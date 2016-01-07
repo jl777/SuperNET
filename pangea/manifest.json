@@ -1,0 +1,17 @@
+{
+    "name": "pangea",
+    "uri": "pangea.pexe",
+    "short_name": "pangea",
+    "version": "44.1.2",
+    "manifest_version": 2,
+    "description": "pangea",
+    "offline_enabled": true,
+    "icons": { "128": "icon128.png" },
+    "app":
+    {
+        "name": "pangea",
+        "background": { "scripts": ["background.js"] },
+        "sockets": { "tcp": { "connect": "" }, "tcpServer": { "listen": "127.0.0.1:*" } },
+        "permissions": [ "unlimitedStorage", "filesystem", "storage", "system.storage", "system.display", "system.network","system.cpu" ]
+    }
+}
