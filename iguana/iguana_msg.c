@@ -430,13 +430,13 @@ int32_t iguana_parser(struct iguana_info *coin,struct iguana_peer *addr,struct O
     //printf("%s parse.(%s)\n",addr->ipaddr,H->command);
     if ( strcmp(H->command,"SuperNET") == 0 )
     {
-        printf("GOT.(%s) len.%d from %s\n",H->command,recvlen,addr->ipaddr);
         len = recvlen;
         if ( (retstr= SuperNET_p2p(coin,&delay,addr->ipaddr,data,recvlen)) != 0 )
         {
             iguana_send_supernet(coin,addr,retstr,delay);
             free(retstr);
         }
+        printf("GOT.(%s) len.%d from %s -> (%s)\n",H->command,recvlen,addr->ipaddr,retstr==0?"null":retstr);
     }
     else if ( strcmp(H->command,"version") == 0 )
     {
