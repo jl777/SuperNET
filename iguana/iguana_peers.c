@@ -318,7 +318,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
         //timeout.tv_sec = 0;
         //timeout.tv_usec = 1000;
         //setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(char *)&timeout,sizeof(timeout));
-        printf("set keepalive.%d\n",setsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,slen));
+        //printf("set keepalive.%d\n",setsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,slen));
         opt = 0;
         getsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,&slen);
         printf("keepalive.%d\n",opt);

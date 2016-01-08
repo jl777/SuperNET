@@ -396,7 +396,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
         for (i=0; i<IGUANA_MAXPEERS; i++)
             coin->peers.active[i].pending = 0;
     }
-    dispflag = (rand() % 100) == 0;
+    dispflag = (rand() % 1000) == 0;
     numbundles = numdone = numrecv = numhashes = numcached = totalsaved = numemit = numactive = 0;
     firstbundle = -1;
     issued = 0;
