@@ -741,7 +741,7 @@ int32_t iguana_pollsendQ(struct iguana_info *coin,struct iguana_peer *addr)
     if ( (packet= queue_dequeue(&addr->sendQ,0)) != 0 )
     {
         if ( addr->supernet != 0 || strcmp((char *)&packet->serialized[4],"SuperNET") == 0 )
-            printf("%s: send.(%s) usock.%d dead.%u ready.%u\n",addr->ipaddr,packet->serialized+4,addr->usock,addr->dead,addr->ready);
+            printf("%s: send.(%s) usock.%d dead.%u ready.%u supernet.%d\n",addr->ipaddr,packet->serialized+4,addr->usock,addr->dead,addr->ready,addr->supernet);
         if ( strcmp((char *)&packet->serialized[4],"getdata") == 0 )
         {
             printf("unexpected getdata for %s\n",addr->ipaddr);
