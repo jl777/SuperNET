@@ -71,7 +71,7 @@ void iguana_acceptloop(void *args)
     {
         memset(&pfd,0,sizeof(pfd));
         pfd.fd = bindsock;
-        pfd.events = POLL_IN;
+        pfd.events = POLLIN;
         if ( poll(&pfd,1,100) <= 0 )
             continue;
         clilen = sizeof(cli_addr);
