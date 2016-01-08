@@ -141,7 +141,7 @@ void iguana_gotversion(struct iguana_info *coin,struct iguana_peer *addr,struct 
     //printf("gotversion from %s\n",addr->ipaddr);
     if ( (vers->nServices & NODE_NETWORK) == 0 )
         printf("other node.(%s) doesnt relay\n",addr->ipaddr);
-    else if ( (vers->nServices & NODE_NETWORK) != 0 )//&& vers->nonce != coin->instance_nonce )
+    if ( (vers->nServices & NODE_NETWORK) != 0 )//&& vers->nonce != coin->instance_nonce )
     {
         addr->protover = (vers->nVersion < PROTOCOL_VERSION) ? vers->nVersion : PROTOCOL_VERSION;
         addr->relayflag = vers->relayflag;
@@ -154,6 +154,7 @@ void iguana_gotversion(struct iguana_info *coin,struct iguana_peer *addr,struct 
     if ( (vers->nServices & (1<<7)) == (1<<7) )
     {
         addr->supernet = 1;
+        printf("send getpeers to %s\n",addr->ipaddr);
         iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}");
     }
     if ( vers->nStartingHeight > coin->longestchain )
