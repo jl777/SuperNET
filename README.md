@@ -36,6 +36,10 @@ To build just iguana, you can cd into SuperNET/iguana and do ./m_unix (or ./m_os
 
 ./m_clean will remove the files created from the building
 
+TLDR: git clone https://github.com/jl777/SuperNET; cd SuperNET; ./m_onetime m_unix; ./m_unix; agents/iguana
+The above one line gets SuperNET installed, built and launched for unix. 
+After that ./m_unix updates to latest
+
 RUNNING
 The native versions are command line applications: agents/iguana {JSON}
 The chrome app pexe requires that the chrome is launched with a command line parameter (tools/chrome.localhost) and then browse to http://127.0.0.1:7777 to see the pexe
