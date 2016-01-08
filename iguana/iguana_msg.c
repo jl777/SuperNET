@@ -435,6 +435,7 @@ int32_t iguana_parser(struct iguana_info *coin,struct iguana_peer *addr,struct O
         len = recvlen;
         if ( (retstr= SuperNET_p2p(coin,addr->ipaddr,data,recvlen)) != 0 )
         {
+            iguana_send_supernet(coin,addr,retstr);
             free(retstr); // dont respond immediate due to privacy
         }
     }

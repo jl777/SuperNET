@@ -504,7 +504,7 @@ char *SuperNET_p2p(struct iguana_info *coin,char *ipaddr,uint8_t *data,int32_t d
     cJSON *json; char *retstr = 0;
     if ( (json= cJSON_Parse((char *)data)) != 0 )
     {
-        printf("SUPERNET P2P.(%s)\n",(char *)data);
+        printf("GOT >>>>>>>> SUPERNET P2P.(%s)\n",(char *)data);
         retstr = iguana_JSON(coin,(char *)data,ipaddr);
         free_json(json);
     }
