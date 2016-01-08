@@ -103,9 +103,14 @@ char *Jay_NXTrequest(char *command,char *params)
 
 char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params)
 {
-    static int count,count2; static double elapsedsum,elapsedsum2; extern int32_t USE_JAY;
+    static int didinit,count,count2; static double elapsedsum,elapsedsum2; extern int32_t USE_JAY;
     struct curl_slist *headers = NULL; struct return_string s; CURLcode res; CURL *curl_handle;
     char *bracket0,*bracket1,*databuf = 0; long len; int32_t specialcase,numretries; double starttime;
+    if ( didinit == 0 )
+    {
+        didinit = 1;
+        curl_global_init(CURL_GLOBAL_ALL); //init the curl session
+    }
     if ( USE_JAY != 0 && (strncmp(url,"http://127.0.0.1:7876/nxt",strlen("http://127.0.0.1:7876/nxt")) == 0 || strncmp(url,"https://127.0.0.1:7876/nxt",strlen("https://127.0.0.1:7876/nxt")) == 0) )
     {
         if ( (databuf= Jay_NXTrequest(command,params)) != 0 )
