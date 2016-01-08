@@ -26,6 +26,7 @@ void iguana_initQ(queue_t *Q,char *name)
 void iguana_initQs(struct iguana_info *coin)
 {
     int32_t i;
+    iguana_initQ(&coin->acceptQ,"acceptQ");
     iguana_initQ(&coin->bundlesQ,"bundlesQ");
     iguana_initQ(&coin->hdrsQ,"hdrsQ");
     iguana_initQ(&coin->blocksQ,"blocksQ");
@@ -333,7 +334,13 @@ struct iguana_info *iguana_startcoin(struct iguana_info *coin,int32_t initialhei
     if ( (coin->myservices & NODE_NETWORK) != 0 )
     {
         printf("MYSERVICES.%llx\n",(long long)coin->myservices);
-        coin->peers.acceptloop = iguana_launch(coin,"acceptloop",iguana_acceptloop,coin,IGUANA_PERMTHREAD);
+        coin->peers.acceptloop = malloc(sizeof(pthread_t));
+        if ( OS_thread_create(coin->peers.acceptloop,NULL,(void *)iguana_acceptloop,(void *)coin) != 0 )
+        {
+            free(coin->peers.acceptloop);
+            coin->peers.acceptloop = 0;
+            printf("error launching accept thread for port.%u\n",coin->chain->portp2p);
+        }
     }
     coin->firstblock = coin->blocks.parsedblocks + 1;
     iguana_genesis(coin,coin->chain);
@@ -354,7 +361,6 @@ struct iguana_info *iguana_startcoin(struct iguana_info *coin,int32_t initialhei
 #endif
     if ( 0 && (coin->MAXBUNDLES= coin->bundlescount / 4) < _IGUANA_MAXBUNDLES )
         coin->MAXBUNDLES = _IGUANA_MAXBUNDLES;
-    //coin->peers.recvloop = iguana_launch("recvloop",iguana_recvloop,coin,IGUANA_PERMTHREAD);
     printf("started.%s\n",coin->symbol);
     return(coin);
 }

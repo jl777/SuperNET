@@ -373,7 +373,7 @@ struct iguana_peers
 {
     bits256 lastrequest;
     struct iguana_peer active[IGUANA_MAXPEERS],*ranked[IGUANA_MAXPEERS],*localaddr;
-    struct iguana_thread *peersloop,*recvloop,*acceptloop;
+    struct iguana_thread *peersloop,*recvloop; pthread_t *acceptloop;
     double topmetrics[IGUANA_MAXPEERS],avemetric;
     uint32_t numranked,mostreceived,shuttingdown,lastpeer,lastmetrics,numconnected;
     int32_t numfiles;
@@ -427,7 +427,7 @@ struct iguana_info
     struct iguana_bitmap screen;
     //struct pollfd fds[IGUANA_MAXPEERS]; struct iguana_peer bindaddr; int32_t numsocks;
     struct OS_memspace TXMEM;
-    queue_t bundlesQ,hdrsQ,blocksQ,priorityQ,possibleQ,jsonQ,finishedQ,TerminateQ,cacheQ;
+    queue_t acceptQ,bundlesQ,hdrsQ,blocksQ,priorityQ,possibleQ,jsonQ,finishedQ,TerminateQ,cacheQ;
     double parsemillis,avetime; uint32_t Launched[8],Terminated[8];
     portable_mutex_t peers_mutex,blocks_mutex;
     struct iguana_bundle *bundles[IGUANA_MAXBUNDLES];
@@ -648,8 +648,8 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
 int32_t iguana_scriptgen(struct iguana_info *coin,uint8_t *script,char *asmstr,struct iguana_bundle *bp,struct iguana_pkhash *p,uint8_t type);
 int32_t iguana_ramchain_spendtxid(struct iguana_info *coin,bits256 *txidp,struct iguana_txid *T,int32_t numtxids,bits256 *X,int32_t numexternaltxids,struct iguana_spend *s);
 struct iguana_info *iguana_coinselect();
-//void init_InstantDEX();
-//char *InstantDEX(char *jsonstr,char *remoteaddr,int32_t localaccess);
+void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr);
+struct iguana_peer *iguana_peerslot(struct iguana_info *coin,uint32_t ipbits);
 
 char *busdata_sync(uint32_t *noncep,char *jsonstr,char *broadcastmode,char *destNXTaddr);
 void peggy();

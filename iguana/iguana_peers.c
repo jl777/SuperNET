@@ -14,7 +14,6 @@
  ******************************************************************************/
 
 #include "iguana777.h"
-void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr);
 
 #define _iguana_hashfind(coin,ipbits) _iguana_hashset(coin,ipbits,-1)
 struct iguana_iAddr *iguana_iAddrhashfind(struct iguana_info *coin,uint32_t ipbits,int32_t createflag);
@@ -593,10 +592,7 @@ void iguana_startconnection(void *arg)
         coin->peers.numconnected++;
         printf("PEER CONNECTED.%d:%d of max.%d! %s:%d usock.%d\n",coin->peers.numconnected,n,coin->MAXPEERS,addr->ipaddr,coin->chain->portp2p,addr->usock);
         if ( strcmp("127.0.0.1",addr->ipaddr) == 0 )
-        {
             coin->peers.localaddr = addr;
-            iguana_send_ping(coin,addr);
-        }
 #ifdef IGUANA_DEDICATED_THREADS
         //iguana_launch("recv",iguana_dedicatedrecv,addr,IGUANA_RECVTHREAD);
         iguana_dedicatedloop(coin,addr);
@@ -765,64 +761,6 @@ int32_t iguana_pollrecv(struct iguana_info *coin,struct iguana_peer *addr,uint8_
     return(1);
 }
 
-void iguana_acceptloop(void *args)
-{
-    socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits; uint16_t port; int32_t bindsock;
-    struct iguana_peer *addr; struct iguana_info *coin = args;
-    port = coin->chain->portp2p;
-    bindsock = iguana_socket(1,"127.0.0.1",port);
-    printf("iguana_bindloop 127.0.0.1:%d bind sock.%d\n",port,bindsock);
-    while ( bindsock >= 0 )
-    {
-        ipbits = rand();
-        while ( (addr= iguana_peerslot(coin,ipbits)) == 0 )
-        {
-            ipbits = rand();
-            sleep(1);
-        }
-        clilen = sizeof(cli_addr);
-        printf("ACCEPT (%s:%d) on sock.%d\n","127.0.0.1",port,bindsock);
-        addr->usock = accept(bindsock,(struct sockaddr *)&cli_addr,&clilen);
-        if ( addr->usock < 0 )
-        {
-            printf("ERROR on accept bindsock.%d errno.%d (%s)\n",bindsock,errno,strerror(errno));
-            continue;
-        }
-        memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
-        addr->ipbits = ipbits;
-        expand_ipbits(addr->ipaddr,addr->ipbits);
-        printf("NEWSOCK.%d for %x (%s)\n",addr->usock,addr->ipbits,addr->ipaddr);
-        iguana_dedicatedloop(coin,addr);
-    }
-}
-
-/*void iguana_recvloop(void *arg)
-{
-    int32_t i; uint8_t buf[32768]; struct iguana_info *coin = arg;
-    while ( 1 )
-    {
-        if ( coin->numsocks == 0 )
-        {
-            sleep(1);
-            continue;
-        }
-        for (i=0; i<coin->numsocks; i++)
-            coin->fds[i].revents = POLLIN, coin->fds[i].events = 0;
-        if ( poll(coin->fds,coin->numsocks,10000) > 0 )
-        {
-            for (i=0; i<coin->numsocks; i++)
-            {
-                if ( (coin->fds[i].events & POLLIN) != 0 )
-                {
-                    printf("process message from [%d]\n",i);
-                    _iguana_processmsg(coin,coin->fds[i].fd,&coin->bindaddr,buf,sizeof(buf));
-                    printf("iguana_bindloop processed.(%s)\n",buf+4);
-                }
-            }
-        } else printf("numsocks.%d nothing to receive\n",coin->numsocks);
-    }
-}*/
-
 #ifdef IGUANA_PEERALLOC
 void *iguana_peeralloc(struct iguana_info *coin,struct iguana_peer *addr,int32_t datalen)
 {
@@ -980,10 +918,6 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
             flag += iguana_pollsendQ(coin,addr);
         if ( flag == 0 )
         {
-            //memset(&fds,0,sizeof(fds));
-            //fds.fd = addr->usock;
-            //fds.events |= POLLIN;
-            //if ( poll(&fds,1,timeout) > 0 )
             if ( (fds.revents & POLLIN) != 0 )
                 flag += iguana_pollrecv(coin,addr,buf,bufsize);
             if ( flag == 0 )
@@ -996,10 +930,6 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
                         addr->pendhdrs--;
                     addr->pendtime = 0;
                 }
-                //memset(&fds,0,sizeof(fds));
-                //fds.fd = addr->usock;
-                //fds.events |= POLLOUT;
-                //if ( poll(&fds,1,timeout) > 0 )
                 if ( coin->active != 0 && (fds.revents & POLLOUT) != 0 )
                     flag += iguana_pollQsPT(coin,addr);
             }
