@@ -307,7 +307,7 @@ int32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bits
                 if ( bp->emitfinish == 0 && (block= bp->blocks[i]) != 0 && (block->queued == 0 && block->fpipbits == 0) && block->numrequests < 3 )
                     iguana_blockQ(coin,bp,i,block->RO.hash2,0), n++;
             }
-            printf("ALLHASHES FOUND! %d requested.%d\n",bp->bundleheight,n);
+            //printf("ALLHASHES FOUND! %d requested.%d\n",bp->bundleheight,n);
             return(i);
         }
     }
@@ -561,7 +561,7 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                         char str[65];
                         bits256_str(str,bp->hashes[0]);
                         //printf("(%s %d).%d ",str,bp->bundleheight,i);
-                        printf("%d ",bp->bundleheight);
+                        //printf("%d ",bp->bundleheight);
                         init_hexbytes_noT(hashstr,bp->hashes[0].bytes,sizeof(bits256));
                         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
                         /*if ( strcmp(coin->symbol,"BTC") != 0 && bits256_nonz(bp->hashes[1]) > 0 )

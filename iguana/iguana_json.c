@@ -455,6 +455,7 @@ int32_t iguana_processjsonQ(struct iguana_info *coin) // reentrant, can be calle
     {
         if ( ptr->expired != 0 )
         {
+            *ptr->retjsonstrp = clonestr("{\"error\":\"request timeout\"}");
             printf("garbage collection: expired.(%s)\n",ptr->jsonstr);
             myfree(ptr,ptr->allocsize);
         } else queue_enqueue("finishedQ",&coin->finishedQ,&ptr->DL,0);
@@ -490,7 +491,7 @@ char *iguana_blockingjsonstr(struct iguana_info *coin,char *jsonstr,uint64_t tag
         while ( OS_milliseconds() < expiration )
         {
             usleep(100);
-            if ( (retjsonstr= *ptr->retjsonstrp) != 0 )
+            if ( retjsonstr != 0 )
             {
                 //printf("blocking retjsonstr.(%s)\n",retjsonstr);
                 queue_delete(&coin->finishedQ,&ptr->DL,allocsize,1);
