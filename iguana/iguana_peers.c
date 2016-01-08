@@ -352,8 +352,8 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
     if ( usock < 0 || addr->dead != 0 )
         return(-1);
     remains = len;
-    //if ( strcmp((char *)&serialized[4],"SuperNET") == 0 || addr->supernet != 0 )
-        printf(" >>>>>>> send.(%s) %d bytes to %s\n",(char *)&serialized[4],len,addr->ipaddr);// getchar();
+    if ( strcmp((char *)&serialized[4],"SuperNET") == 0 || addr->supernet != 0 )
+        printf(" >>>>>>> send.(%s) %d bytes to %s supernet.%d\n",(char *)&serialized[4],len,addr->ipaddr,addr->supernet);// getchar();
     if ( strcmp((char *)&serialized[4],"ping") == 0 )
         addr->sendmillis = OS_milliseconds();
     if ( len > IGUANA_MAXPACKETSIZE )
