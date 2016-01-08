@@ -483,7 +483,8 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
     int32_t len,recvlen; void *buf = _buf; struct iguana_msghdr H;
     if ( coin->peers.shuttingdown != 0 || addr->dead != 0 )
         return;
-    //printf("%p got.(%s) from %s | usock.%d ready.%u dead.%u\n",addr,H.command,addr->ipaddr,addr->usock,addr->ready,addr->dead);
+    if ( addr->supernet != 0 )
+        printf("%p got.(%s) from %s | usock.%d ready.%u dead.%u\n",addr,H.command,addr->ipaddr,addr->usock,addr->ready,addr->dead);
     memset(&H,0,sizeof(H));
     if ( (recvlen= (int32_t)iguana_recv(usock,(uint8_t *)&H,sizeof(H))) == sizeof(H) )
     {
