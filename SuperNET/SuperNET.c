@@ -296,7 +296,6 @@ void add_standard_fields(char *request)
         free_json(json);
     }
 }
-#endif
 
 char *nn_loadbalanced(struct supernet_info *myinfo,uint8_t *data,int32_t len)
 {
