@@ -2,7 +2,7 @@ iguana is easy to build. start by cloning (or downloading) this repo
 
 DEPENDENCIES
 for native (unix, osx): just make sure you have the dev versions of openssl and curl installed:
-    sudo apt-get install libcurl4-gnutls-dev libcurl4-openssl-dev
+    sudo apt-get install libcurl4-gnutls-dev libssl-dev
 
 for native (win32, win64): this still needs to be ported, pthreads is the only non-native windows system functions being used. OS_portable.c and OS_nonportable.c have the few windows functions that are needed to be ported and also a compile/link process needs to be done. I think cygwin or even mingw would work, alternatively compiling the codebase with VS shouldnt be too much work. until this is done the instructions below about m_win32 and m_win64 wont actually work
 
@@ -36,7 +36,7 @@ To build just iguana, you can cd into SuperNET/iguana and do ./m_unix (or ./m_os
 
 ./m_clean will remove the files created from the building
 
-TLDR: git clone https://github.com/jl777/SuperNET; cd SuperNET; ./m_onetime m_unix; ./m_unix; agents/iguana
+TLDR:  sudo apt-get update; sudo apt-get install libcurl4-gnutls-dev libssl-dev; git clone https://github.com/jl777/SuperNET; cd SuperNET; ./m_onetime m_unix; ./m_unix; agents/iguana
 The above one line gets SuperNET installed, built and launched for unix. 
 After that ./m_unix updates to latest
 
