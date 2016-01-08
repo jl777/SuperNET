@@ -346,7 +346,7 @@ struct iguana_info *iguana_startcoin(struct iguana_info *coin,int32_t initialhei
     iguana_genesis(coin,coin->chain);
     for (iter=0; iter<2; iter++)
     {
-        sprintf(fname,"%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
+        sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
         OS_compatible_path(fname);
         printf("parsefile.%d %s\n",iter,fname);
         if ( (fp= fopen(fname,"r")) != 0 )
