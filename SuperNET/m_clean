@@ -1,1 +1,1 @@
-rm *.o ../agents/SuperNET
+rm -f *.o ../agents/SuperNET
