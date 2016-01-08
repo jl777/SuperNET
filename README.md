@@ -1,4 +1,8 @@
-iguana is easy to build. start by cloning (or downloading) this repo
+#SuperNET Client "iguana"
+
+[![Join the chat at https://gitter.im/jl777/SuperNET](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/jl777/SuperNET?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
+iguana is easy to build. Start by cloning (or downloading) this repository.
 
 DEPENDENCIES
 for native (unix, osx): just make sure you have the dev versions of openssl and curl installed:
