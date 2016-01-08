@@ -561,7 +561,7 @@ void iguana_startconnection(void *arg)
         printf("avoid self-loopback\n");
         return;
     }
-    printf("startconnection.(%s) pending.%u usock.%d addrind.%d\n",addr->ipaddr,addr->pending,addr->usock,addr->addrind);
+    //printf("startconnection.(%s) pending.%u usock.%d addrind.%d\n",addr->ipaddr,addr->pending,addr->usock,addr->addrind);
     addr->pending = (uint32_t)time(NULL);
     if ( addr->usock < 0 )
         addr->usock = iguana_socket(0,addr->ipaddr,coin->chain->portp2p);
@@ -569,7 +569,7 @@ void iguana_startconnection(void *arg)
     {
         strcpy(ipaddr,addr->ipaddr);
         iguana_iAkill(coin,addr,1);
-        printf("refused PEER KILLED. for %s:%d usock.%d\n",addr->ipaddr,coin->chain->portp2p,addr->usock);
+        //printf("refused PEER KILLED. for %s:%d usock.%d\n",addr->ipaddr,coin->chain->portp2p,addr->usock);
     }
     else
     {
@@ -643,7 +643,7 @@ void *iguana_iAddriterator(struct iguana_info *coin,struct iguana_iAddr *iA)
                 addr->pending = (uint32_t)time(NULL);
                 if ( iguana_rwiAddrind(coin,1,iA,iA->hh.itemind) > 0 )
                 {
-                    printf("iA.%p iguana_startconnection.(%s) status.%d pending.%d\n",iA,addr->ipaddr,iA->status,addr->pending);
+                    //printf("iA.%p iguana_startconnection.(%s) status.%d pending.%d\n",iA,addr->ipaddr,iA->status,addr->pending);
                     iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
                 } else printf("error rwiAddrind.%d\n",iA->hh.itemind);
             }
@@ -726,7 +726,7 @@ int32_t iguana_pollsendQ(struct iguana_info *coin,struct iguana_peer *addr)
     struct iguana_packet *packet;
     if ( (packet= queue_dequeue(&addr->sendQ,0)) != 0 )
     {
-        //printf("%s: send.(%s) usock.%d dead.%u ready.%u\n",addr->ipaddr,packet->serialized+4,addr->usock,addr->dead,addr->ready);
+        printf("%s: send.(%s) usock.%d dead.%u ready.%u\n",addr->ipaddr,packet->serialized+4,addr->usock,addr->dead,addr->ready);
         if ( strcmp((char *)&packet->serialized[4],"getdata") == 0 )
         {
             printf("unexpected getdata for %s\n",addr->ipaddr);
@@ -891,7 +891,8 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     //printf("send version myservices.%llu\n",(long long)coin->myservices);
     iguana_send_version(coin,addr,coin->myservices);
     iguana_queue_send(coin,addr,serialized,"getaddr",0,0,0);
-    //printf("after send version\n");
+    iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}");
+  //printf("after send version\n");
     run = 0;
     while ( addr->usock >= 0 && addr->dead == 0 && coin->peers.shuttingdown == 0 )
     {

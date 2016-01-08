@@ -130,6 +130,7 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
     if ( (len= (int32_t)strlen(jsonstr)) < sizeof(serialized)-sizeof(struct iguana_msghdr) )
     {
         memcpy(&serialized[sizeof(struct iguana_msghdr)],jsonstr,len+1);
+        printf("SEND.(%s) -> (%s)\n",jsonstr,addr->ipaddr);
         return(iguana_queue_send(coin,addr,serialized,"SuperNET",len+1,0,1));
     }
     else return(-1);
@@ -218,6 +219,8 @@ int32_t iguana_send_ping(struct iguana_info *coin,struct iguana_peer *addr)
     }
     printf("pingnonce.%llx\n",(long long)nonce);
     len = iguana_rwnum(1,&serialized[sizeof(struct iguana_msghdr)],sizeof(uint64_t),&nonce);
+    if ( addr->supernet != 0 )
+        iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}");
     return(iguana_queue_send(coin,addr,serialized,"ping",len,0,0));
 }
 
