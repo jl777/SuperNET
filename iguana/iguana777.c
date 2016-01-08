@@ -394,15 +394,12 @@ void iguana_coinloop(void *arg)
                         if ( iguana_updateramchain(coin) != 0 )
                             iguana_syncs(coin), flag++; // merge ramchain fragments into full ramchain
                     }
-                    //if ( now > lastdisp+1 )
+                    lastdisp = (uint32_t)now;
+                    iguana_bundlestats(coin,str);
+                    if ( str[0] != 0 )
                     {
-                        lastdisp = (uint32_t)now;
-                        iguana_bundlestats(coin,str);
-                        if ( str[0] != 0 )
-                        {
-                            if ( (rand() % 30) == 0 )
-                                myallocated(0,0);
-                        }
+                        if ( (rand() % 1000) == 0 )
+                            myallocated(0,0);
                     }
                     iguana_ramchainmerge(coin);
                 }
