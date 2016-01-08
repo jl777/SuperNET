@@ -705,8 +705,8 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                         if ( block->numrequests < 100 )
                             block->numrequests++;
                         //block->issued = (uint32_t)time(NULL);;
-                        if ( (rand() % 100) == 0 )
-                        printf("%s Send auto blockreq.%d [%d] minreq.%d\n",addr->ipaddr,bp->bundleheight+bundlei,block->numrequests,bp->minrequests);
+                        if ( 0 && (rand() % 100) == 0 )
+                            printf("%s Send auto blockreq.%d [%d] minreq.%d\n",addr->ipaddr,bp->bundleheight+bundlei,block->numrequests,bp->minrequests);
                         iguana_sendblockreq(coin,addr,bp,bundlei,bp->hashes[bundlei],0);
                         return(1);
                     }
