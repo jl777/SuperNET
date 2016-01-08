@@ -434,21 +434,6 @@ char *iguana_jsonstr(struct iguana_info *coin,char *jsonstr,char *remoteaddr)
     return(retjsonstr);
 }
 
-/*char *iguana_genericjsonstr(char *jsonstr,char *remoteaddr)
-{
-    cJSON *json; char *retjsonstr,*methodstr,*agentstr;
-    if ( (json= cJSON_Parse(jsonstr)) != 0 )
-    {
-        if ( (agentstr= jstr(json,"agent")) == 0 )
-            agentstr = "SuperNET";
-        if ( (methodstr= jstr(json,"method")) != 0 )
-            retjsonstr = iguana_agentjson(agentstr,0,methodstr,json,remoteaddr);
-        else retjsonstr = clonestr("{\"error\":\"no method in generic JSON\"}");
-        free_json(json);
-    } else retjsonstr = clonestr("{\"error\":\"cant parse generic JSON\"}");
-    return(retjsonstr);
-}*/
-
 int32_t iguana_processjsonQ(struct iguana_info *coin) // reentrant, can be called during any idletime
 {
     struct iguana_jsonitem *ptr;
@@ -553,6 +538,29 @@ char *iguana_JSON(struct iguana_info *coin,char *jsonstr,char *remoteaddr)
     return(retstr);
 }
 
+char *SuperNET_p2p(struct iguana_info *coin,int32_t *delaymillisp,char *ipaddr,uint8_t *data,int32_t datalen)
+{
+    cJSON *json,*retjson; char *retstr = 0;
+    if ( (json= cJSON_Parse((char *)data)) != 0 )
+    {
+        printf("GOT >>>>>>>> SUPERNET P2P.(%s)\n",(char *)data);
+        if ( (retstr = iguana_JSON(coin,(char *)data,ipaddr)) != 0 )
+        {
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
+            {
+                if ( jobj(retjson,"result") != 0 || jobj(retjson,"error") != 0 || jobj(retjson,"method") == 0 )
+                {
+                    free(retstr);
+                    retstr = 0;
+                }
+                free_json(retjson);
+            }
+        }
+        free_json(json);
+    }
+    return(retstr);
+}
+
 /*void iguana_issuejsonstrM(void *arg)
 {
     cJSON *json; int32_t fd; char *retjsonstr,*jsonstr = arg;
@@ -577,6 +585,19 @@ void iguana_main(void *arg)
     int32_t i,len,flag; cJSON *json; uint8_t secretbuf[512];
     //  portable_OS_init()?
     mycalloc(0,0,0);
+    {
+        char str[65]; struct tai t; double startmillis; int32_t datenum,seconds; uint64_t i,checkval,timestamp,now = (uint32_t)time(NULL);
+        startmillis = OS_milliseconds();
+        for (i=0; i<1000000; i++)
+        {
+            timestamp = now - (rand() % 100000000LL); // range -100000000LL to +500000000LL
+            datenum = OS_conv_unixtime(&t,&seconds,timestamp); // gmtime -> datenum + number of seconds
+            checkval = OS_conv_datenum(datenum,seconds/3600,(seconds/60)%60,seconds%60); // datenum+H:M:S -> unix time
+            if ( checkval != timestamp )
+                printf("%s i.%lld timestamp.%-12llu -> (%d:%06d) -> checkval.%-12llu diff.[%lld]\n",tai_str(str,t),i,(long long)timestamp,datenum,seconds,(long long)checkval,(long long)(timestamp-checkval));
+        }
+        printf("million tai compares in %.3f microseconds per encode/decode\n",1000. * (OS_milliseconds()-startmillis)/i);
+    }
     if ( (retstr= iguana_addagent("ramchain",ramchain_parser,"127.0.0.1",cJSON_Parse("[\"block\", \"tx\", \"txs\", \"rawtx\", \"balance\", \"totalreceived\", \"totalsent\", \"utxo\", \"status\"]"),0,0,0)) != 0 )
         printf("%s\n",retstr), free(retstr);
     if ( (retstr= iguana_addagent("pangea",pangea_parser,"127.0.0.1",cJSON_Parse("[\"test\"]"),0,0,0)) != 0 )

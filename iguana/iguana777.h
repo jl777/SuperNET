@@ -19,6 +19,7 @@
 
 //#define IGUANA_DISABLEPEERS
 #define IGUANA_MAXCOINS 64
+#define IGUANA_MAXDELAY_MILLIS (3600 * 1000) 
 
 #define IGUANA_EXCHANGEIDLE 10
 #define IGUANS_JSMILLIS 100
@@ -221,7 +222,7 @@ struct iguana_msgtx
     int32_t allocsize,timestamp;
 } __attribute__((packed));
 
-struct iguana_packet { struct queueitem DL; struct iguana_peer *addr; int32_t datalen,getdatablock; uint8_t serialized[]; };
+struct iguana_packet { struct queueitem DL; struct iguana_peer *addr; struct tai embargo; int32_t datalen,getdatablock; uint8_t serialized[]; };
 
 struct msgcounts { uint32_t version,verack,getaddr,addr,inv,getdata,notfound,getblocks,getheaders,headers,tx,block,mempool,ping,pong,reject,filterload,filteradd,filterclear,merkleblock,alert; };
 
@@ -444,7 +445,7 @@ struct iguana_info
 int32_t iguana_verifypeer(struct iguana_info *coin,void *key,void *value,int32_t itemind,int32_t itemsize);
 int32_t iguana_peermetrics(struct iguana_info *coin);
 void iguana_peersloop(void *arg);
-int32_t iguana_queue_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *serialized,char *cmd,int32_t len,int32_t getdatablock,int32_t forceflag);
+int32_t iguana_queue_send(struct iguana_info *coin,struct iguana_peer *addr,int32_t delay,uint8_t *serialized,char *cmd,int32_t len,int32_t getdatablock,int32_t forceflag);
 uint32_t iguana_ipbits2ind(struct iguana_info *coin,struct iguana_iAddr *iA,uint32_t ipbits,int32_t createflag);
 uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana_iAddr *iA,uint32_t ind);
 //uint32_t iguana_rwipbits_status(struct iguana_info *coin,int32_t rwflag,uint32_t ipbits,int32_t *statusp);
@@ -555,7 +556,7 @@ double dxblend(double *destp,double val,double decay);
 // json
 int32_t iguana_processjsonQ(struct iguana_info *coin); // reentrant, can be called during any idletime
 char *iguana_JSON(struct iguana_info *coin,char *jsonstr,char *remoteaddr);
-char *SuperNET_p2p(struct iguana_info *coin,char *ipaddr,uint8_t *data,int32_t datalen);
+char *SuperNET_p2p(struct iguana_info *coin,int32_t *delaymillisp,char *ipaddr,uint8_t *data,int32_t datalen);
 
 char *mbstr(char *str,double);
 int init_hexbytes_noT(char *hexbytes,unsigned char *message,long len);
@@ -660,6 +661,6 @@ struct iguana_info *iguana_coinfind(const char *symbol);
 struct iguana_info *iguana_coinadd(const char *symbol);
 struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana_bundle *bp);
 int32_t iguana_sendblockreq(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2,int32_t iamthreadsafe);
-int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,char *jsonstr);
+int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,char *jsonstr,int32_t delay);
 
 #endif

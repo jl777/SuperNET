@@ -498,15 +498,3 @@ char *ramchain_parser(struct iguana_agent *agent,struct iguana_info *coin,char *
     }
     return(ramchain_coinparser(coin,method,json));
 }
-
-char *SuperNET_p2p(struct iguana_info *coin,char *ipaddr,uint8_t *data,int32_t datalen)
-{
-    cJSON *json; char *retstr = 0;
-    if ( (json= cJSON_Parse((char *)data)) != 0 )
-    {
-        printf("GOT >>>>>>>> SUPERNET P2P.(%s)\n",(char *)data);
-        retstr = iguana_JSON(coin,(char *)data,ipaddr);
-        free_json(json);
-    }
-    return(retstr);
-}

@@ -384,7 +384,7 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
     return(len);
 }
 
-int32_t iguana_queue_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *serialized,char *cmd,int32_t len,int32_t getdatablock,int32_t forceflag)
+int32_t iguana_queue_send(struct iguana_info *coin,struct iguana_peer *addr,int32_t delay,uint8_t *serialized,char *cmd,int32_t len,int32_t getdatablock,int32_t forceflag)
 {
     struct iguana_packet *packet; int32_t datalen;
     if ( addr == 0 )
@@ -401,6 +401,12 @@ int32_t iguana_queue_send(struct iguana_info *coin,struct iguana_peer *addr,uint
     packet = mycalloc('S',1,sizeof(struct iguana_packet) + datalen);
     packet->datalen = datalen;
     packet->addr = addr;
+    if ( delay != 0 )
+    {
+        if ( delay > IGUANA_MAXDELAY_MILLIS )
+            delay = IGUANA_MAXDELAY_MILLIS;
+        packet->embargo = tai_now();
+    }
     memcpy(packet->serialized,serialized,datalen);
     //printf("%p queue send.(%s) %d to (%s) %x\n",packet,serialized+4,datalen,addr->ipaddr,addr->ipbits);
     queue_enqueue("sendQ",&addr->sendQ,&packet->DL,0);
@@ -732,12 +738,14 @@ int32_t iguana_pollsendQ(struct iguana_info *coin,struct iguana_peer *addr)
             printf("unexpected getdata for %s\n",addr->ipaddr);
             myfree(packet,sizeof(*packet) + packet->datalen);
         }
-        else
+        else if ( packet->embargo.x == 0 )
         {
+            
             iguana_send(coin,addr,packet->serialized,packet->datalen);
             myfree(packet,sizeof(*packet) + packet->datalen);
             return(1);
         }
+        else queue_enqueue("embargo",&addr->sendQ,&packet->DL,0);
     }
     return(0);
 }
@@ -890,7 +898,7 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     buf = mycalloc('r',1,bufsize);
     //printf("send version myservices.%llu\n",(long long)coin->myservices);
     iguana_send_version(coin,addr,coin->myservices);
-    iguana_queue_send(coin,addr,serialized,"getaddr",0,0,0);
+    iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
   //printf("after send version\n");
     run = 0;
     while ( addr->usock >= 0 && addr->dead == 0 && coin->peers.shuttingdown == 0 )

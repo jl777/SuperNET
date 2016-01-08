@@ -10168,4 +10168,21 @@ void iguana_dedicatedrecv(void *arg)
                 }
                 else return(0);
             }
+                
+                
+            /*char *iguana_genericjsonstr(char *jsonstr,char *remoteaddr)
+             {
+             cJSON *json; char *retjsonstr,*methodstr,*agentstr;
+             if ( (json= cJSON_Parse(jsonstr)) != 0 )
+             {
+             if ( (agentstr= jstr(json,"agent")) == 0 )
+             agentstr = "SuperNET";
+             if ( (methodstr= jstr(json,"method")) != 0 )
+             retjsonstr = iguana_agentjson(agentstr,0,methodstr,json,remoteaddr);
+             else retjsonstr = clonestr("{\"error\":\"no method in generic JSON\"}");
+             free_json(json);
+             } else retjsonstr = clonestr("{\"error\":\"cant parse generic JSON\"}");
+             return(retjsonstr);
+             }*/
+
 #endif

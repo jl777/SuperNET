@@ -18,6 +18,8 @@
 #include "OS_portable.h"
 
 #define TAI_PACK 8
+#define TAI_UTC_DIFF ((uint64_t)4611686018427387914ULL)
+
 //#define UTC_ADJUST -36
 #define tai_approx(t) ((double) ((t)->x))
 #define tai_less(t,u) ((t)->x < (u)->x)
@@ -26,6 +28,80 @@ int32_t leapsecs_sub(struct tai *);
 static struct tai First_TAI;
 uint32_t First_utc;
 int32_t UTC_ADJUST;
+
+#ifdef _WIN32
+struct tm *gmtime_r(const time_t *timep,struct tm *result)
+{
+	struct tm *p = gmtime(timep);
+	memset(result,0,sizeof(*result));
+	if ( p != 0 )
+    {
+        *result = *p;
+        p = result;
+	}
+	return(p);
+}
+
+#include <Windows.h>
+#include <stdint.h> // portable: uint64_t   MSVC: __int64
+
+// MSVC defines this in winsock2.h!?
+/*typedef struct timeval {
+    long tv_sec;
+    long tv_usec;
+} timeval;
+
+int gettimeofday(struct timeval * tp, struct timezone * tzp)
+{
+    // Note: some broken versions only have 8 trailing zero's, the correct epoch has 9 trailing zero's
+    static const uint64_t EPOCH = ((uint64_t) 116444736000000000ULL);
+    
+    SYSTEMTIME  system_time;
+    FILETIME    file_time;
+    uint64_t    time;
+    
+    GetSystemTime( &system_time );
+    SystemTimeToFileTime( &system_time, &file_time );
+    time =  ((uint64_t)file_time.dwLowDateTime )      ;
+    time += ((uint64_t)file_time.dwHighDateTime) << 32;
+    
+    tp->tv_sec  = (long) ((time - EPOCH) / 10000000L);
+    tp->tv_usec = (long) (system_time.wMilliseconds * 1000);
+    return 0;
+}*/
+#endif
+
+double OS_portable_milliseconds()
+{
+    struct timeval tv; double millis;
+    gettimeofday(&tv,NULL);
+    millis = ((double)tv.tv_sec * 1000. + (double)tv.tv_usec / 1000.);
+    //printf("tv_sec.%ld usec.%d %f\n",tv.tv_sec,tv.tv_usec,millis);
+    return(millis);
+}
+
+// portable time functions
+
+int32_t is_DST(int32_t datenum)
+{
+    int32_t year,month,day;
+    year = datenum / 10000, month = (datenum / 100) % 100, day = (datenum % 100);
+    if ( month >= 4 && month <= 9 )
+        return(1);
+    else if ( month == 3 && day >= 29 )
+        return(1);
+    else if ( month == 10 && day < 25 )
+        return(1);
+    return(0);
+}
+
+struct taidate taidate_set(int32_t year,int32_t month,int32_t day)
+{
+    struct taidate cd;
+    memset(&cd,0,sizeof(cd));
+    cd.year = year, cd.month = month, cd.day = day;
+    return(cd);
+}
 
 struct taidate taidate_frommjd(int32_t day,int32_t *pwday,int32_t *pyday)
 {
@@ -96,6 +172,15 @@ struct taidate tai2date(struct tai t)
 {
     struct taitime ct = tai2time(t,0,0);
     return(ct.date);
+}
+
+struct taitime taitime_set(struct taidate cd,int32_t hour,int32_t minute,int32_t seconds)
+{
+    struct taitime ct;
+    memset(&ct,0,sizeof(ct));
+    ct.date = cd;
+    ct.hour = hour, ct.minute = minute, ct.second = seconds;
+    return(ct);
 }
 
 /*int32_t taitime_scan(char *s,struct taitime *ct)
@@ -177,7 +262,7 @@ char *taitime_str(char *s,struct taitime ct)
         s[4] = '0' + (x % 6); x /= 6;
         s[3] = '0' + (x % 10); x /= 10;
         s[2] = '0' + (x % 10);
-        s[len] = 0;
+        s[6] = 0;
     }
     return(s);
 }
@@ -249,23 +334,26 @@ int32_t taidate_mjd(struct taidate cd)
     return d;
 }
 
-uint32_t tai2utc(struct tai t) { t.x -= 4611686018427387914ULL; return((uint32_t)t.x); }
+struct tai utc2tai(uint32_t timestamp) { struct tai t; memset(&t,0,sizeof(t)); t.x = (timestamp + TAI_UTC_DIFF); return(t); }
 
-uint32_t tai2utime(struct tai t)
+uint32_t tai2utc(struct tai t) { t.x -= TAI_UTC_DIFF; return((uint32_t)t.x); }
+
+uint64_t tai2utime(struct tai t)
 {
-    uint64_t mjd; struct taitime ct = tai2time(t,0,0);
+    uint64_t mjd; uint64_t timestamp; struct taitime ct = tai2time(t,0,0);
     mjd = taidate_mjd(ct.date);
-    return((uint32_t)(mjd * 24*3600 + ct.hour*3600 + ct.minute*60 + ct.second));
+    timestamp = ((uint64_t)(mjd * 24*3600 + ct.hour*3600 + ct.minute*60 + ct.second));
+    return(timestamp);
 }
 
 struct tai tai_now()
 {
-    struct tai t;
-    t.x = 4611686018427387914ULL + (uint64_t)time(NULL);
+    struct tai t; uint64_t now = time(NULL);
+    t.x = TAI_UTC_DIFF + now;
     t.millis = OS_milliseconds();
     if ( First_TAI.x == 0 )
     {
-        First_TAI = t, First_utc = (uint32_t)time(NULL);
+        First_TAI = t, First_utc = (uint32_t)now;
         UTC_ADJUST = -36;
         printf("TAINOW.%llu %03.3f UTC.%u vs %u [diff %d]\n",(long long)t.x,t.millis,First_utc,tai2utc(t),UTC_ADJUST);
     }
@@ -387,80 +475,74 @@ char *utc_str(char *str,struct tai t)
     return(tai_str(str,t));
 }
 
-#ifdef ENABLE_TEST
-#include <unistd.h>
-int main(int argc, const char * argv[])
-{
-    int i; char str[111],str2[111],str3[111],str4[111]; struct taitime ct;
-    struct tai t,start = tai_now();
-    for (i=0; i<100; i++)
-    {
-        sleep(1);
-        t = tai_now();
-        taidate_str(str2,tai2date(t));
-        printf("(%s) time.%s date.%s %ld start.%ld %s %u %u\n",tai_str(str3,t),taitime_str(str,ct),str2,(long)tai2utime(t),(long)tai2utime(start),utime_str(str4,t),tai2utc(t),(uint32_t)time(NULL));
-    }
-    // insert code here...
-    printf("Hello, World!\n");
-    return 0;
-}
-#endif
-
-
-int32_t conv_date(int32_t *secondsp,char *buf);
-
-double OS_portable_milliseconds()
-{
-    struct timeval tv; double millis;
-    gettimeofday(&tv,NULL);
-    millis = ((double)tv.tv_sec * 1000. + (double)tv.tv_usec / 1000.);
-    //printf("tv_sec.%ld usec.%d %f\n",tv.tv_sec,tv.tv_usec,millis);
-    return(millis);
-}
-
-uint32_t OS_conv_datenum(int32_t datenum,int32_t hour,int32_t minute,int32_t second) // datenum+H:M:S -> unix time
-{
-#ifdef __PNACL
-    return(0);
-#else
-    struct tm t;
-    memset(&t,0,sizeof(t));
-    t.tm_year = (datenum / 10000) - 1900, t.tm_mon = ((datenum / 100) % 100) - 1, t.tm_mday = (datenum % 100);
-    t.tm_hour = hour, t.tm_min = minute, t.tm_sec = second;
-    return((uint32_t)timegm(&t));
-#endif
-}
-
 double OS_milliseconds()
 {
     return(OS_portable_milliseconds());
 }
 
-int32_t OS_conv_unixtime(int32_t *secondsp,time_t timestamp) // gmtime -> datenum + number of seconds
+int32_t calc_datenum(int32_t year,int32_t month,int32_t day)
 {
-    struct tm t; int32_t datenum; uint32_t checktime; char buf[64];
-    t = *gmtime(&timestamp);
-    strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%SZ",&t); //printf("%s\n",buf);
-    datenum = conv_date(secondsp,buf);
-    if ( (checktime= OS_conv_datenum(datenum,*secondsp/3600,(*secondsp%3600)/60,*secondsp%60)) != timestamp )
-    {
-        printf("error: timestamp.%u -> (%d + %d) -> %u\n",(uint32_t)timestamp,datenum,*secondsp,checktime);
-        return(-1);
-    }
-    return(datenum);
+    return((year * 10000) + (month * 100) + day);
 }
 
-int32_t is_DST(int32_t datenum)
+int32_t extract_datenum(int32_t *yearp,int32_t *monthp,int32_t *dayp,int32_t datenum)
 {
-    int32_t year,month,day;
-    year = datenum / 10000, month = (datenum / 100) % 100, day = (datenum % 100);
-    if ( month >= 4 && month <= 9 )
-        return(1);
-    else if ( month == 3 && day >= 29 )
-        return(1);
-    else if ( month == 10 && day < 25 )
-        return(1);
-    return(0);
+    *yearp = datenum / 10000, *monthp = (datenum / 100) % 100, *dayp = (datenum % 100);
+    if ( *yearp >= 2000 && *yearp <= 2038 && *monthp >= 1 && *monthp <= 12 && *dayp >= 1 && *dayp <= 31 )
+        return(datenum);
+    else return(-1);
+}
+
+uint64_t OS_conv_datenum(int32_t datenum,int32_t hour,int32_t minute,int32_t second) // datenum+H:M:S -> unix time
+{
+    int32_t year,month,day; struct tai t; struct taitime ct;
+    if ( 1 )
+    {
+        if ( extract_datenum(&year,&month,&day,datenum) > 0 )
+        {
+            ct = taitime_set(taidate_set(year,month,day),hour,minute,second);
+            t = taitime2tai(ct);
+            return(tai2utime(t)+788250398LL - 4294967296LL);
+        }
+        return(0);
+    }
+    else
+    {
+#ifdef __PNACL
+        return(0);
+#else
+        struct tm t;
+        memset(&t,0,sizeof(t));
+        t.tm_year = (datenum / 10000) - 1900, t.tm_mon = ((datenum / 100) % 100) - 1, t.tm_mday = (datenum % 100);
+        t.tm_hour = hour, t.tm_min = minute, t.tm_sec = second;
+        return((uint32_t)timegm(&t));
+#endif
+    }
+}
+
+int32_t OS_conv_unixtime(struct tai *tp,int32_t *secondsp,time_t timestamp) // gmtime -> datenum + number of seconds
+{
+    struct tm tm,*ptr; int32_t datenum; uint32_t checktime; char buf[64]; struct tai t; struct taitime ct;
+    if ( 1 )
+    {
+        *tp = t = utc2tai((uint32_t)timestamp);
+        ct = tai2time(t,0,0);
+        *secondsp = (ct.hour*3600 + ct.minute*60 + ct.second);
+        return(calc_datenum(ct.date.year,ct.date.month,ct.date.day));
+    }
+    else
+    {
+        if ( (ptr= gmtime(&timestamp)) != 0 )
+            tm = *ptr;;
+        strftime(buf,sizeof(buf), "%Y-%m-%dT%H:%M:%SZ",&tm); //printf("%s\n",buf);
+        datenum = conv_date(secondsp,buf);
+        if ( (checktime= OS_conv_datenum(datenum,*secondsp/3600,(*secondsp%3600)/60,*secondsp%60)) != timestamp )
+        {
+            printf("error: timestamp.%u -> (%d + %d) -> %u\n",(uint32_t)timestamp,datenum,*secondsp,checktime);
+            return(-1);
+        }
+        return(datenum);
+    }
 }
 
 int32_t conv_date(int32_t *secondsp,char *date)
@@ -488,18 +570,14 @@ int32_t conv_date(int32_t *secondsp,char *date)
     return((year * 10000) + (month * 100) + day);
 }
 
-int32_t extract_datenum(int32_t *yearp,int32_t *monthp,int32_t *dayp,int32_t datenum)
+int32_t expand_datenum(char *date,int32_t datenum)
 {
-    *yearp = datenum / 10000, *monthp = (datenum / 100) % 100, *dayp = (datenum % 100);
-    if ( *yearp >= 2000 && *yearp <= 2038 && *monthp >= 1 && *monthp <= 12 && *dayp >= 1 && *dayp <= 31 )
-        return(datenum);
-    else return(-1);
+    int32_t year,month,day; date[0] = 0;
+    if ( extract_datenum(&year,&month,&day,datenum) != datenum)
+        return(-1);
+    sprintf(date,"%d-%02d-%02d",year,month,day);
+    return(0);
 }
-
-int32_t expand_datenum(char *date,int32_t datenum) { int32_t year,month,day; date[0] = 0; if ( extract_datenum(&year,&month,&day,datenum) != datenum) return(-1); sprintf(date,"%d-%02d-%02d",year,month,day); return(0); }
-
-int32_t calc_datenum(int32_t year,int32_t month,int32_t day) { return((year * 10000) + (month * 100) + day); }
-
 
 int32_t ecb_decrdate(int32_t *yearp,int32_t *monthp,int32_t *dayp,char *date,int32_t datenum)
 {
@@ -527,3 +605,22 @@ int32_t ecb_decrdate(int32_t *yearp,int32_t *monthp,int32_t *dayp,char *date,int
     *yearp = year, *monthp = month, *dayp = day;
     return((year * 10000) + (month * 100) + day);
 }
+
+#ifdef ENABLE_TEST
+#include <unistd.h>
+int main(int argc, const char * argv[])
+{
+    int i; char str[111],str2[111],str3[111],str4[111]; struct taitime ct;
+    struct tai t,start = tai_now();
+    for (i=0; i<100; i++)
+    {
+        sleep(1);
+        t = tai_now();
+        taidate_str(str2,tai2date(t));
+        printf("(%s) time.%s date.%s %ld start.%ld %s %u %u\n",tai_str(str3,t),taitime_str(str,ct),str2,(long)tai2utime(t),(long)tai2utime(start),utime_str(str4,t),tai2utc(t),(uint32_t)time(NULL));
+    }
+    // insert code here...
+    printf("Hello, World!\n");
+    return 0;
+}
+#endif

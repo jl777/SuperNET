@@ -47,9 +47,9 @@ void *iguana(void *arg)
 #else
         arg = 0;//"{\"coins\":[{\"name\":\"BTCD\",\"maxpeers\":128,\"initialheight\":400000,\"services\":1,\"peers\":[\"127.0.0.1\"]}]}";
 #endif
+    PostMessage("iguana start.(%s)\n",(char *)arg);
     while ( initflag == 0 )
         sleep(1);
-    PostMessage("iguana start.(%s)\n",(char *)arg);
     iguana_main(arg);
     return(0);
 }
