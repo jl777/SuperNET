@@ -18,6 +18,7 @@
 #include "../crypto777/OS_portable.h"
 
 //#define IGUANA_DISABLEPEERS
+#define IGUANA_MAXCOINS 64
 
 #define IGUANA_EXCHANGEIDLE 10
 #define IGUANS_JSMILLIS 100
@@ -634,7 +635,7 @@ struct iguana_agent
 {
     char name[32],hostname[64]; void *methods; uint16_t port; int32_t sock,nummethods;
     bits256 pubkey,privkey;
-    char *(*parsefunc)(struct iguana_agent *agent,struct iguana_info *coin,char *method,void *json);
+    char *(*parsefunc)(struct iguana_agent *agent,char *method,void *json,char *remoteaddr);
 };
 char *iguana_txbytes(struct iguana_info *coin,bits256 *txidp,struct iguana_txid *tx,int32_t height);
 void iguana_vinset(struct iguana_info *coin,int32_t height,struct iguana_msgvin *vin,struct iguana_txid *tx,int32_t i);

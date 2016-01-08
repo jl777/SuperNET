@@ -24,7 +24,7 @@
 #include "iguana777.h"
 
 // ALL globals must be here!
-struct iguana_info *Coins[64];
+struct iguana_info *Coins[IGUANA_MAXCOINS];
 int32_t USE_JAY,FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel;
 uint32_t prices777_NXTBLOCK,MAX_DEPTH = 100;
 char NXTAPIURL[256],IGUANA_NXTADDR[256],IGUANA_NXTACCTSECRET[256];

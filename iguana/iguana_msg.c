@@ -154,7 +154,7 @@ void iguana_gotversion(struct iguana_info *coin,struct iguana_peer *addr,struct 
     if ( (vers->nServices & (1<<7)) == (1<<7) )
     {
         addr->supernet = 1;
-        iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"hello\"}");
+        iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}");
     }
     if ( vers->nStartingHeight > coin->longestchain )
         coin->longestchain = vers->nStartingHeight;

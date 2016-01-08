@@ -245,11 +245,8 @@ void iguana_iAkill(struct iguana_info *coin,struct iguana_peer *addr,int32_t mar
                 printf("killconnection (%s) save error\n",addr->ipaddr);
         }
     } else printf("killconnection cant get ind for ipaddr.%s\n",addr->ipaddr);
-    //memset(addr,0,sizeof(*addr));
+    memset(addr,0,sizeof(*addr));
     addr->usock = -1;
-    addr->pending = 0;
-    memset(addr->ipaddr,0,sizeof(addr->ipaddr));
-    addr->ipbits = 0;
     if ( rank > 0 )
         iguana_possible_peer(coin,ipaddr);
 }
@@ -573,9 +570,6 @@ void iguana_startconnection(void *arg)
         strcpy(ipaddr,addr->ipaddr);
         iguana_iAkill(coin,addr,1);
         printf("refused PEER KILLED. for %s:%d usock.%d\n",addr->ipaddr,coin->chain->portp2p,addr->usock);
-        addr->pending = 0;
-        addr->ipbits = 0;
-        addr->dead = 1;
     }
     else
     {
