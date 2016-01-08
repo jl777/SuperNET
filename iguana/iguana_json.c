@@ -550,8 +550,8 @@ char *SuperNET_p2p(struct iguana_info *coin,int32_t *delaymillisp,char *ipaddr,u
             {
                 if ( jobj(retjson,"result") != 0 || jobj(retjson,"error") != 0 || jobj(retjson,"method") == 0 )
                 {
-                    free(retstr);
-                    retstr = 0;
+                    //free(retstr);
+                    //retstr = 0;
                 }
                 free_json(retjson);
             }

@@ -430,6 +430,7 @@ int32_t iguana_parser(struct iguana_info *coin,struct iguana_peer *addr,struct O
     //printf("%s parse.(%s)\n",addr->ipaddr,H->command);
     if ( strcmp(H->command,"SuperNET") == 0 )
     {
+        addr->supernet = 1;
         len = recvlen;
         if ( (retstr= SuperNET_p2p(coin,&delay,addr->ipaddr,data,recvlen)) != 0 )
         {
