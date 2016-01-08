@@ -92,6 +92,7 @@ void iguana_acceptloop(void *args)
         else
         {
             printf("LAUNCH DEDICATED THREAD for %s\n",ipaddr);
+            addr->usock = sock;
             iguana_dedicatedloop(coin,addr);
         }
     }
