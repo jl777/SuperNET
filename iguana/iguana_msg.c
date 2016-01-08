@@ -140,8 +140,6 @@ void iguana_gotversion(struct iguana_info *coin,struct iguana_peer *addr,struct 
 {
     uint8_t serialized[sizeof(struct iguana_msghdr)];
     //printf("gotversion from %s\n",addr->ipaddr);
-    if ( (vers->nServices & NODE_NETWORK) == 0 )
-        printf("other node.(%s) doesnt relay\n",addr->ipaddr);
     if ( (vers->nServices & NODE_NETWORK) != 0 )//&& vers->nonce != coin->instance_nonce )
     {
         addr->protover = (vers->nVersion < PROTOCOL_VERSION) ? vers->nVersion : PROTOCOL_VERSION;
@@ -151,7 +149,8 @@ void iguana_gotversion(struct iguana_info *coin,struct iguana_peer *addr,struct 
         iguana_gotdata(coin,addr,addr->height);
         iguana_queue_send(coin,addr,0,serialized,"verack",0,0,0);
         //iguana_send_ping(coin,addr);
-    } else printf("nServices.%lld nonce.%llu invalid version message from.(%s)\n",(long long)vers->nServices,(long long)vers->nonce,addr->ipaddr);
+    }
+    else printf("nServices.%lld nonce.%llu non-relay node.(%s)\n",(long long)vers->nServices,(long long)vers->nonce,addr->ipaddr);
     if ( (vers->nServices & (1<<7)) == (1<<7) )
     {
         addr->supernet = 1;

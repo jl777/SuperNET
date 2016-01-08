@@ -902,7 +902,7 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     addr->maxfilehash2 = IGUANA_MAXFILEITEMS;
     bufsize = IGUANA_MAXPACKETSIZE;
     buf = mycalloc('r',1,bufsize);
-    //printf("send version myservices.%llu\n",(long long)coin->myservices);
+    printf("send version myservices.%llu to (%s)\n",(long long)coin->myservices,addr->ipaddr);
     iguana_send_version(coin,addr,coin->myservices);
     iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
   //printf("after send version\n");
