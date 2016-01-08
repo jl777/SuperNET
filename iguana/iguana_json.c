@@ -287,6 +287,8 @@ char *iguana_agentjson(char *name,struct iguana_info *coin,char *method,cJSON *j
             if ( array != 0 )
             {
                 retjson = cJSON_CreateObject();
+                jaddstr(retjson,"agent","SuperNET");
+                jaddstr(retjson,"method","peers");
                 jaddstr(retjson,"result","peers found");
                 jadd(retjson,"peers",array);
                 return(jprint(retjson,1));
@@ -550,8 +552,8 @@ char *SuperNET_p2p(struct iguana_info *coin,int32_t *delaymillisp,char *ipaddr,u
             {
                 if ( jobj(retjson,"result") != 0 || jobj(retjson,"error") != 0 || jobj(retjson,"method") == 0 )
                 {
-                    //free(retstr);
-                    //retstr = 0;
+                    free(retstr);
+                    retstr = 0;
                 }
                 free_json(retjson);
             }
