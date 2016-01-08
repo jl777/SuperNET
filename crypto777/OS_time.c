@@ -496,7 +496,7 @@ int32_t extract_datenum(int32_t *yearp,int32_t *monthp,int32_t *dayp,int32_t dat
 uint64_t OS_conv_datenum(int32_t datenum,int32_t hour,int32_t minute,int32_t second) // datenum+H:M:S -> unix time
 {
     int32_t year,month,day; struct tai t; struct taitime ct;
-    if ( 1 )
+    if ( 0 )
     {
         if ( extract_datenum(&year,&month,&day,datenum) > 0 )
         {
@@ -523,7 +523,7 @@ uint64_t OS_conv_datenum(int32_t datenum,int32_t hour,int32_t minute,int32_t sec
 int32_t OS_conv_unixtime(struct tai *tp,int32_t *secondsp,time_t timestamp) // gmtime -> datenum + number of seconds
 {
     struct tm tm,*ptr; int32_t datenum; uint32_t checktime; char buf[64]; struct tai t; struct taitime ct;
-    if ( 1 )
+    if ( 0 )
     {
         *tp = t = utc2tai((uint32_t)timestamp);
         ct = tai2time(t,0,0);
