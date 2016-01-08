@@ -286,7 +286,7 @@ void iguana_iAkill(struct iguana_info *coin,struct iguana_peer *addr,int32_t mar
 
 int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
 {
-    int32_t opt,sock,result; uint32_t ipbits; char ipaddr[64]; //struct timeval timeout;
+    int32_t opt,sock,result; uint32_t ipbits; char ipaddr[64]; struct timeval timeout;
     struct sockaddr_in saddr; socklen_t addrlen,slen;
     addrlen = sizeof(saddr);
     struct hostent *hostent = gethostbyname(hostname);
@@ -311,13 +311,13 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
             printf("socket() failed: %s errno.%d", strerror(errno),errno);
         return(-1);
     }
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 1000;
+    setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(void *)&timeout,sizeof(timeout));
     opt = 1;
     slen = sizeof(opt);
     if ( 0 && bindflag != 0 )
     {
-        //timeout.tv_sec = 0;
-        //timeout.tv_usec = 1000;
-        //setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(char *)&timeout,sizeof(timeout));
         //printf("set keepalive.%d\n",setsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,slen));
         opt = 0;
         getsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,&slen);
