@@ -740,7 +740,7 @@ int32_t iguana_pollsendQ(struct iguana_info *coin,struct iguana_peer *addr)
     struct iguana_packet *packet;
     if ( (packet= queue_dequeue(&addr->sendQ,0)) != 0 )
     {
-        //if ( strcmp((char *)&packet->serialized[4],"SuperNET") == 0 )
+        if ( addr->supernet != 0 || strcmp((char *)&packet->serialized[4],"SuperNET") == 0 )
             printf("%s: send.(%s) usock.%d dead.%u ready.%u\n",addr->ipaddr,packet->serialized+4,addr->usock,addr->dead,addr->ready);
         if ( strcmp((char *)&packet->serialized[4],"getdata") == 0 )
         {
