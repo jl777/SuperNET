@@ -14,6 +14,7 @@
  ******************************************************************************/
 
 #include "SuperNET.h"
+#ifdef later
 
 int32_t nn_typelist[] = { NN_REP, NN_REQ, NN_RESPONDENT, NN_SURVEYOR, NN_PUB, NN_SUB, NN_PULL, NN_PUSH, NN_BUS, NN_PAIR };
 char *nn_transports[] = { "tcp", "ws", "ipc", "inproc", "tcpmux", "tbd1", "tbd2", "tbd3" };
@@ -280,7 +281,6 @@ int32_t nn_createsocket(struct supernet_info *myinfo,char *endpoint,int32_t bind
     return(sock);
 }
 
-#ifdef later
 void add_standard_fields(char *request)
 {
     cJSON *json; uint64_t tag;
@@ -413,6 +413,7 @@ void busdata_init(struct supernet_info *myinfo,int32_t sendtimeout,int32_t recvt
         myinfo->pfd[i].events = NN_POLLIN | NN_POLLOUT;
     printf("myinfo->iamrelay %d, numservers.%d ipaddr.(%s://%s) port.%d serviceport.%d\n",myinfo->iamrelay,myinfo->numservers,myinfo->transport,myinfo->ipaddr,myinfo->port,myinfo->serviceport);
 }
+#endif
 
 char *SuperNET_JSON(struct supernet_info *myinfo,char *jsonstr)
 {
@@ -424,7 +425,7 @@ void SuperNET_init(struct supernet_info *myinfo,char *jsonstr)
     char *str;
     if ( jsonstr != 0 && (str= SuperNET_JSON(myinfo,jsonstr)) != 0 )
         free(str);
-    busdata_init(myinfo,10,1,0);
-    init_SUPERNET_pullsock(myinfo,10,10);
+    //busdata_init(myinfo,10,1,0);
+    //init_SUPERNET_pullsock(myinfo,10,10);
 }
 
