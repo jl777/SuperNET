@@ -594,7 +594,7 @@ void iguana_main(void *arg)
             datenum = OS_conv_unixtime(&t,&seconds,timestamp); // gmtime -> datenum + number of seconds
             checkval = OS_conv_datenum(datenum,seconds/3600,(seconds/60)%60,seconds%60); // datenum+H:M:S -> unix time
             if ( checkval != timestamp )
-                printf("%s i.%lld timestamp.%-12llu -> (%d:%06d) -> checkval.%-12llu diff.[%lld]\n",tai_str(str,t),i,(long long)timestamp,datenum,seconds,(long long)checkval,(long long)(timestamp-checkval));
+                printf("%s i.%lld timestamp.%-12llu -> (%d:%06d) -> checkval.%-12llu diff.[%lld]\n",tai_str(str,t),(long long)i,(long long)timestamp,datenum,seconds,(long long)checkval,(long long)(timestamp-checkval));
         }
         printf("million tai compares in %.3f microseconds per encode/decode\n",1000. * (OS_milliseconds()-startmillis)/i);
     }
