@@ -1,0 +1,8 @@
+echo cleaning crypto777; cd crypto777; make clean; ./m_clean; cd ..
+echo cleaning iguana; cd iguana; make clean; ./m_clean; cd ..
+echo cleaning SuperNET; cd SuperNET; make clean; ./m_clean; cd ..
+echo cleaning pangea; cd pangea; make clean; ./m_clean; cd ..
+echo cleaning InstantDEX; cd InstantDEX; make clean; ./m_clean; cd ..
+echo cleaning prices; cd prices; make clean; ./m_clean; cd ..
+echo cleaning tradebots; cd tradebots; make clean; ./m_clean; cd ..
+echo cleaning PAX; cd peggy; make clean; ./m_clean; cd ..

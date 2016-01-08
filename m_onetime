@@ -1,5 +1,5 @@
-make crypto777
+git pull
 cd crypto777
+./$1
 make
 cd ..
-

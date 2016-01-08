@@ -1,0 +1,3 @@
+git pull
+cd iguana; ./m_win64; cd ..
+cd SuperNET; ./m_win64; cd ..
