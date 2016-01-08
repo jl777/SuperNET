@@ -1711,7 +1711,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
                     bp->blocks[i] = block;
                 if ( bits256_nonz(bp->hashes[i]) == 0 )
                     bp->hashes[i] = B[i].hash2;
-                _iguana_chainlink(coin,block);
+                //_iguana_chainlink(coin,block);
             }
         }
         bp->emitfinish = (uint32_t)time(NULL) + 1;

@@ -409,7 +409,11 @@ int32_t iguana_parser(struct iguana_info *coin,struct iguana_peer *addr,struct O
     }
     retval = 0;
     //printf("%s parse.(%s)\n",addr->ipaddr,H->command);
-    if ( strcmp(H->command,"version") == 0 )
+    if ( strcmp(H->command,"SuperNET") == 0 )
+    {
+        printf("GOT.(%s) len.%d from %s\n",H->command,recvlen,addr->ipaddr);
+    }
+    else if ( strcmp(H->command,"version") == 0 )
     {
         struct iguana_msgversion recvmv;
         if ( addr != 0 )
@@ -552,7 +556,6 @@ int32_t iguana_parser(struct iguana_info *coin,struct iguana_peer *addr,struct O
         }
         else if ( strcmp(H->command,"getaddr") == 0 )
         {
-            printf("GOT.(%s) len.%d from %s\n",H->command,recvlen,addr->ipaddr);
             srvmsg = 'A', addr->msgcounts.getaddr++;
         }
         else if ( strcmp(H->command,"mempool") == 0 )
