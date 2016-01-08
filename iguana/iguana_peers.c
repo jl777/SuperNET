@@ -313,12 +313,12 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
     }
     opt = 1;
     slen = sizeof(opt);
-    if ( bindflag != 0 )
+    if ( 0 && bindflag != 0 )
     {
         //timeout.tv_sec = 0;
         //timeout.tv_usec = 1000;
         //setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(char *)&timeout,sizeof(timeout));
-        printf("set keepalive.%d\n",setsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,slen));
+        //printf("set keepalive.%d\n",setsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,slen));
         opt = 0;
         getsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,&slen);
         printf("keepalive.%d\n",opt);
@@ -898,6 +898,7 @@ int64_t iguana_peerallocated(struct iguana_info *coin,struct iguana_peer *addr)
 
 void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
 {
+    static uint32_t lastping;
     struct pollfd fds; uint8_t *buf,serialized[64]; struct iguana_bundlereq *req;
     int32_t bufsize,flag,run,timeout = coin->polltimeout == 0 ? 10 : coin->polltimeout;
 #ifdef IGUANA_PEERALLOC
@@ -997,6 +998,11 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
         }
         if ( flag != 0 )
             run = 0;
+        else if ( time(NULL) > lastping+1 )
+        {
+            iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
+            lastping = time(NULL);
+        }
         if ( coin->isRT != 0 && addr->rank > coin->MAXPEERS && (rand() % 100) == 0 )
         {
             printf("isRT and low rank.%d ",addr->rank);
@@ -1086,7 +1092,11 @@ void iguana_peersloop(void *ptr)
             }
         }
         if ( flag == 0 )
+        {
+            if ( time(NULL) > lastping+1 )
+                iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
             usleep(1000);
+        }
     }
 #endif
 }
