@@ -1,0 +1,3 @@
+git pull
+cd iguana; make; cd ..
+cd SuperNET; make; cd ..
