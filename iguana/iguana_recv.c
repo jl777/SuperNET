@@ -677,7 +677,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         {
             int32_t bundlei;
             incr = coin->peers.numranked == 0 ? coin->MAXPEERS : coin->peers.numranked;
-            if ( (rand() % 100) < 50 )
+            if ( (rand() % 100) < 25 )
             {
                 height = (addr->lastheight + 1);
                 if ( height >= coin->longestchain-coin->chain->bundlesize )
