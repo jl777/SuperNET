@@ -124,6 +124,17 @@ int32_t iguana_rwblockhash(int32_t rwflag,uint8_t *serialized,uint32_t *nVersion
     return(len);
 }*/
 
+int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,char *jsonstr)
+{
+    int32_t len; uint8_t serialized[8192];
+    if ( (len= (int32_t)strlen(jsonstr)) < sizeof(serialized)-sizeof(struct iguana_msghdr) )
+    {
+        memcpy(&serialized[sizeof(struct iguana_msghdr)],jsonstr,len+1);
+        return(iguana_queue_send(coin,addr,serialized,"SuperNET",len+1,0,1));
+    }
+    else return(-1);
+}
+
 void iguana_gotversion(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msgversion *vers)
 {
     uint8_t serialized[sizeof(struct iguana_msghdr)];
@@ -139,7 +150,12 @@ void iguana_gotversion(struct iguana_info *coin,struct iguana_peer *addr,struct 
         iguana_gotdata(coin,addr,addr->height);
         iguana_queue_send(coin,addr,serialized,"verack",0,0,0);
         //iguana_send_ping(coin,addr);
-    } else printf("nServices.%llx nonce.%llu invalid version message from.(%s)\n",(long long)vers->nServices,(long long)vers->nonce,addr->ipaddr);
+    } else printf("nServices.%lld nonce.%llu invalid version message from.(%s)\n",(long long)vers->nServices,(long long)vers->nonce,addr->ipaddr);
+    if ( (vers->nServices & (1<<7)) == (1<<7) )
+    {
+        addr->supernet = 1;
+        iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"hello\"}");
+    }
     if ( vers->nStartingHeight > coin->longestchain )
         coin->longestchain = vers->nStartingHeight;
     iguana_queue_send(coin,addr,serialized,"getaddr",0,0,0);
