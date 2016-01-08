@@ -64,7 +64,7 @@ void iguana_acceptloop(void *args)
 {
     int32_t bindsock,sock; struct iguana_accept *ptr; struct iguana_peer *addr; struct iguana_info *coin = args;
     socklen_t clilen; struct sockaddr_in cli_addr; char ipaddr[64]; uint32_t ipbits;
-    bindsock = iguana_socket(1,"127.0.0.1",coin->chain->portp2p);
+    bindsock = iguana_socket(1,"0.0.0.0",coin->chain->portp2p);
     printf("iguana_bindloop 127.0.0.1:%d bind sock.%d\n",coin->chain->portp2p,bindsock);
     while ( bindsock >= 0 )
     {

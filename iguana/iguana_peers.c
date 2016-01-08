@@ -248,6 +248,8 @@ void iguana_iAkill(struct iguana_info *coin,struct iguana_peer *addr,int32_t mar
     //memset(addr,0,sizeof(*addr));
     addr->usock = -1;
     addr->pending = 0;
+    memset(addr->ipaddr,0,sizeof(addr->ipaddr));
+    addr->ipbits = 0;
     if ( rank > 0 )
         iguana_possible_peer(coin,ipaddr);
 }
