@@ -1,1 +1,1 @@
-gcc -o ../agents/iguana -O2 *.c ../agents/libcrypto777.a  -lssl -lcrypto -lpthread -lm
+gcc -o ../agents/SuperNET -O2 *.c ../agents/libcrypto777.a  -lssl -lcrypto -lpthread -lm
