@@ -436,7 +436,7 @@ int32_t iguana_parser(struct iguana_info *coin,struct iguana_peer *addr,struct O
             iguana_send_supernet(coin,addr,retstr,delay);
             free(retstr);
         }
-        printf("GOT.(%s) len.%d from %s -> (%s)\n",H->command,recvlen,addr->ipaddr,retstr==0?"null":retstr);
+        printf("GOT.(%s) [%s] len.%d from %s -> (%s)\n",H->command,data,recvlen,addr->ipaddr,retstr==0?"null":retstr);
     }
     else if ( strcmp(H->command,"version") == 0 )
     {
