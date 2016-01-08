@@ -436,6 +436,7 @@ int32_t iguana_recv(int32_t usock,uint8_t *recvbuf,int32_t len)
     {
         if ( (recvlen= (int32_t)recv(usock,recvbuf,remains,0)) < 0 )
         {
+            printf("recv errno.%d %s\n",errno,strerror(errno));
             if ( errno == EAGAIN )
             {
 #ifdef IGUANA_DEDICATED_THREADS
