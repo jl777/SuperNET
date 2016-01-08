@@ -128,7 +128,7 @@ select_file_name (char * fname)
 {
   next_file_num++;		/* advance counter */
   sprintf(fname, TEMP_FILE_NAME, TEMP_DIRECTORY, next_file_num);
-  mktemp(fname);		/* make sure file name is unique */
+  mkstemp(fname);		/* make sure file name is unique */
   /* mktemp replaces the trailing XXXXXX with a unique string of characters */
 }
 
