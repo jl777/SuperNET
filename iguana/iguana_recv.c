@@ -677,15 +677,22 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         {
             int32_t bundlei;
             incr = coin->peers.numranked == 0 ? coin->MAXPEERS : coin->peers.numranked;
-            if ( (rand() % 10) < 3 )
+            if ( (rand() % 100) < 50 )
             {
                 height = (addr->lastheight + 1);
                 if ( height >= coin->longestchain-coin->chain->bundlesize )
                     height = coin->blocks.hwmchain.height + addr->rank*incr*_IGUANA_MAXPENDING;
             }
-            else if ( (rand() % 10) < 9 )
+            else if ( (rand() % 100) < 10 )
                 height = addr->rank * _IGUANA_MAXPENDING;
-            else height = coin->longestchain - (rand() % incr);
+            else if ( (rand() % 100) < 90 )
+                height = addr->addrind + (addr->rank * (coin->longestchain - coin->blocks.hwmchain.height) / (coin->peers.numranked+1));
+            else
+            {
+                height = coin->longestchain - (rand() % incr) * 1000;
+                if ( height < 0 )
+                    height = coin->blocks.hwmchain.height;
+            }
             for (; height<coin->bundlescount*coin->chain->bundlesize; height+=incr)
             {
                 if  ( height > addr->lastheight )
