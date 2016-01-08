@@ -382,12 +382,15 @@ void iguana_coinloop(void *arg)
                         coin->polltimeout = 100;
                     coin->MAXPEERS = 8;
                 }
-                if ( now > coin->lastpossible )
+                if ( coin->peers.numranked != 0 && coin->peers.numranked < (coin->MAXPEERS>>1) && now > coin->lastpossible )
                     coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
                 if ( coin->active != 0 )
                 {
                     if ( now > coin->peers.lastmetrics+6 )
+                    {
                         coin->peers.lastmetrics = iguana_updatemetrics(coin); // ranks peers
+                        coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
+                    }
                     flag += iguana_processrecv(coin);
                     if ( 0 && coin->blocks.parsedblocks < coin->blocks.hwmchain.height-coin->chain->minconfirms )
                     {
