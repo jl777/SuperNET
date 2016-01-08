@@ -331,7 +331,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
             close(sock);
         return(-1);
     }
-    if ( bindflag != 0 && listen(sock,3) != 0 )
+    if ( bindflag != 0 && listen(sock,100) != 0 )
     {
         printf("listen(%s) port.%d failed: %s sock.%d. errno.%d\n",hostname,port,strerror(errno),sock,errno);
         if ( sock >= 0 )
@@ -903,9 +903,10 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     bufsize = IGUANA_MAXPACKETSIZE;
     buf = mycalloc('r',1,bufsize);
     printf("send version myservices.%llu to (%s)\n",(long long)coin->myservices,addr->ipaddr);
+    sleep(1);
     iguana_send_version(coin,addr,coin->myservices);
     iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
-  //printf("after send version\n");
+    printf("after send version\n");
     run = 0;
     while ( addr->usock >= 0 && addr->dead == 0 && coin->peers.shuttingdown == 0 )
     {
