@@ -12,7 +12,7 @@
  * Removal or modification of this copyright notice is prohibited.            *
  *                                                                            *
  ******************************************************************************/
-
+#ifdef oldway
 #include "SuperNET.h"
 
 // sync relays
@@ -1377,3 +1377,4 @@ int32_t init_SUPERNET_pullsock(int32_t sendtimeout,int32_t recvtimeout)
     return(0);
 }
 
+#endif
