@@ -1,1 +1,1 @@
-echo do equivalent of: gcc -o ../agents/iguana -O2 *.c -lssl -lcrypto -lm
+echo do equivalent of: gcc -o ../agents/iguana -O2 *.c ../agents/libcrypto777.a -lssl -lcrypto -lm

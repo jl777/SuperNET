@@ -1,1 +1,1 @@
-rm *.o
+rm *.o ../agents/iguana
