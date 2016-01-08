@@ -289,6 +289,7 @@ char *iguana_agentjson(char *name,struct iguana_info *coin,char *method,cJSON *j
                 retjson = cJSON_CreateObject();
                 jaddstr(retjson,"result","peers found");
                 jadd(retjson,"peers",array);
+                return(jprint(retjson,1));
             } else return(clonestr("{\"error\":\"no peers found\"}"));
         }
     }
