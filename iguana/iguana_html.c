@@ -152,12 +152,12 @@ char *HTMLfooter =
 #define HTML_EMIT(str)  if ( (str) != 0 && (str)[0] != 0 ) strcpy(&retbuf[size],str), size += (int32_t)strlen(str)
 char Prevjsonstr[1024],Currentjsonstr[1024];
 
-char *iguana_rpc(char *agent,cJSON *json,char *data,int32_t datalen)
+char *iguana_rpc(char *agent,cJSON *json,char *data,int32_t datalen,char *remoteaddr)
 {
     //printf("agent.(%s) json.(%s) data[%d] %s\n",agent,jprint(json,0),datalen,data!=0?data:"");
     if ( data == 0 )
-        return(iguana_JSON(jprint(json,0)));
-    else return(iguana_JSON(data));
+        return(iguana_JSON(0,jprint(json,0),remoteaddr));
+    else return(iguana_JSON(0,data,remoteaddr));
 }
 
 void iguana_urldecode(char *str)
@@ -578,7 +578,12 @@ char *iguana_rpcparse(char *retbuf,int32_t bufsize,int32_t *postflagp,char *json
     char *key,*reststr,*str,*retstr,remoteaddr[65],porturl[65],*data = 0,*value,*agent = "SuperNET";
     //printf("rpcparse.(%s)\n",jsonstr);
     localaccess = 1;
-    strcpy(remoteaddr,"127.0.0.1"); // need to verify this
+    if ( (str= strstr("Referer: ",jsonstr)) != 0 )
+    {
+        for (i=0; str[i]!=' '&&str[i]!=0&&str[i]!='\n'&&str[i]!='\r'; i++)
+            remoteaddr[i] = str[i];
+        remoteaddr[i] = 0;
+    } else strcpy(remoteaddr,"127.0.0.1"); // need to verify this
     *postflagp = 0;
     if ( strncmp("POST",jsonstr,4) == 0 )
         jsonstr += 6, *postflagp = postflag = 1;
@@ -687,7 +692,7 @@ char *iguana_rpcparse(char *retbuf,int32_t bufsize,int32_t *postflagp,char *json
             }
         }
     }
-    retstr = iguana_rpc(agent,json,data,datalen);
+    retstr = iguana_rpc(agent,json,data,datalen,remoteaddr);
     free_json(json);
     return(retstr);
     //printf("post.%d json.(%s) data[%d] %s\n",postflag,jprint(json,0),datalen,data!=0?data:"");

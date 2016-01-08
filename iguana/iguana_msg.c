@@ -399,7 +399,7 @@ int32_t iguana_send_hashes(struct iguana_info *coin,char *command,struct iguana_
 
 int32_t iguana_parser(struct iguana_info *coin,struct iguana_peer *addr,struct OS_memspace *rawmem,struct OS_memspace *txmem,struct OS_memspace *hashmem,struct iguana_msghdr *H,uint8_t *data,int32_t recvlen)
 {
-    uint8_t serialized[512];
+    uint8_t serialized[512]; char *retstr;
     int32_t i,retval,srvmsg,bloom,intvectors,len= -100; uint64_t nonce,x; uint32_t type; bits256 hash2;
     bloom = intvectors = srvmsg = -1;
     if ( addr != 0 )
@@ -412,6 +412,11 @@ int32_t iguana_parser(struct iguana_info *coin,struct iguana_peer *addr,struct O
     if ( strcmp(H->command,"SuperNET") == 0 )
     {
         printf("GOT.(%s) len.%d from %s\n",H->command,recvlen,addr->ipaddr);
+        len = recvlen;
+        if ( (retstr= SuperNET_p2p(coin,addr->ipaddr,data,recvlen)) != 0 )
+        {
+            free(retstr); // dont respond immediate due to privacy
+        }
     }
     else if ( strcmp(H->command,"version") == 0 )
     {

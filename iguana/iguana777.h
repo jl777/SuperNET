@@ -553,7 +553,8 @@ double dxblend(double *destp,double val,double decay);
 
 // json
 int32_t iguana_processjsonQ(struct iguana_info *coin); // reentrant, can be called during any idletime
-char *iguana_JSON(char *jsonstr);
+char *iguana_JSON(struct iguana_info *coin,char *jsonstr,char *remoteaddr);
+char *SuperNET_p2p(struct iguana_info *coin,char *ipaddr,uint8_t *data,int32_t datalen);
 
 char *mbstr(char *str,double);
 int init_hexbytes_noT(char *hexbytes,unsigned char *message,long len);

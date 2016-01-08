@@ -452,14 +452,16 @@ char *iguana_blockingjsonstr(struct iguana_info *coin,char *jsonstr,uint64_t tag
     }
 }
 
-char *iguana_JSON(char *jsonstr)
+char *iguana_JSON(struct iguana_info *coin,char *jsonstr,char *remoteaddr)
 {
-    cJSON *json,*retjson; uint64_t tag; uint32_t timeout; int32_t retval;
-    struct iguana_info *coin; char *method,*retjsonstr,*symbol,*retstr = 0;
-    printf("iguana_JSON.(%s)\n",jsonstr);
+    cJSON *json,*retjson; uint64_t tag; uint32_t timeout; int32_t retval,localaccess = 0;
+    char *method,*retjsonstr,*symbol,*retstr = 0;
+    if ( remoteaddr == 0 || strcmp(remoteaddr,"127.0.0.1") == 0 ) // || strcmp(remoteaddr,myipaddr) == 0 )
+        localaccess = 1;
+    printf("iguana_JSON.(%s) from %s\n",jsonstr,localaccess==0?remoteaddr:"local access");
     if ( (json= cJSON_Parse(jsonstr)) != 0 )
     {
-        if ( (method= jstr(json,"method")) != 0 && strcmp(method,"addcoin") == 0 )
+        if ( localaccess != 0 && (method= jstr(json,"method")) != 0 && strcmp(method,"addcoin") == 0 )
         {
             if ( (retval= iguana_launchcoin(jstr(json,"coin"),json)) > 0 )
                 return(clonestr("{\"result\":\"launched coin\"}"));
@@ -470,10 +472,10 @@ char *iguana_JSON(char *jsonstr)
             OS_randombytes((uint8_t *)&tag,sizeof(tag));
         if ( (symbol= jstr(json,"coin")) != 0 )
         {
-            if ( (coin= iguana_coinfind(symbol)) != 0 && coin->launched == 0 )
+            coin = iguana_coinfind(symbol);
+            if ( coin != 0 && localaccess != 0 && coin->launched == 0 )
                 iguana_launchcoin(symbol,json);
         }
-        else coin = 0;
         if ( (timeout= juint(json,"timeout")) == 0 )
             timeout = IGUANA_JSONTIMEOUT;
         if ( (retjsonstr= iguana_blockingjsonstr(coin,jsonstr,tag,timeout)) != 0 )
@@ -496,7 +498,7 @@ char *iguana_JSON(char *jsonstr)
     return(retstr);
 }
 
-void iguana_issuejsonstrM(void *arg)
+/*void iguana_issuejsonstrM(void *arg)
 {
     cJSON *json; int32_t fd; char *retjsonstr,*jsonstr = arg;
     retjsonstr = iguana_JSON(jsonstr);
@@ -512,7 +514,7 @@ void iguana_issuejsonstrM(void *arg)
     printf("%s\n",retjsonstr);
     free(retjsonstr);//,strlen(retjsonstr)+1);
     free(jsonstr);//,strlen(jsonstr)+1);
-}
+}*/
 
 void iguana_main(void *arg)
 {
@@ -563,11 +565,11 @@ void iguana_main(void *arg)
     {
 #ifdef __APPLE__
         sleep(1);
-        iguana_JSON("{\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":0,\"maxpeers\":4,\"coin\":\"BTCD\",\"active\":1}");
+        iguana_JSON(iguana_coinfind("BTCD"),"{\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":0,\"maxpeers\":4,\"coin\":\"BTCD\",\"active\":1}",0);
 #endif
     }
     if ( arg != 0 )
-        iguana_JSON(arg);
+        iguana_JSON(0,arg,0);
     //init_InstantDEX();
     while ( 1 )
     {
