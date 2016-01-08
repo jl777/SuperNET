@@ -352,7 +352,8 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
     if ( usock < 0 || addr->dead != 0 )
         return(-1);
     remains = len;
-    //printf(" send.(%s) %d bytes to %s\n",(char *)&serialized[4],len,addr->ipaddr);// getchar();
+    //if ( strcmp((char *)&serialized[4],"SuperNET") == 0 || addr->supernet != 0 )
+        printf(" >>>>>>> send.(%s) %d bytes to %s\n",(char *)&serialized[4],len,addr->ipaddr);// getchar();
     if ( strcmp((char *)&serialized[4],"ping") == 0 )
         addr->sendmillis = OS_milliseconds();
     if ( len > IGUANA_MAXPACKETSIZE )
@@ -483,7 +484,7 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
     int32_t len,recvlen; void *buf = _buf; struct iguana_msghdr H;
     if ( coin->peers.shuttingdown != 0 || addr->dead != 0 )
         return;
-    if ( addr->supernet != 0 )
+    if ( 0 && addr->supernet != 0 )
         printf("%p got.(%s) from %s | usock.%d ready.%u dead.%u\n",addr,H.command,addr->ipaddr,addr->usock,addr->ready,addr->dead);
     memset(&H,0,sizeof(H));
     if ( (recvlen= (int32_t)iguana_recv(usock,(uint8_t *)&H,sizeof(H))) == sizeof(H) )
@@ -905,6 +906,8 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     bufsize = IGUANA_MAXPACKETSIZE;
     buf = mycalloc('r',1,bufsize);
     printf("send version myservices.%llu to (%s)\n",(long long)coin->myservices,addr->ipaddr);
+    //if ( addr->supernet != 0 )
+        iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
     sleep(1);
     iguana_send_version(coin,addr,coin->myservices);
     printf("after send version\n");

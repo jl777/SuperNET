@@ -127,7 +127,7 @@ int32_t iguana_rwblockhash(int32_t rwflag,uint8_t *serialized,uint32_t *nVersion
 int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,char *jsonstr,int32_t delaymillis)
 {
     int32_t len; uint8_t serialized[8192];
-    if ( addr->supernet != 0 && (len= (int32_t)strlen(jsonstr)) < sizeof(serialized)-sizeof(struct iguana_msghdr) )
+    if ( (len= (int32_t)strlen(jsonstr)) < sizeof(serialized)-sizeof(struct iguana_msghdr) )
     {
         memcpy(&serialized[sizeof(struct iguana_msghdr)],jsonstr,len+1);
         printf("SEND.(%s) -> (%s)\n",jsonstr,addr->ipaddr);
