@@ -565,7 +565,7 @@ void iguana_main(void *arg)
     {
 #ifdef __APPLE__
         sleep(1);
-        iguana_JSON(iguana_coinfind("BTCD"),"{\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":0,\"maxpeers\":4,\"coin\":\"BTCD\",\"active\":1}",0);
+        iguana_JSON(iguana_coinfind("BTCD"),"{\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":0,\"maxpeers\":16,\"coin\":\"BTCD\",\"active\":1}",0);
 #endif
     }
     if ( arg != 0 )
