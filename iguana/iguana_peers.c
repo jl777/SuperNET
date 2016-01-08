@@ -311,7 +311,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
             printf("socket() failed: %s errno.%d", strerror(errno),errno);
         return(-1);
     }
-    if ( 1 && bindflag != 0 )
+    if ( 0 && bindflag != 0 )
     {
         timeout.tv_sec = 0;
         timeout.tv_usec = 1000;
@@ -331,7 +331,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
             close(sock);
         return(-1);
     }
-    if ( bindflag != 0 && listen(sock,3) != 0 )
+    if ( bindflag != 0 && listen(sock,128) != 0 )
     {
         printf("listen(%s) port.%d failed: %s sock.%d. errno.%d\n",hostname,port,strerror(errno),sock,errno);
         if ( sock >= 0 )
