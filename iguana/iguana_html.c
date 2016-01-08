@@ -903,7 +903,7 @@ void iguana_rpcloop(void *args)
     int32_t recvlen,bindsock,postflag,sock,remains,numsent,len; socklen_t clilen;
     char ipaddr[64],jsonbuf[8192],*buf,*retstr,*space;//,*retbuf; ,n,i,m
     struct sockaddr_in cli_addr; uint32_t ipbits,i,size = IGUANA_WIDTH*IGUANA_HEIGHT*16 + 512; uint16_t port;
-    port = IGUANA_RPCPORT;//coin->chain->portrpc;
+    port = IGUANA_RPCPORT;
     bindsock = iguana_socket(1,"127.0.0.1",port);
     printf("iguana_rpcloop 127.0.0.1:%d bind sock.%d\n",port,bindsock);
     space = calloc(1,size);
@@ -914,7 +914,7 @@ void iguana_rpcloop(void *args)
         sock = accept(bindsock,(struct sockaddr *)&cli_addr,&clilen);
         if ( sock < 0 )
         {
-            printf("ERROR on accept usock.%d\n",sock);
+            //printf("iguana_rpcloop ERROR on accept usock.%d\n",sock);
             continue;
         }
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));

@@ -314,7 +314,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
     if ( 1 && bindflag != 0 )
     {
         timeout.tv_sec = 0;
-        timeout.tv_usec = 1000;
+        timeout.tv_usec = 10000;
         setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(char *)&timeout,sizeof(timeout));
     }
     opt = 1;
