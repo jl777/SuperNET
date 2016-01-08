@@ -534,20 +534,28 @@ int32_t iguana_parser(struct iguana_info *coin,struct iguana_peer *addr,struct O
     }
     else if ( addr != 0 )
     {
-        printf("GOT.(%s) len.%d from %s\n",H->command,recvlen,addr->ipaddr);
         if ( strcmp(H->command,"inv") == 0 )
             intvectors = 'I', addr->msgcounts.inv++;
         else if ( strcmp(H->command,"notfound") == 0 ) // for servers
             intvectors = 'N', addr->msgcounts.notfound++;
         else if ( strcmp(H->command,"getdata") == 0 ) // for servers
+        {
             intvectors = srvmsg = 'D', addr->msgcounts.getdata++;
+        }
         else if ( strcmp(H->command,"getblocks") == 0 ) // for servers
+        {
             srvmsg = 'B', addr->msgcounts.getblocks++;
+        }
         else if ( strcmp(H->command,"getheaders") == 0 ) // for servers
+        {
             srvmsg = 'H', addr->msgcounts.getheaders++;
-        else if ( strcmp(H->command,"getaddr") == 0 ) // for servers
+        }
+        else if ( strcmp(H->command,"getaddr") == 0 )
+        {
+            printf("GOT.(%s) len.%d from %s\n",H->command,recvlen,addr->ipaddr);
             srvmsg = 'A', addr->msgcounts.getaddr++;
-        else if ( strcmp(H->command,"mempool") == 0 ) // for servers
+        }
+        else if ( strcmp(H->command,"mempool") == 0 )
             srvmsg = 'M', addr->msgcounts.mempool++;
         else if ( strcmp(H->command,"filterload") == 0 ) // for bloom
             bloom = 'L', addr->msgcounts.filterload++;
