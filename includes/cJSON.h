@@ -212,6 +212,7 @@ extern "C"
     char *nxt64str(uint64_t nxt64bits);
     char *nxt64str2(uint64_t nxt64bits);
     cJSON *addrs_jsonarray(uint64_t *addrs,int32_t num);
+    int32_t myatoi(char *str,int32_t range);
 
     char *stringifyM(char *str);
 #define replace_backslashquotes unstringify
@@ -223,9 +224,6 @@ extern "C"
 #define portable_mutex_init nn_mutex_init
 #define portable_mutex_lock nn_mutex_lock
 #define portable_mutex_unlock nn_mutex_unlock*/
-
-#define CONNECTION_NUMBITS 10
-    struct endpoint { uint64_t ipbits:32,port:16,transport:2,nn:4,directind:CONNECTION_NUMBITS; };
 
 #ifdef __cplusplus
 }

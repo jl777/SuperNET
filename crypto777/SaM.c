@@ -378,7 +378,7 @@ uint64_t SaM_threshold(int32_t leverage)
 
 uint32_t SaM_nonce(void *data,int32_t datalen,int32_t leverage,int32_t maxmillis,uint32_t nonce)
 {
-    double milliseconds();
+    double OS_milliseconds();
     uint64_t hit,threshold; bits384 sig; double endmilli;
     if ( leverage != 0 )
     {
@@ -395,8 +395,8 @@ uint32_t SaM_nonce(void *data,int32_t datalen,int32_t leverage,int32_t maxmillis
         }
         else
         {
-            endmilli = (milliseconds() + maxmillis);
-            while ( milliseconds() < endmilli )
+            endmilli = (OS_milliseconds() + maxmillis);
+            while ( OS_milliseconds() < endmilli )
             {
                 OS_randombytes((void *)&nonce,sizeof(nonce));
                 if ( (hit= SaM(&sig,data,datalen,(void *)&nonce,sizeof(nonce))) < threshold )

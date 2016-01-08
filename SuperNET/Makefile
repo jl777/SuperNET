@@ -18,7 +18,7 @@ include $(NACL_SDK_ROOT)/tools/common.mk
 CHROME_ARGS += --allow-nacl-socket-api=127.0.0.1
 
 DEPS = nacl_io
-LIBS = crypto777 curl  ssl crypto z glibc-compat nacl_spawn ppapi nacl_io ppapi_simple  #  cli_main ppapi_cpp ppapi_simple
+LIBS = crypto777 nanomsg curl  ssl crypto z glibc-compat nacl_spawn ppapi nacl_io ppapi_simple  #  cli_main ppapi_cpp ppapi_simple
 
 CFLAGS = -Wall -D__PNACL -fno-strict-aliasing $(EXTRA)
 LFLAGS = libs

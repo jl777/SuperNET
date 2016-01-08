@@ -23,7 +23,7 @@ LIBS =
 CFLAGS = -Wall -D__PNACL -fno-strict-aliasing $(EXTRA)
 LFLAGS = libs
 
-SOURCES = cJSON.c ramcoder.c iguana_OS.c OS_portable.c OS_time.c OS_nonportable.c hmac_sha512.c SaM.c bitcoind_RPC.c inet.c iguana_utils.c curve25519.c curve25519-donna.c jpeg/jaricom.c jpeg/jcapimin.c jpeg/jcapistd.c jpeg/jcarith.c jpeg/jccoefct.c jpeg/jccolor.c \
+SOURCES = cJSON.c ramcoder.c iguana_serdes.c iguana_OS.c OS_portable.c OS_time.c OS_nonportable.c hmac_sha512.c SaM.c bitcoind_RPC.c inet.c iguana_utils.c curve25519.c curve25519-donna.c jpeg/jaricom.c jpeg/jcapimin.c jpeg/jcapistd.c jpeg/jcarith.c jpeg/jccoefct.c jpeg/jccolor.c \
         jpeg/jcdctmgr.c jpeg/jchuff.c jpeg/jcinit.c jpeg/jcmainct.c jpeg/jcmarker.c jpeg/jcmaster.c \
         jpeg/jcomapi.c jpeg/jcparam.c jpeg/jcprepct.c jpeg/jcsample.c jpeg/jctrans.c jpeg/jdapimin.c \
         jpeg/jdapistd.c jpeg/jdarith.c jpeg/jdatadst.c jpeg/jdatasrc.c jpeg/jdcoefct.c jpeg/jdcolor.c \

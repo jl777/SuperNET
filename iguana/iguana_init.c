@@ -137,9 +137,9 @@ int32_t iguana_savehdrs(struct iguana_info *coin)
         }
         printf("finished calc\n");
     }
-    sprintf(oldfname,"%s_oldhdrs.txt",coin->symbol), OS_compatible_path(oldfname);
+    sprintf(oldfname,"confs/%s_oldhdrs.txt",coin->symbol), OS_compatible_path(oldfname);
     sprintf(tmpfname,"tmp/%s/hdrs.txt",coin->symbol), OS_compatible_path(tmpfname);
-    sprintf(fname,"%s_hdrs.txt",coin->symbol), OS_compatible_path(fname);
+    sprintf(fname,"confs/%s_hdrs.txt",coin->symbol), OS_compatible_path(fname);
     if ( (fp= fopen(tmpfname,"w")) != 0 )
     {
         if ( 0 )

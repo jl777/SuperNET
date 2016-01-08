@@ -826,7 +826,10 @@ void *OS_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long origsize
     return(OS_portable_tmpalloc(dirname,name,mem,origsize));
 }
 
+#include <curl/curl.h>
 void OS_init()
 {
+    curl_global_init(CURL_GLOBAL_ALL); //init the curl session
+    SaM_PrepareIndices();
     return(OS_portable_init());
 }

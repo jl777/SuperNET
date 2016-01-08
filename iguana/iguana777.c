@@ -201,8 +201,8 @@ uint32_t iguana_updatemetrics(struct iguana_info *coin)
 {
     char fname[512],tmpfname[512],oldfname[512]; int32_t i; struct iguana_peer *addr; FILE *fp;
     iguana_peermetrics(coin);
-    sprintf(fname,"%s_peers.txt",coin->symbol), OS_compatible_path(fname);
-    sprintf(oldfname,"%s_oldpeers.txt",coin->symbol), OS_compatible_path(oldfname);
+    sprintf(fname,"confs/%s_peers.txt",coin->symbol), OS_compatible_path(fname);
+    sprintf(oldfname,"confs/%s_oldpeers.txt",coin->symbol), OS_compatible_path(oldfname);
     sprintf(tmpfname,"tmp/%s/peers.txt",coin->symbol), OS_compatible_path(tmpfname);
     if ( (fp= fopen(tmpfname,"w")) != 0 )
     {
@@ -348,6 +348,8 @@ void iguana_coinloop(void *arg)
     coin = coins[0];
     iguana_rwiAddrind(coin,0,0,0);
     iguana_possible_peer(coin,"127.0.0.1");
+    while ( 1 ) sleep(1);
+    
     memset(zero.bytes,0,sizeof(zero));
     if ( (bp= iguana_bundlecreate(coin,&bundlei,0,*(bits256 *)coin->chain->genesis_hashdata,zero,1)) != 0 )
         bp->bundleheight = 0;

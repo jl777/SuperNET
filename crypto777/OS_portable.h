@@ -36,6 +36,7 @@
 #include "../includes/libgfshare.h"
 #include "../includes/utlist.h"
 #include "../includes/uthash.h"
+#include "../includes/curve25519.h"
 
 #ifndef MAP_FILE
 #define MAP_FILE        0
@@ -254,6 +255,36 @@ void calc_NXTaddr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void calc_curve25519_str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void calc_base64_encodestr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void calc_base64_decodestr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
+
+uint64_t calc_ipbits(char *ip_port);
+void expand_ipbits(char *ipaddr,uint64_t ipbits);
+void escape_code(char *escaped,char *str);
+void SaM_PrepareIndices();
+
+// iguana_serdes.c
+#define IGUANA_LOG2PACKETSIZE 21
+#define IGUANA_MAXPACKETSIZE (1 << IGUANA_LOG2PACKETSIZE)
+struct iguana_msghdr { uint8_t netmagic[4]; char command[12]; uint8_t serdatalen[4],hash[4]; } __attribute__((packed));
+
+int32_t iguana_rwnum(int32_t rwflag,uint8_t *serialized,int32_t len,void *endianedp);
+int32_t iguana_validatehdr(struct iguana_msghdr *H);
+int32_t iguana_rwbignum(int32_t rwflag,uint8_t *serialized,int32_t len,uint8_t *endianedp);
+int32_t iguana_sethdr(struct iguana_msghdr *H,const uint8_t netmagic[4],char *command,uint8_t *data,int32_t datalen);
+uint8_t *iguana_varint16(int32_t rwflag,uint8_t *serialized,uint16_t *varint16p);
+uint8_t *iguana_varint32(int32_t rwflag,uint8_t *serialized,uint16_t *varint16p);
+uint8_t *iguana_varint64(int32_t rwflag,uint8_t *serialized,uint32_t *varint32p);
+int32_t iguana_rwvarint(int32_t rwflag,uint8_t *serialized,uint64_t *varint64p);
+int32_t iguana_rwvarint32(int32_t rwflag,uint8_t *serialized,uint32_t *int32p);
+int32_t iguana_rwstr(int32_t rwflag,uint8_t *serialized,int32_t maxlen,char *endianedp);
+int32_t iguana_rwmem(int32_t rwflag,uint8_t *serialized,int32_t len,void *endianedp);
+
+bits256 bits256_doublesha256(char *hashstr,uint8_t *data,int32_t datalen);
+char *bits256_str(char hexstr[65],bits256 x);
+char *bits256_lstr(char hexstr[65],bits256 x);
+bits256 bits256_add(bits256 a,bits256 b);
+int32_t bits256_cmp(bits256 a,bits256 b);
+bits256 bits256_lshift(bits256 x);
+bits256 bits256_from_compact(uint32_t c);
 
 #endif
 

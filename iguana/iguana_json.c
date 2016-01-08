@@ -529,6 +529,7 @@ void iguana_main(void *arg)
     if ( (retstr= iguana_addagent("jumblr",jumblr_parser,"127.0.0.1",cJSON_Parse("[\"test\"]"),0,0,0)) != 0 )
         printf("%s\n",retstr), free(retstr);
     iguana_initQ(&helperQ,"helperQ");
+    OS_ensure_directory("confs");
     OS_ensure_directory("DB");
     OS_ensure_directory("tmp");
     if ( jsonstr != 0 && (json= cJSON_Parse(jsonstr)) != 0 )
@@ -562,7 +563,7 @@ void iguana_main(void *arg)
     {
 #ifdef __APPLE__
         sleep(1);
-        iguana_JSON("{\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":0,\"maxpeers\":64,\"coin\":\"BTC\",\"active\":1}");
+        iguana_JSON("{\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":0,\"maxpeers\":4,\"coin\":\"BTCD\",\"active\":1}");
 #endif
     }
     if ( arg != 0 )

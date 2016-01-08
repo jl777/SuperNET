@@ -575,7 +575,7 @@ char *iguana_htmlget(char *space,int32_t max,int32_t *jsonflagp,char *path,char 
 char *iguana_rpcparse(char *retbuf,int32_t bufsize,int32_t *postflagp,char *jsonstr)
 {
     cJSON *json = 0; int32_t i,n,localaccess,datalen,postflag = 0;
-    char *key,*reststr,*str,*retstr,remoteaddr[65],*data = 0,*value,*agent = "SuperNET";
+    char *key,*reststr,*str,*retstr,remoteaddr[65],porturl[65],*data = 0,*value,*agent = "SuperNET";
     //printf("rpcparse.(%s)\n",jsonstr);
     localaccess = 1;
     strcpy(remoteaddr,"127.0.0.1"); // need to verify this
@@ -586,9 +586,10 @@ char *iguana_rpcparse(char *retbuf,int32_t bufsize,int32_t *postflagp,char *json
     {
         jsonstr += 4;
         str = 0;
-        if ( (str= iguana_htmlget(retbuf,bufsize,postflagp,jsonstr,remoteaddr,localaccess)) == 0 && (reststr= strstr(jsonstr,"Referer: http://127.0.0.1:7778")) != 0 )
+        sprintf(porturl,"Referer: http://127.0.0.1:%u",IGUANA_RPCPORT);
+        if ( (str= iguana_htmlget(retbuf,bufsize,postflagp,jsonstr,remoteaddr,localaccess)) == 0 && (reststr= strstr(jsonstr,porturl)) != 0 )
         {
-            reststr += strlen("Referer: http://127.0.0.1:7778");
+            reststr += strlen(porturl);
             str = iguana_htmlget(retbuf,bufsize,postflagp,reststr,remoteaddr,localaccess);
         }
         if ( str != 0 )
