@@ -378,6 +378,7 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
             return(-1);
         if ( (numsent= (int32_t)send(usock,serialized,remains,MSG_NOSIGNAL)) < 0 )
         {
+            printf("send errno.%d %s\n",errno,strerror(errno));
             if ( errno != EAGAIN && errno != EWOULDBLOCK )
             {
                 printf("%s: %s numsent.%d vs remains.%d len.%d errno.%d (%s) usock.%d\n",serialized+4,addr->ipaddr,numsent,remains,len,errno,strerror(errno),addr->usock);
