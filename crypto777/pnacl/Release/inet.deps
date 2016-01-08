@@ -1,0 +1,18 @@
+# Updated by fix_deps.py
+pnacl/Release/inet.o: inet.c ../includes/nonportable.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/select.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/time.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netdb.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/socket.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netinet/in.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netinet6/in6.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/arpa/inet.h
+inet.c:
+../includes/nonportable.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/select.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/time.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netdb.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/socket.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netinet/in.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netinet6/in6.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/arpa/inet.h:

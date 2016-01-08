@@ -129,5 +129,8 @@ int32_t OS_nonportable_init()
     return(0);
 }
 
+#else
+void OS_nonportable_none() { printf("unix is the reference OS\n"); }
+
 #endif
 

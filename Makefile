@@ -25,7 +25,7 @@ CFLAGS +=  -O2
 
 all: $(CRYPTO777) $(IGUANA) $(TRADEBOTS) $(SUPERNET) # $(INSTANTDEX) $(PAX) $(PRICES) $(PANGEA)
 
-$(CRYPTO777):  crypto777/OS_nonportable.c crypto777/OS_portable.c crypto777/OS_time.c crypto777/iguana_OS.c crypto777/OS_portable.h crypto777/iguana_utils.c crypto777/bitcoind_RPC.c crypto777/cJSON.c crypto777/curve25519-donna.c crypto777/curve25519.c crypto777/hmac_sha512.c crypto777/inet.c crypto777/libgfshare.c crypto777/ramcoder.c crypto777/SaM.c crypto777/jpeg/jaricom.c crypto777/jpeg/jcapimin.c crypto777/jpeg/jcapistd.c crypto777/jpeg/jcarith.c crypto777/jpeg/jccoefct.c crypto777/jpeg/jccolor.c \
+$(CRYPTO777):  crypto777/OS_portable.o crypto777/OS_nonportable.c crypto777/OS_portable.c crypto777/OS_time.c crypto777/iguana_OS.c crypto777/OS_portable.h crypto777/iguana_utils.c crypto777/bitcoind_RPC.c crypto777/cJSON.c crypto777/curve25519-donna.c crypto777/curve25519.c crypto777/hmac_sha512.c crypto777/inet.c crypto777/libgfshare.c crypto777/ramcoder.c crypto777/SaM.c crypto777/jpeg/jaricom.c crypto777/jpeg/jcapimin.c crypto777/jpeg/jcapistd.c crypto777/jpeg/jcarith.c crypto777/jpeg/jccoefct.c crypto777/jpeg/jccolor.c \
         crypto777/jpeg/jcdctmgr.c crypto777/jpeg/jchuff.c crypto777/jpeg/jcinit.c crypto777/jpeg/jcmainct.c crypto777/jpeg/jcmarker.c crypto777/jpeg/jcmaster.c \
         crypto777/jpeg/jcomapi.c crypto777/jpeg/jcparam.c crypto777/jpeg/jcprepct.c crypto777/jpeg/jcsample.c crypto777/jpeg/jctrans.c crypto777/jpeg/jdapimin.c \
         crypto777/jpeg/jdapistd.c crypto777/jpeg/jdarith.c crypto777/jpeg/jdatadst.c crypto777/jpeg/jdatasrc.c crypto777/jpeg/jdcoefct.c crypto777/jpeg/jdcolor.c \

@@ -1,0 +1,5 @@
+make crypto777
+cd crypto777
+make
+cd ..
+

@@ -1,0 +1,6 @@
+# Updated by fix_deps.py
+pnacl/Release/ramcoder.o: ramcoder.c ../includes/curve25519.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/memory.h
+ramcoder.c:
+../includes/curve25519.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/memory.h:

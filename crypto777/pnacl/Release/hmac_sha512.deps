@@ -1,0 +1,71 @@
+# Updated by fix_deps.py
+pnacl/Release/hmac_sha512.o: hmac_sha512.c hmac/crypt_argchk.c \
+  hmac/tomcrypt.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/memory.h \
+  hmac/tomcrypt_custom.h hmac/tomcrypt_cfg.h hmac/tomcrypt_macros.h \
+  hmac/tomcrypt_cipher.h hmac/tomcrypt_hash.h hmac/tomcrypt_mac.h \
+  hmac/tomcrypt_prng.h hmac/tomcrypt_pk.h hmac/tomcrypt_math.h \
+  hmac/tomcrypt_misc.h hmac/tomcrypt_argchk.h hmac/tomcrypt_pkcs.h \
+  hmac/hash_memory.c hmac/hmac_init.c hmac/hmac_process.c \
+  hmac/hmac_done.c hmac/hmac_file.c hmac/hmac_memory.c hmac/rmd128.c \
+  hmac/rmd160.c hmac/rmd256.c hmac/rmd320.c hmac/tiger.c hmac/md2.c \
+  hmac/md4.c hmac/md5.c hmac/../OS_portable.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/poll.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/poll.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netdb.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netinet/in.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netinet6/in6.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/socket.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/time.h \
+  ../includes/libgfshare.h ../includes/utlist.h ../includes/uthash.h \
+  ../includes/curve25519.h hmac/sha1.c hmac/whirl.c hmac/whirltab.c \
+  hmac/sha224.c hmac/sha256.c hmac/sha384.c hmac/sha512.c
+hmac_sha512.c:
+hmac/crypt_argchk.c:
+hmac/tomcrypt.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/memory.h:
+hmac/tomcrypt_custom.h:
+hmac/tomcrypt_cfg.h:
+hmac/tomcrypt_macros.h:
+hmac/tomcrypt_cipher.h:
+hmac/tomcrypt_hash.h:
+hmac/tomcrypt_mac.h:
+hmac/tomcrypt_prng.h:
+hmac/tomcrypt_pk.h:
+hmac/tomcrypt_math.h:
+hmac/tomcrypt_misc.h:
+hmac/tomcrypt_argchk.h:
+hmac/tomcrypt_pkcs.h:
+hmac/hash_memory.c:
+hmac/hmac_init.c:
+hmac/hmac_process.c:
+hmac/hmac_done.c:
+hmac/hmac_file.c:
+hmac/hmac_memory.c:
+hmac/rmd128.c:
+hmac/rmd160.c:
+hmac/rmd256.c:
+hmac/rmd320.c:
+hmac/tiger.c:
+hmac/md2.c:
+hmac/md4.c:
+hmac/md5.c:
+hmac/../OS_portable.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/poll.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/poll.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netdb.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netinet/in.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netinet6/in6.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/socket.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/time.h:
+../includes/libgfshare.h:
+../includes/utlist.h:
+../includes/uthash.h:
+../includes/curve25519.h:
+hmac/sha1.c:
+hmac/whirl.c:
+hmac/whirltab.c:
+hmac/sha224.c:
+hmac/sha256.c:
+hmac/sha384.c:
+hmac/sha512.c:

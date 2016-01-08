@@ -1,0 +1,9 @@
+# Updated by fix_deps.py
+pnacl/Release/jpeg/jdatadst.o: jpeg/jdatadst.c jpeg/jinclude.h \
+  jpeg/jconfig.h jpeg/jpeglib.h jpeg/jmorecfg.h jpeg/jerror.h
+jpeg/jdatadst.c:
+jpeg/jinclude.h:
+jpeg/jconfig.h:
+jpeg/jpeglib.h:
+jpeg/jmorecfg.h:
+jpeg/jerror.h:

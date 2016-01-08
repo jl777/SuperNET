@@ -1,0 +1,11 @@
+# Updated by fix_deps.py
+pnacl/Release/jpeg/jdsample.o: jpeg/jdsample.c jpeg/jinclude.h \
+  jpeg/jconfig.h jpeg/jpeglib.h jpeg/jmorecfg.h jpeg/jpegint.h \
+  jpeg/jerror.h
+jpeg/jdsample.c:
+jpeg/jinclude.h:
+jpeg/jconfig.h:
+jpeg/jpeglib.h:
+jpeg/jmorecfg.h:
+jpeg/jpegint.h:
+jpeg/jerror.h:
