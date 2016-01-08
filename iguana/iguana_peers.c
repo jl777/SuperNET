@@ -518,7 +518,7 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
         printf("invalid header received from (%s)\n",addr->ipaddr);
         addr->dead = 1;
     }
-    printf("%s recv error on hdr errno.%d (%s)\n",addr->ipaddr,-recvlen,strerror(-recvlen));
+    printf("%s recv error on hdr errno.%d (%s) -> zombify\n",addr->ipaddr,-recvlen,strerror(-recvlen));
 #ifndef IGUANA_DEDICATED_THREADS
     addr->dead = 1;
 #endif
@@ -930,7 +930,11 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
         if ( flag == 0 )
         {
             if ( (fds.revents & POLLIN) != 0 )
+            {
                 flag += iguana_pollrecv(coin,addr,buf,bufsize);
+                if ( addr->dead != 0 )
+                    break;
+            }
             if ( flag == 0 )
             {
                 if ( time(NULL) > addr->pendtime+30 )
@@ -942,7 +946,11 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
                     addr->pendtime = 0;
                 }
                 if ( coin->active != 0 && (fds.revents & POLLOUT) != 0 )
+                {
                     flag += iguana_pollQsPT(coin,addr);
+                    if ( addr->dead != 0 )
+                        break;
+                }
             }
             if ( flag == 0 )
             {
@@ -964,10 +972,10 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
             addr->dead = 1;
         }
     }
+    printf(">>>>>>>>>>>>>> finish dedicatedloop.%s\n",addr->ipaddr);
     //if ( addr->fp != 0 )
     //    fclose(addr->fp);
     iguana_iAkill(coin,addr,addr->dead != 0);
-    printf("finish dedicatedloop.%s\n",addr->ipaddr);
     myfree(buf,bufsize);
     if ( addr->filehash2 != 0 )
         myfree(addr->filehash2,addr->maxfilehash2*sizeof(*addr->filehash2));
