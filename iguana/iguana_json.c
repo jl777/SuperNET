@@ -248,7 +248,7 @@ char *iguana_agentjson(char *name,struct iguana_info *coin,char *method,cJSON *j
             }
         }
     }
-    else if ( remoteaddr == 0 || strcmp(remoteaddr,"127.0.0.1") == 0 ) // public api
+    else if ( remoteaddr == 0 || strcmp(remoteaddr,"127.0.0.1") != 0 ) // public api
     {
         char *coinstr; int32_t j,k,l,r,rr; struct iguana_peer *addr;
         array = 0;
