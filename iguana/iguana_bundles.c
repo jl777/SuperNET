@@ -541,7 +541,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     difft.millis = ((double)tmp / 1000000.);
     sprintf(str,"N[%d] d.%d p.%d g.%d A.%d h.%d r.%d c.%d:%d s.%d E.%d:%d M.%d L.%d est.%d %s %d:%02d:%02d %03.3f peers.%d/%d",coin->bundlescount,numdone,coin->numpendings,numbundles,numactive,numhashes,coin->blocksrecv,coin->numcached,coin->cachefreed,totalsaved,coin->numemitted,coin->numreqsent,coin->blocks.hwmchain.height,coin->longestchain,coin->MAXBUNDLES,mbstr(str2,estsize),(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,difft.millis,p,coin->MAXPEERS);
     //sprintf(str+strlen(str),"%s.%-2d %s time %.2f files.%d Q.%d %d\n",coin->symbol,flag,str,(double)(time(NULL)-coin->starttime)/60.,coin->peers.numfiles,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
-    //if ( (rand() % 100) == 0 )
+    if ( (rand() % 100) == 0 )
         printf("%s\n",str);
     strcpy(coin->statusstr,str);
     coin->activebundles = numactive;
