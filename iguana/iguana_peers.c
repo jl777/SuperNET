@@ -311,14 +311,15 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
             printf("socket() failed: %s errno.%d", strerror(errno),errno);
         return(-1);
     }
-    if ( 0 && bindflag != 0 )
-    {
-        timeout.tv_sec = 0;
-        timeout.tv_usec = 1000;
-        setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(char *)&timeout,sizeof(timeout));
-    }
     opt = 1;
-    setsockopt(sock,SOL_SOCKET,SO_REUSEADDR,(void*)&opt,sizeof(opt));
+    if ( bindflag != 0 )
+    {
+        //timeout.tv_sec = 0;
+        //timeout.tv_usec = 1000;
+        //setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(char *)&timeout,sizeof(timeout));
+        setsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,sizeof(opt));
+    }
+    setsockopt(sock,SOL_SOCKET,SO_REUSEADDR,(void *)&opt,sizeof(opt));
 #ifdef __APPLE__
     setsockopt(sock,SOL_SOCKET,SO_NOSIGPIPE,&opt,sizeof(opt));
 #endif
