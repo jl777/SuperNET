@@ -944,7 +944,10 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
         {
             flag += iguana_pollsendQ(coin,addr);
             if ( addr->dead != 0 )
+            {
+                printf("%s is dead\n",addr->ipaddr);
                 break;
+            }
         }
         if ( flag == 0 )
         {
@@ -952,7 +955,10 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
             {
                 flag += iguana_pollrecv(coin,addr,buf,bufsize);
                 if ( addr->dead != 0 )
+                {
+                    printf("%s is dead\n",addr->ipaddr);
                     break;
+                }
             }
             if ( flag == 0 )
             {
@@ -968,7 +974,10 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
                 {
                     flag += iguana_pollQsPT(coin,addr);
                     if ( addr->dead != 0 )
+                    {
+                        printf("%s is dead\n",addr->ipaddr);
                         break;
+                    }
                 }
             }
             if ( flag == 0 )
