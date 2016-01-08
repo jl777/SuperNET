@@ -331,7 +331,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
             close(sock);
         return(-1);
     }
-    if ( bindflag != 0 && listen(sock,100) != 0 )
+    if ( bindflag != 0 && listen(sock,3) != 0 )
     {
         printf("listen(%s) port.%d failed: %s sock.%d. errno.%d\n",hostname,port,strerror(errno),sock,errno);
         if ( sock >= 0 )
