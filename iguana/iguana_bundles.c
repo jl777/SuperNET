@@ -543,7 +543,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     //sprintf(str+strlen(str),"%s.%-2d %s time %.2f files.%d Q.%d %d\n",coin->symbol,flag,str,(double)(time(NULL)-coin->starttime)/60.,coin->peers.numfiles,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
     if ( dispflag != 0 && time(NULL) > lastdisp+10 )
     {
-        printf("%s\n",str);
+        printf("%u %s\n",lastdisp,str);
         lastdisp = (uint32_t)time(NULL);
     }
     strcpy(coin->statusstr,str);
