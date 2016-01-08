@@ -396,8 +396,8 @@ int32_t iguana_queue_send(struct iguana_info *coin,struct iguana_peer *addr,int3
     datalen = iguana_sethdr((void *)serialized,coin->chain->netmagic,cmd,&serialized[sizeof(struct iguana_msghdr)],len);
     if ( strcmp("getaddr",cmd) == 0 && time(NULL) < addr->lastgotaddr+300 )
         return(0);
-    if ( strcmp("version",cmd) == 0 )
-        return(iguana_send(coin,addr,serialized,datalen));
+    //if ( strcmp("version",cmd) == 0 )
+    //    return(iguana_send(coin,addr,serialized,datalen));
     packet = mycalloc('S',1,sizeof(struct iguana_packet) + datalen);
     packet->datalen = datalen;
     packet->addr = addr;
@@ -739,7 +739,8 @@ int32_t iguana_pollsendQ(struct iguana_info *coin,struct iguana_peer *addr)
     struct iguana_packet *packet;
     if ( (packet= queue_dequeue(&addr->sendQ,0)) != 0 )
     {
-        //printf("%s: send.(%s) usock.%d dead.%u ready.%u\n",addr->ipaddr,packet->serialized+4,addr->usock,addr->dead,addr->ready);
+        //if ( strcmp((char *)&packet->serialized[4],"SuperNET") == 0 )
+            printf("%s: send.(%s) usock.%d dead.%u ready.%u\n",addr->ipaddr,packet->serialized+4,addr->usock,addr->dead,addr->ready);
         if ( strcmp((char *)&packet->serialized[4],"getdata") == 0 )
         {
             printf("unexpected getdata for %s\n",addr->ipaddr);
@@ -906,8 +907,9 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     printf("send version myservices.%llu to (%s)\n",(long long)coin->myservices,addr->ipaddr);
     sleep(1);
     iguana_send_version(coin,addr,coin->myservices);
-    iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
     printf("after send version\n");
+    iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
+    printf("after send getaddr\n");
     run = 0;
     while ( addr->usock >= 0 && addr->dead == 0 && coin->peers.shuttingdown == 0 )
     {
@@ -927,7 +929,11 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
         fds.fd = addr->usock;
         fds.events |= (POLLOUT | POLLIN);
         if (  poll(&fds,1,timeout) > 0 && (fds.revents & POLLOUT) != 0 )
+        {
             flag += iguana_pollsendQ(coin,addr);
+            if ( addr->dead != 0 )
+                break;
+        }
         if ( flag == 0 )
         {
             if ( (fds.revents & POLLIN) != 0 )
