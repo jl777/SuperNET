@@ -15,11 +15,11 @@
 
 #include "iguana777.h"
 #include <stdbool.h>
-#include <openssl/ec.h>
-#include <openssl/ecdsa.h>
-#include <openssl/obj_mac.h>
-#include <openssl/ripemd.h>
-#include <openssl/sha.h>
+#include "../includes/openssl/ec.h"
+#include "../includes/openssl/ecdsa.h"
+#include "../includes/openssl/obj_mac.h"
+//#include "../includes/openssl/ripemd.h"
+//#include "../includes/openssl/sha.h"
 
 #define SCRIPT_OP_IF 0x63
 #define SCRIPT_OP_ELSE 0x67

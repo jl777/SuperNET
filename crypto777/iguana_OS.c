@@ -118,7 +118,7 @@ void *queueitem(char *str)
     }
     item->allocsize = (uint32_t)allocsize;
     item->type = type;
-    data = (void *)((uint64_t)item + sizeof(*item));
+    data = (void *)(long)((long)item + sizeof(*item));
     memcpy(data,str,n);
     //printf("(%c) queueitem.%p itemdata.%p n.%d allocsize.%d\n",type,item,data,n,allocsize);
     //portable_mutex_unlock(&MEMmutex);
@@ -400,7 +400,7 @@ void *iguana_memalloc(struct OS_memspace *mem,long size,int32_t clearflag)
 #endif
     if ( (mem->used + size) <= mem->totalsize )
     {
-        ptr = (void *)((uint64_t)mem->ptr + (uint64_t)mem->used);
+        ptr = (void *)(long)((long)(mem->ptr + mem->used));
         mem->used += size;
         if ( size*clearflag != 0 )
             memset(ptr,0,size);

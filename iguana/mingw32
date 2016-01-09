@@ -1,0 +1,9 @@
+TOOL_DIR := /usr/local/gcc-4.8.0-qt-4.8.4-for-mingw32/win32-gcc/bin
+MINGW := i586-mingw32
+LIBS := ../win/libcrypto.a ../win/libssl.a ../win/libpthreadGC2.a -lws2_32 -lgdi32
+
+include mingw
+
+all: 
+	$(TOOL_DIR)/$(MINGW)-gcc -o ../agents/iguana.exe -D __MINGW $(SOURCES) $(LIBS) 
+	$(TOOL_DIR)/$(MINGW)-strip --strip-all ../agents/iguana.exe

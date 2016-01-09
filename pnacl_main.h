@@ -6,14 +6,21 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <pthread.h>
 #include <unistd.h>
+#ifdef _WIN32
+#include "win/pthread.h"
+#include <windows.h>
+//static inline void sleep(unsigned ms) { Sleep(ms*1000); }
+
+#else
+#include <pthread.h>
+#endif
 
 static int initflag;
 #ifndef __PNACL
-#define PostMessage printf
+#define PNACL_message printf
 #else
-void PostMessage(const char* format, ...);
+void PNACL_message(const char* format, ...);
 #endif
 
 void OS_init();
@@ -31,8 +38,8 @@ void *CHROMEAPP_NAME(void *arg)
         arg = 0;
 #endif
     while ( initflag == 0 )
-        sleep(1);
-    PostMessage("%s start.(%s)\n",CHROMEAPP_STR,(char *)arg);
+        usleep(1000000);
+    PNACL_message("%s start.(%s)\n",CHROMEAPP_STR,(char *)arg);
     CHROMEAPP_MAIN(arg);
     return(0);
 }
@@ -135,7 +142,7 @@ struct PP_Var GetDictVar(struct PP_Var dict, const char* key)
     return value;
 }
 
-void PostMessage(const char* format, ...)
+void PNACL_message(const char* format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -172,7 +179,7 @@ static int ParseMessage(struct PP_Var message,const char **out_function,struct P
     *out_function = VarToCStr(cmd_value);
     g_ppb_var->Release(cmd_value);
     *out_params = GetDictVar(message, "args");
-    PostMessage("Parse.(%s) cmd.(%s)\n",*out_function,VarToCStr(*out_params));
+    PNACL_message("Parse.(%s) cmd.(%s)\n",*out_function,VarToCStr(*out_params));
     if ( cmd_value.type != PP_VARTYPE_STRING )
         return(1);
     if ( out_params->type != PP_VARTYPE_ARRAY )
@@ -201,13 +208,13 @@ static void HandleMessage(struct PP_Var message)
     const char *function_name,*error; struct PP_Var params,result_var;
     if ( ParseMessage(message, &function_name, &params) != 0 )
     {
-        PostMessage("Error: Unable to parse message");
+        PNACL_message("Error: Unable to parse message");
         return;
     }
     HandleFunc function = GetFunctionByName(function_name);
     if ( function == 0 )
     {
-        PostMessage("Error: Unknown function \"%s\"", function_name); // Function name wasn't found.
+        PNACL_message("Error: Unknown function \"%s\"", function_name); // Function name wasn't found.
         return;
     }
     // Function name was found, call it.
@@ -216,10 +223,10 @@ static void HandleMessage(struct PP_Var message)
     {
         if ( error != NULL )
         {
-            PostMessage("Error: \"%s\" failed: %s.", function_name, error);
+            PNACL_message("Error: \"%s\" failed: %s.", function_name, error);
             free((void*)error);
         }
-        else PostMessage("Error: \"%s\" failed.", function_name);
+        else PNACL_message("Error: \"%s\" failed.", function_name);
         return;
     }
     // Function returned an output dictionary. Send it to JavaScript.
@@ -266,7 +273,7 @@ int EnqueueMessage(struct PP_Var message)
     // We shouldn't block the main thread waiting for the queue to not be full, so just drop the message.
     if ( IsQueueFull() != 0)
     {
-        PostMessage("EnqueueMessage: full Q, drop message\n");
+        PNACL_message("EnqueueMessage: full Q, drop message\n");
         pthread_mutex_unlock(&g_queue_mutex);
         return(0);
     }
@@ -341,7 +348,7 @@ static PP_Bool Instance_DidCreate(PP_Instance instance,uint32_t argc,const char*
           "httpfs", /* filesystemtype */
           0,        /* mountflags */
           "");      /* data */
-    PostMessage("finished DidCreate %s\n",CHROMEAPP_STR);
+    PNACL_message("finished DidCreate %s\n",CHROMEAPP_STR);
     initflag = 1;
     return PP_TRUE;
 }
@@ -362,7 +369,7 @@ static void Messaging_HandleMessage(PP_Instance instance,struct PP_Var message)
 {
     if ( message.type != PP_VARTYPE_DICTIONARY ) // Special case for jspipe input handling
     {
-        PostMessage("Got unexpected message type: %d\n", message.type);
+        PNACL_message("Got unexpected message type: %d\n", message.type);
         return;
     }
     struct PP_Var pipe_var = CStrToVar("pipe");
@@ -376,11 +383,11 @@ static void Messaging_HandleMessage(PP_Instance instance,struct PP_Var message)
         g_ppb_var->Release(pipe_name);
         if ( fd < 0 )
         {
-            PostMessage("Warning: opening %s failed.", file_name);
+            PNACL_message("Warning: opening %s failed.", file_name);
             goto done;
         }
         //if ( ioctl(fd, NACL_IOC_HANDLEMESSAGE, &message) != 0 )
-        //    PostMessage("Error: ioctl on %s failed: %s", file_name, strerror(errno));
+        //    PNACL_message("Error: ioctl on %s failed: %s", file_name, strerror(errno));
         close(fd);
         goto done;
     }
@@ -388,7 +395,7 @@ static void Messaging_HandleMessage(PP_Instance instance,struct PP_Var message)
     if ( !EnqueueMessage(message) )
     {
         g_ppb_var->Release(message);
-        PostMessage("Warning: dropped message because the queue was full.");
+        PNACL_message("Warning: dropped message because the queue was full.");
     }
 done:
     g_ppb_var->Release(pipe_name);
@@ -596,7 +603,7 @@ int CHROMEAPP_HANDLER(struct PP_Var params,struct PP_Var *output,const char **ou
 {
     char *CHROMEAPP_JSON(char *);
     char *retstr;
-    PostMessage("inside Handle_%s\n",CHROMEAPP_STR);
+    PNACL_message("inside Handle_%s\n",CHROMEAPP_STR);
     CHECK_PARAM_COUNT(CHROMEAPP_NAME, 1);
     PARAM_STRING(0,jsonstr);
     retstr = CHROMEAPP_JSON(jsonstr);
@@ -607,7 +614,7 @@ int CHROMEAPP_HANDLER(struct PP_Var params,struct PP_Var *output,const char **ou
 
 int example_main()
 {
-    PostMessage("Started %s example main.\n",CHROMEAPP_STR);
+    PNACL_message("Started %s example main.\n",CHROMEAPP_STR);
     while ( 1 )
     {
         sleep(777);

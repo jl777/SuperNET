@@ -63,12 +63,18 @@ void OS_portable_randombytes(unsigned char *x,long xlen)
 
 int32_t OS_portable_truncate(char *fname,long filesize)
 {
+#ifdef _WIN32
+    printf("need to implement truncate()\n");
+    return(-1);
+#else
     return(truncate(fname,filesize));
+#endif
 }
 
 char *OS_portable_path(char *str)
 {
 #ifdef _WIN32
+    char *OS_nonportable_path(char *str);
     return(OS_nonportable_path(str));
 #else
     return(str);
@@ -79,10 +85,10 @@ int32_t OS_portable_renamefile(char *fname,char *newfname)
 {
 #ifdef _WIN32
     char cmdstr[1024],tmp[512];
-    strcpt(tmp,fname);
-    iguana_compatible_path(tmp);
+    strcpy(tmp,fname);
+    OS_portable_path(tmp);
     sprintf(cmdstr,"del %s",tmp);
-    if ( system() != 0 )
+    if ( system(cmdstr) != 0 )
         printf("error deleting file.(%s)\n",cmdstr);
     else return(1);
 #else
@@ -94,10 +100,10 @@ int32_t OS_portable_removefile(char *fname)
 {
 #ifdef _WIN32
     char cmdstr[1024],tmp[512];
-    strcpt(tmp,fname);
-    iguana_compatible_path(tmp);
+    strcpy(tmp,fname);
+    OS_portable_path(tmp);
     sprintf(cmdstr,"del %s",tmp);
-    if ( system() != 0 )
+    if ( system(cmdstr) != 0 )
         printf("error deleting file.(%s)\n",cmdstr);
     else return(1);
 #else
@@ -108,7 +114,8 @@ int32_t OS_portable_removefile(char *fname)
 void *OS_portable_mapfile(char *fname,long *filesizep,int32_t enablewrite)
 {
 #ifdef _WIN32
-    return(OS_nonportable_mapfile(fname,filesizep,enablewrite);
+    void *OS_nonportable_mapfile(char *fname,long *filesizep,int32_t enablewrite);
+    return(OS_nonportable_mapfile(fname,filesizep,enablewrite));
 #else
 	int32_t fd,rwflags,flags = MAP_FILE|MAP_SHARED;
 	uint64_t filesize;

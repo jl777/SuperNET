@@ -24,19 +24,31 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <math.h>
-#include <pthread.h>
-#include <poll.h>
 #include <errno.h>
-#include <netdb.h>
-#include <netinet/in.h>
+#include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <sys/time.h>
+
+#ifdef __MINGW
+#define sleep(x) Sleep(1000*(x))
+#include "../win/mingw.h"
+#include "../win/mman.h"
+
+#else
+#include <poll.h>
+#include <netdb.h>
+#include <pthread.h>
+#include <netinet/in.h>
 #include <sys/mman.h>
+#include <sys/socket.h>
+#define closesocket close
+#endif
+
 #include "../includes/libgfshare.h"
 #include "../includes/utlist.h"
 #include "../includes/uthash.h"
 #include "../includes/curve25519.h"
+#include "../includes/cJSON.h"
 
 #ifndef MAP_FILE
 #define MAP_FILE        0

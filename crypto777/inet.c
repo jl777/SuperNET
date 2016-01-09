@@ -16,34 +16,25 @@
  */
 
 
-#ifdef DEFINES_ONLY
 #ifndef crypto777_inet_h
 #define crypto777_inet_h
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <string.h>
-#include <stdint.h>
-#include <errno.h>
+#include "OS_portable.h"
+
 #ifdef _WIN32
-#include <nonportable.h>
-#else
-#include "../includes/nonportable.h"
-#endif
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+#include <windows.h>
+#include <io.h>
+#include <winsock2.h>
+#define in6_addr sockaddr
+#define in_addr_t struct sockaddr_storage
+#define EAFNOSUPPORT WSAEAFNOSUPPORT
 
-#endif
-#else
-
-#ifndef crypto777_system777_c
-#define crypto777_system777_c
-
-#ifndef crypto777_system777_h
-#define DEFINES_ONLY
-#include "inet.c"
-#undef DEFINES_ONLY
+struct sockaddr_in6 {
+    short   sin6_family;
+    u_short sin6_port;
+    u_long  sin6_flowinfo;
+    struct  in6_addr sin6_addr;
+    u_long  sin6_scope_id;
+};
 #endif
 
 static int inet_ntop4(unsigned char *src, char *dst, size_t size);
@@ -502,7 +493,7 @@ char *conv_ipv6(char *ipv6addr)
     char ipv4str[4096];
     struct sockaddr_in6 ipv6sa;
     in_addr_t *ipv4bin;
-    unsigned char *bytes;
+    unsigned char *bytes = 0;
     int32_t isok;
     memset(IPV4CHECK,0,sizeof(IPV4CHECK));
     strcpy(ipv4str,ipv6addr);
@@ -511,7 +502,12 @@ char *conv_ipv6(char *ipv6addr)
     isok = portable_pton(AF_INET6,ipv6addr,&ipv6sa.sin6_addr);
     if ( isok == 0 )
     {
+#ifdef _WIN32
+        printf("need to figure this out for win32\n");
+        //bytes = ((struct sockaddr_in6 *)&ipv6sa)->sin6_addr.s6_addr;
+#else
         bytes = ((struct sockaddr_in6 *)&ipv6sa)->sin6_addr.s6_addr;
+#endif
         if ( memcmp(bytes,IPV4CHECK,sizeof(IPV4CHECK)) != 0 ) // check its IPV4 really
         {
             bytes += 12;
@@ -600,6 +596,5 @@ uint16_t parse_endpoint(int32_t *ip6flagp,char *transport,char *ipbuf,char *retb
     return(0);
 }
 
-#endif
 #endif
 

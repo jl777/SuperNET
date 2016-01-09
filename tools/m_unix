@@ -1,2 +1,0 @@
-git pull
-gcc -o agent *.c libcrypto777.a

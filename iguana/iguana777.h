@@ -72,19 +72,18 @@ struct iguana_txdatabits { uint64_t addrind:IGUANA_LOG2MAXPEERS,filecount:10,fpo
 #endif
 
 
-#include "../includes/cJSON.h"
 #ifdef __PNACL
-void PostMessage(const char* format, ...);
+void PNACL_message(const char* format, ...);
 #endif
 
 extern int32_t IGUANA_NUMHELPERS;
 
 #ifdef __PNACL
-#define printf PostMessage
+#define printf PNACL_message
 #define MS_ASYNC	1		/* Sync memory asynchronously.  */
 #define MS_SYNC		4		/* Synchronous memory sync.  */
 #else
-#define PostMessage printf
+#define PNACL_message printf
 #endif
 
 #ifndef MSG_NOSIGNAL

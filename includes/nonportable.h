@@ -1,4 +1,4 @@
-// MIT license
+/*
 
 #ifndef _NONPORTABLELINUX_H
 #define _NONPORTABLELINUX_H
@@ -8,4 +8,4 @@
 #include <netdb.h>
 
 #include <sys/mman.h>
-#endif
+#endif*/

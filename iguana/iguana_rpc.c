@@ -185,9 +185,9 @@ void iguana_vinset(struct iguana_info *coin,int32_t height,struct iguana_msgvin 
     memset(vin,0,sizeof(*vin));
     if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0 && (rdata= bp->ramchain.H.data) != 0 )
     {
-        S = (void *)((long)rdata + rdata->Soffset);
-        X = (void *)((long)rdata + rdata->Xoffset);
-        T = (void *)((long)rdata + rdata->Toffset);
+        S = (void *)(long)((long)rdata + rdata->Soffset);
+        X = (void *)(long)((long)rdata + rdata->Xoffset);
+        T = (void *)(long)((long)rdata + rdata->Toffset);
         spendind = (tx->firstvin + i);
         s = &S[spendind];
         if ( s->diffsequence == 0 )
@@ -204,8 +204,8 @@ int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmst
     memset(vout,0,sizeof(*vout));
     if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0  && (rdata= bp->ramchain.H.data) != 0 )
     {
-        U = (void *)((long)rdata + rdata->Uoffset);
-        P = (void *)((long)rdata + rdata->Poffset);
+        U = (void *)(long)((long)rdata + rdata->Uoffset);
+        P = (void *)(long)((long)rdata + rdata->Poffset);
         unspentind = (tx->firstvout + i);
         u = &U[unspentind];
         if ( u->txidind != tx->txidind || u->vout != i || u->hdrsi != height / coin->chain->bundlesize )

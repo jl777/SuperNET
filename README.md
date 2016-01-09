@@ -20,7 +20,9 @@ Just make sure you have the dev versions of openssl and curl installed:
 ```sudo apt-get install libcurl4-gnutls-dev libssl-dev```
 
 ##For native (win32, win64)##
-This still needs to be ported, pthreads is the only non-native windows system functions being used. OS_portable.c and OS_nonportable.c have the few windows functions that are needed to be ported and also a compile/link process needs to be done. I think cygwin or even mingw would work, alternatively compiling the codebase with VS shouldnt be too much work. Until this is done the instructions below about m_win32 and m_win64 wont actually work.
+TOOL_DIR := /usr/local/gcc-4.8.0-qt-4.8.4-for-mingw32/win32-gcc/bin
+MINGW := i586-mingw32
+The above two definitions need to be changed to match the mingw install on your system. m_win32 and m_win64 just invokes the makefile in mingw32 and mingw64
 
 ##For chrome app##
 You need to make sure the nacl sdk is properly installed and you are able to build the examples.

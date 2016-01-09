@@ -228,7 +228,7 @@ void iguana_iAkill(struct iguana_info *coin,struct iguana_peer *addr,int32_t mar
     rank = addr->rank;
     strcpy(ipaddr,addr->ipaddr);
     if ( addr->usock >= 0 )
-        close(addr->usock), addr->usock = -1;
+        closesocket(addr->usock), addr->usock = -1;
     if ( addr == coin->peers.localaddr )
         coin->peers.localaddr = 0;
     //printf("iAkill.(%s)\n",addr->ipaddr);
@@ -256,7 +256,7 @@ void iguana_iAkill(struct iguana_info *coin,struct iguana_peer *addr,int32_t mar
     int32_t opt; struct sockaddr_in addr; socklen_t addrlen = sizeof(addr);
     struct hostent* hostent = gethostbyname(hostname);
     if (hostent == NULL) {
-        PostMessage("gethostbyname() returned error: %d", errno);
+        PNACL_message("gethostbyname() returned error: %d", errno);
         return -1;
     }
     addr.sin_family = AF_INET;
@@ -278,7 +278,7 @@ void iguana_iAkill(struct iguana_info *coin,struct iguana_peer *addr,int32_t mar
     int result = bind(sock, (struct sockaddr*)&addr, addrlen);
     if (result != 0) {
         printf("bind() failed: %s", strerror(errno));
-        close(sock);
+        closesocket(sock);
         return -1;
     }
     return(sock);
@@ -333,14 +333,14 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
         if ( errno != ECONNRESET && errno != ENOTCONN && errno != ECONNREFUSED && errno != ETIMEDOUT && errno != EHOSTUNREACH )
             printf("connect(%s) port.%d failed: %s sock.%d. errno.%d\n",hostname,port,strerror(errno),sock,errno);
         if ( sock >= 0 )
-            close(sock);
+            closesocket(sock);
         return(-1);
     }
     if ( bindflag != 0 && listen(sock,128) != 0 )
     {
         printf("listen(%s) port.%d failed: %s sock.%d. errno.%d\n",hostname,port,strerror(errno),sock,errno);
         if ( sock >= 0 )
-            close(sock);
+            closesocket(sock);
         return(-1);
     }
     return(sock);

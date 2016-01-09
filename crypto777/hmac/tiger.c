@@ -37,7 +37,7 @@ const struct ltc_hash_descriptor tiger_desc =
 };
 
 #define t1 (table)
-#define t2 (table+256)
+#define t256 (table+256)
 #define t3 (table+256*2)
 #define t4 (table+256*3)
 
@@ -566,8 +566,8 @@ INLINE static void tiger_round(ulong64 *a, ulong64 *b, ulong64 *c, ulong64 x, in
 {
     ulong64 tmp;
     tmp = (*c ^= x); 
-           *a -= t1[byte(tmp, 0)] ^ t2[byte(tmp, 2)] ^ t3[byte(tmp, 4)] ^ t4[byte(tmp, 6)];      
-    tmp = (*b += t4[byte(tmp, 1)] ^ t3[byte(tmp, 3)] ^ t2[byte(tmp,5)] ^ t1[byte(tmp,7)]); 
+           *a -= t1[byte(tmp, 0)] ^ t256[byte(tmp, 2)] ^ t3[byte(tmp, 4)] ^ t4[byte(tmp, 6)];
+    tmp = (*b += t4[byte(tmp, 1)] ^ t3[byte(tmp, 3)] ^ t256[byte(tmp,5)] ^ t1[byte(tmp,7)]);
     switch (mul) {
         case 5:  *b = (tmp << 2) + tmp; break;
         case 7:  *b = (tmp << 3) - tmp; break;
