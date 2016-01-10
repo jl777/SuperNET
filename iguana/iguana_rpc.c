@@ -174,6 +174,7 @@ cJSON *iguana_vinjson(struct iguana_info *coin,struct iguana_msgvin *vin)
 }
 
 //struct iguana_txid { bits256 txid; uint32_t txidind,firstvout,firstvin,locktime,version,timestamp; uint16_t numvouts,numvins; } __attribute__((packed));
+
 //struct iguana_msgvin { bits256 prev_hash; uint8_t *script; uint32_t prev_vout,scriptlen,sequence; } __attribute__((packed));
 
 //struct iguana_spend { uint32_t spendtxidind; int16_t prevout; uint16_t tbd:14,external:1,diffsequence:1; } __attribute__((packed));
@@ -248,7 +249,7 @@ cJSON *iguana_txjson(struct iguana_info *coin,struct iguana_txid *tx,int32_t hei
 
 char *ramchain_coinparser(struct iguana_info *coin,char *method,cJSON *json)
 {
-    char *hashstr,*txidstr,*coinaddr,*txbytes,rmd160str[41],str[65]; int32_t height,i,n,valid = 0;
+    char *hashstr,*txidstr,*coinaddr,*txbytes,rmd160str[41],str[65]; int32_t len,height,i,n,valid = 0;
     cJSON *addrs,*retjson,*retitem; uint8_t rmd160[20],addrtype; bits256 hash2,checktxid;
     memset(&hash2,0,sizeof(hash2)); struct iguana_txid *tx,T; struct iguana_block *block = 0;
     if ( coin == 0 && (coin= iguana_coinselect()) == 0 )
@@ -305,13 +306,15 @@ char *ramchain_coinparser(struct iguana_info *coin,char *method,cJSON *json)
             decode_hex(hash2.bytes,sizeof(hash2),txidstr);
             if ( (tx= iguana_txidfind(coin,&height,&T,hash2)) != 0 )
             {
-                if ( (txbytes= iguana_txbytes(coin,&checktxid,tx,height)) != 0 )
+                if ( (len= iguana_txbytes(coin,coin->blockspace,sizeof(coin->blockspace),&checktxid,tx,height,0,0)) > 0 )
                 {
+                    txbytes = mycalloc('x',1,len*2+1);
+                    init_hexbytes_noT(txbytes,coin->blockspace,len*2+1);
                     retitem = cJSON_CreateObject();
                     jaddstr(retitem,"txid",bits256_str(str,hash2));
                     jaddnum(retitem,"height",height);
                     jaddstr(retitem,"rawtx",txbytes);
-                    myfree(txbytes,strlen(txbytes)+1);
+                    myfree(txbytes,len*2+1);
                     return(jprint(retitem,1));
                 } else return(clonestr("{\"error\":\"couldnt generate txbytes\"}"));
             }

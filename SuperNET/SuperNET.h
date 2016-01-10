@@ -21,19 +21,17 @@
 #include "../includes/nanomsg/nn.h"
 
 #define SUPERNET_PORT 7774
-#define SUPERNET_TIMEOUT 10000
-#define SUPERNET_MAXPEERS 128
+#define SUPERNET_NETWORKTIMEOUT 10000
+#define SUPERNET_POLLTIMEOUT 1
+#define SUPERNET_APIUSLEEP (SUPERNET_POLLTIMEOUT * 10000)
+#define SUPERNET_MAXAGENTS 64
 
 #define LB_OFFSET 1
 #define PUBGLOBALS_OFFSET 2
 #define PUBRELAYS_OFFSET 3
-#define SUPERNET_APIENDPOINT "tcp://127.0.0.1:7776"
 #define NXT_TOKEN_LEN 160
 
 #define nn_errstr() nn_strerror(nn_errno())
-
-#define CONNECTION_NUMBITS 10
-struct endpoint { uint64_t ipbits:32,port:16,transport:2,nn:4,directind:CONNECTION_NUMBITS; };
 
 #define MAX_SERVERNAME 128
 struct relayargs
@@ -42,16 +40,41 @@ struct relayargs
     int32_t sock,type,bindflag,sendtimeout,recvtimeout;
 };
 
+#define CONNECTION_NUMBITS 10
+struct endpoint { queue_t nnrecvQ; int32_t nnsock,nnind; uint64_t ipbits:32,port:16,transport:2,nn:4,directind:CONNECTION_NUMBITS; };
+
 struct relay_info { int32_t sock,num,mytype,desttype; struct endpoint connections[1 << CONNECTION_NUMBITS]; };
 struct direct_connection { char handler[16]; struct endpoint epbits; int32_t sock; };
+
+struct supernet_msghdr { uint8_t type,serlen[3]; char command[16]; uint8_t hdrdata[44]; uint8_t data[]; };
+
+struct supernet_agent
+{
+    struct queueitem DL; queue_t recvQ; uint64_t totalrecv,totalsent;
+    int32_t (*recvfunc)(void *myinfo,struct supernet_agent *,struct supernet_msghdr *msg,uint8_t *data,int32_t datalen);
+    cJSON *networks;
+    char name[9],ipaddr[64],reppoint[64],pubpoint[64]; int32_t reqsock,repsock,pubsock,subsock;
+    uint32_t ipbits,dead; int32_t num,sock; uint16_t port,pubport,repport;
+};
 
 struct supernet_info
 {
     char ipaddr[64],transport[8]; int32_t APISLEEP; int32_t iamrelay; uint64_t my64bits; uint64_t ipbits;
-    int32_t Debuglevel,readyflag,dead;
+    int32_t Debuglevel,readyflag,dead,POLLTIMEOUT;
     int32_t pullsock,subclient,lbclient,lbserver,servicesock,pubglobal,pubrelays,numservers;
-    uint16_t port,serviceport,portp2p;
-    struct nn_pollfd pfd[16]; struct relay_info active;
+    
+    uint16_t port,serviceport,acceptport;
+    struct nn_pollfd pfd[SUPERNET_MAXAGENTS]; struct relay_info active;
+    struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ; int32_t numagents;
+};
+
+
+struct supernet_endpoint
+{
+    char name[64]; struct endpoint ep;
+    int32_t (*nnrecvfunc)(struct supernet_info *,struct supernet_endpoint *,int32_t ind,uint8_t *msg,int32_t nnlen);
+    queue_t nnrecvQ;
+    int32_t nnsock,num; struct endpoint eps[];
 };
 
 void expand_epbits(char *endpoint,struct endpoint epbits);

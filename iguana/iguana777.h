@@ -637,7 +637,8 @@ struct iguana_agent
     bits256 pubkey,privkey;
     char *(*parsefunc)(struct iguana_agent *agent,char *method,void *json,char *remoteaddr);
 };
-char *iguana_txbytes(struct iguana_info *coin,bits256 *txidp,struct iguana_txid *tx,int32_t height);
+
+int32_t iguana_txbytes(struct iguana_info *coin,uint8_t *serialized,int32_t maxlen,bits256 *txidp,struct iguana_txid *tx,int32_t height,struct iguana_msgvin *vins,struct iguana_msgvout *vouts);
 void iguana_vinset(struct iguana_info *coin,int32_t height,struct iguana_msgvin *vin,struct iguana_txid *tx,int32_t i);
 int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmstr,int32_t height,struct iguana_msgvout *vout,struct iguana_txid *tx,int32_t i);
 int32_t btc_convrmd160(char *coinaddr,uint8_t addrtype,uint8_t rmd160[20]);

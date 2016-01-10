@@ -14,121 +14,8 @@
  ******************************************************************************/
 
 #include "SuperNET.h"
-#ifdef later
 
-int32_t nn_typelist[] = { NN_REP, NN_REQ, NN_RESPONDENT, NN_SURVEYOR, NN_PUB, NN_SUB, NN_PULL, NN_PUSH, NN_BUS, NN_PAIR };
-char *nn_transports[] = { "tcp", "ws", "ipc", "inproc", "tcpmux", "tbd1", "tbd2", "tbd3" };
-
-void expand_epbits(char *endpoint,struct endpoint epbits)
-{
-    char ipaddr[64];
-    if ( epbits.ipbits != 0 )
-        expand_ipbits(ipaddr,epbits.ipbits);
-    else strcpy(ipaddr,"*");
-    sprintf(endpoint,"%s://%s:%d",nn_transports[epbits.transport],ipaddr,epbits.port);
-}
-
-struct endpoint calc_epbits(char *transport,uint32_t ipbits,uint16_t port,int32_t type)
-{
-    int32_t i; struct endpoint epbits;
-    memset(&epbits,0,sizeof(epbits));
-    for (i=0; i<(int32_t)(sizeof(nn_transports)/sizeof(*nn_transports)); i++)
-        if ( strcmp(transport,nn_transports[i]) == 0 )
-        {
-            epbits.ipbits = ipbits;
-            epbits.port = port;
-            epbits.transport = i;
-            epbits.nn = type;
-            break;
-        }
-    return(epbits);
-}
-
-int32_t ismyaddress(char *server,struct supernet_info *myinfo)
-{
-    uint32_t ipbits;
-    if ( strncmp(server,"tcp://",6) == 0 )
-        server += 6;
-    else if ( strncmp(server,"ws://",5) == 0 )
-        server += 5;
-    if ( (ipbits= is_ipaddr(server)) != 0 )
-    {
-        if ( strcmp(server,myinfo->ipaddr) == 0 || myinfo->ipbits == ipbits )
-        {
-            printf("(%s) MATCHES me (%s)\n",server,myinfo->ipaddr);
-            return(1);
-        }
-    }
-    else if ( myinfo->my64bits == ipbits )
-        return(1);
-    //printf("(%s) is not me (%s)\n",server,myipaddr);
-    return(0);
-}
-
-char *nn_typestr(int32_t type)
-{
-    switch ( type )
-    {
-            // Messages that need a response from the set of peers: SURVEY
-        case NN_SURVEYOR: return("NN_SURVEYOR"); break;
-        case NN_RESPONDENT: return("NN_RESPONDENT"); break;
-            // Messages that need a response, but only from one peer: REQ/REP
-        case NN_REQ: return("NN_REQ"); break;
-        case NN_REP: return("NN_REP"); break;
-            // One-way messages to one peer: PUSH/PULL
-        case NN_PUSH: return("NN_PUSH"); break;
-        case NN_PULL: return("NN_PULL"); break;
-            //  One-way messages to all: PUB/SUB
-        case NN_PUB: return("NN_PUB"); break;
-        case NN_SUB: return("NN_SUB"); break;
-        case NN_BUS: return("NN_BUS"); break;
-        case NN_PAIR: return("NN_PAIR"); break;
-    }
-    return("NN_ERROR");
-}
-
-int32_t nn_oppotype(int32_t type)
-{
-    switch ( type )
-    {
-            // Messages that need a response from the set of peers: SURVEY
-        case NN_SURVEYOR: return(NN_RESPONDENT); break;
-        case NN_RESPONDENT: return(NN_SURVEYOR); break;
-            // Messages that need a response, but only from one peer: REQ/REP
-        case NN_REQ: return(NN_REP); break;
-        case NN_REP: return(NN_REQ); break;
-            // One-way messages to one peer: PUSH/PULL
-        case NN_PUSH: return(NN_PULL); break;
-        case NN_PULL: return(NN_PUSH); break;
-            //  One-way messages to all: PUB/SUB
-        case NN_PUB: return(NN_SUB); break;
-        case NN_SUB: return(NN_PUB); break;
-        case NN_BUS: return(NN_BUS); break;
-        case NN_PAIR: return(NN_PAIR); break;
-    }
-    return(-1);
-}
-
-int32_t nn_portoffset(int32_t type)
-{
-    int32_t i;
-    for (i=0; i<(int32_t)(sizeof(nn_typelist)/sizeof(*nn_typelist)); i++)
-        if ( nn_typelist[i] == type )
-            return(i + 2);
-    return(-1);
-}
-
-int32_t nn_socket_status(int32_t sock,int32_t timeoutmillis)
-{
-    struct nn_pollfd pfd;
-    int32_t rc;
-    pfd.fd = sock;
-    pfd.events = NN_POLLIN | NN_POLLOUT;
-    if ( (rc= nn_poll(&pfd,1,timeoutmillis)) == 0 )
-        return(pfd.revents);
-    else return(-1);
-}
-
+/*
 struct endpoint find_epbits(struct relay_info *list,uint32_t ipbits,uint16_t port,int32_t type)
 {
     int32_t i; struct endpoint epbits;
@@ -207,7 +94,7 @@ int32_t _lb_socket(struct supernet_info *myinfo,uint16_t port,uint16_t globalpor
             printf("error setting NN_REQ NN_RECONNECT_IVL_MAX socket %s\n",nn_errstr());
         else if ( nn_setsockopt(lbsock,NN_SOL_SOCKET,NN_RECONNECT_IVL_MAX,&maxmillis,sizeof(maxmillis)) < 0 )
             fprintf(stderr,"error setting NN_REQ NN_RECONNECT_IVL_MAX socket %s\n",nn_errstr());
-        timeout = SUPERNET_TIMEOUT;
+        timeout = SUPERNET_NETWORKTIMEOUT;
         if ( 1 && nn_setsockopt(lbsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout)) < 0 )
             printf("error setting NN_SOL_SOCKET NN_RCVTIMEO socket %s\n",nn_errstr());
         timeout = 100;
@@ -228,57 +115,13 @@ int32_t nn_lbsocket(struct supernet_info *myinfo,int32_t maxmillis,int32_t port,
 {
     char Cservers[32][MAX_SERVERNAME],Bservers[32][MAX_SERVERNAME],failsafes[4][MAX_SERVERNAME];
     int32_t n,m,lbsock,numfailsafes = 0;
+    printf("redo lbsocket()\n"), exit(-1);
     //strcpy(failsafes[numfailsafes++],"5.9.56.103");
     //strcpy(failsafes[numfailsafes++],"5.9.102.210");
-    n = crackfoo_servers(Cservers,sizeof(Cservers)/sizeof(*Cservers),port);
-    m = badass_servers(Bservers,sizeof(Bservers)/sizeof(*Bservers),port);
+   // n = crackfoo_servers(Cservers,sizeof(Cservers)/sizeof(*Cservers),port);
+   // m = badass_servers(Bservers,sizeof(Bservers)/sizeof(*Bservers),port);
     lbsock = _lb_socket(myinfo,port,globalport,relaysport,maxmillis,Bservers,m,Cservers,n*0,failsafes,numfailsafes);
     return(lbsock);
-}
-
-int32_t nn_settimeouts(int32_t sock,int32_t sendtimeout,int32_t recvtimeout)
-{
-    int32_t retrymillis,maxmillis;
-    if ( (maxmillis= SUPERNET_TIMEOUT) == 0 )
-        maxmillis = 3000;
-    retrymillis = maxmillis/40;
-    if ( nn_setsockopt(sock,NN_SOL_SOCKET,NN_RECONNECT_IVL,&retrymillis,sizeof(retrymillis)) < 0 )
-        fprintf(stderr,"error setting NN_REQ NN_RECONNECT_IVL_MAX socket %s\n",nn_errstr());
-    else if ( nn_setsockopt(sock,NN_SOL_SOCKET,NN_RECONNECT_IVL_MAX,&maxmillis,sizeof(maxmillis)) < 0 )
-        fprintf(stderr,"error setting NN_REQ NN_RECONNECT_IVL_MAX socket %s\n",nn_errstr());
-    else if ( sendtimeout > 0 && nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&sendtimeout,sizeof(sendtimeout)) < 0 )
-        fprintf(stderr,"error setting sendtimeout %s\n",nn_errstr());
-    else if ( recvtimeout > 0 && nn_setsockopt(sock,NN_SOL_SOCKET,NN_RCVTIMEO,&recvtimeout,sizeof(recvtimeout)) < 0 )
-        fprintf(stderr,"error setting sendtimeout %s\n",nn_errstr());
-    else return(0);
-    return(-1);
-}
-
-int32_t nn_createsocket(struct supernet_info *myinfo,char *endpoint,int32_t bindflag,char *name,int32_t type,uint16_t port,int32_t sendtimeout,int32_t recvtimeout)
-{
-    int32_t sock;
-    if ( (sock= nn_socket(AF_SP,type)) < 0 )
-        fprintf(stderr,"error getting socket %s\n",nn_errstr());
-    if ( bindflag != 0 )
-    {
-        if ( endpoint[0] == 0 )
-            expand_epbits(endpoint,calc_epbits(myinfo->transport,0,port,type));
-        if ( nn_bind(sock,endpoint) < 0 )
-            fprintf(stderr,"error binding to relaypoint sock.%d type.%d to (%s) (%s) %s\n",sock,type,name,endpoint,nn_errstr());
-        else fprintf(stderr,"BIND.(%s) <- %s\n",endpoint,name);
-    }
-    else if ( bindflag == 0 && endpoint[0] != 0 )
-    {
-        if ( nn_connect(sock,endpoint) < 0 )
-            fprintf(stderr,"error connecting to relaypoint sock.%d type.%d to (%s) (%s) %s\n",sock,type,name,endpoint,nn_errstr());
-        else fprintf(stderr,"%s -> CONNECT.(%s)\n",name,endpoint);
-    }
-    if ( nn_settimeouts(sock,sendtimeout,recvtimeout) < 0 )
-    {
-        fprintf(stderr,"nn_createsocket.(%s) %d\n",name,sock);
-        return(-1);
-    }
-    return(sock);
 }
 
 void add_standard_fields(char *request)
@@ -402,7 +245,7 @@ void busdata_init(struct supernet_info *myinfo,int32_t sendtimeout,int32_t recvt
         myinfo->pfd[myinfo->numservers++].fd = myinfo->subclient, printf("numservers.%d\n",myinfo->numservers);
         nn_setsockopt(myinfo->subclient,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
     } else printf("error creating subclient\n");
-    myinfo->lbclient = nn_lbsocket(myinfo,SUPERNET_TIMEOUT,SUPERNET_PORT + LB_OFFSET,myinfo->port + PUBGLOBALS_OFFSET,myinfo->port + PUBRELAYS_OFFSET);
+    myinfo->lbclient = nn_lbsocket(myinfo,SUPERNET_NETWORKTIMEOUT,SUPERNET_PORT + LB_OFFSET,myinfo->port + PUBGLOBALS_OFFSET,myinfo->port + PUBRELAYS_OFFSET);
     printf("LBclient.%d port.%d\n",myinfo->lbclient,SUPERNET_PORT + LB_OFFSET);
     sprintf(endpoint,"%s://%s:%u",myinfo->transport,myinfo->ipaddr,myinfo->serviceport);
     if ( (myinfo->servicesock= nn_createsocket(myinfo,endpoint,1,"NN_REP",NN_REP,myinfo->serviceport,sendtimeout,recvtimeout)) >= 0 )
@@ -412,19 +255,13 @@ void busdata_init(struct supernet_info *myinfo,int32_t sendtimeout,int32_t recvt
         myinfo->pfd[i].events = NN_POLLIN | NN_POLLOUT;
     printf("myinfo->iamrelay %d, numservers.%d ipaddr.(%s://%s) port.%d serviceport.%d\n",myinfo->iamrelay,myinfo->numservers,myinfo->transport,myinfo->ipaddr,myinfo->port,myinfo->serviceport);
 }
-#endif
-
-char *SuperNET_JSON(struct supernet_info *myinfo,char *jsonstr)
-{
-    return(clonestr("{\"error\":\"SuperNET is just a stub for now\"}"));
-}
 
 void SuperNET_init(struct supernet_info *myinfo,char *jsonstr)
 {
     char *str;
     if ( jsonstr != 0 && (str= SuperNET_JSON(myinfo,jsonstr)) != 0 )
         free(str);
-    //busdata_init(myinfo,10,1,0);
-    //init_SUPERNET_pullsock(myinfo,10,10);
-}
+    busdata_init(myinfo,10,1,0);
+    init_SUPERNET_pullsock(myinfo,10,10);
+}*/
 

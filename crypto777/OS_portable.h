@@ -54,6 +54,12 @@
 #define MAP_FILE        0
 #endif
 
+#define SCRIPT_OPRETURN 0x6a
+#define GENESIS_ACCT "1739068987193023818"  // NXT-MRCC-2YLS-8M54-3CMAJ
+#define GENESIS_PUBKEYSTR "1259ec21d31a30898d7cd1609f80d9668b4778e3d97e941044b39f0c44d2e51b"
+#define GENESIS_PRIVKEYSTR "88a71671a6edd987ad9e9097428fc3f169decba3ac8f10da7b24e0ca16803b70"
+#define GENESIS_SECRET "It was a bright cold day in April, and the clocks were striking thirteen."
+
 #define SATOSHIDEN ((uint64_t)100000000L)
 #define dstr(x) ((double)(x) / SATOSHIDEN)
 
@@ -211,6 +217,11 @@ uint64_t stringbits(char *str);
 int32_t is_decimalstr(char *str);
 void tolowercase(char *str);
 char *clonestr(char *str);
+int32_t is_hexstr(char *str,int32_t n);
+int32_t decode_hex(unsigned char *bytes,int32_t n,char *hex);
+void reverse_hexstr(char *str);
+int32_t init_hexbytes_noT(char *hexbytes,uint8_t *message,long len);
+
 long _stripwhite(char *buf,int accept);
 int32_t is_DST(int32_t datenum);
 int32_t extract_datenum(int32_t *yearp,int32_t *monthp,int32_t *dayp,int32_t datenum);
@@ -221,8 +232,6 @@ int32_t conv_date(int32_t *secondsp,char *buf);
 uint64_t OS_conv_datenum(int32_t datenum,int32_t hour,int32_t minute,int32_t second);
 int32_t OS_conv_unixtime(struct tai *t,int32_t *secondsp,time_t timestamp);
 int32_t btc_coinaddr(char *coinaddr,uint8_t addrtype,char *pubkeystr);
-void reverse_hexstr(char *str);
-int32_t init_hexbytes_noT(char *hexbytes,uint8_t *message,long len);
 
 uint64_t RS_decode(char *rs);
 int32_t RS_encode(char *rsaddr,uint64_t id);

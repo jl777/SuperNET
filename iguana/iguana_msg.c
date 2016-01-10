@@ -339,9 +339,9 @@ int32_t iguana_rwtx(int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized,s
     return(len);
 }
 
-char *iguana_txbytes(struct iguana_info *coin,bits256 *txidp,struct iguana_txid *tx,int32_t height)
+int32_t iguana_txbytes(struct iguana_info *coin,uint8_t *serialized,int32_t maxlen,bits256 *txidp,struct iguana_txid *tx,int32_t height,struct iguana_msgvin *vins,struct iguana_msgvout *vouts)
 {
-    int32_t i,rwflag=1,len = 0; uint8_t *serialized = coin->blockspace; char asmstr[512],txidstr[65],*txbytes = 0;
+    int32_t i,rwflag=1,len = 0; char asmstr[512],txidstr[65];
     uint32_t numvins,numvouts; struct iguana_msgvin vin; struct iguana_msgvout vout; uint8_t space[8192];
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->version),&tx->version);
     if ( coin->chain->hastimestamp != 0 )
@@ -350,15 +350,23 @@ char *iguana_txbytes(struct iguana_info *coin,bits256 *txidp,struct iguana_txid 
     len += iguana_rwvarint32(rwflag,&serialized[len],&numvins);
     for (i=0; i<numvins; i++)
     {
-        iguana_vinset(coin,height,&vin,tx,i);
+        if ( vins == 0 )
+            iguana_vinset(coin,height,&vin,tx,i);
+        else vin = vins[i];
         len += iguana_rwvin(rwflag,0,&serialized[len],&vin);
     }
+    if ( len > maxlen )
+        return(0);
     len += iguana_rwvarint32(rwflag,&serialized[len],&numvouts);
     for (i=0; i<numvouts; i++)
     {
-        iguana_voutset(coin,space,asmstr,height,&vout,tx,i);
+        if ( vouts == 0 )
+            iguana_voutset(coin,space,asmstr,height,&vout,tx,i);
+        else vout = vouts[i];
         len += iguana_rwvout(rwflag,0,&serialized[len],&vout);
     }
+    if ( len > maxlen )
+        return(0);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->locktime),&tx->locktime);
     *txidp = bits256_doublesha256(txidstr,serialized,len);
     if ( memcmp(txidp,tx->txid.bytes,sizeof(*txidp)) != 0 )
@@ -366,9 +374,7 @@ char *iguana_txbytes(struct iguana_info *coin,bits256 *txidp,struct iguana_txid 
         printf("error generating txbytes\n");
         return(0);
     }
-    txbytes = mycalloc('x',1,len*2+1);
-    init_hexbytes_noT(txbytes,serialized,len*2+1);
-    return(txbytes);
+    return(len);
 }
 
 int32_t iguana_gentxarray(struct iguana_info *coin,struct OS_memspace *mem,struct iguana_txblock *txdata,int32_t *lenp,uint8_t *data,int32_t recvlen)

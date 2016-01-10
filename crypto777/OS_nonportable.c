@@ -567,6 +567,7 @@ int32_t OS_nonportable_init()
         //printf("%s\n", strError.c_str());
         return -1;
     }
+    printf("WSAStartup called\n");
     return(0);
 }
 

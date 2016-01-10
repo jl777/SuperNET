@@ -296,7 +296,7 @@ cstring *base58_decode(const char *s_in)
 				goto out;
 			break;
 		}
-		BN_set_word(&bnChar,p1 - base58_chars);
+		BN_set_word(&bnChar,(int32_t)(p1 - base58_chars));
 		if (!BN_mul(&bn, &bn, &bn58, ctx))
 			goto out;
 		if (!BN_add(&bn, &bn, &bnChar))
@@ -788,6 +788,55 @@ int32_t btc_pub65toaddr(char *coinaddr,uint8_t addrtype,char pubkey[131],uint8_t
     }
     return(retval);
 }
+
+/*char *iguana_txsign(struct iguana_info *coin,struct cointx_info *refT,int32_t redeemi,char *redeemscript,char sigs[][256],int32_t n,uint8_t privkey[32],int32_t privkeyind)
+{
+    char hexstr[16384]; bits256 hash2; uint8_t data[4096],sigbuf[512]; struct bp_key key;
+    struct cointx_info *T; int32_t i,len; void *sig = NULL; size_t siglen = 0; struct cointx_input *vin;
+    if ( bp_key_init(&key) != 0 && bp_key_secret_set(&key,privkey,32) != 0 )
+    {
+        if ( (T= calloc(1,sizeof(*T))) == 0 )
+            return(0);
+        *T = *refT; vin = &T->inputs[redeemi];
+        for (i=0; i<T->numinputs; i++)
+            strcpy(T->inputs[i].sigs,"00");
+        strcpy(vin->sigs,redeemscript);
+        vin->sequence = (uint32_t)-1;
+        T->nlocktime = 0;
+        //disp_cointx(&T);
+        emit_cointx(&hash2,data,sizeof(data),T,oldtx_format,SIGHASH_ALL);
+        //printf("HASH2.(%llx)\n",(long long)hash2.txid);
+        if ( bp_sign(&key,hash2.bytes,sizeof(hash2),&sig,&siglen) != 0 )
+        {
+            memcpy(sigbuf,sig,siglen);
+            sigbuf[siglen++] = SIGHASH_ALL;
+            init_hexbytes_noT(sigs[privkeyind],sigbuf,(int32_t)siglen);
+            strcpy(vin->sigs,"00");
+            for (i=0; i<n; i++)
+            {
+                if ( sigs[i][0] != 0 )
+                {
+                    sprintf(vin->sigs + strlen(vin->sigs),"%02x%s",(int32_t)strlen(sigs[i])>>1,sigs[i]);
+                    //printf("(%s).%ld ",sigs[i],strlen(sigs[i]));
+                }
+            }
+            len = (int32_t)(strlen(redeemscript)/2);
+            if ( len >= 0xfd )
+                sprintf(&vin->sigs[strlen(vin->sigs)],"4d%02x%02x",len & 0xff,(len >> 8) & 0xff);
+            else sprintf(&vin->sigs[strlen(vin->sigs)],"4c%02x",len);
+            sprintf(&vin->sigs[strlen(vin->sigs)],"%s",redeemscript);
+            //printf("after A.(%s) othersig.(%s) siglen.%02lx -> (%s)\n",hexstr,othersig != 0 ? othersig : "",siglen,vin->sigs);
+            //printf("vinsigs.(%s) %ld\n",vin->sigs,strlen(vin->sigs));
+            _emit_cointx(hexstr,sizeof(hexstr),T,oldtx_format);
+            //disp_cointx(&T);
+            free(T);
+            return(clonestr(hexstr));
+        }
+        else printf("error signing\n");
+        free(T);
+    }
+    return(0);
+}*/
 
 #define IGUANA_SCRIPT_NULL 0
 #define IGUANA_SCRIPT_76AC 1
