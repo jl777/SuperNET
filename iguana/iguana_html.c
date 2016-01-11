@@ -499,7 +499,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
                 }
             }
         }
-        if ( jstr(argjson,"agent") == 0 || jstr(argjson,"method") == 0 )
+        if ( jstr(argjson,"method") == 0 )
         {
             free_json(argjson);
             return(0);

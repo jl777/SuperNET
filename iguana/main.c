@@ -97,7 +97,8 @@ char *SuperNET_jsonstr(struct supernet_info *myinfo,char *jsonstr,char *remotead
     cJSON *json; char *agent,*method;
     if ( (json= cJSON_Parse(jsonstr)) != 0 )
     {
-        if ( (agent= jstr(json,"agent")) != 0 && (method= jstr(json,"method")) != 0 )
+        method = jstr(json,"method");
+        if ( (agent= jstr(json,"agent")) != 0 && method != 0 )
         {
             if ( strcmp(agent,"iguana") == 0 )
                 return(iguana_parser(myinfo,method,json,remoteaddr));
@@ -112,6 +113,8 @@ char *SuperNET_jsonstr(struct supernet_info *myinfo,char *jsonstr,char *remotead
             else if ( strcmp(agent,"hash") == 0 )
                 return(hash_parser(myinfo,method,json,remoteaddr));
         }
+        else if ( method != 0 && is_bitcoinrpc(method) )
+            return(iguana_bitcoinRPC(myinfo,method,json,remoteaddr));
         return(clonestr("{\"error\":\"need both agent and method\"}"));
     }
     return(clonestr("{\"error\":\"couldnt parse SuperNET_JSON\"}"));
@@ -133,10 +136,10 @@ int32_t iguana_jsonQ()
     }
     if ( (ptr= queue_dequeue(&jsonQ,0)) != 0 )
     {
-        printf("process.(%s)\n",ptr->jsonstr);
+        //printf("process.(%s)\n",ptr->jsonstr);
         if ( (*ptr->retjsonstrp= SuperNET_jsonstr(ptr->myinfo,ptr->jsonstr,ptr->remoteaddr)) == 0 )
             *ptr->retjsonstrp = clonestr("{\"error\":\"null return from iguana_jsonstr\"}");
-        printf("finished.(%s)\n",ptr->jsonstr);
+        //printf("finished.(%s)\n",ptr->jsonstr);
         queue_enqueue("finishedQ",&finishedQ,&ptr->DL,0);
         return(1);
     }

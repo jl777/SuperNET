@@ -16,6 +16,7 @@
 #ifndef iguana777_net_h
 #define iguana777_net_h
 #include "../crypto777/OS_portable.h"
+#include "SuperNET.h"
 
 //#define IGUANA_DISABLEPEERS
 #define IGUANA_MAXCOINS 64
@@ -679,5 +680,7 @@ int32_t btc_priv2wip(char *wipstr,uint8_t privkey[32],uint8_t addrtype);
 int32_t btc_pub2rmd(uint8_t rmd160[20],uint8_t pubkey[33]);
 int32_t iguana_launchcoin(char *symbol,cJSON *json);
 int32_t iguana_jsonQ();
+int32_t is_bitcoinrpc(char *method);
+char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr);
 
 #endif

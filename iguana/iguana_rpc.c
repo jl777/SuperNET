@@ -982,7 +982,7 @@ struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,flag1; } 
      { "listaddressgroupings",   &listaddressgroupings,   false,  false },
      { "signmessage",            &signmessage,            false,  false },
      { "verifymessage",          &verifymessage,          false,  false },
-      { "listaccounts",           &listaccounts,           false,  false },
+     { "listaccounts",           &listaccounts,           false,  false },
      { "settxfee",               &settxfee,               false,  false },
      { "listsinceblock",         &listsinceblock,         false,  false },
      { "dumpprivkey",            &dumpprivkey,            false,  false },
@@ -1032,6 +1032,17 @@ struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,flag1; } 
     // { "reservebalance",         &reservebalance,         false,  true},
 };
 
+int32_t is_bitcoinrpc(char *method)
+{
+    int32_t i;
+    for (i=0; i<sizeof(RPCcalls)/sizeof(*RPCcalls); i++)
+    {
+        if ( strcmp(RPCcalls[i].name,method) == 0 )
+            return(i);
+    }
+    return(-1);
+}
+
 char *iguana_bitcoinrpc(struct supernet_info *myinfo,struct iguana_info *coin,char *method,cJSON *params[16],int32_t n,cJSON *json,char *remoteaddr)
 {
     int32_t i;
@@ -1043,13 +1054,13 @@ char *iguana_bitcoinrpc(struct supernet_info *myinfo,struct iguana_info *coin,ch
     return(clonestr("{\"error\":\"invalid coin address\"}"));
 }
 
-char *iguana_bitcoinRPC(struct iguana_info *coin,struct supernet_info *myinfo,char *jsonstr,char *remoteaddr)
+char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr)
 {
-    cJSON *json,*params[16],*array; char *method; int32_t i,n; char *retstr = 0;
+    cJSON *params[16],*array; struct iguana_info *coin; char *symbol; int32_t i,n; char *retstr = 0;
     memset(params,0,sizeof(params));
-    if ( (json= cJSON_Parse(jsonstr)) != 0 )
+    if ( json != 0 )
     {
-        if ( (method= jstr(json,"method")) != 0 )
+        if ( method != 0 && (symbol= jstr(json,"coin")) != 0 && (coin= iguana_coinfind(symbol)) != 0 )
         {
             if ( (array= jarray(&n,json,"params")) == 0 )
             {

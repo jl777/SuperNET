@@ -232,8 +232,6 @@ try_again:
     return(0);
 }
 
-
-
 /************************************************************************
  *
  * Initialize the string handler so that it is thread safe
