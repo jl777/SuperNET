@@ -94,7 +94,7 @@ char *pangea_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *
 
 char *SuperNET_jsonstr(struct supernet_info *myinfo,char *jsonstr,char *remoteaddr)
 {
-    cJSON *json; char *agent,*method;
+    cJSON *json; char *agent,*method,*symbol;
     if ( (json= cJSON_Parse(jsonstr)) != 0 )
     {
         method = jstr(json,"method");
@@ -112,6 +112,15 @@ char *SuperNET_jsonstr(struct supernet_info *myinfo,char *jsonstr,char *remotead
                 return(jumblr_parser(myinfo,method,json,remoteaddr));
             else if ( strcmp(agent,"hash") == 0 )
                 return(hash_parser(myinfo,method,json,remoteaddr));
+            else if ( strcmp(agent,"SuperNET") == 0 )
+            {
+                if ( strcmp(method,"bitcoinrpc") == 0 && (symbol= jstr(json,"coin")) != 0 && strlen(symbol) < 8  && iguana_coinfind(symbol) != 0)
+                {
+                    strcpy(myinfo->rpcsymbol,symbol);
+                    return(clonestr("{\"result\":\"set bitcoin RPC coin\"}"));
+                }
+                return(clonestr("{\"error\":\"unrecognized SuperNET method\"}"));
+            }
         }
         else if ( method != 0 && is_bitcoinrpc(method) )
             return(iguana_bitcoinRPC(myinfo,method,json,remoteaddr));

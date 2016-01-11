@@ -60,7 +60,7 @@ struct supernet_agent
 struct supernet_info
 {
     char ipaddr[64],transport[8]; int32_t APISLEEP; int32_t iamrelay; uint64_t my64bits; uint64_t ipbits;
-    int32_t Debuglevel,readyflag,dead,POLLTIMEOUT;
+    int32_t Debuglevel,readyflag,dead,POLLTIMEOUT; char rpcsymbol[16];
     //int32_t pullsock,subclient,lbclient,lbserver,servicesock,pubglobal,pubrelays,numservers;
     bits256 privkey,pubkey;
     uint16_t port,serviceport,acceptport;

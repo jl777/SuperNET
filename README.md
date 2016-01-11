@@ -66,7 +66,13 @@ by submitting API calls using the forms, you will see it go to some specific URL
 *http://127.0.0.1:7778/json/ramchain/block/height/0* -> JSON only
 
 ```curl --url "http://127.0.0.1:7778/ramchain/BTCD/block/height/0"``` --> full webpage returned (probably not what you want)
-```curl --url "http://127.0.0.1:7778/json/ramchain/BTCD/block/height/0"``` --> returns just the json object from the api call
+```curl --url "http://127.0.0.1:7778/api/ramchain/BTCD/block/height/0"``` --> returns just the json object from the api call
 
-Internall, all paths convert the request into a standard SuperNET JSON request. you can use a POST command to directly submit such JSON requests:
-```curl --url "http://127.0.0.1:7778/?" --data "{\"agent\":\"ramchain\",\"method\":\"block\",\"coin\":\"BTCD\",\"height\":0}"```
+Internally, all paths convert the request into a standard SuperNET JSON request. you can use a POST command to directly submit such JSON requests:
+```curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"ramchain\",\"method\":\"block\",\"coin\":\"BTCD\",\"height\":0}"```
+
+Another approach is to use the bitcoin RPC syntax via:
+ curl --url "http://127.0.0.1:7778" --data "{\"coin\":\"BTCD\",\"method\":\"getinfo\",\"params\":[]}"
+the params:[] array is where the standard bitcoin parameters go, the only change that is needed is to specify the coin
+alternatively {"agent":"SuperNET","method":"bitcoinrpc","coin":"BTCD"} will set the coin 
+to use for bitcoin RPC calls. this will suffice in single coin environments

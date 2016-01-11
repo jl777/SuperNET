@@ -1060,7 +1060,9 @@ char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,ch
     memset(params,0,sizeof(params));
     if ( json != 0 )
     {
-        if ( method != 0 && (symbol= jstr(json,"coin")) != 0 && (coin= iguana_coinfind(symbol)) != 0 )
+        if ( (symbol= jstr(json,"coin")) == 0 || symbol[0] == 0 )
+            symbol = myinfo->rpcsymbol;
+        if ( method != 0 && symbol != 0 && (coin= iguana_coinfind(symbol)) != 0 )
         {
             if ( (array= jarray(&n,json,"params")) == 0 )
             {
