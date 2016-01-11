@@ -25,13 +25,13 @@
 #define SUPERNET_POLLTIMEOUT 1
 #define SUPERNET_APIUSLEEP (SUPERNET_POLLTIMEOUT * 10000)
 #define SUPERNET_MAXAGENTS 64
+#define NXT_TOKEN_LEN 160
+#define nn_errstr() nn_strerror(nn_errno())
 
-#define LB_OFFSET 1
+/*#define LB_OFFSET 1
 #define PUBGLOBALS_OFFSET 2
 #define PUBRELAYS_OFFSET 3
-#define NXT_TOKEN_LEN 160
 
-#define nn_errstr() nn_strerror(nn_errno())
 
 #define MAX_SERVERNAME 128
 struct relayargs
@@ -39,11 +39,11 @@ struct relayargs
     char name[16],endpoint[MAX_SERVERNAME];
     int32_t sock,type,bindflag,sendtimeout,recvtimeout;
 };
+struct relay_info { int32_t sock,num,mytype,desttype; struct endpoint connections[1 << CONNECTION_NUMBITS]; };*/
 
 #define CONNECTION_NUMBITS 10
 struct endpoint { queue_t nnrecvQ; int32_t nnsock,nnind; uint64_t ipbits:32,port:16,transport:2,nn:4,directind:CONNECTION_NUMBITS; };
 
-struct relay_info { int32_t sock,num,mytype,desttype; struct endpoint connections[1 << CONNECTION_NUMBITS]; };
 struct direct_connection { char handler[16]; struct endpoint epbits; int32_t sock; };
 
 struct supernet_msghdr { uint8_t type,serlen[3]; char command[16]; uint8_t hdrdata[44]; uint8_t data[]; };
@@ -61,13 +61,12 @@ struct supernet_info
 {
     char ipaddr[64],transport[8]; int32_t APISLEEP; int32_t iamrelay; uint64_t my64bits; uint64_t ipbits;
     int32_t Debuglevel,readyflag,dead,POLLTIMEOUT;
-    int32_t pullsock,subclient,lbclient,lbserver,servicesock,pubglobal,pubrelays,numservers;
-    
+    //int32_t pullsock,subclient,lbclient,lbserver,servicesock,pubglobal,pubrelays,numservers;
+    bits256 privkey,pubkey;
     uint16_t port,serviceport,acceptport;
-    struct nn_pollfd pfd[SUPERNET_MAXAGENTS]; struct relay_info active;
+    struct nn_pollfd pfd[SUPERNET_MAXAGENTS]; //struct relay_info active;
     struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ; int32_t numagents;
 };
-
 
 struct supernet_endpoint
 {
@@ -80,14 +79,13 @@ struct supernet_endpoint
 void expand_epbits(char *endpoint,struct endpoint epbits);
 struct endpoint calc_epbits(char *transport,uint32_t ipbits,uint16_t port,int32_t type);
 
-int32_t badass_servers(char servers[][MAX_SERVERNAME],int32_t max,int32_t port);
-int32_t crackfoo_servers(char servers[][MAX_SERVERNAME],int32_t max,int32_t port);
 void SuperNET_init();
-char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *argjson,char *remoteaddr);
-char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsize,int32_t *postflagp,char *urlstr,char *remoteaddr);
+char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr);
 
-extern int32_t PULLsock;
-extern struct relay_info RELAYS;
+char *pangea_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr);
+char *ramchain_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr);
+char *iguana_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr);
+char *InstantDEX_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr);
 
 #endif
 

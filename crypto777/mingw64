@@ -1,0 +1,3 @@
+include ../mingw.path
+include mingw
+

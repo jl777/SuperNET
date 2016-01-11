@@ -10184,5 +10184,840 @@ void iguana_dedicatedrecv(void *arg)
              } else retjsonstr = clonestr("{\"error\":\"cant parse generic JSON\"}");
              return(retjsonstr);
              }*/
-
+                
+                char *iguana_remoteparser(struct iguana_agent *agent,struct iguana_info *coin,char *method,cJSON *json)
+            {
+                int32_t i,n,remains,numsent; char *jsonstr = 0,*retstr = 0; uint8_t hdr[128];
+                if ( agent->sock < 0 )
+                    agent->sock = iguana_socket(0,agent->hostname,agent->port);
+                if ( agent->sock >= 0 )
+                {
+                    i = 0;
+                    jsonstr = jprint(json,0);
+                    n = (int32_t)strlen(jsonstr) + 1;
+                    remains = n;
+                    //printf("RETBUF.(%s)\n",retbuf);
+                    while ( remains > 0 )
+                    {
+                        if ( (numsent= (int32_t)send(agent->sock,&jsonstr[i],remains,MSG_NOSIGNAL)) < 0 )
+                        {
+                            if ( errno != EAGAIN && errno != EWOULDBLOCK )
+                            {
+                                printf("%s: %s numsent.%d vs remains.%d of %d errno.%d (%s) usock.%d\n",jsonstr,agent->name,numsent,remains,n,errno,strerror(errno),agent->sock);
+                                break;
+                            }
+                        }
+                        else if ( remains > 0 )
+                        {
+                            remains -= numsent;
+                            i += numsent;
+                            if ( remains > 0 )
+                                printf("iguana sent.%d remains.%d of len.%d\n",numsent,remains,n);
+                        }
+                    }
+                    if ( (n= (int32_t)recv(agent->sock,hdr,sizeof(hdr),0)) >= 0 )
+                    {
+                        remains = (hdr[0] + ((int32_t)hdr[1] << 8) + ((int32_t)hdr[2] << 16));
+                        retstr = mycalloc('p',1,remains + 1);
+                        i = 0;
+                        while ( remains > 0 )
+                        {
+                            if ( (n= (int32_t)recv(agent->sock,&retstr[i],remains,0)) < 0 )
+                            {
+                                if ( errno == EAGAIN )
+                                {
+                                    printf("EAGAIN for len %d, remains.%d\n",n,remains);
+                                    usleep(10000);
+                                }
+                                break;
+                            }
+                            else
+                            {
+                                if ( n > 0 )
+                                {
+                                    remains -= n;
+                                    i += n;
+                                } else usleep(10000);
+                            }
+                        }
+                    }
+                    free(jsonstr);
+                }
+                if ( retstr == 0 )
+                    retstr = clonestr("{\"error\":\"null return\"}");
+                return(retstr);
+            }
+                
+                struct iguana_agent *Agents[16];
+        
+        cJSON *iguana_agentinfojson(struct iguana_agent *agent)
+        {
+            cJSON *json= cJSON_CreateObject();
+            jaddstr(json,"name",agent->name);
+            jadd(json,"methods",agent->methods);
+            if ( agent->port != 0 )
+                jaddnum(json,"port",agent->port);
+            else jaddstr(json,"type","builtin");
+            return(json);
+        }
+        
+        char *iguana_addagent(char *name,char *(*parsefunc)(struct iguana_agent *agent,struct iguana_info *coin,char *method,cJSON *json),char *hostname,cJSON *methods,uint16_t port,char *pubkeystr,char *privkeystr)
+        {
+            int32_t i; struct iguana_agent *agent; char retbuf[8192];
+            for (i=0; i<sizeof(Agents)/sizeof(*Agents); i++)
+            {
+                if ( (agent= Agents[i]) != 0 && strcmp(agent->name,name) == 0 )
+                {
+                    if ( pubkeystr != 0 && privkeystr != 0 && strlen(pubkeystr) == 64 && strlen(privkeystr) == 64 )
+                    {
+                        decode_hex(agent->pubkey.bytes,sizeof(bits256),pubkeystr);
+                        decode_hex(agent->privkey.bytes,sizeof(bits256),privkeystr);
+                    }
+                    if ( port != 0 && agent->port == 0 )
+                    {
+                        if ( agent->sock >= 0 )
+                            close(agent->sock);
+                        agent->port = port;
+                        strcpy(agent->hostname,hostname);
+                        agent->sock = iguana_socket(0,agent->hostname,port);
+                        printf("set (%s) port.%d for %s -> sock.%d\n",hostname,port,agent->name,agent->sock);
+                    }
+                    if ( agent->port > 0 && agent->sock < 0 && agent->hostname[0] != 0 && (agent->sock= iguana_socket(0,agent->hostname,agent->port)) < 0 )
+                        return(clonestr("{\"result\":\"existing agent couldnt connect to remote agent\"}"));
+                    else return(clonestr("{\"result\":\"agent already there\"}"));
+                }
+            }
+            for (i=0; i<sizeof(Agents)/sizeof(*Agents); i++)
+            {
+                if ( Agents[i] == 0 )
+                {
+                    agent = mycalloc('G',1,sizeof(*Agents[i]));
+                    Agents[i] = agent;
+                    strncpy(agent->name,name,sizeof(agent->name)-1);
+                    strncpy(agent->hostname,hostname,sizeof(agent->hostname)-1);
+                    agent->methods = methods, agent->nummethods = cJSON_GetArraySize(methods);
+                    agent->sock = -1;
+                    agent->port = port;
+                    agent->parsefunc = (void *)parsefunc;
+                    if ( pubkeystr != 0 && privkeystr != 0 && strlen(pubkeystr) == 64 && strlen(privkeystr) == 64 )
+                    {
+                        decode_hex(agent->pubkey.bytes,sizeof(bits256),pubkeystr);
+                        decode_hex(agent->privkey.bytes,sizeof(bits256),privkeystr);
+                    }
+                    if ( port > 0 )
+                    {
+                        if ( (agent->sock= iguana_socket(0,hostname,port)) < 0 )
+                            return(clonestr("{\"result\":\"agent added, but couldnt connect to remote agent\"}"));
+                    }
+                    sprintf(retbuf,"{\"result\":\"agent added\",\"name\"\"%s\",\"methods\":%s,\"hostname\":\"%s\",\"port\":%u,\"sock\":%d}",agent->name,jprint(agent->methods,0),agent->hostname,agent->port,agent->sock);
+                    return(clonestr(retbuf));
+                }
+            }
+            return(clonestr("{\"error\":\"no more agent slots available\"}"));
+        }
+        else if ( strcmp(method,"addagent") == 0 )
+        {
+            char *hostname = "127.0.0.1",*name; uint16_t port;
+            if ( (name= jstr(json,"name")) != 0 && (methods= jarray(&n,json,"methods")) != 0 )
+            {
+                if ( (port= juint(json,"port")) != 0 )
+                {
+                    if ( (hostname= jstr(json,"host")) == 0 )
+                    {
+                        if ( (hostname= jstr(json,"ipaddr")) == 0 )
+                            hostname = "127.0.0.1";
+                            }
+                    if ( hostname == 0 )
+                        return(clonestr("{\"error\":\"no host specified for remote agent\"}"));
+                }
+                else if ( strcmp(name,"pangea") != 0 && strcmp(name,"InstantDEX") != 0 && strcmp(name,"jumblr") != 0 )
+                    return(clonestr("{\"error\":\"no port specified for remote agent\"}"));
+                return(iguana_addagent(name,iguana_remoteparser,hostname,methods,port,jstr(json,"pubkey"),jstr(json,"privkey")));
+            } else return(clonestr("{\"error\":\"cant addagent without name and methods\"}"));
+        }
+        if ( (retstr= iguana_addagent("ramchain",ramchain_parser,"127.0.0.1",cJSON_Parse("[\"block\", \"tx\", \"txs\", \"rawtx\", \"balance\", \"totalreceived\", \"totalsent\", \"utxo\", \"status\"]"),0,0,0)) != 0 )
+            printf("%s\n",retstr), free(retstr);
+            
+            
+        /*void iguana_issuejsonstrM(void *arg)
+         {
+         cJSON *json; int32_t fd; char *retjsonstr,*jsonstr = arg;
+         retjsonstr = iguana_JSON(jsonstr);
+         if ( (json= cJSON_Parse(jsonstr)) != 0 )
+         {
+         if ( (fd= juint(json,"retdest")) > 0 )
+         {
+         send(fd,jsonstr,(int32_t)strlen(jsonstr)+1,MSG_NOSIGNAL);
+         }
+         free_json(json);
+         return;
+         }
+         printf("%s\n",retjsonstr);
+         free(retjsonstr);//,strlen(retjsonstr)+1);
+         free(jsonstr);//,strlen(jsonstr)+1);
+         }*/
+        
+        int32_t iguana_rpctestvector(struct iguana_info *coin,char *checkstr,char *jsonstr,int32_t maxlen,int32_t testi)
+        {
+            int32_t len,checklen;
+            sprintf(jsonstr,"{\"rpc.%s testvector.%d\"}",coin->symbol,testi);
+            sprintf(checkstr,"{\"rpc.%s testvector.%d checkstr should have all info needed to verify the rpc request\"}",coin->symbol,testi);
+            len = (int32_t)strlen(jsonstr);
+            checklen = (int32_t)strlen(checkstr);
+            if ( len > maxlen || checklen > maxlen )
+                printf("iguana_rpctestvector: i was bad and overflowed buffer len.%d checklen.%d\n",len,checklen), exit(-1);
+            if ( checklen > len )
+                len = checklen;
+            return(len);
+        }
+        
+        int32_t iguana_rpctestcheck(struct iguana_info *coin,char *jsonstr,char *retjsonstr)
+        {
+            if ( (rand() % 100) == 0 ) // 1% failure rate
+                return(-1);
+            else return(0);
+        }
+        
+        int32_t iguana_rpctest(struct iguana_info *coin)
+        {
+            /*    static int32_t testi,good,bad;
+             char *retjsonstr,jsonstr[4096],checkstr[sizeof(jsonstr)]; // should be big enough
+             //if ( (rand() % 1000) < 999 ) // if no test active, just return 0
+             return(0);
+             if ( iguana_rpctestvector(coin,checkstr,jsonstr,sizeof(jsonstr),testi++) > 0 )
+             {
+             retjsonstr = iguana_rpc(coin,jsonstr);
+             if ( iguana_rpctestcheck(coin,jsonstr,retjsonstr) < 0 )
+             bad++, printf("rpctestcheck.%s error: (%s) -> (%s) | good.%d bad.%d %.2f%%\n",coin->symbol,jsonstr,retjsonstr,good,bad,100.*(double)good/(good+bad));
+             else good++;
+             free(retjsonstr);
+             return(1); // indicates was active
+             }*/
+            return(0);
+        }
+                
+                char *iguana_agentjson(char *name,struct iguana_info *coin,char *method,cJSON *json,char *remoteaddr)
+            {
+                cJSON *retjson = 0,*array,*methods,*obj; int32_t i,n,j; struct iguana_agent *agent;
+                if ( strcmp(name,"SuperNET") != 0 )
+                {
+                    for (i=0; i<sizeof(Agents)/sizeof(*Agents); i++)
+                    {
+                        if ( (agent= Agents[i]) != 0 && strcmp(agent->name,name) == 0 )
+                        {
+                            if ( agent->parsefunc != 0 )
+                            {
+                                for (j=0; j<agent->nummethods; j++)
+                                {
+                                    if ( (obj= jitem(agent->methods,j)) != 0 )
+                                    {
+                                        if ( strcmp(method,jstr(obj,0)) == 0 )
+                                            return((*agent->parsefunc)(agent,method,json,remoteaddr));
+                                    }
+                                }
+                                return(clonestr("{\"result\":\"agent doesnt have method\"}"));
+                            } else return(clonestr("{\"result\":\"agent doesnt have parsefunc\"}"));
+                        }
+                    }
+                }
+                else if ( remoteaddr == 0 || strcmp(remoteaddr,"127.0.0.1") != 0 ) // public api
+                {
+                    char *coinstr; int32_t j,k,l,r,rr; struct iguana_peer *addr;
+                    array = 0;
+                    if ( strcmp(method,"getpeers") == 0 )
+                    {
+                        if ( (coinstr= jstr(json,"coin")) != 0 )
+                        {
+                            if ( (array= iguana_peersjson(iguana_coinfind(coinstr),1)) == 0 )
+                                return(clonestr("{\"error\":\"coin not found\"}"));
+                        }
+                        else
+                        {
+                            n = 0;
+                            array = cJSON_CreateArray();
+                            r = rand();
+                            for (i=0; i<IGUANA_MAXCOINS; i++)
+                            {
+                                j = (r + i) % IGUANA_MAXCOINS;
+                                if ( (coin= Coins[j]) != 0 )
+                                {
+                                    rr = rand();
+                                    for (k=0; k<IGUANA_MAXPEERS; k++)
+                                    {
+                                        l = (rr + k) % IGUANA_MAXPEERS;
+                                        addr = &coin->peers.active[l];
+                                        if ( addr->usock >= 0 && addr->supernet != 0 )
+                                        {
+                                            jaddistr(array,addr->ipaddr);
+                                            if ( ++n >= 64 )
+                                                break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if ( array != 0 )
+                        {
+                            retjson = cJSON_CreateObject();
+                            jaddstr(retjson,"agent","SuperNET");
+                            jaddstr(retjson,"method","mypeers");
+                            jaddstr(retjson,"result","peers found");
+                            jadd(retjson,"peers",array);
+                            return(jprint(retjson,1));
+                        } else return(clonestr("{\"error\":\"no peers found\"}"));
+                    }
+                    else if ( strcmp(method,"mypeers") == 0 )
+                    {
+                        printf("mypeers from %s\n",remoteaddr!=0?remoteaddr:"local");
+                    }
+                }
+                else // local api
+                {
+                    if ( strcmp(method,"list") == 0 )
+                    {
+                        retjson = cJSON_CreateObject();
+                        array = cJSON_CreateArray();
+                        for (i=0; i<sizeof(Coins)/sizeof(*Coins); i++)
+                        {
+                            if ( Coins[i] != 0 && Coins[i]->symbol[0] != 0 )
+                                jaddistr(array,Coins[i]->symbol);
+                        }
+                        jadd(retjson,"coins",array);
+                        array = cJSON_CreateArray();
+                        for (i=0; i<sizeof(Agents)/sizeof(*Agents); i++)
+                        {
+                            if ( Agents[i] != 0 && Agents[i]->name[0] != 0 )
+                                jaddi(array,iguana_agentinfojson(Agents[i]));
+                        }
+                        jadd(retjson,"agents",array);
+                        return(jprint(retjson,1));
+                    }
+                    else if ( strcmp(method,"peers") == 0 )
+                    {
+                        retjson = cJSON_CreateObject();
+                        array = cJSON_CreateArray();
+                        for (i=0; i<sizeof(Coins)/sizeof(*Coins); i++)
+                        {
+                            if ( Coins[i] != 0 && Coins[i]->symbol[0] != 0 )
+                                jaddi(array,iguana_peersjson(Coins[i],0));
+                        }
+                        jadd(retjson,"allpeers",array);
+                        return(jprint(retjson,1));
+                    }
+                }
+                return(clonestr("{\"result\":\"stub processed generic json\"}"));
+            }
+                
+                char *iguana_jsonstr(struct iguana_info *coin,char *jsonstr,char *remoteaddr)
+            {
+                cJSON *json; char *retjsonstr,*methodstr,*agentstr;
+                //printf("iguana_jsonstr.(%s)\n",jsonstr);
+                if ( (json= cJSON_Parse(jsonstr)) != 0 )
+                {
+                    if ( (methodstr= jstr(json,"method")) != 0 )
+                    {
+                        if ( (agentstr= jstr(json,"agent")) == 0 || strcmp(agentstr,"iguana") == 0 )
+                            retjsonstr = iguana_coinjson(coin,methodstr,json);
+                        else retjsonstr = iguana_agentjson(agentstr,coin,methodstr,json,remoteaddr);
+                    } else retjsonstr = clonestr("{\"error\":\"no method in JSON\"}");
+                    free_json(json);
+                } else retjsonstr = clonestr("{\"error\":\"cant parse JSON\"}");
+                printf("iguana_jsonstr.(%s)\n",retjsonstr);
+                return(retjsonstr);
+            }
+                char *iguana_htmlget(char *space,int32_t max,int32_t *jsonflagp,char *path,char *remoteaddr,int32_t localaccess)
+            {
+                char *iguana_coinjson(struct iguana_info *coin,char *method,cJSON *json);
+                struct iguana_info *coin = 0; cJSON *json; bits256 hash2; int32_t height,i;
+                char buf[64],jsonstr[1024],coinstr[64],*retstr;
+                for (i=0; path[i]!=0; i++)
+                    if ( path[i] == ' ' )
+                        break;
+                path[i] = 0;
+                if ( path[strlen(path)-1] == '/' )
+                    path[strlen(path)-1] = 0;
+                if ( strncmp(path,"/api",strlen("/api")) == 0 )
+                {
+                    *jsonflagp = 1;
+                    path += strlen("/api");
+                } else *jsonflagp = 0;
+                iguana_coinset(coinstr,path);
+                if ( coinstr[0] != 0 )
+                    coin = iguana_coinfind(coinstr);
+                else coin = 0;
+                if ( strncmp(path,"/bitmap",strlen("/bitmap")) == 0 )
+                {
+                    path += strlen("/bitmap");
+                    *jsonflagp = 2;
+                    iguana_bitmap(space,max,path);
+                    return(space);
+                }
+                //printf("GETCHECK.(%s)\n",path);
+                if ( strncmp(path,"/ramchain/",strlen("/ramchain/")) == 0 )
+                {
+                    path += strlen("/ramchain/");
+                    if ( strncmp(path,"block/",strlen("block/")) == 0 )
+                    {
+                        path += strlen("block/");
+                        if ( strncmp(path,"height/",strlen("height/")) == 0 )
+                        {
+                            height = atoi(path + strlen("height/"));
+                            sprintf(Currentjsonstr,"{\"agent\":\"ramchain\",\"method\":\"block\",\"coin\":\"%s\",\"height\":%d,\"txids\":1}",coinstr,height);
+                            return(iguana_ramchain_glue(coin,"block",Currentjsonstr));
+                        }
+                        else if ( strncmp(path,"hash/",strlen("hash/")) == 0 )
+                        {
+                            decode_hex(hash2.bytes,sizeof(hash2),path + strlen("hash/"));
+                            char str[65]; printf("ramchain blockhash.%s\n",bits256_str(str,hash2));
+                            sprintf(Currentjsonstr,"{\"agent\":\"ramchain\",\"method\":\"block\",\"coin\":\"%s\",\"hash\":\"%s\",\"txids\":1}",coinstr,str);
+                            return(iguana_ramchain_glue(coin,"block",Currentjsonstr));
+                        }
+                    }
+                    else if ( strncmp(path,"txid/",strlen("txid/")) == 0 )
+                    {
+                        decode_hex(hash2.bytes,sizeof(hash2),path + strlen("txid/"));
+                        char str[65]; bits256_str(str,hash2);
+                        sprintf(Currentjsonstr,"{\"agent\":\"ramchain\",\"method\":\"tx\",\"coin\":\"%s\",\"txid\":\"%s\"}",coinstr,str);
+                        return(iguana_ramchain_glue(coin,"tx",Currentjsonstr));
+                    }
+                    else if ( strncmp(path,"explore/",strlen("explore/")) == 0 )
+                    {
+                        path += strlen("explore/");
+                        if ( coin != 0 )
+                        {
+                            sprintf(Currentjsonstr,"{\"agent\":\"iguana\",\"method\":\"explore\",\"coin\":\"%s\",\"search\":\"%s\"}",coinstr,path);
+                        } else sprintf(Currentjsonstr,"{\"agent\":\"iguana\",\"method\":\"explore\",\"search\":\"%s\"}",path);
+                        return(iguana_ramchain_glue(coin,"explore",Currentjsonstr));
+                    }
+                    else if ( strncmp(path,"bundleinfo/",strlen("bundleinfo/")) == 0 )
+                    {
+                        path += strlen("bundleinfo/");
+                        sprintf(Currentjsonstr,"{\"agent\":\"iguana\",\"method\":\"bundleinfo\",\"coin\":\"%s\",\"height\":%d}",coinstr,atoi(path));
+                        
+                    }
+                    else
+                    {
+                        sprintf(Currentjsonstr,"{\"agent\":\"iguana\",\"method\":\"%s\",\"coin\":\"%s\"}",path,coinstr);
+                        return(iguana_ramchain_glue(coin,path,Currentjsonstr));
+                    }
+                }
+                else if ( strncmp(path,"/hash/",strlen("/hash/")) == 0 )
+                {
+                    path += strlen("/hash/");
+                    return(iguana_hashparse(path));
+                }
+                else if ( strncmp(path,"/iguana/",strlen("/iguana/")) == 0 )
+                {
+                    strcpy(Currentjsonstr,path);
+                    path += strlen("/iguana/");
+                    if ( strncmp(path,"setagent/",strlen("setagent/")) == 0 )
+                    {
+                        path += strlen("setagent/");
+                        if ( strncmp(path,"ramchain",strlen("ramchain")) == 0 || strncmp(path,"iguana",strlen("iguana")) == 0 || strncmp(path,"InstantDEX",strlen("InstantDEX")) == 0 || strncmp(path,"pangea",strlen("pangea")) == 0 || strncmp(path,"PAX",strlen("PAX")) == 0 || strncmp(path,"ALL",strlen("ALL")) == 0 || strncmp(path,"jumblr",strlen("jumblr")) == 0 )
+                        {
+                            if ( strncmp(Default_agent,path,strlen(path)) == 0 )
+                            {
+                                strcpy(Default_agent,"ALL");
+                                return(clonestr("{\"result\":\"ALL agents selected\"}"));
+                            }
+                            strcpy(Default_agent,path);
+                            if ( Default_agent[strlen(Default_agent)-1] == '/' )
+                                Default_agent[strlen(Default_agent)-1] = 0;
+                            sprintf(buf,"{\"result\":\"agent selected\",\"name\":\"%s\"}",path);
+                            return(clonestr(buf));
+                        }
+                        return(clonestr("{\"error\":\"invalid agent specified\"}"));
+                    }
+                    else
+                    {
+                        if ( strncmp(path,"peers/",strlen("peers/")) == 0 )
+                        {
+                            path += strlen("peers/");
+                            if ( coin != 0 )
+                            {
+                                sprintf(Currentjsonstr,"{\"agent\":\"iguana\",\"method\":\"peers\",\"coin\":\"%s\"}",coinstr);
+                            } else sprintf(Currentjsonstr,"{\"agent\":\"iguana\",\"method\":\"peers\"}");
+                            json = cJSON_Parse(Currentjsonstr);
+                            retstr = iguana_coinjson(coin,"peers",json);
+                            free_json(json);
+                            return(retstr);
+                        }
+                        else if ( coin != 0 )
+                        {
+                            if ( strncmp(path,"addnode/",strlen("addnode/")) == 0 )
+                            {
+                                path += strlen("addnode/");
+                                sprintf(Currentjsonstr,"{\"agent\":\"iguana\",\"method\":\"addnode\",\"coin\":\"%s\",\"ipaddr\":\"%s\"}",coinstr,path);
+                                json = cJSON_Parse(Currentjsonstr);
+                                retstr = iguana_coinjson(coin,"addnode",json);
+                                free_json(json);
+                                return(retstr);
+                            }
+                            else if ( strncmp(path,"nodestatus/",strlen("nodestatus/")) == 0 )
+                            {
+                                path += strlen("nodestatus/");
+                                sprintf(Currentjsonstr,"{\"agent\":\"iguana\",\"method\":\"nodestatus\",\"coin\":\"%s\",\"ipaddr\":\"%s\"}",coinstr,path);
+                                json = cJSON_Parse(Currentjsonstr);
+                                retstr = iguana_coinjson(coin,"nodestatus",json);
+                                free_json(json);
+                                return(retstr);
+                            }
+                            else if ( strncmp(path,"addcoin",strlen("addcoin")) == 0 )
+                            {
+                                path += strlen("addcoin");
+                                iguana_coinset(buf,path);
+                                if ( (coin= iguana_coinadd(buf)) != 0 )
+                                {
+                                    sprintf(Currentjsonstr,"{\"agent\":\"iguana\",\"method\":\"addcoin\",\"coin\":\"%s\"}",buf);
+                                    json = cJSON_Parse(Currentjsonstr);
+                                    retstr = iguana_coinjson(coin,"addcoin",json);
+                                    free_json(json);
+                                }
+                                else retstr = clonestr("{\"error\":\"cant create coin\"}");
+                                return(retstr);
+                            }
+                            else if ( strncmp(path,"startcoin",strlen("startcoin")) == 0 )
+                            {
+                                path += strlen("startcoin");
+                                iguana_coinset(buf,path);
+                                if ( (coin= iguana_coinfind(buf)) != 0 )
+                                {
+                                    sprintf(Currentjsonstr,"{\"agent\":\"iguana\",\"method\":\"startcoin\",\"coin\":\"%s\"}",buf);
+                                    json = cJSON_Parse(Currentjsonstr);
+                                    retstr = iguana_coinjson(coin,"startcoin",json);
+                                    free_json(json);
+                                }
+                                else retstr = clonestr("{\"error\":\"cant create coin\"}");
+                                return(retstr);
+                            }
+                            else if ( strncmp(path,"pausecoin",strlen("pausecoin")) == 0 )
+                            {
+                                path += strlen("pausecoin");
+                                iguana_coinset(buf,path);
+                                if ( (coin= iguana_coinfind(buf)) != 0 )
+                                {
+                                    sprintf(Currentjsonstr,"{\"agent\":\"iguana\",\"method\":\"pausecoin\",\"coin\":\"%s\"}",buf);
+                                    json = cJSON_Parse(Currentjsonstr);
+                                    retstr = iguana_coinjson(coin,"pausecoin",json);
+                                    free_json(json);
+                                }
+                                else retstr = clonestr("{\"error\":\"cant create coin\"}");
+                                return(retstr);
+                            }
+                            else if ( strncmp(path,"maxpeers/",strlen("maxpeers/")) == 0 )
+                            {
+                                path += strlen("maxpeers/");
+                                sprintf(Currentjsonstr,"{\"agent\":\"iguana\",\"method\":\"maxpeers\",\"coin\":\"%s\",\"max\":%d}",coinstr,atoi(path));
+                                json = cJSON_Parse(Currentjsonstr);
+                                retstr = iguana_coinjson(coin,"maxpeers",json);
+                                free_json(json);
+                                return(retstr);
+                            }
+                            return(clonestr("{\"result\":\"iguana method not found\"}"));
+                        }
+                        return(clonestr("{\"result\":\"iguana method needs coin\"}"));
+                    }
+                }
+                else if ( strncmp(path,"/InstantDEX/",strlen("/InstantDEX/")) == 0 )
+                {
+                    double price,volume; char base[16],rel[16],exchange[16];
+                    path += strlen("/InstantDEX/");
+                    jsonstr[0] = 0;
+                    if ( strncmp(path,"placebid/",strlen("placebid/")) == 0 )
+                    {
+                        path += strlen("placebid/");
+                        if ( iguana_InstantDEX(jsonstr,path,"placebid") == 0 )
+                            return(clonestr("{\"error\":\"error with placebid parameters\"}"));
+                    }
+                    else if ( strncmp(path,"placeask/",strlen("placeask/")) == 0 )
+                    {
+                        path += strlen("placeask/");
+                        if ( iguana_InstantDEX(jsonstr,path,"placeask") == 0 )
+                            return(clonestr("{\"error\":\"error with placeask parameters\"}"));
+                    }
+                    else if ( strncmp(path,"orderbook/",strlen("orderbook/")) == 0 )
+                    {
+                        path += strlen("orderbook/");
+                        iguana_parsebidask(base,rel,exchange,&price,&volume,path);
+                        if ( exchange[0] == 0 )
+                            strcpy(exchange,"active");
+                        sprintf(jsonstr,"{\"agent\":\"InstantDEX\",\"method\":\"orderbook\",\"base\":\"%s\",\"rel\":\"%s\",\"exchange\":\"%s\",\"allfields\":1}",base,rel,exchange);
+                    }
+                    else if ( strncmp(path,"orderstatus/",strlen("orderstatus/")) == 0 )
+                    {
+                        path += strlen("orderstatus/");
+                        sprintf(jsonstr,"{\"agent\":\"InstantDEX\",\"method\":\"orderstatus\",\"orderid\":\"%s\"}",path);
+                    }
+                    else if ( strncmp(path,"cancelorder/",strlen("cancelorder/")) == 0 )
+                    {
+                        path += strlen("cancelorder/");
+                        sprintf(jsonstr,"{\"agent\":\"InstantDEX\",\"method\":\"cancelorder\",\"orderid\":\"%s\"}",path);
+                    }
+                    else if ( strncmp(path,"balance/",strlen("balance/")) == 0 )
+                    {
+                        path += strlen("balance/");
+                        iguana_parsebidask(base,rel,exchange,&price,&volume,path);
+                        if ( path[0] != ' ' && path[0] != '/' )
+                            sprintf(jsonstr,"{\"agent\":\"InstantDEX\",\"method\":\"balance\",\"exchange\":\"%s\"}",path);
+                        else sprintf(jsonstr,"{\"agent\":\"InstantDEX\",\"method\":\"balance\"}");
+                    }
+                    else if ( strncmp(path,"openorders",strlen("openorders")) == 0 )
+                    {
+                        path += strlen("openorders");
+                        sprintf(jsonstr,"{\"agent\":\"InstantDEX\",\"method\":\"openorders\"}");
+                    }
+                    else if ( strncmp(path,"tradehistory",strlen("tradehistory")) == 0 )
+                    {
+                        path += strlen("tradehistory");
+                        sprintf(jsonstr,"{\"agent\":\"InstantDEX\",\"method\":\"tradehistory\"}");
+                    }
+                    else if ( strncmp(path,"allorderbooks",strlen("allorderbooks")) == 0 )
+                    {
+                        path += strlen("allorderbooks");
+                        sprintf(jsonstr,"{\"agent\":\"InstantDEX\",\"method\":\"allorderbooks\"}");
+                    }
+                    else if ( strncmp(path,"allexchanges",strlen("allexchanges")) == 0 )
+                    {
+                        path += strlen("allexchanges");
+                        sprintf(jsonstr,"{\"agent\":\"InstantDEX\",\"method\":\"allexchanges\"}");
+                    }
+                    if ( jsonstr[0] != 0 )
+                    {
+                        strcpy(Currentjsonstr,jsonstr);
+                        return(clonestr(jsonstr));
+                        //return(InstantDEX(jsonstr,remoteaddr,localaccess));
+                    }
+                    return(clonestr("{\"error\":\"unrecognized InstantDEX API call\"}"));
+                }
+                else if ( strncmp(path,"/pangea/",strlen("/pangea/")) == 0 )
+                {
+                    path += strlen("/pangea/");
+                }
+                else if ( strncmp(path,"/jumblr/",strlen("/jumblr/")) == 0 )
+                {
+                    path += strlen("/jumblr/");
+                }
+                else printf("no match to (%s)\n",path);
+                return(0);
+            }
+                
+                char *iguana_rpcparse(char *retbuf,int32_t bufsize,int32_t *postflagp,char *jsonstr)
+            {
+                cJSON *json = 0; int32_t i,n,localaccess,datalen,postflag = 0;
+                char *key,*reststr,*str,*retstr,remoteaddr[65],porturl[65],*data = 0,*value,*agent = "SuperNET";
+                //printf("rpcparse.(%s)\n",jsonstr);
+                localaccess = 1;
+                if ( (str= strstr("Referer: ",jsonstr)) != 0 )
+                {
+                    for (i=0; str[i]!=' '&&str[i]!=0&&str[i]!='\n'&&str[i]!='\r'; i++)
+                        remoteaddr[i] = str[i];
+                    remoteaddr[i] = 0;
+                } else strcpy(remoteaddr,"127.0.0.1"); // need to verify this
+                *postflagp = 0;
+                if ( strncmp("POST",jsonstr,4) == 0 )
+                    jsonstr += 6, *postflagp = postflag = 1;
+                else if ( strncmp("GET",jsonstr,3) == 0 )
+                {
+                    jsonstr += 4;
+                    str = 0;
+                    sprintf(porturl,"Referer: http://127.0.0.1:%u",IGUANA_RPCPORT);
+                    if ( (str= iguana_htmlget(retbuf,bufsize,postflagp,jsonstr,remoteaddr,localaccess)) == 0 && (reststr= strstr(jsonstr,porturl)) != 0 )
+                    {
+                        reststr += strlen(porturl);
+                        str = iguana_htmlget(retbuf,bufsize,postflagp,reststr,remoteaddr,localaccess);
+                    }
+                    if ( str != 0 )
+                    {
+                        if ( *postflagp == 0 )
+                        {
+                            json = cJSON_CreateObject();
+                            jaddstr(json,"result",str);
+                            if ( str != retbuf )
+                                free(str);
+                            str = cJSON_Print(json);
+                            free_json(json);
+                        }
+                        return(str);
+                    }
+                    jsonstr++;
+                }
+                else return(0);
+                n = (int32_t)strlen(jsonstr);
+                for (i=0; i<n; i++)
+                    if ( jsonstr[i] == '?' )
+                        break;
+                if ( i == n )
+                {
+                    //printf("no url\n");
+                    return(0);
+                }
+                if ( i > 0 )
+                {
+                    jsonstr[i] = 0;
+                    agent = jsonstr;
+                    jsonstr += i;
+                }
+                jsonstr++;
+                json = cJSON_CreateObject();
+                jaddstr(json,"agent",agent);
+                while ( 1 )
+                {
+                    n = (int32_t)strlen(jsonstr);
+                    key = jsonstr;
+                    value = 0;
+                    for (i=0; i<n; i++)
+                    {
+                        if ( jsonstr[i] == ' ' || jsonstr[i] == '&' )
+                            break;
+                        else if ( jsonstr[i] == '=' )
+                        {
+                            if ( value != 0 )
+                            {
+                                printf("parse error.(%s)\n",jsonstr);
+                                free_json(json);
+                                return(0);
+                            }
+                            jsonstr[i] = 0;
+                            value = &jsonstr[++i];
+                        }
+                    }
+                    if ( value == 0 )
+                        value = "";
+                    jsonstr += i;
+                    if ( jsonstr[0] == ' ' )
+                    {
+                        jsonstr[0] = 0;
+                        jsonstr++;
+                        if ( key != 0 && key[0] != 0 )
+                            jaddstr(json,key,value);
+                        //printf("{%s:%s}\n",key,value);
+                        break;
+                    }
+                    jsonstr[0] = 0;
+                    jsonstr++;
+                    if ( key != 0 && key[0] != 0 )
+                        jaddstr(json,key,value);
+                    //printf("{%s:%s}\n",key,value);
+                    if ( i == 0 )
+                        break;
+                }
+                n = (int32_t)strlen(jsonstr);
+                datalen = 0;
+                if ( postflag != 0 )
+                {
+                    for (i=0; i<n; i++)
+                    {
+                        //printf("(%d) ",jsonstr[i]);
+                        if ( jsonstr[i] == '\n' || jsonstr[i] == '\r' )
+                        {
+                            //printf("[%s] cmp.%d\n",jsonstr+i+1,strncmp(jsonstr+i+1,"Content-Length:",strlen("Content-Length:")));
+                            if ( strncmp(jsonstr+i+1,"Content-Length:",strlen("Content-Length:")) == 0 )
+                            {
+                                datalen = (int32_t)atoi(jsonstr + i + 1 + strlen("Content-Length:") + 1);
+                                data = &jsonstr[n - datalen];
+                                //printf("post.(%s) (%c)\n",data,data[0]);
+                                //iguana_urldecode(data);
+                            }
+                        }
+                    }
+                }
+                retstr = iguana_rpc(agent,json,data,datalen,remoteaddr);
+                free_json(json);
+                return(retstr);
+                //printf("post.%d json.(%s) data[%d] %s\n",postflag,jprint(json,0),datalen,data!=0?data:"");
+                //return(json);
+            }
+                
+                
+                char *iguana_rpc(char *agent,cJSON *json,char *data,int32_t datalen,char *remoteaddr)
+            {
+                //printf("agent.(%s) json.(%s) data[%d] %s\n",agent,jprint(json,0),datalen,data!=0?data:"");
+                if ( data == 0 )
+                    return(iguana_JSON(0,jprint(json,0),remoteaddr));
+                else return(iguana_JSON(0,data,remoteaddr));
+            }
+                
+                void iguana_urldecode(char *str)
+            {
+                int32_t a,b,c; char *dest = str;
+                while ( (c= *str) != 0 )
+                {
+                    if ( c == '%' && (a= str[1]) != 0 && (b= str[2]) != 0 )
+                        *dest++ = (unhex(a)<<4) | unhex(b);
+                    else *dest++ = c;
+                }
+                *dest = 0;
+            }
+                
+                char *iguana_parsebidask(char *base,char *rel,char *exchange,double *pricep,double *volumep,char *line)
+            {
+                int32_t i;
+                for (i=0; i<16&&line[i]!='/'&&line[i]!=0; i++)
+                    base[i] = line[i];
+                base[i] = 0;
+                touppercase(base);
+                line += (i + 1);
+                for (i=0; i<16&&line[i]!='/'&&line[i]!=0; i++)
+                    rel[i] = line[i];
+                rel[i] = 0;
+                touppercase(rel);
+                line += (i + 1);
+                for (i=0; i<16&&line[i]!='/'&&line[i]!=0; i++)
+                    exchange[i] = line[i];
+                exchange[i] = 0;
+                line += (i + 1);
+                if ( strncmp(line,"price/",strlen("price/")) == 0 )
+                {
+                    line += strlen("price/");
+                    *pricep = atof(line);
+                    if ( (line= strstr(line,"volume/")) != 0 )
+                    {
+                        line += strlen("volume/");
+                        *volumep = atof(line);
+                        for (i=0; i<16&&line[i]!=0; i++)
+                            if ( line[i] == '/' )
+                            {
+                                i++;
+                                break;
+                            }
+                        return(line+i);
+                    }
+                }
+                return(0);
+            }
+                
+                char *iguana_InstantDEX(char *jsonstr,char *path,char *method)
+            {
+                char *str,base[64],rel[64],exchange[64]; double price,volume;
+                if ( (str= iguana_parsebidask(base,rel,exchange,&price,&volume,path)) != 0 )
+                {
+                    if ( price > 0. && volume > 0. )
+                    {
+                        sprintf(jsonstr,"{\"agent\":\"InstantDEX\",\"method\":\"%s\",\"base\":\"%s\",\"rel\":\"%s\",\"exchange\":\"%s\",\"price\":\%0.8f,\"volume\":%0.8f}",method,base,rel,exchange,price,volume);
+                        return(jsonstr);
+                    }
+                    else return(0);
+                }
+                return(0);
+            }
+                
+                void iguana_coinset(char *buf,char *path)
+            {
+                int32_t i;
+                if ( path[0] == '/' )
+                    path++;
+                for (i=0; i<8&&path[i]!=0&&path[i]!=' '&&path[i]!='/'; i++)
+                    buf[i] = path[i];
+                buf[i] = 0;
+                touppercase(buf);
+            }
+                
+                char *iguana_ramchain_glue(struct iguana_info *coin,char *method,char *jsonstr)
+            {
+                cJSON *json; char *retstr;
+                json = cJSON_Parse(jsonstr);
+                retstr = ramchain_parser(0,method,json);
+                free_json(json);
+                return(retstr);
+            }
 #endif

@@ -284,7 +284,7 @@ int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *m
 
 void iguana_helper(void *arg)
 {
-    FILE *fp = 0; char fname[512],name[64],*helpername = 0; cJSON *argjson=0; int32_t i,flag;
+    FILE *fp = 0; char fname[512],name[64],*helpername = 0; cJSON *argjson=0; int32_t flag;
     struct iguana_helper *ptr; struct iguana_info *coin; struct OS_memspace MEM,*MEMB;
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
         helpername = jstr(argjson,"name");
@@ -302,6 +302,7 @@ void iguana_helper(void *arg)
     MEMB = mycalloc('b',IGUANA_MAXBUNDLESIZE,sizeof(*MEMB));
     while ( 1 )
     {
+        iguana_jsonQ();
         flag = 0;
         if ( (ptr= queue_dequeue(&helperQ,0)) != 0 )
         {
@@ -316,11 +317,11 @@ void iguana_helper(void *arg)
         }
         if ( flag == 0 )
         {
-            for (i=0; i<sizeof(Coins)/sizeof(*Coins); i++)
+            /*for (i=0; i<sizeof(Coins)/sizeof(*Coins); i++)
             {
                 if ( (coin= Coins[i]) != 0 && coin->launched != 0 )
                     flag += iguana_rpctest(coin);
-            }
+            }*/
             if ( flag == 0 )
                 usleep(10000);
         }

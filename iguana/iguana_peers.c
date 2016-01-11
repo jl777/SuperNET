@@ -480,7 +480,7 @@ void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct ig
                 iguana_meminit(&addr->HASHMEM,"HASHPTRS",0,256,0);//IGUANA_MAXPACKETSIZE*16,0);
             //printf("Init %s memory %p %p %p\n",addr->ipaddr,addr->RAWMEM.ptr,addr->TXDATA.ptr,addr->HASHMEM.ptr);
         }
-        if ( iguana_parser(coin,addr,&addr->RAWMEM,&addr->TXDATA,&addr->HASHMEM,H,buf,len) < 0 || addr->dead != 0 )
+        if ( iguana_msgparser(coin,addr,&addr->RAWMEM,&addr->TXDATA,&addr->HASHMEM,H,buf,len) < 0 || addr->dead != 0 )
         {
             printf("%p addr->dead.%d or parser break at %u\n",&addr->dead,addr->dead,(uint32_t)time(NULL));
             addr->dead = (uint32_t)time(NULL);
@@ -706,7 +706,7 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
             free_queueitem(ipaddr);
             return((uint32_t)time(NULL));
         }
-        else if ( coin->peers.active[i].ipaddr != 0 )
+        else if ( coin->peers.active[i].ipaddr[0] != 0 )
             n++;
     }
     if ( n >= coin->MAXPEERS-(coin->MAXPEERS>>3)-1 )

@@ -1,0 +1,6 @@
+include crypto777.sources
+
+all: 
+	$(TOOL_DIR)/$(MINGW)-gcc -D __MINGW -c $(CRYPTO777_SRCS) 
+	$(TOOL_DIR)/$(MINGW)-ar rcu *.o ../agents/libcrypto777.a
+

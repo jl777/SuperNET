@@ -123,7 +123,7 @@ void gen_jpegfile(char *fname,int32_t quality,uint8_t *bitmap,int32_t width,int3
     int row_stride;		/* physical row width in image buffer */
     cinfo.err = jpeg_std_error(&jerr);
     jpeg_create_compress(&cinfo);
-    if ((outfile = fopen(fname, "wb")) == NULL)
+    if ( (outfile= fopen(fname,"wb")) == NULL)
     {
         fprintf(stderr, "can't open %s\n", fname);
         exit(1);
@@ -1131,11 +1131,10 @@ void iguana_bitmap(char *space,int32_t max,char *name)
         //sprintf(space,"Content-type: text/standard\r\n");
         //sprintf(space+strlen(space),"Content-Length: %ld\r\n\r\n",strlen(buf));
         //strcpy(space,buf);
-        //printf("bitmap.[%s]\n",space);
+        printf("bitmap.[%s]\n",space);
     }
     else
     {
-        sprintf(space,"{\"name\":\"%s\",\"status\":\"%s\",\"amplitude\":%u,\"width\":%d,\"height\":%d,\"pixels\":[",name,coin!=0?coin->statusstr:"no coin",rect->amplitude,rect->width,rect->height), len = (int32_t)strlen(space);
         ptr = rect->data;
         h = rect->height, w = rect->width;
         for (y=0; y<h; y++)
@@ -1150,6 +1149,8 @@ void iguana_bitmap(char *space,int32_t max,char *name)
             }
         }
         space[len-1] = ']', space[len++] = '}', space[len++] = 0;
+        if ( cJSON_Parse(space) == 0 )
+            printf("ERROR PARSING BITMAP\n");
         //if ( (rand() % 100) == 0 )
         {
             sprintf(fname,"%s.jpg",name);

@@ -162,11 +162,6 @@ int32_t SuperNET_msgvalidate(struct supernet_msghdr *msg)
     return(msglen);
 }
 
-char *SuperNET_JSON(struct supernet_info *myinfo,char *jsonstr)
-{
-    return(clonestr("{\"error\":\"SuperNET is just a stub for now\"}"));
-}
-
 int32_t nn_settimeouts(int32_t sock,int32_t sendtimeout,int32_t recvtimeout)
 {
     int32_t retrymillis,maxmillis;
@@ -215,24 +210,9 @@ int32_t nn_createsocket(struct supernet_info *myinfo,char *endpoint,int32_t bind
 bits256 SuperNET_OPRETURN(struct supernet_info *myinfo,char *symbol,double fee,uint8_t *buf,int32_t len)
 {
     bits256 txid;
+    printf("send OPRETURN\n");
     return(txid);
 }
-
-/*int32_t SuperNET_OPRETURN(uint8_t *data,char *announce)
-{
-    static char *protocols[][2] = { {"pangea","GEA"}, {"peggy","PAX"} };
-    int32_t i;
-    for (i=0; i<sizeof(protocols)/sizeof(*protocols); i++)
-    {
-        if ( strcmp(protocols[i][0],announce) == 0 )
-        {
-            data[0] = SCRIPT_OPRETURN;
-            memcpy(&data[1],protocols[i][1],3);
-            return(4);
-        }
-    }
-    return(0);
-}*/
 
 bits256 SuperNET_agentannounce(struct supernet_info *myinfo,struct supernet_agent *agent,cJSON *network)
 {
@@ -423,6 +403,99 @@ int32_t SuperNET_send(struct supernet_info *myinfo,struct supernet_agent *agent,
     agent->totalsent += len;
     //printf(" sent.%d bytes to %s\n",len,addr->ipaddr);// getchar();
     return(len);
+}
+
+char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *argjson,char *remoteaddr)
+{
+    char *agent,*method;
+    if ( (agent= jstr(argjson,"agent")) == 0 || (method= jstr(argjson,"method")) == 0 )
+        return(clonestr("{\"error\":\"need both agent and method\"}"));
+}
+
+void SuperNET_rpcloop(void *args)
+{
+    struct supernet_info *myinfo = args;
+    int32_t recvlen,bindsock,postflag,sock,remains,numsent,len; socklen_t clilen;
+    char remoteaddr[64],jsonbuf[8192],*buf,*retstr,*space;//,*retbuf; ,n,i,m
+    struct sockaddr_in cli_addr; uint32_t ipbits,i; uint16_t port;
+    int32_t size = 1024 * 1024 * 2;
+    port = SUPERNET_PORT;
+    bindsock = SuperNET_socket(1,"127.0.0.1",port);
+    printf("SuperNET_rpcloop 127.0.0.1:%d bind sock.%d\n",port,bindsock);
+    space = calloc(1,size);
+    while ( bindsock >= 0 )
+    {
+        clilen = sizeof(cli_addr);
+        //printf("ACCEPT (%s:%d) on sock.%d\n","127.0.0.1",port,bindsock);
+        sock = accept(bindsock,(struct sockaddr *)&cli_addr,&clilen);
+        if ( sock < 0 )
+        {
+            //printf("iguana_rpcloop ERROR on accept usock.%d\n",sock);
+            continue;
+        }
+        memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
+        expand_ipbits(remoteaddr,ipbits);
+        memset(jsonbuf,0,sizeof(jsonbuf));
+        remains = (int32_t)(sizeof(jsonbuf) - 1);
+        buf = jsonbuf;
+        recvlen = 0;
+        retstr = 0;
+        while ( remains > 0 )
+        {
+            if ( (len= (int32_t)recv(sock,buf,remains,0)) < 0 )
+            {
+                if ( errno == EAGAIN )
+                {
+                    printf("EAGAIN for len %d, remains.%d\n",len,remains);
+                    usleep(10000);
+                }
+                break;
+            }
+            else
+            {
+                if ( len > 0 )
+                {
+                    remains -= len;
+                    recvlen += len;
+                    buf = &buf[len];
+                    retstr = SuperNET_rpcparse(myinfo,space,size,&postflag,jsonbuf,remoteaddr);
+                    break;
+                } else usleep(10000);
+            }
+        }
+        if ( retstr != 0 )
+        {
+            i = 0;
+            if ( postflag == 0 )
+            {
+                //retstr = SuperNET_htmlresponse(space,size,&remains,1,retstr,1);
+            }
+            else remains = (int32_t)strlen(retstr);
+            printf("RETBUF.(%s)\n",retstr);
+            while ( remains > 0 )
+            {
+                if ( (numsent= (int32_t)send(sock,&retstr[i],remains,MSG_NOSIGNAL)) < 0 )
+                {
+                    if ( errno != EAGAIN && errno != EWOULDBLOCK )
+                    {
+                        //printf("%s: %s numsent.%d vs remains.%d len.%d errno.%d (%s) usock.%d\n",retstr,ipaddr,numsent,remains,recvlen,errno,strerror(errno),sock);
+                        break;
+                    }
+                }
+                else if ( remains > 0 )
+                {
+                    remains -= numsent;
+                    i += numsent;
+                    if ( remains > 0 )
+                        printf("iguana sent.%d remains.%d of len.%d\n",numsent,remains,recvlen);
+                }
+            }
+            if ( retstr != space )
+                free(retstr);
+        }
+        //printf("done response sock.%d\n",sock);
+        closesocket(sock);
+    }
 }
 
 int32_t SuperNET_msgrecv(struct supernet_info *myinfo,struct supernet_agent *agent,uint8_t *_buf,int32_t maxlen)
@@ -647,7 +720,7 @@ void SuperNET_loop(struct supernet_info *myinfo)
 
 void SuperNET_main(void *arg)
 {
-    struct supernet_info MYINFO; cJSON *json,*array; uint16_t port; int32_t i,n = 0;
+    struct supernet_info MYINFO; int32_t i;//cJSON *json,*array; uint16_t port;,n = 0;
     memset(&MYINFO,0,sizeof(MYINFO));
     if ( 1 )
     {
@@ -658,8 +731,8 @@ void SuperNET_main(void *arg)
         if ( MYINFO.POLLTIMEOUT == 0 )
             MYINFO.POLLTIMEOUT = SUPERNET_POLLTIMEOUT;
     }
-    if ( arg == 0 || (json= cJSON_Parse(arg)) == 0 )
-        SuperNET_acceptport(&MYINFO,MYINFO.port);
+    /*if ( arg == 0 || (json= cJSON_Parse(arg)) == 0 )
+        SuperNET_acceptport(&MYINFO,MYINFO.acceptport);
     else
     {
         if ( (array= jarray(&n,json,"accept")) != 0 )
@@ -669,9 +742,9 @@ void SuperNET_main(void *arg)
                     SuperNET_acceptport(&MYINFO,port);
         }
         free_json(json);
-    }
-    sleep(3);
-    printf("start SuperNET_loop on port.%u\n",MYINFO.port);
+    }*/
+    printf("start SuperNET_loop on port.%u\n",SUPERNET_PORT);
+    OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)SuperNET_rpcloop,&MYINFO);
     for (i=0; i<sizeof(MYINFO.agents)/sizeof(*MYINFO.agents); i++)
         MYINFO.agents[i].sock = -1;
     SuperNET_loop(&MYINFO);

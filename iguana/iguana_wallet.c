@@ -42,14 +42,14 @@ struct iguana_waccount *iguana_waccountadd(struct iguana_info *coin,char *wallet
     return(acct);
 }
 
-int32_t iguana_waccountswitch(struct iguana_info *coin,struct iguana_waddress *waddr,char *coinaddr)
+int32_t iguana_waccountswitch(struct iguana_info *coin,char *account,struct iguana_waccount *oldwaddr,int32_t oldind,char *coinaddr)
 {
     // what if coinaddr is already in an account?
     //printf("change %s walletaccount.(%s) (%s) <- %s\n",coin->symbol,waddr->account,waddr->coinaddr,coinaddr);
     return(0);
 }
 
-struct iguana_waddress *iguana_waddressfind(struct iguana_info *coin,char *coinaddr)
+struct iguana_waccount *iguana_waddressfind(struct iguana_info *coin,int32_t *indp,char *coinaddr)
 {
     return(0);
 }

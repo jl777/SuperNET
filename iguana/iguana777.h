@@ -132,7 +132,7 @@ extern int32_t IGUANA_NUMHELPERS;
 #define IGUANA_ALLOC_MULT 1.1
 #define IGUANA_ALLOC_INCR 1000
 
-#define IGUANA_JSONTIMEOUT 10000
+#define IGUANA_JSONTIMEOUT 1000
 
 #define IGUANA_MAPRECVDATA 1
 #define IGUANA_MAPTXIDITEMS 2
@@ -432,7 +432,7 @@ struct iguana_info
     struct iguana_bitmap screen;
     //struct pollfd fds[IGUANA_MAXPEERS]; struct iguana_peer bindaddr; int32_t numsocks;
     struct OS_memspace TXMEM;
-    queue_t acceptQ,bundlesQ,hdrsQ,blocksQ,priorityQ,possibleQ,jsonQ,finishedQ,TerminateQ,cacheQ;
+    queue_t acceptQ,bundlesQ,hdrsQ,blocksQ,priorityQ,possibleQ,TerminateQ,cacheQ;
     double parsemillis,avetime; uint32_t Launched[8],Terminated[8];
     portable_mutex_t peers_mutex,blocks_mutex;
     struct iguana_bundle *bundles[IGUANA_MAXBUNDLES];
@@ -477,7 +477,7 @@ int32_t iguana_rwblock(int32_t rwflag,bits256 *hash2p,uint8_t *serialized,struct
 int32_t iguana_serialize_block(bits256 *hash2p,uint8_t serialized[sizeof(struct iguana_msgblock)],struct iguana_block *block);
 void iguana_blockconv(struct iguana_block *dest,struct iguana_msgblock *msg,bits256 hash2,int32_t height);
 //void iguana_freetx(struct iguana_msgtx *tx,int32_t n);
-int32_t iguana_parser(struct iguana_info *coin,struct iguana_peer *addr,struct OS_memspace *rawmem,struct OS_memspace *txmem,struct OS_memspace *hashmem,struct iguana_msghdr *H,uint8_t *data,int32_t datalen);
+int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struct OS_memspace *rawmem,struct OS_memspace *txmem,struct OS_memspace *hashmem,struct iguana_msghdr *H,uint8_t *data,int32_t datalen);
 
 // send message
 int32_t iguana_validatehdr(struct iguana_msghdr *H);
@@ -559,7 +559,7 @@ double dxblend(double *destp,double val,double decay);
 
 // json
 int32_t iguana_processjsonQ(struct iguana_info *coin); // reentrant, can be called during any idletime
-char *iguana_JSON(struct iguana_info *coin,char *jsonstr,char *remoteaddr);
+char *iguana_JSON(char *jsonstr);
 char *SuperNET_p2p(struct iguana_info *coin,int32_t *delaymillisp,char *ipaddr,uint8_t *data,int32_t datalen);
 
 char *mbstr(char *str,double);
@@ -670,11 +670,14 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
 
 struct iguana_waccount *iguana_waccountfind(struct iguana_info *coin,char *account);
 struct iguana_waccount *iguana_waccountadd(struct iguana_info *coin,char *walletaccount,struct iguana_waddress *waddr);
-int32_t iguana_waccountswitch(struct iguana_info *coin,struct iguana_waddress *waddr,char *coinaddr);
-struct iguana_waddress *iguana_waddressfind(struct iguana_info *coin,char *coinaddr);
+int32_t iguana_waccountswitch(struct iguana_info *coin,char *account,struct iguana_waccount *oldwaddr,int32_t oldind,char *coinaddr);
+struct iguana_waddress *iguana_waddresscalc(struct iguana_info *coin,struct iguana_waddress *addr,bits256 privkey);
+struct iguana_waccount *iguana_waddressfind(struct iguana_info *coin,int32_t *indp,char *coinaddr);
 char *iguana_coinjson(struct iguana_info *coin,char *method,cJSON *json);
 cJSON *iguana_peersjson(struct iguana_info *coin,int32_t addronly);
 int32_t btc_priv2wip(char *wipstr,uint8_t privkey[32],uint8_t addrtype);
 int32_t btc_pub2rmd(uint8_t rmd160[20],uint8_t pubkey[33]);
+int32_t iguana_launchcoin(char *symbol,cJSON *json);
+int32_t iguana_jsonQ();
 
 #endif

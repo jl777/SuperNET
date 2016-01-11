@@ -19,6 +19,7 @@
 #ifndef crypto777_inet_h
 #define crypto777_inet_h
 #include "OS_portable.h"
+#include <netinet/in.h>
 
 #ifdef _WIN32
 #include <windows.h>

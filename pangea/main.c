@@ -13,6 +13,7 @@
  *                                                                            *
  ******************************************************************************/
 
+#ifdef STANDALONE
 #define CHROMEAPP_NAME pangea
 #define CHROMEAPP_STR "pangea"
 #define CHROMEAPP_CONF "pangea.conf"
@@ -34,3 +35,10 @@ char *pangea_JSON(char *jsonstr)
 {
     return(clonestr("{\"error\":\"pangea is just a stub for now\"}"));
 }
+#else
+
+char *pangea_parser(struct supernet_info *myinfo,char *method,cJSON *json)
+{
+    return(clonestr("{\"error\":\"pangea API is not yet\"}"));
+}
+#endif
