@@ -426,7 +426,7 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
 
 char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr)
 {
-    cJSON *tokens,*argjson,*json = 0; char urlmethod[16],*data,url[1024],*retstr,*token = 0; int32_t i,j,n;
+    cJSON *tokens,*argjson,*json = 0; char symbol[16],urlmethod[16],*data,url[1024],*retstr,*token = 0; int32_t i,j,n;
     //printf("rpcparse.(%s)\n",urlstr);
     for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
         urlmethod[i] = urlstr[i];
@@ -493,7 +493,12 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
                         jaddstr(argjson,"data",jstri(tokens,i));
                     else
                     {
-                        jaddstr(argjson,jstri(tokens,i),jstri(tokens,i+1));
+                        if ( strcmp(jstri(tokens,i),"coin") == 0 && strlen(jstri(tokens,i+1)) < 8 )
+                        {
+                            strcpy(symbol,jstri(tokens,i+1));
+                            touppercase(symbol);
+                            jaddstr(argjson,jstri(tokens,i),symbol);
+                        } else jaddstr(argjson,jstri(tokens,i),jstri(tokens,i+1));
                         i++;
                     }
                 }
