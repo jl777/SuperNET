@@ -121,7 +121,7 @@ struct tai taitime2tai(struct taitime ct);
 char *tai_str(char *str,struct tai t);
 char *utc_str(char *str,struct tai t);
 
-int32_t msync(void *addr,size_t len,int32_t flags);
+//int32_t msync(void *addr,size_t len,int32_t flags);
 
 #ifdef __PNACL
 int32_t OS_nonportable_syncmap(struct OS_mappedptr *mp,long len);
@@ -306,6 +306,8 @@ bits256 bits256_add(bits256 a,bits256 b);
 int32_t bits256_cmp(bits256 a,bits256 b);
 bits256 bits256_lshift(bits256 x);
 bits256 bits256_from_compact(uint32_t c);
+
+int32_t btc_priv2pub(uint8_t pubkey[33],uint8_t privkey[32]);
 
 #endif
 

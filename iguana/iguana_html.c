@@ -298,7 +298,6 @@ char *iguana_hashparse(char *path)
 
 char *iguana_htmlget(char *space,int32_t max,int32_t *jsonflagp,char *path,char *remoteaddr,int32_t localaccess)
 {
-    char *iguana_coinjson(struct iguana_info *coin,char *method,cJSON *json);
     struct iguana_info *coin = 0; cJSON *json; bits256 hash2; int32_t height,i;
     char buf[64],jsonstr[1024],coinstr[64],*retstr;
     for (i=0; path[i]!=0; i++)

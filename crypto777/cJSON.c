@@ -811,6 +811,22 @@ char *jstr(cJSON *json,char *field) { if ( field == 0 ) return(cJSON_str(json));
 char *jstri(cJSON *json,int32_t i) { return(cJSON_str(cJSON_GetArrayItem(json,i))); }
 char *jprint(cJSON *json,int32_t freeflag) { char *str; if ( json == 0 ) return(clonestr("{}")); str = cJSON_Print(json), _stripwhite(str,' '); if ( freeflag != 0 ) free_json(json); return(str); }
 
+bits256 get_API_bits256(cJSON *obj)
+{
+    bits256 hash; char *str;
+    memset(hash.bytes,0,sizeof(hash));
+    if ( obj != 0 )
+    {
+        if ( is_cJSON_String(obj) != 0 && (str= obj->valuestring) != 0 && strlen(str) == 64 )
+            decode_hex(hash.bytes,sizeof(hash),str);
+    }
+    return(hash);
+}
+bits256 jbits256(cJSON *json,char *field) { if ( field == 0 ) return(get_API_bits256(json)); return(get_API_bits256(cJSON_GetObjectItem(json,field))); }
+bits256 jbits256i(cJSON *json,int32_t i) { return(get_API_bits256(cJSON_GetArrayItem(json,i))); }
+void jaddbits256(cJSON *json,char *field,bits256 hash) { char str[65]; bits256_str(str,hash), jaddstr(json,field,str); }
+void jaddibits256(cJSON *json,bits256 hash) { char str[65]; bits256_str(str,hash), jaddistr(json,str); }
+
 char *get_cJSON_fieldname(cJSON *obj)
 {
     if ( obj != 0 )

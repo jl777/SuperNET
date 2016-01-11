@@ -187,6 +187,10 @@ extern "C"
     void jdelete(cJSON *object,char *string);
     cJSON *jduplicate(cJSON *json);
     
+    bits256 jbits256(cJSON *json,char *field);
+    bits256 jbits256i(cJSON *json,int32_t i);
+    void jaddbits256(cJSON *json,char *field,bits256 hash);
+    void jaddibits256(cJSON *json,bits256 hash);
     void copy_cJSON(struct destbuf *dest,cJSON *obj);
     void copy_cJSON2(char *dest,int32_t maxlen,cJSON *obj);
     cJSON *gen_list_json(char **list);

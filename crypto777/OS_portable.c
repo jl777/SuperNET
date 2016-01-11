@@ -155,7 +155,7 @@ void *OS_portable_mapfile(char *fname,long *filesizep,int32_t enablewrite)
 
 int32_t OS_portable_syncmap(struct OS_mappedptr *mp,long len)
 {
-#ifndef __PNACL
+/*#ifndef __PNACL
 	int32_t err = -1;
 	if ( mp->actually_allocated != 0 )
 		return(0);
@@ -172,7 +172,8 @@ int32_t OS_portable_syncmap(struct OS_mappedptr *mp,long len)
 	return(err);
 #else
     return(OS_nonportable_syncmap(mp,len));
-#endif
+#endif*/
+    return(-1);
 }
 
 void *OS_portable_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long origsize)

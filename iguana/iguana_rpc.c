@@ -408,6 +408,10 @@ char *ramchain_coinparser(struct iguana_info *coin,char *method,cJSON *json)
             {
                 jaddstr(retitem,"totalsent","totalsent entry");
             }
+            else if ( strcmp(method,"validate") == 0 )
+            {
+                jaddstr(retitem,"validate",coinaddr);
+            }
             if ( n == 0 )
                 return(jprint(retitem,1));
             else jaddi(retjson,retitem);
@@ -501,3 +505,562 @@ char *ramchain_parser(struct iguana_agent *agent,struct iguana_info *coin,char *
     }
     return(ramchain_coinparser(coin,method,json));
 }
+
+/*
+#define RPCARGS struct iguana_info *coin,struct iguana_wallet *wallet,cJSON *params[],int32_t n,char *origstr,char *remoteaddr
+
+// MAP bitcoin RPC to SuperNET JSONstr
+// MAP REST to SuperNET JSONstr
+// misc
+static char *help(RPCARGS)
+{
+    return(clonestr("{\"result\":\"return help string here\n"));
+}
+
+static char *stop(RPCARGS)
+{
+    return(iguana_coinjson(coin,"pausecoin",params[0]));
+}
+
+static char *sendalert(RPCARGS)
+{
+}
+
+static char *SuperNET(RPCARGS)
+{
+    return(iguana_JSON(coin,origstr,remoteaddr));
+}
+
+static char *getrawmempool(RPCARGS)
+{
+}
+
+// peers
+static char *getconnectioncount(RPCARGS)
+{
+    int32_t i,num = 0; char buf[128];
+    for (i=0; i<sizeof(coin->peers.active)/sizeof(*coin->peers.active); i++)
+        if ( coin->peers.active[i].usock >= 0 )
+            num++;
+    sprintf(buf,"{\"result\":\"%d\"}",num);
+    return(clonestr(buf));
+}
+
+static char *getpeerinfo(RPCARGS)
+{
+    cJSON *retjson; char buf[128];
+    if ( (retjson= iguana_peersjson(coin,0)) != 0 )
+        return(jprint(retjson,1));
+    sprintf(buf,"{\"result\":\"%d\"}",coin->blocks.hwmchain.height + 1);
+    return(clonestr("{\"error\":\"no peers\"}"));
+}
+
+static char *addnode(RPCARGS)
+{
+    // addnode	<node> <add/remove/onetry>	version 0.8 Attempts add or remove <node> from the addnode list or try a connection to <node> once.	N
+}
+
+// address and pubkeys
+int32_t iguana_waddresscalc(struct iguana_info *coin,struct iguana_waddress *addr,bits256 privkey)
+{
+    memset(addr,0,sizeof(*addr));
+    addr->privkey = privkey;
+    if ( btc_priv2pub(addr->pubkey,addr->privkey.bytes) == 0 && btc_priv2wip(addr->wipstr,addr->privkey.bytes,coin->chain->wipval) == 0 && btc_pub2rmd(addr->rmd160,addr->pubkey) == 0 && btc_convrmd160(addr->coinaddr,coin->chain->pubval,addr->rmd160) == 0 )
+    {
+        addr->wiptype = coin->chain->wipval;
+        addr->type = coin->chain->pubval;
+        return(0);
+    }
+    return(-1);
+}
+
+static char *validateretstr(struct iguana_info *coin,char *coinaddr)
+{
+    char *retstr,buf[512]; cJSON *json;
+    if ( iguana_addressvalidate(coin,coinaddr) < 0 )
+        return(clonestr("{\"error\":\"invalid coin address\"}"));
+    sprintf(buf,"{\"agent\":\"ramchain\",\"coin\":\"%s\",\"method\":\"validate\",\"address\":\"%s\"}",coin->symbol,coinaddr);
+    if ( (json= cJSON_Parse(buf)) != 0 )
+        retstr = ramchain_coinparser(coin,"validate",json);
+    else return(clonestr("{\"error\":\"internal error, couldnt parse validate\"}"));
+    free_json(json);
+    return(retstr);
+}
+
+static char *validateaddress(RPCARGS)
+{
+    char *coinaddr; cJSON *retjson;
+    retjson = cJSON_CreateObject();
+    if ( params[0] != 0 && (coinaddr= jstr(params[0],0)) != 0 )
+        return(validateretstr(coin,coinaddr));
+    return(clonestr("{\"error\":\"need coin address\"}"));
+}
+
+static char *validatepubkey(RPCARGS)
+{
+    char *pubkeystr,coinaddr[128]; cJSON *retjson;
+    retjson = cJSON_CreateObject();
+    if ( params[0] != 0 && (pubkeystr= jstr(params[0],0)) != 0 )
+    {
+        if ( btc_coinaddr(coinaddr,coin->chain->pubval,pubkeystr) == 0 )
+            return(validateretstr(coin,coinaddr));
+        return(clonestr("{\"error\":\"cant convert pubkey\"}"));
+    }
+    return(clonestr("{\"error\":\"need pubkey\"}"));
+}
+
+static char *createmultisig(RPCARGS)
+{
+}
+
+// blockchain
+static char *getinfo(RPCARGS)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result",coin->statusstr);
+    return(jprint(retjson,1));
+}
+
+static char *getbestblockhash(RPCARGS)
+{
+    char buf[512],str[65];
+    sprintf(buf,"{\"result\":\"%s\"}",bits256_str(str,coin->blocks.hwmchain.RO.hash2));
+    return(clonestr(buf));
+}
+
+static char *getblockcount(RPCARGS)
+{
+    char buf[512];
+    sprintf(buf,"{\"result\":\"%d\"}",coin->blocks.hwmchain.height + 1);
+    return(clonestr(buf));
+}
+
+static char *getblock(RPCARGS)
+{
+}
+
+static char *getblockhash(RPCARGS)
+{
+}
+
+static char *gettransaction(RPCARGS)
+{
+}
+
+static char *listtransactions(RPCARGS)
+{
+}
+
+static char *getreceivedbyaddress(RPCARGS)
+{
+}
+
+static char *listreceivedbyaddress(RPCARGS)
+{
+}
+
+static char *listsinceblock(RPCARGS)
+{
+}
+
+// waccount and waddress funcs
+static char *getreceivedbyaccount(RPCARGS)
+{
+}
+
+static char *listreceivedbyaccount(RPCARGS)
+{
+}
+
+static char *addmultisigaddress(RPCARGS)
+{
+}
+
+static char *getnewaddress(RPCARGS)
+{
+    struct iguana_waddress addr; char str[67],*account; cJSON *retjson = cJSON_CreateObject();
+    if ( iguana_waddresscalc(coin,&addr,rand256(1)) == 0 )
+    {
+        jaddstr(retjson,"result",addr.coinaddr);
+        init_hexbytes_noT(str,addr.pubkey,33);
+        jaddstr(retjson,"pubkey",str);
+        jaddstr(retjson,"privkey",bits256_str(str,addr.privkey));
+        jaddstr(retjson,"wip",addr.wipstr);
+        init_hexbytes_noT(str,addr.rmd160,20);
+        jaddstr(retjson,"rmd160",str);
+        if ( params[0] != 0 && (account= jstr(params[0],0)) != 0 )
+        {
+            if ( iguana_waccountadd(coin,account,&addr) < 0 )
+                jaddstr(retjson,"account","error adding to account");
+            else jaddstr(retjson,"account",account);
+        }
+    } else jaddstr(retjson,"error","cant create address");
+    return(jprint(retjson,1));
+}
+
+static char *makekeypair(RPCARGS)
+{
+    struct iguana_waddress addr; char str[67]; cJSON *retjson = cJSON_CreateObject();
+    if ( iguana_waddresscalc(coin,&addr,rand256(1)) == 0 )
+    {
+        init_hexbytes_noT(str,addr.pubkey,33);
+        jaddstr(retjson,"result",str);
+        jaddstr(retjson,"privkey",bits256_str(str,addr.privkey));
+    } else jaddstr(retjson,"error","cant create address");
+    return(jprint(retjson,1));
+}
+
+static char *getaccountaddress(RPCARGS)
+{
+    struct iguana_waddress *waddr,addr; char str[67]; char *account,*coinaddr; cJSON *retjson;
+    if ( params[0] != 0 && (coinaddr= jstr(params[0],0)) != 0 )
+    {
+        if ( (waddr= iguana_waccountfind(coin,account)) == 0 )
+        {
+            if ( (waddr= iguana_waddresscalc(coin,&addr,rand256(1))) == 0 )
+                return(clonestr("{\"error\":\"cant generate address\"}"));
+        }
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"result",waddr->coinaddr);
+        init_hexbytes_noT(str,addr.pubkey,33);
+        jaddstr(retjson,"pubkey",str);
+        jaddstr(retjson,"privkey",bits256_str(str,waddr->privkey));
+        jaddstr(retjson,"wip",waddr->wipstr);
+        init_hexbytes_noT(str,waddr->rmd160,20);
+        jaddstr(retjson,"rmd160",str);
+        jaddstr(retjson,"account",account);
+        return(jprint(retjson,1));
+    }
+    return(clonestr("{\"error\":\"no account specified\"}"));
+}
+
+static char *setaccount(RPCARGS)
+{
+    struct iguana_waddress *waddr,addr; char *account,*coinaddr;
+    if ( params[0] != 0 && (coinaddr= jstr(params[0],0)) != 0 && params[1] != 0 && (account= jstr(params[1],0)) != 0 )
+    {
+        if ( iguana_addressvalidate(coin,coinaddr) < 0 )
+            return(clonestr("{\"error\":\"invalid coin address\"}"));
+        if ( (waddr= iguana_waddressfind(coin,coinaddr)) == 0 )
+        {
+            if ( (waddr= iguana_waddresscalc(coin,&addr,rand256(1))) == 0 )
+                return(clonestr("{\"error\":\"cant generate address\"}"));
+        }
+        iguana_waccountswitch(coin,waddr,coinaddr);
+        return(clonestr("{\"result\":\"account set\"}"));
+    }
+    return(clonestr("{\"error\":\"need address and account\"}"));
+}
+
+static char *getaccount(RPCARGS)
+{
+    struct iguana_waddress *waddr,addr; char *account,*coinaddr; cJSON *retjson;
+    if ( params[0] != 0 && (coinaddr= jstr(params[0],0)) != 0 )
+    {
+        if ( iguana_addressvalidate(coin,coinaddr) < 0 )
+            return(clonestr("{\"error\":\"invalid coin address\"}"));
+        if ( (waddr= iguana_waccountfind(coin,account)) == 0 )
+            return(clonestr("{\"result\":\"no account for address\"}"));
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"result",waddr->account);
+        return(jprint(retjson,1));
+    }
+    return(clonestr("{\"error\":\"need address\"}"));
+}
+
+static char *getaddressesbyaccount(RPCARGS)
+{
+    struct iguana_waccount *subset; char *account; cJSON *retjson,*array;
+    retjson = cJSON_CreateObject();
+    if ( params[0] != 0 && (account= jstr(params[0],0)) != 0 )
+    {
+        array = cJSON_CreateArray();
+        if ( (subset= iguana_waccountfind(coin,account)) != 0 )
+        {
+            HASH_ITER(hh,subset->waddrs,waddr,tmp)
+            {
+                jaddistr(array,waddr->coinaddr);
+            }
+        } else jaddstr(retjson,"result","cant find account");
+    } else jaddstr(retjson,"error","no account specified");
+    jadd(retjson,"addresses",array);
+    return(jprint(retjson,1));
+}
+
+static char *listaddressgroupings(RPCARGS)
+{
+}
+
+static char *getbalance(RPCARGS)
+{
+}
+
+// wallet
+static char *listaccounts(RPCARGS)
+{
+}
+
+static char *dumpprivkey(RPCARGS)
+{
+}
+
+static char *importprivkey(RPCARGS)
+{
+}
+
+static char *dumpwallet(RPCARGS)
+{
+}
+
+static char *importwallet(RPCARGS)
+{
+}
+
+static char *walletpassphrase(RPCARGS)
+{
+}
+
+static char *walletpassphrasechange(RPCARGS)
+{
+}
+
+static char *walletlock(RPCARGS)
+{
+}
+
+static char *encryptwallet(RPCARGS)
+{
+}
+
+static char *checkwallet(RPCARGS)
+{
+}
+
+static char *repairwallet(RPCARGS)
+{
+}
+
+// messages
+static char *signmessage(RPCARGS)
+{
+}
+
+static char *verifymessage(RPCARGS)
+{
+}
+
+// unspents
+static char *listunspent(RPCARGS)
+{
+}
+
+static char *lockunspent(RPCARGS)
+{
+}
+
+static char *listlockunspent(RPCARGS)
+{
+}
+
+static char *gettxout(RPCARGS)
+{
+}
+
+static char *gettxoutsetinfo(RPCARGS)
+{
+}
+
+// payments
+static char *sendtoaddress(RPCARGS)
+{
+    struct iguana_waddress *waddr,addr; char *account,*coinaddr,*comment=0,*comment2=0; double amount = -1.;
+    //sendtoaddress	<bitcoinaddress> <amount> [comment] [comment-to]	<amount> is a real and is rounded to 8 decimal places. Returns the transaction ID <txid> if successful.	Y
+    if ( params[0] != 0 && (coinaddr= jstr(params[0],0)) != 0 &&  params[1] != 0 && is_cJSON_Number(params[1]) != 0 )
+    {
+        if ( iguana_addressvalidate(coin,coinaddr) < 0 )
+            return(clonestr("{\"error\":\"invalid coin address\"}"));
+        amount = jdouble(params[1],0);
+        comment = jstr(params[2],0);
+        comment2 = jstr(params[3],0);
+        printf("need to generate send %.8f to %s [%s] [%s]\n",dstr(amount),coinaddr,comment!=0?comment:"",comment2!=0comment2:"");
+    }
+    return(clonestr("{\"error\":\"need address and amount\"}"));
+}
+
+static char *move(RPCARGS)
+{
+}
+
+static char *sendfrom(RPCARGS)
+{
+}
+
+static char *sendmany(RPCARGS)
+{
+}
+
+static char *settxfee(RPCARGS)
+{
+}
+
+// rawtransaction
+static char *getrawtransaction(RPCARGS)
+{
+}
+
+static char *createrawtransaction(RPCARGS)
+{
+}
+
+static char *decoderawtransaction(RPCARGS)
+{
+}
+
+static char *decodescript(RPCARGS)
+{
+}
+
+static char *signrawtransaction(RPCARGS)
+{
+}
+
+static char *sendrawtransaction(RPCARGS)
+{
+}
+
+static char *resendtx(RPCARGS)
+{
+}
+
+static char *getrawchangeaddress(RPCARGS)
+{
+}
+
+struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,flag1; } RPCcalls[] =
+{
+     { "help",                   &help,                   true,   true },
+     { "stop",                   &stop,                   true,   true },
+     { "getbestblockhash",       &getbestblockhash,       true,   false },
+     { "getblockcount",          &getblockcount,          true,   false },
+     { "getconnectioncount",     &getconnectioncount,     true,   false },
+     { "getpeerinfo",            &getpeerinfo,            true,   false },
+     { "getinfo",                &getinfo,                true,   false },
+     { "getnewaddress",          &getnewaddress,          true,   false },
+     { "getnewpubkey",           &makekeypair,           true,   false },
+     { "getaccountaddress",      &getaccountaddress,      true,   false },
+     { "setaccount",             &setaccount,             true,   false },
+     { "getaccount",             &getaccount,             false,  false },
+     { "getaddressesbyaccount",  &getaddressesbyaccount,  true,   false },
+     { "sendtoaddress",          &sendtoaddress,          false,  false },
+     { "getreceivedbyaddress",   &getreceivedbyaddress,   false,  false },
+     { "getreceivedbyaccount",   &getreceivedbyaccount,   false,  false },
+     { "listreceivedbyaddress",  &listreceivedbyaddress,  false,  false },
+     { "listreceivedbyaccount",  &listreceivedbyaccount,  false,  false },
+     { "backupwallet",           &backupwallet,           true,   false },
+     { "walletpassphrase",       &walletpassphrase,       true,   false },
+     { "walletpassphrasechange", &walletpassphrasechange, false,  false },
+     { "walletlock",             &walletlock,             true,   false },
+     { "encryptwallet",          &encryptwallet,          false,  false },
+     { "validateaddress",        &validateaddress,        true,   false },
+     { "validatepubkey",         &validatepubkey,         true,   false },
+     { "getbalance",             &getbalance,             false,  false },
+     { "move",                   &movecmd,                false,  false },
+     { "sendfrom",               &sendfrom,               false,  false },
+     { "sendmany",               &sendmany,               false,  false },
+     { "addmultisigaddress",     &addmultisigaddress,     false,  false },
+     { "getblock",               &getblock,               false,  false },
+     { "getblockhash",           &getblockhash,           false,  false },
+     { "gettransaction",         &gettransaction,         false,  false },
+     { "listtransactions",       &listtransactions,       false,  false },
+     { "listaddressgroupings",   &listaddressgroupings,   false,  false },
+     { "signmessage",            &signmessage,            false,  false },
+     { "verifymessage",          &verifymessage,          false,  false },
+      { "listaccounts",           &listaccounts,           false,  false },
+     { "settxfee",               &settxfee,               false,  false },
+     { "listsinceblock",         &listsinceblock,         false,  false },
+     { "dumpprivkey",            &dumpprivkey,            false,  false },
+     { "SuperNET",               &SuperNET,               false,  false },
+     { "dumpwallet",             &dumpwallet,             true,   false },
+     { "importwallet",           &importwallet,           false,  false },
+     { "importprivkey",          &importprivkey,          false,  false },
+     { "listunspent",            &listunspent,            false,  false },
+     { "getrawtransaction",      &getrawtransaction,      false,  false },
+     { "createrawtransaction",   &createrawtransaction,   false,  false },
+     { "decoderawtransaction",   &decoderawtransaction,   false,  false },
+     { "decodescript",           &decodescript,           false,  false },
+     { "signrawtransaction",     &signrawtransaction,     false,  false },
+     { "sendrawtransaction",     &sendrawtransaction,     false,  false },
+     { "checkwallet",            &checkwallet,            false,  true},
+     { "repairwallet",           &repairwallet,           false,  true},
+     { "resendtx",               &resendtx,               false,  true},
+     { "makekeypair",            &makekeypair,            false,  true},
+     { "sendalert",              &sendalert,              false,  false},
+     //
+     { "addnode",              &addnode,              false,  false},
+     { "getrawmempool",              &getrawmempool,              false,  false},
+     { "getrawchangeaddress",              &getrawchangeaddress,              false,  false},
+     { "listlockunspent",              &listlockunspent,              false,  false},
+     { "lockunspent",              &lockunspent,              false,  false},
+     { "gettxout",              &gettxout,              false,  false},
+     { "gettxoutsetinfo",              &gettxoutsetinfo,              false,  false}]
+#ifdef PEGGY
+    //{ "peggytx",                &peggytx,                true,   false },
+    //{ "peggypayments",          &peggypayments,          true,   false },
+    //{ "getpeggyblock",          &getpeggyblock,          true,   false },
+#endif
+   // { "addredeemscript",        &addredeemscript,        false,  false },
+    //  { "getrawmempool",          &getrawmempool,          true,   false },
+    //    { "getdifficulty",          &getdifficulty,          true,   false },
+    //    { "getsubsidy",             &getsubsidy,             true,   false },
+    //    { "getmininginfo",          &getmininginfo,          true,   false },
+    //    { "getstakinginfo",         &getstakinginfo,         true,   false },
+    // { "getblockbynumber",       &getblockbynumber,       false,  false },
+    //{ "getwork",                &getwork,                true,   false },
+    //{ "getworkex",              &getworkex,              true,   false },
+    // { "keypoolrefill",          &keypoolrefill,          true,   false },
+    //{ "getblocktemplate",       &getblocktemplate,       true,   false },
+    //{ "submitblock",            &submitblock,            false,  false },
+    // { "getcheckpoint",          &getcheckpoint,          true,   false },
+    // { "reservebalance",         &reservebalance,         false,  true},
+};
+
+char *iguana_bitcoinrpc(struct iguana_info *coin,struct iguana_wallet *wallet,char *method,cJSON *params,int32_t n,char *origstr,char *remoteaddr)
+{
+    int32_t i;
+    for (i=0; i<sizeof(RPCcalls)/sizeof(*RPCcalls); i++)
+    {
+        if ( strcmp(RPCcalls[i].name,method) == 0 )
+            return((*RPCcalls[i].rpcfunc)(coin,wallet,params,n,origstr,remoteaddr));
+    }
+    return(clonestr("{\"error\":\"invalid coin address\"}"));
+}
+
+char *iguana_bitcoinRPC(struct iguana_info *coin,struct supernet_info *myinfo,char *jsonstr,char *remoteaddr)
+{
+    cJSON *json,*obj0,*params[16]; char *method; int32_t n; char *retstr = 0;
+    memset(params,0,sizeof(params));
+    if ( (json= cJSON_Parse(jsonstr)) != 0 )
+    {
+        if ( (method= jstr(json,"method")) != 0 )
+        {
+            if ( (params= jarray(&n,json,"params")) == 0 )
+            {
+                n = 1;
+                params[0] = jobj(json,"params");
+            }
+            else
+            {
+                params[0] = jitem(params,0);
+                if ( n > 1 )
+                    for (i=1; i<n; i++)
+                        params[i] = jitem(params,i);
+            }
+            retstr = iguana_bitcoin(coin,myinfo,method,params,n,jsonstr,remoteaddr);
+        }
+        free_json(json);
+    }
+    if ( retstr == 0 )
+        retstr = clonestr("{\"error\":\"cant parse jsonstr\"}");
+    return(retstr);
+}
+*/

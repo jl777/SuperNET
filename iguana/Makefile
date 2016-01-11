@@ -26,7 +26,7 @@ LIBS = crypto777 curl  ssl crypto z glibc-compat nacl_spawn ppapi nacl_io ppapi_
 CFLAGS = -Wall -D__PNACL -fno-strict-aliasing $(EXTRA)
 LFLAGS = libs
 
-SOURCES = main.c iguana777.c iguana_init.c iguana_json.c iguana_recv.c iguana_chains.c iguana_ramchain.c iguana_bitmap.c iguana_rpc.c iguana_bundles.c iguana_pubkeys.c iguana_msg.c  iguana_html.c iguana_blocks.c iguana_peers.c
+SOURCES = main.c iguana777.c iguana_wallet.c iguana_init.c iguana_json.c iguana_recv.c iguana_chains.c iguana_ramchain.c iguana_bitmap.c iguana_rpc.c iguana_bundles.c iguana_pubkeys.c iguana_msg.c  iguana_html.c iguana_blocks.c iguana_peers.c
 
 SOURCESI = InstantDEX/main.c InstantDEX/InstantDEX_main.c InstantDEX/prices777.c
 
