@@ -434,7 +434,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
         iguana_blockQ(coin,0,-1,blockhashes[1],1);
         for (i=coin->chain->bundlesize; i<num; i++)
         {
-            if ( i >= coin->chain->bundlesize && (i % coin->chain->bundlesize) < 2 )
+            //if ( i >= coin->chain->bundlesize && (i % coin->chain->bundlesize) < 2 )
                 iguana_blockQ(coin,0,-1,blockhashes[i],0);
         }
     }
