@@ -35,7 +35,7 @@ uint64_t IGUANA_MY64BITS;
 queue_t helperQ,jsonQ,finishedQ;
 static int32_t initflag;
 #ifdef __linux__
-int32_t IGUANA_NUMHELPERS = 1;
+int32_t IGUANA_NUMHELPERS = 4;
 #else
 int32_t IGUANA_NUMHELPERS = 1;
 #endif
@@ -310,7 +310,7 @@ void iguana_main(void *arg)
         helperargs = clonestr(helperstr);
         iguana_launch(iguana_coinadd("BTCD"),"iguana_helper",iguana_helper,helperargs,IGUANA_PERMTHREAD);
     }
-    //iguana_launch(iguana_coinadd("BTCD"),"rpcloop",iguana_rpcloop,iguana_coinadd("BTCD"),IGUANA_PERMTHREAD);
+    iguana_launch(iguana_coinadd("BTCD"),"rpcloop",iguana_rpcloop,iguana_coinadd("BTCD"),IGUANA_PERMTHREAD);
     if ( coinargs != 0 )
         iguana_launch(iguana_coinadd("BTCD"),"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
     else if ( 1 )
