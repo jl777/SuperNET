@@ -488,7 +488,7 @@ int32_t is_remote_access(char *previpaddr)
  return(server_addr);
  }*/
 
-char *conv_ipv6(char *ipv6addr)
+/*char *conv_ipv6(char *ipv6addr)
 {
     unsigned char IPV4CHECK[10]; // 80 ZERO BITS for testing
     char ipv4str[4096];
@@ -522,7 +522,7 @@ char *conv_ipv6(char *ipv6addr)
     if ( isok != 0 )
         strcpy(ipv6addr,ipv4str);
     return(ipv6addr); // it is ipv4 now
-}
+}*/
 
 uint16_t parse_endpoint(int32_t *ip6flagp,char *transport,char *ipbuf,char *retbuf,char *endpoint,uint16_t default_port)
 {
