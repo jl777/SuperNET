@@ -371,7 +371,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
                     if ( bundlei == 0 )
                     {
                         char str[65]; bits256_str(str,block->RO.prev_block);
-                        //printf("Afound block -> hdr.%s\n",str);
+                        printf("found block -> hdr.%s\n",str);
                         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(str),1);
                     }
                 }
@@ -390,7 +390,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
         printf("iguana_recvblockhdrs null blocks?\n");
         return(req);
     }
-    //printf("GOT HDRS[%d]\n",n);
+    printf("GOT HDRS[%d]\n",n);
     if ( blocks != 0 && n > 0 )
     {
         for (i=0; i<n; i++)
@@ -487,7 +487,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
         if ( prevbp->numhashes < prevbp->n && prevbundlei == 0 )
         {
             char str[65]; bits256_str(str,prevbp->hashes[0]);
-            //printf("found block -> %d hdr.%s\n",prevbp->bundleheight,str);
+            printf("found block -> %d hdr.%s\n",prevbp->bundleheight,str);
             queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(str),1);
         }
         //char str[65]; printf("PREV %s prevbp.%p[%d] h.%d\n",bits256_str(str,origblock->RO.prev_block),prevbp,prevbundlei,prevbp->numhashes);
@@ -684,7 +684,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
     int32_t i,r,diff,j,k,n,m; double metric,bestmetric = -1.; struct iguana_bundle *bp,*bestbp = 0;
     int32_t limit,refbundlei,height=-1,incr,datalen,flag = 0; double val;
     now = (uint32_t)time(NULL);
-    if ( iguana_needhdrs(coin) != 0 )//&& addr->pendhdrs < IGUANA_MAXPENDHDRS )
+    if ( iguana_needhdrs(coin) != 0 && addr->pendhdrs < IGUANA_MAXPENDHDRS )
     {
         //printf("%s check hdrsQ\n",addr->ipaddr);
         if ( (hashstr= queue_dequeue(&coin->hdrsQ,1)) != 0 )
