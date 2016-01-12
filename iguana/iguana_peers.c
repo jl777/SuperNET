@@ -928,7 +928,7 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     //if ( addr->supernet != 0 )
     //    iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
     iguana_send_version(coin,addr,coin->myservices);
-    sleep(10);
+    sleep(1+(rand()%5));
     iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
     run = 0;
     while ( addr->usock >= 0 && addr->dead == 0 && coin->peers.shuttingdown == 0 )
