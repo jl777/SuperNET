@@ -400,7 +400,7 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
         }
     }
     addr->totalsent += len;
-    printf(" sent.%d bytes to %s\n",len,addr->ipaddr);// getchar();
+    printf(" %s sent.%d bytes to %s\n",(char *)&serialized[4],len,addr->ipaddr);// getchar();
     return(len);
 }
 
@@ -440,7 +440,7 @@ int32_t iguana_recv(int32_t usock,uint8_t *recvbuf,int32_t len)
     {
         if ( (recvlen= (int32_t)recv(usock,recvbuf,remains,0)) < 0 )
         {
-            //printf("recv errno.%d %s\n",errno,strerror(errno));
+            printf("recv errno.%d %s\n",errno,strerror(errno));
             if ( errno == EAGAIN )
             {
 #ifdef IGUANA_DEDICATED_THREADS
@@ -457,7 +457,7 @@ int32_t iguana_recv(int32_t usock,uint8_t *recvbuf,int32_t len)
                 remains -= recvlen;
                 recvbuf = &recvbuf[recvlen];
             } else usleep(10000);
-            if ( 0 && remains > 0 )
+            //if ( 0 && remains > 0 )
                 printf("got %d remains.%d of total.%d\n",recvlen,remains,len);
         }
     }
