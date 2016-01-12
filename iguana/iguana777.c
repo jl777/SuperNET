@@ -500,6 +500,7 @@ int32_t iguana_launchcoin(char *symbol,cJSON *json)
             coins[1] = coin;
             printf("launch coinloop for.%s services.%llx\n",coin->symbol,(long long)services);
             iguana_launch(coin,"iguana_coinloop",iguana_coinloop,coins,IGUANA_PERMTHREAD);
+            coin->active = 1;
             return(1);
         }
         else
