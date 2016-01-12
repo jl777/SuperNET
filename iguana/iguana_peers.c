@@ -340,7 +340,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
             closesocket(sock);
         return(-1);
     }
-    if ( bindflag != 0 && listen(sock,128) != 0 )
+    if ( bindflag != 0 && listen(sock,16) != 0 )
     {
         printf("listen(%s) port.%d failed: %s sock.%d. errno.%d\n",hostname,port,strerror(errno),sock,errno);
         if ( sock >= 0 )
@@ -504,12 +504,10 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
     int32_t len,recvlen; void *buf = _buf; struct iguana_msghdr H;
     if ( coin->peers.shuttingdown != 0 || addr->dead != 0 )
         return;
-    if ( 0 && addr->supernet != 0 )
-        printf("%p got.(%s) from %s | usock.%d ready.%u dead.%u\n",addr,H.command,addr->ipaddr,addr->usock,addr->ready,addr->dead);
     memset(&H,0,sizeof(H));
     if ( (recvlen= (int32_t)iguana_recv(usock,(uint8_t *)&H,sizeof(H))) == sizeof(H) )
     {
-        //printf("%p got.(%s) recvlen.%d from %s | usock.%d ready.%u dead.%u\n",addr,H.command,recvlen,addr->ipaddr,addr->usock,addr->ready,addr->dead);
+        printf("%p got.(%s) recvlen.%d from %s | usock.%d ready.%u dead.%u\n",addr,H.command,recvlen,addr->ipaddr,addr->usock,addr->ready,addr->dead);
         if ( coin->peers.shuttingdown != 0 || addr->dead != 0 )
             return;
         if ( (len= iguana_validatehdr(&H)) >= 0 )
