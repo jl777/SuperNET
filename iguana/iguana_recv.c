@@ -671,7 +671,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         limit = 1;
     //if ( addr->pendblocks >= limit )
     //    printf("%s %d overlimit.%d\n",addr->ipaddr,addr->pendblocks,limit);
-    if ( coin->bundlescount > 0  && (req= queue_dequeue(&coin->priorityQ,0)) == 0 && addr->pendblocks < limit )//&& now > addr->lastpoll )
+    if ( coin->bundlescount > 0 && (req= queue_dequeue(&coin->priorityQ,0)) == 0 )//addr->pendblocks < limit )//&& now > addr->lastpoll )
     {
         if ( 0 )//strcmp("BTC",coin->symbol) != 0 )
         {
@@ -759,7 +759,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                     i = (bestbp->hdrsi + k) % coin->bundlescount;
                     if ( (bp= coin->bundles[i]) == 0 || bp->emitfinish != 0 )
                         continue;
-                    printf("%.15f ref.%d addrind.%d bestbp.%d\n",bestmetric,refbundlei,addr->addrind,bp->hdrsi);
+                    //printf("%.15f ref.%d addrind.%d bestbp.%d\n",bestmetric,refbundlei,addr->addrind,bp->hdrsi);
                     m = coin->chain->bundlesize;
                     if ( bp->n < m )
                         m = bp->n;
@@ -774,7 +774,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                             if ( block->numrequests < 100 )
                                 block->numrequests++;
                             //block->issued = (uint32_t)time(NULL);;
-                            printf("%s Send auto blockreq.%d\n",addr->ipaddr,bp->bundleheight+j);
+                            //printf("%s Send auto blockreq.%d\n",addr->ipaddr,bp->bundleheight+j);
                             iguana_sendblockreq(coin,addr,bp,j,hash2,0);
                             return(1);
                         }
