@@ -328,15 +328,14 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
         if ( block != origblock )
             iguana_blockcopy(coin,block,origblock);
         *blockp = block;
-        if ( bits256_nonz(block->RO.prev_block) > 0 )
-            iguana_patch(coin,block);
+        //if ( bits256_nonz(block->RO.prev_block) > 0 )
+        //    iguana_patch(coin,block);
         if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,block->RO.hash2)) != 0 )
         {
             if ( bundlei < coin->chain->bundlesize )
             {
                 block->bundlei = bundlei;
                 block->hdrsi = bp->hdrsi;
-                //iguana_hash2set(coin,"blockadd",bp,block->bundlei,block->hash2);
                 iguana_bundlehash2add(coin,0,bp,bundlei,block->RO.hash2);
                 if ( bundlei > 0 )
                 {
@@ -418,11 +417,11 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
     else
     {
         //char str[65]; printf("blockhashes[%d] %s\n",num,bits256_str(str,blockhashes[1]));
-        iguana_blockQ(coin,0,-1,blockhashes[1],1);
+        iguana_blockQ(coin,0,-1,blockhashes[1],0);
         for (i=coin->chain->bundlesize; i<num; i++)
         {
             if ( i >= coin->chain->bundlesize && (i % coin->chain->bundlesize) < 2 )
-                iguana_blockQ(coin,0,-1,blockhashes[i],1);
+                iguana_blockQ(coin,0,-1,blockhashes[i],0);
         }
     }
     /*if ( (block= iguana_blockhashset(coin,-1,blockhashes[1],1)) != 0 && num > 2 )
@@ -869,7 +868,7 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
                         if ( bp != 0 )
                         {
                             coin->backstopmillis = OS_milliseconds();
-                            iguana_blockQ(coin,bp,bundlei,iguana_blockhash(coin,coin->backstop),1);
+                            iguana_blockQ(coin,bp,bundlei,iguana_blockhash(coin,coin->backstop),0);
                             //if ( (rand() % 100) == 0 )
                             printf("MAINCHAIN.%d threshold %.3f %.3f lag %.3f\n",coin->blocks.hwmchain.height+1,threshold,coin->backstopmillis,lag);
                         }
