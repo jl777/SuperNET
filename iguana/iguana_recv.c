@@ -703,7 +703,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                         iguana_send(coin,addr,serialized,datalen);
                         addr->pendhdrs++;
                         flag++;
-                    }
+                    } else printf("skip hdrreq.%d numhashes.%d\n",bp->bundleheight,bp->numhashes);
                 }
                 free_queueitem(hashstr);
                 return(flag);
