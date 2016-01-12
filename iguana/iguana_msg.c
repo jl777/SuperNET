@@ -152,11 +152,7 @@ void iguana_gotversion(struct iguana_info *coin,struct iguana_peer *addr,struct 
     }
     else printf("nServices.%lld nonce.%llu non-relay node.(%s)\n",(long long)vers->nServices,(long long)vers->nonce,addr->ipaddr);
     if ( (vers->nServices & (1<<7)) == (1<<7) )
-    {
         addr->supernet = 1;
-        printf("send getpeers to %s\n",addr->ipaddr);
-        iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
-    }
     if ( vers->nStartingHeight > coin->longestchain )
         coin->longestchain = vers->nStartingHeight;
     iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
@@ -185,6 +181,11 @@ void iguana_gotverack(struct iguana_info *coin,struct iguana_peer *addr)
         printf("gotverack from %s\n",addr->ipaddr);
         addr->A.nTime = (uint32_t)time(NULL);
         iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
+        if ( addr->supernet != 0 )
+        {
+            printf("send getpeers to %s\n",addr->ipaddr);
+            iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
+        }
     }
 }
 
@@ -204,7 +205,11 @@ void iguana_gotping(struct iguana_info *coin,struct iguana_peer *addr,uint64_t n
     if ( memcmp(data,&serialized[sizeof(struct iguana_msghdr)],sizeof(nonce)) != 0 )
         printf("ping ser error %llx != %llx\n",(long long)nonce,*(long long *)data);
     iguana_queue_send(coin,addr,0,serialized,"pong",len,0,0);
-    iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
+    if ( addr->supernet != 0 )
+    {
+        printf("send getpeers to %s\n",addr->ipaddr);
+        iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
+    }
 }
 
 int32_t iguana_send_ping(struct iguana_info *coin,struct iguana_peer *addr)

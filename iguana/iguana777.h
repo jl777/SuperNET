@@ -33,7 +33,7 @@
 #define _IGUANA_MAXBUNDLES 8 
 #define IGUANA_MAXACTIVEBUNDLES 32
 #define IGUANA_MAXFILES 4096
-#define IGUANA_BUNDLELOOP 1000
+#define IGUANA_BUNDLELOOP 10
 #define IGUANA_RPCPORT 7778
 #define IGUANA_MAXRAMCHAINSIZE ((uint64_t)1024L * 1024L * 1024L * 16)
 
@@ -252,8 +252,8 @@ struct iguana_block
 {
     struct iguana_blockRO RO;
     double PoW; // NOT consensus safe, for estimation purposes only
-    int32_t height,fpos; uint32_t fpipbits;
-    uint16_t hdrsi,bundlei:12,mainchain:1,valid:1,queued:1,tbd:1,numrequests:8,extra:8;
+    int32_t height,fpos; uint32_t fpipbits,numrequests;
+    uint16_t hdrsi,bundlei:12,mainchain:1,valid:1,queued:1,tbd:1,extra:8;
     UT_hash_handle hh;
 } __attribute__((packed));
 
@@ -388,7 +388,8 @@ struct iguana_bundle
     struct queueitem DL; struct iguana_info *coin; struct iguana_bundle *nextbp;
     struct iguana_bloom16 bloom;
     uint32_t issuetime,hdrtime,emitfinish,mergefinish,purgetime;
-    int32_t minrequests,numhashes,numissued,numrecv,n,hdrsi,bundleheight,numtxids,numspends,numunspents;
+    int32_t numhashes,numrecv,numsaved,numcached;
+    int32_t minrequests,n,hdrsi,bundleheight,numtxids,numspends,numunspents;
     double avetime,threshold,metric; uint64_t datasize,estsize;
     struct iguana_block *blocks[IGUANA_MAXBUNDLESIZE]; uint32_t issued[IGUANA_MAXBUNDLESIZE];
     bits256 prevbundlehash2,hashes[IGUANA_MAXBUNDLESIZE+1],nextbundlehash2,allhash;
@@ -437,7 +438,8 @@ struct iguana_info
     double parsemillis,avetime; uint32_t Launched[8],Terminated[8];
     portable_mutex_t peers_mutex,blocks_mutex;
     struct iguana_bundle *bundles[IGUANA_MAXBUNDLES];
-    int32_t numpendings,zcount,recvcount,bcount,pcount,lastbundle; uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent;
+    double rankedbps[IGUANA_MAXBUNDLES][2];
+    int32_t numremain,numpendings,zcount,recvcount,bcount,pcount,lastbundle; uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent;
     double backstopmillis; bits256 backstophash2;
     int32_t initialheight,mapflags,minconfirms,numrecv,isRT,backstop,blocksrecv,merging,polltimeout,numreqtxids; bits256 reqtxids[64];
     void *launched,*started;
