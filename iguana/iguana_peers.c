@@ -992,7 +992,7 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
                     }
                 }
             }
-            if ( 0 && flag == 0 )
+            if ( flag == 0 )
             {
                 if ( run++ > 1000 )
                 {
