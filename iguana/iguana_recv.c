@@ -154,7 +154,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
     bp = 0, bundlei = -2;
     if ( copyflag != 0 && recvlen != 0 && ((bp= iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.hash2)) == 0 || (bp->blocks[bundlei] != 0 && bp->blocks[bundlei]->fpipbits == 0)) )
     {
-        printf("copy %p serialized[%d]\n",req->serialized,req->recvlen);
+        //printf("copy %p serialized[%d]\n",req->serialized,req->recvlen);
         memcpy(req->serialized,data,recvlen), req->copyflag = 1;
     }
     txdata = origtxdata;
@@ -463,7 +463,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     
     struct iguana_bundle *prevbp=0,*bp=0; int32_t prevbundlei=-2,bundlei = -2; struct iguana_block *prevblock,*block;
     bp = iguana_bundleset(coin,&block,&bundlei,origblock);
-    static int total; char str[65]; printf("RECV %s [%d:%d] block.%08x | %d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,total++);
+    //static int total; char str[65]; printf("RECV %s [%d:%d] block.%08x | %d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,total++);
     iguana_bundlefind(coin,&prevbp,&prevbundlei,origblock->RO.prev_block);
     if ( prevbp != 0 && prevbundlei >= 0 && (prevblock= iguana_blockfind(coin,origblock->RO.prev_block)) != 0 )
     {
@@ -499,7 +499,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
         block->RO.recvlen = recvlen;
         if ( req->copyflag != 0 && block->queued == 0 )//block->rawdata == 0 )
         {
-            char str[65]; printf("%s copyflag.%d %d data %d %d\n",bits256_str(str,block->RO.hash2),req->copyflag,block->height,req->recvlen,recvlen);
+            //char str[65]; printf("%s copyflag.%d %d data %d %d\n",bits256_str(str,block->RO.hash2),req->copyflag,block->height,req->recvlen,recvlen);
             //block->rawdata = mycalloc('n',1,block->RO.recvlen);
             //memcpy(block->rawdata,req->serialized,block->RO.recvlen);
             //block->copyflag = 1;

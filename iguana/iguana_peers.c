@@ -471,7 +471,7 @@ void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct ig
     if ( memcmp(&checkH,H,sizeof(checkH)) == 0 )
     {
         //if ( strcmp(addr->ipaddr,"127.0.0.1") == 0 )
-        printf("%s parse.(%s) len.%d\n",addr->ipaddr,H->command,len);
+        //printf("%s parse.(%s) len.%d\n",addr->ipaddr,H->command,len);
         //printf("addr->dead.%u\n",addr->dead);
         if ( strcmp(H->command,"block") == 0 || strcmp(H->command,"tx") == 0 )
         {
@@ -937,7 +937,7 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
         {
             if ( req->datalen != 0 )
             {
-                char str[65]; printf("CACHE parse[%d] %s %s\n",req->recvlen,req->H.command,bits256_str(str,req->block.RO.hash2));
+                //char str[65]; printf("CACHE parse[%d] %s %s\n",req->recvlen,req->H.command,bits256_str(str,req->block.RO.hash2));
                 iguana_parsebuf(coin,addr,&req->H,req->serialized,req->recvlen);
             } else printf("CACHE error no datalen\n");
             coin->cachefreed++;
