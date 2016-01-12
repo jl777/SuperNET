@@ -400,7 +400,7 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
         }
     }
     addr->totalsent += len;
-    printf(" %s sent.%d bytes to %s\n",(char *)&serialized[4],len,addr->ipaddr);// getchar();
+    //printf(" %s sent.%d bytes to %s\n",(char *)&serialized[4],len,addr->ipaddr);// getchar();
     return(len);
 }
 
