@@ -506,32 +506,29 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             //if ( origissue < 8 )
              //   origissue = 8;
             issue = origissue;
-            while ( issue > 0 && m++ < 100 )
+            now = (uint32_t)time(NULL);
+            for (i=0; i<n&&i<100; i++)
             {
-                now = (uint32_t)time(NULL);
-                for (i=0; i<n; i++)
+                if ( issue <= 0 )
+                    break;
+                if ( (bp= coin->bundles[(int32_t)coin->rankedbps[i][1]]) != 0 )
                 {
-                    if ( (bp= coin->bundles[(int32_t)coin->rankedbps[i][1]]) != 0 )
+                    for (j=0; j<bp->n; j++)
                     {
-                        for (j=0; j<bp->n; j++)
+                        if ( bits256_nonz(bp->hashes[j]) > 0 && (block= bp->blocks[j]) != 0 )
                         {
-                            if ( bits256_nonz(bp->hashes[j]) > 0 && (block= bp->blocks[j]) != 0 )
+                            //printf("j.%d bp.%d %d %x lag.%d\n",j,bp->minrequests,block->numrequests,block->fpipbits,now - bp->issued[j]);
+                            if ( block->numrequests <= bp->minrequests && block->fpipbits == 0 && (bp->issued[j] == 0 || now > bp->issued[j]+60) )
                             {
-                                //printf("j.%d bp.%d %d %x lag.%d\n",j,bp->minrequests,block->numrequests,block->fpipbits,now - bp->issued[j]);
-                                if ( block->numrequests <= bp->minrequests && block->fpipbits == 0 && (bp->issued[j] == 0 || now > bp->issued[j]+60) )
-                                {
-                                    printf("%d:%d.%d ",bp->hdrsi,j,block->numrequests);
-                                    flag++;
-                                    bp->issued[j] = now;
-                                    iguana_blockQ(coin,bp,j,bp->hashes[j],1);
-                                    if ( --issue < 0 )
-                                        break;
-                                }
+                                printf("%d:%d.%d ",bp->hdrsi,j,block->numrequests);
+                                flag++;
+                                bp->issued[j] = now;
+                                iguana_blockQ(coin,bp,j,bp->hashes[j],1);
+                                if ( --issue < 0 )
+                                    break;
                             }
                         }
                     }
-                    if ( issue <= 0 )
-                        break;
                 }
             }
             /*for (i=0; i<n&&i<3; i++)
