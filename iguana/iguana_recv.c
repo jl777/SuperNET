@@ -142,7 +142,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             }
         }
     }
-    copyflag = 1;// * (strcmp(coin->symbol,"BTC") != 0);
+    copyflag = 1 * (strcmp(coin->symbol,"BTC") != 0);
     req = iguana_bundlereq(coin,addr,'B',copyflag * recvlen);
     req->recvlen = recvlen;
     if ( copyflag != 0 && recvlen != 0 )
@@ -671,7 +671,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         limit = 1;
     //if ( addr->pendblocks >= limit )
     //    printf("%s %d overlimit.%d\n",addr->ipaddr,addr->pendblocks,limit);
-    if ( coin->bundlescount > 0 && (req= queue_dequeue(&coin->priorityQ,0)) == 0 )//addr->pendblocks < limit )//&& now > addr->lastpoll )
+    if ( 0 && coin->bundlescount > 0 && (req= queue_dequeue(&coin->priorityQ,0)) == 0 )//addr->pendblocks < limit )//&& now > addr->lastpoll )
     {
         if ( 0 )//strcmp("BTC",coin->symbol) != 0 )
         {
