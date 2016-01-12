@@ -328,8 +328,8 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
         if ( block != origblock )
             iguana_blockcopy(coin,block,origblock);
         *blockp = block;
-        //if ( bits256_nonz(block->RO.prev_block) > 0 )
-        //    iguana_patch(coin,block);
+        if ( bits256_nonz(block->RO.prev_block) > 0 )
+            iguana_patch(coin,block);
         if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,block->RO.hash2)) != 0 )
         {
             if ( bundlei < coin->chain->bundlesize )
@@ -839,7 +839,7 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
                     lflag++;
                 //else printf("chainlink error for %d\n",coin->blocks.hwmchain.height+1);
             }
-            else if ( 1 )
+            else if ( 0 )
             {
                 double threshold,lag = OS_milliseconds() - coin->backstopmillis;
                 threshold = (10 + coin->longestchain - coin->blocksrecv);
