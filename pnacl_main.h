@@ -459,7 +459,7 @@ if (GetParamString(params, index, &var, &var##_len, out_error)) { \
 return 1;                                                       \
 }
 
-#define CREATE_RESPONSE(name) CreateResponse(output, #name, out_error)
+#define CREATE_RESPONSE(name) CreateResponse(output, name, out_error)
 #define RESPONSE_STRING(var) AppendResponseString(output, var, out_error)
 #define RESPONSE_INT(var) AppendResponseInt(output, var, out_error)
 #define MAX_PARAMS 4
@@ -604,10 +604,10 @@ int CHROMEAPP_HANDLER(struct PP_Var params,struct PP_Var *output,const char **ou
     char *CHROMEAPP_JSON(char *);
     char *retstr;
     PNACL_message("inside Handle_%s\n",CHROMEAPP_STR);
-    CHECK_PARAM_COUNT(CHROMEAPP_NAME, 1);
+    CHECK_PARAM_COUNT(CHROMEAPP_STR, 1);
     PARAM_STRING(0,jsonstr);
     retstr = CHROMEAPP_JSON(jsonstr);
-    CREATE_RESPONSE(CHROMEAPP_NAME);
+    CREATE_RESPONSE(CHROMEAPP_STR);
     RESPONSE_STRING(retstr);
     return 0;
 }

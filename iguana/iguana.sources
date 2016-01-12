@@ -1,1 +1,1 @@
-SOURCES := iguana_wallet.c iguana_html.c  iguana_pubkeys.c iguana_recv.c iguana_bundles.c iguana_msg.c iguana_rpc.c iguana777.c iguana_chains.c iguana_peers.c iguana_accept.c	iguana_bitmap.c iguana_init.c iguana_ramchain.c iguana_blocks.c iguana_json.c $(CRYPTO777_SRCS) main.c
+SOURCES := iguana_tx.c iguana_wallet.c iguana_html.c  iguana_pubkeys.c iguana_recv.c iguana_bundles.c iguana_msg.c iguana_rpc.c iguana777.c iguana_chains.c iguana_peers.c iguana_accept.c	iguana_bitmap.c iguana_init.c iguana_ramchain.c iguana_blocks.c iguana_json.c $(CRYPTO777_SRCS) main.c

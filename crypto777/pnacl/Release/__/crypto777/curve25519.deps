@@ -1,0 +1,7 @@
+# Updated by fix_deps.py
+pnacl/Release/__/crypto777/curve25519.o: ../crypto777/curve25519.c \
+  ../crypto777/../includes/curve25519.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/memory.h
+../crypto777/curve25519.c:
+../crypto777/../includes/curve25519.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/memory.h:
