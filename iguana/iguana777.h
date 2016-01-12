@@ -18,7 +18,7 @@
 #include "../crypto777/OS_portable.h"
 #include "SuperNET.h"
 
-#define IGUANA_DISABLEPEERS
+//#define IGUANA_DISABLEPEERS
 #define IGUANA_MAXCOINS 64
 #define IGUANA_MAXDELAY_MILLIS (3600 * 1000) 
 

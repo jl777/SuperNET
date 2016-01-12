@@ -50,6 +50,11 @@ int32_t iguana_sendblockreq(struct iguana_info *coin,struct iguana_peer *addr,st
 {
     int32_t len; uint8_t serialized[sizeof(struct iguana_msghdr) + sizeof(uint32_t)*32 + sizeof(bits256)];
     char hexstr[65]; init_hexbytes_noT(hexstr,hash2.bytes,sizeof(hash2));
+    if ( addr->msgcounts.verack == 0 )
+    {
+        printf("iguana_sendblockreq %s hasn't verack'ed yet\n");
+        return(-1);
+    }
     if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,hexstr)) > 0 )
     {
         iguana_send(coin,addr,serialized,len);
@@ -671,6 +676,8 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
             hashstr = 0;
         }
     }
+    if ( addr->msgcounts.verack == 0 )
+        return(0);
     if ( (limit= addr->recvblocks) > coin->MAXPENDING )
         limit = coin->MAXPENDING;
     if ( limit < 1 )
@@ -678,7 +685,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
     //if ( addr->pendblocks >= limit )
     //    printf("%s %d overlimit.%d\n",addr->ipaddr,addr->pendblocks,limit);
     req = queue_dequeue(&coin->priorityQ,0);
-    if ( 1 && coin->bundlescount > 0 && req == 0 )//addr->pendblocks < limit )//&& now > addr->lastpoll )
+    if ( addr->msgcounts.verack > 0 && coin->bundlescount > 0 && req == 0 )//addr->pendblocks < limit )//&& now > addr->lastpoll )
     {
         if ( 1 )//strcmp("BTC",coin->symbol) != 0 )
         {
