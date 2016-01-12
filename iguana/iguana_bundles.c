@@ -503,8 +503,8 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
         if ( pend > 0 )
         {
             origissue = (_IGUANA_MAXPENDING*coin->peers.numranked - pend);
-            if ( origissue < 8 )
-                origissue = 8;
+            //if ( origissue < 8 )
+             //   origissue = 8;
             issue = origissue;
             while ( issue > 0 && m++ < 100 )
             {
@@ -536,8 +536,8 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             }
             /*for (i=0; i<n&&i<3; i++)
              printf("(%.5f %.0f).%d ",coin->rankedbps[i][0],coin->rankedbps[i][1],coin->bundles[(int32_t)coin->rankedbps[i][1]]->numrecv);*/
-            //if ( flag != 0 )
-            printf("rem.%d issue.%d pend.%d | numranked.%d\n",n,origissue,pend,coin->peers.numranked);
+            if ( flag != 0 )
+                printf("rem.%d issue.%d pend.%d | numranked.%d\n",n,origissue,pend,coin->peers.numranked);
         }
     }
     coin->numremain = n;
@@ -554,7 +554,12 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     sprintf(str,"N[%d] h.%d r.%d c.%d:%d:%d s.%d E.%d:%d M.%d L.%d est.%d %s %d:%02d:%02d %03.3f peers.%d/%d",coin->bundlescount,numhashes,coin->blocksrecv,coin->numcached,numcached,coin->cachefreed,numsaved,numemit,coin->numreqsent,coin->blocks.hwmchain.height,coin->longestchain,coin->MAXBUNDLES,mbstr(str2,estsize),(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,difft.millis,p,coin->MAXPEERS);
     //sprintf(str+strlen(str),"%s.%-2d %s time %.2f files.%d Q.%d %d\n",coin->symbol,flag,str,(double)(time(NULL)-coin->starttime)/60.,coin->peers.numfiles,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
     //if ( (rand() % 100) == 0 )
+    static uint32_t lastdisp;
+    if ( time(NULL) > lastdisp+10 )
+    {
         printf("%s\n",str);
+        lastdisp = (uint32_t)time(NULL);
+    }
     strcpy(coin->statusstr,str);
     coin->estsize = estsize;
 }
