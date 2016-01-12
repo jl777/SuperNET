@@ -316,7 +316,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
     setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(void *)&timeout,sizeof(timeout));
     opt = 1;
     slen = sizeof(opt);
-    printf("set keepalive.%d\n",setsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,slen));
+    //printf("set keepalive.%d\n",setsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,slen));
     if ( 0 && bindflag != 0 )
     {
         opt = 0;
@@ -365,8 +365,8 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
     }
     else
     {
-        if ( addr->relayflag == 0 )
-            return(-1);
+        //if ( addr->relayflag == 0 )
+        //    return(-1);
     }
     if ( strcmp((char *)&serialized[4],"ping") == 0 )
         addr->sendmillis = OS_milliseconds();
@@ -436,7 +436,7 @@ int32_t iguana_recv(int32_t usock,uint8_t *recvbuf,int32_t len)
     {
         if ( (recvlen= (int32_t)recv(usock,recvbuf,remains,0)) < 0 )
         {
-            printf("recv errno.%d %s\n",errno,strerror(errno));
+            //printf("recv errno.%d %s\n",errno,strerror(errno));
             if ( errno == EAGAIN )
             {
 #ifdef IGUANA_DEDICATED_THREADS
@@ -765,7 +765,6 @@ int32_t iguana_pollsendQ(struct iguana_info *coin,struct iguana_peer *addr)
         }
         else if ( packet->embargo.x == 0 )
         {
-            
             iguana_send(coin,addr,packet->serialized,packet->datalen);
             myfree(packet,sizeof(*packet) + packet->datalen);
             return(1);
@@ -927,7 +926,7 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     //    iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
     sleep(1);
     iguana_send_version(coin,addr,coin->myservices);
-    iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
+    //iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
     run = 0;
     while ( addr->usock >= 0 && addr->dead == 0 && coin->peers.shuttingdown == 0 )
     {
