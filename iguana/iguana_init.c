@@ -236,19 +236,19 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
         //printf("parse line.(%s) maxpeers.%d\n",line,coin->MAXPEERS);
         if ( iter == 0 )
         {
-            if ( m < coin->MAXPEERS/2 )//&& m < 77.7 )
+            if ( m < (2*coin->MAXPEERS)/3 )//&& m < 77.7 )
             {
                 if ( m == 0 )
                 {
                     addr = &coin->peers.active[m++];
                     iguana_initpeer(coin,addr,(uint32_t)calc_ipbits("127.0.0.1"));
-                    //printf("call initpeer.(%s)\n",addr->ipaddr);
+                    printf("call initpeer.(%s)\n",addr->ipaddr);
                     iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
                 }
 #ifndef IGUANA_DISABLEPEERS
                 addr = &coin->peers.active[m++];
                 iguana_initpeer(coin,addr,(uint32_t)calc_ipbits(line));
-                //printf("call initpeer.(%s)\n",addr->ipaddr);
+                printf("call initpeer.(%s)\n",addr->ipaddr);
                 iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
 #endif
             }

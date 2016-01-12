@@ -330,11 +330,11 @@ void iguana_main(void *arg)
     //init_InstantDEX();
     while ( 1 )
     {
-        //flag = 0;
+        flag = 0;
         //for (i=0; i<sizeof(Coins)/sizeof(*Coins); i++)
         //    if ( Coins[i] != 0 && Coins[i]->symbol[0] != 0 )
         //        flag += iguana_processjsonQ(Coins[i]);
-        flag = iguana_jsonQ();
+        //flag = iguana_jsonQ();
         if ( flag == 0 )
             usleep(100000);
     }

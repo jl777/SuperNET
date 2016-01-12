@@ -453,8 +453,8 @@ int32_t iguana_recv(int32_t usock,uint8_t *recvbuf,int32_t len)
                 remains -= recvlen;
                 recvbuf = &recvbuf[recvlen];
             } else usleep(10000);
-            //if ( remains > 0 )
-                //printf("got %d remains.%d of total.%d\n",recvlen,remains,len);
+            if ( 0 && remains > 0 )
+                printf("got %d remains.%d of total.%d\n",recvlen,remains,len);
         }
     }
     return(len);
@@ -468,7 +468,7 @@ void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct ig
     if ( memcmp(&checkH,H,sizeof(checkH)) == 0 )
     {
         //if ( strcmp(addr->ipaddr,"127.0.0.1") == 0 )
-        //printf("%s parse.(%s) len.%d\n",addr->ipaddr,H.command,len);
+        //printf("%s parse.(%s) len.%d\n",addr->ipaddr,H->command,len);
         //printf("addr->dead.%u\n",addr->dead);
         if ( strcmp(H->command,"block") == 0 || strcmp(H->command,"tx") == 0 )
         {
@@ -573,6 +573,7 @@ void iguana_startconnection(void *arg)
     addr->addrind = (int32_t)(((long)addr - (long)&coin->peers.active[0]) / sizeof(*addr));
     if ( addr->usock >= 0 )
     {
+        printf("%s usock.%d skip connection\n",addr->ipaddr,addr->usock);
         return;
     }
     if ( strcmp(coin->name,addr->coinstr) != 0 )
@@ -697,7 +698,7 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
         return((uint32_t)time(NULL));
     }
 #endif
-    //printf("check possible peer.(%s)\n",ipaddr);
+    printf("check possible peer.(%s)\n",ipaddr);
     for (i=n=0; i<coin->MAXPEERS; i++)
     {
         if ( strcmp(ipaddr,coin->peers.active[i].ipaddr) == 0 )
@@ -900,7 +901,7 @@ int64_t iguana_peerallocated(struct iguana_info *coin,struct iguana_peer *addr)
 void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
 {
     static uint32_t lastping;
-    struct pollfd fds; uint8_t *buf; struct iguana_bundlereq *req; //,serialized[64]
+    struct pollfd fds; uint8_t *buf,serialized[64]; struct iguana_bundlereq *req;
     int32_t bufsize,flag,run,timeout = coin->polltimeout == 0 ? 10 : coin->polltimeout;
 #ifdef IGUANA_PEERALLOC
     int32_t i;  int64_t remaining; struct OS_memspace *mem[sizeof(addr->SEROUT)/sizeof(*addr->SEROUT)];
@@ -926,7 +927,7 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     //    iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
     sleep(1);
     iguana_send_version(coin,addr,coin->myservices);
-    //iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
+    iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
     run = 0;
     while ( addr->usock >= 0 && addr->dead == 0 && coin->peers.shuttingdown == 0 )
     {
