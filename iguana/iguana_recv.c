@@ -195,7 +195,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
 void iguana_gottxidsM(struct iguana_info *coin,struct iguana_peer *addr,bits256 *txids,int32_t n)
 {
     struct iguana_bundlereq *req;
-    printf("got %d txids from %s\n",n,addr->ipaddr);
+    //printf("got %d txids from %s\n",n,addr->ipaddr);
     req = iguana_bundlereq(coin,addr,'T',0);
     req->hashes = txids, req->n = n;
     queue_enqueue("bundlesQ",&coin->bundlesQ,&req->DL,0);
