@@ -186,7 +186,8 @@ extern "C"
     void jaddi64bits(cJSON *json,uint64_t nxt64bits);
     void jdelete(cJSON *object,char *string);
     cJSON *jduplicate(cJSON *json);
-    
+    int32_t jnum(cJSON *obj,char *field);
+ 
     bits256 jbits256(cJSON *json,char *field);
     bits256 jbits256i(cJSON *json,int32_t i);
     void jaddbits256(cJSON *json,char *field,bits256 hash);

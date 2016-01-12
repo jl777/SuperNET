@@ -24,6 +24,8 @@
 #include "iguana777.h"
 #include "SuperNET.h"
 
+#define SUPERNET_HELPSTR "SuperNET help text here"
+
 // ALL globals must be here!
 struct iguana_info *Coins[IGUANA_MAXCOINS];
 int32_t USE_JAY,FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel;
@@ -94,7 +96,7 @@ char *pangea_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *
 
 char *SuperNET_jsonstr(struct supernet_info *myinfo,char *jsonstr,char *remoteaddr)
 {
-    cJSON *json; char *agent,*method,*symbol;
+    cJSON *json,*retjson; char *agent,*method,*symbol;
     if ( (json= cJSON_Parse(jsonstr)) != 0 )
     {
         method = jstr(json,"method");
@@ -118,6 +120,12 @@ char *SuperNET_jsonstr(struct supernet_info *myinfo,char *jsonstr,char *remotead
                 {
                     strcpy(myinfo->rpcsymbol,symbol);
                     return(clonestr("{\"result\":\"set bitcoin RPC coin\"}"));
+                }
+                else if ( strcmp(method,"help") == 0 )
+                {
+                    retjson = cJSON_CreateObject();
+                    jaddstr(retjson,"result",SUPERNET_HELPSTR);
+                    return(jprint(retjson,1));
                 }
                 return(clonestr("{\"error\":\"unrecognized SuperNET method\"}"));
             }
@@ -174,7 +182,7 @@ char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t
         usleep(100);
         if ( retjsonstr != 0 )
         {
-            printf("blocking retjsonstr.(%s)\n",retjsonstr);
+            //printf("blocking retjsonstr.(%s)\n",retjsonstr);
             queue_delete(&finishedQ,&ptr->DL,allocsize,1);
             return(retjsonstr);
         }
@@ -210,14 +218,14 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
         jsonstr = jprint(json,0);
         if ( (retjsonstr= iguana_blockingjsonstr(myinfo,jsonstr,tag,timeout,remoteaddr)) != 0 )
         {
-            //printf("retjsonstr.(%s)\n",retjsonstr);
-            if ( (retjson= cJSON_Parse(retjsonstr)) == 0 )
-                retjson = cJSON_Parse("{\"error\":\"cant parse retjsonstr\"}");
-            jdelete(retjson,"tag");
-            jadd64bits(retjson,"tag",tag);
-            retstr = jprint(retjson,1);
-            //printf("retstr.(%s) retjsonstr.%p retjson.%p\n",retstr,retjsonstr,retjson);
-            free(retjsonstr);//,strlen(retjsonstr)+1);
+            if ( (retjson= cJSON_Parse(retjsonstr)) != 0 )
+            {
+                jdelete(retjson,"tag");
+                jadd64bits(retjson,"tag",tag);
+                retstr = jprint(retjson,1);
+                //printf("retstr.(%s) retjsonstr.%p retjson.%p\n",retstr,retjsonstr,retjson);
+                free(retjsonstr);//,strlen(retjsonstr)+1);
+            } else retstr = retjsonstr;
         }
         free(jsonstr);
     } else retstr = clonestr("{\"error\":\"cant parse JSON\"}");

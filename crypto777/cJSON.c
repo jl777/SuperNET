@@ -839,6 +839,25 @@ char *get_cJSON_fieldname(cJSON *obj)
     return((char *)"<no cJSON string field>");
 }
 
+int32_t jnum(cJSON *obj,char *field)
+{
+    char *str; int32_t polarity = 1;
+    if ( field != 0 )
+        obj = jobj(obj,field);
+    if ( obj != 0 )
+    {
+        if ( is_cJSON_Number(obj) != 0 )
+            return(obj->valuedouble);
+        else if ( is_cJSON_String(obj) != 0 && (str= jstr(obj,0)) != 0 )
+        {
+            if ( str[0] == '-' )
+                polarity = -1, str++;
+            return(polarity * (int32_t)calc_nxt64bits(str));
+        }
+    }
+    return(0);
+}
+
 void ensure_jsonitem(cJSON *json,char *field,char *value)
 {
     cJSON *obj = cJSON_GetObjectItem(json,field);

@@ -1107,3 +1107,98 @@ if ( bp_key_init(&key) != 0 && bp_key_secret_set(&key,privkey,32) != 0 )
             return(clonestr(hexstr));
         }
 */
+struct iguana_waddress *iguana_waddresscalc(struct iguana_info *coin,struct iguana_waddress *addr,bits256 privkey)
+{
+    memset(addr,0,sizeof(*addr));
+    addr->privkey = privkey;
+    if ( btc_priv2pub(addr->pubkey,addr->privkey.bytes) == 0 && btc_priv2wip(addr->wipstr,addr->privkey.bytes,coin->chain->wipval) == 0 && btc_pub2rmd(addr->rmd160,addr->pubkey) == 0 && btc_convrmd160(addr->coinaddr,coin->chain->pubval,addr->rmd160) == 0 )
+    {
+        addr->wiptype = coin->chain->wipval;
+        addr->type = coin->chain->pubval;
+        return(addr);
+    }
+    return(0);
+}
+
+/*static char *validateretstr(struct iguana_info *coin,char *coinaddr)
+{
+    char *retstr,buf[512]; cJSON *json;
+    if ( iguana_addressvalidate(coin,coinaddr) < 0 )
+        return(clonestr("{\"error\":\"invalid coin address\"}"));
+    sprintf(buf,"{\"agent\":\"ramchain\",\"coin\":\"%s\",\"method\":\"validate\",\"address\":\"%s\"}",coin->symbol,coinaddr);
+    if ( (json= cJSON_Parse(buf)) != 0 )
+        retstr = ramchain_coinparser(coin,"validate",json);
+    else return(clonestr("{\"error\":\"internal error, couldnt parse validate\"}"));
+    free_json(json);
+    return(retstr);
+}
+
+static char *validatepubkey(RPCARGS)
+{
+    char *pubkeystr,coinaddr[128]; cJSON *retjson;
+    retjson = cJSON_CreateObject();
+    if ( params[0] != 0 && (pubkeystr= jstr(params[0],0)) != 0 )
+    {
+        if ( btc_coinaddr(coinaddr,coin->chain->pubval,pubkeystr) == 0 )
+            return(validateretstr(coin,coinaddr));
+        return(clonestr("{\"error\":\"cant convert pubkey\"}"));
+    }
+    return(clonestr("{\"error\":\"need pubkey\"}"));
+}*/
+
+char *makekeypair(struct iguana_info *coin)
+{
+    struct iguana_waddress addr; char str[67]; cJSON *retjson = cJSON_CreateObject();
+    if ( iguana_waddresscalc(coin,&addr,rand256(1)) == 0 )
+    {
+        init_hexbytes_noT(str,addr.pubkey,33);
+        jaddstr(retjson,"result",str);
+        jaddstr(retjson,"privkey",bits256_str(str,addr.privkey));
+    } else jaddstr(retjson,"error","cant create address");
+    return(jprint(retjson,1));
+}
+
+cJSON *iguana_pubkeyjson(struct iguana_info *coin,char *pubkeystr)
+{
+    cJSON *json = cJSON_CreateObject();
+    return(json);
+}
+
+char *iguana_signmessage(struct supernet_info *myinfo,struct iguana_info *coin,char *address,char *message)
+{
+    return(clonestr("{\"error\":\"notyet\"}"));
+}
+
+
+char *iguana_verifymessage(struct supernet_info *myinfo,struct iguana_info *coin,char *address,char *sig,char *message)
+{
+    return(clonestr("{\"error\":\"notyet\"}"));
+}
+
+
+char *iguana_getnewaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
+{
+    return(clonestr("{\"error\":\"notyet\"}"));
+}
+
+
+char *iguana_makekeypair(struct supernet_info *myinfo,struct iguana_info *coin)
+{
+    return(clonestr("{\"error\":\"notyet\"}"));
+}
+
+
+char *iguana_vanitygen(struct supernet_info *myinfo,struct iguana_info *coin,char *vanity)
+{
+    return(clonestr("{\"error\":\"notyet\"}"));
+}
+
+
+char *iguana_createmultisig(struct supernet_info *myinfo,struct iguana_info *coin,int32_t M,cJSON *pubkeys,char *account)
+{
+    return(clonestr("{\"error\":\"notyet\"}"));
+}
+
+
+                            
+                            

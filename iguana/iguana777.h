@@ -682,5 +682,61 @@ int32_t iguana_launchcoin(char *symbol,cJSON *json);
 int32_t iguana_jsonQ();
 int32_t is_bitcoinrpc(char *method);
 char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr);
+cJSON *iguana_pubkeyjson(struct iguana_info *coin,char *pubkeystr);
+
+
+char *iguana_listsinceblock(struct supernet_info *myinfo,struct iguana_info *coin,bits256 blockhash,int32_t target);
+char *iguana_getreceivedbyaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account,int32_t minconf);
+char *iguana_listreceivedbyaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account,int32_t includeempty);
+
+char *iguana_getaccountaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *account);
+char *iguana_setaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account);
+char *iguana_getaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account);
+char *iguana_getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account);
+char *iguana_listaddressgroupings(struct supernet_info *myinfo,struct iguana_info *coin);
+char *iguana_getbalance(struct supernet_info *myinfo,struct iguana_info *coin,char *account,int32_t minconf);
+char *iguana_listaccounts(struct supernet_info *myinfo,struct iguana_info *coin,int32_t minconf);
+
+char *iguana_move(struct supernet_info *myinfo,struct iguana_info *coin,char *fromaccount,char *toaccount,double amount,int32_t minconf,char *comment);
+char *iguana_sendfrom(struct supernet_info *myinfo,struct iguana_info *coin,char *fromaccount,char *toaddress,double amount,int32_t minconf,char *comment,char *comment2);
+char *iguana_sendmany(struct supernet_info *myinfo,struct iguana_info *coin,char *fromaccount,cJSON *payments,int32_t minconf,char *comment);
+
+char *iguana_dumpprivkey(struct supernet_info *myinfo,struct iguana_info *coin,char *address);
+char *iguana_importprivkey(struct supernet_info *myinfo,struct iguana_info *coin,char *wip);
+char *iguana_dumpwallet(struct supernet_info *myinfo,struct iguana_info *coin);
+char *iguana_importwallet(struct supernet_info *myinfo,struct iguana_info *coin,char *wallet);
+char *iguana_walletpassphrase(struct supernet_info *myinfo,struct iguana_info *coin,char *passphrase,int32_t timeout);
+char *iguana_walletpassphrasechange(struct supernet_info *myinfo,struct iguana_info *coin,char *oldpassphrase,char *newpassphrase);
+char *iguana_walletlock(struct supernet_info *myinfo,struct iguana_info *coin);
+char *iguana_encryptwallet(struct supernet_info *myinfo,struct iguana_info *coin,char *passphrase);
+char *iguana_checkwallet(struct supernet_info *myinfo,struct iguana_info *coin);
+char *iguana_repairwallet(struct supernet_info *myinfo,struct iguana_info *coin);
+char *iguana_backupwallet(struct supernet_info *myinfo,struct iguana_info *coin,char *filename);
+
+char *iguana_signmessage(struct supernet_info *myinfo,struct iguana_info *coin,char *address,char *message);
+char *iguana_verifymessage(struct supernet_info *myinfo,struct iguana_info *coin,char *address,char *sig,char *message);
+char *iguana_getnewaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *account);
+char *iguana_makekeypair(struct supernet_info *myinfo,struct iguana_info *coin);
+char *iguana_vanitygen(struct supernet_info *myinfo,struct iguana_info *coin,char *vanity);
+char *iguana_createmultisig(struct supernet_info *myinfo,struct iguana_info *coin,int32_t M,cJSON *pubkeys,char *account);
+
+char *iguana_getrawchangeaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *account);
+char *iguana_settxfee(struct supernet_info *myinfo,struct iguana_info *coin,double amount);
+char *iguana_listtransactions(struct supernet_info *myinfo,struct iguana_info *coin,char *account,int32_t count,int32_t from);
+char *iguana_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,int32_t minconf,int32_t maxconf);
+char *iguana_lockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *filename);
+char *iguana_listlockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *unlock,cJSON *array);
+char *iguana_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout,int32_t mempool);
+char *iguana_gettxoutsetinfo(struct supernet_info *myinfo,struct iguana_info *coin);
+char *iguana_getrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t verbose);
+char *iguana_createrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins,cJSON *vouts);
+char *iguana_decoderawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx);
+char *iguana_decodescript(struct supernet_info *myinfo,struct iguana_info *coin,char *script);
+char *iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx,cJSON *vins,cJSON *privkeys);
+char *iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx);
+char *iguana_sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address,double amount,char *comment,char *comment2);
+char *iguana_getreceivedbyaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address,int32_t minconf);
+char *iguana_listreceivedbyaddress(struct supernet_info *myinfo,struct iguana_info *coin,int32_t minconf,int32_t includeempty);
+
 
 #endif
