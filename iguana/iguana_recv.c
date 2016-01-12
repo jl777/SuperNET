@@ -673,7 +673,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
     //    printf("%s %d overlimit.%d\n",addr->ipaddr,addr->pendblocks,limit);
     if ( coin->bundlescount > 0  && (req= queue_dequeue(&coin->priorityQ,0)) == 0 && addr->pendblocks < limit )//&& now > addr->lastpoll )
     {
-        if ( 1 )//strcmp("BTC",coin->symbol) != 0 )
+        if ( 0 )//strcmp("BTC",coin->symbol) != 0 )
         {
             int32_t bundlei;
             incr = coin->peers.numranked == 0 ? coin->MAXPEERS : coin->peers.numranked;

@@ -685,7 +685,9 @@ char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,ch
 cJSON *iguana_pubkeyjson(struct iguana_info *coin,char *pubkeystr);
 
 // API functions
-
+char *iguana_getinfo(struct supernet_info *myinfo,struct iguana_info *coin);
+char *iguana_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *coin);
+char *iguana_getblockcount(struct supernet_info *myinfo,struct iguana_info *coin);
 char *iguana_listsinceblock(struct supernet_info *myinfo,struct iguana_info *coin,bits256 blockhash,int32_t target);
 char *iguana_getreceivedbyaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account,int32_t minconf);
 char *iguana_listreceivedbyaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account,int32_t includeempty);

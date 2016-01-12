@@ -469,6 +469,10 @@ cJSON *iguana_txjson(struct iguana_info *coin,struct iguana_txid *tx,int32_t hei
 }
 
 /*
+ //char *hashstr,*txidstr,*coinaddr,*txbytes,rmd160str[41],str[65]; int32_t len,height,i,n,valid = 0;
+ //cJSON *addrs,*retjson,*retitem; uint8_t rmd160[20],addrtype; bits256 hash2,checktxid;
+ //memset(&hash2,0,sizeof(hash2)); struct iguana_txid *tx,T; struct iguana_block *block = 0;
+
 if ( (coinaddr= jstr(json,"address")) != 0 )
 {
     if ( btc_addr2univ(&addrtype,rmd160,coinaddr) == 0 )
@@ -659,9 +663,6 @@ char *iguana_getblockcount(struct supernet_info *myinfo,struct iguana_info *coin
 
 char *ramchain_coinparser(struct supernet_info *myinfo,struct iguana_info *coin,char *method,cJSON *json)
 {
-    //char *hashstr,*txidstr,*coinaddr,*txbytes,rmd160str[41],str[65]; int32_t len,height,i,n,valid = 0;
-    //cJSON *addrs,*retjson,*retitem; uint8_t rmd160[20],addrtype; bits256 hash2,checktxid;
-    //memset(&hash2,0,sizeof(hash2)); struct iguana_txid *tx,T; struct iguana_block *block = 0;
     if ( coin == 0 && (coin= iguana_coinselect()) == 0 )
         return(clonestr("{\"error\":\"ramchain_coinparser needs coin\"}"));
     if ( strcmp(method,"status") == 0 || strcmp(method,"getinfo") == 0 )
