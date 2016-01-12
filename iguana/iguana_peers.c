@@ -299,7 +299,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
     saddr.sin_port = htons(port);
     memcpy(&saddr.sin_addr.s_addr,hostent->h_addr_list[0],hostent->h_length);
     ipbits = (uint32_t)calc_ipbits(hostname);
-    printf("ipbits.%08x vs %08x\n",ipbits,saddr.sin_addr.s_addr);
+    //printf("ipbits.%08x vs %08x\n",ipbits,saddr.sin_addr.s_addr);
     expand_ipbits(ipaddr,saddr.sin_addr.s_addr);
     //if ( bindflag != 0 )
     //    printf("iguana_socket.(%s:%d) bind.%d\n",ipaddr,port,bindflag), getchar();
@@ -319,12 +319,12 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
     }
     opt = 1;
     slen = sizeof(opt);
-    printf("set keepalive.%d\n",setsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,slen));
+    //printf("set keepalive.%d\n",setsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,slen));
     if ( 1 )//&& bindflag != 0 )
     {
         opt = 0;
         getsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,&slen);
-        printf("keepalive.%d\n",opt);
+        //printf("keepalive.%d\n",opt);
     }
     setsockopt(sock,SOL_SOCKET,SO_REUSEADDR,(void *)&opt,sizeof(opt));
 #ifdef __APPLE__
@@ -335,7 +335,6 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
     {
         if ( errno != ECONNRESET && errno != ENOTCONN && errno != ECONNREFUSED && errno != ETIMEDOUT && errno != EHOSTUNREACH )
             printf("connect(%s) port.%d failed: %s sock.%d. errno.%d\n",hostname,port,strerror(errno),sock,errno);
-        printf("connect(%s) port.%d failed: %s sock.%d. errno.%d\n",hostname,port,strerror(errno),sock,errno);
         if ( sock >= 0 )
             closesocket(sock);
         return(-1);
