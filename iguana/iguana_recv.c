@@ -304,7 +304,7 @@ int32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bits
             {
                 if ( (err= iguana_bundlehash2add(coin,0,bp,i,blockhashes[i])) < 0 )
                     return(err);
-                if ( bp->emitfinish == 0 && (block= bp->blocks[i]) != 0 && (block->queued == 0 && block->fpipbits == 0) )//&& block->numrequests < 3 )
+                if ( bp->emitfinish == 0 && (block= bp->blocks[i]) != 0 && (block->queued == 0 && block->fpipbits == 0) && block->numrequests < 3 )
                     iguana_blockQ(coin,bp,i,block->RO.hash2,0), n++;
             }
             printf("ALLHASHES FOUND! %d requested.%d\n",bp->bundleheight,n);
@@ -844,7 +844,7 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
                     lflag++;
                 //else printf("chainlink error for %d\n",coin->blocks.hwmchain.height+1);
             }
-            if ( 1 )
+            if ( 0 )
             {
                 double threshold,lag = OS_milliseconds() - coin->backstopmillis;
                 threshold = (10 + coin->longestchain - coin->blocksrecv);
