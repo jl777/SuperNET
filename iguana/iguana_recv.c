@@ -304,10 +304,10 @@ int32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bits
             {
                 if ( (err= iguana_bundlehash2add(coin,0,bp,i,blockhashes[i])) < 0 )
                     return(err);
-                if ( bp->emitfinish == 0 && (block= bp->blocks[i]) != 0 && (block->queued == 0 && block->fpipbits == 0) && block->numrequests < 3 )
+                if ( 0 && bp->emitfinish == 0 && (block= bp->blocks[i]) != 0 && (block->queued == 0 && block->fpipbits == 0) && block->numrequests < 3 )
                     iguana_blockQ(coin,bp,i,block->RO.hash2,0), n++;
             }
-            printf("ALLHASHES FOUND! %d requested.%d\n",bp->bundleheight,n);
+            //printf("ALLHASHES FOUND! %d requested.%d\n",bp->bundleheight,n);
             return(i);
         }
     }
