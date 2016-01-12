@@ -116,7 +116,8 @@ void iguana_gotunconfirmedM(struct iguana_info *coin,struct iguana_peer *addr,st
 
 void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,struct iguana_msghdr *H,uint8_t *data,int32_t recvlen)
 {
-    struct iguana_bundlereq *req; struct iguana_txblock *txdata = 0; int32_t i,j,copyflag; char fname[1024];
+    struct iguana_bundlereq *req; struct iguana_txblock *txdata = 0; int32_t i,j,bundlei,copyflag; char fname[1024];
+    struct iguana_bundle *bp;
     if ( 0 )
     {
         for (i=0; i<txdata->space[0]; i++)
@@ -145,10 +146,11 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
     copyflag = 1 * (strcmp(coin->symbol,"BTC") != 0);
     req = iguana_bundlereq(coin,addr,'B',copyflag * recvlen);
     req->recvlen = recvlen;
-    if ( copyflag != 0 && recvlen != 0 )
+    req->H = *H;
+    bp = 0, bundlei = -2;
+    if ( copyflag != 0 && recvlen != 0 && ((bp= iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.hash2)) == 0 || (bp->blocks[bundlei] != 0 && bp->blocks[bundlei]->fpipbits == 0)) )
     {
         //printf("copy %p serialized[%d]\n",req->serialized,req->recvlen);
-        req->H = *H;
         memcpy(req->serialized,data,recvlen), req->copyflag = 1;
     }
     txdata = origtxdata;
@@ -449,7 +451,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     static int total;
     struct iguana_bundle *prevbp=0,*bp=0; int32_t prevbundlei=-2,bundlei = -2; struct iguana_block *prevblock,*block;
     bp = iguana_bundleset(coin,&block,&bundlei,origblock);
-    char str[65]; printf("RECV %s [%d:%d] block.%p | %d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block,total++);
+    //char str[65]; printf("RECV %s [%d:%d] block.%08x | %d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,total++);
     iguana_bundlefind(coin,&prevbp,&prevbundlei,origblock->RO.prev_block);
     if ( prevbp != 0 && prevbundlei >= 0 && prevbp->blocks[prevbundlei] == 0 && (prevblock= iguana_blockfind(coin,origblock->RO.prev_block)) != 0 )
     {
