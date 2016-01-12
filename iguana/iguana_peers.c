@@ -978,7 +978,11 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
                 }
                 if ( coin->active != 0 && (fds.revents & POLLOUT) != 0 )
                 {
-                    flag += iguana_pollQsPT(coin,addr);
+                    if ( iguana_pollQsPT(coin,addr) > 0 )
+                    {
+                        printf("pollQ!\n");
+                        flag++;
+                    }
                     if ( addr->dead != 0 )
                     {
                         printf("%s is dead\n",addr->ipaddr);
@@ -988,15 +992,15 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
             }
             if ( flag == 0 )
             {
-                if ( run++ > 10000 )
+                if ( run++ > 1000 )
                 {
-                    //printf("sleep\n");
+                    printf("sleep\n");
                     sleep(1);
                 }
                 else if ( addr->rank != 1 )
                     usleep(coin->polltimeout*2500 + (rand() % (coin->polltimeout*2500)));
                 else usleep(100 + coin->polltimeout*1000);
-            }
+            } //else printf("flag.%d\n",flag);
         }
         if ( flag != 0 )
             run = 0;

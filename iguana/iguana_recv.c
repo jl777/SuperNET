@@ -713,6 +713,8 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                         return(1);
                     }
                 }
+                if ( (rand() % 100) < 50 )
+                    break;
             }
         }
         else
