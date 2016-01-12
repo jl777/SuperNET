@@ -702,11 +702,11 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                 if ( (bp= coin->bundles[height/coin->chain->bundlesize]) != 0 && bp->emitfinish == 0 )
                 {
                     bundlei = (height % coin->chain->bundlesize);
-                    if ( bundlei < bp->n && bits256_nonz(bp->hashes[bundlei]) > 0 && (block= bp->blocks[bundlei]) != 0 && block->numrequests <= bp->minrequests && block->fpipbits == 0 )//&& block->queued == 0 )//(bp->issued[bundlei] == 0 || now > bp->issued[bundlei]+10) )
+                    if ( bundlei < bp->n && bits256_nonz(bp->hashes[bundlei]) > 0 && (block= bp->blocks[bundlei]) != 0 && block->numrequests <= bp->minrequests && block->fpipbits == 0 && (bp->issued[bundlei] == 0 || now > bp->issued[bundlei]+10) )
                     {
                         if ( block->numrequests < 100 )
                             block->numrequests++;
-                        //block->issued = (uint32_t)time(NULL);;
+                        bp->issued[bundlei] = (uint32_t)time(NULL);;
                         if ( 0 && (rand() % 100) == 0 )
                             printf("%s Send auto blockreq.%d [%d] minreq.%d\n",addr->ipaddr,bp->bundleheight+bundlei,block->numrequests,bp->minrequests);
                         iguana_sendblockreq(coin,addr,bp,bundlei,bp->hashes[bundlei],0);

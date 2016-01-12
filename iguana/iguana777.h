@@ -390,7 +390,7 @@ struct iguana_bundle
     uint32_t issuetime,hdrtime,emitfinish,mergefinish,purgetime;
     int32_t minrequests,numhashes,numissued,numrecv,n,hdrsi,bundleheight,numtxids,numspends,numunspents;
     double avetime,threshold,metric; uint64_t datasize,estsize;
-    struct iguana_block *blocks[IGUANA_MAXBUNDLESIZE];
+    struct iguana_block *blocks[IGUANA_MAXBUNDLESIZE]; uint32_t issued[IGUANA_MAXBUNDLESIZE];
     bits256 prevbundlehash2,hashes[IGUANA_MAXBUNDLESIZE+1],nextbundlehash2,allhash;
     struct iguana_ramchain ramchain; uint8_t red,green,blue;
 };
