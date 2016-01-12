@@ -447,9 +447,10 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
 
 struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundlereq *req,struct iguana_block *origblock,int32_t numtx,int32_t datalen,int32_t recvlen,int32_t *newhwmp)
 {
+    static int total;
     struct iguana_bundle *prevbp=0,*bp=0; int32_t prevbundlei=-2,bundlei = -2; struct iguana_block *prevblock,*block;
     bp = iguana_bundleset(coin,&block,&bundlei,origblock);
-    char str[65]; printf("RECV %s [%d:%d] block.%p\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block);
+    char str[65]; printf("RECV %s [%d:%d] block.%p | %d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block,total++);
     iguana_bundlefind(coin,&prevbp,&prevbundlei,origblock->RO.prev_block);
     if ( prevbp != 0 && prevbundlei >= 0 && prevbp->blocks[prevbundlei] == 0 && (prevblock= iguana_blockfind(coin,origblock->RO.prev_block)) != 0 )
     {
@@ -676,7 +677,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
     //if ( addr->pendblocks >= limit )
     //    printf("%s %d overlimit.%d\n",addr->ipaddr,addr->pendblocks,limit);
     req = queue_dequeue(&coin->priorityQ,0);
-    if ( 0 && coin->bundlescount > 0 && req == 0 )//addr->pendblocks < limit )//&& now > addr->lastpoll )
+    if ( 1 && coin->bundlescount > 0 && req == 0 )//addr->pendblocks < limit )//&& now > addr->lastpoll )
     {
         if ( 0 )//strcmp("BTC",coin->symbol) != 0 )
         {
@@ -806,7 +807,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         }
         else
         {
-            char str[65];
+            //char str[65];
             //if ( 0 && priority != 0 )
             //    printf(" issue.%s\n",bits256_str(str,hash2));
             if ( block != 0 && block->numrequests < 100 )
