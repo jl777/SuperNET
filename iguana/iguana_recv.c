@@ -449,7 +449,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
 {
     struct iguana_bundle *prevbp=0,*bp=0; int32_t prevbundlei=-2,bundlei = -2; struct iguana_block *prevblock,*block;
     bp = iguana_bundleset(coin,&block,&bundlei,origblock);
-    //char str[65]; printf("RECV %s [%d:%d] block.%p\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block);
+    char str[65]; printf("RECV %s [%d:%d] block.%p\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block);
     iguana_bundlefind(coin,&prevbp,&prevbundlei,origblock->RO.prev_block);
     if ( prevbp != 0 && prevbundlei >= 0 && prevbp->blocks[prevbundlei] == 0 && (prevblock= iguana_blockfind(coin,origblock->RO.prev_block)) != 0 )
     {
