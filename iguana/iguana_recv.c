@@ -330,8 +330,8 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
         if ( block != origblock )
             iguana_blockcopy(coin,block,origblock);
         *blockp = block;
-        //if ( bits256_nonz(block->RO.prev_block) > 0 )
-        //    iguana_patch(coin,block);
+        if ( bits256_nonz(block->RO.prev_block) > 0 )
+            iguana_patch(coin,block);
         if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,block->RO.hash2)) != 0 )
         {
             if ( bundlei < coin->chain->bundlesize )
@@ -448,7 +448,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
 
 struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundlereq *req,struct iguana_block *origblock,int32_t numtx,int32_t datalen,int32_t recvlen,int32_t *newhwmp)
 {
-    static int total;
+    //static int total;
     struct iguana_bundle *prevbp=0,*bp=0; int32_t prevbundlei=-2,bundlei = -2; struct iguana_block *prevblock,*block;
     bp = iguana_bundleset(coin,&block,&bundlei,origblock);
     //char str[65]; printf("RECV %s [%d:%d] block.%08x | %d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,total++);
