@@ -390,7 +390,6 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
         printf("iguana_recvblockhdrs null blocks?\n");
         return(req);
     }
-    printf("GOT HDRS[%d] Q.%d %d\n",n,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
     if ( blocks != 0 && n > 0 )
     {
         for (i=0; i<n; i++)
@@ -399,6 +398,8 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
             if ( (bp= iguana_bundleset(coin,&block,&bundlei,&blocks[i])) != 0 && bp->hdrsi < IGUANA_MAXACTIVEBUNDLES )
             {
                 iguana_blockQ(coin,bp,bundlei,blocks[i].RO.hash2,0);
+                if ( i == 0 )
+                    printf("GOT HDRS[%d] Q.(%d %d) ht.%d\n",n,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ),bp->bundleheight);
             }
         }
     }
