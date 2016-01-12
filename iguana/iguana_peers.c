@@ -935,9 +935,9 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
         {
             if ( req->datalen != 0 )
             {
-                //printf("CACHE parse[%d] %s\n",req->recvlen,req->H.command);
+                printf("CACHE parse[%d] %s\n",req->recvlen,req->H.command);
                 iguana_parsebuf(coin,addr,&req->H,req->serialized,req->recvlen);
-            }
+            } else printf("CACHE error no datalen\n");
             coin->cachefreed++;
             myfree(req,req->allocsize);
             continue;
