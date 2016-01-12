@@ -582,7 +582,7 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
     int32_t i,lag,n = 0; struct iguana_bundle *bp; char hashstr[65];
     if ( iguana_needhdrs(coin) > 0 && queue_size(&coin->hdrsQ) == 0 )
     {
-        if ( coin->zcount++ > 1 )
+        //if ( coin->zcount++ > 1 )
         {
             for (i=0; i<coin->bundlescount; i++)
             {
