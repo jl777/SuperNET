@@ -583,6 +583,7 @@ void iguana_startconnection(void *arg)
     }
     if ( strcmp("127.0.0.1",addr->ipaddr) == 0 && (coin->myservices & NODE_NETWORK) != 0 )
     {
+        iguana_iAkill(coin,addr,0);
         printf("avoid self-loopback\n");
         return;
     }
@@ -968,7 +969,7 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
             }
             if ( flag == 0 )
             {
-                if ( time(NULL) > addr->pendtime+30 )
+                if ( 0 && time(NULL) > addr->pendtime+30 )
                 {
                     if ( addr->pendblocks > 0 )
                         addr->pendblocks--;
