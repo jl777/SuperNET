@@ -457,7 +457,7 @@ int32_t iguana_recv(int32_t usock,uint8_t *recvbuf,int32_t len)
                 remains -= recvlen;
                 recvbuf = &recvbuf[recvlen];
             } else usleep(10000);
-            //if ( 0 && remains > 0 )
+            if ( 0 && remains > 0 )
                 printf("got %d remains.%d of total.%d\n",recvlen,remains,len);
         }
     }
@@ -472,7 +472,7 @@ void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct ig
     if ( memcmp(&checkH,H,sizeof(checkH)) == 0 )
     {
         //if ( strcmp(addr->ipaddr,"127.0.0.1") == 0 )
-        printf("%s parse.(%s) len.%d\n",addr->ipaddr,H->command,len);
+        //printf("%s parse.(%s) len.%d\n",addr->ipaddr,H->command,len);
         //printf("addr->dead.%u\n",addr->dead);
         if ( strcmp(H->command,"block") == 0 || strcmp(H->command,"tx") == 0 )
         {
@@ -507,7 +507,7 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
     memset(&H,0,sizeof(H));
     if ( (recvlen= (int32_t)iguana_recv(usock,(uint8_t *)&H,sizeof(H))) == sizeof(H) )
     {
-        printf("%p got.(%s) recvlen.%d from %s | usock.%d ready.%u dead.%u\n",addr,H.command,recvlen,addr->ipaddr,addr->usock,addr->ready,addr->dead);
+        //printf("%p got.(%s) recvlen.%d from %s | usock.%d ready.%u dead.%u\n",addr,H.command,recvlen,addr->ipaddr,addr->usock,addr->ready,addr->dead);
         if ( coin->peers.shuttingdown != 0 || addr->dead != 0 )
             return;
         if ( (len= iguana_validatehdr(&H)) >= 0 )
