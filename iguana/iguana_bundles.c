@@ -499,7 +499,10 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             if ( (addr= coin->peers.ranked[i]) != 0 )
                 pend += addr->pendblocks;
         }
-        origissue = issue = (_IGUANA_MAXPENDING*coin->peers.numranked - pend);
+        origissue = (_IGUANA_MAXPENDING*coin->peers.numranked - pend);
+        if ( origissue < 8 )
+            origissue = 8;
+        issue = origissue;
         while ( issue > 0 )
         {
             now = (uint32_t)time(NULL);
