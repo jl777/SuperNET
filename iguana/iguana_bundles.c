@@ -515,7 +515,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                             {
                                 printf("%d:%d.%d ",bp->hdrsi,j,block->numrequests);
                                 bp->issued[j] = now;
-                                iguana_blockQ(coin,bp,j,bp->hashes[j],0);
+                                iguana_blockQ(coin,bp,j,bp->hashes[j],1);
                                 if ( --issue < 0 )
                                     break;
                             }
