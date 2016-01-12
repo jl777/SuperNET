@@ -438,7 +438,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
         strcpy(addr->lastcommand,H->command);
     }
     retval = 0;
-    //printf("%s parse.(%s)\n",addr->ipaddr,H->command);
+    printf("iguana_msgparser %s parse.(%s)\n",addr->ipaddr,H->command);
     if ( strcmp(H->command,"SuperNET") == 0 )
     {
         addr->supernet = 1;
@@ -527,12 +527,12 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                 len += iguana_rwblock(0,&hash2,&data[len],&msg);
                 iguana_blockconv(&blocks[i],&msg,hash2,-1);
             }
-            //printf("GOT HEADERS n.%d len.%d\n",n,len);
             iguana_gotheadersM(coin,addr,blocks,n);
             //myfree(blocks,sizeof(*blocks) * n);
             if ( len == recvlen && addr != 0 )
                 addr->msgcounts.headers++;
         } else printf("got unexpected n.%d for headers\n",n);
+        printf("GOT HEADERS n.%d len.%d\n",n,len);
     }
     else if ( strcmp(H->command,"tx") == 0 )
     {
