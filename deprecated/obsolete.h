@@ -11206,5 +11206,17 @@ void iguana_dedicatedrecv(void *arg)
                     }
                 }
             }
-
+                if ( 0 && coin->newramchain != 0 && now > coin->savedblocks+60 )
+                {
+                    char fname[512]; FILE *fp;
+                    sprintf(fname,"blocks.%s",coin->symbol), OS_compatible_path(fname);
+                    if ( (fp= fopen(fname,"wb")) != 0 )
+                    {
+                        if ( fwrite(coin->blocks.RO,sizeof(*coin->blocks.RO),coin->longestchain,fp) != coin->longestchain )
+                            printf("error saving blocks\n");
+                            else printf("%s saved\n",fname);
+                                fclose(fp);
+                                coin->savedblocks = (uint32_t)time(NULL);
+                                }
+                }
 #endif

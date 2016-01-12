@@ -429,8 +429,8 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
             bp->numhashes++;
         }
     }
-    bp->metric = 0.;
-    if ( bp->numsaved > 0 )
+    bp->metric = bp->numhashes;
+    //if ( bp->numsaved > 0 )
     {
         bp->estsize = ((uint64_t)bp->datasize * bp->n) / (bp->numrecv+1);
         if ( bp->numsaved >= bp->n && bp->emitfinish == 0 )
@@ -441,6 +441,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
         }
         else bp->metric = sqrt((sqrt(fabs(bp->estsize - bp->datasize)) * (bp->n - bp->numsaved)) * (bp->hdrsi + 1));
     }
+    //printf("%f ",bp->metric);
     return(bp->estsize);
 }
 
@@ -491,8 +492,8 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     }
     if ( n > 0 )
     {
-        struct iguana_peer *addr; uint32_t now; struct iguana_block *block; int32_t flag,origissue,j,issue,pend = 0;
-        flag = 0;
+        struct iguana_peer *addr; uint32_t now; struct iguana_block *block; int32_t m,flag,origissue,j,issue,pend = 0;
+        flag = m = 0;
         sortds(&coin->rankedbps[0][0],n,sizeof(coin->rankedbps[0]));
         for (i=0; i<coin->peers.numranked; i++)
         {
@@ -503,7 +504,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
         if ( origissue < 8 )
             origissue = 8;
         issue = origissue;
-        while ( issue > 0 )
+        while ( issue > 0 && m++ < 100 )
         {
             now = (uint32_t)time(NULL);
             for (i=0; i<n; i++)
@@ -533,7 +534,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
         }
         /*for (i=0; i<n&&i<3; i++)
             printf("(%.5f %.0f).%d ",coin->rankedbps[i][0],coin->rankedbps[i][1],coin->bundles[(int32_t)coin->rankedbps[i][1]]->numrecv);*/
-        if ( flag != 0 )
+        //if ( flag != 0 )
             printf("rem.%d issue.%d pend.%d | numranked.%d\n",n,origissue,pend,coin->peers.numranked);
     }
     coin->numremain = n;

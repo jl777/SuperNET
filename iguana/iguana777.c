@@ -356,25 +356,13 @@ void iguana_coinloop(void *arg)
         bp->bundleheight = 0;
     while ( 1 )
     {
+        //printf("iter\n");
         flag = 0;
         for (i=0; i<n; i++)
         {
             if ( (coin= coins[i]) != 0 )
             {
                 now = (uint32_t)time(NULL);
-                if ( 0 && coin->newramchain != 0 && now > coin->savedblocks+60 )
-                {
-                    char fname[512]; FILE *fp;
-                    sprintf(fname,"blocks.%s",coin->symbol), OS_compatible_path(fname);
-                    if ( (fp= fopen(fname,"wb")) != 0 )
-                    {
-                        if ( fwrite(coin->blocks.RO,sizeof(*coin->blocks.RO),coin->longestchain,fp) != coin->longestchain )
-                            printf("error saving blocks\n");
-                        else printf("%s saved\n",fname);
-                        fclose(fp);
-                        coin->savedblocks = (uint32_t)time(NULL);
-                    }
-                }
                 if ( coin->isRT == 0 && now > coin->startutc+600 && coin->blocksrecv >= coin->longestchain-1 && coin->blocks.hwmchain.height >= coin->longestchain-1 )
                 {
                     printf(">>>>>>> %s isRT blockrecv.%d vs longest.%d\n",coin->symbol,coin->blocksrecv,coin->longestchain);
@@ -384,14 +372,19 @@ void iguana_coinloop(void *arg)
                     coin->MAXPEERS = 8;
                 }
                 if ( coin->peers.numranked != 0 && coin->peers.numranked < (coin->MAXPEERS>>1) && now > coin->lastpossible )
+                {
+                    //printf("possible\n");
                     coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
+                }
                 if ( coin->active != 0 )
                 {
                     if ( now > coin->peers.lastmetrics+6 )
                     {
+                        //printf("metrics\n");
                         coin->peers.lastmetrics = iguana_updatemetrics(coin); // ranks peers
                         coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
                     }
+                    //printf("process\n");
                     flag += iguana_processrecv(coin);
                     if ( 0 && coin->blocks.parsedblocks < coin->blocks.hwmchain.height-coin->chain->minconfirms )
                     {
@@ -399,13 +392,14 @@ void iguana_coinloop(void *arg)
                             iguana_syncs(coin), flag++; // merge ramchain fragments into full ramchain
                     }
                     lastdisp = (uint32_t)now;
+                    //printf("now.%u\n",now);
                     iguana_bundlestats(coin,str);
                     if ( str[0] != 0 )
                     {
                         if ( (rand() % 1000) == 0 )
                             myallocated(0,0);
                     }
-                    iguana_ramchainmerge(coin);
+                    //iguana_ramchainmerge(coin);
                 }
             }// bp block needs mutex
         }
