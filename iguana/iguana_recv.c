@@ -399,7 +399,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
             {
                 iguana_blockQ(coin,bp,bundlei,blocks[i].RO.hash2,0);
                 if ( i == 0 )
-                    printf("GOT HDRS[%d] Q.(%d %d) ht.%d\n",n,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ),bp->bundleheight);
+                    printf("GOT HDRS[%d] Q.(%d %d) ht.%d hashes.%d recv.%d\n",n,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ),bp->bundleheight,bp->numhashes,bp->numrecv);
             }
         }
     }
