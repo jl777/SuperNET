@@ -1193,6 +1193,11 @@ char *iguana_vanitygen(struct supernet_info *myinfo,struct iguana_info *coin,cha
     return(clonestr("{\"error\":\"notyet\"}"));
 }
 
+char *iguana_validatepubkey(struct supernet_info *myinfo,struct iguana_info *coin,char *pubkey)
+{
+    return(clonestr("{\"error\":\"notyet\"}"));
+}
+
 
 char *iguana_createmultisig(struct supernet_info *myinfo,struct iguana_info *coin,int32_t M,cJSON *pubkeys,char *account)
 {

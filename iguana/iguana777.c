@@ -302,7 +302,7 @@ void iguana_helper(void *arg)
     MEMB = mycalloc('b',IGUANA_MAXBUNDLESIZE,sizeof(*MEMB));
     while ( 1 )
     {
-        iguana_jsonQ();
+        //iguana_jsonQ();
         flag = 0;
         if ( (ptr= queue_dequeue(&helperQ,0)) != 0 )
         {

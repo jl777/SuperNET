@@ -19,59 +19,59 @@
 char Default_agent[64] = { "ALL" };
 #define IGUANA_FORMS "[ \
 \
-{\"disp\":\"simple explorer\",\"agent\":\"ramchain\",\"method\":\"explore\",\"fields\":[{\"skip\":1,\"field\":\"search\",\"cols\":65,\"rows\":1}]}, \
-{\"disp\":\"block height\",\"agent\":\"ramchain\",\"method\":\"block\",\"fields\":[{\"field\":\"height\",\"cols\":10,\"rows\":1}]}, \
-{\"disp\":\"block hash\",\"agent\":\"ramchain\",\"method\":\"block\",\"fields\":[{\"field\":\"hash\",\"cols\":65,\"rows\":1}]}, \
-{\"disp\":\"txid\",\"agent\":\"ramchain\",\"method\":\"txid\",\"fields\":[{\"skip\":1,\"field\":\"hash\",\"cols\":65,\"rows\":1}]}, \
-{\"disp\":\"status\",\"agent\":\"ramchain\",\"method\":\"status\",\"fields\":[{\"skip\":1,\"field\":\"coin\",\"cols\":1,\"rows\":1}]}, \
-{\"disp\":\"bundleinfo\",\"agent\":\"ramchain\",\"method\":\"bundleinfo\",\"fields\":[{\"skip\":1,\"field\":\"height\",\"cols\":12,\"rows\":1}]}, \
+{\"disp\":\"simple explorer\",\"agent\":\"ramchain\",\"method\":\"explore\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"search\",\"cols\":65,\"rows\":1}]}, \
+{\"disp\":\"block height\",\"agent\":\"ramchain\",\"method\":\"block\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"height\",\"cols\":10,\"rows\":1}]}, \
+{\"disp\":\"block hash\",\"agent\":\"ramchain\",\"method\":\"block\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"hash\",\"cols\":65,\"rows\":1}]}, \
+{\"disp\":\"txid\",\"agent\":\"ramchain\",\"method\":\"txid\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"hash\",\"cols\":65,\"rows\":1}]}, \
+{\"disp\":\"status\",\"agent\":\"ramchain\",\"method\":\"status\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1}]}, \
+{\"disp\":\"bundleinfo\",\"agent\":\"ramchain\",\"method\":\"bundleinfo\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"height\",\"cols\":12,\"rows\":1}]}, \
 \
-{\"disp\":\"addcoin\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"fields\":[{\"skip\":1,\"field\":\"coin\",\"cols\":8,\"rows\":1}]}, \
-{\"disp\":\"pausecoin\",\"agent\":\"iguana\",\"method\":\"pausecoin\",\"fields\":[{\"skip\":1,\"field\":\"coin\",\"cols\":8,\"rows\":1}]}, \
-{\"disp\":\"startcoin\",\"agent\":\"iguana\",\"method\":\"startcoin\",\"fields\":[{\"skip\":1,\"field\":\"coin\",\"cols\":8,\"rows\":1}]}, \
-{\"disp\":\"addnode\",\"agent\":\"iguana\",\"method\":\"addnode\",\"fields\":[{\"skip\":1,\"field\":\"ipaddr\",\"cols\":32,\"rows\":1}]}, \
-{\"disp\":\"maxpeers\",\"agent\":\"iguana\",\"method\":\"maxpeers\",\"fields\":[{\"skip\":1,\"field\":\"max\",\"cols\":8,\"rows\":1}]}, \
-{\"disp\":\"peers\",\"agent\":\"iguana\",\"method\":\"peers\",\"fields\":[{\"field\":\"coin\",\"cols\":16,\"rows\":1}]}, \
-{\"disp\":\"nodestatus\",\"agent\":\"iguana\",\"method\":\"nodestatus\",\"fields\":[{\"skip\":1,\"field\":\"ipaddr\",\"cols\":32,\"rows\":1}]}, \
+{\"disp\":\"addcoin\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"coin\",\"cols\":8,\"rows\":1}]}, \
+{\"disp\":\"pausecoin\",\"agent\":\"iguana\",\"method\":\"pausecoin\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"coin\",\"cols\":8,\"rows\":1}]}, \
+{\"disp\":\"startcoin\",\"agent\":\"iguana\",\"method\":\"startcoin\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"coin\",\"cols\":8,\"rows\":1}]}, \
+{\"disp\":\"addnode\",\"agent\":\"iguana\",\"method\":\"addnode\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"ipaddr\",\"cols\":32,\"rows\":1}]}, \
+{\"disp\":\"maxpeers\",\"agent\":\"iguana\",\"method\":\"maxpeers\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"max\",\"cols\":8,\"rows\":1}]}, \
+{\"disp\":\"peers\",\"agent\":\"iguana\",\"method\":\"peers\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"coin\",\"cols\":16,\"rows\":1}]}, \
+{\"disp\":\"nodestatus\",\"agent\":\"iguana\",\"method\":\"nodestatus\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"ipaddr\",\"cols\":32,\"rows\":1}]}, \
 \
-{\"disp\":\"rates\",\"agent\":\"PAX\",\"method\":\"rates\",\"fields\":[{\"skip\":1,\"field\":\"peg\",\"cols\":16,\"rows\":1}]},\
-{\"disp\":\"prices\",\"agent\":\"PAX\",\"method\":\"prices\",\"fields\":[{\"skip\":1,\"field\":\"peg\",\"cols\":16,\"rows\":1}]},\
-{\"agent\":\"PAX\",\"method\":\"lock\",\"fields\":[{\"skip\":1,\"field\":\"peg\",\"cols\":16,\"rows\":1},{\"skip\":1,\"field\":\"lockdays\",\"cols\":6,\"rows\":1},{\"skip\":1,\"field\":\"units\",\"cols\":12,\"rows\":1}]}, \
-{\"agent\":\"PAX\",\"method\":\"redeem\",\"fields\":[{\"skip\":1,\"field\":\"txid\",\"cols\":65,\"rows\":1},{\"skip\":1,\"field\":\"dest\",\"cols\":65,\"rows\":1}]},\
-{\"disp\":\"balance\",\"agent\":\"PAX\",\"method\":\"balance\",\"fields\":[{\"skip\":1,\"field\":\"address\",\"cols\":44,\"rows\":1}]},\
-{\"agent\":\"PAX\",\"method\":\"rollover\",\"fields\":[{\"skip\":1,\"field\":\"txid\",\"cols\":16,\"rows\":1},{\"skip\":1,\"field\":\"newpeg\",\"cols\":16,\"rows\":1},{\"skip\":1,\"field\":\"newlockdays\",\"cols\":6,\"rows\":1}]},\
-{\"agent\":\"PAX\",\"method\":\"swap\",\"fields\":[{\"skip\":1,\"field\":\"txid\",\"cols\":16,\"rows\":1},{\"skip\":1,\"field\":\"othertxid\",\"cols\":16,\"rows\":1}]},\
-{\"agent\":\"PAX\",\"method\":\"bet\",\"fields\":[{\"skip\":1,\"field\":\"peg\",\"cols\":16,\"rows\":1},{\"skip\":1,\"field\":\"price\",\"cols\":16,\"rows\":1},{\"skip\":1,\"field\":\"amount\",\"cols\":16,\"rows\":1}]},\
+{\"disp\":\"rates\",\"agent\":\"PAX\",\"method\":\"rates\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"peg\",\"cols\":16,\"rows\":1}]},\
+{\"disp\":\"prices\",\"agent\":\"PAX\",\"method\":\"prices\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"peg\",\"cols\":16,\"rows\":1}]},\
+{\"agent\":\"PAX\",\"method\":\"lock\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"peg\",\"cols\":16,\"rows\":1},{\"field\":\"lockdays\",\"cols\":6,\"rows\":1},{\"field\":\"units\",\"cols\":12,\"rows\":1}]}, \
+{\"agent\":\"PAX\",\"method\":\"redeem\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"txid\",\"cols\":65,\"rows\":1},{\"field\":\"dest\",\"cols\":65,\"rows\":1}]},\
+{\"disp\":\"balance\",\"agent\":\"PAX\",\"method\":\"balance\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"address\",\"cols\":44,\"rows\":1}]},\
+{\"agent\":\"PAX\",\"method\":\"rollover\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"txid\",\"cols\":16,\"rows\":1},{\"field\":\"newpeg\",\"cols\":16,\"rows\":1},{\"field\":\"newlockdays\",\"cols\":6,\"rows\":1}]},\
+{\"agent\":\"PAX\",\"method\":\"swap\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"txid\",\"cols\":16,\"rows\":1},{\"field\":\"othertxid\",\"cols\":16,\"rows\":1}]},\
+{\"agent\":\"PAX\",\"method\":\"bet\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"peg\",\"cols\":16,\"rows\":1},{\"field\":\"price\",\"cols\":16,\"rows\":1},{\"field\":\"amount\",\"cols\":16,\"rows\":1}]},\
 \
-{\"agent\":\"InstantDEX\",\"method\":\"placebid\",\"fields\":[{\"skip\":1,\"field\":\"base\",\"cols\":8,\"rows\":1},{\"skip\":1,\"field\":\"rel\",\"cols\":8,\"rows\":1},{\"skip\":1,\"field\":\"exchange\",\"cols\":16,\"rows\":1},{\"field\":\"price\",\"cols\":16,\"rows\":1},{\"field\":\"volume\",\"cols\":16,\"rows\":1}]}, \
-{\"agent\":\"InstantDEX\",\"method\":\"placeask\",\"fields\":[{\"skip\":1,\"field\":\"base\",\"cols\":8,\"rows\":1},{\"skip\":1,\"field\":\"rel\",\"cols\":8,\"rows\":1},{\"skip\":1,\"field\":\"exchange\",\"cols\":16,\"rows\":1},{\"field\":\"price\",\"cols\":16,\"rows\":1},{\"field\":\"volume\",\"cols\":16,\"rows\":1}]}, \
-{\"agent\":\"InstantDEX\",\"method\":\"orderbook\",\"fields\":[{\"skip\":1,\"field\":\"base\",\"cols\":8,\"rows\":1},{\"skip\":1,\"field\":\"rel\",\"cols\":8,\"rows\":1},{\"skip\":1,\"field\":\"exchange\",\"cols\":16,\"rows\":1}]}, \
-{\"disp\":\"orderstatus\",\"agent\":\"InstantDEX\",\"method\":\"orderstatus\",\"fields\":[{\"skip\":1,\"field\":\"orderid\",\"cols\":32,\"rows\":1}]}, \
-{\"disp\":\"cancelorder\",\"agent\":\"InstantDEX\",\"method\":\"cancelorder\",\"fields\":[{\"skip\":1,\"field\":\"orderid\",\"cols\":32,\"rows\":1}]}, \
-{\"disp\":\"balance\",\"agent\":\"InstantDEX\",\"method\":\"balance\",\"fields\":[{\"skip\":1,\"field\":\"exchange\",\"cols\":16,\"rows\":1}]}, \
-{\"newline\":0,\"disp\":\"allorderbooks\",\"agent\":\"InstantDEX\",\"method\":\"allorderbooks\",\"fields\":[{\"skip\":1,\"field\":\"allorderbooks\",\"cols\":1,\"rows\":1}]}, \
-{\"newline\":0,\"disp\":\"openorders\",\"agent\":\"InstantDEX\",\"method\":\"openorders\",\"fields\":[{\"skip\":1,\"field\":\"openorders\",\"cols\":1,\"rows\":1}]}, \
-{\"newline\":0,\"disp\":\"tradehistory\",\"agent\":\"InstantDEX\",\"method\":\"tradehistory\",\"fields\":[{\"skip\":1,\"field\":\"tradehistory\",\"cols\":1,\"rows\":1}]}, \
-{\"disp\":\"allexchanges\",\"agent\":\"InstantDEX\",\"method\":\"allexchanges\",\"fields\":[{\"skip\":1,\"field\":\"allexchanges\",\"cols\":1,\"rows\":1}]}, \
+{\"agent\":\"InstantDEX\",\"method\":\"placebid\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"base\",\"cols\":8,\"rows\":1},{\"field\":\"rel\",\"cols\":8,\"rows\":1},{\"field\":\"exchange\",\"cols\":16,\"rows\":1},{\"field\":\"price\",\"cols\":16,\"rows\":1},{\"field\":\"volume\",\"cols\":16,\"rows\":1}]}, \
+{\"agent\":\"InstantDEX\",\"method\":\"placeask\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"base\",\"cols\":8,\"rows\":1},{\"field\":\"rel\",\"cols\":8,\"rows\":1},{\"field\":\"exchange\",\"cols\":16,\"rows\":1},{\"field\":\"price\",\"cols\":16,\"rows\":1},{\"field\":\"volume\",\"cols\":16,\"rows\":1}]}, \
+{\"agent\":\"InstantDEX\",\"method\":\"orderbook\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"base\",\"cols\":8,\"rows\":1},{\"field\":\"rel\",\"cols\":8,\"rows\":1},{\"field\":\"exchange\",\"cols\":16,\"rows\":1}]}, \
+{\"disp\":\"orderstatus\",\"agent\":\"InstantDEX\",\"method\":\"orderstatus\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"orderid\",\"cols\":32,\"rows\":1}]}, \
+{\"disp\":\"cancelorder\",\"agent\":\"InstantDEX\",\"method\":\"cancelorder\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"orderid\",\"cols\":32,\"rows\":1}]}, \
+{\"disp\":\"balance\",\"agent\":\"InstantDEX\",\"method\":\"balance\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"exchange\",\"cols\":16,\"rows\":1}]}, \
+{\"newline\":0,\"disp\":\"allorderbooks\",\"agent\":\"InstantDEX\",\"method\":\"allorderbooks\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"allorderbooks\",\"cols\":1,\"rows\":1}]}, \
+{\"newline\":0,\"disp\":\"openorders\",\"agent\":\"InstantDEX\",\"method\":\"openorders\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"openorders\",\"cols\":1,\"rows\":1}]}, \
+{\"newline\":0,\"disp\":\"tradehistory\",\"agent\":\"InstantDEX\",\"method\":\"tradehistory\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"tradehistory\",\"cols\":1,\"rows\":1}]}, \
+{\"disp\":\"allexchanges\",\"agent\":\"InstantDEX\",\"method\":\"allexchanges\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"allexchanges\",\"cols\":1,\"rows\":1}]}, \
 \
-{\"agent\":\"pangea\",\"method\":\"bet\",\"fields\":[{\"skip\":1,\"field\":\"tableid\",\"cols\":24,\"rows\":1},{\"skip\":1,\"field\":\"amount\",\"cols\":24,\"rows\":1}]}, \
-{\"disp\":\"call\",\"agent\":\"pangea\",\"method\":\"call\",\"fields\":[{\"skip\":1,\"field\":\"tableid\",\"cols\":1,\"rows\":1}]}, \
-{\"disp\":\"fold\",\"agent\":\"pangea\",\"method\":\"fold\",\"fields\":[{\"skip\":1,\"field\":\"tableid\",\"cols\":1,\"rows\":1}]}, \
-{\"disp\":\"status\",\"agent\":\"pangea\",\"method\":\"status\",\"fields\":[{\"skip\":1,\"field\":\"tableid\",\"cols\":1,\"rows\":1}]}, \
-{\"disp\":\"hand history\",\"agent\":\"pangea\",\"method\":\"handhistory\",\"fields\":[{\"skip\":1,\"field\":\"tableid\",\"cols\":1,\"rows\":1}]}, \
-{\"disp\":\"history\",\"agent\":\"pangea\",\"method\":\"history\",\"fields\":[{\"skip\":1,\"field\":\"coin\",\"cols\":1,\"rows\":1}]}, \
-{\"disp\":\"follow\",\"agent\":\"pangea\",\"method\":\"follow\",\"fields\":[{\"skip\":1,\"field\":\"tableid\",\"cols\":24,\"rows\":1}]}, \
-{\"disp\":\"lobby\",\"agent\":\"pangea\",\"method\":\"lobby\",\"fields\":[{\"skip\":1,\"field\":\"coin\",\"cols\":8,\"rows\":1}]}, \
-{\"disp\":\"join\",\"agent\":\"pangea\",\"method\":\"join\",\"fields\":[{\"skip\":1,\"field\":\"tableid\",\"cols\":24,\"rows\":1}]}, \
-{\"agent\":\"pangea\",\"method\":\"buyin\",\"fields\":[{\"skip\":1,\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"skip\":1,\"field\":\"tableid\",\"cols\":24,\"rows\":1},{\"skip\":1,\"field\":\"amount\",\"cols\":12,\"rows\":1}]}, \
-{\"agent\":\"pangea\",\"method\":\"newtournament\",\"fields\":[{\"field\":\"mintables\",\"cols\":8,\"rows\":1},{\"field\":\"maxtables\",\"cols\":4,\"rows\":1},{\"field\":\"starttime\",\"cols\":16,\"rows\":1},{\"field\":\"prizefund\",\"cols\":12,\"rows\":1},{\"field\":\"coin\",\"cols\":12,\"rows\":1}]}, \
-{\"agent\":\"pangea\",\"method\":\"newtable\",\"fields\":[{\"field\":\"minplayers\",\"cols\":4,\"rows\":1},{\"field\":\"maxplayers\",\"cols\":4,\"rows\":1},{\"field\":\"rake\",\"cols\":4,\"rows\":1},{\"field\":\"bigblind\",\"cols\":12,\"rows\":1},{\"field\":\"ante\",\"cols\":12,\"rows\":1},{\"field\":\"minbuyin\",\"cols\":12,\"rows\":1},{\"field\":\"maxbuyin\",\"cols\":12,\"rows\":1}]}, \
-{\"disp\":\"leave\",\"agent\":\"pangea\",\"method\":\"leave\",\"fields\":[{\"skip\":1,\"field\":\"tableid\",\"cols\":8,\"rows\":1}]}, \
+{\"agent\":\"pangea\",\"method\":\"bet\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"tableid\",\"cols\":24,\"rows\":1},{\"field\":\"amount\",\"cols\":24,\"rows\":1}]}, \
+{\"disp\":\"call\",\"agent\":\"pangea\",\"method\":\"call\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"tableid\",\"cols\":1,\"rows\":1}]}, \
+{\"disp\":\"fold\",\"agent\":\"pangea\",\"method\":\"fold\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"tableid\",\"cols\":1,\"rows\":1}]}, \
+{\"disp\":\"status\",\"agent\":\"pangea\",\"method\":\"status\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"tableid\",\"cols\":1,\"rows\":1}]}, \
+{\"disp\":\"hand history\",\"agent\":\"pangea\",\"method\":\"handhistory\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"tableid\",\"cols\":1,\"rows\":1}]}, \
+{\"disp\":\"history\",\"agent\":\"pangea\",\"method\":\"history\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"coin\",\"cols\":1,\"rows\":1}]}, \
+{\"disp\":\"follow\",\"agent\":\"pangea\",\"method\":\"follow\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"tableid\",\"cols\":24,\"rows\":1}]}, \
+{\"disp\":\"lobby\",\"agent\":\"pangea\",\"method\":\"lobby\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"coin\",\"cols\":8,\"rows\":1}]}, \
+{\"disp\":\"join\",\"agent\":\"pangea\",\"method\":\"join\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"tableid\",\"cols\":24,\"rows\":1}]}, \
+{\"agent\":\"pangea\",\"method\":\"buyin\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"tableid\",\"cols\":24,\"rows\":1},{\"field\":\"amount\",\"cols\":12,\"rows\":1}]}, \
+{\"agent\":\"pangea\",\"method\":\"newtournament\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"mintables\",\"cols\":8,\"rows\":1},{\"field\":\"maxtables\",\"cols\":4,\"rows\":1},{\"field\":\"starttime\",\"cols\":16,\"rows\":1},{\"field\":\"prizefund\",\"cols\":12,\"rows\":1},{\"field\":\"coin\",\"cols\":12,\"rows\":1}]}, \
+{\"agent\":\"pangea\",\"method\":\"newtable\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"minplayers\",\"cols\":4,\"rows\":1},{\"field\":\"maxplayers\",\"cols\":4,\"rows\":1},{\"field\":\"rake\",\"cols\":4,\"rows\":1},{\"field\":\"bigblind\",\"cols\":12,\"rows\":1},{\"field\":\"ante\",\"cols\":12,\"rows\":1},{\"field\":\"minbuyin\",\"cols\":12,\"rows\":1},{\"field\":\"maxbuyin\",\"cols\":12,\"rows\":1}]}, \
+{\"disp\":\"leave\",\"agent\":\"pangea\",\"method\":\"leave\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"tableid\",\"cols\":8,\"rows\":1}]}, \
 \
-{\"agent\":\"jumblr\",\"method\":\"send\",\"fields\":[{\"skip\":1,\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"skip\":1,\"field\":\"amount\",\"cols\":13,\"rows\":1},{\"skip\":1,\"field\":\"address\",\"cols\":8,\"rows\":1}]}, \
-{\"agent\":\"jumblr\",\"method\":\"invoice\",\"fields\":[{\"skip\":1,\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"skip\":1,\"field\":\"amount\",\"cols\":13,\"rows\":1},{\"skip\":1,\"field\":\"address\",\"cols\":8,\"rows\":1}]}, \
-{\"agent\":\"jumblr\",\"method\":\"shuffle\",\"fields\":[{\"skip\":1,\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"skip\":1,\"field\":\"amount\",\"cols\":13,\"rows\":1}]}, \
-{\"agent\":\"jumblr\",\"method\":\"balance\",\"fields\":[{\"skip\":1,\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"skip\":1,\"field\":\"address\",\"cols\":13,\"rows\":1}]}, \
+{\"agent\":\"jumblr\",\"method\":\"send\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"amount\",\"cols\":13,\"rows\":1},{\"field\":\"address\",\"cols\":8,\"rows\":1}]}, \
+{\"agent\":\"jumblr\",\"method\":\"invoice\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"amount\",\"cols\":13,\"rows\":1},{\"field\":\"address\",\"cols\":8,\"rows\":1}]}, \
+{\"agent\":\"jumblr\",\"method\":\"shuffle\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"amount\",\"cols\":13,\"rows\":1}]}, \
+{\"agent\":\"jumblr\",\"method\":\"balance\",\"fields\":[{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"coin\",\"cols\":8,\"rows\":1},{\"field\":\"address\",\"cols\":13,\"rows\":1}]}, \
 \
 {\"newline\":0,\"disp\":\"InstantDEX\",\"agent\":\"iguana\",\"method\":\"setagent\",\"fields\":[{\"field\":\"InstantDEX\",\"cols\":1,\"rows\":1}]}, \
 {\"newline\":0,\"disp\":\"PAX\",\"agent\":\"iguana\",\"method\":\"setagent\",\"fields\":[{\"field\":\"PAX\",\"cols\":1,\"rows\":1}]}, \
@@ -80,41 +80,41 @@ char Default_agent[64] = { "ALL" };
 {\"disp\":\"ramchain\",\"agent\":\"iguana\",\"method\":\"setagent\",\"fields\":[{\"field\":\"ramchain\",\"cols\":1,\"rows\":1}]}, \
 {\"newline\":0,\"disp\":\"iguana\",\"agent\":\"iguana\",\"method\":\"setagent\",\"fields\":[{\"field\":\"iguana\",\"cols\":1,\"rows\":1}]}, \
 \
-{\"agent\":\"hash\",\"method\":\"NXT\",\"fields\":[{\"skip\":1,\"field\":\"password\",\"cols\":100,\"rows\":1}]}, \
-    {\"agent\":\"hash\",\"method\":\"curve25519\",\"fields\":[{\"skip\":1,\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"rmd160_sha256\",\"fields\":[{\"skip\":1,\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-{\"agent\":\"hash\",\"method\":\"sha256_sha256\",\"fields\":[{\"skip\":1,\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-{\"agent\":\"hash\",\"method\":\"base64_encode\",\"fields\":[{\"skip\":1,\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-{\"agent\":\"hash\",\"method\":\"base64_decode\",\"fields\":[{\"skip\":1,\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-{\"agent\":\"hash\",\"method\":\"crc32\",\"fields\":[{\"skip\":1,\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"sha512\",\"fields\":[{\"skip\":1,\"skip\":1,\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"sha384\",\"fields\":[{\"skip\":1,\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"sha256\",\"fields\":[{\"skip\":1,\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"sha224\",\"fields\":[{\"skip\":1,\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"rmd320\",\"fields\":[{\"skip\":1,\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"rmd256\",\"fields\":[{\"skip\":1,\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"rmd160\",\"fields\":[{\"skip\":1,\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"rmd128\",\"fields\":[{\"skip\":1,\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"sha1\",\"fields\":[{\"skip\":1,\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"md2\",\"fields\":[{\"skip\":1,\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"md4\",\"fields\":[{\"skip\":1,\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"md5\",\"fields\":[{\"skip\":1,\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"tiger\",\"fields\":[{\"skip\":1,\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"whirlpool\",\"fields\":[{\"skip\":1,\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"hmac_sha512\",\"fields\":[{\"skip\":1,\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"hmac_sha384\",\"fields\":[{\"skip\":1,\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"hmac_sha256\",\"fields\":[{\"skip\":1,\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"hmac_sha224\",\"fields\":[{\"skip\":1,\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"hmac_rmd320\",\"fields\":[{\"skip\":1,\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"hmac_rmd256\",\"fields\":[{\"skip\":1,\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"hmac_rmd160\",\"fields\":[{\"skip\":1,\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"hmac_rmd128\",\"fields\":[{\"skip\":1,\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"hmac_sha1\",\"fields\":[{\"skip\":1,\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"hmac_md2\",\"fields\":[{\"skip\":1,\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"hmac_md4\",\"fields\":[{\"skip\":1,\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"hmac_md5\",\"fields\":[{\"skip\":1,\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"hmac_tiger\",\"fields\":[{\"skip\":1,\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
-    {\"agent\":\"hash\",\"method\":\"hmac_whirlpool\",\"fields\":[{\"skip\":1,\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}\
+{\"agent\":\"hash\",\"method\":\"NXT\",\"fields\":[{\"field\":\"password\",\"cols\":100,\"rows\":1}]}, \
+    {\"agent\":\"hash\",\"method\":\"curve25519\",\"fields\":[{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"rmd160_sha256\",\"fields\":[{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+{\"agent\":\"hash\",\"method\":\"sha256_sha256\",\"fields\":[{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+{\"agent\":\"hash\",\"method\":\"base64_encode\",\"fields\":[{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+{\"agent\":\"hash\",\"method\":\"base64_decode\",\"fields\":[{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+{\"agent\":\"hash\",\"method\":\"crc32\",\"fields\":[{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"sha512\",\"fields\":[{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"sha384\",\"fields\":[{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"sha256\",\"fields\":[{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"sha224\",\"fields\":[{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"rmd320\",\"fields\":[{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"rmd256\",\"fields\":[{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"rmd160\",\"fields\":[{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"rmd128\",\"fields\":[{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"sha1\",\"fields\":[{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"md2\",\"fields\":[{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"md4\",\"fields\":[{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"md5\",\"fields\":[{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"tiger\",\"fields\":[{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"whirlpool\",\"fields\":[{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"hmac_sha512\",\"fields\":[{\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"hmac_sha384\",\"fields\":[{\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"hmac_sha256\",\"fields\":[{\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"hmac_sha224\",\"fields\":[{\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"hmac_rmd320\",\"fields\":[{\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"hmac_rmd256\",\"fields\":[{\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"hmac_rmd160\",\"fields\":[{\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"hmac_rmd128\",\"fields\":[{\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"hmac_sha1\",\"fields\":[{\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"hmac_md2\",\"fields\":[{\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"hmac_md4\",\"fields\":[{\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"hmac_md5\",\"fields\":[{\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"hmac_tiger\",\"fields\":[{\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}, \
+    {\"agent\":\"hash\",\"method\":\"hmac_whirlpool\",\"fields\":[{\"field\":\"password\",\"cols\":32,\"rows\":1},{\"field\":\"message\",\"cols\":64,\"rows\":3}]}\
 ]"
 
 char *HTMLheader =
@@ -289,7 +289,7 @@ function iguana_poll( )\
                     if ( rows == 0 && cols == 0 )
                         sprintf(buf,"<input type=\"text\" name=\"%s\"/>",fieldname);
                     else sprintf(buf,"<textarea cols=\"%d\" rows=\"%d\"  name=\"%s\" %s></textarea>",cols,rows,fieldname,cols == 1 ? "hidden" : "");
-                    str = disp==0?jstr(obj,"disp"):disp;
+                    str = 0;//disp==0?jstr(obj,"disp"):disp;
                     sprintf(&retbuf[size],"<td>%s %s </td>\r\n",str!=0?str:fieldname,buf), size += strlen(&retbuf[size]);
                 }
                 sprintf(formfooter,"<td colspan=\"2\"> <input type=\"button\" value=\"%s\" onclick=\"click_%s()\" /></td> </tr>\n</table></form>",button,clickname);

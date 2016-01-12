@@ -1125,7 +1125,7 @@ void iguana_bitmap(char *space,int32_t max,char *name)
     if ( name == 0 || name[0] == 0 )
         name = "BTCD";
     coin = iguana_coinfind(name);
-    if ( (rect= iguana_bitmapfind(name)) == 0 )
+    if ( 1 || (rect= iguana_bitmapfind(name)) == 0 )
     {
         strcpy(space,"{\"name\":\"nobitmap\",\"amplitude\":222,\"width\":1,\"height\":1,\"pixels\":[222,0,22]}");
         //sprintf(space,"Content-type: text/standard\r\n");

@@ -76,3 +76,14 @@ Another approach is to use the bitcoin RPC syntax via:
 the params:[] array is where the standard bitcoin parameters go, the only change that is needed is to specify the coin
 alternatively {"agent":"SuperNET","method":"bitcoinrpc","coin":"BTCD"} will set the coin 
 to use for bitcoin RPC calls. this will suffice in single coin environments
+
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana",\"method\":\"test\"}"
+curl --url "http://127.0.0.1:7778/iguana/test" -> html page with results
+curl --url "http://127.0.0.1:7778/api/iguana/test" -> just json text
+http://127.0.0.1:7778 -> superugly GUI
+http://127.0.0.1:7778/iguana/test 
+http://127.0.0.1:7778/api/iguana/test
+postCall('{"agent":"iguana","method":"test"}'}
+iguana_JSON("{\"agent\":\"iguana",\"method\":\"test\"}"); -> direct C function call
+
+
