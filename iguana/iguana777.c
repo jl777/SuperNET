@@ -207,7 +207,7 @@ uint32_t iguana_updatemetrics(struct iguana_info *coin)
     if ( (fp= fopen(tmpfname,"w")) != 0 )
     {
         for (i=0; i<coin->peers.numranked; i++)
-            if ( (addr= coin->peers.ranked[i]) != 0 )
+            if ( (addr= coin->peers.ranked[i]) != 0 && strcmp(addr->ipaddr,"127.0.0.1") != 0 )
                 fprintf(fp,"%s\n",addr->ipaddr);
         if ( ftell(fp) > OS_filesize(fname) )
         {
