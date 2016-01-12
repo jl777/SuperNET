@@ -239,6 +239,8 @@ int32_t RS_encode(char *rsaddr,uint64_t id);
 void calc_sha1(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void calc_md2(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void calc_md4(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
+void calc_md4str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
+void calc_md2str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void calc_md5str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void calc_sha224(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void calc_sha384(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);

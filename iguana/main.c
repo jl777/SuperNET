@@ -48,11 +48,12 @@ char *hash_parser(struct supernet_info *myinfo,char *hashname,cJSON *json,char *
     typedef char *(*hmacfunc)(char *dest,char *key,int32_t key_size,char *message);
     struct hashfunc_entry { char *name; hashfunc hashfunc; };
     struct hmacfunc_entry { char *name; hmacfunc hmacfunc; };
-    struct hashfunc_entry hashes[] = { {"NXT",calc_NXTaddr}, {"curve25519",calc_curve25519_str }, {"base64_encode",calc_base64_encodestr}, {"base64_decode",calc_base64_decodestr}, {"crc32",calc_crc32str}, {"rmd160_sha256",rmd160ofsha256}, {"sha256_sha256",sha256_sha256}, {"sha256",vcalc_sha256}, {"sha512",calc_sha512}, {"sha384",calc_sha384}, {"sha224",calc_sha224}, {"rmd160",calc_rmd160}, {"rmd256",calc_rmd256}, {"rmd320",calc_rmd320}, {"rmd128",calc_rmd128}, {"sha1",calc_sha1}, {"md5",calc_md5str}, {"tiger",calc_tiger}, {"whirlpool",calc_whirlpool} };
-    struct hmacfunc_entry hmacs[] = { {"hmac_sha256",hmac_sha256_str}, {"hmac_sha512",hmac_sha512_str}, {"hmac_sha384",hmac_sha384_str}, {"hmac_sha224",hmac_sha224_str}, {"hmac_rmd160",hmac_rmd160_str}, {"hmac_rmd256",hmac_rmd256_str}, {"hmac_rmd320",hmac_rmd320_str}, {"hmac_rmd128",hmac_rmd128_str}, {"hmac_sha1",hmac_sha1_str}, {"hmac_md5",hmac_md5_str}, {"hmac_tiger",hmac_tiger_str}, {"hmac_whirlpool",hmac_whirlpool_str} };
+    struct hashfunc_entry hashes[] = { {"NXT",calc_NXTaddr}, {"curve25519",calc_curve25519_str }, {"base64_encode",calc_base64_encodestr}, {"base64_decode",calc_base64_decodestr}, {"crc32",calc_crc32str}, {"rmd160_sha256",rmd160ofsha256}, {"sha256_sha256",sha256_sha256}, {"sha256",vcalc_sha256}, {"sha512",calc_sha512}, {"sha384",calc_sha384}, {"sha224",calc_sha224}, {"rmd160",calc_rmd160}, {"rmd256",calc_rmd256}, {"rmd320",calc_rmd320}, {"rmd128",calc_rmd128}, {"sha1",calc_sha1}, {"md5",calc_md5str}, {"md2",calc_md2str}, {"md4",calc_md4str}, {"tiger",calc_tiger}, {"whirlpool",calc_whirlpool} };
+    struct hmacfunc_entry hmacs[] = { {"hmac_sha256",hmac_sha256_str}, {"hmac_sha512",hmac_sha512_str}, {"hmac_sha384",hmac_sha384_str}, {"hmac_sha224",hmac_sha224_str}, {"hmac_rmd160",hmac_rmd160_str}, {"hmac_rmd256",hmac_rmd256_str}, {"hmac_rmd320",hmac_rmd320_str}, {"hmac_rmd128",hmac_rmd128_str}, {"hmac_sha1",hmac_sha1_str}, {"hmac_md52",hmac_md2_str},{"hmac_md4",hmac_md4_str},{"hmac_md5",hmac_md5_str}, {"hmac_tiger",hmac_tiger_str}, {"hmac_whirlpool",hmac_whirlpool_str} };
     if ( (msg= jstr(json,"message")) == 0 )
         return(clonestr("{\"error\":\"no message to hash\"}"));
-    password = jstr(json,"password");
+    if ( (password= jstr(json,"password")) == 0 || password[0] == 0 )
+        password = " ";
     n = (int32_t)sizeof(hashes)/sizeof(*hashes);
     printf("msg.(%s) password.(%s)\n",msg,password!=0?password:"");
     for (iter=0; iter<2; iter++)
@@ -60,14 +61,14 @@ char *hash_parser(struct supernet_info *myinfo,char *hashname,cJSON *json,char *
         for (i=0; i<n; i++)
         {
             name = (iter == 0) ? hashes[i].name : hmacs[i].name;
-            printf("iter.%d i.%d (%s) vs (%s) %d\n",iter,i,name,hashname,strcmp(hashname,name) == 0);
+            //printf("iter.%d i.%d (%s) vs (%s) %d\n",iter,i,name,hashname,strcmp(hashname,name) == 0);
             if ( strcmp(hashname,name) == 0 )
             {
                 json = cJSON_CreateObject();
-                len = (int32_t)strlen(msg);
+                len = msg==0?0:(int32_t)strlen(msg);
                 if ( iter == 0 )
                     (*hashes[i].hashfunc)(hexstr,databuf,(uint8_t *)msg,len);
-                else (*hmacs[i].hmacfunc)(hexstr,password,(int32_t)strlen(password),msg);
+                else (*hmacs[i].hmacfunc)(hexstr,password,password==0?0:(int32_t)strlen(password),msg);
                 jaddstr(json,"result","hash calculated");
                 jaddstr(json,"message",msg);
                 jaddstr(json,name,hexstr);
