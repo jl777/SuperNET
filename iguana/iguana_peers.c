@@ -927,8 +927,8 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     printf("send version myservices.%llu to (%s)\n",(long long)coin->myservices,addr->ipaddr);
     //if ( addr->supernet != 0 )
     //    iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
-    sleep(1);
     iguana_send_version(coin,addr,coin->myservices);
+    sleep(10);
     iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
     run = 0;
     while ( addr->usock >= 0 && addr->dead == 0 && coin->peers.shuttingdown == 0 )
