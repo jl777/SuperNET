@@ -533,7 +533,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
             if ( len == recvlen && addr != 0 )
                 addr->msgcounts.headers++;
         } else printf("got unexpected n.%d for headers\n",n);
-        printf("GOT HEADERS n.%d len.%d\n",n,len);
+        //printf("GOT HEADERS n.%d len.%d\n",n,len);
     }
     else if ( strcmp(H->command,"tx") == 0 )
     {
