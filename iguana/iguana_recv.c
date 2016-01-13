@@ -591,8 +591,8 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                 if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish < coin->startutc )
                 {
                     if ( i == coin->bundlescount-1 )
-                        lag = 5;
-                    else lag = 3 + (rand() % 13);
+                        lag = 60;
+                    else lag = 13 + (rand() % 13);
                     //if ( i < coin->bundlescount-1 && (bp->numhashes >= (rand() % bp->n) || time(NULL) < bp->hdrtime+lag) )
                     //    continue;
                     if ( bp->numhashes < bp->n && bp->bundleheight+bp->numhashes < coin->longestchain && time(NULL) > bp->issuetime+lag )

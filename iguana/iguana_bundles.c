@@ -439,7 +439,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
             bp->emitfinish = 1;
             iguana_emitQ(coin,bp);
         }
-        else bp->metric = (2*bp->n - bp->numsaved - bp->numrecv);//sqrt((sqrt(fabs(bp->estsize - bp->datasize)) * (bp->n - bp->numsaved)) * (bp->hdrsi + 1));
+        else bp->metric = (2*bp->n - bp->numsaved - bp->numrecv) * (bp->hdrsi + 1);//sqrt((sqrt(fabs(bp->estsize - bp->datasize)) * (bp->n - bp->numsaved)) * (bp->hdrsi + 1));
     }
     //printf("%f ",bp->metric);
     return(bp->estsize);
@@ -535,7 +535,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             }
             /*for (i=0; i<n&&i<3; i++)
              printf("(%.5f %.0f).%d ",coin->rankedbps[i][0],coin->rankedbps[i][1],coin->bundles[(int32_t)coin->rankedbps[i][1]]->numrecv);*/
-            if ( 0 && flag != 0 )
+            if ( 1 && flag != 0 )
                 printf("rem.%d issue.%d pend.%d | numranked.%d\n",n,origissue,pend,coin->peers.numranked);
         }
     }
