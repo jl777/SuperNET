@@ -391,8 +391,10 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
         for (i=match=0; i<n; i++)
         {
             //fprintf(stderr,"i.%d of %d bundleset\n",i,n);
+            bp = 0, bundlei = -1;
             if ( (bp= iguana_bundleset(coin,&block,&bundlei,&blocks[i])) != 0 )
             {
+                printf("ht.%d[%d]\n",bp->bundleheight,bundlei);
                 if ( i == 0 )
                     firstbp = bp;
                 if ( bundlei == i && bp == firstbp )
@@ -406,7 +408,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
                 printf("blockQ %d\n",firstbp->bundleheight);
                 iguana_bundleQ(coin,firstbp,1000 + 10*(rand() % (int32_t)(1+sqrt(bp->bundleheight))));
             }
-        } else printf("match.%d vs n.%d bp->n.%d ht.%dn\n",match,n,firstbp->n,firstbp->bundleheight);
+        } else printf("match.%d vs n.%d bp->n.%d ht.%d\n",match,n,firstbp->n,firstbp->bundleheight);
     }
     return(req);
 }
