@@ -466,10 +466,10 @@ int32_t sortds(double *buf,uint32_t num,int32_t size)
 
 void iguana_bundlestats(struct iguana_info *coin,char *str)
 {
-    int32_t i,n,dispflag,numrecv,numhashes,numcached,numsaved,numemit; int64_t estsize = 0;
+    int32_t i,n,dispflag,numrecv,done,numhashes,numcached,numsaved,numemit; int64_t estsize = 0;
     struct iguana_bundle *bp;
     dispflag = (rand() % 1000) == 0;
-    numrecv = numhashes = numcached = numsaved = numemit = 0;
+    numrecv = numhashes = numcached = numsaved = numemit = done = 0;
     memset(coin->rankedbps,0,sizeof(coin->rankedbps));
     for (i=n=0; i<coin->bundlescount; i++)
     {
@@ -483,7 +483,9 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             numsaved += bp->numsaved;
             if ( bp->emitfinish != 0 )
             {
-                numemit++;
+                done++;
+                if ( bp->emitfinish > 1 )
+                    numemit++;
                 iguana_bundlepurge(coin,bp);
             }
             else if ( bp->metric > 0. )
@@ -507,7 +509,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
              //   origissue = 8;
             issue = origissue;
             now = (uint32_t)time(NULL);
-            for (i=0; i<n&&i<100; i++)
+            for (i=0; i<n; i++)
             {
                 if ( issue <= 0 )
                     break;
@@ -520,10 +522,10 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                             //printf("j.%d bp.%d %d %x lag.%d\n",j,bp->minrequests,block->numrequests,block->fpipbits,now - bp->issued[j]);
                             if ( block->numrequests <= bp->minrequests && block->fpipbits == 0 && (bp->issued[j] == 0 || now > bp->issued[j]+60) )
                             {
-                                printf("%d:%d.%d ",bp->hdrsi,j,block->numrequests);
+                                //printf("%d:%d.%d ",bp->hdrsi,j,block->numrequests);
                                 flag++;
                                 bp->issued[j] = now;
-                                iguana_blockQ(coin,bp,j,bp->hashes[j],1);
+                                iguana_blockQ(coin,bp,j,bp->hashes[j],0);
                                 if ( --issue < 0 )
                                     break;
                             }
@@ -548,7 +550,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     tmp = (difft.millis * 1000000);
     tmp %= 1000000000;
     difft.millis = ((double)tmp / 1000000.);
-    sprintf(str,"N[%d] h.%d r.%d c.%d:%d:%d s.%d E.%d:%d M.%d L.%d est.%d %s %d:%02d:%02d %03.3f peers.%d/%d",coin->bundlescount,numhashes,coin->blocksrecv,coin->numcached,numcached,coin->cachefreed,numsaved,numemit,coin->numreqsent,coin->blocks.hwmchain.height,coin->longestchain,coin->MAXBUNDLES,mbstr(str2,estsize),(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,difft.millis,p,coin->MAXPEERS);
+    sprintf(str,"N[%d] h.%d r.%d c.%d:%d:%d s.%d d.%d E.%d:%d M.%d L.%d est.%d %s %d:%02d:%02d %03.3f peers.%d/%d",coin->bundlescount,numhashes,coin->blocksrecv,coin->numcached,numcached,coin->cachefreed,numsaved,done,numemit,coin->numreqsent,coin->blocks.hwmchain.height,coin->longestchain,coin->MAXBUNDLES,mbstr(str2,estsize),(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,difft.millis,p,coin->MAXPEERS);
     //sprintf(str+strlen(str),"%s.%-2d %s time %.2f files.%d Q.%d %d\n",coin->symbol,flag,str,(double)(time(NULL)-coin->starttime)/60.,coin->peers.numfiles,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
     //if ( (rand() % 100) == 0 )
     static uint32_t lastdisp;
