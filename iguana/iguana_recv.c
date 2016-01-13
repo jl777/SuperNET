@@ -683,8 +683,10 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
 {
     uint8_t serialized[sizeof(struct iguana_msghdr) + sizeof(uint32_t)*32 + sizeof(bits256)];
     char *hashstr=0; bits256 hash2; uint32_t now; struct iguana_block *block; struct iguana_blockreq *req=0;
-    int32_t i,r,diff,j,k,n,m; double metric,bestmetric = -1.; struct iguana_bundle *bp,*bestbp = 0;
+    int32_t i,r,diff,j,k,n,m,z; double metric,bestmetric = -1.; struct iguana_bundle *bp,*bestbp = 0;
     int32_t limit,refbundlei,height=-1,incr,bundlei,datalen,flag = 0; double val;
+    if ( addr->msgcounts.verack == 0 )
+        return(0);
     now = (uint32_t)time(NULL);
     if ( iguana_needhdrs(coin) != 0 && addr->pendhdrs < IGUANA_MAXPENDHDRS )
     {
@@ -697,13 +699,26 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                 if ( bits256_nonz(hash2) > 0 )
                 {
                     bp = 0, bundlei = -2;
-                    if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) == 0 || (bp->numhashes < bp->n && bp->bundleheight+coin->chain->bundlesize < coin->longestchain) )
+                    bp = iguana_bundlefind(coin,&bp,&bundlei,hash2);
+                    z = 0;
+                    if ( bp != 0 )
+                    {
+                        if ( bp->bundleheight+coin->chain->bundlesize < coin->longestchain )
+                        {
+                            m = (coin->longestchain - bp->bundleheight);
+                            if ( bp->numhashes < m )
+                                z = 1;
+                        }
+                        else if ( bp->numhashes < bp->n )
+                            z = 1;
+                    }
+                    if ( bp == 0 || z != 0 )
                     {
                         //printf("%s request hdr.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp->numhashes);
                         iguana_send(coin,addr,serialized,datalen);
                         addr->pendhdrs++;
                         flag++;
-                    } // else printf("skip hdrreq.%d numhashes.%d\n",bp->bundleheight,bp->numhashes);
+                    } else printf("skip hdrreq.%d numhashes.%d\n",bp->bundleheight,bp->numhashes);
                 }
                 free_queueitem(hashstr);
                 return(flag);
@@ -712,8 +727,6 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
             hashstr = 0;
         }
     }
-    if ( addr->msgcounts.verack == 0 )
-        return(0);
     if ( (limit= addr->recvblocks) > coin->MAXPENDING )
         limit = coin->MAXPENDING;
     if ( limit < 1 )
