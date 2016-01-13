@@ -767,19 +767,26 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
 
 int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
 {
-    int32_t newhwm = 0,h,lflag,bundlei,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp;
+    int32_t newhwm = 0,hdrsi,h,lflag,bundlei,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp;
     //printf("process bundlesQ\n");
     flag += iguana_processbundlesQ(coin,&newhwm);
     flag += iguana_reqhdrs(coin);
     lflag = 1;
+    h = (coin->blocks.hwmchain.height+1) / coin->chain->bundlesize;
     while ( lflag != 0 )
     {
         lflag = 0;
-        h = coin->blocks.hwmchain.height / coin->chain->bundlesize;
+        hdrsi = (coin->blocks.hwmchain.height+1) / coin->chain->bundlesize;
+        bundlei = (coin->blocks.hwmchain.height+1) % coin->chain->bundlesize;
         if ( (next= iguana_blockfind(coin,iguana_blockhash(coin,coin->blocks.hwmchain.height+1))) == 0 )
         {
             if ( (block= iguana_blockfind(coin,coin->blocks.hwmchain.RO.hash2)) != 0 )
                 next = block->hh.next, block->mainchain = 1;
+        }
+        if ( next == 0 && hdrsi < coin->bundlescount && (bp= coin->bundles[hdrsi]) != 0 && (next= bp->blocks[bundlei]) != 0 )
+        {
+            if ( bits256_nonz(next->RO.prev_block) == 0 )
+                next = 0;
         }
         if ( next != 0 )
         {
@@ -825,8 +832,8 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
                     printf("next prev cmp error nonz.%d\n",bits256_nonz(next->RO.prev_block));
             }
         }
-        if ( h != coin->blocks.hwmchain.height / coin->chain->bundlesize )
-            iguana_savehdrs(coin);
     }
+    if ( hdrsi != (coin->blocks.hwmchain.height+1) / coin->chain->bundlesize )
+        iguana_savehdrs(coin);
     return(flag);
 }

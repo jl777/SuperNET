@@ -1706,12 +1706,13 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
                 block->hdrsi = bp->hdrsi;
                 block->bundlei = i;
                 block->fpipbits = (uint32_t)calc_ipbits("127.0.0.1");
-
+                block->RO = B[i];
                 if ( bp->blocks[i] == 0 )
                     bp->blocks[i] = block;
                 if ( bits256_nonz(bp->hashes[i]) == 0 )
                     bp->hashes[i] = B[i].hash2;
-                //_iguana_chainlink(coin,block);
+                if ( bp->bundleheight+i == coin->blocks.hwmchain.height+1 )
+                    _iguana_chainlink(coin,block);
             }
         }
         bp->emitfinish = (uint32_t)time(NULL) + 1;
@@ -1816,11 +1817,17 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         {
             iguana_blocksetcounters(coin,block,dest);
             coin->blocks.RO[bp->bundleheight+bundlei] = block->RO;
+            B[bundlei] = block->RO;
+            //printf("(%d %d) ",R[bundlei].H.data->numtxids,dest->H.txidind);
+            if ( (err= iguana_ramchain_iterate(coin,dest,&R[bundlei])) != 0 )
+            {
+                printf("error ramchain_iterate hdrs.%d bundlei.%d\n",bp->hdrsi,bundlei);
+                break;
+            }
         }
-        //printf("(%d %d) ",R[bundlei].H.data->numtxids,dest->H.txidind);
-        if ( (err= iguana_ramchain_iterate(coin,dest,&R[bundlei])) != 0 )
+        else
         {
-            printf("error ramchain_iterate hdrs.%d bundlei.%d\n",bp->hdrsi,bundlei);
+            printf("error ramchain_iterate hdrs.%d bundlei.%d cant find block\n",bp->hdrsi,bundlei);
             break;
         }
     }

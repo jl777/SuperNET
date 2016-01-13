@@ -111,6 +111,7 @@ bits256 iguana_genesis(struct iguana_info *coin,struct iguana_chain *chain)
     int32_t bundlei = -2;
     static bits256 zero;
     iguana_bundlecreate(coin,&bundlei,0,hash2,zero,1);
+    _iguana_chainlink(coin,iguana_blockfind(coin,hash2));
     return(hash2);
 }
 
