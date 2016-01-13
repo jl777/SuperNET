@@ -925,6 +925,8 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     bufsize = IGUANA_MAXPACKETSIZE;
     buf = mycalloc('r',1,bufsize);
     printf("send version myservices.%llu to (%s)\n",(long long)coin->myservices,addr->ipaddr);
+    //if ( addr->supernet != 0 )
+    //    iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
     iguana_send_version(coin,addr,coin->myservices);
     sleep(1+(rand()%5));
     iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
@@ -982,17 +984,25 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
                     }
                 }
             }
+            if ( flag == 0 )
+            {
+                if ( run++ > 1000 )
+                {
+                    //printf("sleep\n");
+                    usleep(100000);
+                }
+                else if ( addr->rank != 1 )
+                    usleep(coin->polltimeout*100 + 0*(rand() % (coin->polltimeout*100)));
+                else usleep(100 + coin->polltimeout*1000);
+            } else run >>= 2;
         }
         if ( flag != 0 )
             run = 0;
-        else if ( flag == 0 )
+        else if ( addr->supernet != 0 && time(NULL) > lastping+10 )
         {
-            if ( addr->supernet != 0 && time(NULL) > lastping+10 )
-            {
-                iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
-                lastping = (uint32_t)time(NULL);
-            }
-        } else run >>= 2;
+            iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
+            lastping = (uint32_t)time(NULL);
+        }
         if ( coin->isRT != 0 && addr->rank > coin->MAXPEERS && (rand() % 100) == 0 )
         {
             printf("isRT and low rank.%d ",addr->rank);

@@ -331,6 +331,7 @@ void iguana_main(void *arg)
     while ( 1 )
     {
         flag = 0;
+        iguana_jsonQ();
         if ( flag == 0 )//|| addr->rank >= (coin->peers.numranked>>1) )
         {
             struct iguana_helper *ptr;
