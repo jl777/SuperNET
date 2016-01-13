@@ -406,7 +406,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
             if ( firstbp->queued == 0 )
             {
                 printf("blockQ %d\n",firstbp->bundleheight);
-                iguana_bundleQ(coin,firstbp,1000 + 10*(rand() % (int32_t)(1+sqrt(bp->bundleheight))));
+                iguana_bundleQ(coin,firstbp,1000 + 10*(rand() % (int32_t)(1+sqrt(firstbp->bundleheight))));
             }
         } else printf("match.%d vs n.%d bp->n.%d ht.%d\n",match,n,firstbp->n,firstbp->bundleheight);
     }
