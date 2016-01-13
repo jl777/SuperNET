@@ -310,7 +310,7 @@ uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bit
             }
             //printf("ALLHASHES FOUND! %d requested.%d\n",bp->bundleheight,n);
             bp->queued = (uint32_t)time(NULL);
-            iguana_bundleQ(coin,bp,1000 + (rand() % 2000));
+            iguana_bundleQ(coin,bp,500 + (rand() % 500));
             return(bp->queued);
         }
     }
@@ -794,7 +794,7 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
             if ( memcmp(next->RO.prev_block.bytes,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256)) == 0 )
             {
                 if ( _iguana_chainlink(coin,next) != 0 )
-                    lflag++;
+                    lflag++, flag++;
                 //else printf("chainlink error for %d\n",coin->blocks.hwmchain.height+1);
             }
             if ( 0 )
