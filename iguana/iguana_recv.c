@@ -744,7 +744,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
             if ( (ptr= coin->peers.ranked[i]) != 0 && ptr->msgcounts.verack > 0 )
                 pend += ptr->pendblocks, m++;
         }
-        if ( pend < _IGUANA_MAXPENDING*m )
+        if ( pend < coin->MAXPENDING*m )
             req = queue_dequeue(&coin->blocksQ,0);
     } else priority = 1;
     if ( req != 0 )
