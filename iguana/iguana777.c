@@ -403,11 +403,6 @@ void iguana_coinloop(void *arg)
                     lastdisp = (uint32_t)now;
                     //printf("now.%u\n",now);
                     iguana_bundlestats(coin,str);
-                    if ( str[0] != 0 )
-                    {
-                        if ( (rand() % 1000) == 0 )
-                            myallocated(0,0);
-                    }
                     //iguana_ramchainmerge(coin);
                 }
             }// bp block needs mutex
@@ -415,6 +410,11 @@ void iguana_coinloop(void *arg)
         if ( flag == 0 )
         {
             //printf("IDLE\n");
+            if ( str[0] != 0 )
+            {
+                if ( (rand() % 1000) == 0 )
+                    myallocated(0,0);
+            }
             usleep(coin->polltimeout * 1000);
         }
     }

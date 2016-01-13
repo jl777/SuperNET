@@ -399,8 +399,14 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
                     match++;
             }
         }
-        if ( match == n && n == firstbp->n & firstbp->queued == 0 )
-            iguana_bundleQ(coin,firstbp,1000 + 10*(rand() % (int32_t)(1+sqrt(bp->bundleheight))));
+        if ( firstbp != 0 && match == n && n == firstbp->n )
+        {
+            if ( firstbp->queued == 0 )
+            {
+                printf("blockQ %d\n",firstbp->bundleheight);
+                iguana_bundleQ(coin,firstbp,1000 + 10*(rand() % (int32_t)(1+sqrt(bp->bundleheight))));
+            }
+        } else printf("match.%d vs n.%d bp->n.%d ht.%dn\n",match,n,firstbp->n,firstbp->bundleheight);
     }
     return(req);
 }
@@ -823,8 +829,8 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
                         if ( bp != 0 )
                         {
                             coin->backstopmillis = OS_milliseconds();
-                            iguana_blockQ(coin,bp,bundlei,iguana_blockhash(coin,coin->backstop),1);
-                            //if ( (rand() % 100) == 0 )
+                            iguana_blockQ(coin,bp,bundlei,iguana_blockhash(coin,coin->backstop),0);
+                            if ( (rand() % 100) == 0 )
                                 printf("MAINCHAIN.%d threshold %.3f %.3f lag %.3f\n",coin->blocks.hwmchain.height+1,threshold,coin->backstopmillis,lag);
                         }
                     }
