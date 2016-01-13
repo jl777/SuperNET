@@ -993,7 +993,7 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
                 }
                 else if ( addr->rank != 1 )
                     usleep(coin->polltimeout*100 + 1*(rand() % (coin->polltimeout*100)));
-                else usleep(100 + coin->polltimeout*1000);
+                else usleep(100);
             } else run >>= 2;
         }
         if ( flag != 0 )
