@@ -37,7 +37,7 @@ static int32_t initflag;
 #ifdef __linux__
 int32_t IGUANA_NUMHELPERS = 16;
 #else
-int32_t IGUANA_NUMHELPERS = 4;
+int32_t IGUANA_NUMHELPERS = 8;
 #endif
 
 char *hash_parser(struct supernet_info *myinfo,char *hashname,cJSON *json,char *remoteaddr)
