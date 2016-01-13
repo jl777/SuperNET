@@ -439,7 +439,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
             bp->emitfinish = 1;
             iguana_emitQ(coin,bp);
         }
-        else if ( bp->hdrsi >= coin->bundlescount-3 )
+        else if ( bp->hdrsi >= coin->bundlescount-8 )
             bp->metric = 1;
         else bp->metric = (bp->hdrsi + 1);//(2*bp->n - bp->numsaved - bp->numrecv);//sqrt((sqrt(fabs(bp->estsize - bp->datasize)) * (bp->n - bp->numsaved)) * (bp->hdrsi + 1));
     }
