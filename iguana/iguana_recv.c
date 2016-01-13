@@ -311,7 +311,7 @@ int32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bits
                 if ( (err= iguana_bundlehash2add(coin,0,bp,i,blockhashes[i])) < 0 )
                     return(err);
                 if ( 1 && bp->emitfinish == 0 && (block= bp->blocks[i]) != 0 && (block->queued == 0 && block->fpipbits == 0) && block->numrequests <= bp->minrequests+10 )
-                    iguana_blockQ(coin,bp,i,block->RO.hash2,0), n++;
+                    iguana_blockQ(coin,bp,i,block->RO.hash2,1), n++;
             }
             printf("ALLHASHES FOUND! %d requested.%d\n",bp->bundleheight,n);
             return(i);
@@ -397,7 +397,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
             //fprintf(stderr,"i.%d of %d bundleset\n",i,n);
             if ( (bp= iguana_bundleset(coin,&block,&bundlei,&blocks[i])) != 0 && bp->hdrsi < IGUANA_MAXACTIVEBUNDLES )
             {
-                iguana_blockQ(coin,bp,bundlei,blocks[i].RO.hash2,0);
+                iguana_blockQ(coin,bp,bundlei,blocks[i].RO.hash2,1);
                 if ( i == 0 )
                     printf("GOT HDRS[%d] Q.(%d %d) ht.%d hashes.%d recv.%d\n",n,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ),bp->bundleheight,bp->numhashes,bp->numrecv);
             }
