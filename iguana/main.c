@@ -331,10 +331,17 @@ void iguana_main(void *arg)
     while ( 1 )
     {
         flag = 0;
-        //for (i=0; i<sizeof(Coins)/sizeof(*Coins); i++)
-        //    if ( Coins[i] != 0 && Coins[i]->symbol[0] != 0 )
-        //        flag += iguana_processjsonQ(Coins[i]);
-        //flag = iguana_jsonQ();
+        if ( flag == 0 )//|| addr->rank >= (coin->peers.numranked>>1) )
+        {
+            struct iguana_helper *ptr;
+            if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
+            {
+                if ( ptr->bp != 0 && ptr->coin != 0 )
+                    iguana_bundleiters(ptr->coin,ptr->bp,ptr->timelimit);
+                myfree(ptr,ptr->allocsize);
+                flag++;
+            }
+        }
         if ( flag == 0 )
             usleep(100000);
     }

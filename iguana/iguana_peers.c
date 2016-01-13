@@ -993,16 +993,6 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
                 lastping = (uint32_t)time(NULL);
             }
         } else run >>= 2;
-        if ( flag == 0 )//|| addr->rank >= (coin->peers.numranked>>1) )
-        {
-            struct iguana_helper *ptr;
-            if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
-            {
-                if ( ptr->bp != 0 )
-                    iguana_bundleiters(coin,ptr->bp,ptr->timelimit);
-                myfree(ptr,ptr->allocsize);
-            }
-        }
         if ( coin->isRT != 0 && addr->rank > coin->MAXPEERS && (rand() % 100) == 0 )
         {
             printf("isRT and low rank.%d ",addr->rank);
