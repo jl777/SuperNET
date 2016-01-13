@@ -1817,7 +1817,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         {
             iguana_blocksetcounters(coin,block,dest);
             coin->blocks.RO[bp->bundleheight+bundlei] = block->RO;
-            B[bundlei] = block->RO;
+            destB[bundlei] = block->RO;
             //printf("(%d %d) ",R[bundlei].H.data->numtxids,dest->H.txidind);
             if ( (err= iguana_ramchain_iterate(coin,dest,&R[bundlei])) != 0 )
             {
