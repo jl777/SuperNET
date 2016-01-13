@@ -626,7 +626,7 @@ struct iguana_blockreq { struct queueitem DL; bits256 hash2,*blockhashes; struct
 
 int32_t iguana_blockQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2,int32_t priority)
 {
-    queue_t *Q; char *str; struct iguana_blockreq *req; struct iguana_block *block = 0;
+    queue_t *Q; char *str; int32_t height = -1; struct iguana_blockreq *req; struct iguana_block *block = 0;
     if ( bits256_nonz(hash2) == 0 )
     {
         printf("cant queue zerohash bundlei.%d\n",bundlei);
@@ -647,16 +647,24 @@ int32_t iguana_blockQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t 
         else str = "blocksQ", Q = &coin->blocksQ;
         if ( Q != 0 )
         {
+            if ( bp != 0 && bundlei >= 0 && bundlei < bp->n )
+            {
+                if ( bp->issued[bundlei] == 0 || time(NULL) > bp->issued[bundlei]+3 )
+                {
+                    bp->issued[bundlei] = (uint32_t)time(NULL);
+                    if ( bp->bundleheight >= 0 )
+                        height = (bp->bundleheight + bundlei);
+                }
+                else
+                {
+                    return(1);
+                }
+            }
             req = mycalloc('y',1,sizeof(*req));
             req->hash2 = hash2;
             req->bp = bp;
+            req->height = height;
             req->bundlei = bundlei;
-            if ( bp != 0 && bundlei >= 0 && bundlei < bp->n )
-            {
-                bp->issued[bundlei] = (uint32_t)time(NULL);
-                if ( bp->bundleheight >= 0 )
-                    req->height = (bp->bundleheight + bundlei);
-            }
             char str2[65];
             //if ( 0 && (bundlei % 250) == 0 )
                 printf("%s %d %s %d numranked.%d qsize.%d\n",str,req->height,bits256_str(str2,hash2),coin->blocks.recvblocks,coin->peers.numranked,queue_size(Q));
