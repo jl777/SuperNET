@@ -520,7 +520,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                         if ( bits256_nonz(bp->hashes[j]) > 0 && (block= bp->blocks[j]) != 0 )
                         {
                             //printf("j.%d bp.%d %d %x lag.%d\n",j,bp->minrequests,block->numrequests,block->fpipbits,now - bp->issued[j]);
-                            if ( block->numrequests <= bp->minrequests && block->fpipbits == 0 && (bp->issued[j] == 0 || now > bp->issued[j]+60) )
+                            if ( block->numrequests <= bp->minrequests+10 && block->fpipbits == 0 && (bp->issued[j] == 0 || now > bp->issued[j]+60) )
                             {
                                 //printf("%d:%d.%d ",bp->hdrsi,j,block->numrequests);
                                 flag++;
