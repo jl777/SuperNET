@@ -247,7 +247,7 @@ void iguana_mergeQ(struct iguana_info *coin,struct iguana_bundle *bp,struct igua
     queue_enqueue("helperQ",&helperQ,&ptr->DL,0);
 }
 
-void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp)
+void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
 {
     struct iguana_helper *ptr;
     ptr = mycalloc('i',1,sizeof(*ptr));
@@ -256,6 +256,7 @@ void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp)
     ptr->bp = bp, ptr->hdrsi = bp->hdrsi;
     ptr->type = 'B';
     ptr->starttime = (uint32_t)time(NULL);
+    ptr->timelimit = timelimit;
     coin->numbundlesQ++;
     //printf("%s bundle.%d[%d] emitfinish.%u\n",coin->symbol,ptr->hdrsi,bp->n,bp->emitfinish);
     queue_enqueue("helperQ",&helperQ,&ptr->DL,0);
@@ -264,35 +265,36 @@ void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp)
 int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_helper *ptr)
 {
     struct iguana_info *coin; struct iguana_peer *addr; struct iguana_bundle *bp,*nextbp;
-    coin = ptr->coin, addr = ptr->addr;
-    if ( 0 && ptr->type == 'M' )
+    addr = ptr->addr;
+    if ( (coin= ptr->coin) != 0 )
     {
-        if ( (coin= ptr->coin) != 0 )
+        if ( (bp= ptr->bp) != 0 )
         {
-            if ( (bp= ptr->bp) != 0 && (nextbp= ptr->nextbp) != 0 )
+            if ( 0 && ptr->type == 'M' )
             {
-                bp->mergefinish = nextbp->mergefinish = (uint32_t)time(NULL);
-                if ( iguana_bundlemergeHT(coin,mem,memB,bp,nextbp,ptr->starttime) < 0 )
-                    bp->mergefinish = nextbp->mergefinish = 0;
+                if ( (nextbp= ptr->nextbp) != 0 )
+                {
+                    bp->mergefinish = nextbp->mergefinish = (uint32_t)time(NULL);
+                    if ( iguana_bundlemergeHT(coin,mem,memB,bp,nextbp,ptr->starttime) < 0 )
+                        bp->mergefinish = nextbp->mergefinish = 0;
+                }
             }
-        }
-    }
-    else if ( ptr->type == 'E' )
-    {
-        //printf("emitQ coin.%p bp.%p\n",ptr->coin,ptr->bp);
-        if ( (coin= ptr->coin) != 0 )
-        {
-            if ( (bp= ptr->bp) != 0 )
+            else if ( ptr->type == 'B' )
             {
+                iguana_bundleiters(coin,bp,ptr->timelimit);
+            }
+            else if ( ptr->type == 'E' )
+            {
+                //printf("emitQ coin.%p bp.%p\n",ptr->coin,ptr->bp);
                 if ( iguana_bundlesaveHT(coin,mem,memB,bp,ptr->starttime) == 0 )
                 {
                     bp->emitfinish = (uint32_t)time(NULL);
                     coin->numemitted++;
                 }
                 else bp->emitfinish = 0;
-            } else printf("error missing bp in emit\n");
-        } else printf("no coin in helper request?\n");
-    }
+            }
+        } else printf("no bundle in helperrequest\n");
+    } else printf("no coin in helperrequest\n");
     return(0);
 }
 

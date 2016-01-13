@@ -35,9 +35,9 @@ uint64_t IGUANA_MY64BITS;
 queue_t helperQ,jsonQ,finishedQ;
 static int32_t initflag;
 #ifdef __linux__
-int32_t IGUANA_NUMHELPERS = 8;
+int32_t IGUANA_NUMHELPERS = 16;
 #else
-int32_t IGUANA_NUMHELPERS = 1;
+int32_t IGUANA_NUMHELPERS = 8;
 #endif
 
 char *hash_parser(struct supernet_info *myinfo,char *hashname,cJSON *json,char *remoteaddr)

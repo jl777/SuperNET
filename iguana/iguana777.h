@@ -29,7 +29,7 @@
 #define IGUANA_HEIGHT 200
 
 #define IGUANA_MAXPENDHDRS 1
-#define _IGUANA_MAXPENDING 512    //64
+#define _IGUANA_MAXPENDING 3    //64
 #define _IGUANA_MAXBUNDLES 8 
 #define IGUANA_MAXACTIVEBUNDLES 32
 #define IGUANA_MAXFILES 4096
@@ -588,7 +588,7 @@ void iguana_emitQ(struct iguana_info *coin,struct iguana_bundle *bp);
 void iguana_txdataQ(struct iguana_info *coin,struct iguana_peer *addr,FILE *fp,long fpos,int32_t datalen);
 void iguana_helper(void *arg);
 
-struct iguana_helper { struct queueitem DL; void *coin,*addr,*bp,*nextbp,*fp; long fpos; int32_t allocsize,type,hdrsi,bundlei,datalen; uint32_t starttime; };
+struct iguana_helper { struct queueitem DL; void *coin,*addr,*bp,*nextbp,*fp; long fpos; int32_t allocsize,type,hdrsi,bundlei,datalen,timelimit; uint32_t starttime; };
 int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_helper *ptr);
 void iguana_flushQ(struct iguana_info *coin,struct iguana_peer *addr);
 //struct iguana_txdatabits iguana_peerfilePT(struct iguana_info *coin,struct iguana_peer *addr,bits256 hash2,struct iguana_txdatabits txdatabits,int32_t recvlen);
@@ -685,7 +685,8 @@ int32_t iguana_jsonQ();
 int32_t is_bitcoinrpc(char *method);
 char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr);
 cJSON *iguana_pubkeyjson(struct iguana_info *coin,char *pubkeystr);
-void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp);
+void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit);
+void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit);
 
 #include "../includes/iguana_api.h"
 

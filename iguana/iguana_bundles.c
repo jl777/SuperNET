@@ -425,7 +425,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
         }
     }
     bp->metric = bp->numhashes;
-    //if ( bp->numsaved > 0 )
+    /*if ( bp->numsaved > 0 )
     {
         bp->estsize = ((uint64_t)bp->datasize * bp->n) / (bp->numrecv+1);
         if ( bp->numsaved >= bp->n && bp->emitfinish == 0 )
@@ -437,7 +437,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
         else if ( bp->hdrsi >= coin->bundlescount-8 )
             bp->metric = 1;
         else bp->metric = (bp->hdrsi + 1);//(2*bp->n - bp->numsaved - bp->numrecv);//sqrt((sqrt(fabs(bp->estsize - bp->datasize)) * (bp->n - bp->numsaved)) * (bp->hdrsi + 1));
-    }
+    }*/
     //printf("%f ",bp->metric);
     return(bp->estsize);
 }
@@ -558,4 +558,39 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     }
     strcpy(coin->statusstr,str);
     coin->estsize = estsize;
+}
+
+void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
+{
+    int32_t i,n; uint32_t now; struct iguana_block *block; double endmillis = OS_milliseconds() + timelimit;
+    printf("ITERATE bundle.%d r.%d s.%d\n",bp->bundleheight,bp->numrecv,bp->numsaved);
+    memset(bp->issued,0,sizeof(bp->issued));
+    while ( bp->emitfinish == 0 && OS_milliseconds() < endmillis )
+    {
+        now = (uint32_t)time(NULL);
+        for (i=n=0; i<bp->n; i++)
+        {
+            if ( (block= bp->blocks[i]) != 0 )
+            {
+                if ( block->queued == 0 && block->fpipbits == 0 && bp->issued[i] == 0 )
+                {
+                    printf("(%d:%d) ",bp->hdrsi,i);
+                    iguana_blockQ(coin,bp,i,block->RO.hash2,0);
+                    bp->issued[i] = now;
+                }
+                else if ( block->fpipbits != 0 )
+                    n++;
+            } else printf("iguana_bundleiters[%d] unexpected null block[%d]\n",bp->bundleheight,i);
+            bp->numsaved = n;
+        }
+        if ( bp->numsaved >= bp->n && bp->emitfinish == 0 )
+        {
+            printf(">>>>>>>>>>>>>>>>>>>>>>> EMIT\n");
+            bp->emitfinish = 1;
+            iguana_emitQ(coin,bp);
+            return;
+        }
+        usleep(1000);
+    }
+    iguana_bundleQ(coin,bp,timelimit);
 }
