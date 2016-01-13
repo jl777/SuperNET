@@ -564,8 +564,9 @@ void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_
 {
     int32_t i,n,pend,counter = 0; uint32_t now; struct iguana_block *block; double endmillis;
     coin->numbundlesQ--;
-    for (i=pend=0; i<IGUANA_MAXPEERS; i++)
-        pend += coin->peers.active[i].pendblocks + queue_size(&coin->priorityQ) + queue_size(&coin->blocksQ);
+    pend = queue_size(&coin->priorityQ) + queue_size(&coin->blocksQ);
+    for (i=0; i<IGUANA_MAXPEERS; i++)
+        pend += coin->peers.active[i].pendblocks;
     if ( pend >= coin->MAXPENDING*coin->MAXPEERS )
     {
         printf("SKIP pend.%d ITERATE bundle.%d n.%d r.%d s.%d finished.%d\n",pend,bp->bundleheight,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish);
