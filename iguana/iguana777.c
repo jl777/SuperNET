@@ -250,6 +250,7 @@ void iguana_mergeQ(struct iguana_info *coin,struct iguana_bundle *bp,struct igua
 void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
 {
     struct iguana_helper *ptr;
+    bp->queued = (uint32_t)time(NULL);
     ptr = mycalloc('i',1,sizeof(*ptr));
     ptr->allocsize = sizeof(*ptr);
     ptr->coin = coin;

@@ -309,7 +309,6 @@ uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bit
                 //    iguana_blockQ(coin,bp,i,block->RO.hash2,1), n++;
             }
             //printf("ALLHASHES FOUND! %d requested.%d\n",bp->bundleheight,n);
-            bp->queued = (uint32_t)time(NULL);
             iguana_bundleQ(coin,bp,500 + (rand() % 500));
             return(bp->queued);
         }
@@ -381,7 +380,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
 
 struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct iguana_bundlereq *req,struct iguana_block *blocks,int32_t n,int32_t *newhwmp)
 {
-    int32_t i,bundlei; struct iguana_block *block; struct iguana_bundle *bp;
+    int32_t i,bundlei,match; struct iguana_block *block; struct iguana_bundle *bp,*firstbp = 0;
     if ( blocks == 0 )
     {
         printf("iguana_recvblockhdrs null blocks?\n");
@@ -389,16 +388,19 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
     }
     if ( blocks != 0 && n > 0 )
     {
-        for (i=0; i<n; i++)
+        for (i=match=0; i<n; i++)
         {
             //fprintf(stderr,"i.%d of %d bundleset\n",i,n);
-            if ( (bp= iguana_bundleset(coin,&block,&bundlei,&blocks[i])) != 0 && bp->hdrsi < IGUANA_MAXACTIVEBUNDLES )
+            if ( (bp= iguana_bundleset(coin,&block,&bundlei,&blocks[i])) != 0 )
             {
-                //iguana_blockQ(coin,bp,bundlei,blocks[i].RO.hash2,1);
                 if ( i == 0 )
-                    printf("GOT HDRS[%d] Q.(%d %d) ht.%d hashes.%d recv.%d\n",n,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ),bp->bundleheight,bp->numhashes,bp->numrecv);
+                    firstbp = bp;
+                if ( bundlei == i && bp == firstbp )
+                    match++;
             }
         }
+        if ( match == n && n == firstbp->n & firstbp->queued == 0 )
+            iguana_bundleQ(coin,firstbp,1000 + 10*(rand() % (int32_t)(1+sqrt(bp->bundleheight))));
     }
     return(req);
 }
