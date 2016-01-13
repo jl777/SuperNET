@@ -39,13 +39,13 @@ char *iguana_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,i
 }
 
 
-char *iguana_lockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *filename)
+char *iguana_lockunspent(struct supernet_info *myinfo,struct iguana_info *coin,int32_t flag,cJSON *array)
 {
     return(clonestr("{\"error\":\"notyet\"}"));
 }
 
 
-char *iguana_listlockunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *unlock,cJSON *array)
+char *iguana_listlockunspent(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     return(clonestr("{\"error\":\"notyet\"}"));
 }

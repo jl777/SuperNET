@@ -387,7 +387,7 @@ static char *listunspent(RPCARGS)
 
 static char *lockunspent(RPCARGS)
 {
-    return(sglue2(0,myinfo,coin,remoteaddr,"ramchain","lockunspent","unlock",params[0],"array",params[1]));
+    return(sglue2(0,myinfo,coin,remoteaddr,"ramchain","lockunspent","flag",params[0],"array",params[1]));
 }
 
 static char *listlockunspent(RPCARGS)

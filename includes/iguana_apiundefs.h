@@ -1,0 +1,21 @@
+
+#undef S_D_SS
+#undef S_A_I_S
+#undef SS_D_I_S
+#undef SS_D_I_SS
+#undef ZERO_ARGS
+#undef INT_ARG
+#undef TWO_INTS
+#undef STRING_ARG
+#undef TWO_STRINGS
+#undef THREE_STRINGS
+#undef STRING_AND_INT
+#undef STRING_AND_TWOINTS
+#undef HASH_AND_INT
+#undef HASH_AND_TWOINTS
+#undef DOUBLE_ARG
+#undef STRING_AND_ARRAY
+#undef INT_AND_ARRAY
+#undef INT_ARRAY_STRING
+#undef TWO_ARRAYS
+#undef STRING_AND_TWOARRAYS

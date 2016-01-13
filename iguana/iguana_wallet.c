@@ -184,7 +184,7 @@ char *iguana_getaccountaddress(struct supernet_info *myinfo,struct iguana_info *
 }
 
 
-char *iguana_setaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
+char *iguana_setaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *address,char *account)
 {
     return(clonestr("{\"error\":\"notyet\"}"));
 }

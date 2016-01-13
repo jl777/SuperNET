@@ -334,7 +334,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
         if ( block != origblock )
             iguana_blockcopy(coin,block,origblock);
         *blockp = block;
-        if ( bits256_nonz(block->RO.prev_block) > 0 )
+        if ( 0 && bits256_nonz(block->RO.prev_block) > 0 )
             iguana_patch(coin,block);
         if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,block->RO.hash2)) != 0 )
         {

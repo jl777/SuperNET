@@ -692,7 +692,7 @@ char *ramchain_coinparser(struct supernet_info *myinfo,struct iguana_info *coin,
     else if ( strcmp(method,"getaccountaddress") == 0 )
         return(iguana_getaccountaddress(myinfo,coin,jstr(json,"account")));
     else if ( strcmp(method,"setaccount") == 0 )
-        return(iguana_setaccount(myinfo,coin,jstr(json,"account")));
+        return(iguana_setaccount(myinfo,coin,jstr(json,"address"),jstr(json,"account")));
     else if ( strcmp(method,"getaccount") == 0 )
         return(iguana_getaccount(myinfo,coin,jstr(json,"account")));
     else if ( strcmp(method,"getaddressesbyaccount") == 0 )
@@ -732,9 +732,9 @@ char *ramchain_coinparser(struct supernet_info *myinfo,struct iguana_info *coin,
     else if ( strcmp(method,"listunspent") == 0 )
         return(iguana_listunspent(myinfo,coin,juint(json,"minconf"),juint(json,"maxconf")));
     else if ( strcmp(method,"lockunspent") == 0 )
-        return(iguana_lockunspent(myinfo,coin,jstr(json,"filename")));
+        return(iguana_lockunspent(myinfo,coin,juint(json,"flag"),jobj(json,"array")));
     else if ( strcmp(method,"listlockunspent") == 0 )
-        return(iguana_listlockunspent(myinfo,coin,jstr(json,"unlock"),jobj(json,"array")));
+        return(iguana_listlockunspent(myinfo,coin));
     else if ( strcmp(method,"gettxout") == 0 )
         return(iguana_gettxout(myinfo,coin,jbits256(json,"txid"),juint(json,"vout"),juint(json,"mempool")));
     else if ( strcmp(method,"gettxoutsetinfo") == 0 )
