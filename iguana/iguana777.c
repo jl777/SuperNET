@@ -332,8 +332,8 @@ void iguana_helper(void *arg)
             }
             flag++;
         }
-        if ( flag == 0 )
-            usleep(10000);
+        //if ( flag == 0 )
+            usleep(coin->polltimeout*10000);
     }
 }
 

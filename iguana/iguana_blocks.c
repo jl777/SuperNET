@@ -66,7 +66,7 @@ struct iguana_block *iguana_blockhashset(struct iguana_info *coin,int32_t height
     }
     if ( createflag > 0 )
     {
-        block = mycalloc('y',1,sizeof(*block));
+        block = mycalloc('x',1,sizeof(*block));
         block->RO.hash2 = hash2;
         block->hh.itemind = height, block->height = -1;
         HASH_ADD(hh,coin->blocks.hash,RO.hash2,sizeof(hash2),block);
