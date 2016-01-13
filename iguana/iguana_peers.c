@@ -925,8 +925,6 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     bufsize = IGUANA_MAXPACKETSIZE;
     buf = mycalloc('r',1,bufsize);
     printf("send version myservices.%llu to (%s)\n",(long long)coin->myservices,addr->ipaddr);
-    //if ( addr->supernet != 0 )
-    //    iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
     iguana_send_version(coin,addr,coin->myservices);
     sleep(1+(rand()%5));
     iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
@@ -970,14 +968,6 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
             }
             if ( flag == 0 )
             {
-                /*if ( 0 && time(NULL) > addr->pendtime+30 )
-                {
-                    if ( addr->pendblocks > 0 )
-                        addr->pendblocks--;
-                    if ( addr->pendhdrs > 0 )
-                        addr->pendhdrs--;
-                    addr->pendtime = 0;
-                }*/
                 if ( coin->active != 0 && (fds.revents & POLLOUT) != 0 )
                 {
                     if ( iguana_pollQsPT(coin,addr) > 0 )

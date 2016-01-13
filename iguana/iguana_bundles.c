@@ -279,11 +279,6 @@ struct iguana_bundle *iguana_bundlecreate(struct iguana_info *coin,int32_t *bund
                 bp->allhash = allhash;
             if ( bp->bundleheight >= 0 && bp->bundleheight != (bundleheight - *bundleip) )
                 printf("bundlecreate warning: bp->bundleheight %d != %d (bundleheight %d - %d bundlei)\n",bp->bundleheight,(bundleheight - *bundleip),bundleheight,*bundleip);
-            if ( *bundleip == 0 && iguana_bundlehash2add(coin,0,bp,0,bundlehash2) == 0 )
-            {
-                //if ( bp->numhashes < bp->n )
-                //    queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(str),1);
-            }
             return(bp);
         }
         bp = mycalloc('b',1,sizeof(*bp));
@@ -552,7 +547,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     tmp = (difft.millis * 1000000);
     tmp %= 1000000000;
     difft.millis = ((double)tmp / 1000000.);
-    sprintf(str,"N[%d] h.%d r.%d c.%d:%d:%d s.%d d.%d E.%d:%d M.%d L.%d est.%d %s %d:%02d:%02d %03.3f peers.%d/%d",coin->bundlescount,numhashes,coin->blocksrecv,coin->numcached,numcached,coin->cachefreed,numsaved,done,numemit,coin->numreqsent,coin->blocks.hwmchain.height,coin->longestchain,coin->MAXBUNDLES,mbstr(str2,estsize),(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,difft.millis,p,coin->MAXPEERS);
+    sprintf(str,"N[%d] Q.%d h.%d r.%d c.%d:%d:%d s.%d d.%d E.%d:%d M.%d L.%d est.%d %s %d:%02d:%02d %03.3f peers.%d/%d",coin->bundlescount,coin->numbundlesQ,numhashes,coin->blocksrecv,coin->numcached,numcached,coin->cachefreed,numsaved,done,numemit,coin->numreqsent,coin->blocks.hwmchain.height,coin->longestchain,coin->MAXBUNDLES,mbstr(str2,estsize),(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,difft.millis,p,coin->MAXPEERS);
     //sprintf(str+strlen(str),"%s.%-2d %s time %.2f files.%d Q.%d %d\n",coin->symbol,flag,str,(double)(time(NULL)-coin->starttime)/60.,coin->peers.numfiles,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
     //if ( (rand() % 100) == 0 )
     static uint32_t lastdisp;

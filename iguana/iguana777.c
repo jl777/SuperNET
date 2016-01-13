@@ -247,6 +247,20 @@ void iguana_mergeQ(struct iguana_info *coin,struct iguana_bundle *bp,struct igua
     queue_enqueue("helperQ",&helperQ,&ptr->DL,0);
 }
 
+void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp)
+{
+    struct iguana_helper *ptr;
+    ptr = mycalloc('i',1,sizeof(*ptr));
+    ptr->allocsize = sizeof(*ptr);
+    ptr->coin = coin;
+    ptr->bp = bp, ptr->hdrsi = bp->hdrsi;
+    ptr->type = 'B';
+    ptr->starttime = (uint32_t)time(NULL);
+    coin->numbundlesQ++;
+    //printf("%s bundle.%d[%d] emitfinish.%u\n",coin->symbol,ptr->hdrsi,bp->n,bp->emitfinish);
+    queue_enqueue("helperQ",&helperQ,&ptr->DL,0);
+}
+
 int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_helper *ptr)
 {
     struct iguana_info *coin; struct iguana_peer *addr; struct iguana_bundle *bp,*nextbp;
@@ -316,15 +330,7 @@ void iguana_helper(void *arg)
             flag++;
         }
         if ( flag == 0 )
-        {
-            /*for (i=0; i<sizeof(Coins)/sizeof(*Coins); i++)
-            {
-                if ( (coin= Coins[i]) != 0 && coin->launched != 0 )
-                    flag += iguana_rpctest(coin);
-            }*/
-            if ( flag == 0 )
-                usleep(10000);
-        }
+            usleep(10000);
     }
 }
 

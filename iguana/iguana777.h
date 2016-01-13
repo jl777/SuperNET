@@ -387,7 +387,7 @@ struct iguana_bundle
 {
     struct queueitem DL; struct iguana_info *coin; struct iguana_bundle *nextbp;
     struct iguana_bloom16 bloom;
-    uint32_t issuetime,hdrtime,emitfinish,mergefinish,purgetime;
+    uint32_t issuetime,hdrtime,emitfinish,mergefinish,purgetime,queued;
     int32_t numhashes,numrecv,numsaved,numcached;
     int32_t minrequests,n,hdrsi,bundleheight,numtxids,numspends,numunspents;
     double avetime,threshold,metric; uint64_t datasize,estsize;
@@ -439,7 +439,7 @@ struct iguana_info
     portable_mutex_t peers_mutex,blocks_mutex;
     struct iguana_bundle *bundles[IGUANA_MAXBUNDLES];
     double rankedbps[IGUANA_MAXBUNDLES][2];
-    int32_t numremain,numpendings,zcount,recvcount,bcount,pcount,lastbundle; uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent;
+    int32_t numremain,numpendings,zcount,recvcount,bcount,pcount,lastbundle; uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ;
     double backstopmillis; bits256 backstophash2;
     int32_t initialheight,mapflags,minconfirms,numrecv,isRT,backstop,blocksrecv,merging,polltimeout,numreqtxids; bits256 reqtxids[64];
     void *launched,*started;
@@ -685,6 +685,7 @@ int32_t iguana_jsonQ();
 int32_t is_bitcoinrpc(char *method);
 char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr);
 cJSON *iguana_pubkeyjson(struct iguana_info *coin,char *pubkeystr);
+void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp);
 
 #include "../includes/iguana_api.h"
 
