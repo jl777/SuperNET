@@ -415,7 +415,7 @@ void iguana_coinloop(void *arg)
         if ( flag == 0 )
         {
             //printf("IDLE\n");
-            usleep(coin->polltimeout * 10000);
+            usleep(coin->polltimeout * 1000);
         }
     }
 }

@@ -580,7 +580,7 @@ void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_
         {
             if ( (block= bp->blocks[i]) != 0 )
             {
-                if ( block->queued == 0 && block->fpipbits == 0 && bp->issued[i] == 0 )
+                if ( block->fpipbits == 0 && ((block->queued == 0 && bp->issued[i] == 0) || now > bp->issued[i]+1) )
                 {
                     //printf("(%d:%d) ",bp->hdrsi,i);
                     iguana_blockQ(coin,bp,i,block->RO.hash2,bp->numsaved > bp->n-10);
