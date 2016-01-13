@@ -16,7 +16,7 @@
 #include "iguana777.h"
 #include "SuperNET.h"
 
-char *iguana_getrawchangeaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
+char *iguana_getrawchangeaddress(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     return(clonestr("{\"error\":\"notyet\"}"));
 }
@@ -27,13 +27,13 @@ char *iguana_settxfee(struct supernet_info *myinfo,struct iguana_info *coin,doub
 }
 
 
-char *iguana_listtransactions(struct supernet_info *myinfo,struct iguana_info *coin,char *account,int32_t count,int32_t from)
+char *iguana_listtransactions(struct supernet_info *myinfo,struct iguana_info *coin,char *account,int32_t count,int32_t skip,int32_t watchonly)
 {
     return(clonestr("{\"error\":\"notyet\"}"));
 }
 
 
-char *iguana_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,int32_t minconf,int32_t maxconf)
+char *iguana_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,int32_t minconf,int32_t maxconf,cJSON *array)
 {
     return(clonestr("{\"error\":\"notyet\"}"));
 }
@@ -93,7 +93,7 @@ char *iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_info 
 }
 
 
-char *iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx)
+char *iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx,int32_t allowhighfees)
 {
     return(clonestr("{\"error\":\"notyet\"}"));
 }

@@ -118,34 +118,29 @@ ZERO_ARGS(getinfo);
 ZERO_ARGS(getbestblockhash);
 ZERO_ARGS(getblockcount);
 ZERO_ARGS(listaddressgroupings);
-ZERO_ARGS(getinfo);
 ZERO_ARGS(walletlock);
 ZERO_ARGS(checkwallet);
 ZERO_ARGS(repairwallet);
 ZERO_ARGS(makekeypair);
 ZERO_ARGS(gettxoutsetinfo);
-ZERO_ARGS(dumpwallet);
 ZERO_ARGS(listlockunspent);
+ZERO_ARGS(getrawchangeaddress);
 
-INT_ARG(listaccounts,minconf);
-
-TWO_INTS(listunspent,minconf,maxconf);
+TWO_INTS(listaccounts,minconf,includewatchonly);
 TWO_INTS(listreceivedbyaddress,minconf,includeempty);
+TWOINTS_AND_ARRAY(listunspent,minconf,maxconf,array);
 
+STRING_ARG(dumpwallet,filename);
 STRING_ARG(backupwallet,filename);
 STRING_ARG(encryptwallet,passphrase);
 STRING_ARG(validatepubkey,pubkey);
 STRING_ARG(getnewaddress,account);
 STRING_ARG(vanitygen,vanity);
-STRING_ARG(getrawchangeaddress,account);
-STRING_ARG(sendrawtransaction,rawtx);
 
 STRING_ARG(getaddressesbyaccount,account);
-STRING_ARG(getaccountaddress,account);
 STRING_ARG(getaccount,address);
 STRING_ARG(getaccountaddress,account);
 STRING_ARG(dumpprivkey,address);
-STRING_ARG(importprivkey,wif);
 STRING_ARG(importwallet,filename);
 STRING_ARG(decoderawtransaction,rawtx);
 STRING_ARG(decodescript,script);
@@ -155,17 +150,19 @@ TWO_STRINGS(walletpassphrasechange,oldpassphrase,newpassphrase);
 TWO_STRINGS(signmessage,address,message);
 
 THREE_STRINGS(verifymessage,address,sig,message);
+THREE_INTS(listreceivedbyaccount,confirmations,includeempty,watchonly);
+THREE_INTS(getbalance,confirmations,includeempty,watchonly);
 
+TWOSTRINGS_AND_INT(importprivkey,wif,account,rescan);
 STRING_AND_INT(getreceivedbyaccount,account,includeempty);
-STRING_AND_INT(listreceivedbyaccount,account,includeempty);
-STRING_AND_INT(getbalance,account,minconf);
 STRING_AND_INT(walletpassphrase,passphrase,timeout);
 STRING_AND_INT(getreceivedbyaddress,address,minconf);
+STRING_AND_INT(sendrawtransaction,rawtx,allowhighfees);
 
 HASH_AND_INT(listsinceblock,blockhash,target);
 HASH_AND_INT(getrawtransaction,txid,verbose);
 
-STRING_AND_TWOINTS(listtransactions,account,count,from);
+STRING_AND_THREEINTS(listtransactions,account,count,skip,includewatchonly);
 
 HASH_AND_TWOINTS(gettxout,txid,vout,mempool);
 

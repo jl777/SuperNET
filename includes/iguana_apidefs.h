@@ -9,7 +9,11 @@
 #define IGUANA_CFUNC_IA(name,val,array) char *iguana_ ## name(IGUANA_ARGS,int32_t val,cJSON *array)
 #define IGUANA_CFUNC_IAS(name,val,array,str) char *iguana_ ## name(IGUANA_ARGS,int32_t val,cJSON *array,char *str)
 #define IGUANA_CFUNC_II(name,val,val2) char *iguana_ ## name(IGUANA_ARGS,int32_t val,int32_t val2)
+#define IGUANA_CFUNC_III(name,val,val2,val3) char *iguana_ ## name(IGUANA_ARGS,int32_t val,int32_t val2,int32_t val3)
+#define IGUANA_CFUNC_SIII(name,str,val,val2,val3) char *iguana_ ## name(IGUANA_ARGS,char *str,int32_t val,int32_t val2,int32_t val3)
+#define IGUANA_CFUNC_IIA(name,val,val2,array) char *iguana_ ## name(IGUANA_ARGS,int32_t val,int32_t val2,cJSON *array)
 #define IGUANA_CFUNC_SS(name,str,str2) char *iguana_ ## name(IGUANA_ARGS,char *str,char *str2)
+#define IGUANA_CFUNC_SSI(name,str,str2,val) char *iguana_ ## name(IGUANA_ARGS,char *str,char *str2,int32_t val)
 #define IGUANA_CFUNC_SSS(name,str,str2,str3) char *iguana_ ## name(IGUANA_ARGS,char *str,char *str2,char *str3)
 #define IGUANA_CFUNC_SI(name,str,val) char *iguana_ ## name(IGUANA_ARGS,char *str,int32_t val)
 #define IGUANA_CFUNC_SII(name,str,val,val2) char *iguana_ ## name(IGUANA_ARGS,char *str,int32_t val,int32_t val2)
@@ -42,3 +46,7 @@
 #define SS_D_I_SS IGUANA_CFUNC_SSDISS
 #define S_A_I_S IGUANA_CFUNC_SAIS
 #define S_D_SS IGUANA_CFUNC_SDSS
+#define TWOINTS_AND_ARRAY IGUANA_CFUNC_IIA
+#define STRING_AND_THREEINTS IGUANA_CFUNC_SIII
+#define TWOSTRINGS_AND_INT IGUANA_CFUNC_SSI
+#define THREE_INTS IGUANA_CFUNC_III

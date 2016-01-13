@@ -667,7 +667,7 @@ char *ramchain_coinparser(struct supernet_info *myinfo,struct iguana_info *coin,
         return(clonestr("{\"error\":\"ramchain_coinparser needs coin\"}"));
     if ( strcmp(method,"status") == 0 || strcmp(method,"getinfo") == 0 )
         return(iguana_getinfo(myinfo,coin));
-    else if ( strcmp(method,"getbestblockhash") == 0 )
+   /* else if ( strcmp(method,"getbestblockhash") == 0 )
         return(iguana_getbestblockhash(myinfo,coin));
     else if ( strcmp(method,"getblockcount") == 0 )
         return(iguana_getblockcount(myinfo,coin));
@@ -763,6 +763,7 @@ char *ramchain_coinparser(struct supernet_info *myinfo,struct iguana_info *coin,
         return(iguana_sendrawtransaction(myinfo,coin,jstr(json,"rawtx")));
     else if ( strcmp(method,"getrawchangeaddress") == 0 )
         return(iguana_getrawchangeaddress(myinfo,coin,jstr(json,"account")));
+    */
     return(clonestr("{\"error\":\"illegal ramchain method or missing coin\"}"));
 }
 

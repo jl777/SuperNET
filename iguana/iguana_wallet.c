@@ -171,10 +171,10 @@ char *iguana_getreceivedbyaccount(struct supernet_info *myinfo,struct iguana_inf
 }
 
 
-char *iguana_listreceivedbyaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account,int32_t includeempty)
+/*char *iguana_listreceivedbyaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account,int32_t includeempty)
 {
     return(clonestr("{\"error\":\"notyet\"}"));
-}
+}*/
 
 
 
@@ -208,7 +208,7 @@ char *iguana_listaddressgroupings(struct supernet_info *myinfo,struct iguana_inf
 }
 
 
-char *iguana_getbalance(struct supernet_info *myinfo,struct iguana_info *coin,char *account,int32_t minconf)
+/*char *iguana_getbalance(struct supernet_info *myinfo,struct iguana_info *coin,char *account,int32_t minconf)
 {
     return(clonestr("{\"error\":\"notyet\"}"));
 }
@@ -217,7 +217,7 @@ char *iguana_getbalance(struct supernet_info *myinfo,struct iguana_info *coin,ch
 char *iguana_listaccounts(struct supernet_info *myinfo,struct iguana_info *coin,int32_t minconf)
 {
     return(clonestr("{\"error\":\"notyet\"}"));
-}
+}*/
 
 
 
@@ -246,7 +246,7 @@ char *iguana_dumpprivkey(struct supernet_info *myinfo,struct iguana_info *coin,c
 }
 
 
-char *iguana_importprivkey(struct supernet_info *myinfo,struct iguana_info *coin,char *wip)
+/*char *iguana_importprivkey(struct supernet_info *myinfo,struct iguana_info *coin,char *wip)
 {
     return(clonestr("{\"error\":\"notyet\"}"));
 }
@@ -255,7 +255,7 @@ char *iguana_importprivkey(struct supernet_info *myinfo,struct iguana_info *coin
 char *iguana_dumpwallet(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     return(clonestr("{\"error\":\"notyet\"}"));
-}
+}*/
 
 
 char *iguana_importwallet(struct supernet_info *myinfo,struct iguana_info *coin,char *wallet)
