@@ -394,11 +394,11 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
             bp = 0, bundlei = -1;
             if ( (bp= iguana_bundleset(coin,&block,&bundlei,&blocks[i])) != 0 )
             {
-                printf("ht.%d[%d] vs i.%d\n",bp->bundleheight,bundlei,i);
                 if ( i == 1 )
                     firstbp = bp;
                 if ( bundlei == i+1 && bp == firstbp )
                     match++;
+                else printf("recvhdr: ht.%d[%d] vs i.%d\n",bp->bundleheight,bundlei,i);
             }
         }
         if ( firstbp != 0 && match == n && n == firstbp->n )
