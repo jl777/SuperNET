@@ -709,7 +709,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                             if ( bp->numhashes < m )
                                 z = 1;
                         }
-                        else if ( bp->numhashes < bp->n )
+                        else if ( bp->numhashes < 3 )
                             z = 1;
                     }
                     if ( bp == 0 || z != 0 )
