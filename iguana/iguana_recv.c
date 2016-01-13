@@ -492,7 +492,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
         if ( prevbp->numhashes < prevbp->n && prevbundlei == 0 )
         {
             char str[65]; bits256_str(str,prevbp->hashes[0]);
-            printf("Afound block -> %d hdr.%s\n",prevbp->bundleheight,str);
+            //printf("Afound block -> %d hdr.%s\n",prevbp->bundleheight,str);
             queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(str),1);
         }
         //char str[65]; printf("PREV %s prevbp.%p[%d] h.%d\n",bits256_str(str,origblock->RO.prev_block),prevbp,prevbundlei,prevbp->numhashes);

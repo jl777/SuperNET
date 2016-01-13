@@ -601,7 +601,7 @@ void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_
         }
         usleep(10000);
     }
-    if ( counter > 0 )
+    if ( 0 && counter > 0 )
         printf("ITERATE bundle.%d n.%d r.%d s.%d finished.%d issued.%d\n",bp->bundleheight,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,counter);
     if ( bp->emitfinish == 0 )
     {
