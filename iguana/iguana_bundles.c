@@ -595,7 +595,7 @@ void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_
             } else printf("iguana_bundleiters[%d] unexpected null block[%d]\n",bp->bundleheight,i);
             bp->numsaved = n;
         }
-        //usleep(10000);
+        usleep(10000);
     }
     if ( counter > 0 )
         printf("ITERATE bundle.%d n.%d r.%d s.%d finished.%d issued.%d\n",bp->bundleheight,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,counter);
