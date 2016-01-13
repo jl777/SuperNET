@@ -323,11 +323,13 @@ void iguana_helper(void *arg)
         flag = 0;
         if ( (ptr= queue_dequeue(&helperQ,0)) != 0 )
         {
-            if ( (coin= ptr->coin) != 0 && myallocated(0,-1) > coin->MAXMEM )
+            if ( (coin= ptr->coin) != 0 && myallocated(0,-1) > coin->MAXMEM && coin->helperdepth > IGUANA_NUMHELPERS/2 && ptr->type == 'B' )
                 queue_enqueue("reQ",&helperQ,&ptr->DL,0);
             else
             {
+                coin->helperdepth++;
                 iguana_helpertask(fp,&MEM,MEMB,ptr);
+                coin->helperdepth--;
                 myfree(ptr,ptr->allocsize);
             }
             flag++;
