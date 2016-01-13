@@ -599,6 +599,8 @@ void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_
             } else printf("iguana_bundleiters[%d] unexpected null block[%d]\n",bp->bundleheight,i);
             bp->numsaved = n;
         }
+        if ( max <= 0 )
+            break;
         usleep(10000);
     }
     if ( 0 && counter > 0 )
