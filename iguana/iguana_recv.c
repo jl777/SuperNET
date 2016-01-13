@@ -310,7 +310,7 @@ uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bit
             }
             //printf("ALLHASHES FOUND! %d requested.%d\n",bp->bundleheight,n);
             bp->queued = (uint32_t)time(NULL);
-            iguana_bundleQ(coin,bp,5000);
+            iguana_bundleQ(coin,bp,1000 + (rand() % 2000));
             return(bp->queued);
         }
     }
