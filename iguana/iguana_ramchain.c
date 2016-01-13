@@ -1581,7 +1581,13 @@ int32_t iguana_bundlefiles(struct iguana_info *coin,uint32_t *ipbits,void **ptrs
     {
         if ( (block= bp->blocks[bundlei]) != 0 )
             fpipbits = block->fpipbits;
-        else return(0);
+        else
+        {
+            block->queued = 0;
+            block->fpipbits = 0;
+            bp->issued[bundlei] = 0;
+            return(0);
+        }
         if ( num > 0 )
         {
             for (j=0; j<num; j++)
@@ -1599,6 +1605,9 @@ int32_t iguana_bundlefiles(struct iguana_info *coin,uint32_t *ipbits,void **ptrs
             if ( (ptrs[num]= OS_mapfile(fname,&filesizes[num],0)) == 0 )
             {
                 printf("error mapping bundlei.%d\n",bundlei);
+                block->queued = 0;
+                block->fpipbits = 0;
+                bp->issued[bundlei] = 0;
                 return(0);
             }
             //printf("%s mapped ptrs[%d] filesize.%ld bundlei.%d ipbits.%x fpos.%d\n",fname,num,(long)filesizes[num],bundlei,fpipbits,bp->fpos[bundlei]);
