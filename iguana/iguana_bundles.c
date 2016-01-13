@@ -513,7 +513,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             {
                 if ( issue <= 0 )
                     break;
-                if ( (bp= coin->bundles[(int32_t)coin->rankedbps[i][1]]) != 0 )
+                if ( (bp= coin->bundles[(int32_t)coin->rankedbps[i][1]]) != 0 && bp->emitfinish == 0 && bp->numhashes == bp->n )
                 {
                     for (j=0; j<bp->n; j++)
                     {
