@@ -562,7 +562,12 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
 
 void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
 {
-    int32_t i,n; uint32_t now; struct iguana_block *block; double endmillis = OS_milliseconds() + timelimit;
+    int32_t i,n,pend; uint32_t now; struct iguana_block *block; double endmillis;
+    for (i=pend=0; i<IGUANA_MAXPEERS; i++)
+        pend += coin->peers.active[i].pendblocks;
+    if ( pend >= coin->MAXPENDING*coin->MAXPEERS )
+        return;
+    endmillis = OS_milliseconds() + timelimit;
     printf("ITERATE bundle.%d n.%d r.%d s.%d finished.%d\n",bp->bundleheight,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish);
     memset(bp->issued,0,sizeof(bp->issued));
     while ( bp->emitfinish == 0 && OS_milliseconds() < endmillis )
@@ -575,7 +580,7 @@ void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_
                 if ( block->queued == 0 && block->fpipbits == 0 && bp->issued[i] == 0 )
                 {
                     //printf("(%d:%d) ",bp->hdrsi,i);
-                    iguana_blockQ(coin,bp,i,block->RO.hash2,0);
+                    iguana_blockQ(coin,bp,i,block->RO.hash2,bp->numsaved > bp->n-10);
                     bp->issued[i] = now;
                 }
                 else if ( block->fpipbits != 0 )

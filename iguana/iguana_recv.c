@@ -310,7 +310,7 @@ uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bit
             }
             //printf("ALLHASHES FOUND! %d requested.%d\n",bp->bundleheight,n);
             bp->queued = (uint32_t)time(NULL);
-            iguana_bundleQ(coin,bp,1000);
+            iguana_bundleQ(coin,bp,5000);
             return(bp->queued);
         }
     }
@@ -685,8 +685,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
 {
     uint8_t serialized[sizeof(struct iguana_msghdr) + sizeof(uint32_t)*32 + sizeof(bits256)];
     char *hashstr=0; bits256 hash2; uint32_t now; struct iguana_block *block; struct iguana_blockreq *req=0;
-    int32_t m,z; struct iguana_bundle *bp;
-    int32_t limit,height=-1,bundlei,datalen,flag = 0;
+    struct iguana_bundle *bp; struct iguana_peer *ptr; int32_t i,m,z,pend,limit,height=-1,bundlei,datalen,flag = 0;
     if ( addr->msgcounts.verack == 0 )
         return(0);
     now = (uint32_t)time(NULL);
@@ -740,7 +739,13 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
     if ( addr->rank != 1 && req == 0 && addr->pendblocks < limit )
     {
         priority = 0;
-        req = queue_dequeue(&coin->blocksQ,0);
+        for (i=m=pend=0; i<coin->peers.numranked; i++)
+        {
+            if ( (ptr= coin->peers.ranked[i]) != 0 && ptr->msgcounts.verack > 0 )
+                pend += ptr->pendblocks, m++;
+        }
+        if ( pend < _IGUANA_MAXPENDING*m )
+            req = queue_dequeue(&coin->blocksQ,0);
     } else priority = 1;
     if ( req != 0 )
     {
