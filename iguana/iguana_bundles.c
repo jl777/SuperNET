@@ -563,7 +563,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
 void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
 {
     int32_t i,n; uint32_t now; struct iguana_block *block; double endmillis = OS_milliseconds() + timelimit;
-    printf("ITERATE bundle.%d r.%d s.%d finished.%d\n",bp->bundleheight,bp->numrecv,bp->numsaved,bp->emitfinish);
+    printf("ITERATE bundle.%d n.%d r.%d s.%d finished.%d\n",bp->bundleheight,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish);
     memset(bp->issued,0,sizeof(bp->issued));
     while ( bp->emitfinish == 0 && OS_milliseconds() < endmillis )
     {
@@ -585,12 +585,15 @@ void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_
         }
         usleep(1000);
     }
-    if ( bp->numsaved >= bp->n && bp->emitfinish == 0 )
+    if ( bp->emitfinish == 0 )
     {
-        printf(">>>>>>>>>>>>>>>>>>>>>>> EMIT bundle.%d\n",bp->bundleheight);
-        bp->emitfinish = 1;
-        iguana_emitQ(coin,bp);
-        return;
+        if ( bp->numsaved >= bp->n )
+        {
+            printf(">>>>>>>>>>>>>>>>>>>>>>> EMIT bundle.%d\n",bp->bundleheight);
+            bp->emitfinish = 1;
+            iguana_emitQ(coin,bp);
+            return;
+        }
+        iguana_bundleQ(coin,bp,timelimit);
     }
-    iguana_bundleQ(coin,bp,timelimit);
 }
