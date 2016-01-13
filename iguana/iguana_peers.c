@@ -996,11 +996,11 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
             {
                 if ( run++ > 1000 )
                 {
-                    //printf("sleep\n");
+                    printf("sleep\n");
                     sleep(1);
                 }
                 else if ( addr->rank != 1 )
-                    usleep(coin->polltimeout*2500 + (rand() % (coin->polltimeout*2500)));
+                    usleep(coin->polltimeout*250 + (rand() % (coin->polltimeout*250)));
                 else usleep(100 + coin->polltimeout*1000);
             } //else printf("flag.%d\n",flag);
         }

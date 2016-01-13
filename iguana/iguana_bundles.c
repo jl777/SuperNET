@@ -535,7 +535,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             }
             /*for (i=0; i<n&&i<3; i++)
              printf("(%.5f %.0f).%d ",coin->rankedbps[i][0],coin->rankedbps[i][1],coin->bundles[(int32_t)coin->rankedbps[i][1]]->numrecv);*/
-            if ( 1 && flag != 0 )
+            if ( 0 && flag != 0 )
                 printf("rem.%d issue.%d pend.%d | numranked.%d\n",n,origissue,pend,coin->peers.numranked);
         }
     }
