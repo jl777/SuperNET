@@ -688,6 +688,8 @@ cJSON *iguana_pubkeyjson(struct iguana_info *coin,char *pubkeystr);
 void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit);
 void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit);
 
+extern queue_t bundlesQ;
+
 #include "../includes/iguana_api.h"
 
 #endif

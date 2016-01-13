@@ -982,24 +982,26 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
                     }
                 }
             }
-            if ( flag == 0 )
-            {
-                if ( run++ > 1000 )
-                {
-                    //printf("sleep\n");
-                    usleep(100000);
-                }
-                else if ( addr->rank != 1 )
-                    usleep(coin->polltimeout*100 + 0*(rand() % (coin->polltimeout*100)));
-                else usleep(100 + coin->polltimeout*1000);
-            } else run >>= 2;
         }
         if ( flag != 0 )
             run = 0;
-        else if ( addr->supernet != 0 && time(NULL) > lastping+10 )
+        else if ( flag == 0 )
         {
-            iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
-            lastping = (uint32_t)time(NULL);
+            if ( addr->supernet != 0 && time(NULL) > lastping+10 )
+            {
+                iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
+                lastping = (uint32_t)time(NULL);
+            }
+        } else run >>= 2;
+        if ( flag == 0 )//|| addr->rank >= (coin->peers.numranked>>1) )
+        {
+            struct iguana_helper *ptr;
+            if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
+            {
+                if ( ptr->bp != 0 )
+                    iguana_bundleiters(coin,ptr->bp,ptr->timelimit);
+                myfree(ptr,ptr->allocsize);
+            }
         }
         if ( coin->isRT != 0 && addr->rank > coin->MAXPEERS && (rand() % 100) == 0 )
         {

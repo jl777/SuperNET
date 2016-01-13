@@ -260,7 +260,7 @@ void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t ti
     ptr->timelimit = timelimit;
     coin->numbundlesQ++;
     //printf("%s bundle.%d[%d] emitfinish.%u\n",coin->symbol,ptr->hdrsi,bp->n,bp->emitfinish);
-    queue_enqueue("helperQ",&helperQ,&ptr->DL,0);
+    queue_enqueue("bundlesQ",&bundlesQ,&ptr->DL,0);
 }
 
 int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_helper *ptr)
@@ -323,7 +323,7 @@ void iguana_helper(void *arg)
         flag = 0;
         if ( (ptr= queue_dequeue(&helperQ,0)) != 0 )
         {
-            if ( (coin= ptr->coin) != 0 && myallocated(0,-1) > coin->MAXMEM && coin->helperdepth > IGUANA_NUMHELPERS/2 && ptr->type == 'B' )
+            if ( (coin= ptr->coin) != 0 && myallocated(0,-1) > coin->MAXMEM )
                 queue_enqueue("reQ",&helperQ,&ptr->DL,0);
             else
             {
