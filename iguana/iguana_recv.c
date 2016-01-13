@@ -697,9 +697,9 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                 if ( bits256_nonz(hash2) > 0 )
                 {
                     bp = 0, bundlei = -2;
-                    if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) == 0 || bp->numhashes < bp->n )
+                    if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) == 0 || (bp->numhashes < bp->n && bp->bundleheight+coin->chain->bundlesize < coin->longestchain) )
                     {
-                        printf("%s request hdr.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp->numhashes);
+                        //printf("%s request hdr.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp->numhashes);
                         iguana_send(coin,addr,serialized,datalen);
                         addr->pendhdrs++;
                         flag++;
