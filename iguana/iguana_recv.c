@@ -677,7 +677,7 @@ int32_t iguana_blockQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t 
             queue_enqueue(str,Q,&req->DL,0);
             return(1);
         } else printf("null Q\n");
-    } else printf("queueblock skip priority.%d bundlei.%d\n",bundlei,priority);
+    } //else printf("queueblock skip priority.%d bundlei.%d\n",bundlei,priority);
     return(0);
 }
 
@@ -715,11 +715,11 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                     }
                     if ( bp == 0 || z != 0 )
                     {
-                        printf("%s request hdr.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp->numhashes);
+                        //printf("%s request hdr.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp->numhashes);
                         iguana_send(coin,addr,serialized,datalen);
                         addr->pendhdrs++;
                         flag++;
-                    } else printf("skip hdrreq.%d numhashes.%d\n",bp->bundleheight,bp->numhashes);
+                    } //else printf("skip hdrreq.%d numhashes.%d\n",bp->bundleheight,bp->numhashes);
                 }
                 free_queueitem(hashstr);
                 return(flag);
