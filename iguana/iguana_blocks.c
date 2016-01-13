@@ -346,8 +346,8 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                         }
                     }
                 }
-                if ( block->fpipbits == 0 )
-                    iguana_blockQ(coin,bp,block->height % coin->chain->bundlesize,block->RO.hash2,1);
+                //if ( block->fpipbits == 0 )
+                //    iguana_blockQ(coin,bp,block->height % coin->chain->bundlesize,block->RO.hash2,1);
                 block->mainchain = 1;
                 return(block);
             }

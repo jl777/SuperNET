@@ -799,7 +799,7 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
                     lflag++, flag++;
                 //else printf("chainlink error for %d\n",coin->blocks.hwmchain.height+1);
             }
-            if ( 0 )
+            if ( 1 )
             {
                 double threshold,lag = OS_milliseconds() - coin->backstopmillis;
                 threshold = (10 + coin->longestchain - coin->blocksrecv);
@@ -810,8 +810,8 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
                 else threshold = coin->avetime;
                 threshold *= 100. * sqrt(threshold) * .000777;
                 if ( strcmp(coin->symbol,"BTC") != 0 )
-                    threshold = 33;
-                else threshold = 1000;
+                    threshold = 100;
+                else threshold = 10000;
                 if ( coin->blocks.hwmchain.height < coin->longestchain && (coin->backstop != coin->blocks.hwmchain.height+1 || lag > threshold) )
                 {
                     coin->backstop = coin->blocks.hwmchain.height+1;
@@ -824,7 +824,7 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
                         {
                             coin->backstopmillis = OS_milliseconds();
                             iguana_blockQ(coin,bp,bundlei,iguana_blockhash(coin,coin->backstop),1);
-                            if ( (rand() % 100) == 0 )
+                            //if ( (rand() % 100) == 0 )
                                 printf("MAINCHAIN.%d threshold %.3f %.3f lag %.3f\n",coin->blocks.hwmchain.height+1,threshold,coin->backstopmillis,lag);
                         }
                     }
