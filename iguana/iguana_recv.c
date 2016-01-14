@@ -45,7 +45,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
         coin->numreqsent++;
         addr->pendblocks++;
         addr->pendtime = (uint32_t)time(NULL);
-        printf("REQ.%s bundlei.%d hdrsi.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1);
+        //printf("REQ.%s bundlei.%d hdrsi.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);
 }
@@ -456,9 +456,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
                     iguana_blockQ(coin,bp,1,blockhashes[1],0);
                     iguana_blockQ(coin,bp,0,blockhashes[0],0);
                     iguana_blockQ(coin,bp,coin->chain->bundlesize-1,blockhashes[coin->chain->bundlesize-1],0);
-                    if ( num >= coin->chain->bundlesize )
-                    iguana_blockQ(coin,0,-1,blockhashes[coin->chain->bundlesize],0);
-                    if ( i == coin->chain->bundlesize )
+                    if ( bp->n > coin->chain->bundlesize )
                         iguana_blockQ(coin,0,-1,blockhashes[coin->chain->bundlesize],0);
                     printf("matched bundle.%d\n",bp->bundleheight);
                     return(req);
