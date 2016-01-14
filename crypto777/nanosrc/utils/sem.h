@@ -60,7 +60,7 @@ struct nn_sem {
 #elif defined NN_HAVE_SEMAPHORE
 
 #include <semaphore.h>
-ccc
+
 struct nn_sem {
     sem_t sem;
 };
