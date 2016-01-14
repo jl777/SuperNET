@@ -4,7 +4,7 @@ NANOMSG_DEVICES = nanosrc/devices/device.c nanosrc/devices/tcpmuxd.c
 
 NANOMSG_AIO = nanosrc/aio/ctx.c nanosrc/aio/fsm.c nanosrc/aio/poller.c nanosrc/aio/pool.c nanosrc/aio/timer.c nanosrc/aio/usock.c nanosrc/aio/timerset.c nanosrc/aio/worker.c 
 
-NANOMSG_UTILS = nanosrc/utils/alloc.c nanosrc/utils/atomic.c nanosrc/utils/chunk.c nanosrc/utils/chunkref.c nanosrc/utils/clock.c nanosrc/utils/closefd.c nanosrc/utils/efd.c nanosrc/utils/err.c nanosrc/utils/glock.c nanosrc/utils/hash.c nanosrc/utils/list.c nanosrc/utils/msg.c nanosrc/utils/mutex.c nanosrc/utils/queue.c nanosrc/utils/random.c nanosrc/utils/sem.c nanosrc/utils/sleep.c nanosrc/utils/stopwatch.c nanosrc/utils/thread.c nanosrc/utils/wire.c plugins/utils/inet.c
+NANOMSG_UTILS = nanosrc/utils/alloc.c nanosrc/utils/atomic.c nanosrc/utils/chunk.c nanosrc/utils/chunkref.c nanosrc/utils/clock.c nanosrc/utils/closefd.c nanosrc/utils/efd.c nanosrc/utils/err.c nanosrc/utils/glock.c nanosrc/utils/hash.c nanosrc/utils/list.c nanosrc/utils/msg.c nanosrc/utils/mutex.c nanosrc/utils/queue.c nanosrc/utils/random.c nanosrc/utils/sem.c nanosrc/utils/sleep.c nanosrc/utils/stopwatch.c nanosrc/utils/thread.c nanosrc/utils/wire.c 
 
 PROTOCOLS_UTILS = nanosrc/protocols/utils/dist.c nanosrc/protocols/utils/excl.c nanosrc/protocols/utils/fq.c nanosrc/protocols/utils/lb.c nanosrc/protocols/utils/priolist.c
 
