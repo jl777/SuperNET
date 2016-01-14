@@ -56,11 +56,11 @@ struct iguana_block *iguana_blockhashset(struct iguana_info *coin,int32_t height
         return(0);
     }
     depth++;
-    //portable_mutex_lock(&coin->blocks_mutex);
+    portable_mutex_lock(&coin->blocks_mutex);
     HASH_FIND(hh,coin->blocks.hash,&hash2,sizeof(hash2),block);
     if ( block != 0 )
     {
-        //portable_mutex_unlock(&coin->blocks_mutex);
+        portable_mutex_unlock(&coin->blocks_mutex);
         depth--;
         return(block);
     }
@@ -88,7 +88,7 @@ struct iguana_block *iguana_blockhashset(struct iguana_info *coin,int32_t height
                 printf("%s height.%d search error %p != %p\n",str,height,block,tmp);
         }
     }
-    //portable_mutex_unlock(&coin->blocks_mutex);
+    portable_mutex_unlock(&coin->blocks_mutex);
     depth--;
     return(block);
 }
