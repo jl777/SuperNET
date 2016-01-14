@@ -446,6 +446,7 @@ struct iguana_info
     uint64_t bloomsearches,bloomhits,bloomfalse,collisions; uint8_t blockspace[IGUANA_MAXPACKETSIZE + 8192]; struct OS_memspace blockMEM;
     struct iguana_blocks blocks;
     struct iguana_waccount *wallet;
+    bits256 *lasthashes; int32_t numlasthashes,lastbundleheight;
 };
 
 // peers

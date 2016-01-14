@@ -203,9 +203,11 @@ int32_t iguana_savehdrs(struct iguana_info *coin)
 
 void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
 {
-    int32_t j,k,m,c,height,flag,bundlei,bundleheight = -1; char checkstr[1024],line[1024];
-    struct iguana_peer *addr; struct iguana_bundle *bp; bits256 allhash,hash2,zero;
+    int32_t j,k,m,c,height,flag,bundlei; char checkstr[1024],line[1024];
+    struct iguana_peer *addr; struct iguana_bundle *bp; bits256 allhash,hash2,zero,lastbundle;
     struct iguana_block *block;
+    memset(&zero,0,sizeof(zero));
+    lastbundle = zero;
     if ( iter == 1 )
     {
         int32_t i; FILE *fp; char fname[512]; struct iguana_blockRO blockRO;
@@ -228,7 +230,6 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
         }
     }
     m = flag = 0;
-    memset(&zero,0,sizeof(zero));
     allhash = zero;
     while ( fgets(line,sizeof(line),fp) > 0 )
     {
@@ -281,6 +282,7 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                         if ( (bp= iguana_bundlecreate(coin,&bundlei,height,hash2,allhash,0)) != 0 )
                         {
                             bp->bundleheight = height;
+                            lastbundle = hash2;
                             if ( (block= iguana_blockfind(coin,hash2)) != 0 )
                                 block->mainchain = 1, block->height = height;
                             if ( iguana_bundleload(coin,bp) != 0 )
@@ -299,7 +301,7 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                         }
                     }
                 }
-                init_hexbytes_noT(checkstr,hash2.bytes,sizeof(hash2));
+                /*init_hexbytes_noT(checkstr,hash2.bytes,sizeof(hash2));
                 if ( strncmp(checkstr,line+k+1,64) == 0 )
                 {
                     if ( (height % coin->chain->bundlesize) == 1 )
@@ -314,9 +316,15 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                             }
                         }
                     }
-                }
+                }*/
             }
         }
+    }
+    if ( bits256_nonz(lastbundle) > 0 )
+    {
+        char hashstr[65];
+        init_hexbytes_noT(hashstr,lastbundle.bytes,sizeof(bits256));
+        queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
     }
 }
 

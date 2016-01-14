@@ -326,7 +326,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                 else str2[0] = 0;
                 if ( block->height+1 > coin->longestchain )
                     coin->longestchain = block->height+1;
-                if ( (block->height % 1000) == 0 )
+                if ( 0 && (block->height % 1000) == 0 )
                     printf("EXTENDMAIN %s %d <- (%s) n.%u max.%u PoW %f numtx.%d valid.%d\n",str,block->height,str2,hwmchain->height+1,coin->blocks.maxblocks,block->PoW,block->RO.txn_count,block->valid);
                 struct iguana_bundle *bp;
                 if ( (block->height % coin->chain->bundlesize) == 0 )
