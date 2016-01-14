@@ -449,9 +449,12 @@ void SuperNET_loop(void *args)
 
 void SuperNET_init(struct supernet_info *myinfo,uint16_t PUBport,uint16_t LBport)
 {
-    int32_t sendtimeout,recvtimeout; int64_t allocsize; char *ipaddr;
+    int32_t sendtimeout,recvtimeout,len,c; int64_t allocsize; char *ipaddr;
     if ( (ipaddr = OS_filestr(&allocsize,"myipaddr")) != 0 )
     {
+        len = (int32_t)strlen(ipaddr) - 1;
+        while ( len > 8 && ((c= ipaddr[len]) == '\r' || c == '\n' || c == ' ' || c == '\t') )
+            ipaddr[len] = 0, len--;
         if ( is_ipaddr(ipaddr) != 0 )
             strcpy(myinfo->ipaddr,ipaddr);
         free(ipaddr), ipaddr = 0;
