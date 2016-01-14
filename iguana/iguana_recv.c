@@ -481,7 +481,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
         if ( coin->lasthashes != 0 && bundlei+1 < coin->numlasthashes && bits256_nonz(coin->lasthashes[bundlei+1]) > 0 )
         {
             //printf("req.%d\n",bp->bundleheight+bundlei+1);
-            iguana_blockQ(coin,bp,bundlei+1,coin->lasthashes[bundlei+1],0);
+            //iguana_blockQ(coin,bp,bundlei+1,coin->lasthashes[bundlei+1],0);
         }
     }
     //static int total; char str[65]; printf("RECV %s [%d:%d] block.%08x | %d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,total++);
@@ -509,7 +509,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
                     if ( coin->lasthashes != 0 && prevbundlei+2 < coin->numlasthashes && bits256_nonz(coin->lasthashes[prevbundlei+2]) > 0 )
                     {
                         //printf("req.%d\n",prevbp->bundleheight+bundlei+2);
-                        iguana_blockQ(coin,prevbp,bundlei+1,coin->lasthashes[prevbundlei+2],1);
+                        iguana_blockQ(coin,0,-1,coin->lasthashes[prevbundlei+2],1);
                     }
                 }
             }
@@ -858,13 +858,11 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
             }
         }
     }
-    if ( hdrsi != (coin->blocks.hwmchain.height+1) / coin->chain->bundlesize )
-        iguana_savehdrs(coin);
     bundlei = (coin->blocks.hwmchain.height+1) % coin->chain->bundlesize;
     static int32_t lastbundlei; static uint32_t lastbundleitime;
     if ( coin->lasthashes != 0 && bundlei < coin->numlasthashes )
     {
-        if ( lastbundlei != bundlei || time(NULL) > lastbundleitime+3 )
+        if ( time(NULL) > lastbundleitime+3 )
         {
             lastbundleitime = (uint32_t)time(NULL);
             lastbundlei = bundlei;

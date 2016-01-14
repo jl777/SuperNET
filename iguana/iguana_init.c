@@ -324,6 +324,7 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
     {
         char hashstr[65];
         init_hexbytes_noT(hashstr,lastbundle.bytes,sizeof(bits256));
+        printf("req lastbundle.(%s)\n",hashstr);
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
     }
 }
