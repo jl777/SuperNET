@@ -290,7 +290,7 @@ int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
     errno_assert (rc == 0);
 
     rc = bind (self->s, addr, (socklen_t) addrlen);
-    printf("usock.%d -> bind rc.%d errno.%d\n",self->s,rc,errno);
+    printf("usock.%d -> bind rc.%d errno.%d %s\n",self->s,rc,errno,nn_strerror(errno));
     if (nn_slow (rc != 0))
         return -errno;
 
@@ -306,7 +306,7 @@ int nn_usock_listen (struct nn_usock *self, int backlog)
 
     /*  Start listening for incoming connections. */
     rc = listen (self->s, backlog);
-    printf("usock.%d -> listen rc.%d errno.%d\n",self->s,rc,errno);
+    printf("usock.%d -> listen rc.%d errno.%d %s\n",self->s,rc,errno,nn_strerror(errno));
     if (nn_slow (rc != 0))
         return -errno;
 
@@ -333,7 +333,7 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
 #else
     s = accept (listener->s, NULL, NULL);
 #endif
-    printf("usock.%d -> accept errno.%d s.%d\n",self->s,errno,s);
+    printf("usock.%d -> accept errno.%d s.%d %s\n",self->s,errno,s,nn_strerror(errno));
 
     /*  Immediate success. */
     if (nn_fast (s >= 0)) {
@@ -393,7 +393,7 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
 
     /* Do the connect itself. */
     rc = connect(self->s,addr,(socklen_t)addrlen);
-    printf("usock.%d <- connect (%llx) rc.%d errno.%d\n",self->s,*(long long *)addr,rc,errno);
+    printf("usock.%d <- connect (%llx) rc.%d errno.%d %s\n",self->s,*(long long *)addr,rc,errno,nn_strerror(errno));
     /* Immediate success. */
     if ( nn_fast(rc == 0) )
     {
@@ -1298,7 +1298,7 @@ static int nn_usock_recv_raw(struct nn_usock *self, void *buf, size_t *len)
             nbytes = 0;
         else
         {
-            printf("errno.%d\n",errno);
+            printf("recvraw errno.%d %s\n",errno,nn_strerror(errno));
             // If the peer closes the connection, return ECONNRESET
             errno_assert(errno == ECONNRESET || errno == ENOTCONN || errno == ECONNREFUSED || errno == ETIMEDOUT || errno == EHOSTUNREACH
 #if NN_USE_MYMSG
