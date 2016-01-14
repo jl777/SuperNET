@@ -482,6 +482,7 @@ void SuperNET_init(struct supernet_info *myinfo,uint16_t PUBport,uint16_t LBport
     myinfo->PUBpoint[0] = myinfo->LBpoint[0] = 0;
     myinfo->PUBport = myinfo->LBport = 0;
     myinfo->PUBsock = myinfo->LBsock = -1;
+    OS_randombytes(myinfo->myaddr.pubkey.bytes,sizeof(myinfo->myaddr.pubkey));
     strcpy(myinfo->transport,"tcp");
     if ( PUBport == 0 )
         PUBport = SUPERNET_PUBPORT;

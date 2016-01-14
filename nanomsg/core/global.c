@@ -228,10 +228,9 @@ void nn_global_init (void)
     nn_list_init(&SELF.socktypes);
     //PostMessage("transports init\n");
     //  Plug in individual transports.
-    nn_global_add_transport(nn_ipc);
+    //nn_global_add_transport(nn_ipc);
     nn_global_add_transport(nn_tcp);
-//#ifdef NN_ENABLE_EXTRA
-    nn_global_add_transport(nn_inproc);
+    //nn_global_add_transport(nn_inproc);
     //nn_global_add_transport(nn_ws);
     //nn_global_add_transport(nn_tcpmux);
     //PostMessage("socktypes init\n");
@@ -246,7 +245,6 @@ void nn_global_init (void)
     nn_global_add_socktype(nn_surveyor_socktype);
     nn_global_add_socktype(nn_xrespondent_socktype);
     nn_global_add_socktype(nn_xsurveyor_socktype);
-//#endif
     nn_global_add_socktype(nn_pub_socktype);
     nn_global_add_socktype(nn_sub_socktype);
     nn_global_add_socktype(nn_xpub_socktype);
