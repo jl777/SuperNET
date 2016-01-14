@@ -1734,7 +1734,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
                     bp->hashes[i] = B[i].hash2;
                 if ( bp->bundleheight+i == coin->blocks.hwmchain.height+1 )
                 {
-                    printf("try extend.%d\n",bp->bundleheight+i);
+                    //printf("try extend.%d\n",bp->bundleheight+i);
                     _iguana_chainlink(coin,block);
                 }
             }
