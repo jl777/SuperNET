@@ -360,15 +360,18 @@ int32_t _req_socket(struct supernet_info *myinfo,uint16_t LBport,uint16_t PUBpor
 int32_t badass_servers(char servers[][MAX_SERVERNAME],int32_t max)
 {
     int32_t n = 0;
-    strcpy(servers[n++],"89.248.160.237");
-    strcpy(servers[n++],"89.248.160.238");
-    strcpy(servers[n++],"89.248.160.239");
-    strcpy(servers[n++],"89.248.160.240");
-    strcpy(servers[n++],"89.248.160.241");
-    strcpy(servers[n++],"89.248.160.242");
-    strcpy(servers[n++],"89.248.160.243");
-    strcpy(servers[n++],"89.248.160.244");
-    strcpy(servers[n++],"89.248.160.245");
+    if ( 0 )
+    {
+        strcpy(servers[n++],"89.248.160.237");
+        strcpy(servers[n++],"89.248.160.238");
+        strcpy(servers[n++],"89.248.160.239");
+        strcpy(servers[n++],"89.248.160.240");
+        strcpy(servers[n++],"89.248.160.241");
+        strcpy(servers[n++],"89.248.160.242");
+        strcpy(servers[n++],"89.248.160.243");
+        strcpy(servers[n++],"89.248.160.244");
+        strcpy(servers[n++],"89.248.160.245");
+    }
     return(n);
 }
 
@@ -462,7 +465,7 @@ void SuperNET_init(struct supernet_info *myinfo,uint16_t PUBport,uint16_t LBport
         else free(ipaddr), ipaddr = 0;
     }
     sendtimeout = 100;
-    recvtimeout = 1000;
+    recvtimeout = 0;
     myinfo->PUBpoint[0] = myinfo->LBpoint[0] = 0;
     myinfo->PUBport = myinfo->LBport = 0;
     myinfo->PUBsock = myinfo->LBsock = -1;
