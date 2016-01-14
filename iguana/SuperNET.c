@@ -484,12 +484,12 @@ void SuperNET_init(struct supernet_info *myinfo,uint16_t PUBport,uint16_t LBport
         if ( ipaddr != 0 )
             myinfo->LBsock = nn_createsocket(myinfo,myinfo->LBpoint,1,"NN_REP",NN_REP,myinfo->LBport,sendtimeout,recvtimeout);
     } else myinfo->reqsock = -1;
+    iguana_launch(iguana_coinadd("BTCD"),"SuperNET",SuperNET_loop,myinfo,IGUANA_PERMTHREAD);
     if ( myinfo->LBsock >= 0 || myinfo->PUBsock >= 0 )
     {
-        iguana_launch(iguana_coinadd("BTCD"),"SuperNET",SuperNET_loop,myinfo,IGUANA_PERMTHREAD);
         SuperNET_announce(myinfo,"ramchain");
     } else SuperNET_announce(myinfo,"pangea");
-    printf("LBsock.%d %d, PUBsock.%d %d\n",myinfo->LBsock,myinfo->reqsock,myinfo->PUBsock,myinfo->subsock);
+    printf("%s LBsock.%d %d, %s PUBsock.%d %d\n",myinfo->LBpoint,myinfo->LBsock,myinfo->reqsock,myinfo->PUBpoint,myinfo->PUBsock,myinfo->subsock);
 }
 
 #endif

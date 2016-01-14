@@ -328,7 +328,7 @@ void iguana_main(void *arg)
     if ( arg != 0 )
         SuperNET_JSON(&MYINFO,cJSON_Parse(arg),0);
 #ifndef MINIGUANA
-    SuperNET_init(&MYINFO,MYINFO.PUBport,MYINFO.LBport);
+    SuperNET_init(&MYINFO,0,0);
 #endif
  //init_InstantDEX();
     while ( 1 )
