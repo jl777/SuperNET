@@ -35,7 +35,7 @@ uint64_t IGUANA_MY64BITS;
 queue_t helperQ,jsonQ,finishedQ,bundlesQ;
 static int32_t initflag;
 #ifdef __linux__
-int32_t IGUANA_NUMHELPERS = 8;
+int32_t IGUANA_NUMHELPERS = 16;
 #else
 int32_t IGUANA_NUMHELPERS = 8;
 #endif
