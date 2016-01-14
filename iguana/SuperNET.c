@@ -312,7 +312,7 @@ int32_t nn_add_LBendpoints(struct supernet_info *myinfo,uint16_t LBport,uint16_t
                 continue;
             }
             //printf("epbits.%llx ipbits.%x %s\n",*(long long *)&epbits,(uint32_t)ipbits,endpoint);
-            if ( 1 || ismyaddress(myinfo,endpoints[i]) == 0 )
+            if ( ismyaddress(myinfo,endpoints[i]) == 0 )
             {
                 epbits = calc_epbits("tcp",ipbits,LBport,NN_REP), expand_epbits(endpoint,epbits);
                 if ( reqsock >= 0 && nn_connect(reqsock,endpoint) >= 0 )
