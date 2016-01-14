@@ -1649,18 +1649,10 @@ void iguana_bundlemapfree(struct OS_memspace *mem,struct OS_memspace *hashmem,ui
 int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,struct iguana_ramchain *newchain,struct OS_memspace *hashmem,int32_t cmpflag,struct iguana_bundle *bp)
 {
     static bits256 zero;
-    bits256 firsthash2,lasthash2; int32_t err,i,bundlei,hdrsi,numblocks,firsti,height,retval = -1;
-    struct iguana_ramchain checkR,*mapchain; char fname[1024]; struct iguana_block *block;
+    bits256 firsthash2,lasthash2; int32_t err,bundlei,hdrsi,numblocks,firsti,height,retval = -1;
+    struct iguana_ramchain checkR,*mapchain; char fname[1024];
     firsthash2 = ramchain->H.data->firsthash2, lasthash2 = ramchain->H.data->lasthash2;
     height = ramchain->height, firsti = ramchain->H.data->firsti, hdrsi = ramchain->H.hdrsi, numblocks = ramchain->numblocks;
-    for (i=0; i<bp->n; i++)
-    {
-        if ( (block= bp->blocks[i]) != 0 && block == iguana_blockfind(coin,bp->hashes[i]) )
-        {
-            //printf("(%x:%x) ",(uint32_t)block->RO.hash2.ulongs[3],(uint32_t)bp->hashes[i].ulongs[3]);
-            B[i] = block->RO;
-        } else printf("error getting block (%d:%d) %p vs %p\n",bp->hdrsi,i,block,iguana_blockfind(coin,bp->hashes[i]));
-    }
     //printf("B[] %p\n",B);
     //printf("Apresave T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d\n",ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,firsti);
     iguana_ramchain_setsize(ramchain,ramchain->H.data,bp->n);
@@ -1735,14 +1727,19 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
                 block->bundlei = i;
                 block->fpipbits = (uint32_t)calc_ipbits("127.0.0.1");
                 block->RO = B[i];
+                //printf("%x ",(int32_t)B[i].hash2.ulongs[3]);
                 if ( bp->blocks[i] == 0 )
                     bp->blocks[i] = block;
                 if ( bits256_nonz(bp->hashes[i]) == 0 )
                     bp->hashes[i] = B[i].hash2;
                 if ( bp->bundleheight+i == coin->blocks.hwmchain.height+1 )
+                {
+                    printf("try extend.%d\n",bp->bundleheight+i);
                     _iguana_chainlink(coin,block);
+                }
             }
         }
+        //printf("bundle.%d\n",bp->bundleheight);
         bp->emitfinish = (uint32_t)time(NULL) + 1;
         /*for (i=1; i<mapchain->H.data->numtxids; i++)
         {break;
@@ -1764,7 +1761,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     RAMCHAIN_DESTDECLARE; RAMCHAIN_DECLARE;
     void **ptrs,*ptr; long *filesizes,filesize; uint32_t *ipbits; char fname[1024];
     struct iguana_ramchain *R,*mapchain,*dest,newchain; uint32_t fpipbits,now = (uint32_t)time(NULL);
-    int32_t numtxids,numunspents,numspends,numpkinds,numexternaltxids,fpos; struct iguana_block *block;
+    int32_t i,numtxids,numunspents,numspends,numpkinds,numexternaltxids,fpos; struct iguana_block *block;
     struct OS_memspace HASHMEM; int32_t err,j,num,hdrsi,bundlei,firsti= 1,retval = -1;
     B = 0, Ux = 0, Sx = 0, P = 0, A = 0, X = 0, TXbits = 0, PKbits = 0, U = 0, S = 0, T = 0;//U2 = 0, P2 = 0,
     R = mycalloc('s',bp->n,sizeof(*R));
@@ -1843,6 +1840,24 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     iguana_ramchain_link(dest,bp->hashes[0],bp->hashes[bp->n-1],bp->hdrsi,bp->bundleheight,0,bp->n,firsti,0);
     _iguana_ramchain_setptrs(RAMCHAIN_DESTPTRS,dest->H.data);
     iguana_ramchain_extras(dest,&HASHMEM);
+    for (i=0; i<bp->n; i++)
+    {
+        if ( (block= bp->blocks[i]) != 0 && block == iguana_blockfind(coin,bp->hashes[i]) )
+        {
+            //printf("(%x:%x) ",(uint32_t)block->RO.hash2.ulongs[3],(uint32_t)bp->hashes[i].ulongs[3]);
+            destB[i] = block->RO;
+            if ( bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0 )
+            {
+                char str[65]; printf("null prevblock error at ht.%d patch.(%s)\n",bp->bundleheight+i,bits256_str(str,bp->hashes[i-1]));
+                if ( i > 0 )
+                    block->RO.prev_block = bp->hashes[i-1];
+                block->queued = 0;
+                block->fpipbits = 0;
+                bp->issued[i] = 0;
+                return(-1);
+            }
+        } else printf("error getting block (%d:%d) %p vs %p\n",bp->hdrsi,i,block,iguana_blockfind(coin,bp->hashes[i]));
+    }
     dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
     dest->externalind = 0;
     //printf("\n");
