@@ -426,10 +426,10 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
                 if ( (block= iguana_blockfind(coin,blockhashes[i])) != 0 )
                 {
                     block->hh.next = iguana_blockfind(coin,blockhashes[i+1]);
-                    if ( flag == 0 && bits256_nonz(block->RO.prev_block) == 0 )
+                    if ( bits256_nonz(block->RO.prev_block) == 0 )
                     {
                         printf("extend blockQ.%d\n",bp->bundleheight+i);
-                        iguana_blockQ(coin,0,-1,block->RO.hash2,1), flag++;
+                        iguana_blockQ(coin,0,-1,block->RO.hash2,0), flag++;
                     }
                 }
             }
