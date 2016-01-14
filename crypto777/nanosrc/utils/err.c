@@ -111,9 +111,8 @@ const char *nn_err_strerror(int32_t errnum)
 #pragma warning (push)
 #pragma warning (disable:4996)
 #endif
-            PNACL_message("nanomsg: errno.%d\n",errnum);
             PNACL_message("nanomsg: errno.%d (%s)\n",errnum,strerror(errnum));
-            getchar();
+            //getchar();
         return strerror (errnum);
 #if defined _MSC_VER
 #pragma warning (pop)
