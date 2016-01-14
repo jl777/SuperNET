@@ -420,7 +420,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
         }
         if ( bp->hdrsi == coin->bundlescount-1 )
         {
-            printf("FOUND LAST BLOCKHASHES[%d]\n",num,bp->bundleheight);
+            printf("FOUND LAST BLOCKHASHES[%d] ht.%d\n",num,bp->bundleheight);
             if ( coin->lasthashes != 0 )
                 myfree(coin->lasthashes,sizeof(*coin->lasthashes) * coin->numlasthashes);
             coin->lasthashes = blockhashes;

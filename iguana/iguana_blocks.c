@@ -330,7 +330,15 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                     printf("EXTENDMAIN %s %d <- (%s) n.%u max.%u PoW %f numtx.%d valid.%d\n",str,block->height,str2,hwmchain->height+1,coin->blocks.maxblocks,block->PoW,block->RO.txn_count,block->valid);
                 struct iguana_bundle *bp;
                 if ( (block->height % coin->chain->bundlesize) == 0 )
+                {
                     bp = iguana_bundlecreate(coin,&bundlei,block->height,block->RO.hash2,zero,0);
+                    if ( coin->started != 0 )
+                    {
+                        printf("savehdrs\n");
+                        iguana_savehdrs(coin);
+                        printf("done savehdrs\n");
+                    }
+                }
                 else
                 {
                     if ( (bp= coin->bundles[block->height / coin->chain->bundlesize]) != 0 )
