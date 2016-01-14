@@ -439,11 +439,12 @@ void SuperNET_loop(void *args)
     struct supernet_info *myinfo = args;
     while ( 1 )
     {
-        if ( (nn_socket_status(myinfo->LBsock,1) & POLLIN) != 0 )
+        if ( (nn_socket_status(myinfo->LBsock,1000) & POLLIN) != 0 )
             SuperNET_recv(myinfo,myinfo->LBsock,1); // req
-        else if ( (nn_socket_status(myinfo->subsock,1) & POLLIN) != 0 )
+        else if ( (nn_socket_status(myinfo->subsock,1000) & POLLIN) != 0 )
             SuperNET_recv(myinfo,myinfo->subsock,0); // info update
         else usleep(10000);
+        printf("SuperNET_loop\n");
     }
 }
 
@@ -486,7 +487,7 @@ void SuperNET_init(struct supernet_info *myinfo,uint16_t PUBport,uint16_t LBport
     {
         iguana_launch(iguana_coinadd("BTCD"),"SuperNET",SuperNET_loop,myinfo,IGUANA_PERMTHREAD);
         SuperNET_announce(myinfo,"ramchain");
-    }
+    } else SuperNET_announce(myinfo,"pangea");
 }
 
 #endif
