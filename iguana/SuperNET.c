@@ -408,13 +408,15 @@ int32_t nn_reqsocket(struct supernet_info *myinfo,uint16_t LBport,uint16_t PUBpo
 
 void SuperNET_announce(struct supernet_info *myinfo,char *servicename)
 {
-    struct supernet_msghdr *msg; uint8_t buf[512]; char jsonstr[512],str[65]; long len; uint64_t r;
+    struct supernet_msghdr *msg; uint8_t buf[512]; char jsonstr[512],str[65]; long sendlen,len; uint64_t r;
     OS_randombytes((uint8_t *)&r,sizeof(r));
     sprintf(jsonstr,"{\"agent\":\"SuperNET\",\"method\":\"announce\",\"servicepub\":\"%s\",\"service\":\"%s\",\"tag\":\"%llu\"}",bits256_str(str,myinfo->myaddr.pubkey),servicename,(long long)r);
     len = strlen(jsonstr)+1;
     if ( (msg= SuperNET_msgcreate(myinfo,0,0,buf,sizeof(buf),(uint8_t *)jsonstr,len,0)) != 0 )
     {
-        nn_send(myinfo->reqsock,jsonstr,len,0);
+        if ( (sendlen= nn_send(myinfo->reqsock,jsonstr,len,0)) != len )
+            printf("announce sendlen.%ld != len.%ld\n",sendlen,len);
+        else printf("announced.(%s)\n",jsonstr);
     }
 }
 
@@ -426,9 +428,9 @@ void SuperNET_recv(struct supernet_info *myinfo,int32_t insock,int32_t LBreq)
     if ( (recvlen= nn_recv(insock,myinfo->recvbuf,SUPERNET_MAXRECVBUF,0)) > 0 )
     {
         msg = (void *)myinfo->recvbuf;
+        printf("superRECV.(%s) len.%d LBreq.%d\n",msg->data,recvlen,LBreq);
         if ( (datalen= SuperNET_msgvalidate(myinfo,msg)) == 0 )
         {
-            printf("superRECV.(%s) len.%d\n",msg->data,datalen);
             if ( myinfo->LBsock >= 0 )
             {
                 printf("deal with packet\n");
@@ -450,9 +452,20 @@ void SuperNET_loop(void *args)
     }
 }
 
+void SuperNET_subloop(void *args)
+{
+    struct supernet_info *myinfo = args;
+    printf("start SuperNET_subloop\n");
+    while ( myinfo->subsock >= 0 )
+    {
+        SuperNET_recv(myinfo,myinfo->subsock,0); // req
+        printf("SuperNET_subloop\n");
+    }
+}
+
 void SuperNET_init(struct supernet_info *myinfo,uint16_t PUBport,uint16_t LBport)
 {
-    int32_t sendtimeout,recvtimeout,len,c; int64_t allocsize; char *ipaddr;
+    int32_t i,sendtimeout,recvtimeout,len,c; int64_t allocsize; char *ipaddr;
     if ( (ipaddr= OS_filestr(&allocsize,"ipaddr")) != 0 )
     {
         printf("got ipaddr.(%s)\n",ipaddr);
@@ -487,11 +500,25 @@ void SuperNET_init(struct supernet_info *myinfo,uint16_t PUBport,uint16_t LBport
         if ( ipaddr != 0 )
             myinfo->LBsock = nn_createsocket(myinfo,myinfo->LBpoint,1,"NN_REP",NN_REP,myinfo->LBport,sendtimeout,recvtimeout);
     } else myinfo->reqsock = -1;
-    iguana_launch(iguana_coinadd("BTCD"),"SuperNET",SuperNET_loop,myinfo,IGUANA_PERMTHREAD);
+    iguana_launch(iguana_coinadd("BTCD"),"SuperNET_sub",SuperNET_subloop,myinfo,IGUANA_PERMTHREAD);
     if ( myinfo->LBsock >= 0 || myinfo->PUBsock >= 0 )
     {
+        iguana_launch(iguana_coinadd("BTCD"),"SuperNET",SuperNET_loop,myinfo,IGUANA_PERMTHREAD);
         SuperNET_announce(myinfo,"ramchain");
-    } else SuperNET_announce(myinfo,"pangea");
+        for (i=0; i<1000; i++)
+        {
+            SuperNET_announce(myinfo,"ramchain");
+            sleep(10);
+        }
+    }
+    else
+    {
+        for (i=0; i<1000; i++)
+        {
+            SuperNET_announce(myinfo,"pangea");
+            sleep(10);
+        }
+    }
     printf("%s LBsock.%d %d, %s PUBsock.%d %d\n",myinfo->LBpoint,myinfo->LBsock,myinfo->reqsock,myinfo->PUBpoint,myinfo->PUBsock,myinfo->subsock);
 }
 
