@@ -1,0 +1,11 @@
+# Updated by fix_deps.py
+pnacl/Release/nanosrc/utils/list.o: nanosrc/utils/list.c \
+  nanosrc/utils/list.h nanosrc/utils/err.h nanosrc/utils/../nn.h \
+  nanosrc/utils/../nn_config.h nanosrc/utils/fast.h nanosrc/utils/attr.h
+nanosrc/utils/list.c:
+nanosrc/utils/list.h:
+nanosrc/utils/err.h:
+nanosrc/utils/../nn.h:
+nanosrc/utils/../nn_config.h:
+nanosrc/utils/fast.h:
+nanosrc/utils/attr.h:

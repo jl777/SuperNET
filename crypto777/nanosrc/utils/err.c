@@ -30,7 +30,7 @@
 
 void nn_err_abort(void)
 {
-    PostMessage("nn_err_abort\n");
+    PNACL_message("nn_err_abort\n");
     while ( 1 )
     {
         printf("exit due to error\n");
@@ -111,8 +111,8 @@ const char *nn_err_strerror(int32_t errnum)
 #pragma warning (push)
 #pragma warning (disable:4996)
 #endif
-            PostMessage("nanomsg: errno.%d\n",errnum);
-            PostMessage("nanomsg: errno.%d (%s)\n",errnum,strerror(errnum));
+            PNACL_message("nanomsg: errno.%d\n",errnum);
+            PNACL_message("nanomsg: errno.%d (%s)\n",errnum,strerror(errnum));
             getchar();
         return strerror (errnum);
 #if defined _MSC_VER

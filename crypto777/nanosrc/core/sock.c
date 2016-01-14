@@ -489,11 +489,11 @@ int nn_sock_add_ep(struct nn_sock *self,struct nn_transport *transport,int32_t b
             return rc;
         }
         nn_ep_start(ep);
-        //PostMessage("ep sock.(%s) started %s://(%s) bind.%d\n",self->socket_name,transport->name,addr,bind);
+        //PNACL_message("ep sock.(%s) started %s://(%s) bind.%d\n",self->socket_name,transport->name,addr,bind);
         eid = self->eid++; // Increase the endpoint ID for the next endpoint
         nn_list_insert(&self->eps,&ep->item,nn_list_end(&self->eps)); // Add to the list of active endpoints
         nn_ctx_leave (&self->ctx);
-    } else PostMessage("self->sock.(%s) %p already has (%s)\n",self->socket_name,self->sockbase->sock,addr);
+    } else PNACL_message("self->sock.(%s) %p already has (%s)\n",self->socket_name,self->sockbase->sock,addr);
     return(ep->eid);
 }
 
@@ -973,12 +973,12 @@ void nn_sock_report_error(struct nn_sock *self,struct nn_ep *ep,int32_t errnum,c
     if ( ep != 0 )
     {
         fprintf(stderr,"nanomsg: socket.%s[%s]: Error: %s\n",self->socket_name,nn_ep_getaddr(ep),nn_strerror(errnum));
-        PostMessage("nanomsg: socket.%s[%s]: [%s:%d] Error: %s\n",self->socket_name,nn_ep_getaddr(ep),fname,linenum,nn_strerror(errnum));
+        PNACL_message("nanomsg: socket.%s[%s]: [%s:%d] Error: %s\n",self->socket_name,nn_ep_getaddr(ep),fname,linenum,nn_strerror(errnum));
     }
     else
     {
         fprintf(stderr,"nanomsg: socket.%s: Error: %s\n",self->socket_name, nn_strerror(errnum));
-        PostMessage("nanomsg: socket.%s: [%s:%d] Error: %s\n",self->socket_name,fname,linenum,nn_strerror(errnum));
+        PNACL_message("nanomsg: socket.%s: [%s:%d] Error: %s\n",self->socket_name,fname,linenum,nn_strerror(errnum));
     }
 }
 

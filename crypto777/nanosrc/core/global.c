@@ -213,7 +213,7 @@ void nn_global_init (void)
     for (i=0; i<NN_MAX_SOCKETS; i++)
         SELF.socks[i] = NULL;
     SELF.nsocks = SELF.flags = 0;
-    //PostMessage("do getenv\n");
+    //PNACL_message("do getenv\n");
     envvar = getenv("NN_PRINT_ERRORS"); // Print connection and accepting errors to the stderr
     SELF.print_errors = envvar && *envvar; // any non-empty string is true
     envvar = getenv("NN_PRINT_STATISTICS"); // Print socket statistics to stderr
@@ -222,18 +222,18 @@ void nn_global_init (void)
     alloc_assert (SELF.unused);
     for (i=0; i<NN_MAX_SOCKETS; i++)
         SELF.unused [i] = NN_MAX_SOCKETS - i - 1;
-    //PostMessage("list init\n");
+    //PNACL_message("list init\n");
     // Initialise other parts of the global state.
     nn_list_init(&SELF.transports);
     nn_list_init(&SELF.socktypes);
-    //PostMessage("transports init\n");
+    //PNACL_message("transports init\n");
     //  Plug in individual transports.
     //nn_global_add_transport(nn_ipc);
     nn_global_add_transport(nn_tcp);
     //nn_global_add_transport(nn_inproc);
     //nn_global_add_transport(nn_ws);
     //nn_global_add_transport(nn_tcpmux);
-    //PostMessage("socktypes init\n");
+    //PNACL_message("socktypes init\n");
     // Plug in individual socktypes
     nn_global_add_socktype(nn_pair_socktype);
     nn_global_add_socktype(nn_xpair_socktype);
@@ -255,18 +255,18 @@ void nn_global_init (void)
     //nn_global_add_socktype(nn_xpull_socktype);
     //nn_global_add_socktype(nn_bus_socktype);
     //nn_global_add_socktype(nn_xbus_socktype);
-    //PostMessage("do pool init\n");
+    //PNACL_message("do pool init\n");
     nn_pool_init(&SELF.pool); // Start the worker threads
-    //PostMessage("do FSM init\n");
+    //PNACL_message("do FSM init\n");
     nn_fsm_init_root(&SELF.fsm,nn_global_handler,nn_global_shutdown,&SELF.ctx); // Start FSM
     SELF.state = NN_GLOBAL_STATE_IDLE;
-    //PostMessage("ctx init\n");
+    //PNACL_message("ctx init\n");
     nn_ctx_init(&SELF.ctx, nn_global_getpool(),NULL);
-    //PostMessage("timer init\n");
+    //PNACL_message("timer init\n");
     nn_timer_init(&SELF.stat_timer,NN_GLOBAL_SRC_STAT_TIMER,&SELF.fsm);
-    //PostMessage("do FSM start\n");
+    //PNACL_message("do FSM start\n");
     nn_fsm_start(&SELF.fsm);
-    //PostMessage("special sockets init\n");
+    //PNACL_message("special sockets init\n");
     //  Initializing special sockets.
     addr = getenv("NN_STATISTICS_SOCKET");
     if ( addr != 0 )
@@ -483,14 +483,14 @@ int nn_socket(int domain,int protocol)
 {
     int rc;
     nn_glock_lock();
-    //PostMessage("nn_socket flags.%d\n",SELF.flags);
+    //PNACL_message("nn_socket flags.%d\n",SELF.flags);
     if (nn_slow (SELF.flags & NN_CTX_FLAG_ZOMBIE)) // If nn_term() was already called, return ETERM
     {
         nn_glock_unlock();
         errno = ETERM;
         return -1;
     }
-    //PostMessage("nn_socket flags.%d\n",SELF.flags);
+    //PNACL_message("nn_socket flags.%d\n",SELF.flags);
     nn_global_init(); // Make sure that global state is initialised
     rc = nn_global_create_socket (domain, protocol);
     if ( rc < 0 )
@@ -501,7 +501,7 @@ int nn_socket(int domain,int protocol)
         return -1;
     }
     nn_glock_unlock();
-    //PostMessage("did nn_global_init\n");
+    //PNACL_message("did nn_global_init\n");
     return rc;
 }
 
@@ -651,7 +651,7 @@ int32_t nn_recv(int32_t s,void *buf,size_t len,int32_t flags)
 int32_t nn_sendmsg(int32_t s,const struct nn_msghdr *msghdr,int32_t flags)
 {
     int32_t rc,i,nnmsg; size_t sz; struct nn_iovec *iov; struct nn_msg msg; void *chunk;
-    //PostMessage("nn_sendmsg.(%d) \n",s);
+    //PNACL_message("nn_sendmsg.(%d) \n",s);
     NN_BASIC_CHECKS;
     if ( nn_slow(!msghdr) )
     {
@@ -751,13 +751,13 @@ int32_t nn_recvmsg(int32_t s,struct nn_msghdr *msghdr,int32_t flags)
         chunk = nn_chunkref_getchunk(&msg.body);
         *(void **)(msghdr->msg_iov[0].iov_base) = chunk;
         sz = nn_chunk_size(chunk);
-        //PostMessage("got message -> iov_base.%p sz.%d\n",msghdr->msg_iov[0].iov_base,(int32_t)sz);
+        //PNACL_message("got message -> iov_base.%p sz.%d\n",msghdr->msg_iov[0].iov_base,(int32_t)sz);
     }
     else // Copy the message content into the supplied gather array
     {
         data = nn_chunkref_data(&msg.body);
         sz = nn_chunkref_size(&msg.body);
-        //PostMessage("got message -> data.%p sz.%d\n",data,(int32_t)sz);
+        //PNACL_message("got message -> data.%p sz.%d\n",data,(int32_t)sz);
         for (i=0; i!=msghdr->msg_iovlen; i++)
         {
             iov = &msghdr->msg_iov[i];
@@ -788,7 +788,7 @@ int32_t nn_recvmsg(int32_t s,struct nn_msghdr *msghdr,int32_t flags)
 int32_t nn_sendmsg(int32_t s,const struct nn_msghdr *msghdr,int32_t flags)
 {
     int32_t rc,i,nnmsg; size_t sz,spsz; struct nn_iovec *iov; struct nn_msg msg; void *chunk; struct nn_cmsghdr *cmsg;
-    //PostMessage("nn_sendmsg.(%d) \n",s);
+    //PNACL_message("nn_sendmsg.(%d) \n",s);
     NN_BASIC_CHECKS;
     if ( nn_slow(!msghdr) )
     {
@@ -907,7 +907,7 @@ int32_t nn_recvmsg(int32_t s,struct nn_msghdr *msghdr,int32_t flags)
 {
     struct nn_msg msg; uint8_t *data; struct nn_iovec *iov; void *chunk,*ctrl; struct nn_cmsghdr *chdr;
     int32_t i,rc; size_t sz,hdrssz,ctrlsz,spsz,sptotalsz;
-    //PostMessage("nn_recvmsg.(%d) \n",s);
+    //PNACL_message("nn_recvmsg.(%d) \n",s);
     NN_BASIC_CHECKS;
     if ( nn_slow(!msghdr) )
     {
@@ -919,7 +919,7 @@ int32_t nn_recvmsg(int32_t s,struct nn_msghdr *msghdr,int32_t flags)
         errno = EMSGSIZE;
         return -1;
     }
-    //PostMessage("get a message from sock.%d\n",s);
+    //PNACL_message("get a message from sock.%d\n",s);
     rc = nn_sock_recv(SELF.socks[s],&msg,flags); // Get a message
     if ( nn_slow(rc < 0) )
     {
@@ -931,13 +931,13 @@ int32_t nn_recvmsg(int32_t s,struct nn_msghdr *msghdr,int32_t flags)
         chunk = nn_chunkref_getchunk(&msg.body);
         *(void **)(msghdr->msg_iov[0].iov_base) = chunk;
         sz = nn_chunk_size(chunk);
-        //PostMessage("got message -> iov_base.%p sz.%d\n",msghdr->msg_iov[0].iov_base,(int32_t)sz);
+        //PNACL_message("got message -> iov_base.%p sz.%d\n",msghdr->msg_iov[0].iov_base,(int32_t)sz);
     }
     else // Copy the message content into the supplied gather array
     {
         data = nn_chunkref_data(&msg.body);
         sz = nn_chunkref_size (&msg.body);
-        //PostMessage("got message -> data.%p sz.%d\n",data,(int32_t)sz);
+        //PNACL_message("got message -> data.%p sz.%d\n",data,(int32_t)sz);
         for (i=0; i!=msghdr->msg_iovlen; i++)
         {
             iov = &msghdr->msg_iov[i];
@@ -1142,7 +1142,7 @@ static void nn_global_submit_errors (int i, struct nn_sock *s,
                  len = snprintf (curbuf, buf_left,
                      " nanomsg: Endpoint %d [%s] error: %s\n",
                      ep->eid, nn_ep_getaddr (ep), nn_strerror (ep->last_errno));
-                PostMessage("%s\n",curbuf);
+                PNACL_message("%s\n",curbuf);
 #endif
                 if (buf_left < len)
                     break;
@@ -1239,7 +1239,7 @@ static int nn_global_create_ep (int s, const char *addr, int bind)
 #ifdef NN_USE_MYMSG
     if ( strncmp("inproc",proto,strlen("inproc")) != 0 && strncmp("ipc",proto,strlen("ipc")) != 0 && strncmp("tcp",proto,strlen("tcp")) != 0 )
     {
-        PostMessage("only ipc, inproc and tcp transport is supported\n");
+        PNACL_message("only ipc, inproc and tcp transport is supported\n");
         printf("only ipc, inproc and tcp transport is supported\n");
         fprintf(stderr,"only ipc, inproc and tcp transport is supported\n");
         exit(-1);
@@ -1316,12 +1316,12 @@ static void nn_global_handler (struct nn_fsm *myself,int src, int type, NN_UNUSE
                     nn_timer_start (&global->stat_timer, 10000); // Start statistics collection timer
                 return;
             default:
-                    PostMessage("bad action %d type %d\n",src,type);
+                    PNACL_message("bad action %d type %d\n",src,type);
                 nn_fsm_bad_action(global->state, src, type);
             }
 
         default:
-                PostMessage("bad source %d\n",src);
+                PNACL_message("bad source %d\n",src);
                 nn_fsm_bad_source(global->state, src, type);
         }
 

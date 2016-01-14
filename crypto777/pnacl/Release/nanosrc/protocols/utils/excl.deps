@@ -1,0 +1,28 @@
+# Updated by fix_deps.py
+pnacl/Release/nanosrc/protocols/utils/excl.o: \
+  nanosrc/protocols/utils/excl.c nanosrc/protocols/utils/excl.h \
+  nanosrc/protocols/utils/../../protocol.h \
+  nanosrc/protocols/utils/../../utils/msg.h \
+  nanosrc/protocols/utils/../../utils/chunkref.h \
+  nanosrc/protocols/utils/../../utils/chunk.h \
+  nanosrc/protocols/utils/../../utils/int.h \
+  nanosrc/protocols/utils/../../utils/list.h \
+  nanosrc/protocols/utils/../../utils/fast.h \
+  nanosrc/protocols/utils/../../utils/err.h \
+  nanosrc/protocols/utils/../../utils/../nn.h \
+  nanosrc/protocols/utils/../../nn_config.h \
+  nanosrc/protocols/utils/../../utils/attr.h
+:
+nanosrc/protocols/utils/excl.c:
+nanosrc/protocols/utils/excl.h:
+nanosrc/protocols/utils/../../protocol.h:
+nanosrc/protocols/utils/../../utils/msg.h:
+nanosrc/protocols/utils/../../utils/chunkref.h:
+nanosrc/protocols/utils/../../utils/chunk.h:
+nanosrc/protocols/utils/../../utils/int.h:
+nanosrc/protocols/utils/../../utils/list.h:
+nanosrc/protocols/utils/../../utils/fast.h:
+nanosrc/protocols/utils/../../utils/err.h:
+nanosrc/protocols/utils/../../utils/../nn.h:
+nanosrc/protocols/utils/../../nn_config.h:
+nanosrc/protocols/utils/../../utils/attr.h:

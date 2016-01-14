@@ -55,7 +55,7 @@ void PostMessage(const char* format, ...);
 #include <glibc-compat/sys/un.h>
 #else
 //#define NN_ENABLE_EXTRA 1
-#define PostMessage printf
+#define PNACL_message printf
 #include <sys/uio.h>
 #include <sys/un.h>
 #endif

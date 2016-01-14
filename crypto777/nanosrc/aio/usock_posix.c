@@ -167,7 +167,7 @@ int nn_usock_start (struct nn_usock *self, int domain, int type, int protocol)
     s = socket (domain, type, protocol);
     if (nn_slow (s < 0))
        return -errno;
-    //PostMessage("got socket s.%d\n",s);
+    //PNACL_message("got socket s.%d\n",s);
     nn_usock_init_from_fd (self, s);
 
     /*  Start the state machine. */
@@ -366,7 +366,7 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
         and allow processing other events in the meantime  */
     if (nn_slow (errno != EAGAIN && errno != EWOULDBLOCK && errno != ECONNABORTED && errno != listener->errnum))
     {
-        PostMessage("listen errno.%d\n",errno);
+        PNACL_message("listen errno.%d\n",errno);
         listener->errnum = errno;
         listener->state = NN_USOCK_STATE_ACCEPTING_ERROR;
         nn_fsm_raise (&listener->fsm,
@@ -404,7 +404,7 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     if ( nn_slow(errno != EINPROGRESS) )
     {
         self->errnum = errno;
-        PostMessage("error.%d not EINPROGRESS\n",errno);
+        PNACL_message("error.%d not EINPROGRESS\n",errno);
         nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
         return;
     }
@@ -433,9 +433,9 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
         self->out.iov [out].iov_base = iov [i].iov_base;
         self->out.iov [out].iov_len = iov [i].iov_len;
         out++;
-        //PostMessage("{%d} ",(int)iov [i].iov_len);
+        //PNACL_message("{%d} ",(int)iov [i].iov_len);
     }
-    //PostMessage("iov[%d]\n",out);
+    //PNACL_message("iov[%d]\n",out);
     self->out.hdr.msg_iovlen = out;
 
     /*  Try to send the data immediately. */
@@ -472,17 +472,17 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len, int *fd)
     rc = nn_usock_recv_raw (self, buf, &nbytes);
     if (nn_slow (rc < 0)) {
         errnum_assert (rc == -ECONNRESET, -rc);
-        //PostMessage("rc.%d vs ECONNRESET\n",rc,ECONNRESET);
+        //PNACL_message("rc.%d vs ECONNRESET\n",rc,ECONNRESET);
         nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
         return;
     }
     //int i;
     //for (i=0; i<16&&i<nbytes; i++)
-    //    PostMessage("%02x ",((uint8_t *)buf)[i]);
-    //PostMessage("nn_usock_recv nbytes.%d\n",(int)nbytes);
+    //    PNACL_message("%02x ",((uint8_t *)buf)[i]);
+    //PNACL_message("nn_usock_recv nbytes.%d\n",(int)nbytes);
     /*  Success. */
     if (nn_fast (nbytes == len)) {
-        //PostMessage("raise NN_USOCK_RECEIVED\n");
+        //PNACL_message("raise NN_USOCK_RECEIVED\n");
         nn_fsm_raise (&self->fsm, &self->event_received, NN_USOCK_RECEIVED);
         return;
     }
@@ -1021,19 +1021,19 @@ int32_t nn_getiovec_size(uint8_t *buf,int32_t maxlen,struct msghdr *hdr)
         if ( nn_slow(iov->iov_len == NN_MSG) )
         {
             errno = EINVAL;
-            PostMessage("ERROR: iov->iov_len == NN_MSG\n");
+            PNACL_message("ERROR: iov->iov_len == NN_MSG\n");
             return(-1);
         }
         if ( nn_slow(!iov->iov_base && iov->iov_len) )
         {
             errno = EFAULT;
-            PostMessage("ERROR: !iov->iov_base && iov->iov_len\n");
+            PNACL_message("ERROR: !iov->iov_base && iov->iov_len\n");
             return(-1);
         }
         if ( maxlen > 0 && nn_slow(size + iov->iov_len > maxlen) )
         {
             errno = EINVAL;
-            PostMessage("ERROR: sz.%d + iov->iov_len.%d < maxlen.%d\n",(int32_t)size,(int32_t)iov->iov_len,maxlen);
+            PNACL_message("ERROR: sz.%d + iov->iov_len.%d < maxlen.%d\n",(int32_t)size,(int32_t)iov->iov_len,maxlen);
             return(-1);
         }
         if ( iov->iov_len > 0 )
@@ -1069,10 +1069,10 @@ ssize_t mysendmsg(int32_t usock,struct msghdr *hdr,int32_t flags)
         if ( nn_getiovec_size(&buf[offset],veclen,hdr) == veclen )
         {
             nbytes = send(usock,buf,offset + veclen,0);
-            //PostMessage(">>>>>>>>> send.[%d %d %d %d] (n.%d v.%d c.%d)-> usock.%d nbytes.%d\n",buf[offset],buf[offset+1],buf[offset+2],buf[offset+3],(int32_t)offset+veclen,veclen,clen,usock,(int32_t)nbytes);
+            //PNACL_message(">>>>>>>>> send.[%d %d %d %d] (n.%d v.%d c.%d)-> usock.%d nbytes.%d\n",buf[offset],buf[offset+1],buf[offset+2],buf[offset+3],(int32_t)offset+veclen,veclen,clen,usock,(int32_t)nbytes);
             if ( nbytes != offset + veclen )
             {
-                //PostMessage("nbytes.%d != offset.%d veclen.%d errno.%d usock.%d\n",(int32_t)nbytes,(int32_t)offset,veclen,errno,usock);
+                //PNACL_message("nbytes.%d != offset.%d veclen.%d errno.%d usock.%d\n",(int32_t)nbytes,(int32_t)offset,veclen,errno,usock);
             }
             if ( nbytes >= offset )
                 nbytes -= offset;
@@ -1080,19 +1080,19 @@ ssize_t mysendmsg(int32_t usock,struct msghdr *hdr,int32_t flags)
         else
         {
             err = -errno;
-            PostMessage("mysendmsg: unexpected nn_getiovec_size error %d\n",err);
+            PNACL_message("mysendmsg: unexpected nn_getiovec_size error %d\n",err);
         }
         if ( buf != _buf )
             free(buf);
         if ( err != 0 )
         {
-            PostMessage("nn_usock_send_raw errno.%d err.%d\n",errno,err);
+            PNACL_message("nn_usock_send_raw errno.%d err.%d\n",errno,err);
             return(-errno);
         }
     }
     else
     {
-        PostMessage("nn_usock_send_raw errno.%d invalid iovec size\n",errno);
+        PNACL_message("nn_usock_send_raw errno.%d invalid iovec size\n",errno);
         return(-errno);
     }
     return(nbytes);
@@ -1104,32 +1104,32 @@ ssize_t myrecvmsg(int32_t usock,struct msghdr *hdr,int32_t flags,int32_t len)
     iov = hdr->msg_iov;
     /*if ( (n= (int32_t)recv(usock,lens,sizeof(lens),0)) != sizeof(lens) )
     {
-        PostMessage("error getting veclen/clen n.%d vs %d from usock.%d\n",n,(int32_t)sizeof(lens),usock);
+        PNACL_message("error getting veclen/clen n.%d vs %d from usock.%d\n",n,(int32_t)sizeof(lens),usock);
         return(0);
-    } else PostMessage("GOT %d bytes from usock.%d\n",n,usock);
+    } else PNACL_message("GOT %d bytes from usock.%d\n",n,usock);
     offset = 0;
     veclen = lens[offset++];
     veclen |= ((int32_t)lens[offset++] << 8);
     veclen |= ((int32_t)lens[offset++] << 16);
     clen = lens[offset++];
     clen |= ((int32_t)lens[offset++] << 8);
-    PostMessage("veclen.%d clen.%d waiting in usock.%d\n",veclen,clen,usock);
+    PNACL_message("veclen.%d clen.%d waiting in usock.%d\n",veclen,clen,usock);
     if ( clen > 0 )
     {
         if ( (cbytes= (int32_t)recv(usock,hdr->msg_control,clen,0)) != clen )
         {
-            PostMessage("myrecvmsg: unexpected cbytes.%d vs clen.%d\n",cbytes,clen);
+            PNACL_message("myrecvmsg: unexpected cbytes.%d vs clen.%d\n",cbytes,clen);
         }
     } else cbytes = 0;*/
     hdr->msg_controllen = 0;
     if ( (nbytes= (int32_t)recv(usock,iov->iov_base,len,0)) != len )
     {
-        //PostMessage("myrecvmsg: partial nbytes.%d vs veclen.%d\n",(int32_t)nbytes,len);
+        //PNACL_message("myrecvmsg: partial nbytes.%d vs veclen.%d\n",(int32_t)nbytes,len);
     }
-    //PostMessage("GOT nbytes.%d of len.%d from usock.%d\n",(int32_t)nbytes,len,usock);
+    //PNACL_message("GOT nbytes.%d of len.%d from usock.%d\n",(int32_t)nbytes,len,usock);
     if ( 0 && nbytes > 0 )
     {
-        PostMessage("got nbytes.%d from usock.%d [%d %d %d %d]\n",(int32_t)nbytes,usock,((uint8_t *)iov->iov_base)[0],((uint8_t *)iov->iov_base)[1],((uint8_t *)iov->iov_base)[2],((uint8_t *)iov->iov_base)[3]);
+        PNACL_message("got nbytes.%d from usock.%d [%d %d %d %d]\n",(int32_t)nbytes,usock,((uint8_t *)iov->iov_base)[0],((uint8_t *)iov->iov_base)[1],((uint8_t *)iov->iov_base)[2],((uint8_t *)iov->iov_base)[3]);
     }
     return(nbytes);
 }
@@ -1199,13 +1199,13 @@ int32_t nn_process_cmsg(struct nn_usock *self,struct msghdr *hdr)
             memcpy(&retval,(int32_t *)CMSG_DATA(cmsg),sizeof(int32_t));
             if ( self->in.pfd )
             {
-                PostMessage("CMSG set self->in.pfd (%d)\n",retval);
+                PNACL_message("CMSG set self->in.pfd (%d)\n",retval);
                 *self->in.pfd = retval;
                 self->in.pfd = NULL;
             }
             else
             {
-                PostMessage("CMSG nn_closefd(%d)\n",retval);
+                PNACL_message("CMSG nn_closefd(%d)\n",retval);
                 nn_closefd(retval);
             }
             break;
@@ -1310,7 +1310,7 @@ static int nn_usock_recv_raw(struct nn_usock *self, void *buf, size_t *len)
         }
     } else if ( hdr.msg_controllen > 0 )
         nn_process_cmsg(self,&hdr);
-    //PostMessage("nbytes.%d length.%d *len %d\n",(int)nbytes,(int)length,(int)*len);
+    //PNACL_message("nbytes.%d length.%d *len %d\n",(int)nbytes,(int)length,(int)*len);
 
     //  If the data were received directly into the place we can return straight away
     if ( usebuf != 0 )

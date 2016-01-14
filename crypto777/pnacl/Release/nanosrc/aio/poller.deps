@@ -1,0 +1,20 @@
+# Updated by fix_deps.py
+pnacl/Release/nanosrc/aio/poller.o: nanosrc/aio/poller.c \
+  nanosrc/aio/poller.h nanosrc/aio/../nn_config.h \
+  nanosrc/aio/poller_poll.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/poll.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/poll.h \
+  nanosrc/aio/poller_poll.c nanosrc/aio/../utils/alloc.h \
+  nanosrc/aio/../utils/err.h nanosrc/aio/../utils/../nn.h \
+  nanosrc/aio/../utils/fast.h
+nanosrc/aio/poller.c:
+nanosrc/aio/poller.h:
+nanosrc/aio/../nn_config.h:
+nanosrc/aio/poller_poll.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/poll.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/poll.h:
+nanosrc/aio/poller_poll.c:
+nanosrc/aio/../utils/alloc.h:
+nanosrc/aio/../utils/err.h:
+nanosrc/aio/../utils/../nn.h:
+nanosrc/aio/../utils/fast.h:

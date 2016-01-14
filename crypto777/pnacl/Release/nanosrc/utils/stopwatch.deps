@@ -1,0 +1,13 @@
+# Updated by fix_deps.py
+pnacl/Release/nanosrc/utils/stopwatch.o: nanosrc/utils/stopwatch.c \
+  nanosrc/utils/stopwatch.h nanosrc/utils/err.h nanosrc/utils/../nn.h \
+  nanosrc/utils/../nn_config.h nanosrc/utils/fast.h nanosrc/utils/int.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/time.h
+nanosrc/utils/stopwatch.c:
+nanosrc/utils/stopwatch.h:
+nanosrc/utils/err.h:
+nanosrc/utils/../nn.h:
+nanosrc/utils/../nn_config.h:
+nanosrc/utils/fast.h:
+nanosrc/utils/int.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/time.h:

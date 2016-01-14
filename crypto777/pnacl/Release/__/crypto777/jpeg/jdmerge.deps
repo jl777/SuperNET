@@ -1,0 +1,12 @@
+# Updated by fix_deps.py
+pnacl/Release/__/crypto777/jpeg/jdmerge.o: ../crypto777/jpeg/jdmerge.c \
+  ../crypto777/jpeg/jinclude.h ../crypto777/jpeg/jconfig.h \
+  ../crypto777/jpeg/jpeglib.h ../crypto777/jpeg/jmorecfg.h \
+  ../crypto777/jpeg/jpegint.h ../crypto777/jpeg/jerror.h
+../crypto777/jpeg/jdmerge.c:
+../crypto777/jpeg/jinclude.h:
+../crypto777/jpeg/jconfig.h:
+../crypto777/jpeg/jpeglib.h:
+../crypto777/jpeg/jmorecfg.h:
+../crypto777/jpeg/jpegint.h:
+../crypto777/jpeg/jerror.h:

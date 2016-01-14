@@ -1,0 +1,36 @@
+# Updated by fix_deps.py
+pnacl/Release/nanosrc/protocols/pubsub/xpub.o: \
+  nanosrc/protocols/pubsub/xpub.c nanosrc/protocols/pubsub/xpub.h \
+  nanosrc/protocols/pubsub/../../protocol.h \
+  nanosrc/protocols/pubsub/../../utils/msg.h \
+  nanosrc/protocols/pubsub/../../utils/chunkref.h \
+  nanosrc/protocols/pubsub/../../utils/chunk.h \
+  nanosrc/protocols/pubsub/../../utils/int.h \
+  nanosrc/protocols/pubsub/../../utils/list.h \
+  nanosrc/protocols/pubsub/../../nn.h \
+  nanosrc/protocols/pubsub/../../nn_config.h \
+  nanosrc/protocols/pubsub/../../pubsub.h \
+  nanosrc/protocols/pubsub/../utils/dist.h \
+  nanosrc/protocols/pubsub/../../utils/err.h \
+  nanosrc/protocols/pubsub/../../utils/fast.h \
+  nanosrc/protocols/pubsub/../../utils/cont.h \
+  nanosrc/protocols/pubsub/../../utils/alloc.h \
+  nanosrc/protocols/pubsub/../../utils/attr.h
+:
+nanosrc/protocols/pubsub/xpub.c:
+nanosrc/protocols/pubsub/xpub.h:
+nanosrc/protocols/pubsub/../../protocol.h:
+nanosrc/protocols/pubsub/../../utils/msg.h:
+nanosrc/protocols/pubsub/../../utils/chunkref.h:
+nanosrc/protocols/pubsub/../../utils/chunk.h:
+nanosrc/protocols/pubsub/../../utils/int.h:
+nanosrc/protocols/pubsub/../../utils/list.h:
+nanosrc/protocols/pubsub/../../nn.h:
+nanosrc/protocols/pubsub/../../nn_config.h:
+nanosrc/protocols/pubsub/../../pubsub.h:
+nanosrc/protocols/pubsub/../utils/dist.h:
+nanosrc/protocols/pubsub/../../utils/err.h:
+nanosrc/protocols/pubsub/../../utils/fast.h:
+nanosrc/protocols/pubsub/../../utils/cont.h:
+nanosrc/protocols/pubsub/../../utils/alloc.h:
+nanosrc/protocols/pubsub/../../utils/attr.h:
