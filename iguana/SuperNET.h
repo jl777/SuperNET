@@ -49,7 +49,7 @@ struct endpoint { queue_t nnrecvQ; int32_t nnsock,nnind; uint64_t ipbits:32,port
 
 struct direct_connection { char handler[16]; struct endpoint epbits; int32_t sock; };
 
-struct supernet_msghdr { bits256 sig; uint8_t type,serlen[3],ser_nonce[4],ser_timestamp[4],ser_duration[4]; char command[16]; uint8_t data[]; };
+struct supernet_msghdr { bits256 dest,sender,payment; uint8_t type,serlen[3],ser_nonce[4],ser_timestamp[4],ser_duration[4]; char agent[8]; uint8_t data[]; };
 
 struct supernet_agent
 {
@@ -68,7 +68,7 @@ struct supernet_info
     int32_t Debuglevel,readyflag,dead,POLLTIMEOUT; char rpcsymbol[16],LBpoint[64],PUBpoint[64];
     //int32_t pullsock,subclient,lbclient,lbserver,servicesock,pubglobal,pubrelays,numservers;
     bits256 privkey;
-    uint8_t *recvbuf;
+    uint8_t *recvbuf[6];
     struct supernet_address myaddr;
     int32_t LBsock,PUBsock,reqsock,subsock,networktimeout;
     uint16_t LBport,PUBport,reqport,subport;

@@ -1124,10 +1124,10 @@ ssize_t myrecvmsg(int32_t usock,struct msghdr *hdr,int32_t flags,int32_t len)
     hdr->msg_controllen = 0;
     if ( (nbytes= (int32_t)recv(usock,iov->iov_base,len,0)) != len )
     {
-        PNACL_message("myrecvmsg: partial nbytes.%d vs veclen.%d\n",(int32_t)nbytes,len);
+        //PNACL_message("myrecvmsg: partial nbytes.%d vs veclen.%d\n",(int32_t)nbytes,len);
     }
-    PNACL_message("GOT nbytes.%d of len.%d from usock.%d\n",(int32_t)nbytes,len,usock);
-    if ( 1 && nbytes > 0 )
+    //PNACL_message("GOT nbytes.%d of len.%d from usock.%d\n",(int32_t)nbytes,len,usock);
+    if ( 0 && nbytes > 0 )
     {
         PNACL_message("got nbytes.%d from usock.%d [%d %d %d %d]\n",(int32_t)nbytes,usock,((uint8_t *)iov->iov_base)[0],((uint8_t *)iov->iov_base)[1],((uint8_t *)iov->iov_base)[2],((uint8_t *)iov->iov_base)[3]);
     }
