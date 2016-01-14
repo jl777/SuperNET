@@ -1,2 +1,42 @@
-gcc -c -O2 *.c jpeg/*.c jpeg/unix/*.c
+NANOMSG_CORE = nanosrc/core/ep.c nanosrc/core/epbase.c nanosrc/core/pipe.c nanosrc/core/poll.c nanosrc/core/sock.c nanosrc/core/sockbase.c nanosrc/core/symbol.c
+
+NANOMSG_DEVICES = nanosrc/devices/device.c nanosrc/devices/tcpmuxd.c
+
+NANOMSG_AIO = nanosrc/aio/ctx.c nanosrc/aio/fsm.c nanosrc/aio/poller.c nanosrc/aio/pool.c nanosrc/aio/timer.c nanosrc/aio/usock.c nanosrc/aio/timerset.c nanosrc/aio/worker.c 
+
+NANOMSG_UTILS = nanosrc/utils/alloc.c nanosrc/utils/atomic.c nanosrc/utils/chunk.c nanosrc/utils/chunkref.c nanosrc/utils/clock.c nanosrc/utils/closefd.c nanosrc/utils/efd.c nanosrc/utils/err.c nanosrc/utils/glock.c nanosrc/utils/hash.c nanosrc/utils/list.c nanosrc/utils/msg.c nanosrc/utils/mutex.c nanosrc/utils/queue.c nanosrc/utils/random.c nanosrc/utils/sem.c nanosrc/utils/sleep.c nanosrc/utils/stopwatch.c nanosrc/utils/thread.c nanosrc/utils/wire.c 
+
+PROTOCOLS_UTILS = nanosrc/protocols/utils/dist.c nanosrc/protocols/utils/excl.c nanosrc/protocols/utils/fq.c nanosrc/protocols/utils/lb.c nanosrc/protocols/utils/priolist.c
+
+PROTOCOLS_BUS = nanosrc/protocols/bus/bus.c nanosrc/protocols/bus/xbus.c
+
+PROTOCOLS_PIPELINE = nanosrc/protocols/pipeline/push.c nanosrc/protocols/pipeline/pull.c nanosrc/protocols/pipeline/xpull.c nanosrc/protocols/pipeline/xpush.c
+
+PROTOCOLS_PUBSUB = nanosrc/protocols/pubsub/pub.c nanosrc/protocols/pubsub/sub.c nanosrc/protocols/pubsub/trie.c nanosrc/protocols/pubsub/xpub.c nanosrc/protocols/pubsub/xsub.c
+
+PROTOCOLS_PAIR = nanosrc/protocols/pair/pair.c nanosrc/protocols/pair/xpair.c
+
+PROTOCOLS_REQREP = nanosrc/protocols/reqrep/req.c nanosrc/protocols/reqrep/rep.c nanosrc/protocols/reqrep/task.c nanosrc/protocols/reqrep/xrep.c nanosrc/protocols/reqrep/xreq.c
+
+PROTOCOLS_SURVEY = nanosrc/protocols/survey/respondent.c nanosrc/protocols/survey/surveyor.c nanosrc/protocols/survey/xrespondent.c nanosrc/protocols/survey/xsurveyor.c
+
+TRANSPORTS_UTILS = nanosrc/transports/utils/backoff.c nanosrc/transports/utils/dns.c nanosrc/transports/utils/iface.c nanosrc/transports/utils/literal.c nanosrc/transports/utils/port.c nanosrc/transports/utils/streamhdr.c nanosrc/transports/utils/base64.c
+
+TRANSPORTS_IPC = nanosrc/transports/ipc/aipc.c nanosrc/transports/ipc/bipc.c nanosrc/transports/ipc/cipc.c nanosrc/transports/ipc/ipc.c nanosrc/transports/ipc/sipc.c
+
+TRANSPORTS_TCP = nanosrc/transports/tcp/atcp.c nanosrc/transports/tcp/btcp.c nanosrc/transports/tcp/ctcp.c nanosrc/transports/tcp/stcp.c nanosrc/transports/tcp/tcp.c
+
+TRANSPORTS_INPROC = nanosrc/transports/inproc/binproc.c nanosrc/transports/inproc/cinproc.c nanosrc/transports/inproc/inproc.c nanosrc/transports/inproc/ins.c nanosrc/transports/inproc/msgqueue.c nanosrc/transports/inproc/sinproc.c
+
+TRANSPORTS_WS = nanosrc/transports/ws/aws.c nanosrc/transports/ws/bws.c nanosrc/transports/ws/cws.c nanosrc/transports/ws/sws.c nanosrc/transports/ws/ws.c nanosrc/transports/ws/ws_handshake.c nanosrc/transports/ws/sha1.c
+
+TRANSPORTS_TCPMUX = nanosrc/transports/tcpmux/atcpmux.c nanosrc/transports/tcpmux/btcpmux.c nanosrc/transports/tcpmux/ctcpmux.c nanosrc/transports/tcpmux/stcpmux.c nanosrc/transports/tcpmux/tcpmux.c
+
+NANOMSG_PROTOCOLS = $(PROTOCOLS_UTILS) $(PROTOCOLS_PUBSUB) $(PROTOCOLS_PAIR) $(PROTOCOLS_REQREP) #$(PROTOCOLS_BUS) $(PROTOCOLS_PIPELINE)
+
+NANOMSG_TRANSPORTS =  $(TRANSPORTS_UTILS) $(TRANSPORTS_TCP)
+
+NANOMSG = $(NANOMSG_CORE) $(NANOMSG_AIO) $(NANOMSG_UTILS) $(NANOMSG_DEVICES) $(NANOMSG_TRANSPORTS) $(NANOMSG_PROTOCOLS)
+
+gcc -c -O2 *.c $(NANOMSG) jpeg/*.c jpeg/unix/*.c
 rm -f ../agents/libcrypto777.a; ar rcu ../agents/libcrypto777.a *.o 
