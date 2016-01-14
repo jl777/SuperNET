@@ -1,1 +1,1 @@
-gcc -o ../agents/iguana -O2 *.c ../agents/libcrypto777.a -lcurl -lssl -lcrypto -lpthread -lm
+gcc -o ../agents/iguana -O2 *.c ../agents/libcrypto777.a -lnanomsg -lcurl -lssl -lcrypto -lpthread -lm

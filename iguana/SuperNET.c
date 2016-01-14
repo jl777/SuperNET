@@ -406,7 +406,7 @@ void SuperNET_announce(struct supernet_info *myinfo,char *servicename)
 {
     struct supernet_msghdr *msg; uint8_t buf[512]; char jsonstr[512],str[65]; long len; uint64_t r;
     OS_randombytes((uint8_t *)&r,sizeof(r));
-    sprintf(jsonstr,"{\"agent\":\"SuperNET\",\"method\":\"announce\",\"servicepub\":\"%s\",\"service\":\"%s\",\"tag\":\"%llu\"}",bits256_str(str,myinfo->myaddr.pubkey),servicename,r);
+    sprintf(jsonstr,"{\"agent\":\"SuperNET\",\"method\":\"announce\",\"servicepub\":\"%s\",\"service\":\"%s\",\"tag\":\"%llu\"}",bits256_str(str,myinfo->myaddr.pubkey),servicename,(long long)r);
     len = strlen(jsonstr)+1;
     if ( (msg= SuperNET_msgcreate(myinfo,0,0,buf,sizeof(buf),(uint8_t *)jsonstr,len,0)) != 0 )
     {
