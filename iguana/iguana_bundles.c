@@ -570,7 +570,7 @@ void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_
         pend += coin->peers.active[i].pendblocks;
     if ( pend >= coin->MAXPENDING*coin->MAXPEERS )
     {
-        //usleep(timelimit * 1000);
+        usleep(10000);
         //printf("SKIP pend.%d vs %d: ITERATE bundle.%d n.%d r.%d s.%d finished.%d timelimit.%d\n",pend,coin->MAXPENDING*coin->MAXPEERS,bp->bundleheight,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit);
         iguana_bundleQ(coin,bp,counter == 0 ? bp->n*5 : bp->n*2);
         return;
@@ -617,7 +617,7 @@ void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_
                     //printf("(%x:%x) ",(uint32_t)block->RO.hash2.ulongs[3],(uint32_t)bp->hashes[i].ulongs[3]);
                     if ( iguana_blockvalidate(coin,&valid,block) != 0 || (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) )
                     {
-                        char str[65]; printf(">>>>>>> null prevblock error at ht.%d patch.(%s) and reissue\n",bp->bundleheight+i,bits256_str(str,bp->hashes[i-1]));
+                        //char str[65]; printf(">>>>>>> null prevblock error at ht.%d patch.(%s) and reissue\n",bp->bundleheight+i,bits256_str(str,bp->hashes[i-1]));
                         block->queued = 0;
                         block->fpipbits = 0;
                         bp->issued[i] = 0;
