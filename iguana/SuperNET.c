@@ -440,7 +440,7 @@ void SuperNET_loop(void *args)
     printf("start SuperNET_loop\n");
     while ( 1 )
     {
-        if ( (nn_socket_status(myinfo->LBsock,1000) & POLLIN) != 0 )
+        if ( myinfo->LBsock >= 0 && (nn_socket_status(myinfo->LBsock,1000) & POLLIN) != 0 )
             SuperNET_recv(myinfo,myinfo->LBsock,1); // req
         else if ( (nn_socket_status(myinfo->subsock,1000) & POLLIN) != 0 )
             SuperNET_recv(myinfo,myinfo->subsock,0); // info update
@@ -452,14 +452,16 @@ void SuperNET_loop(void *args)
 void SuperNET_init(struct supernet_info *myinfo,uint16_t PUBport,uint16_t LBport)
 {
     int32_t sendtimeout,recvtimeout,len,c; int64_t allocsize; char *ipaddr;
-    if ( (ipaddr = OS_filestr(&allocsize,"myipaddr")) != 0 )
+    if ( (ipaddr= OS_filestr(&allocsize,"ipaddr")) != 0 )
     {
+        printf("got ipaddr.(%s)\n",ipaddr);
         len = (int32_t)strlen(ipaddr) - 1;
         while ( len > 8 && ((c= ipaddr[len]) == '\r' || c == '\n' || c == ' ' || c == '\t') )
             ipaddr[len] = 0, len--;
+        printf("got ipaddr.(%s) %x\n",ipaddr,is_ipaddr(ipaddr));
         if ( is_ipaddr(ipaddr) != 0 )
             strcpy(myinfo->ipaddr,ipaddr);
-        free(ipaddr), ipaddr = 0;
+        else free(ipaddr), ipaddr = 0;
     }
     sendtimeout = 100;
     recvtimeout = 1000;
