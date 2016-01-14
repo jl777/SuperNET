@@ -629,6 +629,7 @@ void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_
             }
             printf(">>>>>>>>>>>>>>>>>>>>>>> EMIT bundle.%d\n",bp->bundleheight);
             bp->emitfinish = 1;
+            sleep(1);
             iguana_emitQ(coin,bp);
             return;
         }
