@@ -1,0 +1,2 @@
+git pull
+cd iguana; ./m_android; cd ..
