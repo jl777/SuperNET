@@ -298,7 +298,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
             //getchar();
             return(0);
         }
-        char str[65]; printf("extend? %s.h%d: %.15f vs %.15f ht.%d vs %d\n",bits256_str(str,block->RO.hash2),height,block->PoW,coin->blocks.hwmchain.PoW,height,coin->blocks.hwmchain.height);
+        //char str[65]; printf("extend? %s.h%d: %.15f vs %.15f ht.%d vs %d\n",bits256_str(str,block->RO.hash2),height,block->PoW,coin->blocks.hwmchain.PoW,height,coin->blocks.hwmchain.height);
         if ( iguana_blockvalidate(coin,&valid,newblock) < 0 || valid == 0 )
             return(0);
         block->height = height;
