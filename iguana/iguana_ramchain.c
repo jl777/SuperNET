@@ -1761,7 +1761,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     RAMCHAIN_DESTDECLARE; RAMCHAIN_DECLARE;
     void **ptrs,*ptr; long *filesizes,filesize; uint32_t *ipbits; char fname[1024];
     struct iguana_ramchain *R,*mapchain,*dest,newchain; uint32_t fpipbits,now = (uint32_t)time(NULL);
-    int32_t i,numtxids,numunspents,numspends,numpkinds,numexternaltxids,fpos; struct iguana_block *block;
+    int32_t i,numtxids,valid,numunspents,numspends,numpkinds,numexternaltxids,fpos; struct iguana_block *block;
     struct OS_memspace HASHMEM; int32_t err,j,num,hdrsi,bundlei,firsti= 1,retval = -1;
     B = 0, Ux = 0, Sx = 0, P = 0, A = 0, X = 0, TXbits = 0, PKbits = 0, U = 0, S = 0, T = 0;//U2 = 0, P2 = 0,
     R = mycalloc('s',bp->n,sizeof(*R));
@@ -1845,20 +1845,15 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         if ( (block= bp->blocks[i]) != 0 && block == iguana_blockfind(coin,bp->hashes[i]) )
         {
             //printf("(%x:%x) ",(uint32_t)block->RO.hash2.ulongs[3],(uint32_t)bp->hashes[i].ulongs[3]);
-            destB[i] = block->RO;
-            if ( bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0 )
+            if ( iguana_blockvalidate(coin,&valid,block) != 0 || (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) )
             {
                 char str[65]; printf("null prevblock error at ht.%d patch.(%s)\n",bp->bundleheight+i,bits256_str(str,bp->hashes[i-1]));
-                if ( i > 0 )
-                    block->RO.prev_block = bp->hashes[i-1];
-                else
-                {
-                    block->queued = 0;
-                    block->fpipbits = 0;
-                    bp->issued[i] = 0;
-                    return(-1);
-                }
+                block->queued = 0;
+                block->fpipbits = 0;
+                bp->issued[i] = 0;
+                return(-1);
             }
+            destB[i] = block->RO;
         } else printf("error getting block (%d:%d) %p vs %p\n",bp->hdrsi,i,block,iguana_blockfind(coin,bp->hashes[i]));
     }
     dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
