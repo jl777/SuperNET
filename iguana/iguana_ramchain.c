@@ -1851,10 +1851,13 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
                 char str[65]; printf("null prevblock error at ht.%d patch.(%s)\n",bp->bundleheight+i,bits256_str(str,bp->hashes[i-1]));
                 if ( i > 0 )
                     block->RO.prev_block = bp->hashes[i-1];
-                block->queued = 0;
-                block->fpipbits = 0;
-                bp->issued[i] = 0;
-                return(-1);
+                else
+                {
+                    block->queued = 0;
+                    block->fpipbits = 0;
+                    bp->issued[i] = 0;
+                    return(-1);
+                }
             }
         } else printf("error getting block (%d:%d) %p vs %p\n",bp->hdrsi,i,block,iguana_blockfind(coin,bp->hashes[i]));
     }

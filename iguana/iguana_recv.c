@@ -444,8 +444,8 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
                 if ( iguana_allhashcmp(coin,bp,blockhashes,coin->chain->bundlesize) > 0 )
                 {
                     bp->hdrtime = (uint32_t)time(NULL);
-                    iguana_blockQ(coin,bp,0,blockhashes[0],0);
                     iguana_blockQ(coin,bp,1,blockhashes[1],0);
+                    iguana_blockQ(coin,bp,0,blockhashes[0],0);
                     iguana_blockQ(coin,bp,coin->chain->bundlesize-1,blockhashes[coin->chain->bundlesize],0);
                     if ( i == coin->chain->bundlesize )
                         iguana_blockQ(coin,0,-1,blockhashes[coin->chain->bundlesize],0);
