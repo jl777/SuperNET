@@ -17,6 +17,7 @@
 
 #include "../crypto777/OS_portable.h"
 #include "SuperNET.h"
+#include "iguana777.h"
 
 int32_t nn_typelist[] = { NN_REP, NN_REQ, NN_RESPONDENT, NN_SURVEYOR, NN_PUB, NN_SUB, NN_PULL, NN_PUSH, NN_BUS, NN_PAIR };
 char *nn_transports[] = { "tcp", "ws", "ipc", "inproc", "tcpmux", "", "", "" };
@@ -414,7 +415,7 @@ void SuperNET_announce(struct supernet_info *myinfo,char *servicename)
     }
 }
 
-void SuperNET_recv(struct supernet_info *myinfo,int32_t insock,int32_t outsock)
+void SuperNET_recv(struct supernet_info *myinfo,int32_t insock,int32_t LBreq)
 {
     int32_t recvlen,datalen; struct supernet_msghdr *msg;
     if ( myinfo->recvbuf == 0 )
@@ -425,6 +426,10 @@ void SuperNET_recv(struct supernet_info *myinfo,int32_t insock,int32_t outsock)
         if ( (datalen= SuperNET_msgvalidate(myinfo,msg)) == 0 )
         {
             printf("superRECV.(%s) len.%d\n",msg->data,datalen);
+            if ( myinfo->LBsock >= 0 )
+            {
+                printf("deal with packet\n");
+            }
         }
     }
 }
@@ -435,35 +440,50 @@ void SuperNET_loop(void *args)
     while ( 1 )
     {
         if ( (nn_socket_status(myinfo->LBsock,1) & POLLIN) != 0 )
-            SuperNET_recv(myinfo,myinfo->LBsock,myinfo->LBsock); // req
+            SuperNET_recv(myinfo,myinfo->LBsock,1); // req
         else if ( (nn_socket_status(myinfo->subsock,1) & POLLIN) != 0 )
-            SuperNET_recv(myinfo,myinfo->subsock,myinfo->PUBsock); // info update
+            SuperNET_recv(myinfo,myinfo->subsock,0); // info update
         else usleep(10000);
     }
 }
 
 void SuperNET_init(struct supernet_info *myinfo,uint16_t PUBport,uint16_t LBport)
 {
-    int32_t sendtimeout,recvtimeout;
+    int32_t sendtimeout,recvtimeout; int64_t allocsize; char *ipaddr;
+    if ( (ipaddr = OS_filestr(&allocsize,"myipaddr")) != 0 )
+    {
+        if ( is_ipaddr(ipaddr) != 0 )
+            strcpy(myinfo->ipaddr,ipaddr);
+        free(ipaddr), ipaddr = 0;
+    }
     sendtimeout = 100;
     recvtimeout = 1000;
     myinfo->PUBpoint[0] = myinfo->LBpoint[0] = 0;
+    myinfo->PUBport = myinfo->LBport = 0;
+    myinfo->PUBsock = myinfo->LBsock = -1;
+    strcpy(myinfo->transport,"tcp");
     if ( PUBport == 0 )
         PUBport = SUPERNET_PUBPORT;
     if ( LBport == 0 )
         LBport = SUPERNET_LBPORT;
     if ( (myinfo->PUBport= PUBport) != 0 )
     {
-        myinfo->PUBsock = nn_createsocket(myinfo,myinfo->PUBpoint,1,"NN_PUB",NN_PUB,myinfo->PUBport,sendtimeout,recvtimeout);
-    }
-    else myinfo->PUBport = -1;
+        myinfo->subsock = nn_createsocket(myinfo,0,0,"NN_SUB",NN_SUB,0,sendtimeout,recvtimeout);
+        nn_setsockopt(myinfo->subsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
+        if ( ipaddr != 0 )
+            myinfo->PUBsock = nn_createsocket(myinfo,myinfo->PUBpoint,1,"NN_PUB",NN_PUB,myinfo->PUBport,sendtimeout,recvtimeout);
+    } else myinfo->subsock = -1;
     if ( (myinfo->LBport= LBport) != 0 )
-        myinfo->LBsock = nn_createsocket(myinfo,myinfo->LBpoint,1,"NN_REP",NN_REP,myinfo->LBport,sendtimeout,recvtimeout);
-    else myinfo->LBport = -1;
-    myinfo->subsock = nn_createsocket(myinfo,0,0,"NN_SUB",NN_SUB,0,sendtimeout,recvtimeout);
-    nn_setsockopt(myinfo->subsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
-    myinfo->reqsock = nn_reqsocket(myinfo,myinfo->LBport,myinfo->PUBport,myinfo->subsock,60000);
-    SuperNET_announce(myinfo,"ramchain");
+    {
+        myinfo->reqsock = nn_reqsocket(myinfo,myinfo->LBport,myinfo->PUBport,myinfo->subsock,60000);
+        if ( ipaddr != 0 )
+            myinfo->LBsock = nn_createsocket(myinfo,myinfo->LBpoint,1,"NN_REP",NN_REP,myinfo->LBport,sendtimeout,recvtimeout);
+    } else myinfo->reqsock = -1;
+    if ( myinfo->LBsock >= 0 || myinfo->PUBsock >= 0 )
+    {
+        iguana_launch(iguana_coinadd("BTCD"),"SuperNET",SuperNET_loop,myinfo,IGUANA_PERMTHREAD);
+        SuperNET_announce(myinfo,"ramchain");
+    }
 }
 
 #endif
