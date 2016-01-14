@@ -437,6 +437,7 @@ void SuperNET_recv(struct supernet_info *myinfo,int32_t insock,int32_t LBreq)
 void SuperNET_loop(void *args)
 {
     struct supernet_info *myinfo = args;
+    printf("start SuperNET_loop\n");
     while ( 1 )
     {
         if ( (nn_socket_status(myinfo->LBsock,1000) & POLLIN) != 0 )
@@ -488,6 +489,7 @@ void SuperNET_init(struct supernet_info *myinfo,uint16_t PUBport,uint16_t LBport
         iguana_launch(iguana_coinadd("BTCD"),"SuperNET",SuperNET_loop,myinfo,IGUANA_PERMTHREAD);
         SuperNET_announce(myinfo,"ramchain");
     } else SuperNET_announce(myinfo,"pangea");
+    printf("LBsock.%d %d, PUBsock.%d %d\n",myinfo->LBsock,myinfo->reqsock,myinfo->PUBsock,myinfo->subsock);
 }
 
 #endif
