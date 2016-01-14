@@ -505,6 +505,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
                 iguana_bundlehash2add(coin,0,prevbp,prevbundlei+1,block->RO.hash2);
                 if ( prevbp->hdrsi == coin->bundlescount-1 )
                 {
+                    coin->lastbundleitime = (uint32_t)time(NULL);
                     //printf("last (prev) bundle recv %d %p\n",prevbp->bundleheight+prevbundlei+1,coin->lasthashes);
                     if ( coin->lasthashes != 0 && prevbundlei+2 < coin->numlasthashes && bits256_nonz(coin->lasthashes[prevbundlei+2]) > 0 )
                     {
@@ -859,12 +860,12 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
         }
     }
     bundlei = (coin->blocks.hwmchain.height+1) % coin->chain->bundlesize;
-    static int32_t lastbundlei; static uint32_t lastbundleitime;
+    static int32_t lastbundlei;
     if ( coin->lasthashes != 0 && bundlei < coin->numlasthashes )
     {
-        if ( time(NULL) > lastbundleitime+3 )
+        if ( time(NULL) > coin->lastbundleitime+3 )
         {
-            lastbundleitime = (uint32_t)time(NULL);
+            coin->lastbundleitime = (uint32_t)time(NULL);
             lastbundlei = bundlei;
             //printf("Q last\n");
             iguana_blockQ(coin,0,-1,coin->lasthashes[bundlei],0);
