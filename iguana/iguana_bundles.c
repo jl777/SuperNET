@@ -276,15 +276,10 @@ struct iguana_bundle *iguana_bundlecreate(struct iguana_info *coin,int32_t *bund
         if ( iguana_bundlefind(coin,&bp,bundleip,bundlehash2) != 0 )
         {
             if ( bp->bundleheight >= 0 && bp->bundleheight != (bundleheight - *bundleip) )
-            {
                 printf("bundlecreate warning: bp->bundleheight %d != %d (bundleheight %d - %d bundlei)\n",bp->bundleheight,(bundleheight - *bundleip),bundleheight,*bundleip);
-                return(bp);
-            }
             else if ( bits256_nonz(bp->allhash) == 0 )
-            {
                 bp->allhash = allhash;
-                return(bp);
-            }
+            return(bp);
         }
         bp = mycalloc('b',1,sizeof(*bp));
         bp->n = coin->chain->bundlesize;
@@ -300,7 +295,8 @@ struct iguana_bundle *iguana_bundlecreate(struct iguana_info *coin,int32_t *bund
             if ( coin->bundlescount > 0 )
                 coin->bundles[coin->bundlescount-1]->nextbp = bp;
             *bundleip = 0;
-            printf("ht.%d alloc.[%d] new hdrs.%s %s\n",bp->bundleheight,coin->bundlescount,bits256_str(str,bundlehash2),bits256_str(str2,allhash));
+            bits256_str(str,bundlehash2);
+            printf("ht.%d alloc.[%d] new hdrs.%s %s\n",bp->bundleheight,coin->bundlescount,str,bits256_str(str2,allhash));
             iguana_bundlehash2add(coin,0,bp,0,bundlehash2);
             if ( issueflag != 0 )
             {
