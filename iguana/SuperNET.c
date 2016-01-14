@@ -438,13 +438,11 @@ void SuperNET_loop(void *args)
 {
     struct supernet_info *myinfo = args;
     printf("start SuperNET_loop\n");
-    while ( 1 )
+    while ( myinfo->LBsock >= 0 )
     {
-        if ( myinfo->LBsock >= 0 && (nn_socket_status(myinfo->LBsock,1000) & POLLIN) != 0 )
-            SuperNET_recv(myinfo,myinfo->LBsock,1); // req
-        else if ( (nn_socket_status(myinfo->subsock,1000) & POLLIN) != 0 )
-            SuperNET_recv(myinfo,myinfo->subsock,0); // info update
-        else usleep(10000);
+        SuperNET_recv(myinfo,myinfo->LBsock,1); // req
+        //else if ( (nn_socket_status(myinfo->subsock,1000) & POLLIN) != 0 )
+        //    SuperNET_recv(myinfo,myinfo->subsock,0); // info update
         printf("SuperNET_loop\n");
     }
 }
