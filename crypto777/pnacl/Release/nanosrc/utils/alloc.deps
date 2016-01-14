@@ -1,5 +1,0 @@
-# Updated by fix_deps.py
-pnacl/Release/nanosrc/utils/alloc.o: nanosrc/utils/alloc.c \
-  nanosrc/utils/alloc.h
-nanosrc/utils/alloc.c:
-nanosrc/utils/alloc.h:

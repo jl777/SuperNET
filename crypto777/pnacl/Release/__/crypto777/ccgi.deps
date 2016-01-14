@@ -1,5 +1,0 @@
-# Updated by fix_deps.py
-pnacl/Release/__/crypto777/ccgi.o: ../crypto777/ccgi.c \
-  ../crypto777/../includes/ccgi.h
-../crypto777/ccgi.c:
-../crypto777/../includes/ccgi.h:

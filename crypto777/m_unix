@@ -1,4 +1,4 @@
-NANOMSG_CORE = nanosrc/core/ep.c nanosrc/core/epbase.c nanosrc/core/pipe.c nanosrc/core/poll.c nanosrc/core/sock.c nanosrc/core/sockbase.c nanosrc/core/symbol.c
+NANOMSG_CORE = nanosrc/core/global.c nanosrc/core/ep.c nanosrc/core/epbase.c nanosrc/core/pipe.c nanosrc/core/poll.c nanosrc/core/sock.c nanosrc/core/sockbase.c nanosrc/core/symbol.c
 
 NANOMSG_DEVICES = nanosrc/devices/device.c nanosrc/devices/tcpmuxd.c
 

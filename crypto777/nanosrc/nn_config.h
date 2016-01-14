@@ -50,7 +50,7 @@
 #ifdef __PNACL
 //#define FD_CLOEXEC 1
 
-void PostMessage(const char* format, ...);
+void PNACL_message(const char* format, ...);
 #include <glibc-compat/sys/uio.h>
 #include <glibc-compat/sys/un.h>
 #else

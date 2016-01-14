@@ -1,9 +1,0 @@
-# Updated by fix_deps.py
-pnacl/Release/nanosrc/utils/random.o: nanosrc/utils/random.c \
-  nanosrc/utils/random.h nanosrc/utils/clock.h nanosrc/utils/int.h \
-  nanosrc/utils/fast.h
-nanosrc/utils/random.c:
-nanosrc/utils/random.h:
-nanosrc/utils/clock.h:
-nanosrc/utils/int.h:
-nanosrc/utils/fast.h:
