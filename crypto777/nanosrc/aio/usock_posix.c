@@ -1286,7 +1286,7 @@ static int nn_usock_recv_raw(struct nn_usock *self, void *buf, size_t *len)
     
 #if NN_USE_MYMSG
     nbytes = myrecvmsg(self->s,&hdr,0,(int32_t)iov.iov_len);
-    //printf("got nbytes.%d from recvmsg errno.%d\n",(int32_t)nbytes,errno);
+    printf("got nbytes.%d from recvmsg errno.%d\n",(int32_t)nbytes,errno);
 #else
     nbytes = recvmsg (self->s, &hdr, 0);
 #endif
