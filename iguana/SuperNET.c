@@ -312,7 +312,7 @@ int32_t nn_add_LBendpoints(struct supernet_info *myinfo,uint16_t LBport,uint16_t
                 continue;
             }
             //printf("epbits.%llx ipbits.%x %s\n",*(long long *)&epbits,(uint32_t)ipbits,endpoint);
-            if ( ismyaddress(myinfo,endpoints[i]) == 0 )
+            if ( 1 || ismyaddress(myinfo,endpoints[i]) == 0 )
             {
                 epbits = calc_epbits("tcp",ipbits,LBport,NN_REP), expand_epbits(endpoint,epbits);
                 if ( reqsock >= 0 && nn_connect(reqsock,endpoint) >= 0 )
@@ -416,7 +416,7 @@ void SuperNET_announce(struct supernet_info *myinfo,char *servicename)
     {
         if ( (sendlen= nn_send(myinfo->reqsock,jsonstr,len,0)) != len )
             printf("announce sendlen.%ld != len.%ld\n",sendlen,len);
-        else printf("announced.(%s)\n",jsonstr);
+        else printf("announced.(%ld)\n",len);
     }
 }
 
@@ -428,7 +428,7 @@ void SuperNET_recv(struct supernet_info *myinfo,int32_t insock,int32_t LBreq)
     if ( (recvlen= nn_recv(insock,myinfo->recvbuf,SUPERNET_MAXRECVBUF,0)) > 0 )
     {
         msg = (void *)myinfo->recvbuf;
-        printf("superRECV.(%s) len.%d LBreq.%d\n",msg->data,recvlen,LBreq);
+        printf(">>>>>>>>>>>>>>>>>>>>>>>> superRECV.(%s) len.%d LBreq.%d\n",msg->data,recvlen,LBreq);
         if ( (datalen= SuperNET_msgvalidate(myinfo,msg)) == 0 )
         {
             if ( myinfo->LBsock >= 0 )
@@ -436,7 +436,7 @@ void SuperNET_recv(struct supernet_info *myinfo,int32_t insock,int32_t LBreq)
                 printf("deal with packet\n");
             }
         }
-    }
+    } else printf("nn_recv error %d %s\n",recvlen,nn_strerror(nn_errno()));
 }
 
 void SuperNET_loop(void *args)
