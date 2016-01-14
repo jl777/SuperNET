@@ -448,6 +448,10 @@ void SuperNET_init(struct supernet_info *myinfo,uint16_t PUBport,uint16_t LBport
     sendtimeout = 100;
     recvtimeout = 1000;
     myinfo->PUBpoint[0] = myinfo->LBpoint[0] = 0;
+    if ( PUBport == 0 )
+        PUBport = SUPERNET_PUBPORT;
+    if ( LBport == 0 )
+        LBport = SUPERNET_LBPORT;
     if ( (myinfo->PUBport= PUBport) != 0 )
     {
         myinfo->PUBsock = nn_createsocket(myinfo,myinfo->PUBpoint,1,"NN_PUB",NN_PUB,myinfo->PUBport,sendtimeout,recvtimeout);
