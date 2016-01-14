@@ -199,7 +199,7 @@ int32_t nn_createsocket(struct supernet_info *myinfo,char *endpoint,int32_t bind
     if ( bindflag != 0 )
     {
         if ( endpoint[0] == 0 )
-            expand_epbits(endpoint,calc_epbits(myinfo->transport,0,port,type));
+            expand_epbits(endpoint,calc_epbits(myinfo->transport,(uint32_t)calc_ipbits(myinfo->ipaddr),port,type));
         if ( nn_bind(sock,endpoint) < 0 )
             fprintf(stderr,"error binding to relaypoint sock.%d type.%d to (%s) (%s) %s\n",sock,type,name,endpoint,nn_errstr());
         else fprintf(stderr,"BIND.(%s) <- %s\n",endpoint,name);
@@ -316,10 +316,10 @@ int32_t nn_add_LBendpoints(struct supernet_info *myinfo,uint16_t LBport,uint16_t
             {
                 epbits = calc_epbits("tcp",ipbits,LBport,NN_REP), expand_epbits(endpoint,epbits);
                 if ( reqsock >= 0 && nn_connect(reqsock,endpoint) >= 0 )
-                    printf("+R%s ",endpoint);
+                    printf("+%s ",endpoint);
                 epbits = calc_epbits("tcp",ipbits,PUBport,NN_PUB), expand_epbits(endpoint,epbits);
                 if ( subsock >= 0 && nn_connect(subsock,endpoint) >= 0 )
-                    printf("+P%s ",endpoint);
+                    printf("+%s ",endpoint);
             }
         }
         printf("added priority.%d\n",priority);
