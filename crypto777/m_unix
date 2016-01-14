@@ -28,15 +28,15 @@ TRANSPORTS_TCP = nanosrc/transports/tcp/atcp.c nanosrc/transports/tcp/btcp.c nan
 
 TRANSPORTS_INPROC = nanosrc/transports/inproc/binproc.c nanosrc/transports/inproc/cinproc.c nanosrc/transports/inproc/inproc.c nanosrc/transports/inproc/ins.c nanosrc/transports/inproc/msgqueue.c nanosrc/transports/inproc/sinproc.c
 
-TRANSPORTS_WS = nanosrc/transports/ws/aws.c nanosrc/transports/ws/bws.c nanosrc/transports/ws/cws.c nanosrc/transports/ws/sws.c nanosrc/transports/ws/ws.c nanosrc/transports/ws/ws_handshake.c nanosrc/transports/ws/sha1.c
+# doesnt work in pnacl TRANSPORTS_WS = nanosrc/transports/ws/aws.c nanosrc/transports/ws/bws.c nanosrc/transports/ws/cws.c nanosrc/transports/ws/sws.c nanosrc/transports/ws/ws.c nanosrc/transports/ws/ws_handshake.c nanosrc/transports/ws/sha1.c
 
-TRANSPORTS_TCPMUX = nanosrc/transports/tcpmux/atcpmux.c nanosrc/transports/tcpmux/btcpmux.c nanosrc/transports/tcpmux/ctcpmux.c nanosrc/transports/tcpmux/stcpmux.c nanosrc/transports/tcpmux/tcpmux.c
+# doesnt work in pnacl TRANSPORTS_TCPMUX = nanosrc/transports/tcpmux/atcpmux.c nanosrc/transports/tcpmux/btcpmux.c nanosrc/transports/tcpmux/ctcpmux.c nanosrc/transports/tcpmux/stcpmux.c nanosrc/transports/tcpmux/tcpmux.c
 
-NANOMSG_PROTOCOLS = $(PROTOCOLS_UTILS) $(PROTOCOLS_PUBSUB) $(PROTOCOLS_PAIR) $(PROTOCOLS_REQREP) #$(PROTOCOLS_BUS) $(PROTOCOLS_PIPELINE)
+NANOMSG_PROTOCOLS = $PROTOCOLS_UTILS $PROTOCOLS_PUBSUB $PROTOCOLS_PAIR $PROTOCOLS_REQREP $PROTOCOLS_BUS $PROTOCOLS_PIPELINE $PROTOCOLS_SURVEY
 
-NANOMSG_TRANSPORTS =  $(TRANSPORTS_UTILS) $(TRANSPORTS_TCP)
+NANOMSG_TRANSPORTS =  $TRANSPORTS_UTILS $TRANSPORTS_TCP $TRANSPORTS_IPC $TRANSPORTS_INPROC
 
-NANOMSG = $(NANOMSG_CORE) $(NANOMSG_AIO) $(NANOMSG_UTILS) $(NANOMSG_DEVICES) $(NANOMSG_TRANSPORTS) $(NANOMSG_PROTOCOLS)
+NANOMSG = $NANOMSG_CORE $NANOMSG_AIO $NANOMSG_UTILS $NANOMSG_DEVICES $NANOMSG_TRANSPORTS $NANOMSG_PROTOCOLS
 
-gcc -c -O2 *.c $(NANOMSG) jpeg/*.c jpeg/unix/*.c
+gcc -c -O2 *.c $NANOMSG jpeg/*.c jpeg/unix/*.c
 rm -f ../agents/libcrypto777.a; ar rcu ../agents/libcrypto777.a *.o 
