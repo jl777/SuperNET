@@ -621,7 +621,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
 int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blockp,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2);
 struct iguana_block *iguana_bundleblockadd(struct iguana_info *coin,struct iguana_bundle **bpp,int32_t *bundleip,struct iguana_block *origblock);
 int32_t iguana_chainextend(struct iguana_info *coin,struct iguana_block *newblock);
-int32_t iguana_blockvalidate(struct iguana_info *coin,int32_t *validp,struct iguana_block *block);
+int32_t iguana_blockvalidate(struct iguana_info *coin,int32_t *validp,struct iguana_block *block,int32_t dispflag);
 char *iguana_bundledisp(struct iguana_info *coin,struct iguana_bundle *prevbp,struct iguana_bundle *bp,struct iguana_bundle *nextbp,int32_t m);
 struct iguana_bundle *iguana_bundlefind(struct iguana_info *coin,struct iguana_bundle **bpp,int32_t *bundleip,bits256 hash2);
 //int32_t iguana_chainheight(struct iguana_info *coin,struct iguana_block *origblock);

@@ -130,7 +130,7 @@ struct iguana_block *iguana_blockptr(struct iguana_info *coin,int32_t height)
     return(0);
 }
 
-int32_t iguana_blockvalidate(struct iguana_info *coin,int32_t *validp,struct iguana_block *block)
+int32_t iguana_blockvalidate(struct iguana_info *coin,int32_t *validp,struct iguana_block *block,int32_t dispflag)
 {
     bits256 hash2; uint8_t serialized[sizeof(struct iguana_msgblock) + 4096];
     *validp = 0;
@@ -140,7 +140,8 @@ int32_t iguana_blockvalidate(struct iguana_info *coin,int32_t *validp,struct igu
     char str[65]; char str2[65];
     if ( *validp == 0 )
     {
-        printf("iguana_blockvalidate: miscompare (%s) vs (%s)\n",bits256_str(str,hash2),bits256_str(str2,block->RO.hash2));
+        if ( dispflag != 0 )
+            printf("iguana_blockvalidate: miscompare (%s) vs (%s)\n",bits256_str(str,hash2),bits256_str(str2,block->RO.hash2));
         return(-1);
     }
     return(0);
@@ -299,7 +300,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
             return(0);
         }
         //char str[65]; printf("extend? %s.h%d: %.15f vs %.15f ht.%d vs %d\n",bits256_str(str,block->RO.hash2),height,block->PoW,coin->blocks.hwmchain.PoW,height,coin->blocks.hwmchain.height);
-        if ( iguana_blockvalidate(coin,&valid,newblock) < 0 || valid == 0 )
+        if ( iguana_blockvalidate(coin,&valid,newblock,1) < 0 || valid == 0 )
             return(0);
         block->height = height;
         block->valid = 1;
@@ -372,7 +373,7 @@ void iguana_blocksetheights(struct iguana_info *coin,struct iguana_block *block)
 int32_t iguana_chainextend(struct iguana_info *coin,struct iguana_block *newblock)
 {
     struct iguana_block *block,*prev; int32_t valid,oldhwm; char str[65];
-    if ( iguana_blockvalidate(coin,&valid,newblock) < 0 || valid == 0 )
+    if ( iguana_blockvalidate(coin,&valid,newblock,1) < 0 || valid == 0 )
     {
         printf("chainextend: newblock.%s didnt validate\n",bits256_str(str,newblock->RO.hash2));
         return(-1);
