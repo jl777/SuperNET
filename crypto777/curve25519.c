@@ -872,7 +872,7 @@ inline bits320 force_inline crecip(const bits320 z)
     /* 2^255 - 21 */ return(fmul(t0, a));
 }
 
-void randombytes(unsigned char *x,long xlen);
+void OS_randombytes(unsigned char *x,long xlen);
 
 bits256 rand256(int32_t privkeyflag)
 {
@@ -1692,4 +1692,95 @@ uint64_t conv_NXTpassword(unsigned char *mysecret,unsigned char *mypublic,uint8_
     memcpy(&addr,hash,sizeof(addr));
     return(addr);
 }
+
+#include <stdio.h>
+
+bits256 GENESIS_PUBKEY,GENESIS_PRIVKEY;
+
+bits256 acct777_pubkey(bits256 privkey)
+{
+    static uint8_t basepoint[32] = {9};
+    bits256 pubkey;
+    privkey.bytes[0] &= 248, privkey.bytes[31] &= 127, privkey.bytes[31] |= 64;
+    curve25519_donna(pubkey.bytes,privkey.bytes,basepoint);
+    return(pubkey);
+}
+
+uint64_t acct777_nxt64bits(bits256 pubkey)
+{
+    bits256 acct;
+    vcalc_sha256(0,acct.bytes,pubkey.bytes,sizeof(pubkey));
+    return(acct.txid);
+}
+
+bits256 acct777_hashiter(bits256 privkey,bits256 pubkey,int32_t lockdays,uint8_t chainlen)
+{
+    uint16_t lockseed,signlen = 0; uint8_t signbuf[16]; bits256 shared,lockhash;
+    lockseed = (chainlen & 0x7f) | (lockdays << 7);
+    signlen = 0, signbuf[signlen++] = lockseed & 0xff, signbuf[signlen++] = (lockseed >> 8) & 0xff;
+    
+    privkey.bytes[0] &= 248, privkey.bytes[31] &= 127, privkey.bytes[31] |= 64;
+    shared = curve25519(privkey,pubkey);
+    vcalc_sha256cat(lockhash.bytes,shared.bytes,sizeof(shared),signbuf,signlen);
+    return(lockhash);
+}
+
+bits256 acct777_lockhash(bits256 pubkey,int32_t lockdays,uint8_t chainlen)
+{
+    bits256 lockhash = GENESIS_PRIVKEY;
+    while ( chainlen > 0 )
+        lockhash = acct777_hashiter(lockhash,pubkey,lockdays,chainlen--);
+    return(lockhash);
+}
+
+bits256 acct777_invoicehash(bits256 *invoicehash,uint16_t lockdays,uint8_t chainlen)
+{
+    int32_t i; bits256 lockhash,privkey;
+    OS_randombytes(privkey.bytes,sizeof(privkey)); // both privkey and pubkey are sensitive. pubkey allows verification, privkey proves owner
+    lockhash = privkey;
+    for (i=0; i<chainlen; i++)
+        lockhash = acct777_hashiter(lockhash,GENESIS_PUBKEY,chainlen - i,lockdays);
+    *invoicehash = lockhash;
+    return(privkey);
+}
+
+uint64_t acct777_sign(struct acct777_sig *sig,bits256 privkey,bits256 otherpubkey,uint32_t timestamp,uint8_t *data,int32_t datalen)
+{
+    int32_t i; bits256 shared; uint8_t buf[sizeof(shared) + sizeof(timestamp)]; uint32_t t = timestamp;
+    for (i=0; i<sizeof(t); i++,t>>=8)
+        buf[i] = (t & 0xff);
+    sig->timestamp = timestamp;
+    shared = curve25519(privkey,otherpubkey);
+    memcpy(&buf[sizeof(timestamp)],shared.bytes,sizeof(shared));
+    vcalc_sha256cat(sig->sigbits.bytes,buf,sizeof(buf),data,datalen);
+    sig->pubkey = acct777_pubkey(privkey), sig->signer64bits = acct777_nxt64bits(sig->pubkey);
+    //printf(" calcsig.%llx pubkey.%llx signer.%llu | t%u crc.%08x len.%d shared.%llx <- %llx * %llx\n",(long long)sig->sigbits.txid,(long long)sig->pubkey.txid,(long long)sig->signer64bits,timestamp,_crc32(0,data,datalen),datalen,(long long)shared.txid,(long long)privkey.txid,(long long)otherpubkey.txid);
+    return(sig->signer64bits);
+}
+
+uint64_t acct777_validate(struct acct777_sig *sig,uint32_t timestamp,uint8_t *data,int32_t datalen)
+{
+    struct acct777_sig checksig;
+    acct777_sign(&checksig,GENESIS_PRIVKEY,sig->pubkey,timestamp,data,datalen);
+    if ( memcmp(checksig.sigbits.bytes,sig->sigbits.bytes,sizeof(checksig.sigbits)) != 0 )
+    {
+        printf("sig compare error using sig->pub from %llu\n",(long long)acct777_nxt64bits(sig->pubkey));
+        return(0);
+    }
+    return(acct777_nxt64bits(sig->pubkey));
+}
+
+uint64_t acct777_signtx(struct acct777_sig *sig,bits256 privkey,uint32_t timestamp,uint8_t *data,int32_t datalen)
+{
+    return(acct777_sign(sig,privkey,GENESIS_PUBKEY,timestamp,data,datalen));
+}
+
+uint64_t acct777_swaptx(bits256 privkey,struct acct777_sig *sig,uint32_t timestamp,uint8_t *data,int32_t datalen)
+{
+    uint64_t othernxt;
+    if ( (othernxt= acct777_validate(sig,timestamp,data,datalen)) != sig->signer64bits )
+        return(0);
+    return(acct777_sign(sig,privkey,GENESIS_PUBKEY,timestamp,data,datalen));
+}
+
 #undef force_inline

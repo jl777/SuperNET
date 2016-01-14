@@ -33,8 +33,12 @@ typedef union _bits384 bits384;
 
 struct sha256_vstate { uint64_t length; uint32_t state[8],curlen; uint8_t buf[64]; };
 struct rmd160_vstate { uint64_t length; uint8_t buf[64]; uint32_t curlen, state[5]; };
+
+struct acct777_sig { bits256 sigbits,pubkey; uint64_t signer64bits; uint32_t timestamp; };
+
 #undef force_inline
 #define force_inline __attribute__((always_inline))
+
 
 bits320 fmul(const bits320 in2,const bits320 in);
 bits320 fexpand(bits256 basepoint);

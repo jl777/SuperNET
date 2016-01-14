@@ -828,6 +828,9 @@ void *OS_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long origsize
 
 void OS_init()
 {
+    extern bits256 GENESIS_PUBKEY,GENESIS_PRIVKEY;
+    decode_hex(GENESIS_PUBKEY.bytes,sizeof(GENESIS_PUBKEY),GENESIS_PUBKEYSTR);
+    decode_hex(GENESIS_PRIVKEY.bytes,sizeof(GENESIS_PRIVKEY),GENESIS_PRIVKEYSTR);
     SaM_PrepareIndices();
     return(OS_portable_init());
 }

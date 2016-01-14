@@ -20,13 +20,15 @@
 #include "../includes/cJSON.h"
 #include "../includes/nanomsg/nn.h"
 
-#define SUPERNET_PORT 7778
+#define SUPERNET_PORT 7776
 #define SUPERNET_NETWORKTIMEOUT 10000
 #define SUPERNET_POLLTIMEOUT 1
 #define SUPERNET_APIUSLEEP (SUPERNET_POLLTIMEOUT * 10000)
 #define SUPERNET_MAXAGENTS 64
 #define NXT_TOKEN_LEN 160
 #define nn_errstr() nn_strerror(nn_errno())
+#define MAX_SERVERNAME 128
+#define SUPERNET_MAXRECVBUF (1024 * 1024 * 16)
 
 /*#define LB_OFFSET 1
 #define PUBGLOBALS_OFFSET 2
@@ -46,7 +48,7 @@ struct endpoint { queue_t nnrecvQ; int32_t nnsock,nnind; uint64_t ipbits:32,port
 
 struct direct_connection { char handler[16]; struct endpoint epbits; int32_t sock; };
 
-struct supernet_msghdr { uint8_t type,serlen[3]; char command[16]; uint8_t hdrdata[44]; uint8_t data[]; };
+struct supernet_msghdr { bits256 sig; uint8_t type,serlen[3],ser_nonce[4],ser_timestamp[4],ser_duration[4]; char command[16]; uint8_t data[]; };
 
 struct supernet_agent
 {
@@ -57,13 +59,18 @@ struct supernet_agent
     uint32_t ipbits,dead; int32_t num,sock; uint16_t port,pubport,repport;
 };
 
+struct supernet_address { bits256 pubkey; };
+
 struct supernet_info
 {
     char ipaddr[64],transport[8]; int32_t APISLEEP; int32_t iamrelay; uint64_t my64bits; uint64_t ipbits;
-    int32_t Debuglevel,readyflag,dead,POLLTIMEOUT; char rpcsymbol[16];
+    int32_t Debuglevel,readyflag,dead,POLLTIMEOUT; char rpcsymbol[16],LBpoint[64],PUBpoint[64];
     //int32_t pullsock,subclient,lbclient,lbserver,servicesock,pubglobal,pubrelays,numservers;
-    bits256 privkey,pubkey;
-    uint16_t port,serviceport,acceptport;
+    bits256 privkey;
+    uint8_t *recvbuf;
+    struct supernet_address myaddr;
+    int32_t LBsock,PUBsock,reqsock,subsock,networktimeout;
+    uint16_t LBport,PUBport,reqport,subport;
     struct nn_pollfd pfd[SUPERNET_MAXAGENTS]; //struct relay_info active;
     struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ; int32_t numagents;
 };
@@ -79,7 +86,7 @@ struct supernet_endpoint
 void expand_epbits(char *endpoint,struct endpoint epbits);
 struct endpoint calc_epbits(char *transport,uint32_t ipbits,uint16_t port,int32_t type);
 
-void SuperNET_init();
+void SuperNET_init(struct supernet_info *myinfo,uint16_t PUBport,uint16_t LBport);
 char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr);
 
 char *pangea_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr);
