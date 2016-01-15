@@ -691,7 +691,7 @@ void SuperNET_init(struct supernet_info *myinfo,uint16_t PUBport,uint16_t LBport
             sleep(10);
         }*/
     }
-    else if ( 1 )
+    else if ( 0 )
     {
         double startmillis = OS_milliseconds();
         for (i=0; i<1825; i++)
