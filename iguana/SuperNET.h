@@ -49,7 +49,13 @@ struct endpoint { queue_t nnrecvQ; int32_t nnsock,nnind; uint64_t ipbits:32,port
 
 struct direct_connection { char handler[16]; struct endpoint epbits; int32_t sock; };
 
-struct supernet_msghdr { bits256 dest,sender,payment; uint8_t type,serlen[3],ser_nonce[4],ser_timestamp[4],ser_duration[4]; char agent[8]; uint8_t data[]; };
+struct supernet_msghdr
+{
+    bits256 dest,sender,arg;
+    uint8_t type,serlen[3],ser_nonce[4],ser_timestamp[4],ser_duration[4];
+    char agent[8],coin[5],func;
+    uint8_t data[];
+};
 
 struct supernet_agent
 {

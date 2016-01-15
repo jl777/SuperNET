@@ -20,7 +20,7 @@
 #include "iguana777.h"
 
 // maxlen of 7!
-#define SUPERNET_RAMCHAIN "rmchain"
+#define SUPERNET_RAMCHAIN "rchain"
 #define SUPERNET_PANGEA "pangea"
 #define SUPERNET_BITCOIN "bitcoin"
 
@@ -39,7 +39,7 @@ int32_t SuperNET_msgvalidate(struct supernet_info *myinfo,struct supernet_msghdr
     return(msglen);
 }
 
-struct supernet_msghdr *SuperNET_msgcreate(struct supernet_info *myinfo,uint8_t type,bits256 *senderpub,bits256 *destpub,struct supernet_msghdr *msg,int32_t maxlen,char *agent,uint8_t *data,long datalen,uint32_t duration,uint32_t nonce)
+struct supernet_msghdr *SuperNET_msgcreate(struct supernet_info *myinfo,uint8_t type,bits256 *senderpub,bits256 *destpub,struct supernet_msghdr *msg,int32_t maxlen,char *agent,uint8_t func,uint8_t *data,long datalen,uint32_t duration,uint32_t nonce)
 {
     uint32_t i,len,timestamp;
     if ( (datalen + sizeof(*msg)) <= maxlen )
@@ -56,6 +56,7 @@ struct supernet_msghdr *SuperNET_msgcreate(struct supernet_info *myinfo,uint8_t 
         if ( senderpub != 0 )
             msg->sender = *senderpub;
         msg->type = type;
+        msg->func = func;
         if ( (len= (int32_t)strlen(agent)) > 7 )
             len = 7;
         memcpy(msg->agent,agent,len);
@@ -421,12 +422,12 @@ int32_t nn_reqsocket(struct supernet_info *myinfo,uint16_t LBport,uint16_t PUBpo
     return(reqsock);
 }
 
-int32_t SuperNET_send(struct supernet_info *myinfo,int32_t sock,bits256 *dest,uint8_t type,struct supernet_msghdr *msg,char *agent,uint8_t *data,int32_t datalen,uint32_t duration,uint32_t nonce)
+int32_t SuperNET_send(struct supernet_info *myinfo,int32_t sock,bits256 *dest,uint8_t type,struct supernet_msghdr *msg,char *agent,uint8_t func,uint8_t *data,int32_t datalen,uint32_t duration,uint32_t nonce)
 {
     int32_t sendlen = -1;
     if ( nonce == 0 )
         OS_randombytes((void *)&nonce,sizeof(nonce));
-    if ( (msg= SuperNET_msgcreate(myinfo,type,&myinfo->myaddr.pubkey,dest,msg,sizeof(*msg)+datalen,agent,data,datalen,duration,nonce)) != 0 )
+    if ( (msg= SuperNET_msgcreate(myinfo,type,&myinfo->myaddr.pubkey,dest,msg,sizeof(*msg)+datalen,agent,func,data,datalen,duration,nonce)) != 0 )
     {
         //for (i=0; i<10; i++)
         //    if ( (nn_socket_status(sock,1) & NN_POLLOUT) != 0 )
@@ -502,20 +503,30 @@ void SuperNET_msgresponse(struct supernet_info *myinfo,struct supernet_msghdr *m
 
 int32_t SuperNET_reqhandler(struct supernet_info *myinfo,struct supernet_msghdr *retmsg,int32_t maxlen,struct supernet_msghdr *msg,int32_t datalen)
 {
-    uint32_t nonce,timestamp,duration; int32_t retdatalen;
+    uint32_t nonce,timestamp,duration,intarg; int32_t retdatalen;
     iguana_rwnum(0,msg->ser_timestamp,sizeof(timestamp),&timestamp);
     iguana_rwnum(0,msg->ser_duration,sizeof(duration),&duration);
     iguana_rwnum(0,msg->ser_nonce,sizeof(nonce),&nonce);
-    retdatalen = 0;
+    retdatalen = 300000;
+    if ( strcmp(msg->agent,SUPERNET_RAMCHAIN) == 0 )
+    {
+        iguana_rwnum(0,(uint8_t *)&msg->arg.uints[0],sizeof(intarg),&intarg);
+        switch ( msg->func )
+        {
+            //case 'H': retdatalen = iguana_getheaders(retmsg->data,maxlen,msg->coin); break;
+            //case 'B': retdatalen = iguana_getbundle(retmsg->data,maxlen,msg->coin); break;
+            default: break;
+        }
+    }
     printf("reqhandle.(%c) (%s) datalen.%d t%u:%d nonce.%u retdatalen.%d\n",msg->type,msg->agent,datalen,timestamp,duration,nonce,retdatalen);
-    if ( (retmsg= SuperNET_msgcreate(myinfo,'R',&myinfo->myaddr.pubkey,bits256_nonz(msg->dest)>0?&msg->dest:0,retmsg,sizeof(*retmsg)+retdatalen,msg->agent,retmsg->data,retdatalen,60,nonce)) != 0 )
+    if ( (retmsg= SuperNET_msgcreate(myinfo,'R',&myinfo->myaddr.pubkey,bits256_nonz(msg->dest)>0?&msg->dest:0,retmsg,sizeof(*retmsg)+retdatalen,msg->agent,msg->func,retmsg->data,retdatalen,60,nonce)) != 0 )
     {
         return(retdatalen);
     }
     return(-1);
 }
 
-int32_t SuperNET_LBrequest(struct supernet_info *myinfo,bits256 *dest,uint8_t type,char *agent,uint8_t *data,int32_t datalen,int32_t duration)
+int32_t SuperNET_LBrequest(struct supernet_info *myinfo,bits256 *dest,uint8_t type,char *agent,uint8_t func,uint8_t *data,int32_t datalen,int32_t duration)
 {
     struct supernet_msghdr *msg,*retmsg; int32_t sendlen,recvlen,sock; uint32_t nonce;
     if ( (sock= myinfo->reqsock) < 0 )
@@ -530,7 +541,7 @@ int32_t SuperNET_LBrequest(struct supernet_info *myinfo,bits256 *dest,uint8_t ty
     if ( myinfo->recvbuf[5] == 0 )
         myinfo->recvbuf[5] = calloc(1,SUPERNET_MAXRECVBUF+sizeof(*msg));
     msg = (void *)myinfo->recvbuf[4];
-    if ( (sendlen= SuperNET_send(myinfo,sock,dest,type,msg,agent,data,datalen,duration,0)) == datalen+sizeof(*msg) )
+    if ( (sendlen= SuperNET_send(myinfo,sock,dest,type,msg,agent,func,data,datalen,duration,0)) == datalen+sizeof(*msg) )
     {
         retmsg = (void *)myinfo->recvbuf[1];
         iguana_rwnum(0,msg->ser_nonce,sizeof(nonce),&nonce);
@@ -581,20 +592,20 @@ void SuperNET_recv(struct supernet_info *myinfo,int32_t sock,int32_t LBreq)
             {
                 if ( (retlen= SuperNET_reqhandler(myinfo,(struct supernet_msghdr *)&retbuf[sizeof(*msg)],SUPERNET_MAXRECVBUF,msg,datalen)) < 0 )
                 {
-                    if ( myinfo->PUBsock >= 0 && SuperNET_send(myinfo,myinfo->PUBsock,bits256_nonz(msg->dest)>0?&msg->dest:0,tolower(msg->type),(void *)msg,msg->agent,msg->data,datalen,duration,nonce) != sizeof(*msg)+datalen )
+                    if ( myinfo->PUBsock >= 0 && SuperNET_send(myinfo,myinfo->PUBsock,bits256_nonz(msg->dest)>0?&msg->dest:0,tolower(msg->type),(void *)msg,msg->agent,msg->func,msg->data,datalen,duration,nonce) != sizeof(*msg)+datalen )
                         type = 'E';
                     else type = 'F';
                     retlen = 0;
                 } else type = 'R'; // request handled locally
                 printf("respond.%c %u -> sock.%d\n",type,nonce,sock);
-                SuperNET_send(myinfo,sock,&msg->sender,type,(struct supernet_msghdr *)retbuf,msg->agent,&retbuf[sizeof(*msg)],retlen,60,nonce);
+                SuperNET_send(myinfo,sock,&msg->sender,type,(struct supernet_msghdr *)retbuf,msg->agent,msg->func,&retbuf[sizeof(*msg)],retlen,60,nonce);
             }
             else if ( myinfo->PUBsock >= 0 )
             {
                 printf("publisher received len.%d\n",datalen);
                 if ( (retlen= SuperNET_reqhandler(myinfo,(struct supernet_msghdr *)&retbuf[sizeof(*msg)],SUPERNET_MAXRECVBUF,msg,datalen)) >= 0 ) // forwarded request handled
                 {
-                    SuperNET_send(myinfo,myinfo->PUBsock,&msg->sender,'R',(struct supernet_msghdr *)retbuf,msg->agent,&retbuf[sizeof(*msg)],retlen,60,nonce);
+                    SuperNET_send(myinfo,myinfo->PUBsock,&msg->sender,'R',(struct supernet_msghdr *)retbuf,msg->agent,msg->func,&retbuf[sizeof(*msg)],retlen,60,nonce);
                 } // else nothing to do
             }
             else // originator's subsock
@@ -673,10 +684,10 @@ void SuperNET_init(struct supernet_info *myinfo,uint16_t PUBport,uint16_t LBport
     if ( myinfo->LBsock >= 0 || myinfo->PUBsock >= 0 )
     {
         iguana_launch(iguana_coinadd("BTCD"),"SuperNET",SuperNET_loop,myinfo,IGUANA_PERMTHREAD);
-        /*SuperNET_LBrequest(myinfo,0,'A',SUPERNET_RAMCHAIN,0,0,0);
+        /*SuperNET_LBrequest(myinfo,0,'A',SUPERNET_RAMCHAIN,0,0,0,0);
         for (i=0; i<1000; i++)
         {
-            SuperNET_LBrequest(myinfo,0,'A',SUPERNET_RAMCHAIN,0,0,0);
+            SuperNET_LBrequest(myinfo,0,'A',SUPERNET_RAMCHAIN,0,0,0,0);
             sleep(10);
         }*/
     }
@@ -685,7 +696,7 @@ void SuperNET_init(struct supernet_info *myinfo,uint16_t PUBport,uint16_t LBport
         double startmillis = OS_milliseconds();
         for (i=0; i<1000; i++)
         {
-            SuperNET_LBrequest(myinfo,0,'A',SUPERNET_PANGEA,0,0,0);
+            SuperNET_LBrequest(myinfo,0,'A',SUPERNET_PANGEA,0,0,0,0);
             printf("%d: %.3f [%.4f]\n",i,OS_milliseconds() - startmillis,(OS_milliseconds() - startmillis)/(i+1));
             //sleep(10);
         }
