@@ -67,7 +67,7 @@ struct supernet_agent
 };
 
 struct supernet_address { bits256 pubkey; };
-#define SUPERNET_REQSOCKS 64
+#define SUPERNET_REQSOCKS 16
 
 struct supernet_info
 {
