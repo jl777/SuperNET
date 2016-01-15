@@ -721,7 +721,7 @@ int32_t iguana_blockQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t 
     {
         if ( block != 0 )
         {
-            if ( block->fpipbits != 0 || block->queued != 0 || block->issued+10 < time(NULL) )
+            if ( block->fpipbits != 0 || block->queued != 0 || block->issued > time(NULL)-10 )
                 return(0);
         }
         if ( priority != 0 )
