@@ -376,7 +376,7 @@ int32_t _req_socket(struct supernet_info *myinfo,uint16_t LBport,uint16_t PUBpor
 int32_t badass_servers(char servers[][MAX_SERVERNAME],int32_t max)
 {
     int32_t n = 0;
-    if ( 0 )
+    if ( 1 )
     {
         strcpy(servers[n++],"89.248.160.237");
         strcpy(servers[n++],"89.248.160.238");
