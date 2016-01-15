@@ -62,7 +62,7 @@ void PNACL_message(const char* format, ...);
 
 /*  Size of the buffer used for batch-reads of inbound data. To keep the
  performance optimal make sure that this value is larger than network MTU. */
-#define NN_USOCK_BATCH_SIZE (65536)
+#define NN_USOCK_BATCH_SIZE (2048)
 //#define NN_USOCK_BATCH_SIZE (_NN_USOCK_BATCH_SIZE - 5 - 256 - 16) // adjust for veclen/clen + sizeof(ctrl)
 #define NN_USE_MYMSG 1
 
