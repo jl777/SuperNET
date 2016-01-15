@@ -857,14 +857,23 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
             if ( bits256_nonz(next->RO.prev_block) > 0 )
                 _iguana_chainlink(coin,next);
             else if ( next->queued == 0 && next->fpipbits == 0 )
-                iguana_blockQ(coin,bp,bundlei,next->RO.hash2,0);
+            {
+                printf("HWM next %d\n",coin->blocks.hwmchain.height+1);
+                iguana_blockQ(coin,bp,bundlei,next->RO.hash2,1);
+            }
         }
         else
         {
             if ( bits256_nonz(bp->hashes[bundlei]) > 0 )
+            {
+                printf("next %d\n",coin->blocks.hwmchain.height+1);
                 iguana_blockQ(coin,bp,bundlei,bp->hashes[bundlei],0);
+            }
             else if ( bp->speculative != 0 && bits256_nonz(bp->speculative[bundlei]) > 0 )
+            {
+                printf("speculative next %d\n",coin->blocks.hwmchain.height+1);
                 iguana_blockQ(coin,0,-1,bp->speculative[bundlei],0);
+            }
         }
     }
     lflag = 1;
