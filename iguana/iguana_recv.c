@@ -338,7 +338,7 @@ void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_
 {
     int32_t i,n,valid,pend,max,counter = 0; uint32_t now; struct iguana_block *block; double endmillis;
     coin->numbundlesQ--;
-    if ( bp->numhashes < bp->n )
+    if ( bp->numhashes < bp->n && bp->bundleheight < coin->longestchain-coin->chain->bundlesize )
     {
         printf("ITERATE bundle.%d h.%d n.%d r.%d s.%d finished.%d speculative.%p\n",bp->bundleheight,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,bp->speculative);
         if ( bp->speculative == 0 )
