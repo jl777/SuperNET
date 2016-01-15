@@ -330,7 +330,7 @@ void iguana_bundlespeculate(struct iguana_info *coin,struct iguana_bundle *bp,in
             //char str[65]; printf("speculative req[%d] %s\n",bundlei,bits256_str(str,bp->speculative[bundlei]));
             //iguana_blockQ(coin,0,-1,bp->speculative[bundlei],0);
         }
-    } else printf("speculative.%p %d vs %d cmp.%d\n",bp->speculative,bundlei,bp->numspec,bp->speculative!=0?memcmp(hash2.bytes,bp->speculative[bundlei].bytes,sizeof(hash2)):-1);
+    } //else printf("speculative.%p %d vs %d cmp.%d\n",bp->speculative,bundlei,bp->numspec,bp->speculative!=0?memcmp(hash2.bytes,bp->speculative[bundlei].bytes,sizeof(hash2)):-1);
 }
 
 void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
