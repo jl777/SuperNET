@@ -354,7 +354,8 @@ void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_
                     break;
                 }
         }
-        sleep(1);
+        if ( queue_size(&coin->bundlesQ) < 3)
+            sleep(1);
         iguana_bundleQ(coin,bp,bp->n * 10);
         return;
     }
@@ -364,7 +365,7 @@ void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_
     if ( pend >= coin->MAXPENDING*coin->MAXPEERS )
     {
         usleep(10000);
-        //printf("SKIP pend.%d vs %d: ITERATE bundle.%d n.%d r.%d s.%d finished.%d timelimit.%d\n",pend,coin->MAXPENDING*coin->MAXPEERS,bp->bundleheight,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit);
+        printf("SKIP pend.%d vs %d: ITERATE bundle.%d n.%d r.%d s.%d finished.%d timelimit.%d\n",pend,coin->MAXPENDING*coin->MAXPEERS,bp->bundleheight,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit);
         iguana_bundleQ(coin,bp,counter == 0 ? bp->n*5 : bp->n*2);
         return;
     }
@@ -398,7 +399,7 @@ void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_
             break;
         usleep(10000);
     }
-    if ( 0 && counter > 0 )
+    //if ( 0 && counter > 0 )
         printf("ITERATE bundle.%d n.%d r.%d s.%d finished.%d issued.%d\n",bp->bundleheight,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,counter);
     if ( bp->emitfinish == 0 )
     {
@@ -530,9 +531,11 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
             if ( iguana_allhashcmp(coin,bp,blockhashes,num) > 0 )
                 return(req);
         }
-        if ( bp->speculative == 0 && bp->emitfinish == 0 )
+        if ( (bp->speculative == 0 || num > bp->numspec) && bp->emitfinish == 0 )
         {
             printf("FOUND speculative BLOCKHASHES[%d] ht.%d\n",num,bp->bundleheight);
+            if ( bp->speculative != 0 )
+                myfree(bp->speculative,sizeof(*bp->speculative) * bp->numspec);
             bp->speculative = blockhashes;
             bp->numspec = num;
             req->hashes = 0;
