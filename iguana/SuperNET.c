@@ -517,7 +517,7 @@ int32_t SuperNET_reqhandler(struct supernet_info *myinfo,struct supernet_msghdr 
 
 int32_t SuperNET_LBrequest(struct supernet_info *myinfo,bits256 *dest,uint8_t type,char *agent,uint8_t *data,int32_t datalen,int32_t duration)
 {
-    struct supernet_msghdr *msg,*retmsg; int32_t i,sendlen,recvlen,sock; uint32_t nonce;
+    struct supernet_msghdr *msg,*retmsg; int32_t sendlen,recvlen,sock; uint32_t nonce;
     if ( (sock= myinfo->reqsock) < 0 )
     {
         printf("SuperNET_LBrequest no reqsock for.(%s)\n",agent);
@@ -558,7 +558,7 @@ int32_t SuperNET_LBrequest(struct supernet_info *myinfo,bits256 *dest,uint8_t ty
 
 void SuperNET_recv(struct supernet_info *myinfo,int32_t sock,int32_t LBreq)
 {
-    int32_t i,recvlen,datalen,retlen,type; uint32_t nonce,duration,timestamp; uint8_t *retbuf; struct supernet_msghdr *msg;
+    int32_t recvlen,datalen,retlen,type; uint32_t nonce,duration,timestamp; uint8_t *retbuf; struct supernet_msghdr *msg;
     LBreq <<= 1;
     if ( myinfo->recvbuf[LBreq] == 0 )
         myinfo->recvbuf[LBreq] = calloc(1,SUPERNET_MAXRECVBUF+sizeof(*msg));
@@ -680,7 +680,7 @@ void SuperNET_init(struct supernet_info *myinfo,uint16_t PUBport,uint16_t LBport
             sleep(10);
         }*/
     }
-    else
+    else if ( 0 )
     {
         double startmillis = OS_milliseconds();
         for (i=0; i<1000; i++)

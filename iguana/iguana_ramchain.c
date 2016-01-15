@@ -1715,6 +1715,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
     {
         iguana_ramchain_link(mapchain,bp->hashes[0],bp->ramchain.lasthash2,bp->hdrsi,bp->bundleheight,0,bp->ramchain.numblocks,firsti,1);
         char str[65]; printf("bp.%d: T.%d U.%d S.%d P%d X.%d MAPPED %s %p\n",bp->hdrsi,bp->ramchain.H.data->numtxids,bp->ramchain.H.data->numunspents,bp->ramchain.H.data->numspends,bp->ramchain.H.data->numpkinds,bp->ramchain.H.data->numexternaltxids,mbstr(str,bp->ramchain.H.data->allocsize),bp->ramchain.H.data);
+        //ramcoder_test(bp->ramchain.H.data,bp->ramchain.H.data->allocsize);
         B = (void *)(long)((long)mapchain->H.data + mapchain->H.data->Boffset);
         T = (void *)(long)((long)mapchain->H.data + mapchain->H.data->Toffset);
         for (i=0; i<bp->n; i++)

@@ -275,6 +275,18 @@ char *SuperNET_p2p(struct iguana_info *coin,int32_t *delaymillisp,char *ipaddr,u
     return(retstr);
 }
 
+void ramcoder_test(void *data,int64_t datalen)
+{
+    static double totalin,totalout;
+    int32_t complen,bufsize = 1024 * 1024; uint8_t *buf;
+    buf = malloc(bufsize);
+    complen = ramcoder_compress(buf,bufsize,data,(int32_t)datalen);
+    totalin += datalen;
+    totalout += (complen >> 3);
+    printf("datalen.%d -> numbits.%d %d %.3f\n",(int32_t)datalen,complen,complen>>3,(double)totalin/totalout);
+    free(buf);
+}
+
 void iguana_main(void *arg)
 {
     struct supernet_info MYINFO; char helperstr[64],*helperargs,*coinargs=0,*secret,*jsonstr = arg;
@@ -313,7 +325,7 @@ void iguana_main(void *arg)
     iguana_launch(iguana_coinadd("BTCD"),"rpcloop",iguana_rpcloop,iguana_coinadd("BTCD"),IGUANA_PERMTHREAD);
     if ( coinargs != 0 )
         iguana_launch(iguana_coinadd("BTCD"),"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
-    else if ( 0 )
+    else if ( 1 )
     {
 #ifdef __APPLE__
         sleep(1);
