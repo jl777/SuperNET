@@ -526,6 +526,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
         blockhashes[0] = bp->hashes[0];
         if ( num >= coin->chain->bundlesize )
         {
+            iguana_blockQ(coin,0,-1,blockhashes[coin->chain->bundlesize],1);
             if ( iguana_allhashcmp(coin,bp,blockhashes,num) > 0 )
                 return(req);
         }
