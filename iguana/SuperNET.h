@@ -93,7 +93,7 @@ struct supernet_endpoint
 void expand_epbits(char *endpoint,struct endpoint epbits);
 struct endpoint calc_epbits(char *transport,uint32_t ipbits,uint16_t port,int32_t type);
 
-void SuperNET_init(struct supernet_info *myinfo,uint16_t PUBport,uint16_t LBport);
+void SuperNET_init(void *args);
 char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr);
 
 char *pangea_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr);

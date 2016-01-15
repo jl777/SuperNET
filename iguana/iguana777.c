@@ -353,7 +353,7 @@ void iguana_coinloop(void *arg)
 {
     struct iguana_info *coin,**coins = arg;
     struct iguana_bundle *bp; int32_t flag,i,n,bundlei; bits256 zero; char str[1024];
-    uint32_t now,lastdisp = 0;
+    uint32_t now;
     n = (int32_t)(long)coins[0];
     coins++;
     printf("begin coinloop[%d]\n",n);
@@ -384,21 +384,21 @@ void iguana_coinloop(void *arg)
             if ( (coin= coins[i]) != 0 )
             {
                 now = (uint32_t)time(NULL);
-                if ( coin->isRT == 0 && now > coin->startutc+600 && coin->blocksrecv >= coin->longestchain-1 && coin->blocks.hwmchain.height >= coin->longestchain-1 )
-                {
-                    printf(">>>>>>> %s isRT blockrecv.%d vs longest.%d\n",coin->symbol,coin->blocksrecv,coin->longestchain);
-                    coin->isRT = 1;
-                    if ( coin->polltimeout > 100 )
-                        coin->polltimeout = 100;
-                    coin->MAXPEERS = 8;
-                }
-                if ( coin->peers.numranked != 0 && coin->peers.numranked < (coin->MAXPEERS>>1) && now > coin->lastpossible )
-                {
-                    //printf("possible\n");
-                    coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
-                }
                 if ( coin->active != 0 )
                 {
+                    if ( coin->isRT == 0 && now > coin->startutc+600 && coin->blocksrecv >= coin->longestchain-1 && coin->blocks.hwmchain.height >= coin->longestchain-1 )
+                    {
+                        printf(">>>>>>> %s isRT blockrecv.%d vs longest.%d\n",coin->symbol,coin->blocksrecv,coin->longestchain);
+                        coin->isRT = 1;
+                        if ( coin->polltimeout > 100 )
+                            coin->polltimeout = 100;
+                        coin->MAXPEERS = 8;
+                    }
+                    if ( coin->peers.numranked != 0 && coin->peers.numranked < (coin->MAXPEERS>>1) && now > coin->lastpossible )
+                    {
+                        //printf("possible\n");
+                        coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
+                    }
                     if ( now > coin->peers.lastmetrics+6 )
                     {
                         //printf("metrics\n");
@@ -406,18 +406,10 @@ void iguana_coinloop(void *arg)
                         coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
                     }
                     //printf("process\n");
-                    flag += iguana_processrecv(coin);
-                    if ( 0 && coin->blocks.parsedblocks < coin->blocks.hwmchain.height-coin->chain->minconfirms )
-                    {
-                        if ( iguana_updateramchain(coin) != 0 )
-                            iguana_syncs(coin), flag++; // merge ramchain fragments into full ramchain
-                    }
-                    lastdisp = (uint32_t)now;
-                    //printf("now.%u\n",now);
                     iguana_bundlestats(coin,str);
-                    //iguana_ramchainmerge(coin);
+                    flag += iguana_processrecv(coin);
                 }
-            }// bp block needs mutex
+            }
         }
         if ( flag == 0 )
         {

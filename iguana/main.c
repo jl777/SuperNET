@@ -330,7 +330,7 @@ void iguana_main(void *arg)
 #ifdef __APPLE__
         sleep(1);
         char *str;
-        if ( (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":0,\"maxpeers\":128,\"coin\":\"BTCD\",\"active\":1}"),0)) != 0 )
+        if ( (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":0,\"maxpeers\":32,\"coin\":\"BTCD\",\"active\":1}"),0)) != 0 )
         {
             printf("got.(%s)\n",str);
             free(str);
@@ -340,7 +340,7 @@ void iguana_main(void *arg)
     if ( arg != 0 )
         SuperNET_JSON(&MYINFO,cJSON_Parse(arg),0);
 #ifndef MINIGUANA
-    SuperNET_init(&MYINFO,0,0);
+    iguana_launch(iguana_coinadd("BTCD"),"SuperNET_init",SuperNET_init,&MYINFO,IGUANA_PERMTHREAD);
 #endif
  //init_InstantDEX();
     while ( 1 )

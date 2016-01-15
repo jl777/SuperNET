@@ -345,7 +345,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                             bp->hashes[block->height % coin->chain->bundlesize] = block->RO.hash2;
                             bp->blocks[block->height % coin->chain->bundlesize] = block;
                         }
-                        if ( coin->started != 0 && (block->height % coin->chain->bundlesize) == 2 )
+                        if ( coin->started != 0 && (block->height % coin->chain->bundlesize) == 10 )
                         {
                             printf("savehdrs\n");
                             iguana_savehdrs(coin);

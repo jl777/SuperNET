@@ -117,75 +117,46 @@ bits256 iguana_genesis(struct iguana_info *coin,struct iguana_chain *chain)
 
 int32_t iguana_savehdrs(struct iguana_info *coin)
 {
-    int32_t height,iter,i,n,retval = 0; char fname[512],shastr[65],tmpfname[512],str[65],oldfname[512];
-    bits256 hash2,sha256all,*hashes; FILE *fp; struct sha256_vstate shastate;
+    int32_t height,i,n,retval = 0; char fname[512],shastr[65],tmpfname[512],str[65],oldfname[512];
+    bits256 hash2,sha256all,*hashes; FILE *fp;
     n = coin->blocks.hwmchain.height + 1;
     hashes = mycalloc('h',coin->chain->bundlesize,sizeof(*hashes));
-    if ( 0 )
-    {
-        printf("start savehdrs calc\n");
-        vupdate_sha256(sha256all.bytes,&shastate,0,0);
-        for (i=0; i<n; i++)
-        {
-            hash2 = iguana_blockhash(coin,i);
-            if ( bits256_nonz(hash2) == 0 )
-            {
-                printf("iguana_savehdrs null hash at %d\n",i);
-                return(-1);
-            }
-            vupdate_sha256(sha256all.bytes,&shastate,(void *)hash2.bytes,sizeof(hash2));
-        }
-        printf("finished calc\n");
-    }
     sprintf(oldfname,"confs/%s_oldhdrs.txt",coin->symbol), OS_compatible_path(oldfname);
     sprintf(tmpfname,"tmp/%s/hdrs.txt",coin->symbol), OS_compatible_path(tmpfname);
     sprintf(fname,"confs/%s_hdrs.txt",coin->symbol), OS_compatible_path(fname);
     if ( (fp= fopen(tmpfname,"w")) != 0 )
     {
-        if ( 0 )
+        fprintf(fp,"%d\n",n);
+        for (height=0; height<=n; height+=coin->chain->bundlesize)
         {
-            fprintf(fp,"%d %s\n",n,bits256_str(str,sha256all));
-            for (i=0; i<n; i++)
+            for (i=0; i<coin->chain->bundlesize; i++)
             {
-                hash2 = iguana_blockhash(coin,i);
-                fprintf(fp,"%d %s\n",i,bits256_str(str,hash2));
+                hashes[i] = iguana_blockhash(coin,height+i);
+                if ( bits256_str(str,hashes[i]) == 0 )
+                    break;
             }
-            printf("finished saving\n");
-        }
-        else
-        {
-            fprintf(fp,"%d\n",n);
-            for (height=0; height<=n; height+=coin->chain->bundlesize)
+            if ( i == coin->chain->bundlesize )
             {
-                for (i=0; i<coin->chain->bundlesize; i++)
+                struct iguana_bundle *bp;
+                if ( (bp= coin->bundles[height/coin->chain->bundlesize]) != 0 )
                 {
-                    hashes[i] = iguana_blockhash(coin,height+i);
-                    if ( bits256_str(str,hashes[i]) == 0 )
-                        break;
-                }
-                if ( i == coin->chain->bundlesize )
-                {
-                    struct iguana_bundle *bp;
-                    vcalc_sha256(shastr,sha256all.bytes,hashes[0].bytes,sizeof(*hashes) * coin->chain->bundlesize);
-                    if ( (bp= coin->bundles[height/coin->chain->bundlesize]) != 0 )
-                        bp->allhash = sha256all;
-                }
-                else shastr[0] = 0;
-                for (iter=0; iter<1; iter++)
-                {
-                    hash2 = iguana_blockhash(coin,height+iter);
-                    if ( bits256_nonz(hash2) > 0 )
+                    if ( bits256_nonz(bp->allhash) == 0 )
                     {
-                        char str[65];
-                        bits256_str(str,hash2);
-                        if ( iter == 0 )
-                            fprintf(fp,"%d %s %s\n",height+iter,str,shastr);
-                        else fprintf(fp,"%d %s\n",height+iter,str);
-                        retval = height+iter;
+                        vcalc_sha256(shastr,sha256all.bytes,hashes[0].bytes,sizeof(*hashes) * coin->chain->bundlesize);
+                        bp->allhash = sha256all;
                     }
-                    if ( coin->chain->hasheaders != 0 )
-                        break;
+                    else
+                    {
+                        sha256all = bp->allhash;
+                        bits256_str(shastr,bp->allhash);
+                    }
                 }
+            } else shastr[0] = 0;
+            hash2 = iguana_blockhash(coin,height);
+            if ( bits256_nonz(hash2) > 0 )
+            {
+                fprintf(fp,"%d %s %s\n",height,bits256_str(str,hash2),shastr);
+                retval = height;
             }
         }
         //printf("new hdrs.txt %ld vs (%s) %ld\n",ftell(fp),fname,(long)iguana_filesize(fname));

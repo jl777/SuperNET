@@ -389,10 +389,10 @@ struct iguana_bundle
     struct iguana_bloom16 bloom;
     uint32_t issuetime,hdrtime,emitfinish,mergefinish,purgetime,queued;
     int32_t numhashes,numrecv,numsaved,numcached;
-    int32_t minrequests,n,hdrsi,bundleheight,numtxids,numspends,numunspents;
+    int32_t minrequests,n,hdrsi,bundleheight,numtxids,numspends,numunspents,numspec;
     double avetime,threshold,metric; uint64_t datasize,estsize;
     struct iguana_block *blocks[IGUANA_MAXBUNDLESIZE]; uint32_t issued[IGUANA_MAXBUNDLESIZE];
-    bits256 prevbundlehash2,hashes[IGUANA_MAXBUNDLESIZE+1],nextbundlehash2,allhash;
+    bits256 prevbundlehash2,hashes[IGUANA_MAXBUNDLESIZE+1],nextbundlehash2,allhash,*speculative;
     struct iguana_ramchain ramchain; uint8_t red,green,blue;
 };
 
@@ -438,7 +438,6 @@ struct iguana_info
     double parsemillis,avetime; uint32_t Launched[8],Terminated[8];
     portable_mutex_t peers_mutex,blocks_mutex;
     struct iguana_bundle *bundles[IGUANA_MAXBUNDLES];
-    double rankedbps[IGUANA_MAXBUNDLES][2];
     int32_t numremain,numpendings,zcount,recvcount,bcount,pcount,lastbundle;
     uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ,lastbundleitime;
     double backstopmillis; bits256 backstophash2;
@@ -447,7 +446,6 @@ struct iguana_info
     uint64_t bloomsearches,bloomhits,bloomfalse,collisions; uint8_t blockspace[IGUANA_MAXPACKETSIZE + 8192]; struct OS_memspace blockMEM;
     struct iguana_blocks blocks;
     struct iguana_waccount *wallet;
-    bits256 *lasthashes; int32_t numlasthashes,lastbundleheight;
 };
 
 // peers
@@ -690,6 +688,7 @@ cJSON *iguana_pubkeyjson(struct iguana_info *coin,char *pubkeystr);
 void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit);
 void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit);
 void ramcoder_test(void *data,int64_t len);
+void SuperNET_init(void *args);
 
 extern queue_t bundlesQ;
 
