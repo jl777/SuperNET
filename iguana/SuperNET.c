@@ -534,16 +534,17 @@ int32_t SuperNET_LBrequest(struct supernet_info *myinfo,bits256 *dest,uint8_t ty
         printf("SuperNET_LBrequest no reqsock for.(%s)\n",agent);
         return(-1);
     }
-    if ( myinfo->recvbuf[1] == 0 )
-        myinfo->recvbuf[1] = calloc(1,SUPERNET_MAXRECVBUF+sizeof(*msg));
-    if ( myinfo->recvbuf[SUPERNET_REQSOCKS*2] == 0 )
-        myinfo->recvbuf[SUPERNET_REQSOCKS*2] = calloc(1,SUPERNET_MAXRECVBUF+sizeof(*msg));
-    if ( myinfo->recvbuf[SUPERNET_REQSOCKS*2+1] == 0 )
-        myinfo->recvbuf[SUPERNET_REQSOCKS*2+1] = calloc(1,SUPERNET_MAXRECVBUF+sizeof(*msg));
-    msg = (void *)myinfo->recvbuf[SUPERNET_REQSOCKS*2];
+    //if ( myinfo->recvbuf[1] == 0 )
+    //    myinfo->recvbuf[1] = calloc(1,SUPERNET_MAXRECVBUF+sizeof(*msg));
+    //if ( myinfo->recvbuf[SUPERNET_REQSOCKS*2] == 0 )
+    //    myinfo->recvbuf[SUPERNET_REQSOCKS*2] = calloc(1,SUPERNET_MAXRECVBUF+sizeof(*msg));
+    //if ( myinfo->recvbuf[SUPERNET_REQSOCKS*2+1] == 0 )
+    //    myinfo->recvbuf[SUPERNET_REQSOCKS*2+1] = calloc(1,SUPERNET_MAXRECVBUF+sizeof(*msg));
+    msg = malloc(SUPERNET_MAXRECVBUF+sizeof(*msg));//(void *)myinfo->recvbuf[SUPERNET_REQSOCKS*2];
     if ( (sendlen= SuperNET_send(myinfo,sock,dest,type,msg,agent,func,data,datalen,duration,0)) == datalen+sizeof(*msg) )
     {
-        retmsg = (void *)myinfo->recvbuf[1];
+        retmsg = malloc(SUPERNET_MAXRECVBUF+sizeof(*msg));
+        //retmsg = (void *)myinfo->recvbuf[1];
         iguana_rwnum(0,msg->ser_nonce,sizeof(nonce),&nonce);
         //for (i=0; i<10; i++)
         //    if ( (nn_socket_status(sock,1) & NN_POLLIN) != 0 )
@@ -563,22 +564,25 @@ int32_t SuperNET_LBrequest(struct supernet_info *myinfo,bits256 *dest,uint8_t ty
             SuperNET_msgnonce(myinfo,msg,nonce);
             printf("LBrequest recvlen.%d\n",recvlen);
         }
+        free(retmsg);
     }
+    free(msg);
     return(sendlen);
 }
 
 void SuperNET_recv(struct supernet_info *myinfo,int32_t sock,int32_t LBreq)
 {
-    int32_t recvlen,datalen,retlen,type; uint32_t nonce,duration,timestamp; uint8_t *retbuf; struct supernet_msghdr *msg;
+    int32_t recvlen,datalen,retlen,type; uint32_t nonce,duration,timestamp; uint8_t *retbuf,*recvbuf; struct supernet_msghdr *msg;
     LBreq <<= 1;
-    if ( myinfo->recvbuf[LBreq] == 0 )
-        myinfo->recvbuf[LBreq] = calloc(1,SUPERNET_MAXRECVBUF+sizeof(*msg));
-    if ( myinfo->recvbuf[LBreq + 1] == 0 )
-        myinfo->recvbuf[LBreq + 1] = calloc(1,SUPERNET_MAXRECVBUF+sizeof(*msg));
+    //if ( myinfo->recvbuf[LBreq] == 0 )
+    //    myinfo->recvbuf[LBreq] = calloc(1,SUPERNET_MAXRECVBUF+sizeof(*msg));
+    //if ( myinfo->recvbuf[LBreq + 1] == 0 )
+    //    myinfo->recvbuf[LBreq + 1] = calloc(1,SUPERNET_MAXRECVBUF+sizeof(*msg));
     //for (i=0; i<10; i++)
     //    if ( (nn_socket_status(sock,1) & NN_POLLIN) != 0 )
     //        break;
-    if ( (recvlen= nn_recv(sock,myinfo->recvbuf[LBreq],SUPERNET_MAXRECVBUF,0)) > 0 )
+    recvbuf = malloc(SUPERNET_MAXRECVBUF+sizeof(*msg)); //myinfo->recvbuf[LBreq]
+    if ( (recvlen= nn_recv(sock,recvbuf,SUPERNET_MAXRECVBUF,0)) > 0 )
     {
         msg = (void *)myinfo->recvbuf[LBreq];
         iguana_rwnum(0,msg->ser_timestamp,sizeof(timestamp),&timestamp);
@@ -587,7 +591,8 @@ void SuperNET_recv(struct supernet_info *myinfo,int32_t sock,int32_t LBreq)
         printf(">>>>>>>>>>>>>>>>>>>>>>>> superRECV.(%s) len.%d LBreq.%d nonce.%u\n",msg->agent,recvlen,LBreq,nonce);
         if ( (datalen= SuperNET_msgvalidate(myinfo,msg)) >= 0 )
         {
-            retbuf = myinfo->recvbuf[LBreq + 1];
+            retbuf = malloc(SUPERNET_MAXRECVBUF+sizeof(*msg)); //myinfo->recvbuf[LBreq]
+            //retbuf = myinfo->recvbuf[LBreq + 1];
             if ( LBreq != 0 )
             {
                 if ( (retlen= SuperNET_reqhandler(myinfo,(struct supernet_msghdr *)&retbuf[sizeof(*msg)],SUPERNET_MAXRECVBUF,msg,datalen)) < 0 )
@@ -616,8 +621,10 @@ void SuperNET_recv(struct supernet_info *myinfo,int32_t sock,int32_t LBreq)
                     SuperNET_msgresponse(myinfo,0,msg);
                 }
             }
+            free(retbuf);
         } else printf("recv error.%d\n",recvlen);
     } else printf("nn_recv error %d %s\n",recvlen,nn_strerror(nn_errno()));
+    free(recvbuf);
 }
 
 void SuperNET_subloop(void *args)
