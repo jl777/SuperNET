@@ -856,6 +856,8 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
         {
             if ( bits256_nonz(next->RO.prev_block) > 0 )
                 _iguana_chainlink(coin,next);
+            else if ( next->queued == 0 && next->fpipbits == 0 )
+                iguana_blockQ(coin,bp,bundlei,next->RO.hash2,0);
         }
         else
         {
