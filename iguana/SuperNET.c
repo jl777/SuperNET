@@ -448,9 +448,9 @@ struct supernet_msghdr *SuperNET_msgnonce(struct supernet_info *myinfo,struct su
             if ( msgs[i] == 0 )
             {
                 msgs[i] = calloc(1,allocsize);
-                memcmp(msgs[i],msg,allocsize);
+                memcpy(msgs[i],msg,allocsize);
                 printf("associate datalen.%d with nonce.%u\n",datalen,nonce);
-                break;
+                return(msg);
             }
             else if ( memcmp(msgs[i],msg,sizeof(*msg)) == 0 )
             {
@@ -459,7 +459,7 @@ struct supernet_msghdr *SuperNET_msgnonce(struct supernet_info *myinfo,struct su
             }
         }
         printf("no space left\n");
-        return(msg);
+        return(0);
     }
     else
     {
@@ -474,7 +474,7 @@ struct supernet_msghdr *SuperNET_msgnonce(struct supernet_info *myinfo,struct su
                     msgs[sizeof(msgs)/sizeof(*msgs) - 1] = 0;
                     printf("found msg.%u\n",nonce);
                     return(msg);
-                }
+                } else printf("i.%d: %u vs check.%u\n",i,nonce,checknonce);
             }
         }
         printf("cant find nonce.%u\n",nonce);
@@ -484,14 +484,16 @@ struct supernet_msghdr *SuperNET_msgnonce(struct supernet_info *myinfo,struct su
 
 void SuperNET_msgresponse(struct supernet_info *myinfo,struct supernet_msghdr *msg,struct supernet_msghdr *retmsg)
 {
-    uint32_t nonce,retlen;
+    uint32_t nonce,retlen,flag = 0;
     retlen = SuperNET_msglen(retmsg);
     iguana_rwnum(0,retmsg->ser_nonce,sizeof(nonce),&nonce);
     if ( msg == 0 )
-        msg = SuperNET_msgnonce(myinfo,0,nonce);
+        msg = SuperNET_msgnonce(myinfo,0,nonce), flag = 1;
     if ( msg != 0 )
     {
         printf("Got response to (%s).%u retlen.%d\n",msg->agent,nonce,retlen);
+        if ( flag != 0 )
+            free(msg);
     } else printf("cant find nonce.%u\n",nonce);
 }
 
@@ -518,12 +520,12 @@ int32_t SuperNET_LBrequest(struct supernet_info *myinfo,bits256 *dest,uint8_t ty
     if ( myinfo->recvbuf[5] == 0 )
         myinfo->recvbuf[5] = calloc(1,SUPERNET_MAXRECVBUF+sizeof(*msg));
     msg = (void *)myinfo->recvbuf[4];
-    if ( (sendlen= SuperNET_send(myinfo,myinfo->reqsock,dest,type,msg,agent,data,datalen,duration,0)) > 0 )
+    if ( (sendlen= SuperNET_send(myinfo,myinfo->reqsock,dest,type,msg,agent,data,datalen,duration,0)) == datalen+sizeof(*msg) )
     {
         retmsg = (void *)myinfo->recvbuf[1];
+        iguana_rwnum(0,msg->ser_nonce,sizeof(nonce),&nonce);
         if ( (recvlen= nn_recv(myinfo->reqsock,retmsg,SUPERNET_MAXRECVBUF,0)) > 0 )
         {
-            iguana_rwnum(0,retmsg->ser_nonce,sizeof(nonce),&nonce);
             printf("LBrequest recvlen.%d nonce.%u\n",recvlen,nonce);
             if ( retmsg->type == 'R' )
                 SuperNET_msgresponse(myinfo,msg,retmsg);
@@ -531,7 +533,12 @@ int32_t SuperNET_LBrequest(struct supernet_info *myinfo,bits256 *dest,uint8_t ty
                 SuperNET_msgnonce(myinfo,msg,nonce);
             else if ( retmsg->type == 'E' )
                 printf("error sending LBrequest.(%s) datalen.%d\n",agent,datalen);
-        } else printf("LBrequest recvlen.%d\n",recvlen);
+        }
+        else
+        {
+            SuperNET_msgnonce(myinfo,msg,nonce);
+            printf("LBrequest recvlen.%d\n",recvlen);
+        }
     }
     return(sendlen);
 }
@@ -556,7 +563,7 @@ void SuperNET_recv(struct supernet_info *myinfo,int32_t sock,int32_t LBreq)
             retbuf = myinfo->recvbuf[LBreq + 1];
             if ( LBreq != 0 )
             {
-                if ( (retlen= SuperNET_reqhandler(myinfo,(struct supernet_msghdr *)&retbuf[sizeof(*msg)],SUPERNET_MAXRECVBUF,msg,datalen)) >= 0 )
+                if ( (retlen= SuperNET_reqhandler(myinfo,(struct supernet_msghdr *)&retbuf[sizeof(*msg)],SUPERNET_MAXRECVBUF,msg,datalen)) < 0 )
                 {
                     if ( myinfo->PUBsock >= 0 && SuperNET_send(myinfo,myinfo->PUBsock,bits256_nonz(msg->dest)>0?&msg->dest:0,tolower(msg->type),(void *)msg,msg->agent,msg->data,datalen,duration,nonce) != sizeof(*msg)+datalen )
                         type = 'E';
@@ -593,7 +600,7 @@ void SuperNET_subloop(void *args)
     while ( myinfo->subsock >= 0 )
     {
         SuperNET_recv(myinfo,myinfo->subsock,0); // req
-        printf("SuperNET_subloop\n");
+        //printf("SuperNET_subloop\n");
     }
 }
 
@@ -604,7 +611,7 @@ void SuperNET_loop(void *args)
     while ( myinfo->LBsock >= 0 )
     {
         SuperNET_recv(myinfo,myinfo->LBsock,1); // req
-        printf("SuperNET_loop\n");
+        //printf("SuperNET_loop\n");
     }
 }
 
