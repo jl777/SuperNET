@@ -379,7 +379,7 @@ void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_
         {
             if ( (block= bp->blocks[i]) != 0 )
             {
-                if ( block->fpipbits == 0 && block->numrequests == bp->minrequests && (block->queued == 0 || bp->issued[i] == 0 || now > bp->issued[i]+13) )
+                if ( block->fpipbits == 0 && (block->queued == 0 || bp->issued[i] == 0 || now > bp->issued[i]+13) )
                 {
                     //if ( bp->bundleheight == 20000 )
                     //   printf("(%d:%d) ",bp->hdrsi,i);
@@ -400,7 +400,7 @@ void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_
         usleep(10000);
     }
     //if ( 0 && counter > 0 )
-        printf("ITERATE bundle.%d n.%d r.%d s.%d finished.%d issued.%d\n",bp->bundleheight,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,counter);
+        printf("ITERATE bundle.%d h.%d n.%d r.%d s.%d finished.%d issued.%d\n",bp->bundleheight,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,counter);
     if ( bp->emitfinish == 0 )
     {
         if ( bp->numsaved >= bp->n )
