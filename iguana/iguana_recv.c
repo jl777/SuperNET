@@ -317,7 +317,7 @@ uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bit
 
 void iguana_bundlespeculate(struct iguana_info *coin,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2,int32_t offset)
 {
-    if ( bp->numhashes < bp->n && bundlei == 0 && bp->speculative == 0 )
+    if ( bp->numhashes < bp->n && bundlei == 0 && bp->speculative == 0 && bp->bundleheight < coin->longestchain-coin->chain->bundlesize )
     {
         char str[65]; bits256_str(str,bp->hashes[0]);
         printf("Afound block -> %d hdr.%s\n",bp->bundleheight,str);
