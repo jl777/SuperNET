@@ -430,7 +430,7 @@ int32_t SuperNET_send(struct supernet_info *myinfo,int32_t sock,bits256 *dest,ui
     {
         if ( (sendlen= nn_send(sock,msg,sizeof(*msg)+datalen,0)) != sizeof(*msg)+datalen )
             printf("SuperNET_send sendlen.%d != len.%ld\n",sendlen,sizeof(*msg)+datalen);
-        else printf("SuperNET_send.(%d)\n",datalen);
+        else printf("SuperNET_send.(%s).%u sendlen.%d\n",msg->agent,nonce,sendlen);
     } else printf("error creating %s.msg\n",agent);
     return(sendlen);
 }
@@ -524,13 +524,14 @@ int32_t SuperNET_LBrequest(struct supernet_info *myinfo,bits256 *dest,uint8_t ty
         if ( (recvlen= nn_recv(myinfo->reqsock,retmsg,SUPERNET_MAXRECVBUF,0)) > 0 )
         {
             iguana_rwnum(0,retmsg->ser_nonce,sizeof(nonce),&nonce);
+            printf("LBrequest recvlen.%d nonce.%u\n",recvlen,nonce);
             if ( retmsg->type == 'R' )
                 SuperNET_msgresponse(myinfo,msg,retmsg);
             else if ( retmsg->type == 'F' )
                 SuperNET_msgnonce(myinfo,msg,nonce);
             else if ( retmsg->type == 'E' )
                 printf("error sending LBrequest.(%s) datalen.%d\n",agent,datalen);
-        }
+        } else printf("LBrequest recvlen.%d\n",recvlen);
     }
     return(sendlen);
 }
@@ -562,6 +563,7 @@ void SuperNET_recv(struct supernet_info *myinfo,int32_t sock,int32_t LBreq)
                     else type = 'F';
                     retlen = 0;
                 } else type = 'R'; // request handled locally
+                printf("respond.%c %u\n",type,nonce);
                 SuperNET_send(myinfo,sock,&msg->sender,type,(struct supernet_msghdr *)retbuf,msg->agent,&retbuf[sizeof(*msg)],retlen,60,nonce);
             }
             else if ( myinfo->PUBsock >= 0 )

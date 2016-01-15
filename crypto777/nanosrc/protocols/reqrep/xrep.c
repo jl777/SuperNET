@@ -124,7 +124,7 @@ void nn_xrep_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 void nn_xrep_in(struct nn_sockbase *self,struct nn_pipe *pipe)
 {
     struct nn_xrep *xrep; struct nn_xrep_data *data;
-    printf("xrep_in.%p pipe.%p\n",self,pipe);
+    //printf("xrep_in.%p pipe.%p\n",self,pipe);
     xrep = nn_cont(self,struct nn_xrep,sockbase);
     data = nn_pipe_getdata(pipe);
     nn_fq_in(&xrep->inpipes,&data->initem);
@@ -253,7 +253,7 @@ int nn_xrep_getopt (NN_UNUSED struct nn_sockbase *self,NN_UNUSED int level, NN_U
 static int nn_xrep_create(void *hint, struct nn_sockbase **sockbase)
 {
     struct nn_xrep *self;
-    printf("nn_xrep_create\n");
+    //printf("nn_xrep_create\n");
     self = nn_alloc(sizeof(struct nn_xrep),"socket (xrep)");
     alloc_assert(self);
     nn_xrep_init(self,&nn_xrep_sockbase_vfptr,hint);
