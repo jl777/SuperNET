@@ -67,7 +67,6 @@ struct supernet_agent
 };
 
 struct supernet_address { bits256 pubkey; };
-#define SUPERNET_REQSOCKS 1
 
 struct supernet_info
 {
@@ -75,9 +74,9 @@ struct supernet_info
     int32_t Debuglevel,readyflag,dead,POLLTIMEOUT; char rpcsymbol[16],LBpoint[64],PUBpoint[64];
     //int32_t pullsock,subclient,lbclient,lbserver,servicesock,pubglobal,pubrelays,numservers;
     bits256 privkey;
-    uint8_t *recvbuf[(SUPERNET_REQSOCKS+2)*2];
+    uint8_t *recvbuf[6];
     struct supernet_address myaddr;
-    int32_t LBsock,PUBsock,reqsocks[SUPERNET_REQSOCKS],subsock,networktimeout;
+    int32_t LBsock,PUBsock,reqsock,subsock,networktimeout;
     uint16_t LBport,PUBport,reqport,subport;
     struct nn_pollfd pfd[SUPERNET_MAXAGENTS]; //struct relay_info active;
     struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ; int32_t numagents;
