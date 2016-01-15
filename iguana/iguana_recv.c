@@ -876,6 +876,11 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
             }
         }
     }
+    else if ( (bp= coin->bundles[--hdrsi]) != 0 )
+    {
+        char str[65];
+        queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
+    }
     lflag = 1;
     while ( 0 && lflag != 0 )
     {
