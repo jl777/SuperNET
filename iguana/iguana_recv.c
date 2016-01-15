@@ -415,7 +415,7 @@ void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_
                         block->queued = 0;
                         block->fpipbits = 0;
                         bp->issued[i] = 0;
-                        iguana_blockQ(coin,bp,i,block->RO.hash2,1);
+                        iguana_blockQ(coin,bp,i,block->RO.hash2,0);
                         iguana_bundleQ(coin,bp,counter == 0 ? bp->n*5 : bp->n*2);
                         return;
                     }
