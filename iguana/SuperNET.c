@@ -507,7 +507,7 @@ int32_t SuperNET_reqhandler(struct supernet_info *myinfo,struct supernet_msghdr 
     iguana_rwnum(0,msg->ser_timestamp,sizeof(timestamp),&timestamp);
     iguana_rwnum(0,msg->ser_duration,sizeof(duration),&duration);
     iguana_rwnum(0,msg->ser_nonce,sizeof(nonce),&nonce);
-    retdatalen = 30000;
+    retdatalen = 300000;
     if ( strcmp(msg->agent,SUPERNET_RAMCHAIN) == 0 )
     {
         iguana_rwnum(0,(uint8_t *)&msg->arg.uints[0],sizeof(intarg),&intarg);
