@@ -376,7 +376,7 @@ int32_t _req_socket(struct supernet_info *myinfo,uint16_t LBport,uint16_t PUBpor
 int32_t badass_servers(char servers[][MAX_SERVERNAME],int32_t max)
 {
     int32_t n = 0;
-    if ( 1 )
+    if ( 0 )
     {
         strcpy(servers[n++],"89.248.160.237");
         strcpy(servers[n++],"89.248.160.238");
@@ -507,7 +507,7 @@ int32_t SuperNET_reqhandler(struct supernet_info *myinfo,struct supernet_msghdr 
     iguana_rwnum(0,msg->ser_timestamp,sizeof(timestamp),&timestamp);
     iguana_rwnum(0,msg->ser_duration,sizeof(duration),&duration);
     iguana_rwnum(0,msg->ser_nonce,sizeof(nonce),&nonce);
-    retdatalen = 300000;
+    retdatalen = 30000;
     if ( strcmp(msg->agent,SUPERNET_RAMCHAIN) == 0 )
     {
         iguana_rwnum(0,(uint8_t *)&msg->arg.uints[0],sizeof(intarg),&intarg);
@@ -691,10 +691,10 @@ void SuperNET_init(struct supernet_info *myinfo,uint16_t PUBport,uint16_t LBport
             sleep(10);
         }*/
     }
-    else if ( 0 )
+    else if ( 1 )
     {
         double startmillis = OS_milliseconds();
-        for (i=0; i<1000; i++)
+        for (i=0; i<1825; i++)
         {
             SuperNET_LBrequest(myinfo,0,'A',SUPERNET_PANGEA,0,0,0,0);
             printf("%d: %.3f [%.4f]\n",i,OS_milliseconds() - startmillis,(OS_milliseconds() - startmillis)/(i+1));
