@@ -523,6 +523,8 @@ int32_t SuperNET_LBrequest(struct supernet_info *myinfo,bits256 *dest,uint8_t ty
         printf("SuperNET_LBrequest no reqsock for.(%s)\n",agent);
         return(-1);
     }
+    if ( myinfo->recvbuf[1] == 0 )
+        myinfo->recvbuf[1] = calloc(1,SUPERNET_MAXRECVBUF+sizeof(*msg));
     if ( myinfo->recvbuf[4] == 0 )
         myinfo->recvbuf[4] = calloc(1,SUPERNET_MAXRECVBUF+sizeof(*msg));
     if ( myinfo->recvbuf[5] == 0 )
