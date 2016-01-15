@@ -1,0 +1,54 @@
+# Updated by fix_deps.py
+pnacl/Release/nanosrc/core/sockbase.o: nanosrc/core/sockbase.c \
+  nanosrc/core/../protocol.h nanosrc/core/../utils/msg.h \
+  nanosrc/core/../utils/chunkref.h nanosrc/core/../utils/chunk.h \
+  nanosrc/core/../utils/int.h nanosrc/core/../utils/list.h \
+  nanosrc/core/sock.h nanosrc/core/../transport.h nanosrc/core/../nn.h \
+  nanosrc/core/../nn_config.h nanosrc/core/../aio/fsm.h \
+  nanosrc/core/../aio/../utils/queue.h nanosrc/core/../aio/ctx.h \
+  nanosrc/core/../aio/../utils/mutex.h nanosrc/core/../aio/worker.h \
+  nanosrc/core/../aio/timerset.h nanosrc/core/../aio/../utils/clock.h \
+  nanosrc/core/../aio/worker_posix.h \
+  nanosrc/core/../aio/../utils/thread.h \
+  nanosrc/core/../utils/thread_posix.h \
+  nanosrc/core/../aio/../utils/efd.h nanosrc/core/../utils/fd.h \
+  nanosrc/core/../utils/efd_pipe.h nanosrc/core/../aio/poller.h \
+  nanosrc/core/../aio/poller_poll.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/poll.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/poll.h \
+  nanosrc/core/../aio/pool.h nanosrc/core/../utils/sem.h \
+  nanosrc/core/../utils/err.h nanosrc/core/../utils/fast.h \
+  nanosrc/core/../utils/attr.h
+nanosrc/core/sockbase.c:
+nanosrc/core/../protocol.h:
+nanosrc/core/../utils/msg.h:
+nanosrc/core/../utils/chunkref.h:
+nanosrc/core/../utils/chunk.h:
+nanosrc/core/../utils/int.h:
+nanosrc/core/../utils/list.h:
+nanosrc/core/sock.h:
+nanosrc/core/../transport.h:
+nanosrc/core/../nn.h:
+nanosrc/core/../nn_config.h:
+nanosrc/core/../aio/fsm.h:
+nanosrc/core/../aio/../utils/queue.h:
+nanosrc/core/../aio/ctx.h:
+nanosrc/core/../aio/../utils/mutex.h:
+nanosrc/core/../aio/worker.h:
+nanosrc/core/../aio/timerset.h:
+nanosrc/core/../aio/../utils/clock.h:
+nanosrc/core/../aio/worker_posix.h:
+nanosrc/core/../aio/../utils/thread.h:
+nanosrc/core/../utils/thread_posix.h:
+nanosrc/core/../aio/../utils/efd.h:
+nanosrc/core/../utils/fd.h:
+nanosrc/core/../utils/efd_pipe.h:
+nanosrc/core/../aio/poller.h:
+nanosrc/core/../aio/poller_poll.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/poll.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/poll.h:
+nanosrc/core/../aio/pool.h:
+nanosrc/core/../utils/sem.h:
+nanosrc/core/../utils/err.h:
+nanosrc/core/../utils/fast.h:
+nanosrc/core/../utils/attr.h:

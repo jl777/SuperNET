@@ -1,0 +1,81 @@
+# Updated by fix_deps.py
+pnacl/Release/nanosrc/protocols/survey/surveyor.o: \
+  nanosrc/protocols/survey/surveyor.c \
+  nanosrc/protocols/survey/surveyor.h \
+  nanosrc/protocols/survey/../../protocol.h \
+  nanosrc/protocols/survey/../../utils/msg.h \
+  nanosrc/protocols/survey/../../utils/chunkref.h \
+  nanosrc/protocols/survey/../../utils/chunk.h \
+  nanosrc/protocols/survey/../../utils/int.h \
+  nanosrc/protocols/survey/../../utils/list.h \
+  nanosrc/protocols/survey/xsurveyor.h \
+  nanosrc/protocols/survey/../utils/dist.h \
+  nanosrc/protocols/survey/../utils/fq.h \
+  nanosrc/protocols/survey/../utils/priolist.h \
+  nanosrc/protocols/survey/../../nn.h \
+  nanosrc/protocols/survey/../../nn_config.h \
+  nanosrc/protocols/survey/../../survey.h \
+  nanosrc/protocols/survey/../../aio/fsm.h \
+  nanosrc/protocols/survey/../../aio/../utils/queue.h \
+  nanosrc/protocols/survey/../../aio/timer.h \
+  nanosrc/protocols/survey/../../aio/worker.h \
+  nanosrc/protocols/survey/../../aio/timerset.h \
+  nanosrc/protocols/survey/../../aio/../utils/clock.h \
+  nanosrc/protocols/survey/../../aio/worker_posix.h \
+  nanosrc/protocols/survey/../../aio/../utils/mutex.h \
+  nanosrc/protocols/survey/../../aio/../utils/thread.h \
+  nanosrc/protocols/survey/../../utils/thread_posix.h \
+  nanosrc/protocols/survey/../../aio/../utils/efd.h \
+  nanosrc/protocols/survey/../../utils/fd.h \
+  nanosrc/protocols/survey/../../utils/efd_pipe.h \
+  nanosrc/protocols/survey/../../aio/poller.h \
+  nanosrc/protocols/survey/../../aio/poller_poll.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/poll.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/poll.h \
+  nanosrc/protocols/survey/../../utils/err.h \
+  nanosrc/protocols/survey/../../utils/fast.h \
+  nanosrc/protocols/survey/../../utils/cont.h \
+  nanosrc/protocols/survey/../../utils/wire.h \
+  nanosrc/protocols/survey/../../utils/alloc.h \
+  nanosrc/protocols/survey/../../utils/random.h \
+  nanosrc/protocols/survey/../../utils/attr.h
+:
+nanosrc/protocols/survey/surveyor.c:
+nanosrc/protocols/survey/surveyor.h:
+nanosrc/protocols/survey/../../protocol.h:
+nanosrc/protocols/survey/../../utils/msg.h:
+nanosrc/protocols/survey/../../utils/chunkref.h:
+nanosrc/protocols/survey/../../utils/chunk.h:
+nanosrc/protocols/survey/../../utils/int.h:
+nanosrc/protocols/survey/../../utils/list.h:
+nanosrc/protocols/survey/xsurveyor.h:
+nanosrc/protocols/survey/../utils/dist.h:
+nanosrc/protocols/survey/../utils/fq.h:
+nanosrc/protocols/survey/../utils/priolist.h:
+nanosrc/protocols/survey/../../nn.h:
+nanosrc/protocols/survey/../../nn_config.h:
+nanosrc/protocols/survey/../../survey.h:
+nanosrc/protocols/survey/../../aio/fsm.h:
+nanosrc/protocols/survey/../../aio/../utils/queue.h:
+nanosrc/protocols/survey/../../aio/timer.h:
+nanosrc/protocols/survey/../../aio/worker.h:
+nanosrc/protocols/survey/../../aio/timerset.h:
+nanosrc/protocols/survey/../../aio/../utils/clock.h:
+nanosrc/protocols/survey/../../aio/worker_posix.h:
+nanosrc/protocols/survey/../../aio/../utils/mutex.h:
+nanosrc/protocols/survey/../../aio/../utils/thread.h:
+nanosrc/protocols/survey/../../utils/thread_posix.h:
+nanosrc/protocols/survey/../../aio/../utils/efd.h:
+nanosrc/protocols/survey/../../utils/fd.h:
+nanosrc/protocols/survey/../../utils/efd_pipe.h:
+nanosrc/protocols/survey/../../aio/poller.h:
+nanosrc/protocols/survey/../../aio/poller_poll.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/poll.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/poll.h:
+nanosrc/protocols/survey/../../utils/err.h:
+nanosrc/protocols/survey/../../utils/fast.h:
+nanosrc/protocols/survey/../../utils/cont.h:
+nanosrc/protocols/survey/../../utils/wire.h:
+nanosrc/protocols/survey/../../utils/alloc.h:
+nanosrc/protocols/survey/../../utils/random.h:
+nanosrc/protocols/survey/../../utils/attr.h:

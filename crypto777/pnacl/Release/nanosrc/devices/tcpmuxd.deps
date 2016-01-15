@@ -1,0 +1,33 @@
+# Updated by fix_deps.py
+pnacl/Release/nanosrc/devices/tcpmuxd.o: nanosrc/devices/tcpmuxd.c \
+  nanosrc/devices/../nn.h nanosrc/devices/../nn_config.h \
+  nanosrc/devices/../utils/thread.h \
+  nanosrc/devices/../utils/thread_posix.h \
+  nanosrc/devices/../utils/attr.h nanosrc/devices/../utils/err.h \
+  nanosrc/devices/../utils/fast.h nanosrc/devices/../utils/int.h \
+  nanosrc/devices/../utils/cont.h nanosrc/devices/../utils/wire.h \
+  nanosrc/devices/../utils/alloc.h nanosrc/devices/../utils/list.h \
+  nanosrc/devices/../utils/mutex.h nanosrc/devices/../utils/closefd.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netinet/tcp.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/time.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/poll.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/poll.h
+nanosrc/devices/tcpmuxd.c:
+nanosrc/devices/../nn.h:
+nanosrc/devices/../nn_config.h:
+nanosrc/devices/../utils/thread.h:
+nanosrc/devices/../utils/thread_posix.h:
+nanosrc/devices/../utils/attr.h:
+nanosrc/devices/../utils/err.h:
+nanosrc/devices/../utils/fast.h:
+nanosrc/devices/../utils/int.h:
+nanosrc/devices/../utils/cont.h:
+nanosrc/devices/../utils/wire.h:
+nanosrc/devices/../utils/alloc.h:
+nanosrc/devices/../utils/list.h:
+nanosrc/devices/../utils/mutex.h:
+nanosrc/devices/../utils/closefd.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netinet/tcp.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/time.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/poll.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/poll.h:

@@ -1,0 +1,9 @@
+# Updated by fix_deps.py
+pnacl/Release/nanosrc/utils/msg.o: nanosrc/utils/msg.c \
+  nanosrc/utils/msg.h nanosrc/utils/chunkref.h nanosrc/utils/chunk.h \
+  nanosrc/utils/int.h
+nanosrc/utils/msg.c:
+nanosrc/utils/msg.h:
+nanosrc/utils/chunkref.h:
+nanosrc/utils/chunk.h:
+nanosrc/utils/int.h:

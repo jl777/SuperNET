@@ -45,7 +45,7 @@ struct relayargs
 struct relay_info { int32_t sock,num,mytype,desttype; struct endpoint connections[1 << CONNECTION_NUMBITS]; };*/
 
 #define CONNECTION_NUMBITS 10
-struct endpoint { queue_t nnrecvQ; int32_t nnsock,nnind; uint64_t ipbits:32,port:16,transport:2,nn:4,directind:CONNECTION_NUMBITS; };
+struct endpoint { queue_t nnrecvQ; int32_t nnsock,nnind; uint32_t ipbits; uint16_t port,directind; uint8_t transport,nn; };
 
 struct direct_connection { char handler[16]; struct endpoint epbits; int32_t sock; };
 

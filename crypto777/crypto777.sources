@@ -32,7 +32,7 @@ TRANSPORTS_WS = nanosrc/transports/ws/aws.c nanosrc/transports/ws/bws.c nanosrc/
 
 TRANSPORTS_TCPMUX = nanosrc/transports/tcpmux/atcpmux.c nanosrc/transports/tcpmux/btcpmux.c nanosrc/transports/tcpmux/ctcpmux.c nanosrc/transports/tcpmux/stcpmux.c nanosrc/transports/tcpmux/tcpmux.c
 
-NANOMSG_PROTOCOLS = $(PROTOCOLS_UTILS) $(PROTOCOLS_PUBSUB) $(PROTOCOLS_PAIR) $(PROTOCOLS_REQREP) #$(PROTOCOLS_BUS) $(PROTOCOLS_PIPELINE)
+NANOMSG_PROTOCOLS = $(PROTOCOLS_UTILS) $(PROTOCOLS_PUBSUB) $(PROTOCOLS_PAIR) $(PROTOCOLS_REQREP)  $(PROTOCOLS_BUS) $(PROTOCOLS_PIPELINE) $(PROTOCOLS_SURVEY)
 
 NANOMSG_TRANSPORTS =  $(TRANSPORTS_UTILS) $(TRANSPORTS_TCP)
 

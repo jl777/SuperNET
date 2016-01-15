@@ -1,0 +1,36 @@
+# Updated by fix_deps.py
+pnacl/Release/nanosrc/protocols/pair/xpair.o: \
+  nanosrc/protocols/pair/xpair.c nanosrc/protocols/pair/xpair.h \
+  nanosrc/protocols/pair/../../protocol.h \
+  nanosrc/protocols/pair/../../utils/msg.h \
+  nanosrc/protocols/pair/../../utils/chunkref.h \
+  nanosrc/protocols/pair/../../utils/chunk.h \
+  nanosrc/protocols/pair/../../utils/int.h \
+  nanosrc/protocols/pair/../../utils/list.h \
+  nanosrc/protocols/pair/../../nn.h \
+  nanosrc/protocols/pair/../../nn_config.h \
+  nanosrc/protocols/pair/../../pair.h \
+  nanosrc/protocols/pair/../utils/excl.h \
+  nanosrc/protocols/pair/../../utils/err.h \
+  nanosrc/protocols/pair/../../utils/fast.h \
+  nanosrc/protocols/pair/../../utils/cont.h \
+  nanosrc/protocols/pair/../../utils/alloc.h \
+  nanosrc/protocols/pair/../../utils/attr.h
+:
+nanosrc/protocols/pair/xpair.c:
+nanosrc/protocols/pair/xpair.h:
+nanosrc/protocols/pair/../../protocol.h:
+nanosrc/protocols/pair/../../utils/msg.h:
+nanosrc/protocols/pair/../../utils/chunkref.h:
+nanosrc/protocols/pair/../../utils/chunk.h:
+nanosrc/protocols/pair/../../utils/int.h:
+nanosrc/protocols/pair/../../utils/list.h:
+nanosrc/protocols/pair/../../nn.h:
+nanosrc/protocols/pair/../../nn_config.h:
+nanosrc/protocols/pair/../../pair.h:
+nanosrc/protocols/pair/../utils/excl.h:
+nanosrc/protocols/pair/../../utils/err.h:
+nanosrc/protocols/pair/../../utils/fast.h:
+nanosrc/protocols/pair/../../utils/cont.h:
+nanosrc/protocols/pair/../../utils/alloc.h:
+nanosrc/protocols/pair/../../utils/attr.h:

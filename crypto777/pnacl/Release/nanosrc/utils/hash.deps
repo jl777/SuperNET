@@ -1,0 +1,15 @@
+# Updated by fix_deps.py
+pnacl/Release/nanosrc/utils/hash.o: nanosrc/utils/hash.c \
+  nanosrc/utils/hash.h nanosrc/utils/list.h nanosrc/utils/int.h \
+  nanosrc/utils/fast.h nanosrc/utils/alloc.h nanosrc/utils/cont.h \
+  nanosrc/utils/err.h nanosrc/utils/../nn.h nanosrc/utils/../nn_config.h
+nanosrc/utils/hash.c:
+nanosrc/utils/hash.h:
+nanosrc/utils/list.h:
+nanosrc/utils/int.h:
+nanosrc/utils/fast.h:
+nanosrc/utils/alloc.h:
+nanosrc/utils/cont.h:
+nanosrc/utils/err.h:
+nanosrc/utils/../nn.h:
+nanosrc/utils/../nn_config.h:

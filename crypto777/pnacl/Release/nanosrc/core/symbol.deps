@@ -1,0 +1,19 @@
+# Updated by fix_deps.py
+pnacl/Release/nanosrc/core/symbol.o: nanosrc/core/symbol.c \
+  nanosrc/core/../nn.h nanosrc/core/../nn_config.h \
+  nanosrc/core/../inproc.h nanosrc/core/../ipc.h nanosrc/core/../tcp.h \
+  nanosrc/core/../pair.h nanosrc/core/../pubsub.h \
+  nanosrc/core/../reqrep.h nanosrc/core/../pipeline.h \
+  nanosrc/core/../survey.h nanosrc/core/../bus.h
+nanosrc/core/symbol.c:
+nanosrc/core/../nn.h:
+nanosrc/core/../nn_config.h:
+nanosrc/core/../inproc.h:
+nanosrc/core/../ipc.h:
+nanosrc/core/../tcp.h:
+nanosrc/core/../pair.h:
+nanosrc/core/../pubsub.h:
+nanosrc/core/../reqrep.h:
+nanosrc/core/../pipeline.h:
+nanosrc/core/../survey.h:
+nanosrc/core/../bus.h:

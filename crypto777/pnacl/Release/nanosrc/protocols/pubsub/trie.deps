@@ -1,0 +1,18 @@
+# Updated by fix_deps.py
+pnacl/Release/nanosrc/protocols/pubsub/trie.o: \
+  nanosrc/protocols/pubsub/trie.c nanosrc/protocols/pubsub/trie.h \
+  nanosrc/protocols/pubsub/../../utils/int.h \
+  nanosrc/protocols/pubsub/../../utils/alloc.h \
+  nanosrc/protocols/pubsub/../../utils/fast.h \
+  nanosrc/protocols/pubsub/../../utils/err.h \
+  nanosrc/protocols/pubsub/../../utils/../nn.h \
+  nanosrc/protocols/pubsub/../../utils/../nn_config.h
+:
+nanosrc/protocols/pubsub/trie.c:
+nanosrc/protocols/pubsub/trie.h:
+nanosrc/protocols/pubsub/../../utils/int.h:
+nanosrc/protocols/pubsub/../../utils/alloc.h:
+nanosrc/protocols/pubsub/../../utils/fast.h:
+nanosrc/protocols/pubsub/../../utils/err.h:
+nanosrc/protocols/pubsub/../../utils/../nn.h:
+nanosrc/protocols/pubsub/../../utils/../nn_config.h:

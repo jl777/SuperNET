@@ -1,0 +1,26 @@
+# Updated by fix_deps.py
+pnacl/Release/nanosrc/protocols/pipeline/push.o: \
+  nanosrc/protocols/pipeline/push.c nanosrc/protocols/pipeline/push.h \
+  nanosrc/protocols/pipeline/../../protocol.h \
+  nanosrc/protocols/pipeline/../../utils/msg.h \
+  nanosrc/protocols/pipeline/../../utils/chunkref.h \
+  nanosrc/protocols/pipeline/../../utils/chunk.h \
+  nanosrc/protocols/pipeline/../../utils/int.h \
+  nanosrc/protocols/pipeline/../../utils/list.h \
+  nanosrc/protocols/pipeline/xpush.h \
+  nanosrc/protocols/pipeline/../../nn.h \
+  nanosrc/protocols/pipeline/../../nn_config.h \
+  nanosrc/protocols/pipeline/../../pipeline.h
+:
+nanosrc/protocols/pipeline/push.c:
+nanosrc/protocols/pipeline/push.h:
+nanosrc/protocols/pipeline/../../protocol.h:
+nanosrc/protocols/pipeline/../../utils/msg.h:
+nanosrc/protocols/pipeline/../../utils/chunkref.h:
+nanosrc/protocols/pipeline/../../utils/chunk.h:
+nanosrc/protocols/pipeline/../../utils/int.h:
+nanosrc/protocols/pipeline/../../utils/list.h:
+nanosrc/protocols/pipeline/xpush.h:
+nanosrc/protocols/pipeline/../../nn.h:
+nanosrc/protocols/pipeline/../../nn_config.h:
+nanosrc/protocols/pipeline/../../pipeline.h:

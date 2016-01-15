@@ -1,0 +1,71 @@
+# Updated by fix_deps.py
+pnacl/Release/nanosrc/transports/utils/streamhdr.o: \
+  nanosrc/transports/utils/streamhdr.c \
+  nanosrc/transports/utils/streamhdr.h \
+  nanosrc/transports/utils/../../transport.h \
+  nanosrc/transports/utils/../../nn.h \
+  nanosrc/transports/utils/../../nn_config.h \
+  nanosrc/transports/utils/../../aio/fsm.h \
+  nanosrc/transports/utils/../../aio/../utils/queue.h \
+  nanosrc/transports/utils/../../utils/list.h \
+  nanosrc/transports/utils/../../utils/msg.h \
+  nanosrc/transports/utils/../../aio/../utils/chunkref.h \
+  nanosrc/transports/utils/../../aio/../utils/chunk.h \
+  nanosrc/transports/utils/../../aio/../utils/int.h \
+  nanosrc/transports/utils/../../aio/usock.h \
+  nanosrc/transports/utils/../../aio/usock_posix.h \
+  nanosrc/transports/utils/../../aio/worker.h \
+  nanosrc/transports/utils/../../aio/timerset.h \
+  nanosrc/transports/utils/../../aio/../utils/clock.h \
+  nanosrc/transports/utils/../../aio/worker_posix.h \
+  nanosrc/transports/utils/../../aio/../utils/mutex.h \
+  nanosrc/transports/utils/../../aio/../utils/thread.h \
+  nanosrc/transports/utils/../../aio/../utils/thread_posix.h \
+  nanosrc/transports/utils/../../aio/../utils/efd.h \
+  nanosrc/transports/utils/../../aio/../utils/fd.h \
+  nanosrc/transports/utils/../../aio/../utils/efd_pipe.h \
+  nanosrc/transports/utils/../../aio/poller.h \
+  nanosrc/transports/utils/../../aio/poller_poll.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/poll.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/poll.h \
+  nanosrc/transports/utils/../../aio/timer.h \
+  nanosrc/transports/utils/../../utils/err.h \
+  nanosrc/transports/utils/../../aio/../utils/fast.h \
+  nanosrc/transports/utils/../../utils/cont.h \
+  nanosrc/transports/utils/../../utils/wire.h \
+  nanosrc/transports/utils/../../utils/attr.h
+:
+nanosrc/transports/utils/streamhdr.c:
+nanosrc/transports/utils/streamhdr.h:
+nanosrc/transports/utils/../../transport.h:
+nanosrc/transports/utils/../../nn.h:
+nanosrc/transports/utils/../../nn_config.h:
+nanosrc/transports/utils/../../aio/fsm.h:
+nanosrc/transports/utils/../../aio/../utils/queue.h:
+nanosrc/transports/utils/../../utils/list.h:
+nanosrc/transports/utils/../../utils/msg.h:
+nanosrc/transports/utils/../../aio/../utils/chunkref.h:
+nanosrc/transports/utils/../../aio/../utils/chunk.h:
+nanosrc/transports/utils/../../aio/../utils/int.h:
+nanosrc/transports/utils/../../aio/usock.h:
+nanosrc/transports/utils/../../aio/usock_posix.h:
+nanosrc/transports/utils/../../aio/worker.h:
+nanosrc/transports/utils/../../aio/timerset.h:
+nanosrc/transports/utils/../../aio/../utils/clock.h:
+nanosrc/transports/utils/../../aio/worker_posix.h:
+nanosrc/transports/utils/../../aio/../utils/mutex.h:
+nanosrc/transports/utils/../../aio/../utils/thread.h:
+nanosrc/transports/utils/../../aio/../utils/thread_posix.h:
+nanosrc/transports/utils/../../aio/../utils/efd.h:
+nanosrc/transports/utils/../../aio/../utils/fd.h:
+nanosrc/transports/utils/../../aio/../utils/efd_pipe.h:
+nanosrc/transports/utils/../../aio/poller.h:
+nanosrc/transports/utils/../../aio/poller_poll.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/poll.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/poll.h:
+nanosrc/transports/utils/../../aio/timer.h:
+nanosrc/transports/utils/../../utils/err.h:
+nanosrc/transports/utils/../../aio/../utils/fast.h:
+nanosrc/transports/utils/../../utils/cont.h:
+nanosrc/transports/utils/../../utils/wire.h:
+nanosrc/transports/utils/../../utils/attr.h:

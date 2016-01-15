@@ -1,0 +1,44 @@
+# Updated by fix_deps.py
+pnacl/Release/nanosrc/aio/worker.o: nanosrc/aio/worker.c \
+  nanosrc/aio/worker.h nanosrc/aio/fsm.h nanosrc/aio/../utils/queue.h \
+  nanosrc/aio/timerset.h nanosrc/aio/../utils/clock.h \
+  nanosrc/aio/../utils/int.h nanosrc/aio/../utils/list.h \
+  nanosrc/aio/worker_posix.h nanosrc/aio/../utils/mutex.h \
+  nanosrc/aio/../utils/thread.h nanosrc/aio/../utils/thread_posix.h \
+  nanosrc/aio/../utils/efd.h nanosrc/aio/../utils/../nn_config.h \
+  nanosrc/aio/../utils/fd.h nanosrc/aio/../utils/efd_pipe.h \
+  nanosrc/aio/poller.h nanosrc/aio/poller_poll.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/poll.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/poll.h \
+  nanosrc/aio/worker_posix.c nanosrc/aio/ctx.h nanosrc/aio/pool.h \
+  nanosrc/aio/../utils/err.h nanosrc/aio/../utils/../nn.h \
+  nanosrc/aio/../utils/fast.h nanosrc/aio/../utils/cont.h \
+  nanosrc/aio/../utils/attr.h
+nanosrc/aio/worker.c:
+nanosrc/aio/worker.h:
+nanosrc/aio/fsm.h:
+nanosrc/aio/../utils/queue.h:
+nanosrc/aio/timerset.h:
+nanosrc/aio/../utils/clock.h:
+nanosrc/aio/../utils/int.h:
+nanosrc/aio/../utils/list.h:
+nanosrc/aio/worker_posix.h:
+nanosrc/aio/../utils/mutex.h:
+nanosrc/aio/../utils/thread.h:
+nanosrc/aio/../utils/thread_posix.h:
+nanosrc/aio/../utils/efd.h:
+nanosrc/aio/../utils/../nn_config.h:
+nanosrc/aio/../utils/fd.h:
+nanosrc/aio/../utils/efd_pipe.h:
+nanosrc/aio/poller.h:
+nanosrc/aio/poller_poll.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/poll.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/poll.h:
+nanosrc/aio/worker_posix.c:
+nanosrc/aio/ctx.h:
+nanosrc/aio/pool.h:
+nanosrc/aio/../utils/err.h:
+nanosrc/aio/../utils/../nn.h:
+nanosrc/aio/../utils/fast.h:
+nanosrc/aio/../utils/cont.h:
+nanosrc/aio/../utils/attr.h:

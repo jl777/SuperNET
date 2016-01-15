@@ -1,0 +1,26 @@
+# Updated by fix_deps.py
+pnacl/Release/nanosrc/transports/utils/iface.o: \
+  nanosrc/transports/utils/iface.c nanosrc/transports/utils/iface.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/socket.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netinet/in.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netinet6/in6.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netdb.h \
+  nanosrc/transports/utils/literal.h \
+  nanosrc/transports/utils/../../utils/err.h \
+  nanosrc/transports/utils/../../utils/../nn.h \
+  nanosrc/transports/utils/../../utils/../nn_config.h \
+  nanosrc/transports/utils/../../utils/fast.h \
+  nanosrc/transports/utils/../../utils/closefd.h
+:
+nanosrc/transports/utils/iface.c:
+nanosrc/transports/utils/iface.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/socket.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netinet/in.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netinet6/in6.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netdb.h:
+nanosrc/transports/utils/literal.h:
+nanosrc/transports/utils/../../utils/err.h:
+nanosrc/transports/utils/../../utils/../nn.h:
+nanosrc/transports/utils/../../utils/../nn_config.h:
+nanosrc/transports/utils/../../utils/fast.h:
+nanosrc/transports/utils/../../utils/closefd.h:

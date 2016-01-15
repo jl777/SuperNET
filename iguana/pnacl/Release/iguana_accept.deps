@@ -1,0 +1,53 @@
+# Updated by fix_deps.py
+pnacl/Release/iguana_accept.o: iguana_accept.c iguana777.h \
+  ../crypto777/OS_portable.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/time.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/poll.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/poll.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netdb.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netinet/in.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netinet6/in6.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/socket.h \
+  ../crypto777/../includes/libgfshare.h \
+  ../crypto777/../includes/utlist.h ../crypto777/../includes/uthash.h \
+  ../crypto777/../includes/curve25519.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/memory.h \
+  ../crypto777/../includes/cJSON.h \
+  ../crypto777/../includes/../crypto777/OS_portable.h SuperNET.h \
+  ../includes/nanomsg/nn.h ../includes/nanomsg/nn_config.h \
+  ../includes/nanomsg/pair.h ../includes/nanomsg/bus.h \
+  ../includes/nanomsg/pubsub.h ../includes/nanomsg/reqrep.h \
+  ../includes/nanomsg/survey.h ../includes/nanomsg/pipeline.h \
+  ../includes/iguana_api.h ../crypto777/../includes/iguana_apidefs.h \
+  ../crypto777/../includes/iguana_apideclares.h \
+  ../crypto777/../includes/iguana_apiundefs.h
+iguana_accept.c:
+iguana777.h:
+../crypto777/OS_portable.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/time.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/poll.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/poll.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netdb.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netinet/in.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netinet6/in6.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/socket.h:
+../crypto777/../includes/libgfshare.h:
+../crypto777/../includes/utlist.h:
+../crypto777/../includes/uthash.h:
+../crypto777/../includes/curve25519.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/memory.h:
+../crypto777/../includes/cJSON.h:
+../crypto777/../includes/../crypto777/OS_portable.h:
+SuperNET.h:
+../includes/nanomsg/nn.h:
+../includes/nanomsg/nn_config.h:
+../includes/nanomsg/pair.h:
+../includes/nanomsg/bus.h:
+../includes/nanomsg/pubsub.h:
+../includes/nanomsg/reqrep.h:
+../includes/nanomsg/survey.h:
+../includes/nanomsg/pipeline.h:
+../includes/iguana_api.h:
+../crypto777/../includes/iguana_apidefs.h:
+../crypto777/../includes/iguana_apideclares.h:
+../crypto777/../includes/iguana_apiundefs.h:

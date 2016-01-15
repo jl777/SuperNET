@@ -1,0 +1,132 @@
+# Updated by fix_deps.py
+pnacl/Release/nanosrc/core/global.o: nanosrc/core/global.c \
+  nanosrc/core/../nn.h nanosrc/core/../nn_config.h \
+  nanosrc/core/../transport.h nanosrc/core/../aio/fsm.h \
+  nanosrc/core/../aio/../utils/queue.h nanosrc/core/../utils/list.h \
+  nanosrc/core/../utils/msg.h nanosrc/core/../aio/../utils/chunkref.h \
+  nanosrc/core/../aio/../utils/chunk.h \
+  nanosrc/core/../aio/../utils/int.h nanosrc/core/../protocol.h \
+  nanosrc/core/global.h nanosrc/core/sock.h nanosrc/core/../aio/ctx.h \
+  nanosrc/core/../aio/../utils/mutex.h nanosrc/core/../aio/worker.h \
+  nanosrc/core/../aio/timerset.h nanosrc/core/../aio/../utils/clock.h \
+  nanosrc/core/../aio/worker_posix.h \
+  nanosrc/core/../aio/../utils/thread.h \
+  nanosrc/core/../aio/../utils/thread_posix.h \
+  nanosrc/core/../aio/../utils/efd.h nanosrc/core/../aio/../utils/fd.h \
+  nanosrc/core/../aio/../utils/efd_pipe.h nanosrc/core/../aio/poller.h \
+  nanosrc/core/../aio/poller_poll.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/poll.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/poll.h \
+  nanosrc/core/../aio/pool.h nanosrc/core/../utils/sem.h \
+  nanosrc/core/ep.h nanosrc/core/../aio/timer.h \
+  nanosrc/core/../utils/err.h nanosrc/core/../aio/../utils/fast.h \
+  nanosrc/core/../utils/alloc.h nanosrc/core/../utils/cont.h \
+  nanosrc/core/../utils/random.h nanosrc/core/../utils/glock.h \
+  nanosrc/core/../utils/attr.h \
+  nanosrc/core/../transports/inproc/inproc.h \
+  nanosrc/core/../transports/ipc/ipc.h \
+  nanosrc/core/../transports/tcp/tcp.h \
+  nanosrc/core/../transports/ws/ws.h \
+  nanosrc/core/../transports/tcpmux/tcpmux.h \
+  nanosrc/core/../protocols/pair/pair.h \
+  nanosrc/core/../protocols/pair/xpair.h \
+  nanosrc/core/../protocols/pubsub/pub.h \
+  nanosrc/core/../protocols/pubsub/sub.h \
+  nanosrc/core/../protocols/pubsub/xpub.h \
+  nanosrc/core/../protocols/pubsub/xsub.h \
+  nanosrc/core/../protocols/reqrep/rep.h \
+  nanosrc/core/../protocols/reqrep/xrep.h \
+  nanosrc/core/../protocols/reqrep/../../utils/hash.h \
+  nanosrc/core/../protocols/reqrep/../utils/fq.h \
+  nanosrc/core/../protocols/reqrep/../utils/priolist.h \
+  nanosrc/core/../protocols/reqrep/req.h \
+  nanosrc/core/../protocols/reqrep/xreq.h \
+  nanosrc/core/../protocols/reqrep/../utils/lb.h \
+  nanosrc/core/../protocols/reqrep/task.h \
+  nanosrc/core/../protocols/reqrep/../../reqrep.h \
+  nanosrc/core/../protocols/pipeline/push.h \
+  nanosrc/core/../protocols/pipeline/pull.h \
+  nanosrc/core/../protocols/pipeline/xpush.h \
+  nanosrc/core/../protocols/pipeline/xpull.h \
+  nanosrc/core/../protocols/survey/respondent.h \
+  nanosrc/core/../protocols/survey/surveyor.h \
+  nanosrc/core/../protocols/survey/xrespondent.h \
+  nanosrc/core/../protocols/survey/xsurveyor.h \
+  nanosrc/core/../protocols/survey/../utils/dist.h \
+  nanosrc/core/../protocols/bus/bus.h \
+  nanosrc/core/../protocols/bus/xbus.h nanosrc/core/../pubsub.h \
+  nanosrc/core/../pipeline.h
+nanosrc/core/global.c:
+nanosrc/core/../nn.h:
+nanosrc/core/../nn_config.h:
+nanosrc/core/../transport.h:
+nanosrc/core/../aio/fsm.h:
+nanosrc/core/../aio/../utils/queue.h:
+nanosrc/core/../utils/list.h:
+nanosrc/core/../utils/msg.h:
+nanosrc/core/../aio/../utils/chunkref.h:
+nanosrc/core/../aio/../utils/chunk.h:
+nanosrc/core/../aio/../utils/int.h:
+nanosrc/core/../protocol.h:
+nanosrc/core/global.h:
+nanosrc/core/sock.h:
+nanosrc/core/../aio/ctx.h:
+nanosrc/core/../aio/../utils/mutex.h:
+nanosrc/core/../aio/worker.h:
+nanosrc/core/../aio/timerset.h:
+nanosrc/core/../aio/../utils/clock.h:
+nanosrc/core/../aio/worker_posix.h:
+nanosrc/core/../aio/../utils/thread.h:
+nanosrc/core/../aio/../utils/thread_posix.h:
+nanosrc/core/../aio/../utils/efd.h:
+nanosrc/core/../aio/../utils/fd.h:
+nanosrc/core/../aio/../utils/efd_pipe.h:
+nanosrc/core/../aio/poller.h:
+nanosrc/core/../aio/poller_poll.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/poll.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/poll.h:
+nanosrc/core/../aio/pool.h:
+nanosrc/core/../utils/sem.h:
+nanosrc/core/ep.h:
+nanosrc/core/../aio/timer.h:
+nanosrc/core/../utils/err.h:
+nanosrc/core/../aio/../utils/fast.h:
+nanosrc/core/../utils/alloc.h:
+nanosrc/core/../utils/cont.h:
+nanosrc/core/../utils/random.h:
+nanosrc/core/../utils/glock.h:
+nanosrc/core/../utils/attr.h:
+nanosrc/core/../transports/inproc/inproc.h:
+nanosrc/core/../transports/ipc/ipc.h:
+nanosrc/core/../transports/tcp/tcp.h:
+nanosrc/core/../transports/ws/ws.h:
+nanosrc/core/../transports/tcpmux/tcpmux.h:
+nanosrc/core/../protocols/pair/pair.h:
+nanosrc/core/../protocols/pair/xpair.h:
+nanosrc/core/../protocols/pubsub/pub.h:
+nanosrc/core/../protocols/pubsub/sub.h:
+nanosrc/core/../protocols/pubsub/xpub.h:
+nanosrc/core/../protocols/pubsub/xsub.h:
+nanosrc/core/../protocols/reqrep/rep.h:
+nanosrc/core/../protocols/reqrep/xrep.h:
+nanosrc/core/../protocols/reqrep/../../utils/hash.h:
+nanosrc/core/../protocols/reqrep/../utils/fq.h:
+nanosrc/core/../protocols/reqrep/../utils/priolist.h:
+nanosrc/core/../protocols/reqrep/req.h:
+nanosrc/core/../protocols/reqrep/xreq.h:
+nanosrc/core/../protocols/reqrep/../utils/lb.h:
+nanosrc/core/../protocols/reqrep/task.h:
+nanosrc/core/../protocols/reqrep/../../reqrep.h:
+nanosrc/core/../protocols/pipeline/push.h:
+nanosrc/core/../protocols/pipeline/pull.h:
+nanosrc/core/../protocols/pipeline/xpush.h:
+nanosrc/core/../protocols/pipeline/xpull.h:
+nanosrc/core/../protocols/survey/respondent.h:
+nanosrc/core/../protocols/survey/surveyor.h:
+nanosrc/core/../protocols/survey/xrespondent.h:
+nanosrc/core/../protocols/survey/xsurveyor.h:
+nanosrc/core/../protocols/survey/../utils/dist.h:
+nanosrc/core/../protocols/bus/bus.h:
+nanosrc/core/../protocols/bus/xbus.h:
+nanosrc/core/../pubsub.h:
+nanosrc/core/../pipeline.h:

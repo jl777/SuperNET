@@ -1,0 +1,41 @@
+# Updated by fix_deps.py
+pnacl/Release/nanosrc/transports/tcp/tcp.o: nanosrc/transports/tcp/tcp.c \
+  nanosrc/transports/tcp/tcp.h nanosrc/transports/tcp/../../transport.h \
+  nanosrc/transports/tcp/../../nn.h \
+  nanosrc/transports/tcp/../../nn_config.h \
+  nanosrc/transports/tcp/../../aio/fsm.h \
+  nanosrc/transports/tcp/../../aio/../utils/queue.h \
+  nanosrc/transports/tcp/../../utils/list.h \
+  nanosrc/transports/tcp/../../utils/msg.h \
+  nanosrc/transports/tcp/../../aio/../utils/chunkref.h \
+  nanosrc/transports/tcp/../../aio/../utils/chunk.h \
+  nanosrc/transports/tcp/../../aio/../utils/int.h \
+  nanosrc/transports/tcp/btcp.h nanosrc/transports/tcp/ctcp.h \
+  nanosrc/transports/tcp/../../tcp.h \
+  nanosrc/transports/tcp/../utils/port.h \
+  nanosrc/transports/tcp/../utils/iface.h \
+  nanosrc/transports/tcp/../../utils/err.h \
+  nanosrc/transports/tcp/../../aio/../utils/fast.h \
+  nanosrc/transports/tcp/../../utils/alloc.h \
+  nanosrc/transports/tcp/../../utils/cont.h
+nanosrc/transports/tcp/tcp.c:
+nanosrc/transports/tcp/tcp.h:
+nanosrc/transports/tcp/../../transport.h:
+nanosrc/transports/tcp/../../nn.h:
+nanosrc/transports/tcp/../../nn_config.h:
+nanosrc/transports/tcp/../../aio/fsm.h:
+nanosrc/transports/tcp/../../aio/../utils/queue.h:
+nanosrc/transports/tcp/../../utils/list.h:
+nanosrc/transports/tcp/../../utils/msg.h:
+nanosrc/transports/tcp/../../aio/../utils/chunkref.h:
+nanosrc/transports/tcp/../../aio/../utils/chunk.h:
+nanosrc/transports/tcp/../../aio/../utils/int.h:
+nanosrc/transports/tcp/btcp.h:
+nanosrc/transports/tcp/ctcp.h:
+nanosrc/transports/tcp/../../tcp.h:
+nanosrc/transports/tcp/../utils/port.h:
+nanosrc/transports/tcp/../utils/iface.h:
+nanosrc/transports/tcp/../../utils/err.h:
+nanosrc/transports/tcp/../../aio/../utils/fast.h:
+nanosrc/transports/tcp/../../utils/alloc.h:
+nanosrc/transports/tcp/../../utils/cont.h:

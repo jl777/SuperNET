@@ -1,0 +1,34 @@
+# Updated by fix_deps.py
+pnacl/Release/nanosrc/transports/utils/dns.o: \
+  nanosrc/transports/utils/dns.c nanosrc/transports/utils/dns.h \
+  nanosrc/transports/utils/../../aio/fsm.h \
+  nanosrc/transports/utils/../../aio/../utils/queue.h \
+  nanosrc/transports/utils/dns_getaddrinfo.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/socket.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netinet/in.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netinet6/in6.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netdb.h \
+  nanosrc/transports/utils/../../utils/err.h \
+  nanosrc/transports/utils/../../aio/../utils/../nn.h \
+  nanosrc/transports/utils/../../aio/../utils/../nn_config.h \
+  nanosrc/transports/utils/../../aio/../utils/fast.h \
+  nanosrc/transports/utils/dns_getaddrinfo.c \
+  nanosrc/transports/utils/literal.h \
+  nanosrc/transports/utils/../../utils/cont.h
+:
+nanosrc/transports/utils/dns.c:
+nanosrc/transports/utils/dns.h:
+nanosrc/transports/utils/../../aio/fsm.h:
+nanosrc/transports/utils/../../aio/../utils/queue.h:
+nanosrc/transports/utils/dns_getaddrinfo.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/socket.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netinet/in.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netinet6/in6.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/netdb.h:
+nanosrc/transports/utils/../../utils/err.h:
+nanosrc/transports/utils/../../aio/../utils/../nn.h:
+nanosrc/transports/utils/../../aio/../utils/../nn_config.h:
+nanosrc/transports/utils/../../aio/../utils/fast.h:
+nanosrc/transports/utils/dns_getaddrinfo.c:
+nanosrc/transports/utils/literal.h:
+nanosrc/transports/utils/../../utils/cont.h:

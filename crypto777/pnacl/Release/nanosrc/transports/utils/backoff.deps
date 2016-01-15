@@ -1,0 +1,46 @@
+# Updated by fix_deps.py
+pnacl/Release/nanosrc/transports/utils/backoff.o: \
+  nanosrc/transports/utils/backoff.c nanosrc/transports/utils/backoff.h \
+  nanosrc/transports/utils/../../aio/timer.h \
+  nanosrc/transports/utils/../../aio/fsm.h \
+  nanosrc/transports/utils/../../aio/../utils/queue.h \
+  nanosrc/transports/utils/../../aio/worker.h \
+  nanosrc/transports/utils/../../aio/timerset.h \
+  nanosrc/transports/utils/../../aio/../utils/clock.h \
+  nanosrc/transports/utils/../../aio/../utils/int.h \
+  nanosrc/transports/utils/../../aio/../utils/list.h \
+  nanosrc/transports/utils/../../aio/worker_posix.h \
+  nanosrc/transports/utils/../../aio/../utils/mutex.h \
+  nanosrc/transports/utils/../../aio/../utils/thread.h \
+  nanosrc/transports/utils/../../aio/../utils/thread_posix.h \
+  nanosrc/transports/utils/../../aio/../utils/efd.h \
+  nanosrc/transports/utils/../../aio/../utils/../nn_config.h \
+  nanosrc/transports/utils/../../aio/../utils/fd.h \
+  nanosrc/transports/utils/../../aio/../utils/efd_pipe.h \
+  nanosrc/transports/utils/../../aio/poller.h \
+  nanosrc/transports/utils/../../aio/poller_poll.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/poll.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/poll.h
+:
+nanosrc/transports/utils/backoff.c:
+nanosrc/transports/utils/backoff.h:
+nanosrc/transports/utils/../../aio/timer.h:
+nanosrc/transports/utils/../../aio/fsm.h:
+nanosrc/transports/utils/../../aio/../utils/queue.h:
+nanosrc/transports/utils/../../aio/worker.h:
+nanosrc/transports/utils/../../aio/timerset.h:
+nanosrc/transports/utils/../../aio/../utils/clock.h:
+nanosrc/transports/utils/../../aio/../utils/int.h:
+nanosrc/transports/utils/../../aio/../utils/list.h:
+nanosrc/transports/utils/../../aio/worker_posix.h:
+nanosrc/transports/utils/../../aio/../utils/mutex.h:
+nanosrc/transports/utils/../../aio/../utils/thread.h:
+nanosrc/transports/utils/../../aio/../utils/thread_posix.h:
+nanosrc/transports/utils/../../aio/../utils/efd.h:
+nanosrc/transports/utils/../../aio/../utils/../nn_config.h:
+nanosrc/transports/utils/../../aio/../utils/fd.h:
+nanosrc/transports/utils/../../aio/../utils/efd_pipe.h:
+nanosrc/transports/utils/../../aio/poller.h:
+nanosrc/transports/utils/../../aio/poller_poll.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/poll.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/poll.h:

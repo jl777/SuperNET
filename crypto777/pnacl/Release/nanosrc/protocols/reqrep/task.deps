@@ -1,0 +1,56 @@
+# Updated by fix_deps.py
+pnacl/Release/nanosrc/protocols/reqrep/task.o: \
+  nanosrc/protocols/reqrep/task.c nanosrc/protocols/reqrep/task.h \
+  nanosrc/protocols/reqrep/../../reqrep.h \
+  nanosrc/protocols/reqrep/../../nn.h \
+  nanosrc/protocols/reqrep/../../nn_config.h \
+  nanosrc/protocols/reqrep/../../aio/fsm.h \
+  nanosrc/protocols/reqrep/../../aio/../utils/queue.h \
+  nanosrc/protocols/reqrep/../../aio/timer.h \
+  nanosrc/protocols/reqrep/../../aio/worker.h \
+  nanosrc/protocols/reqrep/../../aio/timerset.h \
+  nanosrc/protocols/reqrep/../../aio/../utils/clock.h \
+  nanosrc/protocols/reqrep/../../aio/../utils/int.h \
+  nanosrc/protocols/reqrep/../../aio/../utils/list.h \
+  nanosrc/protocols/reqrep/../../aio/worker_posix.h \
+  nanosrc/protocols/reqrep/../../aio/../utils/mutex.h \
+  nanosrc/protocols/reqrep/../../aio/../utils/thread.h \
+  nanosrc/protocols/reqrep/../../aio/../utils/thread_posix.h \
+  nanosrc/protocols/reqrep/../../aio/../utils/efd.h \
+  nanosrc/protocols/reqrep/../../aio/../utils/fd.h \
+  nanosrc/protocols/reqrep/../../aio/../utils/efd_pipe.h \
+  nanosrc/protocols/reqrep/../../aio/poller.h \
+  nanosrc/protocols/reqrep/../../aio/poller_poll.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/poll.h \
+  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/poll.h \
+  nanosrc/protocols/reqrep/../../utils/msg.h \
+  nanosrc/protocols/reqrep/../../aio/../utils/chunkref.h \
+  nanosrc/protocols/reqrep/../../aio/../utils/chunk.h
+:
+nanosrc/protocols/reqrep/task.c:
+nanosrc/protocols/reqrep/task.h:
+nanosrc/protocols/reqrep/../../reqrep.h:
+nanosrc/protocols/reqrep/../../nn.h:
+nanosrc/protocols/reqrep/../../nn_config.h:
+nanosrc/protocols/reqrep/../../aio/fsm.h:
+nanosrc/protocols/reqrep/../../aio/../utils/queue.h:
+nanosrc/protocols/reqrep/../../aio/timer.h:
+nanosrc/protocols/reqrep/../../aio/worker.h:
+nanosrc/protocols/reqrep/../../aio/timerset.h:
+nanosrc/protocols/reqrep/../../aio/../utils/clock.h:
+nanosrc/protocols/reqrep/../../aio/../utils/int.h:
+nanosrc/protocols/reqrep/../../aio/../utils/list.h:
+nanosrc/protocols/reqrep/../../aio/worker_posix.h:
+nanosrc/protocols/reqrep/../../aio/../utils/mutex.h:
+nanosrc/protocols/reqrep/../../aio/../utils/thread.h:
+nanosrc/protocols/reqrep/../../aio/../utils/thread_posix.h:
+nanosrc/protocols/reqrep/../../aio/../utils/efd.h:
+nanosrc/protocols/reqrep/../../aio/../utils/fd.h:
+nanosrc/protocols/reqrep/../../aio/../utils/efd_pipe.h:
+nanosrc/protocols/reqrep/../../aio/poller.h:
+nanosrc/protocols/reqrep/../../aio/poller_poll.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/poll.h:
+/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/sys/poll.h:
+nanosrc/protocols/reqrep/../../utils/msg.h:
+nanosrc/protocols/reqrep/../../aio/../utils/chunkref.h:
+nanosrc/protocols/reqrep/../../aio/../utils/chunk.h:
