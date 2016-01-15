@@ -485,8 +485,8 @@ struct supernet_msghdr *SuperNET_msgnonce(struct supernet_info *myinfo,struct su
 void SuperNET_msgresponse(struct supernet_info *myinfo,struct supernet_msghdr *msg,struct supernet_msghdr *retmsg)
 {
     uint32_t nonce,retlen;
-    iguana_rwnum(0,msg->ser_nonce,sizeof(nonce),&nonce);
     retlen = SuperNET_msglen(retmsg);
+    iguana_rwnum(0,retmsg->ser_nonce,sizeof(nonce),&nonce);
     if ( msg == 0 )
         msg = SuperNET_msgnonce(myinfo,0,nonce);
     if ( msg != 0 )
@@ -650,12 +650,12 @@ void SuperNET_init(struct supernet_info *myinfo,uint16_t PUBport,uint16_t LBport
     if ( myinfo->LBsock >= 0 || myinfo->PUBsock >= 0 )
     {
         iguana_launch(iguana_coinadd("BTCD"),"SuperNET",SuperNET_loop,myinfo,IGUANA_PERMTHREAD);
-        SuperNET_LBrequest(myinfo,0,'A',SUPERNET_RAMCHAIN,0,0,0);
+        /*SuperNET_LBrequest(myinfo,0,'A',SUPERNET_RAMCHAIN,0,0,0);
         for (i=0; i<1000; i++)
         {
             SuperNET_LBrequest(myinfo,0,'A',SUPERNET_RAMCHAIN,0,0,0);
             sleep(10);
-        }
+        }*/
     }
     else
     {
