@@ -550,8 +550,8 @@ void SuperNET_recv(struct supernet_info *myinfo,int32_t sock,int32_t LBreq)
         iguana_rwnum(0,msg->ser_timestamp,sizeof(timestamp),&timestamp);
         iguana_rwnum(0,msg->ser_duration,sizeof(duration),&duration);
         iguana_rwnum(0,msg->ser_nonce,sizeof(nonce),&nonce);
-        printf(">>>>>>>>>>>>>>>>>>>>>>>> superRECV.(%s) len.%d LBreq.%d nonce.%u\n",msg->data,recvlen,LBreq,nonce);
-        if ( (datalen= SuperNET_msgvalidate(myinfo,msg)) > 0 )
+        printf(">>>>>>>>>>>>>>>>>>>>>>>> superRECV.(%s) len.%d LBreq.%d nonce.%u\n",msg->agent,recvlen,LBreq,nonce);
+        if ( (datalen= SuperNET_msgvalidate(myinfo,msg)) >= 0 )
         {
             retbuf = myinfo->recvbuf[LBreq + 1];
             if ( LBreq != 0 )
@@ -582,7 +582,7 @@ void SuperNET_recv(struct supernet_info *myinfo,int32_t sock,int32_t LBreq)
                     SuperNET_msgresponse(myinfo,0,msg);
                 }
             }
-        }
+        } else printf("recv error.%d\n",recvlen);
     } else printf("nn_recv error %d %s\n",recvlen,nn_strerror(nn_errno()));
 }
 
