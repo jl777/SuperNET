@@ -20,7 +20,7 @@
 #include "iguana777.h"
 
 // maxlen of 7!
-#define SUPERNET_RAMCHAIN "rchain"
+#define SUPERNET_RAMCHAIN "rmchain"
 #define SUPERNET_PANGEA "pangea"
 #define SUPERNET_BITCOIN "bitcoin"
 
