@@ -713,15 +713,13 @@ int32_t iguana_blockQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t 
         printf("cant queue zerohash bundlei.%d\n",bundlei);
         return(-1);
     }
-    if ( bp != 0 )
-        block = iguana_blockfind(coin,bp->hashes[bundlei]);
+    block = iguana_blockfind(coin,hash2);
     if ( priority != 0 || block == 0 || (block->queued == 0 && block->fpipbits == 0) )
     {
         if ( block != 0 )
         {
-            if ( block->fpipbits != 0 || block->queued != 0 )
+            if ( block->fpipbits != 0 || block->queued != 0 || block->issued+10 < time(NULL) )
                 return(0);
-            block->numrequests++;
         }
         if ( priority != 0 )
             str = "priorityQ", Q = &coin->priorityQ;
@@ -749,6 +747,11 @@ int32_t iguana_blockQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t 
             char str2[65];
             if ( 0 && (bundlei % 250) == 0 )
                 printf("%s %d %s %d numranked.%d qsize.%d\n",str,req->height,bits256_str(str2,hash2),coin->blocks.recvblocks,coin->peers.numranked,queue_size(Q));
+            if ( block != 0 )
+            {
+                block->numrequests++;
+                block->issued = (uint32_t)time(NULL);
+            }
             queue_enqueue(str,Q,&req->DL,0);
             return(1);
         } else printf("null Q\n");
@@ -859,20 +862,20 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                 _iguana_chainlink(coin,next);
             else if ( next->queued == 0 && next->fpipbits == 0 )
             {
-                printf("HWM next %d\n",coin->blocks.hwmchain.height+1);
-                iguana_blockQ(coin,bp,bundlei,next->RO.hash2,1);
+                //printf("HWM next %d\n",coin->blocks.hwmchain.height+1);
+                iguana_blockQ(coin,bp,bundlei,next->RO.hash2,0);
             }
         }
         else
         {
             if ( bits256_nonz(bp->hashes[bundlei]) > 0 )
             {
-                printf("next %d\n",coin->blocks.hwmchain.height+1);
+                //printf("next %d\n",coin->blocks.hwmchain.height+1);
                 iguana_blockQ(coin,bp,bundlei,bp->hashes[bundlei],0);
             }
             else if ( bp->speculative != 0 && bits256_nonz(bp->speculative[bundlei]) > 0 )
             {
-                printf("speculative next %d\n",coin->blocks.hwmchain.height+1);
+                //printf("speculative next %d\n",coin->blocks.hwmchain.height+1);
                 iguana_blockQ(coin,0,-1,bp->speculative[bundlei],0);
             }
         }

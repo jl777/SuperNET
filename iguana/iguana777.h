@@ -252,7 +252,7 @@ struct iguana_block
 {
     struct iguana_blockRO RO;
     double PoW; // NOT consensus safe, for estimation purposes only
-    int32_t height,fpos; uint32_t fpipbits,numrequests;
+    int32_t height,fpos; uint32_t fpipbits,numrequests,issued;
     uint16_t hdrsi,bundlei:12,mainchain:1,valid:1,queued:1,tbd:1,extra:8;
     UT_hash_handle hh;
 } __attribute__((packed));
