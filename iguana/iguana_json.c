@@ -332,16 +332,22 @@ cJSON *SuperNET_peerarray(struct iguana_info *coin,int32_t max,int32_t supernetf
 
 int32_t SuperNET_coinpeers(struct iguana_info *coin,cJSON *SNjson,cJSON *rawjson,int32_t max)
 {
-    cJSON *array;
+    cJSON *array,*item;
     if ( (array= SuperNET_peerarray(coin,max,1)) != 0 )
     {
         max -= cJSON_GetArraySize(array);
-        jadd(SNjson,coin->symbol,array);
+        item = cJSON_CreateObject();
+        jadd(item,"coin",coin->symbol);
+        jadd(item,"peers",array);
+        jaddi(SNjson,item);
     }
     if ( max > 0 && (array= SuperNET_peerarray(coin,max,0)) != 0 )
     {
         max -= cJSON_GetArraySize(array);
-        jadd(rawjson,coin->symbol,array);
+        item = cJSON_CreateObject();
+        jadd(item,"coin",coin->symbol);
+        jadd(item,"peers",array);
+        jaddi(rawjson,item);
     }
     return(max);
 }
@@ -353,20 +359,21 @@ void SuperNET_remotepeer(struct supernet_info *myinfo,struct iguana_info *coin,c
 
 void SuperNET_parsepeers(struct supernet_info *myinfo,cJSON *array,int32_t n,int32_t supernetflag)
 {
-    int32_t i,j,m; cJSON *coinarray; char *symbol,*ipaddr; struct iguana_info *ptr;
+    int32_t i,j,m; cJSON *coinarray,*item; char *symbol,*ipaddr; struct iguana_info *ptr;
     if ( array != 0 && n > 0 )
     {
         for (i=0; i<n; i++)
         {
-            if ( (symbol= jfieldstr(jitem(array,i))) != 0 )
+            if ( (item= jitem(array,i)) != 0 && (symbol= jstr(item,"coin")) != 0 )
             {
                 ptr = iguana_coinfind(symbol);
-                if ( (coinarray= jarray(&m,array,symbol)) != 0 )
+                if ( (coinarray= jarray(&m,item,"peers")) != 0 )
                 {
                     for (j=0; j<m; j++)
                     {
                         if ( (ipaddr= jstr(jitem(coinarray,j),0)) != 0 )
                             SuperNET_remotepeer(myinfo,ptr,symbol,ipaddr,supernetflag);
+                        else printf("no ipaddr[%d] of %d\n",j,m);
                     }
                 }
                 printf("parsed.%d %s.peers supernet.%d\n",m,symbol,supernetflag);
@@ -388,9 +395,8 @@ STRING_ARG(SuperNET,getpeers,activecoin)
 {
     int32_t i,max = 64;
     cJSON *SNjson,*rawjson,*retjson = cJSON_CreateObject();
-    printf("inside SuperNET coin.%p\n",coin);
-    SNjson = cJSON_CreateObject();
-    rawjson = cJSON_CreateObject();
+    SNjson = cJSON_CreateArray();
+    rawjson = cJSON_CreateArray();
     if ( coin != 0 )
         max = SuperNET_coinpeers(coin,SNjson,rawjson,max);
     else
