@@ -307,7 +307,121 @@ cJSON *iguana_peersjson(struct iguana_info *coin,int32_t addronly)
     else return(array);
 }
 
+cJSON *SuperNET_peerarray(struct iguana_info *coin,int32_t max,int32_t supernetflag)
+{
+    int32_t i,r,j,n = 0; struct iguana_peer *addr; cJSON *array = cJSON_CreateArray();
+    r = rand();
+    for (j=0; j<IGUANA_MAXPEERS; j++)
+    {
+        i = (r + j) % IGUANA_MAXPEERS;
+        addr = &coin->peers.active[i];
+        if ( addr->usock >= 0 && (supernetflag == 0 || addr->supernet != 0) )
+        {
+            jaddistr(array,addr->ipaddr);
+            if ( ++n >= max )
+                break;
+        }
+    }
+    if ( n == 0 )
+    {
+        free_json(array);
+        return(0);
+    }
+    return(array);
+}
+
+int32_t SuperNET_coinpeers(struct iguana_info *coin,cJSON *SNjson,cJSON *rawjson,int32_t max)
+{
+    cJSON *array;
+    if ( (array= SuperNET_peerarray(coin,max,1)) != 0 )
+    {
+        max -= cJSON_GetArraySize(array);
+        jadd(SNjson,coin->symbol,array);
+    }
+    if ( max > 0 && (array= SuperNET_peerarray(coin,max,0)) != 0 )
+    {
+        max -= cJSON_GetArraySize(array);
+        jadd(rawjson,coin->symbol,array);
+    }
+    return(max);
+}
+
+void SuperNET_remotepeer(struct supernet_info *myinfo,struct iguana_info *coin,char *symbol,char *ipaddr,int32_t supernetflag)
+{
+    printf("got %s remotepeer.(%s) supernet.%d\n",symbol,ipaddr,supernetflag);
+}
+
+void SuperNET_parsepeers(struct supernet_info *myinfo,cJSON *array,int32_t n,int32_t supernetflag)
+{
+    int32_t i,j,m; cJSON *coinarray; char *symbol,*ipaddr; struct iguana_info *ptr;
+    if ( (array= jarray(&n,array,"supernet")) != 0 )
+    {
+        for (i=0; i<n; i++)
+        {
+            if ( (symbol= jfieldstr(jitem(array,i))) != 0 )
+            {
+                ptr = iguana_coinfind(symbol);
+                if ( (coinarray= jarray(&m,array,symbol)) != 0 )
+                {
+                    for (j=0; j<m; j++)
+                    {
+                        if ( (ipaddr= jstr(jitem(coinarray,j),0)) != 0 )
+                            SuperNET_remotepeer(myinfo,ptr,symbol,ipaddr,supernetflag);
+                    }
+                }
+            }
+        }
+    }
+}
+
 #include "../includes/iguana_apidefs.h"
+
+STRING_ARG(SuperNET,mypeers,jsonstr)
+{
+    cJSON *argjson,*SNarray,*rawarray; int32_t n;
+    if ( (argjson= cJSON_Parse(jsonstr)) != 0 )
+    {
+        if ( (SNarray= jarray(&n,argjson,"supernet")) != 0 )
+            SuperNET_parsepeers(myinfo,SNarray,n,1);
+        if ( (rawarray= jarray(&n,argjson,"rawpeers")) != 0 )
+            SuperNET_parsepeers(myinfo,SNarray,n,1);
+        free_json(argjson);
+        return(clonestr("{\"result\":\"peers parsed\"}"));
+    }
+    return(clonestr("{\"error\":\"couldnt parse jsonstr\"}"));
+}
+
+STRING_ARG(SuperNET,getpeers,activecoin)
+{
+    int32_t i,max = 64;
+    cJSON *SNjson,*rawjson,*retjson = cJSON_CreateObject();
+    printf("inside SuperNET coin.%p\n",coin);
+    SNjson = cJSON_CreateObject();
+    rawjson = cJSON_CreateObject();
+    if ( coin != 0 )
+        max = SuperNET_coinpeers(coin,SNjson,rawjson,max);
+    else
+    {
+        for (i=0; i<IGUANA_MAXCOINS&&max>0; i++)
+            if ( Coins[i] != 0 )
+                max = SuperNET_coinpeers(Coins[i],SNjson,rawjson,max);
+    }
+    if ( max != 64 )
+    {
+        jaddstr(retjson,"agent","SuperNET");
+        jaddstr(retjson,"method","mypeers");
+        jaddstr(retjson,"result","peers found");
+        jadd(retjson,"supernet",SNjson);
+        jadd(retjson,"rawpeers",rawjson);
+    }
+    else
+    {
+        jaddstr(retjson,"error","no peers");
+        free_json(SNjson);
+        free_json(rawjson);
+    }
+    return(jprint(retjson,1));
+}
 
 STRING_ARG(iguana,peers,activecoin)
 {
@@ -540,7 +654,9 @@ TWO_STRINGS(SuperNET,html,agentform,htmlfile)
 char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSON *json,char *remoteaddr)
 {
     char *coinstr; struct iguana_info *coin = 0;
-    if ( (coinstr= jstr(json,"coin")) != 0 )
+    if ( (coinstr= jstr(json,"activecoin")) != 0 )
+        coin = iguana_coinfind(coinstr);
+    if ( coin == 0 && (coinstr= jstr(json,"coin")) != 0 )
         coin = iguana_coinfind(coinstr);
     if ( strcmp(agent,"ramchain") == 0 && coin == 0 )
         return(clonestr("{\"error\":\"ramchain needs coin\"}"));

@@ -16,6 +16,8 @@
 ZERO_ARGS(SuperNET,help);
 TWO_STRINGS(SuperNET,html,agentform,htmlfile);
 STRING_ARG(SuperNET,bitcoinrpc,setcoin);
+STRING_ARG(SuperNET,getpeers,activecoin);
+STRING_ARG(SuperNET,mypeers,jsonstr);
 
 STRING_ARG(iguana,peers,activecoin);
 STRING_AND_INT(iguana,maxpeers,activecoin,max);
@@ -28,7 +30,6 @@ TWO_STRINGS(iguana,removenode,activecoin,ipaddr);
 TWO_STRINGS(iguana,oneshot,activecoin,ipaddr);
 TWO_STRINGS(iguana,nodestatus,activecoin,ipaddr);
 
-STRING_ARG(ramchain,getpeers,activecoin);
 ZERO_ARGS(ramchain,getinfo);
 ZERO_ARGS(ramchain,getbestblockhash);
 ZERO_ARGS(ramchain,getblockcount);
