@@ -410,7 +410,6 @@ STRING_ARG(SuperNET,getpeers,activecoin)
     {
         jaddstr(retjson,"agent","SuperNET");
         jaddstr(retjson,"method","mypeers");
-        jaddstr(retjson,"result","peers found");
         jadd(retjson,"supernet",SNjson);
         jadd(retjson,"rawpeers",rawjson);
     }
