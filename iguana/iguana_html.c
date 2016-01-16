@@ -427,13 +427,13 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
 
 char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr)
 {
-    cJSON *tokens,*argjson,*json = 0; char symbol[16],urlmethod[16],*data,url[1024],*retstr,*token = 0; int32_t i,j,n;
-    printf("rpcparse.(%s)\n",urlstr);
+    cJSON *tokens,*argjson,*json = 0; char symbol[16],buf[4096],urlmethod[16],*data,url[1024],*retstr,*token = 0; int32_t i,j,n;
+    //printf("rpcparse.(%s)\n",urlstr);
     for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
         urlmethod[i] = urlstr[i];
     urlmethod[i++] = 0;
     n = i;
-    printf("URLMETHOD.(%s)\n",urlmethod);
+    //printf("URLMETHOD.(%s)\n",urlmethod);
     *postflagp = (strcmp(urlmethod,"POST") == 0);
     for (i=0; i<sizeof(url)-1&&urlstr[n+i]!=0&&urlstr[n+i]!=' '; i++)
         url[i] = urlstr[n+i];
@@ -454,7 +454,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
         iguana_bitmap(retbuf,bufsize,&url[i]);
         return(retbuf);
     }
-    printf("URL.(%s)\n",url);
+    //printf("URL.(%s)\n",url);
     if ( strcmp(url,"/favicon.ico") == 0 )
     {
         *jsonflagp = -1;
@@ -487,7 +487,62 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
             {
                 jaddstr(argjson,"agent",jstri(tokens,0));
                 if ( n > 1 )
-                    jaddstr(argjson,"method",jstri(tokens,1));
+                {
+                    if ( jstri(tokens,1) != 0 )
+                    {
+                        char *key,*value;
+                        strcpy(buf,jstri(tokens,1));
+                        key = value = 0;
+                        i = 0;
+                        for (; buf[i]!=0; i++)
+                        {
+                            if ( buf[i] == '?' )
+                            {
+                                buf[i] = 0;
+                                jaddstr(argjson,"method",buf);
+                                i++;
+                                key = &buf[i];
+                                break;
+                            }
+                        }
+                        while ( buf[i] != 0 )
+                        {
+                            //printf("iter.[%s]\n",&buf[i]);
+                            if ( buf[i] != 0 && key != 0 )
+                            {
+                                for (; buf[i]!=0; i++)
+                                {
+                                    if ( buf[i] == '=' )
+                                    {
+                                        buf[i] = 0;
+                                        i++;
+                                        //printf("got key.(%s)\n",key);
+                                        value = &buf[i];
+                                        break;
+                                    }
+                                }
+                                if ( buf[i] != 0 && value != 0 )
+                                {
+                                    for (; buf[i]!=0; i++)
+                                    {
+                                        if ( buf[i] == '&' )
+                                        {
+                                            buf[i] = 0;
+                                            jaddstr(argjson,key,value);
+                                            i++;
+                                            //printf("got value.(%s)\n",value);
+                                            value = 0;
+                                            key = &buf[i];
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if ( key != 0 && value != 0 )
+                            jaddstr(argjson,key,value);
+                    } else jaddstr(argjson,"method",buf);
+                }
                 for (i=2; i<n; i++)
                 {
                     if ( i == n-1 )
