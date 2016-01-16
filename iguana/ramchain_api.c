@@ -16,25 +16,30 @@
 #include "iguana777.h"
 #include "../includes/iguana_apidefs.h"
 
-ZERO_ARGS(ramchain,getpeers)
+STRING_ARG(ramchain,getpeers,activecoin)
 {
     int32_t i,r,j,iter,n; struct iguana_peer *addr; cJSON *array = cJSON_CreateArray();
     cJSON *retjson = cJSON_CreateObject();
-    r = rand();
-    for (iter=n=0; iter<2; iter++)
+    printf("inside getpeers coin.%p\n",coin);
+    if ( coin != 0 )
     {
-        for (j=0; j<IGUANA_MAXPEERS; j++)
+        r = rand();
+        for (iter=n=0; iter<2; iter++)
         {
-            i = (r + j) % IGUANA_MAXPEERS;
-            addr = &coin->peers.active[i];
-            if ( addr->usock >= 0 && (iter == 1 || addr->supernet != 0) )
+            for (j=0; j<IGUANA_MAXPEERS; j++)
             {
-                jaddistr(array,addr->ipaddr);
-                if ( ++n >= 64 )
-                    break;
+                i = (r + j) % IGUANA_MAXPEERS;
+                addr = &coin->peers.active[i];
+                if ( addr->usock >= 0 && (iter == 1 || addr->supernet != 0) )
+                {
+                    jaddistr(array,addr->ipaddr);
+                    if ( ++n >= 64 )
+                        break;
+                }
             }
         }
     }
+    jadd(retjson,"peers",array);
     return(jprint(retjson,1));
 }
 

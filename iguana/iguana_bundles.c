@@ -441,6 +441,8 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     {
         printf("%s\n",str);
         lastdisp = (uint32_t)time(NULL);
+        if ( coin->peers.ranked[0] != 0 )
+            iguana_send_ping(coin,coin->peers.ranked[0]);
     }
     strcpy(coin->statusstr,str);
     coin->estsize = estsize;

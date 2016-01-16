@@ -71,10 +71,10 @@ int32_t iguana_jsonQ()
     }
     if ( (ptr= queue_dequeue(&jsonQ,0)) != 0 )
     {
-        //printf("process.(%s)\n",ptr->jsonstr);
+printf("process.(%s)\n",ptr->jsonstr);
         if ( (*ptr->retjsonstrp= SuperNET_jsonstr(ptr->myinfo,ptr->jsonstr,ptr->remoteaddr)) == 0 )
             *ptr->retjsonstrp = clonestr("{\"error\":\"null return from iguana_jsonstr\"}");
-        //printf("finished.(%s)\n",ptr->jsonstr);
+printf("finished.(%s)\n",ptr->jsonstr);
         queue_enqueue("finishedQ",&finishedQ,&ptr->DL,0);
         return(1);
     }
@@ -114,7 +114,7 @@ char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t
 char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
 {
     cJSON *retjson; uint64_t tag; uint32_t timeout; char *jsonstr; char *retjsonstr,*retstr = 0;
-    printf("SuperNET_JSON.(%s)\n",jprint(json,0));
+    printf("SuperNET_JSON.(%s) remoteaddr.(%s)\n",jprint(json,0),remoteaddr!=0?remoteaddr:"");
     if ( json != 0 )
     {
         if ( (tag= j64bits(json,"tag")) == 0 )
@@ -170,10 +170,12 @@ char *SuperNET_p2p(struct iguana_info *coin,int32_t *delaymillisp,char *ipaddr,u
             jaddstr(json,"fromp2p",coin->symbol);
             if ( (retstr= SuperNET_JSON(0,json,ipaddr)) != 0 )
             {
+                printf("retstr.(%s)\n",retstr);
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
                     if ( jobj(retjson,"result") != 0 || jobj(retjson,"error") != 0 || jobj(retjson,"method") == 0 )
                     {
+                        printf("it is a result, dont return\n");
                         free(retstr);
                         retstr = 0;
                     }
@@ -241,7 +243,7 @@ void iguana_main(void *arg)
 #ifdef __APPLE__
         sleep(1);
         char *str;
-        if ( (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":0,\"maxpeers\":2,\"activecoin\":\"BTC\",\"active\":1}"),0)) != 0 )
+        if ( (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":0,\"maxpeers\":2,\"activecoin\":\"BTCD\",\"active\":1}"),0)) != 0 )
         {
             printf("got.(%s)\n",str);
             free(str);
