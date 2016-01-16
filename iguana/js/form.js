@@ -12,7 +12,6 @@ var historyTable = (function(historyTable, $, undefined) {
             //adding first item
             items.push(json);
             $('#submit_history tbody').append(newTab);
-            localStorage['submit_history'] = JSON.stringify(items);
         } else {
             //check for duplicates
             var jsonExist = false;
@@ -24,7 +23,6 @@ var historyTable = (function(historyTable, $, undefined) {
             if ( jsonExist == false ) {
                 items.push(json);
                 $('#submit_history tbody').append(newTab);
-                localStorage['submit_history'] = JSON.stringify(items);
             } else {
                 console.log('this json already exist');
             }
@@ -36,18 +34,12 @@ var historyTable = (function(historyTable, $, undefined) {
 
     $(document).ready(function() {
         // loading previously submitted jsons from local storage
-        if ( localStorage['submit_history'] ) {
-            var submit_history = JSON.parse(localStorage['submit_history']);
-            for ( i=0; i < submit_history.length; i++ ) {
-                historyTable.addItem(submit_history[i]);
-            }
-        }
+        
 
         // handling clear history button
         $('#clearHistory').click(function() {
             $('#submit_history tbody').empty();
             items = [];
-            localStorage.removeItem('submit_history');
         });
         
         // bind handler to resubmit buttons

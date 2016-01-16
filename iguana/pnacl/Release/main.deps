@@ -1,0 +1,93 @@
+# Updated by fix_deps.py
+pnacl/Release/main.o: main.c ../pnacl_main.h \
+  /home/vikku/Desktop/iguana/nacl_sdk/pepper_46/include/pnacl/sys/ioctl.h \
+  /home/vikku/Desktop/iguana/nacl_sdk/pepper_46/include/pnacl/sys/mount.h \
+  /home/vikku/Desktop/iguana/nacl_sdk/pepper_46/include/pnacl/sys/select.h \
+  /home/vikku/Desktop/iguana/nacl_sdk/pepper_46/include/pnacl/sys/time.h \
+  ../includes/ppapi/c/ppb.h ../includes/ppapi/c/pp_macros.h \
+  ../includes/ppapi/c/pp_stdint.h ../includes/ppapi/c/ppb_var.h \
+  ../includes/ppapi/c/pp_bool.h ../includes/ppapi/c/pp_module.h \
+  ../includes/ppapi/c/pp_resource.h ../includes/ppapi/c/pp_var.h \
+  ../includes/ppapi/c/ppb_instance.h ../includes/ppapi/c/pp_instance.h \
+  ../includes/ppapi/c/ppb_messaging.h \
+  ../includes/ppapi/c/ppp_message_handler.h \
+  ../includes/ppapi/c/ppb_var_array.h \
+  ../includes/ppapi/c/ppb_var_dictionary.h \
+  ../includes/ppapi/c/pp_errors.h ../includes/ppapi/c/ppp_messaging.h \
+  ../includes/ppapi/c/ppp_instance.h ../includes/ppapi/c/pp_point.h \
+  ../includes/ppapi/c/pp_rect.h ../includes/ppapi/c/pp_size.h \
+  iguana777.h ../crypto777/OS_portable.h \
+  /home/vikku/Desktop/iguana/nacl_sdk/pepper_46/include/pnacl/poll.h \
+  /home/vikku/Desktop/iguana/nacl_sdk/pepper_46/include/pnacl/sys/poll.h \
+  /home/vikku/Desktop/iguana/nacl_sdk/pepper_46/include/pnacl/netdb.h \
+  /home/vikku/Desktop/iguana/nacl_sdk/pepper_46/include/pnacl/netinet/in.h \
+  /home/vikku/Desktop/iguana/nacl_sdk/pepper_46/include/pnacl/netinet6/in6.h \
+  /home/vikku/Desktop/iguana/nacl_sdk/pepper_46/include/pnacl/sys/socket.h \
+  ../crypto777/../includes/libgfshare.h \
+  ../crypto777/../includes/utlist.h ../crypto777/../includes/uthash.h \
+  ../crypto777/../includes/curve25519.h \
+  /home/vikku/Desktop/iguana/nacl_sdk/pepper_46/include/pnacl/memory.h \
+  ../crypto777/../includes/cJSON.h \
+  ../crypto777/../includes/../crypto777/OS_portable.h SuperNET.h \
+  ../includes/nanomsg/nn.h ../includes/nanomsg/nn_config.h \
+  ../includes/nanomsg/pair.h ../includes/nanomsg/bus.h \
+  ../includes/nanomsg/pubsub.h ../includes/nanomsg/reqrep.h \
+  ../includes/nanomsg/survey.h ../includes/nanomsg/pipeline.h \
+  ../includes/iguana_api.h \
+  ../crypto777/../includes/../includes/iguana_apidefs.h \
+  ../crypto777/../includes/../includes/iguana_apideclares.h \
+  ../crypto777/../includes/../includes/iguana_apiundefs.h
+main.c:
+../pnacl_main.h:
+/home/vikku/Desktop/iguana/nacl_sdk/pepper_46/include/pnacl/sys/ioctl.h:
+/home/vikku/Desktop/iguana/nacl_sdk/pepper_46/include/pnacl/sys/mount.h:
+/home/vikku/Desktop/iguana/nacl_sdk/pepper_46/include/pnacl/sys/select.h:
+/home/vikku/Desktop/iguana/nacl_sdk/pepper_46/include/pnacl/sys/time.h:
+../includes/ppapi/c/ppb.h:
+../includes/ppapi/c/pp_macros.h:
+../includes/ppapi/c/pp_stdint.h:
+../includes/ppapi/c/ppb_var.h:
+../includes/ppapi/c/pp_bool.h:
+../includes/ppapi/c/pp_module.h:
+../includes/ppapi/c/pp_resource.h:
+../includes/ppapi/c/pp_var.h:
+../includes/ppapi/c/ppb_instance.h:
+../includes/ppapi/c/pp_instance.h:
+../includes/ppapi/c/ppb_messaging.h:
+../includes/ppapi/c/ppp_message_handler.h:
+../includes/ppapi/c/ppb_var_array.h:
+../includes/ppapi/c/ppb_var_dictionary.h:
+../includes/ppapi/c/pp_errors.h:
+../includes/ppapi/c/ppp_messaging.h:
+../includes/ppapi/c/ppp_instance.h:
+../includes/ppapi/c/pp_point.h:
+../includes/ppapi/c/pp_rect.h:
+../includes/ppapi/c/pp_size.h:
+iguana777.h:
+../crypto777/OS_portable.h:
+/home/vikku/Desktop/iguana/nacl_sdk/pepper_46/include/pnacl/poll.h:
+/home/vikku/Desktop/iguana/nacl_sdk/pepper_46/include/pnacl/sys/poll.h:
+/home/vikku/Desktop/iguana/nacl_sdk/pepper_46/include/pnacl/netdb.h:
+/home/vikku/Desktop/iguana/nacl_sdk/pepper_46/include/pnacl/netinet/in.h:
+/home/vikku/Desktop/iguana/nacl_sdk/pepper_46/include/pnacl/netinet6/in6.h:
+/home/vikku/Desktop/iguana/nacl_sdk/pepper_46/include/pnacl/sys/socket.h:
+../crypto777/../includes/libgfshare.h:
+../crypto777/../includes/utlist.h:
+../crypto777/../includes/uthash.h:
+../crypto777/../includes/curve25519.h:
+/home/vikku/Desktop/iguana/nacl_sdk/pepper_46/include/pnacl/memory.h:
+../crypto777/../includes/cJSON.h:
+../crypto777/../includes/../crypto777/OS_portable.h:
+SuperNET.h:
+../includes/nanomsg/nn.h:
+../includes/nanomsg/nn_config.h:
+../includes/nanomsg/pair.h:
+../includes/nanomsg/bus.h:
+../includes/nanomsg/pubsub.h:
+../includes/nanomsg/reqrep.h:
+../includes/nanomsg/survey.h:
+../includes/nanomsg/pipeline.h:
+../includes/iguana_api.h:
+../crypto777/../includes/../includes/iguana_apidefs.h:
+../crypto777/../includes/../includes/iguana_apideclares.h:
+../crypto777/../includes/../includes/iguana_apiundefs.h:
