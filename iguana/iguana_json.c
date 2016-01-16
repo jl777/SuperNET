@@ -337,7 +337,7 @@ int32_t SuperNET_coinpeers(struct iguana_info *coin,cJSON *SNjson,cJSON *rawjson
     {
         max -= cJSON_GetArraySize(array);
         item = cJSON_CreateObject();
-        jadd(item,"coin",coin->symbol);
+        jaddstr(item,"coin",coin->symbol);
         jadd(item,"peers",array);
         jaddi(SNjson,item);
     }
@@ -345,7 +345,7 @@ int32_t SuperNET_coinpeers(struct iguana_info *coin,cJSON *SNjson,cJSON *rawjson
     {
         max -= cJSON_GetArraySize(array);
         item = cJSON_CreateObject();
-        jadd(item,"coin",coin->symbol);
+        jaddstr(item,"coin",coin->symbol);
         jadd(item,"peers",array);
         jaddi(rawjson,item);
     }
