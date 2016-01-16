@@ -17,16 +17,16 @@ ZERO_ARGS(SuperNET,help);
 TWO_STRINGS(SuperNET,html,agentform,htmlfile);
 STRING_ARG(SuperNET,bitcoinrpc,setcoin);
 
-ZERO_ARGS(iguana,peers);
-INT_ARG(iguana,maxpeers,max);
-ZERO_ARGS(iguana,getconnectioncount);
-STRING_ARG(iguana,addcoin,newcoin);
-ZERO_ARGS(iguana,startcoin);
-ZERO_ARGS(iguana,pausecoin);
-STRING_ARG(iguana,addnode,ipaddr);
-STRING_ARG(iguana,removenode,ipaddr);
-STRING_ARG(iguana,oneshot,ipaddr);
-STRING_ARG(iguana,nodestatus,ipaddr);
+STRING_ARG(iguana,peers,activecoin);
+STRING_AND_INT(iguana,maxpeers,activecoin,max);
+STRING_ARG(iguana,getconnectioncount,activecoin);
+STRING_ARG(iguana,addcoin,activecoin);
+STRING_ARG(iguana,startcoin,activecoin);
+STRING_ARG(iguana,pausecoin,activecoin);
+TWO_STRINGS(iguana,addnode,activecoin,ipaddr);
+TWO_STRINGS(iguana,removenode,activecoin,ipaddr);
+TWO_STRINGS(iguana,oneshot,activecoin,ipaddr);
+TWO_STRINGS(iguana,nodestatus,activecoin,ipaddr);
 
 ZERO_ARGS(ramchain,getinfo);
 ZERO_ARGS(ramchain,getbestblockhash);

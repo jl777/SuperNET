@@ -309,14 +309,14 @@ cJSON *iguana_peersjson(struct iguana_info *coin,int32_t addronly)
 
 #include "../includes/iguana_apidefs.h"
 
-ZERO_ARGS(iguana,peers)
+STRING_ARG(iguana,peers,activecoin)
 {
     if ( coin != 0 )
         return(jprint(iguana_peersjson(coin,0),1));
     else return(clonestr("{\"error\":\"peers needs coin\"}"));
 }
 
-ZERO_ARGS(iguana,getconnectioncount)
+STRING_ARG(iguana,getconnectioncount,activecoin)
 {
     int32_t i,num = 0; char buf[512];
     if ( coin != 0 )
@@ -329,10 +329,10 @@ ZERO_ARGS(iguana,getconnectioncount)
     } else return(clonestr("{\"error\":\"getconnectioncount needs coin\"}"));
 }
 
-STRING_ARG(iguana,addcoin,newcoin)
+STRING_ARG(iguana,addcoin,activecoin)
 {
     char *symbol; int32_t retval;
-    if ( (symbol= newcoin) == 0 && coin != 0 )
+    if ( (symbol= activecoin) == 0 && coin != 0 )
         symbol = coin->symbol;
     if ( symbol != 0 )
     {
@@ -344,7 +344,7 @@ STRING_ARG(iguana,addcoin,newcoin)
     } else return(clonestr("{\"error\":\"addcoin needs newcoin\"}"));
 }
 
-ZERO_ARGS(iguana,startcoin)
+STRING_ARG(iguana,startcoin,activecoin)
 {
     if ( coin != 0 )
     {
@@ -353,7 +353,7 @@ ZERO_ARGS(iguana,startcoin)
     } else return(clonestr("{\"error\":\"startcoin needs coin\"}"));
 }
 
-ZERO_ARGS(iguana,pausecoin)
+STRING_ARG(iguana,pausecoin,activecoin)
 {
     if ( coin != 0 )
     {
@@ -362,7 +362,7 @@ ZERO_ARGS(iguana,pausecoin)
     } else return(clonestr("{\"error\":\"pausecoin needs coin\"}"));
 }
 
-STRING_ARG(iguana,addnode,ipaddr)
+TWO_STRINGS(iguana,addnode,activecoin,ipaddr)
 {
     if ( coin != 0 && ipaddr != 0 )
     {
@@ -371,7 +371,7 @@ STRING_ARG(iguana,addnode,ipaddr)
     } else return(clonestr("{\"error\":\"addnode needs ipaddr\"}"));
 }
 
-STRING_ARG(iguana,removenode,ipaddr)
+TWO_STRINGS(iguana,removenode,activecoin,ipaddr)
 {
     int32_t i;
     if ( coin != 0 && ipaddr != 0 )
@@ -389,7 +389,7 @@ STRING_ARG(iguana,removenode,ipaddr)
     } else return(clonestr("{\"error\":\"removenode needs coin and ipaddr\"}"));
 }
 
-STRING_ARG(iguana,oneshot,ipaddr)
+TWO_STRINGS(iguana,oneshot,activecoin,ipaddr)
 {
     if ( coin != 0 && ipaddr != 0 )
     {
@@ -398,7 +398,7 @@ STRING_ARG(iguana,oneshot,ipaddr)
     } else return(clonestr("{\"error\":\"addnode needs coin and ipaddr\"}"));
 }
 
-STRING_ARG(iguana,nodestatus,ipaddr)
+TWO_STRINGS(iguana,nodestatus,activecoin,ipaddr)
 {
     int32_t i; struct iguana_peer *addr;
     if ( coin != 0 && ipaddr != 0 )
@@ -413,7 +413,7 @@ STRING_ARG(iguana,nodestatus,ipaddr)
     } else return(clonestr("{\"error\":\"nodestatus needs ipaddr\"}"));
 }
 
-INT_ARG(iguana,maxpeers,max)
+STRING_AND_INT(iguana,maxpeers,activecoin,max)
 {
     cJSON *retjson; int32_t i; struct iguana_peer *addr;
     if ( coin != 0 )
