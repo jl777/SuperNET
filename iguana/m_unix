@@ -1,1 +1,1 @@
-gcc -DNN_DISABLE_GETADDRINFO_A=1 -DNN_USE_LITERAL_IFADDR=1 -DNN_HAVE_STDINT=1 -DNN_HAVE_MSG_CONTROL=1 -DNN_HAVE_SEMAPHORE=1 -DNN_HAVE_POLL=1 -DNN_HAVE_SOCKETPAIR=1 -DNN_USE_POLL=1 -o ../agents/iguana -O2 *.c ../crypto777/nanosrc/core/global.c ../crypto777/nanosrc/aio/usock.c ../agents/libcrypto777.a  -lcurl -lssl -lcrypto -lpthread -lm
+gcc  -o ../agents/iguana -O2 *.c ../crypto777/nanosrc/core/global.c ../crypto777/nanosrc/aio/usock.c ../agents/libcrypto777.a  -lcurl -lssl -lcrypto -lpthread -lm

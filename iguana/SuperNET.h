@@ -18,7 +18,7 @@
 
 #include "../crypto777/OS_portable.h"
 #include "../includes/cJSON.h"
-#include "../includes/nanomsg/nn.h"
+#include "../crypto777/nanosrc/nn.h"
 
 #define SUPERNET_LBPORT 7770
 #define SUPERNET_PUBPORT 7771

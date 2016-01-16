@@ -32,8 +32,8 @@
 
 // need one of following 3, listed in order of precedence, used by efd*
 //#define NN_HAVE_EVENTFD 1
-#define NN_HAVE_PIPE 1
-//#define NN_HAVE_SOCKETPAIR 1
+//#define NN_HAVE_PIPE 1
+#define NN_HAVE_SOCKETPAIR 1
 
 // need one of following 3, listed in order of precedence, used by poller*
 #define NN_USE_POLL 1
@@ -44,7 +44,7 @@
 #define NN_USE_LITERAL_IFADDR 1
 #define NN_HAVE_STDINT 1
 
-#define NN_HAVE_MSG_CONTROL 1
+#define NN_HAVE_MSG_CONTROL 0
 //#define STANDALONE 1
 
 #ifdef __PNACL

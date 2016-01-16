@@ -191,7 +191,19 @@ static void nn_global_shutdown (struct nn_fsm *self,int32_t src,int32_t type,voi
 int32_t nn_errno(void) { return nn_err_errno(); }
 
 const char *nn_strerror(int32_t errnum) { return nn_err_strerror(errnum); }
+static void nn_global_add_transport (struct nn_transport *transport)
+{
+    if (transport->init)
+        transport->init ();
+    nn_list_insert (&SELF.transports, &transport->item,nn_list_end (&SELF.transports));
+}
 
+static void nn_global_add_socktype (struct nn_socktype *socktype)
+{
+    PNACL_message("add socktype %p -> %p\n",socktype,&SELF.socktypes);
+    nn_list_insert (&SELF.socktypes, &socktype->item,nn_list_end (&SELF.socktypes));
+    PNACL_message("added socktype %p -> %p\n",socktype,&SELF.socktypes);
+}
 void nn_global_init (void)
 {
     int32_t i,rc; char *envvar,*addr;
@@ -205,15 +217,16 @@ void nn_global_init (void)
     nn_assert (LOBYTE (data.wVersion) == 2 &&
         HIBYTE (data.wVersion) == 2);
 #endif
+    PNACL_message("nn_global_init\n");
     nn_alloc_init(); // Initialise the memory allocation subsystem
     nn_random_seed(); // Seed the pseudo-random number generator
     //  Allocate the global table of SP sockets. 
-    SELF.socks = nn_alloc((sizeof (struct nn_sock*) * NN_MAX_SOCKETS) + (sizeof (uint16_t) * NN_MAX_SOCKETS), "socket table");
+    SELF.socks = nn_alloc((sizeof (struct nn_sock *) * NN_MAX_SOCKETS) + (sizeof (uint16_t) * NN_MAX_SOCKETS), "socket table");
     alloc_assert (SELF.socks);
     for (i=0; i<NN_MAX_SOCKETS; i++)
         SELF.socks[i] = NULL;
     SELF.nsocks = SELF.flags = 0;
-    //PNACL_message("do getenv\n");
+PNACL_message("do getenv\n");
     envvar = getenv("NN_PRINT_ERRORS"); // Print connection and accepting errors to the stderr
     SELF.print_errors = envvar && *envvar; // any non-empty string is true
     envvar = getenv("NN_PRINT_STATISTICS"); // Print socket statistics to stderr
@@ -222,51 +235,58 @@ void nn_global_init (void)
     alloc_assert (SELF.unused);
     for (i=0; i<NN_MAX_SOCKETS; i++)
         SELF.unused [i] = NN_MAX_SOCKETS - i - 1;
-    //PNACL_message("list init\n");
+PNACL_message("list init\n");
     // Initialise other parts of the global state.
     nn_list_init(&SELF.transports);
     nn_list_init(&SELF.socktypes);
-    //PNACL_message("transports init\n");
+    sleep(1);
+PNACL_message("transports init\n");
     //  Plug in individual transports.
     //nn_global_add_transport(nn_ipc);
     nn_global_add_transport(nn_tcp);
     //nn_global_add_transport(nn_inproc);
     //nn_global_add_transport(nn_ws);
     //nn_global_add_transport(nn_tcpmux);
-    //PNACL_message("socktypes init\n");
+    sleep(1);
+PNACL_message("socktypes init\n");
     // Plug in individual socktypes
     nn_global_add_socktype(nn_pair_socktype);
+    sleep(1);
+    PNACL_message("nn_xpair_socktype init\n");
     nn_global_add_socktype(nn_xpair_socktype);
-    nn_global_add_socktype(nn_rep_socktype);
-    nn_global_add_socktype(nn_req_socktype);
-    nn_global_add_socktype(nn_xrep_socktype);
-    nn_global_add_socktype(nn_xreq_socktype);
-    nn_global_add_socktype(nn_respondent_socktype);
-    nn_global_add_socktype(nn_surveyor_socktype);
-    nn_global_add_socktype(nn_xrespondent_socktype);
-    nn_global_add_socktype(nn_xsurveyor_socktype);
-    nn_global_add_socktype(nn_pub_socktype);
-    nn_global_add_socktype(nn_sub_socktype);
-    nn_global_add_socktype(nn_xpub_socktype);
-    nn_global_add_socktype(nn_xsub_socktype);
-    nn_global_add_socktype(nn_push_socktype);
-    nn_global_add_socktype(nn_xpush_socktype);
-    nn_global_add_socktype(nn_pull_socktype);
-    nn_global_add_socktype(nn_xpull_socktype);
-    nn_global_add_socktype(nn_bus_socktype);
-    nn_global_add_socktype(nn_xbus_socktype);
-    //PNACL_message("do pool init\n");
+    PNACL_message("did nn_xpair_socktype init\n");
+    //nn_global_add_socktype(nn_rep_socktype);
+    //nn_global_add_socktype(nn_req_socktype);
+    //nn_global_add_socktype(nn_xrep_socktype);
+    //nn_global_add_socktype(nn_xreq_socktype);
+    //nn_global_add_socktype(nn_respondent_socktype);
+    //nn_global_add_socktype(nn_surveyor_socktype);
+    //nn_global_add_socktype(nn_xrespondent_socktype);
+    //nn_global_add_socktype(nn_xsurveyor_socktype);
+    //nn_global_add_socktype(nn_pub_socktype);
+    //nn_global_add_socktype(nn_sub_socktype);
+    //nn_global_add_socktype(nn_xpub_socktype);
+    //nn_global_add_socktype(nn_xsub_socktype);
+    //nn_global_add_socktype(nn_push_socktype);
+    //nn_global_add_socktype(nn_xpush_socktype);
+    //nn_global_add_socktype(nn_pull_socktype);
+    //nn_global_add_socktype(nn_xpull_socktype);
+    //nn_global_add_socktype(nn_bus_socktype);
+    //nn_global_add_socktype(nn_xbus_socktype);
+    sleep(1);
+PNACL_message("do pool init\n");
     nn_pool_init(&SELF.pool); // Start the worker threads
-    //PNACL_message("do FSM init\n");
+    sleep(1);
+PNACL_message("do FSM init\n");
     nn_fsm_init_root(&SELF.fsm,nn_global_handler,nn_global_shutdown,&SELF.ctx); // Start FSM
     SELF.state = NN_GLOBAL_STATE_IDLE;
-    //PNACL_message("ctx init\n");
+PNACL_message("ctx init\n");
     nn_ctx_init(&SELF.ctx, nn_global_getpool(),NULL);
-    //PNACL_message("timer init\n");
+PNACL_message("timer init\n");
     nn_timer_init(&SELF.stat_timer,NN_GLOBAL_SRC_STAT_TIMER,&SELF.fsm);
-    //PNACL_message("do FSM start\n");
+PNACL_message("do FSM start\n");
     nn_fsm_start(&SELF.fsm);
-    //PNACL_message("special sockets init\n");
+PNACL_message("special sockets init\n");
     //  Initializing special sockets.
     addr = getenv("NN_STATISTICS_SOCKET");
     if ( addr != 0 )
@@ -482,8 +502,8 @@ int32_t nn_global_create_socket(int32_t domain,int32_t protocol)
 int nn_socket(int domain,int protocol)
 {
     int rc;
+    PNACL_message("nn_socket flags.%d\n",SELF.flags);
     nn_glock_lock();
-    //PNACL_message("nn_socket flags.%d\n",SELF.flags);
     if (nn_slow (SELF.flags & NN_CTX_FLAG_ZOMBIE)) // If nn_term() was already called, return ETERM
     {
         nn_glock_unlock();
@@ -995,20 +1015,7 @@ int32_t nn_recvmsg(int32_t s,struct nn_msghdr *msghdr,int32_t flags)
 }
 #endif
 
-static void nn_global_add_transport (struct nn_transport *transport)
-{
-    if (transport->init)
-        transport->init ();
-    nn_list_insert (&SELF.transports, &transport->item,
-        nn_list_end (&SELF.transports));
 
-}
-
-static void nn_global_add_socktype (struct nn_socktype *socktype)
-{
-    nn_list_insert (&SELF.socktypes, &socktype->item,
-        nn_list_end (&SELF.socktypes));
-}
 
 static void nn_global_submit_counter (int i, struct nn_sock *s,
     char *name, uint64_t value)

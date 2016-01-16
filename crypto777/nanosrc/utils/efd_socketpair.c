@@ -36,11 +36,11 @@ int nn_efd_init (struct nn_efd *self)
     int flags;
     int sp [2];
 
-//#if defined SOCK_CLOEXEC
-//    rc = socketpair (AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, sp);
-//#else
+#if defined SOCK_CLOEXEC
+    rc = socketpair (AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, sp);
+#else
     rc = socketpair (AF_UNIX, SOCK_STREAM, 0, sp);
-//#endif
+#endif
     if (rc != 0 && (errno == EMFILE || errno == ENFILE))
         return -EMFILE;
     errno_assert (rc == 0);

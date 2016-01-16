@@ -211,7 +211,6 @@ int32_t nn_settimeouts(int32_t sock,int32_t sendtimeout,int32_t recvtimeout)
 int32_t nn_createsocket(struct supernet_info *myinfo,char *endpoint,int32_t bindflag,char *name,int32_t type,uint16_t port,int32_t sendtimeout,int32_t recvtimeout)
 {
     int32_t sock;
-    return(-1);
     if ( (sock= nn_socket(AF_SP,type)) < 0 )
         fprintf(stderr,"error getting socket %s\n",nn_errstr());
     if ( bindflag != 0 )
@@ -662,26 +661,25 @@ void SuperNET_init(void *args)
         else free(ipaddr), ipaddr = 0;
     }
 #endif
-    return;
+    //return;
     sendtimeout = 100;
     recvtimeout = 30000;
-    printf("call PUBpoint\n");
+    PNACL_message("call PUBpoint myinfo.%p\n",myinfo);
     myinfo->PUBpoint[0] = myinfo->LBpoint[0] = 0;
     myinfo->PUBport = myinfo->LBport = 0;
     myinfo->PUBsock = myinfo->LBsock = -1;
-    printf("call OS_randombytes\n");
-
+    PNACL_message("call OS_randombytes\n");
     OS_randombytes(myinfo->myaddr.pubkey.bytes,sizeof(myinfo->myaddr.pubkey));
     strcpy(myinfo->transport,"tcp");
     //if ( PUBport == 0 )
         PUBport = SUPERNET_PUBPORT;
     //if ( LBport == 0 )
         LBport = SUPERNET_LBPORT;
-    printf("call nn_createsocket\n");
+  PNACL_message("call nn_createsocket\n");
     if ( (myinfo->PUBport= PUBport) != 0 )
     {
         myinfo->subsock = nn_createsocket(myinfo,0,0,"NN_SUB",NN_SUB,0,sendtimeout,0*recvtimeout);
-        printf("call setsockopt\n");
+   printf("call setsockopt\n");
         nn_setsockopt(myinfo->subsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
 #ifndef __PNACL
         if ( ipaddr != 0 )
@@ -697,7 +695,7 @@ void SuperNET_init(void *args)
             myinfo->LBsock = nn_createsocket(myinfo,myinfo->LBpoint,1,"NN_REP",NN_REP,myinfo->LBport,sendtimeout,0*recvtimeout);
 #endif
     } else myinfo->reqsock = -1;
-    PNACL_message("launch subloop\n");
+ PNACL_message("launch subloop\n");
     iguana_launch(iguana_coinadd("BTCD"),"SuperNET_sub",SuperNET_subloop,myinfo,IGUANA_PERMTHREAD);
     if ( myinfo->LBsock >= 0 || myinfo->PUBsock >= 0 )
     {
@@ -709,7 +707,7 @@ void SuperNET_init(void *args)
             sleep(10);
         }*/
     }
-    else if ( 0 )
+    else if ( 1 )
     {
         double startmillis = OS_milliseconds();
         PNACL_message("start requests %f\n",startmillis);

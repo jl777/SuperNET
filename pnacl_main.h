@@ -156,6 +156,20 @@ void PNACL_message(const char* format, ...)
 #endif
     va_end(args);
 }
+void PostMessage(const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+#ifdef __PNACL
+    struct PP_Var var;
+    var = VprintfToVar(format, args);
+    g_ppb_messaging->PostMessage(g_instance, var);
+    g_ppb_var->Release(var);
+#else
+    printf(format,args);
+#endif
+    va_end(args);
+}
 
 /**
  * Given a message from JavaScript, parse it for functions and parameters.
@@ -626,6 +640,7 @@ PSMainFunc_t PSUserMainGet()
 {
     return(example_main);
 }
+
 #else
 int main(int argc, const char * argv[])
 {

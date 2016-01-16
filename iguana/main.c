@@ -244,9 +244,9 @@ void iguana_main(void *arg)
     }
     if ( arg != 0 )
         SuperNET_JSON(&MYINFO,cJSON_Parse(arg),0);
-#ifndef MINIGUANA
-    iguana_launch(iguana_coinadd("BTCD"),"SuperNET_init",SuperNET_init,&MYINFO,IGUANA_PERMTHREAD);
-#endif
+//#ifndef MINIGUANA
+ //  iguana_launch(iguana_coinadd("BTCD"),"SuperNET_init",SuperNET_init,&MYINFO,IGUANA_PERMTHREAD);
+//#endif
  //init_InstantDEX();
     while ( 1 )
     {

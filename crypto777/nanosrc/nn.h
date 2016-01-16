@@ -391,5 +391,12 @@ NN_EXPORT int nn_tcpmuxd (int port);
 }
 #endif
 
+#include "pair.h"
+#include "bus.h"
+#include "pubsub.h"
+#include "reqrep.h"
+#include "survey.h"
+#include "pipeline.h"
+
 #endif
 

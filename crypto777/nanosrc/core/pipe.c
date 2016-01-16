@@ -58,7 +58,7 @@ void nn_pipebase_init(struct nn_pipebase *self,const struct nn_pipebase_vfptr *v
     memcpy(&self->options,&epbase->ep->options,sizeof(struct nn_ep_options));
     nn_fsm_event_init(&self->in);
     nn_fsm_event_init(&self->out);
-    //printf("pipebase_init vfptr.%p recv.%p rcvprio.%d\n",vfptr,vfptr->recv,self->options.rcvprio);
+    PNACL_message("pipebase_init vfptr.%p recv.%p rcvprio.%d\n",vfptr,vfptr->recv,self->options.rcvprio);
 }
 
 void nn_pipebase_term (struct nn_pipebase *self)
@@ -78,7 +78,7 @@ int nn_pipebase_start (struct nn_pipebase *self)
     self->instate = NN_PIPEBASE_INSTATE_ASYNC;
     self->outstate = NN_PIPEBASE_OUTSTATE_IDLE;
     rc = nn_sock_add(self->sock,(struct nn_pipe *)self);
-    //printf("nn_pipebase_start self.%p rc.%d\n",self,rc);
+    PNACL_message("nn_pipebase_start self.%p rc.%d\n",self,rc);
     if ( nn_slow(rc < 0) )
     {
         self->state = NN_PIPEBASE_STATE_FAILED;
@@ -98,7 +98,7 @@ void nn_pipebase_stop(struct nn_pipebase *self)
 
 void nn_pipebase_received(struct nn_pipebase *self)
 {
-    //printf("nn_pipebase_received\n");
+    PNACL_message("nn_pipebase_received\n");
     if ( nn_fast(self->instate == NN_PIPEBASE_INSTATE_RECEIVING) )
     {
         self->instate = NN_PIPEBASE_INSTATE_RECEIVED;
@@ -196,7 +196,7 @@ int nn_pipe_recv(struct nn_pipe *self,struct nn_msg *msg)
     pipebase = (struct nn_pipebase*) self;
     nn_assert (pipebase->instate == NN_PIPEBASE_INSTATE_IDLE);
     pipebase->instate = NN_PIPEBASE_INSTATE_RECEIVING;
-    //printf("call pipebase recv\n");
+    PNACL_message("call pipebase recv\n");
     rc = pipebase->vfptr->recv (pipebase,msg);
     errnum_assert (rc >= 0, -rc);
     if ( nn_fast(pipebase->instate == NN_PIPEBASE_INSTATE_RECEIVED) )

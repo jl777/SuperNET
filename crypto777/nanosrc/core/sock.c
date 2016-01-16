@@ -478,7 +478,7 @@ int nn_sock_add_ep(struct nn_sock *self,struct nn_transport *transport,int32_t b
 {
     int rc,eid; struct nn_ep *ep;
     nn_ctx_enter (&self->ctx);
-    //if ( (ep= nn_find_ep(self,0,addr,transport,bind)) == NULL ) // The endpoint doesn't exist
+    if ( (ep= nn_find_ep(self,0,addr,transport,bind)) == NULL ) // The endpoint doesn't exist
     {
         ep = nn_alloc(sizeof(struct nn_ep),"endpoint"); // Instantiate the endpoint
         rc = nn_ep_init(ep,NN_SOCK_SRC_EP,self,self->eid,transport,bind,addr);
@@ -489,11 +489,11 @@ int nn_sock_add_ep(struct nn_sock *self,struct nn_transport *transport,int32_t b
             return rc;
         }
         nn_ep_start(ep);
-        //PNACL_message("ep sock.(%s) started %s://(%s) bind.%d\n",self->socket_name,transport->name,addr,bind);
+        PNACL_message("ep sock.(%s) started %s://(%s) bind.%d\n",self->socket_name,transport->name,addr,bind);
         eid = self->eid++; // Increase the endpoint ID for the next endpoint
         nn_list_insert(&self->eps,&ep->item,nn_list_end(&self->eps)); // Add to the list of active endpoints
         nn_ctx_leave (&self->ctx);
-    } //else PNACL_message("self->sock.(%s) %p already has (%s)\n",self->socket_name,self->sockbase->sock,addr);
+    } else PNACL_message("self->sock.(%s) %p already has (%s)\n",self->socket_name,self->sockbase->sock,addr);
     return(ep->eid);
 }
 

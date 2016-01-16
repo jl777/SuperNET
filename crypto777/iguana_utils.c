@@ -603,7 +603,7 @@ int32_t nn_base64_decode (const char *in, size_t in_len,uint8_t *out, size_t out
         
         ch = DECODEMAP [(uint32_t)in [ii]];
         
-        /*  Discard invalid characters as per RFC 2045. */
+        // Discard invalid characters as per RFC 2045.
         if (ch == 0xFF)
             break;
         
@@ -653,7 +653,7 @@ int32_t nn_base64_encode (const uint8_t *in, size_t in_len,char *out, size_t out
         out [io++] = ENCODEMAP [v & 63];
     }
     
-    /*  Pad to a multiple of 3. */
+    //  Pad to a multiple of 3
     while (io & 3) {
         if (io >= out_len)
             return -ENOBUFS;
@@ -667,6 +667,7 @@ int32_t nn_base64_encode (const uint8_t *in, size_t in_len,char *out, size_t out
     
     return io;
 }
+
 /*
  NXT address converter,
  Ported from original javascript (nxtchg)

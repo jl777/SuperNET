@@ -1,8 +1,0 @@
-# Updated by fix_deps.py
-pnacl/Release/nanosrc/utils/wire.o: nanosrc/utils/wire.c \
-  nanosrc/utils/wire.h nanosrc/utils/int.h \
-  /Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/arpa/inet.h
-nanosrc/utils/wire.c:
-nanosrc/utils/wire.h:
-nanosrc/utils/int.h:
-/Users/jimbolaptop/Downloads/nacl_sdk/pepper_44/include/pnacl/arpa/inet.h:
