@@ -125,7 +125,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
         if ( (timeout= juint(json,"timeout")) == 0 )
             timeout = IGUANA_JSONTIMEOUT;
         jsonstr = jprint(json,0);
-        if ( jstr(json,"immediate") != 0 )
+        if ( remoteaddr == 0 || jstr(json,"immediate") != 0 )
             retjsonstr = SuperNET_jsonstr(myinfo,jsonstr,remoteaddr);
         else retjsonstr = iguana_blockingjsonstr(myinfo,jsonstr,tag,timeout,remoteaddr);
         if ( retjsonstr != 0 )
