@@ -458,7 +458,7 @@ static void hmac_sha512_final(hmac_sha512_ctx * ctx, unsigned char *mac,
    memcpy(mac, mac_temp, mac_size);
 }
 
-void hmac_sha512(const unsigned char *key, unsigned int key_size,
+void hmac_sha512str(const unsigned char *key, unsigned int key_size,
 		 const unsigned char *message, unsigned int message_len,
 		 unsigned char *mac, unsigned mac_size)
 {
@@ -499,7 +499,7 @@ char *hmac_sha512_str(char *dest,char *key,int32_t key_size,char *message)
 {
 	unsigned char mac[SHA512_DIGEST_SIZE],checkbuf[SHA512_DIGEST_SIZE*2 + 1]; char dest2[SHA512_DIGEST_SIZE*2 + 1]; unsigned long size = sizeof(checkbuf);
 	//int i;
-	hmac_sha512((const unsigned char *)key,key_size,(const unsigned char *)message,(int)strlen(message),mac,SHA512_DIGEST_SIZE);
+	hmac_sha512str((const unsigned char *)key,key_size,(const unsigned char *)message,(int)strlen(message),mac,SHA512_DIGEST_SIZE);
 	//for (i=0; i<SHA512_DIGEST_SIZE; i++)
  	//	sprintf(&dest[i*2],"%02x", mac[i]);
 	//dest[2 * SHA512_DIGEST_SIZE] = '\0';

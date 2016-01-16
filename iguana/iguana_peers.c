@@ -251,39 +251,6 @@ void iguana_iAkill(struct iguana_info *coin,struct iguana_peer *addr,int32_t mar
         iguana_possible_peer(coin,ipaddr);
 }
 
-/*int32_t pp_bind(char *hostname,uint16_t port)
-{
-    int32_t opt; struct sockaddr_in addr; socklen_t addrlen = sizeof(addr);
-    struct hostent* hostent = gethostbyname(hostname);
-    if (hostent == NULL) {
-        PNACL_message("gethostbyname() returned error: %d", errno);
-        return -1;
-    }
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
-    memcpy(&addr.sin_addr.s_addr, hostent->h_addr_list[0], hostent->h_length);
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0) {
-        printf("socket() failed: %s", strerror(errno));
-        return -1;
-    }
-    opt = 1;
-    setsockopt(sock,SOL_SOCKET,SO_REUSEADDR,(void*)&opt,sizeof(opt));
-#ifdef __APPLE__
-    setsockopt(sock,SOL_SOCKET,SO_NOSIGPIPE,&opt,sizeof(opt));
-#endif
-    //timeout.tv_sec = 0;
-    //timeout.tv_usec = 1000;
-    //setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(char *)&timeout,sizeof(timeout));
-    int result = bind(sock, (struct sockaddr*)&addr, addrlen);
-    if (result != 0) {
-        printf("bind() failed: %s", strerror(errno));
-        closesocket(sock);
-        return -1;
-    }
-    return(sock);
-}*/
-
 int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
 {
     int32_t opt,sock,result; uint32_t ipbits; char ipaddr[64]; struct timeval timeout;

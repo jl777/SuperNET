@@ -550,7 +550,7 @@ int32_t iguana_updatebundles(struct iguana_info *coin);
 void iguana_bundlestats(struct iguana_info *coin,char *str);
 
 // init
-struct iguana_info *iguana_startcoin(struct iguana_info *coin,int32_t initialheight,int32_t mapflags);
+struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialheight,int32_t mapflags);
 void iguana_initcoin(struct iguana_info *coin);
 void iguana_coinloop(void *arg);
 
@@ -689,6 +689,7 @@ void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t ti
 void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit);
 void ramcoder_test(void *data,int64_t len);
 void SuperNET_init(void *args);
+char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSON *json,char *remoteaddr);
 
 extern queue_t bundlesQ;
 

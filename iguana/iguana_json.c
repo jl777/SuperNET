@@ -16,6 +16,227 @@
 #include "iguana777.h"
 #include "SuperNET.h"
 
+cJSON *helpjson(cJSON *json,cJSON *array,cJSON *agents,char *agentstr,char *method,cJSON *methodargs)
+{
+    cJSON *methodobj,*item; int32_t i,n; char url[2048],curl[2048];
+    /*if ( *agentstrp == 0 || strcmp(*agentstrp,agentstr) != 0 )
+    {
+        if ( array != 0 )
+            jadd(json,*agentstrp,array);
+        *agentstrp = agentstr;
+        jaddistr(agents,agentstr);
+        printf("add agent.(%s)\n",agentstr);
+    }*/
+    if ( (n= cJSON_GetArraySize(agents)) > 0 )
+    {
+        for (i=0; i<n; i++)
+        {
+            item = jitem(agents,i);
+            if ( strcmp(agentstr,jstr(item,0)) == 0 )
+                break;
+        }
+    } else i = 0;
+    if ( i == n )
+        jaddistr(agents,agentstr);
+    if ( array == 0 )
+        array = cJSON_CreateArray();
+    methodobj = cJSON_CreateObject();
+    jaddstr(methodobj,"agent",agentstr);
+    jaddstr(methodobj,"method",method);
+    sprintf(url,"http://127.0.0.1:7778/api/%s/%s",agentstr,method);
+    sprintf(curl,"curl --url \"http://127.0.0.1:7778\" --data \"{\"agent\":\"%s\",\"method\":\"%s\"",agentstr,method);
+    if ( methodargs != 0 && (n= cJSON_GetArraySize(methodargs)) > 0 )
+    {
+        //printf("method.%s n.%d %s\n",method,n,jprint(methodargs,0));
+        for (i=0; i<n; i++)
+        {
+            strcat(url,i==0?"?":"&");
+            item = jitem(methodargs,i);
+            sprintf(url+strlen(url),"%s={%s}",get_cJSON_fieldname(item),jstr(item,get_cJSON_fieldname(item)));
+            sprintf(curl+strlen(curl),",\"%s\":\"{%s}\"",get_cJSON_fieldname(item),jstr(item,get_cJSON_fieldname(item)));
+        }
+    }
+    strcat(curl,"}\"");
+    jaddstr(methodobj,"url",url);
+    jaddstr(methodobj,"curl",curl);
+    jadd(methodobj,"fields",methodargs==0?cJSON_CreateArray():methodargs);
+    jaddi(array,methodobj);
+    return(array);
+}
+
+cJSON *helpitem(char *field,char *type) { cJSON *obj = cJSON_CreateObject(); jaddstr(obj,field,type); return(obj); }
+cJSON *helparray(cJSON *array,cJSON *obj0) { jaddi(array,obj0); return(array);}
+cJSON *helparray2(cJSON *array,cJSON *obj0,cJSON *obj1) { jaddi(array,obj0); return(helparray(array,obj1)); }
+cJSON *helparray3(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2) { jaddi(array,obj0); return(helparray2(array,obj1,obj2)); }
+cJSON *helparray4(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3) { jaddi(array,obj0); return(helparray3(array,obj1,obj2,obj3)); }
+cJSON *helparray5(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4) { jaddi(array,obj0); return(helparray4(array,obj1,obj2,obj3,obj4)); }
+cJSON *helparray6(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4,cJSON *obj5) { jaddi(array,obj0); return(helparray5(array,obj1,obj2,obj3,obj4,obj5)); }
+
+cJSON *SuperNET_helpjson()
+{
+    cJSON *array=0,*json,*agents;
+    json = cJSON_CreateObject();
+    agents = cJSON_CreateArray();
+#define IGUANA_ARGS json,array,agents
+#define IGUANA_HELP0(agent,name) array = helpjson(IGUANA_ARGS,#agent,#name,0)
+#define IGUANA_HELP_S(agent,name,str) array = helpjson(IGUANA_ARGS,#agent,#name,helparray(cJSON_CreateArray(),helpitem(#str,"string")))
+#define IGUANA_HELP_SS(agent,name,str,str2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#str2,"string")))
+#define IGUANA_HELP_SSS(agent,name,str,str2,str3) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#str2,"string"),helpitem(#str3,"string")))
+#define IGUANA_HELP_SI(agent,name,str,val) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#val,"int")))
+#define IGUANA_HELP_SII(agent,name,str,val,val2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#val,"int"),helpitem(#val2,"int")))
+#define IGUANA_HELP_SSI(agent,name,str,str2,val) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#str2,"string"),helpitem(#val,"int")))
+#define IGUANA_HELP_SA(agent,name,str,obj) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#obj,"array")))
+#define IGUANA_HELP_SAA(agent,name,str,obj,obj2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#obj,"array"),helpitem(#obj2,"array")))
+#define IGUANA_HELP_SIII(agent,name,str,val,val2,val3) array = helpjson(IGUANA_ARGS,#agent,#name,helparray4(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#val,"int"),helpitem(#val2,"int"),helpitem(#val3,"int")))
+    
+#define IGUANA_HELP_I(agent,name,val) array = helpjson(IGUANA_ARGS,#agent,#name,helparray(cJSON_CreateArray(),helpitem(#val,"int")))
+#define IGUANA_HELP_II(agent,name,val,val2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#val,"int"),helpitem(#val2,"int")))
+#define IGUANA_HELP_IA(agent,name,val,obj) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#val,"int"),helpitem(#obj,"array")))
+#define IGUANA_HELP_IIA(agent,name,val,val2,obj) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#val,"int"),helpitem(#val2,"int"),helpitem(#obj,"array")))
+#define IGUANA_HELP_III(agent,name,val,val2,val3) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#val,"int"),helpitem(#val2,"int"),helpitem(#val3,"int")))
+#define IGUANA_HELP_IAS(agent,name,val,obj,str) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#val,"int"),helpitem(#obj,"array"),helpitem(#str,"string")))
+    
+#define IGUANA_HELP_AA(agent,name,obj,obj2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#obj,"array"),helpitem(#obj2,"array")))
+#define IGUANA_HELP_D(agent,name,amount) array = helpjson(IGUANA_ARGS,#agent,#name,helparray(cJSON_CreateArray(),helpitem(#amount,"float")))
+    
+#define IGUANA_HELP_HI(agent,name,hash,val) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#val,"int")))
+#define IGUANA_HELP_HII(agent,name,hash,val,val2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#val,"int"),helpitem(#val2,"int")))
+    
+#define IGUANA_HELP_SSDIS(agent,name,str,str2,amount,val,str3) array = helpjson(IGUANA_ARGS,#agent,#name,helparray5(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#str2,"string"),helpitem(#amount,"float"),helpitem(#val,"int"),helpitem(#str3,"string")))
+#define IGUANA_HELP_SSDISS(agent,name,str,str2,amount,val,str3,str4) array = helpjson(IGUANA_ARGS,#agent,#name,helparray6(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#str2,"string"),helpitem(#amount,"float"),helpitem(#val,"int"),helpitem(#str3,"string"),helpitem(#str4,"string")))
+#define IGUANA_HELP_SAIS(agent,name,str,obj,val,str2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray4(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#obj,"array"),helpitem(#val,"int"),helpitem(#str2,"string")))
+#define IGUANA_HELP_SDSS(agent,name,str,amount,str2,str3) array = helpjson(IGUANA_ARGS,#agent,#name,helparray4(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#amount,"float"),helpitem(#str2,"string"),helpitem(#str3,"string")))
+    
+    // API functions
+#define ZERO_ARGS IGUANA_HELP0
+#define INT_ARG IGUANA_HELP_I
+#define TWO_INTS IGUANA_HELP_II
+#define STRING_ARG IGUANA_HELP_S
+#define TWO_STRINGS IGUANA_HELP_SS
+#define THREE_STRINGS IGUANA_HELP_SSS
+#define STRING_AND_INT IGUANA_HELP_SI
+#define STRING_AND_TWOINTS IGUANA_HELP_SII
+#define HASH_AND_INT IGUANA_HELP_HI
+#define HASH_AND_TWOINTS IGUANA_HELP_HII
+#define DOUBLE_ARG IGUANA_HELP_D
+#define STRING_AND_ARRAY IGUANA_HELP_SA
+#define STRING_AND_TWOARRAYS IGUANA_HELP_SAA
+#define TWO_ARRAYS IGUANA_HELP_AA
+#define INT_AND_ARRAY IGUANA_HELP_IA
+#define INT_ARRAY_STRING IGUANA_HELP_IAS
+#define SS_D_I_S IGUANA_HELP_SSDIS
+#define SS_D_I_SS IGUANA_HELP_SSDISS
+#define S_A_I_S IGUANA_HELP_SAIS
+#define S_D_SS IGUANA_HELP_SDSS
+#define TWOINTS_AND_ARRAY IGUANA_HELP_IIA
+#define STRING_AND_THREEINTS IGUANA_HELP_SIII
+#define TWOSTRINGS_AND_INT IGUANA_HELP_SSI
+#define THREE_INTS IGUANA_HELP_III
+    
+#include "../includes/iguana_apideclares.h"
+#undef IGUANA_ARGS
+    
+#include "../includes/iguana_apiundefs.h"
+    if ( array != 0 )
+        jadd(json,"API",array);
+    jadd(json,"agents",agents);
+    return(json);
+}
+
+int32_t agentform(FILE *fp,char *form,int32_t max,char *agent,cJSON *methoditem)
+{
+    cJSON *item,*fieldsarray; int32_t j,m,width,size = 0;
+    char *methodstr,*typestr,outstr[2048],outstr2[2048],fields[8192],str[2],agent_method[256],*fieldname;
+    form[0] = 0;
+    if ( (methodstr= jstr(methoditem,"method")) == 0 )
+        methodstr = "method";
+    if ( agent == 0 )
+        agent = "agent";
+    outstr[0] = outstr2[0] = 0;
+    str[1] = 0;
+    fields[0] = 0;
+    sprintf(agent_method,"%s %s",agent,methodstr);
+    if ( (fieldsarray= jarray(&m,methoditem,"fields")) != 0 )
+    {
+        for (j=0; j<m; j++)
+        {
+            item = jitem(fieldsarray,j);
+            fieldname = get_cJSON_fieldname(item);
+           // printf("item.(%s) %s\n",jprint(item,0),jstr(item,fieldname));
+            if ( (typestr= jstr(item,fieldname)) != 0 )
+            {
+                if ( strcmp(typestr,"string") == 0 )
+                    width = 44;
+                else if ( strcmp(typestr,"hash") == 0 )
+                    width = 65;
+                else if ( strcmp(typestr,"int") == 0 )
+                    width = 8;
+                else if ( strcmp(typestr,"float") == 0 )
+                    width = 16;
+                else width = 0;
+            }
+            //sprintf(buf,"<input type=\"text\" name=\"%s\"/>",fieldname);
+            // sprintf(buf,"<textarea cols=\"%d\" rows=\"%d\"  name=\"%s\" %s></textarea>",
+            sprintf(fields+strlen(fields),"<b>%s</b> %s <textarea name=\"%s\" rows=\"1\" cols=\"%d\" %s></textarea>",j==0?agent_method:"",fieldname,fieldname,width,fieldname);
+            if ( j > 0 )
+            {
+                strcat(outstr,"+");
+                strcat(outstr2," ");
+            }
+            strcat(outstr,fieldname);
+            strcat(outstr2,fieldname);
+            //printf("fields[%d] (%s)\n",j,fields);
+        }
+    } else sprintf(fields+strlen(fields),"<b>%s</b> <textarea rows=\"0\" cols=\"0\"></textarea>",agent_method);
+    sprintf(&form[size],"<form action=\"http://127.0.0.1:7778/api/%s/%s\" oninput=\"%s\">%s<output for=\"%s\"></output><input type=\"submit\" value=\"%s\"></form>",agent,methodstr,outstr,fields,outstr2,methodstr);
+    if ( fp != 0 )
+        fprintf(fp,"<form action=\"http://127.0.0.1:7778/api/%s/%s\" oninput=\"%s\">%s<output for=\"%s\"></output><input type=\"submit\" value=\"%s\"></form>",agent,methodstr,outstr,fields,outstr2,methodstr);
+    return((int32_t)strlen(form));
+}
+
+/*<form action="action_page.asp"
+ oninput="x.value=parseInt(a.value)+parseInt(b.value)">
+ 0
+ <input type="range"  id="a" name="a" value="50">
+ 100 +
+ <input type="number" id="b" name="b" value="50">
+ =
+ <output name="x" for="a b"></output>
+ <br><br>
+ <input type="submit">
+ </form>*/
+
+char *SuperNET_htmlstr(FILE *fp,char *htmlstr,int32_t max,char *agentstr)
+{
+    int32_t i,n,len,size = 0; cJSON *helpjson,*item,*array; char *str;
+    htmlstr[0] = 0;
+    sprintf(htmlstr,"<!DOCTYPE HTML><html> <head><title>SuperUGLY GUI></title></head> <body> ");
+    if ( fp != 0 )
+        fprintf(fp,"%s\n",htmlstr);
+    size = (int32_t)strlen(htmlstr);
+    if ( (helpjson= SuperNET_helpjson()) != 0 )
+    {
+        if ( (array= jarray(&n,helpjson,"API")) != 0 )
+        {
+            for (i=0; i<n; i++)
+            {
+                item = jitem(array,i);
+                str = jstr(item,"agent");
+                if ( agentstr == 0 || agentstr[0] == 0 || (str != 0 && strcmp(str,agentstr) == 0) )
+                {
+                    len = agentform(fp,&htmlstr[size],max - size,str!=0?str:"agent",item);
+                    size += len;
+                } //else printf("agentstr.%p (%s) (%s) str.%p \n",agentstr,agentstr,str,str);
+            }
+        }
+        free_json(helpjson);
+    }
+    strcat(htmlstr,"<br><br/></body></html><br><br/>");
+    if ( fp != 0 )
+        fprintf(fp,"<br><br/></body></html><br><br/>\n");
+    return(htmlstr);
+}
+
 cJSON *iguana_peerjson(struct iguana_info *coin,struct iguana_peer *addr)
 {
     cJSON *array,*json = cJSON_CreateObject();
@@ -86,71 +307,119 @@ cJSON *iguana_peersjson(struct iguana_info *coin,int32_t addronly)
     else return(array);
 }
 
-char *iguana_coinjson(struct iguana_info *coin,char *method,cJSON *json)
+#include "../includes/iguana_apidefs.h"
+
+ZERO_ARGS(iguana,peers)
 {
-    int32_t i,max,retval,num=0; char buf[1024]; struct iguana_peer *addr; char *ipaddr; cJSON *retjson = 0;
-    //printf("iguana_coinjson(%s)\n",jprint(json,0));
-    if ( strcmp(method,"peers") == 0 )
+    if ( coin != 0 )
         return(jprint(iguana_peersjson(coin,0),1));
-    else if ( strcmp(method,"getconnectioncount") == 0 )
+    else return(clonestr("{\"error\":\"peers needs coin\"}"));
+}
+
+ZERO_ARGS(iguana,getconnectioncount)
+{
+    int32_t i,num = 0; char buf[512];
+    if ( coin != 0 )
     {
         for (i=0; i<sizeof(coin->peers.active)/sizeof(*coin->peers.active); i++)
             if ( coin->peers.active[i].usock >= 0 )
                 num++;
         sprintf(buf,"{\"result\":\"%d\"}",num);
         return(clonestr(buf));
-    }
-    else if ( strcmp(method,"addnode") == 0 )
+    } else return(clonestr("{\"error\":\"getconnectioncount needs coin\"}"));
+}
+
+STRING_ARG(iguana,addcoin,newcoin)
+{
+    char *symbol; int32_t retval;
+    if ( (symbol= newcoin) == 0 && coin != 0 )
+        symbol = coin->symbol;
+    if ( symbol != 0 )
     {
-        if ( (ipaddr= jstr(json,"ipaddr")) != 0 )
-        {
-            iguana_possible_peer(coin,ipaddr);
-            return(clonestr("{\"result\":\"addnode submitted\"}"));
-        } else return(clonestr("{\"error\":\"addnode needs ipaddr\"}"));
-    }
-    else if ( strcmp(method,"removenode") == 0 )
+        if ( (retval= iguana_launchcoin(symbol,json)) > 0 )
+            return(clonestr("{\"result\":\"coin added\"}"));
+        else if ( retval == 0 )
+            return(clonestr("{\"result\":\"coin already there\"}"));
+        else return(clonestr("{\"error\":\"error adding coin\"}"));
+    } else return(clonestr("{\"error\":\"addcoin needs newcoin\"}"));
+}
+
+ZERO_ARGS(iguana,startcoin)
+{
+    if ( coin != 0 )
     {
-        if ( (ipaddr= jstr(json,"ipaddr")) != 0 )
+        coin->active = 1;
+        return(clonestr("{\"result\":\"coin started\"}"));
+    } else return(clonestr("{\"error\":\"startcoin needs coin\"}"));
+}
+
+ZERO_ARGS(iguana,pausecoin)
+{
+    if ( coin != 0 )
+    {
+        coin->active = 0;
+        return(clonestr("{\"result\":\"coin paused\"}"));
+    } else return(clonestr("{\"error\":\"pausecoin needs coin\"}"));
+}
+
+STRING_ARG(iguana,addnode,ipaddr)
+{
+    if ( coin != 0 && ipaddr != 0 )
+    {
+        iguana_possible_peer(coin,ipaddr);
+        return(clonestr("{\"result\":\"addnode submitted\"}"));
+    } else return(clonestr("{\"error\":\"addnode needs ipaddr\"}"));
+}
+
+STRING_ARG(iguana,removenode,ipaddr)
+{
+    int32_t i;
+    if ( coin != 0 && ipaddr != 0 )
+    {
+        for (i=0; i<IGUANA_MAXPEERS; i++)
         {
-            for (i=0; i<IGUANA_MAXPEERS; i++)
+            if ( strcmp(coin->peers.active[i].ipaddr,ipaddr) == 0 )
             {
-                if ( strcmp(coin->peers.active[i].ipaddr,ipaddr) == 0 )
-                {
-                    coin->peers.active[i].rank = 0;
-                    coin->peers.active[i].dead = (uint32_t)time(NULL);
-                    return(clonestr("{\"result\":\"node marked as dead\"}"));
-                }
+                coin->peers.active[i].rank = 0;
+                coin->peers.active[i].dead = (uint32_t)time(NULL);
+                return(clonestr("{\"result\":\"node marked as dead\"}"));
             }
-            return(clonestr("{\"result\":\"node wasnt active\"}"));
-        } else return(clonestr("{\"error\":\"removenode needs ipaddr\"}"));
-    }
-    else if ( strcmp(method,"oneshot") == 0 )
+        }
+        return(clonestr("{\"result\":\"node wasnt active\"}"));
+    } else return(clonestr("{\"error\":\"removenode needs coin and ipaddr\"}"));
+}
+
+STRING_ARG(iguana,oneshot,ipaddr)
+{
+    if ( coin != 0 && ipaddr != 0 )
     {
-        if ( (ipaddr= jstr(json,"ipaddr")) != 0 )
-        {
-            iguana_possible_peer(coin,ipaddr);
-            return(clonestr("{\"result\":\"addnode submitted\"}"));
-        } else return(clonestr("{\"error\":\"addnode needs ipaddr\"}"));
-    }
-    else if ( strcmp(method,"nodestatus") == 0 )
+        iguana_possible_peer(coin,ipaddr);
+        return(clonestr("{\"result\":\"addnode submitted\"}"));
+    } else return(clonestr("{\"error\":\"addnode needs coin and ipaddr\"}"));
+}
+
+STRING_ARG(iguana,nodestatus,ipaddr)
+{
+    int32_t i; struct iguana_peer *addr;
+    if ( coin != 0 && ipaddr != 0 )
     {
-        if ( (ipaddr= jstr(json,"ipaddr")) != 0 )
+        for (i=0; i<coin->MAXPEERS; i++)
         {
-            for (i=0; i<coin->MAXPEERS; i++)
-            {
-                addr = &coin->peers.active[i];
-                if ( strcmp(addr->ipaddr,ipaddr) == 0 )
-                    return(jprint(iguana_peerjson(coin,addr),1));
-            }
-            return(clonestr("{\"result\":\"nodestatus couldnt find ipaddr\"}"));
-        } else return(clonestr("{\"error\":\"nodestatus needs ipaddr\"}"));
-    }
-    else if ( strcmp(method,"maxpeers") == 0 )
+            addr = &coin->peers.active[i];
+            if ( strcmp(addr->ipaddr,ipaddr) == 0 )
+                return(jprint(iguana_peerjson(coin,addr),1));
+        }
+        return(clonestr("{\"result\":\"nodestatus couldnt find ipaddr\"}"));
+    } else return(clonestr("{\"error\":\"nodestatus needs ipaddr\"}"));
+}
+
+INT_ARG(iguana,maxpeers,max)
+{
+    cJSON *retjson; int32_t i; struct iguana_peer *addr;
+    if ( coin != 0 )
     {
         retjson = cJSON_CreateObject();
-        if ( (max= juint(json,"max")) <= 0 )
-            max = 1;
-        else if ( max > IGUANA_MAXPEERS )
+        if ( max > IGUANA_MAXPEERS )
             max = IGUANA_MAXPEERS;
         if ( max > coin->MAXPEERS )
         {
@@ -162,692 +431,182 @@ char *iguana_coinjson(struct iguana_info *coin,char *method,cJSON *json)
         jaddnum(retjson,"maxpeers",coin->MAXPEERS);
         jaddstr(retjson,"coin",coin->symbol);
         return(jprint(retjson,1));
-    }
-    else if ( strcmp(method,"getrawmempool") == 0 )
-    {
-        return(clonestr("{\"result\":\"no rampool yet\"}"));
-    }
-    else if ( strcmp(method,"sendalert") == 0 )
-    {
-        return(clonestr("{\"result\":\"no sendalert yet\"}"));
-    }
-    else if ( strcmp(method,"startcoin") == 0 )
-    {
-        coin->active = 1;
-        return(clonestr("{\"result\":\"coin started\"}"));
-    }
-    else if ( strcmp(method,"pausecoin") == 0 )
-    {
-        coin->active = 0;
-        return(clonestr("{\"result\":\"coin paused\"}"));
-    }
-    else if ( strcmp(method,"addcoin") == 0 )
-    {
-        if ( (retval= iguana_launchcoin(coin->symbol,json)) > 0 )
-            return(clonestr("{\"result\":\"coin added\"}"));
-        else if ( retval == 0 )
-            return(clonestr("{\"result\":\"coin already there\"}"));
-        else return(clonestr("{\"error\":\"error adding coin\"}"));
-    }
-    return(clonestr("{\"error\":\"unhandled request\"}"));
+    } else return(clonestr("{\"error\":\"maxpeers needs coin\"}"));
 }
 
-char *iguana_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr)
+char *hmac_dispatch(char *(*hmacfunc)(char *dest,char *key,int32_t key_size,char *message),char *name,char *message,char *password)
 {
-    char *coinstr,SYM[16]; int32_t j,k,l,r,rr; struct iguana_peer *addr;
-    cJSON *retjson = 0,*array; int32_t i,n; struct iguana_info *coin; char *symbol;
-    printf("remoteaddr.(%s)\n",remoteaddr!=0?remoteaddr:"local");
-    if ( remoteaddr == 0 || remoteaddr[0] == 0 || strcmp(remoteaddr,"127.0.0.1") == 0 ) // local (private) api
+    char hexstr[1025]; cJSON *json;
+    if ( message != 0 && password != 0 )
     {
-        if ( strcmp(method,"list") == 0 )
-        {
-            retjson = cJSON_CreateObject();
-            array = cJSON_CreateArray();
-            for (i=0; i<sizeof(Coins)/sizeof(*Coins); i++)
-            {
-                if ( Coins[i] != 0 && Coins[i]->symbol[0] != 0 )
-                    jaddistr(array,Coins[i]->symbol);
-            }
-            jadd(retjson,"coins",array);
-            return(jprint(retjson,1));
-        }
-        else if ( strcmp(method,"allpeers") == 0 )
-        {
-            retjson = cJSON_CreateObject();
-            array = cJSON_CreateArray();
-            for (i=0; i<sizeof(Coins)/sizeof(*Coins); i++)
-            {
-                if ( Coins[i] != 0 && Coins[i]->symbol[0] != 0 )
-                    jaddi(array,iguana_peersjson(Coins[i],0));
-            }
-            jadd(retjson,"allpeers",array);
-            return(jprint(retjson,1));
-        }
-        else
-        {
-            if ( (symbol= jstr(json,"coin")) != 0 && strlen(symbol) < sizeof(SYM)-1 )
-            {
-                strcpy(SYM,symbol);
-                touppercase(SYM);
-                if ( (coin= iguana_coinfind(SYM)) == 0 )
-                {
-                    if ( strcmp(method,"addcoin") == 0 )
-                        coin = iguana_coinadd(SYM);
-                }
-                if ( coin != 0 )
-                    return(iguana_coinjson(coin,method,json));
-                else return(clonestr("{\"error\":\"cant get coin info\"}"));
-            }
-        }
-    }
-    array = 0;
-    if ( strcmp(method,"getpeers") == 0 )
-    {
-        if ( (coinstr= jstr(json,"coin")) != 0 )
-        {
-            if ( (array= iguana_peersjson(iguana_coinfind(coinstr),1)) == 0 )
-                return(clonestr("{\"error\":\"coin not found\"}"));
-        }
-        else
-        {
-            n = 0;
-            array = cJSON_CreateArray();
-            r = rand();
-            for (i=0; i<IGUANA_MAXCOINS; i++)
-            {
-                j = (r + i) % IGUANA_MAXCOINS;
-                if ( (coin= Coins[j]) != 0 )
-                {
-                    rr = rand();
-                    for (k=0; k<IGUANA_MAXPEERS; k++)
-                    {
-                        l = (rr + k) % IGUANA_MAXPEERS;
-                        addr = &coin->peers.active[l];
-                        if ( addr->usock >= 0 && addr->supernet != 0 )
-                        {
-                            jaddistr(array,addr->ipaddr);
-                            if ( ++n >= 64 )
-                                break;
-                        }
-                    }
-                }
-            }
-        }
-        if ( array != 0 )
-        {
-            retjson = cJSON_CreateObject();
-            jaddstr(retjson,"agent","SuperNET");
-            jaddstr(retjson,"method","mypeers");
-            jaddstr(retjson,"result","peers found");
-            jadd(retjson,"peers",array);
-            return(jprint(retjson,1));
-        } else return(clonestr("{\"error\":\"no peers found\"}"));
-    }
-    else if ( strcmp(method,"mypeers") == 0 )
-    {
-        printf("mypeers from %s\n",remoteaddr!=0?remoteaddr:"local");
-    }
-    return(clonestr("{\"result\":\"stub processed generic json\"}"));
+        (*hmacfunc)(hexstr,password,password==0?0:(int32_t)strlen(password),message);
+        json = cJSON_CreateObject();
+        jaddstr(json,"result","hmac calculated");
+        jaddstr(json,"message",message);
+        jaddstr(json,name,hexstr);
+        return(jprint(json,1));
+    } else return(clonestr("{\"error\":\"hmac needs message and passphrase\"}"));
 }
 
-struct iguana_txid *iguana_blocktx(struct iguana_info *coin,struct iguana_txid *tx,struct iguana_block *block,int32_t i)
+char *hash_dispatch(void (*hashfunc)(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len),char *name,char *message)
 {
-    struct iguana_bundle *bp; uint32_t txidind;
-    if ( i >= 0 && i < block->RO.txn_count )
+    char hexstr[1025]; uint8_t databuf[512]; cJSON *json;
+    if ( message != 0 )
     {
-        if ( block->height >= 0 ) //
-        {
-            if ( (bp= coin->bundles[block->hdrsi]) != 0 )
-            {
-                if ( (txidind= block->RO.firsttxidind) > 0 )//bp->firsttxidinds[block->bundlei]) > 0 )
-                {
-                    if ( iguana_bundletx(coin,bp,block->bundlei,tx,txidind+i) == tx )
-                        return(tx);
-                    printf("error getting txidind.%d + i.%d from hdrsi.%d\n",txidind,i,block->hdrsi);
-                    return(0);
-                } else printf("iguana_blocktx null txidind\n");
-            } else printf("iguana_blocktx no bp\n");
-        }
-    } else printf("i.%d vs txn_count.%d\n",i,block->RO.txn_count);
-    return(0);
+        (*hashfunc)(hexstr,databuf,(uint8_t *)message,(int32_t)strlen(message));
+        json = cJSON_CreateObject();
+        jaddstr(json,"result","hash calculated");
+        jaddstr(json,"message",message);
+        jaddstr(json,name,hexstr);
+        return(jprint(json,1));
+    } else return(clonestr("{\"error\":\"hash needs message\"}"));
 }
 
-cJSON *iguana_blockjson(struct iguana_info *coin,struct iguana_block *block,int32_t txidsflag)
+STRING_ARG(hash,NXT,passphrase) { return(hash_dispatch(calc_NXTaddr,"NXT",passphrase)); }
+STRING_ARG(hash,curve25519,pubkey) { return(hash_dispatch(calc_curve25519_str,"curve25519",pubkey)); }
+STRING_ARG(hash,crc32,message) { return(hash_dispatch(calc_crc32str,"crc32",message)); }
+STRING_ARG(hash,base64_encode,message) { return(hash_dispatch(calc_base64_encodestr,"base64_encode",message)); }
+STRING_ARG(hash,base64_decode,message) { return(hash_dispatch(calc_base64_decodestr,"base64_decode",message)); }
+STRING_ARG(hash,rmd160_sha256,message) { return(hash_dispatch(rmd160ofsha256,"rmd160_sha256",message)); }
+STRING_ARG(hash,sha256_sha256,message) { return(hash_dispatch(sha256_sha256,"sha256_sha256",message)); }
+STRING_ARG(hash,sha224,message) { return(hash_dispatch(calc_sha224,"sha224",message)); }
+STRING_ARG(hash,sha256,message) { return(hash_dispatch(vcalc_sha256,"sha256",message)); }
+STRING_ARG(hash,sha384,message) { return(hash_dispatch(calc_sha384,"sha384",message)); }
+STRING_ARG(hash,sha512,message) { return(hash_dispatch(calc_sha512,"sha512",message)); }
+STRING_ARG(hash,rmd128,message) { return(hash_dispatch(calc_rmd128,"rmd128",message)); }
+STRING_ARG(hash,rmd160,message) { return(hash_dispatch(calc_rmd160,"rmd160",message)); }
+STRING_ARG(hash,rmd256,message) { return(hash_dispatch(calc_rmd256,"rmd256",message)); }
+STRING_ARG(hash,rmd320,message) { return(hash_dispatch(calc_rmd320,"rmd320",message)); }
+STRING_ARG(hash,sha1,message) { return(hash_dispatch(calc_sha1,"sha1",message)); }
+STRING_ARG(hash,md2,message) { return(hash_dispatch(calc_md2str,"md2",message)); }
+STRING_ARG(hash,md4,message) { return(hash_dispatch(calc_md4str,"md4",message)); }
+STRING_ARG(hash,md5,message) { return(hash_dispatch(calc_md5str,"md5",message)); }
+STRING_ARG(hash,tiger,message) { return(hash_dispatch(calc_tiger,"tiger",message)); }
+STRING_ARG(hash,whirlpool,message) { return(hash_dispatch(calc_whirlpool,"whirlpool",message)); }
+TWO_STRINGS(hmac,sha224,message,passphrase) { return(hmac_dispatch(hmac_sha224_str,"sha224",message,passphrase)); }
+TWO_STRINGS(hmac,sha256,message,passphrase) { return(hmac_dispatch(hmac_sha256_str,"sha256",message,passphrase)); }
+TWO_STRINGS(hmac,sha384,message,passphrase) { return(hmac_dispatch(hmac_sha384_str,"sha384",message,passphrase)); }
+TWO_STRINGS(hmac,sha512,message,passphrase) { return(hmac_dispatch(hmac_sha512_str,"sha512",message,passphrase)); }
+TWO_STRINGS(hmac,rmd128,message,passphrase) { return(hmac_dispatch(hmac_rmd128_str,"rmd128",message,passphrase)); }
+TWO_STRINGS(hmac,rmd160,message,passphrase) { return(hmac_dispatch(hmac_rmd160_str,"rmd160",message,passphrase)); }
+TWO_STRINGS(hmac,rmd256,message,passphrase) { return(hmac_dispatch(hmac_rmd256_str,"rmd256",message,passphrase)); }
+TWO_STRINGS(hmac,rmd320,message,passphrase) { return(hmac_dispatch(hmac_rmd320_str,"rmd320",message,passphrase)); }
+TWO_STRINGS(hmac,sha1,message,passphrase) { return(hmac_dispatch(hmac_sha1_str,"sha1",message,passphrase)); }
+TWO_STRINGS(hmac,md2,message,passphrase) { return(hmac_dispatch(hmac_md2_str,"md2",message,passphrase)); }
+TWO_STRINGS(hmac,md4,message,passphrase) { return(hmac_dispatch(hmac_md4_str,"md4",message,passphrase)); }
+TWO_STRINGS(hmac,md5,message,passphrase) { return(hmac_dispatch(hmac_md5_str,"md5",message,passphrase)); }
+TWO_STRINGS(hmac,tiger,message,passphrase) { return(hmac_dispatch(hmac_tiger_str,"tiger",message,passphrase)); }
+TWO_STRINGS(hmac,whirlpool,message,passphrase) { return(hmac_dispatch(hmac_whirlpool_str,"whirlpool",message,passphrase)); }
+
+STRING_ARG(SuperNET,bitcoinrpc,setcoin)
 {
-    char str[65]; int32_t i; struct iguana_txid *tx,T; cJSON *array,*json = cJSON_CreateObject();
-    jaddstr(json,"blockhash",bits256_str(str,block->RO.hash2));
-    jaddnum(json,"height",block->height);
-    jaddnum(json,"ipbits",block->fpipbits);
-    jaddstr(json,"merkle_root",bits256_str(str,block->RO.merkle_root));
-    jaddstr(json,"prev_block",bits256_str(str,block->RO.prev_block));
-    jaddnum(json,"timestamp",block->RO.timestamp);
-    jaddnum(json,"nonce",block->RO.nonce);
-    jaddnum(json,"nBits",block->RO.bits);
-    jaddnum(json,"version",block->RO.version);
-    jaddnum(json,"numvouts",block->RO.numvouts);
-    jaddnum(json,"numvins",block->RO.numvins);
-    jaddnum(json,"recvlen",block->RO.recvlen);
-    jaddnum(json,"hdrsi",block->hdrsi);
-    jaddnum(json,"PoW",block->PoW);
-    jaddnum(json,"bundlei",block->bundlei);
-    jaddnum(json,"mainchain",block->mainchain);
-    jaddnum(json,"valid",block->valid);
-    jaddnum(json,"txn_count",block->RO.txn_count);
-    if ( txidsflag != 0 )
+    if ( coin != 0 && setcoin != 0 && setcoin[0] != 0 )
     {
-        array = cJSON_CreateArray();
-        for (i=0; i<block->RO.txn_count; i++)
-        {
-            if ( (tx= iguana_blocktx(coin,&T,block,i)) != 0 )
-                jaddistr(array,bits256_str(str,tx->txid));
-        }
-        jadd(json,"txids",array);
-        //printf("add txids[%d]\n",block->txn_count);
-    }
-    return(json);
+        strcpy(myinfo->rpcsymbol,setcoin);
+        touppercase(myinfo->rpcsymbol);
+        return(clonestr("{\"result\":\"set bitcoin RPC coin\"}"));
+    } else return(clonestr("{\"error\":\"bitcoinrpc needs setcoin value\"}"));
 }
 
-cJSON *iguana_voutjson(struct iguana_info *coin,struct iguana_msgvout *vout,char *asmstr)
+ZERO_ARGS(SuperNET,help)
 {
-    static bits256 zero;
-    char scriptstr[8192+1],coinaddr[65]; int32_t i,M,N; uint8_t rmd160[20],msigs160[16][20],addrtype;
-    cJSON *addrs,*json = cJSON_CreateObject();
-    jaddnum(json,"value",dstr(vout->value));
-    if ( asmstr[0] != 0 )
-        jaddstr(json,"asm",asmstr);
-    if ( vout->pk_script != 0 && vout->pk_scriptlen*2+1 < sizeof(scriptstr) )
+    cJSON *helpjson,*retjson;
+    if ( (helpjson= SuperNET_helpjson()) != 0 )
     {
-        if ( iguana_calcrmd160(coin,rmd160,msigs160,&M,&N,vout->pk_script,vout->pk_scriptlen,zero) > 0 )
-            addrtype = coin->chain->p2shval;
-        else addrtype = coin->chain->pubval;
-        btc_convrmd160(coinaddr,addrtype,rmd160);
-        jaddstr(json,"address",coinaddr);
-        init_hexbytes_noT(scriptstr,vout->pk_script,vout->pk_scriptlen);
-        jaddstr(json,"payscript",scriptstr);
-        if ( N != 0 )
-        {
-            jaddnum(json,"M",M);
-            jaddnum(json,"N",N);
-            addrs = cJSON_CreateArray();
-            for (i=0; i<N; i++)
-            {
-                btc_convrmd160(coinaddr,coin->chain->pubval,msigs160[i]);
-                jaddistr(addrs,coinaddr);
-            }
-            jadd(json,"addrs",addrs);
-        }
-    }
-    return(json);
+        retjson = cJSON_CreateObject();
+        jadd(retjson,"result",helpjson);
+        return(jprint(retjson,1));
+    } else return(clonestr("{\"error\":\"cant get helpjson\"}"));
 }
 
-cJSON *iguana_vinjson(struct iguana_info *coin,struct iguana_msgvin *vin)
+TWO_STRINGS(SuperNET,html,agentform,htmlfile)
 {
-    char scriptstr[8192+1],str[65]; cJSON *json = cJSON_CreateObject();
-    jaddstr(json,"prev_hash",bits256_str(str,vin->prev_hash));
-    jaddnum(json,"prev_vout",vin->prev_vout);
-    jaddnum(json,"sequence",vin->sequence);
-    if ( vin->script != 0 && vin->scriptlen*2+1 < sizeof(scriptstr) )
-    {
-        init_hexbytes_noT(scriptstr,vin->script,vin->scriptlen);
-        jaddstr(json,"sigscript",scriptstr);
-    }
-    return(json);
-}
-
-//struct iguana_txid { bits256 txid; uint32_t txidind,firstvout,firstvin,locktime,version,timestamp; uint16_t numvouts,numvins; } __attribute__((packed));
-
-//struct iguana_msgvin { bits256 prev_hash; uint8_t *script; uint32_t prev_vout,scriptlen,sequence; } __attribute__((packed));
-
-//struct iguana_spend { uint32_t spendtxidind; int16_t prevout; uint16_t tbd:14,external:1,diffsequence:1; } __attribute__((packed));
-
-void iguana_vinset(struct iguana_info *coin,int32_t height,struct iguana_msgvin *vin,struct iguana_txid *tx,int32_t i)
-{
-    struct iguana_spend *s,*S; uint32_t spendind; struct iguana_bundle *bp;
-    struct iguana_ramchaindata *rdata; struct iguana_txid *T; bits256 *X;
-    memset(vin,0,sizeof(*vin));
-    if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0 && (rdata= bp->ramchain.H.data) != 0 )
-    {
-        S = (void *)(long)((long)rdata + rdata->Soffset);
-        X = (void *)(long)((long)rdata + rdata->Xoffset);
-        T = (void *)(long)((long)rdata + rdata->Toffset);
-        spendind = (tx->firstvin + i);
-        s = &S[spendind];
-        if ( s->diffsequence == 0 )
-            vin->sequence = 0xffffffff;
-        vin->prev_vout = s->prevout;
-        iguana_ramchain_spendtxid(coin,&vin->prev_hash,T,rdata->numtxids,X,rdata->numexternaltxids,s);
-    }
-}
-
-int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmstr,int32_t height,struct iguana_msgvout *vout,struct iguana_txid *tx,int32_t i)
-{
-    struct iguana_unspent *u,*U; uint32_t unspentind,scriptlen = 0; struct iguana_bundle *bp;
-    struct iguana_ramchaindata *rdata; struct iguana_pkhash *P,*p;
-    memset(vout,0,sizeof(*vout));
-    if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0  && (rdata= bp->ramchain.H.data) != 0 )
-    {
-        U = (void *)(long)((long)rdata + rdata->Uoffset);
-        P = (void *)(long)((long)rdata + rdata->Poffset);
-        unspentind = (tx->firstvout + i);
-        u = &U[unspentind];
-        if ( u->txidind != tx->txidind || u->vout != i || u->hdrsi != height / coin->chain->bundlesize )
-            printf("iguana_voutset: txidind mismatch %d vs %d || %d vs %d || (%d vs %d)\n",u->txidind,u->txidind,u->vout,i,u->hdrsi,height / coin->chain->bundlesize);
-        p = &P[u->pkind];
-        vout->value = u->value;
-        scriptlen = iguana_scriptgen(coin,scriptspace,asmstr,bp,p,u->type);
-    }
-    vout->pk_scriptlen = scriptlen;
-    return(scriptlen);
-}
-
-cJSON *iguana_txjson(struct iguana_info *coin,struct iguana_txid *tx,int32_t height)
-{
-    struct iguana_msgvin vin; struct iguana_msgvout vout; int32_t i; char asmstr[512],str[65]; uint8_t space[8192];
-    cJSON *vouts,*vins,*json;
-    json = cJSON_CreateObject();
-    jaddstr(json,"txid",bits256_str(str,tx->txid));
-    if ( height >= 0 )
-        jaddnum(json,"height",height);
-    jaddnum(json,"version",tx->version);
-    jaddnum(json,"timestamp",tx->timestamp);
-    jaddnum(json,"locktime",tx->locktime);
-    vins = cJSON_CreateArray();
-    vouts = cJSON_CreateArray();
-    for (i=0; i<tx->numvouts; i++)
-    {
-        iguana_voutset(coin,space,asmstr,height,&vout,tx,i);
-        jaddi(vouts,iguana_voutjson(coin,&vout,asmstr));
-    }
-    jadd(json,"vouts",vouts);
-    for (i=0; i<tx->numvins; i++)
-    {
-        iguana_vinset(coin,height,&vin,tx,i);
-        jaddi(vins,iguana_vinjson(coin,&vin));
-    }
-    jadd(json,"vins",vins);
-    return(json);
-}
-
-/*
- //char *hashstr,*txidstr,*coinaddr,*txbytes,rmd160str[41],str[65]; int32_t len,height,i,n,valid = 0;
- //cJSON *addrs,*retjson,*retitem; uint8_t rmd160[20],addrtype; bits256 hash2,checktxid;
- //memset(&hash2,0,sizeof(hash2)); struct iguana_txid *tx,T; struct iguana_block *block = 0;
-
-if ( (coinaddr= jstr(json,"address")) != 0 )
-{
-    if ( btc_addr2univ(&addrtype,rmd160,coinaddr) == 0 )
-    {
-        if ( addrtype == coin->chain->pubval || addrtype == coin->chain->p2shval )
-            valid = 1;
-        else return(clonestr("{\"error\":\"invalid addrtype\"}"));
-    } else return(clonestr("{\"error\":\"cant convert address to rmd160\"}"));
-}
-if ( strcmp(method,"block") == 0 )
-{
-    height = -1;
-    if ( ((hashstr= jstr(json,"blockhash")) != 0 || (hashstr= jstr(json,"hash")) != 0) && strlen(hashstr) == sizeof(bits256)*2 )
-        decode_hex(hash2.bytes,sizeof(hash2),hashstr);
-        else
-        {
-            height = juint(json,"height");
-            hash2 = iguana_blockhash(coin,height);
-        }
-    retitem = cJSON_CreateObject();
-    if ( (block= iguana_blockfind(coin,hash2)) != 0 )
-    {
-        if ( (height >= 0 && block->height == height) || memcmp(hash2.bytes,block->RO.hash2.bytes,sizeof(hash2)) == 0 )
-        {
-            char str[65],str2[65]; printf("hash2.(%s) -> %s\n",bits256_str(str,hash2),bits256_str(str2,block->RO.hash2));
-            return(jprint(iguana_blockjson(coin,block,juint(json,"txids")),1));
-        }
-    }
-    else return(clonestr("{\"error\":\"cant find block\"}"));
-}
-else if ( strcmp(method,"tx") == 0 )
-{
-    if ( ((txidstr= jstr(json,"txid")) != 0 || (txidstr= jstr(json,"hash")) != 0) && strlen(txidstr) == sizeof(bits256)*2 )
-    {
-        retitem = cJSON_CreateObject();
-        decode_hex(hash2.bytes,sizeof(hash2),txidstr);
-        if ( (tx= iguana_txidfind(coin,&height,&T,hash2)) != 0 )
-        {
-            jadd(retitem,"tx",iguana_txjson(coin,tx,height));
-            return(jprint(retitem,1));
-        }
-        return(clonestr("{\"error\":\"cant find txid\"}"));
-    }
-    else return(clonestr("{\"error\":\"invalid txid\"}"));
-}
-else if ( strcmp(method,"rawtx") == 0 )
-{
-    if ( ((txidstr= jstr(json,"txid")) != 0 || (txidstr= jstr(json,"hash")) != 0) && strlen(txidstr) == sizeof(bits256)*2 )
-    {
-        decode_hex(hash2.bytes,sizeof(hash2),txidstr);
-        if ( (tx= iguana_txidfind(coin,&height,&T,hash2)) != 0 )
-        {
-            if ( (len= iguana_txbytes(coin,coin->blockspace,sizeof(coin->blockspace),&checktxid,tx,height,0,0)) > 0 )
-            {
-                txbytes = mycalloc('x',1,len*2+1);
-                init_hexbytes_noT(txbytes,coin->blockspace,len*2+1);
-                retitem = cJSON_CreateObject();
-                jaddstr(retitem,"txid",bits256_str(str,hash2));
-                jaddnum(retitem,"height",height);
-                jaddstr(retitem,"rawtx",txbytes);
-                myfree(txbytes,len*2+1);
-                return(jprint(retitem,1));
-            } else return(clonestr("{\"error\":\"couldnt generate txbytes\"}"));
-        }
-        return(clonestr("{\"error\":\"cant find txid\"}"));
-    }
-    else return(clonestr("{\"error\":\"invalid txid\"}"));
-}
-else if ( strcmp(method,"txs") == 0 )
-{
-    if ( ((hashstr= jstr(json,"block")) != 0 || (hashstr= jstr(json,"blockhash")) != 0) && strlen(hashstr) == sizeof(bits256)*2 )
-    {
-        decode_hex(hash2.bytes,sizeof(hash2),hashstr);
-        if ( (block= iguana_blockfind(coin,hash2)) == 0 )
-            return(clonestr("{\"error\":\"cant find blockhash\"}"));
-    }
-    else if ( jobj(json,"height") != 0 )
-    {
-        height = juint(json,"height");
-        hash2 = iguana_blockhash(coin,height);
-        if ( (block= iguana_blockfind(coin,hash2)) == 0 )
-            return(clonestr("{\"error\":\"cant find block at height\"}"));
-    }
-    else if ( valid == 0 )
-        return(clonestr("{\"error\":\"txs needs blockhash or height or address\"}"));
-    retitem = cJSON_CreateArray();
-    if ( block != 0 )
-    {
-        for (i=0; i<block->RO.txn_count; i++)
-        {
-            if ( (tx= iguana_blocktx(coin,&T,block,i)) != 0 )
-                jaddi(retitem,iguana_txjson(coin,tx,-1));
-        }
-    }
-    else
-    {
-        init_hexbytes_noT(rmd160str,rmd160,20);
-        jaddnum(retitem,"addrtype",addrtype);
-        jaddstr(retitem,"rmd160",rmd160str);
-        jaddstr(retitem,"txlist","get list of all tx for this address");
-    }
-    return(jprint(retitem,1));
-}
-
-else
-{
-    n = 0;
-    if ( valid == 0 )
-    {
-        if ( (addrs= jarray(&n,json,"addrs")) == 0 )
-            return(clonestr("{\"error\":\"need address or addrs\"}"));
-    }
-    for (i=0; i<=n; i++)
-    {
-        retitem = cJSON_CreateObject();
-        if ( i > 0 )
-            retjson = cJSON_CreateArray();
-        if ( i > 0 )
-        {
-            if ( (coinaddr= jstr(jitem(addrs,i-1),0)) == 0 )
-                return(clonestr("{\"error\":\"missing address in addrs\"}"));
-            if ( btc_addr2univ(&addrtype,rmd160,coinaddr) < 0 )
-            {
-                free_json(retjson);
-                return(clonestr("{\"error\":\"illegal address in addrs\"}"));
-            }
-            if ( addrtype != coin->chain->pubval && addrtype != coin->chain->p2shval )
-                return(clonestr("{\"error\":\"invalid addrtype in addrs\"}"));
-        }
-        if ( strcmp(method,"utxo") == 0 )
-        {
-            jaddstr(retitem,"utxo","utxo entry");
-        }
-        else if ( strcmp(method,"unconfirmed") == 0 )
-        {
-            jaddstr(retitem,"unconfirmed","unconfirmed entry");
-        }
-        else if ( strcmp(method,"balance") == 0 )
-        {
-            jaddstr(retitem,"balance","balance entry");
-        }
-        else if ( strcmp(method,"totalreceived") == 0 )
-        {
-            jaddstr(retitem,"totalreceived","totalreceived entry");
-        }
-        else if ( strcmp(method,"totalsent") == 0 )
-        {
-            jaddstr(retitem,"totalsent","totalsent entry");
-        }
-        else if ( strcmp(method,"validateaddress") == 0 )
-        {
-            jaddstr(retitem,"validate",coinaddr);
-        }
-        if ( n == 0 )
-            return(jprint(retitem,1));
-        else jaddi(retjson,retitem);
-    }
+    char *htmlstr; cJSON *retjson; FILE *fp; int32_t max = 4*1024*1024;
+    if ( htmlfile == 0 || htmlfile[0] == 0 )
+        htmlfile = "uglyform.html";
+    fp = fopen(htmlfile,"w");
+    htmlstr = malloc(max);
+    htmlstr = SuperNET_htmlstr(fp,htmlstr,max,agentform);
+    retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result",htmlstr);
+    free(htmlstr);
+    if ( fp != 0 )
+        fclose(fp);
     return(jprint(retjson,1));
 }
-*/
+#undef IGUANA_ARGS
+#include "../includes/iguana_apiundefs.h"
 
-char *iguana_listsinceblock(struct supernet_info *myinfo,struct iguana_info *coin,bits256 blockhash,int32_t target)
+char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSON *json,char *remoteaddr)
 {
-    cJSON *retitem = cJSON_CreateObject();
-    return(jprint(retitem,1));
-}
+    char *coinstr; struct iguana_info *coin = 0;
+    if ( (coinstr= jstr(json,"coin")) != 0 )
+        coin = iguana_coinfind(coinstr);
+    if ( strcmp(agent,"ramchain") == 0 && coin == 0 )
+        return(clonestr("{\"error\":\"ramchain needs coin\"}"));
+#define IGUANA_ARGS myinfo,coin,json,remoteaddr
+#define IGUANA_DISPATCH0(agent,name) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS))
+#define IGUANA_DISPATCH_S(agent,name,str) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str)))
+#define IGUANA_DISPATCH_SS(agent,name,str,str2) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2)))
+#define IGUANA_DISPATCH_SSS(agent,name,str,str2,str3) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2),jstr(json,#str3)))
+#define IGUANA_DISPATCH_SI(agent,name,str,val) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),juint(json,#val)))
+#define IGUANA_DISPATCH_SII(agent,name,str,val,val2) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),juint(json,#val),juint(json,#val2)))
+#define IGUANA_DISPATCH_SSI(agent,name,str,str2,val) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2),juint(json,#val)))
+#define IGUANA_DISPATCH_SA(agent,name,str,array) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jobj(json,#array)))
+#define IGUANA_DISPATCH_SAA(agent,name,str,array,array2) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jobj(json,#array),jobj(json,#array2)))
+#define IGUANA_DISPATCH_SIII(agent,name,str,val,val2,val3) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),juint(json,#val),juint(json,#val2),juint(json,#val3)))
 
-char *iguana_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
-{
-    cJSON *retitem = cJSON_CreateObject();
-    jaddstr(retitem,"result",coin->statusstr);
-    return(jprint(retitem,1));
-}
+#define IGUANA_DISPATCH_I(agent,name,val) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,juint(json,#val)))
+#define IGUANA_DISPATCH_II(agent,name,val,val2) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,juint(json,#val),juint(json,#val2)))
+#define IGUANA_DISPATCH_IIA(agent,name,val,val2,array) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,juint(json,#val),juint(json,#val2),jobj(json,#array)))
+#define IGUANA_DISPATCH_III(agent,name,val,val2,val3) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,juint(json,#val),juint(json,#val2),juint(json,#val3)))
+#define IGUANA_DISPATCH_IA(agent,name,val,array) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,juint(json,#val),jobj(json,#array)))
+#define IGUANA_DISPATCH_IAS(agent,name,val,array,str) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,juint(json,#val),jobj(json,#array),jstr(json,#str)))
+    
+#define IGUANA_DISPATCH_AA(agent,name,array,array2) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jobj(json,#array),jobj(json,#array2)))
+    
+#define IGUANA_DISPATCH_D(agent,name,amount) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jdouble(json,#amount)))
+    
+#define IGUANA_DISPATCH_HI(agent,name,hash,val) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),juint(json,#val)))
+#define IGUANA_DISPATCH_HII(agent,name,hash,val,val2) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),juint(json,#val),juint(json,#val2)))
 
-char *iguana_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *coin)
-{
-    cJSON *retitem = cJSON_CreateObject();
-    char str[65]; jaddstr(retitem,"result",bits256_str(str,coin->blocks.hwmchain.RO.hash2));
-    return(jprint(retitem,1));
-}
+#define IGUANA_DISPATCH_SSDIS(agent,name,str,str2,amount,val,str3) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2),jdouble(json,#amount),juint(json,#val),jstr(json,#str3)))
+#define IGUANA_DISPATCH_SSDISS(agent,name,str,str2,amount,val,str3,str4) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2),jdouble(json,#amount),juint(json,#val),jstr(json,#str3),jstr(json,#str4)))
+#define IGUANA_DISPATCH_SAIS(agent,name,str,array,val,str2) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jobj(json,#array),juint(json,#val),jstr(json,#str2)))
+#define IGUANA_DISPATCH_SDSS(agent,name,str,amount,str2,str3) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jdouble(json,#amount),jstr(json,#str2),jstr(json,#str3)))
+    
+    // API functions
+#define ZERO_ARGS IGUANA_DISPATCH0
+#define INT_ARG IGUANA_DISPATCH_I
+#define TWO_INTS IGUANA_DISPATCH_II
+#define STRING_ARG IGUANA_DISPATCH_S
+#define TWO_STRINGS IGUANA_DISPATCH_SS
+#define THREE_STRINGS IGUANA_DISPATCH_SSS
+#define STRING_AND_INT IGUANA_DISPATCH_SI
+#define STRING_AND_TWOINTS IGUANA_DISPATCH_SII
+#define HASH_AND_INT IGUANA_DISPATCH_HI
+#define HASH_AND_TWOINTS IGUANA_DISPATCH_HII
+#define DOUBLE_ARG IGUANA_DISPATCH_D
+#define STRING_AND_ARRAY IGUANA_DISPATCH_SA
+#define STRING_AND_TWOARRAYS IGUANA_DISPATCH_SAA
+#define TWO_ARRAYS IGUANA_DISPATCH_AA
+#define INT_AND_ARRAY IGUANA_DISPATCH_IA
+#define INT_ARRAY_STRING IGUANA_DISPATCH_IAS
+#define SS_D_I_S IGUANA_DISPATCH_SSDIS
+#define SS_D_I_SS IGUANA_DISPATCH_SSDISS
+#define S_A_I_S IGUANA_DISPATCH_SAIS
+#define S_D_SS IGUANA_DISPATCH_SDSS
+#define TWOINTS_AND_ARRAY IGUANA_DISPATCH_IIA
+#define STRING_AND_THREEINTS IGUANA_DISPATCH_SIII
+#define TWOSTRINGS_AND_INT IGUANA_DISPATCH_SSI
+#define THREE_INTS IGUANA_DISPATCH_III
 
-char *iguana_getblockcount(struct supernet_info *myinfo,struct iguana_info *coin)
-{
-    cJSON *retitem = cJSON_CreateObject();
-    jaddnum(retitem,"result",coin->blocks.hwmchain.height);
-    return(jprint(retitem,1));
-}
-
-char *ramchain_coinparser(struct supernet_info *myinfo,struct iguana_info *coin,char *method,cJSON *json)
-{
-    if ( coin == 0 && (coin= iguana_coinselect()) == 0 )
-        return(clonestr("{\"error\":\"ramchain_coinparser needs coin\"}"));
-    if ( strcmp(method,"status") == 0 || strcmp(method,"getinfo") == 0 )
-        return(iguana_getinfo(myinfo,coin));
-   /* else if ( strcmp(method,"getbestblockhash") == 0 )
-        return(iguana_getbestblockhash(myinfo,coin));
-    else if ( strcmp(method,"getblockcount") == 0 )
-        return(iguana_getblockcount(myinfo,coin));
-    else if ( strcmp(method,"validatepubkey") == 0 )
-        return(iguana_validatepubkey(myinfo,coin,jstr(json,"pubkey")));
-    else if ( strcmp(method,"listtransactions") == 0 )
-        return(iguana_listtransactions(myinfo,coin,jstr(json,"account"),juint(json,"count"),juint(json,"from")));
-    else if ( strcmp(method,"getreceivedbyaddress") == 0 )
-        return(iguana_getreceivedbyaddress(myinfo,coin,jstr(json,"address"),juint(json,"minconf")));
-    else if ( strcmp(method,"listreceivedbyaddress") == 0 )
-        return(iguana_listreceivedbyaddress(myinfo,coin,juint(json,"minconf"),juint(json,"includeempty")));
-    else if ( strcmp(method,"listsinceblock") == 0 )
-        return(iguana_listsinceblock(myinfo,coin,jbits256(json,"blockhash"),juint(json,"target")));
-    else if ( strcmp(method,"getreceivedbyaccount") == 0 )
-        return(iguana_getreceivedbyaccount(myinfo,coin,jstr(json,"account"),juint(json,"minconf")));
-    else if ( strcmp(method,"listreceivedbyaccount") == 0 )
-        return(iguana_listreceivedbyaccount(myinfo,coin,jstr(json,"account"),juint(json,"includeempty")));
-    else if ( strcmp(method,"getnewaddress") == 0 )
-        return(iguana_getnewaddress(myinfo,coin,jstr(json,"account")));
-    else if ( strcmp(method,"makekeypair") == 0 )
-        return(iguana_makekeypair(myinfo,coin));
-    else if ( strcmp(method,"getaccountaddress") == 0 )
-        return(iguana_getaccountaddress(myinfo,coin,jstr(json,"account")));
-    else if ( strcmp(method,"setaccount") == 0 )
-        return(iguana_setaccount(myinfo,coin,jstr(json,"address"),jstr(json,"account")));
-    else if ( strcmp(method,"getaccount") == 0 )
-        return(iguana_getaccount(myinfo,coin,jstr(json,"account")));
-    else if ( strcmp(method,"getaddressesbyaccount") == 0 )
-        return(iguana_getaddressesbyaccount(myinfo,coin,jstr(json,"account")));
-    else if ( strcmp(method,"listaddressgroupings") == 0 )
-        return(iguana_listaddressgroupings(myinfo,coin));
-    else if ( strcmp(method,"getbalance") == 0 )
-        return(iguana_getbalance(myinfo,coin,jstr(json,"account"),juint(json,"minconf")));
-    else if ( strcmp(method,"listaccounts") == 0 )
-        return(iguana_listaccounts(myinfo,coin,juint(json,"minconf")));
-    else if ( strcmp(method,"dumpprivkey") == 0 )
-        return(iguana_dumpprivkey(myinfo,coin,jstr(json,"address")));
-    else if ( strcmp(method,"importprivkey") == 0 )
-        return(iguana_importprivkey(myinfo,coin,jstr(json,"wip")));
-    else if ( strcmp(method,"dumpwallet") == 0 )
-        return(iguana_dumpwallet(myinfo,coin));
-    else if ( strcmp(method,"importwallet") == 0 )
-        return(iguana_importwallet(myinfo,coin,jstr(json,"wallet")));
-    else if ( strcmp(method,"walletpassphrase") == 0 )
-        return(iguana_walletpassphrase(myinfo,coin,jstr(json,"passphrase"),juint(json,"timeout")));
-    else if ( strcmp(method,"walletpassphrasechange") == 0 )
-        return(iguana_walletpassphrasechange(myinfo,coin,jstr(json,"oldpassphrase"),jstr(json,"newpassphrase")));
-    else if ( strcmp(method,"walletlock") == 0 )
-        return(iguana_walletlock(myinfo,coin));
-    else if ( strcmp(method,"encryptwallet") == 0 )
-        return(iguana_encryptwallet(myinfo,coin,jstr(json,"passphrase")));
-    else if ( strcmp(method,"checkwallet") == 0 )
-        return(iguana_checkwallet(myinfo,coin));
-    else if ( strcmp(method,"repairwallet") == 0 )
-        return(iguana_repairwallet(myinfo,coin));
-    else if ( strcmp(method,"backupwallet") == 0 )
-        return(iguana_backupwallet(myinfo,coin,jstr(json,"filename")));
-    else if ( strcmp(method,"signmessage") == 0 )
-        return(iguana_signmessage(myinfo,coin,jstr(json,"address"),jstr(json,"message")));
-    else if ( strcmp(method,"verifymessage") == 0 )
-        return(iguana_verifymessage(myinfo,coin,jstr(json,"address"),jstr(json,"sig"),jstr(json,"message")));
-    else if ( strcmp(method,"listunspent") == 0 )
-        return(iguana_listunspent(myinfo,coin,juint(json,"minconf"),juint(json,"maxconf")));
-    else if ( strcmp(method,"lockunspent") == 0 )
-        return(iguana_lockunspent(myinfo,coin,juint(json,"flag"),jobj(json,"array")));
-    else if ( strcmp(method,"listlockunspent") == 0 )
-        return(iguana_listlockunspent(myinfo,coin));
-    else if ( strcmp(method,"gettxout") == 0 )
-        return(iguana_gettxout(myinfo,coin,jbits256(json,"txid"),juint(json,"vout"),juint(json,"mempool")));
-    else if ( strcmp(method,"gettxoutsetinfo") == 0 )
-        return(iguana_gettxoutsetinfo(myinfo,coin));
-    else if ( strcmp(method,"sendtoaddress") == 0 )
-        return(iguana_sendtoaddress(myinfo,coin,jstr(json,"address"),jdouble(json,"amount"),jstr(json,"comment"),jstr(json,"comment2")));
-    else if ( strcmp(method,"move") == 0 )
-        return(iguana_move(myinfo,coin,jstr(json,"fromaccount"),jstr(json,"toaccount"),jdouble(json,"amount"),juint(json,"minconf"),jstr(json,"comment")));
-    else if ( strcmp(method,"sendfrom") == 0 )
-        return(iguana_sendfrom(myinfo,coin,jstr(json,"fromaccount"),jstr(json,"toaddress"),jdouble(json,"amount"),juint(json,"minconf"),jstr(json,"comment"),jstr(json,"comment2")));
-    else if ( strcmp(method,"sendmany") == 0 )
-        return(iguana_sendmany(myinfo,coin,jstr(json,"fromaccount"),jobj(json,"payments"),juint(json,"minconf"),jstr(json,"comment")));
-    else if ( strcmp(method,"settxfee") == 0 )
-        return(iguana_settxfee(myinfo,coin,jdouble(json,"amount")));
-    else if ( strcmp(method,"getrawtransaction") == 0 )
-        return(iguana_getrawtransaction(myinfo,coin,jbits256(json,"txid"),juint(json,"verbose")));
-    else if ( strcmp(method,"createrawtransaction") == 0 )
-        return(iguana_createrawtransaction(myinfo,coin,jobj(json,"vins"),jobj(json,"vouts")));
-    else if ( strcmp(method,"decoderawtransaction") == 0 )
-        return(iguana_decoderawtransaction(myinfo,coin,jstr(json,"rawtx")));
-    else if ( strcmp(method,"decodescript") == 0 )
-        return(iguana_decodescript(myinfo,coin,jstr(json,"script")));
-    else if ( strcmp(method,"signrawtransaction") == 0 )
-        return(iguana_signrawtransaction(myinfo,coin,jstr(json,"rawtx"),jobj(json,"vins"),jobj(json,"privkeys")));
-    else if ( strcmp(method,"sendrawtransaction") == 0 )
-        return(iguana_sendrawtransaction(myinfo,coin,jstr(json,"rawtx")));
-    else if ( strcmp(method,"getrawchangeaddress") == 0 )
-        return(iguana_getrawchangeaddress(myinfo,coin,jstr(json,"account")));
-    */
+#include "../includes/iguana_apideclares.h"
+#undef IGUANA_ARGS
+    
+#include "../includes/iguana_apiundefs.h"
+    
     return(clonestr("{\"error\":\"illegal ramchain method or missing coin\"}"));
 }
 
-char *iguana_jsoncheck(char *retstr,int32_t freeflag)
-{
-    cJSON *retjson; char *errstr;
-    if ( retstr != 0 )
-    {
-        if ( (retjson= cJSON_Parse(retstr)) != 0 )
-        {
-            if ( (errstr= jstr(retjson,"error")) == 0 )
-            {
-                free_json(retjson);
-                return(retstr);
-            }
-            free_json(retjson);
-        }
-        if ( freeflag != 0 )
-            free(retstr);
-    }
-    return(0);
-}
 
-char *ramchain_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr)
-{
-    char *symbol,*str,*retstr; int32_t height; cJSON *argjson,*obj; struct iguana_info *coin = 0;
-    /*{"agent":"ramchain","method":"block","coin":"BTCD","hash":"<sha256hash>"}
-     {"agent":"ramchain","method":"block","coin":"BTCD","height":345600}
-     {"agent":"ramchain","method":"tx","coin":"BTCD","txid":"<sha txid>"}
-     {"agent":"ramchain","method":"rawtx","coin":"BTCD","txid":"<sha txid>"}
-     {"agent":"ramchain","method":"balance","coin":"BTCD","address":"<coinaddress>"}
-     {"agent":"ramchain","method":"balance","coin":"BTCD","addrs":["<coinaddress>",...]}
-     {"agent":"ramchain","method":"totalreceived","coin":"BTCD","address":"<coinaddress>"}
-     {"agent":"ramchain","method":"totalsent","coin":"BTCD","address":"<coinaddress>"}
-     {"agent":"ramchain","method":"unconfirmed","coin":"BTCD","address":"<coinaddress>"}
-     {"agent":"ramchain","method":"utxo","coin":"BTCD","address":"<coinaddress>"}
-     {"agent":"ramchain","method":"utxo","coin":"BTCD","addrs":["<coinaddress0>", "<coinadress1>",...]}
-     {"agent":"ramchain","method":"txs","coin":"BTCD","block":"<blockhash>"}
-     {"agent":"ramchain","method":"txs","coin":"BTCD","height":12345}
-     {"agent":"ramchain","method":"txs","coin":"BTCD","address":"<coinaddress>"}
-     {"agent":"ramchain","method":"status","coin":"BTCD"}*/
-    if ( (symbol= jstr(json,"coin")) != 0 && symbol[0] != 0 )
-    {
-        if ( coin == 0 )
-            coin = iguana_coinfind(symbol);
-        else if ( strcmp(symbol,coin->symbol) != 0 )
-            return(clonestr("{\"error\":\"mismatched coin symbol\"}"));
-    }
-    if ( strcmp(method,"explore") == 0 )
-    {
-        obj = jobj(json,"search");
-        if ( coin != 0 && obj != 0 )
-        {
-            argjson = cJSON_CreateObject();
-            jaddstr(argjson,"agent","ramchain");
-            jaddstr(argjson,"method","block");
-            jaddnum(argjson,"txids",1);
-            if ( is_cJSON_Number(obj) != 0 )
-            {
-                height = juint(obj,0);
-                jaddnum(argjson,"height",height);
-            }
-            else if ( (str= jstr(obj,0)) != 0 )
-                jaddstr(argjson,"hash",str);
-            else return(clonestr("{\"error\":\"need number or string to search\"}"));
-            if ( (retstr= iguana_jsoncheck(ramchain_coinparser(myinfo,coin,"block",argjson),1)) != 0 )
-            {
-                free_json(argjson);
-                return(retstr);
-            }
-            free_json(argjson);
-            argjson = cJSON_CreateObject();
-            jaddstr(argjson,"agent","ramchain");
-            jaddstr(argjson,"method","tx");
-            jaddstr(argjson,"txid",str);
-            if ( (retstr= iguana_jsoncheck(ramchain_coinparser(myinfo,coin,"tx",argjson),1)) != 0 )
-            {
-                free_json(argjson);
-                return(retstr);
-            }
-            free_json(argjson);
-            return(clonestr("{\"result\":\"explore search cant find height, blockhash, txid\"}"));
-        }
-        return(clonestr("{\"result\":\"explore no coin or search\"}"));
-    }
-    return(ramchain_coinparser(myinfo,coin,method,json));
-}

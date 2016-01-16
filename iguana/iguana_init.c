@@ -300,7 +300,7 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
     }
 }
 
-struct iguana_info *iguana_startcoin(struct iguana_info *coin,int32_t initialheight,int32_t mapflags)
+struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialheight,int32_t mapflags)
 {
     FILE *fp; char fname[512],*symbol; int32_t iter;
     coin->sleeptime = 10000;
