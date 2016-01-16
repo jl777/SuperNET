@@ -239,6 +239,7 @@ int32_t nn_createsocket(struct supernet_info *myinfo,char *endpoint,int32_t bind
 bits256 SuperNET_OPRETURN(struct supernet_info *myinfo,char *symbol,double fee,uint8_t *buf,int32_t len)
 {
     bits256 txid;
+    memset(&txid,0,sizeof(txid));
     printf("send OPRETURN\n");
     return(txid);
 }

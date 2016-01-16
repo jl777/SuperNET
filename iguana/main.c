@@ -114,6 +114,7 @@ char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t
 char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
 {
     cJSON *retjson; uint64_t tag; uint32_t timeout; char *jsonstr; char *retjsonstr,*retstr = 0;
+    printf("SuperNET_JSON.(%s)\n",jprint(json,0));
     if ( json != 0 )
     {
         if ( (tag= j64bits(json,"tag")) == 0 )

@@ -385,6 +385,7 @@ int32_t Supernet_lineparse(char *key,int32_t keymax,char *value,int32_t valuemax
         while ( (c= src[n]) == '\r' || c == '\n' )
             n++;
     }
+    printf("key.(%s) value.(%s)\n",key,value);
     return(n);
 }
 
@@ -427,19 +428,19 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
 char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr)
 {
     cJSON *tokens,*argjson,*json = 0; char symbol[16],urlmethod[16],*data,url[1024],*retstr,*token = 0; int32_t i,j,n;
-    //printf("rpcparse.(%s)\n",urlstr);
+    printf("rpcparse.(%s)\n",urlstr);
     for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
         urlmethod[i] = urlstr[i];
     urlmethod[i++] = 0;
     n = i;
-    //printf("URLMETHOD.(%s)\n",urlmethod);
+    printf("URLMETHOD.(%s)\n",urlmethod);
     *postflagp = (strcmp(urlmethod,"POST") == 0);
     for (i=0; i<sizeof(url)-1&&urlstr[n+i]!=0&&urlstr[n+i]!=' '; i++)
         url[i] = urlstr[n+i];
     url[i++] = 0;
     n += i;
     j = i = 0;
-    if ( strncmp(&url[i],"/api",strlen("/url")) == 0 )
+    if ( strncmp(&url[i],"/api",strlen("/api")) == 0 )
     {
         *jsonflagp = 1;
         i += strlen("/api");
