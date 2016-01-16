@@ -338,9 +338,9 @@ static int inet_pton6(char *src, unsigned char *dst) {
     return 0;
 }
 
-int32_t parse_ipaddr(char *ipaddr,char *ip_port)
+uint16_t parse_ipaddr(char *ipaddr,char *ip_port)
 {
-    int32_t j,port = 0;
+    int32_t j; uint16_t port = 0;
     if ( ip_port != 0 && ip_port[0] != 0 )
     {
 		strcpy(ipaddr,ip_port);

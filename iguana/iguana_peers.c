@@ -257,9 +257,11 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
     struct sockaddr_in saddr; socklen_t addrlen,slen;
     addrlen = sizeof(saddr);
     struct hostent *hostent = gethostbyname(hostname);
+    if ( parse_ipaddr(ipaddr,hostname) != 0 )
+        port = parse_ipaddr(ipaddr,hostname);
     if ( hostent == NULL )
     {
-        printf("gethostbyname() returned error: %d",errno);
+        printf("gethostbyname(%s) returned error: %d port.%d ipaddr.(%s)\n",hostname,errno,port,ipaddr);
         return(-1);
     }
     saddr.sin_family = AF_INET;
@@ -733,7 +735,7 @@ int32_t iguana_pollsendQ(struct iguana_info *coin,struct iguana_peer *addr)
     if ( (packet= queue_dequeue(&addr->sendQ,0)) != 0 )
     {
         if ( addr->supernet != 0 || strcmp((char *)&packet->serialized[4],"SuperNET") == 0 )
-            printf("%s: send.(%s) usock.%d dead.%u ready.%u supernet.%d\n",addr->ipaddr,packet->serialized+4,addr->usock,addr->dead,addr->ready,addr->supernet);
+            printf("%s: send.(%s).%d usock.%d dead.%u ready.%u supernet.%d\n",addr->ipaddr,packet->serialized+4,packet->datalen,addr->usock,addr->dead,addr->ready,addr->supernet);
         if ( strcmp((char *)&packet->serialized[4],"getdata") == 0 )
         {
             printf("unexpected getdata for %s\n",addr->ipaddr);
@@ -971,8 +973,9 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
         }
         if ( flag != 0 )
             run = 0;
-        else if ( addr->supernet != 0 && time(NULL) > lastping+10 )
+        else if ( addr->supernet != 0 && time(NULL) > lastping+60 )
         {
+            printf("send getpeers\n");
             iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
             lastping = (uint32_t)time(NULL);
         }
