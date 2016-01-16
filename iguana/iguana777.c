@@ -339,13 +339,12 @@ void iguana_helper(void *arg)
             if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
             {
                 if ( ptr->bp != 0 && ptr->coin != 0 )
-                    iguana_bundleiters(ptr->coin,ptr->bp,ptr->timelimit);
+                    flag += iguana_bundleiters(ptr->coin,ptr->bp,ptr->timelimit);
                 myfree(ptr,ptr->allocsize);
-                flag++;
             }
         }
-        //if ( flag == 0 )
-            usleep(100000);
+        if ( flag == 0 )
+            sleep(10);
     }
 }
 

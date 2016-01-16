@@ -686,7 +686,7 @@ int32_t is_bitcoinrpc(char *method);
 char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr);
 cJSON *iguana_pubkeyjson(struct iguana_info *coin,char *pubkeystr);
 void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit);
-void iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit);
+int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit);
 void ramcoder_test(void *data,int64_t len);
 void SuperNET_init(void *args);
 char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSON *json,char *remoteaddr);

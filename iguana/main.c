@@ -35,9 +35,9 @@ uint64_t IGUANA_MY64BITS;
 queue_t helperQ,jsonQ,finishedQ,bundlesQ;
 static int32_t initflag;
 #ifdef __linux__
-int32_t IGUANA_NUMHELPERS = 16;
-#else
 int32_t IGUANA_NUMHELPERS = 8;
+#else
+int32_t IGUANA_NUMHELPERS = 1;
 #endif
 
 char *SuperNET_jsonstr(struct supernet_info *myinfo,char *jsonstr,char *remoteaddr)
@@ -236,12 +236,12 @@ void iguana_main(void *arg)
     iguana_launch(iguana_coinadd("BTCD"),"rpcloop",iguana_rpcloop,iguana_coinadd("BTCD"),IGUANA_PERMTHREAD);
     if ( coinargs != 0 )
         iguana_launch(iguana_coinadd("BTCD"),"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
-    else if ( 0 )
+    else if ( 1 )
     {
 #ifdef __APPLE__
         sleep(1);
         char *str;
-        if ( (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":0,\"maxpeers\":2,\"coin\":\"BTCD\",\"active\":1}"),0)) != 0 )
+        if ( (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":0,\"maxpeers\":2,\"activecoin\":\"BTC\",\"active\":1}"),0)) != 0 )
         {
             printf("got.(%s)\n",str);
             free(str);
@@ -264,13 +264,12 @@ void iguana_main(void *arg)
             if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
             {
                 if ( ptr->bp != 0 && ptr->coin != 0 )
-                    iguana_bundleiters(ptr->coin,ptr->bp,ptr->timelimit);
+                    flag += iguana_bundleiters(ptr->coin,ptr->bp,ptr->timelimit);
                 myfree(ptr,ptr->allocsize);
-                flag++;
             }
         }
         if ( flag == 0 )
-            usleep(100000);
+            sleep(1);
     }
 }
 

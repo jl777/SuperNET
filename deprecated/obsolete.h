@@ -10309,7 +10309,7 @@ void iguana_dedicatedrecv(void *arg)
                         if ( (agent->sock= iguana_socket(0,hostname,port)) < 0 )
                             return(clonestr("{\"result\":\"agent added, but couldnt connect to remote agent\"}"));
                     }
-                    sprintf(retbuf,"{\"result\":\"agent added\",\"name\"\"%s\",\"methods\":%s,\"hostname\":\"%s\",\"port\":%u,\"sock\":%d}",agent->name,jprint(agent->methods,0),agent->hostname,agent->port,agent->sock);
+                    sprintf(retbuf,"{\"result\":\"agent added\",\"name\":\"%s\",\"methods\":%s,\"hostname\":\"%s\",\"port\":%u,\"sock\":%d}",agent->name,jprint(agent->methods,0),agent->hostname,agent->port,agent->sock);
                     return(clonestr(retbuf));
                 }
             }

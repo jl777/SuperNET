@@ -661,7 +661,6 @@ void SuperNET_init(void *args)
         else free(ipaddr), ipaddr = 0;
     }
 #endif
-    //return;
     sendtimeout = 100;
     recvtimeout = 30000;
     PNACL_message("call PUBpoint myinfo.%p\n",myinfo);
