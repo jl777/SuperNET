@@ -410,15 +410,7 @@ void iguana_coinloop(void *arg)
             }
         }
         if ( flag == 0 )
-        {
-            //printf("IDLE\n");
-            if ( str[0] != 0 )
-            {
-                if ( (rand() % 10000) == 0 )
-                    myallocated(0,0);
-            }
             usleep(coin->polltimeout * 1000);
-        }
     }
 }
 
