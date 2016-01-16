@@ -74,7 +74,7 @@ int32_t iguana_jsonQ()
 printf("process.(%s)\n",ptr->jsonstr);
         if ( (*ptr->retjsonstrp= SuperNET_jsonstr(ptr->myinfo,ptr->jsonstr,ptr->remoteaddr)) == 0 )
             *ptr->retjsonstrp = clonestr("{\"error\":\"null return from iguana_jsonstr\"}");
-printf("finished.(%s)\n",ptr->jsonstr);
+        printf("finished.(%s) -> (%s)\n",ptr->jsonstr,*ptr->retjsonstrp!=0?*ptr->retjsonstrp:"null return");
         queue_enqueue("finishedQ",&finishedQ,&ptr->DL,0);
         return(1);
     }
@@ -162,6 +162,7 @@ char *iguana_JSON(char *jsonstr)
 char *SuperNET_p2p(struct iguana_info *coin,int32_t *delaymillisp,char *ipaddr,uint8_t *data,int32_t datalen)
 {
     cJSON *json,*retjson; char *agent,*method,*retstr = 0;
+    *delaymillisp = 0;
     if ( (json= cJSON_Parse((char *)data)) != 0 )
     {
         printf("GOT >>>>>>>> SUPERNET P2P.(%s) from.%s\n",(char *)data,coin->symbol);
@@ -170,18 +171,18 @@ char *SuperNET_p2p(struct iguana_info *coin,int32_t *delaymillisp,char *ipaddr,u
             jaddstr(json,"fromp2p",coin->symbol);
             if ( (retstr= SuperNET_JSON(0,json,ipaddr)) != 0 )
             {
-                printf("retstr.(%s)\n",retstr);
+                //printf("retstr.(%s)\n",retstr);
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
                     if ( jobj(retjson,"result") != 0 || jobj(retjson,"error") != 0 || jobj(retjson,"method") == 0 )
                     {
-                        printf("it is a result, dont return\n");
+                        //printf("it is a result, dont return\n");
                         free(retstr);
                         retstr = 0;
-                    }
+                    } else *delaymillisp = (rand() % 1000);
                     free_json(retjson);
                 }
-            }
+            } else printf("null retstr from SuperNET_JSON\n");
         }
         free_json(json);
     }

@@ -742,7 +742,7 @@ int32_t iguana_pollsendQ(struct iguana_info *coin,struct iguana_peer *addr)
             printf("unexpected getdata for %s\n",addr->ipaddr);
             myfree(packet,sizeof(*packet) + packet->datalen);
         }
-        else if ( packet->embargo.x == 0 || tai_diff(packet->embargo,tai_now()) < 0 )
+        else if ( packet->embargo.x == 0 || tai_diff(packet->embargo,tai_now()) >= -SMALLVAL )
         {
             iguana_send(coin,addr,packet->serialized,packet->datalen);
             myfree(packet,sizeof(*packet) + packet->datalen);
@@ -750,7 +750,7 @@ int32_t iguana_pollsendQ(struct iguana_info *coin,struct iguana_peer *addr)
         }
         else
         {
-            printf("embargo.x %f\n",tai_diff(packet->embargo,tai_now()));
+            printf("embargo.x %llu %f\n",(long long)packet->embargo.x,tai_diff(packet->embargo,tai_now()));
             queue_enqueue("embargo",&addr->sendQ,&packet->DL,0);
         }
     }
