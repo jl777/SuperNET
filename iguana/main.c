@@ -118,11 +118,17 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
     if ( json != 0 )
     {
         if ( (tag= j64bits(json,"tag")) == 0 )
+        {
             OS_randombytes((uint8_t *)&tag,sizeof(tag));
+            jadd64bits(json,"tag",tag);
+        }
         if ( (timeout= juint(json,"timeout")) == 0 )
             timeout = IGUANA_JSONTIMEOUT;
         jsonstr = jprint(json,0);
-        if ( (retjsonstr= iguana_blockingjsonstr(myinfo,jsonstr,tag,timeout,remoteaddr)) != 0 )
+        if ( jstr(json,"immediate") != 0 )
+            retjsonstr = SuperNET_jsonstr(myinfo,jsonstr,remoteaddr);
+        else retjsonstr = iguana_blockingjsonstr(myinfo,jsonstr,tag,timeout,remoteaddr);
+        if ( retjsonstr != 0 )
         {
             if ( (retjson= cJSON_Parse(retjsonstr)) != 0 )
             {
@@ -252,7 +258,7 @@ void iguana_main(void *arg)
     {
         flag = 0;
         iguana_jsonQ();
-        if ( flag == 0 )//|| addr->rank >= (coin->peers.numranked>>1) )
+        if ( flag == 0 )
         {
             struct iguana_helper *ptr;
             if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
