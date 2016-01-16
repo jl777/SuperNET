@@ -188,22 +188,29 @@ char *SuperNET_p2p(struct iguana_info *coin,int32_t *delaymillisp,char *ipaddr,u
     return(retstr);
 }
 
-void ramcoder_test(void *data,int64_t datalen)
-{
-    static double totalin,totalout;
-    int32_t complen,bufsize = 1024 * 1024; uint8_t *buf;
-    buf = malloc(bufsize);
-    complen = ramcoder_compress(buf,bufsize,data,(int32_t)datalen);
-    totalin += datalen;
-    totalout += (complen >> 3);
-    printf("datalen.%d -> numbits.%d %d %.3f\n",(int32_t)datalen,complen,complen>>3,(double)totalin/totalout);
-    free(buf);
-}
+void sigint_func() { printf("SIGINT\n"); exit(0); }
+void sigillegal_func() { printf("SIGILL\n"); exit(0); }
+void sighangup_func() { printf("SIGHUP\n"); exit(0); }
+void sigkill_func() { printf("SIGKILL\n"); exit(0); }
+void sigabort_func() { printf("SIGABRT\n"); exit(0); }
+void sigquit_func() { printf("SIGQUIT\n"); exit(0); }
+void sigchild_func() { printf("SIGCHLD\n"); signal(SIGCHLD,sigchild_func); }
+void sigalarm_func() { printf("SIGALRM\n"); signal(SIGALRM,sigalarm_func); }
+void sigcontinue_func() { printf("SIGCONT\n"); signal(SIGCONT,sigcontinue_func); }
 
 void iguana_main(void *arg)
 {
     struct supernet_info MYINFO; char helperstr[64],*helperargs,*coinargs=0,*secret,*jsonstr = arg;
     int32_t i,len,flag; cJSON *json; uint8_t secretbuf[512];
+    signal(SIGINT,sigint_func);
+    signal(SIGILL,sigillegal_func);
+    signal(SIGHUP,sighangup_func);
+    signal(SIGKILL,sigkill_func);
+    signal(SIGABRT,sigabort_func);
+    signal(SIGQUIT,sigquit_func);
+    signal(SIGCHLD,sigchild_func);
+    signal(SIGALRM,sigalarm_func);
+    signal(SIGCONT,sigcontinue_func);
     mycalloc(0,0,0);
     iguana_initQ(&helperQ,"helperQ");
     OS_ensure_directory("confs");

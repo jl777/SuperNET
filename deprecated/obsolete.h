@@ -11956,5 +11956,15 @@ void iguana_dedicatedrecv(void *arg)
              }
              return(clonestr("{\"error\":\"cant find hash function\"}"));
              }*/
-
+                void ramcoder_test(void *data,int64_t datalen)
+            {
+                static double totalin,totalout;
+                int32_t complen,bufsize = 1024 * 1024; uint8_t *buf;
+                buf = malloc(bufsize);
+                complen = ramcoder_compress(buf,bufsize,data,(int32_t)datalen);
+                totalin += datalen;
+                totalout += (complen >> 3);
+                printf("datalen.%d -> numbits.%d %d %.3f\n",(int32_t)datalen,complen,complen>>3,(double)totalin/totalout);
+                free(buf);
+            }
 #endif
