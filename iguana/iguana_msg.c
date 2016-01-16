@@ -191,11 +191,14 @@ void iguana_gotverack(struct iguana_info *coin,struct iguana_peer *addr)
 
 void iguana_gotaddr(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msgaddress *A)
 {
-    char ipaddr[64]; uint32_t ipbits;
+    char ipaddr[64],ipport[64]; uint32_t ipbits; uint16_t port;
     iguana_rwnum(0,&A->ip[12],sizeof(uint32_t),&ipbits);
+    iguana_rwnum(0,(void *)&A->port,sizeof(uint16_t),&port);
     expand_ipbits(ipaddr,ipbits);
-    iguana_possible_peer(coin,ipaddr);
-    //printf("gotaddr.(%s)\n",ipaddr);
+    if ( port != 0 )
+        sprintf(ipport,"%s:%d",ipaddr,port);
+    iguana_possible_peer(coin,ipport);
+    printf("gotaddr.(%s:%d)\n",ipaddr,port);
 }
 
 void iguana_gotping(struct iguana_info *coin,struct iguana_peer *addr,uint64_t nonce,uint8_t *data)

@@ -348,7 +348,7 @@ void iguana_bundlepurge(struct iguana_info *coin,struct iguana_bundle *bp)
     {
         for (j=m=0; j<sizeof(coin->peers.active)/sizeof(*coin->peers.active); j++)
         {
-            if ( (ipbits= coin->peers.active[j].ipbits) != 0 )
+            if ( (ipbits= (uint32_t)coin->peers.active[j].ipbits) != 0 )
             {
                 if ( iguana_peerfname(coin,&hdrsi,"tmp",fname,ipbits,bp->hashes[0],zero,1) >= 0 )
                 {

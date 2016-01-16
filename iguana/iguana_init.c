@@ -38,7 +38,7 @@ void iguana_initQs(struct iguana_info *coin)
         iguana_initQ(&coin->peers.active[i].sendQ,"addrsendQ");
 }
 
-void iguana_initpeer(struct iguana_info *coin,struct iguana_peer *addr,uint32_t ipbits)
+void iguana_initpeer(struct iguana_info *coin,struct iguana_peer *addr,uint64_t ipbits)
 {
     memset(addr,0,sizeof(*addr));
     addr->ipbits = ipbits;

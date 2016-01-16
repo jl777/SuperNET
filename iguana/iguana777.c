@@ -402,7 +402,6 @@ void iguana_coinloop(void *arg)
                     {
                         //printf("metrics\n");
                         coin->peers.lastmetrics = iguana_updatemetrics(coin); // ranks peers
-                        coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
                     }
                     //printf("process\n");
                     iguana_bundlestats(coin,str);

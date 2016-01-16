@@ -16,9 +16,9 @@
 #include "iguana777.h"
 
 #define _iguana_hashfind(coin,ipbits) _iguana_hashset(coin,ipbits,-1)
-struct iguana_iAddr *iguana_iAddrhashfind(struct iguana_info *coin,uint32_t ipbits,int32_t createflag);
+struct iguana_iAddr *iguana_iAddrhashfind(struct iguana_info *coin,uint64_t ipbits,int32_t createflag);
 
-struct iguana_iAddr *_iguana_hashset(struct iguana_info *coin,uint32_t ipbits,int32_t itemind)
+struct iguana_iAddr *_iguana_hashset(struct iguana_info *coin,uint64_t ipbits,int32_t itemind)
 {
     struct iguana_iAddr *ptr = 0; int32_t allocsize; char str[65]; struct OS_memspace *mem = 0;
     expand_ipbits(str,ipbits);
@@ -56,7 +56,7 @@ struct iguana_iAddr *iguana_iAddrhashset(struct iguana_info *coin,struct iguana_
     struct iguana_iAddr *tmp,*item;
     if ( iA == 0 || iA->ipbits == 0 )
     {
-        printf("null iA.%p or ipbits.%x ind.%d status.%d\n",iA,iA!=0?iA->ipbits:0,iA!=0?iA->hh.itemind:0,iA!=0?iA->status:0);
+        printf("null iA.%p or ipbits.%llx ind.%d status.%d\n",iA,iA!=0?(long long)iA->ipbits:0,iA!=0?iA->hh.itemind:0,iA!=0?iA->status:0);
         exit(-1);
         return(0);
     }
@@ -87,7 +87,7 @@ struct iguana_iAddr *iguana_iAddrhashset(struct iguana_info *coin,struct iguana_
     return(iA);
 }
 
-struct iguana_iAddr *iguana_iAddrhashfind(struct iguana_info *coin,uint32_t ipbits,int32_t createflag)
+struct iguana_iAddr *iguana_iAddrhashfind(struct iguana_info *coin,uint64_t ipbits,int32_t createflag)
 {
     int32_t ind; struct iguana_iAddr *item = 0;
     portable_mutex_lock(&coin->peers_mutex);
@@ -253,7 +253,7 @@ void iguana_iAkill(struct iguana_info *coin,struct iguana_peer *addr,int32_t mar
 
 int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
 {
-    int32_t opt,sock,result; uint32_t ipbits; char ipaddr[64]; struct timeval timeout;
+    int32_t opt,sock,result; uint64_t ipbits; char ipaddr[64]; struct timeval timeout;
     struct sockaddr_in saddr; socklen_t addrlen,slen;
     addrlen = sizeof(saddr);
     struct hostent *hostent = gethostbyname(hostname);
@@ -265,7 +265,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
     saddr.sin_family = AF_INET;
     saddr.sin_port = htons(port);
     memcpy(&saddr.sin_addr.s_addr,hostent->h_addr_list[0],hostent->h_length);
-    ipbits = (uint32_t)calc_ipbits(hostname);
+    ipbits = calc_ipbits(hostname);
     //printf("ipbits.%08x vs %08x\n",ipbits,saddr.sin_addr.s_addr);
     expand_ipbits(ipaddr,saddr.sin_addr.s_addr);
     //if ( bindflag != 0 )
@@ -524,7 +524,7 @@ void iguana_gotdata(struct iguana_info *coin,struct iguana_peer *addr,int32_t he
         coin->longestchain = height;
 }
 
-int32_t iguana_iAddrheight(struct iguana_info *coin,uint32_t ipbits)
+int32_t iguana_iAddrheight(struct iguana_info *coin,uint64_t ipbits)
 {
     struct iguana_iAddr *iA;
     if ( (iA= iguana_iAddrhashfind(coin,ipbits,0)) != 0 )
@@ -534,7 +534,7 @@ int32_t iguana_iAddrheight(struct iguana_info *coin,uint32_t ipbits)
 
 void iguana_startconnection(void *arg)
 {
-    int32_t i,n; char ipaddr[64]; struct iguana_peer *addr = arg; struct iguana_info *coin = 0;
+    int32_t i,n; uint16_t port; char ipaddr[64]; struct iguana_peer *addr = arg; struct iguana_info *coin = 0;
     if ( addr == 0 || (coin= iguana_coinfind(addr->symbol)) == 0 )
     {
         printf("iguana_startconnection nullptrs addr.%p coin.%p\n",addr,coin);
@@ -559,8 +559,10 @@ void iguana_startconnection(void *arg)
     }
     //printf("startconnection.(%s) pending.%u usock.%d addrind.%d\n",addr->ipaddr,addr->pending,addr->usock,addr->addrind);
     addr->pending = (uint32_t)time(NULL);
+    if ( (port= (uint16_t)(addr->ipbits >> 32)) == 0 )
+        port = coin->chain->portp2p;
     if ( addr->usock < 0 )
-        addr->usock = iguana_socket(0,addr->ipaddr,coin->chain->portp2p);
+        addr->usock = iguana_socket(0,addr->ipaddr,port);
     if ( addr->usock < 0 || coin->peers.shuttingdown != 0 )
     {
         strcpy(ipaddr,addr->ipaddr);
@@ -570,7 +572,7 @@ void iguana_startconnection(void *arg)
     else
     {
         addr->ready = (uint32_t)time(NULL);
-        addr->ipbits = (uint32_t)calc_ipbits(addr->ipaddr);
+        addr->ipbits = calc_ipbits(addr->ipaddr);
         addr->dead = 0;
         addr->pending = 0;
         addr->height = iguana_iAddrheight(coin,addr->ipbits);
@@ -592,7 +594,7 @@ void iguana_startconnection(void *arg)
     }
 }
 
-struct iguana_peer *iguana_peerslot(struct iguana_info *coin,uint32_t ipbits)
+struct iguana_peer *iguana_peerslot(struct iguana_info *coin,uint64_t ipbits)
 {
     int32_t i; struct iguana_peer *addr; char ipaddr[64];
     expand_ipbits(ipaddr,ipbits);
@@ -653,7 +655,7 @@ void *iguana_iAddriterator(struct iguana_info *coin,struct iguana_iAddr *iA)
  
 uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
 {
-    char checkaddr[64]; uint32_t ipbits,now = (uint32_t)time(NULL); int32_t i,n; struct iguana_iAddr *iA;
+    char checkaddr[64]; uint64_t ipbits; uint32_t now = (uint32_t)time(NULL); int32_t i,n; struct iguana_iAddr *iA;
     if ( ipaddr != 0 )
     {
         //printf("%p Q possible peer.(%s)\n",coin,ipaddr);
@@ -685,12 +687,12 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
         return((uint32_t)time(NULL));
     if ( strncmp("0.0.0",ipaddr,5) != 0 && strcmp("0.0.255.255",ipaddr) != 0 && strcmp("1.0.0.0",ipaddr) != 0 )
     {
-        if ( (ipbits= (uint32_t)calc_ipbits(ipaddr)) != 0 )
+        if ( (ipbits= calc_ipbits(ipaddr)) != 0 )
         {
             expand_ipbits(checkaddr,ipbits);
             if ( strcmp(checkaddr,ipaddr) == 0 )
             {
-                //printf("valid ipaddr.(%s) MAXPEERS.%d\n",ipaddr,coin->MAXPEERS);
+                printf("valid ipaddr.(%s) MAXPEERS.%d\n",ipaddr,coin->MAXPEERS);
                 if ( (iA= iguana_iAddrhashfind(coin,ipbits,1)) != 0 )
                 {
                     if ( iA->status != IGUANA_PEER_CONNECTING && iA->status != IGUANA_PEER_READY && iA->status != IGUANA_PEER_ELIGIBLE )

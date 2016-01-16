@@ -268,7 +268,7 @@ int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,
 int32_t iguana_peerfile_exists(struct iguana_info *coin,struct iguana_peer *addr,char *dirname,char *fname,bits256 hash2,bits256 prevhash2,int32_t numblocks)
 {
     FILE *fp; int32_t bundlei,hdrsi;
-    if ( (bundlei= iguana_peerfname(coin,&hdrsi,dirname,fname,addr!=0?addr->ipbits:0,hash2,prevhash2,numblocks)) >= 0 )
+    if ( (bundlei= iguana_peerfname(coin,&hdrsi,dirname,fname,addr!=0?(uint32_t)addr->ipbits:0,hash2,prevhash2,numblocks)) >= 0 )
     {
         OS_compatible_path(fname);
         if ( (fp= fopen(fname,"rb")) == 0 )
@@ -1493,7 +1493,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         if ( (err= iguana_ramchain_verify(coin,ramchain)) == 0 )
         {
             B[0] = origtxdata->block.RO;
-            if ( (fpos= (int32_t)iguana_ramchain_save(coin,RAMCHAIN_ARG,addr->ipbits,origtxdata->block.RO.hash2,origtxdata->block.RO.prev_block,bundlei,0)) >= 0 )
+            if ( (fpos= (int32_t)iguana_ramchain_save(coin,RAMCHAIN_ARG,(uint32_t)addr->ipbits,origtxdata->block.RO.hash2,origtxdata->block.RO.prev_block,bundlei,0)) >= 0 )
             {
                 //printf("set fpos.%d\n",fpos);
                 //bp->ipbits[bundlei] = addr->ipbits;
@@ -1501,7 +1501,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
                 ramchain->H.ROflag = 0;
                 flag = 1;
                 memset(&R,0,sizeof(R));
-                if ( verifyflag != 0 && (mapchain= iguana_ramchain_map(coin,fname,0,1,&R,0,addr->ipbits,origtxdata->block.RO.hash2,origtxdata->block.RO.prev_block,bundlei,fpos,1,0)) != 0 )
+                if ( verifyflag != 0 && (mapchain= iguana_ramchain_map(coin,fname,0,1,&R,0,(uint32_t)addr->ipbits,origtxdata->block.RO.hash2,origtxdata->block.RO.prev_block,bundlei,fpos,1,0)) != 0 )
                 {
                     //printf("mapped Soffset.%ld\n",(long)mapchain->data->Soffset);
                     iguana_ramchain_link(&R,origtxdata->block.RO.hash2,origtxdata->block.RO.hash2,bp->hdrsi,bp->bundleheight+bundlei,bundlei,1,firsti,1);
@@ -1540,7 +1540,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
                     bp->numspends += ramchain->H.data->numspends;
                 }
                 if ( fpos >= 0 )
-                    block->fpos = fpos, block->fpipbits = addr->ipbits;
+                    block->fpos = fpos, block->fpipbits = (uint32_t)addr->ipbits;
             }
         } else printf("ramchain verification error.%d hdrsi.%d bundlei.%d\n",err,bp->hdrsi,bundlei);
     }

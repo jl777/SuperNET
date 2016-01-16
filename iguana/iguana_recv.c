@@ -159,7 +159,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
         addr->recvtotal += recvlen;
         if ( iguana_ramchain_data(coin,addr,origtxdata,txarray,origtxdata->block.RO.txn_count,data,recvlen) >= 0 )
         {
-            txdata->block.fpipbits = addr->ipbits;
+            txdata->block.fpipbits = (uint32_t)addr->ipbits;
             req->datalen = txdata->datalen;
             req->ipbits = txdata->block.fpipbits;
             if ( 0 )

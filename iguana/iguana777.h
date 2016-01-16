@@ -232,7 +232,7 @@ struct iguana_kvitem { UT_hash_handle hh; uint8_t keyvalue[]; } __attribute__((p
 
 struct iguana_iAddr
 {
-    UT_hash_handle hh; uint32_t ipbits;
+    UT_hash_handle hh; uint64_t ipbits;
     uint32_t lastkilled,lastconnect;
     int32_t status,height,numkilled,numconnects;
 };
@@ -355,8 +355,8 @@ struct iguana_peer
     queue_t sendQ;
     struct iguana_msgaddress A;
     char ipaddr[64],lastcommand[16],coinstr[16],symbol[16];
-    uint64_t pingnonce,totalsent,totalrecv; double pingtime,sendmillis,pingsum,getdatamillis;
-    uint32_t lastcontact,sendtime,ready,startsend,startrecv,pending,ipbits,lastgotaddr,lastblockrecv,pendtime,lastflush,lastpoll;
+    uint64_t pingnonce,totalsent,totalrecv,ipbits; double pingtime,sendmillis,pingsum,getdatamillis;
+    uint32_t lastcontact,sendtime,ready,startsend,startrecv,pending,lastgotaddr,lastblockrecv,pendtime,lastflush,lastpoll;
     int32_t supernet,dead,addrind,usock,lastheight,protover,relayflag,numpackets,numpings,ipv6,height,rank,pendhdrs,pendblocks,recvhdrs,lastlefti;
     double recvblocks,recvtotal;
     int64_t allocated,freed;
@@ -453,14 +453,12 @@ int32_t iguana_verifypeer(struct iguana_info *coin,void *key,void *value,int32_t
 int32_t iguana_peermetrics(struct iguana_info *coin);
 void iguana_peersloop(void *arg);
 int32_t iguana_queue_send(struct iguana_info *coin,struct iguana_peer *addr,int32_t delay,uint8_t *serialized,char *cmd,int32_t len,int32_t getdatablock,int32_t forceflag);
-uint32_t iguana_ipbits2ind(struct iguana_info *coin,struct iguana_iAddr *iA,uint32_t ipbits,int32_t createflag);
 uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana_iAddr *iA,uint32_t ind);
-//uint32_t iguana_rwipbits_status(struct iguana_info *coin,int32_t rwflag,uint32_t ipbits,int32_t *statusp);
 void iguana_connections(void *arg);
-uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr);
+uint32_t iguana_possible_peer(struct iguana_info *coin,char *ip_port);
 //int32_t iguana_set_iAddrheight(struct iguana_info *coin,uint32_t ipbits,int32_t height);
 //struct iguana_peer *iguana_choosepeer(struct iguana_info *coin);
-void iguana_initpeer(struct iguana_info *coin,struct iguana_peer *addr,uint32_t ipbits);
+void iguana_initpeer(struct iguana_info *coin,struct iguana_peer *addr,uint64_t ipbits);
 void iguana_startconnection(void *arg);
 void iguana_shutdownpeers(struct iguana_info *coin,int32_t forceflag);
 void iguana_acceptloop(void *args);
@@ -660,7 +658,7 @@ int32_t iguana_scriptgen(struct iguana_info *coin,uint8_t *script,char *asmstr,s
 int32_t iguana_ramchain_spendtxid(struct iguana_info *coin,bits256 *txidp,struct iguana_txid *T,int32_t numtxids,bits256 *X,int32_t numexternaltxids,struct iguana_spend *s);
 struct iguana_info *iguana_coinselect();
 void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr);
-struct iguana_peer *iguana_peerslot(struct iguana_info *coin,uint32_t ipbits);
+struct iguana_peer *iguana_peerslot(struct iguana_info *coin,uint64_t ipbits);
 
 char *busdata_sync(uint32_t *noncep,char *jsonstr,char *broadcastmode,char *destNXTaddr);
 void peggy();

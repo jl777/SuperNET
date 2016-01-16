@@ -28,6 +28,7 @@ TWO_STRINGS(iguana,removenode,activecoin,ipaddr);
 TWO_STRINGS(iguana,oneshot,activecoin,ipaddr);
 TWO_STRINGS(iguana,nodestatus,activecoin,ipaddr);
 
+ZERO_ARGS(ramchain,getpeers);
 ZERO_ARGS(ramchain,getinfo);
 ZERO_ARGS(ramchain,getbestblockhash);
 ZERO_ARGS(ramchain,getblockcount);
