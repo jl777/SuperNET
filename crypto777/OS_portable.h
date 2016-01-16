@@ -120,6 +120,7 @@ uint64_t tai2utime(struct tai t);
 struct tai taitime2tai(struct taitime ct);
 char *tai_str(char *str,struct tai t);
 char *utc_str(char *str,struct tai t);
+double tai_diff(struct tai reftai,struct tai cmptai);
 
 //int32_t msync(void *addr,size_t len,int32_t flags);
 

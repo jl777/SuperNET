@@ -188,6 +188,7 @@ char *SuperNET_p2p(struct iguana_info *coin,int32_t *delaymillisp,char *ipaddr,u
     return(retstr);
 }
 
+#include <signal.h>
 void sigint_func() { printf("SIGINT\n"); exit(0); }
 void sigillegal_func() { printf("SIGILL\n"); exit(0); }
 void sighangup_func() { printf("SIGHUP\n"); exit(0); }

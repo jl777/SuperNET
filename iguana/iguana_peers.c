@@ -333,7 +333,7 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
     remains = len;
     if ( strcmp((char *)&serialized[4],"SuperNET") == 0 )
     {
-        printf(" >>>>>>> send.(%s) %d bytes to %s supernet.%d\n",(char *)&serialized[4],len,addr->ipaddr,addr->supernet);// getchar();
+        printf(" >>>>>>> send.(%s) %d bytes to %s supernet.%d\n",(char *)&serialized[4],len,addr->ipaddr,addr->supernet);
     }
     else if ( addr->msgcounts.verack == 0 && (strcmp((char *)&serialized[4],"version") != 0 && strcmp((char *)&serialized[4],"verack") != 0) != 0 )
     {
@@ -394,9 +394,10 @@ int32_t iguana_queue_send(struct iguana_info *coin,struct iguana_peer *addr,int3
         if ( delay > IGUANA_MAXDELAY_MILLIS )
             delay = IGUANA_MAXDELAY_MILLIS;
         packet->embargo = tai_now();
+        packet->embargo.millis += delay;
     }
     memcpy(packet->serialized,serialized,datalen);
-    //printf("%p queue send.(%s) %d to (%s) %x\n",packet,serialized+4,datalen,addr->ipaddr,addr->ipbits);
+    printf("%p queue send.(%s) %d to (%s)\n",packet,serialized+4,datalen,addr->ipaddr);
     queue_enqueue("sendQ",&addr->sendQ,&packet->DL,0);
     return(datalen);
 }
@@ -741,13 +742,17 @@ int32_t iguana_pollsendQ(struct iguana_info *coin,struct iguana_peer *addr)
             printf("unexpected getdata for %s\n",addr->ipaddr);
             myfree(packet,sizeof(*packet) + packet->datalen);
         }
-        else if ( packet->embargo.x == 0 )
+        else if ( packet->embargo.x == 0 || tai_diff(packet->embargo,tai_now()) < 0 )
         {
             iguana_send(coin,addr,packet->serialized,packet->datalen);
             myfree(packet,sizeof(*packet) + packet->datalen);
             return(1);
         }
-        else queue_enqueue("embargo",&addr->sendQ,&packet->DL,0);
+        else
+        {
+            printf("embargo.x %f\n",tai_diff(packet->embargo,tai_now()));
+            queue_enqueue("embargo",&addr->sendQ,&packet->DL,0);
+        }
     }
     return(0);
 }

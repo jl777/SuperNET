@@ -393,6 +393,15 @@ struct tai taitime2tai(struct taitime ct)
     return(leapsecs_add(t,ct.second == 60));
 }
 
+double tai_diff(struct tai reftai,struct tai cmptai)
+{
+    double diff;
+    reftai = taitime2tai(tai2time(reftai,0,0));
+    cmptai = taitime2tai(tai2time(cmptai,0,0));
+    diff = ((double)cmptai.x - reftai.x) * 1000 + (cmptai.millis - reftai.millis);
+    return(diff);
+}
+
 struct tai taidate_scan(char *s,int32_t numleaps)
 {
     int32_t z,c,sign = 1; char *t = s; struct taidate cd; struct tai st;

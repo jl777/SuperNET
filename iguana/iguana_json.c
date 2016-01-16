@@ -315,7 +315,7 @@ cJSON *SuperNET_peerarray(struct iguana_info *coin,int32_t max,int32_t supernetf
     {
         i = (r + j) % IGUANA_MAXPEERS;
         addr = &coin->peers.active[i];
-        if ( addr->usock >= 0 && (supernetflag == 0 || addr->supernet != 0) )
+        if ( addr->usock >= 0 && supernetflag == (addr->supernet != 0) )
         {
             jaddistr(array,addr->ipaddr);
             if ( ++n >= max )
@@ -354,7 +354,7 @@ void SuperNET_remotepeer(struct supernet_info *myinfo,struct iguana_info *coin,c
 void SuperNET_parsepeers(struct supernet_info *myinfo,cJSON *array,int32_t n,int32_t supernetflag)
 {
     int32_t i,j,m; cJSON *coinarray; char *symbol,*ipaddr; struct iguana_info *ptr;
-    if ( (array= jarray(&n,array,"supernet")) != 0 )
+    if ( array != 0 && n > 0 )
     {
         for (i=0; i<n; i++)
         {
@@ -369,6 +369,7 @@ void SuperNET_parsepeers(struct supernet_info *myinfo,cJSON *array,int32_t n,int
                             SuperNET_remotepeer(myinfo,ptr,symbol,ipaddr,supernetflag);
                     }
                 }
+                printf("parsed.%d %s.peers supernet.%d\n",m,symbol,supernetflag);
             }
         }
     }
@@ -376,19 +377,11 @@ void SuperNET_parsepeers(struct supernet_info *myinfo,cJSON *array,int32_t n,int
 
 #include "../includes/iguana_apidefs.h"
 
-STRING_ARG(SuperNET,mypeers,jsonstr)
+TWO_ARRAYS(SuperNET,mypeers,supernet,rawpeers)
 {
-    cJSON *argjson,*SNarray,*rawarray; int32_t n;
-    if ( (argjson= cJSON_Parse(jsonstr)) != 0 )
-    {
-        if ( (SNarray= jarray(&n,argjson,"supernet")) != 0 )
-            SuperNET_parsepeers(myinfo,SNarray,n,1);
-        if ( (rawarray= jarray(&n,argjson,"rawpeers")) != 0 )
-            SuperNET_parsepeers(myinfo,SNarray,n,1);
-        free_json(argjson);
-        return(clonestr("{\"result\":\"peers parsed\"}"));
-    }
-    return(clonestr("{\"error\":\"couldnt parse jsonstr\"}"));
+    SuperNET_parsepeers(myinfo,supernet,cJSON_GetArraySize(supernet),1);
+    SuperNET_parsepeers(myinfo,rawpeers,cJSON_GetArraySize(rawpeers),0);
+    return(clonestr("{\"result\":\"peers parsed\"}"));
 }
 
 STRING_ARG(SuperNET,getpeers,activecoin)

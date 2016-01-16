@@ -130,7 +130,7 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
     if ( (len= (int32_t)strlen(jsonstr)) < sizeof(serialized)-sizeof(struct iguana_msghdr) )
     {
         memcpy(&serialized[sizeof(struct iguana_msghdr)],jsonstr,len+1);
-        printf("SEND.(%s) -> (%s)\n",jsonstr,addr->ipaddr);
+        printf("SUPERSEND.(%s) -> (%s) delaymillis.%d\n",jsonstr,addr->ipaddr,delaymillis);
         return(iguana_queue_send(coin,addr,delaymillis,serialized,"SuperNET",len+1,0,1));
     }
     else return(-1);

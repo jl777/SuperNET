@@ -17,7 +17,7 @@ ZERO_ARGS(SuperNET,help);
 TWO_STRINGS(SuperNET,html,agentform,htmlfile);
 STRING_ARG(SuperNET,bitcoinrpc,setcoin);
 STRING_ARG(SuperNET,getpeers,activecoin);
-STRING_ARG(SuperNET,mypeers,jsonstr);
+TWO_ARRAYS(SuperNET,mypeers,supernet,rawpeers);
 
 STRING_ARG(iguana,peers,activecoin);
 STRING_AND_INT(iguana,maxpeers,activecoin,max);
