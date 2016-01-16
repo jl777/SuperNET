@@ -145,29 +145,22 @@ struct taidate taidate_frommjd(int32_t day,int32_t *pwday,int32_t *pyday)
 
 struct taitime tai2time(struct tai t,int32_t *pwday,int32_t *pyday)
 {
-    uint64_t u,tmp; int32_t leap,s; double diff; struct taitime ct;
+    uint64_t u; int32_t leap,s; struct taitime ct;
+    memset(&ct,0,sizeof(ct));
+    ct.millis = fmod(t.millis,999.999999);
+    //if ( First_TAI.x != 0 && t.x > First_TAI.x )
+    //    t.x = (t.millis / 1000.) + First_TAI.x;
     leap = leapsecs_sub(&t);
     u = t.x;
     u += (58486 + 60); // was off by a minute
     s = u % 86400ULL;
-    memset(&ct,0,sizeof(ct));
     ct.second = (s % 60) + leap; s /= 60;
     ct.minute = s % 60; s /= 60;
     ct.hour = s;
     u /= 86400ULL;
     ct.date = taidate_frommjd((int32_t)(u - 53375995543064ULL),pwday,pyday);
     ct.offset = 0;
-    if ( First_TAI.x != 0 && t.x > First_TAI.x )
-    {
-        tmp = (t.x - First_TAI.x);
-        diff = (t.millis - First_TAI.millis);
-        if ( diff < tmp*1000 )
-            tmp = 0, printf("TAI diff %f vs tmp.%lld\n",diff,(long long)tmp);
-        else tmp = diff * 1000000000.;
-        //printf("tmp.%llu \n",(long long)tmp);
-        tmp %= (uint64_t)1000000000000;
-        ct.millis = ((double)tmp / 1000000000.);
-    }
+    // printf("origt.x %llu t.x %llu %3.3f -> %02d:%02d:%02d %3.3f\n",(long long)origt.x,(long long)t.x,t.millis,ct.second,ct.minute,ct.second,ct.millis);
     //printf("TAI millis: %lld -1st.%lld %f - %f -> %f | %f\n",(long long)t.x,(long long)First_TAI.x,t.millis,First_TAI.millis,t.millis-First_TAI.millis,ct.millis);
     return(ct);
 }
@@ -354,7 +347,7 @@ struct tai tai_now()
 {
     struct tai t; uint64_t now = time(NULL);
     t.x = TAI_UTC_DIFF + now;
-    t.millis = OS_milliseconds();
+    t.millis = OS_milliseconds() - First_TAI.millis;
     if ( First_TAI.x == 0 )
     {
         First_TAI = t, First_utc = (uint32_t)now;
@@ -368,16 +361,18 @@ struct tai leapsecs_add(struct tai t,int32_t hit)
 {
     int32_t i; uint64_t u;
     u = t.x;
-    if ( t.x > leaptais[sizeof(leaptais)/sizeof(*leaptais)-1].x )
-        u += (sizeof(leaptais)/sizeof(*leaptais) - 1);
-        else
+    if ( t.x > leaptais[(sizeof(leaptais)/sizeof(*leaptais)) - 1].x )
+        u += (sizeof(leaptais)/sizeof(*leaptais));//, printf("add leap.%ld\n",(sizeof(leaptais)/sizeof(*leaptais)));
+    else
+    {
+        for (i=0; i<sizeof(leaptais)/sizeof(*leaptais); i++)
         {
-            for (i=0; i<sizeof(leaptais)/sizeof(*leaptais); i++)
-            {
-                if ( u < leaptais[i].x ) break;
-                if ( !hit || (u > leaptais[i].x) ) ++u;
-            }
+            if ( u < leaptais[i].x )
+                break;
+            if ( hit == 0 || u > leaptais[i].x )
+                u++;
         }
+    }
     t.x = u;
     return(t);
 }
@@ -396,9 +391,11 @@ struct tai taitime2tai(struct taitime ct)
 double tai_diff(struct tai reftai,struct tai cmptai)
 {
     double diff;
+    //char str[111],str2[111]; printf("start [%f %f] %s vs %s\n",reftai.millis,cmptai.millis,tai_str(str,reftai),tai_str(str2,cmptai));
     reftai = taitime2tai(tai2time(reftai,0,0));
     cmptai = taitime2tai(tai2time(cmptai,0,0));
-    diff = ((double)cmptai.x - reftai.x) * 1000 + (cmptai.millis - reftai.millis);
+    diff = (cmptai.x - reftai.x) * 1000. + (cmptai.millis - reftai.millis);
+    //printf("%s vs %s -> diff [%d] %f [%llu - %llu]\n\n",tai_str(str,reftai),tai_str(str2,cmptai),(int32_t)(cmptai.x - reftai.x),diff,(long long)cmptai.x,(long long)reftai.x);
     return(diff);
 }
 
@@ -646,6 +643,16 @@ int main(int argc, const char * argv[])
         }
         printf("million tai compares in %.3f microseconds per encode/decode\n",1000. * (OS_milliseconds()-startmillis)/i);
     }
+   /* struct tai t = tai_now(); double diff,lastdiff = 0.;
+    for (i=0; i<1000000; i++)
+    {
+        diff = tai_diff(t,tai_now());
+        if ( diff < lastdiff )
+            printf("embargo.x %f %llu.%3.3f %llu.%3.3f\n",tai_diff(t,tai_now()),(long long)t.x,t.millis,(long long)tai_now().x,tai_now().millis);
+        lastdiff = diff;
+        //usleep(100000);
+    } getchar();
+*/
     return 0;
 }
 #endif
