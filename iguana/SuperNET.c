@@ -314,6 +314,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
         free(jsonstr);
     if ( retstr == 0 )
         retstr = clonestr("{\"error\":\"invalid JSON request\"}");
+    printf("RETSTR.(%s)\n",retstr);
     return(retstr);
 }
 
