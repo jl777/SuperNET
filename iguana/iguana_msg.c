@@ -124,18 +124,6 @@ int32_t iguana_rwblockhash(int32_t rwflag,uint8_t *serialized,uint32_t *nVersion
     return(len);
 }*/
 
-int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,char *jsonstr,int32_t delaymillis)
-{
-    int32_t len; uint8_t serialized[8192];
-    if ( (len= (int32_t)strlen(jsonstr)) < sizeof(serialized)-sizeof(struct iguana_msghdr) )
-    {
-        memcpy(&serialized[sizeof(struct iguana_msghdr)],jsonstr,len+1);
-        printf("SUPERSEND.(%s) -> (%s) delaymillis.%d\n",jsonstr,addr->ipaddr,delaymillis);
-        return(iguana_queue_send(coin,addr,delaymillis,serialized,"SuperNET",len+1,0,1));
-    }
-    else return(-1);
-}
-
 void iguana_gotversion(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msgversion *vers)
 {
     uint8_t serialized[sizeof(struct iguana_msghdr)];

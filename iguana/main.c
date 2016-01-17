@@ -134,8 +134,6 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
             {
                 jdelete(retjson,"tag");
                 jadd64bits(retjson,"tag",tag);
-                if ( remoteaddr != 0 && remoteaddr[0] != 0 && strncmp(remoteaddr,"127.0.0.1",strlen("127.0.0.1")) != 0 )
-                    jaddstr(retjson,"yourip",remoteaddr);
                 retstr = jprint(retjson,1);
                 //printf("retstr.(%s) retjsonstr.%p retjson.%p\n",retstr,retjsonstr,retjson);
                 free(retjsonstr);//,strlen(retjsonstr)+1);
@@ -196,6 +194,31 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
         free_json(json);
     }
     return(retstr);
+}
+
+int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,char *jsonstr,int32_t delaymillis)
+{
+    int32_t len,flag=0,qlen = -1; uint8_t serialized[8192],*buf; cJSON *json;
+    if ( (json= cJSON_Parse(jsonstr)) != 0 )
+    {
+        jdelete(json,"yourip");
+        jaddstr(json,"yourip",addr->ipaddr);
+        jsonstr = jprint(json,1);
+        flag = 1;
+    }
+    buf = serialized;
+    if ( (len= (int32_t)strlen(jsonstr)) > sizeof(serialized)-sizeof(struct iguana_msghdr) )
+        buf = calloc(1,len+sizeof(struct iguana_msghdr));
+    {
+        memcpy(&buf[sizeof(struct iguana_msghdr)],jsonstr,len+1);
+        printf("SUPERSEND.(%s) -> (%s) delaymillis.%d\n",jsonstr,addr->ipaddr,delaymillis);
+        qlen = iguana_queue_send(coin,addr,delaymillis,serialized,"SuperNET",len+1,0,1);
+    }
+    if ( buf != serialized )
+        free(buf);
+    if ( flag != 0 )
+        free(jsonstr);
+    return(qlen);
 }
 
 void iguana_exit()
