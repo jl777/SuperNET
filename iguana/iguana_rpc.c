@@ -469,17 +469,17 @@ static char *getrawchangeaddress(RPCARGS)
 
 #define true 1
 #define false 0
-struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,flag1; } RPCcalls[] =
+struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,remoteflag; } RPCcalls[] =
 {
-     { "help",                   &help,                   true,   true },
+     { "help",                   &help,                   true,   false },
      { "stop",                   &stop,                   true,   true },
-     { "getbestblockhash",       &getbestblockhash,       true,   false },
-     { "getblockcount",          &getblockcount,          true,   false },
-     { "getconnectioncount",     &getconnectioncount,     true,   false },
-     { "getpeerinfo",            &getpeerinfo,            true,   false },
-     { "getinfo",                &getinfo,                true,   false },
+     { "getbestblockhash",       &getbestblockhash,       true,   true },
+     { "getblockcount",          &getblockcount,          true,   true },
+     { "getconnectioncount",     &getconnectioncount,     true,   true },
+     { "getpeerinfo",            &getpeerinfo,            true,   true },
+     { "getinfo",                &getinfo,                true,   true },
      { "getnewaddress",          &getnewaddress,          true,   false },
-     { "getnewpubkey",           &makekeypair,           true,   false },
+     { "getnewpubkey",           &makekeypair,            true,   false },
      { "getaccountaddress",      &getaccountaddress,      true,   false },
      { "setaccount",             &setaccount,             true,   false },
      { "getaccount",             &getaccount,             false,  false },
@@ -494,16 +494,16 @@ struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,flag1; } 
      { "walletpassphrasechange", &walletpassphrasechange, false,  false },
      { "walletlock",             &walletlock,             true,   false },
      { "encryptwallet",          &encryptwallet,          false,  false },
-     { "validateaddress",        &validateaddress,        true,   false },
-     { "validatepubkey",         &validatepubkey,         true,   false },
+     { "validateaddress",        &validateaddress,        true,   true },
+     { "validatepubkey",         &validatepubkey,         true,   true },
      { "getbalance",             &getbalance,             false,  false },
      { "move",                   &movecmd,                false,  false },
      { "sendfrom",               &sendfrom,               false,  false },
      { "sendmany",               &sendmany,               false,  false },
      { "addmultisigaddress",     &addmultisigaddress,     false,  false },
-     { "getblock",               &getblock,               false,  false },
-     { "getblockhash",           &getblockhash,           false,  false },
-     { "gettransaction",         &gettransaction,         false,  false },
+     { "getblock",               &getblock,               false,  true },
+     { "getblockhash",           &getblockhash,           false,  true },
+     { "gettransaction",         &gettransaction,         false,  true },
      { "listtransactions",       &listtransactions,       false,  false },
      { "listaddressgroupings",   &listaddressgroupings,   false,  false },
      { "signmessage",            &signmessage,            false,  false },
@@ -512,31 +512,31 @@ struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,flag1; } 
      { "settxfee",               &settxfee,               false,  false },
      { "listsinceblock",         &listsinceblock,         false,  false },
      { "dumpprivkey",            &dumpprivkey,            false,  false },
-     { "SuperNET",               &SuperNET,               false,  false },
+     { "SuperNET",               &SuperNET,               false,  true },
      { "dumpwallet",             &dumpwallet,             true,   false },
      { "importwallet",           &importwallet,           false,  false },
      { "importprivkey",          &importprivkey,          false,  false },
      { "listunspent",            &listunspent,            false,  false },
      { "getrawtransaction",      &getrawtransaction,      false,  false },
      { "createrawtransaction",   &createrawtransaction,   false,  false },
-     { "decoderawtransaction",   &decoderawtransaction,   false,  false },
-     { "decodescript",           &decodescript,           false,  false },
+     { "decoderawtransaction",   &decoderawtransaction,   false,  true },
+     { "decodescript",           &decodescript,           false,  true },
      { "signrawtransaction",     &signrawtransaction,     false,  false },
-     { "sendrawtransaction",     &sendrawtransaction,     false,  false },
-     { "checkwallet",            &checkwallet,            false,  true},
-     { "repairwallet",           &repairwallet,           false,  true},
-     { "makekeypair",            &makekeypair,            false,  true},
-     { "sendalert",              &sendalert,              false,  false},
+     { "sendrawtransaction",     &sendrawtransaction,     false,  true },
+     { "checkwallet",            &checkwallet,            false,  false },
+     { "repairwallet",           &repairwallet,           false,  false },
+     { "makekeypair",            &makekeypair,            false,  false },
+     { "sendalert",              &sendalert,              false,  false },
      //
-    { "createmultisig",              &createmultisig,              false,  false},
-    { "addnode",              &addnode,              false,  false},
-     { "getrawmempool",              &getrawmempool,              false,  false},
-     { "getrawchangeaddress",              &getrawchangeaddress,              false,  false},
-     { "listlockunspent",              &listlockunspent,              false,  false},
-     { "lockunspent",              &lockunspent,              false,  false},
-     { "gettxout",              &gettxout,              false,  false},
-    { "gettxoutsetinfo",              &gettxoutsetinfo,              false,  false},
-    { "vanitygen",              &vanitygen,              false,  false}
+     { "createmultisig",         &createmultisig,         false,  false },
+     { "addnode",                &addnode,                false,  false },
+     { "getrawmempool",          &getrawmempool,          false,  true },
+     { "getrawchangeaddress",    &getrawchangeaddress,    false,  false },
+     { "listlockunspent",        &listlockunspent,        false,  false },
+     { "lockunspent",            &lockunspent,            false,  false },
+     { "gettxout",               &gettxout,               false,  true },
+     { "gettxoutsetinfo",        &gettxoutsetinfo,        false,  true },
+     { "vanitygen",              &vanitygen,              false,  false }
 #ifdef PEGGY
     //{ "peggytx",                &peggytx,                true,   false },
     //{ "peggypayments",          &peggypayments,          true,   false },
@@ -559,13 +559,16 @@ struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,flag1; } 
     // { "reservebalance",         &reservebalance,         false,  true},
 };
 
-int32_t is_bitcoinrpc(char *method)
+int32_t is_bitcoinrpc(char *method,char *remoteaddr)
 {
     int32_t i;
     for (i=0; i<sizeof(RPCcalls)/sizeof(*RPCcalls); i++)
     {
         if ( strcmp(RPCcalls[i].name,method) == 0 )
-            return(i);
+        {
+            if ( RPCcalls[i].remoteflag != 0 || (RPCcalls[i].remoteflag == 0 && (remoteaddr == 0 || remoteaddr[0] == 0 || strcmp(remoteaddr,"127.0.0.1") == 0)) )
+                return(i);
+        }
     }
     return(-1);
 }

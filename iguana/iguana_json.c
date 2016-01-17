@@ -385,55 +385,11 @@ void SuperNET_parsepeers(struct supernet_info *myinfo,cJSON *array,int32_t n,int
 
 TWOSTRINGS_AND_HASH_AND_INT(SuperNET,DHT,message,destip,destpub,maxdelay)
 {
-    bits256 routehash; uint32_t destipbits = 0; long datalen;
-    char *retstr,*data,*hexstr; cJSON *msgjson;
-    if ( is_hexstr(message,(int32_t)strlen(message)) <= 0 )
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"cant remote DHT\"}"));
+    else if ( is_hexstr(message,(int32_t)strlen(message)) <= 0 )
         return(clonestr("{\"error\":\"message must be in hex\"}"));
-    else hexstr = message;
-    msgjson = cJSON_CreateObject();
-    jaddstr(msgjson,"agent","SuperNET");
-    jaddstr(msgjson,"method","DHT");
-    if ( destip == 0 || destip[0] == 0 || strncmp(destip,"127.0.0.1",strlen("127.0.0.1")) == 0 )
-    {
-        routehash = destpub;
-        jaddbits256(msgjson,"destpub",destpub);
-    }
-    else
-    {
-        destipbits = (uint32_t)calc_ipbits(destip);
-        vcalc_sha256(0,routehash.bytes,(uint8_t *)&destipbits,sizeof(destipbits));
-        jaddstr(msgjson,"destip",destip);
-    }
-    jaddstr(msgjson,"message",message);
-    data = jprint(msgjson,1);
-    datalen = strlen(data)+1;
-    retstr = SuperNET_DHTsend(myinfo,routehash,data,(int32_t)datalen,maxdelay);
-    free(data);
-    return(retstr);
-    /*if ( (msgjson= cJSON_Parse(message)) != 0 )
-    {
-        if ( (agent= jstr(msgjson,"agent")) != 0 && strcmp(agent,"SuperNET")) != 0 )
-        {
-            safecopy(agentstr,agent,sizeof(agentstr)-1);
-            jdelete(msgjson,"agent");
-            jaddstr(msgjson,"agent","SuperNET");
-            jaddstr(msgjson,"destagent",agentstr);
-        }
-        if ( (method= jstr(msgjson,"method")) != 0 && strcmp(agent,"SuperNET")) != 0 )
-        {
-            safecopy(methodstr,method,sizeof(methodstr)-1);
-            jdelete(msgjson,"method");
-            jaddstr(msgjson,"method","DHTsend");
-            jaddstr(msgjson,"destmethod",methodstr);
-        }
-        msgstr = jprint(msgjson,1);
-        msglen = (int32_t)strlen(msgstr);
-        hexstr = calloc(1,msglen*2+1);
-        flag = 1;
-        init_hexbytes_noT(hexstr,msgstr,msglen);
-    }
-    if ( flag != 0 )
-        free(hexstr);*/
+    return(SuperNET_DHTencode(myinfo,destip,destpub,message,maxdelay));
 }
 
 ZERO_ARGS(SuperNET,stop)

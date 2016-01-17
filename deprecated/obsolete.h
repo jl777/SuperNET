@@ -11956,6 +11956,25 @@ void iguana_dedicatedrecv(void *arg)
              }
              return(clonestr("{\"error\":\"cant find hash function\"}"));
              }*/
+                                            
+            /*cJSON *SuperNET_transportencode(struct supernet_info *myinfo,bits256 destpub,cJSON *json,char *destip)
+             {
+             char str[65]; uint64_t r;
+             if ( j64bits(json,"tag") == 0 )
+             {
+             OS_randombytes((uint8_t *)&r,sizeof(r));
+             jadd64bits(json,"tag",r);
+             }
+             jdelete(json,"yourip");
+             jaddstr(json,"yourip",destip);
+             jdelete(json,"mypub");
+             jaddstr(json,"mypub",bits256_str(str,myinfo->myaddr.pubkey));
+             jdelete(json,"myip");
+             jaddstr(json,"myip",myinfo->ipaddr);
+             return(json);
+             }*/
+
+                                            
                 void ramcoder_test(void *data,int64_t datalen)
             {
                 static double totalin,totalout;
@@ -11967,4 +11986,29 @@ void iguana_dedicatedrecv(void *arg)
                 printf("datalen.%d -> numbits.%d %d %.3f\n",(int32_t)datalen,complen,complen>>3,(double)totalin/totalout);
                 free(buf);
             }
+            /*if ( (msgjson= cJSON_Parse(message)) != 0 )
+             {
+             if ( (agent= jstr(msgjson,"agent")) != 0 && strcmp(agent,"SuperNET")) != 0 )
+             {
+             safecopy(agentstr,agent,sizeof(agentstr)-1);
+             jdelete(msgjson,"agent");
+             jaddstr(msgjson,"agent","SuperNET");
+             jaddstr(msgjson,"destagent",agentstr);
+             }
+             if ( (method= jstr(msgjson,"method")) != 0 && strcmp(agent,"SuperNET")) != 0 )
+             {
+             safecopy(methodstr,method,sizeof(methodstr)-1);
+             jdelete(msgjson,"method");
+             jaddstr(msgjson,"method","DHTsend");
+             jaddstr(msgjson,"destmethod",methodstr);
+             }
+             msgstr = jprint(msgjson,1);
+             msglen = (int32_t)strlen(msgstr);
+             hexstr = calloc(1,msglen*2+1);
+             flag = 1;
+             init_hexbytes_noT(hexstr,msgstr,msglen);
+             }
+             if ( flag != 0 )
+             free(hexstr);*/
+
 #endif

@@ -888,7 +888,7 @@ int64_t iguana_peerallocated(struct iguana_info *coin,struct iguana_peer *addr)
 void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
 {
     static uint32_t lastping;
-    char *msg; struct pollfd fds; uint8_t *buf,serialized[64]; struct iguana_bundlereq *req;
+    struct pollfd fds; uint8_t *buf,serialized[64]; struct iguana_bundlereq *req;
     uint32_t ipbits; int32_t bufsize,flag,run,timeout = coin->polltimeout == 0 ? 10 : coin->polltimeout;
 #ifdef IGUANA_PEERALLOC
     int32_t i;  int64_t remaining; struct OS_memspace *mem[sizeof(addr->SEROUT)/sizeof(*addr->SEROUT)];
@@ -912,8 +912,6 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     bufsize = IGUANA_MAXPACKETSIZE;
     buf = mycalloc('r',1,bufsize);
     printf("send version myservices.%llu to (%s)\n",(long long)coin->myservices,addr->ipaddr);
-    //if ( addr->supernet != 0 )
-    //    iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
     iguana_send_version(coin,addr,coin->myservices);
     sleep(1+(rand()%5));
     iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
@@ -985,11 +983,9 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
         }
         if ( flag != 0 )
             run = 0;
-        else if ( addr->supernet != 0 && time(NULL) > lastping+60 )
+        else if ( addr->supernet != 0 && time(NULL) > lastping+600 )
         {
-            printf("send getpeers\n");
-            msg = "{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}";
-            iguana_send_supernet(coin,addr,msg,strlen(msg)+1,0);
+            iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
             lastping = (uint32_t)time(NULL);
         }
         if ( coin->isRT != 0 && addr->rank > coin->MAXPEERS && (rand() % 100) == 0 )
@@ -1093,9 +1089,8 @@ void iguana_peersloop(void *ptr)
         }
         if ( flag == 0 )
         {
-            char *msg = "{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}";
             if ( time(NULL) > lastping+1 )
-                iguana_send_supernet(coin,addr,msg,strlen(msg)+1,0);
+                iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
             usleep(1000);
         }
     }

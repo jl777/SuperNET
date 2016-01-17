@@ -353,7 +353,7 @@ struct iguana_peer
 {
     struct queueitem DL;
     queue_t sendQ;
-    bits256 iphash;
+    bits256 iphash,pubkey;
     struct iguana_msgaddress A;
     char ipaddr[64],lastcommand[16],coinstr[16],symbol[16];
     uint64_t pingnonce,totalsent,totalrecv,ipbits; double pingtime,sendmillis,pingsum,getdatamillis;
@@ -671,7 +671,7 @@ struct iguana_info *iguana_coinfind(const char *symbol);
 struct iguana_info *iguana_coinadd(const char *symbol);
 struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana_bundle *bp);
 int32_t iguana_sendblockreq(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2,int32_t iamthreadsafe);
-int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,void *data,long datalen,int32_t delay);
+int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,char *jsonstr,int32_t delay);
 
 struct iguana_waccount *iguana_waccountfind(struct iguana_info *coin,char *account);
 struct iguana_waccount *iguana_waccountadd(struct iguana_info *coin,char *walletaccount,struct iguana_waddress *waddr);
@@ -684,16 +684,15 @@ int32_t btc_priv2wip(char *wipstr,uint8_t privkey[32],uint8_t addrtype);
 int32_t btc_pub2rmd(uint8_t rmd160[20],uint8_t pubkey[33]);
 int32_t iguana_launchcoin(char *symbol,cJSON *json);
 int32_t iguana_jsonQ();
-int32_t is_bitcoinrpc(char *method);
+int32_t is_bitcoinrpc(char *method,char *remoteaddr);
 char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr);
 cJSON *iguana_pubkeyjson(struct iguana_info *coin,char *pubkeystr);
 void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit);
 int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit);
 void ramcoder_test(void *data,int64_t len);
-void SuperNET_init(void *args);
-char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSON *json,char *remoteaddr);
 void iguana_exit();
 int32_t iguana_pendingaccept(struct iguana_info *coin);
+char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t tag,int32_t maxmillis,char *remoteaddr);
 
 extern queue_t bundlesQ;
 

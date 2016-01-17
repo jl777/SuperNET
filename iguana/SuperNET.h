@@ -32,6 +32,10 @@
 #define MAX_SERVERNAME 128
 #define SUPERNET_MAXRECVBUF (1024 * 1024 * 16)
 
+#define SUPERNET_FORWARD 2
+#define SUPERNET_ISMINE 1
+#define SUPERNET_MAXDELAY (1000 * 3600)
+
 /*#define LB_OFFSET 1
 #define PUBGLOBALS_OFFSET 2
 #define PUBRELAYS_OFFSET 3
@@ -81,7 +85,7 @@ struct supernet_info
     bits256 privkey;
     uint8_t *recvbuf[6];
     struct supernet_address myaddr;
-    int32_t LBsock,PUBsock,reqsock,subsock,networktimeout;
+    int32_t LBsock,PUBsock,reqsock,subsock,networktimeout,maxdelay;
     uint16_t LBport,PUBport,reqport,subport;
     struct nn_pollfd pfd[SUPERNET_MAXAGENTS]; //struct relay_info active;
     struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ; int32_t numagents;
@@ -98,14 +102,16 @@ struct supernet_endpoint
 void expand_epbits(char *endpoint,struct endpoint epbits);
 struct endpoint calc_epbits(char *transport,uint32_t ipbits,uint16_t port,int32_t type);
 
+struct supernet_info *SuperNET_MYINFO(char *passphrase);
 void SuperNET_init(void *args);
 char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr);
 
-char *pangea_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr);
-char *ramchain_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr);
-char *iguana_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr);
-char *InstantDEX_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr);
-char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,void *data,int32_t datalen,int32_t maxdelay);
+char *SuperNET_jsonstr(struct supernet_info *myinfo,char *jsonstr,char *remoteaddr);
+char *SuperNET_DHTencode(struct supernet_info *myinfo,char *destip,bits256 destpub,char *hexmsg,int32_t maxdelay);
+char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSON *json,char *remoteaddr);
+char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr);
+char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,char *hexmessage,int32_t maxdelay);
+
 
 #endif
 
