@@ -117,18 +117,24 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 prevpub,uint8_t *
 {
     char destip[64],myipaddr[64],str[65],*hexmsg; uint64_t tag; int32_t len = 0;
     uint32_t destipbits,myipbits; bits256 senderpub; cJSON *json = cJSON_CreateObject();
+    int32_t i; for (i=0; i<datalen; i++)
+        printf("%02x ",serialized[i]);
+    printf("bits[%d]\n",datalen);
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&destipbits);
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&myipbits);
     len += iguana_rwbignum(0,&serialized[len],sizeof(bits256),senderpub.bytes);
     len += iguana_rwnum(0,&serialized[len],sizeof(tag),&tag);
+    printf("-> dest.%x myip.%x senderpub.%llx tag.%llu\n",destipbits,myipbits,(long long)senderpub.txid,(long long)tag);
     expand_ipbits(destip,destipbits), jaddstr(json,"yourip",destip);
     expand_ipbits(myipaddr,myipbits), jaddstr(json,"myip",myipaddr);
     jaddstr(json,"mypub",bits256_str(str,senderpub));
     jadd64bits(json,"tag",tag);
     if ( len < datalen )
     {
+        printf("len %d vs %d datalen\n",len,datalen);
         hexmsg = malloc(((datalen - len)<<1) + 1);
         init_hexbytes_noT(hexmsg,&serialized[len],datalen - len);
+        printf("hex.(%s)\n",hexmsg);
         jaddstr(json,"message",hexmsg);
         free(hexmsg);
     }
@@ -313,7 +319,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
     if ( (json= SuperNET_bits2json(myinfo,addr->pubkey,data,datalen)) != 0 )
     {
         maxdelay = juint(json,"maxdelay");
-        printf("GOT >>>>>>>> SUPERNET P2P.(%s) from.%s\n",(char *)data,coin->symbol);
+        printf("GOT >>>>>>>> SUPERNET P2P.(%s) from.%s\n",jprint(json,0),coin->symbol);
         if ( (myipaddr= jstr(json,"yourip")) != 0 )
             SuperNET_myipaddr(SuperNET_MYINFO(0),addr,myipaddr,ipaddr);
         senderpub = jbits256(json,"mypub");

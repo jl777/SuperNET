@@ -253,7 +253,7 @@ void iguana_iAkill(struct iguana_info *coin,struct iguana_peer *addr,int32_t mar
 
 int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
 {
-    int32_t opt,sock,result; uint64_t ipbits; char ipaddr[64]; struct timeval timeout;
+    int32_t opt,sock,result; char ipaddr[64],checkipaddr[64]; struct timeval timeout;
     struct sockaddr_in saddr; socklen_t addrlen,slen;
     addrlen = sizeof(saddr);
     struct hostent *hostent;
@@ -268,13 +268,9 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
     saddr.sin_family = AF_INET;
     saddr.sin_port = htons(port);
     memcpy(&saddr.sin_addr.s_addr,hostent->h_addr_list[0],hostent->h_length);
-    ipbits = calc_ipbits(hostname);
-    //printf("ipbits.%08x vs %08x\n",ipbits,saddr.sin_addr.s_addr);
-    expand_ipbits(ipaddr,saddr.sin_addr.s_addr);
-    //if ( bindflag != 0 )
-    //    printf("iguana_socket.(%s:%d) bind.%d\n",ipaddr,port,bindflag), getchar();
-    if ( strcmp(ipaddr,hostname) != 0 )
-        printf("iguana_socket mismatch (%s) -> (%s)?\n",hostname,ipaddr);
+    expand_ipbits(checkipaddr,saddr.sin_addr.s_addr);
+    if ( strcmp(ipaddr,checkipaddr) != 0 )
+        printf("bindflag.%d iguana_socket mismatch (%s) -> (%s)?\n",bindflag,checkipaddr,ipaddr);
     if ( (sock= socket(AF_INET,SOCK_STREAM,0)) < 0 )
     {
         if ( errno != ETIMEDOUT )
