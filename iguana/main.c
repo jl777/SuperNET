@@ -134,6 +134,8 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
             {
                 jdelete(retjson,"tag");
                 jadd64bits(retjson,"tag",tag);
+                if ( remoteaddr != 0 && remoteaddr[0] != 0 && strncmp(remoteaddr,"127.0.0.1",strlen("127.0.0.1")) != 0 )
+                    jaddstr(retjson,"yourip",remoteaddr);
                 retstr = jprint(retjson,1);
                 //printf("retstr.(%s) retjsonstr.%p retjson.%p\n",retstr,retjsonstr,retjson);
                 free(retjsonstr);//,strlen(retjsonstr)+1);
@@ -185,7 +187,8 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
                         //printf("it is a result, dont return\n");
                         free(retstr);
                         retstr = 0;
-                    } else *delaymillisp = (rand() % 1000);
+                    }
+                    else *delaymillisp = (rand() % 1000);
                     free_json(retjson);
                 }
             } else printf("null retstr from SuperNET_JSON\n");
