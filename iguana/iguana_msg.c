@@ -186,7 +186,7 @@ void iguana_gotaddr(struct iguana_info *coin,struct iguana_peer *addr,struct igu
     if ( port != 0 )
         sprintf(ipport,"%s:%d",ipaddr,port);
     iguana_possible_peer(coin,ipport);
-    printf("gotaddr.(%s:%d)\n",ipaddr,port);
+    //printf("gotaddr.(%s:%d)\n",ipaddr,port);
 }
 
 void iguana_gotping(struct iguana_info *coin,struct iguana_peer *addr,uint64_t nonce,uint8_t *data)
