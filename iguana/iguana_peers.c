@@ -293,9 +293,9 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
         }
         opt = 0;
         getsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,&slen);
+        opt = 1;
         //printf("keepalive.%d\n",opt);
-    }
-    setsockopt(sock,SOL_SOCKET,SO_REUSEADDR,(void *)&opt,sizeof(opt));
+    } else setsockopt(sock,SOL_SOCKET,SO_REUSEADDR,(void *)&opt,sizeof(opt));
 #ifdef __APPLE__
     setsockopt(sock,SOL_SOCKET,SO_NOSIGPIPE,&opt,sizeof(opt));
 #endif
