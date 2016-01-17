@@ -393,10 +393,21 @@ void iguana_coinloop(void *arg)
                             coin->polltimeout = 100;
                         coin->MAXPEERS = 8;
                     }
-                    if ( coin->peers.numranked != 0 && coin->peers.numranked < (coin->MAXPEERS>>1) && now > coin->lastpossible )
+                    if ( coin->bindsock >= 0 )
                     {
-                        //printf("possible\n");
-                        coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
+                        if ( coin->peers.numranked < 8 && now > coin->lastpossible+60 )
+                        {
+                            //printf("possible\n");
+                            coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
+                        }
+                    }
+                    else
+                    {
+                        if ( coin->peers.numranked != 0 && coin->peers.numranked < (coin->MAXPEERS>>1) && now > coin->lastpossible+6 )
+                        {
+                            //printf("possible\n");
+                            coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
+                        }
                     }
                     if ( now > coin->peers.lastmetrics+6 )
                     {
