@@ -57,6 +57,7 @@ void iguana_initcoin(struct iguana_info *coin)
     portable_mutex_init(&coin->blocks_mutex);
     iguana_meminit(&coin->blockMEM,"blockMEM",coin->blockspace,sizeof(coin->blockspace),0);
     iguana_initQs(coin);
+    coin->bindsock = -1;
     OS_randombytes((unsigned char *)&coin->instance_nonce,sizeof(coin->instance_nonce));
     coin->startutc = (uint32_t)time(NULL);
     while ( time(NULL) == coin->startutc )

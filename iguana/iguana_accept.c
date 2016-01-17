@@ -63,23 +63,23 @@ int32_t iguana_acceptspoll(uint8_t *buf,int32_t bufsize,struct iguana_accept *ac
 void iguana_acceptloop(void *args)
 {
     struct iguana_peer *addr; struct iguana_info *coin = args;
-    struct pollfd pfd; int32_t bindsock,sock; struct iguana_accept *ptr;
+    struct pollfd pfd; int32_t sock; struct iguana_accept *ptr;
     socklen_t clilen; struct sockaddr_in cli_addr; char ipaddr[64]; uint32_t ipbits;
-    bindsock = iguana_socket(1,"0.0.0.0",coin->chain->portp2p);
-    printf("iguana_bindloop 127.0.0.1:%d bind sock.%d\n",coin->chain->portp2p,bindsock);
-    while ( bindsock >= 0 )
+    coin->bindsock = iguana_socket(1,"0.0.0.0",coin->chain->portp2p);
+    printf("iguana_bindloop 127.0.0.1:%d bind sock.%d\n",coin->chain->portp2p,coin->bindsock);
+    while ( coin->bindsock >= 0 )
     {
         memset(&pfd,0,sizeof(pfd));
-        pfd.fd = bindsock;
+        pfd.fd = coin->bindsock;
         pfd.events = POLLIN;
         if ( poll(&pfd,1,100) <= 0 )
             continue;
         clilen = sizeof(cli_addr);
-        printf("ACCEPT (%s:%d) on sock.%d\n","127.0.0.1",coin->chain->portp2p,bindsock);
-        sock = accept(bindsock,(struct sockaddr *)&cli_addr,&clilen);
+        printf("ACCEPT (%s:%d) on sock.%d\n","127.0.0.1",coin->chain->portp2p,coin->bindsock);
+        sock = accept(coin->bindsock,(struct sockaddr *)&cli_addr,&clilen);
         if ( sock < 0 )
         {
-            printf("ERROR on accept bindsock.%d errno.%d (%s)\n",bindsock,errno,strerror(errno));
+            printf("ERROR on accept bindsock.%d errno.%d (%s)\n",coin->bindsock,errno,strerror(errno));
             continue;
         }
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
