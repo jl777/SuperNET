@@ -384,6 +384,12 @@ void SuperNET_parsepeers(struct supernet_info *myinfo,cJSON *array,int32_t n,int
 
 #include "../includes/iguana_apidefs.h"
 
+ZERO_ARGS(SuperNET,stop)
+{
+    iguana_exit();
+    return(clonestr("{\"result\":\"exit started\"}"));
+}
+
 TWO_ARRAYS(SuperNET,mypeers,supernet,rawpeers)
 {
     SuperNET_parsepeers(myinfo,supernet,cJSON_GetArraySize(supernet),1);

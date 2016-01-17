@@ -397,7 +397,7 @@ int32_t iguana_queue_send(struct iguana_info *coin,struct iguana_peer *addr,int3
         packet->embargo.millis += delay;
     }
     memcpy(packet->serialized,serialized,datalen);
-    printf("%p queue send.(%s) %d to (%s)\n",packet,serialized+4,datalen,addr->ipaddr);
+    //printf("%p queue send.(%s) %d to (%s)\n",packet,serialized+4,datalen,addr->ipaddr);
     queue_enqueue("sendQ",&addr->sendQ,&packet->DL,0);
     return(datalen);
 }
@@ -735,7 +735,7 @@ int32_t iguana_pollsendQ(struct iguana_info *coin,struct iguana_peer *addr)
     struct iguana_packet *packet;
     if ( (packet= queue_dequeue(&addr->sendQ,0)) != 0 )
     {
-        if ( addr->supernet != 0 || strcmp((char *)&packet->serialized[4],"SuperNET") == 0 )
+        if ( 0 && (addr->supernet != 0 || strcmp((char *)&packet->serialized[4],"SuperNET") == 0) )
             printf("%s: send.(%s).%d usock.%d dead.%u ready.%u supernet.%d\n",addr->ipaddr,packet->serialized+4,packet->datalen,addr->usock,addr->dead,addr->ready,addr->supernet);
         if ( strcmp((char *)&packet->serialized[4],"getdata") == 0 )
         {
@@ -750,7 +750,7 @@ int32_t iguana_pollsendQ(struct iguana_info *coin,struct iguana_peer *addr)
         }
         else
         {
-            printf("embargo.x %llu %f\n",(long long)packet->embargo.x,tai_diff(packet->embargo,tai_now()));
+            //printf("embargo.x %llu %f\n",(long long)packet->embargo.x,tai_diff(packet->embargo,tai_now()));
             queue_enqueue("embargo",&addr->sendQ,&packet->DL,0);
         }
     }

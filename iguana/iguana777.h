@@ -688,6 +688,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
 void ramcoder_test(void *data,int64_t len);
 void SuperNET_init(void *args);
 char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSON *json,char *remoteaddr);
+void iguana_exit();
 
 extern queue_t bundlesQ;
 

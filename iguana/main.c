@@ -71,10 +71,10 @@ int32_t iguana_jsonQ()
     }
     if ( (ptr= queue_dequeue(&jsonQ,0)) != 0 )
     {
-printf("process.(%s)\n",ptr->jsonstr);
+//printf("process.(%s)\n",ptr->jsonstr);
         if ( (*ptr->retjsonstrp= SuperNET_jsonstr(ptr->myinfo,ptr->jsonstr,ptr->remoteaddr)) == 0 )
             *ptr->retjsonstrp = clonestr("{\"error\":\"null return from iguana_jsonstr\"}");
-        printf("finished.(%s) -> (%s)\n",ptr->jsonstr,*ptr->retjsonstrp!=0?*ptr->retjsonstrp:"null return");
+//printf("finished.(%s) -> (%s)\n",ptr->jsonstr,*ptr->retjsonstrp!=0?*ptr->retjsonstrp:"null return");
         queue_enqueue("finishedQ",&finishedQ,&ptr->DL,0);
         return(1);
     }
@@ -100,7 +100,7 @@ char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t
         usleep(100);
         if ( retjsonstr != 0 )
         {
-            printf("got blocking retjsonstr.(%s) delete allocsize.%d:%d\n",retjsonstr,allocsize,ptr->allocsize);
+            //printf("got blocking retjsonstr.(%s) delete allocsize.%d:%d\n",retjsonstr,allocsize,ptr->allocsize);
             queue_delete(&finishedQ,&ptr->DL,ptr->allocsize,1);
             return(retjsonstr);
         }
@@ -192,6 +192,7 @@ char *SuperNET_p2p(struct iguana_info *coin,int32_t *delaymillisp,char *ipaddr,u
 void iguana_exit()
 {
     int32_t i,j,k;
+    printf("start EXIT\n");
     for (i=0; i<IGUANA_MAXCOINS; i++)
     {
         if ( Coins[i] != 0 )
@@ -216,19 +217,20 @@ void iguana_exit()
             }
         }
     }
+    printf("sockets closed, now EXIT\n");
     exit(0);
 }
 
 #include <signal.h>
-void sigint_func() { printf("SIGINT\n"); iguana_exit(); }
-void sigillegal_func() { printf("SIGILL\n"); iguana_exit(); }
-void sighangup_func() { printf("SIGHUP\n"); iguana_exit(); }
-void sigkill_func() { printf("SIGKILL\n"); iguana_exit(); }
-void sigabort_func() { printf("SIGABRT\n"); iguana_exit(); }
-void sigquit_func() { printf("SIGQUIT\n"); iguana_exit(); }
-void sigchild_func() { printf("SIGCHLD\n"); signal(SIGCHLD,sigchild_func); }
-void sigalarm_func() { printf("SIGALRM\n"); signal(SIGALRM,sigalarm_func); }
-void sigcontinue_func() { printf("SIGCONT\n"); signal(SIGCONT,sigcontinue_func); }
+void sigint_func() { printf("\nSIGINT\n"); iguana_exit(); }
+void sigillegal_func() { printf("\nSIGILL\n"); iguana_exit(); }
+void sighangup_func() { printf("\nSIGHUP\n"); iguana_exit(); }
+void sigkill_func() { printf("\nSIGKILL\n"); iguana_exit(); }
+void sigabort_func() { printf("\nSIGABRT\n"); iguana_exit(); }
+void sigquit_func() { printf("\nSIGQUIT\n"); iguana_exit(); }
+void sigchild_func() { printf("\nSIGCHLD\n"); signal(SIGCHLD,sigchild_func); }
+void sigalarm_func() { printf("\nSIGALRM\n"); signal(SIGALRM,sigalarm_func); }
+void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func); }
 
 void iguana_main(void *arg)
 {
