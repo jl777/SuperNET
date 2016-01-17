@@ -257,10 +257,12 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,v
 }
 
 uint64_t Packetcache[1024];
-int32_t SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,uint8_t *data,int32_t datalen,int32_t maxdelay)
+char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,void *data,int32_t datalen,int32_t maxdelay)
 {
     static int lastpurge;
-    bits256 packethash; int32_t i,j,firstz,iter,n = 0; struct iguana_peer *addr;
+    bits256 packethash; char retbuf[512]; int32_t i,j,firstz,iter,n = 0; struct iguana_peer *addr;
+    if ( myinfo == 0 )
+        myinfo = &MYINFO;
     vcalc_sha256(0,packethash.bytes,data,datalen);
     firstz = -1;
     for (i=0; i<sizeof(Packetcache)/sizeof(*Packetcache); i++)
@@ -274,7 +276,7 @@ int32_t SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,uint8_t 
         else if ( Packetcache[i] == packethash.txid )
         {
             printf("SuperNET_DHTsend reject repeated packet.%llx (%s)\n",(long long)packethash.txid,(char *)data);
-            return(-1);
+            return(clonestr("{\"error\":\"duplicate packet rejected\"}"));
         }
     }
     if ( i == sizeof(Packetcache)/sizeof(*Packetcache) )
@@ -298,7 +300,7 @@ int32_t SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,uint8_t 
                         if ( iter == 0 && memcmp(addr->iphash.bytes,routehash.bytes,sizeof(addr->iphash)) == 0 )
                         {
                             iguana_send_supernet(Coins[i],addr,data,datalen,maxdelay==0?0:rand()%maxdelay);
-                            return(100);
+                            return(clonestr("{\"result\":\"packet sent directly to destip\"}"));
                         }
                         else if ( iter == 1 )
                         {
@@ -313,7 +315,10 @@ int32_t SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,uint8_t 
             }
         }
     }
-    return(n);
+    if ( n > 0 )
+        sprintf(retbuf,"{\"result\":\"packet forwarded to superDHT\",\"branches\":%d}",n);
+    else sprintf(retbuf,"{\"error\":\"no nodes to forward packet to\"}");
+    return(clonestr(retbuf));
 }
 
 int32_t SuperNET_mypacket(struct supernet_info *myinfo,uint32_t destipbits,bits256 destpub)
@@ -328,8 +333,8 @@ int32_t SuperNET_mypacket(struct supernet_info *myinfo,uint32_t destipbits,bits2
 
 char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *delaymillisp,char *ipaddr,uint8_t *data,int32_t datalen)
 {
-    cJSON *json,*retjson; bits256 destpub,routehash; uint32_t n,destipbits = 0;
-    char *destip,*agent,*myipaddr,*method,retbuf[512],*retstr = 0;
+    cJSON *json,*retjson; bits256 destpub,routehash; uint32_t destipbits = 0;
+    char *destip,*agent,*myipaddr,*method,*retstr = 0;
     *delaymillisp = 0;
     if ( (json= cJSON_Parse((char *)data)) != 0 )
     {
@@ -344,14 +349,9 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
             if ( destipbits != 0 )
                 vcalc_sha256(0,routehash.bytes,(uint8_t *)&destipbits,sizeof(destipbits));
             else routehash = destpub;
-            n = SuperNET_DHTsend(&MYINFO,routehash,data,datalen,juint(json,"delay"));
+            retstr = SuperNET_DHTsend(&MYINFO,routehash,data,datalen,juint(json,"delay"));
             free_json(json);
-            if ( n > 0 )
-            {
-                if ( n == 100 )
-                    sprintf(retbuf,"{\"result\":\"packet sent to destination\"}");
-                else sprintf(retbuf,"{\"result\":\"packet forwarded to superDHT\",\"branches\":%d}",n);
-            } else return(clonestr("{\"error\":\"no nodes to forward packet to\"}"));
+            return(retstr);
         }
         if ( (agent= jstr(json,"agent")) != 0 && (method= jstr(json,"method")) != 0 )
         {

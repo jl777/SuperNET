@@ -22,6 +22,7 @@
 
 #define SUPERNET_LBPORT 7770
 #define SUPERNET_PUBPORT 7771
+#define SUPERNET_PORTP2P 7770
 #define SUPERNET_NETWORKTIMEOUT 10000
 #define SUPERNET_POLLTIMEOUT 1
 #define SUPERNET_APIUSLEEP (SUPERNET_POLLTIMEOUT * 10000)
@@ -104,6 +105,7 @@ char *pangea_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *
 char *ramchain_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr);
 char *iguana_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr);
 char *InstantDEX_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr);
+char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,void *data,int32_t datalen,int32_t maxdelay);
 
 #endif
 
