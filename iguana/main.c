@@ -205,7 +205,7 @@ void iguana_exit()
         {
             for (j=0; j<IGUANA_MAXPEERS; j++)
             {
-                if ( Coins[i]->peers.active[j].usock >= 0 )
+                if ( Coins[i]->peers.active[j].usock >= 0 && Coins[i]->peers.active[j].supernet != 0 )
                     iguana_send_supernet(Coins[i],&Coins[i]->peers.active[j],stopstr,0);
             }
         }
