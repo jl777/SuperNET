@@ -93,7 +93,7 @@ void iguana_acceptloop(void *args)
             ptr->ipbits = ipbits;
             ptr->sock = sock;
             ptr->port = coin->chain->portp2p;
-            printf("NEED TO DEAL WITH PENDING ACCEPTS\n");
+            printf("queue PENDING ACCEPTS\n");
             queue_enqueue("acceptQ",&coin->acceptQ,&ptr->DL,0);
         }
         else
@@ -107,6 +107,24 @@ void iguana_acceptloop(void *args)
     }
 }
 
+int32_t iguana_pendingaccept(struct iguana_info *coin)
+{
+    struct iguana_accept *ptr; char ipaddr[64]; struct iguana_peer *addr;
+    if ( (ptr= queue_dequeue(&coin->acceptQ,0)) != 0 )
+    {
+        if ( (addr= iguana_peerslot(coin,ptr->ipbits)) != 0 )
+        {
+            expand_ipbits(ipaddr,ptr->ipbits);
+            printf("iguana_pendingaccept LAUNCH DEDICATED THREAD for %s\n",ipaddr);
+            addr->usock = ptr->sock;
+            strcpy(addr->symbol,coin->symbol);
+            iguana_launch(coin,"accept",iguana_dedicatedglue,addr,IGUANA_CONNTHREAD);
+            myfree(ptr,sizeof(*ptr));
+            return(1);
+        } else queue_enqueue("requeue_acceptQ",&coin->acceptQ,&ptr->DL,0);
+    }
+    return(0);
+}
 /*int32_t iguana_acceptport(struct iguana_info *coin,uint16_t port)
 {
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)iguana_acceptloop,(void *)coin) != 0 )

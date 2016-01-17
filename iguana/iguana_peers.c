@@ -670,6 +670,8 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
         queue_enqueue("possibleQ",&coin->possibleQ,queueitem(ipaddr),1);
         return((uint32_t)time(NULL));
     }
+    else if ( iguana_pendingaccept(coin) != 0 )
+        return((uint32_t)time(NULL));
     else if ( (ipaddr= queue_dequeue(&coin->possibleQ,1)) == 0 )
         return((uint32_t)time(NULL));
 #ifdef IGUANA_DISABLEPEERS
