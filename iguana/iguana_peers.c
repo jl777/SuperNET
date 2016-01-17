@@ -256,9 +256,10 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
     int32_t opt,sock,result; uint64_t ipbits; char ipaddr[64]; struct timeval timeout;
     struct sockaddr_in saddr; socklen_t addrlen,slen;
     addrlen = sizeof(saddr);
-    struct hostent *hostent = gethostbyname(hostname);
+    struct hostent *hostent;
     if ( parse_ipaddr(ipaddr,hostname) != 0 )
         port = parse_ipaddr(ipaddr,hostname);
+    hostent = gethostbyname(ipaddr);
     if ( hostent == NULL )
     {
         printf("gethostbyname(%s) returned error: %d port.%d ipaddr.(%s)\n",hostname,errno,port,ipaddr);
@@ -412,12 +413,9 @@ int32_t iguana_recv(char *ipaddr,int32_t usock,uint8_t *recvbuf,int32_t len)
             printf("%s recv errno.%d %s\n",ipaddr,errno,strerror(errno));
             if ( errno == EAGAIN )
             {
-#ifdef IGUANA_DEDICATED_THREADS
                 //printf("EAGAIN for len %d, remains.%d\n",len,remains);
-#endif
-                usleep(10000);
-            }
-            else return(-errno);
+                usleep(100000);
+            } else return(-errno);
         }
         else
         {
