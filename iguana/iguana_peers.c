@@ -280,17 +280,17 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
             printf("socket() failed: %s errno.%d", strerror(errno),errno);
         return(-1);
     }
-    if ( 0 )
-    {
-        timeout.tv_sec = 0;
-        timeout.tv_usec = 1000;
-        setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(void *)&timeout,sizeof(timeout));
-    }
     opt = 1;
     slen = sizeof(opt);
     //printf("set keepalive.%d\n",setsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,slen));
     if ( 1 )//&& bindflag != 0 )
     {
+        if ( 1 )
+        {
+            timeout.tv_sec = 0;
+            timeout.tv_usec = 30000;
+            setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(void *)&timeout,sizeof(timeout));
+        }
         opt = 0;
         getsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,&slen);
         //printf("keepalive.%d\n",opt);
