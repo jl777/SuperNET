@@ -249,13 +249,15 @@ void *queue_dequeue(queue_t *queue,int32_t offsetflag)
 
 void *queue_delete(queue_t *queue,struct queueitem *copy,int32_t copysize,int32_t freeitem)
 {
+    struct allocitem *ptr;
     struct queueitem *item = 0;
     lock_queue(queue);
     if ( queue->list != 0 )
     {
         DL_FOREACH(queue->list,item)
         {
-            if ( item == copy || memcmp((void *)((long)item + sizeof(struct queueitem)),(void *)((long)item + sizeof(struct queueitem)),copysize) == 0 )
+            ptr = (void *)((long)item - sizeof(struct allocitem));
+            if ( item == copy || (ptr->allocsize == copysize && memcmp((void *)((long)item + sizeof(struct queueitem)),(void *)((long)item + sizeof(struct queueitem)),copysize) == 0) )
             {
                 DL_DELETE(queue->list,item);
                 portable_mutex_unlock(&queue->mutex);

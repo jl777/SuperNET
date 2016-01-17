@@ -100,8 +100,8 @@ char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t
         usleep(100);
         if ( retjsonstr != 0 )
         {
-            //printf("blocking retjsonstr.(%s)\n",retjsonstr);
-            queue_delete(&finishedQ,&ptr->DL,allocsize,1);
+            printf("got blocking retjsonstr.(%s) delete allocsize.%d:%d\n",retjsonstr,allocsize,ptr->allocsize);
+            queue_delete(&finishedQ,&ptr->DL,ptr->allocsize,1);
             return(retjsonstr);
         }
         usleep(1000);
