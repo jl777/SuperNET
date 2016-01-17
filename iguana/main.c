@@ -159,7 +159,7 @@ char *iguana_JSON(char *jsonstr)
     return(retstr);
 }
 
-char *SuperNET_p2p(struct iguana_info *coin,int32_t *delaymillisp,char *ipaddr,uint8_t *data,int32_t datalen)
+char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *delaymillisp,char *ipaddr,uint8_t *data,int32_t datalen)
 {
     cJSON *json,*retjson; char *agent,*method,*retstr = 0;
     *delaymillisp = 0;
@@ -168,6 +168,12 @@ char *SuperNET_p2p(struct iguana_info *coin,int32_t *delaymillisp,char *ipaddr,u
         printf("GOT >>>>>>>> SUPERNET P2P.(%s) from.%s\n",(char *)data,coin->symbol);
         if ( (agent= jstr(json,"agent")) != 0 && (method= jstr(json,"method")) != 0 )
         {
+            if ( strcmp(agent,"SuperNET") == 0 && strcmp(method,"stop") == 0 )
+            {
+                addr->dead = (uint32_t)time(NULL);
+                free_json(json);
+                return(clonestr("{\"result\":\"peer marked as dead\"}"));
+            }
             jaddstr(json,"fromp2p",coin->symbol);
             if ( (retstr= SuperNET_JSON(0,json,ipaddr)) != 0 )
             {
@@ -191,22 +197,27 @@ char *SuperNET_p2p(struct iguana_info *coin,int32_t *delaymillisp,char *ipaddr,u
 
 void iguana_exit()
 {
-    int32_t i,j,k;
+    int32_t i,j,k; char *stopstr = "{\"agent\":\"SuperNET\",\"method\":\"stop\"}";
     printf("start EXIT\n");
     for (i=0; i<IGUANA_MAXCOINS; i++)
     {
         if ( Coins[i] != 0 )
         {
             for (j=0; j<IGUANA_MAXPEERS; j++)
-                Coins[i]->peers.active[j].dead = (uint32_t)time(NULL);
+            {
+                if ( Coins[i]->peers.active[j].usock >= 0 )
+                    iguana_send_supernet(Coins[i],&Coins[i]->peers.active[j],stopstr,0);
+            }
         }
     }
+    sleep(3);
     for (i=0; i<IGUANA_MAXCOINS; i++)
     {
         if ( Coins[i] != 0 )
         {
             for (j=0; j<IGUANA_MAXPEERS; j++)
             {
+                Coins[i]->peers.active[j].dead = (uint32_t)time(NULL);
                 for (k=0; k<3; k++)
                 {
                     if ( Coins[i]->peers.active[j].usock >= 0 )

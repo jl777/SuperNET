@@ -446,8 +446,9 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
     if ( strcmp(H->command,"SuperNET") == 0 )
     {
         addr->supernet = 1;
+        addr->msgcounts.verack++;
         len = recvlen;
-        if ( (retstr= SuperNET_p2p(coin,&delay,addr->ipaddr,data,recvlen)) != 0 )
+        if ( (retstr= SuperNET_p2p(coin,addr,&delay,addr->ipaddr,data,recvlen)) != 0 )
         {
             iguana_send_supernet(coin,addr,retstr,delay);
             free(retstr);

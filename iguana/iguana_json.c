@@ -386,8 +386,11 @@ void SuperNET_parsepeers(struct supernet_info *myinfo,cJSON *array,int32_t n,int
 
 ZERO_ARGS(SuperNET,stop)
 {
-    iguana_exit();
-    return(clonestr("{\"result\":\"exit started\"}"));
+    if ( remoteaddr == 0 || strncmp(remoteaddr,"127.0.0.1",strlen("127.0.0.1")) == 0 )
+    {
+        iguana_exit();
+        return(clonestr("{\"result\":\"exit started\"}"));
+    } else return(clonestr("{\"error\":\"cant do a remote stop of this node\"}"));
 }
 
 TWO_ARRAYS(SuperNET,mypeers,supernet,rawpeers)
