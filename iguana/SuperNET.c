@@ -341,8 +341,10 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
             return(clonestr("{\"result\":\"peer marked as dead\"}"));
         }
         retstr = SuperNET_JSON(myinfo,json,ipaddr);
+        printf("call delaymillis\n");
         *delaymillisp = SuperNET_delaymillis(myinfo,maxdelay);
         free_json(json);
     } else retstr = clonestr("{\"error\":\"p2p cant parse json\"}");
+    printf("P2PRET.(%s)\n",retstr);
     return(retstr);
 }
