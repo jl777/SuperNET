@@ -410,7 +410,7 @@ int32_t iguana_recv(char *ipaddr,int32_t usock,uint8_t *recvbuf,int32_t len)
             if ( errno == EAGAIN )
             {
                 //printf("EAGAIN for len %d, remains.%d\n",len,remains);
-                usleep(100000);
+                sleep(1);
             } else return(-errno);
         }
         else
