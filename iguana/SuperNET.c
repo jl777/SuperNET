@@ -259,6 +259,7 @@ int32_t SuperNET_destination(struct supernet_info *myinfo,uint32_t *destipbitsp,
     char *destip; int32_t destflag = SUPERNET_FORWARD;
     if ( (destip= jstr(json,"destip")) != 0 )
         *destipbitsp = (uint32_t)calc_ipbits(destip);
+    else *destipbitsp = 0;
     *maxdelayp = juint(json,"delay");
     *destpubp = jbits256(json,"destpub");
     if ( *destipbitsp == myinfo->myaddr.selfipbits )
@@ -275,7 +276,9 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
     char *forwardstr=0,*retstr=0,*agent,*method,*message,*jsonstr=0;
     if ( remoteaddr != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 )
         remoteaddr = 0;
+    printf("SuperNET_JSON.(%s) remote.(%s)\n",jprint(json,0),remoteaddr!=0?remoteaddr:"");
     destflag = SuperNET_destination(myinfo,&destipbits,&destpub,&maxdelay,json);
+    printf("destflag.%d\n",destflag);
     if ( (destflag & SUPERNET_FORWARD) != 0 )
     {
         if ( (message= jstr(json,"message")) == 0 )
@@ -336,6 +339,6 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
         retstr = SuperNET_JSON(myinfo,json,ipaddr);
         *delaymillisp = SuperNET_delaymillis(myinfo,maxdelay);
         free_json(json);
-    }
+    } else retstr = clonestr("{\"error\":\"p2p cant parse json\"}");
     return(retstr);
 }
