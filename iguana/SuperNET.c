@@ -273,7 +273,7 @@ int32_t SuperNET_destination(struct supernet_info *myinfo,uint32_t *destipbitsp,
 char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
 {
     int32_t destflag,maxdelay; bits256 destpub; uint32_t destipbits; cJSON *retjson;
-    char *forwardstr=0,*retstr=0,*agent,*method,*message,*jsonstr=0;
+    char *forwardstr=0,*retstr=0,*agent=0,*method=0,*message,*jsonstr=0;
     if ( remoteaddr != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 )
         remoteaddr = 0;
     printf("SuperNET_JSON.(%s) remote.(%s)\n",jprint(json,0),remoteaddr!=0?remoteaddr:"");
@@ -305,6 +305,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
             }
         } else printf("null retstr from SuperNET_JSON\n");
     }
+    printf("retstr.%p forwardstr.%p jsonstr.%p\n",retstr,forwardstr,jsonstr);
     if ( retstr == 0 )
         retstr = forwardstr, forwardstr = 0;
     if ( forwardstr != 0 )

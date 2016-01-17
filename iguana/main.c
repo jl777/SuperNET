@@ -137,7 +137,7 @@ char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t
 char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
 {
     cJSON *retjson; uint64_t tag; uint32_t timeout; char *jsonstr; char *retjsonstr,*retstr = 0;
-    //printf("SuperNET_JSON.(%s) remoteaddr.(%s)\n",jprint(json,0),remoteaddr!=0?remoteaddr:"");
+    printf("SuperNET_JSON.(%s) remoteaddr.(%s)\n",jprint(json,0),remoteaddr!=0?remoteaddr:"");
     if ( json != 0 )
     {
         if ( (tag= j64bits(json,"tag")) == 0 )
@@ -158,7 +158,7 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remote
                 jdelete(retjson,"tag");
                 jadd64bits(retjson,"tag",tag);
                 retstr = jprint(retjson,1);
-                //printf("retstr.(%s) retjsonstr.%p retjson.%p\n",retstr,retjsonstr,retjson);
+                printf("retstr.(%s) retjsonstr.%p retjson.%p\n",retstr,retjsonstr,retjson);
                 free(retjsonstr);//,strlen(retjsonstr)+1);
             } else retstr = retjsonstr;
         }
