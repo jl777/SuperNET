@@ -20,6 +20,8 @@ int32_t SuperNET_delaymillis(struct supernet_info *myinfo,int32_t maxdelay)
     maxdelay += myinfo->maxdelay;
     if ( maxdelay > SUPERNET_MAXDELAY )
         maxdelay = SUPERNET_MAXDELAY;
+    if ( maxdelay == 0 )
+        return(0);
     return(rand() % maxdelay);
 }
 
