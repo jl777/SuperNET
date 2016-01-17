@@ -189,13 +189,43 @@ char *SuperNET_p2p(struct iguana_info *coin,int32_t *delaymillisp,char *ipaddr,u
     return(retstr);
 }
 
+void iguana_exit()
+{
+    int32_t i,j,k;
+    for (i=0; i<IGUANA_MAXCOINS; i++)
+    {
+        if ( Coins[i] != 0 )
+        {
+            for (j=0; j<IGUANA_MAXPEERS; j++)
+                Coins[i]->peers.active[j].dead = (uint32_t)time(NULL);
+        }
+    }
+    for (i=0; i<IGUANA_MAXCOINS; i++)
+    {
+        if ( Coins[i] != 0 )
+        {
+            for (j=0; j<IGUANA_MAXPEERS; j++)
+            {
+                for (k=0; k<3; k++)
+                {
+                    if ( Coins[i]->peers.active[j].usock >= 0 )
+                        printf("wait for %s\n",Coins[i]->peers.active[j].ipaddr), sleep(1);
+                }
+                if ( Coins[i]->peers.active[j].usock >= 0 )
+                    closesocket(Coins[i]->peers.active[j].usock);
+            }
+        }
+    }
+    exit(0);
+}
+
 #include <signal.h>
-void sigint_func() { printf("SIGINT\n"); exit(0); }
-void sigillegal_func() { printf("SIGILL\n"); exit(0); }
-void sighangup_func() { printf("SIGHUP\n"); exit(0); }
-void sigkill_func() { printf("SIGKILL\n"); exit(0); }
-void sigabort_func() { printf("SIGABRT\n"); exit(0); }
-void sigquit_func() { printf("SIGQUIT\n"); exit(0); }
+void sigint_func() { printf("SIGINT\n"); iguana_exit(); }
+void sigillegal_func() { printf("SIGILL\n"); iguana_exit(); }
+void sighangup_func() { printf("SIGHUP\n"); iguana_exit(); }
+void sigkill_func() { printf("SIGKILL\n"); iguana_exit(); }
+void sigabort_func() { printf("SIGABRT\n"); iguana_exit(); }
+void sigquit_func() { printf("SIGQUIT\n"); iguana_exit(); }
 void sigchild_func() { printf("SIGCHLD\n"); signal(SIGCHLD,sigchild_func); }
 void sigalarm_func() { printf("SIGALRM\n"); signal(SIGALRM,sigalarm_func); }
 void sigcontinue_func() { printf("SIGCONT\n"); signal(SIGCONT,sigcontinue_func); }
