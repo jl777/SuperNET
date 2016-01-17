@@ -402,14 +402,14 @@ int32_t iguana_queue_send(struct iguana_info *coin,struct iguana_peer *addr,int3
     return(datalen);
 }
 
-int32_t iguana_recv(int32_t usock,uint8_t *recvbuf,int32_t len)
+int32_t iguana_recv(char *ipaddr,int32_t usock,uint8_t *recvbuf,int32_t len)
 {
     int32_t recvlen,remains = len;
     while ( remains > 0 )
     {
         if ( (recvlen= (int32_t)recv(usock,recvbuf,remains,0)) < 0 )
         {
-            printf("recv errno.%d %s\n",errno,strerror(errno));
+            printf("%s recv errno.%d %s\n",ipaddr,errno,strerror(errno));
             if ( errno == EAGAIN )
             {
 #ifdef IGUANA_DEDICATED_THREADS
@@ -474,7 +474,7 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
     if ( coin->peers.shuttingdown != 0 || addr->dead != 0 )
         return;
     memset(&H,0,sizeof(H));
-    if ( (recvlen= (int32_t)iguana_recv(usock,(uint8_t *)&H,sizeof(H))) == sizeof(H) )
+    if ( (recvlen= (int32_t)iguana_recv(addr->ipaddr,usock,(uint8_t *)&H,sizeof(H))) == sizeof(H) )
     {
         //printf("%p got.(%s) recvlen.%d from %s | usock.%d ready.%u dead.%u\n",addr,H.command,recvlen,addr->ipaddr,addr->usock,addr->ready,addr->dead);
         if ( coin->peers.shuttingdown != 0 || addr->dead != 0 )
@@ -490,7 +490,7 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
                 }
                 if ( len > maxlen )
                     buf = mycalloc('p',1,len);
-                if ( (recvlen= iguana_recv(usock,buf,len)) < 0 )
+                if ( (recvlen= iguana_recv(addr->ipaddr,usock,buf,len)) < 0 )
                 {
                     printf("recv error on (%s) len.%d errno.%d (%s)\n",H.command,len,-recvlen,strerror(-recvlen));
                     if ( buf != _buf )
