@@ -654,7 +654,7 @@ int32_t Supernet_lineparse(char *key,int32_t keymax,char *value,int32_t valuemax
         while ( (c= src[n]) == '\r' || c == '\n' )
             n++;
     }
-    printf("key.(%s) value.(%s)\n",key,value);
+    //printf("key.(%s) value.(%s)\n",key,value);
     return(n);
 }
 
