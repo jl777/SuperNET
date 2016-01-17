@@ -602,6 +602,9 @@ void iguana_startconnection(void *arg)
 struct iguana_peer *iguana_peerslot(struct iguana_info *coin,uint64_t ipbits)
 {
     int32_t i; struct iguana_peer *addr; char ipaddr[64];
+    for (i=0; i<IGUANA_MAXPEERS; i++)
+        if ( ipbits == coin->peers.active[i].ipbits )
+            return(0);
     expand_ipbits(ipaddr,ipbits);
 #ifdef IGUANA_DISABLEPEERS
     if ( strcmp("127.0.0.1",ipaddr) != 0 )
@@ -883,8 +886,8 @@ int64_t iguana_peerallocated(struct iguana_info *coin,struct iguana_peer *addr)
 void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
 {
     static uint32_t lastping;
-    struct pollfd fds; uint8_t *buf,serialized[64]; struct iguana_bundlereq *req;
-    int32_t bufsize,flag,run,timeout = coin->polltimeout == 0 ? 10 : coin->polltimeout;
+    char *msg; struct pollfd fds; uint8_t *buf,serialized[64]; struct iguana_bundlereq *req;
+    uint32_t ipbits; int32_t bufsize,flag,run,timeout = coin->polltimeout == 0 ? 10 : coin->polltimeout;
 #ifdef IGUANA_PEERALLOC
     int32_t i;  int64_t remaining; struct OS_memspace *mem[sizeof(addr->SEROUT)/sizeof(*addr->SEROUT)];
     for (i=0; i<sizeof(addr->SEROUT)/sizeof(*addr->SEROUT); i++)
@@ -900,7 +903,9 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     }
 #endif
     addr->addrind = (int32_t)(((long)addr - (long)&coin->peers.active[0]) / sizeof(*addr));
-    printf("start dedicatedloop.%s addrind.%d\n",addr->ipaddr,addr->addrind);
+    ipbits = (uint32_t)addr->ipbits;
+    vcalc_sha256(0,addr->iphash.bytes,(uint8_t *)&ipbits,sizeof(ipbits));
+    char str[65]; printf("start dedicatedloop.%s addrind.%d %s\n",addr->ipaddr,addr->addrind,bits256_str(str,addr->iphash));
     addr->maxfilehash2 = IGUANA_MAXFILEITEMS;
     bufsize = IGUANA_MAXPACKETSIZE;
     buf = mycalloc('r',1,bufsize);
@@ -981,7 +986,8 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
         else if ( addr->supernet != 0 && time(NULL) > lastping+60 )
         {
             printf("send getpeers\n");
-            iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
+            msg = "{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}";
+            iguana_send_supernet(coin,addr,msg,strlen(msg)+1,0);
             lastping = (uint32_t)time(NULL);
         }
         if ( coin->isRT != 0 && addr->rank > coin->MAXPEERS && (rand() % 100) == 0 )
@@ -1018,6 +1024,17 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     }
 #endif
     coin->peers.numconnected--;
+}
+
+void iguana_dedicatedglue(void *arg)
+{
+    struct iguana_info *coin = 0; struct iguana_peer *addr = arg;
+    if ( addr == 0 || (coin= iguana_coinfind(addr->symbol)) == 0 )
+    {
+        printf("iguana_dedicatedglue nullptrs addr.%p coin.%p\n",addr,coin);
+        return;
+    }
+    iguana_dedicatedloop(coin,addr);
 }
 
 void iguana_peersloop(void *ptr)
@@ -1074,8 +1091,9 @@ void iguana_peersloop(void *ptr)
         }
         if ( flag == 0 )
         {
+            char *msg = "{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}";
             if ( time(NULL) > lastping+1 )
-                iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
+                iguana_send_supernet(coin,addr,msg,strlen(msg)+1,0);
             usleep(1000);
         }
     }

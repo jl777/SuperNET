@@ -353,10 +353,11 @@ struct iguana_peer
 {
     struct queueitem DL;
     queue_t sendQ;
+    bits256 iphash;
     struct iguana_msgaddress A;
     char ipaddr[64],lastcommand[16],coinstr[16],symbol[16];
     uint64_t pingnonce,totalsent,totalrecv,ipbits; double pingtime,sendmillis,pingsum,getdatamillis;
-    uint32_t lastcontact,sendtime,ready,startsend,startrecv,pending,lastgotaddr,lastblockrecv,pendtime,lastflush,lastpoll;
+    uint32_t lastcontact,sendtime,ready,startsend,startrecv,pending,lastgotaddr,lastblockrecv,pendtime,lastflush,lastpoll,myipbits;
     int32_t supernet,dead,addrind,usock,lastheight,protover,relayflag,numpackets,numpings,ipv6,height,rank,pendhdrs,pendblocks,recvhdrs,lastlefti;
     double recvblocks,recvtotal;
     int64_t allocated,freed;
@@ -659,6 +660,9 @@ int32_t iguana_ramchain_spendtxid(struct iguana_info *coin,bits256 *txidp,struct
 struct iguana_info *iguana_coinselect();
 void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr);
 struct iguana_peer *iguana_peerslot(struct iguana_info *coin,uint64_t ipbits);
+void iguana_dedicatedglue(void *arg);
+void SuperNET_remotepeer(struct supernet_info *myinfo,struct iguana_info *coin,char *symbol,char *ipaddr,int32_t supernetflag);
+void SuperNET_yourip(struct supernet_info *myinfo,char *yourip);
 
 char *busdata_sync(uint32_t *noncep,char *jsonstr,char *broadcastmode,char *destNXTaddr);
 void peggy();
@@ -667,7 +671,7 @@ struct iguana_info *iguana_coinfind(const char *symbol);
 struct iguana_info *iguana_coinadd(const char *symbol);
 struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana_bundle *bp);
 int32_t iguana_sendblockreq(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2,int32_t iamthreadsafe);
-int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,char *jsonstr,int32_t delay);
+int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,void *data,long datalen,int32_t delay);
 
 struct iguana_waccount *iguana_waccountfind(struct iguana_info *coin,char *account);
 struct iguana_waccount *iguana_waccountadd(struct iguana_info *coin,char *walletaccount,struct iguana_waddress *waddr);

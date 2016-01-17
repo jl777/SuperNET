@@ -184,6 +184,7 @@ bits256 fcontract(const bits320 input)
 bits256 curve25519(bits256 mysecret,bits256 basepoint)
 {
     bits320 bp,x,z;
+    mysecret.bytes[0] &= 0xf8, mysecret.bytes[31] &= 0x7f, mysecret.bytes[31] |= 0x40;
     bp = fexpand(basepoint);
     cmult(&x,&z,mysecret,bp);
     return(fcontract(fmul(x,crecip(z))));

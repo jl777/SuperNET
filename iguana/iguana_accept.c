@@ -100,7 +100,9 @@ void iguana_acceptloop(void *args)
         {
             printf("LAUNCH DEDICATED THREAD for %s\n",ipaddr);
             addr->usock = sock;
-            iguana_dedicatedloop(coin,addr);
+            strcpy(addr->symbol,coin->symbol);
+            iguana_launch(coin,"accept",iguana_dedicatedglue,addr,IGUANA_CONNTHREAD);
+            //iguana_dedicatedloop(coin,addr);
         }
     }
 }

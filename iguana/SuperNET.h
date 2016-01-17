@@ -66,11 +66,15 @@ struct supernet_agent
     uint32_t ipbits,dead; int32_t num,sock; uint16_t port,pubport,repport;
 };
 
-struct supernet_address { bits256 pubkey; };
+struct supernet_address
+{
+    bits256 pubkey,iphash;
+    uint32_t selfipbits,myipbits; int32_t confirmed,totalconfirmed;
+};
 
 struct supernet_info
 {
-    char ipaddr[64],transport[8]; int32_t APISLEEP; int32_t iamrelay; uint64_t my64bits; uint64_t ipbits;
+    char ipaddr[64],transport[8]; int32_t APISLEEP; int32_t iamrelay;
     int32_t Debuglevel,readyflag,dead,POLLTIMEOUT; char rpcsymbol[16],LBpoint[64],PUBpoint[64];
     //int32_t pullsock,subclient,lbclient,lbserver,servicesock,pubglobal,pubrelays,numservers;
     bits256 privkey;
