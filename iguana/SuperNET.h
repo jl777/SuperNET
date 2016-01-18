@@ -108,10 +108,10 @@ void SuperNET_init(void *args);
 char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr);
 
 char *SuperNET_jsonstr(struct supernet_info *myinfo,char *jsonstr,char *remoteaddr);
-char *SuperNET_DHTencode(struct supernet_info *myinfo,char *destip,bits256 destpub,char *hexmsg,int32_t maxdelay);
+char *SuperNET_DHTencode(struct supernet_info *myinfo,char *destip,bits256 destpub,char *hexmsg,int32_t maxdelay,int32_t broadcastflag);
 char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSON *json,char *remoteaddr);
 char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr);
-char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,char *hexmessage,int32_t maxdelay);
+char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,char *hexmessage,int32_t maxdelay,int32_t broadcastflag);
 uint16_t SuperNET_API2num(char *agent,char *method);
 int32_t SuperNET_num2API(char *agent,char *method,uint16_t num);
 

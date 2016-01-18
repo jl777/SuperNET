@@ -84,6 +84,7 @@ cJSON *SuperNET_helpjson()
 #define IGUANA_HELP_SSS(agent,name,str,str2,str3) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#str2,"string"),helpitem(#str3,"string")))
 #define IGUANA_HELP_SSH(agent,name,str,str2,hash) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#str2,"string"),helpitem(#hash,"hash")))
 #define IGUANA_HELP_SSHI(agent,name,str,str2,hash,val) array = helpjson(IGUANA_ARGS,#agent,#name,helparray4(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#str2,"string"),helpitem(#hash,"hash"),helpitem(#val,"int")))
+#define IGUANA_HELP_SSHII(agent,name,str,str2,hash,val,val2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray5(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#str2,"string"),helpitem(#hash,"hash"),helpitem(#val,"int"),helpitem(#val2,"int")))
 #define IGUANA_HELP_SI(agent,name,str,val) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#val,"int")))
 #define IGUANA_HELP_SII(agent,name,str,val,val2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#val,"int"),helpitem(#val2,"int")))
 #define IGUANA_HELP_SSI(agent,name,str,str2,val) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#str2,"string"),helpitem(#val,"int")))
@@ -134,7 +135,7 @@ cJSON *SuperNET_helpjson()
 #define STRING_AND_THREEINTS IGUANA_HELP_SIII
 #define TWOSTRINGS_AND_INT IGUANA_HELP_SSI
 #define TWOSTRINGS_AND_HASH IGUANA_HELP_SSH
-#define TWOSTRINGS_AND_HASH_AND_INT IGUANA_HELP_SSHI
+#define TWOSTRINGS_AND_HASH_AND_TWOINTS IGUANA_HELP_SSHII
 #define THREE_INTS IGUANA_HELP_III
     
 #include "../includes/iguana_apideclares.h"
@@ -383,13 +384,13 @@ void SuperNET_parsepeers(struct supernet_info *myinfo,cJSON *array,int32_t n,int
 
 #include "../includes/iguana_apidefs.h"
 
-TWOSTRINGS_AND_HASH_AND_INT(SuperNET,DHT,message,destip,destpub,maxdelay)
+TWOSTRINGS_AND_HASH_AND_TWOINTS(SuperNET,DHT,message,destip,destpub,maxdelay,broadcast)
 {
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"cant remote DHT\"}"));
     else if ( is_hexstr(message,(int32_t)strlen(message)) <= 0 )
         return(clonestr("{\"error\":\"message must be in hex\"}"));
-    return(SuperNET_DHTencode(myinfo,destip,destpub,message,maxdelay));
+    return(SuperNET_DHTencode(myinfo,destip,destpub,message,maxdelay,broadcast));
 }
 
 ZERO_ARGS(SuperNET,stop)
@@ -682,6 +683,7 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSO
 #define IGUANA_DISPATCH_SSS(agent,name,str,str2,str3) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2),jstr(json,#str3)))
 #define IGUANA_DISPATCH_SSH(agent,name,str,str2,hash) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2),jbits256(json,#hash)))
 #define IGUANA_DISPATCH_SSHI(agent,name,str,str2,hash,val) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2),jbits256(json,#hash),juint(json,#val)))
+#define IGUANA_DISPATCH_SSHII(agent,name,str,str2,hash,val,val2) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2),jbits256(json,#hash),juint(json,#val),juint(json,#val2)))
 #define IGUANA_DISPATCH_SI(agent,name,str,val) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),juint(json,#val)))
 #define IGUANA_DISPATCH_SII(agent,name,str,val,val2) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),juint(json,#val),juint(json,#val2)))
 #define IGUANA_DISPATCH_SSI(agent,name,str,str2,val) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2),juint(json,#val)))
@@ -733,7 +735,7 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSO
 #define STRING_AND_THREEINTS IGUANA_DISPATCH_SIII
 #define TWOSTRINGS_AND_INT IGUANA_DISPATCH_SSI
 #define TWOSTRINGS_AND_HASH IGUANA_DISPATCH_SSH
-#define TWOSTRINGS_AND_HASH_AND_INT IGUANA_DISPATCH_SSHI
+#define TWOSTRINGS_AND_HASH_AND_TWOINTS IGUANA_DISPATCH_SSHII
 #define THREE_INTS IGUANA_DISPATCH_III
 
 #include "../includes/iguana_apideclares.h"

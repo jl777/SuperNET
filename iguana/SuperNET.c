@@ -254,7 +254,7 @@ int32_t DHT_dist(bits256 desthash,bits256 hash)
     return(dist);
 }
 
-char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,char *hexmsg,int32_t maxdelay)
+char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,char *hexmsg,int32_t maxdelay,int32_t broadcastflag)
 {
     static int lastpurge; static uint64_t Packetcache[1024];
     bits256 packethash; char retbuf[512]; int32_t mydist,i,j,datalen,firstz,iter,n = 0; char *jsonstr=0;
@@ -269,7 +269,7 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,char *hexm
     jsonstr = jprint(json,1);
     vcalc_sha256(0,packethash.bytes,(void *)hexmsg,datalen);
     firstz = -1;
-    for (i=0; i<sizeof(Packetcache)/sizeof(*Packetcache); i++)
+    for (i=broadcastflag!=0; i<sizeof(Packetcache)/sizeof(*Packetcache); i++)
     {
         if ( Packetcache[i] == 0 )
         {
@@ -329,7 +329,7 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,char *hexm
     return(clonestr(retbuf));
 }
 
-char *SuperNET_DHTencode(struct supernet_info *myinfo,char *destip,bits256 destpub,char *hexmsg,int32_t maxdelay)
+char *SuperNET_DHTencode(struct supernet_info *myinfo,char *destip,bits256 destpub,char *hexmsg,int32_t maxdelay,int32_t broadcastflag)
 {
     uint32_t destipbits; bits256 routehash; char *retstr; cJSON *msgjson = cJSON_CreateObject();
     if ( destip == 0 || destip[0] == 0 || strncmp(destip,"127.0.0.1",strlen("127.0.0.1")) == 0 )
@@ -343,17 +343,17 @@ char *SuperNET_DHTencode(struct supernet_info *myinfo,char *destip,bits256 destp
         vcalc_sha256(0,routehash.bytes,(uint8_t *)&destipbits,sizeof(destipbits));
         jaddstr(msgjson,"destip",destip);
     }
-    retstr = SuperNET_DHTsend(myinfo,routehash,hexmsg,maxdelay);
+    retstr = SuperNET_DHTsend(myinfo,routehash,hexmsg,maxdelay,broadcastflag);
     return(retstr);
 }
 
-char *SuperNET_forward(struct supernet_info *myinfo,char *hexmsg,uint32_t destipbits,bits256 destpub,int32_t maxdelay)
+char *SuperNET_forward(struct supernet_info *myinfo,char *hexmsg,uint32_t destipbits,bits256 destpub,int32_t maxdelay,int32_t broadcastflag)
 {
     bits256 routehash;
     if ( destipbits != 0 )
         vcalc_sha256(0,routehash.bytes,(uint8_t *)&destipbits,sizeof(destipbits));
     else routehash = destpub;
-    return(SuperNET_DHTsend(myinfo,routehash,hexmsg,maxdelay));
+    return(SuperNET_DHTsend(myinfo,routehash,hexmsg,maxdelay,broadcastflag));
 }
 
 int32_t SuperNET_destination(struct supernet_info *myinfo,uint32_t *destipbitsp,bits256 *destpubp,int32_t *maxdelayp,cJSON *json,char *remoteaddr)
@@ -397,7 +397,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
             jsonstr = jprint(json,0);
             message = jsonstr;
         }
-        forwardstr = SuperNET_forward(myinfo,message,destipbits,destpub,maxdelay);
+        forwardstr = SuperNET_forward(myinfo,message,destipbits,destpub,maxdelay,juint(json,"broadcast"));
     }
     if ( (destflag & SUPERNET_ISMINE) && (agent= jstr(json,"agent")) != 0 && (method= jstr(json,"method")) != 0 )
     {

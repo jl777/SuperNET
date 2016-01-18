@@ -16,7 +16,7 @@
 ZERO_ARGS(SuperNET,help);
 TWO_STRINGS(SuperNET,html,agentform,htmlfile);
 STRING_ARG(SuperNET,bitcoinrpc,setcoin);
-TWOSTRINGS_AND_HASH_AND_INT(SuperNET,DHT,message,destip,destpub,maxdelay);
+TWOSTRINGS_AND_HASH_AND_TWOINTS(SuperNET,DHT,message,destip,destpub,maxdelay,broadcast);
 STRING_ARG(SuperNET,getpeers,activecoin);
 TWO_ARRAYS(SuperNET,mypeers,supernet,rawpeers);
 ZERO_ARGS(SuperNET,stop);

@@ -16,6 +16,7 @@
 #define IGUANA_CFUNC_SSI(agent,name,str,str2,val) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,int32_t val)
 #define IGUANA_CFUNC_SSH(agent,name,str,str2,hash) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,bits256 hash)
 #define IGUANA_CFUNC_SSHI(agent,name,str,str2,hash,val) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,bits256 hash,int32_t val)
+#define IGUANA_CFUNC_SSHII(agent,name,str,str2,hash,val,val2) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,bits256 hash,int32_t val,int32_t val2)
 #define IGUANA_CFUNC_SSS(agent,name,str,str2,str3) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,char *str3)
 #define IGUANA_CFUNC_SI(agent,name,str,val) char *agent ## _ ## name(IGUANA_ARGS,char *str,int32_t val)
 #define IGUANA_CFUNC_SII(agent,name,str,val,val2) char *agent ## _ ## name(IGUANA_ARGS,char *str,int32_t val,int32_t val2)
@@ -52,5 +53,5 @@
 #define STRING_AND_THREEINTS IGUANA_CFUNC_SIII
 #define TWOSTRINGS_AND_INT IGUANA_CFUNC_SSI
 #define TWOSTRINGS_AND_HASH IGUANA_CFUNC_SSH
-#define TWOSTRINGS_AND_HASH_AND_INT IGUANA_CFUNC_SSHI
+#define TWOSTRINGS_AND_HASH_AND_TWOINTS IGUANA_CFUNC_SSHII
 #define THREE_INTS IGUANA_CFUNC_III
