@@ -92,9 +92,9 @@ void SuperNET_myipaddr(struct supernet_info *myinfo,struct iguana_peer *addr,cha
     }
 }
 
-int32_t SuperNET_json2bits(struct supernet_info *myinfo,uint8_t *serialized,int32_t *complenp,uint8_t *compressed,int32_t maxsize,char *destip,bits256 destpub,cJSON *json)
+int32_t SuperNET_json2bits(struct supernet_info *myinfo,int32_t validpub,uint8_t *serialized,int32_t *complenp,uint8_t *compressed,int32_t maxsize,char *destip,bits256 destpub,cJSON *json)
 {
-    uint16_t apinum; uint32_t ipbits,crc; uint64_t tag; bits256 seed,seed2; char *hexmsg; int32_t n,numbits,len = sizeof(uint32_t);
+    uint16_t apinum; uint32_t ipbits,crc; uint64_t tag; bits256 priv,seed,seed2; char *hexmsg; int32_t n,numbits,len = sizeof(uint32_t);
     *complenp = -1;
     if ( (tag= j64bits(json,"tag")) == 0 )
         OS_randombytes((uint8_t *)&tag,sizeof(tag));
@@ -121,7 +121,10 @@ int32_t SuperNET_json2bits(struct supernet_info *myinfo,uint8_t *serialized,int3
     iguana_rwnum(1,serialized,sizeof(crc),&crc);
     //memset(seed.bytes,0,sizeof(seed));
     //int32_t testbits = ramcoder_compress(&compressed[3],maxsize-3,serialized,len,seed);
-    seed = curve25519_shared(myinfo->privkey,destpub);
+    if ( validpub != 0 )
+        priv = myinfo->privkey;
+    else priv = GENESIS_PRIVKEY;
+    seed = curve25519_shared(priv,destpub);
     vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
     char str[65],str2[65],str3[65],str4[65];
     int32_t i; for (i=0; i<len; i++)
@@ -224,7 +227,7 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
     {
         compressed = malloc(sizeof(struct iguana_msghdr) + IGUANA_MAXPACKETSIZE);
         serialized = malloc(sizeof(struct iguana_msghdr) + IGUANA_MAXPACKETSIZE);
-        datalen = SuperNET_json2bits(SuperNET_MYINFO(0),&serialized[sizeof(struct iguana_msghdr)],&complen,&compressed[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE,addr->ipaddr,addr->pubkey,json);
+        datalen = SuperNET_json2bits(SuperNET_MYINFO(0),addr->validpub,&serialized[sizeof(struct iguana_msghdr)],&complen,&compressed[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE,addr->ipaddr,addr->pubkey,json);
         printf("SUPERSEND.(%s) -> (%s) delaymillis.%d datalen.%d\n",jsonstr,addr->ipaddr,delaymillis,datalen);
         if ( datalen >= 0 )
         {
