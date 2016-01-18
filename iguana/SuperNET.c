@@ -177,7 +177,7 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,int32_t validpub,bits256 
                     vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
                 //char str[65]; printf("compressed len.%d seed2.(%s)\n",numbits,bits256_str(str,seed2));
                 datalen = ramcoder_decompress(space,IGUANA_MAXPACKETSIZE,&serialized[3],numbits,seed2);
-                if ( datalen > 0 && datalen < IGUANA_MAXPACKETSIZE )
+                if ( datalen > sizeof(crc) && datalen < IGUANA_MAXPACKETSIZE )
                 {
                     serialized = space;
                     crc = calc_crc32(0,&serialized[sizeof(crc)],datalen - sizeof(crc));
