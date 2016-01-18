@@ -133,7 +133,7 @@ int32_t SuperNET_json2bits(struct supernet_info *myinfo,uint8_t *serialized,int3
 
 cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 prevpub,uint8_t *serialized,uint8_t *space,int32_t datalen,int32_t iscompressed)
 {
-    char destip[64],method[64],agent[64],myipaddr[64],str[65],*hexmsg; uint64_t tag; int32_t len = 0;
+    char destip[64],method[64],agent[64],myipaddr[64],str[65],*hexmsg; uint64_t tag; int32_t numbits,len = 0;
     uint16_t apinum; uint32_t destipbits,myipbits; bits256 seed,seed2,senderpub; cJSON *json = cJSON_CreateObject();
     //int32_t i; for (i=0; i<datalen; i++)
     //    printf("%02x ",serialized[i]);
@@ -145,7 +145,9 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 prevpub,uint8_t *
         len = (len << 8) + serialized[2];
         seed = curve25519_shared(myinfo->privkey,prevpub);
         vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
-        datalen = ramcoder_decompress(space,datalen,serialized,datalen<<3,seed2);
+        char str[65]; printf("compressed len.%d seed2.(%s)\n",len,bits256_str(str,seed2));
+        numbits = ramcoder_decompress(space,IGUANA_MAXPACKETSIZE,&serialized[3],len<<3,seed2);
+        datalen = (int32_t)hconv_bitlen(numbits);
         serialized = space;
     }
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&destipbits);
