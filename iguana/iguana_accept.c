@@ -64,7 +64,7 @@ void iguana_acceptloop(void *args)
 {
     struct iguana_peer *addr; struct iguana_info *coin = args;
     struct pollfd pfd; int32_t sock; struct iguana_accept *ptr; uint16_t port = coin->chain->portp2p;
-    socklen_t clilen; struct sockaddr_in cli_addr; char ipaddr[64]; uint32_t ipbits;
+    socklen_t clilen; struct sockaddr_in cli_addr; char ipaddr[64]; uint32_t i,ipbits;
     while ( (coin->bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
         sleep(5);
     printf("iguana_bindloop 127.0.0.1:%d bind sock.%d\n",coin->chain->portp2p,coin->bindsock);
@@ -86,6 +86,19 @@ void iguana_acceptloop(void *args)
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
         expand_ipbits(ipaddr,ipbits);
         printf("NEWSOCK.%d for %x (%s)\n",sock,ipbits,ipaddr);
+        for (i=0; i<IGUANA_MAXPEERS; i++)
+        {
+            if ( coin->peers.active[i].ipbits == (uint32_t)ipbits && coin->peers.active[i].usock >= 0 )
+            {
+                printf("found existing peer.(%s) in slot[%d]\n",ipaddr,i);
+                coin->peers.active[i].dead = (uint32_t)time(NULL);
+                sleep(1);
+            }
+        }
+        /*if ( (uint32_t)ipbits == myinfo->myaddr.myipbits )
+        {
+            
+        }*/
         if ( (addr= iguana_peerslot(coin,ipbits)) == 0 )
         {
             ptr = mycalloc('a',1,sizeof(*ptr));

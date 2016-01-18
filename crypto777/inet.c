@@ -392,7 +392,7 @@ uint64_t calc_ipbits(char *ip_port)
     ipbits = _calc_ipbits(ip_port);
     expand_ipbits(ipaddr,ipbits);
     if ( ipbits != 0 && strcmp(ipaddr,ip_port) != 0 )
-        printf("calc_ipbits error: (%s) -> %llx -> (%s)\n",ip_port,(long long)ipbits,ipaddr);
+        printf("calc_ipbits error: (%s) -> %llx -> (%s)\n",ip_port,(long long)ipbits,ipaddr), getchar();
     return(ipbits);
 }
 
