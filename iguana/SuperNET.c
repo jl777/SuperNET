@@ -443,15 +443,14 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
 
 char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *delaymillisp,char *ipaddr,uint8_t *data,int32_t datalen,int32_t compressed)
 {
-    cJSON *json; bits256 senderpub; bits256 zero; char *checkstr,*myipaddr,*method,*retstr;
+    cJSON *json; bits256 senderpub; char *checkstr,*myipaddr,*method,*retstr;
     int32_t maxdelay; struct supernet_info *myinfo; uint16_t checkc,othercheckc; uint8_t *space;
     myinfo = SuperNET_MYINFO(0);
     retstr = 0; space = 0;
     *delaymillisp = 0;
-    memset(zero.bytes,0,sizeof(zero));
     if ( compressed != 0 )
         space = malloc(sizeof(struct iguana_msghdr) + IGUANA_MAXPACKETSIZE);
-    if ( (json= SuperNET_bits2json(myinfo,addr->pubkey,addr->validpub>2?addr->sharedseed:zero,data,space,datalen,compressed)) != 0 )
+    if ( (json= SuperNET_bits2json(myinfo,addr->pubkey,addr->sharedseed,data,space,datalen,compressed)) != 0 )
     {
         senderpub = jbits256(json,"mypub");
         if ( memcmp(senderpub.bytes,addr->pubkey.bytes,sizeof(senderpub)) != 0 )
@@ -462,8 +461,10 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
             checkc = SuperNET_checkc(myinfo,senderpub,j64bits(json,"tag"));
             printf("validpub.%d: %x vs %x\n",addr->validpub,checkc,othercheckc);
             if ( checkc == othercheckc )
-                addr->validpub++;
-            else addr->validpub--;
+            {
+                if ( addr->validpub++ > 1 )
+                    addr->sharedseed = SuperNET_sharedseed(myinfo,senderpub);
+            } else addr->validpub = 0;
         }
         maxdelay = juint(json,"maxdelay");
         printf("GOT >>>>>>>> SUPERNET P2P.(%s) from.%s\n",jprint(json,0),coin->symbol);
