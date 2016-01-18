@@ -49,7 +49,7 @@ int32_t init_ramcoder(struct ramcoder *coder,HUFF *hp,bits256 *seed);
 int32_t ramcoder_emit(HUFF *hp,struct ramcoder *coder,int32_t updateprobs,uint8_t *buf,int32_t len);
 
 int32_t ramcoder_decompress(uint8_t *data,int32_t maxlen,uint8_t *bits,uint32_t numbits,bits256 seed);
-int32_t ramcoder_compress(uint8_t *bits,int32_t maxlen,uint8_t *data,int32_t datalen);
+int32_t ramcoder_compress(uint8_t *bits,int32_t maxlen,uint8_t *data,int32_t datalen,bits256 seed);
 uint64_t hconv_bitlen(uint64_t bitlen);
 void _init_HUFF(HUFF *hp,int32_t allocsize,void *buf);
 
@@ -439,10 +439,9 @@ int32_t ramcoder_decoder(struct ramcoder *coder,int32_t updateprobs,uint8_t *buf
     return(n);
 }
 
-int32_t ramcoder_compress(uint8_t *bits,int32_t maxlen,uint8_t *data,int32_t datalen)
+int32_t ramcoder_compress(uint8_t *bits,int32_t maxlen,uint8_t *data,int32_t datalen,bits256 seed)
 {
-    int32_t numbits; bits256 seed; HUFF H,*hp = &H;
-    memset(seed.bytes,0,sizeof(seed));
+    int32_t numbits; HUFF H,*hp = &H;
     _init_HUFF(hp,maxlen,bits);
     if ( ramcoder_encoder(0,1,data,datalen,hp,0,&seed) < 0 )
         return(-1);

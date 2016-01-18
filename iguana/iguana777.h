@@ -529,7 +529,7 @@ int32_t iguana_updatewaiting(struct iguana_info *coin,int32_t starti,int32_t max
 // recvbits
 int32_t iguana_recvinit(struct iguana_info *coin,int32_t initialheight);
 int32_t ramcoder_decompress(uint8_t *data,int32_t maxlen,uint8_t *bits,uint32_t numbits,bits256 seed);
-int32_t ramcoder_compress(uint8_t *bits,int32_t maxlen,uint8_t *data,int32_t datalen);
+int32_t ramcoder_compress(uint8_t *bits,int32_t maxlen,uint8_t *data,int32_t datalen,bits256 seed);
 uint64_t hconv_bitlen(uint64_t bitlen);
 struct iguana_block *iguana_blockptr(struct iguana_info *coin,int32_t height);
 int32_t iguana_processrecv(struct iguana_info *coin); // single threaded
@@ -562,7 +562,7 @@ double dxblend(double *destp,double val,double decay);
 // json
 int32_t iguana_processjsonQ(struct iguana_info *coin); // reentrant, can be called during any idletime
 char *iguana_JSON(char *jsonstr);
-char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *delaymillisp,char *ipaddr,uint8_t *data,int32_t datalen);
+char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *delaymillisp,char *ipaddr,uint8_t *data,int32_t datalen,int32_t compressed);
 
 char *mbstr(char *str,double);
 int init_hexbytes_noT(char *hexbytes,unsigned char *message,long len);

@@ -430,17 +430,17 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
     }
     retval = 0;
     //printf("iguana_msgparser %s parse.(%s)\n",addr->ipaddr,H->command);
-    if ( strcmp(H->command,"SuperNET") == 0 )
+    if ( strncmp(H->command,"SuperNET",strlen("SuperNET")) == 0 )
     {
         addr->supernet = 1;
         addr->msgcounts.verack++;
         len = recvlen;
-        if ( (retstr= SuperNET_p2p(coin,addr,&delay,addr->ipaddr,data,recvlen)) != 0 )
+        if ( (retstr= SuperNET_p2p(coin,addr,&delay,addr->ipaddr,data,recvlen,H->command[strlen("SuperNET")]=='b')) != 0 )
         {
             iguana_send_supernet(coin,addr,retstr,delay);
             free(retstr);
         }
-        printf("GOT.(%s) [%s] len.%d from %s -> (%s)\n",H->command,data,recvlen,addr->ipaddr,retstr==0?"null":retstr);
+        //printf("GOT.(%s) [%s] len.%d from %s -> (%s)\n",H->command,data,recvlen,addr->ipaddr,retstr==0?"null":retstr);
     }
     else if ( strcmp(H->command,"version") == 0 )
     {

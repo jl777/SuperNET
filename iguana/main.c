@@ -33,6 +33,7 @@ uint64_t IGUANA_MY64BITS;
 queue_t helperQ,jsonQ,finishedQ,bundlesQ;
 struct supernet_info MYINFO;
 static int32_t initflag;
+cJSON *API_json;
 #ifdef __linux__
 int32_t IGUANA_NUMHELPERS = 8;
 #else
@@ -40,6 +41,33 @@ int32_t IGUANA_NUMHELPERS = 1;
 #endif
 struct iguana_jsonitem { struct queueitem DL; struct supernet_info *myinfo; uint32_t fallback,expired,allocsize; char **retjsonstrp; char remoteaddr[64]; char jsonstr[]; };
 
+uint16_t SuperNET_API2num(char *agent,char *method)
+{
+    int32_t i,n = 0; cJSON *item;
+    if ( agent != 0 && method != 0 && API_json != 0 && (n= cJSON_GetArraySize(API_json)) > 0 )
+    {
+        for (i=0; i<n; i++)
+        {
+            item = jitem(API_json,i);
+            if ( strcmp(agent,jstr(item,"agent")) == 0 && strcmp(method,jstr(item,"method")) == 0 )
+                return(i);
+        }
+    }
+    return(-1);
+}
+
+int32_t SuperNET_num2API(char *agent,char *method,uint16_t num)
+{
+    int32_t n; cJSON *item;
+    if ( API_json != 0 && (n= cJSON_GetArraySize(API_json)) > 0 && num < n )
+    {
+        item = jitem(API_json,num);
+        strcpy(agent,jstr(item,"agent"));
+        strcpy(method,jstr(item,"method"));
+        return(num);
+    }
+    return(-1);
+}
 
 struct supernet_info *SuperNET_MYINFO(char *passphrase)
 {
@@ -215,7 +243,7 @@ void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func
 
 void iguana_main(void *arg)
 {
-    char helperstr[64],*helperargs,*ipaddr,*coinargs=0,*secret,*jsonstr = arg;
+    char helperstr[64],*tmpstr,*helperargs,*ipaddr,*coinargs=0,*secret,*jsonstr = arg;
     int32_t i,len,flag,c; cJSON *json; uint8_t secretbuf[512]; int64_t allocsize;
     if ( (ipaddr= OS_filestr(&allocsize,"ipaddr")) != 0 )
     {
@@ -245,6 +273,12 @@ void iguana_main(void *arg)
     OS_ensure_directory("confs");
     OS_ensure_directory("DB");
     OS_ensure_directory("tmp");
+    if ( (tmpstr= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"help\"}"),0)) != 0 )
+    {
+        if ( (API_json= cJSON_Parse(tmpstr)) != 0 )
+            API_json = jobj(API_json,"result");
+        free(tmpstr);
+    }
     memset(&MYINFO,0,sizeof(MYINFO));
     OS_randombytes(MYINFO.privkey.bytes,sizeof(MYINFO.privkey));
     if ( jsonstr != 0 && (json= cJSON_Parse(jsonstr)) != 0 )
@@ -264,6 +298,7 @@ void iguana_main(void *arg)
         if ( jobj(json,"coins") != 0 )
             coinargs = jsonstr;
     }
+    MYINFO.myaddr.pubkey = curve25519(MYINFO.privkey,curve25519_basepoint9());
     if ( IGUANA_NUMHELPERS == 0 )
         IGUANA_NUMHELPERS = 1;
     for (i=0; i<IGUANA_NUMHELPERS; i++)

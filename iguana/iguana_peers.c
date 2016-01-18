@@ -434,9 +434,6 @@ void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct ig
     iguana_sethdr(&checkH,coin->chain->netmagic,H->command,buf,len);
     if ( memcmp(&checkH,H,sizeof(checkH)) == 0 )
     {
-        //if ( strcmp(addr->ipaddr,"127.0.0.1") == 0 )
-        //printf("%s parse.(%s) len.%d\n",addr->ipaddr,H->command,len);
-        //printf("addr->dead.%u\n",addr->dead);
         if ( strcmp(H->command,"block") == 0 || strcmp(H->command,"tx") == 0 )
         {
             if ( addr->RAWMEM.ptr == 0 )
@@ -977,7 +974,7 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
         }
         if ( flag != 0 )
             run = 0;
-        else if ( addr->supernet != 0 && time(NULL) > lastping+600 )
+        else if ( addr->supernet != 0 && time(NULL) > lastping+60 )
         {
             iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
             lastping = (uint32_t)time(NULL);
