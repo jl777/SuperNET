@@ -464,12 +464,12 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
             else if ( addr->validpub > 0 )
                 addr->validpub >>= 1;
             else addr->validpub--;
-            printf("validpub.%d: %x vs %x shared.%llx\n",addr->validpub,checkc,othercheckc,(long long)addr->sharedseed.txid);
         }
         if ( addr->validpub > 3 )
             addr->sharedseed = SuperNET_sharedseed(myinfo,senderpub);
         else if ( addr->validpub < -2 )
             memset(addr->sharedseed.bytes,0,sizeof(addr->sharedseed));
+        printf("validpub.%d: %x vs %x shared.%llx\n",addr->validpub,checkc,othercheckc,(long long)addr->sharedseed.txid);
         maxdelay = juint(json,"maxdelay");
         printf("GOT >>>>>>>> SUPERNET P2P.(%s) from.%s\n",jprint(json,0),coin->symbol);
         if ( (myipaddr= jstr(json,"yourip")) != 0 )
