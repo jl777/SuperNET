@@ -154,9 +154,9 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 prevpub,uint8_t *
     char destip[64],method[64],agent[64],myipaddr[64],str[65],*hexmsg; uint64_t tag;
     uint16_t apinum; uint32_t destipbits,myipbits; bits256 priv,seed,seed2,senderpub;
     int32_t numbits,iter,flag=0,len = 0; uint32_t crc,checkcrc; cJSON *json = cJSON_CreateObject();
-    //int32_t i; for (i=0; i<datalen; i++)
-    //    printf("%02x ",serialized[i]);
-    //printf("bits[%d] iscompressed.%d\n",datalen,iscompressed);
+    int32_t i; for (i=0; i<datalen; i++)
+        printf("%02x ",serialized[i]);
+    printf("bits[%d] iscompressed.%d\n",datalen,iscompressed);
     if ( iscompressed != 0 )
     {
         if ( genesis2.txid == 0 )
@@ -170,11 +170,11 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 prevpub,uint8_t *
             //    priv = myinfo->privkey;
             //else priv = GENESIS_PRIVKEY;
             seed = curve25519_shared(priv,prevpub);
-            memset(seed2.bytes,0,sizeof(seed2));
             for (iter=0; iter<4; iter++)
             {
                 if ( iter > 0 )
                     vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
+                else memset(seed2.bytes,0,sizeof(seed2));
                 //char str[65]; printf("compressed len.%d seed2.(%s)\n",numbits,bits256_str(str,seed2));
                 datalen = ramcoder_decompress(space,IGUANA_MAXPACKETSIZE,&serialized[3],numbits,seed2);
                 if ( datalen > sizeof(crc) && datalen < IGUANA_MAXPACKETSIZE )
@@ -193,7 +193,7 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 prevpub,uint8_t *
                 }
                 switch ( iter )
                 {
-                    case 0: seed = myinfo->privkey; break;
+                    case 0: seed = curve25519_shared(myinfo->privkey,prevpub); break;
                     case 1: seed = curve25519_shared(GENESIS_PRIVKEY,prevpub); break;
                     case 2: seed = genesis2; break;
                 }
@@ -470,7 +470,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
         free_json(json);
         if ( memcmp(senderpub.bytes,GENESIS_PUBKEY.bytes,sizeof(senderpub)) != 0 )
             addr->validpub = 1;
-    }
+    } else printf("error decoding %d from %s\n",datalen,addr->ipaddr);
     if ( space != 0 )
         free(space);
     return(retstr);
