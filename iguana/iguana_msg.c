@@ -429,7 +429,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
         strcpy(addr->lastcommand,H->command);
     }
     retval = 0;
-    printf("iguana_msgparser %s parse.(%s)\n",addr->ipaddr,H->command);
+    //printf("iguana_msgparser %s parse.(%s)\n",addr->ipaddr,H->command);
     if ( strncmp(H->command,"SuperNET",strlen("SuperNET")) == 0 )
     {
         addr->supernet = 1;
