@@ -123,7 +123,7 @@ int32_t SuperNET_json2bits(struct supernet_info *myinfo,uint8_t *serialized,int3
     memset(seed.bytes,0,sizeof(seed));
     numbits = ramcoder_compress(&compressed[3],maxsize-3,serialized,len,seed);
     *complenp = (int32_t)hconv_bitlen(numbits);
-    seed = curve25519_shared(myinfo->privkey,destpub);
+    seed = curve25519_shared(GENESIS_PRIVKEY,destpub);//myinfo->privkey,destpub);
     vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
     char str[65],str2[65],str3[65],str4[65];
     printf("mypriv.%s destpub.%s seed.%s seed2.%s\n",bits256_str(str,myinfo->privkey),bits256_str(str2,destpub),bits256_str(str3,seed),bits256_str(str4,seed2));
@@ -137,9 +137,9 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 prevpub,uint8_t *
 {
     char destip[64],method[64],agent[64],myipaddr[64],str[65],*hexmsg; uint64_t tag; int32_t numbits,len = 0;
     uint16_t apinum; uint32_t destipbits,myipbits; bits256 seed,seed2,senderpub; cJSON *json = cJSON_CreateObject();
-    //int32_t i; for (i=0; i<datalen; i++)
-    //    printf("%02x ",serialized[i]);
-    //printf("bits[%d]\n",datalen);
+    int32_t i; for (i=0; i<datalen; i++)
+        printf("%02x ",serialized[i]);
+    printf("bits[%d]\n",datalen);
     if ( iscompressed != 0 )
     {
         len = serialized[0];
@@ -393,7 +393,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
         printf("p2pret.(%s)\n",retstr);
         *delaymillisp = SuperNET_delaymillis(myinfo,maxdelay);
         free_json(json);
-    } else retstr = clonestr("{\"error\":\"p2p cant parse json\"}");
+    }
     if ( space != 0 )
         free(space);
     return(retstr);
