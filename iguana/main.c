@@ -258,6 +258,7 @@ void iguana_main(void *arg)
 {
     char helperstr[64],*tmpstr,*helperargs,*ipaddr,*coinargs=0,*secret,*jsonstr = arg;
     int32_t i,len,flag,c; cJSON *json; uint8_t secretbuf[512]; int64_t allocsize;
+    memset(&MYINFO,0,sizeof(MYINFO));
     if ( (ipaddr= OS_filestr(&allocsize,"ipaddr")) != 0 )
     {
         printf("got ipaddr.(%s)\n",ipaddr);
@@ -297,7 +298,6 @@ void iguana_main(void *arg)
             API_json = jobj(API_json,"API");
         free(tmpstr);
     }
-    memset(&MYINFO,0,sizeof(MYINFO));
     OS_randombytes(MYINFO.privkey.bytes,sizeof(MYINFO.privkey));
     if ( jsonstr != 0 && (json= cJSON_Parse(jsonstr)) != 0 )
     {
@@ -317,6 +317,7 @@ void iguana_main(void *arg)
             coinargs = jsonstr;
     }
     MYINFO.myaddr.pubkey = curve25519(MYINFO.privkey,curve25519_basepoint9());
+    char str[65],str2[65]; printf("PRIV.%s PUB.%s\n",bits256_str(str,MYINFO.privkey),bits256_str(str2,MYINFO.myaddr.pubkey));
     if ( IGUANA_NUMHELPERS == 0 )
         IGUANA_NUMHELPERS = 1;
     for (i=0; i<IGUANA_NUMHELPERS; i++)

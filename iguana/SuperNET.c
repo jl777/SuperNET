@@ -125,8 +125,10 @@ int32_t SuperNET_json2bits(struct supernet_info *myinfo,uint8_t *serialized,int3
     *complenp = (int32_t)hconv_bitlen(numbits);
     seed = curve25519_shared(myinfo->privkey,destpub);
     vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
+    char str[65],str2[65],str3[65],str4[65];
+    printf("mypriv.%s destpub.%s seed.%s seed2.%s\n",bits256_str(str,myinfo->privkey),bits256_str(str2,destpub),bits256_str(str3,seed),bits256_str(str4,seed2));
     int32_t seedlen; seedlen = ramcoder_compress(&compressed[3],maxsize-3,serialized,len,seed2);
-    char str[65]; printf("strlen.%d len.%d -> complen.%d %s seedlen.%d\n",(int32_t)strlen(jprint(json,0)),len,*complenp,bits256_str(str,seed2),(int32_t)hconv_bitlen(seedlen));
+    printf("strlen.%d len.%d -> complen.%d %s seedlen.%d\n",(int32_t)strlen(jprint(json,0)),len,*complenp,bits256_str(str,seed2),(int32_t)hconv_bitlen(seedlen));
     *complenp = (int32_t)hconv_bitlen(seedlen);
     return(len);
 }
@@ -143,7 +145,7 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 prevpub,uint8_t *
         len = serialized[0];
         len = (len << 8) + serialized[1];
         len = (len << 8) + serialized[2];
-        seed = curve25519_shared(myinfo->privkey,prevpub);
+        seed = curve25519_shared(GENESIS_PRIVKEY,prevpub);
         vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
         char str[65]; printf("compressed len.%d seed2.(%s)\n",len,bits256_str(str,seed2));
         numbits = ramcoder_decompress(space,IGUANA_MAXPACKETSIZE,&serialized[3],len<<3,seed2);
@@ -298,9 +300,12 @@ char *SuperNET_forward(struct supernet_info *myinfo,char *hexmsg,uint32_t destip
     return(SuperNET_DHTsend(myinfo,routehash,hexmsg,maxdelay));
 }
 
-int32_t SuperNET_destination(struct supernet_info *myinfo,uint32_t *destipbitsp,bits256 *destpubp,int32_t *maxdelayp,cJSON *json)
+int32_t SuperNET_destination(struct supernet_info *myinfo,uint32_t *destipbitsp,bits256 *destpubp,int32_t *maxdelayp,cJSON *json,char *remoteaddr)
 {
-    char *destip; int32_t destflag = SUPERNET_FORWARD;
+    char *destip; int32_t destflag = 0;
+    if ( remoteaddr != 0 && remoteaddr[0] != 0 )
+        destflag = SUPERNET_FORWARD;
+    else destflag = SUPERNET_ISMINE;
     if ( (destip= jstr(json,"destip")) != 0 )
         *destipbitsp = (uint32_t)calc_ipbits(destip);
     else *destipbitsp = 0;
@@ -321,7 +326,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
     if ( remoteaddr != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 )
         remoteaddr = 0;
     //printf("SuperNET_JSON.(%s) remote.(%s)\n",jprint(json,0),remoteaddr!=0?remoteaddr:"");
-    destflag = SuperNET_destination(myinfo,&destipbits,&destpub,&maxdelay,json);
+    destflag = SuperNET_destination(myinfo,&destipbits,&destpub,&maxdelay,json,remoteaddr);
     printf("destflag.%d\n",destflag);
     if ( (destflag & SUPERNET_FORWARD) != 0 )
     {

@@ -312,6 +312,7 @@ bits256 bits256_from_compact(uint32_t c);
 int32_t btc_priv2pub(uint8_t pubkey[33],uint8_t privkey[32]);
 
 extern char *Iguana_validcommands[];
+extern bits256 GENESIS_PUBKEY,GENESIS_PRIVKEY;
 
 #endif
 

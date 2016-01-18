@@ -138,9 +138,9 @@ void iguana_gotversion(struct iguana_info *coin,struct iguana_peer *addr,struct 
         iguana_queue_send(coin,addr,0,serialized,"verack",0,0,0);
         //iguana_send_ping(coin,addr);
     }
-    else printf("nServices.%lld nonce.%llu non-relay node.(%s)\n",(long long)vers->nServices,(long long)vers->nonce,addr->ipaddr);
     if ( (vers->nServices & (1<<7)) == (1<<7) )
         addr->supernet = 1;
+    else printf("nServices.%lld nonce.%llu non-relay node.(%s) supernet.%d\n",(long long)vers->nServices,(long long)vers->nonce,addr->ipaddr,addr->supernet);
     if ( vers->nStartingHeight > coin->longestchain )
         coin->longestchain = vers->nStartingHeight;
     iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
