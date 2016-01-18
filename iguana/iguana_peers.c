@@ -315,7 +315,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
             if ( errno == EADDRINUSE )
             {
                 printf("%s(%s) port.%d try again: %s sock.%d. errno.%d\n",bindflag!=0?"bind":"connect",hostname,port,strerror(errno),sock,errno);
-                sleep(3);
+                sleep(13);
                 continue;
             }
             if ( errno != ECONNRESET && errno != ENOTCONN && errno != ECONNREFUSED && errno != ETIMEDOUT && errno != EHOSTUNREACH )
