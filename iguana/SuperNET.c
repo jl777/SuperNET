@@ -189,7 +189,7 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 senderpub,bits256
                     iguana_rwnum(0,serialized,sizeof(checkcrc),&checkcrc);
                     //int32_t i; for (i=0; i<datalen; i++)
                     //    printf("%02x ",serialized[i]);
-                    printf("bits[%d] numbits.%d after decompress crc.(%08x vs %08x) <<<<<< iter.%d %llx\n",datalen,numbits,crc,checkcrc,iter,(long long)seed2.txid);
+                    printf("bits[%d] numbits.%d after decompress crc.(%08x vs %08x) <<<<<< iter.%d %llx shared.%llx\n",datalen,numbits,crc,checkcrc,iter,(long long)seed2.txid,(long long)sharedseed.txid);
                     if ( crc == checkcrc )
                     {
                         flag = 1;
@@ -460,12 +460,16 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
             decode_hex((uint8_t *)&othercheckc,sizeof(othercheckc),checkstr);
             checkc = SuperNET_checkc(myinfo,senderpub,j64bits(json,"tag"));
             if ( checkc == othercheckc )
-            {
-                if ( addr->validpub++ > 3 )
-                    addr->sharedseed = SuperNET_sharedseed(myinfo,senderpub);
-            } else addr->validpub = 0, memset(addr->sharedseed.bytes,0,sizeof(addr->sharedseed));
+                addr->validpub++;
+            else if ( addr->validpub > 0 )
+                addr->validpub >>= 1;
+            else addr->validpub--;
             printf("validpub.%d: %x vs %x shared.%llx\n",addr->validpub,checkc,othercheckc,(long long)addr->sharedseed.txid);
-        } else addr->validpub = 0, memset(addr->sharedseed.bytes,0,sizeof(addr->sharedseed));
+        }
+        if ( addr->validpub > 3 )
+            addr->sharedseed = SuperNET_sharedseed(myinfo,senderpub);
+        else if ( addr->validpub < -2 )
+            memset(addr->sharedseed.bytes,0,sizeof(addr->sharedseed));
         maxdelay = juint(json,"maxdelay");
         printf("GOT >>>>>>>> SUPERNET P2P.(%s) from.%s\n",jprint(json,0),coin->symbol);
         if ( (myipaddr= jstr(json,"yourip")) != 0 )
