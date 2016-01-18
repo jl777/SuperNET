@@ -94,7 +94,7 @@ void SuperNET_myipaddr(struct supernet_info *myinfo,struct iguana_peer *addr,cha
 
 int32_t SuperNET_json2bits(struct supernet_info *myinfo,uint8_t *serialized,int32_t *complenp,uint8_t *compressed,int32_t maxsize,char *destip,bits256 destpub,cJSON *json)
 {
-    uint16_t apinum; uint32_t ipbits; uint64_t tag; bits256 seed,seed2; char *hexmsg; int32_t n,numbits,len = 0;
+    uint16_t apinum; uint32_t ipbits,crc; uint64_t tag; bits256 seed,seed2; char *hexmsg; int32_t n,numbits,len = sizeof(uint32_t);
     *complenp = -1;
     if ( (tag= j64bits(json,"tag")) == 0 )
         OS_randombytes((uint8_t *)&tag,sizeof(tag));
@@ -117,12 +117,14 @@ int32_t SuperNET_json2bits(struct supernet_info *myinfo,uint8_t *serialized,int3
             len += n;
         } else return(-1);
     }
+    crc = calc_crc32(0,&serialized[sizeof(crc)],len - sizeof(crc));
+    iguana_rwnum(1,serialized,sizeof(crc),&crc);
     memset(seed.bytes,0,sizeof(seed));
     int32_t testbits = ramcoder_compress(&compressed[3],maxsize-3,serialized,len,seed);
-    seed = curve25519_shared(GENESIS_PRIVKEY,destpub);//myinfo->privkey,destpub);
+    seed = curve25519_shared(myinfo->privkey,destpub);
     vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
     char str[65],str2[65],str3[65],str4[65];
-    printf("mypriv.%s destpub.%s seed.%s seed2.%s\n",bits256_str(str,myinfo->privkey),bits256_str(str2,destpub),bits256_str(str3,seed),bits256_str(str4,seed2));
+    printf("mypriv.%s destpub.%s seed.%s seed2.%s -> crc.%08x\n",bits256_str(str,myinfo->privkey),bits256_str(str2,destpub),bits256_str(str3,seed),bits256_str(str4,seed2),crc);
     numbits = ramcoder_compress(&compressed[3],maxsize-3,serialized,len,seed2);
     compressed[0] = (numbits & 0xff);
     compressed[1] = ((numbits>>8) & 0xff);
@@ -142,26 +144,32 @@ int32_t SuperNET_json2bits(struct supernet_info *myinfo,uint8_t *serialized,int3
 
 cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 prevpub,uint8_t *serialized,uint8_t *space,int32_t datalen,int32_t iscompressed)
 {
-    char destip[64],method[64],agent[64],myipaddr[64],str[65],*hexmsg; uint64_t tag; int32_t numbits,len = 0;
-    uint16_t apinum; uint32_t destipbits,myipbits; bits256 seed,seed2,senderpub; cJSON *json = cJSON_CreateObject();
+    static bits256 genesis2;
+    char destip[64],method[64],agent[64],myipaddr[64],str[65],*hexmsg; uint64_t tag;
+    uint16_t apinum; uint32_t destipbits,myipbits; bits256 seed,seed2,senderpub;
+    int32_t numbits,len = 0; uint32_t crc,checkcrc; cJSON *json = cJSON_CreateObject();
     int32_t i; for (i=0; i<datalen; i++)
         printf("%02x ",serialized[i]);
     printf("bits[%d] iscompressed.%d\n",datalen,iscompressed);
     if ( iscompressed != 0 )
     {
+        if ( genesis2.txid == 0 )
+            genesis2 = curve25519_shared(GENESIS_PRIVKEY,GENESIS_PUBKEY);
         numbits = serialized[2];
         numbits = (numbits << 8) + serialized[1];
         numbits = (numbits << 8) + serialized[0];
-        seed = curve25519_shared(GENESIS_PRIVKEY,prevpub);
+        seed = curve25519_shared(myinfo->privkey,prevpub);
         vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
         char str[65]; printf("compressed len.%d seed2.(%s)\n",numbits,bits256_str(str,seed2));
         datalen = ramcoder_decompress(space,IGUANA_MAXPACKETSIZE,&serialized[3],numbits,seed2);
         serialized = space;
-        printf("bits[%d] numbits.%d\n",datalen,numbits);
+        crc = calc_crc32(0,&serialized[sizeof(crc)],datalen - sizeof(crc));
+        iguana_rwnum(0,serialized,sizeof(checkcrc),&checkcrc);
         int32_t i; for (i=0; i<datalen; i++)
             printf("%02x ",serialized[i]);
-        printf("bits[%d] numbits.%d\n",datalen,numbits);
+        printf("bits[%d] numbits.%d after decompress crc.(%08x vs %08x) <<<<<<<<<<<<<<<\n",datalen,numbits,crc,checkcrc);
     }
+    len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&crc);
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&destipbits);
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&myipbits);
     len += iguana_rwbignum(0,&serialized[len],sizeof(bits256),senderpub.bytes);
