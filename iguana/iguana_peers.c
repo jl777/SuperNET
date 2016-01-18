@@ -488,9 +488,12 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
     memset(&H,0,sizeof(H));
     if ( (recvlen= (int32_t)iguana_recv(addr->ipaddr,usock,(uint8_t *)&H,sizeof(H))) == sizeof(H) )
     {
-        printf("%p got.(%s) recvlen.%d from %s | usock.%d ready.%u dead.%u\n",addr,H.command,recvlen,addr->ipaddr,addr->usock,addr->ready,addr->dead);
         if ( coin->peers.shuttingdown != 0 || addr->dead != 0 )
             return;
+        {
+            iguana_rwnum(0,H.serdatalen,sizeof(H.serdatalen),(uint32_t *)&len);
+            printf("%p got.(%s) recvlen.%d from %s | usock.%d ready.%u dead.%u len.%d\n",addr,H.command,recvlen,addr->ipaddr,addr->usock,addr->ready,addr->dead,len);
+        }
         if ( (len= iguana_validatehdr(&H)) >= 0 )
         {
             if ( len > 0 )
