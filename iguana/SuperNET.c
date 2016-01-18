@@ -170,9 +170,11 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,int32_t validpub,bits256 
                 priv = myinfo->privkey;
             else priv = GENESIS_PRIVKEY;
             seed = curve25519_shared(priv,prevpub);
-            for (iter=0; iter<3; iter++)
+            memset(seed2.bytes,0,sizeof(seed2));
+            for (iter=0; iter<4; iter++)
             {
-                vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
+                if ( iter > 0 )
+                    vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
                 //char str[65]; printf("compressed len.%d seed2.(%s)\n",numbits,bits256_str(str,seed2));
                 datalen = ramcoder_decompress(space,IGUANA_MAXPACKETSIZE,&serialized[3],numbits,seed2);
                 serialized = space;
