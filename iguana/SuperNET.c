@@ -135,14 +135,14 @@ int32_t SuperNET_json2bits(struct supernet_info *myinfo,int32_t plaintext,int32_
     compressed[1] = ((numbits>>8) & 0xff);
     compressed[2] = ((numbits>>16) & 0xff);
     //printf("strlen.%d len.%d -> %s numbits.%d\n",(int32_t)strlen(jprint(json,0)),len,bits256_str(str,seed2),(int32_t)hconv_bitlen(numbits));
-    if ( 0 )
+    if ( 1 )
     {
         uint8_t space[9999];
         int32_t testlen = ramcoder_decompress(space,IGUANA_MAXPACKETSIZE,&compressed[3],numbits,seed2);
         printf("len.%d -> testlen.%d cmp.%d\n",len,testlen,memcmp(space,serialized,testlen));
         int32_t i; for (i=0; i<3+hconv_bitlen(numbits); i++)
             printf("%02x ",compressed[i]);
-        printf("complen.%d\n",i+3);
+        char str[65]; printf("complen.%d seeds.%s\n",i+3,bits256_str(str,seed2));
     }
     *complenp = (int32_t)hconv_bitlen(numbits) + 3;
     return(len);
@@ -152,7 +152,7 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 prevpub,uint8_t *
 {
     static bits256 genesis2;
     char destip[64],method[64],agent[64],myipaddr[64],str[65],*hexmsg; uint64_t tag;
-    uint16_t apinum; uint32_t destipbits,myipbits; bits256 priv,seed,seed2,senderpub;
+    uint16_t apinum; uint32_t destipbits,myipbits; bits256 seed,seed2,senderpub;
     int32_t numbits,iter,flag=0,len = 0; uint32_t crc,checkcrc; cJSON *json = cJSON_CreateObject();
     int32_t i; for (i=0; i<datalen; i++)
         printf("%02x ",serialized[i]);
@@ -174,15 +174,18 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 prevpub,uint8_t *
             {
                 switch ( iter )
                 {
-                    case 0: break;
-                    case 1: seed = curve25519_shared(myinfo->privkey,prevpub); break;
-                    case 2: seed = curve25519_shared(GENESIS_PRIVKEY,prevpub); break;
-                    case 3: seed = genesis2; break;
+                    case 0: memset(seed2.bytes,0,sizeof(seed2)); break;
+                    case 1:
+                        seed = curve25519_shared(myinfo->privkey,prevpub);
+                        vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
+                        break;
+                    case 2:
+                        seed = curve25519_shared(GENESIS_PRIVKEY,prevpub);
+                        vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
+                        break;
+                    case 3: seed2 = genesis2; break;
                 }
-                if ( iter > 0 )
-                    vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
-                else memset(seed2.bytes,0,sizeof(seed2));
-                //char str[65]; printf("compressed len.%d seed2.(%s)\n",numbits,bits256_str(str,seed2));
+                char str[65]; printf("compressed len.%d seed2.(%s)\n",numbits,bits256_str(str,seed2));
                 datalen = ramcoder_decompress(space,IGUANA_MAXPACKETSIZE,&serialized[3],numbits,seed2);
                 if ( datalen > sizeof(crc) && datalen < IGUANA_MAXPACKETSIZE )
                 {
