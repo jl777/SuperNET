@@ -149,7 +149,6 @@ void *OS_portable_mapfile(char *fname,long *filesizep,int32_t enablewrite);
 int32_t OS_portable_syncmap(struct OS_mappedptr *mp,long len);
 void *OS_portable_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long origsize);
 
-
 int32_t is_DST(int32_t datenum);
 int32_t extract_datenum(int32_t *yearp,int32_t *monthp,int32_t *dayp,int32_t datenum);
 int32_t expand_datenum(char *date,int32_t datenum);
@@ -205,7 +204,6 @@ void iguana_mempurge(struct OS_memspace *mem);
 void *iguana_meminit(struct OS_memspace *mem,char *name,void *ptr,int64_t totalsize,int32_t threadsafe);
 void *iguana_memalloc(struct OS_memspace *mem,long size,int32_t clearflag);
 int64_t iguana_memfree(struct OS_memspace *mem,void *ptr,int32_t size);
-
 
 // generic functions
 int32_t unhex(char c);
@@ -312,6 +310,8 @@ bits256 bits256_lshift(bits256 x);
 bits256 bits256_from_compact(uint32_t c);
 
 int32_t btc_priv2pub(uint8_t pubkey[33],uint8_t privkey[32]);
+
+extern char *Iguana_validcommands[];
 
 #endif
 

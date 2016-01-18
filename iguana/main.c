@@ -25,6 +25,13 @@
 #include "SuperNET.h"
 
 // ALL globals must be here!
+char *Iguana_validcommands[] =
+{
+    "SuperNET", "SuperNETb",
+    "version", "verack", "getaddr", "addr", "inv", "getdata", "notfound", "getblocks", "getheaders", "headers", "tx", "block", "mempool", "ping", "pong",
+    "reject", "filterload", "filteradd", "filterclear", "merkleblock", "alert", ""
+};
+
 struct iguana_info *Coins[IGUANA_MAXCOINS];
 int32_t USE_JAY,FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel;
 uint32_t prices777_NXTBLOCK,MAX_DEPTH = 100;
