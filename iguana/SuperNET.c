@@ -124,6 +124,9 @@ int32_t SuperNET_json2bits(struct supernet_info *myinfo,uint8_t *serialized,int3
     seed = curve25519_shared(myinfo->privkey,destpub);
     vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
     char str[65],str2[65],str3[65],str4[65];
+    int32_t i; for (i=0; i<len; i++)
+        printf("%02x ",serialized[i]);
+    printf("ORIG SERIALIZED.%d\n",len);
     printf("mypriv.%s destpub.%s seed.%s seed2.%s -> crc.%08x\n",bits256_str(str,myinfo->privkey),bits256_str(str2,destpub),bits256_str(str3,seed),bits256_str(str4,seed2),crc);
     numbits = ramcoder_compress(&compressed[3],maxsize-3,serialized,len,seed2);
     compressed[0] = (numbits & 0xff);
@@ -158,16 +161,24 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 prevpub,uint8_t *
         numbits = serialized[2];
         numbits = (numbits << 8) + serialized[1];
         numbits = (numbits << 8) + serialized[0];
-        seed = curve25519_shared(myinfo->privkey,prevpub);
-        vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
-        char str[65]; printf("compressed len.%d seed2.(%s)\n",numbits,bits256_str(str,seed2));
-        datalen = ramcoder_decompress(space,IGUANA_MAXPACKETSIZE,&serialized[3],numbits,seed2);
-        serialized = space;
-        crc = calc_crc32(0,&serialized[sizeof(crc)],datalen - sizeof(crc));
-        iguana_rwnum(0,serialized,sizeof(checkcrc),&checkcrc);
-        int32_t i; for (i=0; i<datalen; i++)
-            printf("%02x ",serialized[i]);
-        printf("bits[%d] numbits.%d after decompress crc.(%08x vs %08x) <<<<<<<<<<<<<<<\n",datalen,numbits,crc,checkcrc);
+        if ( hconv_bitlen(numbits)+3 == datalen )
+        {
+            seed = curve25519_shared(myinfo->privkey,prevpub);
+            vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
+            char str[65]; printf("compressed len.%d seed2.(%s)\n",numbits,bits256_str(str,seed2));
+            datalen = ramcoder_decompress(space,IGUANA_MAXPACKETSIZE,&serialized[3],numbits,seed2);
+            serialized = space;
+            crc = calc_crc32(0,&serialized[sizeof(crc)],datalen - sizeof(crc));
+            iguana_rwnum(0,serialized,sizeof(checkcrc),&checkcrc);
+            int32_t i; for (i=0; i<datalen; i++)
+                printf("%02x ",serialized[i]);
+            printf("bits[%d] numbits.%d after decompress crc.(%08x vs %08x) <<<<<<<<<<<<<<<\n",datalen,numbits,crc,checkcrc);
+        }
+        else
+        {
+            printf("numbits.%d + 3 -> %d != datalen.%d\n",numbits,(int32_t)hconv_bitlen(numbits)+3,datalen);
+            return(0);
+        }
     }
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&crc);
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&destipbits);
