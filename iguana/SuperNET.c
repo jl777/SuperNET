@@ -232,16 +232,16 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
         compressed = malloc(sizeof(struct iguana_msghdr) + IGUANA_MAXPACKETSIZE);
         serialized = malloc(sizeof(struct iguana_msghdr) + IGUANA_MAXPACKETSIZE);
         datalen = SuperNET_json2bits(SuperNET_MYINFO(0),addr->validpub,&serialized[sizeof(struct iguana_msghdr)],&complen,&compressed[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE,addr->ipaddr,addr->pubkey,json);
-        //printf("SUPERSEND.(%s) -> (%s) delaymillis.%d datalen.%d\n",jsonstr,addr->ipaddr,delaymillis,datalen);
+        printf("SUPERSEND.(%s) -> (%s) delaymillis.%d datalen.%d\n",jsonstr,addr->ipaddr,delaymillis,datalen);
         if ( datalen >= 0 )
         {
-            if ( complen >= 0 )//&& complen < (((datalen-3) * 7) >> 3) )
+            if ( complen >= 0 )
                 qlen = iguana_queue_send(coin,addr,delaymillis,compressed,"SuperNETb",complen,0,0);
             else qlen = iguana_queue_send(coin,addr,delaymillis,serialized,"SuperNET",datalen,0,0);
         }
         free(compressed);
         free(serialized);
-    }
+    } else printf("cant parse.(%s)\n",jsonstr);
     return(qlen);
 }
 
@@ -254,6 +254,8 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,char *hexm
         return(clonestr("{\"error\":\"no supernet_info\"}"));
     datalen = (int32_t)strlen(hexmsg) + 1;
     json = cJSON_CreateObject();
+    jaddstr(json,"agent","SuperNET");
+    jaddstr(json,"method","DHT");
     jaddstr(json,"message",hexmsg);
     jsonstr = jprint(json,1);
     vcalc_sha256(0,packethash.bytes,(void *)hexmsg,datalen);
@@ -292,6 +294,7 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,char *hexm
                     {
                         if ( iter == 0 && memcmp(addr->iphash.bytes,routehash.bytes,sizeof(addr->iphash)) == 0 )
                         {
+                            printf("DHT send\n");
                             iguana_send_supernet(Coins[i],addr,jsonstr,maxdelay==0?0:rand()%maxdelay);
                             return(clonestr("{\"result\":\"packet sent directly to destip\"}"));
                         }
