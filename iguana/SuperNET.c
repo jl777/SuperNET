@@ -28,7 +28,7 @@ int32_t SuperNET_delaymillis(struct supernet_info *myinfo,int32_t maxdelay)
 void SuperNET_remotepeer(struct supernet_info *myinfo,struct iguana_info *coin,char *symbol,char *ipaddr,int32_t supernetflag)
 {
     uint64_t ipbits; struct iguana_peer *addr;
-    //printf("got %s remotepeer.(%s) supernet.%d\n",symbol,ipaddr,supernetflag);
+    printf("got %s remotepeer.(%s) supernet.%d\n",symbol,ipaddr,supernetflag);
     if ( supernetflag != 0 )
     {
         ipbits = calc_ipbits(ipaddr);
@@ -126,7 +126,8 @@ int32_t SuperNET_json2bits(struct supernet_info *myinfo,uint8_t *serialized,int3
     seed = curve25519_shared(myinfo->privkey,destpub);
     vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
     int32_t seedlen; seedlen = ramcoder_compress(&compressed[3],maxsize-3,serialized,len,seed2);
-    printf("strlen.%d len.%d -> complen.%d seedlen.%d\n",(int32_t)strlen(jprint(json,0)),len,*complenp,seedlen);
+    char str[65]; printf("strlen.%d len.%d -> complen.%d %s seedlen.%d\n",(int32_t)strlen(jprint(json,0)),len,*complenp,bits256_str(str,seed2),(int32_t)hconv_bitlen(seedlen));
+    *complenp = (int32_t)hconv_bitlen(seedlen);
     return(len);
 }
 
@@ -361,7 +362,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
     myinfo = SuperNET_MYINFO(0);
     *delaymillisp = 0;
     if ( compressed != 0 )
-        space = malloc(datalen);
+        space = malloc(sizeof(struct iguana_msghdr) + IGUANA_MAXPACKETSIZE);
     if ( (json= SuperNET_bits2json(myinfo,addr->pubkey,data,space,datalen,compressed)) != 0 )
     {
         maxdelay = juint(json,"maxdelay");
@@ -382,6 +383,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
             return(clonestr("{\"result\":\"peer marked as dead\"}"));
         }
         retstr = SuperNET_JSON(myinfo,json,ipaddr);
+        printf("p2pret.(%s)\n",retstr);
         *delaymillisp = SuperNET_delaymillis(myinfo,maxdelay);
         free_json(json);
     } else retstr = clonestr("{\"error\":\"p2p cant parse json\"}");

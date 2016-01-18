@@ -50,7 +50,7 @@ uint16_t SuperNET_API2num(char *agent,char *method)
         {
             item = jitem(API_json,i);
             if ( strcmp(agent,jstr(item,"agent")) == 0 && strcmp(method,jstr(item,"method")) == 0 )
-                return(i);
+                return((i << 11) | (SUPERNET_APIVERSION & 0x1f));
         }
     }
     return(-1);
@@ -58,7 +58,13 @@ uint16_t SuperNET_API2num(char *agent,char *method)
 
 int32_t SuperNET_num2API(char *agent,char *method,uint16_t num)
 {
-    int32_t n; cJSON *item;
+    int32_t n,apiversion; cJSON *item;
+    if ( (apiversion= (num & 0x1f)) != SUPERNET_APIVERSION )
+    {
+        printf("need to make sure all released api help returns are indexed here!\n");
+        return(-1);
+    }
+    num >>= 5;
     if ( API_json != 0 && (n= cJSON_GetArraySize(API_json)) > 0 && num < n )
     {
         item = jitem(API_json,num);

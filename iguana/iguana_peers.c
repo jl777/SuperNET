@@ -300,12 +300,12 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
     if ( result != 0 )
     {
         if ( errno != ECONNRESET && errno != ENOTCONN && errno != ECONNREFUSED && errno != ETIMEDOUT && errno != EHOSTUNREACH )
-            printf("connect(%s) port.%d failed: %s sock.%d. errno.%d\n",hostname,port,strerror(errno),sock,errno);
+            printf("%s(%s) port.%d failed: %s sock.%d. errno.%d\n",bindflag!=0?"bind":"connect",hostname,port,strerror(errno),sock,errno);
         if ( sock >= 0 )
             closesocket(sock);
         return(-1);
     }
-    if ( bindflag != 0 && listen(sock,16) != 0 )
+    if ( bindflag != 0 && listen(sock,64) != 0 )
     {
         printf("listen(%s) port.%d failed: %s sock.%d. errno.%d\n",hostname,port,strerror(errno),sock,errno);
         if ( sock >= 0 )
