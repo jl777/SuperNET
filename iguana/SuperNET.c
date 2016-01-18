@@ -169,9 +169,16 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 prevpub,uint8_t *
             //if ( validpub != 0 )
             //    priv = myinfo->privkey;
             //else priv = GENESIS_PRIVKEY;
-            seed = curve25519_shared(priv,prevpub);
+            //seed = curve25519_shared(priv,prevpub);
             for (iter=0; iter<4; iter++)
             {
+                switch ( iter )
+                {
+                    case 0: break;
+                    case 1: seed = curve25519_shared(myinfo->privkey,prevpub); break;
+                    case 2: seed = curve25519_shared(GENESIS_PRIVKEY,prevpub); break;
+                    case 3: seed = genesis2; break;
+                }
                 if ( iter > 0 )
                     vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
                 else memset(seed2.bytes,0,sizeof(seed2));
@@ -191,13 +198,7 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 prevpub,uint8_t *
                         break;
                     }
                 }
-                switch ( iter )
-                {
-                    case 0: seed = curve25519_shared(myinfo->privkey,prevpub); break;
-                    case 1: seed = curve25519_shared(GENESIS_PRIVKEY,prevpub); break;
-                    case 2: seed = genesis2; break;
-                }
-            }
+             }
         }
         else
         {
