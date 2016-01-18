@@ -111,7 +111,7 @@ uint16_t SuperNET_checkc(struct supernet_info *myinfo,bits256 otherpub,uint64_t 
 
 int32_t SuperNET_json2bits(struct supernet_info *myinfo,bits256 seed2,uint8_t *serialized,int32_t *complenp,uint8_t *compressed,int32_t maxsize,char *destip,bits256 destpub,cJSON *json)
 {
-    uint16_t apinum,checkc; uint32_t ipbits,crc; uint64_t tag; char *hexmsg;
+    uint16_t apinum,checkc=0; uint32_t ipbits,crc; uint64_t tag; char *hexmsg;
     int32_t n,numbits,len = sizeof(uint32_t);
     *complenp = -1;
     if ( (tag= j64bits(json,"tag")) == 0 )
@@ -122,7 +122,8 @@ int32_t SuperNET_json2bits(struct supernet_info *myinfo,bits256 seed2,uint8_t *s
     len += iguana_rwnum(1,&serialized[len],sizeof(uint32_t),&ipbits);
     len += iguana_rwbignum(1,&serialized[len],sizeof(myinfo->myaddr.pubkey),myinfo->myaddr.pubkey.bytes);
     len += iguana_rwnum(1,&serialized[len],sizeof(tag),&tag);
-    checkc = SuperNET_checkc(myinfo,destpub,tag);
+    if ( bits256_nonz(seed2) > 0 )
+        checkc = SuperNET_checkc(myinfo,destpub,tag);
     len += iguana_rwnum(1,&serialized[len],sizeof(checkc),&checkc);
     if ( (apinum= SuperNET_API2num(jstr(json,"agent"),jstr(json,"method"))) == 0xffff )
         return(-1);
@@ -223,8 +224,11 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 senderpub,bits256
         expand_ipbits(myipaddr,myipbits), jaddstr(json,"myip",myipaddr);
         jaddstr(json,"mypub",bits256_str(str,senderpub));
         jadd64bits(json,"tag",tag);
-        init_hexbytes_noT(checkstr,(void *)&checkc,sizeof(checkc));
-        jaddstr(json,"check",checkstr);
+        if ( checkc != 0 )
+        {
+            init_hexbytes_noT(checkstr,(void *)&checkc,sizeof(checkc));
+            jaddstr(json,"check",checkstr);
+        }
         if ( len < datalen )
         {
             printf("len %d vs %d datalen\n",len,datalen);
@@ -462,14 +466,14 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
             if ( checkc == othercheckc )
                 addr->validpub++;
             else if ( addr->validpub > 0 )
-                addr->validpub >>= 1;
+                addr->validpub = 0;
             else addr->validpub--;
+            printf("validpub.%d: %x vs %x shared.%llx\n",addr->validpub,checkc,othercheckc,(long long)addr->sharedseed.txid);
         }
         if ( addr->validpub > 3 )
             addr->sharedseed = SuperNET_sharedseed(myinfo,senderpub);
         else if ( addr->validpub < -2 )
             memset(addr->sharedseed.bytes,0,sizeof(addr->sharedseed));
-        printf("validpub.%d: %x vs %x shared.%llx\n",addr->validpub,checkc,othercheckc,(long long)addr->sharedseed.txid);
         maxdelay = juint(json,"maxdelay");
         printf("GOT >>>>>>>> SUPERNET P2P.(%s) from.%s\n",jprint(json,0),coin->symbol);
         if ( (myipaddr= jstr(json,"yourip")) != 0 )
