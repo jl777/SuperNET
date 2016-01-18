@@ -17,10 +17,11 @@
 
 bits256 SuperNET_sharedseed(struct supernet_info *myinfo,bits256 otherpub)
 {
-    bits256 seed2;
+    bits256 seed2,seed;
     if ( myinfo == 0 )
         myinfo = SuperNET_MYINFO(0);
-    vcalc_sha256(0,seed2.bytes,curve25519_shared(myinfo->privkey,otherpub).bytes,sizeof(bits256));
+    seed = curve25519_shared(myinfo->privkey,otherpub);
+    vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(bits256));
     return(seed2);
 }
 
