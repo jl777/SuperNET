@@ -221,6 +221,7 @@ int32_t decode_hex(unsigned char *bytes,int32_t n,char *hex);
 void reverse_hexstr(char *str);
 int32_t init_hexbytes_noT(char *hexbytes,uint8_t *message,long len);
 uint16_t parse_ipaddr(char *ipaddr,char *ip_port);
+int32_t bitweight(uint64_t x);
 
 long _stripwhite(char *buf,int accept);
 int32_t is_DST(int32_t datenum);

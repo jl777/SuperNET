@@ -94,6 +94,15 @@ bits256 bits256_from_compact(uint32_t c)
     return(x);
 }
 
+int32_t bitweight(uint64_t x)
+{
+    int i,wt = 0;
+    for (i=0; i<64; i++)
+        if ( (1LL << i) & x )
+            wt++;
+    return(wt);
+}
+
 void calc_OP_HASH160(char hexstr[41],uint8_t hash160[20],char *pubkey)
 {
     uint8_t sha256[32],buf[4096]; int32_t len;

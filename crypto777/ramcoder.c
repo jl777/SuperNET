@@ -132,7 +132,7 @@ int32_t hgetbit(HUFF *hp)
         //fprintf(stderr,"<-%d ",bit);
         return(bit);
     }
-    printf("hgetbit past EOF: %d >= %d\n",hp->bitoffset,hp->endpos);//, getchar();
+    //printf("hgetbit past EOF: %d >= %d\n",hp->bitoffset,hp->endpos);//, getchar();
     return(-1);
 }
 

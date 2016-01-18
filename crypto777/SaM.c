@@ -229,15 +229,15 @@ int32_t _SaM_test(char *msg,TRIT *testvector,int32_t n,TRIT *checkvals)
     return(errs);
 }
 
-int32_t bitweight(uint64_t x)
+/*int32_t bitweight(uint64_t x)
 {
     int i,wt = 0;
     for (i=0; i<64; i++)
         if ( (1LL << i) & x )
             wt++;
     return(wt);
-}
-
+}*/
+int32_t bitweight(uint64_t x);
 #define SETBIT(bits,bitoffset) (((uint8_t *)bits)[(bitoffset) >> 3] |= (1 << ((bitoffset) & 7)))
 #define GETBIT(bits,bitoffset) (((uint8_t *)bits)[(bitoffset) >> 3] & (1 << ((bitoffset) & 7)))
 #define CLEARBIT(bits,bitoffset) (((uint8_t *)bits)[(bitoffset) >> 3] &= ~(1 << ((bitoffset) & 7)))
