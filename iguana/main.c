@@ -57,7 +57,7 @@ uint16_t SuperNET_API2num(char *agent,char *method)
         {
             item = jitem(API_json,i);
             if ( strcmp(agent,jstr(item,"agent")) == 0 && strcmp(method,jstr(item,"method")) == 0 )
-                return((i << 11) | (SUPERNET_APIVERSION & 0x1f));
+                return((i << 5) | (SUPERNET_APIVERSION & 0x1f));
         }
     }
     return(-1);

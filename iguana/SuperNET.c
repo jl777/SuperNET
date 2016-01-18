@@ -175,8 +175,9 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 prevpub,uint8_t *
             jaddstr(json,"message",hexmsg);
             free(hexmsg);
         }
+        printf("bits2json.(%s)\n",jprint(json,0));
         return(json);
-    }
+    } else printf("cant decode apinum.%d\n",apinum);
     return(0);
 }
 
