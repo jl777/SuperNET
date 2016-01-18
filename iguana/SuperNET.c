@@ -131,9 +131,12 @@ int32_t SuperNET_json2bits(struct supernet_info *myinfo,uint8_t *serialized,int3
     {
         uint8_t space[9999];
         int32_t testlen = ramcoder_decompress(space,IGUANA_MAXPACKETSIZE,&compressed[3],numbits,seed2);
-        printf("testlen.%d\n",testlen);
+        printf("len.%d -> testlen.%d cmp.%d\n",len,testlen,memcmp(space,serialized,testlen));
+        int32_t i; for (i=0; i<3+hconv_bitlen(numbits); i++)
+            printf("%02x ",compressed[i]);
+        printf("complen.%d\n",i+3);
     }
-    *complenp = (int32_t)hconv_bitlen(numbits);
+    *complenp = (int32_t)hconv_bitlen(numbits) + 3;
     return(len);
 }
 
