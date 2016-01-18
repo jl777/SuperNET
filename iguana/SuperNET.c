@@ -291,7 +291,7 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,char *hexm
             lastpurge = 0;
     }
     mydist = DHT_dist(packethash,myinfo->myaddr.iphash);
-    for (iter=0; iter<2; iter++)
+    for (iter=broadcastflag!=0; iter<2; iter++)
     {
         for (i=0; i<IGUANA_MAXCOINS; i++)
         {
@@ -310,7 +310,7 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,char *hexm
                         }
                         else if ( iter == 1 )
                         {
-                            if ( DHT_dist(packethash,addr->iphash) < mydist )
+                            //if ( DHT_dist(packethash,addr->iphash) < mydist )
                             {
                                 iguana_send_supernet(Coins[i],addr,jsonstr,maxdelay==0?0:rand()%maxdelay);
                                 n++;
