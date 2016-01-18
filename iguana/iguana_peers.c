@@ -349,7 +349,7 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
         return(-1);
     }
     remains = len;
-    if ( strcmp((char *)&serialized[4],"SuperNET") == 0 )
+    if ( strncmp((char *)&serialized[4],"SuperNET",strlen("SuperNET")) == 0 )
     {
         printf(" >>>>>>> send.(%s) %d bytes to %s supernet.%d\n",(char *)&serialized[4],len,addr->ipaddr,addr->supernet);
     }
