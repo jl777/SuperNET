@@ -139,7 +139,7 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 prevpub,uint8_t *
     uint16_t apinum; uint32_t destipbits,myipbits; bits256 seed,seed2,senderpub; cJSON *json = cJSON_CreateObject();
     int32_t i; for (i=0; i<datalen; i++)
         printf("%02x ",serialized[i]);
-    printf("bits[%d]\n",datalen);
+    printf("bits[%d] iscompressed.%d\n",datalen,iscompressed);
     if ( iscompressed != 0 )
     {
         len = serialized[0];
@@ -151,6 +151,9 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 prevpub,uint8_t *
         numbits = ramcoder_decompress(space,IGUANA_MAXPACKETSIZE,&serialized[3],len<<3,seed2);
         datalen = (int32_t)hconv_bitlen(numbits);
         serialized = space;
+        int32_t i; for (i=0; i<datalen; i++)
+            printf("%02x ",serialized[i]);
+        printf("bits[%d]\n",datalen);
     }
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&destipbits);
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&myipbits);
@@ -192,7 +195,7 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
         printf("SUPERSEND.(%s) -> (%s) delaymillis.%d datalen.%d\n",jsonstr,addr->ipaddr,delaymillis,datalen);
         if ( datalen >= 0 )
         {
-            if ( complen >= 0 && complen < (((datalen-3) * 7) >> 3) )
+            if ( complen >= 0 )//&& complen < (((datalen-3) * 7) >> 3) )
                 qlen = iguana_queue_send(coin,addr,delaymillis,compressed,"SuperNETb",complen,0,0);
             else qlen = iguana_queue_send(coin,addr,delaymillis,serialized,"SuperNET",datalen,0,0);
         }
@@ -304,19 +307,25 @@ char *SuperNET_forward(struct supernet_info *myinfo,char *hexmsg,uint32_t destip
 int32_t SuperNET_destination(struct supernet_info *myinfo,uint32_t *destipbitsp,bits256 *destpubp,int32_t *maxdelayp,cJSON *json,char *remoteaddr)
 {
     char *destip; int32_t destflag = 0;
-    if ( remoteaddr != 0 && remoteaddr[0] != 0 )
-        destflag = SUPERNET_FORWARD;
-    else destflag = SUPERNET_ISMINE;
     if ( (destip= jstr(json,"destip")) != 0 )
         *destipbitsp = (uint32_t)calc_ipbits(destip);
     else *destipbitsp = 0;
     *maxdelayp = juint(json,"delay");
     *destpubp = jbits256(json,"destpub");
-    if ( *destipbitsp == myinfo->myaddr.selfipbits )
-        destflag = SUPERNET_ISMINE;
-    else if ( memcmp(destpubp,myinfo->myaddr.pubkey.bytes,sizeof(*destpubp)) == 0 )
-        destflag = SUPERNET_ISMINE;
-    // check for encrypted packets
+    if ( *destipbitsp != 0 )
+    {
+        if ( *destipbitsp == myinfo->myaddr.selfipbits )
+            destflag |= SUPERNET_ISMINE;
+        else destflag |= SUPERNET_FORWARD;
+    }
+    else if ( bits256_nonz(*destpubp) > 0 )
+    {
+        if ( memcmp(destpubp,myinfo->myaddr.pubkey.bytes,sizeof(*destpubp)) == 0 )
+            destflag |= SUPERNET_ISMINE;
+        else destflag |= SUPERNET_FORWARD;
+    }
+    else if ( remoteaddr == 0 || remoteaddr[0] == 0 )
+        destflag |= SUPERNET_ISMINE;
     return(destflag);
 }
 
@@ -391,7 +400,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
             return(clonestr("{\"result\":\"peer marked as dead\"}"));
         }
         retstr = SuperNET_JSON(myinfo,json,ipaddr);
-        printf("p2pret.(%s)\n",retstr);
+        //printf("p2pret.(%s)\n",retstr);
         *delaymillisp = SuperNET_delaymillis(myinfo,maxdelay);
         free_json(json);
     }
