@@ -75,8 +75,9 @@ struct supernet_agent
 
 struct supernet_address
 {
-    bits256 pubkey,iphash;
-    uint32_t selfipbits,myipbits; int32_t confirmed,totalconfirmed;
+    bits256 pubkey,iphash,persistent;
+    uint32_t selfipbits,myipbits; int32_t confirmed,totalconfirmed; uint64_t nxt64bits;
+    char NXTADDR[32];
 };
 
 struct supernet_info
@@ -84,7 +85,7 @@ struct supernet_info
     char ipaddr[64],transport[8]; int32_t APISLEEP; int32_t iamrelay;
     int32_t Debuglevel,readyflag,dead,POLLTIMEOUT; char rpcsymbol[16],LBpoint[64],PUBpoint[64];
     //int32_t pullsock,subclient,lbclient,lbserver,servicesock,pubglobal,pubrelays,numservers;
-    bits256 privkey;
+    bits256 privkey,persistent_priv;
     uint8_t *recvbuf[6];
     struct supernet_address myaddr;
     int32_t LBsock,PUBsock,reqsock,subsock,networktimeout,maxdelay;
@@ -116,6 +117,8 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,char *hexm
 uint16_t SuperNET_API2num(char *agent,char *method);
 int32_t SuperNET_num2API(char *agent,char *method,uint16_t num);
 bits256 SuperNET_sharedseed(struct supernet_info *myinfo,bits256 otherpub);
+cJSON *SuperNET_bits2json(bits256 sharedseed,uint8_t *serialized,uint8_t *space,int32_t datalen,int32_t iscompressed);
+int32_t SuperNET_json2bits(char *myipaddr,bits256 sessionpriv,bits256 sessionpub,bits256 seed2,uint8_t *serialized,int32_t *complenp,uint8_t *compressed,int32_t maxsize,char *destip,bits256 destpub,cJSON *json);
 
 
 #endif

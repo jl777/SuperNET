@@ -13,6 +13,7 @@
  *                                                                            *
  ******************************************************************************/
 
+ZERO_ARGS(SuperNET,saveconf);
 ZERO_ARGS(SuperNET,help);
 TWO_STRINGS(SuperNET,html,agentform,htmlfile);
 STRING_ARG(SuperNET,bitcoinrpc,setcoin);
@@ -20,6 +21,9 @@ TWOSTRINGS_AND_HASH_AND_TWOINTS(SuperNET,DHT,message,destip,destpub,maxdelay,bro
 STRING_ARG(SuperNET,getpeers,activecoin);
 TWO_ARRAYS(SuperNET,mypeers,supernet,rawpeers);
 ZERO_ARGS(SuperNET,stop);
+
+// 1.    Line 48  - TWO_INTS(ramchain,listreceivedbyaddress,minconf,includeempty);   has only 2 arguments  but listreceivedbyaddress  call needs 3 arguments(int, bool, bool).
+// 2.    Line 80 - HASH_AND_INT(ramchain,listsinceblock,blockhash,target);  has only 2 arguments but it needs 3 arguments(string,int, bool).
 
 STRING_ARG(iguana,peers,activecoin);
 STRING_AND_INT(iguana,maxpeers,activecoin,max);

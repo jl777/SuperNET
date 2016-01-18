@@ -664,6 +664,12 @@ TWO_STRINGS(SuperNET,html,agentform,htmlfile)
         fclose(fp);
     return(jprint(retjson,1));
 }
+
+ZERO_ARGS(SuperNET,saveconf)
+{
+    return(clonestr("{\"result\":\"saveconf here\"}"));
+}
+
 #undef IGUANA_ARGS
 #include "../includes/iguana_apiundefs.h"
 

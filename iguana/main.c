@@ -256,10 +256,108 @@ void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func
 
 void iguana_main(void *arg)
 {
-    char helperstr[64],*tmpstr,*helperargs,*ipaddr,*coinargs=0,*secret,*jsonstr = arg;
-    int32_t i,len,flag,c; cJSON *json; uint8_t secretbuf[512]; int64_t allocsize;
+    FILE *fp; cJSON *json; uint8_t *space,secretbuf[512]; uint32_t r; int64_t allocsize;
+    char helperstr[64],fname[512],*wallet2,*wallet2str,*tmpstr,*confstr,*helperargs,*ipaddr,*coinargs=0,*secret,*jsonstr = arg;
+    int32_t i,len,flag,c,datalen; bits256 acct,seed,checkhash,wallethash,wallet2shared,wallet2priv,wallet2pub;
     memset(&MYINFO,0,sizeof(MYINFO));
-    if ( (ipaddr= OS_filestr(&allocsize,"ipaddr")) != 0 )
+    mycalloc(0,0,0);
+    iguana_initQ(&helperQ,"helperQ");
+    OS_ensure_directory("confs");
+    OS_ensure_directory("DB");
+    OS_ensure_directory("tmp");
+    if ( (tmpstr= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"help\"}"),0)) != 0 )
+    {
+        if ( (API_json= cJSON_Parse(tmpstr)) != 0 && (API_json= jobj(API_json,"result")) != 0 )
+            API_json = jobj(API_json,"API");
+        free(tmpstr);
+    }
+    memset(wallet2shared.bytes,0,sizeof(wallet2shared));
+    wallethash = GENESIS_PRIVKEY;
+    wallet2pub = GENESIS_PUBKEY;
+    if ( jsonstr != 0 && (json= cJSON_Parse(jsonstr)) != 0 )
+    {
+        if ( jobj(json,"numhelpers") != 0 )
+            IGUANA_NUMHELPERS = juint(json,"numhelpers");
+        if ( (secret= jstr(json,"wallet")) != 0 )
+        {
+            len = (int32_t)strlen(secret);
+            if ( is_hexstr(secret,0) != 0 && len == 128 )
+            {
+                len >>= 1;
+                decode_hex(secretbuf,len,secret);
+            } else vcalc_sha256(0,secretbuf,(void *)secret,len), len = sizeof(bits256);
+            memcpy(wallethash.bytes,secretbuf,sizeof(wallethash));
+        }
+        if ( (wallet2= jstr(json,"keyfile")) != 0 )
+        {
+            if ( (wallet2str= OS_filestr(&allocsize,wallet2)) != 0 )
+            {
+                r = calc_crc32(0,wallet2str,(int32_t)allocsize);
+                r %= 32;
+                for (i=0; i<allocsize; i++)
+                    wallet2str[i] ^= wallethash.bytes[(i + r) % 32];
+                vcalc_sha256(0,wallet2priv.bytes,(void *)wallet2str,(int32_t)allocsize);
+                wallet2pub = curve25519(wallet2priv,curve25519_basepoint9());
+                seed = curve25519_shared(wallethash,wallet2pub);
+                vcalc_sha256(0,wallet2shared.bytes,seed.bytes,sizeof(bits256));
+                char str[65],str2[65]; printf("have keyfile.(%s) -> pub.%s shared.%s\n",wallet2,bits256_str(str,wallet2pub),bits256_str(str2,wallet2shared));
+                free(wallet2str);
+            }
+        }
+        if ( jobj(json,"coins") != 0 )
+            coinargs = jsonstr;
+    }
+    OS_randombytes(MYINFO.persistent_priv.bytes,sizeof(MYINFO.privkey));
+    MYINFO.myaddr.persistent = curve25519(MYINFO.persistent_priv,curve25519_basepoint9());
+    vcalc_sha256(0,acct.bytes,(void *)MYINFO.myaddr.persistent.bytes,sizeof(bits256));
+    MYINFO.myaddr.nxt64bits = acct.txid;
+    RS_encode(MYINFO.myaddr.NXTADDR,MYINFO.myaddr.nxt64bits);
+    if ( bits256_nonz(wallet2shared) > 0 )
+        sprintf(fname,"confs/iguana.%llu",(long long)wallet2shared.txid);
+    else sprintf(fname,"confs/iguana.conf");
+    printf("check conf.(%s)\n",fname);
+    if ( (confstr= OS_filestr(&allocsize,fname)) != 0 )
+    {
+        datalen = (int32_t)strlen(confstr);
+        if ( bits256_nonz(wallet2shared) > 0 )
+        {
+            space = malloc(IGUANA_MAXPACKETSIZE);
+            json = SuperNET_bits2json(wallet2shared,(uint8_t *)confstr,space,datalen,1);
+            free(space);
+            printf("decoded.(%s)\n",jprint(json,0));
+        } else json = cJSON_Parse(confstr), printf("CONF.(%s)\n",confstr);
+        if ( json != 0 )
+        {
+            if ( (ipaddr= jstr(json,"ipaddr")) != 0 && is_ipaddr(ipaddr) != 0 )
+                strcpy(MYINFO.ipaddr,ipaddr);
+            if ( (secret= jstr(json,"secret")) != 0 )
+            {
+                MYINFO.myaddr.nxt64bits = conv_NXTpassword(MYINFO.persistent_priv.bytes,MYINFO.myaddr.persistent.bytes,(uint8_t *)secret,(int32_t)strlen(secret));
+                RS_encode(MYINFO.myaddr.NXTADDR,MYINFO.myaddr.nxt64bits);
+            }
+            else
+            {
+                MYINFO.persistent_priv = jbits256(json,"persistent_priv");
+                if ( bits256_nonz(MYINFO.persistent_priv) == 0 )
+                {
+                    printf("null persistent_priv? generate new one\n");
+                    OS_randombytes(MYINFO.persistent_priv.bytes,sizeof(MYINFO.privkey));
+                }
+                MYINFO.myaddr.persistent = jbits256(json,"persistent_pub");
+                checkhash = curve25519(MYINFO.persistent_priv,curve25519_basepoint9());
+            }
+            free_json(json);
+            if ( memcmp(checkhash.bytes,MYINFO.myaddr.persistent.bytes,sizeof(checkhash)) != 0 )
+            {
+                printf("persistent pubkey mismatches one in iguana.conf\n");
+                MYINFO.myaddr.persistent = checkhash;
+                confstr = 0;
+            }
+        } else printf("Cant parse.(%s)\n",confstr), confstr = 0;
+        if ( confstr != 0 )
+            free(confstr);
+    }
+    else if ( (ipaddr= OS_filestr(&allocsize,"ipaddr")) != 0 )
     {
         printf("got ipaddr.(%s)\n",ipaddr);
         len = (int32_t)strlen(ipaddr) - 1;
@@ -278,6 +376,51 @@ void iguana_main(void *arg)
         strcpy(MYINFO.ipaddr,"127.0.0.1");
         MYINFO.myaddr.selfipbits = (uint32_t)calc_ipbits(MYINFO.ipaddr);
     }
+    OS_randombytes(MYINFO.privkey.bytes,sizeof(MYINFO.privkey));
+    MYINFO.myaddr.pubkey = curve25519(MYINFO.privkey,curve25519_basepoint9());
+    vcalc_sha256(0,acct.bytes,(void *)MYINFO.myaddr.persistent.bytes,sizeof(bits256));
+    MYINFO.myaddr.nxt64bits = acct.txid;
+    RS_encode(MYINFO.myaddr.NXTADDR,MYINFO.myaddr.nxt64bits);
+    char str[65],str2[65]; printf("%s %llu PRIV.%s PUB.%s persistent.%llx %llx\n",MYINFO.myaddr.NXTADDR,(long long)MYINFO.myaddr.nxt64bits,bits256_str(str,MYINFO.privkey),bits256_str(str2,MYINFO.myaddr.pubkey),(long long)MYINFO.persistent_priv.txid,(long long)MYINFO.myaddr.persistent.txid);
+    if ( confstr == 0 )
+    {
+        uint8_t *compressed,*serialized; int32_t complen,maxsize = IGUANA_MAXPACKETSIZE;
+        json = cJSON_CreateObject();
+        jaddstr(json,"agent","SuperNET");
+        jaddstr(json,"method","saveconf");
+        jaddstr(json,"myipaddr",MYINFO.ipaddr);
+        jaddbits256(json,"persistent_priv",MYINFO.persistent_priv);
+        jaddbits256(json,"persistent_pub",MYINFO.myaddr.persistent);
+        compressed = calloc(1,maxsize);
+        serialized = calloc(1,maxsize);
+        if ( strcmp("confs/iguana.conf",fname) != 0 )
+        {
+            //sprintf(fname,"confs/iguana.%llu",(long long)wallet2shared.txid);
+            if ( SuperNET_json2bits(MYINFO.ipaddr,wallethash,curve25519(wallethash,curve25519_basepoint9()),wallet2shared,serialized,&complen,compressed,maxsize,MYINFO.ipaddr,wallet2pub,json) > 0 )
+            {
+                printf("save (%s) <- %d\n",fname,complen);
+                if ( (fp= fopen(fname,"wb")) != 0 )
+                {
+                    fwrite(compressed,1,complen,fp);
+                    fclose(fp);
+                }
+            } else printf("error saving.(%s) json2bits.(%s)\n",fname,jprint(json,0));
+        }
+        else
+        {
+            char *str = jprint(json,0);
+            //sprintf(fname,"confs/iguana.conf");
+            printf("save (%s) <- (%s)\n",fname,str);
+            if ( (fp= fopen(fname,"wb")) != 0 )
+            {
+                fwrite(str,1,strlen(str),fp);
+                fclose(fp);
+            }
+            free(str);
+        }
+        free(compressed), free(serialized);
+        free_json(json);
+    }
     signal(SIGINT,sigint_func);
     signal(SIGILL,sigillegal_func);
     signal(SIGHUP,sighangup_func);
@@ -287,37 +430,6 @@ void iguana_main(void *arg)
     signal(SIGCHLD,sigchild_func);
     signal(SIGALRM,sigalarm_func);
     signal(SIGCONT,sigcontinue_func);
-    mycalloc(0,0,0);
-    iguana_initQ(&helperQ,"helperQ");
-    OS_ensure_directory("confs");
-    OS_ensure_directory("DB");
-    OS_ensure_directory("tmp");
-    if ( (tmpstr= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"help\"}"),0)) != 0 )
-    {
-        if ( (API_json= cJSON_Parse(tmpstr)) != 0 && (API_json= jobj(API_json,"result")) != 0 )
-            API_json = jobj(API_json,"API");
-        free(tmpstr);
-    }
-    OS_randombytes(MYINFO.privkey.bytes,sizeof(MYINFO.privkey));
-    if ( jsonstr != 0 && (json= cJSON_Parse(jsonstr)) != 0 )
-    {
-        if ( jobj(json,"numhelpers") != 0 )
-            IGUANA_NUMHELPERS = juint(json,"numhelpers");
-        if ( (secret= jstr(json,"secret")) != 0 )
-        {
-            len = (int32_t)strlen(secret);
-            if ( is_hexstr(secret,0) != 0 && len == 128 )
-            {
-                len >>= 1;
-                decode_hex(secretbuf,len,secret);
-            } else vcalc_sha256(0,secretbuf,(void *)secret,len), len = sizeof(bits256);
-            memcpy(MYINFO.privkey.bytes,secretbuf,sizeof(MYINFO.privkey));
-        }
-        if ( jobj(json,"coins") != 0 )
-            coinargs = jsonstr;
-    }
-    MYINFO.myaddr.pubkey = curve25519(MYINFO.privkey,curve25519_basepoint9());
-    char str[65],str2[65]; printf("PRIV.%s PUB.%s\n",bits256_str(str,MYINFO.privkey),bits256_str(str2,MYINFO.myaddr.pubkey));
     if ( IGUANA_NUMHELPERS == 0 )
         IGUANA_NUMHELPERS = 1;
     for (i=0; i<IGUANA_NUMHELPERS; i++)
