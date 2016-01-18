@@ -353,7 +353,7 @@ struct iguana_peer
 {
     struct queueitem DL;
     queue_t sendQ;
-    bits256 iphash,pubkey;
+    bits256 iphash,pubkey,sharedseed;
     struct iguana_msgaddress A;
     char ipaddr[64],lastcommand[16],coinstr[16],symbol[16];
     uint64_t pingnonce,totalsent,totalrecv,ipbits; double pingtime,sendmillis,pingsum,getdatamillis;
