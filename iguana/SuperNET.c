@@ -177,16 +177,19 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,int32_t validpub,bits256 
                     vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
                 //char str[65]; printf("compressed len.%d seed2.(%s)\n",numbits,bits256_str(str,seed2));
                 datalen = ramcoder_decompress(space,IGUANA_MAXPACKETSIZE,&serialized[3],numbits,seed2);
-                serialized = space;
-                crc = calc_crc32(0,&serialized[sizeof(crc)],datalen - sizeof(crc));
-                iguana_rwnum(0,serialized,sizeof(checkcrc),&checkcrc);
-                if ( crc == checkcrc )
+                if ( datalen > 0 && datalen < IGUANA_MAXPACKETSIZE )
                 {
-                    //int32_t i; for (i=0; i<datalen; i++)
-                    //    printf("%02x ",serialized[i]);
-                    //printf("bits[%d] numbits.%d after decompress crc.(%08x vs %08x) <<<<<<<<<<<<<<< iter.%d\n",datalen,numbits,crc,checkcrc,iter);
-                    flag = 1;
-                    break;
+                    serialized = space;
+                    crc = calc_crc32(0,&serialized[sizeof(crc)],datalen - sizeof(crc));
+                    iguana_rwnum(0,serialized,sizeof(checkcrc),&checkcrc);
+                    if ( crc == checkcrc )
+                    {
+                        //int32_t i; for (i=0; i<datalen; i++)
+                        //    printf("%02x ",serialized[i]);
+                        //printf("bits[%d] numbits.%d after decompress crc.(%08x vs %08x) <<<<<<<<<<<<<<< iter.%d\n",datalen,numbits,crc,checkcrc,iter);
+                        flag = 1;
+                        break;
+                    }
                 }
                 seed = (iter == 0) ? curve25519_shared(GENESIS_PRIVKEY,prevpub) : genesis2;
             }
