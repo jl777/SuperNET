@@ -91,7 +91,7 @@ void iguana_acceptloop(void *args)
             if ( coin->peers.active[i].ipbits == (uint32_t)ipbits && coin->peers.active[i].usock >= 0 )
             {
                 printf("found existing peer.(%s) in slot[%d]\n",ipaddr,i);
-                coin->peers.active[i].dead = (uint32_t)time(NULL);
+                iguana_iAkill(coin,addr,0);
                 sleep(1);
             }
         }

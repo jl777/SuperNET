@@ -28,10 +28,10 @@ int32_t SuperNET_delaymillis(struct supernet_info *myinfo,int32_t maxdelay)
 void SuperNET_remotepeer(struct supernet_info *myinfo,struct iguana_info *coin,char *symbol,char *ipaddr,int32_t supernetflag)
 {
     uint64_t ipbits; struct iguana_peer *addr;
+    ipbits = calc_ipbits(ipaddr);
     printf("got %s remotepeer.(%s) supernet.%d\n",symbol,ipaddr,supernetflag);
-    if ( supernetflag != 0 )
+    if ( supernetflag != 0 && (uint32_t)myinfo->myaddr.selfipbits != (uint32_t)ipbits )
     {
-        ipbits = calc_ipbits(ipaddr);
         if ( (addr= iguana_peerslot(coin,ipbits)) != 0 )
         {
             printf("launch startconnection to supernet peer.(%s)\n",ipaddr);

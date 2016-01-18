@@ -693,6 +693,7 @@ void ramcoder_test(void *data,int64_t len);
 void iguana_exit();
 int32_t iguana_pendingaccept(struct iguana_info *coin);
 char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t tag,int32_t maxmillis,char *remoteaddr);
+void iguana_iAkill(struct iguana_info *coin,struct iguana_peer *addr,int32_t markflag);
 
 extern queue_t bundlesQ;
 
