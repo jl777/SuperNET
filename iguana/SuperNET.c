@@ -169,7 +169,7 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 senderpub,bits256
     int32_t numbits,iter,flag=0,len = 0; uint32_t crc,checkcrc; cJSON *json = cJSON_CreateObject();
     int32_t i; for (i=0; i<datalen; i++)
         printf("%02x ",serialized[i]);
-    printf("bits[%d] iscompressed.%d\n",datalen,iscompressed);
+    printf("bits[%d] iscompressed.%d %llx %llx\n",datalen,iscompressed,(long long)senderpub.txid,(long long)sharedseed.txid);
     if ( iscompressed != 0 )
     {
         numbits = serialized[2];
@@ -459,12 +459,12 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
         {
             decode_hex((uint8_t *)&othercheckc,sizeof(othercheckc),checkstr);
             checkc = SuperNET_checkc(myinfo,senderpub,j64bits(json,"tag"));
-            printf("validpub.%d: %x vs %x\n",addr->validpub,checkc,othercheckc);
             if ( checkc == othercheckc )
             {
                 if ( addr->validpub++ > 1 )
                     addr->sharedseed = SuperNET_sharedseed(myinfo,senderpub);
             } else addr->validpub = 0;
+            printf("validpub.%d: %x vs %x shared.%llx\n",addr->validpub,checkc,othercheckc,(long long)addr->sharedseed.txid);
         }
         maxdelay = juint(json,"maxdelay");
         printf("GOT >>>>>>>> SUPERNET P2P.(%s) from.%s\n",jprint(json,0),coin->symbol);

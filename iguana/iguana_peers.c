@@ -1000,7 +1000,7 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
         }
         if ( flag != 0 )
             run = 0;
-        else if ( addr->supernet != 0 && time(NULL) > lastping+60 )
+        else if ( addr->supernet != 0 && time(NULL) > lastping+SUPERNET_PINGGAP )
         {
             iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
             lastping = (uint32_t)time(NULL);
