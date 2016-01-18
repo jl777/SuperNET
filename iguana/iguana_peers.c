@@ -296,21 +296,42 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
 #ifdef __APPLE__
     setsockopt(sock,SOL_SOCKET,SO_NOSIGPIPE,&opt,sizeof(opt));
 #endif
-    result = (bindflag != 0) ? bind(sock,(struct sockaddr*)&saddr,addrlen) : connect(sock,(struct sockaddr *)&saddr,addrlen);
-    if ( result != 0 )
+    if ( bindflag == 0 )
     {
-        if ( errno != ECONNRESET && errno != ENOTCONN && errno != ECONNREFUSED && errno != ETIMEDOUT && errno != EHOSTUNREACH )
-            printf("%s(%s) port.%d failed: %s sock.%d. errno.%d\n",bindflag!=0?"bind":"connect",hostname,port,strerror(errno),sock,errno);
-        if ( sock >= 0 )
-            closesocket(sock);
-        return(-1);
+        result = connect(sock,(struct sockaddr *)&saddr,addrlen);
+        if ( result != 0 )
+        {
+            if ( errno != ECONNRESET && errno != ENOTCONN && errno != ECONNREFUSED && errno != ETIMEDOUT && errno != EHOSTUNREACH )
+                printf("%s(%s) port.%d failed: %s sock.%d. errno.%d\n",bindflag!=0?"bind":"connect",hostname,port,strerror(errno),sock,errno);
+            if ( sock >= 0 )
+                closesocket(sock);
+            return(-1);
+        }
     }
-    if ( bindflag != 0 && listen(sock,64) != 0 )
+    else
     {
-        printf("listen(%s) port.%d failed: %s sock.%d. errno.%d\n",hostname,port,strerror(errno),sock,errno);
-        if ( sock >= 0 )
-            closesocket(sock);
-        return(-1);
+        while ( (result= bind(sock,(struct sockaddr*)&saddr,addrlen)) != 0 )
+        {
+            if ( errno == EADDRINUSE )
+            {
+                printf("%s(%s) port.%d try again: %s sock.%d. errno.%d\n",bindflag!=0?"bind":"connect",hostname,port,strerror(errno),sock,errno);
+                sleep(3);
+                continue;
+            }
+            if ( errno != ECONNRESET && errno != ENOTCONN && errno != ECONNREFUSED && errno != ETIMEDOUT && errno != EHOSTUNREACH )
+            {
+                printf("%s(%s) port.%d failed: %s sock.%d. errno.%d\n",bindflag!=0?"bind":"connect",hostname,port,strerror(errno),sock,errno);
+                closesocket(sock);
+                return(-1);
+            }
+        }
+        if ( listen(sock,64) != 0 )
+        {
+            printf("listen(%s) port.%d failed: %s sock.%d. errno.%d\n",hostname,port,strerror(errno),sock,errno);
+            if ( sock >= 0 )
+                closesocket(sock);
+            return(-1);
+        }
     }
     return(sock);
 }

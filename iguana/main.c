@@ -265,6 +265,11 @@ void iguana_main(void *arg)
         }
         free(ipaddr);
     }
+    if ( MYINFO.myaddr.selfipbits == 0 )
+    {
+        strcpy(MYINFO.ipaddr,"127.0.0.1");
+        MYINFO.myaddr.selfipbits = (uint32_t)calc_ipbits(MYINFO.ipaddr);
+    }
     signal(SIGINT,sigint_func);
     signal(SIGILL,sigillegal_func);
     signal(SIGHUP,sighangup_func);
