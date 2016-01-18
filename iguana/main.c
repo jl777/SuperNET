@@ -276,6 +276,7 @@ void iguana_main(void *arg)
     wallet2pub = GENESIS_PUBKEY;
     if ( jsonstr != 0 && (json= cJSON_Parse(jsonstr)) != 0 )
     {
+        printf("ARGSTR.(%s)\n",jsonstr);
         if ( jobj(json,"numhelpers") != 0 )
             IGUANA_NUMHELPERS = juint(json,"numhelpers");
         if ( (secret= jstr(json,"wallet")) != 0 )
@@ -287,6 +288,7 @@ void iguana_main(void *arg)
                 decode_hex(secretbuf,len,secret);
             } else vcalc_sha256(0,secretbuf,(void *)secret,len), len = sizeof(bits256);
             memcpy(wallethash.bytes,secretbuf,sizeof(wallethash));
+            char str[65]; printf("wallethash.(%s)\n",bits256_str(str,wallethash));
         }
         if ( (wallet2= jstr(json,"keyfile")) != 0 )
         {
@@ -446,7 +448,7 @@ void iguana_main(void *arg)
 #ifdef __APPLE__
         sleep(1);
         char *str;
-        if ( (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":12,\"activecoin\":\"BTCD\",\"active\":1}"),0)) != 0 )
+        if ( (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"wallet\":\"password\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":12,\"activecoin\":\"BTCD\",\"active\":1}"),0)) != 0 )
         {
             printf("got.(%s)\n",str);
             free(str);
