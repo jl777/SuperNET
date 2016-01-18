@@ -275,8 +275,8 @@ void iguana_main(void *arg)
     OS_ensure_directory("tmp");
     if ( (tmpstr= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"help\"}"),0)) != 0 )
     {
-        if ( (API_json= cJSON_Parse(tmpstr)) != 0 )
-            API_json = jobj(API_json,"result");
+        if ( (API_json= cJSON_Parse(tmpstr)) != 0 && (API_json= jobj(API_json,"result")) != 0 )
+            API_json = jobj(API_json,"API");
         free(tmpstr);
     }
     memset(&MYINFO,0,sizeof(MYINFO));
