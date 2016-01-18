@@ -118,18 +118,22 @@ int32_t SuperNET_json2bits(struct supernet_info *myinfo,uint8_t *serialized,int3
         } else return(-1);
     }
     memset(seed.bytes,0,sizeof(seed));
-    numbits = ramcoder_compress(&compressed[3],maxsize-3,serialized,len,seed);
-    compressed[0] = (numbits & 0xff);
-    compressed[1] = ((numbits>>8) & 0xff);
-    compressed[2] = ((numbits>>16) & 0xff);
-    *complenp = (int32_t)hconv_bitlen(numbits);
+    int32_t testbits = ramcoder_compress(&compressed[3],maxsize-3,serialized,len,seed);
     seed = curve25519_shared(GENESIS_PRIVKEY,destpub);//myinfo->privkey,destpub);
     vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
     char str[65],str2[65],str3[65],str4[65];
     printf("mypriv.%s destpub.%s seed.%s seed2.%s\n",bits256_str(str,myinfo->privkey),bits256_str(str2,destpub),bits256_str(str3,seed),bits256_str(str4,seed2));
-    int32_t seedlen; seedlen = ramcoder_compress(&compressed[3],maxsize-3,serialized,len,seed2);
-    printf("strlen.%d len.%d -> complen.%d %s seedlen.%d\n",(int32_t)strlen(jprint(json,0)),len,*complenp,bits256_str(str,seed2),(int32_t)hconv_bitlen(seedlen));
-    *complenp = (int32_t)hconv_bitlen(seedlen);
+    numbits = ramcoder_compress(&compressed[3],maxsize-3,serialized,len,seed2);
+    compressed[0] = (numbits & 0xff);
+    compressed[1] = ((numbits>>8) & 0xff);
+    compressed[2] = ((numbits>>16) & 0xff);
+    printf("strlen.%d len.%d -> testbits.%d %s numbits.%d\n",(int32_t)strlen(jprint(json,0)),len,testbits,bits256_str(str,seed2),(int32_t)hconv_bitlen(numbits));
+    {
+        uint8_t space[9999];
+        int32_t testlen = ramcoder_decompress(space,IGUANA_MAXPACKETSIZE,&compressed[3],numbits,seed2);
+        printf("testlen.%d\n",testlen);
+    }
+    *complenp = (int32_t)hconv_bitlen(numbits);
     return(len);
 }
 
