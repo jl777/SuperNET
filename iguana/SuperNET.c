@@ -116,7 +116,7 @@ int32_t SuperNET_json2bits(struct supernet_info *myinfo,int32_t plaintext,int32_
     crc = calc_crc32(0,&serialized[sizeof(crc)],len - sizeof(crc));
     iguana_rwnum(1,serialized,sizeof(crc),&crc);
     if ( plaintext != 0 )
-        memset(seed.bytes,0,sizeof(seed));
+        memset(seed2.bytes,0,sizeof(seed2));
     else
     {
         if ( validpub != 0 )
@@ -142,7 +142,7 @@ int32_t SuperNET_json2bits(struct supernet_info *myinfo,int32_t plaintext,int32_
         printf("len.%d -> testlen.%d cmp.%d\n",len,testlen,memcmp(space,serialized,testlen));
         int32_t i; for (i=0; i<3+hconv_bitlen(numbits); i++)
             printf("%02x ",compressed[i]);
-        char str[65]; printf("complen.%d seeds.%s\n",i+3,bits256_str(str,seed2));
+        char str[65]; printf("complen.%d seed2.%s\n",i+3,bits256_str(str,seed2));
     }
     *complenp = (int32_t)hconv_bitlen(numbits) + 3;
     return(len);
@@ -248,7 +248,7 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
     {
         compressed = malloc(sizeof(struct iguana_msghdr) + IGUANA_MAXPACKETSIZE);
         serialized = malloc(sizeof(struct iguana_msghdr) + IGUANA_MAXPACKETSIZE);
-        datalen = SuperNET_json2bits(SuperNET_MYINFO(0),1||juint(json,"plaintext"),addr->validpub,&serialized[sizeof(struct iguana_msghdr)],&complen,&compressed[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE,addr->ipaddr,addr->pubkey,json);
+        datalen = SuperNET_json2bits(SuperNET_MYINFO(0),juint(json,"plaintext"),addr->validpub,&serialized[sizeof(struct iguana_msghdr)],&complen,&compressed[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE,addr->ipaddr,addr->pubkey,json);
         printf("SUPERSEND.(%s) -> (%s) delaymillis.%d datalen.%d\n",jsonstr,addr->ipaddr,delaymillis,datalen);
         if ( datalen >= 0 )
         {
