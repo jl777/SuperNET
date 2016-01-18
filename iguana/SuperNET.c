@@ -142,16 +142,16 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 prevpub,uint8_t *
     printf("bits[%d] iscompressed.%d\n",datalen,iscompressed);
     if ( iscompressed != 0 )
     {
-        numbits = serialized[0];
+        numbits = serialized[2];
         numbits = (numbits << 8) + serialized[1];
-        numbits = (numbits << 8) + serialized[2];
+        numbits = (numbits << 8) + serialized[0];
         seed = curve25519_shared(GENESIS_PRIVKEY,prevpub);
         vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
         char str[65]; printf("compressed len.%d seed2.(%s)\n",numbits,bits256_str(str,seed2));
         datalen = ramcoder_decompress(space,IGUANA_MAXPACKETSIZE,&serialized[3],numbits,seed2);
         serialized = space;
         printf("bits[%d] numbits.%d\n",datalen,numbits);
- int32_t i; for (i=0; i<datalen; i++)
+        int32_t i; for (i=0; i<datalen; i++)
             printf("%02x ",serialized[i]);
         printf("bits[%d] numbits.%d\n",datalen,numbits);
     }
