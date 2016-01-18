@@ -154,9 +154,9 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 prevpub,uint8_t *
     char destip[64],method[64],agent[64],myipaddr[64],str[65],*hexmsg; uint64_t tag;
     uint16_t apinum; uint32_t destipbits,myipbits; bits256 seed,seed2,senderpub;
     int32_t numbits,iter,flag=0,len = 0; uint32_t crc,checkcrc; cJSON *json = cJSON_CreateObject();
-    int32_t i; for (i=0; i<datalen; i++)
-        printf("%02x ",serialized[i]);
-    printf("bits[%d] iscompressed.%d\n",datalen,iscompressed);
+    //int32_t i; for (i=0; i<datalen; i++)
+    //    printf("%02x ",serialized[i]);
+    //printf("bits[%d] iscompressed.%d\n",datalen,iscompressed);
     if ( iscompressed != 0 )
     {
         if ( genesis2.txid == 0 )
@@ -249,7 +249,7 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
         compressed = malloc(sizeof(struct iguana_msghdr) + IGUANA_MAXPACKETSIZE);
         serialized = malloc(sizeof(struct iguana_msghdr) + IGUANA_MAXPACKETSIZE);
         datalen = SuperNET_json2bits(SuperNET_MYINFO(0),juint(json,"plaintext"),addr->validpub,&serialized[sizeof(struct iguana_msghdr)],&complen,&compressed[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE,addr->ipaddr,addr->pubkey,json);
-        printf("SUPERSEND.(%s) -> (%s) delaymillis.%d datalen.%d\n",jsonstr,addr->ipaddr,delaymillis,datalen);
+        //printf("SUPERSEND.(%s) -> (%s) delaymillis.%d datalen.%d\n",jsonstr,addr->ipaddr,delaymillis,datalen);
         if ( datalen >= 0 )
         {
             if ( complen >= 0 )
