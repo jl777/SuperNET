@@ -189,15 +189,13 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 senderpub,bits256
                     iguana_rwnum(0,serialized,sizeof(checkcrc),&checkcrc);
                     //int32_t i; for (i=0; i<datalen; i++)
                     //    printf("%02x ",serialized[i]);
-                    printf("bits[%d] numbits.%d after decompress crc.(%08x vs %08x) <<<<<<<<<<<<<<< iter.%d\n",datalen,numbits,crc,checkcrc,iter);
+                    printf("bits[%d] numbits.%d after decompress crc.(%08x vs %08x) <<<<<< iter.%d %llx\n",datalen,numbits,crc,checkcrc,iter,(long long)seed2.txid);
                     if ( crc == checkcrc )
                     {
                         flag = 1;
                         break;
                     }
                 }
-                //seed = (iter == 0) ? curve25519_shared(GENESIS_PRIVKEY,prevpub) : genesis2;
-                //vcalc_sha256(0,seed2.bytes,seed.bytes,sizeof(seed));
                 seed2 = sharedseed;
             }
         }
@@ -458,7 +456,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
         senderpub = jbits256(json,"mypub");
         if ( memcmp(senderpub.bytes,addr->pubkey.bytes,sizeof(senderpub)) != 0 )
             addr->pubkey = senderpub;
-        if ( (checkstr= jstr(json,"checkstr")) != 0 )
+        if ( (checkstr= jstr(json,"check")) != 0 )
         {
             decode_hex((uint8_t *)&othercheckc,sizeof(othercheckc),checkstr);
             checkc = SuperNET_checkc(myinfo,senderpub,j64bits(json,"tag"));
