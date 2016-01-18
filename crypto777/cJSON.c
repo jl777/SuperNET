@@ -526,7 +526,7 @@ static char *print_object(cJSON *item,int32_t depth,int32_t fmt)
 }
 
 /* Get Array size/item / object item. */
-int32_t    cJSON_GetArraySize(cJSON *array)							{cJSON *c=array->child;int32_t i=0;while(c)i++,c=c->next;return i;}
+int32_t    cJSON_GetArraySize(cJSON *array)							{cJSON *c; if ( array == 0 ) return(0); c=array->child;int32_t i=0;while(c)i++,c=c->next;return i;}
 cJSON *cJSON_GetArrayItem(cJSON *array,int32_t item)				{cJSON *c=array->child;  while (c && item>0) item--,c=c->next; return c;}
 cJSON *cJSON_GetObjectItem(cJSON *object,const char *string)	{cJSON *c=object->child; while (c && cJSON_strcasecmp(c->string,string)) c=c->next; return c;}
 
