@@ -148,7 +148,7 @@ int32_t SuperNET_json2bits(struct supernet_info *myinfo,int32_t plaintext,int32_
     return(len);
 }
 
-cJSON *SuperNET_bits2json(struct supernet_info *myinfo,int32_t validpub,bits256 prevpub,uint8_t *serialized,uint8_t *space,int32_t datalen,int32_t iscompressed)
+cJSON *SuperNET_bits2json(struct supernet_info *myinfo,bits256 prevpub,uint8_t *serialized,uint8_t *space,int32_t datalen,int32_t iscompressed)
 {
     static bits256 genesis2;
     char destip[64],method[64],agent[64],myipaddr[64],str[65],*hexmsg; uint64_t tag;
@@ -166,9 +166,9 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,int32_t validpub,bits256 
         numbits = (numbits << 8) + serialized[0];
         if ( hconv_bitlen(numbits)+3 == datalen )
         {
-            if ( validpub != 0 )
-                priv = myinfo->privkey;
-            else priv = GENESIS_PRIVKEY;
+            //if ( validpub != 0 )
+            //    priv = myinfo->privkey;
+            //else priv = GENESIS_PRIVKEY;
             seed = curve25519_shared(priv,prevpub);
             memset(seed2.bytes,0,sizeof(seed2));
             for (iter=0; iter<4; iter++)
@@ -191,7 +191,12 @@ cJSON *SuperNET_bits2json(struct supernet_info *myinfo,int32_t validpub,bits256 
                         break;
                     }
                 }
-                seed = (iter == 0) ? curve25519_shared(GENESIS_PRIVKEY,prevpub) : genesis2;
+                switch ( iter )
+                {
+                    case 0: seed = myinfo->privkey; break;
+                    case 1: seed = curve25519_shared(GENESIS_PRIVKEY,prevpub); break;
+                    case 2: seed = genesis2; break;
+                }
             }
         }
         else
@@ -440,7 +445,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
     *delaymillisp = 0;
     if ( compressed != 0 )
         space = malloc(sizeof(struct iguana_msghdr) + IGUANA_MAXPACKETSIZE);
-    if ( (json= SuperNET_bits2json(myinfo,addr->validpub,addr->pubkey,data,space,datalen,compressed)) != 0 )
+    if ( (json= SuperNET_bits2json(myinfo,addr->pubkey,data,space,datalen,compressed)) != 0 )
     {
         maxdelay = juint(json,"maxdelay");
         printf("GOT >>>>>>>> SUPERNET P2P.(%s) from.%s\n",jprint(json,0),coin->symbol);
