@@ -61,4 +61,14 @@ uint64_t conv_NXTpassword(unsigned char *mysecret,unsigned char *mypublic,uint8_
 bits128 calc_md5(char digeststr[33],void *buf,int32_t len);
 
 
+bits256 acct777_pubkey(bits256 privkey);
+uint64_t acct777_nxt64bits(bits256 pubkey);
+bits256 acct777_hashiter(bits256 privkey,bits256 pubkey,int32_t lockdays,uint8_t chainlen);
+bits256 acct777_lockhash(bits256 pubkey,int32_t lockdays,uint8_t chainlen);
+bits256 acct777_invoicehash(bits256 *invoicehash,uint16_t lockdays,uint8_t chainlen);
+uint64_t acct777_sign(struct acct777_sig *sig,bits256 privkey,bits256 otherpubkey,uint32_t timestamp,uint8_t *data,int32_t datalen);
+uint64_t acct777_validate(struct acct777_sig *sig,uint32_t timestamp,uint8_t *data,int32_t datalen);
+uint64_t acct777_signtx(struct acct777_sig *sig,bits256 privkey,uint32_t timestamp,uint8_t *data,int32_t datalen);
+uint64_t acct777_swaptx(bits256 privkey,struct acct777_sig *sig,uint32_t timestamp,uint8_t *data,int32_t datalen);
+
 #endif

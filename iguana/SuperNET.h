@@ -37,6 +37,7 @@
 #define SUPERNET_ISMINE 1
 #define SUPERNET_MAXDELAY (1000 * 3600)
 #define SUPERNET_APIVERSION 0
+#define SUPERNET_MAXTIMEDIFF 10
 
 /*#define LB_OFFSET 1
 #define PUBGLOBALS_OFFSET 2
@@ -116,10 +117,10 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remote
 char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,char *hexmessage,int32_t maxdelay,int32_t broadcastflag);
 uint16_t SuperNET_API2num(char *agent,char *method);
 int32_t SuperNET_num2API(char *agent,char *method,uint16_t num);
-bits256 SuperNET_sharedseed(struct supernet_info *myinfo,bits256 otherpub);
-cJSON *SuperNET_bits2json(bits256 sharedseed,uint8_t *serialized,uint8_t *space,int32_t datalen,int32_t iscompressed);
-int32_t SuperNET_json2bits(char *myipaddr,bits256 sessionpriv,bits256 sessionpub,bits256 seed2,uint8_t *serialized,int32_t *complenp,uint8_t *compressed,int32_t maxsize,char *destip,bits256 destpub,cJSON *json);
+bits256 SuperNET_sharedseed(bits256 privkey,bits256 otherpub);
 
+int32_t SuperNET_str2hex(uint8_t *hex,char *str);
+void SuperNET_hex2str(char *str,uint8_t *hex,int32_t len);
 
 #endif
 

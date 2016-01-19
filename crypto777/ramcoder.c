@@ -19,11 +19,9 @@
 #ifndef crypto777_ramcoder_h
 #define crypto777_ramcoder_h
 #include <stdio.h>
+#include "../crypto777/OS_portable.h"
 #include "../includes/curve25519.h"
 
-struct huffstream { uint8_t *ptr,*buf; uint32_t bitoffset,maski,endpos; uint32_t allocsize:31,allocated:1; };
-typedef struct huffstream HUFF;
-#define hrewind(hp) hseek(hp,0,SEEK_SET)
 
 #define RAMMASK_BIT(x) ((uint16_t)(1 << ((8 * sizeof(uint16_t)) - (1 + (x)))))
 #define RAMCODER_FINALIZE 1
@@ -33,13 +31,6 @@ typedef struct huffstream HUFF;
 #define SETBIT(bits,bitoffset) (((uint8_t *)bits)[(bitoffset) >> 3] |= (1 << ((bitoffset) & 7)))
 #define GETBIT(bits,bitoffset) (((uint8_t *)bits)[(bitoffset) >> 3] & (1 << ((bitoffset) & 7)))
 
-struct ramcoder
-{
-    uint32_t cumulativeProb;
-    uint16_t lower,upper,code,underflowBits,lastsymbol,upper_lastsymbol,counter;
-    uint64_t *histo;
-    uint16_t ranges[];
-};
 int32_t ramcoder_decode(struct ramcoder *coder,int32_t updateprobs,HUFF *hp);
 int32_t ramcoder_decoder(struct ramcoder *coder,int32_t updateprobs,uint8_t *buf,int32_t maxlen,HUFF *hp,bits256 *seed);
 #define ramcoder_encode(val,coder,hp) ramcoder_update(val,coder,1,RAMCODER_PUTBITS,hp)

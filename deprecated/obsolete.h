@@ -12010,5 +12010,103 @@ void iguana_dedicatedrecv(void *arg)
              }
              if ( flag != 0 )
              free(hexstr);*/
+                //char str[65],str2[65],str3[65],str4[65];
+                //int32_t i; for (i=0; i<len; i++)
+                //    printf("%02x ",serialized[i]);
+                //printf("ORIG SERIALIZED.%d\n",len);
+                //printf("mypriv.%s destpub.%s seed.%s seed2.%s -> crc.%08x\n",bits256_str(str,myinfo->privkey),bits256_str(str2,destpub),bits256_str(str3,seed),bits256_str(str4,seed2),crc);
+                numbits = ramcoder_compress(&compressed[3],maxsize-3,serialized,len,seed2);
+                compressed[0] = (numbits & 0xff);
+                compressed[1] = ((numbits>>8) & 0xff);
+                compressed[2] = ((numbits>>16) & 0xff);
+                //printf("strlen.%d len.%d -> %s numbits.%d\n",(int32_t)strlen(jprint(json,0)),len,bits256_str(str,seed2),(int32_t)hconv_bitlen(numbits));
+                if ( 0 )
+                {
+                    uint8_t space[9999];
+                    int32_t testlen = ramcoder_decompress(space,IGUANA_MAXPACKETSIZE,&compressed[3],numbits,seed2);
+                    printf("len.%d -> testlen.%d cmp.%d\n",len,testlen,memcmp(space,serialized,testlen));
+                    int32_t i; for (i=0; i<3+hconv_bitlen(numbits); i++)
+                        printf("%02x ",compressed[i]);
+                        printf("complen.%d\n",i+3);
+                        }
+        *complenp = (int32_t)hconv_bitlen(numbits) + 3;
+        
+        cJSON *SuperNET_bits2json(bits256 senderpub,bits256 sharedseed,uint8_t *serialized,uint8_t *space,int32_t datalen,int32_t iscompressed)
+        {
+            char destip[64],method[64],checkstr[5],agent[64],myipaddr[64],str[65],*hexmsg; uint64_t tag;
+            uint16_t apinum,checkc; uint32_t destipbits,myipbits; bits256 seed2;
+            int32_t numbits,dlen,iter,flag=0,len = 0; uint32_t crc,checkcrc; cJSON *json = cJSON_CreateObject();
+            //int32_t i; for (i=0; i<datalen; i++)
+            //    printf("%02x ",serialized[i]);
+            printf("bits[%d] iscompressed.%d sender.%llx shared.%llx\n",datalen,iscompressed,(long long)senderpub.txid,(long long)sharedseed.txid);
+            if ( iscompressed != 0 )
+            {
+                numbits = serialized[2];
+                numbits = (numbits << 8) + serialized[1];
+                numbits = (numbits << 8) + serialized[0];
+                if ( hconv_bitlen(numbits)+3 == datalen || hconv_bitlen(numbits)+3 == datalen-1 )
+                {
+                    memset(seed2.bytes,0,sizeof(seed2));
+                    for (iter=0; iter<2; iter++)
+                    {
+                        //char str[65]; printf("compressed len.%d seed2.(%s)\n",numbits,bits256_str(str,seed2));
+                        dlen = ramcoder_decompress(space,IGUANA_MAXPACKETSIZE,&serialized[3],numbits,seed2);
+                        serialized = space;
+                        if ( dlen > sizeof(crc) && dlen < IGUANA_MAXPACKETSIZE )
+                        {
+                            crc = calc_crc32(0,&serialized[sizeof(crc)],dlen - sizeof(crc));
+                            iguana_rwnum(0,serialized,sizeof(checkcrc),&checkcrc);
+                            //int32_t i; for (i=0; i<datalen; i++)
+                            //    printf("%02x ",serialized[i]);
+                            printf("bits[%d] numbits.%d after decompress crc.(%08x vs %08x) <<<<<< iter.%d %llx shared.%llx\n",datalen,numbits,crc,checkcrc,iter,(long long)seed2.txid,(long long)sharedseed.txid);
+                            if ( crc == checkcrc )
+                            {
+                                flag = 1;
+                                break;
+                            }
+                        }
+                        seed2 = sharedseed;
+                    }
+                }
+                else
+                {
+                    printf("numbits.%d + 3 -> %d != datalen.%d\n",numbits,(int32_t)hconv_bitlen(numbits)+3,datalen);
+                    return(0);
+                }
+            }
+            if ( flag == 0 )
+                return(0);
+            len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&crc);
+            len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&destipbits);
+            len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&myipbits);
+            len += iguana_rwbignum(0,&serialized[len],sizeof(bits256),senderpub.bytes);
+            len += iguana_rwnum(0,&serialized[len],sizeof(tag),&tag);
+            len += iguana_rwnum(0,&serialized[len],sizeof(checkc),&checkc);
+            len += iguana_rwnum(0,&serialized[len],sizeof(apinum),&apinum);
+            //printf("-> dest.%x myip.%x senderpub.%llx tag.%llu\n",destipbits,myipbits,(long long)senderpub.txid,(long long)tag);
+            if ( SuperNET_num2API(agent,method,apinum) >= 0 )
+            {
+                jaddstr(json,"agent",agent);
+                jaddstr(json,"method",method);
+                expand_ipbits(destip,destipbits), jaddstr(json,"yourip",destip);
+                expand_ipbits(myipaddr,myipbits), jaddstr(json,"myip",myipaddr);
+                jaddstr(json,"mypub",bits256_str(str,senderpub));
+                jadd64bits(json,"tag",tag);
+                init_hexbytes_noT(checkstr,(void *)&checkc,sizeof(checkc));
+                jaddstr(json,"check",checkstr);
+                if ( len < datalen )
+                {
+                    printf("len %d vs %d datalen\n",len,datalen);
+                    hexmsg = malloc(((datalen - len)<<1) + 1);
+                    init_hexbytes_noT(hexmsg,&serialized[len],datalen - len);
+                    printf("hex.(%s)\n",hexmsg);
+                    jaddstr(json,"message",hexmsg);
+                    free(hexmsg);
+                }
+                //printf("bits2json.(%s)\n",jprint(json,0));
+                return(json);
+            } else printf("cant decode apinum.%d (%d.%d)\n",apinum,apinum>>5,apinum%0x1f);
+            return(0);
+        }
 
 #endif

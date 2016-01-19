@@ -82,6 +82,19 @@ int32_t SuperNET_num2API(char *agent,char *method,uint16_t num)
     return(-1);
 }
 
+int32_t SuperNET_str2hex(uint8_t *hex,char *str)
+{
+    int32_t len;
+    len = (int32_t)strlen(str)+1;
+    decode_hex(hex,len,str);
+    return(len);
+}
+
+void SuperNET_hex2str(char *str,uint8_t *hex,int32_t len)
+{
+    init_hexbytes_noT(str,hex,len);
+}
+
 struct supernet_info *SuperNET_MYINFO(char *passphrase)
 {
     if ( passphrase == 0 || passphrase[0] == 0 )
@@ -258,7 +271,7 @@ void iguana_main(void *arg)
 {
     FILE *fp; cJSON *json; uint8_t *space,secretbuf[512]; uint32_t r; int64_t allocsize;
     char helperstr[64],fname[512],*wallet2,*wallet2str,*tmpstr,*confstr,*helperargs,*ipaddr,*coinargs=0,*secret,*jsonstr = arg;
-    int32_t i,len,flag,c,datalen; bits256 acct,seed,checkhash,wallethash,wallet2shared,wallet2priv,wallet2pub;
+    int32_t i,len,flag,c; bits256 acct,seed,checkhash,wallethash,walletpub,wallet2shared,wallet2priv,wallet2pub;
     memset(&MYINFO,0,sizeof(MYINFO));
     mycalloc(0,0,0);
     iguana_initQ(&helperQ,"helperQ");
@@ -290,7 +303,7 @@ void iguana_main(void *arg)
             memcpy(wallethash.bytes,secretbuf,sizeof(wallethash));
             char str[65]; printf("wallethash.(%s)\n",bits256_str(str,wallethash));
         }
-        if ( (wallet2= jstr(json,"keyfile")) != 0 )
+        if ( (wallet2= jstr(json,"2fafile")) != 0 )
         {
             if ( (wallet2str= OS_filestr(&allocsize,wallet2)) != 0 )
             {
@@ -302,13 +315,16 @@ void iguana_main(void *arg)
                 wallet2pub = curve25519(wallet2priv,curve25519_basepoint9());
                 seed = curve25519_shared(wallethash,wallet2pub);
                 vcalc_sha256(0,wallet2shared.bytes,seed.bytes,sizeof(bits256));
-                char str[65],str2[65]; printf("have keyfile.(%s) -> pub.%s shared.%s\n",wallet2,bits256_str(str,wallet2pub),bits256_str(str2,wallet2shared));
+                char str[65],str2[65]; printf("have 2fafile.(%s) -> pub.%s shared.%s\n",wallet2,bits256_str(str,wallet2pub),bits256_str(str2,wallet2shared));
                 free(wallet2str);
             }
         }
         if ( jobj(json,"coins") != 0 )
             coinargs = jsonstr;
     }
+    walletpub = curve25519(wallethash,curve25519_basepoint9());
+    seed = curve25519_shared(wallethash,wallet2pub);
+    vcalc_sha256(0,wallet2shared.bytes,seed.bytes,sizeof(bits256));
     OS_randombytes(MYINFO.persistent_priv.bytes,sizeof(MYINFO.privkey));
     MYINFO.myaddr.persistent = curve25519(MYINFO.persistent_priv,curve25519_basepoint9());
     vcalc_sha256(0,acct.bytes,(void *)MYINFO.myaddr.persistent.bytes,sizeof(bits256));
@@ -320,11 +336,11 @@ void iguana_main(void *arg)
     printf("check conf.(%s)\n",fname);
     if ( (confstr= OS_filestr(&allocsize,fname)) != 0 )
     {
-        datalen = (int32_t)strlen(confstr);
         if ( bits256_nonz(wallet2shared) > 0 )
         {
             space = malloc(IGUANA_MAXPACKETSIZE);
-            json = SuperNET_bits2json(wallet2shared,(uint8_t *)confstr,space,datalen,1);
+            json = cJSON_Parse(confstr);
+            //json = SuperNET_bits2json(walletpub,wallet2shared,(uint8_t *)confstr,space,(int32_t)allocsize,1);
             free(space);
             printf("decoded.(%s)\n",jprint(json,0));
         } else json = cJSON_Parse(confstr), printf("CONF.(%s)\n",confstr);
@@ -398,15 +414,16 @@ void iguana_main(void *arg)
         if ( strcmp("confs/iguana.conf",fname) != 0 )
         {
             //sprintf(fname,"confs/iguana.%llu",(long long)wallet2shared.txid);
-            if ( SuperNET_json2bits(MYINFO.ipaddr,wallethash,curve25519(wallethash,curve25519_basepoint9()),wallet2shared,serialized,&complen,compressed,maxsize,MYINFO.ipaddr,wallet2pub,json) > 0 )
+            //if ( SuperNET_json2bits(MYINFO.ipaddr,wallethash,walletpub,wallet2shared,serialized,&complen,compressed,maxsize,MYINFO.ipaddr,wallet2pub,json) > 0 )
             {
+                complen = (int32_t)strlen(jprint(json,0));
                 printf("save (%s) <- %d\n",fname,complen);
                 if ( (fp= fopen(fname,"wb")) != 0 )
                 {
                     fwrite(compressed,1,complen,fp);
                     fclose(fp);
                 }
-            } else printf("error saving.(%s) json2bits.(%s)\n",fname,jprint(json,0));
+            }// else printf("error saving.(%s) json2bits.(%s)\n",fname,jprint(json,0));
         }
         else
         {

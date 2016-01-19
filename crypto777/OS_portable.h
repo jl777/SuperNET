@@ -49,10 +49,31 @@
 #include "../includes/uthash.h"
 #include "../includes/curve25519.h"
 #include "../includes/cJSON.h"
+#include "../includes/tweetnacl.h"
 
 #ifndef MAP_FILE
 #define MAP_FILE        0
 #endif
+
+struct huffstream { uint8_t *ptr,*buf; uint32_t bitoffset,maski,endpos; uint32_t allocsize:31,allocated:1; };
+typedef struct huffstream HUFF;
+
+struct ramcoder
+{
+    uint32_t cumulativeProb;
+    uint16_t lower,upper,code,underflowBits,lastsymbol,upper_lastsymbol,counter;
+    uint64_t *histo;
+    uint16_t ranges[];
+};
+
+#define hrewind(hp) hseek(hp,0,SEEK_SET)
+int32_t ramcoder_decoder(struct ramcoder *coder,int32_t updateprobs,uint8_t *buf,int32_t maxlen,HUFF *hp,bits256 *seed);
+int32_t ramcoder_encoder(struct ramcoder *coder,int32_t updateprobs,uint8_t *buf,int32_t len,HUFF *hp,uint64_t *histo,bits256 *seed);
+//int32_t init_ramcoder(struct ramcoder *coder,HUFF *hp,bits256 *seed);
+int32_t ramcoder_decompress(uint8_t *data,int32_t maxlen,uint8_t *bits,uint32_t numbits,bits256 seed);
+int32_t ramcoder_compress(uint8_t *bits,int32_t maxlen,uint8_t *data,int32_t datalen,bits256 seed);
+uint64_t hconv_bitlen(uint64_t bitlen);
+void _init_HUFF(HUFF *hp,int32_t allocsize,void *buf);
 
 #define SCRIPT_OPRETURN 0x6a
 #define GENESIS_ACCT "1739068987193023818"  // NXT-MRCC-2YLS-8M54-3CMAJ

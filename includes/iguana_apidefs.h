@@ -21,6 +21,9 @@
 #define IGUANA_CFUNC_SI(agent,name,str,val) char *agent ## _ ## name(IGUANA_ARGS,char *str,int32_t val)
 #define IGUANA_CFUNC_SII(agent,name,str,val,val2) char *agent ## _ ## name(IGUANA_ARGS,char *str,int32_t val,int32_t val2)
 #define IGUANA_CFUNC_HI(agent,name,hash,val) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,int32_t val)
+#define IGUANA_CFUNC_HS(agent,name,hash,str) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,char *str)
+#define IGUANA_CFUNC_HHS(agent,name,hash,hash2,str) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,bits256 hash2,char *str)
+#define IGUANA_CFUNC_HAS(agent,name,hash,array,str) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,cJSON *array,char *str)
 #define IGUANA_CFUNC_HII(agent,name,hash,val,val2) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,int32_t val,int32_t val2)
 #define IGUANA_CFUNC_D(agent,name,val) char *agent ## _ ## name(IGUANA_ARGS,double val)
 #define IGUANA_CFUNC_SSDIS(agent,name,str,str2,amount,val,str3) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,double amount,int32_t val,char *str3)
@@ -38,6 +41,8 @@
 #define STRING_AND_INT IGUANA_CFUNC_SI
 #define STRING_AND_TWOINTS IGUANA_CFUNC_SII
 #define HASH_AND_INT IGUANA_CFUNC_HI
+#define HASH_AND_STRING IGUANA_CFUNC_HS
+#define TWOHASHES_AND_STRING IGUANA_CFUNC_HHS
 #define HASH_AND_TWOINTS IGUANA_CFUNC_HII
 #define DOUBLE_ARG IGUANA_CFUNC_D
 #define STRING_AND_ARRAY IGUANA_CFUNC_SA
@@ -55,3 +60,4 @@
 #define TWOSTRINGS_AND_HASH IGUANA_CFUNC_SSH
 #define TWOSTRINGS_AND_HASH_AND_TWOINTS IGUANA_CFUNC_SSHII
 #define THREE_INTS IGUANA_CFUNC_III
+#define HASH_ARRAY_STRING IGUANA_CFUNC_HAS

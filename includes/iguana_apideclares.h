@@ -21,9 +21,8 @@ TWOSTRINGS_AND_HASH_AND_TWOINTS(SuperNET,DHT,message,destip,destpub,maxdelay,bro
 STRING_ARG(SuperNET,getpeers,activecoin);
 TWO_ARRAYS(SuperNET,mypeers,supernet,rawpeers);
 ZERO_ARGS(SuperNET,stop);
-
-// 1.    Line 48  - TWO_INTS(ramchain,listreceivedbyaddress,minconf,includeempty);   has only 2 arguments  but listreceivedbyaddress  call needs 3 arguments(int, bool, bool).
-// 2.    Line 80 - HASH_AND_INT(ramchain,listsinceblock,blockhash,target);  has only 2 arguments but it needs 3 arguments(string,int, bool).
+HASH_AND_STRING(SuperNET,sharepersistent,persistentpub,destip);
+HASH_ARRAY_STRING(SuperNET,layer,mypriv,otherpubs,str);
 
 STRING_ARG(iguana,peers,activecoin);
 STRING_AND_INT(iguana,maxpeers,activecoin,max);
@@ -49,7 +48,7 @@ ZERO_ARGS(ramchain,listlockunspent);
 ZERO_ARGS(ramchain,getrawchangeaddress);
 
 TWO_INTS(ramchain,listaccounts,minconf,includewatchonly);
-TWO_INTS(ramchain,listreceivedbyaddress,minconf,includeempty);
+THREE_INTS(ramchain,listreceivedbyaddress,minconf,includeempty,flag);
 TWOINTS_AND_ARRAY(ramchain,listunspent,minconf,maxconf,array);
 
 STRING_ARG(ramchain,dumpwallet,filename);
@@ -81,7 +80,7 @@ STRING_AND_INT(ramchain,walletpassphrase,passphrase,timeout);
 STRING_AND_INT(ramchain,getreceivedbyaddress,address,minconf);
 STRING_AND_INT(ramchain,sendrawtransaction,rawtx,allowhighfees);
 
-HASH_AND_INT(ramchain,listsinceblock,blockhash,target);
+HASH_AND_TWOINTS(ramchain,listsinceblock,blockhash,target,flag);
 HASH_AND_INT(ramchain,getrawtransaction,txid,verbose);
 
 STRING_AND_THREEINTS(ramchain,listtransactions,account,count,skip,includewatchonly);

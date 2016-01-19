@@ -37,7 +37,7 @@ ZERO_ARGS(ramchain,getblockcount)
     return(jprint(retjson,1));
 }
 
-HASH_AND_INT(ramchain,listsinceblock,blockhash,target)
+HASH_AND_TWOINTS(ramchain,listsinceblock,blockhash,target,flag)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
@@ -154,7 +154,7 @@ STRING_AND_INT(ramchain,getreceivedbyaddress,address,minconf)
     return(jprint(retjson,1));
 }
 
-TWO_INTS(ramchain,listreceivedbyaddress,minconf,includeempty)
+THREE_INTS(ramchain,listreceivedbyaddress,minconf,includeempty,flag)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
