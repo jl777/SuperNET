@@ -419,7 +419,9 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
         space = malloc(sizeof(struct iguana_msghdr) + IGUANA_MAXPACKETSIZE);
         datalen = SuperNET_json2bits(myinfo->ipaddr,myinfo->persistent_priv,myinfo->myaddr.persistent,&serialized[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE,addr->ipaddr,addr->pubkey,json);
         printf("SUPERSEND.(%s) -> (%s) delaymillis.%d datalen.%d\n",jsonstr,addr->ipaddr,delaymillis,datalen);
-        qlen = SuperNET_sendmsg(myinfo,coin,addr,addr->pubkey,myinfo->privkey,myinfo->myaddr.pubkey,serialized,datalen,space,delaymillis);
+        if ( 1 )
+            qlen = iguana_queue_send(coin,addr,delaymillis,serialized,"SuperNET",datalen,0,0);
+        else qlen = SuperNET_sendmsg(myinfo,coin,addr,addr->pubkey,myinfo->privkey,myinfo->myaddr.pubkey,serialized,datalen,space,delaymillis);
         free(serialized);
         free(space);
     } else printf("cant parse.(%s)\n",jsonstr);
