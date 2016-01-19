@@ -652,7 +652,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
         //printf("p2pret.(%s)\n",retstr);
         *delaymillisp = SuperNET_delaymillis(myinfo,maxdelay);
         free_json(json);
-    } else memset(addr->sharedseed.bytes,0,sizeof(addr->sharedseed)), printf("decode error clear %s shared seed\n",addr->ipaddr);
+    } 
     if ( space != 0 )
         free(space);
     return(retstr);
