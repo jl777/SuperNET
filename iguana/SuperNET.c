@@ -137,7 +137,7 @@ int32_t SuperNET_serialize(int32_t reverse,bits256 *senderpubp,uint64_t *senderb
 uint8_t *SuperNET_encode(int32_t *cipherlenp,void *str,int32_t len,bits256 destpubkey,bits256 myprivkey,bits256 mypubkey,uint64_t senderbits,bits256 sig,uint32_t timestamp)
 {
     uint8_t *buf,*nonce,*origcipher,*cipher,*ptr; uint64_t destbits; int32_t totalsize,hdrlen;
-    long extra = crypto_box_NONCEBYTES + crypto_box_ZEROBYTES + sizeof(sig) + sizeof(struct iguana_msghdr);
+    long extra = crypto_box_NONCEBYTES + crypto_box_ZEROBYTES + sizeof(sig);
     destbits = (memcmp(destpubkey.bytes,GENESIS_PUBKEY.bytes,sizeof(destpubkey)) != 0) ? acct777_nxt64bits(destpubkey) : 0;
     totalsize = (int32_t)(len + sizeof(mypubkey) + sizeof(senderbits) + sizeof(destbits) + sizeof(timestamp));
     *cipherlenp = 0;
@@ -146,9 +146,9 @@ uint8_t *SuperNET_encode(int32_t *cipherlenp,void *str,int32_t len,bits256 destp
         printf("SuperNET_encode: outof mem for buf[%ld]\n",totalsize+extra);
         return(0);
     }
-    if ( (cipher= calloc(1,totalsize + extra)) == 0 )
+    if ( (cipher= calloc(1,totalsize + extra + sizeof(struct iguana_msghdr))) == 0 )
     {
-        printf("SuperNET_encode: outof mem for cipher[%ld]\n",totalsize+extra);
+        printf("SuperNET_encode: outof mem for cipher[%ld]\n",totalsize + extra + sizeof(struct iguana_msghdr));
         free(buf);
         return(0);
     }
@@ -227,7 +227,7 @@ int32_t SuperNET_decrypt(bits256 *senderpubp,uint64_t *senderbitsp,uint32_t *tim
             printf("diff.%d > %d %u vs %u\n",diff,SUPERNET_MAXTIMEDIFF,*timestampp,(uint32_t)time(NULL));
         else
         {
-            if ( 1 )
+            if ( 0 )
             {
                 memset(seed.bytes,0,sizeof(seed));
                 //for (i='0'; i<='9'; i++)
@@ -275,7 +275,7 @@ int32_t SuperNET_sendmsg(struct supernet_info *myinfo,struct iguana_info *coin,s
     if ( mypub.txid == 0 || mypriv.txid == 0 )
         mypriv = curve25519_keypair(&mypub), sig.timestamp = (uint32_t)time(NULL);
     else acct777_sign(&sig,mypriv,destpub,(uint32_t)time(NULL),msg,len);
-    if ( 1 )
+    if ( 0 )
     {
         memset(seed.bytes,0,sizeof(seed));
         //seed = addr->sharedseed;
@@ -419,7 +419,7 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
         space = malloc(sizeof(struct iguana_msghdr) + IGUANA_MAXPACKETSIZE);
         datalen = SuperNET_json2bits(myinfo->ipaddr,myinfo->persistent_priv,myinfo->myaddr.persistent,&serialized[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE,addr->ipaddr,addr->pubkey,json);
         printf("SUPERSEND.(%s) -> (%s) delaymillis.%d datalen.%d\n",jsonstr,addr->ipaddr,delaymillis,datalen);
-        if ( 1 )
+        if ( 0 )
             qlen = iguana_queue_send(coin,addr,delaymillis,serialized,"SuperNET",datalen,0,0);
         else qlen = SuperNET_sendmsg(myinfo,coin,addr,addr->pubkey,myinfo->privkey,myinfo->myaddr.pubkey,serialized,datalen,space,delaymillis);
         free(serialized);
