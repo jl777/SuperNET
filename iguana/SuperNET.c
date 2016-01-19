@@ -346,6 +346,9 @@ int32_t SuperNET_json2bits(char *myipaddr,bits256 persistent_priv,bits256 persis
     }
     crc = calc_crc32(0,&serialized[sizeof(crc)],len - sizeof(crc));
     iguana_rwnum(1,serialized,sizeof(crc),&crc);
+    int32_t i; for (i=0; i<len; i++)
+        printf("%02x ",serialized[i]);
+    printf("SEND[%d]\n",len);
     return(len);
 }
 
@@ -378,6 +381,9 @@ cJSON *SuperNET_bits2json(bits256 mypriv,bits256 mypub,struct iguana_peer *addr,
     len += iguana_rwnum(0,&serialized[len],sizeof(checkc),&checkc);
     len += iguana_rwnum(0,&serialized[len],sizeof(apinum),&apinum);
     //printf("-> dest.%x myip.%x senderpub.%llx tag.%llu\n",destipbits,myipbits,(long long)senderpub.txid,(long long)tag);
+    int32_t i; for (i=0; i<len; i++)
+        printf("%02x ",serialized[i]);
+    printf("RECV[%d]\n",len);
     if ( SuperNET_num2API(agent,method,apinum) >= 0 )
     {
         jaddstr(json,"agent",agent);
