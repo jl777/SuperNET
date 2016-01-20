@@ -31,7 +31,7 @@
 #define nn_errstr() nn_strerror(nn_errno())
 #define MAX_SERVERNAME 128
 #define SUPERNET_MAXRECVBUF (1024 * 1024 * 16)
-#define SUPERNET_PINGGAP 0
+#define SUPERNET_PINGGAP 6
 
 #define SUPERNET_FORWARD 2
 #define SUPERNET_ISMINE 1
