@@ -315,8 +315,8 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
     if ( (json= cJSON_Parse(jsonstr)) != 0 )
     {
         serialized = malloc(sizeof(struct iguana_msghdr) + IGUANA_MAXPACKETSIZE);
-        privkey = myinfo->privkey;
-        if ( addr->validpub > 3 && addr->othervalid > 3 )
+        privkey = GENESIS_PRIVKEY;//myinfo->privkey;
+        if ( addr->validpub > 1 && addr->othervalid > 3 )
             destpub = addr->pubkey;
         else privkey = GENESIS_PRIVKEY, destpub = GENESIS_PUBKEY;
         if ( (datalen= SuperNET_json2bits(myinfo->ipaddr,myinfo->privkey,myinfo->myaddr.pubkey,&serialized[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE,addr->ipaddr,json,addr->pubkey,addr->validpub)) > 0 )
@@ -539,16 +539,19 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
         //int32_t i; for (i=0; i<datalen; i++)
         //    printf("%02x ",data[i]);
         //printf("DECRYPT %d\n",datalen);
-        if ( addr->validpub > 3 && addr->othervalid > 3 )
+        if ( addr->validpub > 1 && addr->othervalid > 3 )
         {
-            privkey = myinfo->privkey;
+            privkey = GENESIS_PRIVKEY;//myinfo->privkey;
             senderpub = addr->pubkey;
             //memset(senderpub.bytes,0,sizeof(senderpub));
             printf("decrypt with priv.%llx pub.%llx\n",(long long)privkey.txid,(long long)senderpub.txid);
         } else privkey = GENESIS_PRIVKEY, senderpub = GENESIS_PUBKEY;
         if ( (msgbits= SuperNET_deciphercalc(&ptr,&msglen,privkey,senderpub,data,datalen,space,sizeof(space))) == 0 )
         {
-            memset(addr->pubkey.bytes,0,sizeof(addr->pubkey));
+            int32_t i; for (i=0; i<datalen; i++)
+                printf("%02x ",data[i]);
+            printf("error decryptint %d\n",datalen);
+            //memset(addr->pubkey.bytes,0,sizeof(addr->pubkey));
             addr->validpub = addr->othervalid = 0;
             printf("couldnt decrypt\n");
             return(clonestr("{\"error\":\"couldnt decrypt p2p packet\"}"));
