@@ -226,7 +226,7 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remote
 
 void iguana_exit()
 {
-    int32_t i,j,iter; char *stopstr = "{\"agent\":\"SuperNET\",\"method\":\"stop\"}";
+    int32_t i,j,iter; char *stopstr = SUPERNET_STOPSTR;
     printf("start EXIT\n");
     for (iter=0; iter<3; iter++)
     {

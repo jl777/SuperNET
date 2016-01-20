@@ -21,6 +21,7 @@
 #include "../crypto777/nanosrc/nn.h"
 
 #define SUPERNET_GETPEERSTR "{\"agent\":\"SuperNET\",\"method\":\"getpeers\",\"plaintext\":1}"
+#define SUPERNET_STOPSTR "{\"agent\":\"SuperNET\",\"method\":\"stop\",\"plaintext\":1}"
 
 #define SUPERNET_LBPORT 7770
 #define SUPERNET_PUBPORT 7771

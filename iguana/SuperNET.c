@@ -94,7 +94,7 @@ void SuperNET_myipaddr(struct supernet_info *myinfo,struct iguana_info *coin,str
         expand_ipbits(myinfo->ipaddr,myinfo->myaddr.selfipbits);
         vcalc_sha256(0,myinfo->myaddr.iphash.bytes,(uint8_t *)&myinfo->myaddr.selfipbits,sizeof(myinfo->myaddr.selfipbits));
     }
-    printf("myipaddr.%s self.%x your.%x\n",myinfo->ipaddr,myinfo->myaddr.selfipbits,myinfo->myaddr.myipbits);
+    //printf("myipaddr.%s self.%x your.%x\n",myinfo->ipaddr,myinfo->myaddr.selfipbits,myinfo->myaddr.myipbits);
 }
 
 int32_t _SuperNET_cipher(uint8_t nonce[crypto_box_NONCEBYTES],uint8_t *cipher,uint8_t *message,int32_t len,bits256 destpub,bits256 srcpriv,uint8_t *buf)
@@ -393,11 +393,36 @@ int32_t DHT_dist(bits256 desthash,bits256 hash)
     return(dist*0);
 }
 
+struct iguana_peer *iguana_peerfind(struct supernet_info *myinfo,struct iguana_info **coinp,bits256 routehash)
+{
+    int32_t i,j; struct iguana_peer *addr;
+    *coinp = 0;
+    for (i=0; i<IGUANA_MAXCOINS; i++)
+    {
+        if ( Coins[i] != 0 )
+        {
+            for (j=0; j<IGUANA_MAXPEERS; j++)
+            {
+                addr = &Coins[i]->peers.active[j];
+                if ( addr->usock >= 0 )
+                {
+                    if ( memcmp(addr->iphash.bytes,routehash.bytes,sizeof(addr->iphash)) == 0 )
+                    {
+                        *coinp = Coins[i];
+                        return(addr);
+                    }
+                }
+            }
+        }
+    }
+    return(0);
+}
+
 char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,char *hexmsg,int32_t maxdelay,int32_t broadcastflag)
 {
     static int lastpurge; static uint64_t Packetcache[1024];
-    bits256 packethash; char retbuf[512]; int32_t mydist,i,j,datalen,firstz,iter,n = 0; char *jsonstr=0;
-    struct iguana_peer *addr; cJSON *json;
+    bits256 packethash; int32_t i,j,datalen,firstz; char *jsonstr=0;
+    struct iguana_peer *addr; cJSON *json; struct iguana_info *coin;
     if ( myinfo == 0 )
         return(clonestr("{\"error\":\"no supernet_info\"}"));
     datalen = (int32_t)strlen(hexmsg) + 1;
@@ -405,6 +430,8 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,char *hexm
     jaddstr(json,"agent","SuperNET");
     jaddstr(json,"method","DHT");
     jaddstr(json,"message",hexmsg);
+    if ( broadcastflag > 0 )
+        jaddstr(json,"broadcast",broadcastflag-1);
     jsonstr = jprint(json,1);
     vcalc_sha256(0,packethash.bytes,(void *)hexmsg,datalen);
     firstz = -1;
@@ -429,8 +456,7 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,char *hexm
         if ( lastpurge >= sizeof(Packetcache)/sizeof(*Packetcache) )
             lastpurge = 0;
     }
-    mydist = DHT_dist(packethash,myinfo->myaddr.iphash);
-    for (iter=broadcastflag!=0; iter<2; iter++)
+    if ( broadcastflag != 0 )
     {
         for (i=0; i<IGUANA_MAXCOINS; i++)
         {
@@ -440,32 +466,16 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,char *hexm
                 {
                     addr = &Coins[i]->peers.active[j];
                     if ( addr->usock >= 0 )
-                    {
-                        if ( iter == 0 && memcmp(addr->iphash.bytes,routehash.bytes,sizeof(addr->iphash)) == 0 )
-                        {
-                            printf("DHT send\n");
-                            iguana_send_supernet(Coins[i],addr,jsonstr,maxdelay==0?0:(rand()%maxdelay));
-                            return(clonestr("{\"result\":\"packet sent directly to destip\"}"));
-                        }
-                        else if ( iter == 1 )
-                        {
-                            if ( DHT_dist(packethash,addr->iphash) <= mydist )
-                            {
-                                iguana_send_supernet(Coins[i],addr,jsonstr,maxdelay==0?0:(rand()%maxdelay));
-                                n++;
-                            }
-                        }
-                    }
+                        iguana_send_supernet(Coins[i],addr,jsonstr,maxdelay==0?0:(rand()%maxdelay));
                 }
             }
         }
+        return(clonestr("{\"result\":\"packet sent to all peers\"}"));
     }
-    if ( jsonstr != 0 )
-        free(jsonstr);
-    if ( n > 0 )
-        sprintf(retbuf,"{\"result\":\"packet forwarded to superDHT\",\"branches\":%d}",n);
-    else sprintf(retbuf,"{\"error\":\"no nodes to forward packet to\"}");
-    return(clonestr(retbuf));
+    if ( (addr= iguana_peerfind(myinfo,&coin,routehash)) == 0 )
+        return(clonestr("{\"error\":\"no route found\"}"));
+    iguana_send_supernet(coin,addr,jsonstr,maxdelay==0?0:(rand()%maxdelay));
+    return(clonestr("{\"result\":\"packet sent directly\"}"));
 }
 
 char *SuperNET_DHTencode(struct supernet_info *myinfo,char *destip,bits256 destpub,char *hexmsg,int32_t maxdelay,int32_t broadcastflag)
@@ -583,13 +593,15 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
         {
             if ( (msgbits= SuperNET_deciphercalc(&ptr,&msglen,GENESIS_PRIVKEY,GENESIS_PUBKEY,data+offset,datalen-offset,space,sizeof(space))) == 0 )
             {
-                int32_t i; for (i=0; i<datalen; i++)
-                    printf("%02x ",data[i]);
-                printf("error decrypting %d from %s\n",datalen,addr->ipaddr);
-                addr->validpub = 0;
-                //return(clonestr("{\"error\":\"couldnt decrypt p2p packet\"}"));
-                return(0);
-            } else printf("GENESIS recv\n");
+                if ( (msgbits= SuperNET_deciphercalc(&ptr,&msglen,GENESIS_PRIVKEY,senderpub,data+offset,datalen-offset,space,sizeof(space))) == 0 )
+                {
+                    int32_t i; for (i=0; i<datalen; i++)
+                        printf("%02x ",data[i]);
+                    printf("error decrypting %d from %s\n",datalen,addr->ipaddr);
+                    addr->validpub = 0;
+                    return(0);
+                } else { char str[65]; printf("GENESIS recv %s\n",bits256_str(str,senderpub)); }
+            } else printf("GENESIS recv GENESIS\n");
         } else printf("decrypted mypriv.%llx senderpub.%llx\n",(long long)privkey.txid,(long long)senderpub.txid);
         //for (i=0; i<msglen; i++)
         //    printf("%02x ",msgbits[i]);
@@ -609,10 +621,6 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
             else addr->validpub--;
             printf("validpub.%d: %x vs %x shared.%llx\n",addr->validpub,checkc,othercheckc,(long long)addr->sharedseed.txid);
         }
-        /*if ( addr->validpub > 3 && bits256_nonz(addr->sharedseed) == 0 )
-            addr->sharedseed = SuperNET_sharedseed(myinfo->privkey,senderpub);
-        else if ( addr->validpub < -2 )
-            memset(addr->sharedseed.bytes,0,sizeof(addr->sharedseed));*/
         maxdelay = juint(json,"maxdelay");
         printf("GOT >>>>>>>> SUPERNET P2P.(%s) from.%s valid.%d:%d\n",jprint(json,0),coin->symbol,addr->validpub,addr->othervalid);
         if ( (myipaddr= jstr(json,"yourip")) != 0 )
