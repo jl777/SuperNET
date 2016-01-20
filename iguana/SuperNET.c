@@ -541,8 +541,8 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
         //printf("DECRYPT %d\n",datalen);
         if ( addr->validpub > 3 && addr->othervalid > 3 )
         {
-            privkey = GENESIS_PRIVKEY;//myinfo->privkey;
-            senderpub = addr->pubkey;
+            privkey = myinfo->privkey;
+            memset(senderpub.bytes,0,sizeof(senderpub));//senderpub = addr->pubkey;
         } else privkey = GENESIS_PRIVKEY, senderpub = GENESIS_PUBKEY;
         if ( (msgbits= SuperNET_deciphercalc(&ptr,&msglen,privkey,senderpub,data,datalen,space,sizeof(space))) == 0 )
         {
