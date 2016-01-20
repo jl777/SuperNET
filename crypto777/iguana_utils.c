@@ -859,6 +859,10 @@ void calc_NXTaddr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 
 void calc_curve25519_str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 {
-    bits256 x = curve25519(*(bits256 *)msg,curve25519_basepoint9());
+    bits256 x,priv,pub;
+    if ( len != sizeof(bits256)*2 || is_hexstr((char *)msg,64) == 0 )
+        conv_NXTpassword(priv.bytes,pub.bytes,msg,len);
+    else priv = *(bits256 *)msg;
+    x = curve25519(priv,curve25519_basepoint9());
     init_hexbytes_noT(hexstr,x.bytes,sizeof(x));
 }

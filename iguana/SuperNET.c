@@ -976,6 +976,6 @@ THREE_STRINGS(SuperNET,announce,category,subcategory,message)
 
 THREE_STRINGS(SuperNET,survey,category,subcategory,message)
 {
-    return(clonestr("{\"result\":\"layer encrypt here\"}"));
+    return(clonestr("{\"result\":\"survey here\"}"));
 }
 #include "../includes/iguana_apiundefs.h"
