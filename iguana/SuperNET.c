@@ -315,7 +315,7 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
     if ( (json= cJSON_Parse(jsonstr)) != 0 )
     {
         serialized = malloc(sizeof(struct iguana_msghdr) + IGUANA_MAXPACKETSIZE);
-        if ( addr->validpub > 1 && addr->othervalid > 1 )
+        if ( addr->validpub > 3 && addr->othervalid > 3 )
         {
             privkey = myinfo->privkey;
             destpub = addr->pubkey;
@@ -540,7 +540,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
         //int32_t i; for (i=0; i<datalen; i++)
         //    printf("%02x ",data[i]);
         //printf("DECRYPT %d\n",datalen);
-        if ( addr->validpub > 1 && addr->othervalid > 1 )
+        if ( addr->validpub > 3 && addr->othervalid > 3 )
         {
             privkey = myinfo->privkey;
             senderpub = addr->pubkey;
