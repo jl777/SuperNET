@@ -118,13 +118,17 @@ uint8_t *_SuperNET_decipher(uint8_t nonce[crypto_box_NONCEBYTES],uint8_t *cipher
     return(0);
 }
 
-void *SuperNET_deciphercalc(int32_t *msglenp,bits256 privkey,bits256 srcpubkey,uint8_t *cipher,int32_t cipherlen,uint8_t *buf,int32_t bufsize)
+void *SuperNET_deciphercalc(void **ptrp,int32_t *msglenp,bits256 privkey,bits256 srcpubkey,uint8_t *cipher,int32_t cipherlen,uint8_t *buf,int32_t bufsize)
 {
-    uint8_t *origptr,*nonce,*message;
+    uint8_t *origptr,*nonce,*message; void *retptr;
     if ( bits256_nonz(privkey) == 0 )
         privkey = GENESIS_PRIVKEY;
+    *ptrp = 0;
     if ( cipherlen > bufsize )
+    {
         message = calloc(1,cipherlen);
+        *ptrp = (void *)message;
+    }
     else message = buf;
     origptr = cipher;
     if ( bits256_nonz(srcpubkey) == 0 )
@@ -137,7 +141,12 @@ void *SuperNET_deciphercalc(int32_t *msglenp,bits256 privkey,bits256 srcpubkey,u
     nonce = cipher;
     cipher += crypto_box_NONCEBYTES, cipherlen -= crypto_box_NONCEBYTES;
     *msglenp = cipherlen - crypto_box_ZEROBYTES;
-    return(_SuperNET_decipher(nonce,cipher,message,cipherlen,srcpubkey,privkey));
+    if ( (retptr= _SuperNET_decipher(nonce,cipher,message,cipherlen,srcpubkey,privkey)) == 0 )
+    {
+        *msglenp = -1;
+        free(*ptrp);
+    }
+    return(retptr);
 }
 
 uint8_t *SuperNET_ciphercalc(int32_t *cipherlenp,bits256 *privkeyp,bits256 *destpubkeyp,uint8_t *data,int32_t datalen,uint8_t *space2,int32_t space2size)
@@ -714,14 +723,14 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
 
 char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *delaymillisp,char *ipaddr,uint8_t *data,int32_t datalen,int32_t compressed)
 {
-    cJSON *json; char *myipaddr,*method,*retstr; int32_t maxdelay,msglen = datalen;
+    cJSON *json; char *myipaddr,*method,*retstr; void *ptr = 0; int32_t maxdelay,msglen = datalen;
     struct supernet_info *myinfo; uint8_t space[8192],*msgbits = 0; bits256 senderpub;
     myinfo = SuperNET_MYINFO(0);
     retstr = 0;
     *delaymillisp = 0;
     if ( compressed != 0 )
     {
-        if ( (msgbits= SuperNET_deciphercalc(&msglen,myinfo->privkey,myinfo->myaddr.pubkey,data,datalen,space,sizeof(space))) == 0 )
+        if ( (msgbits= SuperNET_deciphercalc(&ptr,&msglen,myinfo->privkey,myinfo->myaddr.pubkey,data,datalen,space,sizeof(space))) == 0 )
             return(clonestr("{\"error\":\"couldnt decrypt p2p packet\"}"));
     } else msgbits = data;
     if ( (json= SuperNET_bits2json(myinfo->privkey,addr,msgbits,msglen)) != 0 )
@@ -763,8 +772,8 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
             addr->pubkey = senderpub;
         free_json(json);
     } 
-    if ( &msgbits[-crypto_box_ZEROBYTES] != space )
-        free(&msgbits[-crypto_box_ZEROBYTES]);
+    if ( ptr != 0 )
+        free(ptr);
     return(retstr);
 }
 
@@ -860,21 +869,21 @@ ZERO_ARGS(SuperNET,keypair)
 
 TWOHASHES_AND_STRING(SuperNET,decipher,privkey,srcpubkey,cipherstr)
 {
-    int32_t cipherlen,msglen; char *retstr; cJSON *retjson; uint8_t *cipher,*message,space[8192];
+    int32_t cipherlen,msglen; char *retstr; cJSON *retjson; void *ptr = 0; uint8_t *cipher,*message,space[8192];
     cipherlen = (int32_t)strlen(cipherstr) >> 1;
     if ( cipherlen < crypto_box_NONCEBYTES )
         return(clonestr("{\"error\":\"cipher is too short\"}"));
     cipher = calloc(1,cipherlen);
     decode_hex(cipher,cipherlen,cipherstr);
-    if ( (message= SuperNET_deciphercalc(&msglen,privkey,srcpubkey,cipher,cipherlen,space,sizeof(space))) != 0 )
+    if ( (message= SuperNET_deciphercalc(&ptr,&msglen,privkey,srcpubkey,cipher,cipherlen,space,sizeof(space))) != 0 )
     {
         message[msglen] = 0;
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","deciphered message");
         jaddstr(retjson,"message",(char *)message);
         retstr = jprint(retjson,1);
-        if ( &message[-crypto_box_ZEROBYTES] != space )
-            free(&message[-crypto_box_ZEROBYTES]);
+        if ( ptr != 0 )
+            free(ptr);
     } else retstr = clonestr("{\"error\":\"couldnt decipher message\"}");
     return(retstr);
 }
