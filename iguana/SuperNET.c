@@ -315,7 +315,7 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
     if ( (json= cJSON_Parse(jsonstr)) != 0 )
     {
         serialized = malloc(sizeof(struct iguana_msghdr) + IGUANA_MAXPACKETSIZE);
-        if ( addr->validpub > 3 && addr->othervalid > 3 )
+        if ( addr->validpub > 1 && addr->othervalid > 1 )
         {
             privkey = myinfo->privkey;
             destpub = addr->pubkey;
@@ -330,6 +330,7 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
                 //int32_t i; for (i=0; i<datalen; i++)
                 //    printf("%02x ",serialized[sizeof(struct iguana_msghdr) + i]);
                 //printf("data.%d\n",datalen);
+                printf("encrypt with priv.%llx pub.%llx\n",(long long)privkey.txid,(long long)destpub.txid);
                 if ( (cipher= SuperNET_ciphercalc(&ptr,&cipherlen,&privkey,&destpub,&serialized[sizeof(struct iguana_msghdr)],datalen,space2,sizeof(space2))) != 0 )
                 {
                     //int32_t i; for (i=0; i<cipherlen; i++)
@@ -539,10 +540,11 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
         //int32_t i; for (i=0; i<datalen; i++)
         //    printf("%02x ",data[i]);
         //printf("DECRYPT %d\n",datalen);
-        if ( addr->validpub > 3 && addr->othervalid > 3 )
+        if ( addr->validpub > 1 && addr->othervalid > 1 )
         {
             privkey = myinfo->privkey;
             senderpub = addr->pubkey;
+            printf("decrypt with priv.%llx pub.%llx\n",(long long)privkey.txid,(long long)senderpub.txid);
         } else privkey = GENESIS_PRIVKEY, senderpub = GENESIS_PUBKEY;
         if ( (msgbits= SuperNET_deciphercalc(&ptr,&msglen,privkey,senderpub,data,datalen,space,sizeof(space))) == 0 )
         {
