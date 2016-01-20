@@ -62,7 +62,6 @@ INT_AND_ARRAY(pangea,action,senderind,args);
 INT_AND_ARRAY(pangea,showdown,senderind,args);
 INT_AND_ARRAY(pangea,handsummary,senderind,args);
 
-//U64_AND_ARRAY(pangea,turn,tableid,args);
 U64_AND_ARRAY(pangea,status,tableid,args);
 U64_AND_ARRAY(pangea,mode,tableid,args);
 U64_AND_ARRAY(pangea,buyin,tableid,args);

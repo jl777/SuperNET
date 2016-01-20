@@ -46,8 +46,9 @@ void pangeanet777_processmsg(uint64_t *destbitsp,bits256 *senderpubp,queue_t *Q,
             printf("hostnet777_processmsg cant alloc queueitem\n");
             return;
         }
-        if ( (len= SuperNET_decrypt(senderpubp,&senderbits,&timestamp,mypriv,mypub,&ptr[sizeof(struct queueitem)],len*4,msg,len)) > 1 && len < len*4 )
+        //if ( (len= SuperNET_decrypt(senderpubp,&senderbits,&timestamp,mypriv,mypub,&ptr[sizeof(struct queueitem)],len*4,msg,len)) > 1 && len < len*4 )
         {
+            senderbits = timestamp = len = 0;
             jsonstr = (char *)&ptr[sizeof(struct queueitem)];
             if ( (json= cJSON_Parse(jsonstr)) != 0 )
             {
@@ -65,7 +66,7 @@ void pangeanet777_processmsg(uint64_t *destbitsp,bits256 *senderpubp,queue_t *Q,
                 }
                 free_json(json);
             } else printf("parse error.(%s)\n",jsonstr);
-        } else printf("decrypt error len.%d origlen.%d\n",len,origlen);
+        } //else printf("decrypt error len.%d origlen.%d\n",len,origlen);
     } else printf("origlen.%d\n",origlen);
     if ( ptr != 0 )
         free(ptr);
@@ -283,7 +284,7 @@ int32_t SuperNET_sendmsg(struct supernet_info *myinfo,struct iguana_info *coin,s
 #define pangeanet777_blindPM(destpub,msg,len) SuperNET_sendmsg(myinfo,coin,addr,destpub,zeropoint,zeropoint,msg,len,space,0)
 void pangeanet777_msg(uint64_t destbits,bits256 destpub,union pangeanet777 *src,int32_t blindflag,char *jsonstr,int32_t len)
 {
-    static bits256 zeropoint;
+    /*static bits256 zeropoint;
     struct supernet_info *myinfo = SuperNET_MYINFO(0); uint8_t *space;
     struct iguana_peer *addr = 0; struct iguana_info *coin = iguana_coinfind("BTCD");
     if ( destbits == 0 )
@@ -306,7 +307,7 @@ void pangeanet777_msg(uint64_t destbits,bits256 destpub,union pangeanet777 *src,
         else pangeanet777_signedPM(destpub,src->client->H.privkey,src->client->H.pubkey,(uint8_t *)jsonstr,len);
         free(space);
     }
-    else queue_enqueue("loopback",&src->client->H.Q,queueitem(jsonstr),1);
+    else queue_enqueue("loopback",&src->client->H.Q,queueitem(jsonstr),1);*/
 }
 
 int32_t pangea_search(struct pangea_info *sp,uint64_t nxt64bits)
