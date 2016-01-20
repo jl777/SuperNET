@@ -12301,6 +12301,22 @@ void iguana_dedicatedrecv(void *arg)
                 }
                 return(qlen);
             }
-#endif
+#endif    /*memset(senderpub.bytes,0,sizeof(senderpub));
+if ( iscompressed != 0 )
+{
+if ( (len= SuperNET_decrypt(&senderpub,&senderbits,&timestamp,mypriv,mypub,space,IGUANA_MAXPACKETSIZE,serialized,datalen)) > 1 && len < IGUANA_MAXPACKETSIZE )
+{
+if ( memcmp(senderpub.bytes,addr->pubkey.bytes,sizeof(senderpub)) != 0 )
+{
+printf("got new pubkey.(%s) for %s\n",bits256_str(str,senderpub),addr->ipaddr);
+addr->pubkey = senderpub;
+addr->sharedseed = SuperNET_sharedseed(mypriv,senderpub);
+}
+serialized = space;
+datalen = len;
+len = 0;
+} else printf("decrypt error len.%d origlen.%d\n",len,datalen);
+}*/
+
 
 #endif

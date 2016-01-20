@@ -270,22 +270,6 @@ cJSON *SuperNET_bits2json(bits256 mypriv,struct iguana_peer *addr,uint8_t *seria
     char destip[64],method[64],checkstr[5],agent[64],myipaddr[64],str[65],*hexmsg; uint64_t tag;
     uint16_t apinum,checkc; uint32_t destipbits,myipbits; bits256 senderpub;
     int32_t len = 0; uint32_t crc; cJSON *json = cJSON_CreateObject();
-    /*memset(senderpub.bytes,0,sizeof(senderpub));
-    if ( iscompressed != 0 )
-    {
-        if ( (len= SuperNET_decrypt(&senderpub,&senderbits,&timestamp,mypriv,mypub,space,IGUANA_MAXPACKETSIZE,serialized,datalen)) > 1 && len < IGUANA_MAXPACKETSIZE )
-        {
-            if ( memcmp(senderpub.bytes,addr->pubkey.bytes,sizeof(senderpub)) != 0 )
-            {
-                printf("got new pubkey.(%s) for %s\n",bits256_str(str,senderpub),addr->ipaddr);
-                addr->pubkey = senderpub;
-                addr->sharedseed = SuperNET_sharedseed(mypriv,senderpub);
-            }
-            serialized = space;
-            datalen = len;
-            len = 0;
-        } else printf("decrypt error len.%d origlen.%d\n",len,datalen);
-    }*/
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&crc);
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&destipbits);
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&myipbits);
@@ -293,10 +277,6 @@ cJSON *SuperNET_bits2json(bits256 mypriv,struct iguana_peer *addr,uint8_t *seria
     len += iguana_rwnum(0,&serialized[len],sizeof(tag),&tag);
     //len += iguana_rwnum(0,&serialized[len],sizeof(checkc),&checkc);
     len += iguana_rwnum(0,&serialized[len],sizeof(apinum),&apinum);
-    //printf("-> dest.%x myip.%x senderpub.%llx tag.%llu\n",destipbits,myipbits,(long long)senderpub.txid,(long long)tag);
-    //int32_t i; for (i=0; i<len; i++)
-    //    printf("%02x ",serialized[i]);
-    //printf("RECV[%d]\n",len);
     if ( SuperNET_num2API(agent,method,apinum) >= 0 )
     {
         jaddstr(json,"agent",agent);
@@ -334,14 +314,15 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
         if ( (datalen= SuperNET_json2bits(myinfo->ipaddr,myinfo->persistent_priv,myinfo->myaddr.persistent,&serialized[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE,addr->ipaddr,json)) > 0 )
         {
             printf("SUPERSEND.(%s) -> (%s) delaymillis.%d datalen.%d\n",jsonstr,addr->ipaddr,delaymillis,datalen);
-            if ( memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(destpub)) == 0 )
+            if ( 0 && memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(destpub)) == 0 )
                 qlen = iguana_queue_send(coin,addr,delaymillis,serialized,"SuperNET",datalen,0,0);
             else
             {
                 int32_t i; for (i=0; i<datalen; i++)
                     printf("%02x ",serialized[i]);
                 printf("data.%d\n",datalen);
-                privkey = myinfo->privkey;
+                privkey = GENESIS_PRIVKEY;//myinfo->privkey;
+                destpub = GENESIS_PUBKEY;
                 if ( (cipher= SuperNET_ciphercalc(&ptr,&cipherlen,&privkey,&destpub,serialized,datalen,space2,sizeof(space2))) != 0 )
                 {
                     int32_t i; for (i=0; i<cipherlen; i++)
@@ -541,7 +522,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
 char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *delaymillisp,char *ipaddr,uint8_t *data,int32_t datalen,int32_t compressed)
 {
     cJSON *json; char *myipaddr,*method,*retstr; void *ptr = 0; int32_t maxdelay,msglen = datalen;
-    struct supernet_info *myinfo; uint8_t space[8192],*msgbits = 0; bits256 senderpub;
+    struct supernet_info *myinfo; uint8_t space[8192],*msgbits = 0; bits256 senderpub,privkey;
     myinfo = SuperNET_MYINFO(0);
     retstr = 0;
     *delaymillisp = 0;
@@ -550,7 +531,9 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
         int32_t i; for (i=0; i<datalen; i++)
             printf("%02x ",data[i]);
         printf("DECRYPT %d\n",datalen);
-        if ( (msgbits= SuperNET_deciphercalc(&ptr,&msglen,myinfo->privkey,addr->pubkey,data,datalen,space,sizeof(space))) == 0 )
+        privkey = GENESIS_PRIVKEY;
+        senderpub = GENESIS_PUBKEY;
+        if ( (msgbits= SuperNET_deciphercalc(&ptr,&msglen,privkey,senderpub,data,datalen,space,sizeof(space))) == 0 )
         {
             printf("couldnt decrypt\n");
             return(clonestr("{\"error\":\"couldnt decrypt p2p packet\"}"));
