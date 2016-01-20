@@ -347,7 +347,7 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
                     int32_t i; for (i=0; i<cipherlen; i++)
                         printf("%02x ",cipher[i]);
                     printf("cipherlen.%d\n",cipherlen);
-                    qlen = iguana_queue_send(coin,addr,delaymillis,cipher,"SuperNETb",cipherlen,0,0);
+                    qlen = iguana_queue_send(coin,addr,delaymillis,&cipher[-sizeof(struct iguana_msghdr)],"SuperNETb",cipherlen,0,0);
                     if ( ptr != 0 )
                         free(ptr);
                 }
@@ -586,8 +586,8 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
         {
             addr->dead = (uint32_t)time(NULL);
             free_json(json);
-            if ( &msgbits[-crypto_box_ZEROBYTES] != space )
-                free(&msgbits[-crypto_box_ZEROBYTES]);
+            if ( ptr != 0 )
+                free(ptr);
             return(clonestr("{\"result\":\"peer marked as dead\"}"));
         }
         retstr = SuperNET_JSON(myinfo,json,ipaddr);
