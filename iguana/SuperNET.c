@@ -149,9 +149,10 @@ void *SuperNET_deciphercalc(void **ptrp,int32_t *msglenp,bits256 privkey,bits256
     return(retptr);
 }
 
-uint8_t *SuperNET_ciphercalc(int32_t *cipherlenp,bits256 *privkeyp,bits256 *destpubkeyp,uint8_t *data,int32_t datalen,uint8_t *space2,int32_t space2size)
+uint8_t *SuperNET_ciphercalc(void **ptrp,int32_t *cipherlenp,bits256 *privkeyp,bits256 *destpubkeyp,uint8_t *data,int32_t datalen,uint8_t *space2,int32_t space2size)
 {
     bits256 mypubkey; uint8_t *buf,*nonce,*cipher,*origptr,space[8192]; int32_t onetimeflag=0,allocsize;
+    *ptrp = 0;
     allocsize = (datalen + crypto_box_NONCEBYTES + crypto_box_ZEROBYTES);
     if ( bits256_nonz(*destpubkeyp) == 0 )
     {
@@ -168,9 +169,12 @@ uint8_t *SuperNET_ciphercalc(int32_t *cipherlenp,bits256 *privkeyp,bits256 *dest
     if ( allocsize > sizeof(space) )
         buf = calloc(1,allocsize);
     else buf = space;
-    if ( allocsize > space2size )
-        cipher = calloc(1,allocsize);
-    else cipher = space2;
+    if ( allocsize+sizeof(struct iguana_msghdr) > space2size )
+    {
+        cipher = calloc(1,allocsize + sizeof(struct iguana_msghdr));
+        *ptrp = (void *)cipher;
+    } else cipher = space2;
+    cipher = &cipher[sizeof(struct iguana_msghdr)];
     origptr = nonce = cipher;
     if ( onetimeflag != 0 )
     {
@@ -321,7 +325,7 @@ cJSON *SuperNET_bits2json(bits256 mypriv,struct iguana_peer *addr,uint8_t *seria
 int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,char *jsonstr,int32_t delaymillis)
 {
     int32_t datalen,cipherlen,qlen = -1; uint8_t *serialized,space2[8192],*cipher; cJSON *json;
-    struct supernet_info *myinfo; bits256 destpub,privkey;
+    struct supernet_info *myinfo; bits256 destpub,privkey; void *ptr = 0;
     myinfo = SuperNET_MYINFO(0);
     if ( (json= cJSON_Parse(jsonstr)) != 0 )
     {
@@ -334,15 +338,19 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
                 qlen = iguana_queue_send(coin,addr,delaymillis,serialized,"SuperNET",datalen,0,0);
             else
             {
-                printf("ENCRYPT\n");
+                int32_t i; for (i=0; i<datalen; i++)
+                    printf("%02x ",serialized[i]);
+                printf("data.%d\n",datalen);
                 privkey = myinfo->privkey;
-                if ( (cipher= SuperNET_ciphercalc(&cipherlen,&privkey,&destpub,serialized,datalen,space2,sizeof(space2))) != 0 )
+                if ( (cipher= SuperNET_ciphercalc(&ptr,&cipherlen,&privkey,&destpub,serialized,datalen,space2,sizeof(space2))) != 0 )
                 {
+                    int32_t i; for (i=0; i<cipherlen; i++)
+                        printf("%02x ",cipher[i]);
+                    printf("cipherlen.%d\n",cipherlen);
                     qlen = iguana_queue_send(coin,addr,delaymillis,cipher,"SuperNETb",cipherlen,0,0);
-                    if ( cipher != space2 )
-                        free(cipher);
+                    if ( ptr != 0 )
+                        free(ptr);
                 }
-                //qlen = SuperNET_sendmsg(myinfo,coin,addr,addr->pubkey,myinfo->privkey,myinfo->myaddr.pubkey,serialized,datalen,space,delaymillis);
             }
         }
         free(serialized);
@@ -539,9 +547,17 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
     *delaymillisp = 0;
     if ( compressed != 0 )
     {
-        printf("DECRYPT\n");
-        if ( (msgbits= SuperNET_deciphercalc(&ptr,&msglen,myinfo->privkey,myinfo->myaddr.pubkey,data,datalen,space,sizeof(space))) == 0 )
+        int32_t i; for (i=0; i<datalen; i++)
+            printf("%02x ",data[i]);
+        printf("DECRYPT %d\n",datalen);
+        if ( (msgbits= SuperNET_deciphercalc(&ptr,&msglen,myinfo->privkey,addr->pubkey,data,datalen,space,sizeof(space))) == 0 )
+        {
+            printf("couldnt decrypt\n");
             return(clonestr("{\"error\":\"couldnt decrypt p2p packet\"}"));
+        }
+        for (i=0; i<msglen; i++)
+            printf("%02x ",msgbits[i]);
+        printf("DECRYPTED %d\n",msglen);
     } else msgbits = data;
     if ( (json= SuperNET_bits2json(myinfo->privkey,addr,msgbits,msglen)) != 0 )
     {
@@ -701,8 +717,8 @@ TWOHASHES_AND_STRING(SuperNET,decipher,privkey,srcpubkey,cipherstr)
 TWOHASHES_AND_STRING(SuperNET,cipher,privkey,destpubkey,message)
 {
     cJSON *retjson; char *retstr,*hexstr,space[8129]; uint8_t space2[8129];
-    uint8_t *cipher; int32_t cipherlen,onetimeflag; bits256 origprivkey;
-    if ( (cipher= SuperNET_ciphercalc(&cipherlen,&privkey,&destpubkey,(uint8_t *)message,(int32_t)strlen(message)+1,space2,sizeof(space2))) != 0 )
+    uint8_t *cipher; int32_t cipherlen,onetimeflag; bits256 origprivkey; void *ptr = 0;
+    if ( (cipher= SuperNET_ciphercalc(&ptr,&cipherlen,&privkey,&destpubkey,(uint8_t *)message,(int32_t)strlen(message)+1,space2,sizeof(space2))) != 0 )
     {
         if ( cipherlen > sizeof(space)/2 )
             hexstr = calloc(1,(cipherlen<<1)+1);
@@ -723,8 +739,8 @@ TWOHASHES_AND_STRING(SuperNET,cipher,privkey,destpubkey,message)
         retstr = jprint(retjson,1);
         if ( hexstr != (void *)space )
             free(hexstr);
-        if ( cipher != space2 )
-            free(cipher);
+        if ( ptr != 0 )
+            free(ptr);
         return(retstr);
     } else return(clonestr("{\"error\":\"cant encrypt message\"}"));
 }
