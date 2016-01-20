@@ -259,7 +259,7 @@ int32_t SuperNET_json2bits(char *myipaddr,bits256 privkey,bits256 mypubkey,uint8
         } else return(-1);
     }
     crc = calc_crc32(0,&serialized[sizeof(crc)],len - sizeof(crc));
-    printf("crc.%u ip.(%s %s) tag.%llx checkc.%x apinum.%d >>>>>>>>>>>>>>>>\n",crc,destip,myipaddr,(long long)tag,checkc,apinum);
+    //printf("crc.%u ip.(%s %s) tag.%llx checkc.%x apinum.%d >>>>>>>>>>>>>>>>\n",crc,destip,myipaddr,(long long)tag,checkc,apinum);
     iguana_rwnum(1,serialized,sizeof(crc),&crc);
     //int32_t i; for (i=0; i<len; i++)
     //    printf("%02x ",serialized[i]);
@@ -280,7 +280,7 @@ cJSON *SuperNET_bits2json(struct iguana_peer *addr,uint8_t *serialized,int32_t d
     len += iguana_rwnum(0,&serialized[len],sizeof(tag),&tag);
     len += iguana_rwbignum(0,&serialized[len],sizeof(bits256),senderpub.bytes);
     len += iguana_rwnum(0,&serialized[len],sizeof(othervalid),&othervalid);
-    printf("<<<<<<<<<<<<<<<< crc.%u ipbits.(%x %x) tag.%llx checkc.%x apinum.%d valid.%d other.%d\n",crc,destipbits,myipbits,(long long)tag,checkc,apinum,addr->validpub,othervalid);
+    //printf("<<<<<<<<<<<<<<<< crc.%u ipbits.(%x %x) tag.%llx checkc.%x apinum.%d valid.%d other.%d\n",crc,destipbits,myipbits,(long long)tag,checkc,apinum,addr->validpub,othervalid);
     if ( SuperNET_num2API(agent,method,apinum) >= 0 )
     {
         jaddstr(json,"agent",agent);
@@ -568,7 +568,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
             else if ( addr->validpub > 0 )
                 addr->validpub = 0;
             else addr->validpub--;
-            printf("validpub.%d: %x vs %x shared.%llx\n",addr->validpub,checkc,othercheckc,(long long)addr->sharedseed.txid);
+            //printf("validpub.%d: %x vs %x shared.%llx\n",addr->validpub,checkc,othercheckc,(long long)addr->sharedseed.txid);
         }
         /*if ( addr->validpub > 3 && bits256_nonz(addr->sharedseed) == 0 )
             addr->sharedseed = SuperNET_sharedseed(myinfo->privkey,senderpub);
