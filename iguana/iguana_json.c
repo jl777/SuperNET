@@ -105,6 +105,7 @@ cJSON *SuperNET_helpjson()
     
 #define IGUANA_HELP_H(agent,name,hash) array = helpjson(IGUANA_ARGS,#agent,#name,helparray(cJSON_CreateArray(),helpitem(#hash,"hash")))
 #define IGUANA_HELP_HI(agent,name,hash,val) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#val,"int")))
+#define IGUANA_HELP_HH(agent,name,hash,hash2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#hash2,"hash")))
 #define IGUANA_HELP_HS(agent,name,hash,str) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#str,"str")))
 #define IGUANA_HELP_HII(agent,name,hash,val,val2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#val,"int"),helpitem(#val2,"int")))
 #define IGUANA_HELP_HHS(agent,name,hash,hash2,str) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#hash2,"hash"),helpitem(#str,"str")))
@@ -147,6 +148,7 @@ cJSON *SuperNET_helpjson()
 #define HASH_ARRAY_STRING IGUANA_HELP_HAS
 #define U64_AND_ARRAY IGUANA_HELP_64A
 #define HASH_ARG IGUANA_HELP_H
+#define TWO_HASHES IGUANA_HELP_HH
 
 #include "../includes/iguana_apideclares.h"
     
@@ -476,6 +478,13 @@ char *hash_dispatch(void (*hashfunc)(char *hexstr,uint8_t *buf,uint8_t *msg,int3
     } else return(clonestr("{\"error\":\"hash needs message\"}"));
 }
 
+TWO_HASHES(hash,curve25519_pair,element,scalar)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    jaddbits256(retjson,"result",curve25519(element,scalar));
+    return(jprint(retjson,1));
+}
+
 STRING_ARG(hash,NXT,passphrase) { return(hash_dispatch(calc_NXTaddr,"NXT",passphrase)); }
 STRING_ARG(hash,curve25519,pubkey) { return(hash_dispatch(calc_curve25519_str,"curve25519",pubkey)); }
 STRING_ARG(hash,crc32,message) { return(hash_dispatch(calc_crc32str,"crc32",message)); }
@@ -590,6 +599,7 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSO
     
 #define IGUANA_DISPATCH_H(agent,name,hash) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash)))
 #define IGUANA_DISPATCH_HI(agent,name,hash,val) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),juint(json,#val)))
+#define IGUANA_DISPATCH_HH(agent,name,hash,hash2) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),jbits256(json,#hash2)))
 #define IGUANA_DISPATCH_HS(agent,name,hash,str) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),jstr(json,#str)))
 #define IGUANA_DISPATCH_HII(agent,name,hash,val,val2) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),juint(json,#val),juint(json,#val2)))
 #define IGUANA_DISPATCH_HHS(agent,name,hash,hash2,str) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),jbits256(json,#hash2),jstr(json,#str)))
@@ -632,6 +642,7 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSO
 #define HASH_ARRAY_STRING IGUANA_DISPATCH_HAS
 #define U64_AND_ARRAY IGUANA_DISPATCH_64A
 #define HASH_ARG IGUANA_DISPATCH_H
+#define TWO_HASHES IGUANA_DISPATCH_HH
 
 #include "../includes/iguana_apideclares.h"
 //#undef IGUANA_ARGS

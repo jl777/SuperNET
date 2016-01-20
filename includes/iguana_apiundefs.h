@@ -30,6 +30,7 @@
 #undef HASH_ARRAY_STRING
 #undef U64_AND_ARRAY
 #undef HASH_ARG
+#undef TWO_HASHES
 
 #undef IGUANA_ARGS
 #undef IGUANA_CALLARGS

@@ -140,6 +140,7 @@ SS_D_I_SS(ramchain,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment
 S_A_I_S(ramchain,sendmany,fromaccount,array,minconf,comment);
 S_D_SS(ramchain,sendtoaddress,address,amount,comment,comment2);
 
+TWO_HASHES(hash,curve25519_pair,element,scalar);
 STRING_ARG(hash,NXT,passphrase);
 STRING_ARG(hash,curve25519,pubkey);
 STRING_ARG(hash,crc32,message);

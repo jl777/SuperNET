@@ -28,6 +28,7 @@
 #define IGUANA_CFUNC_HI(agent,name,hash,val) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,int32_t val)
 #define IGUANA_CFUNC_H(agent,name,hash) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash)
 #define IGUANA_CFUNC_HS(agent,name,hash,str) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,char *str)
+#define IGUANA_CFUNC_HH(agent,name,hash,hash2) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,bits256 hash2)
 #define IGUANA_CFUNC_HHS(agent,name,hash,hash2,str) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,bits256 hash2,char *str)
 #define IGUANA_CFUNC_HAS(agent,name,hash,array,str) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,cJSON *array,char *str)
 #define IGUANA_CFUNC_HII(agent,name,hash,val,val2) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,int32_t val,int32_t val2)
@@ -69,3 +70,4 @@
 #define HASH_ARRAY_STRING IGUANA_CFUNC_HAS
 #define U64_AND_ARRAY IGUANA_CFUNC_64A
 #define HASH_ARG IGUANA_CFUNC_H
+#define TWO_HASHES IGUANA_CFUNC_HH
