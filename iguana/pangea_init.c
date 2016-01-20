@@ -15,6 +15,9 @@
 
 #include "pangea777.h"
 
+struct pangea_info *TABLES[100];
+struct pangea_thread *THREADS[_PANGEA_MAXTHREADS];
+
 void pangea_buyins(uint32_t *minbuyinp,uint32_t *maxbuyinp)
 {
     if ( *minbuyinp == 0 && *maxbuyinp == 0 )

@@ -94,7 +94,8 @@ struct pangea_info
     int32_t myslot,myind,numactive,buyinvouts[CARDS777_MAXPLAYERS]; uint64_t buyinamounts[CARDS777_MAXPLAYERS];
     char buyintxids[CARDS777_MAXPLAYERS][128],coinaddrs[CARDS777_MAXPLAYERS][67],btcpubkeys[CARDS777_MAXPLAYERS][67];
     struct pangea_thread *tp; struct cards777_privdata *priv; struct cards777_pubdata *dp;
-} *TABLES[100];
+};
+extern struct pangea_info *TABLES[100];
 
 //./BitcoinDarkd SuperNET '{"agent":"InstantDEX","method":"orderbook","exchange":"active","base":"NXT","rel":"BTC"}'
 // ./SNapi "{\"agent\":\"InstantDEX\",\"method\":\"orderbook\",\"exchange\":\"pangea\",\"base\":\"NXT\"}"
@@ -124,7 +125,8 @@ struct pangeanet777_server
 struct pangea_thread
 {
     union pangeanet777 hn; uint64_t nxt64bits; int32_t threadid,ishost,M,N,numcards;
-} *THREADS[_PANGEA_MAXTHREADS];
+};
+extern struct pangea_thread *THREADS[_PANGEA_MAXTHREADS];
 
 int32_t SuperNET_copybits(int32_t reverse,uint8_t *dest,uint8_t *src,int32_t len);
 

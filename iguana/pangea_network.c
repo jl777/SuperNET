@@ -73,12 +73,12 @@ void pangeanet777_processmsg(uint64_t *destbitsp,bits256 *senderpubp,queue_t *Q,
 
 int32_t pangeanet777_idle(union pangeanet777 *hn)
 {
-    int32_t len,slot,sock,n = 0; bits256 senderpub,mypriv,mypub; uint64_t destbits; uint8_t *msg;
-    long extra = sizeof(bits256)+sizeof(uint64_t);
+    int32_t len=0,slot,n = 0; bits256 senderpub,mypriv,mypub; uint64_t destbits; uint8_t *msg=0;
+    //long extra = sizeof(bits256)+sizeof(uint64_t);
     if ( (slot= hn->client->H.slot) != 0 )
     {
         mypriv = hn->client->H.privkey, mypub = hn->client->H.pubkey;
-        if ( (sock= hn->client->subsock) >= 0 && (len= nn_recv(sock,&msg,NN_MSG,0)) > extra )
+        /*if ( (sock= hn->client->subsock) >= 0 && (len= nn_recv(sock,&msg,NN_MSG,0)) > extra )
         {
             SuperNET_copybits(1,msg,(void *)&destbits,sizeof(uint64_t));
             //printf("client got pub len.%d\n",len);
@@ -86,7 +86,7 @@ int32_t pangeanet777_idle(union pangeanet777 *hn)
                 pangeanet777_processmsg(&destbits,&senderpub,&hn->client->H.Q,mypriv,mypub,msg,len,0), n++;
             nn_freemsg(msg);
         } else if ( hn->client->H.pollfunc != 0 )
-            (*hn->client->H.pollfunc)(hn);
+            (*hn->client->H.pollfunc)(hn);*/
     }
     else
     {
@@ -95,7 +95,7 @@ int32_t pangeanet777_idle(union pangeanet777 *hn)
         for (slot=1; slot<hn->server->num; slot++)
         {
             //printf("check ind.%d %.0f\n",ind,milliseconds());
-            if ( (sock= hn->server->clients[slot].pmsock) >= 0 && (len= nn_recv(sock,&msg,NN_MSG,0)) > extra )
+            //f ( (sock= hn->server->clients[slot].pmsock) >= 0 && (len= nn_recv(sock,&msg,NN_MSG,0)) > extra )
             {
                 //printf("server got pm[%d] %d\n",slot,len);
                 SuperNET_copybits(1,msg,(void *)&destbits,sizeof(uint64_t));
@@ -106,7 +106,7 @@ int32_t pangeanet777_idle(union pangeanet777 *hn)
                 }
                 printf("pangeanet777_idle: do the send here\n");
                 //pangeanet777_send(hn->server->pubsock,msg,len);
-                nn_freemsg(msg);
+                //nn_freemsg(msg);
             }
         }
         if ( hn->server->H.pollfunc != 0 )
@@ -142,8 +142,8 @@ int32_t pangeanet777_register(struct pangeanet777_server *srv,bits256 clientpub,
         {
             slot = (int32_t)(((long)ptr - (long)srv->clients) / sizeof(*srv->clients));
             //printf("pangea_register: deregister slot.%d\n",slot);
-            if ( ptr->pmsock >= 0 )
-                nn_shutdown(ptr->pmsock,0);
+            //if ( ptr->pmsock >= 0 )
+            //    nn_shutdown(ptr->pmsock,0);
             memset(ptr,0,sizeof(*ptr));
             ptr->pmsock = -1;
             srv->num--;
@@ -199,7 +199,7 @@ struct pangeanet777_client *pangeanet777_client(bits256 privkey,bits256 pubkey,c
     sprintf(endbuf2,"%s%u",endbuf,port);
     //ptr->subsock = nn_createsocket(endbuf2,0,"NN_SUB",NN_SUB,0,10,100);
     printf("SUB %d from (%s) port.%d\n",ptr->subsock,endbuf2,port);
-    nn_setsockopt(ptr->subsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
+    //nn_setsockopt(ptr->subsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
     //sprintf(endbuf2,"%s%u",endbuf,port);
     //ptr->pushsock = nn_createsocket(endbuf2,0,"NN_PUSH",NN_PUSH,0,10,1);
     //printf("PUSH %d to (%s)\n",ptr->pushsock,endbuf2);
@@ -209,12 +209,12 @@ struct pangeanet777_client *pangeanet777_client(bits256 privkey,bits256 pubkey,c
 void pangeanet777_freeclient(struct pangeanet777_client *client)
 {
     client->H.done = 1;
-    if ( client->subsock >= 0 )
-        nn_shutdown(client->subsock,0);
+    //if ( client->subsock >= 0 )
+    //    nn_shutdown(client->subsock,0);
     //if ( client->pushsock >= 0 )
     //    nn_shutdown(client->pushsock,0);
-    if ( client->my.pmsock >= 0 )
-        nn_shutdown(client->my.pmsock,0);
+    //if ( client->my.pmsock >= 0 )
+    //    nn_shutdown(client->my.pmsock,0);
 }
 
 void pangeanet777_freeserver(struct pangeanet777_server *srv)
@@ -223,12 +223,12 @@ void pangeanet777_freeserver(struct pangeanet777_server *srv)
     srv->H.done = 1;
     //if ( srv->pullsock >= 0 )
     //    nn_shutdown(srv->pullsock,0);
-    if ( srv->pubsock >= 0 )
-        nn_shutdown(srv->pubsock,0);
+    //if ( srv->pubsock >= 0 )
+    //    nn_shutdown(srv->pubsock,0);
     for (ind=1; ind<srv->max; ind++)
     {
-        if ( srv->clients[ind].pmsock >= 0 )
-            nn_shutdown(srv->clients[ind].pmsock,0);
+       // if ( srv->clients[ind].pmsock >= 0 )
+       //     nn_shutdown(srv->clients[ind].pmsock,0);
     }
 }
 
