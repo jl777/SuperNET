@@ -31,9 +31,6 @@ STRING_ARG(SuperNET,broadcastdecipher,message);
 HASH_AND_STRING(SuperNET,multicastcipher,pubkey,message);
 HASH_AND_STRING(SuperNET,multicastdecipher,privkey,cipherstr);
 
-ZERO_ARGS(SuperNET,keypair);
-HASH_ARG(SuperNET,priv2pub,privkey);
-
 THREE_STRINGS(SuperNET,announce,category,subcategory,message);
 THREE_STRINGS(SuperNET,survey,category,subcategory,message);
 
