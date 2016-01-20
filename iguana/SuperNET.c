@@ -570,7 +570,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
             printf("validpub.%d: %x vs %x shared.%llx\n",addr->validpub,checkc,othercheckc,(long long)addr->sharedseed.txid);
         }
         senderpub = jbits256(json,"mypub");
-        if ( memcmp(senderpub.bytes,addr->pubkey.bytes,sizeof(senderpub)) != 0 )
+        if ( addr->validpub > 3 && memcmp(senderpub.bytes,addr->pubkey.bytes,sizeof(senderpub)) != 0 )
             addr->pubkey = senderpub;
         /*if ( addr->validpub > 3 && bits256_nonz(addr->sharedseed) == 0 )
             addr->sharedseed = SuperNET_sharedseed(myinfo->privkey,senderpub);
