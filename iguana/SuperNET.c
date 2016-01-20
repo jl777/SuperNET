@@ -764,6 +764,7 @@ TWOHASHES_AND_STRING(SuperNET,cipher,privkey,destpubkey,message)
             hexstr = calloc(1,(cipherlen<<1)+1);
         else hexstr = (void *)space;
         init_hexbytes_noT(hexstr,cipher,cipherlen);
+        printf("ciphercalc.(%s)\n",hexstr);
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result",hexstr);
         //jaddstr(retjson,"message",message);
@@ -781,8 +782,11 @@ TWOHASHES_AND_STRING(SuperNET,cipher,privkey,destpubkey,message)
             free(hexstr);
         if ( ptr != 0 )
             free(ptr);
+        printf("return.(%s)\n",retstr);
         return(retstr);
-    } else return(clonestr("{\"error\":\"cant encrypt message\"}"));
+    }
+    printf("error encrypting message.(%s)\n",message);
+    return(clonestr("{\"error\":\"cant encrypt message\"}"));
 }
 
 bits256 SuperNET_pindecipher(IGUANA_ARGS,char *pin,char *privcipher)
@@ -817,12 +821,12 @@ THREE_STRINGS(SuperNET,rosetta,passphrase,pin,showprivkey)
     {
         if ( (retjson= cJSON_Parse(cstr)) != 0 )
         {
-            if ( (privcipherstr= jstr(retjson,"cipher")) != 0 )
+            if ( (privcipherstr= jstr(retjson,"result")) != 0 )
                 strcpy(privcipher,privcipherstr);
             free_json(retjson);
-        }
+        } else printf("error parsing cipher retstr.(%s)\n",cstr);
         free(cstr);
-    }
+    } else printf("error SuperNET_cipher null return\n");
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"privcipher",privcipher);
     jaddbits256(retjson,"pubkey",pubkey);
