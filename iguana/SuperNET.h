@@ -16,6 +16,7 @@
 #ifndef INCLUDED_SUPERNET_H
 #define INCLUDED_SUPERNET_H
 
+#define SUPERNET_MAXHOPS 7
 #include "../crypto777/OS_portable.h"
 #include "../includes/cJSON.h"
 #include "../crypto777/nanosrc/nn.h"

@@ -231,9 +231,11 @@ int32_t SuperNET_json2bits(char *myipaddr,bits256 privkey,bits256 mypubkey,uint8
         othervalid = -100;
     else othervalid = _othervalid;
     tmp = juint(json,"broadcast");
-    if ( tmp > 100 )
-        broadcastflag = 100;
+    if ( tmp > SUPERNET_MAXHOPS )
+        broadcastflag = SUPERNET_MAXHOPS;
     else broadcastflag = tmp;
+    if ( bits256_nonz(destpub) > 0 && memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(destpub)) != 0 )
+        broadcastflag |= 0x40;
     if ( juint(json,"plaintext") != 0 )
         broadcastflag |= 0x80;
     if ( (tag= j64bits(json,"tag")) == 0 )
@@ -260,6 +262,8 @@ int32_t SuperNET_json2bits(char *myipaddr,bits256 privkey,bits256 mypubkey,uint8
     len += iguana_rwbignum(1,&serialized[len],sizeof(mypubkey),mypubkey.bytes);
     len += iguana_rwnum(1,&serialized[len],sizeof(othervalid),&othervalid);
     len += iguana_rwnum(1,&serialized[len],sizeof(broadcastflag),&broadcastflag);
+    if ( (broadcastflag & 0x40) != 0 )
+        len += iguana_rwbignum(1,&serialized[len],sizeof(bits256),destpub.bytes);
     if ( (hexmsg= jstr(json,"message")) != 0 )
     {
         n = (int32_t)strlen(hexmsg);
@@ -282,8 +286,9 @@ int32_t SuperNET_json2bits(char *myipaddr,bits256 privkey,bits256 mypubkey,uint8
 cJSON *SuperNET_bits2json(struct iguana_peer *addr,uint8_t *serialized,int32_t datalen)
 {
     char destip[64],method[64],checkstr[5],agent[64],myipaddr[64],str[65],*hexmsg; uint64_t tag;
-    uint16_t apinum,checkc; int8_t othervalid; uint32_t destipbits,myipbits; bits256 senderpub;
-    int32_t len = 0; uint32_t crc; uint8_t broadcastflag,plaintext; cJSON *json = cJSON_CreateObject();
+    uint16_t apinum,checkc; int8_t othervalid; uint32_t destipbits,myipbits;
+    bits256 destpub,senderpub; cJSON *json = cJSON_CreateObject();
+    int32_t len = 0; uint32_t crc; uint8_t broadcastflag,plaintext;
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&crc);
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&destipbits);
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&myipbits);
@@ -293,8 +298,12 @@ cJSON *SuperNET_bits2json(struct iguana_peer *addr,uint8_t *serialized,int32_t d
     len += iguana_rwbignum(0,&serialized[len],sizeof(bits256),senderpub.bytes);
     len += iguana_rwnum(0,&serialized[len],sizeof(othervalid),&othervalid);
     len += iguana_rwnum(0,&serialized[len],sizeof(broadcastflag),&broadcastflag);
+    if ( (broadcastflag & 0x40) != 0 )
+        len += iguana_rwbignum(0,&serialized[len],sizeof(bits256),destpub.bytes);
     plaintext = (broadcastflag & 0x80);
-    broadcastflag &= 0x7f;
+    broadcastflag &= 0x3f;
+    if ( broadcastflag > SUPERNET_MAXHOPS )
+        broadcastflag = SUPERNET_MAXHOPS;
     printf("<<<<<<<<<<<<<<<< crc.%u ipbits.(%x %x) tag.%llx checkc.%x apinum.%d valid.%d other.%d broadcast.%d plaintext.%d\n",crc,destipbits,myipbits,(long long)tag,checkc,apinum,addr->validpub,othervalid,broadcastflag,plaintext);
     if ( SuperNET_num2API(agent,method,apinum) >= 0 )
     {
@@ -303,6 +312,10 @@ cJSON *SuperNET_bits2json(struct iguana_peer *addr,uint8_t *serialized,int32_t d
         expand_ipbits(destip,destipbits), jaddstr(json,"yourip",destip);
         expand_ipbits(myipaddr,myipbits), jaddstr(json,"myip",myipaddr);
         jaddstr(json,"mypub",bits256_str(str,senderpub));
+        if ( broadcastflag != 0 )
+            jaddbits256(json,"destpub",GENESIS_PUBKEY);
+        else if ( (broadcastflag & 0x40) != 0 )
+            jaddbits256(json,"destpub",destpub);
         jadd64bits(json,"tag",tag);
         init_hexbytes_noT(checkstr,(void *)&checkc,sizeof(checkc));
         jaddstr(json,"check",checkstr);
@@ -377,10 +390,6 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
                 qlen = iguana_queue_send(coin,addr,delaymillis,serialized,"SuperNET",datalen,0,0);
             else
             {
-                //int32_t i; for (i=0; i<datalen; i++)
-                //    printf("%02x ",serialized[sizeof(struct iguana_msghdr) + i]);
-                //printf("data.%d\n",datalen);
-                printf("encrypt mypriv.%llx destpub.%llx\n",(long long)privkey.txid,(long long)destpub.txid);
                 if ( (cipher= SuperNET_ciphercalc(&ptr,&cipherlen,&privkey,&destpub,&serialized[sizeof(struct iguana_msghdr)],datalen,space2,sizeof(space2))) != 0 )
                 {
                     /*void *msgbits; int32_t msglen; uint8_t space[65536]; void *ptr2;
@@ -542,7 +551,12 @@ int32_t SuperNET_destination(struct supernet_info *myinfo,uint32_t *destipbitsp,
     {
         if ( memcmp(destpubp,myinfo->myaddr.pubkey.bytes,sizeof(*destpubp)) == 0 )
             destflag |= SUPERNET_ISMINE;
-        else destflag |= SUPERNET_FORWARD;
+        else
+        {
+            if ( memcmp(destpubp,GENESIS_PUBKEY.bytes,sizeof(*destpubp)) == 0 )
+                destflag |= SUPERNET_ISMINE;
+            destflag |= SUPERNET_FORWARD;
+        }
     }
     else if ( remoteaddr == 0 || remoteaddr[0] == 0 )
         destflag |= SUPERNET_ISMINE;
