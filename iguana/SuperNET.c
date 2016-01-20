@@ -323,9 +323,9 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
             else
             {
                 int32_t i; for (i=0; i<datalen; i++)
-                    printf("%02x ",serialized[i]);
+                    printf("%02x ",serialized[sizeof(struct iguana_msghdr) + i]);
                 printf("data.%d\n",datalen);
-                if ( (cipher= SuperNET_ciphercalc(&ptr,&cipherlen,&privkey,&destpub,serialized,datalen,space2,sizeof(space2))) != 0 )
+                if ( (cipher= SuperNET_ciphercalc(&ptr,&cipherlen,&privkey,&destpub,&serialized[sizeof(struct iguana_msghdr)],datalen,space2,sizeof(space2))) != 0 )
                 {
                     int32_t i; for (i=0; i<cipherlen; i++)
                         printf("%02x ",cipher[i]);
