@@ -694,7 +694,7 @@ void iguana_exit();
 int32_t iguana_pendingaccept(struct iguana_info *coin);
 char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t tag,int32_t maxmillis,char *remoteaddr);
 void iguana_iAkill(struct iguana_info *coin,struct iguana_peer *addr,int32_t markflag);
-cJSON *SuperNET_bits2json(bits256 mypriv,struct iguana_peer *addr,uint8_t *serialized,int32_t datalen);
+cJSON *SuperNET_bits2json(struct iguana_peer *addr,uint8_t *serialized,int32_t datalen);
 int32_t SuperNET_sendmsg(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,bits256 destpub,bits256 mypriv,bits256 mypub,uint8_t *msg,int32_t len,uint8_t *data,int32_t delaymillis);
 
 extern queue_t bundlesQ;
