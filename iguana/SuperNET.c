@@ -431,7 +431,7 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,char *hexm
     jaddstr(json,"method","DHT");
     jaddstr(json,"message",hexmsg);
     if ( broadcastflag > 0 )
-        jaddstr(json,"broadcast",broadcastflag-1);
+        jaddnum(json,"broadcast",broadcastflag-1);
     jsonstr = jprint(json,1);
     vcalc_sha256(0,packethash.bytes,(void *)hexmsg,datalen);
     firstz = -1;
