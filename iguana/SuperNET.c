@@ -316,9 +316,9 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
     {
         serialized = malloc(sizeof(struct iguana_msghdr) + IGUANA_MAXPACKETSIZE);
         privkey = myinfo->privkey;
-        if ( addr->validpub > 1 && addr->othervalid > 3 )
+        //if ( addr->validpub > 1 && addr->othervalid > 3 )
             destpub = addr->pubkey;
-        else privkey = GENESIS_PRIVKEY, destpub = GENESIS_PUBKEY;
+        //else privkey = GENESIS_PRIVKEY, destpub = GENESIS_PUBKEY;
         if ( (datalen= SuperNET_json2bits(myinfo->ipaddr,myinfo->privkey,myinfo->myaddr.pubkey,&serialized[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE,addr->ipaddr,json,addr->pubkey,addr->validpub)) > 0 )
         {
             printf("SUPERSEND.(%s) -> (%s) delaymillis.%d datalen.%d\n",jsonstr,addr->ipaddr,delaymillis,datalen);
