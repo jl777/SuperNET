@@ -1001,7 +1001,7 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
             run = 0;
         else if ( addr->supernet != 0 && time(NULL) > lastping+SUPERNET_PINGGAP )
         {
-            iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
+            iguana_send_supernet(coin,addr,SUPERNET_GETPEERSTR,0);
             lastping = (uint32_t)time(NULL);
         }
         if ( coin->isRT != 0 && addr->rank > coin->MAXPEERS && (rand() % 100) == 0 )
@@ -1106,7 +1106,7 @@ void iguana_peersloop(void *ptr)
         if ( flag == 0 )
         {
             if ( time(NULL) > lastping+1 )
-                iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
+                iguana_send_supernet(coin,addr,SUPERNET_GETPEERSTR,0);
             usleep(1000);
         }
     }
