@@ -163,7 +163,7 @@ int32_t iguana_send_version(struct iguana_info *coin,struct iguana_peer *addr,ui
 
 void iguana_gotverack(struct iguana_info *coin,struct iguana_peer *addr)
 {
-    uint8_t serialized[sizeof(struct iguana_msghdr)]; int32_t i;
+    uint8_t serialized[sizeof(struct iguana_msghdr)];
     if ( addr != 0 )
     {
         printf("gotverack from %s\n",addr->ipaddr);
@@ -172,8 +172,7 @@ void iguana_gotverack(struct iguana_info *coin,struct iguana_peer *addr)
         if ( addr->supernet != 0 )
         {
             printf("send getpeers to %s\n",addr->ipaddr);
-            for (i=0; i<4; i++)
-                iguana_send_supernet(coin,addr,SUPERNET_GETPEERSTR,0);
+            iguana_send_supernet(coin,addr,SUPERNET_GETPEERSTR,0);
         }
     }
 }

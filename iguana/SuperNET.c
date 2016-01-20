@@ -94,7 +94,7 @@ void SuperNET_myipaddr(struct supernet_info *myinfo,struct iguana_info *coin,str
         expand_ipbits(myinfo->ipaddr,myinfo->myaddr.selfipbits);
         vcalc_sha256(0,myinfo->myaddr.iphash.bytes,(uint8_t *)&myinfo->myaddr.selfipbits,sizeof(myinfo->myaddr.selfipbits));
     }
-    //printf("myipaddr.%s self.%x your.%x\n",myinfo->ipaddr,myinfo->myaddr.selfipbits,myinfo->myaddr.myipbits);
+    printf("myipaddr.%s self.%x your.%x\n",myinfo->ipaddr,myinfo->myaddr.selfipbits,myinfo->myaddr.myipbits);
 }
 
 int32_t _SuperNET_cipher(uint8_t nonce[crypto_box_NONCEBYTES],uint8_t *cipher,uint8_t *message,int32_t len,bits256 destpub,bits256 srcpriv,uint8_t *buf)
@@ -581,11 +581,11 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
         senderpub = iguana_actualpubkey(&offset,data,datalen,senderpub);
         if ( (msgbits= SuperNET_deciphercalc(&ptr,&msglen,privkey,senderpub,data+offset,datalen-offset,space,sizeof(space))) == 0 )
         {
-            if ( (msgbits= SuperNET_deciphercalc(&ptr,&msglen,GENESIS_PRIVKEY,senderpub,data+offset,datalen-offset,space,sizeof(space))) == 0 )
+            if ( (msgbits= SuperNET_deciphercalc(&ptr,&msglen,GENESIS_PRIVKEY,GENESIS_PUBKEY,data+offset,datalen-offset,space,sizeof(space))) == 0 )
             {
                 int32_t i; for (i=0; i<datalen; i++)
                     printf("%02x ",data[i]);
-                printf("error decryptint %d\n",datalen);
+                printf("error decrypting %d from %s\n",datalen,addr->ipaddr);
                 addr->validpub = 0;
                 //return(clonestr("{\"error\":\"couldnt decrypt p2p packet\"}"));
                 return(0);
@@ -764,7 +764,6 @@ TWOHASHES_AND_STRING(SuperNET,cipher,privkey,destpubkey,message)
             hexstr = calloc(1,(cipherlen<<1)+1);
         else hexstr = (void *)space;
         init_hexbytes_noT(hexstr,cipher,cipherlen);
-        printf("ciphercalc.(%s)\n",hexstr);
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result",hexstr);
         //jaddstr(retjson,"message",message);
@@ -782,7 +781,6 @@ TWOHASHES_AND_STRING(SuperNET,cipher,privkey,destpubkey,message)
             free(hexstr);
         if ( ptr != 0 )
             free(ptr);
-        printf("return.(%s)\n",retstr);
         return(retstr);
     }
     printf("error encrypting message.(%s)\n",message);
@@ -800,11 +798,11 @@ bits256 SuperNET_pindecipher(IGUANA_ARGS,char *pin,char *privcipher)
             if ( (mstr= jstr(testjson,"message")) != 0 && strlen(mstr) == sizeof(bits256)*2 )
             {
                 decode_hex(privkey.bytes,sizeof(privkey),mstr);
-            } //else jaddstr(retjson,"error","invalid return from deciphering privcipher");
+            } else printf("error cant find message privcipher\n");
             free_json(testjson);
-        }
+        } else printf("Error decipher.(%s)\n",cstr);
         free(cstr);
-    } //else jaddstr(retjson,"error","null return from deciphering privcipher");
+    } else printf("null return from deciphering privcipher\n");
     return(privkey);
 }
 
