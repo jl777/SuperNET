@@ -16,19 +16,6 @@
 #include "iguana777.h"
 #include "../includes/tweetnacl.h"
 
-bits256 testprivkey(int32_t selector)
-{
-    bits256 privkey;
-    memset(privkey.bytes,0,sizeof(privkey.bytes));
-    privkey.bytes[15] = selector;
-    return(privkey);
-}
-
-bits256 testpubkey(int32_t selector)
-{
-    return(acct777_pubkey(testprivkey(selector)));
-}
-
 bits256 SuperNET_sharedseed(bits256 privkey,bits256 otherpub)
 {
     bits256 seed2,seed;
@@ -320,25 +307,15 @@ cJSON *SuperNET_bits2json(struct iguana_peer *addr,uint8_t *serialized,int32_t d
     return(0);
 }
 
-bits256 iguana_setkeys(struct supernet_info *myinfo,struct iguana_peer *addr,bits256 *myprivp,bits256 *mypubp,bits256 *destpubp,bits256 *nextprivp,bits256 *nextpubp,bits256 *nextdestpubp)
+void iguana_setkeys(struct supernet_info *myinfo,struct iguana_peer *addr,bits256 *myprivp,bits256 *mypubp,bits256 *destpubp,bits256 *nextprivp,bits256 *nextpubp,bits256 *nextdestpubp)
 {
-    bits256 testpriv;
-#ifdef __APPLE__
-        *nextprivp = testprivkey(0); // myinfo->privkey;
-        *nextpubp = testpubkey(0); // myinfo->myaddr.pubkey;
-        testpriv = testprivkey(1);
-        *nextdestpubp = testpubkey(1); // addr->pubkey;
-#else
-        *nextprivp = testprivkey(1);
-        *nextpubp = testpubkey(1);
-        testpriv = testprivkey(0);
-        *nextdestpubp = testpubkey(0);
-#endif
+    *nextprivp = myinfo->privkey;
+    *nextpubp = myinfo->myaddr.pubkey;
+    *nextdestpubp = addr->pubkey;
     if ( addr->validpub < 3 || addr->othervalid < 3 )
-        *myprivp = testpriv = GENESIS_PRIVKEY, *destpubp = *mypubp = GENESIS_PUBKEY;
+        *myprivp = GENESIS_PRIVKEY, *destpubp = *mypubp = GENESIS_PUBKEY;
     else *myprivp = *nextprivp, *mypubp = *nextpubp, *destpubp = *nextdestpubp;
     char str[65]; printf("(priv.%llx pub.%llx) -> destpub.%s\n",(long long)myprivp->txid,(long long)mypubp->txid,bits256_str(str,*destpubp));
-    return(testpriv);
 }
 
 bits256 iguana_actualpubkey(int32_t *offsetp,uint8_t *cipher,int32_t cipherlen,bits256 destpubkey)
@@ -361,13 +338,12 @@ bits256 iguana_actualpubkey(int32_t *offsetp,uint8_t *cipher,int32_t cipherlen,b
 
 int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,char *jsonstr,int32_t delaymillis)
 {
-    int32_t offset,datalen,cipherlen,qlen = -1; uint8_t *serialized,space2[8192],*cipher; cJSON *json;
+    int32_t datalen,cipherlen,qlen = -1; uint8_t *serialized,space2[8192],*cipher; cJSON *json;
     struct supernet_info *myinfo; bits256 destpub,privkey,pubkey,nextprivkey,nextpubkey,nextdestpub; void *ptr = 0;
     myinfo = SuperNET_MYINFO(0);
     if ( (json= cJSON_Parse(jsonstr)) != 0 )
     {
-        bits256 testpriv;
-        testpriv = iguana_setkeys(myinfo,addr,&privkey,&pubkey,&destpub,&nextprivkey,&nextpubkey,&nextdestpub);
+        iguana_setkeys(myinfo,addr,&privkey,&pubkey,&destpub,&nextprivkey,&nextpubkey,&nextdestpub);
         if ( juint(json,"plaintext") == 0 && memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(pubkey)) == 0 )
         {
             printf("reject broadcasting non-plaintext! (%s)\n",jsonstr);
@@ -388,7 +364,7 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
                 printf("encrypt mypriv.%llx destpub.%llx\n",(long long)privkey.txid,(long long)destpub.txid);
                 if ( (cipher= SuperNET_ciphercalc(&ptr,&cipherlen,&privkey,&destpub,&serialized[sizeof(struct iguana_msghdr)],datalen,space2,sizeof(space2))) != 0 )
                 {
-                    void *msgbits; int32_t msglen; uint8_t space[65536]; void *ptr2;
+                    /*void *msgbits; int32_t msglen; uint8_t space[65536]; void *ptr2;
                     destpub = iguana_actualpubkey(&offset,cipher,cipherlen,destpub);
                     if ( (msgbits= SuperNET_deciphercalc(&ptr2,&msglen,testpriv,destpub,&cipher[offset],cipherlen-offset,space,sizeof(space))) == 0 )
                     {
@@ -396,7 +372,7 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
                             printf("%02x",cipher[i]);
                         printf(" cant decrypt cipherlen.%d otherpriv.%llx pub.%llx\n",cipherlen,(long long)testpriv.txid,(long long)pubkey.txid);
                         printf("encrypted mypriv.%llx destpub.%llx\n",(long long)privkey.txid,(long long)destpub.txid);
-                    } else printf("decrypted\n");
+                    } else printf("decrypted\n");*/
                     qlen = iguana_queue_send(coin,addr,delaymillis,&cipher[-sizeof(struct iguana_msghdr)],"SuperNETb",cipherlen,0,0);
                     if ( ptr != 0 )
                         free(ptr);

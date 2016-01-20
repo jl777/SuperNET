@@ -12318,5 +12318,18 @@ len = 0;
 } else printf("decrypt error len.%d origlen.%d\n",len,datalen);
 }*/
 
+                
+                bits256 testprivkey(int32_t selector)
+            {
+                bits256 privkey;
+                memset(privkey.bytes,0,sizeof(privkey.bytes));
+                privkey.bytes[15] = selector;
+                return(privkey);
+            }
+                
+                bits256 testpubkey(int32_t selector)
+            {
+                return(acct777_pubkey(testprivkey(selector)));
+            }
 
 #endif
