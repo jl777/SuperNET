@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2015 The SuperNET Developers.                             *
+ * Copyright © 2014-2016 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -118,6 +118,7 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,char *hexm
 uint16_t SuperNET_API2num(char *agent,char *method);
 int32_t SuperNET_num2API(char *agent,char *method,uint16_t num);
 bits256 SuperNET_sharedseed(bits256 privkey,bits256 otherpub);
+int32_t SuperNET_decrypt(bits256 *senderpubp,uint64_t *senderbitsp,uint32_t *timestampp,bits256 mypriv,bits256 mypub,uint8_t *dest,int32_t maxlen,uint8_t *src,int32_t len);
 
 int32_t SuperNET_str2hex(uint8_t *hex,char *str);
 void SuperNET_hex2str(char *str,uint8_t *hex,int32_t len);

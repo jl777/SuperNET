@@ -456,6 +456,11 @@ int crypto_box_keypair(u8 *y,u8 *x)
     return crypto_scalarmult_base(y,x);
 }
 
+int crypto_box_priv2pub(u8 *y,u8 *x)
+{
+    return crypto_scalarmult_base(y,x);
+}
+
 int crypto_box_beforenm(u8 *k,const u8 *y,const u8 *x)
 {
     u8 s[32];

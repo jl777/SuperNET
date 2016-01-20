@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2015 The SuperNET Developers.                             *
+ * Copyright © 2014-2016 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -243,6 +243,7 @@ void reverse_hexstr(char *str);
 int32_t init_hexbytes_noT(char *hexbytes,uint8_t *message,long len);
 uint16_t parse_ipaddr(char *ipaddr,char *ip_port);
 int32_t bitweight(uint64_t x);
+unsigned char _decode_hex(char *hex);
 
 long _stripwhite(char *buf,int accept);
 int32_t is_DST(int32_t datenum);
@@ -335,6 +336,7 @@ int32_t btc_priv2pub(uint8_t pubkey[33],uint8_t privkey[32]);
 
 extern char *Iguana_validcommands[];
 extern bits256 GENESIS_PUBKEY,GENESIS_PRIVKEY;
+extern char NXTAPIURL[];
 
 #endif
 

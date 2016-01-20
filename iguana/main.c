@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2015 The SuperNET Developers.                             *
+ * Copyright © 2014-2016 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -31,6 +31,7 @@ char *Iguana_validcommands[] =
     "version", "verack", "getaddr", "addr", "inv", "getdata", "notfound", "getblocks", "getheaders", "headers", "tx", "block", "mempool", "ping", "pong",
     "reject", "filterload", "filteradd", "filterclear", "merkleblock", "alert", ""
 };
+int32_t Showmode,Autofold,PANGEA_MAXTHREADS = 1;
 
 struct iguana_info *Coins[IGUANA_MAXCOINS];
 int32_t USE_JAY,FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel;

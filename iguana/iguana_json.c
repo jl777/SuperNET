@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2015 The SuperNET Developers.                             *
+ * Copyright © 2014-2016 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -99,9 +99,11 @@ cJSON *SuperNET_helpjson()
 #define IGUANA_HELP_III(agent,name,val,val2,val3) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#val,"int"),helpitem(#val2,"int"),helpitem(#val3,"int")))
 #define IGUANA_HELP_IAS(agent,name,val,obj,str) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#val,"int"),helpitem(#obj,"array"),helpitem(#str,"string")))
     
+#define IGUANA_HELP_64A(agent,name,j64,obj) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#j64,"u64bits"),helpitem(#obj,"array")))
 #define IGUANA_HELP_AA(agent,name,obj,obj2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#obj,"array"),helpitem(#obj2,"array")))
 #define IGUANA_HELP_D(agent,name,amount) array = helpjson(IGUANA_ARGS,#agent,#name,helparray(cJSON_CreateArray(),helpitem(#amount,"float")))
     
+#define IGUANA_HELP_H(agent,name,hash) array = helpjson(IGUANA_ARGS,#agent,#name,helparray(cJSON_CreateArray(),helpitem(#hash,"hash")))
 #define IGUANA_HELP_HI(agent,name,hash,val) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#val,"int")))
 #define IGUANA_HELP_HS(agent,name,hash,str) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#str,"str")))
 #define IGUANA_HELP_HII(agent,name,hash,val,val2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#val,"int"),helpitem(#val2,"int")))
@@ -143,9 +145,10 @@ cJSON *SuperNET_helpjson()
 #define THREE_INTS IGUANA_HELP_III
 #define TWOHASHES_AND_STRING IGUANA_HELP_HHS
 #define HASH_ARRAY_STRING IGUANA_HELP_HAS
+#define U64_AND_ARRAY IGUANA_HELP_64A
+#define HASH_ARG IGUANA_HELP_H
 
 #include "../includes/iguana_apideclares.h"
-#undef IGUANA_ARGS
     
 #include "../includes/iguana_apiundefs.h"
     if ( array != 0 )
@@ -318,132 +321,7 @@ cJSON *iguana_peersjson(struct iguana_info *coin,int32_t addronly)
     else return(array);
 }
 
-cJSON *SuperNET_peerarray(struct iguana_info *coin,int32_t max,int32_t supernetflag)
-{
-    int32_t i,r,j,n = 0; struct iguana_peer *addr; cJSON *array = cJSON_CreateArray();
-    r = rand();
-    for (j=0; j<IGUANA_MAXPEERS; j++)
-    {
-        i = (r + j) % IGUANA_MAXPEERS;
-        addr = &coin->peers.active[i];
-        if ( addr->usock >= 0 && supernetflag == (addr->supernet != 0) )
-        {
-            jaddistr(array,addr->ipaddr);
-            if ( ++n >= max )
-                break;
-        }
-    }
-    if ( n == 0 )
-    {
-        free_json(array);
-        return(0);
-    }
-    return(array);
-}
-
-int32_t SuperNET_coinpeers(struct iguana_info *coin,cJSON *SNjson,cJSON *rawjson,int32_t max)
-{
-    cJSON *array,*item;
-    if ( (array= SuperNET_peerarray(coin,max,1)) != 0 )
-    {
-        max -= cJSON_GetArraySize(array);
-        item = cJSON_CreateObject();
-        jaddstr(item,"coin",coin->symbol);
-        jadd(item,"peers",array);
-        jaddi(SNjson,item);
-    }
-    if ( max > 0 && (array= SuperNET_peerarray(coin,max,0)) != 0 )
-    {
-        max -= cJSON_GetArraySize(array);
-        item = cJSON_CreateObject();
-        jaddstr(item,"coin",coin->symbol);
-        jadd(item,"peers",array);
-        jaddi(rawjson,item);
-    }
-    return(max);
-}
-
-void SuperNET_parsepeers(struct supernet_info *myinfo,cJSON *array,int32_t n,int32_t supernetflag)
-{
-    int32_t i,j,m; cJSON *coinarray,*item; char *symbol,*ipaddr; struct iguana_info *ptr;
-    if ( array != 0 && n > 0 )
-    {
-        for (i=0; i<n; i++)
-        {
-            if ( (item= jitem(array,i)) != 0 && (symbol= jstr(item,"coin")) != 0 )
-            {
-                ptr = iguana_coinfind(symbol);
-                if ( (coinarray= jarray(&m,item,"peers")) != 0 )
-                {
-                    for (j=0; j<m; j++)
-                    {
-                        if ( (ipaddr= jstr(jitem(coinarray,j),0)) != 0 )
-                            SuperNET_remotepeer(myinfo,ptr,symbol,ipaddr,supernetflag);
-                        else printf("no ipaddr[%d] of %d\n",j,m);
-                    }
-                }
-                printf("parsed.%d %s.peers supernet.%d\n",m,symbol,supernetflag);
-            }
-        }
-    }
-}
-
 #include "../includes/iguana_apidefs.h"
-
-TWOSTRINGS_AND_HASH_AND_TWOINTS(SuperNET,DHT,message,destip,destpub,maxdelay,broadcast)
-{
-    if ( remoteaddr != 0 )
-        return(clonestr("{\"error\":\"cant remote DHT\"}"));
-    else if ( is_hexstr(message,(int32_t)strlen(message)) <= 0 )
-        return(clonestr("{\"error\":\"message must be in hex\"}"));
-    return(SuperNET_DHTencode(myinfo,destip,destpub,message,maxdelay,broadcast));
-}
-
-ZERO_ARGS(SuperNET,stop)
-{
-    if ( remoteaddr == 0 || strncmp(remoteaddr,"127.0.0.1",strlen("127.0.0.1")) == 0 )
-    {
-        iguana_exit();
-        return(clonestr("{\"result\":\"exit started\"}"));
-    } else return(clonestr("{\"error\":\"cant do a remote stop of this node\"}"));
-}
-
-TWO_ARRAYS(SuperNET,mypeers,supernet,rawpeers)
-{
-    SuperNET_parsepeers(myinfo,supernet,cJSON_GetArraySize(supernet),1);
-    SuperNET_parsepeers(myinfo,rawpeers,cJSON_GetArraySize(rawpeers),0);
-    return(clonestr("{\"result\":\"peers parsed\"}"));
-}
-
-STRING_ARG(SuperNET,getpeers,activecoin)
-{
-    int32_t i,max = 64;
-    cJSON *SNjson,*rawjson,*retjson = cJSON_CreateObject();
-    SNjson = cJSON_CreateArray();
-    rawjson = cJSON_CreateArray();
-    if ( coin != 0 )
-        max = SuperNET_coinpeers(coin,SNjson,rawjson,max);
-    else
-    {
-        for (i=0; i<IGUANA_MAXCOINS&&max>0; i++)
-            if ( Coins[i] != 0 )
-                max = SuperNET_coinpeers(Coins[i],SNjson,rawjson,max);
-    }
-    if ( max != 64 )
-    {
-        jaddstr(retjson,"agent","SuperNET");
-        jaddstr(retjson,"method","mypeers");
-        jadd(retjson,"supernet",SNjson);
-        jadd(retjson,"rawpeers",rawjson);
-    }
-    else
-    {
-        jaddstr(retjson,"error","no peers");
-        free_json(SNjson);
-        free_json(rawjson);
-    }
-    return(jprint(retjson,1));
-}
 
 STRING_ARG(iguana,peers,activecoin)
 {
@@ -670,22 +548,7 @@ TWO_STRINGS(SuperNET,html,agentform,htmlfile)
         fclose(fp);
     return(jprint(retjson,1));
 }
-
-ZERO_ARGS(SuperNET,saveconf)
-{
-    return(clonestr("{\"result\":\"saveconf here\"}"));
-}
-
-HASH_ARRAY_STRING(SuperNET,layer,mypriv,otherpubs,str)
-{
-    return(clonestr("{\"result\":\"layer encrypt here\"}"));
-}
-
-HASH_AND_STRING(SuperNET,sharepersistent,persistentpub,destip)
-{
-    return(clonestr("{\"result\":\"share persistent here\"}"));
-}
-
+       
 #undef IGUANA_ARGS
 #include "../includes/iguana_apiundefs.h"
 
@@ -720,10 +583,12 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSO
 #define IGUANA_DISPATCH_IA(agent,name,val,array) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,juint(json,#val),jobj(json,#array)))
 #define IGUANA_DISPATCH_IAS(agent,name,val,array,str) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,juint(json,#val),jobj(json,#array),jstr(json,#str)))
     
+#define IGUANA_DISPATCH_64A(agent,name,j64,array) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,j64bits(json,#j64),jobj(json,#array)))
 #define IGUANA_DISPATCH_AA(agent,name,array,array2) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jobj(json,#array),jobj(json,#array2)))
     
 #define IGUANA_DISPATCH_D(agent,name,amount) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jdouble(json,#amount)))
     
+#define IGUANA_DISPATCH_H(agent,name,hash) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash)))
 #define IGUANA_DISPATCH_HI(agent,name,hash,val) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),juint(json,#val)))
 #define IGUANA_DISPATCH_HS(agent,name,hash,str) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),jstr(json,#str)))
 #define IGUANA_DISPATCH_HII(agent,name,hash,val,val2) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),juint(json,#val),juint(json,#val2)))
@@ -765,9 +630,11 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSO
 #define THREE_INTS IGUANA_DISPATCH_III
 #define TWOHASHES_AND_STRING IGUANA_DISPATCH_HHS
 #define HASH_ARRAY_STRING IGUANA_DISPATCH_HAS
+#define U64_AND_ARRAY IGUANA_DISPATCH_64A
+#define HASH_ARG IGUANA_DISPATCH_H
 
 #include "../includes/iguana_apideclares.h"
-#undef IGUANA_ARGS
+//#undef IGUANA_ARGS
     
 #include "../includes/iguana_apiundefs.h"
     

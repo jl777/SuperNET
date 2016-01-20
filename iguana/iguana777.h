@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2015 The SuperNET Developers.                             *
+ * Copyright © 2014-2016 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -695,6 +695,7 @@ int32_t iguana_pendingaccept(struct iguana_info *coin);
 char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t tag,int32_t maxmillis,char *remoteaddr);
 void iguana_iAkill(struct iguana_info *coin,struct iguana_peer *addr,int32_t markflag);
 cJSON *SuperNET_bits2json(bits256 mypriv,bits256 mypub,struct iguana_peer *addr,uint8_t *serialized,uint8_t *space,int32_t datalen,int32_t iscompressed);
+int32_t SuperNET_sendmsg(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,bits256 destpub,bits256 mypriv,bits256 mypub,uint8_t *msg,int32_t len,uint8_t *data,int32_t delaymillis);
 
 extern queue_t bundlesQ;
 

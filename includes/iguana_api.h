@@ -18,7 +18,7 @@
 
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
-#undef IGUANA_ARGS
+//#undef IGUANA_ARGS
 
 #include "../includes/iguana_apiundefs.h"
 

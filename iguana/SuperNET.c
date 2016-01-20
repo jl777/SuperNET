@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2015 The SuperNET Developers.                             *
+ * Copyright © 2014-2016 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -134,6 +134,24 @@ int32_t SuperNET_serialize(int32_t reverse,bits256 *senderpubp,uint64_t *senderb
     return((int32_t)extra);
 }
 
+int32_t SuperNET_decode(uint64_t *senderbitsp,bits256 *sigp,uint32_t *timestampp,uint64_t *destbitsp,uint8_t *str,uint8_t *cipher,int32_t *lenp,uint8_t *myprivkey)
+{
+    bits256 srcpubkey; uint8_t *nonce; int i,hdrlen,err=0,len = *lenp;
+    hdrlen = SuperNET_serialize(1,&srcpubkey,senderbitsp,sigp,timestampp,destbitsp,cipher);
+    cipher += hdrlen, len -= hdrlen;
+    if ( *destbitsp != 0 && *senderbitsp != 0 )
+    {
+        nonce = cipher;
+        cipher += crypto_box_NONCEBYTES, len -= crypto_box_NONCEBYTES;
+        printf("decode ptr.%p[%d]\n",cipher,len);
+        err = crypto_box_open((uint8_t *)str,cipher,len,nonce,srcpubkey.bytes,myprivkey);
+        for (i=0; i<len-crypto_box_ZEROBYTES; i++)
+            str[i] = str[i+crypto_box_ZEROBYTES];
+        *lenp = len - crypto_box_ZEROBYTES;
+    } else memcpy(str,cipher,len);
+    return(err);
+}
+
 uint8_t *SuperNET_encode(int32_t *cipherlenp,void *str,int32_t len,bits256 destpubkey,bits256 myprivkey,bits256 mypubkey,uint64_t senderbits,bits256 sig,uint32_t timestamp)
 {
     uint8_t *buf,*nonce,*origcipher,*cipher,*ptr; uint64_t destbits; int32_t totalsize,hdrlen;
@@ -155,6 +173,7 @@ uint8_t *SuperNET_encode(int32_t *cipherlenp,void *str,int32_t len,bits256 destp
     origcipher = cipher;
     ptr = &cipher[sizeof(struct iguana_msghdr)];
     hdrlen = SuperNET_serialize(0,&mypubkey,&senderbits,&sig,&timestamp,&destbits,ptr);
+    printf("hdrlen.%d sender.%llx dest.%llx\n",hdrlen,(long long)senderbits,(long long)destbits);
     if ( senderbits != 0 )
         totalsize += sizeof(sig);//, printf("totalsize.%d extra.%ld add %ld\n",totalsize-len,extra,(long)(sizeof(sig) + sizeof(timestamp)));
     if ( destbits != 0 && senderbits != 0 )
@@ -167,32 +186,25 @@ uint8_t *SuperNET_encode(int32_t *cipherlenp,void *str,int32_t len,bits256 destp
         memset(cipher,0,len+crypto_box_ZEROBYTES);
         memset(buf,0,crypto_box_ZEROBYTES);
         memcpy(buf+crypto_box_ZEROBYTES,str,len);
+        printf("cryptobox.%p[%d]\n",cipher,len+crypto_box_ZEROBYTES);
         crypto_box(cipher,buf,len+crypto_box_ZEROBYTES,nonce,destpubkey.bytes,myprivkey.bytes);
         hdrlen += crypto_box_NONCEBYTES + crypto_box_ZEROBYTES;
     }
     else memcpy(&cipher[hdrlen],str,len);
     if ( totalsize != len+hdrlen )
         printf("unexpected totalsize.%d != len.%d + hdrlen.%d %d\n",totalsize,len,hdrlen,len+hdrlen);
-    free(buf);
     *cipherlenp = totalsize;
-    return(origcipher);
-}
-
-int32_t SuperNET_decode(uint64_t *senderbitsp,bits256 *sigp,uint32_t *timestampp,uint64_t *destbitsp,uint8_t *str,uint8_t *cipher,int32_t *lenp,uint8_t *myprivkey)
-{
-    bits256 srcpubkey; uint8_t *nonce; int i,hdrlen,err=0,len = *lenp;
-    hdrlen = SuperNET_serialize(1,&srcpubkey,senderbitsp,sigp,timestampp,destbitsp,cipher);
-    cipher += hdrlen, len -= hdrlen;
-    if ( *destbitsp != 0 && *senderbitsp != 0 )
     {
-        nonce = cipher;
-        cipher += crypto_box_NONCEBYTES, len -= crypto_box_NONCEBYTES;
-        err = crypto_box_open((uint8_t *)str,cipher,len,nonce,srcpubkey.bytes,myprivkey);
-        for (i=0; i<len-crypto_box_ZEROBYTES; i++)
-            str[i] = str[i+crypto_box_ZEROBYTES];
-        *lenp = len - crypto_box_ZEROBYTES;
-    } else memcpy(str,cipher,len);
-    return(err);
+        bits256 checksig; uint32_t checkstamp; uint64_t checksender,checkbits; int32_t checklen;
+        checklen = totalsize;
+        if ( SuperNET_decode(&checksender,&checksig,&checkstamp,&checkbits,(void *)buf,ptr,&checklen,myprivkey.bytes) == 0 )
+        {
+            printf("decoded %u %llx checklen.%d\n",checkstamp,(long long)checkbits,checklen);
+        } else printf("encrypt/decrypt error\n");
+        printf("decoded %u %llx checklen.%d\n",checkstamp,(long long)checkbits,checklen);
+    }
+    free(buf);
+    return(origcipher);
 }
 
 int32_t SuperNET_decrypt(bits256 *senderpubp,uint64_t *senderbitsp,uint32_t *timestampp,bits256 mypriv,bits256 mypub,uint8_t *dest,int32_t maxlen,uint8_t *src,int32_t len)
@@ -254,8 +266,7 @@ int32_t SuperNET_decrypt(bits256 *senderpubp,uint64_t *senderbitsp,uint32_t *tim
                 } //else printf("SIG VERIFIED newlen.%d (%llu -> %llu)\n",newlen,(long long)senderbits,(long long)destbits);
             }
         }
-    }
-    else printf("%llu: SuperNET_decrypt skip: decode_cipher error len.%d -> newlen.%d\n",(long long)acct777_nxt64bits(mypub),len,newlen);
+    } else printf("%llu: SuperNET_decrypt skip: decode_cipher error len.%d -> newlen.%d\n",(long long)acct777_nxt64bits(mypub),len,newlen);
     free(buf);
     return(newlen);
 }
@@ -270,7 +281,7 @@ int32_t SuperNET_sendmsg(struct supernet_info *myinfo,struct iguana_info *coin,s
         destbits = 0;
         destpub = GENESIS_PUBKEY;
     }
-    //printf("hostnet777_sendmsg dest.%llu destpub.%llx priv.%llx pub.%llx\n",(long long)destbits,(long long)destpub.txid,(long long)mypriv.txid,(long long)mypub.txid);
+    printf("SuperNET_sendmsg dest.%llu destpub.%llx priv.%llx pub.%llx\n",(long long)destbits,(long long)destpub.txid,(long long)mypriv.txid,(long long)mypub.txid);
     memset(&sig,0,sizeof(sig));
     if ( mypub.txid == 0 || mypriv.txid == 0 )
         mypriv = curve25519_keypair(&mypub), sig.timestamp = (uint32_t)time(NULL);
@@ -323,7 +334,7 @@ int32_t SuperNET_json2bits(char *myipaddr,bits256 persistent_priv,bits256 persis
     checkc = SuperNET_checkc(persistent_priv,destpub,tag);
     len += iguana_rwnum(1,&serialized[len],sizeof(checkc),&checkc);
     agent = jstr(json,"agent"), method = jstr(json,"method");
-    if ( strcmp(agent,"SuperNET") == 0 && strcmp(method,"json2bits") == 0 )
+    if ( agent != 0 && method != 0 && strcmp(agent,"SuperNET") == 0 && strcmp(method,"json2bits") == 0 )
     {
         agent = jstr(json,"destagent");
         method = jstr(json,"destmethod");
@@ -346,9 +357,9 @@ int32_t SuperNET_json2bits(char *myipaddr,bits256 persistent_priv,bits256 persis
     }
     crc = calc_crc32(0,&serialized[sizeof(crc)],len - sizeof(crc));
     iguana_rwnum(1,serialized,sizeof(crc),&crc);
-    int32_t i; for (i=0; i<len; i++)
-        printf("%02x ",serialized[i]);
-    printf("SEND[%d]\n",len);
+    //int32_t i; for (i=0; i<len; i++)
+    //    printf("%02x ",serialized[i]);
+    //printf("SEND[%d]\n",len);
     return(len);
 }
 
@@ -381,9 +392,9 @@ cJSON *SuperNET_bits2json(bits256 mypriv,bits256 mypub,struct iguana_peer *addr,
     len += iguana_rwnum(0,&serialized[len],sizeof(checkc),&checkc);
     len += iguana_rwnum(0,&serialized[len],sizeof(apinum),&apinum);
     //printf("-> dest.%x myip.%x senderpub.%llx tag.%llu\n",destipbits,myipbits,(long long)senderpub.txid,(long long)tag);
-    int32_t i; for (i=0; i<len; i++)
-        printf("%02x ",serialized[i]);
-    printf("RECV[%d]\n",len);
+    //int32_t i; for (i=0; i<len; i++)
+    //    printf("%02x ",serialized[i]);
+    //printf("RECV[%d]\n",len);
     if ( SuperNET_num2API(agent,method,apinum) >= 0 )
     {
         jaddstr(json,"agent",agent);
@@ -419,7 +430,7 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
         space = malloc(sizeof(struct iguana_msghdr) + IGUANA_MAXPACKETSIZE);
         datalen = SuperNET_json2bits(myinfo->ipaddr,myinfo->persistent_priv,myinfo->myaddr.persistent,&serialized[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE,addr->ipaddr,addr->pubkey,json);
         printf("SUPERSEND.(%s) -> (%s) delaymillis.%d datalen.%d\n",jsonstr,addr->ipaddr,delaymillis,datalen);
-        if ( 0 )
+        if ( 1 )
             qlen = iguana_queue_send(coin,addr,delaymillis,serialized,"SuperNET",datalen,0,0);
         else qlen = SuperNET_sendmsg(myinfo,coin,addr,addr->pubkey,myinfo->privkey,myinfo->myaddr.pubkey,serialized,datalen,space,delaymillis);
         free(serialized);
@@ -659,3 +670,410 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
         free(space);
     return(retstr);
 }
+
+cJSON *SuperNET_peerarray(struct iguana_info *coin,int32_t max,int32_t supernetflag)
+{
+    int32_t i,r,j,n = 0; struct iguana_peer *addr; cJSON *array = cJSON_CreateArray();
+    r = rand();
+    for (j=0; j<IGUANA_MAXPEERS; j++)
+    {
+        i = (r + j) % IGUANA_MAXPEERS;
+        addr = &coin->peers.active[i];
+        if ( addr->usock >= 0 && supernetflag == (addr->supernet != 0) )
+        {
+            jaddistr(array,addr->ipaddr);
+            if ( ++n >= max )
+                break;
+        }
+    }
+    if ( n == 0 )
+    {
+        free_json(array);
+        return(0);
+    }
+    return(array);
+}
+
+int32_t SuperNET_coinpeers(struct iguana_info *coin,cJSON *SNjson,cJSON *rawjson,int32_t max)
+{
+    cJSON *array,*item;
+    if ( (array= SuperNET_peerarray(coin,max,1)) != 0 )
+    {
+        max -= cJSON_GetArraySize(array);
+        item = cJSON_CreateObject();
+        jaddstr(item,"coin",coin->symbol);
+        jadd(item,"peers",array);
+        jaddi(SNjson,item);
+    }
+    if ( max > 0 && (array= SuperNET_peerarray(coin,max,0)) != 0 )
+    {
+        max -= cJSON_GetArraySize(array);
+        item = cJSON_CreateObject();
+        jaddstr(item,"coin",coin->symbol);
+        jadd(item,"peers",array);
+        jaddi(rawjson,item);
+    }
+    return(max);
+}
+
+void SuperNET_parsepeers(struct supernet_info *myinfo,cJSON *array,int32_t n,int32_t supernetflag)
+{
+    int32_t i,j,m; cJSON *coinarray,*item; char *symbol,*ipaddr; struct iguana_info *ptr;
+    if ( array != 0 && n > 0 )
+    {
+        for (i=0; i<n; i++)
+        {
+            if ( (item= jitem(array,i)) != 0 && (symbol= jstr(item,"coin")) != 0 )
+            {
+                ptr = iguana_coinfind(symbol);
+                if ( (coinarray= jarray(&m,item,"peers")) != 0 )
+                {
+                    for (j=0; j<m; j++)
+                    {
+                        if ( (ipaddr= jstr(jitem(coinarray,j),0)) != 0 )
+                            SuperNET_remotepeer(myinfo,ptr,symbol,ipaddr,supernetflag);
+                        else printf("no ipaddr[%d] of %d\n",j,m);
+                    }
+                }
+                printf("parsed.%d %s.peers supernet.%d\n",m,symbol,supernetflag);
+            }
+        }
+    }
+}
+
+int32_t _SuperNET_cipher(uint8_t nonce[crypto_box_NONCEBYTES],uint8_t *cipher,uint8_t *message,int32_t len,bits256 destpub,bits256 srcpriv,uint8_t *buf)
+{
+    memset(cipher,0,len+crypto_box_ZEROBYTES);
+    memset(buf,0,crypto_box_ZEROBYTES);
+    memcpy(buf+crypto_box_ZEROBYTES,message,len);
+    crypto_box(cipher,buf,len+crypto_box_ZEROBYTES,nonce,destpub.bytes,srcpriv.bytes);
+    return(len + crypto_box_ZEROBYTES);
+}
+
+uint8_t *_SuperNET_decipher(uint8_t nonce[crypto_box_NONCEBYTES],uint8_t *cipher,uint8_t *message,int32_t len,bits256 srcpub,bits256 mypriv)
+{
+    int32_t err;
+    if ( (err= crypto_box_open(message,cipher,len,nonce,srcpub.bytes,mypriv.bytes)) == 0 )
+    {
+        message += crypto_box_ZEROBYTES;
+        len -= crypto_box_ZEROBYTES;
+        return(message);
+    }
+    return(0);
+}
+
+#include "../includes/iguana_apidefs.h"
+
+HASH_ARG(SuperNET,priv2pub,privkey)
+{
+    cJSON *retjson = cJSON_CreateObject(); bits256 pubkey;
+    crypto_box_priv2pub(pubkey.bytes,privkey.bytes);
+    jaddbits256(retjson,"result",pubkey);
+    return(jprint(retjson,1));
+}
+
+ZERO_ARGS(SuperNET,keypair)
+{
+    cJSON *retjson = cJSON_CreateObject(); bits256 pubkey,privkey;
+    crypto_box_keypair(pubkey.bytes,privkey.bytes);
+    jaddstr(retjson,"result","generated keypair");
+    jaddbits256(retjson,"privkey",privkey);
+    jaddbits256(retjson,"pubkey",pubkey);
+    return(jprint(retjson,1));
+}
+
+TWOHASHES_AND_STRING(SuperNET,decipher,privkey,srcpubkey,cipherstr)
+{
+    cJSON *retjson; char *retstr;
+    uint8_t *origptr,*cipher,*nonce,*deciphered,*message,space[8192],space2[sizeof(space)]; int len;
+    if ( bits256_nonz(privkey) == 0 )
+        privkey = GENESIS_PRIVKEY;
+    len = (int32_t)strlen(cipherstr)>>1;
+    if ( len < crypto_box_NONCEBYTES )
+        return(clonestr("{\"error\":\"cipher is too short\"}"));
+    if ( len > sizeof(space) )
+    {
+        cipher = calloc(1,len);
+        message = calloc(1,len);
+    }
+    else cipher = space, message = space2;
+    decode_hex(cipher,len,cipherstr);
+    origptr = cipher;
+    if ( bits256_nonz(srcpubkey) == 0 )
+    {
+        memcpy(srcpubkey.bytes,cipher,sizeof(srcpubkey));
+        //char str[65]; printf("use attached pubkey.(%s)\n",bits256_str(str,srcpubkey));
+        cipher += sizeof(srcpubkey);
+        len -= sizeof(srcpubkey);
+    }
+    nonce = cipher;
+    cipher += crypto_box_NONCEBYTES, len -= crypto_box_NONCEBYTES;
+    if ( (deciphered= _SuperNET_decipher(nonce,cipher,message,len,srcpubkey,privkey)) != 0 )
+    {
+        len -= crypto_box_ZEROBYTES;
+        deciphered[len] = 0;
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"result","deciphered message");
+        jaddstr(retjson,"message",(char *)deciphered);
+        retstr = jprint(retjson,1);
+    } else retstr = clonestr("{\"error\":\"couldnt decipher message\"}");
+    if ( origptr != space )
+        free(origptr);
+    if ( message != space2 )
+        free(message);
+    return(retstr);
+}
+
+TWOHASHES_AND_STRING(SuperNET,cipher,privkey,destpubkey,message)
+{
+    bits256 mypubkey; uint8_t *buf,*nonce,*cipher,*origptr,space[8192],space2[sizeof(space)];
+    cJSON *retjson; char *retstr,*hexstr; int32_t onetimeflag=0,allocsize,len;
+    len = (int32_t)strlen(message);
+    allocsize = (len + crypto_box_NONCEBYTES + crypto_box_ZEROBYTES);
+    if ( bits256_nonz(destpubkey) == 0 )
+    {
+        destpubkey = GENESIS_PUBKEY;
+        onetimeflag = 2; // prevent any possible leakage of privkey by using known destpub
+    }
+    if ( bits256_nonz(privkey) == 0 )
+        onetimeflag = 1;
+    if ( onetimeflag != 0 )
+    {
+        crypto_box_keypair(mypubkey.bytes,privkey.bytes);
+        allocsize += sizeof(bits256);
+    }
+    if ( allocsize > sizeof(space) )
+    {
+        buf = calloc(1,allocsize);
+        cipher = calloc(1,allocsize);
+    } else buf = space, cipher = space2;
+    origptr = nonce = cipher;
+    if ( onetimeflag != 0 )
+    {
+        memcpy(cipher,mypubkey.bytes,sizeof(mypubkey));
+        nonce = &cipher[sizeof(mypubkey)];
+    }
+    OS_randombytes(nonce,crypto_box_NONCEBYTES);
+    cipher = &nonce[crypto_box_NONCEBYTES];
+    _SuperNET_cipher(nonce,cipher,(void *)message,len,destpubkey,privkey,buf);
+    if ( buf != space )
+        free(buf);
+    if ( allocsize > sizeof(space)/2 )
+        hexstr = calloc(1,(allocsize<<1)+1);
+    else hexstr = (void *)space;
+    init_hexbytes_noT(hexstr,origptr,allocsize);
+    retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result","ciphered message");
+    jaddstr(retjson,"message",message);
+    jaddstr(retjson,"cipher",hexstr);
+    init_hexbytes_noT(hexstr,nonce,crypto_box_NONCEBYTES);
+    jaddstr(retjson,"nonce",hexstr);
+    if ( onetimeflag != 0 )
+    {
+        jaddbits256(retjson,"onetime_privkey",privkey);
+        jaddbits256(retjson,"onetime_pubkey",mypubkey);
+        if ( onetimeflag == 2 )
+            jaddstr(retjson,"warning","onetime keypair was used to broadcast");
+    }
+    retstr = jprint(retjson,1);
+    if ( hexstr != (void *)space )
+        free(hexstr);
+    if ( origptr != space2 )
+        free(origptr);
+    return(retstr);
+}
+
+bits256 SuperNET_pindecipher(IGUANA_ARGS,char *pin,char *privcipher)
+{
+    cJSON *testjson; char *mstr,*cstr; bits256 privkey,pinpriv,pinpub;
+    conv_NXTpassword(pinpriv.bytes,pinpub.bytes,(uint8_t *)pin,(int32_t)strlen(pin));
+    if ( (cstr= SuperNET_decipher(IGUANA_CALLARGS,pinpriv,pinpub,privcipher)) != 0 )
+    {
+        if ( (testjson= cJSON_Parse(cstr)) != 0 )
+        {
+            if ( (mstr= jstr(testjson,"message")) != 0 && strlen(mstr) == sizeof(bits256)*2 )
+            {
+                decode_hex(privkey.bytes,sizeof(privkey),mstr);
+            } //else jaddstr(retjson,"error","invalid return from deciphering privcipher");
+            free_json(testjson);
+        }
+        free(cstr);
+    } //else jaddstr(retjson,"error","null return from deciphering privcipher");
+    return(privkey);
+}
+
+THREE_STRINGS(SuperNET,rosetta,passphrase,pin,showprivkey)
+{
+    uint8_t rmd160[20],pub[33],flag = 0; uint64_t nxt64bits; bits256 check,privkey,pubkey,pinpriv,pinpub;
+    char str2[41],wifbuf[64],addr[64],str[128],privcipher[512],*privcipherstr,*cstr; cJSON *retjson;
+    nxt64bits = conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
+    if ( showprivkey != 0 && strcmp(showprivkey,"yes") == 0 )
+        flag = 1;
+    privcipher[0] = 0;
+    conv_NXTpassword(pinpriv.bytes,pinpub.bytes,(uint8_t *)pin,(int32_t)strlen(pin));
+    if ( (cstr= SuperNET_cipher(IGUANA_CALLARGS,pinpriv,pinpub,bits256_str(str,privkey))) != 0 )
+    {
+        if ( (retjson= cJSON_Parse(cstr)) != 0 )
+        {
+            if ( (privcipherstr= jstr(retjson,"cipher")) != 0 )
+                strcpy(privcipher,privcipherstr);
+            free_json(retjson);
+        }
+        free(cstr);
+    }
+    retjson = cJSON_CreateObject();
+    jaddstr(retjson,"privcipher",privcipher);
+    jaddbits256(retjson,"pubkey",pubkey);
+    RS_encode(str,nxt64bits);
+    jaddstr(retjson,"RS",str);
+    jadd64bits(retjson,"NXT",nxt64bits);
+    btc_priv2pub(pub,privkey.bytes);
+    init_hexbytes_noT(str,pub,33);
+    jaddstr(retjson,"btcpubkey",str);
+    calc_OP_HASH160(str2,rmd160,str);
+    jaddstr(retjson,"rmd160",str2);
+    if ( btc_coinaddr(addr,0,str) == 0 )
+    {
+        jaddstr(retjson,"BTC",addr);
+        btc_priv2wip(wifbuf,privkey.bytes,0x80);
+        if ( flag != 0 )
+            jaddstr(retjson,"BTCwif",wifbuf);
+    }
+    if ( btc_coinaddr(addr,60,str) == 0 )
+    {
+        jaddstr(retjson,"BTCD",addr);
+        btc_priv2wip(wifbuf,privkey.bytes,0xbc);
+        if ( flag != 0 )
+            jaddstr(retjson,"BTCDwif",wifbuf);
+    }
+    if ( flag != 0 )
+        jaddbits256(retjson,"privkey",privkey);
+    check = SuperNET_pindecipher(IGUANA_CALLARGS,pin,privcipher);
+    if ( memcmp(check.bytes,privkey.bytes,sizeof(check)) != 0 )
+    {
+        jaddbits256(retjson,"deciphered",check);
+        jaddstr(retjson,"error","cant recreate privkey from (pin + privcipher)");
+    }
+    else if ( flag != 0 )
+        jaddbits256(retjson,"deciphered",check);
+    if ( jobj(retjson,"error") == 0 )
+        jaddstr(retjson,"result","use pin and privcipher to access wallet");
+    return(jprint(retjson,1));
+}
+
+STRING_ARG(SuperNET,broadcastcipher,message)
+{
+    bits256 zero;
+    memset(zero.bytes,0,sizeof(zero));
+    return(SuperNET_cipher(IGUANA_CALLARGS,zero,zero,message));
+}
+
+STRING_ARG(SuperNET,broadcastdecipher,message)
+{
+    bits256 zero;
+    memset(zero.bytes,0,sizeof(zero));
+    return(SuperNET_decipher(IGUANA_CALLARGS,zero,zero,message));
+}
+
+HASH_AND_STRING(SuperNET,multicastcipher,pubkey,message)
+{
+    bits256 zero;
+    memset(zero.bytes,0,sizeof(zero));
+    return(SuperNET_cipher(IGUANA_CALLARGS,zero,pubkey,message));
+}
+
+HASH_AND_STRING(SuperNET,multicastdecipher,privkey,cipherstr)
+{
+    bits256 zero;
+    memset(zero.bytes,0,sizeof(zero));
+    return(SuperNET_decipher(IGUANA_CALLARGS,privkey,zero,cipherstr));
+}
+
+ZERO_ARGS(SuperNET,stop)
+{
+    if ( remoteaddr == 0 || strncmp(remoteaddr,"127.0.0.1",strlen("127.0.0.1")) == 0 )
+    {
+        iguana_exit();
+        return(clonestr("{\"result\":\"exit started\"}"));
+    } else return(clonestr("{\"error\":\"cant do a remote stop of this node\"}"));
+}
+
+TWO_ARRAYS(SuperNET,mypeers,supernet,rawpeers)
+{
+    SuperNET_parsepeers(myinfo,supernet,cJSON_GetArraySize(supernet),1);
+    SuperNET_parsepeers(myinfo,rawpeers,cJSON_GetArraySize(rawpeers),0);
+    return(clonestr("{\"result\":\"peers parsed\"}"));
+}
+
+STRING_ARG(SuperNET,getpeers,activecoin)
+{
+    int32_t i,max = 64;
+    cJSON *SNjson,*rawjson,*retjson = cJSON_CreateObject();
+    SNjson = cJSON_CreateArray();
+    rawjson = cJSON_CreateArray();
+    if ( coin != 0 )
+        max = SuperNET_coinpeers(coin,SNjson,rawjson,max);
+    else
+    {
+        for (i=0; i<IGUANA_MAXCOINS&&max>0; i++)
+            if ( Coins[i] != 0 )
+                max = SuperNET_coinpeers(Coins[i],SNjson,rawjson,max);
+    }
+    if ( max != 64 )
+    {
+        jaddstr(retjson,"agent","SuperNET");
+        jaddstr(retjson,"method","mypeers");
+        jadd(retjson,"supernet",SNjson);
+        jadd(retjson,"rawpeers",rawjson);
+    }
+    else
+    {
+        jaddstr(retjson,"error","no peers");
+        free_json(SNjson);
+        free_json(rawjson);
+    }
+    return(jprint(retjson,1));
+}
+
+TWOSTRINGS_AND_HASH_AND_TWOINTS(SuperNET,DHT,hexmsg,destip,destpub,maxdelay,broadcast)
+{
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"cant remote DHT\"}"));
+    else if ( is_hexstr(hexmsg,(int32_t)strlen(hexmsg)) <= 0 )
+        return(clonestr("{\"error\":\"message must be in hex\"}"));
+    return(SuperNET_DHTencode(myinfo,destip,destpub,hexmsg,maxdelay,broadcast));
+}
+
+HASH_AND_STRING(SuperNET,saveconf,wallethash,confjsonstr)
+{
+    return(clonestr("{\"result\":\"saveconf here\"}"));
+}
+
+HASH_ARRAY_STRING(SuperNET,layer,mypriv,otherpubs,str)
+{
+    return(clonestr("{\"result\":\"layer encrypt here\"}"));
+}
+
+THREE_STRINGS(SuperNET,announce,category,subcategory,message)
+{
+    cJSON *argjson = cJSON_CreateObject(); int32_t len; char *hexmsg=0,*retstr = 0;
+    //SuperNET_ann(myinfo,category,subcategory,message);
+    if ( remoteaddr == 0 )
+    {
+        len = (int32_t)strlen(message);
+        if ( is_hexstr(message,len) == 0 )
+        {
+        }
+        else hexmsg = message;
+        retstr = SuperNET_DHTsend(myinfo,GENESIS_PUBKEY,hexmsg,0,1);
+        if ( hexmsg != message)
+            free(hexmsg);
+    }
+    return(jprint(argjson,1));
+}
+
+THREE_STRINGS(SuperNET,survey,category,subcategory,message)
+{
+    return(clonestr("{\"result\":\"layer encrypt here\"}"));
+}
+#include "../includes/iguana_apiundefs.h"

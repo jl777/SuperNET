@@ -1,4 +1,5 @@
 
+#define IGUANA_CALLARGS myinfo,coin,json,remoteaddr
 #define IGUANA_ARGS struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr
 #define IGUANA_CFUNC0(agent,name) char *agent ## _ ## name(IGUANA_ARGS)
 #define IGUANA_CFUNC_S(agent,name,str) char *agent ## _ ## name(IGUANA_ARGS,char *str)
@@ -6,6 +7,10 @@
 #define IGUANA_CFUNC_SA(agent,name,str,array) char *agent ## _ ## name(IGUANA_ARGS,char *str,cJSON *array)
 #define IGUANA_CFUNC_AA(agent,name,array,array2) char *agent ## _ ## name(IGUANA_ARGS,cJSON *array,cJSON *array2)
 #define IGUANA_CFUNC_SAA(agent,name,str,array,array2) char *agent ## _ ## name(IGUANA_ARGS,char *str,cJSON *array,cJSON *array2)
+
+#define IGUANA_CFUNC_64A(agent,name,j64,array) char *agent ## _ ## name(IGUANA_ARGS,uint64_t j64,cJSON *array)
+
+
 #define IGUANA_CFUNC_IA(agent,name,val,array) char *agent ## _ ## name(IGUANA_ARGS,int32_t val,cJSON *array)
 #define IGUANA_CFUNC_IAS(agent,name,val,array,str) char *agent ## _ ## name(IGUANA_ARGS,int32_t val,cJSON *array,char *str)
 #define IGUANA_CFUNC_II(agent,name,val,val2) char *agent ## _ ## name(IGUANA_ARGS,int32_t val,int32_t val2)
@@ -21,6 +26,7 @@
 #define IGUANA_CFUNC_SI(agent,name,str,val) char *agent ## _ ## name(IGUANA_ARGS,char *str,int32_t val)
 #define IGUANA_CFUNC_SII(agent,name,str,val,val2) char *agent ## _ ## name(IGUANA_ARGS,char *str,int32_t val,int32_t val2)
 #define IGUANA_CFUNC_HI(agent,name,hash,val) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,int32_t val)
+#define IGUANA_CFUNC_H(agent,name,hash) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash)
 #define IGUANA_CFUNC_HS(agent,name,hash,str) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,char *str)
 #define IGUANA_CFUNC_HHS(agent,name,hash,hash2,str) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,bits256 hash2,char *str)
 #define IGUANA_CFUNC_HAS(agent,name,hash,array,str) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,cJSON *array,char *str)
@@ -61,3 +67,5 @@
 #define TWOSTRINGS_AND_HASH_AND_TWOINTS IGUANA_CFUNC_SSHII
 #define THREE_INTS IGUANA_CFUNC_III
 #define HASH_ARRAY_STRING IGUANA_CFUNC_HAS
+#define U64_AND_ARRAY IGUANA_CFUNC_64A
+#define HASH_ARG IGUANA_CFUNC_H
