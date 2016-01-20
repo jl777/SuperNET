@@ -581,13 +581,16 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
         senderpub = iguana_actualpubkey(&offset,data,datalen,senderpub);
         if ( (msgbits= SuperNET_deciphercalc(&ptr,&msglen,privkey,senderpub,data+offset,datalen-offset,space,sizeof(space))) == 0 )
         {
-            int32_t i; for (i=0; i<datalen; i++)
-                printf("%02x ",data[i]);
-            printf("error decryptint %d\n",datalen);
-            addr->validpub = 0;
-            //return(clonestr("{\"error\":\"couldnt decrypt p2p packet\"}"));
-            return(0);
-        }
+            if ( (msgbits= SuperNET_deciphercalc(&ptr,&msglen,GENESIS_PRIVKEY,senderpub,data+offset,datalen-offset,space,sizeof(space))) == 0 )
+            {
+                int32_t i; for (i=0; i<datalen; i++)
+                    printf("%02x ",data[i]);
+                printf("error decryptint %d\n",datalen);
+                addr->validpub = 0;
+                //return(clonestr("{\"error\":\"couldnt decrypt p2p packet\"}"));
+                return(0);
+            } else printf("GENESIS recv\n");
+        } else printf("decrypted mypriv.%llx senderpub.%llx\n",(long long)privkey.txid,(long long)senderpub.txid);
         //for (i=0; i<msglen; i++)
         //    printf("%02x ",msgbits[i]);
         //printf("DECRYPTED %d\n",msglen);
