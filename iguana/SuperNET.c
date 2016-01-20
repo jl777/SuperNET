@@ -221,7 +221,7 @@ uint16_t SuperNET_checkc(bits256 privkey,bits256 otherpub,uint64_t tag)
     return(check.ushorts[0]);
 }
 
-int32_t SuperNET_json2bits(char *myipaddr,bits256 persistent_priv,bits256 persistent_pub,uint8_t *serialized,int32_t maxsize,char *destip,cJSON *json,bits256 destpub,int16_t othervalid)
+int32_t SuperNET_json2bits(char *myipaddr,bits256 privkey,bits256 mypubkey,uint8_t *serialized,int32_t maxsize,char *destip,cJSON *json,bits256 destpub,int16_t othervalid)
 {
     uint16_t apinum,checkc; uint32_t ipbits,crc; char *agent,*method; uint64_t tag; char *hexmsg;
     int32_t n,len = sizeof(uint32_t);
@@ -238,7 +238,7 @@ int32_t SuperNET_json2bits(char *myipaddr,bits256 persistent_priv,bits256 persis
         printf("agent.(%s) method.(%s) is not found\n",agent,method);
         return(-1);
     }
-    checkc = SuperNET_checkc(persistent_priv,destpub,tag);
+    checkc = SuperNET_checkc(privkey,destpub,tag);
     ipbits = (uint32_t)calc_ipbits(destip);
     len += iguana_rwnum(1,&serialized[len],sizeof(uint32_t),&ipbits);
     ipbits = (uint32_t)calc_ipbits(myipaddr);
@@ -246,7 +246,7 @@ int32_t SuperNET_json2bits(char *myipaddr,bits256 persistent_priv,bits256 persis
     len += iguana_rwnum(1,&serialized[len],sizeof(checkc),&checkc);
     len += iguana_rwnum(1,&serialized[len],sizeof(apinum),&apinum);
     len += iguana_rwnum(1,&serialized[len],sizeof(tag),&tag);
-    len += iguana_rwbignum(1,&serialized[len],sizeof(persistent_pub),persistent_pub.bytes);
+    len += iguana_rwbignum(1,&serialized[len],sizeof(mypubkey),mypubkey.bytes);
     len += iguana_rwnum(1,&serialized[len],sizeof(othervalid),&othervalid);
     if ( (hexmsg= jstr(json,"message")) != 0 )
     {
@@ -320,7 +320,7 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
             privkey = myinfo->privkey;
             destpub = addr->pubkey;
         } else privkey = GENESIS_PRIVKEY, destpub = GENESIS_PUBKEY;
-        if ( (datalen= SuperNET_json2bits(myinfo->ipaddr,myinfo->persistent_priv,myinfo->myaddr.persistent,&serialized[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE,addr->ipaddr,json,destpub,addr->validpub)) > 0 )
+        if ( (datalen= SuperNET_json2bits(myinfo->ipaddr,myinfo->privkey,myinfo->myaddr.pubkey,&serialized[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE,addr->ipaddr,json,addr->pubkey,addr->validpub)) > 0 )
         {
             printf("SUPERSEND.(%s) -> (%s) delaymillis.%d datalen.%d\n",jsonstr,addr->ipaddr,delaymillis,datalen);
             if ( 0 && memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(destpub)) == 0 )
@@ -558,7 +558,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
         if ( (checkstr= jstr(json,"check")) != 0 )
         {
             decode_hex((uint8_t *)&othercheckc,sizeof(othercheckc),checkstr);
-            checkc = SuperNET_checkc(myinfo->privkey,senderpub,j64bits(json,"tag"));
+            checkc = SuperNET_checkc(myinfo->privkey,addr->pubkey,j64bits(json,"tag"));
             if ( checkc == othercheckc )
                 addr->validpub++;
             else if ( addr->validpub > 0 )
