@@ -259,7 +259,7 @@ int32_t SuperNET_json2bits(char *myipaddr,bits256 privkey,bits256 mypubkey,uint8
         } else return(-1);
     }
     crc = calc_crc32(0,&serialized[sizeof(crc)],len - sizeof(crc));
-    printf("crc.%u ip.(%s %s) tag.%llx checkc.%x apinum.%d >>>>>>>>>>>>>>>>\n",crc,destip,myipaddr,(long long)tag,checkc,apinum);
+    char str[65]; printf("crc.%u ip.(%s %s) tag.%llx checkc.%x apinum.%d >>>>>>>>>>>>>>>> mypub.%s\n",crc,destip,myipaddr,(long long)tag,checkc,apinum,bits256_str(str,mypubkey));
     iguana_rwnum(1,serialized,sizeof(crc),&crc);
     //int32_t i; for (i=0; i<len; i++)
     //    printf("%02x ",serialized[i]);
@@ -315,11 +315,10 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
     if ( (json= cJSON_Parse(jsonstr)) != 0 )
     {
         serialized = malloc(sizeof(struct iguana_msghdr) + IGUANA_MAXPACKETSIZE);
+        memset(privkey.bytes,0,sizeof(privkey));// = myinfo->privkey;
         if ( addr->validpub > 3 && addr->othervalid > 3 )
-        {
-            privkey = myinfo->privkey;
             destpub = addr->pubkey;
-        } else privkey = GENESIS_PRIVKEY, destpub = GENESIS_PUBKEY;
+        else privkey = GENESIS_PRIVKEY, destpub = GENESIS_PUBKEY;
         if ( (datalen= SuperNET_json2bits(myinfo->ipaddr,myinfo->privkey,myinfo->myaddr.pubkey,&serialized[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE,addr->ipaddr,json,addr->pubkey,addr->validpub)) > 0 )
         {
             printf("SUPERSEND.(%s) -> (%s) delaymillis.%d datalen.%d\n",jsonstr,addr->ipaddr,delaymillis,datalen);
@@ -330,7 +329,7 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
                 //int32_t i; for (i=0; i<datalen; i++)
                 //    printf("%02x ",serialized[sizeof(struct iguana_msghdr) + i]);
                 //printf("data.%d\n",datalen);
-                printf("encrypt with priv.%llx pub.%llx\n",(long long)privkey.txid,(long long)destpub.txid);
+                char str[65]; printf("encrypt with priv.%llx pub.%s\n",(long long)privkey.txid,bits256_str(str,destpub));
                 if ( (cipher= SuperNET_ciphercalc(&ptr,&cipherlen,&privkey,&destpub,&serialized[sizeof(struct iguana_msghdr)],datalen,space2,sizeof(space2))) != 0 )
                 {
                     //int32_t i; for (i=0; i<cipherlen; i++)
@@ -546,6 +545,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
             senderpub = addr->pubkey;
             printf("decrypt with priv.%llx pub.%llx\n",(long long)privkey.txid,(long long)senderpub.txid);
         } else privkey = GENESIS_PRIVKEY, senderpub = GENESIS_PUBKEY;
+        memset(senderpub.bytes,0,sizeof(senderpub));
         if ( (msgbits= SuperNET_deciphercalc(&ptr,&msglen,privkey,senderpub,data,datalen,space,sizeof(space))) == 0 )
         {
             memset(addr->pubkey.bytes,0,sizeof(addr->pubkey));
