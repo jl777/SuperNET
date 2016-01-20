@@ -206,200 +206,6 @@ int32_t SuperNET_copybits(int32_t reverse,uint8_t *dest,uint8_t *src,int32_t len
     return(len >> 3);
 }
 
-#ifdef notyet
-
-int32_t SuperNET_serialize(int32_t reverse,bits256 *senderpubp,uint64_t *senderbitsp,bits256 *sigp,uint32_t *timestampp,uint64_t *destbitsp,uint8_t *origbuf)
-{
-    uint8_t *buf = origbuf; long extra = sizeof(bits256) + sizeof(uint64_t) + sizeof(uint64_t);
-    buf += SuperNET_copybits(reverse,buf,(void *)destbitsp,sizeof(uint64_t));
-    buf += SuperNET_copybits(reverse,buf,senderpubp->bytes,sizeof(bits256));
-    buf += SuperNET_copybits(reverse,buf,(void *)senderbitsp,sizeof(uint64_t));
-    buf += SuperNET_copybits(reverse,buf,(void *)timestampp,sizeof(uint32_t)), extra += sizeof(uint32_t);
-    if ( *senderbitsp != 0 )
-        buf += SuperNET_copybits(reverse,buf,sigp->bytes,sizeof(bits256)), extra += sizeof(bits256);
-    else memset(sigp,0,sizeof(*sigp));
-    if ( ((long)buf - (long)origbuf) != extra )
-    {
-        printf("SuperNET_serialize: extrasize mismatch %ld vs %ld\n",((long)buf - (long)origbuf),extra);
-    }
-    return((int32_t)extra);
-}
-
-int32_t SuperNET_decode(uint64_t *senderbitsp,bits256 *sigp,uint32_t *timestampp,uint64_t *destbitsp,uint8_t *str,uint8_t *cipher,int32_t *lenp,uint8_t *myprivkey)
-{
-    bits256 srcpubkey; uint8_t *nonce; int i,hdrlen,err=0,len = *lenp;
-    hdrlen = SuperNET_serialize(1,&srcpubkey,senderbitsp,sigp,timestampp,destbitsp,cipher);
-    cipher += hdrlen, len -= hdrlen;
-    if ( *destbitsp != 0 && *senderbitsp != 0 )
-    {
-        nonce = cipher;
-        cipher += crypto_box_NONCEBYTES, len -= crypto_box_NONCEBYTES;
-        printf("decode ptr.%p[%d]\n",cipher,len);
-        err = crypto_box_open((uint8_t *)str,cipher,len,nonce,srcpubkey.bytes,myprivkey);
-        for (i=0; i<len-crypto_box_ZEROBYTES; i++)
-            str[i] = str[i+crypto_box_ZEROBYTES];
-        *lenp = len - crypto_box_ZEROBYTES;
-    } else memcpy(str,cipher,len);
-    return(err);
-}
-
-uint8_t *SuperNET_encode(int32_t *cipherlenp,void *str,int32_t len,bits256 destpubkey,bits256 myprivkey,bits256 mypubkey,uint64_t senderbits,bits256 sig,uint32_t timestamp)
-{
-    uint8_t *buf,*nonce,*origcipher,*cipher,*ptr; uint64_t destbits; int32_t totalsize,hdrlen;
-    long extra = crypto_box_NONCEBYTES + crypto_box_ZEROBYTES + sizeof(sig);
-    destbits = (memcmp(destpubkey.bytes,GENESIS_PUBKEY.bytes,sizeof(destpubkey)) != 0) ? acct777_nxt64bits(destpubkey) : 0;
-    totalsize = (int32_t)(len + sizeof(mypubkey) + sizeof(senderbits) + sizeof(destbits) + sizeof(timestamp));
-    *cipherlenp = 0;
-    if ( (buf= calloc(1,totalsize + extra)) == 0 )
-    {
-        printf("SuperNET_encode: outof mem for buf[%ld]\n",totalsize+extra);
-        return(0);
-    }
-    if ( (cipher= calloc(1,totalsize + extra + sizeof(struct iguana_msghdr))) == 0 )
-    {
-        printf("SuperNET_encode: outof mem for cipher[%ld]\n",totalsize + extra + sizeof(struct iguana_msghdr));
-        free(buf);
-        return(0);
-    }
-    origcipher = cipher;
-    ptr = &cipher[sizeof(struct iguana_msghdr)];
-    hdrlen = SuperNET_serialize(0,&mypubkey,&senderbits,&sig,&timestamp,&destbits,ptr);
-    printf("hdrlen.%d sender.%llx dest.%llx\n",hdrlen,(long long)senderbits,(long long)destbits);
-    if ( senderbits != 0 )
-        totalsize += sizeof(sig);//, printf("totalsize.%d extra.%ld add %ld\n",totalsize-len,extra,(long)(sizeof(sig) + sizeof(timestamp)));
-    if ( destbits != 0 && senderbits != 0 )
-    {
-        totalsize += crypto_box_NONCEBYTES + crypto_box_ZEROBYTES;//, printf("totalsize.%d extra.%ld add %d\n",totalsize-len,extra,crypto_box_NONCEBYTES + crypto_box_ZEROBYTES);
-        nonce = &ptr[hdrlen];
-        OS_randombytes(nonce,crypto_box_NONCEBYTES);
-        cipher = &nonce[crypto_box_NONCEBYTES];
-        //printf("len.%d -> %d %d\n",len,len+crypto_box_ZEROBYTES,len + crypto_box_ZEROBYTES + crypto_box_NONCEBYTES);
-        memset(cipher,0,len+crypto_box_ZEROBYTES);
-        memset(buf,0,crypto_box_ZEROBYTES);
-        memcpy(buf+crypto_box_ZEROBYTES,str,len);
-        printf("cryptobox.%p[%d]\n",cipher,len+crypto_box_ZEROBYTES);
-        crypto_box(cipher,buf,len+crypto_box_ZEROBYTES,nonce,destpubkey.bytes,myprivkey.bytes);
-        hdrlen += crypto_box_NONCEBYTES + crypto_box_ZEROBYTES;
-    }
-    else memcpy(&cipher[hdrlen],str,len);
-    if ( totalsize != len+hdrlen )
-        printf("unexpected totalsize.%d != len.%d + hdrlen.%d %d\n",totalsize,len,hdrlen,len+hdrlen);
-    *cipherlenp = totalsize;
-    {
-        bits256 checksig; uint32_t checkstamp; uint64_t checksender,checkbits; int32_t checklen;
-        checklen = totalsize;
-        if ( SuperNET_decode(&checksender,&checksig,&checkstamp,&checkbits,(void *)buf,ptr,&checklen,myprivkey.bytes) == 0 )
-        {
-            printf("decoded %u %llx checklen.%d\n",checkstamp,(long long)checkbits,checklen);
-        } else printf("encrypt/decrypt error\n");
-        printf("decoded %u %llx checklen.%d\n",checkstamp,(long long)checkbits,checklen);
-    }
-    free(buf);
-    return(origcipher);
-}
-
-int32_t SuperNET_decrypt(bits256 *senderpubp,uint64_t *senderbitsp,uint32_t *timestampp,bits256 mypriv,bits256 mypub,uint8_t *dest,int32_t maxlen,uint8_t *src,int32_t len)
-{
-    bits256 seed,sig,msgpriv; uint64_t my64bits,destbits,senderbits,sendertmp,desttmp;
-    uint8_t *buf; int32_t hdrlen,diff,newlen = -1; HUFF H,*hp = &H; struct acct777_sig checksig;
-    *senderbitsp = 0;
-    my64bits = acct777_nxt64bits(mypub);
-    if ( (buf = calloc(1,maxlen)) == 0 )
-    {
-        printf("SuperNET_decrypt cant allocate maxlen.%d\n",maxlen);
-        return(-1);
-    }
-    hdrlen = SuperNET_serialize(1,senderpubp,&senderbits,&sig,timestampp,&destbits,src);
-    if ( destbits != 0 && my64bits != destbits && destbits != acct777_nxt64bits(GENESIS_PUBKEY) )
-    {
-        free(buf);
-        printf("SuperNET_decrypt received destination packet.%llu when my64bits.%llu len.%d\n",(long long)destbits,(long long)my64bits,len);
-        return(-1);
-    }
-    if ( memcmp(mypub.bytes,senderpubp->bytes,sizeof(mypub)) == 0 )
-    {
-        if ( destbits != 0 )
-            printf("SuperNET: got my own msg?\n");
-    }
-    printf("decrypt(%d) destbits.%llu my64.%llu mypriv.%llx mypub.%llx senderpub.%llx shared.%llx\n",len,(long long)destbits,(long long)my64bits,(long long)mypriv.txid,(long long)mypub.txid,(long long)senderpubp->txid,(long long)seed.txid);
-    if ( SuperNET_decode(&sendertmp,&sig,timestampp,&desttmp,(void *)buf,src,&len,mypriv.bytes) == 0 )
-    {
-        if ( (diff= (*timestampp - (uint32_t)time(NULL))) < 0 )
-            diff = -diff;
-        if ( 1 && diff > SUPERNET_MAXTIMEDIFF )
-            printf("diff.%d > %d %u vs %u\n",diff,SUPERNET_MAXTIMEDIFF,*timestampp,(uint32_t)time(NULL));
-        else
-        {
-            if ( 0 )
-            {
-                memset(seed.bytes,0,sizeof(seed));
-                //for (i='0'; i<='9'; i++)
-                //    SETBIT(seed.bytes,i);
-                //for (i='a'; i<='f'; i++)
-                //    SETBIT(seed.bytes,i);
-                _init_HUFF(hp,len,buf), hp->endpos = (len << 3);
-                newlen = ramcoder_decoder(0,1,dest,maxlen,hp,&seed);
-            }
-            else memcpy(dest,buf,len), newlen = len;
-            //printf("T%d decrypted newlen.%d\n",threadid,newlen);
-            if ( senderbits != 0 && senderpubp->txid != 0 )
-            {
-                *senderbitsp = senderbits;
-                if ( destbits == 0 )
-                    msgpriv = GENESIS_PRIVKEY;
-                else msgpriv = mypriv;
-                acct777_sign(&checksig,msgpriv,*senderpubp,*timestampp,dest,newlen);
-                if ( memcmp(checksig.sigbits.bytes,&sig,sizeof(checksig.sigbits)) != 0 )
-                {
-                    printf("sender.%llu sig %llx compare error vs %llx using sig->pub from %llu, broadcast.%d len.%d -> newlen.%d\n",(long long)senderbits,(long long)sig.txid,(long long)checksig.sigbits.txid,(long long)senderbits,destbits == 0,len,newlen);
-                    //free(buf);
-                    //return(0);
-                } //else printf("SIG VERIFIED newlen.%d (%llu -> %llu)\n",newlen,(long long)senderbits,(long long)destbits);
-            }
-        }
-    } else printf("%llu: SuperNET_decrypt skip: decode_cipher error len.%d -> newlen.%d\n",(long long)acct777_nxt64bits(mypub),len,newlen);
-    free(buf);
-    return(newlen);
-}
-
-int32_t SuperNET_sendmsg(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,bits256 destpub,bits256 mypriv,bits256 mypub,uint8_t *msg,int32_t len,uint8_t *data,int32_t delaymillis)
-{
-    int32_t cipherlen,datalen,qlen=-1; bits256 seed; uint8_t *cipher; uint64_t destbits; struct acct777_sig sig; HUFF H,*hp = &H;
-    if ( destpub.txid != 0 )
-        destbits = acct777_nxt64bits(destpub);
-    else
-    {
-        destbits = 0;
-        destpub = GENESIS_PUBKEY;
-    }
-    printf("SuperNET_sendmsg dest.%llu destpub.%llx priv.%llx pub.%llx\n",(long long)destbits,(long long)destpub.txid,(long long)mypriv.txid,(long long)mypub.txid);
-    memset(&sig,0,sizeof(sig));
-    if ( mypub.txid == 0 || mypriv.txid == 0 )
-        mypriv = curve25519_keypair(&mypub), sig.timestamp = (uint32_t)time(NULL);
-    else acct777_sign(&sig,mypriv,destpub,(uint32_t)time(NULL),msg,len);
-    if ( 0 )
-    {
-        memset(seed.bytes,0,sizeof(seed));
-        //seed = addr->sharedseed;
-        data = calloc(1,len*2);
-        _init_HUFF(hp,len*2,data);
-        /*for (i='0'; i<='9'; i++)
-            SETBIT(seed.bytes,i);
-        for (i='a'; i<='f'; i++)
-            SETBIT(seed.bytes,i);*/
-        ramcoder_encoder(0,1,msg,len,hp,0,&seed);
-        datalen = (int32_t)hconv_bitlen(hp->bitoffset);
-    }
-    else data = msg, datalen = len;
-    if ( (cipher= SuperNET_encode(&cipherlen,data,datalen,destpub,mypriv,mypub,sig.signer64bits,sig.sigbits,sig.timestamp)) != 0 )
-    {
-        qlen = iguana_queue_send(coin,addr,delaymillis,cipher,"SuperNETb",cipherlen,0,0);
-        free(cipher);
-    }
-    return(qlen);
-}
-#endif
-
 uint16_t SuperNET_checkc(bits256 privkey,bits256 otherpub,uint64_t tag)
 {
     uint8_t buf[40]; bits256 check,seed,seed2;
@@ -521,20 +327,23 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
     {
         serialized = malloc(sizeof(struct iguana_msghdr) + IGUANA_MAXPACKETSIZE);
         destpub = addr->pubkey;
-        datalen = SuperNET_json2bits(myinfo->ipaddr,myinfo->persistent_priv,myinfo->myaddr.persistent,&serialized[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE,addr->ipaddr,json);
-        printf("SUPERSEND.(%s) -> (%s) delaymillis.%d datalen.%d\n",jsonstr,addr->ipaddr,delaymillis,datalen);
-        if ( memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(destpub)) == 0 )
-            qlen = iguana_queue_send(coin,addr,delaymillis,serialized,"SuperNET",datalen,0,0);
-        else
+        if ( (datalen= SuperNET_json2bits(myinfo->ipaddr,myinfo->persistent_priv,myinfo->myaddr.persistent,&serialized[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE,addr->ipaddr,json)) > 0 )
         {
-            privkey = myinfo->privkey;
-            if ( (cipher= SuperNET_ciphercalc(&cipherlen,&privkey,&destpub,serialized,datalen,space2,sizeof(space2))) != 0 )
+            printf("SUPERSEND.(%s) -> (%s) delaymillis.%d datalen.%d\n",jsonstr,addr->ipaddr,delaymillis,datalen);
+            if ( memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(destpub)) == 0 )
+                qlen = iguana_queue_send(coin,addr,delaymillis,serialized,"SuperNET",datalen,0,0);
+            else
             {
-                qlen = iguana_queue_send(coin,addr,delaymillis,cipher,"SuperNETb",cipherlen,0,0);
-                if ( cipher != space2 )
-                    free(cipher);
+                printf("ENCRYPT\n");
+                privkey = myinfo->privkey;
+                if ( (cipher= SuperNET_ciphercalc(&cipherlen,&privkey,&destpub,serialized,datalen,space2,sizeof(space2))) != 0 )
+                {
+                    qlen = iguana_queue_send(coin,addr,delaymillis,cipher,"SuperNETb",cipherlen,0,0);
+                    if ( cipher != space2 )
+                        free(cipher);
+                }
+                //qlen = SuperNET_sendmsg(myinfo,coin,addr,addr->pubkey,myinfo->privkey,myinfo->myaddr.pubkey,serialized,datalen,space,delaymillis);
             }
-            //qlen = SuperNET_sendmsg(myinfo,coin,addr,addr->pubkey,myinfo->privkey,myinfo->myaddr.pubkey,serialized,datalen,space,delaymillis);
         }
         free(serialized);
     } else printf("cant parse.(%s)\n",jsonstr);
@@ -730,6 +539,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
     *delaymillisp = 0;
     if ( compressed != 0 )
     {
+        printf("DECRYPT\n");
         if ( (msgbits= SuperNET_deciphercalc(&ptr,&msglen,myinfo->privkey,myinfo->myaddr.pubkey,data,datalen,space,sizeof(space))) == 0 )
             return(clonestr("{\"error\":\"couldnt decrypt p2p packet\"}"));
     } else msgbits = data;
