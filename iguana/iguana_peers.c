@@ -921,7 +921,7 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
 #endif
     addr->addrind = (int32_t)(((long)addr - (long)&coin->peers.active[0]) / sizeof(*addr));
     ipbits = (uint32_t)addr->ipbits;
-    addr->pubkey = GENESIS_PUBKEY;
+    //addr->pubkey = GENESIS_PUBKEY;
     vcalc_sha256(0,addr->iphash.bytes,(uint8_t *)&ipbits,sizeof(ipbits));
     char str[65]; printf("start dedicatedloop.%s addrind.%d %s\n",addr->ipaddr,addr->addrind,bits256_str(str,addr->iphash));
     addr->maxfilehash2 = IGUANA_MAXFILEITEMS;
