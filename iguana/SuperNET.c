@@ -262,7 +262,7 @@ int32_t SuperNET_json2bits(char *myipaddr,bits256 privkey,bits256 mypubkey,uint8
     len += iguana_rwnum(1,&serialized[len],sizeof(uint32_t),&ipbits);
     len += iguana_rwnum(1,&serialized[len],sizeof(checkc),&checkc);
     len += iguana_rwnum(1,&serialized[len],sizeof(apinum),&apinum);
-    //len += iguana_rwnum(1,&serialized[len],sizeof(tag),&tag);
+    len += iguana_rwnum(1,&serialized[len],sizeof(tag),&tag);
     len += iguana_rwbignum(1,&serialized[len],sizeof(mypubkey),mypubkey.bytes);
     len += iguana_rwnum(1,&serialized[len],sizeof(othervalid),&othervalid);
     len += iguana_rwnum(1,&serialized[len],sizeof(broadcastflag),&broadcastflag);
@@ -298,7 +298,7 @@ cJSON *SuperNET_bits2json(struct iguana_peer *addr,uint8_t *serialized,int32_t d
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&myipbits);
     len += iguana_rwnum(0,&serialized[len],sizeof(checkc),&checkc);
     len += iguana_rwnum(0,&serialized[len],sizeof(apinum),&apinum);
-    //len += iguana_rwnum(0,&serialized[len],sizeof(tag),&tag);
+    len += iguana_rwnum(0,&serialized[len],sizeof(tag),&tag);
     len += iguana_rwbignum(0,&serialized[len],sizeof(bits256),senderpub.bytes);
     len += iguana_rwnum(0,&serialized[len],sizeof(othervalid),&othervalid);
     len += iguana_rwnum(0,&serialized[len],sizeof(broadcastflag),&broadcastflag);
