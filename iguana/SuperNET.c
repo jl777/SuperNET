@@ -537,7 +537,7 @@ int32_t SuperNET_destination(struct supernet_info *myinfo,uint32_t *destipbitsp,
             destflag |= SUPERNET_FORWARD;
         }
     }
-    else if ( remoteaddr == 0 || remoteaddr[0] == 0 )
+    if ( remoteaddr == 0 || remoteaddr[0] == 0 || strcmp(remoteaddr,"127.0.0.1") == 0 )
         destflag |= SUPERNET_ISMINE;
     return(destflag);
 }
@@ -562,6 +562,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
         }
         if ( hexmsg != 0 )
         {
+            printf("check.(%s)\n",hexmsg);
             if ( SuperNET_hexmsguniq(myinfo,destpub,hexmsg,0) >= 0 )
             {
                 SuperNET_hexmsgadd(myinfo,destpub,hexmsg);
@@ -985,8 +986,8 @@ TWOSTRINGS_AND_HASH_AND_TWOINTS(SuperNET,DHT,hexmsg,destip,destpub,maxdelay,broa
 {
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"cant remote DHT\"}"));
-    else if ( is_hexstr(hexmsg,(int32_t)strlen(hexmsg)) <= 0 )
-        return(clonestr("{\"error\":\"message must be in hex\"}"));
+    else if ( hexmsg == 0 || is_hexstr(hexmsg,(int32_t)strlen(hexmsg)) <= 0 )
+        return(clonestr("{\"error\":\"hexmsg missing or not in hex\"}"));
     return(SuperNET_DHTencode(myinfo,destip,destpub,hexmsg,maxdelay,broadcast,juint(json,"plaintext")!=0));
 }
 

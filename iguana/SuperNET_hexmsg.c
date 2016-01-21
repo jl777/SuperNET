@@ -21,7 +21,10 @@ int32_t SuperNET_hexmsguniq(struct supernet_info *myinfo,bits256 dest,char *hexm
     bits256 packethash; int32_t i,datalen;
     datalen = (int32_t)strlen(hexmsg) + 1;
     vcalc_sha256(0,packethash.bytes,(void *)hexmsg,datalen);
+    if ( bits256_nonz(dest) == 0 )
+        dest = GENESIS_PUBKEY;
     packethash = curve25519(dest,packethash);
+    //printf("addflag.%d packethash.%llx dest.%llx\n",addflag,(long long)packethash.txid,(long long)dest.txid);
     for (i=0; i<sizeof(Packetcache)/sizeof(*Packetcache); i++)
     {
         if ( Packetcache[i] == 0 )
@@ -29,7 +32,7 @@ int32_t SuperNET_hexmsguniq(struct supernet_info *myinfo,bits256 dest,char *hexm
             if ( addflag != 0 )
             {
                 Packetcache[i] = packethash.txid;
-                printf("add.%llx packetcache(%s) -> slot[%d]\n",(long long)packethash.txid,hexmsg,i);
+                //printf("add.%llx packetcache(%s) -> slot[%d]\n",(long long)packethash.txid,hexmsg,i);
             }
             break;
         }
