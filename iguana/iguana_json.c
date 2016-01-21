@@ -186,9 +186,11 @@ int32_t agentform(FILE *fp,char *form,int32_t max,char *agent,cJSON *methoditem)
                 else if ( strcmp(typestr,"hash") == 0 )
                     width = 65;
                 else if ( strcmp(typestr,"int") == 0 )
-                    width = 8;
+                    width = 12;
                 else if ( strcmp(typestr,"float") == 0 )
-                    width = 16;
+                    width = 24;
+                else if ( strcmp(typestr,"u64bits") == 0 )
+                    width = 24;
                 else width = 0;
             }
             //sprintf(buf,"<input type=\"text\" name=\"%s\"/>",fieldname);
@@ -206,7 +208,8 @@ int32_t agentform(FILE *fp,char *form,int32_t max,char *agent,cJSON *methoditem)
     } else sprintf(fields+strlen(fields),"<b>%s</b> <textarea rows=\"0\" cols=\"0\"></textarea>",agent_method);
     sprintf(&form[size],"<form action=\"http://127.0.0.1:7778/api/%s/%s\" oninput=\"%s\">%s<output for=\"%s\"></output><input type=\"submit\" value=\"%s\"></form>",agent,methodstr,outstr,fields,outstr2,methodstr);
     if ( fp != 0 )
-        fprintf(fp,"<form action=\"http://127.0.0.1:7778/api/%s/%s\" oninput=\"%s\">%s<output for=\"%s\"></output><input type=\"submit\" value=\"%s\"></form>",agent,methodstr,outstr,fields,outstr2,methodstr);
+        fprintf(fp,"%s\n",&form[size]);
+    printf("%s\n",&form[size]);
     return((int32_t)strlen(form));
 }
 
@@ -229,6 +232,7 @@ char *SuperNET_htmlstr(FILE *fp,char *htmlstr,int32_t max,char *agentstr)
     sprintf(htmlstr,"<!DOCTYPE HTML><html> <head><title>SuperUGLY GUI></title></head> <body> ");
     if ( fp != 0 )
         fprintf(fp,"%s\n",htmlstr);
+    printf("%s\n",htmlstr);
     size = (int32_t)strlen(htmlstr);
     if ( (helpjson= SuperNET_helpjson()) != 0 )
     {
@@ -250,6 +254,7 @@ char *SuperNET_htmlstr(FILE *fp,char *htmlstr,int32_t max,char *agentstr)
     strcat(htmlstr,"<br><br/></body></html><br><br/>");
     if ( fp != 0 )
         fprintf(fp,"<br><br/></body></html><br><br/>\n");
+    printf("<br><br/></body></html><br><br/>\n");
     return(htmlstr);
 }
 
@@ -547,11 +552,13 @@ TWO_STRINGS(SuperNET,html,agentform,htmlfile)
     char *htmlstr; cJSON *retjson; FILE *fp; int32_t max = 4*1024*1024;
     if ( htmlfile == 0 || htmlfile[0] == 0 )
         htmlfile = "uglyform.html";
-    fp = fopen(htmlfile,"w");
+    if ( (fp= fopen(htmlfile,"w")) == 0 )
+        printf("error opening htmlfile.(%s)\n",htmlfile);
     htmlstr = malloc(max);
     htmlstr = SuperNET_htmlstr(fp,htmlstr,max,agentform);
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result",htmlstr);
+    jaddstr(retjson,"htmlfile",htmlfile);
     free(htmlstr);
     if ( fp != 0 )
         fclose(fp);
