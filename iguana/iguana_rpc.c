@@ -618,7 +618,7 @@ char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,ch
 
 int32_t Supernet_lineparse(char *key,int32_t keymax,char *value,int32_t valuemax,char *src)
 {
-    int32_t a,b,c,n = 0; char *origkey=key,*origvalue=value;
+    int32_t a,b,c,n = 0; //char *origkey=key,*origvalue=value;
     key[0] = value[0] = 0;
     while ( (c= src[n]) == ' ' || c == '\t' || c == '\n' || c == '\t' )
         n++;
@@ -766,10 +766,10 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
         num++;
     }
     argjson = cJSON_CreateObject();
-    /*if ( num > 0 )
+    if ( num > 0 )
         jaddstr(argjson,"agent",jstri(tokens,0));
     if ( num > 1 )
-        jaddstr(argjson,"method",jstri(tokens,1));*/
+        jaddstr(argjson,"method",jstri(tokens,1));
     //printf("urlstr.(%s)\n",urlstr+n);
     if ( (json= SuperNET_urlconv(retbuf,bufsize,urlstr+n)) != 0 )
     {
@@ -793,6 +793,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
                             if ( buf[i] == '?' )
                             {
                                 buf[i] = 0;
+                                jdelete(argjson,"method");
                                 jaddstr(argjson,"method",buf);
                                 i++;
                                 key = &buf[i];
