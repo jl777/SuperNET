@@ -227,7 +227,7 @@ uint16_t SuperNET_checkc(bits256 privkey,bits256 otherpub,uint32_t x)
 
 int32_t SuperNET_json2bits(char *myipaddr,bits256 privkey,bits256 mypubkey,uint8_t *serialized,int32_t maxsize,char *destip,cJSON *json,bits256 destpub,int16_t _othervalid)
 {
-    uint16_t apinum,checkc; uint32_t tmp,ipbits,crc; char *agent,*method; uint64_t tag;
+    uint16_t apinum,checkc; uint32_t tmp,ipbits,crc; char *agent,*method; //uint64_t tag;
     char *hexmsg; uint8_t broadcastflag; int8_t othervalid; int32_t n,len = sizeof(uint32_t);
     if ( _othervalid > 100 )
         othervalid = 100;
@@ -262,7 +262,7 @@ int32_t SuperNET_json2bits(char *myipaddr,bits256 privkey,bits256 mypubkey,uint8
     len += iguana_rwnum(1,&serialized[len],sizeof(uint32_t),&ipbits);
     len += iguana_rwnum(1,&serialized[len],sizeof(checkc),&checkc);
     len += iguana_rwnum(1,&serialized[len],sizeof(apinum),&apinum);
-    len += iguana_rwnum(1,&serialized[len],sizeof(tag),&tag);
+    //len += iguana_rwnum(1,&serialized[len],sizeof(tag),&tag);
     len += iguana_rwbignum(1,&serialized[len],sizeof(mypubkey),mypubkey.bytes);
     len += iguana_rwnum(1,&serialized[len],sizeof(othervalid),&othervalid);
     len += iguana_rwnum(1,&serialized[len],sizeof(broadcastflag),&broadcastflag);
@@ -289,7 +289,7 @@ int32_t SuperNET_json2bits(char *myipaddr,bits256 privkey,bits256 mypubkey,uint8
 
 cJSON *SuperNET_bits2json(struct iguana_peer *addr,uint8_t *serialized,int32_t datalen)
 {
-    char destip[64],method[64],checkstr[5],agent[64],myipaddr[64],str[65],*hexmsg; uint64_t tag;
+    char destip[64],method[64],checkstr[5],agent[64],myipaddr[64],str[65],*hexmsg; //uint64_t tag;
     uint16_t apinum,checkc; int8_t othervalid; uint32_t destipbits,myipbits;
     bits256 destpub,senderpub; cJSON *json = cJSON_CreateObject();
     int32_t len = 0; uint32_t crc; uint8_t broadcastflag,plaintext;
@@ -298,7 +298,7 @@ cJSON *SuperNET_bits2json(struct iguana_peer *addr,uint8_t *serialized,int32_t d
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&myipbits);
     len += iguana_rwnum(0,&serialized[len],sizeof(checkc),&checkc);
     len += iguana_rwnum(0,&serialized[len],sizeof(apinum),&apinum);
-    len += iguana_rwnum(0,&serialized[len],sizeof(tag),&tag);
+    //len += iguana_rwnum(0,&serialized[len],sizeof(tag),&tag);
     len += iguana_rwbignum(0,&serialized[len],sizeof(bits256),senderpub.bytes);
     len += iguana_rwnum(0,&serialized[len],sizeof(othervalid),&othervalid);
     len += iguana_rwnum(0,&serialized[len],sizeof(broadcastflag),&broadcastflag);

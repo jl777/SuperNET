@@ -191,7 +191,7 @@ char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t
 
 char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
 {
-    cJSON *retjson; uint64_t tag; uint32_t timeout; char *jsonstr; char *retjsonstr,*retstr = 0;
+    cJSON *retjson; uint64_t tag; uint32_t timeout; char *jsonstr,*method; char *retjsonstr,*retstr = 0;
     //printf("SuperNET_JSON.(%s) remoteaddr.(%s)\n",jprint(json,0),remoteaddr!=0?remoteaddr:"");
     if ( json != 0 )
     {
@@ -203,7 +203,7 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remote
         if ( (timeout= juint(json,"timeout")) == 0 )
             timeout = IGUANA_JSONTIMEOUT;
         jsonstr = jprint(json,0);
-        if ( remoteaddr == 0 || jstr(json,"immediate") != 0 )
+        if ( remoteaddr == 0 || jstr(json,"immediate") != 0 || ((method= jstr(json,"method")) != 0 && strcmp(method,"DHT") == 0) )
             retjsonstr = SuperNET_jsonstr(myinfo,jsonstr,remoteaddr);
         else retjsonstr = iguana_blockingjsonstr(myinfo,jsonstr,tag,timeout,remoteaddr);
         if ( retjsonstr != 0 )
