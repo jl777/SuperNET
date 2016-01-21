@@ -85,6 +85,7 @@ cJSON *SuperNET_helpjson()
 #define IGUANA_HELP_SSH(agent,name,str,str2,hash) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#str2,"string"),helpitem(#hash,"hash")))
 #define IGUANA_HELP_SSHI(agent,name,str,str2,hash,val) array = helpjson(IGUANA_ARGS,#agent,#name,helparray4(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#str2,"string"),helpitem(#hash,"hash"),helpitem(#val,"int")))
 #define IGUANA_HELP_SSHII(agent,name,str,str2,hash,val,val2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray5(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#str2,"string"),helpitem(#hash,"hash"),helpitem(#val,"int"),helpitem(#val2,"int")))
+#define IGUANA_HELP_SSHHII(agent,name,str,str2,hash,hash2,val,val2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray6(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#str2,"string"),helpitem(#hash,"hash"),helpitem(#hash2,"hash"),helpitem(#val,"int"),helpitem(#val2,"int")))
 #define IGUANA_HELP_SI(agent,name,str,val) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#val,"int")))
 #define IGUANA_HELP_SII(agent,name,str,val,val2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#val,"int"),helpitem(#val2,"int")))
 #define IGUANA_HELP_SSI(agent,name,str,str2,val) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#str2,"string"),helpitem(#val,"int")))
@@ -143,6 +144,7 @@ cJSON *SuperNET_helpjson()
 #define TWOSTRINGS_AND_INT IGUANA_HELP_SSI
 #define TWOSTRINGS_AND_HASH IGUANA_HELP_SSH
 #define TWOSTRINGS_AND_HASH_AND_TWOINTS IGUANA_HELP_SSHII
+#define TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS IGUANA_HELP_SSHHII
 #define THREE_INTS IGUANA_HELP_III
 #define TWOHASHES_AND_STRING IGUANA_HELP_HHS
 #define HASH_ARRAY_STRING IGUANA_HELP_HAS
@@ -708,6 +710,7 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSO
 #define IGUANA_DISPATCH_SSH(agent,name,str,str2,hash) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2),jbits256(json,#hash)))
 #define IGUANA_DISPATCH_SSHI(agent,name,str,str2,hash,val) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2),jbits256(json,#hash),juint(json,#val)))
 #define IGUANA_DISPATCH_SSHII(agent,name,str,str2,hash,val,val2) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2),jbits256(json,#hash),juint(json,#val),juint(json,#val2)))
+#define IGUANA_DISPATCH_SSHHII(agent,name,str,str2,hash,hash2,val,val2) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2),jbits256(json,#hash),jbits256(json,#hash2),juint(json,#val),juint(json,#val2)))
 #define IGUANA_DISPATCH_SI(agent,name,str,val) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),juint(json,#val)))
 #define IGUANA_DISPATCH_SII(agent,name,str,val,val2) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),juint(json,#val),juint(json,#val2)))
 #define IGUANA_DISPATCH_SSI(agent,name,str,str2,val) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2),juint(json,#val)))
@@ -767,6 +770,7 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSO
 #define TWOSTRINGS_AND_INT IGUANA_DISPATCH_SSI
 #define TWOSTRINGS_AND_HASH IGUANA_DISPATCH_SSH
 #define TWOSTRINGS_AND_HASH_AND_TWOINTS IGUANA_DISPATCH_SSHII
+#define TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS IGUANA_DISPATCH_SSHHII
 #define THREE_INTS IGUANA_DISPATCH_III
 #define TWOHASHES_AND_STRING IGUANA_DISPATCH_HHS
 #define HASH_ARRAY_STRING IGUANA_DISPATCH_HAS

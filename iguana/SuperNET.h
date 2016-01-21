@@ -115,10 +115,10 @@ void SuperNET_init(void *args);
 char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr);
 
 char *SuperNET_jsonstr(struct supernet_info *myinfo,char *jsonstr,char *remoteaddr);
-char *SuperNET_DHTencode(struct supernet_info *myinfo,char *destip,bits256 destpub,char *hexmsg,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext);
+char *SuperNET_DHTencode(struct supernet_info *myinfo,char *destip,bits256 category,bits256 subhash,char *hexmsg,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext);
 char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSON *json,char *remoteaddr);
 char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr);
-char *SuperNET_DHTsend(struct supernet_info *myinfo,uint32_t destipbits,bits256 destpub,char *hexmsg,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext);
+char *SuperNET_DHTsend(struct supernet_info *myinfo,uint32_t destipbits,bits256 category,bits256 subhash,char *hexmsg,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext);
 uint16_t SuperNET_API2num(char *agent,char *method);
 int32_t SuperNET_num2API(char *agent,char *method,uint16_t num);
 bits256 SuperNET_sharedseed(bits256 privkey,bits256 otherpub);
@@ -126,10 +126,10 @@ int32_t SuperNET_decrypt(bits256 *senderpubp,uint64_t *senderbitsp,uint32_t *tim
 
 int32_t SuperNET_str2hex(uint8_t *hex,char *str);
 void SuperNET_hex2str(char *str,uint8_t *hex,int32_t len);
-void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 destpub,char *hexmsg,struct tai now);
-int32_t SuperNET_hexmsgfind(struct supernet_info *myinfo,bits256 dest,char *hexmsg,int32_t addflag);
+void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 category,bits256 subhash,char *hexmsg,struct tai now);
+int32_t SuperNET_hexmsgfind(struct supernet_info *myinfo,bits256 category,bits256 subhash,char *hexmsg,int32_t addflag);
 
-char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag,bits256 categoryhash,char *subcategory,char *message,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext);
+char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag,bits256 categoryhash,bits256 subcategory,char *message,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext);
 
 #endif
 

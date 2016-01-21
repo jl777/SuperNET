@@ -1159,3 +1159,37 @@ void iguana_bitmap(char *space,int32_t max,char *name)
         //printf("BIGMAP.(%s)\n",space);
     }
 }
+
+#include "../includes/iguana_apidefs.h"
+#include "../includes/iguana_apideclares.h"
+
+STRING_AND_TWOINTS(mouse,change,name,x,y)
+{
+    return(clonestr("{\"result\":\"changed\"}"));
+}
+
+STRING_ARG(mouse,leave,name)
+{
+    return(clonestr("{\"result\":\"left\"}"));
+}
+
+STRING_AND_TWOINTS(mouse,click,name,x,y)
+{
+    return(clonestr("{\"result\":\"click\"}"));
+}
+
+STRING_AND_INT(keyboard,key,name,c)
+{
+    return(clonestr("{\"result\":\"key\"}"));
+}
+
+STRING_AND_TWOINTS(mouse,image,name,x,y)
+{
+    return(clonestr("{\"result\":\"opened\"}"));
+}
+
+STRING_ARG(mouse,close,name)
+{
+    return(clonestr("{\"result\":\"closed\"}"));
+}
+#include "../includes/iguana_apiundefs.h"

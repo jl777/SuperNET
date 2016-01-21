@@ -16,7 +16,14 @@
 ZERO_ARGS(SuperNET,help);
 TWO_STRINGS(SuperNET,html,agentform,htmlfile);
 STRING_ARG(SuperNET,bitcoinrpc,setcoin);
-TWOSTRINGS_AND_HASH_AND_TWOINTS(SuperNET,DHT,hexmsg,destip,destpub,maxdelay,broadcast);
+TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(SuperNET,DHT,hexmsg,destip,categoryhash,subhash,maxdelay,broadcast);
+
+STRING_AND_TWOINTS(mouse,image,name,x,y);
+STRING_AND_TWOINTS(mouse,change,name,x,y);
+STRING_AND_TWOINTS(mouse,click,name,x,y);
+STRING_ARG(mouse,close,name);
+STRING_ARG(mouse,leave,name);
+STRING_AND_INT(keyboard,key,name,c);
 
 THREE_STRINGS(SuperNET,rosetta,passphrase,pin,showprivkey);
 ZERO_ARGS(SuperNET,keypair);

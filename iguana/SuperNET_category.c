@@ -15,24 +15,22 @@
 
 #include "iguana777.h"
 
-int32_t category_peer(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,bits256 destpub)
+int32_t category_peer(struct supernet_info *myinfo,struct iguana_peer *addr,bits256 category,bits256 subhash)
 {
-    if ( memcmp(addr->pubkey.bytes,destpub.bytes,sizeof(destpub)) == 0 )
-        return(1);
-    else return(-1);
+    return(1);
 }
 
-int32_t category_plaintext(struct supernet_info *myinfo,bits256 categoryhash,int32_t plaintext)
+int32_t category_plaintext(struct supernet_info *myinfo,bits256 category,bits256 subhash,int32_t plaintext)
 {
     return(plaintext);
 }
 
-int32_t category_maxdelay(struct supernet_info *myinfo,bits256 categoryhash,int32_t maxdelay)
+int32_t category_maxdelay(struct supernet_info *myinfo,bits256 category,bits256 subhash,int32_t maxdelay)
 {
     return(maxdelay);
 }
 
-int32_t category_broadcast(struct supernet_info *myinfo,bits256 categoryhash,int32_t broadcastflag)
+int32_t category_broadcast(struct supernet_info *myinfo,bits256 category,bits256 subhash,int32_t broadcastflag)
 {
     if ( broadcastflag < 1 )
         broadcastflag = 1;
@@ -41,7 +39,7 @@ int32_t category_broadcast(struct supernet_info *myinfo,bits256 categoryhash,int
     return(broadcastflag);
 }
 
-char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag,bits256 categoryhash,char *subcategory,char *message,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext)
+char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag,bits256 category,bits256 subhash,char *message,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext)
 {
     char *hexmsg,*retstr; int32_t len;
     len = (int32_t)strlen(message);
@@ -50,10 +48,10 @@ char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag
         hexmsg = malloc((len << 1) + 1);
         init_hexbytes_noT(hexmsg,(uint8_t *)message,len+1);
     } else hexmsg = message;
-    plaintext = category_plaintext(myinfo,categoryhash,plaintext);
-    broadcastflag = category_broadcast(myinfo,categoryhash,broadcastflag);
-    maxdelay = category_maxdelay(myinfo,categoryhash,maxdelay);
-    retstr = SuperNET_DHTsend(myinfo,0,categoryhash,hexmsg,maxdelay,broadcastflag,plaintext);
+    plaintext = category_plaintext(myinfo,category,subhash,plaintext);
+    broadcastflag = category_broadcast(myinfo,category,subhash,broadcastflag);
+    maxdelay = category_maxdelay(myinfo,category,subhash,maxdelay);
+    retstr = SuperNET_DHTsend(myinfo,0,category,subhash,hexmsg,maxdelay,broadcastflag,plaintext);
     if ( hexmsg != message)
         free(hexmsg);
     return(retstr);

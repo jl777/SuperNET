@@ -720,7 +720,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
     j = i = 0;
     if ( strcmp(&url[i],"/") == 0 && strcmp(urlmethod,"GET") == 0 )
         return(OS_filestr(&filesize,"index7778.html"));
-    printf("url.(%s) method.(%s)\n",&url[i],urlmethod);
+    //printf("url.(%s) method.(%s)\n",&url[i],urlmethod);
     if ( strncmp(&url[i],"/api",strlen("/api")) == 0 )
     {
         *jsonflagp = 1;

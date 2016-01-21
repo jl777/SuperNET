@@ -15,16 +15,18 @@
 
 #include "iguana777.h"
 
-int32_t SuperNET_hexmsgfind(struct supernet_info *myinfo,bits256 dest,char *hexmsg,int32_t addflag)
+int32_t SuperNET_hexmsgfind(struct supernet_info *myinfo,bits256 category,bits256 subhash,char *hexmsg,int32_t addflag)
 {
     static int lastpurge; static uint64_t Packetcache[1024];
     bits256 packethash; int32_t i,datalen;
     datalen = (int32_t)strlen(hexmsg) + 1;
     vcalc_sha256(0,packethash.bytes,(void *)hexmsg,datalen);
-    if ( bits256_nonz(dest) == 0 )
-        dest = GENESIS_PUBKEY;
-    packethash = curve25519(dest,packethash);
-    printf("addflag.%d packethash.%llx dest.%llx\n",addflag,(long long)packethash.txid,(long long)dest.txid);
+    if ( bits256_nonz(category) == 0 )
+        category = GENESIS_PUBKEY;
+    if ( bits256_nonz(subhash) == 0 )
+        subhash = GENESIS_PUBKEY;
+    packethash = curve25519(category,packethash);
+    printf("addflag.%d packethash.%llx dest.%llx\n",addflag,(long long)packethash.txid,(long long)category.txid);
     for (i=0; i<sizeof(Packetcache)/sizeof(*Packetcache); i++)
     {
         if ( Packetcache[i] == 0 )
@@ -55,11 +57,16 @@ int32_t SuperNET_hexmsgfind(struct supernet_info *myinfo,bits256 dest,char *hexm
     return(-1);
 }
 
-void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 destpub,char *hexmsg,struct tai now)
+void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 category,bits256 subhash,char *hexmsg,struct tai now)
 {
-    char str[65];
-    if ( memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(destpub)) == 0 )
-        strcpy(str,"BROADCAST");
-    else bits256_str(str,destpub);
+    char str[512],str2[65];
+    if ( memcmp(category.bytes,GENESIS_PUBKEY.bytes,sizeof(category)) == 0 )
+        strcpy(str,"BROADCAST.");
+    else bits256_str(str,category);
+    if ( memcmp(subhash.bytes,GENESIS_PUBKEY.bytes,sizeof(subhash)) != 0 )
+    {
+        bits256_str(str2,subhash);
+        strcat(str,str2);
+    }
     printf("HEXMSG.(%s) -> %s\n",hexmsg,str);
 }
