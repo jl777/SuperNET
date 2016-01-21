@@ -227,7 +227,7 @@ uint16_t SuperNET_checkc(bits256 privkey,bits256 otherpub,uint32_t x)
 
 int32_t SuperNET_json2bits(char *myipaddr,bits256 privkey,bits256 mypubkey,uint8_t *serialized,int32_t maxsize,char *destip,cJSON *json,bits256 destpub,int16_t _othervalid)
 {
-    uint16_t apinum,checkc; bits256 categoryhash,subhash; uint32_t tmp,ipbits,crc;
+    uint16_t apinum,checkc; bits256 categoryhash,subhash; uint32_t tmp,ipbits,crc,timestamp;
     char *agent,*method; //uint64_t tag;
     char *hexmsg; uint8_t broadcastflag; int8_t othervalid; int32_t n,len = sizeof(uint32_t);
     if ( _othervalid > 100 )
@@ -241,6 +241,7 @@ int32_t SuperNET_json2bits(char *myipaddr,bits256 privkey,bits256 mypubkey,uint8
     else broadcastflag = tmp;
     categoryhash = jbits256(json,"categoryhash");
     subhash = jbits256(json,"subhash");
+    timestamp = juint(json,"timestamp");
     if ( bits256_nonz(categoryhash) > 0 && memcmp(categoryhash.bytes,GENESIS_PUBKEY.bytes,sizeof(categoryhash)) != 0 )
     {
         broadcastflag |= 0x40;
@@ -273,6 +274,7 @@ int32_t SuperNET_json2bits(char *myipaddr,bits256 privkey,bits256 mypubkey,uint8
     }
     ipbits = (uint32_t)calc_ipbits(destip);
     checkc = SuperNET_checkc(privkey,destpub,ipbits);
+    len += iguana_rwnum(1,&serialized[len],sizeof(uint32_t),&timestamp);
     len += iguana_rwnum(1,&serialized[len],sizeof(uint32_t),&ipbits);
     ipbits = (uint32_t)calc_ipbits(myipaddr);
     len += iguana_rwnum(1,&serialized[len],sizeof(uint32_t),&ipbits);
@@ -310,10 +312,11 @@ int32_t SuperNET_json2bits(char *myipaddr,bits256 privkey,bits256 mypubkey,uint8
 cJSON *SuperNET_bits2json(struct iguana_peer *addr,uint8_t *serialized,int32_t datalen)
 {
     char destip[64],method[64],checkstr[5],agent[64],myipaddr[64],str[65],*hexmsg; //uint64_t tag;
-    uint16_t apinum,checkc; int8_t othervalid; uint32_t destipbits,myipbits;
+    uint16_t apinum,checkc; int8_t othervalid; uint32_t destipbits,myipbits,timestamp;
     bits256 categoryhash,subhash,senderpub; cJSON *json = cJSON_CreateObject();
     int32_t len = 0; uint32_t crc; uint8_t broadcastflag,plaintext;
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&crc);
+    len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&timestamp);
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&destipbits);
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&myipbits);
     len += iguana_rwnum(0,&serialized[len],sizeof(checkc),&checkc);
@@ -339,6 +342,7 @@ cJSON *SuperNET_bits2json(struct iguana_peer *addr,uint8_t *serialized,int32_t d
     {
         jaddstr(json,"agent",agent);
         jaddstr(json,"method",method);
+        jaddnum(json,"timestamp",timestamp);
         jaddbits256(json,"categoryhash",categoryhash);
         jaddbits256(json,"subhash",subhash);
         expand_ipbits(destip,destipbits), jaddstr(json,"yourip",destip);
@@ -577,6 +581,10 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
     char *forwardstr=0,*retstr=0,*agent=0,*method=0,*message,*hexmsg=0,*jsonstr=0; uint64_t tag;
     if ( remoteaddr != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 )
         remoteaddr = 0;
+    agent = jstr(json,"agent");
+    method = jstr(json,"method");
+    if ( strcmp(agent,"SuperNET") == 0 && strcmp(agent,"getpeers") == 0 && juint(json,"timestamp") == 0 )
+        jaddnum(json,"timestamp",time(NULL));
     if ( (tag= j64bits(json,"tag")) == 0 )
     {
         OS_randombytes((uint8_t *)&tag,sizeof(tag));
@@ -606,7 +614,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
             }
         }
     }
-    if ( (destflag & SUPERNET_ISMINE) != 0 && (agent= jstr(json,"agent")) != 0 && (method= jstr(json,"method")) != 0 )
+    if ( (destflag & SUPERNET_ISMINE) != 0 && agent != 0 && method != 0 )
     {
         if ( hexmsg != 0 && SuperNET_hexmsgfind(myinfo,category,subhash,hexmsg,0) < 0 )
             SuperNET_hexmsgadd(myinfo,category,subhash,hexmsg,tai_now());
