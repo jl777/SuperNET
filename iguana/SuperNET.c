@@ -477,7 +477,10 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,char *hexm
                 {
                     addr = &Coins[i]->peers.active[j];
                     if ( addr->usock >= 0 )
+                    {
+                        printf("BROADCAST[%d] SEND.(%s) to %s\n",j,jsonstr,addr->ipaddr);
                         iguana_send_supernet(Coins[i],addr,jsonstr,maxdelay==0?0:(rand()%maxdelay));
+                    }
                 }
             }
         }
@@ -485,6 +488,7 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,char *hexm
     }
     if ( (addr= iguana_peerfind(myinfo,&coin,routehash)) == 0 )
         return(clonestr("{\"error\":\"no route found\"}"));
+    printf("SEND.(%s) to %s\n",jsonstr,addr->ipaddr);
     iguana_send_supernet(coin,addr,jsonstr,maxdelay==0?0:(rand()%maxdelay));
     return(clonestr("{\"result\":\"packet sent directly\"}"));
 }
