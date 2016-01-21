@@ -15,7 +15,7 @@
 
 #include "iguana777.h"
 
-int32_t SuperNET_hexmsguniq(struct supernet_info *myinfo,bits256 dest,char *hexmsg,int32_t addflag)
+int32_t SuperNET_hexmsgfind(struct supernet_info *myinfo,bits256 dest,char *hexmsg,int32_t addflag)
 {
     static int lastpurge; static uint64_t Packetcache[1024];
     bits256 packethash; int32_t i,datalen;
