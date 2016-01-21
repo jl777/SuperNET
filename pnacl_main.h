@@ -24,7 +24,7 @@ void PNACL_message(const char* format, ...);
 #endif
 
 void OS_init();
-void *OS_filestr(int64_t *allocsizep,char *fname);
+void *OS_filestr(long *allocsizep,char *fname);
 char *clonestr(char *);
 
 void CHROMEAPP_MAIN(void *arg);

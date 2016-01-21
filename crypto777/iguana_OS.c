@@ -769,10 +769,10 @@ void *OS_filealloc(struct OS_mappedptr *M,char *fname,struct OS_memspace *mem,lo
     return(M->fileptr);
 }
 
-void *OS_loadfile(char *fname,char **bufp,int64_t *lenp,int64_t *allocsizep)
+void *OS_loadfile(char *fname,char **bufp,long *lenp,long *allocsizep)
 {
     FILE *fp;
-    int64_t  filesize,buflen = *allocsizep;
+    long  filesize,buflen = *allocsizep;
     char *buf = *bufp;
     *lenp = 0;
     if ( (fp= fopen(OS_compatible_path(fname),"rb")) != 0 )
@@ -805,9 +805,9 @@ void *OS_loadfile(char *fname,char **bufp,int64_t *lenp,int64_t *allocsizep)
     return(buf);
 }
 
-void *OS_filestr(int64_t *allocsizep,char *fname)
+void *OS_filestr(long *allocsizep,char *fname)
 {
-    int64_t filesize = 0; char *buf = 0;
+    long filesize = 0; char *buf = 0;
     *allocsizep = 0;
     return(OS_loadfile(fname,&buf,&filesize,allocsizep));
 }

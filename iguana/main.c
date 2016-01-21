@@ -270,7 +270,7 @@ void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func
 
 void iguana_main(void *arg)
 {
-    FILE *fp; cJSON *json; uint8_t *space,secretbuf[512]; uint32_t r; int64_t allocsize;
+    FILE *fp; cJSON *json; uint8_t *space,secretbuf[512]; uint32_t r; long allocsize;
     char helperstr[64],fname[512],*wallet2,*wallet2str,*tmpstr,*confstr,*helperargs,*ipaddr,*coinargs=0,*secret,*jsonstr = arg;
     int32_t i,len,flag,c; bits256 acct,seed,checkhash,wallethash,walletpub,wallet2shared,wallet2priv,wallet2pub;
     memset(&MYINFO,0,sizeof(MYINFO));
@@ -461,7 +461,7 @@ void iguana_main(void *arg)
     iguana_launch(iguana_coinadd("BTCD"),"rpcloop",iguana_rpcloop,iguana_coinadd("BTCD"),IGUANA_PERMTHREAD);
     if ( coinargs != 0 )
         iguana_launch(iguana_coinadd("BTCD"),"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
-    else if ( 0 )
+    else if ( 1 )
     {
 #ifdef __APPLE__
         sleep(1);

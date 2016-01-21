@@ -198,8 +198,8 @@ int32_t OS_openmap(struct OS_mappedptr *mp);
 void *OS_mappedptr(void **ptrp,struct OS_mappedptr *mp,uint64_t allocsize,int32_t rwflag,char *fname);
 void *OS_filealloc(struct OS_mappedptr *M,char *fname,struct OS_memspace *mem,long size);
 void *OS_mapfile(char *fname,long *filesizep,int32_t enablewrite);
-void *OS_loadfile(char *fname,char **bufp,int64_t *lenp,int64_t *allocsizep);
-void *OS_filestr(int64_t *allocsizep,char *fname);
+void *OS_loadfile(char *fname,char **bufp,long *lenp,long *allocsizep);
+void *OS_filestr(long *allocsizep,char *fname);
 
 int32_t OS_syncmap(struct OS_mappedptr *mp,long len);
 void *OS_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long origsize);

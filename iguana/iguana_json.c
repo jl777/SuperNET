@@ -213,26 +213,150 @@ int32_t agentform(FILE *fp,char *form,int32_t max,char *agent,cJSON *methoditem)
     return((int32_t)strlen(form));
 }
 
-/*<form action="action_page.asp"
- oninput="x.value=parseInt(a.value)+parseInt(b.value)">
- 0
- <input type="range"  id="a" name="a" value="50">
- 100 +
- <input type="number" id="b" name="b" value="50">
- =
- <output name="x" for="a b"></output>
- <br><br>
- <input type="submit">
- </form>*/
-
-char *SuperNET_htmlstr(FILE *fp,char *htmlstr,int32_t max,char *agentstr)
+#define HTML_EMIT(str,n)  memcpy(&retbuf[size],str,n), size += (n)
+int32_t template_emit(char *retbuf,int32_t maxsize,char *template,char *varname,char *value)
 {
-    int32_t i,n,len,size = 0; cJSON *helpjson,*item,*array; char *str;
+    int32_t offset,valuelen,varnamelen,position,size = 0; char *match;
+    offset = 0;
+    valuelen = (int32_t)strlen(value);
+    varnamelen = (int32_t)strlen(varname);
+    while ( (match= strstr(varname,&template[offset])) != 0 )
+    {
+        position = (int32_t)((long)match - (long)&template[offset]);
+        printf("found match.(%s) at %d offset.%d\n",varname,position,offset);
+        if ( size + (valuelen + position) > maxsize )
+            return(-1);
+        HTML_EMIT(&template[offset],position), offset += position + varnamelen;
+        HTML_EMIT(value,valuelen);
+    }
+    HTML_EMIT(&template[offset],strlen(&template[offset])+1);
+    return(size);
+}
+
+#define MAX_TEMPLATESIZE 32768
+int32_t templates_emit(char *retbuf,int32_t maxsize,char *template,char *agent,char *method,char *fieldnames,char *fieldnames2)
+{
+    char buf[MAX_TEMPLATESIZE+4096];
+    strcpy(buf,template);
+    template_emit(retbuf,maxsize,buf,"$AGENT",agent), strcpy(buf,retbuf);
+    template_emit(retbuf,maxsize,buf,"$METHOD",method), strcpy(buf,retbuf);
+    template_emit(retbuf,maxsize,buf,"$FIELDNAMES",fieldnames), strcpy(buf,retbuf);
+    return(template_emit(retbuf,maxsize,buf,"$FIELDNAMES2",fieldnames2));
+}
+
+int32_t pretty_form(FILE *fp,char *formheader,char *formfooter,char *fieldtemplate,char *agent,cJSON *methoditem)
+{
+    cJSON *item,*fieldsarray; int32_t j,m,formsize,fieldsize,iter,width,size = 0;
+    char *methodstr,*typestr,*fieldname;
+    char outstr[2048],outstr2[2048],str[2],widthstr[16];
+    if ( (methodstr= jstr(methoditem,"method")) == 0 )
+        methodstr = "method";
+    if ( agent == 0 )
+        agent = "agent";
+    outstr[0] = outstr2[0] = str[1] = 0;
+    formsize = fieldsize = 0;
+    if ( (fieldsarray= jarray(&m,methoditem,"fields")) != 0 )
+    {
+        for (iter=0; iter<2; iter++)
+        {
+            if ( iter == 1 )
+                fprintf(fp,formheader,methodstr,methodstr,methodstr,agent,methodstr,methodstr,methodstr,agent,methodstr,outstr);
+            for (j=0; j<m; j++)
+            {
+                item = jitem(fieldsarray,j);
+                fieldname = get_cJSON_fieldname(item);
+                // printf("item.(%s) %s\n",jprint(item,0),jstr(item,fieldname));
+                if ( iter == 0 )
+                {
+                    if ( j > 0 )
+                    {
+                        strcat(outstr,"+");
+                        strcat(outstr2," ");
+                    }
+                    strcat(outstr,fieldname);
+                    strcat(outstr2,fieldname);
+                }
+                else
+                {
+                    if ( (typestr= jstr(item,fieldname)) != 0 )
+                    {
+                        if ( strcmp(typestr,"string") == 0 )
+                            width = 44;
+                        else if ( strcmp(typestr,"hash") == 0 )
+                            width = 65;
+                        else if ( strcmp(typestr,"int") == 0 )
+                            width = 12;
+                        else if ( strcmp(typestr,"float") == 0 )
+                            width = 24;
+                        else if ( strcmp(typestr,"u64bits") == 0 )
+                            width = 24;
+                        else width = 0;
+                    }
+                    sprintf(widthstr,"%d",width);
+                    fprintf(fp,fieldtemplate,fieldname,fieldname,fieldname,widthstr,fieldname);
+                }
+            }
+            if ( iter == 1 )
+                fprintf(fp,formfooter,outstr2,methodstr,methodstr);
+        }
+    }
+    return(size);
+}
+
+int32_t pretty_forms(char *fname,char *agentstr)
+{
+    char *str,*header,*footer,*formheader,*formfooter,*field; long allocsize; FILE *fp;
+    int32_t i,n,len,err=0,size = 0; cJSON *helpjson,*array,*item;
+    header = OS_filestr(&allocsize,"header.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
+    footer = OS_filestr(&allocsize,"footer.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
+    formheader = OS_filestr(&allocsize,"formheader.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
+    formfooter = OS_filestr(&allocsize,"formfooter.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
+    field = OS_filestr(&allocsize,"field.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
+    fp = fopen(fname,"w");
+    if ( fp != 0 && err == 0 && header != 0 && footer != 0 && formheader != 0 && formfooter != 0 && field != 0 )
+    {
+        //HTML_EMIT(header,strlen(header));
+        fprintf(fp,"%s\n",header);
+        if ( (helpjson= SuperNET_helpjson()) != 0 )
+        {
+            if ( (array= jarray(&n,helpjson,"API")) != 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    str = jstr(item,"agent");
+                    if ( agentstr == 0 || agentstr[0] == 0 || (str != 0 && strcmp(str,agentstr) == 0) )
+                    {
+                        len = pretty_form(fp,formheader,formfooter,field,str!=0?str:"agent",item);
+                        size += len;
+                    } //else printf("agentstr.%p (%s) (%s) str.%p \n",agentstr,agentstr,str,str);
+                }
+            }
+            free_json(helpjson);
+        }
+        fprintf(fp,"%s\n",footer);
+        fclose(fp);
+        //HTML_EMIT(footer,strlen(footer));
+    }
+    if ( header != 0 ) free(header);
+    if ( footer != 0 ) free(footer);
+    if ( formheader != 0 ) free(formheader);
+    if ( formfooter != 0 ) free(formfooter);
+    if ( field != 0 ) free(field);
+    return(size);
+}
+#undef HTML_EMIT
+
+char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr)
+{
+    int32_t i,n,len,size = 0; cJSON *helpjson,*item,*array; char *str; FILE *fp = 0;
     htmlstr[0] = 0;
+    if ( pretty_forms(fname,agentstr) != 0 )
+    {
+        printf("%s\n",htmlstr);
+        return(htmlstr);
+    }
     sprintf(htmlstr,"<!DOCTYPE HTML><html> <head><title>SuperUGLY GUI></title></head> <body> ");
-    if ( fp != 0 )
-        fprintf(fp,"%s\n",htmlstr);
-    printf("%s\n",htmlstr);
     size = (int32_t)strlen(htmlstr);
     if ( (helpjson= SuperNET_helpjson()) != 0 )
     {
@@ -244,7 +368,7 @@ char *SuperNET_htmlstr(FILE *fp,char *htmlstr,int32_t max,char *agentstr)
                 str = jstr(item,"agent");
                 if ( agentstr == 0 || agentstr[0] == 0 || (str != 0 && strcmp(str,agentstr) == 0) )
                 {
-                    len = agentform(fp,&htmlstr[size],max - size,str!=0?str:"agent",item);
+                    len = agentform(fp,&htmlstr[size],maxsize - size,str!=0?str:"agent",item);
                     size += len;
                 } //else printf("agentstr.%p (%s) (%s) str.%p \n",agentstr,agentstr,str,str);
             }
@@ -252,8 +376,6 @@ char *SuperNET_htmlstr(FILE *fp,char *htmlstr,int32_t max,char *agentstr)
         free_json(helpjson);
     }
     strcat(htmlstr,"<br><br/></body></html><br><br/>");
-    if ( fp != 0 )
-        fprintf(fp,"<br><br/></body></html><br><br/>\n");
     printf("<br><br/></body></html><br><br/>\n");
     return(htmlstr);
 }
@@ -549,19 +671,18 @@ ZERO_ARGS(SuperNET,help)
 
 TWO_STRINGS(SuperNET,html,agentform,htmlfile)
 {
-    char *htmlstr; cJSON *retjson; FILE *fp; int32_t max = 4*1024*1024;
+    char *htmlstr; cJSON *retjson; int32_t max = 4*1024*1024;
     if ( htmlfile == 0 || htmlfile[0] == 0 )
-        htmlfile = "uglyform.html";
-    if ( (fp= fopen(htmlfile,"w")) == 0 )
-        printf("error opening htmlfile.(%s)\n",htmlfile);
+        htmlfile = "forms.html";
+    //if ( (fp= fopen(htmlfile,"w")) == 0 )
+    //    printf("error opening htmlfile.(%s)\n",htmlfile);
     htmlstr = malloc(max);
-    htmlstr = SuperNET_htmlstr(fp,htmlstr,max,agentform);
+    htmlstr = SuperNET_htmlstr(htmlfile,htmlstr,max,agentform);
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result",htmlstr);
-    jaddstr(retjson,"htmlfile",htmlfile);
     free(htmlstr);
-    if ( fp != 0 )
-        fclose(fp);
+    //if ( fp != 0 )
+    //    fclose(fp);
     return(jprint(retjson,1));
 }
        
