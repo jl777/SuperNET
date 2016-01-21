@@ -452,7 +452,7 @@ struct iguana_peer *iguana_peerfind(struct supernet_info *myinfo,struct iguana_i
 
 char *SuperNET_DHTsend(struct supernet_info *myinfo,uint32_t destipbits,bits256 destpub,char *hexmsg,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext)
 {
-    int32_t i,j; char *jsonstr=0; struct iguana_peer *addr; cJSON *json; struct iguana_info *coin;
+    int32_t i,j; char *jsonstr=0; bits256 hash; struct iguana_peer *addr; cJSON *json; struct iguana_info *coin;
     if ( myinfo == 0 )
         return(clonestr("{\"error\":\"no supernet_info\"}"));
     json = cJSON_CreateObject();
@@ -464,11 +464,11 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,uint32_t destipbits,bits256 
     if ( plaintext != 0 )
         jaddnum(json,"plaintext",plaintext!=0);
     jsonstr = jprint(json,1);
-    if ( SuperNET_hexmsgfind(myinfo,destpub,hexmsg,1) < 0 )
+    /*if ( SuperNET_hexmsgfind(myinfo,destpub,hexmsg,1) >= 0 )
     {
         char str[65]; printf("duplicate hex.(%s) for %s\n",hexmsg,bits256_str(str,destpub));
         return(clonestr("{\"error\":\"duplicate packet rejected\"}"));
-    }
+    }*/
     if ( broadcastflag != 0 || destipbits == 0 )
     {
         for (i=0; i<IGUANA_MAXCOINS; i++)
@@ -480,8 +480,12 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,uint32_t destipbits,bits256 
                     addr = &Coins[i]->peers.active[j];
                     if ( addr->usock >= 0 && addr->supernet != 0 && (broadcastflag != 0 || category_peer(myinfo,Coins[i],addr,destpub) >= 0) )
                     {
-                        char str[65]; printf("BROADCAST[%d] %s SEND.(%ld) to %s\n",j,bits256_str(str,destpub),strlen(jsonstr),addr->ipaddr);
-                        iguana_send_supernet(Coins[i],addr,jsonstr,maxdelay==0?0:(rand()%maxdelay));
+                        hash = destpub, hash.uints[0] ^= addr->ipbits;
+                        if ( SuperNET_hexmsgfind(myinfo,hash,hexmsg,1) >= 0 )
+                        {
+                            char str[65]; printf("BROADCAST[%d] %s SEND.(%ld) to %s\n",j,bits256_str(str,destpub),strlen(jsonstr),addr->ipaddr);
+                            iguana_send_supernet(Coins[i],addr,jsonstr,maxdelay==0?0:(rand()%maxdelay));
+                        }
                     }
                 }
             }
@@ -490,9 +494,14 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,uint32_t destipbits,bits256 
     }
     if ( (addr= iguana_peerfind(myinfo,&coin,destipbits,destpub)) == 0 )
         return(clonestr("{\"error\":\"no route found\"}"));
-    printf("SEND.(%s) to %s\n",jsonstr,addr->ipaddr);
-    iguana_send_supernet(coin,addr,jsonstr,maxdelay==0?0:(rand()%maxdelay));
-    return(clonestr("{\"result\":\"packet sent directly\"}"));
+    hash = destpub, hash.uints[0] ^= addr->ipbits;
+    if ( SuperNET_hexmsgfind(myinfo,hash,hexmsg,1) >= 0 )
+    {
+        printf("SEND.(%s) to %s\n",jsonstr,addr->ipaddr);
+        iguana_send_supernet(coin,addr,jsonstr,maxdelay==0?0:(rand()%maxdelay));
+        return(clonestr("{\"result\":\"packet sent directly\"}"));
+    }
+    return(clonestr("{\"result\":\"no appropriate peers to send to\"}"));
 }
 
 char *SuperNET_DHTencode(struct supernet_info *myinfo,char *destip,bits256 destpub,char *hexmsg,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext)

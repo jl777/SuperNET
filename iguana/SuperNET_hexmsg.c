@@ -24,7 +24,7 @@ int32_t SuperNET_hexmsgfind(struct supernet_info *myinfo,bits256 dest,char *hexm
     if ( bits256_nonz(dest) == 0 )
         dest = GENESIS_PUBKEY;
     packethash = curve25519(dest,packethash);
-    //printf("addflag.%d packethash.%llx dest.%llx\n",addflag,(long long)packethash.txid,(long long)dest.txid);
+    printf("addflag.%d packethash.%llx dest.%llx\n",addflag,(long long)packethash.txid,(long long)dest.txid);
     for (i=0; i<sizeof(Packetcache)/sizeof(*Packetcache); i++)
     {
         if ( Packetcache[i] == 0 )
