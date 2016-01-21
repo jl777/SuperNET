@@ -571,6 +571,8 @@ TWO_STRINGS(SuperNET,html,agentform,htmlfile)
 char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSON *json,char *remoteaddr)
 {
     char *coinstr; struct iguana_info *coin = 0;
+    if ( remoteaddr != 0 && (remoteaddr[0] == 0 || strcmp(remoteaddr,"127.0.0.1") == 0) )
+        remoteaddr = 0;
     if ( (coinstr= jstr(json,"activecoin")) != 0 )
         coin = iguana_coinfind(coinstr);
     if ( coin == 0 && (coinstr= jstr(json,"coin")) != 0 )
