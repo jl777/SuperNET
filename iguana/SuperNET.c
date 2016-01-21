@@ -268,7 +268,7 @@ int32_t SuperNET_json2bits(char *myipaddr,bits256 privkey,bits256 mypubkey,uint8
     len += iguana_rwnum(1,&serialized[len],sizeof(broadcastflag),&broadcastflag);
     if ( (broadcastflag & 0x40) != 0 )
         len += iguana_rwbignum(1,&serialized[len],sizeof(bits256),destpub.bytes);
-    if ( (hexmsg= jstr(json,"message")) != 0 )
+    if ( (hexmsg= jstr(json,"hexmsg")) != 0 )
     {
         n = (int32_t)strlen(hexmsg);
         if ( (n & 1) == 0 && is_hexstr(hexmsg,n) > 0 )
