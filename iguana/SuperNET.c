@@ -583,8 +583,11 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
         remoteaddr = 0;
     agent = jstr(json,"agent");
     method = jstr(json,"method");
-    if ( strcmp(agent,"SuperNET") == 0 && strcmp(agent,"getpeers") == 0 && juint(json,"timestamp") == 0 )
-        jaddnum(json,"timestamp",time(NULL));
+    if ( strcmp(agent,"SuperNET") == 0 && strcmp(method,"getpeers") == 0 )
+    {
+        if ( juint(json,"timestamp") == 0 )
+            jaddnum(json,"timestamp",time(NULL));
+    }
     if ( (tag= j64bits(json,"tag")) == 0 )
     {
         OS_randombytes((uint8_t *)&tag,sizeof(tag));
