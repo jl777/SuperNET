@@ -618,13 +618,14 @@ char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,ch
 
 int32_t Supernet_lineparse(char *key,int32_t keymax,char *value,int32_t valuemax,char *src)
 {
-    int32_t a,b,c,n = 0;
+    int32_t a,b,c,n = 0; char *origkey=key,*origvalue=value;
     key[0] = value[0] = 0;
     while ( (c= src[n]) == ' ' || c == '\t' || c == '\n' || c == '\t' )
         n++;
     while ( (c= src[n]) != ':' && c != 0 )
     {
         *key++ = c;
+        //printf("(%c) ",c);
         if ( ++n >= keymax-1 )
         {
             *key = 0;
@@ -633,6 +634,7 @@ int32_t Supernet_lineparse(char *key,int32_t keymax,char *value,int32_t valuemax
         }
     }
     *key = 0;
+    //printf("-> key.(%s)\n",origkey);
     if ( src[n] != ':' )
         return(n);
     n++;
@@ -658,7 +660,7 @@ int32_t Supernet_lineparse(char *key,int32_t keymax,char *value,int32_t valuemax
         while ( (c= src[n]) == '\r' || c == '\n' )
             n++;
     }
-    //printf("key.(%s) value.(%s)\n",key,value);
+    //printf("key.(%s) value.(%s)\n",origkey,origvalue);
     return(n);
 }
 
@@ -679,6 +681,7 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
             continue;
         }
         urlstr[i] = 0;
+        //printf("URLSTR[%d]=%s\n",i,&urlstr[len]);
         if ( (n= Supernet_lineparse(key,sizeof(key),value,bufsize,&urlstr[len])) > 0 )
         {
             if ( value[0] != 0 )
@@ -695,12 +698,13 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
         } else break;
     }
     jadd(json,"lines",array);
+    //printf("urlconv.(%s)\n",jprint(json,0));
     return(json);
 }
 
 char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr)
 {
-    cJSON *tokens,*argjson,*json = 0; char symbol[16],buf[4096],urlmethod[16],*data,url[1024],*retstr,*token = 0; int32_t i,j,n;
+    cJSON *tokens,*argjson,*json = 0; char symbol[16],buf[4096],urlmethod[16],*data,url[1024],*retstr,*token = 0; int32_t i,j,n,num=0;
     //printf("rpcparse.(%s)\n",urlstr);
     for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
         urlmethod[i] = urlstr[i];
@@ -734,28 +738,45 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
         return(0);
     }
     if ( url[i] != '/' )
-        token = url;
+        token = &url[i];
+    n = i;
     tokens = cJSON_CreateArray();
     for (; url[i]!=0; i++)
     {
+        //printf("i.%d (%c)\n",i,url[i]);
         if ( url[i] == '/' )
         {
             url[i] = 0;
             if ( token != 0 )
+            {
+                //printf("TOKEN.(%s) i.%d\n",token,i);
                 jaddistr(tokens,token);
+                num++;
+            }
             token = &url[i+1];
+            i++;
+            //printf("new token.(%s) i.%d\n",token,i+1);
             continue;
         }
     }
     if ( token != 0 )
+    {
+        //printf("add token.(%s)\n",token);
         jaddistr(tokens,token);
+        num++;
+    }
+    argjson = cJSON_CreateObject();
+    /*if ( num > 0 )
+        jaddstr(argjson,"agent",jstri(tokens,0));
+    if ( num > 1 )
+        jaddstr(argjson,"method",jstri(tokens,1));*/
+    //printf("urlstr.(%s)\n",urlstr+n);
     if ( (json= SuperNET_urlconv(retbuf,bufsize,urlstr+n)) != 0 )
     {
         jadd(json,"tokens",tokens);
         jaddstr(json,"urlmethod",urlmethod);
         if ( (data= jstr(json,"POST")) == 0 || (argjson= cJSON_Parse(data)) == 0 )
         {
-            argjson = cJSON_CreateObject();
             if ( (n= cJSON_GetArraySize(tokens)) > 0 )
             {
                 jaddstr(argjson,"agent",jstri(tokens,0));
@@ -833,14 +854,15 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
                 }
             }
         }
+        //printf("after urlconv.(%s) argjson.(%s)\n",jprint(json,0),jprint(argjson,0));
         if ( jstr(argjson,"method") == 0 )
         {
             free_json(argjson);
             return(0);
         }
         retstr = SuperNET_JSON(myinfo,argjson,remoteaddr);
+        //printf("(%s) {%s} -> (%s) postflag.%d (%s)\n",urlstr,jprint(argjson,0),cJSON_Print(json),*postflagp,retstr);
         free_json(argjson);
-        //printf("(%s) -> (%s) postflag.%d (%s)\n",urlstr,cJSON_Print(json),*postflagp,retstr);
         return(retstr);
     }
     return(clonestr("{\"error\":\"couldnt process packet\"}"));
