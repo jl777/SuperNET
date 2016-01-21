@@ -126,7 +126,7 @@ int32_t SuperNET_decrypt(bits256 *senderpubp,uint64_t *senderbitsp,uint32_t *tim
 
 int32_t SuperNET_str2hex(uint8_t *hex,char *str);
 void SuperNET_hex2str(char *str,uint8_t *hex,int32_t len);
-void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 destpub,char *hexmsg);
+void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 destpub,char *hexmsg,struct tai now);
 int32_t SuperNET_hexmsguniq(struct supernet_info *myinfo,bits256 dest,char *hexmsg,int32_t addflag);
 
 #endif

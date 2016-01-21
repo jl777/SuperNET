@@ -55,7 +55,7 @@ int32_t SuperNET_hexmsguniq(struct supernet_info *myinfo,bits256 dest,char *hexm
     return(i);
 }
 
-void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 destpub,char *hexmsg)
+void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 destpub,char *hexmsg,struct tai now)
 {
     char str[65];
     if ( memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(destpub)) == 0 )
