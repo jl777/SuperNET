@@ -225,29 +225,10 @@ uint16_t SuperNET_checkc(bits256 privkey,bits256 otherpub,uint32_t x)
     return(check.ushorts[0]);
 }
 
-int32_t pathstr2bits(uint8_t *path,char *pathstr,uint32_t ipbits)
-{
-    int32_t pathlen = 0;
-    if ( pathstr != 0 )
-    {
-        pathlen = ((int32_t)strlen(pathstr) >> 1) / sizeof(uint32_t);
-        if ( pathlen < SUPERNET_MAXHOPS-1 )
-        {
-            decode_hex(path,(int32_t)(pathlen*sizeof(uint32_t)*2),pathstr);
-            if ( ipbits != 0 )
-                iguana_rwnum(1,&path[pathlen*sizeof(uint32_t)],sizeof(ipbits),&ipbits), pathlen++;
-            return(pathlen);
-        }
-    }
-    return(0);
-}
-
 int32_t SuperNET_json2bits(char *myipaddr,bits256 privkey,bits256 mypubkey,uint8_t *serialized,int32_t maxsize,char *destip,cJSON *json,bits256 destpub,int16_t _othervalid)
 {
-    uint16_t apinum,checkc; uint32_t tmp,myipbits,ipbits,crc; char *agent,*method,*hexmsg;
-    uint8_t broadcastflag; int8_t othervalid; int32_t n,len;
-    uint8_t pathlen,path[0x100 * sizeof(uint32_t)];
-    len = sizeof(crc);
+    uint16_t apinum,checkc; uint32_t tmp,ipbits,crc; char *agent,*method; uint64_t tag;
+    char *hexmsg; uint8_t broadcastflag; int8_t othervalid; int32_t n,len = sizeof(uint32_t);
     if ( _othervalid > 100 )
         othervalid = 100;
     else if ( _othervalid < -100 )
@@ -261,10 +242,6 @@ int32_t SuperNET_json2bits(char *myipaddr,bits256 privkey,bits256 mypubkey,uint8
         broadcastflag |= 0x40;
     if ( juint(json,"plaintext") != 0 )
         broadcastflag |= 0x80;
-    myipbits = (uint32_t)calc_ipbits(myipaddr);
-    if ( jstr(json,"path") != 0 )
-        pathlen = pathstr2bits(path,jstr(json,"path"),myipbits);
-    else pathlen = pathstr2bits(path,0,myipbits);
     //if ( (tag= j64bits(json,"tag")) == 0 )
     //    OS_randombytes((uint8_t *)&tag,sizeof(tag));
     agent = jstr(json,"agent"), method = jstr(json,"method");
@@ -281,7 +258,8 @@ int32_t SuperNET_json2bits(char *myipaddr,bits256 privkey,bits256 mypubkey,uint8
     ipbits = (uint32_t)calc_ipbits(destip);
     checkc = SuperNET_checkc(privkey,destpub,ipbits);
     len += iguana_rwnum(1,&serialized[len],sizeof(uint32_t),&ipbits);
-    len += iguana_rwnum(1,&serialized[len],sizeof(uint32_t),&myipbits);
+    ipbits = (uint32_t)calc_ipbits(myipaddr);
+    len += iguana_rwnum(1,&serialized[len],sizeof(uint32_t),&ipbits);
     len += iguana_rwnum(1,&serialized[len],sizeof(checkc),&checkc);
     len += iguana_rwnum(1,&serialized[len],sizeof(apinum),&apinum);
     //len += iguana_rwnum(1,&serialized[len],sizeof(tag),&tag);
@@ -290,16 +268,6 @@ int32_t SuperNET_json2bits(char *myipaddr,bits256 privkey,bits256 mypubkey,uint8
     len += iguana_rwnum(1,&serialized[len],sizeof(broadcastflag),&broadcastflag);
     if ( (broadcastflag & 0x40) != 0 )
         len += iguana_rwbignum(1,&serialized[len],sizeof(bits256),destpub.bytes);
-    if ( pathlen > 0 && pathlen < SUPERNET_MAXHOPS )
-    {
-        len += iguana_rwnum(1,&serialized[len],sizeof(pathlen),&pathlen);
-        memcpy(&serialized[len],path,pathlen*sizeof(uint32_t)), len += pathlen*sizeof(uint32_t);
-    }
-    else
-    {
-        pathlen = 0;
-        len += iguana_rwnum(1,&serialized[len],sizeof(pathlen),&pathlen);
-    }
     if ( (hexmsg= jstr(json,"hexmsg")) != 0 )
     {
         n = (int32_t)strlen(hexmsg);
@@ -321,11 +289,10 @@ int32_t SuperNET_json2bits(char *myipaddr,bits256 privkey,bits256 mypubkey,uint8
 
 cJSON *SuperNET_bits2json(struct iguana_peer *addr,uint8_t *serialized,int32_t datalen)
 {
-    char destip[64],method[64],checkstr[5],agent[64],myipaddr[64],str[65],*hexmsg;
+    char destip[64],method[64],checkstr[5],agent[64],myipaddr[64],str[65],*hexmsg; uint64_t tag;
     uint16_t apinum,checkc; int8_t othervalid; uint32_t destipbits,myipbits;
     bits256 destpub,senderpub; cJSON *json = cJSON_CreateObject();
     int32_t len = 0; uint32_t crc; uint8_t broadcastflag,plaintext;
-    uint8_t pathlen,path[0x100 * sizeof(uint32_t)]; char pathstr[0x100 * sizeof(uint32_t) * 2 + 1];
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&crc);
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&destipbits);
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&myipbits);
@@ -337,13 +304,6 @@ cJSON *SuperNET_bits2json(struct iguana_peer *addr,uint8_t *serialized,int32_t d
     len += iguana_rwnum(0,&serialized[len],sizeof(broadcastflag),&broadcastflag);
     if ( (broadcastflag & 0x40) != 0 )
         len += iguana_rwbignum(0,&serialized[len],sizeof(bits256),destpub.bytes);
-    len += iguana_rwnum(0,&serialized[len],sizeof(pathlen),&pathlen);
-    if ( pathlen > 0 && pathlen < SUPERNET_MAXHOPS )
-    {
-        memcpy(path,&serialized[len],pathlen*sizeof(uint32_t));
-        init_hexbytes_noT(pathstr,path,pathlen*sizeof(uint32_t));
-        len += pathlen*sizeof(uint32_t);
-    } else pathstr[0] = 0;
     plaintext = (broadcastflag & 0x80) != 0;
     broadcastflag &= 0x3f;
     if ( broadcastflag > SUPERNET_MAXHOPS )
@@ -360,8 +320,6 @@ cJSON *SuperNET_bits2json(struct iguana_peer *addr,uint8_t *serialized,int32_t d
             jaddbits256(json,"destpub",GENESIS_PUBKEY);
         else if ( (broadcastflag & 0x40) != 0 )
             jaddbits256(json,"destpub",destpub);
-        if ( pathstr[0] != 0 )
-            jaddstr(json,"path",pathstr);
         //jadd64bits(json,"tag",tag);
         init_hexbytes_noT(checkstr,(void *)&checkc,sizeof(checkc));
         jaddstr(json,"check",checkstr);
@@ -424,7 +382,7 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
         iguana_setkeys(myinfo,addr,&privkey,&pubkey,&destpub,&nextprivkey,&nextpubkey,&nextdestpub);
         if ( juint(json,"plaintext") == 0 && juint(json,"broadcast") == 0 && memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(pubkey)) == 0 )
         {
-            printf("reject broadcasting non-plaintext! (%s)\n",jsonstr); //getchar();
+            printf("reject broadcasting non-plaintext! (%s)\n",jsonstr); getchar();
             free_json(json);
             return(-1);
         }

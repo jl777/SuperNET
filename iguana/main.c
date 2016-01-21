@@ -150,7 +150,7 @@ int32_t iguana_jsonQ()
     if ( (ptr= queue_dequeue(&jsonQ,0)) != 0 )
     {
         //printf("process.(%s)\n",ptr->jsonstr);
-        if ( (*ptr->retjsonstrp= SuperNET_jsonstr(ptr->myinfo,ptr->jsonstr,ptr->remoteaddr)) == 0 )
+        if ( *ptr->retjsonstrp != 0 && (*ptr->retjsonstrp= SuperNET_jsonstr(ptr->myinfo,ptr->jsonstr,ptr->remoteaddr)) == 0 )
             *ptr->retjsonstrp = clonestr("{\"error\":\"null return from iguana_jsonstr\"}");
         //printf("finished.(%s) -> (%s)\n",ptr->jsonstr,*ptr->retjsonstrp!=0?*ptr->retjsonstrp:"null return");
         queue_enqueue("finishedQ",&finishedQ,&ptr->DL,0);
