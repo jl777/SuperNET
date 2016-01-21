@@ -39,7 +39,7 @@ int32_t SuperNET_hexmsgfind(struct supernet_info *myinfo,bits256 dest,char *hexm
         else if ( Packetcache[i] == packethash.txid )
         {
             printf("SuperNET_DHTsend reject duplicate packet.%llx (%s)\n",(long long)packethash.txid,hexmsg);
-            return(-1);
+            return(i);
         }
     }
     if ( i == sizeof(Packetcache)/sizeof(*Packetcache) )
@@ -52,7 +52,7 @@ int32_t SuperNET_hexmsgfind(struct supernet_info *myinfo,bits256 dest,char *hexm
                 lastpurge = 0;
         }
     }
-    return(i);
+    return(-1);
 }
 
 void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 destpub,char *hexmsg,struct tai now)
