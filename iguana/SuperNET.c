@@ -542,7 +542,7 @@ int32_t SuperNET_destination(struct supernet_info *myinfo,uint32_t *destipbitsp,
 char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
 {
     int32_t destflag,maxdelay,flag=0; bits256 destpub; uint32_t destipbits; cJSON *retjson;
-    char *forwardstr=0,*retstr=0,*agent=0,*method=0,*message,*hexmsg,*jsonstr=0; uint64_t tag;
+    char *forwardstr=0,*retstr=0,*agent=0,*method=0,*message,*hexmsg=0,*jsonstr=0; uint64_t tag;
     if ( remoteaddr != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 )
         remoteaddr = 0;
     if ( (tag= j64bits(json,"tag")) == 0 )
@@ -591,7 +591,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
             }
         } else printf("null retstr from SuperNET_JSON\n");
     }
-    if ( flag != 0 )
+    if ( flag != 0 && hexmsg != 0 )
         free(hexmsg);
     if ( retstr == 0 )
         retstr = forwardstr, forwardstr = 0;
@@ -604,8 +604,8 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
 
 char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *delaymillisp,char *ipaddr,uint8_t *data,int32_t datalen,int32_t compressed)
 {
-    struct supernet_info *myinfo; char *hexmsg,*myipaddr,*method,*retstr,*checkstr; void *ptr=0;
-    bits256 senderpub,privkey,pubkey,nextprivkey,nextpubkey,nextdestpub,destpub; uint16_t checkc,othercheckc;
+    struct supernet_info *myinfo;char *myipaddr,*method,*retstr,*checkstr; void *ptr=0;
+    bits256 senderpub,privkey,pubkey,nextprivkey,nextpubkey,nextdestpub; uint16_t checkc,othercheckc;
      cJSON *json,*retjson; int32_t offset,maxdelay,msglen = datalen; uint8_t space[8192],*msgbits = 0;
     myinfo = SuperNET_MYINFO(0);
     retstr = 0;
@@ -666,9 +666,6 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
             return(0);
         }
         retstr = SuperNET_JSON(myinfo,json,ipaddr);
-        destpub = jbits256(json,"destpub");
-        if ( 0 && (hexmsg= jstr(json,"hexmsg")) != 0 && SuperNET_hexmsgfind(myinfo,destpub,hexmsg,0) < 0 )
-            SuperNET_hexmsgadd(myinfo,destpub,hexmsg,tai_now());
         //printf("p2pret.(%s)\n",retstr);
         *delaymillisp = SuperNET_delaymillis(myinfo,maxdelay);
         senderpub = jbits256(json,"mypub");
