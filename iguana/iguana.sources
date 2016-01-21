@@ -1,3 +1,3 @@
 #iguana_html.c 
 
-SOURCES := SuperNET.c pangea_api.c pangea_funds.c cards777.c pangea_fsm.c pangea_network.c pangea_init.c poker.c ramchain_api.c iguana_tx.c iguana_wallet.c  iguana_pubkeys.c iguana_recv.c iguana_bundles.c iguana_msg.c iguana_rpc.c iguana777.c iguana_chains.c iguana_peers.c iguana_accept.c iguana_bitmap.c iguana_init.c iguana_ramchain.c iguana_blocks.c iguana_json.c main.c
+SOURCES := SuperNET.c SuperNET_hexmsg.c pangea_api.c pangea_funds.c cards777.c pangea_fsm.c pangea_network.c pangea_init.c poker.c ramchain_api.c iguana_tx.c iguana_wallet.c  iguana_pubkeys.c iguana_recv.c iguana_bundles.c iguana_msg.c iguana_rpc.c iguana777.c iguana_chains.c iguana_peers.c iguana_accept.c iguana_bitmap.c iguana_init.c iguana_ramchain.c iguana_blocks.c iguana_json.c main.c
