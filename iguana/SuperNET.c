@@ -476,9 +476,9 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,bits256 routehash,char *hexm
                 for (j=0; j<IGUANA_MAXPEERS; j++)
                 {
                     addr = &Coins[i]->peers.active[j];
-                    if ( addr->usock >= 0 )
+                    if ( addr->usock >= 0 && addr->supernet != 0 )
                     {
-                        printf("BROADCAST[%d] SEND.(%s) to %s\n",j,jsonstr,addr->ipaddr);
+                        printf("BROADCAST[%d] SEND.(%ld) to %s\n",j,strlen(jsonstr),addr->ipaddr);
                         iguana_send_supernet(Coins[i],addr,jsonstr,maxdelay==0?0:(rand()%maxdelay));
                     }
                 }
