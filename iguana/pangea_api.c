@@ -30,6 +30,7 @@ cJSON *pangea_lobbyjson(struct supernet_info *myinfo)
 
 int32_t pangea_updatemsg(struct supernet_info *myinfo,struct pangea_msghdr *pm,int32_t len)
 {
+    char str[65]; printf("PANGEA.(%s) sends %s\n",bits256_str(str,pm->sig.pubkey),pm->sig.serialized);
     return(0);
 }
 
