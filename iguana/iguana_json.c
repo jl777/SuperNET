@@ -250,11 +250,12 @@ int32_t pretty_form(FILE *fp,char *formheader,char *formfooter,char *fieldtempla
 {
     cJSON *item,*fieldsarray; int32_t j,m,formsize,fieldsize,iter,width,size = 0;
     char *methodstr,*typestr,*fieldname;
-    char outstr[2048],outstr2[2048],str[2],widthstr[16];
+    char outstr[2048],outstr2[2048],str[2],widthstr[16],both[512];
     if ( (methodstr= jstr(methoditem,"method")) == 0 )
         methodstr = "method";
     if ( agent == 0 )
         agent = "agent";
+    sprintf(both,"%s-%s",agent,methodstr);
     outstr[0] = outstr2[0] = str[1] = 0;
     formsize = fieldsize = 0;
     if ( (fieldsarray= jarray(&m,methoditem,"fields")) != 0 )
@@ -262,7 +263,7 @@ int32_t pretty_form(FILE *fp,char *formheader,char *formfooter,char *fieldtempla
         for (iter=0; iter<2; iter++)
         {
             if ( iter == 1 )
-                fprintf(fp,formheader,methodstr,methodstr,methodstr,agent,methodstr,methodstr,methodstr,agent,methodstr,outstr);
+                fprintf(fp,formheader,both,both,both,agent,methodstr,both,both,agent,methodstr,outstr);
             for (j=0; j<m; j++)
             {
                 item = jitem(fieldsarray,j);

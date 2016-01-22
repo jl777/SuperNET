@@ -135,6 +135,7 @@ int32_t SuperNET_hexmsgfind(struct supernet_info *myinfo,bits256 category,bits25
 void category_posthexmsg(struct supernet_info *myinfo,bits256 category,bits256 subhash,char *hexmsg,struct tai now);
 void *category_sub(struct supernet_info *myinfo,bits256 category,bits256 subhash);
 struct category_msg *category_gethexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash);
+char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr);
 
 char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag,bits256 categoryhash,bits256 subcategory,char *message,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext);
 
