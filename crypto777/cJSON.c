@@ -62,7 +62,7 @@ static char* cJSON_strdup(const char* str)
     char* copy;
     
     len = strlen(str) + 1;
-    if (!(copy = (char*)cJSON_malloc(len))) return 0;
+    if (!(copy = (char*)cJSON_malloc(len+1))) return 0;
     memcpy(copy,str,len);
     return copy;
 }
@@ -137,7 +137,7 @@ static char *print_number(cJSON *item)
 	}
 	else
 	{
-		str = (char *)cJSON_malloc(64);	/* This is a nice tradeoff. */
+		str = (char *)cJSON_malloc(66);	/* This is a nice tradeoff. */
 		if ( str != 0 )
 		{
 			if ( fabs(floor(d) - d) <= DBL_EPSILON && fabs(d) < 1.0e60 )
@@ -172,7 +172,7 @@ static const char *parse_string(cJSON *item,const char *str)
 	
 	while (*ptr!='\"' && *ptr && ++len) if (*ptr++ == '\\') ptr++;	/* Skip escaped quotes. */
 	
-	out=(char*)cJSON_malloc(len+1);	/* This is how long we need for the string, roughly. */
+	out=(char*)cJSON_malloc(len+2);	/* This is how long we need for the string, roughly. */
 	if (!out) return 0;
 	
 	ptr=str+1;ptr2=out;
@@ -232,7 +232,7 @@ static char *print_string_ptr(const char *str)
 	if (!str) return cJSON_strdup("");
 	ptr=str;while ((token=*ptr) && ++len) {if (strchr("\"\\\b\f\n\r\t",token)) len++; else if (token<32) len+=5;ptr++;}
 	
-	out=(char*)cJSON_malloc(len+3);
+	out=(char*)cJSON_malloc(len+3+1);
 	if (!out) return 0;
     
 	ptr2=out;ptr=str;
@@ -376,12 +376,12 @@ static char *print_array(cJSON *item,int32_t depth,int32_t fmt)
 	/* Explicitly handle numentries==0 */
 	if (!numentries)
 	{
-		out=(char*)cJSON_malloc(3);
+		out=(char*)cJSON_malloc(3+1);
 		if (out) strcpy(out,"[]");
 		return out;
 	}
 	/* Allocate an array to hold the values for each */
-	entries=(char**)cJSON_malloc(numentries*sizeof(char*));
+	entries=(char**)cJSON_malloc((1+numentries)*sizeof(char*));
 	if (!entries) return 0;
 	memset(entries,0,numentries*sizeof(char*));
 	/* Retrieve all the results: */
@@ -395,7 +395,7 @@ static char *print_array(cJSON *item,int32_t depth,int32_t fmt)
 	}
 	
 	/* If we didn't fail, try to malloc the output string */
-	if (!fail) out=(char*)cJSON_malloc(len);
+	if (!fail) out=(char*)cJSON_malloc(len+1);
 	/* If that fails, we fail. */
 	if (!out) fail=1;
     
@@ -469,7 +469,7 @@ static char *print_object(cJSON *item,int32_t depth,int32_t fmt)
 	/* Explicitly handle empty object case */
 	if (!numentries)
 	{
-		out=(char*)cJSON_malloc(fmt?depth+4:3);
+		out=(char*)cJSON_malloc(fmt?depth+4+1:3+1);
 		if (!out)	return 0;
 		ptr=out;*ptr++='{';
 		if (fmt) {*ptr++='\n';for (i=0;i<depth-1;i++) *ptr++='\t';}
@@ -495,7 +495,7 @@ static char *print_object(cJSON *item,int32_t depth,int32_t fmt)
 	}
 	
 	/* Try to allocate the output string */
-	if (!fail) out=(char*)cJSON_malloc(len);
+	if (!fail) out=(char*)cJSON_malloc(len+1);
 	if (!out) fail=1;
     
 	/* Handle failure */

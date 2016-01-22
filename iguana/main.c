@@ -104,6 +104,7 @@ struct supernet_info *SuperNET_MYINFO(char *passphrase)
     {
         // search saved accounts
     }
+    return(&MYINFO);
     return(0);
 }
 
@@ -123,6 +124,7 @@ char *iguana_JSON(char *jsonstr)
 char *SuperNET_jsonstr(struct supernet_info *myinfo,char *jsonstr,char *remoteaddr)
 {
     cJSON *json; char *agent,*method;
+    //char str[65]; printf("SuperNET_jsonstr %p %s\n",&myinfo->privkey,bits256_str(str,myinfo->privkey));
     if ( (json= cJSON_Parse(jsonstr)) != 0 )
     {
         method = jstr(json,"method");
@@ -149,7 +151,7 @@ int32_t iguana_jsonQ()
     }
     if ( (ptr= queue_dequeue(&jsonQ,0)) != 0 )
     {
-        //printf("process.(%s)\n",ptr->jsonstr);
+        char str[65]; printf("ptr %p %s\n",&ptr->myinfo->privkey,bits256_str(str,ptr->myinfo->privkey));
         if ( *ptr->retjsonstrp != 0 && (*ptr->retjsonstrp= SuperNET_jsonstr(ptr->myinfo,ptr->jsonstr,ptr->remoteaddr)) == 0 )
             *ptr->retjsonstrp = clonestr("{\"error\":\"null return from iguana_jsonstr\"}");
         //printf("finished.(%s) -> (%s)\n",ptr->jsonstr,*ptr->retjsonstrp!=0?*ptr->retjsonstrp:"null return");
@@ -192,7 +194,7 @@ char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t
 char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
 {
     cJSON *retjson; uint64_t tag; uint32_t timeout; char *jsonstr,*method; char *retjsonstr,*retstr = 0;
-    //printf("SuperNET_JSON.(%s) remoteaddr.(%s)\n",jprint(json,0),remoteaddr!=0?remoteaddr:"");
+    //char str[65]; printf("processJSON %p %s\n",&myinfo->privkey,bits256_str(str,myinfo->privkey));
     if ( json != 0 )
     {
         if ( (tag= j64bits(json,"tag")) == 0 )
@@ -272,14 +274,15 @@ void iguana_main(void *arg)
 {
     FILE *fp; cJSON *json; uint8_t *space,secretbuf[512]; uint32_t r; long allocsize;
     char helperstr[64],fname[512],*wallet2,*wallet2str,*tmpstr,*confstr,*helperargs,*ipaddr,*coinargs=0,*secret,*jsonstr = arg;
+    struct supernet_info *myinfo;
     int32_t i,len,flag,c; bits256 acct,seed,checkhash,wallethash,walletpub,wallet2shared,wallet2priv,wallet2pub;
-    memset(&MYINFO,0,sizeof(MYINFO));
+    myinfo = SuperNET_MYINFO(0);
     mycalloc(0,0,0);
     iguana_initQ(&helperQ,"helperQ");
     OS_ensure_directory("confs");
     OS_ensure_directory("DB");
     OS_ensure_directory("tmp");
-    if ( (tmpstr= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"help\"}"),0)) != 0 )
+    if ( (tmpstr= SuperNET_JSON(myinfo,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"help\"}"),0)) != 0 )
     {
         if ( (API_json= cJSON_Parse(tmpstr)) != 0 && (API_json= jobj(API_json,"result")) != 0 )
             API_json = jobj(API_json,"API");
@@ -326,11 +329,11 @@ void iguana_main(void *arg)
     walletpub = curve25519(wallethash,curve25519_basepoint9());
     seed = curve25519_shared(wallethash,wallet2pub);
     vcalc_sha256(0,wallet2shared.bytes,seed.bytes,sizeof(bits256));
-    OS_randombytes(MYINFO.persistent_priv.bytes,sizeof(MYINFO.privkey));
-    MYINFO.myaddr.persistent = curve25519(MYINFO.persistent_priv,curve25519_basepoint9());
-    vcalc_sha256(0,acct.bytes,(void *)MYINFO.myaddr.persistent.bytes,sizeof(bits256));
-    MYINFO.myaddr.nxt64bits = acct.txid;
-    RS_encode(MYINFO.myaddr.NXTADDR,MYINFO.myaddr.nxt64bits);
+    OS_randombytes(myinfo->persistent_priv.bytes,sizeof(myinfo->privkey));
+    myinfo->myaddr.persistent = curve25519(myinfo->persistent_priv,curve25519_basepoint9());
+    vcalc_sha256(0,acct.bytes,(void *)myinfo->myaddr.persistent.bytes,sizeof(bits256));
+    myinfo->myaddr.nxt64bits = acct.txid;
+    RS_encode(myinfo->myaddr.NXTADDR,myinfo->myaddr.nxt64bits);
     if ( bits256_nonz(wallet2shared) > 0 )
         sprintf(fname,"confs/iguana.%llu",(long long)wallet2shared.txid);
     else sprintf(fname,"confs/iguana.conf");
@@ -348,28 +351,28 @@ void iguana_main(void *arg)
         if ( json != 0 )
         {
             if ( (ipaddr= jstr(json,"ipaddr")) != 0 && is_ipaddr(ipaddr) != 0 )
-                strcpy(MYINFO.ipaddr,ipaddr);
+                strcpy(myinfo->ipaddr,ipaddr);
             if ( (secret= jstr(json,"secret")) != 0 )
             {
-                MYINFO.myaddr.nxt64bits = conv_NXTpassword(MYINFO.persistent_priv.bytes,MYINFO.myaddr.persistent.bytes,(uint8_t *)secret,(int32_t)strlen(secret));
-                RS_encode(MYINFO.myaddr.NXTADDR,MYINFO.myaddr.nxt64bits);
+                myinfo->myaddr.nxt64bits = conv_NXTpassword(myinfo->persistent_priv.bytes,myinfo->myaddr.persistent.bytes,(uint8_t *)secret,(int32_t)strlen(secret));
+                RS_encode(myinfo->myaddr.NXTADDR,myinfo->myaddr.nxt64bits);
             }
             else
             {
-                MYINFO.persistent_priv = jbits256(json,"persistent_priv");
-                if ( bits256_nonz(MYINFO.persistent_priv) == 0 )
+                myinfo->persistent_priv = jbits256(json,"persistent_priv");
+                if ( bits256_nonz(myinfo->persistent_priv) == 0 )
                 {
                     printf("null persistent_priv? generate new one\n");
-                    OS_randombytes(MYINFO.persistent_priv.bytes,sizeof(MYINFO.privkey));
+                    OS_randombytes(myinfo->persistent_priv.bytes,sizeof(myinfo->privkey));
                 }
-                MYINFO.myaddr.persistent = jbits256(json,"persistent_pub");
-                checkhash = curve25519(MYINFO.persistent_priv,curve25519_basepoint9());
+                myinfo->myaddr.persistent = jbits256(json,"persistent_pub");
+                checkhash = curve25519(myinfo->persistent_priv,curve25519_basepoint9());
             }
             free_json(json);
-            if ( memcmp(checkhash.bytes,MYINFO.myaddr.persistent.bytes,sizeof(checkhash)) != 0 )
+            if ( memcmp(checkhash.bytes,myinfo->myaddr.persistent.bytes,sizeof(checkhash)) != 0 )
             {
                 printf("persistent pubkey mismatches one in iguana.conf\n");
-                MYINFO.myaddr.persistent = checkhash;
+                myinfo->myaddr.persistent = checkhash;
                 confstr = 0;
             }
         } else printf("Cant parse.(%s)\n",confstr), confstr = 0;
@@ -385,37 +388,37 @@ void iguana_main(void *arg)
         printf("got ipaddr.(%s) %x\n",ipaddr,is_ipaddr(ipaddr));
         if ( is_ipaddr(ipaddr) != 0 )
         {
-            strcpy(MYINFO.ipaddr,ipaddr);
-            MYINFO.myaddr.selfipbits = (uint32_t)calc_ipbits(ipaddr);
+            strcpy(myinfo->ipaddr,ipaddr);
+            myinfo->myaddr.selfipbits = (uint32_t)calc_ipbits(ipaddr);
         }
         free(ipaddr);
     }
-    if ( MYINFO.myaddr.selfipbits == 0 )
+    if ( myinfo->myaddr.selfipbits == 0 )
     {
-        strcpy(MYINFO.ipaddr,"127.0.0.1");
-        MYINFO.myaddr.selfipbits = (uint32_t)calc_ipbits(MYINFO.ipaddr);
+        strcpy(myinfo->ipaddr,"127.0.0.1");
+        myinfo->myaddr.selfipbits = (uint32_t)calc_ipbits(myinfo->ipaddr);
     }
-    OS_randombytes(MYINFO.privkey.bytes,sizeof(MYINFO.privkey));
-    MYINFO.myaddr.pubkey = curve25519(MYINFO.privkey,curve25519_basepoint9());
-    vcalc_sha256(0,acct.bytes,(void *)MYINFO.myaddr.persistent.bytes,sizeof(bits256));
-    MYINFO.myaddr.nxt64bits = acct.txid;
-    RS_encode(MYINFO.myaddr.NXTADDR,MYINFO.myaddr.nxt64bits);
-    char str[65],str2[65]; printf("%s %llu PRIV.%s PUB.%s persistent.%llx %llx\n",MYINFO.myaddr.NXTADDR,(long long)MYINFO.myaddr.nxt64bits,bits256_str(str,MYINFO.privkey),bits256_str(str2,MYINFO.myaddr.pubkey),(long long)MYINFO.persistent_priv.txid,(long long)MYINFO.myaddr.persistent.txid);
+    OS_randombytes(myinfo->privkey.bytes,sizeof(myinfo->privkey));
+    myinfo->myaddr.pubkey = curve25519(myinfo->privkey,curve25519_basepoint9());
+    vcalc_sha256(0,acct.bytes,(void *)myinfo->myaddr.persistent.bytes,sizeof(bits256));
+    myinfo->myaddr.nxt64bits = acct.txid;
+    RS_encode(myinfo->myaddr.NXTADDR,myinfo->myaddr.nxt64bits);
+    char str[65],str2[65]; printf("%s %llu %p PRIV.%s PUB.%s persistent.%llx %llx\n",myinfo->myaddr.NXTADDR,(long long)myinfo->myaddr.nxt64bits,&myinfo->privkey,bits256_str(str,myinfo->privkey),bits256_str(str2,myinfo->myaddr.pubkey),(long long)myinfo->persistent_priv.txid,(long long)myinfo->myaddr.persistent.txid);
     if ( confstr == 0 )
     {
         uint8_t *compressed,*serialized; int32_t complen,maxsize = IGUANA_MAXPACKETSIZE;
         json = cJSON_CreateObject();
         jaddstr(json,"agent","SuperNET");
         jaddstr(json,"method","saveconf");
-        jaddstr(json,"myipaddr",MYINFO.ipaddr);
-        jaddbits256(json,"persistent_priv",MYINFO.persistent_priv);
-        jaddbits256(json,"persistent_pub",MYINFO.myaddr.persistent);
+        jaddstr(json,"myipaddr",myinfo->ipaddr);
+        jaddbits256(json,"persistent_priv",myinfo->persistent_priv);
+        jaddbits256(json,"persistent_pub",myinfo->myaddr.persistent);
         compressed = calloc(1,maxsize);
         serialized = calloc(1,maxsize);
         if ( strcmp("confs/iguana.conf",fname) != 0 )
         {
             //sprintf(fname,"confs/iguana.%llu",(long long)wallet2shared.txid);
-            //if ( SuperNET_json2bits(MYINFO.ipaddr,wallethash,walletpub,wallet2shared,serialized,&complen,compressed,maxsize,MYINFO.ipaddr,wallet2pub,json) > 0 )
+            //if ( SuperNET_json2bits(myinfo->ipaddr,wallethash,walletpub,wallet2shared,serialized,&complen,compressed,maxsize,myinfo->ipaddr,wallet2pub,json) > 0 )
             {
                 complen = (int32_t)strlen(jprint(json,0));
                 printf("save (%s) <- %d\n",fname,complen);
@@ -459,7 +462,7 @@ void iguana_main(void *arg)
         helperargs = clonestr(helperstr);
         iguana_launch(iguana_coinadd("BTCD"),"iguana_helper",iguana_helper,helperargs,IGUANA_PERMTHREAD);
     }
-    iguana_launch(iguana_coinadd("BTCD"),"rpcloop",iguana_rpcloop,iguana_coinadd("BTCD"),IGUANA_PERMTHREAD);
+    iguana_launch(iguana_coinadd("BTCD"),"rpcloop",iguana_rpcloop,SuperNET_MYINFO(0),IGUANA_PERMTHREAD);
     if ( coinargs != 0 )
         iguana_launch(iguana_coinadd("BTCD"),"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
     else if ( 1 )

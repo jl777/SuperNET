@@ -1714,11 +1714,16 @@ uint64_t acct777_nxt64bits(bits256 pubkey)
     return(acct.txid);
 }
 
-bits256 acct777_msgpubkey(uint8_t *data,int32_t datalen)
+bits256 acct777_msgprivkey(uint8_t *data,int32_t datalen)
 {
     bits256 hash;
     vcalc_sha256(0,hash.bytes,data,datalen);
-    return(acct777_pubkey(hash));
+    return(hash);
+}
+
+bits256 acct777_msgpubkey(uint8_t *data,int32_t datalen)
+{
+    return(acct777_pubkey(acct777_msgprivkey(data,datalen)));
 }
 
 bits256 acct777_hashiter(bits256 privkey,bits256 pubkey,int32_t lockdays,uint8_t chainlen)
@@ -1752,24 +1757,42 @@ bits256 acct777_invoicehash(bits256 *invoicehash,uint16_t lockdays,uint8_t chain
     return(privkey);
 }
 
-uint64_t acct777_sign(struct acct777_sig *sig,bits256 privkey,bits256 otherpubkey,uint32_t timestamp,uint8_t *data,int32_t datalen)
+//char *bits256_str();
+//struct acct777_sig { bits256 sigbits,pubkey; uint64_t signer64bits; uint32_t timestamp,allocsize; };
+uint64_t acct777_sign(struct acct777_sig *sig,bits256 privkey,bits256 otherpubkey,uint32_t timestamp,uint8_t *serialized,int32_t datalen)
 {
-    int32_t i; bits256 shared; uint8_t buf[sizeof(shared) + sizeof(timestamp)]; uint32_t t = timestamp;
-    for (i=0; i<sizeof(t); i++,t>>=8)
-        buf[i] = (t & 0xff);
-    sig->timestamp = timestamp;
+    int32_t len = 0; bits256 pubkey; bits256 shared; uint8_t buf[sizeof(*sig)];
+    pubkey = acct777_pubkey(privkey);
+    if ( memcmp(sig->pubkey.bytes,otherpubkey.bytes,sizeof(bits256)) != 0 )
+    {
+        //char str[65],str2[65];
+        //printf("set sig fields.(%s) != (%s)\n",bits256_str(str,sig->pubkey),bits256_str(str2,otherpubkey));
+        sig->pubkey = pubkey;
+        sig->timestamp = timestamp;
+        sig->allocsize = (int32_t)(datalen + sizeof(*sig));
+        sig->signer64bits = acct777_nxt64bits(sig->pubkey);
+    }
     shared = curve25519(privkey,otherpubkey);
-    memcpy(&buf[sizeof(timestamp)],shared.bytes,sizeof(shared));
-    vcalc_sha256cat(sig->sigbits.bytes,buf,sizeof(buf),data,datalen);
-    sig->pubkey = acct777_pubkey(privkey), sig->signer64bits = acct777_nxt64bits(sig->pubkey);
-    //printf(" calcsig.%llx pubkey.%llx signer.%llu | t%u crc.%08x len.%d shared.%llx <- %llx * %llx\n",(long long)sig->sigbits.txid,(long long)sig->pubkey.txid,(long long)sig->signer64bits,timestamp,_crc32(0,data,datalen),datalen,(long long)shared.txid,(long long)privkey.txid,(long long)otherpubkey.txid);
+    memset(buf,0,sizeof(buf));
+    iguana_rwbignum(1,&buf[len],sizeof(bits256),shared.bytes), len += sizeof(bits256);
+    iguana_rwbignum(1,&buf[len],sizeof(bits256),sig->pubkey.bytes),len += sizeof(bits256);
+    iguana_rwnum(1,&buf[len],sizeof(sig->signer64bits),&sig->signer64bits),len += sizeof(sig->signer64bits);
+    iguana_rwnum(1,&buf[len],sizeof(sig->timestamp),&sig->timestamp),len += sizeof(sig->timestamp);
+    iguana_rwnum(1,&buf[len],sizeof(sig->allocsize),&sig->allocsize),len += sizeof(sig->allocsize);
+    //int32_t i; for (i=0; i<sizeof(*sig); i++)
+    //    printf("%02x ",buf[i]);
+    //char str[65]; printf("shared.(%s) crc.%u datalen.%d\n",bits256_str(str,shared),calc_crc32(0,buf,sizeof(buf)),datalen);
+    vcalc_sha256cat(sig->sigbits.bytes,buf,sizeof(buf),serialized,datalen);
+    //printf(" calcsig.%llx pubkey.%llx signer.%llu | t%u crc.%08x len.%d shared.%llx <- %llx * %llx\n",(long long)sig->sigbits.txid,(long long)sig->pubkey.txid,(long long)sig->signer64bits,timestamp,calc_crc32(0,serialized,datalen),datalen,(long long)shared.txid,(long long)privkey.txid,(long long)otherpubkey.txid);
     return(sig->signer64bits);
 }
 
-uint64_t acct777_validate(struct acct777_sig *sig,uint32_t timestamp,uint8_t *data,int32_t datalen)
+uint64_t acct777_validate(struct acct777_sig *sig,bits256 privkey,bits256 pubkey)
 {
-    struct acct777_sig checksig; uint64_t signerbits;
-    acct777_sign(&checksig,acct777_msgpubkey(data,datalen),sig->pubkey,timestamp,data,datalen);
+    struct acct777_sig checksig; uint64_t signerbits; int32_t datalen;
+    datalen = (int32_t)(sig->allocsize - sizeof(*sig));
+    checksig = *sig;
+    acct777_sign(&checksig,privkey,pubkey,sig->timestamp,sig->serialized,datalen);
     if ( memcmp(checksig.sigbits.bytes,sig->sigbits.bytes,sizeof(checksig.sigbits)) != 0 )
     {
         printf("sig compare error using sig->pub from %llu\n",(long long)acct777_nxt64bits(sig->pubkey));
@@ -1786,12 +1809,12 @@ uint64_t acct777_signtx(struct acct777_sig *sig,bits256 privkey,uint32_t timesta
     return(acct777_sign(sig,privkey,acct777_msgpubkey(data,datalen),timestamp,data,datalen));
 }
 
-uint64_t acct777_swaptx(bits256 privkey,struct acct777_sig *sig,uint32_t timestamp,uint8_t *data,int32_t datalen)
+/*uint64_t acct777_swaptx(bits256 privkey,struct acct777_sig *sig,uint32_t timestamp,uint8_t *data,int32_t datalen)
 {
     uint64_t othernxt;
-    if ( (othernxt= acct777_validate(sig,timestamp,data,datalen)) != sig->signer64bits )
+    if ( (othernxt= acct777_validate(sig)) != sig->signer64bits )
         return(0);
     return(acct777_sign(sig,privkey,acct777_msgpubkey(data,datalen),timestamp,data,datalen));
-}
+}*/
 
 #undef force_inline
