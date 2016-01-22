@@ -102,19 +102,20 @@ int32_t category_broadcastflag(struct supernet_info *myinfo,bits256 category,bit
     return(broadcastflag);
 }
 
-char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag,bits256 category,bits256 subhash,char *message,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext)
+char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag,bits256 categoryhash,bits256 subhash,char *message,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext)
 {
     char *hexmsg,*retstr; int32_t len;
     len = (int32_t)strlen(message);
+    char str[65]; printf("multicast.(%s)\n",bits256_str(str,categoryhash));
     if ( is_hexstr(message,len) == 0 )
     {
         hexmsg = malloc((len << 1) + 1);
         init_hexbytes_noT(hexmsg,(uint8_t *)message,len+1);
     } else hexmsg = message;
-    plaintext = category_plaintext(myinfo,category,subhash,plaintext);
-    broadcastflag = category_broadcastflag(myinfo,category,subhash,broadcastflag);
-    maxdelay = category_maxdelay(myinfo,category,subhash,maxdelay);
-    retstr = SuperNET_DHTsend(myinfo,0,category,subhash,hexmsg,maxdelay,broadcastflag,plaintext);
+    plaintext = category_plaintext(myinfo,categoryhash,subhash,plaintext);
+    broadcastflag = category_broadcastflag(myinfo,categoryhash,subhash,broadcastflag);
+    maxdelay = category_maxdelay(myinfo,categoryhash,subhash,maxdelay);
+    retstr = SuperNET_DHTsend(myinfo,0,categoryhash,subhash,hexmsg,maxdelay,broadcastflag,plaintext);
     if ( hexmsg != message)
         free(hexmsg);
     return(retstr);
