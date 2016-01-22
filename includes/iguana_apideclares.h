@@ -38,12 +38,11 @@ STRING_ARG(SuperNET,broadcastdecipher,message);
 HASH_AND_STRING(SuperNET,multicastcipher,pubkey,message);
 HASH_AND_STRING(SuperNET,multicastdecipher,privkey,cipherstr);
 
-THREE_STRINGS(SuperNET,announce,category,subcategory,message);
-THREE_STRINGS(SuperNET,survey,category,subcategory,message);
-
 TWO_STRINGS(SuperNET,subscribe,category,subcategory);
 TWO_STRINGS(SuperNET,gethexmsg,category,subcategory);
 THREE_STRINGS(SuperNET,posthexmsg,category,subcategory,hexmsg);
+THREE_STRINGS(SuperNET,announce,category,subcategory,message);
+THREE_STRINGS(SuperNET,survey,category,subcategory,message);
 
 STRING_ARG(SuperNET,getpeers,activecoin);
 TWO_ARRAYS(SuperNET,mypeers,supernet,rawpeers);

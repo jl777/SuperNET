@@ -287,7 +287,7 @@ int32_t SuperNET_json2bits(uint8_t *serialized,int32_t maxsize,cJSON *json,bits2
         if ( (broadcastflag & 0x20) != 0 )
             len += iguana_rwbignum(1,&serialized[len],sizeof(bits256),subhash.bytes);
     }
-    printf("broadcastflag.%x\n",broadcastflag);
+    //printf("broadcastflag.%x\n",broadcastflag);
     if ( (hexmsg= jstr(json,"hexmsg")) != 0 )
     {
         n = (int32_t)strlen(hexmsg);
@@ -451,7 +451,8 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
         checkc = SuperNET_checkc(nextprivkey,nextdestpub,&nextpubkey.txid,sizeof(nextpubkey.txid));
         if ( (datalen= SuperNET_json2bits(&serialized[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE,json,nextpubkey,checkc,(uint32_t)calc_ipbits(myinfo->ipaddr),(uint32_t)calc_ipbits(addr->ipaddr),addr->othervalid)) > 0 )
         {
-            printf("SUPERSEND.(%s) -> (%s) (%s) delaymillis.%d datalen.%d\n",jsonstr,jprint(SuperNET_bits2json(&serialized[sizeof(struct iguana_msghdr)],datalen),1),addr->ipaddr,delaymillis,datalen);
+            if ( jstr(json,"method") != 0 && strcmp("getpeers",jstr(json,"method")) != 0 )
+                printf("SUPERSEND.(%s) -> (%s) (%s) delaymillis.%d datalen.%d\n",jsonstr,jprint(SuperNET_bits2json(&serialized[sizeof(struct iguana_msghdr)],datalen),1),addr->ipaddr,delaymillis,datalen);
             if ( 0 && memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(destpub)) == 0 )
                 qlen = iguana_queue_send(coin,addr,delaymillis,serialized,"SuperNET",datalen,0,0);
             else
@@ -460,13 +461,13 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
                 {
                     void *msgbits; int32_t msglen,offset; bits256 testpriv; uint8_t space[65536]; void *ptr2;
                     destpub = iguana_actualpubkey(&offset,cipher,cipherlen,destpub);
-                    if ( (msgbits= SuperNET_deciphercalc(&ptr2,&msglen,testpriv,destpub,&cipher[offset],cipherlen-offset,space,sizeof(space))) == 0 )
+                    if ( 0 && (msgbits= SuperNET_deciphercalc(&ptr2,&msglen,testpriv,destpub,&cipher[offset],cipherlen-offset,space,sizeof(space))) == 0 )
                     {
                         int32_t i; for (i=0; i<cipherlen; i++)
                             printf("%02x",cipher[i]);
                         printf(" cant decrypt cipherlen.%d otherpriv.%llx pub.%llx\n",cipherlen,(long long)testpriv.txid,(long long)pubkey.txid);
                         printf("encrypted mypriv.%llx destpub.%llx\n",(long long)privkey.txid,(long long)destpub.txid);
-                    } else printf("decrypted\n");
+                    } //else printf("decrypted\n");
                     qlen = iguana_queue_send(coin,addr,delaymillis,&cipher[-sizeof(struct iguana_msghdr)],"SuperNETb",cipherlen,0,0);
                     if ( ptr != 0 )
                         free(ptr);
