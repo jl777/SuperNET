@@ -15,6 +15,75 @@
 
 #include "pangea777.h"
 
+//struct acct777_sig { bits256 sigbits,pubkey; uint64_t signer64bits; uint32_t timestamp; };
+
+struct pangea_msghdr
+{
+    struct acct777_sig sig __attribute__((packed));
+    int32_t allocsize __attribute__((packed));
+    bits256 tablehash __attribute__((packed));
+    uint32_t ipbits __attribute__((packed));
+    uint8_t data[];
+} __attribute__((packed));
+
+cJSON *pangea_lobbyjson(struct supernet_info *myinfo)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(retjson);
+}
+
+int32_t pangea_updatemsg(struct supernet_info *myinfo,struct pangea_msghdr *pm,int32_t len)
+{
+    return(0);
+}
+
+
+int32_t pangea_validate(struct pangea_msghdr *pm,int32_t size)
+{
+    uint64_t signerbits;
+    if ( size == pm->allocsize )
+    {
+        printf("pangea message size mismatch %d != %d\n",size,pm->allocsize);
+        return(-1);
+    }
+    if ( (signerbits = acct777_validate(&pm->sig,pm->sig.timestamp,&((uint8_t *)pm)[sizeof(pm->sig)],pm->allocsize-sizeof(pm->sig))) != 0 )
+    {
+        return(0);
+    }
+    return(-1);
+}
+
+struct pangea_msghdr *pangea_msgcreate(struct supernet_info *myinfo,uint8_t *space,bits256 tablehash,uint8_t *data,int32_t datalen)
+{
+    struct pangea_msghdr *pm = (struct pangea_msghdr *)space;
+    memset(pm,0,sizeof(*pm));
+    pm->sig.pubkey = myinfo->myaddr.pubkey;
+    pm->sig.signer64bits = acct777_nxt64bits(pm->sig.pubkey);
+    pm->sig.timestamp = (uint32_t)time(NULL);
+    if ( datalen > 0 )
+        memcpy(pm->data,data,datalen);
+    pm->allocsize = (int32_t)(sizeof(*pm) + datalen);
+    pm->tablehash = tablehash;
+    pm->ipbits = myinfo->myaddr.myipbits;
+    acct777_sign(&pm->sig,myinfo->privkey,tablehash,pm->sig.timestamp,&space[sizeof(pm->sig)],pm->allocsize);
+    if ( pangea_validate(pm,pm->allocsize) == 0 )
+        return(pm);
+    else printf("error validating pangea msg\n");
+    return(0);
+}
+
+void pangea_update(struct supernet_info *myinfo)
+{
+    struct category_msg *m; bits256 pangeahash;
+    pangeahash = calc_categoryhashes(0,"pangea",0);
+    while ( (m= category_gethexmsg(myinfo,pangeahash,GENESIS_PUBKEY)) != 0 )
+    {
+        if ( pangea_validate((struct pangea_msghdr *)m->msg,m->len) == 0 )
+            pangea_updatemsg(myinfo,(struct pangea_msghdr *)m->msg,m->len);
+        free(m);
+    }
+}
+
 void pangea_sendcmd(char *hex,union pangeanet777 *hn,char *cmdstr,int32_t destplayer,uint8_t *data,int32_t datalen,int32_t cardi,int32_t turni)
 {
     int32_t n,hexlen,blindflag = 0; uint64_t destbits; bits256 destpub; cJSON *json; char hoststr[1024]; struct pangea_info *sp;
@@ -237,55 +306,6 @@ void _pangea_chat(uint64_t senderbits,void *buf,int32_t len,int32_t senderind)
 {
     PNACL_message(">>>>>>>>>>> CHAT FROM.%d %llu: (%s)\n",senderind,(long long)senderbits,(char *)buf);
 }
-
-/*char *pangea_univ(uint8_t *mypriv,cJSON *json)
-{
-    char *addrtypes[][3] = { {"BTC","0","80"}, {"LTC","48"}, {"BTCD","60","bc"}, {"DOGE","30"}, {"VRC","70"}, {"OPAL","115"}, {"BITS","25"} };
-    char *wipstr,*coin,*coinaddr,pubkeystr[67],rsaddr[64],destaddr[64],wifbuf[128]; uint8_t priv[32],pub[33],addrtype; int32_t i;
-    uint64_t nxt64bits; cJSON *retjson,*item;
-    PNACL_message("inside rosetta\n");
-    if ( (coin= jstr(json,"coin")) != 0 )
-    {
-        if ( (wipstr= jstr(json,"wif")) != 0 || (wipstr= jstr(json,"wip")) != 0 )
-        {
-            PNACL_message("got wip.(%s)\n",wipstr);
-            btc_wip2priv(priv,wipstr);
-        }
-        else if ( (coinaddr= jstr(json,"addr")) != 0 )
-        {
-            if ( getprivkey(priv,coin,coinaddr) < 0 )
-                return(clonestr("{\"error\":\"cant get privkey\"}"));
-        }
-    } else memcpy(priv,mypriv,sizeof(priv));
-    btc_priv2pub(pub,priv);
-    init_hexbytes_noT(pubkeystr,pub,33);
-    PNACL_message("pubkey.%s\n",pubkeystr);
-    retjson = cJSON_CreateObject();
-    jaddstr(retjson,"btcpubkey",pubkeystr);
-    for (i=0; i<sizeof(addrtypes)/sizeof(*addrtypes); i++)
-    {
-        if ( btc_coinaddr(destaddr,atoi(addrtypes[i][1]),pubkeystr) == 0 )
-        {
-            item = cJSON_CreateObject();
-            jaddstr(item,"addr",destaddr);
-            if ( addrtypes[i][2] != 0 )
-            {
-                decode_hex(&addrtype,1,addrtypes[i][2]);
-                btc_priv2wip(wifbuf,priv,addrtype);
-                jaddstr(item,"wif",wifbuf);
-            }
-            jadd(retjson,addrtypes[i][0],item);
-        }
-    }
-    nxt64bits = nxt_priv2addr(rsaddr,pubkeystr,priv);
-    item = cJSON_CreateObject();
-    jaddstr(item,"addressRS",rsaddr);
-    jadd64bits(item,"address",nxt64bits);
-    jaddstr(item,"pubkey",pubkeystr);
-    jadd(retjson,"NXT",item);
-    return(jprint(retjson,1));
-}
-*/
 
 /*
         else if ( strcmp(methodstr,"newtable") == 0 )
@@ -565,30 +585,55 @@ INT_AND_ARRAY(pangea,handsummary,senderind,args)
 }
 
 
-//U64_AND_ARRAY(pangea,turn,tableid,args);
-U64_AND_ARRAY(pangea,status,tableid,args)
+HASH_AND_ARRAY(pangea,status,tablehash,args)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-U64_AND_ARRAY(pangea,mode,tableid,args)
+HASH_AND_ARRAY(pangea,mode,tablehash,args)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-U64_AND_ARRAY(pangea,buyin,tableid,args)
+HASH_AND_ARRAY(pangea,buyin,tablehash,args)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-U64_AND_ARRAY(pangea,history,tableid,args)
+HASH_AND_ARRAY(pangea,history,tablehash,args)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
+
+ZERO_ARGS(pangea,lobby)
+{
+    pangea_update(myinfo);
+    return(jprint(pangea_lobbyjson(myinfo),1));
+}
+
+INT_AND_ARRAY(pangea,host,minplayers,args)
+{
+    char *req = "{\"host\":\"table\"}";
+    bits256 pangeahash,tablehash; struct pangea_msghdr *pm; uint8_t space[sizeof(*pm) + 512];
+    pangeahash = calc_categoryhashes(0,"pangea",0);
+    OS_randombytes(tablehash.bytes,sizeof(tablehash));
+    pm = pangea_msgcreate(myinfo,space,tablehash,(void *)req,(int32_t)strlen(req));
+    return(SuperNET_categorymulticast(myinfo,0,pangeahash,tablehash,(void *)pm,0,1,1));
+}
+
+HASH_AND_ARRAY(pangea,join,tablehash,args)
+{
+    char *req = "{\"lobby\":\"join\"}";
+    bits256 pangeahash; struct pangea_msghdr *pm; uint8_t space[sizeof(*pm) + 512];
+    pangeahash = calc_categoryhashes(0,"pangea",0);
+    pm = pangea_msgcreate(myinfo,space,tablehash,(void *)req,(int32_t)strlen(req));
+    return(SuperNET_categorymulticast(myinfo,0,pangeahash,tablehash,(void *)pm,0,1,1));
+}
+
 #undef IGUANA_ARGS
 
 #include "../includes/iguana_apiundefs.h"

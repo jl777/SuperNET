@@ -1084,16 +1084,14 @@ HASH_ARRAY_STRING(SuperNET,layer,mypriv,otherpubs,str)
     return(clonestr("{\"result\":\"layer encrypt here\"}"));
 }
 
-bits256 calc_categoryhashes(bits256 *subhashp,char *category,char *subcategory)
+TWO_STRINGS(SuperNET,categoryhashes,category,subcategory)
 {
-    bits256 categoryhash;
-    if ( category == 0 || category[0] == 0 || strcmp(category,"broadcast") == 0 )
-        categoryhash = GENESIS_PUBKEY;
-    else vcalc_sha256(0,categoryhash.bytes,(uint8_t *)category,(int32_t)strlen(category));
-    if ( subcategory == 0 || subcategory[0] == 0 || strcmp(subcategory,"broadcast") == 0 )
-        *subhashp = GENESIS_PUBKEY;
-    else vcalc_sha256(0,subhashp->bytes,(uint8_t *)subcategory,(int32_t)strlen(subcategory));
-    return(categoryhash);
+    bits256 categoryhash,subhash; cJSON *retjson = cJSON_CreateObject();
+    categoryhash = calc_categoryhashes(&subhash,category,subcategory);
+    jaddstr(retjson,"result","category hashes calculated");
+    jaddbits256(retjson,"categoryhash",categoryhash);
+    jaddbits256(retjson,"subhash",subhash);
+    return(jprint(retjson,1));
 }
 
 TWO_STRINGS(SuperNET,subscribe,category,subcategory)

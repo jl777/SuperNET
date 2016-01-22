@@ -138,6 +138,7 @@ struct category_msg *category_gethexmsg(struct supernet_info *myinfo,bits256 cat
 char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr);
 
 char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag,bits256 categoryhash,bits256 subcategory,char *message,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext);
+bits256 calc_categoryhashes(bits256 *subhashp,char *category,char *subcategory);
 
 #endif
 

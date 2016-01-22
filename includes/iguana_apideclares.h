@@ -14,16 +14,10 @@
  ******************************************************************************/
 
 ZERO_ARGS(SuperNET,help);
-TWO_STRINGS(SuperNET,html,agentform,htmlfile);
 STRING_ARG(SuperNET,bitcoinrpc,setcoin);
-TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(SuperNET,DHT,hexmsg,destip,categoryhash,subhash,maxdelay,broadcast);
 
-STRING_AND_TWOINTS(mouse,image,name,x,y);
-STRING_AND_TWOINTS(mouse,change,name,x,y);
-STRING_AND_TWOINTS(mouse,click,name,x,y);
-STRING_ARG(mouse,close,name);
-STRING_ARG(mouse,leave,name);
-STRING_AND_INT(keyboard,key,name,c);
+TWO_STRINGS(SuperNET,html,agentform,htmlfile);
+TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(SuperNET,DHT,hexmsg,destip,categoryhash,subhash,maxdelay,broadcast);
 
 THREE_STRINGS(SuperNET,rosetta,passphrase,pin,showprivkey);
 ZERO_ARGS(SuperNET,keypair);
@@ -43,6 +37,14 @@ TWO_STRINGS(SuperNET,gethexmsg,category,subcategory);
 THREE_STRINGS(SuperNET,posthexmsg,category,subcategory,hexmsg);
 THREE_STRINGS(SuperNET,announce,category,subcategory,message);
 THREE_STRINGS(SuperNET,survey,category,subcategory,message);
+TWO_STRINGS(SuperNET,categoryhashes,category,subcategory);
+
+STRING_AND_TWOINTS(mouse,image,name,x,y);
+STRING_AND_TWOINTS(mouse,change,name,x,y);
+STRING_AND_TWOINTS(mouse,click,name,x,y);
+STRING_ARG(mouse,close,name);
+STRING_ARG(mouse,leave,name);
+STRING_AND_INT(keyboard,key,name,c);
 
 STRING_ARG(SuperNET,getpeers,activecoin);
 TWO_ARRAYS(SuperNET,mypeers,supernet,rawpeers);
@@ -69,10 +71,14 @@ INT_AND_ARRAY(pangea,action,senderind,args);
 INT_AND_ARRAY(pangea,showdown,senderind,args);
 INT_AND_ARRAY(pangea,handsummary,senderind,args);
 
-U64_AND_ARRAY(pangea,status,tableid,args);
-U64_AND_ARRAY(pangea,mode,tableid,args);
-U64_AND_ARRAY(pangea,buyin,tableid,args);
-U64_AND_ARRAY(pangea,history,tableid,args);
+HASH_AND_ARRAY(pangea,status,tableid,args);
+HASH_AND_ARRAY(pangea,mode,tableid,args);
+HASH_AND_ARRAY(pangea,buyin,tableid,args);
+HASH_AND_ARRAY(pangea,history,tableid,args);
+
+ZERO_ARGS(pangea,lobby);
+INT_AND_ARRAY(pangea,host,minplayers,args);
+HASH_AND_ARRAY(pangea,join,tablehash,args);
 
 STRING_ARG(iguana,peers,activecoin);
 STRING_AND_INT(iguana,maxpeers,activecoin,max);

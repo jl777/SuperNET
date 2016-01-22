@@ -45,8 +45,8 @@ int32_t iguana_rwversion(int32_t rwflag,uint8_t *serialized,struct iguana_msgver
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->nStartingHeight),&msg->nStartingHeight);
     if ( msg->nVersion > 70000 )
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->relayflag),&msg->relayflag);
-    if ( rwflag == 0 )
-        printf("%-15s v.%llu srv.%llx %u ht.%llu [%s].R%d nonce.%llx\n",ipaddr,(long long)msg->nVersion,(long long)msg->nServices,(uint32_t)msg->nTime,(long long)msg->nStartingHeight,msg->strSubVer,msg->relayflag,(long long)msg->nonce);
+    //if ( rwflag == 0 )
+    //    printf("%-15s v.%llu srv.%llx %u ht.%llu [%s].R%d nonce.%llx\n",ipaddr,(long long)msg->nVersion,(long long)msg->nServices,(uint32_t)msg->nTime,(long long)msg->nStartingHeight,msg->strSubVer,msg->relayflag,(long long)msg->nonce);
     return(len);
 }
 

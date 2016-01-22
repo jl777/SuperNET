@@ -12331,5 +12331,54 @@ len = 0;
             {
                 return(acct777_pubkey(testprivkey(selector)));
             }
+                
+            /*char *pangea_univ(uint8_t *mypriv,cJSON *json)
+             {
+             char *addrtypes[][3] = { {"BTC","0","80"}, {"LTC","48"}, {"BTCD","60","bc"}, {"DOGE","30"}, {"VRC","70"}, {"OPAL","115"}, {"BITS","25"} };
+             char *wipstr,*coin,*coinaddr,pubkeystr[67],rsaddr[64],destaddr[64],wifbuf[128]; uint8_t priv[32],pub[33],addrtype; int32_t i;
+             uint64_t nxt64bits; cJSON *retjson,*item;
+             PNACL_message("inside rosetta\n");
+             if ( (coin= jstr(json,"coin")) != 0 )
+             {
+             if ( (wipstr= jstr(json,"wif")) != 0 || (wipstr= jstr(json,"wip")) != 0 )
+             {
+             PNACL_message("got wip.(%s)\n",wipstr);
+             btc_wip2priv(priv,wipstr);
+             }
+             else if ( (coinaddr= jstr(json,"addr")) != 0 )
+             {
+             if ( getprivkey(priv,coin,coinaddr) < 0 )
+             return(clonestr("{\"error\":\"cant get privkey\"}"));
+             }
+             } else memcpy(priv,mypriv,sizeof(priv));
+             btc_priv2pub(pub,priv);
+             init_hexbytes_noT(pubkeystr,pub,33);
+             PNACL_message("pubkey.%s\n",pubkeystr);
+             retjson = cJSON_CreateObject();
+             jaddstr(retjson,"btcpubkey",pubkeystr);
+             for (i=0; i<sizeof(addrtypes)/sizeof(*addrtypes); i++)
+             {
+             if ( btc_coinaddr(destaddr,atoi(addrtypes[i][1]),pubkeystr) == 0 )
+             {
+             item = cJSON_CreateObject();
+             jaddstr(item,"addr",destaddr);
+             if ( addrtypes[i][2] != 0 )
+             {
+             decode_hex(&addrtype,1,addrtypes[i][2]);
+             btc_priv2wip(wifbuf,priv,addrtype);
+             jaddstr(item,"wif",wifbuf);
+             }
+             jadd(retjson,addrtypes[i][0],item);
+             }
+             }
+             nxt64bits = nxt_priv2addr(rsaddr,pubkeystr,priv);
+             item = cJSON_CreateObject();
+             jaddstr(item,"addressRS",rsaddr);
+             jadd64bits(item,"address",nxt64bits);
+             jaddstr(item,"pubkey",pubkeystr);
+             jadd(retjson,"NXT",item);
+             return(jprint(retjson,1));
+             }
+             */
 
 #endif

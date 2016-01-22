@@ -1714,6 +1714,13 @@ uint64_t acct777_nxt64bits(bits256 pubkey)
     return(acct.txid);
 }
 
+bits256 acct777_msgpubkey(uint8_t *data,int32_t datalen)
+{
+    bits256 hash;
+    vcalc_sha256(0,hash.bytes,data,datalen);
+    return(acct777_pubkey(hash));
+}
+
 bits256 acct777_hashiter(bits256 privkey,bits256 pubkey,int32_t lockdays,uint8_t chainlen)
 {
     uint16_t lockseed,signlen = 0; uint8_t signbuf[16]; bits256 shared,lockhash;
@@ -1761,19 +1768,22 @@ uint64_t acct777_sign(struct acct777_sig *sig,bits256 privkey,bits256 otherpubke
 
 uint64_t acct777_validate(struct acct777_sig *sig,uint32_t timestamp,uint8_t *data,int32_t datalen)
 {
-    struct acct777_sig checksig;
-    acct777_sign(&checksig,GENESIS_PRIVKEY,sig->pubkey,timestamp,data,datalen);
+    struct acct777_sig checksig; uint64_t signerbits;
+    acct777_sign(&checksig,acct777_msgpubkey(data,datalen),sig->pubkey,timestamp,data,datalen);
     if ( memcmp(checksig.sigbits.bytes,sig->sigbits.bytes,sizeof(checksig.sigbits)) != 0 )
     {
         printf("sig compare error using sig->pub from %llu\n",(long long)acct777_nxt64bits(sig->pubkey));
         return(0);
     }
-    return(acct777_nxt64bits(sig->pubkey));
+    signerbits = acct777_nxt64bits(sig->pubkey);
+    if ( signerbits == checksig.signer64bits )
+        return(signerbits);
+    else return(0);
 }
 
 uint64_t acct777_signtx(struct acct777_sig *sig,bits256 privkey,uint32_t timestamp,uint8_t *data,int32_t datalen)
 {
-    return(acct777_sign(sig,privkey,GENESIS_PUBKEY,timestamp,data,datalen));
+    return(acct777_sign(sig,privkey,acct777_msgpubkey(data,datalen),timestamp,data,datalen));
 }
 
 uint64_t acct777_swaptx(bits256 privkey,struct acct777_sig *sig,uint32_t timestamp,uint8_t *data,int32_t datalen)
@@ -1781,7 +1791,7 @@ uint64_t acct777_swaptx(bits256 privkey,struct acct777_sig *sig,uint32_t timesta
     uint64_t othernxt;
     if ( (othernxt= acct777_validate(sig,timestamp,data,datalen)) != sig->signer64bits )
         return(0);
-    return(acct777_sign(sig,privkey,GENESIS_PUBKEY,timestamp,data,datalen));
+    return(acct777_sign(sig,privkey,acct777_msgpubkey(data,datalen),timestamp,data,datalen));
 }
 
 #undef force_inline

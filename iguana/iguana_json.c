@@ -107,6 +107,7 @@ cJSON *SuperNET_helpjson()
 #define IGUANA_HELP_H(agent,name,hash) array = helpjson(IGUANA_ARGS,#agent,#name,helparray(cJSON_CreateArray(),helpitem(#hash,"hash")))
 #define IGUANA_HELP_HI(agent,name,hash,val) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#val,"int")))
 #define IGUANA_HELP_HH(agent,name,hash,hash2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#hash2,"hash")))
+#define IGUANA_HELP_HA(agent,name,hash,obj) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#obj,"array")))
 #define IGUANA_HELP_HS(agent,name,hash,str) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#str,"str")))
 #define IGUANA_HELP_HII(agent,name,hash,val,val2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#val,"int"),helpitem(#val2,"int")))
 #define IGUANA_HELP_HHS(agent,name,hash,hash2,str) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#hash2,"hash"),helpitem(#str,"str")))
@@ -151,6 +152,7 @@ cJSON *SuperNET_helpjson()
 #define U64_AND_ARRAY IGUANA_HELP_64A
 #define HASH_ARG IGUANA_HELP_H
 #define TWO_HASHES IGUANA_HELP_HH
+#define HASH_AND_ARRAY IGUANA_HELP_HA
 
 #include "../includes/iguana_apideclares.h"
     
@@ -322,6 +324,7 @@ int32_t pretty_forms(char *fname,char *agentstr)
         fprintf(fp,"%s\n",header);
         if ( (helpjson= SuperNET_helpjson()) != 0 )
         {
+            printf("JSON.(%s)\n",jprint(helpjson,0));
             if ( (array= jarray(&n,helpjson,"API")) != 0 )
             {
                 for (i=0; i<n; i++)
@@ -332,6 +335,7 @@ int32_t pretty_forms(char *fname,char *agentstr)
                     {
                         len = pretty_form(fp,formheader,formfooter,field,str!=0?str:"agent",item);
                         size += len;
+                        printf("%s.%s\n",str,jstr(item,"method"));
                     } //else printf("agentstr.%p (%s) (%s) str.%p \n",agentstr,agentstr,str,str);
                 }
             }
@@ -376,7 +380,8 @@ char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr)
                 } //else printf("agentstr.%p (%s) (%s) str.%p \n",agentstr,agentstr,str,str);
             }
         }
-        free_json(helpjson);
+        //free_json(helpjson);
+        return(jprint(helpjson,1));
     }
     strcat(htmlstr,"<br><br/></body></html><br><br/>");
     printf("<br><br/></body></html><br><br/>\n");
@@ -734,6 +739,7 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSO
 #define IGUANA_DISPATCH_H(agent,name,hash) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash)))
 #define IGUANA_DISPATCH_HI(agent,name,hash,val) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),juint(json,#val)))
 #define IGUANA_DISPATCH_HH(agent,name,hash,hash2) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),jbits256(json,#hash2)))
+#define IGUANA_DISPATCH_HA(agent,name,hash,array) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),jobj(json,#array)))
 #define IGUANA_DISPATCH_HS(agent,name,hash,str) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),jstr(json,#str)))
 #define IGUANA_DISPATCH_HII(agent,name,hash,val,val2) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),juint(json,#val),juint(json,#val2)))
 #define IGUANA_DISPATCH_HHS(agent,name,hash,hash2,str) else if ( strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),jbits256(json,#hash2),jstr(json,#str)))
@@ -778,6 +784,7 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSO
 #define U64_AND_ARRAY IGUANA_DISPATCH_64A
 #define HASH_ARG IGUANA_DISPATCH_H
 #define TWO_HASHES IGUANA_DISPATCH_HH
+#define HASH_AND_ARRAY IGUANA_DISPATCH_HA
 
 #include "../includes/iguana_apideclares.h"
 //#undef IGUANA_ARGS
