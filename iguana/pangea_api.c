@@ -602,20 +602,31 @@ ZERO_ARGS(pangea,lobby)
 
 INT_AND_ARRAY(pangea,host,minplayers,params)
 {
-    cJSON *retjson; char *str,hexstr[1024],*req = "{\"host\":\"table\"}";
+    cJSON *retjson,*argjson; char *str,hexstr[1024],*reqstr;
     bits256 pangeahash,tablehash; struct pangea_msghdr *pm; uint8_t space[sizeof(*pm) + 512];
     pangeahash = calc_categoryhashes(0,"pangea",0);
     OS_randombytes(tablehash.bytes,sizeof(tablehash));
-    if ( (pm= pangea_msgcreate(myinfo,space,tablehash,(void *)req,(int32_t)strlen(req))) != 0 )
+    argjson = cJSON_CreateObject();
+    jaddbits256(argjson,"newtable",tablehash);
+    jaddnum(argjson,"minplayers",minplayers);
+    jaddstr(argjson,"ipaddr",myinfo->ipaddr);
+    reqstr = jprint(argjson,1);
+    if ( (pm= pangea_msgcreate(myinfo,space,tablehash,(void *)reqstr,(int32_t)strlen(reqstr)+1)) != 0 )
     {
+        free(reqstr);
         init_hexbytes_noT(hexstr,(uint8_t *)pm,pm->sig.allocsize);
-        str = SuperNET_categorymulticast(myinfo,0,pangeahash,tablehash,hexstr,0,1,1);
+        str = SuperNET_categorymulticast(myinfo,0,pangeahash,GENESIS_PUBKEY,hexstr,0,1,1);
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","table created");
         jaddstr(retjson,"multicast",str);
         jaddbits256(retjson,"tablehash",tablehash);
         return(jprint(retjson,1));
-    } else return(clonestr("{\"error\":\"couldnt create pangea message\"}"));
+    }
+    else
+    {
+        free(reqstr);
+        return(clonestr("{\"error\":\"couldnt create pangea message\"}"));
+    }
 }
 
 HASH_AND_ARRAY(pangea,join,tablehash,params)
