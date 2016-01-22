@@ -69,5 +69,5 @@ void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 category,bits256 su
         strcat(str,str2);
     }
     category_posthexmsg(myinfo,category,subhash,hexmsg,now);
-    printf("HEXMSG.(%s) -> %s\n",hexmsg,str);
+    //printf("HEXMSG.(%s) -> %s\n",hexmsg,str);
 }
