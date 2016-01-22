@@ -124,10 +124,17 @@ int32_t SuperNET_num2API(char *agent,char *method,uint16_t num);
 bits256 SuperNET_sharedseed(bits256 privkey,bits256 otherpub);
 int32_t SuperNET_decrypt(bits256 *senderpubp,uint64_t *senderbitsp,uint32_t *timestampp,bits256 mypriv,bits256 mypub,uint8_t *dest,int32_t maxlen,uint8_t *src,int32_t len);
 
+
+struct category_info { UT_hash_handle hh; queue_t Q; bits256 hash; struct category_info *sub; } *Categories;
+struct category_msg { struct queueitem DL; struct tai t; int32_t len; uint8_t msg[]; };
+
 int32_t SuperNET_str2hex(uint8_t *hex,char *str);
 void SuperNET_hex2str(char *str,uint8_t *hex,int32_t len);
 void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 category,bits256 subhash,char *hexmsg,struct tai now);
 int32_t SuperNET_hexmsgfind(struct supernet_info *myinfo,bits256 category,bits256 subhash,char *hexmsg,int32_t addflag);
+void category_posthexmsg(struct supernet_info *myinfo,bits256 category,bits256 subhash,char *hexmsg,struct tai now);
+void *category_sub(struct supernet_info *myinfo,bits256 category,bits256 subhash);
+struct category_msg *category_gethexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash);
 
 char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag,bits256 categoryhash,bits256 subcategory,char *message,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext);
 

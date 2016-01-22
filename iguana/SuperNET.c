@@ -382,21 +382,23 @@ char *SuperNET_hexconv(char *hexmsg)
 {
     cJSON *json; char *myip,*yourip,*retstr = hexmsg; uint32_t myipbits=0,destipbits=0;
     uint8_t *bits; int32_t n,len = (int32_t)strlen(hexmsg) >> 1;
-    bits = calloc(1,len*2);
-    decode_hex(bits,len,hexmsg);
-    if ( (json= cJSON_Parse((char *)bits)) != 0 )
+    if ( (bits = calloc(1,len)) != 0 )
     {
-        if ( (myip= jstr(json,"myip")) != 0 )
-            myipbits = (uint32_t)calc_ipbits(myip);
-        if ( (yourip= jstr(json,"yourip")) != 0 )
-            destipbits = (uint32_t)calc_ipbits(yourip);
-        n = SuperNET_json2bits(bits,len,json,jbits256(json,"mypub"),juint(json,"checkc"),myipbits,destipbits,(int32_t)jdouble(json,"ov"));
-        cJSON *json2 = SuperNET_bits2json(bits,n); printf("hexconv.(%s) -> (%s)\n",jprint(json,0),jprint(json2,1));
-        retstr = calloc(1,n*2+1);
-        init_hexbytes_noT(retstr,bits,n);
-    }
-    if ( bits != 0 )
+        decode_hex(bits,len,hexmsg);
+        if ( (json= cJSON_Parse((char *)bits)) != 0 )
+        {
+            if ( (myip= jstr(json,"myip")) != 0 )
+                myipbits = (uint32_t)calc_ipbits(myip);
+            if ( (yourip= jstr(json,"yourip")) != 0 )
+                destipbits = (uint32_t)calc_ipbits(yourip);
+            n = SuperNET_json2bits(bits,len,json,jbits256(json,"mypub"),juint(json,"checkc"),myipbits,destipbits,(int32_t)jdouble(json,"ov"));
+            cJSON *json2 = SuperNET_bits2json(bits,n); printf("hexconv.(%s) -> (%s)\n",jprint(json,0),jprint(json2,1));
+            if ( (retstr= calloc(1,n*2+1)) != 0 )
+                init_hexbytes_noT(retstr,bits,n);
+            else retstr = hexmsg;
+        } else printf("SuperNET_hexconv cant parse.(%s)\n",hexmsg);
         free(bits);
+    }
     return(retstr);
 }
 
@@ -1076,19 +1078,61 @@ HASH_ARRAY_STRING(SuperNET,layer,mypriv,otherpubs,str)
     return(clonestr("{\"result\":\"layer encrypt here\"}"));
 }
 
+bits256 calc_categoryhashes(bits256 *subhashp,char *category,char *subcategory)
+{
+    bits256 categoryhash;
+    if ( category == 0 || category[0] == 0 || strcmp(category,"broadcast") == 0 )
+        categoryhash = GENESIS_PUBKEY;
+    else vcalc_sha256(0,categoryhash.bytes,(uint8_t *)category,(int32_t)strlen(category));
+    if ( subcategory == 0 || subcategory[0] == 0 || strcmp(subcategory,"broadcast") == 0 )
+        *subhashp = GENESIS_PUBKEY;
+    else vcalc_sha256(0,subhashp->bytes,(uint8_t *)subcategory,(int32_t)strlen(subcategory));
+    return(categoryhash);
+}
+
 THREE_STRINGS(SuperNET,announce,category,subcategory,message)
 {
     bits256 categoryhash,subhash;
-    vcalc_sha256(0,categoryhash.bytes,(uint8_t *)category,(int32_t)strlen(category));
-    vcalc_sha256(0,subhash.bytes,(uint8_t *)subcategory,(int32_t)strlen(subcategory));
+    categoryhash = calc_categoryhashes(&subhash,category,subcategory);
     return(SuperNET_categorymulticast(myinfo,0,categoryhash,subhash,message,juint(json,"maxdelay"),juint(json,"broadcast"),juint(json,"plaintext")));
+}
+
+TWO_STRINGS(SuperNET,subscribe,category,subcategory)
+{
+    bits256 categoryhash,subhash;
+    categoryhash = calc_categoryhashes(&subhash,category,subcategory);
+    if ( category_sub(myinfo,categoryhash,subhash) != 0 )
+        return(clonestr("{\"result\":\"subscribed\"}"));
+    else return(clonestr("{\"error\":\"couldnt subscribe\"}"));
+}
+
+TWO_STRINGS(SuperNET,gethexmsg,category,subcategory)
+{
+    bits256 categoryhash,subhash; struct category_msg *m; char *hexstr; cJSON *retjson;
+    categoryhash = calc_categoryhashes(&subhash,category,subcategory);
+    if ( (m= category_gethexmsg(myinfo,categoryhash,subhash)) != 0 )
+    {
+        hexstr = calloc(1,m->len*2+1);
+        init_hexbytes_noT(hexstr,m->msg,m->len);
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"result",hexstr);
+        free(hexstr);
+        return(jprint(retjson,1));
+    } else return(clonestr("{\"result\":\"no message\"}"));
+}
+
+THREE_STRINGS(SuperNET,posthexmsg,category,subcategory,hexmsg)
+{
+    bits256 categoryhash,subhash;
+    categoryhash = calc_categoryhashes(&subhash,category,subcategory);
+    category_posthexmsg(myinfo,categoryhash,subhash,hexmsg,tai_now());
+    return(clonestr("{\"result\":\"posted message\"}"));
 }
 
 THREE_STRINGS(SuperNET,survey,category,subcategory,message)
 {
     bits256 categoryhash,subhash;
-    vcalc_sha256(0,categoryhash.bytes,(uint8_t *)category,(int32_t)strlen(category));
-    vcalc_sha256(0,subhash.bytes,(uint8_t *)subcategory,(int32_t)strlen(subcategory));
+    categoryhash = calc_categoryhashes(&subhash,category,subcategory);
     return(SuperNET_categorymulticast(myinfo,1,categoryhash,subhash,message,juint(json,"maxdelay"),juint(json,"broadcast"),juint(json,"plaintext")));
 }
 #include "../includes/iguana_apiundefs.h"
