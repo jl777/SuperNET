@@ -34,6 +34,17 @@ int32_t pangea_updatemsg(struct supernet_info *myinfo,struct pangea_msghdr *pm,i
     return(0);
 }
 
+void pangea_update(struct supernet_info *myinfo)
+{
+    struct category_msg *m; bits256 pangeahash;
+    pangeahash = calc_categoryhashes(0,"pangea",0);
+    while ( (m= category_gethexmsg(myinfo,pangeahash,GENESIS_PUBKEY)) != 0 )
+    {
+        pangea_updatemsg(myinfo,(struct pangea_msghdr *)m->msg,m->len);
+        free(m);
+    }
+}
+
 int32_t pangea_validate(struct pangea_msghdr *pm,bits256 privkey,bits256 pubkey)
 {
     uint64_t signerbits;
@@ -57,17 +68,6 @@ struct pangea_msghdr *pangea_msgcreate(struct supernet_info *myinfo,uint8_t *spa
         return(pm);
     else printf("error validating pangea msg\n");
     return(0);
-}
-
-void pangea_update(struct supernet_info *myinfo)
-{
-    struct category_msg *m; bits256 pangeahash;
-    pangeahash = calc_categoryhashes(0,"pangea",0);
-    while ( (m= category_gethexmsg(myinfo,pangeahash,GENESIS_PUBKEY)) != 0 )
-    {
-        pangea_updatemsg(myinfo,(struct pangea_msghdr *)m->msg,m->len);
-        free(m);
-    }
 }
 
 void pangea_sendcmd(char *hex,union pangeanet777 *hn,char *cmdstr,int32_t destplayer,uint8_t *data,int32_t datalen,int32_t cardi,int32_t turni)
@@ -570,7 +570,6 @@ INT_AND_ARRAY(pangea,handsummary,senderind,params)
     return(jprint(retjson,1));
 }
 
-
 HASH_AND_ARRAY(pangea,status,tablehash,params)
 {
     cJSON *retjson = cJSON_CreateObject();
@@ -597,6 +596,8 @@ HASH_AND_ARRAY(pangea,history,tablehash,params)
 
 ZERO_ARGS(pangea,lobby)
 {
+    bits256 pangeahash = calc_categoryhashes(0,"pangea",0);
+    category_sub(myinfo,pangeahash,GENESIS_PUBKEY);
     pangea_update(myinfo);
     return(jprint(pangea_lobbyjson(myinfo),1));
 }
@@ -607,10 +608,12 @@ INT_AND_ARRAY(pangea,host,minplayers,params)
     bits256 pangeahash,tablehash; struct pangea_msghdr *pm; uint8_t space[sizeof(*pm) + 512];
     pangeahash = calc_categoryhashes(0,"pangea",0);
     OS_randombytes(tablehash.bytes,sizeof(tablehash));
+    category_sub(myinfo,pangeahash,GENESIS_PUBKEY);
+    category_sub(myinfo,pangeahash,tablehash);
     argjson = cJSON_CreateObject();
     jaddbits256(argjson,"newtable",tablehash);
     jaddnum(argjson,"minplayers",minplayers);
-    jaddstr(argjson,"ipaddr",myinfo->ipaddr);
+    jaddstr(argjson,"myipaddr",myinfo->ipaddr);
     reqstr = jprint(argjson,1);
     if ( (pm= pangea_msgcreate(myinfo,space,tablehash,(void *)reqstr,(int32_t)strlen(reqstr)+1)) != 0 )
     {
@@ -632,15 +635,26 @@ INT_AND_ARRAY(pangea,host,minplayers,params)
 
 HASH_AND_ARRAY(pangea,join,tablehash,params)
 {
-    char hexstr[512],*req = "{\"lobby\":\"join\"}";
+    cJSON *argjson; char hexstr[512],*reqstr;
     bits256 pangeahash; struct pangea_msghdr *pm; uint8_t space[sizeof(*pm) + 512];
     pangeahash = calc_categoryhashes(0,"pangea",0);
-    if ( (pm= pangea_msgcreate(myinfo,space,tablehash,(void *)req,(int32_t)strlen(req))) != 0 )
+    category_sub(myinfo,pangeahash,GENESIS_PUBKEY);
+    category_sub(myinfo,pangeahash,tablehash);
+    argjson = cJSON_CreateObject();
+    jaddbits256(argjson,"join",tablehash);
+    jaddstr(argjson,"myipaddr",myinfo->ipaddr);
+    reqstr = jprint(argjson,1);
+    if ( (pm= pangea_msgcreate(myinfo,space,tablehash,(void *)reqstr,(int32_t)strlen(reqstr))) != 0 )
     {
+        free(reqstr);
         init_hexbytes_noT(hexstr,(uint8_t *)pm,pm->sig.allocsize);
         return(SuperNET_categorymulticast(myinfo,0,pangeahash,tablehash,hexstr,0,1,1));
-    } else return(clonestr("{\"error\":\"couldnt create pangea message\"}"));
-
+    }
+    else
+    {
+        free(reqstr);
+        return(clonestr("{\"error\":\"couldnt create pangea message\"}"));
+    }
 }
 
 #undef IGUANA_ARGS

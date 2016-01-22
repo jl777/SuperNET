@@ -798,15 +798,15 @@ char *cJSON_str(cJSON *json)
     return(0);
 }
 
-void jadd(cJSON *json,char *field,cJSON *item) { cJSON_AddItemToObject(json,field,item); }
-void jaddstr(cJSON *json,char *field,char *str) { cJSON_AddItemToObject(json,field,cJSON_CreateString(str)); }
-void jaddnum(cJSON *json,char *field,double num) { cJSON_AddItemToObject(json,field,cJSON_CreateNumber(num)); }
+void jadd(cJSON *json,char *field,cJSON *item) { if ( json != 0 )cJSON_AddItemToObject(json,field,item); }
+void jaddstr(cJSON *json,char *field,char *str) { if ( json != 0 ) cJSON_AddItemToObject(json,field,cJSON_CreateString(str)); }
+void jaddnum(cJSON *json,char *field,double num) { if ( json != 0 )cJSON_AddItemToObject(json,field,cJSON_CreateNumber(num)); }
 void jadd64bits(cJSON *json,char *field,uint64_t nxt64bits) { char numstr[64]; sprintf(numstr,"%llu",(long long)nxt64bits), jaddstr(json,field,numstr); }
-void jaddi(cJSON *json,cJSON *item) { cJSON_AddItemToArray(json,item); }
-void jaddistr(cJSON *json,char *str) { cJSON_AddItemToArray(json,cJSON_CreateString(str)); }
-void jaddinum(cJSON *json,double num) { cJSON_AddItemToArray(json,cJSON_CreateNumber(num)); }
+void jaddi(cJSON *json,cJSON *item) { if ( json != 0 ) cJSON_AddItemToArray(json,item); }
+void jaddistr(cJSON *json,char *str) { if ( json != 0 ) cJSON_AddItemToArray(json,cJSON_CreateString(str)); }
+void jaddinum(cJSON *json,double num) { if ( json != 0 ) cJSON_AddItemToArray(json,cJSON_CreateNumber(num)); }
 void jaddi64bits(cJSON *json,uint64_t nxt64bits) { char numstr[64]; sprintf(numstr,"%llu",(long long)nxt64bits), jaddistr(json,numstr); }
-char *jstr(cJSON *json,char *field) { if ( field == 0 ) return(cJSON_str(json)); return(cJSON_str(cJSON_GetObjectItem(json,field))); }
+char *jstr(cJSON *json,char *field) { if ( json == 0 ) return(0); if ( field == 0 ) return(cJSON_str(json)); return(cJSON_str(cJSON_GetObjectItem(json,field))); }
 
 char *jstri(cJSON *json,int32_t i) { return(cJSON_str(cJSON_GetArrayItem(json,i))); }
 char *jprint(cJSON *json,int32_t freeflag) { char *str; if ( json == 0 ) return(clonestr("{}")); str = cJSON_Print(json), _stripwhite(str,' '); if ( freeflag != 0 ) free_json(json); return(str); }

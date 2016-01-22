@@ -49,6 +49,7 @@ queue_t *category_Q(bits256 categoryhash,bits256 subhash)
 struct category_msg *category_gethexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash)
 {
     queue_t *Q;
+    char str[65]; printf("getmsg.(%s) %llx\n",bits256_str(str,categoryhash),(long long)subhash.txid);
     if ( (Q= category_Q(categoryhash,subhash)) != 0 )
         return(queue_dequeue(Q,0));
     else return(0);
