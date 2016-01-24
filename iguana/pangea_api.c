@@ -617,8 +617,14 @@ ZERO_ARGS(pangea,lobby)
 
 INT_AND_ARRAY(pangea,host,minplayers,params)
 {
-    bits256 tablehash; uint8_t space[sizeof(struct pangea_msghdr) + 4096];
+    bits256 tablehash; struct table_info *tp; uint8_t space[sizeof(struct pangea_msghdr) + 4096];
     OS_randombytes(tablehash.bytes,sizeof(tablehash));
+    tp = pangea_table(tablehash);
+    if ( tp != 0 )
+    {
+        pangea_gamecreate(&tp->G,(uint32_t)time(NULL),tablehash,json);
+        tp->G.creatorbits = myinfo->myaddr.nxt64bits;
+    }
     return(pangea_jsondatacmd(myinfo,tablehash,(struct pangea_msghdr *)space,json,"host",myinfo->ipaddr));
 }
 
