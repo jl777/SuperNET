@@ -43,7 +43,7 @@ struct category_info *category_find(bits256 categoryhash,bits256 subhash)
                 return(sub);
         }
         return(cat);
-    } else printf("category_find.(%s) not found\n",bits256_str(str,categoryhash));
+    } else printf("category_find.(%s) not found\n",bits256_str(str,categoryhash));//, getchar();
     return(0);
 }
 

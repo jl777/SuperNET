@@ -638,10 +638,16 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
     char hexbuf[8192]; bits256 category,subhash;
     int32_t hexlen,destflag,maxdelay,flag=0; uint32_t destipbits,timestamp; cJSON *retjson;
     char *forwardstr=0,*retstr=0,*agent=0,*method=0,*message,*hexmsg=0,*jsonstr=0; uint64_t tag;
+    //printf("SuperNET_JSON.(%s)\n",jprint(json,0));
     if ( remoteaddr != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 )
         remoteaddr = 0;
     agent = jstr(json,"agent");
     method = jstr(json,"method");
+    if ( agent != 0 && strcmp(agent,"pangea") == 0 && jobj(json,"categoryhash") == 0 )
+    {
+        jaddbits256(json,"categoryhash",calc_categoryhashes(0,"pangea",0));
+        jaddbits256(json,"subhash",GENESIS_PUBKEY);
+    }
     if ( remoteaddr == 0 )
     {
         if ( jobj(json,"timestamp") != 0 )

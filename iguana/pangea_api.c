@@ -317,7 +317,8 @@ void pangea_update(struct supernet_info *myinfo)
         { "turn", pangea_turn }, { "confirm", pangea_confirm }, { "action", pangea_action },
         { "showdown", pangea_showdown }, { "summary", pangea_summary },
     };
-    struct category_msg *m; bits256 pangeahash,tablehash; struct pangea_msghdr *pm;  int32_t i,allocsize;
+    struct category_msg *m; bits256 pangeahash,tablehash; struct pangea_msghdr *pm;
+    int32_t i,allocsize; cJSON *argjson;
     uint64_t cmdbits; char str[65]; struct table_info *tp; uint8_t buf[sizeof(pm->sig)];
     if ( tablecmds[0].cmdbits == 0 )
     {
@@ -328,6 +329,19 @@ void pangea_update(struct supernet_info *myinfo)
     while ( (m= category_gethexmsg(myinfo,pangeahash,GENESIS_PUBKEY)) != 0 )
     {
         pm = (struct pangea_msghdr *)m->msg;
+        if ( m->msg[m->len-1] == 0 )
+        {
+            if ( (argjson= cJSON_Parse((char *)m->msg)) != 0 )
+            {
+                printf("parsed pangea hex.(%s)\n",(char *)m->msg);
+                free_json(argjson);
+                free(m);
+                continue;
+            }
+        }
+        for (i=0; i<16; i++)
+            printf("%02x ",m->msg[i]);
+        printf("pangeahash.%s len.%d (%02x %02x)\n",bits256_str(str,pangeahash),m->len,m->msg[m->len-2],m->msg[m->len-1]);
         acct777_rwsig(0,(void *)&pm->sig,(void *)buf), memcpy(&pm->sig,buf,sizeof(pm->sig));
         iguana_rwbignum(0,pm->tablehash.bytes,sizeof(bits256),tablehash.bytes);
         pm->tablehash = tablehash;
