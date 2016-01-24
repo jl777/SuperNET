@@ -386,7 +386,7 @@ void pangea_card(PANGEA_HANDARGS)
 int64_t pangea_snapshot(struct table_info *tp,int64_t *snapshot)
 {
     struct player_info *p; int64_t betsize; int32_t i,N = tp->numactive;
-    memcpy(snapshot,0,N * sizeof(int64_t));
+    memset(snapshot,0,N * sizeof(int64_t));
     for (betsize=i=0; i<N; i++)
     {
         if ( (p= tp->active[i]) != 0 )
