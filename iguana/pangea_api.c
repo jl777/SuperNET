@@ -140,6 +140,8 @@ char *pangea_jsondatacmd(struct supernet_info *myinfo,bits256 tablehash,struct p
     category_subscribe(myinfo,pangeahash,tablehash);
     argjson = SuperNET_argjson(json);
     jaddstr(argjson,"cmd",cmdstr);
+    if ( myinfo->ipaddr[0] == 0 || strncmp(myinfo->ipaddr,"127.0.0.1",strlen("127.0.0.1")) == 0 )
+        return(clonestr("{\"error\":\"need to send your ipaddr for now\"}"));
     jaddstr(argjson,"myipaddr",myinfo->ipaddr);
     jaddbits256(argjson,"categoryhash",pangeahash);
     jaddbits256(argjson,"subhash",tablehash);

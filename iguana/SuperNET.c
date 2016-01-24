@@ -116,7 +116,7 @@ void SuperNET_myipaddr(struct supernet_info *myinfo,struct iguana_info *coin,str
     {
         strcpy(myinfo->ipaddr,myipaddr);
     }
-    //printf("myipaddr.%s self.%x your.%x\n",myinfo->ipaddr,myinfo->myaddr.selfipbits,myinfo->myaddr.myipbits);
+    printf("myipaddr.%s self.%x your.%x\n",myinfo->ipaddr,myinfo->myaddr.selfipbits,myinfo->myaddr.myipbits);
 }
 
 int32_t _SuperNET_cipher(uint8_t nonce[crypto_box_NONCEBYTES],uint8_t *cipher,uint8_t *message,int32_t len,bits256 destpub,bits256 srcpriv,uint8_t *buf)
@@ -291,8 +291,9 @@ int32_t SuperNET_json2bits(uint8_t *serialized,int32_t maxsize,cJSON *json,bits2
         return(-1);
     }
     len += iguana_rwnum(1,&serialized[len],sizeof(uint32_t),&timestamp);
-    len += iguana_rwnum(1,&serialized[len],sizeof(uint32_t),&myipbits);
     len += iguana_rwnum(1,&serialized[len],sizeof(uint32_t),&destipbits);
+    len += iguana_rwnum(1,&serialized[len],sizeof(uint32_t),&myipbits);
+    //printf("myipbits.%x destipbits.%x\n",myipbits,destipbits);
     len += iguana_rwnum(1,&serialized[len],sizeof(checkc),&checkc);
     len += iguana_rwnum(1,&serialized[len],sizeof(apinum),&apinum);
     //len += iguana_rwnum(1,&serialized[len],sizeof(tag),&tag);
@@ -401,7 +402,7 @@ char *SuperNET_hexconv(char *hexmsg)
 {
     cJSON *json; char *myip,*yourip,*retstr = hexmsg; uint32_t myipbits=0,destipbits=0;
     uint8_t *bits; int32_t n,len = (int32_t)strlen(hexmsg);
-    if ( hexmsg == 0 || is_hexstr(hexmsg,len) == 0 )
+    //if ( hexmsg == 0 || is_hexstr(hexmsg,len) == 0 )
         return(hexmsg);
     len >>= 1;
     if ( (bits= calloc(1,len)) != 0 )
@@ -768,7 +769,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
             //printf("validpub.%d: %x vs %x shared.%llx\n",addr->validpub,checkc,othercheckc,(long long)addr->sharedseed.txid);
         }
         maxdelay = juint(json,"maxdelay");
-        if ( 0 && jstr(json,"method") != 0 && strcmp(jstr(json,"method"),"getpeers") != 0 )
+        //if ( 0 && jstr(json,"method") != 0 && strcmp(jstr(json,"method"),"getpeers") != 0 )
             printf("GOT >>>>>>>> SUPERNET P2P.(%s) from.%s %s valid.%d:%d\n",jprint(json,0),coin->symbol,addr->ipaddr,addr->validpub,addr->othervalid);
         if ( (myipaddr= jstr(json,"yourip")) != 0 )
             SuperNET_myipaddr(SuperNET_MYINFO(0),coin,addr,myipaddr,ipaddr);
