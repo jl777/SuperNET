@@ -116,7 +116,10 @@ struct pangea_msghdr *pangea_msgcreate(struct supernet_info *myinfo,bits256 tabl
     acct777_sign(&pm->sig,myinfo->privkey,otherpubkey,timestamp,serialized,datalen);
     if ( pangea_validate(pm,acct777_msgprivkey(serialized,datalen),pm->sig.pubkey) == 0 )
     {
-        printf(">>>>>>>>>>>>>>>> validated [%ld] len.%d\n",(long)serialized-(long)pm,datalen);
+        int32_t i; char str[65],str2[65];
+        for (i=0; i<datalen; i++)
+            printf("%02x",serialized[i]);
+        printf(">>>>>>>>>>>>>>>> validated [%ld] len.%d (%s + %s)\n",(long)serialized-(long)pm,datalen,bits256_str(str,acct777_msgprivkey(serialized,datalen)),bits256_str(str2,pm->sig.pubkey));
         memset(buf,0,sizeof(buf));
         acct777_rwsig(1,buf,&pm->sig);
         memcpy(&pm->sig,buf,sizeof(buf));
@@ -574,7 +577,14 @@ ZERO_ARGS(pangea,lobby)
                         printf("len.%d time.%u RESULT.(%s) (%s) [%ld].%d\n",pm->sig.allocsize,pm->sig.timestamp,result,pm->serialized,(long)pm->serialized - (long)pm,pm->sig.allocsize-(int32_t)((long)pm->serialized - (long)pm));
                         if ( pangea_validate(pm,acct777_msgprivkey(pm->serialized,pm->sig.allocsize-(int32_t)((long)pm->serialized - (long)pm)),pm->sig.pubkey) == 0 )
                             printf("VALIDATED!\n");
-                        else printf("SIG ERROR\n");
+                        else
+                        {
+                            int32_t i,datalen; char str[65],str2[65];
+                            datalen = pm->sig.allocsize-(int32_t)((long)pm->serialized - (long)pm);
+                            for (i=0; i<datalen; i++)
+                                printf("%02x",pm->serialized[i]);
+                            printf("<<<<<<<<<<<<< SIG ERROR [%ld] len.%d (%s + %s)\n",(long)pm->serialized-(long)pm,datalen,bits256_str(str,acct777_msgprivkey(pm->serialized,datalen)),bits256_str(str2,pm->sig.pubkey));
+                        }
                     }
                     flag++;
                 }
