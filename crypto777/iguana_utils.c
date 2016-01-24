@@ -801,6 +801,17 @@ int32_t RS_encode(char *rsaddr,uint64_t id)
     return(0);
 }
 
+void calc_hexstr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
+{
+    init_hexbytes_noT(hexstr,(void *)msg,len+1);
+}
+
+void calc_unhexstr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
+{
+    decode_hex((void *)hexstr,len>>1,(void *)msg);
+    hexstr[len>>1] = 0;
+}
+
 void calc_base64_encodestr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 {
     nn_base64_encode(msg,len,hexstr,64);

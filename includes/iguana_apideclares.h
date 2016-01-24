@@ -53,7 +53,6 @@ STRING_AND_TWOINTS(mouse,change,name,x,y);
 STRING_AND_TWOINTS(mouse,click,name,x,y);
 STRING_ARG(mouse,close,name);
 STRING_ARG(mouse,leave,name);
-STRING_AND_INT(keyboard,key,name,c);
 
 STRING_ARG(SuperNET,getpeers,activecoin);
 TWO_ARRAYS(SuperNET,mypeers,supernet,rawpeers);
@@ -137,6 +136,8 @@ SS_D_I_SS(ramchain,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment
 S_A_I_S(ramchain,sendmany,fromaccount,array,minconf,comment);
 S_D_SS(ramchain,sendtoaddress,address,amount,comment,comment2);
 
+STRING_ARG(hash,hex,message);
+STRING_ARG(hash,unhex,hexmsg);
 TWO_HASHES(hash,curve25519_pair,element,scalar);
 STRING_ARG(hash,NXT,passphrase);
 STRING_ARG(hash,curve25519,pubkey);

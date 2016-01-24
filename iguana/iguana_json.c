@@ -601,7 +601,7 @@ char *hmac_dispatch(char *(*hmacfunc)(char *dest,char *key,int32_t key_size,char
 
 char *hash_dispatch(void (*hashfunc)(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len),char *name,char *message)
 {
-    char hexstr[1025]; uint8_t databuf[512]; cJSON *json;
+    char hexstr[16384]; uint8_t databuf[8192]; cJSON *json;
     if ( message != 0 )
     {
         (*hashfunc)(hexstr,databuf,(uint8_t *)message,(int32_t)strlen(message));
@@ -627,6 +627,9 @@ STRING_ARG(hash,base64_encode,message) { return(hash_dispatch(calc_base64_encode
 STRING_ARG(hash,base64_decode,message) { return(hash_dispatch(calc_base64_decodestr,"base64_decode",message)); }
 STRING_ARG(hash,rmd160_sha256,message) { return(hash_dispatch(rmd160ofsha256,"rmd160_sha256",message)); }
 STRING_ARG(hash,sha256_sha256,message) { return(hash_dispatch(sha256_sha256,"sha256_sha256",message)); }
+STRING_ARG(hash,hex,message) { return(hash_dispatch(calc_hexstr,"hex",message)); }
+STRING_ARG(hash,unhex,message) { return(hash_dispatch(calc_unhexstr,"unhex",message)); }
+
 STRING_ARG(hash,sha224,message) { return(hash_dispatch(calc_sha224,"sha224",message)); }
 STRING_ARG(hash,sha256,message) { return(hash_dispatch(vcalc_sha256,"sha256",message)); }
 STRING_ARG(hash,sha384,message) { return(hash_dispatch(calc_sha384,"sha384",message)); }

@@ -1,3 +1,0 @@
-# Updated by fix_deps.py
-pnacl/Release/poker.o: poker.c
-poker.c:
