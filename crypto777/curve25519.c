@@ -1788,7 +1788,7 @@ uint64_t acct777_sign(struct acct777_sig *sig,bits256 privkey,bits256 otherpubke
     acct777_rwsig(1,buf,sig);
     int32_t i; for (i=0; i<sizeof(buf); i++)
         printf("%02x ",buf[i]);
-    printf(" <<<<<<<<< SIGN.%d\n",datalen);
+    printf(" <<<<<<<<< SIGN.%d allocsize.%d signer.%llu t%u\n",datalen,sig->allocsize,(long long)sig->signer64bits,sig->timestamp);
     //char str[65]; printf("shared.(%s) crc.%u datalen.%d\n",bits256_str(str,shared),calc_crc32(0,buf,sizeof(buf)),datalen);
     vcalc_sha256cat(sig->sigbits.bytes,buf,sizeof(buf),serialized,datalen);
     //printf(" calcsig.%llx pubkey.%llx signer.%llu | t%u crc.%08x len.%d shared.%llx <- %llx * %llx\n",(long long)sig->sigbits.txid,(long long)sig->pubkey.txid,(long long)sig->signer64bits,timestamp,calc_crc32(0,serialized,datalen),datalen,(long long)shared.txid,(long long)privkey.txid,(long long)otherpubkey.txid);
