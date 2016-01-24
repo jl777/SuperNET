@@ -603,7 +603,7 @@ HASH_AND_ARRAY(pangea,history,tablehash,params)
 
 ZERO_ARGS(pangea,lobby)
 {
-    cJSON *retjson,*argjson; char *retstr,*result; uint8_t *buf; int32_t flag,len; struct pangea_msghdr *pm;
+    //cJSON *retjson,*argjson; char *retstr,*result; uint8_t *buf; int32_t flag,len; struct pangea_msghdr *pm;
     bits256 pangeahash = calc_categoryhashes(0,"pangea",0);
     category_subscribe(myinfo,pangeahash,GENESIS_PUBKEY);
     pangea_update(myinfo);
