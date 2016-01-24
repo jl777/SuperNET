@@ -53,6 +53,7 @@ STRING_AND_TWOINTS(mouse,change,name,x,y);
 STRING_AND_TWOINTS(mouse,click,name,x,y);
 STRING_ARG(mouse,close,name);
 STRING_ARG(mouse,leave,name);
+STRING_AND_INT(keyboard,key,name,c);
 
 STRING_ARG(SuperNET,getpeers,activecoin);
 TWO_ARRAYS(SuperNET,mypeers,supernet,rawpeers);

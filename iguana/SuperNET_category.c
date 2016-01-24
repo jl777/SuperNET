@@ -32,7 +32,7 @@ bits256 calc_categoryhashes(bits256 *subhashp,char *category,char *subcategory)
 
 struct category_info *category_find(bits256 categoryhash,bits256 subhash)
 {
-    char str[65]; struct category_info *cat=0,*sub = 0;
+    struct category_info *cat=0,*sub = 0;
     HASH_FIND(hh,Categories,categoryhash.bytes,sizeof(categoryhash),cat);
     if ( cat != 0 )
     {

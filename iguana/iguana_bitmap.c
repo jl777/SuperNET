@@ -1195,7 +1195,7 @@ STRING_AND_TWOINTS(mouse,image,name,x,y)
 
 STRING_ARG(mouse,close,name)
 {
-    printf("mouse CLOSE (%s) x.%d y.%d\n",name);
+    printf("mouse CLOSE (%s)\n",name);
     return(clonestr("{\"result\":\"closed\"}"));
 }
 #include "../includes/iguana_apiundefs.h"
