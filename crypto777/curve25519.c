@@ -1799,8 +1799,8 @@ uint64_t acct777_validate(struct acct777_sig *sig,bits256 privkey,bits256 pubkey
     struct acct777_sig checksig; uint64_t signerbits; int32_t datalen; uint8_t *serialized;
     datalen = (int32_t)(sig->allocsize - sizeof(*sig));
     checksig = *sig;
-    serialized = (uint8_t *)((long)sig + sizeof(*sig));
-    { int32_t i; for (i=0; i<datalen; i++) printf("%02x",serialized[i]); printf(" VALIDATE?\n"); }
+    serialized = (uint8_t *)((long)sig + sizeof(sig->sigbits));
+    { int32_t i; for (i=0; i<datalen; i++) printf("%02x",serialized[i]); printf(" VALIDATE.%d?\n",datalen); }
     acct777_sign(&checksig,privkey,pubkey,sig->timestamp,serialized,datalen);
     if ( memcmp(checksig.sigbits.bytes,sig->sigbits.bytes,sizeof(checksig.sigbits)) != 0 )
     {
