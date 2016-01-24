@@ -63,7 +63,7 @@ void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 categoryhash,bits25
     str[0] = 0;
     if ( memcmp(categoryhash.bytes,GENESIS_PUBKEY.bytes,sizeof(categoryhash)) == 0 )
         strcpy(str,"BROADCAST.");
-    else bits256_str(str+strlen(str),category);
+    else bits256_str(str+strlen(str),categoryhash);
     if ( memcmp(subhash.bytes,GENESIS_PUBKEY.bytes,sizeof(subhash)) != 0 )
     {
         bits256_str(str2,subhash);

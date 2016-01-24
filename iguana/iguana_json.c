@@ -644,7 +644,7 @@ STRING_ARG(hash,sha1,message) { return(hash_dispatch(calc_sha1,"sha1",message));
 STRING_ARG(hash,md2,message) { return(hash_dispatch(calc_md2str,"md2",message)); }
 STRING_ARG(hash,md4,message) { return(hash_dispatch(calc_md4str,"md4",message)); }
 STRING_ARG(hash,md5,message) { return(hash_dispatch(calc_md5str,"md5",message)); }
-STRING_ARG(hash,tiger,message) { return(hash_dispatch(calc_tiger,"tiger",message)); }
+STRING_ARG(hash,tiger192_3,message) { return(hash_dispatch(calc_tiger,"tiger",message)); }
 STRING_ARG(hash,whirlpool,message) { return(hash_dispatch(calc_whirlpool,"whirlpool",message)); }
 TWO_STRINGS(hmac,sha224,message,passphrase) { return(hmac_dispatch(hmac_sha224_str,"sha224",message,passphrase)); }
 TWO_STRINGS(hmac,sha256,message,passphrase) { return(hmac_dispatch(hmac_sha256_str,"sha256",message,passphrase)); }
@@ -658,7 +658,7 @@ TWO_STRINGS(hmac,sha1,message,passphrase) { return(hmac_dispatch(hmac_sha1_str,"
 TWO_STRINGS(hmac,md2,message,passphrase) { return(hmac_dispatch(hmac_md2_str,"md2",message,passphrase)); }
 TWO_STRINGS(hmac,md4,message,passphrase) { return(hmac_dispatch(hmac_md4_str,"md4",message,passphrase)); }
 TWO_STRINGS(hmac,md5,message,passphrase) { return(hmac_dispatch(hmac_md5_str,"md5",message,passphrase)); }
-TWO_STRINGS(hmac,tiger,message,passphrase) { return(hmac_dispatch(hmac_tiger_str,"tiger",message,passphrase)); }
+TWO_STRINGS(hmac,tiger192_3,message,passphrase) { return(hmac_dispatch(hmac_tiger_str,"tiger",message,passphrase)); }
 TWO_STRINGS(hmac,whirlpool,message,passphrase) { return(hmac_dispatch(hmac_whirlpool_str,"whirlpool",message,passphrase)); }
 
 STRING_ARG(SuperNET,bitcoinrpc,setcoin)
