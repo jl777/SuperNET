@@ -132,8 +132,8 @@ char *pangea_jsondatacmd(struct supernet_info *myinfo,bits256 tablehash,struct p
 {
     cJSON *argjson; char *reqstr,hexstr[8192]; int32_t datalen; bits256 pangeahash;
     pangeahash = calc_categoryhashes(0,"pangea",0);
-    category_sub(myinfo,pangeahash,GENESIS_PUBKEY);
-    category_sub(myinfo,pangeahash,tablehash);
+    category_subscribe(myinfo,pangeahash,GENESIS_PUBKEY);
+    category_subscribe(myinfo,pangeahash,tablehash);
     argjson = SuperNET_argjson(json);
     jaddstr(argjson,"cmd",cmdstr);
     jaddstr(argjson,"myipaddr",myinfo->ipaddr);
@@ -324,6 +324,26 @@ void pangea_tablecreate(PANGEA_HANDARGS)
     }
 }
 
+struct table_info *pangea_table(bits256 tablehash)
+{
+    struct table_info *tp; int32_t allocsize; bits256 pangeahash; char str[65];
+    pangeahash = calc_categoryhashes(0,"pangea",0);
+    if ( (tp= category_info(pangeahash,tablehash)) == 0 )
+    {
+        allocsize = (int32_t)(sizeof(tp->G) + sizeof(void *)*2);
+        if ( (tp= calloc(1,allocsize)) == 0 )
+            printf("error: couldnt create table.(%s)\n",bits256_str(str,tablehash));
+    }
+    if ( tp != 0 )
+    {
+        category_subscribe(SuperNET_MYINFO(0),pangeahash,tablehash);
+        if ( category_infoset(pangeahash,tablehash,tp) == 0 )
+            printf("error: couldnt set table.(%s)\n",bits256_str(str,tablehash)), tp = 0;
+        else tp->G.allocsize = allocsize;
+    }
+    return(tp);
+}
+
 void pangea_update(struct supernet_info *myinfo)
 {
     static struct { char *cmdstr; void (*func)(PANGEA_HANDARGS); uint64_t cmdbits; } tablecmds[] =
@@ -339,7 +359,7 @@ void pangea_update(struct supernet_info *myinfo)
         { "showdown", pangea_showdown }, { "summary", pangea_summary },
     };
     struct category_msg *m; bits256 pangeahash,tablehash;
-    struct pangea_msghdr *pm; int32_t i,allocsize; cJSON *argjson; char str[65],*agent,*method;
+    struct pangea_msghdr *pm; int32_t i; cJSON *argjson; char *agent,*method;
     uint64_t cmdbits; struct table_info *tp; uint8_t buf[sizeof(pm->sig)];
     if ( tablecmds[0].cmdbits == 0 )
     {
@@ -355,9 +375,9 @@ void pangea_update(struct supernet_info *myinfo)
             if ( (argjson= cJSON_Parse((char *)m->msg)) != 0 )
             {
                 printf("parsed pangea hex.(%s)\n",(char *)m->msg);
-                if ( (agent= jstr(argjson,"agent")) != 0 && (method= jstr(argjson,"method")) != 0 )
+                if ( (agent= jstr(argjson,"agent")) != 0 && strcmp(agent,"pangea") == 0 && (method= jstr(argjson,"method")) != 0 )
                 {
-                    if ( strcmp(agent,"pangea") == 0 && strcmp(method,"lobby") == 0 )
+                    if ( strcmp(method,"lobby") == 0 )
                     {
                         //categoryhash = jbits256(argjson,"categoryhash");
                     }
@@ -373,16 +393,7 @@ void pangea_update(struct supernet_info *myinfo)
         acct777_rwsig(0,(void *)&pm->sig,(void *)buf), memcpy(&pm->sig,buf,sizeof(pm->sig));
         iguana_rwbignum(0,pm->tablehash.bytes,sizeof(bits256),tablehash.bytes);
         pm->tablehash = tablehash;
-        if ( (tp= category_info(pangeahash,tablehash)) == 0 )
-        {
-            allocsize = (int32_t)(sizeof(tp->G) + sizeof(void *)*2);
-            if ( (tp= calloc(1,allocsize)) == 0 )
-                printf("error: couldnt create table.(%s)\n",bits256_str(str,tablehash));
-            else if ( category_infoset(pangeahash,tablehash,tp) == 0 )
-                printf("error: couldnt set table.(%s)\n",bits256_str(str,tablehash)), tp = 0;
-            else tp->G.allocsize = allocsize;
-        }
-        if ( tp != 0 && pangea_rwdata(0,pm->serialized,m->len-(int32_t)((long)pm->serialized-(long)pm),pm->serialized) > 0 )
+        if ( (tp= pangea_table(tablehash)) != 0 && pangea_rwdata(0,pm->serialized,m->len-(int32_t)((long)pm->serialized-(long)pm),pm->serialized) > 0 )
         {
             cmdbits = stringbits(pm->cmd);
             for (i=0; i<sizeof(tablecmds)/sizeof(*tablecmds); i++)
@@ -542,7 +553,7 @@ ZERO_ARGS(pangea,lobby)
 {
     cJSON *retjson,*argjson; char *retstr,*result; uint8_t *buf; int32_t flag,len; struct pangea_msghdr *pm;
     bits256 pangeahash = calc_categoryhashes(0,"pangea",0);
-    category_sub(myinfo,pangeahash,GENESIS_PUBKEY);
+    category_subscribe(myinfo,pangeahash,GENESIS_PUBKEY);
     //pangea_update(myinfo);
     while ( (retstr= SuperNET_gethexmsg(IGUANA_CALLARGS,"pangea",0)) != 0 )
     {
@@ -565,6 +576,7 @@ ZERO_ARGS(pangea,lobby)
                     }
                     else
                     {
+                        char *method; bits256 tablehash; struct table_info *tp;
                         int32_t datalen; uint8_t *serialized; uint8_t tmp[sizeof(pm->sig)];
                         pm = (struct  pangea_msghdr *)buf;
                         acct777_rwsig(0,(void *)&pm->sig,(void *)tmp);
@@ -572,7 +584,36 @@ ZERO_ARGS(pangea,lobby)
                         datalen = len  - (int32_t)sizeof(pm->sig);
                         serialized = (void *)((long)pm + sizeof(pm->sig));
                         if ( pangea_validate(pm,acct777_msgprivkey(serialized,datalen),pm->sig.pubkey) == 0 )
-                            printf("<<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen);
+                        {
+                            iguana_rwbignum(0,pm->tablehash.bytes,sizeof(bits256),tablehash.bytes);
+                            pm->tablehash = tablehash;
+                            printf("<<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen,pm->sig.timestamp,pm->sig.allocsize,(void *)pm->serialized,serialized[datalen-1]);
+                            if ( serialized[datalen-1] == 0 && (argjson= cJSON_Parse((char *)pm->serialized)) != 0 )
+                            {
+                                tablehash = jbits256(argjson,"subhash");
+                                if ( (method= jstr(argjson,"cmd")) != 0 )
+                                {
+                                    if ( strcmp(method,"lobby") == 0 )
+                                    {
+                                        //categoryhash = jbits256(argjson,"categoryhash");
+                                    }
+                                    else if ( strcmp(method,"host") == 0 )
+                                    {
+                                        if ( (tp= pangea_table(tablehash)) != 0 )
+                                        {
+                                            pangea_gamecreate(&tp->G,pm->sig.timestamp,pm->tablehash,argjson);
+                                            tp->G.creatorbits = pm->sig.signer64bits;
+                                        }
+                                        char str[65],str2[65]; printf("new game detected (%s) vs (%s)\n",bits256_str(str,tablehash),bits256_str(str2,pm->tablehash));
+                                    }
+                                    else if ( strcmp(method,"join") == 0 )
+                                    {
+                                        printf("JOIN.(%s)\n",jprint(argjson,0));
+                                    }
+                                }
+                                free_json(argjson);
+                            } else printf("ERROR >>>>>>> (%s) cant parse\n",(char *)pm->serialized);
+                        }
                         else
                         {
                             int32_t i; char str[65],str2[65];

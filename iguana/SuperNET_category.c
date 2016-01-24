@@ -99,7 +99,7 @@ void category_posthexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits2
    // char str[65]; printf("no subscription for category.(%s) %llx\n",bits256_str(str,categoryhash),(long long)subhash.txid);
 }
 
-void *category_sub(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash)
+void *category_subscribe(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash)
 {
     struct category_info *cat,*sub; bits256 hash;
     HASH_FIND(hh,Categories,categoryhash.bytes,sizeof(categoryhash),cat);

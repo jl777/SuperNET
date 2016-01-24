@@ -100,6 +100,8 @@ cJSON *pangea_lobbyjson(struct supernet_info *myinfo)
         }
     }
     jadd(retjson,"tables",array);
+    jaddstr(retjson,"result","success");
+    printf("LOBBY.(%s)\n",jprint(retjson,0));
     return(retjson);
 }
 

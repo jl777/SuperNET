@@ -139,7 +139,7 @@ void SuperNET_hex2str(char *str,uint8_t *hex,int32_t len);
 void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 category,bits256 subhash,char *hexmsg,struct tai now);
 int32_t SuperNET_hexmsgfind(struct supernet_info *myinfo,bits256 category,bits256 subhash,char *hexmsg,int32_t addflag);
 void category_posthexmsg(struct supernet_info *myinfo,bits256 category,bits256 subhash,char *hexmsg,struct tai now);
-void *category_sub(struct supernet_info *myinfo,bits256 category,bits256 subhash);
+void *category_subscribe(struct supernet_info *myinfo,bits256 category,bits256 subhash);
 struct category_msg *category_gethexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash);
 char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr);
 

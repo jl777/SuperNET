@@ -456,8 +456,8 @@ void iguana_main(void *arg)
     signal(SIGCONT,sigcontinue_func);
     if ( IGUANA_NUMHELPERS == 0 )
         IGUANA_NUMHELPERS = 1;
-    category_sub(&MYINFO,GENESIS_PUBKEY,GENESIS_PUBKEY);
-    category_sub(myinfo,calc_categoryhashes(0,"pangea",0),GENESIS_PUBKEY);
+    category_subscribe(&MYINFO,GENESIS_PUBKEY,GENESIS_PUBKEY);
+    category_subscribe(myinfo,calc_categoryhashes(0,"pangea",0),GENESIS_PUBKEY);
     for (i=0; i<IGUANA_NUMHELPERS; i++)
     {
         sprintf(helperstr,"{\"name\":\"helper.%d\"}",i);

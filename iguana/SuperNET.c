@@ -1130,7 +1130,7 @@ TWO_STRINGS(SuperNET,subscribe,category,subcategory)
 {
     bits256 categoryhash,subhash;
     categoryhash = calc_categoryhashes(&subhash,category,subcategory);
-    if ( category_sub(myinfo,categoryhash,subhash) != 0 )
+    if ( category_subscribe(myinfo,categoryhash,subhash) != 0 )
         return(clonestr("{\"result\":\"subscribed\"}"));
     else return(clonestr("{\"error\":\"couldnt subscribe\"}"));
 }
