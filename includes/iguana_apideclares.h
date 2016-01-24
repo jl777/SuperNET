@@ -159,7 +159,7 @@ STRING_ARG(hash,sha1,message);
 STRING_ARG(hash,md2,message);
 STRING_ARG(hash,md4,message);
 STRING_ARG(hash,md5,message);
-STRING_ARG(hash,tiger,message);
+STRING_ARG(hash,tiger192,message);
 STRING_ARG(hash,whirlpool,message);
 
 TWO_STRINGS(hmac,sha224,message,passphrase);
@@ -174,5 +174,5 @@ TWO_STRINGS(hmac,sha1,message,passphrase);
 TWO_STRINGS(hmac,md2,message,passphrase);
 TWO_STRINGS(hmac,md4,message,passphrase);
 TWO_STRINGS(hmac,md5,message,passphrase);
-TWO_STRINGS(hmac,tiger,message,passphrase);
+TWO_STRINGS(hmac,tiger192,message,passphrase);
 TWO_STRINGS(hmac,whirlpool,message,passphrase);

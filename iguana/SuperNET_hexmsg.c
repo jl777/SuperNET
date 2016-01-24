@@ -57,17 +57,18 @@ int32_t SuperNET_hexmsgfind(struct supernet_info *myinfo,bits256 category,bits25
     return(-1);
 }
 
-void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 category,bits256 subhash,char *hexmsg,struct tai now)
+void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,char *hexmsg,struct tai now)
 {
     char str[512],str2[65];
-    if ( memcmp(category.bytes,GENESIS_PUBKEY.bytes,sizeof(category)) == 0 )
+    str[0] = 0;
+    if ( memcmp(categoryhash.bytes,GENESIS_PUBKEY.bytes,sizeof(categoryhash)) == 0 )
         strcpy(str,"BROADCAST.");
-    else bits256_str(str,category);
+    else bits256_str(str+strlen(str),category);
     if ( memcmp(subhash.bytes,GENESIS_PUBKEY.bytes,sizeof(subhash)) != 0 )
     {
         bits256_str(str2,subhash);
         strcat(str,str2);
     }
-    category_posthexmsg(myinfo,category,subhash,hexmsg,now);
-    //printf("HEXMSG.(%s) -> %s\n",hexmsg,str);
+    category_posthexmsg(myinfo,categoryhash,subhash,hexmsg,now);
+    printf("HEXMSG.(%s).%llx -> %s\n",hexmsg,(long long)subhash.txid,str);
 }

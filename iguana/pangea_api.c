@@ -296,6 +296,7 @@ void pangea_tablecreate(PANGEA_HANDARGS)
     }
     else if ( (json= cJSON_Parse((char *)pm->serialized)) != 0 )
     {
+        printf("create table\n");
         pangea_gamecreate(&tp->G,pm->sig.timestamp,pm->tablehash,json);
         tp->G.creatorbits = pm->sig.signer64bits;
         free_json(json);

@@ -74,6 +74,7 @@ void pangea_gamecreate(struct game_info *gp,uint32_t timestamp,bits256 tablehash
     gp->bigblind = jdouble(json,"bigblind") * SATOSHIDEN;
     gp->ante = jdouble(json,"ante") * SATOSHIDEN;
     gp->opentime = timestamp;
+    printf("opentime timestamp.%u\n",timestamp);
 }
 
 int32_t pangea_opentable(struct game_info *gp)

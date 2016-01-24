@@ -625,7 +625,8 @@ int32_t SuperNET_destination(struct supernet_info *myinfo,uint32_t *destipbitsp,
     {
         if ( category_peer(myinfo,0,*categoryp,*subhashp) > 0 )
             destflag |= SUPERNET_ISMINE;
-        destflag |= SUPERNET_FORWARD;
+        if ( juint(json,"broadcast") > 0 )
+            destflag |= SUPERNET_FORWARD;
     }
     if ( remoteaddr == 0 || remoteaddr[0] == 0 || strcmp(remoteaddr,"127.0.0.1") == 0 )
         destflag |= SUPERNET_ISMINE;

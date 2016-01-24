@@ -32,17 +32,18 @@ bits256 calc_categoryhashes(bits256 *subhashp,char *category,char *subcategory)
 
 struct category_info *category_find(bits256 categoryhash,bits256 subhash)
 {
-    struct category_info *cat,*sub = 0;
+    char str[65]; struct category_info *cat=0,*sub = 0;
     HASH_FIND(hh,Categories,categoryhash.bytes,sizeof(categoryhash),cat);
     if ( cat != 0 )
     {
         if ( bits256_nonz(subhash) > 0 && memcmp(GENESIS_PUBKEY.bytes,subhash.bytes,sizeof(subhash)) != 0 )
         {
             HASH_FIND(hh,cat->sub,subhash.bytes,sizeof(subhash),sub);
-            return(sub);
+            if ( sub != 0 )
+                return(sub);
         }
         return(cat);
-    }
+    } else printf("category_find.(%s) not found\n",bits256_str(str,categoryhash));
     return(0);
 }
 
@@ -92,10 +93,10 @@ void category_posthexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits2
         m->t = now, m->len = len;
         decode_hex(m->msg,m->len,hexmsg);
         queue_enqueue("categoryQ",Q,&m->DL,0);
-        char str[65]; printf("HEXMSG.(%s) -> %s.%llx\n",hexmsg,bits256_str(str,categoryhash),(long long)subhash.txid);
+        char str[65]; printf("POST HEXMSG.(%s) -> %s.%llx\n",hexmsg,bits256_str(str,categoryhash),(long long)subhash.txid);
         return;
     }
-    //char str[65]; printf("no subscription for category.(%s) %llx\n",bits256_str(str,categoryhash),(long long)subhash.txid); getchar();
+    char str[65]; printf("no subscription for category.(%s) %llx\n",bits256_str(str,categoryhash),(long long)subhash.txid);
 }
 
 void *category_sub(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash)
@@ -106,6 +107,7 @@ void *category_sub(struct supernet_info *myinfo,bits256 categoryhash,bits256 sub
     {
         cat = mycalloc('c',1,sizeof(*cat));
         cat->hash = hash = categoryhash;
+        char str[65]; printf("ADD cat.(%s)\n",bits256_str(str,categoryhash));
         HASH_ADD(hh,Categories,hash,sizeof(hash),cat);
     }
     if ( bits256_nonz(subhash) > 0 && memcmp(GENESIS_PUBKEY.bytes,subhash.bytes,sizeof(subhash)) != 0 && cat != 0 )
@@ -115,6 +117,7 @@ void *category_sub(struct supernet_info *myinfo,bits256 categoryhash,bits256 sub
         {
             sub = mycalloc('c',1,sizeof(*sub));
             sub->hash = hash = subhash;
+            char str[65],str2[65]; printf("subadd.(%s) -> (%s)\n",bits256_str(str,hash),bits256_str(str2,categoryhash));
             HASH_ADD(hh,cat->sub,hash,sizeof(hash),sub);
         }
     }
