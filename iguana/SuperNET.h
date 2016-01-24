@@ -118,15 +118,20 @@ char *SuperNET_jsonstr(struct supernet_info *myinfo,char *jsonstr,char *remotead
 char *SuperNET_DHTencode(struct supernet_info *myinfo,char *destip,bits256 category,bits256 subhash,char *hexmsg,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext);
 char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSON *json,char *remoteaddr);
 char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr);
-char *SuperNET_DHTsend(struct supernet_info *myinfo,uint32_t destipbits,bits256 category,bits256 subhash,char *hexmsg,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext);
+char *SuperNET_DHTsend(struct supernet_info *myinfo,uint64_t destipbits,bits256 category,bits256 subhash,char *hexmsg,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext);
 uint16_t SuperNET_API2num(char *agent,char *method);
 int32_t SuperNET_num2API(char *agent,char *method,uint16_t num);
 bits256 SuperNET_sharedseed(bits256 privkey,bits256 otherpub);
 int32_t SuperNET_decrypt(bits256 *senderpubp,uint64_t *senderbitsp,uint32_t *timestampp,bits256 mypriv,bits256 mypub,uint8_t *dest,int32_t maxlen,uint8_t *src,int32_t len);
+cJSON *SuperNET_argjson(cJSON *json);
 
 
-struct category_info { UT_hash_handle hh; queue_t Q; bits256 hash; struct category_info *sub; } *Categories;
+struct category_info { UT_hash_handle hh; queue_t Q; bits256 hash; void *info; struct category_info *sub; } *Categories;
 struct category_msg { struct queueitem DL; struct tai t; int32_t len; uint8_t msg[]; };
+
+void *category_info(bits256 categoryhash,bits256 subhash);
+void *category_infoset(bits256 categoryhash,bits256 subhash,void *info);
+struct category_info *category_find(bits256 categoryhash,bits256 subhash);
 
 int32_t SuperNET_str2hex(uint8_t *hex,char *str);
 void SuperNET_hex2str(char *str,uint8_t *hex,int32_t len);

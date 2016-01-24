@@ -1130,7 +1130,7 @@ int32_t pangea_poll(uint64_t *senderbitsp,uint32_t *timestampp,union hostnet777 
                     pangea_faceup(hn,json,dp,priv,buf,len,senderind);
                 else if ( strcmp(cmdstr,"turn") == 0 )
                     pangea_turn(hn,json,dp,priv,buf,len,senderind);
-                else if ( strcmp(cmdstr,"confirmturn") == 0 )
+                else if ( strcmp(cmdstr,"confirm") == 0 )
                     pangea_confirmturn(hn,json,dp,priv,buf,len,senderind);
                 else if ( strcmp(cmdstr,"chat") == 0 )
                     pangea_chat(*senderbitsp,buf,len,senderind);

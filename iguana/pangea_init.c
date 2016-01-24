@@ -184,6 +184,7 @@ cJSON *pangea_sharenrs(uint8_t *sharenrs,int32_t n)
     return(array);
 }
 
+/*
 char *pangea_newtable(int32_t threadid,cJSON *json,uint64_t my64bits,bits256 privkey,bits256 pubkey,char *transport,char *ipaddr,uint16_t port,uint32_t minbuyin,uint32_t maxbuyin,int32_t hostrake)
 {
     int32_t createdflag,num,i,myind= -1; uint64_t tableid,addrs[CARDS777_MAXPLAYERS],isbot[CARDS777_MAXPLAYERS];
@@ -242,13 +243,6 @@ char *pangea_newtable(int32_t threadid,cJSON *json,uint64_t my64bits,bits256 pri
         }
         if ( myind < 0 )
             return(clonestr("{\"error\":\"this table is not for me\"}"));
-        /*if ( (array= jarray(&num,json,"balances")) == 0 )
-         {
-         PNACL_message("no balances or illegal num.%d\n",num);
-         return(clonestr("{\"error\":\"no balances or illegal numplayers\"}"));
-         }
-         for (i=0; i<num; i++)
-         balances[i] = j64bits(jitem(array,i),0);*/
         if ( (array= jarray(&num,json,"isbot")) != 0 )
         {
             for (i=0; i<num; i++)
@@ -315,7 +309,7 @@ char *pangea_newtable(int32_t threadid,cJSON *json,uint64_t my64bits,bits256 pri
         }
     }
     return(clonestr("{\"error\":\"no tableid\"}"));
-}
+}*/
 
 struct pangea_thread *pangea_threadinit(struct supernet_info *plugin,int32_t maxplayers)
 {

@@ -12380,5 +12380,331 @@ len = 0;
              return(jprint(retjson,1));
              }
              */
-
+            /*INT_AND_ARRAY(pangea,newhand,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,ping,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,gotdeck,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,ready,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,encoded,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,final,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,addedfunds,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,preflop,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,decoded,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,card,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,facedown,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,faceup,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,turn,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,confirmturn,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,chat,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,action,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,showdown,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,handsummary,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }*/
+                
+            /*INT_AND_ARRAY(pangea,newhand,senderind,params);
+             INT_AND_ARRAY(pangea,ping,senderind,params);
+             INT_AND_ARRAY(pangea,gotdeck,senderind,params);
+             INT_AND_ARRAY(pangea,ready,senderind,params);
+             INT_AND_ARRAY(pangea,encoded,senderind,params);
+             INT_AND_ARRAY(pangea,final,senderind,params);
+             INT_AND_ARRAY(pangea,addedfunds,senderind,params);
+             INT_AND_ARRAY(pangea,preflop,senderind,params);
+             INT_AND_ARRAY(pangea,decoded,senderind,params);
+             INT_AND_ARRAY(pangea,card,senderind,params);
+             INT_AND_ARRAY(pangea,facedown,senderind,params);
+             INT_AND_ARRAY(pangea,faceup,senderind,params);
+             INT_AND_ARRAY(pangea,turn,senderind,params);
+             INT_AND_ARRAY(pangea,confirmturn,senderind,params);
+             INT_AND_ARRAY(pangea,chat,senderind,params);
+             INT_AND_ARRAY(pangea,action,senderind,params);
+             INT_AND_ARRAY(pangea,showdown,senderind,params);
+             INT_AND_ARRAY(pangea,handsummary,senderind,params);*/
+                else if ( (sp= pangea_find64(tableid,my64bits)) != 0 && (chatstr= jstr(json,"chat")) != 0 && strlen(chatstr) < 256 )
+                {
+                    if ( 0 && (pm= j64bits(json,"pm")) != 0 )
+                    {
+                        for (i=0; i<sp->numaddrs; i++)
+                            if ( sp->addrs[i] == pm )
+                                break;
+                        if ( i == sp->numaddrs )
+                            return(clonestr("{\"error\":\"specified pm destination not at table\"}"));
+                    } else i = -1;
+                        pangea_sendcmd(hex,&sp->tp->hn,"chat",i,(void *)chatstr,(int32_t)strlen(chatstr)+1,pangea_ind(sp,sp->myslot),-1);
+                        return(clonestr("{\"result\":\"chat message sent\"}"));
+                }
+                
+            /*void _pangea_chat(uint64_t senderbits,void *buf,int32_t len,int32_t senderind)
+             {
+             PNACL_message(">>>>>>>>>>> CHAT FROM.%d %llu: (%s)\n",senderind,(long long)senderbits,(char *)buf);
+             }
+             
+             else if ( strcmp(methodstr,"newtable") == 0 )
+             retstr = pangea_newtable(juint(json,"threadid"),json,plugin->nxt64bits,*(bits256 *)plugin->mypriv,*(bits256 *)plugin->mypub,plugin->transport,plugin->ipaddr,plugin->pangeaport,juint(json,"minbuyin"),juint(json,"maxbuyin"),juint(json,"rakemillis"));
+             else if ( sender == 0 || sender[0] == 0 )
+             {
+             if ( strcmp(methodstr,"start") == 0 )
+             {
+             strcpy(retbuf,"{\"result\":\"start issued\"}");
+             if ( (base= jstr(json,"base")) != 0 )
+             {
+             if ( (maxplayers= juint(json,"maxplayers")) < 2 )
+             maxplayers = 2;
+             else if ( maxplayers > CARDS777_MAXPLAYERS )
+             maxplayers = CARDS777_MAXPLAYERS;
+             if ( jstr(json,"resubmit") == 0 )
+             sprintf(retbuf,"{\"resubmit\":[{\"method\":\"start\"}, {\"bigblind\":\"%llu\"}, {\"ante\":\"%llu\"}, {\"rakemillis\":\"%u\"}, {\"maxplayers\":%d}, {\"minbuyin\":%d}, {\"maxbuyin\":%d}],\"pluginrequest\":\"SuperNET\",\"plugin\":\"InstantDEX\",\"method\":\"orderbook\",\"base\":\"%s\",\"exchange\":\"pangea\",\"allfields\":1}",(long long)j64bits(json,"bigblind"),(long long)j64bits(json,"ante"),juint(json,"rakemillis"),maxplayers,juint(json,"minbuyin"),juint(json,"maxbuyin"),jstr(json,"base")!=0?jstr(json,"base"):"BTCD");
+             else if ( pangea_start(plugin,retbuf,base,0,j64bits(json,"bigblind"),j64bits(json,"ante"),juint(json,"rakemillis"),maxplayers,juint(json,"minbuyin"),juint(json,"maxbuyin"),json) < 0 )
+             ;
+             } else strcpy(retbuf,"{\"error\":\"no base specified\"}");
+             }
+             else if ( strcmp(methodstr,"status") == 0 )
+             retstr = pangea_status(plugin->nxt64bits,j64bits(json,"tableid"),json);
+             }
+             
+             int32_t pangea_unzbuf(uint8_t *buf,char *hexstr,int32_t len)
+             {
+             int32_t i,j,len2;
+             for (len2=i=0; i<len; i+=2)
+             {
+             if ( hexstr[i] == 'Z' )
+             {
+             for (j=0; j<hexstr[i+1]-'A'; j++)
+             buf[len2++] = 0;
+             }
+             else buf[len2++] = _decode_hex(&hexstr[i]);
+             }
+             //char *tmp = calloc(1,len*2+1);
+             //init_hexbytes_noT(tmp,buf,len2);
+             //PostMessage("zlen %d to len2 %d\n",len,len2);
+             //free(tmp);
+             return(len2);
+             }
+             
+             int32_t pangea_poll(uint64_t *senderbitsp,uint32_t *timestampp,union hostnet777 *hn)
+             {
+             char *jsonstr,*hexstr,*cmdstr; cJSON *json; struct cards777_privdata *priv; struct cards777_pubdata *dp; struct pangea_info *sp;
+             int32_t len,senderind,maxlen; uint8_t *buf;
+             *senderbitsp = 0;
+             dp = hn->client->H.pubdata, sp = dp->table;
+             priv = hn->client->H.privdata;
+             if ( hn == 0 || hn->client == 0 || dp == 0 || priv == 0 )
+             {
+             if ( Debuglevel > 2 )
+             PNACL_message("pangea_poll: null hn.%p %p dp.%p priv.%p\n",hn,hn!=0?hn->client:0,dp,priv);
+             return(-1);
+             }
+             maxlen = (int32_t)(sizeof(bits256) * dp->N*dp->N*dp->numcards);
+             if ( (buf= malloc(maxlen)) == 0 )
+             {
+             PNACL_message("pangea_poll: null buf\n");
+             return(-1);
+             }
+             if ( dp != 0 && priv != 0 && (jsonstr= queue_dequeue(&hn->client->H.Q,1)) != 0 )
+             {
+             //pangea_neworder(dp,dp->table,0,0);
+             //PNACL_message("player.%d GOT.(%s)\n",hn->client->H.slot,jsonstr);
+             if ( (json= cJSON_Parse(jsonstr)) != 0 )
+             {
+             *senderbitsp = j64bits(json,"sender");
+             if ( (senderind= juint(json,"myind")) < 0 || senderind >= dp->N )
+             {
+             PNACL_message("pangea_poll: illegal senderind.%d cardi.%d turni.%d (%s)\n",senderind,juint(json,"cardi"),juint(json,"turni"),jsonstr);
+             goto cleanup;
+             }
+             *timestampp = juint(json,"timestamp");
+             hn->client->H.state = juint(json,"state");
+             len = juint(json,"n");
+             cmdstr = jstr(json,"cmd");
+             if ( sp->myind < 0 )
+             {
+             // check for reactivation command
+             goto cleanup;
+             }
+             if ( cmdstr != 0 && strcmp(cmdstr,"preflop") == 0 )
+             {
+             if ( (hexstr= jstr(json,"data")) != 0 )
+             len = pangea_unzbuf(buf,hexstr,len);
+             }
+             else if ( (hexstr= jstr(json,"data")) != 0 && strlen(hexstr) == (len<<1) )
+             {
+             if ( len > maxlen )
+             {
+             PNACL_message("len too big for pangea_poll\n");
+             goto cleanup;
+             }
+             decode_hex(buf,len,hexstr);
+             } else if ( hexstr != 0 )
+             PNACL_message("len.%d vs hexlen.%ld (%s)\n",len,(long)(strlen(hexstr)>>1),hexstr);
+             if ( cmdstr != 0 )
+             {
+             if ( strcmp(cmdstr,"newhand") == 0 )
+             pangea_newhand(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"ping") == 0 )
+             pangea_ping(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"gotdeck") == 0 )
+             pangea_gotdeck(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"ready") == 0 )
+             pangea_ready(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"encoded") == 0 )
+             pangea_encoded(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"final") == 0 )
+             pangea_final(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"addfunds") == 0 )
+             pangea_addfunds(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"preflop") == 0 )
+             pangea_preflop(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"decoded") == 0 )
+             pangea_decoded(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"card") == 0 )
+             pangea_card(hn,json,dp,priv,buf,len,juint(json,"cardi"),senderind);
+             else if ( strcmp(cmdstr,"facedown") == 0 )
+             pangea_facedown(hn,json,dp,priv,buf,len,juint(json,"cardi"),senderind);
+             else if ( strcmp(cmdstr,"faceup") == 0 )
+             pangea_faceup(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"turn") == 0 )
+             pangea_turn(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"confirmturn") == 0 )
+             pangea_confirmturn(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"chat") == 0 )
+             pangea_chat(*senderbitsp,buf,len,senderind);
+             else if ( strcmp(cmdstr,"action") == 0 )
+             pangea_action(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"showdown") == 0 )
+             pangea_showdown(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"summary") == 0 )
+             pangea_gotsummary(hn,json,dp,priv,buf,len,senderind);
+             }
+             cleanup:
+             free_json(json);
+             }
+             free_queueitem(jsonstr);
+             }
+             free(buf);
+             return(hn->client->H.state);
+             }
+             
+             char *Pangea_bypass(uint64_t my64bits,uint8_t myprivkey[32],cJSON *json)
+             {
+             char *methodstr,*retstr = 0;
+             if ( (methodstr= jstr(json,"method")) != 0 )
+             {
+             if ( strcmp(methodstr,"turn") == 0 )
+             retstr = _pangea_input(my64bits,j64bits(json,"tableid"),json);
+             else if ( strcmp(methodstr,"status") == 0 )
+             retstr = _pangea_status(my64bits,j64bits(json,"tableid"),json);
+             else if ( strcmp(methodstr,"mode") == 0 )
+             retstr = _pangea_mode(my64bits,j64bits(json,"tableid"),json);
+             else if ( strcmp(methodstr,"buyin") == 0 )
+             retstr = _pangea_buyin(my64bits,j64bits(json,"tableid"),json);
+             else if ( strcmp(methodstr,"history") == 0 )
+             retstr = _pangea_history(my64bits,j64bits(json,"tableid"),json);
+             }
+             return(retstr);
+             }*/
+                
+            /*sprintf(hex,"{\"cmd\":\"%s\",\"turni\":%d,\"myslot\":%d,\"myind\":%d,\"cardi\":%d,\"dest\":%d,\"sender\":\"%llu\",\"n\":%u,%s\"data\":\"",cmdstr,turni,priv->myslot,pangea_ind(dp->table,priv->myslot),cardi,destplayer,(long long)myinfo->myaddr.nxt64bits,(long)time(NULL),datalen,hoststr);
+             n = (int32_t)strlen(hex);
+             if ( strcmp(cmdstr,"preflop") == 0 )
+             {
+             memcpy(&hex[n],data,datalen+1);
+             hexlen = (int32_t)strlen(hex)+1;
+             }
+             else
+             if ( data != 0 && datalen != 0 )
+             init_hexbytes_noT(&hex[n],data,datalen);
+             strcat(hex,"\"}");
+             if ( (json= cJSON_Parse(hex)) == 0 )
+             {
+             PNACL_message("error creating json\n");
+             return;
+             }
+             free_json(json);
+             hexlen = (int32_t)strlen(hex)+1;*/
 #endif

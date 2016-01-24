@@ -299,6 +299,7 @@ bits256 cards777_decode(bits256 *seedp,bits256 *xoverz,int32_t destplayer,bits25
     return(cipher);
 }
 
+#ifdef notyet
 struct cards777_privdata *cards777_allocpriv(int32_t numcards,int32_t N)
 {
     struct cards777_privdata *priv;
@@ -328,7 +329,6 @@ struct cards777_pubdata *cards777_allocpub(int32_t M,int32_t numcards,int32_t N)
     return(dp);
 }
 
-#ifdef notyet
 int32_t cards777_testinit(struct hostnet777_server *srv,int32_t M,struct hostnet777_client **clients,int32_t N,int32_t numcards)
 {
     //static int64_t balances[9];

@@ -30,20 +30,47 @@ bits256 calc_categoryhashes(bits256 *subhashp,char *category,char *subcategory)
     return(categoryhash);
 }
 
-queue_t *category_Q(bits256 categoryhash,bits256 subhash)
+struct category_info *category_find(bits256 categoryhash,bits256 subhash)
 {
-    struct category_info *cat,*sub; queue_t *Q = 0;
+    struct category_info *cat,*sub = 0;
     HASH_FIND(hh,Categories,categoryhash.bytes,sizeof(categoryhash),cat);
     if ( cat != 0 )
     {
         if ( bits256_nonz(subhash) > 0 && memcmp(GENESIS_PUBKEY.bytes,subhash.bytes,sizeof(subhash)) != 0 )
         {
             HASH_FIND(hh,cat->sub,subhash.bytes,sizeof(subhash),sub);
-            if ( sub != 0 )
-                Q = &sub->Q;
-        } else Q = &cat->Q;
+            return(sub);
+        }
+        return(cat);
     }
-    return(Q);
+    return(0);
+}
+
+queue_t *category_Q(bits256 categoryhash,bits256 subhash)
+{
+    struct category_info *cat;
+    if ( (cat= category_find(categoryhash,subhash)) != 0 )
+        return(&cat->Q);
+    else return(0);
+}
+
+void *category_info(bits256 categoryhash,bits256 subhash)
+{
+    struct category_info *cat;
+    if ( (cat= category_find(categoryhash,subhash)) != 0 )
+        return(cat->info);
+    else return(0);
+}
+
+void *category_infoset(bits256 categoryhash,bits256 subhash,void *info)
+{
+    struct category_info *cat;
+    if ( (cat= category_find(categoryhash,subhash)) != 0 )
+    {
+        cat->info = info;
+        return(info);
+    }
+    return(0);
 }
 
 struct category_msg *category_gethexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash)

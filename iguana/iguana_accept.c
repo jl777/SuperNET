@@ -100,7 +100,7 @@ void iguana_acceptloop(void *args)
         {
             
         }*/
-        if ( (addr= iguana_peerslot(coin,ipbits)) == 0 )
+        if ( (addr= iguana_peerslot(coin,ipbits,0)) == 0 )
         {
             ptr = mycalloc('a',1,sizeof(*ptr));
             strcpy(ptr->ipaddr,ipaddr);
@@ -126,7 +126,7 @@ int32_t iguana_pendingaccept(struct iguana_info *coin)
     struct iguana_accept *ptr; char ipaddr[64]; struct iguana_peer *addr;
     if ( (ptr= queue_dequeue(&coin->acceptQ,0)) != 0 )
     {
-        if ( (addr= iguana_peerslot(coin,ptr->ipbits)) != 0 )
+        if ( (addr= iguana_peerslot(coin,ptr->ipbits,0)) != 0 )
         {
             expand_ipbits(ipaddr,ptr->ipbits);
             printf("iguana_pendingaccept LAUNCH DEDICATED THREAD for %s\n",ipaddr);

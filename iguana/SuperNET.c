@@ -16,6 +16,24 @@
 #include "iguana777.h"
 #include "../includes/tweetnacl.h"
 
+cJSON *SuperNET_argjson(cJSON *json)
+{
+    cJSON *argjson = jduplicate(json);
+    jdelete(argjson,"agent");
+    jdelete(argjson,"method");
+    jdelete(argjson,"categoryhash");
+    jdelete(argjson,"subhash");
+    jdelete(argjson,"mypub");
+    jdelete(argjson,"hexmsg");
+    jdelete(argjson,"plaintext");
+    jdelete(argjson,"broadcast");
+    jdelete(argjson,"ov");
+    jdelete(argjson,"check");
+    jdelete(argjson,"yourip");
+    jdelete(argjson,"myip");
+    return(argjson);
+}
+
 bits256 SuperNET_sharedseed(bits256 privkey,bits256 otherpub)
 {
     bits256 seed2,seed;
@@ -41,7 +59,7 @@ void SuperNET_remotepeer(struct supernet_info *myinfo,struct iguana_info *coin,c
     printf("got %s remotepeer.(%s) supernet.%d\n",symbol,ipaddr,supernetflag);
     if ( supernetflag != 0 && (uint32_t)myinfo->myaddr.selfipbits != (uint32_t)ipbits )
     {
-        if ( (addr= iguana_peerslot(coin,ipbits)) != 0 )
+        if ( (addr= iguana_peerslot(coin,ipbits,0)) != 0 )
         {
             printf("launch startconnection to supernet peer.(%s)\n",ipaddr);
             iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
@@ -488,10 +506,11 @@ int32_t DHT_dist(bits256 desthash,bits256 hash)
     return(dist*0);
 }
 
-struct iguana_peer *iguana_peerfind(struct supernet_info *myinfo,struct iguana_info **coinp,uint32_t destipbits,bits256 category,bits256 subhash)
+struct iguana_peer *iguana_peerfind(struct supernet_info *myinfo,struct iguana_info **coinp,uint64_t destipbits,bits256 category,bits256 subhash)
 {
-    int32_t i,j; struct iguana_peer *addr;
+    int32_t i,j; struct iguana_peer *addr; uint16_t port;
     *coinp = 0;
+    port = (uint16_t)(destipbits >> 32);
     for (i=0; i<IGUANA_MAXCOINS; i++)
     {
         if ( Coins[i] != 0 )
@@ -503,8 +522,11 @@ struct iguana_peer *iguana_peerfind(struct supernet_info *myinfo,struct iguana_i
                 {
                     if ( destipbits == addr->ipbits || category_peer(myinfo,addr,category,subhash) >= 0 )
                     {
-                        *coinp = Coins[i];
-                        return(addr);
+                        if ( port == 0 || addr->A.port == port )
+                        {
+                            *coinp = Coins[i];
+                            return(addr);
+                        }
                     }
                 }
             }
@@ -513,7 +535,7 @@ struct iguana_peer *iguana_peerfind(struct supernet_info *myinfo,struct iguana_i
     return(0);
 }
 
-char *SuperNET_DHTsend(struct supernet_info *myinfo,uint32_t destipbits,bits256 categoryhash,bits256 subhash,char *hexmsg,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext)
+char *SuperNET_DHTsend(struct supernet_info *myinfo,uint64_t destipbits,bits256 categoryhash,bits256 subhash,char *hexmsg,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext)
 {
     int32_t i,j; char *convstr,*jsonstr=0; struct iguana_peer *addr; cJSON *json; struct iguana_info *coin;
     if ( myinfo == 0 )

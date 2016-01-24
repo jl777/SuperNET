@@ -13,6 +13,15 @@
  *                                                                            *
  ******************************************************************************/
 
+/*HASH_AND_ARRAY(pangea,userturn,tablehash,params);
+ HASH_AND_ARRAY(pangea,status,tableid,params);
+ HASH_AND_ARRAY(pangea,mode,tableid,params);
+ HASH_AND_ARRAY(pangea,buyin,tableid,params);
+ HASH_AND_ARRAY(pangea,history,tableid,params);*/
+INT_AND_ARRAY(pangea,host,minplayers,params);
+ZERO_ARGS(pangea,lobby);
+HASH_AND_ARRAY(pangea,join,tablehash,params);
+
 ZERO_ARGS(SuperNET,help);
 STRING_ARG(SuperNET,bitcoinrpc,setcoin);
 
@@ -51,34 +60,6 @@ TWO_ARRAYS(SuperNET,mypeers,supernet,rawpeers);
 ZERO_ARGS(SuperNET,stop);
 HASH_AND_STRING(SuperNET,saveconf,wallethash,confjsonstr);
 HASH_ARRAY_STRING(SuperNET,layer,mypriv,otherpubs,str);
-
-INT_AND_ARRAY(pangea,newhand,senderind,params);
-INT_AND_ARRAY(pangea,ping,senderind,params);
-INT_AND_ARRAY(pangea,gotdeck,senderind,params);
-INT_AND_ARRAY(pangea,ready,senderind,params);
-INT_AND_ARRAY(pangea,encoded,senderind,params);
-INT_AND_ARRAY(pangea,final,senderind,params);
-INT_AND_ARRAY(pangea,addedfunds,senderind,params);
-INT_AND_ARRAY(pangea,preflop,senderind,params);
-INT_AND_ARRAY(pangea,decoded,senderind,params);
-INT_AND_ARRAY(pangea,card,senderind,params);
-INT_AND_ARRAY(pangea,facedown,senderind,params);
-INT_AND_ARRAY(pangea,faceup,senderind,params);
-INT_AND_ARRAY(pangea,turn,senderind,params);
-INT_AND_ARRAY(pangea,confirmturn,senderind,params);
-INT_AND_ARRAY(pangea,chat,senderind,params);
-INT_AND_ARRAY(pangea,action,senderind,params);
-INT_AND_ARRAY(pangea,showdown,senderind,params);
-INT_AND_ARRAY(pangea,handsummary,senderind,params);
-
-HASH_AND_ARRAY(pangea,status,tableid,params);
-HASH_AND_ARRAY(pangea,mode,tableid,params);
-HASH_AND_ARRAY(pangea,buyin,tableid,params);
-HASH_AND_ARRAY(pangea,history,tableid,params);
-
-ZERO_ARGS(pangea,lobby);
-INT_AND_ARRAY(pangea,host,minplayers,params);
-HASH_AND_ARRAY(pangea,join,tablehash,params);
 
 STRING_ARG(iguana,peers,activecoin);
 STRING_AND_INT(iguana,maxpeers,activecoin,max);

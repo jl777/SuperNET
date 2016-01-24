@@ -74,12 +74,12 @@ void pangeanet777_processmsg(uint64_t *destbitsp,bits256 *senderpubp,queue_t *Q,
 
 int32_t pangeanet777_idle(union pangeanet777 *hn)
 {
-    int32_t len=0,slot,n = 0; bits256 senderpub,mypriv,mypub; uint64_t destbits; uint8_t *msg=0;
+    /*int32_t slot,n = 0; bits256 senderpub,mypriv,mypub; uint64_t destbits;// uint8_t *msg=0;
     //long extra = sizeof(bits256)+sizeof(uint64_t);
     if ( (slot= hn->client->H.slot) != 0 )
     {
         mypriv = hn->client->H.privkey, mypub = hn->client->H.pubkey;
-        /*if ( (sock= hn->client->subsock) >= 0 && (len= nn_recv(sock,&msg,NN_MSG,0)) > extra )
+        if ( (sock= hn->client->subsock) >= 0 && (len= nn_recv(sock,&msg,NN_MSG,0)) > extra )
         {
             SuperNET_copybits(1,msg,(void *)&destbits,sizeof(uint64_t));
             //printf("client got pub len.%d\n",len);
@@ -87,7 +87,7 @@ int32_t pangeanet777_idle(union pangeanet777 *hn)
                 pangeanet777_processmsg(&destbits,&senderpub,&hn->client->H.Q,mypriv,mypub,msg,len,0), n++;
             nn_freemsg(msg);
         } else if ( hn->client->H.pollfunc != 0 )
-            (*hn->client->H.pollfunc)(hn);*/
+            (*hn->client->H.pollfunc)(hn);
     }
     else
     {
@@ -96,7 +96,7 @@ int32_t pangeanet777_idle(union pangeanet777 *hn)
         for (slot=1; slot<hn->server->num; slot++)
         {
             //printf("check ind.%d %.0f\n",ind,milliseconds());
-            //f ( (sock= hn->server->clients[slot].pmsock) >= 0 && (len= nn_recv(sock,&msg,NN_MSG,0)) > extra )
+            if ( (sock= hn->server->clients[slot].pmsock) >= 0 && (len= nn_recv(sock,&msg,NN_MSG,0)) > extra )
             {
                 //printf("server got pm[%d] %d\n",slot,len);
                 SuperNET_copybits(1,msg,(void *)&destbits,sizeof(uint64_t));
@@ -113,7 +113,8 @@ int32_t pangeanet777_idle(union pangeanet777 *hn)
         if ( hn->server->H.pollfunc != 0 )
             (*hn->server->H.pollfunc)(hn);
     }
-    return(n);
+    return(n);*/
+    return(0);
 }
 
 int32_t pangeanet777_replace(struct pangeanet777_server *srv,bits256 clientpub,int32_t slot)

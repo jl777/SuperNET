@@ -614,36 +614,49 @@ void iguana_startconnection(void *arg)
     }
 }
 
-struct iguana_peer *iguana_peerslot(struct iguana_info *coin,uint64_t ipbits)
+void iguana_peerkill(struct iguana_info *coin)
+{
+    struct iguana_peer *addr;
+    if ( coin->peers.numranked > 0 && (addr= coin->peers.ranked[coin->peers.numranked-1]) != 0 )
+    {
+        printf("mark rank.%d as dead.(%s)\n",coin->peers.numranked,addr->ipaddr);
+        addr->dead = (uint32_t)time(NULL);
+    }
+}
+
+struct iguana_peer *iguana_peerslot(struct iguana_info *coin,uint64_t ipbits,int32_t forceflag)
 {
     int32_t i; struct iguana_peer *addr; char ipaddr[64];
     for (i=0; i<IGUANA_MAXPEERS; i++)
         if ( ipbits == coin->peers.active[i].ipbits )
-            return(0);
+            return(forceflag!=0 ? &coin->peers.active[i] : 0);
     expand_ipbits(ipaddr,ipbits);
 #ifdef IGUANA_DISABLEPEERS
     if ( strcmp("127.0.0.1",ipaddr) != 0 )
         return(0);
 #endif
     //portable_mutex_lock(&coin->peers_mutex);
-    for (i=0; i<coin->MAXPEERS && i<IGUANA_MAXPEERS; i++)
+    for (i=0; i<IGUANA_MAXPEERS; i++)
     {
-        addr = &coin->peers.active[i];
-        addr->addrind = i;
-        if ( addr->usock >= 0 || addr->pending != 0 || addr->ipbits == ipbits || strcmp(ipaddr,addr->ipaddr) == 0 )
+        if ( i < coin->MAXPEERS || forceflag != 0 )
         {
-            //printf("skip.(%s) usock.%d pending.%d ipbits.%x vs %x lag.%ld\n",addr->ipaddr,addr->usock,addr->pending,addr->ipbits,iA->ipbits,time(NULL)-addr->pending);
-            continue;
-        }
-        portable_mutex_lock(&coin->peers_mutex);
-        if ( addr->ipbits == 0 )
-        {
-            iguana_initpeer(coin,addr,ipbits);
-            //addr->pending = (uint32_t)time(NULL);
+            addr = &coin->peers.active[i];
+            addr->addrind = i;
+            if ( addr->usock >= 0 || addr->pending != 0 || addr->ipbits == ipbits || strcmp(ipaddr,addr->ipaddr) == 0 )
+            {
+                //printf("skip.(%s) usock.%d pending.%d ipbits.%x vs %x lag.%ld\n",addr->ipaddr,addr->usock,addr->pending,addr->ipbits,iA->ipbits,time(NULL)-addr->pending);
+                continue;
+            }
+            portable_mutex_lock(&coin->peers_mutex);
+            if ( addr->ipbits == 0 )
+            {
+                iguana_initpeer(coin,addr,ipbits);
+                //addr->pending = (uint32_t)time(NULL);
+                portable_mutex_unlock(&coin->peers_mutex);
+                return(addr);
+            }
             portable_mutex_unlock(&coin->peers_mutex);
-            return(addr);
         }
-        portable_mutex_unlock(&coin->peers_mutex);
     }
     return(0);
 }
@@ -655,7 +668,7 @@ void *iguana_iAddriterator(struct iguana_info *coin,struct iguana_iAddr *iA)
     {
         //printf("%x\n",iA->ipbits);
         //portable_mutex_unlock(&coin->peers_mutex);
-        if ( (addr= iguana_peerslot(coin,iA->ipbits)) != 0 )//i < coin->MAXPEERS && i < IGUANA_MAXPEERS && addr != 0 )
+        if ( (addr= iguana_peerslot(coin,iA->ipbits,0)) != 0 )//i < coin->MAXPEERS && i < IGUANA_MAXPEERS && addr != 0 )
         {
             //printf("pend.%d status.%d possible peer.(%s).%x threads %d %d %d %d\n",addr->pending,iA->status,addr->ipaddr,addr->ipbits,iguana_numthreads(coin,0),iguana_numthreads(coin,1),iguana_numthreads(coin,2),iguana_numthreads(coin,3));
             if ( addr->pending == 0 && iA->status != IGUANA_PEER_CONNECTING )

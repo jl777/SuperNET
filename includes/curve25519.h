@@ -34,7 +34,7 @@ typedef union _bits384 bits384;
 struct sha256_vstate { uint64_t length; uint32_t state[8],curlen; uint8_t buf[64]; };
 struct rmd160_vstate { uint64_t length; uint8_t buf[64]; uint32_t curlen, state[5]; };
 
-struct acct777_sig { bits256 sigbits,pubkey; uint64_t signer64bits; uint32_t timestamp,allocsize; uint8_t serialized[]; };
+struct acct777_sig { bits256 sigbits,pubkey; uint64_t signer64bits; uint32_t timestamp,allocsize; };
 
 #undef force_inline
 #define force_inline __attribute__((always_inline))
@@ -64,6 +64,7 @@ bits128 calc_md5(char digeststr[33],void *buf,int32_t len);
 
 bits256 acct777_msgprivkey(uint8_t *data,int32_t datalen);
 bits256 acct777_msgpubkey(uint8_t *data,int32_t datalen);
+void acct777_rwsig(int32_t rwflag,uint8_t *serialized,struct acct777_sig *sig);
 
 bits256 acct777_pubkey(bits256 privkey);
 uint64_t acct777_nxt64bits(bits256 pubkey);

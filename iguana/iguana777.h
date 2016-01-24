@@ -659,10 +659,11 @@ int32_t iguana_scriptgen(struct iguana_info *coin,uint8_t *script,char *asmstr,s
 int32_t iguana_ramchain_spendtxid(struct iguana_info *coin,bits256 *txidp,struct iguana_txid *T,int32_t numtxids,bits256 *X,int32_t numexternaltxids,struct iguana_spend *s);
 struct iguana_info *iguana_coinselect();
 void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr);
-struct iguana_peer *iguana_peerslot(struct iguana_info *coin,uint64_t ipbits);
+struct iguana_peer *iguana_peerslot(struct iguana_info *coin,uint64_t ipbits,int32_t forceflag);
 void iguana_dedicatedglue(void *arg);
 void SuperNET_remotepeer(struct supernet_info *myinfo,struct iguana_info *coin,char *symbol,char *ipaddr,int32_t supernetflag);
 void SuperNET_yourip(struct supernet_info *myinfo,char *yourip);
+void iguana_peerkill(struct iguana_info *coin);
 
 char *busdata_sync(uint32_t *noncep,char *jsonstr,char *broadcastmode,char *destNXTaddr);
 void peggy();

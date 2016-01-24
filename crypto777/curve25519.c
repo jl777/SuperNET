@@ -1759,9 +1759,20 @@ bits256 acct777_invoicehash(bits256 *invoicehash,uint16_t lockdays,uint8_t chain
 
 //char *bits256_str();
 //struct acct777_sig { bits256 sigbits,pubkey; uint64_t signer64bits; uint32_t timestamp,allocsize; };
+
+void acct777_rwsig(int32_t rwflag,uint8_t *serialized,struct acct777_sig *sig)
+{
+    int32_t len = 0;
+    iguana_rwbignum(rwflag,&serialized[len],sizeof(bits256),sig->sigbits.bytes), len += sizeof(bits256);
+    iguana_rwbignum(rwflag,&serialized[len],sizeof(bits256),sig->pubkey.bytes),len += sizeof(bits256);
+    iguana_rwnum(rwflag,&serialized[len],sizeof(sig->signer64bits),&sig->signer64bits),len += sizeof(sig->signer64bits);
+    iguana_rwnum(rwflag,&serialized[len],sizeof(sig->timestamp),&sig->timestamp),len += sizeof(sig->timestamp);
+    iguana_rwnum(rwflag,&serialized[len],sizeof(sig->allocsize),&sig->allocsize),len += sizeof(sig->allocsize);
+}
+
 uint64_t acct777_sign(struct acct777_sig *sig,bits256 privkey,bits256 otherpubkey,uint32_t timestamp,uint8_t *serialized,int32_t datalen)
 {
-    int32_t len = 0; bits256 pubkey; bits256 shared; uint8_t buf[sizeof(*sig)];
+    bits256 pubkey; bits256 shared; uint8_t buf[sizeof(*sig)];
     pubkey = acct777_pubkey(privkey);
     if ( memcmp(sig->pubkey.bytes,otherpubkey.bytes,sizeof(bits256)) != 0 )
     {
@@ -1772,13 +1783,9 @@ uint64_t acct777_sign(struct acct777_sig *sig,bits256 privkey,bits256 otherpubke
         sig->allocsize = (int32_t)(datalen + sizeof(*sig));
         sig->signer64bits = acct777_nxt64bits(sig->pubkey);
     }
-    shared = curve25519(privkey,otherpubkey);
+    sig->sigbits = shared = curve25519(privkey,otherpubkey);
     memset(buf,0,sizeof(buf));
-    iguana_rwbignum(1,&buf[len],sizeof(bits256),shared.bytes), len += sizeof(bits256);
-    iguana_rwbignum(1,&buf[len],sizeof(bits256),sig->pubkey.bytes),len += sizeof(bits256);
-    iguana_rwnum(1,&buf[len],sizeof(sig->signer64bits),&sig->signer64bits),len += sizeof(sig->signer64bits);
-    iguana_rwnum(1,&buf[len],sizeof(sig->timestamp),&sig->timestamp),len += sizeof(sig->timestamp);
-    iguana_rwnum(1,&buf[len],sizeof(sig->allocsize),&sig->allocsize),len += sizeof(sig->allocsize);
+    acct777_rwsig(1,buf,sig);
     //int32_t i; for (i=0; i<sizeof(*sig); i++)
     //    printf("%02x ",buf[i]);
     //char str[65]; printf("shared.(%s) crc.%u datalen.%d\n",bits256_str(str,shared),calc_crc32(0,buf,sizeof(buf)),datalen);
@@ -1789,10 +1796,11 @@ uint64_t acct777_sign(struct acct777_sig *sig,bits256 privkey,bits256 otherpubke
 
 uint64_t acct777_validate(struct acct777_sig *sig,bits256 privkey,bits256 pubkey)
 {
-    struct acct777_sig checksig; uint64_t signerbits; int32_t datalen;
+    struct acct777_sig checksig; uint64_t signerbits; int32_t datalen; uint8_t *serialized;
     datalen = (int32_t)(sig->allocsize - sizeof(*sig));
     checksig = *sig;
-    acct777_sign(&checksig,privkey,pubkey,sig->timestamp,sig->serialized,datalen);
+    serialized = (uint8_t *)((long)sig + sizeof(*sig));
+    acct777_sign(&checksig,privkey,pubkey,sig->timestamp,serialized,datalen);
     if ( memcmp(checksig.sigbits.bytes,sig->sigbits.bytes,sizeof(checksig.sigbits)) != 0 )
     {
         printf("sig compare error using sig->pub from %llu\n",(long long)acct777_nxt64bits(sig->pubkey));
