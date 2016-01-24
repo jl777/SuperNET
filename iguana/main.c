@@ -194,7 +194,7 @@ char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t
 
 char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
 {
-    cJSON *retjson; uint64_t tag; uint32_t timeout; char *jsonstr,*method; char *retjsonstr,*retstr = 0;
+    cJSON *retjson; uint64_t tag; uint32_t timeout; char *jsonstr,*method,*retjsonstr,*retstr = 0;
     //char str[65]; printf("processJSON %p %s\n",&myinfo->privkey,bits256_str(str,myinfo->privkey));
     if ( json != 0 )
     {
@@ -205,8 +205,13 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remote
         }
         if ( (timeout= juint(json,"timeout")) == 0 )
             timeout = IGUANA_JSONTIMEOUT;
+        if ( (method= jstr(json,"method")) != 0 && strcmp(method,"DHT") == 0 && remoteaddr != 0 )
+        {
+            SuperNET_hexmsgprocess(myinfo,json,jstr(json,"hexmsg"),remoteaddr);
+            return(clonestr("{\"result\":\"processed remote DHT\"}"));
+        }
         jsonstr = jprint(json,0);
-        if ( remoteaddr == 0 || jstr(json,"immediate") != 0 || ((method= jstr(json,"method")) != 0 && strcmp(method,"DHT") == 0) )
+        if ( remoteaddr == 0 || jstr(json,"immediate") != 0 )
             retjsonstr = SuperNET_jsonstr(myinfo,jsonstr,remoteaddr);
         else retjsonstr = iguana_blockingjsonstr(myinfo,jsonstr,tag,timeout,remoteaddr);
         if ( retjsonstr != 0 )
@@ -273,7 +278,7 @@ void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func
 
 void iguana_main(void *arg)
 {
-    FILE *fp; cJSON *json; uint8_t *space,secretbuf[512]; uint32_t r; long allocsize;
+    FILE *fp; cJSON *json; uint8_t *space,secretbuf[512]; uint32_t r; long allocsize; bits256 pangeahash;
     char helperstr[64],fname[512],*wallet2,*wallet2str,*tmpstr,*confstr,*helperargs,*ipaddr,*coinargs=0,*secret,*jsonstr = arg;
     struct supernet_info *myinfo;
     int32_t i,len,flag,c; bits256 acct,seed,checkhash,wallethash,walletpub,wallet2shared,wallet2priv,wallet2pub;
@@ -457,7 +462,9 @@ void iguana_main(void *arg)
     if ( IGUANA_NUMHELPERS == 0 )
         IGUANA_NUMHELPERS = 1;
     category_subscribe(&MYINFO,GENESIS_PUBKEY,GENESIS_PUBKEY);
-    category_subscribe(myinfo,calc_categoryhashes(0,"pangea",0),GENESIS_PUBKEY);
+    pangeahash = calc_categoryhashes(0,"pangea",0);
+    category_subscribe(myinfo,pangeahash,GENESIS_PUBKEY);
+    category_funcset(pangeahash,pangea_hexmsg);
     for (i=0; i<IGUANA_NUMHELPERS; i++)
     {
         sprintf(helperstr,"{\"name\":\"helper.%d\"}",i);

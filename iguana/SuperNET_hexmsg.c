@@ -57,7 +57,7 @@ int32_t SuperNET_hexmsgfind(struct supernet_info *myinfo,bits256 category,bits25
     return(-1);
 }
 
-void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,char *hexmsg,struct tai now)
+void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,char *hexmsg,struct tai now,char *remoteaddr)
 {
     char str[512],str2[65];
     str[0] = 0;
@@ -69,6 +69,40 @@ void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 categoryhash,bits25
         bits256_str(str2,subhash);
         strcat(str,str2);
     }
-    category_posthexmsg(myinfo,categoryhash,subhash,hexmsg,now);
+    category_posthexmsg(myinfo,categoryhash,subhash,hexmsg,now,remoteaddr);
     //printf("HEXMSG.(%s).%llx -> %s\n",hexmsg,(long long)subhash.txid,str);
+}
+
+void SuperNET_hexmsgprocess(struct supernet_info *myinfo,cJSON *json,char *hexmsg,char *remoteaddr)
+{
+    int32_t len,flag=0; uint8_t _buf[8192],*buf = _buf; bits256 categoryhash; struct category_info *cat;
+    if ( hexmsg != 0 )
+    {
+        len = (int32_t)strlen(hexmsg);
+        if ( is_hexstr(hexmsg,len) > 0 )
+        {
+            len >>= 1;
+            if ( len > sizeof(_buf) )
+                buf = malloc(len);
+            decode_hex(buf,len,hexmsg);
+            categoryhash = jbits256(json,"categoryhash");
+            if ( (cat= category_find(categoryhash,GENESIS_PUBKEY)) != 0 )
+            {
+                if ( cat->process_func != 0 )
+                {
+                    (*cat->process_func)(myinfo,buf,len,remoteaddr);
+                    flag = 1;
+                    printf("PROCESSFUNC\n");
+                }
+            }
+            if ( flag == 0 )
+            {
+                printf("no processfunc, posthexmsg\n");
+                category_posthexmsg(myinfo,categoryhash,jbits256(json,"subhash"),hexmsg,tai_now(),remoteaddr);
+            }
+            char str[65]; printf("HEXPROCESS.(%s) -> %s\n",hexmsg,bits256_str(str,categoryhash));
+            if ( buf != _buf )
+                free(buf);
+        }
+    }
 }

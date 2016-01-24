@@ -884,9 +884,8 @@ void iguana_rpcloop(void *args)
     char remoteaddr[64],jsonbuf[8192],*buf,*retstr,*space;//,*retbuf; ,n,i,m
     struct sockaddr_in cli_addr; uint32_t ipbits,i,size = IGUANA_WIDTH*IGUANA_HEIGHT*16 + 512; uint16_t port;
     port = IGUANA_RPCPORT;
-    
     while ( (bindsock= iguana_socket(1,"127.0.0.1",port)) < 0 )
-        sleep(3);
+        exit(-1);
     printf("iguana_rpcloop 127.0.0.1:%d bind sock.%d\n",port,bindsock);
     space = calloc(1,size);
     while ( bindsock >= 0 )

@@ -1770,6 +1770,24 @@ void acct777_rwsig(int32_t rwflag,uint8_t *serialized,struct acct777_sig *sig)
     iguana_rwnum(rwflag,&serialized[len],sizeof(sig->allocsize),&sig->allocsize),len += sizeof(sig->allocsize);
 }
 
+int32_t acct777_sigcheck(struct acct777_sig *sig)
+{
+#define IGUANA_GENESIS 1453075200
+#define IGUANA_MAXPACKETSIZE (1024 * 1024 * 2)
+#define TEN_YEARS (10 * 365 * 24 * 3600)
+   if ( sig->allocsize < sizeof(*sig) || sig->allocsize > IGUANA_MAXPACKETSIZE )
+    {
+        printf("acct777_sign: invalid datalen.%d hex.%08x\n",sig->allocsize,sig->allocsize);
+        return(-1);
+    }
+    if ( sig->timestamp < IGUANA_GENESIS || sig->timestamp > (long)IGUANA_GENESIS+TEN_YEARS )
+    {
+        printf("acct777_sign: invalid timestamp.%u (%u %u)\n",sig->timestamp,IGUANA_GENESIS,IGUANA_GENESIS+TEN_YEARS);
+        return(-1);
+    }
+    return(sig->allocsize);
+}
+
 uint64_t acct777_sign(struct acct777_sig *sig,bits256 privkey,bits256 otherpubkey,uint32_t timestamp,uint8_t *serialized,int32_t datalen)
 {
     bits256 pubkey; bits256 shared; uint8_t buf[sizeof(*sig)];
@@ -1784,6 +1802,8 @@ uint64_t acct777_sign(struct acct777_sig *sig,bits256 privkey,bits256 otherpubke
         sig->signer64bits = acct777_nxt64bits(sig->pubkey);
     }
     sig->sigbits = shared = curve25519(privkey,otherpubkey);
+    if ( acct777_sigcheck(sig) < 0 )
+        return(0);
     memset(buf,0,sizeof(buf));
     acct777_rwsig(1,buf,sig);
     //int32_t i; for (i=0; i<sizeof(buf); i++)

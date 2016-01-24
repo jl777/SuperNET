@@ -12707,4 +12707,56 @@ len = 0;
              }
              free_json(json);
              hexlen = (int32_t)strlen(hex)+1;*/
+                
+                
+                int32_t pangea_hexmsg(struct supernet_info *myinfo,struct pangea_msghdr *pm,int32_t len)
+            {
+                cJSON *argjson; char *method; bits256 tablehash; struct table_info *tp; int32_t flag = 0;
+                int32_t datalen; uint8_t *serialized; uint8_t tmp[sizeof(pm->sig)];
+                acct777_rwsig(0,(void *)&pm->sig,(void *)tmp);
+                memcpy(&pm->sig,tmp,sizeof(pm->sig));
+                datalen = len  - (int32_t)sizeof(pm->sig);
+                serialized = (void *)((long)pm + sizeof(pm->sig));
+                if ( pangea_validate(pm,acct777_msgprivkey(serialized,datalen),pm->sig.pubkey) == 0 )
+                {
+                    flag++;
+                    iguana_rwbignum(0,pm->tablehash.bytes,sizeof(bits256),tablehash.bytes);
+                    pm->tablehash = tablehash;
+                    printf("<<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen,pm->sig.timestamp,pm->sig.allocsize,(char *)pm->serialized,serialized[datalen-1]);
+                    if ( serialized[datalen-1] == 0 && (argjson= cJSON_Parse((char *)pm->serialized)) != 0 )
+                    {
+                        tablehash = jbits256(argjson,"subhash");
+                        if ( (method= jstr(argjson,"cmd")) != 0 )
+                        {
+                            if ( strcmp(method,"lobby") == 0 )
+                            {
+                                //categoryhash = jbits256(argjson,"categoryhash");
+                            }
+                            else if ( strcmp(method,"host") == 0 )
+                            {
+                                if ( (tp= pangea_table(tablehash)) != 0 )
+                                {
+                                    pangea_gamecreate(&tp->G,pm->sig.timestamp,pm->tablehash,argjson);
+                                    tp->G.creatorbits = pm->sig.signer64bits;
+                                }
+                                char str[65],str2[65]; printf("new game detected (%s) vs (%s)\n",bits256_str(str,tablehash),bits256_str(str2,pm->tablehash));
+                            }
+                            else if ( strcmp(method,"join") == 0 )
+                            {
+                                printf("JOIN.(%s)\n",jprint(argjson,0));
+                            }
+                        }
+                        free_json(argjson);
+                    } else printf("ERROR >>>>>>> (%s) cant parse\n",(char *)pm->serialized);
+                }
+                else
+                {
+                    int32_t i; char str[65],str2[65];
+                    for (i=0; i<datalen; i++)
+                        printf("%02x",serialized[i]);
+                    printf("<<<<<<<<<<<<< sigsize.%ld SIG ERROR [%ld] len.%d (%s + %s)\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen,bits256_str(str,acct777_msgprivkey(serialized,datalen)),bits256_str(str2,pm->sig.pubkey));
+                }
+                return(flag);
+            }
+
 #endif

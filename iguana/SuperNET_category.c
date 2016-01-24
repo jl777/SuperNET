@@ -74,6 +74,17 @@ void *category_infoset(bits256 categoryhash,bits256 subhash,void *info)
     return(0);
 }
 
+struct category_info *category_funcset(bits256 categoryhash,int32_t (*process_func)(struct supernet_info *myinfo,void *data,int32_t datalen,char *remoteaddr))
+{
+    struct category_info *cat;
+    if ( (cat= category_find(categoryhash,GENESIS_PUBKEY)) != 0 )
+    {
+        cat->process_func = process_func;
+        return(cat);
+    }
+    return(0);
+}
+
 struct category_msg *category_gethexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash)
 {
     queue_t *Q;
@@ -83,7 +94,7 @@ struct category_msg *category_gethexmsg(struct supernet_info *myinfo,bits256 cat
     else return(0);
 }
 
-void category_posthexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,char *hexmsg,struct tai now)
+void category_posthexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,char *hexmsg,struct tai now,char *remoteaddr)
 {
     int32_t len; struct category_msg *m; queue_t *Q = 0;
     if ( (Q= category_Q(categoryhash,subhash)) != 0 )
@@ -91,6 +102,8 @@ void category_posthexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits2
         len = (int32_t)strlen(hexmsg) >> 1;
         m = calloc(1,sizeof(*m) + len);
         m->t = now, m->len = len;
+        if ( remoteaddr != 0 && remoteaddr[0] != 0 )
+            m->remoteipbits = calc_ipbits(remoteaddr);
         decode_hex(m->msg,m->len,hexmsg);
         queue_enqueue("categoryQ",Q,&m->DL,0);
         //char str[65]; printf("POST HEXMSG.(%s) -> %s.%llx len.%d\n",hexmsg,bits256_str(str,categoryhash),(long long)subhash.txid,m->len);

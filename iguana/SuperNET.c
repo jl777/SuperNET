@@ -401,7 +401,7 @@ char *SuperNET_hexconv(char *hexmsg)
 {
     cJSON *json; char *myip,*yourip,*retstr = hexmsg; uint32_t myipbits=0,destipbits=0;
     uint8_t *bits; int32_t n,len = (int32_t)strlen(hexmsg) >> 1;
-    if ( (bits = calloc(1,len)) != 0 )
+    if ( (bits= calloc(1,len)) != 0 )
     {
         decode_hex(bits,len,hexmsg);
         if ( (json= cJSON_Parse((char *)bits)) != 0 )
@@ -681,7 +681,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
             //printf("check.(%s)\n",hexmsg);
             if ( SuperNET_hexmsgfind(myinfo,category,subhash,hexmsg,0) < 0 )
             {
-                SuperNET_hexmsgadd(myinfo,category,subhash,hexmsg,tai_now());
+                SuperNET_hexmsgadd(myinfo,category,subhash,hexmsg,tai_now(),remoteaddr);
                 forwardstr = SuperNET_forward(myinfo,hexmsg,destipbits,category,subhash,maxdelay,juint(json,"broadcast"),juint(json,"plaintext")!=0);
             }
         }
@@ -689,7 +689,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
     if ( (destflag & SUPERNET_ISMINE) != 0 && agent != 0 && method != 0 )
     {
         if ( hexmsg != 0 && SuperNET_hexmsgfind(myinfo,category,subhash,hexmsg,0) < 0 )
-            SuperNET_hexmsgadd(myinfo,category,subhash,hexmsg,tai_now());
+            SuperNET_hexmsgadd(myinfo,category,subhash,hexmsg,tai_now(),remoteaddr);
         if ( (retstr= SuperNET_processJSON(myinfo,json,remoteaddr)) != 0 )
         {
             //printf("retstr.(%s)\n",retstr);
@@ -1154,7 +1154,7 @@ THREE_STRINGS(SuperNET,posthexmsg,category,subcategory,hexmsg)
 {
     bits256 categoryhash,subhash;
     categoryhash = calc_categoryhashes(&subhash,category,subcategory);
-    category_posthexmsg(myinfo,categoryhash,subhash,hexmsg,tai_now());
+    category_posthexmsg(myinfo,categoryhash,subhash,hexmsg,tai_now(),remoteaddr);
     return(clonestr("{\"result\":\"posted message\"}"));
 }
 

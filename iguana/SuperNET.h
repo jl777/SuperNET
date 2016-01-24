@@ -126,19 +126,27 @@ int32_t SuperNET_decrypt(bits256 *senderpubp,uint64_t *senderbitsp,uint32_t *tim
 cJSON *SuperNET_argjson(cJSON *json);
 
 
-struct category_info { UT_hash_handle hh; queue_t Q; bits256 hash; void *info; struct category_info *sub; };
+struct category_info
+{
+    UT_hash_handle hh; queue_t Q;
+    int32_t (*process_func)(struct supernet_info *myinfo,void *data,int32_t datalen,char *remoteaddr);
+    bits256 hash; void *info; struct category_info *sub;
+};
 extern struct category_info *Categories;
-struct category_msg { struct queueitem DL; struct tai t; int32_t len; uint8_t msg[]; };
+struct category_msg { struct queueitem DL; struct tai t; uint64_t remoteipbits; int32_t len; uint8_t msg[]; };
 
 void *category_info(bits256 categoryhash,bits256 subhash);
 void *category_infoset(bits256 categoryhash,bits256 subhash,void *info);
 struct category_info *category_find(bits256 categoryhash,bits256 subhash);
+void SuperNET_hexmsgprocess(struct supernet_info *myinfo,cJSON *json,char *hexmsg,char *remoteaddr);
+struct category_info *category_funcset(bits256 categoryhash,int32_t (*process_func)(struct supernet_info *myinfo,void *data,int32_t datalen,char *remoteaddr));
+int32_t pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *remoteaddr);
 
 int32_t SuperNET_str2hex(uint8_t *hex,char *str);
 void SuperNET_hex2str(char *str,uint8_t *hex,int32_t len);
-void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 category,bits256 subhash,char *hexmsg,struct tai now);
+void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,char *hexmsg,struct tai now,char *remoteaddr);
 int32_t SuperNET_hexmsgfind(struct supernet_info *myinfo,bits256 category,bits256 subhash,char *hexmsg,int32_t addflag);
-void category_posthexmsg(struct supernet_info *myinfo,bits256 category,bits256 subhash,char *hexmsg,struct tai now);
+void category_posthexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,char *hexmsg,struct tai now,char *remoteaddr);
 void *category_subscribe(struct supernet_info *myinfo,bits256 category,bits256 subhash);
 struct category_msg *category_gethexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash);
 char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr);

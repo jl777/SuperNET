@@ -65,6 +65,7 @@ bits128 calc_md5(char digeststr[33],void *buf,int32_t len);
 bits256 acct777_msgprivkey(uint8_t *data,int32_t datalen);
 bits256 acct777_msgpubkey(uint8_t *data,int32_t datalen);
 void acct777_rwsig(int32_t rwflag,uint8_t *serialized,struct acct777_sig *sig);
+int32_t acct777_sigcheck(struct acct777_sig *sig);
 
 bits256 acct777_pubkey(bits256 privkey);
 uint64_t acct777_nxt64bits(bits256 pubkey);
