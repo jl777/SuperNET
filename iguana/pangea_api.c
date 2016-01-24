@@ -565,26 +565,20 @@ ZERO_ARGS(pangea,lobby)
                     }
                     else
                     {
-                       // uint8_t tmp[sizeof(pm->sig)];
-                        bits256 hash;
+                        int32_t datalen; uint8_t *serialized; uint8_t tmp[sizeof(pm->sig)];
                         pm = (struct  pangea_msghdr *)buf;
-                        //acct777_rwsig(0,(void *)&pm->sig,(void *)&pm->sig);
-                        //memcpy(&pm->sig,tmp,sizeof(pm->sig));
-                        iguana_rwbignum(0,pm->sig.pubkey.bytes,sizeof(bits256),hash.bytes);
-                        //iguana_rwbignum(0,pm->tablehash.bytes,sizeof(bits256),hash.bytes);
-                        //pm->tablehash = hash;
-                        int32_t datalen; uint8_t *serialized;
+                        acct777_rwsig(0,(void *)&pm->sig,(void *)tmp);
+                        memcpy(&pm->sig,tmp,sizeof(pm->sig));
                         datalen = len  - (int32_t)sizeof(pm->sig);
                         serialized = (void *)((long)pm + sizeof(pm->sig));
-
-                        if ( pangea_validate(pm,acct777_msgprivkey(serialized,datalen),hash) == 0 )
-                            printf("VALIDATED!\n");
+                        if ( pangea_validate(pm,acct777_msgprivkey(serialized,datalen),pm->sig.pubkey) == 0 )
+                            printf("<<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen);
                         else
                         {
                             int32_t i; char str[65],str2[65];
                             for (i=0; i<datalen; i++)
                                 printf("%02x",serialized[i]);
-                            printf("<<<<<<<<<<<<< sigsize.%ld SIG ERROR [%ld] len.%d (%s + %s)\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen,bits256_str(str,acct777_msgprivkey(serialized,datalen)),bits256_str(str2,hash));
+                            printf("<<<<<<<<<<<<< sigsize.%ld SIG ERROR [%ld] len.%d (%s + %s)\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen,bits256_str(str,acct777_msgprivkey(serialized,datalen)),bits256_str(str2,pm->sig.pubkey));
                         }
                     }
                     flag++;
