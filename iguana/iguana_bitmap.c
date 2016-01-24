@@ -1165,6 +1165,7 @@ void iguana_bitmap(char *space,int32_t max,char *name)
 
 STRING_AND_TWOINTS(mouse,change,name,x,y)
 {
+    printf("(%s) x.%d y.%d\n",name,x,y);
     return(clonestr("{\"result\":\"changed\"}"));
 }
 

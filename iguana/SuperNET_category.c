@@ -43,7 +43,7 @@ struct category_info *category_find(bits256 categoryhash,bits256 subhash)
                 return(sub);
         }
         return(cat);
-    } else printf("category_find.(%s) not found\n",bits256_str(str,categoryhash));//, getchar();
+    } //else printf("category_find.(%s) not found\n",bits256_str(str,categoryhash));//, getchar();
     return(0);
 }
 
@@ -96,7 +96,7 @@ void category_posthexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits2
         char str[65]; printf("POST HEXMSG.(%s) -> %s.%llx len.%d\n",hexmsg,bits256_str(str,categoryhash),(long long)subhash.txid,m->len);
         return;
     }
-    char str[65]; printf("no subscription for category.(%s) %llx\n",bits256_str(str,categoryhash),(long long)subhash.txid);
+   // char str[65]; printf("no subscription for category.(%s) %llx\n",bits256_str(str,categoryhash),(long long)subhash.txid);
 }
 
 void *category_sub(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash)
