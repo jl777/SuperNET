@@ -126,7 +126,8 @@ int32_t SuperNET_decrypt(bits256 *senderpubp,uint64_t *senderbitsp,uint32_t *tim
 cJSON *SuperNET_argjson(cJSON *json);
 
 
-struct category_info { UT_hash_handle hh; queue_t Q; bits256 hash; void *info; struct category_info *sub; } *Categories;
+struct category_info { UT_hash_handle hh; queue_t Q; bits256 hash; void *info; struct category_info *sub; };
+extern struct category_info *Categories;
 struct category_msg { struct queueitem DL; struct tai t; int32_t len; uint8_t msg[]; };
 
 void *category_info(bits256 categoryhash,bits256 subhash);

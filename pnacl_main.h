@@ -340,7 +340,7 @@ static PP_Bool Instance_DidCreate(PP_Instance instance,uint32_t argc,const char*
     int nacl_io_init_ppapi(PP_Instance instance, PPB_GetInterface get_interface);
     static pthread_t g_handle_message_thread;
     static pthread_t chromeapp_thread;
-    int64_t allocsize;
+    long allocsize;
     g_instance = instance;
     // By default, nacl_io mounts / to pass through to the original NaCl
     // filesystem (which doesn't do much). Let's remount it to a memfs

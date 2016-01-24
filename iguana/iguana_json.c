@@ -260,12 +260,12 @@ int32_t pretty_form(FILE *fp,char *formheader,char *formfooter,char *fieldtempla
     sprintf(both,"%s-%s",agent,methodstr);
     outstr[0] = outstr2[0] = str[1] = 0;
     formsize = fieldsize = 0;
-    if ( (fieldsarray= jarray(&m,methoditem,"fields")) != 0 )
+    for (iter=0; iter<2; iter++)
     {
-        for (iter=0; iter<2; iter++)
+        if ( iter == 1 )
+            fprintf(fp,formheader,both,both,both,agent,methodstr,both,both,agent,methodstr,outstr);
+        if ( (fieldsarray= jarray(&m,methoditem,"fields")) != 0 )
         {
-            if ( iter == 1 )
-                fprintf(fp,formheader,both,both,both,agent,methodstr,both,both,agent,methodstr,outstr);
             for (j=0; j<m; j++)
             {
                 item = jitem(fieldsarray,j);
@@ -301,9 +301,9 @@ int32_t pretty_form(FILE *fp,char *formheader,char *formfooter,char *fieldtempla
                     fprintf(fp,fieldtemplate,fieldname,fieldname,fieldname,widthstr,fieldname);
                 }
             }
-            if ( iter == 1 )
-                fprintf(fp,formfooter,outstr2,methodstr,methodstr);
         }
+        if ( iter == 1 )
+            fprintf(fp,formfooter,outstr2,methodstr,methodstr);
     }
     return(size);
 }

@@ -33,6 +33,7 @@ char *Iguana_validcommands[] =
 };
 int32_t Showmode,Autofold,PANGEA_MAXTHREADS = 1;
 
+struct category_info *Categories;
 struct iguana_info *Coins[IGUANA_MAXCOINS];
 int32_t USE_JAY,FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel;
 uint32_t prices777_NXTBLOCK,MAX_DEPTH = 100;
