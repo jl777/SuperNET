@@ -565,25 +565,26 @@ ZERO_ARGS(pangea,lobby)
                     }
                     else
                     {
-                        uint8_t tmp[sizeof(pm->sig)]; bits256 tablehash;
+                       // uint8_t tmp[sizeof(pm->sig)];
+                        bits256 hash;
                         pm = (struct  pangea_msghdr *)buf;
-                        acct777_rwsig(0,(void *)&pm->sig,(void *)tmp);
-                        memcpy(&pm->sig,tmp,sizeof(pm->sig));
-                        iguana_rwbignum(0,pm->tablehash.bytes,sizeof(bits256),tablehash.bytes);
-                        pm->tablehash = tablehash;
-                        if ( pangea_validate(pm,acct777_msgprivkey(pm->serialized,pm->sig.allocsize-(int32_t)((long)pm->serialized - (long)pm)),pm->sig.pubkey) == 0 )
-                            printf("VALIDATED! ");
-                        else printf("SIG ERROR ");
-                        printf("len.%d time.%u RESULT.(%s) (%s) [%ld].%d\n",pm->sig.allocsize,pm->sig.timestamp,result,pm->serialized,(long)pm->serialized - (long)pm,pm->sig.allocsize-(int32_t)((long)pm->serialized - (long)pm));
-                        if ( pangea_validate(pm,acct777_msgprivkey(pm->serialized,pm->sig.allocsize-(int32_t)((long)pm->serialized - (long)pm)),pm->sig.pubkey) == 0 )
+                        //acct777_rwsig(0,(void *)&pm->sig,(void *)&pm->sig);
+                        //memcpy(&pm->sig,tmp,sizeof(pm->sig));
+                        iguana_rwbignum(0,pm->sig.pubkey.bytes,sizeof(bits256),hash.bytes);
+                        //iguana_rwbignum(0,pm->tablehash.bytes,sizeof(bits256),hash.bytes);
+                        //pm->tablehash = hash;
+                        int32_t datalen; uint8_t *serialized;
+                        datalen = len  - (int32_t)sizeof(pm->sig);
+                        serialized = (void *)((long)pm + sizeof(pm->sig));
+
+                        if ( pangea_validate(pm,acct777_msgprivkey(serialized,datalen),hash) == 0 )
                             printf("VALIDATED!\n");
                         else
                         {
-                            int32_t i,datalen; char str[65],str2[65];
-                            datalen = pm->sig.allocsize-(int32_t)((long)pm->serialized - (long)pm);
+                            int32_t i; char str[65],str2[65];
                             for (i=0; i<datalen; i++)
-                                printf("%02x",pm->serialized[i]);
-                            printf("<<<<<<<<<<<<< SIG ERROR [%ld] len.%d (%s + %s)\n",(long)pm->serialized-(long)pm,datalen,bits256_str(str,acct777_msgprivkey(pm->serialized,datalen)),bits256_str(str2,pm->sig.pubkey));
+                                printf("%02x",serialized[i]);
+                            printf("<<<<<<<<<<<<< sigsize.%ld SIG ERROR [%ld] len.%d (%s + %s)\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen,bits256_str(str,acct777_msgprivkey(serialized,datalen)),bits256_str(str2,hash));
                         }
                     }
                     flag++;
