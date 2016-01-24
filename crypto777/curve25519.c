@@ -1825,8 +1825,8 @@ uint64_t acct777_validate(struct acct777_sig *sig,bits256 privkey,bits256 pubkey
     acct777_sign(&checksig,privkey,pubkey,sig->timestamp,serialized,datalen);
     if ( memcmp(checksig.sigbits.bytes,sig->sigbits.bytes,sizeof(checksig.sigbits)) != 0 )
     {
-        char *bits256_str();
-        char str[65],str2[65]; printf("sig compare error using sig->pub from %llu\n>>>>>>>> sig.(%s) vs (%s)",(long long)acct777_nxt64bits(sig->pubkey),bits256_str(str,checksig.sigbits),bits256_str(str2,sig->sigbits));
+        //char *bits256_str();
+        //char str[65],str2[65]; printf("sig compare error using sig->pub from %llu\n>>>>>>>> sig.(%s) vs (%s)",(long long)acct777_nxt64bits(sig->pubkey),bits256_str(str,checksig.sigbits),bits256_str(str2,sig->sigbits));
         return(0);
     }
     signerbits = acct777_nxt64bits(sig->pubkey);

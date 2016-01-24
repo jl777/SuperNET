@@ -120,10 +120,10 @@ struct pangea_msghdr *pangea_msgcreate(struct supernet_info *myinfo,bits256 tabl
     acct777_sign(&pm->sig,myinfo->privkey,otherpubkey,timestamp,serialized,datalen);
     if ( pangea_validate(pm,acct777_msgprivkey(serialized,datalen),pm->sig.pubkey) == 0 )
     {
-        int32_t i; char str[65],str2[65];
-        for (i=0; i<datalen; i++)
-            printf("%02x",serialized[i]);
-        printf(">>>>>>>>>>>>>>>> validated [%ld] len.%d (%s + %s)\n",(long)serialized-(long)pm,datalen,bits256_str(str,acct777_msgprivkey(serialized,datalen)),bits256_str(str2,pm->sig.pubkey));
+        //int32_t i; char str[65],str2[65];
+        //for (i=0; i<datalen; i++)
+        //    printf("%02x",serialized[i]);
+        //printf(">>>>>>>>>>>>>>>> validated [%ld] len.%d (%s + %s)\n",(long)serialized-(long)pm,datalen,bits256_str(str,acct777_msgprivkey(serialized,datalen)),bits256_str(str2,pm->sig.pubkey));
         memset(buf,0,sizeof(buf));
         acct777_rwsig(1,buf,&pm->sig);
         memcpy(&pm->sig,buf,sizeof(buf));
@@ -314,7 +314,12 @@ void pangea_tableaccept(PANGEA_HANDARGS)
                     {
                         iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
                         printf("launch start connection to (%s)\n",ipaddr);
-                    } else printf("already connected\n");
+                    }
+                    else
+                    {
+                        printf("already connected\n");
+                        addr->persistent_peer = 1;
+                    }
                 } else printf("no open iguana peer slots, cant connect\n");
                 if ( tp->G.numactive >= tp->G.minplayers && pangea_tableismine(myinfo,tp) >= 0 )
                 {
@@ -391,14 +396,14 @@ int32_t pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *
         free_json(argjson);
         return(1);
     }
-    printf("pm.%p len.%d serialized.%p datalen.%d crc.%u %s\n",pm,len,serialized,datalen,calc_crc32(0,(void *)pm,len),bits256_str(str,pm->sig.pubkey));
+    //printf("pm.%p len.%d serialized.%p datalen.%d crc.%u %s\n",pm,len,serialized,datalen,calc_crc32(0,(void *)pm,len),bits256_str(str,pm->sig.pubkey));
     //return(0);
     if ( pangea_validate(pm,acct777_msgprivkey(serialized,datalen),pm->sig.pubkey) == 0 )
     {
         flag++;
         iguana_rwbignum(0,pm->tablehash.bytes,sizeof(bits256),tablehash.bytes);
         pm->tablehash = tablehash;
-        printf("<<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen,pm->sig.timestamp,pm->sig.allocsize,(char *)pm->serialized,serialized[datalen-1]);
+        //printf("<<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen,pm->sig.timestamp,pm->sig.allocsize,(char *)pm->serialized,serialized[datalen-1]);
         if ( serialized[datalen-1] == 0 && (argjson= cJSON_Parse((char *)pm->serialized)) != 0 )
         {
             pangea_parse(myinfo,pm,argjson);

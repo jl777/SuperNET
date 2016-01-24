@@ -59,8 +59,12 @@ void pangea_gamecreate(struct game_info *gp,uint32_t timestamp,bits256 tablehash
     gp->hostipbits = calc_ipbits(jstr(json,"myipaddr"));
     gp->minbuyin = jdouble(json,"minbuyin") * SATOSHIDEN;
     gp->maxbuyin = jdouble(json,"maxbuyin") * SATOSHIDEN;
-    gp->minplayers = juint(json,"minplayers");
-    gp->maxplayers = juint(json,"maxplayers");
+    if ( (gp->minplayers= juint(json,"minplayers")) < 2 )
+        gp->minplayers = 2;
+    if ( (gp->maxplayers= juint(json,"maxplayers")) < gp->minplayers )
+        gp->maxplayers = gp->minplayers;
+    else if ( gp->maxplayers > CARDS777_MAXPLAYERS )
+        gp->maxplayers = CARDS777_MAXPLAYERS;
     if ( (gp->N= juint(json,"N")) < gp->minplayers )
         gp->N = gp->minplayers;
     if ( (gp->M= juint(json,"M")) > gp->N )

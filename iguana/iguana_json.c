@@ -522,6 +522,23 @@ TWO_STRINGS(iguana,addnode,activecoin,ipaddr)
     } else return(clonestr("{\"error\":\"addnode needs ipaddr\"}"));
 }
 
+TWO_STRINGS(iguana,persistent,activecoin,ipaddr)
+{
+    int32_t i;
+    if ( coin != 0 && ipaddr != 0 )
+    {
+        for (i=0; i<IGUANA_MAXPEERS; i++)
+        {
+            if ( strcmp(coin->peers.active[i].ipaddr,ipaddr) == 0 )
+            {
+                coin->peers.active[i].persistent_peer = juint(json,"interval")+3;
+                return(clonestr("{\"result\":\"node marked as persistent\"}"));
+            }
+        }
+        return(clonestr("{\"result\":\"node wasnt active\"}"));
+    } else return(clonestr("{\"error\":\"persistent needs coin and ipaddr\"}"));
+}
+
 TWO_STRINGS(iguana,removenode,activecoin,ipaddr)
 {
     int32_t i;

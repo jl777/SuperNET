@@ -92,7 +92,7 @@ void SuperNET_hexmsgprocess(struct supernet_info *myinfo,cJSON *json,char *hexms
                 {
                     (*cat->process_func)(myinfo,buf,len,remoteaddr);
                     flag = 1;
-                    printf("PROCESSFUNC\n");
+                    //printf("PROCESSFUNC\n");
                 }
             }
             if ( flag == 0 )
@@ -100,7 +100,7 @@ void SuperNET_hexmsgprocess(struct supernet_info *myinfo,cJSON *json,char *hexms
                 printf("no processfunc, posthexmsg\n");
                 category_posthexmsg(myinfo,categoryhash,jbits256(json,"subhash"),hexmsg,tai_now(),remoteaddr);
             }
-            char str[65]; printf("HEXPROCESS.(%s) -> %s\n",hexmsg,bits256_str(str,categoryhash));
+            //char str[65]; printf("HEXPROCESS.(%s) -> %s\n",hexmsg,bits256_str(str,categoryhash));
             if ( buf != _buf )
                 free(buf);
         }

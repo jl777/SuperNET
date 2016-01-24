@@ -1019,7 +1019,25 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
             iguana_send_supernet(coin,addr,SUPERNET_GETPEERSTR,0);
             lastping = (uint32_t)time(NULL);
         }
-        if ( coin->isRT != 0 && addr->rank > coin->MAXPEERS && (rand() % 100) == 0 )
+        if ( addr->persistent_peer != 0 )
+        {
+            uint16_t port;
+            if ( addr->usock < 0 || addr->dead != 0 )
+            {
+                if ( addr->usock >= 0 )
+                    closesocket(addr->usock);
+                addr->usock = -1;
+                while ( addr->usock < 0 )
+                {
+                    printf("persistent peer.(%s) disconnected... reconnect\n",addr->ipaddr);
+                    sleep(addr->persistent_peer);
+                    if ( (port= (uint16_t)(addr->ipbits >> 32)) == 0 )
+                        port = coin->chain->portp2p;
+                    addr->usock = iguana_socket(0,addr->ipaddr,port);
+                }
+            }
+        }
+        else if ( coin->isRT != 0 && addr->rank > coin->MAXPEERS && (rand() % 100) == 0 )
         {
             printf("isRT and low rank.%d ",addr->rank);
             addr->dead = 1;

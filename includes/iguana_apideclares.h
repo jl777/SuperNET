@@ -68,6 +68,7 @@ STRING_ARG(iguana,addcoin,activecoin);
 STRING_ARG(iguana,startcoin,activecoin);
 STRING_ARG(iguana,pausecoin,activecoin);
 TWO_STRINGS(iguana,addnode,activecoin,ipaddr);
+TWO_STRINGS(iguana,persistent,activecoin,ipaddr);
 TWO_STRINGS(iguana,removenode,activecoin,ipaddr);
 TWO_STRINGS(iguana,oneshot,activecoin,ipaddr);
 TWO_STRINGS(iguana,nodestatus,activecoin,ipaddr);
