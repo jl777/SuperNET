@@ -58,7 +58,7 @@ int32_t pangea_validate(struct pangea_msghdr *pm,bits256 privkey,bits256 pubkey)
     return(-1);
 }
 
-int32_t pangea_rwdata(int32_t rwflag,uint8_t *serialized,int32_t datalen,void *endianedp)
+int32_t pangea_rwdata(int32_t rwflag,uint8_t *serialized,int32_t datalen,uint8_t *endianedp)
 {
     int32_t i,n,len = 0; uint64_t x; bits256 X;
     if ( datalen <= sizeof(uint64_t) )
