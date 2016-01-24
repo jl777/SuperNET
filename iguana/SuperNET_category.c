@@ -93,7 +93,7 @@ void category_posthexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits2
         m->t = now, m->len = len;
         decode_hex(m->msg,m->len,hexmsg);
         queue_enqueue("categoryQ",Q,&m->DL,0);
-        //char str[65]; printf("POST HEXMSG.(%s) -> %s.%llx\n",hexmsg,bits256_str(str,categoryhash),(long long)subhash.txid);
+        char str[65]; printf("POST HEXMSG.(%s) -> %s.%llx len.%d\n",hexmsg,bits256_str(str,categoryhash),(long long)subhash.txid,m->len);
         return;
     }
     char str[65]; printf("no subscription for category.(%s) %llx\n",bits256_str(str,categoryhash),(long long)subhash.txid);

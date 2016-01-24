@@ -647,7 +647,8 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
     if ( agent != 0 && strcmp(agent,"pangea") == 0 && jobj(json,"categoryhash") == 0 )
     {
         jaddbits256(json,"categoryhash",calc_categoryhashes(0,"pangea",0));
-        jaddbits256(json,"subhash",GENESIS_PUBKEY);
+        if ( jobj(json,"subhash") == 0 )
+            jaddbits256(json,"subhash",GENESIS_PUBKEY);
     }
     if ( remoteaddr == 0 )
     {

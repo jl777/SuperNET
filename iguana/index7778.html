@@ -50,39 +50,147 @@
 
 
 <div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-SuperNET-html">
+    <div class="panel-heading" role="tab" id="heading-pangea-host">
         <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-SuperNET-html" aria-expanded="false" aria-controls="collapse-SuperNET-html">
-                SuperNET html
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-host" aria-expanded="false" aria-controls="collapse-pangea-host">
+                pangea host
             </a>
         </h4>
     </div>
-    <div id="collapse-SuperNET-html" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-SuperNET-html">
+    <div id="collapse-pangea-host" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-host">
         <div class="panel-body">
             
-            <form action="http://127.0.0.1:7778/api/SuperNET/html" oninput="agentform+htmlfile">
+            <form action="http://127.0.0.1:7778/api/pangea/host" oninput="minplayers+params">
                 <div class="row">
                     <div class="col-md-6">
   <div class="form-group">
-    <label for="agentform">agentform</label>
-    <textarea class="form-control" name="agentform" rows="1" cols="44" agentform></textarea>
+    <label for="minplayers">minplayers</label>
+    <textarea class="form-control" name="minplayers" rows="1" cols="12" minplayers></textarea>
 </div><div class="form-group">
-    <label for="htmlfile">htmlfile</label>
-    <textarea class="form-control" name="htmlfile" rows="1" cols="44" htmlfile></textarea>
+    <label for="params">params</label>
+    <textarea class="form-control" name="params" rows="1" cols="0" params></textarea>
 </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="broadcast">Response</label>
-                            <figure class="highlight" for="agentform htmlfile" disabled="">
+                            <figure class="highlight" for="minplayers params" disabled="">
                                 <pre>
-                                    <code id="html" class="language-html" data-lang="javascript"></code>
+                                    <code id="host" class="language-html" data-lang="javascript"></code>
                                 </pre>
                             </figure>
                         </div>
                     </div>
                 </div>
-                <input type="submit" value="html" class="btn btn-default">
+                <input type="submit" value="host" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-pangea-lobby">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-lobby" aria-expanded="false" aria-controls="collapse-pangea-lobby">
+                pangea lobby
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-pangea-lobby" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-lobby">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/pangea/lobby" oninput="">
+                <div class="row">
+                    <div class="col-md-6">
+  
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="" disabled="">
+                                <pre>
+                                    <code id="lobby" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="lobby" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-pangea-join">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-join" aria-expanded="false" aria-controls="collapse-pangea-join">
+                pangea join
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-pangea-join" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-join">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/pangea/join" oninput="tablehash+params">
+                <div class="row">
+                    <div class="col-md-6">
+  <div class="form-group">
+    <label for="tablehash">tablehash</label>
+    <textarea class="form-control" name="tablehash" rows="1" cols="65" tablehash></textarea>
+</div><div class="form-group">
+    <label for="params">params</label>
+    <textarea class="form-control" name="params" rows="1" cols="0" params></textarea>
+</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="tablehash params" disabled="">
+                                <pre>
+                                    <code id="join" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="join" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-SuperNET-help">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-SuperNET-help" aria-expanded="false" aria-controls="collapse-SuperNET-help">
+                SuperNET help
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-SuperNET-help" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-SuperNET-help">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/SuperNET/help" oninput="">
+                <div class="row">
+                    <div class="col-md-6">
+  
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="" disabled="">
+                                <pre>
+                                    <code id="help" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="help" class="btn btn-default">
                     </form>
             
         </div>
@@ -120,6 +228,46 @@
                     </div>
                 </div>
                 <input type="submit" value="bitcoinrpc" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-SuperNET-html">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-SuperNET-html" aria-expanded="false" aria-controls="collapse-SuperNET-html">
+                SuperNET html
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-SuperNET-html" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-SuperNET-html">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/SuperNET/html" oninput="agentform+htmlfile">
+                <div class="row">
+                    <div class="col-md-6">
+  <div class="form-group">
+    <label for="agentform">agentform</label>
+    <textarea class="form-control" name="agentform" rows="1" cols="44" agentform></textarea>
+</div><div class="form-group">
+    <label for="htmlfile">htmlfile</label>
+    <textarea class="form-control" name="htmlfile" rows="1" cols="44" htmlfile></textarea>
+</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="agentform htmlfile" disabled="">
+                                <pre>
+                                    <code id="html" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="html" class="btn btn-default">
                     </form>
             
         </div>
@@ -179,249 +327,6 @@
 </div>
 
 <div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-mouse-image">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-mouse-image" aria-expanded="false" aria-controls="collapse-mouse-image">
-                mouse image
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-mouse-image" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-mouse-image">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/mouse/image" oninput="name+x+y">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="name">name</label>
-    <textarea class="form-control" name="name" rows="1" cols="44" name></textarea>
-</div><div class="form-group">
-    <label for="x">x</label>
-    <textarea class="form-control" name="x" rows="1" cols="12" x></textarea>
-</div><div class="form-group">
-    <label for="y">y</label>
-    <textarea class="form-control" name="y" rows="1" cols="12" y></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="name x y" disabled="">
-                                <pre>
-                                    <code id="image" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="image" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-mouse-change">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-mouse-change" aria-expanded="false" aria-controls="collapse-mouse-change">
-                mouse change
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-mouse-change" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-mouse-change">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/mouse/change" oninput="name+x+y">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="name">name</label>
-    <textarea class="form-control" name="name" rows="1" cols="44" name></textarea>
-</div><div class="form-group">
-    <label for="x">x</label>
-    <textarea class="form-control" name="x" rows="1" cols="12" x></textarea>
-</div><div class="form-group">
-    <label for="y">y</label>
-    <textarea class="form-control" name="y" rows="1" cols="12" y></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="name x y" disabled="">
-                                <pre>
-                                    <code id="change" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="change" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-mouse-click">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-mouse-click" aria-expanded="false" aria-controls="collapse-mouse-click">
-                mouse click
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-mouse-click" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-mouse-click">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/mouse/click" oninput="name+x+y">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="name">name</label>
-    <textarea class="form-control" name="name" rows="1" cols="44" name></textarea>
-</div><div class="form-group">
-    <label for="x">x</label>
-    <textarea class="form-control" name="x" rows="1" cols="12" x></textarea>
-</div><div class="form-group">
-    <label for="y">y</label>
-    <textarea class="form-control" name="y" rows="1" cols="12" y></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="name x y" disabled="">
-                                <pre>
-                                    <code id="click" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="click" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-mouse-close">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-mouse-close" aria-expanded="false" aria-controls="collapse-mouse-close">
-                mouse close
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-mouse-close" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-mouse-close">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/mouse/close" oninput="name">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="name">name</label>
-    <textarea class="form-control" name="name" rows="1" cols="44" name></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="name" disabled="">
-                                <pre>
-                                    <code id="close" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="close" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-mouse-leave">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-mouse-leave" aria-expanded="false" aria-controls="collapse-mouse-leave">
-                mouse leave
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-mouse-leave" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-mouse-leave">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/mouse/leave" oninput="name">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="name">name</label>
-    <textarea class="form-control" name="name" rows="1" cols="44" name></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="name" disabled="">
-                                <pre>
-                                    <code id="leave" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="leave" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-keyboard-key">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-keyboard-key" aria-expanded="false" aria-controls="collapse-keyboard-key">
-                keyboard key
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-keyboard-key" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-keyboard-key">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/keyboard/key" oninput="name+c">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="name">name</label>
-    <textarea class="form-control" name="name" rows="1" cols="44" name></textarea>
-</div><div class="form-group">
-    <label for="c">c</label>
-    <textarea class="form-control" name="c" rows="1" cols="12" c></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="name c" disabled="">
-                                <pre>
-                                    <code id="key" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="key" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
     <div class="panel-heading" role="tab" id="heading-SuperNET-rosetta">
         <h4 class="panel-title">
             <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-SuperNET-rosetta" aria-expanded="false" aria-controls="collapse-SuperNET-rosetta">
@@ -458,6 +363,40 @@
                     </div>
                 </div>
                 <input type="submit" value="rosetta" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-SuperNET-keypair">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-SuperNET-keypair" aria-expanded="false" aria-controls="collapse-SuperNET-keypair">
+                SuperNET keypair
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-SuperNET-keypair" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-SuperNET-keypair">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/SuperNET/keypair" oninput="">
+                <div class="row">
+                    <div class="col-md-6">
+  
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="" disabled="">
+                                <pre>
+                                    <code id="keypair" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="keypair" class="btn btn-default">
                     </form>
             
         </div>
@@ -951,6 +890,249 @@
 </div>
 
 <div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-SuperNET-categoryhashes">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-SuperNET-categoryhashes" aria-expanded="false" aria-controls="collapse-SuperNET-categoryhashes">
+                SuperNET categoryhashes
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-SuperNET-categoryhashes" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-SuperNET-categoryhashes">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/SuperNET/categoryhashes" oninput="category+subcategory">
+                <div class="row">
+                    <div class="col-md-6">
+  <div class="form-group">
+    <label for="category">category</label>
+    <textarea class="form-control" name="category" rows="1" cols="44" category></textarea>
+</div><div class="form-group">
+    <label for="subcategory">subcategory</label>
+    <textarea class="form-control" name="subcategory" rows="1" cols="44" subcategory></textarea>
+</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="category subcategory" disabled="">
+                                <pre>
+                                    <code id="categoryhashes" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="categoryhashes" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-mouse-image">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-mouse-image" aria-expanded="false" aria-controls="collapse-mouse-image">
+                mouse image
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-mouse-image" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-mouse-image">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/mouse/image" oninput="name+x+y">
+                <div class="row">
+                    <div class="col-md-6">
+  <div class="form-group">
+    <label for="name">name</label>
+    <textarea class="form-control" name="name" rows="1" cols="44" name></textarea>
+</div><div class="form-group">
+    <label for="x">x</label>
+    <textarea class="form-control" name="x" rows="1" cols="12" x></textarea>
+</div><div class="form-group">
+    <label for="y">y</label>
+    <textarea class="form-control" name="y" rows="1" cols="12" y></textarea>
+</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="name x y" disabled="">
+                                <pre>
+                                    <code id="image" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="image" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-mouse-change">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-mouse-change" aria-expanded="false" aria-controls="collapse-mouse-change">
+                mouse change
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-mouse-change" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-mouse-change">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/mouse/change" oninput="name+x+y">
+                <div class="row">
+                    <div class="col-md-6">
+  <div class="form-group">
+    <label for="name">name</label>
+    <textarea class="form-control" name="name" rows="1" cols="44" name></textarea>
+</div><div class="form-group">
+    <label for="x">x</label>
+    <textarea class="form-control" name="x" rows="1" cols="12" x></textarea>
+</div><div class="form-group">
+    <label for="y">y</label>
+    <textarea class="form-control" name="y" rows="1" cols="12" y></textarea>
+</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="name x y" disabled="">
+                                <pre>
+                                    <code id="change" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="change" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-mouse-click">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-mouse-click" aria-expanded="false" aria-controls="collapse-mouse-click">
+                mouse click
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-mouse-click" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-mouse-click">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/mouse/click" oninput="name+x+y">
+                <div class="row">
+                    <div class="col-md-6">
+  <div class="form-group">
+    <label for="name">name</label>
+    <textarea class="form-control" name="name" rows="1" cols="44" name></textarea>
+</div><div class="form-group">
+    <label for="x">x</label>
+    <textarea class="form-control" name="x" rows="1" cols="12" x></textarea>
+</div><div class="form-group">
+    <label for="y">y</label>
+    <textarea class="form-control" name="y" rows="1" cols="12" y></textarea>
+</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="name x y" disabled="">
+                                <pre>
+                                    <code id="click" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="click" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-mouse-close">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-mouse-close" aria-expanded="false" aria-controls="collapse-mouse-close">
+                mouse close
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-mouse-close" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-mouse-close">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/mouse/close" oninput="name">
+                <div class="row">
+                    <div class="col-md-6">
+  <div class="form-group">
+    <label for="name">name</label>
+    <textarea class="form-control" name="name" rows="1" cols="44" name></textarea>
+</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="name" disabled="">
+                                <pre>
+                                    <code id="close" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="close" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-mouse-leave">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-mouse-leave" aria-expanded="false" aria-controls="collapse-mouse-leave">
+                mouse leave
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-mouse-leave" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-mouse-leave">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/mouse/leave" oninput="name">
+                <div class="row">
+                    <div class="col-md-6">
+  <div class="form-group">
+    <label for="name">name</label>
+    <textarea class="form-control" name="name" rows="1" cols="44" name></textarea>
+</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="name" disabled="">
+                                <pre>
+                                    <code id="leave" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="leave" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
     <div class="panel-heading" role="tab" id="heading-SuperNET-getpeers">
         <h4 class="panel-title">
             <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-SuperNET-getpeers" aria-expanded="false" aria-controls="collapse-SuperNET-getpeers">
@@ -1021,6 +1203,40 @@
                     </div>
                 </div>
                 <input type="submit" value="mypeers" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-SuperNET-stop">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-SuperNET-stop" aria-expanded="false" aria-controls="collapse-SuperNET-stop">
+                SuperNET stop
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-SuperNET-stop" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-SuperNET-stop">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/SuperNET/stop" oninput="">
+                <div class="row">
+                    <div class="col-md-6">
+  
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="" disabled="">
+                                <pre>
+                                    <code id="stop" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="stop" class="btn btn-default">
                     </form>
             
         </div>
@@ -1104,886 +1320,6 @@
                     </div>
                 </div>
                 <input type="submit" value="layer" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-pangea-newhand">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-newhand" aria-expanded="false" aria-controls="collapse-pangea-newhand">
-                pangea newhand
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-pangea-newhand" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-newhand">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/pangea/newhand" oninput="senderind+args">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="senderind">senderind</label>
-    <textarea class="form-control" name="senderind" rows="1" cols="12" senderind></textarea>
-</div><div class="form-group">
-    <label for="args">args</label>
-    <textarea class="form-control" name="args" rows="1" cols="0" args></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="senderind args" disabled="">
-                                <pre>
-                                    <code id="newhand" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="newhand" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-pangea-ping">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-ping" aria-expanded="false" aria-controls="collapse-pangea-ping">
-                pangea ping
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-pangea-ping" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-ping">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/pangea/ping" oninput="senderind+args">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="senderind">senderind</label>
-    <textarea class="form-control" name="senderind" rows="1" cols="12" senderind></textarea>
-</div><div class="form-group">
-    <label for="args">args</label>
-    <textarea class="form-control" name="args" rows="1" cols="0" args></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="senderind args" disabled="">
-                                <pre>
-                                    <code id="ping" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="ping" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-pangea-gotdeck">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-gotdeck" aria-expanded="false" aria-controls="collapse-pangea-gotdeck">
-                pangea gotdeck
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-pangea-gotdeck" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-gotdeck">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/pangea/gotdeck" oninput="senderind+args">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="senderind">senderind</label>
-    <textarea class="form-control" name="senderind" rows="1" cols="12" senderind></textarea>
-</div><div class="form-group">
-    <label for="args">args</label>
-    <textarea class="form-control" name="args" rows="1" cols="0" args></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="senderind args" disabled="">
-                                <pre>
-                                    <code id="gotdeck" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="gotdeck" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-pangea-ready">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-ready" aria-expanded="false" aria-controls="collapse-pangea-ready">
-                pangea ready
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-pangea-ready" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-ready">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/pangea/ready" oninput="senderind+args">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="senderind">senderind</label>
-    <textarea class="form-control" name="senderind" rows="1" cols="12" senderind></textarea>
-</div><div class="form-group">
-    <label for="args">args</label>
-    <textarea class="form-control" name="args" rows="1" cols="0" args></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="senderind args" disabled="">
-                                <pre>
-                                    <code id="ready" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="ready" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-pangea-encoded">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-encoded" aria-expanded="false" aria-controls="collapse-pangea-encoded">
-                pangea encoded
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-pangea-encoded" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-encoded">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/pangea/encoded" oninput="senderind+args">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="senderind">senderind</label>
-    <textarea class="form-control" name="senderind" rows="1" cols="12" senderind></textarea>
-</div><div class="form-group">
-    <label for="args">args</label>
-    <textarea class="form-control" name="args" rows="1" cols="0" args></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="senderind args" disabled="">
-                                <pre>
-                                    <code id="encoded" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="encoded" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-pangea-final">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-final" aria-expanded="false" aria-controls="collapse-pangea-final">
-                pangea final
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-pangea-final" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-final">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/pangea/final" oninput="senderind+args">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="senderind">senderind</label>
-    <textarea class="form-control" name="senderind" rows="1" cols="12" senderind></textarea>
-</div><div class="form-group">
-    <label for="args">args</label>
-    <textarea class="form-control" name="args" rows="1" cols="0" args></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="senderind args" disabled="">
-                                <pre>
-                                    <code id="final" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="final" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-pangea-addedfunds">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-addedfunds" aria-expanded="false" aria-controls="collapse-pangea-addedfunds">
-                pangea addedfunds
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-pangea-addedfunds" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-addedfunds">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/pangea/addedfunds" oninput="senderind+args">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="senderind">senderind</label>
-    <textarea class="form-control" name="senderind" rows="1" cols="12" senderind></textarea>
-</div><div class="form-group">
-    <label for="args">args</label>
-    <textarea class="form-control" name="args" rows="1" cols="0" args></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="senderind args" disabled="">
-                                <pre>
-                                    <code id="addedfunds" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="addedfunds" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-pangea-preflop">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-preflop" aria-expanded="false" aria-controls="collapse-pangea-preflop">
-                pangea preflop
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-pangea-preflop" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-preflop">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/pangea/preflop" oninput="senderind+args">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="senderind">senderind</label>
-    <textarea class="form-control" name="senderind" rows="1" cols="12" senderind></textarea>
-</div><div class="form-group">
-    <label for="args">args</label>
-    <textarea class="form-control" name="args" rows="1" cols="0" args></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="senderind args" disabled="">
-                                <pre>
-                                    <code id="preflop" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="preflop" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-pangea-decoded">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-decoded" aria-expanded="false" aria-controls="collapse-pangea-decoded">
-                pangea decoded
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-pangea-decoded" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-decoded">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/pangea/decoded" oninput="senderind+args">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="senderind">senderind</label>
-    <textarea class="form-control" name="senderind" rows="1" cols="12" senderind></textarea>
-</div><div class="form-group">
-    <label for="args">args</label>
-    <textarea class="form-control" name="args" rows="1" cols="0" args></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="senderind args" disabled="">
-                                <pre>
-                                    <code id="decoded" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="decoded" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-pangea-card">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-card" aria-expanded="false" aria-controls="collapse-pangea-card">
-                pangea card
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-pangea-card" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-card">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/pangea/card" oninput="senderind+args">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="senderind">senderind</label>
-    <textarea class="form-control" name="senderind" rows="1" cols="12" senderind></textarea>
-</div><div class="form-group">
-    <label for="args">args</label>
-    <textarea class="form-control" name="args" rows="1" cols="0" args></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="senderind args" disabled="">
-                                <pre>
-                                    <code id="card" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="card" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-pangea-facedown">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-facedown" aria-expanded="false" aria-controls="collapse-pangea-facedown">
-                pangea facedown
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-pangea-facedown" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-facedown">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/pangea/facedown" oninput="senderind+args">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="senderind">senderind</label>
-    <textarea class="form-control" name="senderind" rows="1" cols="12" senderind></textarea>
-</div><div class="form-group">
-    <label for="args">args</label>
-    <textarea class="form-control" name="args" rows="1" cols="0" args></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="senderind args" disabled="">
-                                <pre>
-                                    <code id="facedown" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="facedown" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-pangea-faceup">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-faceup" aria-expanded="false" aria-controls="collapse-pangea-faceup">
-                pangea faceup
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-pangea-faceup" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-faceup">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/pangea/faceup" oninput="senderind+args">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="senderind">senderind</label>
-    <textarea class="form-control" name="senderind" rows="1" cols="12" senderind></textarea>
-</div><div class="form-group">
-    <label for="args">args</label>
-    <textarea class="form-control" name="args" rows="1" cols="0" args></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="senderind args" disabled="">
-                                <pre>
-                                    <code id="faceup" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="faceup" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-pangea-turn">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-turn" aria-expanded="false" aria-controls="collapse-pangea-turn">
-                pangea turn
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-pangea-turn" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-turn">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/pangea/turn" oninput="senderind+args">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="senderind">senderind</label>
-    <textarea class="form-control" name="senderind" rows="1" cols="12" senderind></textarea>
-</div><div class="form-group">
-    <label for="args">args</label>
-    <textarea class="form-control" name="args" rows="1" cols="0" args></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="senderind args" disabled="">
-                                <pre>
-                                    <code id="turn" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="turn" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-pangea-confirmturn">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-confirmturn" aria-expanded="false" aria-controls="collapse-pangea-confirmturn">
-                pangea confirmturn
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-pangea-confirmturn" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-confirmturn">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/pangea/confirmturn" oninput="senderind+args">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="senderind">senderind</label>
-    <textarea class="form-control" name="senderind" rows="1" cols="12" senderind></textarea>
-</div><div class="form-group">
-    <label for="args">args</label>
-    <textarea class="form-control" name="args" rows="1" cols="0" args></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="senderind args" disabled="">
-                                <pre>
-                                    <code id="confirmturn" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="confirmturn" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-pangea-chat">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-chat" aria-expanded="false" aria-controls="collapse-pangea-chat">
-                pangea chat
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-pangea-chat" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-chat">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/pangea/chat" oninput="senderind+args">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="senderind">senderind</label>
-    <textarea class="form-control" name="senderind" rows="1" cols="12" senderind></textarea>
-</div><div class="form-group">
-    <label for="args">args</label>
-    <textarea class="form-control" name="args" rows="1" cols="0" args></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="senderind args" disabled="">
-                                <pre>
-                                    <code id="chat" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="chat" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-pangea-action">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-action" aria-expanded="false" aria-controls="collapse-pangea-action">
-                pangea action
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-pangea-action" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-action">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/pangea/action" oninput="senderind+args">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="senderind">senderind</label>
-    <textarea class="form-control" name="senderind" rows="1" cols="12" senderind></textarea>
-</div><div class="form-group">
-    <label for="args">args</label>
-    <textarea class="form-control" name="args" rows="1" cols="0" args></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="senderind args" disabled="">
-                                <pre>
-                                    <code id="action" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="action" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-pangea-showdown">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-showdown" aria-expanded="false" aria-controls="collapse-pangea-showdown">
-                pangea showdown
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-pangea-showdown" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-showdown">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/pangea/showdown" oninput="senderind+args">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="senderind">senderind</label>
-    <textarea class="form-control" name="senderind" rows="1" cols="12" senderind></textarea>
-</div><div class="form-group">
-    <label for="args">args</label>
-    <textarea class="form-control" name="args" rows="1" cols="0" args></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="senderind args" disabled="">
-                                <pre>
-                                    <code id="showdown" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="showdown" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-pangea-handsummary">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-handsummary" aria-expanded="false" aria-controls="collapse-pangea-handsummary">
-                pangea handsummary
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-pangea-handsummary" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-handsummary">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/pangea/handsummary" oninput="senderind+args">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="senderind">senderind</label>
-    <textarea class="form-control" name="senderind" rows="1" cols="12" senderind></textarea>
-</div><div class="form-group">
-    <label for="args">args</label>
-    <textarea class="form-control" name="args" rows="1" cols="0" args></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="senderind args" disabled="">
-                                <pre>
-                                    <code id="handsummary" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="handsummary" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-pangea-status">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-status" aria-expanded="false" aria-controls="collapse-pangea-status">
-                pangea status
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-pangea-status" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-status">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/pangea/status" oninput="tableid+args">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="tableid">tableid</label>
-    <textarea class="form-control" name="tableid" rows="1" cols="24" tableid></textarea>
-</div><div class="form-group">
-    <label for="args">args</label>
-    <textarea class="form-control" name="args" rows="1" cols="0" args></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="tableid args" disabled="">
-                                <pre>
-                                    <code id="status" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="status" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-pangea-mode">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-mode" aria-expanded="false" aria-controls="collapse-pangea-mode">
-                pangea mode
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-pangea-mode" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-mode">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/pangea/mode" oninput="tableid+args">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="tableid">tableid</label>
-    <textarea class="form-control" name="tableid" rows="1" cols="24" tableid></textarea>
-</div><div class="form-group">
-    <label for="args">args</label>
-    <textarea class="form-control" name="args" rows="1" cols="0" args></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="tableid args" disabled="">
-                                <pre>
-                                    <code id="mode" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="mode" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-pangea-buyin">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-buyin" aria-expanded="false" aria-controls="collapse-pangea-buyin">
-                pangea buyin
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-pangea-buyin" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-buyin">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/pangea/buyin" oninput="tableid+args">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="tableid">tableid</label>
-    <textarea class="form-control" name="tableid" rows="1" cols="24" tableid></textarea>
-</div><div class="form-group">
-    <label for="args">args</label>
-    <textarea class="form-control" name="args" rows="1" cols="0" args></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="tableid args" disabled="">
-                                <pre>
-                                    <code id="buyin" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="buyin" class="btn btn-default">
-                    </form>
-            
-        </div>
-    </div>
-</div>
-
-<div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-pangea-history">
-        <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-pangea-history" aria-expanded="false" aria-controls="collapse-pangea-history">
-                pangea history
-            </a>
-        </h4>
-    </div>
-    <div id="collapse-pangea-history" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-pangea-history">
-        <div class="panel-body">
-            
-            <form action="http://127.0.0.1:7778/api/pangea/history" oninput="tableid+args">
-                <div class="row">
-                    <div class="col-md-6">
-  <div class="form-group">
-    <label for="tableid">tableid</label>
-    <textarea class="form-control" name="tableid" rows="1" cols="24" tableid></textarea>
-</div><div class="form-group">
-    <label for="args">args</label>
-    <textarea class="form-control" name="args" rows="1" cols="0" args></textarea>
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="broadcast">Response</label>
-                            <figure class="highlight" for="tableid args" disabled="">
-                                <pre>
-                                    <code id="history" class="language-html" data-lang="javascript"></code>
-                                </pre>
-                            </figure>
-                        </div>
-                    </div>
-                </div>
-                <input type="submit" value="history" class="btn btn-default">
                     </form>
             
         </div>
@@ -2369,6 +1705,380 @@
                     </div>
                 </div>
                 <input type="submit" value="nodestatus" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-ramchain-getinfo">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-ramchain-getinfo" aria-expanded="false" aria-controls="collapse-ramchain-getinfo">
+                ramchain getinfo
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-ramchain-getinfo" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-ramchain-getinfo">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/ramchain/getinfo" oninput="">
+                <div class="row">
+                    <div class="col-md-6">
+  
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="" disabled="">
+                                <pre>
+                                    <code id="getinfo" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="getinfo" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-ramchain-getbestblockhash">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-ramchain-getbestblockhash" aria-expanded="false" aria-controls="collapse-ramchain-getbestblockhash">
+                ramchain getbestblockhash
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-ramchain-getbestblockhash" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-ramchain-getbestblockhash">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/ramchain/getbestblockhash" oninput="">
+                <div class="row">
+                    <div class="col-md-6">
+  
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="" disabled="">
+                                <pre>
+                                    <code id="getbestblockhash" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="getbestblockhash" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-ramchain-getblockcount">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-ramchain-getblockcount" aria-expanded="false" aria-controls="collapse-ramchain-getblockcount">
+                ramchain getblockcount
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-ramchain-getblockcount" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-ramchain-getblockcount">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/ramchain/getblockcount" oninput="">
+                <div class="row">
+                    <div class="col-md-6">
+  
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="" disabled="">
+                                <pre>
+                                    <code id="getblockcount" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="getblockcount" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-ramchain-listaddressgroupings">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-ramchain-listaddressgroupings" aria-expanded="false" aria-controls="collapse-ramchain-listaddressgroupings">
+                ramchain listaddressgroupings
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-ramchain-listaddressgroupings" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-ramchain-listaddressgroupings">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/ramchain/listaddressgroupings" oninput="">
+                <div class="row">
+                    <div class="col-md-6">
+  
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="" disabled="">
+                                <pre>
+                                    <code id="listaddressgroupings" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="listaddressgroupings" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-ramchain-walletlock">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-ramchain-walletlock" aria-expanded="false" aria-controls="collapse-ramchain-walletlock">
+                ramchain walletlock
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-ramchain-walletlock" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-ramchain-walletlock">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/ramchain/walletlock" oninput="">
+                <div class="row">
+                    <div class="col-md-6">
+  
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="" disabled="">
+                                <pre>
+                                    <code id="walletlock" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="walletlock" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-ramchain-checkwallet">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-ramchain-checkwallet" aria-expanded="false" aria-controls="collapse-ramchain-checkwallet">
+                ramchain checkwallet
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-ramchain-checkwallet" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-ramchain-checkwallet">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/ramchain/checkwallet" oninput="">
+                <div class="row">
+                    <div class="col-md-6">
+  
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="" disabled="">
+                                <pre>
+                                    <code id="checkwallet" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="checkwallet" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-ramchain-repairwallet">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-ramchain-repairwallet" aria-expanded="false" aria-controls="collapse-ramchain-repairwallet">
+                ramchain repairwallet
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-ramchain-repairwallet" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-ramchain-repairwallet">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/ramchain/repairwallet" oninput="">
+                <div class="row">
+                    <div class="col-md-6">
+  
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="" disabled="">
+                                <pre>
+                                    <code id="repairwallet" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="repairwallet" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-ramchain-makekeypair">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-ramchain-makekeypair" aria-expanded="false" aria-controls="collapse-ramchain-makekeypair">
+                ramchain makekeypair
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-ramchain-makekeypair" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-ramchain-makekeypair">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/ramchain/makekeypair" oninput="">
+                <div class="row">
+                    <div class="col-md-6">
+  
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="" disabled="">
+                                <pre>
+                                    <code id="makekeypair" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="makekeypair" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-ramchain-gettxoutsetinfo">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-ramchain-gettxoutsetinfo" aria-expanded="false" aria-controls="collapse-ramchain-gettxoutsetinfo">
+                ramchain gettxoutsetinfo
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-ramchain-gettxoutsetinfo" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-ramchain-gettxoutsetinfo">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/ramchain/gettxoutsetinfo" oninput="">
+                <div class="row">
+                    <div class="col-md-6">
+  
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="" disabled="">
+                                <pre>
+                                    <code id="gettxoutsetinfo" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="gettxoutsetinfo" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-ramchain-listlockunspent">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-ramchain-listlockunspent" aria-expanded="false" aria-controls="collapse-ramchain-listlockunspent">
+                ramchain listlockunspent
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-ramchain-listlockunspent" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-ramchain-listlockunspent">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/ramchain/listlockunspent" oninput="">
+                <div class="row">
+                    <div class="col-md-6">
+  
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="" disabled="">
+                                <pre>
+                                    <code id="listlockunspent" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="listlockunspent" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-ramchain-getrawchangeaddress">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-ramchain-getrawchangeaddress" aria-expanded="false" aria-controls="collapse-ramchain-getrawchangeaddress">
+                ramchain getrawchangeaddress
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-ramchain-getrawchangeaddress" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-ramchain-getrawchangeaddress">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/ramchain/getrawchangeaddress" oninput="">
+                <div class="row">
+                    <div class="col-md-6">
+  
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="" disabled="">
+                                <pre>
+                                    <code id="getrawchangeaddress" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="getrawchangeaddress" class="btn btn-default">
                     </form>
             
         </div>
@@ -4003,6 +3713,80 @@
 </div>
 
 <div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-hash-hex">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-hash-hex" aria-expanded="false" aria-controls="collapse-hash-hex">
+                hash hex
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-hash-hex" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-hash-hex">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/hash/hex" oninput="message">
+                <div class="row">
+                    <div class="col-md-6">
+  <div class="form-group">
+    <label for="message">message</label>
+    <textarea class="form-control" name="message" rows="1" cols="44" message></textarea>
+</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="message" disabled="">
+                                <pre>
+                                    <code id="hex" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="hex" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="heading-hash-unhex">
+        <h4 class="panel-title">
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-hash-unhex" aria-expanded="false" aria-controls="collapse-hash-unhex">
+                hash unhex
+            </a>
+        </h4>
+    </div>
+    <div id="collapse-hash-unhex" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-hash-unhex">
+        <div class="panel-body">
+            
+            <form action="http://127.0.0.1:7778/api/hash/unhex" oninput="hexmsg">
+                <div class="row">
+                    <div class="col-md-6">
+  <div class="form-group">
+    <label for="hexmsg">hexmsg</label>
+    <textarea class="form-control" name="hexmsg" rows="1" cols="44" hexmsg></textarea>
+</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="broadcast">Response</label>
+                            <figure class="highlight" for="hexmsg" disabled="">
+                                <pre>
+                                    <code id="unhex" class="language-html" data-lang="javascript"></code>
+                                </pre>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <input type="submit" value="unhex" class="btn btn-default">
+                    </form>
+            
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
     <div class="panel-heading" role="tab" id="heading-hash-curve25519_pair">
         <h4 class="panel-title">
             <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-hash-curve25519_pair" aria-expanded="false" aria-controls="collapse-hash-curve25519_pair">
@@ -4746,17 +4530,17 @@
 </div>
 
 <div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-hash-tiger">
+    <div class="panel-heading" role="tab" id="heading-hash-tiger192_3">
         <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-hash-tiger" aria-expanded="false" aria-controls="collapse-hash-tiger">
-                hash tiger
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-hash-tiger192_3" aria-expanded="false" aria-controls="collapse-hash-tiger192_3">
+                hash tiger192_3
             </a>
         </h4>
     </div>
-    <div id="collapse-hash-tiger" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-hash-tiger">
+    <div id="collapse-hash-tiger192_3" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-hash-tiger192_3">
         <div class="panel-body">
             
-            <form action="http://127.0.0.1:7778/api/hash/tiger" oninput="message">
+            <form action="http://127.0.0.1:7778/api/hash/tiger192_3" oninput="message">
                 <div class="row">
                     <div class="col-md-6">
   <div class="form-group">
@@ -4769,13 +4553,13 @@
                             <label for="broadcast">Response</label>
                             <figure class="highlight" for="message" disabled="">
                                 <pre>
-                                    <code id="tiger" class="language-html" data-lang="javascript"></code>
+                                    <code id="tiger192_3" class="language-html" data-lang="javascript"></code>
                                 </pre>
                             </figure>
                         </div>
                     </div>
                 </div>
-                <input type="submit" value="tiger" class="btn btn-default">
+                <input type="submit" value="tiger192_3" class="btn btn-default">
                     </form>
             
         </div>
@@ -5300,17 +5084,17 @@
 </div>
 
 <div class="panel panel-default">
-    <div class="panel-heading" role="tab" id="heading-hmac-tiger">
+    <div class="panel-heading" role="tab" id="heading-hmac-tiger192_3">
         <h4 class="panel-title">
-            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-hmac-tiger" aria-expanded="false" aria-controls="collapse-hmac-tiger">
-                hmac tiger
+            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-hmac-tiger192_3" aria-expanded="false" aria-controls="collapse-hmac-tiger192_3">
+                hmac tiger192_3
             </a>
         </h4>
     </div>
-    <div id="collapse-hmac-tiger" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-hmac-tiger">
+    <div id="collapse-hmac-tiger192_3" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-hmac-tiger192_3">
         <div class="panel-body">
             
-            <form action="http://127.0.0.1:7778/api/hmac/tiger" oninput="message+passphrase">
+            <form action="http://127.0.0.1:7778/api/hmac/tiger192_3" oninput="message+passphrase">
                 <div class="row">
                     <div class="col-md-6">
   <div class="form-group">
@@ -5326,13 +5110,13 @@
                             <label for="broadcast">Response</label>
                             <figure class="highlight" for="message passphrase" disabled="">
                                 <pre>
-                                    <code id="tiger" class="language-html" data-lang="javascript"></code>
+                                    <code id="tiger192_3" class="language-html" data-lang="javascript"></code>
                                 </pre>
                             </figure>
                         </div>
                     </div>
                 </div>
-                <input type="submit" value="tiger" class="btn btn-default">
+                <input type="submit" value="tiger192_3" class="btn btn-default">
                     </form>
             
         </div>
