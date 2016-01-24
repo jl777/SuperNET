@@ -416,6 +416,7 @@ char *SuperNET_hexconv(char *hexmsg)
             if ( (retstr= calloc(1,n*2+1)) != 0 )
                 init_hexbytes_noT(retstr,bits,n);
             else retstr = hexmsg;
+            free_json(json);
         } //else printf("SuperNET_hexconv cant parse.(%s)\n",hexmsg);
         free(bits);
     }
