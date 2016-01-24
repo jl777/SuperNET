@@ -109,8 +109,8 @@ struct pangea_msghdr *pangea_msgcreate(struct supernet_info *myinfo,bits256 tabl
     bits256 otherpubkey; uint32_t timestamp; uint8_t buf[sizeof(pm->sig)],*serialized;
     memset(&pm->sig,0,sizeof(pm->sig));
     iguana_rwbignum(1,pm->tablehash.bytes,sizeof(bits256),tablehash.bytes);
-    datalen += (int32_t)(sizeof(*pm) - sizeof(pm->sig.sigbits));
-    serialized = (void *)((long)pm + sizeof(pm->sig.sigbits));
+    datalen += (int32_t)(sizeof(*pm) - sizeof(pm->sig));
+    serialized = (void *)((long)pm + sizeof(pm->sig));
     otherpubkey = acct777_msgpubkey(serialized,datalen);
     timestamp = (uint32_t)time(NULL);
     acct777_sign(&pm->sig,myinfo->privkey,otherpubkey,timestamp,serialized,datalen);

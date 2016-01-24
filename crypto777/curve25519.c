@@ -1786,8 +1786,9 @@ uint64_t acct777_sign(struct acct777_sig *sig,bits256 privkey,bits256 otherpubke
     sig->sigbits = shared = curve25519(privkey,otherpubkey);
     memset(buf,0,sizeof(buf));
     acct777_rwsig(1,buf,sig);
-    //int32_t i; for (i=0; i<sizeof(*sig); i++)
-    //    printf("%02x ",buf[i]);
+    int32_t i; for (i=0; i<sizeof(buf); i++)
+        printf("%02x ",buf[i]);
+    printf(" <<<<<<<<< SIGN.%d\n",datalen);
     //char str[65]; printf("shared.(%s) crc.%u datalen.%d\n",bits256_str(str,shared),calc_crc32(0,buf,sizeof(buf)),datalen);
     vcalc_sha256cat(sig->sigbits.bytes,buf,sizeof(buf),serialized,datalen);
     //printf(" calcsig.%llx pubkey.%llx signer.%llu | t%u crc.%08x len.%d shared.%llx <- %llx * %llx\n",(long long)sig->sigbits.txid,(long long)sig->pubkey.txid,(long long)sig->signer64bits,timestamp,calc_crc32(0,serialized,datalen),datalen,(long long)shared.txid,(long long)privkey.txid,(long long)otherpubkey.txid);
@@ -1799,7 +1800,7 @@ uint64_t acct777_validate(struct acct777_sig *sig,bits256 privkey,bits256 pubkey
     struct acct777_sig checksig; uint64_t signerbits; int32_t datalen; uint8_t *serialized;
     datalen = (int32_t)(sig->allocsize - sizeof(*sig));
     checksig = *sig;
-    serialized = (uint8_t *)((long)sig + sizeof(sig->sigbits));
+    serialized = (uint8_t *)((long)sig + sizeof(*sig));
     { int32_t i; for (i=0; i<datalen; i++) printf("%02x",serialized[i]); printf(" VALIDATE.%d?\n",datalen); }
     acct777_sign(&checksig,privkey,pubkey,sig->timestamp,serialized,datalen);
     if ( memcmp(checksig.sigbits.bytes,sig->sigbits.bytes,sizeof(checksig.sigbits)) != 0 )
