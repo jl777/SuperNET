@@ -112,7 +112,7 @@ void SuperNET_myipaddr(struct supernet_info *myinfo,struct iguana_info *coin,str
         expand_ipbits(myinfo->ipaddr,myinfo->myaddr.selfipbits);
         vcalc_sha256(0,myinfo->myaddr.iphash.bytes,(uint8_t *)&myinfo->myaddr.selfipbits,sizeof(myinfo->myaddr.selfipbits));
     }
-    if ( strcmp(myinfo->ipaddr,"127.0.0.1") == 0 )
+    if ( myinfo->ipaddr[0] == 0 || strcmp(myinfo->ipaddr,"127.0.0.1") == 0 )
     {
         strcpy(myinfo->ipaddr,myipaddr);
     }
@@ -400,7 +400,10 @@ cJSON *SuperNET_bits2json(uint8_t *serialized,int32_t datalen)
 char *SuperNET_hexconv(char *hexmsg)
 {
     cJSON *json; char *myip,*yourip,*retstr = hexmsg; uint32_t myipbits=0,destipbits=0;
-    uint8_t *bits; int32_t n,len = (int32_t)strlen(hexmsg) >> 1;
+    uint8_t *bits; int32_t n,len = (int32_t)strlen(hexmsg);
+    if ( hexmsg == 0 || is_hexstr(hexmsg,len) == 0 )
+        return(hexmsg);
+    len >>= 1;
     if ( (bits= calloc(1,len)) != 0 )
     {
         decode_hex(bits,len,hexmsg);
