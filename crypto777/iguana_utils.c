@@ -860,8 +860,15 @@ void calc_md5str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 
 void calc_crc32str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 {
-    uint32_t crc = calc_crc32(0,msg,len);
-    init_hexbytes_noT(hexstr,(uint8_t *)&crc,sizeof(crc));
+    uint32_t crc; uint8_t serialized[sizeof(crc)];
+    crc = calc_crc32(0,msg,len);
+    //iguana_rwnum(1,serialized,sizeof(crc),&crc);
+    serialized[3] = (crc & 0xff), crc >>= 8;
+    serialized[2] = (crc & 0xff), crc >>= 8;
+    serialized[1] = (crc & 0xff), crc >>= 8;
+    serialized[0] = (crc & 0xff), crc >>= 8;
+    init_hexbytes_noT(hexstr,serialized,sizeof(crc));
+    //printf("crc.%08x vs revcrc.%08x -> %s\n",crc,*(uint32_t *)serialized,hexstr);
 }
 
 void calc_NXTaddr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)

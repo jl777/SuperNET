@@ -406,6 +406,7 @@ char *SuperNET_hexconv(char *hexmsg)
         decode_hex(bits,len,hexmsg);
         if ( (json= cJSON_Parse((char *)bits)) != 0 )
         {
+            printf("parsed hexmsg.(%s)\n",(char *)bits);
             if ( (myip= jstr(json,"myip")) != 0 )
                 myipbits = (uint32_t)calc_ipbits(myip);
             if ( (yourip= jstr(json,"yourip")) != 0 )
@@ -415,7 +416,7 @@ char *SuperNET_hexconv(char *hexmsg)
             if ( (retstr= calloc(1,n*2+1)) != 0 )
                 init_hexbytes_noT(retstr,bits,n);
             else retstr = hexmsg;
-        } else printf("SuperNET_hexconv cant parse.(%s)\n",hexmsg);
+        } //else printf("SuperNET_hexconv cant parse.(%s)\n",hexmsg);
         free(bits);
     }
     return(retstr);
