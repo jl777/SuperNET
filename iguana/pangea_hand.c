@@ -292,7 +292,8 @@ int32_t pangea_checkstart(struct supernet_info *myinfo,int32_t N,int32_t turni,i
                 PNACL_message("start encoded %llx\n",(long long)hand->checkprod.txid);
                 if ( destplayer == tp->priv.myind )
                 {
-                    pangea_encoded(myinfo,tp->G.numactive,turni,cardi,destplayer,senderind,tp,tp->priv.outcards[0].bytes,sizeof(bits256) * tp->G.numactive * tp->G.numcards);
+                    printf("encode to myself\n");
+                    pangea_encoded(myinfo,N,turni,cardi,destplayer,tp->priv.myind,tp,tp->priv.outcards[0].bytes,sizeof(bits256) * tp->G.numactive * tp->G.numcards);
                 }
                 else pangea_sendcmd(myinfo,tp,"encoded",pangea_slotB(tp),tp->priv.outcards[0].bytes,sizeof(bits256) * tp->G.numactive * tp->G.numcards,tp->G.numactive*tp->G.numcards,-1);
                 return(matches);
@@ -336,6 +337,7 @@ void pangea_encoded(PANGEA_HANDARGS)
 {
     bits256 audit[CARDS777_MAXPLAYERS]; int32_t i,iter;
     struct hand_info *hand = &tp->hand;
+    printf("pangea_encoded\n");
     if ( N <= 1 || data == 0 || datalen != (tp->G.numcards * N) * sizeof(bits256) )
     {
         PNACL_message("pangea_encode invalid datalen.%d vs %ld\n",datalen,(long)((tp->G.numcards * N) * sizeof(bits256)));
