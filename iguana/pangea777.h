@@ -82,8 +82,8 @@ struct player_info
 struct game_info
 {
     bits256 tablehash,gamehash;
-    uint8_t M,N,numcards,ismine,numactive;
-    uint32_t allocsize,rakemillis,minbuyin,maxbuyin,minplayers,maxplayers,opentime,started,finished;
+    uint8_t M,N,numcards,ismine;
+    uint32_t numactive,allocsize,rakemillis,minbuyin,maxbuyin,minplayers,maxplayers,opentime,started,finished;
     uint64_t maxrake,hostrake,bigblind,ante,pangearake,hostipbits,creatorbits;
     struct player_info P[CARDS777_MAXPLAYERS];
 };

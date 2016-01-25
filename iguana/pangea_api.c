@@ -134,28 +134,69 @@ struct pangea_msghdr *pangea_msgcreate(struct supernet_info *myinfo,bits256 tabl
 
 void pangea_playeradd(struct supernet_info *myinfo,struct table_info *tp,struct player_info *p,cJSON *json)
 {
-    p->playerpub = jbits256(json,"playerpub");
+    if ( jobj(json,"playerpub") != 0 )
+        p->playerpub = jbits256(json,"playerpub");
+    else p->playerpub = GENESIS_PUBKEY;
     p->ipbits = calc_ipbits(jstr(json,"playeripaddr"));
     safecopy(p->handle,jstr(json,"handle"), sizeof(p->handle));
     p->balance = 100 * SATOSHIDEN;
     p->nxt64bits = acct777_nxt64bits(p->playerpub);
 }
 
+struct table_info *pangea_table(bits256 tablehash)
+{
+    struct table_info *tp; int32_t allocsize; bits256 pangeahash; char str[65];
+    pangeahash = calc_categoryhashes(0,"pangea",0);
+    if ( (tp= category_info(pangeahash,tablehash)) == 0 )
+    {
+        allocsize = (int32_t)(sizeof(tp->G) + sizeof(void *)*2);
+        if ( (tp= calloc(1,allocsize)) == 0 )
+            printf("error: couldnt create table.(%s)\n",bits256_str(str,tablehash));
+    }
+    if ( tp != 0 )
+    {
+        category_subscribe(SuperNET_MYINFO(0),pangeahash,tablehash);
+        if ( category_infoset(pangeahash,tablehash,tp) == 0 )
+            printf("error: couldnt set table.(%s)\n",bits256_str(str,tablehash)), tp = 0;
+        else tp->G.allocsize = allocsize;
+    }
+    return(tp);
+}
+
 char *pangea_jsondatacmd(struct supernet_info *myinfo,bits256 tablehash,struct pangea_msghdr *pm,cJSON *json,char *cmdstr,char *ipaddr)
 {
-    cJSON *argjson; char *reqstr,hexstr[8192]; int32_t datalen; bits256 pangeahash;
+    cJSON *argjson; char *reqstr,hexstr[8192]; uint64_t nxt64bits;
+    struct table_info *tp; int32_t i,datalen; bits256 pangeahash;
     pangeahash = calc_categoryhashes(0,"pangea",0);
     category_subscribe(myinfo,pangeahash,GENESIS_PUBKEY);
     category_subscribe(myinfo,pangeahash,tablehash);
-    argjson = SuperNET_argjson(json);
+    argjson = cJSON_CreateObject();//SuperNET_argjson(json);
     jaddstr(argjson,"cmd",cmdstr);
     if ( myinfo->ipaddr[0] == 0 || strncmp(myinfo->ipaddr,"127.0.0.1",strlen("127.0.0.1")) == 0 )
         return(clonestr("{\"error\":\"need to send your ipaddr for now\"}"));
-    jaddstr(argjson,"playeripaddr",myinfo->ipaddr);
+    jaddstr(argjson,"playeripaddr",ipaddr);
     jaddbits256(argjson,"categoryhash",pangeahash);
     jaddbits256(argjson,"subhash",tablehash);
     jaddbits256(argjson,"playerpub",myinfo->myaddr.persistent);
     jaddstr(argjson,"handle",jstr(json,"handle"));
+    nxt64bits = acct777_nxt64bits(myinfo->myaddr.persistent);
+    if ( (tp= pangea_table(tablehash)) != 0 && tp->G.numactive < tp->G.maxplayers )
+    {
+        for (i=0; i<tp->G.numactive; i++)
+            if ( tp->G.P[i].nxt64bits == nxt64bits )
+                break;
+        if ( i == tp->G.numactive )
+        {
+            printf("self join\n");
+            struct player_info *p = &tp->G.P[tp->G.numactive++];
+            p->playerpub = myinfo->myaddr.persistent;
+            p->ipbits = calc_ipbits(myinfo->ipaddr);
+            safecopy(p->handle,jstr(json,"handle"),sizeof(p->handle));
+            p->balance = 100 * SATOSHIDEN;
+            p->nxt64bits = nxt64bits;
+            //pangea_playeradd(myinfo,tp,&tp->G.P[tp->G.numactive++],argjson);
+        }
+    }
     reqstr = jprint(argjson,1);
     datalen = (int32_t)(strlen(reqstr) + 1);
     memcpy(pm->serialized,reqstr,datalen);
@@ -165,7 +206,12 @@ char *pangea_jsondatacmd(struct supernet_info *myinfo,bits256 tablehash,struct p
         printf("pangea send.(%s)\n",cmdstr);
         init_hexbytes_noT(hexstr,(uint8_t *)pm,pm->sig.allocsize);
         return(SuperNET_categorymulticast(myinfo,0,pangeahash,tablehash,hexstr,0,2,1));
-    } else return(clonestr("{\"error\":\"couldnt create pangea message\"}"));
+    }
+    else
+    {
+        printf("cant msgcreate\n");
+        return(clonestr("{\"error\":\"couldnt create pangea message\"}"));
+    }
 }
 
 void pangea_sendcmd(struct supernet_info *myinfo,struct table_info *tp,char *cmdstr,int32_t destplayer,uint8_t *data,int32_t datalen,int32_t cardi,int32_t turni)
@@ -192,26 +238,6 @@ void pangea_sendcmd(struct supernet_info *myinfo,struct table_info *tp,char *cmd
                 free(str);
         }
     }
-}
-
-struct table_info *pangea_table(bits256 tablehash)
-{
-    struct table_info *tp; int32_t allocsize; bits256 pangeahash; char str[65];
-    pangeahash = calc_categoryhashes(0,"pangea",0);
-    if ( (tp= category_info(pangeahash,tablehash)) == 0 )
-    {
-        allocsize = (int32_t)(sizeof(tp->G) + sizeof(void *)*2);
-        if ( (tp= calloc(1,allocsize)) == 0 )
-            printf("error: couldnt create table.(%s)\n",bits256_str(str,tablehash));
-    }
-    if ( tp != 0 )
-    {
-        category_subscribe(SuperNET_MYINFO(0),pangeahash,tablehash);
-        if ( category_infoset(pangeahash,tablehash,tp) == 0 )
-            printf("error: couldnt set table.(%s)\n",bits256_str(str,tablehash)), tp = 0;
-        else tp->G.allocsize = allocsize;
-    }
-    return(tp);
 }
 
 int32_t pangea_allocsize(struct table_info *tp,int32_t setptrs)
@@ -279,7 +305,6 @@ void pangea_tablejoin(PANGEA_HANDARGS)
         {
             pangea_playeradd(myinfo,tp,&tp->G.P[tp->G.numactive++],json);
             printf("add player.%d %p\n",i,tp);
-            printf("NEW LOBBY.(%s)\n",jprint(pangea_lobbyjson(myinfo),1));
             if ( tp->G.creatorbits == myinfo->myaddr.nxt64bits )
             {
                 pangea_jsondatacmd(myinfo,pm->tablehash,(struct pangea_msghdr *)space,json,"accept",myinfo->ipaddr);
@@ -294,7 +319,7 @@ void pangea_tablejoin(PANGEA_HANDARGS)
 void pangea_tableaccept(PANGEA_HANDARGS)
 {
     cJSON *json; char ipaddr[64]; struct iguana_peer *addr; uint64_t ipbits = 0;
-    struct iguana_info *coin; struct player_info p; int32_t allocsize;
+    struct iguana_info *coin; struct player_info p;
     ipaddr[0] = 0;
     if ( pm->sig.signer64bits == tp->G.creatorbits && tp->G.numactive < tp->G.maxplayers )
     {
@@ -333,17 +358,6 @@ void pangea_tableaccept(PANGEA_HANDARGS)
                         addr->persistent_peer = 1;
                     }
                 } else printf("no open iguana peer slots, cant connect\n");
-                if ( tp->G.numactive >= tp->G.minplayers && pangea_tableismine(myinfo,tp) >= 0 )
-                {
-                    allocsize = pangea_allocsize(tp,0);
-                    if ( tp->G.allocsize < allocsize )
-                    {
-                        tp = pangea_tablealloc(tp);
-                        category_infoset(tp->G.gamehash,tp->G.tablehash,tp);
-                    }
-                    if ( tp->G.creatorbits == myinfo->myaddr.nxt64bits )
-                        pangea_newdeck(myinfo,tp);
-                }
             }
         }
     }
@@ -427,7 +441,7 @@ int32_t pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *
             free_json(argjson);
         } else printf("ERROR >>>>>>> (%s) cant parse\n",(char *)pm->serialized);
     }
-    else
+    else if ( 0 )
     {
         for (i=0; i<datalen; i++)
             printf("%02x",serialized[i]);
@@ -451,8 +465,7 @@ void pangea_update(struct supernet_info *myinfo)
         { "showdown", pangea_showdown }, { "summary", pangea_summary },
     };
     struct category_msg *m; bits256 pangeahash,tablehash; char remoteaddr[64];
-    struct pangea_msghdr *pm; int32_t i; //cJSON *argjson; char *agent,*method,remoteaddr[64];
-    uint64_t cmdbits; struct table_info *tp; //uint8_t buf[sizeof(pm->sig)];
+    struct pangea_msghdr *pm; int32_t i,allocsize; uint64_t cmdbits; struct table_info *tp;
     if ( tablecmds[0].cmdbits == 0 )
     {
         for (i=0; i<sizeof(tablecmds)/sizeof(*tablecmds); i++)
@@ -473,6 +486,13 @@ void pangea_update(struct supernet_info *myinfo)
                 {
                     if ( tablecmds[i].cmdbits == cmdbits )
                     {
+                        printf("PANGEA.(%s)\n",tablecmds[i].cmdstr);
+                        allocsize = pangea_allocsize(tp,0);
+                        if ( tp->G.allocsize < allocsize )
+                        {
+                            tp = pangea_tablealloc(tp);
+                            category_infoset(tp->G.gamehash,tp->G.tablehash,tp);
+                        }
                         (*tablecmds[i].func)(myinfo,pm,tp,pm->serialized,(int32_t)(pm->sig.allocsize - sizeof(*pm)));
                         break;
                     }
@@ -651,6 +671,26 @@ HASH_AND_ARRAY(pangea,join,tablehash,params)
     return(pangea_jsondatacmd(myinfo,tablehash,(struct pangea_msghdr *)space,json,"join",myinfo->ipaddr));
 }
 
+HASH_AND_ARRAY(pangea,start,tablehash,params)
+{
+    struct table_info *tp; int32_t allocsize;
+    if ( (tp= pangea_table(tablehash)) != 0 )
+    {
+        if ( tp->G.numactive >= tp->G.minplayers && pangea_tableismine(myinfo,tp) >= 0 )
+        {
+            allocsize = pangea_allocsize(tp,0);
+            if ( tp->G.allocsize < allocsize )
+            {
+                tp = pangea_tablealloc(tp);
+                category_infoset(tp->G.gamehash,tp->G.tablehash,tp);
+            }
+            if ( tp->G.creatorbits == myinfo->myaddr.nxt64bits )
+                pangea_newdeck(myinfo,tp);
+        }
+        return(clonestr("{\"result\":\"started tablehash\"}"));
+    }
+    return(clonestr("{\"error\":\"cant find tablehash\"}"));
+}
 #undef IGUANA_ARGS
 
 #include "../includes/iguana_apiundefs.h"

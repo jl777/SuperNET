@@ -1777,7 +1777,7 @@ int32_t acct777_sigcheck(struct acct777_sig *sig)
 #define TEN_YEARS (10 * 365 * 24 * 3600)
    if ( sig->allocsize < sizeof(*sig) || sig->allocsize > IGUANA_MAXPACKETSIZE )
     {
-        printf("acct777_sign: invalid datalen.%d hex.%08x\n",sig->allocsize,sig->allocsize);
+        //printf("acct777_sign: invalid datalen.%d hex.%08x\n",sig->allocsize,sig->allocsize);
         return(-1);
     }
     if ( sig->timestamp < IGUANA_GENESIS || sig->timestamp > (long)IGUANA_GENESIS+TEN_YEARS )

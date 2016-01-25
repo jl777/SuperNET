@@ -21,6 +21,7 @@
 INT_AND_ARRAY(pangea,host,minplayers,params);
 ZERO_ARGS(pangea,lobby);
 HASH_AND_ARRAY(pangea,join,tablehash,params);
+HASH_AND_ARRAY(pangea,start,tablehash,params);
 
 ZERO_ARGS(SuperNET,help);
 STRING_ARG(SuperNET,bitcoinrpc,setcoin);
