@@ -165,7 +165,7 @@ void pangea_newhand(PANGEA_HANDARGS)
     int32_t i,handid,numcards,n,ind; struct hand_info *hand; bits256 *pubkeys;
     hand = &tp->hand;
     numcards = tp->G.numcards;
-    if ( data == 0 || datalen != (numcards + 1) * sizeof(bits256) )
+    if ( data == 0 || datalen != (numcards + 1 + tp->G.numactive) * sizeof(bits256) )
     {
         PNACL_message("pangea_newhand invalid datalen.%d vs %ld\n",datalen,(long)((numcards + 1) * sizeof(bits256)));
         return;

@@ -416,8 +416,26 @@ void pangea_parse(struct supernet_info *myinfo,struct pangea_msghdr *pm,cJSON *a
 
 int32_t pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *remoteaddr)
 {
-    struct pangea_msghdr *pm = data; cJSON *argjson; bits256 tablehash; int32_t i,datalen,flag = 0;
-    uint8_t *serialized; uint8_t tmp[sizeof(pm->sig)]; char str[65],str2[65];
+    static struct { char *cmdstr; void (*func)(PANGEA_HANDARGS); uint64_t cmdbits; } tablecmds[] =
+    {
+        { "newtable", pangea_tablecreate }, { "join", pangea_tablejoin },
+        { "accept", pangea_tableaccept }, { "addfunds", pangea_addfunds },
+        { "newhand", pangea_newhand }, { "ping", pangea_ping },
+        { "gotdeck", pangea_gotdeck }, { "ready", pangea_ready },
+        { "encoded", pangea_encoded }, { "decoded", pangea_decoded },
+        { "final", pangea_final }, { "preflop", pangea_preflop },
+        { "card", pangea_card }, { "facedown", pangea_facedown }, { "faceup", pangea_faceup },
+        { "turn", pangea_turn }, { "confirm", pangea_confirm }, { "action", pangea_action },
+        { "showdown", pangea_showdown }, { "summary", pangea_summary },
+    };
+    struct pangea_msghdr *pm = data; cJSON *argjson; bits256 tablehash;
+    uint64_t cmdbits; uint8_t *serialized; uint8_t tmp[sizeof(pm->sig)]; char str[65],str2[65];
+    struct table_info *tp; int32_t i,allocsize,datalen,flag = 0;
+    if ( tablecmds[0].cmdbits == 0 )
+    {
+        for (i=0; i<sizeof(tablecmds)/sizeof(*tablecmds); i++)
+            tablecmds[i].cmdbits = stringbits(tablecmds[i].cmdstr);
+    }
     acct777_rwsig(0,(void *)&pm->sig,(void *)tmp);
     memcpy(&pm->sig,tmp,sizeof(pm->sig));
     datalen = len  - (int32_t)sizeof(pm->sig);
@@ -441,47 +459,10 @@ int32_t pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *
         {
             pangea_parse(myinfo,pm,argjson,remoteaddr);
             free_json(argjson);
-        } else printf("ERROR >>>>>>> (%s) cant parse\n",(char *)pm->serialized);
-    }
-    else if ( 0 )
-    {
-        for (i=0; i<datalen; i++)
-            printf("%02x",serialized[i]);
-        printf("<<<<<<<<<<<<< sigsize.%ld SIG ERROR [%ld] len.%d (%s + %s)\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen,bits256_str(str,acct777_msgprivkey(serialized,datalen)),bits256_str(str2,pm->sig.pubkey));
-    }
-    return(flag);
-}
-
-void pangea_update(struct supernet_info *myinfo)
-{
-    static struct { char *cmdstr; void (*func)(PANGEA_HANDARGS); uint64_t cmdbits; } tablecmds[] =
-    {
-        { "newtable", pangea_tablecreate }, { "join", pangea_tablejoin },
-        { "accept", pangea_tableaccept }, { "addfunds", pangea_addfunds },
-        { "newhand", pangea_newhand }, { "ping", pangea_ping },
-        { "gotdeck", pangea_gotdeck }, { "ready", pangea_ready },
-        { "encoded", pangea_encoded }, { "decoded", pangea_decoded },
-        { "final", pangea_final }, { "preflop", pangea_preflop },
-        { "card", pangea_card }, { "facedown", pangea_facedown }, { "faceup", pangea_faceup },
-        { "turn", pangea_turn }, { "confirm", pangea_confirm }, { "action", pangea_action },
-        { "showdown", pangea_showdown }, { "summary", pangea_summary },
-    };
-    struct category_msg *m; bits256 pangeahash,tablehash; char remoteaddr[64];
-    struct pangea_msghdr *pm; int32_t i,allocsize; uint64_t cmdbits; struct table_info *tp;
-    if ( tablecmds[0].cmdbits == 0 )
-    {
-        for (i=0; i<sizeof(tablecmds)/sizeof(*tablecmds); i++)
-            tablecmds[i].cmdbits = stringbits(tablecmds[i].cmdstr);
-    }
-    pangeahash = calc_categoryhashes(0,"pangea",0);
-    while ( (m= category_gethexmsg(myinfo,pangeahash,GENESIS_PUBKEY)) != 0 )
-    {
-        pm = (struct pangea_msghdr *)m->msg;
-        if ( m->remoteipbits != 0 )
-            expand_ipbits(remoteaddr,m->remoteipbits);
-        if ( pangea_hexmsg(myinfo,pm,m->len,remoteaddr) > 0 )
+        }
+        else
         {
-            if ( (tp= pangea_table(tablehash)) != 0 && pangea_rwdata(0,pm->serialized,m->len-(int32_t)((long)pm->serialized-(long)pm),pm->serialized) > 0 )
+            if ( (tp= pangea_table(tablehash)) != 0 && pangea_rwdata(0,pm->serialized,len-(int32_t)((long)pm->serialized-(long)pm),pm->serialized) > 0 )
             {
                 cmdbits = stringbits(pm->cmd);
                 for (i=0; i<sizeof(tablecmds)/sizeof(*tablecmds); i++)
@@ -500,9 +481,32 @@ void pangea_update(struct supernet_info *myinfo)
                     }
                 }
             }
+            printf("ERROR >>>>>>> (%s) cant parse\n",(char *)pm->serialized);
+        }
+    }
+    else if ( 0 )
+    {
+        for (i=0; i<datalen; i++)
+            printf("%02x",serialized[i]);
+        printf("<<<<<<<<<<<<< sigsize.%ld SIG ERROR [%ld] len.%d (%s + %s)\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen,bits256_str(str,acct777_msgprivkey(serialized,datalen)),bits256_str(str2,pm->sig.pubkey));
+    }
+    return(flag);
+}
+
+void pangea_update(struct supernet_info *myinfo)
+{
+    struct pangea_msghdr *pm; struct category_msg *m; bits256 pangeahash; char remoteaddr[64];
+    pangeahash = calc_categoryhashes(0,"pangea",0);
+    while ( (m= category_gethexmsg(myinfo,pangeahash,GENESIS_PUBKEY)) != 0 )
+    {
+        pm = (struct pangea_msghdr *)m->msg;
+        if ( m->remoteipbits != 0 )
+            expand_ipbits(remoteaddr,m->remoteipbits);
+        if ( pangea_hexmsg(myinfo,pm,m->len,remoteaddr) > 0 )
+        {
         }
         free(m);
-     }
+    }
 }
 /*
 char *_pangea_status(struct supernet_info *myinfo,bits256 tablehash,cJSON *json)
