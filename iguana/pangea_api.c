@@ -232,7 +232,8 @@ void pangea_sendcmd(struct supernet_info *myinfo,struct table_info *tp,char *cmd
     memset(pm,0,sizeof(*pm));
     strncpy(pm->cmd,cmdstr,8);
     pm->turni = turni, pm->myind = tp->priv.myind, pm->cardi = cardi, pm->destplayer = destplayer;
-    pangea_rwdata(1,pm->serialized,datalen,data);
+    if ( data != 0 )
+        pangea_rwdata(1,pm->serialized,datalen,data);
     if ( pangea_msgcreate(myinfo,tp->G.tablehash,pm,datalen) != 0 )
     {
         if ( destplayer < 0 )
@@ -427,12 +428,12 @@ int32_t pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *
 {
     static struct { char *cmdstr; void (*func)(PANGEA_HANDARGS); uint64_t cmdbits; } tablecmds[] =
     {
-        { "newtable", pangea_tablecreate }, { "join", pangea_tablejoin },
-        { "accept", pangea_tableaccept }, { "addfunds", pangea_addfunds },
-        { "newhand", pangea_newhand }, { "ping", pangea_ping },
-        { "gotdeck", pangea_gotdeck }, { "ready", pangea_ready },
-        { "encoded", pangea_encoded }, { "decoded", pangea_decoded },
-        { "final", pangea_final }, { "preflop", pangea_preflop },
+        { "newtable", pangea_tablecreate }, { "join", pangea_tablejoin }, { "accept", pangea_tableaccept }, { "addfunds", pangea_addfunds }, { "ping", pangea_ping }, { "ready", pangea_ready },
+        { "newhand", pangea_newhand }, { "gothand", pangea_gothand },
+        { "encoded", pangea_encoded }, { "sentencoded", pangea_sentencoded },
+        { "final", pangea_final }, { "gotfinal", pangea_gotfinal },
+        { "preflop", pangea_preflop }, 
+        { "decoded", pangea_decoded },
         { "card", pangea_card }, { "facedown", pangea_facedown }, { "faceup", pangea_faceup },
         { "turn", pangea_turn }, { "confirm", pangea_confirm }, { "action", pangea_action },
         { "showdown", pangea_showdown }, { "summary", pangea_summary },
@@ -463,7 +464,7 @@ int32_t pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *
         flag++;
         iguana_rwbignum(0,pm->tablehash.bytes,sizeof(bits256),tablehash.bytes);
         pm->tablehash = tablehash;
-        printf("<<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen,pm->sig.timestamp,pm->sig.allocsize,(char *)pm->serialized,serialized[datalen-1]);
+        //printf("<<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen,pm->sig.timestamp,pm->sig.allocsize,(char *)pm->serialized,serialized[datalen-1]);
         if ( serialized[datalen-1] == 0 && (argjson= cJSON_Parse((char *)pm->serialized)) != 0 )
         {
             pangea_parse(myinfo,pm,argjson,remoteaddr);

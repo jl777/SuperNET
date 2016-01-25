@@ -15,6 +15,36 @@
 
 #include "pangea777.h"
 
+#define PANGEA_GOTDECKS 1
+#define PANGEA_GOTFINAL 2
+struct pangea_queueitem { struct queueitem DL; struct tai start,last; int32_t waitevent; };
+
+struct pangea_queueitem *pangea_queuefind(struct table_info *tp,int32_t waitevent)
+{
+    int32_t iter; struct pangea_queueitem *ptr;
+    for (iter=0; iter<2; iter++)
+    {
+        while ( (ptr= queue_dequeue(&tp->stateQ[iter],0)) != 0 )
+        {
+            if ( ptr->waitevent == waitevent )
+                return(ptr);
+            queue_enqueue("stateQ",&tp->stateQ[iter ^ 1],&ptr->DL,0);
+        }
+    }
+    return(0);
+}
+
+void pangea_queuestate(struct table_info *tp,int32_t currentstate,int32_t waitevent)
+{
+    struct pangea_queueitem *ptr;
+    if ( (ptr= pangea_queuefind(tp,currentstate)) == 0 )
+        ptr = calloc(1,sizeof(*ptr));
+    ptr->last = ptr->start = tai_now();
+    ptr->waitevent = waitevent;
+    char str[65]; printf("table.%s current.%d -> wait.%d\n",bits256_str(str,tp->G.tablehash),currentstate,waitevent);
+    queue_enqueue("stateQ",&tp->stateQ[0],&ptr->DL,0);
+}
+
 int32_t pangea_slotA(struct table_info *tp) { return(0); }
 int32_t pangea_slotB(struct table_info *tp) { return(1); }
 int32_t pangea_lastnode(struct table_info *tp) { return(tp->G.numactive-1); }
@@ -169,6 +199,7 @@ int32_t pangea_newdeck(struct supernet_info *myinfo,struct table_info *tp)
             printf("%d: %s\n",i,bits256_str(str,hand->cardpubs[i]));
         printf("cardpubs.(%s)\n",bits256_str(str,hand->cardpubs[tp->G.numcards]));
     }
+    pangea_queuestate(tp,PANGEA_GOTDECKS,PANGEA_GOTDECKS);
     return(0);
 }
 
@@ -184,19 +215,16 @@ void pangea_newhand(PANGEA_HANDARGS)
     }
     pubkeys = (bits256 *)data;
     n = pm->turni;
-    tp->myind = -1;
+    tp->priv.myind = -1;
     tp->priv.mypriv = myinfo->persistent_priv, tp->priv.mypub = myinfo->myaddr.persistent;
     tp->G.M = (tp->G.numactive >> 1) + 1;
     for (i=0; i<n; i++)
     {
-        /*if ( (ind= pangea_Pind(tp,pubkeys[numcards + 1 + i])) < 0 )
+        if ( (ind= pangea_Pind(tp,pubkeys[numcards + 1 + i])) >= 0 && ind > i )
         {
-            char str[65],str2[65]; int32_t j;
-            for (j=0; j<n; j++)
-                printf("(j%d %s vs %s)",j,bits256_str(str,tp->G.P[j].playerpub),bits256_str(str2,pubkeys[numcards + 1 + i]));
-            printf("illegal pubkey, cant find player[%d] (%s)\n",i,bits256_str(str,pubkeys[numcards + 1 + i]));
-            return;
-        }*/
+            tp->G.P[i] = tp->G.P[ind];
+            printf("init player[%d] with.%d\n",i,ind);
+        }
         ind = i;
         tp->G.P[ind].playerpub = pubkeys[numcards + 1 + i];
         tp->G.P[ind].nxt64bits = acct777_nxt64bits(pubkeys[numcards + 1 + i]);
@@ -209,7 +237,7 @@ void pangea_newhand(PANGEA_HANDARGS)
     }
     hand->startdecktime = pm->sig.timestamp;
     memcpy(hand->cardpubs,pubkeys,(numcards +1 + tp->G.numactive) * sizeof(bits256));
-    PNACL_message("player.%d NEWHAND.%llx received numhands.%d button.%d cardi.%d | N %d numactive.%d\n",tp->myind,(long long)hand->cardpubs[numcards].txid,tp->numhands,hand->button,hand->cardi,tp->G.N,n);
+    PNACL_message("player.%d NEWHAND.%llx received numhands.%d button.%d cardi.%d | N %d numactive.%d\n",tp->priv.myind,(long long)hand->cardpubs[numcards].txid,tp->numhands,hand->button,hand->cardi,tp->G.N,n);
     printf("check.%s\n",bits256_str(str,hand->cardpubs[numcards]));
     hand->checkprod = cards777_pubkeys(hand->cardpubs,numcards,hand->cardpubs[numcards]);
     printf("B check.%s\n",bits256_str(str,hand->checkprod));
@@ -219,19 +247,22 @@ void pangea_newhand(PANGEA_HANDARGS)
     {
         for (i=0; i<tp->G.numcards; i++)
             printf("%d: %s\n",i,bits256_str(str,hand->cardpubs[i]));
-        printf("checkprod mismatch myind.%d %s\n",tp->myind,bits256_str(str,hand->cardpubs[i]));
+        printf("checkprod mismatch myind.%d %s\n",tp->priv.myind,bits256_str(str,hand->cardpubs[i]));
         return;
     }
-    tp->G.numactive = n;
-    memset(tp->summary,0,sizeof(tp->summary));
-    hand->summaries = hand->mismatches = tp->summarysize = 0;
-    handid = tp->numhands++;
-    pangea_summaryadd(myinfo,tp,CARDS777_START,&handid,sizeof(handid),hand->cardpubs[0].bytes,sizeof(bits256) * (numcards + 1));
-    if ( tp->myind >= 0 )
+    if ( tp->priv.myind >= 0 )
+    {
+        hand->othercardpubs[tp->priv.myind] = hand->checkprod;
+        tp->G.numactive = n;
+        memset(tp->summary,0,sizeof(tp->summary));
+        hand->summaries = hand->mismatches = tp->summarysize = 0;
+        handid = tp->numhands++;
+        pangea_summaryadd(myinfo,tp,CARDS777_START,&handid,sizeof(handid),hand->cardpubs[0].bytes,sizeof(bits256) * (numcards + 1));
         pangea_sendcmd(myinfo,tp,"gotdeck",-1,hand->checkprod.bytes,sizeof(bits256),hand->cardi,hand->button);
+    }
 }
 
-void pangea_checkstart(struct supernet_info *myinfo,struct table_info *tp)
+int32_t pangea_checkstart(struct supernet_info *myinfo,struct table_info *tp)
 {
     int32_t i; struct hand_info *hand = &tp->hand;
     if ( bits256_nonz(hand->checkprod) > 0 && hand->encodestarted == 0 )
@@ -243,19 +274,22 @@ void pangea_checkstart(struct supernet_info *myinfo,struct table_info *tp)
         }
         if ( i == tp->G.numactive )
         {
-            if ( PANGEA_PAUSE > 0 )
-                sleep(PANGEA_PAUSE);
-            if ( time(NULL) > (tp->myind*3 + hand->startdecktime) )
+            if ( time(NULL) > (tp->priv.myind*3 + hand->startdecktime) )
             {
+                if ( PANGEA_PAUSE > 0 )
+                    sleep(PANGEA_PAUSE);
                 hand->encodestarted = (uint32_t)time(NULL);
-                PNACL_message("SERVERSTATE issues encoded %llx\n",(long long)hand->checkprod.txid);
+                pangea_queuestate(tp,PANGEA_GOTDECKS,PANGEA_GOTFINAL);
+                PNACL_message("start encoded %llx\n",(long long)hand->checkprod.txid);
                 pangea_sendcmd(myinfo,tp,"encoded",pangea_slotB(tp),tp->priv.outcards[0].bytes,sizeof(bits256) * tp->G.numactive * tp->G.numcards,tp->G.numactive*tp->G.numcards,-1);
+                return(i);
             }
-        }
-    }
+        } else printf("i.%d != numactive.%d\n",i,tp->G.numactive);
+    } else printf("zero checkprod or encodestarted.%u\n",hand->encodestarted);
+    return(-1);
 }
 
-void pangea_gotdeck(PANGEA_HANDARGS)
+void pangea_gothand(PANGEA_HANDARGS)
 {
     int32_t i,senderind; uint64_t total = 0;
     senderind = pm->myind;
@@ -268,9 +302,21 @@ void pangea_gotdeck(PANGEA_HANDARGS)
             PNACL_message("(p%d %.8f) ",i,dstr(tp->G.P[i].balance));
         }
         PNACL_message("balances %.8f [%.8f] | ",dstr(total),dstr(total + tp->G.hostrake + tp->G.pangearake));
-        PNACL_message("player.%d pangea_gotdeck from P.%d otherpubs.%llx\n",tp->myind,senderind,(long long)tp->hand.othercardpubs[senderind].txid);
+        PNACL_message("player.%d pangea_gotdeck from P.%d otherpubs.%llx\n",tp->priv.myind,senderind,(long long)tp->hand.othercardpubs[senderind].txid);
     }
     pangea_checkstart(myinfo,tp);
+}
+
+void pangea_sentencoded(PANGEA_HANDARGS)
+{
+    tp->hand.sentencoded |= (1 << pm->myind);
+    printf("P%d: got sentencoded from %d\n",tp->priv.myind,pm->myind);
+}
+
+void pangea_gotfinal(PANGEA_HANDARGS)
+{
+    tp->hand.gotfinal |= (1 << pm->myind);
+    printf("P%d: gotfinal from %d\n",tp->priv.myind,pm->myind);
 }
 
 void pangea_encoded(PANGEA_HANDARGS)
@@ -283,14 +329,15 @@ void pangea_encoded(PANGEA_HANDARGS)
         return;
     }
     hand->encodestarted = pm->sig.timestamp;
-    cards777_encode(tp->priv.outcards,tp->priv.xoverz,tp->priv.allshares,tp->priv.myshares,hand->sharenrs[tp->myind],tp->G.M,(void *)data,tp->G.numcards,N);
-    PNACL_message("player.%d ind.%d encodes into %p %llx -> %llx next.%d N %d\n",tp->myind,tp->myind,tp->priv.outcards,(long long)*(uint64_t *)data,(long long)tp->priv.outcards[0].txid,pangea_nextnode(tp),N);
-    if ( tp->myind > 0 )
+    cards777_encode(tp->priv.outcards,tp->priv.xoverz,tp->priv.allshares,tp->priv.myshares,hand->sharenrs[tp->priv.myind],tp->G.M,(void *)data,tp->G.numcards,N);
+    PNACL_message("player.%d ind.%d encodes into %p %llx -> %llx next.%d N %d\n",tp->priv.myind,tp->priv.myind,tp->priv.outcards,(long long)*(uint64_t *)data,(long long)tp->priv.outcards[0].txid,pangea_nextnode(tp),N);
+    if ( tp->priv.myind > 0 )
     {
-        if ( tp->myind < tp->G.numactive-1 )
+        if ( tp->priv.myind < tp->G.numactive-1 )
         {
             //PNACL_message("send encoded\n");
             pangea_sendcmd(myinfo,tp,"encoded",pangea_nextnode(tp),tp->priv.outcards[0].bytes,datalen,N*tp->G.numcards,-1);
+            pangea_sendcmd(myinfo,tp,"sentencoded",-1,0,0,tp->priv.myind,pangea_nextnode(tp));
         }
         else
         {
@@ -304,7 +351,7 @@ void pangea_encoded(PANGEA_HANDARGS)
                         audit[0] = hand->final[cardi*N + destplayer];
                         pangea_rwaudit(1,audit,tp->priv.audits,cardi,destplayer,N);
                     }
-            PNACL_message("call preflop %ld\n",(long)((2 * N) * (N * N * sizeof(bits256))));
+            PNACL_message("send preflop %ld\n",(long)((2 * N) * (N * N * sizeof(bits256))));
             pangea_preflop(myinfo,pm,tp,tp->priv.audits[0].bytes,(2 * N) * (N * N * sizeof(bits256)));
         }
     }
@@ -318,8 +365,47 @@ void pangea_final(PANGEA_HANDARGS)
         return;
     }
     if ( Debuglevel > 2 )
-        PNACL_message("player.%d final into %p\n",tp->myind,tp->priv.outcards);
+        PNACL_message("player.%d final into %p\n",tp->priv.myind,tp->priv.outcards);
     memcpy(tp->hand.final,data,sizeof(bits256) * tp->G.numactive * tp->G.numcards);
+    pangea_sendcmd(myinfo,tp,"gotfinal",-1,0,0,tp->priv.myind,tp->priv.myind);
+}
+
+int32_t pangea_queueprocess(struct supernet_info *myinfo,struct table_info *tp)
+{
+    int32_t iter,retval,flag = 0; double diff; struct pangea_queueitem *ptr;
+    for (iter=0; iter<2; iter++)
+    {
+        while ( (ptr= queue_dequeue(&tp->stateQ[iter],0)) != 0 )
+        {
+            retval = 0;
+            diff = tai_diff(ptr->last,tai_now());
+            if ( diff > 10000 )
+            {
+                printf("its been over 10 seconds %.3f no state.%d yet\n",diff,ptr->waitevent);
+            }
+            switch ( ptr->waitevent )
+            {
+                case PANGEA_GOTDECKS:
+                    if ( pangea_checkstart(myinfo,tp) > 0 )
+                        return(1);
+                    break;
+                case PANGEA_GOTFINAL:
+                    printf("sentencoded.%x\n",tp->hand.sentencoded);
+                    break;
+            }
+            if ( retval != 0 )
+            {
+                flag++;
+                free(ptr);
+            }
+            else
+            {
+                ptr->last = tai_now();
+                queue_enqueue("stateQ",&tp->stateQ[iter ^ 1],&ptr->DL,0);
+            }
+        }
+    }
+    return(flag);
 }
 
 void pangea_preflop(PANGEA_HANDARGS)
@@ -332,20 +418,20 @@ void pangea_preflop(PANGEA_HANDARGS)
         PNACL_message("pangea_preflop invalid datalen.%d vs %ld\n",datalen,(long)(2 * N) * (N * N * sizeof(bits256)));
         return;
     }
-    //PNACL_message("preflop player.%d\n",tp->myind);
+    //PNACL_message("preflop player.%d\n",tp->priv.myind);
     memcpy(tp->priv.audits,data,datalen);
-    if ( tp->myind != pangea_slotA(tp) && tp->myind != pangea_slotB(tp) )
+    if ( tp->priv.myind != pangea_slotA(tp) && tp->priv.myind != pangea_slotB(tp) )
     {
         //for (i=0; i<tp->G.numcards*N; i++)
         //    PNACL_message("%llx ",(long long)tp->priv.outcards[i].txid);
-        //PNACL_message("player.%d outcards\n",tp->myind);
+        PNACL_message("player.%d outcards\n",tp->priv.myind);
         for (cardi=0; cardi<N*2; cardi++)
             for (destplayer=0; destplayer<N; destplayer++)
             {
                 pangea_rwaudit(0,audit,tp->priv.audits,cardi,destplayer,N);
-                //if ( 1 && (card= cards777_checkcard(&cardpriv,cardi,tp->myind,destplayer,hn->client->H.privkey,hand->cardpubs,tp->G.numcards,audit[0])) >= 0 )
-                    //PNACL_message("ERROR: unexpected decode player.%d got card.[%d]\n",tp->myind,card);
-                audit[0] = cards777_decode(&audit[tp->myind],tp->priv.xoverz,destplayer,audit[0],tp->priv.outcards,tp->G.numcards,N);
+                //if ( 1 && (card= cards777_checkcard(&cardpriv,cardi,tp->priv.myind,destplayer,hn->client->H.privkey,hand->cardpubs,tp->G.numcards,audit[0])) >= 0 )
+                    //PNACL_message("ERROR: unexpected decode player.%d got card.[%d]\n",tp->priv.myind,card);
+                audit[0] = cards777_decode(&audit[tp->priv.myind],tp->priv.xoverz,destplayer,audit[0],tp->priv.outcards,tp->G.numcards,N);
                 pangea_rwaudit(1,audit,tp->priv.audits,cardi,destplayer,N);
             }
             //PNACL_message("issue preflop\n");
@@ -353,17 +439,17 @@ void pangea_preflop(PANGEA_HANDARGS)
     }
     else
     {
-        //PNACL_message("sendout cards\n");
+        PNACL_message("P%d sendout cards\n",tp->priv.myind);
         for (iter=cardi=0; iter<2; iter++)
             for (i=0; i<N; i++,cardi++)
             {
                 destplayer = (tp->hand.button + i) % N;
                 pangea_rwaudit(0,audit,tp->priv.audits,cardi,destplayer,N);
                 //PNACL_message("audit[0] %llx -> ",(long long)audit[0].txid);
-                audit[0] = cards777_decode(&audit[tp->myind],tp->priv.xoverz,destplayer,audit[0],tp->priv.outcards,tp->G.numcards,N);
+                audit[0] = cards777_decode(&audit[tp->priv.myind],tp->priv.xoverz,destplayer,audit[0],tp->priv.outcards,tp->G.numcards,N);
                 pangea_rwaudit(1,audit,tp->priv.audits,cardi,destplayer,N);
-                //PNACL_message("[%llx + %llx] ",*(long long *)&audit[0],(long long)&audit[tp->myind]);
-                if ( destplayer == tp->myind )
+                //PNACL_message("[%llx + %llx] ",*(long long *)&audit[0],(long long)&audit[tp->priv.myind]);
+                if ( destplayer == tp->priv.myind )
                     pangea_card(myinfo,pm,tp,audit[0].bytes,sizeof(bits256)*N);
                 else pangea_sendcmd(myinfo,tp,"card",destplayer,audit[0].bytes,sizeof(bits256)*N,cardi,-1);
             }
@@ -383,12 +469,12 @@ void pangea_card(PANGEA_HANDARGS)
     }
     pangea_rwaudit(1,(void *)data,tp->priv.audits,cardi,destplayer,N);
     pangea_rwaudit(0,audit,tp->priv.audits,cardi,destplayer,N);
-    //PNACL_message("card.%d destplayer.%d [%llx]\n",cardi,destplayer,(long long)audit[0].txid);
-    if ( (card= cards777_checkcard(&cardpriv,cardi,tp->myind,destplayer,myinfo->persistent_priv,hand->cardpubs,tp->G.numcards,audit[0])) >= 0 )
+    PNACL_message("pangea_card.%d destplayer.%d [%llx]\n",cardi,destplayer,(long long)audit[0].txid);
+    if ( (card= cards777_checkcard(&cardpriv,cardi,tp->priv.myind,destplayer,myinfo->persistent_priv,hand->cardpubs,tp->G.numcards,audit[0])) >= 0 )
     {
-        destplayer = tp->myind;
-        if ( Debuglevel > 2 )
-            PNACL_message("player.%d got card.[%d]\n",tp->myind,card);
+        destplayer = tp->priv.myind;
+        //if ( Debuglevel > 2 )
+            PNACL_message("player.%d got card.[%d]\n",tp->priv.myind,card);
         selector = (cardi / N);
         tp->priv.holecards[selector] = cardpriv;
         tp->priv.cardis[selector] = cardi;
@@ -401,8 +487,8 @@ void pangea_card(PANGEA_HANDARGS)
             cardstr(cardBstr,tp->priv.hole[1]);
         PNACL_message(">>>>>>>>>> dest.%d holecards[%02d] cardi.%d / N %d (%02d %02d) -> (%s %s)\n",destplayer,tp->priv.hole[cardi / N],cardi,N,tp->priv.hole[0],tp->priv.hole[1],cardAstr,cardBstr);
         if ( cards777_validate(cardpriv,hand->final[cardi*N + destplayer],hand->cardpubs,tp->G.numcards,audit,N,tp->priv.mypub) < 0 )
-            PNACL_message("player.%d decoded cardi.%d card.[%02d] but it doesnt validate\n",tp->myind,cardi,card);
-    } else PNACL_message("ERROR player.%d got no card %llx\n",tp->myind,*(long long *)data);
+            PNACL_message("player.%d decoded cardi.%d card.[%02d] but it doesnt validate\n",tp->priv.myind,cardi,card);
+    } else PNACL_message("ERROR player.%d got no card %llx\n",tp->priv.myind,*(long long *)data);
     if ( cardi < N*2 )
         pangea_sendcmd(myinfo,tp,"facedown",-1,(void *)&cardi,sizeof(cardi),cardi,validcard);
     else pangea_sendcmd(myinfo,tp,"faceup",-1,cardpriv.bytes,sizeof(cardpriv),cardi,0xff);
@@ -466,8 +552,8 @@ void pangea_facedown(PANGEA_HANDARGS)
     validcard = pm->turni;
     if ( validcard > 0 )
         p->havemask |= (1LL << cardi);
-    if ( Debuglevel > 2 )
-        PNACL_message(" | player.%d sees that destplayer.%d got cardi.%d valid.%d | %llx | n.%d\n",tp->myind,senderind,cardi,validcard,(long long)p->havemask,n);
+    //if ( Debuglevel > 2 )
+        PNACL_message(" | player.%d sees that destplayer.%d got cardi.%d valid.%d | %llx | n.%d\n",tp->priv.myind,senderind,cardi,validcard,(long long)p->havemask,n);
     for (i=0; i<N; i++)
     {
         if ( (p= tp->active[i]) != 0 )
@@ -479,7 +565,7 @@ void pangea_facedown(PANGEA_HANDARGS)
                 n++;
         }
     }
-    if ( tp->myind == pangea_slotA(tp) && n == N )
+    if ( tp->priv.myind == pangea_slotA(tp) && n == N )
         pangea_startbets(myinfo,tp,N*2);
 }
 
@@ -494,11 +580,11 @@ void pangea_faceup(PANGEA_HANDARGS)
         return;
     }
     validcard = (pm->turni >= 0);
-    if ( Debuglevel > 2 || tp->myind == pangea_slotA(tp) )
+    if ( Debuglevel > 2 || tp->priv.myind == pangea_slotA(tp) )
     {
-        PNACL_message("from.%d -> player.%d COMMUNITY.[%d] cardi.%d valid.%d\n",senderind,tp->myind,data[1],cardi,validcard);
+        PNACL_message("from.%d -> player.%d COMMUNITY.[%d] cardi.%d valid.%d\n",senderind,tp->priv.myind,data[1],cardi,validcard);
     }
-    //PNACL_message("got FACEUP.(%s)\n",jprint(json,0));
+    PNACL_message("got FACEUP cardi.%d validcard.%d [%d]\n",cardi,validcard,data[1]);
     if ( validcard > 0 )
     {
         tmp = (cardi << 8);
@@ -514,9 +600,9 @@ void pangea_faceup(PANGEA_HANDARGS)
             }
             memcpy(hand->community256[cardi - N*2].bytes,data,sizeof(bits256));
             PNACL_message("set community[%d] <- %d\n",cardi - N*2,data[1]);
-            if ( senderind == tp->myind )
+            if ( senderind == tp->priv.myind )
                 pangea_rank(myinfo,tp,senderind);
-            if ( tp->myind == pangea_slotA(tp) && cardi >= N*2+2 && cardi < N*2+5 )
+            if ( tp->priv.myind == pangea_slotA(tp) && cardi >= N*2+2 && cardi < N*2+5 )
                 pangea_startbets(myinfo,tp,cardi+1);
             //else PNACL_message("dont start bets %d\n",cardi+1);
         }
@@ -544,19 +630,19 @@ void pangea_turn(PANGEA_HANDARGS)
         PNACL_message("pangea_turn illegal arg\n");
         return;
     }
-    if ( Debuglevel > 2 )
-        printf("P%d: got turn.%d from %d | cardi.%d summary[%d] crc.%u\n",tp->myind,turni,senderind,cardi,tp->summarysize,calc_crc32(0,tp->summary,tp->summarysize));
+    //if ( Debuglevel > 2 )
+        printf("P%d: got turn.%d from %d | cardi.%d summary[%d] crc.%u\n",tp->priv.myind,turni,senderind,cardi,tp->summarysize,calc_crc32(0,tp->summary,tp->summarysize));
     destp->turni = turni;
     if ( senderind == 0 )
     {
         hand->cardi = cardi;
         hand->betstarted = 1;
         hand->undergun = turni;
-        if ( tp->myind != pangea_slotA(tp) )
+        if ( tp->priv.myind != pangea_slotA(tp) )
         {
             pangea_checkantes(myinfo,tp);
             hand->betsizesnapshot = pangea_snapshot(tp,snapshot);
-            //printf("player.%d sends confirmturn.%d\n",tp->myind,turni);
+            //printf("player.%d sends confirmturn.%d\n",tp->priv.myind,turni);
             pangea_sendcmd(myinfo,tp,"confirm",-1,(void *)snapshot,sizeof(uint64_t)*(N+1),cardi,turni);
         }
     }
@@ -573,11 +659,11 @@ void pangea_confirm(PANGEA_HANDARGS)
         printf("pangea_turn: null data\n");
         return;
     }
-    printf("got confirmturn.%d cardi.%d sender.%d\n",turni,cardi,senderind);
+    printf("P%d: got confirmturn.%d cardi.%d sender.%d\n",tp->priv.myind,turni,cardi,senderind);
     //if ( datalen == sizeof(betsize) )
     //    memcpy(&betsize,data,sizeof(betsize));
     starttime = hand->starttime;
-    if ( senderind == 0 && tp->myind != pangea_slotA(tp) )
+    if ( senderind == 0 && tp->priv.myind != pangea_slotA(tp) )
     {
         hand->undergun = turni;
         hand->cardi = cardi;
@@ -593,19 +679,19 @@ void pangea_confirm(PANGEA_HANDARGS)
             break;
     }
     //printf("sp.%p vs turni.%d cardi.%d hand.cardi %d\n",sp,turni,cardi,hand->cardi);
-    if ( tp->myind == pangea_slotA(tp) && i == N )
+    if ( tp->priv.myind == pangea_slotA(tp) && i == N )
     {
         betsize = pangea_snapshot(tp,snapshot);
         hand->betsize = hand->betsizesnapshot = betsize;
         //if ( Debuglevel > 2 )
-        printf("player.%d sends confirmturn.%d cardi.%d betsize %.0f\n",tp->myind,hand->undergun,hand->cardi,dstr(betsize));
+        printf("player.%d sends confirmturn.%d cardi.%d betsize %.0f\n",tp->priv.myind,hand->undergun,hand->cardi,dstr(betsize));
         if ( senderind != 0 )
             pangea_sendcmd(myinfo,tp,"confirm",-1,(void *)snapshot,sizeof(*snapshot)*(N+1),hand->cardi,hand->undergun);
     }
-    if ( senderind == 0 && (turni= hand->undergun) == tp->myind && (p= tp->active[senderind]) != 0 )
+    if ( senderind == 0 && (turni= hand->undergun) == tp->priv.myind && (p= tp->active[senderind]) != 0 )
     {
         if ( hand->betsize != betsize )
-            printf("P%d: pangea_turn warning hand.betsize %.8f != betsize %.8f\n",tp->myind,dstr(hand->betsize),dstr(betsize));
+            printf("P%d: pangea_turn warning hand.betsize %.8f != betsize %.8f\n",tp->priv.myind,dstr(hand->betsize),dstr(betsize));
         //if ( sp->isbot[tp->priv.myind] != 0 )
         //    pangea_bot(myinfo,tp,turni,cardi,betsize);
         //else
@@ -620,13 +706,13 @@ void pangea_confirm(PANGEA_HANDARGS)
             hand->betsize = betsize;
             fprintf(stderr,"Waiting for user input cardi.%d: ",cardi);
         }
-        if ( tp->myind == pangea_slotA(tp) )
+        if ( tp->priv.myind == pangea_slotA(tp) )
         {
             char *str = jprint(pangea_tablestatus(myinfo,tp),1);
             printf("%s\n",str);
             free(str);
         }
-        //pangea_statusprint(dp,priv,tp->myind);
+        //pangea_statusprint(dp,priv,tp->priv.myind);
     }
 }
 
@@ -703,7 +789,7 @@ int32_t pangea_lastman(struct supernet_info *myinfo,struct table_info *tp)
             printf("DUPLICATE LASTMAN!\n");
             return(1);
         }
-        if ( 0 && tp->myind == activej && tp->priv.automuck == 0 )
+        if ( 0 && tp->priv.myind == activej && tp->priv.automuck == 0 )
         {
             pangea_sendcmd(myinfo,tp,"faceup",-1,tp->priv.holecards[0].bytes,sizeof(tp->priv.holecards[0]),tp->priv.cardis[0],tp->priv.cardis[0] != 0xff);
             pangea_sendcmd(myinfo,tp,"faceup",-1,tp->priv.holecards[1].bytes,sizeof(tp->priv.holecards[1]),tp->priv.cardis[1],tp->priv.cardis[1] != 0xff);
@@ -729,7 +815,7 @@ void pangea_action(PANGEA_HANDARGS)
     }
     if ( senderind != hand->undergun )
     {
-        printf("T%d: out of turn action.%d by player.%d (undergun.%d) cardi.%d amount %.8f\n",tp->myind,action,senderind,hand->undergun,cardi,dstr(amount));
+        printf("T%d: out of turn action.%d by player.%d (undergun.%d) cardi.%d amount %.8f\n",tp->priv.myind,action,senderind,hand->undergun,cardi,dstr(amount));
         return;
     }
     tmp = senderind;
@@ -737,11 +823,11 @@ void pangea_action(PANGEA_HANDARGS)
     p->action = action;
     hand->undergun = (hand->undergun + 1) % N;
     hand->numactions++;
-    if ( Debuglevel > 2 )//|| tp->myind == 0 )
-        printf("player.%d: got action.%d cardi.%d senderind.%d -> undergun.%d numactions.%d\n",tp->myind,action,cardi,senderind,hand->undergun,hand->numactions);
+    //if ( Debuglevel > 2 )//|| tp->priv.myind == 0 )
+        printf("player.%d: got action.%d cardi.%d senderind.%d -> undergun.%d numactions.%d\n",tp->priv.myind,action,cardi,senderind,hand->undergun,hand->numactions);
     if ( pangea_lastman(myinfo,tp) > 0 )
         return;
-    if ( tp->myind == pangea_slotA(tp) )
+    if ( tp->priv.myind == pangea_slotA(tp) )
     {
         now = (uint32_t)time(NULL);
         for (i=j=0; i<N; i++)
@@ -760,7 +846,7 @@ void pangea_action(PANGEA_HANDARGS)
         hand->undergun = j;
         if ( hand->numactions < N )
         {
-            //printf("T%d: senderind.%d i.%d j.%d -> undergun.%d numactions.%d\n",tp->myind,senderind,i,j,hand->undergun,hand->numactions);
+            //printf("T%d: senderind.%d i.%d j.%d -> undergun.%d numactions.%d\n",tp->priv.myind,senderind,i,j,hand->undergun,hand->numactions);
             //if ( senderind != 0 )
             memset(snapshot,0,sizeof(*snapshot)*(N+1));
             for (x=i=0; i<N; i++)
@@ -834,10 +920,10 @@ void pangea_action(PANGEA_HANDARGS)
             }
         }
     }
-    if ( Debuglevel > 2 )// || tp->myind == 0 )
+    if ( Debuglevel > 2 )// || tp->priv.myind == 0 )
     {
         char *str = jprint(pangea_tablestatus(myinfo,tp),1);
-        printf("player.%d got pangea_action.%d for player.%d action.%d amount %.8f | numactions.%d\n%s\n",tp->myind,cardi,senderind,action,dstr(amount),hand->numactions,str);
+        printf("player.%d got pangea_action.%d for player.%d action.%d amount %.8f | numactions.%d\n%s\n",tp->priv.myind,cardi,senderind,action,dstr(amount),hand->numactions,str);
         free(str);
     }
 }
@@ -859,20 +945,20 @@ void pangea_decoded(PANGEA_HANDARGS)
     destplayer = 0;
     pangea_rwaudit(1,(void *)data,tp->priv.audits,cardi,destplayer,N);
     pangea_rwaudit(0,audit,tp->priv.audits,cardi,destplayer,N);
-    if ( turni == tp->myind )
+    if ( turni == tp->priv.myind )
     {
-        if ( tp->myind != pangea_slotA(tp) )
+        if ( tp->priv.myind != pangea_slotA(tp) )
         {
-            audit[0] = cards777_decode(&audit[tp->myind],tp->priv.xoverz,destplayer,audit[0],tp->priv.outcards,tp->G.numcards,N);
+            audit[0] = cards777_decode(&audit[tp->priv.myind],tp->priv.xoverz,destplayer,audit[0],tp->priv.outcards,tp->G.numcards,N);
             pangea_rwaudit(1,audit,tp->priv.audits,cardi,destplayer,N);
             pangea_sendcmd(myinfo,tp,"decoded",-1,audit[0].bytes,sizeof(bits256)*N,cardi,pangea_prevnode(tp));
         }
         else
         {
-            if ( (card= cards777_checkcard(&cardpriv,cardi,tp->myind,tp->myind,tp->priv.mypriv,hand->cardpubs,tp->G.numcards,audit[0])) >= 0 )
+            if ( (card= cards777_checkcard(&cardpriv,cardi,tp->priv.myind,tp->priv.myind,tp->priv.mypriv,hand->cardpubs,tp->G.numcards,audit[0])) >= 0 )
             {
                 if ( cards777_validate(cardpriv,hand->final[cardi*N + destplayer],hand->cardpubs,tp->G.numcards,audit,N,tp->priv.mypub) < 0 )
-                    PNACL_message("player.%d decoded cardi.%d card.[%d] but it doesnt validate\n",tp->myind,cardi,card);
+                    PNACL_message("player.%d decoded cardi.%d card.[%d] but it doesnt validate\n",tp->priv.myind,cardi,card);
                 pangea_sendcmd(myinfo,tp,"faceup",-1,cardpriv.bytes,sizeof(cardpriv),cardi,cardpriv.txid!=0?0xff:-1);
                 //PNACL_message("-> FACEUP.(%s)\n",hex);
             }
@@ -890,7 +976,7 @@ void pangea_showdown(PANGEA_HANDARGS)
         printf("error nullp myind.%d\n",myind);
         return;
     }
-    if ( Debuglevel > 2 )
+    //if ( Debuglevel > 2 )
         printf("P%d: showdown from sender.%d\n",myind,pm->myind);
     if ( p->betstatus != CARDS777_FOLD && ((tp->priv.automuck == 0 && p->action != CARDS777_SENTCARDS) || (turni == myind && hand->lastbettor == myind)) )
     {

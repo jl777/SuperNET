@@ -85,7 +85,7 @@ int32_t pangea_bet(struct supernet_info *myinfo,struct table_info *tp,struct pla
     pangea_summaryadd(myinfo,tp,action,&tmp,sizeof(tmp),(void *)&bet,sizeof(bet));
     player->balance -= bet, player->bets += bet;
     if ( Debuglevel > 2 )
-        printf("player.%d: player.%d BET %f -> balances %f bets %f\n",tp->myind,player->ind,dstr(bet),dstr(player->balance),dstr(player->bets));
+        printf("player.%d: player.%d BET %f -> balances %f bets %f\n",tp->priv.myind,player->ind,dstr(bet),dstr(player->balance),dstr(player->bets));
     return(action);
 }
 

@@ -63,6 +63,7 @@ struct hand_info
     bits256 othercardpubs[CARDS777_MAXPLAYERS];
     int64_t betsize,lastraise,betsizesnapshot;
     uint32_t starttime,handmask,lastbettor,startdecktime,betstarted,finished,encodestarted;
+    int32_t sentencoded,gotfinal;
     uint32_t readymask,summaries,mismatches,cardi,userinput_starttime,handranks;
     uint8_t button,numactions,undergun,community[5],sharenrs[CARDS777_MAXPLAYERS][255];
 };
@@ -90,11 +91,12 @@ struct game_info
 
 struct table_info
 {
+    struct queueitem DL; queue_t stateQ[2];
     struct table_info *next,*prev; struct game_info G; // must be at top of table_info
     struct player_info *active[CARDS777_MAXPLAYERS];
     uint32_t numhands,summarysize,timestamp; int64_t hostrake,pangearake;
     struct hand_info hand; int64_t snapshot[CARDS777_MAXPLAYERS];
-    uint8_t myind,summary[65536],space[65536*2]; char spacestr[65536*4+1];
+    uint8_t summary[65536],space[65536*2]; char spacestr[65536*4+1];
     struct cards777_privdata priv;
 };
 
@@ -174,11 +176,10 @@ int64_t pangea_splitpot(struct supernet_info *myinfo,struct table_info *tp,uint6
 #define PANGEA_HANDCALLARGS myinfo,pm,tp,data,datalen
 
 void pangea_tablecreate(PANGEA_HANDARGS);
-void pangea_newhand(PANGEA_HANDARGS);
-void pangea_gotdeck(PANGEA_HANDARGS);
-void pangea_encoded(PANGEA_HANDARGS);
+void pangea_newhand(PANGEA_HANDARGS); void pangea_gothand(PANGEA_HANDARGS);
+void pangea_encoded(PANGEA_HANDARGS); void pangea_sentencoded(PANGEA_HANDARGS);
 void pangea_decoded(PANGEA_HANDARGS);
-void pangea_final(PANGEA_HANDARGS);
+void pangea_final(PANGEA_HANDARGS); void pangea_gotfinal(PANGEA_HANDARGS);
 void pangea_preflop(PANGEA_HANDARGS);
 void pangea_card(PANGEA_HANDARGS);
 void pangea_facedown(PANGEA_HANDARGS);
