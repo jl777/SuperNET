@@ -95,7 +95,7 @@ int32_t pangea_rwdata(int32_t rwflag,uint8_t *serialized,int32_t datalen,uint8_t
             if ( rwflag != 0 )
             {
                 X = pubkeys[i];
-                len += iguana_rwbignum(rwflag,&serialized[len],sizeof(bits256),X.bytes);
+                len += iguana_rwbignum(1,pubkeys[i].bytes,sizeof(bits256),X.bytes);
             }
             else
             {
