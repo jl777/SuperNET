@@ -258,7 +258,8 @@ void pangea_newhand(PANGEA_HANDARGS)
         hand->summaries = hand->mismatches = tp->summarysize = 0;
         handid = tp->numhands++;
         pangea_summaryadd(myinfo,tp,CARDS777_START,&handid,sizeof(handid),hand->cardpubs[0].bytes,sizeof(bits256) * (numcards + 1));
-        pangea_sendcmd(myinfo,tp,"gotdeck",-1,hand->checkprod.bytes,sizeof(bits256),hand->cardi,hand->button);
+        pangea_sendcmd(myinfo,tp,"gothand",-1,hand->checkprod.bytes,sizeof(bits256),hand->cardi,hand->button);
+        printf("sent gotdeck\n");
     }
 }
 

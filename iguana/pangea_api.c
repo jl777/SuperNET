@@ -188,6 +188,7 @@ char *pangea_jsondatacmd(struct supernet_info *myinfo,bits256 tablehash,struct p
     jaddstr(argjson,"playeripaddr",ipaddr);
     jaddbits256(argjson,"categoryhash",pangeahash);
     jaddbits256(argjson,"subhash",tablehash);
+    jaddbits256(argjson,"mypub",myinfo->myaddr.pubkey);
     jaddbits256(argjson,"playerpub",myinfo->myaddr.persistent);
     jaddstr(argjson,"handle",jstr(json,"handle"));
     nxt64bits = acct777_nxt64bits(myinfo->myaddr.persistent);
