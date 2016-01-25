@@ -289,11 +289,11 @@ int32_t pangea_checkstart(struct supernet_info *myinfo,int32_t N,int32_t turni,i
                     sleep(PANGEA_PAUSE);
                 hand->encodestarted = (uint32_t)time(NULL);
                 pangea_queuestate(tp,PANGEA_GOTDECKS,PANGEA_GOTFINAL);
-                PNACL_message("start encoded %llx\n",(long long)hand->checkprod.txid);
-                if ( destplayer == tp->priv.myind )
+                PNACL_message("start encoded %llx destplayer.%d vs myind.%d\n",(long long)hand->checkprod.txid,destplayer,tp->priv.myind);
+                if ( pangea_slotB(tp) == tp->priv.myind )
                 {
                     printf("encode to myself\n");
-                    pangea_encoded(myinfo,N,turni,cardi,destplayer,tp->priv.myind,tp,tp->priv.outcards[0].bytes,sizeof(bits256) * tp->G.numactive * tp->G.numcards);
+                    pangea_encoded(myinfo,N,turni,cardi,pangea_slotB(tp),tp->priv.myind,tp,tp->priv.outcards[0].bytes,sizeof(bits256) * tp->G.numactive * tp->G.numcards);
                 }
                 else pangea_sendcmd(myinfo,tp,"encoded",pangea_slotB(tp),tp->priv.outcards[0].bytes,sizeof(bits256) * tp->G.numactive * tp->G.numcards,tp->G.numactive*tp->G.numcards,-1);
                 return(matches);
