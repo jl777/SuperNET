@@ -409,7 +409,7 @@ void pangea_parse(struct supernet_info *myinfo,struct pangea_msghdr *pm,cJSON *a
         else if ( strcmp(method,"accept") == 0 )
         {
             printf("ACCEPT.(%s)\n",jprint(argjson,0));
-            pangea_tableaccept(myinfo,pm,tp,pm->serialized,(int32_t)(pm->sig.allocsize - sizeof(*pm)));
+            //pangea_tableaccept(myinfo,pm,tp,pm->serialized,(int32_t)(pm->sig.allocsize - sizeof(*pm)));
         }
     }
 }
