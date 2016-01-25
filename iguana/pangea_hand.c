@@ -252,6 +252,7 @@ void pangea_newhand(PANGEA_HANDARGS)
     }
     if ( tp->priv.myind >= 0 )
     {
+        printf("set othercardpubs[%d]\n",tp->priv.myind);
         hand->othercardpubs[tp->priv.myind] = hand->checkprod;
         tp->G.numactive = n;
         memset(tp->summary,0,sizeof(tp->summary));
@@ -265,15 +266,16 @@ void pangea_newhand(PANGEA_HANDARGS)
 
 int32_t pangea_checkstart(struct supernet_info *myinfo,struct table_info *tp)
 {
-    int32_t i; struct hand_info *hand = &tp->hand;
+    int32_t i,matches = 0; struct hand_info *hand = &tp->hand;
     if ( bits256_nonz(hand->checkprod) > 0 && hand->encodestarted == 0 )
     {
         for (i=0; i<tp->G.numactive; i++)
         {
-            if ( bits256_cmp(hand->othercardpubs[i],hand->checkprod) != 0 )
-                break;
+             if ( bits256_cmp(hand->othercardpubs[i],hand->checkprod) == 0 )
+                matches++;
+            char str[65],str2[65]; printf("matches.%d (%s vs %s)\n",matches,bits256_str(str,hand->othercardpubs[i]),bits256_str(str2,hand->checkprod));
         }
-        if ( i == tp->G.numactive )
+        if ( matches == tp->G.numactive )
         {
             if ( time(NULL) > (tp->priv.myind*3 + hand->startdecktime) )
             {
@@ -294,6 +296,7 @@ void pangea_gothand(PANGEA_HANDARGS)
 {
     int32_t i,senderind; uint64_t total = 0;
     senderind = pm->myind;
+    printf("P%d: gothand from p%d\n",tp->priv.myind,senderind);
     tp->hand.othercardpubs[senderind] = *(bits256 *)data;
     if ( Debuglevel > 2 )
     {
