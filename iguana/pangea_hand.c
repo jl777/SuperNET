@@ -464,7 +464,10 @@ void pangea_preflop(PANGEA_HANDARGS)
                 pangea_rwaudit(1,audit,tp->priv.audits,cardi,destplayer,N);
                 //PNACL_message("[%llx + %llx] ",*(long long *)&audit[0],(long long)&audit[tp->priv.myind]);
                 if ( destplayer == tp->priv.myind )
-                    pangea_card(myinfo,N,turni,cardi,destplayer,senderind,tp,audit[0].bytes,sizeof(bits256)*N);
+                {
+                    printf("send card to myself\n");
+                    pangea_card(myinfo,N,turni,cardi,destplayer,tp->priv.myind,tp,audit[0].bytes,sizeof(bits256)*N);
+                }
                 else pangea_sendcmd(myinfo,tp,"card",destplayer,audit[0].bytes,sizeof(bits256)*N,cardi,-1);
             }
     }
@@ -476,9 +479,9 @@ void pangea_card(PANGEA_HANDARGS)
     bits256 cardpriv,audit[CARDS777_MAXPLAYERS]; char cardAstr[8],cardBstr[8]; struct player_info *destp;
     hand = &tp->hand;
     destp = tp->active[destplayer];
-    if ( N <= 1 || data == 0 || datalen != sizeof(bits256)*N || destp == 0 )
+    if ( N <= 1 || data == 0 || datalen != sizeof(bits256)*N || destp == 0 || destplayer < 0 )
     {
-        PNACL_message("pangea_card invalid datalen.%d vs %ld\n",datalen,(long)sizeof(bits256)*N);
+        PNACL_message("pangea_card invalid datalen.%d vs %ld destplayer.%d destp.%p\n",datalen,(long)sizeof(bits256)*N,destplayer,destp);
         return;
     }
     pangea_rwaudit(1,(void *)data,tp->priv.audits,cardi,destplayer,N);
