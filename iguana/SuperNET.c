@@ -31,6 +31,7 @@ cJSON *SuperNET_argjson(cJSON *json)
     jdelete(argjson,"check");
     jdelete(argjson,"yourip");
     jdelete(argjson,"myip");
+    jdelete(argjson,"myipaddr");
     return(argjson);
 }
 

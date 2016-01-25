@@ -165,7 +165,7 @@ char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag
 {
     char *hexmsg,*retstr; int32_t len;
     len = (int32_t)strlen(message);
-    char str[65]; printf("multicast.(%s)\n",bits256_str(str,categoryhash));
+    //char str[65]; printf("multicast.(%s)\n",bits256_str(str,categoryhash));
     if ( is_hexstr(message,len) == 0 )
     {
         hexmsg = malloc((len << 1) + 1);

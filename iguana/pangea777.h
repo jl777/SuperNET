@@ -163,6 +163,7 @@ void pangea_gamecreate(struct game_info *gp,uint32_t timestamp,bits256 tablehash
 int32_t pangea_playerparse(struct player_info *p,cJSON *json);
 int32_t pangea_newdeck(struct supernet_info *myinfo,struct table_info *tp);
 int32_t pangea_tableismine(struct supernet_info *myinfo,struct table_info *tp);
+void pangea_playeradd(struct supernet_info *myinfo,struct table_info *tp,struct player_info *p,cJSON *json);
 
 void pangea_checkantes(struct supernet_info *myinfo,struct table_info *tp);
 int32_t pangea_bet(struct supernet_info *myinfo,struct table_info *tp,struct player_info *player,int64_t bet,int32_t action);

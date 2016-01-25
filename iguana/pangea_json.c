@@ -15,6 +15,15 @@
 
 #include "pangea777.h"
 
+void pangea_playeradd(struct supernet_info *myinfo,struct table_info *tp,struct player_info *p,cJSON *json)
+{
+    p->playerpub = jbits256(json,"playerpub");
+    p->ipbits = calc_ipbits(jstr(json,"myipaddr"));
+    safecopy(p->handle,jstr(json,"handle"),sizeof(p->handle));
+    p->balance = 100 * SATOSHIDEN;
+    p->nxt64bits = acct777_nxt64bits(p->playerpub);
+}
+
 cJSON *pangea_tablejson(struct game_info *gp)
 {
     char ipaddr[64],str[64]; struct tai t; int32_t seconds; cJSON *json = cJSON_CreateObject();

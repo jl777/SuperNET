@@ -145,12 +145,15 @@ char *pangea_jsondatacmd(struct supernet_info *myinfo,bits256 tablehash,struct p
     jaddstr(argjson,"myipaddr",myinfo->ipaddr);
     jaddbits256(argjson,"categoryhash",pangeahash);
     jaddbits256(argjson,"subhash",tablehash);
+    jaddbits256(argjson,"playerpub",myinfo->myaddr.persistent);
+    jaddstr(argjson,"handle",jstr(json,"handle"));
     reqstr = jprint(argjson,1);
     datalen = (int32_t)(strlen(reqstr) + 1);
     memcpy(pm->serialized,reqstr,datalen);
     free(reqstr);
     if ( pangea_msgcreate(myinfo,tablehash,pm,datalen) != 0 )
     {
+        printf("pangea send.(%s)\n",cmdstr);
         init_hexbytes_noT(hexstr,(uint8_t *)pm,pm->sig.allocsize);
         return(SuperNET_categorymulticast(myinfo,0,pangeahash,tablehash,hexstr,0,2,1));
     } else return(clonestr("{\"error\":\"couldnt create pangea message\"}"));
@@ -267,6 +270,8 @@ void pangea_tablejoin(PANGEA_HANDARGS)
                     break;
             if ( i == tp->G.numactive )
             {
+                pangea_playeradd(myinfo,tp,&tp->G.P[tp->G.numactive++],json);
+                printf("add player.%d\n",i);
                 pangea_jsondatacmd(myinfo,pm->tablehash,(struct pangea_msghdr *)space,json,"accept",myinfo->ipaddr);
             } else printf("duplicate player.%llu\n",(long long)pm->sig.signer64bits);
             printf("my table! ");
