@@ -220,7 +220,7 @@ bits256 cards777_initdeck(bits256 *cards,bits256 *cardpubs,int32_t numcards,int3
     }
     if ( playerprivs != 0 )
         printf("\n%llx %llx playerprivs\n",(long long)playerprivs[0].txid,(long long)playerprivs[1].txid);
-    if ( 0 && Debuglevel > 2 )
+    //if ( 0 && Debuglevel > 2 )
     {
         for (i=0; i<numcards; i++)
             printf("%d ",cards[i*N].bytes[1]);

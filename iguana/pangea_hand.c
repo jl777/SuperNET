@@ -160,6 +160,15 @@ int32_t pangea_newdeck(struct supernet_info *myinfo,struct table_info *tp)
     datalen = (tp->G.numcards + 1 + n) * sizeof(bits256);
     pangea_sendcmd(myinfo,tp,"newhand",-1,hand->cardpubs[0].bytes,datalen,n,n);
     printf("host sends NEWDECK checkprod.%llx numhands.%d\n",(long long)hand->checkprod.txid,tp->numhands);
+    {
+        bits256 checkprod; char str[65],str2[65];
+        checkprod = cards777_pubkeys(hand->cardpubs,tp->G.numcards,hand->cardpubs[tp->G.numcards]);
+        if ( bits256_cmp(checkprod,hand->checkprod) != 0 )
+            printf("checkprod err.(%s) != (%s)\n",bits256_str(str,checkprod),bits256_str(str2,hand->checkprod));
+        for (i=0; i<tp->G.numcards; i++)
+            printf("%d: %s\n",i,bits256_str(str,hand->cardpubs[i]));
+        printf("cardpubs.(%s)\n",bits256_str(str,hand->cardpubs[tp->G.numcards]));
+    }
     return(0);
 }
 
@@ -178,14 +187,17 @@ void pangea_newhand(PANGEA_HANDARGS)
     tp->myind = -1;
     for (i=0; i<n; i++)
     {
-        if ( (ind= pangea_Pind(tp,pubkeys[numcards + 1 + i])) < 0 )
+        /*if ( (ind= pangea_Pind(tp,pubkeys[numcards + 1 + i])) < 0 )
         {
             char str[65],str2[65]; int32_t j;
             for (j=0; j<n; j++)
                 printf("(j%d %s vs %s)",j,bits256_str(str,tp->G.P[j].playerpub),bits256_str(str2,pubkeys[numcards + 1 + i]));
             printf("illegal pubkey, cant find player[%d] (%s)\n",i,bits256_str(str,pubkeys[numcards + 1 + i]));
             return;
-        }
+        }*/
+        ind = i;
+        tp->G.P[ind].playerpub = pubkeys[numcards + 1 + i];
+        tp->G.P[ind].nxt64bits = acct777_nxt64bits(pubkeys[numcards + 1 + i]);
         tp->active[i] = &tp->G.P[ind];
         if ( i == 0 )
             hand->button = ind;
