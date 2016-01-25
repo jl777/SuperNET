@@ -89,13 +89,15 @@ int32_t pangea_rwdata(int32_t rwflag,uint8_t *serialized,int32_t datalen,uint8_t
     else if ( datalen >= sizeof(bits256) && (datalen % sizeof(bits256)) == 0 )
     {
         n = (int32_t)(datalen / sizeof(bits256));
-        pubkeys = (void *)serialized;
+        if ( rwflag != 0 )
+            pubkeys = (void *)endianedp;
+        else pubkeys = (void *)serialized;
         for (i=0; i<n; i++)
         {
             if ( rwflag != 0 )
             {
                 X = pubkeys[i];
-                len += iguana_rwbignum(1,pubkeys[i].bytes,sizeof(bits256),X.bytes);
+                len += iguana_rwbignum(1,&serialized[len],sizeof(bits256),X.bytes);
             }
             else
             {
