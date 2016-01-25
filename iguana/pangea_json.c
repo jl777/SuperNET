@@ -15,18 +15,21 @@
 
 #include "pangea777.h"
 
-void pangea_playeradd(struct supernet_info *myinfo,struct table_info *tp,struct player_info *p,cJSON *json)
+cJSON *pangea_playerjson(struct supernet_info *myinfo,struct table_info *tp,struct player_info *p)
 {
-    p->playerpub = jbits256(json,"playerpub");
-    p->ipbits = calc_ipbits(jstr(json,"myipaddr"));
-    safecopy(p->handle,jstr(json,"handle"),sizeof(p->handle));
-    p->balance = 100 * SATOSHIDEN;
-    p->nxt64bits = acct777_nxt64bits(p->playerpub);
+    char ipaddr[64]; cJSON *json = cJSON_CreateObject();
+    jaddstr(json,"handle",p->handle);
+    expand_ipbits(ipaddr,p->ipbits);
+    jaddstr(json,"playeripaddr",ipaddr);
+    jaddbits256(json,"playerpub",p->playerpub);
+    return(json);
 }
 
-cJSON *pangea_tablejson(struct game_info *gp)
+cJSON *pangea_tablejson(struct supernet_info *myinfo,struct table_info *tp)
 {
-    char ipaddr[64],str[64]; struct tai t; int32_t seconds; cJSON *json = cJSON_CreateObject();
+    char ipaddr[64],str[64]; struct tai t; int32_t i,seconds; cJSON *array,*json; struct game_info *gp;
+    gp = &tp->G;
+    json = cJSON_CreateObject();
     jaddbits256(json,"tablehash",gp->tablehash);
     expand_ipbits(ipaddr,gp->hostipbits);
     jaddstr(json,"host",ipaddr);
@@ -58,6 +61,15 @@ cJSON *pangea_tablejson(struct game_info *gp)
             }
         }
     }
+    if ( tp->G.numactive > 0 )
+    {
+        array = cJSON_CreateArray();
+        for (i=0; i<tp->G.numactive; i++)
+            jaddi(array,pangea_playerjson(myinfo,tp,&tp->G.P[i]));
+        jadd(json,"players",array);
+    }
+    jaddnum(json,"numactive",tp->G.numactive);
+    printf("tp.%p\n",tp);
     return(json);
 }
 
@@ -109,27 +121,13 @@ cJSON *pangea_lobbyjson(struct supernet_info *myinfo)
         HASH_ITER(hh,cat->sub,sub,tmp)
         {
             if ( (tp= sub->info) != 0 && pangea_opentable(&tp->G) > 0 )
-                jaddi(array,pangea_tablejson(&tp->G));
+                jaddi(array,pangea_tablejson(myinfo,tp));
         }
     }
     jadd(retjson,"tables",array);
     jaddstr(retjson,"result","success");
     printf("LOBBY.(%s)\n",jprint(retjson,0));
     return(retjson);
-}
-
-int32_t pangea_playerparse(struct player_info *p,cJSON *json)
-{
-    char *handle,*ipaddr;
-    if ( (handle= jstr(json,"handle")) != 0 && strlen(handle) < sizeof(p->handle)-1 )
-        strcpy(p->handle,handle);
-    p->playerpub = jbits256(json,"playerpub");
-    if ( (ipaddr= jstr(json,"myipaddr")) != 0 && is_ipaddr(ipaddr) > 0 )
-    {
-        p->ipbits = calc_ipbits(ipaddr);
-        return(0);
-    }
-    return(-1);
 }
 
 cJSON *pangea_handjson(struct hand_info *hand,uint8_t *holecards,int32_t isbot)
@@ -193,7 +191,7 @@ cJSON *pangea_tablestatus(struct supernet_info *myinfo,struct table_info *tp)
     struct player_info *p; int32_t i,n,N,j,countdown,iter; cJSON *item,*array,*json;
     int64_t won[CARDS777_MAXPLAYERS],snapshot[CARDS777_MAXPLAYERS],bets[CARDS777_MAXPLAYERS];
     int64_t total,val; char *handhist,*str; struct game_info *gp; struct hand_info *hand;
-    hand = &tp->hand, gp = &tp->G, N = tp->numactive;
+    hand = &tp->hand, gp = &tp->G, N = tp->G.numactive;
     json = cJSON_CreateObject();
     jaddbits256(json,"tablehash",gp->tablehash);
     jadd64bits(json,"myind",tp->priv.myind);
@@ -201,7 +199,7 @@ cJSON *pangea_tablestatus(struct supernet_info *myinfo,struct table_info *tp)
     jaddnum(json,"maxbuyin",gp->maxbuyin);
     jaddnum(json,"button",tp->hand.button);
     jaddnum(json,"M",gp->M);
-    jaddnum(json,"N",tp->numactive);
+    jaddnum(json,"N",tp->G.numactive);
     jaddnum(json,"numcards",gp->numcards);
     jaddnum(json,"numhands",tp->numhands);
     jaddnum(json,"rake",(double)gp->rakemillis/10.);
@@ -211,14 +209,14 @@ cJSON *pangea_tablestatus(struct supernet_info *myinfo,struct table_info *tp)
     jaddnum(json,"bigblind",dstr(gp->bigblind));
     jaddnum(json,"ante",dstr(gp->ante));
     array = cJSON_CreateArray();
-    for (i=0; i<tp->numactive; i++)
+    for (i=0; i<tp->G.numactive; i++)
         jaddi64bits(array,tp->active[i]!=0?tp->active[i]->nxt64bits:0);
     jadd(json,"addrs",array);
     total = 0;
     for (iter=0; iter<6; iter++)
     {
         array = cJSON_CreateArray();
-        for (i=0; i<tp->numactive; i++)
+        for (i=0; i<tp->G.numactive; i++)
         {
             val = 0;
             if ( (p= tp->active[i]) != 0 )
@@ -311,7 +309,7 @@ void pangea_playerprint(struct supernet_info *myinfo,struct table_info *tp,int32
 void pangea_statusprint(struct supernet_info *myinfo,struct table_info *tp,int32_t myind)
 {
     int32_t i,N; char handstr[64]; uint8_t handvals[7]; struct hand_info *hand = &tp->hand;
-    N = tp->numactive;
+    N = tp->G.numactive;
     for (i=0; i<N; i++)
         pangea_playerprint(myinfo,tp,i,myind);
     handstr[0] = 0;

@@ -132,6 +132,15 @@ struct pangea_msghdr *pangea_msgcreate(struct supernet_info *myinfo,bits256 tabl
     return(0);
 }
 
+void pangea_playeradd(struct supernet_info *myinfo,struct table_info *tp,struct player_info *p,cJSON *json)
+{
+    p->playerpub = jbits256(json,"playerpub");
+    p->ipbits = calc_ipbits(jstr(json,"playeripaddr"));
+    safecopy(p->handle,jstr(json,"handle"), sizeof(p->handle));
+    p->balance = 100 * SATOSHIDEN;
+    p->nxt64bits = acct777_nxt64bits(p->playerpub);
+}
+
 char *pangea_jsondatacmd(struct supernet_info *myinfo,bits256 tablehash,struct pangea_msghdr *pm,cJSON *json,char *cmdstr,char *ipaddr)
 {
     cJSON *argjson; char *reqstr,hexstr[8192]; int32_t datalen; bits256 pangeahash;
@@ -142,7 +151,7 @@ char *pangea_jsondatacmd(struct supernet_info *myinfo,bits256 tablehash,struct p
     jaddstr(argjson,"cmd",cmdstr);
     if ( myinfo->ipaddr[0] == 0 || strncmp(myinfo->ipaddr,"127.0.0.1",strlen("127.0.0.1")) == 0 )
         return(clonestr("{\"error\":\"need to send your ipaddr for now\"}"));
-    jaddstr(argjson,"myipaddr",myinfo->ipaddr);
+    jaddstr(argjson,"playeripaddr",myinfo->ipaddr);
     jaddbits256(argjson,"categoryhash",pangeahash);
     jaddbits256(argjson,"subhash",tablehash);
     jaddbits256(argjson,"playerpub",myinfo->myaddr.persistent);
@@ -263,19 +272,20 @@ void pangea_tablejoin(PANGEA_HANDARGS)
     }
     else if ( (json= cJSON_Parse((char *)pm->serialized)) != 0 )
     {
-        if ( tp->G.creatorbits == myinfo->myaddr.nxt64bits )
+        for (i=0; i<tp->G.numactive; i++)
+            if ( tp->G.P[i].nxt64bits == pm->sig.signer64bits )
+                break;
+        if ( i == tp->G.numactive )
         {
-            for (i=0; i<tp->G.numactive; i++)
-                if ( tp->G.P[i].nxt64bits == pm->sig.signer64bits )
-                    break;
-            if ( i == tp->G.numactive )
+            pangea_playeradd(myinfo,tp,&tp->G.P[tp->G.numactive++],json);
+            printf("add player.%d %p\n",i,tp);
+            printf("NEW LOBBY.(%s)\n",jprint(pangea_lobbyjson(myinfo),1));
+            if ( tp->G.creatorbits == myinfo->myaddr.nxt64bits )
             {
-                pangea_playeradd(myinfo,tp,&tp->G.P[tp->G.numactive++],json);
-                printf("add player.%d\n",i);
                 pangea_jsondatacmd(myinfo,pm->tablehash,(struct pangea_msghdr *)space,json,"accept",myinfo->ipaddr);
-            } else printf("duplicate player.%llu\n",(long long)pm->sig.signer64bits);
-            printf("my table! ");
-        }
+                printf("my table! ");
+            }
+        } else printf("duplicate player.%llu\n",(long long)pm->sig.signer64bits);
         printf("pending join of %llu table.(%s)\n",(long long)pm->sig.signer64bits,bits256_str(str,pm->tablehash));
         free_json(json);
     } else printf("tablejoin cant parse json\n");
@@ -290,21 +300,16 @@ void pangea_tableaccept(PANGEA_HANDARGS)
     {
         if ( (json= cJSON_Parse((char *)pm->serialized)) != 0 )
         {
-            if ( pangea_playerparse(&p,json) == 0 )
+            if ( tp->G.creatorbits == myinfo->myaddr.nxt64bits )
             {
-                p.nxt64bits = pm->sig.signer64bits;
-                tp->G.P[tp->G.numactive++] = p;
-                if ( tp->G.creatorbits == myinfo->myaddr.nxt64bits )
-                {
-                    expand_ipbits(ipaddr,p.ipbits);
-                    printf("connect to new player.(%s)\n",ipaddr);
-                }
-                else if ( pm->sig.signer64bits == myinfo->myaddr.nxt64bits )
-                {
-                    expand_ipbits(ipaddr,tp->G.hostipbits);
-                    printf("connect to host.(%s)\n",ipaddr);
-                }
-            } else printf("error playerparse.(%s)\n",jprint(json,0));
+                expand_ipbits(ipaddr,p.ipbits);
+                printf("connect to new player.(%s)\n",ipaddr);
+            }
+            else if ( pm->sig.signer64bits == myinfo->myaddr.nxt64bits )
+            {
+                expand_ipbits(ipaddr,tp->G.hostipbits);
+                printf("connect to host.(%s)\n",ipaddr);
+            }
             free_json(json);
             if ( ipbits != 0 )
             {
@@ -360,7 +365,7 @@ void pangea_tablecreate(PANGEA_HANDARGS)
     }
 }
 
-void pangea_parse(struct supernet_info *myinfo,struct pangea_msghdr *pm,cJSON *argjson)
+void pangea_parse(struct supernet_info *myinfo,struct pangea_msghdr *pm,cJSON *argjson,char *remoteaddr)
 {
     bits256 tablehash; char *method; struct table_info *tp;
     tablehash = jbits256(argjson,"subhash");
@@ -404,7 +409,7 @@ int32_t pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *
     if ( remoteaddr != 0 && remoteaddr[0] == 0 && strcmp("127.0.0.1",remoteaddr) == 0 && ((uint8_t *)pm)[len-1] == 0 && (argjson= cJSON_Parse((char *)pm)) != 0 )
     {
         printf("pangea_hexmsg RESULT.(%s)\n",jprint(argjson,0));
-        pangea_parse(myinfo,pm,argjson);
+        pangea_parse(myinfo,pm,argjson,remoteaddr);
         free_json(argjson);
         return(1);
     }
@@ -418,7 +423,7 @@ int32_t pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *
         //printf("<<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen,pm->sig.timestamp,pm->sig.allocsize,(char *)pm->serialized,serialized[datalen-1]);
         if ( serialized[datalen-1] == 0 && (argjson= cJSON_Parse((char *)pm->serialized)) != 0 )
         {
-            pangea_parse(myinfo,pm,argjson);
+            pangea_parse(myinfo,pm,argjson,remoteaddr);
             free_json(argjson);
         } else printf("ERROR >>>>>>> (%s) cant parse\n",(char *)pm->serialized);
     }

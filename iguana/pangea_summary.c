@@ -259,7 +259,7 @@ void pangea_summaryadd(struct supernet_info *myinfo,struct table_info *tp,uint8_
 void pangea_summary(PANGEA_HANDARGS)
 {
     char *otherhist,*handhist = 0; int32_t senderind,N,matched = 0; struct hand_info *hand = &tp->hand;
-    senderind = pm->myind, N = tp->numactive;
+    senderind = pm->myind, N = tp->G.numactive;
     if ( Debuglevel > 2 ) // ordering changes crc
         printf("player.%d [%d]: got summary.%d from %d memcmp.%d\n",tp->priv.myind,tp->summarysize,datalen,senderind,memcmp(data,tp->summary,datalen));
     if ( datalen == tp->summarysize )

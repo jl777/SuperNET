@@ -92,7 +92,7 @@ struct table_info
 {
     struct table_info *next,*prev; struct game_info G; // must be at top of table_info
     struct player_info *active[CARDS777_MAXPLAYERS];
-    uint32_t numhands,summarysize,timestamp,numactive; int64_t hostrake,pangearake;
+    uint32_t numhands,summarysize,timestamp; int64_t hostrake,pangearake;
     struct hand_info hand; int64_t snapshot[CARDS777_MAXPLAYERS];
     uint8_t myind,summary[65536],space[65536*2]; char spacestr[65536*4+1];
     struct cards777_privdata priv;
@@ -148,7 +148,7 @@ uint8_t *cards777_encode(bits256 *encoded,bits256 *xoverz,uint8_t *allshares,uin
 void pangea_sendcmd(struct supernet_info *myinfo,struct table_info *tp,char *cmdstr,int32_t destplayer,uint8_t *data,int32_t datalen,int32_t cardi,int32_t turni);
 void pangea_summaryadd(struct supernet_info *myinfo,struct table_info *tp,uint8_t type,void *arg0,int32_t size0,void *arg1,int32_t size1);
 
-cJSON *pangea_tablejson(struct game_info *gp);
+cJSON *pangea_tablejson(struct supernet_info *myinfo,struct table_info *tp);
 cJSON *pangea_lobbyjson(struct supernet_info *myinfo);
 cJSON *pangea_tablestatus(struct supernet_info *myinfo,struct table_info *tp);
 

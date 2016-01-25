@@ -92,7 +92,7 @@ int32_t pangea_bet(struct supernet_info *myinfo,struct table_info *tp,struct pla
 void pangea_antes(struct supernet_info *myinfo,struct table_info *tp)
 {
     int32_t i,n,N; struct player_info *p; uint64_t threshold; int32_t handid;
-    N = tp->numactive;
+    N = tp->G.numactive;
     for (i=0; i<tp->G.N; i++)
     {
         tp->G.P[i].ind = i;
@@ -136,7 +136,7 @@ void pangea_antes(struct supernet_info *myinfo,struct table_info *tp)
 
 void pangea_checkantes(struct supernet_info *myinfo,struct table_info *tp)
 {
-    int64_t bets[CARDS777_MAXPLAYERS+1]; int32_t i,N = tp->numactive; struct hand_info *hand = &tp->hand;
+    int64_t bets[CARDS777_MAXPLAYERS+1]; int32_t i,N = tp->G.numactive; struct hand_info *hand = &tp->hand;
     pangea_snapshot(tp,bets);
     for (i=0; i<N; i++)
     {
@@ -192,7 +192,7 @@ int32_t pangea_sidepots(struct supernet_info *myinfo,struct table_info *tp,int32
 {
     int32_t i,j,nonz,N,n = 0; uint64_t bet,minbet = 0;
     memset(sidepots,0,sizeof(uint64_t)*CARDS777_MAXPLAYERS*CARDS777_MAXPLAYERS);
-    N = tp->numactive;
+    N = tp->G.numactive;
     for (j=0; j<N; j++)
         sidepots[0][j] = bets[j];
     nonz = 1;
@@ -245,7 +245,7 @@ int64_t pangea_splitpot(struct supernet_info *myinfo,struct table_info *tp,uint6
     struct player_info *winners[CARDS777_MAXPLAYERS];
     int32_t j,n,N,numwinners = 0; uint32_t bestrank,rank; uint8_t tmp; struct player_info *p;
     uint64_t total = 0,bet,split,maxrake,rake=0,pangearake=0; char handstr[128],besthandstr[128];
-    N = tp->numactive;
+    N = tp->G.numactive;
     bestrank = 0;
     besthandstr[0] = 0;
     for (j=n=0; j<N; j++)

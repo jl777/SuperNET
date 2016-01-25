@@ -278,7 +278,7 @@ void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func
 
 void iguana_main(void *arg)
 {
-    FILE *fp; cJSON *json; uint8_t *space,secretbuf[512]; uint32_t r; long allocsize; bits256 pangeahash;
+    FILE *fp; cJSON *json; uint8_t *space,secretbuf[512],x; uint32_t r; long allocsize; bits256 pangeahash;
     char helperstr[64],fname[512],*wallet2,*wallet2str,*tmpstr,*confstr,*helperargs,*ipaddr,*coinargs=0,*secret,*jsonstr = arg;
     struct supernet_info *myinfo;
     int32_t i,len,flag,c; bits256 acct,seed,checkhash,wallethash,walletpub,wallet2shared,wallet2priv,wallet2pub;
@@ -404,8 +404,16 @@ void iguana_main(void *arg)
         strcpy(myinfo->ipaddr,"127.0.0.1");
         myinfo->myaddr.selfipbits = (uint32_t)calc_ipbits(myinfo->ipaddr);
     }
-    OS_randombytes(myinfo->privkey.bytes,sizeof(myinfo->privkey));
-    myinfo->myaddr.pubkey = curve25519(myinfo->privkey,curve25519_basepoint9());
+#ifdef __APPLE__
+    x = 1;
+#else
+    x = 0;
+#endif
+    while ( myinfo->myaddr.pubkey.bytes[0] != x )
+    {
+        OS_randombytes(myinfo->privkey.bytes,sizeof(myinfo->privkey));
+        myinfo->myaddr.pubkey = curve25519(myinfo->privkey,curve25519_basepoint9());
+    }
     vcalc_sha256(0,acct.bytes,(void *)myinfo->myaddr.persistent.bytes,sizeof(bits256));
     myinfo->myaddr.nxt64bits = acct.txid;
     RS_encode(myinfo->myaddr.NXTADDR,myinfo->myaddr.nxt64bits);
