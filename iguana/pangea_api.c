@@ -469,19 +469,25 @@ int32_t pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *
                 {
                     if ( tablecmds[i].cmdbits == cmdbits )
                     {
-                        printf("PANGEA.(%s)\n",tablecmds[i].cmdstr);
                         allocsize = pangea_allocsize(tp,0);
                         if ( tp->G.allocsize < allocsize )
                         {
                             tp = pangea_tablealloc(tp);
                             category_infoset(tp->G.gamehash,tp->G.tablehash,tp);
                         }
+                        if ( strcmp(tablecmds[i].cmdstr,"newhand") == 0 )
+                        {
+                            tp->G.numactive = pm->turni;
+                            tp->G.numcards = 52;
+                            if ( tp->G.minplayers == 0 )
+                                tp->G.minplayers = tp->G.maxplayers = tp->G.numactive;
+                        }
+                        printf("PANGEA.(%s) numactive.%d minplayers.%d\n",tablecmds[i].cmdstr,tp->G.numactive,tp->G.minplayers);
                         (*tablecmds[i].func)(myinfo,pm,tp,pm->serialized,(int32_t)(pm->sig.allocsize - sizeof(*pm)));
                         break;
                     }
                 }
             }
-            printf("ERROR >>>>>>> (%s) cant parse\n",(char *)pm->serialized);
         }
     }
     else if ( 0 )
@@ -671,7 +677,7 @@ INT_AND_ARRAY(pangea,host,minplayers,params)
     return(pangea_jsondatacmd(myinfo,tablehash,(struct pangea_msghdr *)space,json,"host",myinfo->ipaddr));
 }
 
-HASH_AND_ARRAY(pangea,join,tablehash,params)
+HASH_AND_STRING(pangea,join,tablehash,handle)
 {
     uint8_t space[sizeof(struct pangea_msghdr) + 4096];
     return(pangea_jsondatacmd(myinfo,tablehash,(struct pangea_msghdr *)space,json,"join",myinfo->ipaddr));
