@@ -228,8 +228,8 @@ char *pangea_jsondatacmd(struct supernet_info *myinfo,bits256 tablehash,struct p
 
 void pangea_sendcmd(struct supernet_info *myinfo,struct table_info *tp,char *cmdstr,int32_t destplayer,uint8_t *data,int32_t datalen,int32_t cardi,int32_t turni)
 {
-    struct player_info *p; struct pangea_msghdr *pm; char *str;
-    pm = (void *)tp->space;
+    struct player_info *p; struct pangea_msghdr *pm; char *str,*hexstr;
+    pm = calloc(1,sizeof(*pm) + datalen);//(void *)tp->space;
     memset(pm,0,sizeof(*pm));
     strncpy(pm->cmd,cmdstr,8);
     pm->turni = turni, pm->myind = tp->priv.myind, pm->cardi = cardi, pm->destplayer = destplayer;
@@ -237,20 +237,23 @@ void pangea_sendcmd(struct supernet_info *myinfo,struct table_info *tp,char *cmd
         pangea_rwdata(1,pm->serialized,datalen,data);
     if ( pangea_msgcreate(myinfo,tp->G.tablehash,pm,datalen) != 0 )
     {
+        hexstr = malloc(pm->sig.allocsize*2 + 1);
+        init_hexbytes_noT(hexstr,(uint8_t *)pm,pm->sig.allocsize);
         if ( destplayer < 0 )
         {
-            init_hexbytes_noT(tp->spacestr,(uint8_t *)pm,pm->sig.allocsize);
-            if ( (str= SuperNET_categorymulticast(myinfo,0,tp->G.gamehash,tp->G.tablehash,tp->spacestr,0,2,1)) != 0 )
+            if ( (str= SuperNET_categorymulticast(myinfo,0,tp->G.gamehash,tp->G.tablehash,hexstr,0,2,1)) != 0 )
                 free(str);
         }
         else if ( (p= tp->active[destplayer]) != 0 )
         {
             // encrypt here!
             int32_t plaintext = 1; // for now
-            if ( (str= SuperNET_DHTsend(myinfo,p->ipbits,tp->G.gamehash,tp->G.tablehash,tp->spacestr,0,0,plaintext)) != 0 )
+            if ( (str= SuperNET_DHTsend(myinfo,p->ipbits,tp->G.gamehash,tp->G.tablehash,hexstr,0,0,plaintext)) != 0 )
                 free(str);
         }
+        free(hexstr);
     }
+    free(pm);
 }
 
 int32_t pangea_allocsize(struct table_info *tp,int32_t setptrs)

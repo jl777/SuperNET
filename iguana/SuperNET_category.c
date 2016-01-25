@@ -168,7 +168,7 @@ char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag
     //char str[65]; printf("multicast.(%s)\n",bits256_str(str,categoryhash));
     if ( is_hexstr(message,len) == 0 )
     {
-        hexmsg = malloc((len << 1) + 1);
+        hexmsg = malloc(((len+1) << 1) + 1);
         init_hexbytes_noT(hexmsg,(uint8_t *)message,len+1);
     } else hexmsg = message;
     plaintext = category_plaintext(myinfo,categoryhash,subhash,plaintext);

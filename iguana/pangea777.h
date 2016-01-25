@@ -96,7 +96,7 @@ struct table_info
     struct player_info *active[CARDS777_MAXPLAYERS];
     uint32_t numhands,summarysize,timestamp; int64_t hostrake,pangearake;
     struct hand_info hand; int64_t snapshot[CARDS777_MAXPLAYERS];
-    uint8_t summary[65536],space[65536*2]; char spacestr[65536*4+1];
+    uint8_t summary[65536];
     struct cards777_privdata priv;
 };
 

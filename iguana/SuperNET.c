@@ -459,7 +459,7 @@ bits256 iguana_actualpubkey(int32_t *offsetp,uint8_t *cipher,int32_t cipherlen,b
 
 int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,char *jsonstr,int32_t delaymillis)
 {
-    int32_t datalen,cipherlen,qlen = -1; uint8_t *serialized,space2[8192],*cipher; cJSON *json;
+    int32_t datalen,cipherlen,qlen = -1; uint8_t *serialized,space2[32768],*cipher; cJSON *json;
     struct supernet_info *myinfo; uint16_t checkc;
     bits256 destpub,privkey,pubkey,nextprivkey,nextpubkey,nextdestpub; void *ptr = 0;
     myinfo = SuperNET_MYINFO(0);

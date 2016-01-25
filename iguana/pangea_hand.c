@@ -432,7 +432,7 @@ void pangea_preflop(PANGEA_HANDARGS)
         PNACL_message("pangea_preflop invalid datalen.%d vs %ld\n",datalen,(long)(2 * N) * (N * N * sizeof(bits256)));
         return;
     }
-    //PNACL_message("preflop player.%d\n",tp->priv.myind);
+    PNACL_message("preflop player.%d\n",tp->priv.myind);
     memcpy(tp->priv.audits,data,datalen);
     if ( tp->priv.myind != pangea_slotA(tp) && tp->priv.myind != pangea_slotB(tp) )
     {
