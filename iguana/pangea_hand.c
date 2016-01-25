@@ -174,7 +174,7 @@ int32_t pangea_newdeck(struct supernet_info *myinfo,struct table_info *tp)
 
 void pangea_newhand(PANGEA_HANDARGS)
 {
-    int32_t i,handid,numcards,n,ind; struct hand_info *hand; bits256 *pubkeys;
+    int32_t i,handid,numcards,n,ind; struct hand_info *hand; bits256 *pubkeys; char str[65],str2[65];
     hand = &tp->hand;
     numcards = tp->G.numcards;
     if ( data == 0 || datalen != (numcards + 1 + tp->G.numactive) * sizeof(bits256) )
@@ -185,6 +185,8 @@ void pangea_newhand(PANGEA_HANDARGS)
     pubkeys = (bits256 *)data;
     n = pm->turni;
     tp->myind = -1;
+    tp->priv.mypriv = myinfo->persistent_priv, tp->priv.mypub = myinfo->myaddr.persistent;
+    tp->G.M = (tp->G.numactive >> 1) + 1;
     for (i=0; i<n; i++)
     {
         /*if ( (ind= pangea_Pind(tp,pubkeys[numcards + 1 + i])) < 0 )
@@ -201,18 +203,23 @@ void pangea_newhand(PANGEA_HANDARGS)
         tp->active[i] = &tp->G.P[ind];
         if ( i == 0 )
             hand->button = ind;
-        if ( tp->G.P[ind].nxt64bits == myinfo->myaddr.nxt64bits )
+        if ( bits256_cmp(tp->G.P[ind].playerpub,myinfo->myaddr.persistent))
             tp->priv.myind = i;
+        printf("player.%d (%s) vs persistent.(%s) myind.%d\n",i,bits256_str(str,tp->G.P[ind].playerpub),bits256_str(str2,myinfo->myaddr.persistent),tp->priv.myind );
     }
-    tp->priv.mypriv = myinfo->privkey, tp->priv.mypub = myinfo->myaddr.pubkey;
-    tp->G.M = (tp->G.numactive >> 1) + 1;
     hand->startdecktime = pm->sig.timestamp;
-    memcpy(hand->cardpubs,pubkeys,numcards * sizeof(bits256));
+    memcpy(hand->cardpubs,pubkeys,(numcards +1 + tp->G.numactive) * sizeof(bits256));
     PNACL_message("player.%d NEWHAND.%llx received numhands.%d button.%d cardi.%d | N %d numactive.%d\n",tp->myind,(long long)hand->cardpubs[numcards].txid,tp->numhands,hand->button,hand->cardi,tp->G.N,n);
+    printf("check.%s\n",bits256_str(str,hand->cardpubs[numcards]));
     hand->checkprod = cards777_pubkeys(hand->cardpubs,numcards,hand->cardpubs[numcards]);
+    printf("B check.%s\n",bits256_str(str,hand->checkprod));
+    printf("P0.%s\n",bits256_str(str,hand->cardpubs[numcards+1]));
+    printf("P1.%s\n",bits256_str(str,hand->cardpubs[numcards+2]));
     if ( bits256_cmp(hand->checkprod,hand->cardpubs[numcards]) != 0 )
     {
-        printf("checkprod mismatch myind.%d\n",tp->myind);
+        for (i=0; i<tp->G.numcards; i++)
+            printf("%d: %s\n",i,bits256_str(str,hand->cardpubs[i]));
+        printf("checkprod mismatch myind.%d %s\n",tp->myind,bits256_str(str,hand->cardpubs[i]));
         return;
     }
     tp->G.numactive = n;
@@ -377,7 +384,7 @@ void pangea_card(PANGEA_HANDARGS)
     pangea_rwaudit(1,(void *)data,tp->priv.audits,cardi,destplayer,N);
     pangea_rwaudit(0,audit,tp->priv.audits,cardi,destplayer,N);
     //PNACL_message("card.%d destplayer.%d [%llx]\n",cardi,destplayer,(long long)audit[0].txid);
-    if ( (card= cards777_checkcard(&cardpriv,cardi,tp->myind,destplayer,myinfo->privkey,hand->cardpubs,tp->G.numcards,audit[0])) >= 0 )
+    if ( (card= cards777_checkcard(&cardpriv,cardi,tp->myind,destplayer,myinfo->persistent_priv,hand->cardpubs,tp->G.numcards,audit[0])) >= 0 )
     {
         destplayer = tp->myind;
         if ( Debuglevel > 2 )

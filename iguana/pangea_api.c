@@ -64,7 +64,7 @@ int32_t pangea_validate(struct pangea_msghdr *pm,bits256 privkey,bits256 pubkey)
 
 int32_t pangea_rwdata(int32_t rwflag,uint8_t *serialized,int32_t datalen,uint8_t *endianedp)
 {
-    int32_t i,n,len = 0; uint64_t x; bits256 X; cJSON *json;
+    int32_t i,n,len = 0; uint64_t x; bits256 X,*pubkeys; cJSON *json;
     if ( rwflag == 0 && serialized[datalen-1] == 0 )
         json = cJSON_Parse((char *)serialized);
     else if ( rwflag == 1 && endianedp[datalen-1] == 0 )
@@ -89,13 +89,17 @@ int32_t pangea_rwdata(int32_t rwflag,uint8_t *serialized,int32_t datalen,uint8_t
     else if ( datalen >= sizeof(bits256) && (datalen % sizeof(bits256)) == 0 )
     {
         n = (int32_t)(datalen / sizeof(bits256));
+        pubkeys = (void *)serialized;
         for (i=0; i<n; i++)
         {
             if ( rwflag != 0 )
-                memcpy(&X,&endianedp[len],sizeof(bits256));
-            len += iguana_rwbignum(1,&serialized[len],sizeof(bits256),&endianedp[len]);
-            if ( rwflag == 0 )
-                memcpy(&endianedp[len],&X,sizeof(bits256));
+                len += iguana_rwbignum(rwflag,&serialized[len],sizeof(bits256),X.bytes);
+            else
+            {
+                len += iguana_rwbignum(0,pubkeys[i].bytes,sizeof(bits256),X.bytes);
+                pubkeys[i] = X;
+                //char str[65]; printf("i.%d len.%d X.%s\n",i,len,bits256_str(str,pubkeys[i]));
+            }
         }
     }
     else
@@ -454,7 +458,7 @@ int32_t pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *
         flag++;
         iguana_rwbignum(0,pm->tablehash.bytes,sizeof(bits256),tablehash.bytes);
         pm->tablehash = tablehash;
-        //printf("<<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen,pm->sig.timestamp,pm->sig.allocsize,(char *)pm->serialized,serialized[datalen-1]);
+        printf("<<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen,pm->sig.timestamp,pm->sig.allocsize,(char *)pm->serialized,serialized[datalen-1]);
         if ( serialized[datalen-1] == 0 && (argjson= cJSON_Parse((char *)pm->serialized)) != 0 )
         {
             pangea_parse(myinfo,pm,argjson,remoteaddr);
