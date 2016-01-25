@@ -297,22 +297,22 @@ void pangea_addfunds(PANGEA_HANDARGS)
     
 }
 
-void pangea_tablejoin(PANGEA_HANDARGS)
+void pangea_tablejoin(struct supernet_info *myinfo,struct table_info *tp,uint8_t *data,int32_t datalen,uint64_t signer64bits,uint32_t sigtimestamp,bits256 sigtablehash)
 {
     char str[65],str2[65],space[4096]; struct tai t; int32_t i,seconds; cJSON *json;
     if ( tp->G.started != 0 )
     {
         OS_conv_unixtime(&t,&seconds,tp->G.finished == 0 ? tp->G.started : tp->G.finished);
-        printf("table.(%s) already %s %s\n",bits256_str(str,pm->tablehash),tp->G.finished == 0 ? "started" : "finished",utc_str(str2,t));
+        printf("table.(%s) already %s %s\n",bits256_str(str,tp->G.tablehash),tp->G.finished == 0 ? "started" : "finished",utc_str(str2,t));
     }
     else if ( tp->G.numactive >= tp->G.maxplayers )
     {
-        printf("table.(%s) numactive.%d >= max.%d\n",bits256_str(str,pm->tablehash),tp->G.numactive,tp->G.maxplayers);
+        printf("table.(%s) numactive.%d >= max.%d\n",bits256_str(str,tp->G.tablehash),tp->G.numactive,tp->G.maxplayers);
     }
-    else if ( (json= cJSON_Parse((char *)pm->serialized)) != 0 )
+    else if ( (json= cJSON_Parse((char *)data)) != 0 )//pm->serialized)) != 0 )
     {
         for (i=0; i<tp->G.numactive; i++)
-            if ( tp->G.P[i].nxt64bits == pm->sig.signer64bits )
+            if ( tp->G.P[i].nxt64bits == signer64bits )
                 break;
         if ( i == tp->G.numactive )
         {
@@ -320,30 +320,30 @@ void pangea_tablejoin(PANGEA_HANDARGS)
             printf("add player.%d %p\n",i,tp);
             if ( tp->G.creatorbits == myinfo->myaddr.nxt64bits )
             {
-                pangea_jsondatacmd(myinfo,pm->tablehash,(struct pangea_msghdr *)space,json,"accept",myinfo->ipaddr);
+                pangea_jsondatacmd(myinfo,sigtablehash,(struct pangea_msghdr *)space,json,"accept",myinfo->ipaddr);
                 printf("my table! ");
             }
-        } else printf("duplicate player.%llu\n",(long long)pm->sig.signer64bits);
-        printf("pending join of %llu table.(%s)\n",(long long)pm->sig.signer64bits,bits256_str(str,pm->tablehash));
+        } else printf("duplicate player.%llu\n",(long long)signer64bits);
+        printf("pending join of %llu table.(%s)\n",(long long)signer64bits,bits256_str(str,sigtablehash));
         free_json(json);
     } else printf("tablejoin cant parse json\n");
 }
 
-void pangea_tableaccept(PANGEA_HANDARGS)
+void pangea_tableaccept(PANGEA_HANDARGS,uint64_t signer64bits,uint32_t sigtimestamp,bits256 sigtablehash)
 {
     cJSON *json; char ipaddr[64]; struct iguana_peer *addr; uint64_t ipbits = 0;
     struct iguana_info *coin; struct player_info p;
     ipaddr[0] = 0;
-    if ( pm->sig.signer64bits == tp->G.creatorbits && tp->G.numactive < tp->G.maxplayers )
+    if ( signer64bits == tp->G.creatorbits && tp->G.numactive < tp->G.maxplayers )
     {
-        if ( (json= cJSON_Parse((char *)pm->serialized)) != 0 )
+        if ( (json= cJSON_Parse((char *)data)) != 0 )//pm->serialized)) != 0 )
         {
             if ( tp->G.creatorbits == myinfo->myaddr.nxt64bits )
             {
                 expand_ipbits(ipaddr,p.ipbits);
                 printf("connect to new player.(%s)\n",ipaddr);
             }
-            else if ( pm->sig.signer64bits == myinfo->myaddr.nxt64bits )
+            else if ( signer64bits == myinfo->myaddr.nxt64bits )
             {
                 expand_ipbits(ipaddr,tp->G.hostipbits);
                 printf("connect to host.(%s)\n",ipaddr);
@@ -376,18 +376,18 @@ void pangea_tableaccept(PANGEA_HANDARGS)
     }
 }
 
-void pangea_tablecreate(PANGEA_HANDARGS)
+void pangea_tablecreate(PANGEA_HANDARGS,uint64_t signer64bits,uint32_t sigtimestamp,bits256 sigtablehash)
 {
     cJSON *json;
     if ( tp->G.gamehash.txid != 0 )
     {
-        char str[65]; printf("table.(%s) already exists\n",bits256_str(str,pm->tablehash));
+        char str[65]; printf("table.(%s) already exists\n",bits256_str(str,sigtablehash));
     }
-    else if ( (json= cJSON_Parse((char *)pm->serialized)) != 0 )
+    else if ( (json= cJSON_Parse((char *)data)) != 0 )//pm->serialized)) != 0 )
     {
         printf("create table\n");
-        pangea_gamecreate(&tp->G,pm->sig.timestamp,pm->tablehash,json);
-        tp->G.creatorbits = pm->sig.signer64bits;
+        pangea_gamecreate(&tp->G,sigtimestamp,sigtablehash,json);
+        tp->G.creatorbits = signer64bits;
         free_json(json);
     }
 }
@@ -415,7 +415,7 @@ void pangea_parse(struct supernet_info *myinfo,struct pangea_msghdr *pm,cJSON *a
         else if ( strcmp(method,"join") == 0 )
         {
             printf("JOIN.(%s)\n",jprint(argjson,0));
-            pangea_tablejoin(myinfo,pm,tp,pm->serialized,(int32_t)(pm->sig.allocsize - sizeof(*pm)));
+            pangea_tablejoin(myinfo,tp,pm->serialized,(int32_t)(pm->sig.allocsize - sizeof(*pm)),pm->sig.signer64bits,pm->sig.timestamp,pm->tablehash);
         }
         else if ( strcmp(method,"accept") == 0 )
         {
@@ -429,7 +429,8 @@ int32_t pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *
 {
     static struct { char *cmdstr; void (*func)(PANGEA_HANDARGS); uint64_t cmdbits; } tablecmds[] =
     {
-        { "newtable", pangea_tablecreate }, { "join", pangea_tablejoin }, { "accept", pangea_tableaccept }, { "addfunds", pangea_addfunds }, { "ping", pangea_ping }, { "ready", pangea_ready },
+        //{ "newtable", pangea_tablecreate }, { "join", pangea_tablejoin }, { "accept", pangea_tableaccept },
+        { "addfunds", pangea_addfunds }, { "ping", pangea_ping }, { "ready", pangea_ready },
         { "newhand", pangea_newhand }, { "gothand", pangea_gothand },
         { "encoded", pangea_encoded }, { "sentencoded", pangea_sentencoded },
         { "final", pangea_final }, { "gotfinal", pangea_gotfinal },
@@ -493,8 +494,8 @@ int32_t pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *
                             if ( tp->G.minplayers == 0 )
                                 tp->G.minplayers = tp->G.maxplayers = tp->G.numactive;
                         }
-                        printf("PANGEA.(%s) numactive.%d minplayers.%d\n",tablecmds[i].cmdstr,tp->G.numactive,tp->G.minplayers);
-                        (*tablecmds[i].func)(myinfo,pm,tp,pm->serialized,(int32_t)(pm->sig.allocsize - sizeof(*pm)));
+                        printf("P%d PANGEA.(%s) numactive.%d minplayers.%d\n",tp->priv.myind,tablecmds[i].cmdstr,tp->G.numactive,tp->G.minplayers);
+                        (*tablecmds[i].func)(myinfo,tp->G.numactive,pm->turni,pm->cardi,pm->destplayer,pm->myind,tp,pm->serialized,(int32_t)(pm->sig.allocsize - sizeof(*pm)));
                         break;
                     }
                 }

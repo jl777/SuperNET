@@ -172,10 +172,10 @@ int32_t pangea_bet(struct supernet_info *myinfo,struct table_info *tp,struct pla
 int32_t pangea_sidepots(struct supernet_info *myinfo,struct table_info *tp,int32_t dispflag,int64_t sidepots[CARDS777_MAXPLAYERS][CARDS777_MAXPLAYERS],int64_t *bets);
 int64_t pangea_splitpot(struct supernet_info *myinfo,struct table_info *tp,uint64_t *pangearakep,int64_t sidepot[CARDS777_MAXPLAYERS],int32_t rakemillis);
 
-#define PANGEA_HANDARGS struct supernet_info *myinfo,struct pangea_msghdr *pm,struct table_info *tp,uint8_t *data,int32_t datalen
-#define PANGEA_HANDCALLARGS myinfo,pm,tp,data,datalen
+#define PANGEA_HANDARGS struct supernet_info *myinfo,int32_t N,int32_t turni,int32_t cardi,int32_t destplayer,int32_t senderind,struct table_info *tp,uint8_t *data,int32_t datalen
+#define PANGEA_HANDCALLARGS myinfo,N,turni,cardi,destplayer,senderind,tp,data,datalen
 
-void pangea_tablecreate(PANGEA_HANDARGS);
+void pangea_tablecreate(PANGEA_HANDARGS,uint64_t signer64bits,uint32_t sigtimestamp,bits256 sigtablehash);
 void pangea_newhand(PANGEA_HANDARGS); void pangea_gothand(PANGEA_HANDARGS);
 void pangea_encoded(PANGEA_HANDARGS); void pangea_sentencoded(PANGEA_HANDARGS);
 void pangea_decoded(PANGEA_HANDARGS);
