@@ -152,22 +152,52 @@ void pangea_playeradd(struct supernet_info *myinfo,struct table_info *tp,struct 
     p->nxt64bits = acct777_nxt64bits(p->playerpub);
 }
 
-struct table_info *pangea_table(bits256 tablehash)
+int32_t pangea_allocsize(struct table_info *tp,int32_t N,int32_t setptrs)
 {
-    struct table_info *tp; int32_t allocsize; bits256 pangeahash; char str[65];
+    long allocsize = sizeof(*tp); int32_t numcards = 52;//tp->G.numcards;
+    //N = tp->G.numactive;
+    allocsize += sizeof(bits256) * (2 * ((N * numcards * N) + (N * numcards)));
+    //allocsize += sizeof(bits256) * ((numcards + 1) + (N * numcards));
+    if ( tp != 0 && setptrs != 0 )
+    {
+        //tp->hand.cardpubs = tp->priv.data;
+        //tp->hand.final = &tp->hand.cardpubs[numcards + 1 + N];
+        tp->priv.audits = tp->priv.data;//&tp->hand.final[N * numcards];
+        tp->priv.outcards = &tp->priv.audits[N * numcards * N];
+        tp->priv.xoverz = &tp->priv.outcards[N * numcards];
+        tp->priv.allshares = (void *)&tp->priv.xoverz[N * numcards]; // N*numcards*N
+    }
+    return((int32_t)allocsize);
+}
+
+struct table_info *pangea_tablealloc(struct table_info *tp,int32_t N)
+{
+    int32_t allocsize = pangea_allocsize(tp,N,0);
+    if ( tp == 0 || tp->G.allocsize != allocsize )
+    {
+        tp = realloc(tp,allocsize);
+        pangea_allocsize(tp,N,1);
+    }
+    return(tp);
+}
+
+struct table_info *pangea_table(bits256 tablehash,int32_t N)
+{
+    struct table_info *tp; bits256 pangeahash; char str[65];
     pangeahash = calc_categoryhashes(0,"pangea",0);
     if ( (tp= category_info(pangeahash,tablehash)) == 0 )
     {
-        allocsize = (int32_t)(sizeof(tp->G) + sizeof(void *)*2);
-        if ( (tp= calloc(1,allocsize)) == 0 )
-            printf("error: couldnt create table.(%s)\n",bits256_str(str,tablehash));
+        tp = pangea_tablealloc(0,N);
+        //allocsize = (int32_t)(sizeof(tp->G) + sizeof(void *)*2);
+        //if ( (tp= calloc(1,allocsize)) == 0 )
+        //    printf("error: couldnt create table.(%s)\n",bits256_str(str,tablehash));
     }
     if ( tp != 0 )
     {
         category_subscribe(SuperNET_MYINFO(0),pangeahash,tablehash);
         if ( category_infoset(pangeahash,tablehash,tp) == 0 )
             printf("error: couldnt set table.(%s)\n",bits256_str(str,tablehash)), tp = 0;
-        else tp->G.allocsize = allocsize;
+        //else tp->G.allocsize = allocsize;
     }
     return(tp);
 }
@@ -192,7 +222,7 @@ char *pangea_jsondatacmd(struct supernet_info *myinfo,bits256 tablehash,struct p
     jaddbits256(argjson,"playerpub",myinfo->myaddr.persistent);
     jaddstr(argjson,"handle",jstr(json,"handle"));
     nxt64bits = acct777_nxt64bits(myinfo->myaddr.persistent);
-    if ( (tp= pangea_table(tablehash)) != 0 && tp->G.numactive < tp->G.maxplayers )
+    if ( (tp= pangea_table(tablehash,9)) != 0 && tp->G.numactive < tp->G.maxplayers )
     {
         for (i=0; i<tp->G.numactive; i++)
             if ( tp->G.P[i].nxt64bits == nxt64bits )
@@ -254,35 +284,6 @@ void pangea_sendcmd(struct supernet_info *myinfo,struct table_info *tp,char *cmd
         free(hexstr);
     }
     free(pm);
-}
-
-int32_t pangea_allocsize(struct table_info *tp,int32_t setptrs)
-{
-    long allocsize = sizeof(*tp); int32_t N,numcards = tp->G.numcards;
-    N = tp->G.numactive;
-    allocsize += sizeof(bits256) * (2 * ((N * numcards * N) + (N * numcards)));
-    allocsize += sizeof(bits256) * ((numcards + 1) + (N * numcards));
-    if ( setptrs != 0 )
-    {
-        tp->hand.cardpubs = tp->priv.data;
-        tp->hand.final = &tp->hand.cardpubs[numcards + 1 + N];
-        tp->priv.audits = &tp->hand.final[N * numcards];
-        tp->priv.outcards = &tp->priv.audits[N * numcards * N];
-        tp->priv.xoverz = &tp->priv.outcards[N * numcards];
-        tp->priv.allshares = (void *)&tp->priv.xoverz[N * numcards]; // N*numcards*N
-    }
-    return((int32_t)allocsize);
-}
-
-struct table_info *pangea_tablealloc(struct table_info *tp)
-{
-    int32_t allocsize = pangea_allocsize(tp,0);
-    if ( tp->G.allocsize != allocsize )
-    {
-        tp = realloc(tp,allocsize);
-        pangea_allocsize(tp,1);
-    }
-    return(tp);
 }
 
 void pangea_ping(PANGEA_HANDARGS)
@@ -399,7 +400,7 @@ void pangea_parse(struct supernet_info *myinfo,struct pangea_msghdr *pm,cJSON *a
 {
     bits256 tablehash; char *method; struct table_info *tp;
     tablehash = jbits256(argjson,"subhash");
-    tp = pangea_table(tablehash);
+    tp = pangea_table(tablehash,9);
     if ( (method= jstr(argjson,"cmd")) != 0 )
     {
         if ( strcmp(method,"lobby") == 0 )
@@ -477,19 +478,17 @@ int32_t pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *
         }
         else
         {
-            if ( (tp= pangea_table(tablehash)) != 0 && pangea_rwdata(0,pm->serialized,len-(int32_t)((long)pm->serialized-(long)pm),pm->serialized) > 0 )
+            if ( (tp= pangea_table(tablehash,9)) != 0 && pangea_rwdata(0,pm->serialized,len-(int32_t)((long)pm->serialized-(long)pm),pm->serialized) > 0 )
             {
                 cmdbits = stringbits(pm->cmd);
                 for (i=0; i<sizeof(tablecmds)/sizeof(*tablecmds); i++)
                 {
                     if ( tablecmds[i].cmdbits == cmdbits )
                     {
-                        allocsize = pangea_allocsize(tp,0);
+                        allocsize = pangea_allocsize(tp,9,0);
                         if ( tp->G.allocsize < allocsize )
-                        {
-                            tp = pangea_tablealloc(tp);
-                            category_infoset(tp->G.gamehash,tp->G.tablehash,tp);
-                        }
+                            tp = pangea_tablealloc(tp,9);
+                        category_infoset(tp->G.gamehash,tp->G.tablehash,tp);
                         if ( strcmp(tablecmds[i].cmdstr,"newhand") == 0 )
                         {
                             tp->G.numactive = pm->turni;
@@ -683,7 +682,7 @@ INT_AND_ARRAY(pangea,host,minplayers,params)
 {
     bits256 tablehash; struct table_info *tp; uint8_t space[sizeof(struct pangea_msghdr) + 4096];
     OS_randombytes(tablehash.bytes,sizeof(tablehash));
-    tp = pangea_table(tablehash);
+    tp = pangea_table(tablehash,9);
     if ( tp != 0 )
     {
         pangea_gamecreate(&tp->G,(uint32_t)time(NULL),tablehash,json);
@@ -701,14 +700,14 @@ HASH_AND_STRING(pangea,join,tablehash,handle)
 HASH_AND_ARRAY(pangea,start,tablehash,params)
 {
     struct table_info *tp; int32_t allocsize;
-    if ( (tp= pangea_table(tablehash)) != 0 )
+    if ( (tp= pangea_table(tablehash,9)) != 0 )
     {
         if ( tp->G.numactive >= tp->G.minplayers && pangea_tableismine(myinfo,tp) >= 0 )
         {
-            allocsize = pangea_allocsize(tp,0);
+            allocsize = pangea_allocsize(tp,9,0);
             if ( tp->G.allocsize < allocsize )
             {
-                tp = pangea_tablealloc(tp);
+                tp = pangea_tablealloc(tp,9);
                 category_infoset(tp->G.gamehash,tp->G.tablehash,tp);
             }
             if ( tp->G.creatorbits == myinfo->myaddr.nxt64bits )

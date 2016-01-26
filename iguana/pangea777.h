@@ -59,7 +59,8 @@ struct cards777_privdata
 
 struct hand_info
 {
-    bits256 checkprod,*cardpubs,*final,community256[5],cards[CARDS777_MAXPLAYERS][2];
+    bits256 checkprod,cardpubs[CARDS777_MAXCARDS + 1 + CARDS777_MAXPLAYERS],community256[5];
+    bits256 final[CARDS777_MAXCARDS * CARDS777_MAXPLAYERS],cards[CARDS777_MAXPLAYERS][2];
     bits256 othercardpubs[CARDS777_MAXPLAYERS];
     int64_t betsize,lastraise,betsizesnapshot;
     uint32_t starttime,handmask,lastbettor,startdecktime,betstarted,finished,encodestarted;

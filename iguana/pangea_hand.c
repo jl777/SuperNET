@@ -125,12 +125,8 @@ int32_t pangea_myrank(struct supernet_info *myinfo,struct table_info *tp,struct 
 
 void pangea_clearhand(struct table_info *tp)
 {
-    bits256 *final,*cardpubs; int32_t i; struct hand_info *hand = &tp->hand;
-    final = hand->final, cardpubs = hand->cardpubs;
+    int32_t i; struct hand_info *hand = &tp->hand;
     memset(hand,0,sizeof(*hand));
-    hand->final = final, hand->cardpubs = cardpubs;
-    memset(final,0,sizeof(*final) * tp->G.N * tp->G.numcards);
-    memset(cardpubs,0,sizeof(*cardpubs) * (1 + tp->G.numcards));
     for (i=0; i<5; i++)
         hand->community[i] = 0xff;
     for (i=0; i<tp->G.N; i++)
