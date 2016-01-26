@@ -16,7 +16,7 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
         $(".debuglog").show();
         debug_on = 1;
 
-        $("html, body").animate({ scrollTop: $(document).height() }, 1000);
+        //$("html, body").animate({ scrollTop: $(document).height() }, 1000);
 
 
     };
