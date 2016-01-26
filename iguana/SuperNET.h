@@ -141,6 +141,7 @@ struct category_info *category_find(bits256 categoryhash,bits256 subhash);
 void SuperNET_hexmsgprocess(struct supernet_info *myinfo,cJSON *json,char *hexmsg,char *remoteaddr);
 struct category_info *category_funcset(bits256 categoryhash,int32_t (*process_func)(struct supernet_info *myinfo,void *data,int32_t datalen,char *remoteaddr));
 int32_t pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *remoteaddr);
+void pangea_queues(struct supernet_info *myinfo);
 
 int32_t SuperNET_str2hex(uint8_t *hex,char *str);
 void SuperNET_hex2str(char *str,uint8_t *hex,int32_t len);

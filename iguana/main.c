@@ -513,6 +513,7 @@ void iguana_main(void *arg)
                     flag += iguana_bundleiters(ptr->coin,ptr->bp,ptr->timelimit);
                 myfree(ptr,ptr->allocsize);
             }
+            else pangea_queues(SuperNET_MYINFO(0));
         }
         if ( flag == 0 )
             sleep(1);

@@ -188,6 +188,9 @@ struct table_info *pangea_table(bits256 tablehash,int32_t N)
     if ( (tp= category_info(pangeahash,tablehash)) == 0 )
     {
         tp = pangea_tablealloc(0,N);
+        memset(tp,0,sizeof(*tp));
+        iguana_initQ(&tp->stateQ[0],"stateQ[0]");
+        iguana_initQ(&tp->stateQ[1],"stateQ[1]");
         //allocsize = (int32_t)(sizeof(tp->G) + sizeof(void *)*2);
         //if ( (tp= calloc(1,allocsize)) == 0 )
         //    printf("error: couldnt create table.(%s)\n",bits256_str(str,tablehash));
@@ -258,28 +261,36 @@ char *pangea_jsondatacmd(struct supernet_info *myinfo,bits256 tablehash,struct p
 
 void pangea_sendcmd(struct supernet_info *myinfo,struct table_info *tp,char *cmdstr,int32_t destplayer,uint8_t *data,int32_t datalen,int32_t cardi,int32_t turni)
 {
-    struct player_info *p; struct pangea_msghdr *pm; char *str,*hexstr;
+    struct player_info *p; struct pangea_msghdr *pm; char *str,*hexstr; int32_t plaintext,loopback = 0;
     pm = calloc(1,sizeof(*pm) + datalen);//(void *)tp->space;
     memset(pm,0,sizeof(*pm));
     strncpy(pm->cmd,cmdstr,8);
     pm->turni = turni, pm->myind = tp->priv.myind, pm->cardi = cardi, pm->destplayer = destplayer;
     if ( data != 0 )
         pangea_rwdata(1,pm->serialized,datalen,data);
+    // additional layer of encryption can be added here, make sure to decrypt on incoming
+    plaintext = 1; // for now
     if ( pangea_msgcreate(myinfo,tp->G.tablehash,pm,datalen) != 0 )
     {
         hexstr = malloc(pm->sig.allocsize*2 + 1);
         init_hexbytes_noT(hexstr,(uint8_t *)pm,pm->sig.allocsize);
+        if ( destplayer == tp->priv.myind )
+            loopback = 1;
         if ( destplayer < 0 )
         {
-            if ( (str= SuperNET_categorymulticast(myinfo,0,tp->G.gamehash,tp->G.tablehash,hexstr,0,2,1)) != 0 )
+            if ( (str= SuperNET_categorymulticast(myinfo,0,tp->G.gamehash,tp->G.tablehash,hexstr,0,2,plaintext)) != 0 )
                 free(str);
+            loopback = 1;
         }
         else if ( (p= tp->active[destplayer]) != 0 )
         {
-            // encrypt here!
-            int32_t plaintext = 1; // for now
             if ( (str= SuperNET_DHTsend(myinfo,p->ipbits,tp->G.gamehash,tp->G.tablehash,hexstr,0,0,plaintext)) != 0 )
                 free(str);
+        }
+        if ( loopback != 0 )
+        {
+            printf("LOOPBACK\n");
+            category_posthexmsg(myinfo,tp->G.gamehash,GENESIS_PUBKEY,hexstr,tai_now(),0);
         }
         free(hexstr);
     }

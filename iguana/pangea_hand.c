@@ -266,7 +266,7 @@ void pangea_newhand(PANGEA_HANDARGS)
     }
 }
 
-int32_t pangea_checkstart(struct supernet_info *myinfo,int32_t N,int32_t turni,int32_t cardi,int32_t destplayer,int32_t senderind,struct table_info *tp)
+int32_t pangea_checkstart(struct supernet_info *myinfo,struct table_info *tp)
 {
     int32_t i,matches = 0; struct hand_info *hand = &tp->hand;
     if ( bits256_nonz(hand->checkprod) > 0 && hand->encodestarted == 0 )
@@ -281,17 +281,13 @@ int32_t pangea_checkstart(struct supernet_info *myinfo,int32_t N,int32_t turni,i
         {
             if ( time(NULL) > (tp->priv.myind + hand->startdecktime) )
             {
-                if ( PANGEA_PAUSE > 0 )
-                    sleep(PANGEA_PAUSE);
+                //if ( PANGEA_PAUSE > 0 )
+                //    sleep(PANGEA_PAUSE);
                 hand->encodestarted = (uint32_t)time(NULL);
+                tp->hand.sentencoded |= (1 << tp->priv.myind);
                 pangea_queuestate(tp,PANGEA_GOTDECKS,PANGEA_GOTFINAL);
-                PNACL_message("start encoded %llx destplayer.%d vs myind.%d\n",(long long)hand->checkprod.txid,destplayer,tp->priv.myind);
-                if ( pangea_slotB(tp) == tp->priv.myind )
-                {
-                    printf("encode to myself\n");
-                    pangea_encoded(myinfo,N,turni,cardi,pangea_slotB(tp),tp->priv.myind,tp,tp->priv.outcards[0].bytes,sizeof(bits256) * tp->G.numactive * tp->G.numcards);
-                }
-                else pangea_sendcmd(myinfo,tp,"encoded",pangea_slotB(tp),tp->priv.outcards[0].bytes,sizeof(bits256) * tp->G.numactive * tp->G.numcards,tp->G.numactive*tp->G.numcards,-1);
+                PNACL_message("start encoded %llx destplayer.%d vs myind.%d\n",(long long)hand->checkprod.txid,pangea_slotB(tp),tp->priv.myind);
+                pangea_sendcmd(myinfo,tp,"encoded",pangea_slotB(tp),tp->priv.outcards[0].bytes,sizeof(bits256) * tp->G.numactive * tp->G.numcards,tp->G.numactive*tp->G.numcards,-1);
                 return(matches);
             }
         } else printf("i.%d != numactive.%d\n",matches,tp->G.numactive);
@@ -314,7 +310,7 @@ void pangea_gothand(PANGEA_HANDARGS)
         PNACL_message("balances %.8f [%.8f] | ",dstr(total),dstr(total + tp->G.hostrake + tp->G.pangearake));
         PNACL_message("player.%d pangea_gotdeck from P.%d otherpubs.%llx\n",tp->priv.myind,senderind,(long long)tp->hand.othercardpubs[senderind].txid);
     }
-    pangea_checkstart(myinfo,N,turni,cardi,destplayer,senderind,tp);
+    pangea_checkstart(myinfo,tp);
 }
 
 void pangea_sentencoded(PANGEA_HANDARGS)
@@ -381,9 +377,10 @@ void pangea_final(PANGEA_HANDARGS)
     pangea_sendcmd(myinfo,tp,"gotfinal",-1,0,0,tp->priv.myind,tp->priv.myind);
 }
 
-int32_t pangea_queueprocess(struct supernet_info *myinfo,int32_t N,int32_t turni,int32_t cardi,int32_t destplayer,int32_t senderind,struct table_info *tp)
+int32_t pangea_queueprocess(struct supernet_info *myinfo,struct table_info *tp)
 {
     int32_t iter,retval,flag = 0; double diff; struct pangea_queueitem *ptr;
+    //char str[65]; printf("queueprocess.(%s)\n",bits256_str(str,tp->G.tablehash));
     for (iter=0; iter<2; iter++)
     {
         while ( (ptr= queue_dequeue(&tp->stateQ[iter],0)) != 0 )
@@ -397,11 +394,11 @@ int32_t pangea_queueprocess(struct supernet_info *myinfo,int32_t N,int32_t turni
             switch ( ptr->waitevent )
             {
                 case PANGEA_GOTDECKS:
-                    if ( pangea_checkstart(myinfo,N,turni,cardi,destplayer,senderind,tp) > 0 )
+                    if ( pangea_checkstart(myinfo,tp) > 0 )
                         return(1);
                     break;
                 case PANGEA_GOTFINAL:
-                    printf("sentencoded.%x\n",tp->hand.sentencoded);
+                    //printf("sentencoded.%x, waiting for gotfinal\n",tp->hand.sentencoded);
                     break;
             }
             if ( retval != 0 )
@@ -417,6 +414,20 @@ int32_t pangea_queueprocess(struct supernet_info *myinfo,int32_t N,int32_t turni
         }
     }
     return(flag);
+}
+
+void pangea_queues(struct supernet_info *myinfo)
+{
+    struct category_info *cat,*sub,*tmp; struct table_info *tp;
+    pangea_update(myinfo);
+    if ( (cat= category_find(calc_categoryhashes(0,"pangea",0),GENESIS_PUBKEY)) != 0 )
+    {
+        HASH_ITER(hh,cat->sub,sub,tmp)
+        {
+            if ( (tp= sub->info) != 0 )
+                pangea_queueprocess(myinfo,tp);
+        }
+    }
 }
 
 void pangea_preflop(PANGEA_HANDARGS)
@@ -462,9 +473,10 @@ void pangea_preflop(PANGEA_HANDARGS)
                 if ( destplayer == tp->priv.myind )
                 {
                     printf("send card to myself\n");
-                    pangea_card(myinfo,N,turni,cardi,destplayer,tp->priv.myind,tp,audit[0].bytes,sizeof(bits256)*N);
+                   // pangea_card(myinfo,N,turni,cardi,destplayer,tp->priv.myind,tp,audit[0].bytes,sizeof(bits256)*N);
                 }
-                else pangea_sendcmd(myinfo,tp,"card",destplayer,audit[0].bytes,sizeof(bits256)*N,cardi,-1);
+               // else
+                    pangea_sendcmd(myinfo,tp,"card",destplayer,audit[0].bytes,sizeof(bits256)*N,cardi,-1);
             }
     }
 }
