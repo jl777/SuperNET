@@ -10,3 +10,9 @@ agents/iguana.exe
 iguana/pnacl/Release/iguana_unstripped.pexe
 
 iguana/pnacl/Release/iguana_unstripped.bc
+
+*.deps
+
+iguana/pnacl/Release/iguana_unstripped.bc---linked.pre_opt.pexe
+
+*.stamp

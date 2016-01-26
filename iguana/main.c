@@ -472,7 +472,7 @@ void iguana_main(void *arg)
     category_subscribe(&MYINFO,GENESIS_PUBKEY,GENESIS_PUBKEY);
     pangeahash = calc_categoryhashes(0,"pangea",0);
     category_subscribe(myinfo,pangeahash,GENESIS_PUBKEY);
-    category_funcset(pangeahash,pangea_hexmsg);
+    category_processfunc(pangeahash,pangea_hexmsg);
     for (i=0; i<IGUANA_NUMHELPERS; i++)
     {
         sprintf(helperstr,"{\"name\":\"helper.%d\"}",i);

@@ -74,12 +74,34 @@ void *category_infoset(bits256 categoryhash,bits256 subhash,void *info)
     return(0);
 }
 
-struct category_info *category_funcset(bits256 categoryhash,int32_t (*process_func)(struct supernet_info *myinfo,void *data,int32_t datalen,char *remoteaddr))
+struct category_info *category_processfunc(bits256 categoryhash,int32_t (*process_func)(struct supernet_info *myinfo,void *data,int32_t datalen,char *remoteaddr))
 {
     struct category_info *cat;
     if ( (cat= category_find(categoryhash,GENESIS_PUBKEY)) != 0 )
     {
         cat->process_func = process_func;
+        return(cat);
+    }
+    return(0);
+}
+
+struct category_info *category_blockhashfunc(bits256 categoryhash,bits256 subhash,int32_t (*blockhash_func)(void *blockhashp,void *data,int32_t datalen))
+{
+    struct category_info *cat;
+    if ( (cat= category_find(categoryhash,subhash)) != 0 )
+    {
+        cat->blockhash_func = blockhash_func;
+        return(cat);
+    }
+    return(0);
+}
+
+struct category_info *category_stakehitfunc(bits256 categoryhash,bits256 subhash,uint64_t (*stakehit_func)(struct supernet_info *myinfo,void *categoryinfo,void *subinfo,bits256 addr))
+{
+    struct category_info *cat;
+    if ( (cat= category_find(categoryhash,subhash)) != 0 )
+    {
+        cat->stakehit_func = stakehit_func;
         return(cat);
     }
     return(0);

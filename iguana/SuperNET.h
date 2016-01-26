@@ -43,19 +43,6 @@
 #define SUPERNET_APIVERSION 0
 #define SUPERNET_MAXTIMEDIFF 10
 
-/*#define LB_OFFSET 1
-#define PUBGLOBALS_OFFSET 2
-#define PUBRELAYS_OFFSET 3
-
-
-#define MAX_SERVERNAME 128
-struct relayargs
-{
-    char name[16],endpoint[MAX_SERVERNAME];
-    int32_t sock,type,bindflag,sendtimeout,recvtimeout;
-};
-struct relay_info { int32_t sock,num,mytype,desttype; struct endpoint connections[1 << CONNECTION_NUMBITS]; };*/
-
 #define CONNECTION_NUMBITS 10
 struct endpoint { queue_t nnrecvQ; int32_t nnsock,nnind; uint32_t ipbits; uint16_t port,directind; uint8_t transport,nn; };
 
@@ -99,13 +86,25 @@ struct supernet_info
     struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ; int32_t numagents;
 };
 
-struct supernet_endpoint
+/*struct supernet_endpoint
 {
     char name[64]; struct endpoint ep;
     int32_t (*nnrecvfunc)(struct supernet_info *,struct supernet_endpoint *,int32_t ind,uint8_t *msg,int32_t nnlen);
     queue_t nnrecvQ;
     int32_t nnsock,num; struct endpoint eps[];
+};*/
+
+struct category_info
+{
+    UT_hash_handle hh; queue_t Q;
+    int32_t (*process_func)(struct supernet_info *myinfo,void *data,int32_t datalen,char *remoteaddr);
+    int32_t (*blockhash_func)(void *blockhashp,void *data,int32_t datalen); // returns len of blockhash
+    uint64_t (*stakehit_func)(struct supernet_info *myinfo,void *categoryinfo,void *subinfo,bits256 addr);
+    bits256 hash; void *info; struct category_info *sub;
 };
+extern struct category_info *Categories;
+struct category_msg { struct queueitem DL; struct tai t; uint64_t remoteipbits; int32_t len; uint8_t msg[]; };
+
 
 void expand_epbits(char *endpoint,struct endpoint epbits);
 struct endpoint calc_epbits(char *transport,uint32_t ipbits,uint16_t port,int32_t type);
@@ -125,21 +124,11 @@ bits256 SuperNET_sharedseed(bits256 privkey,bits256 otherpub);
 int32_t SuperNET_decrypt(bits256 *senderpubp,uint64_t *senderbitsp,uint32_t *timestampp,bits256 mypriv,bits256 mypub,uint8_t *dest,int32_t maxlen,uint8_t *src,int32_t len);
 cJSON *SuperNET_argjson(cJSON *json);
 
-
-struct category_info
-{
-    UT_hash_handle hh; queue_t Q;
-    int32_t (*process_func)(struct supernet_info *myinfo,void *data,int32_t datalen,char *remoteaddr);
-    bits256 hash; void *info; struct category_info *sub;
-};
-extern struct category_info *Categories;
-struct category_msg { struct queueitem DL; struct tai t; uint64_t remoteipbits; int32_t len; uint8_t msg[]; };
-
 void *category_info(bits256 categoryhash,bits256 subhash);
 void *category_infoset(bits256 categoryhash,bits256 subhash,void *info);
 struct category_info *category_find(bits256 categoryhash,bits256 subhash);
 void SuperNET_hexmsgprocess(struct supernet_info *myinfo,cJSON *json,char *hexmsg,char *remoteaddr);
-struct category_info *category_funcset(bits256 categoryhash,int32_t (*process_func)(struct supernet_info *myinfo,void *data,int32_t datalen,char *remoteaddr));
+struct category_info *category_processfunc(bits256 categoryhash,int32_t (*process_func)(struct supernet_info *myinfo,void *data,int32_t datalen,char *remoteaddr));
 int32_t pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *remoteaddr);
 void pangea_queues(struct supernet_info *myinfo);
 
