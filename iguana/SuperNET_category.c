@@ -96,12 +96,23 @@ struct category_info *category_blockhashfunc(bits256 categoryhash,bits256 subhas
     return(0);
 }
 
-struct category_info *category_stakehitfunc(bits256 categoryhash,bits256 subhash,uint64_t (*stakehit_func)(struct supernet_info *myinfo,void *categoryinfo,void *subinfo,bits256 addr))
+struct category_info *category_hitfunc(bits256 categoryhash,bits256 subhash,uint64_t (*hit_func)(struct supernet_info *myinfo,void *categoryinfo,void *subinfo,bits256 addr))
 {
     struct category_info *cat;
     if ( (cat= category_find(categoryhash,subhash)) != 0 )
     {
-        cat->stakehit_func = stakehit_func;
+        cat->hit_func = hit_func;
+        return(cat);
+    }
+    return(0);
+}
+
+struct category_info *category_ishwmfunc(bits256 categoryhash,bits256 subhash,int32_t (*ishwm_func)(struct supernet_info *myinfo,void *categoryinfo,void *subinfo,bits256 blockhash,int32_t heighthint,uint64_t hwmwt,uint64_t prevwt,uint64_t hit))
+{
+    struct category_info *cat;
+    if ( (cat= category_find(categoryhash,subhash)) != 0 )
+    {
+        cat->ishwm_func = ishwm_func;
         return(cat);
     }
     return(0);

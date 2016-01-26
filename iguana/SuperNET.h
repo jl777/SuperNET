@@ -99,7 +99,8 @@ struct category_info
     UT_hash_handle hh; queue_t Q;
     int32_t (*process_func)(struct supernet_info *myinfo,void *data,int32_t datalen,char *remoteaddr);
     int32_t (*blockhash_func)(void *blockhashp,void *data,int32_t datalen); // returns len of blockhash
-    uint64_t (*stakehit_func)(struct supernet_info *myinfo,void *categoryinfo,void *subinfo,bits256 addr);
+    uint64_t (*hit_func)(struct supernet_info *myinfo,void *categoryinfo,void *subinfo,bits256 addr);
+    int32_t (*ishwm_func)(struct supernet_info *myinfo,void *categoryinfo,void *subinfo,bits256 blockhash,int32_t heighthint,uint64_t hwmwt,uint64_t prevwt,uint64_t hit);
     bits256 hash; void *info; struct category_info *sub;
 };
 extern struct category_info *Categories;

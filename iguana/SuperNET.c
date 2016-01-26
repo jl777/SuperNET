@@ -954,6 +954,7 @@ bits256 SuperNET_pindecipher(IGUANA_ARGS,char *pin,char *privcipher)
 {
     cJSON *testjson; char *mstr,*cstr; bits256 privkey,pinpriv,pinpub;
     conv_NXTpassword(pinpriv.bytes,pinpub.bytes,(uint8_t *)pin,(int32_t)strlen(pin));
+    privkey = GENESIS_PRIVKEY;
     if ( (cstr= SuperNET_decipher(IGUANA_CALLARGS,pinpriv,pinpub,privcipher)) != 0 )
     {
         if ( (testjson= cJSON_Parse(cstr)) != 0 )
