@@ -16,3 +16,5 @@ iguana/pnacl/Release/iguana_unstripped.bc
 iguana/pnacl/Release/iguana_unstripped.bc---linked.pre_opt.pexe
 
 *.stamp
+
+*.d

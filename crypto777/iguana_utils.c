@@ -33,6 +33,15 @@ char *bits256_str(char hexstr[65],bits256 x)
     return(hexstr);
 }
 
+bits256 bits256_conv(char *hexstr)
+{
+    bits256 x;
+    memset(&x,0,sizeof(x));
+    if ( strlen(hexstr) == sizeof(x)*2)
+        decode_hex(x.bytes,sizeof(x.bytes),hexstr);
+    return(x);
+}
+
 char *bits256_lstr(char hexstr[65],bits256 x)
 {
     bits256 revx; int32_t i;

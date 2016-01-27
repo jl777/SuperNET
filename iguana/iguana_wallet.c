@@ -62,13 +62,13 @@ int32_t iguana_addressvalidate(struct iguana_info *coin,char *coinaddr)
 char *getnewaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
 {
     struct iguana_waddress addr; char str[67]; cJSON *retjson = cJSON_CreateObject();
-    if ( iguana_waddresscalc(coin,&addr,rand256(1)) == 0 )
+    if ( iguana_waddresscalc(coin->chain->pubtype,coin->chain->wiftype,&addr,rand256(1)) == 0 )
     {
         jaddstr(retjson,"result",addr.coinaddr);
         init_hexbytes_noT(str,addr.pubkey,33);
         jaddstr(retjson,"pubkey",str);
         jaddstr(retjson,"privkey",bits256_str(str,addr.privkey));
-        jaddstr(retjson,"wip",addr.wipstr);
+        jaddstr(retjson,"wif",addr.wifstr);
         init_hexbytes_noT(str,addr.rmd160,20);
         jaddstr(retjson,"rmd160",str);
         if ( iguana_waccountadd(coin,account,&addr) < 0 )
@@ -85,7 +85,7 @@ char *getaccountaddress(struct supernet_info *myinfo,struct iguana_info *coin,ch
     {
         if ( (wacct= iguana_waccountfind(coin,account)) == 0 )
         {
-            if ( (waddr= iguana_waddresscalc(coin,&addr,rand256(1))) == 0 )
+            if ( (waddr= iguana_waddresscalc(coin->chain->pubtype,coin->chain->wiftype,&addr,rand256(1))) == 0 )
                 return(clonestr("{\"error\":\"cant generate address\"}"));
             iguana_waccountswitch(coin,account,0,-1,addr.coinaddr);
         }
@@ -94,7 +94,7 @@ char *getaccountaddress(struct supernet_info *myinfo,struct iguana_info *coin,ch
         init_hexbytes_noT(str,addr.pubkey,33);
         jaddstr(retjson,"pubkey",str);
         jaddstr(retjson,"privkey",bits256_str(str,waddr->privkey));
-        jaddstr(retjson,"wip",waddr->wipstr);
+        jaddstr(retjson,"wif",waddr->wifstr);
         init_hexbytes_noT(str,waddr->rmd160,20);
         jaddstr(retjson,"rmd160",str);
         jaddstr(retjson,"account",account);
@@ -112,7 +112,7 @@ char *setaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *acc
             return(clonestr("{\"error\":\"invalid coin address\"}"));
         if ( (wacct= iguana_waddressfind(coin,&ind,coinaddr)) == 0 )
         {
-            if ( (waddr= iguana_waddresscalc(coin,&addr,rand256(1))) == 0 )
+            if ( (waddr= iguana_waddresscalc(coin->chain->pubtype,coin->chain->wiftype,&addr,rand256(1))) == 0 )
                 return(clonestr("{\"error\":\"cant generate address\"}"));
         }
         iguana_waccountswitch(coin,account,wacct,ind,coinaddr);

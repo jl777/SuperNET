@@ -140,8 +140,9 @@ int32_t taidate_mjd(struct taidate cd);
 uint64_t tai2utime(struct tai t);
 struct tai taitime2tai(struct taitime ct);
 char *tai_str(char *str,struct tai t);
-char *utc_str(char *str,struct tai t);
+char *utc_str(char *str,uint32_t utc);
 double tai_diff(struct tai reftai,struct tai cmptai);
+uint32_t OS_conv_utime(char *utime);
 
 //int32_t msync(void *addr,size_t len,int32_t flags);
 
@@ -333,7 +334,7 @@ bits256 bits256_add(bits256 a,bits256 b);
 int32_t bits256_cmp(bits256 a,bits256 b);
 bits256 bits256_lshift(bits256 x);
 bits256 bits256_from_compact(uint32_t c);
-
+bits256 bits256_conv(char *hexstr);
 int32_t btc_priv2pub(uint8_t pubkey[33],uint8_t privkey[32]);
 
 extern char *Iguana_validcommands[];

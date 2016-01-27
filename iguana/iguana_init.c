@@ -90,6 +90,7 @@ bits256 iguana_genesis(struct iguana_info *coin,struct iguana_chain *chain)
     printf("genesis.(%s) len.%d hash.%s\n",chain->genesis_hex,(int32_t)sizeof(msg.H),str);
     iguana_blockconv(&block,&msg,hash2,0);
     //coin->latest.dep.numtxids =
+    block.RO.txn_count = 1;
     block.RO.numvouts = 1;
     iguana_gotdata(coin,0,0);
     if ( (ptr= iguana_blockhashset(coin,0,hash2,1)) != 0 )

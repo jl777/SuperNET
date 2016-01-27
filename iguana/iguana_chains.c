@@ -44,7 +44,7 @@ static struct iguana_chain Chains[] =
 		"\xf9\xbe\xb4\xd9",
         "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
         "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c0101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4d04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73ffffffff0100f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac00000000",
-        8333,8334,0,
+        8333,8334,0,0x1d,
         { { 210000, (50 * SATOSHIDEN) }, { 420000, (50 * SATOSHIDEN) / 2 }, { 630000, (50 * SATOSHIDEN) / 4 },{ 840000, (50 * SATOSHIDEN) / 8 },
         }
 	},
@@ -54,11 +54,36 @@ static struct iguana_chain Chains[] =
         "btcd", "BTCD",
 		PUBKEY_ADDRESS_BTCD, SCRIPT_ADDRESS_BTCD, PRIVKEY_ADDRESS_BTCD,
 		"\xe4\xc2\xd8\xe6",
-        "0000044966f40703b516c5af180582d53f783bfd319bb045e2dc3e05ea695d46",
-        "0100000000000000000000000000000000000000000000000000000000000000000000002b5b9d8cdd624d25ce670a7aa34726858388da010d4ca9ec8fd86369cc5117fd0132a253ffff0f1ec58c7f0001010000000132a253010000000000000000000000000000000000000000000000000000000000000000ffffffff4100012a3d3138204a756e652032303134202d204269746f696e20796f75722077617920746f206120646f75626c6520657370726573736f202d20636e6e2e636f6dffffffff010000000000000000000000000000",
+        "0000044966f40703b516c5af180582d53f783bfd319bb045e2dc3e05ea695d46","0100000000000000000000000000000000000000000000000000000000000000000000002b5b9d8cdd624d25ce670a7aa34726858388da010d4ca9ec8fd86369cc5117fd0132a253ffff0f1ec58c7f0000",
+        //       "0100000000000000000000000000000000000000000000000000000000000000000000002b5b9d8cdd624d25ce670a7aa34726858388da010d4ca9ec8fd86369cc5117fd0132a253ffff0f1ec58c7f0001010000000132a253010000000000000000000000000000000000000000000000000000000000000000ffffffff4100012a3d3138204a756e652032303134202d204269746f696e20796f75722077617920746f206120646f75626c6520657370726573736f202d20636e6e2e636f6dffffffff010000000000000000000000000000",
         14631,14632,1,
     },
+	[CHAIN_VPN] =
+    {
+        "vpncoin", "VPN",
+		71, 5, 199, // PUBKEY_ADDRESS + SCRIPT_ADDRESS addrman.h, use wif2priv API on any valid wif
+		"\xcd\xf2\xc0\xef", // pchMessageStart main.cpp
+        "3b27c25b333e890fbb6cd912fcdfb07bf17245def80410a0a05a8eae070b2060",
+        //"00000ac7d764e7119da60d3c832b1d4458da9bc9ef9d5dd0d91a15f690a46d99", // hashGenesisBlock main.h
+        "01000000000000000000000000000000000000000000000000000000000000000000000028581b3ba53e73adaaf957bced1d42d46ed0d84a86b34f7a5a49cdcaa1938a697f9c0854ffff0f1e0004de0300", // need to extract from valid blk0001.dat
+        11920,11921,1,0x1e // port and rpcport vpncoin.conf
+    },
 };
+
+bits256 iguana_chaingenesis(int32_t version,uint32_t timestamp,uint32_t bits,uint32_t nonce,bits256 merkle_root)
+{
+    struct iguana_msgblock msg; int32_t len; bits256 hash2; uint8_t serialized[1024]; char hexstr[2049];
+    memset(&msg,0,sizeof(msg));
+    msg.H.version = version;
+    msg.H.merkle_root = merkle_root;
+    msg.H.timestamp = timestamp;
+    msg.H.bits = bits;
+    msg.H.nonce = nonce;
+    len = iguana_rwblock(1,&hash2,serialized,&msg);
+    init_hexbytes_noT(hexstr,serialized,len);
+    char str[65],str2[65]; printf("v.%d t.%u bits.%x nonce.%u merkle.(%s) genesis.(%s) hash.(%s) size.%ld\n",version,timestamp,bits,nonce,bits256_str(str2,merkle_root),hexstr,bits256_str(str,hash2),strlen(hexstr)/2);
+    return(hash2);
+}
 
 void iguana_chaininit(struct iguana_chain *chain,int32_t hasheaders)
 {
@@ -145,11 +170,11 @@ struct iguana_chain *iguana_createchain(cJSON *json)
         if ( (name= jstr(json,"description")) != 0 && strlen(name) < 32 )
             strcpy(chain->name,name);
         if ( (hexstr= jstr(json,"pubval")) != 0 && strlen(hexstr) == 2 )
-            decode_hex((uint8_t *)&chain->pubval,1,hexstr);
+            decode_hex((uint8_t *)&chain->pubtype,1,hexstr);
         if ( (hexstr= jstr(json,"scriptval")) != 0 && strlen(hexstr) == 2 )
-            decode_hex((uint8_t *)&chain->p2shval,1,hexstr);
-        if ( (hexstr= jstr(json,"wipval")) != 0 && strlen(hexstr) == 2 )
-            decode_hex((uint8_t *)&chain->wipval,1,hexstr);
+            decode_hex((uint8_t *)&chain->p2shtype,1,hexstr);
+        if ( (hexstr= jstr(json,"wiftype")) != 0 && strlen(hexstr) == 2 )
+            decode_hex((uint8_t *)&chain->wiftype,1,hexstr);
         if ( (hexstr= jstr(json,"netmagic")) != 0 && strlen(hexstr) == 8 )
             decode_hex((uint8_t *)chain->netmagic,1,hexstr);
         if ( (hexstr= jstr(json,"unitval")) != 0 && strlen(hexstr) == 2 )

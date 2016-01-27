@@ -27,7 +27,7 @@ cJSON *pangea_playerjson(struct supernet_info *myinfo,struct table_info *tp,stru
 
 cJSON *pangea_tablejson(struct supernet_info *myinfo,struct table_info *tp)
 {
-    char ipaddr[64],str[64]; struct tai t; int32_t i,seconds; cJSON *array,*json; struct game_info *gp;
+    char ipaddr[64],str[64]; int32_t i; cJSON *array,*json; struct game_info *gp;
     gp = &tp->G;
     json = cJSON_CreateObject();
     jaddbits256(json,"tablehash",gp->tablehash);
@@ -48,17 +48,12 @@ cJSON *pangea_tablejson(struct supernet_info *myinfo,struct table_info *tp)
     jaddnum(json,"ante",dstr(gp->ante));
     if ( gp->opentime != 0 )
     {
-        OS_conv_unixtime(&t,&seconds,gp->opentime);
-        jaddstr(json,"opentime",utc_str(str,t));
+        jaddstr(json,"opentime",utc_str(str,gp->opentime));
         if ( gp->started != 0 )
         {
-            OS_conv_unixtime(&t,&seconds,gp->started);
-            jaddstr(json,"started",utc_str(str,t));
+            jaddstr(json,"started",utc_str(str,gp->started));
             if ( gp->finished != 0 )
-            {
-                OS_conv_unixtime(&t,&seconds,gp->finished);
-                jaddstr(json,"finished",utc_str(str,t));
-            }
+                jaddstr(json,"finished",utc_str(str,gp->finished));
         }
     }
     if ( tp->G.numactive > 0 )

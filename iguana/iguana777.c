@@ -15,7 +15,7 @@
 
 
 #include "iguana777.h"
-const char *Hardcoded_coins[][3] = { { "BTC", "bitcoin", "0" }, { "BTCD", "BitcoinDark", "129" } };
+const char *Hardcoded_coins[][3] = { { "BTC", "bitcoin", "0" }, { "BTCD", "BitcoinDark", "129" },  { "VPN", "VPNcoin", "129" } };
 
 struct iguana_info *iguana_coinfind(const char *symbol)
 {

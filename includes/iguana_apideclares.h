@@ -13,6 +13,9 @@
  *                                                                            *
  ******************************************************************************/
 
+STRING_ARG(SuperNET,bitcoinrpc,setcoin);
+HASH_AND_INT(ramchain,getblock,blockhash,localonly);
+
 /*HASH_AND_ARRAY(pangea,userturn,tablehash,params);
  HASH_AND_ARRAY(pangea,status,tableid,params);
  HASH_AND_ARRAY(pangea,mode,tableid,params);
@@ -24,7 +27,8 @@ HASH_AND_STRING(pangea,join,tablehash,handle);
 HASH_AND_ARRAY(pangea,start,tablehash,params);
 
 ZERO_ARGS(SuperNET,help);
-STRING_ARG(SuperNET,bitcoinrpc,setcoin);
+STRING_ARG(SuperNET,utime2utc,utime);
+INT_ARG(SuperNET,utc2utime,utc);
 
 TWO_STRINGS(SuperNET,html,agentform,htmlfile);
 TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(SuperNET,DHT,hexmsg,destip,categoryhash,subhash,maxdelay,broadcast);
@@ -32,6 +36,7 @@ TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(SuperNET,DHT,hexmsg,destip,categoryhash,sub
 THREE_STRINGS(SuperNET,rosetta,passphrase,pin,showprivkey);
 ZERO_ARGS(SuperNET,keypair);
 HASH_ARG(SuperNET,priv2pub,privkey);
+STRING_ARG(SuperNET,wif2priv,wif);
 
 TWOHASHES_AND_STRING(SuperNET,cipher,privkey,destpubkey,message);
 TWOHASHES_AND_STRING(SuperNET,decipher,privkey,srcpubkey,cipherstr);
@@ -65,7 +70,7 @@ HASH_ARRAY_STRING(SuperNET,layer,mypriv,otherpubs,str);
 STRING_ARG(iguana,peers,activecoin);
 STRING_AND_INT(iguana,maxpeers,activecoin,max);
 STRING_ARG(iguana,getconnectioncount,activecoin);
-STRING_ARG(iguana,addcoin,activecoin);
+STRING_ARG(iguana,addcoin,newcoin);
 STRING_ARG(iguana,startcoin,activecoin);
 STRING_ARG(iguana,pausecoin,activecoin);
 TWO_STRINGS(iguana,addnode,activecoin,ipaddr);

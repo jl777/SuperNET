@@ -96,7 +96,7 @@ struct category_info *category_blockhashfunc(bits256 categoryhash,bits256 subhas
     return(0);
 }
 
-struct category_info *category_hitfunc(bits256 categoryhash,bits256 subhash,uint64_t (*hit_func)(struct supernet_info *myinfo,void *categoryinfo,void *subinfo,bits256 addr))
+struct category_info *category_hitfunc(bits256 categoryhash,bits256 subhash,uint64_t (*hit_func)(struct supernet_info *myinfo,void *categoryinfo,void *subinfo,void *addr,int32_t addrlen))
 {
     struct category_info *cat;
     if ( (cat= category_find(categoryhash,subhash)) != 0 )
@@ -107,7 +107,7 @@ struct category_info *category_hitfunc(bits256 categoryhash,bits256 subhash,uint
     return(0);
 }
 
-struct category_info *category_ishwmfunc(bits256 categoryhash,bits256 subhash,int32_t (*ishwm_func)(struct supernet_info *myinfo,void *categoryinfo,void *subinfo,bits256 blockhash,int32_t heighthint,uint64_t hwmwt,uint64_t prevwt,uint64_t hit))
+struct category_info *category_ishwmfunc(bits256 categoryhash,bits256 subhash,int32_t (*ishwm_func)(struct supernet_info *myinfo,void *categoryinfo,void *subinfo,void *blockhashp,int32_t hashlen,int32_t heighthint,uint64_t hwmwt,uint64_t prevwt,uint64_t hit))
 {
     struct category_info *cat;
     if ( (cat= category_find(categoryhash,subhash)) != 0 )

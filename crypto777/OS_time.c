@@ -17,6 +17,7 @@
 
 #include "OS_portable.h"
 
+#define DISABLE_LEAPS
 #define TAI_PACK 8
 #define TAI_UTC_DIFF ((uint64_t)4611686018427387914ULL)
 
@@ -152,7 +153,7 @@ struct taitime tai2time(struct tai t,int32_t *pwday,int32_t *pyday)
     //    t.x = (t.millis / 1000.) + First_TAI.x;
     leap = leapsecs_sub(&t);
     u = t.x;
-    u += (58486 + 60); // was off by a minute
+    u += 58486; // was off by a minute (or 3?)
     s = u % 86400ULL;
     ct.second = (s % 60) + leap; s /= 60;
     ct.minute = s % 60; s /= 60;
@@ -351,7 +352,9 @@ struct tai tai_now()
     if ( First_TAI.x == 0 )
     {
         First_TAI = t, First_utc = (uint32_t)now;
+#ifndef DISABLE_LEAPS
         UTC_ADJUST = -36;
+#endif
         printf("TAINOW.%llu %03.3f UTC.%u vs %u [diff %d]\n",(long long)t.x,t.millis,First_utc,tai2utc(t),UTC_ADJUST);
     }
     return(t);
@@ -359,6 +362,7 @@ struct tai tai_now()
 
 struct tai leapsecs_add(struct tai t,int32_t hit)
 {
+#ifndef DISABLE_LEAPS
     int32_t i; uint64_t u;
     u = t.x;
     if ( t.x > leaptais[(sizeof(leaptais)/sizeof(*leaptais)) - 1].x )
@@ -374,6 +378,7 @@ struct tai leapsecs_add(struct tai t,int32_t hit)
         }
     }
     t.x = u;
+#endif
     return(t);
 }
 
@@ -421,6 +426,7 @@ struct tai taidate_scan(char *s,int32_t numleaps)
 
 int32_t leapsecs_sub(struct tai *lt)
 {
+#ifndef DISABLE_LEAPS
     char out[101],x[TAI_PACK]; double packerr;
     int32_t weekday,yearday,i,j,s; uint64_t u; struct tai t,t2; struct taitime ct2;
     if ( leaptais[0].x == 0 )
@@ -468,6 +474,7 @@ int32_t leapsecs_sub(struct tai *lt)
         }
         lt->x = u - s;
     }
+#endif
     return(0);
 }
 
@@ -479,10 +486,20 @@ char *tai_str(char *str,struct tai t)
     return(str);
 }
 
-char *utc_str(char *str,struct tai t)
+/*char *utc_str(char *str,struct tai t)
 {
     t.x += UTC_ADJUST;
     return(tai_str(str,t));
+}*/
+
+char *utc_str(char *str,uint32_t utc)
+{
+    struct taitime ct; struct tai t;
+    t = utc2tai(utc);
+    t.x += UTC_ADJUST;
+    ct = tai2time(t,0,0);
+    sprintf(str,"%d-%02d-%02dT%02d:%02d:%02dZ",ct.date.year,ct.date.month,ct.date.day,ct.hour,ct.minute,ct.second);
+    return(str);
 }
 
 double OS_milliseconds()
@@ -512,7 +529,8 @@ uint64_t OS_conv_datenum(int32_t datenum,int32_t hour,int32_t minute,int32_t sec
         {
             ct = taitime_set(taidate_set(year,month,day),hour,minute,second);
             t = taitime2tai(ct);
-            return(tai2utime(t)+788250398LL - 4294967296LL);
+            //char str[65]; printf("conv.(y%d m%d d%d %d:%d:%d) %s\n",year,month,day,hour,minute,second,tai_str(str,t));
+            return(tai2utc(t));//tai2utime(t)+788250398LL - 4294967296LL);
         }
         return(0);
     }
@@ -571,6 +589,7 @@ int32_t conv_date(int32_t *secondsp,char *date)
             *secondsp = (3600*hour + 60*min + sec);
         else printf("ERROR: seconds.%d %d %d %d, len.%d\n",*secondsp,hour,min,sec,len);
     }
+    //printf("(%s) -> Y.%d M.%d D.%d %d:%d:%d\n",date,year,month,day,hour,min,sec);
     sprintf(origdate,"%d-%02d-%02d",year,month,day); //2015-07-25T22:34:31Z
     if ( strcmp(tmpdate,origdate) != 0 )
     {
@@ -578,6 +597,13 @@ int32_t conv_date(int32_t *secondsp,char *date)
         return(-1);
     }
     return((year * 10000) + (month * 100) + day);
+}
+
+uint32_t OS_conv_utime(char *utime)
+{
+    int32_t datenum,seconds;
+    datenum = conv_date(&seconds,utime);
+    return((uint32_t)OS_conv_datenum(datenum,seconds/3600,(seconds%3600)/60,seconds%60));
 }
 
 int32_t expand_datenum(char *date,int32_t datenum)

@@ -314,11 +314,10 @@ void pangea_addfunds(PANGEA_HANDARGS)
 
 void pangea_tablejoin(struct supernet_info *myinfo,struct table_info *tp,uint8_t *data,int32_t datalen,uint64_t signer64bits,uint32_t sigtimestamp,bits256 sigtablehash)
 {
-    char str[65],str2[65],space[4096]; struct tai t; int32_t i,seconds; cJSON *json;
+    char str[65],str2[65],space[4096]; int32_t i; cJSON *json;
     if ( tp->G.started != 0 )
     {
-        OS_conv_unixtime(&t,&seconds,tp->G.finished == 0 ? tp->G.started : tp->G.finished);
-        printf("table.(%s) already %s %s\n",bits256_str(str,tp->G.tablehash),tp->G.finished == 0 ? "started" : "finished",utc_str(str2,t));
+        printf("table.(%s) already %s %s\n",bits256_str(str,tp->G.tablehash),tp->G.finished == 0 ? "started" : "finished",utc_str(str2,tp->G.finished == 0 ? tp->G.started : tp->G.finished));
     }
     else if ( tp->G.numactive >= tp->G.maxplayers )
     {

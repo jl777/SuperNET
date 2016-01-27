@@ -320,7 +320,7 @@ static char *dumpprivkey(RPCARGS)
 
 static char *importprivkey(RPCARGS)
 {
-    return(sglue1(0,myinfo,coin,remoteaddr,"ramchain","importprivkey","wip",params[0]));
+    return(sglue1(0,myinfo,coin,remoteaddr,"ramchain","importprivkey","wif",params[0]));
 }
 
 static char *dumpwallet(RPCARGS)

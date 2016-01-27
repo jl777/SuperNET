@@ -1003,16 +1003,23 @@ THREE_STRINGS(SuperNET,rosetta,passphrase,pin,showprivkey)
     if ( btc_coinaddr(addr,0,str) == 0 )
     {
         jaddstr(retjson,"BTC",addr);
-        btc_priv2wip(wifbuf,privkey.bytes,0x80);
+        btc_priv2wif(wifbuf,privkey.bytes,0x80);
         if ( flag != 0 )
             jaddstr(retjson,"BTCwif",wifbuf);
     }
     if ( btc_coinaddr(addr,60,str) == 0 )
     {
         jaddstr(retjson,"BTCD",addr);
-        btc_priv2wip(wifbuf,privkey.bytes,0xbc);
+        btc_priv2wif(wifbuf,privkey.bytes,0xbc);
         if ( flag != 0 )
             jaddstr(retjson,"BTCDwif",wifbuf);
+    }
+    if ( btc_coinaddr(addr,5,str) == 0 )
+    {
+        jaddstr(retjson,"VPN",addr);
+        btc_priv2wif(wifbuf,privkey.bytes,0xbc);
+        if ( flag != 0 )
+            jaddstr(retjson,"VPNwif",wifbuf);
     }
     if ( flag != 0 )
         jaddbits256(retjson,"privkey",privkey);
@@ -1177,4 +1184,33 @@ THREE_STRINGS(SuperNET,survey,category,subcategory,message)
     categoryhash = calc_categoryhashes(&subhash,category,subcategory);
     return(SuperNET_categorymulticast(myinfo,1,categoryhash,subhash,message,juint(json,"maxdelay"),juint(json,"broadcast"),juint(json,"plaintext")));
 }
+
+STRING_ARG(SuperNET,wif2priv,wif)
+{
+    bits256 privkey; char str[65]; uint8_t privkeytype; cJSON *retjson = cJSON_CreateObject();
+    if ( btc_wif2priv(&privkeytype,privkey.bytes,wif) == sizeof(privkey) )
+    {
+        jaddstr(retjson,"result","success");
+        jaddstr(retjson,"privkey",bits256_str(str,privkey));
+        jaddnum(retjson,"type",privkeytype);
+    } else jaddstr(retjson,"error","couldnt convert wif");
+    return(jprint(retjson,1));
+}
+
+STRING_ARG(SuperNET,utime2utc,utime)
+{
+    uint32_t utc = 0; cJSON *retjson = cJSON_CreateObject();
+    utc = OS_conv_utime(utime);
+    char str[65]; printf("utime.%s -> %u -> %s\n",utime,utc,utc_str(str,utc));
+    jaddnum(retjson,"result",utc);
+    return(jprint(retjson,1));
+}
+
+INT_ARG(SuperNET,utc2utime,utc)
+{
+    char str[65]; cJSON *retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result",utc_str(str,utc));
+    return(jprint(retjson,1));
+}
+
 #include "../includes/iguana_apiundefs.h"

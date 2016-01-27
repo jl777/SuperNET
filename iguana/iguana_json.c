@@ -480,15 +480,19 @@ STRING_ARG(iguana,getconnectioncount,activecoin)
     } else return(clonestr("{\"error\":\"getconnectioncount needs coin\"}"));
 }
 
-STRING_ARG(iguana,addcoin,activecoin)
+STRING_ARG(iguana,addcoin,newcoin)
 {
     char *symbol; int32_t retval;
-    if ( (symbol= activecoin) == 0 && coin != 0 )
+    if ( (symbol= newcoin) == 0 && coin != 0 )
         symbol = coin->symbol;
     if ( symbol != 0 )
     {
         if ( (retval= iguana_launchcoin(symbol,json)) > 0 )
+        {
+            if ( myinfo->rpcsymbol[0] == 0 )
+                safecopy(myinfo->rpcsymbol,symbol,sizeof(myinfo->rpcsymbol));
             return(clonestr("{\"result\":\"coin added\"}"));
+        }
         else if ( retval == 0 )
             return(clonestr("{\"result\":\"coin already there\"}"));
         else return(clonestr("{\"error\":\"error adding coin\"}"));
@@ -680,7 +684,7 @@ TWO_STRINGS(hmac,whirlpool,message,passphrase) { return(hmac_dispatch(hmac_whirl
 
 STRING_ARG(SuperNET,bitcoinrpc,setcoin)
 {
-    if ( coin != 0 && setcoin != 0 && setcoin[0] != 0 )
+    if ( setcoin != 0 && setcoin[0] != 0 )
     {
         strcpy(myinfo->rpcsymbol,setcoin);
         touppercase(myinfo->rpcsymbol);
@@ -724,9 +728,9 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSO
     char *coinstr; struct iguana_info *coin = 0;
     if ( remoteaddr != 0 && (remoteaddr[0] == 0 || strcmp(remoteaddr,"127.0.0.1") == 0) )
         remoteaddr = 0;
-    if ( (coinstr= jstr(json,"activecoin")) != 0 )
-        coin = iguana_coinfind(coinstr);
-    if ( coin == 0 && (coinstr= jstr(json,"coin")) != 0 )
+    if ( (coinstr= jstr(json,"activecoin")) == 0 && (coinstr= jstr(json,"coin")) == 0 )
+        coinstr = myinfo->rpcsymbol;
+    if ( coinstr != 0 && coinstr[0] != 0 )
         coin = iguana_coinfind(coinstr);
     if ( strcmp(agent,"ramchain") == 0 && coin == 0 )
         return(clonestr("{\"error\":\"ramchain needs coin\"}"));

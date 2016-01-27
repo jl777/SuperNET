@@ -53,7 +53,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
         coin->numreqsent++;
         addr->pendblocks++;
         addr->pendtime = (uint32_t)time(NULL);
-       // printf("REQ.%s bundlei.%d hdrsi.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1);
+        printf("REQ.%s bundlei.%d hdrsi.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);
 }
@@ -148,6 +148,12 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
     {
         //printf("copy %p serialized[%d]\n",req->serialized,req->recvlen);
         memcpy(req->serialized,data,recvlen), req->copyflag = 1;
+    }
+    if ( bits256_cmp(origtxdata->block.RO.hash2,coin->APIblockhash) == 0 )
+    {
+        printf("MATCHED APIblockhash\n");
+        coin->APIblockstr = calloc(1,recvlen*2+1);
+        init_hexbytes_noT(coin->APIblockstr,data,recvlen);
     }
     txdata = origtxdata;
     if ( addr != 0 )
@@ -722,7 +728,7 @@ int32_t iguana_blockQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t 
     block = iguana_blockfind(coin,hash2);
     if ( priority != 0 || block == 0 || (block->queued == 0 && block->fpipbits == 0) )
     {
-        if ( block != 0 )
+        if ( block != 0 && bits256_cmp(coin->APIblockhash,hash2) != 0 )
         {
             if ( block->fpipbits != 0 || block->queued != 0 || block->issued > time(NULL)-10 )
                 return(0);

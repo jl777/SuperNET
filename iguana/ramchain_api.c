@@ -16,6 +16,50 @@
 #include "iguana777.h"
 #include "../includes/iguana_apidefs.h"
 
+HASH_AND_INT(ramchain,getblock,blockhash,localonly)
+{
+    int32_t i,len; char hexstr[(sizeof(uint32_t)+sizeof(struct iguana_msgblock))*2+1];
+    uint8_t serialized[sizeof(uint32_t)+sizeof(struct iguana_msgblock)]; bits256 hash2;
+    struct iguana_msgblock msg; struct iguana_block *block;
+    cJSON *retjson = cJSON_CreateObject();
+    memset(&msg,0,sizeof(msg));
+    if ( localonly == 0 && (block= iguana_blockfind(coin,blockhash)) != 0 )
+    {
+        msg.H.version = block->RO.version;
+        msg.H.merkle_root = block->RO.merkle_root;
+        msg.H.timestamp = block->RO.timestamp;
+        msg.H.bits = block->RO.bits;
+        msg.H.nonce = block->RO.nonce;
+        msg.txn_count = block->RO.txn_count;
+        len = iguana_rwblock(1,&hash2,serialized,&msg);
+        char str[65]; printf("timestamp.%u bits.%u nonce.%u v.%d (%s) len.%d (%ld %ld)\n",block->RO.timestamp,block->RO.bits,block->RO.nonce,block->RO.version,bits256_str(str,hash2),len,sizeof(serialized),sizeof(hexstr));
+        init_hexbytes_noT(hexstr,serialized,len);
+        jaddstr(retjson,"result",hexstr);
+    }
+    else if ( coin->APIblockstr != 0 )
+        jaddstr(retjson,"error","already have pending request");
+    else
+    {
+        coin->APIblockhash = blockhash;
+        iguana_blockQ(coin,0,-1,blockhash,1);
+        for (i=0; i<10; i++)
+        {
+            if ( coin->APIblockstr != 0 )
+            {
+                jaddstr(retjson,"result",coin->APIblockstr);
+                free(coin->APIblockstr);
+                memset(&coin->APIblockhash,0,sizeof(coin->APIblockhash));
+                coin->APIblockstr = 0;
+                break;
+            }
+            sleep(1);
+        }
+        if ( i == 10 )
+            jaddstr(retjson,"error","cant find blockhash");
+    }
+    return(jprint(retjson,1));
+}
+
 ZERO_ARGS(ramchain,getinfo)
 {
     cJSON *retjson = cJSON_CreateObject();
