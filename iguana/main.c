@@ -293,7 +293,7 @@ void iguana_main(void *arg)
             printf("t.%u -> %s -> %u diff.[%d]\n",t-i,str,s,(t-i) - s);
     }
     iguana_chaingenesis(1,1403138561,0x1e0fffff,8359109,bits256_conv("fd1751cc6963d88feca94c0d01da8883852647a37a0a67ce254d62dd8c9d5b2b"));
-    iguana_chaingenesis(1,1409832000,0x1e0fffff,64881664,bits256_conv("698a93a1cacd495a7a4fb3864ad8d06ed4421dedbc57f9aaad733ea53b1b5828"));
+    iguana_chaingenesis(1,1409839200,0x1e0fffff,64881664,bits256_conv("698a93a1cacd495a7a4fb3864ad8d06ed4421dedbc57f9aaad733ea53b1b5828"));
 
     mycalloc(0,0,0);
     iguana_initQ(&helperQ,"helperQ");

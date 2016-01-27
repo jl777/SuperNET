@@ -170,7 +170,7 @@ static const char *parse_string(cJSON *item,const char *str)
 	const char *ptr=str+1;char *ptr2;char *out;int32_t len=0;unsigned uc,uc2;
 	if (*str!='\"') {ep=str;return 0;}	/* not a string! */
 	
-	while (*ptr!='\"' && *ptr && ++len) if (*ptr++ == '\\') ptr++;	/* Skip escaped quotes. */
+	while (*ptr!='\"' && *ptr && ++len) if (*ptr++ == '\\') ptr++;	// Skip escaped quotes
 	
 	out=(char*)cJSON_malloc(len+2);	/* This is how long we need for the string, roughly. */
 	if (!out) return 0;
@@ -178,7 +178,12 @@ static const char *parse_string(cJSON *item,const char *str)
 	ptr=str+1;ptr2=out;
 	while (*ptr!='\"' && *ptr)
 	{
-		if (*ptr!='\\') *ptr2++=*ptr++;
+		if (*ptr!='\\')
+        {
+            if ( *ptr == '%' && is_hexstr((char *)&ptr[1],2) && isprint(_decode_hex((char *)&ptr[1])) != 0 )
+                *ptr2++ = _decode_hex((char *)&ptr[1]), ptr += 3;
+            else *ptr2++ = *ptr++;
+        }
 		else
 		{
 			ptr++;
@@ -189,16 +194,16 @@ static const char *parse_string(cJSON *item,const char *str)
 				case 'n': *ptr2++='\n';	break;
 				case 'r': *ptr2++='\r';	break;
 				case 't': *ptr2++='\t';	break;
-				case 'u':	 /* transcode utf16 to utf8. */
-					uc=parse_hex4(ptr+1);ptr+=4;	/* get the unicode char. */
+				case 'u':	 // transcode utf16 to utf8
+					uc=parse_hex4(ptr+1);ptr+=4;	// get the unicode char
                     
-					if ((uc>=0xDC00 && uc<=0xDFFF) || uc==0)	break;	/* check for invalid.	*/
+					if ((uc>=0xDC00 && uc<=0xDFFF) || uc==0)	break;	// check for invalid
                     
-					if (uc>=0xD800 && uc<=0xDBFF)	/* UTF16 surrogate pairs.	*/
+					if (uc>=0xD800 && uc<=0xDBFF)	// UTF16 surrogate pairs
 					{
-						if (ptr[1]!='\\' || ptr[2]!='u')	break;	/* missing second-half of surrogate.	*/
+						if (ptr[1]!='\\' || ptr[2]!='u')	break;	// missing second-half of surrogate.
 						uc2=parse_hex4(ptr+3);ptr+=6;
-						if (uc2<0xDC00 || uc2>0xDFFF)		break;	/* invalid second-half of surrogate.	*/
+						if (uc2<0xDC00 || uc2>0xDFFF)		break;	// invalid second-half of surrogate
 						uc=0x10000 + (((uc&0x3FF)<<10) | (uc2&0x3FF));
 					}
                     
