@@ -10,9 +10,49 @@ function $(id) {
   return document.getElementById(id);
 }
 
+/*
+ * file system functions
+ * 
+ */
+window.requestFileSystem  = window.requestFileSystem || window.webkitRequestFileSystem;
+
+function errorHandler(e) {
+  var msg = '';
+
+  switch (e.code) {
+    case FileError.QUOTA_EXCEEDED_ERR:
+      msg = 'QUOTA_EXCEEDED_ERR';
+      break;
+    case FileError.NOT_FOUND_ERR:
+      msg = 'NOT_FOUND_ERR';
+      break;
+    case FileError.SECURITY_ERR:
+      msg = 'SECURITY_ERR';
+      break;
+    case FileError.INVALID_MODIFICATION_ERR:
+      msg = 'INVALID_MODIFICATION_ERR';
+      break;
+    case FileError.INVALID_STATE_ERR:
+      msg = 'INVALID_STATE_ERR';
+      break;
+    default:
+      msg = 'Unknown Error';
+      break;
+  };
+
+  console.log('Error: ' + msg);
+}
+
+var fileSystem;
+
+function onInitFs(fs) {
+  console.log('Opened file system: ' + fs.name);
+  fileSystem = fs;
+}
+
 // Called by the common.js module.
 function domContentLoaded(name, tc, config, width, height) {
-  navigator.webkitPersistentStorage.requestQuota(10000000000,
+/*  navigator.webkitPersistentStorage.requestQuota(10000000000,
       function(bytes) {
         common.updateStatus(
             'Allocated ' + bytes + ' bytes of persistent storage. Running the first time will take 17 seconds to load');
@@ -20,6 +60,19 @@ function domContentLoaded(name, tc, config, width, height) {
         common.createNaClModule(name, tc, config, width, height);
       },
       function(e) { alert('Failed to allocate space') });
+      
+  */    
+      navigator.webkitPersistentStorage.requestQuota(10000000000, 
+  function(bytes){
+    window.requestFileSystem(PERSISTENT, bytes, onInitFs, errorHandler);
+     common.updateStatus(
+            'Allocated ' + bytes + ' bytes of persistent storage. Running the first time will take 17 seconds to load');
+        common.attachDefaultListeners();
+        common.createNaClModule(name, tc, config, width, height);
+  }, function(e){
+    console.log('Error', e);
+});
+
 }
 
 // Called by the common.js module.

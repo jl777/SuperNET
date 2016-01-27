@@ -17,7 +17,7 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
     /*
      * added variables for flexibility
      */
-    SPNAPI.usePexe=true;
+    SPNAPI.usePexe=false;
     SPNAPI.domain="http://127.0.0.1";
     SPNAPI.port="7778";
     $(document).ready(function() {
@@ -36,6 +36,9 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
             if(page==="Peers"){
                 peer_resonse=[];
                 getPeerList();
+            }else if(page==="Debug"){
+                
+                filesystem_save();
             }
             
         });
