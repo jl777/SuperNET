@@ -4,7 +4,7 @@ $(function () {
     $(".select ").dropdown({ "autoinit ": ".select " });
 
     startCoinManagement();
-    startPeerManagement();
+    //startPeerManagement();
     
     // Event Handlers
     
@@ -15,10 +15,16 @@ $(function () {
             deleteCoin(e.getAttribute('data-id'));
         }
         else if (e.className && e.className.indexOf('addPeerToFav') != -1) {
-            addPeerToFav(e.getAttribute('data-id'));
+            addPeerToFav(e.getAttribute('data-id'),e.getAttribute('data-coin'));
         }
         else if (e.className && e.className.indexOf('removePeerFromFav') != -1) {
-            removePeerFromFav(e.getAttribute('data-id'));
+            removePeerFromFav(e.getAttribute('data-id'),e.getAttribute('data-coin'));
+        }else if(e.className && e.className.indexOf('disconnectPeer') != -1){
+            disconnectPeer(e.getAttribute('data-ip'),e.getAttribute('data-coin'));
+            
+        }else if(e.className && e.className.indexOf('connectPeer') != -1){
+            connectPeer(e.getAttribute('data-ip'),e.getAttribute('data-coin'));
+           
         }
     };
 });

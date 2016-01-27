@@ -1,17 +1,41 @@
 {
-    "name": "iguana",
-    "uri": "iguana.pexe",
-    "short_name": "iguana",
-    "version": "44.1.2",
-    "manifest_version": 2,
-    "description": "iguana",
-    "offline_enabled": true,
-    "icons": { "128": "icon128.png" },
-    "app":
-    {
-        "name": "iguana",
-        "background": { "scripts": ["background.js"] },
-        "sockets": { "tcp": { "connect": "" }, "tcpServer": { "listen": "127.0.0.1:*" } },
-        "permissions": [ "unlimitedStorage", "storage.local" ]
+  "name": "SuperNET Iguana",
+  // "url": "iguana.pexe",
+  "short_name": "iguana",
+  "version": "0.0.1",
+  "manifest_version": 2,
+  "description": "SuperNET Iguana",
+  "offline_enabled": true,
+  "icons": {
+    "128": "icon128.png"
+  },
+  "app": {
+    "background": {
+      "scripts": [
+        "background.js"
+      ]
     }
+  },
+  "sockets": {
+    "tcp": {
+      "connect": ""
+    },
+    "tcpServer": {
+      "listen": "127.0.0.1:*"
+    }
+  },
+  "permissions": [
+    "unlimitedStorage",
+    "nativeMessaging",
+    // "networking.config",
+    "dns",
+    "browser",
+    // "filesystem",
+    "storage",
+    "system.storage",
+    "system.display",
+    "system.network",
+    "system.cpu",
+	"http://127.0.0.1:7778/"
+  ]
 }

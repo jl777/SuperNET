@@ -14,6 +14,12 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
     SPNAPI.pages = ["Settings", "eyedea", "Peers","Debug", "Coins", "Blockexplorer"];
     SPNAPI.pageContent = {};
     SPNAPI.page = "welcome";
+    /*
+     * added variables for flexibility
+     */
+    SPNAPI.usePexe=false;
+    SPNAPI.domain="http://127.0.0.1";
+    SPNAPI.port="7778";
     $(document).ready(function() {
 
         //load Pages into the navbar
@@ -26,6 +32,15 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
             var page = $(this).data("page");
             $(".navigation").removeClass("active");
             SPNAPI.loadSite(page);
+            console.log(page);
+            if(page==="Peers"){
+                peer_resonse=[];
+                getPeerList();
+            }else if(page==="Debug"){
+                
+                filesystem_save();
+            }
+            
         });
         $(".page").hide();
         $("#welcome_page").show();
@@ -59,7 +74,7 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
     SPNAPI.makeRequest = function( request, callback ) {
         // check if tag is already included in request
         request = JSON.parse( request );
-        if ( request.tag == undefined ) {
+        if ( request.tag === undefined ) {
             request = JSON.stringify( request );
             var tag = tagGen(18);
             request = request.substr(0, request.length - 1);
@@ -68,11 +83,63 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
             request = JSON.stringify( request );
         }
         console.log('Requesting: ' + request);
-        postCall('iguana', request, function(response){
-            console.log('Response is ' + response);
+        /*
+         * typeof nacl_module !== 'undefined' will test if pexe is loaded or not
+         */
+        if(typeof nacl_module !== 'undefined' && SPNAPI.usePexe){
+          postCall('iguana', request, function(response){
+            console.log('pexe Response is ' + response);
+            //if(typeof callback === 'function'){
+                callback(request, response);
+    
+            //}
+        });   
+        }else{
+            request = JSON.parse( request );
+        var url=SPNAPI.returnAJAXgetURL(request);
+            if(url!==false){
+                
+    /*
+     * Ajax request will be sent if pexe is not loaded or 
+     * if usepexe is set to false
+     * (this adds the user the ability to handle how requests are sent)
+     */                 
+$.ajax({
+  type: "GET",
+  url: url
+  }).done(function( response ) {
+       console.log('AJAX Response is ' + response);
+            //if(typeof callback === 'function'){
             callback(request, response);
-        }); 
+            //}
+            });    
+            }
+   }
+    };
+    
+    SPNAPI.returnAJAXgetURL=function(request){
         
-    }
+        var url=SPNAPI.domain+":"+SPNAPI.port+"/api/";
+        if(request.method === undefined){
+            console.log("Invalid request.");
+            return false;
+        }
+        if(request.agent=== undefined){
+            url=url+"iguana/";
+        }else{
+             url=url+request.agent+"/";
+        }
+        
+        url=url+request.method+"/";
+        
+        for(var i in request){
+            if(i==="agent" ||i==="method"){
+                continue;
+            }
+            url=url+i+"/"+request[i]+"/";
+        }
+        console.log("Url generated from request:"+url);
+        return url;
+    };
     return SPNAPI;
 }(SPNAPI || {}, jQuery));
