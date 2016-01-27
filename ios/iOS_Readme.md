@@ -31,7 +31,7 @@ Expected result:
 ## Info on iOS libraries ##
 The iOS libraries libcrypto.a, libssl.a, and libcurl.a are picked from the following github repositories:
 https://github.com/sinofool/build-libcurl-ios
-https://github.com/sinofool/build-libcurl-ios
+https://github.com/sinofool/build-openssl-ios
 
 
 NOTE: This build of iguana iOS has not been tested with any iOS device due to the limitations of iOS App has to execute system commands in iOS devices. A task is created in developer channel to help testing this iguana iOS compile. Please head over to this link for more detail: https://phabricator.supernet.org/T398
