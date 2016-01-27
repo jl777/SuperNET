@@ -12,6 +12,6 @@
         "name": "iguana",
         "background": { "scripts": ["background.js"] },
         "sockets": { "tcp": { "connect": "" }, "tcpServer": { "listen": "127.0.0.1:*" } },
-        "permissions": [ "unlimitedStorage"]
+        "permissions": [ "unlimitedStorage", "storage.local" ]
     }
 }

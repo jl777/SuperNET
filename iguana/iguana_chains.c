@@ -62,7 +62,7 @@ static struct iguana_chain Chains[] =
     {
         "vpncoin", "VPN",
 		71, 5, 199, // PUBKEY_ADDRESS + SCRIPT_ADDRESS addrman.h, use wif2priv API on any valid wif
-		"\xcd\xf2\xc0\xef", // pchMessageStart main.cpp
+		"\xfb\xc0\xb6\xdb", // pchMessageStart main.cpp
         "3b27c25b333e890fbb6cd912fcdfb07bf17245def80410a0a05a8eae070b2060",
         //"00000ac7d764e7119da60d3c832b1d4458da9bc9ef9d5dd0d91a15f690a46d99", // hashGenesisBlock main.h
         "01000000000000000000000000000000000000000000000000000000000000000000000028581b3ba53e73adaaf957bced1d42d46ed0d84a86b34f7a5a49cdcaa1938a697f9c0854ffff0f1e0004de0300", // need to extract from valid blk0001.dat

@@ -499,7 +499,7 @@ void iguana_main(void *arg)
 #ifdef __APPLE__
         sleep(1);
         char *str;
-        if ( (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"wallet\":\"password\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":16,\"newcoin\":\"VPN\",\"active\":1}"),0)) != 0 )
+        if ( (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"wallet\":\"password\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":128,\"newcoin\":\"VPN\",\"active\":1}"),0)) != 0 )
         {
             printf("got.(%s)\n",str);
             free(str);
