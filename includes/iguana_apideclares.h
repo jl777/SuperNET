@@ -14,7 +14,10 @@
  ******************************************************************************/
 
 STRING_ARG(SuperNET,bitcoinrpc,setcoin);
-HASH_AND_INT(ramchain,getblock,blockhash,localonly);
+HASH_AND_INT(ramchain,getblock,blockhash,remoteonly);
+HASH_AND_INT(ramchain,getrawtransaction,txid,verbose);
+HASH_ARG(ramchain,gettransaction,txid);
+STRING_ARG(ramchain,decoderawtransaction,rawtx);
 
 /*HASH_AND_ARRAY(pangea,userturn,tablehash,params);
  HASH_AND_ARRAY(pangea,status,tableid,params);
@@ -107,7 +110,6 @@ STRING_ARG(ramchain,getaccount,address);
 STRING_ARG(ramchain,getaccountaddress,account);
 STRING_ARG(ramchain,dumpprivkey,address);
 STRING_ARG(ramchain,importwallet,filename);
-STRING_ARG(ramchain,decoderawtransaction,rawtx);
 STRING_ARG(ramchain,decodescript,script);
 
 TWO_STRINGS(ramchain,setaccount,address,account);
@@ -125,7 +127,6 @@ STRING_AND_INT(ramchain,getreceivedbyaddress,address,minconf);
 STRING_AND_INT(ramchain,sendrawtransaction,rawtx,allowhighfees);
 
 HASH_AND_TWOINTS(ramchain,listsinceblock,blockhash,target,flag);
-HASH_AND_INT(ramchain,getrawtransaction,txid,verbose);
 
 STRING_AND_THREEINTS(ramchain,listtransactions,account,count,skip,includewatchonly);
 

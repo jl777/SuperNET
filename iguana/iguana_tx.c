@@ -16,34 +16,39 @@
 #include "iguana777.h"
 #include "SuperNET.h"
 
-cJSON *iguana_voutjson(struct iguana_info *coin,struct iguana_msgvout *vout,char *asmstr)
+cJSON *iguana_voutjson(struct iguana_info *coin,struct iguana_msgvout *vout,int32_t txi)
 {
+    // 035f1321ed17d387e4433b2fa229c53616057964af065f98bfcae2233c5108055e OP_CHECKSIG
     static bits256 zero;
-    char scriptstr[8192+1],coinaddr[65]; int32_t i,M,N; uint8_t rmd160[20],msigs160[16][20],addrtype;
+    char scriptstr[8192+1],coinaddr[65],asmstr[16384]; int32_t i,M,N,asmtype;
+    uint8_t rmd160[20],msigs160[16][20],addrtype,space[8192];
     cJSON *addrs,*json = cJSON_CreateObject();
     jaddnum(json,"value",dstr(vout->value));
-    if ( asmstr[0] != 0 )
-        jaddstr(json,"asm",asmstr);
     if ( vout->pk_script != 0 && vout->pk_scriptlen*2+1 < sizeof(scriptstr) )
     {
-        if ( iguana_calcrmd160(coin,rmd160,msigs160,&M,&N,vout->pk_script,vout->pk_scriptlen,zero) > 0 )
-            addrtype = coin->chain->p2shtype;
-        else addrtype = coin->chain->pubtype;
-        btc_convrmd160(coinaddr,addrtype,rmd160);
-        jaddstr(json,"address",coinaddr);
-        init_hexbytes_noT(scriptstr,vout->pk_script,vout->pk_scriptlen);
-        jaddstr(json,"payscript",scriptstr);
-        if ( N != 0 )
+        if ( (asmtype= iguana_calcrmd160(coin,rmd160,msigs160,&M,&N,vout->pk_script,vout->pk_scriptlen,zero)) >= 0 )
         {
-            jaddnum(json,"M",M);
-            jaddnum(json,"N",N);
-            addrs = cJSON_CreateArray();
-            for (i=0; i<N; i++)
+            addrtype = iguana_scriptgen(coin,coinaddr,space,asmstr,rmd160,asmtype,txi);
+            if ( asmstr[0] != 0 )
+                jaddstr(json,"asm",asmstr);
+            //btc_convrmd160(coinaddr,addrtype,rmd160);
+            if ( coinaddr[0] != 0 )
+                jaddstr(json,"address",coinaddr);
+            init_hexbytes_noT(scriptstr,vout->pk_script,vout->pk_scriptlen);
+            if ( scriptstr[0] != 0 )
+                jaddstr(json,"payscript",scriptstr);
+            if ( N != 0 )
             {
-                btc_convrmd160(coinaddr,coin->chain->pubtype,msigs160[i]);
-                jaddistr(addrs,coinaddr);
+                jaddnum(json,"M",M);
+                jaddnum(json,"N",N);
+                addrs = cJSON_CreateArray();
+                for (i=0; i<N; i++)
+                {
+                    btc_convrmd160(coinaddr,coin->chain->pubtype,msigs160[i]);
+                    jaddistr(addrs,coinaddr);
+                }
+                jadd(json,"addrs",addrs);
             }
-            jadd(json,"addrs",addrs);
         }
     }
     return(json);
@@ -51,9 +56,10 @@ cJSON *iguana_voutjson(struct iguana_info *coin,struct iguana_msgvout *vout,char
 
 cJSON *iguana_vinjson(struct iguana_info *coin,struct iguana_msgvin *vin)
 {
-    char scriptstr[8192+1],str[65]; cJSON *json = cJSON_CreateObject();
+    char scriptstr[8192+1],str[65]; int32_t vout; cJSON *json = cJSON_CreateObject();
     jaddstr(json,"prev_hash",bits256_str(str,vin->prev_hash));
-    jaddnum(json,"prev_vout",vin->prev_vout);
+    vout = vin->prev_vout;
+    jaddnum(json,"prev_vout",vout);
     jaddnum(json,"sequence",vin->sequence);
     if ( vin->script != 0 && vin->scriptlen*2+1 < sizeof(scriptstr) )
     {
@@ -90,7 +96,7 @@ void iguana_vinset(struct iguana_info *coin,int32_t height,struct iguana_msgvin 
 
 int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmstr,int32_t height,struct iguana_msgvout *vout,struct iguana_txid *tx,int32_t i)
 {
-    struct iguana_unspent *u,*U; uint32_t unspentind,scriptlen = 0; struct iguana_bundle *bp;
+    struct iguana_unspent *u,*U; uint32_t unspentind,scriptlen = 0; struct iguana_bundle *bp; char coinaddr[65];
     struct iguana_ramchaindata *rdata; struct iguana_pkhash *P,*p;
     memset(vout,0,sizeof(*vout));
     if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0  && (rdata= bp->ramchain.H.data) != 0 )
@@ -103,7 +109,7 @@ int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmst
             printf("iguana_voutset: txidind mismatch %d vs %d || %d vs %d || (%d vs %d)\n",u->txidind,u->txidind,u->vout,i,u->hdrsi,height / coin->chain->bundlesize);
         p = &P[u->pkind];
         vout->value = u->value;
-        scriptlen = iguana_scriptgen(coin,scriptspace,asmstr,bp,p,u->type);
+        scriptlen = iguana_scriptgen(coin,coinaddr,scriptspace,asmstr,p->rmd160,u->type,i);
     }
     vout->pk_scriptlen = scriptlen;
     return(scriptlen);
@@ -125,7 +131,7 @@ cJSON *iguana_txjson(struct iguana_info *coin,struct iguana_txid *tx,int32_t hei
     for (i=0; i<tx->numvouts; i++)
     {
         iguana_voutset(coin,space,asmstr,height,&vout,tx,i);
-        jaddi(vouts,iguana_voutjson(coin,&vout,asmstr));
+        jaddi(vouts,iguana_voutjson(coin,&vout,i));
     }
     jadd(json,"vouts",vouts);
     for (i=0; i<tx->numvins; i++)

@@ -16,14 +16,39 @@
 #include "iguana777.h"
 #include "../includes/iguana_apidefs.h"
 
-HASH_AND_INT(ramchain,getblock,blockhash,localonly)
+char *iguana_APIrequest(struct iguana_info *coin,bits256 blockhash,bits256 txid,int32_t seconds)
 {
-    int32_t i,len; char hexstr[(sizeof(uint32_t)+sizeof(struct iguana_msgblock))*2+1];
-    uint8_t serialized[sizeof(uint32_t)+sizeof(struct iguana_msgblock)]; bits256 hash2;
+    int32_t i,len; char *retstr = 0; uint8_t serialized[1024]; char str[65];
+    coin->APIblockhash = blockhash;
+    coin->APItxid = txid;
+    printf("request block.(%s) txid.%llx\n",bits256_str(str,blockhash),(long long)txid.txid);
+    if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,bits256_str(str,blockhash))) > 0 )
+    {
+        for (i=0; i<seconds; i++)
+        {
+            iguana_send(coin,0,serialized,len);
+            if ( coin->APIblockstr != 0 )
+            {
+                retstr = coin->APIblockstr;
+                coin->APIblockstr = 0;
+                memset(&coin->APIblockhash,0,sizeof(coin->APIblockhash));
+                memset(&coin->APItxid,0,sizeof(coin->APItxid));
+                return(retstr);
+            }
+            sleep(1);
+        }
+    }
+    return(0);
+}
+
+HASH_AND_INT(ramchain,getblock,blockhash,remoteonly)
+{
+    int32_t len; char hexstr[(sizeof(uint32_t)+sizeof(struct iguana_msgblock))*2+1],*blockstr;
+    uint8_t serialized[sizeof(uint32_t)+sizeof(struct iguana_msgblock)]; bits256 hash2,txid;
     struct iguana_msgblock msg; struct iguana_block *block;
     cJSON *retjson = cJSON_CreateObject();
     memset(&msg,0,sizeof(msg));
-    if ( localonly == 0 && (block= iguana_blockfind(coin,blockhash)) != 0 )
+    if ( remoteonly == 0 && (block= iguana_blockfind(coin,blockhash)) != 0 )
     {
         msg.H.version = block->RO.version;
         msg.H.merkle_root = block->RO.merkle_root;
@@ -40,24 +65,63 @@ HASH_AND_INT(ramchain,getblock,blockhash,localonly)
         jaddstr(retjson,"error","already have pending request");
     else
     {
-        coin->APIblockhash = blockhash;
-        iguana_blockQ(coin,0,-1,blockhash,1);
-        for (i=0; i<10; i++)
+        memset(txid.bytes,0,sizeof(txid));
+        if ( (blockstr= iguana_APIrequest(coin,blockhash,txid,10)) != 0 )
         {
-            if ( coin->APIblockstr != 0 )
-            {
-                jaddstr(retjson,"result",coin->APIblockstr);
-                free(coin->APIblockstr);
-                memset(&coin->APIblockhash,0,sizeof(coin->APIblockhash));
-                coin->APIblockstr = 0;
-                break;
-            }
-            sleep(1);
-        }
-        if ( i == 10 )
-            jaddstr(retjson,"error","cant find blockhash");
+            jaddstr(retjson,"result",blockstr);
+            free(blockstr);
+        } else jaddstr(retjson,"error","cant find blockhash");
     }
     return(jprint(retjson,1));
+}
+
+HASH_AND_INT(ramchain,getrawtransaction,txid,verbose)
+{
+    struct iguana_txid *tx,T; char *txbytes; bits256 checktxid; int32_t len,height; cJSON *retjson;
+    if ( (tx= iguana_txidfind(coin,&height,&T,txid)) != 0 )
+    {
+        retjson = cJSON_CreateObject();
+        if ( (len= iguana_txbytes(coin,coin->blockspace,sizeof(coin->blockspace),&checktxid,tx,height,0,0)) > 0 )
+        {
+            txbytes = mycalloc('x',1,len*2+1);
+            init_hexbytes_noT(txbytes,coin->blockspace,len*2+1);
+            jaddstr(retjson,"result",txbytes);
+            myfree(txbytes,len*2+1);
+            return(jprint(retjson,1));
+        }
+        else if ( height >= 0 )
+        {
+            if ( coin->APIblockstr != 0 )
+                jaddstr(retjson,"error","already have pending request");
+            else
+            {
+                int32_t datalen; uint8_t *data; char *blockstr; bits256 blockhash;
+                blockhash = iguana_blockhash(coin,height);
+                if ( (blockstr= iguana_APIrequest(coin,blockhash,txid,10)) != 0 )
+                {
+                    datalen = (int32_t)(strlen(blockstr) >> 1);
+                    data = malloc(datalen);
+                    decode_hex(data,datalen,blockstr);
+                    if ( (txbytes= iguana_txscan(coin,verbose != 0 ? retjson : 0,data,datalen,txid)) != 0 )
+                    {
+                        jaddstr(retjson,"result",txbytes);
+                        jaddbits256(retjson,"blockhash",blockhash);
+                        jaddnum(retjson,"height",height);
+                        free(txbytes);
+                    } else jaddstr(retjson,"error","cant find txid in block");
+                    free(blockstr);
+                    free(data);
+                } else jaddstr(retjson,"error","cant find blockhash");
+                return(jprint(retjson,1));
+            }
+        } else printf("height.%d\n",height);
+    }
+    return(clonestr("{\"error\":\"cant find txid\"}"));
+}
+
+HASH_ARG(ramchain,gettransaction,txid)
+{
+    return(ramchain_getrawtransaction(IGUANA_CALLARGS,txid,1));
 }
 
 ZERO_ARGS(ramchain,getinfo)
@@ -132,12 +196,6 @@ THREE_STRINGS(ramchain,verifymessage,address,sig,message)
 
 // tx
 TWO_ARRAYS(ramchain,createrawtransaction,vins,vouts)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-HASH_AND_INT(ramchain,getrawtransaction,txid,verbose)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));

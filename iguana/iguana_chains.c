@@ -66,7 +66,7 @@ static struct iguana_chain Chains[] =
         "3b27c25b333e890fbb6cd912fcdfb07bf17245def80410a0a05a8eae070b2060",
         //"00000ac7d764e7119da60d3c832b1d4458da9bc9ef9d5dd0d91a15f690a46d99", // hashGenesisBlock main.h
         "01000000000000000000000000000000000000000000000000000000000000000000000028581b3ba53e73adaaf957bced1d42d46ed0d84a86b34f7a5a49cdcaa1938a697f9c0854ffff0f1e0004de0300", // need to extract from valid blk0001.dat
-        11920,11921,1,0x1e // port and rpcport vpncoin.conf
+        1920,1921,1,0x1e // port and rpcport vpncoin.conf
     },
 };
 

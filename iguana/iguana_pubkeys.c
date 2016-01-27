@@ -902,9 +902,10 @@ int32_t iguana_calcrmd160(struct iguana_info *coin,uint8_t rmd160[20],uint8_t ms
         }
         return(IGUANA_SCRIPT_7688AC);
     }
+    // 21035f1321ed17d387e4433b2fa229c53616057964af065f98bfcae2233c5108055eac
     else if ( pk_script[0] > 0 && pk_script[0] < 76 && pk_script[pk_scriptlen-1] == 0xac && pk_script[0] == pk_scriptlen-2 )
     {
-        //printf("minus2\n");
+        printf("minus2\n");
         vcalc_sha256(0,sha256,&pk_script[1],pk_script[0]);
         calc_rmd160(0,rmd160,sha256,sizeof(sha256));
         return(IGUANA_SCRIPT_76AC);
@@ -978,16 +979,19 @@ int32_t iguana_calcrmd160(struct iguana_info *coin,uint8_t rmd160[20],uint8_t ms
     return(type);
 }
 
-int32_t iguana_scriptgen(struct iguana_info *coin,uint8_t *script,char *asmstr,struct iguana_bundle *bp,struct iguana_pkhash *p,uint8_t type)
+int32_t iguana_scriptgen(struct iguana_info *coin,char *coinaddr,uint8_t *script,char *asmstr,uint8_t rmd160[20],uint8_t type,int32_t txi)
 {
-    char coinaddr[65]; uint8_t addrtype; int32_t scriptlen = 0;
+    uint8_t addrtype; int32_t scriptlen = 0;
     if ( type == IGUANA_SCRIPT_7688AC || type == IGUANA_SCRIPT_76AC )
         addrtype = coin->chain->pubtype;
     else addrtype = coin->chain->p2shtype;
-    btc_convrmd160(coinaddr,addrtype,p->rmd160);
+    btc_convrmd160(coinaddr,addrtype,rmd160);
     switch ( type )
     {
-        case IGUANA_SCRIPT_NULL: strcpy(asmstr,"coinbase"); break;
+        case IGUANA_SCRIPT_NULL:
+            strcpy(asmstr,txi == 0 ? "coinbase" : "PoSbase");
+            coinaddr[0] = 0;
+            break;
         case IGUANA_SCRIPT_76AC:
             sprintf(asmstr,"OP_DUP %s OP_CHECKSIG",coinaddr);
             break;
@@ -996,7 +1000,7 @@ int32_t iguana_scriptgen(struct iguana_info *coin,uint8_t *script,char *asmstr,s
             break;
         case IGUANA_SCRIPT_P2SH:
             script[0] = 0xa9, script[1] = 0x14;
-            memcpy(&script[2],p->rmd160,20);
+            memcpy(&script[2],rmd160,20);
             script[22] = 0x87;
             sprintf(asmstr,"OP_HASH160 %s OP_EQUAL",coinaddr);
             scriptlen = 23;

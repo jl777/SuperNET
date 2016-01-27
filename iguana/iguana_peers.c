@@ -343,9 +343,17 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
 
 int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *serialized,int32_t len)
 {
-    int32_t numsent,remains,usock;
-    if ( addr == 0 && coin->peers.numranked > 1 )
-        addr = coin->peers.ranked[rand() % coin->peers.numranked];
+    int32_t numsent,remains,usock,r,i;
+    if ( addr == 0 )
+    {
+        r = rand();
+        for (i=0; i<IGUANA_MAXPEERS; i++)
+        {
+            addr = &coin->peers.active[(i + r) % IGUANA_MAXPEERS];
+            if ( addr->usock >= 0 && addr->msgcounts.verack > 0 )
+                break;
+        }
+    }
     if ( addr == 0 )
         return(-1);
     usock = addr->usock;
@@ -358,7 +366,7 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
     {
         //printf(" >>>>>>> send.(%s) %d bytes to %s supernet.%d\n",(char *)&serialized[4],len,addr->ipaddr,addr->supernet);
     }
-    else if ( addr->msgcounts.verack == 0 && (strcmp((char *)&serialized[4],"version") != 0 && strcmp((char *)&serialized[4],"verack") != 0) != 0 )
+    else if ( addr->msgcounts.verack == 0 && (strcmp((char *)&serialized[4],"version") != 0 && strcmp((char *)&serialized[4],"ConnectTo") != 0 && strcmp((char *)&serialized[4],"verack") != 0) != 0 )
     {
         printf("skip.(%s) since no verack yet\n",(char *)&serialized[4]);
         return(-1);
@@ -497,7 +505,7 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
             return;
         {
             iguana_rwnum(0,H.serdatalen,sizeof(H.serdatalen),(uint32_t *)&len);
-            printf("%p got.(%s) recvlen.%d from %s | usock.%d ready.%u dead.%u len.%d\n",addr,H.command,recvlen,addr->ipaddr,addr->usock,addr->ready,addr->dead,len);
+            //printf("%08x got.(%s) recvlen.%d from %s | usock.%d ready.%u dead.%u len.%d\n",(uint32_t)addr->ipbits,H.command,recvlen,addr->ipaddr,addr->usock,addr->ready,addr->dead,len);
         }
         if ( (len= iguana_validatehdr(&H)) >= 0 )
         {
@@ -519,6 +527,10 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
                     return;
                 }
             }
+            // 79 22 e3 b4 80 07
+            //int32_t i; for (i=0; i<recvlen; i++)
+            //    printf("%02x ",((uint8_t *)buf)[i]);
+            //printf("received data.%d\n",recvlen);
             iguana_parsebuf(coin,addr,&H,buf,len);
             if ( buf != _buf )
                 myfree(buf,len);
@@ -580,7 +592,7 @@ void iguana_startconnection(void *arg)
         printf("avoid self-loopback\n");
         return;
     }
-    printf("startconnection.(%s) pending.%u usock.%d addrind.%d\n",addr->ipaddr,addr->pending,addr->usock,addr->addrind);
+    //printf("startconnection.(%s) pending.%u usock.%d addrind.%d\n",addr->ipaddr,addr->pending,addr->usock,addr->addrind);
     addr->pending = (uint32_t)time(NULL);
     if ( (port= (uint16_t)(addr->ipbits >> 32)) == 0 )
         port = coin->chain->portp2p;
@@ -921,7 +933,7 @@ int64_t iguana_peerallocated(struct iguana_info *coin,struct iguana_peer *addr)
 void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
 {
     static uint32_t lastping;
-    struct pollfd fds; uint8_t *buf,serialized[64]; struct iguana_bundlereq *req;
+    struct pollfd fds; struct iguana_bundlereq *req; uint8_t *buf;//,serialized[64];
     uint32_t ipbits; int32_t bufsize,flag,run,timeout = coin->polltimeout == 0 ? 10 : coin->polltimeout;
 #ifdef IGUANA_PEERALLOC
     int32_t i;  int64_t remaining; struct OS_memspace *mem[sizeof(addr->SEROUT)/sizeof(*addr->SEROUT)];
@@ -945,10 +957,15 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     addr->maxfilehash2 = IGUANA_MAXFILEITEMS;
     bufsize = IGUANA_MAXPACKETSIZE;
     buf = mycalloc('r',1,bufsize);
-    printf("send version myservices.%llu to (%s)\n",(long long)coin->myservices,addr->ipaddr);
-    iguana_send_version(coin,addr,coin->myservices);
-    sleep(1+(rand()%5));
-    iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
+    if ( strcmp(coin->symbol,"VPN") == 0 )
+        iguana_send_ConnectTo(coin,addr);
+    else
+    {
+        iguana_send_version(coin,addr,coin->myservices);
+        //printf("send version myservices.%llu to (%s)\n",(long long)coin->myservices,addr->ipaddr);
+    }
+    //sleep(1+(rand()%5));
+    //iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
     run = 0;
     while ( addr->usock >= 0 && addr->dead == 0 && coin->peers.shuttingdown == 0 )
     {
