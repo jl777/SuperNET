@@ -497,7 +497,7 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
             return;
         {
             iguana_rwnum(0,H.serdatalen,sizeof(H.serdatalen),(uint32_t *)&len);
-            //printf("%p got.(%s) recvlen.%d from %s | usock.%d ready.%u dead.%u len.%d\n",addr,H.command,recvlen,addr->ipaddr,addr->usock,addr->ready,addr->dead,len);
+            printf("%p got.(%s) recvlen.%d from %s | usock.%d ready.%u dead.%u len.%d\n",addr,H.command,recvlen,addr->ipaddr,addr->usock,addr->ready,addr->dead,len);
         }
         if ( (len= iguana_validatehdr(&H)) >= 0 )
         {
@@ -580,7 +580,7 @@ void iguana_startconnection(void *arg)
         printf("avoid self-loopback\n");
         return;
     }
-    //printf("startconnection.(%s) pending.%u usock.%d addrind.%d\n",addr->ipaddr,addr->pending,addr->usock,addr->addrind);
+    printf("startconnection.(%s) pending.%u usock.%d addrind.%d\n",addr->ipaddr,addr->pending,addr->usock,addr->addrind);
     addr->pending = (uint32_t)time(NULL);
     if ( (port= (uint16_t)(addr->ipbits >> 32)) == 0 )
         port = coin->chain->portp2p;
