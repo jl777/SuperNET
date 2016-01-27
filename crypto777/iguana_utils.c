@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2015 The SuperNET Developers.                             *
+ * Copyright © 2014-2016 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -31,6 +31,15 @@ char *bits256_str(char hexstr[65],bits256 x)
 {
     init_hexbytes_noT(hexstr,x.bytes,sizeof(x));
     return(hexstr);
+}
+
+bits256 bits256_conv(char *hexstr)
+{
+    bits256 x;
+    memset(&x,0,sizeof(x));
+    if ( strlen(hexstr) == sizeof(x)*2)
+        decode_hex(x.bytes,sizeof(x.bytes),hexstr);
+    return(x);
 }
 
 char *bits256_lstr(char hexstr[65],bits256 x)
@@ -92,6 +101,15 @@ bits256 bits256_from_compact(uint32_t c)
     for (i=0; i<nbits; i++) // horrible inefficient
         x = bits256_lshift(x);
     return(x);
+}
+
+int32_t bitweight(uint64_t x)
+{
+    int i,wt = 0;
+    for (i=0; i<64; i++)
+        if ( (1LL << i) & x )
+            wt++;
+    return(wt);
 }
 
 void calc_OP_HASH160(char hexstr[41],uint8_t hash160[20],char *pubkey)
@@ -280,8 +298,11 @@ int32_t decode_hex(unsigned char *bytes,int32_t n,char *hex)
     }
     if ( n == 0 || (hex[n*2+1] == 0 && hex[n*2] != 0) )
     {
-        bytes[0] = unhex(hex[0]);
-        printf("decode_hex n.%d hex[0] (%c) -> %d hex.(%s) [n*2+1: %d] [n*2: %d %c] len.%ld\n",n,hex[0],bytes[0],hex,hex[n*2+1],hex[n*2],hex[n*2],(long)strlen(hex));
+        if ( n > 0 )
+        {
+            bytes[0] = unhex(hex[0]);
+            printf("decode_hex n.%d hex[0] (%c) -> %d hex.(%s) [n*2+1: %d] [n*2: %d %c] len.%ld\n",n,hex[0],bytes[0],hex,hex[n*2+1],hex[n*2],hex[n*2],(long)strlen(hex));
+        }
 #ifdef __APPLE__
         getchar();
 #endif
@@ -427,6 +448,25 @@ int32_t has_backslash(char *str)
         if ( str[i] == '\\' )
             return(1);
     return(0);
+}
+
+static int _increasing_double(const void *a,const void *b)
+{
+#define double_a (*(double *)a)
+#define double_b (*(double *)b)
+	if ( double_b > double_a )
+		return(-1);
+	else if ( double_b < double_a )
+		return(1);
+	return(0);
+#undef double_a
+#undef double_b
+}
+
+int32_t sortds(double *buf,uint32_t num,int32_t size)
+{
+	qsort(buf,num,size,_increasing_double);
+	return(0);
 }
 
 /*int32_t iguana_sortbignum(void *buf,int32_t size,uint32_t num,int32_t structsize,int32_t dir)
@@ -584,7 +624,7 @@ int32_t nn_base64_decode (const char *in, size_t in_len,uint8_t *out, size_t out
         
         ch = DECODEMAP [(uint32_t)in [ii]];
         
-        /*  Discard invalid characters as per RFC 2045. */
+        // Discard invalid characters as per RFC 2045.
         if (ch == 0xFF)
             break;
         
@@ -634,7 +674,7 @@ int32_t nn_base64_encode (const uint8_t *in, size_t in_len,char *out, size_t out
         out [io++] = ENCODEMAP [v & 63];
     }
     
-    /*  Pad to a multiple of 3. */
+    //  Pad to a multiple of 3
     while (io & 3) {
         if (io >= out_len)
             return -ENOBUFS;
@@ -648,6 +688,7 @@ int32_t nn_base64_encode (const uint8_t *in, size_t in_len,char *out, size_t out
     
     return io;
 }
+
 /*
  NXT address converter,
  Ported from original javascript (nxtchg)
@@ -769,6 +810,17 @@ int32_t RS_encode(char *rsaddr,uint64_t id)
     return(0);
 }
 
+void calc_hexstr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
+{
+    init_hexbytes_noT(hexstr,(void *)msg,len+1);
+}
+
+void calc_unhexstr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
+{
+    decode_hex((void *)hexstr,len>>1,(void *)msg);
+    hexstr[len>>1] = 0;
+}
+
 void calc_base64_encodestr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 {
     nn_base64_encode(msg,len,hexstr,64);
@@ -817,8 +869,15 @@ void calc_md5str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 
 void calc_crc32str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 {
-    uint32_t crc = calc_crc32(0,msg,len);
-    init_hexbytes_noT(hexstr,(uint8_t *)&crc,sizeof(crc));
+    uint32_t crc; uint8_t serialized[sizeof(crc)];
+    crc = calc_crc32(0,msg,len);
+    //iguana_rwnum(1,serialized,sizeof(crc),&crc);
+    serialized[3] = (crc & 0xff), crc >>= 8;
+    serialized[2] = (crc & 0xff), crc >>= 8;
+    serialized[1] = (crc & 0xff), crc >>= 8;
+    serialized[0] = (crc & 0xff), crc >>= 8;
+    init_hexbytes_noT(hexstr,serialized,sizeof(crc));
+    //printf("crc.%08x vs revcrc.%08x -> %s\n",crc,*(uint32_t *)serialized,hexstr);
 }
 
 void calc_NXTaddr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
@@ -830,6 +889,10 @@ void calc_NXTaddr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 
 void calc_curve25519_str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 {
-    bits256 x = curve25519(*(bits256 *)msg,curve25519_basepoint9());
+    bits256 x,priv,pub;
+    if ( len != sizeof(bits256)*2 || is_hexstr((char *)msg,64) == 0 )
+        conv_NXTpassword(priv.bytes,pub.bytes,msg,len);
+    else priv = *(bits256 *)msg;
+    x = curve25519(priv,curve25519_basepoint9());
     init_hexbytes_noT(hexstr,x.bytes,sizeof(x));
 }

@@ -338,9 +338,9 @@ static int inet_pton6(char *src, unsigned char *dst) {
     return 0;
 }
 
-int32_t parse_ipaddr(char *ipaddr,char *ip_port)
+uint16_t parse_ipaddr(char *ipaddr,char *ip_port)
 {
-    int32_t j,port = 0;
+    int32_t j; uint16_t port = 0;
     if ( ip_port != 0 && ip_port[0] != 0 )
     {
 		strcpy(ipaddr,ip_port);
@@ -388,11 +388,14 @@ void expand_ipbits(char *ipaddr,uint64_t ipbits)
 
 uint64_t calc_ipbits(char *ip_port)
 {
-    uint64_t ipbits; char ipaddr[64];
-    ipbits = _calc_ipbits(ip_port);
-    expand_ipbits(ipaddr,ipbits);
-    if ( ipbits != 0 && strcmp(ipaddr,ip_port) != 0 )
-        printf("calc_ipbits error: (%s) -> %llx -> (%s)\n",ip_port,(long long)ipbits,ipaddr);
+    uint64_t ipbits = 0; char ipaddr[64];
+    if ( ip_port != 0 )
+    {
+        ipbits = _calc_ipbits(ip_port);
+        expand_ipbits(ipaddr,ipbits);
+        if ( ipbits != 0 && strcmp(ipaddr,ip_port) != 0 )
+            printf("calc_ipbits error: (%s) -> %llx -> (%s)\n",ip_port,(long long)ipbits,ipaddr);//, getchar();
+    }
     return(ipbits);
 }
 

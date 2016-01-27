@@ -160,6 +160,7 @@ extern "C"
     
     /* When assigning an integer value, it needs to be propagated to valuedouble too. */
 #define cJSON_SetIntValue(object,val)			((object)?(object)->valueint=(object)->valuedouble=(val):(val))
+#define jfieldstr get_cJSON_fieldname
     
     char *cJSON_str(cJSON *json);
     char *jstr(cJSON *json,char *field);

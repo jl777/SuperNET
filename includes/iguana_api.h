@@ -16,10 +16,8 @@
 #ifndef IGUANA_API_H
 #define IGUANA_API_H
 
-#include "iguana_apidefs.h"
-#include "iguana_apideclares.h"
-#undef IGUANA_ARGS
-
-#include "iguana_apiundefs.h"
+#include "../includes/iguana_apidefs.h"
+#include "../includes/iguana_apideclares.h"
+#include "../includes/iguana_apiundefs.h"
 
 #endif

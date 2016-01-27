@@ -10309,7 +10309,7 @@ void iguana_dedicatedrecv(void *arg)
                         if ( (agent->sock= iguana_socket(0,hostname,port)) < 0 )
                             return(clonestr("{\"result\":\"agent added, but couldnt connect to remote agent\"}"));
                     }
-                    sprintf(retbuf,"{\"result\":\"agent added\",\"name\"\"%s\",\"methods\":%s,\"hostname\":\"%s\",\"port\":%u,\"sock\":%d}",agent->name,jprint(agent->methods,0),agent->hostname,agent->port,agent->sock);
+                    sprintf(retbuf,"{\"result\":\"agent added\",\"name\":\"%s\",\"methods\":%s,\"hostname\":\"%s\",\"port\":%u,\"sock\":%d}",agent->name,jprint(agent->methods,0),agent->hostname,agent->port,agent->sock);
                     return(clonestr(retbuf));
                 }
             }
@@ -11345,4 +11345,1504 @@ void iguana_dedicatedrecv(void *arg)
                         }
                     }
                 }
+                
+                
+                void iguana_bundlestats(struct iguana_info *coin,char *str)
+            {
+                int32_t i,n,dispflag,numrecv,done,numhashes,numcached,numsaved,numemit; int64_t estsize = 0;
+                struct iguana_bundle *bp;
+                dispflag = (rand() % 1000) == 0;
+                numrecv = numhashes = numcached = numsaved = numemit = done = 0;
+                memset(coin->rankedbps,0,sizeof(coin->rankedbps));
+                for (i=n=0; i<coin->bundlescount; i++)
+                {
+                    coin->rankedbps[n][1] = i;
+                    if ( (bp= coin->bundles[i]) != 0 )
+                    {
+                        estsize += iguana_bundlecalcs(coin,bp);
+                        numhashes += bp->numhashes;
+                        numcached += bp->numcached;
+                        numrecv += bp->numrecv;
+                        numsaved += bp->numsaved;
+                        if ( bp->emitfinish != 0 )
+                        {
+                            done++;
+                            if ( bp->emitfinish > 1 )
+                                numemit++;
+                            iguana_bundlepurge(coin,bp);
+                        }
+                        else if ( bp->metric > 0. )
+                            coin->rankedbps[n++][0] = bp->metric;
+                    }
+                }
+                if ( n > 0 )
+                {
+                    struct iguana_peer *addr; uint32_t now; struct iguana_block *block; int32_t m,flag,origissue,j,issue,pend = 0;
+                    flag = m = 0;
+                    sortds(&coin->rankedbps[0][0],n,sizeof(coin->rankedbps[0]));
+                    for (i=0; i<coin->peers.numranked; i++)
+                    {
+                        if ( (addr= coin->peers.ranked[i]) != 0 && addr->msgcounts.verack > 0 )
+                            pend += addr->pendblocks;
+                    }
+                    if ( pend > 0 )
+                    {
+                        origissue = (_IGUANA_MAXPENDING*coin->peers.numranked - pend);
+                        issue = origissue;
+                        now = (uint32_t)time(NULL);
+                        for (i=0; i<n; i++)
+                        {
+                            if ( issue <= 0 )
+                                break;
+                            if ( (bp= coin->bundles[(int32_t)coin->rankedbps[i][1]]) != 0 && bp->emitfinish == 0 && bp->numhashes == bp->n )
+                            {
+                                for (j=0; j<bp->n; j++)
+                                {
+                                    if ( bits256_nonz(bp->hashes[j]) > 0 && (block= bp->blocks[j]) != 0 )
+                                    {
+                                        //printf("j.%d bp.%d %d %x lag.%d\n",j,bp->minrequests,block->numrequests,block->fpipbits,now - bp->issued[j]);
+                                        if ( block->numrequests <= bp->minrequests+10 && block->fpipbits == 0 && (bp->issued[j] == 0 || now > bp->issued[j]+60) )
+                                        {
+                                            printf("%d:%d.%d ",bp->hdrsi,j,block->numrequests);
+                                            flag++;
+                                            bp->issued[j] = now;
+                                            iguana_blockQ(coin,bp,j,bp->hashes[j],0);
+                                            if ( --issue < 0 )
+                                                break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        /*for (i=0; i<n&&i<3; i++)
+                         printf("(%.5f %.0f).%d ",coin->rankedbps[i][0],coin->rankedbps[i][1],coin->bundles[(int32_t)coin->rankedbps[i][1]]->numrecv);*/
+                        if ( flag != 0 )
+                            printf("rem.%d issue.%d pend.%d | numranked.%d\n",n,origissue,pend,coin->peers.numranked);
+                    }
+                }
+                coin->numremain = n;
+                coin->blocksrecv = numrecv;
+                char str2[65]; uint64_t tmp; int32_t diff,p = 0; struct tai difft,t = tai_now();
+                for (i=0; i<IGUANA_MAXPEERS; i++)
+                    if ( coin->peers.active[i].usock >= 0 )
+                        p++;
+                diff = (int32_t)time(NULL) - coin->startutc;
+                difft.x = (t.x - coin->starttime.x), difft.millis = (t.millis - coin->starttime.millis);
+                tmp = (difft.millis * 1000000);
+                tmp %= 1000000000;
+                difft.millis = ((double)tmp / 1000000.);
+                sprintf(str,"N[%d] Q.%d h.%d r.%d c.%d:%d:%d s.%d d.%d E.%d:%d M.%d L.%d est.%d %s %d:%02d:%02d %03.3f peers.%d/%d Q.(%d %d)",coin->bundlescount,coin->numbundlesQ,numhashes,coin->blocksrecv,coin->numcached,numcached,coin->cachefreed,numsaved,done,numemit,coin->numreqsent,coin->blocks.hwmchain.height,coin->longestchain,coin->MAXBUNDLES,mbstr(str2,estsize),(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,difft.millis,p,coin->MAXPEERS,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
+                //sprintf(str+strlen(str),"%s.%-2d %s time %.2f files.%d Q.%d %d\n",coin->symbol,flag,str,(double)(time(NULL)-coin->starttime)/60.,coin->peers.numfiles,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
+                //if ( (rand() % 100) == 0 )
+                static uint32_t lastdisp;
+                if ( time(NULL) > lastdisp+10 )
+                {
+                    printf("%s\n",str);
+                    lastdisp = (uint32_t)time(NULL);
+                }
+                strcpy(coin->statusstr,str);
+                coin->estsize = estsize;
+            }
+                
+                char *iguana_bundledisp(struct iguana_info *coin,struct iguana_bundle *prevbp,struct iguana_bundle *bp,struct iguana_bundle *nextbp,int32_t m)
+            {
+                static char line[1024];
+                line[0] = 0;
+                if ( bp == 0 )
+                    return(line);
+                if ( prevbp != 0 )
+                {
+                    if ( memcmp(prevbp->hashes[0].bytes,bp->prevbundlehash2.bytes,sizeof(bits256)) == 0 )
+                    {
+                        if ( memcmp(prevbp->nextbundlehash2.bytes,bp->hashes[0].bytes,sizeof(bits256)) == 0 )
+                            sprintf(line+strlen(line),"<->");
+                        else sprintf(line+strlen(line),"<-");
+                    }
+                    else if ( memcmp(prevbp->nextbundlehash2.bytes,bp->hashes[0].bytes,sizeof(bits256)) == 0 )
+                        sprintf(line+strlen(line),"->");
+                }
+                sprintf(line+strlen(line),"(%d:%d).%d ",bp->hdrsi,m,bp->numhashes);
+                if ( nextbp != 0 )
+                {
+                    if ( memcmp(nextbp->hashes[0].bytes,bp->nextbundlehash2.bytes,sizeof(bits256)) == 0 )
+                    {
+                        if ( memcmp(nextbp->prevbundlehash2.bytes,bp->hashes[0].bytes,sizeof(bits256)) == 0 )
+                            sprintf(line+strlen(line),"<->");
+                        else sprintf(line+strlen(line),"->");
+                    }
+                    else if ( memcmp(nextbp->prevbundlehash2.bytes,bp->hashes[0].bytes,sizeof(bits256)) == 0 )
+                        sprintf(line+strlen(line),"<-");
+                }
+                return(line);
+            }
+                if ( strcmp(method,"status") == 0 || strcmp(method,"getinfo") == 0 )
+                    return(iguana_getinfo(myinfo,coin));
+        /* else if ( strcmp(method,"getbestblockhash") == 0 )
+         return(iguana_getbestblockhash(myinfo,coin));
+         else if ( strcmp(method,"getblockcount") == 0 )
+         return(iguana_getblockcount(myinfo,coin));
+         else if ( strcmp(method,"validatepubkey") == 0 )
+         return(iguana_validatepubkey(myinfo,coin,jstr(json,"pubkey")));
+         else if ( strcmp(method,"listtransactions") == 0 )
+         return(iguana_listtransactions(myinfo,coin,jstr(json,"account"),juint(json,"count"),juint(json,"from")));
+         else if ( strcmp(method,"getreceivedbyaddress") == 0 )
+         return(iguana_getreceivedbyaddress(myinfo,coin,jstr(json,"address"),juint(json,"minconf")));
+         else if ( strcmp(method,"listreceivedbyaddress") == 0 )
+         return(iguana_listreceivedbyaddress(myinfo,coin,juint(json,"minconf"),juint(json,"includeempty")));
+         else if ( strcmp(method,"listsinceblock") == 0 )
+         return(iguana_listsinceblock(myinfo,coin,jbits256(json,"blockhash"),juint(json,"target")));
+         else if ( strcmp(method,"getreceivedbyaccount") == 0 )
+         return(iguana_getreceivedbyaccount(myinfo,coin,jstr(json,"account"),juint(json,"minconf")));
+         else if ( strcmp(method,"listreceivedbyaccount") == 0 )
+         return(iguana_listreceivedbyaccount(myinfo,coin,jstr(json,"account"),juint(json,"includeempty")));
+         else if ( strcmp(method,"getnewaddress") == 0 )
+         return(iguana_getnewaddress(myinfo,coin,jstr(json,"account")));
+         else if ( strcmp(method,"makekeypair") == 0 )
+         return(iguana_makekeypair(myinfo,coin));
+         else if ( strcmp(method,"getaccountaddress") == 0 )
+         return(iguana_getaccountaddress(myinfo,coin,jstr(json,"account")));
+         else if ( strcmp(method,"setaccount") == 0 )
+         return(iguana_setaccount(myinfo,coin,jstr(json,"address"),jstr(json,"account")));
+         else if ( strcmp(method,"getaccount") == 0 )
+         return(iguana_getaccount(myinfo,coin,jstr(json,"account")));
+         else if ( strcmp(method,"getaddressesbyaccount") == 0 )
+         return(iguana_getaddressesbyaccount(myinfo,coin,jstr(json,"account")));
+         else if ( strcmp(method,"listaddressgroupings") == 0 )
+         return(iguana_listaddressgroupings(myinfo,coin));
+         else if ( strcmp(method,"getbalance") == 0 )
+         return(iguana_getbalance(myinfo,coin,jstr(json,"account"),juint(json,"minconf")));
+         else if ( strcmp(method,"listaccounts") == 0 )
+         return(iguana_listaccounts(myinfo,coin,juint(json,"minconf")));
+         else if ( strcmp(method,"dumpprivkey") == 0 )
+         return(iguana_dumpprivkey(myinfo,coin,jstr(json,"address")));
+         else if ( strcmp(method,"importprivkey") == 0 )
+         return(iguana_importprivkey(myinfo,coin,jstr(json,"wip")));
+         else if ( strcmp(method,"dumpwallet") == 0 )
+         return(iguana_dumpwallet(myinfo,coin));
+         else if ( strcmp(method,"importwallet") == 0 )
+         return(iguana_importwallet(myinfo,coin,jstr(json,"wallet")));
+         else if ( strcmp(method,"walletpassphrase") == 0 )
+         return(iguana_walletpassphrase(myinfo,coin,jstr(json,"passphrase"),juint(json,"timeout")));
+         else if ( strcmp(method,"walletpassphrasechange") == 0 )
+         return(iguana_walletpassphrasechange(myinfo,coin,jstr(json,"oldpassphrase"),jstr(json,"newpassphrase")));
+         else if ( strcmp(method,"walletlock") == 0 )
+         return(iguana_walletlock(myinfo,coin));
+         else if ( strcmp(method,"encryptwallet") == 0 )
+         return(iguana_encryptwallet(myinfo,coin,jstr(json,"passphrase")));
+         else if ( strcmp(method,"checkwallet") == 0 )
+         return(iguana_checkwallet(myinfo,coin));
+         else if ( strcmp(method,"repairwallet") == 0 )
+         return(iguana_repairwallet(myinfo,coin));
+         else if ( strcmp(method,"backupwallet") == 0 )
+         return(iguana_backupwallet(myinfo,coin,jstr(json,"filename")));
+         else if ( strcmp(method,"signmessage") == 0 )
+         return(iguana_signmessage(myinfo,coin,jstr(json,"address"),jstr(json,"message")));
+         else if ( strcmp(method,"verifymessage") == 0 )
+         return(iguana_verifymessage(myinfo,coin,jstr(json,"address"),jstr(json,"sig"),jstr(json,"message")));
+         else if ( strcmp(method,"listunspent") == 0 )
+         return(iguana_listunspent(myinfo,coin,juint(json,"minconf"),juint(json,"maxconf")));
+         else if ( strcmp(method,"lockunspent") == 0 )
+         return(iguana_lockunspent(myinfo,coin,juint(json,"flag"),jobj(json,"array")));
+         else if ( strcmp(method,"listlockunspent") == 0 )
+         return(iguana_listlockunspent(myinfo,coin));
+         else if ( strcmp(method,"gettxout") == 0 )
+         return(iguana_gettxout(myinfo,coin,jbits256(json,"txid"),juint(json,"vout"),juint(json,"mempool")));
+         else if ( strcmp(method,"gettxoutsetinfo") == 0 )
+         return(iguana_gettxoutsetinfo(myinfo,coin));
+         else if ( strcmp(method,"sendtoaddress") == 0 )
+         return(iguana_sendtoaddress(myinfo,coin,jstr(json,"address"),jdouble(json,"amount"),jstr(json,"comment"),jstr(json,"comment2")));
+         else if ( strcmp(method,"move") == 0 )
+         return(iguana_move(myinfo,coin,jstr(json,"fromaccount"),jstr(json,"toaccount"),jdouble(json,"amount"),juint(json,"minconf"),jstr(json,"comment")));
+         else if ( strcmp(method,"sendfrom") == 0 )
+         return(iguana_sendfrom(myinfo,coin,jstr(json,"fromaccount"),jstr(json,"toaddress"),jdouble(json,"amount"),juint(json,"minconf"),jstr(json,"comment"),jstr(json,"comment2")));
+         else if ( strcmp(method,"sendmany") == 0 )
+         return(iguana_sendmany(myinfo,coin,jstr(json,"fromaccount"),jobj(json,"payments"),juint(json,"minconf"),jstr(json,"comment")));
+         else if ( strcmp(method,"settxfee") == 0 )
+         return(iguana_settxfee(myinfo,coin,jdouble(json,"amount")));
+         else if ( strcmp(method,"getrawtransaction") == 0 )
+         return(iguana_getrawtransaction(myinfo,coin,jbits256(json,"txid"),juint(json,"verbose")));
+         else if ( strcmp(method,"createrawtransaction") == 0 )
+         return(iguana_createrawtransaction(myinfo,coin,jobj(json,"vins"),jobj(json,"vouts")));
+         else if ( strcmp(method,"decoderawtransaction") == 0 )
+         return(iguana_decoderawtransaction(myinfo,coin,jstr(json,"rawtx")));
+         else if ( strcmp(method,"decodescript") == 0 )
+         return(iguana_decodescript(myinfo,coin,jstr(json,"script")));
+         else if ( strcmp(method,"signrawtransaction") == 0 )
+         return(iguana_signrawtransaction(myinfo,coin,jstr(json,"rawtx"),jobj(json,"vins"),jobj(json,"privkeys")));
+         else if ( strcmp(method,"sendrawtransaction") == 0 )
+         return(iguana_sendrawtransaction(myinfo,coin,jstr(json,"rawtx")));
+         else if ( strcmp(method,"getrawchangeaddress") == 0 )
+         return(iguana_getrawchangeaddress(myinfo,coin,jstr(json,"account")));
+         */
+                                            
+                                            char *iguana_jsoncheck(char *retstr,int32_t freeflag)
+            {
+                cJSON *retjson; char *errstr;
+                if ( retstr != 0 )
+                {
+                    if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                    {
+                        if ( (errstr= jstr(retjson,"error")) == 0 )
+                        {
+                            free_json(retjson);
+                            return(retstr);
+                        }
+                        free_json(retjson);
+                    }
+                    if ( freeflag != 0 )
+                        free(retstr);
+                }
+                return(0);
+            }
+
+        char *ramchain_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr)
+        {
+            char *symbol,*str,*retstr; int32_t height; cJSON *argjson,*obj; struct iguana_info *coin = 0;
+            /*{"agent":"ramchain","method":"block","coin":"BTCD","hash":"<sha256hash>"}
+             {"agent":"ramchain","method":"block","coin":"BTCD","height":345600}
+             {"agent":"ramchain","method":"tx","coin":"BTCD","txid":"<sha txid>"}
+             {"agent":"ramchain","method":"rawtx","coin":"BTCD","txid":"<sha txid>"}
+             {"agent":"ramchain","method":"balance","coin":"BTCD","address":"<coinaddress>"}
+             {"agent":"ramchain","method":"balance","coin":"BTCD","addrs":["<coinaddress>",...]}
+             {"agent":"ramchain","method":"totalreceived","coin":"BTCD","address":"<coinaddress>"}
+             {"agent":"ramchain","method":"totalsent","coin":"BTCD","address":"<coinaddress>"}
+             {"agent":"ramchain","method":"unconfirmed","coin":"BTCD","address":"<coinaddress>"}
+             {"agent":"ramchain","method":"utxo","coin":"BTCD","address":"<coinaddress>"}
+             {"agent":"ramchain","method":"utxo","coin":"BTCD","addrs":["<coinaddress0>", "<coinadress1>",...]}
+             {"agent":"ramchain","method":"txs","coin":"BTCD","block":"<blockhash>"}
+             {"agent":"ramchain","method":"txs","coin":"BTCD","height":12345}
+             {"agent":"ramchain","method":"txs","coin":"BTCD","address":"<coinaddress>"}
+             {"agent":"ramchain","method":"status","coin":"BTCD"}*/
+            
+            if ( (symbol= jstr(json,"coin")) != 0 && symbol[0] != 0 )
+            {
+                if ( coin == 0 )
+                    coin = iguana_coinfind(symbol);
+                else if ( strcmp(symbol,coin->symbol) != 0 )
+                    return(clonestr("{\"error\":\"mismatched coin symbol\"}"));
+            }
+            if ( strcmp(method,"explore") == 0 )
+            {
+                obj = jobj(json,"search");
+                if ( coin != 0 && obj != 0 )
+                {
+                    argjson = cJSON_CreateObject();
+                    jaddstr(argjson,"agent","ramchain");
+                    jaddstr(argjson,"method","block");
+                    jaddnum(argjson,"txids",1);
+                    if ( is_cJSON_Number(obj) != 0 )
+                    {
+                        height = juint(obj,0);
+                        jaddnum(argjson,"height",height);
+                    }
+                    else if ( (str= jstr(obj,0)) != 0 )
+                        jaddstr(argjson,"hash",str);
+                    else return(clonestr("{\"error\":\"need number or string to search\"}"));
+                    if ( (retstr= iguana_jsoncheck(ramchain_coinparser(myinfo,coin,"block",argjson),1)) != 0 )
+                    {
+                        free_json(argjson);
+                        return(retstr);
+                    }
+                    free_json(argjson);
+                    argjson = cJSON_CreateObject();
+                    jaddstr(argjson,"agent","ramchain");
+                    jaddstr(argjson,"method","tx");
+                    jaddstr(argjson,"txid",str);
+                    if ( (retstr= iguana_jsoncheck(ramchain_coinparser(myinfo,coin,"tx",argjson),1)) != 0 )
+                    {
+                        free_json(argjson);
+                        return(retstr);
+                    }
+                    free_json(argjson);
+                    return(clonestr("{\"result\":\"explore search cant find height, blockhash, txid\"}"));
+                }
+                return(clonestr("{\"result\":\"explore no coin or search\"}"));
+            }
+            return(ramchain_coinparser(myinfo,coin,method,json));
+        }
+                
+            /*int32_t pp_bind(char *hostname,uint16_t port)
+             {
+             int32_t opt; struct sockaddr_in addr; socklen_t addrlen = sizeof(addr);
+             struct hostent* hostent = gethostbyname(hostname);
+             if (hostent == NULL) {
+             PNACL_message("gethostbyname() returned error: %d", errno);
+             return -1;
+             }
+             addr.sin_family = AF_INET;
+             addr.sin_port = htons(port);
+             memcpy(&addr.sin_addr.s_addr, hostent->h_addr_list[0], hostent->h_length);
+             int sock = socket(AF_INET, SOCK_STREAM, 0);
+             if (sock < 0) {
+             printf("socket() failed: %s", strerror(errno));
+             return -1;
+             }
+             opt = 1;
+             setsockopt(sock,SOL_SOCKET,SO_REUSEADDR,(void*)&opt,sizeof(opt));
+             #ifdef __APPLE__
+             setsockopt(sock,SOL_SOCKET,SO_NOSIGPIPE,&opt,sizeof(opt));
+             #endif
+             //timeout.tv_sec = 0;
+             //timeout.tv_usec = 1000;
+             //setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(char *)&timeout,sizeof(timeout));
+             int result = bind(sock, (struct sockaddr*)&addr, addrlen);
+             if (result != 0) {
+             printf("bind() failed: %s", strerror(errno));
+             closesocket(sock);
+             return -1;
+             }
+             return(sock);
+             }*/
+            /*if ( strcmp(agent,"ramchain") == 0 )
+             return(ramchain_parser(myinfo,method,json,remoteaddr));
+             else if ( strcmp(agent,"InstantDEX") == 0 )
+             return(InstantDEX_parser(myinfo,method,json,remoteaddr));
+             else if ( strcmp(agent,"pangea") == 0 )
+             return(pangea_parser(myinfo,method,json,remoteaddr));
+             else if ( strcmp(agent,"jumblr") == 0 )
+             return(jumblr_parser(myinfo,method,json,remoteaddr));
+             else if ( strcmp(agent,"hash") == 0 )
+             return(hash_parser(myinfo,method,json,remoteaddr));*/
+                
+                char *iguana_coinjson(struct iguana_info *coin,char *method,cJSON *json)
+            {
+                int32_t i,max,retval,num=0; char buf[1024]; struct iguana_peer *addr; char *ipaddr; cJSON *retjson = 0;
+                //printf("iguana_coinjson(%s)\n",jprint(json,0));
+                if ( strcmp(method,"peers") == 0 )
+                    return(jprint(iguana_peersjson(coin,0),1));
+                else if ( strcmp(method,"getconnectioncount") == 0 )
+                {
+                    for (i=0; i<sizeof(coin->peers.active)/sizeof(*coin->peers.active); i++)
+                        if ( coin->peers.active[i].usock >= 0 )
+                            num++;
+                    sprintf(buf,"{\"result\":\"%d\"}",num);
+                    return(clonestr(buf));
+                }
+                else if ( strcmp(method,"addnode") == 0 )
+                {
+                    if ( (ipaddr= jstr(json,"ipaddr")) != 0 )
+                    {
+                        iguana_possible_peer(coin,ipaddr);
+                        return(clonestr("{\"result\":\"addnode submitted\"}"));
+                    } else return(clonestr("{\"error\":\"addnode needs ipaddr\"}"));
+                }
+                else if ( strcmp(method,"removenode") == 0 )
+                {
+                    if ( (ipaddr= jstr(json,"ipaddr")) != 0 )
+                    {
+                        for (i=0; i<IGUANA_MAXPEERS; i++)
+                        {
+                            if ( strcmp(coin->peers.active[i].ipaddr,ipaddr) == 0 )
+                            {
+                                coin->peers.active[i].rank = 0;
+                                coin->peers.active[i].dead = (uint32_t)time(NULL);
+                                return(clonestr("{\"result\":\"node marked as dead\"}"));
+                            }
+                        }
+                        return(clonestr("{\"result\":\"node wasnt active\"}"));
+                    } else return(clonestr("{\"error\":\"removenode needs ipaddr\"}"));
+                }
+                else if ( strcmp(method,"oneshot") == 0 )
+                {
+                    if ( (ipaddr= jstr(json,"ipaddr")) != 0 )
+                    {
+                        iguana_possible_peer(coin,ipaddr);
+                        return(clonestr("{\"result\":\"addnode submitted\"}"));
+                    } else return(clonestr("{\"error\":\"addnode needs ipaddr\"}"));
+                }
+                else if ( strcmp(method,"nodestatus") == 0 )
+                {
+                    if ( (ipaddr= jstr(json,"ipaddr")) != 0 )
+                    {
+                        for (i=0; i<coin->MAXPEERS; i++)
+                        {
+                            addr = &coin->peers.active[i];
+                            if ( strcmp(addr->ipaddr,ipaddr) == 0 )
+                                return(jprint(iguana_peerjson(coin,addr),1));
+                        }
+                        return(clonestr("{\"result\":\"nodestatus couldnt find ipaddr\"}"));
+                    } else return(clonestr("{\"error\":\"nodestatus needs ipaddr\"}"));
+                }
+                else if ( strcmp(method,"maxpeers") == 0 )
+                {
+                    retjson = cJSON_CreateObject();
+                    if ( (max= juint(json,"max")) <= 0 )
+                        max = 1;
+                    else if ( max > IGUANA_MAXPEERS )
+                        max = IGUANA_MAXPEERS;
+                    if ( max > coin->MAXPEERS )
+                    {
+                        for (i=max; i<coin->MAXPEERS; i++)
+                            if ( (addr= coin->peers.ranked[i]) != 0 )
+                                addr->dead = 1;
+                    }
+                    coin->MAXPEERS = max;
+                    jaddnum(retjson,"maxpeers",coin->MAXPEERS);
+                    jaddstr(retjson,"coin",coin->symbol);
+                    return(jprint(retjson,1));
+                }
+                else if ( strcmp(method,"startcoin") == 0 )
+                {
+                    coin->active = 1;
+                    return(clonestr("{\"result\":\"coin started\"}"));
+                }
+                else if ( strcmp(method,"pausecoin") == 0 )
+                {
+                    coin->active = 0;
+                    return(clonestr("{\"result\":\"coin paused\"}"));
+                }
+                else if ( strcmp(method,"addcoin") == 0 )
+                {
+                    if ( (retval= iguana_launchcoin(coin->symbol,json)) > 0 )
+                        return(clonestr("{\"result\":\"coin added\"}"));
+                    else if ( retval == 0 )
+                        return(clonestr("{\"result\":\"coin already there\"}"));
+                    else return(clonestr("{\"error\":\"error adding coin\"}"));
+                }
+                return(clonestr("{\"error\":\"unhandled request\"}"));
+            }
+                
+                char *iguana_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr)
+            {
+                char *coinstr,SYM[16]; int32_t j,k,l,r,rr; struct iguana_peer *addr;
+                cJSON *retjson = 0,*array; int32_t i,n; struct iguana_info *coin; char *symbol;
+                printf("remoteaddr.(%s)\n",remoteaddr!=0?remoteaddr:"local");
+                if ( remoteaddr == 0 || remoteaddr[0] == 0 || strcmp(remoteaddr,"127.0.0.1") == 0 ) // local (private) api
+                {
+                    if ( strcmp(method,"list") == 0 )
+                    {
+                        retjson = cJSON_CreateObject();
+                        array = cJSON_CreateArray();
+                        for (i=0; i<sizeof(Coins)/sizeof(*Coins); i++)
+                        {
+                            if ( Coins[i] != 0 && Coins[i]->symbol[0] != 0 )
+                                jaddistr(array,Coins[i]->symbol);
+                        }
+                        jadd(retjson,"coins",array);
+                        return(jprint(retjson,1));
+                    }
+                    else if ( strcmp(method,"allpeers") == 0 )
+                    {
+                        retjson = cJSON_CreateObject();
+                        array = cJSON_CreateArray();
+                        for (i=0; i<sizeof(Coins)/sizeof(*Coins); i++)
+                        {
+                            if ( Coins[i] != 0 && Coins[i]->symbol[0] != 0 )
+                                jaddi(array,iguana_peersjson(Coins[i],0));
+                        }
+                        jadd(retjson,"allpeers",array);
+                        return(jprint(retjson,1));
+                    }
+                    else
+                    {
+                        if ( (symbol= jstr(json,"coin")) != 0 && strlen(symbol) < sizeof(SYM)-1 )
+                        {
+                            strcpy(SYM,symbol);
+                            touppercase(SYM);
+                            if ( (coin= iguana_coinfind(SYM)) == 0 )
+                            {
+                                if ( strcmp(method,"addcoin") == 0 )
+                                    coin = iguana_coinadd(SYM);
+                            }
+                            if ( coin != 0 )
+                                return(iguana_coinjson(coin,method,json));
+                            else return(clonestr("{\"error\":\"cant get coin info\"}"));
+                        }
+                    }
+                }
+                array = 0;
+                if ( strcmp(method,"getpeers") == 0 )
+                {
+                    if ( (coinstr= jstr(json,"coin")) != 0 )
+                    {
+                        if ( (array= iguana_peersjson(iguana_coinfind(coinstr),1)) == 0 )
+                            return(clonestr("{\"error\":\"coin not found\"}"));
+                    }
+                    else
+                    {
+                        n = 0;
+                        array = cJSON_CreateArray();
+                        r = rand();
+                        for (i=0; i<IGUANA_MAXCOINS; i++)
+                        {
+                            j = (r + i) % IGUANA_MAXCOINS;
+                            if ( (coin= Coins[j]) != 0 )
+                            {
+                                rr = rand();
+                                for (k=0; k<IGUANA_MAXPEERS; k++)
+                                {
+                                    l = (rr + k) % IGUANA_MAXPEERS;
+                                    addr = &coin->peers.active[l];
+                                    if ( addr->usock >= 0 && addr->supernet != 0 )
+                                    {
+                                        jaddistr(array,addr->ipaddr);
+                                        if ( ++n >= 64 )
+                                            break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if ( array != 0 )
+                    {
+                        retjson = cJSON_CreateObject();
+                        jaddstr(retjson,"agent","SuperNET");
+                        jaddstr(retjson,"method","mypeers");
+                        jaddstr(retjson,"result","peers found");
+                        jadd(retjson,"peers",array);
+                        return(jprint(retjson,1));
+                    } else return(clonestr("{\"error\":\"no peers found\"}"));
+                }
+                else if ( strcmp(method,"mypeers") == 0 )
+                {
+                    printf("mypeers from %s\n",remoteaddr!=0?remoteaddr:"local");
+                }
+                return(clonestr("{\"result\":\"stub processed generic json\"}"));
+            }
+                
+                
+                char *InstantDEX_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr)
+            {
+                return(clonestr("{\"error\":\"InstantDEX API is not yet\"}"));
+            }
+                
+                char *jumblr_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr)
+            {
+                return(clonestr("{\"error\":\"jumblr API is not yet\"}"));
+            }
+                
+                char *pangea_parser(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr)
+            {
+                return(clonestr("{\"error\":\"jumblr API is not yet\"}"));
+            }
+                
+            /*
+             char *hash_parser(struct supernet_info *myinfo,char *hashname,cJSON *json,char *remoteaddr)
+             {
+             int32_t i,len,iter,n; uint8_t databuf[512];
+             char hexstr[1025],*password,*name,*msg;
+             typedef void (*hashfunc)(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
+             typedef char *(*hmacfunc)(char *dest,char *key,int32_t key_size,char *message);
+             struct hashfunc_entry { char *name; hashfunc hashfunc; };
+             struct hmacfunc_entry { char *name; hmacfunc hmacfunc; };
+             struct hashfunc_entry hashes[] = { {"NXT",calc_NXTaddr}, {"curve25519",calc_curve25519_str }, {"base64_encode",calc_base64_encodestr}, {"base64_decode",calc_base64_decodestr}, {"crc32",calc_crc32str}, {"rmd160_sha256",rmd160ofsha256}, {"sha256_sha256",sha256_sha256}, {"sha256",vcalc_sha256}, {"sha512",calc_sha512}, {"sha384",calc_sha384}, {"sha224",calc_sha224}, {"rmd160",calc_rmd160}, {"rmd256",calc_rmd256}, {"rmd320",calc_rmd320}, {"rmd128",calc_rmd128}, {"sha1",calc_sha1}, {"md5",calc_md5str}, {"md2",calc_md2str}, {"md4",calc_md4str}, {"tiger",calc_tiger}, {"whirlpool",calc_whirlpool} };
+             struct hmacfunc_entry hmacs[] = { {"hmac_sha256",hmac_sha256_str}, {"hmac_sha512",hmac_sha512_str}, {"hmac_sha384",hmac_sha384_str}, {"hmac_sha224",hmac_sha224_str}, {"hmac_rmd160",hmac_rmd160_str}, {"hmac_rmd256",hmac_rmd256_str}, {"hmac_rmd320",hmac_rmd320_str}, {"hmac_rmd128",hmac_rmd128_str}, {"hmac_sha1",hmac_sha1_str}, {"hmac_md52",hmac_md2_str},{"hmac_md4",hmac_md4_str},{"hmac_md5",hmac_md5_str}, {"hmac_tiger",hmac_tiger_str}, {"hmac_whirlpool",hmac_whirlpool_str} };
+             if ( (msg= jstr(json,"message")) == 0 )
+             return(clonestr("{\"error\":\"no message to hash\"}"));
+             if ( (password= jstr(json,"password")) == 0 || password[0] == 0 )
+             password = " ";
+             n = (int32_t)sizeof(hashes)/sizeof(*hashes);
+             printf("msg.(%s) password.(%s)\n",msg,password!=0?password:"");
+             for (iter=0; iter<2; iter++)
+             {
+             for (i=0; i<n; i++)
+             {
+             name = (iter == 0) ? hashes[i].name : hmacs[i].name;
+             //printf("iter.%d i.%d (%s) vs (%s) %d\n",iter,i,name,hashname,strcmp(hashname,name) == 0);
+             if ( strcmp(hashname,name) == 0 )
+             {
+             json = cJSON_CreateObject();
+             len = msg==0?0:(int32_t)strlen(msg);
+             if ( iter == 0 )
+             (*hashes[i].hashfunc)(hexstr,databuf,(uint8_t *)msg,len);
+             else (*hmacs[i].hmacfunc)(hexstr,password,password==0?0:(int32_t)strlen(password),msg);
+             jaddstr(json,"result","hash calculated");
+             jaddstr(json,"message",msg);
+             jaddstr(json,name,hexstr);
+             return(jprint(json,1));
+             }
+             }
+             n = (int32_t)sizeof(hmacs)/sizeof(*hmacs);
+             }
+             return(clonestr("{\"error\":\"cant find hash function\"}"));
+             }*/
+                                            
+            /*cJSON *SuperNET_transportencode(struct supernet_info *myinfo,bits256 destpub,cJSON *json,char *destip)
+             {
+             char str[65]; uint64_t r;
+             if ( j64bits(json,"tag") == 0 )
+             {
+             OS_randombytes((uint8_t *)&r,sizeof(r));
+             jadd64bits(json,"tag",r);
+             }
+             jdelete(json,"yourip");
+             jaddstr(json,"yourip",destip);
+             jdelete(json,"mypub");
+             jaddstr(json,"mypub",bits256_str(str,myinfo->myaddr.pubkey));
+             jdelete(json,"myip");
+             jaddstr(json,"myip",myinfo->ipaddr);
+             return(json);
+             }*/
+
+                                            
+                void ramcoder_test(void *data,int64_t datalen)
+            {
+                static double totalin,totalout;
+                int32_t complen,bufsize = 1024 * 1024; uint8_t *buf;
+                buf = malloc(bufsize);
+                complen = ramcoder_compress(buf,bufsize,data,(int32_t)datalen);
+                totalin += datalen;
+                totalout += (complen >> 3);
+                printf("datalen.%d -> numbits.%d %d %.3f\n",(int32_t)datalen,complen,complen>>3,(double)totalin/totalout);
+                free(buf);
+            }
+            /*if ( (msgjson= cJSON_Parse(message)) != 0 )
+             {
+             if ( (agent= jstr(msgjson,"agent")) != 0 && strcmp(agent,"SuperNET")) != 0 )
+             {
+             safecopy(agentstr,agent,sizeof(agentstr)-1);
+             jdelete(msgjson,"agent");
+             jaddstr(msgjson,"agent","SuperNET");
+             jaddstr(msgjson,"destagent",agentstr);
+             }
+             if ( (method= jstr(msgjson,"method")) != 0 && strcmp(agent,"SuperNET")) != 0 )
+             {
+             safecopy(methodstr,method,sizeof(methodstr)-1);
+             jdelete(msgjson,"method");
+             jaddstr(msgjson,"method","DHTsend");
+             jaddstr(msgjson,"destmethod",methodstr);
+             }
+             msgstr = jprint(msgjson,1);
+             msglen = (int32_t)strlen(msgstr);
+             hexstr = calloc(1,msglen*2+1);
+             flag = 1;
+             init_hexbytes_noT(hexstr,msgstr,msglen);
+             }
+             if ( flag != 0 )
+             free(hexstr);*/
+                //char str[65],str2[65],str3[65],str4[65];
+                //int32_t i; for (i=0; i<len; i++)
+                //    printf("%02x ",serialized[i]);
+                //printf("ORIG SERIALIZED.%d\n",len);
+                //printf("mypriv.%s destpub.%s seed.%s seed2.%s -> crc.%08x\n",bits256_str(str,myinfo->privkey),bits256_str(str2,destpub),bits256_str(str3,seed),bits256_str(str4,seed2),crc);
+                numbits = ramcoder_compress(&compressed[3],maxsize-3,serialized,len,seed2);
+                compressed[0] = (numbits & 0xff);
+                compressed[1] = ((numbits>>8) & 0xff);
+                compressed[2] = ((numbits>>16) & 0xff);
+                //printf("strlen.%d len.%d -> %s numbits.%d\n",(int32_t)strlen(jprint(json,0)),len,bits256_str(str,seed2),(int32_t)hconv_bitlen(numbits));
+                if ( 0 )
+                {
+                    uint8_t space[9999];
+                    int32_t testlen = ramcoder_decompress(space,IGUANA_MAXPACKETSIZE,&compressed[3],numbits,seed2);
+                    printf("len.%d -> testlen.%d cmp.%d\n",len,testlen,memcmp(space,serialized,testlen));
+                    int32_t i; for (i=0; i<3+hconv_bitlen(numbits); i++)
+                        printf("%02x ",compressed[i]);
+                        printf("complen.%d\n",i+3);
+                        }
+        *complenp = (int32_t)hconv_bitlen(numbits) + 3;
+        
+        cJSON *SuperNET_bits2json(bits256 senderpub,bits256 sharedseed,uint8_t *serialized,uint8_t *space,int32_t datalen,int32_t iscompressed)
+        {
+            char destip[64],method[64],checkstr[5],agent[64],myipaddr[64],str[65],*hexmsg; uint64_t tag;
+            uint16_t apinum,checkc; uint32_t destipbits,myipbits; bits256 seed2;
+            int32_t numbits,dlen,iter,flag=0,len = 0; uint32_t crc,checkcrc; cJSON *json = cJSON_CreateObject();
+            //int32_t i; for (i=0; i<datalen; i++)
+            //    printf("%02x ",serialized[i]);
+            printf("bits[%d] iscompressed.%d sender.%llx shared.%llx\n",datalen,iscompressed,(long long)senderpub.txid,(long long)sharedseed.txid);
+            if ( iscompressed != 0 )
+            {
+                numbits = serialized[2];
+                numbits = (numbits << 8) + serialized[1];
+                numbits = (numbits << 8) + serialized[0];
+                if ( hconv_bitlen(numbits)+3 == datalen || hconv_bitlen(numbits)+3 == datalen-1 )
+                {
+                    memset(seed2.bytes,0,sizeof(seed2));
+                    for (iter=0; iter<2; iter++)
+                    {
+                        //char str[65]; printf("compressed len.%d seed2.(%s)\n",numbits,bits256_str(str,seed2));
+                        dlen = ramcoder_decompress(space,IGUANA_MAXPACKETSIZE,&serialized[3],numbits,seed2);
+                        serialized = space;
+                        if ( dlen > sizeof(crc) && dlen < IGUANA_MAXPACKETSIZE )
+                        {
+                            crc = calc_crc32(0,&serialized[sizeof(crc)],dlen - sizeof(crc));
+                            iguana_rwnum(0,serialized,sizeof(checkcrc),&checkcrc);
+                            //int32_t i; for (i=0; i<datalen; i++)
+                            //    printf("%02x ",serialized[i]);
+                            printf("bits[%d] numbits.%d after decompress crc.(%08x vs %08x) <<<<<< iter.%d %llx shared.%llx\n",datalen,numbits,crc,checkcrc,iter,(long long)seed2.txid,(long long)sharedseed.txid);
+                            if ( crc == checkcrc )
+                            {
+                                flag = 1;
+                                break;
+                            }
+                        }
+                        seed2 = sharedseed;
+                    }
+                }
+                else
+                {
+                    printf("numbits.%d + 3 -> %d != datalen.%d\n",numbits,(int32_t)hconv_bitlen(numbits)+3,datalen);
+                    return(0);
+                }
+            }
+            if ( flag == 0 )
+                return(0);
+            len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&crc);
+            len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&destipbits);
+            len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&myipbits);
+            len += iguana_rwbignum(0,&serialized[len],sizeof(bits256),senderpub.bytes);
+            len += iguana_rwnum(0,&serialized[len],sizeof(tag),&tag);
+            len += iguana_rwnum(0,&serialized[len],sizeof(checkc),&checkc);
+            len += iguana_rwnum(0,&serialized[len],sizeof(apinum),&apinum);
+            //printf("-> dest.%x myip.%x senderpub.%llx tag.%llu\n",destipbits,myipbits,(long long)senderpub.txid,(long long)tag);
+            if ( SuperNET_num2API(agent,method,apinum) >= 0 )
+            {
+                jaddstr(json,"agent",agent);
+                jaddstr(json,"method",method);
+                expand_ipbits(destip,destipbits), jaddstr(json,"yourip",destip);
+                expand_ipbits(myipaddr,myipbits), jaddstr(json,"myip",myipaddr);
+                jaddstr(json,"mypub",bits256_str(str,senderpub));
+                jadd64bits(json,"tag",tag);
+                init_hexbytes_noT(checkstr,(void *)&checkc,sizeof(checkc));
+                jaddstr(json,"check",checkstr);
+                if ( len < datalen )
+                {
+                    printf("len %d vs %d datalen\n",len,datalen);
+                    hexmsg = malloc(((datalen - len)<<1) + 1);
+                    init_hexbytes_noT(hexmsg,&serialized[len],datalen - len);
+                    printf("hex.(%s)\n",hexmsg);
+                    jaddstr(json,"message",hexmsg);
+                    free(hexmsg);
+                }
+                //printf("bits2json.(%s)\n",jprint(json,0));
+                return(json);
+            } else printf("cant decode apinum.%d (%d.%d)\n",apinum,apinum>>5,apinum%0x1f);
+            return(0);
+        }
+                
+#ifdef notyet
+                
+                int32_t SuperNET_serialize(int32_t reverse,bits256 *senderpubp,uint64_t *senderbitsp,bits256 *sigp,uint32_t *timestampp,uint64_t *destbitsp,uint8_t *origbuf)
+            {
+                uint8_t *buf = origbuf; long extra = sizeof(bits256) + sizeof(uint64_t) + sizeof(uint64_t);
+                buf += SuperNET_copybits(reverse,buf,(void *)destbitsp,sizeof(uint64_t));
+                buf += SuperNET_copybits(reverse,buf,senderpubp->bytes,sizeof(bits256));
+                buf += SuperNET_copybits(reverse,buf,(void *)senderbitsp,sizeof(uint64_t));
+                buf += SuperNET_copybits(reverse,buf,(void *)timestampp,sizeof(uint32_t)), extra += sizeof(uint32_t);
+                if ( *senderbitsp != 0 )
+                    buf += SuperNET_copybits(reverse,buf,sigp->bytes,sizeof(bits256)), extra += sizeof(bits256);
+                else memset(sigp,0,sizeof(*sigp));
+                if ( ((long)buf - (long)origbuf) != extra )
+                {
+                    printf("SuperNET_serialize: extrasize mismatch %ld vs %ld\n",((long)buf - (long)origbuf),extra);
+                }
+                return((int32_t)extra);
+            }
+                
+                int32_t SuperNET_decode(uint64_t *senderbitsp,bits256 *sigp,uint32_t *timestampp,uint64_t *destbitsp,uint8_t *str,uint8_t *cipher,int32_t *lenp,uint8_t *myprivkey)
+            {
+                bits256 srcpubkey; uint8_t *nonce; int i,hdrlen,err=0,len = *lenp;
+                hdrlen = SuperNET_serialize(1,&srcpubkey,senderbitsp,sigp,timestampp,destbitsp,cipher);
+                cipher += hdrlen, len -= hdrlen;
+                if ( *destbitsp != 0 && *senderbitsp != 0 )
+                {
+                    nonce = cipher;
+                    cipher += crypto_box_NONCEBYTES, len -= crypto_box_NONCEBYTES;
+                    printf("decode ptr.%p[%d]\n",cipher,len);
+                    err = crypto_box_open((uint8_t *)str,cipher,len,nonce,srcpubkey.bytes,myprivkey);
+                    for (i=0; i<len-crypto_box_ZEROBYTES; i++)
+                        str[i] = str[i+crypto_box_ZEROBYTES];
+                    *lenp = len - crypto_box_ZEROBYTES;
+                } else memcpy(str,cipher,len);
+                return(err);
+            }
+                
+                uint8_t *SuperNET_encode(int32_t *cipherlenp,void *str,int32_t len,bits256 destpubkey,bits256 myprivkey,bits256 mypubkey,uint64_t senderbits,bits256 sig,uint32_t timestamp)
+            {
+                uint8_t *buf,*nonce,*origcipher,*cipher,*ptr; uint64_t destbits; int32_t totalsize,hdrlen;
+                long extra = crypto_box_NONCEBYTES + crypto_box_ZEROBYTES + sizeof(sig);
+                destbits = (memcmp(destpubkey.bytes,GENESIS_PUBKEY.bytes,sizeof(destpubkey)) != 0) ? acct777_nxt64bits(destpubkey) : 0;
+                totalsize = (int32_t)(len + sizeof(mypubkey) + sizeof(senderbits) + sizeof(destbits) + sizeof(timestamp));
+                *cipherlenp = 0;
+                if ( (buf= calloc(1,totalsize + extra)) == 0 )
+                {
+                    printf("SuperNET_encode: outof mem for buf[%ld]\n",totalsize+extra);
+                    return(0);
+                }
+                if ( (cipher= calloc(1,totalsize + extra + sizeof(struct iguana_msghdr))) == 0 )
+                {
+                    printf("SuperNET_encode: outof mem for cipher[%ld]\n",totalsize + extra + sizeof(struct iguana_msghdr));
+                    free(buf);
+                    return(0);
+                }
+                origcipher = cipher;
+                ptr = &cipher[sizeof(struct iguana_msghdr)];
+                hdrlen = SuperNET_serialize(0,&mypubkey,&senderbits,&sig,&timestamp,&destbits,ptr);
+                printf("hdrlen.%d sender.%llx dest.%llx\n",hdrlen,(long long)senderbits,(long long)destbits);
+                if ( senderbits != 0 )
+                    totalsize += sizeof(sig);//, printf("totalsize.%d extra.%ld add %ld\n",totalsize-len,extra,(long)(sizeof(sig) + sizeof(timestamp)));
+                if ( destbits != 0 && senderbits != 0 )
+                {
+                    totalsize += crypto_box_NONCEBYTES + crypto_box_ZEROBYTES;//, printf("totalsize.%d extra.%ld add %d\n",totalsize-len,extra,crypto_box_NONCEBYTES + crypto_box_ZEROBYTES);
+                    nonce = &ptr[hdrlen];
+                    OS_randombytes(nonce,crypto_box_NONCEBYTES);
+                    cipher = &nonce[crypto_box_NONCEBYTES];
+                    //printf("len.%d -> %d %d\n",len,len+crypto_box_ZEROBYTES,len + crypto_box_ZEROBYTES + crypto_box_NONCEBYTES);
+                    memset(cipher,0,len+crypto_box_ZEROBYTES);
+                    memset(buf,0,crypto_box_ZEROBYTES);
+                    memcpy(buf+crypto_box_ZEROBYTES,str,len);
+                    printf("cryptobox.%p[%d]\n",cipher,len+crypto_box_ZEROBYTES);
+                    crypto_box(cipher,buf,len+crypto_box_ZEROBYTES,nonce,destpubkey.bytes,myprivkey.bytes);
+                    hdrlen += crypto_box_NONCEBYTES + crypto_box_ZEROBYTES;
+                }
+                else memcpy(&cipher[hdrlen],str,len);
+                if ( totalsize != len+hdrlen )
+                    printf("unexpected totalsize.%d != len.%d + hdrlen.%d %d\n",totalsize,len,hdrlen,len+hdrlen);
+                *cipherlenp = totalsize;
+                {
+                    bits256 checksig; uint32_t checkstamp; uint64_t checksender,checkbits; int32_t checklen;
+                    checklen = totalsize;
+                    if ( SuperNET_decode(&checksender,&checksig,&checkstamp,&checkbits,(void *)buf,ptr,&checklen,myprivkey.bytes) == 0 )
+                    {
+                        printf("decoded %u %llx checklen.%d\n",checkstamp,(long long)checkbits,checklen);
+                    } else printf("encrypt/decrypt error\n");
+                    printf("decoded %u %llx checklen.%d\n",checkstamp,(long long)checkbits,checklen);
+                }
+                free(buf);
+                return(origcipher);
+            }
+                
+                int32_t SuperNET_decrypt(bits256 *senderpubp,uint64_t *senderbitsp,uint32_t *timestampp,bits256 mypriv,bits256 mypub,uint8_t *dest,int32_t maxlen,uint8_t *src,int32_t len)
+            {
+                bits256 seed,sig,msgpriv; uint64_t my64bits,destbits,senderbits,sendertmp,desttmp;
+                uint8_t *buf; int32_t hdrlen,diff,newlen = -1; HUFF H,*hp = &H; struct acct777_sig checksig;
+                *senderbitsp = 0;
+                my64bits = acct777_nxt64bits(mypub);
+                if ( (buf = calloc(1,maxlen)) == 0 )
+                {
+                    printf("SuperNET_decrypt cant allocate maxlen.%d\n",maxlen);
+                    return(-1);
+                }
+                hdrlen = SuperNET_serialize(1,senderpubp,&senderbits,&sig,timestampp,&destbits,src);
+                if ( destbits != 0 && my64bits != destbits && destbits != acct777_nxt64bits(GENESIS_PUBKEY) )
+                {
+                    free(buf);
+                    printf("SuperNET_decrypt received destination packet.%llu when my64bits.%llu len.%d\n",(long long)destbits,(long long)my64bits,len);
+                    return(-1);
+                }
+                if ( memcmp(mypub.bytes,senderpubp->bytes,sizeof(mypub)) == 0 )
+                {
+                    if ( destbits != 0 )
+                        printf("SuperNET: got my own msg?\n");
+                }
+                printf("decrypt(%d) destbits.%llu my64.%llu mypriv.%llx mypub.%llx senderpub.%llx shared.%llx\n",len,(long long)destbits,(long long)my64bits,(long long)mypriv.txid,(long long)mypub.txid,(long long)senderpubp->txid,(long long)seed.txid);
+                if ( SuperNET_decode(&sendertmp,&sig,timestampp,&desttmp,(void *)buf,src,&len,mypriv.bytes) == 0 )
+                {
+                    if ( (diff= (*timestampp - (uint32_t)time(NULL))) < 0 )
+                        diff = -diff;
+                    if ( 1 && diff > SUPERNET_MAXTIMEDIFF )
+                        printf("diff.%d > %d %u vs %u\n",diff,SUPERNET_MAXTIMEDIFF,*timestampp,(uint32_t)time(NULL));
+                    else
+                    {
+                        if ( 0 )
+                        {
+                            memset(seed.bytes,0,sizeof(seed));
+                            //for (i='0'; i<='9'; i++)
+                            //    SETBIT(seed.bytes,i);
+                            //for (i='a'; i<='f'; i++)
+                            //    SETBIT(seed.bytes,i);
+                            _init_HUFF(hp,len,buf), hp->endpos = (len << 3);
+                            newlen = ramcoder_decoder(0,1,dest,maxlen,hp,&seed);
+                        }
+                        else memcpy(dest,buf,len), newlen = len;
+                        //printf("T%d decrypted newlen.%d\n",threadid,newlen);
+                        if ( senderbits != 0 && senderpubp->txid != 0 )
+                        {
+                            *senderbitsp = senderbits;
+                            if ( destbits == 0 )
+                                msgpriv = GENESIS_PRIVKEY;
+                            else msgpriv = mypriv;
+                            acct777_sign(&checksig,msgpriv,*senderpubp,*timestampp,dest,newlen);
+                            if ( memcmp(checksig.sigbits.bytes,&sig,sizeof(checksig.sigbits)) != 0 )
+                            {
+                                printf("sender.%llu sig %llx compare error vs %llx using sig->pub from %llu, broadcast.%d len.%d -> newlen.%d\n",(long long)senderbits,(long long)sig.txid,(long long)checksig.sigbits.txid,(long long)senderbits,destbits == 0,len,newlen);
+                                //free(buf);
+                                //return(0);
+                            } //else printf("SIG VERIFIED newlen.%d (%llu -> %llu)\n",newlen,(long long)senderbits,(long long)destbits);
+                        }
+                    }
+                } else printf("%llu: SuperNET_decrypt skip: decode_cipher error len.%d -> newlen.%d\n",(long long)acct777_nxt64bits(mypub),len,newlen);
+                free(buf);
+                return(newlen);
+            }
+                
+                int32_t SuperNET_sendmsg(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,bits256 destpub,bits256 mypriv,bits256 mypub,uint8_t *msg,int32_t len,uint8_t *data,int32_t delaymillis)
+            {
+                int32_t cipherlen,datalen,qlen=-1; bits256 seed; uint8_t *cipher; uint64_t destbits; struct acct777_sig sig; HUFF H,*hp = &H;
+                if ( destpub.txid != 0 )
+                    destbits = acct777_nxt64bits(destpub);
+                else
+                {
+                    destbits = 0;
+                    destpub = GENESIS_PUBKEY;
+                }
+                printf("SuperNET_sendmsg dest.%llu destpub.%llx priv.%llx pub.%llx\n",(long long)destbits,(long long)destpub.txid,(long long)mypriv.txid,(long long)mypub.txid);
+                memset(&sig,0,sizeof(sig));
+                if ( mypub.txid == 0 || mypriv.txid == 0 )
+                    mypriv = curve25519_keypair(&mypub), sig.timestamp = (uint32_t)time(NULL);
+                else acct777_sign(&sig,mypriv,destpub,(uint32_t)time(NULL),msg,len);
+                if ( 0 )
+                {
+                    memset(seed.bytes,0,sizeof(seed));
+                    //seed = addr->sharedseed;
+                    data = calloc(1,len*2);
+                    _init_HUFF(hp,len*2,data);
+                    /*for (i='0'; i<='9'; i++)
+                     SETBIT(seed.bytes,i);
+                     for (i='a'; i<='f'; i++)
+                     SETBIT(seed.bytes,i);*/
+                    ramcoder_encoder(0,1,msg,len,hp,0,&seed);
+                    datalen = (int32_t)hconv_bitlen(hp->bitoffset);
+                }
+                else data = msg, datalen = len;
+                if ( (cipher= SuperNET_encode(&cipherlen,data,datalen,destpub,mypriv,mypub,sig.signer64bits,sig.sigbits,sig.timestamp)) != 0 )
+                {
+                    qlen = iguana_queue_send(coin,addr,delaymillis,cipher,"SuperNETb",cipherlen,0,0);
+                    free(cipher);
+                }
+                return(qlen);
+            }
+#endif    /*memset(senderpub.bytes,0,sizeof(senderpub));
+if ( iscompressed != 0 )
+{
+if ( (len= SuperNET_decrypt(&senderpub,&senderbits,&timestamp,mypriv,mypub,space,IGUANA_MAXPACKETSIZE,serialized,datalen)) > 1 && len < IGUANA_MAXPACKETSIZE )
+{
+if ( memcmp(senderpub.bytes,addr->pubkey.bytes,sizeof(senderpub)) != 0 )
+{
+printf("got new pubkey.(%s) for %s\n",bits256_str(str,senderpub),addr->ipaddr);
+addr->pubkey = senderpub;
+addr->sharedseed = SuperNET_sharedseed(mypriv,senderpub);
+}
+serialized = space;
+datalen = len;
+len = 0;
+} else printf("decrypt error len.%d origlen.%d\n",len,datalen);
+}*/
+
+                
+                bits256 testprivkey(int32_t selector)
+            {
+                bits256 privkey;
+                memset(privkey.bytes,0,sizeof(privkey.bytes));
+                privkey.bytes[15] = selector;
+                return(privkey);
+            }
+                
+                bits256 testpubkey(int32_t selector)
+            {
+                return(acct777_pubkey(testprivkey(selector)));
+            }
+                
+            /*char *pangea_univ(uint8_t *mypriv,cJSON *json)
+             {
+             char *addrtypes[][3] = { {"BTC","0","80"}, {"LTC","48"}, {"BTCD","60","bc"}, {"DOGE","30"}, {"VRC","70"}, {"OPAL","115"}, {"BITS","25"} };
+             char *wipstr,*coin,*coinaddr,pubkeystr[67],rsaddr[64],destaddr[64],wifbuf[128]; uint8_t priv[32],pub[33],addrtype; int32_t i;
+             uint64_t nxt64bits; cJSON *retjson,*item;
+             PNACL_message("inside rosetta\n");
+             if ( (coin= jstr(json,"coin")) != 0 )
+             {
+             if ( (wipstr= jstr(json,"wif")) != 0 || (wipstr= jstr(json,"wip")) != 0 )
+             {
+             PNACL_message("got wip.(%s)\n",wipstr);
+             btc_wip2priv(priv,wipstr);
+             }
+             else if ( (coinaddr= jstr(json,"addr")) != 0 )
+             {
+             if ( getprivkey(priv,coin,coinaddr) < 0 )
+             return(clonestr("{\"error\":\"cant get privkey\"}"));
+             }
+             } else memcpy(priv,mypriv,sizeof(priv));
+             btc_priv2pub(pub,priv);
+             init_hexbytes_noT(pubkeystr,pub,33);
+             PNACL_message("pubkey.%s\n",pubkeystr);
+             retjson = cJSON_CreateObject();
+             jaddstr(retjson,"btcpubkey",pubkeystr);
+             for (i=0; i<sizeof(addrtypes)/sizeof(*addrtypes); i++)
+             {
+             if ( btc_coinaddr(destaddr,atoi(addrtypes[i][1]),pubkeystr) == 0 )
+             {
+             item = cJSON_CreateObject();
+             jaddstr(item,"addr",destaddr);
+             if ( addrtypes[i][2] != 0 )
+             {
+             decode_hex(&addrtype,1,addrtypes[i][2]);
+             btc_priv2wip(wifbuf,priv,addrtype);
+             jaddstr(item,"wif",wifbuf);
+             }
+             jadd(retjson,addrtypes[i][0],item);
+             }
+             }
+             nxt64bits = nxt_priv2addr(rsaddr,pubkeystr,priv);
+             item = cJSON_CreateObject();
+             jaddstr(item,"addressRS",rsaddr);
+             jadd64bits(item,"address",nxt64bits);
+             jaddstr(item,"pubkey",pubkeystr);
+             jadd(retjson,"NXT",item);
+             return(jprint(retjson,1));
+             }
+             */
+            /*INT_AND_ARRAY(pangea,newhand,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,ping,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,gotdeck,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,ready,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,encoded,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,final,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,addedfunds,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,preflop,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,decoded,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,card,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,facedown,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,faceup,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,turn,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,confirmturn,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,chat,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,action,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,showdown,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }
+             
+             INT_AND_ARRAY(pangea,handsummary,senderind,params)
+             {
+             cJSON *retjson = cJSON_CreateObject();
+             return(jprint(retjson,1));
+             }*/
+                
+            /*INT_AND_ARRAY(pangea,newhand,senderind,params);
+             INT_AND_ARRAY(pangea,ping,senderind,params);
+             INT_AND_ARRAY(pangea,gotdeck,senderind,params);
+             INT_AND_ARRAY(pangea,ready,senderind,params);
+             INT_AND_ARRAY(pangea,encoded,senderind,params);
+             INT_AND_ARRAY(pangea,final,senderind,params);
+             INT_AND_ARRAY(pangea,addedfunds,senderind,params);
+             INT_AND_ARRAY(pangea,preflop,senderind,params);
+             INT_AND_ARRAY(pangea,decoded,senderind,params);
+             INT_AND_ARRAY(pangea,card,senderind,params);
+             INT_AND_ARRAY(pangea,facedown,senderind,params);
+             INT_AND_ARRAY(pangea,faceup,senderind,params);
+             INT_AND_ARRAY(pangea,turn,senderind,params);
+             INT_AND_ARRAY(pangea,confirmturn,senderind,params);
+             INT_AND_ARRAY(pangea,chat,senderind,params);
+             INT_AND_ARRAY(pangea,action,senderind,params);
+             INT_AND_ARRAY(pangea,showdown,senderind,params);
+             INT_AND_ARRAY(pangea,handsummary,senderind,params);*/
+                else if ( (sp= pangea_find64(tableid,my64bits)) != 0 && (chatstr= jstr(json,"chat")) != 0 && strlen(chatstr) < 256 )
+                {
+                    if ( 0 && (pm= j64bits(json,"pm")) != 0 )
+                    {
+                        for (i=0; i<sp->numaddrs; i++)
+                            if ( sp->addrs[i] == pm )
+                                break;
+                        if ( i == sp->numaddrs )
+                            return(clonestr("{\"error\":\"specified pm destination not at table\"}"));
+                    } else i = -1;
+                        pangea_sendcmd(hex,&sp->tp->hn,"chat",i,(void *)chatstr,(int32_t)strlen(chatstr)+1,pangea_ind(sp,sp->myslot),-1);
+                        return(clonestr("{\"result\":\"chat message sent\"}"));
+                }
+                
+            /*void _pangea_chat(uint64_t senderbits,void *buf,int32_t len,int32_t senderind)
+             {
+             PNACL_message(">>>>>>>>>>> CHAT FROM.%d %llu: (%s)\n",senderind,(long long)senderbits,(char *)buf);
+             }
+             
+             else if ( strcmp(methodstr,"newtable") == 0 )
+             retstr = pangea_newtable(juint(json,"threadid"),json,plugin->nxt64bits,*(bits256 *)plugin->mypriv,*(bits256 *)plugin->mypub,plugin->transport,plugin->ipaddr,plugin->pangeaport,juint(json,"minbuyin"),juint(json,"maxbuyin"),juint(json,"rakemillis"));
+             else if ( sender == 0 || sender[0] == 0 )
+             {
+             if ( strcmp(methodstr,"start") == 0 )
+             {
+             strcpy(retbuf,"{\"result\":\"start issued\"}");
+             if ( (base= jstr(json,"base")) != 0 )
+             {
+             if ( (maxplayers= juint(json,"maxplayers")) < 2 )
+             maxplayers = 2;
+             else if ( maxplayers > CARDS777_MAXPLAYERS )
+             maxplayers = CARDS777_MAXPLAYERS;
+             if ( jstr(json,"resubmit") == 0 )
+             sprintf(retbuf,"{\"resubmit\":[{\"method\":\"start\"}, {\"bigblind\":\"%llu\"}, {\"ante\":\"%llu\"}, {\"rakemillis\":\"%u\"}, {\"maxplayers\":%d}, {\"minbuyin\":%d}, {\"maxbuyin\":%d}],\"pluginrequest\":\"SuperNET\",\"plugin\":\"InstantDEX\",\"method\":\"orderbook\",\"base\":\"%s\",\"exchange\":\"pangea\",\"allfields\":1}",(long long)j64bits(json,"bigblind"),(long long)j64bits(json,"ante"),juint(json,"rakemillis"),maxplayers,juint(json,"minbuyin"),juint(json,"maxbuyin"),jstr(json,"base")!=0?jstr(json,"base"):"BTCD");
+             else if ( pangea_start(plugin,retbuf,base,0,j64bits(json,"bigblind"),j64bits(json,"ante"),juint(json,"rakemillis"),maxplayers,juint(json,"minbuyin"),juint(json,"maxbuyin"),json) < 0 )
+             ;
+             } else strcpy(retbuf,"{\"error\":\"no base specified\"}");
+             }
+             else if ( strcmp(methodstr,"status") == 0 )
+             retstr = pangea_status(plugin->nxt64bits,j64bits(json,"tableid"),json);
+             }
+             
+             int32_t pangea_unzbuf(uint8_t *buf,char *hexstr,int32_t len)
+             {
+             int32_t i,j,len2;
+             for (len2=i=0; i<len; i+=2)
+             {
+             if ( hexstr[i] == 'Z' )
+             {
+             for (j=0; j<hexstr[i+1]-'A'; j++)
+             buf[len2++] = 0;
+             }
+             else buf[len2++] = _decode_hex(&hexstr[i]);
+             }
+             //char *tmp = calloc(1,len*2+1);
+             //init_hexbytes_noT(tmp,buf,len2);
+             //PostMessage("zlen %d to len2 %d\n",len,len2);
+             //free(tmp);
+             return(len2);
+             }
+             
+             int32_t pangea_poll(uint64_t *senderbitsp,uint32_t *timestampp,union hostnet777 *hn)
+             {
+             char *jsonstr,*hexstr,*cmdstr; cJSON *json; struct cards777_privdata *priv; struct cards777_pubdata *dp; struct pangea_info *sp;
+             int32_t len,senderind,maxlen; uint8_t *buf;
+             *senderbitsp = 0;
+             dp = hn->client->H.pubdata, sp = dp->table;
+             priv = hn->client->H.privdata;
+             if ( hn == 0 || hn->client == 0 || dp == 0 || priv == 0 )
+             {
+             if ( Debuglevel > 2 )
+             PNACL_message("pangea_poll: null hn.%p %p dp.%p priv.%p\n",hn,hn!=0?hn->client:0,dp,priv);
+             return(-1);
+             }
+             maxlen = (int32_t)(sizeof(bits256) * dp->N*dp->N*dp->numcards);
+             if ( (buf= malloc(maxlen)) == 0 )
+             {
+             PNACL_message("pangea_poll: null buf\n");
+             return(-1);
+             }
+             if ( dp != 0 && priv != 0 && (jsonstr= queue_dequeue(&hn->client->H.Q,1)) != 0 )
+             {
+             //pangea_neworder(dp,dp->table,0,0);
+             //PNACL_message("player.%d GOT.(%s)\n",hn->client->H.slot,jsonstr);
+             if ( (json= cJSON_Parse(jsonstr)) != 0 )
+             {
+             *senderbitsp = j64bits(json,"sender");
+             if ( (senderind= juint(json,"myind")) < 0 || senderind >= dp->N )
+             {
+             PNACL_message("pangea_poll: illegal senderind.%d cardi.%d turni.%d (%s)\n",senderind,juint(json,"cardi"),juint(json,"turni"),jsonstr);
+             goto cleanup;
+             }
+             *timestampp = juint(json,"timestamp");
+             hn->client->H.state = juint(json,"state");
+             len = juint(json,"n");
+             cmdstr = jstr(json,"cmd");
+             if ( sp->myind < 0 )
+             {
+             // check for reactivation command
+             goto cleanup;
+             }
+             if ( cmdstr != 0 && strcmp(cmdstr,"preflop") == 0 )
+             {
+             if ( (hexstr= jstr(json,"data")) != 0 )
+             len = pangea_unzbuf(buf,hexstr,len);
+             }
+             else if ( (hexstr= jstr(json,"data")) != 0 && strlen(hexstr) == (len<<1) )
+             {
+             if ( len > maxlen )
+             {
+             PNACL_message("len too big for pangea_poll\n");
+             goto cleanup;
+             }
+             decode_hex(buf,len,hexstr);
+             } else if ( hexstr != 0 )
+             PNACL_message("len.%d vs hexlen.%ld (%s)\n",len,(long)(strlen(hexstr)>>1),hexstr);
+             if ( cmdstr != 0 )
+             {
+             if ( strcmp(cmdstr,"newhand") == 0 )
+             pangea_newhand(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"ping") == 0 )
+             pangea_ping(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"gotdeck") == 0 )
+             pangea_gotdeck(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"ready") == 0 )
+             pangea_ready(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"encoded") == 0 )
+             pangea_encoded(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"final") == 0 )
+             pangea_final(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"addfunds") == 0 )
+             pangea_addfunds(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"preflop") == 0 )
+             pangea_preflop(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"decoded") == 0 )
+             pangea_decoded(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"card") == 0 )
+             pangea_card(hn,json,dp,priv,buf,len,juint(json,"cardi"),senderind);
+             else if ( strcmp(cmdstr,"facedown") == 0 )
+             pangea_facedown(hn,json,dp,priv,buf,len,juint(json,"cardi"),senderind);
+             else if ( strcmp(cmdstr,"faceup") == 0 )
+             pangea_faceup(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"turn") == 0 )
+             pangea_turn(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"confirmturn") == 0 )
+             pangea_confirmturn(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"chat") == 0 )
+             pangea_chat(*senderbitsp,buf,len,senderind);
+             else if ( strcmp(cmdstr,"action") == 0 )
+             pangea_action(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"showdown") == 0 )
+             pangea_showdown(hn,json,dp,priv,buf,len,senderind);
+             else if ( strcmp(cmdstr,"summary") == 0 )
+             pangea_gotsummary(hn,json,dp,priv,buf,len,senderind);
+             }
+             cleanup:
+             free_json(json);
+             }
+             free_queueitem(jsonstr);
+             }
+             free(buf);
+             return(hn->client->H.state);
+             }
+             
+             char *Pangea_bypass(uint64_t my64bits,uint8_t myprivkey[32],cJSON *json)
+             {
+             char *methodstr,*retstr = 0;
+             if ( (methodstr= jstr(json,"method")) != 0 )
+             {
+             if ( strcmp(methodstr,"turn") == 0 )
+             retstr = _pangea_input(my64bits,j64bits(json,"tableid"),json);
+             else if ( strcmp(methodstr,"status") == 0 )
+             retstr = _pangea_status(my64bits,j64bits(json,"tableid"),json);
+             else if ( strcmp(methodstr,"mode") == 0 )
+             retstr = _pangea_mode(my64bits,j64bits(json,"tableid"),json);
+             else if ( strcmp(methodstr,"buyin") == 0 )
+             retstr = _pangea_buyin(my64bits,j64bits(json,"tableid"),json);
+             else if ( strcmp(methodstr,"history") == 0 )
+             retstr = _pangea_history(my64bits,j64bits(json,"tableid"),json);
+             }
+             return(retstr);
+             }*/
+                
+            /*sprintf(hex,"{\"cmd\":\"%s\",\"turni\":%d,\"myslot\":%d,\"myind\":%d,\"cardi\":%d,\"dest\":%d,\"sender\":\"%llu\",\"n\":%u,%s\"data\":\"",cmdstr,turni,priv->myslot,pangea_ind(dp->table,priv->myslot),cardi,destplayer,(long long)myinfo->myaddr.nxt64bits,(long)time(NULL),datalen,hoststr);
+             n = (int32_t)strlen(hex);
+             if ( strcmp(cmdstr,"preflop") == 0 )
+             {
+             memcpy(&hex[n],data,datalen+1);
+             hexlen = (int32_t)strlen(hex)+1;
+             }
+             else
+             if ( data != 0 && datalen != 0 )
+             init_hexbytes_noT(&hex[n],data,datalen);
+             strcat(hex,"\"}");
+             if ( (json= cJSON_Parse(hex)) == 0 )
+             {
+             PNACL_message("error creating json\n");
+             return;
+             }
+             free_json(json);
+             hexlen = (int32_t)strlen(hex)+1;*/
+                
+                
+                int32_t pangea_hexmsg(struct supernet_info *myinfo,struct pangea_msghdr *pm,int32_t len)
+            {
+                cJSON *argjson; char *method; bits256 tablehash; struct table_info *tp; int32_t flag = 0;
+                int32_t datalen; uint8_t *serialized; uint8_t tmp[sizeof(pm->sig)];
+                acct777_rwsig(0,(void *)&pm->sig,(void *)tmp);
+                memcpy(&pm->sig,tmp,sizeof(pm->sig));
+                datalen = len  - (int32_t)sizeof(pm->sig);
+                serialized = (void *)((long)pm + sizeof(pm->sig));
+                if ( pangea_validate(pm,acct777_msgprivkey(serialized,datalen),pm->sig.pubkey) == 0 )
+                {
+                    flag++;
+                    iguana_rwbignum(0,pm->tablehash.bytes,sizeof(bits256),tablehash.bytes);
+                    pm->tablehash = tablehash;
+                    printf("<<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen,pm->sig.timestamp,pm->sig.allocsize,(char *)pm->serialized,serialized[datalen-1]);
+                    if ( serialized[datalen-1] == 0 && (argjson= cJSON_Parse((char *)pm->serialized)) != 0 )
+                    {
+                        tablehash = jbits256(argjson,"subhash");
+                        if ( (method= jstr(argjson,"cmd")) != 0 )
+                        {
+                            if ( strcmp(method,"lobby") == 0 )
+                            {
+                                //categoryhash = jbits256(argjson,"categoryhash");
+                            }
+                            else if ( strcmp(method,"host") == 0 )
+                            {
+                                if ( (tp= pangea_table(tablehash)) != 0 )
+                                {
+                                    pangea_gamecreate(&tp->G,pm->sig.timestamp,pm->tablehash,argjson);
+                                    tp->G.creatorbits = pm->sig.signer64bits;
+                                }
+                                char str[65],str2[65]; printf("new game detected (%s) vs (%s)\n",bits256_str(str,tablehash),bits256_str(str2,pm->tablehash));
+                            }
+                            else if ( strcmp(method,"join") == 0 )
+                            {
+                                printf("JOIN.(%s)\n",jprint(argjson,0));
+                            }
+                        }
+                        free_json(argjson);
+                    } else printf("ERROR >>>>>>> (%s) cant parse\n",(char *)pm->serialized);
+                }
+                else
+                {
+                    int32_t i; char str[65],str2[65];
+                    for (i=0; i<datalen; i++)
+                        printf("%02x",serialized[i]);
+                    printf("<<<<<<<<<<<<< sigsize.%ld SIG ERROR [%ld] len.%d (%s + %s)\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen,bits256_str(str,acct777_msgprivkey(serialized,datalen)),bits256_str(str2,pm->sig.pubkey));
+                }
+                return(flag);
+            }
+                
+                if ( 0 && buf[len-1] == 0 && (argjson= cJSON_Parse((char *)buf)) != 0 )
+                {
+                    printf("RESULT.(%s)\n",jprint(argjson,0));
+                    free_json(argjson);
+                }
+                else if ( 0 )
+                {
+                    char *method; bits256 tablehash; struct table_info *tp;
+                    int32_t datalen; uint8_t *serialized; uint8_t tmp[sizeof(pm->sig)];
+                    decode_hex(buf,len,result);
+                    pm = (struct  pangea_msghdr *)buf;
+                    acct777_rwsig(0,(void *)&pm->sig,(void *)tmp);
+                    memcpy(&pm->sig,tmp,sizeof(pm->sig));
+                    datalen = len  - (int32_t)sizeof(pm->sig);
+                    serialized = (void *)((long)pm + sizeof(pm->sig));
+                    char str[65]; printf("OLD pm.%p len.%d serialized.%p datalen.%d crc.%u %s\n",pm,len,serialized,datalen,calc_crc32(0,(void *)pm,len),bits256_str(str,pm->sig.pubkey));
+                    if ( pangea_validate(pm,acct777_msgprivkey(serialized,datalen),pm->sig.pubkey) == 0 )
+                    {
+                        iguana_rwbignum(0,pm->tablehash.bytes,sizeof(bits256),tablehash.bytes);
+                        pm->tablehash = tablehash;
+                        printf("<<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen,pm->sig.timestamp,pm->sig.allocsize,(char *)pm->serialized,serialized[datalen-1]);
+                        if ( serialized[datalen-1] == 0 && (argjson= cJSON_Parse((char *)pm->serialized)) != 0 )
+                        {
+                            tablehash = jbits256(argjson,"subhash");
+                            if ( (method= jstr(argjson,"cmd")) != 0 )
+                            {
+                                if ( strcmp(method,"lobby") == 0 )
+                                {
+                                    //categoryhash = jbits256(argjson,"categoryhash");
+                                }
+                                else if ( strcmp(method,"host") == 0 )
+                                {
+                                    if ( (tp= pangea_table(tablehash)) != 0 )
+                                    {
+                                        pangea_gamecreate(&tp->G,pm->sig.timestamp,pm->tablehash,argjson);
+                                        tp->G.creatorbits = pm->sig.signer64bits;
+                                    }
+                                    char str[65],str2[65]; printf("new game detected (%s) vs (%s)\n",bits256_str(str,tablehash),bits256_str(str2,pm->tablehash));
+                                }
+                                else if ( strcmp(method,"join") == 0 )
+                                {
+                                    printf("JOIN.(%s)\n",jprint(argjson,0));
+                                }
+                            }
+                            free_json(argjson);
+                        } else printf("ERROR >>>>>>> (%s) cant parse\n",(char *)pm->serialized);
+                            }
+                    else
+                    {
+                        int32_t i; char str[65],str2[65];
+                        for (i=0; i<datalen; i++)
+                            printf("%02x",serialized[i]);
+                            printf("<<<<<<<<<<<<< sigsize.%ld SIG ERROR [%ld] len.%d (%s + %s)\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen,bits256_str(str,acct777_msgprivkey(serialized,datalen)),bits256_str(str2,pm->sig.pubkey));
+                            }
+                }
+        while ( 0 && (retstr= SuperNET_gethexmsg(IGUANA_CALLARGS,"pangea",0)) != 0 )
+        {
+            flag = 0;
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
+            {
+                
+                if ( (result= jstr(retjson,"result")) != 0 )
+                {
+                    len = (int32_t)strlen(result);
+                    if ( is_hexstr(result,len) > 0 )
+                    {
+                        len >>= 1;
+                        buf = malloc(len);
+                        decode_hex(buf,len,result);
+                        lag = pangea_hexmsg(myinfo,(struct pangea_msghdr *)buf,len,remoteaddr);
+                    }
+                }
+                free_json(retjson);
+            }
+            free(retstr);
+            if ( flag == 0 )
+                break;
+        }
+                uint8_t hex[1024]; char hashstr[65]; bits256 hash,hash2; long l = strlen("c0fbdbb600b7000000010000000000000000000000000000000000000000000000000000000000000000000058283b1b3ea5ad73f9aabc571dedd442d06e4ad8b3867a4f495acacd93a1698a54405408ffff1e0fb2780001010100004000085401540000000000000000000000000000000000000000000000000000000000000000ffffffff0424ffff1d000401541c7568202c2034655320703032343131203a323030303a20304d47ff54ffff01ff0000000000000000000000000000fb00b6c0afdb0000060000009900a46df6901a15d0d99d5dc9efda9b44582b1d3c83a60d119d64e7c7d7000a3300a678b550a606416b7a09510b2f3f89ee88971b7164c6f93fce76bb6d620b5f0c0880ff540fff001ede04010300010000805e54080001000000000000000000000000000000000000000000000000000000000000ff00ffff03ff0151ff02ffff01ff00005d8a45780163761914a96651e5e6e52dfa8d18cb0c673000dcae95f23923ac88000000000000");
+        l>>=1;
+        decode_hex(hex,(int32_t)l,"c0fbdbb600b7000000010000000000000000000000000000000000000000000000000000000000000000000058283b1b3ea5ad73f9aabc571dedd442d06e4ad8b3867a4f495acacd93a1698a54405408ffff1e0fb2780001010100004000085401540000000000000000000000000000000000000000000000000000000000000000ffffffff0424ffff1d000401541c7568202c2034655320703032343131203a323030303a20304d47ff54ffff01ff0000000000000000000000000000fb00b6c0afdb0000060000009900a46df6901a15d0d99d5dc9efda9b44582b1d3c83a60d119d64e7c7d7000a3300a678b550a606416b7a09510b2f3f89ee88971b7164c6f93fce76bb6d620b5f0c0880ff540fff001ede04010300010000805e54080001000000000000000000000000000000000000000000000000000000000000ff00ffff03ff0151ff02ffff01ff00005d8a45780163761914a96651e5e6e52dfa8d18cb0c673000dcae95f23923ac88000000000000");
+        vcalc_sha256(0,hash.bytes,hex+24,(int32_t)l-24);
+        vcalc_sha256(hashstr,hash2.bytes,hash.bytes,sizeof(hash));
+        printf("ghash.(%s)\n",hashstr);
+        
+        getchar();
 #endif

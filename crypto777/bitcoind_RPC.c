@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2015 The SuperNET Developers.                             *
+ * Copyright © 2014-2016 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -18,6 +18,7 @@
 
 #include <curl/curl.h>
 #include <curl/easy.h>
+#define issue_curl(cmdstr) bitcoind_RPC(0,"curl",cmdstr,0,0,0)
 
 // return data from the server
 struct return_string {
@@ -338,4 +339,32 @@ void *curl_post(CURL **cHandlep,char *url,char *userpass,char *postfields,char *
 void curlhandle_free(void *curlhandle)
 {
     curl_easy_cleanup(curlhandle);
+}
+
+bits256 issue_getpubkey(int32_t *haspubkeyp,char *acct)
+{
+    cJSON *json; bits256 pubkey; char cmd[4096],*jsonstr; struct destbuf pubkeystr;
+    sprintf(cmd,"%s?requestType=getAccountPublicKey&account=%s",NXTAPIURL,acct);
+    jsonstr = issue_curl(cmd);
+    pubkeystr.buf[0] = 0;
+    if ( haspubkeyp != 0 )
+        *haspubkeyp = 0;
+    memset(&pubkey,0,sizeof(pubkey));
+    if ( jsonstr != 0 )
+    {
+        printf("PUBKEYRPC.(%s)\n",jsonstr);
+        if ( (json = cJSON_Parse(jsonstr)) != 0 )
+        {
+            copy_cJSON(&pubkeystr,cJSON_GetObjectItem(json,"publicKey"));
+            free_json(json);
+            if ( strlen(pubkeystr.buf) == sizeof(pubkey)*2 )
+            {
+                if ( haspubkeyp != 0 )
+                    *haspubkeyp = 1;
+                decode_hex(pubkey.bytes,sizeof(pubkey),pubkeystr.buf);
+            }
+        }
+        free(jsonstr);
+    }
+    return(pubkey);
 }

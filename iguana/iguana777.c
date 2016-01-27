@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2015 The SuperNET Developers.                             *
+ * Copyright © 2014-2016 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -15,7 +15,7 @@
 
 
 #include "iguana777.h"
-const char *Hardcoded_coins[][3] = { { "BTC", "bitcoin", "0" }, { "BTCD", "BitcoinDark", "129" } };
+const char *Hardcoded_coins[][3] = { { "BTC", "bitcoin", "0" }, { "BTCD", "BitcoinDark", "129" },  { "VPN", "VPNcoin", "129" } };
 
 struct iguana_info *iguana_coinfind(const char *symbol)
 {
@@ -339,13 +339,12 @@ void iguana_helper(void *arg)
             if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
             {
                 if ( ptr->bp != 0 && ptr->coin != 0 )
-                    iguana_bundleiters(ptr->coin,ptr->bp,ptr->timelimit);
+                    flag += iguana_bundleiters(ptr->coin,ptr->bp,ptr->timelimit);
                 myfree(ptr,ptr->allocsize);
-                flag++;
             }
         }
-        //if ( flag == 0 )
-            usleep(100000);
+        if ( flag == 0 )
+            sleep(10);
     }
 }
 
@@ -353,7 +352,7 @@ void iguana_coinloop(void *arg)
 {
     struct iguana_info *coin,**coins = arg;
     struct iguana_bundle *bp; int32_t flag,i,n,bundlei; bits256 zero; char str[1024];
-    uint32_t now,lastdisp = 0;
+    uint32_t now;
     n = (int32_t)(long)coins[0];
     coins++;
     printf("begin coinloop[%d]\n",n);
@@ -361,7 +360,7 @@ void iguana_coinloop(void *arg)
     {
         if ( (coin= coins[i]) != 0 && coin->started == 0 )
         {
-            iguana_startcoin(coin,coin->initialheight,coin->mapflags);
+            iguana_coinstart(coin,coin->initialheight,coin->mapflags);
             printf("init.(%s) maxpeers.%d maxrecvcache.%s services.%llx MAXMEM.%s polltimeout.%d\n",coin->symbol,coin->MAXPEERS,mbstr(str,coin->MAXRECVCACHE),(long long)coin->myservices,mbstr(str,coin->MAXMEM),coin->polltimeout);
             coin->started = coin;
             coin->chain->minconfirms = coin->minconfirms;
@@ -384,51 +383,45 @@ void iguana_coinloop(void *arg)
             if ( (coin= coins[i]) != 0 )
             {
                 now = (uint32_t)time(NULL);
-                if ( coin->isRT == 0 && now > coin->startutc+600 && coin->blocksrecv >= coin->longestchain-1 && coin->blocks.hwmchain.height >= coin->longestchain-1 )
-                {
-                    printf(">>>>>>> %s isRT blockrecv.%d vs longest.%d\n",coin->symbol,coin->blocksrecv,coin->longestchain);
-                    coin->isRT = 1;
-                    if ( coin->polltimeout > 100 )
-                        coin->polltimeout = 100;
-                    coin->MAXPEERS = 8;
-                }
-                if ( coin->peers.numranked != 0 && coin->peers.numranked < (coin->MAXPEERS>>1) && now > coin->lastpossible )
-                {
-                    //printf("possible\n");
-                    coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
-                }
                 if ( coin->active != 0 )
                 {
+                    if ( coin->isRT == 0 && now > coin->startutc+600 && coin->blocksrecv >= coin->longestchain-1 && coin->blocks.hwmchain.height >= coin->longestchain-1 )
+                    {
+                        printf(">>>>>>> %s isRT blockrecv.%d vs longest.%d\n",coin->symbol,coin->blocksrecv,coin->longestchain);
+                        coin->isRT = 1;
+                        if ( coin->polltimeout > 100 )
+                            coin->polltimeout = 100;
+                        coin->MAXPEERS = 8;
+                    }
+                    if ( coin->bindsock >= 0 )
+                    {
+                        if ( coin->peers.numranked < 8 && now > coin->lastpossible+60 )
+                        {
+                            //printf("possible\n");
+                            coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
+                        }
+                    }
+                    else
+                    {
+                        if ( coin->peers.numranked != 0 && coin->peers.numranked < (coin->MAXPEERS>>1) && now > coin->lastpossible+6 )
+                        {
+                            //printf("possible\n");
+                            coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
+                        }
+                    }
                     if ( now > coin->peers.lastmetrics+6 )
                     {
                         //printf("metrics\n");
                         coin->peers.lastmetrics = iguana_updatemetrics(coin); // ranks peers
-                        coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
                     }
                     //printf("process\n");
-                    flag += iguana_processrecv(coin);
-                    if ( 0 && coin->blocks.parsedblocks < coin->blocks.hwmchain.height-coin->chain->minconfirms )
-                    {
-                        if ( iguana_updateramchain(coin) != 0 )
-                            iguana_syncs(coin), flag++; // merge ramchain fragments into full ramchain
-                    }
-                    lastdisp = (uint32_t)now;
-                    //printf("now.%u\n",now);
                     iguana_bundlestats(coin,str);
-                    //iguana_ramchainmerge(coin);
+                    flag += iguana_processrecv(coin);
                 }
-            }// bp block needs mutex
+            }
         }
         if ( flag == 0 )
-        {
-            //printf("IDLE\n");
-            if ( str[0] != 0 )
-            {
-                if ( (rand() % 10000) == 0 )
-                    myallocated(0,0);
-            }
             usleep(coin->polltimeout * 1000);
-        }
     }
 }
 

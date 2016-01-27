@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2015 The SuperNET Developers.                             *
+ * Copyright © 2014-2016 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -320,7 +320,7 @@ static char *dumpprivkey(RPCARGS)
 
 static char *importprivkey(RPCARGS)
 {
-    return(sglue1(0,myinfo,coin,remoteaddr,"ramchain","importprivkey","wip",params[0]));
+    return(sglue1(0,myinfo,coin,remoteaddr,"ramchain","importprivkey","wif",params[0]));
 }
 
 static char *dumpwallet(RPCARGS)
@@ -469,74 +469,75 @@ static char *getrawchangeaddress(RPCARGS)
 
 #define true 1
 #define false 0
-struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,flag1; } RPCcalls[] =
+struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,remoteflag; } RPCcalls[] =
 {
-     { "help",                   &help,                   true,   true },
-     { "stop",                   &stop,                   true,   true },
-     { "getbestblockhash",       &getbestblockhash,       true,   false },
-     { "getblockcount",          &getblockcount,          true,   false },
-     { "getconnectioncount",     &getconnectioncount,     true,   false },
-     { "getpeerinfo",            &getpeerinfo,            true,   false },
-     { "getinfo",                &getinfo,                true,   false },
-     { "getnewaddress",          &getnewaddress,          true,   false },
-     { "getnewpubkey",           &makekeypair,           true,   false },
-     { "getaccountaddress",      &getaccountaddress,      true,   false },
-     { "setaccount",             &setaccount,             true,   false },
-     { "getaccount",             &getaccount,             false,  false },
-     { "getaddressesbyaccount",  &getaddressesbyaccount,  true,   false },
-     { "sendtoaddress",          &sendtoaddress,          false,  false },
-     { "getreceivedbyaddress",   &getreceivedbyaddress,   false,  false },
-     { "getreceivedbyaccount",   &getreceivedbyaccount,   false,  false },
-     { "listreceivedbyaddress",  &listreceivedbyaddress,  false,  false },
-     { "listreceivedbyaccount",  &listreceivedbyaccount,  false,  false },
-     { "backupwallet",           &backupwallet,           true,   false },
-     { "walletpassphrase",       &walletpassphrase,       true,   false },
-     { "walletpassphrasechange", &walletpassphrasechange, false,  false },
-     { "walletlock",             &walletlock,             true,   false },
-     { "encryptwallet",          &encryptwallet,          false,  false },
-     { "validateaddress",        &validateaddress,        true,   false },
-     { "validatepubkey",         &validatepubkey,         true,   false },
-     { "getbalance",             &getbalance,             false,  false },
-     { "move",                   &movecmd,                false,  false },
-     { "sendfrom",               &sendfrom,               false,  false },
-     { "sendmany",               &sendmany,               false,  false },
-     { "addmultisigaddress",     &addmultisigaddress,     false,  false },
-     { "getblock",               &getblock,               false,  false },
-     { "getblockhash",           &getblockhash,           false,  false },
-     { "gettransaction",         &gettransaction,         false,  false },
-     { "listtransactions",       &listtransactions,       false,  false },
-     { "listaddressgroupings",   &listaddressgroupings,   false,  false },
-     { "signmessage",            &signmessage,            false,  false },
-     { "verifymessage",          &verifymessage,          false,  false },
-     { "listaccounts",           &listaccounts,           false,  false },
-     { "settxfee",               &settxfee,               false,  false },
-     { "listsinceblock",         &listsinceblock,         false,  false },
-     { "dumpprivkey",            &dumpprivkey,            false,  false },
-     { "SuperNET",               &SuperNET,               false,  false },
-     { "dumpwallet",             &dumpwallet,             true,   false },
-     { "importwallet",           &importwallet,           false,  false },
-     { "importprivkey",          &importprivkey,          false,  false },
-     { "listunspent",            &listunspent,            false,  false },
-     { "getrawtransaction",      &getrawtransaction,      false,  false },
-     { "createrawtransaction",   &createrawtransaction,   false,  false },
-     { "decoderawtransaction",   &decoderawtransaction,   false,  false },
-     { "decodescript",           &decodescript,           false,  false },
-     { "signrawtransaction",     &signrawtransaction,     false,  false },
-     { "sendrawtransaction",     &sendrawtransaction,     false,  false },
-     { "checkwallet",            &checkwallet,            false,  true},
-     { "repairwallet",           &repairwallet,           false,  true},
-     { "makekeypair",            &makekeypair,            false,  true},
-     { "sendalert",              &sendalert,              false,  false},
-     //
-    { "createmultisig",              &createmultisig,              false,  false},
-    { "addnode",              &addnode,              false,  false},
-     { "getrawmempool",              &getrawmempool,              false,  false},
-     { "getrawchangeaddress",              &getrawchangeaddress,              false,  false},
-     { "listlockunspent",              &listlockunspent,              false,  false},
-     { "lockunspent",              &lockunspent,              false,  false},
-     { "gettxout",              &gettxout,              false,  false},
-    { "gettxoutsetinfo",              &gettxoutsetinfo,              false,  false},
-    { "vanitygen",              &vanitygen,              false,  false}
+    { "SuperNET",               &SuperNET,               false,  true },
+  //{ "SuperNETb",              &SuperNET,               false,  true },
+    { "help",                   &help,                   true,   false },
+    { "stop",                   &stop,                   true,   true },
+    { "getbestblockhash",       &getbestblockhash,       true,   true },
+    { "getblockcount",          &getblockcount,          true,   true },
+    { "getconnectioncount",     &getconnectioncount,     true,   true },
+    { "getpeerinfo",            &getpeerinfo,            true,   true },
+    { "getinfo",                &getinfo,                true,   true },
+    { "getnewaddress",          &getnewaddress,          true,   false },
+    { "getnewpubkey",           &makekeypair,            true,   false },
+    { "getaccountaddress",      &getaccountaddress,      true,   false },
+    { "setaccount",             &setaccount,             true,   false },
+    { "getaccount",             &getaccount,             false,  false },
+    { "getaddressesbyaccount",  &getaddressesbyaccount,  true,   false },
+    { "sendtoaddress",          &sendtoaddress,          false,  false },
+    { "getreceivedbyaddress",   &getreceivedbyaddress,   false,  false },
+    { "getreceivedbyaccount",   &getreceivedbyaccount,   false,  false },
+    { "listreceivedbyaddress",  &listreceivedbyaddress,  false,  false },
+    { "listreceivedbyaccount",  &listreceivedbyaccount,  false,  false },
+    { "backupwallet",           &backupwallet,           true,   false },
+    { "walletpassphrase",       &walletpassphrase,       true,   false },
+    { "walletpassphrasechange", &walletpassphrasechange, false,  false },
+    { "walletlock",             &walletlock,             true,   false },
+    { "encryptwallet",          &encryptwallet,          false,  false },
+    { "validateaddress",        &validateaddress,        true,   true },
+    { "validatepubkey",         &validatepubkey,         true,   true },
+    { "getbalance",             &getbalance,             false,  false },
+    { "move",                   &movecmd,                false,  false },
+    { "sendfrom",               &sendfrom,               false,  false },
+    { "sendmany",               &sendmany,               false,  false },
+    { "addmultisigaddress",     &addmultisigaddress,     false,  false },
+    { "getblock",               &getblock,               false,  true },
+    { "getblockhash",           &getblockhash,           false,  true },
+    { "gettransaction",         &gettransaction,         false,  true },
+    { "listtransactions",       &listtransactions,       false,  false },
+    { "listaddressgroupings",   &listaddressgroupings,   false,  false },
+    { "signmessage",            &signmessage,            false,  false },
+    { "verifymessage",          &verifymessage,          false,  false },
+    { "listaccounts",           &listaccounts,           false,  false },
+    { "settxfee",               &settxfee,               false,  false },
+    { "listsinceblock",         &listsinceblock,         false,  false },
+    { "dumpprivkey",            &dumpprivkey,            false,  false },
+    { "dumpwallet",             &dumpwallet,             true,   false },
+    { "importwallet",           &importwallet,           false,  false },
+    { "importprivkey",          &importprivkey,          false,  false },
+    { "listunspent",            &listunspent,            false,  false },
+    { "getrawtransaction",      &getrawtransaction,      false,  false },
+    { "createrawtransaction",   &createrawtransaction,   false,  false },
+    { "decoderawtransaction",   &decoderawtransaction,   false,  true },
+    { "decodescript",           &decodescript,           false,  true },
+    { "signrawtransaction",     &signrawtransaction,     false,  false },
+    { "sendrawtransaction",     &sendrawtransaction,     false,  true },
+    { "checkwallet",            &checkwallet,            false,  false },
+    { "repairwallet",           &repairwallet,           false,  false },
+    { "makekeypair",            &makekeypair,            false,  false },
+    { "sendalert",              &sendalert,              false,  false },
+    //
+    { "createmultisig",         &createmultisig,         false,  false },
+    { "addnode",                &addnode,                false,  false },
+    { "getrawmempool",          &getrawmempool,          false,  true },
+    { "getrawchangeaddress",    &getrawchangeaddress,    false,  false },
+    { "listlockunspent",        &listlockunspent,        false,  false },
+    { "lockunspent",            &lockunspent,            false,  false },
+    { "gettxout",               &gettxout,               false,  true },
+    { "gettxoutsetinfo",        &gettxoutsetinfo,        false,  true },
+    { "vanitygen",              &vanitygen,              false,  false }
 #ifdef PEGGY
     //{ "peggytx",                &peggytx,                true,   false },
     //{ "peggypayments",          &peggypayments,          true,   false },
@@ -559,13 +560,16 @@ struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,flag1; } 
     // { "reservebalance",         &reservebalance,         false,  true},
 };
 
-int32_t is_bitcoinrpc(char *method)
+int32_t is_bitcoinrpc(char *method,char *remoteaddr)
 {
     int32_t i;
     for (i=0; i<sizeof(RPCcalls)/sizeof(*RPCcalls); i++)
     {
         if ( strcmp(RPCcalls[i].name,method) == 0 )
-            return(i);
+        {
+            if ( RPCcalls[i].remoteflag != 0 || (RPCcalls[i].remoteflag == 0 && (remoteaddr == 0 || remoteaddr[0] == 0 || strcmp(remoteaddr,"127.0.0.1") == 0)) )
+                return(i);
+        }
     }
     return(-1);
 }
@@ -610,4 +614,361 @@ char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,ch
     if ( retstr == 0 )
         retstr = clonestr("{\"error\":\"cant parse jsonstr\"}");
     return(retstr);
+}
+
+int32_t Supernet_lineparse(char *key,int32_t keymax,char *value,int32_t valuemax,char *src)
+{
+    int32_t a,b,c,n = 0; //char *origkey=key,*origvalue=value;
+    key[0] = value[0] = 0;
+    while ( (c= src[n]) == ' ' || c == '\t' || c == '\n' || c == '\t' )
+        n++;
+    while ( (c= src[n]) != ':' && c != 0 )
+    {
+        *key++ = c;
+        //printf("(%c) ",c);
+        if ( ++n >= keymax-1 )
+        {
+            *key = 0;
+            printf("lineparse overflow key.(%s)\n",src);
+            return(-1);
+        }
+    }
+    *key = 0;
+    //printf("-> key.(%s)\n",origkey);
+    if ( src[n] != ':' )
+        return(n);
+    n++;
+    while ( (c= src[n]) == ' ' || c == '\t' )
+        n++;
+    while ( (c= src[n]) != 0 && c != '\r' && c != '\n' )
+    {
+        if ( c == '%' && (a= src[n+1]) != 0 && (b= src[n+2]) != 0 )
+            c = ((unhex(a) << 4) | unhex(b)), n += 2;
+        *value++ = c;
+        n++;
+        if ( n >= valuemax-1 )
+        {
+            *value = 0;
+            printf("lineparse overflow.(%s)\n",src);
+            return(-1);
+        }
+    }
+    *value = 0;
+    if ( src[n] != 0 )
+    {
+        n++;
+        while ( (c= src[n]) == '\r' || c == '\n' )
+            n++;
+    }
+    //printf("key.(%s) value.(%s)\n",origkey,origvalue);
+    return(n);
+}
+
+cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
+{
+    int32_t i,n,totallen,datalen,len = 0; cJSON *json,*array; char key[8192],*data;
+    json = cJSON_CreateObject();
+    array = cJSON_CreateArray();
+    totallen = (int32_t)strlen(urlstr);
+    while ( 1 )
+    {
+        for (i=len; urlstr[i]!=0; i++)
+            if ( urlstr[i] == '\r' || urlstr[i] == '\n' )
+                break;
+        if ( i == len && (urlstr[len] == '\r' || urlstr[len] == '\n') )
+        {
+            len++;
+            continue;
+        }
+        urlstr[i] = 0;
+        //printf("URLSTR[%d]=%s\n",i,&urlstr[len]);
+        if ( (n= Supernet_lineparse(key,sizeof(key),value,bufsize,&urlstr[len])) > 0 )
+        {
+            if ( value[0] != 0 )
+                jaddstr(json,key,value);
+            else jaddistr(array,key);
+            len += (n + 1);
+            if ( strcmp(key,"Content-Length") == 0 && (datalen= atoi(value)) > 0 )
+            {
+                data = &urlstr[totallen - datalen];
+                data[-1] = 0;
+                //printf("post.(%s) (%c)\n",data,data[0]);
+                jaddstr(json,"POST",data);
+            }
+        } else break;
+    }
+    jadd(json,"lines",array);
+    //printf("urlconv.(%s)\n",jprint(json,0));
+    return(json);
+}
+
+char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr)
+{
+    cJSON *tokens,*argjson,*json = 0; long filesize;
+    char symbol[16],buf[4096],urlmethod[16],*data,url[1024],*retstr,*token = 0; int32_t i,j,n,num=0;
+    //printf("rpcparse.(%s)\n",urlstr);
+    for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
+        urlmethod[i] = urlstr[i];
+    urlmethod[i++] = 0;
+    n = i;
+    //printf("URLMETHOD.(%s)\n",urlmethod);
+    *postflagp = (strcmp(urlmethod,"POST") == 0);
+    for (i=0; i<sizeof(url)-1&&urlstr[n+i]!=0&&urlstr[n+i]!=' '; i++)
+        url[i] = urlstr[n+i];
+    url[i++] = 0;
+    n += i;
+    j = i = 0;
+    //printf("url.(%s) method.(%s)\n",&url[i],urlmethod);
+    if ( strcmp(&url[i],"/") == 0 && strcmp(urlmethod,"GET") == 0 )
+    {
+        SuperNET_htmlstr("index7778.html",retbuf,bufsize,0);
+        //return(retbuf);
+        return(OS_filestr(&filesize,"index7778.html"));
+    }
+    if ( strncmp(&url[i],"/api",strlen("/api")) == 0 )
+    {
+        *jsonflagp = 1;
+        i += strlen("/api");
+    } else *jsonflagp = 0;
+    if ( strncmp(&url[i],"/bitmap",strlen("/bitmap")) == 0 )
+    {
+        i += strlen("/bitmap");
+        *jsonflagp = 2;
+        if ( url[i] == '/' )
+            i++;
+        iguana_bitmap(retbuf,bufsize,&url[i]);
+        return(retbuf);
+    }
+    //printf("URL.(%s)\n",url);
+    if ( strcmp(url,"/favicon.ico") == 0 )
+    {
+        *jsonflagp = -1;
+        return(0);
+    }
+    if ( url[i] != '/' )
+        token = &url[i];
+    n = i;
+    tokens = cJSON_CreateArray();
+    for (; url[i]!=0; i++)
+    {
+        //printf("i.%d (%c)\n",i,url[i]);
+        if ( url[i] == '/' )
+        {
+            url[i] = 0;
+            if ( token != 0 )
+            {
+                //printf("TOKEN.(%s) i.%d\n",token,i);
+                jaddistr(tokens,token);
+                num++;
+            }
+            token = &url[i+1];
+            i++;
+            //printf("new token.(%s) i.%d\n",token,i+1);
+            continue;
+        }
+    }
+    if ( token != 0 )
+    {
+        //printf("add token.(%s)\n",token);
+        jaddistr(tokens,token);
+        num++;
+    }
+    argjson = cJSON_CreateObject();
+    if ( num > 0 )
+        jaddstr(argjson,"agent",jstri(tokens,0));
+    if ( num > 1 )
+        jaddstr(argjson,"method",jstri(tokens,1));
+    //printf("urlstr.(%s)\n",urlstr+n);
+    if ( (json= SuperNET_urlconv(retbuf,bufsize,urlstr+n)) != 0 )
+    {
+        jadd(json,"tokens",tokens);
+        jaddstr(json,"urlmethod",urlmethod);
+        if ( (data= jstr(json,"POST")) == 0 || (argjson= cJSON_Parse(data)) == 0 )
+        {
+            if ( (n= cJSON_GetArraySize(tokens)) > 0 )
+            {
+                jaddstr(argjson,"agent",jstri(tokens,0));
+                if ( n > 1 )
+                {
+                    if ( jstri(tokens,1) != 0 )
+                    {
+                        char *key,*value;
+                        strcpy(buf,jstri(tokens,1));
+                        key = value = 0;
+                        i = 0;
+                        for (; buf[i]!=0; i++)
+                        {
+                            if ( buf[i] == '?' )
+                            {
+                                buf[i] = 0;
+                                jdelete(argjson,"method");
+                                jaddstr(argjson,"method",buf);
+                                i++;
+                                key = &buf[i];
+                                break;
+                            }
+                        }
+                        while ( buf[i] != 0 )
+                        {
+                            //printf("iter.[%s]\n",&buf[i]);
+                            if ( buf[i] != 0 && key != 0 )
+                            {
+                                for (; buf[i]!=0; i++)
+                                {
+                                    if ( buf[i] == '=' )
+                                    {
+                                        buf[i] = 0;
+                                        i++;
+                                        //printf("got key.(%s)\n",key);
+                                        value = &buf[i];
+                                        break;
+                                    }
+                                }
+                                if ( buf[i] != 0 && value != 0 )
+                                {
+                                    for (; buf[i]!=0; i++)
+                                    {
+                                        if ( buf[i] == '&' )
+                                        {
+                                            buf[i] = 0;
+                                            jaddstr(argjson,key,value);
+                                            i++;
+                                            //printf("got value.(%s)\n",value);
+                                            value = 0;
+                                            key = &buf[i];
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if ( key != 0 && value != 0 )
+                            jaddstr(argjson,key,value);
+                    } else jaddstr(argjson,"method",buf);
+                }
+                for (i=2; i<n; i++)
+                {
+                    if ( i == n-1 )
+                        jaddstr(argjson,"data",jstri(tokens,i));
+                    else
+                    {
+                        if ( strcmp(jstri(tokens,i),"coin") == 0 && strlen(jstri(tokens,i+1)) < 8 )
+                        {
+                            strcpy(symbol,jstri(tokens,i+1));
+                            touppercase(symbol);
+                            jaddstr(argjson,jstri(tokens,i),symbol);
+                        } else jaddstr(argjson,jstri(tokens,i),jstri(tokens,i+1));
+                        i++;
+                    }
+                }
+            }
+        }
+        //printf("after urlconv.(%s) argjson.(%s)\n",jprint(json,0),jprint(argjson,0));
+        if ( jstr(argjson,"method") == 0 )
+        {
+            free_json(argjson);
+            return(0);
+        }
+        retstr = SuperNET_JSON(myinfo,argjson,remoteaddr);
+        //printf("(%s) {%s} -> (%s) postflag.%d (%s)\n",urlstr,jprint(argjson,0),cJSON_Print(json),*postflagp,retstr);
+        free_json(argjson);
+        return(retstr);
+    }
+    return(clonestr("{\"error\":\"couldnt process packet\"}"));
+}
+
+void iguana_rpcloop(void *args)
+{
+    struct supernet_info *myinfo = args;
+    int32_t recvlen,bindsock,postflag,sock,remains,numsent,jsonflag,len; socklen_t clilen;
+    char remoteaddr[64],jsonbuf[8192],*buf,*retstr,*space;//,*retbuf; ,n,i,m
+    struct sockaddr_in cli_addr; uint32_t ipbits,i,size = IGUANA_WIDTH*IGUANA_HEIGHT*16 + 512; uint16_t port;
+    port = IGUANA_RPCPORT;
+    while ( (bindsock= iguana_socket(1,"127.0.0.1",port)) < 0 )
+        exit(-1);
+    printf("iguana_rpcloop 127.0.0.1:%d bind sock.%d\n",port,bindsock);
+    space = calloc(1,size);
+    while ( bindsock >= 0 )
+    {
+        clilen = sizeof(cli_addr);
+        //printf("ACCEPT (%s:%d) on sock.%d\n","127.0.0.1",port,bindsock);
+        sock = accept(bindsock,(struct sockaddr *)&cli_addr,&clilen);
+        if ( sock < 0 )
+        {
+            //printf("iguana_rpcloop ERROR on accept usock.%d\n",sock);
+            continue;
+        }
+        memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
+        expand_ipbits(remoteaddr,ipbits);
+        //printf("RPC.%d for %x (%s)\n",sock,ipbits,ipaddr);
+        //printf("%p got.(%s) from %s | usock.%d ready.%u dead.%u\n",addr,H.command,addr->ipaddr,addr->usock,addr->ready,addr->dead);
+        memset(jsonbuf,0,sizeof(jsonbuf));
+        remains = (int32_t)(sizeof(jsonbuf) - 1);
+        buf = jsonbuf;
+        recvlen = 0;
+        retstr = 0;
+        while ( remains > 0 )
+        {
+            if ( (len= (int32_t)recv(sock,buf,remains,0)) < 0 )
+            {
+                if ( errno == EAGAIN )
+                {
+                    printf("EAGAIN for len %d, remains.%d\n",len,remains);
+                    usleep(10000);
+                }
+                break;
+            }
+            else
+            {
+                if ( len > 0 )
+                {
+                    remains -= len;
+                    recvlen += len;
+                    buf = &buf[len];
+                    retstr = SuperNET_rpcparse(myinfo,space,size,&jsonflag,&postflag,jsonbuf,remoteaddr);
+                    break;
+                } else usleep(10000);
+                //printf("got.(%s) %d remains.%d of total.%d\n",jsonbuf,recvlen,remains,len);
+                //retstr = iguana_rpcparse(space,size,&postflag,jsonbuf);
+                break;
+            }
+        }
+        //if ( retstr == 0 )
+        //    retstr = iguana_htmlresponse(space,size,&remains,1,retstr,retstr != space);
+        if ( retstr != 0 )
+        {
+            i = 0;
+            //if ( 0 && postflag == 0 )
+            //    retstr = iguana_htmlresponse(space,size,&remains,1,retstr,retstr != space);
+            //else
+                remains = (int32_t)strlen(retstr);
+            //printf("POSTFLAG.%d\n",postflag);
+            //printf("RETBUF.(%s)\n",retstr);
+            while ( remains > 0 )
+            {
+                if ( (numsent= (int32_t)send(sock,&retstr[i],remains,MSG_NOSIGNAL)) < 0 )
+                {
+                    if ( errno != EAGAIN && errno != EWOULDBLOCK )
+                    {
+                        //printf("%s: %s numsent.%d vs remains.%d len.%d errno.%d (%s) usock.%d\n",retstr,ipaddr,numsent,remains,recvlen,errno,strerror(errno),sock);
+                        break;
+                    }
+                }
+                else if ( remains > 0 )
+                {
+                    remains -= numsent;
+                    i += numsent;
+                    if ( remains > 0 )
+                        printf("iguana sent.%d remains.%d of len.%d\n",numsent,remains,recvlen);
+                }
+            }
+            if ( retstr != space)
+                free(retstr);
+        }
+        //if ( Currentjsonstr[0] != 0 )
+        //    strcpy(Prevjsonstr,Currentjsonstr);
+        //Currentjsonstr[0] = 0;
+        //printf("done response sock.%d\n",sock);
+        closesocket(sock);
+    }
 }

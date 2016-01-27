@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2015 The SuperNET Developers.                             *
+ * Copyright © 2014-2016 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -249,13 +249,15 @@ void *queue_dequeue(queue_t *queue,int32_t offsetflag)
 
 void *queue_delete(queue_t *queue,struct queueitem *copy,int32_t copysize,int32_t freeitem)
 {
+    struct allocitem *ptr;
     struct queueitem *item = 0;
     lock_queue(queue);
     if ( queue->list != 0 )
     {
         DL_FOREACH(queue->list,item)
         {
-            if ( item == copy || memcmp((void *)((long)item + sizeof(struct queueitem)),(void *)((long)item + sizeof(struct queueitem)),copysize) == 0 )
+            ptr = (void *)((long)item - sizeof(struct allocitem));
+            if ( item == copy || (ptr->allocsize == copysize && memcmp((void *)((long)item + sizeof(struct queueitem)),(void *)((long)item + sizeof(struct queueitem)),copysize) == 0) )
             {
                 DL_DELETE(queue->list,item);
                 portable_mutex_unlock(&queue->mutex);
@@ -767,10 +769,10 @@ void *OS_filealloc(struct OS_mappedptr *M,char *fname,struct OS_memspace *mem,lo
     return(M->fileptr);
 }
 
-void *OS_loadfile(char *fname,char **bufp,int64_t *lenp,int64_t *allocsizep)
+void *OS_loadfile(char *fname,char **bufp,long *lenp,long *allocsizep)
 {
     FILE *fp;
-    int64_t  filesize,buflen = *allocsizep;
+    long  filesize,buflen = *allocsizep;
     char *buf = *bufp;
     *lenp = 0;
     if ( (fp= fopen(OS_compatible_path(fname),"rb")) != 0 )
@@ -803,9 +805,9 @@ void *OS_loadfile(char *fname,char **bufp,int64_t *lenp,int64_t *allocsizep)
     return(buf);
 }
 
-void *OS_filestr(int64_t *allocsizep,char *fname)
+void *OS_filestr(long *allocsizep,char *fname)
 {
-    int64_t filesize = 0; char *buf = 0;
+    long filesize = 0; char *buf = 0;
     *allocsizep = 0;
     return(OS_loadfile(fname,&buf,&filesize,allocsizep));
 }
@@ -828,6 +830,10 @@ void *OS_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long origsize
 
 void OS_init()
 {
+    extern bits256 GENESIS_PUBKEY,GENESIS_PRIVKEY;
+    tai_now();
+    decode_hex(GENESIS_PUBKEY.bytes,sizeof(GENESIS_PUBKEY),GENESIS_PUBKEYSTR);
+    decode_hex(GENESIS_PRIVKEY.bytes,sizeof(GENESIS_PRIVKEY),GENESIS_PRIVKEYSTR);
     SaM_PrepareIndices();
     return(OS_portable_init());
 }

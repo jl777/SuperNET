@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2015 The SuperNET Developers.                             *
+ * Copyright © 2014-2016 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -63,47 +63,82 @@ int32_t iguana_acceptspoll(uint8_t *buf,int32_t bufsize,struct iguana_accept *ac
 void iguana_acceptloop(void *args)
 {
     struct iguana_peer *addr; struct iguana_info *coin = args;
-    struct pollfd pfd; int32_t bindsock,sock; struct iguana_accept *ptr;
-    socklen_t clilen; struct sockaddr_in cli_addr; char ipaddr[64]; uint32_t ipbits;
-    bindsock = iguana_socket(1,"0.0.0.0",coin->chain->portp2p);
-    printf("iguana_bindloop 127.0.0.1:%d bind sock.%d\n",coin->chain->portp2p,bindsock);
-    while ( bindsock >= 0 )
+    struct pollfd pfd; int32_t sock; struct iguana_accept *ptr; uint16_t port = coin->chain->portp2p;
+    socklen_t clilen; struct sockaddr_in cli_addr; char ipaddr[64]; uint32_t i,ipbits;
+    while ( (coin->bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
+        sleep(5);
+    printf(">>>>>>>>>>>>>>>> iguana_bindloop 127.0.0.1:%d bind sock.%d\n",coin->chain->portp2p,coin->bindsock);
+    printf("START ACCEPTING\n");
+    while ( coin->bindsock >= 0 )
     {
         memset(&pfd,0,sizeof(pfd));
-        pfd.fd = bindsock;
+        pfd.fd = coin->bindsock;
         pfd.events = POLLIN;
         if ( poll(&pfd,1,100) <= 0 )
             continue;
         clilen = sizeof(cli_addr);
-        printf("ACCEPT (%s:%d) on sock.%d\n","127.0.0.1",coin->chain->portp2p,bindsock);
-        sock = accept(bindsock,(struct sockaddr *)&cli_addr,&clilen);
+        printf("ACCEPT (%s:%d) on sock.%d\n","127.0.0.1",coin->chain->portp2p,coin->bindsock);
+        sock = accept(coin->bindsock,(struct sockaddr *)&cli_addr,&clilen);
         if ( sock < 0 )
         {
-            printf("ERROR on accept bindsock.%d errno.%d (%s)\n",bindsock,errno,strerror(errno));
+            printf("ERROR on accept bindsock.%d errno.%d (%s)\n",coin->bindsock,errno,strerror(errno));
             continue;
         }
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
         expand_ipbits(ipaddr,ipbits);
         printf("NEWSOCK.%d for %x (%s)\n",sock,ipbits,ipaddr);
-        if ( (addr= iguana_peerslot(coin,ipbits)) == 0 )
+        for (i=0; i<IGUANA_MAXPEERS; i++)
+        {
+            if ( coin->peers.active[i].ipbits == (uint32_t)ipbits && coin->peers.active[i].usock >= 0 )
+            {
+                printf("found existing peer.(%s) in slot[%d]\n",ipaddr,i);
+                iguana_iAkill(coin,&coin->peers.active[i],0);
+                sleep(1);
+            }
+        }
+        /*if ( (uint32_t)ipbits == myinfo->myaddr.myipbits )
+        {
+            
+        }*/
+        if ( (addr= iguana_peerslot(coin,ipbits,0)) == 0 )
         {
             ptr = mycalloc('a',1,sizeof(*ptr));
             strcpy(ptr->ipaddr,ipaddr);
             ptr->ipbits = ipbits;
             ptr->sock = sock;
             ptr->port = coin->chain->portp2p;
-            printf("NEED TO DEAL WITH PENDING ACCEPTS\n");
+            printf("queue PENDING ACCEPTS\n");
             queue_enqueue("acceptQ",&coin->acceptQ,&ptr->DL,0);
         }
         else
         {
             printf("LAUNCH DEDICATED THREAD for %s\n",ipaddr);
             addr->usock = sock;
-            iguana_dedicatedloop(coin,addr);
+            strcpy(addr->symbol,coin->symbol);
+            iguana_launch(coin,"accept",iguana_dedicatedglue,addr,IGUANA_CONNTHREAD);
+            //iguana_dedicatedloop(coin,addr);
         }
     }
 }
 
+int32_t iguana_pendingaccept(struct iguana_info *coin)
+{
+    struct iguana_accept *ptr; char ipaddr[64]; struct iguana_peer *addr;
+    if ( (ptr= queue_dequeue(&coin->acceptQ,0)) != 0 )
+    {
+        if ( (addr= iguana_peerslot(coin,ptr->ipbits,0)) != 0 )
+        {
+            expand_ipbits(ipaddr,ptr->ipbits);
+            printf("iguana_pendingaccept LAUNCH DEDICATED THREAD for %s\n",ipaddr);
+            addr->usock = ptr->sock;
+            strcpy(addr->symbol,coin->symbol);
+            iguana_launch(coin,"accept",iguana_dedicatedglue,addr,IGUANA_CONNTHREAD);
+            myfree(ptr,sizeof(*ptr));
+            return(1);
+        } else queue_enqueue("requeue_acceptQ",&coin->acceptQ,&ptr->DL,0);
+    }
+    return(0);
+}
 /*int32_t iguana_acceptport(struct iguana_info *coin,uint16_t port)
 {
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)iguana_acceptloop,(void *)coin) != 0 )

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2015 The SuperNET Developers.                             *
+ * Copyright © 2014-2016 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -45,8 +45,8 @@ int32_t iguana_rwversion(int32_t rwflag,uint8_t *serialized,struct iguana_msgver
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->nStartingHeight),&msg->nStartingHeight);
     if ( msg->nVersion > 70000 )
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->relayflag),&msg->relayflag);
-    if ( rwflag == 0 )
-        printf("%-15s v.%llu srv.%llx %u ht.%llu [%s].R%d nonce.%llx\n",ipaddr,(long long)msg->nVersion,(long long)msg->nServices,(uint32_t)msg->nTime,(long long)msg->nStartingHeight,msg->strSubVer,msg->relayflag,(long long)msg->nonce);
+    //if ( rwflag == 0 )
+    //    printf("%-15s v.%llu srv.%llx %u ht.%llu [%s].R%d nonce.%llx\n",ipaddr,(long long)msg->nVersion,(long long)msg->nServices,(uint32_t)msg->nTime,(long long)msg->nStartingHeight,msg->strSubVer,msg->relayflag,(long long)msg->nonce);
     return(len);
 }
 
@@ -124,18 +124,6 @@ int32_t iguana_rwblockhash(int32_t rwflag,uint8_t *serialized,uint32_t *nVersion
     return(len);
 }*/
 
-int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,char *jsonstr,int32_t delaymillis)
-{
-    int32_t len; uint8_t serialized[8192];
-    if ( (len= (int32_t)strlen(jsonstr)) < sizeof(serialized)-sizeof(struct iguana_msghdr) )
-    {
-        memcpy(&serialized[sizeof(struct iguana_msghdr)],jsonstr,len+1);
-        printf("SEND.(%s) -> (%s)\n",jsonstr,addr->ipaddr);
-        return(iguana_queue_send(coin,addr,delaymillis,serialized,"SuperNET",len+1,0,1));
-    }
-    else return(-1);
-}
-
 void iguana_gotversion(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msgversion *vers)
 {
     uint8_t serialized[sizeof(struct iguana_msghdr)];
@@ -150,9 +138,9 @@ void iguana_gotversion(struct iguana_info *coin,struct iguana_peer *addr,struct 
         iguana_queue_send(coin,addr,0,serialized,"verack",0,0,0);
         //iguana_send_ping(coin,addr);
     }
-    else printf("nServices.%lld nonce.%llu non-relay node.(%s)\n",(long long)vers->nServices,(long long)vers->nonce,addr->ipaddr);
     if ( (vers->nServices & (1<<7)) == (1<<7) )
         addr->supernet = 1;
+    else printf("nServices.%lld nonce.%llu non-relay node.(%s) supernet.%d\n",(long long)vers->nServices,(long long)vers->nonce,addr->ipaddr,addr->supernet);
     if ( vers->nStartingHeight > coin->longestchain )
         coin->longestchain = vers->nStartingHeight;
     iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
@@ -184,18 +172,21 @@ void iguana_gotverack(struct iguana_info *coin,struct iguana_peer *addr)
         if ( addr->supernet != 0 )
         {
             printf("send getpeers to %s\n",addr->ipaddr);
-            iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
+            iguana_send_supernet(coin,addr,SUPERNET_GETPEERSTR,0);
         }
     }
 }
 
 void iguana_gotaddr(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msgaddress *A)
 {
-    char ipaddr[64]; uint32_t ipbits;
+    char ipaddr[64],ipport[64]; uint32_t ipbits; uint16_t port;
     iguana_rwnum(0,&A->ip[12],sizeof(uint32_t),&ipbits);
+    iguana_rwnum(0,(void *)&A->port,sizeof(uint16_t),&port);
     expand_ipbits(ipaddr,ipbits);
-    iguana_possible_peer(coin,ipaddr);
-    //printf("gotaddr.(%s)\n",ipaddr);
+    if ( port != 0 )
+        sprintf(ipport,"%s:%d",ipaddr,port);
+    iguana_possible_peer(coin,ipport);
+    //printf("gotaddr.(%s:%d)\n",ipaddr,port);
 }
 
 void iguana_gotping(struct iguana_info *coin,struct iguana_peer *addr,uint64_t nonce,uint8_t *data)
@@ -208,7 +199,7 @@ void iguana_gotping(struct iguana_info *coin,struct iguana_peer *addr,uint64_t n
     if ( addr->supernet != 0 )
     {
         printf("send getpeers to %s\n",addr->ipaddr);
-        iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",0);
+        iguana_send_supernet(coin,addr,SUPERNET_GETPEERSTR,0);
     }
 }
 
@@ -224,7 +215,7 @@ int32_t iguana_send_ping(struct iguana_info *coin,struct iguana_peer *addr)
     printf("pingnonce.%llx\n",(long long)nonce);
     len = iguana_rwnum(1,&serialized[sizeof(struct iguana_msghdr)],sizeof(uint64_t),&nonce);
     if ( addr->supernet != 0 )
-        iguana_send_supernet(coin,addr,"{\"agent\":\"SuperNET\",\"method\":\"getpeers\"}",(rand() % 10000));
+        iguana_send_supernet(coin,addr,SUPERNET_GETPEERSTR,0);
     return(iguana_queue_send(coin,addr,0,serialized,"ping",len,0,0));
 }
 
@@ -438,18 +429,18 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
         strcpy(addr->lastcommand,H->command);
     }
     retval = 0;
-    //usleep(1000);
     //printf("iguana_msgparser %s parse.(%s)\n",addr->ipaddr,H->command);
-    if ( strcmp(H->command,"SuperNET") == 0 )
+    if ( strncmp(H->command,"SuperNET",strlen("SuperNET")) == 0 )
     {
         addr->supernet = 1;
+        addr->msgcounts.verack++;
         len = recvlen;
-        if ( (retstr= SuperNET_p2p(coin,&delay,addr->ipaddr,data,recvlen)) != 0 )
+        if ( (retstr= SuperNET_p2p(coin,addr,&delay,addr->ipaddr,data,recvlen,H->command[strlen("SuperNET")]=='b')) != 0 )
         {
             iguana_send_supernet(coin,addr,retstr,delay);
             free(retstr);
         }
-        printf("GOT.(%s) [%s] len.%d from %s -> (%s)\n",H->command,data,recvlen,addr->ipaddr,retstr==0?"null":retstr);
+        //printf("GOT.(%s) [%s] len.%d from %s -> (%s)\n",H->command,data,recvlen,addr->ipaddr,retstr==0?"null":retstr);
     }
     else if ( strcmp(H->command,"version") == 0 )
     {

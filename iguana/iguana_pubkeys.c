@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2015 The SuperNET Developers.                             *
+ * Copyright © 2014-2016 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -333,7 +333,7 @@ cstring *base58_decode_check(uint8_t *addrtype,const char *s_in)
             // validate with trailing hash, then remove hash
             hash = bits256_doublesha256(0,(uint8_t *)s->str,(int32_t)s->len - 4);
             //bu_Hash4(md32,s->str,s->len - 4);
-            if ( memcmp(hash.bytes,&s->str[s->len - 4],4) == 0 )
+            if ( (s->str[s->len - 4]&0xff) == hash.bytes[31] && (s->str[s->len - 3]&0xff) == hash.bytes[30] &&(s->str[s->len - 2]&0xff) == hash.bytes[29] &&(s->str[s->len - 1]&0xff) == hash.bytes[28] )
             {
                 cstr_resize(s,s->len - 4);
                 if ( addrtype ) // if addrtype requested, remove from front of data string
@@ -342,6 +342,10 @@ cstring *base58_decode_check(uint8_t *addrtype,const char *s_in)
                     cstr_erase(s,0,1);
                 }
                 return(s);
+            }
+            else
+            {
+                char str[65]; printf("checkhash mismatch %02x %02x %02x %02x vs %02x %02x %02x %02x (%s)\n",s->str[s->len - 4]&0xff,s->str[s->len - 3]&0xff,s->str[s->len - 2]&0xff,s->str[s->len - 1]&0xff,hash.bytes[31],hash.bytes[30],hash.bytes[29],hash.bytes[28],bits256_str(str,hash));
             }
         }
         cstr_free(s,true);
@@ -633,7 +637,7 @@ int32_t btc_addr2univ(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr)
     return(-1);
 }
 
-int32_t btc_priv2wip(char *wipstr,uint8_t privkey[32],uint8_t addrtype)
+int32_t btc_priv2wif(char *wifstr,uint8_t privkey[32],uint8_t addrtype)
 {
     uint8_t tmp[128]; char hexstr[67]; cstring *btc_addr;
     memcpy(tmp,privkey,32);
@@ -641,17 +645,17 @@ int32_t btc_priv2wip(char *wipstr,uint8_t privkey[32],uint8_t addrtype)
     init_hexbytes_noT(hexstr,tmp,32);
     if ( (btc_addr= base58_encode_check(addrtype,true,tmp,33)) != 0 )
     {
-        strcpy(wipstr,btc_addr->str);
+        strcpy(wifstr,btc_addr->str);
         cstr_free(btc_addr,true);
     }
-    printf("-> (%s) -> wip.(%s) addrtype.%02x\n",hexstr,wipstr,addrtype);
+    printf("-> (%s) -> wif.(%s) addrtype.%02x\n",hexstr,wifstr,addrtype);
     return(0);
 }
 
-int32_t btc_wip2priv(uint8_t privkey[32],char *wipstr)
+int32_t btc_wif2priv(uint8_t *addrtypep,uint8_t privkey[32],char *wifstr)
 {
-    uint8_t addrtype; cstring *cstr; int32_t len = -1;
-    if ( (cstr= base58_decode_check(&addrtype,(const char *)wipstr)) != 0 )
+    cstring *cstr; int32_t len = -1;
+    if ( (cstr= base58_decode_check(addrtypep,(const char *)wifstr)) != 0 )
     {
         init_hexbytes_noT((void *)privkey,(void *)cstr->str,cstr->len);
         if ( cstr->str[cstr->len-1] == 0x01 )
@@ -659,17 +663,17 @@ int32_t btc_wip2priv(uint8_t privkey[32],char *wipstr)
         memcpy(privkey,cstr->str,cstr->len);
         len = (int32_t)cstr->len;
         char tmp[138];
-        btc_priv2wip(tmp,privkey,addrtype);
-        printf("addrtype.%02x wipstr.(%llx) len.%d\n",addrtype,*(long long *)privkey,len);
+        btc_priv2wif(tmp,privkey,*addrtypep);
+        printf("addrtype.%02x wifstr.(%llx) len.%d\n",*addrtypep,*(long long *)privkey,len);
         cstr_free(cstr,true);
     }
     return(len);
 }
 
-int32_t btc_setprivkey(struct bp_key *key,char *wipstr)
+int32_t btc_setprivkey(struct bp_key *key,char *wifstr)
 {
-    uint8_t privkey[512]; int32_t len;
-    len = btc_wip2priv(privkey,wipstr);
+    uint8_t privkey[512],privkeytype; int32_t len;
+    len = btc_wif2priv(&privkeytype,privkey,wifstr);
     if ( len < 0 || bp_key_init(key) == 0 || bp_key_secret_set(key,privkey,len) == 0 )
     {
         printf("error setting privkey\n");
@@ -787,6 +791,19 @@ int32_t btc_pub65toaddr(char *coinaddr,uint8_t addrtype,char pubkey[131],uint8_t
         EC_KEY_free(key);
     }
     return(retval);
+}
+
+struct iguana_waddress *iguana_waddresscalc(uint8_t pubtype,uint8_t wiftype,struct iguana_waddress *addr,bits256 privkey)
+{
+    memset(addr,0,sizeof(*addr));
+    addr->privkey = privkey;
+    if ( btc_priv2pub(addr->pubkey,addr->privkey.bytes) == 0 && btc_priv2wif(addr->wifstr,addr->privkey.bytes,wiftype) == 0 && btc_pub2rmd(addr->rmd160,addr->pubkey) == 0 && btc_convrmd160(addr->coinaddr,pubtype,addr->rmd160) == 0 )
+    {
+        addr->wiftype = wiftype;
+        addr->type = pubtype;
+        return(addr);
+    }
+    return(0);
 }
 
 /*char *iguana_txsign(struct iguana_info *coin,struct cointx_info *refT,int32_t redeemi,char *redeemscript,char sigs[][256],int32_t n,uint8_t privkey[32],int32_t privkeyind)
@@ -965,8 +982,8 @@ int32_t iguana_scriptgen(struct iguana_info *coin,uint8_t *script,char *asmstr,s
 {
     char coinaddr[65]; uint8_t addrtype; int32_t scriptlen = 0;
     if ( type == IGUANA_SCRIPT_7688AC || type == IGUANA_SCRIPT_76AC )
-        addrtype = coin->chain->pubval;
-    else addrtype = coin->chain->p2shval;
+        addrtype = coin->chain->pubtype;
+    else addrtype = coin->chain->p2shtype;
     btc_convrmd160(coinaddr,addrtype,p->rmd160);
     switch ( type )
     {
@@ -1107,18 +1124,7 @@ if ( bp_key_init(&key) != 0 && bp_key_secret_set(&key,privkey,32) != 0 )
             return(clonestr(hexstr));
         }
 */
-struct iguana_waddress *iguana_waddresscalc(struct iguana_info *coin,struct iguana_waddress *addr,bits256 privkey)
-{
-    memset(addr,0,sizeof(*addr));
-    addr->privkey = privkey;
-    if ( btc_priv2pub(addr->pubkey,addr->privkey.bytes) == 0 && btc_priv2wip(addr->wipstr,addr->privkey.bytes,coin->chain->wipval) == 0 && btc_pub2rmd(addr->rmd160,addr->pubkey) == 0 && btc_convrmd160(addr->coinaddr,coin->chain->pubval,addr->rmd160) == 0 )
-    {
-        addr->wiptype = coin->chain->wipval;
-        addr->type = coin->chain->pubval;
-        return(addr);
-    }
-    return(0);
-}
+
 
 /*static char *validateretstr(struct iguana_info *coin,char *coinaddr)
 {
@@ -1149,7 +1155,7 @@ static char *validatepubkey(RPCARGS)
 char *makekeypair(struct iguana_info *coin)
 {
     struct iguana_waddress addr; char str[67]; cJSON *retjson = cJSON_CreateObject();
-    if ( iguana_waddresscalc(coin,&addr,rand256(1)) == 0 )
+    if ( iguana_waddresscalc(coin->chain->pubtype,coin->chain->wiftype,&addr,rand256(1)) == 0 )
     {
         init_hexbytes_noT(str,addr.pubkey,33);
         jaddstr(retjson,"result",str);
@@ -1163,47 +1169,3 @@ cJSON *iguana_pubkeyjson(struct iguana_info *coin,char *pubkeystr)
     cJSON *json = cJSON_CreateObject();
     return(json);
 }
-
-char *iguana_signmessage(struct supernet_info *myinfo,struct iguana_info *coin,char *address,char *message)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-char *iguana_verifymessage(struct supernet_info *myinfo,struct iguana_info *coin,char *address,char *sig,char *message)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-char *iguana_getnewaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-char *iguana_makekeypair(struct supernet_info *myinfo,struct iguana_info *coin)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-char *iguana_vanitygen(struct supernet_info *myinfo,struct iguana_info *coin,char *vanity)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-char *iguana_validatepubkey(struct supernet_info *myinfo,struct iguana_info *coin,char *pubkey)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-char *iguana_createmultisig(struct supernet_info *myinfo,struct iguana_info *coin,int32_t M,cJSON *pubkeys,char *account)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-                            
-                            

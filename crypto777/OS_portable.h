@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2015 The SuperNET Developers.                             *
+ * Copyright © 2014-2016 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -49,10 +49,31 @@
 #include "../includes/uthash.h"
 #include "../includes/curve25519.h"
 #include "../includes/cJSON.h"
+#include "../includes/tweetnacl.h"
 
 #ifndef MAP_FILE
 #define MAP_FILE        0
 #endif
+
+struct huffstream { uint8_t *ptr,*buf; uint32_t bitoffset,maski,endpos; uint32_t allocsize:31,allocated:1; };
+typedef struct huffstream HUFF;
+
+struct ramcoder
+{
+    uint32_t cumulativeProb;
+    uint16_t lower,upper,code,underflowBits,lastsymbol,upper_lastsymbol,counter;
+    uint64_t *histo;
+    uint16_t ranges[];
+};
+
+#define hrewind(hp) hseek(hp,0,SEEK_SET)
+int32_t ramcoder_decoder(struct ramcoder *coder,int32_t updateprobs,uint8_t *buf,int32_t maxlen,HUFF *hp,bits256 *seed);
+int32_t ramcoder_encoder(struct ramcoder *coder,int32_t updateprobs,uint8_t *buf,int32_t len,HUFF *hp,uint64_t *histo,bits256 *seed);
+//int32_t init_ramcoder(struct ramcoder *coder,HUFF *hp,bits256 *seed);
+int32_t ramcoder_decompress(uint8_t *data,int32_t maxlen,uint8_t *bits,uint32_t numbits,bits256 seed);
+int32_t ramcoder_compress(uint8_t *bits,int32_t maxlen,uint8_t *data,int32_t datalen,bits256 seed);
+uint64_t hconv_bitlen(uint64_t bitlen);
+void _init_HUFF(HUFF *hp,int32_t allocsize,void *buf);
 
 #define SCRIPT_OPRETURN 0x6a
 #define GENESIS_ACCT "1739068987193023818"  // NXT-MRCC-2YLS-8M54-3CMAJ
@@ -119,7 +140,9 @@ int32_t taidate_mjd(struct taidate cd);
 uint64_t tai2utime(struct tai t);
 struct tai taitime2tai(struct taitime ct);
 char *tai_str(char *str,struct tai t);
-char *utc_str(char *str,struct tai t);
+char *utc_str(char *str,uint32_t utc);
+double tai_diff(struct tai reftai,struct tai cmptai);
+uint32_t OS_conv_utime(char *utime);
 
 //int32_t msync(void *addr,size_t len,int32_t flags);
 
@@ -147,7 +170,6 @@ int32_t OS_portable_removefile(char *fname);
 void *OS_portable_mapfile(char *fname,long *filesizep,int32_t enablewrite);
 int32_t OS_portable_syncmap(struct OS_mappedptr *mp,long len);
 void *OS_portable_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long origsize);
-
 
 int32_t is_DST(int32_t datenum);
 int32_t extract_datenum(int32_t *yearp,int32_t *monthp,int32_t *dayp,int32_t datenum);
@@ -177,8 +199,8 @@ int32_t OS_openmap(struct OS_mappedptr *mp);
 void *OS_mappedptr(void **ptrp,struct OS_mappedptr *mp,uint64_t allocsize,int32_t rwflag,char *fname);
 void *OS_filealloc(struct OS_mappedptr *M,char *fname,struct OS_memspace *mem,long size);
 void *OS_mapfile(char *fname,long *filesizep,int32_t enablewrite);
-void *OS_loadfile(char *fname,char **bufp,int64_t *lenp,int64_t *allocsizep);
-void *OS_filestr(int64_t *allocsizep,char *fname);
+void *OS_loadfile(char *fname,char **bufp,long *lenp,long *allocsizep);
+void *OS_filestr(long *allocsizep,char *fname);
 
 int32_t OS_syncmap(struct OS_mappedptr *mp,long len);
 void *OS_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long origsize);
@@ -205,7 +227,6 @@ void *iguana_meminit(struct OS_memspace *mem,char *name,void *ptr,int64_t totals
 void *iguana_memalloc(struct OS_memspace *mem,long size,int32_t clearflag);
 int64_t iguana_memfree(struct OS_memspace *mem,void *ptr,int32_t size);
 
-
 // generic functions
 int32_t unhex(char c);
 void touppercase(char *str);
@@ -221,6 +242,9 @@ int32_t is_hexstr(char *str,int32_t n);
 int32_t decode_hex(unsigned char *bytes,int32_t n,char *hex);
 void reverse_hexstr(char *str);
 int32_t init_hexbytes_noT(char *hexbytes,uint8_t *message,long len);
+uint16_t parse_ipaddr(char *ipaddr,char *ip_port);
+int32_t bitweight(uint64_t x);
+unsigned char _decode_hex(char *hex);
 
 long _stripwhite(char *buf,int accept);
 int32_t is_DST(int32_t datenum);
@@ -278,6 +302,8 @@ void calc_NXTaddr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void calc_curve25519_str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void calc_base64_encodestr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void calc_base64_decodestr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
+void calc_hexstr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
+void calc_unhexstr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 
 uint64_t calc_ipbits(char *ip_port);
 void expand_ipbits(char *ipaddr,uint64_t ipbits);
@@ -308,8 +334,12 @@ bits256 bits256_add(bits256 a,bits256 b);
 int32_t bits256_cmp(bits256 a,bits256 b);
 bits256 bits256_lshift(bits256 x);
 bits256 bits256_from_compact(uint32_t c);
-
+bits256 bits256_conv(char *hexstr);
 int32_t btc_priv2pub(uint8_t pubkey[33],uint8_t privkey[32]);
+
+extern char *Iguana_validcommands[];
+extern bits256 GENESIS_PUBKEY,GENESIS_PRIVKEY;
+extern char NXTAPIURL[];
 
 #endif
 

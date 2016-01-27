@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2015 The SuperNET Developers.                             *
+ * Copyright © 2014-2016 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -19,11 +19,9 @@
 #ifndef crypto777_ramcoder_h
 #define crypto777_ramcoder_h
 #include <stdio.h>
+#include "../crypto777/OS_portable.h"
 #include "../includes/curve25519.h"
 
-struct huffstream { uint8_t *ptr,*buf; uint32_t bitoffset,maski,endpos; uint32_t allocsize:31,allocated:1; };
-typedef struct huffstream HUFF;
-#define hrewind(hp) hseek(hp,0,SEEK_SET)
 
 #define RAMMASK_BIT(x) ((uint16_t)(1 << ((8 * sizeof(uint16_t)) - (1 + (x)))))
 #define RAMCODER_FINALIZE 1
@@ -33,13 +31,6 @@ typedef struct huffstream HUFF;
 #define SETBIT(bits,bitoffset) (((uint8_t *)bits)[(bitoffset) >> 3] |= (1 << ((bitoffset) & 7)))
 #define GETBIT(bits,bitoffset) (((uint8_t *)bits)[(bitoffset) >> 3] & (1 << ((bitoffset) & 7)))
 
-struct ramcoder
-{
-    uint32_t cumulativeProb;
-    uint16_t lower,upper,code,underflowBits,lastsymbol,upper_lastsymbol,counter;
-    uint64_t *histo;
-    uint16_t ranges[];
-};
 int32_t ramcoder_decode(struct ramcoder *coder,int32_t updateprobs,HUFF *hp);
 int32_t ramcoder_decoder(struct ramcoder *coder,int32_t updateprobs,uint8_t *buf,int32_t maxlen,HUFF *hp,bits256 *seed);
 #define ramcoder_encode(val,coder,hp) ramcoder_update(val,coder,1,RAMCODER_PUTBITS,hp)
@@ -49,7 +40,7 @@ int32_t init_ramcoder(struct ramcoder *coder,HUFF *hp,bits256 *seed);
 int32_t ramcoder_emit(HUFF *hp,struct ramcoder *coder,int32_t updateprobs,uint8_t *buf,int32_t len);
 
 int32_t ramcoder_decompress(uint8_t *data,int32_t maxlen,uint8_t *bits,uint32_t numbits,bits256 seed);
-int32_t ramcoder_compress(uint8_t *bits,int32_t maxlen,uint8_t *data,int32_t datalen,uint64_t *histo,bits256 seed);
+int32_t ramcoder_compress(uint8_t *bits,int32_t maxlen,uint8_t *data,int32_t datalen,bits256 seed);
 uint64_t hconv_bitlen(uint64_t bitlen);
 void _init_HUFF(HUFF *hp,int32_t allocsize,void *buf);
 
@@ -132,7 +123,7 @@ int32_t hgetbit(HUFF *hp)
         //fprintf(stderr,"<-%d ",bit);
         return(bit);
     }
-    printf("hgetbit past EOF: %d >= %d\n",hp->bitoffset,hp->endpos), getchar();
+    //printf("hgetbit past EOF: %d >= %d\n",hp->bitoffset,hp->endpos);//, getchar();
     return(-1);
 }
 
@@ -439,11 +430,11 @@ int32_t ramcoder_decoder(struct ramcoder *coder,int32_t updateprobs,uint8_t *buf
     return(n);
 }
 
-int32_t ramcoder_compress(uint8_t *bits,int32_t maxlen,uint8_t *data,int32_t datalen,uint64_t *histo,bits256 seed)
+int32_t ramcoder_compress(uint8_t *bits,int32_t maxlen,uint8_t *data,int32_t datalen,bits256 seed)
 {
     int32_t numbits; HUFF H,*hp = &H;
     _init_HUFF(hp,maxlen,bits);
-    if ( ramcoder_encoder(0,1,data,datalen,hp,histo,&seed) < 0 )
+    if ( ramcoder_encoder(0,1,data,datalen,hp,0,&seed) < 0 )
         return(-1);
     numbits = hp->bitoffset;
     if ( 0 )

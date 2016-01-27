@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2015 The SuperNET Developers.                             *
+ * Copyright © 2014-2016 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -62,13 +62,13 @@ int32_t iguana_addressvalidate(struct iguana_info *coin,char *coinaddr)
 char *getnewaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
 {
     struct iguana_waddress addr; char str[67]; cJSON *retjson = cJSON_CreateObject();
-    if ( iguana_waddresscalc(coin,&addr,rand256(1)) == 0 )
+    if ( iguana_waddresscalc(coin->chain->pubtype,coin->chain->wiftype,&addr,rand256(1)) == 0 )
     {
         jaddstr(retjson,"result",addr.coinaddr);
         init_hexbytes_noT(str,addr.pubkey,33);
         jaddstr(retjson,"pubkey",str);
         jaddstr(retjson,"privkey",bits256_str(str,addr.privkey));
-        jaddstr(retjson,"wip",addr.wipstr);
+        jaddstr(retjson,"wif",addr.wifstr);
         init_hexbytes_noT(str,addr.rmd160,20);
         jaddstr(retjson,"rmd160",str);
         if ( iguana_waccountadd(coin,account,&addr) < 0 )
@@ -85,7 +85,7 @@ char *getaccountaddress(struct supernet_info *myinfo,struct iguana_info *coin,ch
     {
         if ( (wacct= iguana_waccountfind(coin,account)) == 0 )
         {
-            if ( (waddr= iguana_waddresscalc(coin,&addr,rand256(1))) == 0 )
+            if ( (waddr= iguana_waddresscalc(coin->chain->pubtype,coin->chain->wiftype,&addr,rand256(1))) == 0 )
                 return(clonestr("{\"error\":\"cant generate address\"}"));
             iguana_waccountswitch(coin,account,0,-1,addr.coinaddr);
         }
@@ -94,7 +94,7 @@ char *getaccountaddress(struct supernet_info *myinfo,struct iguana_info *coin,ch
         init_hexbytes_noT(str,addr.pubkey,33);
         jaddstr(retjson,"pubkey",str);
         jaddstr(retjson,"privkey",bits256_str(str,waddr->privkey));
-        jaddstr(retjson,"wip",waddr->wipstr);
+        jaddstr(retjson,"wif",waddr->wifstr);
         init_hexbytes_noT(str,waddr->rmd160,20);
         jaddstr(retjson,"rmd160",str);
         jaddstr(retjson,"account",account);
@@ -112,7 +112,7 @@ char *setaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *acc
             return(clonestr("{\"error\":\"invalid coin address\"}"));
         if ( (wacct= iguana_waddressfind(coin,&ind,coinaddr)) == 0 )
         {
-            if ( (waddr= iguana_waddresscalc(coin,&addr,rand256(1))) == 0 )
+            if ( (waddr= iguana_waddresscalc(coin->chain->pubtype,coin->chain->wiftype,&addr,rand256(1))) == 0 )
                 return(clonestr("{\"error\":\"cant generate address\"}"));
         }
         iguana_waccountswitch(coin,account,wacct,ind,coinaddr);
@@ -164,147 +164,3 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
     }
     return(clonestr("{\"error\":\"need address and amount\"}"));
 }
-
-char *iguana_getreceivedbyaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account,int32_t minconf)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-/*char *iguana_listreceivedbyaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account,int32_t includeempty)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}*/
-
-
-
-char *iguana_getaccountaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-char *iguana_setaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *address,char *account)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-char *iguana_getaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-char *iguana_getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-char *iguana_listaddressgroupings(struct supernet_info *myinfo,struct iguana_info *coin)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-/*char *iguana_getbalance(struct supernet_info *myinfo,struct iguana_info *coin,char *account,int32_t minconf)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-char *iguana_listaccounts(struct supernet_info *myinfo,struct iguana_info *coin,int32_t minconf)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}*/
-
-
-
-char *iguana_move(struct supernet_info *myinfo,struct iguana_info *coin,char *fromaccount,char *toaccount,double amount,int32_t minconf,char *comment)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-char *iguana_sendfrom(struct supernet_info *myinfo,struct iguana_info *coin,char *fromaccount,char *toaddress,double amount,int32_t minconf,char *comment,char *comment2)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-char *iguana_sendmany(struct supernet_info *myinfo,struct iguana_info *coin,char *fromaccount,cJSON *payments,int32_t minconf,char *comment)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-
-char *iguana_dumpprivkey(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-/*char *iguana_importprivkey(struct supernet_info *myinfo,struct iguana_info *coin,char *wip)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-char *iguana_dumpwallet(struct supernet_info *myinfo,struct iguana_info *coin)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}*/
-
-
-char *iguana_importwallet(struct supernet_info *myinfo,struct iguana_info *coin,char *wallet)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-char *iguana_walletpassphrase(struct supernet_info *myinfo,struct iguana_info *coin,char *passphrase,int32_t timeout)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-char *iguana_walletpassphrasechange(struct supernet_info *myinfo,struct iguana_info *coin,char *oldpassphrase,char *newpassphrase)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-char *iguana_walletlock(struct supernet_info *myinfo,struct iguana_info *coin)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-char *iguana_encryptwallet(struct supernet_info *myinfo,struct iguana_info *coin,char *passphrase)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-char *iguana_checkwallet(struct supernet_info *myinfo,struct iguana_info *coin)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-char *iguana_repairwallet(struct supernet_info *myinfo,struct iguana_info *coin)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-char *iguana_backupwallet(struct supernet_info *myinfo,struct iguana_info *coin,char *filename)
-{
-    return(clonestr("{\"error\":\"notyet\"}"));
-}
-
-
-
-

@@ -62,7 +62,7 @@ static char* cJSON_strdup(const char* str)
     char* copy;
     
     len = strlen(str) + 1;
-    if (!(copy = (char*)cJSON_malloc(len))) return 0;
+    if (!(copy = (char*)cJSON_malloc(len+1))) return 0;
     memcpy(copy,str,len);
     return copy;
 }
@@ -137,7 +137,7 @@ static char *print_number(cJSON *item)
 	}
 	else
 	{
-		str = (char *)cJSON_malloc(64);	/* This is a nice tradeoff. */
+		str = (char *)cJSON_malloc(66);	/* This is a nice tradeoff. */
 		if ( str != 0 )
 		{
 			if ( fabs(floor(d) - d) <= DBL_EPSILON && fabs(d) < 1.0e60 )
@@ -170,15 +170,20 @@ static const char *parse_string(cJSON *item,const char *str)
 	const char *ptr=str+1;char *ptr2;char *out;int32_t len=0;unsigned uc,uc2;
 	if (*str!='\"') {ep=str;return 0;}	/* not a string! */
 	
-	while (*ptr!='\"' && *ptr && ++len) if (*ptr++ == '\\') ptr++;	/* Skip escaped quotes. */
+	while (*ptr!='\"' && *ptr && ++len) if (*ptr++ == '\\') ptr++;	// Skip escaped quotes
 	
-	out=(char*)cJSON_malloc(len+1);	/* This is how long we need for the string, roughly. */
+	out=(char*)cJSON_malloc(len+2);	/* This is how long we need for the string, roughly. */
 	if (!out) return 0;
 	
 	ptr=str+1;ptr2=out;
 	while (*ptr!='\"' && *ptr)
 	{
-		if (*ptr!='\\') *ptr2++=*ptr++;
+		if (*ptr!='\\')
+        {
+            if ( *ptr == '%' && is_hexstr((char *)&ptr[1],2) && isprint(_decode_hex((char *)&ptr[1])) != 0 )
+                *ptr2++ = _decode_hex((char *)&ptr[1]), ptr += 3;
+            else *ptr2++ = *ptr++;
+        }
 		else
 		{
 			ptr++;
@@ -189,16 +194,16 @@ static const char *parse_string(cJSON *item,const char *str)
 				case 'n': *ptr2++='\n';	break;
 				case 'r': *ptr2++='\r';	break;
 				case 't': *ptr2++='\t';	break;
-				case 'u':	 /* transcode utf16 to utf8. */
-					uc=parse_hex4(ptr+1);ptr+=4;	/* get the unicode char. */
+				case 'u':	 // transcode utf16 to utf8
+					uc=parse_hex4(ptr+1);ptr+=4;	// get the unicode char
                     
-					if ((uc>=0xDC00 && uc<=0xDFFF) || uc==0)	break;	/* check for invalid.	*/
+					if ((uc>=0xDC00 && uc<=0xDFFF) || uc==0)	break;	// check for invalid
                     
-					if (uc>=0xD800 && uc<=0xDBFF)	/* UTF16 surrogate pairs.	*/
+					if (uc>=0xD800 && uc<=0xDBFF)	// UTF16 surrogate pairs
 					{
-						if (ptr[1]!='\\' || ptr[2]!='u')	break;	/* missing second-half of surrogate.	*/
+						if (ptr[1]!='\\' || ptr[2]!='u')	break;	// missing second-half of surrogate.
 						uc2=parse_hex4(ptr+3);ptr+=6;
-						if (uc2<0xDC00 || uc2>0xDFFF)		break;	/* invalid second-half of surrogate.	*/
+						if (uc2<0xDC00 || uc2>0xDFFF)		break;	// invalid second-half of surrogate
 						uc=0x10000 + (((uc&0x3FF)<<10) | (uc2&0x3FF));
 					}
                     
@@ -232,7 +237,7 @@ static char *print_string_ptr(const char *str)
 	if (!str) return cJSON_strdup("");
 	ptr=str;while ((token=*ptr) && ++len) {if (strchr("\"\\\b\f\n\r\t",token)) len++; else if (token<32) len+=5;ptr++;}
 	
-	out=(char*)cJSON_malloc(len+3);
+	out=(char*)cJSON_malloc(len+3+1);
 	if (!out) return 0;
     
 	ptr2=out;ptr=str;
@@ -376,12 +381,12 @@ static char *print_array(cJSON *item,int32_t depth,int32_t fmt)
 	/* Explicitly handle numentries==0 */
 	if (!numentries)
 	{
-		out=(char*)cJSON_malloc(3);
+		out=(char*)cJSON_malloc(3+1);
 		if (out) strcpy(out,"[]");
 		return out;
 	}
 	/* Allocate an array to hold the values for each */
-	entries=(char**)cJSON_malloc(numentries*sizeof(char*));
+	entries=(char**)cJSON_malloc((1+numentries)*sizeof(char*));
 	if (!entries) return 0;
 	memset(entries,0,numentries*sizeof(char*));
 	/* Retrieve all the results: */
@@ -395,7 +400,7 @@ static char *print_array(cJSON *item,int32_t depth,int32_t fmt)
 	}
 	
 	/* If we didn't fail, try to malloc the output string */
-	if (!fail) out=(char*)cJSON_malloc(len);
+	if (!fail) out=(char*)cJSON_malloc(len+1);
 	/* If that fails, we fail. */
 	if (!out) fail=1;
     
@@ -469,7 +474,7 @@ static char *print_object(cJSON *item,int32_t depth,int32_t fmt)
 	/* Explicitly handle empty object case */
 	if (!numentries)
 	{
-		out=(char*)cJSON_malloc(fmt?depth+4:3);
+		out=(char*)cJSON_malloc(fmt?depth+4+1:3+1);
 		if (!out)	return 0;
 		ptr=out;*ptr++='{';
 		if (fmt) {*ptr++='\n';for (i=0;i<depth-1;i++) *ptr++='\t';}
@@ -495,7 +500,7 @@ static char *print_object(cJSON *item,int32_t depth,int32_t fmt)
 	}
 	
 	/* Try to allocate the output string */
-	if (!fail) out=(char*)cJSON_malloc(len);
+	if (!fail) out=(char*)cJSON_malloc(len+1);
 	if (!out) fail=1;
     
 	/* Handle failure */
@@ -526,7 +531,7 @@ static char *print_object(cJSON *item,int32_t depth,int32_t fmt)
 }
 
 /* Get Array size/item / object item. */
-int32_t    cJSON_GetArraySize(cJSON *array)							{cJSON *c=array->child;int32_t i=0;while(c)i++,c=c->next;return i;}
+int32_t    cJSON_GetArraySize(cJSON *array)							{cJSON *c; if ( array == 0 ) return(0); c=array->child;int32_t i=0;while(c)i++,c=c->next;return i;}
 cJSON *cJSON_GetArrayItem(cJSON *array,int32_t item)				{cJSON *c=array->child;  while (c && item>0) item--,c=c->next; return c;}
 cJSON *cJSON_GetObjectItem(cJSON *object,const char *string)	{cJSON *c=object->child; while (c && cJSON_strcasecmp(c->string,string)) c=c->next; return c;}
 
@@ -616,7 +621,7 @@ void cJSON_Minify(char *json)
 
 // the following written by jl777
 /******************************************************************************
- * Copyright © 2014-2015 The SuperNET Developers.                             *
+ * Copyright © 2014-2016 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -798,15 +803,15 @@ char *cJSON_str(cJSON *json)
     return(0);
 }
 
-void jadd(cJSON *json,char *field,cJSON *item) { cJSON_AddItemToObject(json,field,item); }
-void jaddstr(cJSON *json,char *field,char *str) { cJSON_AddItemToObject(json,field,cJSON_CreateString(str)); }
-void jaddnum(cJSON *json,char *field,double num) { cJSON_AddItemToObject(json,field,cJSON_CreateNumber(num)); }
+void jadd(cJSON *json,char *field,cJSON *item) { if ( json != 0 )cJSON_AddItemToObject(json,field,item); }
+void jaddstr(cJSON *json,char *field,char *str) { if ( json != 0 && str != 0 ) cJSON_AddItemToObject(json,field,cJSON_CreateString(str)); }
+void jaddnum(cJSON *json,char *field,double num) { if ( json != 0 )cJSON_AddItemToObject(json,field,cJSON_CreateNumber(num)); }
 void jadd64bits(cJSON *json,char *field,uint64_t nxt64bits) { char numstr[64]; sprintf(numstr,"%llu",(long long)nxt64bits), jaddstr(json,field,numstr); }
-void jaddi(cJSON *json,cJSON *item) { cJSON_AddItemToArray(json,item); }
-void jaddistr(cJSON *json,char *str) { cJSON_AddItemToArray(json,cJSON_CreateString(str)); }
-void jaddinum(cJSON *json,double num) { cJSON_AddItemToArray(json,cJSON_CreateNumber(num)); }
+void jaddi(cJSON *json,cJSON *item) { if ( json != 0 ) cJSON_AddItemToArray(json,item); }
+void jaddistr(cJSON *json,char *str) { if ( json != 0 ) cJSON_AddItemToArray(json,cJSON_CreateString(str)); }
+void jaddinum(cJSON *json,double num) { if ( json != 0 ) cJSON_AddItemToArray(json,cJSON_CreateNumber(num)); }
 void jaddi64bits(cJSON *json,uint64_t nxt64bits) { char numstr[64]; sprintf(numstr,"%llu",(long long)nxt64bits), jaddistr(json,numstr); }
-char *jstr(cJSON *json,char *field) { if ( field == 0 ) return(cJSON_str(json)); return(cJSON_str(cJSON_GetObjectItem(json,field))); }
+char *jstr(cJSON *json,char *field) { if ( json == 0 ) return(0); if ( field == 0 ) return(cJSON_str(json)); return(cJSON_str(cJSON_GetObjectItem(json,field))); }
 
 char *jstri(cJSON *json,int32_t i) { return(cJSON_str(cJSON_GetArrayItem(json,i))); }
 char *jprint(cJSON *json,int32_t freeflag) { char *str; if ( json == 0 ) return(clonestr("{}")); str = cJSON_Print(json), _stripwhite(str,' '); if ( freeflag != 0 ) free_json(json); return(str); }

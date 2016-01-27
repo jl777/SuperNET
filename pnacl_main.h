@@ -24,7 +24,7 @@ void PNACL_message(const char* format, ...);
 #endif
 
 void OS_init();
-void *OS_filestr(int64_t *allocsizep,char *fname);
+void *OS_filestr(long *allocsizep,char *fname);
 char *clonestr(char *);
 
 void CHROMEAPP_MAIN(void *arg);
@@ -143,6 +143,20 @@ struct PP_Var GetDictVar(struct PP_Var dict, const char* key)
 }
 
 void PNACL_message(const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+#ifdef __PNACL
+    struct PP_Var var;
+    var = VprintfToVar(format, args);
+    g_ppb_messaging->PostMessage(g_instance, var);
+    g_ppb_var->Release(var);
+#else
+    printf(format,args);
+#endif
+    va_end(args);
+}
+void PostMessage(const char* format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -326,7 +340,7 @@ static PP_Bool Instance_DidCreate(PP_Instance instance,uint32_t argc,const char*
     int nacl_io_init_ppapi(PP_Instance instance, PPB_GetInterface get_interface);
     static pthread_t g_handle_message_thread;
     static pthread_t chromeapp_thread;
-    int64_t allocsize;
+    long allocsize;
     g_instance = instance;
     // By default, nacl_io mounts / to pass through to the original NaCl
     // filesystem (which doesn't do much). Let's remount it to a memfs
@@ -626,6 +640,7 @@ PSMainFunc_t PSUserMainGet()
 {
     return(example_main);
 }
+
 #else
 int main(int argc, const char * argv[])
 {

@@ -1,29 +1,44 @@
 
-#define IGUANA_ARGS struct supernet_info *myinfo,struct iguana_info *coin
-#define IGUANA_CFUNC0(name) char *iguana_ ## name(IGUANA_ARGS)
-#define IGUANA_CFUNC_S(name,str) char *iguana_ ## name(IGUANA_ARGS,char *str)
-#define IGUANA_CFUNC_I(name,val) char *iguana_ ## name(IGUANA_ARGS,int32_t val)
-#define IGUANA_CFUNC_SA(name,str,array) char *iguana_ ## name(IGUANA_ARGS,char *str,cJSON *array)
-#define IGUANA_CFUNC_AA(name,array,array2) char *iguana_ ## name(IGUANA_ARGS,cJSON *array,cJSON *array2)
-#define IGUANA_CFUNC_SAA(name,str,array,array2) char *iguana_ ## name(IGUANA_ARGS,char *str,cJSON *array,cJSON *array2)
-#define IGUANA_CFUNC_IA(name,val,array) char *iguana_ ## name(IGUANA_ARGS,int32_t val,cJSON *array)
-#define IGUANA_CFUNC_IAS(name,val,array,str) char *iguana_ ## name(IGUANA_ARGS,int32_t val,cJSON *array,char *str)
-#define IGUANA_CFUNC_II(name,val,val2) char *iguana_ ## name(IGUANA_ARGS,int32_t val,int32_t val2)
-#define IGUANA_CFUNC_III(name,val,val2,val3) char *iguana_ ## name(IGUANA_ARGS,int32_t val,int32_t val2,int32_t val3)
-#define IGUANA_CFUNC_SIII(name,str,val,val2,val3) char *iguana_ ## name(IGUANA_ARGS,char *str,int32_t val,int32_t val2,int32_t val3)
-#define IGUANA_CFUNC_IIA(name,val,val2,array) char *iguana_ ## name(IGUANA_ARGS,int32_t val,int32_t val2,cJSON *array)
-#define IGUANA_CFUNC_SS(name,str,str2) char *iguana_ ## name(IGUANA_ARGS,char *str,char *str2)
-#define IGUANA_CFUNC_SSI(name,str,str2,val) char *iguana_ ## name(IGUANA_ARGS,char *str,char *str2,int32_t val)
-#define IGUANA_CFUNC_SSS(name,str,str2,str3) char *iguana_ ## name(IGUANA_ARGS,char *str,char *str2,char *str3)
-#define IGUANA_CFUNC_SI(name,str,val) char *iguana_ ## name(IGUANA_ARGS,char *str,int32_t val)
-#define IGUANA_CFUNC_SII(name,str,val,val2) char *iguana_ ## name(IGUANA_ARGS,char *str,int32_t val,int32_t val2)
-#define IGUANA_CFUNC_HI(name,hash,val) char *iguana_ ## name(IGUANA_ARGS,bits256 hash,int32_t val)
-#define IGUANA_CFUNC_HII(name,hash,val,val2) char *iguana_ ## name(IGUANA_ARGS,bits256 hash,int32_t val,int32_t val2)
-#define IGUANA_CFUNC_D(name,val) char *iguana_ ## name(IGUANA_ARGS,double val)
-#define IGUANA_CFUNC_SSDIS(name,str,str2,amount,val,str3) char *iguana_ ## name(IGUANA_ARGS,char *str,char *str2,double amount,int32_t val,char *str3)
-#define IGUANA_CFUNC_SSDISS(name,str,str2,amount,val,str3,str4) char *iguana_ ## name(IGUANA_ARGS,char *str,char *str2,double amount,int32_t val,char *str3,char *str4)
-#define IGUANA_CFUNC_SAIS(name,str,array,val,str2) char *iguana_ ## name(IGUANA_ARGS,char *str,cJSON *array,int32_t val,char *str2)
-#define IGUANA_CFUNC_SDSS(name,str,amount,str2,str3) char *iguana_ ## name(IGUANA_ARGS,char *str,double amount,char *str2,char *str3)
+#define IGUANA_CALLARGS myinfo,coin,json,remoteaddr
+#define IGUANA_ARGS struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr
+#define IGUANA_CFUNC0(agent,name) char *agent ## _ ## name(IGUANA_ARGS)
+#define IGUANA_CFUNC_S(agent,name,str) char *agent ## _ ## name(IGUANA_ARGS,char *str)
+#define IGUANA_CFUNC_I(agent,name,val) char *agent ## _ ## name(IGUANA_ARGS,int32_t val)
+#define IGUANA_CFUNC_SA(agent,name,str,array) char *agent ## _ ## name(IGUANA_ARGS,char *str,cJSON *array)
+#define IGUANA_CFUNC_AA(agent,name,array,array2) char *agent ## _ ## name(IGUANA_ARGS,cJSON *array,cJSON *array2)
+#define IGUANA_CFUNC_SAA(agent,name,str,array,array2) char *agent ## _ ## name(IGUANA_ARGS,char *str,cJSON *array,cJSON *array2)
+
+#define IGUANA_CFUNC_64A(agent,name,j64,array) char *agent ## _ ## name(IGUANA_ARGS,uint64_t j64,cJSON *array)
+
+
+#define IGUANA_CFUNC_IA(agent,name,val,array) char *agent ## _ ## name(IGUANA_ARGS,int32_t val,cJSON *array)
+#define IGUANA_CFUNC_IAS(agent,name,val,array,str) char *agent ## _ ## name(IGUANA_ARGS,int32_t val,cJSON *array,char *str)
+#define IGUANA_CFUNC_II(agent,name,val,val2) char *agent ## _ ## name(IGUANA_ARGS,int32_t val,int32_t val2)
+#define IGUANA_CFUNC_III(agent,name,val,val2,val3) char *agent ## _ ## name(IGUANA_ARGS,int32_t val,int32_t val2,int32_t val3)
+#define IGUANA_CFUNC_SIII(agent,name,str,val,val2,val3) char *agent ## _ ## name(IGUANA_ARGS,char *str,int32_t val,int32_t val2,int32_t val3)
+#define IGUANA_CFUNC_IIA(agent,name,val,val2,array) char *agent ## _ ## name(IGUANA_ARGS,int32_t val,int32_t val2,cJSON *array)
+#define IGUANA_CFUNC_SS(agent,name,str,str2) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2)
+#define IGUANA_CFUNC_SSI(agent,name,str,str2,val) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,int32_t val)
+#define IGUANA_CFUNC_SSH(agent,name,str,str2,hash) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,bits256 hash)
+#define IGUANA_CFUNC_SSHI(agent,name,str,str2,hash,val) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,bits256 hash,int32_t val)
+#define IGUANA_CFUNC_SSHII(agent,name,str,str2,hash,val,val2) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,bits256 hash,int32_t val,int32_t val2)
+#define IGUANA_CFUNC_SSHHII(agent,name,str,str2,hash,hash2,val,val2) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,bits256 hash,bits256 hash2,int32_t val,int32_t val2)
+#define IGUANA_CFUNC_SSS(agent,name,str,str2,str3) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,char *str3)
+#define IGUANA_CFUNC_SI(agent,name,str,val) char *agent ## _ ## name(IGUANA_ARGS,char *str,int32_t val)
+#define IGUANA_CFUNC_SII(agent,name,str,val,val2) char *agent ## _ ## name(IGUANA_ARGS,char *str,int32_t val,int32_t val2)
+#define IGUANA_CFUNC_HI(agent,name,hash,val) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,int32_t val)
+#define IGUANA_CFUNC_H(agent,name,hash) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash)
+#define IGUANA_CFUNC_HS(agent,name,hash,str) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,char *str)
+#define IGUANA_CFUNC_HA(agent,name,hash,array) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,cJSON *array)
+#define IGUANA_CFUNC_HH(agent,name,hash,hash2) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,bits256 hash2)
+#define IGUANA_CFUNC_HHS(agent,name,hash,hash2,str) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,bits256 hash2,char *str)
+#define IGUANA_CFUNC_HAS(agent,name,hash,array,str) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,cJSON *array,char *str)
+#define IGUANA_CFUNC_HII(agent,name,hash,val,val2) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,int32_t val,int32_t val2)
+#define IGUANA_CFUNC_D(agent,name,val) char *agent ## _ ## name(IGUANA_ARGS,double val)
+#define IGUANA_CFUNC_SSDIS(agent,name,str,str2,amount,val,str3) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,double amount,int32_t val,char *str3)
+#define IGUANA_CFUNC_SSDISS(agent,name,str,str2,amount,val,str3,str4) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,double amount,int32_t val,char *str3,char *str4)
+#define IGUANA_CFUNC_SAIS(agent,name,str,array,val,str2) char *agent ## _ ## name(IGUANA_ARGS,char *str,cJSON *array,int32_t val,char *str2)
+#define IGUANA_CFUNC_SDSS(agent,name,str,amount,str2,str3) char *agent ## _ ## name(IGUANA_ARGS,char *str,double amount,char *str2,char *str3)
 
 // API functions
 #define ZERO_ARGS IGUANA_CFUNC0
@@ -35,6 +50,8 @@
 #define STRING_AND_INT IGUANA_CFUNC_SI
 #define STRING_AND_TWOINTS IGUANA_CFUNC_SII
 #define HASH_AND_INT IGUANA_CFUNC_HI
+#define HASH_AND_STRING IGUANA_CFUNC_HS
+#define TWOHASHES_AND_STRING IGUANA_CFUNC_HHS
 #define HASH_AND_TWOINTS IGUANA_CFUNC_HII
 #define DOUBLE_ARG IGUANA_CFUNC_D
 #define STRING_AND_ARRAY IGUANA_CFUNC_SA
@@ -49,4 +66,12 @@
 #define TWOINTS_AND_ARRAY IGUANA_CFUNC_IIA
 #define STRING_AND_THREEINTS IGUANA_CFUNC_SIII
 #define TWOSTRINGS_AND_INT IGUANA_CFUNC_SSI
+#define TWOSTRINGS_AND_HASH IGUANA_CFUNC_SSH
+#define TWOSTRINGS_AND_HASH_AND_TWOINTS IGUANA_CFUNC_SSHII
+#define TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS IGUANA_CFUNC_SSHHII
 #define THREE_INTS IGUANA_CFUNC_III
+#define HASH_ARRAY_STRING IGUANA_CFUNC_HAS
+#define U64_AND_ARRAY IGUANA_CFUNC_64A
+#define HASH_ARG IGUANA_CFUNC_H
+#define HASH_AND_ARRAY IGUANA_CFUNC_HA
+#define TWO_HASHES IGUANA_CFUNC_HH

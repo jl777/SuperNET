@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2015 The SuperNET Developers.                             *
+ * Copyright © 2014-2016 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -54,13 +54,9 @@ int32_t iguana_rwnum(int32_t rwflag,uint8_t *serialized,int32_t len,void *endian
 
 int32_t iguana_validatehdr(struct iguana_msghdr *H)
 {
-    int32_t i,len; char *validcommands[] =
-    {
-        "SuperNET", "version", "verack", "getaddr", "addr", "inv", "getdata", "notfound", "getblocks", "getheaders",
-        "headers", "tx", "block", "mempool", "ping", "pong", "reject", "filterload", "filteradd", "filterclear", "merkleblock", "alert"
-    };
-    for (i=0; i<sizeof(validcommands)/sizeof(*validcommands); i++)
-        if ( strcmp(H->command,validcommands[i]) == 0 )
+    int32_t i,len;
+    for (i=0; Iguana_validcommands[i]!=0&&Iguana_validcommands[i][0]!=0; i++)
+        if ( strcmp(H->command,Iguana_validcommands[i]) == 0 )
         {
             iguana_rwnum(0,H->serdatalen,sizeof(H->serdatalen),(uint32_t *)&len);
             if ( len > IGUANA_MAXPACKETSIZE )
