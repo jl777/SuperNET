@@ -28,7 +28,6 @@
 char *Iguana_validcommands[] =
 {
     "SuperNET", "SuperNETb",
-    "ConnectTo",
     "version", "verack", "getaddr", "addr", "inv", "getdata", "notfound", "getblocks", "getheaders", "headers", "tx", "block", "mempool", "ping", "pong",
     "reject", "filterload", "filteradd", "filterclear", "merkleblock", "alert", ""
 };
@@ -442,6 +441,7 @@ void iguana_main(void *arg)
         jaddbits256(json,"persistent_pub",myinfo->myaddr.persistent);
         compressed = calloc(1,maxsize);
         serialized = calloc(1,maxsize);
+        char *str = jprint(json,0);
         if ( strcmp("confs/iguana.conf",fname) != 0 )
         {
             //sprintf(fname,"confs/iguana.%llu",(long long)wallet2shared.txid);
@@ -451,14 +451,14 @@ void iguana_main(void *arg)
                 printf("save (%s) <- %d\n",fname,complen);
                 if ( (fp= fopen(fname,"wb")) != 0 )
                 {
-                    fwrite(compressed,1,complen,fp);
+                    fwrite(str,1,strlen(str),fp);
+                    //fwrite(compressed,1,complen,fp);
                     fclose(fp);
                 }
             }// else printf("error saving.(%s) json2bits.(%s)\n",fname,jprint(json,0));
         }
         else
         {
-            char *str = jprint(json,0);
             //sprintf(fname,"confs/iguana.conf");
             printf("save (%s) <- (%s)\n",fname,str);
             if ( (fp= fopen(fname,"wb")) != 0 )
@@ -466,8 +466,8 @@ void iguana_main(void *arg)
                 fwrite(str,1,strlen(str),fp);
                 fclose(fp);
             }
-            free(str);
         }
+        free(str);
         free(compressed), free(serialized);
         free_json(json);
     }
@@ -500,7 +500,7 @@ void iguana_main(void *arg)
 #ifdef __APPLE__
         sleep(1);
         char *str;
-        if ( (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"wallet\":\"password\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":0,\"maxpeers\":3,\"newcoin\":\"BTCD\",\"active\":0}"),0)) != 0 )
+        if ( (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"wallet\":\"password\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":129,\"maxpeers\":32,\"newcoin\":\"VPN\",\"active\":0}"),0)) != 0 )
         {
             printf("got.(%s)\n",str);
             free(str);

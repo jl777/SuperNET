@@ -26,7 +26,8 @@ char *iguana_APIrequest(struct iguana_info *coin,bits256 blockhash,bits256 txid,
     {
         for (i=0; i<seconds; i++)
         {
-            iguana_send(coin,0,serialized,len);
+            if ( i == 0 )
+                iguana_send(coin,0,serialized,len);
             if ( coin->APIblockstr != 0 )
             {
                 retstr = coin->APIblockstr;
@@ -39,6 +40,13 @@ char *iguana_APIrequest(struct iguana_info *coin,bits256 blockhash,bits256 txid,
         }
     }
     return(0);
+}
+
+INT_ARG(ramchain,getblockhash,height)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    jaddbits256(retjson,"result",iguana_blockhash(coin,height));
+    return(jprint(retjson,1));
 }
 
 HASH_AND_INT(ramchain,getblock,blockhash,remoteonly)
@@ -66,7 +74,7 @@ HASH_AND_INT(ramchain,getblock,blockhash,remoteonly)
     else
     {
         memset(txid.bytes,0,sizeof(txid));
-        if ( (blockstr= iguana_APIrequest(coin,blockhash,txid,10)) != 0 )
+        if ( (blockstr= iguana_APIrequest(coin,blockhash,txid,5)) != 0 )
         {
             jaddstr(retjson,"result",blockstr);
             free(blockstr);
@@ -97,7 +105,7 @@ HASH_AND_INT(ramchain,getrawtransaction,txid,verbose)
             {
                 int32_t datalen; uint8_t *data; char *blockstr; bits256 blockhash;
                 blockhash = iguana_blockhash(coin,height);
-                if ( (blockstr= iguana_APIrequest(coin,blockhash,txid,10)) != 0 )
+                if ( (blockstr= iguana_APIrequest(coin,blockhash,txid,2)) != 0 )
                 {
                     datalen = (int32_t)(strlen(blockstr) >> 1);
                     data = malloc(datalen);
@@ -117,6 +125,18 @@ HASH_AND_INT(ramchain,getrawtransaction,txid,verbose)
         } else printf("height.%d\n",height);
     }
     return(clonestr("{\"error\":\"cant find txid\"}"));
+}
+
+STRING_ARG(ramchain,decoderawtransaction,rawtx)
+{
+    char *str; uint8_t *data; int32_t datalen; cJSON *retjson = cJSON_CreateObject();
+    datalen = (int32_t)strlen(rawtx) >> 1;
+    data = malloc(datalen);
+    decode_hex(data,datalen,rawtx);
+    if ( (str= iguana_rawtxbytes(coin,retjson,data,datalen)) != 0 )
+        free(str);
+    free(data);
+    return(jprint(retjson,1));
 }
 
 HASH_ARG(ramchain,gettransaction,txid)
@@ -196,12 +216,6 @@ THREE_STRINGS(ramchain,verifymessage,address,sig,message)
 
 // tx
 TWO_ARRAYS(ramchain,createrawtransaction,vins,vouts)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-STRING_ARG(ramchain,decoderawtransaction,rawtx)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));

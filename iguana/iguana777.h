@@ -196,7 +196,19 @@ struct iguana_msgversion
 	char strSubVer[80];
 	uint32_t nStartingHeight;
     uint8_t relayflag;
-};
+} __attribute__((packed));
+
+struct iguana_VPNversion
+{
+	uint32_t nVersion;
+	uint64_t nServices;
+	int64_t nTime;
+	struct iguana_msgaddress addrTo,addrFrom;
+	uint64_t nonce;
+	char strSubVer[80];
+	uint32_t nStartingHeight;
+    uint32_t iVer,v_Network_id; uint16_t wPort; uint8_t bIsGui; uint16_t wCtPort,wPrPort;
+} __attribute__((packed));
 
 struct iguana_msgblockhdr
 {
@@ -484,7 +496,7 @@ void iguana_blockconv(struct iguana_block *dest,struct iguana_msgblock *msg,bits
 int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struct OS_memspace *rawmem,struct OS_memspace *txmem,struct OS_memspace *hashmem,struct iguana_msghdr *H,uint8_t *data,int32_t datalen);
 
 // send message
-int32_t iguana_validatehdr(struct iguana_msghdr *H);
+int32_t iguana_validatehdr(char *symbol,struct iguana_msghdr *H);
 int32_t iguana_sethdr(struct iguana_msghdr *H,const uint8_t netmagic[4],char *command,uint8_t *data,int32_t datalen);
 int32_t iguana_send_version(struct iguana_info *coin,struct iguana_peer *addr,uint64_t myservices);
 int32_t iguana_gentxarray(struct iguana_info *coin,struct OS_memspace *mem,struct iguana_txblock *txblock,int32_t *lenp,uint8_t *data,int32_t datalen);
@@ -707,6 +719,8 @@ cJSON *iguana_txjson(struct iguana_info *coin,struct iguana_txid *tx,int32_t hei
 char *iguana_txscan(struct iguana_info *coin,cJSON *json,uint8_t *data,int32_t recvlen,bits256 txid);
 cJSON *iguana_voutjson(struct iguana_info *coin,struct iguana_msgvout *vout,int32_t txi);
 cJSON *iguana_vinjson(struct iguana_info *coin,struct iguana_msgvin *vin);
+char *iguana_rawtxbytes(struct iguana_info *coin,cJSON *json,uint8_t *data,int32_t datalen);
+int32_t iguana_send_VPNversion(struct iguana_info *coin,struct iguana_peer *addr,uint64_t myservices);
 
 extern queue_t bundlesQ;
 

@@ -688,6 +688,7 @@ STRING_ARG(SuperNET,bitcoinrpc,setcoin)
     {
         strcpy(myinfo->rpcsymbol,setcoin);
         touppercase(myinfo->rpcsymbol);
+        iguana_launchcoin(myinfo->rpcsymbol,json);
         return(clonestr("{\"result\":\"set bitcoin RPC coin\"}"));
     } else return(clonestr("{\"error\":\"bitcoinrpc needs setcoin value\"}"));
 }

@@ -83,8 +83,10 @@ bits256 iguana_genesis(struct iguana_info *coin,struct iguana_chain *chain)
     {
         bits256_str(str,hash2);
         printf("genesis mismatch? calculated %s vs %s\n",str,(char *)chain->genesis_hex);
-        memset(hash2.bytes,0,sizeof(hash2));
-        return(hash2);
+        hash2 = bits256_conv("00000ac7d764e7119da60d3c832b1d4458da9bc9ef9d5dd0d91a15f690a46d99");
+                             
+        //memset(hash2.bytes,0,sizeof(hash2));
+        //return(hash2);
     }
     bits256_str(str,hash2);
     printf("genesis.(%s) len.%d hash.%s\n",chain->genesis_hex,(int32_t)sizeof(msg.H),str);

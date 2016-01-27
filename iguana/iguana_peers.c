@@ -399,7 +399,7 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
         }
     }
     addr->totalsent += len;
-    //printf(" %s sent.%d bytes to %s\n",(char *)&serialized[4],len,addr->ipaddr);// getchar();
+    printf(" %s sent.%d bytes to %s\n",(char *)&serialized[4],len,addr->ipaddr);// getchar();
     return(len);
 }
 
@@ -505,9 +505,9 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
             return;
         {
             iguana_rwnum(0,H.serdatalen,sizeof(H.serdatalen),(uint32_t *)&len);
-            //printf("%08x got.(%s) recvlen.%d from %s | usock.%d ready.%u dead.%u len.%d\n",(uint32_t)addr->ipbits,H.command,recvlen,addr->ipaddr,addr->usock,addr->ready,addr->dead,len);
+            printf("%08x got.(%s) recvlen.%d from %s | usock.%d ready.%u dead.%u len.%d\n",(uint32_t)addr->ipbits,H.command,recvlen,addr->ipaddr,addr->usock,addr->ready,addr->dead,len);
         }
-        if ( (len= iguana_validatehdr(&H)) >= 0 )
+        if ( (len= iguana_validatehdr(coin->symbol,&H)) >= 0 )
         {
             if ( len > 0 )
             {
@@ -528,9 +528,9 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
                 }
             }
             // 79 22 e3 b4 80 07
-            //int32_t i; for (i=0; i<recvlen; i++)
-            //    printf("%02x ",((uint8_t *)buf)[i]);
-            //printf("received data.%d\n",recvlen);
+            int32_t i; for (i=0; i<recvlen; i++)
+                printf("%02x",((uint8_t *)buf)[i]);
+            printf(" received data.%d\n",recvlen);
             iguana_parsebuf(coin,addr,&H,buf,len);
             if ( buf != _buf )
                 myfree(buf,len);
@@ -711,7 +711,7 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
     char checkaddr[64]; uint64_t ipbits; uint32_t now = (uint32_t)time(NULL); int32_t i,n; struct iguana_iAddr *iA;
     if ( ipaddr != 0 )
     {
-        //printf("%p Q possible peer.(%s)\n",coin,ipaddr);
+        printf("%p Q possible peer.%s\n",coin,ipaddr);
         queue_enqueue("possibleQ",&coin->possibleQ,queueitem(ipaddr),1);
         return((uint32_t)time(NULL));
     }
@@ -958,7 +958,10 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     bufsize = IGUANA_MAXPACKETSIZE;
     buf = mycalloc('r',1,bufsize);
     if ( strcmp(coin->symbol,"VPN") == 0 )
-        iguana_send_ConnectTo(coin,addr);
+    {
+        addr->msgcounts.verack++;
+        iguana_send_VPNversion(coin,addr,coin->myservices);
+    }
     else
     {
         iguana_send_version(coin,addr,coin->myservices);

@@ -316,7 +316,7 @@ void SaM_PrepareIndices();
 struct iguana_msghdr { uint8_t netmagic[4]; char command[12]; uint8_t serdatalen[4],hash[4]; } __attribute__((packed));
 
 int32_t iguana_rwnum(int32_t rwflag,uint8_t *serialized,int32_t len,void *endianedp);
-int32_t iguana_validatehdr(struct iguana_msghdr *H);
+int32_t iguana_validatehdr(char *symbol,struct iguana_msghdr *H);
 int32_t iguana_rwbignum(int32_t rwflag,uint8_t *serialized,int32_t len,uint8_t *endianedp);
 int32_t iguana_sethdr(struct iguana_msghdr *H,const uint8_t netmagic[4],char *command,uint8_t *data,int32_t datalen);
 uint8_t *iguana_varint16(int32_t rwflag,uint8_t *serialized,uint16_t *varint16p);

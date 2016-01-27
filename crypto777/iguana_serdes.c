@@ -52,18 +52,22 @@ int32_t iguana_rwnum(int32_t rwflag,uint8_t *serialized,int32_t len,void *endian
     return(len);
 }
 
-int32_t iguana_validatehdr(struct iguana_msghdr *H)
+int32_t iguana_validatehdr(char *symbol,struct iguana_msghdr *H)
 {
-    int32_t i,len;
-    for (i=0; Iguana_validcommands[i]!=0&&Iguana_validcommands[i][0]!=0; i++)
-        if ( strcmp(H->command,Iguana_validcommands[i]) == 0 )
-        {
-            iguana_rwnum(0,H->serdatalen,sizeof(H->serdatalen),(uint32_t *)&len);
-            if ( len > IGUANA_MAXPACKETSIZE )
-                return(-1);
-            return(len);
-        }
-    return(-1);
+    int32_t i = 0,len = -1;
+    if ( strcmp(symbol,"VPN") != 0 )
+    {
+        for (i=0; Iguana_validcommands[i]!=0&&Iguana_validcommands[i][0]!=0; i++)
+            if ( strcmp(H->command,Iguana_validcommands[i]) == 0 )
+                break;
+    }
+    if ( Iguana_validcommands[i][0] != 0 )
+    {
+        iguana_rwnum(0,H->serdatalen,sizeof(H->serdatalen),(uint32_t *)&len);
+        if ( len > IGUANA_MAXPACKETSIZE )
+            return(-1);
+    }
+    return(len);
 }
 
 int32_t iguana_rwbignum(int32_t rwflag,uint8_t *serialized,int32_t len,uint8_t *endianedp)

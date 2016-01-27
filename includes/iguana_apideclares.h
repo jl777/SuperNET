@@ -14,6 +14,7 @@
  ******************************************************************************/
 
 STRING_ARG(SuperNET,bitcoinrpc,setcoin);
+INT_ARG(ramchain,getblockhash,height);
 HASH_AND_INT(ramchain,getblock,blockhash,remoteonly);
 HASH_AND_INT(ramchain,getrawtransaction,txid,verbose);
 HASH_ARG(ramchain,gettransaction,txid);
