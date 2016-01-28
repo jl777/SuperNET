@@ -528,9 +528,9 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
                 }
             }
             // 79 22 e3 b4 80 07
-            int32_t i; for (i=0; i<recvlen; i++)
-                printf("%02x",((uint8_t *)buf)[i]);
-            printf(" received data.%d\n",recvlen);
+            //int32_t i; for (i=0; i<recvlen; i++)
+            //    printf("%02x",((uint8_t *)buf)[i]);
+            //printf(" received data.%d\n",recvlen);
             iguana_parsebuf(coin,addr,&H,buf,len);
             if ( buf != _buf )
                 myfree(buf,len);
