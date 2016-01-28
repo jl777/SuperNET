@@ -523,7 +523,10 @@ TWO_STRINGS(iguana,addnode,activecoin,ipaddr)
     {
         iguana_possible_peer(coin,ipaddr);
         return(clonestr("{\"result\":\"addnode submitted\"}"));
-    } else return(clonestr("{\"error\":\"addnode needs ipaddr\"}"));
+    }
+    else if ( coin == 0 )
+        return(clonestr("{\"error\":\"addnode needs active coin, do an addcoin first\"}"));
+    else return(clonestr("{\"error\":\"addnode needs ipaddr\"}"));
 }
 
 TWO_STRINGS(iguana,persistent,activecoin,ipaddr)

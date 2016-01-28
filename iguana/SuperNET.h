@@ -94,13 +94,23 @@ struct supernet_info
     int32_t nnsock,num; struct endpoint eps[];
 };*/
 
+struct category_chain
+{
+    bits256 *weights,*blocks,category_hwm,cchainhash;
+    int32_t hashlen,addrlen,maxblocknum;
+    struct supernet_info *myinfo;
+    void *categoryinfo,*subinfo;
+    int32_t (*blockhash_func)(struct category_chain *cchain,void *blockhashp,void *data,int32_t datalen);
+    bits256 (*stake_func)(struct category_chain *cchain,void *addr,int32_t addrlen);
+    bits256 (*hit_func)(struct category_chain *cchain,int32_t height,void *prevgenerator,void *addr,void *blockhashp);
+    bits256 (*default_func)(struct category_chain *cchain,int32_t func,int32_t height,void *prevgenerator,void *addr,void *blockhashp,bits256 heaviest);
+};
+
 struct category_info
 {
     UT_hash_handle hh; queue_t Q;
     int32_t (*process_func)(struct supernet_info *myinfo,void *data,int32_t datalen,char *remoteaddr);
-    int32_t (*blockhash_func)(void *blockhashp,void *data,int32_t datalen); // returns len of blockhash
-    uint64_t (*hit_func)(struct supernet_info *myinfo,void *categoryinfo,void *subinfo,void *addr,int32_t addrlen);
-    int32_t (*ishwm_func)(struct supernet_info *myinfo,void *categoryinfo,void *subinfo,void *blockhashp,int32_t hashlen,int32_t heighthint,uint64_t hwmwt,uint64_t prevwt,uint64_t hit);
+    struct category_chain *cchain;
     bits256 hash; void *info; struct category_info *sub;
 };
 extern struct category_info *Categories;
@@ -144,6 +154,8 @@ char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr)
 
 char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag,bits256 categoryhash,bits256 subcategory,char *message,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext);
 bits256 calc_categoryhashes(bits256 *subhashp,char *category,char *subcategory);
+struct category_chain *category_chain_functions(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,int32_t hashlen,int32_t addrlen,void *hash_func,void *stake_func,void *hit_func,void *default_func);
+#define category_default_latest() (*cchain->default_func)(cchain,'L',0,0,0,0,zero)
 
 #endif
 

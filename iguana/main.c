@@ -283,15 +283,6 @@ void iguana_main(void *arg)
     struct supernet_info *myinfo;
     int32_t i,len,flag,c; bits256 acct,seed,checkhash,wallethash,walletpub,wallet2shared,wallet2priv,wallet2pub;
     myinfo = SuperNET_MYINFO(0);
-    char str[65]; uint32_t t,s;
-    t = 1409839200;//(uint32_t)time(NULL);
-    for (i=0; i<1; i++)
-    {
-        utc_str(str,t-i);
-        s = OS_conv_utime(str);
-        //if ( s != t-i )
-            printf("t.%u -> %s -> %u diff.[%d]\n",t-i,str,s,(t-i) - s);
-    }
     iguana_chaingenesis(1,1403138561,0x1e0fffff,8359109,bits256_conv("fd1751cc6963d88feca94c0d01da8883852647a37a0a67ce254d62dd8c9d5b2b"));
     iguana_chaingenesis(1,1409839200,0x1e0fffff,64881664,bits256_conv("698a93a1cacd495a7a4fb3864ad8d06ed4421dedbc57f9aaad733ea53b1b5828"));
 
@@ -429,7 +420,7 @@ void iguana_main(void *arg)
     vcalc_sha256(0,acct.bytes,(void *)myinfo->myaddr.persistent.bytes,sizeof(bits256));
     myinfo->myaddr.nxt64bits = acct.txid;
     RS_encode(myinfo->myaddr.NXTADDR,myinfo->myaddr.nxt64bits);
-    char str2[65]; printf("%s %llu %p PRIV.%s PUB.%s persistent.%llx %llx\n",myinfo->myaddr.NXTADDR,(long long)myinfo->myaddr.nxt64bits,&myinfo->privkey,bits256_str(str,myinfo->privkey),bits256_str(str2,myinfo->myaddr.pubkey),(long long)myinfo->persistent_priv.txid,(long long)myinfo->myaddr.persistent.txid);
+    char str[65],str2[65]; printf("%s %llu %p PRIV.%s PUB.%s persistent.%llx %llx\n",myinfo->myaddr.NXTADDR,(long long)myinfo->myaddr.nxt64bits,&myinfo->privkey,bits256_str(str,myinfo->privkey),bits256_str(str2,myinfo->myaddr.pubkey),(long long)myinfo->persistent_priv.txid,(long long)myinfo->myaddr.persistent.txid);
     if ( confstr == 0 )
     {
         uint8_t *compressed,*serialized; int32_t r,complen,maxsize = IGUANA_MAXPACKETSIZE;
@@ -488,6 +479,7 @@ void iguana_main(void *arg)
     pangeahash = calc_categoryhashes(0,"pangea",0);
     category_subscribe(myinfo,pangeahash,GENESIS_PUBKEY);
     category_processfunc(pangeahash,pangea_hexmsg);
+    category_chain_functions(&MYINFO,pangeahash,GENESIS_PUBKEY,sizeof(bits256),sizeof(bits256),0,0,0,0);
     for (i=0; i<IGUANA_NUMHELPERS; i++)
     {
         sprintf(helperstr,"{\"name\":\"helper.%d\"}",i);
