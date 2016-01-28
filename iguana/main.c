@@ -441,6 +441,7 @@ void iguana_main(void *arg)
         jaddbits256(json,"persistent_pub",myinfo->myaddr.persistent);
         compressed = calloc(1,maxsize);
         serialized = calloc(1,maxsize);
+        jadd64bits(json,"rand",rand());
         char *str = jprint(json,0);
         if ( strcmp("confs/iguana.conf",fname) != 0 )
         {
@@ -500,7 +501,7 @@ void iguana_main(void *arg)
 #ifdef __APPLE__
         sleep(1);
         char *str;
-        if ( (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"wallet\":\"password\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":129,\"maxpeers\":32,\"newcoin\":\"VPN\",\"active\":0}"),0)) != 0 )
+        if ( (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"wallet\":\"password\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":0,\"maxpeers\":128,\"newcoin\":\"VPN\",\"active\":1}"),0)) != 0 )
         {
             printf("got.(%s)\n",str);
             free(str);

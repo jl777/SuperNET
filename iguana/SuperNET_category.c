@@ -85,34 +85,124 @@ struct category_info *category_processfunc(bits256 categoryhash,int32_t (*proces
     return(0);
 }
 
-struct category_info *category_blockhashfunc(bits256 categoryhash,bits256 subhash,int32_t (*blockhash_func)(void *blockhashp,void *data,int32_t datalen))
+struct category_chain
+{
+    int32_t hashlen,addrlen;
+    struct supernet_info *myinfo;
+    void *categoryinfo,*subinfo;
+    int32_t (*blockhash_func)(struct category_chain *cchain,void *blockhashp,void *data,int32_t datalen);
+    bits256 (*stake_func)(struct category_chain *cchain,void *addr,int32_t addrlen);
+};
+
+int32_t category_default_blockhash(struct category_chain *cchain,void *blockhashp,void *data,int32_t datalen)
+{
+    bits256 hash;
+    vcalc_sha256(0,hash.bytes,data,datalen);
+    vcalc_sha256(0,blockhashp,hash.bytes,sizeof(hash));
+    return(sizeof(*blockhashp));
+}
+
+bits256 category_default_stake(struct category_chain *cchain,void *addr,int32_t addrlen)
+{
+    bits256 stake;
+    memset(stake.bytes,0,sizeof(stake));
+    stake.txid = ((uint64_t)1 << 63);
+    return(stake);
+}
+
+bits256 catgory_default_hit(struct supernet_info *myinfo,void *categoryinfo,void *subinfo,int32_t height,void *prevgenerator,void *addr,int32_t addrlen,void *blockhashp,int32_t hashlen)
+{
+    bits256 hash; bits256 rawhit,hit;
+    memset(rawhit.bytes,0,sizeof(rawhit));
+    memset(hit.bytes,0,sizeof(hit));
+    vcalc_sha256cat(hash.bytes,prevgenerator,addrlen,addr,addrlen);
+    hit = category_default_stake(*(void **)categoryinfo,addr,addrlen);
+    rawhit.txid = hash.txid % ((uint64_t)1 << 42);
+    if ( rawhit.txid != 0 )
+        hit.txid /= rawhit.txid;
+    return(hit);
+}
+
+// WARNING: toy implementation assumes only one category chain
+bits256 category_default_func(struct supernet_info *myinfo,int32_t func,void *categoryinfo,void *subinfo,int32_t height,void *prevgenerator,void *addr,int32_t addrlen,void *blockhashp,int32_t hashlen,bits256 heaviest)
+{
+    static int maxblocknum; static bits256 *weights,*blocks,category_hwm,zero;
+    if ( hashlen != sizeof(bits256) || addrlen != sizeof(bits256) )
+    {
+        printf("unsupported hashlen.%d or addrlen.%d\n",hashlen,addrlen);
+        return(zero);
+    }
+    if ( height > maxblocknum + (func == 'S') )
+    {
+        printf("error func.%c setting heaviest. skipped %d -> %d?\n",func,maxblocknum,height);
+        return(category_hwm);
+    }
+    if ( func == 'H' )
+        return(category_hwm);
+    else if ( func == 'S' )
+    {
+        category_hwm = heaviest;
+        if ( height > maxblocknum )
+        {
+            weights = realloc(weights,(maxblocknum+1) * sizeof(*weights));
+            blocks = realloc(blocks,(maxblocknum+1) * sizeof(*blocks));
+        }
+        maxblocknum = height;
+        weights[height] = heaviest;
+        if ( blockhashp != 0 )
+            memcpy(&blocks[height],blockhashp,sizeof(blocks[height]));
+    }
+    else if ( func == 'B' )
+    {
+        if ( height <= maxblocknum )
+            return(blocks[height]);
+        else
+        {
+            printf("error: illegal height.%d vs max.%d\n",height,maxblocknum);
+            return(zero);
+        }
+    }
+    else if ( func == 'W' )
+    {
+        if ( height >= 0 && height < maxblocknum )
+            return(weights[height]);
+        else printf("error getting weight for height.%d vs maxblocknum.%d\n",height,maxblocknum);
+    }
+    return(category_hwm);
+}
+
+#define category_default_heaviest() category_default_func(myinfo,'H',categoryinfo,subinfo,0,0,0,0,0,0,zero)
+#define category_default_setheaviest(height,blockhashp,heaviest) category_default_func(myinfo,'S',categoryinfo,subinfo,height,0,0,0,blockhashp,hashlen,zero)
+#define category_default_weight(height) category_default_func(myinfo,'W',categoryinfo,subinfo,height,0,0,0,0,0,zero)
+#define category_default_blockfind(height) category_default_func(myinfo,'B',categoryinfo,subinfo,height,0,0,0,0,0,zero)
+
+int32_t category_default_ishwm(struct supernet_info *myinfo,void *categoryinfo,void *subinfo,int32_t prevheight,void *prevblockhashp,void *blockhashp,int32_t hashlen,void *prevgenerator,void *addr,int32_t addrlen)
+{
+    bits256 checkhash,prevwt,oldhit,hit,heaviest; static bits256 zero;
+    checkhash = category_default_blockfind(prevheight);
+    if ( memcmp(checkhash.bytes,prevblockhashp,hashlen) == 0 )
+    {
+        heaviest = category_default_heaviest();
+        prevwt = category_default_weight(prevheight);
+        oldhit = category_default_weight(prevheight+1);
+        hit = catgory_default_hit(myinfo,categoryinfo,subinfo,prevheight+1,prevgenerator,addr,addrlen,blockhashp,hashlen);
+        if ( hit.txid > oldhit.txid && prevwt.txid+hit.txid > heaviest.txid )
+        {
+            heaviest.txid = (prevwt.txid + hit.txid);
+            category_default_setheaviest(prevheight+1,blockhashp,heaviest);
+            return(prevheight+1);
+        }
+        
+    } else return(-2);
+    return(-1);
+}
+
+struct category_info *category_chain_functions(bits256 categoryhash,bits256 subhash,int32_t (*blockhash_func)(void *blockhashp,void *data,int32_t datalen))
 {
     struct category_info *cat;
     if ( (cat= category_find(categoryhash,subhash)) != 0 )
     {
         cat->blockhash_func = blockhash_func;
-        return(cat);
-    }
-    return(0);
-}
-
-struct category_info *category_hitfunc(bits256 categoryhash,bits256 subhash,uint64_t (*hit_func)(struct supernet_info *myinfo,void *categoryinfo,void *subinfo,void *addr,int32_t addrlen))
-{
-    struct category_info *cat;
-    if ( (cat= category_find(categoryhash,subhash)) != 0 )
-    {
-        cat->hit_func = hit_func;
-        return(cat);
-    }
-    return(0);
-}
-
-struct category_info *category_ishwmfunc(bits256 categoryhash,bits256 subhash,int32_t (*ishwm_func)(struct supernet_info *myinfo,void *categoryinfo,void *subinfo,void *blockhashp,int32_t hashlen,int32_t heighthint,uint64_t hwmwt,uint64_t prevwt,uint64_t hit))
-{
-    struct category_info *cat;
-    if ( (cat= category_find(categoryhash,subhash)) != 0 )
-    {
-        cat->ishwm_func = ishwm_func;
         return(cat);
     }
     return(0);

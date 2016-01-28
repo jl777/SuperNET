@@ -45,7 +45,7 @@ int32_t iguana_rwversion(int32_t rwflag,uint8_t *serialized,struct iguana_msgver
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->nStartingHeight),&msg->nStartingHeight);
     if ( readsize == 117 )
     {
-        uint32_t iVer = 1132,v_Network_id=0; uint16_t wPort=0,wCtPort=0,wPrPort=0; uint8_t bIsGui=0;
+        uint32_t iVer = 1132,v_Network_id=1; uint16_t wPort=1920,wCtPort=0,wPrPort=0; uint8_t bIsGui=0;
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(iVer),&iVer);
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(v_Network_id),&v_Network_id);
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(wPort),&wPort);
@@ -76,6 +76,8 @@ int32_t iguana_rwversion(int32_t rwflag,uint8_t *serialized,struct iguana_msgver
     return(len);
 }
 
+// 06000000996da490f6151ad9d05d9defc99bda58441d2b833c0da69d11e764d7c70a00003378a650b506a66b41097a0b513f2fee899788711bc6643ff976ce6dbb0b620c5f800854ffff0f1e0004de0301010000005e800854010000000000000000000000000000000000000000000000000000000000000000ffffffff03510102ffffffff0100008a5d784563011976a9145166e6e52de58dfacb18670c0030aedcf295233988ac000000000000
+
 int32_t iguana_rwblock(int32_t rwflag,bits256 *hash2p,uint8_t *serialized,struct iguana_msgblock *msg)
 {
     int32_t len = 0; char blockhash[65]; uint64_t x;
@@ -86,7 +88,7 @@ int32_t iguana_rwblock(int32_t rwflag,bits256 *hash2p,uint8_t *serialized,struct
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->H.bits),&msg->H.bits);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->H.nonce),&msg->H.nonce);
     *hash2p = bits256_doublesha256(blockhash,serialized,len);
-    //printf("len.%d: block version.%d timestamp.%u bits.%x nonce.%u prev.(%s) %llx blockhash.(%s) %llx\n",len,msg->H.version,msg->H.timestamp,msg->H.bits,msg->H.nonce,bits256_str(str,msg->H.prev_block),(long long)msg->H.merkle_root.txid,blockhash,(long long)hash2p->txid);
+    char str[65]; printf("len.%d: block version.%d timestamp.%u bits.%x nonce.%u prev.(%s) %llx blockhash.(%s) %llx\n",len,msg->H.version,msg->H.timestamp,msg->H.bits,msg->H.nonce,bits256_str(str,msg->H.prev_block),(long long)msg->H.merkle_root.txid,blockhash,(long long)hash2p->txid);
     if ( rwflag != 0 )
         x = msg->txn_count;
     len += iguana_rwvarint(rwflag,&serialized[len],&x);
@@ -194,7 +196,7 @@ int32_t iguana_send_VPNversion(struct iguana_info *coin,struct iguana_peer *addr
 	msg.nVersion = PROTOCOL_VERSION;
 	msg.nServices = myservices;
 	msg.nTime = (int64_t)time(NULL);
-	msg.nonce = coin->instance_nonce;
+	msg.nonce = 0;//coin->instance_nonce;
 	sprintf(msg.strSubVer,"/Satoshi:0.11.99/");
 	msg.nStartingHeight = coin->blocks.hwmchain.height;
     len = iguana_rwversion(1,&serialized[sizeof(struct iguana_msghdr)],(void *)&msg,addr->ipaddr,117);
