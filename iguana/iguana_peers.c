@@ -711,7 +711,7 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
     char checkaddr[64]; uint64_t ipbits; uint32_t now = (uint32_t)time(NULL); int32_t i,n; struct iguana_iAddr *iA;
     if ( ipaddr != 0 )
     {
-        //printf("%p Q possible peer.%s\n",coin,ipaddr);
+        printf("%p Q possible peer.%s\n",coin,ipaddr);
         queue_enqueue("possibleQ",&coin->possibleQ,queueitem(ipaddr),1);
         return((uint32_t)time(NULL));
     }
