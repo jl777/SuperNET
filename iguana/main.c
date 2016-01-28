@@ -432,7 +432,7 @@ void iguana_main(void *arg)
     char str2[65]; printf("%s %llu %p PRIV.%s PUB.%s persistent.%llx %llx\n",myinfo->myaddr.NXTADDR,(long long)myinfo->myaddr.nxt64bits,&myinfo->privkey,bits256_str(str,myinfo->privkey),bits256_str(str2,myinfo->myaddr.pubkey),(long long)myinfo->persistent_priv.txid,(long long)myinfo->myaddr.persistent.txid);
     if ( confstr == 0 )
     {
-        uint8_t *compressed,*serialized; int32_t complen,maxsize = IGUANA_MAXPACKETSIZE;
+        uint8_t *compressed,*serialized; int32_t r,complen,maxsize = IGUANA_MAXPACKETSIZE;
         json = cJSON_CreateObject();
         jaddstr(json,"agent","SuperNET");
         jaddstr(json,"method","saveconf");
@@ -441,7 +441,8 @@ void iguana_main(void *arg)
         jaddbits256(json,"persistent_pub",myinfo->myaddr.persistent);
         compressed = calloc(1,maxsize);
         serialized = calloc(1,maxsize);
-        jadd64bits(json,"rand",rand());
+        OS_randombytes((void *)&r,sizeof(r));
+        jadd64bits(json,"rand",r);
         char *str = jprint(json,0);
         if ( strcmp("confs/iguana.conf",fname) != 0 )
         {
