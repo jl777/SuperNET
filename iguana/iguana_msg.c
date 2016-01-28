@@ -345,7 +345,7 @@ int32_t iguana_rwvout(int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized
     return(len);
 }
 
-int32_t iguana_rwtx(int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized,struct iguana_msgtx *msg,int32_t maxsize,bits256 *txidp,int32_t hastimestamp)
+int32_t iguana_rwtx(int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized,struct iguana_msgtx *msg,int32_t maxsize,bits256 *txidp,int32_t hastimestamp,int32_t isvpncoin)
 {
     int32_t i,len = 0; uint8_t *txstart = serialized; char txidstr[65];
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
@@ -381,6 +381,13 @@ int32_t iguana_rwtx(int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized,s
         return(-1);
     }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->lock_time),&msg->lock_time);
+    if ( isvpncoin != 0 )
+    {
+        uint16_t ddosflag=0;
+        len += iguana_rwnum(rwflag,&serialized[len],sizeof(ddosflag),&ddosflag);
+        for (; serialized[len]!=0&&len<maxsize; len++) // eat null terminated string
+            ;
+    }
     *txidp = bits256_doublesha256(txidstr,txstart,len);
     msg->allocsize = len;
     return(len);
@@ -564,7 +571,7 @@ int32_t iguana_gentxarray(struct iguana_info *coin,struct OS_memspace *mem,struc
     tx = iguana_memalloc(mem,msg.txn_count*sizeof(*tx),1);
     for (i=numvins=numvouts=0; i<msg.txn_count; i++)
     {
-        if ( (n= iguana_rwtx(0,mem,&data[len],&tx[i],recvlen - len,&tx[i].txid,coin->chain->hastimestamp)) < 0 )
+        if ( (n= iguana_rwtx(0,mem,&data[len],&tx[i],recvlen - len,&tx[i].txid,coin->chain->hastimestamp,strcmp(coin->symbol,"VPN")==0)) < 0 )
             break;
         numvouts += tx[i].tx_out;
         numvins += tx[i].tx_in;
@@ -718,7 +725,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
         struct iguana_msgtx *tx;
         iguana_memreset(rawmem);
         tx = iguana_memalloc(rawmem,sizeof(*tx),1);//mycalloc('u',1,sizeof(*tx));
-        len = iguana_rwtx(0,rawmem,data,tx,recvlen,&tx->txid,coin->chain->hastimestamp);
+        len = iguana_rwtx(0,rawmem,data,tx,recvlen,&tx->txid,coin->chain->hastimestamp,strcmp(coin->symbol,"VPN")==0);
         iguana_gotunconfirmedM(coin,addr,tx,data,recvlen);
         printf("tx recvlen.%d vs len.%d\n",recvlen,len);
         addr->msgcounts.tx++;

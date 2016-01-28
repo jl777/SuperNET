@@ -63,7 +63,7 @@ struct iguana_txdatabits { uint64_t addrind:IGUANA_LOG2MAXPEERS,filecount:10,fpo
 
 #define IGUANA_DEDICATED_THREADS
 #ifdef IGUANA_DEDICATED_THREADS
-#define IGUANA_MAXCONNTHREADS 64
+#define IGUANA_MAXCONNTHREADS 16
 #define IGUANA_MAXSENDTHREADS IGUANA_MAXPEERS
 #define IGUANA_MAXRECVTHREADS IGUANA_MAXPEERS
 #else
@@ -146,10 +146,10 @@ extern int32_t IGUANA_NUMHELPERS;
 #define IGUANA_PEER_READY 3
 #define IGUANA_PEER_KILLED 4
 
-#define CHAIN_BTCD 0
-#define CHAIN_TESTNET3 1
-#define CHAIN_BITCOIN 2
-#define CHAIN_VPN 3
+//#define CHAIN_BTCD 0
+//#define CHAIN_TESTNET3 1
+//#define CHAIN_BITCOIN 2
+//#define CHAIN_VPN 3
 
 #define IGUANA_SEARCHBUNDLE 1
 #define IGUANA_SEARCHNOLAST (IGUANA_SEARCHBUNDLE | 2)
@@ -524,7 +524,7 @@ int32_t iguana_chainextend(struct iguana_info *coin,struct iguana_block *newbloc
 uint64_t iguana_miningreward(struct iguana_info *coin,uint32_t blocknum);
 
 // tx
-int32_t iguana_rwtx(int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized,struct iguana_msgtx *msg,int32_t maxsize,bits256 *txidp,int32_t hastimestamp);
+int32_t iguana_rwtx(int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized,struct iguana_msgtx *msg,int32_t maxsize,bits256 *txidp,int32_t hastimestamp,int32_t isvpncoin);
 void iguana_gottxidsM(struct iguana_info *coin,struct iguana_peer *addr,bits256 *txids,int32_t n);
 void iguana_gotunconfirmedM(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msgtx *tx,uint8_t *data,int32_t datalen);
 void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bits256 *blockhashes,int32_t n);
