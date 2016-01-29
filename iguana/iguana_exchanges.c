@@ -24,7 +24,7 @@ struct exchange_request
     struct queueitem DL;
     cJSON *argjson; char **retstrp;
     double price,volume,hbla,lastbid,lastask,commission;
-    uint64_t orderid; uint32_t timedout;
+    uint64_t orderid; uint32_t timedout,expiration;
     int32_t dir,depth,func,numbids,numasks;
     char base[32],rel[32],destaddr[64],invert,allflag,dotrade;
     struct exchange_quote bidasks[];
@@ -474,7 +474,8 @@ char *exchanges777_process(struct exchange_info *exchange,int32_t *retvalp,struc
 
 void exchanges777_loop(void *ptr)
 {
-    int32_t flag,retval; struct exchange_request *req; char *retstr; struct exchange_info *exchange = ptr;
+    struct exchange_info *exchange = ptr;
+    int32_t flag,retval; struct exchange_request *req; char *retstr; void *bot;
     while ( 1 )
     {
         flag = retval = 0;
@@ -511,6 +512,8 @@ void exchanges777_loop(void *ptr)
                 }
             }
         }
+        if ( (bot= queue_dequeue(&exchange->tradebotsQ,0)) != 0 )
+            tradebot_timeslice(exchange,bot);
         if ( flag == 0 && time(NULL) > exchange->lastpoll+exchange->pollgap )
         {
             if ( (req= queue_dequeue(&exchange->pricesQ,0)) != 0 )
@@ -668,6 +671,7 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
     exchange->issue = funcs[i];
     iguana_initQ(&exchange->pricesQ,"prices");
     iguana_initQ(&exchange->requestQ,"request");
+    iguana_initQ(&exchange->tradebotsQ,"tradebots");
     iguana_initQ(&exchange->pendingQ[0],"pending0");
     iguana_initQ(&exchange->pendingQ[1],"pending1");
     exchange->exchangeid = exchangeid;

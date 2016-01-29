@@ -49,7 +49,7 @@ struct exchange_info
     char name[16],apikey[MAX_JSON_FIELD],apisecret[MAX_JSON_FIELD],tradepassword[MAX_JSON_FIELD],userid[MAX_JSON_FIELD];
     uint32_t exchangeid,pollgap,lastpoll;
     uint64_t lastnonce; double commission;
-    CURL *cHandle; queue_t requestQ,pricesQ,pendingQ[2];
+    CURL *cHandle; queue_t requestQ,pricesQ,pendingQ[2],tradebotsQ;
 };
 
 void *curl_post(void **cHandlep,char *url,char *userpass,char *postfields,char *hdr0,char *hdr1,char *hdr2,char *hdr3);
@@ -58,6 +58,8 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,cJSON *argjson,char *cmdst
 char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,int32_t maxseconds,int32_t allfields,int32_t depth,cJSON *argjson,int32_t monitor,double commission);
 struct exchange_info *exchanges777_info(char *exchangestr,int32_t sleepflag,cJSON *json,char *remoteaddr);
 char *exchanges777_unmonitor(struct exchange_info *exchange,char *base,char *rel);
+void tradebot_timeslice(struct exchange_info *exchange,void *bot);
+char *exchanges777_Qtrade(struct exchange_info *exchange,char *base,char *rel,int32_t maxseconds,int32_t dotrade,int32_t dir,double price,double volume,cJSON *argjson);
 
 void prices777_processprice(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth);
 #endif

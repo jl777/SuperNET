@@ -42,6 +42,10 @@ TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,confirm,reference,message,basetx
 
 THREE_STRINGS_AND_DOUBLE(tradebot,monitor,exchange,base,rel,commission);
 THREE_STRINGS(tradebot,unmonitor,exchange,base,rel);
+TWO_STRINGS(tradebot,status,exchange,botid);
+TWO_STRINGS(tradebot,pause,exchange,botid);
+TWO_STRINGS(tradebot,stop,exchange,botid);
+TWO_STRINGS(tradebot,resume,exchange,botid);
 THREE_STRINGS_AND_THREE_DOUBLES(tradebot,accumulate,exchange,base,rel,price,volume,duration);
 THREE_STRINGS_AND_THREE_DOUBLES(tradebot,divest,exchange,base,rel,price,volume,duration);
 
