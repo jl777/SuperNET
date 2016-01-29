@@ -27,13 +27,13 @@
 #define WITHDRAW quadriga ## _withdraw
 #define CHECKBALANCE quadriga ## _checkbalance
 
-double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,cJSON *argjson)
+double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
 {
     char url[1024],lrel[16],lbase[16];
     strcpy(lrel,rel), strcpy(lbase,base);
     tolowercase(lrel), tolowercase(lbase);
     sprintf(url,"https://api.quadrigacx.com/v2/order_book?book=%s_%s",lbase,lrel);
-    return(exchanges777_standardprices(exchange,base,rel,url,quotes,0,0,maxdepth,0));
+    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0));
 }
 
 int32_t SUPPORTS(struct exchange_info *exchange,char *base,char *rel,cJSON *argjson)

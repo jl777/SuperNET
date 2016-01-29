@@ -28,7 +28,7 @@
 #define EXCHANGE_AUTHURL "https://www.okcoin.com/api/v1"
 #define CHECKBALANCE okcoin ## _checkbalance
 
-double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,cJSON *argjson)
+double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
 {
     char url[1024],lrel[16],lbase[16];
     strcpy(lrel,rel), strcpy(lbase,base);
@@ -41,7 +41,7 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
         exit(-1);
         return(0);
     }
-    return(exchanges777_standardprices(exchange,base,rel,url,quotes,0,0,maxdepth,0));
+    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0));
 }
 
 int32_t SUPPORTS(struct exchange_info *exchange,char *base,char *rel,cJSON *argjson)

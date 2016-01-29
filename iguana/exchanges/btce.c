@@ -28,14 +28,14 @@
 #define EXCHANGE_AUTHURL "https://btc-e.com/tapi"
 #define CHECKBALANCE btce ## _checkbalance
 
-double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,cJSON *argjson)
+double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
 {
     char field[64],url[1024],lbase[16],lrel[16];
     strcpy(lrel,rel), strcpy(lbase,base);
     tolowercase(lrel), tolowercase(lbase);
     sprintf(field,"%s_%s",lbase,lrel);
     sprintf(url,"https://btc-e.com/api/3/depth/%s",field);
-    return(exchanges777_standardprices(exchange,base,rel,url,quotes,0,0,maxdepth,field));
+    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,field));
 }
 
 int32_t SUPPORTS(struct exchange_info *exchange,char *base,char *rel,cJSON *argjson)

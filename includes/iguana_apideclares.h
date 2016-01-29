@@ -32,6 +32,18 @@ TWO_STRINGS(InstantDEX,orderstatus,exchange,orderid);
 TWO_STRINGS(InstantDEX,cancelorder,exchange,orderid);
 STRING_ARG(InstantDEX,openorders,exchange);
 STRING_ARG(InstantDEX,tradehistory,exchange);
+STRING_AND_INT(InstantDEX,pollgap,exchange,pollgap);
+
+THREE_STRINGS_AND_DOUBLE(InstantDEX,request,reference,base,rel,volume);
+TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,proposal,reference,message,basetxid,reltxid,duration,flags);
+
+TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,accept,reference,message,basetxid,reltxid,duration,flags);
+TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,confirm,reference,message,basetxid,reltxid,baseheight,relheight);
+
+THREE_STRINGS_AND_DOUBLE(tradebot,monitor,exchange,base,rel,commission);
+THREE_STRINGS(tradebot,unmonitor,exchange,base,rel);
+THREE_STRINGS_AND_THREE_DOUBLES(tradebot,accumulate,exchange,base,rel,price,volume,duration);
+THREE_STRINGS_AND_THREE_DOUBLES(tradebot,divest,exchange,base,rel,price,volume,duration);
 
 /*HASH_AND_ARRAY(pangea,userturn,tablehash,params);
  HASH_AND_ARRAY(pangea,status,tableid,params);

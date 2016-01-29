@@ -28,7 +28,7 @@
 #define EXCHANGE_AUTHURL "http://www.btc38.com/trade/t_api"
 #define CHECKBALANCE btc38 ## _checkbalance
 
-double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,cJSON *argjson)
+double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
 {
     char url[1024],lrel[16],lbase[16];
     strcpy(lrel,rel), strcpy(lbase,base);
@@ -36,7 +36,7 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
     if ( strcmp(lbase,"cny") == 0 && strcmp(lrel,"btc") == 0 )
         sprintf(url,"http://api.btc38.com/v1/depth.php?c=%s&mk_type=%s","btc","cny");
     else sprintf(url,"http://api.btc38.com/v1/depth.php?c=%s&mk_type=%s",lbase,lrel);
-    return(exchanges777_standardprices(exchange,base,rel,url,quotes,0,0,maxdepth,0));
+    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0));
 }
 
 int32_t SUPPORTS(struct exchange_info *exchange,char *_base,char *_rel,cJSON *argjson)

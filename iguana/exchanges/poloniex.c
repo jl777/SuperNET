@@ -28,12 +28,12 @@
 #define EXCHANGE_AUTHURL "https://poloniex.com/tradingApi"
 #define CHECKBALANCE poloniex ## _checkbalance
 
-double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,cJSON *argjson)
+double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
 {
     char market[128],url[1024];
     sprintf(market,"%s_%s",rel,base);
     sprintf(url,"https://poloniex.com/public?command=returnOrderBook&currencyPair=%s&depth=%d",market,maxdepth);
-    return(exchanges777_standardprices(exchange,base,rel,url,quotes,0,0,maxdepth,0));
+    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0));
 }
 
 int32_t SUPPORTS(struct exchange_info *exchange,char *base,char *rel,cJSON *argjson)

@@ -27,7 +27,7 @@
 #define WITHDRAW bittrex ## _withdraw
 #define CHECKBALANCE bittrex ## _checkbalance
 
-double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,cJSON *argjson)
+double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
 {
     cJSON *json,*obj; char *jsonstr,market[128],url[1024]; double hbla = 0.;
     sprintf(market,"%s-%s",rel,base);
@@ -38,7 +38,7 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
         if ( (json = cJSON_Parse(jsonstr)) != 0 )
         {
            if ( (obj= cJSON_GetObjectItem(json,"success")) != 0 && is_cJSON_True(obj) != 0 )
-                hbla = exchanges777_json_orderbook(exchange,base,rel,quotes,maxdepth,json,"result","buy","sell","Rate","Quantity");
+                hbla = exchanges777_json_orderbook(exchange,commission,base,rel,quotes,maxdepth,json,"result","buy","sell","Rate","Quantity");
             free_json(json);
         }
         free(jsonstr);

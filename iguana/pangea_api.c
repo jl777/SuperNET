@@ -439,7 +439,7 @@ void pangea_parse(struct supernet_info *myinfo,struct pangea_msghdr *pm,cJSON *a
     }
 }
 
-int32_t pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *remoteaddr)
+char *pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *remoteaddr)
 {
     static struct { char *cmdstr; void (*func)(PANGEA_HANDARGS); uint64_t cmdbits; } tablecmds[] =
     {
@@ -455,7 +455,7 @@ int32_t pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *
         { "showdown", pangea_showdown }, { "summary", pangea_summary },
     };
     struct pangea_msghdr *pm = data; cJSON *argjson; bits256 tablehash;
-    uint64_t cmdbits; uint8_t *serialized; uint8_t tmp[sizeof(pm->sig)]; char str[65],str2[65];
+    uint64_t cmdbits; uint8_t *serialized; uint8_t tmp[sizeof(pm->sig)]; char *retstr=0,str[65],str2[65];
     struct table_info *tp; int32_t i,allocsize,datalen,flag = 0;
     if ( tablecmds[0].cmdbits == 0 )
     {
@@ -468,10 +468,11 @@ int32_t pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *
     serialized = (void *)((long)pm + sizeof(pm->sig));
     if ( remoteaddr != 0 && remoteaddr[0] == 0 && strcmp("127.0.0.1",remoteaddr) == 0 && ((uint8_t *)pm)[len-1] == 0 && (argjson= cJSON_Parse((char *)pm)) != 0 )
     {
+        // ?? iguana_rwbignum(0,pm->tablehash.bytes,sizeof(bits256),tablehash.bytes);
         printf("pangea_hexmsg RESULT.(%s)\n",jprint(argjson,0));
         pangea_parse(myinfo,pm,argjson,remoteaddr);
         free_json(argjson);
-        return(1);
+        return(retstr);
     }
     //printf("pm.%p len.%d serialized.%p datalen.%d crc.%u %s\n",pm,len,serialized,datalen,calc_crc32(0,(void *)pm,len),bits256_str(str,pm->sig.pubkey));
     //return(0);
@@ -520,7 +521,7 @@ int32_t pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *
             printf("%02x",serialized[i]);
         printf("<<<<<<<<<<<<< sigsize.%ld SIG ERROR [%ld] len.%d (%s + %s)\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen,bits256_str(str,acct777_msgprivkey(serialized,datalen)),bits256_str(str2,pm->sig.pubkey));
     }
-    return(flag);
+    return(retstr);
 }
 
 void pangea_update(struct supernet_info *myinfo)

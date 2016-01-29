@@ -74,12 +74,12 @@ void *category_infoset(bits256 categoryhash,bits256 subhash,void *info)
     return(0);
 }
 
-struct category_info *category_processfunc(bits256 categoryhash,int32_t (*process_func)(struct supernet_info *myinfo,void *data,int32_t datalen,char *remoteaddr))
+struct category_info *category_processfunc(bits256 categoryhash,char *(*process_func)(struct supernet_info *myinfo,void *data,int32_t datalen,char *remoteaddr))
 {
     struct category_info *cat;
     if ( (cat= category_find(categoryhash,GENESIS_PUBKEY)) != 0 )
     {
-        cat->process_func = process_func;
+        cat->processfunc = process_func;
         return(cat);
     }
     return(0);
