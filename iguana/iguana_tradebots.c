@@ -86,15 +86,17 @@ cJSON *tradebot_json(struct supernet_info *myinfo,struct exchange_info *exchange
     return(json);
 }
 
-struct tradebot_info *tradebot_find(struct exchange_info *exchange,char *botname)
+struct tradebot_info *tradebot_find(struct supernet_info *myinfo,struct exchange_info *exchange,char *botname,cJSON *array)
 {
     struct tradebot_info PAD,*bot,*retbot = 0;
     memset(&PAD,0,sizeof(PAD));
     queue_enqueue("tradebotsQ",&exchange->tradebotsQ,&PAD.DL,0);
     while ( (bot= queue_dequeue(&exchange->tradebotsQ,0)) != 0 && bot != &PAD )
     {
-        if ( strcmp(botname,bot->name) == 0 )
+        if ( botname != 0 && strcmp(botname,bot->name) == 0 )
             retbot = bot;
+        if ( array != 0 )
+            jaddi(array,tradebot_json(myinfo,exchange,bot));
         queue_enqueue("tradebotsQ",&exchange->tradebotsQ,&bot->DL,0);
     }
     return(retbot);
@@ -182,26 +184,29 @@ THREE_STRINGS(tradebot,unmonitor,exchange,base,rel)
 
 char *tradebot_launch(struct supernet_info *myinfo,char *exchangestr,char *base,char *rel,int32_t dir,double price,double volume,int32_t duration,char *remoteaddr,cJSON *json)
 {
-    struct exchange_info *exchange;
+    struct exchange_info *exchange; char retbuf[1024]; struct tradebot_info *bot;
     if ( remoteaddr == 0 )
     {
         if ( (exchange= exchanges777_info(exchangestr,1,json,remoteaddr)) != 0 )
         {
-            if ( tradebot_create(myinfo,exchange,base,rel,1,price,fabs(volume),duration) != 0 )
-                return(clonestr("{\"result\":\"tradebot created\"}"));
+            if ( (bot= tradebot_create(myinfo,exchange,base,rel,1,price,fabs(volume),duration)) != 0 )
+            {
+                sprintf(retbuf,"{\"result\":\"tradebot created\",\"botid\":\"%s\"}",bot->name);
+                return(clonestr(retbuf));
+            }
             else return(clonestr("{\"error\":\"couldnt create exchange tradebot\"}"));
         } else return(clonestr("{\"error\":\"couldnt find/create exchange info\"}"));
     } else return(clonestr("{\"error\":\"tradebots only local usage!\"}"));
 }
 
-char *tradebot_control(char *exchangestr,char *botid,int32_t control,char *remoteaddr,cJSON *json)
+char *tradebot_control(struct supernet_info *myinfo,char *exchangestr,char *botid,int32_t control,char *remoteaddr,cJSON *json)
 {
     struct tradebot_info *bot; struct exchange_info *exchange;
     if ( remoteaddr == 0 )
     {
         if ( (exchange= exchanges777_info(exchangestr,1,json,remoteaddr)) != 0 )
         {
-            if ( (bot= tradebot_find(exchange,botid)) != 0 )
+            if ( (bot= tradebot_find(myinfo,exchange,botid,0)) != 0 )
             {
                 if ( control > 1 )
                     bot->pause = (uint32_t)time(NULL);
@@ -232,8 +237,25 @@ TWO_STRINGS(tradebot,status,exchange,botid)
     {
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
         {
-            if ( (bot= tradebot_find(ptr,botid)) != 0 )
+            if ( (bot= tradebot_find(myinfo,ptr,botid,0)) != 0 )
                 return(jprint(tradebot_json(myinfo,ptr,bot),1));
+        }
+    }
+    return(clonestr("{\"error\":\"tradebots only local usage!\"}"));
+}
+
+STRING_ARG(tradebot,activebots,exchange)
+{
+    struct exchange_info *ptr; cJSON *retjson,*array = cJSON_CreateArray();
+    if ( remoteaddr == 0 )
+    {
+        if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+        {
+            tradebot_find(myinfo,ptr,0,array);
+            retjson = cJSON_CreateObject();
+            jaddstr(retjson,"result","success");
+            jadd(retjson,"tradebots",array);
+            return(jprint(retjson,1));
         }
     }
     return(clonestr("{\"error\":\"tradebots only local usage!\"}"));
@@ -241,17 +263,17 @@ TWO_STRINGS(tradebot,status,exchange,botid)
 
 TWO_STRINGS(tradebot,pause,exchange,botid)
 {
-    return(tradebot_control(exchange,botid,1,remoteaddr,json));
+    return(tradebot_control(myinfo,exchange,botid,1,remoteaddr,json));
 }
 
 TWO_STRINGS(tradebot,stop,exchange,botid)
 {
-    return(tradebot_control(exchange,botid,-1,remoteaddr,json));
+    return(tradebot_control(myinfo,exchange,botid,-1,remoteaddr,json));
 }
 
 TWO_STRINGS(tradebot,resume,exchange,botid)
 {
-    return(tradebot_control(exchange,botid,0,remoteaddr,json));
+    return(tradebot_control(myinfo,exchange,botid,0,remoteaddr,json));
 }
 #include "../includes/iguana_apiundefs.h"
 

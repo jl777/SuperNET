@@ -44,6 +44,7 @@ THREE_STRINGS_AND_DOUBLE(tradebot,monitor,exchange,base,rel,commission);
 THREE_STRINGS(tradebot,unmonitor,exchange,base,rel);
 THREE_STRINGS_AND_THREE_DOUBLES(tradebot,accumulate,exchange,base,rel,price,volume,duration);
 THREE_STRINGS_AND_THREE_DOUBLES(tradebot,divest,exchange,base,rel,price,volume,duration);
+STRING_ARG(tradebot,activebots,exchange);
 TWO_STRINGS(tradebot,status,exchange,botid);
 TWO_STRINGS(tradebot,pause,exchange,botid);
 TWO_STRINGS(tradebot,stop,exchange,botid);
