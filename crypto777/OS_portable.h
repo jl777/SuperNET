@@ -96,6 +96,8 @@ void _init_HUFF(HUFF *hp,int32_t allocsize,void *buf);
 #define portable_mutex_unlock pthread_mutex_unlock
 #define OS_thread_create pthread_create
 
+#define issue_curl(cmdstr) bitcoind_RPC(0,"curl",cmdstr,0,0,0)
+
 struct allocitem { uint32_t allocsize,type; } __attribute__((packed));
 struct queueitem { struct queueitem *next,*prev; uint32_t allocsize,type;  } __attribute__((packed));
 typedef struct queue

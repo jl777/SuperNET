@@ -288,6 +288,7 @@ void iguana_main(void *arg)
     iguana_chaingenesis(1,1317972665,0x1e0ffff0,2084524493,bits256_conv("97ddfbbae6be97fd6cdf3e7ca13232a3afff2353e29badfab7f73011edd4ced9")); // LTC
 
     mycalloc(0,0,0);
+    //exchanges777_init(0);
     iguana_initQ(&helperQ,"helperQ");
     OS_ensure_directory("confs");
     OS_ensure_directory("DB");
@@ -480,7 +481,7 @@ void iguana_main(void *arg)
     iguana_launch(iguana_coinadd("BTCD"),"rpcloop",iguana_rpcloop,SuperNET_MYINFO(0),IGUANA_PERMTHREAD);
     if ( coinargs != 0 )
         iguana_launch(iguana_coinadd("BTCD"),"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
-    else if ( 1 )
+    else if ( 0 )
     {
 #ifdef __APPLE__
         sleep(1);

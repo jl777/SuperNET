@@ -20,6 +20,19 @@ HASH_AND_INT(ramchain,getrawtransaction,txid,verbose);
 HASH_ARG(ramchain,gettransaction,txid);
 STRING_ARG(ramchain,decoderawtransaction,rawtx);
 
+THREE_STRINGS_AND_THREE_INTS(InstantDEX,orderbook,exchange,base,rel,depth,allfields,invert);
+THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,buy,exchange,base,rel,price,volume,dotrade);
+THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,sell,exchange,base,rel,price,volume,dotrade);
+THREE_STRINGS_AND_DOUBLE(InstantDEX,withdraw,exchange,base,destaddr,amount);
+THREE_STRINGS(InstantDEX,apikeypair,exchange,apikey,apisecret);
+THREE_STRINGS(InstantDEX,setuserid,exchange,userid,tradepassword);
+THREE_STRINGS(InstantDEX,supports,exchange,base,rel);
+TWO_STRINGS(InstantDEX,balance,exchange,base);
+TWO_STRINGS(InstantDEX,orderstatus,exchange,orderid);
+TWO_STRINGS(InstantDEX,cancelorder,exchange,orderid);
+STRING_ARG(InstantDEX,openorders,exchange);
+STRING_ARG(InstantDEX,tradehistory,exchange);
+
 /*HASH_AND_ARRAY(pangea,userturn,tablehash,params);
  HASH_AND_ARRAY(pangea,status,tableid,params);
  HASH_AND_ARRAY(pangea,mode,tableid,params);

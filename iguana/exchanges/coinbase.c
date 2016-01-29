@@ -14,7 +14,7 @@
  ******************************************************************************/
 
 #define EXCHANGE_NAME "coinbase"
-#define UPDATE prices777_ ## coinbase
+#define UPDATE coinbase ## _price
 #define SUPPORTS coinbase ## _supports
 #define SIGNPOST coinbase ## _signpost
 #define TRADE coinbase ## _trade
@@ -28,14 +28,14 @@
 #define EXCHANGE_AUTHURL "https://api.exchange.coinbase.com"
 #define CHECKBALANCE coinbase ## _checkbalance
 
-double UPDATE(struct prices777 *prices,int32_t maxdepth)
+double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,cJSON *argjson)
 {
-    if ( prices->url[0] == 0 )
-        sprintf(prices->url,"https://api.exchange.coinbase.com/products/%s-%s/book?level=2",prices->base,prices->rel);
-    return(prices777_standard("coinbase",prices->url,prices,0,0,maxdepth,0));
+    char url[1024];
+    sprintf(url,"https://api.exchange.coinbase.com/products/%s-%s/book?level=2",base,rel);
+    return(exchanges777_standardprices(exchange,base,rel,url,quotes,0,0,maxdepth,0));
 }
 
-int32_t SUPPORTS(char *base,char *rel)
+int32_t SUPPORTS(struct exchange_info *exchange,char *base,char *rel,cJSON *argjson)
 {
     char *baserels[][2] = { {"btc","usd"} };
     return(baserel_polarity(baserels,(int32_t)(sizeof(baserels)/sizeof(*baserels)),base,rel));
@@ -93,11 +93,11 @@ cJSON *SIGNPOST(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_i
         sprintf(hdr2,"CB-ACCESS-SIGN:%s",sig64);
         sprintf(hdr3,"CB-ACCESS-TIMESTAMP:%llu",(long long)nonce);
         //sprintf(hdr4,"CB-ACCESS-PASSPHRASE:%s; content-type:application/json; charset=utf-8",exchange->userid);
-        sprintf(hdr4,"CB-ACCESS-PASSPHRASE:%s",exchange->tradepassword);
+        sprintf(hdr4,"CB-ACCESS-PASSPHRASE:%s",exchange->userid);
         sprintf(url,"%s/%s",EXCHANGE_AUTHURL,path);
         if ( dotrade == 0 )
             data = exchange_would_submit(payload,hdr1,hdr2,hdr3,hdr4);
-        else if ( (data= curl_post(cHandlep,url,0,payload,hdr1,hdr2,hdr3,hdr4)) != 0 )
+        else if ( (data= curl_post(&exchange->cHandle,url,0,payload,hdr1,hdr2,hdr3,hdr4)) != 0 )
             json = cJSON_Parse(data);
     }
     if ( retstrp != 0 )
@@ -107,18 +107,18 @@ cJSON *SIGNPOST(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_i
     return(json);
 }
 
-cJSON *BALANCES(void **cHandlep,struct exchange_info *exchange)
+cJSON *BALANCES(struct exchange_info *exchange,cJSON *argjson)
 {
-    return(SIGNPOST(cHandlep,1,0,exchange,"",exchange_nonce(exchange),"accounts","GET"));
+    return(SIGNPOST(&exchange->cHandle,1,0,exchange,"",exchange_nonce(exchange),"accounts","GET"));
 }
 
-char *PARSEBALANCE(struct exchange_info *exchange,double *balancep,char *coinstr)
+char *PARSEBALANCE(struct exchange_info *exchange,double *balancep,char *coinstr,cJSON *argjson)
 {
     char field[128],*itemstr = 0; cJSON *obj,*item;
     *balancep = 0.;
     strcpy(field,coinstr);
     tolowercase(field);
-    if ( exchange->balancejson != 0 && (obj= jobj(exchange->balancejson,"return")) != 0 && (item= jobj(obj,"funds")) != 0 )
+    if ( argjson != 0 && (obj= jobj(argjson,"return")) != 0 && (item= jobj(obj,"funds")) != 0 )
     {
         *balancep = jdouble(item,field);
         obj = cJSON_CreateObject();
@@ -134,7 +134,7 @@ char *PARSEBALANCE(struct exchange_info *exchange,double *balancep,char *coinstr
 
 #include "checkbalance.c"
 
-uint64_t TRADE(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *base,char *rel,int32_t dir,double price,double volume)
+uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *base,char *rel,int32_t dir,double price,double volume,cJSON *argjson)
 {
     char payload[1024],pairstr[512],method[32],*path,*extra;
     cJSON *json; uint64_t nonce,txid = 0;
@@ -148,7 +148,7 @@ uint64_t TRADE(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_in
     }
     nonce = exchange_nonce(exchange);
     sprintf(payload,"method=Trade&nonce=%llu&pair=%s&type=%s&rate=%.6f&amount=%.6f",(long long)nonce,pairstr,dir>0?"buy":"sell",price,volume);
-    if ( CHECKBALANCE(retstrp,dotrade,exchange,dir,base,rel,price,volume) == 0 && (json= SIGNPOST(cHandlep,dotrade,retstrp,exchange,payload,nonce,path,method)) != 0 )
+    if ( CHECKBALANCE(retstrp,dotrade,exchange,dir,base,rel,price,volume,argjson) == 0 && (json= SIGNPOST(&exchange->cHandle,dotrade,retstrp,exchange,payload,nonce,path,method)) != 0 )
     {
         // parse json and set txid
         free_json(json);
@@ -156,55 +156,55 @@ uint64_t TRADE(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_in
     return(txid);
 }
 
-char *ORDERSTATUS(void **cHandlep,struct exchange_info *exchange,cJSON *argjson,uint64_t quoteid)
+char *ORDERSTATUS(struct exchange_info *exchange,uint64_t quoteid,cJSON *argjson)
 {
     char payload[1024],*retstr = 0; cJSON *json;
     // generate payload
-    if ( (json= SIGNPOST(cHandlep,1,0,exchange,payload,exchange_nonce(exchange),"accounts","GET")) != 0 )
+    if ( (json= SIGNPOST(&exchange->cHandle,1,0,exchange,payload,exchange_nonce(exchange),"accounts","GET")) != 0 )
     {
         free_json(json);
     }
     return(retstr); // return standardized orderstatus
 }
 
-char *CANCELORDER(void **cHandlep,struct exchange_info *exchange,cJSON *argjson,uint64_t quoteid)
+char *CANCELORDER(struct exchange_info *exchange,uint64_t quoteid,cJSON *argjson)
 {
     char payload[1024],*retstr = 0; cJSON *json;
     // generate payload
-    if ( (json= SIGNPOST(cHandlep,1,0,exchange,payload,exchange_nonce(exchange),"accounts","GET")) != 0 )
+    if ( (json= SIGNPOST(&exchange->cHandle,1,0,exchange,payload,exchange_nonce(exchange),"accounts","GET")) != 0 )
     {
         free_json(json);
     }
     return(retstr); // return standardized cancelorder
 }
 
-char *OPENORDERS(void **cHandlep,struct exchange_info *exchange,cJSON *argjson)
+char *OPENORDERS(struct exchange_info *exchange,cJSON *argjson)
 {
     char payload[1024],*retstr = 0; cJSON *json;
     // generate payload
-    if ( (json= SIGNPOST(cHandlep,1,0,exchange,payload,exchange_nonce(exchange),"accounts","GET")) != 0 )
+    if ( (json= SIGNPOST(&exchange->cHandle,1,0,exchange,payload,exchange_nonce(exchange),"accounts","GET")) != 0 )
     {
         free_json(json);
     }
     return(retstr); // return standardized open orders
 }
 
-char *TRADEHISTORY(void **cHandlep,struct exchange_info *exchange,cJSON *argjson)
+char *TRADEHISTORY(struct exchange_info *exchange,cJSON *argjson)
 {
     char payload[1024],*retstr = 0; cJSON *json;
     // generate payload
-    if ( (json= SIGNPOST(cHandlep,1,0,exchange,payload,exchange_nonce(exchange),"accounts","GET")) != 0 )
+    if ( (json= SIGNPOST(&exchange->cHandle,1,0,exchange,payload,exchange_nonce(exchange),"accounts","GET")) != 0 )
     {
         free_json(json);
     }
     return(retstr); // return standardized tradehistory
 }
 
-char *WITHDRAW(void **cHandlep,struct exchange_info *exchange,cJSON *argjson)
+char *WITHDRAW(struct exchange_info *exchange,char *base,double amount,char *destaddr,cJSON *argjson)
 {
     char payload[1024],*retstr = 0; cJSON *json;
     // generate payload
-    if ( (json= SIGNPOST(cHandlep,1,0,exchange,payload,exchange_nonce(exchange),"accounts","GET")) != 0 )
+    if ( (json= SIGNPOST(&exchange->cHandle,1,0,exchange,payload,exchange_nonce(exchange),"accounts","GET")) != 0 )
     {
         free_json(json);
     }

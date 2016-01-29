@@ -24,6 +24,10 @@
 #define IGUANA_CFUNC_SSHII(agent,name,str,str2,hash,val,val2) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,bits256 hash,int32_t val,int32_t val2)
 #define IGUANA_CFUNC_SSHHII(agent,name,str,str2,hash,hash2,val,val2) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,bits256 hash,bits256 hash2,int32_t val,int32_t val2)
 #define IGUANA_CFUNC_SSS(agent,name,str,str2,str3) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,char *str3)
+#define IGUANA_CFUNC_SSSD(agent,name,str,str2,str3,val) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,char *str3,double val)
+#define IGUANA_CFUNC_SSSDDD(agent,name,str,str2,str3,val,val2,val3) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,char *str3,double val,double val2,double val3)
+#define IGUANA_CFUNC_SSSIII(agent,name,str,str2,str3,val,val2,val3) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,char *str3,int32_t val,int32_t val2,int32_t val3)
+
 #define IGUANA_CFUNC_SI(agent,name,str,val) char *agent ## _ ## name(IGUANA_ARGS,char *str,int32_t val)
 #define IGUANA_CFUNC_SII(agent,name,str,val,val2) char *agent ## _ ## name(IGUANA_ARGS,char *str,int32_t val,int32_t val2)
 #define IGUANA_CFUNC_HI(agent,name,hash,val) char *agent ## _ ## name(IGUANA_ARGS,bits256 hash,int32_t val)
@@ -75,3 +79,6 @@
 #define HASH_ARG IGUANA_CFUNC_H
 #define HASH_AND_ARRAY IGUANA_CFUNC_HA
 #define TWO_HASHES IGUANA_CFUNC_HH
+#define THREE_STRINGS_AND_THREE_INTS IGUANA_CFUNC_SSSIII
+#define THREE_STRINGS_AND_THREE_DOUBLES IGUANA_CFUNC_SSSDDD
+#define THREE_STRINGS_AND_DOUBLE IGUANA_CFUNC_SSSD

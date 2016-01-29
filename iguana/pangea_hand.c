@@ -279,7 +279,7 @@ int32_t pangea_checkstart(struct supernet_info *myinfo,struct table_info *tp)
         }
         if ( matches == tp->G.numactive )
         {
-            if ( time(NULL) > (tp->priv.myind + hand->startdecktime) )
+            if ( tp->priv.myind == pangea_slotA(tp) )
             {
                 //if ( PANGEA_PAUSE > 0 )
                 //    sleep(PANGEA_PAUSE);

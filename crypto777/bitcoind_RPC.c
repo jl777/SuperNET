@@ -18,7 +18,6 @@
 
 #include <curl/curl.h>
 #include <curl/easy.h>
-#define issue_curl(cmdstr) bitcoind_RPC(0,"curl",cmdstr,0,0,0)
 
 // return data from the server
 struct return_string {
