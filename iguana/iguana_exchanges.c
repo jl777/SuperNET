@@ -461,11 +461,14 @@ char *exchanges777_process(struct exchange_info *exchange,int32_t *retvalp,struc
             }
             break;
         case 'B':
-            if ( exchange->issue.balances != 0 && exchange->issue.parsebalance != 0 )
+            if ( exchange->issue.balances != 0 )
             {
                 if ( (balancejson= (*exchange->issue.balances)(exchange,req->argjson)) != 0 )
                 {
-                    retstr = (*exchange->issue.parsebalance)(exchange,&balance,req->base,balancejson);
+                    //printf("BALANCE.(%s)\n",jprint(balancejson,0));
+                    if ( req->base[0] != 0 && exchange->issue.parsebalance != 0 )
+                        retstr = (*exchange->issue.parsebalance)(exchange,&balance,req->base,balancejson);
+                    else retstr = jprint(balancejson,0);
                     free_json(balancejson);
                 }
             }
@@ -504,10 +507,11 @@ void exchanges777_loop(void *ptr)
         retstr = 0;
         if ( (req= queue_dequeue(&exchange->requestQ,0)) != 0 )
         {
-            printf("dequeued %s.%c\n",exchange->name,req->func);
+            //printf("dequeued %s.%c\n",exchange->name,req->func);
             if ( req->dead == 0 )
             {
                 retstr = exchanges777_process(exchange,&retval,req);
+                printf("retval.%d (%p) retstrp.%p timedout.%u\n",retval,retstr,req->retstrp,req->timedout);
                 if ( retval == EXCHANGE777_DONE )
                 {
                     if ( retstr != 0 )
@@ -608,17 +612,21 @@ char *exchanges777_unmonitor(struct exchange_info *exchange,char *base,char *rel
     return(retstr);
 }
 
-char *exchanges777_submit(struct exchange_info *exchange,char **retstrp,struct exchange_request *req,int32_t func,int32_t maxseconds)
+char *exchanges777_submit(struct exchange_info *exchange,struct exchange_request *req,int32_t func,int32_t maxseconds)
 {
     int32_t i;
     req->func = func;
     if ( maxseconds == 0 )
         maxseconds = EXCHANGES777_DEFAULT_TIMEOUT;
+    printf("retstrp.%p\n",req->retstrp);
     queue_enqueue("exchangeQ",&exchange->requestQ,&req->DL,0);
     for (i=0; i<maxseconds; i++)
     {
-        if ( *retstrp != 0 )
-            return(*retstrp);
+        if ( req->retstrp != 0 && *req->retstrp != 0 )
+        {
+            printf("GOT.(%s)\n",*req->retstrp);
+            return(*req->retstrp);
+        }
         sleep(1);
     }
     req->timedout = (uint32_t)time(NULL);
@@ -640,7 +648,7 @@ char *exchanges777_Qtrade(struct exchange_info *exchange,char *base,char *rel,in
         dir *= -1, volume *= price, price = 1. / price;
     req->price = price, req->volume = volume, req->dir = dir;
     req->dotrade = dotrade;
-    return(exchanges777_submit(exchange,&retstr,req,'T',maxseconds));
+    return(exchanges777_submit(exchange,req,'T',maxseconds));
 }
 
 char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,int32_t maxseconds,int32_t allfields,int32_t depth,cJSON *argjson,int32_t monitor,double commission)
@@ -661,7 +669,7 @@ char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,i
     if ( (req->commission= commission) == 0. )
         req->commission = exchange->commission;
     if ( monitor == 0 )
-        return(exchanges777_submit(exchange,&retstr,req,'Q',maxseconds));
+        return(exchanges777_submit(exchange,req,'Q',maxseconds));
     else
     {
         req->func = 'M';
@@ -679,8 +687,9 @@ char *exchanges777_Qrequest(struct exchange_info *exchange,int32_t func,char *ba
     safecopy(req->destaddr,destaddr,sizeof(req->destaddr));
     safecopy(req->base,base,sizeof(req->base));
     safecopy(req->rel,rel,sizeof(req->rel));
+    req->retstrp = &retstr;
     req->orderid = orderid;
-    return(exchanges777_submit(exchange,&retstr,req,func,maxseconds));
+    return(exchanges777_submit(exchange,req,func,maxseconds));
 }
 
 int32_t exchanges777_id(char *exchangestr)

@@ -285,6 +285,7 @@ static size_t WriteMemoryCallback(void *ptr,size_t size,size_t nmemb,void *data)
         mem->size += realsize;
         mem->memory[mem->size] = 0;
     }
+    printf("got %d bytes\n",(int32_t)(size*nmemb));
     return(realsize);
 }
 
@@ -328,10 +329,10 @@ void *curl_post(CURL **cHandlep,char *url,char *userpass,char *postfields,char *
     curl_easy_setopt(cHandle,CURLOPT_WRITEDATA,(void *)&chunk);
     curl_easy_perform(cHandle);
     curl_easy_getinfo(cHandle,CURLINFO_RESPONSE_CODE,&code);
-    if ( code != 200 )
-        printf("error: (%s) server responded with code %ld\n",url,code);
     if ( headers != 0 )
         curl_slist_free_all(headers);
+    if ( code != 200 )
+        printf("(%s) server responded with code %ld (%s)\n",url,code,chunk.memory);
     return(chunk.memory);
 }
 

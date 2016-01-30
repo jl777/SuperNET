@@ -101,7 +101,10 @@ cJSON *SIGNPOST(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_i
     if ( dotrade == 0 )
         data = exchange_would_submit(payload,hdr1,hdr2,hdr3,hdr4);
     else if ( (data= curl_post(&exchange->cHandle,url,0,payload,hdr1,hdr2,hdr3,hdr4)) != 0 )
+    {
         json = cJSON_Parse(data);
+        //printf("GOT.(%s) %p\n",data,json);
+    }
     if ( retstrp != 0 )
         *retstrp = data;
     else if ( data != 0 )
