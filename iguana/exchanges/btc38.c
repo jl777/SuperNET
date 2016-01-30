@@ -27,22 +27,36 @@
 #define WITHDRAW btc38 ## _withdraw
 #define EXCHANGE_AUTHURL "http://www.btc38.com/trade/t_api"
 #define CHECKBALANCE btc38 ## _checkbalance
+#define ALLPAIRS btc38 ## _allpairs
+#define FUNCS btc38 ## _funcs
 
-double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
+char *btc38_cnypairs[] = { "BTC", "LTC", "DOGE", "XRP", "BTS", "XLM", "NXT", "BLK", "BC", "VPN", "BILS", "BOST", "PPC", "APC", "ZCC", "XPM", "DGC", "MEC", "WDC", "QRK", "BEC", "ANC", "UNC", "RIC", "SRC", "TAG" };
+char *btc38_btcpairs[] = { "TMC", "LTC", "DOGE", "XRP", "BTS", "XEM", "XCN", "VOOT", "SYS", "NRS", "NAS", "SYNC", "MED", "EAC" };
+
+char *ALLPAIRS(struct exchange_info *exchange,cJSON *argjson)
 {
-    char url[1024],lrel[16],lbase[16];
-    strcpy(lrel,rel), strcpy(lbase,base);
-    tolowercase(lrel), tolowercase(lbase);
-    if ( strcmp(lbase,"cny") == 0 && strcmp(lrel,"btc") == 0 )
-        sprintf(url,"http://api.btc38.com/v1/depth.php?c=%s&mk_type=%s","btc","cny");
-    else sprintf(url,"http://api.btc38.com/v1/depth.php?c=%s&mk_type=%s",lbase,lrel);
-    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0));
+    int32_t i; char str[65]; cJSON *json,*item,*array = cJSON_CreateArray();
+    for (i=0; i<sizeof(btc38_btcpairs)/sizeof(*btc38_btcpairs); i++)
+    {
+        item = cJSON_CreateArray();
+        jaddistr(item,uppercase_str(str,btc38_btcpairs[i]));
+        jaddistr(item,"BTC");
+        jaddi(array,item);
+    }
+    for (i=0; i<sizeof(btc38_cnypairs)/sizeof(*btc38_cnypairs); i++)
+    {
+        item = cJSON_CreateArray();
+        jaddistr(item,uppercase_str(str,btc38_cnypairs[i]));
+        jaddistr(item,"CNY");
+        jaddi(array,item);
+    }
+    json = cJSON_CreateObject();
+    jadd(json,"result",array);
+    return(jprint(json,1));
 }
 
 int32_t SUPPORTS(struct exchange_info *exchange,char *_base,char *_rel,cJSON *argjson)
 {
-    char *cnypairs[] = { "BTC", "LTC", "DOGE", "XRP", "BTS", "STR", "NXT", "BLK", "BC", "VPN", "BILS", "BOST", "PPC", "APC", "ZCC", "XPM", "DGC", "MEC", "WDC", "QRK", "BEC", "ANC", "UNC", "RIC", "SRC", "TAG" };
-    char *btcpairs[] = { "TMC", "LTC", "DOGE", "XRP", "BTS", "XEM", "VPN", "XCN", "VOOT", "SYS", "NRS", "NAS", "SYNC", "MED", "EAC" };
     int32_t i; char base[64],rel[64];
     strcpy(base,_base), strcpy(rel,_rel);
     touppercase(base), touppercase(rel);
@@ -54,30 +68,41 @@ int32_t SUPPORTS(struct exchange_info *exchange,char *_base,char *_rel,cJSON *ar
         return(-1);
     else if ( strcmp(base,"BTC") == 0 )
     {
-        for (i=0; i<sizeof(btcpairs)/sizeof(*btcpairs); i++)
-            if ( strcmp(btcpairs[i],rel) == 0 )
+        for (i=0; i<sizeof(btc38_btcpairs)/sizeof(*btc38_btcpairs); i++)
+            if ( strcmp(btc38_btcpairs[i],rel) == 0 )
                 return(-1);
     }
     else if ( strcmp(rel,"BTC") == 0 )
     {
-        for (i=0; i<sizeof(btcpairs)/sizeof(*btcpairs); i++)
-            if ( strcmp(btcpairs[i],base) == 0 )
+        for (i=0; i<sizeof(btc38_btcpairs)/sizeof(*btc38_btcpairs); i++)
+            if ( strcmp(btc38_btcpairs[i],base) == 0 )
                 return(1);
     }
     else if ( strcmp(base,"CNY") == 0 )
     {
-        for (i=0; i<sizeof(cnypairs)/sizeof(*cnypairs); i++)
-            if ( strcmp(cnypairs[i],rel) == 0 )
+        for (i=0; i<sizeof(btc38_cnypairs)/sizeof(*btc38_cnypairs); i++)
+            if ( strcmp(btc38_cnypairs[i],rel) == 0 )
                 return(-1);
     }
     else if ( strcmp(rel,"CNY") == 0 )
     {
-        for (i=0; i<sizeof(cnypairs)/sizeof(*cnypairs); i++)
-            if ( strcmp(cnypairs[i],base) == 0 )
+        for (i=0; i<sizeof(btc38_cnypairs)/sizeof(*btc38_cnypairs); i++)
+            if ( strcmp(btc38_cnypairs[i],base) == 0 )
                 return(1);
     }
     printf("BTC38 doesnt support (%s/%s)\n",base,rel);
     return(0);
+}
+
+double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
+{
+    char url[1024],lrel[16],lbase[16];
+    strcpy(lrel,rel), strcpy(lbase,base);
+    tolowercase(lrel), tolowercase(lbase);
+    if ( strcmp(lbase,"cny") == 0 && strcmp(lrel,"btc") == 0 )
+        sprintf(url,"http://api.btc38.com/v1/depth.php?c=%s&mk_type=%s","btc","cny");
+    else sprintf(url,"http://api.btc38.com/v1/depth.php?c=%s&mk_type=%s",lbase,lrel);
+    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0));
 }
 
 cJSON *SIGNPOST(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *payload,char *path)
@@ -304,18 +329,4 @@ char *ORDERSTATUS(struct exchange_info *exchange,uint64_t quoteid,cJSON *argjson
 
 struct exchange_funcs btc38_funcs = EXCHANGE_FUNCS(btc38,EXCHANGE_NAME);
 
-#undef UPDATE
-#undef SUPPORTS
-#undef SIGNPOST
-#undef TRADE
-#undef ORDERSTATUS
-#undef CANCELORDER
-#undef OPENORDERS
-#undef TRADEHISTORY
-#undef BALANCES
-#undef PARSEBALANCE
-#undef WITHDRAW
-#undef EXCHANGE_NAME
-#undef EXCHANGE_AUTHURL
-#undef CHECKBALANCE
-
+#include "exchange_undefs.h"

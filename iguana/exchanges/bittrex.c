@@ -26,6 +26,52 @@
 #define PARSEBALANCE bittrex ## _parsebalance
 #define WITHDRAW bittrex ## _withdraw
 #define CHECKBALANCE bittrex ## _checkbalance
+#define ALLPAIRS bittrex ## _allpairs
+#define FUNCS bittrex ## _funcs
+
+static char *(*bittrex_baserels)[][2];
+
+char *ALLPAIRS(struct exchange_info *exchange,cJSON *argjson)
+{
+    static int32_t num;
+    char *jsonstr,*base,*rel; int32_t i; cJSON *json,*array,*item;
+    if ( num == 0 || (*bittrex_baserels) == 0 )
+    {
+        jsonstr = issue_curl("https://bittrex.com/api/v1.1/public/getmarkets");
+        if ( (json= cJSON_Parse(jsonstr)) != 0 )
+        {
+            if ( (array= jarray(&num,json,"result")) != 0 )
+            {
+                bittrex_baserels = calloc(num,sizeof(char *) * 2);
+                for (i=0; i<num; i++)
+                {
+                    item = jitem(array,i);
+                    base = jstr(item,"MarketCurrency");
+                    rel = jstr(item,"BaseCurrency");
+                    if ( base != 0 && rel != 0 )
+                    {
+                        (*bittrex_baserels)[i][0] = clonestr(base);
+                        (*bittrex_baserels)[i][1] = clonestr(rel);
+                    }
+                }
+            }
+            free_json(json);
+        }
+        free(jsonstr);
+    }
+    return(jprint(exchanges777_allpairs((*bittrex_baserels),num),1));
+}
+
+int32_t SUPPORTS(struct exchange_info *exchange,char *base,char *rel,cJSON *argjson)
+{
+    if ( strlen(base) > 5 || strlen(rel) > 5 || strcmp(rel,"CNY") == 0 || strcmp(base,"CNY") == 0 || strcmp(rel,"USD") == 0 || strcmp(base,"USD") == 0 )
+        return(0);
+    if ( strcmp(rel,"BTC") == 0 )
+        return(1);
+    else if ( strcmp(base,"BTC") == 0 )
+        return(-1);
+    else return(0);
+}
 
 double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
 {
@@ -44,17 +90,6 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
         free(jsonstr);
     }
     return(hbla);
-}
-
-int32_t SUPPORTS(struct exchange_info *exchange,char *base,char *rel,cJSON *argjson)
-{
-    if ( strlen(base) > 5 || strlen(rel) > 5 || strcmp(rel,"CNY") == 0 || strcmp(base,"CNY") == 0 || strcmp(rel,"USD") == 0 || strcmp(base,"USD") == 0 )
-        return(0);
-    if ( strcmp(rel,"BTC") == 0 )
-        return(1);
-    else if ( strcmp(base,"BTC") == 0 )
-        return(-1);
-    else return(0);
 }
 
 cJSON *SIGNPOST(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *url,char *payload)
@@ -230,16 +265,4 @@ char *WITHDRAW(struct exchange_info *exchange,char *base,double amount,char *des
 
 struct exchange_funcs bittrex_funcs = EXCHANGE_FUNCS(bittrex,EXCHANGE_NAME);
 
-#undef UPDATE
-#undef SUPPORTS
-#undef SIGNPOST
-#undef TRADE
-#undef ORDERSTATUS
-#undef CANCELORDER
-#undef OPENORDERS
-#undef TRADEHISTORY
-#undef BALANCES
-#undef PARSEBALANCE
-#undef WITHDRAW
-#undef EXCHANGE_NAME
-#undef CHECKBALANCE
+#include "exchange_undefs.h"

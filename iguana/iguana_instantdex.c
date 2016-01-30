@@ -85,13 +85,28 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,cJSON *argjson,char *cmdst
     }
 }
 
-char *instantdex_reqprice(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen)
+char *instantdex_request(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen)
 {
+    char *base,*rel,*request; double volume; int32_t i; struct exchange_info *exchange;
     if ( argjson != 0 )
     {
-        return(clonestr("{\"result\":\"reqprice response not sent\"}"));
-        return(clonestr("{\"result\":\"reqprice response sent\"}"));
-    } else return(clonestr("{\"error\":\"reqprice needs argjson\"}"));
+        request = jstr(argjson,"request");
+        base = jstr(argjson,"base");
+        rel = jstr(argjson,"rel");
+        volume = jdouble(argjson,"volume");
+        if ( base != 0 && rel != 0 && volume > SMALLVAL )
+        {
+            for (i=0; i<myinfo->numexchanges; i++)
+            {
+                if ( (exchange= myinfo->tradingexchanges[i]) != 0 )
+                {
+                    
+                }
+            }
+            return(clonestr("{\"result\":\"reqprice response sent\"}"));
+        }
+        return(clonestr("{\"error\":\"request missing parameter\"}"));
+    } else return(clonestr("{\"error\":\"request needs argjson\"}"));
 }
 
 char *instantdex_proposal(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen)
@@ -123,7 +138,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
 {
     static struct { char *cmdstr; char *(*func)(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen); uint64_t cmdbits; } cmds[] =
     {
-        { "reqprice", instantdex_reqprice }, { "proposal", instantdex_proposal },
+        { "request", instantdex_request }, { "proposal", instantdex_proposal },
         { "accepted", instantdex_accepted }, { "confirmed", instantdex_confirmed },
     };
     char *retstr = 0; int32_t i; uint64_t cmdbits;
@@ -265,7 +280,6 @@ TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,confirm,reference,message,basetx
         return(retstr);
     } else return(clonestr("{\"error\":\"InstantDEX API confirm only local usage!\"}"));
 }
-
 
 #include "../includes/iguana_apiundefs.h"
 

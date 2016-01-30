@@ -38,6 +38,21 @@ void prices777_processprice(struct exchange_info *exchange,char *base,char *rel,
     
 }
 
+cJSON *exchanges777_allpairs(char *baserels[][2],int32_t num)
+{
+    int32_t i; char str[32]; cJSON *json,*item,*array = cJSON_CreateArray();
+    for (i=0; i<num; i++)
+    {
+        item = cJSON_CreateArray();
+        jaddistr(item,uppercase_str(str,baserels[i][0]));
+        jaddistr(item,uppercase_str(str,baserels[i][1]));
+        jaddi(array,item);
+    }
+    json = cJSON_CreateObject();
+    jadd(json,"result",array);
+    return(json);
+}
+
 cJSON *exchanges777_quotejson(struct exchange_quote *quote,int32_t allflag,double pricesum,double totalvol)
 {
     cJSON *json; char str[65];
@@ -840,5 +855,23 @@ STRING_AND_INT(InstantDEX,pollgap,exchange,pollgap)
         ptr->pollgap = pollgap;
         return(clonestr("{\"result\":\"set pollgap\"}"));
     } else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+}
+
+ZERO_ARGS(InstantDEX,allexchanges)
+{
+    int32_t i; cJSON *retjson,*array;
+    retjson = cJSON_CreateObject(); array = cJSON_CreateArray();
+    for (i=0; i<sizeof(Exchange_names)/sizeof(*Exchange_names); i++)
+        jaddistr(array,Exchange_names[i]);
+    jadd(retjson,"result",array);
+    return(jprint(retjson,1));
+}
+
+STRING_ARG(InstantDEX,allpairs,exchange)
+{
+    struct exchange_info *ptr;
+    if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+        return((*ptr->issue.allpairs)(ptr,json));
+    else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
 }
 #include "../includes/iguana_apiundefs.h"

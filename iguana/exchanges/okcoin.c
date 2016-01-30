@@ -27,6 +27,12 @@
 #define WITHDRAW okcoin ## _withdraw
 #define EXCHANGE_AUTHURL "https://www.okcoin.com/api/v1"
 #define CHECKBALANCE okcoin ## _checkbalance
+#define ALLPAIRS okcoin ## _allpairs
+#define FUNCS okcoin ## _funcs
+#define BASERELS okcoin ## _baserels
+
+static char *BASERELS[][2] = { {"btc","usd"}, {"ltc","usd"} };
+#include "exchange_supports.h"
 
 double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
 {
@@ -42,12 +48,6 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
         return(0);
     }
     return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0));
-}
-
-int32_t SUPPORTS(struct exchange_info *exchange,char *base,char *rel,cJSON *argjson)
-{
-    char *baserels[][2] = { {"btc","usd"}, {"ltc","usd"} };
-    return(baserel_polarity(baserels,(int32_t)(sizeof(baserels)/sizeof(*baserels)),base,rel));
 }
 
 cJSON *SIGNPOST(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *url,char *payload)
@@ -226,18 +226,4 @@ char *WITHDRAW(struct exchange_info *exchange,char *base,double amount,char *des
 
 struct exchange_funcs okcoin_funcs = EXCHANGE_FUNCS(okcoin,EXCHANGE_NAME);
 
-#undef UPDATE
-#undef SUPPORTS
-#undef SIGNPOST
-#undef TRADE
-#undef ORDERSTATUS
-#undef CANCELORDER
-#undef OPENORDERS
-#undef TRADEHISTORY
-#undef BALANCES
-#undef PARSEBALANCE
-#undef WITHDRAW
-#undef EXCHANGE_NAME
-#undef EXCHANGE_AUTHURL
-#undef CHECKBALANCE
-
+#include "exchange_undefs.h"

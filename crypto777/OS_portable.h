@@ -247,6 +247,9 @@ int32_t init_hexbytes_noT(char *hexbytes,uint8_t *message,long len);
 uint16_t parse_ipaddr(char *ipaddr,char *ip_port);
 int32_t bitweight(uint64_t x);
 unsigned char _decode_hex(char *hex);
+char *uppercase_str(char *buf,char *str);
+char *lowercase_str(char *buf,char *str);
+int32_t OS_getline(int32_t waitflag,char *line,int32_t max,char *dispstr);
 
 long _stripwhite(char *buf,int accept);
 int32_t is_DST(int32_t datenum);

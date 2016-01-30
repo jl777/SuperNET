@@ -27,6 +27,13 @@
 #define WITHDRAW btce ## _withdraw
 #define EXCHANGE_AUTHURL "https://btc-e.com/tapi"
 #define CHECKBALANCE btce ## _checkbalance
+#define ALLPAIRS btce ## _allpairs
+#define FUNCS btce ## _funcs
+#define BASERELS btce ## _baserels
+
+static char *BASERELS[][2] = { {"btc","usd"}, {"btc","rur"}, {"btc","eur"}, {"ltc","btc"}, {"ltc","usd"}, {"ltc","rur"}, {"ltc","eur"}, {"nmc","btc"}, {"nmc","usd"}, {"nvc","btc"}, {"nvc","usd"}, {"eur","usd"}, {"eur","rur"}, {"ppc","btc"}, {"ppc","usd"} };
+
+#include "exchange_supports.h"
 
 double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
 {
@@ -36,12 +43,6 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
     sprintf(field,"%s_%s",lbase,lrel);
     sprintf(url,"https://btc-e.com/api/3/depth/%s",field);
     return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,field));
-}
-
-int32_t SUPPORTS(struct exchange_info *exchange,char *base,char *rel,cJSON *argjson)
-{
-    char *baserels[][2] = { {"btc","usd"}, {"btc","rur"}, {"btc","eur"}, {"ltc","btc"}, {"ltc","usd"}, {"ltc","rur"}, {"ltc","eur"}, {"nmc","btc"}, {"nmc","usd"}, {"nvc","btc"}, {"nvc","usd"}, {"eur","usd"}, {"eur","rur"}, {"ppc","btc"}, {"ppc","usd"} };
-    return(baserel_polarity(baserels,(int32_t)(sizeof(baserels)/sizeof(*baserels)),base,rel));
 }
 
 cJSON *SIGNPOST(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *url,char *payload)
@@ -200,17 +201,4 @@ char *WITHDRAW(struct exchange_info *exchange,char *base,double amount,char *des
 
 struct exchange_funcs btce_funcs = EXCHANGE_FUNCS(btce,EXCHANGE_NAME);
 
-#undef UPDATE
-#undef SUPPORTS
-#undef SIGNPOST
-#undef TRADE
-#undef ORDERSTATUS
-#undef CANCELORDER
-#undef OPENORDERS
-#undef TRADEHISTORY
-#undef BALANCES
-#undef PARSEBALANCE
-#undef WITHDRAW
-#undef EXCHANGE_NAME
-#undef EXCHANGE_AUTHURL
-#undef CHECKBALANCE
+#include "exchange_undefs.h"

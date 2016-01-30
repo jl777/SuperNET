@@ -27,18 +27,18 @@
 #define WITHDRAW bitstamp ## _withdraw
 #define EXCHANGE_AUTHURL "https://www.bitstamp.net/api"
 #define CHECKBALANCE bitstamp ## _checkbalance
+#define ALLPAIRS bitstamp ## _allpairs
+#define FUNCS bitstamp ## _funcs
+#define BASERELS bitstamp ## _baserels
+
+static char *BASERELS[][2] = { {"btc","usd"} };
+#include "exchange_supports.h"
 
 double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
 {
     char url[1024];
     sprintf(url,"https://www.bitstamp.net/api/order_book/");
     return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0));
-}
-
-int32_t SUPPORTS(struct exchange_info *exchange,char *base,char *rel,cJSON *argjson)
-{
-    char *baserels[][2] = { {"btc","usd"} };
-    return(baserel_polarity(baserels,(int32_t)(sizeof(baserels)/sizeof(*baserels)),base,rel));
 }
 
 cJSON *SIGNPOST(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *method,char *payload)
@@ -154,17 +154,4 @@ char *WITHDRAW(struct exchange_info *exchange,char *base,double amount,char *des
 
 struct exchange_funcs bitstamp_funcs = EXCHANGE_FUNCS(bitstamp,EXCHANGE_NAME);
 
-#undef UPDATE
-#undef SUPPORTS
-#undef SIGNPOST
-#undef TRADE
-#undef ORDERSTATUS
-#undef CANCELORDER
-#undef OPENORDERS
-#undef TRADEHISTORY
-#undef BALANCES
-#undef PARSEBALANCE
-#undef WITHDRAW
-#undef EXCHANGE_NAME
-#undef EXCHANGE_AUTHURL
-#undef CHECKBALANCE
+#include "exchange_undefs.h"

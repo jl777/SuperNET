@@ -338,15 +338,6 @@ int32_t init_hexbytes_noT(char *hexbytes,unsigned char *message,long len)
     return((int32_t)len*2+1);
 }
 
-void touppercase(char *str)
-{
-    int32_t i;
-    if ( str == 0 || str[0] == 0 )
-        return;
-    for (i=0; str[i]!=0; i++)
-        str[i] = toupper(((int32_t)str[i]));
-}
-
 long _stripwhite(char *buf,int accept)
 {
     int32_t i,j,c;
@@ -494,6 +485,15 @@ int32_t sortds(double *buf,uint32_t num,int32_t size)
 }
 */
 
+void touppercase(char *str)
+{
+    int32_t i;
+    if ( str == 0 || str[0] == 0 )
+        return;
+    for (i=0; str[i]!=0; i++)
+        str[i] = toupper(((int32_t)str[i]));
+}
+
 void tolowercase(char *str)
 {
     int32_t i;
@@ -501,6 +501,20 @@ void tolowercase(char *str)
         return;
     for (i=0; str[i]!=0; i++)
         str[i] = tolower(((int32_t)str[i]));
+}
+
+char *uppercase_str(char *buf,char *str)
+{
+    strcpy(buf,str);
+    touppercase(buf);
+    return(buf);
+}
+
+char *lowercase_str(char *buf,char *str)
+{
+    strcpy(buf,str);
+    tolowercase(buf);
+    return(buf);
 }
 
 int32_t is_decimalstr(char *str)

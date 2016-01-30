@@ -20,6 +20,9 @@ HASH_AND_INT(ramchain,getrawtransaction,txid,verbose);
 HASH_ARG(ramchain,gettransaction,txid);
 STRING_ARG(ramchain,decoderawtransaction,rawtx);
 
+THREE_STRINGS(InstantDEX,encryptjson,passphrase,permanentfile,anything);
+TWO_STRINGS(InstantDEX,decryptjson,passphrase,permanentfile);
+
 THREE_STRINGS_AND_THREE_INTS(InstantDEX,orderbook,exchange,base,rel,depth,allfields,invert);
 THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,buy,exchange,base,rel,price,volume,dotrade);
 THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,sell,exchange,base,rel,price,volume,dotrade);
@@ -33,6 +36,8 @@ TWO_STRINGS(InstantDEX,cancelorder,exchange,orderid);
 STRING_ARG(InstantDEX,openorders,exchange);
 STRING_ARG(InstantDEX,tradehistory,exchange);
 STRING_AND_INT(InstantDEX,pollgap,exchange,pollgap);
+ZERO_ARGS(InstantDEX,allexchanges);
+STRING_ARG(InstantDEX,allpairs,exchange);
 
 THREE_STRINGS_AND_DOUBLE(InstantDEX,request,reference,base,rel,volume);
 TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,proposal,reference,message,basetxid,reltxid,duration,flags);

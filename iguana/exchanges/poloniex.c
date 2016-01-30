@@ -27,13 +27,36 @@
 #define WITHDRAW poloniex ## _withdraw
 #define EXCHANGE_AUTHURL "https://poloniex.com/tradingApi"
 #define CHECKBALANCE poloniex ## _checkbalance
+#define ALLPAIRS poloniex ## _allpairs
+#define FUNCS poloniex ## _funcs
+static char *(*poloniex_baserels)[][2];
 
-double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
+char *ALLPAIRS(struct exchange_info *exchange,cJSON *argjson)
 {
-    char market[128],url[1024];
-    sprintf(market,"%s_%s",rel,base);
-    sprintf(url,"https://poloniex.com/public?command=returnOrderBook&currencyPair=%s&depth=%d",market,maxdepth);
-    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0));
+    static int32_t num;
+    char *jsonstr,*baserel; int32_t i; cJSON *json;
+    if ( num == 0 || (*poloniex_baserels) == 0 )
+    {
+        jsonstr = issue_curl("https://poloniex.com/public?command=returnTicker");
+        if ( (json= cJSON_Parse(jsonstr)) != 0 )
+        {
+            if ( (num= cJSON_GetArraySize(json)) != 0 )
+            {
+                poloniex_baserels = calloc(num,sizeof(char *) * 2);
+                for (i=0; i<num; i++)
+                {
+                    if ( (baserel= get_cJSON_fieldname(jitem(json,i))) != 0 && strncmp(baserel,"BTC_",4) == 0 )
+                    {
+                        (*poloniex_baserels)[i][0] = clonestr(baserel+4);
+                        (*poloniex_baserels)[i][1] = "BTC";
+                    }
+                }
+            }
+            free_json(json);
+        }
+        free(jsonstr);
+    }
+    return(jprint(exchanges777_allpairs((*poloniex_baserels),num),1));
 }
 
 int32_t SUPPORTS(struct exchange_info *exchange,char *base,char *rel,cJSON *argjson)
@@ -47,6 +70,14 @@ int32_t SUPPORTS(struct exchange_info *exchange,char *base,char *rel,cJSON *argj
     else if ( strcmp(base,"BTC") == 0 )
         return(-1);
     else return(0);
+}
+
+double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
+{
+    char market[128],url[1024];
+    sprintf(market,"%s_%s",rel,base);
+    sprintf(url,"https://poloniex.com/public?command=returnOrderBook&currencyPair=%s&depth=%d",market,maxdepth);
+    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0));
 }
 
 cJSON *SIGNPOST(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *url,char *payload)
@@ -213,18 +244,4 @@ char *WITHDRAW(struct exchange_info *exchange,char *base,double amount,char *des
 
 struct exchange_funcs poloniex_funcs = EXCHANGE_FUNCS(poloniex,EXCHANGE_NAME);
 
-
-#undef UPDATE
-#undef SUPPORTS
-#undef SIGNPOST
-#undef TRADE
-#undef ORDERSTATUS
-#undef CANCELORDER
-#undef OPENORDERS
-#undef TRADEHISTORY
-#undef BALANCES
-#undef PARSEBALANCE
-#undef WITHDRAW
-#undef EXCHANGE_NAME
-#undef EXCHANGE_AUTHURL
-#undef CHECKBALANCE
+#include "exchange_undefs.h"

@@ -26,6 +26,12 @@
 #define PARSEBALANCE quadriga ## _parsebalance
 #define WITHDRAW quadriga ## _withdraw
 #define CHECKBALANCE quadriga ## _checkbalance
+#define ALLPAIRS quadriga ## _allpairs
+#define FUNCS quadriga ## _funcs
+#define BASERELS quadriga ## _baserels
+
+static char *BASERELS[][2] = { {"btc","usd"}, {"btc","cad"} };
+#include "exchange_supports.h"
 
 double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
 {
@@ -34,12 +40,6 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
     tolowercase(lrel), tolowercase(lbase);
     sprintf(url,"https://api.quadrigacx.com/v2/order_book?book=%s_%s",lbase,lrel);
     return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0));
-}
-
-int32_t SUPPORTS(struct exchange_info *exchange,char *base,char *rel,cJSON *argjson)
-{
-    char *baserels[][2] = { {"btc","usd"}, {"btc","cad"} };
-    return(baserel_polarity(baserels,(int32_t)(sizeof(baserels)/sizeof(*baserels)),base,rel));
 }
 
 cJSON *SIGNPOST(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *payload,char *path)
@@ -169,17 +169,4 @@ char *WITHDRAW(struct exchange_info *exchange,char *base,double amount,char *des
 
 struct exchange_funcs quadriga_funcs = EXCHANGE_FUNCS(quadriga,EXCHANGE_NAME);
 
-#undef UPDATE
-#undef SUPPORTS
-#undef SIGNPOST
-#undef TRADE
-#undef ORDERSTATUS
-#undef CANCELORDER
-#undef OPENORDERS
-#undef TRADEHISTORY
-#undef BALANCES
-#undef PARSEBALANCE
-#undef WITHDRAW
-#undef EXCHANGE_NAME
-#undef CHECKBALANCE
-
+#include "exchange_undefs.h"

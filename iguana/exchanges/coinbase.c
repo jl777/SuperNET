@@ -27,18 +27,18 @@
 #define WITHDRAW coinbase ## _withdraw
 #define EXCHANGE_AUTHURL "https://api.exchange.coinbase.com"
 #define CHECKBALANCE coinbase ## _checkbalance
+#define ALLPAIRS coinbase ## _allpairs
+#define FUNCS coinbase ## _funcs
+#define BASERELS coinbase ## _baserels
+
+static char *BASERELS[][2] = { {"btc","usd"} };
+#include "exchange_supports.h"
 
 double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
 {
     char url[1024];
     sprintf(url,"https://api.exchange.coinbase.com/products/%s-%s/book?level=2",base,rel);
     return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0));
-}
-
-int32_t SUPPORTS(struct exchange_info *exchange,char *base,char *rel,cJSON *argjson)
-{
-    char *baserels[][2] = { {"btc","usd"} };
-    return(baserel_polarity(baserels,(int32_t)(sizeof(baserels)/sizeof(*baserels)),base,rel));
 }
 
 cJSON *SIGNPOST(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *payload,uint64_t nonce,char *path,char *method)
@@ -213,17 +213,4 @@ char *WITHDRAW(struct exchange_info *exchange,char *base,double amount,char *des
 
 struct exchange_funcs coinbase_funcs = EXCHANGE_FUNCS(coinbase,EXCHANGE_NAME);
 
-#undef UPDATE
-#undef SUPPORTS
-#undef SIGNPOST
-#undef TRADE
-#undef ORDERSTATUS
-#undef CANCELORDER
-#undef OPENORDERS
-#undef TRADEHISTORY
-#undef BALANCES
-#undef PARSEBALANCE
-#undef WITHDRAW
-#undef EXCHANGE_NAME
-#undef EXCHANGE_AUTHURL
-#undef CHECKBALANCE
+#include "exchange_undefs.h"

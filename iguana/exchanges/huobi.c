@@ -26,6 +26,12 @@
 #define PARSEBALANCE huobi ## _parsebalance
 #define WITHDRAW huobi ## _withdraw
 #define CHECKBALANCE huobi ## _checkbalance
+#define ALLPAIRS huobi ## _allpairs
+#define FUNCS huobi ## _funcs
+#define BASERELS huobi ## _baserels
+
+static char *BASERELS[][2] = { {"btc","cny"}, {"ltc","cny"} };
+#include "exchange_supports.h"
 
 double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
 {
@@ -33,12 +39,6 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
     strcpy(lbase,base), tolowercase(lbase);
     sprintf(url,"http://api.huobi.com/staticmarket/depth_%s_json.js ",lbase);
     return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0));
-}
-
-int32_t SUPPORTS(struct exchange_info *exchange,char *base,char *rel,cJSON *argjson)
-{
-    char *baserels[][2] = { {"btc","cny"}, {"ltc","cny"} };
-    return(baserel_polarity(baserels,(int32_t)(sizeof(baserels)/sizeof(*baserels)),base,rel));
 }
 
 cJSON *SIGNPOST(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *payload)
@@ -168,17 +168,4 @@ char *WITHDRAW(struct exchange_info *exchange,char *base,double amount,char *des
 
 struct exchange_funcs huobi_funcs = EXCHANGE_FUNCS(huobi,EXCHANGE_NAME);
 
-#undef UPDATE
-#undef SUPPORTS
-#undef SIGNPOST
-#undef TRADE
-#undef ORDERSTATUS
-#undef CANCELORDER
-#undef OPENORDERS
-#undef TRADEHISTORY
-#undef BALANCES
-#undef PARSEBALANCE
-#undef WITHDRAW
-#undef EXCHANGE_NAME
-#undef CHECKBALANCE
-
+#include "exchange_undefs.h"

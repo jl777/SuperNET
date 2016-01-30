@@ -787,7 +787,6 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
         {
             if ( (n= cJSON_GetArraySize(tokens)) > 0 )
             {
-                jaddstr(argjson,"agent",jstri(tokens,0));
                 if ( n > 1 )
                 {
                     if ( jstri(tokens,1) != 0 )
@@ -838,13 +837,20 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
                                             key = &buf[i];
                                             break;
                                         }
+                                        else if ( buf[i] == '+' )
+                                            buf[i] = ' ';
                                     }
                                 }
                             }
                         }
                         if ( key != 0 && value != 0 )
                             jaddstr(argjson,key,value);
-                    } else jaddstr(argjson,"method",buf);
+                    }
+                    else
+                    {
+                        //jdelete(argjson,"method");
+                        //jaddstr(argjson,"method",buf);
+                    }
                 }
                 for (i=2; i<n; i++)
                 {

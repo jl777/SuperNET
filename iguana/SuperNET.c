@@ -900,8 +900,9 @@ ZERO_ARGS(SuperNET,keypair)
 
 TWOHASHES_AND_STRING(SuperNET,decipher,privkey,srcpubkey,cipherstr)
 {
-    int32_t cipherlen,msglen; char *retstr; cJSON *retjson; void *ptr = 0; uint8_t *cipher,*message,space[8192];
-    cipherlen = (int32_t)strlen(cipherstr) >> 1;
+    int32_t cipherlen=0,msglen; char *retstr; cJSON *retjson; void *ptr = 0; uint8_t *cipher,*message,space[8192];
+    if ( cipherstr != 0 )
+        cipherlen = (int32_t)strlen(cipherstr) >> 1;
     if ( cipherlen < crypto_box_NONCEBYTES )
         return(clonestr("{\"error\":\"cipher is too short\"}"));
     cipher = calloc(1,cipherlen);
@@ -934,7 +935,7 @@ TWOHASHES_AND_STRING(SuperNET,cipher,privkey,destpubkey,message)
         onetimeflag = memcmp(origprivkey.bytes,privkey.bytes,sizeof(privkey));
         if ( onetimeflag != 0 )
         {
-            jaddbits256(retjson,"onetime_privkey",privkey);
+            //jaddbits256(retjson,"onetime_privkey",privkey);
             jaddbits256(retjson,"onetime_pubkey",destpubkey);
             if ( onetimeflag == 2 )
                 jaddstr(retjson,"warning","onetime keypair was used to broadcast");

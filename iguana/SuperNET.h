@@ -24,6 +24,7 @@
 #define SUPERNET_GETPEERSTR "{\"agent\":\"SuperNET\",\"method\":\"getpeers\",\"plaintext\":1}"
 #define SUPERNET_STOPSTR "{\"agent\":\"SuperNET\",\"method\":\"stop\",\"plaintext\":1}"
 
+#define SUPERNET_MAXEXCHANGES 64
 #define SUPERNET_LBPORT 7770
 #define SUPERNET_PUBPORT 7771
 #define SUPERNET_PORTP2P 7770
@@ -83,7 +84,8 @@ struct supernet_info
     int32_t LBsock,PUBsock,reqsock,subsock,networktimeout,maxdelay;
     uint16_t LBport,PUBport,reqport,subport;
     struct nn_pollfd pfd[SUPERNET_MAXAGENTS]; //struct relay_info active;
-    struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ; int32_t numagents;
+    struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ; int32_t numagents,numexchanges;
+    struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES];
 };
 
 /*struct supernet_endpoint
@@ -156,6 +158,8 @@ char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag
 bits256 calc_categoryhashes(bits256 *subhashp,char *category,char *subcategory);
 struct category_chain *category_chain_functions(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,int32_t hashlen,int32_t addrlen,void *hash_func,void *stake_func,void *hit_func,void *default_func);
 #define category_default_latest() (*cchain->default_func)(cchain,'L',0,0,0,0,zero)
+void category_init(struct supernet_info *myinfo);
+char *SuperNET_keysinit(struct supernet_info *myinfo,char *jsonstr);
 
 #endif
 

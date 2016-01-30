@@ -26,6 +26,12 @@
 #define PARSEBALANCE lakebtc ## _parsebalance
 #define WITHDRAW lakebtc ## _withdraw
 #define CHECKBALANCE lakebtc ## _checkbalance
+#define ALLPAIRS lakebtc ## _allpairs
+#define FUNCS lakebtc ## _funcs
+#define BASERELS lakebtc ## _baserels
+
+static char *BASERELS[][2] = { {"btc","usd"}, {"btc","cny"} };
+#include "exchange_supports.h"
 
 double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
 {
@@ -36,15 +42,6 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
         sprintf(url,"https://www.LakeBTC.com/api_v1/bcorderbook_cny");
     else printf("illegal lakebtc pair.(%s/%s)\n",base,rel);
     return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0));
-}
-
-int32_t SUPPORTS(struct exchange_info *exchange,char *base,char *rel,cJSON *argjson)
-{
-    char *baserels[][2] = { {"btc","usd"}, {"btc","cny"} };
-    int32_t polarity;
-    polarity = baserel_polarity(baserels,(int32_t)(sizeof(baserels)/sizeof(*baserels)),base,rel);
-    printf("lakebtc.(%s %s) polarity.%d\n",base,rel,polarity);
-    return(polarity);
 }
 
 cJSON *SIGNPOST(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *payload,char *hdr1,uint64_t tonce)
@@ -267,17 +264,4 @@ char *WITHDRAW(struct exchange_info *exchange,char *base,double amount,char *des
 
 struct exchange_funcs lakebtc_funcs = EXCHANGE_FUNCS(lakebtc,EXCHANGE_NAME);
 
-#undef UPDATE
-#undef SUPPORTS
-#undef SIGNPOST
-#undef TRADE
-#undef ORDERSTATUS
-#undef CANCELORDER
-#undef OPENORDERS
-#undef TRADEHISTORY
-#undef BALANCES
-#undef PARSEBALANCE
-#undef WITHDRAW
-#undef EXCHANGE_NAME
-#undef CHECKBALANCE
-
+#include "exchange_undefs.h"

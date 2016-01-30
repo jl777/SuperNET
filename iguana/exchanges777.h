@@ -40,8 +40,9 @@ struct exchange_funcs
     char *(*openorders)(struct exchange_info *exchange,cJSON *argjson);
     char *(*tradehistory)(struct exchange_info *exchange,cJSON *argjson);
     char *(*withdraw)(struct exchange_info *exchange,char *base,double amount,char *destaddr,cJSON *argjson);
+    char *(*allpairs)(struct exchange_info *exchange,cJSON *argjson);
 };
-#define EXCHANGE_FUNCS(xchg,name) { name, xchg ## _price, xchg ## _supports, xchg ## _parsebalance, xchg ## _balances, xchg ## _trade, xchg ## _orderstatus, xchg ## _cancelorder, xchg ## _openorders, xchg ## _tradehistory, xchg ## _withdraw }
+#define EXCHANGE_FUNCS(xchg,name) { name, xchg ## _price, xchg ## _supports, xchg ## _parsebalance, xchg ## _balances, xchg ## _trade, xchg ## _orderstatus, xchg ## _cancelorder, xchg ## _openorders, xchg ## _tradehistory, xchg ## _withdraw, xchg ## _allpairs }
 
 struct exchange_info
 {

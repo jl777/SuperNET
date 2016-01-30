@@ -329,3 +329,14 @@ char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag
         free(hexmsg);
     return(retstr);
 }
+
+void category_init(struct supernet_info *myinfo)
+{
+    bits256 pangeahash;
+    //exchanges777_init(0);
+    category_subscribe(myinfo,GENESIS_PUBKEY,GENESIS_PUBKEY);
+    pangeahash = calc_categoryhashes(0,"pangea",0);
+    category_subscribe(myinfo,pangeahash,GENESIS_PUBKEY);
+    category_processfunc(pangeahash,pangea_hexmsg);
+    category_chain_functions(myinfo,pangeahash,GENESIS_PUBKEY,sizeof(bits256),sizeof(bits256),0,0,0,0);
+}

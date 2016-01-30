@@ -220,7 +220,7 @@ int32_t agentform(FILE *fp,char *form,int32_t max,char *agent,cJSON *methoditem)
     sprintf(&form[size],"<form action=\"http://127.0.0.1:7778/api/%s/%s\" oninput=\"%s\">%s<output for=\"%s\"></output><input type=\"submit\" value=\"%s\"></form>",agent,methodstr,outstr,fields,outstr2,methodstr);
     if ( fp != 0 )
         fprintf(fp,"%s\n",&form[size]);
-    printf("%s\n",&form[size]);
+    //printf("%s\n",&form[size]);
     return((int32_t)strlen(form));
 }
 
@@ -342,7 +342,7 @@ int32_t pretty_forms(char *fname,char *agentstr)
                     {
                         len = pretty_form(fp,formheader,formfooter,field,str!=0?str:"agent",item);
                         size += len;
-                        printf("%s.%s\n",str,jstr(item,"method"));
+                        //printf("%s.%s\n",str,jstr(item,"method"));
                     } //else printf("agentstr.%p (%s) (%s) str.%p \n",agentstr,agentstr,str,str);
                 }
             }
@@ -367,7 +367,7 @@ char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr)
     htmlstr[0] = 0;
     if ( pretty_forms(fname,agentstr) != 0 )
     {
-        printf("%s\n",htmlstr);
+        //printf("%s\n",htmlstr);
         return(htmlstr);
     }
     sprintf(htmlstr,"<!DOCTYPE HTML><html> <head><title>SuperUGLY GUI></title></head> <body> ");

@@ -13,7 +13,8 @@
  *                                                                            *
  ******************************************************************************/
 
-#define EXCHANGE_NAME "bitfinex"
+#define EXCHANGE_NAMESTR "bitfinex"
+#define EXCHANGE_NAME #bitfinex
 #define UPDATE bitfinex ## _price
 #define SUPPORTS bitfinex ## _supports
 #define SIGNPOST bitfinex ## _signpost
@@ -26,18 +27,18 @@
 #define PARSEBALANCE bitfinex ## _parsebalance
 #define WITHDRAW bitfinex ## _withdraw
 #define CHECKBALANCE bitfinex ## _checkbalance
+#define ALLPAIRS bitfinex ## _allpairs
+#define FUNCS bitfinex ## _funcs
+#define BASERELS bitfinex ## _baserels
+
+static char *BASERELS[][2] = { {"btc","usd"}, {"ltc","usd"}, {"ltc","btc"}, {"",""} };
+#include "exchange_supports.h"
 
 double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
 {
     char url[1024];
     sprintf(url,"https://api.bitfinex.com/v1/book/%s%s",base,rel);
     return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,"price","amount",maxdepth,0));
-}
-
-int32_t SUPPORTS(struct exchange_info *exchange,char *base,char *rel,cJSON *argjson)
-{
-    char *baserels[][2] = { {"btc","usd"}, {"ltc","usd"}, {"ltc","btc"} };
-    return(baserel_polarity(baserels,(int32_t)(sizeof(baserels)/sizeof(*baserels)),base,rel));
 }
 
 char *PARSEBALANCE(struct exchange_info *exchange,double *balancep,char *coinstr,cJSON *argjson)
@@ -245,18 +246,6 @@ char *WITHDRAW(struct exchange_info *exchange,char *base,double amount,char *des
     return(retstr); // return standardized withdraw
 }
 
-struct exchange_funcs bitfinex_funcs = EXCHANGE_FUNCS(bitfinex,EXCHANGE_NAME);
+struct exchange_funcs FUNCS = EXCHANGE_FUNCS(bitfinex,EXCHANGE_NAMESTR);
 
-#undef UPDATE
-#undef SUPPORTS
-#undef SIGNPOST
-#undef TRADE
-#undef ORDERSTATUS
-#undef CANCELORDER
-#undef OPENORDERS
-#undef TRADEHISTORY
-#undef BALANCES
-#undef PARSEBALANCE
-#undef WITHDRAW
-#undef EXCHANGE_NAME
-#undef CHECKBALANCE
+#include "exchange_undefs.h"
