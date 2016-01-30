@@ -43,7 +43,7 @@ bits256 SuperNET_wallet2priv(char *wallet2fname,bits256 wallethash)
 
 char *SuperNET_parsemainargs(struct supernet_info *myinfo,bits256 *wallethashp,bits256 *wallet2privp,char *argjsonstr)
 {
-    cJSON *exchanges,*json = 0; char *wallet2fname,*coinargs=0,*secret,*filestr;
+    cJSON *exchanges=0,*json = 0; char *wallet2fname,*coinargs=0,*secret,*filestr;
     long allocsize; bits256 wallethash,wallet2priv; int32_t n,len; uint8_t secretbuf[8192];
     wallethash = wallet2priv = GENESIS_PRIVKEY;
     if ( argjsonstr != 0 )
@@ -71,13 +71,13 @@ char *SuperNET_parsemainargs(struct supernet_info *myinfo,bits256 *wallethashp,b
                 if ( (wallet2fname= jstr(json,"2fafile")) != 0 )
                     wallet2priv = SuperNET_wallet2priv(wallet2fname,wallethash);
             }
-            if ( (exchanges= jarray(&n,json,"exchanges")) != 0 )
-                exchanges777_init(myinfo,exchanges,0);
+            exchanges = jarray(&n,json,"exchanges");
             if ( jobj(json,"coins") != 0 )
                 coinargs = argjsonstr;
             free_json(json);
         }
     }
+    exchanges777_init(myinfo,exchanges,0);
     *wallethashp = wallethash, *wallet2privp = wallet2priv;
     return(coinargs);
 }
@@ -147,6 +147,7 @@ int32_t SuperNET_savejsonfile(char *fname,bits256 privkey,bits256 destpubkey,cJS
 
 int32_t SuperNET_userkeys(char *passphrase,int32_t passsize,char *fname2fa,int32_t fnamesize)
 {
+    return(0);
 #ifndef __PNACL
     //if ( (bits256_nonz(*wallethashp) == 0 || bits256_cmp(*wallethashp,GENESIS_PRIVKEY) == 0) && (bits256_nonz(*wallet2privp) == 0 || bits256_cmp(*wallet2privp,GENESIS_PRIVKEY) == 0) )
     {

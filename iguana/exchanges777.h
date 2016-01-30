@@ -63,7 +63,7 @@ struct instantdex_msghdr
 struct exchange_request
 {
     struct queueitem DL;
-    cJSON *argjson; char **retstrp;
+    cJSON *argjson; char **retstrp; struct exchange_info *exchange;
     double price,volume,hbla,lastbid,lastask,commission;
     uint64_t orderid; uint32_t timedout,expiration,dead,timestamp;
     int32_t dir,depth,func,numbids,numasks;

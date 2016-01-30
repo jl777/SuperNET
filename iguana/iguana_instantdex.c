@@ -78,54 +78,98 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,cJSON *argjson,char *cmdst
     }
 }
 
-void instantdex_updatesources(int32_t dir,struct exchange_quote *quotes,int32_t numquotes)
+int32_t instantdex_updatesources(uint64_t *sortbuf,int32_t n,int32_t ind,int32_t dir,struct exchange_quote *quotes,int32_t numquotes)
 {
     int32_t i; struct exchange_quote *quote;
     for (i=0; i<numquotes; i++)
     {
         quote = &quotes[i << 1];
+        //printf("n.%d ind.%d i.%d dir.%d price %.8f vol %.8f\n",n,ind,i,dir,quote->price,quote->volume);
+        if ( quote->price > SMALLVAL )
+        {
+            quote->val = ind;
+            sortbuf[n*2] = quote->price * SATOSHIDEN;
+            //printf("sortbuf[%d] <-\n",n*2);
+            memcpy(&sortbuf[n*2 + 1],&quote,sizeof(quote));
+            n++;
+        }
     }
+    return(n);
+}
+
+double instantdex_aveprice(struct supernet_info *myinfo,char *base,char *rel,double volume,cJSON *argjson)
+{
+    char *str; double totalvol,pricesum; uint32_t timestamp;
+    uint64_t sortbuf[64*32][2]; int32_t i,n,num,depth = 30; struct exchange_quote *quote;
+    struct exchange_info *exchange; struct exchange_request *req,*active[64];
+    timestamp = (uint32_t)time(NULL);
+    //InstantDEX_supports(myinfo,0,argjson,0,"poloniex",base,rel);
+    if ( base != 0 && rel != 0 && volume > SMALLVAL )
+    {
+        for (i=num=0; i<myinfo->numexchanges && num < sizeof(active)/sizeof(*active); i++)
+        {
+            if ( (exchange= myinfo->tradingexchanges[i]) != 0 )
+            {
+                if ( (req= exchanges777_baserelfind(exchange,base,rel,'M')) == 0 )
+                {
+                    if ( (str= exchanges777_Qprices(exchange,base,rel,30,1,depth,argjson,1,exchange->commission)) != 0 )
+                        free(str);
+                    req = exchanges777_baserelfind(exchange,base,rel,'M');
+                }
+                if ( req == 0 )
+                {
+                    if ( (*exchange->issue.supports)(exchange,base,rel,argjson) != 0 )
+                        printf("unexpected null req.(%s %s) %s\n",base,rel,exchange->name);
+                }
+                else
+                {
+                    active[num++] = req;
+                }
+            }
+        }
+        for (i=n=0; i<num; i++)
+        {
+            if ( active[i]->timestamp > timestamp-30 )
+            {
+                if ( volume < 0. && active[i]->numbids > 0 )
+                    n = instantdex_updatesources(&sortbuf[0][0],n,i,1,active[i]->bidasks,active[i]->numbids);
+                else if ( volume > 0. && active[i]->numasks > 0 )
+                    n = instantdex_updatesources(&sortbuf[0][0],n,i,-1,&active[i]->bidasks[1],active[i]->numasks);
+            }
+        }
+        if ( volume < 0. )
+            revsort64s(&sortbuf[0][0],n,sizeof(*sortbuf) * 2);
+        else sort64s(&sortbuf[0][0],n,sizeof(*sortbuf) * 2);
+        for (totalvol=pricesum=i=0; i<n && totalvol < volume; i++)
+        {
+            memcpy(&quote,&sortbuf[i][1],sizeof(uint64_t));
+            printf("i.%d price %.8f %llu quote.%p\n",i,dstr(sortbuf[i][0]),(long long)sortbuf[i][1],quote);
+            if ( quote != 0 )
+            {
+                pricesum += (quote->price * quote->volume);
+                totalvol += quote->volume;
+                printf("i.%d %12.8f vol %.8f %s | aveprice %.8f total vol %.8f\n",i,dstr(sortbuf[i][0]),quote->volume,active[quote->val]->exchange->name,pricesum/totalvol,totalvol);
+            }
+        }
+        if ( totalvol > 0. )
+            return(pricesum / totalvol);
+    }
+    return(0);
 }
 
 char *instantdex_request(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen)
 {
-    char *base,*rel,*request,*str; double volume; int32_t i,num,depth = 30;
-    struct exchange_info *exchange; struct exchange_request *req,*active[64];
+    char *base,*rel,*request; double volume,aveprice; int32_t num,depth;
     if ( argjson != 0 )
     {
         num = 0;
+        depth = 30;
         request = jstr(argjson,"request");
         base = jstr(argjson,"base");
         rel = jstr(argjson,"rel");
         volume = jdouble(argjson,"volume");
-        if ( base != 0 && rel != 0 && volume > SMALLVAL )
-        {
-            for (i=0; i<myinfo->numexchanges; i++)
-            {
-                if ( (exchange= myinfo->tradingexchanges[i]) != 0 )
-                {
-                    if ( (req= exchanges777_baserelfind(exchange,base,rel,'M')) == 0 )
-                    {
-                        if ( (str= exchanges777_Qprices(exchange,base,rel,30,1,depth,argjson,1,exchange->commission)) != 0 )
-                            free(str);
-                        req = exchanges777_baserelfind(exchange,base,rel,'M');
-                    }
-                    if ( req == 0 )
-                    {
-                        if ( (*exchange->issue.supports)(exchange,base,rel,argjson) != 0 )
-                            printf("unexpected null req.(%s %s) %s\n",base,rel,exchange->name);
-                    } else active[num++] = req;
-                }
-            }
-            for (i=0; i<num; i++)
-            {
-                if ( volume < 0. && active[i]->numbids > 0 )
-                    instantdex_updatesources(1,active[i]->bidasks,active[i]->numbids);
-                else if ( volume > 0. && active[i]->numasks > 0 )
-                    instantdex_updatesources(-1,&active[i]->bidasks[1],active[i]->numasks);
-            }
-            return(clonestr("{\"result\":\"reqprice response sent\"}"));
-        }
+        aveprice = instantdex_aveprice(myinfo,base,rel,volume,argjson);
+        return(clonestr("{\"result\":\"request calculated aveprice\"}"));
         return(clonestr("{\"error\":\"request missing parameter\"}"));
     } else return(clonestr("{\"error\":\"request needs argjson\"}"));
 }

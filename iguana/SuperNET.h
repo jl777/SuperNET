@@ -160,6 +160,7 @@ struct category_chain *category_chain_functions(struct supernet_info *myinfo,bit
 #define category_default_latest() (*cchain->default_func)(cchain,'L',0,0,0,0,zero)
 void category_init(struct supernet_info *myinfo);
 char *SuperNET_keysinit(struct supernet_info *myinfo,char *jsonstr);
+double instantdex_aveprice(struct supernet_info *myinfo,char *base,char *rel,double volume,cJSON *argjson);
 
 #endif
 

@@ -294,7 +294,13 @@ void mainloop(struct supernet_info *myinfo)
             else pangea_queues(SuperNET_MYINFO(0));
         }
         if ( flag == 0 )
-            sleep(1);
+        {
+            //double avebid,aveask; cJSON *argjson = cJSON_Parse("{}");
+            //avebid = instantdex_aveprice(myinfo,"NXT","BTC",10000,argjson);
+            //aveask = instantdex_aveprice(myinfo,"NXT","BTC",-10000,argjson);
+            //printf("avebid %.8f aveask %.8f\n",avebid,aveask);
+            sleep(10);
+        }
     }
 }
 

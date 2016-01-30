@@ -250,6 +250,8 @@ unsigned char _decode_hex(char *hex);
 char *uppercase_str(char *buf,char *str);
 char *lowercase_str(char *buf,char *str);
 int32_t OS_getline(int32_t waitflag,char *line,int32_t max,char *dispstr);
+int32_t sort64s(uint64_t *buf,uint32_t num,int32_t size);
+int32_t revsort64s(uint64_t *buf,uint32_t num,int32_t size);
 
 long _stripwhite(char *buf,int accept);
 int32_t is_DST(int32_t datenum);

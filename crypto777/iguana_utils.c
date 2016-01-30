@@ -454,12 +454,49 @@ static int _increasing_double(const void *a,const void *b)
 #undef double_b
 }
 
+int _increasing_uint64(const void *a,const void *b)
+{
+#define uint64_a (*(uint64_t *)a)
+#define uint64_b (*(uint64_t *)b)
+	if ( uint64_b > uint64_a )
+		return(-1);
+	else if ( uint64_b < uint64_a )
+		return(1);
+	return(0);
+#undef uint64_a
+#undef uint64_b
+}
+
+static int _decreasing_uint64(const void *a,const void *b)
+{
+#define uint64_a (*(uint64_t *)a)
+#define uint64_b (*(uint64_t *)b)
+	if ( uint64_b > uint64_a )
+		return(1);
+	else if ( uint64_b < uint64_a )
+		return(-1);
+	return(0);
+#undef uint64_a
+#undef uint64_b
+}
+
 int32_t sortds(double *buf,uint32_t num,int32_t size)
 {
 	qsort(buf,num,size,_increasing_double);
 	return(0);
 }
 
+int32_t sort64s(uint64_t *buf,uint32_t num,int32_t size)
+{
+	qsort(buf,num,size,_increasing_uint64);
+	return(0);
+}
+
+int32_t revsort64s(uint64_t *buf,uint32_t num,int32_t size)
+{
+	qsort(buf,num,size,_decreasing_uint64);
+	return(0);
+}
 /*int32_t iguana_sortbignum(void *buf,int32_t size,uint32_t num,int32_t structsize,int32_t dir)
 {
     int32_t retval = 0;

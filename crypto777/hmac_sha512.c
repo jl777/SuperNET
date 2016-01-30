@@ -506,8 +506,8 @@ char *hmac_sha512_str(char *dest,char *key,int32_t key_size,char *message)
     hmac_memory(&sha512_desc,(void *)key,key_size,(void *)message,strlen(message),checkbuf,&size);
     init_hexbytes_noT(dest,mac,SHA512_DIGEST_SIZE);
     init_hexbytes_noT(dest2,checkbuf,SHA512_DIGEST_SIZE);
-    if ( memcmp(checkbuf,mac,SHA512_DIGEST_SIZE) != 0 )
-        printf("hmac_512 error: %s vs %s\n",dest,dest2);
+    //if ( memcmp(checkbuf,mac,SHA512_DIGEST_SIZE) != 0 )
+        printf("hmac_512 : %s vs %s\n",dest,dest2);
 	return(dest);
 }
 

@@ -19,8 +19,9 @@
 #define EXCHANGE777_ISPENDING 2
 #define EXCHANGE777_REQUEUE 3
 
-char *Exchange_names[] = { "bitfinex", "btc38", "bitstamp", "btce", "poloniex", "bittrex", "huobi", "coinbase", "okcoin", "lakebtc", "quadriga", "truefx", "ecb", "instaforex", "fxcm", "yahoo" };
-struct exchange_info *Exchanges[sizeof(Exchange_names)/sizeof(*Exchange_names)];
+char *Exchange_names[] = { "poloniex" };// "bitfinex", "btc38", "bitstamp", "btce", "bittrex", "huobi", "coinbase", "okcoin", "lakebtc", "quadriga",};// "truefx", "ecb", "instaforex", "fxcm", "yahoo" };
+
+    struct exchange_info *Exchanges[sizeof(Exchange_names)/sizeof(*Exchange_names)];
 
 void prices777_processprice(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth)
 {
@@ -405,7 +406,7 @@ int32_t baserel_polarity(char *pairs[][2],int32_t n,char *_base,char *_rel)
         else if ( strcmp(pairs[i][0],rel) == 0 && strcmp(pairs[i][1],base) == 0 )
             return(-1);
     }
-    printf("cant find.(%s/%s) [%s/%s].%d\n",base,rel,pairs[0][0],pairs[0][1],n);
+    //printf("%s cant find.(%s/%s) [%s/%s].%d\n",exchange->name,base,rel,pairs[0][0],pairs[0][1],n);
     return(0);
 }
 
@@ -429,48 +430,65 @@ char *exchanges777_process(struct exchange_info *exchange,int32_t *retvalp,struc
     switch ( req->func )
     {
         case 'Q': case 'M':
-            memset(req->bidasks,0,req->depth * sizeof(*req->bidasks) * 2);
-            (*exchange->issue.price)(exchange,req->base,req->rel,req->bidasks,req->depth,req->commission,req->argjson);
-            retstr = exchanges777_orderbook_jsonstr(exchange,req->base,req->rel,req->bidasks,req->depth,req->invert,req->allflag);
+            if ( exchange->issue.price != 0 )
+            {
+                memset(req->bidasks,0,req->depth * sizeof(*req->bidasks) * 2);
+                (*exchange->issue.price)(exchange,req->base,req->rel,req->bidasks,req->depth,req->commission,req->argjson);
+                retstr = exchanges777_orderbook_jsonstr(exchange,req->base,req->rel,req->bidasks,req->depth,req->invert,req->allflag);
+            }
             break;
         case 'S':
-            dir = (*exchange->issue.supports)(exchange,req->base,req->rel,req->argjson);
-            retjson = cJSON_CreateObject();
-            jaddnum(retjson,"result",dir);
-            retstr = jprint(retjson,1);
-            break;
-        case 'T':
-            orderid = (*exchange->issue.trade)(req->dotrade,&retstr,exchange,req->base,req->rel,req->dir,req->price,req->volume,req->argjson);
-            if ( retstr == 0 )
+            if ( exchange->issue.supports != 0 )
             {
+                dir = (*exchange->issue.supports)(exchange,req->base,req->rel,req->argjson);
                 retjson = cJSON_CreateObject();
-                if ( orderid != 0 )
-                    jadd64bits(retjson,"result",orderid);
-                else jaddstr(retjson,"error","no return value from trade call");
+                jaddnum(retjson,"result",dir);
                 retstr = jprint(retjson,1);
             }
             break;
-        case 'B':
-            if ( (balancejson= (*exchange->issue.balances)(exchange,req->argjson)) != 0 )
+        case 'T':
+            if ( exchange->issue.trade != 0 )
             {
-                retstr = (*exchange->issue.parsebalance)(exchange,&balance,req->base,balancejson);
-                free_json(balancejson);
+                orderid = (*exchange->issue.trade)(req->dotrade,&retstr,exchange,req->base,req->rel,req->dir,req->price,req->volume,req->argjson);
+                if ( retstr == 0 )
+                {
+                    retjson = cJSON_CreateObject();
+                    if ( orderid != 0 )
+                        jadd64bits(retjson,"result",orderid);
+                    else jaddstr(retjson,"error","no return value from trade call");
+                    retstr = jprint(retjson,1);
+                }
+            }
+            break;
+        case 'B':
+            if ( exchange->issue.balances != 0 && exchange->issue.parsebalance != 0 )
+            {
+                if ( (balancejson= (*exchange->issue.balances)(exchange,req->argjson)) != 0 )
+                {
+                    retstr = (*exchange->issue.parsebalance)(exchange,&balance,req->base,balancejson);
+                    free_json(balancejson);
+                }
             }
             break;
         case 'P':
-            retstr = (*exchange->issue.orderstatus)(exchange,req->orderid,req->argjson);
+            if ( exchange->issue.orderstatus != 0 )
+                retstr = (*exchange->issue.orderstatus)(exchange,req->orderid,req->argjson);
             break;
         case 'C':
-            retstr = (*exchange->issue.cancelorder)(exchange,req->orderid,req->argjson);
+            if ( exchange->issue.cancelorder != 0 )
+                retstr = (*exchange->issue.cancelorder)(exchange,req->orderid,req->argjson);
             break;
         case 'O':
-            retstr = (*exchange->issue.openorders)(exchange,req->argjson);
+            if ( exchange->issue.openorders != 0 )
+                retstr = (*exchange->issue.openorders)(exchange,req->argjson);
             break;
         case 'H':
-            retstr = (*exchange->issue.tradehistory)(exchange,req->argjson);
+            if ( exchange->issue.tradehistory != 0 )
+                retstr = (*exchange->issue.tradehistory)(exchange,req->argjson);
             break;
         case 'W':
-            retstr = (*exchange->issue.withdraw)(exchange,req->base,req->volume,req->destaddr,req->argjson);
+            if ( exchange->issue.withdraw != 0 )
+                retstr = (*exchange->issue.withdraw)(exchange,req->base,req->volume,req->destaddr,req->argjson);
             break;
     }
     return(retstr);
@@ -486,9 +504,9 @@ void exchanges777_loop(void *ptr)
         retstr = 0;
         if ( (req= queue_dequeue(&exchange->requestQ,0)) != 0 )
         {
+            printf("dequeued %s.%c\n",exchange->name,req->func);
             if ( req->dead == 0 )
             {
-                //printf("dequeued %s.%c\n",exchange->name,req->func);
                 retstr = exchanges777_process(exchange,&retval,req);
                 if ( retval == EXCHANGE777_DONE )
                 {
@@ -527,16 +545,17 @@ void exchanges777_loop(void *ptr)
         }
         if ( (bot= queue_dequeue(&exchange->tradebotsQ,0)) != 0 )
             tradebot_timeslice(exchange,bot);
-        if ( flag == 0 && time(NULL) > exchange->lastpoll+exchange->pollgap )
+        if ( time(NULL) > exchange->lastpoll+exchange->pollgap )
         {
             if ( (req= queue_dequeue(&exchange->pricesQ,0)) != 0 )
             {
+                printf("check %s pricesQ (%s %s)\n",exchange->name,req->base,req->rel);
                 if ( req->dead == 0 )
                 {
                     if ( req->base[0] != 0 )
                     {
-                        //printf("check %s pricesQ (%s %s)\n",exchange->name,req->base,req->rel);
                         req->timestamp = exchange->lastpoll = (uint32_t)time(NULL);
+                        req->exchange = exchange;
                         req->hbla = (*exchange->issue.price)(exchange,req->base,req->rel,req->bidasks,req->depth,req->commission,req->argjson);
                         for (i=req->numbids=0; i<req->depth; i++)
                             if ( req->bidasks[i << 1].price > SMALLVAL )
@@ -570,7 +589,7 @@ struct exchange_request *exchanges777_baserelfind(struct exchange_info *exchange
     {
         if ( ((strcmp(base,req->base) == 0 && strcmp(rel,req->rel) == 0) || (strcmp(rel,req->base) == 0 && strcmp(base,req->rel) == 0)) && (func < 0 || req->func == func) )
             retreq = req;
-        else queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL,0);
+        queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL,0);
     }
     return(retreq);
 }
@@ -609,6 +628,8 @@ char *exchanges777_submit(struct exchange_info *exchange,char **retstrp,struct e
 char *exchanges777_Qtrade(struct exchange_info *exchange,char *base,char *rel,int32_t maxseconds,int32_t dotrade,int32_t dir,double price,double volume,cJSON *argjson)
 {
     struct exchange_request *req; int32_t polarity; char *retstr = 0;
+    if ( exchange->issue.supports == 0 )
+        return(clonestr("{\"error\":\"no supports function\"}"));
     if ( base[0] == 0 || rel[0] == 0 || (polarity= (*exchange->issue.supports)(exchange,base,rel,argjson)) == 0 || price < SMALLVAL || volume < SMALLVAL )
         return(clonestr("{\"error\":\"invalid base or rel\"}"));
     req = calloc(1,sizeof(*req));
@@ -625,6 +646,8 @@ char *exchanges777_Qtrade(struct exchange_info *exchange,char *base,char *rel,in
 char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,int32_t maxseconds,int32_t allfields,int32_t depth,cJSON *argjson,int32_t monitor,double commission)
 {
     struct exchange_request *req; char *retstr = 0; int32_t polarity;
+    if ( exchange->issue.supports == 0 )
+        return(clonestr("{\"error\":\"no supports function\"}"));
     if ( base[0] == 0 || rel[0] == 0 || (polarity= (*exchange->issue.supports)(exchange,base,rel,argjson)) == 0 )
         return(clonestr("{\"error\":\"invalid base or rel\"}"));
     if ( depth <= 0 )
@@ -642,6 +665,7 @@ char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,i
     else
     {
         req->func = 'M';
+        printf("Monitor.%s (%s %s)\n",exchange->name,base,rel);
         queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL,0);
         return(clonestr("{\"result\":\"start monitoring\"}"));
     }
@@ -752,7 +776,7 @@ struct exchange_info *exchanges777_info(char *exchangestr,int32_t sleepflag,cJSO
 void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sleepflag)
 {
     int32_t i,n; cJSON *argjson,*item; bits256 instantdexhash; struct exchange_info *exchange;
-    if ( exchanges != 0 )
+    if ( 0 && exchanges != 0 )
     {
         n = cJSON_GetArraySize(exchanges);
         for (i=0; i<n; i++)
@@ -766,7 +790,8 @@ void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sle
     {
         argjson = cJSON_CreateObject();
         for (i=0; i<sizeof(Exchange_names)/sizeof(*Exchange_names); i++)
-            exchanges777_info(Exchange_names[i],sleepflag,argjson,0);
+            if ( (exchange= exchanges777_info(Exchange_names[i],sleepflag,argjson,0)) != 0 )
+                myinfo->tradingexchanges[myinfo->numexchanges++] = exchange;
         free_json(argjson);
     }
     instantdexhash = calc_categoryhashes(0,"InstantDEX",0);
