@@ -34,26 +34,35 @@ static char *(*poloniex_baserels)[][2];
 char *ALLPAIRS(struct exchange_info *exchange,cJSON *argjson)
 {
     static int32_t num;
-    char *jsonstr,*baserel; int32_t i; cJSON *json;
+    char *jsonstr,*baserel; int32_t i; cJSON *json,*item;
+    printf("ALLPAIRS num.%d %p\n",num,*poloniex_baserels);
     if ( num == 0 || (*poloniex_baserels) == 0 )
     {
         jsonstr = issue_curl("https://poloniex.com/public?command=returnTicker");
+        //jsonstr[0] = '[';
+        //jsonstr[strlen(jsonstr)-1] = ']';
+        i = 0;
         if ( (json= cJSON_Parse(jsonstr)) != 0 )
         {
             if ( (num= cJSON_GetArraySize(json)) != 0 )
             {
                 poloniex_baserels = calloc(num,sizeof(char *) * 2);
-                for (i=0; i<num; i++)
+                item = json->child;
+                while ( item != 0 )
                 {
-                    if ( (baserel= get_cJSON_fieldname(jitem(json,i))) != 0 && strncmp(baserel,"BTC_",4) == 0 )
+                    if ( (baserel= item->string) != 0 && strncmp(baserel,"BTC_",4) == 0 && strlen(baserel) > 4 )
                     {
                         (*poloniex_baserels)[i][0] = clonestr(baserel+4);
                         (*poloniex_baserels)[i][1] = "BTC";
+                        i++;
                     }
+                    item = item->next;
                 }
             }
             free_json(json);
         }
+        num = i;
+        printf("(%s) num.%d\n",jsonstr,num);
         free(jsonstr);
     }
     return(jprint(exchanges777_allpairs((*poloniex_baserels),num),1));

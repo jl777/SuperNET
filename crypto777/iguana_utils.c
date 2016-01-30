@@ -542,15 +542,21 @@ void tolowercase(char *str)
 
 char *uppercase_str(char *buf,char *str)
 {
-    strcpy(buf,str);
-    touppercase(buf);
+    if ( str != 0 )
+    {
+        strcpy(buf,str);
+        touppercase(buf);
+    } else buf[0] = 0;
     return(buf);
 }
 
 char *lowercase_str(char *buf,char *str)
 {
-    strcpy(buf,str);
-    tolowercase(buf);
+    if ( str != 0 )
+    {
+        strcpy(buf,str);
+        tolowercase(buf);
+    } else buf[0] = 0;
     return(buf);
 }
 
