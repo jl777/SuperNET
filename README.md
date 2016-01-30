@@ -100,3 +100,11 @@ postCall('{"agent":"iguana","method":"test"}'}
 iguana_JSON("{\"agent\":\"iguana",\"method\":\"test\"}"); -> direct C function call
 
 
+iguana can be invoked with a command line argument. if it is a name of a file, it will load it and check to see if it is valid JSON and if it is, it will use it. Otherwise the command line argument needs to be valid JSON to be used and it will process the JSON to initialize account passphrases, exchange apikeys, etc. A few special keys:
+
+"wallet" -> passphrase used for the persistent privkey
+"2fafile" -> secondary part (optional) for the persistent privkey
+"numhelpers" -> number of helper threads (need at least 1)
+"exchanges" -> { "name":"<name of exchange>", ... }
+    "apikey", "apisecret", "userid", "tradepassword" these are as expected
+    "pollgap" -> gap between each access to exchange for getting prices

@@ -86,7 +86,7 @@ cJSON *tradebot_json(struct supernet_info *myinfo,struct exchange_info *exchange
     return(json);
 }
 
-struct tradebot_info *tradebot_find(struct supernet_info *myinfo,struct exchange_info *exchange,char *botname,cJSON *array)
+struct tradebot_info *tradebot_find(struct supernet_info *myinfo,struct exchange_info *exchange,char *botname,cJSON *array,char *base,char *rel)
 {
     struct tradebot_info PAD,*bot,*retbot = 0;
     memset(&PAD,0,sizeof(PAD));
@@ -97,6 +97,8 @@ struct tradebot_info *tradebot_find(struct supernet_info *myinfo,struct exchange
             retbot = bot;
         if ( array != 0 )
             jaddi(array,tradebot_json(myinfo,exchange,bot));
+        if ( base != 0 && rel != 0 && strcmp(base,bot->base) == 0 && strcmp(rel,bot->rel) == 0 )
+            retbot = bot;
         queue_enqueue("tradebotsQ",&exchange->tradebotsQ,&bot->DL,0);
     }
     return(retbot);
@@ -158,30 +160,6 @@ void tradebot_timeslice(struct exchange_info *exchange,void *_bot)
     } else free(bot);
 }
 
-#include "../includes/iguana_apidefs.h"
-
-THREE_STRINGS_AND_DOUBLE(tradebot,monitor,exchange,base,rel,commission)
-{
-    int32_t allfields = 1,depth = 50; struct exchange_info *ptr;
-    if ( remoteaddr == 0 )
-    {
-        if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
-            return(exchanges777_Qprices(ptr,base,rel,30,allfields,depth,json,1,commission * .01));
-        else return(clonestr("{\"error\":\"couldnt find/create exchange info\"}"));
-    } else return(clonestr("{\"error\":\"tradebots only local usage!\"}"));
-}
-
-THREE_STRINGS(tradebot,unmonitor,exchange,base,rel)
-{
-    struct exchange_info *ptr;
-    if ( remoteaddr == 0 )
-    {
-        if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
-            return(exchanges777_unmonitor(ptr,base,rel));
-        else return(clonestr("{\"error\":\"couldnt find/create exchange info\"}"));
-    } else return(clonestr("{\"error\":\"tradebots only local usage!\"}"));
-}
-
 char *tradebot_launch(struct supernet_info *myinfo,char *exchangestr,char *base,char *rel,int32_t dir,double price,double volume,int32_t duration,char *remoteaddr,cJSON *json)
 {
     struct exchange_info *exchange; char retbuf[1024]; struct tradebot_info *bot;
@@ -206,7 +184,7 @@ char *tradebot_control(struct supernet_info *myinfo,char *exchangestr,char *boti
     {
         if ( (exchange= exchanges777_info(exchangestr,1,json,remoteaddr)) != 0 )
         {
-            if ( (bot= tradebot_find(myinfo,exchange,botid,0)) != 0 )
+            if ( (bot= tradebot_find(myinfo,exchange,botid,0,0,0)) != 0 )
             {
                 if ( control > 1 )
                     bot->pause = (uint32_t)time(NULL);
@@ -216,6 +194,30 @@ char *tradebot_control(struct supernet_info *myinfo,char *exchangestr,char *boti
                 return(clonestr("{\"result\":\"ask bot to pause\"}"));
             } else return(clonestr("{\"error\":\"cant find tradebot\"}"));
         }
+        else return(clonestr("{\"error\":\"couldnt find/create exchange info\"}"));
+    } else return(clonestr("{\"error\":\"tradebots only local usage!\"}"));
+}
+
+#include "../includes/iguana_apidefs.h"
+
+THREE_STRINGS_AND_DOUBLE(tradebot,monitor,exchange,base,rel,commission)
+{
+    int32_t allfields = 1,depth = 50; struct exchange_info *ptr;
+    if ( remoteaddr == 0 )
+    {
+        if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+            return(exchanges777_Qprices(ptr,base,rel,30,allfields,depth,json,1,commission * .01));
+        else return(clonestr("{\"error\":\"couldnt find/create exchange info\"}"));
+    } else return(clonestr("{\"error\":\"tradebots only local usage!\"}"));
+}
+
+THREE_STRINGS(tradebot,unmonitor,exchange,base,rel)
+{
+    struct exchange_info *ptr;
+    if ( remoteaddr == 0 )
+    {
+        if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+            return(exchanges777_unmonitor(ptr,base,rel));
         else return(clonestr("{\"error\":\"couldnt find/create exchange info\"}"));
     } else return(clonestr("{\"error\":\"tradebots only local usage!\"}"));
 }
@@ -237,7 +239,7 @@ TWO_STRINGS(tradebot,status,exchange,botid)
     {
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
         {
-            if ( (bot= tradebot_find(myinfo,ptr,botid,0)) != 0 )
+            if ( (bot= tradebot_find(myinfo,ptr,botid,0,0,0)) != 0 )
                 return(jprint(tradebot_json(myinfo,ptr,bot),1));
         }
     }
@@ -251,7 +253,7 @@ STRING_ARG(tradebot,activebots,exchange)
     {
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
         {
-            tradebot_find(myinfo,ptr,0,array);
+            tradebot_find(myinfo,ptr,0,array,0,0);
             retjson = cJSON_CreateObject();
             jaddstr(retjson,"result","success");
             jadd(retjson,"tradebots",array);

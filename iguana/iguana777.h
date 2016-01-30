@@ -721,7 +721,7 @@ cJSON *iguana_voutjson(struct iguana_info *coin,struct iguana_msgvout *vout,int3
 cJSON *iguana_vinjson(struct iguana_info *coin,struct iguana_msgvin *vin);
 char *iguana_rawtxbytes(struct iguana_info *coin,cJSON *json,uint8_t *data,int32_t datalen);
 int32_t iguana_send_VPNversion(struct iguana_info *coin,struct iguana_peer *addr,uint64_t myservices);
-void exchanges777_init(int32_t sleepflag);
+void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sleepflag);
 
 extern queue_t bundlesQ;
 

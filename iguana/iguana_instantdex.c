@@ -15,13 +15,6 @@
 
 #include "exchanges777.h"
 
-struct instantdex_msghdr
-{
-    struct acct777_sig sig __attribute__((packed));
-    char cmd[8];
-    uint8_t serialized[];
-} __attribute__((packed));
-
 int32_t instantdex_rwdata(int32_t rwflag,uint64_t cmdbits,uint8_t *data,int32_t datalen)
 {
     // need to inplace serialize/deserialize here
@@ -85,11 +78,22 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,cJSON *argjson,char *cmdst
     }
 }
 
+void instantdex_updatesources(int32_t dir,struct exchange_quote *quotes,int32_t numquotes)
+{
+    int32_t i; struct exchange_quote *quote;
+    for (i=0; i<numquotes; i++)
+    {
+        quote = &quotes[i << 1];
+    }
+}
+
 char *instantdex_request(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen)
 {
-    char *base,*rel,*request; double volume; int32_t i; struct exchange_info *exchange;
+    char *base,*rel,*request,*str; double volume; int32_t i,num,depth = 30;
+    struct exchange_info *exchange; struct exchange_request *req,*active[64];
     if ( argjson != 0 )
     {
+        num = 0;
         request = jstr(argjson,"request");
         base = jstr(argjson,"base");
         rel = jstr(argjson,"rel");
@@ -100,8 +104,25 @@ char *instantdex_request(struct supernet_info *myinfo,struct instantdex_msghdr *
             {
                 if ( (exchange= myinfo->tradingexchanges[i]) != 0 )
                 {
-                    
+                    if ( (req= exchanges777_baserelfind(exchange,base,rel,'M')) == 0 )
+                    {
+                        if ( (str= exchanges777_Qprices(exchange,base,rel,30,1,depth,argjson,1,exchange->commission)) != 0 )
+                            free(str);
+                        req = exchanges777_baserelfind(exchange,base,rel,'M');
+                    }
+                    if ( req == 0 )
+                    {
+                        if ( (*exchange->issue.supports)(exchange,base,rel,argjson) != 0 )
+                            printf("unexpected null req.(%s %s) %s\n",base,rel,exchange->name);
+                    } else active[num++] = req;
                 }
+            }
+            for (i=0; i<num; i++)
+            {
+                if ( volume < 0. && active[i]->numbids > 0 )
+                    instantdex_updatesources(1,active[i]->bidasks,active[i]->numbids);
+                else if ( volume > 0. && active[i]->numasks > 0 )
+                    instantdex_updatesources(-1,&active[i]->bidasks[1],active[i]->numasks);
             }
             return(clonestr("{\"result\":\"reqprice response sent\"}"));
         }

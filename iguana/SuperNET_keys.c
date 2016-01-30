@@ -43,30 +43,40 @@ bits256 SuperNET_wallet2priv(char *wallet2fname,bits256 wallethash)
 
 char *SuperNET_parsemainargs(struct supernet_info *myinfo,bits256 *wallethashp,bits256 *wallet2privp,char *argjsonstr)
 {
-    cJSON *json; uint8_t secretbuf[512]; char *wallet2fname,*coinargs=0,*secret;
-    bits256 wallethash,wallet2priv; int32_t len;
+    cJSON *exchanges,*json = 0; char *wallet2fname,*coinargs=0,*secret,*filestr;
+    long allocsize; bits256 wallethash,wallet2priv; int32_t n,len; uint8_t secretbuf[8192];
     wallethash = wallet2priv = GENESIS_PRIVKEY;
-    if ( argjsonstr != 0 && (json= cJSON_Parse(argjsonstr)) != 0 )
+    if ( argjsonstr != 0 )
     {
-        printf("ARGSTR.(%s)\n",argjsonstr);
-        if ( jobj(json,"numhelpers") != 0 )
-            IGUANA_NUMHELPERS = juint(json,"numhelpers");
-        if ( (secret= jstr(json,"wallet")) != 0 )
+        if ( (filestr= OS_filestr(&allocsize,argjsonstr)) != 0 )
         {
-            len = (int32_t)strlen(secret);
-            if ( is_hexstr(secret,0) != 0 && len == 128 )
-            {
-                len >>= 1;
-                decode_hex(secretbuf,len,secret);
-            } else vcalc_sha256(0,secretbuf,(void *)secret,len), len = sizeof(bits256);
-            memcpy(wallethash.bytes,secretbuf,sizeof(wallethash));
-            //printf("wallethash.(%s)\n",bits256_str(str,wallethash));
-            if ( (wallet2fname= jstr(json,"2fafile")) != 0 )
-                wallet2priv = SuperNET_wallet2priv(wallet2fname,wallethash);
+            json = cJSON_Parse(filestr);
+            free(filestr);
         }
-        if ( jobj(json,"coins") != 0 )
-            coinargs = argjsonstr;
-        free_json(json);
+        if ( json != 0 || (json= cJSON_Parse(argjsonstr)) != 0 )
+        {
+            printf("ARGSTR.(%s)\n",argjsonstr);
+            if ( jobj(json,"numhelpers") != 0 )
+                IGUANA_NUMHELPERS = juint(json,"numhelpers");
+            if ( (secret= jstr(json,"wallet")) != 0 )
+            {
+                len = (int32_t)strlen(secret);
+                if ( is_hexstr(secret,0) != 0 && len == 128 )
+                {
+                    len >>= 1;
+                    decode_hex(secretbuf,len,secret);
+                } else vcalc_sha256(0,secretbuf,(void *)secret,len), len = sizeof(bits256);
+                memcpy(wallethash.bytes,secretbuf,sizeof(wallethash));
+                //printf("wallethash.(%s)\n",bits256_str(str,wallethash));
+                if ( (wallet2fname= jstr(json,"2fafile")) != 0 )
+                    wallet2priv = SuperNET_wallet2priv(wallet2fname,wallethash);
+            }
+            if ( (exchanges= jarray(&n,json,"exchanges")) != 0 )
+                exchanges777_init(myinfo,exchanges,0);
+            if ( jobj(json,"coins") != 0 )
+                coinargs = argjsonstr;
+            free_json(json);
+        }
     }
     *wallethashp = wallethash, *wallet2privp = wallet2priv;
     return(coinargs);

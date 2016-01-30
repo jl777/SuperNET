@@ -25,7 +25,7 @@
 #define EXCHANGES777_DEFAULT_TIMEOUT 30
 
 struct exchange_info;
-struct exchange_quote { double price,volume; uint64_t orderid,offerNXT; uint32_t timestamp; };
+struct exchange_quote { double price,volume; uint64_t orderid,offerNXT; uint32_t timestamp,val; };
 
 struct exchange_funcs
 {
@@ -53,6 +53,24 @@ struct exchange_info
     CURL *cHandle; queue_t requestQ,pricesQ,pendingQ[2],tradebotsQ;
 };
 
+struct instantdex_msghdr
+{
+    struct acct777_sig sig __attribute__((packed));
+    char cmd[8];
+    uint8_t serialized[];
+} __attribute__((packed));
+
+struct exchange_request
+{
+    struct queueitem DL;
+    cJSON *argjson; char **retstrp;
+    double price,volume,hbla,lastbid,lastask,commission;
+    uint64_t orderid; uint32_t timedout,expiration,dead,timestamp;
+    int32_t dir,depth,func,numbids,numasks;
+    char base[32],rel[32],destaddr[64],invert,allflag,dotrade;
+    struct exchange_quote bidasks[];
+};
+
 void *curl_post(void **cHandlep,char *url,char *userpass,char *postfields,char *hdr0,char *hdr1,char *hdr2,char *hdr3);
 char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *remoteaddr);
 char *instantdex_sendcmd(struct supernet_info *myinfo,cJSON *argjson,char *cmdstr,char *ipaddr,int32_t hops);
@@ -61,6 +79,8 @@ struct exchange_info *exchanges777_info(char *exchangestr,int32_t sleepflag,cJSO
 char *exchanges777_unmonitor(struct exchange_info *exchange,char *base,char *rel);
 void tradebot_timeslice(struct exchange_info *exchange,void *bot);
 char *exchanges777_Qtrade(struct exchange_info *exchange,char *base,char *rel,int32_t maxseconds,int32_t dotrade,int32_t dir,double price,double volume,cJSON *argjson);
+struct exchange_request *exchanges777_baserelfind(struct exchange_info *exchange,char *base,char *rel,int32_t func);
 
 void prices777_processprice(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth);
+
 #endif

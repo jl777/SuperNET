@@ -19,17 +19,6 @@
 #define EXCHANGE777_ISPENDING 2
 #define EXCHANGE777_REQUEUE 3
 
-struct exchange_request
-{
-    struct queueitem DL;
-    cJSON *argjson; char **retstrp;
-    double price,volume,hbla,lastbid,lastask,commission;
-    uint64_t orderid; uint32_t timedout,expiration;
-    int32_t dir,depth,func,numbids,numasks;
-    char base[32],rel[32],destaddr[64],invert,allflag,dotrade;
-    struct exchange_quote bidasks[];
-};
-
 char *Exchange_names[] = { "bitfinex", "btc38", "bitstamp", "btce", "poloniex", "bittrex", "huobi", "coinbase", "okcoin", "lakebtc", "quadriga", "truefx", "ecb", "instaforex", "fxcm", "yahoo" };
 struct exchange_info *Exchanges[sizeof(Exchange_names)/sizeof(*Exchange_names)];
 
@@ -439,7 +428,7 @@ char *exchanges777_process(struct exchange_info *exchange,int32_t *retvalp,struc
     *retvalp = EXCHANGE777_DONE;
     switch ( req->func )
     {
-        case 'Q':
+        case 'Q': case 'M':
             memset(req->bidasks,0,req->depth * sizeof(*req->bidasks) * 2);
             (*exchange->issue.price)(exchange,req->base,req->rel,req->bidasks,req->depth,req->commission,req->argjson);
             retstr = exchanges777_orderbook_jsonstr(exchange,req->base,req->rel,req->bidasks,req->depth,req->invert,req->allflag);
@@ -490,41 +479,50 @@ char *exchanges777_process(struct exchange_info *exchange,int32_t *retvalp,struc
 void exchanges777_loop(void *ptr)
 {
     struct exchange_info *exchange = ptr;
-    int32_t flag,retval; struct exchange_request *req; char *retstr; void *bot;
+    int32_t flag,retval,i; struct exchange_request *req; char *retstr; void *bot;
     while ( 1 )
     {
         flag = retval = 0;
         retstr = 0;
         if ( (req= queue_dequeue(&exchange->requestQ,0)) != 0 )
         {
-            //printf("dequeued %s.%c\n",exchange->name,req->func);
-            retstr = exchanges777_process(exchange,&retval,req);
-            if ( retval == EXCHANGE777_DONE )
+            if ( req->dead == 0 )
             {
-                if ( retstr != 0 )
+                //printf("dequeued %s.%c\n",exchange->name,req->func);
+                retstr = exchanges777_process(exchange,&retval,req);
+                if ( retval == EXCHANGE777_DONE )
                 {
-                    if ( req->retstrp != 0 && req->timedout == 0 )
-                        *req->retstrp = retstr;
-                    else free(retstr);
-                    if ( req->timedout != 0 )
-                        printf("timedout.%u req finally finished at %u\n",req->timedout,(uint32_t)time(NULL));
+                    if ( retstr != 0 )
+                    {
+                        if ( req->retstrp != 0 && req->timedout == 0 )
+                            *req->retstrp = retstr;
+                        else free(retstr);
+                        if ( req->timedout != 0 )
+                            printf("timedout.%u req finally finished at %u\n",req->timedout,(uint32_t)time(NULL));
+                    }
+                    free(req);
+                    flag++;
                 }
-                free(req);
-                flag++;
+                else
+                {
+                    if ( retstr != 0 )
+                        free(retstr);
+                    if ( retval == EXCHANGE777_ISPENDING )
+                        queue_enqueue("Xpending",&exchange->pendingQ[0],&req->DL,0), flag++;
+                    else if ( retval == EXCHANGE777_REQUEUE )
+                        queue_enqueue("requeue",&exchange->requestQ,&req->DL,0);
+                    else
+                    {
+                        printf("exchanges777_process: illegal retval.%d\n",retval);
+                        free(req);
+                    }
+                }
             }
             else
             {
-                if ( retstr != 0 )
-                    free(retstr);
-                if ( retval == EXCHANGE777_ISPENDING )
-                    queue_enqueue("Xpending",&exchange->pendingQ[0],&req->DL,0), flag++;
-                else if ( retval == EXCHANGE777_REQUEUE )
-                    queue_enqueue("requeue",&exchange->requestQ,&req->DL,0);
-                else
-                {
-                    printf("exchanges777_process: illegal retval.%d\n",retval);
-                    free(req);
-                }
+                if ( req->retstrp != 0 )
+                    *req->retstrp = clonestr("{\"result\":\"request killed\"}");
+                free(req);
             }
         }
         if ( (bot= queue_dequeue(&exchange->tradebotsQ,0)) != 0 )
@@ -533,14 +531,29 @@ void exchanges777_loop(void *ptr)
         {
             if ( (req= queue_dequeue(&exchange->pricesQ,0)) != 0 )
             {
-                if ( req->base[0] != 0 )
+                if ( req->dead == 0 )
                 {
-                    //printf("check %s pricesQ (%s %s)\n",exchange->name,req->base,req->rel);
-                    exchange->lastpoll = (uint32_t)time(NULL);
-                    req->hbla = (*exchange->issue.price)(exchange,req->base,req->rel,req->bidasks,req->depth,req->commission,req->argjson);
-                    prices777_processprice(exchange,req->base,req->rel,req->bidasks,req->depth);
+                    if ( req->base[0] != 0 )
+                    {
+                        //printf("check %s pricesQ (%s %s)\n",exchange->name,req->base,req->rel);
+                        req->timestamp = exchange->lastpoll = (uint32_t)time(NULL);
+                        req->hbla = (*exchange->issue.price)(exchange,req->base,req->rel,req->bidasks,req->depth,req->commission,req->argjson);
+                        for (i=req->numbids=0; i<req->depth; i++)
+                            if ( req->bidasks[i << 1].price > SMALLVAL )
+                                req->numbids++;
+                        for (i=req->numasks=0; i<req->depth; i++)
+                            if ( req->bidasks[(i << 1) + 1].price > SMALLVAL )
+                                req->numasks++;
+                        prices777_processprice(exchange,req->base,req->rel,req->bidasks,req->depth);
+                    }
+                    queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL,0);
                 }
-                queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL,0);
+                else
+                {
+                    if ( req->retstrp != 0 )
+                        *req->retstrp = clonestr("{\"result\":\"request killed\"}");
+                    free(req);
+                }
             }
         }
         if ( flag == 0 )
@@ -548,19 +561,28 @@ void exchanges777_loop(void *ptr)
     }
 }
 
-char *exchanges777_unmonitor(struct exchange_info *exchange,char *base,char *rel)
+struct exchange_request *exchanges777_baserelfind(struct exchange_info *exchange,char *base,char *rel,int32_t func)
 {
-    struct exchange_request PAD,*req; char *retstr = 0;
+    struct exchange_request PAD,*req,*retreq=0;
     memset(&PAD,0,sizeof(PAD));
     queue_enqueue("pricesQ",&exchange->pricesQ,&PAD.DL,0);
     while ( (req= queue_dequeue(&exchange->pricesQ,0)) != 0 && req != &PAD )
     {
-        if ( strcmp(base,req->base) == 0 || strcmp(rel,req->rel) == 0 )
-        {
-            printf("unmonitor.%s (%s %s)\n",exchange->name,base,rel);
-            free(req);
-            retstr = clonestr("{\"result\":\"unmonitored\"}");
-        } else queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL,0);
+        if ( ((strcmp(base,req->base) == 0 && strcmp(rel,req->rel) == 0) || (strcmp(rel,req->base) == 0 && strcmp(base,req->rel) == 0)) && (func < 0 || req->func == func) )
+            retreq = req;
+        else queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL,0);
+    }
+    return(retreq);
+}
+
+char *exchanges777_unmonitor(struct exchange_info *exchange,char *base,char *rel)
+{
+    struct exchange_request *req; char *retstr = 0;
+    if ( (req= exchanges777_baserelfind(exchange,base,rel,'M')) != 0 )
+    {
+        printf("unmonitor.%s (%s %s)\n",exchange->name,base,rel);
+        req->dead = (uint32_t)time(NULL);
+        retstr = clonestr("{\"result\":\"mark priceQ entry as dead\"}");
     }
     if ( retstr == 0 )
         retstr = clonestr("{\"error\":\"cant find base/rel pair to unmonitor\"}");
@@ -619,7 +641,7 @@ char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,i
         return(exchanges777_submit(exchange,&retstr,req,'Q',maxseconds));
     else
     {
-        req->func = 'Q';
+        req->func = 'M';
         queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL,0);
         return(clonestr("{\"result\":\"start monitoring\"}"));
     }
@@ -665,6 +687,8 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
         huobi_funcs, lakebtc_funcs, quadriga_funcs, okcoin_funcs, coinbase_funcs, bitstamp_funcs
     };
     char *key,*secret,*userid,*tradepassword; struct exchange_info *exchange; int32_t i,exchangeid;
+    if ( exchangestr == 0 || exchangestr[0] == 0 )
+        return(0);
     if ( (exchangeid= exchanges777_id(exchangestr)) < 0 )
     {
         printf("exchange_create: cant find.(%s)\n",exchangestr);
@@ -725,9 +749,19 @@ struct exchange_info *exchanges777_info(char *exchangestr,int32_t sleepflag,cJSO
     return(exchange);
 }
 
-void exchanges777_init(int32_t sleepflag)
+void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sleepflag)
 {
-    int32_t i; cJSON *argjson; bits256 instantdexhash;
+    int32_t i,n; cJSON *argjson,*item; bits256 instantdexhash; struct exchange_info *exchange;
+    if ( exchanges != 0 )
+    {
+        n = cJSON_GetArraySize(exchanges);
+        for (i=0; i<n; i++)
+        {
+            item = jitem(exchanges,i);
+            if ( (exchange= exchange_create(jstr(item,"name"),item)) != 0 )
+                myinfo->tradingexchanges[myinfo->numexchanges++] = exchange;
+        }
+    }
     if ( 0 )
     {
         argjson = cJSON_CreateObject();
