@@ -560,6 +560,19 @@ char *lowercase_str(char *buf,char *str)
     return(buf);
 }
 
+int32_t strsearch(char *strs[],int32_t num,char *name)
+{
+    int32_t i; char strA[32],refstr[32];
+    strcpy(refstr,name), touppercase(refstr);
+    for (i=0; i<num; i++)
+    {
+        strcpy(strA,strs[i]), touppercase(strA);
+        if ( strcmp(strA,refstr) == 0 )
+            return(i);
+    }
+    return(-1);
+}
+
 int32_t is_decimalstr(char *str)
 {
     int32_t i;

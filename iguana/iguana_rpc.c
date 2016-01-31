@@ -950,6 +950,17 @@ void iguana_rpcloop(void *args)
                 remains = (int32_t)strlen(retstr);
             //printf("POSTFLAG.%d\n",postflag);
             //printf("RETBUF.(%s)\n",retstr);
+            char hdrs[1024];
+            if ( remoteaddr[0] != 0 && strcmp(remoteaddr,"127.0.0.1") != 0 )
+                sprintf(hdrs,"Access-Control-Allow-Origin: *\r\n");
+            else sprintf(hdrs,"Access-Control-Allow-Origin: null\r\n");
+            sprintf(hdrs,"Access-Control-Allow-Credentials: true\r\n");
+            sprintf(hdrs,"Access-Control-Allow-Headers: Authorization, Content-Type\r\n");
+            sprintf(hdrs,"Access-Control-Allow-Methods: GET, POST\r\n");
+            sprintf(hdrs,"Cache-Control: no-cache, no-store, must-revalidate\r\n");
+            sprintf(hdrs,"Content-type: text/html\r\n");
+            sprintf(hdrs,"Content-Length: %8d\r\n",(int32_t)strlen(retstr));
+            send(sock,hdrs,strlen(hdrs),MSG_NOSIGNAL);
             while ( remains > 0 )
             {
                 if ( (numsent= (int32_t)send(sock,&retstr[i],remains,MSG_NOSIGNAL)) < 0 )

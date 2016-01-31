@@ -19,7 +19,7 @@
 #define EXCHANGE777_ISPENDING 2
 #define EXCHANGE777_REQUEUE 3
 
-char *Exchange_names[] = { "poloniex", "bittrex", "btc38",  "huobi", "bitstamp", "bitfinex", "btce", "coinbase", "okcoin", "lakebtc", "quadriga",};// "truefx", "ecb", "instaforex", "fxcm", "yahoo" };
+char *Exchange_names[] = { "poloniex", "bittrex", "btc38",  "huobi", "bitstamp", "bitfinex", "btce", "coinbase", "okcoin", "lakebtc", "quadriga", "truefx", "ecb", "instaforex", "fxcm", "yahoo" };
 
 struct exchange_info *Exchanges[sizeof(Exchange_names)/sizeof(*Exchange_names)];
 
@@ -165,10 +165,39 @@ char *exchanges777_orderbook_jsonstr(struct exchange_info *exchange,char *_base,
     return(jprint(json,1));
 }
 
+double exchange_setquote(struct exchange_quote *bidasks,int32_t *numbidsp,int32_t *numasksp,int32_t bidask,int32_t invert,double price,double volume,double commission,uint64_t orderid,uint32_t timestamp,uint64_t offerNXT)
+{
+    int32_t slot_ba; struct exchange_quote *quote;
+    if ( price > SMALLVAL && volume > SMALLVAL )
+    {
+        if ( invert != 0 )
+        {
+            bidask = (1 ^ bidask);
+            volume *= price;
+            price = 1. / price;
+        }
+        if ( commission != 0. )
+        {
+            //printf("price %f fee %f -> ",price,prices->commission * price);
+            if ( bidask == 0 )
+                price -= commission * price;
+            else price += commission * price;
+            //printf("%f\n",price);
+        }
+        quote = (bidask == 0) ? &bidasks[(*numbidsp)<<1] : &bidasks[((*numasksp)<<1) + 1];
+        quote->price = price, quote->volume = volume, quote->timestamp = timestamp, quote->orderid = orderid, quote->offerNXT = offerNXT;
+        if ( bidask == 0 )
+            slot_ba = ((*numbidsp)++ << 1);
+        else slot_ba = ((*numasksp)++ << 1) | 1;
+        quote->satoshis = (price * SATOSHIDEN);
+    }
+    return(price);
+}
+
 void exchanges777_json_quotes(struct exchange_info *exchange,double commission,char *base,char *rel,double *lastbidp,double *lastaskp,double *hblap,struct exchange_quote *bidasks,cJSON *bids,cJSON *asks,int32_t maxdepth,char *pricefield,char *volfield,uint32_t reftimestamp,int32_t invert)
 {
-    int32_t i,slot,ba2,n=0,m=0,dir,bidask,slot_ba,numitems,numbids,numasks; uint64_t orderid,offerNXT;
-    cJSON *item; struct exchange_quote *quote; uint32_t timestamp; double price,volume,hbla = 0.;
+    int32_t i,slot,n=0,m=0,dir,bidask,numitems,numbids,numasks; uint64_t orderid,offerNXT;
+    cJSON *item; uint32_t timestamp; double price,volume,hbla = 0.;
     *lastbidp = *lastaskp = 0.;
     numbids = numasks = 0;
     if ( reftimestamp == 0 )
@@ -214,36 +243,16 @@ void exchanges777_json_quotes(struct exchange_info *exchange,double commission,c
             else continue;
             if ( price > SMALLVAL && volume > SMALLVAL )
             {
-                if ( invert != 0 )
-                {
-                    ba2 = (1 ^ bidask);
-                    volume *= price;
-                    price = 1. / price;
-                }
-                else ba2 = bidask;
-                if ( commission != 0. )
-                {
-                    //printf("price %f fee %f -> ",price,prices->commission * price);
-                    if ( ba2 == 0 )
-                        price -= commission * price;
-                    else price += commission * price;
-                    //printf("%f\n",price);
-                }
-                quote = (ba2 == 0) ? &bidasks[numbids<<1] : &bidasks[(numasks<<1) + 1];
-                quote->price = price, quote->volume = volume, quote->timestamp = timestamp, quote->orderid = orderid, quote->offerNXT = offerNXT;
-                if ( ba2 == 0 )
-                    slot_ba = (numbids++ << 1);
-                else slot_ba = (numasks++ << 1) | 1;
+                price = exchange_setquote(bidasks,&numbids,&numasks,bidask,invert,price,volume,commission,orderid,timestamp,offerNXT);
                 if ( i == 0 )
                 {
-                    if ( ba2 == 0 )
+                    if ( (bidask ^ invert) == 0 )
                         *lastbidp = price;
                     else *lastaskp = price;
                     if ( hbla == 0. )
                         hbla = price;
                     else hbla = 0.5 * (hbla + price);
                 }
-                quote->satoshis = (price * SATOSHIDEN);
                 //printf("%d,%d: %-8s %s %5s/%-5s %13.8f vol %13.8f | i %13.8f vol %13.8f | t.%u\n",numbids,numasks,exchange->name,dir>0?"bid":"ask",base,rel,price,volume,1./price,volume*price,timestamp);
             }
         }
@@ -404,14 +413,16 @@ char *exchange_extractorderid(int32_t historyflag,char *status,uint64_t quoteid,
 
 int32_t baserel_polarity(char *pairs[][2],int32_t n,char *_base,char *_rel)
 {
-    int32_t i; char base[32],rel[32];
+    int32_t i; char base[32],rel[32],cmpbase[32],cmprel[32];
     strcpy(base,_base), tolowercase(base);
     strcpy(rel,_rel), tolowercase(rel);
     for (i=0; i<n; i++)
     {
-        if ( strcmp(pairs[i][0],base) == 0 && strcmp(pairs[i][1],rel) == 0 )
+        strcpy(cmpbase,pairs[i][0]), tolowercase(cmpbase);
+        strcpy(cmprel,pairs[i][1]), tolowercase(cmprel);
+        if ( strcmp(cmpbase,base) == 0 && strcmp(cmprel,rel) == 0 )
             return(1);
-        else if ( strcmp(pairs[i][0],rel) == 0 && strcmp(pairs[i][1],base) == 0 )
+        else if ( strcmp(cmpbase,rel) == 0 && strcmp(cmprel,base) == 0 )
             return(-1);
     }
     //printf("%s cant find.(%s/%s) [%s/%s].%d\n",exchange->name,base,rel,pairs[0][0],pairs[0][1],n);
@@ -430,6 +441,12 @@ int32_t baserel_polarity(char *pairs[][2],int32_t n,char *_base,char *_rel)
 #include "exchanges/okcoin.c"
 #include "exchanges/coinbase.c"
 #include "exchanges/bitstamp.c"
+
+#include "exchanges/truefx.c"
+#include "exchanges/yahoo.c"
+#include "exchanges/fxcm.c"
+#include "exchanges/instaforex.c"
+#include "exchanges/ecb.c"
 
 int32_t exchanges777_orient(struct exchange_info *exchange,char *base,char *rel,double *pricep,double *volumep,struct exchange_request *req)
 {
@@ -531,6 +548,8 @@ char *exchanges777_process(struct exchange_info *exchange,int32_t *retvalp,struc
                 retstr = (*exchange->issue.withdraw)(exchange,req->base,req->volume,req->destaddr,req->argjson);
             break;
     }
+    if ( retstr == 0 )
+        retstr = clonestr("{\"error\":\"null return\"}");
     return(retstr);
 }
 
@@ -742,9 +761,11 @@ int32_t exchanges777_id(char *exchangestr)
     int32_t i;
     for (i=0; i<sizeof(Exchange_names)/sizeof(*Exchange_names); i++)
     {
+        //printf("%s ",Exchange_names[i]);
         if ( strcmp(exchangestr,Exchange_names[i]) == 0 )
             return(i);
     }
+    //printf("cant find (%s)\n",exchangestr);
     return(-1);
 }
 
@@ -760,7 +781,7 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
 {
     struct exchange_funcs funcs[] =
     {
-        {"truefx", 0 }, {"ecb", 0 }, {"instaforex", 0 }, {"fxcm", 0 }, {"yahoo", 0 },
+        truefx_funcs, ecb_funcs, instaforex_funcs, fxcm_funcs, yahoo_funcs,
         poloniex_funcs, bittrex_funcs, btce_funcs, bitfinex_funcs, btc38_funcs,
         huobi_funcs, lakebtc_funcs, quadriga_funcs, okcoin_funcs, coinbase_funcs, bitstamp_funcs
     };
@@ -822,6 +843,8 @@ struct exchange_info *exchanges777_info(char *exchangestr,int32_t sleepflag,cJSO
                 sleep(sleepflag);
         }
     }
+    if ( 0 && exchange != 0 )
+        printf("found exchange.(%s) %p %p %p\n",exchange->name,exchange->issue.supports,exchange->issue.price,exchange->issue.allpairs);
     return(exchange);
 }
 
@@ -981,7 +1004,7 @@ ZERO_ARGS(InstantDEX,allexchanges)
 STRING_ARG(InstantDEX,allpairs,exchange)
 {
     struct exchange_info *ptr;
-    if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+    if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 && ptr->issue.allpairs != 0 )
         return((*ptr->issue.allpairs)(ptr,json));
     else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
 }
