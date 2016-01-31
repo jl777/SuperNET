@@ -19,7 +19,7 @@
 #define EXCHANGE777_ISPENDING 2
 #define EXCHANGE777_REQUEUE 3
 
-char *Exchange_names[] = { "poloniex", "bittrex", "btc38",  "huobi", };// "bitstamp", "bitfinex", "btce", "coinbase", "okcoin", "lakebtc", "quadriga",};// "truefx", "ecb", "instaforex", "fxcm", "yahoo" };
+char *Exchange_names[] = { "poloniex", "bittrex", "btc38",  "huobi", "bitstamp", "bitfinex", "btce", "coinbase", "okcoin", "lakebtc", "quadriga",};// "truefx", "ecb", "instaforex", "fxcm", "yahoo" };
 
 struct exchange_info *Exchanges[sizeof(Exchange_names)/sizeof(*Exchange_names)];
 
