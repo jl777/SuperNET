@@ -19,9 +19,9 @@
 #define EXCHANGE777_ISPENDING 2
 #define EXCHANGE777_REQUEUE 3
 
-char *Exchange_names[] = { "poloniex", "bitfinex", "btc38", "bitstamp", "btce", "bittrex", "huobi", "coinbase", "okcoin", "lakebtc", "quadriga",};// "truefx", "ecb", "instaforex", "fxcm", "yahoo" };
+char *Exchange_names[] = { "poloniex", "bittrex", "btc38",  "huobi", };// "bitstamp", "bitfinex", "btce", "coinbase", "okcoin", "lakebtc", "quadriga",};// "truefx", "ecb", "instaforex", "fxcm", "yahoo" };
 
-    struct exchange_info *Exchanges[sizeof(Exchange_names)/sizeof(*Exchange_names)];
+struct exchange_info *Exchanges[sizeof(Exchange_names)/sizeof(*Exchange_names)];
 
 void prices777_processprice(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth)
 {
@@ -165,9 +165,9 @@ char *exchanges777_orderbook_jsonstr(struct exchange_info *exchange,char *_base,
     return(jprint(json,1));
 }
 
-void exchanges777_json_quotes(struct exchange_info *exchange,double commission,char *base,char *rel,double *lastbidp,double *lastaskp,double *hblap,struct exchange_quote *bidasks,cJSON *bids,cJSON *asks,int32_t maxdepth,char *pricefield,char *volfield,uint32_t reftimestamp)
+void exchanges777_json_quotes(struct exchange_info *exchange,double commission,char *base,char *rel,double *lastbidp,double *lastaskp,double *hblap,struct exchange_quote *bidasks,cJSON *bids,cJSON *asks,int32_t maxdepth,char *pricefield,char *volfield,uint32_t reftimestamp,int32_t invert)
 {
-    int32_t i,slot,n=0,m=0,dir,bidask,slot_ba,numitems,numbids,numasks; uint64_t orderid,offerNXT;
+    int32_t i,slot,ba2,n=0,m=0,dir,bidask,slot_ba,numitems,numbids,numasks; uint64_t orderid,offerNXT;
     cJSON *item; struct exchange_quote *quote; uint32_t timestamp; double price,volume,hbla = 0.;
     *lastbidp = *lastaskp = 0.;
     numbids = numasks = 0;
@@ -214,29 +214,37 @@ void exchanges777_json_quotes(struct exchange_info *exchange,double commission,c
             else continue;
             if ( price > SMALLVAL && volume > SMALLVAL )
             {
+                if ( invert != 0 )
+                {
+                    ba2 = (1 ^ bidask);
+                    volume *= price;
+                    price = 1. / price;
+                }
+                else ba2 = bidask;
                 if ( commission != 0. )
                 {
                     //printf("price %f fee %f -> ",price,prices->commission * price);
-                    if ( bidask == 0 )
+                    if ( ba2 == 0 )
                         price -= commission * price;
                     else price += commission * price;
                     //printf("%f\n",price);
                 }
-                quote = (bidask == 0) ? &bidasks[numbids<<1] : &bidasks[(numasks<<1) + 1];
+                quote = (ba2 == 0) ? &bidasks[numbids<<1] : &bidasks[(numasks<<1) + 1];
                 quote->price = price, quote->volume = volume, quote->timestamp = timestamp, quote->orderid = orderid, quote->offerNXT = offerNXT;
-                if ( bidask == 0 )
+                if ( ba2 == 0 )
                     slot_ba = (numbids++ << 1);
                 else slot_ba = (numasks++ << 1) | 1;
                 if ( i == 0 )
                 {
-                    if ( bidask == 0 )
+                    if ( ba2 == 0 )
                         *lastbidp = price;
                     else *lastaskp = price;
                     if ( hbla == 0. )
                         hbla = price;
                     else hbla = 0.5 * (hbla + price);
                 }
-                printf("%d,%d: %-8s %s %5s/%-5s %13.8f vol %13.8f | i %13.8f vol %13.8f | t.%u\n",numbids,numasks,exchange->name,dir>0?"bid":"ask",base,rel,price,volume,1./price,volume*price,timestamp);
+                quote->satoshis = (price * SATOSHIDEN);
+                //printf("%d,%d: %-8s %s %5s/%-5s %13.8f vol %13.8f | i %13.8f vol %13.8f | t.%u\n",numbids,numasks,exchange->name,dir>0?"bid":"ask",base,rel,price,volume,1./price,volume*price,timestamp);
             }
         }
     }
@@ -244,7 +252,7 @@ void exchanges777_json_quotes(struct exchange_info *exchange,double commission,c
         *hblap = hbla;
 }
 
-double exchanges777_json_orderbook(struct exchange_info *exchange,double commission,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth,cJSON *json,char *resultfield,char *bidfield,char *askfield,char *pricefield,char *volfield)
+double exchanges777_json_orderbook(struct exchange_info *exchange,double commission,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth,cJSON *json,char *resultfield,char *bidfield,char *askfield,char *pricefield,char *volfield,int32_t invert)
 {
     cJSON *obj = 0,*bidobj=0,*askobj=0; double lastbid,lastask,hbla = 0.; int32_t numasks=0,numbids=0;
     if ( resultfield == 0 )
@@ -257,22 +265,22 @@ double exchanges777_json_orderbook(struct exchange_info *exchange,double commiss
         askobj = jarray(&numasks,obj,askfield);
         if ( bidobj != 0 || askobj != 0 )
         {
-            exchanges777_json_quotes(exchange,commission,base,rel,&lastbid,&lastask,&hbla,bidasks,bidobj,askobj,maxdepth,pricefield,volfield,0);
+            exchanges777_json_quotes(exchange,commission,base,rel,&lastbid,&lastask,&hbla,bidasks,bidobj,askobj,maxdepth,pricefield,volfield,0,invert);
         }
     }
     return(hbla);
 }
 
-double exchanges777_standardprices(struct exchange_info *exchange,double commission,char *base,char *rel,char *url,struct exchange_quote *quotes,char *price,char *volume,int32_t maxdepth,char *field)
+double exchanges777_standardprices(struct exchange_info *exchange,double commission,char *base,char *rel,char *url,struct exchange_quote *quotes,char *price,char *volume,int32_t maxdepth,char *field,int32_t invert)
 {
     char *jsonstr; cJSON *json; double hbla = 0.;
     if ( (jsonstr= issue_curl(url)) != 0 )
     {
         //if ( strcmp(exchangestr,"btc38") == 0 )
-        printf("(%s) -> (%s)\n",url,jsonstr);
+        //printf("(%s) -> (%s)\n",url,jsonstr);
         if ( (json= cJSON_Parse(jsonstr)) != 0 )
         {
-            hbla = exchanges777_json_orderbook(exchange,commission,base,rel,quotes,maxdepth,json,field,"bids","asks",price,volume);
+            hbla = exchanges777_json_orderbook(exchange,commission,base,rel,quotes,maxdepth,json,field,"bids","asks",price,volume,invert);
             free_json(json);
         }
         free(jsonstr);
@@ -423,9 +431,36 @@ int32_t baserel_polarity(char *pairs[][2],int32_t n,char *_base,char *_rel)
 #include "exchanges/coinbase.c"
 #include "exchanges/bitstamp.c"
 
+int32_t exchanges777_orient(struct exchange_info *exchange,char *base,char *rel,double *pricep,double *volumep,struct exchange_request *req)
+{
+    int32_t polarity = 1;
+    if ( exchange->issue.supports != 0 )
+        polarity = (*exchange->issue.supports)(exchange,req->base,req->rel,req->argjson);
+    if ( polarity < 0 )
+    {
+        strcpy(base,req->rel);
+        strcpy(rel,req->base);
+        if ( volumep != 0 )
+            *volumep = (req->price * req->volume);
+        if ( pricep != 0 && req->price != 0 )
+            *pricep = 1. / req->price;
+    }
+    else
+    {
+        strcpy(rel,req->rel);
+        strcpy(base,req->base);
+        if ( pricep != 0 )
+            *pricep = req->price;
+        if ( volumep != 0 )
+            *volumep = req->volume;
+    }
+    touppercase(base), touppercase(rel);
+    return(polarity);
+}
+
 char *exchanges777_process(struct exchange_info *exchange,int32_t *retvalp,struct exchange_request *req)
 {
-    char *retstr = 0; int32_t dir; uint64_t orderid; double balance; cJSON *balancejson,*retjson;
+    char base[32],rel[32],*retstr = 0; int32_t polarity; uint64_t orderid; double price,volume,balance; cJSON *balancejson,*retjson;
     *retvalp = EXCHANGE777_DONE;
     switch ( req->func )
     {
@@ -433,23 +468,25 @@ char *exchanges777_process(struct exchange_info *exchange,int32_t *retvalp,struc
             if ( exchange->issue.price != 0 )
             {
                 memset(req->bidasks,0,req->depth * sizeof(*req->bidasks) * 2);
-                (*exchange->issue.price)(exchange,req->base,req->rel,req->bidasks,req->depth,req->commission,req->argjson);
-                retstr = exchanges777_orderbook_jsonstr(exchange,req->base,req->rel,req->bidasks,req->depth,req->invert,req->allflag);
+                polarity = exchanges777_orient(exchange,base,rel,0,0,req);
+                (*exchange->issue.price)(exchange,base,rel,req->bidasks,req->depth,req->commission,req->argjson,polarity < 0);
+                retstr = exchanges777_orderbook_jsonstr(exchange,base,rel,req->bidasks,req->depth,0,req->allflag);
             }
             break;
         case 'S':
             if ( exchange->issue.supports != 0 )
             {
-                dir = (*exchange->issue.supports)(exchange,req->base,req->rel,req->argjson);
+                polarity = (*exchange->issue.supports)(exchange,req->base,req->rel,req->argjson);
                 retjson = cJSON_CreateObject();
-                jaddnum(retjson,"result",dir);
+                jaddnum(retjson,"result",polarity);
                 retstr = jprint(retjson,1);
             }
             break;
         case 'T':
             if ( exchange->issue.trade != 0 )
             {
-                orderid = (*exchange->issue.trade)(req->dotrade,&retstr,exchange,req->base,req->rel,req->dir,req->price,req->volume,req->argjson);
+                polarity = exchanges777_orient(exchange,base,rel,&price,&volume,req);
+                orderid = (*exchange->issue.trade)(req->dotrade,&retstr,exchange,base,rel,polarity * req->dir,price,volume,req->argjson);
                 if ( retstr == 0 )
                 {
                     retjson = cJSON_CreateObject();
@@ -511,7 +548,7 @@ void exchanges777_loop(void *ptr)
             if ( req->dead == 0 )
             {
                 retstr = exchanges777_process(exchange,&retval,req);
-                printf("retval.%d (%p) retstrp.%p timedout.%u\n",retval,retstr,req->retstrp,req->timedout);
+                //printf("retval.%d (%p) retstrp.%p timedout.%u\n",retval,retstr,req->retstrp,req->timedout);
                 if ( retval == EXCHANGE777_DONE )
                 {
                     if ( retstr != 0 )
@@ -553,20 +590,21 @@ void exchanges777_loop(void *ptr)
         {
             if ( (req= queue_dequeue(&exchange->pricesQ,0)) != 0 )
             {
-                printf("check %s pricesQ (%s %s)\n",exchange->name,req->base,req->rel);
+                //printf("check %s pricesQ (%s %s)\n",exchange->name,req->base,req->rel);
                 if ( req->dead == 0 )
                 {
                     if ( req->base[0] != 0 )
                     {
                         req->timestamp = exchange->lastpoll = (uint32_t)time(NULL);
                         req->exchange = exchange;
-                        req->hbla = (*exchange->issue.price)(exchange,req->base,req->rel,req->bidasks,req->depth,req->commission,req->argjson);
+                        req->hbla = (*exchange->issue.price)(exchange,req->base,req->rel,req->bidasks,req->depth,req->commission,req->argjson,req->invert);
                         for (i=req->numbids=0; i<req->depth; i++)
                             if ( req->bidasks[i << 1].price > SMALLVAL )
                                 req->numbids++;
                         for (i=req->numasks=0; i<req->depth; i++)
                             if ( req->bidasks[(i << 1) + 1].price > SMALLVAL )
                                 req->numasks++;
+                        //printf("%-10s %s/%s numbids.%d numasks.%d\n",exchange->name,req->base,req->rel,req->numbids,req->numasks);
                         prices777_processprice(exchange,req->base,req->rel,req->bidasks,req->depth);
                     }
                     queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL,0);
@@ -591,7 +629,7 @@ struct exchange_request *exchanges777_baserelfind(struct exchange_info *exchange
     queue_enqueue("pricesQ",&exchange->pricesQ,&PAD.DL,0);
     while ( (req= queue_dequeue(&exchange->pricesQ,0)) != 0 && req != &PAD )
     {
-        if ( ((strcmp(base,req->base) == 0 && strcmp(rel,req->rel) == 0) || (strcmp(rel,req->base) == 0 && strcmp(base,req->rel) == 0)) && (func < 0 || req->func == func) )
+        if ( ((req->invert == 0 && strcmp(base,req->base) == 0 && strcmp(rel,req->rel) == 0) || (req->invert != 0 && strcmp(rel,req->base) == 0 && strcmp(base,req->rel) == 0)) && (func < 0 || req->func == func) )
             retreq = req;
         queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL,0);
     }
@@ -614,18 +652,19 @@ char *exchanges777_unmonitor(struct exchange_info *exchange,char *base,char *rel
 
 char *exchanges777_submit(struct exchange_info *exchange,struct exchange_request *req,int32_t func,int32_t maxseconds)
 {
-    int32_t i;
+    int32_t i; char **retstrp,*retstr;
     req->func = func;
     if ( maxseconds == 0 )
         maxseconds = EXCHANGES777_DEFAULT_TIMEOUT;
-    printf("retstrp.%p\n",req->retstrp);
+    retstrp = req->retstrp;
     queue_enqueue("exchangeQ",&exchange->requestQ,&req->DL,0);
     for (i=0; i<maxseconds; i++)
     {
-        if ( req->retstrp != 0 && *req->retstrp != 0 )
+        if ( retstrp != 0 && (retstr= *retstrp) != 0 )
         {
-            printf("GOT.(%s)\n",*req->retstrp);
-            return(*req->retstrp);
+            //printf("GOT.(%s)\n",retstr);
+            free(retstrp);
+            return(retstr);
         }
         sleep(1);
     }
@@ -635,17 +674,15 @@ char *exchanges777_submit(struct exchange_info *exchange,struct exchange_request
 
 char *exchanges777_Qtrade(struct exchange_info *exchange,char *base,char *rel,int32_t maxseconds,int32_t dotrade,int32_t dir,double price,double volume,cJSON *argjson)
 {
-    struct exchange_request *req; int32_t polarity; char *retstr = 0;
+    struct exchange_request *req; int32_t polarity; 
     if ( exchange->issue.supports == 0 )
         return(clonestr("{\"error\":\"no supports function\"}"));
-    if ( base[0] == 0 || rel[0] == 0 || (polarity= (*exchange->issue.supports)(exchange,base,rel,argjson)) == 0 || price < SMALLVAL || volume < SMALLVAL )
+    if ( base[0] == 0 || rel[0] == 0 || (polarity= (*exchange->issue.supports)(exchange,base,rel,argjson)) <= 0 || price < SMALLVAL || volume < SMALLVAL )
         return(clonestr("{\"error\":\"invalid base or rel\"}"));
     req = calloc(1,sizeof(*req));
-    req->argjson = argjson; req->retstrp = &retstr;
+    req->argjson = argjson; req->retstrp = calloc(1,sizeof(void *));
     safecopy(req->base,base,sizeof(req->base));
     safecopy(req->rel,rel,sizeof(req->rel));
-    if ( polarity < 0 )
-        dir *= -1, volume *= price, price = 1. / price;
     req->price = price, req->volume = volume, req->dir = dir;
     req->dotrade = dotrade;
     return(exchanges777_submit(exchange,req,'T',maxseconds));
@@ -653,7 +690,7 @@ char *exchanges777_Qtrade(struct exchange_info *exchange,char *base,char *rel,in
 
 char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,int32_t maxseconds,int32_t allfields,int32_t depth,cJSON *argjson,int32_t monitor,double commission)
 {
-    struct exchange_request *req; char *retstr = 0; int32_t polarity;
+    struct exchange_request *req; int32_t polarity;
     if ( exchange->issue.supports == 0 )
         return(clonestr("{\"error\":\"no supports function\"}"));
     if ( base[0] == 0 || rel[0] == 0 || (polarity= (*exchange->issue.supports)(exchange,base,rel,argjson)) == 0 )
@@ -661,11 +698,19 @@ char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,i
     if ( depth <= 0 )
         depth = 1;
     req = calloc(1,sizeof(*req) + sizeof(*req->bidasks)*depth*2);
-    req->argjson = argjson; req->retstrp = &retstr;
-    safecopy(req->base,base,sizeof(req->base));
-    safecopy(req->rel,rel,sizeof(req->rel));
+    req->argjson = argjson; req->retstrp = calloc(1,sizeof(void *));
+    if ( polarity < 0 )
+    {
+        req->invert = 1;
+        safecopy(req->base,rel,sizeof(req->base));
+        safecopy(req->rel,base,sizeof(req->rel));
+    }
+    else
+    {
+        safecopy(req->base,base,sizeof(req->base));
+        safecopy(req->rel,rel,sizeof(req->rel));
+    }
     req->depth = depth, req->allflag = allfields;
-    req->invert = (polarity < 0);
     if ( (req->commission= commission) == 0. )
         req->commission = exchange->commission;
     if ( monitor == 0 )
@@ -673,7 +718,7 @@ char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,i
     else
     {
         req->func = 'M';
-        printf("Monitor.%s (%s %s)\n",exchange->name,base,rel);
+        printf("Monitor.%s (%s %s) invert.%d\n",exchange->name,base,rel,req->invert);
         queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL,0);
         return(clonestr("{\"result\":\"start monitoring\"}"));
     }
@@ -681,13 +726,13 @@ char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,i
 
 char *exchanges777_Qrequest(struct exchange_info *exchange,int32_t func,char *base,char *rel,int32_t maxseconds,uint64_t orderid,char *destaddr,double amount,cJSON *argjson)
 {
-    struct exchange_request *req; char *retstr = 0;
+    struct exchange_request *req;
     req = calloc(1,sizeof(*req));
     req->volume = amount;
     safecopy(req->destaddr,destaddr,sizeof(req->destaddr));
     safecopy(req->base,base,sizeof(req->base));
     safecopy(req->rel,rel,sizeof(req->rel));
-    req->retstrp = &retstr;
+    req->retstrp = calloc(1,sizeof(void *));
     req->orderid = orderid;
     return(exchanges777_submit(exchange,req,func,maxseconds));
 }
@@ -730,9 +775,7 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
     for (i=0; i<sizeof(funcs)/sizeof(*funcs); i++)
     {
         if ( strcmp(exchangestr,funcs[i].name) == 0 )
-        {
             break;
-        }
     }
     if ( i == sizeof(funcs)/sizeof(*funcs) )
     {
@@ -795,7 +838,7 @@ void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sle
                 myinfo->tradingexchanges[myinfo->numexchanges++] = exchange;
         }
     }
-    if ( 0 )
+    if ( 1 )
     {
         argjson = cJSON_CreateObject();
         for (i=0; i<sizeof(Exchange_names)/sizeof(*Exchange_names); i++)

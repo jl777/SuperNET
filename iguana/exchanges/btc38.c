@@ -90,11 +90,11 @@ int32_t SUPPORTS(struct exchange_info *exchange,char *_base,char *_rel,cJSON *ar
             if ( strcmp(btc38_cnypairs[i],base) == 0 )
                 return(1);
     }
-    printf("BTC38 doesnt support (%s/%s)\n",base,rel);
+    //printf("BTC38 doesnt support (%s/%s)\n",base,rel);
     return(0);
 }
 
-double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
+double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert)
 {
     char url[1024],lrel[16],lbase[16];
     strcpy(lrel,rel), strcpy(lbase,base);
@@ -102,7 +102,7 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
     if ( strcmp(lbase,"cny") == 0 && strcmp(lrel,"btc") == 0 )
         sprintf(url,"http://api.btc38.com/v1/depth.php?c=%s&mk_type=%s","btc","cny");
     else sprintf(url,"http://api.btc38.com/v1/depth.php?c=%s&mk_type=%s",lbase,lrel);
-    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0));
+    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0,invert));
 }
 
 cJSON *SIGNPOST(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *payload,char *path)

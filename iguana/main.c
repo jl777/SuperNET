@@ -295,10 +295,6 @@ void mainloop(struct supernet_info *myinfo)
         }
         if ( flag == 0 )
         {
-            //double avebid,aveask; cJSON *argjson = cJSON_Parse("{}");
-            //avebid = instantdex_aveprice(myinfo,"NXT","BTC",10000,argjson);
-            //aveask = instantdex_aveprice(myinfo,"NXT","BTC",-10000,argjson);
-            //printf("avebid %.8f aveask %.8f\n",avebid,aveask);
             sleep(10);
         }
     }

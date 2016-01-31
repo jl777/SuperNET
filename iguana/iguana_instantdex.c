@@ -78,33 +78,37 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,cJSON *argjson,char *cmdst
     }
 }
 
-int32_t instantdex_updatesources(uint64_t *sortbuf,int32_t n,int32_t ind,int32_t dir,struct exchange_quote *quotes,int32_t numquotes)
+int32_t instantdex_updatesources(struct exchange_quote *sortbuf,int32_t n,int32_t max,int32_t ind,int32_t dir,struct exchange_quote *quotes,int32_t numquotes)
 {
     int32_t i; struct exchange_quote *quote;
+    //printf("instantdex_updatesources update dir.%d numquotes.%d\n",dir,numquotes);
     for (i=0; i<numquotes; i++)
     {
         quote = &quotes[i << 1];
         //printf("n.%d ind.%d i.%d dir.%d price %.8f vol %.8f\n",n,ind,i,dir,quote->price,quote->volume);
         if ( quote->price > SMALLVAL )
         {
-            quote->val = ind;
-            sortbuf[n*2] = quote->price * SATOSHIDEN;
+            sortbuf[n] = *quote;
+            sortbuf[n].val = ind;
             //printf("sortbuf[%d] <-\n",n*2);
-            memcpy(&sortbuf[n*2 + 1],&quote,sizeof(quote));
-            n++;
+            if ( ++n >= max )
+                break;
         }
     }
     return(n);
 }
 
-double instantdex_aveprice(struct supernet_info *myinfo,char *base,char *rel,double volume,cJSON *argjson)
+double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *sortbuf,int32_t max,double *totalvolp,char *base,char *rel,double relvolume,cJSON *argjson)
 {
     char *str; double totalvol,pricesum; uint32_t timestamp;
-    uint64_t sortbuf[64*32][2]; int32_t i,n,num,depth = 30; struct exchange_quote *quote;
+    struct exchange_quote quote; int32_t i,n,dir,num,depth = 100;
     struct exchange_info *exchange; struct exchange_request *req,*active[64];
     timestamp = (uint32_t)time(NULL);
-    //InstantDEX_supports(myinfo,0,argjson,0,"poloniex",base,rel);
-    if ( base != 0 && rel != 0 && volume > SMALLVAL )
+    if ( relvolume < 0. )
+        relvolume = -relvolume, dir = -1;
+    else dir = 1;
+    memset(sortbuf,0,sizeof(*sortbuf) * max);
+    if ( base != 0 && rel != 0 && relvolume > SMALLVAL )
     {
         for (i=num=0; i<myinfo->numexchanges && num < sizeof(active)/sizeof(*active); i++)
         {
@@ -123,43 +127,46 @@ double instantdex_aveprice(struct supernet_info *myinfo,char *base,char *rel,dou
                 }
                 else
                 {
+                    //printf("active.%s\n",exchange->name);
                     active[num++] = req;
                 }
             }
         }
         for (i=n=0; i<num; i++)
         {
-            if ( active[i]->timestamp > timestamp-30 )
-            {
-                if ( volume < 0. && active[i]->numbids > 0 )
-                    n = instantdex_updatesources(&sortbuf[0][0],n,i,1,active[i]->bidasks,active[i]->numbids);
-                else if ( volume > 0. && active[i]->numasks > 0 )
-                    n = instantdex_updatesources(&sortbuf[0][0],n,i,-1,&active[i]->bidasks[1],active[i]->numasks);
-            }
+            if ( dir < 0 && active[i]->numbids > 0 )
+                n = instantdex_updatesources(sortbuf,n,max,i,1,active[i]->bidasks,active[i]->numbids);
+            else if ( dir > 0 && active[i]->numasks > 0 )
+                n = instantdex_updatesources(sortbuf,n,max,i,-1,&active[i]->bidasks[1],active[i]->numasks);
         }
-        if ( volume < 0. )
-            revsort64s(&sortbuf[0][0],n,sizeof(*sortbuf) * 2);
-        else sort64s(&sortbuf[0][0],n,sizeof(*sortbuf) * 2);
-        for (totalvol=pricesum=i=0; i<n && totalvol < volume; i++)
+        //printf("dir.%d %s/%s numX.%d n.%d\n",dir,base,rel,num,n);
+        if ( dir < 0 )
+            revsort64s(&sortbuf[0].satoshis,n,sizeof(*sortbuf));
+        else sort64s(&sortbuf[0].satoshis,n,sizeof(*sortbuf));
+        for (totalvol=pricesum=i=0; i<n && totalvol < relvolume; i++)
         {
-            memcpy(&quote,&sortbuf[i][1],sizeof(uint64_t));
-            printf("i.%d price %.8f %llu quote.%p\n",i,dstr(sortbuf[i][0]),(long long)sortbuf[i][1],quote);
-            if ( quote != 0 )
+            quote = sortbuf[i];
+            //printf("n.%d i.%d price %.8f %.8f %.8f\n",n,i,dstr(sortbuf[i].satoshis),sortbuf[i].price,quote.volume);
+            if ( quote.satoshis != 0 )
             {
-                pricesum += (quote->price * quote->volume);
-                totalvol += quote->volume;
-                printf("i.%d %12.8f vol %.8f %s | aveprice %.8f total vol %.8f\n",i,dstr(sortbuf[i][0]),quote->volume,active[quote->val]->exchange->name,pricesum/totalvol,totalvol);
+                pricesum += (quote.price * quote.volume);
+                totalvol += quote.volume;
+                //printf("i.%d of %d %12.8f vol %.8f %s | aveprice %.8f total vol %.8f\n",i,n,sortbuf[i].price,quote.volume,active[quote.val]->exchange->name,pricesum/totalvol,totalvol);
             }
         }
         if ( totalvol > 0. )
+        {
+            *totalvolp = pricesum;
             return(pricesum / totalvol);
+        }
     }
+    *totalvolp = 0;
     return(0);
 }
 
 char *instantdex_request(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen)
 {
-    char *base,*rel,*request; double volume,aveprice; int32_t num,depth;
+    char *base,*rel,*request; double volume,aveprice,totalvol; int32_t num,depth; struct exchange_quote sortbuf[1000];
     if ( argjson != 0 )
     {
         num = 0;
@@ -168,7 +175,7 @@ char *instantdex_request(struct supernet_info *myinfo,struct instantdex_msghdr *
         base = jstr(argjson,"base");
         rel = jstr(argjson,"rel");
         volume = jdouble(argjson,"volume");
-        aveprice = instantdex_aveprice(myinfo,base,rel,volume,argjson);
+        aveprice = instantdex_aveprice(myinfo,sortbuf,(int32_t)(sizeof(sortbuf)/sizeof(*sortbuf)),&totalvol,base,rel,volume,argjson);
         return(clonestr("{\"result\":\"request calculated aveprice\"}"));
         return(clonestr("{\"error\":\"request missing parameter\"}"));
     } else return(clonestr("{\"error\":\"request needs argjson\"}"));

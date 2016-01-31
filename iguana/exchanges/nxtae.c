@@ -13,24 +13,24 @@
  *                                                                            *
  ******************************************************************************/
 
-#define EXCHANGE_NAME "quadriga"
-#define UPDATE quadriga ## _price
-#define SUPPORTS quadriga ## _supports
-#define SIGNPOST quadriga ## _signpost
-#define TRADE quadriga ## _trade
-#define ORDERSTATUS quadriga ## _orderstatus
-#define CANCELORDER quadriga ## _cancelorder
-#define OPENORDERS quadriga ## _openorders
-#define TRADEHISTORY quadriga ## _tradehistory
-#define BALANCES quadriga ## _balances
-#define PARSEBALANCE quadriga ## _parsebalance
-#define WITHDRAW quadriga ## _withdraw
-#define CHECKBALANCE quadriga ## _checkbalance
-#define ALLPAIRS quadriga ## _allpairs
-#define FUNCS quadriga ## _funcs
-#define BASERELS quadriga ## _baserels
+#define EXCHANGE_NAME "nxtae"
+#define UPDATE nxtae ## _price
+#define SUPPORTS nxtae ## _supports
+#define SIGNPOST nxtae ## _signpost
+#define TRADE nxtae ## _trade
+#define ORDERSTATUS nxtae ## _orderstatus
+#define CANCELORDER nxtae ## _cancelorder
+#define OPENORDERS nxtae ## _openorders
+#define TRADEHISTORY nxtae ## _tradehistory
+#define BALANCES nxtae ## _balances
+#define PARSEBALANCE nxtae ## _parsebalance
+#define WITHDRAW nxtae ## _withdraw
+#define CHECKBALANCE nxtae ## _checkbalance
+#define ALLPAIRS nxtae ## _allpairs
+#define FUNCS nxtae ## _funcs
+#define BASERELS nxtae ## _baserels
 
-static char *BASERELS[][2] = { {"btc","usd"}, {"btc","cad"} };
+static char *BASERELS[][2] = { {"btc","nxt"}, {"btc","btcd"}, {"btc","ltc"}, {"btc","vrc"}, {"btc","doge"} };
 #include "exchange_supports.h"
 
 double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert)
@@ -38,7 +38,7 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
     char url[1024],lrel[16],lbase[16];
     strcpy(lrel,rel), strcpy(lbase,base);
     tolowercase(lrel), tolowercase(lbase);
-    sprintf(url,"https://api.quadrigacx.com/v2/order_book?book=%s_%s",lbase,lrel);
+    sprintf(url,"http://api.quadrigacx.com/v2/order_book?book=%s_%s",lbase,lrel);
     return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0,invert));
 }
 
@@ -155,18 +155,21 @@ char *TRADEHISTORY(struct exchange_info *exchange,cJSON *argjson)
 
 char *WITHDRAW(struct exchange_info *exchange,char *base,double amount,char *destaddr,cJSON *argjson)
 {
-    char buf[1024];
-    if ( base == 0 || base[0] == 0 )
-        return(clonestr("{\"error\":\"base not specified\"}"));
-    if ( destaddr == 0 || destaddr[0] == 0 )
-        return(clonestr("{\"error\":\"destaddr not specified\"}"));
-    if ( amount < SMALLVAL )
-        return(clonestr("{\"error\":\"amount not specified\"}"));
-    sprintf(buf,"\"amount\":%.4f,\"address\":\"%s\",",amount,destaddr);
-    printf("submit.(%s)\n",buf);
-    return(jprint(SIGNPOST(&exchange->cHandle,1,0,exchange,"","bitcoin_withdrawal"),1));
+    uint64_t txid,assetid,assetoshis; cJSON *retjson = cJSON_CreateObject();
+    if ( is_validNXT(destaddr) < 0 )
+        jaddstr(retjson,"error","invalid NXT address");
+    else if ( (assetid= is_MGW_asset(base)) == 0 )
+        jaddstr(retjson,"error","invalid MGW asset");
+    else if ( is_validNXT_amount(base) < 0 )
+        jaddstr(retjson,"error","invalid NXT asset");
+    else if ( (txid= MGW_redeem(passphrase,assetid,assetoshis,destaddr)) != 0 )
+    {
+        jaddstr(retjson,"result","success");
+        jadd64bits(retjson,"redeemtxid",txid);
+    } else jaddstr(retjson,"error","couldnt submit MGW redeem");
+    return(jprint(retjson,1));
 }
 
-struct exchange_funcs quadriga_funcs = EXCHANGE_FUNCS(quadriga,EXCHANGE_NAME);
+struct exchange_funcs nxtae_funcs = EXCHANGE_FUNCS(nxtae,EXCHANGE_NAME);
 
 #include "exchange_undefs.h"

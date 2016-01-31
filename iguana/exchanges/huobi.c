@@ -33,12 +33,12 @@
 static char *BASERELS[][2] = { {"btc","cny"}, {"ltc","cny"} };
 #include "exchange_supports.h"
 
-double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
+double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert)
 {
     char url[1024],lbase[16];
     strcpy(lbase,base), tolowercase(lbase);
     sprintf(url,"http://api.huobi.com/staticmarket/depth_%s_json.js ",lbase);
-    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0));
+    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0,invert));
 }
 
 cJSON *SIGNPOST(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *payload)

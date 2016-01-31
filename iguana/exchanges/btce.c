@@ -35,14 +35,14 @@ static char *BASERELS[][2] = { {"btc","usd"}, {"btc","rur"}, {"btc","eur"}, {"lt
 
 #include "exchange_supports.h"
 
-double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
+double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert)
 {
     char field[64],url[1024],lbase[16],lrel[16];
     strcpy(lrel,rel), strcpy(lbase,base);
     tolowercase(lrel), tolowercase(lbase);
     sprintf(field,"%s_%s",lbase,lrel);
     sprintf(url,"https://btc-e.com/api/3/depth/%s",field);
-    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,field));
+    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,field,invert));
 }
 
 cJSON *SIGNPOST(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *url,char *payload)

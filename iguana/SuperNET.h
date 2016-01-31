@@ -118,6 +118,7 @@ struct category_info
 extern struct category_info *Categories;
 struct category_msg { struct queueitem DL; struct tai t; uint64_t remoteipbits; int32_t len; uint8_t msg[]; };
 
+struct exchange_quote { uint64_t satoshis,orderid,offerNXT; double price,volume; uint32_t timestamp,val; };
 
 void expand_epbits(char *endpoint,struct endpoint epbits);
 struct endpoint calc_epbits(char *transport,uint32_t ipbits,uint16_t port,int32_t type);
@@ -160,7 +161,7 @@ struct category_chain *category_chain_functions(struct supernet_info *myinfo,bit
 #define category_default_latest() (*cchain->default_func)(cchain,'L',0,0,0,0,zero)
 void category_init(struct supernet_info *myinfo);
 char *SuperNET_keysinit(struct supernet_info *myinfo,char *jsonstr);
-double instantdex_aveprice(struct supernet_info *myinfo,char *base,char *rel,double volume,cJSON *argjson);
+double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *sortbuf,int32_t max,double *totalvolp,char *base,char *rel,double volume,cJSON *argjson);
 
 #endif
 

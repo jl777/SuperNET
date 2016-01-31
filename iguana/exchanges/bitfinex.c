@@ -34,11 +34,11 @@
 static char *BASERELS[][2] = { {"btc","usd"}, {"ltc","usd"}, {"ltc","btc"}, {"",""} };
 #include "exchange_supports.h"
 
-double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
+double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert)
 {
     char url[1024];
     sprintf(url,"https://api.bitfinex.com/v1/book/%s%s",base,rel);
-    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,"price","amount",maxdepth,0));
+    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,"price","amount",maxdepth,0,invert));
 }
 
 char *PARSEBALANCE(struct exchange_info *exchange,double *balancep,char *coinstr,cJSON *argjson)

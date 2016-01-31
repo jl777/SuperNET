@@ -33,7 +33,7 @@
 static char *BASERELS[][2] = { {"btc","usd"}, {"btc","cny"} };
 #include "exchange_supports.h"
 
-double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
+double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert)
 {
     char url[1024];
     if ( strcmp(rel,"USD") == 0 )
@@ -41,7 +41,7 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
     else if ( strcmp(rel,"CNY") == 0 )
         sprintf(url,"https://www.LakeBTC.com/api_v1/bcorderbook_cny");
     else printf("illegal lakebtc pair.(%s/%s)\n",base,rel);
-    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0));
+    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0,invert));
 }
 
 cJSON *SIGNPOST(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *payload,char *hdr1,uint64_t tonce)

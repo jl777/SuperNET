@@ -189,7 +189,7 @@ try_again:
             free(s.ptr);
             return(0);
         }
-        else if ( numretries >= 2 )
+        else if ( numretries >= 1 )
         {
             printf("Maximum number of retries exceeded!\n");
             free(s.ptr);
@@ -285,7 +285,7 @@ static size_t WriteMemoryCallback(void *ptr,size_t size,size_t nmemb,void *data)
         mem->size += realsize;
         mem->memory[mem->size] = 0;
     }
-    printf("got %d bytes\n",(int32_t)(size*nmemb));
+    //printf("got %d bytes\n",(int32_t)(size*nmemb));
     return(realsize);
 }
 

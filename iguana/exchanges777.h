@@ -25,12 +25,11 @@
 #define EXCHANGES777_DEFAULT_TIMEOUT 30
 
 struct exchange_info;
-struct exchange_quote { double price,volume; uint64_t orderid,offerNXT; uint32_t timestamp,val; };
 
 struct exchange_funcs
 {
     char name[32];
-    double (*price)(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson);
+    double (*price)(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert);
     int32_t (*supports)(struct exchange_info *exchange,char *base,char *rel,cJSON *argjson);
     char *(*parsebalance)(struct exchange_info *exchange,double *balancep,char *coinstr,cJSON *argjson);
     cJSON *(*balances)(struct exchange_info *exchange,cJSON *argjson);

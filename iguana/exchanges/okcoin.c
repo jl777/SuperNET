@@ -34,7 +34,7 @@
 static char *BASERELS[][2] = { {"btc","usd"}, {"ltc","usd"} };
 #include "exchange_supports.h"
 
-double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson)
+double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert)
 {
     char url[1024],lrel[16],lbase[16];
     strcpy(lrel,rel), strcpy(lbase,base);
@@ -47,7 +47,7 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
         exit(-1);
         return(0);
     }
-    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0));
+    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0,invert));
 }
 
 cJSON *SIGNPOST(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *url,char *payload)
