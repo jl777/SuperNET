@@ -265,7 +265,6 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
         {
             prices777_fxcm(bids,asks,highs,lows);
             numbids = numasks = 0;
-            printf("invert.%d\n",invert);
             bid = exchange_setquote(bidasks,&numbids,&numasks,0,invert,bids[c],1,commission,0,(uint32_t)time(NULL),0);
             ask = exchange_setquote(bidasks,&numbids,&numasks,1,invert,asks[c],1,commission,0,(uint32_t)time(NULL),0);
             if ( bid > SMALLVAL && ask > SMALLVAL )

@@ -485,9 +485,14 @@ char *exchanges777_process(struct exchange_info *exchange,int32_t *retvalp,struc
             if ( exchange->issue.price != 0 )
             {
                 memset(req->bidasks,0,req->depth * sizeof(*req->bidasks) * 2);
-                polarity = exchanges777_orient(exchange,base,rel,0,0,req);
-                (*exchange->issue.price)(exchange,base,rel,req->bidasks,req->depth,req->commission,req->argjson,polarity < 0);
-                retstr = exchanges777_orderbook_jsonstr(exchange,base,rel,req->bidasks,req->depth,0,req->allflag);
+                if ( (polarity= exchanges777_orient(exchange,base,rel,0,0,req)) <= 0 )
+                    retstr = clonestr("{\"error\":\"invalid polarity\"}");
+                else
+                {
+                    //printf("polarity.%d %s %s req.(%s %s)\n",polarity,base,rel,req->base,req->rel);
+                    (*exchange->issue.price)(exchange,req->base,req->rel,req->bidasks,req->depth,req->commission,req->argjson,req->invert);
+                    retstr = exchanges777_orderbook_jsonstr(exchange,base,rel,req->bidasks,req->depth,0,req->allflag);
+                }
             }
             break;
         case 'S':
