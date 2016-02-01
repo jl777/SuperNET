@@ -11,9 +11,9 @@ function tagGen(len)
 var SPNAPI = (function(SPNAPI, $, undefined) {
 
     SPNAPI.methods = {};
-    SPNAPI.pages = ["Settings", "eyedea", "Peers","Debug", "Coins", "Blockexplorer"];
+    SPNAPI.pages = ["Settings","Instandex", "Pangea", "Peers","Debug", "Coins", "Blockexplorer"];
     SPNAPI.pageContent = {};
-    SPNAPI.page = "welcome";
+    SPNAPI.page = "Blockexplorer";
     /*
      * added variables for flexibility
      */
@@ -39,11 +39,15 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
             }else if(page==="Debug"){
                 
                 filesystem_save();
+            }else if(page==="Coins"){
+                addInitCoins();
+            }else if(page==="Instandex"){
+                ListAllExchanges();
             }
             
         });
         $(".page").hide();
-        $("#welcome_page").show();
+        $("#Blockexplorer_page").show();
         $(".submit_api_request").on("click", function () {
             SPNAPI.submitRequest();
         });
@@ -134,6 +138,12 @@ $.ajax({
         
         for(var i in request){
             if(i==="agent" ||i==="method"){
+                continue;
+            }
+            if(request[i] instanceof Array ){
+                for(var x in request[i]){
+                    url=url+i+"/"+request[i][x]+"/";
+                }
                 continue;
             }
             url=url+i+"/"+request[i]+"/";
