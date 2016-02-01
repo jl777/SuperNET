@@ -943,14 +943,14 @@ void iguana_rpcloop(void *args)
         //    retstr = iguana_htmlresponse(space,size,&remains,1,retstr,retstr != space);
         if ( retstr != 0 )
         {
-            i = 0;
             //if ( 0 && postflag == 0 )
             //    retstr = iguana_htmlresponse(space,size,&remains,1,retstr,retstr != space);
             //else
-                remains = (int32_t)strlen(retstr);
+                //remains = (int32_t)strlen(retstr);
             //printf("POSTFLAG.%d\n",postflag);
             //printf("RETBUF.(%s)\n",retstr);
-            char hdrs[1024];
+            /*char hdrs[1024];
+		 sprintf(hdrs,"HTTP/1.1 200 OK\r\n");
             if ( remoteaddr[0] != 0 && strcmp(remoteaddr,"127.0.0.1") != 0 )
                 sprintf(hdrs,"Access-Control-Allow-Origin: *\r\n");
             else sprintf(hdrs,"Access-Control-Allow-Origin: null\r\n");
@@ -958,12 +958,22 @@ void iguana_rpcloop(void *args)
             sprintf(hdrs,"Access-Control-Allow-Headers: Authorization, Content-Type\r\n");
             sprintf(hdrs,"Access-Control-Allow-Methods: GET, POST\r\n");
             sprintf(hdrs,"Cache-Control: no-cache, no-store, must-revalidate\r\n");
-            sprintf(hdrs,"Content-type: text/html\r\n");
+            sprintf(hdrs,"Content-type: application/javascript\r\n");
             sprintf(hdrs,"Content-Length: %8d\r\n",(int32_t)strlen(retstr));
-            send(sock,hdrs,strlen(hdrs),MSG_NOSIGNAL);
+            send(sock,hdrs,strlen(hdrs),MSG_NOSIGNAL);*/
+	char * response ;
+	char hdrs[1024];
+	response = malloc(strlen(retstr)+1024+1);
+	sprintf(hdrs,"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET, POST\r\nCache-Control :  no-cache, no-store, must-revalidate\r\nContent-Length : %8d\r\n\r\n",(int32_t)strlen(retstr));
+	 response[0] = '\0'; 	 
+	strcat(response,hdrs);
+	 strcat(response,retstr);
+	remains = (int32_t)strlen(response);
+	i = 0;
+
             while ( remains > 0 )
             {
-                if ( (numsent= (int32_t)send(sock,&retstr[i],remains,MSG_NOSIGNAL)) < 0 )
+                if ( (numsent= (int32_t)send(sock,&response[i],remains,MSG_NOSIGNAL)) < 0 )
                 {
                     if ( errno != EAGAIN && errno != EWOULDBLOCK )
                     {
@@ -979,8 +989,10 @@ void iguana_rpcloop(void *args)
                         printf("iguana sent.%d remains.%d of len.%d\n",numsent,remains,recvlen);
                 }
             }
-            if ( retstr != space)
+            if ( response != space){
                 free(retstr);
+		free(response);
+		}
         }
         //if ( Currentjsonstr[0] != 0 )
         //    strcpy(Prevjsonstr,Currentjsonstr);
