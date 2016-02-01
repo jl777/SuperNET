@@ -52,7 +52,7 @@ data-path="{tc}/{config}">
                 <!-- Collect the nav links, forms, and other content for toggling -->
                 <div class="collapse navbar-collapse" id="bs-example-navbar-collapse">
                     <ul class="nav navbar-nav">
-                        <li id="welcome"><a href="#">Welcome <span class="sr-only">(current)</a></li>
+                        <li id="welcome"> <!--<a href="#">Welcome <span class="sr-only">(current)</span></a>--></li>
 
                         <li class="dropdown">
                             <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">More <span class="caret"></span></a>
@@ -75,9 +75,9 @@ data-path="{tc}/{config}">
             <!-- /.container-fluid -->
         </nav>
         <div class="container">
-            <div id="welcome_page" class="page" style="text-align: center;">
+            <!--<div id="welcome_page" class="page" style="text-align: center;">
                 <div class="panel panel-default">
-                    <!-- Default panel contents -->
+                    <!-- Default panel contents 
                     <div class="panel-heading">Welcome</div>
                     <div class="panel-body">
                         <h2>iguana</h2>
@@ -92,9 +92,9 @@ data-path="{tc}/{config}">
                         </p>
                     </div>
                 </div>
-            </div>
+            </div>-->
             <!-- eyedea page is for creating front-end markup -->
-            <div id="eyedea_page" class="page">
+            <div id="Pangea_page" class="page">
                 <div class="row" style="margin-bottom:15px;">
                     <div class="col-xs-4 col-sm-3 col-md-2">
                         <div class="api-navpills">
@@ -116,7 +116,8 @@ data-path="{tc}/{config}">
                                                         <textarea name="json_to_submit" id="json_src" cols="30" rows="5" class="result form-control" placeholder='Paste json here'></textarea>
                                                     </div>
                                                     <div class="form-group">
-                                                        <button class="btn btn-primary submit_api_request" id='submit_primary'>Submit</button>
+                                                        <button class="btn btn-primary host_pangea_request" id='submit_primary'>Host game</button>
+                                                        <button class="btn btn-primary list_pangea_request" id='list_pangea'>List games</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -131,12 +132,12 @@ data-path="{tc}/{config}">
                                     </div>
                                     <hr>
                                     <h3>
-                                            <span>Submitted JSON history</span>
-                                            <button id="clearHistory" style='float: right' class='btn btn-default'>Clear history</button>
+                                            <span>List of games</span>
+                                            <!--<button id="clearHistory" style='float: right' class='btn btn-default'>Clear history</button>-->
                                         </h3>
                                     <div class="row">
                                         <div class="col-md-12">
-                                            <table class="table" id='submit_history'>
+                                            <table class="table" id='game_list_table'>
                                                 <tbody>
 
                                                 </tbody>
@@ -361,13 +362,80 @@ data-path="{tc}/{config}">
                         <h3>Block Explorer tab</h3>
                     </div>
                     <div class="panel-body center">
-                        <h3>Block Explorer</h3>
-                        <p>
-                            Page dedicated to searching blockchain.
-                        </p>
+                        <h3>Set Active coin</h3>
+                        <div id="BlockExpCoin">
+                            
+                        </div>
+                        <div id="Blockhashbutton">
+                            
+                        </div>
+                        <div id="Blockhashoutput">
+                            
+                        </div>
+                        <div id="Blockbutton">
+                            
+                        </div>
+                        <div id="Blockoutput">
+                            
+                        </div>
+                        <div id="transactionButton">
+                            
+                        </div>
+                        
+                        <div id="transactionoutput">
+                            
+                        </div>
+                        
+                        
                         <p>
                             ** Awaiting specific requirements **
                         </p>
+                    </div>
+                </div>
+                <style type="text/css">
+                    #Blockexplorer_page .center {
+                        text-align: center;
+                    }
+                </style>
+            </div>
+            
+            
+            <div id="Instandex_page" class="page">
+                <div class="panel panel-default">
+                    <!-- Default panel contents -->
+                    <div class="panel-heading">
+                        <h3>Instandex tab</h3>
+                    </div>
+                    <div class="panel-body center">
+                        <button class="btn btn-primary instantdex_set_method_table" data-method="orderbook" >orderbook</button>
+                     <button class="btn btn-primary instantdex_set_method_table" data-method="apikeypair" >API Keypair</button> 
+                     <button class="btn btn-primary instantdex_set_method_table" data-method="balance" >Balance</button>
+                     <button class="btn btn-primary instantdex_set_method_table" data-method="support" >Support</button>
+                     
+                     <button class="btn btn-primary instantdex_set_method_table" data-method="sell" >Sell</button> 
+                     <button class="btn btn-primary instantdex_set_method_table" data-method="buy" >Buy</button> 
+                     <button class="btn btn-primary instantdex_set_method_table" data-method="withdraw" >Withdraw</button> 
+                     
+                     <button class="btn btn-primary instantdex_set_method_table" data-method="order_status" >Order status </button> 
+                     <button class="btn btn-primary instantdex_set_method_table" data-method="order_open" >Open Orders</button> 
+                     <button class="btn btn-primary instantdex_set_method_table" data-method="order_cancel" >Cancel Order</button> 
+                     
+                     <button class="btn btn-primary instantdex_set_method_table" data-method="trade_history" >Trade History</button> 
+                     <button class="btn btn-primary instantdex_set_method_table" data-method="pollgap" >Pollgap</button> 
+                     
+                     
+                    </div>
+                    <div class="panel-body center">
+                        <table id="Instandex_form_table">
+                        </table>
+                        
+                        <table >
+                            <tr>
+                                <td id="Instandex_output_table">
+                                    
+                                </td>
+                            </tr>
+                        </table>
                     </div>
                 </div>
                 <style type="text/css">
@@ -410,6 +478,9 @@ data-path="{tc}/{config}">
         <script type="text/javascript " src="js/methods.js "  charset="utf-8 "></script>
         <script type="text/javascript " src="js/settings.js "  charset="utf-8 "></script>
         <script type="text/javascript " src="js/imgAPI.js " ></script>
+        <script type="text/javascript " src="js/pangea.js" ></script>
+        <script type="text/javascript " src="js/blockexplorer.js" ></script>
+        <script type="text/javascript " src="js/instantdex.js" ></script>
     </body>
 
 </html>
