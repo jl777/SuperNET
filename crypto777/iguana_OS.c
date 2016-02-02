@@ -881,7 +881,7 @@ int32_t OS_getline(int32_t waitflag,char *line,int32_t max,char *dispstr)
         return((int32_t)strlen(line));
     }
 #endif
-    if ( fgets(line,max,stdin) >= 0 )
+    if ( fgets(line,max,stdin) != 0 )
         line[strlen(line)-1] = 0;
     return((int32_t)strlen(line));
 }
