@@ -824,7 +824,7 @@ int32_t pangea_lastman(struct supernet_info *myinfo,struct table_info *tp)
 void pangea_action(PANGEA_HANDARGS)
 {
     uint32_t now; struct player_info *p; int64_t x,snapshot[CARDS777_MAXPLAYERS + 1]; int32_t action,i,j;
-    bits256 audit[CARDS777_MAXPLAYERS]; struct hand_info *hand; uint8_t tmp; uint64_t amount = 0;
+    bits256 audit[CARDS777_MAXPLAYERS]; struct hand_info *hand; uint8_t tmp; int64_t amount = 0;
     hand = &tp->hand;
     p = tp->active[senderind];
     memcpy(&amount,data,sizeof(amount));
@@ -840,8 +840,8 @@ void pangea_action(PANGEA_HANDARGS)
         return;
     }
     tmp = senderind;
-    pangea_bet(myinfo,tp,tp->active[senderind],amount,CARDS777_CHECK);
     p->action = action;
+    p->actualaction = pangea_playerbet(myinfo,&p->actualbet,tp,tp->active[senderind],amount,CARDS777_CHECK);
     hand->undergun = (hand->undergun + 1) % N;
     hand->numactions++;
     //if ( Debuglevel > 2 )//|| tp->priv.myind == 0 )

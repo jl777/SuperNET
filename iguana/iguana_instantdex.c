@@ -78,7 +78,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,cJSON *argjson,char *cmdst
     }
 }
 
-int32_t instantdex_updatesources(struct exchange_quote *sortbuf,int32_t n,int32_t max,int32_t ind,int32_t dir,struct exchange_quote *quotes,int32_t numquotes)
+int32_t instantdex_updatesources(struct exchange_info *exchange,struct exchange_quote *sortbuf,int32_t n,int32_t max,int32_t ind,int32_t dir,struct exchange_quote *quotes,int32_t numquotes)
 {
     int32_t i; struct exchange_quote *quote;
     //printf("instantdex_updatesources update dir.%d numquotes.%d\n",dir,numquotes);
@@ -90,6 +90,7 @@ int32_t instantdex_updatesources(struct exchange_quote *sortbuf,int32_t n,int32_
         {
             sortbuf[n] = *quote;
             sortbuf[n].val = ind;
+            sortbuf[n].exchangebits = exchange->exchangebits;
             //printf("sortbuf[%d] <-\n",n*2);
             if ( ++n >= max )
                 break;
@@ -135,9 +136,9 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
         for (i=n=0; i<num; i++)
         {
             if ( dir < 0 && active[i]->numbids > 0 )
-                n = instantdex_updatesources(sortbuf,n,max,i,1,active[i]->bidasks,active[i]->numbids);
+                n = instantdex_updatesources(active[i]->exchange,sortbuf,n,max,i,1,active[i]->bidasks,active[i]->numbids);
             else if ( dir > 0 && active[i]->numasks > 0 )
-                n = instantdex_updatesources(sortbuf,n,max,i,-1,&active[i]->bidasks[1],active[i]->numasks);
+                n = instantdex_updatesources(active[i]->exchange,sortbuf,n,max,i,-1,&active[i]->bidasks[1],active[i]->numasks);
         }
         //printf("dir.%d %s/%s numX.%d n.%d\n",dir,base,rel,num,n);
         if ( dir < 0 )
@@ -156,7 +157,7 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
         }
         if ( totalvol > 0. )
         {
-            *totalvolp = pricesum;
+            *totalvolp = totalvol;
             return(pricesum / totalvol);
         }
     }

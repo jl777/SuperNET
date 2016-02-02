@@ -24,6 +24,15 @@
 #define MAP_FILE        0
 #endif
 
+char *OS_mvstr()
+{
+#ifdef __WIN32
+    return("rename");
+#else
+    return("mv");
+#endif
+}
+
 void OS_randombytes(unsigned char *x,long xlen)
 {
     OS_portable_randombytes(x,xlen);

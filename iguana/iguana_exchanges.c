@@ -14,14 +14,13 @@
  ******************************************************************************/
 
 #include "exchanges777.h"
+#include "peggy.h"
 
 #define EXCHANGE777_DONE 1
 #define EXCHANGE777_ISPENDING 2
 #define EXCHANGE777_REQUEUE 3
 
-char *Exchange_names[] = { "poloniex", "bittrex", "btc38",  "huobi", "bitstamp", "bitfinex", "btce", "coinbase", "okcoin", "lakebtc", "quadriga", "truefx", "ecb", "instaforex", "fxcm", "yahoo" };
-
-struct exchange_info *Exchanges[sizeof(Exchange_names)/sizeof(*Exchange_names)];
+//char *Exchange_names[] = { "poloniex", "bittrex", "btc38",  "huobi", "bitstamp", "bitfinex", "btce", "coinbase", "okcoin", "lakebtc", "quadriga", "truefx", "ecb", "instaforex", "fxcm", "yahoo" };
 
 void prices777_processprice(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth)
 {
@@ -443,10 +442,25 @@ int32_t baserel_polarity(char *pairs[][2],int32_t n,char *_base,char *_rel)
 #include "exchanges/bitstamp.c"
 
 #include "exchanges/truefx.c"
-#include "exchanges/yahoo.c"
+#include "exchanges/PAX.c"
 #include "exchanges/fxcm.c"
 #include "exchanges/instaforex.c"
-#include "exchanges/ecb.c"
+
+#include "exchanges/jumblr.c"
+#include "exchanges/bitcoin.c"
+#include "exchanges/nxtae.c"
+#include "exchanges/unconf.c"
+
+struct exchange_funcs *Exchange_funcs[] =
+{
+    &truefx_funcs, &instaforex_funcs, &fxcm_funcs, // prices only
+    &PAX_funcs, &nxtae_funcs, &bitcoin_funcs, &jumblr_funcs, // special
+    &bitfinex_funcs, &huobi_funcs, &lakebtc_funcs, &quadriga_funcs, &okcoin_funcs, // BTC exchanges
+    &poloniex_funcs, &bittrex_funcs, &btce_funcs, &btc38_funcs, // altcoin exchanges
+    &coinbase_funcs, &bitstamp_funcs // authentication not working yet
+};
+
+struct exchange_info *Exchanges[sizeof(Exchange_funcs)/sizeof(*Exchange_funcs)];
 
 int32_t exchanges777_orient(struct exchange_info *exchange,char *base,char *rel,double *pricep,double *volumep,struct exchange_request *req)
 {
@@ -560,10 +574,28 @@ char *exchanges777_process(struct exchange_info *exchange,int32_t *retvalp,struc
 
 void exchanges777_loop(void *ptr)
 {
-    struct exchange_info *exchange = ptr;
-    int32_t flag,retval,i; struct exchange_request *req; char *retstr; void *bot;
+    struct peggy_info *PEGS; struct exchange_info *exchange = ptr;
+    int32_t flag,retval,i,peggyflag = 0; struct exchange_request *req; char *retstr; void *bot;
+    if ( strcmp(exchange->name,"PAX") == 0 )
+    {
+        PEGS = calloc(1,sizeof(*PEGS));
+        PAX_init(PEGS);
+        exchange->privatedata = PEGS;
+        peggyflag = 1;
+        _crypto_update(PEGS,PEGS->cryptovols,&PEGS->data,1,peggyflag);
+        PEGS->lastupdate = (uint32_t)time(NULL);
+    }
     while ( 1 )
     {
+        if ( peggyflag != 0 )
+        {
+            PAX_idle(PEGS,peggyflag,3);
+            if ( time(NULL) > PEGS->lastupdate+100 )
+            {
+                _crypto_update(PEGS,PEGS->cryptovols,&PEGS->data,1,peggyflag);
+                PEGS->lastupdate = (uint32_t)time(NULL);
+            }
+        }
         flag = retval = 0;
         retstr = 0;
         if ( (req= queue_dequeue(&exchange->requestQ,0)) != 0 )
@@ -764,14 +796,27 @@ char *exchanges777_Qrequest(struct exchange_info *exchange,int32_t func,char *ba
 int32_t exchanges777_id(char *exchangestr)
 {
     int32_t i;
-    for (i=0; i<sizeof(Exchange_names)/sizeof(*Exchange_names); i++)
+    for (i=0; i<sizeof(Exchange_funcs)/sizeof(*Exchange_funcs); i++)
     {
-        //printf("%s ",Exchange_names[i]);
-        if ( strcmp(exchangestr,Exchange_names[i]) == 0 )
+        //printf("%s ",Exchange_funcs[i]->name);
+        if ( strcmp(exchangestr,Exchange_funcs[i]->name) == 0 )
             return(i);
     }
     //printf("cant find (%s)\n",exchangestr);
     return(-1);
+}
+
+struct exchange_info *exchanges777_findbits(uint64_t exchangebits)
+{
+    int32_t i;
+    for (i=0; i<sizeof(Exchange_funcs)/sizeof(*Exchange_funcs); i++)
+    {
+        //printf("%s ",Exchange_funcs[i]->name);
+        if ( Exchanges[i] != 0 && exchangebits == Exchanges[i]->exchangebits )
+            return(Exchanges[i]);
+    }
+    //printf("cant find (%s)\n",exchangestr);
+    return(0);
 }
 
 struct exchange_info *exchanges777_find(char *exchangestr)
@@ -784,12 +829,21 @@ struct exchange_info *exchanges777_find(char *exchangestr)
 
 struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
 {
-    struct exchange_funcs funcs[] =
+    static int didinit;
+    if ( didinit == 0 )
     {
-        truefx_funcs, ecb_funcs, instaforex_funcs, fxcm_funcs, yahoo_funcs,
-        poloniex_funcs, bittrex_funcs, btce_funcs, bitfinex_funcs, btc38_funcs,
-        huobi_funcs, lakebtc_funcs, quadriga_funcs, okcoin_funcs, coinbase_funcs, bitstamp_funcs
-    };
+        int32_t i,j;
+        for (i=0; i<sizeof(Exchange_funcs)/sizeof(*Exchange_funcs)-1; i++)
+        {
+            for (j=i+1; j<sizeof(Exchange_funcs)/sizeof(*Exchange_funcs); j++)
+                if ( stringbits((char *)Exchange_funcs[i]->name) == stringbits((char *)Exchange_funcs[j]->name) )
+                {
+                    printf("FIRST 8 chars of Exchange_func[].name must be unique: %d.(%s) vs %d.(%s)\n",i,Exchange_funcs[i]->name,j,Exchange_funcs[j]->name);
+                    exit(-1);
+                }
+        }
+        didinit = 1;
+    }
     char *key,*secret,*userid,*tradepassword; struct exchange_info *exchange; int32_t i,exchangeid;
     if ( exchangestr == 0 || exchangestr[0] == 0 )
         return(0);
@@ -798,18 +852,18 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
         printf("exchange_create: cant find.(%s)\n",exchangestr);
         return(0);
     }
-    for (i=0; i<sizeof(funcs)/sizeof(*funcs); i++)
+    for (i=0; i<sizeof(Exchange_funcs)/sizeof(*Exchange_funcs); i++)
     {
-        if ( strcmp(exchangestr,funcs[i].name) == 0 )
+        if ( strcmp(exchangestr,Exchange_funcs[i]->name) == 0 )
             break;
     }
-    if ( i == sizeof(funcs)/sizeof(*funcs) )
+    if ( i == sizeof(Exchange_funcs)/sizeof(*Exchange_funcs) )
     {
         printf("cant find exchange.(%s)\n",exchangestr);
         return(0);
     }
     exchange = calloc(1,sizeof(*exchange));
-    exchange->issue = funcs[i];
+    exchange->issue = *Exchange_funcs[i];
     iguana_initQ(&exchange->pricesQ,"prices");
     iguana_initQ(&exchange->requestQ,"request");
     iguana_initQ(&exchange->tradebotsQ,"tradebots");
@@ -817,6 +871,7 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
     iguana_initQ(&exchange->pendingQ[1],"pending1");
     exchange->exchangeid = exchangeid;
     safecopy(exchange->name,exchangestr,sizeof(exchange->name));
+    exchange->exchangebits = stringbits(exchange->name);
     if ( (exchange->pollgap= juint(argjson,"pollgap")) < EXCHANGES777_MINPOLLGAP )
         exchange->pollgap = EXCHANGES777_MINPOLLGAP;
     if ( (key= jstr(argjson,"apikey")) != 0 || (key= jstr(argjson,"key")) != 0 )
@@ -869,8 +924,8 @@ void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sle
     if ( 1 )
     {
         argjson = cJSON_CreateObject();
-        for (i=0; i<sizeof(Exchange_names)/sizeof(*Exchange_names); i++)
-            if ( (exchange= exchanges777_info(Exchange_names[i],sleepflag,argjson,0)) != 0 )
+        for (i=0; i<sizeof(Exchange_funcs)/sizeof(*Exchange_funcs); i++)
+            if ( (exchange= exchanges777_info(Exchange_funcs[i]->name,sleepflag,argjson,0)) != 0 )
                 myinfo->tradingexchanges[myinfo->numexchanges++] = exchange;
         free_json(argjson);
     }
@@ -1000,8 +1055,8 @@ ZERO_ARGS(InstantDEX,allexchanges)
 {
     int32_t i; cJSON *retjson,*array;
     retjson = cJSON_CreateObject(); array = cJSON_CreateArray();
-    for (i=0; i<sizeof(Exchange_names)/sizeof(*Exchange_names); i++)
-        jaddistr(array,Exchange_names[i]);
+    for (i=0; i<sizeof(Exchange_funcs)/sizeof(*Exchange_funcs); i++)
+        jaddistr(array,Exchange_funcs[i]->name);
     jadd(retjson,"result",array);
     return(jprint(retjson,1));
 }

@@ -959,21 +959,25 @@ void iguana_rpcloop(void *args)
             sprintf(hdrs,"Access-Control-Allow-Methods: GET, POST\r\n");
             sprintf(hdrs,"Cache-Control: no-cache, no-store, must-revalidate\r\n");
             sprintf(hdrs,"Content-type: application/javascript\r\n");
-            sprintf(hdrs,"Content-Length: %8d\r\n",(int32_t)strlen(retstr));
-            send(sock,hdrs,strlen(hdrs),MSG_NOSIGNAL);*/
-	char * response ;
-	char hdrs[1024];
-	response = malloc(strlen(retstr)+1024+1);
-	sprintf(hdrs,"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET, POST\r\nCache-Control :  no-cache, no-store, must-revalidate\r\nContent-Length : %8d\r\n\r\n",(int32_t)strlen(retstr));
-	 response[0] = '\0'; 	 
-	strcat(response,hdrs);
-	 strcat(response,retstr);
-	remains = (int32_t)strlen(response);
-	i = 0;
-
+             sprintf(hdrs,"Content-Length: %8d\r\n",(int32_t)strlen(retstr));
+             send(sock,hdrs,strlen(hdrs),MSG_NOSIGNAL);*/
+            char *response,hdrs[1024];
+            if ( jsonflag != 0 )
+            {
+                response = malloc(strlen(retstr)+1024+1);
+                sprintf(hdrs,"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET, POST\r\nCache-Control :  no-cache, no-store, must-revalidate\r\nContent-Length : %8d\r\n\r\n",(int32_t)strlen(retstr));
+                response[0] = '\0';
+                strcat(response,hdrs);
+                strcat(response,retstr);
+                if ( retstr != space )
+                    free(retstr);
+                retstr = response;
+            }
+            remains = (int32_t)strlen(retstr);
+            i = 0;
             while ( remains > 0 )
             {
-                if ( (numsent= (int32_t)send(sock,&response[i],remains,MSG_NOSIGNAL)) < 0 )
+                if ( (numsent= (int32_t)send(sock,&retstr[i],remains,MSG_NOSIGNAL)) < 0 )
                 {
                     if ( errno != EAGAIN && errno != EWOULDBLOCK )
                     {
@@ -989,10 +993,8 @@ void iguana_rpcloop(void *args)
                         printf("iguana sent.%d remains.%d of len.%d\n",numsent,remains,recvlen);
                 }
             }
-            if ( response != space){
+            if ( retstr != space)
                 free(retstr);
-		free(response);
-		}
         }
         //if ( Currentjsonstr[0] != 0 )
         //    strcpy(Prevjsonstr,Currentjsonstr);

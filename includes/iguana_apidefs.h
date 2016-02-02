@@ -5,6 +5,7 @@
 #define IGUANA_CFUNC_S(agent,name,str) char *agent ## _ ## name(IGUANA_ARGS,char *str)
 #define IGUANA_CFUNC_I(agent,name,val) char *agent ## _ ## name(IGUANA_ARGS,int32_t val)
 #define IGUANA_CFUNC_SA(agent,name,str,array) char *agent ## _ ## name(IGUANA_ARGS,char *str,cJSON *array)
+#define IGUANA_CFUNC_SD(agent,name,str,val) char *agent ## _ ## name(IGUANA_ARGS,char *str,double val)
 #define IGUANA_CFUNC_AA(agent,name,array,array2) char *agent ## _ ## name(IGUANA_ARGS,cJSON *array,cJSON *array2)
 #define IGUANA_CFUNC_SAA(agent,name,str,array,array2) char *agent ## _ ## name(IGUANA_ARGS,char *str,cJSON *array,cJSON *array2)
 
@@ -24,6 +25,7 @@
 #define IGUANA_CFUNC_SSHII(agent,name,str,str2,hash,val,val2) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,bits256 hash,int32_t val,int32_t val2)
 #define IGUANA_CFUNC_SSHHII(agent,name,str,str2,hash,hash2,val,val2) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,bits256 hash,bits256 hash2,int32_t val,int32_t val2)
 #define IGUANA_CFUNC_SSS(agent,name,str,str2,str3) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,char *str3)
+#define IGUANA_CFUNC_SSSS(agent,name,str,str2,str3,str4) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,char *str3,char *str4)
 #define IGUANA_CFUNC_SSSD(agent,name,str,str2,str3,val) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,char *str3,double val)
 #define IGUANA_CFUNC_SSSDDD(agent,name,str,str2,str3,val,val2,val3) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,char *str3,double val,double val2,double val3)
 #define IGUANA_CFUNC_SSSIII(agent,name,str,str2,str3,val,val2,val3) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,char *str3,int32_t val,int32_t val2,int32_t val3)
@@ -51,7 +53,9 @@
 #define STRING_ARG IGUANA_CFUNC_S
 #define TWO_STRINGS IGUANA_CFUNC_SS
 #define THREE_STRINGS IGUANA_CFUNC_SSS
+#define FOUR_STRINGS IGUANA_CFUNC_SSSS
 #define STRING_AND_INT IGUANA_CFUNC_SI
+#define STRING_AND_DOUBLE IGUANA_CFUNC_SD
 #define STRING_AND_TWOINTS IGUANA_CFUNC_SII
 #define HASH_AND_INT IGUANA_CFUNC_HI
 #define HASH_AND_STRING IGUANA_CFUNC_HS

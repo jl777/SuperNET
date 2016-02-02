@@ -77,7 +77,19 @@ uint64_t prices777_truefx(char *reqbase,char *reqrel,uint64_t *millistampp,doubl
     }
     if ( str != 0 )
     {
-        //printf("(%s) -> (%s)\n",url,str);
+        printf("(%s) -> (%s)\n",url,str);
+        /*EUR/USD,1454354222037,1.08,997,1.09,000,1.08142,1.09130,1.08333
+        USD/JPY,1454354221120,121.,049,121.,053,120.676,121.496,121.289
+        GBP/USD,1454354221048,1.44,242,1.44,254,1.42280,1.44305,1.42483
+        EUR/GBP,1454354220966,0.75,561,0.75,567,0.75517,0.76238,0.76031
+        USD/CHF,1454354221288,1.01,866,1.01,876,1.01553,1.02514,1.02209
+        EUR/JPY,1454354221693,131.,937,131.,944,131.224,132.003,131.381
+        EUR/CHF,1454354221028,1.11,027,1.11,032,1.10542,1.11173,1.10705
+        USD/CAD,1454354221764,1.39,473,1.39,479,1.39437,1.40627,1.39729
+        AUD/USD,1454354221515,0.70,955,0.70,961,0.70421,0.70970,0.70817
+        GBP/JPY,1454354221581,174.,602,174.,621,172.408,174.730,172.805
+        
+*/
         while ( str[n + 0] != 0 && str[n] != '\n' && str[n] != '\r' )
         {
             for (i=jpyflag=0; str[n + i]!=' '&&str[n + i]!='\n'&&str[n + i]!='\r'&&str[n + i]!=0; i++)
@@ -94,7 +106,7 @@ uint64_t prices777_truefx(char *reqbase,char *reqrel,uint64_t *millistampp,doubl
             memcpy(base,str+n,3), base[3] = 0;
             memcpy(rel,str+n+4,3), rel[3] = 0;
             str[n + i] = 0;
-            //printf("str.(%s) (%s/%s) %d n.%d i.%d\n",str+n,base,rel,str[n],n,i);
+            printf("str.(%s) (%s/%s) %d n.%d i.%d\n",str+n,base,rel,str[n],n,i);
             sprintf(buf,"[%s]",str+n+7+1);
             n += i + 1;
             if ( (array= cJSON_Parse(buf)) != 0 )

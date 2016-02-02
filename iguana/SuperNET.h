@@ -70,7 +70,7 @@ struct supernet_address
 {
     bits256 pubkey,iphash,persistent;
     uint32_t selfipbits,myipbits; int32_t confirmed,totalconfirmed; uint64_t nxt64bits;
-    char NXTADDR[32];
+    char NXTADDR[32],BTC[64],BTCD[64];
 };
 
 struct supernet_info
@@ -86,6 +86,7 @@ struct supernet_info
     struct nn_pollfd pfd[SUPERNET_MAXAGENTS]; //struct relay_info active;
     struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ; int32_t numagents,numexchanges;
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES];
+    char handle[1024];
 };
 
 /*struct supernet_endpoint
@@ -118,7 +119,7 @@ struct category_info
 extern struct category_info *Categories;
 struct category_msg { struct queueitem DL; struct tai t; uint64_t remoteipbits; int32_t len; uint8_t msg[]; };
 
-struct exchange_quote { uint64_t satoshis,orderid,offerNXT; double price,volume; uint32_t timestamp,val; };
+struct exchange_quote { uint64_t satoshis,orderid,offerNXT,exchangebits; double price,volume; uint32_t timestamp,val; };
 
 void expand_epbits(char *endpoint,struct endpoint epbits);
 struct endpoint calc_epbits(char *transport,uint32_t ipbits,uint16_t port,int32_t type);
@@ -162,6 +163,7 @@ struct category_chain *category_chain_functions(struct supernet_info *myinfo,bit
 void category_init(struct supernet_info *myinfo);
 char *SuperNET_keysinit(struct supernet_info *myinfo,char *jsonstr);
 double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *sortbuf,int32_t max,double *totalvolp,char *base,char *rel,double volume,cJSON *argjson);
+void SuperNET_setkeys(struct supernet_info *myinfo,void *pass,int32_t passlen,int32_t dosha256);
 
 #endif
 

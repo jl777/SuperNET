@@ -211,6 +211,44 @@ THREE_STRINGS_AND_DOUBLE(tradebot,monitor,exchange,base,rel,commission)
     } else return(clonestr("{\"error\":\"tradebots only local usage!\"}"));
 }
 
+STRING_AND_DOUBLE(tradebot,monitorall,exchange,commission)
+{
+    int32_t i,n,allfields = 1,depth = 50; cJSON *arg,*array,*item; char *base,*rel,*str,*str2; struct exchange_info *ptr;
+    if ( remoteaddr == 0 )
+    {
+        if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+        {
+            if ( (str= InstantDEX_allpairs(myinfo,0,json,remoteaddr,exchange)) != 0 )
+            {
+                if ( (arg= cJSON_Parse(str)) != 0 )
+                {
+                    if ( (array= jarray(&n,arg,"result")) != 0 )
+                    {
+                        for (i=0; i<n; i++)
+                        {
+                            item = jitem(array,i);
+                            if ( is_cJSON_Array(item) != 0 && cJSON_GetArraySize(item) == 2 )
+                            {
+                                base = jstr(jitem(item,0),0);
+                                rel = jstr(jitem(item,1),0);
+                                if ( base != 0 && rel != 0 && (str2= exchanges777_Qprices(ptr,base,rel,30,allfields,depth,json,1,commission * .01)) != 0 )
+                                {
+                                    printf("%s/%s ",base,rel);
+                                    free(str2);
+                                }
+                            }
+                        }
+                    }
+                    free_json(arg);
+                }
+                free(str);
+            }
+            return(clonestr("{\"result\":\"monitorall started\"}"));
+        }
+        else return(clonestr("{\"error\":\"couldnt find/create exchange info\"}"));
+    } else return(clonestr("{\"error\":\"tradebots only local usage!\"}"));
+}
+
 THREE_STRINGS(tradebot,unmonitor,exchange,base,rel)
 {
     struct exchange_info *ptr;

@@ -13,22 +13,22 @@
  *                                                                            *
  ******************************************************************************/
 
-#define EXCHANGE_NAME "ecb"
-#define UPDATE ecb ## _price
-#define SUPPORTS ecb ## _supports
-#define SIGNPOST ecb ## _signpost
-#define TRADE ecb ## _trade
-#define ORDERSTATUS ecb ## _orderstatus
-#define CANCELORDER ecb ## _cancelorder
-#define OPENORDERS ecb ## _openorders
-#define TRADEHISTORY ecb ## _tradehistory
-#define BALANCES ecb ## _balances
-#define PARSEBALANCE ecb ## _parsebalance
-#define WITHDRAW ecb ## _withdraw
-#define CHECKBALANCE ecb ## _checkbalance
-#define ALLPAIRS ecb ## _allpairs
-#define FUNCS ecb ## _funcs
-#define BASERELS ecb ## _baserels
+#define EXCHANGE_NAME "bitcoin"
+#define UPDATE bitcoin ## _price
+#define SUPPORTS bitcoin ## _supports
+#define SIGNPOST bitcoin ## _signpost
+#define TRADE bitcoin ## _trade
+#define ORDERSTATUS bitcoin ## _orderstatus
+#define CANCELORDER bitcoin ## _cancelorder
+#define OPENORDERS bitcoin ## _openorders
+#define TRADEHISTORY bitcoin ## _tradehistory
+#define BALANCES bitcoin ## _balances
+#define PARSEBALANCE bitcoin ## _parsebalance
+#define WITHDRAW bitcoin ## _withdraw
+#define CHECKBALANCE bitcoin ## _checkbalance
+#define ALLPAIRS bitcoin ## _allpairs
+#define FUNCS bitcoin ## _funcs
+#define BASERELS bitcoin ## _baserels
 
 static char *BASERELS[][2] = { {"btc","nxt"}, {"btc","btcd"}, {"btc","ltc"}, {"btc","vrc"}, {"btc","doge"} };
 #include "exchange_supports.h"
@@ -45,18 +45,18 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
 cJSON *SIGNPOST(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *payload,char *path)
 {
     if ( retstrp != 0 )
-        *retstrp = clonestr("{\"error\":\"ecb is readonly data source\"}");
+        *retstrp = clonestr("{\"error\":\"bitcoin is not yet\"}");
     return(cJSON_Parse("{}"));
 }
 
 char *PARSEBALANCE(struct exchange_info *exchange,double *balancep,char *coinstr,cJSON *argjson)
 {
-    return(clonestr("{\"error\":\"ecb is readonly data source\"}"));
+    return(clonestr("{\"error\":\"bitcoin is not yet\"}"));
 }
 
 cJSON *BALANCES(struct exchange_info *exchange,cJSON *argjson)
 {
-    return(cJSON_Parse("{\"error\":\"ecb is readonly data source\"}"));
+    return(cJSON_Parse("{\"error\":\"bitcoin is not yet\"}"));
 }
 
 uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *base,char *rel,int32_t dir,double price,double volume,cJSON *argjson)
@@ -66,29 +66,29 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
 
 char *ORDERSTATUS(struct exchange_info *exchange,uint64_t quoteid,cJSON *argjson)
 {
-    return(clonestr("{\"error\":\"ecb is readonly data source\"}"));
+    return(clonestr("{\"error\":\"bitcoin is not yet\"}"));
 }
 
 char *CANCELORDER(struct exchange_info *exchange,uint64_t quoteid,cJSON *argjson)
 {
-    return(clonestr("{\"error\":\"ecb is readonly data source\"}"));
+    return(clonestr("{\"error\":\"bitcoin is not yet\"}"));
 }
 
 char *OPENORDERS(struct exchange_info *exchange,cJSON *argjson)
 {
-    return(clonestr("{\"error\":\"ecb is readonly data source\"}"));
+    return(clonestr("{\"error\":\"bitcoin is not yet\"}"));
 }
 
 char *TRADEHISTORY(struct exchange_info *exchange,cJSON *argjson)
 {
-    return(clonestr("{\"error\":\"ecb is readonly data source\"}"));
+    return(clonestr("{\"error\":\"bitcoin is not yet\"}"));
 }
 
 char *WITHDRAW(struct exchange_info *exchange,char *base,double amount,char *destaddr,cJSON *argjson)
 {
-    return(clonestr("{\"error\":\"ecb is readonly data source\"}"));
+    return(clonestr("{\"error\":\"bitcoin is not yet\"}"));
 }
 
-struct exchange_funcs ecb_funcs = EXCHANGE_FUNCS(ecb,EXCHANGE_NAME);
+struct exchange_funcs bitcoin_funcs = EXCHANGE_FUNCS(bitcoin,EXCHANGE_NAME);
 
 #include "exchange_undefs.h"

@@ -43,6 +43,9 @@
 #include <sys/socket.h>
 #define closesocket close
 #endif
+#ifndef MIN
+#define MIN(x, y) ( ((x)<(y))?(x):(y) )
+#endif
 
 #include "../includes/libgfshare.h"
 #include "../includes/utlist.h"
@@ -74,6 +77,10 @@ int32_t ramcoder_decompress(uint8_t *data,int32_t maxlen,uint8_t *bits,uint32_t 
 int32_t ramcoder_compress(uint8_t *bits,int32_t maxlen,uint8_t *data,int32_t datalen,bits256 seed);
 uint64_t hconv_bitlen(uint64_t bitlen);
 void _init_HUFF(HUFF *hp,int32_t allocsize,void *buf);
+int32_t hgetbit(HUFF *hp);
+int32_t hputbit(HUFF *hp,int32_t bit);
+uint64_t hconv_bitlen(uint64_t bitlen);
+int32_t hseek(HUFF *hp,int32_t offset,int32_t mode);
 
 #define SCRIPT_OPRETURN 0x6a
 #define GENESIS_ACCT "1739068987193023818"  // NXT-MRCC-2YLS-8M54-3CMAJ
@@ -179,7 +186,7 @@ int32_t expand_datenum(char *date,int32_t datenum);
 int32_t calc_datenum(int32_t year,int32_t month,int32_t day);
 int32_t ecb_decrdate(int32_t *yearp,int32_t *monthp,int32_t *dayp,char *date,int32_t datenum);
 int32_t conv_date(int32_t *secondsp,char *buf);
-uint64_t OS_conv_datenum(int32_t datenum,int32_t hour,int32_t minute,int32_t second);
+uint32_t OS_conv_datenum(int32_t datenum,int32_t hour,int32_t minute,int32_t second);
 int32_t OS_conv_unixtime(struct tai *t,int32_t *secondsp,time_t timestamp);
 double OS_milliseconds();
 
@@ -253,6 +260,9 @@ int32_t strsearch(char *strs[],int32_t num,char *name);
 int32_t OS_getline(int32_t waitflag,char *line,int32_t max,char *dispstr);
 int32_t sort64s(uint64_t *buf,uint32_t num,int32_t size);
 int32_t revsort64s(uint64_t *buf,uint32_t num,int32_t size);
+int decode_base32(uint8_t *token,uint8_t *tokenstr,int32_t len);
+int init_base32(char *tokenstr,uint8_t *token,int32_t len);
+char *OS_mvstr();
 
 long _stripwhite(char *buf,int accept);
 int32_t is_DST(int32_t datenum);
@@ -261,9 +271,10 @@ int32_t expand_datenum(char *date,int32_t datenum);
 int32_t calc_datenum(int32_t year,int32_t month,int32_t day);
 int32_t ecb_decrdate(int32_t *yearp,int32_t *monthp,int32_t *dayp,char *date,int32_t datenum);
 int32_t conv_date(int32_t *secondsp,char *buf);
-uint64_t OS_conv_datenum(int32_t datenum,int32_t hour,int32_t minute,int32_t second);
+uint32_t OS_conv_datenum(int32_t datenum,int32_t hour,int32_t minute,int32_t second);
 int32_t OS_conv_unixtime(struct tai *t,int32_t *secondsp,time_t timestamp);
 int32_t btc_coinaddr(char *coinaddr,uint8_t addrtype,char *pubkeystr);
+int32_t btc_convaddr(char *hexaddr,char *addr58);
 
 uint64_t RS_decode(char *rs);
 int32_t RS_encode(char *rsaddr,uint64_t id);
@@ -348,6 +359,7 @@ int32_t btc_priv2pub(uint8_t pubkey[33],uint8_t privkey[32]);
 extern char *Iguana_validcommands[];
 extern bits256 GENESIS_PUBKEY,GENESIS_PRIVKEY;
 extern char NXTAPIURL[];
+extern int32_t smallprimes[168],Debuglevel;
 
 #endif
 

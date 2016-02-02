@@ -320,7 +320,7 @@ void iguana_main(void *arg)
 
     iguana_initQ(&helperQ,"helperQ");
     OS_ensure_directory("confs");
-    OS_ensure_directory("DB");
+    OS_ensure_directory("DB"), OS_ensure_directory("DB/ECB");
     OS_ensure_directory("tmp");
     if ( (tmpstr= SuperNET_JSON(myinfo,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"help\"}"),0)) != 0 )
     {

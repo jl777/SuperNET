@@ -559,16 +559,6 @@ void iguana_coins(void *arg)
     }
 }
 
-int32_t opreturns_init(uint32_t blocknum,uint32_t blocktimestamp,char *path)
-{
-    printf("opreturns_init not yet\n");
-    return(-1);
-}
-
-void peggy()
-{
-    printf("peggy not yet\n");
-}
 char *busdata_sync(uint32_t *noncep,char *jsonstr,char *broadcastmode,char *destNXTaddr)
 {
     printf("busdata_sync.(%s)\n",jsonstr);

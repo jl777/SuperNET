@@ -185,7 +185,7 @@ struct table_info *pangea_table(bits256 tablehash,int32_t N)
 {
     struct table_info *tp; bits256 pangeahash; char str[65];
     pangeahash = calc_categoryhashes(0,"pangea",0);
-    if ( (tp= category_info(pangeahash,tablehash)) == 0 )
+    if ( (tp= category_info(pangeahash,tablehash)) == 0 && N > 0 )
     {
         tp = pangea_tablealloc(0,N);
         memset(tp,0,sizeof(*tp));
@@ -205,6 +205,19 @@ struct table_info *pangea_table(bits256 tablehash,int32_t N)
     return(tp);
 }
 
+struct player_info *pangea_playerfind(struct supernet_info *myinfo,struct table_info *tp)
+{
+    struct player_info *player;
+    if ( tp->priv.myind >= 0 && tp->priv.myind < tp->G.numactive )
+    {
+        player = tp->active[tp->priv.myind];
+        if ( memcmp(player->playerpub.bytes,myinfo->myaddr.persistent.bytes,sizeof(player->playerpub)) == 0 )
+            return(player);
+        char str[65],str2[65]; printf("unexpected playerpub mismatch %s vs %s\n",bits256_str(str,player->playerpub),bits256_str(str2,myinfo->myaddr.persistent));
+    }
+    return(0);
+}
+
 char *pangea_jsondatacmd(struct supernet_info *myinfo,bits256 tablehash,struct pangea_msghdr *pm,cJSON *json,char *cmdstr,char *ipaddr)
 {
     cJSON *argjson; char *reqstr,hexstr[8192]; uint64_t nxt64bits;
@@ -212,7 +225,7 @@ char *pangea_jsondatacmd(struct supernet_info *myinfo,bits256 tablehash,struct p
     pangeahash = calc_categoryhashes(0,"pangea",0);
     category_subscribe(myinfo,pangeahash,GENESIS_PUBKEY);
     category_subscribe(myinfo,pangeahash,tablehash);
-    argjson = cJSON_CreateObject();//SuperNET_argjson(json);
+    argjson = json != 0 ? jduplicate(json) : cJSON_CreateObject();
     jaddstr(argjson,"cmd",cmdstr);
     if ( myinfo->ipaddr[0] == 0 || strncmp(myinfo->ipaddr,"127.0.0.1",strlen("127.0.0.1")) == 0 )
         return(clonestr("{\"error\":\"need to send your ipaddr for now\"}"));
@@ -297,21 +310,6 @@ void pangea_sendcmd(struct supernet_info *myinfo,struct table_info *tp,char *cmd
     free(pm);
 }
 
-void pangea_ping(PANGEA_HANDARGS)
-{
-    
-}
-
-void pangea_ready(PANGEA_HANDARGS)
-{
-    
-}
-
-void pangea_addfunds(PANGEA_HANDARGS)
-{
-    
-}
-
 void pangea_tablejoin(struct supernet_info *myinfo,struct table_info *tp,uint8_t *data,int32_t datalen,uint64_t signer64bits,uint32_t sigtimestamp,bits256 sigtablehash)
 {
     char str[65],str2[65],space[4096]; int32_t i; cJSON *json;
@@ -334,7 +332,7 @@ void pangea_tablejoin(struct supernet_info *myinfo,struct table_info *tp,uint8_t
             printf("add player.%d %p\n",i,tp);
             if ( tp->G.creatorbits == myinfo->myaddr.nxt64bits )
             {
-                pangea_jsondatacmd(myinfo,sigtablehash,(struct pangea_msghdr *)space,json,"accept",myinfo->ipaddr);
+                pangea_jsondatacmd(myinfo,sigtablehash,(struct pangea_msghdr *)space,0,"accept",myinfo->ipaddr);
                 printf("my table! ");
             }
         } else printf("duplicate player.%llu\n",(long long)signer64bits);
@@ -436,7 +434,24 @@ void pangea_parse(struct supernet_info *myinfo,struct pangea_msghdr *pm,cJSON *a
             printf("ACCEPT.(%s)\n",jprint(argjson,0));
             //pangea_tableaccept(myinfo,pm,tp,pm->serialized,(int32_t)(pm->sig.allocsize - sizeof(*pm)));
         }
+        else if ( strcmp(method,"addfunds") == 0 )
+        {
+            printf("ADDFUNDS.(%s)\n",jprint(argjson,0));
+        }
+        else if ( strcmp(method,"buyin") == 0 )
+        {
+            printf("BUYIN.(%s)\n",jprint(argjson,0));
+        }
+        else if ( strcmp(method,"status") == 0 )
+        {
+            printf("STATUS.(%s)\n",jprint(argjson,0));
+        }
     }
+}
+
+void pangea_addfunds(PANGEA_HANDARGS)
+{
+    printf("got remote addfunds\n");
 }
 
 char *pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *remoteaddr)
@@ -444,7 +459,7 @@ char *pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *re
     static struct { char *cmdstr; void (*func)(PANGEA_HANDARGS); uint64_t cmdbits; } tablecmds[] =
     {
         //{ "newtable", pangea_tablecreate }, { "join", pangea_tablejoin }, { "accept", pangea_tableaccept },
-        { "addfunds", pangea_addfunds }, { "ping", pangea_ping }, { "ready", pangea_ready },
+        { "addfunds", pangea_addfunds }, //{ "ping", pangea_ping }, { "ready", pangea_ready },
         { "newhand", pangea_newhand }, { "gothand", pangea_gothand },
         { "encoded", pangea_encoded }, { "sentencoded", pangea_sentencoded },
         { "final", pangea_final }, { "gotfinal", pangea_gotfinal },
@@ -680,9 +695,123 @@ HASH_AND_ARRAY(pangea,history,tablehash,params)
     return(_pangea_history(myinfo,tablehash,json));
 }*/
 
+char *pangea_submitaction(struct supernet_info *myinfo,struct table_info *tp,int64_t bet,int32_t action,char *name)
+{
+    char retbuf[1024]; struct player_info *player;
+    if ( (player= pangea_playerfind(myinfo,tp)) != 0 )
+    {
+        pangea_action(myinfo,tp->G.numactive,action,action,-1,tp->priv.myind,tp,(uint8_t *)&bet,sizeof(bet));
+        if ( player->actualaction != action )
+            sprintf(retbuf,"{\"result\":\"submitted %s, but got mismatched\",\"action\":\"%d\",\"expected\":\"%d\",\"bet\":%.8f}",name,action,player->actualaction,dstr(player->actualbet));
+        else sprintf(retbuf,"{\"result\":\"success\",\"broadcast\":\"%s\",\"bet\":%.8f}",name,dstr(player->actualbet));
+        return(clonestr(retbuf));
+    } else return(clonestr("{\"error\":\"not a player on the table\"}"));
+}
+
+HASH_ARG(pangea,call,tablehash)
+{
+    struct table_info *tp;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    if ( (tp= pangea_table(tablehash,0)) == 0 )
+        return(clonestr("{\"result\":\"table doesnt exist\"}"));
+    else return(pangea_submitaction(myinfo,tp,0,CARDS777_CALL,"call"));
+}
+
+HASH_AND_INT(pangea,raise,tablehash,numchips)
+{
+    struct table_info *tp; int64_t value;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    if ( (tp= pangea_table(tablehash,0)) == 0 )
+        return(clonestr("{\"result\":\"table doesnt exist\"}"));
+    else
+    {
+        value = pangea_chipsvalue(myinfo,tp,numchips);
+        return(pangea_submitaction(myinfo,tp,value,CARDS777_RAISE,"raise"));
+    }
+}
+
+HASH_ARG(pangea,allin,tablehash)
+{
+    struct table_info *tp;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    if ( (tp= pangea_table(tablehash,0)) == 0 )
+        return(clonestr("{\"result\":\"table doesnt exist\"}"));
+    else return(pangea_submitaction(myinfo,tp,0,CARDS777_ALLIN,"allin"));
+}
+
+HASH_AND_INT(pangea,bet,tablehash,numchips)
+{
+    struct table_info *tp; int64_t value;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    if ( (tp= pangea_table(tablehash,0)) == 0 )
+        return(clonestr("{\"result\":\"table doesnt exist\"}"));
+    else
+    {
+        value = pangea_chipsvalue(myinfo,tp,numchips);
+        return(pangea_submitaction(myinfo,tp,value,CARDS777_BET,"bet"));
+    }
+}
+
+HASH_ARG(pangea,check,tablehash)
+{
+    struct table_info *tp;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    if ( (tp= pangea_table(tablehash,0)) == 0 )
+        return(clonestr("{\"result\":\"table doesnt exist\"}"));
+    else return(pangea_submitaction(myinfo,tp,0,CARDS777_CHECK,"check"));
+}
+
+HASH_ARG(pangea,fold,tablehash)
+{
+    struct table_info *tp;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    if ( (tp= pangea_table(tablehash,0)) == 0 )
+        return(clonestr("{\"result\":\"table doesnt exist\"}"));
+    else return(pangea_submitaction(myinfo,tp,0,CARDS777_FOLD,"fold"));
+}
+
+HASH_ARG(pangea,status,tablehash)
+{
+    struct table_info *tp;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    if ( (tp= pangea_table(tablehash,0)) == 0 )
+        return(clonestr("{\"result\":\"table doesnt exist\"}"));
+    else return(jprint(pangea_tablestatus(myinfo,tp),1));
+}
+
+HASH_AND_STRING(pangea,mode,tablehash,params)
+{
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    return(clonestr("{\"result\":\"mode not active yet\"}"));
+}
+
+HASH_ARG(pangea,history,tablehash)
+{
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    return(clonestr("{\"result\":\"history not active yet\"}"));
+}
+
+HASH_AND_INT(pangea,handhistory,tablehash,hand)
+{
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    return(clonestr("{\"result\":\"handhistory not active yet\"}"));
+}
+
 ZERO_ARGS(pangea,lobby)
 {
     //cJSON *retjson,*argjson; char *retstr,*result; uint8_t *buf; int32_t flag,len; struct pangea_msghdr *pm;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
     bits256 pangeahash = calc_categoryhashes(0,"pangea",0);
     category_subscribe(myinfo,pangeahash,GENESIS_PUBKEY);
     pangea_update(myinfo);
@@ -692,6 +821,8 @@ ZERO_ARGS(pangea,lobby)
 INT_AND_ARRAY(pangea,host,minplayers,params)
 {
     bits256 tablehash; struct table_info *tp; uint8_t space[sizeof(struct pangea_msghdr) + 4096];
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
     OS_randombytes(tablehash.bytes,sizeof(tablehash));
     tp = pangea_table(tablehash,9);
     if ( tp != 0 )
@@ -705,12 +836,32 @@ INT_AND_ARRAY(pangea,host,minplayers,params)
 HASH_AND_STRING(pangea,join,tablehash,handle)
 {
     uint8_t space[sizeof(struct pangea_msghdr) + 4096];
-    return(pangea_jsondatacmd(myinfo,tablehash,(struct pangea_msghdr *)space,json,"join",myinfo->ipaddr));
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    return(pangea_jsondatacmd(myinfo,tablehash,(struct pangea_msghdr *)space,0,"join",myinfo->ipaddr));
 }
 
-HASH_AND_ARRAY(pangea,start,tablehash,params)
+HASH_AND_INT(pangea,buyin,tablehash,numchips)
+{
+    uint8_t space[sizeof(struct pangea_msghdr) + 4096]; struct table_info *tp; int64_t value; cJSON *fundsjson;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    if ( (tp= pangea_table(tablehash,0)) == 0 )
+        return(clonestr("{\"result\":\"table doesnt exist\"}"));
+    else
+    {
+        value = pangea_chipsvalue(myinfo,tp,numchips);
+        fundsjson = cJSON_CreateObject();
+        jaddnum(fundsjson,"amount",dstr(value));
+        return(pangea_jsondatacmd(myinfo,tablehash,(struct pangea_msghdr *)space,fundsjson,"addfunds",myinfo->ipaddr));
+    }
+}
+
+HASH_ARG(pangea,start,tablehash)
 {
     struct table_info *tp; int32_t allocsize;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
     if ( (tp= pangea_table(tablehash,9)) != 0 )
     {
         if ( tp->G.numactive >= tp->G.minplayers && pangea_tableismine(myinfo,tp) >= 0 )
