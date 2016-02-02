@@ -26,7 +26,7 @@ ZERO_ARGS(SuperNET,activehandle);
 THREE_STRINGS(SuperNET,encryptjson,password,permanentfile,anything);
 TWO_STRINGS(SuperNET,decryptjson,password,permanentfile);
 
-THREE_STRINGS_AND_THREE_INTS(InstantDEX,orderbook,exchange,base,rel,depth,allfields,invert);
+THREE_STRINGS_AND_THREE_INTS(InstantDEX,orderbook,exchange,base,rel,depth,allfields,ignore);
 THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,buy,exchange,base,rel,price,volume,dotrade);
 THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,sell,exchange,base,rel,price,volume,dotrade);
 THREE_STRINGS_AND_DOUBLE(InstantDEX,withdraw,exchange,base,destaddr,amount);

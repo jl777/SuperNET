@@ -936,7 +936,7 @@ void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sle
 
 #include "../includes/iguana_apidefs.h"
 
-THREE_STRINGS_AND_THREE_INTS(InstantDEX,orderbook,exchange,base,rel,depth,allfields,invert)
+THREE_STRINGS_AND_THREE_INTS(InstantDEX,orderbook,exchange,base,rel,depth,allfields,ignore)
 {
     struct exchange_info *ptr;
     if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )

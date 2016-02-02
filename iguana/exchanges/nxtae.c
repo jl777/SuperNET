@@ -532,7 +532,7 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
     json = cJSON_CreateObject();
     cJSON_AddItemToObject(json,"bids",bids);
     cJSON_AddItemToObject(json,"asks",asks);
-   // if ( Debuglevel > 2 )
+    if ( Debuglevel > 2 )
         printf("invert.%d NXTAE.(%s)\n",invert,jprint(json,0));
     hbla = exchanges777_json_orderbook(exchange,commission,base,rel,bidasks,maxdepth,json,0,"bids","asks",0,0,invert);
     free_json(json);
