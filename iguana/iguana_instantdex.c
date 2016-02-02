@@ -65,10 +65,11 @@ struct instantdex_msghdr *instantdex_msgcreate(struct supernet_info *myinfo,stru
     acct777_sign(&msg->sig,myinfo->privkey,otherpubkey,timestamp,data,datalen);
     if ( (signerbits= acct777_validate(&msg->sig,acct777_msgprivkey(data,datalen),msg->sig.pubkey)) != 0 )
     {
-        int32_t i; char str[65],str2[65];
-        for (i=0; i<datalen; i++)
-            printf("%02x",data[i]);
-        printf(">>>>>>>>>>>>>>>> validated [%ld] len.%d (%s + %s)\n",(long)data-(long)msg,datalen,bits256_str(str,acct777_msgprivkey(data,datalen)),bits256_str(str2,msg->sig.pubkey));
+        //int32_t i;
+        //char str[65],str2[65];
+        //for (i=0; i<datalen; i++)
+        //    printf("%02x",data[i]);
+        //printf(">>>>>>>>>>>>>>>> validated [%ld] len.%d (%s + %s)\n",(long)data-(long)msg,datalen,bits256_str(str,acct777_msgprivkey(data,datalen)),bits256_str(str2,msg->sig.pubkey));
         memset(buf,0,sizeof(buf));
         acct777_rwsig(1,buf,&msg->sig);
         memcpy(&msg->sig,buf,sizeof(buf));
@@ -203,9 +204,9 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
 
 char *instantdex_request(struct supernet_info *myinfo,char *cmdstr,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen)
 {
-    char *base,*rel,*request,*refstr,*nextcmdstr,*message;; double volume,price,aveprice,totalvol;
-    cJSON *newjson; int32_t duration,flags,nextcmd; int32_t num,depth;
-    struct exchange_quote sortbuf[1000]; bits256 basetxid,reltxid;
+    char *base,*rel,*request,*refstr,*nextcmdstr,*message,*traderip;
+    double volume,price,aveprice,totalvol; cJSON *newjson; int32_t duration,flags,nextcmd;
+    int32_t num,depth; struct exchange_quote sortbuf[1000]; bits256 basetxid,reltxid;
     if ( argjson != 0 )
     {
         num = 0;
@@ -219,12 +220,17 @@ char *instantdex_request(struct supernet_info *myinfo,char *cmdstr,struct instan
         flags = juint(argjson,"flags");
         nextcmd = 0;
         nextcmdstr = message = "";
+        if ( (traderip= jstr(argjson,"traderip")) != 0 && strcmp(traderip,myinfo->ipaddr) == 0 )
+        {
+            printf("got my own request\n");
+            return(clonestr("{\"result\":\"got my own request\"}"));
+        }
         if ( strcmp(cmdstr,"request") == 0 )
         {
             aveprice = instantdex_aveprice(myinfo,sortbuf,(int32_t)(sizeof(sortbuf)/sizeof(*sortbuf)),&totalvol,base,rel,volume,argjson);
-            printf("aveprice %.8f vol %f\n",aveprice,totalvol);
             OS_randombytes(basetxid.bytes,sizeof(basetxid));
             OS_randombytes(reltxid.bytes,sizeof(reltxid));
+            char str[65]; printf("GENERATE txid.%s aveprice %.8f vol %f\n",bits256_str(str,basetxid),aveprice,totalvol);
             nextcmd = INSTANTDEX_PROPOSE;
             nextcmdstr = "proposal";
             message = "hello";
