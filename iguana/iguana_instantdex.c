@@ -267,7 +267,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
     static struct { char *cmdstr; char *(*func)(struct supernet_info *myinfo,char *cmdstr,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen); uint64_t cmdbits; } cmds[] =
     {
         { "request", instantdex_request }, { "proposal", instantdex_request },
-        { "accepted", instantdex_request }, { "confirmed", instantdex_request },
+        { "accept", instantdex_request }, { "confirm", instantdex_request },
     };
     char *retstr = 0; int32_t i; uint64_t cmdbits;
     if ( cmds[0].cmdbits == 0 )
