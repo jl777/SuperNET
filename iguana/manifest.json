@@ -1,41 +1,25 @@
 {
-  "name": "SuperNET Iguana",
-  // "url": "iguana.pexe",
-  "short_name": "iguana",
-  "version": "0.0.1",
-  "manifest_version": 2,
-  "description": "SuperNET Iguana",
-  "offline_enabled": true,
-  "icons": {
-    "128": "icon128.png"
-  },
-  "app": {
-    "background": {
-      "scripts": [
-        "background.js"
-      ]
-    }
-  },
-  "sockets": {
-    "tcp": {
-      "connect": ""
+    "app": {
+        "background": {
+            "scripts": ["js/background.js"]
+        }
     },
-    "tcpServer": {
-      "listen": "127.0.0.1:*"
-    }
-  },
-  "permissions": [
-    "unlimitedStorage",
-    "nativeMessaging",
-    // "networking.config",
-    "dns",
-    "browser",
-    // "filesystem",
-    "storage",
-    "system.storage",
-    "system.display",
-    "system.network",
-    "system.cpu",
-	"http://127.0.0.1:7778/"
-  ]
+    "manifest_version": 2,
+    "name": "Iguana",
+    "version": "0.0.1",
+    "icons": {
+        "128": "iguana/icon128.png"
+    },
+    "minimum_chrome_version": "36",
+    "sockets": {
+        "tcp": {
+            "connect": "*"
+        },
+        "tcpServer": {
+            "listen": "*"
+        }
+    },
+    "permissions": [
+                    "storage"
+                    ]
 }
