@@ -15,6 +15,39 @@
 
 #include "exchanges777.h"
 
+#define INSTANTDEX_HOPS 3
+#define INSTANTDEX_DURATION 60
+
+#define INSTANTDEX_PROPOSE 1
+#define INSTANTDEX_ACCEPT 2
+#define INSTANTDEX_CONFIRM 3
+
+cJSON *InstantDEX_argjson(char *reference,char *message,bits256 basetxid,bits256 reltxid,int32_t iter,int32_t val,int32_t val2)
+{
+    cJSON *argjson = cJSON_CreateObject();
+    if ( reference != 0 )
+        jaddstr(argjson,"refstr",reference);
+    if ( message != 0 && message[0] != 0 )
+        jaddstr(argjson,"message",message);
+    jaddbits256(argjson,"basetxid",basetxid);
+    jaddbits256(argjson,"reltxid",reltxid);
+    if ( iter != 3 )
+    {
+        if ( val == 0 )
+            val = INSTANTDEX_DURATION;
+        jaddnum(argjson,"duration",val);
+        jaddnum(argjson,"flags",val2);
+    }
+    else
+    {
+        if ( val > 0 )
+            jaddnum(argjson,"baseheight",val);
+        if ( val2 > 0 )
+            jaddnum(argjson,"relheight",val2);
+    }
+    return(argjson);
+}
+
 int32_t instantdex_rwdata(int32_t rwflag,uint64_t cmdbits,uint8_t *data,int32_t datalen)
 {
     // need to inplace serialize/deserialize here
@@ -168,9 +201,11 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
     return(0);
 }
 
-char *instantdex_request(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen)
+char *instantdex_request(struct supernet_info *myinfo,char *cmdstr,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen)
 {
-    char *base,*rel,*request; double volume,aveprice,totalvol; int32_t num,depth; struct exchange_quote sortbuf[1000];
+    char *base,*rel,*request,*refstr,*nextcmdstr,*message;; double volume,price,aveprice,totalvol;
+    cJSON *newjson; int32_t duration,flags,nextcmd; int32_t num,depth;
+    struct exchange_quote sortbuf[1000]; bits256 basetxid,reltxid;
     if ( argjson != 0 )
     {
         num = 0;
@@ -178,44 +213,61 @@ char *instantdex_request(struct supernet_info *myinfo,struct instantdex_msghdr *
         request = jstr(argjson,"request");
         base = jstr(argjson,"base");
         rel = jstr(argjson,"rel");
+        refstr = jstr(argjson,"refstr");
         volume = jdouble(argjson,"volume");
-        aveprice = instantdex_aveprice(myinfo,sortbuf,(int32_t)(sizeof(sortbuf)/sizeof(*sortbuf)),&totalvol,base,rel,volume,argjson);
-        printf("aveprice %.8f vol %f\n",aveprice,volume);
-        return(clonestr("{\"result\":\"request calculated aveprice\"}"));
-    } else return(clonestr("{\"error\":\"request needs argjson\"}"));
-}
-
-char *instantdex_proposal(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen)
-{
-    if ( argjson != 0 )
-    {
-        return(clonestr("{\"result\":\"proposal ignored\"}"));
-        return(clonestr("{\"result\":\"proposal accepted\"}"));
-    } else return(clonestr("{\"error\":\"response needs argjson\"}"));
-}
-
-char *instantdex_accepted(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen)
-{
-    if ( argjson != 0 )
-    {
-        return(clonestr("{\"result\":\"proposal was accepted, confirmation sent\"}"));
-    } else return(clonestr("{\"error\":\"response needs argjson\"}"));
-}
-
-char *instantdex_confirmed(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen)
-{
-    if ( argjson != 0 )
-    {
-        return(clonestr("{\"result\":\"proposal was confirmed\"}"));
-    } else return(clonestr("{\"error\":\"response needs argjson\"}"));
+        duration = juint(argjson,"duration");
+        flags = juint(argjson,"flags");
+        nextcmd = 0;
+        nextcmdstr = message = "";
+        if ( strcmp(cmdstr,"request") == 0 )
+        {
+            aveprice = instantdex_aveprice(myinfo,sortbuf,(int32_t)(sizeof(sortbuf)/sizeof(*sortbuf)),&totalvol,base,rel,volume,argjson);
+            printf("aveprice %.8f vol %f\n",aveprice,totalvol);
+            OS_randombytes(basetxid.bytes,sizeof(basetxid));
+            OS_randombytes(reltxid.bytes,sizeof(reltxid));
+            nextcmd = INSTANTDEX_PROPOSE;
+            nextcmdstr = "proposal";
+            message = "hello";
+            price = aveprice;
+            volume = totalvol;
+        }
+        else
+        {
+            basetxid = jbits256(argjson,"basetxid");
+            reltxid = jbits256(argjson,"reltxid");
+            if ( strcmp(cmdstr,"proposal") == 0 )
+            {
+                nextcmd = INSTANTDEX_ACCEPT;
+                nextcmdstr = "accept";
+                message = "world";
+            }
+            else if ( strcmp(cmdstr,"accept") == 0 )
+            {
+                nextcmd = INSTANTDEX_CONFIRM;
+                nextcmdstr = "confirm";
+                message = "confirmed";
+            }
+            else if ( strcmp(cmdstr,"confirm") == 0 )
+            {
+                return(clonestr("{\"error\":\"trade confirmed\"}"));
+            }
+        }
+        if ( (newjson= InstantDEX_argjson(refstr,message,basetxid,reltxid,nextcmd,duration,flags)) != 0 )
+        {
+            jaddnum(newjson,"price",price);
+            jaddnum(newjson,"volume",volume);
+            return(instantdex_sendcmd(myinfo,newjson,nextcmdstr,myinfo->ipaddr,INSTANTDEX_HOPS));
+        }
+    }
+    return(clonestr("{\"error\":\"request needs argjson\"}"));
 }
 
 char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen)
 {
-    static struct { char *cmdstr; char *(*func)(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen); uint64_t cmdbits; } cmds[] =
+    static struct { char *cmdstr; char *(*func)(struct supernet_info *myinfo,char *cmdstr,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen); uint64_t cmdbits; } cmds[] =
     {
-        { "request", instantdex_request }, { "proposal", instantdex_proposal },
-        { "accepted", instantdex_accepted }, { "confirmed", instantdex_confirmed },
+        { "request", instantdex_request }, { "proposal", instantdex_request },
+        { "accepted", instantdex_request }, { "confirmed", instantdex_request },
     };
     char *retstr = 0; int32_t i; uint64_t cmdbits;
     if ( cmds[0].cmdbits == 0 )
@@ -226,15 +278,13 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
     cmdbits = stringbits(msg->cmd);
     for (i=0; i<sizeof(cmds)/sizeof(*cmds); i++)
     {
-        printf("%llx vs ",(long long)cmds[i].cmdbits);
         if ( cmds[i].cmdbits == cmdbits )
         {
             printf("parsed.(%s)\n",cmds[i].cmdstr);
-            retstr = (*cmds[i].func)(myinfo,msg,argjson,remoteaddr,signerbits,data,datalen);
+            retstr = (*cmds[i].func)(myinfo,cmds[i].cmdstr,msg,argjson,remoteaddr,signerbits,data,datalen);
             break;
         }
     }
-    printf("%llx (%s)\n",(long long)cmdbits,msg->cmd);
     return(retstr);
 }
 
@@ -289,11 +339,11 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
 
 THREE_STRINGS_AND_DOUBLE(InstantDEX,request,reference,base,rel,volume)
 {
-    int32_t hops = 3; cJSON *argjson;
+    int32_t hops = INSTANTDEX_HOPS; cJSON *argjson;
     if ( remoteaddr == 0 )
     {
         argjson = cJSON_CreateObject();
-        jaddstr(argjson,"ref",reference);
+        jaddstr(argjson,"refstr",reference);
         jaddstr(argjson,"base",base);
         jaddstr(argjson,"rel",rel);
         jaddnum(argjson,"volume",volume);
@@ -301,62 +351,33 @@ THREE_STRINGS_AND_DOUBLE(InstantDEX,request,reference,base,rel,volume)
     } else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
 }
 
-cJSON *InstantDEX_argjson(char *reference,char *message,bits256 basetxid,bits256 reltxid,int32_t iter,int32_t val,int32_t val2)
-{
-    cJSON *argjson = cJSON_CreateObject();
-    jaddstr(argjson,"ref",reference);
-    if ( message != 0 && message[0] != 0 )
-        jaddstr(argjson,"message",message);
-    jaddbits256(argjson,"basetxid",basetxid);
-    jaddbits256(argjson,"reltxid",reltxid);
-    if ( iter != 3 )
-    {
-        jaddnum(argjson,"duration",val);
-        jaddnum(argjson,"flags",val2);
-    }
-    else
-    {
-        if ( val > 0 )
-            jaddnum(argjson,"baseheight",val);
-        if ( val2 > 0 )
-            jaddnum(argjson,"relheight",val2);
-    }
-    return(argjson);
-}
-
 TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,proposal,reference,message,basetxid,reltxid,duration,flags)
 {
-    int32_t hops = 3; cJSON *argjson; char *retstr;
+    int32_t hops = INSTANTDEX_HOPS; cJSON *argjson;
     if ( remoteaddr == 0 )
     {
-        argjson = InstantDEX_argjson(reference,message,basetxid,reltxid,1,duration,flags);
-        retstr = instantdex_sendcmd(myinfo,argjson,"proposal",myinfo->ipaddr,hops);
-        free_json(argjson);
-        return(retstr);
+        argjson = InstantDEX_argjson(reference,message,basetxid,reltxid,INSTANTDEX_PROPOSE,duration,flags);
+        return(instantdex_sendcmd(myinfo,argjson,"proposal",myinfo->ipaddr,hops));
     } else return(clonestr("{\"error\":\"InstantDEX API proposal only local usage!\"}"));
 }
 
 TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,accept,reference,message,basetxid,reltxid,duration,flags)
 {
-    int32_t hops = 3; cJSON *argjson; char *retstr;
+    int32_t hops = INSTANTDEX_HOPS; cJSON *argjson;
     if ( remoteaddr == 0 )
     {
-        argjson = InstantDEX_argjson(reference,message,basetxid,reltxid,2,duration,flags);
-        retstr = instantdex_sendcmd(myinfo,argjson,"accept",myinfo->ipaddr,hops);
-        free_json(argjson);
-        return(retstr);
+        argjson = InstantDEX_argjson(reference,message,basetxid,reltxid,INSTANTDEX_ACCEPT,duration,flags);
+        return(instantdex_sendcmd(myinfo,argjson,"accept",myinfo->ipaddr,hops));
     } else return(clonestr("{\"error\":\"InstantDEX API accept only local usage!\"}"));
 }
 
 TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,confirm,reference,message,basetxid,reltxid,baseheight,relheight)
 {
-    int32_t hops = 3; cJSON *argjson; char *retstr;
+    int32_t hops = INSTANTDEX_HOPS; cJSON *argjson;
     if ( remoteaddr == 0 )
     {
-        argjson = InstantDEX_argjson(reference,message,basetxid,reltxid,3,baseheight,relheight);
-        retstr = instantdex_sendcmd(myinfo,argjson,"confirm",myinfo->ipaddr,hops);
-        free_json(argjson);
-        return(retstr);
+        argjson = InstantDEX_argjson(reference,message,basetxid,reltxid,INSTANTDEX_CONFIRM,baseheight,relheight);
+        return(instantdex_sendcmd(myinfo,argjson,"confirm",myinfo->ipaddr,hops));
     } else return(clonestr("{\"error\":\"InstantDEX API confirm only local usage!\"}"));
 }
 

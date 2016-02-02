@@ -676,7 +676,7 @@ void PAX_bidask(struct exchange_info *exchange,uint32_t *timestamps,double *bids
     bids[contractnum] = bidasks[0].price;
     asks[contractnum] = bidasks[1].price;
     timestamps[contractnum] = bidasks[0].timestamp;
-    //printf("(%d %.6f) ",contractnum,_pairaved(bids[contractnum],asks[contractnum]));
+    printf("(%d %.6f) ",contractnum,_pairaved(bids[contractnum],asks[contractnum]));
 }
 
 struct exchange_info *PAX_bidasks(char *exchangestr,uint32_t *timestamps,double *bids,double *asks)
@@ -693,7 +693,7 @@ struct exchange_info *PAX_bidasks(char *exchangestr,uint32_t *timestamps,double 
             }
         }
     } else printf("cant find (%s) exchange\n",exchangestr);
-    //printf("%s\n",exchangestr);
+    printf("%s\n",exchangestr);
     return(exchange);
 }
 
@@ -701,13 +701,15 @@ int32_t PAX_idle(struct peggy_info *PEGS,int32_t peggyflag,int32_t idlegap)
 {
     static double lastupdate,lastdayupdate; static int32_t didinit; static portable_mutex_t mutex;
     struct exchange_info *exchange; struct exchange_quote bidasks[2]; double btcdbtc,btcusd;
-    int32_t i,datenum,contractnum; struct PAX_data *dp = &PEGS->tmp;
+    int32_t i,datenum,contractnum,seconds; struct tai t; struct PAX_data *dp = &PEGS->tmp;
     *dp = PEGS->data;
     if ( didinit == 0 )
     {
         portable_mutex_init(&mutex);
         //prices777_init(BUNDLE.jsonstr,peggyflag);
         didinit = 1;
+        datenum = OS_conv_unixtime(&t,&seconds,(uint32_t)time(NULL));
+        expand_datenum(PEGS->data.edate,datenum);
         if ( peggyflag != 0 )
         {
             //int32_t opreturns_init(uint32_t blocknum,uint32_t blocktimestamp,char *path);

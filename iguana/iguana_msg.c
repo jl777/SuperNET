@@ -848,7 +848,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
             myfree(txids,sizeof(*txids) * (x+1));
         if ( blockhashes != 0 )
             myfree(blockhashes,sizeof(*blockhashes) * (x+1));
-        printf("intvectors.%c recvlen.%d\n",intvectors,recvlen);
+        //printf("intvectors.%c recvlen.%d\n",intvectors,recvlen);
     }
     if ( len != recvlen && len != recvlen-1 && len != recvlen-2 )
     {
