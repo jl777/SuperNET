@@ -930,7 +930,8 @@ void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sle
         free_json(argjson);
     }
     instantdexhash = calc_categoryhashes(0,"InstantDEX",0);
-    category_subscribe(SuperNET_MYINFO(0),instantdexhash,GENESIS_PUBKEY);
+    printf("InstantDEX:\n");
+    category_subscribe(myinfo,instantdexhash,GENESIS_PUBKEY);
     category_processfunc(instantdexhash,InstantDEX_hexmsg);
 }
 

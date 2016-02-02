@@ -962,7 +962,7 @@ void iguana_rpcloop(void *args)
              sprintf(hdrs,"Content-Length: %8d\r\n",(int32_t)strlen(retstr));
              send(sock,hdrs,strlen(hdrs),MSG_NOSIGNAL);*/
             char *response,hdrs[1024];
-            if ( jsonflag != 0 )
+            if ( jsonflag != 0 || postflag != 0 )
             {
                 response = malloc(strlen(retstr)+1024+1);
                 sprintf(hdrs,"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET, POST\r\nCache-Control :  no-cache, no-store, must-revalidate\r\nContent-Length : %8d\r\n\r\n",(int32_t)strlen(retstr));

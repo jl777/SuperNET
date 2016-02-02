@@ -46,7 +46,7 @@ struct instantdex_msghdr *instantdex_msgcreate(struct supernet_info *myinfo,stru
 
 char *instantdex_sendcmd(struct supernet_info *myinfo,cJSON *argjson,char *cmdstr,char *ipaddr,int32_t hops)
 {
-    char *reqstr,hexstr[8192]; uint8_t _msg[4096]; uint64_t nxt64bits; int32_t datalen;
+    char *reqstr,hexstr[8192]; uint8_t _msg[4096]; uint64_t nxt64bits; int32_t i,datalen;
     bits256 instantdexhash; struct instantdex_msghdr *msg;
     msg = (struct instantdex_msghdr *)_msg;
     memset(msg,0,sizeof(*msg));
@@ -55,6 +55,9 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,cJSON *argjson,char *cmdst
     if ( ipaddr == 0 || ipaddr[0] == 0 || strncmp(ipaddr,"127.0.0.1",strlen("127.0.0.1")) == 0 )
         return(clonestr("{\"error\":\"no ipaddr, need to send your ipaddr for now\"}"));
     jaddstr(argjson,"cmd",cmdstr);
+    for (i=0; i<sizeof(msg->cmd); i++)
+        if ( (msg->cmd[i]= cmdstr[i]) == 0 )
+            break;
     jaddstr(argjson,"agent","SuperNET");
     jaddstr(argjson,"method","DHT");
     jaddstr(argjson,"traderip",ipaddr);
@@ -223,12 +226,15 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
     cmdbits = stringbits(msg->cmd);
     for (i=0; i<sizeof(cmds)/sizeof(*cmds); i++)
     {
+        printf("%llx vs ",(long long)cmds[i].cmdbits);
         if ( cmds[i].cmdbits == cmdbits )
         {
+            printf("parsed.(%s)\n",cmds[i].cmdstr);
             retstr = (*cmds[i].func)(myinfo,msg,argjson,remoteaddr,signerbits,data,datalen);
             break;
         }
     }
+    printf("%llx (%s)\n",(long long)cmdbits,msg->cmd);
     return(retstr);
 }
 
@@ -252,7 +258,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
     else if ( (signerbits= acct777_validate(&msg->sig,acct777_msgprivkey(data,datalen),msg->sig.pubkey)) != 0 )
     {
         flag++;
-        printf("<<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(msg->sig),(long)data-(long)msg,datalen,msg->sig.timestamp,msg->sig.allocsize,(char *)msg->serialized,data[datalen-1]);
+        printf("InstantDEX_hexmsg <<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(msg->sig),(long)data-(long)msg,datalen,msg->sig.timestamp,msg->sig.allocsize,(char *)msg->serialized,data[datalen-1]);
         if ( data[datalen-1] == 0 && (argjson= cJSON_Parse((char *)msg->serialized)) != 0 )
             retstr = instantdex_parse(myinfo,msg,argjson,remoteaddr,signerbits,data,datalen);
         else
