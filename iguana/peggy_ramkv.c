@@ -165,9 +165,13 @@ long ramkv777_save(struct ramkv777 *kv)
     if ( retval > 0 )
     {
         sprintf(oldfname,"%s.%u",kv->name,(uint32_t)time(NULL));
-        sprintf(cmd,"%s %s %s",OS_mvstr(),kv->name,oldfname), system(cmd);
-        sprintf(cmd,"%s %s %s",OS_mvstr(),fname,kv->name), system(cmd);
-    }
+        sprintf(cmd,"%s %s %s",OS_mvstr(),kv->name,oldfname);
+        if ( system(cmd) != 0 )
+            printf("error issuing.(%s)\n",cmd);
+        sprintf(cmd,"%s %s %s",OS_mvstr(),fname,kv->name);
+        if ( system(cmd) != 0 )
+            printf("error issuing.(%s)\n",cmd);
+   }
     return(retval);
 }
 

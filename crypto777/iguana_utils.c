@@ -668,7 +668,7 @@ void reverse_hexstr(char *str)
     free(rev);
 }
 
-int32_t nn_base64_decode (const char *in, size_t in_len,uint8_t *out, size_t out_len)
+/*int32_t nn_base64_decode (const char *in, size_t in_len,uint8_t *out, size_t out_len)
 {
     uint32_t ii,io,rem,v; uint8_t ch;
     //  Unrolled lookup of ASCII code points. 0xFF represents a non-base64 valid character.
@@ -778,7 +778,7 @@ int32_t nn_base64_encode (const uint8_t *in, size_t in_len,char *out, size_t out
     out [io] = '\0';
     
     return io;
-}
+}*/
 
 /*
  NXT address converter,
