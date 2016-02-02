@@ -186,7 +186,7 @@ double PAX_yahoo(char *metal)
         }
         free(jsonstr);
     }
-    //if ( Debuglevel > 2 )
+    if ( Debuglevel > 2 )
         printf("(%s %f) ",metal,price);
     return(price);
 }
@@ -233,13 +233,13 @@ void PAX_btcprices(struct peggy_info *PEGS,int32_t enddatenum,int32_t numdates)
             // ["Date","24h Average","Ask","Bid","Last","Total Volume"]
             // ["2015-07-25",289.27,288.84,288.68,288.87,44978.61]
             item = jitem(array,i);
-            //if ( Debuglevel > 2 )
+            if ( Debuglevel > 2 )
                 printf("(%s) ",cJSON_Print(item));
             if ( (dstr= jstr(jitem(item,0),0)) != 0 && (datenum= conv_date(&seconds,dstr)) > 0 )
             {
                 price = jdouble(jitem(item,1),0), ask = jdouble(jitem(item,2),0), bid = jdouble(jitem(item,3),0);
                 close = jdouble(jitem(item,4),0), vol = jdouble(jitem(item,5),0);
-                //if ( Debuglevel > 2 )
+                if ( Debuglevel > 2 )
                     fprintf(stderr,"%d.[%d %f %f %f %f %f].%d ",i,datenum,price,ask,bid,close,vol,n);
                 utc32[numdates - 1 - i] = OS_conv_datenum(datenum,12,0,0), qdaily[numdates - 1 - i] = price * .001;
             }
@@ -258,11 +258,11 @@ void PAX_btcprices(struct peggy_info *PEGS,int32_t enddatenum,int32_t numdates)
             timestamp = juint(item,"date"), high = jdouble(item,"high"), low = jdouble(item,"low"), open = jdouble(item,"open");
             close = jdouble(item,"close"), vol = jdouble(item,"volume"), quotevol = jdouble(item,"quoteVolume"), price = jdouble(item,"weightedAverage");
             //printf("[%u %f %f %f %f %f %f %f]",timestamp,high,low,open,close,vol,quotevol,price);
-            //if ( Debuglevel > 2 )
+            if ( Debuglevel > 2 )
                 printf("[%u %d %f]",timestamp,OS_conv_unixtime(&t,&seconds,timestamp),price);
             utc32[i] = timestamp - 12*3600, btcddaily[i] = price * 100.;
         }
-        //if ( Debuglevel > 2 )
+        if ( Debuglevel > 2 )
             printf("poloniex.%d\n",n);
         PAX_genspline(&PEGS->splines[MAX_CURRENCIES+2],MAX_CURRENCIES+2,"btcdhist",utc32,btcddaily,n<MAX_SPLINES?n:MAX_SPLINES,btcddaily);
     }
@@ -274,8 +274,8 @@ int32_t PAX_ecbparse(char *date,double *prices,char *url,int32_t basenum)
     char *jsonstr,*relstr,*basestr; int32_t count=0,i,relnum; cJSON *json,*ratesobj,*item; struct destbuf tmp;
     if ( (jsonstr= issue_curl(url)) != 0 )
     {
-        //if ( Debuglevel > 2 )
-        printf("(%s)\n",jsonstr);
+        if ( Debuglevel > 2 )
+            printf("(%s)\n",jsonstr);
         if ( (json= cJSON_Parse(jsonstr)) != 0 )
         {
             copy_cJSON(&tmp,jobj(json,"date")), safecopy(date,tmp.buf,64);
@@ -292,8 +292,8 @@ int32_t PAX_ecbparse(char *date,double *prices,char *url,int32_t basenum)
                         // else if ( relnum == JPYNUM )
                         //     prices[i] /= 100.;
                         count++;
-                        //if ( Debuglevel > 2 )
-                        printf("(%02d:%02d %f) ",basenum,relnum,prices[i]);
+                        if ( Debuglevel > 2 )
+                            printf("(%02d:%02d %f) ",basenum,relnum,prices[i]);
                     } else printf("cant find.(%s)\n",relstr);//, getchar();
                     item = item->next;
                 }
@@ -344,11 +344,11 @@ int32_t PAX_ecbprices(char *date,double *prices,int32_t year,int32_t month,int32
                         break;
                     if ( prices[MAX_CURRENCIES*basenum + i] != 0. )
                         nonz++;
-                    //if ( Debuglevel > 2 )
-                    printf("%8.5f ",prices[MAX_CURRENCIES*basenum + i]);
+                    if ( Debuglevel > 2 )
+                        printf("%8.5f ",prices[MAX_CURRENCIES*basenum + i]);
                 }
-                //if ( Debuglevel > 2 )
-                printf("%s.%d %d\n",CURRENCIES[basenum],basenum,nonz);
+                if ( Debuglevel > 2 )
+                    printf("%s.%d %d\n",CURRENCIES[basenum],basenum,nonz);
             }
         }
     }
@@ -573,7 +573,7 @@ void _crypto_update(struct peggy_info *PEGS,double cryptovols[2][8][2],struct PA
                 }
                 cryptovols[0][i][iter] = _pairaved(cryptovols[0][i][iter],prices[i][iter]);
                 cryptovols[1][i][iter] = _pairaved(cryptovols[1][i][iter],volumes[i][iter]);
-                //if ( Debuglevel > 2 )
+                if ( Debuglevel > 2 )
                     printf("(%f %f).%d:%d ",cryptovols[0][i][iter],cryptovols[1][i][iter],i,iter);
                 //if ( cnyusd < SMALLVAL || btcusd < SMALLVAL )
                 //    break;
@@ -619,19 +619,19 @@ void PAX_RTupdate(struct peggy_info *PEGS,double cryptovols[2][8][2],double RTme
         if ( (vol= volumes[i][0]+volumes[i][1]) > SMALLVAL )
         {
             price = ((prices[i][0] * volumes[i][0]) + (prices[i][1] * volumes[i][1])) / vol;
-            //if ( Debuglevel > 2 )
+            if ( Debuglevel > 2 )
                 printf("%s %f v%f + %f v%f -> %f %f\n",cryptostrs[i],prices[i][0],volumes[i][0],prices[i][1],volumes[i][1],price,dp->cryptos[i]);
             dxblend(&dp->cryptos[i],price,.995);
         }
     }
     btcusd = PEGS->btcusd;
     btcdbtc = PEGS->btcdbtc;
-    //if ( Debuglevel > 2 )
+    if ( Debuglevel > 2 )
         printf("    update with btcusd %f btcd %f\n",btcusd,btcdbtc);
     if ( btcusd < SMALLVAL || btcdbtc < SMALLVAL )
     {
         PAX_update(PEGS,&btcusd,&btcdbtc);
-        //if ( Debuglevel > 2 )
+        if ( Debuglevel > 2 )
             printf("     price777_update with btcusd %f btcd %f\n",btcusd,btcdbtc);
     } else PEGS->btcusd = btcusd, PEGS->btcdbtc = btcdbtc;
     for (c=0; c<sizeof(CONTRACTS)/sizeof(*CONTRACTS); c++)
@@ -646,7 +646,7 @@ void PAX_RTupdate(struct peggy_info *PEGS,double cryptovols[2][8][2],double RTme
             }
             if ( (price= _pairaved(bid,ask)) > SMALLVAL )
             {
-                //if ( Debuglevel > 2 )
+                if ( Debuglevel > 2 )
                     printf("%.6f ",price);
                 dxblend(&RTprices[c],price,.995);
                 if ( 0 && (baserel= PAX_ispair(base,rel,CONTRACTS[c])) >= 0 )
@@ -676,7 +676,7 @@ void PAX_bidask(struct exchange_info *exchange,uint32_t *timestamps,double *bids
     bids[contractnum] = bidasks[0].price;
     asks[contractnum] = bidasks[1].price;
     timestamps[contractnum] = bidasks[0].timestamp;
-    printf("%.6f ",_pairaved(bids[contractnum],asks[contractnum]));
+    printf("(%d %.6f) ",contractnum,_pairaved(bids[contractnum],asks[contractnum]));
 }
 
 struct exchange_info *PAX_bidasks(char *exchangestr,uint32_t *timestamps,double *bids,double *asks)

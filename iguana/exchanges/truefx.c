@@ -35,7 +35,7 @@ static char *BASERELS[][2] = { {"EUR","USD"},{"USD","JPY"},{"GBP","USD"},{"EUR",
 
 uint64_t prices777_truefx(char *reqbase,char *reqrel,uint64_t *millistampp,double *bidp,double *askp,double *openp,double *highp,double *lowp,double *closep,char *username,char *password,uint64_t sessionid)
 {
-    static uint32_t lasttime; static char *laststr;
+   // static uint32_t lasttime; static char *laststr;
     char *truefxfmt = "http://webrates.truefx.com/rates/connect.html?f=csv&id=%s:%s:poll:%llu&c=EUR/USD,USD/JPY,GBP/USD,EUR/GBP,USD/CHF,AUD/NZD,CAD/CHF,CHF/JPY,EUR/AUD,EUR/CAD,EUR/JPY,EUR/CHF,USD/CAD,AUD/USD,GBP/JPY,AUD/CAD,AUD/CHF,AUD/JPY,EUR/NOK,EUR/NZD,GBP/CAD,GBP/CHF,NZD/JPY,NZD/USD,USD/NOK,USD/SEK";
     // EUR/USD,1437569931314,1.09,034,1.09,038,1.08922,1.09673,1.09384 USD/JPY,1437569932078,123.,778,123.,781,123.569,123.903,123.860 GBP/USD,1437569929008,1.56,332,1.56,337,1.55458,1.56482,1.55538 EUR/GBP,1437569931291,0.69,742,0.69,750,0.69710,0.70383,0.70338 USD/CHF,1437569932237,0.96,142,0.96,153,0.95608,0.96234,0.95748 EUR/JPY,1437569932237,134.,960,134.,972,134.842,135.640,135.476 EUR/CHF,1437569930233,1.04,827,1.04,839,1.04698,1.04945,1.04843 USD/CAD,1437569929721,1.30,231,1.30,241,1.29367,1.30340,1.29466 AUD/USD,1437569931700,0.73,884,0.73,890,0.73721,0.74395,0.74200 GBP/JPY,1437569931924,193.,500,193.,520,192.298,193.670,192.649
     char url[1024],userpass[1024],buf[128],base[64],rel[64],*str=0; cJSON *array;
@@ -63,7 +63,7 @@ uint64_t prices777_truefx(char *reqbase,char *reqrel,uint64_t *millistampp,doubl
     }
     if ( url[0] == 0 )
         sprintf(url,"http://webrates.truefx.com/rates/connect.html?f=csv&s=y");
-    if ( laststr != 0 && time(NULL) > lasttime )
+    /*if ( laststr != 0 && time(NULL) > lasttime )
     {
         //printf("free laststr.%p lag.%d\n",laststr,(int32_t)(time(NULL) - lasttime));
         free(laststr);
@@ -74,10 +74,11 @@ uint64_t prices777_truefx(char *reqbase,char *reqrel,uint64_t *millistampp,doubl
         str = issue_curl(url);
         lasttime = (uint32_t)time(NULL);
         laststr = str;
-    }
+    }*/
+    str = issue_curl(url);
     if ( str != 0 )
     {
-        printf("(%s) -> (%s)\n",url,str);
+        //printf("(%s) -> (%s)\n",url,str);
         /*EUR/USD,1454354222037,1.08,997,1.09,000,1.08142,1.09130,1.08333
         USD/JPY,1454354221120,121.,049,121.,053,120.676,121.496,121.289
         GBP/USD,1454354221048,1.44,242,1.44,254,1.42280,1.44305,1.42483
@@ -106,8 +107,8 @@ uint64_t prices777_truefx(char *reqbase,char *reqrel,uint64_t *millistampp,doubl
             memcpy(base,str+n,3), base[3] = 0;
             memcpy(rel,str+n+4,3), rel[3] = 0;
             str[n + i] = 0;
-            printf("str.(%s) (%s/%s) %d n.%d i.%d\n",str+n,base,rel,str[n],n,i);
             sprintf(buf,"[%s]",str+n+7+1);
+            //printf("str.(%s) (%s/%s) %d n.%d i.%d |%s|\n",str+n,base,rel,str[n],n,i,buf);
             n += i + 1;
             if ( (array= cJSON_Parse(buf)) != 0 )
             {
@@ -129,12 +130,14 @@ uint64_t prices777_truefx(char *reqbase,char *reqrel,uint64_t *millistampp,doubl
                         *bidp = bid, *askp = ask, *openp = openval, *highp = high, *lowp = low;
                         *closep = 0;
                         *millistampp = millistamp;
+                        //printf("(%f %f)\n ",bid,ask);
                         break;
                     }
                 }
                 free_json(array);
             } else printf("cant parse.(%s)\n",buf);
         }
+        free(str);
     }
     return(sessionid);
 }

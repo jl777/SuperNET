@@ -206,20 +206,12 @@ int32_t SUPPORTS(struct exchange_info *exchange,char *_base,char *_rel,cJSON *ar
 
 void prices777_fxcm(double bids[64],double asks[64],double highs[64],double lows[64])
 {
-    static char *xmlstr; static uint32_t lasttime;
-    char name[64],*str; cJSON *json,*obj; int32_t i,c,flag,n = 0; double bid,ask,high,low; struct destbuf numstr;
+    char name[64],*str,*xmlstr; cJSON *json,*obj; int32_t i,c,flag,n = 0; double bid,ask,high,low; struct destbuf numstr;
     memset(bids,0,sizeof(*bids) * 64), memset(asks,0,sizeof(*asks) * 64);
     memset(highs,0,sizeof(*highs) * 64), memset(lows,0,sizeof(*lows) * 64);
     if ( fxcm_ensure() < 0 )
         return;
-    if ( time(NULL) > lasttime )
-    {
-        if ( xmlstr != 0 )
-            free(xmlstr);
-        xmlstr = fxcm_xmlstr();
-        lasttime = (uint32_t)time(NULL);
-    }
-    if ( xmlstr != 0 )
+    if ( (xmlstr= fxcm_xmlstr()) != 0 )
     {
         if ( (json= cJSON_Parse(xmlstr)) != 0 )
         {
@@ -252,6 +244,7 @@ void prices777_fxcm(double bids[64],double asks[64],double highs[64],double lows
             }
             free_json(json);
         } else printf("couldnt parse.(%s)\n",xmlstr);
+        free(xmlstr);
     }
 }
 

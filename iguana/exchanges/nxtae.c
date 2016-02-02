@@ -140,7 +140,9 @@ uint64_t NXT_assetid(char *name)
     uint64_t assetid;
     if ( (assetid= is_MGWcoin(name)) != 0 )
         return(assetid);
-    else return(calc_nxt64bits(name));
+    else if ( is_decimalstr(name) > 0 )
+        return(calc_nxt64bits(name));
+    else return(0);
 }
 
 double NXT_price_volume(double *volumep,uint64_t baseamount,uint64_t relamount)
@@ -180,7 +182,7 @@ int32_t get_assettype(struct supernet_info *myinfo,int32_t *numdecimalsp,char *a
         *numdecimalsp = 8;
         return(0);
     }
-    if ( (assetid= calc_nxt64bits(assetidstr)) == NXT_ASSETID )
+    if ( is_decimalstr(assetidstr) > 0 && (assetid= calc_nxt64bits(assetidstr)) == NXT_ASSETID )
     {
         //printf("found NXT_ASSETID.(%s)\n",assetidstr);
         ap_type = 0;
@@ -298,8 +300,11 @@ double get_minvolume(struct supernet_info *myinfo,uint64_t assetid)
 int64_t get_asset_quantity(struct supernet_info *myinfo,int64_t *unconfirmedp,char *NXTaddr,char *assetidstr)
 {
     char cmd[2*MAX_JSON_FIELD],*jsonstr; struct destbuf assetid; int32_t i,n,iter; cJSON *array,*item,*obj,*json; int64_t quantity,qty = 0;
-    uint64_t assetidbits = calc_nxt64bits(assetidstr);
-    quantity = *unconfirmedp = 0;
+    uint64_t assetidbits;
+     quantity = *unconfirmedp = 0;
+    if ( is_decimalstr(assetidstr) > 0 )
+        assetidbits = calc_nxt64bits(assetidstr);
+    else return(0);
     if ( assetidbits == NXT_ASSETID )
     {
         sprintf(cmd,"requestType=getBalance&account=%s",NXTaddr);
@@ -428,9 +433,9 @@ int32_t SUPPORTS(struct exchange_info *exchange,char *base,char *rel,cJSON *argj
     int32_t polarity; struct supernet_info *myinfo = SuperNET_MYINFO(0);
     if ( (polarity= baserel_polarity(BASERELS,(int32_t)(sizeof(BASERELS)/sizeof(*BASERELS)),base,rel)) == 0 )
     {
-        if ( strcmp(rel,"NXT") == 0 || strcmp(rel,"nxt") == 0 || calc_nxt64bits(rel) == NXT_ASSETID )
+        if ( strcmp(rel,"NXT") == 0 || strcmp(rel,"nxt") == 0 || (is_decimalstr(rel) != 0 && calc_nxt64bits(rel) == NXT_ASSETID) )
             return(NXT_assetpolarity(myinfo,base));
-        else if ( strcmp(base,"NXT") == 0 || strcmp(base,"nxt") == 0 || calc_nxt64bits(base) == NXT_ASSETID )
+        else if ( strcmp(base,"NXT") == 0 || strcmp(base,"nxt") == 0 || (is_decimalstr(base) != 0 && calc_nxt64bits(rel) == NXT_ASSETID) )
             return(-NXT_assetpolarity(myinfo,rel));
     }
     return(polarity);
@@ -703,7 +708,7 @@ char *CANCELORDER(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson
     uint64_t nxt64bits; char cmd[4096],secret[8192],*str = "Bid",*retstr = 0; struct supernet_info *myinfo = SuperNET_MYINFO(0);
     if ( (nxt64bits= _get_AEquote(myinfo,str,orderid)) == 0 )
         str = "Ask", nxt64bits = _get_AEquote(myinfo,str,orderid);
-    if ( nxt64bits == calc_nxt64bits(myinfo->myaddr.NXTADDR) )
+    if ( nxt64bits == myinfo->myaddr.nxt64bits )
     {
         escape_code(secret,myinfo->secret);
         sprintf(cmd,"requestType=cancel%sOrder&secretPhrase=%s&feeNQT=%d&deadline=%d&order=%llu",str,secret,0,DEFAULT_NXT_DEADLINE,(long long)orderid);

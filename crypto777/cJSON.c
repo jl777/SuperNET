@@ -1062,9 +1062,9 @@ uint64_t calc_nxt64bits(const char *NXTaddr)
         {
             printf("calc_nxt64bits: illegal char.(%c %d) in (%s).%d\n",c,c,NXTaddr,(int32_t)i);
 #ifdef __APPLE__
-            while ( 1 )
+            //while ( 1 )
             {
-                sleep(60);
+                //sleep(60);
                 printf("calc_nxt64bits: illegal char.(%c %d) in (%s).%d\n",c,c,NXTaddr,(int32_t)i);
             }
 #endif

@@ -36,19 +36,12 @@ static char *BASERELS[][2] = { {"NZD","USD"},{"NZD","CHF"},{"NZD","CAD"},{"NZD",
 
 void prices777_instaforex(uint32_t timestamps[NUM_INSTAFOREX],double bids[NUM_INSTAFOREX],double asks[NUM_INSTAFOREX])
 {
-    static uint32_t lasttime; static char *jsonstr;
     //{"NZDUSD":{"symbol":"NZDUSD","lasttime":1437580206,"digits":4,"change":"-0.0001","bid":"0.6590","ask":"0.6593"},
-    char contract[32]; cJSON *json,*item; int32_t i;
+    char contract[32],*jsonstr; cJSON *json,*item; int32_t i;
     memset(timestamps,0,sizeof(*timestamps) * NUM_INSTAFOREX);
     memset(bids,0,sizeof(*bids) * NUM_INSTAFOREX);
     memset(asks,0,sizeof(*asks) * NUM_INSTAFOREX);
-    if ( time(NULL) > lasttime )
-    {
-        if ( jsonstr != 0 )
-            free(jsonstr);
-        jsonstr = issue_curl("https://quotes.instaforex.com/get_quotes.php?q=NZDUSD,NZDCHF,NZDCAD,NZDJPY,GBPNZD,EURNZD,AUDNZD,CADJPY,CADCHF,USDCAD,EURCAD,GBPCAD,AUDCAD,USDCHF,CHFJPY,EURCHF,GBPCHF,AUDCHF,EURUSD,EURAUD,EURJPY,EURGBP,GBPUSD,GBPJPY,GBPAUD,USDJPY,AUDJPY,AUDUSD,XAUUSD&m=json");
-        lasttime = (uint32_t)time(NULL);
-    }
+    jsonstr = issue_curl("https://quotes.instaforex.com/get_quotes.php?q=NZDUSD,NZDCHF,NZDCAD,NZDJPY,GBPNZD,EURNZD,AUDNZD,CADJPY,CADCHF,USDCAD,EURCAD,GBPCAD,AUDCAD,USDCHF,CHFJPY,EURCHF,GBPCHF,AUDCHF,EURUSD,EURAUD,EURJPY,EURGBP,GBPUSD,GBPJPY,GBPAUD,USDJPY,AUDJPY,AUDUSD,XAUUSD&m=json");
     if ( jsonstr != 0 )
     {
         // printf("(%s)\n",jsonstr);
@@ -66,6 +59,7 @@ void prices777_instaforex(uint32_t timestamps[NUM_INSTAFOREX],double bids[NUM_IN
             }
             free_json(json);
         }
+        free(jsonstr);
     }
 }
 
