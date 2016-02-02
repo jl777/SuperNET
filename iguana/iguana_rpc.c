@@ -721,6 +721,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
     //printf("url.(%s) method.(%s)\n",&url[i],urlmethod);
     if ( strcmp(&url[i],"/") == 0 && strcmp(urlmethod,"GET") == 0 )
     {
+        *jsonflagp = 1;
         SuperNET_htmlstr("index7778.html",retbuf,bufsize,0);
         //return(retbuf);
         return(OS_filestr(&filesize,"index7778.html"));
