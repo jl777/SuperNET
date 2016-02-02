@@ -676,7 +676,7 @@ void PAX_bidask(struct exchange_info *exchange,uint32_t *timestamps,double *bids
     bids[contractnum] = bidasks[0].price;
     asks[contractnum] = bidasks[1].price;
     timestamps[contractnum] = bidasks[0].timestamp;
-    printf("(%d %.6f) ",contractnum,_pairaved(bids[contractnum],asks[contractnum]));
+    //printf("(%d %.6f) ",contractnum,_pairaved(bids[contractnum],asks[contractnum]));
 }
 
 struct exchange_info *PAX_bidasks(char *exchangestr,uint32_t *timestamps,double *bids,double *asks)
@@ -693,7 +693,7 @@ struct exchange_info *PAX_bidasks(char *exchangestr,uint32_t *timestamps,double 
             }
         }
     } else printf("cant find (%s) exchange\n",exchangestr);
-    printf("%s\n",exchangestr);
+    //printf("%s\n",exchangestr);
     return(exchange);
 }
 
