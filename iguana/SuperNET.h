@@ -78,7 +78,7 @@ struct supernet_info
     char ipaddr[64],transport[8]; int32_t APISLEEP; int32_t iamrelay;
     int32_t Debuglevel,readyflag,dead,POLLTIMEOUT; char rpcsymbol[16],LBpoint[64],PUBpoint[64];
     //int32_t pullsock,subclient,lbclient,lbserver,servicesock,pubglobal,pubrelays,numservers;
-    bits256 privkey,persistent_priv;
+    bits256 privkey,persistent_priv; char secret[2048],NXTAPIURL[512];
     uint8_t *recvbuf[6];
     struct supernet_address myaddr;
     int32_t LBsock,PUBsock,reqsock,subsock,networktimeout,maxdelay;

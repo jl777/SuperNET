@@ -37,8 +37,6 @@ struct category_info *Categories;
 struct iguana_info *Coins[IGUANA_MAXCOINS];
 int32_t USE_JAY,FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel;
 uint32_t prices777_NXTBLOCK,MAX_DEPTH = 100;
-char NXTAPIURL[256],IGUANA_NXTADDR[256],IGUANA_NXTACCTSECRET[256];
-uint64_t IGUANA_MY64BITS;
 queue_t helperQ,jsonQ,finishedQ,bundlesQ;
 struct supernet_info MYINFO;
 static int32_t initflag;
@@ -302,9 +300,17 @@ void mainloop(struct supernet_info *myinfo)
 
 void iguana_main(void *arg)
 {
+    int32_t usessl = 0, ismainnet = 1;
     struct supernet_info *myinfo; char *tmpstr,*helperargs,*coinargs,helperstr[512]; int32_t i;
     mycalloc(0,0,0);
     myinfo = SuperNET_MYINFO(0);
+    if ( usessl == 0 )
+        strcpy(myinfo->NXTAPIURL,"http://127.0.0.1:");
+    else strcpy(myinfo->NXTAPIURL,"https://127.0.0.1:");
+    if ( ismainnet != 0 )
+        strcat(myinfo->NXTAPIURL,"7876/nxt");
+    else strcat(myinfo->NXTAPIURL,"6876/nxt");
+
     signal(SIGINT,sigint_func);
     signal(SIGILL,sigillegal_func);
     signal(SIGHUP,sighangup_func);

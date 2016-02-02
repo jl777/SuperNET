@@ -340,31 +340,3 @@ void curlhandle_free(void *curlhandle)
 {
     curl_easy_cleanup(curlhandle);
 }
-
-bits256 issue_getpubkey(int32_t *haspubkeyp,char *acct)
-{
-    cJSON *json; bits256 pubkey; char cmd[4096],*jsonstr; struct destbuf pubkeystr;
-    sprintf(cmd,"%s?requestType=getAccountPublicKey&account=%s",NXTAPIURL,acct);
-    jsonstr = issue_curl(cmd);
-    pubkeystr.buf[0] = 0;
-    if ( haspubkeyp != 0 )
-        *haspubkeyp = 0;
-    memset(&pubkey,0,sizeof(pubkey));
-    if ( jsonstr != 0 )
-    {
-        printf("PUBKEYRPC.(%s)\n",jsonstr);
-        if ( (json = cJSON_Parse(jsonstr)) != 0 )
-        {
-            copy_cJSON(&pubkeystr,cJSON_GetObjectItem(json,"publicKey"));
-            free_json(json);
-            if ( strlen(pubkeystr.buf) == sizeof(pubkey)*2 )
-            {
-                if ( haspubkeyp != 0 )
-                    *haspubkeyp = 1;
-                decode_hex(pubkey.bytes,sizeof(pubkey),pubkeystr.buf);
-            }
-        }
-        free(jsonstr);
-    }
-    return(pubkey);
-}

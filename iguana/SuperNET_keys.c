@@ -248,10 +248,14 @@ void SuperNET_setkeys(struct supernet_info *myinfo,void *pass,int32_t passlen,in
 {
     char pubkeystr[128]; uint8_t pubkey33[33]; bits256 hash;
     if ( dosha256 != 0 )
+    {
+        memcpy(myinfo->secret,pass,passlen+1);
         myinfo->myaddr.nxt64bits = conv_NXTpassword(myinfo->persistent_priv.bytes,myinfo->myaddr.persistent.bytes,pass,passlen);
+    }
     else
     {
         myinfo->myaddr.persistent = curve25519(myinfo->persistent_priv,curve25519_basepoint9());
+        init_hexbytes_noT(myinfo->secret,myinfo->persistent_priv.bytes,sizeof(myinfo->persistent_priv));
         vcalc_sha256(0,hash.bytes,myinfo->myaddr.persistent.bytes,32);
         myinfo->myaddr.nxt64bits = hash.txid;
     }
