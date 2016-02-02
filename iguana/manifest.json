@@ -8,7 +8,7 @@
     "name": "Iguana",
     "version": "0.0.1",
     "icons": {
-        "128": "iguana/icon128.png"
+        "128": "icon128.png"
     },
     "minimum_chrome_version": "36",
     "sockets": {
