@@ -706,19 +706,19 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
 {
     cJSON *tokens,*argjson,*json = 0; long filesize;
     char symbol[16],buf[4096],urlmethod[16],*data,url[1024],*retstr,*token = 0; int32_t i,j,n,num=0;
-    //printf("rpcparse.(%s)\n",urlstr);
+    printf("rpcparse.(%s)\n",urlstr);
     for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
         urlmethod[i] = urlstr[i];
     urlmethod[i++] = 0;
     n = i;
-    //printf("URLMETHOD.(%s)\n",urlmethod);
+    printf("URLMETHOD.(%s)\n",urlmethod);
     *postflagp = (strcmp(urlmethod,"POST") == 0);
     for (i=0; i<sizeof(url)-1&&urlstr[n+i]!=0&&urlstr[n+i]!=' '; i++)
         url[i] = urlstr[n+i];
     url[i++] = 0;
     n += i;
     j = i = 0;
-    //printf("url.(%s) method.(%s)\n",&url[i],urlmethod);
+    printf("url.(%s) method.(%s)\n",&url[i],urlmethod);
     if ( strcmp(&url[i],"/") == 0 && strcmp(urlmethod,"GET") == 0 )
     {
         *jsonflagp = 1;
@@ -739,7 +739,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
         iguana_bitmap(retbuf,bufsize,&url[i]);
         return(retbuf);
     }
-    //printf("URL.(%s)\n",url);
+    printf("URL.(%s)\n",url);
     if ( strcmp(url,"/favicon.ico") == 0 )
     {
         *jsonflagp = -1;
@@ -927,17 +927,19 @@ void iguana_rpcloop(void *args)
             else
             {
                 if ( len > 0 )
-                {
+                {   //printf("got.(%s) %d remains.%d of total.%d\n",buf,recvlen,remains,len);
                     remains -= len;
                     recvlen += len;
                     buf = &buf[len];
-                    retstr = SuperNET_rpcparse(myinfo,space,size,&jsonflag,&postflag,jsonbuf,remoteaddr);
-                    break;
-                } else usleep(10000);
+                    //break;
+                } else {usleep(10000);
                 //printf("got.(%s) %d remains.%d of total.%d\n",jsonbuf,recvlen,remains,len);
                 //retstr = iguana_rpcparse(space,size,&postflag,jsonbuf);
-                break;
+                break;}
             }
+        }
+        if(recvlen>0){
+        retstr = SuperNET_rpcparse(myinfo,space,size,&jsonflag,&postflag,jsonbuf,remoteaddr);
         }
         //if ( retstr == 0 )
         //    retstr = iguana_htmlresponse(space,size,&remains,1,retstr,retstr != space);
