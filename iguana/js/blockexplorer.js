@@ -44,7 +44,8 @@ var callBlockEXPRPC=function(coin){
     SPNAPI.makeRequest(request, function(request,response){
         response=JSON.parse(response);
         if(response.result && response.result==='set bitcoin RPC coin'){
-            document.getElementById('Blockhashbutton').innerHTML='<button class="btn btn-raised btn-success btn-xs getBlockHashActionButton" data-height="0">Get blockhash</button>';
+            
+        blockExp_input_table();
         }
     });
 };
@@ -57,8 +58,20 @@ var callBlockEXPRPC=function(coin){
  * (initially height is set to zero)
  * 
  */
+
+var filterInt = function (value) {
+  if(/^(\-|\+)?([0-9]+|Infinity)$/.test(value))
+    return Number(value);
+  return "NaN";
+}
+
 var getBlockhash= function(height){
     
+    var height=($('#BlockExp_height').val());
+    /*
+    if (height === "NaN" || height ==='Infinity') {
+     height=0;
+    }*/
     var request="{\"agent\":\"ramchain\",\"method\":\"getblockhash\",\"height\":\""+height+"\"}";
     
     SPNAPI.makeRequest(request, function(request,response){
@@ -66,8 +79,8 @@ var getBlockhash= function(height){
             if(response.result){
                 BlockHash=response.result;
                 //Blockhashoutput
-                document.getElementById('Blockhashoutput').innerHTML='Blockhash is: '+BlockHash;
-                document.getElementById('Blockbutton').innerHTML='<button class="btn btn-raised btn-success btn-xs getBlockActionButton" data-hash="'+BlockHash+'">Get block</button>';
+                document.getElementById('block_output_table').innerHTML='<tr><td >'+'Blockhash is:</td><td  width="300px"> '+BlockHash+'</td></tr>';
+                $('#BlockExp_blockhash').val(BlockHash);
         
                 }
         });
@@ -83,16 +96,20 @@ var getBlockhash= function(height){
  * 
  */
 var getBlock= function(hash){
-    
+    var inputhash=$('#BlockExp_blockhash').val();
+    if(inputhash!==hash){
+        hash=inputhash;
+    }
     var request="{\"agent\":\"ramchain\",\"method\":\"getblock\",\"blockhash\":\""+hash+"\",\"remoteonly\":\""+checkExternalBlock+"\"}";
     
     SPNAPI.makeRequest(request, function(request,response){
             response=JSON.parse(response);
             if(response.result){
-                document.getElementById('Blockoutput').innerHTML=response.result;
+                document.getElementById('block_output_table').innerHTML='<tr><td >'+'Block is: </td><td >'+response.result+'</th></td>';
                 Block=response.result;
-                document.getElementById('transactionButton').innerHTML='<button class="btn btn-raised btn-success btn-xs getTrancationActionButton" data-hash="'+Block+'">Get transaction</button>';
-        
+                }else if(response.error){
+                document.getElementById('block_output_table').innerHTML='<tr><td >'+JSON.stringify(response)+'</th></td>';
+                    
                 }
         });
     
@@ -111,8 +128,12 @@ var getBlock= function(hash){
 //e7386986f14c994d6c70e8eb60753ea1fe2dc2a58567e6269dc6b04ef5310693
 //5f7edfb417855f80b7c12e1a9c040f8b496db23c82c90e4de905b8cff8139f03
 var getRawTransaction=function(Hash){
-    var request="{\"agent\":\"ramchain\",\"method\":\"getrawtransaction\",\"txid\":\"5f7edfb417855f80b7c12e1a9c040f8b496db23c82c90e4de905b8cff8139f03\",\"verbose\":1}";
+    
+    var inputhash=$('#BlockExp_txid').val();
+    var request="{\"agent\":\"ramchain\",\"method\":\"getrawtransaction\",\"txid\":\""+inputhash+"\",\"verbose\":1}";
     SPNAPI.makeRequest(request, function(request,response){
+        document.getElementById('block_output_table').innerHTML='<tr><td>'+'Output is:</td><td width="300px"> '+response+'</th></td>';
+                
             /*response=JSON.parse(response);
             if(response.result){
                 document.getElementById('Blockoutput').innerHTML=response.result;
@@ -120,6 +141,22 @@ var getRawTransaction=function(Hash){
         
                 }*/
         });
+};
+
+var change_ExternalBlocks=function(){
+    
+
+            if(document.getElementById('cbChangeExternalBlocks').checked){
+                    checkExternalBlock=1;
+            }else{
+                 checkExternalBlock=0;
+            }
+            console.log("CheckExternalBlock flag change to "+checkExternalBlock);
+    
+};
+
+document.getElementById('cbChangeExternalBlocks').onclick = function () {
+    change_ExternalBlocks();
 };
 
 /*
@@ -132,4 +169,12 @@ var startBlockExplorer=function(){
     setCoinRadio();
 
 };
-
+var blockExp_input_table=function(){
+  
+    var table='<tr><th>Input height:</th><td><input type="text" id="BlockExp_height"></td>\
+<td><button class="btn btn-raised btn-success btn-xs getBlockHashActionButton" data-height="0">Get blockhash</button></td></tr>\
+<tr><th>Blockhash:</th><td><input type="text" id="BlockExp_blockhash" value=""></td><td><button class="btn btn-raised btn-success btn-xs getBlockActionButton" data-hash="">Get block</button></td></tr>\n\
+<tr><th>Txid:</th><td><input type="text" id="BlockExp_txid"></td><td><button class="btn btn-raised btn-success btn-xs getTrancationActionButton" data-hash="">Get transaction</button></td></tr>';
+    document.getElementById('block_input_table').innerHTML=table;
+    document.getElementById('block_output_table').innerHTML="";
+};

@@ -11,7 +11,7 @@ function tagGen(len)
 var SPNAPI = (function(SPNAPI, $, undefined) {
 
     SPNAPI.methods = {};
-    SPNAPI.pages = ["Settings","Instandex", "Pangea", "Peers","Debug", "Coins", "Blockexplorer"];
+    SPNAPI.pages = ["Instandex", "Pangea", "Peers","Debug", "Coins", "Blockexplorer"];
     SPNAPI.pageContent = {};
     SPNAPI.page = "Blockexplorer";
     /*
@@ -100,25 +100,65 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
         });   
         }else{
             request = JSON.parse( request );
-        var url=SPNAPI.returnAJAXgetURL(request);
+        var usepost=SPNAPI.useGETRequest(request);
             if(url!==false){
                 
     /*
      * Ajax request will be sent if pexe is not loaded or 
      * if usepexe is set to false
      * (this adds the user the ability to handle how requests are sent)
-     */                 
-$.ajax({
+     */ 
+    if(!usepost){
+                var url=SPNAPI.returnAJAXPostURL(request);
+    $.ajax({
+    type: "POST",
+    url: url,
+    crossDomain: true,
+    dataType: 'json',
+    data: request,
+    success: function(response, textStatus, jqXHR) {
+        console.log('AJAX Response is ' + JSON.stringify(response));
+        callback(request, response);
+    },
+    error: function (responseData, textStatus, errorThrown) {
+        console.log('POST request failed.');
+    }
+
+});                  
+}else{
+    var url=SPNAPI.returnAJAXgetURL(request);
+   $.ajax({
   type: "GET",
-  url: url
-  }).done(function( response ) {
+  url: url,
+   success:function( response ) {
        console.log('AJAX Response is ' + response);
             //if(typeof callback === 'function'){
             callback(request, response);
             //}
-            });    
             }
+}); 
+}
+}
    }
+    };
+    
+    SPNAPI.useGETRequest=function(request){
+        if(request.method && (request.method==='apikeypair' || request.method==='setuserid')){
+            return false;
+        }else{
+            return true;
+        }
+    };
+    
+    SPNAPI.returnAJAXPostURL=function(request){
+        
+        var url=SPNAPI.domain+":"+SPNAPI.port;
+        if(request.method === undefined){
+            console.log("Invalid request.");
+            return false;
+        }
+        console.log("Post Url for request:"+url);
+        return url;
     };
     
     SPNAPI.returnAJAXgetURL=function(request){
