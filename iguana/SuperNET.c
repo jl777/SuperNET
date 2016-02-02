@@ -1295,7 +1295,7 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
         {
             printf("decrypted.(%s)\n",decryptstr);
             free(decryptstr);
-            if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
+            if ( (passphrase= jstr(argjson,"result")) != 0 )
             {
                 SuperNET_setkeys(myinfo,passphrase,(int32_t)strlen(passphrase),1);
                 free_json(argjson);

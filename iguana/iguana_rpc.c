@@ -723,7 +723,6 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
     {
         *jsonflagp = 1;
         SuperNET_htmlstr("index7778.html",retbuf,bufsize,0);
-        //return(retbuf);
         return(OS_filestr(&filesize,"index7778.html"));
     }
     if ( strncmp(&url[i],"/api",strlen("/api")) == 0 )

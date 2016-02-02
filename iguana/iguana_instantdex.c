@@ -177,8 +177,8 @@ char *instantdex_request(struct supernet_info *myinfo,struct instantdex_msghdr *
         rel = jstr(argjson,"rel");
         volume = jdouble(argjson,"volume");
         aveprice = instantdex_aveprice(myinfo,sortbuf,(int32_t)(sizeof(sortbuf)/sizeof(*sortbuf)),&totalvol,base,rel,volume,argjson);
+        printf("aveprice %.8f vol %f\n",aveprice,volume);
         return(clonestr("{\"result\":\"request calculated aveprice\"}"));
-        return(clonestr("{\"error\":\"request missing parameter\"}"));
     } else return(clonestr("{\"error\":\"request needs argjson\"}"));
 }
 
