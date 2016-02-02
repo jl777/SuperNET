@@ -332,11 +332,15 @@ char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag
 
 void category_init(struct supernet_info *myinfo)
 {
-    bits256 pangeahash;
+    bits256 pangeahash,instantdexhash;
     //exchanges777_init(0);
     category_subscribe(myinfo,GENESIS_PUBKEY,GENESIS_PUBKEY);
     pangeahash = calc_categoryhashes(0,"pangea",0);
     category_subscribe(myinfo,pangeahash,GENESIS_PUBKEY);
     category_processfunc(pangeahash,pangea_hexmsg);
     category_chain_functions(myinfo,pangeahash,GENESIS_PUBKEY,sizeof(bits256),sizeof(bits256),0,0,0,0);
+    instantdexhash = calc_categoryhashes(0,"InstantDEX",0);
+    printf("InstantDEX:\n");
+    category_subscribe(myinfo,instantdexhash,GENESIS_PUBKEY);
+    category_processfunc(instantdexhash,InstantDEX_hexmsg);
 }
