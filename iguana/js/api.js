@@ -43,6 +43,8 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
                 addInitCoins();
             }else if(page==="Instandex"){
                 ListAllExchanges();
+            }else if(page==="Blockexplorer"){
+                filesystem_show_file_name();
             }
             
         });

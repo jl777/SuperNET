@@ -411,3 +411,18 @@ var startCoinManagement = function () {
     renderGrid();
     populateCoinStatusDropDown();
 };
+
+var add_new_coin_test=function(){
+    var request =  IsJsonString($('textarea#json_src_coin').val());
+    
+    if(request!==false){
+        SPNAPI.makeRequest(JSON.stringify(request), function(request,response){
+            //response=JSON.parse(response);
+             $(".coin_result").text(response);
+        });
+        
+    }else{
+        console.log("Invalid JSON");
+    }
+    
+};

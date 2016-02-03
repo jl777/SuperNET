@@ -87,7 +87,14 @@ $(function () {
         else if(e.className && e.className.indexOf('instantdex_pollgap') != -1){
             InstantDEX_pollgap();
         }
-        ///instantdex_pollgap
+        else if(e.className && e.className.indexOf('submit_new_coin_test') != -1){
+            add_new_coin_test();
+        }
+        
+        else if(e.className && e.className.indexOf('clear-response-coin') != -1){
+            $(".coin_result").text("JSON response");
+        }
+        ///clear-response-coin
         
     };
 });
