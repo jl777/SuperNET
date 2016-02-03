@@ -101,21 +101,20 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
         }else{
             request = JSON.parse( request );
         var usepost=SPNAPI.useGETRequest(request);
-            if(url!==false){
-                
+        var url="";
     /*
      * Ajax request will be sent if pexe is not loaded or 
      * if usepexe is set to false
      * (this adds the user the ability to handle how requests are sent)
      */ 
     if(!usepost){
-                var url=SPNAPI.returnAJAXPostURL(request);
+                url=SPNAPI.returnAJAXPostURL(request);
     $.ajax({
     type: "POST",
     url: url,
     crossDomain: true,
-    dataType: 'json',
-    data: request,
+    //dataType: 'json',
+    data: JSON.stringify(request),
     success: function(response, textStatus, jqXHR) {
         console.log('AJAX Response is ' + JSON.stringify(response));
         callback(request, response);
@@ -127,7 +126,8 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
 });                  
 }else{
     var url=SPNAPI.returnAJAXgetURL(request);
-   $.ajax({
+    if(url){
+        $.ajax({
   type: "GET",
   url: url,
    success:function( response ) {
@@ -136,9 +136,11 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
             callback(request, response);
             //}
             }
-}); 
+});
+    }
+    
 }
-}
+
    }
     };
     
