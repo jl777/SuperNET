@@ -310,7 +310,8 @@ void iguana_main(void *arg)
     if ( ismainnet != 0 )
         strcat(myinfo->NXTAPIURL,"7876/nxt");
     else strcat(myinfo->NXTAPIURL,"6876/nxt");
-
+    void pktest();
+    pktest();
     signal(SIGINT,sigint_func);
     signal(SIGILL,sigillegal_func);
     signal(SIGHUP,sighangup_func);
