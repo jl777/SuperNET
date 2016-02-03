@@ -51,23 +51,42 @@ INT_ARG(ramchain,getblockhash,height)
 
 HASH_AND_INT(ramchain,getblock,blockhash,remoteonly)
 {
-    int32_t len; char hexstr[(sizeof(uint32_t)+sizeof(struct iguana_msgblock))*2+1],*blockstr;
-    uint8_t serialized[sizeof(uint32_t)+sizeof(struct iguana_msgblock)]; bits256 hash2,txid;
-    struct iguana_msgblock msg; struct iguana_block *block;
-    cJSON *retjson = cJSON_CreateObject();
+    char *blockstr; struct iguana_msgblock msg; struct iguana_block *block; cJSON *retjson; bits256 txid;
+    retjson = cJSON_CreateObject();
     memset(&msg,0,sizeof(msg));
     if ( remoteonly == 0 && (block= iguana_blockfind(coin,blockhash)) != 0 )
     {
-        msg.H.version = block->RO.version;
+        return(jprint(iguana_blockjson(coin,block,1),1));
+/* int32_t len,i; char str[65],hexstr[(sizeof(uint32_t)+sizeof(struct iguana_msgblock))*2+1],*blockstr;
+        uint8_t serialized[sizeof(uint32_t)+sizeof(struct iguana_msgblock)]; bits256 hash2,txid;
+   msg.H.version = block->RO.version;
         msg.H.merkle_root = block->RO.merkle_root;
         msg.H.timestamp = block->RO.timestamp;
         msg.H.bits = block->RO.bits;
         msg.H.nonce = block->RO.nonce;
         msg.txn_count = block->RO.txn_count;
+        jaddnum(retjson,"version",msg.H.version);
+        jaddnum(retjson,"timestamp",msg.H.timestamp);
+        jaddstr(retjson,"utc",utc_str(str,msg.H.timestamp));
+        serialized[0] = ((uint8_t *)&msg.H.bits)[3];
+        serialized[1] = ((uint8_t *)&msg.H.bits)[2];
+        serialized[2] = ((uint8_t *)&msg.H.bits)[1];
+        serialized[3] = ((uint8_t *)&msg.H.bits)[0];
+        init_hexbytes_noT(hexstr,serialized,sizeof(uint32_t));
+        jaddstr(retjson,"nBits",hexstr);
+        jaddnum(retjson,"nonce",msg.H.nonce);
+        jaddbits256(retjson,"merkle_root",msg.H.merkle_root);
+        jaddnum(retjson,"txn_count",msg.txn_count);
+        array = cJSON_CreateArray();
+        for (i=0; i<msg.txn_count; i++)
+        {
+            
+        }
+        jadd(retjson,"txids",array);
         len = iguana_rwblock(1,&hash2,serialized,&msg);
         char str[65]; printf("timestamp.%u bits.%u nonce.%u v.%d (%s) len.%d (%ld %ld)\n",block->RO.timestamp,block->RO.bits,block->RO.nonce,block->RO.version,bits256_str(str,hash2),len,sizeof(serialized),sizeof(hexstr));
         init_hexbytes_noT(hexstr,serialized,len);
-        jaddstr(retjson,"result",hexstr);
+        jaddstr(retjson,"result",hexstr);*/
     }
     else if ( coin->APIblockstr != 0 )
         jaddstr(retjson,"error","already have pending request");
@@ -83,13 +102,51 @@ HASH_AND_INT(ramchain,getblock,blockhash,remoteonly)
     return(jprint(retjson,1));
 }
 
+int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t maxlen,bits256 *txidp,struct iguana_txid *tx,int32_t height,struct iguana_msgvin *vins,struct iguana_msgvout *vouts)
+{
+    int32_t i,rwflag=1,len = 0; char asmstr[512],txidstr[65];
+    uint32_t numvins,numvouts; struct iguana_msgvin vin; struct iguana_msgvout vout; uint8_t space[8192];
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->version),&tx->version);
+    if ( coin->chain->hastimestamp != 0 )
+        len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->timestamp),&tx->timestamp);
+    numvins = tx->numvins, numvouts = tx->numvouts;
+    len += iguana_rwvarint32(rwflag,&serialized[len],&numvins);
+    for (i=0; i<numvins; i++)
+    {
+        if ( vins == 0 )
+            iguana_vinset(coin,height,&vin,tx,i);
+        else vin = vins[i];
+        len += iguana_rwvin(rwflag,0,&serialized[len],&vin);
+    }
+    if ( len > maxlen )
+        return(0);
+    len += iguana_rwvarint32(rwflag,&serialized[len],&numvouts);
+    for (i=0; i<numvouts; i++)
+    {
+        if ( vouts == 0 )
+            iguana_voutset(coin,space,asmstr,height,&vout,tx,i);
+        else vout = vouts[i];
+        len += iguana_rwvout(rwflag,0,&serialized[len],&vout);
+    }
+    if ( len > maxlen )
+        return(0);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->locktime),&tx->locktime);
+    *txidp = bits256_doublesha256(txidstr,serialized,len);
+    if ( memcmp(txidp,tx->txid.bytes,sizeof(*txidp)) != 0 )
+    {
+        char str[65],str2[65]; printf("error generating txbytes txid %s vs %s\n",bits256_str(str,*txidp),bits256_str(str2,tx->txid));
+        return(0);
+    }
+    return(len);
+}
+
 HASH_AND_INT(ramchain,getrawtransaction,txid,verbose)
 {
     struct iguana_txid *tx,T; char *txbytes; bits256 checktxid; int32_t len,height; cJSON *retjson;
     if ( (tx= iguana_txidfind(coin,&height,&T,txid)) != 0 )
     {
         retjson = cJSON_CreateObject();
-        if ( (len= iguana_txbytes(coin,coin->blockspace,sizeof(coin->blockspace),&checktxid,tx,height,0,0)) > 0 )
+        if ( (len= iguana_ramtxbytes(coin,coin->blockspace,sizeof(coin->blockspace),&checktxid,tx,height,0,0)) > 0 )
         {
             txbytes = mycalloc('x',1,len*2+1);
             init_hexbytes_noT(txbytes,coin->blockspace,len*2+1);
@@ -445,6 +502,14 @@ TWO_STRINGS(ramchain,walletpassphrasechange,oldpassphrase,newpassphrase)
 STRING_ARG(ramchain,encryptwallet,passphrase)
 {
     cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+
+HASH_AND_STRING(ramchain,verifytx,txid,txbytes)
+{
+    cJSON *retjson;
+    retjson = bitcoin_txtest(coin,txbytes,txid);
+    //printf("verifytx.(%s) %p\n",jprint(retjson,0),retjson);
     return(jprint(retjson,1));
 }
 

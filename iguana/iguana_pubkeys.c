@@ -390,7 +390,7 @@ err:
 	return(ok);
 }
 
-bool bp_key_init(struct bp_key *key)
+int32_t bp_key_init(struct bp_key *key)
 {
 	memset(key, 0, sizeof(*key));
     
@@ -533,13 +533,13 @@ bool bp_key_secret_get(void *p, size_t len, const struct bp_key *key)
 	return true;
 }
 
-bool bp_sign(const struct bp_key *key, const void *data, size_t data_len,void **sig_, size_t *sig_len_)
+bool bp_sign(EC_KEY *key, const void *data, size_t data_len,void **sig_, size_t *sig_len_)
 {
-	size_t sig_sz = ECDSA_size(key->k);
+	size_t sig_sz = ECDSA_size(key);
 	void *sig = mycalloc('b',1, sig_sz);
 	unsigned int sig_sz_out = (int32_t)sig_sz;
-    
-	int src = ECDSA_sign(0, data, (int32_t)data_len, sig, &sig_sz_out, key->k);
+    *sig_len_ = 0;
+	int src = ECDSA_sign(0, data, (int32_t)data_len, sig, &sig_sz_out, key);
 	if (src != 1) {
 		myfree(sig,sig_sz);
 		return false;
@@ -551,7 +551,7 @@ bool bp_sign(const struct bp_key *key, const void *data, size_t data_len,void **
 	return true;
 }
 
-bool bp_verify(const struct bp_key *key, const void *data, size_t data_len,const void *sig_, size_t sig_len)
+bool bp_verify(EC_KEY *key, const void *data, size_t data_len,const void *sig_, size_t sig_len)
 {
 	const unsigned char *sig = sig_;
 	ECDSA_SIG *esig;
@@ -564,7 +564,7 @@ bool bp_verify(const struct bp_key *key, const void *data, size_t data_len,const
 	if (!d2i_ECDSA_SIG(&esig, &sig, sig_len))
 		goto out_free;
     
-	b = ECDSA_do_verify(data,(int32_t) data_len, esig, key->k) == 1;
+	b = ECDSA_do_verify(data,(int32_t) data_len, esig, key) == 1;
     
 out_free:
 	ECDSA_SIG_free(esig);
@@ -890,11 +890,14 @@ int32_t iguana_calcrmd160(struct iguana_info *coin,uint8_t rmd160[20],uint8_t ms
     }
     else if ( pk_script[0] == 0x6a )
         type = IGUANA_SCRIPT_OPRETURN;
-    else if ( pk_script[0] == 0x76 && pk_script[1] == 0xa9 && pk_script[pk_script[2]+3] == 0x88 && pk_script[pk_script[2]+4] == 0xac )
+    else if ( pk_script[0] == 0x76 && pk_script[1] == 0xa9 && pk_script[2] == 20 && pk_script[pk_script[2]+3] == 0x88 && pk_script[pk_script[2]+4] == 0xac )
     {
-        vcalc_sha256(0,sha256,&pk_script[3],pk_script[2]);
-        calc_rmd160(0,rmd160,sha256,sizeof(sha256));
-        if ( (plen= pk_script[2]+4) < pk_scriptlen )
+        //printf("IGUANA_SCRIPT_7688AC plen.%d vs %d pk_scriptlen\n",pk_script[2]+4,pk_scriptlen);
+        // 76a9145f69cb73016264270dae9f65c51f60d0e4d6fd4488ac
+        //vcalc_sha256(0,sha256,&pk_script[3],pk_script[2]);
+        //calc_rmd160(0,rmd160,sha256,sizeof(sha256));
+        memcpy(rmd160,&pk_script[3],20);
+        if ( (plen= pk_script[2]+5) < pk_scriptlen )
         {
             while ( plen < pk_scriptlen )
                 if ( pk_script[plen++] != 0x61 ) // nop
@@ -905,7 +908,6 @@ int32_t iguana_calcrmd160(struct iguana_info *coin,uint8_t rmd160[20],uint8_t ms
     // 21035f1321ed17d387e4433b2fa229c53616057964af065f98bfcae2233c5108055eac
     else if ( pk_script[0] > 0 && pk_script[0] < 76 && pk_script[pk_scriptlen-1] == 0xac && pk_script[0] == pk_scriptlen-2 )
     {
-        printf("minus2\n");
         vcalc_sha256(0,sha256,&pk_script[1],pk_script[0]);
         calc_rmd160(0,rmd160,sha256,sizeof(sha256));
         return(IGUANA_SCRIPT_76AC);
@@ -981,11 +983,13 @@ int32_t iguana_calcrmd160(struct iguana_info *coin,uint8_t rmd160[20],uint8_t ms
 
 int32_t iguana_scriptgen(struct iguana_info *coin,char *coinaddr,uint8_t *script,char *asmstr,uint8_t rmd160[20],uint8_t type,int32_t txi)
 {
-    uint8_t addrtype; int32_t scriptlen = 0;
+    uint8_t addrtype; char rmd160str[41]; int32_t scriptlen = 0;
     if ( type == IGUANA_SCRIPT_7688AC || type == IGUANA_SCRIPT_76AC )
         addrtype = coin->chain->pubtype;
     else addrtype = coin->chain->p2shtype;
     btc_convrmd160(coinaddr,addrtype,rmd160);
+    init_hexbytes_noT(rmd160str,rmd160,20);
+    //printf("addrtype.%d\n",addrtype);
     switch ( type )
     {
         case IGUANA_SCRIPT_NULL:
@@ -993,10 +997,10 @@ int32_t iguana_scriptgen(struct iguana_info *coin,char *coinaddr,uint8_t *script
             coinaddr[0] = 0;
             break;
         case IGUANA_SCRIPT_76AC:
-            sprintf(asmstr,"OP_DUP %s OP_CHECKSIG",coinaddr);
+            sprintf(asmstr,"OP_DUP %s OP_CHECKSIG",rmd160str);
             break;
         case IGUANA_SCRIPT_7688AC:
-            sprintf(asmstr,"OP_DUP %s OP_EQUALVERIFY OP_CHECKSIG",coinaddr);
+            sprintf(asmstr,"OP_DUP OP_HASH160 %s OP_EQUALVERIFY OP_CHECKSIG",rmd160str);
             break;
         case IGUANA_SCRIPT_P2SH:
             script[0] = 0xa9, script[1] = 0x14;
@@ -1076,7 +1080,7 @@ char *iguana_txcreate(struct iguana_info *coin,uint8_t *space,int32_t maxlen,cha
         }
         T.numvins = numvins, T.numvouts = numvouts;
         T.timestamp = (uint32_t)time(NULL);
-        if ( (len= iguana_txbytes(coin,space,maxlen-len,&T.txid,&T,-1,vins,vouts)) > 0 )
+        if ( (len= iguana_ramtxbytes(coin,space,maxlen-len,&T.txid,&T,-1,vins,vouts)) > 0 )
         {
             
         }

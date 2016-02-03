@@ -12874,5 +12874,35 @@ len = 0;
             }
             return(pubkey);
         }
+                
+                int32_t iguana_rwtxbytes(struct iguana_info *coin,int32_t rwflag,uint8_t *serialized,int32_t maxlen,bits256 *txidp,struct iguana_msgtx *tx)
+            {
+                int32_t i,len = 0; char str[65],str2[65],txidstr[65]; uint32_t numvins,numvouts; bits256 txid;
+                len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->version),&tx->version);
+                if ( coin->chain->hastimestamp != 0 )
+                    len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->timestamp),&tx->timestamp);
+                numvins = tx->tx_in, numvouts = tx->tx_out;
+                len += iguana_rwvarint32(rwflag,&serialized[len],&numvins);
+                for (i=0; i<numvins; i++)
+                    len += iguana_rwvin(rwflag,0,&serialized[len],&tx->vins[i]);
+                if ( len > maxlen )
+                    return(0);
+                len += iguana_rwvarint32(rwflag,&serialized[len],&numvouts);
+                for (i=0; i<numvouts; i++)
+                    len += iguana_rwvout(rwflag,0,&serialized[len],&tx->vouts[i]);
+                if ( len > maxlen )
+                    return(0);
+                len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->lock_time),&tx->lock_time);
+                txid = bits256_doublesha256(txidstr,serialized,len);
+                if ( rwflag != 0 )
+                    tx->txid = txid;
+                else *txidp = txid;
+                if ( bits256_nonz(*txidp) > 0 && memcmp(txidp,tx->txid.bytes,sizeof(*txidp)) != 0 )
+                {
+                    printf("iguana_rwtxbytes.rw%d: txid.%s vs %s\n",rwflag,bits256_str(str,tx->txid),bits256_str(str2,*txidp));
+                    return(0);
+                }
+                return(len);
+            }
 
 #endif

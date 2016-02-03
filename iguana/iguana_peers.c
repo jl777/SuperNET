@@ -314,7 +314,9 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
         {
             if ( errno == EADDRINUSE )
             {
-                sleep(5);
+                sleep(1);
+                printf("ERROR BINDING PORT.%d. will exit. wait up to a minute and try again. dont worry, this is normal\n",port);
+                sleep(3);
                 printf("%s(%s) port.%d try again: %s sock.%d. errno.%d\n",bindflag!=0?"bind":"connect",hostname,port,strerror(errno),sock,errno);
                 if ( bindflag == 1 )
                 {

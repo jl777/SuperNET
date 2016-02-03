@@ -921,7 +921,7 @@ void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sle
                 myinfo->tradingexchanges[myinfo->numexchanges++] = exchange;
         }
     }
-    if ( 1 )
+    if ( 0 )
     {
         argjson = cJSON_CreateObject();
         for (i=0; i<sizeof(Exchange_funcs)/sizeof(*Exchange_funcs); i++)

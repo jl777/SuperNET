@@ -13,6 +13,8 @@
  *                                                                            *
  ******************************************************************************/
 
+// selftest supports against allpairs list
+
 #include "exchanges777.h"
 
 #define INSTANTDEX_HOPS 3
