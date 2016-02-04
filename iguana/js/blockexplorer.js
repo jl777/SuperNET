@@ -178,3 +178,41 @@ var blockExp_input_table=function(){
     document.getElementById('block_input_table').innerHTML=table;
     document.getElementById('block_output_table').innerHTML="";
 };
+
+function filesystem_show_file_name(){
+$.ajax({
+    url:fileSystem.root.toURL()+"images/BTC_blocks.jpg",
+    type:'HEAD',
+    error: function()
+    {
+        console.log("file doesnt exists");
+    },
+    success: function()
+    {
+        console.log("Hurray we are good to go!");
+        //file exists
+    }
+});
+//document.getElementById('block_output_table').innerHTML='<a href="'+fileSystem.root.toURL()+"images/BTC_blocks.jpg"+'" download="MyGoogleLogo">download me</a>';
+
+/*fileSystem.root.getFile('confs/iguana.4206523045167609019', {}, function(fileEntry) {
+
+    // Get a File object representing the file,
+    // then use FileReader to read its contents.
+    fileEntry.file(function(file) {
+       var reader = new FileReader();
+
+       reader.onloadend = function(e) {
+         //var txtArea = document.createElement('textarea');
+         console.log("Configuration file text: "+this.result.toString());
+         console.log("Full path is:"+fileEntry.fullPath);
+         //document.body.appendChild(txtArea);
+         document.getElementById('mousexy').innerHTML=this.result;
+       };
+
+       reader.readAsText(file);
+    }, errorHandler);
+
+  }, errorHandler);*/
+      
+}

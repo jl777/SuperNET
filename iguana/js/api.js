@@ -11,7 +11,7 @@ function tagGen(len)
 var SPNAPI = (function(SPNAPI, $, undefined) {
 
     SPNAPI.methods = {};
-    SPNAPI.pages = ["Instandex", "Pangea", "Peers","Debug", "Coins", "Blockexplorer"];
+    SPNAPI.pages = ["Settings","Instandex", "Pangea", "Peers","Debug", "Coins", "Blockexplorer"];
     SPNAPI.pageContent = {};
     SPNAPI.page = "Blockexplorer";
     /*
@@ -36,13 +36,15 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
             if(page==="Peers"){
                 peer_resonse=[];
                 getPeerList();
-            }else if(page==="Debug"){
-                
-                filesystem_save();
+            }else if(page==="Settings"){
+                check_files();
+                //SPNAPI.check_coin_conf_files_present();
             }else if(page==="Coins"){
                 addInitCoins();
             }else if(page==="Instandex"){
                 ListAllExchanges();
+            }else if(page==="Blockexplorer"){
+                filesystem_show_file_name();
             }
             
         });
@@ -101,21 +103,20 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
         }else{
             request = JSON.parse( request );
         var usepost=SPNAPI.useGETRequest(request);
-            if(url!==false){
-                
+        var url="";
     /*
      * Ajax request will be sent if pexe is not loaded or 
      * if usepexe is set to false
      * (this adds the user the ability to handle how requests are sent)
      */ 
     if(!usepost){
-                var url=SPNAPI.returnAJAXPostURL(request);
+                url=SPNAPI.returnAJAXPostURL(request);
     $.ajax({
     type: "POST",
     url: url,
     crossDomain: true,
-    dataType: 'json',
-    data: request,
+    //dataType: 'json',
+    data: JSON.stringify(request),
     success: function(response, textStatus, jqXHR) {
         console.log('AJAX Response is ' + JSON.stringify(response));
         callback(request, response);
@@ -127,7 +128,8 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
 });                  
 }else{
     var url=SPNAPI.returnAJAXgetURL(request);
-   $.ajax({
+    if(url){
+        $.ajax({
   type: "GET",
   url: url,
    success:function( response ) {
@@ -136,9 +138,11 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
             callback(request, response);
             //}
             }
-}); 
+});
+    }
+    
 }
-}
+
    }
     };
     

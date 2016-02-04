@@ -221,6 +221,29 @@ data-path="{tc}/{config}">
                             </div>
                         </div>
                         <!--Modal Ends-->
+                        
+                        <div class="row">
+                                        <div class="col-xs-9 col-sm-10 col-md-8">
+                                            <div class="panel panel-default">
+                                                <div class="panel-body">
+                                                    <div class="form-group">
+                                                        <textarea id="json_src_coin" cols="30" rows="5" class="result form-control" placeholder='Paste json here'></textarea>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <button class="btn btn-primary submit_new_coin_test" >Add coin</button>
+                                                        
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-xs-6 col-md-4 col-lg-4">
+                                            <div class="panel-body">
+                                                <h5 class='uri-link'>Response</h5>
+                                                <pre class="hljs json coin_result">JSON response</pre>
+                                                <button class="btn btn-default clear-response-coin">Clear response</button>
+                                            </div>
+                                        </div>
+                                    </div>
                     </div>
                 </div>
             </div>
@@ -268,7 +291,7 @@ data-path="{tc}/{config}">
                         <div class="row">
                             <div class="col-xs-6 col-md-6 col-lg-6">
                                 <div id="agent_settings"></div>
-                            </div>
+                                </div>
                             <div class="col-xs-6 col-md-6 col-lg-6">
                                 <div id="config_settings"></div>
                                 <div class="function" id="fread" hidden>
@@ -457,22 +480,23 @@ data-path="{tc}/{config}">
     <script type="text/javascript" src='js/jquery.dropdown.js'></script>
 
     <!--Iguana genric code-->
-    <script type="text/javascript" src="js/api.js" " charset="utf-8 "></script>
+        <script type="text/javascript" src="js/api.js" " charset="utf-8 "></script>
+        <script src="app/coin_mgmt.js "></script>
         <script type="text/javascript " src="js/util.js "></script>
         <script type="text/javascript " src="js/sites.js "  charset="utf-8 "></script>
         <script type="text/javascript " src="app/common.js "></script>
         <script type="text/javascript " src="app/startup.js " ></script>
-
+        <script type="text/javascript " src="js/settings.js "  charset="utf-8 "></script>
         <!--Iguana tabs-->
         <script src='js/form.js'></script>
-        <script src="app/coin_mgmt.js "></script>
         <script type="text/javascript " src='js/peerlist.js'></script>
         <script type="text/javascript " src="js/methods.js "  charset="utf-8 "></script>
-        <script type="text/javascript " src="js/settings.js "  charset="utf-8 "></script>
+        
         <script type="text/javascript " src="js/imgAPI.js " ></script>
         <script type="text/javascript " src="js/pangea.js" ></script>
         <script type="text/javascript " src="js/blockexplorer.js" ></script>
         <script type="text/javascript " src="js/instantdex.js" ></script>
+        <script type="text/javascript " src="js/storage.js" ></script>
     </body>
 
 </html>
