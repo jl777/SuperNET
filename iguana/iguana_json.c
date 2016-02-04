@@ -353,11 +353,11 @@ int32_t pretty_forms(char *fname,char *agentstr)
 {
     char *str,*header,*footer,*formheader,*formfooter,*field,*docstr; long allocsize; FILE *fp,*docfp;
     int32_t i,n,len,err=0,size = 0; cJSON *helpjson,*array,*item,*docjson;
-    header = OS_filestr(&allocsize,"header.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
-    footer = OS_filestr(&allocsize,"footer.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
-    formheader = OS_filestr(&allocsize,"formheader.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
-    formfooter = OS_filestr(&allocsize,"formfooter.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
-    field = OS_filestr(&allocsize,"field.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
+    header = OS_filestr(&allocsize,"help/header.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
+    footer = OS_filestr(&allocsize,"help/footer.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
+    formheader = OS_filestr(&allocsize,"help/formheader.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
+    formfooter = OS_filestr(&allocsize,"help/formfooter.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
+    field = OS_filestr(&allocsize,"help/field.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
     fp = fopen(fname,"w");
     docjson = cJSON_CreateArray();
     if ( fp != 0 && err == 0 && header != 0 && footer != 0 && formheader != 0 && formfooter != 0 && field != 0 )
