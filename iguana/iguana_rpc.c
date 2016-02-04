@@ -705,7 +705,7 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
 char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr)
 {
     cJSON *tokens,*argjson,*json = 0; long filesize;
-    char symbol[16],buf[4096],urlmethod[16],*data,url[1024],*retstr,*token = 0; int32_t i,j,n,num=0;
+    char symbol[16],buf[4096],urlmethod[16],*data,url[1024],*retstr,*filestr,*token = 0; int32_t i,j,n,num=0;
     //printf("rpcparse.(%s)\n",urlstr);
     for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
         urlmethod[i] = urlstr[i];
@@ -722,8 +722,13 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
     if ( strcmp(&url[i],"/") == 0 && strcmp(urlmethod,"GET") == 0 )
     {
         *jsonflagp = 1;
-        SuperNET_htmlstr("index7778.html",retbuf,bufsize,0);
-        return(OS_filestr(&filesize,"index7778.html"));
+        if ( (filestr= OS_filestr(&filesize,"index7778.html")) == 0 )
+        {
+            SuperNET_htmlstr("index7778.html",retbuf,bufsize,0);
+            filestr = OS_filestr(&filesize,"index7778.html");
+            printf("created index7778.html size %ld\n",filesize);
+        }
+        return(filestr);
     }
     if ( strncmp(&url[i],"/api",strlen("/api")) == 0 )
     {

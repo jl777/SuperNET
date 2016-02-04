@@ -44,7 +44,7 @@ cJSON *helpjson(cJSON *json,cJSON *array,cJSON *agents,char *agentstr,char *meth
     jaddstr(methodobj,"agent",agentstr);
     jaddstr(methodobj,"method",method);
     sprintf(url,"http://127.0.0.1:7778/api/%s/%s",agentstr,method);
-    sprintf(curl,"curl --url \"http://127.0.0.1:7778\" --data \"{\"agent\":\"%s\",\"method\":\"%s\"",agentstr,method);
+    sprintf(curl,"curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"%s\\\",\\\"method\\\":\\\"%s\\\"",agentstr,method);
     if ( methodargs != 0 && (n= cJSON_GetArraySize(methodargs)) > 0 )
     {
         //printf("method.%s n.%d %s\n",method,n,jprint(methodargs,0));
@@ -53,7 +53,7 @@ cJSON *helpjson(cJSON *json,cJSON *array,cJSON *agents,char *agentstr,char *meth
             strcat(url,i==0?"?":"&");
             item = jitem(methodargs,i);
             sprintf(url+strlen(url),"%s={%s}",get_cJSON_fieldname(item),jstr(item,get_cJSON_fieldname(item)));
-            sprintf(curl+strlen(curl),",\"%s\":\"{%s}\"",get_cJSON_fieldname(item),jstr(item,get_cJSON_fieldname(item)));
+            sprintf(curl+strlen(curl),",\\\"%s\\\":\\\"{%s}\\\"",get_cJSON_fieldname(item),jstr(item,get_cJSON_fieldname(item)));
         }
     }
     strcat(curl,"}\"");
@@ -259,10 +259,10 @@ int32_t templates_emit(char *retbuf,int32_t maxsize,char *template,char *agent,c
     return(template_emit(retbuf,maxsize,buf,"$FIELDNAMES2",fieldnames2));
 }
 
-int32_t pretty_form(FILE *fp,char *formheader,char *formfooter,char *fieldtemplate,char *agent,cJSON *methoditem)
+int32_t pretty_form(FILE *fp,char *formheader,char *formfooter,char *fieldtemplate,char *agent,cJSON *methoditem,cJSON *helpitem,char *suffix)
 {
     cJSON *item,*fieldsarray; int32_t j,m,formsize,fieldsize,iter,width,size = 0;
-    char *methodstr,*typestr,*fieldname;
+    char *methodstr,*typestr,*fieldname,*helpstr,*curlstr,*urlstr,*itemhelp;
     char outstr[2048],outstr2[2048],str[2],widthstr[16],both[512];
     if ( (methodstr= jstr(methoditem,"method")) == 0 )
         methodstr = "method";
@@ -271,16 +271,29 @@ int32_t pretty_form(FILE *fp,char *formheader,char *formfooter,char *fieldtempla
     sprintf(both,"%s-%s",agent,methodstr);
     outstr[0] = outstr2[0] = str[1] = 0;
     formsize = fieldsize = 0;
+    if ( (helpstr= jstr(helpitem,"help")) == 0 )
+        helpstr = "Some description of this API Call.";
+    if ( (urlstr= jstr(methoditem,"url")) == 0 )
+        urlstr = "url";
+    if ( (curlstr= jstr(methoditem,"curl")) == 0 )
+        curlstr = "curl";
     for (iter=0; iter<2; iter++)
     {
         if ( iter == 1 )
-            fprintf(fp,formheader,both,both,both,agent,methodstr,both,both,agent,methodstr,outstr);
+        {
+            if ( strcmp(suffix,"html") == 0 )
+                fprintf(fp,formheader,both,both,both,agent,methodstr,both,both,agent,methodstr,outstr);
+            else if ( strcmp(suffix,"md") == 0 )
+                fprintf(fp,formheader,methodstr,helpstr,curlstr,urlstr);
+        }
         if ( (fieldsarray= jarray(&m,methoditem,"fields")) != 0 )
         {
             for (j=0; j<m; j++)
             {
                 item = jitem(fieldsarray,j);
                 fieldname = get_cJSON_fieldname(item);
+                if ( (itemhelp= jstr(helpitem,fieldname)) == 0 )
+                    itemhelp = "no help info";
                 // printf("item.(%s) %s\n",jprint(item,0),jstr(item,fieldname));
                 if ( iter == 0 )
                 {
@@ -309,22 +322,30 @@ int32_t pretty_form(FILE *fp,char *formheader,char *formfooter,char *fieldtempla
                         else width = 0;
                     }
                     sprintf(widthstr,"%d",width);
-                    fprintf(fp,fieldtemplate,fieldname,fieldname,fieldname,widthstr,fieldname);
+                    if ( strcmp(suffix,"html") == 0 )
+                        fprintf(fp,fieldtemplate,fieldname,fieldname,fieldname,widthstr,fieldname);
+                    else if ( strcmp(suffix,"md") == 0 )
+                        fprintf(fp,fieldtemplate,fieldname,typestr,itemhelp);
                 }
             }
         }
         if ( iter == 1 )
-            fprintf(fp,formfooter,outstr2,methodstr,methodstr);
+        {
+            if ( strcmp(suffix,"html") == 0 )
+                fprintf(fp,formfooter,outstr2,methodstr,methodstr);
+            else if ( strcmp(suffix,"md") == 0 )
+                fprintf(fp,formfooter,"");
+        }
     }
     return(size);
 }
 
-void update_docjson(cJSON *docjson,char *agent,char *method)
+cJSON *update_docjson(cJSON *docjson,char *agent,char *method)
 {
     cJSON *item = 0; long allocsize; char *docstr,fname[512],stubstr[4096]; FILE *fp;
     if ( agent != 0 && method != 0 )
     {
-        sprintf(stubstr,"{\"agent\":\"%s\",\"method\":\"%s\",\"help\":\"put helpful info here\",\"teststatus\":[{\"tester\":\"bob\",\"result\":\"put result here\",\"notes\":\"put useful notes here\",\"automated\":\"notyet\",\"sourcefile\":\"%s_%s_test.py\"}]}",agent,method,agent,method);
+        sprintf(stubstr,"{\"agent\":\"%s\",\"method\":\"%s\",\"field0\":\"put in helpful info field0\",\"field1\":\"put in helpful info for field1\",\"help\":\"put helpful info here\",\"teststatus\":[{\"tester\":\"bob\",\"result\":\"put result here\",\"notes\":\"put useful notes here\",\"automated\":\"notyet\",\"sourcefile\":\"%s_%s_test.py\"}]}",agent,method,agent,method);
         sprintf(fname,"help/%s_%s.json",agent,method);
         if ( (docstr= OS_filestr(&allocsize,fname)) != 0 )
         {
@@ -347,17 +368,26 @@ void update_docjson(cJSON *docjson,char *agent,char *method)
         if ( item != 0 )
             jaddi(docjson,item);
     }
+    return(item);
 }
 
-int32_t pretty_forms(char *fname,char *agentstr)
+char *formfname(char *name,char *suffix)
 {
-    char *str,*header,*footer,*formheader,*formfooter,*field,*docstr; long allocsize; FILE *fp,*docfp;
-    int32_t i,n,len,err=0,size = 0; cJSON *helpjson,*array,*item,*docjson;
-    header = OS_filestr(&allocsize,"help/header.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
-    footer = OS_filestr(&allocsize,"help/footer.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
-    formheader = OS_filestr(&allocsize,"help/formheader.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
-    formfooter = OS_filestr(&allocsize,"help/formfooter.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
-    field = OS_filestr(&allocsize,"help/field.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
+    static char retbuf[512];
+    sprintf(retbuf,"help/%s.%s",name,suffix);
+    return(retbuf);
+}
+
+int32_t pretty_forms(char *fname,char *agentstr,char *suffix)
+{
+    char *str,*header,*footer,*agent,*agenthelp,*prevagent=0,*formheader,*formfooter,*field,*docstr; long allocsize; FILE *fp,*docfp;
+    int32_t i,n,len,err=0,size = 0; cJSON *helpjson,*array,*item,*docjson=0,*helpitem;
+    header = OS_filestr(&allocsize,formfname("header",suffix)); if ( allocsize > MAX_TEMPLATESIZE ) err++;
+    footer = OS_filestr(&allocsize,formfname("footer",suffix)); if ( allocsize > MAX_TEMPLATESIZE ) err++;
+    formheader = OS_filestr(&allocsize,formfname("formheader",suffix)); if ( allocsize > MAX_TEMPLATESIZE ) err++;
+    formfooter = OS_filestr(&allocsize,formfname("formfooter",suffix)); if ( allocsize > MAX_TEMPLATESIZE ) err++;
+    field = OS_filestr(&allocsize,formfname("field",suffix)); if ( allocsize > MAX_TEMPLATESIZE ) err++;
+    agent = OS_filestr(&allocsize,formfname("agent",suffix)); if ( allocsize > MAX_TEMPLATESIZE ) err++;
     fp = fopen(fname,"w");
     docjson = cJSON_CreateArray();
     if ( fp != 0 && err == 0 && header != 0 && footer != 0 && formheader != 0 && formfooter != 0 && field != 0 )
@@ -372,11 +402,26 @@ int32_t pretty_forms(char *fname,char *agentstr)
                 for (i=0; i<n; i++)
                 {
                     item = jitem(array,i);
-                    str = jstr(item,"agent");
-                    update_docjson(docjson,str,jstr(item,"method"));
+                    if ( (str = jstr(item,"agent")) == 0 )
+                        continue;
+                    if ( prevagent == 0 || strcmp(str,prevagent) != 0 )
+                    {
+                        if ( agent != 0 )
+                        {
+                            char errbuf[512];
+                            sprintf(errbuf,"need to create help/%s.md file",str);
+                            if ( (agenthelp= OS_filestr(&allocsize,formfname(str,"md"))) != 0 )
+                            {
+                                fprintf(fp,agent,str,agenthelp);
+                                free(agenthelp);
+                            }  else fprintf(fp,agent,str,errbuf);
+                        }
+                        prevagent = str;
+                    }
+                    helpitem = update_docjson(docjson,str,jstr(item,"method"));
                     if ( agentstr == 0 || agentstr[0] == 0 || (str != 0 && strcmp(str,agentstr) == 0) )
                     {
-                        len = pretty_form(fp,formheader,formfooter,field,str!=0?str:"agent",item);
+                        len = pretty_form(fp,formheader,formfooter,field,str!=0?str:"agent",item,helpitem,suffix);
                         size += len;
                         //printf("%s.%s\n",str,jstr(item,"method"));
                     } //else printf("agentstr.%p (%s) (%s) str.%p \n",agentstr,agentstr,str,str);
@@ -388,7 +433,7 @@ int32_t pretty_forms(char *fname,char *agentstr)
         fclose(fp);
         //HTML_EMIT(footer,strlen(footer));
     }
-    if ( docjson != 0 && (docfp= fopen("help.json","w")) != 0 )
+    if ( suffix != 0 && docjson != 0 && (docfp= fopen("help.json","w")) != 0 )
     {
         docstr = jprint(docjson,1);
         fprintf(docfp,"%s\n",docstr);
@@ -406,9 +451,15 @@ int32_t pretty_forms(char *fname,char *agentstr)
 
 char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr)
 {
+    static int counter;
     int32_t i,n,len,size = 0; cJSON *helpjson,*item,*array; char *str; FILE *fp = 0;
     htmlstr[0] = 0;
-    if ( pretty_forms(fname,agentstr) != 0 )
+    if ( counter++ == 0 )
+    {
+        pretty_forms("API.md",0,"md");
+        printf("autocreate %s\n","API.md");
+    }
+    if ( pretty_forms(fname,agentstr,"html") != 0 )
     {
         //printf("%s\n",htmlstr);
         return(htmlstr);
