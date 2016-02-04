@@ -429,6 +429,7 @@ bool bp_privkey_set(struct bp_key *key, const void *privkey_, size_t pk_len)
 	const unsigned char *privkey = privkey_;
 	if (!d2i_ECPrivateKey(&key->k, &privkey, pk_len))
 		return false;
+    
 	if (!EC_KEY_check_key(key->k))
 		return false;
     
@@ -806,13 +807,23 @@ struct iguana_waddress *iguana_waddresscalc(uint8_t pubtype,uint8_t wiftype,stru
     return(0);
 }
 
-int32_t iguana_ver(uint8_t *sig,int32_t siglen,uint8_t *data,int32_t datalen,bits256 pubkey)
+int32_t iguana_ver(uint8_t *sig,int32_t siglen,uint8_t *data,int32_t datalen,bits256 pub)
 {
-    struct bp_key key;
-    if ( bp_key_init(&key) != 0 && bp_pubkey_set(&key,pubkey.bytes,sizeof(pubkey)) != 0 )
+    struct bp_key key; uint8_t pubkey[33];
+    memcpy(pubkey+1,pub.bytes,sizeof(pub));
+    if ( bp_key_init(&key) != 0 )
     {
-        if ( bp_verify(key.k,data,datalen,sig,siglen) != 0 )
-            return(0);
+        for (pubkey[0]=2; pubkey[0]<=3; pubkey[0]++)
+        {
+            if ( bp_pubkey_set(&key,pubkey,33) != 0 )
+            {
+                if ( bp_verify(key.k,data,datalen,sig,siglen) != 0 )
+                {
+                    printf("verified.[%d]\n",pubkey[0]);
+                    return(0);
+                }
+            }
+        }
     }
     return(-1);
 }
@@ -827,8 +838,9 @@ int32_t iguana_sig(uint8_t *sig,int32_t maxsize,uint8_t *data,int32_t datalen,bi
             if ( siglen < maxsize && sigptr != 0 )
             {
                 memcpy(sig,sigptr,siglen);
+                free(sigptr);
                 return((int32_t)siglen);
-            } else free(sigptr);
+            }
         }
     }
     return(-1);
@@ -1203,20 +1215,4 @@ cJSON *iguana_pubkeyjson(struct iguana_info *coin,char *pubkeystr)
 {
     cJSON *json = cJSON_CreateObject();
     return(json);
-}
-
-void pktest()
-{
-    bits256 p; uint8_t privkey,*pubkey,sig[128]; struct bp_key key; size_t pk_len,pubk_len; int32_t siglen;
-    bp_key_init(&key);
-    bp_key_generate(&key);
-    OS_randombytes(p.bytes,sizeof(privkey));
-    bp_privkey_set(&key,p.bytes,sizeof(privkey));
-    //bp_privkey_get(&key,(void **)&privkey,&pk_len);
-    bp_pubkey_get(&key,(void **)&pubkey,&pubk_len);
-    printf("pk_len.%ld\n",pubk_len);
-
-    siglen = iguana_sig(sig,sizeof(sig),(uint8_t *)"hello",(int32_t)strlen("hello"),p);
-    printf("siglen.%d\n",siglen);
-    //iguana_ver(uint8_t *sig,int32_t siglen,uint8_t *data,int32_t datalen,bits256 pubkey)
 }

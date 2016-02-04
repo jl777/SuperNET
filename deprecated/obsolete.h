@@ -12904,5 +12904,55 @@ len = 0;
                 }
                 return(len);
             }
+                
+                void pktest()
+            {
+                bits256 p,pub; uint8_t *data,*pubkey,sig[128],*sigptr; struct bp_key key; size_t pubk_len;
+                int32_t s,v,v2,v4=-99,v3=-99,datalen; uint32_t siglen;  EC_KEY *KEY;
+                //bp_key_init(&key);
+                // bp_key_generate(&key);
+                OS_randombytes(p.bytes,sizeof(p));
+                
+                data = (uint8_t *)"hello", datalen = (int32_t)strlen("hello");
+                //s = bp_sign(key.k,data,datalen,(void **)&sigptr,&siglen);
+                //sigptr = sig;
+                //siglen = iguana_sig(sig,sizeof(sig),data,datalen,p);
+                //const unsigned char *privkey;
+                //bp_privkey_set(&key,p.bytes,sizeof(p));
+                //bp_pubkey_get(&key,(void **)&pubkey,&pubk_len);
+                //memcpy(pub.bytes,pubkey+1,sizeof(pub));
+                KEY = bitcoin_privkeyset(&pub,p);
+                siglen = bitcoin_sign(sig,sizeof(sig),data,datalen,p);
+                s = siglen > 0;
+                // char str[65]; printf("siglen.%d pk_len.%ld %s\n",siglen,pubk_len,bits256_str(str,*(bits256 *)(pubkey+1)));
+                
+                //s = ECDSA_sign(0,data,datalen,sig,&siglen,KEY);
+                v2 = bp_verify(KEY,data,datalen,sig,siglen);
+                //bp_pubkey_get(&key,(void **)&pubkey,&pubk_len);
+                //bp_key_init(&key);
+                
+                v3 = bitcoin_verify(sig,siglen,data,datalen,pub);
+                //v = iguana_ver(sig,siglen,data,datalen,pub);
+                printf("s.%d siglen.%d v2.%d v3.%d v4.%d\n",s,siglen,v2,v3,v4);
+                getchar();
+            }
+           http://bitcoin.stackexchange.com/questions/3374/how-to-redeem-a-basic-tx     
+                //msgtx->vins[i].scriptlen = scriptlen;
+                //printf("VINI.%d (%s)\n",vini,jprint(bitcoin_txjson(coin,msgtx),1));
+                //decode_hex(privkey.bytes,sizeof(privkey),"18E14A7B6A307F426A94F8114701E7C8E774E7F9A47E2C2035DB29A206321725");
+                //printf("privkey.%s\n",bits256_str(str,privkey));
+                //EC_KEY *KEY = bitcoin_privkeyset(&pkey,privkey);
+        char *refstr = "01000000\
+                01\
+                eccf7e3034189b851985d871f91384b8ee357cd47c3024736e5676eb2debb3f2\
+                01000000\
+                8c\
+                4930460221009e0339f72c793a89e664a8a932df073962a3f84eda0bd9e02084a6a9567f75aa022100bd9cbaca2e5ec195751efdfac164b76250b1e21302e51ca86dd7ebd7020cdc0601410450863ad64a87ae8a2fe83c1af1a8403cb53f53e486d8511dad8a04887e5b23522cd470243453a299fa9e77237716103abc11a1df38855ed6f2ee187e9c582ba6\
+                ffffffff\
+                01\
+                605af40500000000\
+                19\
+                76a914097072524438d003d23a2f23edb65aae1bb3e46988ac\
+                00000000";
 
 #endif

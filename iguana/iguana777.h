@@ -717,7 +717,7 @@ bits256 iguana_chaingenesis(int32_t version,uint32_t timestamp,uint32_t nBits,ui
 int32_t iguana_send_ConnectTo(struct iguana_info *coin,struct iguana_peer *addr);
 cJSON *iguana_txjson(struct iguana_info *coin,struct iguana_txid *tx,int32_t height);
 char *iguana_txscan(struct iguana_info *coin,cJSON *json,uint8_t *data,int32_t recvlen,bits256 txid);
-char *iguana_rawtxbytes(struct iguana_info *coin,cJSON *json,uint8_t *data,int32_t datalen);
+char *iguana_rawtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t datalen,cJSON *json,struct iguana_msgtx *msgtx);
 int32_t iguana_send_VPNversion(struct iguana_info *coin,struct iguana_peer *addr,uint64_t myservices);
 void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sleepflag);
 int32_t iguana_rwvout(int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized,struct iguana_msgvout *msg);
@@ -727,7 +727,8 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
 cJSON *bitcoin_txtest(struct iguana_info *coin,char *rawtxstr,bits256 txid);
 cJSON *iguana_blockjson(struct iguana_info *coin,struct iguana_block *block,int32_t txidsflag);
 int32_t iguana_sig(uint8_t *sig,int32_t maxsize,uint8_t *data,int32_t datalen,bits256 privkey);
-int32_t iguana_ver(uint8_t *sig,int32_t maxsize,uint8_t *data,int32_t datalen,bits256 pubkey);
+int32_t iguana_ver(uint8_t *sig,int32_t siglen,uint8_t *data,int32_t datalen,bits256 pubkey);
+//int32_t iguana_ver(uint8_t *sig,int32_t siglen,uint8_t *data,int32_t datalen,uint8_t *pubkey);
 
 
 extern queue_t bundlesQ;

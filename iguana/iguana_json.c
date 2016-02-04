@@ -319,16 +319,47 @@ int32_t pretty_form(FILE *fp,char *formheader,char *formfooter,char *fieldtempla
     return(size);
 }
 
+void update_docjson(cJSON *docjson,char *agent,char *method)
+{
+    cJSON *item = 0; long allocsize; char *docstr,fname[512],stubstr[4096]; FILE *fp;
+    if ( agent != 0 && method != 0 )
+    {
+        sprintf(stubstr,"{\"agent\":\"%s\",\"method\":\"%s\",\"help\":\"put helpful info here\",\"teststatus\":[{\"tester\":\"bob\",\"result\":\"put result here\",\"notes\":\"put useful notes here\",\"automated\":\"notyet\",\"sourcefile\":\"%s_%s_test.py\"}]}",agent,method,agent,method);
+        sprintf(fname,"help/%s_%s.json",agent,method);
+        if ( (docstr= OS_filestr(&allocsize,fname)) != 0 )
+        {
+            if ( (item= cJSON_Parse(docstr)) == 0 )
+                printf("WARNING: cant parse %s\n",fname);
+            free(docstr);
+        }
+        else if ( (fp= fopen(fname,"w")) != 0 )
+        {
+            if ( (item= cJSON_Parse(stubstr)) == 0 )
+                printf("WARNING: cant parse stubstr %s\n",stubstr);
+            else
+            {
+                fprintf(fp,"%s\n",stubstr);
+                fclose(fp);
+            }
+        }
+        if ( item == 0 )
+            item = cJSON_Parse(stubstr);
+        if ( item != 0 )
+            jaddi(docjson,item);
+    }
+}
+
 int32_t pretty_forms(char *fname,char *agentstr)
 {
-    char *str,*header,*footer,*formheader,*formfooter,*field; long allocsize; FILE *fp;
-    int32_t i,n,len,err=0,size = 0; cJSON *helpjson,*array,*item;
+    char *str,*header,*footer,*formheader,*formfooter,*field,*docstr; long allocsize; FILE *fp,*docfp;
+    int32_t i,n,len,err=0,size = 0; cJSON *helpjson,*array,*item,*docjson;
     header = OS_filestr(&allocsize,"header.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
     footer = OS_filestr(&allocsize,"footer.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
     formheader = OS_filestr(&allocsize,"formheader.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
     formfooter = OS_filestr(&allocsize,"formfooter.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
     field = OS_filestr(&allocsize,"field.html"); if ( allocsize > MAX_TEMPLATESIZE ) err++;
     fp = fopen(fname,"w");
+    docjson = cJSON_CreateArray();
     if ( fp != 0 && err == 0 && header != 0 && footer != 0 && formheader != 0 && formfooter != 0 && field != 0 )
     {
         //HTML_EMIT(header,strlen(header));
@@ -342,6 +373,7 @@ int32_t pretty_forms(char *fname,char *agentstr)
                 {
                     item = jitem(array,i);
                     str = jstr(item,"agent");
+                    update_docjson(docjson,str,jstr(item,"method"));
                     if ( agentstr == 0 || agentstr[0] == 0 || (str != 0 && strcmp(str,agentstr) == 0) )
                     {
                         len = pretty_form(fp,formheader,formfooter,field,str!=0?str:"agent",item);
@@ -355,6 +387,13 @@ int32_t pretty_forms(char *fname,char *agentstr)
         fprintf(fp,"%s\n",footer);
         fclose(fp);
         //HTML_EMIT(footer,strlen(footer));
+    }
+    if ( docjson != 0 && (docfp= fopen("help.json","w")) != 0 )
+    {
+        docstr = jprint(docjson,1);
+        fprintf(docfp,"%s\n",docstr);
+        fclose(docfp);
+        free(docstr);
     }
     if ( header != 0 ) free(header);
     if ( footer != 0 ) free(footer);

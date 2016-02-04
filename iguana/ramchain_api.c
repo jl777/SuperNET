@@ -186,12 +186,12 @@ HASH_AND_INT(ramchain,getrawtransaction,txid,verbose)
 
 STRING_ARG(ramchain,decoderawtransaction,rawtx)
 {
-    char *str; uint8_t *data; int32_t datalen; cJSON *retjson = cJSON_CreateObject();
+    uint8_t *data; int32_t datalen; cJSON *retjson = cJSON_CreateObject(); // struct iguana_msgtx msgtx; 
     datalen = (int32_t)strlen(rawtx) >> 1;
     data = malloc(datalen);
     decode_hex(data,datalen,rawtx);
-    if ( (str= iguana_rawtxbytes(coin,retjson,data,datalen)) != 0 )
-        free(str);
+    //if ( (str= iguana_rawtxbytes(coin,data,datalen,retjson,&msgtx)) != 0 )
+    //    free(str);
     free(data);
     return(jprint(retjson,1));
 }

@@ -310,8 +310,6 @@ void iguana_main(void *arg)
     if ( ismainnet != 0 )
         strcat(myinfo->NXTAPIURL,"7876/nxt");
     else strcat(myinfo->NXTAPIURL,"6876/nxt");
-    void pktest();
-    pktest();
     signal(SIGINT,sigint_func);
     signal(SIGILL,sigillegal_func);
     signal(SIGHUP,sighangup_func);
@@ -326,6 +324,7 @@ void iguana_main(void *arg)
     iguana_chaingenesis(1,1317972665,0x1e0ffff0,2084524493,bits256_conv("97ddfbbae6be97fd6cdf3e7ca13232a3afff2353e29badfab7f73011edd4ced9")); // LTC
 
     iguana_initQ(&helperQ,"helperQ");
+    OS_ensure_directory("help");
     OS_ensure_directory("confs");
     OS_ensure_directory("DB"), OS_ensure_directory("DB/ECB");
     OS_ensure_directory("tmp");
@@ -347,15 +346,15 @@ void iguana_main(void *arg)
     category_init(&MYINFO);
     if ( (coinargs= SuperNET_keysinit(&MYINFO,arg)) != 0 )
         iguana_launch(iguana_coinadd("BTCD"),"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
-    else if ( 1 )
+    else if ( 0 )
     {
 #ifdef __APPLE__
         sleep(1);
         char *str;
-        strcpy(MYINFO.rpcsymbol,"BTCD");
+        strcpy(MYINFO.rpcsymbol,"BTC");
         iguana_launchcoin(MYINFO.rpcsymbol,cJSON_Parse("{}"));
 
-        if ( 0 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"wallet\":\"password\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":3,\"newcoin\":\"BTCD\",\"active\":0}"),0)) != 0 )
+        if ( 0 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"wallet\":\"password\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":3,\"newcoin\":\"BTC\",\"active\":0}"),0)) != 0 )
         {
             printf("got.(%s)\n",str);
             free(str);
