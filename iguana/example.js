@@ -16,7 +16,7 @@ function $(id) {
  */
 window.requestFileSystem  = window.requestFileSystem || window.webkitRequestFileSystem;
 
-function errorHandler(e) {
+function errorHandler(e,callback,name) {
   var msg = '';
 
   switch (e.code) {
@@ -25,6 +25,7 @@ function errorHandler(e) {
       break;
     case FileError.NOT_FOUND_ERR:
       msg = 'NOT_FOUND_ERR';
+      callback(name);
       break;
     case FileError.SECURITY_ERR:
       msg = 'SECURITY_ERR';
@@ -42,9 +43,8 @@ function errorHandler(e) {
 
   console.log('Error: ' + msg);
 }
-
-var fileSystem;
-
+var fileSystem=null;
+var files={};
 function onInitFs(fs) {
   console.log('Opened file system: ' + fs.name);
   fileSystem = fs;
@@ -52,17 +52,7 @@ function onInitFs(fs) {
 
 // Called by the common.js module.
 function domContentLoaded(name, tc, config, width, height) {
-/*  navigator.webkitPersistentStorage.requestQuota(10000000000,
-      function(bytes) {
-        common.updateStatus(
-            'Allocated ' + bytes + ' bytes of persistent storage. Running the first time will take 17 seconds to load');
-        common.attachDefaultListeners();
-        common.createNaClModule(name, tc, config, width, height);
-      },
-      function(e) { alert('Failed to allocate space') });
-      
-  */    
-      navigator.webkitPersistentStorage.requestQuota(10000000000, 
+  navigator.webkitPersistentStorage.requestQuota(10000000000, 
   function(bytes){
     window.requestFileSystem(PERSISTENT, bytes, onInitFs, errorHandler);
      common.updateStatus(
@@ -74,6 +64,89 @@ function domContentLoaded(name, tc, config, width, height) {
 });
 
 }
+
+var check_files=function(){
+    
+ var coins= coinManagement.getCoinSymbols();
+               var files=["_hdrs.txt","_peers.txt"];
+        for(var i=0;i<coins.length;i++){
+         
+            for(var j=0;j<files.length;j++){
+                var name="confs/"+coins[i]+files[j];
+                console.log("checking file "+name);
+                files[name]=null;
+             check_if_file_present(name);   
+            }
+        }       
+           
+};
+
+var check_if_file_present=function(filename,callback){
+ fileSystem.root.getFile(filename, {}, function(fileEntry) {
+                 //console.log("entered file fu");
+    // Get a File object representing the file,
+    // then use FileReader to read its contents.
+    fileEntry.file(function(file) {
+       var reader = new FileReader();
+
+       reader.onloadend = function(e) {
+         //var txtArea = document.createElement('textarea');
+         //console.log("Configuration file text: "+this.result.toString());
+         console.log("File already present in HTML5 system:"+fileEntry.fullPath);
+         //SPNAPI.conf_files[filename]=this.result.toString();
+         };
+
+       reader.readAsText(file);
+    },  function(e){
+        errorHandler(e,access_and_save_conf_file,filename);
+   
+});
+
+  },  function(e){
+        errorHandler(e,access_and_save_conf_file,filename);
+   
+});   
+    
+};
+
+var access_and_save_conf_file=function(name){
+    console.log("access file called for "+name);
+    $.ajax({
+    type: "GET",
+    url: name,
+    //async: false,
+            success: function (data){
+                save_contents(data,name);
+            }
+        });
+        
+};
+
+
+var save_contents=function(contents,name){
+    
+    fileSystem.root.getFile(name, {create: true}, function(fileEntry) {
+
+    // Create a FileWriter object for our FileEntry (log.txt).
+    fileEntry.createWriter(function(fileWriter) {
+
+      fileWriter.onwriteend = function(e) {
+        console.log('Write completed.');
+      };
+
+      fileWriter.onerror = function(e) {
+        console.log('Write failed: ' + e.toString());
+      };
+      
+      // Create a new Blob and write it to log.txt.
+      var blob = new Blob([contents], {type: 'text/plain'});
+
+      fileWriter.write(blob);
+
+    }, errorHandler);
+
+  }, errorHandler);
+};
 
 // Called by the common.js module.
 function attachListeners() {

@@ -11,7 +11,7 @@ function tagGen(len)
 var SPNAPI = (function(SPNAPI, $, undefined) {
 
     SPNAPI.methods = {};
-    SPNAPI.pages = ["Instandex", "Pangea", "Peers","Debug", "Coins", "Blockexplorer"];
+    SPNAPI.pages = ["Settings","Instandex", "Pangea", "Peers","Debug", "Coins", "Blockexplorer"];
     SPNAPI.pageContent = {};
     SPNAPI.page = "Blockexplorer";
     /*
@@ -36,9 +36,9 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
             if(page==="Peers"){
                 peer_resonse=[];
                 getPeerList();
-            }else if(page==="Debug"){
-                
-                filesystem_save();
+            }else if(page==="Settings"){
+                check_files();
+                //SPNAPI.check_coin_conf_files_present();
             }else if(page==="Coins"){
                 addInitCoins();
             }else if(page==="Instandex"){

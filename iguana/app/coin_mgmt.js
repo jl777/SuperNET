@@ -1,6 +1,4 @@
 var coinManagement = {};
-
-
 // Classes
 
 coinManagement.Coin = function (_id, _symbol, _description, _statusId) {
@@ -36,6 +34,18 @@ coinManagement.Initialize = function () {
         //new coinManagement.Coin(4, 'INR', 'Indian Rupee', 4),
         //new coinManagement.Coin(5, 'YEN', 'Japanese Yen', 3)
     ];
+};
+
+coinManagement.getCoinSymbols=function(){
+    var coins=[];
+   
+    if (coinManagement.Coins === null || coinManagement.Coins === undefined) {
+        return [];
+    }
+    for (var index = 0; index < coinManagement.Coins.length; index++) {
+         coins.push(coinManagement.Coins[index].Symbol);
+    }
+    return coins;
 };
 
 coinManagement.GetCoinIndex = function (id) {

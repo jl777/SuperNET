@@ -44,11 +44,12 @@ var context = canvas.getContext('2d');
 context.drawImage(img, 0, 0 );
 var dataURL = {data:canvas.toDataURL('image/jpg'),height:img.height,width:img.width,type:'JPG'};
 var name='imagedata-'+i;
-if(typeof localStorage !== 'undefined'){
+/*if(typeof localStorage !== 'undefined'){
     localStorage[name]=JSON.stringify(dataURL);
 }else{
         chrome.storage.local.set({name: JSON.stringify(dataURL)});
-}
+}*/
+        Storage.save(name,JSON.stringify(dataURL));
 $("#dest-imagAPI-"+i).attr('src', dataURL.data);
     
 }
@@ -102,31 +103,3 @@ $.ajax({
   
   
 });
-
-/*
- * Function to test filesystem Access
- */
-
-function filesystem_save(){
-
-fileSystem.root.getFile('confs/iguana.4206523045167609019', {}, function(fileEntry) {
-
-    // Get a File object representing the file,
-    // then use FileReader to read its contents.
-    fileEntry.file(function(file) {
-       var reader = new FileReader();
-
-       reader.onloadend = function(e) {
-         //var txtArea = document.createElement('textarea');
-         console.log("Configuration file text: "+this.result.toString());
-         console.log("Full path is:"+fileEntry.fullPath);
-         //document.body.appendChild(txtArea);
-         document.getElementById('mousexy').innerHTML=this.result;
-       };
-
-       reader.readAsText(file);
-    }, errorHandler);
-
-  }, errorHandler);
-      
-}

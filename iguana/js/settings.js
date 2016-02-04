@@ -1,7 +1,8 @@
-var SPNAPI = (function(SPNAPI, $, undefined) {
+var SPNAPI = (function(SPNAPI, $,errorHandler,undefined) {
 
     SPNAPI.settings = {};
-
+    SPNAPI.conf_files={};
+    
     SPNAPI.getCheckBoxDetails = function(agent) {
 
         var extraInfo = '';
@@ -41,13 +42,13 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
         return extraInfo;
 
 
-    }
+    };
 
     SPNAPI.pageContent.Settings = function () {
 
         var filehandle_map = {};
         var dirhandle_map = {};
-
+/*
         var rows = '<h3>Agents</h3>';
 
         $.each(SPNAPI.methods, function (index, value) {
@@ -102,7 +103,7 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
 
             console.log(filehandle + " and "+filename_return);
         });
-        /*
+        
 
          var data = "SuperNETconfigurationsdaaaaa TES TEST TEST TEST";
          postCall('fwrite', 0, data, function(filehandle, bytesWritten) {
@@ -126,41 +127,58 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
          var filename = filehandle_map[filehandle];
          common.logMessage('Read "' + data + '" from file ' + filename + '.');
          });
-         */
+         
 
         $("#agent_settings").html(rows);
-
+*/
         var config = '<h3>Config</h3>';
+        var checkbox_text="";
+        var checkbox_checked="";
+        
+        if(SPNAPI.usePexe === false) { checkbox_text = '<i>Disabled</i>'; checkbox_checked = ''; extraDetails = "";  }
+            else {
+                checkbox_text = 'Enabled'; checkbox_checked = 'checked="checked"';
 
+            }
+        
+        config += '' +
+            '<div class="panel panel-default">'+
+            '<div class="panel-body">'+
+            '<div class="col-xs-6 col-md-6 col-lg-6">Pexe</div>'+
+            '<div class="col-xs-6 col-md-6 col-lg-6" style="text-align: right;">' +
+            '<div class="checkbox">'+
+            '<label>'+
+            '<input type="checkbox" id="use_pexe_checkbox" class="pexe_checkbox" value="'+checkbox_checked+'" aria-label="Activate/Deactivate Agent"> <span class="pexe_checkbox_text">'+checkbox_text+'</span>'+
+            '</label>'+
+            '</div>' +
+            '</div>' +
+            '<div class="row"><div class="pexe_extra_info col-xs-10 col-md-10 col-lg-10">Use pexe or URL requests for communications</div></div>'+
+            '</div>'+
+            '</div>';
+        $("#agent_settings").html(config);
 
-        $("#config_settings").html(config);
+        var pexe_checkbox = $('.pexe_checkbox');
 
-
-        var agent_checkbox = $('.agent_checkbox');
-
-        agent_checkbox.on("click", function () {
-
-            var checkbox_agent = $(this).val();
-
-            var thisCheck = $(this);
+        pexe_checkbox.on("click", function () {
+            if(typeof nacl_module !== 'undefined'){
+              
+                var thisCheck = $(this);
             if (thisCheck.is (':checked'))
             {
-                $('.checkbox_'+checkbox_agent+'_text').html("Enabled");
-                var extraDetails = SPNAPI.getCheckBoxDetails(checkbox_agent);
-
-                $("."+checkbox_agent+"_extra_info").html(extraDetails);
-
-            } else {
-                $("."+checkbox_agent+"_extra_info").html('');
-                $('.checkbox_'+checkbox_agent+'_text').html("<i>Disabled</i>");
+                $('.pexe_checkbox_text').html("Enabled");
+                SPNAPI.usePexe=true;
+                } else {
+                SPNAPI.usePexe=false;
+                $('.pexe_checkbox_text').html("<i>Disabled</i>");
             }
-
-
-        });
+            }else{
+                console.log("Pexe not loaded!");
+            }
+});
 
         $("#save_settings").on("click", function () {
 
-            var agent_checkbox = $('.agent_checkbox');
+            /*var agent_checkbox = $('.agent_checkbox');
             var settings = [];
 
             $.each(agent_checkbox, function(index, value) {
@@ -209,13 +227,13 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
                     //document.getElementById("data").innerText = items.data;
                     SPNAPI.settings = items;
                 }
-            });
+            });*/
 
         });
 
     };
 
     return SPNAPI;
-}(SPNAPI || {}, jQuery));
+}(SPNAPI || {}, jQuery,errorHandler));
 
 
