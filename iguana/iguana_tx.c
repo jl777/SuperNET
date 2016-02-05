@@ -43,8 +43,8 @@ void iguana_vinset(struct iguana_info *coin,int32_t height,struct iguana_msgvin 
 
 int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmstr,int32_t height,struct iguana_msgvout *vout,struct iguana_txid *tx,int32_t i)
 {
-    struct iguana_unspent *u,*U; uint32_t unspentind,scriptlen = 0; struct iguana_bundle *bp; char coinaddr[65];
-    struct iguana_ramchaindata *rdata; struct iguana_pkhash *P,*p;
+    struct iguana_ramchaindata *rdata; uint32_t unspentind,scriptlen = 0; struct iguana_bundle *bp;
+    struct iguana_unspent *u,*U; char coinaddr[65]; struct iguana_pkhash *P,*p; struct vin_info V;
     memset(vout,0,sizeof(*vout));
     if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0  && (rdata= bp->ramchain.H.data) != 0 && i < tx->numvouts )
     {
@@ -57,7 +57,8 @@ int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmst
         p = &P[u->pkind];
         vout->value = u->value;
         vout->pk_script = scriptspace;
-        scriptlen = iguana_scriptgen(coin,coinaddr,scriptspace,asmstr,p->rmd160,u->type,i);
+        memset(&V,0,sizeof(V));
+        scriptlen = iguana_scriptgen(coin,coinaddr,scriptspace,asmstr,p->rmd160,u->type,i,&V);
     }
     vout->pk_scriptlen = scriptlen;
     return(scriptlen);

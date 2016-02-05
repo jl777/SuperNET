@@ -465,13 +465,14 @@ struct iguana_info
     struct iguana_waccount *wallet;
 };
 
-struct vin_signer { bits256 privkey; uint8_t siglen,sig[80],rmd160[20],pubkey[65]; };
+struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };
 
 struct vin_info
 {
     struct iguana_msgvin vin;
-    int32_t M,N,validmask,spendlen,p2shflag;
+    int32_t M,N,validmask,spendlen,type;
     struct vin_signer signers[16];
+    char coinaddr[65];
     uint8_t rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE];
 };
 
@@ -520,7 +521,7 @@ int64_t iguana_verifyaccount(struct iguana_info *coin,struct iguana_account *acc
 int32_t iguana_initramchain(struct iguana_info *coin,int32_t initialheight,int32_t mapflags,int32_t fullverify);
 void iguana_syncramchain(struct iguana_info *coin);
 //int32_t iguana_validateramchain(struct iguana_info *coin,int64_t *netp,uint64_t *creditsp,uint64_t *debitsp,int32_t height,struct iguana_block *block,int32_t hwmheight,struct iguana_prevdep *lp);
-int32_t iguana_calcrmd160(struct iguana_info *coin,uint8_t rmd160[20],uint8_t msigs160[16][20],int32_t *Mp,int32_t *nump,uint8_t *pk_script,int32_t pk_scriptlen,bits256 debugtxid,int32_t vout);
+int32_t iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp,uint8_t *pk_script,int32_t pk_scriptlen,bits256 debugtxid,int32_t vout,uint32_t sequence);
 uint32_t iguana_updatescript(struct iguana_info *coin,uint32_t blocknum,uint32_t txidind,uint32_t spendind,uint32_t unspentind,uint64_t value,uint8_t *script,int32_t scriptlen,uint32_t sequence);
 void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *txdata,struct iguana_msgtx *txarray,struct iguana_msghdr *H,uint8_t *data,int32_t datalen);
 int32_t iguana_parseblock(struct iguana_info *coin,struct iguana_block *block,struct iguana_msgtx *tx,int32_t numtx);
@@ -681,7 +682,7 @@ void iguana_bundleiclear(struct iguana_info *coin,struct iguana_bundle *bp,int32
 int32_t hcalc_bitsize(uint64_t x);
 struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_pkhash *p,uint8_t rmd160[20]);
 struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,struct iguana_txid *tx,bits256 txid);
-int32_t iguana_scriptgen(struct iguana_info *coin,char *coinaddr,uint8_t *script,char *asmstr,uint8_t rmd160[20],uint8_t type,int32_t txi);
+int32_t iguana_scriptgen(struct iguana_info *coin,char *coinaddr,uint8_t *script,char *asmstr,uint8_t rmd160[20],uint8_t type,int32_t txi,struct vin_info *vp);
 int32_t iguana_ramchain_spendtxid(struct iguana_info *coin,bits256 *txidp,struct iguana_txid *T,int32_t numtxids,bits256 *X,int32_t numexternaltxids,struct iguana_spend *s);
 struct iguana_info *iguana_coinselect();
 void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr);

@@ -31,219 +31,6 @@ static const char base58_chars[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijk
 #define IGUANA_SCRIPT_DATA 11
 #define IGUANA_SCRIPT_STRANGE 15
 
-int32_t bitcoin_standardspend(uint8_t *script,int32_t n,uint8_t rmd160[20])
-{
-    script[n++] = SCRIPT_OP_DUP;
-    script[n++] = SCRIPT_OP_HASH160;
-    script[n++] = 20; memcpy(&script[n],rmd160,20); n += 20;
-    script[n++] = SCRIPT_OP_EQUALVERIFY;
-    script[n++] = SCRIPT_OP_CHECKSIG;
-    return(n);
-}
-
-int32_t bitcoin_checklocktimeverify(uint8_t *script,int32_t n,uint32_t locktime)
-{
-    script[n++] = (locktime >> 24), script[n++] = (locktime >> 16), script[n++] = (locktime >> 8), script[n++] = locktime;
-    script[n++] = OP_CHECKLOCKTIMEVERIFY;
-    script[n++] = OP_DROP;
-    return(n);
-}
-
-char *create_atomictx_cltvspend(char *scriptstr,uint8_t *rmd160A,uint8_t *rmd160B,uint32_t locktime)
-{
-    // OP_IF
-    //      <timestamp> OP_CHECKLOCKTIMEVERIFY OP_DROP OP_DUP OP_HASH160 <hash160> OP_EQUALVERIFY OP_CHECKSIG
-    // OP_ELSE
-    //      OP_DUP OP_HASH160 <hash160> OP_EQUALVERIFY OP_CHECKSIG // standard spend
-    // OP_ENDIF
-    uint8_t hex[4096]; int32_t n = 0;
-    hex[n++] = SCRIPT_OP_IF;
-    n = bitcoin_checklocktimeverify(hex,n,locktime);
-    n = bitcoin_standardspend(hex,n,rmd160A);
-    hex[n++] = SCRIPT_OP_ELSE;
-    n = bitcoin_standardspend(hex,n,rmd160B);
-    hex[n++] = SCRIPT_OP_ENDIF;
-    init_hexbytes_noT(scriptstr,hex,n);
-    return(scriptstr);
-}
-
-/*struct vin_signer { bits256 privkey; uint8_t siglen,sig[80],pubkey[65]; };
- 
- struct vin_info
- {
- struct iguana_msgvin vin;
- int32_t M,N,validmask,voutlen;
- struct vin_signer signers[16];
- uint8_t voutscript[IGUANA_MAXSCRIPTSIZE];
- };*/
-
-int32_t iguana_scriptgen(struct iguana_info *coin,char *coinaddr,uint8_t *script,char *asmstr,uint8_t rmd160[20],uint8_t type,int32_t txi)
-{
-    uint8_t addrtype; char rmd160str[41]; int32_t scriptlen = 0;
-    if ( type == IGUANA_SCRIPT_76A988AC || type == IGUANA_SCRIPT_76AC )
-        addrtype = coin->chain->pubtype;
-    else addrtype = coin->chain->p2shtype;
-    btc_convrmd160(coinaddr,addrtype,rmd160);
-    init_hexbytes_noT(rmd160str,rmd160,20);
-    //printf("addrtype.%d\n",addrtype);
-    switch ( type )
-    {
-        case IGUANA_SCRIPT_NULL:
-            strcpy(asmstr,txi == 0 ? "coinbase" : "PoSbase");
-            coinaddr[0] = 0;
-            break;
-        case IGUANA_SCRIPT_76AC:
-            sprintf(asmstr,"OP_DUP %s OP_CHECKSIG",rmd160str);
-            break;
-        case IGUANA_SCRIPT_76A988AC:
-            sprintf(asmstr,"OP_DUP OP_HASH160 %s OP_EQUALVERIFY OP_CHECKSIG",rmd160str);
-            break;
-        case IGUANA_SCRIPT_P2SH:
-            script[0] = SCRIPT_OP_HASH160, script[1] = 0x14;
-            memcpy(&script[2],rmd160,20);
-            script[22] = SCRIPT_OP_EQUAL;
-            sprintf(asmstr,"OP_HASH160 %s OP_EQUAL",coinaddr);
-            scriptlen = 23;
-            break;
-        case IGUANA_SCRIPT_OPRETURN: strcpy(asmstr,"OP_RETURN"); break;
-        case IGUANA_SCRIPT_3of3: strcpy(asmstr,"3 of 3 MSIG"); break;
-        case IGUANA_SCRIPT_2of3: strcpy(asmstr,"2 of 3 MSIG"); break;
-        case IGUANA_SCRIPT_1of3: strcpy(asmstr,"1 of 3 MSIG"); break;
-        case IGUANA_SCRIPT_2of2: strcpy(asmstr,"2 of 2 MSIG"); break;
-        case IGUANA_SCRIPT_1of2: strcpy(asmstr,"1 of 2 MSIG"); break;
-        case IGUANA_SCRIPT_MSIG: strcpy(asmstr,"NON-STANDARD MSIG"); break;
-        case IGUANA_SCRIPT_DATA: strcpy(asmstr,"DATA ONLY"); break;
-        case IGUANA_SCRIPT_STRANGE: strcpy(asmstr,"STRANGE SCRIPT"); break;
-        default: printf("unexpected script type\n"); break;
-    }
-    return(0);
-}
-
-int32_t _iguana_calcrmd160(struct iguana_info *coin,uint8_t rmd160[20],uint8_t msigs160[16][20],int32_t *Mp,int32_t *nump,uint8_t *pk_script,int32_t pk_scriptlen,bits256 txid,int32_t vout)
-{
-    static uint8_t zero_rmd160[20];
-    char hexstr[8192]; uint8_t sha256[32],*script,type; int32_t i,n,m,plen;
-    if ( nump != 0 )
-        *nump = 0;
-    type = IGUANA_SCRIPT_STRANGE;
-    if ( pk_scriptlen == 0 )
-    {
-        if ( zero_rmd160[0] == 0 )
-        {
-            vcalc_sha256(0,sha256,pk_script,pk_scriptlen); // e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-            calc_rmd160(0,zero_rmd160,sha256,sizeof(sha256)); // b472a266d0bd89c13706a4132ccfb16f7c3b9fcb
-            init_hexbytes_noT(hexstr,zero_rmd160,20);
-            char str[65]; printf("iguana_calcrmd160 zero len %s -> %s\n",bits256_str(str,*(bits256 *)sha256),hexstr);
-        }
-        memcpy(rmd160,zero_rmd160,sizeof(zero_rmd160));
-        return(IGUANA_SCRIPT_NULL);
-    }
-    else if ( pk_script[0] == 0x6a )
-        type = IGUANA_SCRIPT_OPRETURN;
-    else if ( pk_script[0] == 0x76 && pk_script[1] == 0xa9 && pk_script[2] == 20 && pk_script[pk_script[2]+3] == 0x88 && pk_script[pk_script[2]+4] == 0xac )
-    {
-        //printf("IGUANA_SCRIPT_76A988AC plen.%d vs %d pk_scriptlen\n",pk_script[2]+4,pk_scriptlen);
-        // 76a9145f69cb73016264270dae9f65c51f60d0e4d6fd4488ac
-        //vcalc_sha256(0,sha256,&pk_script[3],pk_script[2]);
-        //calc_rmd160(0,rmd160,sha256,sizeof(sha256));
-        memcpy(rmd160,&pk_script[3],20);
-        if ( (plen= pk_script[2]+5) < pk_scriptlen )
-        {
-            while ( plen < pk_scriptlen )
-                if ( pk_script[plen++] != 0x61 ) // nop
-                    return(IGUANA_SCRIPT_STRANGE);
-        }
-        return(IGUANA_SCRIPT_76A988AC);
-    }
-    // 21035f1321ed17d387e4433b2fa229c53616057964af065f98bfcae2233c5108055eac
-    else if ( pk_script[0] > 0 && pk_script[0] < 76 && pk_script[pk_scriptlen-1] == 0xac && pk_script[0] == pk_scriptlen-2 )
-    {
-        vcalc_sha256(0,sha256,&pk_script[1],pk_script[0]);
-        calc_rmd160(0,rmd160,sha256,sizeof(sha256));
-        return(IGUANA_SCRIPT_76AC);
-    }
-    else if ( pk_script[0] == 0xa9 && pk_script[1] == 0x14 && pk_scriptlen == 23 && pk_script[22] == 0x87 )
-    {
-        memcpy(rmd160,pk_script+2,20);
-        return(IGUANA_SCRIPT_P2SH);
-    }
-    else if ( pk_scriptlen > 34 && pk_script[pk_scriptlen-1] == 0xae && (n= pk_script[pk_scriptlen-2]) >= 0x51 && n <= 0x60 && (m= pk_script[0]) >= 0x51 && m <= n ) // m of n multisig
-    {
-        m -= 0x50, n -= 0x50;
-        if ( msigs160 != 0 && nump != 0 && *Mp != 0 )
-        {
-            script = pk_script+1;
-            for (i=0; i<n; i++,script += plen)
-            {
-                plen = *script++;
-                vcalc_sha256(0,sha256,script,plen);
-                calc_rmd160(0,msigs160[i],sha256,sizeof(sha256));
-            }
-            if ( (int32_t)((long)script - (long)pk_script) == pk_scriptlen-2 )
-            {
-                *nump = n;
-                *Mp = m;
-                //printf("M.%d N.%d\n",m,n);
-            }
-        }
-        vcalc_sha256(0,sha256,pk_script,pk_scriptlen);
-        calc_rmd160(0,rmd160,sha256,sizeof(sha256));
-        if ( n == 3 )
-        {
-            if ( m == 3 )
-                return(IGUANA_SCRIPT_3of3);
-            else if ( m == 2 )
-                return(IGUANA_SCRIPT_2of3);
-            else if ( m == 1 )
-                return(IGUANA_SCRIPT_1of3);
-        }
-        else if ( n == 2 )
-        {
-            if ( m == 2 )
-                return(IGUANA_SCRIPT_2of2);
-            else if ( m == 1 )
-                return(IGUANA_SCRIPT_1of2);
-        }
-        printf("strange msig M.%d of N.%d\n",m,n);
-        return(IGUANA_SCRIPT_MSIG);
-    }
-    else if ( pk_scriptlen == pk_script[0]+1 )
-    {
-        //printf("just data.%d\n",pk_scriptlen);
-        memcpy(rmd160,zero_rmd160,sizeof(zero_rmd160));
-        return(IGUANA_SCRIPT_DATA);
-    }
-    if ( type != IGUANA_SCRIPT_OPRETURN )
-    {
-        if ( pk_scriptlen < sizeof(hexstr)/2-1)
-        {
-            static FILE *fp;
-            init_hexbytes_noT(hexstr,pk_script,pk_scriptlen);
-            char str[65]; printf("unparsed script.(%s).%d in %s len.%d\n",hexstr,pk_scriptlen,bits256_str(str,txid),pk_scriptlen);
-            if ( 1 && fp == 0 )
-                fp = fopen("unparsed.txt","w");
-            if ( fp != 0 )
-                fprintf(fp,"%s\n",hexstr), fflush(fp);
-        } else sprintf(hexstr,"pkscript overflowed %ld\n",(long)sizeof(hexstr));
-    }
-    vcalc_sha256(0,sha256,pk_script,pk_scriptlen);
-    calc_rmd160(0,rmd160,sha256,sizeof(sha256));
-    return(type);
-}
-
-int32_t iguana_calcrmd160(struct iguana_info *coin,uint8_t rmd160[20],uint8_t msigs160[16][20],int32_t *Mp,int32_t *nump,uint8_t *pk_script,int32_t pk_scriptlen,bits256 debugtxid,int32_t vout)
-{
-    int32_t type,scriptlen; uint8_t script[IGUANA_MAXSCRIPTSIZE];
-    char asmstr[IGUANA_MAXSCRIPTSIZE*3],coinaddr[65];
-    type = _iguana_calcrmd160(coin,rmd160,msigs160,Mp,nump,pk_script,pk_scriptlen,debugtxid,vout);
-    scriptlen = iguana_scriptgen(coin,coinaddr,script,asmstr,rmd160,type,vout);
-    if ( scriptlen != pk_scriptlen || memcmp(script,pk_script,scriptlen) != 0 )
-    {
-        printf("iguana_calcrmd160 type.%d error regenerating scriptlen.%d vs %d\n",type,scriptlen,pk_scriptlen);
-    }
-    return(type);
-}
-
 void bn_mpi2bn(BIGNUM *vo,uint8_t *data,int32_t datalen)
 {
 	uint8_t vch2[64 + 4]; uint32_t i,vch2_len = (int32_t)datalen + 4;
@@ -499,6 +286,317 @@ int32_t bitcoin_verify(uint8_t *sig,int32_t siglen,uint8_t *data,int32_t datalen
     return(retval);
 }
 
+int32_t bitcoin_pubkeyspend(uint8_t *script,int32_t n,uint8_t pubkey[66])
+{
+    script[n++] = pubkey[0]; memcpy(&script[n],pubkey,pubkey[0]+1); n += pubkey[0]+1;
+    script[n++] = SCRIPT_OP_CHECKSIG;
+    return(n);
+}
+
+int32_t bitcoin_p2shspend(uint8_t *script,int32_t n,uint8_t rmd160[20])
+{
+    script[n++] = SCRIPT_OP_HASH160;
+    script[n++] = 0x14; memcpy(&script[n],rmd160,0x14); n += 0x14;
+    script[n++] = SCRIPT_OP_EQUAL;
+    return(n);
+}
+
+int32_t bitcoin_standardspend(uint8_t *script,int32_t n,uint8_t rmd160[20])
+{
+    script[n++] = SCRIPT_OP_DUP;
+    script[n++] = SCRIPT_OP_HASH160;
+    script[n++] = 0x14; memcpy(&script[n],rmd160,0x14); n += 0x14;
+    script[n++] = SCRIPT_OP_EQUALVERIFY;
+    script[n++] = SCRIPT_OP_CHECKSIG;
+    return(n);
+}
+
+int32_t bitcoin_checklocktimeverify(uint8_t *script,int32_t n,uint32_t locktime)
+{
+    script[n++] = (locktime >> 24), script[n++] = (locktime >> 16), script[n++] = (locktime >> 8), script[n++] = locktime;
+    script[n++] = OP_CHECKLOCKTIMEVERIFY;
+    script[n++] = OP_DROP;
+    return(n);
+}
+
+int32_t bitcoin_pubkeylen(uint8_t *pubkey)
+{
+    if ( pubkey[0] == 2 || pubkey[0] == 3 )
+        return(33);
+    else if ( pubkey[0] == 4 )
+        return(65);
+    else return(-1);
+}
+
+int32_t bitcoin_MofN(uint8_t p2sh_rmd160[20],uint8_t *script,int32_t n,struct vin_info *vp,int32_t M,int32_t N)
+{
+    uint8_t sha256[32]; int32_t i,plen;
+    script[n++] = 0x50 + M;
+    for (i=0; i<N; i++)
+    {
+        if ( (plen= bitcoin_pubkeylen(vp->signers[i].pubkey)) < 0 )
+            return(-1);
+        memcpy(&script[n],vp->signers[i].pubkey,plen);
+        n += plen;
+    }
+    script[n++] = 0x50 + N;
+    script[n++] = SCRIPT_OP_CHECKMULTISIG;
+    vcalc_sha256(0,sha256,script,n);
+    calc_rmd160(0,p2sh_rmd160,sha256,sizeof(sha256));
+    return(n);
+}
+
+char *create_atomictx_cltvspend(char *scriptstr,uint8_t *rmd160A,uint8_t *rmd160B,uint32_t locktime)
+{
+    // OP_IF
+    //      <timestamp> OP_CHECKLOCKTIMEVERIFY OP_DROP OP_DUP OP_HASH160 <hash160> OP_EQUALVERIFY OP_CHECKSIG
+    // OP_ELSE
+    //      OP_DUP OP_HASH160 <hash160> OP_EQUALVERIFY OP_CHECKSIG // standard spend
+    // OP_ENDIF
+    uint8_t hex[4096]; int32_t n = 0;
+    hex[n++] = SCRIPT_OP_IF;
+        n = bitcoin_checklocktimeverify(hex,n,locktime);
+        n = bitcoin_standardspend(hex,n,rmd160A);
+    hex[n++] = SCRIPT_OP_ELSE;
+        n = bitcoin_standardspend(hex,n,rmd160B);
+    hex[n++] = SCRIPT_OP_ENDIF;
+    init_hexbytes_noT(scriptstr,hex,n);
+    return(scriptstr);
+}
+
+/*
+ struct vin_signer { bits256 privkey; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };
+ 
+ struct vin_info
+ {
+ struct iguana_msgvin vin;
+ int32_t M,N,validmask,spendlen,p2shflag;
+ struct vin_signer signers[16];
+ uint8_t rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE];
+ };
+*/
+
+int32_t iguana_scriptgen(struct iguana_info *coin,char *coinaddr,uint8_t *script,char *asmstr,uint8_t rmd160[20],uint8_t type,int32_t txi,struct vin_info *vp)
+{
+    uint8_t addrtype; char rmd160str[41]; int32_t i,m,n,flag = 0,scriptlen = 0;
+    m = n = 1;
+    if ( type == IGUANA_SCRIPT_76A988AC || type == IGUANA_SCRIPT_76AC || type == IGUANA_SCRIPT_P2SH )
+    {
+        if ( type == IGUANA_SCRIPT_P2SH )
+            addrtype = coin->chain->p2shtype;
+        else addrtype = coin->chain->pubtype;
+        init_hexbytes_noT(rmd160str,rmd160,20);
+        btc_convrmd160(coinaddr,addrtype,rmd160);
+    }
+    //printf("addrtype.%d\n",addrtype);
+    switch ( type )
+    {
+        case IGUANA_SCRIPT_NULL:
+            strcpy(asmstr,txi == 0 ? "coinbase " : "PoSbase ");
+            flag++;
+            coinaddr[0] = 0;
+            break;
+        case IGUANA_SCRIPT_76AC:
+            sprintf(asmstr,"OP_DUP %s OP_CHECKSIG // %s",rmd160str,coinaddr);
+            scriptlen = bitcoin_pubkeyspend(script,0,vp->signers[0].pubkey);
+            break;
+        case IGUANA_SCRIPT_76A988AC:
+            sprintf(asmstr,"OP_DUP OP_HASH160 %s OP_EQUALVERIFY OP_CHECKSIG // %s",rmd160str,coinaddr);
+            scriptlen = bitcoin_standardspend(script,0,rmd160);
+            break;
+        case IGUANA_SCRIPT_P2SH:
+            sprintf(asmstr,"OP_HASH160 %s OP_EQUAL // %s",rmd160str,coinaddr);
+            scriptlen = bitcoin_p2shspend(script,0,rmd160);
+            break;
+        case IGUANA_SCRIPT_OPRETURN:
+            strcpy(asmstr,"OP_RETURN ");
+            flag++;
+            break;
+        case IGUANA_SCRIPT_3of3: m = 3, n = 3; break;
+        case IGUANA_SCRIPT_2of3: m = 2, n = 3; break;
+        case IGUANA_SCRIPT_1of3: m = 1, n = 3; break;
+        case IGUANA_SCRIPT_2of2: m = 2, n = 2; break;
+        case IGUANA_SCRIPT_1of2: m = 1, n = 2; break;
+        case IGUANA_SCRIPT_MSIG: m = vp->M, n = vp->N; break;
+        case IGUANA_SCRIPT_DATA:
+            strcpy(asmstr,"DATA ONLY");
+            flag++;
+            break;
+        case IGUANA_SCRIPT_STRANGE:
+            strcpy(asmstr,"STRANGE SCRIPT ");
+            flag++;
+            break;
+        default: printf("unexpected script type\n"); break;
+    }
+    if ( n > 1 )
+    {
+        scriptlen = bitcoin_MofN(rmd160,script,0,vp,m,n);
+        sprintf(asmstr,"%d ",m);
+        for (i=0; i<n; i++)
+        {
+            init_hexbytes_noT(asmstr + strlen(asmstr),vp->signers[i].pubkey,bitcoin_pubkeylen(vp->signers[i].pubkey));
+            strcat(asmstr," ");
+        }
+        sprintf(asmstr + strlen(asmstr),"%d // M.%d of N.%d [",n,m,n);
+        for (i=0; i<n; i++)
+            sprintf(asmstr + strlen(asmstr),"%s%s",vp->signers[i].coinaddr,i<n-1?" ":"");
+        strcat(asmstr,"]\n");
+    }
+    if ( flag != 0 && vp->spendlen > 0 )
+        init_hexbytes_noT(asmstr + strlen(asmstr),vp->spendscript,vp->spendlen);
+    return(0);
+}
+
+int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
+{
+    static uint8_t zero_rmd160[20];
+    char hexstr[8192]; uint8_t sha256[32],*script,type; int32_t i,n,m,plen;
+    vp->N = 1;
+    vp->M = 1;
+    type = IGUANA_SCRIPT_STRANGE;
+    if ( vp->spendlen == 0 )
+    {
+        if ( zero_rmd160[0] == 0 )
+        {
+            vcalc_sha256(0,sha256,vp->spendscript,vp->spendlen); // e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+            calc_rmd160(0,zero_rmd160,sha256,sizeof(sha256)); // b472a266d0bd89c13706a4132ccfb16f7c3b9fcb
+            init_hexbytes_noT(hexstr,zero_rmd160,20);
+            char str[65]; printf("iguana_calcrmd160 zero len %s -> %s\n",bits256_str(str,*(bits256 *)sha256),hexstr);
+        }
+        memcpy(vp->rmd160,zero_rmd160,sizeof(zero_rmd160));
+        return(IGUANA_SCRIPT_NULL);
+    }
+    else if ( vp->spendscript[0] == SCRIPT_OP_RETURN )
+        type = IGUANA_SCRIPT_OPRETURN;
+    else if ( vp->spendscript[0] == SCRIPT_OP_DUP && vp->spendscript[1] == SCRIPT_OP_HASH160 && vp->spendscript[2] == 20 && vp->spendscript[vp->spendscript[2]+3] == SCRIPT_OP_EQUALVERIFY && vp->spendscript[vp->spendscript[2]+4] == SCRIPT_OP_CHECKSIG )
+    {
+        //printf("IGUANA_SCRIPT_76A988AC plen.%d vs %d vp->spendlen\n",vp->spendscript[2]+4,vp->spendlen);
+        // 76a9145f69cb73016264270dae9f65c51f60d0e4d6fd4488ac
+        //vcalc_sha256(0,sha256,&vp->spendscript[3],vp->spendscript[2]);
+        //calc_rmd160(0,vp->rmd160,sha256,sizeof(sha256));
+        memcpy(vp->rmd160,&vp->spendscript[3],20);
+        if ( (plen= vp->spendscript[2]+5) < vp->spendlen )
+        {
+            while ( plen < vp->spendlen )
+                if ( vp->spendscript[plen++] != 0x61 ) // nop
+                    return(IGUANA_SCRIPT_STRANGE);
+        }
+        return(IGUANA_SCRIPT_76A988AC);
+    }
+    // 21035f1321ed17d387e4433b2fa229c53616057964af065f98bfcae2233c5108055eac
+    else if ( vp->spendscript[0] > 0 && vp->spendscript[0] < 76 && vp->spendscript[vp->spendlen-1] == SCRIPT_OP_CHECKSIG && vp->spendscript[0] == vp->spendlen-2 )
+    {
+        memcpy(vp->signers[0].pubkey,&vp->spendscript[1],vp->spendscript[0]);
+        vcalc_sha256(0,sha256,vp->signers[0].pubkey,vp->spendscript[0]);
+        calc_rmd160(0,vp->rmd160,sha256,sizeof(sha256));
+        return(IGUANA_SCRIPT_76AC);
+    }
+    else if ( vp->spendscript[0] == SCRIPT_OP_HASH160 && vp->spendscript[1] == 0x14 && vp->spendlen == 23 && vp->spendscript[22] == SCRIPT_OP_EQUAL )
+    {
+        memcpy(vp->rmd160,vp->spendscript+2,20);
+        return(IGUANA_SCRIPT_P2SH);
+    }
+    else if ( vp->spendlen > 34 && vp->spendscript[vp->spendlen-1] == SCRIPT_OP_CHECKMULTISIG && (n= vp->spendscript[vp->spendlen-2]) >= 0x51 && n <= 0x60 && (m= vp->spendscript[0]) >= 0x51 && m <= n ) // m of n multisig
+    {
+        m -= 0x50, n -= 0x50;
+        script = vp->spendscript+1;
+        for (i=0; i<n; i++,script += plen)
+        {
+            plen = *script++;
+            if ( bitcoin_pubkeylen(script) != plen )
+            {
+                printf("invalid pubkey[%d] len %d\n",bitcoin_pubkeylen(script),script[0]);
+                return(-1);
+            }
+            memcpy(vp->signers[i].pubkey,script,plen);
+            vcalc_sha256(0,sha256,vp->signers[i].pubkey,plen);
+            calc_rmd160(0,vp->signers[i].rmd160,sha256,sizeof(sha256));
+            bitcoin_address(vp->signers[i].coinaddr,coin->chain->pubtype,vp->signers[i].pubkey,plen);
+        }
+        if ( (int32_t)((long)script - (long)vp->spendscript) == vp->spendlen-2 )
+        {
+            vp->N = n;
+            vp->M = m;
+            //printf("M.%d N.%d\n",m,n);
+        }
+        vcalc_sha256(0,sha256,vp->spendscript,vp->spendlen);
+        calc_rmd160(0,vp->rmd160,sha256,sizeof(sha256));
+        if ( n == 3 )
+        {
+            if ( m == 3 )
+                return(IGUANA_SCRIPT_3of3);
+            else if ( m == 2 )
+                return(IGUANA_SCRIPT_2of3);
+            else if ( m == 1 )
+                return(IGUANA_SCRIPT_1of3);
+        }
+        else if ( n == 2 )
+        {
+            if ( m == 2 )
+                return(IGUANA_SCRIPT_2of2);
+            else if ( m == 1 )
+                return(IGUANA_SCRIPT_1of2);
+        }
+        printf("strange msig M.%d of N.%d\n",m,n);
+        return(IGUANA_SCRIPT_MSIG);
+    }
+    else if ( vp->spendlen == vp->spendscript[0]+1 )
+    {
+        //printf("just data.%d\n",vp->spendlen);
+        memcpy(vp->rmd160,zero_rmd160,sizeof(zero_rmd160));
+        return(IGUANA_SCRIPT_DATA);
+    }
+    if ( type != IGUANA_SCRIPT_OPRETURN )
+    {
+        if ( vp->spendlen < sizeof(hexstr)/2-1)
+        {
+            static FILE *fp;
+            init_hexbytes_noT(hexstr,vp->spendscript,vp->spendlen);
+            char str[65]; printf("unparsed script.(%s).%d in %s len.%d\n",hexstr,vp->spendlen,bits256_str(str,vp->vin.prev_hash),vp->spendlen);
+            if ( 1 && fp == 0 )
+                fp = fopen("unparsed.txt","w");
+            if ( fp != 0 )
+                fprintf(fp,"%s\n",hexstr), fflush(fp);
+        } else sprintf(hexstr,"pkscript overflowed %ld\n",(long)sizeof(hexstr));
+    }
+    vcalc_sha256(0,sha256,vp->spendscript,vp->spendlen);
+    calc_rmd160(0,vp->rmd160,sha256,sizeof(sha256));
+    return(type);
+}
+
+
+/*
+ struct vin_signer { bits256 privkey; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };
+ 
+ struct vin_info
+ {
+ struct iguana_msgvin vin;
+ int32_t M,N,validmask,spendlen,p2shflag;
+ struct vin_signer signers[16];
+ uint8_t rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE];
+ };
+ */
+
+int32_t iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp,uint8_t *pk_script,int32_t pk_scriptlen,bits256 debugtxid,int32_t vout,uint32_t sequence)
+{
+    int32_t scriptlen; uint8_t script[IGUANA_MAXSCRIPTSIZE]; char asmstr[IGUANA_MAXSCRIPTSIZE*3];
+    memset(vp,0,sizeof(*vp));
+    vp->vin.prev_hash = debugtxid, vp->vin.prev_vout = vout;
+    vp->spendlen = pk_scriptlen;
+    vp->vin.sequence = sequence;
+    memcpy(vp->spendscript,pk_script,pk_scriptlen);
+    vp->vin.script = vp->spendscript, vp->vin.prev_vout = pk_scriptlen;
+    if ( (vp->type= _iguana_calcrmd160(coin,vp)) >= 0 )
+    {
+        scriptlen = iguana_scriptgen(coin,vp->coinaddr,script,asmstr,vp->rmd160,vp->type,vout,vp);
+        if ( scriptlen != pk_scriptlen || memcmp(script,pk_script,scriptlen) != 0 )
+        {
+            printf("iguana_calcrmd160 type.%d error regenerating scriptlen.%d vs %d\n",vp->type,scriptlen,pk_scriptlen);
+        }
+    }
+    return(vp->type);
+}
+
 int32_t iguana_parsevoutobj(struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_msgvout *vout,cJSON *voutobj)
 {
     int32_t len = 0; cJSON *skey; char *hexstr;
@@ -552,22 +650,23 @@ int32_t iguana_parsevinobj(struct iguana_info *coin,uint8_t *serialized,int32_t 
 cJSON *iguana_voutjson(struct iguana_info *coin,struct iguana_msgvout *vout,int32_t txi,bits256 txid)
 {
     // 035f1321ed17d387e4433b2fa229c53616057964af065f98bfcae2233c5108055e OP_CHECKSIG
-    char scriptstr[8192+1],coinaddr[65],asmstr[16384]; int32_t i,M,N,asmtype;
-    uint8_t rmd160[20],msigs160[16][20],addrtype,space[8192];
+    char scriptstr[8192+1],coinaddr[65],asmstr[16384]; int32_t i,asmtype; struct vin_info V;
+    uint8_t addrtype,space[8192];
     cJSON *addrs,*skey,*json = cJSON_CreateObject();
     jaddnum(json,"value",dstr(vout->value));
     jaddnum(json,"n",txi);
     //"scriptPubKey":{"asm":"OP_DUP OP_HASH160 5f69cb73016264270dae9f65c51f60d0e4d6fd44 OP_EQUALVERIFY OP_CHECKSIG","reqSigs":1,"type":"pubkeyhash","addresses":["RHyh1V9syARTf2pyxibz7v27D5paBeWza5"]}
     if ( vout->pk_script != 0 && vout->pk_scriptlen*2+1 < sizeof(scriptstr) )
     {
-        if ( (asmtype= iguana_calcrmd160(coin,rmd160,msigs160,&M,&N,vout->pk_script,vout->pk_scriptlen,txid,txi)) >= 0 )
+        memset(&V,0,sizeof(V));
+        if ( (asmtype= iguana_calcrmd160(coin,&V,vout->pk_script,vout->pk_scriptlen,txid,txi,0xffffffff)) >= 0 )
         {
             skey = cJSON_CreateObject();
-            addrtype = iguana_scriptgen(coin,coinaddr,space,asmstr,rmd160,asmtype,txi);
+            addrtype = iguana_scriptgen(coin,V.coinaddr,space,asmstr,V.rmd160,asmtype,txi,&V);
             if ( asmstr[0] != 0 )
                 jaddstr(skey,"asm",asmstr);
             addrs = cJSON_CreateArray();
-            if ( M == 0 )
+            if ( V.M == 0 )
             {
                 if ( asmtype == 2 )
                 {
@@ -579,10 +678,10 @@ cJSON *iguana_voutjson(struct iguana_info *coin,struct iguana_msgvout *vout,int3
             }
             else
             {
-                jaddnum(skey,"reqSigs",M);
-                for (i=0; i<N; i++)
+                jaddnum(skey,"reqSigs",V.M);
+                for (i=0; i<V.N; i++)
                 {
-                    btc_convrmd160(coinaddr,coin->chain->pubtype,msigs160[i]);
+                    btc_convrmd160(coinaddr,coin->chain->pubtype,V.signers[i].pubkey);
                     jaddistr(addrs,coinaddr);
                 }
             }

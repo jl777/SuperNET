@@ -620,7 +620,8 @@ int CHROMEAPP_HANDLER(struct PP_Var params,struct PP_Var *output,const char **ou
     PNACL_message("inside Handle_%s\n",CHROMEAPP_STR);
     CHECK_PARAM_COUNT(CHROMEAPP_STR, 1);
     PARAM_STRING(0,jsonstr);
-    retstr = CHROMEAPP_JSON(jsonstr);
+    if ( (retstr= CHROMEAPP_JSON(jsonstr)) == 0 )
+        retstr = clonestr("{\"error\":\"null return\"}");
     CREATE_RESPONSE(CHROMEAPP_STR);
     RESPONSE_STRING(retstr);
     return 0;
