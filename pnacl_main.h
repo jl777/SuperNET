@@ -197,14 +197,16 @@ static int ParseMessage(struct PP_Var message,const char **out_function,struct P
     *out_function = VarToCStr(cmd_value);
     g_ppb_var->Release(cmd_value);
     *out_params = GetDictVar(message, "args");
-    PNACL_message("Parse.(%s) cmd.(%s) cmdtype.%d out.%d\n",*out_function,jsonstr,cmd_value.type,out_params->type);
-    if ( (jsonstr= (char *)VarToCStr(*out_params)) != 0 )
+    jsonstr = (char *)VarToCStr(*out_params);
+    PNACL_message("Parse.(%s) cmd.(%s) cmdtype.%d out.%d\n",*out_function,jsonstr!=0?jsonstr:"null",cmd_value.type,out_params->type);
+    if ( jsonstr != 0 )
     {
         PNACL_message("Parse.(%s) cmd.(%s)\n",*out_function,jsonstr);
         if ( cmd_value.type != PP_VARTYPE_STRING )
             return(1);
         if ( out_params->type != PP_VARTYPE_ARRAY )
             return(1);
+        
         return(0);
     } else return(1);
 }
