@@ -187,7 +187,7 @@ void PostMessage(const char* format, ...)
  */
 static int ParseMessage(struct PP_Var message,const char **out_function,struct PP_Var *out_params)
 {
-    char *jsonstr;
+    char *jsonstr=0;
     if ( message.type != PP_VARTYPE_DICTIONARY )
     {
         PNACL_message("illegal message.%d != %d\n",message.type,PP_VARTYPE_DICTIONARY);
