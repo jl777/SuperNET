@@ -370,16 +370,20 @@ uint32_t iguana_ramchain_addpkhash(struct iguana_info *coin,RAMCHAIN_FUNC,uint8_
 uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,RAMCHAIN_FUNC,uint64_t value,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vout,uint8_t type)
 {
     //struct iguana_unspent { uint64_t value; uint32_t txidind,pkind,prevunspentind; } __attribute__((packed));
-    uint8_t rmd160[20],msigs160[16][20]; int32_t M,N; uint32_t unspentind; struct iguana_unspent20 *u;
+    uint32_t unspentind; struct iguana_unspent20 *u; struct vin_info V;
     unspentind = ramchain->H.unspentind++;
     u = &U[unspentind];
     if ( scriptlen == -20 )
-        memcpy(rmd160,script,20);
-    else type = iguana_calcrmd160(coin,rmd160,msigs160,&M,&N,script,scriptlen,txid);
+        memcpy(V.rmd160,script,20);
+    else
+    {
+        memset(&V,0,sizeof(V));
+        type = iguana_calcrmd160(coin,&V,script,scriptlen,txid,vout,0xffffffff);
+    }
     if ( ramchain->H.ROflag != 0 )
     {
         //printf("%p U[%d] txidind.%d pkind.%d\n",u,unspentind,ramchain->txidind,pkind);
-        if ( u->txidind != ramchain->H.txidind || u->value != value || memcmp(u->rmd160,rmd160,sizeof(rmd160)) != 0 )
+        if ( u->txidind != ramchain->H.txidind || u->value != value || memcmp(u->rmd160,V.rmd160,sizeof(V.rmd160)) != 0 )
         {
             printf("iguana_ramchain_addunspent20: mismatched values.(%.8f %d) vs (%.8f %d)\n",dstr(u->value),u->txidind,dstr(value),ramchain->H.txidind);
             return(0);
@@ -390,7 +394,7 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,RAMCHAIN_FUNC,uin
         u->value = value;
         u->type = type;
         u->txidind = ramchain->H.txidind;
-        memcpy(u->rmd160,rmd160,sizeof(rmd160));
+        memcpy(u->rmd160,V.rmd160,sizeof(V.rmd160));
     }
     return(unspentind);
 }

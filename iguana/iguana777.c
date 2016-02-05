@@ -15,7 +15,7 @@
 
 
 #include "iguana777.h"
-const char *Hardcoded_coins[][3] = { { "BTC", "bitcoin", "0" }, { "BTCD", "BitcoinDark", "129" },  { "VPN", "VPNcoin", "129" } };
+const char *Hardcoded_coins[][3] = { { "BTC", "bitcoin", "0" }, { "BTCD", "BitcoinDark", "129" },  { "VPN", "VPNcoin", "129" }, { "LTC", "litecoin", "129" } };
 
 struct iguana_info *iguana_coinfind(const char *symbol)
 {
@@ -559,16 +559,6 @@ void iguana_coins(void *arg)
     }
 }
 
-int32_t opreturns_init(uint32_t blocknum,uint32_t blocktimestamp,char *path)
-{
-    printf("opreturns_init not yet\n");
-    return(-1);
-}
-
-void peggy()
-{
-    printf("peggy not yet\n");
-}
 char *busdata_sync(uint32_t *noncep,char *jsonstr,char *broadcastmode,char *destNXTaddr)
 {
     printf("busdata_sync.(%s)\n",jsonstr);

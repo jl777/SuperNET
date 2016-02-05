@@ -705,7 +705,7 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
 char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr)
 {
     cJSON *tokens,*argjson,*json = 0; long filesize;
-    char symbol[16],buf[4096],urlmethod[16],*data,url[1024],*retstr,*token = 0; int32_t i,j,n,num=0;
+    char symbol[16],buf[4096],urlmethod[16],*data,url[1024],*retstr,*filestr,*token = 0; int32_t i,j,n,num=0;
     //printf("rpcparse.(%s)\n",urlstr);
     for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
         urlmethod[i] = urlstr[i];
@@ -718,13 +718,19 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
     url[i++] = 0;
     n += i;
     j = i = 0;
-    //printf("url.(%s) method.(%s)\n",&url[i],urlmethod);
+    //printf("url.(%s) method.(%s) helpfname.(%s)\n",&url[i],urlmethod,helpfname);
     if ( strcmp(&url[i],"/") == 0 && strcmp(urlmethod,"GET") == 0 )
     {
-        SuperNET_htmlstr("index7778.html",retbuf,bufsize,0);
-        //return(retbuf);
-        return(OS_filestr(&filesize,"index7778.html"));
+        *jsonflagp = 1;
+        if ( (filestr= OS_filestr(&filesize,"index7778.html")) == 0 )
+        {
+            if ( (filestr= SuperNET_htmlstr("index7778.html",retbuf,bufsize,0)) != 0 )
+                printf("created index7778.html size %ld\n",strlen(filestr));
+        }
+        return(filestr);
     }
+    else if ( (filestr= OS_filestr(&filesize,url+1)) != 0 )
+        return(filestr);
     if ( strncmp(&url[i],"/api",strlen("/api")) == 0 )
     {
         *jsonflagp = 1;
@@ -787,7 +793,6 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
         {
             if ( (n= cJSON_GetArraySize(tokens)) > 0 )
             {
-                jaddstr(argjson,"agent",jstri(tokens,0));
                 if ( n > 1 )
                 {
                     if ( jstri(tokens,1) != 0 )
@@ -838,13 +843,20 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
                                             key = &buf[i];
                                             break;
                                         }
+                                        else if ( buf[i] == '+' )
+                                            buf[i] = ' ';
                                     }
                                 }
                             }
                         }
                         if ( key != 0 && value != 0 )
                             jaddstr(argjson,key,value);
-                    } else jaddstr(argjson,"method",buf);
+                    }
+                    else
+                    {
+                        //jdelete(argjson,"method");
+                        //jaddstr(argjson,"method",buf);
+                    }
                 }
                 for (i=2; i<n; i++)
                 {
@@ -877,13 +889,37 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
     return(clonestr("{\"error\":\"couldnt process packet\"}"));
 }
 
+int32_t iguana_getcontentlen(char *buf,int32_t recvlen)
+{
+    char *str,*clenstr = "Content-Length: "; int32_t len = -1;
+    if ( (str= strstr(buf,clenstr)) != 0 )
+    {
+        //printf("strstr.(%s)\n",str);
+        str += strlen(clenstr);
+        len = atoi(str);
+        //printf("len.%d\n",len);
+    }
+    return(len);
+}
+
+int32_t iguana_getheadersize(char *buf,int32_t recvlen)
+{
+    char *str,*delim = "\r\n\r\n";
+    if ( (str= strstr(buf,delim)) != 0 )
+        return((int32_t)(((long)str - (long)buf) + strlen(delim)));
+    return(recvlen);
+}
+
 void iguana_rpcloop(void *args)
 {
-    struct supernet_info *myinfo = args;
-    int32_t recvlen,bindsock,postflag,sock,remains,numsent,jsonflag,len; socklen_t clilen;
-    char remoteaddr[64],jsonbuf[8192],*buf,*retstr,*space;//,*retbuf; ,n,i,m
-    struct sockaddr_in cli_addr; uint32_t ipbits,i,size = IGUANA_WIDTH*IGUANA_HEIGHT*16 + 512; uint16_t port;
+    static char *jsonbuf;
+    uint16_t port; struct supernet_info *myinfo = args;
+    int32_t recvlen,flag,bindsock,postflag,contentlen,sock,remains,numsent,jsonflag,hdrsize,len;
+    socklen_t clilen; char remoteaddr[64],*buf,*retstr,*space;//,*retbuf; ,n,i,m
+    struct sockaddr_in cli_addr; uint32_t ipbits,i,size = IGUANA_WIDTH*IGUANA_HEIGHT*16 + 512;
     port = IGUANA_RPCPORT;
+    if ( jsonbuf == 0 )
+        jsonbuf = calloc(1,IGUANA_MAXPACKETSIZE);
     while ( (bindsock= iguana_socket(1,"127.0.0.1",port)) < 0 )
         exit(-1);
     printf("iguana_rpcloop 127.0.0.1:%d bind sock.%d\n",port,bindsock);
@@ -902,13 +938,14 @@ void iguana_rpcloop(void *args)
         expand_ipbits(remoteaddr,ipbits);
         //printf("RPC.%d for %x (%s)\n",sock,ipbits,ipaddr);
         //printf("%p got.(%s) from %s | usock.%d ready.%u dead.%u\n",addr,H.command,addr->ipaddr,addr->usock,addr->ready,addr->dead);
-        memset(jsonbuf,0,sizeof(jsonbuf));
-        remains = (int32_t)(sizeof(jsonbuf) - 1);
+        memset(jsonbuf,0,IGUANA_MAXPACKETSIZE);
+        remains = (int32_t)(IGUANA_MAXPACKETSIZE - 1);
         buf = jsonbuf;
-        recvlen = 0;
+        recvlen = flag = 0;
         retstr = 0;
         while ( remains > 0 )
         {
+            //printf("flag.%d remains.%d recvlen.%d\n",flag,remains,recvlen);
             if ( (len= (int32_t)recv(sock,buf,remains,0)) < 0 )
             {
                 if ( errno == EAGAIN )
@@ -922,28 +959,59 @@ void iguana_rpcloop(void *args)
             {
                 if ( len > 0 )
                 {
-                    remains -= len;
+                    buf[len] = 0;
+                    if ( recvlen == 0 )
+                    {
+                        if ( (contentlen= iguana_getcontentlen(buf,recvlen)) > 0 )
+                        {
+                            hdrsize = iguana_getheadersize(buf,recvlen);
+                            if ( hdrsize > 0 )
+                            {
+                                if ( len < (hdrsize + contentlen) )
+                                {
+                                    remains = (hdrsize + contentlen) - len;
+                                    buf = &buf[len];
+                                    flag = 1;
+                                    printf("got.(%s) %d remains.%d of len.%d contentlen.%d hdrsize.%d remains.%d\n",buf,recvlen,remains,len,contentlen,hdrsize,(hdrsize+contentlen)-len);
+                                    continue;
+                                }
+                            }
+                        }
+                    }
                     recvlen += len;
+                    remains -= len;
                     buf = &buf[len];
-                    retstr = SuperNET_rpcparse(myinfo,space,size,&jsonflag,&postflag,jsonbuf,remoteaddr);
-                    break;
-                } else usleep(10000);
+                    if ( flag == 0 || remains <= 0 )
+                        break;
+                }
+                else
+                {
+                    usleep(10000);
                 //printf("got.(%s) %d remains.%d of total.%d\n",jsonbuf,recvlen,remains,len);
                 //retstr = iguana_rpcparse(space,size,&postflag,jsonbuf);
-                break;
+                    if ( flag == 0 )
+                        break;
+                }
             }
         }
-        //if ( retstr == 0 )
-        //    retstr = iguana_htmlresponse(space,size,&remains,1,retstr,retstr != space);
+        if ( recvlen > 0 )
+            retstr = SuperNET_rpcparse(myinfo,space,size,&jsonflag,&postflag,jsonbuf,remoteaddr);
         if ( retstr != 0 )
         {
+            char *response,hdrs[1024];
+            if ( jsonflag != 0 || postflag != 0 )
+            {
+                response = malloc(strlen(retstr)+1024+1);
+                sprintf(hdrs,"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET, POST\r\nCache-Control :  no-cache, no-store, must-revalidate\r\nContent-Length : %8d\r\n\r\n",(int32_t)strlen(retstr));
+                response[0] = '\0';
+                strcat(response,hdrs);
+                strcat(response,retstr);
+                if ( retstr != space )
+                    free(retstr);
+                retstr = response;
+            }
+            remains = (int32_t)strlen(retstr);
             i = 0;
-            //if ( 0 && postflag == 0 )
-            //    retstr = iguana_htmlresponse(space,size,&remains,1,retstr,retstr != space);
-            //else
-                remains = (int32_t)strlen(retstr);
-            //printf("POSTFLAG.%d\n",postflag);
-            //printf("RETBUF.(%s)\n",retstr);
             while ( remains > 0 )
             {
                 if ( (numsent= (int32_t)send(sock,&retstr[i],remains,MSG_NOSIGNAL)) < 0 )
@@ -965,10 +1033,6 @@ void iguana_rpcloop(void *args)
             if ( retstr != space)
                 free(retstr);
         }
-        //if ( Currentjsonstr[0] != 0 )
-        //    strcpy(Prevjsonstr,Currentjsonstr);
-        //Currentjsonstr[0] = 0;
-        //printf("done response sock.%d\n",sock);
         closesocket(sock);
     }
 }

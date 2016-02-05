@@ -24,7 +24,7 @@
 
 #include <ctype.h>
 
-int nn_base64_decode (const char *in, size_t in_len,
+int _nn_base64_decode (const char *in, size_t in_len,
     uint8_t *out, size_t out_len)
 {
     unsigned ii;
@@ -101,7 +101,7 @@ int nn_base64_decode (const char *in, size_t in_len,
     return io;
 }
 
-int nn_base64_encode (const uint8_t *in, size_t in_len,
+int _nn_base64_encode (const uint8_t *in, size_t in_len,
     char *out, size_t out_len)
 {
     unsigned ii;

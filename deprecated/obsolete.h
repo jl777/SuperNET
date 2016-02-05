@@ -12845,4 +12845,251 @@ len = 0;
         printf("ghash.(%s)\n",hashstr);
         
         getchar();
+        
+        
+        bits256 issue_getpubkey(int32_t *haspubkeyp,char *acct)
+        {
+            cJSON *json; bits256 pubkey; char cmd[4096],*jsonstr; struct destbuf pubkeystr;
+            sprintf(cmd,"%s?requestType=getAccountPublicKey&account=%s",NXTAPIURL,acct);
+            jsonstr = issue_curl(cmd);
+            pubkeystr.buf[0] = 0;
+            if ( haspubkeyp != 0 )
+                *haspubkeyp = 0;
+            memset(&pubkey,0,sizeof(pubkey));
+            if ( jsonstr != 0 )
+            {
+                printf("PUBKEYRPC.(%s)\n",jsonstr);
+                if ( (json = cJSON_Parse(jsonstr)) != 0 )
+                {
+                    copy_cJSON(&pubkeystr,cJSON_GetObjectItem(json,"publicKey"));
+                    free_json(json);
+                    if ( strlen(pubkeystr.buf) == sizeof(pubkey)*2 )
+                    {
+                        if ( haspubkeyp != 0 )
+                            *haspubkeyp = 1;
+                        decode_hex(pubkey.bytes,sizeof(pubkey),pubkeystr.buf);
+                    }
+                }
+                free(jsonstr);
+            }
+            return(pubkey);
+        }
+                
+                int32_t iguana_rwtxbytes(struct iguana_info *coin,int32_t rwflag,uint8_t *serialized,int32_t maxlen,bits256 *txidp,struct iguana_msgtx *tx)
+            {
+                int32_t i,len = 0; char str[65],str2[65],txidstr[65]; uint32_t numvins,numvouts; bits256 txid;
+                len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->version),&tx->version);
+                if ( coin->chain->hastimestamp != 0 )
+                    len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->timestamp),&tx->timestamp);
+                numvins = tx->tx_in, numvouts = tx->tx_out;
+                len += iguana_rwvarint32(rwflag,&serialized[len],&numvins);
+                for (i=0; i<numvins; i++)
+                    len += iguana_rwvin(rwflag,0,&serialized[len],&tx->vins[i]);
+                if ( len > maxlen )
+                    return(0);
+                len += iguana_rwvarint32(rwflag,&serialized[len],&numvouts);
+                for (i=0; i<numvouts; i++)
+                    len += iguana_rwvout(rwflag,0,&serialized[len],&tx->vouts[i]);
+                if ( len > maxlen )
+                    return(0);
+                len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->lock_time),&tx->lock_time);
+                txid = bits256_doublesha256(txidstr,serialized,len);
+                if ( rwflag != 0 )
+                    tx->txid = txid;
+                else *txidp = txid;
+                if ( bits256_nonz(*txidp) > 0 && memcmp(txidp,tx->txid.bytes,sizeof(*txidp)) != 0 )
+                {
+                    printf("iguana_rwtxbytes.rw%d: txid.%s vs %s\n",rwflag,bits256_str(str,tx->txid),bits256_str(str2,*txidp));
+                    return(0);
+                }
+                return(len);
+            }
+                
+                void pktest()
+            {
+                bits256 p,pub; uint8_t *data,*pubkey,sig[128],*sigptr; struct bp_key key; size_t pubk_len;
+                int32_t s,v,v2,v4=-99,v3=-99,datalen; uint32_t siglen;  EC_KEY *KEY;
+                //bp_key_init(&key);
+                // bp_key_generate(&key);
+                OS_randombytes(p.bytes,sizeof(p));
+                
+                data = (uint8_t *)"hello", datalen = (int32_t)strlen("hello");
+                //s = bp_sign(key.k,data,datalen,(void **)&sigptr,&siglen);
+                //sigptr = sig;
+                //siglen = iguana_sig(sig,sizeof(sig),data,datalen,p);
+                //const unsigned char *privkey;
+                //bp_privkey_set(&key,p.bytes,sizeof(p));
+                //bp_pubkey_get(&key,(void **)&pubkey,&pubk_len);
+                //memcpy(pub.bytes,pubkey+1,sizeof(pub));
+                KEY = bitcoin_privkeyset(&pub,p);
+                siglen = bitcoin_sign(sig,sizeof(sig),data,datalen,p);
+                s = siglen > 0;
+                // char str[65]; printf("siglen.%d pk_len.%ld %s\n",siglen,pubk_len,bits256_str(str,*(bits256 *)(pubkey+1)));
+                
+                //s = ECDSA_sign(0,data,datalen,sig,&siglen,KEY);
+                v2 = bp_verify(KEY,data,datalen,sig,siglen);
+                //bp_pubkey_get(&key,(void **)&pubkey,&pubk_len);
+                //bp_key_init(&key);
+                
+                v3 = bitcoin_verify(sig,siglen,data,datalen,pub);
+                //v = iguana_ver(sig,siglen,data,datalen,pub);
+                printf("s.%d siglen.%d v2.%d v3.%d v4.%d\n",s,siglen,v2,v3,v4);
+                getchar();
+            }
+           http://bitcoin.stackexchange.com/questions/3374/how-to-redeem-a-basic-tx     
+                //msgtx->vins[i].scriptlen = scriptlen;
+                //printf("VINI.%d (%s)\n",vini,jprint(bitcoin_txjson(coin,msgtx),1));
+                //decode_hex(privkey.bytes,sizeof(privkey),"18E14A7B6A307F426A94F8114701E7C8E774E7F9A47E2C2035DB29A206321725");
+                //printf("privkey.%s\n",bits256_str(str,privkey));
+                //EC_KEY *KEY = bitcoin_privkeyset(&pkey,privkey);
+        char *refstr = "01000000\
+                01\
+                eccf7e3034189b851985d871f91384b8ee357cd47c3024736e5676eb2debb3f2\
+                01000000\
+                8c\
+                4930460221009e0339f72c793a89e664a8a932df073962a3f84eda0bd9e02084a6a9567f75aa022100bd9cbaca2e5ec195751efdfac164b76250b1e21302e51ca86dd7ebd7020cdc0601410450863ad64a87ae8a2fe83c1af1a8403cb53f53e486d8511dad8a04887e5b23522cd470243453a299fa9e77237716103abc11a1df38855ed6f2ee187e9c582ba6\
+                ffffffff\
+                01\
+                605af40500000000\
+                19\
+                76a914097072524438d003d23a2f23edb65aae1bb3e46988ac\
+                00000000";
+        
+        char *iguana_txcreate(struct iguana_info *coin,uint8_t *space,int32_t maxlen,char *jsonstr)
+        {
+            struct iguana_txid T; struct iguana_msgvin *vins,*vin; struct iguana_msgvout *vouts,*vout;
+            char *redeemstr;
+            cJSON *array,*json,*item,*retjson = 0; bits256 scriptPubKey; int32_t i,numvins,numvouts,len = 0;
+            if ( (json= cJSON_Parse(jsonstr)) != 0 )
+            {
+                memset(&T,0,sizeof(T));
+                if ( (T.version= juint(json,"version")) == 0 )
+                    T.version = 1;
+                if ( (T.locktime= juint(json,"locktime")) == 0 )
+                    T.locktime = 0xffffffff;
+                vins = (struct iguana_msgvin *)&space[len];
+                if ( (array= jarray(&numvins,json,"vins")) != 0 )
+                {
+                    len += sizeof(*vins) * numvins;
+                    memset(vins,0,sizeof(*vins) * numvins);
+                    //struct iguana_msgvin { bits256 prev_hash; uint8_t *script; uint32_t prev_vout,scriptlen,sequence; };
+                    for (i=0; i<numvins; i++)
+                    {
+                        vin = &vins[i];
+                        item = jitem(array,i);
+                        vin->prev_hash = jbits256(item,"txid");
+                        vin->prev_vout = juint(item,"vout");
+                        vin->sequence = juint(item,"sequence");
+                        scriptPubKey = jbits256(item,"scriptPubKey");
+                        if ( bits256_nonz(scriptPubKey) > 0 )
+                        {
+                            if ( (redeemstr= jstr(item,"redeemScript")) == 0 )
+                            {
+                                vin->scriptlen = (int32_t)strlen(redeemstr);
+                                if ( (vin->scriptlen & 1) != 0 )
+                                {
+                                    free_json(json);
+                                    return(clonestr("{\"error\":\"odd redeemScript length\"}"));
+                                }
+                                vin->scriptlen >>= 1;
+                                vin->script = &space[len], len += vin->scriptlen;
+                            }
+                        }
+                    }
+                }
+                vouts = (struct iguana_msgvout *)&space[len];
+                if ( (array= jarray(&numvouts,json,"vouts")) != 0 )
+                {
+                    len += sizeof(*vouts) * numvouts;
+                    memset(vouts,0,sizeof(*vouts) * numvouts);
+                    //struct iguana_msgvout { uint64_t value; uint32_t pk_scriptlen; uint8_t *pk_script; };
+                    for (i=0; i<numvouts; i++)
+                    {
+                        vout = &vouts[i];
+                        item = jitem(array,i);
+                        printf("create vout\n");
+                    }
+                }
+                T.numvins = numvins, T.numvouts = numvouts;
+                T.timestamp = (uint32_t)time(NULL);
+                if ( (len= iguana_ramtxbytes(coin,space,maxlen-len,&T.txid,&T,-1,vins,vouts)) > 0 )
+                {
+                    
+                }
+                free_json(json);
+            }
+            if ( retjson == 0 )
+                retjson = cJSON_Parse("{\"error\":\"couldnt create transaction\"}");
+            return(jprint(retjson,1));
+        }
+        
+        /*
+         if ( bp_key_init(&key) != 0 && bp_key_secret_set(&key,privkey,32) != 0 )
+         {
+         if ( (T= calloc(1,sizeof(*T))) == 0 )
+         return(0);
+         *T = *refT; vin = &T->inputs[redeemi];
+         for (i=0; i<T->numinputs; i++)
+         strcpy(T->inputs[i].sigs,"00");
+         strcpy(vin->sigs,redeemscript);
+         vin->sequence = (uint32_t)-1;
+         T->nlocktime = 0;
+         //disp_cointx(&T);
+         emit_cointx(&hash2,data,sizeof(data),T,oldtx_format,SIGHASH_ALL);
+         //printf("HASH2.(%llx)\n",(long long)hash2.txid);
+         if ( bp_sign(&key,hash2.bytes,sizeof(hash2),&sig,&siglen) != 0 )
+         {
+         memcpy(sigbuf,sig,siglen);
+         sigbuf[siglen++] = SIGHASH_ALL;
+         init_hexbytes_noT(sigs[privkeyind],sigbuf,(int32_t)siglen);
+         strcpy(vin->sigs,"00");
+         for (i=0; i<n; i++)
+         {
+         if ( sigs[i][0] != 0 )
+         {
+         sprintf(vin->sigs + strlen(vin->sigs),"%02x%s",(int32_t)strlen(sigs[i])>>1,sigs[i]);
+         //printf("(%s).%ld ",sigs[i],strlen(sigs[i]));
+         }
+         }
+         len = (int32_t)(strlen(redeemscript)/2);
+         if ( len >= 0xfd )
+         sprintf(&vin->sigs[strlen(vin->sigs)],"4d%02x%02x",len & 0xff,(len >> 8) & 0xff);
+         else sprintf(&vin->sigs[strlen(vin->sigs)],"4c%02x",len);
+         sprintf(&vin->sigs[strlen(vin->sigs)],"%s",redeemscript);
+         //printf("after A.(%s) othersig.(%s) siglen.%02lx -> (%s)\n",hexstr,othersig != 0 ? othersig : "",siglen,vin->sigs);
+         //printf("vinsigs.(%s) %ld\n",vin->sigs,strlen(vin->sigs));
+         _emit_cointx(hexstr,sizeof(hexstr),T,oldtx_format);
+         //disp_cointx(&T);
+         free(T);
+         return(clonestr(hexstr));
+         }
+         */
+        
+        
+        /*static char *validateretstr(struct iguana_info *coin,char *coinaddr)
+         {
+         char *retstr,buf[512]; cJSON *json;
+         if ( iguana_addressvalidate(coin,coinaddr) < 0 )
+         return(clonestr("{\"error\":\"invalid coin address\"}"));
+         sprintf(buf,"{\"agent\":\"ramchain\",\"coin\":\"%s\",\"method\":\"validate\",\"address\":\"%s\"}",coin->symbol,coinaddr);
+         if ( (json= cJSON_Parse(buf)) != 0 )
+         retstr = ramchain_coinparser(coin,"validate",json);
+         else return(clonestr("{\"error\":\"internal error, couldnt parse validate\"}"));
+         free_json(json);
+         return(retstr);
+         }
+         
+         static char *validatepubkey(RPCARGS)
+         {
+         char *pubkeystr,coinaddr[128]; cJSON *retjson;
+         retjson = cJSON_CreateObject();
+         if ( params[0] != 0 && (pubkeystr= jstr(params[0],0)) != 0 )
+         {
+         if ( btc_coinaddr(coinaddr,coin->chain->pubval,pubkeystr) == 0 )
+         return(validateretstr(coin,coinaddr));
+         return(clonestr("{\"error\":\"cant convert pubkey\"}"));
+         }
+         return(clonestr("{\"error\":\"need pubkey\"}"));
+         }*/
+
 #endif

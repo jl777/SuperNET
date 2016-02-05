@@ -520,7 +520,7 @@ int32_t extract_datenum(int32_t *yearp,int32_t *monthp,int32_t *dayp,int32_t dat
     else return(-1);
 }
 
-uint64_t OS_conv_datenum(int32_t datenum,int32_t hour,int32_t minute,int32_t second) // datenum+H:M:S -> unix time
+uint32_t OS_conv_datenum(int32_t datenum,int32_t hour,int32_t minute,int32_t second) // datenum+H:M:S -> unix time
 {
     int32_t year,month,day; struct tai t; struct taitime ct;
     if ( 1 )
@@ -530,7 +530,7 @@ uint64_t OS_conv_datenum(int32_t datenum,int32_t hour,int32_t minute,int32_t sec
             ct = taitime_set(taidate_set(year,month,day),hour,minute,second);
             t = taitime2tai(ct);
             //char str[65]; printf("conv.(y%d m%d d%d %d:%d:%d) %s\n",year,month,day,hour,minute,second,tai_str(str,t));
-            return(tai2utc(t));//tai2utime(t)+788250398LL - 4294967296LL);
+            return((uint32_t)tai2utc(t));//tai2utime(t)+788250398LL - 4294967296LL);
         }
         return(0);
     }

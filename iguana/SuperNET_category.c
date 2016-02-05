@@ -74,46 +74,163 @@ void *category_infoset(bits256 categoryhash,bits256 subhash,void *info)
     return(0);
 }
 
-struct category_info *category_processfunc(bits256 categoryhash,int32_t (*process_func)(struct supernet_info *myinfo,void *data,int32_t datalen,char *remoteaddr))
+struct category_info *category_processfunc(bits256 categoryhash,char *(*process_func)(struct supernet_info *myinfo,void *data,int32_t datalen,char *remoteaddr))
 {
     struct category_info *cat;
     if ( (cat= category_find(categoryhash,GENESIS_PUBKEY)) != 0 )
     {
-        cat->process_func = process_func;
+        cat->processfunc = process_func;
         return(cat);
     }
     return(0);
 }
 
-struct category_info *category_blockhashfunc(bits256 categoryhash,bits256 subhash,int32_t (*blockhash_func)(void *blockhashp,void *data,int32_t datalen))
+int32_t category_default_blockhash(struct category_chain *cchain,void *blockhashp,void *data,int32_t datalen)
 {
-    struct category_info *cat;
-    if ( (cat= category_find(categoryhash,subhash)) != 0 )
-    {
-        cat->blockhash_func = blockhash_func;
-        return(cat);
-    }
-    return(0);
+    bits256 hash;
+    vcalc_sha256(0,hash.bytes,data,datalen);
+    vcalc_sha256(0,blockhashp,hash.bytes,sizeof(hash));
+    return(sizeof(*blockhashp));
 }
 
-struct category_info *category_hitfunc(bits256 categoryhash,bits256 subhash,uint64_t (*hit_func)(struct supernet_info *myinfo,void *categoryinfo,void *subinfo,void *addr,int32_t addrlen))
+bits256 category_default_stake(struct category_chain *cchain,void *addr,int32_t addrlen)
 {
-    struct category_info *cat;
-    if ( (cat= category_find(categoryhash,subhash)) != 0 )
-    {
-        cat->hit_func = hit_func;
-        return(cat);
-    }
-    return(0);
+    bits256 stake;
+    memset(stake.bytes,0,sizeof(stake));
+    stake.txid = ((uint64_t)1 << 63);
+    return(stake);
 }
 
-struct category_info *category_ishwmfunc(bits256 categoryhash,bits256 subhash,int32_t (*ishwm_func)(struct supernet_info *myinfo,void *categoryinfo,void *subinfo,void *blockhashp,int32_t hashlen,int32_t heighthint,uint64_t hwmwt,uint64_t prevwt,uint64_t hit))
+bits256 catgory_default_hit(struct category_chain *cchain,int32_t height,void *prevgenerator,void *addr,void *blockhashp)
 {
-    struct category_info *cat;
+    bits256 hash; bits256 rawhit,hit;
+    memset(rawhit.bytes,0,sizeof(rawhit));
+    memset(hit.bytes,0,sizeof(hit));
+    vcalc_sha256cat(hash.bytes,prevgenerator,cchain->addrlen,addr,cchain->addrlen);
+    hit = (*cchain->stake_func)(cchain,addr,cchain->addrlen);
+    rawhit.txid = hash.txid % ((uint64_t)1 << 42);
+    if ( rawhit.txid != 0 )
+        hit.txid /= rawhit.txid;
+    return(hit);
+}
+
+#define category_default_heaviest() (*cchain->default_func)(cchain,'H',0,0,0,0,zero)
+#define category_default_latest() (*cchain->default_func)(cchain,'L',0,0,0,0,zero)
+#define category_default_setheaviest(height,blockhashp,heaviest) (*cchain->default_func)(cchain,'S',height,0,0,blockhashp,zero)
+#define category_default_weight(height) (*cchain->default_func)(cchain,'W',height,0,0,0,zero)
+#define category_default_blockfind(height) (*cchain->default_func)(cchain,'B',height,0,0,0,zero)
+
+bits256 category_default_func(struct category_chain *cchain,int32_t func,int32_t height,void *prevgenerator,void *addr,void *blockhashp,bits256 heaviest)
+{
+    static bits256 zero;
+    if ( cchain->hashlen != sizeof(bits256) || cchain->addrlen != sizeof(bits256) )
+    {
+        printf("unsupported hashlen.%d or addrlen.%d\n",cchain->hashlen,cchain->addrlen);
+        return(zero);
+    }
+    if ( height > cchain->maxblocknum + (func == 'S') )
+    {
+        printf("error func.%c setting heaviest. skipped %d -> %d?\n",func,cchain->maxblocknum,height);
+        return(cchain->category_hwm);
+    }
+    if ( func == 'H' )
+        return(cchain->category_hwm);
+    else if ( func == 'L' )
+    {
+        if ( cchain->maxblocknum < 0 )
+            return(cchain->cchainhash);
+        else return(cchain->blocks[cchain->maxblocknum]);
+    }
+    else if ( func == 'S' )
+    {
+        cchain->category_hwm = heaviest;
+        if ( height > cchain->maxblocknum )
+        {
+            cchain->weights = realloc(cchain->weights,(cchain->maxblocknum+1) * sizeof(*cchain->weights));
+            cchain->blocks = realloc(cchain->blocks,(cchain->maxblocknum+1) * sizeof(*cchain->blocks));
+        }
+        cchain->maxblocknum = height;
+        cchain->weights[height] = heaviest;
+        if ( blockhashp != 0 )
+            memcpy(&cchain->blocks[height],blockhashp,sizeof(cchain->blocks[height]));
+    }
+    else if ( func == 'B' )
+    {
+        if ( height <= cchain->maxblocknum )
+            return(cchain->blocks[height]);
+        else
+        {
+            printf("error: illegal height.%d vs max.%d\n",height,cchain->maxblocknum);
+            return(zero);
+        }
+    }
+    else if ( func == 'W' )
+    {
+        if ( height >= 0 && height < cchain->maxblocknum )
+            return(cchain->weights[height]);
+        else printf("error getting weight for height.%d vs maxblocknum.%d\n",height,cchain->maxblocknum);
+    }
+    return(cchain->category_hwm);
+}
+
+int32_t category_default_ishwm(struct category_chain *cchain,int32_t prevheight,void *prevblockhashp,void *blockhashp,void *prevgenerator,void *addr)
+{
+    bits256 checkhash,prevwt,oldhit,hit,heaviest; static bits256 zero;
+    checkhash = category_default_blockfind(prevheight);
+    if ( memcmp(checkhash.bytes,prevblockhashp,cchain->hashlen) == 0 )
+    {
+        heaviest = category_default_heaviest();
+        prevwt = category_default_weight(prevheight);
+        oldhit = category_default_weight(prevheight+1);
+        hit = (*cchain->hit_func)(cchain,prevheight+1,prevgenerator,addr,blockhashp);
+        if ( hit.txid > oldhit.txid && prevwt.txid+hit.txid > heaviest.txid )
+        {
+            heaviest.txid = (prevwt.txid + hit.txid);
+            category_default_setheaviest(prevheight+1,blockhashp,heaviest);
+            return(prevheight+1);
+        }
+        
+    } else return(-2);
+    return(-1);
+}
+
+struct category_chain *category_chain_functions(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,int32_t hashlen,int32_t addrlen,void *hash_func,void *stake_func,void *hit_func,void *default_func)
+{
+    struct category_info *cat; struct category_chain *cchain = calloc(1,sizeof(*cchain));
     if ( (cat= category_find(categoryhash,subhash)) != 0 )
     {
-        cat->ishwm_func = ishwm_func;
-        return(cat);
+        cchain->maxblocknum = -1;
+        cchain->myinfo = myinfo, cchain->subinfo = cat->info;
+        if ( bits256_cmp(subhash,GENESIS_PUBKEY) == 0 )
+            cchain->categoryinfo = cat->info, cchain->cchainhash = categoryhash;
+        else cchain->categoryinfo = category_find(categoryhash,GENESIS_PUBKEY), cchain->cchainhash = subhash;
+        if ( cchain->myinfo == 0 || cchain->categoryinfo || cchain->subinfo )
+        {
+            printf("error with cchain pointers\n");
+            return(0);
+        }
+        if ( (cchain->addrlen= addrlen) <= 0 || (cchain->hashlen= hashlen) <= 0 )
+        {
+            printf("error with cchain lens.%d %d\n",addrlen,hashlen);
+            return(0);
+        }
+        if ( (cchain->blockhash_func= hash_func) == 0 || (cchain->stake_func= stake_func) == 0 || (cchain->hit_func= hit_func) == 0 || (cchain->default_func= default_func) == 0 )
+        {
+            if ( addrlen == sizeof(bits256) && hashlen == sizeof(bits256) )
+            {
+                cchain->blockhash_func = category_default_blockhash;
+                cchain->stake_func = category_default_stake;
+                cchain->hit_func = catgory_default_hit;
+                cchain->default_func = category_default_func;
+            }
+            else
+            {
+                printf("no category chain functions and addrlen.%d hashlen.%d not 32\n",addrlen,hashlen);
+                return(0);
+            }
+        }
+        cat->cchain = cchain;
+        return(cchain);
     }
     return(0);
 }
@@ -211,4 +328,15 @@ char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag
     if ( hexmsg != message)
         free(hexmsg);
     return(retstr);
+}
+
+void category_init(struct supernet_info *myinfo)
+{
+    bits256 pangeahash;
+    category_subscribe(myinfo,GENESIS_PUBKEY,GENESIS_PUBKEY);
+    pangeahash = calc_categoryhashes(0,"pangea",0);
+    category_subscribe(myinfo,pangeahash,GENESIS_PUBKEY);
+    category_processfunc(pangeahash,pangea_hexmsg);
+    category_chain_functions(myinfo,pangeahash,GENESIS_PUBKEY,sizeof(bits256),sizeof(bits256),0,0,0,0);
+    exchanges777_init(myinfo,0,0);
 }

@@ -25,7 +25,7 @@ cJSON *pangea_playerjson(struct supernet_info *myinfo,struct table_info *tp,stru
     return(json);
 }
 
-cJSON *pangea_tablejson(struct supernet_info *myinfo,struct table_info *tp)
+/*cJSON *pangea_tablejson(struct supernet_info *myinfo,struct table_info *tp)
 {
     char ipaddr[64],str[64]; int32_t i; cJSON *array,*json; struct game_info *gp;
     gp = &tp->G;
@@ -64,9 +64,8 @@ cJSON *pangea_tablejson(struct supernet_info *myinfo,struct table_info *tp)
         jadd(json,"players",array);
     }
     jaddnum(json,"numactive",tp->G.numactive);
-    printf("tp.%p\n",tp);
     return(json);
-}
+}*/
 
 void pangea_gamecreate(struct game_info *gp,uint32_t timestamp,bits256 tablehash,cJSON *json)
 {
@@ -116,7 +115,7 @@ cJSON *pangea_lobbyjson(struct supernet_info *myinfo)
         HASH_ITER(hh,cat->sub,sub,tmp)
         {
             if ( (tp= sub->info) != 0 && pangea_opentable(&tp->G) > 0 )
-                jaddi(array,pangea_tablejson(myinfo,tp));
+                jaddi(array,pangea_tablestatus(myinfo,tp));
         }
     }
     jadd(retjson,"tables",array);
@@ -203,10 +202,29 @@ cJSON *pangea_tablestatus(struct supernet_info *myinfo,struct table_info *tp)
     jaddnum(json,"pangearake",dstr(gp->pangearake));
     jaddnum(json,"bigblind",dstr(gp->bigblind));
     jaddnum(json,"ante",dstr(gp->ante));
-    array = cJSON_CreateArray();
+    if ( gp->opentime != 0 )
+    {
+        char utcbuf[65];
+        jaddstr(json,"opentime",utc_str(utcbuf,gp->opentime));
+        if ( gp->started != 0 )
+        {
+            jaddstr(json,"started",utc_str(utcbuf,gp->started));
+            if ( gp->finished != 0 )
+                jaddstr(json,"finished",utc_str(utcbuf,gp->finished));
+        }
+    }
+    if ( tp->G.numactive > 0 )
+    {
+        array = cJSON_CreateArray();
+        for (i=0; i<tp->G.numactive; i++)
+            jaddi(array,pangea_playerjson(myinfo,tp,&tp->G.P[i]));
+        jadd(json,"players",array);
+    }
+    jaddnum(json,"numactive",tp->G.numactive);
+    /*array = cJSON_CreateArray();
     for (i=0; i<tp->G.numactive; i++)
         jaddi64bits(array,tp->active[i]!=0?tp->active[i]->nxt64bits:0);
-    jadd(json,"addrs",array);
+    jadd(json,"addrs",array);*/
     total = 0;
     for (iter=0; iter<6; iter++)
     {

@@ -1,17 +1,32 @@
 {
-    "name": "iguana",
-    "uri": "iguana.pexe",
-    "short_name": "iguana",
+  "app": {
+    "background": { "scripts": ["background.js"] }
+  },
+  "name": "iguana",
+  "short_name": "iguana",
     "version": "44.1.2",
     "manifest_version": 2,
     "description": "iguana",
     "offline_enabled": true,
     "icons": { "128": "icon128.png" },
-    "app":
-    {
-        "name": "iguana",
-        "background": { "scripts": ["background.js"] },
-        "sockets": { "tcp": { "connect": "" }, "tcpServer": { "listen": "127.0.0.1:*" } },
-        "permissions": [ "unlimitedStorage", "storage.local" ]
+  "icons": {
+    "128": "icon128.png"
+  },
+  "minimum_chrome_version": "36",
+  "sockets": {
+    "tcp": {
+      "connect": "*"
+    },
+    "tcpServer": {
+      "listen": "*"
     }
+  },
+  "permissions": [ 
+      "unlimitedStorage", 
+      {"fileSystem": ["write"]},
+      "storage",
+      "system.storage",
+      "system.display",
+      "system.network",
+      "system.cpu" ]
 }

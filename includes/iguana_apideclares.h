@@ -14,17 +14,67 @@
  ******************************************************************************/
 
 STRING_ARG(SuperNET,bitcoinrpc,setcoin);
-HASH_AND_INT(ramchain,getblock,blockhash,localonly);
+HASH_AND_STRING(ramchain,verifytx,txid,txbytes);
 
-/*HASH_AND_ARRAY(pangea,userturn,tablehash,params);
- HASH_AND_ARRAY(pangea,status,tableid,params);
- HASH_AND_ARRAY(pangea,mode,tableid,params);
- HASH_AND_ARRAY(pangea,buyin,tableid,params);
- HASH_AND_ARRAY(pangea,history,tableid,params);*/
+INT_ARG(ramchain,getblockhash,height);
+HASH_AND_INT(ramchain,getblock,blockhash,remoteonly);
+HASH_AND_INT(ramchain,getrawtransaction,txid,verbose);
+HASH_ARG(ramchain,gettransaction,txid);
+STRING_ARG(ramchain,decoderawtransaction,rawtx);
+
+FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase);
+ZERO_ARGS(SuperNET,logout);
+ZERO_ARGS(SuperNET,activehandle);
+THREE_STRINGS(SuperNET,encryptjson,password,permanentfile,anything);
+TWO_STRINGS(SuperNET,decryptjson,password,permanentfile);
+
+THREE_STRINGS_AND_THREE_INTS(InstantDEX,orderbook,exchange,base,rel,depth,allfields,ignore);
+THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,buy,exchange,base,rel,price,volume,dotrade);
+THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,sell,exchange,base,rel,price,volume,dotrade);
+THREE_STRINGS_AND_DOUBLE(InstantDEX,withdraw,exchange,base,destaddr,amount);
+THREE_STRINGS(InstantDEX,apikeypair,exchange,apikey,apisecret);
+THREE_STRINGS(InstantDEX,setuserid,exchange,userid,tradepassword);
+THREE_STRINGS(InstantDEX,supports,exchange,base,rel);
+TWO_STRINGS(InstantDEX,balance,exchange,base);
+TWO_STRINGS(InstantDEX,orderstatus,exchange,orderid);
+TWO_STRINGS(InstantDEX,cancelorder,exchange,orderid);
+STRING_ARG(InstantDEX,openorders,exchange);
+STRING_ARG(InstantDEX,tradehistory,exchange);
+STRING_AND_INT(InstantDEX,pollgap,exchange,pollgap);
+ZERO_ARGS(InstantDEX,allexchanges);
+STRING_ARG(InstantDEX,allpairs,exchange);
+
+THREE_STRINGS_AND_DOUBLE(InstantDEX,request,reference,base,rel,volume);
+TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,proposal,reference,message,basetxid,reltxid,duration,flags);
+TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,accept,reference,message,basetxid,reltxid,duration,flags);
+TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,confirm,reference,message,basetxid,reltxid,baseheight,relheight);
+
+THREE_STRINGS_AND_DOUBLE(tradebot,monitor,exchange,base,rel,commission);
+STRING_AND_DOUBLE(tradebot,monitorall,exchange,commission);
+THREE_STRINGS(tradebot,unmonitor,exchange,base,rel);
+THREE_STRINGS_AND_THREE_DOUBLES(tradebot,accumulate,exchange,base,rel,price,volume,duration);
+THREE_STRINGS_AND_THREE_DOUBLES(tradebot,divest,exchange,base,rel,price,volume,duration);
+STRING_ARG(tradebot,activebots,exchange);
+TWO_STRINGS(tradebot,status,exchange,botid);
+TWO_STRINGS(tradebot,pause,exchange,botid);
+TWO_STRINGS(tradebot,stop,exchange,botid);
+TWO_STRINGS(tradebot,resume,exchange,botid);
+
+HASH_ARG(pangea,call,tablehash);
+HASH_AND_INT(pangea,raise,tablehash,numchips);
+HASH_AND_INT(pangea,bet,tablehash,numchips);
+HASH_ARG(pangea,check,tablehash);
+HASH_ARG(pangea,fold,tablehash);
+HASH_ARG(pangea,allin,tablehash);
+HASH_ARG(pangea,status,tablehash);
+HASH_AND_STRING(pangea,mode,tablehash,params);
+HASH_ARG(pangea,history,tablehash);
+HASH_AND_INT(pangea,handhistory,tablehash,hand);
 INT_AND_ARRAY(pangea,host,minplayers,params);
 ZERO_ARGS(pangea,lobby);
 HASH_AND_STRING(pangea,join,tablehash,handle);
-HASH_AND_ARRAY(pangea,start,tablehash,params);
+HASH_AND_INT(pangea,buyin,tablehash,numchips);
+HASH_ARG(pangea,start,tablehash);
 
 ZERO_ARGS(SuperNET,help);
 STRING_ARG(SuperNET,utime2utc,utime);
@@ -107,7 +157,6 @@ STRING_ARG(ramchain,getaccount,address);
 STRING_ARG(ramchain,getaccountaddress,account);
 STRING_ARG(ramchain,dumpprivkey,address);
 STRING_ARG(ramchain,importwallet,filename);
-STRING_ARG(ramchain,decoderawtransaction,rawtx);
 STRING_ARG(ramchain,decodescript,script);
 
 TWO_STRINGS(ramchain,setaccount,address,account);
@@ -125,7 +174,6 @@ STRING_AND_INT(ramchain,getreceivedbyaddress,address,minconf);
 STRING_AND_INT(ramchain,sendrawtransaction,rawtx,allowhighfees);
 
 HASH_AND_TWOINTS(ramchain,listsinceblock,blockhash,target,flag);
-HASH_AND_INT(ramchain,getrawtransaction,txid,verbose);
 
 STRING_AND_THREEINTS(ramchain,listtransactions,account,count,skip,includewatchonly);
 

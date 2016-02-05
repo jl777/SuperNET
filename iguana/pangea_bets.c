@@ -15,7 +15,12 @@
 
 #include "pangea777.h"
 
-void pangea_fold(struct supernet_info *myinfo,struct table_info *tp,struct player_info *player)
+int64_t pangea_chipsvalue(struct supernet_info *myinfo,struct table_info *tp,int32_t numchips)
+{
+    return((tp->G.bigblind >> 1) * numchips);
+}
+
+void pangea_playerfold(struct supernet_info *myinfo,struct table_info *tp,struct player_info *player)
 {
     uint8_t tmp;
     //printf("player.%d folded\n",player); //getchar();
@@ -26,15 +31,28 @@ void pangea_fold(struct supernet_info *myinfo,struct table_info *tp,struct playe
     pangea_summaryadd(myinfo,tp,CARDS777_FOLD,&tmp,sizeof(tmp),(void *)&player->bets,sizeof(player->bets));
 }
 
-int32_t pangea_bet(struct supernet_info *myinfo,struct table_info *tp,struct player_info *player,int64_t bet,int32_t action)
+int32_t pangea_playerbet(struct supernet_info *myinfo,int64_t *actualbetp,struct table_info *tp,struct player_info *player,int64_t bet,int32_t action)
 {
     uint64_t sum; uint8_t tmp; struct hand_info *hand = &tp->hand;
+    if ( bet == 0 ) // autobet
+    {
+        if ( action == CARDS777_CALL )
+            bet = hand->betsize;
+        else if ( action == CARDS777_BET )
+            bet = hand->betsize + hand->lastraise;
+        else if ( action == CARDS777_RAISE )
+            bet = hand->betsize + hand->lastraise * 2;
+        bet -= player->bets;
+    }
+    *actualbetp = 0;
     if ( Debuglevel > 2 )
         printf("PANGEA_BET[%d] <- %.8f\n",player->ind,dstr(bet));
     if ( player->betstatus == CARDS777_ALLIN )
         return(CARDS777_ALLIN);
     else if ( player->betstatus == CARDS777_FOLD )
         return(CARDS777_FOLD);
+    else if ( action == CARDS777_ALLIN )
+        bet = player->balance;
     if ( bet > 0 && bet >= player->balance )
     {
         bet = player->balance;
@@ -52,7 +70,7 @@ int32_t pangea_bet(struct supernet_info *myinfo,struct table_info *tp,struct pla
     sum = player->bets;
     if ( sum+bet < hand->betsize && action != CARDS777_ALLIN )
     {
-        pangea_fold(myinfo,tp,player);
+        pangea_playerfold(myinfo,tp,player);
         action = CARDS777_FOLD;
         if ( Debuglevel > 2 )
             printf("player.%d betsize %.8f < hand.betsize %.8f FOLD\n",player->ind,dstr(bet),dstr(hand->betsize));
@@ -84,20 +102,21 @@ int32_t pangea_bet(struct supernet_info *myinfo,struct table_info *tp,struct pla
     tmp = player->ind;
     pangea_summaryadd(myinfo,tp,action,&tmp,sizeof(tmp),(void *)&bet,sizeof(bet));
     player->balance -= bet, player->bets += bet;
-    if ( Debuglevel > 2 )
+    //if ( Debuglevel > 2 )
         printf("player.%d: player.%d BET %f -> balances %f bets %f\n",tp->priv.myind,player->ind,dstr(bet),dstr(player->balance),dstr(player->bets));
+    *actualbetp = bet;
     return(action);
 }
 
 void pangea_antes(struct supernet_info *myinfo,struct table_info *tp)
 {
-    int32_t i,n,N; struct player_info *p; uint64_t threshold; int32_t handid;
+    int32_t i,n,N; struct player_info *p; uint64_t threshold; int32_t handid; int64_t actualbet;
     N = tp->G.numactive;
     for (i=0; i<tp->G.N; i++)
     {
         tp->G.P[i].ind = i;
         if ( (tp->snapshot[i]= tp->G.P[i].balance) <= 0 )
-            pangea_fold(myinfo,tp,&tp->G.P[i]);
+            pangea_playerfold(myinfo,tp,&tp->G.P[i]);
     }
     handid = tp->numhands - 1;
     pangea_summaryadd(myinfo,tp,CARDS777_SNAPSHOT,(void *)&handid,sizeof(handid),(void *)tp->snapshot,sizeof(uint64_t)*CARDS777_MAXPLAYERS);
@@ -108,8 +127,8 @@ void pangea_antes(struct supernet_info *myinfo,struct table_info *tp)
             if ( (p= tp->active[i]) != 0 )
             {
                 if ( p->balance < tp->G.ante )
-                    pangea_fold(myinfo,tp,p);
-                else pangea_bet(myinfo,tp,p,tp->G.ante,CARDS777_ANTE);
+                    pangea_playerfold(myinfo,tp,p);
+                else pangea_playerbet(myinfo,&actualbet,tp,p,tp->G.ante,CARDS777_ANTE);
             } else printf("unexpected null player ptr\n");
         }
     }
@@ -121,16 +140,15 @@ void pangea_antes(struct supernet_info *myinfo,struct table_info *tp)
             threshold = tp->G.bigblind - 1;
         else threshold = 0;
         if ( (p= tp->active[i]) != 0 &&  p->balance < threshold )
-            pangea_fold(myinfo,tp,p);
+            pangea_playerfold(myinfo,tp,p);
         else n++;
     }
     if ( n < 2 )
         printf("pangea_antes not enough players n.%d\n",n);
     else
     {
-        pangea_bet(myinfo,tp,tp->active[0],(tp->G.bigblind>>1),CARDS777_SMALLBLIND);
-        pangea_bet(myinfo,tp,tp->active[1],tp->G.bigblind,CARDS777_BIGBLIND);
-        
+        pangea_playerbet(myinfo,&actualbet,tp,tp->active[0],(tp->G.bigblind>>1),CARDS777_SMALLBLIND);
+        pangea_playerbet(myinfo,&actualbet,tp,tp->active[1],tp->G.bigblind,CARDS777_BIGBLIND);
     }
 }
 

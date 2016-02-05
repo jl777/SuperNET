@@ -74,10 +74,10 @@ struct player_info
     bits256 playerpub;
     struct iguana_peer *addr;
     uint64_t ipbits,nxt64bits,havemask;
-    int64_t balance,buyinamount,bets,won,snapshot;
+    int64_t balance,buyinamount,bets,won,snapshot,actualbet;
     uint32_t handrank;
     uint8_t hand[7];
-    int8_t ind,action,betstatus,turni;
+    int8_t ind,action,betstatus,turni,actualaction;
     char handle[32];
 };
 
@@ -171,7 +171,7 @@ int32_t pangea_queueprocess(struct supernet_info *myinfo,struct table_info *tp);
 void pangea_update(struct supernet_info *myinfo);
 
 void pangea_checkantes(struct supernet_info *myinfo,struct table_info *tp);
-int32_t pangea_bet(struct supernet_info *myinfo,struct table_info *tp,struct player_info *player,int64_t bet,int32_t action);
+int32_t pangea_playerbet(struct supernet_info *myinfo,int64_t *actualbetp,struct table_info *tp,struct player_info *player,int64_t bet,int32_t action);
 int32_t pangea_sidepots(struct supernet_info *myinfo,struct table_info *tp,int32_t dispflag,int64_t sidepots[CARDS777_MAXPLAYERS][CARDS777_MAXPLAYERS],int64_t *bets);
 int64_t pangea_splitpot(struct supernet_info *myinfo,struct table_info *tp,uint64_t *pangearakep,int64_t sidepot[CARDS777_MAXPLAYERS],int32_t rakemillis);
 
@@ -192,6 +192,7 @@ void pangea_confirm(PANGEA_HANDARGS);
 void pangea_action(PANGEA_HANDARGS);
 void pangea_showdown(PANGEA_HANDARGS);
 void pangea_summary(PANGEA_HANDARGS);
+int64_t pangea_chipsvalue(struct supernet_info *myinfo,struct table_info *tp,int32_t numchips);
 
 extern int32_t Debuglevel,PANGEA_MAXTHREADS,Showmode,Autofold;
 

@@ -16,7 +16,7 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
         $(".debuglog").show();
         debug_on = 1;
 
-        $("html, body").animate({ scrollTop: $(document).height() }, 1000);
+        //$("html, body").animate({ scrollTop: $(document).height() }, 1000);
 
 
     };
@@ -62,7 +62,7 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
             $(this).parent().addClass('active');
 
             var method_obj = SPNAPI.methods[agent].reduce(function (obj, methods) {
-                if (methods.method == method) {
+                if (methods.method === method) {
                     return obj.concat(methods);
                 } else {
                     return obj;

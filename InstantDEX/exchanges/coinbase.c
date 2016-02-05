@@ -93,7 +93,7 @@ cJSON *SIGNPOST(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_i
         sprintf(hdr2,"CB-ACCESS-SIGN:%s",sig64);
         sprintf(hdr3,"CB-ACCESS-TIMESTAMP:%llu",(long long)nonce);
         //sprintf(hdr4,"CB-ACCESS-PASSPHRASE:%s; content-type:application/json; charset=utf-8",exchange->userid);
-        sprintf(hdr4,"CB-ACCESS-PASSPHRASE:%s",exchange->userid);
+        sprintf(hdr4,"CB-ACCESS-PASSPHRASE:%s",exchange->tradepassword);
         sprintf(url,"%s/%s",EXCHANGE_AUTHURL,path);
         if ( dotrade == 0 )
             data = exchange_would_submit(payload,hdr1,hdr2,hdr3,hdr4);

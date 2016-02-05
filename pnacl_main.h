@@ -187,18 +187,22 @@ void PostMessage(const char* format, ...)
  */
 static int ParseMessage(struct PP_Var message,const char **out_function,struct PP_Var *out_params)
 {
+    char *jsonstr;
     if ( message.type != PP_VARTYPE_DICTIONARY )
         return(1);
     struct PP_Var cmd_value = GetDictVar(message, "cmd");
     *out_function = VarToCStr(cmd_value);
     g_ppb_var->Release(cmd_value);
     *out_params = GetDictVar(message, "args");
-    PNACL_message("Parse.(%s) cmd.(%s)\n",*out_function,VarToCStr(*out_params));
-    if ( cmd_value.type != PP_VARTYPE_STRING )
-        return(1);
-    if ( out_params->type != PP_VARTYPE_ARRAY )
-        return(1);
-    return(0);
+    if ( (jsonstr= (char *)VarToCStr(*out_params)) != 0 )
+    {
+        PNACL_message("Parse.(%s) cmd.(%s)\n",*out_function,jsonstr);
+        if ( cmd_value.type != PP_VARTYPE_STRING )
+            return(1);
+        if ( out_params->type != PP_VARTYPE_ARRAY )
+            return(1);
+        return(0);
+    } else return(1);
 }
 
 static HandleFunc GetFunctionByName(const char* function_name)
@@ -620,7 +624,10 @@ int CHROMEAPP_HANDLER(struct PP_Var params,struct PP_Var *output,const char **ou
     PNACL_message("inside Handle_%s\n",CHROMEAPP_STR);
     CHECK_PARAM_COUNT(CHROMEAPP_STR, 1);
     PARAM_STRING(0,jsonstr);
-    retstr = CHROMEAPP_JSON(jsonstr);
+    if ( jsonstr == 0 )
+        retstr = clonestr("{\"error\":\"illegal null jsonstr received\"}");
+    else if ( (retstr= CHROMEAPP_JSON(jsonstr)) == 0 )
+        retstr = clonestr("{\"error\":\"null return\"}");
     CREATE_RESPONSE(CHROMEAPP_STR);
     RESPONSE_STRING(retstr);
     return 0;

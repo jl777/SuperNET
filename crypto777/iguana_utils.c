@@ -15,6 +15,27 @@
 
 #include "../iguana/iguana777.h"
 
+int32_t smallprimes[168] =
+{
+	2,      3,      5,      7,     11,     13,     17,     19,     23,     29,
+	31,     37,     41,     43,     47,     53,     59,     61,     67,     71,
+	73,     79,     83,     89,     97,    101,    103,    107,    109,    113,
+	127,    131,    137,    139,    149,    151,    157,    163,    167,    173,
+	179,    181,    191,    193,    197,    199,    211,    223,    227,    229,
+	233,    239,    241,    251,    257,    263,    269,    271,    277,    281,
+	283,    293,    307,    311,    313,    317,    331,    337,    347,    349,
+	353,    359,    367,    373,    379,    383,    389,    397,    401,    409,
+	419,    421,    431,    433,    439,    443,    449,    457,    461,    463,
+	467,    479,    487,    491,    499,    503,    509,    521,    523,    541,
+	547,    557,    563,    569,    571,    577,    587,    593,    599,    601,
+	607,    613,    617,    619,    631,    641,    643,    647,    653,    659,
+	661,    673,    677,    683,    691,    701,    709,    719,    727,    733,
+	739,    743,    751,    757,    761,    769,    773,    787,    797,    809,
+	811,    821,    823,    827,    829,    839,    853,    857,    859,    863,
+	877,    881,    883,    887,    907,    911,    919,    929,    937,    941,
+	947,    953,    967,    971,    977,    983,    991,    997
+};
+
 bits256 bits256_doublesha256(char *hashstr,uint8_t *data,int32_t datalen)
 {
     bits256 hash,hash2; int32_t i;
@@ -338,15 +359,6 @@ int32_t init_hexbytes_noT(char *hexbytes,unsigned char *message,long len)
     return((int32_t)len*2+1);
 }
 
-void touppercase(char *str)
-{
-    int32_t i;
-    if ( str == 0 || str[0] == 0 )
-        return;
-    for (i=0; str[i]!=0; i++)
-        str[i] = toupper(((int32_t)str[i]));
-}
-
 long _stripwhite(char *buf,int accept)
 {
     int32_t i,j,c;
@@ -463,12 +475,49 @@ static int _increasing_double(const void *a,const void *b)
 #undef double_b
 }
 
+int _increasing_uint64(const void *a,const void *b)
+{
+#define uint64_a (*(uint64_t *)a)
+#define uint64_b (*(uint64_t *)b)
+	if ( uint64_b > uint64_a )
+		return(-1);
+	else if ( uint64_b < uint64_a )
+		return(1);
+	return(0);
+#undef uint64_a
+#undef uint64_b
+}
+
+static int _decreasing_uint64(const void *a,const void *b)
+{
+#define uint64_a (*(uint64_t *)a)
+#define uint64_b (*(uint64_t *)b)
+	if ( uint64_b > uint64_a )
+		return(1);
+	else if ( uint64_b < uint64_a )
+		return(-1);
+	return(0);
+#undef uint64_a
+#undef uint64_b
+}
+
 int32_t sortds(double *buf,uint32_t num,int32_t size)
 {
 	qsort(buf,num,size,_increasing_double);
 	return(0);
 }
 
+int32_t sort64s(uint64_t *buf,uint32_t num,int32_t size)
+{
+	qsort(buf,num,size,_increasing_uint64);
+	return(0);
+}
+
+int32_t revsort64s(uint64_t *buf,uint32_t num,int32_t size)
+{
+	qsort(buf,num,size,_decreasing_uint64);
+	return(0);
+}
 /*int32_t iguana_sortbignum(void *buf,int32_t size,uint32_t num,int32_t structsize,int32_t dir)
 {
     int32_t retval = 0;
@@ -494,6 +543,15 @@ int32_t sortds(double *buf,uint32_t num,int32_t size)
 }
 */
 
+void touppercase(char *str)
+{
+    int32_t i;
+    if ( str == 0 || str[0] == 0 )
+        return;
+    for (i=0; str[i]!=0; i++)
+        str[i] = toupper(((int32_t)str[i]));
+}
+
 void tolowercase(char *str)
 {
     int32_t i;
@@ -501,6 +559,39 @@ void tolowercase(char *str)
         return;
     for (i=0; str[i]!=0; i++)
         str[i] = tolower(((int32_t)str[i]));
+}
+
+char *uppercase_str(char *buf,char *str)
+{
+    if ( str != 0 )
+    {
+        strcpy(buf,str);
+        touppercase(buf);
+    } else buf[0] = 0;
+    return(buf);
+}
+
+char *lowercase_str(char *buf,char *str)
+{
+    if ( str != 0 )
+    {
+        strcpy(buf,str);
+        tolowercase(buf);
+    } else buf[0] = 0;
+    return(buf);
+}
+
+int32_t strsearch(char *strs[],int32_t num,char *name)
+{
+    int32_t i; char strA[32],refstr[32];
+    strcpy(refstr,name), touppercase(refstr);
+    for (i=0; i<num; i++)
+    {
+        strcpy(strA,strs[i]), touppercase(strA);
+        if ( strcmp(strA,refstr) == 0 )
+            return(i);
+    }
+    return(-1);
 }
 
 int32_t is_decimalstr(char *str)
@@ -808,6 +899,78 @@ int32_t RS_encode(char *rsaddr,uint64_t id)
     }
     rsaddr[j] = 0;
     return(0);
+}
+
+uint64_t conv_acctstr(char *acctstr)
+{
+    uint64_t nxt64bits = 0;
+    int32_t len;
+    if ( acctstr != 0 )
+    {
+        if ( (len= is_decimalstr(acctstr)) > 0 && len < 24 )
+            nxt64bits = calc_nxt64bits(acctstr);
+        else if ( strncmp("NXT-",acctstr,4) == 0 )
+        {
+            nxt64bits = RS_decode(acctstr);
+            //nxt64bits = conv_rsacctstr(acctstr,0);
+        }
+    }
+    return(nxt64bits);
+}
+
+int32_t base32byte(int32_t val)
+{
+    if ( val < 26 )
+        return('A' + val);
+    else if ( val < 32 )
+        return('2' + val - 26);
+    else return(-1);
+}
+
+int32_t unbase32(char c)
+{
+    if ( c >= 'A' && c <= 'Z' )
+        return(c - 'A');
+    else if ( c >= '2' && c <= '7' )
+        return(c - '2' + 26);
+    else return(-1);
+}
+
+int init_base32(char *tokenstr,uint8_t *token,int32_t len)
+{
+    int32_t i,j,n,val5,offset = 0;
+    for (i=n=0; i<len; i++)
+    {
+        for (j=val5=0; j<5; j++,offset++)
+            if ( GETBIT(token,offset) != 0 )
+                SETBIT(&val5,offset);
+        tokenstr[n++] = base32byte(val5);
+    }
+    tokenstr[n] = 0;
+    return(n);
+}
+
+int decode_base32(uint8_t *token,uint8_t *tokenstr,int32_t len)
+{
+    int32_t i,j,n,val5,offset = 0;
+    for (i=n=0; i<len; i++)
+    {
+        if ( (val5= unbase32(tokenstr[i])) >= 0 )
+        {
+            for (j=val5=0; j<5; j++,offset++)
+            {
+                if ( GETBIT(&val5,j) != 0 )
+                    SETBIT(token,offset);
+                else CLEARBIT(token,offset);
+            }
+        } else return(-1);
+    }
+    while ( (offset & 7) != 0 )
+    {
+        CLEARBIT(token,offset);
+        offset++;
+    }
+    return(offset);
 }
 
 void calc_hexstr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)

@@ -147,7 +147,6 @@ if ( (sig= hmac_sha1_str(dest,exchange->apisecret,(int32_t)strlen(exchange->apis
 
 char *PARSEBALANCE(struct exchange_info *exchange,double *balancep,char *coinstr)
 {
-    //lakebtc.({"balance":{"BTC":0.1},"locked":{"BTC":0.0},"profile":{"email":"jameslee777@yahoo.com","id":"U137561934","btc_deposit_addres":"1RyKrNJjezeFfvYaicnJEozHfhWfYzbuh"}})
     char field[128],*str,*itemstr = 0; cJSON *obj=0,*item=0,*prof=0; double locked = 0;
     *balancep = 0.;
     strcpy(field,coinstr);

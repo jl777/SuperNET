@@ -1,6 +1,4 @@
 var coinManagement = {};
-
-
 // Classes
 
 coinManagement.Coin = function (_id, _symbol, _description, _statusId) {
@@ -30,13 +28,25 @@ coinManagement.CoinStatuses = [
 
 coinManagement.Initialize = function () {
     coinManagement.Coins = [
-        new coinManagement.Coin(6, 'USD', 'US Dollar', 1),
-        new coinManagement.Coin(2, 'EUR', 'EURO', 2),
-        new coinManagement.Coin(3, 'GBP', 'British Pound', 3),
-        new coinManagement.Coin(4, 'INR', 'Indian Rupee', 4),
-        new coinManagement.Coin(5, 'YEN', 'Japanese Yen', 3)
+        new coinManagement.Coin(1, 'BTC', 'Bitcoin', 1),
+        new coinManagement.Coin(2, 'BTCD', 'Bitcoin Dark', 1),
+        //new coinManagement.Coin(3, 'GBP', 'British Pound', 3),
+        //new coinManagement.Coin(4, 'INR', 'Indian Rupee', 4),
+        //new coinManagement.Coin(5, 'YEN', 'Japanese Yen', 3)
     ];
-}
+};
+
+coinManagement.getCoinSymbols=function(){
+    var coins=[];
+   
+    if (coinManagement.Coins === null || coinManagement.Coins === undefined) {
+        return [];
+    }
+    for (var index = 0; index < coinManagement.Coins.length; index++) {
+         coins.push(coinManagement.Coins[index].Symbol);
+    }
+    return coins;
+};
 
 coinManagement.GetCoinIndex = function (id) {
 
@@ -47,6 +57,20 @@ coinManagement.GetCoinIndex = function (id) {
     for (var index = 0; index < coinManagement.Coins.length; index++) {
         if (coinManagement.Coins[index].Id == id) {
             console.log('# coin ID:' + id.toString() + 'is @' + index);
+            return index;
+        }
+    }
+};
+
+coinManagement.GetCoinIndexBySymbol = function (id) {
+
+    if (coinManagement.Coins == null || coinManagement.Coins == undefined) {
+        return -1;
+    }
+
+    for (var index = 0; index < coinManagement.Coins.length; index++) {
+        if (coinManagement.Coins[index].Symbol == id) {
+            console.log('# coin symbol:' + id.toString() + 'is @' + index);
             return index;
         }
     }
@@ -228,15 +252,35 @@ var GetStatusNameHtml = function (id) {
 
 };
 
-var getActionButton = function (id) {
-    return '<button class="btn btn-raised btn-danger btn-xs coinMgmtActionButton" data-id=' + id + '>Delete</button>';
+var getActionButton = function (objCoin) {
+    if(objCoin.StatusId===3){
+        return getStopActionButton(objCoin.Id);
+    }else if(objCoin.StatusId===2 || objCoin.StatusId===4){
+        return getStartActionButton(objCoin.Id);
+    }else if(objCoin.StatusId===1){
+       return  getAddActionButton(objCoin.Id);
+    }
+};
+
+var getAddActionButton = function (id) {
+    return '<button class="btn btn-raised btn-success btn-xs coinMgmtAddActionButton" data-id=' + id + '>Add Coin</button>';
+};
+
+var getStopActionButton = function (id) {
+//    return '<button class="btn btn-raised btn-success btn-xs coinMgmtStartActionButton" data-id=' + id + '>Start Coin</button>';
+     return '<button class="btn btn-raised btn-danger btn-xs coinMgmtStopActionButton" data-id=' + id + '>Pause Coin</button>';
+};
+
+var getStartActionButton = function (id) {
+//    return '<button class="btn btn-raised btn-success btn-xs coinMgmtStartActionButton" data-id=' + id + '>Start Coin</button>';
+     return '<button class="btn btn-raised btn-success btn-xs coinMgmtStartActionButton" data-id=' + id + '>Start Coin</button>';
 };
 
 var objToHtml = function (objCoin) {
     if (objCoin == null || objCoin == undefined) {
         return '';
     }
-    return '<tr><td>' + objCoin.Symbol + '</td><td>' + objCoin.Description + '</td><td>' + GetStatusNameHtml(objCoin.StatusId) + '</td><td>' + getActionButton(objCoin.Id) + '</td></tr>';
+    return '<tr><td>' + objCoin.Symbol + '</td><td>' + objCoin.Description + '</td><td>' + GetStatusNameHtml(objCoin.StatusId) + '</td><td>' + getActionButton(objCoin) + '</td></tr>';
 };
 
 var addCoin = function (e) {
@@ -244,7 +288,7 @@ var addCoin = function (e) {
     console.log('# add coin called');
     e.target.removeAttribute('data-dismiss');
 
-    if (coinEditFormIsValid() == false) {
+    if (coinEditFormIsValid() === false) {
         console.log('# add coin form is invalid');
         return;
     }
@@ -283,11 +327,85 @@ var deleteCoin = function (id) {
     renderGrid();
 };
 
+var pauseCoin = function (id) {
+    console.log('# coin pause called');
+    var index = coinManagement.GetCoinIndex(id);
+     var coin=coinManagement.Coins[index].Symbol;
+     console.log("clicked on coin "+coin); 
+     var request="{\"agent\":\"iguana\",\"method\":\"pausecoin\",\"coin\":\""+coin+"\"}";
+     
+     SPNAPI.makeRequest(request, function(request,response){
+            response=JSON.parse(response);
+            if(response.result && response.result ==="coin paused"){
+                var indx=coinManagement.GetCoinIndexBySymbol(request.coin);
+                coinManagement.Coins[indx].StatusId=4;
+                console.log("coins status changed "+coinManagement.Coins[indx].StatusId);
+                renderGrid();
+            }
+        });
+    
+};
+
+var startCoin = function (id) {
+    console.log('# coin start called');
+    //coinManagement.Delete(id);
+     var index = coinManagement.GetCoinIndex(id);
+     var coin=coinManagement.Coins[index].Symbol;
+     console.log("clicked on coin "+coin); 
+     var request="{\"agent\":\"iguana\",\"method\":\"startcoin\",\"coin\":\""+coin+"\"}";
+     
+     SPNAPI.makeRequest(request, function(request,response){
+            response=JSON.parse(response);
+            if(response.result && response.result ==="coin started"){
+                var indx=coinManagement.GetCoinIndexBySymbol(request.coin);
+                coinManagement.Coins[indx].StatusId=3;
+                console.log("coins status changed "+coinManagement.Coins[indx].StatusId);
+                renderGrid();
+            }
+        });
+    
+};
+
+var addExistingCoin = function (id) {
+    
+    var isactive=0;
+    var maxpeers=16;
+    var services=128;
+     var index = coinManagement.GetCoinIndex(id);
+     console.log('# coin add called '+index);
+     var coin=coinManagement.Coins[index].Symbol;
+     console.log("clicked on coin "+coin); 
+     var request="{\"agent\":\"iguana\",\"method\":\"addcoin\",\"newcoin\":\""+coin+"\",\"active\":"+isactive+",\"maxpeers\":"+maxpeers+",\"services\":"+services+"}";
+     
+     SPNAPI.makeRequest(request, function(request,response){
+            response=JSON.parse(response);
+            if(response.result && (response.result ==="coin added" || response.result ==="coin already there")){
+                var indx=coinManagement.GetCoinIndexBySymbol(request.newcoin);
+                coinManagement.Coins[indx].StatusId=2;
+                console.log("coins status changed "+coinManagement.Coins[indx].StatusId);
+                renderGrid();
+            }
+        });
+    
+};
+
+var initCoinsAdded=false;
+
+var addInitCoins= function(){
+    
+    if(!initCoinsAdded){
+        for (var index = 0; index < coinManagement.Coins.length; index++) {
+        addExistingCoin(coinManagement.Coins[index].Id);
+        }
+        initCoinsAdded=true;
+    }
+};
+
 var coinEditFormReset = function () {
     document.getElementById('txtSymbol').value = '';
     document.getElementById('txtDescription').value = '';
     document.getElementById('ddStatus').value = 1;
-}
+};
 // Event Handlers
 
 var startCoinManagement = function () {
@@ -302,4 +420,19 @@ var startCoinManagement = function () {
 
     renderGrid();
     populateCoinStatusDropDown();
-}
+};
+
+var add_new_coin_test=function(){
+    var request =  IsJsonString($('textarea#json_src_coin').val());
+    
+    if(request!==false){
+        SPNAPI.makeRequest(JSON.stringify(request), function(request,response){
+            //response=JSON.parse(response);
+             $(".coin_result").text(response);
+        });
+        
+    }else{
+        console.log("Invalid JSON");
+    }
+    
+};

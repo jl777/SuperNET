@@ -19,9 +19,19 @@
 
 #include "OS_portable.h"
 #include <sys/stat.h>
+#include <sys/select.h>
 #ifndef MAP_FILE
 #define MAP_FILE        0
 #endif
+
+char *OS_mvstr()
+{
+#ifdef __WIN32
+    return("rename");
+#else
+    return("mv");
+#endif
+}
 
 void OS_randombytes(unsigned char *x,long xlen)
 {
@@ -783,6 +793,7 @@ void *OS_loadfile(char *fname,char **bufp,long *lenp,long *allocsizep)
         {
             fclose(fp);
             *lenp = 0;
+            printf("OS_loadfile null size.(%s)\n",fname);
             return(0);
         }
         if ( filesize > buflen-1 )
@@ -801,7 +812,8 @@ void *OS_loadfile(char *fname,char **bufp,long *lenp,long *allocsizep)
         }
         fclose(fp);
         *lenp = filesize;
-    }
+        //printf("loaded.(%s)\n",buf);
+    } //else printf("OS_loadfile couldnt load.(%s)\n",fname);
     return(buf);
 }
 
@@ -836,4 +848,40 @@ void OS_init()
     decode_hex(GENESIS_PRIVKEY.bytes,sizeof(GENESIS_PRIVKEY),GENESIS_PRIVKEYSTR);
     SaM_PrepareIndices();
     return(OS_portable_init());
+}
+
+int32_t OS_getline(int32_t waitflag,char *line,int32_t max,char *dispstr)
+{
+    if ( dispstr != 0 && dispstr[0] != 0 )
+        fprintf(stderr,"%s",dispstr);
+    line[0] = 0;
+#ifndef _WIN32
+    if ( waitflag == 0 )
+    {
+        static char prevline[1024];
+        struct timeval timeout;
+        fd_set fdset;
+        int32_t s;
+        line[0] = 0;
+        FD_ZERO(&fdset);
+        FD_SET(STDIN_FILENO,&fdset);
+        timeout.tv_sec = 0, timeout.tv_usec = 10000;
+        if ( (s= select(1,&fdset,NULL,NULL,&timeout)) < 0 )
+            fprintf(stderr,"wait_for_input: error select s.%d\n",s);
+        else
+        {
+            if ( FD_ISSET(STDIN_FILENO,&fdset) > 0 && fgets(line,max,stdin) == line )
+            {
+                line[strlen(line)-1] = 0;
+                if ( line[0] == 0 || (line[0] == '.' && line[1] == 0) )
+                    strcpy(line,prevline);
+                else strcpy(prevline,line);
+            }
+        }
+        return((int32_t)strlen(line));
+    }
+#endif
+    if ( fgets(line,max,stdin) != 0 )
+        line[strlen(line)-1] = 0;
+    return((int32_t)strlen(line));
 }

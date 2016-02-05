@@ -1068,7 +1068,7 @@ cJSON *url_json2(char *url)
     return(json);
 }
 
-void prices777_btcprices(int32_t enddatenum,int32_t numdates)
+void PAX_btcprices(int32_t enddatenum,int32_t numdates)
 {
     int32_t i,n,year,month,day,seconds,datenum; char url[1024],date[64],*dstr,*str; uint32_t timestamp,utc32[MAX_SPLINES];
     cJSON *coindesk,*quandl,*btcdhist,*bpi,*array,*item;
@@ -1145,7 +1145,7 @@ void prices777_btcprices(int32_t enddatenum,int32_t numdates)
     // https://poloniex.com/public?command=returnChartData&currencyPair=BTC_BTCD&start=1405699200&end=9999999999&period=86400
 }
 
-int32_t prices777_calcmatrix(double matrix[32][32])
+int32_t PAX_calcmatrix(double matrix[32][32])
 {
     int32_t basenum,relnum,nonz,vnum,iter,numbase,numerrs = 0; double sum,vsum,price,price2,basevals[32],errsum=0;
     memset(basevals,0,sizeof(basevals));
@@ -1208,6 +1208,92 @@ int32_t prices777_calcmatrix(double matrix[32][32])
     if ( numerrs != 0 )
         errsum /= numerrs;
     return(errsum);
+}
+
+int32_t prices777_ecbparse(char *date,double *prices,char *url,int32_t basenum)
+{
+    char *jsonstr,*relstr,*basestr; int32_t count=0,i,relnum; cJSON *json,*ratesobj,*item; struct destbuf tmp;
+    if ( (jsonstr= issue_curl(url)) != 0 )
+    {
+        //if ( Debuglevel > 2 )
+            printf("(%s)\n",jsonstr);
+        if ( (json= cJSON_Parse(jsonstr)) != 0 )
+        {
+            copy_cJSON(&tmp,jobj(json,"date")), safecopy(date,tmp.buf,64);
+            if ( (basestr= jstr(json,"base")) != 0 && strcmp(basestr,CURRENCIES[basenum]) == 0 && (ratesobj= jobj(json,"rates")) != 0 && (item= ratesobj->child) != 0 )
+            {
+                while ( item != 0 )
+                {
+                    if ( (relstr= get_cJSON_fieldname(item)) != 0 && (relnum= prices777_basenum(relstr)) >= 0 )
+                    {
+                        i = basenum*MAX_CURRENCIES + relnum;
+                        prices[i] = item->valuedouble;
+                        //if ( basenum == JPYNUM )
+                        //    prices[i] *= 100.;
+                        // else if ( relnum == JPYNUM )
+                        //     prices[i] /= 100.;
+                        count++;
+                        //if ( Debuglevel > 2 )
+                            printf("(%02d:%02d %f) ",basenum,relnum,prices[i]);
+                    } else printf("cant find.(%s)\n",relstr);//, getchar();
+                    item = item->next;
+                }
+            }
+            free_json(json);
+        }
+        free(jsonstr);
+    }
+    return(count);
+}
+
+int32_t prices777_ecb(char *date,double *prices,int32_t year,int32_t month,int32_t day)
+{
+    // http://api.fixer.io/latest?base=CNH
+    // http://api.fixer.io/2000-01-03?base=USD
+    // "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD"
+    char baseurl[512],tmpdate[64],url[512],checkdate[16]; int32_t basenum,count,i,iter,nonz;
+    checkdate[0] = 0;
+    if ( year == 0 )
+        strcpy(baseurl,"http://api.fixer.io/latest?base=");
+    else
+    {
+        sprintf(checkdate,"%d-%02d-%02d",year,month,day);
+        sprintf(baseurl,"http://api.fixer.io/%s?base=",checkdate);
+    }
+    count = 0;
+    for (iter=0; iter<2; iter++)
+    {
+        for (basenum=0; basenum<sizeof(CURRENCIES)/sizeof(*CURRENCIES); basenum++)
+        {
+            if ( strcmp(CURRENCIES[basenum],"XAU") == 0 )
+                break;
+            if ( iter == 0 )
+            {
+                sprintf(url,"%s%s",baseurl,CURRENCIES[basenum]);
+                count += prices777_ecbparse(basenum == 0 ? date : tmpdate,prices,url,basenum);
+                if ( (basenum != 0 && strcmp(tmpdate,date) != 0) || (checkdate[0] != 0 && strcmp(checkdate,date) != 0) )
+                {
+                    printf("date mismatch (%s) != (%s) or checkdate.(%s)\n",tmpdate,date,checkdate);
+                    return(-1);
+                }
+            }
+            else
+            {
+                for (nonz=i=0; i<sizeof(CURRENCIES)/sizeof(*CURRENCIES); i++)
+                {
+                    if ( strcmp(CURRENCIES[i],"XAU") == 0 )
+                        break;
+                    if ( prices[MAX_CURRENCIES*basenum + i] != 0. )
+                        nonz++;
+                    //if ( Debuglevel > 2 )
+                        printf("%8.5f ",prices[MAX_CURRENCIES*basenum + i]);
+                }
+                //if ( Debuglevel > 2 )
+                    printf("%s.%d %d\n",CURRENCIES[basenum],basenum,nonz);
+            }
+        }
+    }
+    return(count);
 }
 
 int32_t ecb_matrix(double matrix[32][32],char *date)

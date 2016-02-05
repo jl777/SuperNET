@@ -18,7 +18,6 @@
 
 #include <curl/curl.h>
 #include <curl/easy.h>
-#define issue_curl(cmdstr) bitcoind_RPC(0,"curl",cmdstr,0,0,0)
 
 // return data from the server
 struct return_string {
@@ -190,7 +189,7 @@ try_again:
             free(s.ptr);
             return(0);
         }
-        else if ( numretries >= 2 )
+        else if ( numretries >= 1 )
         {
             printf("Maximum number of retries exceeded!\n");
             free(s.ptr);
@@ -286,6 +285,7 @@ static size_t WriteMemoryCallback(void *ptr,size_t size,size_t nmemb,void *data)
         mem->size += realsize;
         mem->memory[mem->size] = 0;
     }
+    //printf("got %d bytes\n",(int32_t)(size*nmemb));
     return(realsize);
 }
 
@@ -296,7 +296,7 @@ void *curl_post(CURL **cHandlep,char *url,char *userpass,char *postfields,char *
 		*cHandlep = cHandle = curl_easy_init();
     else curl_easy_reset(cHandle);
     //#ifdef DEBUG
-	//curl_easy_setopt(cHandle,CURLOPT_VERBOSE, 1);
+	curl_easy_setopt(cHandle,CURLOPT_VERBOSE, 1);
     //#endif
 	curl_easy_setopt(cHandle,CURLOPT_USERAGENT,"mozilla/4.0");//"Mozilla/4.0 (compatible; )");
 	curl_easy_setopt(cHandle,CURLOPT_SSL_VERIFYPEER,0);
@@ -329,42 +329,14 @@ void *curl_post(CURL **cHandlep,char *url,char *userpass,char *postfields,char *
     curl_easy_setopt(cHandle,CURLOPT_WRITEDATA,(void *)&chunk);
     curl_easy_perform(cHandle);
     curl_easy_getinfo(cHandle,CURLINFO_RESPONSE_CODE,&code);
-    if ( code != 200 )
-        printf("error: (%s) server responded with code %ld\n",url,code);
     if ( headers != 0 )
         curl_slist_free_all(headers);
+    if ( code != 200 )
+        printf("(%s) server responded with code %ld (%s)\n",url,code,chunk.memory);
     return(chunk.memory);
 }
 
 void curlhandle_free(void *curlhandle)
 {
     curl_easy_cleanup(curlhandle);
-}
-
-bits256 issue_getpubkey(int32_t *haspubkeyp,char *acct)
-{
-    cJSON *json; bits256 pubkey; char cmd[4096],*jsonstr; struct destbuf pubkeystr;
-    sprintf(cmd,"%s?requestType=getAccountPublicKey&account=%s",NXTAPIURL,acct);
-    jsonstr = issue_curl(cmd);
-    pubkeystr.buf[0] = 0;
-    if ( haspubkeyp != 0 )
-        *haspubkeyp = 0;
-    memset(&pubkey,0,sizeof(pubkey));
-    if ( jsonstr != 0 )
-    {
-        printf("PUBKEYRPC.(%s)\n",jsonstr);
-        if ( (json = cJSON_Parse(jsonstr)) != 0 )
-        {
-            copy_cJSON(&pubkeystr,cJSON_GetObjectItem(json,"publicKey"));
-            free_json(json);
-            if ( strlen(pubkeystr.buf) == sizeof(pubkey)*2 )
-            {
-                if ( haspubkeyp != 0 )
-                    *haspubkeyp = 1;
-                decode_hex(pubkey.bytes,sizeof(pubkey),pubkeystr.buf);
-            }
-        }
-        free(jsonstr);
-    }
-    return(pubkey);
 }

@@ -75,7 +75,7 @@ void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 categoryhash,bits25
 
 void SuperNET_hexmsgprocess(struct supernet_info *myinfo,cJSON *json,char *hexmsg,char *remoteaddr)
 {
-    int32_t len,flag=0; uint8_t _buf[8192],*buf = _buf; bits256 categoryhash; struct category_info *cat;
+    int32_t len,flag=0; char *str; uint8_t _buf[8192],*buf = _buf; bits256 categoryhash; struct category_info *cat;
     if ( hexmsg != 0 )
     {
         len = (int32_t)strlen(hexmsg);
@@ -88,9 +88,10 @@ void SuperNET_hexmsgprocess(struct supernet_info *myinfo,cJSON *json,char *hexms
             categoryhash = jbits256(json,"categoryhash");
             if ( (cat= category_find(categoryhash,GENESIS_PUBKEY)) != 0 )
             {
-                if ( cat->process_func != 0 )
+                if ( cat->processfunc != 0 )
                 {
-                    (*cat->process_func)(myinfo,buf,len,remoteaddr);
+                    if ( (str= (*cat->processfunc)(myinfo,buf,len,remoteaddr)) != 0 )
+                        free(str);
                     flag = 1;
                     //printf("PROCESSFUNC\n");
                 }
