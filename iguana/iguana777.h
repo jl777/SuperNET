@@ -18,6 +18,8 @@
 #include "../crypto777/OS_portable.h"
 #include "SuperNET.h"
 
+#define IGUANA_MAXSCRIPTSIZE 8192
+
 //#define IGUANA_DISABLEPEERS
 #define IGUANA_MAXCOINS 64
 #define IGUANA_MAXDELAY_MILLIS (3600 * 1000) 
@@ -463,6 +465,16 @@ struct iguana_info
     struct iguana_waccount *wallet;
 };
 
+struct vin_signer { bits256 privkey; uint8_t siglen,sig[80],rmd160[20],pubkey[65]; };
+
+struct vin_info
+{
+    struct iguana_msgvin vin;
+    int32_t M,N,validmask,spendlen,p2shflag;
+    struct vin_signer signers[16];
+    uint8_t rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE];
+};
+
 // peers
 int32_t iguana_verifypeer(struct iguana_info *coin,void *key,void *value,int32_t itemind,int32_t itemsize);
 int32_t iguana_peermetrics(struct iguana_info *coin);
@@ -508,7 +520,7 @@ int64_t iguana_verifyaccount(struct iguana_info *coin,struct iguana_account *acc
 int32_t iguana_initramchain(struct iguana_info *coin,int32_t initialheight,int32_t mapflags,int32_t fullverify);
 void iguana_syncramchain(struct iguana_info *coin);
 //int32_t iguana_validateramchain(struct iguana_info *coin,int64_t *netp,uint64_t *creditsp,uint64_t *debitsp,int32_t height,struct iguana_block *block,int32_t hwmheight,struct iguana_prevdep *lp);
-int32_t iguana_calcrmd160(struct iguana_info *coin,uint8_t rmd160[20],uint8_t msigs160[16][20],int32_t *Mp,int32_t *nump,uint8_t *pk_script,int32_t pk_scriptlen,bits256 debugtxid);
+int32_t iguana_calcrmd160(struct iguana_info *coin,uint8_t rmd160[20],uint8_t msigs160[16][20],int32_t *Mp,int32_t *nump,uint8_t *pk_script,int32_t pk_scriptlen,bits256 debugtxid,int32_t vout);
 uint32_t iguana_updatescript(struct iguana_info *coin,uint32_t blocknum,uint32_t txidind,uint32_t spendind,uint32_t unspentind,uint64_t value,uint8_t *script,int32_t scriptlen,uint32_t sequence);
 void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *txdata,struct iguana_msgtx *txarray,struct iguana_msghdr *H,uint8_t *data,int32_t datalen);
 int32_t iguana_parseblock(struct iguana_info *coin,struct iguana_block *block,struct iguana_msgtx *tx,int32_t numtx);

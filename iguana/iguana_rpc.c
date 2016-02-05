@@ -724,9 +724,8 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
         *jsonflagp = 1;
         if ( (filestr= OS_filestr(&filesize,"index7778.html")) == 0 )
         {
-            SuperNET_htmlstr("index7778.html",retbuf,bufsize,0);
-            filestr = OS_filestr(&filesize,"index7778.html");
-            printf("created index7778.html size %ld\n",filesize);
+            if ( (filestr= SuperNET_htmlstr("index7778.html",retbuf,bufsize,0)) != 0 )
+                printf("created index7778.html size %ld\n",strlen(filestr));
         }
         return(filestr);
     }
@@ -911,11 +910,14 @@ int32_t iguana_getheadersize(char *buf,int32_t recvlen)
 
 void iguana_rpcloop(void *args)
 {
+    static char *jsonbuf;
     uint16_t port; struct supernet_info *myinfo = args;
     int32_t recvlen,flag,bindsock,postflag,contentlen,sock,remains,numsent,jsonflag,hdrsize,len;
-    socklen_t clilen; char remoteaddr[64],jsonbuf[8192],*buf,*retstr,*space;//,*retbuf; ,n,i,m
+    socklen_t clilen; char remoteaddr[64],*buf,*retstr,*space;//,*retbuf; ,n,i,m
     struct sockaddr_in cli_addr; uint32_t ipbits,i,size = IGUANA_WIDTH*IGUANA_HEIGHT*16 + 512;
     port = IGUANA_RPCPORT;
+    if ( jsonbuf == 0 )
+        jsonbuf = calloc(1,IGUANA_MAXPACKETSIZE);
     while ( (bindsock= iguana_socket(1,"127.0.0.1",port)) < 0 )
         exit(-1);
     printf("iguana_rpcloop 127.0.0.1:%d bind sock.%d\n",port,bindsock);
@@ -934,8 +936,8 @@ void iguana_rpcloop(void *args)
         expand_ipbits(remoteaddr,ipbits);
         //printf("RPC.%d for %x (%s)\n",sock,ipbits,ipaddr);
         //printf("%p got.(%s) from %s | usock.%d ready.%u dead.%u\n",addr,H.command,addr->ipaddr,addr->usock,addr->ready,addr->dead);
-        memset(jsonbuf,0,sizeof(jsonbuf));
-        remains = (int32_t)(sizeof(jsonbuf) - 1);
+        memset(jsonbuf,0,IGUANA_MAXPACKETSIZE);
+        remains = (int32_t)(IGUANA_MAXPACKETSIZE - 1);
         buf = jsonbuf;
         recvlen = flag = 0;
         retstr = 0;

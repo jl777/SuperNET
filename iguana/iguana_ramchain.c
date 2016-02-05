@@ -375,7 +375,7 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,RAMCHAIN_FUNC,uin
     u = &U[unspentind];
     if ( scriptlen == -20 )
         memcpy(rmd160,script,20);
-    else type = iguana_calcrmd160(coin,rmd160,msigs160,&M,&N,script,scriptlen,txid);
+    else type = iguana_calcrmd160(coin,rmd160,msigs160,&M,&N,script,scriptlen,txid,vout);
     if ( ramchain->H.ROflag != 0 )
     {
         //printf("%p U[%d] txidind.%d pkind.%d\n",u,unspentind,ramchain->txidind,pkind);
