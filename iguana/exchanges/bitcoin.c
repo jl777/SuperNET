@@ -111,7 +111,7 @@ int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
 	ctx = BN_CTX_new();
 	BN_init(&bn58), BN_init(&bn), BN_init(&bnChar);
     BN_set_word(&bn58,58), BN_set_word(&bn,0);
-	while ( isspace(*coinaddr) )
+	while ( isspace((uint32_t)(*coinaddr & 0xff)) )
 		coinaddr++;
 	for (p=coinaddr; *p; p++)
     {
