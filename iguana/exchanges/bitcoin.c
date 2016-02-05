@@ -364,18 +364,6 @@ char *create_atomictx_cltvspend(char *scriptstr,uint8_t *rmd160A,uint8_t *rmd160
     return(scriptstr);
 }
 
-/*
- struct vin_signer { bits256 privkey; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };
- 
- struct vin_info
- {
- struct iguana_msgvin vin;
- int32_t M,N,validmask,spendlen,p2shflag;
- struct vin_signer signers[16];
- uint8_t rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE];
- };
-*/
-
 int32_t iguana_scriptgen(struct iguana_info *coin,char *coinaddr,uint8_t *script,char *asmstr,uint8_t rmd160[20],uint8_t type,int32_t txi,struct vin_info *vp)
 {
     uint8_t addrtype; char rmd160str[41]; int32_t i,m,n,flag = 0,scriptlen = 0;

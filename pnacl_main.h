@@ -189,11 +189,15 @@ static int ParseMessage(struct PP_Var message,const char **out_function,struct P
 {
     char *jsonstr;
     if ( message.type != PP_VARTYPE_DICTIONARY )
+    {
+        PNACL_message("illegal message.%d != %d\n",message.type,PP_VARTYPE_DICTIONARY);
         return(1);
+    }
     struct PP_Var cmd_value = GetDictVar(message, "cmd");
     *out_function = VarToCStr(cmd_value);
     g_ppb_var->Release(cmd_value);
     *out_params = GetDictVar(message, "args");
+    PNACL_message("Parse.(%s) cmd.(%s) cmdtype.%d out.%d\n",*out_function,jsonstr,cmd_value.type,out_params->type);
     if ( (jsonstr= (char *)VarToCStr(*out_params)) != 0 )
     {
         PNACL_message("Parse.(%s) cmd.(%s)\n",*out_function,jsonstr);
