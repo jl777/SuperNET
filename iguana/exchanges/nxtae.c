@@ -13,12 +13,12 @@
  *                                                                            *
  ******************************************************************************/
 
-#define NXT_ASSETID ('N' + ((uint64_t)'X'<<8) + ((uint64_t)'T'<<16))    // 5527630
 #define DEFAULT_NXT_DEADLINE 720
 #define issue_NXTPOST(cmdstr) bitcoind_RPC(0,"curl",myinfo->NXTAPIURL,0,0,cmdstr)
 #define NXT_MSTYPE 5
 #define NXT_ASSETTYPE 2
 #define NXT_GENESISTIME 1385294400
+
 
 cJSON *_issue_NXTjson(struct supernet_info *myinfo,char *extra)
 {
@@ -99,6 +99,48 @@ uint32_t get_blockutime(struct supernet_info *myinfo,uint32_t blocknum)
         free(jsonstr);
     }
     return(timestamp);
+}
+
+uint32_t get_NXTheight(struct supernet_info *myinfo,uint32_t *firsttimep)
+{
+    static uint32_t last,lastheight,lastNXTtime;
+    cJSON *json; uint32_t height = 0; char cmd[256],*jsonstr;
+    if ( time(NULL) > last+10 )
+    {
+        sprintf(cmd,"requestType=getState");
+        if ( (jsonstr= issue_NXTPOST(cmd)) != 0 )
+        {
+            //printf("(%s) -> (%s)\n",cmd,jsonstr);
+            if ( (json= cJSON_Parse(jsonstr)) != 0 )
+            {
+                if ( firsttimep != 0 )
+                    lastNXTtime = *firsttimep = (uint32_t)get_cJSON_int(json,"time");
+                height = (int32_t)get_cJSON_int(json,"numberOfBlocks");
+                if ( height > 0 )
+                    height--;
+                lastheight = height;
+                free_json(json);
+            }
+            free(jsonstr);
+        }
+        last = (uint32_t)time(NULL);
+    }
+    else
+    {
+        height = lastheight;
+        if ( firsttimep != 0 )
+            *firsttimep = lastNXTtime;
+    }
+    return(height);
+}
+
+char *issue_approveTransaction(struct supernet_info *myinfo,char *fullhash,char *revealed,bits256 msghash,char *NXTACCTSECRET)
+{
+    char cmd[4096],secret[8192],str[65];
+    escape_code(secret,NXTACCTSECRET);
+    sprintf(cmd,"requestType=approveTransaction&secretPhrase=%s&transactionFullHash=%s&revealedSecret=%s&revealedSecretIsText=false&messageIsText=false&feeNQT=%d&deadline=%d&message=%s",secret,fullhash,revealed,0,DEFAULT_NXT_DEADLINE,bits256_str(str,msghash));
+    printf("submit approve.(%s)\n",cmd);
+    return(issue_NXTPOST(cmd));
 }
 
 char *MGWassets[][3] =
@@ -404,6 +446,101 @@ int32_t NXT_assetpolarity(struct supernet_info *myinfo,char *name)
     else return(0);
 }
 
+uint64_t set_NXTtx(struct supernet_info *myinfo,struct NXT_tx *tx,uint64_t assetidbits,int64_t amount,uint64_t other64bits,int32_t feebits)
+{
+    char assetidstr[64]; int32_t decimals; uint64_t fee = 0; struct NXT_tx U;
+    memset(&U,0,sizeof(U));
+    U.senderbits = myinfo->myaddr.nxt64bits;
+    U.recipientbits = other64bits;
+    U.assetidbits = assetidbits;
+    if ( feebits >= 0 )
+    {
+        fee = (amount >> feebits);
+        if ( fee == 0 )
+            fee = 1;
+    }
+    if ( assetidbits != NXT_ASSETID )
+    {
+        expand_nxt64bits(assetidstr,assetidbits);
+        U.type = get_assettype(myinfo,&decimals,assetidstr);
+        //U.subtype = ap->subtype;
+        U.U.quantityQNT = amount - fee;
+    } else U.U.amountNQT = amount - fee;
+    U.feeNQT = 0;
+    U.deadline = DEFAULT_NXT_DEADLINE;
+    printf("set_NXTtx(%llu -> %llu) %.8f of %llu\n",(long long)U.senderbits,(long long)U.recipientbits,dstr(amount),(long long)assetidbits);
+    *tx = U;
+    return(fee);
+}
+
+cJSON *gen_NXT_tx_json(struct supernet_info *myinfo,char *fullhash,struct NXT_tx *utx,char *reftxid,double myshare)
+{
+    cJSON *json = 0; char secret[8192],cmd[MAX_JSON_FIELD],destNXTaddr[64],assetidstr[64],*retstr;
+    if ( utx->senderbits == myinfo->myaddr.nxt64bits )
+    {
+        expand_nxt64bits(destNXTaddr,utx->recipientbits);
+        cmd[0] = 0;
+        if ( utx->type == 0 && utx->subtype == 0 )
+            sprintf(cmd,"requestType=sendMoney&amountNQT=%lld",(long long)(utx->U.amountNQT*myshare));
+        else
+        {
+            expand_nxt64bits(assetidstr,utx->assetidbits);
+            if ( utx->type == 2 && utx->subtype == 1 )
+                sprintf(cmd,"requestType=transferAsset&asset=%s&quantityQNT=%lld",assetidstr,(long long)(utx->U.quantityQNT*myshare));
+            else if ( utx->type == 5 && utx->subtype == 3 )
+                sprintf(cmd,"requestType=transferCurrency&currency=%s&units=%lld",assetidstr,(long long)(utx->U.quantityQNT*myshare));
+            else
+            {
+                printf("unsupported type.%d subtype.%d\n",utx->type,utx->subtype);
+                return(0);
+            }
+        }
+        if ( utx->comment[0] != 0 )
+            strcat(cmd,"&messageIsText=true&message="),strcat(cmd,utx->comment);
+        if ( reftxid != 0 && reftxid[0] != 0 && cmd[0] != 0 )
+            strcat(cmd,"&referencedTransactionFullHash="),strcat(cmd,reftxid);
+        if ( cmd[0] != 0 )
+        {
+            escape_code(secret,myinfo->secret);
+            sprintf(cmd+strlen(cmd),"&deadline=%u&feeNQT=%lld&secretPhrase=%s&recipient=%s&broadcast=false",utx->deadline,(long long)utx->feeNQT,secret,destNXTaddr);
+            if ( reftxid != 0 && reftxid[0] != 0 )
+                sprintf(cmd+strlen(cmd),"&referencedTransactionFullHash=%s",reftxid);
+            //printf("generated cmd.(%s) reftxid.(%s)\n",cmd,reftxid);
+            retstr = issue_NXTPOST(cmd);
+            if ( retstr != 0 )
+            {
+                json = cJSON_Parse(retstr);
+                if ( (json= cJSON_Parse(retstr)) != 0 )
+                {
+                    if ( jstr(json,"fullHash") != 0 )
+                        strcpy(fullhash,jstr(json,"fullHash"));
+                    //   printf("Parsed.(%s)\n",cJSON_Print(json));
+                }
+                free(retstr);
+            }
+        }
+    } else printf("cant gen_NXT_txjson when sender.%llu is not me.%llu\n",(long long)utx->senderbits,(long long)myinfo->myaddr.nxt64bits);
+    return(json);
+}
+
+int32_t calc_raw_NXTtx(struct supernet_info *myinfo,char *fullhash,char *utxbytes,char *sighash,uint64_t assetidbits,int64_t amount,uint64_t other64bits)
+{
+    int32_t retval = -1; struct NXT_tx U; cJSON *json;
+    utxbytes[0] = sighash[0] = 0;
+    set_NXTtx(myinfo,&U,assetidbits,amount,other64bits,0);
+    json = gen_NXT_tx_json(myinfo,fullhash,&U,0,1.);
+    if ( json != 0 )
+    {
+        if ( extract_cJSON_str(utxbytes,1024,json,"transactionBytes") > 0 && extract_cJSON_str(sighash,1024,json,"signatureHash") > 0 )
+        {
+            retval = 0;
+            printf("generated utx.(%s) sighash.(%s)\n",utxbytes,sighash);
+        }
+        free_json(json);
+    }
+    return(retval);
+}
+
 #define EXCHANGE_NAME "nxtae"
 #define UPDATE nxtae ## _price
 #define SUPPORTS nxtae ## _supports
@@ -544,7 +681,7 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
     return(hbla);
 }
 
-uint64_t submit_triggered_nxtae(struct supernet_info *myinfo,int32_t dotrade,char **retjsonstrp,int32_t is_MS,char *bidask,uint64_t assetid,uint64_t qty,uint64_t NXTprice,char *triggerhash,char *comment,uint64_t otherNXT,uint32_t triggerheight)
+uint64_t submit_triggered_nxtae(struct supernet_info *myinfo,int32_t dotrade,char **retjsonstrp,int32_t is_MS,char *bidask,uint64_t assetid,uint64_t qty,uint64_t NXTprice,char *triggerhash,char *comment,char *otherNXT,uint32_t triggerheight,char *refhash)
 {
     int32_t deadline = 1 + 20; uint64_t txid = 0; struct destbuf errstr; char cmd[4096],secret[8192],*jsonstr; cJSON *json;
     if ( retjsonstrp != 0 )
@@ -564,21 +701,18 @@ uint64_t submit_triggered_nxtae(struct supernet_info *myinfo,int32_t dotrade,cha
     }
     if ( otherNXT != 0 )
         sprintf(cmd+strlen(cmd),"&recipient=%llu",(long long)otherNXT);
+    if ( refhash != 0 )
+        sprintf(cmd+strlen(cmd),"&referencedTransactionFullHash=%s",refhash);
     if ( triggerhash != 0 && triggerhash[0] != 0 )
-    {
-        if ( triggerheight == 0 )
-            sprintf(cmd+strlen(cmd),"&referencedTransactionFullHash=%s",triggerhash);
-        else sprintf(cmd+strlen(cmd),"&referencedTransactionFullHash=%s&phased=true&phasingFinishHeight=%u&phasingVotingModel=4&phasingQuorum=1&phasingLinkedFullHash=%s",triggerhash,triggerheight,triggerhash);
-    }
+        sprintf(cmd+strlen(cmd),"&phased=true&phasingFinishHeight=%u&phasingVotingModel=4&phasingQuorum=1&phasingLinkedFullHash=%s",triggerheight,triggerhash);
     if ( comment != 0 && comment[0] != 0 )
         sprintf(cmd+strlen(cmd),"&message=%s",comment);
     if ( dotrade == 0 )
     {
         if ( retjsonstrp != 0 )
         {
-            json = cJSON_CreateObject();
-            jaddstr(json,"submit",cmd);
-            *retjsonstrp = jprint(json,1);
+            strcat(cmd,"&broadcast=false");
+            *retjsonstrp = issue_NXTPOST(cmd);
         }
         return(0);
     }
@@ -603,6 +737,30 @@ uint64_t submit_triggered_nxtae(struct supernet_info *myinfo,int32_t dotrade,cha
     return(txid);
 }
 
+char *NXT_phasedxfer(struct supernet_info *myinfo,char *othercoin,char *othercoinaddr,char *otherNXT,uint64_t assetid,double volume,char *comment)
+{
+    uint8_t NXT_rmd160[20],addrtype; int32_t is_MS,triggerheight,dotrade = 0;
+    char onetimecoinaddr[64],triggerhash[41],*cmd,*signedtx = 0; uint64_t ap_mult;
+    if ( (triggerheight= get_NXTheight(myinfo,0)) != 0 )
+    {
+        bitcoin_addr2rmd160(&addrtype,NXT_rmd160,onetimecoinaddr);
+        init_hexbytes_noT(triggerhash,NXT_rmd160,20);
+        triggerheight += DEFAULT_NXT_DEADLINE;
+        if ( (ap_mult= get_assetmult(myinfo,&is_MS,assetid)) == 0 )
+            return(0);
+        else
+        {
+            if ( assetid == 0 || assetid == NXT_ASSETID )
+                cmd = "sendMoney";
+            else if ( is_MS == 0 )
+                cmd = "transferAsset";
+            else cmd = "transferCurrency";
+            submit_triggered_nxtae(myinfo,dotrade,&signedtx,is_MS,cmd,assetid,(volume * SATOSHIDEN) / ap_mult,0,triggerhash,comment,otherNXT,triggerheight,0);
+            return(signedtx);
+        }
+    } else return(0);
+}
+
 char *fill_nxtae(struct supernet_info *myinfo,int32_t dotrade,uint64_t *txidp,int32_t dir,double price,double volume,uint64_t baseid,uint64_t relid)
 {
     uint64_t txid,assetid,avail,qty,priceNQT,ap_mult; int32_t is_MS; char retbuf[512],*errstr,*cmdstr;
@@ -617,7 +775,7 @@ char *fill_nxtae(struct supernet_info *myinfo,int32_t dotrade,uint64_t *txidp,in
     if ( is_MS == 0 )
         cmdstr = dir > 0 ? "placeBidOrder" : "placeAskOrder";
     else cmdstr = dir > 0 ? "currencyBuy" : "currencySell";
-    txid = submit_triggered_nxtae(myinfo,dotrade,&errstr,is_MS,cmdstr,assetid,qty,priceNQT,0,0,0,0);
+    txid = submit_triggered_nxtae(myinfo,dotrade,&errstr,is_MS,cmdstr,assetid,qty,priceNQT,0,0,0,0,0);
     if ( errstr != 0 )
         sprintf(retbuf,"{\"error\":\"%s\"}",errstr), free(errstr);
     else sprintf(retbuf,"{\"result\":\"success\",\"txid\":\"%llu\"}",(long long)txid);

@@ -84,10 +84,27 @@ struct supernet_info
     int32_t LBsock,PUBsock,reqsock,subsock,networktimeout,maxdelay;
     uint16_t LBport,PUBport,reqport,subport;
     struct nn_pollfd pfd[SUPERNET_MAXAGENTS]; //struct relay_info active;
-    struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ; int32_t numagents,numexchanges;
+    struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ,acceptableQ;
+    int32_t numagents,numexchanges;
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES];
     char handle[1024];
 };
+#define NXT_ASSETID ('N' + ((uint64_t)'X'<<8) + ((uint64_t)'T'<<16))    // 5527630
+#define INSTANTDEX_ACCT "4383817337783094122"
+union _NXT_tx_num { int64_t amountNQT; int64_t quantityQNT; };
+struct NXT_tx
+{
+    bits256 refhash,sighash,fullhash;
+    uint64_t senderbits,recipientbits,assetidbits,txid,priceNQT,quoteid;
+    int64_t feeNQT;
+    union _NXT_tx_num U;
+    int32_t deadline,type,subtype,verify,number;
+    uint32_t timestamp;
+    char comment[4096];
+};
+uint64_t set_NXTtx(struct supernet_info *myinfo,struct NXT_tx *tx,uint64_t assetidbits,int64_t amount,uint64_t other64bits,int32_t feebits);
+cJSON *gen_NXT_tx_json(struct supernet_info *myinfo,char *fullhash,struct NXT_tx *utx,char *reftxid,double myshare);
+int32_t calc_raw_NXTtx(struct supernet_info *myinfo,char *fullhash,char *utxbytes,char *sighash,uint64_t assetidbits,int64_t amount,uint64_t other64bits);
 
 /*struct supernet_endpoint
 {
@@ -166,6 +183,7 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
 void SuperNET_setkeys(struct supernet_info *myinfo,void *pass,int32_t passlen,int32_t dosha256);
 char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *remoteaddr);
 
+double instantdex_acceptable(struct supernet_info *myinfo,cJSON *array,char *refstr,char *base,char *rel,double volume);
 
 #endif
 

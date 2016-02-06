@@ -44,10 +44,12 @@ STRING_AND_INT(InstantDEX,pollgap,exchange,pollgap);
 ZERO_ARGS(InstantDEX,allexchanges);
 STRING_ARG(InstantDEX,allpairs,exchange);
 
+TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,acceptable,base,rel,price,volume);
+THREE_STRINGS_AND_DOUBLE(InstantDEX,NXToffer,reference,base,rel,volume);
 THREE_STRINGS_AND_DOUBLE(InstantDEX,request,reference,base,rel,volume);
 TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,proposal,reference,message,basetxid,reltxid,duration,flags);
-TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,accept,reference,message,basetxid,reltxid,duration,flags);
-TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,confirm,reference,message,basetxid,reltxid,baseheight,relheight);
+//TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,accept,reference,message,basetxid,reltxid,duration,flags);
+//TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,confirm,reference,message,basetxid,reltxid,baseheight,relheight);
 
 THREE_STRINGS_AND_DOUBLE(tradebot,monitor,exchange,base,rel,commission);
 STRING_AND_DOUBLE(tradebot,monitorall,exchange,commission);

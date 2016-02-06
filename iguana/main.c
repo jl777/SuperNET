@@ -346,7 +346,7 @@ void iguana_main(void *arg)
     category_init(&MYINFO);
     if ( (coinargs= SuperNET_keysinit(&MYINFO,arg)) != 0 )
         iguana_launch(iguana_coinadd("BTCD"),"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
-    else if ( 0 )
+    else if ( 1 )
     {
 #ifdef __APPLE__
         sleep(1);

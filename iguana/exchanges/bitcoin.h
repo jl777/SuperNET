@@ -22,6 +22,7 @@
 #define SIGHASH_SINGLE 3
 #define SIGHASH_ANYONECANPAY 0x80
 
+#define SCRIPT_OP_NOP 0x00
 #define SCRIPT_OP_TRUE 0x51
 #define SCRIPT_OP_2 0x52
 #define SCRIPT_OP_3 0x53

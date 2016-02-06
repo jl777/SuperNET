@@ -22,6 +22,7 @@
 #define IGUANA_CFUNC_SSI(agent,name,str,str2,val) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,int32_t val)
 #define IGUANA_CFUNC_SSH(agent,name,str,str2,hash) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,bits256 hash)
 #define IGUANA_CFUNC_SSHI(agent,name,str,str2,hash,val) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,bits256 hash,int32_t val)
+#define IGUANA_CFUNC_SSDD(agent,name,str,str2,val,val2) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,double val,double val2)
 #define IGUANA_CFUNC_SSHII(agent,name,str,str2,hash,val,val2) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,bits256 hash,int32_t val,int32_t val2)
 #define IGUANA_CFUNC_SSHHII(agent,name,str,str2,hash,hash2,val,val2) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,bits256 hash,bits256 hash2,int32_t val,int32_t val2)
 #define IGUANA_CFUNC_SSS(agent,name,str,str2,str3) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,char *str3)
@@ -86,3 +87,4 @@
 #define THREE_STRINGS_AND_THREE_INTS IGUANA_CFUNC_SSSIII
 #define THREE_STRINGS_AND_THREE_DOUBLES IGUANA_CFUNC_SSSDDD
 #define THREE_STRINGS_AND_DOUBLE IGUANA_CFUNC_SSSD
+#define TWO_STRINGS_AND_TWO_DOUBLES IGUANA_CFUNC_SSDD
