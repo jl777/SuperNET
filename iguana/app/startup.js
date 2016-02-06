@@ -94,7 +94,57 @@ $(function () {
         else if(e.className && e.className.indexOf('clear-response-coin') != -1){
             $(".coin_result").text("JSON response");
         }
-        ///clear-response-coin
+        else if(e.className && e.className.indexOf('instantdex_set_userid') != -1){
+            InstantDEX_setuserid();
+        }
+        else if(e.className && e.className.indexOf('Tradebot_set_method_table') != -1){
+            tradebot_set_method_table(e.getAttribute("data-method"));
+        }
+        else if(e.className && e.className.indexOf('Tradebot_monitorall') != -1){
+            Tradebot_monitorall_api();
+        }
+        else if(e.className && e.className.indexOf('Tradebot_monitor') != -1){
+            Tradebot_monitor_api();
+        }
+        else if(e.className && e.className.indexOf('Tradebot_unmonitor_api') != -1){
+            Tradebot_unmonitor_api();
+        }
+        else if(e.className && e.className.indexOf('Tradebot_accumulate') != -1){
+            Tradebot_accumulate_api();
+        }
+        else if(e.className && e.className.indexOf('Tradebot_divest') != -1){
+            Tradebot_divest_api();
+        }
         
+        else if(e.className && e.className.indexOf('Tradebot_activebots') != -1){
+            Tradebot_activebots_api();
+        }
+        else if(e.className && e.className.indexOf('Tradebot_status') != -1){
+            Tradebot_status_api();
+        }
+        
+        else if(e.className && e.className.indexOf('Tradebot_pause') != -1){
+            Tradebot_pause_api();
+        }
+        
+        else if(e.className && e.className.indexOf('Tradebot_stop') != -1){
+            Tradebot_stop_api();
+        }
+        else if(e.className && e.className.indexOf('Tradebot_resume') != -1){
+            Tradebot_resume_api();
+            }
+        else if(e.className && e.className.indexOf('instantdex_allpairs') != -1){
+            InstantDEX_allpairs();
+                        
+        }
+        // 
     };
+    
+    $("div .btn-primary").on("click",function(){
+        $("div .btn-primary").each(function(){
+             $(this).removeClass('btn-raised');
+         });
+            $(this).addClass("btn-raised");
+    });
+    
 });

@@ -47,7 +47,7 @@ data-path="{tc}/{config}">
                     <!--<a class="navbar-brand" href="#">
                             <img alt="Brand" style="z-index:-1;" src="logo.png" width="25" height="25">
                         </a>-->
-                    <a href="javascript:void(0)" class="navbar-brand">Iguana</a>
+                    <a href="#" class="navbar-brand">Iguana</a>
                 </div>
                 <!-- Collect the nav links, forms, and other content for toggling -->
                 <div class="collapse navbar-collapse" id="bs-example-navbar-collapse">
@@ -280,6 +280,45 @@ data-path="{tc}/{config}">
                     </div>
                 </div>
             </div>
+            
+            <div id="Tradebot_page" class="page">
+                <div class="row">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h3>
+                                    <span>Tradebot</span>
+                                </h3>
+                        </div>
+                        <div class="panel-body center button_div">
+                        <button class="btn btn-primary Tradebot_set_method_table" data-method="monitor" >monitor</button>
+                     <button class="btn btn-primary Tradebot_set_method_table" data-method="monitorall" >monitorall</button>
+                     <button class="btn btn-primary Tradebot_set_method_table" data-method="unmonitor" >unmonitor</button>
+                     <button class="btn btn-primary Tradebot_set_method_table" data-method="accumulate" >accumulate</button>
+                     <button class="btn btn-primary Tradebot_set_method_table" data-method="divest" >divest</button>
+                     
+                     <button class="btn btn-primary Tradebot_set_method_table" data-method="activebots" >activebots</button> 
+                     <button class="btn btn-primary Tradebot_set_method_table" data-method="status" >status</button> 
+                     <button class="btn btn-primary Tradebot_set_method_table" data-method="pause" >pause</button> 
+                     
+                     <button class="btn btn-primary Tradebot_set_method_table" data-method="stop" >stop</button> 
+                     <button class="btn btn-primary Tradebot_set_method_table" data-method="resume" >resume</button> 
+                     
+                     
+                    </div>
+                        <div class="panel-body">
+                            
+                            <table id="tradebot_input" class="table table-hover table-bordered">
+                                
+                                
+                            </table>
+                            <table id="trade_output" class="table table-hover table-bordered">
+                                
+                                
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
 
             <div id="Settings_page" class="page">
@@ -402,9 +441,10 @@ data-path="{tc}/{config}">
                             </table>
                         </div>
                         
-                        <p>
-                            ** Awaiting specific requirements **
-                        </p>
+                        
+                        <table id="appstatus" class="table table-hover table-bordered">
+                            
+                        </table>
                     </div>
                 </div>
                 <style type="text/css">
@@ -422,10 +462,13 @@ data-path="{tc}/{config}">
                         <h3>Instandex tab</h3>
                     </div>
                     <div class="panel-body center">
-                        <button class="btn btn-primary instantdex_set_method_table" data-method="orderbook" >orderbook</button>
-                     <button class="btn btn-primary instantdex_set_method_table" data-method="apikeypair" >API Keypair</button> 
+                        <button class="btn xyz_button_click btn-primary instantdex_set_method_table" data-method="orderbook" >orderbook</button>
+                     <button class="btn xyz_button_click btn-primary instantdex_set_method_table" data-method="apikeypair" >API Keypair</button>
+                     <button class="btn btn-primary instantdex_set_method_table" data-method="setuserid" >Set Userid</button>
+                     <button class="btn btn-primary instantdex_set_method_table" data-method="allpairs" >Allpairs</button>
+                     
                      <button class="btn btn-primary instantdex_set_method_table" data-method="balance" >Balance</button>
-                     <button class="btn btn-primary instantdex_set_method_table" data-method="support" >Support</button>
+                     <button class="btn btn-primary instantdex_set_method_table" data-method="support" >Supports</button>
                      
                      <button class="btn btn-primary instantdex_set_method_table" data-method="sell" >Sell</button> 
                      <button class="btn btn-primary instantdex_set_method_table" data-method="buy" >Buy</button> 
@@ -441,15 +484,12 @@ data-path="{tc}/{config}">
                      
                     </div>
                     <div class="panel-body center">
-                        <table id="Instandex_form_table">
+                        <table id="Instandex_form_table" class="table table-hover table-bordered">
                         </table>
-                        
-                        <table >
-                            <tr>
-                                <td id="Instandex_output_table">
-                                    
-                                </td>
-                            </tr>
+                        </div>
+                    <div class="panel-body center">
+                        <table id="Instandex_output_table" class="table table-hover table-bordered" >
+                            
                         </table>
                     </div>
                 </div>
@@ -496,6 +536,7 @@ data-path="{tc}/{config}">
         <script type="text/javascript " src="js/pangea.js" ></script>
         <script type="text/javascript " src="js/blockexplorer.js" ></script>
         <script type="text/javascript " src="js/instantdex.js" ></script>
+        <script type="text/javascript " src="js/tradebot.js" ></script>
         <script type="text/javascript " src="js/storage.js" ></script>
     </body>
 
