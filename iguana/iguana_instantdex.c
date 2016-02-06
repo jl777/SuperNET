@@ -19,6 +19,7 @@
 
 #define INSTANTDEX_HOPS 3
 #define INSTANTDEX_DURATION 60
+#define INSTANTDEX_OFFERDURATION 3600
 
 #define INSTANTDEX_NXTOFFER 1
 #define INSTANTDEX_REQUEST 2
@@ -26,7 +27,7 @@
 #define INSTANTDEX_ACCEPT 4
 #define INSTANTDEX_CONFIRM 5
 
-struct instantdex_entry { char base[24],rel[24]; double price,volume,pendingvolume; uint32_t expiration,nonce; };
+struct instantdex_entry { char base[24],rel[24]; double price,basevolume,pendingvolume; uint32_t expiration,nonce; char myside,acceptdir; };
 struct instantdex_accept { struct queueitem DL; uint64_t txid; struct instantdex_entry A; };
 
 cJSON *InstantDEX_argjson(char *reference,char *message,char *othercoinaddr,char *otherNXTaddr,int32_t iter,int32_t val,int32_t val2)
@@ -217,10 +218,15 @@ cJSON *instantdex_acceptjson(struct instantdex_accept *ap)
 {
     cJSON *item = cJSON_CreateObject();
     jadd64bits(item,"orderid",ap->txid);
+    if ( ap->A.myside == 0 )
+        jaddstr(item,"myside",ap->A.base);
+    else if ( ap->A.myside == 0 )
+        jaddstr(item,"myside",ap->A.rel);
+    else jaddstr(item,"myside","neither");
     jaddstr(item,"base",ap->A.base);
     jaddstr(item,"rel",ap->A.rel);
-    jaddnum(item,"price",ap->A.price);
-    jaddnum(item,"volume",ap->A.volume);
+    jaddnum(item,ap->A.acceptdir > 0 ? "minprice" : "maxprice",ap->A.price);
+    jaddnum(item,"basevolume",ap->A.basevolume);
     jaddnum(item,"pendingvolume",ap->A.pendingvolume);
     jaddnum(item,"expiresin",ap->A.expiration - time(NULL));
     return(item);
@@ -234,7 +240,7 @@ double instantdex_acceptable(struct supernet_info *myinfo,cJSON *array,char *ref
     queue_enqueue("acceptableQ",&myinfo->acceptableQ,&PAD.DL,0);
     while ( (ap= queue_dequeue(&myinfo->acceptableQ,0)) != 0 && ap != &PAD )
     {
-        if ( volume > 0. && (strcmp(base,"*") == 0 || strcmp(base,ap->A.base) == 0) && (strcmp(rel,"*") == 0 || strcmp(rel,ap->A.rel) == 0) && volume < (ap->A.volume - ap->A.pendingvolume) )
+        if ( volume > 0. && (strcmp(base,"*") == 0 || strcmp(base,ap->A.base) == 0) && (strcmp(rel,"*") == 0 || strcmp(rel,ap->A.rel) == 0) && volume < (ap->A.basevolume - ap->A.pendingvolume) )
         {
             if ( ap->A.price > price )
             {
@@ -257,132 +263,170 @@ double instantdex_acceptable(struct supernet_info *myinfo,cJSON *array,char *ref
     return(price);
 }
 
-char *instantdex_request(struct supernet_info *myinfo,char *cmdstr,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen) // receiving side
+/*
+ if ( strcmp(cmdstr+3,"offer") == 0 )
 {
-    struct NXT_tx feeT; char fullhash[256],*othercoinaddr; cJSON *feejson; uint64_t assetbits = 0;
-    char *base,*rel,*request,*refstr,*nextcmdstr,*message,*traderip,*otherNXTaddr;
-    double volume,price; cJSON *newjson; int32_t duration,flags,nextcmd;
-    int32_t num,depth; //struct exchange_quote sortbuf[1000]; bits256 basetxid,reltxid;,aveprice,totalvol
+    
+}
+if ( (price= instantdex_acceptable(myinfo,0,refstr,base,rel,volume)) > 0. )
+{
+    // sends NXT assetid, volume and desired
+    if ( strcmp(base,"NXT") == 0 || strcmp(base,"nxt") == 0 )
+        assetbits = NXT_ASSETID;
+        else if ( is_decimalstr(base) > 0 )
+            assetbits = calc_nxt64bits(base);
+            if ( assetbits != 0 )
+            {
+                nextcmd = INSTANTDEX_REQUEST;
+                nextcmdstr = "request";
+            }
+}
+}
+else if ( strncmp(cmdstr,"ALT",3) == 0 )
+{
+    if ( (price= instantdex_acceptable(myinfo,0,refstr,base,rel,volume)) > 0. )
+    {
+        // sends NXT assetid, volume and desired
+        if ( strcmp(base,"NXT") == 0 || strcmp(base,"nxt") == 0 )
+            assetbits = NXT_ASSETID;
+        else if ( is_decimalstr(base) > 0 )
+            assetbits = calc_nxt64bits(base);
+        if ( assetbits != 0 )
+        {
+            nextcmd = INSTANTDEX_REQUEST;
+            nextcmdstr = "request";
+        }
+    }
+}
+else if ( strncmp(cmdstr,"NXT",3) == 0 )
+{
+    if ( (price= instantdex_acceptable(myinfo,0,refstr,base,rel,volume)) > 0. )
+    {
+        // sends NXT assetid, volume and desired
+        if ( strcmp(base,"NXT") == 0 || strcmp(base,"nxt") == 0 )
+            assetbits = NXT_ASSETID;
+        else if ( is_decimalstr(base) > 0 )
+            assetbits = calc_nxt64bits(base);
+        if ( assetbits != 0 )
+        {
+            nextcmd = INSTANTDEX_REQUEST;
+            nextcmdstr = "request";
+        }
+    }
+}
+{
+    
+}
+
+if ( strcmp(cmdstr,"request") == 0 )
+{
+    // request:
+    // other node sends (othercoin, othercoinaddr, otherNXT and reftx that expires before phasedtx)
+    if ( (strcmp(rel,"BTC") == 0 || strcmp(base,"BTC") == 0) && (price= instantdex_acceptable(myinfo,0,refstr,base,rel,volume)) > 0. )
+    {
+        //aveprice = instantdex_aveprice(myinfo,sortbuf,(int32_t)(sizeof(sortbuf)/sizeof(*sortbuf)),&totalvol,base,rel,volume,argjson);
+        set_NXTtx(myinfo,&feeT,assetbits,SATOSHIDEN*3,calc_nxt64bits(INSTANTDEX_ACCT),-1);
+        if ( (feejson= gen_NXT_tx_json(myinfo,fullhash,&feeT,0,1.)) != 0 )
+            free_json(feejson);
+        nextcmd = INSTANTDEX_PROPOSE;
+        nextcmdstr = "proposal";
+        othercoinaddr = myinfo->myaddr.BTC;
+        otherNXTaddr = myinfo->myaddr.NXTADDR;
+    }
+}
+else
+{
+    if ( strcmp(cmdstr,"proposal") == 0 )
+    {
+        // proposal:
+        // NXT node submits phasedtx that refers to it, but it wont confirm
+        nextcmd = INSTANTDEX_ACCEPT;
+        nextcmdstr = "accept";
+        message = "";
+        //instantdex_phasetxsubmit(refstr);
+    }
+    else if ( strcmp(cmdstr,"accept") == 0 )
+    {
+        // accept:
+        // other node verifies unconfirmed has phasedtx and broadcasts cltv, also to NXT node, releases trigger
+        nextcmd = INSTANTDEX_CONFIRM;
+        nextcmdstr = "confirm";
+        message = "";
+        //instantdex_phasedtxverify();
+        //instantdex_cltvbroadcast();
+        //instantdex_releasetrigger();
+    }
+    else if ( strcmp(cmdstr,"confirm") == 0 )
+    {
+        // confirm:
+        // NXT node verifies bitcoin txbytes has proper payment and cashes in with onetimepubkey
+        // BTC* node approves phased tx with onetimepubkey
+        //instantdex_cltvverify();
+        //instantdex_phasetxapprove();
+        return(clonestr("{\"error\":\"trade confirmed\"}"));
+    }
+}
+if ( nextcmd != 0 && (newjson= InstantDEX_argjson(refstr,message,othercoinaddr,otherNXTaddr,nextcmd,duration,flags)) != 0 )
+{
+    jaddnum(newjson,"price",price);
+    jaddnum(newjson,"volume",volume);
+    return(instantdex_sendcmd(myinfo,newjson,nextcmdstr,myinfo->ipaddr,INSTANTDEX_HOPS));
+}
+}
+return(clonestr("{\"error\":\"request needs argjson\"}"));
+}
+ num = 0;
+ depth = 30;
+ request = jstr(argjson,"request");
+ base = jstr(argjson,"base");
+ rel = jstr(argjson,"rel");
+ refstr = jstr(argjson,"refstr");
+ volume = jdouble(argjson,"volume");
+ duration = juint(argjson,"duration");
+ flags = juint(argjson,"flags");
+ nextcmd = 0;
+ nextcmdstr = message = "";
+
+*/
+// NXTrequest:
+// sends NXT assetid, volume and desired
+// request:
+// other node sends (othercoin, othercoinaddr, otherNXT and reftx that expires well before phasedtx)
+// proposal:
+// NXT node submits phasedtx that refers to it, but it wont confirm
+// approve:
+// other node verifies unconfirmed has phasedtx and broadcasts cltv, also to NXT node, releases trigger
+// confirm:
+// NXT node verifies bitcoin txbytes has proper payment and cashes in with onetimepubkey
+// BTC* node approves phased tx with onetimepubkey
+
+#include "swaps/iguana_BTCswap.c"
+#include "swaps/iguana_ALTswap.c"
+#include "swaps/iguana_NXTswap.c"
+#include "swaps/iguana_PAXswap.c"
+
+char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen)
+{
+    char cmdstr[16],*traderip;
+    memset(cmdstr,0,sizeof(cmdstr)), memcpy(cmdstr,msg->cmd,sizeof(msg->cmd));
     if ( argjson != 0 )
     {
-        num = 0;
-        depth = 30;
-        request = jstr(argjson,"request");
-        base = jstr(argjson,"base");
-        rel = jstr(argjson,"rel");
-        refstr = jstr(argjson,"refstr");
-        volume = jdouble(argjson,"volume");
-        duration = juint(argjson,"duration");
-        flags = juint(argjson,"flags");
-        nextcmd = 0;
-        nextcmdstr = message = "";
         if ( (traderip= jstr(argjson,"traderip")) != 0 && strcmp(traderip,myinfo->ipaddr) == 0 )
         {
             printf("got my own request\n");
             return(clonestr("{\"result\":\"got my own request\"}"));
         }
-        // NXToffer:
-        // sends NXT assetid, volume and desired rel, also reftx
-        if ( strcmp(cmdstr,"NXToffer") == 0 )
-        {
-            if ( (price= instantdex_acceptable(myinfo,0,refstr,base,rel,volume)) > 0. )
-            {
-                // sends NXT assetid, volume and desired
-                if ( strcmp(base,"NXT") == 0 || strcmp(base,"nxt") == 0 )
-                    assetbits = NXT_ASSETID;
-                else if ( is_decimalstr(base) > 0 )
-                    assetbits = calc_nxt64bits(base);
-                if ( assetbits != 0 )
-                {
-                    nextcmd = INSTANTDEX_REQUEST;
-                    nextcmdstr = "request";
-                }
-            }
-        }
-        else if ( strcmp(cmdstr,"request") == 0 )
-        {
-            // request:
-            // other node sends (othercoin, othercoinaddr, otherNXT and reftx that expires before phasedtx)
-            if ( (strcmp(rel,"BTC") == 0 || strcmp(base,"BTC") == 0) && (price= instantdex_acceptable(myinfo,0,refstr,base,rel,volume)) > 0. )
-            {
-                //aveprice = instantdex_aveprice(myinfo,sortbuf,(int32_t)(sizeof(sortbuf)/sizeof(*sortbuf)),&totalvol,base,rel,volume,argjson);
-                set_NXTtx(myinfo,&feeT,assetbits,SATOSHIDEN*3,calc_nxt64bits(INSTANTDEX_ACCT),-1);
-                if ( (feejson= gen_NXT_tx_json(myinfo,fullhash,&feeT,0,1.)) != 0 )
-                    free_json(feejson);
-                nextcmd = INSTANTDEX_PROPOSE;
-                nextcmdstr = "proposal";
-                othercoinaddr = myinfo->myaddr.BTC;
-                otherNXTaddr = myinfo->myaddr.NXTADDR;
-            }
-        }
-        else
-        {
-            if ( strcmp(cmdstr,"proposal") == 0 )
-            {
-                // proposal:
-                // NXT node submits phasedtx that refers to it, but it wont confirm
-                nextcmd = INSTANTDEX_ACCEPT;
-                nextcmdstr = "accept";
-                message = "";
-                //instantdex_phasetxsubmit(refstr);
-            }
-            else if ( strcmp(cmdstr,"accept") == 0 )
-            {
-                // accept:
-                // other node verifies unconfirmed has phasedtx and broadcasts cltv, also to NXT node, releases trigger
-                nextcmd = INSTANTDEX_CONFIRM;
-                nextcmdstr = "confirm";
-                message = "";
-                //instantdex_phasedtxverify();
-                //instantdex_cltvbroadcast();
-                //instantdex_releasetrigger();
-            }
-            else if ( strcmp(cmdstr,"confirm") == 0 )
-            {
-                // confirm:
-                // NXT node verifies bitcoin txbytes has proper payment and cashes in with onetimepubkey
-                // BTC* node approves phased tx with onetimepubkey
-                //instantdex_cltvverify();
-                //instantdex_phasetxapprove();
-                return(clonestr("{\"error\":\"trade confirmed\"}"));
-            }
-        }
-        if ( nextcmd != 0 && (newjson= InstantDEX_argjson(refstr,message,othercoinaddr,otherNXTaddr,nextcmd,duration,flags)) != 0 )
-        {
-            jaddnum(newjson,"price",price);
-            jaddnum(newjson,"volume",volume);
-            return(instantdex_sendcmd(myinfo,newjson,nextcmdstr,myinfo->ipaddr,INSTANTDEX_HOPS));
-        }
+        if ( strncmp(cmdstr,"BTC",3) == 0 )
+            return(instantdex_BTCswap(myinfo,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen));
+        else if ( strncmp(cmdstr,"NXT",3) == 0 )
+            return(instantdex_NXTswap(myinfo,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen));
+        else if ( strncmp(cmdstr,"ALT",3) == 0 )
+            return(instantdex_ALTswap(myinfo,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen));
+        else if ( strncmp(cmdstr,"PAX",3) == 0 )
+            return(instantdex_PAXswap(myinfo,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen));
+        else return(clonestr("{\"error\":\"unrecognized atomic swap family\"}"));
     }
     return(clonestr("{\"error\":\"request needs argjson\"}"));
-}
-
-char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen)
-{
-    static struct { char *cmdstr; char *(*func)(struct supernet_info *myinfo,char *cmdstr,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen); uint64_t cmdbits; } cmds[] =
-    {
-        { "NXToffer", instantdex_request }, { "request", instantdex_request },
-        { "proposal", instantdex_request },
-        { "accept", instantdex_request },
-        { "confirm", instantdex_request },
-    };
-    char *retstr = 0; int32_t i; uint64_t cmdbits;
-    if ( cmds[0].cmdbits == 0 )
-    {
-        for (i=0; i<sizeof(cmds)/sizeof(*cmds); i++)
-            cmds[i].cmdbits = stringbits(cmds[i].cmdstr);
-    }
-    cmdbits = stringbits(msg->cmd);
-    for (i=0; i<sizeof(cmds)/sizeof(*cmds); i++)
-    {
-        if ( cmds[i].cmdbits == cmdbits )
-        {
-            printf("parsed.(%s)\n",cmds[i].cmdstr);
-            retstr = (*cmds[i].func)(myinfo,cmds[i].cmdstr,msg,argjson,remoteaddr,signerbits,data,datalen);
-            break;
-        }
-    }
-    return(retstr);
 }
 
 char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char *remoteaddr)
@@ -432,50 +476,105 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
     return(retstr);
 }
 
-#include "../includes/iguana_apidefs.h"
-
-// NXTrequest:
-// sends NXT assetid, volume and desired
-// request:
-// other node sends (othercoin, othercoinaddr, otherNXT and reftx that expires well before phasedtx)
-// proposal:
-// NXT node submits phasedtx that refers to it, but it wont confirm
-// approve:
-// other node verifies unconfirmed has phasedtx and broadcasts cltv, also to NXT node, releases trigger
-// confirm:
-// NXT node verifies bitcoin txbytes has proper payment and cashes in with onetimepubkey
-// BTC* node approves phased tx with onetimepubkey
-
-TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,acceptable,base,rel,price,volume)
+char *instantdex_queueaccept(struct supernet_info *myinfo,char *base,char *rel,double price,double basevolume,int32_t acceptdir,char *myside,int32_t duration)
 {
     struct instantdex_accept A; bits256 hash;
     memset(&A,0,sizeof(A));
     OS_randombytes((uint8_t *)&A.A.nonce,sizeof(A.A.nonce));
     safecopy(A.A.base,base,sizeof(A.A.base));
     safecopy(A.A.rel,rel,sizeof(A.A.rel));
-    A.A.price = price, A.A.volume = volume;
-    A.A.expiration = (uint32_t)time(NULL) + 3600;
+    if ( strcmp(myside,base) == 0 )
+        A.A.myside = 0;
+    else if ( strcmp(myside,rel) == 0 )
+        A.A.myside = 1;
+    else A.A.myside = -1;
+    A.A.acceptdir = acceptdir;
+    A.A.price = price, A.A.basevolume = basevolume;
+    A.A.expiration = (uint32_t)time(NULL) + duration;
     vcalc_sha256(0,hash.bytes,(void *)&A.A,sizeof(A.A));
     A.txid = hash.txid;
     queue_enqueue("acceptableQ",&myinfo->acceptableQ,&A.DL,0);
     return(clonestr("{\"result\":\"added acceptable\"}"));
 }
 
-THREE_STRINGS_AND_DOUBLE(InstantDEX,NXToffer,reference,base,rel,volume) // initiator
+#include "../includes/iguana_apidefs.h"
+
+TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,maxaccept,base,rel,maxprice,basevolume)
 {
-    int32_t hops = INSTANTDEX_HOPS; cJSON *argjson;
+    return(instantdex_queueaccept(myinfo,base,rel,maxprice,basevolume,-1,rel,INSTANTDEX_OFFERDURATION));
+}
+
+TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,minaccept,base,rel,minprice,basevolume)
+{
+    return(instantdex_queueaccept(myinfo,base,rel,minprice,basevolume,1,base,INSTANTDEX_OFFERDURATION));
+}
+
+TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,BTCoffer,othercoin,otherassetid,maxprice,othervolume)
+{
+    int32_t hops = INSTANTDEX_HOPS; cJSON *argjson; char *base,*str;
     if ( remoteaddr == 0 )
     {
         argjson = cJSON_CreateObject();
-        jaddstr(argjson,"refstr",reference);
+        base = othercoin[0] != 0 ? othercoin : otherassetid;
         jaddstr(argjson,"base",base);
-        jaddstr(argjson,"rel",rel);
-        jaddnum(argjson,"volume",volume);
+        jaddstr(argjson,"rel","BTC");
+        if ( maxprice > 0. )
+        {
+            if ( (str= InstantDEX_maxaccept(IGUANA_CALLARGS,base,"BTC",maxprice,othervolume)) != 0 )
+                free(str);
+            jaddnum(argjson,"maxprice",maxprice);
+        }
+        jaddnum(argjson,"volume",othervolume);
+        return(instantdex_sendcmd(myinfo,argjson,"BTCoffer",myinfo->ipaddr,hops));
+    } else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
+}
+
+STRING_AND_TWO_DOUBLES(InstantDEX,ALToffer,basecoin,minprice,basevolume)
+{
+    int32_t hops = INSTANTDEX_HOPS; cJSON *argjson; char *str;
+    if ( remoteaddr == 0 )
+    {
+        argjson = cJSON_CreateObject();
+        if ( iguana_coinfind(basecoin) == 0 )
+            return(clonestr("{\"error\":\"InstantDEX basecoin is not active, need to addcoin\"}"));
+        jaddstr(argjson,"base",basecoin);
+        jaddstr(argjson,"rel","BTC");
+        jaddnum(argjson,"volume",basevolume);
+        if ( minprice > 0. )
+        {
+            if ( (str= InstantDEX_minaccept(IGUANA_CALLARGS,basecoin,"BTC",minprice,basevolume)) != 0 )
+                free(str);
+            jaddnum(argjson,"minprice",minprice);
+        }
+        return(instantdex_sendcmd(myinfo,argjson,"ALToffer",myinfo->ipaddr,hops));
+    } else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
+}
+
+STRING_AND_TWO_DOUBLES(InstantDEX,NXToffer,assetid,minprice,basevolume)
+{
+    int32_t hops = INSTANTDEX_HOPS; cJSON *argjson; char *base,*str;
+    if ( remoteaddr == 0 )
+    {
+        argjson = cJSON_CreateObject();
+        if ( assetid == 0 || assetid[0] == 0 || strcmp(assetid,"0") == 0 || strcmp(assetid,"NXT") == 0 || strcmp(assetid,"nxt") == 0 )
+            base = "NXT";
+        else if ( is_decimalstr(assetid) <= 0 )
+            return(clonestr("{\"error\":\"InstantDEX NXToffer illegal assetid\"}"));
+        else base = assetid;
+        jaddstr(argjson,"base",base);
+        jaddstr(argjson,"rel","BTC");
+        jaddnum(argjson,"volume",basevolume);
+        if ( minprice > 0. )
+        {
+            if ( (str= InstantDEX_minaccept(IGUANA_CALLARGS,base,"BTC",minprice,basevolume)) != 0 )
+                free(str);
+            jaddnum(argjson,"minprice",minprice);
+        }
         return(instantdex_sendcmd(myinfo,argjson,"NXToffer",myinfo->ipaddr,hops));
     } else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
 }
 
-THREE_STRINGS_AND_DOUBLE(InstantDEX,request,reference,base,rel,volume) // initiator
+/*THREE_STRINGS_AND_DOUBLE(InstantDEX,request,reference,base,rel,volume) // initiator
 {
     int32_t hops = INSTANTDEX_HOPS; cJSON *argjson;
     if ( remoteaddr == 0 )
