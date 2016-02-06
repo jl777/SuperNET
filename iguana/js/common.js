@@ -207,6 +207,8 @@ var common = (function() {
     // loaded.
     var moduleEl = document.getElementById('nacl_module');
     updateStatus('ERROR [' + moduleEl.lastError + ']');
+    APPLICATION.pexe="Error encountered";
+    change_app_status();
   }
 
   /**
@@ -223,6 +225,8 @@ var common = (function() {
     if (typeof window.handleCrash !== 'undefined') {
       window.handleCrash(common.naclModule.lastError);
     }
+    APPLICATION.pexe="crashed";
+    change_app_status();
   }
 
   /**
@@ -237,6 +241,8 @@ var common = (function() {
     if (typeof window.moduleDidLoad !== 'undefined') {
       window.moduleDidLoad();
     }
+    APPLICATION.pexe="loaded";
+    change_app_status();
   }
 
   /**
