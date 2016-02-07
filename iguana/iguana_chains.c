@@ -82,6 +82,18 @@ static struct iguana_chain Chains[] =
     },
 };
 
+/*
+// PUBKEY_ADDRESS + SCRIPT_ADDRESS addrman.h
+// PRIVKEY_ADDRESS use wif2priv API on any valid wif
+// networkmagic pchMessageStart main.cpp
+// genesis block from any blockexplorer, calendar strings can be converted by utime2utc
+{
+    "name":"BitcoinDark","symbol":"BTCD",
+    "PUBKEY_ADDRESS":60,"SCRIPT_ADDRESS":85,"PRIVKEY_ADDRESS":188,
+    "networkmagic":"e4c2d8e6","portp2p:14631,"portrpc":14632,"txhastimestamp":1,
+    "genesis":{"version":1,"timestamp":1403138561,"nBits":"1e0fffff","nonce":8359109,"hash":"0000044966f40703b516c5af180582d53f783bfd319bb045e2dc3e05ea695d46","merkle":"fd1751cc6963d88feca94c0d01da8883852647a37a0a67ce254d62dd8c9d5b2b"}
+}*/
+
 bits256 iguana_chaingenesis(int32_t version,uint32_t timestamp,uint32_t bits,uint32_t nonce,bits256 merkle_root)
 {
     struct iguana_msgblock msg; int32_t len; bits256 hash2; uint8_t serialized[1024]; char hexstr[2049];

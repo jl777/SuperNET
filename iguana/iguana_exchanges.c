@@ -866,6 +866,7 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
     exchange->issue = *Exchange_funcs[i];
     iguana_initQ(&exchange->pricesQ,"prices");
     iguana_initQ(&exchange->requestQ,"request");
+    iguana_initQ(&exchange->acceptableQ,"acceptable");
     iguana_initQ(&exchange->tradebotsQ,"tradebots");
     iguana_initQ(&exchange->pendingQ[0],"pending0");
     iguana_initQ(&exchange->pendingQ[1],"pending1");

@@ -350,6 +350,7 @@ int32_t bitcoin_MofNspendscript(uint8_t p2sh_rmd160[20],uint8_t *script,int32_t 
     {
         if ( (plen= bitcoin_pubkeylen(vp->signers[i].pubkey)) < 0 )
             return(-1);
+        script[n++] = plen;
         memcpy(&script[n],vp->signers[i].pubkey,plen);
         n += plen;
     }
@@ -620,7 +621,18 @@ int32_t iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp,uint8_t *
         scriptlen = iguana_scriptgen(coin,&vp->M,&vp->N,vp->coinaddr,script,asmstr,vp->rmd160,vp->type,(const struct vin_info *)vp,vout);
         if ( scriptlen != pk_scriptlen || memcmp(script,pk_script,scriptlen) != 0 )
         {
-            printf("iguana_calcrmd160 type.%d error regenerating scriptlen.%d vs %d\n",vp->type,scriptlen,pk_scriptlen);
+            if ( vp->type != IGUANA_SCRIPT_OPRETURN )
+            {
+                int32_t i;
+                printf("\n--------------------\n");
+                for (i=0; i<scriptlen; i++)
+                    printf("%02x ",script[i]);
+                printf("script.%d\n",scriptlen);
+                for (i=0; i<pk_scriptlen; i++)
+                    printf("%02x ",pk_script[i]);
+                printf("original script.%d\n",pk_scriptlen);
+                printf("iguana_calcrmd160 type.%d error regenerating scriptlen.%d vs %d\n\n",vp->type,scriptlen,pk_scriptlen);
+            }
         }
     }
     return(vp->type);
@@ -1340,23 +1352,21 @@ rawtxstr = refstr;
 #define FUNCS bitcoin ## _funcs
 #define BASERELS bitcoin ## _baserels
 
-static char *BASERELS[][2] = { {"btc","nxt"}, {"btc","btcd"}, {"btc","ltc"}, {"btc","vrc"}, {"btc","doge"} };
+static char *BASERELS[][2] = { {"btcd","btc"}, {"nxt","btc"}, {"asset","btc"} };
 #include "exchange_supports.h"
 
-double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert)
+double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert)
 {
-    char url[1024],lrel[16],lbase[16];
-    strcpy(lrel,rel), strcpy(lbase,base);
-    tolowercase(lrel), tolowercase(lbase);
-    sprintf(url,"http://api.quadrigacx.com/v2/order_book?book=%s_%s",lbase,lrel);
-    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0,invert));
-}
-
-cJSON *SIGNPOST(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *payload,char *path)
-{
-    if ( retstrp != 0 )
-        *retstrp = clonestr("{\"error\":\"bitcoin is not yet\"}");
-    return(cJSON_Parse("{}"));
+    cJSON *retjson,*bids,*asks; double hbla;
+    bids = cJSON_CreateArray();
+    asks = cJSON_CreateArray();
+    instantdex_acceptablefind(exchange,bids,asks,0,base,rel);
+    retjson = cJSON_CreateObject();
+    cJSON_AddItemToObject(retjson,"bids",bids);
+    cJSON_AddItemToObject(retjson,"asks",asks);
+    hbla = exchanges777_json_orderbook(exchange,commission,base,rel,bidasks,maxdepth,retjson,0,"bids","asks",0,0,invert);
+    free_json(retjson);
+    return(hbla);
 }
 
 char *PARSEBALANCE(struct exchange_info *exchange,double *balancep,char *coinstr,cJSON *argjson)
@@ -1374,22 +1384,40 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
     return(0);
 }
 
-char *ORDERSTATUS(struct exchange_info *exchange,uint64_t quoteid,cJSON *argjson)
+char *ORDERSTATUS(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson)
 {
-    return(clonestr("{\"error\":\"bitcoin is not yet\"}"));
+    struct instantdex_accept *ap; cJSON *retjson;
+    if ( (ap= instantdex_acceptablefind(exchange,0,0,orderid,"*","*")) != 0 )
+    {
+        retjson = cJSON_CreateObject();
+        jadd(retjson,"result",instantdex_acceptjson(ap));
+        return(jprint(retjson,1));
+    } else return(clonestr("{\"error\":\"couldnt find orderid\"}"));
 }
 
-char *CANCELORDER(struct exchange_info *exchange,uint64_t quoteid,cJSON *argjson)
+char *CANCELORDER(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson)
 {
-    return(clonestr("{\"error\":\"bitcoin is not yet\"}"));
+    struct instantdex_accept *ap; cJSON *retjson;
+    if ( (ap= instantdex_acceptablefind(exchange,0,0,orderid,"*","*")) != 0 )
+    {
+        ap->dead = (uint32_t)time(NULL);
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"result","killed orderid, but might have pending");
+        jadd(retjson,"order",instantdex_acceptjson(ap));
+        return(jprint(retjson,1));
+    } else return(clonestr("{\"error\":\"couldnt find orderid\"}"));
 }
 
 char *OPENORDERS(struct exchange_info *exchange,cJSON *argjson)
 {
-    cJSON *retjson,*array = cJSON_CreateArray();
+    cJSON *retjson,*bids,*asks;
+    bids = cJSON_CreateArray();
+    asks = cJSON_CreateArray();
+    instantdex_acceptablefind(exchange,bids,asks,0,"*","*");
     retjson = cJSON_CreateObject();
-    instantdex_acceptable(SuperNET_MYINFO(0),array,"","*","*",0);
-    jadd(retjson,"result",array);
+    jaddstr(retjson,"result","success");
+    jadd(retjson,"bids",bids);
+    jadd(retjson,"asks",asks);
     return(jprint(retjson,1));
 }
 

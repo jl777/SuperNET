@@ -91,7 +91,7 @@ int32_t SuperNET_confirmip(struct supernet_info *myinfo,uint32_t ipbits)
     return(total);
 }
 
-void SuperNET_myipaddr(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,char *myipaddr,char *remoteaddr)
+void SuperNET_checkipaddr(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,char *myipaddr,char *remoteaddr)
 {
     uint32_t myipbits = (uint32_t)calc_ipbits(myipaddr);
     if ( addr->myipbits == 0 )
@@ -773,7 +773,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
         if ( 0 && jstr(json,"method") != 0 && strcmp(jstr(json,"method"),"getpeers") != 0 )
             printf("GOT >>>>>>>> SUPERNET P2P.(%s) from.%s %s valid.%d:%d\n",jprint(json,0),coin->symbol,addr->ipaddr,addr->validpub,addr->othervalid);
         if ( (myipaddr= jstr(json,"yourip")) != 0 )
-            SuperNET_myipaddr(SuperNET_MYINFO(0),coin,addr,myipaddr,ipaddr);
+            SuperNET_checkipaddr(SuperNET_MYINFO(0),coin,addr,myipaddr,ipaddr);
         jaddstr(json,"fromp2p",coin->symbol);
         method = jstr(json,"method");
         if ( method != 0 && strcmp(method,"stop") == 0 )
@@ -1238,6 +1238,24 @@ STRING_ARG(SuperNET,wif2priv,wif)
         jaddstr(retjson,"privkey",bits256_str(str,privkey));
         jaddnum(retjson,"type",privkeytype);
     } else jaddstr(retjson,"error","couldnt convert wif");
+    return(jprint(retjson,1));
+}
+
+ZERO_ARGS(SuperNET,myipaddr)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result",myinfo->ipaddr);
+    return(jprint(retjson,1));
+}
+
+STRING_ARG(SuperNET,setmyipaddr,ipaddr)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    if ( is_ipaddr(ipaddr) != 0 )
+    {
+        strcpy(myinfo->ipaddr,ipaddr);
+        jaddstr(retjson,"result",myinfo->ipaddr);
+    } else jaddstr(retjson,"error","illegal ipaddr");
     return(jprint(retjson,1));
 }
 

@@ -24,6 +24,13 @@
 // confirm:
 // NXT node verifies bitcoin txbytes has proper payment and cashes in with onetimepubkey
 // BTC* node approves phased tx with onetimepubkey
+/*if ( retap != 0 )
+{
+    retap->A.pendingvolume -= volume;
+    price = retap->A.price;
+}
+struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,cJSON *array,char *refstr,char *base,char *rel,char *offerside,int32_t offerdir,double offerprice,double volume)
+*/
 
 char *instantdex_BTCswap(struct supernet_info *myinfo,char *cmdstr,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen) // receiving side
 {

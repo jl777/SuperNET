@@ -50,7 +50,7 @@ struct exchange_info
     uint32_t exchangeid,pollgap,lastpoll;
     uint64_t lastnonce,exchangebits; double commission;
     void *privatedata;
-    CURL *cHandle; queue_t requestQ,pricesQ,pendingQ[2],tradebotsQ;
+    CURL *cHandle; queue_t requestQ,pricesQ,pendingQ[2],tradebotsQ,acceptableQ;
 };
 
 struct instantdex_msghdr
@@ -59,6 +59,23 @@ struct instantdex_msghdr
     char cmd[8];
     uint8_t serialized[];
 } __attribute__((packed));
+
+#define NXT_ASSETID ('N' + ((uint64_t)'X'<<8) + ((uint64_t)'T'<<16))    // 5527630
+#define INSTANTDEX_ACCT "4383817337783094122"
+union _NXT_tx_num { int64_t amountNQT; int64_t quantityQNT; };
+struct NXT_tx
+{
+    bits256 refhash,sighash,fullhash;
+    uint64_t senderbits,recipientbits,assetidbits,txid,priceNQT,quoteid;
+    int64_t feeNQT;
+    union _NXT_tx_num U;
+    int32_t deadline,type,subtype,verify,number;
+    uint32_t timestamp;
+    char comment[4096];
+};
+uint64_t set_NXTtx(struct supernet_info *myinfo,struct NXT_tx *tx,uint64_t assetidbits,int64_t amount,uint64_t other64bits,int32_t feebits);
+cJSON *gen_NXT_tx_json(struct supernet_info *myinfo,char *fullhash,struct NXT_tx *utx,char *reftxid,double myshare);
+int32_t calc_raw_NXTtx(struct supernet_info *myinfo,char *fullhash,char *utxbytes,char *sighash,uint64_t assetidbits,int64_t amount,uint64_t other64bits);
 
 struct exchange_request
 {
@@ -70,6 +87,13 @@ struct exchange_request
     char base[32],rel[32],destaddr[64],invert,allflag,dotrade;
     struct exchange_quote bidasks[];
 };
+
+struct instantdex_entry { char base[24],rel[24]; double price,basevolume,pendingvolume; uint32_t expiration,nonce; char myside,acceptdir; };
+struct instantdex_accept { struct queueitem DL; uint64_t orderid; uint32_t dead; struct instantdex_entry A; };
+
+struct instantdex_accept *instantdex_acceptablefind(struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel);
+cJSON *instantdex_acceptjson(struct instantdex_accept *ap);
+struct instantdex_accept *instantdex_acceptable(struct exchange_info *exchange,cJSON *array,char *refstr,char *base,char *rel,char *offerside,int32_t offerdir,double offerprice,double volume);
 
 void *curl_post(void **cHandlep,char *url,char *userpass,char *postfields,char *hdr0,char *hdr1,char *hdr2,char *hdr3);
 char *instantdex_sendcmd(struct supernet_info *myinfo,cJSON *argjson,char *cmdstr,char *ipaddr,int32_t hops);
