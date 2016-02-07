@@ -10,7 +10,7 @@ widgetsManagement.createWidgets = function() {
 		var widget = widgets[key];
 		widget.innerHTML="";
 		widget.appendChild(iframeEL);
-		iframeEL.src="//127.0.0.1:7777/widgets?id="+widget.getAttribute("data-ref");
+		iframeEL.src="//127.0.0.1:7778/js/widgets?id="+widget.getAttribute("data-ref");
 		iframeEL.style.width="100%";
 		iframeEL.style.height="100%";
 		iframeEL.style.border="0";

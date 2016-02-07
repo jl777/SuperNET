@@ -549,7 +549,7 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
             plen = *script++;
             if ( bitcoin_pubkeylen(script) != plen )
             {
-                printf("invalid pubkey[%d] len %d\n",bitcoin_pubkeylen(script),script[0]);
+                printf("multisig.%d of %d: invalid pubkey[%02x] len %d\n",i,n,script[0],bitcoin_pubkeylen(script));
                 return(-1);
             }
             memcpy(vp->signers[i].pubkey,script,plen);
