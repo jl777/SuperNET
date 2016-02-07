@@ -443,9 +443,9 @@ int32_t iguana_recv(char *ipaddr,int32_t usock,uint8_t *recvbuf,int32_t len)
     {
         if ( (recvlen= (int32_t)recv(usock,recvbuf,remains,0)) < 0 )
         {
-            printf("%s recv errno.%d %s\n",ipaddr,errno,strerror(errno));
             if ( errno == EAGAIN )
             {
+                printf("%s recv errno.%d %s\n",ipaddr,errno,strerror(errno));
                 //printf("EAGAIN for len %d, remains.%d\n",len,remains);
                 sleep(1);
             } else return(-errno);

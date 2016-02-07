@@ -16,8 +16,14 @@
 STRING_ARG(SuperNET,bitcoinrpc,setcoin);
 ZERO_ARGS(SuperNET,myipaddr);
 STRING_ARG(SuperNET,setmyipaddr,ipaddr);
-HASH_AND_STRING(ramchain,verifytx,txid,txbytes);
 
+TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,BTCoffer,othercoin,otherassetid,maxprice,othervolume);
+TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,minaccept,base,rel,minprice,basevolume);
+TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,maxaccept,base,rel,maxprice,basevolume);
+STRING_AND_TWO_DOUBLES(InstantDEX,ALToffer,basecoin,minprice,basevolume);
+STRING_AND_TWO_DOUBLES(InstantDEX,NXToffer,assetid,minprice,basevolume);
+
+HASH_AND_STRING(ramchain,verifytx,txid,txbytes);
 INT_ARG(ramchain,getblockhash,height);
 HASH_AND_INT(ramchain,getblock,blockhash,remoteonly);
 HASH_AND_INT(ramchain,getrawtransaction,txid,verbose);
@@ -45,12 +51,6 @@ STRING_ARG(InstantDEX,tradehistory,exchange);
 STRING_AND_INT(InstantDEX,pollgap,exchange,pollgap);
 ZERO_ARGS(InstantDEX,allexchanges);
 STRING_ARG(InstantDEX,allpairs,exchange);
-
-STRING_AND_TWO_DOUBLES(InstantDEX,ALToffer,basecoin,minprice,basevolume);
-STRING_AND_TWO_DOUBLES(InstantDEX,NXToffer,assetid,minprice,basevolume);
-TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,BTCoffer,othercoin,otherassetid,maxprice,othervolume);
-TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,minaccept,base,rel,minprice,basevolume);
-TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,maxaccept,base,rel,maxprice,basevolume);
 
 //TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,proposal,reference,message,basetxid,reltxid,duration,flags);
 //TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,accept,reference,message,basetxid,reltxid,duration,flags);

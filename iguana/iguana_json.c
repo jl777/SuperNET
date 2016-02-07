@@ -617,10 +617,22 @@ STRING_ARG(iguana,pausecoin,activecoin)
 
 TWO_STRINGS(iguana,addnode,activecoin,ipaddr)
 {
-    if ( coin != 0 && ipaddr != 0 )
+    struct iguana_peer *addr;
+    if ( coin == 0 )
+        coin = iguana_coinfind(activecoin);
+    printf("coin.%p.[%s] addnode.%s -> %s\n",coin,coin!=0?coin->symbol:"",activecoin,ipaddr);
+    if ( coin != 0 && ipaddr != 0 && is_ipaddr(ipaddr) != 0 )
     {
-        iguana_possible_peer(coin,ipaddr);
-        return(clonestr("{\"result\":\"addnode submitted\"}"));
+        //iguana_possible_peer(coin,ipaddr);
+        if ( (addr= iguana_peerslot(coin,(uint32_t)calc_ipbits(ipaddr),0)) != 0 )
+        {
+            if ( addr->pending == 0 )
+            {
+                addr->pending = (uint32_t)time(NULL);
+                iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
+                return(clonestr("{\"result\":\"addnode submitted\"}"));
+            } else return(clonestr("{\"result\":\"addnode connection was already pending\"}"));
+        } else return(clonestr("{\"result\":\"addnode cant find peer slot\"}"));
     }
     else if ( coin == 0 )
         return(clonestr("{\"error\":\"addnode needs active coin, do an addcoin first\"}"));

@@ -728,7 +728,9 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
             if ( (filestr= SuperNET_htmlstr("index7778.html",retbuf,bufsize,0)) != 0 )
                 printf("created index7778.html size %ld\n",strlen(filestr));
         }
-        return(filestr);
+        if ( filestr != 0 )
+            return(filestr);
+        else return(clonestr("{\"error\":\"cant find index7778\"}"));
     }
     else if ( (filestr= OS_filestr(&filesize,url+1)) != 0 )
         return(filestr);
