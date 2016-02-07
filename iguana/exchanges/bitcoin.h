@@ -13,6 +13,9 @@
  *                                                                            *
  ******************************************************************************/
 
+#ifndef H_BITCOIN_H
+#define H_BITCOIN_H
+
 #include "../../includes/openssl/ec.h"
 #include "../../includes/openssl/ecdsa.h"
 #include "../../includes/openssl/obj_mac.h"
@@ -41,3 +44,23 @@
 #define OP_CHECKLOCKTIMEVERIFY 0xb1
 
 struct bp_key { EC_KEY *k; };
+
+int32_t bitcoin_validaddress(struct iguana_info *coin,char *coinaddr);
+int32_t bitcoin_cltvscript(uint8_t p2shtype,char *ps2h_coinaddr,uint8_t p2sh_rmd160[20],uint8_t *script,int32_t n,char *senderaddr,char *otheraddr,uint8_t secret160[20],uint32_t locktime);
+int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr);
+char *bitcoin_cltvtx(struct iguana_info *coin,char *changeaddr,char *senderaddr,char *senders_otheraddr,char *otheraddr,uint32_t locktime,uint64_t satoshis,bits256 txid,int32_t vout,uint64_t inputsatoshis,bits256 privkey);
+int32_t bitcoin_MofNspendscript(uint8_t p2sh_rmd160[20],uint8_t *script,int32_t n,const struct vin_info *vp);
+cJSON *bitcoin_createtx(struct iguana_info *coin,int32_t locktime);
+cJSON *bitcoin_addoutput(struct iguana_info *coin,cJSON *txobj,uint8_t *paymentscript,int32_t len,uint64_t satoshis);
+int32_t bitcoin_changescript(struct iguana_info *coin,uint8_t *changescript,int32_t n,uint64_t *changep,char *changeaddr,uint64_t inputsatoshis,uint64_t satoshis,uint64_t txfee);
+cJSON *bitcoin_addinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32_t vout,uint32_t sequence);
+int32_t bitcoin_verifytx(struct iguana_info *coin,bits256 *signedtxidp,char **signedtx,char *rawtxstr,struct vin_info *V);
+char *bitcoin_json2hex(struct iguana_info *coin,bits256 *txidp,cJSON *txjson);
+
+int32_t bitcoin_pubkeyspend(uint8_t *script,int32_t n,uint8_t pubkey[66]);
+int32_t bitcoin_p2shspend(uint8_t *script,int32_t n,uint8_t rmd160[20]);
+int32_t bitcoin_revealsecret160(uint8_t *script,int32_t n,uint8_t secret160[20]);
+int32_t bitcoin_standardspend(uint8_t *script,int32_t n,uint8_t rmd160[20]);
+
+#endif
+

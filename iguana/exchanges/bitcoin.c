@@ -169,6 +169,7 @@ int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr
         if ( (buf[len - 4]&0xff) == hash.bytes[31] && (buf[len - 3]&0xff) == hash.bytes[30] &&(buf[len - 2]&0xff) == hash.bytes[29] &&(buf[len - 1]&0xff) == hash.bytes[28] )
         {
             //printf("coinaddr.(%s) valid checksum\n",coinaddr);
+            return(20);
         }
         else
         {
@@ -178,7 +179,6 @@ int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr
                 printf("%02x ",buf[i]);
             char str[65]; printf("\nhex.(%s) checkhash.(%s) len.%d mismatch %02x %02x %02x %02x vs %02x %02x %02x %02x (%s)\n",hexaddr,coinaddr,len,buf[len - 4]&0xff,buf[len - 3]&0xff,buf[len - 2]&0xff,buf[len - 1]&0xff,hash.bytes[31],hash.bytes[30],hash.bytes[29],hash.bytes[28],bits256_str(str,hash));
         }
-        return(20);
     }
 	return(0);
 }
@@ -207,6 +207,20 @@ char *bitcoin_address(char *coinaddr,uint8_t addrtype,uint8_t *pubkey,int32_t le
             printf("checkaddr.(%s) vs coinaddr.(%s) %02x vs [%02x] memcmp.%d\n",checkaddr,coinaddr,addrtype,checktype,memcmp(rmd160,data+1,20));
     }
     return(coinaddr);
+}
+
+int32_t bitcoin_validaddress(struct iguana_info *coin,char *coinaddr)
+{
+    uint8_t rmd160[20],addrtype;
+    if ( coin == 0 || coinaddr == 0 || coinaddr[0] == 0 )
+        return(-1);
+    else if ( bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr) < 0 )
+        return(-1);
+    else if ( addrtype != coin->chain->pubtype && addrtype != coin->chain->p2shtype )
+        return(-1);
+    else if ( bitcoin_address(coinaddr,addrtype,rmd160,sizeof(rmd160)) != coinaddr )
+        return(-1);
+    return(0);
 }
 
 EC_KEY *bitcoin_privkeyset(uint8_t *oddevenp,bits256 *pubkeyp,bits256 privkey)
@@ -241,7 +255,7 @@ EC_KEY *bitcoin_privkeyset(uint8_t *oddevenp,bits256 *pubkeyp,bits256 privkey)
     return(KEY);
 }
 
-bits256 bitcoin_pubkey(uint8_t *data,bits256 privkey)
+bits256 bitcoin_pubkey33(uint8_t *data,bits256 privkey)
 {
     uint8_t oddeven; bits256 pubkey;
     EC_KEY *KEY;
@@ -253,6 +267,39 @@ bits256 bitcoin_pubkey(uint8_t *data,bits256 privkey)
     }
     return(pubkey);
 }
+
+/*int32_t bitcoin_priv2wif(char *wifstr,uint8_t privkey[32],uint8_t addrtype)
+{
+    uint8_t tmp[128]; char hexstr[67]; cstring *btc_addr;
+    memcpy(tmp,privkey,32);
+    tmp[32] = 1;
+    init_hexbytes_noT(hexstr,tmp,32);
+    if ( (btc_addr= base58_encode_check(addrtype,true,tmp,33)) != 0 )
+    {
+        strcpy(wifstr,btc_addr->str);
+        cstr_free(btc_addr,true);
+    }
+    printf("-> (%s) -> wif.(%s) addrtype.%02x\n",hexstr,wifstr,addrtype);
+    return(0);
+}
+
+int32_t bitcoin_wif2priv(uint8_t *addrtypep,uint8_t privkey[32],char *wifstr)
+{
+    cstring *cstr; int32_t len = -1;
+    if ( (cstr= base58_decode_check(addrtypep,(const char *)wifstr)) != 0 )
+    {
+        init_hexbytes_noT((void *)privkey,(void *)cstr->str,cstr->len);
+        if ( cstr->str[cstr->len-1] == 0x01 )
+            cstr->len--;
+        memcpy(privkey,cstr->str,cstr->len);
+        len = (int32_t)cstr->len;
+        char tmp[138];
+        btc_priv2wif(tmp,privkey,*addrtypep);
+        printf("addrtype.%02x wifstr.(%llx) len.%d\n",*addrtypep,*(long long *)privkey,len);
+        cstr_free(cstr,true);
+    }
+    return(len);
+}*/
 
 int32_t bitcoin_sign(uint8_t *sig,int32_t maxlen,uint8_t *data,int32_t datalen,bits256 privkey)
 {
@@ -324,6 +371,14 @@ int32_t bitcoin_p2shspend(uint8_t *script,int32_t n,uint8_t rmd160[20])
     return(n);
 }
 
+int32_t bitcoin_revealsecret160(uint8_t *script,int32_t n,uint8_t secret160[20])
+{
+    script[n++] = SCRIPT_OP_HASH160;
+    script[n++] = 0x14; memcpy(&script[n],secret160,0x14); n += 0x14;
+    script[n++] = SCRIPT_OP_EQUALVERIFY;
+    return(n);
+}
+
 int32_t bitcoin_standardspend(uint8_t *script,int32_t n,uint8_t rmd160[20])
 {
     script[n++] = SCRIPT_OP_DUP;
@@ -378,6 +433,32 @@ int32_t bitcoin_p2shscript(uint8_t *script,int32_t n,const uint8_t *p2shscript,c
     return(n);
 }
 
+int32_t bitcoin_changescript(struct iguana_info *coin,uint8_t *changescript,int32_t n,uint64_t *changep,char *changeaddr,uint64_t inputsatoshis,uint64_t satoshis,uint64_t txfee)
+{
+    uint8_t addrtype,rmd160[20]; int32_t len;
+    *changep = 0;
+    if ( inputsatoshis >= (satoshis + txfee) )
+    {
+        *changep = inputsatoshis - (satoshis + txfee);
+        if ( changeaddr != 0 && changeaddr[0] != 0 )
+        {
+            bitcoin_addr2rmd160(&addrtype,rmd160,changeaddr);
+            if ( addrtype == coin->chain->pubtype )
+                len = bitcoin_standardspend(changescript,0,rmd160);
+            else if ( addrtype == coin->chain->p2shtype )
+                len = bitcoin_standardspend(changescript,0,rmd160);
+            else
+            {
+                printf("error with mismatched addrtype.%02x vs (%02x %02x)\n",addrtype,coin->chain->pubtype,coin->chain->p2shtype);
+                return(-1);
+            }
+            return(len);
+        }
+        else printf("error no change address when there is change\n");
+    }
+    return(-1);
+}
+
 int32_t bitcoin_scriptsig(uint8_t *script,int32_t n,const struct vin_info *vp)
 {
     int32_t i,siglen;
@@ -396,20 +477,21 @@ int32_t bitcoin_scriptsig(uint8_t *script,int32_t n,const struct vin_info *vp)
     return(n);
 }
 
-int32_t bitcoin_cltvscript(uint8_t p2shtype,char *ps2h_coinaddr,uint8_t p2sh_rmd160[20],uint8_t *script,int32_t n,char *senderaddr,char *destaddr,uint32_t locktime)
+int32_t bitcoin_cltvscript(uint8_t p2shtype,char *ps2h_coinaddr,uint8_t p2sh_rmd160[20],uint8_t *script,int32_t n,char *senderaddr,char *otheraddr,uint8_t secret160[20],uint32_t locktime)
 {
     // OP_IF
     //      <timestamp> OP_CHECKLOCKTIMEVERIFY OP_DROP OP_DUP OP_HASH160 <hash160> OP_EQUALVERIFY OP_CHECKSIG
     // OP_ELSE
-    //      OP_DUP OP_HASH160 <hash160> OP_EQUALVERIFY OP_CHECKSIG // standard spend
+    //      OP_HASH160 secret160 OP_EQUALVERIFY OP_DUP OP_HASH160 <hash160> OP_EQUALVERIFY OP_CHECKSIG // standard spend
     // OP_ENDIF
     uint8_t sha256[32],rmd160A[20],rmd160B[20],addrtypeA,addrtypeB;
     bitcoin_addr2rmd160(&addrtypeA,rmd160A,senderaddr);
-    bitcoin_addr2rmd160(&addrtypeB,rmd160B,destaddr);
+    bitcoin_addr2rmd160(&addrtypeB,rmd160B,otheraddr);
     script[n++] = SCRIPT_OP_IF;
         n = bitcoin_checklocktimeverify(script,n,locktime);
         n = bitcoin_standardspend(script,n,rmd160A);
     script[n++] = SCRIPT_OP_ELSE;
+        n = bitcoin_revealsecret160(script,n,secret160);
         n = bitcoin_standardspend(script,n,rmd160B);
     script[n++] = SCRIPT_OP_ENDIF;
     vcalc_sha256(0,sha256,script,n);
@@ -1157,11 +1239,10 @@ char *bitcoin_json2hex(struct iguana_info *coin,bits256 *txidp,cJSON *txjson)
     return(txbytes);
 }
 
-cJSON *bitcoin_createtx(struct iguana_info *coin,int32_t lockduration)
+cJSON *bitcoin_createtx(struct iguana_info *coin,int32_t locktime)
 {
-    uint32_t timestamp; cJSON *json = cJSON_CreateObject();
-    timestamp = (uint32_t)time(NULL) + 5;
-    if ( lockduration == 0 )
+    cJSON *json = cJSON_CreateObject();
+    if ( locktime == 0 )
     {
         jaddnum(json,"version",1);
         jaddnum(json,"locktime",0);
@@ -1169,20 +1250,20 @@ cJSON *bitcoin_createtx(struct iguana_info *coin,int32_t lockduration)
     else
     {
         jaddnum(json,"version",4);
-        jaddnum(json,"locktime",timestamp + lockduration);
+        jaddnum(json,"locktime",locktime);
     }
     if ( coin->chain->hastimestamp != 0 )
-        jaddnum(json,"timestamp",timestamp);
+        jaddnum(json,"timestamp",time(NULL));
     jadd(json,"vin",cJSON_CreateArray());
     jadd(json,"vout",cJSON_CreateArray());
     return(json);
 }
 
-cJSON *bitcoin_addoutput(struct iguana_info *coin,cJSON *txobj,uint8_t *paymentscript,int32_t len,double amount)
+cJSON *bitcoin_addoutput(struct iguana_info *coin,cJSON *txobj,uint8_t *paymentscript,int32_t len,uint64_t satoshis)
 {
     char *hexstr; cJSON *item,*skey,*vouts = jduplicate(jobj(txobj,"vout"));
     item = cJSON_CreateObject();
-    jaddnum(item,"value",amount);
+    jaddnum(item,"value",dstr(satoshis));
     skey = cJSON_CreateObject();
     hexstr = malloc(len*2 + 1);
     init_hexbytes_noT(hexstr,paymentscript,len);
@@ -1206,18 +1287,17 @@ cJSON *bitcoin_addinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32
     return(txobj);
 }
 
-char *bitcoin_cltvtx(struct iguana_info *coin,char *changeaddr,char *senderaddr,char *destaddr,int32_t duration,double amount,bits256 txid,int32_t vout,uint64_t inputsatoshis,bits256 privkey)
+char *bitcoin_cltvtx(struct iguana_info *coin,char *changeaddr,char *senderaddr,char *senders_otheraddr,char *otheraddr,uint32_t locktime,uint64_t satoshis,bits256 txid,int32_t vout,uint64_t inputsatoshis,bits256 privkey)
 {
-    uint64_t change,satoshis; char *rawtxstr,*signedtx; struct vin_info V; bits256 cltxid,signedtxid;
-    int32_t cltvlen,len; uint32_t timestamp,locktime; char ps2h_coinaddr[65]; cJSON *txobj;
-    uint8_t p2sh_rmd160[20],cltvscript[1024],paymentscript[64],rmd160[20],addrtype;
+    uint64_t change; char *rawtxstr,*signedtx; struct vin_info V; bits256 cltxid,signedtxid;
+    int32_t cltvlen,len; uint32_t timestamp; char ps2h_coinaddr[65]; cJSON *txobj;
+    uint8_t p2sh_rmd160[20],cltvscript[1024],paymentscript[64],rmd160[20],secret160[20],addrtype;
     timestamp = (uint32_t)time(NULL);
-    locktime = timestamp + duration;
-    cltvlen = bitcoin_cltvscript(coin->chain->p2shtype,ps2h_coinaddr,p2sh_rmd160,cltvscript,0,senderaddr,destaddr,locktime);
-    txobj = bitcoin_createtx(coin,duration);
+    bitcoin_addr2rmd160(&addrtype,secret160,senders_otheraddr);
+    cltvlen = bitcoin_cltvscript(coin->chain->p2shtype,ps2h_coinaddr,p2sh_rmd160,cltvscript,0,senderaddr,otheraddr,secret160,locktime);
+    txobj = bitcoin_createtx(coin,locktime);
     len = bitcoin_p2shspend(paymentscript,0,p2sh_rmd160);
-    satoshis = (amount * SATOSHIDEN);
-    bitcoin_addoutput(coin,txobj,paymentscript,len,amount);
+    bitcoin_addoutput(coin,txobj,paymentscript,len,satoshis);
     bitcoin_addinput(coin,txobj,txid,vout,locktime);
     if ( inputsatoshis > (satoshis + 10000) )
     {
@@ -1435,7 +1515,7 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
                 jaddnum(json,"volume",volume);
                 if ( (other= iguana_coinfind(base)) != 0 )
                 {
-                    bitcoin_pubkey(pubkey,myinfo->persistent_priv);
+                    bitcoin_pubkey33(pubkey,myinfo->persistent_priv);
                     bitcoin_address(coinaddr,other->chain->pubtype,pubkey,sizeof(pubkey));
                     jaddstr(argjson,base,coinaddr);
                 }

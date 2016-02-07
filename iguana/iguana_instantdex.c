@@ -215,10 +215,10 @@ int32_t instantdex_bidaskdir(struct instantdex_accept *ap)
 
 cJSON *instantdex_acceptjson(struct instantdex_accept *ap)
 {
-    int32_t dir; struct supernet_info *myinfo = SuperNET_MYINFO(0);
+    int32_t dir;
     cJSON *item = cJSON_CreateObject();
     jadd64bits(item,"orderid",ap->orderid);
-    jadd64bits(item,"offerNXT",myinfo->myaddr.nxt64bits);
+    jadd64bits(item,"offerer",ap->A.offer64);
     if ( ap->dead != 0 )
         jadd64bits(item,"dead",ap->dead);
     if ( (dir= instantdex_bidaskdir(ap)) > 0 )
@@ -234,9 +234,10 @@ cJSON *instantdex_acceptjson(struct instantdex_accept *ap)
     jaddstr(item,"base",ap->A.base);
     jaddstr(item,"rel",ap->A.rel);
     jaddnum(item,"timestamp",ap->A.expiration);
-    jaddnum(item,"price",ap->A.price);
-    jaddnum(item,"volume",ap->A.basevolume);
-    jaddnum(item,"pendingvolume",ap->A.pendingvolume);
+    jaddnum(item,"price",dstr(ap->A.price64));
+    jaddnum(item,"volume",dstr(ap->A.basevolume64));
+    jaddnum(item,"nonce",ap->A.nonce);
+    jaddnum(item,"pendingvolume",dstr(ap->pendingvolume64));
     jaddnum(item,"expiresin",ap->A.expiration - time(NULL));
     return(item);
 }
@@ -272,23 +273,26 @@ struct instantdex_accept *instantdex_acceptablefind(struct exchange_info *exchan
     return(retap);
 }
 
-struct instantdex_accept *instantdex_acceptable(struct exchange_info *exchange,char *base,char *rel,char *offerside,int32_t offerdir,double offerprice,double volume)
+struct instantdex_accept *instantdex_acceptable(struct exchange_info *exchange,struct instantdex_accept *A,uint64_t offerbits)
 {
-    struct instantdex_accept PAD,*ap,*retap = 0; double bestprice = 0.; uint32_t now;
+    struct instantdex_accept PAD,*ap,*retap = 0; uint64_t bestprice64 = 0;
+    uint32_t now; int32_t offerdir;
     now = (uint32_t)time(NULL);
     memset(&PAD,0,sizeof(PAD));
     queue_enqueue("acceptableQ",&exchange->acceptableQ,&PAD.DL,0);
+    offerdir = instantdex_bidaskdir(A);
     while ( (ap= queue_dequeue(&exchange->acceptableQ,0)) != 0 && ap != &PAD )
     {
         if ( now < ap->A.expiration && ap->dead == 0 )
         {
-            if ( volume > 0. && (strcmp(base,"*") == 0 || strcmp(base,ap->A.base) == 0) && (strcmp(rel,"*") == 0 || strcmp(rel,ap->A.rel) == 0) && volume <= (ap->A.basevolume - ap->A.pendingvolume) && offerdir*instantdex_bidaskdir(ap) < 0 )
+            if ( (offerbits == 0 || offerbits != A->A.offer64) && A->A.basevolume64 > 0. && (strcmp(A->A.base,"*") == 0 || strcmp(A->A.base,ap->A.base) == 0) && (strcmp(A->A.rel,"*") == 0 || strcmp(A->A.rel,ap->A.rel) == 0) && A->A.basevolume64 <= (ap->A.basevolume64 - ap->pendingvolume64) && offerdir*instantdex_bidaskdir(ap) < 0 )
             {
-                if ( offerdir == 0 || offerprice == 0. || ((offerdir > 0 && ap->A.price > offerprice) || (offerdir < 0 && ap->A.price < offerprice)) )
+                if ( offerdir == 0 || A->A.price64 == 0 || ((offerdir > 0 && ap->A.price64 > A->A.price64) || (offerdir < 0 && ap->A.price64 < A->A.price64)) )
                 {
-                    if ( (offerdir < 0 && ap->A.price < bestprice) || (offerdir > 0 && ap->A.price > bestprice) )
+                    if ( bestprice64 == 0 || (offerdir < 0 && ap->A.price64 < bestprice64) || (offerdir > 0 && ap->A.price64 > bestprice64) )
                     {
-                        bestprice = ap->A.price;
+                        printf("found better price %f vs %f\n",dstr(ap->A.price64),dstr(bestprice64));
+                        bestprice64 = ap->A.price64;
                         retap = ap;
                     }
                 }
@@ -311,6 +315,64 @@ struct instantdex_accept *instantdex_acceptable(struct exchange_info *exchange,c
 // NXT node verifies bitcoin txbytes has proper payment and cashes in with onetimepubkey
 // BTC* node approves phased tx with onetimepubkey
 
+int32_t instantdex_acceptextract(struct instantdex_accept *ap,cJSON *argjson)
+{
+    char *base,*rel; bits256 hash;
+    memset(ap,0,sizeof(*ap));
+    if ( (base= jstr(argjson,"b")) != 0 )
+        safecopy(ap->A.base,base,sizeof(ap->A.base));
+    if ( (rel= jstr(argjson,"r")) != 0 )
+        safecopy(ap->A.rel,rel,sizeof(ap->A.rel));
+    ap->A.nonce = juint(argjson,"n");
+    ap->A.expiration = juint(argjson,"e");
+    ap->A.myside = juint(argjson,"s");
+    ap->A.acceptdir = jint(argjson,"d");
+    ap->A.offer64 = j64bits(argjson,"o");
+    ap->A.price64 = j64bits(argjson,"p");
+    ap->A.basevolume64 = j64bits(argjson,"v");
+    vcalc_sha256(0,hash.bytes,(void *)&ap->A,sizeof(ap->A));
+    ap->orderid = j64bits(argjson,"i");
+    if ( hash.txid != ap->orderid )
+    {
+        printf("instantdex_acceptset warning %llu != %llu\n",(long long)hash.txid,(long long)ap->orderid);
+        return(-1);
+    }
+    return(0);
+}
+
+bits256 instantdex_acceptset(struct instantdex_accept *ap,char *base,char *rel,int32_t duration,int32_t myside,int32_t acceptdir,double price,double volume,uint64_t offerbits)
+{
+    bits256 hash;
+    memset(ap,0,sizeof(*ap));
+    safecopy(ap->A.base,base,sizeof(ap->A.base));
+    safecopy(ap->A.rel,base,sizeof(ap->A.rel));
+    OS_randombytes((uint8_t *)&ap->A.nonce,sizeof(ap->A.nonce));
+    ap->A.expiration = (uint32_t)time(NULL) + duration;
+    ap->A.offer64 = offerbits;
+    ap->A.myside = myside;
+    ap->A.acceptdir = acceptdir;
+    ap->A.price64 = price * SATOSHIDEN;
+    ap->A.basevolume64 = volume * SATOSHIDEN;
+    vcalc_sha256(0,hash.bytes,(void *)&ap->A,sizeof(ap->A));
+    ap->orderid = hash.txid;
+    return(hash);
+}
+
+cJSON *instantdex_acceptsendjson(struct instantdex_accept *ap)
+{
+    cJSON *json = cJSON_CreateObject();
+    jaddstr(json,"b",ap->A.base);
+    jaddstr(json,"r",ap->A.rel);
+    jaddnum(json,"n",ap->A.nonce);
+    jaddnum(json,"e",ap->A.expiration);
+    jaddnum(json,"s",ap->A.myside);
+    jaddnum(json,"d",ap->A.acceptdir);
+    jadd64bits(json,"p",ap->A.price64);
+    jadd64bits(json,"v",ap->A.basevolume64);
+    jadd64bits(json,"i",ap->orderid);
+    return(json);
+}
+
 #include "swaps/iguana_BTCswap.c"
 #include "swaps/iguana_ALTswap.c"
 #include "swaps/iguana_NXTswap.c"
@@ -318,23 +380,32 @@ struct instantdex_accept *instantdex_acceptable(struct exchange_info *exchange,c
 
 char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen)
 {
-    char cmdstr[16],*traderip; struct exchange_info *exchange = exchanges777_find("bitcoin");
+    char cmdstr[16],*traderip,*orderidstr; struct exchange_info *exchange; uint64_t orderid;
+    struct instantdex_accept A,*ap;
+    exchange = exchanges777_find("bitcoin");
     memset(cmdstr,0,sizeof(cmdstr)), memcpy(cmdstr,msg->cmd,sizeof(msg->cmd));
     if ( argjson != 0 )
     {
+        memset(&A,0,sizeof(A));
         if ( (traderip= jstr(argjson,"traderip")) != 0 && strcmp(traderip,myinfo->ipaddr) == 0 )
         {
             printf("got my own request\n");
             return(clonestr("{\"result\":\"got my own request\"}"));
         }
+        if ( (orderidstr= jstr(argjson,"id")) != 0 )
+        {
+            orderid = calc_nxt64bits(orderidstr);
+            if ( (ap= instantdex_acceptablefind(exchange,0,0,orderid,"*","*")) != 0 )
+                A = *ap;
+        } else instantdex_acceptextract(&A,argjson);
         if ( strncmp(cmdstr,"BTC",3) == 0 )
-            return(instantdex_BTCswap(myinfo,exchange,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen));
+            return(instantdex_BTCswap(myinfo,exchange,&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen));
         else if ( strncmp(cmdstr,"NXT",3) == 0 )
-            return(instantdex_NXTswap(myinfo,exchange,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen));
+            return(instantdex_NXTswap(myinfo,exchange,&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen));
         else if ( strncmp(cmdstr,"ALT",3) == 0 )
-            return(instantdex_ALTswap(myinfo,exchange,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen));
+            return(instantdex_ALTswap(myinfo,exchange,&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen));
         else if ( strncmp(cmdstr,"PAX",3) == 0 )
-            return(instantdex_PAXswap(myinfo,exchanges777_find("PAX"),cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen));
+            return(instantdex_PAXswap(myinfo,exchanges777_find("PAX"),&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen));
         else return(clonestr("{\"error\":\"unrecognized atomic swap family\"}"));
     }
     return(clonestr("{\"error\":\"request needs argjson\"}"));
@@ -387,25 +458,18 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
     return(retstr);
 }
 
-char *instantdex_queueaccept(struct exchange_info *exchange,char *base,char *rel,double price,double basevolume,int32_t acceptdir,char *myside,int32_t duration)
+char *instantdex_queueaccept(struct exchange_info *exchange,char *base,char *rel,double price,double basevolume,int32_t acceptdir,char *mysidestr,int32_t duration)
 {
-    struct instantdex_accept *ap; bits256 hash;
+    struct instantdex_accept *ap; int32_t myside; struct supernet_info *myinfo = SuperNET_MYINFO(0);
     if ( exchange != 0 )
     {
         ap = calloc(1,sizeof(*ap));
-        OS_randombytes((uint8_t *)&ap->A.nonce,sizeof(ap->A.nonce));
-        safecopy(ap->A.base,base,sizeof(ap->A.base));
-        safecopy(ap->A.rel,rel,sizeof(ap->A.rel));
-        if ( strcmp(myside,base) == 0 )
-            ap->A.myside = 0;
-        else if ( strcmp(myside,rel) == 0 )
-            ap->A.myside = 1;
-        else ap->A.myside = -1;
-        ap->A.acceptdir = acceptdir;
-        ap->A.price = price, ap->A.basevolume = basevolume;
-        ap->A.expiration = (uint32_t)time(NULL) + duration;
-        vcalc_sha256(0,hash.bytes,(void *)&ap->A,sizeof(ap->A));
-        ap->orderid = hash.txid;
+        if ( strcmp(mysidestr,base) == 0 )
+            myside = 0;
+        else if ( strcmp(mysidestr,rel) == 0 )
+            myside = 1;
+        else myside = -1;
+        instantdex_acceptset(ap,base,rel,duration,myside,acceptdir,price,basevolume,myinfo->myaddr.nxt64bits);
         queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
         return(jprint(instantdex_acceptjson(ap),1));
     }
@@ -430,48 +494,24 @@ TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,minaccept,base,rel,minprice,basevolume)
 
 TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,BTCoffer,othercoin,otherassetid,maxprice,othervolume)
 {
-    int32_t hops = INSTANTDEX_HOPS; cJSON *argjson; char *base,*str,coinaddr[64]; struct iguana_info *other;
-    uint8_t pubkey[33];
     if ( remoteaddr == 0 )
-    {
-        argjson = cJSON_CreateObject();
-        base = othercoin[0] != 0 ? othercoin : otherassetid;
-        if ( (other= iguana_coinfind(othercoin)) != 0 )
-        {
-            bitcoin_pubkey(pubkey,myinfo->persistent_priv);
-            bitcoin_address(coinaddr,other->chain->pubtype,pubkey,sizeof(pubkey));
-            jaddstr(argjson,othercoin,coinaddr);
-        }
-        jaddstr(argjson,"base",base);
-        jaddstr(argjson,"rel","BTC");
-        jaddstr(argjson,"BTC",myinfo->myaddr.BTC);
-        if ( maxprice > 0. )
-        {
-            if ( (str= InstantDEX_maxaccept(IGUANA_CALLARGS,base,"BTC",maxprice,othervolume)) != 0 )
-                free(str);
-            jaddnum(argjson,"maxprice",maxprice);
-        }
-        jaddnum(argjson,"volume",othervolume);
-        return(instantdex_sendcmd(myinfo,argjson,"BTCoffer",myinfo->ipaddr,hops));
-    } else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
+        return(instantdex_btcoffer(myinfo,exchanges777_find("bitcoin"),othercoin[0] != 0 ? othercoin : otherassetid,othervolume,maxprice));
+    else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
 }
 
 STRING_AND_TWO_DOUBLES(InstantDEX,ALToffer,basecoin,minprice,basevolume)
 {
-    int32_t hops = INSTANTDEX_HOPS; cJSON *argjson; char *str;
+    int32_t hops = INSTANTDEX_HOPS; cJSON *argjson; char *str; struct instantdex_accept A;
     if ( remoteaddr == 0 )
     {
-        argjson = cJSON_CreateObject();
         if ( iguana_coinfind(basecoin) == 0 )
             return(clonestr("{\"error\":\"InstantDEX basecoin is not active, need to addcoin\"}"));
-        jaddstr(argjson,"base",basecoin);
-        jaddstr(argjson,"rel","BTC");
-        jaddnum(argjson,"volume",basevolume);
+        instantdex_acceptset(&A,basecoin,"BTC",INSTANTDEX_OFFERDURATION,0,1,minprice,basevolume,myinfo->myaddr.nxt64bits);
+        argjson = instantdex_acceptsendjson(&A);
         if ( minprice > 0. )
         {
             if ( (str= InstantDEX_minaccept(IGUANA_CALLARGS,basecoin,"BTC",minprice,basevolume)) != 0 )
                 free(str);
-            jaddnum(argjson,"minprice",minprice);
         }
         return(instantdex_sendcmd(myinfo,argjson,"ALToffer",myinfo->ipaddr,hops));
     } else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
@@ -479,23 +519,20 @@ STRING_AND_TWO_DOUBLES(InstantDEX,ALToffer,basecoin,minprice,basevolume)
 
 STRING_AND_TWO_DOUBLES(InstantDEX,NXToffer,assetid,minprice,basevolume)
 {
-    int32_t hops = INSTANTDEX_HOPS; cJSON *argjson; char *base,*str;
+    int32_t hops = INSTANTDEX_HOPS; cJSON *argjson; char *base,*str; struct instantdex_accept A;
     if ( remoteaddr == 0 )
     {
-        argjson = cJSON_CreateObject();
         if ( assetid == 0 || assetid[0] == 0 || strcmp(assetid,"0") == 0 || strcmp(assetid,"NXT") == 0 || strcmp(assetid,"nxt") == 0 )
             base = "NXT";
         else if ( is_decimalstr(assetid) <= 0 )
             return(clonestr("{\"error\":\"InstantDEX NXToffer illegal assetid\"}"));
         else base = assetid;
-        jaddstr(argjson,"base",base);
-        jaddstr(argjson,"rel","BTC");
-        jaddnum(argjson,"volume",basevolume);
+        instantdex_acceptset(&A,base,"BTC",INSTANTDEX_OFFERDURATION,0,1,minprice,basevolume,myinfo->myaddr.nxt64bits);
+        argjson = instantdex_acceptsendjson(&A);
         if ( minprice > 0. )
         {
             if ( (str= InstantDEX_minaccept(IGUANA_CALLARGS,base,"BTC",minprice,basevolume)) != 0 )
                 free(str);
-            jaddnum(argjson,"minprice",minprice);
         }
         return(instantdex_sendcmd(myinfo,argjson,"NXToffer",myinfo->ipaddr,hops));
     } else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));

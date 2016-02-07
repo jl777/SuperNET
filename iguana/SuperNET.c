@@ -919,14 +919,18 @@ cJSON *SuperNET_rosettajson(bits256 privkey,int32_t showprivs)
 
 #include "../includes/iguana_apidefs.h"
 
-HASH_ARG(SuperNET,priv2pub,privkey)
+HASH_AND_INT(SuperNET,priv2pub,privkey,addrtype)
 {
-    cJSON *retjson; bits256 pubkey;
+    cJSON *retjson; bits256 pub; uint8_t pubkey[33]; char coinaddr[64];
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     retjson = cJSON_CreateObject();
-    crypto_box_priv2pub(pubkey.bytes,privkey.bytes);
-    jaddbits256(retjson,"result",pubkey);
+    crypto_box_priv2pub(pub.bytes,privkey.bytes);
+    jaddbits256(retjson,"curve25519",pub);
+    pub = bitcoin_pubkey33(pubkey,privkey);
+    jaddbits256(retjson,"secp256k1",pub);
+    bitcoin_address(coinaddr,addrtype,pubkey,33);
+    jaddstr(retjson,"result",coinaddr);
     return(jprint(retjson,1));
 }
 

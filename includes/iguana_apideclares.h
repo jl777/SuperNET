@@ -92,7 +92,7 @@ TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(SuperNET,DHT,hexmsg,destip,categoryhash,sub
 
 THREE_STRINGS(SuperNET,rosetta,passphrase,pin,showprivkey);
 ZERO_ARGS(SuperNET,keypair);
-HASH_ARG(SuperNET,priv2pub,privkey);
+HASH_AND_INT(SuperNET,priv2pub,privkey,addrtype);
 STRING_ARG(SuperNET,wif2priv,wif);
 
 TWOHASHES_AND_STRING(SuperNET,cipher,privkey,destpubkey,message);

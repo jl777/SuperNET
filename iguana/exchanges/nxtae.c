@@ -700,7 +700,7 @@ uint64_t submit_triggered_nxtae(struct supernet_info *myinfo,int32_t dotrade,cha
         else sprintf(cmd+strlen(cmd),"&priceNQT=%llu",(long long)NXTprice);
     }
     if ( otherNXT != 0 )
-        sprintf(cmd+strlen(cmd),"&recipient=%llu",(long long)otherNXT);
+        sprintf(cmd+strlen(cmd),"&recipient=%s",otherNXT);
     if ( refhash != 0 )
         sprintf(cmd+strlen(cmd),"&referencedTransactionFullHash=%s",refhash);
     if ( triggerhash != 0 && triggerhash[0] != 0 )
