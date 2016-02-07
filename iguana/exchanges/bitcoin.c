@@ -1379,9 +1379,75 @@ cJSON *BALANCES(struct exchange_info *exchange,cJSON *argjson)
     return(cJSON_Parse("{\"error\":\"bitcoin is not yet\"}"));
 }
 
+int32_t is_valid_BTCother(char *other)
+{
+    if ( iguana_coinfind(other) != 0 )
+        return(1);
+    else if ( strcmp(other,"NXT") == 0 || strcmp(other,"nxt") == 0 )
+        return(1);
+    else if ( is_decimalstr(other) > 0 )
+        return(1);
+    else return(0);
+}
+
 uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *base,char *rel,int32_t dir,double price,double volume,cJSON *argjson)
 {
-    return(0);
+    struct instantdex_accept *ap; char *str; uint64_t txid = 0; cJSON *json; struct supernet_info *myinfo; int32_t hops = 3;
+    myinfo = SuperNET_MYINFO(0);
+    if ( strcmp(base,"BTC") == 0 || strcmp(base,"btc") == 0 )
+    {
+        base = rel;
+        rel = "BTC";
+        dir = -dir;
+        volume *= price;
+        price = 1. / price;
+    }
+    if ( is_valid_BTCother(base) != 0 && (strcmp(rel,"BTC") == 0 || strcmp(rel,"btc") == 0) )
+    {
+        ap = 0;//instantdex_acceptable(exchange,base,rel,"BTC",dir,price,volume);
+        if ( dotrade == 0 )
+        {
+            if ( retstrp != 0 )
+            {
+                if ( ap != 0 )
+                    *retstrp = jprint(instantdex_acceptjson(ap),1);
+                else *retstrp = clonestr("{\"result\":\"would issue new trade\"}");
+            }
+        }
+        else
+        {
+            if ( ap != 0 )
+            {
+                
+            }
+            else if ( dir < 0 )
+            {
+                printf("bitcoin sell is not yet\n");
+                return(0);
+            }
+            else
+            {
+                json = cJSON_CreateObject();
+                jaddstr(json,"base",base);
+                jaddstr(json,"rel","BTC");
+                jaddnum(json,"maxprice",price);
+                jaddnum(json,"volume",volume);
+                if ( (str= instantdex_sendcmd(myinfo,json,"BTCoffer",myinfo->ipaddr,hops)) != 0 )
+                    free(str);
+                free_json(json);
+                if ( (str= instantdex_queueaccept(exchange,base,"BTC",price,volume,-1,"BTC",INSTANTDEX_OFFERDURATION)) != 0 )
+                {
+                    if ( (json= cJSON_Parse(str)) != 0 )
+                    {
+                        txid = j64bits(json,"orderid");
+                        free_json(json);
+                    }
+                    free(str);
+                }
+            }
+        }
+    }
+    return(txid);
 }
 
 char *ORDERSTATUS(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson)

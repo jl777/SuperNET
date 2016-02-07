@@ -557,7 +557,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
             addr->lastgotaddr = (uint32_t)time(NULL);
             addr->msgcounts.addr++;
         }
-        printf("%s -> addr recvlen.%d num.%d\n",addr->ipaddr,recvlen,(int32_t)x);
+        //printf("%s -> addr recvlen.%d num.%d\n",addr->ipaddr,recvlen,(int32_t)x);
     }
     else if ( strcmp(H->command,"headers") == 0 )
     {

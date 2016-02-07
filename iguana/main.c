@@ -354,7 +354,7 @@ void iguana_main(void *arg)
         strcpy(MYINFO.rpcsymbol,"BTCD");
         iguana_launchcoin(MYINFO.rpcsymbol,cJSON_Parse("{}"));
 
-        if ( 0 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"wallet\":\"password\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":3,\"newcoin\":\"BTCD\",\"active\":1}"),0)) != 0 )
+        if ( 0 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"wallet\":\"password\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":3,\"newcoin\":\"BTCD\",\"active\":0}"),0)) != 0 )
         {
             printf("got.(%s)\n",str);
             free(str);

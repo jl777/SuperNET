@@ -19,7 +19,6 @@
 
 #define INSTANTDEX_HOPS 3
 #define INSTANTDEX_DURATION 60
-#define INSTANTDEX_OFFERDURATION 3600
 
 cJSON *InstantDEX_argjson(char *reference,char *message,char *othercoinaddr,char *otherNXTaddr,int32_t iter,int32_t val,int32_t val2)
 {
@@ -208,17 +207,18 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
 int32_t instantdex_bidaskdir(struct instantdex_accept *ap)
 {
     if ( ap->A.myside == 0 && ap->A.acceptdir > 0 ) // base
-        return(1);
-    else if ( ap->A.myside == 1 && ap->A.acceptdir < 0 ) // rel
         return(-1);
+    else if ( ap->A.myside == 1 && ap->A.acceptdir < 0 ) // rel
+        return(1);
     else return(0);
 }
 
 cJSON *instantdex_acceptjson(struct instantdex_accept *ap)
 {
-    int32_t dir;
+    int32_t dir; struct supernet_info *myinfo = SuperNET_MYINFO(0);
     cJSON *item = cJSON_CreateObject();
     jadd64bits(item,"orderid",ap->orderid);
+    jadd64bits(item,"offerNXT",myinfo->myaddr.nxt64bits);
     if ( ap->dead != 0 )
         jadd64bits(item,"dead",ap->dead);
     if ( (dir= instantdex_bidaskdir(ap)) > 0 )
@@ -233,6 +233,7 @@ cJSON *instantdex_acceptjson(struct instantdex_accept *ap)
     }
     jaddstr(item,"base",ap->A.base);
     jaddstr(item,"rel",ap->A.rel);
+    jaddnum(item,"timestamp",ap->A.expiration);
     jaddnum(item,"price",ap->A.price);
     jaddnum(item,"volume",ap->A.basevolume);
     jaddnum(item,"pendingvolume",ap->A.pendingvolume);
@@ -256,11 +257,12 @@ struct instantdex_accept *instantdex_acceptablefind(struct exchange_info *exchan
             }
             if ( (item= instantdex_acceptjson(ap)) != 0 )
             {
+                //printf("item.(%s)\n",jprint(item,0));
                 if ( (type= jstr(item,"type")) != 0 )
                 {
                     if ( strcmp(type,"bid") == 0 && bids != 0 )
                         jaddi(bids,item);
-                    else if ( strcmp(type,"ask") != 0 && asks != 0 )
+                    else if ( strcmp(type,"ask") == 0 && asks != 0 )
                         jaddi(asks,item);
                 }
             }
@@ -270,7 +272,7 @@ struct instantdex_accept *instantdex_acceptablefind(struct exchange_info *exchan
     return(retap);
 }
 
-struct instantdex_accept *instantdex_acceptable(struct exchange_info *exchange,cJSON *array,char *refstr,char *base,char *rel,char *offerside,int32_t offerdir,double offerprice,double volume)
+struct instantdex_accept *instantdex_acceptable(struct exchange_info *exchange,char *refstr,char *base,char *rel,char *offerside,int32_t offerdir,double offerprice,double volume)
 {
     struct instantdex_accept PAD,*ap,*retap = 0; double bestprice = 0.; uint32_t now;
     now = (uint32_t)time(NULL);
@@ -291,8 +293,6 @@ struct instantdex_accept *instantdex_acceptable(struct exchange_info *exchange,c
                     }
                 }
             }
-            if ( array != 0 )
-                jaddi(array,instantdex_acceptjson(ap));
             queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
         } else free(ap);
     }
@@ -514,25 +514,25 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
 
 char *instantdex_queueaccept(struct exchange_info *exchange,char *base,char *rel,double price,double basevolume,int32_t acceptdir,char *myside,int32_t duration)
 {
-    struct instantdex_accept A; bits256 hash;
+    struct instantdex_accept *ap; bits256 hash;
     if ( exchange != 0 )
     {
-        memset(&A,0,sizeof(A));
-        OS_randombytes((uint8_t *)&A.A.nonce,sizeof(A.A.nonce));
-        safecopy(A.A.base,base,sizeof(A.A.base));
-        safecopy(A.A.rel,rel,sizeof(A.A.rel));
+        ap = calloc(1,sizeof(*ap));
+        OS_randombytes((uint8_t *)&ap->A.nonce,sizeof(ap->A.nonce));
+        safecopy(ap->A.base,base,sizeof(ap->A.base));
+        safecopy(ap->A.rel,rel,sizeof(ap->A.rel));
         if ( strcmp(myside,base) == 0 )
-            A.A.myside = 0;
+            ap->A.myside = 0;
         else if ( strcmp(myside,rel) == 0 )
-            A.A.myside = 1;
-        else A.A.myside = -1;
-        A.A.acceptdir = acceptdir;
-        A.A.price = price, A.A.basevolume = basevolume;
-        A.A.expiration = (uint32_t)time(NULL) + duration;
-        vcalc_sha256(0,hash.bytes,(void *)&A.A,sizeof(A.A));
-        A.orderid = hash.txid;
-        queue_enqueue("acceptableQ",&exchange->acceptableQ,&A.DL,0);
-        return(clonestr("{\"result\":\"added acceptable\"}"));
+            ap->A.myside = 1;
+        else ap->A.myside = -1;
+        ap->A.acceptdir = acceptdir;
+        ap->A.price = price, ap->A.basevolume = basevolume;
+        ap->A.expiration = (uint32_t)time(NULL) + duration;
+        vcalc_sha256(0,hash.bytes,(void *)&ap->A,sizeof(ap->A));
+        ap->orderid = hash.txid;
+        queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
+        return(jprint(instantdex_acceptjson(ap),1));
     }
     else return(clonestr("{\"error\":\"invalid exchange\"}"));
 }

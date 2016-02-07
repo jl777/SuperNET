@@ -19,6 +19,7 @@
 
 #include <curl/curl.h>
 #include <curl/easy.h>
+#define INSTANTDEX_OFFERDURATION 3600
 
 #define EXCHANGES777_MINPOLLGAP 3
 #define EXCHANGES777_MAXDEPTH 200
@@ -93,7 +94,7 @@ struct instantdex_accept { struct queueitem DL; uint64_t orderid; uint32_t dead;
 
 struct instantdex_accept *instantdex_acceptablefind(struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel);
 cJSON *instantdex_acceptjson(struct instantdex_accept *ap);
-struct instantdex_accept *instantdex_acceptable(struct exchange_info *exchange,cJSON *array,char *refstr,char *base,char *rel,char *offerside,int32_t offerdir,double offerprice,double volume);
+struct instantdex_accept *instantdex_acceptable(struct exchange_info *exchange,char *refstr,char *base,char *rel,char *offerside,int32_t offerdir,double offerprice,double volume);
 
 void *curl_post(void **cHandlep,char *url,char *userpass,char *postfields,char *hdr0,char *hdr1,char *hdr2,char *hdr3);
 char *instantdex_sendcmd(struct supernet_info *myinfo,cJSON *argjson,char *cmdstr,char *ipaddr,int32_t hops);
@@ -111,5 +112,6 @@ double truefx_price(struct exchange_info *exchange,char *base,char *rel,struct e
 double fxcm_price(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert);
 double instaforex_price(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert);
 
+char *instantdex_queueaccept(struct exchange_info *exchange,char *base,char *rel,double price,double basevolume,int32_t acceptdir,char *myside,int32_t duration);
 
 #endif

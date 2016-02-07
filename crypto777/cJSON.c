@@ -1075,6 +1075,8 @@ uint64_t calc_nxt64bits(const char *NXTaddr)
             printf("calc_nxt64bits: warning: 64bit overflow %llx < %llx\n",(long long)nxt64bits,(long long)lastval);
         lastval = nxt64bits;
     }
+    while ( *NXTaddr == '0' && *NXTaddr != 0 )
+        NXTaddr++;
     if ( cmp_nxt64bits(NXTaddr,nxt64bits) != 0 )
         printf("error calculating nxt64bits: %s -> %llx -> %s\n",NXTaddr,(long long)nxt64bits,nxt64str(nxt64bits));
     if ( polarity < 0 )
