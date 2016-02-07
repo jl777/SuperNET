@@ -32,11 +32,24 @@
 struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,cJSON *array,char *refstr,char *base,char *rel,char *offerside,int32_t offerdir,double offerprice,double volume)
 */
 
-char *instantdex_BTCswap(struct supernet_info *myinfo,char *cmdstr,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen) // receiving side
+char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exchange,char *cmdstr,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen) // receiving side
 {
-    char *retstr = 0;
+    char *base,*rel,*offerside,*retstr = 0; int32_t offerdir = 0; struct instantdex_accept *ap; double offerprice,volume;
+    if ( exchange == 0 )
+        return(clonestr("{\"error\":\"instantdex_BTCswap null exchange ptr\"}"));
     if ( strcmp(cmdstr,"offer") == 0 )
     {
+        base = jstr(argjson,"base"), rel = jstr(argjson,"rel");
+        if ( rel == 0 || strcmp(rel,"BTC") != 0 )
+            return(clonestr("{\"error\":\"instantdex_BTCswap offer non BTC rel\"}"));
+        offerprice = jdouble(argjson,"price"), volume = jdouble(argjson,"volume");
+        offerside = "BTC";
+       // offerdir = xxx
+       // printf("got offer.(%s) offerside.%s offerdir.%d\n",jprint(argjson,0),offerside,offerdir);
+        if ( (ap= instantdex_acceptable(exchange,base,rel,offerside,offerdir,offerprice,volume)) != 0 )
+        {
+            
+        }
     }
     else if ( strcmp(cmdstr,"proposal") == 0 )
     {

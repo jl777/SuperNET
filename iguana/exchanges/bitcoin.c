@@ -1392,7 +1392,8 @@ int32_t is_valid_BTCother(char *other)
 
 uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *base,char *rel,int32_t dir,double price,double volume,cJSON *argjson)
 {
-    struct instantdex_accept *ap; char *str; uint64_t txid = 0; cJSON *json; struct supernet_info *myinfo; int32_t hops = 3;
+    struct instantdex_accept *ap; char *str,coinaddr[64]; uint64_t txid = 0; cJSON *json;
+    struct supernet_info *myinfo; uint8_t pubkey[33]; struct iguana_info *other; int32_t hops = 3;
     myinfo = SuperNET_MYINFO(0);
     if ( strcmp(base,"BTC") == 0 || strcmp(base,"btc") == 0 )
     {
@@ -1418,7 +1419,7 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
         {
             if ( ap != 0 )
             {
-                
+                // issue matching response
             }
             else if ( dir < 0 )
             {
@@ -1432,6 +1433,13 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
                 jaddstr(json,"rel","BTC");
                 jaddnum(json,"maxprice",price);
                 jaddnum(json,"volume",volume);
+                if ( (other= iguana_coinfind(base)) != 0 )
+                {
+                    bitcoin_pubkey(pubkey,myinfo->persistent_priv);
+                    bitcoin_address(coinaddr,other->chain->pubtype,pubkey,sizeof(pubkey));
+                    jaddstr(argjson,base,coinaddr);
+                }
+                jaddstr(json,"BTC",myinfo->myaddr.BTC);
                 if ( (str= instantdex_sendcmd(myinfo,json,"BTCoffer",myinfo->ipaddr,hops)) != 0 )
                     free(str);
                 free_json(json);

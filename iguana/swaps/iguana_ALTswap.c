@@ -25,7 +25,7 @@
 // NXT node verifies bitcoin txbytes has proper payment and cashes in with onetimepubkey
 // BTC* node approves phased tx with onetimepubkey
 
-char *instantdex_ALTswap(struct supernet_info *myinfo,char *cmdstr,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen) // receiving side
+char *instantdex_ALTswap(struct supernet_info *myinfo,struct exchange_info *exchange,char *cmdstr,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen) // receiving side
 {
     char *retstr = 0;
     if ( strcmp(cmdstr,"offer") == 0 )

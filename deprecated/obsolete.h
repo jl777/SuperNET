@@ -13192,5 +13192,131 @@ len = 0;
              jadd(json,"vin",vins);
              return(json);
              }*/
+                
+            /*
+             if ( strcmp(cmdstr+3,"offer") == 0 )
+             {
+             
+             }
+             if ( (price= instantdex_acceptable(myinfo,0,refstr,base,rel,volume)) > 0. )
+             {
+             // sends NXT assetid, volume and desired
+             if ( strcmp(base,"NXT") == 0 || strcmp(base,"nxt") == 0 )
+             assetbits = NXT_ASSETID;
+             else if ( is_decimalstr(base) > 0 )
+             assetbits = calc_nxt64bits(base);
+             if ( assetbits != 0 )
+             {
+             nextcmd = INSTANTDEX_REQUEST;
+             nextcmdstr = "request";
+             }
+             }
+             }
+             else if ( strncmp(cmdstr,"ALT",3) == 0 )
+             {
+             if ( (price= instantdex_acceptable(myinfo,0,refstr,base,rel,volume)) > 0. )
+             {
+             // sends NXT assetid, volume and desired
+             if ( strcmp(base,"NXT") == 0 || strcmp(base,"nxt") == 0 )
+             assetbits = NXT_ASSETID;
+             else if ( is_decimalstr(base) > 0 )
+             assetbits = calc_nxt64bits(base);
+             if ( assetbits != 0 )
+             {
+             nextcmd = INSTANTDEX_REQUEST;
+             nextcmdstr = "request";
+             }
+             }
+             }
+             else if ( strncmp(cmdstr,"NXT",3) == 0 )
+             {
+             if ( (price= instantdex_acceptable(myinfo,0,refstr,base,rel,volume)) > 0. )
+             {
+             // sends NXT assetid, volume and desired
+             if ( strcmp(base,"NXT") == 0 || strcmp(base,"nxt") == 0 )
+             assetbits = NXT_ASSETID;
+             else if ( is_decimalstr(base) > 0 )
+             assetbits = calc_nxt64bits(base);
+             if ( assetbits != 0 )
+             {
+             nextcmd = INSTANTDEX_REQUEST;
+             nextcmdstr = "request";
+             }
+             }
+             }
+             {
+             
+             }
+             
+             if ( strcmp(cmdstr,"request") == 0 )
+             {
+             // request:
+             // other node sends (othercoin, othercoinaddr, otherNXT and reftx that expires before phasedtx)
+             if ( (strcmp(rel,"BTC") == 0 || strcmp(base,"BTC") == 0) && (price= instantdex_acceptable(myinfo,0,refstr,base,rel,volume)) > 0. )
+             {
+             //aveprice = instantdex_aveprice(myinfo,sortbuf,(int32_t)(sizeof(sortbuf)/sizeof(*sortbuf)),&totalvol,base,rel,volume,argjson);
+             set_NXTtx(myinfo,&feeT,assetbits,SATOSHIDEN*3,calc_nxt64bits(INSTANTDEX_ACCT),-1);
+             if ( (feejson= gen_NXT_tx_json(myinfo,fullhash,&feeT,0,1.)) != 0 )
+             free_json(feejson);
+             nextcmd = INSTANTDEX_PROPOSE;
+             nextcmdstr = "proposal";
+             othercoinaddr = myinfo->myaddr.BTC;
+             otherNXTaddr = myinfo->myaddr.NXTADDR;
+             }
+             }
+             else
+             {
+             if ( strcmp(cmdstr,"proposal") == 0 )
+             {
+             // proposal:
+             // NXT node submits phasedtx that refers to it, but it wont confirm
+             nextcmd = INSTANTDEX_ACCEPT;
+             nextcmdstr = "accept";
+             message = "";
+             //instantdex_phasetxsubmit(refstr);
+             }
+             else if ( strcmp(cmdstr,"accept") == 0 )
+             {
+             // accept:
+             // other node verifies unconfirmed has phasedtx and broadcasts cltv, also to NXT node, releases trigger
+             nextcmd = INSTANTDEX_CONFIRM;
+             nextcmdstr = "confirm";
+             message = "";
+             //instantdex_phasedtxverify();
+             //instantdex_cltvbroadcast();
+             //instantdex_releasetrigger();
+             }
+             else if ( strcmp(cmdstr,"confirm") == 0 )
+             {
+             // confirm:
+             // NXT node verifies bitcoin txbytes has proper payment and cashes in with onetimepubkey
+             // BTC* node approves phased tx with onetimepubkey
+             //instantdex_cltvverify();
+             //instantdex_phasetxapprove();
+             return(clonestr("{\"error\":\"trade confirmed\"}"));
+             }
+             }
+             if ( nextcmd != 0 && (newjson= InstantDEX_argjson(refstr,message,othercoinaddr,otherNXTaddr,nextcmd,duration,flags)) != 0 )
+             {
+             jaddnum(newjson,"price",price);
+             jaddnum(newjson,"volume",volume);
+             return(instantdex_sendcmd(myinfo,newjson,nextcmdstr,myinfo->ipaddr,INSTANTDEX_HOPS));
+             }
+             }
+             return(clonestr("{\"error\":\"request needs argjson\"}"));
+             }
+             num = 0;
+             depth = 30;
+             request = jstr(argjson,"request");
+             base = jstr(argjson,"base");
+             rel = jstr(argjson,"rel");
+             refstr = jstr(argjson,"refstr");
+             volume = jdouble(argjson,"volume");
+             duration = juint(argjson,"duration");
+             flags = juint(argjson,"flags");
+             nextcmd = 0;
+             nextcmdstr = message = "";
+             
+             */
 
 #endif

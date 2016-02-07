@@ -490,6 +490,9 @@ cJSON *iguana_peerjson(struct iguana_info *coin,struct iguana_peer *addr)
 {
     cJSON *array,*json = cJSON_CreateObject();
     jaddstr(json,"ipaddr",addr->ipaddr);
+    if ( addr->supernet != 0 )
+        jaddstr(json,"ipaddr",addr->ipaddr);
+    jaddstr(json,"supernet","yes");
     jaddnum(json,"protover",addr->protover);
     jaddnum(json,"relay",addr->relayflag);
     jaddnum(json,"height",addr->height);
