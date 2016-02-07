@@ -54,7 +54,7 @@ data-path="{tc}/{config}">
                     <ul class="nav navbar-nav">
                         <li id="welcome"> <!--<a href="#">Welcome <span class="sr-only">(current)</span></a>--></li>
 
-                        <li class="dropdown">
+                        <!--<li class="dropdown">
                             <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">More <span class="caret"></span></a>
                             <ul class="dropdown-menu">
                                 <li><a href="#">Wiki</a></li>
@@ -67,7 +67,7 @@ data-path="{tc}/{config}">
                                 <div id="byte_range"></div>
                                 <div id="byte_content"></div>
                             </ul>
-                        </li>
+                        </li>-->
                     </ul>
                 </div>
                 <!-- /.navbar-collapse -->
@@ -260,6 +260,10 @@ data-path="{tc}/{config}">
                                 </h3>
                         </div>
                         <div class="panel-body">
+                            <button class="btn btn-xs btn-success btn-raised connect_to_peers_from_conf"  >Connect to peers</button>
+                            
+                            <button class="btn btn-xs btn-success btn-raised save_peersdata_to_conf"  >Save Peers</button>
+                            <button class="btn btn-xs btn-success btn-raised update_allpeer_status"  >Update Peers</button>
                             <div class="pull-right">
                                 <span class="checkbox"><label><input id="cbShowFavoritePeers" type="checkbox"/> Favorites</label></span>
                             </div>
@@ -270,8 +274,10 @@ data-path="{tc}/{config}">
                                         <th>Coin Type</th>
                                         <th>Height</th>
                                         <th>Rank</th>
+                                        <th>Block</th>
                                         <th>Favourite </th>
                                         <th>Actions</th>
+                                        
                                     </tr>
                                 </thead>
                                 <tbody id="peersTableBody"></tbody>
@@ -329,7 +335,7 @@ data-path="{tc}/{config}">
                     <div class="panel-body">
                         <div class="row">
                             <div class="col-xs-6 col-md-6 col-lg-6">
-                                <div id="agent_settings"></div>
+                                <div id="advanced_settings"></div>
                                 </div>
                             <div class="col-xs-6 col-md-6 col-lg-6">
                                 <div id="config_settings"></div>
@@ -354,7 +360,7 @@ data-path="{tc}/{config}">
                         <div class="row">
                             <div class="col-xs-6 col-md-6 col-lg-6">
                                 <div class="form-group">
-                                    <button class="btn btn-primary" id="save_settings">Save</button>
+                                    <button class="btn btn-primary _not_pressed" id="save_settings">Save</button>
                                 </div>
                             </div>
                         </div>
@@ -538,6 +544,7 @@ data-path="{tc}/{config}">
         <script type="text/javascript " src="js/instantdex.js" ></script>
         <script type="text/javascript " src="js/tradebot.js" ></script>
         <script type="text/javascript " src="js/storage.js" ></script>
+        <script type="text/javascript " src="js/jquery.tablesorter.min.js" ></script>
     </body>
 
 </html>

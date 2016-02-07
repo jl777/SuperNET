@@ -1,6 +1,6 @@
 var SPNAPI = (function(SPNAPI, $,errorHandler,undefined) {
 
-    SPNAPI.settings = {};
+    SPNAPI.settings = {maxpeers:3};
     SPNAPI.conf_files={};
     
     SPNAPI.getCheckBoxDetails = function(agent) {
@@ -155,7 +155,39 @@ var SPNAPI = (function(SPNAPI, $,errorHandler,undefined) {
             '<div class="row"><div class="pexe_extra_info col-xs-10 col-md-10 col-lg-10">Use pexe or URL requests for communications</div></div>'+
             '</div>'+
             '</div>';
-        $("#agent_settings").html(config);
+        config += '' +
+            '<div class="panel panel-default">'+
+            '<div class="panel-body">'+
+            '<div class="col-xs-6 col-md-6 col-lg-6">Save default conf files</div>'+
+            '<div class="col-xs-6 col-md-6 col-lg-6" style="text-align: right;">' +
+            '<div class="checkbox">'+
+            '<label>'+
+            '<span><button class="btn btn-xs btn-success btn-raised saveConfFiles_onclick"  > Save</button></span>'+
+            '</label>'+
+            '</div>' +
+            '</div>' +
+            '<div class="row"><div class="pexe_extra_info col-xs-10 col-md-10 col-lg-10">Save configuration files to chrome APP</div></div>'+
+            '</div>'+
+            '</div>';
+    config += '' +
+            '<div class="panel panel-default">'+
+            '<div class="panel-body">'+
+            '<div class="col-xs-6 col-md-6 col-lg-6">Maximum peers</div>'+
+            '<div class="col-xs-6 col-md-6 col-lg-6" style="text-align: right;">' +
+            '<div class="checkbox">'+
+            '<label>'+
+            '<input type="text" id="max_peers_setting" size="4" value="'+SPNAPI.settings.maxpeers+'"/>'+
+            '</label>'+
+            '</div>' +
+            '</div>' +
+            '<div class="row"><div class="pexe_extra_info col-xs-10 col-md-10 col-lg-10">Set number of nodes connected directly per coin type</div></div>'+
+            '</div>'+
+            '</div>';
+    
+    
+        $("#advanced_settings").html(config);
+
+        
 
         var pexe_checkbox = $('.pexe_checkbox');
 
@@ -177,6 +209,13 @@ var SPNAPI = (function(SPNAPI, $,errorHandler,undefined) {
 });
 
         $("#save_settings").on("click", function () {
+            
+            //saving max peer setting
+            var peers=$('#max_peers_setting').val();
+            if(SPNAPI.settings.maxpeers!==peers){
+                SPNAPI.settings.maxpeers=peers;
+                console.log("maxpeers set to "+SPNAPI.settings.maxpeers);
+            }
 
             /*var agent_checkbox = $('.agent_checkbox');
             var settings = [];
