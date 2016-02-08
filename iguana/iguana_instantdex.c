@@ -334,6 +334,9 @@ int32_t instantdex_acceptextract(struct instantdex_accept *ap,cJSON *argjson)
     ap->orderid = j64bits(argjson,"i");
     if ( hash.txid != ap->orderid )
     {
+        int32_t i;
+        for (i=0; i<sizeof(*ap); i++)
+            printf("%02x ",((uint8_t *)ap)[i]);
         printf("instantdex_acceptset warning %llu != %llu\n",(long long)hash.txid,(long long)ap->orderid);
         return(-1);
     }
@@ -369,6 +372,7 @@ cJSON *instantdex_acceptsendjson(struct instantdex_accept *ap)
     jaddnum(json,"d",ap->A.acceptdir);
     jadd64bits(json,"p",ap->A.price64);
     jadd64bits(json,"v",ap->A.basevolume64);
+    jadd64bits(json,"o",ap->A.offer64);
     jadd64bits(json,"i",ap->orderid);
     return(json);
 }
@@ -390,6 +394,8 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
         if ( (traderip= jstr(argjson,"traderip")) != 0 && strcmp(traderip,myinfo->ipaddr) == 0 )
         {
             printf("got my own request\n");
+            if ( instantdex_acceptextract(&A,argjson) < 0 )
+                return(clonestr("{\"error\":\"hash txid mismatches orderid\"}"));
             return(clonestr("{\"result\":\"got my own request\"}"));
         }
         if ( (orderidstr= jstr(argjson,"id")) != 0 )

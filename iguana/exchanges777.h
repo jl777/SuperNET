@@ -19,7 +19,7 @@
 
 #include <curl/curl.h>
 #include <curl/easy.h>
-#define INSTANTDEX_OFFERDURATION 3600
+#define INSTANTDEX_OFFERDURATION 300
 
 #define EXCHANGES777_MINPOLLGAP 3
 #define EXCHANGES777_MAXDEPTH 200

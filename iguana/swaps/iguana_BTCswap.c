@@ -113,7 +113,7 @@ struct bitcoin_unspent *instantdex_bestfit(struct iguana_info *coin,struct bitco
 
 struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *numunspentsp)
 {
-    struct bitcoin_unspent *ups = calloc(1,sizeof(*ups)); //uint8_t addrtype;
+    struct bitcoin_unspent *ups = calloc(1,sizeof(*ups)); uint8_t addrtype; 
     // struct bitcoin_unspent { bits256 txid,privkey; uint64_t value; int32_t vout; };
     *numunspentsp = 0;
     return(ups);
@@ -302,11 +302,18 @@ int32_t instantdex_calcx20(char hexstr[41],uint8_t *p2shscript,uint8_t firstbyte
 char *instantdex_btcoffer(struct supernet_info *myinfo,struct exchange_info *exchange,char *othercoin,double othervolume,double maxprice) // Bob sending to network (Alice)
 {
     char *str,coinaddr[64],xstr[41]; uint8_t xscript[64]; struct iguana_info *other; int32_t isbob = 1;
-    struct instantdex_accept A; cJSON *newjson; bits256 hash,pub3,sharedprivs[4];
+    struct instantdex_accept checkA,A; cJSON *newjson; bits256 hash,pub3,sharedprivs[4];
     if ( othercoin == 0 || (other= iguana_coinfind(othercoin)) == 0 )
         return(clonestr("{\"error\":\"invalid othercoin\"}"));
     hash = instantdex_acceptset(&A,othercoin,"BTC",INSTANTDEX_OFFERDURATION,1,-1,maxprice,othervolume,myinfo->myaddr.nxt64bits);
     newjson = instantdex_acceptsendjson(&A);
+    if ( instantdex_acceptextract(&checkA,newjson) < 0 )
+    {
+        int32_t i;
+        for (i=0; i<sizeof(A); i++)
+            printf("%02x ",((uint8_t *)&A)[i]);
+        printf("instantdex_btcoffer checkA error\n");
+    }
     if ( instantdex_pubkeyargs(sharedprivs,newjson,4,myinfo->persistent_priv,hash,0x02+isbob) != 4 )
         return(clonestr("{\"error\":\"highly unlikely run of 02 pubkeys\"}"));
     pub3 = jbits256(newjson,"B3");
@@ -329,9 +336,10 @@ void instantdex_pendingnotice(struct supernet_info *myinfo,struct exchange_info 
     ap->pendingvolume64 -= A->A.basevolume64;
 }
 
-cJSON *instantdex_newjson(struct supernet_info *myinfo,bits256 *A0p,bits256 *B0p,bits256 *sharedprivs,uint8_t secret160[20],int32_t isbob,cJSON *argjson,bits256 hash)
+cJSON *instantdex_newjson(struct supernet_info *myinfo,bits256 *A0p,bits256 *B0p,bits256 *sharedprivs,uint8_t secret160[20],int32_t isbob,cJSON *argjson,bits256 hash,struct instantdex_accept *A)
 {
-    cJSON *newjson = cJSON_CreateObject(); char *xstr;
+    cJSON *newjson; char *xstr;
+    newjson = instantdex_acceptsendjson(A);
     if ( instantdex_pubkeyargs(sharedprivs,newjson,3+isbob,myinfo->persistent_priv,hash,0x02+isbob) != 3 )
         return(0);
     if ( isbob == 0 )
@@ -370,7 +378,7 @@ char *instantdex_bailinrefund(struct supernet_info *myinfo,struct iguana_info *c
 cJSON *instantdex_payout(struct supernet_info *myinfo,struct iguana_info *coin,struct exchange_info *exchange,struct instantdex_accept *A,uint8_t secret160[20],int32_t isbob,bits256 *A0p,bits256 *B0p,bits256 *sharedprivs,bits256 hash,uint64_t satoshis[2],cJSON *argjson)
 {
     cJSON *newjson; char field[32],payoutsigstr[256],*signedpayout; int32_t payoutsiglen; bits256 payouttxid,bailintxid;
-    if ( (newjson= instantdex_newjson(myinfo,A0p,B0p,sharedprivs,secret160,isbob,argjson,hash)) == 0 )
+    if ( (newjson= instantdex_newjson(myinfo,A0p,B0p,sharedprivs,secret160,isbob,argjson,hash,A)) == 0 )
         return(0);
     sprintf(field,"bailintxid%c",'A' + (isbob^1)), bailintxid = jbits256(argjson,field);
     sprintf(field,"payoutsig%c",'A' + (isbob^1));
@@ -388,7 +396,7 @@ cJSON *instantdex_payout(struct supernet_info *myinfo,struct iguana_info *coin,s
 char *instantdex_advance(struct supernet_info *myinfo,bits256 *sharedprivs,int32_t isbob,cJSON *argjson,bits256 hash,char *addfield,char *nextstate,struct instantdex_accept *A)
 {
     cJSON *newjson; bits256 A0,B0; uint8_t secret160[20];
-    if ( (newjson= instantdex_newjson(myinfo,&A0,&B0,sharedprivs,secret160,isbob,argjson,hash)) == 0 )
+    if ( (newjson= instantdex_newjson(myinfo,&A0,&B0,sharedprivs,secret160,isbob,argjson,hash,A)) == 0 )
         return(clonestr("{\"error\":\"instantdex_BTCswap offer null newjson\"}"));
     if ( A->statusjson != 0 && jstr(A->statusjson,addfield) != 0 )
     {
@@ -425,7 +433,7 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
         if ( (ap= instantdex_acceptable(exchange,A,myinfo->myaddr.nxt64bits)) != 0 )
         {
             isbob = 0;
-            if ( (newjson= instantdex_newjson(myinfo,&A0,&B0,sharedprivs,secret160,isbob,argjson,hash)) == 0 )
+            if ( (newjson= instantdex_newjson(myinfo,&A0,&B0,sharedprivs,secret160,isbob,argjson,hash,A)) == 0 )
                 return(clonestr("{\"error\":\"instantdex_BTCswap offer null newjson\"}"));
             else
             {
