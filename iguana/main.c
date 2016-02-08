@@ -558,8 +558,7 @@ _gfshare_fill_rand_using_random( uint8_t* buffer,
                                                * are
                                                */
 }
-const gfshare_rand_func_t gfshare_bad_idea_but_fill_rand_using_random =
-_gfshare_fill_rand_using_random;
+const gfshare_rand_func_t gfshare_bad_idea_but_fill_rand_using_random = (void *)_gfshare_fill_rand_using_random;
 gfshare_rand_func_t gfshare_fill_rand = NULL;
 
 /* ------------------------------------------------------[ Preparation ]---- */
