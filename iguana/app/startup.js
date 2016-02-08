@@ -143,6 +143,8 @@ $(function () {
                         
         }
         else if(e.className && e.className.indexOf('connect_to_peers_from_conf') != -1){
+
+            if(peers_pool.peers.length==0)
             load_peers_from_conf();
                         
         }
@@ -152,6 +154,10 @@ $(function () {
         }
         else if(e.className && e.className.indexOf('save_peersdata_to_conf') != -1){
             save_peersdata_to_conf();
+                        
+        }
+        else if(e.className && e.className.indexOf('deletePeertabFile_onclick') != -1){
+            deletePeertabFile_onclick();
                         
         }
         

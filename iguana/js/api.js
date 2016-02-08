@@ -34,8 +34,8 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
             SPNAPI.loadSite(page);
             console.log(page);
             if(page==="Peers"){
-//                /peer_resonse=[];
-                load_peers_to_pool();
+                
+                
             }else if(page==="Settings"){
                 check_files();
                 //SPNAPI.check_coin_conf_files_present();

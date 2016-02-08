@@ -183,6 +183,20 @@ var SPNAPI = (function(SPNAPI, $,errorHandler,undefined) {
             '<div class="row"><div class="pexe_extra_info col-xs-10 col-md-10 col-lg-10">Set number of nodes connected directly per coin type</div></div>'+
             '</div>'+
             '</div>';
+    config += '' +
+            '<div class="panel panel-default">'+
+            '<div class="panel-body">'+
+            '<div class="col-xs-6 col-md-6 col-lg-6">Delete peer data</div>'+
+            '<div class="col-xs-6 col-md-6 col-lg-6" style="text-align: right;">' +
+            '<div class="checkbox">'+
+            '<label>'+
+            '<span><button class="btn btn-xs btn-success btn-raised deletePeertabFile_onclick"  > Delete</button></span>'+
+            '</label>'+
+            '</div>' +
+            '</div>' +
+            '<div class="row"><div class="pexe_extra_info col-xs-10 col-md-10 col-lg-10">Delete peer tab data</div></div>'+
+            '</div>'+
+            '</div>';
     
     
         $("#advanced_settings").html(config);
@@ -215,6 +229,7 @@ var SPNAPI = (function(SPNAPI, $,errorHandler,undefined) {
             if(SPNAPI.settings.maxpeers!==peers){
                 SPNAPI.settings.maxpeers=peers;
                 console.log("maxpeers set to "+SPNAPI.settings.maxpeers);
+                sync_peers_to_maxpeers();
             }
 
             /*var agent_checkbox = $('.agent_checkbox');

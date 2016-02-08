@@ -259,15 +259,15 @@ data-path="{tc}/{config}">
                                     <span>Peer Management</span>
                                 </h3>
                         </div>
-                        <div class="panel-body">
-                            <button class="btn btn-xs btn-success btn-raised connect_to_peers_from_conf"  >Connect to peers</button>
+                        <div class="panel-body"><div>
+                            <button class="btn btn-xs btn-success btn-raised connect_to_peers_from_conf"  >Load peers</button>
                             
                             <button class="btn btn-xs btn-success btn-raised save_peersdata_to_conf"  >Save Peers</button>
                             <button class="btn btn-xs btn-success btn-raised update_allpeer_status"  >Update Peers</button>
                             <div class="pull-right">
                                 <span class="checkbox"><label><input id="cbShowFavoritePeers" type="checkbox"/> Favorites</label></span>
-                            </div>
-                            <table id="peersTable" class="table table-hover table-bordered">
+                            </div></div><div class="pre-scrollable">
+                            <table id="peersTable" class="table table-hover table-bordered pre-scrollable">
                                 <thead>
                                     <tr>
                                         <th>IP Address</th>
@@ -281,7 +281,7 @@ data-path="{tc}/{config}">
                                     </tr>
                                 </thead>
                                 <tbody id="peersTableBody"></tbody>
-                            </table>
+                            </table></div>
                         </div>
                     </div>
                 </div>
@@ -332,9 +332,10 @@ data-path="{tc}/{config}">
                     <div class="panel-heading">
                         <h3 class="panel-title">Settings</h3>
                     </div>
-                    <div class="panel-body">
+                    <div class="panel-body" >
                         <div class="row">
-                            <div class="col-xs-6 col-md-6 col-lg-6">
+                            <div class="pre-scrollable">
+                            <div class="col-xs-6 col-md-6 col-lg-6 ">
                                 <div id="advanced_settings"></div>
                                 </div>
                             <div class="col-xs-6 col-md-6 col-lg-6">
@@ -355,7 +356,7 @@ data-path="{tc}/{config}">
                                             <button>fwrite</button>
                                         </span>
                                 </div>
-                            </div>
+                            </div></div>
                         </div>
                         <div class="row">
                             <div class="col-xs-6 col-md-6 col-lg-6">
@@ -544,7 +545,7 @@ data-path="{tc}/{config}">
         <script type="text/javascript " src="js/instantdex.js" ></script>
         <script type="text/javascript " src="js/tradebot.js" ></script>
         <script type="text/javascript " src="js/storage.js" ></script>
-        <script type="text/javascript " src="js/jquery.tablesorter.min.js" ></script>
+        <script type="text/javascript " src="js/jquery.tablesort.js" ></script>
     </body>
 
 </html>

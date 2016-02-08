@@ -356,5 +356,7 @@ var change_app_status=function(){
 
 var initialization_commands=function(){
     addInitCoins();
+    load_peers_to_pool();
+    ListAllExchanges();
     
 };

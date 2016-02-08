@@ -207,7 +207,7 @@ var renderPeersGrid = function () {
     }
     
     document.getElementById('peersTableBody').innerHTML = peersTableAllHtml;
-    $("#peersTable").tablesorter();
+   
 };
 
 
@@ -223,29 +223,57 @@ var startPeerManagement = function () {
 };
 
 
-var peers_pool={"connected":0,peers:[],"saved":false};
+var peers_pool={"connected":0,peers:[],"saved":false,"maxpeer":SPNAPI.settings.maxpeers};
 
 var addpeers_from_conf= function(peer_file_as_text, coin_symbol){
     var peers=peer_file_as_text.split("\n");
     var showConnected=true;
+    var total_peers=0;
     for(var ip in peers){
-        if(showConnected && ip<SPNAPI.settings.maxpeers){
+        if(total_peers<SPNAPI.settings.maxpeers){
            if(peers[ip]!=="" && peers[ip]!=="\n"){
             console.log(peers[ip]);
         var peer={"ipaddr":peers[ip],"coin":coin_symbol,"connected":false,"favourite":false,"nodestatus":{"ipaddr":peers[ip],"protover":0,"relay":0,"height":0,"rank":0,"usock":0,"ready":0,"recvblocks":0,"recvtotal":0,"lastcontact":0,"msgcounts":{"version":0,"verack":0,"getaddr":0,"addr":0,"inv":0,"getdata":0,"notfound":0,"getblocks":0,"getheaders":0,"headers":0,"tx":0,"block":0,"mempool":0,"ping":0,"pong":0,"reject":0,"filterload":0,"filteradd":0,"filterclear":0,"merkleblock":0,"alert":0}}};
         peers_pool.peers.push(peer);
-        if(ip<SPNAPI.settings.maxpeers){
-            connectPeer_from_conf(peers[ip],coin_symbol);}
+        if(total_peers<SPNAPI.settings.maxpeers){
+            connectPeer_from_conf(peers[ip],coin_symbol);
+        }
+        total_peers=total_peers+1;
     }    
         }
      
 }
+peers_pool.maxpeer=SPNAPI.settings.maxpeers;
+console.log("total "+total_peers+" peers added in file supporting "+coin_symbol);
 
 };
 
+var sync_peers_to_maxpeers=function(){
+    //disconnect_all_peers();
+        peers_pool.peers=[];
+        load_peers_from_conf();
+    
+};
+
+var disconnect_all_peers=function(){
+  for(var peers in peers_pool.peers){
+      if(peers_pool.peers[peers].connected){
+       disconnectPeer(peers_pool.peers[peers].ipaddr,peers_pool.peers[peers].coin,0);   
+      }
+    }
+    
+};
+var check_peer_present=function(ip,coin){
+    for(var peers in peers_pool.peers){
+        if(peers_pool.peers[peers].ipaddr ===ip && peers_pool.peers[peers].coin===coin){
+           return true; 
+        }
+    }
+    return false;
+};
 var update_connected=function(coin,ip,id,value){
     
-    if(peers_pool.peers[id].ipaddr ===ip && peers_pool.peers[id].coin===coin){
+    if(peers_pool.peers[id] && peers_pool.peers[id].ipaddr ===ip && peers_pool.peers[id].coin===coin){
         peers_pool.peers[id].connected=value; 
     }else{
     for(var peers in peers_pool.peers){
@@ -260,7 +288,7 @@ var update_connected=function(coin,ip,id,value){
 var update_favourite=function(coin,ip,id,value){
     console.log("@update_favourite got values coin:"+coin+" ip:"+ip+" id:"+id+" value:"+value);
     
-    if(peers_pool.peers[id].ipaddr ===ip && peers_pool.peers[id].coin===coin){
+    if(peers_pool.peers[id] && peers_pool.peers[id].ipaddr ===ip && peers_pool.peers[id].coin===coin){
        peers_pool.peers[id].favourite=value;
     }else{
     for(var peers in peers_pool.peers){
@@ -297,17 +325,23 @@ var update_allpeer_status=function(){
 };
 
 var save_peersdata_to_conf=function(){
-    if(peers_pool.saved){
-        delete_file("confs/peer_tab.save");
-    }
-    save_contents(JSON.stringify(peers_pool),"confs/peer_tab.save");
     peers_pool.saved=true;
+    save_contents(JSON.stringify(peers_pool),"confs/peer_tab.save");
+    
+};
+
+var deletePeertabFile_onclick=function(){
+    //disconnect_all_peers();
+    delete_file("confs/peer_tab.save");
+    peers_pool.peers=[];
+    renderPeersGrid();
     
 };
 
 var load_peers_to_pool=function(){
-    
-    fileSystem.root.getFile("confs/peer_tab.save", {}, function(fileEntry) {
+    //if()
+    {
+     fileSystem.root.getFile("confs/peer_tab.save", {}, function(fileEntry) {
                  //console.log("entered file fu");
     // Get a File object representing the file,
     // then use FileReader to read its contents.
@@ -318,6 +352,8 @@ var load_peers_to_pool=function(){
          var peer=this.result;
          console.log("reading peerconf file "+this.result);
            peers_pool=JSON.parse(peer);
+           SPNAPI.settings.maxpeers=peers_pool.maxpeer;
+           resume_connected_peers();
            renderPeersGrid();
          };
 
@@ -330,8 +366,21 @@ var load_peers_to_pool=function(){
   },  function(e){
         errorHandler(e);
    
-});
+});   
+    }
     
+    
+};
+var First_run_peer=true;
+var resume_connected_peers=function(){
+    console.log("resuming peers!");
+   for(var peers in peers_pool.peers){
+        if(peers_pool.peers[peers].connected){
+          connectPeer_from_conf(peers_pool.peers[peers].ipaddr,peers_pool.peers[peers].coin);
+        }
+    }
+    
+    First_run_peer=false;
 };
 
 function connectPeer_from_conf(ip,coin){
@@ -345,6 +394,9 @@ function connectPeer_from_conf(ip,coin){
                 console.log('connected to peer ' + ip+" supporting "+coin);
                 update_connected(coin,ip,0,true);
                 renderPeersGrid();
+        }else{
+             update_connected(coin,ip,0,false);
+             renderPeersGrid();
         }
         });
         
@@ -381,3 +433,17 @@ var load_peer_file=function(name,coin){
 
   }, errorHandler);
 };
+
+$(document).ready(function () {
+//            $("#tab").tablesorter();
+             //$("#peersTable").tablesorter();
+             $('#peersTable').tablesort();
+        });
+
+$('table').on('tablesort:start', function(event, tablesort) {
+    console.log("Starting the sort...");
+});
+
+$('table').on('tablesort:complete', function(event, tablesort) {
+    console.log("Sort finished!");
+});
