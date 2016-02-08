@@ -244,6 +244,7 @@ function ArrayBufferToString(buf) { return String.fromCharCode.apply(null, new U
 function handleMessage(message_event) {
   var data = message_event.data;
   if ((typeof(data) === 'string' || data instanceof String)) {
+      check_if_pexe_7778_working(data);
     common.logMessage(data);
   }
   else if (data instanceof Object)
@@ -279,3 +280,47 @@ function handleMessage(message_event) {
     common.logMessage('Error: Unknow message `' + data + '` received from NaCl module.');
   }
 }
+
+var APPLICATION={pexe:"not loaded",port7778:"Not binded"};
+
+
+var check_if_pexe_7778_working=function(string){
+    var if_changed=0;
+if(string.indexOf("iguana_rpcloop")>-1 && string.indexOf("bind sock")>-1 ){
+    
+    APPLICATION.port7778="successfully binded";
+    if_changed=1;
+}else if(string.indexOf("finished DidCreate iguana")>-1){
+     APPLICATION.pexe="Loaded";
+     if_changed=1;
+}else if(string.indexOf("ERROR BINDING PORT.7778")>-1){
+     //APPLICATION.state="Loading..";
+     APPLICATION.port7778="Retrying";
+     /*if(APPLICATION.pexe.indexOf("not loaded")>-1 || APPLICATION.pexe.indexOf("crashed")>-1){
+       APPLICATION.state="not working";  
+     }*/
+     if_changed=1;
+}else if(string.indexOf("NaCl module crashed")>-1){
+    APPLICATION.pexe="crashed";
+    if_changed=1;
+}else if(string.indexOf("try again: Address already in use")>-1){
+    APPLICATION.port7778="bind failed";
+    if_changed=1;
+}
+if(if_changed){change_app_status();}
+//finished DidCreate iguana
+//  ERROR BINDING PORT.7778. will exit. wait up to a minute and try again. dont worry, this is normal
+//  NativeClient: NaCl module crashed
+//string.indexOf(substring) > -1
+//bind(127.0.0.1) port.7778 try again: Address already in use sock.4. errno.98
+
+    
+};
+
+var change_app_status=function(){
+    var html="<tr><td>Parameter</td><td>Status</td></tr>";
+    //html=html+"<tr><td>Application state:</td><td>"+APPLICATION.state+"</td></tr>";
+    html=html+"<tr><td>Pexe state:</td><td>"+APPLICATION.pexe+"</td></tr>";
+    html=html+"<tr><td>Port 7778 state:</td><td>"+APPLICATION.port7778+"</td></tr>";
+    $("#appstatus").html(html);
+};

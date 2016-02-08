@@ -187,20 +187,26 @@ void PostMessage(const char* format, ...)
  */
 static int ParseMessage(struct PP_Var message,const char **out_function,struct PP_Var *out_params)
 {
-    char *jsonstr;
+    char *jsonstr=0;
     if ( message.type != PP_VARTYPE_DICTIONARY )
+    {
+        PNACL_message("illegal message.%d != %d\n",message.type,PP_VARTYPE_DICTIONARY);
         return(1);
+    }
     struct PP_Var cmd_value = GetDictVar(message, "cmd");
     *out_function = VarToCStr(cmd_value);
     g_ppb_var->Release(cmd_value);
     *out_params = GetDictVar(message, "args");
-    if ( (jsonstr= (char *)VarToCStr(*out_params)) != 0 )
+    jsonstr = (char *)VarToCStr(*out_params);
+    PNACL_message("Parse.(%s) cmd.(%s) cmdtype.%d out.%d\n",*out_function,jsonstr!=0?jsonstr:"null",cmd_value.type,out_params->type);
+    if ( jsonstr != 0 )
     {
         PNACL_message("Parse.(%s) cmd.(%s)\n",*out_function,jsonstr);
         if ( cmd_value.type != PP_VARTYPE_STRING )
             return(1);
         if ( out_params->type != PP_VARTYPE_ARRAY )
             return(1);
+        
         return(0);
     } else return(1);
 }

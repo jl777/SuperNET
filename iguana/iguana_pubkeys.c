@@ -345,7 +345,10 @@ cstring *base58_decode_check(uint8_t *addrtype,const char *s_in)
             }
             else
             {
-                char str[65]; printf("checkhash mismatch %02x %02x %02x %02x vs %02x %02x %02x %02x (%s)\n",s->str[s->len - 4]&0xff,s->str[s->len - 3]&0xff,s->str[s->len - 2]&0xff,s->str[s->len - 1]&0xff,hash.bytes[31],hash.bytes[30],hash.bytes[29],hash.bytes[28],bits256_str(str,hash));
+                int32_t i;
+                for (i=0; i<s->len; i++)
+                    printf("%02x ",s->str[i]&0xff);
+                char str[65]; printf(" s->len.%ld\n>>>>>>>> matched %02x %02x %02x %02x vs %02x %02x %02x %02x (%s) (%s)\n",s->len,s->str[s->len - 4]&0xff,s->str[s->len - 3]&0xff,s->str[s->len - 2]&0xff,s->str[s->len - 1]&0xff,hash.bytes[31],hash.bytes[30],hash.bytes[29],hash.bytes[28],bits256_str(str,hash),s_in);
             }
         }
         cstr_free(s,true);

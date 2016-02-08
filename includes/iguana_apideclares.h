@@ -14,8 +14,16 @@
  ******************************************************************************/
 
 STRING_ARG(SuperNET,bitcoinrpc,setcoin);
-HASH_AND_STRING(ramchain,verifytx,txid,txbytes);
+ZERO_ARGS(SuperNET,myipaddr);
+STRING_ARG(SuperNET,setmyipaddr,ipaddr);
 
+TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,BTCoffer,othercoin,otherassetid,maxprice,othervolume);
+TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,minaccept,base,rel,minprice,basevolume);
+TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,maxaccept,base,rel,maxprice,basevolume);
+STRING_AND_TWO_DOUBLES(InstantDEX,ALToffer,basecoin,minprice,basevolume);
+STRING_AND_TWO_DOUBLES(InstantDEX,NXToffer,assetid,minprice,basevolume);
+
+HASH_AND_STRING(ramchain,verifytx,txid,txbytes);
 INT_ARG(ramchain,getblockhash,height);
 HASH_AND_INT(ramchain,getblock,blockhash,remoteonly);
 HASH_AND_INT(ramchain,getrawtransaction,txid,verbose);
@@ -44,10 +52,9 @@ STRING_AND_INT(InstantDEX,pollgap,exchange,pollgap);
 ZERO_ARGS(InstantDEX,allexchanges);
 STRING_ARG(InstantDEX,allpairs,exchange);
 
-THREE_STRINGS_AND_DOUBLE(InstantDEX,request,reference,base,rel,volume);
-TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,proposal,reference,message,basetxid,reltxid,duration,flags);
-TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,accept,reference,message,basetxid,reltxid,duration,flags);
-TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,confirm,reference,message,basetxid,reltxid,baseheight,relheight);
+//TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,proposal,reference,message,basetxid,reltxid,duration,flags);
+//TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,accept,reference,message,basetxid,reltxid,duration,flags);
+//TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,confirm,reference,message,basetxid,reltxid,baseheight,relheight);
 
 THREE_STRINGS_AND_DOUBLE(tradebot,monitor,exchange,base,rel,commission);
 STRING_AND_DOUBLE(tradebot,monitorall,exchange,commission);
@@ -85,7 +92,7 @@ TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(SuperNET,DHT,hexmsg,destip,categoryhash,sub
 
 THREE_STRINGS(SuperNET,rosetta,passphrase,pin,showprivkey);
 ZERO_ARGS(SuperNET,keypair);
-HASH_ARG(SuperNET,priv2pub,privkey);
+HASH_AND_INT(SuperNET,priv2pub,privkey,addrtype);
 STRING_ARG(SuperNET,wif2priv,wif);
 
 TWOHASHES_AND_STRING(SuperNET,cipher,privkey,destpubkey,message);

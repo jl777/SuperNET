@@ -84,7 +84,8 @@ struct supernet_info
     int32_t LBsock,PUBsock,reqsock,subsock,networktimeout,maxdelay;
     uint16_t LBport,PUBport,reqport,subport;
     struct nn_pollfd pfd[SUPERNET_MAXAGENTS]; //struct relay_info active;
-    struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ; int32_t numagents,numexchanges;
+    struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ;
+    int32_t numagents,numexchanges;
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES];
     char handle[1024];
 };
@@ -165,6 +166,8 @@ char *SuperNET_keysinit(struct supernet_info *myinfo,char *jsonstr);
 double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *sortbuf,int32_t max,double *totalvolp,char *base,char *rel,double volume,cJSON *argjson);
 void SuperNET_setkeys(struct supernet_info *myinfo,void *pass,int32_t passlen,int32_t dosha256);
 char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *remoteaddr);
+bits256 bitcoin_pubkey33(uint8_t data[33],bits256 privkey);
+char *bitcoin_address(char *coinaddr,uint8_t addrtype,uint8_t *pubkey,int32_t len);
 
 
 #endif

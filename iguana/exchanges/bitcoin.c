@@ -31,6 +31,15 @@ static const char base58_chars[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijk
 #define IGUANA_SCRIPT_DATA 11
 #define IGUANA_SCRIPT_STRANGE 15
 
+int32_t bitcoin_pubkeylen(const uint8_t *pubkey)
+{
+    if ( pubkey[0] == 2 || pubkey[0] == 3 )
+        return(33);
+    else if ( pubkey[0] == 4 )
+        return(65);
+    else return(-1);
+}
+
 void bn_mpi2bn(BIGNUM *vo,uint8_t *data,int32_t datalen)
 {
 	uint8_t vch2[64 + 4]; uint32_t i,vch2_len = (int32_t)datalen + 4;
@@ -137,7 +146,8 @@ int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
     be_sz = (uint32_t)len + (uint32_t)zeroes;
 	memset(data,0,be_sz);
     for (i=0; i<len; i++)
-        data[i + zeroes] = revdata[be_sz - 1 - i];
+        data[i+zeroes] = revdata[len - 1 - i];
+    //printf("len.%d be_sz.%d zeroes.%d data[0] %02x\n",len,be_sz,zeroes,data[0]);
 out:
 	BN_clear_free(&bn58), BN_clear_free(&bn), BN_clear_free(&bnChar);
 	BN_CTX_free(ctx);
@@ -146,22 +156,28 @@ out:
 
 int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr)
 {
-    bits256 hash; uint8_t buf[25]; int32_t len;
+    bits256 hash; uint8_t *buf,_buf[25]; int32_t len;
     memset(rmd160,0,20);
     *addrtypep = 0;
+    buf = _buf;
     if ( (len= bitcoin_base58decode(buf,coinaddr)) >= 4 )
     {
         // validate with trailing hash, then remove hash
         hash = bits256_doublesha256(0,buf,len - 4);
+        *addrtypep = *buf;
+        memcpy(rmd160,buf+1,20);
         if ( (buf[len - 4]&0xff) == hash.bytes[31] && (buf[len - 3]&0xff) == hash.bytes[30] &&(buf[len - 2]&0xff) == hash.bytes[29] &&(buf[len - 1]&0xff) == hash.bytes[28] )
         {
-            *addrtypep = buf[0];
-            memcpy(rmd160,buf+1,20);
+            //printf("coinaddr.(%s) valid checksum\n",coinaddr);
             return(20);
         }
         else
         {
-            char str[65]; printf("checkhash mismatch %02x %02x %02x %02x vs %02x %02x %02x %02x (%s)\n",buf[len - 4]&0xff,buf[len - 3]&0xff,buf[len - 2]&0xff,buf[len - 1]&0xff,hash.bytes[31],hash.bytes[30],hash.bytes[29],hash.bytes[28],bits256_str(str,hash));
+            int32_t i; char hexaddr[64];
+            btc_convaddr(hexaddr,coinaddr);
+            for (i=0; i<len; i++)
+                printf("%02x ",buf[i]);
+            char str[65]; printf("\nhex.(%s) checkhash.(%s) len.%d mismatch %02x %02x %02x %02x vs %02x %02x %02x %02x (%s)\n",hexaddr,coinaddr,len,buf[len - 4]&0xff,buf[len - 3]&0xff,buf[len - 2]&0xff,buf[len - 1]&0xff,hash.bytes[31],hash.bytes[30],hash.bytes[29],hash.bytes[28],bits256_str(str,hash));
         }
     }
 	return(0);
@@ -170,12 +186,15 @@ int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr
 char *bitcoin_address(char *coinaddr,uint8_t addrtype,uint8_t *pubkey,int32_t len)
 {
     int32_t i; uint8_t data[25]; bits256 hash; char checkaddr[65];
-    vcalc_sha256(0,hash.bytes,pubkey,len);
-    calc_rmd160(0,data+1,hash.bytes,sizeof(hash));
+    if ( len != 20 )
+    {
+        vcalc_sha256(0,hash.bytes,pubkey,len);
+        calc_rmd160(0,data+1,hash.bytes,sizeof(hash));
+    } else memcpy(data+1,pubkey,20);
     btc_convrmd160(checkaddr,addrtype,data+1);
-    for (i=0; i<20; i++)
-        printf("%02x",data[i+1]);
-    printf(" RMD160 len.%d\n",len);
+    //for (i=0; i<20; i++)
+    //    printf("%02x",data[i+1]);
+    //printf(" RMD160 len.%d\n",len);
     data[0] = addrtype;
     hash = bits256_doublesha256(0,data,21);
     for (i=0; i<4; i++)
@@ -184,9 +203,24 @@ char *bitcoin_address(char *coinaddr,uint8_t addrtype,uint8_t *pubkey,int32_t le
     {
         uint8_t checktype,rmd160[20];
         bitcoin_addr2rmd160(&checktype,rmd160,coinaddr);
-        printf("checkaddr.(%s) vs coinaddr.(%s) %02x vs [%02x] memcmp.%d\n",checkaddr,coinaddr,addrtype,checktype,memcmp(rmd160,data+1,20));
+        if ( strcmp(checkaddr,coinaddr) != 0 )
+            printf("checkaddr.(%s) vs coinaddr.(%s) %02x vs [%02x] memcmp.%d\n",checkaddr,coinaddr,addrtype,checktype,memcmp(rmd160,data+1,20));
     }
     return(coinaddr);
+}
+
+int32_t bitcoin_validaddress(struct iguana_info *coin,char *coinaddr)
+{
+    uint8_t rmd160[20],addrtype;
+    if ( coin == 0 || coinaddr == 0 || coinaddr[0] == 0 )
+        return(-1);
+    else if ( bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr) < 0 )
+        return(-1);
+    else if ( addrtype != coin->chain->pubtype && addrtype != coin->chain->p2shtype )
+        return(-1);
+    else if ( bitcoin_address(coinaddr,addrtype,rmd160,sizeof(rmd160)) != coinaddr )
+        return(-1);
+    return(0);
 }
 
 EC_KEY *bitcoin_privkeyset(uint8_t *oddevenp,bits256 *pubkeyp,bits256 privkey)
@@ -221,7 +255,7 @@ EC_KEY *bitcoin_privkeyset(uint8_t *oddevenp,bits256 *pubkeyp,bits256 privkey)
     return(KEY);
 }
 
-bits256 bitcoin_pubkey(uint8_t *data,bits256 privkey)
+bits256 bitcoin_pubkey33(uint8_t *data,bits256 privkey)
 {
     uint8_t oddeven; bits256 pubkey;
     EC_KEY *KEY;
@@ -233,6 +267,39 @@ bits256 bitcoin_pubkey(uint8_t *data,bits256 privkey)
     }
     return(pubkey);
 }
+
+/*int32_t bitcoin_priv2wif(char *wifstr,uint8_t privkey[32],uint8_t addrtype)
+{
+    uint8_t tmp[128]; char hexstr[67]; cstring *btc_addr;
+    memcpy(tmp,privkey,32);
+    tmp[32] = 1;
+    init_hexbytes_noT(hexstr,tmp,32);
+    if ( (btc_addr= base58_encode_check(addrtype,true,tmp,33)) != 0 )
+    {
+        strcpy(wifstr,btc_addr->str);
+        cstr_free(btc_addr,true);
+    }
+    printf("-> (%s) -> wif.(%s) addrtype.%02x\n",hexstr,wifstr,addrtype);
+    return(0);
+}
+
+int32_t bitcoin_wif2priv(uint8_t *addrtypep,uint8_t privkey[32],char *wifstr)
+{
+    cstring *cstr; int32_t len = -1;
+    if ( (cstr= base58_decode_check(addrtypep,(const char *)wifstr)) != 0 )
+    {
+        init_hexbytes_noT((void *)privkey,(void *)cstr->str,cstr->len);
+        if ( cstr->str[cstr->len-1] == 0x01 )
+            cstr->len--;
+        memcpy(privkey,cstr->str,cstr->len);
+        len = (int32_t)cstr->len;
+        char tmp[138];
+        btc_priv2wif(tmp,privkey,*addrtypep);
+        printf("addrtype.%02x wifstr.(%llx) len.%d\n",*addrtypep,*(long long *)privkey,len);
+        cstr_free(cstr,true);
+    }
+    return(len);
+}*/
 
 int32_t bitcoin_sign(uint8_t *sig,int32_t maxlen,uint8_t *data,int32_t datalen,bits256 privkey)
 {
@@ -288,7 +355,10 @@ int32_t bitcoin_verify(uint8_t *sig,int32_t siglen,uint8_t *data,int32_t datalen
 
 int32_t bitcoin_pubkeyspend(uint8_t *script,int32_t n,uint8_t pubkey[66])
 {
-    script[n++] = pubkey[0]; memcpy(&script[n],pubkey,pubkey[0]+1); n += pubkey[0]+1;
+    int32_t scriptlen = bitcoin_pubkeylen(pubkey);
+    script[n++] = scriptlen;
+    memcpy(&script[n],pubkey,scriptlen);
+    n += scriptlen;
     script[n++] = SCRIPT_OP_CHECKSIG;
     return(n);
 }
@@ -298,6 +368,14 @@ int32_t bitcoin_p2shspend(uint8_t *script,int32_t n,uint8_t rmd160[20])
     script[n++] = SCRIPT_OP_HASH160;
     script[n++] = 0x14; memcpy(&script[n],rmd160,0x14); n += 0x14;
     script[n++] = SCRIPT_OP_EQUAL;
+    return(n);
+}
+
+int32_t bitcoin_revealsecret160(uint8_t *script,int32_t n,uint8_t secret160[20])
+{
+    script[n++] = SCRIPT_OP_HASH160;
+    script[n++] = 0x14; memcpy(&script[n],secret160,0x14); n += 0x14;
+    script[n++] = SCRIPT_OP_EQUALVERIFY;
     return(n);
 }
 
@@ -319,66 +397,112 @@ int32_t bitcoin_checklocktimeverify(uint8_t *script,int32_t n,uint32_t locktime)
     return(n);
 }
 
-int32_t bitcoin_pubkeylen(uint8_t *pubkey)
-{
-    if ( pubkey[0] == 2 || pubkey[0] == 3 )
-        return(33);
-    else if ( pubkey[0] == 4 )
-        return(65);
-    else return(-1);
-}
-
-int32_t bitcoin_MofN(uint8_t p2sh_rmd160[20],uint8_t *script,int32_t n,struct vin_info *vp,int32_t M,int32_t N)
+int32_t bitcoin_MofNspendscript(uint8_t p2sh_rmd160[20],uint8_t *script,int32_t n,const struct vin_info *vp)
 {
     uint8_t sha256[32]; int32_t i,plen;
-    script[n++] = 0x50 + M;
-    for (i=0; i<N; i++)
+    script[n++] = 0x50 + vp->M;
+    for (i=0; i<vp->N; i++)
     {
         if ( (plen= bitcoin_pubkeylen(vp->signers[i].pubkey)) < 0 )
             return(-1);
+        script[n++] = plen;
         memcpy(&script[n],vp->signers[i].pubkey,plen);
         n += plen;
     }
-    script[n++] = 0x50 + N;
+    script[n++] = 0x50 + vp->N;
     script[n++] = SCRIPT_OP_CHECKMULTISIG;
     vcalc_sha256(0,sha256,script,n);
     calc_rmd160(0,p2sh_rmd160,sha256,sizeof(sha256));
     return(n);
 }
 
-char *create_atomictx_cltvspend(char *scriptstr,uint8_t *rmd160A,uint8_t *rmd160B,uint32_t locktime)
+int32_t bitcoin_p2shscript(uint8_t *script,int32_t n,const uint8_t *p2shscript,const int32_t p2shlen)
+{
+    if ( p2shlen >= 0xfd )
+    {
+        script[n++] = 0x4d;
+        script[n++] = (p2shlen & 0xff);
+        script[n++] = ((p2shlen >> 8) & 0xff);
+    }
+    else
+    {
+        script[n++] = 0x4c;
+        script[n++] = p2shlen;
+    }
+    memcpy(&script[n],p2shscript,p2shlen), n += p2shlen;
+    return(n);
+}
+
+int32_t bitcoin_changescript(struct iguana_info *coin,uint8_t *changescript,int32_t n,uint64_t *changep,char *changeaddr,uint64_t inputsatoshis,uint64_t satoshis,uint64_t txfee)
+{
+    uint8_t addrtype,rmd160[20]; int32_t len;
+    *changep = 0;
+    if ( inputsatoshis >= (satoshis + txfee) )
+    {
+        *changep = inputsatoshis - (satoshis + txfee);
+        if ( changeaddr != 0 && changeaddr[0] != 0 )
+        {
+            bitcoin_addr2rmd160(&addrtype,rmd160,changeaddr);
+            if ( addrtype == coin->chain->pubtype )
+                len = bitcoin_standardspend(changescript,0,rmd160);
+            else if ( addrtype == coin->chain->p2shtype )
+                len = bitcoin_standardspend(changescript,0,rmd160);
+            else
+            {
+                printf("error with mismatched addrtype.%02x vs (%02x %02x)\n",addrtype,coin->chain->pubtype,coin->chain->p2shtype);
+                return(-1);
+            }
+            return(len);
+        }
+        else printf("error no change address when there is change\n");
+    }
+    return(-1);
+}
+
+int32_t bitcoin_scriptsig(uint8_t *script,int32_t n,const struct vin_info *vp)
+{
+    int32_t i,siglen;
+    if ( vp->N > 1 )
+        script[n++] = SCRIPT_OP_NOP;
+    for (i=0; i<vp->N; i++)
+    {
+        if ( (siglen= vp->signers[i].siglen) != 0 )
+        {
+            script[n++] = siglen;
+            memcpy(&script[n],vp->signers[i].sig,siglen), n += siglen;
+        }
+    }
+    if ( vp->type == IGUANA_SCRIPT_P2SH )
+        n = bitcoin_p2shscript(script,n,vp->p2shscript,vp->p2shlen);
+    return(n);
+}
+
+int32_t bitcoin_cltvscript(uint8_t p2shtype,char *ps2h_coinaddr,uint8_t p2sh_rmd160[20],uint8_t *script,int32_t n,char *senderaddr,char *otheraddr,uint8_t secret160[20],uint32_t locktime)
 {
     // OP_IF
     //      <timestamp> OP_CHECKLOCKTIMEVERIFY OP_DROP OP_DUP OP_HASH160 <hash160> OP_EQUALVERIFY OP_CHECKSIG
     // OP_ELSE
-    //      OP_DUP OP_HASH160 <hash160> OP_EQUALVERIFY OP_CHECKSIG // standard spend
+    //      OP_HASH160 secret160 OP_EQUALVERIFY OP_DUP OP_HASH160 <hash160> OP_EQUALVERIFY OP_CHECKSIG // standard spend
     // OP_ENDIF
-    uint8_t hex[4096]; int32_t n = 0;
-    hex[n++] = SCRIPT_OP_IF;
-        n = bitcoin_checklocktimeverify(hex,n,locktime);
-        n = bitcoin_standardspend(hex,n,rmd160A);
-    hex[n++] = SCRIPT_OP_ELSE;
-        n = bitcoin_standardspend(hex,n,rmd160B);
-    hex[n++] = SCRIPT_OP_ENDIF;
-    init_hexbytes_noT(scriptstr,hex,n);
-    return(scriptstr);
+    uint8_t sha256[32],rmd160A[20],rmd160B[20],addrtypeA,addrtypeB;
+    bitcoin_addr2rmd160(&addrtypeA,rmd160A,senderaddr);
+    bitcoin_addr2rmd160(&addrtypeB,rmd160B,otheraddr);
+    script[n++] = SCRIPT_OP_IF;
+        n = bitcoin_checklocktimeverify(script,n,locktime);
+        n = bitcoin_standardspend(script,n,rmd160A);
+    script[n++] = SCRIPT_OP_ELSE;
+        n = bitcoin_revealsecret160(script,n,secret160);
+        n = bitcoin_standardspend(script,n,rmd160B);
+    script[n++] = SCRIPT_OP_ENDIF;
+    vcalc_sha256(0,sha256,script,n);
+    calc_rmd160(0,p2sh_rmd160,sha256,sizeof(sha256));
+    bitcoin_address(ps2h_coinaddr,p2shtype,p2sh_rmd160,20);
+    return(n);
 }
 
-/*
- struct vin_signer { bits256 privkey; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };
- 
- struct vin_info
- {
- struct iguana_msgvin vin;
- int32_t M,N,validmask,spendlen,p2shflag;
- struct vin_signer signers[16];
- uint8_t rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE];
- };
-*/
-
-int32_t iguana_scriptgen(struct iguana_info *coin,char *coinaddr,uint8_t *script,char *asmstr,uint8_t rmd160[20],uint8_t type,int32_t txi,struct vin_info *vp)
+int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char *coinaddr,uint8_t *script,char *asmstr,uint8_t rmd160[20],uint8_t type,const struct vin_info *vp,int32_t txi)
 {
-    uint8_t addrtype; char rmd160str[41]; int32_t i,m,n,flag = 0,scriptlen = 0;
+    uint8_t addrtype; char rmd160str[41],pubkeystr[256]; int32_t i,m,n,flag = 0,scriptlen = 0;
     m = n = 1;
     if ( type == IGUANA_SCRIPT_76A988AC || type == IGUANA_SCRIPT_76AC || type == IGUANA_SCRIPT_P2SH )
     {
@@ -388,7 +512,6 @@ int32_t iguana_scriptgen(struct iguana_info *coin,char *coinaddr,uint8_t *script
         init_hexbytes_noT(rmd160str,rmd160,20);
         btc_convrmd160(coinaddr,addrtype,rmd160);
     }
-    //printf("addrtype.%d\n",addrtype);
     switch ( type )
     {
         case IGUANA_SCRIPT_NULL:
@@ -397,8 +520,10 @@ int32_t iguana_scriptgen(struct iguana_info *coin,char *coinaddr,uint8_t *script
             coinaddr[0] = 0;
             break;
         case IGUANA_SCRIPT_76AC:
-            sprintf(asmstr,"OP_DUP %s OP_CHECKSIG // %s",rmd160str,coinaddr);
-            scriptlen = bitcoin_pubkeyspend(script,0,vp->signers[0].pubkey);
+            init_hexbytes_noT(pubkeystr,(uint8_t *)vp->signers[0].pubkey,bitcoin_pubkeylen(vp->signers[0].pubkey));
+            sprintf(asmstr,"OP_DUP %s OP_CHECKSIG // %s",pubkeystr,coinaddr);
+            scriptlen = bitcoin_pubkeyspend(script,0,(uint8_t *)vp->signers[0].pubkey);
+            //printf("[%02x] scriptlen.%d (%s)\n",vp->signers[0].pubkey[0],scriptlen,asmstr);
             break;
         case IGUANA_SCRIPT_76A988AC:
             sprintf(asmstr,"OP_DUP OP_HASH160 %s OP_EQUALVERIFY OP_CHECKSIG // %s",rmd160str,coinaddr);
@@ -430,11 +555,11 @@ int32_t iguana_scriptgen(struct iguana_info *coin,char *coinaddr,uint8_t *script
     }
     if ( n > 1 )
     {
-        scriptlen = bitcoin_MofN(rmd160,script,0,vp,m,n);
+        scriptlen = bitcoin_MofNspendscript(rmd160,script,0,vp);
         sprintf(asmstr,"%d ",m);
         for (i=0; i<n; i++)
         {
-            init_hexbytes_noT(asmstr + strlen(asmstr),vp->signers[i].pubkey,bitcoin_pubkeylen(vp->signers[i].pubkey));
+            init_hexbytes_noT(asmstr + strlen(asmstr),(uint8_t *)vp->signers[i].pubkey,bitcoin_pubkeylen(vp->signers[i].pubkey));
             strcat(asmstr," ");
         }
         sprintf(asmstr + strlen(asmstr),"%d // M.%d of N.%d [",n,m,n);
@@ -443,8 +568,9 @@ int32_t iguana_scriptgen(struct iguana_info *coin,char *coinaddr,uint8_t *script
         strcat(asmstr,"]\n");
     }
     if ( flag != 0 && vp->spendlen > 0 )
-        init_hexbytes_noT(asmstr + strlen(asmstr),vp->spendscript,vp->spendlen);
-    return(0);
+        init_hexbytes_noT(asmstr + strlen(asmstr),(uint8_t *)vp->spendscript,vp->spendlen);
+    *Mp = m, *nump = n;
+    return(scriptlen);
 }
 
 int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
@@ -505,7 +631,7 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
             plen = *script++;
             if ( bitcoin_pubkeylen(script) != plen )
             {
-                printf("invalid pubkey[%d] len %d\n",bitcoin_pubkeylen(script),script[0]);
+                printf("multisig.%d of %d: invalid pubkey[%02x] len %d\n",i,n,script[0],bitcoin_pubkeylen(script));
                 return(-1);
             }
             memcpy(vp->signers[i].pubkey,script,plen);
@@ -564,19 +690,6 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
     return(type);
 }
 
-
-/*
- struct vin_signer { bits256 privkey; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };
- 
- struct vin_info
- {
- struct iguana_msgvin vin;
- int32_t M,N,validmask,spendlen,p2shflag;
- struct vin_signer signers[16];
- uint8_t rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE];
- };
- */
-
 int32_t iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp,uint8_t *pk_script,int32_t pk_scriptlen,bits256 debugtxid,int32_t vout,uint32_t sequence)
 {
     int32_t scriptlen; uint8_t script[IGUANA_MAXSCRIPTSIZE]; char asmstr[IGUANA_MAXSCRIPTSIZE*3];
@@ -585,13 +698,23 @@ int32_t iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp,uint8_t *
     vp->spendlen = pk_scriptlen;
     vp->vin.sequence = sequence;
     memcpy(vp->spendscript,pk_script,pk_scriptlen);
-    vp->vin.script = vp->spendscript, vp->vin.prev_vout = pk_scriptlen;
     if ( (vp->type= _iguana_calcrmd160(coin,vp)) >= 0 )
     {
-        scriptlen = iguana_scriptgen(coin,vp->coinaddr,script,asmstr,vp->rmd160,vp->type,vout,vp);
+        scriptlen = iguana_scriptgen(coin,&vp->M,&vp->N,vp->coinaddr,script,asmstr,vp->rmd160,vp->type,(const struct vin_info *)vp,vout);
         if ( scriptlen != pk_scriptlen || memcmp(script,pk_script,scriptlen) != 0 )
         {
-            printf("iguana_calcrmd160 type.%d error regenerating scriptlen.%d vs %d\n",vp->type,scriptlen,pk_scriptlen);
+            if ( vp->type != IGUANA_SCRIPT_OPRETURN )
+            {
+                int32_t i;
+                printf("\n--------------------\n");
+                for (i=0; i<scriptlen; i++)
+                    printf("%02x ",script[i]);
+                printf("script.%d\n",scriptlen);
+                for (i=0; i<pk_scriptlen; i++)
+                    printf("%02x ",pk_script[i]);
+                printf("original script.%d\n",pk_scriptlen);
+                printf("iguana_calcrmd160 type.%d error regenerating scriptlen.%d vs %d\n\n",vp->type,scriptlen,pk_scriptlen);
+            }
         }
     }
     return(vp->type);
@@ -626,7 +749,7 @@ int32_t iguana_parsevinobj(struct iguana_info *coin,uint8_t *serialized,int32_t 
         vin->prev_hash = jbits256(vinobj,"txid");
         vin->prev_vout = jint(vinobj,"vout");
         if ( (sigjson= jobj(vinobj,"scriptSig")) != 0 )
-            hexstr = jstr(sigjson,"redeemScript");
+            hexstr = jstr(sigjson,"hex");
     }
     if ( hexstr != 0 )
     {
@@ -643,46 +766,42 @@ int32_t iguana_parsevinobj(struct iguana_info *coin,uint8_t *serialized,int32_t 
     return(len);
 }
 
-//{"result":{"txid":"a2b81b9894205ced12dfe276cbe27c05308976b5a2e12789ccd167fe6c3217f7","version":1,"time":1433295027,"locktime":0,"vin":[{"txid":"cf8f5e26e29a74c4fb867338213c02059b975fcfeae993926edbad8aba1cfedb","vout":1,"scriptSig":{"asm":"3045022100f86ab6815d1c22bf9f0fb6c389b558eb644159462054039d393cdba6e480a952022079b7f804c48a0ef5de68bc4be4c18cd5ea947763f4d5f6d415092f8dc00ee1aa01","hex":"483045022100f86ab6815d1c22bf9f0fb6c389b558eb644159462054039d393cdba6e480a952022079b7f804c48a0ef5de68bc4be4c18cd5ea947763f4d5f6d415092f8dc00ee1aa01"},"sequence":4294967295},{"txid":"cfcaef36853be671a5247c1ccb2a54a59d8b4628d0d63726dcdc8dbf73116ae3","vout":2,"scriptSig":{"asm":"3045022100a84f56626e4558e13911290e72d498796ba0bc70a0c9eb59b20d50f6ed94cee30220734c94ab1e89dfe26b3cc1b519a5a6f37863829e9eccdb246843e76577b4040f01","hex":"483045022100a84f56626e4558e13911290e72d498796ba0bc70a0c9eb59b20d50f6ed94cee30220734c94ab1e89dfe26b3cc1b519a5a6f37863829e9eccdb246843e76577b4040f01"},"sequence":4294967295}],"vout":[{"value":0.00000000,"n":0,"scriptPubKey":{"asm":"","type":"nonstandard"}},{"value":1036.57541260,"n":1,"scriptPubKey":{"asm":"03506a52e95cdfbb9d17d702af6259ba7de8b7a604007999e0266edbf6e4bb6974 OP_CHECKSIG","reqSigs":1,"type":"pubkey","addresses":["RJyYWRKSK7cMg5EeW9aHAaT3hHVEkAXnP9"]}}],"blockhash":"6863f2bab8cd9b69dd7a446aa63281f9e5301520f9ba02ca3acc892866872fe4","confirmations":374485},"error":null,"id":"jl777"}
-
-//{"result":{"version":1,"timestamp":1433295027,"vin":[{"sequence":4294967295,"txid":"cf8f5e26e29a74c4fb867338213c02059b975fcfeae993926edbad8aba1cfedb","vout":1,"hex":"483045022100f86ab6815d1c22bf9f0fb6c389b558eb644159462054039d393cdba6e480a952022079b7f804c48a0ef5de68bc4be4c18cd5ea947763f4d5f6d415092f8dc00ee1aa01"}, {"sequence":4294967295,"txid":"cfcaef36853be671a5247c1ccb2a54a59d8b4628d0d63726dcdc8dbf73116ae3","vout":2,"hex":"483045022100a84f56626e4558e13911290e72d498796ba0bc70a0c9eb59b20d50f6ed94cee30220734c94ab1e89dfe26b3cc1b519a5a6f37863829e9eccdb246843e76577b4040f01"}],"numvins":2,"vout":[{"value":0,"n":0,"scriptPubKey":{"asm":"coinbase","addresses":[]}}, {"value":1036.57541260,"n":1,"scriptPubKey":{"asm":"OP_DUP 6a5ad2f911f1bfd7c018c95154e2c049accd04da OP_CHECKSIG","addresses":["RJyYWRKSK7cMg5EeW9aHAaT3hHVEkAXnP9"],"hex":"2103506a52e95cdfbb9d17d702af6259ba7de8b7a604007999e0266edbf6e4bb6974ac"}}],"numvouts":2,"locktime":0,"size":295,"txid":"a2b81b9894205ced12dfe276cbe27c05308976b5a2e12789ccd167fe6c3217f7"},"height":555555,"confirmations":333945,"blockhash":"6863f2bab8cd9b69dd7a446aa63281f9e5301520f9ba02ca3acc892866872fe4","tag":"731886559821890929"}
-
 cJSON *iguana_voutjson(struct iguana_info *coin,struct iguana_msgvout *vout,int32_t txi,bits256 txid)
 {
     // 035f1321ed17d387e4433b2fa229c53616057964af065f98bfcae2233c5108055e OP_CHECKSIG
-    char scriptstr[8192+1],coinaddr[65],asmstr[16384]; int32_t i,asmtype; struct vin_info V;
-    uint8_t addrtype,space[8192];
-    cJSON *addrs,*skey,*json = cJSON_CreateObject();
+    char scriptstr[8192+1],asmstr[16384]; int32_t i,m,n,scriptlen,asmtype; struct vin_info *vp;
+    uint8_t space[8192]; cJSON *addrs,*skey,*json = cJSON_CreateObject();
+    vp = calloc(1,sizeof(*vp));
     jaddnum(json,"value",dstr(vout->value));
     jaddnum(json,"n",txi);
     //"scriptPubKey":{"asm":"OP_DUP OP_HASH160 5f69cb73016264270dae9f65c51f60d0e4d6fd44 OP_EQUALVERIFY OP_CHECKSIG","reqSigs":1,"type":"pubkeyhash","addresses":["RHyh1V9syARTf2pyxibz7v27D5paBeWza5"]}
     if ( vout->pk_script != 0 && vout->pk_scriptlen*2+1 < sizeof(scriptstr) )
     {
-        memset(&V,0,sizeof(V));
-        if ( (asmtype= iguana_calcrmd160(coin,&V,vout->pk_script,vout->pk_scriptlen,txid,txi,0xffffffff)) >= 0 )
+        memset(vp,0,sizeof(*vp));
+        if ( (asmtype= iguana_calcrmd160(coin,vp,vout->pk_script,vout->pk_scriptlen,txid,txi,0xffffffff)) >= 0 )
         {
             skey = cJSON_CreateObject();
-            addrtype = iguana_scriptgen(coin,V.coinaddr,space,asmstr,V.rmd160,asmtype,txi,&V);
+            scriptlen = iguana_scriptgen(coin,&m,&n,vp->coinaddr,space,asmstr,vp->rmd160,asmtype,vp,txi);
             if ( asmstr[0] != 0 )
                 jaddstr(skey,"asm",asmstr);
             addrs = cJSON_CreateArray();
-            if ( V.M == 0 )
+            if ( vp->N == 1 )
             {
                 if ( asmtype == 2 )
                 {
                     jaddnum(skey,"reqSigs",1);
                     jaddstr(skey,"type","pubkeyhash");
                 }
-                if ( coinaddr[0] != 0 )
-                    jaddistr(addrs,coinaddr);
+                if ( vp->coinaddr[0] != 0 )
+                    jaddistr(addrs,vp->coinaddr);
             }
             else
             {
-                jaddnum(skey,"reqSigs",V.M);
-                for (i=0; i<V.N; i++)
+                jaddnum(skey,"reqSigs",vp->M);
+                for (i=0; i<vp->N; i++)
                 {
-                    btc_convrmd160(coinaddr,coin->chain->pubtype,V.signers[i].pubkey);
-                    jaddistr(addrs,coinaddr);
+                    //btc_convrmd160(coinaddr,coin->chain->pubtype,V.signers[i].pubkey);
+                    jaddistr(addrs,vp->signers[i].coinaddr);
                 }
             }
             jadd(skey,"addresses",addrs);
@@ -709,41 +828,13 @@ cJSON *iguana_vinjson(struct iguana_info *coin,struct iguana_msgvin *vin)
         jaddstr(json,"txid",bits256_str(str,vin->prev_hash));
         jaddnum(json,"vout",vout);
         sigjson = cJSON_CreateObject();
-        jaddstr(sigjson,"redeemScript",scriptstr);
+        jaddstr(sigjson,"hex",scriptstr);
         jadd(json,"scriptSig",sigjson);
     }
     return(json);
 }
 
-cJSON *iguana_txjson(struct iguana_info *coin,struct iguana_txid *tx,int32_t height)
-{
-    struct iguana_msgvin vin; struct iguana_msgvout vout; int32_t i; char asmstr[512],str[65]; uint8_t space[8192];
-    cJSON *vouts,*vins,*json;
-    json = cJSON_CreateObject();
-    jaddstr(json,"txid",bits256_str(str,tx->txid));
-    if ( height >= 0 )
-        jaddnum(json,"height",height);
-    jaddnum(json,"version",tx->version);
-    jaddnum(json,"timestamp",tx->timestamp);
-    jaddnum(json,"locktime",tx->locktime);
-    vins = cJSON_CreateArray();
-    vouts = cJSON_CreateArray();
-    for (i=0; i<tx->numvouts; i++)
-    {
-        iguana_voutset(coin,space,asmstr,height,&vout,tx,i);
-        jaddi(vouts,iguana_voutjson(coin,&vout,i,tx->txid));
-    }
-    jadd(json,"vout",vouts);
-    for (i=0; i<tx->numvins; i++)
-    {
-        iguana_vinset(coin,height,&vin,tx,i);
-        jaddi(vins,iguana_vinjson(coin,&vin));
-    }
-    jadd(json,"vin",vins);
-    return(json);
-}
-
-int32_t iguana_vinparse(int32_t rwflag,uint8_t *serialized,struct iguana_msgvin *msg)
+int32_t iguana_vinparse(struct iguana_info *coin,int32_t rwflag,uint8_t *serialized,struct iguana_msgvin *msg)
 {
     int32_t len = 0;
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->prev_hash),msg->prev_hash.bytes);
@@ -815,7 +906,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
     {
         for (i=0; i<msg->tx_in; i++)
         {
-            len += iguana_vinparse(rwflag,&serialized[len],&msg->vins[i]);
+            len += iguana_vinparse(coin,rwflag,&serialized[len],&msg->vins[i]);
             if ( array != 0 )
                 jaddi(array,iguana_vinjson(coin,&msg->vins[i]));
         }
@@ -892,7 +983,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
     return(len);
 }
 
-bits256 iguana_parsetxobj(struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,cJSON *txobj)
+bits256 iguana_parsetxobj(struct iguana_info *coin,int32_t *txstartp,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,cJSON *txobj) // json -> serialized + (msg,V)
 {
     int32_t i,numvins,numvouts,len = 0; cJSON *array=0; bits256 txid; char vpnstr[64];
     memset(msg,0,sizeof(*msg));
@@ -928,125 +1019,166 @@ bits256 iguana_parsetxobj(struct iguana_info *coin,uint8_t *serialized,int32_t m
     }
     msg->lock_time = juint(txobj,"locktime");
     msg->txid = jbits256(txobj,"txid");
+    *txstartp = len;
     msg->allocsize = iguana_rwmsgtx(coin,1,0,&serialized[len],maxsize-len,msg,&txid,vpnstr);
     //char str[65]; printf("json -> %s\n",bits256_str(str,txid));
     return(txid);
 }
 
-char *iguana_rawtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t datalen,cJSON *json,struct iguana_msgtx *msgtx)
+char *iguana_rawtxbytes(struct iguana_info *coin,cJSON *json,struct iguana_msgtx *msgtx)
 {
-    int32_t n; char *txbytes,vpnstr[64];
+    int32_t n; char *txbytes = 0,vpnstr[64]; uint8_t *serialized;
+    serialized = malloc(IGUANA_MAXPACKETSIZE);
     vpnstr[0] = 0;
     //char str[65]; printf("%d of %d: %s\n",i,msg.txn_count,bits256_str(str,tx.txid));
-    if ( (n= iguana_rwmsgtx(coin,1,json,serialized,datalen,msgtx,&msgtx->txid,vpnstr)) > 0 )
+    if ( (n= iguana_rwmsgtx(coin,1,json,serialized,IGUANA_MAXPACKETSIZE,msgtx,&msgtx->txid,vpnstr)) > 0 )
     {
         txbytes = malloc(n*2+1);
         init_hexbytes_noT(txbytes,serialized,n);
-        return(txbytes);
-    }
-    return(0);
-}
-
-cJSON *bitcoin_txjson(struct iguana_info *coin,struct iguana_msgtx *msgtx)
-{
-    char vpnstr[2]; int32_t n; uint8_t *serialized; bits256 txid; cJSON *json = cJSON_CreateObject();
-    vpnstr[0] = 0;
-    serialized = malloc(IGUANA_MAXPACKETSIZE);
-    if ( (n= iguana_rwmsgtx(coin,1,json,serialized,IGUANA_MAXPACKETSIZE,msgtx,&txid,vpnstr)) < 0 )
-    {
-        printf("bitcoin_txtest: n.%d\n",n);
     }
     free(serialized);
-    return(json);
+    return(txbytes);
 }
 
-int32_t bitcoin_outputscript(struct iguana_info *coin,char *pubkeys[],int32_t *scriptlenp,uint8_t *scriptspace,bits256 txid,int32_t vout)
+/*
+ struct vin_signer { bits256 privkey; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };
+ 
+ struct vin_info
+ {
+ struct iguana_msgvin vin;
+ int32_t M,N,validmask,spendlen,p2shflag;
+ struct vin_signer signers[16];
+ uint8_t rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE];
+ };
+ */
+
+int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,struct vin_info *vp,uint8_t *scriptsig,int32_t len,int32_t type)
 {
-    struct iguana_txid T,*tx; int32_t height,numpubs = 1; char asmstr[8192]; struct iguana_msgvout v;
-    if ( 0 )
+    char asmstr[IGUANA_MAXSCRIPTSIZE*3]; int32_t j,n,siglen,plen; uint8_t sha256[32];
+    j = n = 0;
+    *hashtypep = SIGHASH_ALL;
+    while ( (siglen= scriptsig[n]) >= 70 && siglen <= 73 && n+siglen+1 < len && j < 16 )
     {
-        *scriptlenp = 0;
-        if ( (tx= iguana_txidfind(coin,&height,&T,txid)) != 0 )
-        {
-            *scriptlenp = iguana_voutset(coin,scriptspace,asmstr,height,&v,tx,vout);
-            return(numpubs);
-        }
+        vp->signers[j].siglen = siglen;
+        memcpy(vp->signers[j].sig,&scriptsig[n+1],siglen);
+        if ( j == 0 )
+            *hashtypep = vp->signers[j].sig[siglen-1];
+        n += (siglen + 1);
+        j++;
+        if ( type == 0 && j > 1 )
+            type = IGUANA_SCRIPT_MSIG;
     }
-    //char *str = "2103506a52e95cdfbb9d17d702af6259ba7de8b7a604007999e0266edbf6e4bb6974ac";
-    char *str = "76a914010966776006953d5567439e5e39f86a0d273bee88ac";
-    *scriptlenp = (int32_t)strlen(str) >> 1;
-    decode_hex(scriptspace,*scriptlenp,str);
-    //pubkeys[0] = clonestr("03506a52e95cdfbb9d17d702af6259ba7de8b7a604007999e0266edbf6e4bb6974");
-    pubkeys[0] = clonestr("0450863ad64a87ae8a2fe83c1af1a8403cb53f53e486d8511dad8a04887e5b23522cd470243453a299fa9e77237716103abc11a1df38855ed6f2ee187e9c582ba6");
-    return(numpubs);
+    vp->type = type;
+    j = 0;
+    while ( ((plen= scriptsig[n]) == 33 || plen == 65 ) && j < 16 )
+    {
+        memcpy(vp->signers[j].pubkey,&scriptsig[n+1],plen);
+        vcalc_sha256(0,sha256,vp->signers[j].pubkey,plen);
+        calc_rmd160(0,vp->signers[j].rmd160,sha256,sizeof(sha256));
+        if ( j == 0 )
+            memcpy(vp->rmd160,vp->signers[j].rmd160,20);
+        n += (plen + 1);
+        j++;
+    }
+    if ( n < len && (scriptsig[n] == 0x4c || scriptsig[n] == 0x4d) )
+    {
+        if ( scriptsig[n] == 0x4c )
+            vp->p2shlen = scriptsig[n+1], n += 2;
+        else vp->p2shlen = ((uint32_t)scriptsig[n+1] + ((uint32_t)scriptsig[n+2] << 8)), n += 3;
+        memcpy(vp->p2shscript,&scriptsig[n],vp->p2shlen);
+        vp->type = IGUANA_SCRIPT_P2SH;
+    }
+    /*if ( len == 0 )
+    {
+        //  txid.(eccf7e3034189b851985d871f91384b8ee357cd47c3024736e5676eb2debb3f2).v1
+        decode_hex(vp->rmd160,20,"010966776006953d5567439e5e39f86a0d273bee");//3564a74f9ddb4372301c49154605573d7d1a88fe");
+        vp->type = IGUANA_SCRIPT_76A988AC;
+    }*/
+    vp->spendlen = iguana_scriptgen(coin,&vp->M,&vp->N,vp->coinaddr,vp->spendscript,asmstr,vp->rmd160,vp->type,(const struct vin_info *)vp,vp->vin.prev_vout);
+    //printf("type.%d asmstr.(%s) spendlen.%d\n",vp->type,asmstr,vp->spendlen);
+    return(vp->spendlen);
 }
 
-int32_t bitcoin_hashtype(uint8_t *script,int32_t scriptlen,uint8_t *pk_script,int32_t pk_scriptlen)
+int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **signedtx,int32_t *scriptlens,struct iguana_msgtx *msgtx,uint8_t *serialized,int32_t maxsize,struct vin_info *V)
 {
-    return(SIGHASH_ALL);
-}
-
-int32_t bitcoin_verifyvins(struct iguana_info *coin,int32_t *scriptlens,struct iguana_msgtx *msgtx,uint8_t *serialized,int32_t maxsize,bits256 myprivkey)
-{
-    char txidstr[128],bigstr[2560],coinaddr[64],vpnstr[64],str[65],*pubkeys[16];
-    uint8_t *sig,mypubkey[128],pubkey[128],sigspace[8192],*saveinput,scriptspace[8192];
-    bits256 txid,sigtxid,revsigtxid,mypub;
-    int32_t n2,i,j,numpubs,plen,scriptlen,vini=0,siglen,numvins,hashtype,myvin = 1;
+    bits256 txid,sigtxid,revsigtxid; char txidstr[128],bigstr[2560],coinaddr[64],vpnstr[64],str[65];
+    uint8_t *sig,*pubkey,*saveinput; struct vin_info *vp;
+    int32_t n2,i,j,k,plen,vini=0,flag,numvins,hashtype,retval,siglen,asmtype;
     vpnstr[0] = 0;
-    memset(pubkeys,0,sizeof(pubkeys));
+    *signedtx = 0;
+    memset(signedtxidp,0,sizeof(*signedtxidp));
     numvins = msgtx->tx_in;
-    mypub = bitcoin_pubkey(mypubkey,myprivkey);
+    retval = -numvins;
     for (vini=0; vini<numvins; vini++)
     {
+        saveinput = msgtx->vins[vini].script;
+        vp = &V[vini];
         for (i=0; i<numvins; i++)
             msgtx->vins[i].scriptlen = 0;
-        saveinput = msgtx->vins[vini].script;
         sig = &msgtx->vins[vini].script[1];
-        siglen = msgtx->vins[vini].script[0];
-        numpubs = bitcoin_outputscript(coin,pubkeys,&scriptlen,scriptspace,msgtx->vins[vini].prev_hash,msgtx->vins[vini].prev_vout);
-        msgtx->vins[vini].scriptlen = scriptlen;
-        msgtx->vins[vini].script = scriptspace;
-        for (j=0; j<numpubs; j++)
+        siglen = msgtx->vins[vini].script[0] - 1;
+        vp->vin = msgtx->vins[vini];
+        flag = 0;
+        for (k=0; k<2; k++)
         {
-            plen = (int32_t)strlen(pubkeys[j]);
-            plen >>= 1;
-            decode_hex(pubkey,plen,pubkeys[j]);
-            bitcoin_address(coinaddr,coin->chain->pubtype,pubkey,plen);
-            n2 = iguana_rwmsgtx(coin,1,0,serialized,maxsize,msgtx,&txid,vpnstr);
-            hashtype = bitcoin_hashtype(saveinput,scriptlens[vini],scriptspace,scriptlen);
-            msgtx->vins[vini].script = saveinput;
-            if ( n2 > 0 )
+            asmtype = (k == 0) ? IGUANA_SCRIPT_76A988AC : IGUANA_SCRIPT_76AC;
+            if ( bitcoin_scriptget(coin,&hashtype,vp,saveinput,scriptlens[vini],asmtype) < 0 )
             {
-                n2 += iguana_rwnum(1,&serialized[n2],sizeof(hashtype),&hashtype);
-                revsigtxid = bits256_doublesha256(txidstr,serialized,n2);
-                for (i=0; i<sizeof(revsigtxid); i++)
-                    sigtxid.bytes[31-i] = revsigtxid.bytes[i];
-                if ( 1 && myvin != 0 )
+                printf("cant get script for (%s).v%d\n",bits256_str(str,vp->vin.prev_hash),vp->vin.prev_vout);
+                continue;
+            }
+            msgtx->vins[vini].script = vp->spendscript;
+            msgtx->vins[vini].scriptlen = vp->spendlen;
+            for (j=0; j<vp->N; j++)
+            {
+                pubkey = vp->signers[j].pubkey;
+                if ( (plen= bitcoin_pubkeylen(pubkey)) < 0 )
                 {
-                    sig = sigspace;
-                    siglen = bitcoin_sign(sig,sizeof(sigspace),sigtxid.bytes,sizeof(sigtxid),myprivkey);
-                    printf("plen.%d siglen.%d %s\n",plen,siglen,bits256_str(str,myprivkey));
-                    msgtx->vins[vini].scriptlen = siglen + plen + 2;
-                    msgtx->vins[vini].script[0] = siglen;
-                    memcpy(msgtx->vins[vini].script+1,sigspace,siglen);
-                    msgtx->vins[vini].script[siglen + 1] = plen;
-                    memcpy(msgtx->vins[vini].script+1+siglen+1,pubkey,plen);
-                    cJSON *j = cJSON_CreateObject();
-                    char *txstr = iguana_rawtxbytes(coin,malloc(10000),10000,j,msgtx);
-                    printf("SIGNEDTX.(%s) %s\n",txstr,jprint(j,0));
-                    siglen++;
-                    //printf("retjson.(%s) %p\n",jprint(retjson,0),retjson);
+                    printf("illegal plen.%d [%02x]\n",plen,pubkey[0]);
+                    break;
                 }
-                if ( bitcoin_verify(sig,siglen-1,sigtxid.bytes,sizeof(sigtxid),0,pubkey,plen) < 0 )
+                bitcoin_address(coinaddr,coin->chain->pubtype,pubkey,plen);
+                n2 = iguana_rwmsgtx(coin,1,0,serialized,maxsize,msgtx,&txid,vpnstr);
+                msgtx->vins[vini].script = saveinput;
+                if ( n2 > 0 )
                 {
-                    init_hexbytes_noT(bigstr,serialized,n2);
-                    printf("(%s) doesnt verify hash2.%s\n",bigstr,bits256_str(str,sigtxid));
-                    return(-1);
-                } else printf("SIG.%d VERIFIED\n",vini);
-            } else return(-1);
+                    n2 += iguana_rwnum(1,&serialized[n2],sizeof(hashtype),&hashtype);
+                    revsigtxid = bits256_doublesha256(txidstr,serialized,n2);
+                    for (i=0; i<sizeof(revsigtxid); i++)
+                        sigtxid.bytes[31-i] = revsigtxid.bytes[i];
+                    if ( 1 && bits256_nonz(vp->signers[j].privkey) != 0 )
+                    {
+                        vp->signers[j].siglen = bitcoin_sign(vp->signers[j].sig,sizeof(vp->signers[j].sig),sigtxid.bytes,sizeof(sigtxid),vp->signers[j].privkey);
+                        sig = vp->signers[j].sig;
+                        siglen = vp->signers[j].siglen;
+                        msgtx->vins[vini].scriptlen = bitcoin_scriptsig(msgtx->vins[vini].script,0,(const struct vin_info *)vp);
+                        printf("SIGNEDTX plen.%d siglen.%d\n",plen,siglen);
+                    }
+                    if ( bitcoin_verify(sig,siglen,sigtxid.bytes,sizeof(sigtxid),0,vp->signers[j].pubkey,bitcoin_pubkeylen(vp->signers[j].pubkey)) < 0 )
+                    {
+                        init_hexbytes_noT(bigstr,serialized,n2);
+                        printf("(%s) doesnt verify hash2.%s\n",bigstr,bits256_str(str,sigtxid));
+                    }
+                    else
+                    {
+                        printf("SIG.%d VERIFIED\n",vini);
+                        *signedtx = iguana_rawtxbytes(coin,0,msgtx);
+                        *signedtxidp = msgtx->txid;
+                        flag = 1;
+                        break;
+                    }
+                } else printf("bitcoin_verifyvins: vini.%d n2.%d\n",vini,n2);
+            }
+            if ( flag > 0 )
+            {
+                retval++;
+                break;
+            }
+            if ( vp->type != IGUANA_SCRIPT_76A988AC && vp->type != IGUANA_SCRIPT_76AC )
+                break;
         }
     }
-    return(0);
+    return(retval);
 }
 
 //printf("privkey.%s\n",bits256_str(str,privkey));
@@ -1064,17 +1196,16 @@ ffffffff\
 76a914097072524438d003d23a2f23edb65aae1bb3e46988ac\
 00000000";
 
-int32_t bitcoin_verifytx(struct iguana_info *coin,char *rawtxstr)
+int32_t bitcoin_verifytx(struct iguana_info *coin,bits256 *signedtxidp,char **signedtx,char *rawtxstr,struct vin_info *V)
 {
     int32_t i,len,maxsize,*scriptlens,numvins,retval = -1; uint8_t *serialized,*serialized2;
-    struct iguana_msgtx msgtx; bits256 txid,myprivkey; char vpnstr[64];
+    struct iguana_msgtx msgtx; bits256 txid; char vpnstr[64];
     len = (int32_t)strlen(rawtxstr);
     maxsize = len + 32768;
     serialized = calloc(1,maxsize);
     serialized2 = calloc(1,maxsize);
     len >>= 1;
     vpnstr[0] = 0;
-decode_hex(myprivkey.bytes,sizeof(myprivkey),"18E14A7B6A307F426A94F8114701E7C8E774E7F9A47E2C2035DB29A206321725");
     decode_hex(serialized,len,rawtxstr);
     memset(&msgtx,0,sizeof(msgtx));
     if ( iguana_rwmsgtx(coin,0,0,serialized,maxsize,&msgtx,&txid,vpnstr) > 0 )
@@ -1083,27 +1214,142 @@ decode_hex(myprivkey.bytes,sizeof(myprivkey),"18E14A7B6A307F426A94F8114701E7C8E7
         scriptlens = calloc(numvins,sizeof(*scriptlens));
         for (i=0; i<numvins; i++)
             scriptlens[i] = msgtx.vins[i].scriptlen;
-        if ( bitcoin_verifyvins(coin,scriptlens,&msgtx,serialized2,maxsize,myprivkey) == 0 )
+        if ( bitcoin_verifyvins(coin,signedtxidp,signedtx,scriptlens,&msgtx,serialized2,maxsize,V) == 0 )
             retval = 0;
+        else printf("bitcoin_verifytx: bitcoin_verifyvins error\n");
+        for (i=0; i<numvins; i++)
+            msgtx.vins[i].scriptlen = scriptlens[i];
         free(scriptlens);
-    }
+    } else printf("bitcoin_verifytx: error iguana_rwmsgtx\n");
     free(serialized), free(serialized2);
     return(retval);
 }
 
+char *bitcoin_json2hex(struct iguana_info *coin,bits256 *txidp,cJSON *txjson)
+{
+    int32_t txstart; uint8_t *serialized; struct iguana_msgtx msgtx; char *txbytes = 0;
+    serialized = malloc(IGUANA_MAXPACKETSIZE);
+    *txidp = iguana_parsetxobj(coin,&txstart,serialized,IGUANA_MAXPACKETSIZE,&msgtx,txjson);
+    if ( msgtx.allocsize != 0 )
+    {
+        txbytes = malloc(msgtx.allocsize*2 + 1);
+        init_hexbytes_noT(txbytes,&serialized[txstart],msgtx.allocsize);
+    } else printf("bitcoin_txtest: zero msgtx allocsize\n");
+    free(serialized);
+    return(txbytes);
+}
+
+cJSON *bitcoin_createtx(struct iguana_info *coin,int32_t locktime)
+{
+    cJSON *json = cJSON_CreateObject();
+    if ( locktime == 0 )
+    {
+        jaddnum(json,"version",1);
+        jaddnum(json,"locktime",0);
+    }
+    else
+    {
+        jaddnum(json,"version",4);
+        jaddnum(json,"locktime",locktime);
+    }
+    if ( coin->chain->hastimestamp != 0 )
+        jaddnum(json,"timestamp",time(NULL));
+    jadd(json,"vin",cJSON_CreateArray());
+    jadd(json,"vout",cJSON_CreateArray());
+    return(json);
+}
+
+cJSON *bitcoin_addoutput(struct iguana_info *coin,cJSON *txobj,uint8_t *paymentscript,int32_t len,uint64_t satoshis)
+{
+    char *hexstr; cJSON *item,*skey,*vouts = jduplicate(jobj(txobj,"vout"));
+    item = cJSON_CreateObject();
+    jaddnum(item,"value",dstr(satoshis));
+    skey = cJSON_CreateObject();
+    hexstr = malloc(len*2 + 1);
+    init_hexbytes_noT(hexstr,paymentscript,len);
+    jaddstr(skey,"hex",hexstr);
+    free(hexstr);
+    jadd(item,"scriptPubkey",skey);
+    jdelete(vouts,"vout");
+    jadd(vouts,"vout",item);
+    return(txobj);
+}
+
+cJSON *bitcoin_addinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32_t vout,uint32_t sequence)
+{
+    cJSON *item,*vins = jduplicate(jobj(txobj,"vin"));
+    item = cJSON_CreateObject();
+    jaddbits256(item,"txid",txid);
+    jaddnum(item,"vout",vout);
+    jaddnum(item,"sequence",sequence);
+    jdelete(vins,"vin");
+    jadd(vins,"vin",item);
+    return(txobj);
+}
+
+char *bitcoin_cltvtx(struct iguana_info *coin,char *changeaddr,char *senderaddr,char *senders_otheraddr,char *otheraddr,uint32_t locktime,uint64_t satoshis,bits256 txid,int32_t vout,uint64_t inputsatoshis,bits256 privkey)
+{
+    uint64_t change; char *rawtxstr,*signedtx; struct vin_info V; bits256 cltxid,signedtxid;
+    int32_t cltvlen,len; uint32_t timestamp; char ps2h_coinaddr[65]; cJSON *txobj;
+    uint8_t p2sh_rmd160[20],cltvscript[1024],paymentscript[64],rmd160[20],secret160[20],addrtype;
+    timestamp = (uint32_t)time(NULL);
+    bitcoin_addr2rmd160(&addrtype,secret160,senders_otheraddr);
+    cltvlen = bitcoin_cltvscript(coin->chain->p2shtype,ps2h_coinaddr,p2sh_rmd160,cltvscript,0,senderaddr,otheraddr,secret160,locktime);
+    txobj = bitcoin_createtx(coin,locktime);
+    len = bitcoin_p2shspend(paymentscript,0,p2sh_rmd160);
+    bitcoin_addoutput(coin,txobj,paymentscript,len,satoshis);
+    bitcoin_addinput(coin,txobj,txid,vout,locktime);
+    if ( inputsatoshis > (satoshis + 10000) )
+    {
+        change = inputsatoshis - (satoshis + 10000);
+        if ( changeaddr != 0 && changeaddr[0] != 0 )
+        {
+            bitcoin_addr2rmd160(&addrtype,rmd160,changeaddr);
+            if ( addrtype == coin->chain->pubtype )
+                len = bitcoin_standardspend(paymentscript,0,rmd160);
+            else if ( addrtype == coin->chain->p2shtype )
+                len = bitcoin_standardspend(paymentscript,0,rmd160);
+            else
+            {
+                printf("error with mismatched addrtype.%02x vs (%02x %02x)\n",addrtype,coin->chain->pubtype,coin->chain->p2shtype);
+                return(0);
+            }
+            bitcoin_addoutput(coin,txobj,paymentscript,len,change);
+        }
+        else
+        {
+            printf("error no change address when there is change\n");
+            return(0);
+        }
+    }
+    rawtxstr = bitcoin_json2hex(coin,&cltxid,txobj);
+    char str[65]; printf("CLTV.%s (%s)\n",bits256_str(str,cltxid),rawtxstr);
+    memset(&V,0,sizeof(V));
+    V.signers[0].privkey = privkey;
+    bitcoin_verifytx(coin,&signedtxid,&signedtx,rawtxstr,&V);
+    free(rawtxstr);
+    if ( signedtx != 0 )
+        printf("signed CLTV.%s (%s)\n",bits256_str(str,signedtxid),signedtx);
+    else printf("error generating signedtx\n");
+    free_json(txobj);
+    return(signedtx);
+}
+
 cJSON *bitcoin_txtest(struct iguana_info *coin,char *rawtxstr,bits256 txid)
 {
-    struct iguana_msgtx msgtx; char str[65],str2[65]; bits256 checktxid,blockhash,myprivkey;
+    struct iguana_msgtx msgtx; char str[65],str2[65]; bits256 checktxid,blockhash,signedtxid;
     cJSON *retjson,*txjson; uint8_t *serialized,*serialized2; struct iguana_txid T,*tp;
-    char vpnstr[64]; int32_t n,i,*scriptlens,height,n2,maxsize,len = (int32_t)strlen(rawtxstr);
+    struct vin_info *V; char vpnstr[64],*txbytes,*signedtx; int32_t n,txstart,height,n2,maxsize,len;
+    len = (int32_t)strlen(rawtxstr);
 rawtxstr = refstr;
     maxsize = len + 32768;
     serialized = calloc(1,maxsize);
     serialized2 = calloc(1,maxsize);
     len >>= 1;
+    V = 0;
     vpnstr[0] = 0;
-decode_hex(myprivkey.bytes,sizeof(myprivkey),"18E14A7B6A307F426A94F8114701E7C8E774E7F9A47E2C2035DB29A206321725");
     memset(&msgtx,0,sizeof(msgtx));
+
     if ( len < maxsize )
     {
         decode_hex(serialized,len,rawtxstr);
@@ -1115,16 +1361,16 @@ decode_hex(myprivkey.bytes,sizeof(myprivkey),"18E14A7B6A307F426A94F8114701E7C8E7
             free(serialized), free(serialized2);
             return(cJSON_Parse("{\"error\":\"cant parse txbytes\"}"));
         }
-        scriptlens = calloc(msgtx.tx_in,sizeof(*scriptlens));
-        for (i=0; i<msgtx.tx_in; i++)
-            scriptlens[i] = msgtx.vins[i].scriptlen;
-        if ( bitcoin_verifyvins(coin,scriptlens,&msgtx,serialized2,maxsize,myprivkey) < 0 )
-            printf("sig verification error\n");
-        else printf("sigs verified\n");
-        for (i=0; i<msgtx.tx_in; i++)
-            msgtx.vins[i].scriptlen = scriptlens[i];
-        free(scriptlens);
-
+        V = calloc(msgtx.tx_in,sizeof(*V));
+        {
+            //char *pstr; int32_t plen;
+            decode_hex(V[0].signers[0].privkey.bytes,sizeof(V[0].signers[0].privkey),"18E14A7B6A307F426A94F8114701E7C8E774E7F9A47E2C2035DB29A206321725");
+            //pstr = "0450863ad64a87ae8a2fe83c1af1a8403cb53f53e486d8511dad8a04887e5b23522cd470243453a299fa9e77237716103abc11a1df38855ed6f2ee187e9c582ba6";
+            //plen = (int32_t)strlen(pstr);
+            //decode_hex(V[0].signers[0].pubkey,plen,pstr);
+        }
+        if ( bitcoin_verifytx(coin,&signedtxid,&signedtx,rawtxstr,V) != 0 )
+            printf("bitcoin_verifytx error\n");
         jadd(retjson,"result",txjson);
         if ( (tp= iguana_txidfind(coin,&height,&T,txid)) != 0 )
         {
@@ -1141,63 +1387,33 @@ decode_hex(myprivkey.bytes,sizeof(myprivkey),"18E14A7B6A307F426A94F8114701E7C8E7
         if ( (n2= iguana_rwmsgtx(coin,1,0,serialized2,maxsize,&msgtx,&checktxid,vpnstr)) < 0 || n != n2 )
         {
             printf("bitcoin_txtest: n.%d vs n2.%d\n",n,n2);
-            free(serialized), free(serialized2);
+            free(serialized), free(serialized2), free(V);
             return(retjson);
         }
         if ( bits256_cmp(checktxid,txid) != 0 )
         {
             printf("bitcoin_txtest: txid.%s vs check.%s\n",bits256_str(str,txid),bits256_str(str2,checktxid));
         }
-        checktxid = iguana_parsetxobj(coin,serialized,maxsize,&msgtx,jobj(retjson,"result"));
+        checktxid = iguana_parsetxobj(coin,&txstart,serialized,maxsize,&msgtx,jobj(retjson,"result"));
         if ( bits256_cmp(checktxid,txid) != 0 )
         {
             printf("bitcoin_txtest: txid.%s vs check2.%s\n",bits256_str(str,txid),bits256_str(str2,checktxid));
         }
-        free(serialized), free(serialized2);
+        if ( msgtx.allocsize != 0 )
+        {
+            txbytes = malloc(msgtx.allocsize*2 + 1);
+            init_hexbytes_noT(txbytes,&serialized[txstart],msgtx.allocsize);
+            if ( strcmp(txbytes,rawtxstr) != 0 )
+                printf("bitcoin_txtest: reconstruction error: %s != %s\n",rawtxstr,txbytes);
+            else printf("reconstruction PASSED\n");
+            free(txbytes);
+        } else printf("bitcoin_txtest: zero msgtx allocsize\n");
+        free(serialized), free(serialized2), free(V);
         return(retjson);
     }
     free(serialized), free(serialized2);
     return(cJSON_Parse("{\"error\":\"testing bitcoin txbytes\"}"));
 }
-
-/*{
-    for (i=0; i<T->numinputs; i++)
-        strcpy(T->inputs[i].sigs,"00");
-        strcpy(vin->sigs,redeemscript);
-        vin->sequence = (uint32_t)-1;
-        T->nlocktime = 0;
-        //disp_cointx(&T);
-        emit_cointx(&hash2,data,sizeof(data),T,oldtx_format,SIGHASH_ALL);
-        //printf("HASH2.(%llx)\n",(long long)hash2.txid);
-        if ( bp_sign(&key,hash2.bytes,sizeof(hash2),&sig,&siglen) != 0 )
-        {
-            memcpy(sigbuf,sig,siglen);
-            sigbuf[siglen++] = SIGHASH_ALL;
-            init_hexbytes_noT(sigs[privkeyind],sigbuf,(int32_t)siglen);
-            strcpy(vin->sigs,"00");
-            for (i=0; i<n; i++)
-            {
-                if ( sigs[i][0] != 0 )
-                {
-                    sprintf(vin->sigs + strlen(vin->sigs),"%02x%s",(int32_t)strlen(sigs[i])>>1,sigs[i]);
-                    //printf("(%s).%ld ",sigs[i],strlen(sigs[i]));
-                }
-            }
-            len = (int32_t)(strlen(redeemscript)/2);
-            if ( len >= 0xfd )
-                sprintf(&vin->sigs[strlen(vin->sigs)],"4d%02x%02x",len & 0xff,(len >> 8) & 0xff);
-            else sprintf(&vin->sigs[strlen(vin->sigs)],"4c%02x",len);
-            sprintf(&vin->sigs[strlen(vin->sigs)],"%s",redeemscript);
-            //printf("after A.(%s) othersig.(%s) siglen.%02lx -> (%s)\n",hexstr,othersig != 0 ? othersig : "",siglen,vin->sigs);
-            //printf("vinsigs.(%s) %ld\n",vin->sigs,strlen(vin->sigs));
-            _emit_cointx(hexstr,sizeof(hexstr),T,oldtx_format);
-            //disp_cointx(&T);
-            free(T);
-            return(clonestr(hexstr));
-        }
-        else printf("error signing\n");
-            free(T);
-}*/
 
 #define EXCHANGE_NAME "bitcoin"
 #define UPDATE bitcoin ## _price
@@ -1216,23 +1432,21 @@ decode_hex(myprivkey.bytes,sizeof(myprivkey),"18E14A7B6A307F426A94F8114701E7C8E7
 #define FUNCS bitcoin ## _funcs
 #define BASERELS bitcoin ## _baserels
 
-static char *BASERELS[][2] = { {"btc","nxt"}, {"btc","btcd"}, {"btc","ltc"}, {"btc","vrc"}, {"btc","doge"} };
+static char *BASERELS[][2] = { {"btcd","btc"}, {"nxt","btc"}, {"asset","btc"} };
 #include "exchange_supports.h"
 
-double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert)
+double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert)
 {
-    char url[1024],lrel[16],lbase[16];
-    strcpy(lrel,rel), strcpy(lbase,base);
-    tolowercase(lrel), tolowercase(lbase);
-    sprintf(url,"http://api.quadrigacx.com/v2/order_book?book=%s_%s",lbase,lrel);
-    return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0,invert));
-}
-
-cJSON *SIGNPOST(void **cHandlep,int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *payload,char *path)
-{
-    if ( retstrp != 0 )
-        *retstrp = clonestr("{\"error\":\"bitcoin is not yet\"}");
-    return(cJSON_Parse("{}"));
+    cJSON *retjson,*bids,*asks; double hbla;
+    bids = cJSON_CreateArray();
+    asks = cJSON_CreateArray();
+    instantdex_acceptablefind(exchange,bids,asks,0,base,rel);
+    retjson = cJSON_CreateObject();
+    cJSON_AddItemToObject(retjson,"bids",bids);
+    cJSON_AddItemToObject(retjson,"asks",asks);
+    hbla = exchanges777_json_orderbook(exchange,commission,base,rel,bidasks,maxdepth,retjson,0,"bids","asks",0,0,invert);
+    free_json(retjson);
+    return(hbla);
 }
 
 char *PARSEBALANCE(struct exchange_info *exchange,double *balancep,char *coinstr,cJSON *argjson)
@@ -1245,24 +1459,120 @@ cJSON *BALANCES(struct exchange_info *exchange,cJSON *argjson)
     return(cJSON_Parse("{\"error\":\"bitcoin is not yet\"}"));
 }
 
+int32_t is_valid_BTCother(char *other)
+{
+    if ( iguana_coinfind(other) != 0 )
+        return(1);
+    else if ( strcmp(other,"NXT") == 0 || strcmp(other,"nxt") == 0 )
+        return(1);
+    else if ( is_decimalstr(other) > 0 )
+        return(1);
+    else return(0);
+}
+
 uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *base,char *rel,int32_t dir,double price,double volume,cJSON *argjson)
 {
-    return(0);
+    struct instantdex_accept *ap; char *str,coinaddr[64]; uint64_t txid = 0; cJSON *json;
+    struct supernet_info *myinfo; uint8_t pubkey[33]; struct iguana_info *other; int32_t hops = 3;
+    myinfo = SuperNET_MYINFO(0);
+    if ( strcmp(base,"BTC") == 0 || strcmp(base,"btc") == 0 )
+    {
+        base = rel;
+        rel = "BTC";
+        dir = -dir;
+        volume *= price;
+        price = 1. / price;
+    }
+    if ( is_valid_BTCother(base) != 0 && (strcmp(rel,"BTC") == 0 || strcmp(rel,"btc") == 0) )
+    {
+        ap = 0;//instantdex_acceptable(exchange,base,rel,"BTC",dir,price,volume);
+        if ( dotrade == 0 )
+        {
+            if ( retstrp != 0 )
+            {
+                if ( ap != 0 )
+                    *retstrp = jprint(instantdex_acceptjson(ap),1);
+                else *retstrp = clonestr("{\"result\":\"would issue new trade\"}");
+            }
+        }
+        else
+        {
+            if ( ap != 0 )
+            {
+                // issue matching response
+            }
+            else if ( dir < 0 )
+            {
+                printf("bitcoin sell is not yet\n");
+                return(0);
+            }
+            else
+            {
+                json = cJSON_CreateObject();
+                jaddstr(json,"base",base);
+                jaddstr(json,"rel","BTC");
+                jaddnum(json,"maxprice",price);
+                jaddnum(json,"volume",volume);
+                if ( (other= iguana_coinfind(base)) != 0 )
+                {
+                    bitcoin_pubkey33(pubkey,myinfo->persistent_priv);
+                    bitcoin_address(coinaddr,other->chain->pubtype,pubkey,sizeof(pubkey));
+                    jaddstr(argjson,base,coinaddr);
+                }
+                jaddstr(json,"BTC",myinfo->myaddr.BTC);
+                if ( (str= instantdex_sendcmd(myinfo,json,"BTCoffer",myinfo->ipaddr,hops)) != 0 )
+                    free(str);
+                free_json(json);
+                if ( (str= instantdex_queueaccept(exchange,base,"BTC",price,volume,-1,"BTC",INSTANTDEX_OFFERDURATION)) != 0 )
+                {
+                    if ( (json= cJSON_Parse(str)) != 0 )
+                    {
+                        txid = j64bits(json,"orderid");
+                        free_json(json);
+                    }
+                    free(str);
+                }
+            }
+        }
+    }
+    return(txid);
 }
 
-char *ORDERSTATUS(struct exchange_info *exchange,uint64_t quoteid,cJSON *argjson)
+char *ORDERSTATUS(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson)
 {
-    return(clonestr("{\"error\":\"bitcoin is not yet\"}"));
+    struct instantdex_accept *ap; cJSON *retjson;
+    if ( (ap= instantdex_acceptablefind(exchange,0,0,orderid,"*","*")) != 0 )
+    {
+        retjson = cJSON_CreateObject();
+        jadd(retjson,"result",instantdex_acceptjson(ap));
+        return(jprint(retjson,1));
+    } else return(clonestr("{\"error\":\"couldnt find orderid\"}"));
 }
 
-char *CANCELORDER(struct exchange_info *exchange,uint64_t quoteid,cJSON *argjson)
+char *CANCELORDER(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson)
 {
-    return(clonestr("{\"error\":\"bitcoin is not yet\"}"));
+    struct instantdex_accept *ap; cJSON *retjson;
+    if ( (ap= instantdex_acceptablefind(exchange,0,0,orderid,"*","*")) != 0 )
+    {
+        ap->dead = (uint32_t)time(NULL);
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"result","killed orderid, but might have pending");
+        jadd(retjson,"order",instantdex_acceptjson(ap));
+        return(jprint(retjson,1));
+    } else return(clonestr("{\"error\":\"couldnt find orderid\"}"));
 }
 
 char *OPENORDERS(struct exchange_info *exchange,cJSON *argjson)
 {
-    return(clonestr("{\"error\":\"bitcoin is not yet\"}"));
+    cJSON *retjson,*bids,*asks;
+    bids = cJSON_CreateArray();
+    asks = cJSON_CreateArray();
+    instantdex_acceptablefind(exchange,bids,asks,0,"*","*");
+    retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result","success");
+    jadd(retjson,"bids",bids);
+    jadd(retjson,"asks",asks);
+    return(jprint(retjson,1));
 }
 
 char *TRADEHISTORY(struct exchange_info *exchange,cJSON *argjson)

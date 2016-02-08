@@ -13091,5 +13091,232 @@ len = 0;
          }
          return(clonestr("{\"error\":\"need pubkey\"}"));
          }*/
+                
+                int32_t bitcoin_outputscript(struct iguana_info *coin,char *pubkeys[],int32_t *scriptlenp,uint8_t *scriptspace,bits256 txid,int32_t vout)
+            {
+                struct iguana_txid T,*tx; int32_t height,numpubs = 1; char asmstr[8192]; struct iguana_msgvout v;
+                if ( 0 )
+                {
+                    *scriptlenp = 0;
+                    if ( (tx= iguana_txidfind(coin,&height,&T,txid)) != 0 )
+                    {
+                        *scriptlenp = iguana_voutset(coin,scriptspace,asmstr,height,&v,tx,vout);
+                        return(numpubs);
+                    }
+                }
+                //char *str = "2103506a52e95cdfbb9d17d702af6259ba7de8b7a604007999e0266edbf6e4bb6974ac";
+                char *str = "76a914010966776006953d5567439e5e39f86a0d273bee88ac";
+                *scriptlenp = (int32_t)strlen(str) >> 1;
+                decode_hex(scriptspace,*scriptlenp,str);
+                //pubkeys[0] = clonestr("03506a52e95cdfbb9d17d702af6259ba7de8b7a604007999e0266edbf6e4bb6974");
+                pubkeys[0] = clonestr("0450863ad64a87ae8a2fe83c1af1a8403cb53f53e486d8511dad8a04887e5b23522cd470243453a299fa9e77237716103abc11a1df38855ed6f2ee187e9c582ba6");
+                return(numpubs);
+            }
+                
+                cJSON *bitcoin_txjson(struct iguana_info *coin,struct iguana_msgtx *msgtx,struct vin_info *V)
+            {
+                char vpnstr[2]; int32_t n; uint8_t *serialized; bits256 txid; cJSON *json = cJSON_CreateObject();
+                vpnstr[0] = 0;
+                serialized = malloc(IGUANA_MAXPACKETSIZE);
+                if ( (n= iguana_rwmsgtx(coin,1,json,serialized,IGUANA_MAXPACKETSIZE,msgtx,&txid,vpnstr,V)) < 0 )
+                {
+                    printf("bitcoin_txtest: n.%d\n",n);
+                }
+                free(serialized);
+                return(json);
+            }
+                
+            /*{
+             for (i=0; i<T->numinputs; i++)
+             strcpy(T->inputs[i].sigs,"00");
+             strcpy(vin->sigs,redeemscript);
+             vin->sequence = (uint32_t)-1;
+             T->nlocktime = 0;
+             //disp_cointx(&T);
+             emit_cointx(&hash2,data,sizeof(data),T,oldtx_format,SIGHASH_ALL);
+             //printf("HASH2.(%llx)\n",(long long)hash2.txid);
+             if ( bp_sign(&key,hash2.bytes,sizeof(hash2),&sig,&siglen) != 0 )
+             {
+             memcpy(sigbuf,sig,siglen);
+             sigbuf[siglen++] = SIGHASH_ALL;
+             init_hexbytes_noT(sigs[privkeyind],sigbuf,(int32_t)siglen);
+             strcpy(vin->sigs,"00");
+             for (i=0; i<n; i++)
+             {
+             if ( sigs[i][0] != 0 )
+             {
+             sprintf(vin->sigs + strlen(vin->sigs),"%02x%s",(int32_t)strlen(sigs[i])>>1,sigs[i]);
+             //printf("(%s).%ld ",sigs[i],strlen(sigs[i]));
+             }
+             }
+             len = (int32_t)(strlen(redeemscript)/2);
+             if ( len >= 0xfd )
+             sprintf(&vin->sigs[strlen(vin->sigs)],"4d%02x%02x",len & 0xff,(len >> 8) & 0xff);
+             else sprintf(&vin->sigs[strlen(vin->sigs)],"4c%02x",len);
+             sprintf(&vin->sigs[strlen(vin->sigs)],"%s",redeemscript);
+             //printf("after A.(%s) othersig.(%s) siglen.%02lx -> (%s)\n",hexstr,othersig != 0 ? othersig : "",siglen,vin->sigs);
+             //printf("vinsigs.(%s) %ld\n",vin->sigs,strlen(vin->sigs));
+             _emit_cointx(hexstr,sizeof(hexstr),T,oldtx_format);
+             //disp_cointx(&T);
+             free(T);
+             return(clonestr(hexstr));
+             }
+             else printf("error signing\n");
+             free(T);
+             }*/
+                
+            /*cJSON *iguana_txjson(struct iguana_info *coin,struct iguana_txid *tx,int32_t height,struct vin_info *V)
+             {
+             struct iguana_msgvin vin; struct iguana_msgvout vout; int32_t i; char asmstr[512],str[65]; uint8_t space[8192];
+             cJSON *vouts,*vins,*json;
+             json = cJSON_CreateObject();
+             jaddstr(json,"txid",bits256_str(str,tx->txid));
+             if ( height >= 0 )
+             jaddnum(json,"height",height);
+             jaddnum(json,"version",tx->version);
+             jaddnum(json,"timestamp",tx->timestamp);
+             jaddnum(json,"locktime",tx->locktime);
+             vins = cJSON_CreateArray();
+             vouts = cJSON_CreateArray();
+             for (i=0; i<tx->numvouts; i++)
+             {
+             iguana_voutset(coin,space,asmstr,height,&vout,tx,i);
+             jaddi(vouts,iguana_voutjson(coin,&vout,i,tx->txid));
+             }
+             jadd(json,"vout",vouts);
+             for (i=0; i<tx->numvins; i++)
+             {
+             iguana_vinset(coin,height,&vin,tx,i);
+             jaddi(vins,iguana_vinjson(coin,&vin,V != 0 ? &V[i] : 0));
+             }
+             jadd(json,"vin",vins);
+             return(json);
+             }*/
+                
+            /*
+             if ( strcmp(cmdstr+3,"offer") == 0 )
+             {
+             
+             }
+             if ( (price= instantdex_acceptable(myinfo,0,refstr,base,rel,volume)) > 0. )
+             {
+             // sends NXT assetid, volume and desired
+             if ( strcmp(base,"NXT") == 0 || strcmp(base,"nxt") == 0 )
+             assetbits = NXT_ASSETID;
+             else if ( is_decimalstr(base) > 0 )
+             assetbits = calc_nxt64bits(base);
+             if ( assetbits != 0 )
+             {
+             nextcmd = INSTANTDEX_REQUEST;
+             nextcmdstr = "request";
+             }
+             }
+             }
+             else if ( strncmp(cmdstr,"ALT",3) == 0 )
+             {
+             if ( (price= instantdex_acceptable(myinfo,0,refstr,base,rel,volume)) > 0. )
+             {
+             // sends NXT assetid, volume and desired
+             if ( strcmp(base,"NXT") == 0 || strcmp(base,"nxt") == 0 )
+             assetbits = NXT_ASSETID;
+             else if ( is_decimalstr(base) > 0 )
+             assetbits = calc_nxt64bits(base);
+             if ( assetbits != 0 )
+             {
+             nextcmd = INSTANTDEX_REQUEST;
+             nextcmdstr = "request";
+             }
+             }
+             }
+             else if ( strncmp(cmdstr,"NXT",3) == 0 )
+             {
+             if ( (price= instantdex_acceptable(myinfo,0,refstr,base,rel,volume)) > 0. )
+             {
+             // sends NXT assetid, volume and desired
+             if ( strcmp(base,"NXT") == 0 || strcmp(base,"nxt") == 0 )
+             assetbits = NXT_ASSETID;
+             else if ( is_decimalstr(base) > 0 )
+             assetbits = calc_nxt64bits(base);
+             if ( assetbits != 0 )
+             {
+             nextcmd = INSTANTDEX_REQUEST;
+             nextcmdstr = "request";
+             }
+             }
+             }
+             {
+             
+             }
+             
+             if ( strcmp(cmdstr,"request") == 0 )
+             {
+             // request:
+             // other node sends (othercoin, othercoinaddr, otherNXT and reftx that expires before phasedtx)
+             if ( (strcmp(rel,"BTC") == 0 || strcmp(base,"BTC") == 0) && (price= instantdex_acceptable(myinfo,0,refstr,base,rel,volume)) > 0. )
+             {
+             //aveprice = instantdex_aveprice(myinfo,sortbuf,(int32_t)(sizeof(sortbuf)/sizeof(*sortbuf)),&totalvol,base,rel,volume,argjson);
+             set_NXTtx(myinfo,&feeT,assetbits,SATOSHIDEN*3,calc_nxt64bits(INSTANTDEX_ACCT),-1);
+             if ( (feejson= gen_NXT_tx_json(myinfo,fullhash,&feeT,0,1.)) != 0 )
+             free_json(feejson);
+             nextcmd = INSTANTDEX_PROPOSE;
+             nextcmdstr = "proposal";
+             othercoinaddr = myinfo->myaddr.BTC;
+             otherNXTaddr = myinfo->myaddr.NXTADDR;
+             }
+             }
+             else
+             {
+             if ( strcmp(cmdstr,"proposal") == 0 )
+             {
+             // proposal:
+             // NXT node submits phasedtx that refers to it, but it wont confirm
+             nextcmd = INSTANTDEX_ACCEPT;
+             nextcmdstr = "accept";
+             message = "";
+             //instantdex_phasetxsubmit(refstr);
+             }
+             else if ( strcmp(cmdstr,"accept") == 0 )
+             {
+             // accept:
+             // other node verifies unconfirmed has phasedtx and broadcasts cltv, also to NXT node, releases trigger
+             nextcmd = INSTANTDEX_CONFIRM;
+             nextcmdstr = "confirm";
+             message = "";
+             //instantdex_phasedtxverify();
+             //instantdex_cltvbroadcast();
+             //instantdex_releasetrigger();
+             }
+             else if ( strcmp(cmdstr,"confirm") == 0 )
+             {
+             // confirm:
+             // NXT node verifies bitcoin txbytes has proper payment and cashes in with onetimepubkey
+             // BTC* node approves phased tx with onetimepubkey
+             //instantdex_cltvverify();
+             //instantdex_phasetxapprove();
+             return(clonestr("{\"error\":\"trade confirmed\"}"));
+             }
+             }
+             if ( nextcmd != 0 && (newjson= InstantDEX_argjson(refstr,message,othercoinaddr,otherNXTaddr,nextcmd,duration,flags)) != 0 )
+             {
+             jaddnum(newjson,"price",price);
+             jaddnum(newjson,"volume",volume);
+             return(instantdex_sendcmd(myinfo,newjson,nextcmdstr,myinfo->ipaddr,INSTANTDEX_HOPS));
+             }
+             }
+             return(clonestr("{\"error\":\"request needs argjson\"}"));
+             }
+             num = 0;
+             depth = 30;
+             request = jstr(argjson,"request");
+             base = jstr(argjson,"base");
+             rel = jstr(argjson,"rel");
+             refstr = jstr(argjson,"refstr");
+             volume = jdouble(argjson,"volume");
+             duration = juint(argjson,"duration");
+             flags = juint(argjson,"flags");
+             nextcmd = 0;
+             nextcmdstr = message = "";
+             
+             */
 
 #endif

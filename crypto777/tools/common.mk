@@ -1,4 +1,4 @@
-# Copyrigh t (c) 2012 The Chromium Authors. All rights reserved.
+# Copyright (c) 2012 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -32,9 +32,12 @@ TOP_MAKE := $(word 1,$(MAKEFILE_LIST))
 #
 # Figure out which OS we are running on.
 #
-GETOS := python $(NACL_SDK_ROOT)/tools/getos.py
-NACL_CONFIG := python $(NACL_SDK_ROOT)/tools/nacl_config.py
-FIXDEPS := python $(NACL_SDK_ROOT)/tools/fix_deps.py -c
+#GETOS := python $(NACL_SDK_ROOT)/tools/getos.py
+#NACL_CONFIG := python $(NACL_SDK_ROOT)/tools/nacl_config.py
+#FIXDEPS := python $(NACL_SDK_ROOT)/tools/fix_deps.py -c
+GETOS := python tools/getos.py
+NACL_CONFIG := python tools/nacl_config.py
+FIXDEPS := python tools/fix_deps.py -c
 OSNAME := $(shell $(GETOS))
 
 
@@ -203,7 +206,7 @@ endif
 #
 # Compute path to requested NaCl Toolchain
 #
-TC_PATH := $(abspath $(NACL_SDK_ROOT)/../toolchain)
+TC_PATH := $(abspath $(NACL_SDK_ROOT)/toolchain)
 
 
 #
@@ -260,8 +263,6 @@ clean:
 	$(RM) -f $(TARGET).nmf
 	$(RM) -rf $(OUTDIR)
 	$(RM) -rf user-data-dir
-	mkdir pnacl; mkdir pnacl/Release
-	cp Release/* nacl_io.stamp pnacl/Release; 
 
 
 #
@@ -294,7 +295,6 @@ ifeq (,$(2))
 else
 	+$(MAKE) -C $(2) STAMPDIR=$(abspath $(STAMPDIR)) $(abspath $(STAMPDIR)/$(1).stamp) $(3)
 endif
-	cp pnacl/Release/*.pexe pnacl/Release/*.bc pnacl/Release/SuperNET_API.nmf Release
 
 all: rebuild_$(1)
 $(STAMPDIR)/$(1).stamp: rebuild_$(1)
@@ -443,8 +443,7 @@ endif
 # Variables for running examples with Chrome.
 #
 RUN_PY := python $(NACL_SDK_ROOT)/tools/run.py
-#HTTPD_PY := python $(NACL_SDK_ROOT)/tools/httpd.py
-HTTPD_PY := python tools/httpd.py
+HTTPD_PY := python $(NACL_SDK_ROOT)/tools/httpd.py
 
 # Add this to launch Chrome with additional environment variables defined.
 # Each element should be specified as KEY=VALUE, with whitespace separating
@@ -532,7 +531,7 @@ debug: check_for_chrome all $(PAGE)
 
 .PHONY: serve
 serve: all
-	echo run tools/httpd.py
+	$(HTTPD_PY) -C $(CURDIR)
 endif
 
 # uppercase aliases (for backward compatibility)

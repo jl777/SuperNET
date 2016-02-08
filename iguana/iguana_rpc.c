@@ -721,13 +721,16 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
     //printf("url.(%s) method.(%s) helpfname.(%s)\n",&url[i],urlmethod,helpfname);
     if ( strcmp(&url[i],"/") == 0 && strcmp(urlmethod,"GET") == 0 )
     {
+        static int counter;
         *jsonflagp = 1;
-        if ( (filestr= OS_filestr(&filesize,"index7778.html")) == 0 )
+        if ( counter++ == 0 || (filestr= OS_filestr(&filesize,"index7778.html")) == 0 )
         {
             if ( (filestr= SuperNET_htmlstr("index7778.html",retbuf,bufsize,0)) != 0 )
                 printf("created index7778.html size %ld\n",strlen(filestr));
         }
-        return(filestr);
+        if ( filestr != 0 )
+            return(filestr);
+        else return(clonestr("{\"error\":\"cant find index7778\"}"));
     }
     else if ( (filestr= OS_filestr(&filesize,url+1)) != 0 )
         return(filestr);

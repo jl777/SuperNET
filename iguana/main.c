@@ -346,15 +346,15 @@ void iguana_main(void *arg)
     category_init(&MYINFO);
     if ( (coinargs= SuperNET_keysinit(&MYINFO,arg)) != 0 )
         iguana_launch(iguana_coinadd("BTCD"),"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
-    else if ( 0 )
+    else if ( 1 )
     {
 #ifdef __APPLE__
         sleep(1);
         char *str;
-        strcpy(MYINFO.rpcsymbol,"BTC");
+        strcpy(MYINFO.rpcsymbol,"BTCD");
         iguana_launchcoin(MYINFO.rpcsymbol,cJSON_Parse("{}"));
 
-        if ( 0 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"wallet\":\"password\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":3,\"newcoin\":\"BTC\",\"active\":0}"),0)) != 0 )
+        if ( 0 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"wallet\":\"password\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":3,\"newcoin\":\"BTCD\",\"active\":0}"),0)) != 0 )
         {
             printf("got.(%s)\n",str);
             free(str);

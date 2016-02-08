@@ -13,7 +13,8 @@ TARGET = crypto777
 
 EXTRA= -D__PNACL -O2
 
-include $(NACL_SDK_ROOT)/tools/common.mk
+#include $(NACL_SDK_ROOT)/tools/common.mk
+include tools/common.mk
 CHROME_ARGS += --allow-nacl-socket-api=127.0.0.1
 
 DEPS = nacl_io
