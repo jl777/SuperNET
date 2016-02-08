@@ -113,7 +113,7 @@ struct bitcoin_unspent *instantdex_bestfit(struct iguana_info *coin,struct bitco
 
 struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *numunspentsp)
 {
-    struct bitcoin_unspent *ups = calloc(1,sizeof(*ups));
+    struct bitcoin_unspent *ups = calloc(1,sizeof(*ups)); //uint8_t addrtype;
     // struct bitcoin_unspent { bits256 txid,privkey; uint64_t value; int32_t vout; };
     *numunspentsp = 0;
     return(ups);
@@ -152,7 +152,7 @@ struct bitcoin_spend *instantdex_spendset(struct supernet_info *myinfo,struct ig
     }
     if ( spend->input_satoshis >= (satoshis + spend->txfee) )
     {
-        realloc(spend,sizeof(*spend) + sizeof(*spend->inputs) * spend->numinputs);
+        spend = realloc(spend,sizeof(*spend) + sizeof(*spend->inputs) * spend->numinputs);
         return(spend);
     }
     else
