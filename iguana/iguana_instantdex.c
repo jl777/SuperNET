@@ -380,8 +380,8 @@ cJSON *instantdex_acceptsendjson(struct instantdex_accept *ap)
 
 char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen)
 {
-    char cmdstr[16],*traderip,*orderidstr; struct exchange_info *exchange; uint64_t orderid;
-    struct instantdex_accept A,*ap;
+    char cmdstr[16],*traderip,*orderidstr,*retstr; struct exchange_info *exchange; uint64_t orderid;
+    struct instantdex_accept A,*ap = 0;
     exchange = exchanges777_find("bitcoin");
     memset(cmdstr,0,sizeof(cmdstr)), memcpy(cmdstr,msg->cmd,sizeof(msg->cmd));
     if ( argjson != 0 )
@@ -397,15 +397,21 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
             orderid = calc_nxt64bits(orderidstr);
             if ( (ap= instantdex_acceptablefind(exchange,0,0,orderid,"*","*")) != 0 )
                 A = *ap;
-        } else instantdex_acceptextract(&A,argjson);
+        } else if ( instantdex_acceptextract(&A,argjson) < 0 )
+            return(clonestr("{\"error\":\"hash txid mismatches orderid\"}"));
         if ( strncmp(cmdstr,"BTC",3) == 0 )
-            return(instantdex_BTCswap(myinfo,exchange,&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen));
+            retstr = instantdex_BTCswap(myinfo,exchange,&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen);
         else if ( strncmp(cmdstr,"NXT",3) == 0 )
-            return(instantdex_NXTswap(myinfo,exchange,&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen));
+            retstr = instantdex_NXTswap(myinfo,exchange,&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen);
         else if ( strncmp(cmdstr,"ALT",3) == 0 )
-            return(instantdex_ALTswap(myinfo,exchange,&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen));
+            retstr = instantdex_ALTswap(myinfo,exchange,&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen);
         else if ( strncmp(cmdstr,"PAX",3) == 0 )
-            return(instantdex_PAXswap(myinfo,exchanges777_find("PAX"),&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen));
+            retstr = instantdex_PAXswap(myinfo,exchanges777_find("PAX"),&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen);
+        if ( ap != 0 )
+        {
+            ap->statusjson = A.statusjson;
+            ap->pendingvolume64 = A.pendingvolume64;
+        }
         else return(clonestr("{\"error\":\"unrecognized atomic swap family\"}"));
     }
     return(clonestr("{\"error\":\"request needs argjson\"}"));

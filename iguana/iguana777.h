@@ -184,6 +184,7 @@ struct iguana_chain
     uint8_t genesis_hashdata[32],minconfirms;
     uint16_t ramchainport,bundlesize,hasheaders;
     char gethdrsmsg[16];
+    uint64_t txfee,minoutput;
 };
 
 struct iguana_msgaddress {	uint32_t nTime; uint64_t nServices; uint8_t ip[16]; uint16_t port; } __attribute__((packed));

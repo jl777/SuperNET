@@ -169,6 +169,9 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char
 bits256 bitcoin_pubkey33(uint8_t data[33],bits256 privkey);
 char *bitcoin_address(char *coinaddr,uint8_t addrtype,uint8_t *pubkey,int32_t len);
 
+uint8_t *cards777_recover(uint8_t *shares[],uint8_t *sharenrs,int32_t M,int32_t numcards,int32_t N);
+int32_t cards777_calcmofn(uint8_t *allshares,uint8_t *myshares[],uint8_t *sharenrs,int32_t M,bits256 *xoverz,int32_t numcards,int32_t N);
+int32_t init_sharenrs(unsigned char sharenrs[255],unsigned char *orig,int32_t m,int32_t n);
 
 #endif
 

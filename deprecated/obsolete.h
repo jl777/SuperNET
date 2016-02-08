@@ -13318,5 +13318,24 @@ len = 0;
              nextcmdstr = message = "";
              
              */
+                if ( A->orderid != orderid )
+                {
+                    printf("orderid mismatch %llu vs %llu\n",(long long)orderid,(long long)A->orderid);
+                    return(clonestr("{\"error\":\"instantdex_BTCswap orderid mismatch\"}"));
+                }
+        if ( senderaddr == 0 || strcmp(A->A.base,base) != 0 || strcmp(A->A.rel,"BTC") != 0 )
+        {
+            printf("senderaddr.%p base.(%s vs %s) rel.(%s vs %s)\n",senderaddr,A->A.base,base,A->A.rel,"BTC");
+            return(clonestr("{\"error\":\"instantdex_BTCswap base or rel mismatch\"}"));
+        }
+        {
+            printf("satoshis mismatch %llu vs %llu\n",(long long)satoshis,(long long)instantdex_relsatoshis(A->A.price64,A->A.basevolume64));
+            return(clonestr("{\"error\":\"instantdex_BTCswap satoshis mismatch\"}"));
+        }
+        if ( othersatoshis != A->A.basevolume64 )
+        {
+            printf("othersatoshis mismatch %llu vs %llu\n",(long long)satoshis,(long long)A->A.basevolume64);
+            return(clonestr("{\"error\":\"instantdex_BTCswap satoshis mismatch\"}"));
+        }
 
 #endif

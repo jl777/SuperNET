@@ -668,7 +668,7 @@ int32_t btc_wif2priv(uint8_t *addrtypep,uint8_t privkey[32],char *wifstr)
         len = (int32_t)cstr->len;
         char tmp[138];
         btc_priv2wif(tmp,privkey,*addrtypep);
-        printf("addrtype.%02x wifstr.(%llx) len.%d\n",*addrtypep,*(long long *)privkey,len);
+        printf("addrtype.%02x wifstr.(%llx) privlen.%d\n",*addrtypep,*(long long *)privkey,len);
         cstr_free(cstr,true);
     }
     return(len);

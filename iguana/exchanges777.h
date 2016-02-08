@@ -94,12 +94,12 @@ struct bitcoin_spend
 {
     char changeaddr[64];
     int32_t numinputs;
-    uint64_t txfee,input_satoshis,satoshis;
+    int64_t txfee,input_satoshis,satoshis,change,netamount;
     struct bitcoin_unspent inputs[];
 };
 
 struct instantdex_entry { char base[24],rel[24]; uint64_t price64,basevolume64,offer64; uint32_t expiration,nonce; char myside,acceptdir; };
-struct instantdex_accept { struct queueitem DL; uint64_t pendingvolume64,orderid; uint32_t dead; struct instantdex_entry A; };
+struct instantdex_accept { struct queueitem DL; cJSON *statusjson; uint64_t pendingvolume64,orderid; uint32_t dead; struct instantdex_entry A; };
 
 struct instantdex_accept *instantdex_acceptablefind(struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel);
 cJSON *instantdex_acceptjson(struct instantdex_accept *ap);

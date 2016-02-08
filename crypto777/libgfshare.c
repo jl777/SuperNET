@@ -39,10 +39,10 @@
 struct _gfshare_ctx
 {
     uint32_t sharecount,threshold,size,buffersize;
-    unsigned char sharenrs[255],buffer[];
+    uint8_t sharenrs[255],buffer[];
 };
 
-unsigned char ctx_logs[256] = {
+uint8_t ctx_logs[256] = {
     0x00, 0x00, 0x01, 0x19, 0x02, 0x32, 0x1a, 0xc6,
     0x03, 0xdf, 0x33, 0xee, 0x1b, 0x68, 0xc7, 0x4b,
     0x04, 0x64, 0xe0, 0x0e, 0x34, 0x8d, 0xef, 0x81,
@@ -76,7 +76,7 @@ unsigned char ctx_logs[256] = {
     0x4f, 0xae, 0xd5, 0xe9, 0xe6, 0xe7, 0xad, 0xe8,
     0x74, 0xd6, 0xf4, 0xea, 0xa8, 0x50, 0x58, 0xaf };
 
-unsigned char ctx_exps[510] = {
+uint8_t ctx_exps[510] = {
     0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
     0x1d, 0x3a, 0x74, 0xe8, 0xcd, 0x87, 0x13, 0x26,
     0x4c, 0x98, 0x2d, 0x5a, 0xb4, 0x75, 0xea, 0xc9,
@@ -142,20 +142,20 @@ unsigned char ctx_exps[510] = {
     0x58, 0xb0, 0x7d, 0xfa, 0xe9, 0xcf, 0x83, 0x1b,
     0x36, 0x6c, 0xd8, 0xad, 0x47, 0x8e };
 
-/*void _gfshare_fill_rand_using_random(unsigned char *buffer,unsigned long long count)
+/*void _gfshare_fill_rand_using_random(uint8_t *buffer,unsigned long long count)
 {
     uint32_t i;
     for (i=0; i<count; i++)
         buffer[i] = (random() & 0xff00) >> 8; // apparently the bottom 8 aren't very random but the middles ones are
 }*/
-//void randombytes(unsigned char *x,long xlen);
+//void randombytes(uint8_t *x,long xlen);
 
 //gfshare_rand_func_t gfshare_fill_rand = _gfshare_fill_rand_using_random;
-gfshare_rand_func_t gfshare_fill_rand = OS_randombytes;
+//gfshare_rand_func_t gfshare_fill_rand = OS_randombytes;
 
 // ------------------------------------------------------[ Preparation ]----
 
-gfshare_ctx *_gfshare_ctx_init_core(unsigned char *sharenrs,uint32_t sharecount,unsigned char threshold,uint32_t size)
+gfshare_ctx *_gfshare_ctx_init_core(uint8_t *sharenrs,uint32_t sharecount,uint8_t threshold,uint32_t size)
 {
     gfshare_ctx *ctx;
     ctx = XMALLOC(sizeof(struct _gfshare_ctx) + threshold * size);
@@ -170,7 +170,7 @@ gfshare_ctx *_gfshare_ctx_init_core(unsigned char *sharenrs,uint32_t sharecount,
 }
 
 // Initialise a gfshare context for producing shares
-gfshare_ctx *gfshare_ctx_init_enc(unsigned char *sharenrs,uint32_t sharecount,unsigned char threshold,uint32_t size)
+gfshare_ctx *gfshare_ctx_init_enc(uint8_t *sharenrs,uint32_t sharecount,uint8_t threshold,uint32_t size)
 {
     uint32_t i;
     // can't have x[i] = 0 - that would just be a copy of the secret, in theory
@@ -179,6 +179,7 @@ gfshare_ctx *gfshare_ctx_init_enc(unsigned char *sharenrs,uint32_t sharecount,un
     {
         if ( sharenrs[i] == 0 )
         {
+            printf("null sharenrs error\n");
             errno = EINVAL;
             return NULL;
         }
@@ -187,7 +188,7 @@ gfshare_ctx *gfshare_ctx_init_enc(unsigned char *sharenrs,uint32_t sharecount,un
 }
 
 // Initialise a gfshare context for recombining shares
-gfshare_ctx *gfshare_ctx_init_dec(unsigned char *sharenrs,uint32_t sharecount,uint32_t size)
+gfshare_ctx *gfshare_ctx_init_dec(uint8_t *sharenrs,uint32_t sharecount,uint32_t size)
 {
     gfshare_ctx *ctx = _gfshare_ctx_init_core(sharenrs,sharecount,sharecount,size);
     if ( ctx != NULL )
@@ -199,26 +200,28 @@ gfshare_ctx *gfshare_ctx_init_dec(unsigned char *sharenrs,uint32_t sharecount,ui
 void gfshare_ctx_free(gfshare_ctx *ctx)
 {
     long len = sizeof(struct _gfshare_ctx) + ctx->buffersize;
-    gfshare_fill_rand((unsigned char*)ctx,len);
+    //gfshare_fill_rand((uint8_t*)ctx,len);
+    OS_randombytes((uint8_t *)ctx,len);
     XFREE(ctx);
 }
 
 // --------------------------------------------------------[ Splitting ]----
 
 // Provide a secret to the encoder. (this re-scrambles the coefficients)
-void gfshare_ctx_enc_setsecret(gfshare_ctx *ctx,unsigned char *secret)
+void gfshare_ctx_enc_setsecret(gfshare_ctx *ctx,uint8_t *secret)
 {
     memcpy(ctx->buffer + ((ctx->threshold-1) * ctx->size),secret,ctx->size);
-    gfshare_fill_rand(ctx->buffer,(ctx->threshold-1) * ctx->size);
+    //gfshare_fill_rand(ctx->buffer,(ctx->threshold-1) * ctx->size);
+    OS_randombytes(ctx->buffer,(ctx->threshold-1) * ctx->size);
 }
 
 // Extract a share from the context. 'share' must be preallocated and at least 'size' bytes long.
 // 'sharenr' is the index into the 'sharenrs' array of the share you want.
-void calc_share(unsigned char *buffer,int32_t size,int32_t M,uint32_t ilog,unsigned char *share)
+void calc_share(uint8_t *buffer,int32_t size,int32_t M,uint32_t ilog,uint8_t *share)
 {
     uint32_t pos,coefficient;//,ilog = ctx_logs[ctx->sharenrs[sharenr]];
-    //unsigned char *coefficient_ptr = buffer;
-    unsigned char *share_ptr,share_byte;
+    //uint8_t *coefficient_ptr = buffer;
+    uint8_t *share_ptr,share_byte;
     for (pos=0; pos<size; pos++)
         share[pos] = *(buffer++);
     for (coefficient=1; coefficient<M; coefficient++)
@@ -234,46 +237,134 @@ void calc_share(unsigned char *buffer,int32_t size,int32_t M,uint32_t ilog,unsig
     }
 }
 
-void gfshare_ctx_enc_getshare(gfshare_ctx *ctx,unsigned char sharenr,unsigned char *share)
+void gfshare_ctx_enc_getshare(gfshare_ctx *ctx,uint8_t sharenr,uint8_t *share)
 {
     calc_share(ctx->buffer,ctx->size,ctx->threshold,ctx_logs[ctx->sharenrs[sharenr]],share);
 }
 
-void calc_shares(unsigned char *shares,unsigned char *secret,int32_t size,int32_t width,int32_t M,int32_t N,unsigned char *sharenrs)
+void calc_shares(uint8_t *shares,uint8_t *secret,int32_t size,int32_t width,int32_t M,int32_t N,uint8_t *sharenrs)
 {
     int32_t i;
-    unsigned char *buffer = calloc(M,width);
+    uint8_t *buffer = calloc(M,width);
     memset(shares,0,N*width);
     memcpy(buffer + ((M - 1) * size),secret,size);
-    gfshare_fill_rand(buffer,(M - 1) * size);
+    //gfshare_fill_rand(buffer,(M - 1) * size);
+    OS_randombytes(buffer,(M - 1) * size);
     for (i=0; i<N; i++)
     {
-        uint32_t _crc32(uint32_t crc, const void *buf, size_t size);
+        //uint32_t _crc32(uint32_t crc, const void *buf, size_t size);
         calc_share(buffer,size,M,ctx_logs[sharenrs[i]],&shares[i * width]);
-        //printf("(%02x %08x) ",sharenrs[i],_crc32(0,&shares[i*width],size));
+        printf("(%02x %08x) ",sharenrs[i],calc_crc32(0,&shares[i*width],size));
     }
     free(buffer);
+}
+
+int32_t init_sharenrs(uint8_t sharenrs[255],uint8_t *orig,int32_t m,int32_t n)
+{
+    uint8_t *randvals,valid[255];
+    int32_t i,j,r,remains,orign;
+    if ( m > n || n >= 0xff ) // reserve 255 for illegal sharei
+    {
+        printf("illegal M.%d of N.%d\n",m,n);
+        return(-1);
+    }
+    randvals = calloc(1,65536);
+    OS_randombytes(randvals,65536);
+    memset(sharenrs,0,n);
+    if ( orig == 0 && n == m )
+    {
+        for (i=0; i<255; i++)
+            valid[i] = (i + 1);
+        remains = orign = 255;
+        for (i=0; i<n; i++)
+        {
+            r = (randvals[i] % remains);
+            sharenrs[i] = valid[r];
+            printf("%d ",sharenrs[i]);
+            valid[r] = valid[--remains];
+        }
+        printf("FULL SET\n");
+    }
+    else
+    {
+        remains = n;
+        orign = n;
+        memcpy(valid,sharenrs,n);
+        i = j = 0;
+        memset(sharenrs,0,n);
+        for (i=0; i<m; i++)
+        {
+            r = (rand() >> 8) % remains;
+            sharenrs[i] = valid[r];
+            valid[r] = valid[--remains];
+        }
+        /*while ( i < m )
+         {
+         if ( j >= 65536 )
+         {
+         gfshare_fill_rand(randvals,65536);
+         printf("refill j.%d\n",j);
+         j = 0;
+         }
+         r = (randvals[j++] % n);
+         if ( valid[r] != 0 )
+         {
+         remains--;
+         i++;
+         sharenrs[r] = valid[r];
+         //printf("%d ",sharenrs[i]);
+         valid[r] = 0;
+         }
+         }*/
+        for (i=0; i<n; i++)
+            printf("%d ",valid[i]);
+        printf("valid\n");
+        for (i=0; i<m; i++)
+            printf("%d ",sharenrs[i]);
+        printf("sharenrs vals m.%d of n.%d\n",m,n);
+        //getchar();
+    }
+    free(randvals);
+    //printf("sharenrs m.%d of n.%d\n",m,n);
+    if ( remains != (orign - m) )
+    {
+        printf("remains algo error??\n");
+        return(-1);
+    }
+    for (i=0; i<m; i++)
+    {
+        for (j=0; j<m; j++)
+        {
+            if ( i == j )
+                continue;
+            if ( sharenrs[i] != 0 && sharenrs[i] == sharenrs[j] )
+            {
+                printf("FATAL: duplicate entry sharenrs[%d] %d vs %d sharenrs[%d]\n",i,sharenrs[i],sharenrs[j],j);
+                return(-1);
+            }
+        }
+    }
+    return(0);
 }
 
 // ----------------------------------------------------[ Recombination ]----
 
 // Inform a recombination context of a change in share indexes
-void gfshare_ctx_dec_newshares(gfshare_ctx *ctx,unsigned char *sharenrs)
+void gfshare_ctx_dec_newshares(gfshare_ctx *ctx,uint8_t *sharenrs)
 {
     memcpy(ctx->sharenrs,sharenrs,ctx->sharecount);
 }
 
 // Provide a share context with one of the shares. The 'sharenr' is the index into the 'sharenrs' array
-void gfshare_ctx_dec_giveshare(gfshare_ctx *ctx,unsigned char sharenr,unsigned char *share)
+void gfshare_ctx_dec_giveshare(gfshare_ctx *ctx,uint8_t sharenr,uint8_t *share)
 {
     memcpy(ctx->buffer + (sharenr * ctx->size),share,ctx->size);
 }
 
 // Extract the secret by interpolation of the shares. secretbuf must be allocated and at least 'size' bytes long
-void gfshare_extract(unsigned char *secretbuf,uint8_t *sharenrs,int32_t N,uint8_t *buffer,int32_t size,int32_t width)
+void gfshare_extract(uint8_t *secretbuf,uint8_t *sharenrs,int32_t N,uint8_t *buffer,int32_t size,int32_t width)
 {
-    uint32_t i,j,Li_top,Li_bottom;
-    unsigned char *secret_ptr,*share_ptr,sharei,sharej;
+    uint32_t i,j,Li_top,Li_bottom; uint8_t *secret_ptr,*share_ptr,sharei,sharej;
     memset(secretbuf,0,width);
     for (i=0; i<N; i++)
     {
@@ -309,14 +400,14 @@ void gfshare_extract(unsigned char *secretbuf,uint8_t *sharenrs,int32_t N,uint8_
     }
 }
 
-void gfshare_ctx_dec_extract(gfshare_ctx *ctx,unsigned char *secretbuf)
+void gfshare_ctx_dec_extract(gfshare_ctx *ctx,uint8_t *secretbuf)
 {
     gfshare_extract(secretbuf,ctx->sharenrs,ctx->sharecount,ctx->buffer,ctx->size,ctx->size);
 }
 
-int32_t init_sharenrs(unsigned char sharenrs[255],unsigned char *orig,int32_t m,int32_t n)
+int32_t init_sharenrs(uint8_t sharenrs[255],uint8_t *orig,int32_t m,int32_t n)
 {
-    unsigned char *randvals,valid[255];
+    uint8_t *randvals,valid[255];
     int32_t i,j,r,remains,orign;
     if ( m > n || n >= 0xff ) // reserve 255 for illegal sharei
     {
@@ -324,7 +415,7 @@ int32_t init_sharenrs(unsigned char sharenrs[255],unsigned char *orig,int32_t m,
         return(-1);
     }
     randvals = calloc(1,65536);
-    gfshare_fill_rand(randvals,65536);
+    OS_randombytes(randvals,65536);
     memset(sharenrs,0,n);
     if ( orig == 0 && n == m )
     {
@@ -335,10 +426,10 @@ int32_t init_sharenrs(unsigned char sharenrs[255],unsigned char *orig,int32_t m,
         {
             r = (randvals[i] % remains);
             sharenrs[i] = valid[r];
-            //printf("%d ",sharenrs[i]);
+            printf("%d ",sharenrs[i]);
             valid[r] = valid[--remains];
         }
-        //printf("FULL SET\n");
+        printf("FULL SET\n");
     }
     else
     {
@@ -417,7 +508,7 @@ int test_m_of_n(int m,int n,int size,int maxiters)
     for (i=0; i<n; i++)
         shares[i] = malloc(size);
     // Stage 1, make a secret
-    gfshare_fill_rand(secret,size);
+    OS_randombytes(secret,size);
     
     err = 0;
     r = m;
@@ -425,7 +516,7 @@ int test_m_of_n(int m,int n,int size,int maxiters)
     {
         memset(allshares,0,254*size);
         // Stage 2, split it n ways with a threshold of m
-        if ( 0 )
+        if ( 1 )
         {
             G = gfshare_ctx_init_enc(sharenrs,n,r,size);
             gfshare_ctx_enc_setsecret(G,secret);
@@ -456,7 +547,8 @@ int test_m_of_n(int m,int n,int size,int maxiters)
     }
     err = 0;
     printf("err.%d\n",err);
-#ifdef hardcoded_m_of_n_test
+//#ifdef hardcoded_m_of_n_test
+    int32_t ok;
     // Stage 3, attempt a recombination with shares 1 and 2
     sharenrs[2] = 0;
     gfshare_ctx_dec_newshares(G,sharenrs);
@@ -497,7 +589,7 @@ int test_m_of_n(int m,int n,int size,int maxiters)
     err += (ok == 0), ok = 1;
     gfshare_ctx_free( G );
     printf("total error test_m_of_n %d\n",err);
-#endif
+//#endif
 cleanup:
     for (i=0; i<n; i++)
         free(shares[i]);

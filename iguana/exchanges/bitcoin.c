@@ -1099,11 +1099,11 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,struct vin
     return(vp->spendlen);
 }
 
-int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **signedtx,int32_t *scriptlens,struct iguana_msgtx *msgtx,uint8_t *serialized,int32_t maxsize,struct vin_info *V)
+int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **signedtx,int32_t *scriptlens,struct iguana_msgtx *msgtx,uint8_t *serialized,int32_t maxsize,struct vin_info *V,int32_t sighashsingle)
 {
     bits256 txid,sigtxid,revsigtxid; char txidstr[128],bigstr[2560],coinaddr[64],vpnstr[64],str[65];
     uint8_t *sig,*pubkey,*saveinput; struct vin_info *vp;
-    int32_t n2,i,j,k,plen,vini=0,flag,numvins,hashtype,retval,siglen,asmtype;
+    int32_t n2,i,j,k,plen,vini=0,flag,numvins,hashtype,retval,siglen,asmtype,numvouts = msgtx->tx_out;
     vpnstr[0] = 0;
     *signedtx = 0;
     memset(signedtxidp,0,sizeof(*signedtxidp));
@@ -1116,7 +1116,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
         for (i=0; i<numvins; i++)
             msgtx->vins[i].scriptlen = 0;
         sig = &msgtx->vins[vini].script[1];
-        siglen = msgtx->vins[vini].script[0] - 1;
+        siglen = msgtx->vins[vini].script[0];
         vp->vin = msgtx->vins[vini];
         flag = 0;
         for (k=0; k<2; k++)
@@ -1127,6 +1127,11 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
                 printf("cant get script for (%s).v%d\n",bits256_str(str,vp->vin.prev_hash),vp->vin.prev_vout);
                 continue;
             }
+            if ( sighashsingle != 0 && vini == 0 )
+            {
+                msgtx->tx_out = 1;
+                hashtype = SIGHASH_SINGLE;
+            } else msgtx->tx_out = numvouts;
             msgtx->vins[vini].script = vp->spendscript;
             msgtx->vins[vini].scriptlen = vp->spendlen;
             for (j=0; j<vp->N; j++)
@@ -1143,6 +1148,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
                 if ( n2 > 0 )
                 {
                     n2 += iguana_rwnum(1,&serialized[n2],sizeof(hashtype),&hashtype);
+                    printf("hashtype.%d [%02x]\n",hashtype,sig[siglen-1]);
                     revsigtxid = bits256_doublesha256(txidstr,serialized,n2);
                     for (i=0; i<sizeof(revsigtxid); i++)
                         sigtxid.bytes[31-i] = revsigtxid.bytes[i];
@@ -1150,9 +1156,12 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
                     {
                         vp->signers[j].siglen = bitcoin_sign(vp->signers[j].sig,sizeof(vp->signers[j].sig),sigtxid.bytes,sizeof(sigtxid),vp->signers[j].privkey);
                         sig = vp->signers[j].sig;
+                        sig[vp->signers[j].siglen++] = hashtype;
                         siglen = vp->signers[j].siglen;
                         msgtx->vins[vini].scriptlen = bitcoin_scriptsig(msgtx->vins[vini].script,0,(const struct vin_info *)vp);
-                        printf("SIGNEDTX plen.%d siglen.%d\n",plen,siglen);
+                        for (i=0; i<siglen; i++)
+                            printf("%02x",sig[i]);
+                        printf(" SIGNEDTX.[%02x] plen.%d siglen.%d\n",sig[siglen-1],plen,siglen);
                     }
                     if ( bitcoin_verify(sig,siglen,sigtxid.bytes,sizeof(sigtxid),0,vp->signers[j].pubkey,bitcoin_pubkeylen(vp->signers[j].pubkey)) < 0 )
                     {
@@ -1161,9 +1170,9 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
                     }
                     else
                     {
-                        printf("SIG.%d VERIFIED\n",vini);
                         *signedtx = iguana_rawtxbytes(coin,0,msgtx);
                         *signedtxidp = msgtx->txid;
+                        printf("SIG.%d VERIFIED %s\n",vini,*signedtx);
                         flag = 1;
                         break;
                     }
@@ -1214,7 +1223,7 @@ int32_t bitcoin_verifytx(struct iguana_info *coin,bits256 *signedtxidp,char **si
         scriptlens = calloc(numvins,sizeof(*scriptlens));
         for (i=0; i<numvins; i++)
             scriptlens[i] = msgtx.vins[i].scriptlen;
-        if ( bitcoin_verifyvins(coin,signedtxidp,signedtx,scriptlens,&msgtx,serialized2,maxsize,V) == 0 )
+        if ( bitcoin_verifyvins(coin,signedtxidp,signedtx,scriptlens,&msgtx,serialized2,maxsize,V,0) == 0 )
             retval = 0;
         else printf("bitcoin_verifytx: bitcoin_verifyvins error\n");
         for (i=0; i<numvins; i++)
@@ -1340,8 +1349,8 @@ cJSON *bitcoin_txtest(struct iguana_info *coin,char *rawtxstr,bits256 txid)
     struct iguana_msgtx msgtx; char str[65],str2[65]; bits256 checktxid,blockhash,signedtxid;
     cJSON *retjson,*txjson; uint8_t *serialized,*serialized2; struct iguana_txid T,*tp;
     struct vin_info *V; char vpnstr[64],*txbytes,*signedtx; int32_t n,txstart,height,n2,maxsize,len;
-    len = (int32_t)strlen(rawtxstr);
 rawtxstr = refstr;
+    len = (int32_t)strlen(rawtxstr);
     maxsize = len + 32768;
     serialized = calloc(1,maxsize);
     serialized2 = calloc(1,maxsize);

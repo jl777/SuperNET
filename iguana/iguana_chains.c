@@ -112,12 +112,17 @@ bits256 iguana_chaingenesis(int32_t version,uint32_t timestamp,uint32_t bits,uin
 void iguana_chaininit(struct iguana_chain *chain,int32_t hasheaders)
 {
     chain->hasheaders = hasheaders;
-    if ( strcmp(chain->symbol,"bitcoin") == 0 )
+    chain->minoutput = 10000;
+    if ( strcmp(chain->symbol,"BTC") == 0 )
     {
         chain->unitval = 0x1d;
+        chain->txfee = 10000;
     }
     else
     {
+        if ( strcmp(chain->symbol,"LTC") == 0 )
+            chain->txfee = 100000;
+        else chain->txfee = 1000000;
         if ( chain->unitval == 0 )
             chain->unitval = 0x1e;
     }
