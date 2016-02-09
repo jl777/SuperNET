@@ -702,7 +702,7 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
     return(json);
 }
 
-char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr)
+char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr,char *filetype)
 {
     cJSON *tokens,*argjson,*json = 0; long filesize;
     char symbol[16],buf[4096],urlmethod[16],*data,url[1024],*retstr,*filestr,*token = 0; int32_t i,j,n,num=0;
@@ -718,22 +718,34 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
     url[i++] = 0;
     n += i;
     j = i = 0;
-    //printf("url.(%s) method.(%s) helpfname.(%s)\n",&url[i],urlmethod,helpfname);
+    filetype[0] = 0;
+    //printf("url.(%s) method.(%s)\n",&url[i],urlmethod);
     if ( strcmp(&url[i],"/") == 0 && strcmp(urlmethod,"GET") == 0 )
     {
         static int counter;
         *jsonflagp = 1;
         if ( counter++ == 0 || (filestr= OS_filestr(&filesize,"index7778.html")) == 0 )
         {
+            printf("call htmlstr\n");
             if ( (filestr= SuperNET_htmlstr("index7778.html",retbuf,bufsize,0)) != 0 )
                 printf("created index7778.html size %ld\n",strlen(filestr));
+            else printf("got null filestr\n");
         }
         if ( filestr != 0 )
             return(filestr);
         else return(clonestr("{\"error\":\"cant find index7778\"}"));
     }
     else if ( (filestr= OS_filestr(&filesize,url+1)) != 0 )
+    {
+        *jsonflagp = 1;
+        for (i=(int32_t)strlen(url)-1; i>0; i--)
+            if ( url[i] == '.' || url[i] == '/' )
+                break;
+        if ( url[i] == '.' )
+            strcpy(filetype,url+i+1);
+        //printf("return filetype.(%s) size.%ld\n",filetype,filesize);
         return(filestr);
+    }
     if ( strncmp(&url[i],"/api",strlen("/api")) == 0 )
     {
         *jsonflagp = 1;
@@ -751,7 +763,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
     //printf("URL.(%s)\n",url);
     if ( strcmp(url,"/favicon.ico") == 0 )
     {
-        *jsonflagp = -1;
+        *jsonflagp = 1;
         return(0);
     }
     if ( url[i] != '/' )
@@ -889,6 +901,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
         free_json(argjson);
         return(retstr);
     }
+    *jsonflagp = 1;
     return(clonestr("{\"error\":\"couldnt process packet\"}"));
 }
 
@@ -916,7 +929,7 @@ int32_t iguana_getheadersize(char *buf,int32_t recvlen)
 void iguana_rpcloop(void *args)
 {
     static char *jsonbuf;
-    uint16_t port; struct supernet_info *myinfo = args;
+    uint16_t port; struct supernet_info *myinfo = args; char filetype[128],content_type[128];
     int32_t recvlen,flag,bindsock,postflag,contentlen,sock,remains,numsent,jsonflag,hdrsize,len;
     socklen_t clilen; char remoteaddr[64],*buf,*retstr,*space;//,*retbuf; ,n,i,m
     struct sockaddr_in cli_addr; uint32_t ipbits,i,size = IGUANA_WIDTH*IGUANA_HEIGHT*16 + 512;
@@ -997,15 +1010,33 @@ void iguana_rpcloop(void *args)
                 }
             }
         }
+        content_type[0] = 0;
         if ( recvlen > 0 )
-            retstr = SuperNET_rpcparse(myinfo,space,size,&jsonflag,&postflag,jsonbuf,remoteaddr);
+        {
+            retstr = SuperNET_rpcparse(myinfo,space,size,&jsonflag,&postflag,jsonbuf,remoteaddr,filetype);
+            if ( filetype[0] != 0 )
+            {
+                static cJSON *mimejson; char *tmp,*typestr=0; long tmpsize;
+                if ( (tmp= OS_filestr(&tmpsize,"help/mime.json")) != 0 )
+                {
+                    mimejson = cJSON_Parse(tmp);
+                    free(tmp);
+                }
+                if ( mimejson != 0 )
+                {
+                    if ( (typestr= jstr(mimejson,filetype)) != 0 )
+                        sprintf(content_type,"Content-Type: %s\r\n",typestr);
+                } else printf("parse error.(%s)\n",tmp);
+                //printf("filetype.(%s) json.%p type.%p tmp.%p [%s]\n",filetype,mimejson,typestr,tmp,content_type);
+            }
+        }
         if ( retstr != 0 )
         {
             char *response,hdrs[1024];
             if ( jsonflag != 0 || postflag != 0 )
             {
                 response = malloc(strlen(retstr)+1024+1);
-                sprintf(hdrs,"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET, POST\r\nCache-Control :  no-cache, no-store, must-revalidate\r\nContent-Length : %8d\r\n\r\n",(int32_t)strlen(retstr));
+                sprintf(hdrs,"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET, POST\r\nCache-Control :  no-cache, no-store, must-revalidate\r\n%sContent-Length : %8d\r\n\r\n",content_type,(int32_t)strlen(retstr));
                 response[0] = '\0';
                 strcat(response,hdrs);
                 strcat(response,retstr);

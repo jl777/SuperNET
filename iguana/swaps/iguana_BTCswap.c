@@ -113,10 +113,10 @@ struct bitcoin_unspent *instantdex_bestfit(struct iguana_info *coin,struct bitco
 
 struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *numunspentsp)
 {
-    struct bitcoin_unspent *ups = calloc(1,sizeof(*ups)); uint8_t addrtype; 
+    struct bitcoin_unspent *ups = calloc(1,sizeof(*ups)); //uint8_t addrtype;
     // struct bitcoin_unspent { bits256 txid,privkey; uint64_t value; int32_t vout; };
     *numunspentsp = 0;
-    return(ups);
+     return(ups);
 }
 
 struct bitcoin_spend *instantdex_spendset(struct supernet_info *myinfo,struct iguana_info *coin,uint64_t satoshis,uint64_t donation)
@@ -418,7 +418,7 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
     if ( (other= iguana_coinfind(A->A.base)) == 0 || (coinbtc= iguana_coinfind("BTC")) == 0 )
         return(clonestr("{\"error\":\"instantdex_BTCswap cant find btc or other coin info\"}"));
     locktime = (uint32_t)(A->A.expiration + INSTANTDEX_OFFERDURATION);
-    if ( A->A.rel == 0 || strcmp(A->A.rel,"BTC") != 0 )
+    if ( strcmp(A->A.rel,"BTC") != 0 )
         return(clonestr("{\"error\":\"instantdex_BTCswap offer non BTC rel\"}"));
     vcalc_sha256(0,hash.bytes,(void *)&A->A,sizeof(ap->A));
     if ( hash.txid != A->orderid )

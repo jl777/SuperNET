@@ -551,9 +551,10 @@ static void
 _gfshare_fill_rand_using_random( uint8_t* buffer,
                                 unsigned int count )
 {
-    unsigned int i;
+    OS_randombytes(buffer,count);
+    /*unsigned int i;
     for( i = 0; i < count; ++i )
-        buffer[i] = (random() & 0xff00) >> 8; /* apparently the bottom 8 aren't
+        buffer[i] = (random() & 0xff00) >> 8;  apparently the bottom 8 aren't
                                                * very random but the middles ones
                                                * are
                                                */
@@ -811,7 +812,7 @@ int32_t test(int32_t M,int32_t N,int32_t datasize)
     }
     /* Stage 1, make a secret */
     for( i = 0; i < datasize; ++i )
-        secret[i] = (random() & 0xff00) >> 8;
+        secret[i] = (rand() & 0xff00) >> 8;
     /* Stage 2, split it N ways with a threshold of M */
     G = gfshare_ctx_init_enc( sharenrs, N, M, datasize );
     gfshare_ctx_enc_setsecret( G, secret );

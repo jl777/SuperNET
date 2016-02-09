@@ -32,12 +32,9 @@ TOP_MAKE := $(word 1,$(MAKEFILE_LIST))
 #
 # Figure out which OS we are running on.
 #
-#GETOS := python $(NACL_SDK_ROOT)/tools/getos.py
-#NACL_CONFIG := python $(NACL_SDK_ROOT)/tools/nacl_config.py
-#FIXDEPS := python $(NACL_SDK_ROOT)/tools/fix_deps.py -c
-GETOS := python tools/getos.py
-NACL_CONFIG := python tools/nacl_config.py
-FIXDEPS := python tools/fix_deps.py -c
+GETOS := python $(NACL_SDK_ROOT)/tools/getos.py
+NACL_CONFIG := python $(NACL_SDK_ROOT)/tools/nacl_config.py
+FIXDEPS := python $(NACL_SDK_ROOT)/tools/fix_deps.py -c
 OSNAME := $(shell $(GETOS))
 
 
