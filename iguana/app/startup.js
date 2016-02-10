@@ -160,6 +160,10 @@ $(function () {
             deletePeertabFile_onclick();
                         
         }
+        else if(e.className && e.className.indexOf('TradeIntegrationTest') != -1){
+            TradeIntegrationTest();
+                        
+        }
         
     };
     

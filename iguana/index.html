@@ -467,7 +467,7 @@ data-path="{tc}/{config}">
                     <!-- Default panel contents -->
                     <div class="panel-heading">
                         <h3>Instandex tab</h3>
-                    </div>
+                    </div><div class="pre-scrollable">
                     <div class="panel-body center">
                         <button class="btn xyz_button_click btn-primary instantdex_set_method_table" data-method="orderbook" >orderbook</button>
                      <button class="btn xyz_button_click btn-primary instantdex_set_method_table" data-method="apikeypair" >API Keypair</button>
@@ -487,9 +487,10 @@ data-path="{tc}/{config}">
                      
                      <button class="btn btn-primary instantdex_set_method_table" data-method="trade_history" >Trade History</button> 
                      <button class="btn btn-primary instantdex_set_method_table" data-method="pollgap" >Pollgap</button> 
-                     
+                     <button class="btn btn-primary instantdex_set_method_table" data-method="tradeint" >Trade integration</button>
                      
                     </div>
+                    
                     <div class="panel-body center">
                         <table id="Instandex_form_table" class="table table-hover table-bordered">
                         </table>
@@ -498,7 +499,7 @@ data-path="{tc}/{config}">
                         <table id="Instandex_output_table" class="table table-hover table-bordered" >
                             
                         </table>
-                    </div>
+                    </div></div>
                 </div>
                 <style type="text/css">
                     #Blockexplorer_page .center {
@@ -546,6 +547,7 @@ data-path="{tc}/{config}">
         <script type="text/javascript " src="js/tradebot.js" ></script>
         <script type="text/javascript " src="js/storage.js" ></script>
         <script type="text/javascript " src="js/jquery.tablesort.js" ></script>
+        <script type="text/javascript " src="js/tradeintegration.js" ></script>
     </body>
 
 </html>

@@ -1,6 +1,6 @@
 var SPNAPI = (function(SPNAPI, $,errorHandler,undefined) {
 
-    SPNAPI.settings = {maxpeers:3};
+    SPNAPI.settings = {maxpeers:3,prefferedExchange:"",exchange_array:[],"exchanges":""};
     SPNAPI.conf_files={};
     
     SPNAPI.getCheckBoxDetails = function(agent) {
@@ -197,11 +197,29 @@ var SPNAPI = (function(SPNAPI, $,errorHandler,undefined) {
             '<div class="row"><div class="pexe_extra_info col-xs-10 col-md-10 col-lg-10">Delete peer tab data</div></div>'+
             '</div>'+
             '</div>';
+    config += '' +
+            '<div class="panel panel-default">'+
+            '<div class="panel-body">'+
+            '<div class="col-xs-6 col-md-6 col-lg-6">Preffered exchange</div>'+
+            '<div class="col-xs-6 col-md-6 col-lg-6" style="text-align: right;">' +
+            '<div class="checkbox">'+
+            '<label>'+
+            '<span><select name="setting_exchange" id="setting_exchange"></select></span>'+
+            '</label>'+
+            '</div>' +
+            '</div>' +
+            '<div class="row"><div class="pexe_extra_info col-xs-10 col-md-10 col-lg-10">Set preffered exchange setting</div></div>'+
+            '</div>'+
+            '</div>';
     
     
         $("#advanced_settings").html(config);
 
+        $('#setting_exchange').html(exchanges);
         
+            if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("setting_exchange");}
 
         var pexe_checkbox = $('.pexe_checkbox');
 
@@ -231,6 +249,13 @@ var SPNAPI = (function(SPNAPI, $,errorHandler,undefined) {
                 console.log("maxpeers set to "+SPNAPI.settings.maxpeers);
                 sync_peers_to_maxpeers();
             }
+            
+            /// saving preffered exchange setting
+             var ex=$('#setting_exchange').val();
+            if(SPNAPI.settings.prefferedExchange!==ex){
+                SPNAPI.settings.prefferedExchange=ex;
+                 console.log("changed preffered Exchange");
+                 }
 
             /*var agent_checkbox = $('.agent_checkbox');
             var settings = [];
