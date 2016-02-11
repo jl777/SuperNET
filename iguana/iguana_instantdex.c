@@ -79,6 +79,7 @@ bits256 instantdex_rwoffer(int32_t rwflag,int32_t *lenp,uint8_t *serialized,stru
     bits256 orderhash; int32_t len = 0;
     if ( rwflag == 0 )
     {
+        memset(offer,0,sizeof(*offer));
         int32_t i;
         for (i=0; i<sizeof(*offer); i++)
             printf("%02x ",serialized[i]);
@@ -93,7 +94,7 @@ bits256 instantdex_rwoffer(int32_t rwflag,int32_t *lenp,uint8_t *serialized,stru
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(offer->nonce),&offer->nonce);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(offer->myside),&offer->myside);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(offer->acceptdir),&offer->acceptdir);
-    vcalc_sha256(0,orderhash.bytes,serialized,len);
+    vcalc_sha256(0,orderhash.bytes,(void *)offer,sizeof(*offer));
     if ( rwflag != 0 )
     {
         int32_t i;
@@ -117,8 +118,8 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     jaddstr(argjson,"handle",myinfo->handle);
     jaddbits256(argjson,"categoryhash",instantdexhash);
     jaddbits256(argjson,"traderpub",myinfo->myaddr.persistent);
-    jadd64bits(argjson,"id",orderhash.txid);
     orderhash = instantdex_rwoffer(1,&olen,serialized,offer);
+    jadd64bits(argjson,"id",orderhash.txid);
     nxt64bits = acct777_nxt64bits(myinfo->myaddr.persistent);
     reqstr = jprint(argjson,0);
     datalen = (int32_t)(strlen(reqstr) + 1 + extralen + olen);
@@ -543,7 +544,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
             serdata = &serdata[slen];
             newlen -= slen;
         }
-        if ( newlen >= sizeof(rawoffer) )
+        if ( newlen > 0 )
         {
             orderhash = instantdex_rwoffer(0,&olen,&msg->serialized[slen],&rawoffer);
             printf("received orderhash.%llu\n",(long long)orderhash.txid);
