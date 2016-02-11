@@ -1337,9 +1337,11 @@ struct supernet_info *SuperNET_accountfind(cJSON *json)
             {
                 M.persistent_priv = bits256_conv(perspriv);
                 SuperNET_setkeys(&M,0,0,0);
-                myinfo = SuperNET_MYINFOfind(&num,M.myaddr.persistent);
-                printf("found account.(%s) %s %llu\n",myinfo!=0?myinfo->handle:"",M.myaddr.NXTADDR,(long long)M.myaddr.nxt64bits);
-                return(myinfo);
+                if ( (myinfo = SuperNET_MYINFOfind(&num,M.myaddr.persistent)) != 0 )
+                {
+                    printf("found account.(%s) %s %llu\n",myinfo!=0?myinfo->handle:"",M.myaddr.NXTADDR,(long long)M.myaddr.nxt64bits);
+                    return(myinfo);
+                }
             }
             else if ( (passphrase= jstr(json,"result")) != 0 || (passphrase= jstr(json,"passphrase")) != 0 )
             {
