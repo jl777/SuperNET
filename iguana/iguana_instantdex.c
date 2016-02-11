@@ -50,12 +50,6 @@ cJSON *InstantDEX_argjson(char *reference,char *message,char *othercoinaddr,char
     return(argjson);
 }
 
-int32_t instantdex_rwdata(int32_t rwflag,uint64_t cmdbits,uint8_t *data,int32_t datalen)
-{
-    // need to inplace serialize/deserialize here
-    return(datalen);
-}
-
 struct instantdex_msghdr *instantdex_msgcreate(struct supernet_info *myinfo,struct instantdex_msghdr *msg,int32_t datalen)
 {
     bits256 otherpubkey; uint64_t signerbits; uint32_t timestamp; uint8_t buf[sizeof(msg->sig)],*data;
@@ -80,9 +74,16 @@ struct instantdex_msghdr *instantdex_msgcreate(struct supernet_info *myinfo,stru
     return(0);
 }
 
-int32_t instantdex_rwoffer(int32_t rwflag,uint8_t *serialized,struct instantdex_offer *offer)
+bits256 instantdex_rwoffer(int32_t rwflag,uint8_t *serialized,struct instantdex_offer *offer)
 {
-    int32_t len = 0;
+    bits256 orderhash; int32_t len = 0;
+    if ( rwflag == 0 )
+    {
+        int32_t i;
+        for (i=0; i<sizeof(*offer); i++)
+            printf("%02x ",serialized[i]);
+        printf("rwoffer got serialized\n");
+    }
     len += iguana_rwstr(rwflag,&serialized[len],sizeof(offer->base),offer->base);
     len += iguana_rwstr(rwflag,&serialized[len],sizeof(offer->rel),offer->rel);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(offer->price64),&offer->price64);
@@ -92,13 +93,21 @@ int32_t instantdex_rwoffer(int32_t rwflag,uint8_t *serialized,struct instantdex_
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(offer->nonce),&offer->nonce);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(offer->myside),&offer->myside);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(offer->acceptdir),&offer->acceptdir);
-    return(len);
+    vcalc_sha256(0,orderhash.bytes,serialized,len);
+    if ( rwflag != 0 )
+    {
+        int32_t i;
+        for (i=0; i<sizeof(*offer); i++)
+            printf("%02x ",serialized[i]);
+        printf("rwoffer send serialized\n");
+    }
+    return(orderhash);
 }
 
-char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extra,int32_t extralen)
+char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extraser,int32_t extralen)
 {
-    char *reqstr,*hexstr,*retstr; uint64_t nxt64bits; int32_t i,datalen;
-    bits256 instantdexhash; struct instantdex_msghdr *msg; uint8_t serialized[sizeof(*offer)];
+    char *reqstr,*hexstr,*retstr; uint64_t nxt64bits; int32_t i,datalen; struct instantdex_msghdr *msg;
+    bits256 instantdexhash,orderhash; uint8_t serialized[sizeof(*offer)];
     instantdexhash = calc_categoryhashes(0,"InstantDEX",0);
     category_subscribe(myinfo,instantdexhash,GENESIS_PUBKEY);
     jaddstr(argjson,"cmd",cmdstr);
@@ -111,13 +120,14 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     reqstr = jprint(argjson,0);
     datalen = (int32_t)(strlen(reqstr) + 1 + extralen + sizeof(*offer));
     msg = calloc(1,sizeof(*msg) + datalen + extralen + sizeof(*offer));
-    instantdex_rwoffer(1,serialized,offer);
+    orderhash = instantdex_rwoffer(1,serialized,offer);
+    jadd64bits(argjson,"id",orderhash.txid);
     for (i=0; i<sizeof(msg->cmd); i++)
         if ( (msg->cmd[i]= cmdstr[i]) == 0 )
             break;
     memcpy(msg->serialized,reqstr,datalen);
     memcpy(&msg->serialized[datalen],serialized,sizeof(serialized));
-    memcpy(&msg->serialized[datalen + sizeof(serialized)],extra,extralen);
+    memcpy(&msg->serialized[datalen + sizeof(serialized)],extraser,extralen);
     free(reqstr);
     if ( instantdex_msgcreate(myinfo,msg,datalen) != 0 )
     {
@@ -428,7 +438,7 @@ int32_t instantdex_acceptextract(struct instantdex_accept *ap,cJSON *argjson)
     return(0);
 }
 
-cJSON *instantdex_acceptsendjson(struct instantdex_accept *ap)
+/*cJSON *instantdex_acceptsendjson(struct instantdex_accept *ap)
 {
     cJSON *json = cJSON_CreateObject();
     jaddstr(json,"b",ap->offer.base);
@@ -442,14 +452,14 @@ cJSON *instantdex_acceptsendjson(struct instantdex_accept *ap)
     jadd64bits(json,"o",ap->offer.offer64);
     jadd64bits(json,"id",ap->orderid);
     return(json);
-}
+}*/
 
 #include "swaps/iguana_BTCswap.c"
 #include "swaps/iguana_ALTswap.c"
 #include "swaps/iguana_NXTswap.c"
 #include "swaps/iguana_PAXswap.c"
 
-char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,struct instantdex_offer *offer,uint8_t *data,int32_t datalen)
+char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,struct instantdex_offer *offer,bits256 orderhash,uint8_t *serdata,int32_t datalen)
 {
     char cmdstr[16],*orderidstr,*retstr; struct exchange_info *exchange; uint64_t orderid;
     struct instantdex_accept A,*ap = 0; bits256 traderpub;
@@ -460,41 +470,37 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
         traderpub = jbits256(argjson,"traderpub");
         memset(&A,0,sizeof(A));
         A.offer = *offer;
+        if ( j64bits(argjson,"id") != orderhash.txid )
+        {
+            printf("orderhash %llu mismatch id.%llu\n",(long long)orderhash.txid,(long long)j64bits(argjson,"id"));
+            return(clonestr("{\"error\":\"orderhash mismatch\"}"));
+        }
+        A.orderid = orderhash.txid;
         printf("A.orderid.%llu\n",(long long)A.orderid);
         if ( bits256_cmp(traderpub,myinfo->myaddr.persistent) == 0 )
         {
             printf("got my own request.(%s)\n",jprint(argjson,0));
             return(clonestr("{\"result\":\"got my own request\"}"));
         }
-        if ( (orderidstr= jstr(argjson,"id")) != 0 )
+        if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,orderid,"*","*")) != 0 )
         {
-            orderid = calc_nxt64bits(orderidstr);
-            printf("orderid.%llu\n",(long long)orderid);
-            if ( orderid != A.orderid )
-            {
-                printf("mismatched orderid %llu != %llu\n",(long long)orderid,(long long)A.orderid);
-                return(clonestr("{\"error\":\"specified orderid mismatches calculated orderid\"}"));
-            }
-            if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,orderid,"*","*")) != 0 )
-            {
-                printf("found existing trade to match\n");
-                A = *ap;
-            }
-            else if ( strcmp(cmdstr+3,"offer") != 0 )
-            {
-                printf("cant find existing order.%llu that matches\n",(long long)A.orderid);
-                return(clonestr("{\"error\":\"cant find matching order\"}"));
-            }
+            printf("found existing trade to match\n");
+            A = *ap;
+        }
+        else if ( strcmp(cmdstr+3,"offer") != 0 )
+        {
+            printf("cant find existing order.%llu that matches\n",(long long)A.orderid);
+            return(clonestr("{\"error\":\"cant find matching order\"}"));
         }
         printf("call (%s/%s) swap baserel.%d acceptdir.%d\n",A.offer.base,A.offer.rel,A.offer.myside,A.offer.acceptdir);
         if ( strncmp(cmdstr,"BTC",3) == 0 )
-            retstr = instantdex_BTCswap(myinfo,exchange,&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen);
+            retstr = instantdex_BTCswap(myinfo,exchange,&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,serdata,datalen);
         else if ( strncmp(cmdstr,"NXT",3) == 0 )
-            retstr = instantdex_NXTswap(myinfo,exchange,&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen);
+            retstr = instantdex_NXTswap(myinfo,exchange,&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,serdata,datalen);
         else if ( strncmp(cmdstr,"ALT",3) == 0 )
-            retstr = instantdex_ALTswap(myinfo,exchange,&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen);
+            retstr = instantdex_ALTswap(myinfo,exchange,&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,serdata,datalen);
         else if ( strncmp(cmdstr,"PAX",3) == 0 )
-            retstr = instantdex_PAXswap(myinfo,exchanges777_find("PAX"),&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen);
+            retstr = instantdex_PAXswap(myinfo,exchanges777_find("PAX"),&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,serdata,datalen);
         else return(clonestr("{\"error\":\"unrecognized atomic swap family\"}"));
         if ( ap != 0 )
         {
@@ -510,12 +516,12 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
 char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char *remoteaddr)
 {
     struct instantdex_msghdr *msg = ptr; cJSON *argjson; int32_t i,slen,num,datalen,newlen,flag = 0;
-    uint8_t *data; struct supernet_info *myinfos[64]; struct instantdex_offer rawoffer;
+    uint8_t *serdata; struct supernet_info *myinfos[64]; struct instantdex_offer rawoffer; bits256 orderhash;
     uint64_t signerbits; uint8_t tmp[sizeof(msg->sig)]; char *retstr = 0; cJSON *retjson,*item;
     acct777_rwsig(0,(void *)&msg->sig,(void *)tmp);
     memcpy(&msg->sig,tmp,sizeof(msg->sig));
     datalen = len  - (int32_t)sizeof(msg->sig);
-    data = (void *)((long)msg + sizeof(msg->sig));
+    serdata = (void *)((long)msg + sizeof(msg->sig));
     if ( remoteaddr != 0 && remoteaddr[0] == 0 && strcmp("127.0.0.1",remoteaddr) == 0 && ((uint8_t *)msg)[len-1] == 0 && (argjson= cJSON_Parse((char *)msg)) != 0 )
     {
         printf("string instantdex_hexmsg RESULT.(%s)\n",jprint(argjson,0));
@@ -524,26 +530,27 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
     }
     //printf("msg.%p len.%d data.%p datalen.%d crc.%u %s\n",msg,len,data,datalen,calc_crc32(0,(void *)msg,len),bits256_str(str,msg->sig.pubkey));
     //return(0);
-    else if ( (signerbits= acct777_validate(&msg->sig,acct777_msgprivkey(data,datalen),msg->sig.pubkey)) != 0 )
+    else if ( (signerbits= acct777_validate(&msg->sig,acct777_msgprivkey(serdata,datalen),msg->sig.pubkey)) != 0 )
     {
         flag++;
         //printf("InstantDEX_hexmsg <<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(msg->sig),(long)data-(long)msg,datalen,msg->sig.timestamp,msg->sig.allocsize,(char *)msg->serialized,data[datalen-1]);
         newlen = (int32_t)(msg->sig.allocsize - sizeof(*msg));
-        data = msg->serialized;
-        if ( (argjson= cJSON_Parse((char *)data)) != 0 )
+        serdata = msg->serialized;
+        if ( (argjson= cJSON_Parse((char *)serdata)) != 0 )
         {
-            slen = (int32_t)strlen((char *)data) + 1;
-            data = &data[slen];
+            slen = (int32_t)strlen((char *)serdata) + 1;
+            serdata = &serdata[slen];
             newlen -= slen;
         }
         if ( newlen >= sizeof(rawoffer) )
         {
-            instantdex_rwoffer(0,&msg->serialized[slen],&rawoffer);
+            orderhash = instantdex_rwoffer(0,&msg->serialized[slen],&rawoffer);
+            printf("received orderhash.%llu\n",(long long)orderhash.txid);
             newlen -= sizeof(rawoffer);
         }
         if ( newlen <= 0 )
-            data = 0, newlen = 0;
-        if ( data != 0 || argjson != 0 )
+            serdata = 0, newlen = 0;
+        if ( serdata != 0 || argjson != 0 )
         {
             printf("CALL instantdex_parse.(%s)\n",argjson!=0?jprint(argjson,0):"");
             retjson = cJSON_CreateArray();
@@ -556,7 +563,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
             {
                 myinfo = myinfos[i];
                 //char str[65]; printf("i.%d of %d: %s\n",i,num,bits256_str(str,myinfo->myaddr.persistent));
-                if ( (retstr= instantdex_parse(myinfo,msg,argjson,remoteaddr,signerbits,&rawoffer,data,newlen)) != 0 )
+                if ( (retstr= instantdex_parse(myinfo,msg,argjson,remoteaddr,signerbits,&rawoffer,orderhash,serdata,newlen)) != 0 )
                 {
                     item = cJSON_CreateObject();
                     jaddstr(item,"result",retstr);
