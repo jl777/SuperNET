@@ -553,7 +553,7 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
         else
         {
             printf("no matching trade.(%s) -> InstantDEX_minaccept\n",jprint(argjson,0));
-            retstr = instantdex_queueaccept(myinfo,exchange,A->A.base,A->A.rel,dstr(A->A.price64),dstr(A->A.basevolume64),A->A.acceptdir,A->A.myside == 0 ? A->A.base : A->A.rel,A->A.expiration);
+            retstr = instantdex_queueaccept(myinfo,exchange,A->A.base,A->A.rel,dstr(A->A.price64),dstr(A->A.basevolume64),A->A.acceptdir,A->A.myside == 0 ? A->A.base : A->A.rel,A->A.expiration,traderpub.txid);
         }
     }
     else if ( strcmp(cmdstr,"step1") == 0 && swap->state == 1 ) // either

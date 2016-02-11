@@ -1542,7 +1542,7 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
                 json = cJSON_CreateObject();
                 jaddstr(json,"BTCoffer",str);
             }
-            if ( (str= instantdex_queueaccept(myinfo,exchange,base,"BTC",price,volume,-dir,dir > 0 ? "BTC" : base,INSTANTDEX_OFFERDURATION)) != 0 )
+            if ( (str= instantdex_queueaccept(myinfo,exchange,base,"BTC",price,volume,-dir,dir > 0 ? "BTC" : base,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits)) != 0 )
             {
                 jaddstr(json,"queue",str);
                 if ( (tmp= cJSON_Parse(str)) != 0 )

@@ -419,31 +419,45 @@ cJSON *instantdex_acceptsendjson(struct instantdex_accept *ap)
 
 char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen)
 {
-    char cmdstr[16],*traderip,*orderidstr,*retstr; struct exchange_info *exchange; uint64_t orderid;
-    struct instantdex_accept A,*ap = 0;
+    char cmdstr[16],*orderidstr,*retstr; struct exchange_info *exchange; uint64_t orderid;
+    struct instantdex_accept A,*ap = 0; bits256 traderpub;
     exchange = exchanges777_find("bitcoin");
     memset(cmdstr,0,sizeof(cmdstr)), memcpy(cmdstr,msg->cmd,sizeof(msg->cmd));
     if ( argjson != 0 )
     {
+        traderpub = jbits256(argjson,"traderpub");
         memset(&A,0,sizeof(A));
-        if ( (remoteaddr != 0 && strcmp(remoteaddr,myinfo->ipaddr) == 0) || ((traderip= jstr(argjson,"traderip")) != 0 && strcmp(traderip,myinfo->ipaddr) == 0) )
+        if ( instantdex_acceptextract(&A,argjson) < 0 )
+        {
+            printf("error setting orderid\n");
+            return(clonestr("{\"error\":\"hash txid mismatches orderid\"}"));
+        }
+        printf("A.orderid.%llu\n",(long long)A.orderid);
+        if ( bits256_cmp(traderpub,myinfo->myaddr.persistent) == 0 )
         {
             printf("got my own request.(%s)\n",jprint(argjson,0));
-            if ( instantdex_acceptextract(&A,argjson) < 0 )
-                return(clonestr("{\"error\":\"hash txid mismatches orderid\"}"));
             return(clonestr("{\"result\":\"got my own request\"}"));
         }
         if ( (orderidstr= jstr(argjson,"id")) != 0 )
         {
             orderid = calc_nxt64bits(orderidstr);
             printf("orderid.%llu\n",(long long)orderid);
+            if ( orderid != A.orderid )
+            {
+                printf("mismatched orderid %llu != %llu\n",(long long)orderid,(long long)A.orderid);
+                return(clonestr("{\"error\":\"specified orderid mismatches calculated orderid\"}"));
+            }
             if ( (ap= instantdex_acceptablefind(myinfo,exchange,0,0,orderid,"*","*")) != 0 )
             {
-                printf("found existing\n");
+                printf("found existing trade to match\n");
                 A = *ap;
             }
-        } else if ( instantdex_acceptextract(&A,argjson) < 0 )
-            return(clonestr("{\"error\":\"hash txid mismatches orderid\"}"));
+            else if ( strcmp(cmdstr+3,"offer") != 0 )
+            {
+                printf("cant find existing order.%llu that matches\n",(long long)A.orderid);
+                return(clonestr("{\"error\":\"cant find matching order\"}"));
+            }
+        }
         printf("call (%s/%s) swap baserel.%d acceptdir.%d\n",A.A.base,A.A.rel,A.A.myside,A.A.acceptdir);
         if ( strncmp(cmdstr,"BTC",3) == 0 )
             retstr = instantdex_BTCswap(myinfo,exchange,&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,data,datalen);
@@ -538,7 +552,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
     return(retstr);
 }
 
-char *instantdex_queueaccept(struct supernet_info *myinfo,struct exchange_info *exchange,char *base,char *rel,double price,double basevolume,int32_t acceptdir,char *mysidestr,int32_t duration)
+char *instantdex_queueaccept(struct supernet_info *myinfo,struct exchange_info *exchange,char *base,char *rel,double price,double basevolume,int32_t acceptdir,char *mysidestr,int32_t duration,uint64_t txid)
 {
     struct instantdex_accept *ap; int32_t myside;
     if ( exchange != 0 )
@@ -582,7 +596,7 @@ TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,maxaccept,base,rel,maxprice,basevolume)
 {
     myinfo = SuperNET_accountfind(json);
     if ( remoteaddr == 0 )
-        return(instantdex_queueaccept(myinfo,exchanges777_find("bitcoin"),base,rel,maxprice,basevolume,-1,rel,INSTANTDEX_OFFERDURATION));
+        return(instantdex_queueaccept(myinfo,exchanges777_find("bitcoin"),base,rel,maxprice,basevolume,-1,rel,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits));
     else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
 }
 
@@ -590,7 +604,7 @@ TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,minaccept,base,rel,minprice,basevolume)
 {
     myinfo = SuperNET_accountfind(json);
     if ( remoteaddr == 0 )
-        return(instantdex_queueaccept(myinfo,exchanges777_find("bitcoin"),base,rel,minprice,basevolume,1,base,INSTANTDEX_OFFERDURATION));
+        return(instantdex_queueaccept(myinfo,exchanges777_find("bitcoin"),base,rel,minprice,basevolume,1,base,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits));
     else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
 }
 
