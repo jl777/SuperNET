@@ -90,15 +90,14 @@ struct exchange_request
     struct exchange_quote bidasks[];
 };
 
-struct instantdex_entry { char base[24],rel[24]; uint64_t price64,basevolume64,offer64; uint32_t expiration,nonce; char myside,acceptdir; };
-struct instantdex_accept { struct queueitem DL; void *info; uint64_t pendingvolume64,orderid; uint32_t dead; struct instantdex_entry A; };
+struct instantdex_offer { char base[24],rel[24]; uint64_t price64,basevolume64,offer64; uint32_t expiration,nonce; char myside,acceptdir; };
+struct instantdex_accept { struct queueitem DL; void *info; uint64_t pendingvolume64,orderid; uint32_t dead; struct instantdex_offer offer; };
 
-struct instantdex_accept *instantdex_acceptablefind(struct supernet_info *myinfo,struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel);
+struct instantdex_accept *instantdex_offerfind(struct supernet_info *myinfo,struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel);
 cJSON *instantdex_acceptjson(struct instantdex_accept *ap);
 struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,uint64_t offerbits,double minperc);
 
 void *curl_post(void **cHandlep,char *url,char *userpass,char *postfields,char *hdr0,char *hdr1,char *hdr2,char *hdr3);
-char *instantdex_sendcmd(struct supernet_info *myinfo,cJSON *argjson,char *cmdstr,bits256 desttrader,int32_t hops);
 char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,int32_t maxseconds,int32_t allfields,int32_t depth,cJSON *argjson,int32_t monitor,double commission);
 struct exchange_info *exchanges777_info(char *exchangestr,int32_t sleepflag,cJSON *json,char *remoteaddr);
 char *exchanges777_unmonitor(struct exchange_info *exchange,char *base,char *rel);
@@ -115,5 +114,6 @@ double instaforex_price(struct exchange_info *exchange,char *base,char *rel,stru
 
 char *instantdex_queueaccept(struct supernet_info *myinfo,struct exchange_info *exchange,char *base,char *rel,double price,double basevolume,int32_t acceptdir,char *mysidestr,int32_t duration,uint64_t txid);
 void instantdex_update(struct supernet_info *myinfo);
+char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extra,int32_t extralen);
 
 #endif
