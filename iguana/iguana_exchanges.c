@@ -951,7 +951,8 @@ void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sle
     instantdexhash = calc_categoryhashes(0,"InstantDEX",0);
     printf("InstantDEX:\n");
     category_subscribe(myinfo,instantdexhash,GENESIS_PUBKEY);
-    category_processfunc(instantdexhash,InstantDEX_hexmsg);
+    category_processfunc(instantdexhash,GENESIS_PUBKEY,InstantDEX_hexmsg);
+    category_processfunc(instantdexhash,myinfo->myaddr.persistent,InstantDEX_hexmsg);
 }
 
 #include "../includes/iguana_apidefs.h"

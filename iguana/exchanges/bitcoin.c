@@ -1537,7 +1537,7 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
             jaddnum(json,"volume",volume);
             jaddstr(json,"BTC",myinfo->myaddr.BTC);
             //printf("trade dir.%d (%s/%s) %.6f vol %.8f\n",dir,base,"BTC",price,volume);
-            if ( (str= instantdex_sendcmd(myinfo,json,"BTCoffer",myinfo->ipaddr,hops)) != 0 )
+            if ( (str= instantdex_sendcmd(myinfo,json,"BTCoffer",GENESIS_PUBKEY,hops)) != 0 )
             {
                 json = cJSON_CreateObject();
                 jaddstr(json,"BTCoffer",str);

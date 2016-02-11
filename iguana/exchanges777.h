@@ -95,10 +95,10 @@ struct instantdex_accept { struct queueitem DL; void *info; uint64_t pendingvolu
 
 struct instantdex_accept *instantdex_acceptablefind(struct supernet_info *myinfo,struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel);
 cJSON *instantdex_acceptjson(struct instantdex_accept *ap);
-struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,uint64_t offerbits);
+struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,uint64_t offerbits,double minperc);
 
 void *curl_post(void **cHandlep,char *url,char *userpass,char *postfields,char *hdr0,char *hdr1,char *hdr2,char *hdr3);
-char *instantdex_sendcmd(struct supernet_info *myinfo,cJSON *argjson,char *cmdstr,char *ipaddr,int32_t hops);
+char *instantdex_sendcmd(struct supernet_info *myinfo,cJSON *argjson,char *cmdstr,bits256 desttrader,int32_t hops);
 char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,int32_t maxseconds,int32_t allfields,int32_t depth,cJSON *argjson,int32_t monitor,double commission);
 struct exchange_info *exchanges777_info(char *exchangestr,int32_t sleepflag,cJSON *json,char *remoteaddr);
 char *exchanges777_unmonitor(struct exchange_info *exchange,char *base,char *rel);

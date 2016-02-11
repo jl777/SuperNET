@@ -74,10 +74,10 @@ void *category_infoset(bits256 categoryhash,bits256 subhash,void *info)
     return(0);
 }
 
-struct category_info *category_processfunc(bits256 categoryhash,char *(*process_func)(struct supernet_info *myinfo,void *data,int32_t datalen,char *remoteaddr))
+struct category_info *category_processfunc(bits256 categoryhash,bits256 subhash,char *(*process_func)(struct supernet_info *myinfo,void *data,int32_t datalen,char *remoteaddr))
 {
     struct category_info *cat;
-    if ( (cat= category_find(categoryhash,GENESIS_PUBKEY)) != 0 )
+    if ( (cat= category_find(categoryhash,subhash)) != 0 )
     {
         cat->processfunc = process_func;
         return(cat);
@@ -344,7 +344,7 @@ void category_init(struct supernet_info *myinfo)
     category_subscribe(myinfo,GENESIS_PUBKEY,GENESIS_PUBKEY);
     pangeahash = calc_categoryhashes(0,"pangea",0);
     category_subscribe(myinfo,pangeahash,GENESIS_PUBKEY);
-    category_processfunc(pangeahash,pangea_hexmsg);
+    category_processfunc(pangeahash,GENESIS_PUBKEY,pangea_hexmsg);
     category_chain_functions(myinfo,pangeahash,GENESIS_PUBKEY,sizeof(bits256),sizeof(bits256),0,0,0,0);
     exchanges777_init(myinfo,0,0);
 }

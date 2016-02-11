@@ -80,14 +80,12 @@ struct instantdex_msghdr *instantdex_msgcreate(struct supernet_info *myinfo,stru
     return(0);
 }
 
-char *instantdex_sendcmd(struct supernet_info *myinfo,cJSON *argjson,char *cmdstr,char *ipaddr,int32_t hops)
+char *instantdex_sendcmd(struct supernet_info *myinfo,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops)
 {
     char *reqstr,*hexstr,*retstr; uint64_t nxt64bits; int32_t i,datalen;
     bits256 instantdexhash; struct instantdex_msghdr *msg;
     instantdexhash = calc_categoryhashes(0,"InstantDEX",0);
     category_subscribe(myinfo,instantdexhash,GENESIS_PUBKEY);
-    //if ( ipaddr == 0 || ipaddr[0] == 0 || strncmp(ipaddr,"127.0.0.1",strlen("127.0.0.1")) == 0 )
-    //    return(clonestr("{\"error\":\"no ipaddr, need to send your ipaddr for now\"}"));
     jaddstr(argjson,"cmd",cmdstr);
     jaddstr(argjson,"agent","SuperNET");
     jaddstr(argjson,"method","DHT");
@@ -105,10 +103,10 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,cJSON *argjson,char *cmdst
     free(reqstr);
     if ( instantdex_msgcreate(myinfo,msg,datalen) != 0 )
     {
-        //printf("instantdex send.(%s)\n",jprint(argjson,0));
+        printf("instantdex send.(%s)\n",cmdstr);
         hexstr = malloc(msg->sig.allocsize*2 + 1);
         init_hexbytes_noT(hexstr,(uint8_t *)msg,msg->sig.allocsize);
-        retstr = SuperNET_categorymulticast(myinfo,0,instantdexhash,GENESIS_PUBKEY,hexstr,0,hops,1,argjson,0);
+        retstr = SuperNET_categorymulticast(myinfo,0,instantdexhash,desthash,hexstr,0,hops,1,argjson,0);
         free_json(argjson);
         free(hexstr);
         free(msg);
@@ -281,20 +279,21 @@ struct instantdex_accept *instantdex_acceptablefind(struct supernet_info *myinfo
     return(retap);
 }
 
-struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,uint64_t offerbits)
+struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,uint64_t offerbits,double minperc)
 {
-    struct instantdex_accept PAD,*ap,*retap = 0; uint64_t bestprice64 = 0;
+    struct instantdex_accept PAD,*ap,*retap = 0; uint64_t minvol,bestprice64 = 0;
     uint32_t now; int32_t offerdir;
     now = (uint32_t)time(NULL);
     memset(&PAD,0,sizeof(PAD));
     queue_enqueue("acceptableQ",&exchange->acceptableQ,&PAD.DL,0);
     offerdir = instantdex_bidaskdir(A);
+    minvol = A->A.basevolume64 * minperc * .01;
     while ( (ap= queue_dequeue(&exchange->acceptableQ,0)) != 0 && ap != &PAD )
     {
         if ( now < ap->A.expiration && ap->dead == 0 && (offerbits == 0 || offerbits != ap->A.offer64) )
         {
             printf("check offerbits.%llu vs %llu: %d %d %d %d %d %d %d %d\n",(long long)offerbits,(long long)ap->A.offer64,A->A.basevolume64 > 0.,strcmp(A->A.base,"*") == 0 ,strcmp(A->A.base,ap->A.base) == 0, strcmp(A->A.rel,"*") == 0 ,strcmp(A->A.rel,ap->A.rel) == 0,A->A.basevolume64 <= (ap->A.basevolume64 - ap->pendingvolume64),offerdir,instantdex_bidaskdir(ap));
-            if ( A->A.basevolume64 > 0. && (strcmp(A->A.base,"*") == 0 || strcmp(A->A.base,ap->A.base) == 0) && (strcmp(A->A.rel,"*") == 0 || strcmp(A->A.rel,ap->A.rel) == 0) && A->A.basevolume64 <= (ap->A.basevolume64 - ap->pendingvolume64) && offerdir*instantdex_bidaskdir(ap) < 0 )
+            if ( A->A.basevolume64 > 0. && (strcmp(A->A.base,"*") == 0 || strcmp(A->A.base,ap->A.base) == 0) && (strcmp(A->A.rel,"*") == 0 || strcmp(A->A.rel,ap->A.rel) == 0) && minvol <= (ap->A.basevolume64 - ap->pendingvolume64) && offerdir*instantdex_bidaskdir(ap) < 0 )
             {
                 printf("passed first cmp: %d %d %d %d\n",offerdir == 0,A->A.price64 == 0,(offerdir > 0 && ap->A.price64 >= A->A.price64),(offerdir < 0 && ap->A.price64 <= A->A.price64));
                 if ( offerdir == 0 || A->A.price64 == 0 || ((offerdir > 0 && ap->A.price64 >= A->A.price64) || (offerdir < 0 && ap->A.price64 <= A->A.price64)) )
@@ -349,8 +348,7 @@ bits256 instantdex_acceptset(struct instantdex_accept *ap,char *base,char *rel,i
 
 int32_t instantdex_acceptextract(struct instantdex_accept *ap,cJSON *argjson)
 {
-    char *base,*rel; bits256 hash,traderpub; double price,volume; int32_t baserel,acceptdir,num;
-    struct supernet_info *myinfo;
+    char *base,*rel; bits256 hash,traderpub; double price,volume; int32_t baserel,acceptdir;
     memset(ap,0,sizeof(*ap));
     if ( (base= jstr(argjson,"base")) != 0 )
     {
