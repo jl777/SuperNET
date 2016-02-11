@@ -461,7 +461,7 @@ int32_t instantdex_acceptextract(struct instantdex_accept *ap,cJSON *argjson)
 
 char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,struct instantdex_offer *offer,bits256 orderhash,uint8_t *serdata,int32_t datalen)
 {
-    char cmdstr[16],*orderidstr,*retstr; struct exchange_info *exchange; uint64_t orderid;
+    char cmdstr[16],*retstr; struct exchange_info *exchange;
     struct instantdex_accept A,*ap = 0; bits256 traderpub;
     exchange = exchanges777_find("bitcoin");
     memset(cmdstr,0,sizeof(cmdstr)), memcpy(cmdstr,msg->cmd,sizeof(msg->cmd));
@@ -482,7 +482,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
             printf("got my own request.(%s)\n",jprint(argjson,0));
             return(clonestr("{\"result\":\"got my own request\"}"));
         }
-        if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,orderid,"*","*")) != 0 )
+        if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,A.orderid,"*","*")) != 0 )
         {
             printf("found existing trade to match\n");
             A = *ap;
