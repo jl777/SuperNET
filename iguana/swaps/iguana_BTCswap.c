@@ -513,6 +513,7 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
     satoshis[0] = A->A.basevolume64;
     satoshis[1] = instantdex_relsatoshis(A->A.price64,A->A.basevolume64);
     swap = A->info;
+    traderpub = jbits256(argjson,"traderpub");
     if ( (minperc= jdouble(argjson,"p")) < INSTANTDEX_MINPERC )
         minperc = INSTANTDEX_MINPERC;
     if ( swap == 0 && strcmp(cmdstr,"offer") != 0 )
@@ -522,9 +523,8 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
     {
         if ( A->A.expiration < (time(NULL) + INSTANTDEX_DURATION) )
             return(clonestr("{\"error\":\"instantdex_BTCswap offer too close to expiration\"}"));
-        if ( (ap= instantdex_acceptable(myinfo,exchange,A,myinfo->myaddr.nxt64bits,minperc)) != 0 )
+        if ( (ap= instantdex_acceptable(myinfo,exchange,A,traderpub.txid,minperc)) != 0 )
         {
-            traderpub = jbits256(argjson,"traderpub");
             char str[65]; printf("FOUND MATCH! %p (%s/%s) other.%s\n",A->info,A->A.base,A->A.rel,bits256_str(str,traderpub));
             if ( A->info == 0 )
             {
@@ -888,8 +888,8 @@ char *instantdex_advance(struct supernet_info *myinfo,bits256 *sharedprivs,int32
 
 char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,char *cmdstr,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen) // receiving side
 {
-    uint8_t secret160[20]; bits256 hash,A0,B0,sharedprivs[4]; uint64_t satoshis[2]; cJSON *newjson;
-    struct instantdex_accept *ap; char *retstr=0,*str;
+    uint8_t secret160[20]; bits256 hash,traderpub,A0,B0,sharedprivs[4]; uint64_t satoshis[2];
+    cJSON *newjson; struct instantdex_accept *ap; char *retstr=0,*str;
     int32_t locktime,isbob=0,offerdir = 0; struct iguana_info *coinbtc,*other;
     if ( exchange == 0 )
         return(clonestr("{\"error\":\"instantdex_BTCswap null exchange ptr\"}"));
@@ -912,7 +912,7 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
     {
         if ( A->A.expiration < (time(NULL) + INSTANTDEX_DURATION) )
             return(clonestr("{\"error\":\"instantdex_BTCswap offer too close to expiration\"}"));
-        if ( (ap= instantdex_acceptable(exchange,A,myinfo->myaddr.nxt64bits)) != 0 )
+        if ( (ap= instantdex_acceptable(exchange,A,traderpub.txid)) != 0 )
         {
             isbob = 0;
             if ( (newjson= instantdex_newjson(myinfo,&A0,&B0,sharedprivs,secret160,isbob,argjson,hash,A)) == 0 )
