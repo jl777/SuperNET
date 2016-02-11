@@ -77,13 +77,17 @@ struct instantdex_msghdr *instantdex_msgcreate(struct supernet_info *myinfo,stru
 bits256 instantdex_rwoffer(int32_t rwflag,int32_t *lenp,uint8_t *serialized,struct instantdex_offer *offer)
 {
     bits256 orderhash; int32_t len = 0;
-    if ( rwflag == 0 )
+    if ( rwflag == 1 )
     {
-        memset(offer,0,sizeof(*offer));
+        vcalc_sha256(0,orderhash.bytes,(void *)offer,sizeof(*offer));
         int32_t i;
         for (i=0; i<sizeof(*offer); i++)
-            printf("%02x ",serialized[i]);
-        printf("rwoffer got serialized\n");
+            printf("%02x ",((uint8_t *)offer)[i]);
+        printf("rwoffer offer\n");
+    }
+    else
+    {
+        memset(offer,0,sizeof(*offer));
     }
     len += iguana_rwstr(rwflag,&serialized[len],sizeof(offer->base),offer->base);
     len += iguana_rwstr(rwflag,&serialized[len],sizeof(offer->rel),offer->rel);
@@ -94,13 +98,23 @@ bits256 instantdex_rwoffer(int32_t rwflag,int32_t *lenp,uint8_t *serialized,stru
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(offer->nonce),&offer->nonce);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(offer->myside),&offer->myside);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(offer->acceptdir),&offer->acceptdir);
-    vcalc_sha256(0,orderhash.bytes,(void *)offer,sizeof(*offer));
-    if ( rwflag != 0 )
+    if ( rwflag == 0 )
+    {
+        vcalc_sha256(0,orderhash.bytes,(void *)offer,sizeof(*offer));
+        int32_t i;
+        for (i=0; i<len; i++)
+            printf("%02x ",serialized[i]);
+        printf("read rwoffer serialized\n");
+        for (i=0; i<sizeof(*offer); i++)
+            printf("%02x ",((uint8_t *)offer)[i]);
+        printf("rwoffer offer\n");
+    }
+    else
     {
         int32_t i;
         for (i=0; i<len; i++)
             printf("%02x ",serialized[i]);
-        printf("rwoffer send serialized\n");
+        printf("wrote rwoffer serialized\n");
     }
     *lenp = len;
     return(orderhash);
@@ -108,8 +122,8 @@ bits256 instantdex_rwoffer(int32_t rwflag,int32_t *lenp,uint8_t *serialized,stru
 
 char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extraser,int32_t extralen)
 {
-    char *reqstr,*hexstr,*retstr; uint64_t nxt64bits; struct instantdex_msghdr *msg;
-    int32_t i,olen,datalen; bits256 instantdexhash,orderhash; uint8_t serialized[sizeof(*offer) + 2];
+    char *reqstr,*hexstr,*retstr; struct instantdex_msghdr *msg; bits256 instantdexhash,orderhash;
+    int32_t i,olen,slen,datalen; uint8_t serialized[sizeof(*offer) + 2]; uint64_t nxt64bits;
     instantdexhash = calc_categoryhashes(0,"InstantDEX",0);
     category_subscribe(myinfo,instantdexhash,GENESIS_PUBKEY);
     jaddstr(argjson,"cmd",cmdstr);
@@ -119,17 +133,25 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     jaddbits256(argjson,"categoryhash",instantdexhash);
     jaddbits256(argjson,"traderpub",myinfo->myaddr.persistent);
     orderhash = instantdex_rwoffer(1,&olen,serialized,offer);
+    {
+        struct instantdex_offer checkoffer; bits256 checkhash; int32_t checklen;
+        checkhash = instantdex_rwoffer(0,&checklen,serialized,&checkoffer);
+        for (i=0; i<sizeof(checkoffer); i++)
+            printf("%02x ",((uint8_t *)&checkoffer)[i]);
+        printf("checklen.%d checktxid.%llu\n",checklen,(long long)checkhash.txid);
+    }
     jadd64bits(argjson,"id",orderhash.txid);
     nxt64bits = acct777_nxt64bits(myinfo->myaddr.persistent);
     reqstr = jprint(argjson,0);
-    datalen = (int32_t)(strlen(reqstr) + 1 + extralen + olen);
-    msg = calloc(1,sizeof(*msg) + datalen + extralen + olen);
+    slen = (int32_t)(strlen(reqstr) + 1);
+    datalen = (int32_t)sizeof(*msg) + slen + extralen + olen;
+    msg = calloc(1,datalen);
     for (i=0; i<sizeof(msg->cmd); i++)
         if ( (msg->cmd[i]= cmdstr[i]) == 0 )
             break;
-    memcpy(msg->serialized,reqstr,datalen);
-    memcpy(&msg->serialized[datalen],serialized,olen);
-    memcpy(&msg->serialized[datalen + olen],extraser,extralen);
+    memcpy(msg->serialized,reqstr,slen);
+    memcpy(&msg->serialized[slen],serialized,olen);
+    memcpy(&msg->serialized[slen + olen],extraser,extralen);
     free(reqstr);
     if ( instantdex_msgcreate(myinfo,msg,datalen) != 0 )
     {
