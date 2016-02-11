@@ -19,6 +19,10 @@ var set_Tradebot_monitor_table=function(){
     $('#tradebot_input').html(html);
     if(exchanges!==""){
     $('#Tradebot_exchange').html(exchanges);
+    
+            if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Tradebot_exchange");}
 }   
     
 };
@@ -41,6 +45,10 @@ var set_Tradebot_monitorall_table=function(){
     $('#tradebot_input').html(html);
     if(exchanges!==""){
     $('#Tradebot_exchange').html(exchanges);
+    
+            if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Tradebot_exchange");}
     }   
     
 };
@@ -66,6 +74,10 @@ var set_Tradebot_unmonitor_table=function(){
     $('#tradebot_input').html(html);
     if(exchanges!==""){
     $('#Tradebot_exchange').html(exchanges);
+    
+            if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Tradebot_exchange");}
 }
     
 };
@@ -91,6 +103,10 @@ var set_Tradebot_accumulate_table=function(){
     $('#tradebot_input').html(html);
     if(exchanges!==""){
     $('#Tradebot_exchange').html(exchanges);
+    
+            if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Tradebot_exchange");}
 } 
 };
 
@@ -118,6 +134,10 @@ var set_Tradebot_divest_table=function(){
     $('#tradebot_input').html(html);
     if(exchanges!==""){
     $('#Tradebot_exchange').html(exchanges);
+    
+            if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Tradebot_exchange");}
 } 
    
     
@@ -139,6 +159,10 @@ var set_Tradebot_activebots_table=function(){
     $('#tradebot_input').html(html);
     if(exchanges!==""){
     $('#Tradebot_exchange').html(exchanges);
+    
+            if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Tradebot_exchange");}
     }
 };
 
@@ -158,7 +182,12 @@ var set_Tradebot_status_table=function(){
     var html='<tr><td align="center" >Botid:</td><td align="center" ><input type="text" id="Tradebot_botid"/></td></tr><tr><td align="center" >  Exchange:</td><td align="center" ><select name="Tradebot_exchange" id="Tradebot_exchange"></select></td></tr><tr><td colspan="2" align="center"> <button class="btn btn-primary Tradebot_status" >Check status of Tradebot</button></td></tr>';
     $('#tradebot_input').html(html);
     if(exchanges!==""){
-    $('#Tradebot_exchange').html(exchanges);}   
+    $('#Tradebot_exchange').html(exchanges);
+
+            if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Tradebot_exchange");}
+}   
     
     
     
@@ -183,6 +212,10 @@ var set_Tradebot_pause_table=function(){
     $('#tradebot_input').html(html);
     if(exchanges!==""){
     $('#Tradebot_exchange').html(exchanges);
+    
+            if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Tradebot_exchange");}
 }   
   
 };
@@ -206,6 +239,10 @@ var set_Tradebot_stop_table=function(){
     $('#tradebot_input').html(html);
     if(exchanges!==""){
     $('#Tradebot_exchange').html(exchanges);
+    
+            if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Tradebot_exchange");}
 }
 };
 
@@ -229,6 +266,9 @@ var set_Tradebot_resume_table=function(){
     $('#tradebot_input').html(html);
     if(exchanges!==""){
     $('#Tradebot_exchange').html(exchanges);
+            if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Tradebot_exchange");}
 }
 
 };

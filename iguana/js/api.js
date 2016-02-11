@@ -34,19 +34,19 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
             SPNAPI.loadSite(page);
             console.log(page);
             if(page==="Peers"){
-                peer_resonse=[];
-                getPeerList();
+                
+                
             }else if(page==="Settings"){
                 check_files();
                 //SPNAPI.check_coin_conf_files_present();
             }else if(page==="Coins"){
                 addInitCoins();
             }else if(page==="Instandex"){
-                if(!saved_exchanges){
-                ListAllExchanges();}
+                $('#Instandex_form_table').html("");
+                $('#Instandex_output_table').html("");
             }else if(page==="Tradebot"){
-                if(!saved_exchanges){
-                ListAllExchanges();}
+                $('#trade_output').html("");
+                $('#tradebot_input').html('');
             }
             else if(page==="Blockexplorer"){
                 filesystem_show_file_name();

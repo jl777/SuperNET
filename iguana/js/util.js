@@ -131,7 +131,7 @@ function DateTime() {
     };
 };
 
-document.getElementById('files').addEventListener('change', handleFileSelect, false);
+//document.getElementById('files').addEventListener('change', handleFileSelect, false);
 	
 function handleFileSelect(evt) {
   var startByte = evt.target.getAttribute('data-startbyte');
