@@ -1312,6 +1312,7 @@ ZERO_ARGS(SuperNET,activehandle)
     retjson = SuperNET_rosettajson(myinfo->persistent_priv,0);
     jaddstr(retjson,"result","success");
     jaddstr(retjson,"handle",myinfo->handle);
+    jaddbits256(retjson,"persistent",myinfo->myaddr.persistent);
     SuperNET_MYINFOadd(myinfo);
     return(jprint(retjson,1));
 }
@@ -1346,9 +1347,11 @@ struct supernet_info *SuperNET_accountfind(cJSON *json)
             else if ( (passphrase= jstr(json,"result")) != 0 || (passphrase= jstr(json,"passphrase")) != 0 )
             {
                 SuperNET_setkeys(&M,passphrase,(int32_t)strlen(passphrase),1);
-                myinfo = SuperNET_MYINFOfind(&num,M.myaddr.persistent);
-                printf("found account.(%s) %s %llu\n",myinfo!=0?myinfo->handle:"",M.myaddr.NXTADDR,(long long)M.myaddr.nxt64bits);
-                return(myinfo);
+                if ( (myinfo= SuperNET_MYINFOfind(&num,M.myaddr.persistent)) != 0 )
+                {
+                    printf("found account.(%s) %s %llu\n",myinfo!=0?myinfo->handle:"",M.myaddr.NXTADDR,(long long)M.myaddr.nxt64bits);
+                    return(myinfo);
+                }
             } else printf("no passphrase in (%s)\n",jprint(json,0));
             free_json(json);
         } else printf("cant parse.(%s)\n",decryptstr);

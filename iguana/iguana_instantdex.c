@@ -369,13 +369,7 @@ int32_t instantdex_acceptextract(struct instantdex_accept *ap,cJSON *argjson)
         } else return(-1);
         //printf("price %f vol %f baserel.%d acceptdir.%d\n",price,volume,baserel,acceptdir);
         traderpub = jbits256(argjson,"traderpub");
-        if ( (myinfo= SuperNET_MYINFOfind(&num,traderpub)) != 0 )
-            hash = instantdex_acceptset(ap,base,rel,INSTANTDEX_LOCKTIME*2,baserel,acceptdir,price,volume,myinfo->myaddr.nxt64bits);
-        else
-        {
-            char str[65]; printf("cant find account for (%s)\n",bits256_str(str,traderpub));
-            return(-1);
-        }
+        hash = instantdex_acceptset(ap,base,rel,INSTANTDEX_LOCKTIME*2,baserel,acceptdir,price,volume,traderpub.txid);
     }
     else
     {

@@ -1498,6 +1498,7 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
     char *str,coinaddr[64]; uint64_t txid = 0; cJSON *tmp,*json=0;
     struct supernet_info *myinfo; uint8_t pubkey[33]; struct iguana_info *other; int32_t hops = 3;
     myinfo = SuperNET_accountfind(argjson);
+    printf("TRADE with myinfo.%p\n",myinfo);
     if ( retstrp != 0 )
         *retstrp = 0;
     if ( strcmp(base,"BTC") == 0 || strcmp(base,"btc") == 0 )
