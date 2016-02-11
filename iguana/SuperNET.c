@@ -564,9 +564,10 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,uint64_t destipbits,bits256 
         jaddbits256(json,"subhash",subhash);
     if ( SuperNET_hexmsgfind(myinfo,categoryhash,subhash,hexmsg,1) >= 0 )
     {
-        //char str[65]; printf("duplicate hex.(%s) for %s\n",hexmsg,bits256_str(str,categoryhash));
+        char str[65]; printf("duplicate hex.(%s) for %s\n",hexmsg,bits256_str(str,categoryhash));
         return(clonestr("{\"error\":\"duplicate packet rejected\"}"));
     }
+    else SuperNET_hexmsgadd(myinfo,categoryhash,subhash,hexmsg,tai_now(),0);
     jsonstr = jprint(json,1);
     if ( broadcastflag != 0 || destipbits == 0 )
     {
@@ -919,6 +920,18 @@ cJSON *SuperNET_rosettajson(bits256 privkey,int32_t showprivs)
 
 #include "../includes/iguana_apidefs.h"
 
+STRING_ARG(SuperNET,addr2rmd160,address)
+{
+    uint8_t addrtype,rmd160[20]; char rmdstr[41]; cJSON *retjson;
+    bitcoin_addr2rmd160(&addrtype,rmd160,address);
+    init_hexbytes_noT(rmdstr,rmd160,sizeof(rmd160));
+    retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result",rmdstr);
+    jaddnum(retjson,"addrtype",addrtype);
+    jaddstr(retjson,"address",address);
+    return(jprint(retjson,1));
+}
+
 HASH_AND_INT(SuperNET,priv2pub,privkey,addrtype)
 {
     cJSON *retjson; bits256 pub; uint8_t pubkey[33]; char coinaddr[64];
@@ -1221,7 +1234,7 @@ THREE_STRINGS(SuperNET,announce,category,subcategory,message)
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     categoryhash = calc_categoryhashes(&subhash,category,subcategory);
-    return(SuperNET_categorymulticast(myinfo,0,categoryhash,subhash,message,juint(json,"maxdelay"),juint(json,"broadcast"),juint(json,"plaintext")));
+    return(SuperNET_categorymulticast(myinfo,0,categoryhash,subhash,message,juint(json,"maxdelay"),juint(json,"broadcast"),juint(json,"plaintext"),json,remoteaddr));
 }
 
 THREE_STRINGS(SuperNET,survey,category,subcategory,message)
@@ -1230,7 +1243,7 @@ THREE_STRINGS(SuperNET,survey,category,subcategory,message)
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     categoryhash = calc_categoryhashes(&subhash,category,subcategory);
-    return(SuperNET_categorymulticast(myinfo,1,categoryhash,subhash,message,juint(json,"maxdelay"),juint(json,"broadcast"),juint(json,"plaintext")));
+    return(SuperNET_categorymulticast(myinfo,1,categoryhash,subhash,message,juint(json,"maxdelay"),juint(json,"broadcast"),juint(json,"plaintext"),json,remoteaddr));
 }
 
 STRING_ARG(SuperNET,wif2priv,wif)
@@ -1299,7 +1312,47 @@ ZERO_ARGS(SuperNET,activehandle)
     retjson = SuperNET_rosettajson(myinfo->persistent_priv,0);
     jaddstr(retjson,"result","success");
     jaddstr(retjson,"handle",myinfo->handle);
+    SuperNET_MYINFOadd(myinfo);
     return(jprint(retjson,1));
+}
+
+struct supernet_info *SuperNET_accountfind(cJSON *json)
+{
+    int32_t num; char *decryptstr; struct supernet_info M,*myinfo; struct iguana_info *coin = 0;
+    char *password,*permanentfile,*passphrase,*remoteaddr,*perspriv;
+    myinfo = 0;
+    if ( (password= jstr(json,"password")) == 0 )
+        password = "";
+    if ( (permanentfile= jstr(json,"permanentfile")) == 0 )
+        permanentfile = "";
+    if ( (passphrase= jstr(json,"passphrase")) == 0 )
+        passphrase = "";
+    remoteaddr = jstr(json,"remoteaddr");
+    if ( (passphrase == 0 || passphrase[0] == 0) && (decryptstr= SuperNET_decryptjson(IGUANA_CALLARGS,password,permanentfile)) != 0 )
+    {
+        if ( (json= cJSON_Parse(decryptstr)) != 0 )
+        {
+            memset(&M,0,sizeof(M));
+            if ( (perspriv= jstr(json,"persistent_priv")) != 0 && strlen(perspriv) == sizeof(bits256)*2 )
+            {
+                M.persistent_priv = bits256_conv(perspriv);
+                SuperNET_setkeys(&M,0,0,0);
+                myinfo = SuperNET_MYINFOfind(&num,M.myaddr.persistent);
+                printf("found account.(%s) %s %llu\n",myinfo!=0?myinfo->handle:"",M.myaddr.NXTADDR,(long long)M.myaddr.nxt64bits);
+                return(myinfo);
+            }
+            else if ( (passphrase= jstr(json,"result")) != 0 || (passphrase= jstr(json,"passphrase")) != 0 )
+            {
+                SuperNET_setkeys(&M,passphrase,(int32_t)strlen(passphrase),1);
+                myinfo = SuperNET_MYINFOfind(&num,M.myaddr.persistent);
+                printf("found account.(%s) %s %llu\n",myinfo!=0?myinfo->handle:"",M.myaddr.NXTADDR,(long long)M.myaddr.nxt64bits);
+                return(myinfo);
+            } else printf("no passphrase in (%s)\n",jprint(json,0));
+            free_json(json);
+        } else printf("cant parse.(%s)\n",decryptstr);
+        free(decryptstr);
+    }
+    return(SuperNET_MYINFO(0));
 }
 
 FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)

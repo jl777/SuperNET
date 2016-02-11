@@ -190,7 +190,7 @@ cJSON *SuperNET_decryptedjson(char *passphrase,int32_t passsize,bits256 walletha
         wallet2shared = SuperNET_wallet2shared(wallethash,wallet2priv);
         wallet2pub = curve25519(wallet2shared,curve25519_basepoint9());
         sprintf(fname,"confs/%s",bits256_str(str,wallet2pub));
-        printf("fname.(%s) wallet2shared.%s\n",fname,bits256_str(str,wallet2pub));
+        //printf("fname.(%s) wallet2shared.%s\n",fname,bits256_str(str,wallet2pub));
         if ( (confstr= OS_filestr(&allocsize,fname)) != 0 )
         {
             if ( (filejson= cJSON_Parse(confstr)) != 0 )

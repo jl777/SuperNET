@@ -20,6 +20,7 @@
 #include <curl/curl.h>
 #include <curl/easy.h>
 #define INSTANTDEX_OFFERDURATION 300
+#define INSTANTDEX_LOCKTIME 3600
 
 #define EXCHANGES777_MINPOLLGAP 3
 #define EXCHANGES777_MAXDEPTH 200
@@ -89,21 +90,12 @@ struct exchange_request
     struct exchange_quote bidasks[];
 };
 
-struct bitcoin_unspent { bits256 txid,privkey; uint64_t value; int32_t vout; };
-struct bitcoin_spend
-{
-    char changeaddr[64];
-    int32_t numinputs;
-    int64_t txfee,input_satoshis,satoshis,change,netamount;
-    struct bitcoin_unspent inputs[];
-};
-
 struct instantdex_entry { char base[24],rel[24]; uint64_t price64,basevolume64,offer64; uint32_t expiration,nonce; char myside,acceptdir; };
-struct instantdex_accept { struct queueitem DL; cJSON *statusjson; uint64_t pendingvolume64,orderid; uint32_t dead; struct instantdex_entry A; };
+struct instantdex_accept { struct queueitem DL; void *info; uint64_t pendingvolume64,orderid; uint32_t dead; struct instantdex_entry A; };
 
-struct instantdex_accept *instantdex_acceptablefind(struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel);
+struct instantdex_accept *instantdex_acceptablefind(struct supernet_info *myinfo,struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel);
 cJSON *instantdex_acceptjson(struct instantdex_accept *ap);
-struct instantdex_accept *instantdex_acceptable(struct exchange_info *exchange,struct instantdex_accept *A,uint64_t offerbits);
+struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,uint64_t offerbits);
 
 void *curl_post(void **cHandlep,char *url,char *userpass,char *postfields,char *hdr0,char *hdr1,char *hdr2,char *hdr3);
 char *instantdex_sendcmd(struct supernet_info *myinfo,cJSON *argjson,char *cmdstr,char *ipaddr,int32_t hops);
@@ -121,6 +113,7 @@ double truefx_price(struct exchange_info *exchange,char *base,char *rel,struct e
 double fxcm_price(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert);
 double instaforex_price(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert);
 
-char *instantdex_queueaccept(struct exchange_info *exchange,char *base,char *rel,double price,double basevolume,int32_t acceptdir,char *myside,int32_t duration);
+char *instantdex_queueaccept(struct supernet_info *myinfo,struct exchange_info *exchange,char *base,char *rel,double price,double basevolume,int32_t acceptdir,char *mysidestr,int32_t duration);
+void instantdex_update(struct supernet_info *myinfo);
 
 #endif

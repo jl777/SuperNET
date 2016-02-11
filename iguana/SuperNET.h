@@ -122,6 +122,15 @@ struct category_msg { struct queueitem DL; struct tai t; uint64_t remoteipbits; 
 
 struct exchange_quote { uint64_t satoshis,orderid,offerNXT,exchangebits; double price,volume; uint32_t timestamp,val; };
 
+struct bitcoin_unspent { bits256 txid,privkeys[16]; uint64_t value; int32_t vout; };
+struct bitcoin_spend
+{
+    char changeaddr[64];
+    int32_t numinputs;
+    int64_t txfee,input_satoshis,satoshis,change,netamount;
+    struct bitcoin_unspent inputs[];
+};
+
 void expand_epbits(char *endpoint,struct endpoint epbits);
 struct endpoint calc_epbits(char *transport,uint32_t ipbits,uint16_t port,int32_t type);
 
@@ -143,7 +152,7 @@ cJSON *SuperNET_argjson(cJSON *json);
 void *category_info(bits256 categoryhash,bits256 subhash);
 void *category_infoset(bits256 categoryhash,bits256 subhash,void *info);
 struct category_info *category_find(bits256 categoryhash,bits256 subhash);
-void SuperNET_hexmsgprocess(struct supernet_info *myinfo,cJSON *json,char *hexmsg,char *remoteaddr);
+void SuperNET_hexmsgprocess(struct supernet_info *myinfo,cJSON *retjson,cJSON *json,char *hexmsg,char *remoteaddr);
 struct category_info *category_processfunc(bits256 categoryhash,char *(*process_func)(struct supernet_info *myinfo,void *data,int32_t datalen,char *remoteaddr));
 char *pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *remoteaddr);
 void pangea_queues(struct supernet_info *myinfo);
@@ -157,7 +166,7 @@ void *category_subscribe(struct supernet_info *myinfo,bits256 category,bits256 s
 struct category_msg *category_gethexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash);
 char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr);
 
-char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag,bits256 categoryhash,bits256 subcategory,char *message,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext);
+char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag,bits256 categoryhash,bits256 subhash,char *message,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext,cJSON *argjson,char *remoteaddr);
 bits256 calc_categoryhashes(bits256 *subhashp,char *category,char *subcategory);
 struct category_chain *category_chain_functions(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,int32_t hashlen,int32_t addrlen,void *hash_func,void *stake_func,void *hit_func,void *default_func);
 #define category_default_latest() (*cchain->default_func)(cchain,'L',0,0,0,0,zero)
@@ -172,6 +181,10 @@ char *bitcoin_address(char *coinaddr,uint8_t addrtype,uint8_t *pubkey,int32_t le
 uint8_t *cards777_recover(uint8_t *shares[],uint8_t *sharenrs,int32_t M,int32_t numcards,int32_t N);
 int32_t cards777_calcmofn(uint8_t *allshares,uint8_t *myshares[],uint8_t *sharenrs,int32_t M,bits256 *xoverz,int32_t numcards,int32_t N);
 int32_t init_sharenrs(unsigned char sharenrs[255],unsigned char *orig,int32_t m,int32_t n);
+struct supernet_info *SuperNET_MYINFOfind(int32_t *nump,bits256 pubkey);
+void SuperNET_MYINFOadd(struct supernet_info *myinfo);
+struct supernet_info *SuperNET_accountfind(cJSON *argjson);
+int32_t SuperNET_MYINFOS(struct supernet_info **myinfos,int32_t max);
 
 #endif
 

@@ -73,7 +73,7 @@ void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 categoryhash,bits25
     //printf("HEXMSG.(%s).%llx -> %s\n",hexmsg,(long long)subhash.txid,str);
 }
 
-void SuperNET_hexmsgprocess(struct supernet_info *myinfo,cJSON *json,char *hexmsg,char *remoteaddr)
+void SuperNET_hexmsgprocess(struct supernet_info *myinfo,cJSON *retjson,cJSON *json,char *hexmsg,char *remoteaddr)
 {
     int32_t len,flag=0; char *str; uint8_t _buf[8192],*buf = _buf; bits256 categoryhash; struct category_info *cat;
     if ( hexmsg != 0 )
@@ -91,7 +91,11 @@ void SuperNET_hexmsgprocess(struct supernet_info *myinfo,cJSON *json,char *hexms
                 if ( cat->processfunc != 0 )
                 {
                     if ( (str= (*cat->processfunc)(myinfo,buf,len,remoteaddr)) != 0 )
-                        free(str);
+                    {
+                        if ( retjson != 0 )
+                            jaddstr(retjson,"processfunc",str);
+                        else free(str);
+                    }
                     flag = 1;
                     //printf("PROCESSFUNC\n");
                 }

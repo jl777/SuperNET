@@ -183,14 +183,19 @@ int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr
 	return(0);
 }
 
+void calc_rmd160_sha256(uint8_t rmd160[20],uint8_t *data,int32_t datalen)
+{
+    bits256 hash;
+    vcalc_sha256(0,hash.bytes,data,datalen);
+    calc_rmd160(0,rmd160,hash.bytes,sizeof(hash));
+}
+
 char *bitcoin_address(char *coinaddr,uint8_t addrtype,uint8_t *pubkey,int32_t len)
 {
     int32_t i; uint8_t data[25]; bits256 hash; char checkaddr[65];
     if ( len != 20 )
-    {
-        vcalc_sha256(0,hash.bytes,pubkey,len);
-        calc_rmd160(0,data+1,hash.bytes,sizeof(hash));
-    } else memcpy(data+1,pubkey,20);
+        calc_rmd160_sha256(data+1,pubkey,len);
+    else memcpy(data+1,pubkey,20);
     btc_convrmd160(checkaddr,addrtype,data+1);
     //for (i=0; i<20; i++)
     //    printf("%02x",data[i+1]);
@@ -399,7 +404,7 @@ int32_t bitcoin_checklocktimeverify(uint8_t *script,int32_t n,uint32_t locktime)
 
 int32_t bitcoin_MofNspendscript(uint8_t p2sh_rmd160[20],uint8_t *script,int32_t n,const struct vin_info *vp)
 {
-    uint8_t sha256[32]; int32_t i,plen;
+    int32_t i,plen;
     script[n++] = 0x50 + vp->M;
     for (i=0; i<vp->N; i++)
     {
@@ -411,8 +416,7 @@ int32_t bitcoin_MofNspendscript(uint8_t p2sh_rmd160[20],uint8_t *script,int32_t 
     }
     script[n++] = 0x50 + vp->N;
     script[n++] = SCRIPT_OP_CHECKMULTISIG;
-    vcalc_sha256(0,sha256,script,n);
-    calc_rmd160(0,p2sh_rmd160,sha256,sizeof(sha256));
+    calc_rmd160_sha256(p2sh_rmd160,script,n);
     return(n);
 }
 
@@ -484,7 +488,7 @@ int32_t bitcoin_cltvscript(uint8_t p2shtype,char *ps2h_coinaddr,uint8_t p2sh_rmd
     // OP_ELSE
     //      OP_HASH160 secret160 OP_EQUALVERIFY OP_DUP OP_HASH160 <hash160> OP_EQUALVERIFY OP_CHECKSIG // standard spend
     // OP_ENDIF
-    uint8_t sha256[32],rmd160A[20],rmd160B[20],addrtypeA,addrtypeB;
+    uint8_t rmd160A[20],rmd160B[20],addrtypeA,addrtypeB;
     bitcoin_addr2rmd160(&addrtypeA,rmd160A,senderaddr);
     bitcoin_addr2rmd160(&addrtypeB,rmd160B,otheraddr);
     script[n++] = SCRIPT_OP_IF;
@@ -494,8 +498,7 @@ int32_t bitcoin_cltvscript(uint8_t p2shtype,char *ps2h_coinaddr,uint8_t p2sh_rmd
         n = bitcoin_revealsecret160(script,n,secret160);
         n = bitcoin_standardspend(script,n,rmd160B);
     script[n++] = SCRIPT_OP_ENDIF;
-    vcalc_sha256(0,sha256,script,n);
-    calc_rmd160(0,p2sh_rmd160,sha256,sizeof(sha256));
+    calc_rmd160_sha256(p2sh_rmd160,script,n);
     bitcoin_address(ps2h_coinaddr,p2shtype,p2sh_rmd160,20);
     return(n);
 }
@@ -584,8 +587,9 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
     {
         if ( zero_rmd160[0] == 0 )
         {
-            vcalc_sha256(0,sha256,vp->spendscript,vp->spendlen); // e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-            calc_rmd160(0,zero_rmd160,sha256,sizeof(sha256)); // b472a266d0bd89c13706a4132ccfb16f7c3b9fcb
+            calc_rmd160_sha256(zero_rmd160,vp->spendscript,vp->spendlen);
+            //vcalc_sha256(0,sha256,vp->spendscript,vp->spendlen); // e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+            //calc_rmd160(0,zero_rmd160,sha256,sizeof(sha256)); // b472a266d0bd89c13706a4132ccfb16f7c3b9fcb
             init_hexbytes_noT(hexstr,zero_rmd160,20);
             char str[65]; printf("iguana_calcrmd160 zero len %s -> %s\n",bits256_str(str,*(bits256 *)sha256),hexstr);
         }
@@ -613,8 +617,7 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
     else if ( vp->spendscript[0] > 0 && vp->spendscript[0] < 76 && vp->spendscript[vp->spendlen-1] == SCRIPT_OP_CHECKSIG && vp->spendscript[0] == vp->spendlen-2 )
     {
         memcpy(vp->signers[0].pubkey,&vp->spendscript[1],vp->spendscript[0]);
-        vcalc_sha256(0,sha256,vp->signers[0].pubkey,vp->spendscript[0]);
-        calc_rmd160(0,vp->rmd160,sha256,sizeof(sha256));
+        calc_rmd160_sha256(vp->rmd160,vp->signers[0].pubkey,vp->spendscript[0]);
         return(IGUANA_SCRIPT_76AC);
     }
     else if ( vp->spendscript[0] == SCRIPT_OP_HASH160 && vp->spendscript[1] == 0x14 && vp->spendlen == 23 && vp->spendscript[22] == SCRIPT_OP_EQUAL )
@@ -635,8 +638,7 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
                 return(-1);
             }
             memcpy(vp->signers[i].pubkey,script,plen);
-            vcalc_sha256(0,sha256,vp->signers[i].pubkey,plen);
-            calc_rmd160(0,vp->signers[i].rmd160,sha256,sizeof(sha256));
+            calc_rmd160_sha256(vp->signers[i].rmd160,vp->signers[i].pubkey,plen);
             bitcoin_address(vp->signers[i].coinaddr,coin->chain->pubtype,vp->signers[i].pubkey,plen);
         }
         if ( (int32_t)((long)script - (long)vp->spendscript) == vp->spendlen-2 )
@@ -645,8 +647,7 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
             vp->M = m;
             //printf("M.%d N.%d\n",m,n);
         }
-        vcalc_sha256(0,sha256,vp->spendscript,vp->spendlen);
-        calc_rmd160(0,vp->rmd160,sha256,sizeof(sha256));
+        calc_rmd160_sha256(vp->rmd160,vp->spendscript,vp->spendlen);
         if ( n == 3 )
         {
             if ( m == 3 )
@@ -685,8 +686,7 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
                 fprintf(fp,"%s\n",hexstr), fflush(fp);
         } else sprintf(hexstr,"pkscript overflowed %ld\n",(long)sizeof(hexstr));
     }
-    vcalc_sha256(0,sha256,vp->spendscript,vp->spendlen);
-    calc_rmd160(0,vp->rmd160,sha256,sizeof(sha256));
+    calc_rmd160_sha256(vp->rmd160,vp->spendscript,vp->spendlen);
     return(type);
 }
 
@@ -1040,21 +1040,9 @@ char *iguana_rawtxbytes(struct iguana_info *coin,cJSON *json,struct iguana_msgtx
     return(txbytes);
 }
 
-/*
- struct vin_signer { bits256 privkey; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };
- 
- struct vin_info
- {
- struct iguana_msgvin vin;
- int32_t M,N,validmask,spendlen,p2shflag;
- struct vin_signer signers[16];
- uint8_t rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE];
- };
- */
-
 int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,struct vin_info *vp,uint8_t *scriptsig,int32_t len,int32_t type)
 {
-    char asmstr[IGUANA_MAXSCRIPTSIZE*3]; int32_t j,n,siglen,plen; uint8_t sha256[32];
+    char asmstr[IGUANA_MAXSCRIPTSIZE*3]; int32_t j,n,siglen,plen;
     j = n = 0;
     *hashtypep = SIGHASH_ALL;
     while ( (siglen= scriptsig[n]) >= 70 && siglen <= 73 && n+siglen+1 < len && j < 16 )
@@ -1073,8 +1061,7 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,struct vin
     while ( ((plen= scriptsig[n]) == 33 || plen == 65 ) && j < 16 )
     {
         memcpy(vp->signers[j].pubkey,&scriptsig[n+1],plen);
-        vcalc_sha256(0,sha256,vp->signers[j].pubkey,plen);
-        calc_rmd160(0,vp->signers[j].rmd160,sha256,sizeof(sha256));
+        calc_rmd160_sha256(vp->signers[j].rmd160,vp->signers[j].pubkey,plen);
         if ( j == 0 )
             memcpy(vp->rmd160,vp->signers[j].rmd160,20);
         n += (plen + 1);
@@ -1246,6 +1233,30 @@ char *bitcoin_json2hex(struct iguana_info *coin,bits256 *txidp,cJSON *txjson)
     } else printf("bitcoin_txtest: zero msgtx allocsize\n");
     free(serialized);
     return(txbytes);
+}
+
+cJSON *bitcoin_hex2json(struct iguana_info *coin,bits256 *txidp,struct iguana_msgtx *msgtx,char *txbytes)
+{
+    int32_t n,len; char vpnstr[64]; struct iguana_msgtx M; uint8_t *serialized; cJSON *txobj;
+    txobj = cJSON_CreateObject();
+    if ( msgtx == 0 )
+    {
+        msgtx = &M;
+        memset(msgtx,0,sizeof(M));
+    }
+    len = (int32_t)strlen(txbytes) >> 1;
+    serialized = malloc(len);
+    decode_hex(serialized,len,txbytes);
+    vpnstr[0] = 0;
+    memset(txidp,0,sizeof(*txidp));
+    //char str[65]; printf("%d of %d: %s\n",i,msg.txn_count,bits256_str(str,tx.txid));
+    if ( (n= iguana_rwmsgtx(coin,0,txobj,serialized,len,msgtx,txidp,vpnstr)) <= 0 )
+    {
+        free_json(txobj);
+        txobj = 0;
+    }
+    free(serialized);
+    return(txobj);
 }
 
 cJSON *bitcoin_createtx(struct iguana_info *coin,int32_t locktime)
@@ -1447,9 +1458,10 @@ static char *BASERELS[][2] = { {"btcd","btc"}, {"nxt","btc"}, {"asset","btc"} };
 double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert)
 {
     cJSON *retjson,*bids,*asks; double hbla;
+    struct supernet_info *myinfo = SuperNET_accountfind(argjson);
     bids = cJSON_CreateArray();
     asks = cJSON_CreateArray();
-    instantdex_acceptablefind(exchange,bids,asks,0,base,rel);
+    instantdex_acceptablefind(myinfo,exchange,bids,asks,0,base,rel);
     retjson = cJSON_CreateObject();
     cJSON_AddItemToObject(retjson,"bids",bids);
     cJSON_AddItemToObject(retjson,"asks",asks);
@@ -1460,11 +1472,13 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
 
 char *PARSEBALANCE(struct exchange_info *exchange,double *balancep,char *coinstr,cJSON *argjson)
 {
+    //struct supernet_info *myinfo = SuperNET_accountfind(argjson);
     return(clonestr("{\"error\":\"bitcoin is not yet\"}"));
 }
 
 cJSON *BALANCES(struct exchange_info *exchange,cJSON *argjson)
 {
+    //struct supernet_info *myinfo = SuperNET_accountfind(argjson);
     return(cJSON_Parse("{\"error\":\"bitcoin is not yet\"}"));
 }
 
@@ -1481,9 +1495,11 @@ int32_t is_valid_BTCother(char *other)
 
 uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *base,char *rel,int32_t dir,double price,double volume,cJSON *argjson)
 {
-    struct instantdex_accept *ap; char *str,coinaddr[64]; uint64_t txid = 0; cJSON *json;
+    char *str,coinaddr[64]; uint64_t txid = 0; cJSON *tmp,*json=0;
     struct supernet_info *myinfo; uint8_t pubkey[33]; struct iguana_info *other; int32_t hops = 3;
-    myinfo = SuperNET_MYINFO(0);
+    myinfo = SuperNET_accountfind(argjson);
+    if ( retstrp != 0 )
+        *retstrp = 0;
     if ( strcmp(base,"BTC") == 0 || strcmp(base,"btc") == 0 )
     {
         base = rel;
@@ -1494,54 +1510,49 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
     }
     if ( is_valid_BTCother(base) != 0 && (strcmp(rel,"BTC") == 0 || strcmp(rel,"btc") == 0) )
     {
-        ap = 0;//instantdex_acceptable(exchange,base,rel,"BTC",dir,price,volume);
         if ( dotrade == 0 )
         {
             if ( retstrp != 0 )
-            {
-                if ( ap != 0 )
-                    *retstrp = jprint(instantdex_acceptjson(ap),1);
-                else *retstrp = clonestr("{\"result\":\"would issue new trade\"}");
-            }
+                *retstrp = clonestr("{\"result\":\"would issue new trade\"}");
         }
         else
         {
-            if ( ap != 0 )
+            if ( (other= iguana_coinfind(base)) != 0 )
             {
-                // issue matching response
+                bitcoin_pubkey33(pubkey,myinfo->persistent_priv);
+                bitcoin_address(coinaddr,other->chain->pubtype,pubkey,sizeof(pubkey));
+                jaddstr(argjson,base,coinaddr);
             }
-            else if ( dir < 0 )
+            else if ( strcmp(base,"NXT") == 0 || (is_decimalstr(base) > 0 && strlen(base) > 13) )
             {
-                printf("bitcoin sell is not yet\n");
+                printf("NXT is not yet\n");
                 return(0);
             }
-            else
+            else return(0);
+            json = cJSON_CreateObject();
+            jaddstr(json,"base",base);
+            jaddstr(json,"rel","BTC");
+            jaddnum(json,dir > 0 ? "maxprice" : "minprice",price);
+            jaddnum(json,"volume",volume);
+            jaddstr(json,"BTC",myinfo->myaddr.BTC);
+            //printf("trade dir.%d (%s/%s) %.6f vol %.8f\n",dir,base,"BTC",price,volume);
+            if ( (str= instantdex_sendcmd(myinfo,json,"BTCoffer",myinfo->ipaddr,hops)) != 0 )
             {
                 json = cJSON_CreateObject();
-                jaddstr(json,"base",base);
-                jaddstr(json,"rel","BTC");
-                jaddnum(json,"maxprice",price);
-                jaddnum(json,"volume",volume);
-                if ( (other= iguana_coinfind(base)) != 0 )
+                jaddstr(json,"BTCoffer",str);
+            }
+            if ( (str= instantdex_queueaccept(myinfo,exchange,base,"BTC",price,volume,-dir,dir > 0 ? "BTC" : base,INSTANTDEX_OFFERDURATION)) != 0 )
+            {
+                jaddstr(json,"queue",str);
+                if ( (tmp= cJSON_Parse(str)) != 0 )
                 {
-                    bitcoin_pubkey33(pubkey,myinfo->persistent_priv);
-                    bitcoin_address(coinaddr,other->chain->pubtype,pubkey,sizeof(pubkey));
-                    jaddstr(argjson,base,coinaddr);
-                }
-                jaddstr(json,"BTC",myinfo->myaddr.BTC);
-                if ( (str= instantdex_sendcmd(myinfo,json,"BTCoffer",myinfo->ipaddr,hops)) != 0 )
-                    free(str);
-                free_json(json);
-                if ( (str= instantdex_queueaccept(exchange,base,"BTC",price,volume,-1,"BTC",INSTANTDEX_OFFERDURATION)) != 0 )
-                {
-                    if ( (json= cJSON_Parse(str)) != 0 )
-                    {
-                        txid = j64bits(json,"orderid");
-                        free_json(json);
-                    }
-                    free(str);
+                    txid = j64bits(json,"orderid");
+                    free_json(tmp);
                 }
             }
+            if ( retstrp != 0 )
+                *retstrp = jprint(json,1);
+            else free_json(json);
         }
     }
     return(txid);
@@ -1550,7 +1561,8 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
 char *ORDERSTATUS(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson)
 {
     struct instantdex_accept *ap; cJSON *retjson;
-    if ( (ap= instantdex_acceptablefind(exchange,0,0,orderid,"*","*")) != 0 )
+    struct supernet_info *myinfo = SuperNET_accountfind(argjson);
+    if ( (ap= instantdex_acceptablefind(myinfo,exchange,0,0,orderid,"*","*")) != 0 )
     {
         retjson = cJSON_CreateObject();
         jadd(retjson,"result",instantdex_acceptjson(ap));
@@ -1561,7 +1573,8 @@ char *ORDERSTATUS(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson
 char *CANCELORDER(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson)
 {
     struct instantdex_accept *ap; cJSON *retjson;
-    if ( (ap= instantdex_acceptablefind(exchange,0,0,orderid,"*","*")) != 0 )
+    struct supernet_info *myinfo = SuperNET_accountfind(argjson);
+    if ( (ap= instantdex_acceptablefind(myinfo,exchange,0,0,orderid,"*","*")) != 0 )
     {
         ap->dead = (uint32_t)time(NULL);
         retjson = cJSON_CreateObject();
@@ -1574,9 +1587,10 @@ char *CANCELORDER(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson
 char *OPENORDERS(struct exchange_info *exchange,cJSON *argjson)
 {
     cJSON *retjson,*bids,*asks;
+    struct supernet_info *myinfo = SuperNET_accountfind(argjson);
     bids = cJSON_CreateArray();
     asks = cJSON_CreateArray();
-    instantdex_acceptablefind(exchange,bids,asks,0,"*","*");
+    instantdex_acceptablefind(myinfo,exchange,bids,asks,0,"*","*");
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
     jadd(retjson,"bids",bids);
@@ -1586,11 +1600,13 @@ char *OPENORDERS(struct exchange_info *exchange,cJSON *argjson)
 
 char *TRADEHISTORY(struct exchange_info *exchange,cJSON *argjson)
 {
+    //struct supernet_info *myinfo = SuperNET_accountfind(argjson);
     return(clonestr("{\"error\":\"bitcoin is not yet\"}"));
 }
 
 char *WITHDRAW(struct exchange_info *exchange,char *base,double amount,char *destaddr,cJSON *argjson)
 {
+    //struct supernet_info *myinfo = SuperNET_accountfind(argjson);
     return(clonestr("{\"error\":\"bitcoin is not yet\"}"));
 }
 

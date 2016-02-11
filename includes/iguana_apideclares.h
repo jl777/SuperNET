@@ -17,11 +17,12 @@ STRING_ARG(SuperNET,bitcoinrpc,setcoin);
 ZERO_ARGS(SuperNET,myipaddr);
 STRING_ARG(SuperNET,setmyipaddr,ipaddr);
 
-TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,BTCoffer,othercoin,otherassetid,maxprice,othervolume);
 TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,minaccept,base,rel,minprice,basevolume);
 TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,maxaccept,base,rel,maxprice,basevolume);
+
+/*TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,BTCoffer,othercoin,otherassetid,maxprice,othervolume);
 STRING_AND_TWO_DOUBLES(InstantDEX,ALToffer,basecoin,minprice,basevolume);
-STRING_AND_TWO_DOUBLES(InstantDEX,NXToffer,assetid,minprice,basevolume);
+STRING_AND_TWO_DOUBLES(InstantDEX,NXToffer,assetid,minprice,basevolume);*/
 
 HASH_AND_STRING(ramchain,verifytx,txid,txbytes);
 INT_ARG(ramchain,getblockhash,height);
@@ -94,6 +95,7 @@ THREE_STRINGS(SuperNET,rosetta,passphrase,pin,showprivkey);
 ZERO_ARGS(SuperNET,keypair);
 HASH_AND_INT(SuperNET,priv2pub,privkey,addrtype);
 STRING_ARG(SuperNET,wif2priv,wif);
+STRING_ARG(SuperNET,addr2rmd160,address);
 
 TWOHASHES_AND_STRING(SuperNET,cipher,privkey,destpubkey,message);
 TWOHASHES_AND_STRING(SuperNET,decipher,privkey,srcpubkey,cipherstr);

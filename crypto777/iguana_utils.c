@@ -133,9 +133,9 @@ int32_t bitweight(uint64_t x)
     return(wt);
 }
 
-void calc_OP_HASH160(char hexstr[41],uint8_t hash160[20],char *pubkey)
+void calc_OP_HASH160(char hexstr[41],uint8_t rmd160[20],char *pubkey)
 {
-    uint8_t sha256[32],buf[4096]; int32_t len;
+    uint8_t buf[4096]; int32_t len;
     len = (int32_t)strlen(pubkey)/2;
     if ( len > sizeof(buf) )
     {
@@ -143,17 +143,16 @@ void calc_OP_HASH160(char hexstr[41],uint8_t hash160[20],char *pubkey)
         return;
     }
     decode_hex(buf,len,pubkey);
-    vcalc_sha256(0,sha256,buf,len);
-    calc_rmd160(0,hash160,sha256,sizeof(sha256));
+    calc_rmd160_sha256(rmd160,buf,len);
     if ( 0 )
     {
         int i;
         for (i=0; i<20; i++)
-            printf("%02x",hash160[i]);
+            printf("%02x",rmd160[i]);
         printf("<- (%s)\n",pubkey);
     }
     if ( hexstr != 0 )
-        init_hexbytes_noT(hexstr,hash160,20);
+        init_hexbytes_noT(hexstr,rmd160,20);
 }
 
 double _dxblend(double *destp,double val,double decay)

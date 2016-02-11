@@ -311,9 +311,9 @@ int32_t category_broadcastflag(struct supernet_info *myinfo,bits256 category,bit
     return(broadcastflag);
 }
 
-char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag,bits256 categoryhash,bits256 subhash,char *message,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext)
+char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag,bits256 categoryhash,bits256 subhash,char *message,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext,cJSON *argjson,char *remoteaddr)
 {
-    char *hexmsg,*retstr; int32_t len;
+    char *hexmsg,*retstr; int32_t len; cJSON *retjson = cJSON_CreateObject();
     len = (int32_t)strlen(message);
     //char str[65]; printf("multicast.(%s)\n",bits256_str(str,categoryhash));
     if ( is_hexstr(message,len) == 0 )
@@ -325,8 +325,16 @@ char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag
     broadcastflag = category_broadcastflag(myinfo,categoryhash,subhash,broadcastflag);
     maxdelay = category_maxdelay(myinfo,categoryhash,subhash,maxdelay);
     retstr = SuperNET_DHTsend(myinfo,0,categoryhash,subhash,hexmsg,maxdelay,broadcastflag,plaintext);
+    if ( 0 && argjson != 0 )
+        SuperNET_hexmsgprocess(myinfo,retjson,argjson,hexmsg,remoteaddr);
     if ( hexmsg != message)
         free(hexmsg);
+    if ( retjson != 0 )
+    {
+        if ( retstr != 0 )
+            jaddstr(retjson,"result",retstr);
+        retstr = jprint(retjson,1);
+    }
     return(retstr);
 }
 

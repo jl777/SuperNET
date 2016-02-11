@@ -263,7 +263,7 @@ char *pangea_jsondatacmd(struct supernet_info *myinfo,bits256 tablehash,struct p
     {
         printf("pangea send.(%s)\n",cmdstr);
         init_hexbytes_noT(hexstr,(uint8_t *)pm,pm->sig.allocsize);
-        return(SuperNET_categorymulticast(myinfo,0,pangeahash,tablehash,hexstr,0,2,1));
+        return(SuperNET_categorymulticast(myinfo,0,pangeahash,tablehash,hexstr,0,2,1,argjson,0));
     }
     else
     {
@@ -291,7 +291,7 @@ void pangea_sendcmd(struct supernet_info *myinfo,struct table_info *tp,char *cmd
             loopback = 1;
         if ( destplayer < 0 )
         {
-            if ( (str= SuperNET_categorymulticast(myinfo,0,tp->G.gamehash,tp->G.tablehash,hexstr,0,2,plaintext)) != 0 )
+            if ( (str= SuperNET_categorymulticast(myinfo,0,tp->G.gamehash,tp->G.tablehash,hexstr,0,2,plaintext,0,0)) != 0 )
                 free(str);
             loopback = 1;
         }
@@ -541,16 +541,16 @@ char *pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *re
 
 void pangea_update(struct supernet_info *myinfo)
 {
-    struct pangea_msghdr *pm; struct category_msg *m; bits256 pangeahash; char remoteaddr[64];
+    struct pangea_msghdr *pm; struct category_msg *m; bits256 pangeahash; char remoteaddr[64],*str;
     pangeahash = calc_categoryhashes(0,"pangea",0);
     while ( (m= category_gethexmsg(myinfo,pangeahash,GENESIS_PUBKEY)) != 0 )
     {
         pm = (struct pangea_msghdr *)m->msg;
         if ( m->remoteipbits != 0 )
             expand_ipbits(remoteaddr,m->remoteipbits);
-        if ( pangea_hexmsg(myinfo,pm,m->len,remoteaddr) > 0 )
-        {
-        }
+        else remoteaddr[0] = 0;
+        if ( (str= pangea_hexmsg(myinfo,pm,m->len,remoteaddr)) != 0 )
+            free(str);
         free(m);
     }
 }
