@@ -522,7 +522,7 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
     {
         if ( A->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) )
             return(clonestr("{\"error\":\"instantdex_BTCswap offer too close to expiration\"}"));
-        if ( (ap= instantdex_acceptable(myinfo,exchange,A,traderpub.txid,minperc)) != 0 )
+        if ( (ap= instantdex_acceptable(myinfo,exchange,A,acct777_nxt64bits(traderpub),minperc)) != 0 )
         {
             char str[65]; printf("FOUND MATCH! %p (%s/%s) other.%s\n",A->info,A->offer.base,A->offer.rel,bits256_str(str,traderpub));
             if ( A->info == 0 )
