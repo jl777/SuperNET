@@ -126,10 +126,13 @@ struct supernet_info *SuperNET_MYINFOfind(int32_t *nump,bits256 pubkey)
 
 int32_t SuperNET_MYINFOS(struct supernet_info **myinfos,int32_t max)
 {
-    int32_t i;
-    for (i=0; i<max; i++)
-        if ( (myinfos[i]= MYINFOS[i]) == 0 )
-            break;
+    int32_t i = 0;
+    if ( MYINFOS != 0 )
+    {
+        for (i=0; i<max; i++)
+            if ( (myinfos[i]= MYINFOS[i]) == 0 )
+                break;
+    }
     return(i);
 }
 
