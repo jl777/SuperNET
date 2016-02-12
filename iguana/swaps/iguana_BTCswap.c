@@ -281,6 +281,12 @@ int32_t instantdex_pubkeyargs(struct bitcoin_swapinfo *swap,cJSON *newjson,int32
         {
             calc_rmd160_sha256(secret160,swap->privkeys[n].bytes,sizeof(swap->privkeys[n]));
             memcpy(&txid,secret160,sizeof(txid));
+            txid = (m+1) | ((m+1)<<16);
+            txid <<= 32;
+            txid = (m+1) | ((m+1)<<16);
+            pubi.txid = (m+1) | ((m+1)<<16);
+            pubi.txid <<= 32;
+            pubi.txid = (m+1) | ((m+1)<<16);
             len += iguana_rwnum(1,(uint8_t *)&swap->deck[m][0],sizeof(txid),&txid);
             len += iguana_rwnum(1,(uint8_t *)&swap->deck[m][1],sizeof(pubi.txid),&pubi.txid);
             m++;
@@ -302,6 +308,7 @@ char *instantdex_choosei(struct bitcoin_swapinfo *swap,cJSON *newjson,cJSON *arg
         OS_randombytes((uint8_t *)&swap->choosei,sizeof(swap->choosei));
         swap->choosei %= max;
         jaddnum(newjson,"mychoosei",swap->choosei);
+        printf("choosei.%d of max.%d\n",swap->choosei,max);
         return(0);
     }
     else
@@ -533,7 +540,7 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
                     }
                     else
                     {
-                        printf("Choosei.%s\n",retstr);
+                        printf(">>>> step1.(%s)\n",jprint(newjson,0));
                         return(instantdex_sendcmd(myinfo,&A->offer,newjson,"BTCstep1",traderpub,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck)));
                     }
                 }
