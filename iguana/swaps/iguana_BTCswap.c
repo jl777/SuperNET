@@ -306,6 +306,8 @@ char *instantdex_choosei(struct bitcoin_swapinfo *swap,cJSON *newjson,cJSON *arg
             for (j=0; j<2; j++)
                 len += iguana_rwnum(1,(uint8_t *)&swap->otherscut[i][j],sizeof(x),&serdata[len]);
         OS_randombytes((uint8_t *)&swap->choosei,sizeof(swap->choosei));
+        if ( swap->choosei < 0 )
+            swap->choosei = -swap->choosei;
         swap->choosei %= max;
         jaddnum(newjson,"mychoosei",swap->choosei);
         printf("choosei.%d of max.%d\n",swap->choosei,max);
