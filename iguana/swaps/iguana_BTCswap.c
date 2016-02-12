@@ -506,7 +506,7 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
     if ( swap == 0 && strcmp(cmdstr,"offer") != 0 )
         return(clonestr("{\"error\":\"instantdex_BTCswap no swap info after offer\"}"));
     printf("T.%d [%d] got offer.(%s/%s) %.8f vol %.8f %llu offerside.%d offerdir.%d swap.%p decksize.%ld\n",bits256_cmp(traderpub,myinfo->myaddr.persistent),swap!=0?swap->state:-1,A->offer.base,A->offer.rel,dstr(A->offer.price64),dstr(A->offer.basevolume64),(long long)A->orderid,A->offer.myside,A->offer.acceptdir,A->info,sizeof(swap->deck));
-    if ( strcmp(cmdstr,"offer") == 0 ) // sender is Bob, receiver is network (Alice)
+    if ( strcmp(cmdstr,"offer") == 0 && A->info == 0 ) // sender is Bob, receiver is network (Alice)
     {
         if ( A->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) )
             return(clonestr("{\"error\":\"instantdex_BTCswap offer too close to expiration\"}"));
@@ -526,14 +526,16 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
                     return(clonestr("{\"error\":\"instantdex_BTCswap offer null newjson\"}"));
                 else
                 {
-                    //printf("NEWJSON.(%s)\n",jprint(newjson,0));
                     instantdex_pendingnotice(myinfo,exchange,ap,A);
                     if ( (retstr= instantdex_choosei(swap,argjson,newjson,serdata,datalen)) != 0 )
                     {
-                        printf("Choosei.%s\n",retstr);
                         return(retstr);
                     }
-                    else return(instantdex_sendcmd(myinfo,&A->offer,newjson,"BTCstep1",traderpub,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck)));
+                    else
+                    {
+                        printf("Choosei.%s\n",retstr);
+                        return(instantdex_sendcmd(myinfo,&A->offer,newjson,"BTCstep1",traderpub,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck)));
+                    }
                 }
             }
         }
