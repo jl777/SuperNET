@@ -153,7 +153,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
             break;
     memcpy(msg->serialized,reqstr,slen);
     memcpy(&msg->serialized[slen],serialized,olen);
-    printf("extralen.%d\n",extralen);
+    printf("extralen.%d datalen.%d\n",extralen,datalen);
     if ( extralen > 0 )
         memcpy(&msg->serialized[slen + olen],extraser,extralen);
     free(reqstr);
@@ -578,8 +578,9 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
         if ( newlen > 0 )
         {
             orderhash = instantdex_rwoffer(0,&olen,&msg->serialized[slen],&rawoffer);
-            //printf("received orderhash.%llu\n",(long long)orderhash.txid);
             newlen -= olen;
+            serdata = &serdata[olen];
+            printf("received orderhash.%llu slen.%d olen.%d newlen.%d\n",(long long)orderhash.txid,slen,olen,newlen);
         }
         if ( newlen <= 0 )
             serdata = 0, newlen = 0;
