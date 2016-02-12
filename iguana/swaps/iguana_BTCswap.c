@@ -440,7 +440,7 @@ char *instantdex_btcoffer(struct supernet_info *myinfo,struct exchange_info *exc
     if ( othercoin == 0 || (other= iguana_coinfind(othercoin)) == 0 )
         return(clonestr("{\"error\":\"invalid othercoin\"}"));
     hash = instantdex_acceptset(&A,othercoin,"BTC",INSTANTDEX_LOCKTIME*2,dir < 0 ? 1 : 0,-dir,price,othervolume,myinfo->myaddr.nxt64bits);
-    newjson = cJSON_CreateObject();//instantdex_acceptsendjson(A);
+    newjson = cJSON_CreateObject();
     if ( instantdex_acceptextract(&checkA,newjson) < 0 )
     {
         int32_t i;
@@ -469,7 +469,7 @@ char *instantdex_btcoffer(struct supernet_info *myinfo,struct exchange_info *exc
         printf("couldnt find accept??\n");
         free(swap);
         return(clonestr("{\"error\":\"couldnt find order just created\"}"));
-    } else return(instantdex_sendcmd(myinfo,&ap->offer,newjson,"BTCoffer",GENESIS_PUBKEY,INSTANTDEX_HOPS,0,0));
+    } else return(instantdex_sendcmd(myinfo,&ap->offer,newjson,"BTCoffer",GENESIS_PUBKEY,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck)));
 }
 
 char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,char *cmdstr,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *serdata,int32_t datalen) // receiving side
