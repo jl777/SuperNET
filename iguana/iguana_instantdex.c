@@ -59,7 +59,7 @@ struct instantdex_msghdr *instantdex_msgcreate(struct supernet_info *myinfo,stru
     otherpubkey = acct777_msgpubkey(data,datalen);
     timestamp = (uint32_t)time(NULL);
     acct777_sign(&msg->sig,myinfo->privkey,otherpubkey,timestamp,data,datalen);
-    printf("signed datalen.%d allocsize.%d\n",datalen,msg->sig.allocsize);
+    printf("signed datalen.%d allocsize.%d crc.%x\n",datalen,msg->sig.allocsize,calc_crc32(0,data,datalen));
     if ( (signerbits= acct777_validate(&msg->sig,acct777_msgprivkey(data,datalen),msg->sig.pubkey)) != 0 )
     {
         //int32_t i;
@@ -557,7 +557,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
     memcpy(&msg->sig,tmp,sizeof(msg->sig));
     datalen = len  - (int32_t)sizeof(msg->sig);
     serdata = (void *)((long)msg + sizeof(msg->sig));
-    printf("datalen.%d len.%d\n",datalen,len);
+    printf("signed datalen.%d allocsize.%d crc.%x\n",datalen,msg->sig.allocsize,calc_crc32(0,serdata,datalen));
     if ( remoteaddr != 0 && remoteaddr[0] == 0 && strcmp("127.0.0.1",remoteaddr) == 0 && ((uint8_t *)msg)[len-1] == 0 && (argjson= cJSON_Parse((char *)msg)) != 0 )
     {
         printf("string instantdex_hexmsg RESULT.(%s)\n",jprint(argjson,0));
