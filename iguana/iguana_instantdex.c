@@ -566,7 +566,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
     else if ( (signerbits= acct777_validate(&msg->sig,acct777_msgprivkey(serdata,datalen),msg->sig.pubkey)) != 0 )
     {
         flag++;
-        printf("InstantDEX_hexmsg <<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(msg->sig),(long)serdata-(long)msg,datalen,msg->sig.timestamp,msg->sig.allocsize,(char *)msg->serialized,serdata[datalen-1]);
+        //printf("InstantDEX_hexmsg <<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(msg->sig),(long)serdata-(long)msg,datalen,msg->sig.timestamp,msg->sig.allocsize,(char *)msg->serialized,serdata[datalen-1]);
         newlen = (int32_t)(msg->sig.allocsize - sizeof(*msg));
         serdata = msg->serialized;
         if ( (argjson= cJSON_Parse((char *)serdata)) != 0 )
@@ -578,9 +578,8 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
         if ( newlen > 0 )
         {
             orderhash = instantdex_rwoffer(0,&olen,&msg->serialized[slen],&rawoffer);
+            //printf("received orderhash.%llu\n",(long long)orderhash.txid);
             newlen -= olen;
-            serdata = &serdata[olen];
-            printf("received orderhash.%llu slen.%d olen.%d newlen.%d\n",(long long)orderhash.txid,slen,olen,newlen);
         }
         if ( newlen <= 0 )
             serdata = 0, newlen = 0;
