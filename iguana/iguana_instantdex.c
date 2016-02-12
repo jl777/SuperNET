@@ -553,11 +553,12 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
     uint8_t *serdata; struct supernet_info *myinfos[64]; struct instantdex_offer rawoffer;
     bits256 orderhash; uint64_t signerbits; uint8_t tmp[sizeof(msg->sig)]; char *retstr = 0;
     cJSON *retjson,*item,*argjson = 0;
-    acct777_rwsig(0,(void *)&msg->sig,(void *)tmp);
-    memcpy(&msg->sig,tmp,sizeof(msg->sig));
     datalen = len  - (int32_t)sizeof(msg->sig);
     serdata = (void *)((long)msg + sizeof(msg->sig));
-    printf("signed datalen.%d allocsize.%d crc.%x\n",datalen,msg->sig.allocsize,calc_crc32(0,serdata,datalen));
+    printf("a signed datalen.%d allocsize.%d crc.%x\n",datalen,msg->sig.allocsize,calc_crc32(0,serdata,datalen));
+    acct777_rwsig(0,(void *)&msg->sig,(void *)tmp);
+    memcpy(&msg->sig,tmp,sizeof(msg->sig));
+    printf("b signed datalen.%d allocsize.%d crc.%x\n",datalen,msg->sig.allocsize,calc_crc32(0,serdata,datalen));
     if ( remoteaddr != 0 && remoteaddr[0] == 0 && strcmp("127.0.0.1",remoteaddr) == 0 && ((uint8_t *)msg)[len-1] == 0 && (argjson= cJSON_Parse((char *)msg)) != 0 )
     {
         printf("string instantdex_hexmsg RESULT.(%s)\n",jprint(argjson,0));
