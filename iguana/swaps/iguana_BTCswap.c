@@ -306,7 +306,7 @@ char *instantdex_choosei(struct bitcoin_swapinfo *swap,cJSON *newjson,cJSON *arg
     }
     else
     {
-        printf("invalid datalen.%d\n",datalen);
+        printf("invalid datalen.%d vs %ld\n",datalen,sizeof(swap->deck));
         return(clonestr("{\"error\":\"instantdex_BTCswap offer no cut\"}"));
     }
 }

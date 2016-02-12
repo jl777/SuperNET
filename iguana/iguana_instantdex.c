@@ -134,13 +134,16 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     jaddbits256(argjson,"categoryhash",instantdexhash);
     jaddbits256(argjson,"traderpub",myinfo->myaddr.persistent);
     orderhash = instantdex_rwoffer(1,&olen,serialized,offer);
-    if ( 0 )
+    if ( 1 )
     {
         struct instantdex_offer checkoffer; bits256 checkhash; int32_t checklen;
         checkhash = instantdex_rwoffer(0,&checklen,serialized,&checkoffer);
-        for (i=0; i<sizeof(checkoffer); i++)
-            printf("%02x ",((uint8_t *)&checkoffer)[i]);
-        printf("checklen.%d checktxid.%llu\n",checklen,(long long)checkhash.txid);
+        if ( checkhash.txid != orderhash.txid )
+        {
+            for (i=0; i<sizeof(checkoffer); i++)
+                printf("%02x ",((uint8_t *)&checkoffer)[i]);
+            printf("checklen.%d checktxid.%llu\n",checklen,(long long)checkhash.txid);
+        }
     }
     jadd64bits(argjson,"id",orderhash.txid);
     nxt64bits = acct777_nxt64bits(myinfo->myaddr.persistent);
@@ -153,13 +156,13 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
             break;
     memcpy(msg->serialized,reqstr,slen);
     memcpy(&msg->serialized[slen],serialized,olen);
-    printf("extralen.%d datalen.%d\n",extralen,datalen);
+    printf("extralen.%d datalen.%d slen.%d olen.%d\n",extralen,datalen,slen,olen);
     if ( extralen > 0 )
         memcpy(&msg->serialized[slen + olen],extraser,extralen);
     free(reqstr);
     if ( instantdex_msgcreate(myinfo,msg,datalen) != 0 )
     {
-        printf("instantdex send.(%s)\n",cmdstr);
+        printf("instantdex send.(%s) datalen.%d allocsize.%d\n",cmdstr,datalen,msg->sig.allocsize);
         hexstr = malloc(msg->sig.allocsize*2 + 1);
         init_hexbytes_noT(hexstr,(uint8_t *)msg,msg->sig.allocsize);
         retstr = SuperNET_categorymulticast(myinfo,0,instantdexhash,desthash,hexstr,0,hops,1,argjson,0);
@@ -554,7 +557,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
     memcpy(&msg->sig,tmp,sizeof(msg->sig));
     datalen = len  - (int32_t)sizeof(msg->sig);
     serdata = (void *)((long)msg + sizeof(msg->sig));
-    //printf("datalen.%d len.%d\n",datalen,len);
+    printf("datalen.%d len.%d\n",datalen,len);
     if ( remoteaddr != 0 && remoteaddr[0] == 0 && strcmp("127.0.0.1",remoteaddr) == 0 && ((uint8_t *)msg)[len-1] == 0 && (argjson= cJSON_Parse((char *)msg)) != 0 )
     {
         printf("string instantdex_hexmsg RESULT.(%s)\n",jprint(argjson,0));
@@ -577,10 +580,11 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
         }
         if ( newlen > 0 )
         {
-            orderhash = instantdex_rwoffer(0,&olen,&msg->serialized[slen],&rawoffer);
+            orderhash = instantdex_rwoffer(0,&olen,serdata,&rawoffer);
             //printf("received orderhash.%llu\n",(long long)orderhash.txid);
             newlen -= olen;
-        }
+            serdata = &serdata[olen];
+        } else olen = 0;
         if ( newlen <= 0 )
             serdata = 0, newlen = 0;
         if ( serdata != 0 || argjson != 0 )
