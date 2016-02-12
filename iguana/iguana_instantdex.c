@@ -59,14 +59,14 @@ struct instantdex_msghdr *instantdex_msgcreate(struct supernet_info *myinfo,stru
     otherpubkey = acct777_msgpubkey(data,datalen);
     timestamp = (uint32_t)time(NULL);
     acct777_sign(&msg->sig,myinfo->privkey,otherpubkey,timestamp,data,datalen);
-    //printf("signed datalen.%d allocsize.%d\n",datalen,msg->sig.allocsize);
+    printf("signed datalen.%d allocsize.%d\n",datalen,msg->sig.allocsize);
     if ( (signerbits= acct777_validate(&msg->sig,acct777_msgprivkey(data,datalen),msg->sig.pubkey)) != 0 )
     {
         //int32_t i;
-        //char str[65],str2[65];
+        char str[65],str2[65];
         //for (i=0; i<datalen; i++)
         //    printf("%02x",data[i]);
-        //printf(">>>>>>>>>>>>>>>> validated [%ld] len.%d (%s + %s)\n",(long)data-(long)msg,datalen,bits256_str(str,acct777_msgprivkey(data,datalen)),bits256_str(str2,msg->sig.pubkey));
+        printf(">>>>>>>>>>>>>>>> validated [%ld] len.%d (%s + %s)\n",(long)data-(long)msg,datalen,bits256_str(str,acct777_msgprivkey(data,datalen)),bits256_str(str2,msg->sig.pubkey));
         memset(buf,0,sizeof(buf));
         acct777_rwsig(1,buf,&msg->sig);
         memcpy(&msg->sig,buf,sizeof(buf));
