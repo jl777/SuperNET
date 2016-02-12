@@ -162,7 +162,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     free(reqstr);
     if ( instantdex_msgcreate(myinfo,msg,datalen) != 0 )
     {
-        printf("instantdex send.(%s) datalen.%d allocsize.%d\n",cmdstr,datalen,msg->sig.allocsize);
+        printf("instantdex send.(%s) datalen.%d allocsize.%d crc.%x\n",cmdstr,datalen,msg->sig.allocsize,calc_crc32(0,(void *)((long)msg + 8),datalen-8));
         hexstr = malloc(msg->sig.allocsize*2 + 1);
         init_hexbytes_noT(hexstr,(uint8_t *)msg,msg->sig.allocsize);
         retstr = SuperNET_categorymulticast(myinfo,0,instantdexhash,desthash,hexstr,0,hops,1,argjson,0);
@@ -571,7 +571,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
     {
         flag++;
         //printf("InstantDEX_hexmsg <<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(msg->sig),(long)serdata-(long)msg,datalen,msg->sig.timestamp,msg->sig.allocsize,(char *)msg->serialized,serdata[datalen-1]);
-        newlen = (int32_t)(msg->sig.allocsize - sizeof(*msg));
+        newlen = (int32_t)(msg->sig.allocsize - ((long)msg->serialized - (long)msg));
         serdata = msg->serialized;
         if ( (argjson= cJSON_Parse((char *)serdata)) != 0 )
         {

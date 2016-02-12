@@ -483,6 +483,7 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
     char *retstr=0; uint64_t satoshis[2]; int32_t reftime,offerdir = 0; double minperc;
     struct instantdex_accept *ap; struct bitcoin_swapinfo *swap = 0; bits256 orderhash,traderpub;
     struct iguana_info *coinbtc,*altcoin; cJSON *newjson=0; uint8_t pubkey[33];
+    printf("serdatalen.%d\n",datalen);
     if ( exchange == 0 )
         return(clonestr("{\"error\":\"instantdex_BTCswap null exchange ptr\"}"));
     offerdir = instantdex_bidaskdir(A);
