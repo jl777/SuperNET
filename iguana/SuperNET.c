@@ -566,8 +566,7 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,uint64_t destipbits,bits256 
     {
         char str[65]; printf("duplicate hex.(%s) for %s\n",hexmsg,bits256_str(str,categoryhash));
         return(clonestr("{\"error\":\"duplicate packet rejected\"}"));
-    }
-    else SuperNET_hexmsgadd(myinfo,categoryhash,subhash,hexmsg,tai_now(),0);
+    } else SuperNET_hexmsgadd(myinfo,categoryhash,subhash,hexmsg,tai_now(),0);
     jsonstr = jprint(json,1);
     if ( broadcastflag != 0 || destipbits == 0 )
     {
@@ -643,7 +642,7 @@ int32_t SuperNET_destination(struct supernet_info *myinfo,uint32_t *destipbitsp,
 char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
 {
     char hexbuf[8192]; bits256 category,subhash;
-    int32_t hexlen,destflag,maxdelay,flag=0; uint32_t destipbits,timestamp; cJSON *retjson;
+    int32_t hexlen,destflag,maxdelay,flag=0,newflag=0; uint32_t destipbits,timestamp; cJSON *retjson;
     char *forwardstr=0,*retstr=0,*agent=0,*method=0,*message,*hexmsg=0,*jsonstr=0; uint64_t tag;
     //printf("SuperNET_JSON.(%s)\n",jprint(json,0));
     if ( remoteaddr != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 )
@@ -684,9 +683,10 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
     {
         if ( hexmsg != 0 )
         {
-            //printf("check.(%s)\n",hexmsg);
             if ( SuperNET_hexmsgfind(myinfo,category,subhash,hexmsg,0) < 0 )
             {
+                //printf("add.(%s)\n",hexmsg);
+                newflag = 1;
                 SuperNET_hexmsgadd(myinfo,category,subhash,hexmsg,tai_now(),remoteaddr);
                 forwardstr = SuperNET_forward(myinfo,hexmsg,destipbits,category,subhash,maxdelay,juint(json,"broadcast"),juint(json,"plaintext")!=0);
             }

@@ -1458,10 +1458,9 @@ static char *BASERELS[][2] = { {"btcd","btc"}, {"nxt","btc"}, {"asset","btc"} };
 double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert)
 {
     cJSON *retjson,*bids,*asks; double hbla;
-    struct supernet_info *myinfo = SuperNET_accountfind(argjson);
     bids = cJSON_CreateArray();
     asks = cJSON_CreateArray();
-    instantdex_offerfind(myinfo,exchange,bids,asks,0,base,rel);
+    instantdex_offerfind(SuperNET_MYINFO(0),exchange,bids,asks,0,base,rel);
     retjson = cJSON_CreateObject();
     cJSON_AddItemToObject(retjson,"bids",bids);
     cJSON_AddItemToObject(retjson,"asks",asks);

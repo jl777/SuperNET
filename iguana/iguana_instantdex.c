@@ -59,6 +59,7 @@ struct instantdex_msghdr *instantdex_msgcreate(struct supernet_info *myinfo,stru
     otherpubkey = acct777_msgpubkey(data,datalen);
     timestamp = (uint32_t)time(NULL);
     acct777_sign(&msg->sig,myinfo->privkey,otherpubkey,timestamp,data,datalen);
+    printf("signed datalen.%d allocsize.%d\n",datalen,msg->sig.allocsize);
     if ( (signerbits= acct777_validate(&msg->sig,acct777_msgprivkey(data,datalen),msg->sig.pubkey)) != 0 )
     {
         //int32_t i;
@@ -539,13 +540,15 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
 
 char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char *remoteaddr)
 {
-    struct instantdex_msghdr *msg = ptr; cJSON *argjson; int32_t i,olen,slen,num,datalen,newlen,flag = 0;
-    uint8_t *serdata; struct supernet_info *myinfos[64]; struct instantdex_offer rawoffer; bits256 orderhash;
-    uint64_t signerbits; uint8_t tmp[sizeof(msg->sig)]; char *retstr = 0; cJSON *retjson,*item;
+    struct instantdex_msghdr *msg = ptr; int32_t i,olen,slen,num,datalen,newlen,flag = 0;
+    uint8_t *serdata; struct supernet_info *myinfos[64]; struct instantdex_offer rawoffer;
+    bits256 orderhash; uint64_t signerbits; uint8_t tmp[sizeof(msg->sig)]; char *retstr = 0;
+    cJSON *retjson,*item,*argjson = 0;
     acct777_rwsig(0,(void *)&msg->sig,(void *)tmp);
     memcpy(&msg->sig,tmp,sizeof(msg->sig));
     datalen = len  - (int32_t)sizeof(msg->sig);
     serdata = (void *)((long)msg + sizeof(msg->sig));
+    //printf("datalen.%d len.%d\n",datalen,len);
     if ( remoteaddr != 0 && remoteaddr[0] == 0 && strcmp("127.0.0.1",remoteaddr) == 0 && ((uint8_t *)msg)[len-1] == 0 && (argjson= cJSON_Parse((char *)msg)) != 0 )
     {
         printf("string instantdex_hexmsg RESULT.(%s)\n",jprint(argjson,0));
@@ -557,7 +560,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
     else if ( (signerbits= acct777_validate(&msg->sig,acct777_msgprivkey(serdata,datalen),msg->sig.pubkey)) != 0 )
     {
         flag++;
-        //printf("InstantDEX_hexmsg <<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(msg->sig),(long)data-(long)msg,datalen,msg->sig.timestamp,msg->sig.allocsize,(char *)msg->serialized,data[datalen-1]);
+        printf("InstantDEX_hexmsg <<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(msg->sig),(long)serdata-(long)msg,datalen,msg->sig.timestamp,msg->sig.allocsize,(char *)msg->serialized,serdata[datalen-1]);
         newlen = (int32_t)(msg->sig.allocsize - sizeof(*msg));
         serdata = msg->serialized;
         if ( (argjson= cJSON_Parse((char *)serdata)) != 0 )
@@ -599,7 +602,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
             }
             retstr = jprint(retjson,1);
         }
-    }
+    } else printf("sig err datalen.%d\n",datalen);
     if ( argjson != 0 )
         free_json(argjson);
     return(retstr);
@@ -629,17 +632,21 @@ char *instantdex_queueaccept(struct supernet_info *myinfo,struct exchange_info *
 
 void instantdex_update(struct supernet_info *myinfo)
 {
-    struct instantdex_msghdr *pm; struct category_msg *m; bits256 instantdexhash; char *str,remote[64];
+    struct instantdex_msghdr *pm; struct category_msg *m; int32_t iter; bits256 instantdexhash; char *str,remote[64];
     instantdexhash = calc_categoryhashes(0,"InstantDEX",0);
-    while ( (m= category_gethexmsg(myinfo,instantdexhash,GENESIS_PUBKEY)) != 0 )
+    for (iter=0; iter<2; iter++)
     {
-        pm = (struct instantdex_msghdr *)m->msg;
-        if ( m->remoteipbits != 0 )
-            expand_ipbits(remote,m->remoteipbits);
-        else remote[0] = 0;
-        if ( (str= InstantDEX_hexmsg(myinfo,pm,m->len,remote)) != 0 )
-            free(str);
-        free(m);
+        while ( (m= category_gethexmsg(myinfo,instantdexhash,iter == 0 ? GENESIS_PUBKEY : myinfo->myaddr.persistent)) != 0 )
+        {
+            printf("gothexmsg len.%d\n",m->len);
+            pm = (struct instantdex_msghdr *)m->msg;
+            if ( m->remoteipbits != 0 )
+                expand_ipbits(remote,m->remoteipbits);
+            else remote[0] = 0;
+            if ( (str= InstantDEX_hexmsg(myinfo,pm,m->len,remote)) != 0 )
+                free(str);
+            free(m);
+        }
     }
 }
 
