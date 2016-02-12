@@ -336,7 +336,7 @@ cJSON *instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *
     cJSON *newjson; char serstr[sizeof(bits256)*2+1],*hexstr=0; int32_t i,wrongfirstbyte,errs;
     bits256 hashpriv,pubi,otherpriv,*privs=0; uint8_t serialized[sizeof(bits256)],otherpubkey[33];
     newjson = cJSON_CreateObject();//instantdex_acceptsendjson(A);
-    printf("acceptsend.(%s)\n",jprint(newjson,0));
+    //printf("acceptsend.(%s)\n",jprint(newjson,0));
     if ( swap->otherschoosei < 0 && jobj(argjson,"mychoosei") != 0 )
     {
         printf("otherschoosei.%d\n",swap->otherschoosei);
@@ -345,7 +345,7 @@ cJSON *instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *
     }
     if ( juint(argjson,"verified") != 0 )
         swap->otherverifiedcut = 1;
-    printf("otherverified.%d\n",swap->otherverifiedcut);
+    //printf("otherverified.%d\n",swap->otherverifiedcut);
     if ( jobj(argjson,"myprivs") != 0 && swap->cutverified == 0 )
     {
         printf("got privs\n");
@@ -393,13 +393,12 @@ cJSON *instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *
         }
     }
     jaddnum(newjson,"verified",swap->otherverifiedcut);
-    printf("otherverified.%d\n",swap->otherverifiedcut);
+    //printf("otherverified.%d\n",swap->otherverifiedcut);
     if ( instantdex_pubkeyargs(swap,newjson,2+flag777*777,myinfo->persistent_priv,hash,0x02 + swap->isbob) != 2+flag777*777 )
     {
         printf("error generating pubkeyargs\n");
         return(0);
     }
-    printf("call getpubs\n");
     instantdex_getpubs(swap,argjson,newjson);
     if ( sendprivs != 0 )
     {
@@ -483,7 +482,6 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
     char *retstr=0; uint64_t satoshis[2]; int32_t reftime,offerdir = 0; double minperc;
     struct instantdex_accept *ap; struct bitcoin_swapinfo *swap = 0; bits256 orderhash,traderpub;
     struct iguana_info *coinbtc,*altcoin; cJSON *newjson=0; uint8_t pubkey[33];
-    printf("serdatalen.%d\n",datalen);
     if ( exchange == 0 )
         return(clonestr("{\"error\":\"instantdex_BTCswap null exchange ptr\"}"));
     offerdir = instantdex_bidaskdir(A);
@@ -507,9 +505,7 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
         minperc = INSTANTDEX_MINPERC;
     if ( swap == 0 && strcmp(cmdstr,"offer") != 0 )
         return(clonestr("{\"error\":\"instantdex_BTCswap no swap info after offer\"}"));
-    printf("got offer.(%s/%s) %.8f vol %.8f %llu offerside.%d offerdir.%d swap.%p decksize.%ld\n",A->offer.base,A->offer.rel,dstr(A->offer.price64),dstr(A->offer.basevolume64),(long long)A->orderid,A->offer.myside,A->offer.acceptdir,A->info,sizeof(swap->deck));
-    if ( swap != 0 )
-        printf("found existing trade to match isbob.%d state.%d\n",swap->isbob,swap->state);
+    printf("T.%d [%d] got offer.(%s/%s) %.8f vol %.8f %llu offerside.%d offerdir.%d swap.%p decksize.%ld\n",bits256_cmp(traderpub,myinfo->myaddr.persistent),swap!=0?swap->state:-1,A->offer.base,A->offer.rel,dstr(A->offer.price64),dstr(A->offer.basevolume64),(long long)A->orderid,A->offer.myside,A->offer.acceptdir,A->info,sizeof(swap->deck));
     if ( strcmp(cmdstr,"offer") == 0 ) // sender is Bob, receiver is network (Alice)
     {
         if ( A->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) )
@@ -550,126 +546,129 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
             retstr = clonestr("{\"result\":\"added new order to orderbook\"}");
         }
     }
-    else if ( strcmp(cmdstr,"step1") == 0 && swap->state == 1 ) // either
+    else
     {
-        printf("got step1, should have other's choosei\n");
-        if ( (newjson= instantdex_newjson(myinfo,swap,argjson,orderhash,A,0,1)) == 0 )
-            return(clonestr("{\"error\":\"instantdex_BTCswap step1 null newjson\"}"));
-        else if ( swap->otherschoosei < 0 )
-            return(clonestr("{\"error\":\"instantdex_BTCswap step1, no didnt choosei\"}"));
-        else
+        if ( strcmp(cmdstr,"step1") == 0 && swap->state == 1 ) // either
         {
-            swap->state++;
-            if ( (retstr= instantdex_choosei(swap,argjson,newjson,serdata,datalen)) != 0 )
-                return(retstr);
-            if ( swap->isbob == 0 )
+            printf("got step1, should have other's choosei\n");
+            if ( (newjson= instantdex_newjson(myinfo,swap,argjson,orderhash,A,0,1)) == 0 )
+                return(clonestr("{\"error\":\"instantdex_BTCswap step1 null newjson\"}"));
+            else if ( swap->otherschoosei < 0 )
+                return(clonestr("{\"error\":\"instantdex_BTCswap step1, no didnt choosei\"}"));
+            else
             {
-                int64_t insurance = (satoshis[1] * INSTANTDEX_INSURANCERATE + coinbtc->chain->txfee); // txfee prevents dust attack
-                if ( (swap->feetx= instantdex_bobtx(myinfo,coinbtc,&swap->ftxid,swap->otherpubs[0],swap->mypubs[0],swap->privkeys[swap->otherschoosei],reftime,insurance,1)) != 0 )
+                swap->state++;
+                if ( (retstr= instantdex_choosei(swap,argjson,newjson,serdata,datalen)) != 0 )
+                    return(retstr);
+                if ( swap->isbob == 0 )
                 {
-                    jaddstr(newjson,"feetx",swap->feetx);
-                    jaddbits256(newjson,"ftxid",swap->ftxid);
-                    // broadcast to network
+                    int64_t insurance = (satoshis[1] * INSTANTDEX_INSURANCERATE + coinbtc->chain->txfee); // txfee prevents dust attack
+                    if ( (swap->feetx= instantdex_bobtx(myinfo,coinbtc,&swap->ftxid,swap->otherpubs[0],swap->mypubs[0],swap->privkeys[swap->otherschoosei],reftime,insurance,1)) != 0 )
+                    {
+                        jaddstr(newjson,"feetx",swap->feetx);
+                        jaddbits256(newjson,"ftxid",swap->ftxid);
+                        // broadcast to network
+                    }
                 }
+                return(instantdex_sendcmd(myinfo,&A->offer,newjson,swap->isbob != 0 ? "BTCstep1" : "BTCstep2",swap->othertrader,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck)));
             }
-            return(instantdex_sendcmd(myinfo,&A->offer,newjson,swap->isbob != 0 ? "BTCstep1" : "BTCstep2",swap->othertrader,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck)));
         }
-    }
-    else if ( strcmp(cmdstr,"step2") == 0 && swap->isbob != 0 && swap->state == 2 ) // Bob
-    {
-        printf("got step2, should have other's privkeys\n");
-        if ( (newjson= instantdex_newjson(myinfo,swap,argjson,orderhash,A,0,0)) == 0 )
-            return(clonestr("{\"error\":\"instantdex_BTCswap step2 null newjson\"}"));
-        else if ( swap->cutverified == 0 || swap->otherverifiedcut == 0 )
-            return(clonestr("{\"error\":\"instantdex_BTCswap step2, both sides didnt validate\"}"));
-        else //if ( instantdex_feeverify() == 0 )
+        else if ( strcmp(cmdstr,"step2") == 0 && swap->isbob != 0 && swap->state == 2 ) // Bob
         {
-            swap->state++;
-            //char *instantdex_bobtx(myinfo,coin,&paytxid,pubA0,pubB0,privAm,reftime,relsatoshis,0);
-            if ( (swap->deposit= instantdex_bobtx(myinfo,coinbtc,&swap->dtxid,swap->otherpubs[0],swap->mypubs[0],swap->privkeys[swap->otherschoosei],reftime,satoshis[swap->isbob],1)) != 0 )
+            printf("got step2, should have other's privkeys\n");
+            if ( (newjson= instantdex_newjson(myinfo,swap,argjson,orderhash,A,0,0)) == 0 )
+                return(clonestr("{\"error\":\"instantdex_BTCswap step2 null newjson\"}"));
+            else if ( swap->cutverified == 0 || swap->otherverifiedcut == 0 )
+                return(clonestr("{\"error\":\"instantdex_BTCswap step2, both sides didnt validate\"}"));
+            else //if ( instantdex_feeverify() == 0 )
             {
-                jaddstr(newjson,"deposit",swap->deposit);
-                jaddbits256(newjson,"dtxid",swap->dtxid);
-                jaddbits256(newjson,"pubBn",bitcoin_pubkey33(pubkey,swap->privkeys[swap->otherschoosei]));
-                // broadcast to network
-                return(instantdex_sendcmd(myinfo,&A->offer,newjson,"BTCstep3",swap->othertrader,INSTANTDEX_HOPS,0,0));
-            } else return(clonestr("{\"error\":\"instantdex_BTCswap Bob step2, cant create deposit\"}"));
-        } //else return(clonestr("{\"error\":\"instantdex_BTCswap step2 invalid fee\"}"));
-    }
-    else if ( strcmp(cmdstr,"step3") == 0 && swap->isbob == 0 && swap->state == 2 ) // Alice
-    {
-        printf("Alice got step3 should have Bob's choosei\n");
-        if ( (newjson= instantdex_newjson(myinfo,swap,argjson,orderhash,A,0,0)) == 0 )
-            return(clonestr("{\"error\":\"instantdex_BTCswap Alice step3 null newjson\"}"));
-        else if ( swap->cutverified == 0 || swap->otherverifiedcut == 0 || bits256_nonz(swap->pubBn) == 0 )
-            return(clonestr("{\"error\":\"instantdex_BTCswap step3, both sides didnt validate\"}"));
-        else if ( instantdex_paymentverify(myinfo,coinbtc,swap,A,argjson,1) == 0 )
+                swap->state++;
+                //char *instantdex_bobtx(myinfo,coin,&paytxid,pubA0,pubB0,privAm,reftime,relsatoshis,0);
+                if ( (swap->deposit= instantdex_bobtx(myinfo,coinbtc,&swap->dtxid,swap->otherpubs[0],swap->mypubs[0],swap->privkeys[swap->otherschoosei],reftime,satoshis[swap->isbob],1)) != 0 )
+                {
+                    jaddstr(newjson,"deposit",swap->deposit);
+                    jaddbits256(newjson,"dtxid",swap->dtxid);
+                    jaddbits256(newjson,"pubBn",bitcoin_pubkey33(pubkey,swap->privkeys[swap->otherschoosei]));
+                    // broadcast to network
+                    return(instantdex_sendcmd(myinfo,&A->offer,newjson,"BTCstep3",swap->othertrader,INSTANTDEX_HOPS,0,0));
+                } else return(clonestr("{\"error\":\"instantdex_BTCswap Bob step2, cant create deposit\"}"));
+            } //else return(clonestr("{\"error\":\"instantdex_BTCswap step2 invalid fee\"}"));
+        }
+        else if ( strcmp(cmdstr,"step3") == 0 && swap->isbob == 0 && swap->state == 2 ) // Alice
         {
-            swap->state++;
-            //char *instantdex_alicetx(myinfo,altcoin,&alicetxid,pubAm,pubBn,satoshis);
-            swap->pubAm = bitcoin_pubkey33(pubkey,swap->privkeys[swap->otherschoosei]);
-            if ( (swap->altpayment= instantdex_alicetx(myinfo,altcoin,swap->altmsigaddr,&swap->aptxid,swap->pubAm,swap->pubBn,satoshis[swap->isbob])) != 0 )
+            printf("Alice got step3 should have Bob's choosei\n");
+            if ( (newjson= instantdex_newjson(myinfo,swap,argjson,orderhash,A,0,0)) == 0 )
+                return(clonestr("{\"error\":\"instantdex_BTCswap Alice step3 null newjson\"}"));
+            else if ( swap->cutverified == 0 || swap->otherverifiedcut == 0 || bits256_nonz(swap->pubBn) == 0 )
+                return(clonestr("{\"error\":\"instantdex_BTCswap step3, both sides didnt validate\"}"));
+            else if ( instantdex_paymentverify(myinfo,coinbtc,swap,A,argjson,1) == 0 )
             {
-                jaddstr(newjson,"altpayment",swap->altpayment);
-                jaddstr(newjson,"altmsigaddr",swap->altmsigaddr);
-                jaddbits256(newjson,"aptxid",swap->aptxid);
-                jaddbits256(newjson,"pubAm",swap->pubAm);
-                // broadcast to network
-                return(instantdex_sendcmd(myinfo,&A->offer,newjson,"BTCstep4",swap->othertrader,INSTANTDEX_HOPS,0,0));
-            } else return(clonestr("{\"error\":\"instantdex_BTCswap Alice step3, error making altpay\"}"));
-        } else return(clonestr("{\"error\":\"instantdex_BTCswap Alice step3, invalid deposit\"}"));
-    }
-    else if ( strcmp(cmdstr,"step4") == 0 && swap->isbob != 0 && swap->state == 3 ) // Bob
-    {
-        printf("Bob got step4 should have Alice's altpayment\n");
-        if ( (newjson= instantdex_newjson(myinfo,swap,argjson,orderhash,A,0,0)) == 0 )
-            return(clonestr("{\"error\":\"instantdex_BTCswap Bob step4 null newjson\"}"));
-        else if ( bits256_nonz(swap->pubAm) == 0 )
-            return(clonestr("{\"error\":\"instantdex_BTCswap step4, no pubAm\"}"));
-        else if ( instantdex_altpaymentverify(myinfo,altcoin,swap,A,argjson) == 0 )
+                swap->state++;
+                //char *instantdex_alicetx(myinfo,altcoin,&alicetxid,pubAm,pubBn,satoshis);
+                swap->pubAm = bitcoin_pubkey33(pubkey,swap->privkeys[swap->otherschoosei]);
+                if ( (swap->altpayment= instantdex_alicetx(myinfo,altcoin,swap->altmsigaddr,&swap->aptxid,swap->pubAm,swap->pubBn,satoshis[swap->isbob])) != 0 )
+                {
+                    jaddstr(newjson,"altpayment",swap->altpayment);
+                    jaddstr(newjson,"altmsigaddr",swap->altmsigaddr);
+                    jaddbits256(newjson,"aptxid",swap->aptxid);
+                    jaddbits256(newjson,"pubAm",swap->pubAm);
+                    // broadcast to network
+                    return(instantdex_sendcmd(myinfo,&A->offer,newjson,"BTCstep4",swap->othertrader,INSTANTDEX_HOPS,0,0));
+                } else return(clonestr("{\"error\":\"instantdex_BTCswap Alice step3, error making altpay\"}"));
+            } else return(clonestr("{\"error\":\"instantdex_BTCswap Alice step3, invalid deposit\"}"));
+        }
+        else if ( strcmp(cmdstr,"step4") == 0 && swap->isbob != 0 && swap->state == 3 ) // Bob
         {
-            swap->state++;
-            if ( (swap->deposit= instantdex_bobtx(myinfo,coinbtc,&swap->ptxid,swap->mypubs[1],swap->otherpubs[0],swap->privkeys[swap->otherschoosei],reftime,satoshis[swap->isbob],0)) != 0 )
+            printf("Bob got step4 should have Alice's altpayment\n");
+            if ( (newjson= instantdex_newjson(myinfo,swap,argjson,orderhash,A,0,0)) == 0 )
+                return(clonestr("{\"error\":\"instantdex_BTCswap Bob step4 null newjson\"}"));
+            else if ( bits256_nonz(swap->pubAm) == 0 )
+                return(clonestr("{\"error\":\"instantdex_BTCswap step4, no pubAm\"}"));
+            else if ( instantdex_altpaymentverify(myinfo,altcoin,swap,A,argjson) == 0 )
             {
-                jaddstr(newjson,"payment",swap->payment);
-                jaddbits256(newjson,"ptxid",swap->ptxid);
-                // broadcast to network
-                return(instantdex_sendcmd(myinfo,&A->offer,newjson,"BTCstep5",swap->othertrader,INSTANTDEX_HOPS,0,0));
-            } else return(clonestr("{\"error\":\"instantdex_BTCswap Bob step4, cant create payment\"}"));
-        } else return(clonestr("{\"error\":\"instantdex_BTCswap Alice step3, invalid deposit\"}"));
-    }
-    else if ( strcmp(cmdstr,"step5") == 0 && swap->isbob == 0 && swap->state == 4 ) // Alice
-    {
-        printf("Alice got step5 should have Bob's payment\n");
-        if ( (newjson= instantdex_newjson(myinfo,swap,argjson,orderhash,A,0,0)) == 0 )
-            return(clonestr("{\"error\":\"instantdex_BTCswap Alice step5 null newjson\"}"));
-        else if ( instantdex_paymentverify(myinfo,coinbtc,swap,A,argjson,0) == 0 )
+                swap->state++;
+                if ( (swap->deposit= instantdex_bobtx(myinfo,coinbtc,&swap->ptxid,swap->mypubs[1],swap->otherpubs[0],swap->privkeys[swap->otherschoosei],reftime,satoshis[swap->isbob],0)) != 0 )
+                {
+                    jaddstr(newjson,"payment",swap->payment);
+                    jaddbits256(newjson,"ptxid",swap->ptxid);
+                    // broadcast to network
+                    return(instantdex_sendcmd(myinfo,&A->offer,newjson,"BTCstep5",swap->othertrader,INSTANTDEX_HOPS,0,0));
+                } else return(clonestr("{\"error\":\"instantdex_BTCswap Bob step4, cant create payment\"}"));
+            } else return(clonestr("{\"error\":\"instantdex_BTCswap Alice step3, invalid deposit\"}"));
+        }
+        else if ( strcmp(cmdstr,"step5") == 0 && swap->isbob == 0 && swap->state == 4 ) // Alice
         {
-            swap->state++;
-            /*if ( (swap->spendtx= instantdex_spendpayment(myinfo,coinbtc,&swap->stxid,swap,argjson,newjson)) != 0 )
+            printf("Alice got step5 should have Bob's payment\n");
+            if ( (newjson= instantdex_newjson(myinfo,swap,argjson,orderhash,A,0,0)) == 0 )
+                return(clonestr("{\"error\":\"instantdex_BTCswap Alice step5 null newjson\"}"));
+            else if ( instantdex_paymentverify(myinfo,coinbtc,swap,A,argjson,0) == 0 )
             {
-                // broadcast to network
-                return(instantdex_sendcmd(myinfo,&A->A,newjson,"BTCstep6",swap->othertrader,INSTANTDEX_HOPS));
-            } else return(clonestr("{\"error\":\"instantdex_BTCswap Alice step5, cant spend payment\"}"));*/
-        } else return(clonestr("{\"error\":\"instantdex_BTCswap Bob step6, invalid payment\"}"));
-    }
-    else if ( strcmp(cmdstr,"step6") == 0 ) // Bob
-    {
-        printf("Bob got step6 should have Alice's privkey\n");
-        if ( (newjson= instantdex_newjson(myinfo,swap,argjson,orderhash,A,0,0)) == 0 )
-            return(clonestr("{\"error\":\"instantdex_BTCswap Bob step6 null newjson\"}"));
-        /*else if ( instantdex_spendverify(myinfo,coinbtc,swap,A,argjson,0) == 0 )
+                swap->state++;
+                /*if ( (swap->spendtx= instantdex_spendpayment(myinfo,coinbtc,&swap->stxid,swap,argjson,newjson)) != 0 )
+                 {
+                 // broadcast to network
+                 return(instantdex_sendcmd(myinfo,&A->A,newjson,"BTCstep6",swap->othertrader,INSTANTDEX_HOPS));
+                 } else return(clonestr("{\"error\":\"instantdex_BTCswap Alice step5, cant spend payment\"}"));*/
+            } else return(clonestr("{\"error\":\"instantdex_BTCswap Bob step6, invalid payment\"}"));
+        }
+        else if ( strcmp(cmdstr,"step6") == 0 ) // Bob
         {
-            if ( (swap->altspend= instantdex_spendaltpayment(myinfo,altcoin,&swap->astxid,swap,argjson,newjson)) != 0 )
-            {
-                jaddstr(newjson,"altspend",swap->altspend);
-                jaddbits256(newjson,"astxid",swap->astxid);
-                // broadcast to network
-                return(clonestr("{\"result\":\"Bob finished atomic swap\"}"));
-            } else return(clonestr("{\"error\":\"instantdex_BTCswap Bob step6, cant spend altpayment\"}"));
-        } else return(clonestr("{\"error\":\"instantdex_BTCswap Bob step6, invalid spend\"}"));*/
+            printf("Bob got step6 should have Alice's privkey\n");
+            if ( (newjson= instantdex_newjson(myinfo,swap,argjson,orderhash,A,0,0)) == 0 )
+                return(clonestr("{\"error\":\"instantdex_BTCswap Bob step6 null newjson\"}"));
+            /*else if ( instantdex_spendverify(myinfo,coinbtc,swap,A,argjson,0) == 0 )
+             {
+             if ( (swap->altspend= instantdex_spendaltpayment(myinfo,altcoin,&swap->astxid,swap,argjson,newjson)) != 0 )
+             {
+             jaddstr(newjson,"altspend",swap->altspend);
+             jaddbits256(newjson,"astxid",swap->astxid);
+             // broadcast to network
+             return(clonestr("{\"result\":\"Bob finished atomic swap\"}"));
+             } else return(clonestr("{\"error\":\"instantdex_BTCswap Bob step6, cant spend altpayment\"}"));
+             } else return(clonestr("{\"error\":\"instantdex_BTCswap Bob step6, invalid spend\"}"));*/
+        }
+        else retstr = clonestr("{\"error\":\"BTC swap got unrecognized command\"}");
     }
-    else retstr = clonestr("{\"error\":\"BTC swap got unrecognized command\"}");
     if ( retstr == 0 )
         retstr = clonestr("{\"error\":\"BTC swap null retstr\"}");
     if ( swap != 0 )
@@ -901,7 +900,7 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
         return(clonestr("{\"error\":\"txid mismatches orderid\"}"));
     satoshis[0] = A->offer.basevolume64;
     satoshis[1] = instantdex_relsatoshis(A->offer.price64,A->offer.basevolume64);
-    printf("got offer.(%s) offerside.%d offerdir.%d\n",jprint(argjson,0),A->offer.myside,A->offer.acceptdir);
+    //printf("got offer.(%s) offerside.%d offerdir.%d\n",jprint(argjson,0),A->offer.myside,A->offer.acceptdir);
     if ( strcmp(cmdstr,"offer") == 0 ) // sender is Bob, receiver is network (Alice)
     {
         if ( A->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) )

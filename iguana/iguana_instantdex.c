@@ -59,14 +59,14 @@ struct instantdex_msghdr *instantdex_msgcreate(struct supernet_info *myinfo,stru
     otherpubkey = acct777_msgpubkey(data,datalen);
     timestamp = (uint32_t)time(NULL);
     acct777_sign(&msg->sig,myinfo->privkey,otherpubkey,timestamp,data,datalen);
-    printf("signed datalen.%d allocsize.%d crc.%x\n",datalen,msg->sig.allocsize,calc_crc32(0,data,datalen));
+    //printf("signed datalen.%d allocsize.%d crc.%x\n",datalen,msg->sig.allocsize,calc_crc32(0,data,datalen));
     if ( (signerbits= acct777_validate(&msg->sig,acct777_msgprivkey(data,datalen),msg->sig.pubkey)) != 0 )
     {
         //int32_t i;
-        char str[65],str2[65];
+        //char str[65],str2[65];
         //for (i=0; i<datalen; i++)
         //    printf("%02x",data[i]);
-        printf(">>>>>>>>>>>>>>>> validated [%ld] len.%d (%s + %s)\n",(long)data-(long)msg,datalen,bits256_str(str,acct777_msgprivkey(data,datalen)),bits256_str(str2,msg->sig.pubkey));
+        //printf(">>>>>>>>>>>>>>>> validated [%ld] len.%d (%s + %s)\n",(long)data-(long)msg,datalen,bits256_str(str,acct777_msgprivkey(data,datalen)),bits256_str(str2,msg->sig.pubkey));
         memset(buf,0,sizeof(buf));
         acct777_rwsig(1,buf,&msg->sig);
         memcpy(&msg->sig,buf,sizeof(buf));
@@ -156,13 +156,13 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
             break;
     memcpy(msg->serialized,reqstr,slen);
     memcpy(&msg->serialized[slen],serialized,olen);
-    printf("extralen.%d datalen.%d slen.%d olen.%d\n",extralen,datalen,slen,olen);
+    //printf("extralen.%d datalen.%d slen.%d olen.%d\n",extralen,datalen,slen,olen);
     if ( extralen > 0 )
         memcpy(&msg->serialized[slen + olen],extraser,extralen);
     free(reqstr);
     if ( instantdex_msgcreate(myinfo,msg,datalen) != 0 )
     {
-        printf("instantdex send.(%s) datalen.%d allocsize.%d crc.%x\n",cmdstr,datalen,msg->sig.allocsize,calc_crc32(0,(void *)((long)msg + 8),datalen-8));
+        printf(">>>>>>>>>>>> instantdex send.(%s) datalen.%d allocsize.%d crc.%x\n",cmdstr,datalen,msg->sig.allocsize,calc_crc32(0,(void *)((long)msg + 8),datalen-8));
         hexstr = malloc(msg->sig.allocsize*2 + 1);
         init_hexbytes_noT(hexstr,(uint8_t *)msg,msg->sig.allocsize);
         retstr = SuperNET_categorymulticast(myinfo,0,instantdexhash,desthash,hexstr,0,hops,1,argjson,0);
@@ -365,10 +365,10 @@ struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,str
     {
         if ( now < ap->offer.expiration && ap->dead == 0 && (offerbits == 0 || offerbits != ap->offer.offer64) )
         {
-            printf("check offerbits.%llu vs %llu: %d %d %d %d %d %d %d %d\n",(long long)offerbits,(long long)ap->offer.offer64,A->offer.basevolume64 > 0.,strcmp(A->offer.base,"*") == 0 ,strcmp(A->offer.base,ap->offer.base) == 0, strcmp(A->offer.rel,"*") == 0 ,strcmp(A->offer.rel,ap->offer.rel) == 0,A->offer.basevolume64 <= (ap->offer.basevolume64 - ap->pendingvolume64),offerdir,instantdex_bidaskdir(ap));
+            //printf("check offerbits.%llu vs %llu: %d %d %d %d %d %d %d %d\n",(long long)offerbits,(long long)ap->offer.offer64,A->offer.basevolume64 > 0.,strcmp(A->offer.base,"*") == 0 ,strcmp(A->offer.base,ap->offer.base) == 0, strcmp(A->offer.rel,"*") == 0 ,strcmp(A->offer.rel,ap->offer.rel) == 0,A->offer.basevolume64 <= (ap->offer.basevolume64 - ap->pendingvolume64),offerdir,instantdex_bidaskdir(ap));
             if ( A->offer.basevolume64 > 0. && (strcmp(A->offer.base,"*") == 0 || strcmp(A->offer.base,ap->offer.base) == 0) && (strcmp(A->offer.rel,"*") == 0 || strcmp(A->offer.rel,ap->offer.rel) == 0) && minvol <= (ap->offer.basevolume64 - ap->pendingvolume64) && offerdir*instantdex_bidaskdir(ap) < 0 )
             {
-                printf("aveprice %.8f %.8f offerdir.%d first cmp: %d %d %d\n",aveprice,dstr(ap->offer.price64),offerdir,A->offer.price64 == 0,(offerdir > 0 && ap->offer.price64 >= A->offer.price64),(offerdir < 0 && ap->offer.price64 <= A->offer.price64));
+                //printf("aveprice %.8f %.8f offerdir.%d first cmp: %d %d %d\n",aveprice,dstr(ap->offer.price64),offerdir,A->offer.price64 == 0,(offerdir > 0 && ap->offer.price64 >= A->offer.price64),(offerdir < 0 && ap->offer.price64 <= A->offer.price64));
                 if ( offerdir == 0 || A->offer.price64 == 0 || ((offerdir < 0 && ap->offer.price64 >= A->offer.price64) || (offerdir > 0 && ap->offer.price64 <= A->offer.price64)) )
                 {
                     printf("passed second cmp: offerdir.%d best %.8f ap %.8f\n",offerdir,dstr(bestprice64),dstr(ap->offer.price64));
@@ -417,10 +417,10 @@ bits256 instantdex_acceptset(struct instantdex_accept *ap,char *base,char *rel,i
     ap->offer.basevolume64 = volume * SATOSHIDEN;
     vcalc_sha256(0,hash.bytes,(void *)&ap->offer,sizeof(ap->offer));
     ap->orderid = hash.txid;
-    int32_t i;
-    for (i=0; i<sizeof(ap->offer); i++)
-        printf("%02x ",((uint8_t *)&ap->offer)[i]);
-    printf("\n(%s/%s) %.8f %.8f acceptdir.%d myside.%d\n",base,rel,price,volume,acceptdir,myside);
+    //int32_t i;
+    //for (i=0; i<sizeof(ap->offer); i++)
+    //    printf("%02x ",((uint8_t *)&ap->offer)[i]);
+    //printf("\n(%s/%s) %.8f %.8f acceptdir.%d myside.%d\n",base,rel,price,volume,acceptdir,myside);
     return(hash);
 }
 
@@ -511,6 +511,13 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
             printf("orderhash %llu mismatch id.%llu\n",(long long)orderhash.txid,(long long)j64bits(argjson,"id"));
             return(clonestr("{\"error\":\"orderhash mismatch\"}"));
         }
+        //char str[65],str2[65];
+        if ( bits256_cmp(traderpub,myinfo->myaddr.persistent) == 0 )
+        {
+            printf("got my own packet\n");
+            return(clonestr("{\"result\":\"got my own packet\"}"));
+        }
+        //else printf("got mismatched traderpub.%s vs %s\n",bits256_str(str,traderpub),bits256_str(str2,myinfo->myaddr.persistent));
         A.orderid = orderhash.txid;
         if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,A.orderid,"*","*")) != 0 )
         {
@@ -521,12 +528,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
             printf("cant find existing order.%llu that matches\n",(long long)A.orderid);
             return(clonestr("{\"error\":\"cant find matching order\"}"));
         }
-        else if ( bits256_cmp(traderpub,myinfo->myaddr.persistent) == 0 )
-        {
-            printf("got my own request.(%s)\n",jprint(argjson,0));
-            return(clonestr("{\"result\":\"got my own request\"}"));
-        }
-        printf("call (%s/%s) swap baserel.%d acceptdir.%d\n",A.offer.base,A.offer.rel,A.offer.myside,A.offer.acceptdir);
+        //printf("call (%s/%s) swap baserel.%d acceptdir.%d\n",A.offer.base,A.offer.rel,A.offer.myside,A.offer.acceptdir);
         if ( strncmp(cmdstr,"BTC",3) == 0 )
             retstr = instantdex_BTCswap(myinfo,exchange,&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,serdata,datalen);
         else if ( strncmp(cmdstr,"NXT",3) == 0 )
@@ -541,7 +543,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
             ap->info = A.info;
             ap->pendingvolume64 = A.pendingvolume64;
         }
-        printf("after swap ap.%p (%s)\n",ap,retstr);
+        //printf("after swap ap.%p (%s)\n",ap,retstr);
         return(retstr);
     }
     return(clonestr("{\"error\":\"request needs argjson\"}"));
@@ -555,10 +557,10 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
     cJSON *retjson,*item,*argjson = 0;
     datalen = len  - (int32_t)sizeof(msg->sig);
     serdata = (void *)((long)msg + sizeof(msg->sig));
-    printf("a signed datalen.%d allocsize.%d crc.%x\n",datalen,msg->sig.allocsize,calc_crc32(0,serdata,datalen));
+    //printf("a signed datalen.%d allocsize.%d crc.%x\n",datalen,msg->sig.allocsize,calc_crc32(0,serdata,datalen));
     acct777_rwsig(0,(void *)&msg->sig,(void *)tmp);
     memcpy(&msg->sig,tmp,sizeof(msg->sig));
-    printf("b signed datalen.%d allocsize.%d crc.%x\n",datalen,msg->sig.allocsize,calc_crc32(0,serdata,datalen));
+   // printf("b signed datalen.%d allocsize.%d crc.%x\n",datalen,msg->sig.allocsize,calc_crc32(0,serdata,datalen));
     if ( remoteaddr != 0 && remoteaddr[0] == 0 && strcmp("127.0.0.1",remoteaddr) == 0 && ((uint8_t *)msg)[len-1] == 0 && (argjson= cJSON_Parse((char *)msg)) != 0 )
     {
         printf("string instantdex_hexmsg RESULT.(%s)\n",jprint(argjson,0));
@@ -570,10 +572,10 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
     else if ( (signerbits= acct777_validate(&msg->sig,acct777_msgprivkey(serdata,datalen),msg->sig.pubkey)) != 0 || 1 )
     {
         flag++;
-        printf("InstantDEX_hexmsg <<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(msg->sig),(long)serdata-(long)msg,datalen,msg->sig.timestamp,msg->sig.allocsize,(char *)msg->serialized,serdata[datalen-1]);
+        //printf("InstantDEX_hexmsg <<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(msg->sig),(long)serdata-(long)msg,datalen,msg->sig.timestamp,msg->sig.allocsize,(char *)msg->serialized,serdata[datalen-1]);
         newlen = (int32_t)(msg->sig.allocsize - ((long)msg->serialized - (long)msg));
         serdata = msg->serialized;
-        printf("newlen.%d diff.%ld alloc.%d datalen.%d\n",newlen,((long)msg->serialized - (long)msg),msg->sig.allocsize,datalen);
+        //printf("newlen.%d diff.%ld alloc.%d datalen.%d\n",newlen,((long)msg->serialized - (long)msg),msg->sig.allocsize,datalen);
         if ( (argjson= cJSON_Parse((char *)serdata)) != 0 )
         {
             slen = (int32_t)strlen((char *)serdata) + 1;
@@ -586,7 +588,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
             newlen -= olen;
             newlen -= ((long)msg->serialized - (long)msg);
             serdata = &serdata[olen];
-            printf("received orderhash.%llu olen.%d slen.%d newlen.%d\n",(long long)orderhash.txid,olen,slen,newlen);
+            //printf("received orderhash.%llu olen.%d slen.%d newlen.%d\n",(long long)orderhash.txid,olen,slen,newlen);
         } else olen = 0;
         if ( newlen <= 0 )
             serdata = 0, newlen = 0;
@@ -640,7 +642,7 @@ char *instantdex_queueaccept(struct supernet_info *myinfo,struct instantdex_acce
         instantdex_acceptset(ap,base,rel,duration,myside,acceptdir,price,basevolume,offerer,0);
         queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
         retstr = jprint(instantdex_acceptjson(ap),1);
-        printf("acceptableQ %llu (%s)\n",(long long)ap->orderid,retstr);
+        //printf("acceptableQ %llu (%s)\n",(long long)ap->orderid,retstr);
         return(retstr);
     } else return(clonestr("{\"error\":\"invalid exchange\"}"));
 }
