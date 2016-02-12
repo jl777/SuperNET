@@ -91,7 +91,12 @@ struct exchange_request
 };
 
 struct instantdex_offer { char base[24],rel[24]; uint64_t price64,basevolume64,offer64; uint32_t expiration,nonce; char myside,acceptdir; };
-struct instantdex_accept { struct queueitem DL; void *info; uint64_t pendingvolume64,orderid; uint32_t dead; struct instantdex_offer offer; };
+struct instantdex_accept
+{
+    struct queueitem DL; void *info;
+    uint64_t pendingvolume64,orderid,matchid; uint32_t dead;
+    struct instantdex_offer offer;
+};
 
 struct instantdex_accept *instantdex_offerfind(struct supernet_info *myinfo,struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel);
 cJSON *instantdex_acceptjson(struct instantdex_accept *ap);

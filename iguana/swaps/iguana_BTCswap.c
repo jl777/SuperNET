@@ -261,21 +261,14 @@ bits256 instantdex_derivekeypair(bits256 *newprivp,uint8_t pubkey[33],bits256 pr
     return(bitcoin_pubkey33(pubkey,*newprivp));
 }
 
-int32_t instantdex_pubkeyargs(bits256 *sharedprivs,cJSON *newjson,int32_t numpubs,bits256 privkey,bits256 hash,int32_t firstbyte)
+int32_t instantdex_pubkeyargs(struct bitcoin_swapinfo *swap,cJSON *newjson,int32_t numpubs,bits256 privkey,bits256 hash,int32_t firstbyte)
 {
-    char buf[3],*hexstr=0; int32_t i,n,len=0; bits256 pubi; uint64_t txid; uint8_t secret160[20],pubkey[33],*hex=0;
-    if ( numpubs > 2 )
-    {
-        if ( (hexstr= malloc(777 * sizeof(uint64_t) * 2 * 2 + 1)) == 0 )
-            return(-1);
-        if ( (hex= malloc(777 * sizeof(uint64_t) * 2)) == 0 )
-            return(-1);
-    }
+    char buf[3]; int32_t i,n,m,len=0; bits256 pubi; uint64_t txid; uint8_t secret160[20],pubkey[33];
     sprintf(buf,"%c0",'A' - 0x02 + firstbyte);
-    for (i=n=0; i<numpubs*100 && n<numpubs; i++)
+    for (i=n=m=0; i<numpubs*100 && n<numpubs; i++)
     {
-        pubi = instantdex_derivekeypair(&sharedprivs[n],pubkey,privkey,hash);
-        privkey = sharedprivs[n];
+        pubi = instantdex_derivekeypair(&swap->privkeys[n],pubkey,privkey,hash);
+        privkey = swap->privkeys[n];
         //printf("i.%d n.%d numpubs.%d %02x vs %02x\n",i,n,numpubs,pubkey[0],firstbyte);
         if ( pubkey[0] != firstbyte )
             continue;
@@ -286,46 +279,36 @@ int32_t instantdex_pubkeyargs(bits256 *sharedprivs,cJSON *newjson,int32_t numpub
         }
         else
         {
-            calc_rmd160_sha256(secret160,sharedprivs[n].bytes,sizeof(sharedprivs[n]));
+            calc_rmd160_sha256(secret160,swap->privkeys[n].bytes,sizeof(swap->privkeys[n]));
             memcpy(&txid,secret160,sizeof(txid));
-            len += iguana_rwnum(1,&hex[len],sizeof(txid),&txid);
-            len += iguana_rwnum(1,&hex[len],sizeof(pubi.txid),&pubi.txid);
+            len += iguana_rwnum(1,(uint8_t *)&swap->deck[m][0],sizeof(txid),&txid);
+            len += iguana_rwnum(1,(uint8_t *)&swap->deck[m][1],sizeof(pubi.txid),&pubi.txid);
+            m++;
         }
         n++;
     }
-    if ( n > 2 && newjson != 0 && len > 0 )
-    {
-        init_hexbytes_noT(hexstr,hex,len);
-        jaddstr(newjson,"cut",hexstr);
-    }
-    if ( hex != 0 )
-        free(hex);
-    if ( hexstr != 0 )
-        free(hexstr);
     return(n);
 }
 
-char *instantdex_choosei(struct bitcoin_swapinfo *swap,cJSON *newjson,cJSON *argjson)
+char *instantdex_choosei(struct bitcoin_swapinfo *swap,cJSON *newjson,cJSON *argjson,uint8_t *serdata,int32_t datalen)
 {
-    char *cutstr; int32_t i,j,max,len = 0; uint64_t x;
-    if ( swap->choosei < 0 && (cutstr= jstr(argjson,"cut")) != 0 )
+    int32_t i,j,max,len = 0; uint64_t x;
+    if ( swap->choosei < 0 && serdata != 0 && datalen == sizeof(swap->deck) )
     {
         max = (int32_t)(sizeof(swap->otherscut) / sizeof(*swap->otherscut));
-        if ( strlen(cutstr) == sizeof(swap->otherscut)*2 )
-        {
-            decode_hex((uint8_t *)swap->otherscut,sizeof(swap->otherscut),cutstr);
-            for (i=0; i<max; i++)
-                for (j=0; j<2; j++)
-                {
-                    len += iguana_rwnum(1,(uint8_t *)&swap->otherscut[i][j],sizeof(x),&x);
-                    swap->otherscut[i][j] = x;
-                }
-        } else return(clonestr("{\"error\":\"instantdex_BTCswap offer wrong cutsize\"}"));
+        for (i=0; i<max; i++)
+            for (j=0; j<2; j++)
+                len += iguana_rwnum(1,(uint8_t *)&swap->otherscut[i][j],sizeof(x),&serdata[len]);
         OS_randombytes((uint8_t *)&swap->choosei,sizeof(swap->choosei));
         swap->choosei %= max;
         jaddnum(newjson,"mychoosei",swap->choosei);
         return(0);
-    } else return(clonestr("{\"error\":\"instantdex_BTCswap offer no cut\"}"));
+    }
+    else
+    {
+        printf("invalid datalen.%d\n",datalen);
+        return(clonestr("{\"error\":\"instantdex_BTCswap offer no cut\"}"));
+    }
 }
 
 void instantdex_getpubs(struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson)
@@ -411,7 +394,7 @@ cJSON *instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *
     }
     jaddnum(newjson,"verified",swap->otherverifiedcut);
     printf("otherverified.%d\n",swap->otherverifiedcut);
-    if ( instantdex_pubkeyargs(swap->privkeys,newjson,2+flag777*777,myinfo->persistent_priv,hash,0x02 + swap->isbob) != 2+flag777*777 )
+    if ( instantdex_pubkeyargs(swap,newjson,2+flag777*777,myinfo->persistent_priv,hash,0x02 + swap->isbob) != 2+flag777*777 )
     {
         printf("error generating pubkeyargs\n");
         return(0);
@@ -466,7 +449,7 @@ char *instantdex_btcoffer(struct supernet_info *myinfo,struct exchange_info *exc
         printf("instantdex_btcoffer checkA error\n");
     }
     swap = calloc(1,sizeof(struct bitcoin_swapinfo)), swap->isbob = dir > 0, swap->choosei = swap->otherschoosei = -1;
-    if ( instantdex_pubkeyargs(swap->privkeys,newjson,777+2,myinfo->persistent_priv,hash,0x02+isbob) != 4 )
+    if ( instantdex_pubkeyargs(swap,newjson,777+2,myinfo->persistent_priv,hash,0x02+isbob) != 4 )
         return(clonestr("{\"error\":\"highly unlikely run of 02 pubkeys\"}"));
     if ( price > SMALLVAL )
     {
@@ -489,7 +472,7 @@ char *instantdex_btcoffer(struct supernet_info *myinfo,struct exchange_info *exc
     } else return(instantdex_sendcmd(myinfo,&ap->offer,newjson,"BTCoffer",GENESIS_PUBKEY,INSTANTDEX_HOPS,0,0));
 }
 
-char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,char *cmdstr,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *data,int32_t datalen) // receiving side
+char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,char *cmdstr,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *serdata,int32_t datalen) // receiving side
 {
     char *retstr=0; uint64_t satoshis[2]; int32_t reftime,offerdir = 0; double minperc;
     struct instantdex_accept *ap; struct bitcoin_swapinfo *swap = 0; bits256 orderhash,traderpub;
@@ -517,8 +500,10 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
         minperc = INSTANTDEX_MINPERC;
     if ( swap == 0 && strcmp(cmdstr,"offer") != 0 )
         return(clonestr("{\"error\":\"instantdex_BTCswap no swap info after offer\"}"));
-    printf("got offer.(%s) offerside.%d offerdir.%d swap.%p\n",jprint(argjson,0),A->offer.myside,A->offer.acceptdir,A->info);
-    if ( strcmp(cmdstr,"offer") == 0 && A->info == 0 ) // sender is Bob, receiver is network (Alice)
+    printf("got offer.(%s/%s) %.8f vol %.8f %llu offerside.%d offerdir.%d swap.%p\n",A->offer.base,A->offer.rel,dstr(A->offer.price64),dstr(A->offer.basevolume64),(long long)A->orderid,A->offer.myside,A->offer.acceptdir,A->info);
+    if ( swap != 0 )
+        printf("found existing trade to match isbob.%d state.%d\n",swap->isbob,swap->state);
+    if ( strcmp(cmdstr,"offer") == 0 ) // sender is Bob, receiver is network (Alice)
     {
         if ( A->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) )
             return(clonestr("{\"error\":\"instantdex_BTCswap offer too close to expiration\"}"));
@@ -540,7 +525,7 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
                 {
                     //printf("NEWJSON.(%s)\n",jprint(newjson,0));
                     instantdex_pendingnotice(myinfo,exchange,ap,A);
-                    if ( (retstr= instantdex_choosei(swap,argjson,newjson)) != 0 )
+                    if ( (retstr= instantdex_choosei(swap,argjson,newjson,serdata,datalen)) != 0 )
                     {
                         printf("Choosei.%s\n",retstr);
                         return(retstr);
@@ -551,7 +536,7 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
         }
         else
         {
-            printf("no matching trade.(%s) -> InstantDEX_minaccept\n",jprint(argjson,0));
+            printf("no matching trade for %llu -> InstantDEX_minaccept\n",(long long)A->orderid);
             ap = calloc(1,sizeof(*ap));
             *ap = *A;
             queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
@@ -569,7 +554,7 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
         else
         {
             swap->state++;
-            if ( (retstr= instantdex_choosei(swap,argjson,newjson)) != 0 )
+            if ( (retstr= instantdex_choosei(swap,argjson,newjson,serdata,datalen)) != 0 )
                 return(retstr);
             if ( swap->isbob == 0 )
             {
