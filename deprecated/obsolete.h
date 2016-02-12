@@ -13337,5 +13337,52 @@ len = 0;
             printf("othersatoshis mismatch %llu vs %llu\n",(long long)satoshis,(long long)A->A.basevolume64);
             return(clonestr("{\"error\":\"instantdex_BTCswap satoshis mismatch\"}"));
         }
+                
+            /*TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,BTCoffer,othercoin,otherassetid,maxprice,othervolume)
+             {
+             if ( remoteaddr == 0 )
+             return(instantdex_btcoffer(myinfo,exchanges777_find("bitcoin"),othercoin[0] != 0 ? othercoin : otherassetid,othervolume,maxprice));
+             else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
+             }
+             
+             STRING_AND_TWO_DOUBLES(InstantDEX,ALToffer,basecoin,minprice,basevolume)
+             {
+             int32_t hops = INSTANTDEX_HOPS; cJSON *argjson; char *str; struct instantdex_accept A;
+             if ( remoteaddr == 0 )
+             {
+             if ( iguana_coinfind(basecoin) == 0 )
+             return(clonestr("{\"error\":\"InstantDEX basecoin is not active, need to addcoin\"}"));
+             instantdex_acceptset(&A,basecoin,"BTC",INSTANTDEX_OFFERDURATION,0,1,minprice,basevolume,myinfo->myaddr.nxt64bits);
+             argjson = instantdex_acceptsendjson(&A);
+             if ( minprice > 0. )
+             {
+             if ( (str= InstantDEX_minaccept(IGUANA_CALLARGS,basecoin,"BTC",minprice,basevolume)) != 0 )
+             free(str);
+             }
+             return(instantdex_sendcmd(myinfo,argjson,"ALToffer",myinfo->ipaddr,hops));
+             } else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
+             }
+             
+             STRING_AND_TWO_DOUBLES(InstantDEX,NXToffer,assetid,minprice,basevolume)
+             {
+             int32_t hops = INSTANTDEX_HOPS; cJSON *argjson; char *base,*str; struct instantdex_accept A;
+             if ( remoteaddr == 0 )
+             {
+             if ( assetid == 0 || assetid[0] == 0 || strcmp(assetid,"0") == 0 || strcmp(assetid,"NXT") == 0 || strcmp(assetid,"nxt") == 0 )
+             base = "NXT";
+             else if ( is_decimalstr(assetid) <= 0 )
+             return(clonestr("{\"error\":\"InstantDEX NXToffer illegal assetid\"}"));
+             else base = assetid;
+             instantdex_acceptset(&A,base,"BTC",INSTANTDEX_OFFERDURATION,0,1,minprice,basevolume,myinfo->myaddr.nxt64bits);
+             argjson = instantdex_acceptsendjson(&A);
+             if ( minprice > 0. )
+             {
+             if ( (str= InstantDEX_minaccept(IGUANA_CALLARGS,base,"BTC",minprice,basevolume)) != 0 )
+             free(str);
+             }
+             return(instantdex_sendcmd(myinfo,argjson,"NXToffer",myinfo->ipaddr,hops));
+             } else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
+             }
+             */
 
 #endif

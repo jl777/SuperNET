@@ -1497,7 +1497,7 @@ int32_t is_valid_BTCother(char *other)
 uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *base,char *rel,int32_t dir,double price,double volume,cJSON *argjson)
 {
     char *str,coinaddr[64]; uint64_t txid = 0; cJSON *tmp,*json=0; struct instantdex_accept *ap;
-    struct supernet_info *myinfo; uint8_t pubkey[33]; struct iguana_info *other; int32_t hops = 3;
+    struct supernet_info *myinfo; uint8_t pubkey[33]; struct iguana_info *other;
     myinfo = SuperNET_accountfind(argjson);
     printf("TRADE with myinfo.%p\n",myinfo);
     if ( retstrp != 0 )
@@ -1538,23 +1538,22 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
             jaddnum(json,"volume",volume);
             jaddstr(json,"BTC",myinfo->myaddr.BTC);
             //printf("trade dir.%d (%s/%s) %.6f vol %.8f\n",dir,base,"BTC",price,volume);
-            if ( (str= instantdex_queueaccept(myinfo,exchange,base,"BTC",price,volume,-dir,dir > 0 ? "BTC" : base,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits)) != 0 )
+            if ( (str= instantdex_queueaccept(myinfo,&ap,exchange,base,"BTC",price,volume,-dir,dir > 0 ? "BTC" : base,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits)) != 0 )
             {
-                jaddstr(json,"queue",str);
                 if ( (tmp= cJSON_Parse(str)) != 0 )
                 {
                     txid = j64bits(json,"orderid");
                     if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,txid,"*","*")) != 0 )
                     {
-                        if ( (str= instantdex_sendcmd(myinfo,&ap->offer,json,"BTCoffer",GENESIS_PUBKEY,hops,0,0)) != 0 )
+                        if ( (str= instantdex_btcoffer(myinfo,exchange,ap)) != 0 )
                         {
                             json = cJSON_CreateObject();
                             jaddstr(json,"BTCoffer",str);
-                        }
-                    }
+                        } else printf("null return from btcoffer\n");
+                    } else printf("couldnt find just added offer\n");
                     free_json(tmp);
-                }
-            }
+                } else printf("queueaccept return parse error.(%s)\n",str);
+            } else printf("null return queueaccept\n");
             if ( retstrp != 0 )
                 *retstrp = jprint(json,1);
             else free_json(json);

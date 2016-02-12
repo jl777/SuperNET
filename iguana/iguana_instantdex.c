@@ -153,7 +153,9 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
             break;
     memcpy(msg->serialized,reqstr,slen);
     memcpy(&msg->serialized[slen],serialized,olen);
-    memcpy(&msg->serialized[slen + olen],extraser,extralen);
+    printf("extralen.%d\n",extralen);
+    if ( extralen > 0 )
+        memcpy(&msg->serialized[slen + olen],extraser,extralen);
     free(reqstr);
     if ( instantdex_msgcreate(myinfo,msg,datalen) != 0 )
     {
@@ -393,13 +395,15 @@ struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,str
 // NXT node verifies bitcoin txbytes has proper payment and cashes in with onetimepubkey
 // BTC* node approves phased tx with onetimepubkey
 
-bits256 instantdex_acceptset(struct instantdex_accept *ap,char *base,char *rel,int32_t duration,int32_t myside,int32_t acceptdir,double price,double volume,uint64_t offerbits)
+bits256 instantdex_acceptset(struct instantdex_accept *ap,char *base,char *rel,int32_t duration,int32_t myside,int32_t acceptdir,double price,double volume,uint64_t offerbits,uint32_t nonce)
 {
     bits256 hash;
     memset(ap,0,sizeof(*ap));
     safecopy(ap->offer.base,base,sizeof(ap->offer.base));
     safecopy(ap->offer.rel,rel,sizeof(ap->offer.rel));
-    OS_randombytes((uint8_t *)&ap->offer.nonce,sizeof(ap->offer.nonce));
+    if ( nonce == 0 )
+        OS_randombytes((uint8_t *)&ap->offer.nonce,sizeof(ap->offer.nonce));
+    else ap->offer.nonce = nonce;
     if ( duration < 1000000000 )
         ap->offer.expiration = (uint32_t)time(NULL) + duration;
     else ap->offer.expiration = duration;
@@ -410,7 +414,10 @@ bits256 instantdex_acceptset(struct instantdex_accept *ap,char *base,char *rel,i
     ap->offer.basevolume64 = volume * SATOSHIDEN;
     vcalc_sha256(0,hash.bytes,(void *)&ap->offer,sizeof(ap->offer));
     ap->orderid = hash.txid;
-    //printf("(%s/%s) acceptdir.%d myside.%d\n",base,rel,acceptdir,myside);
+    int32_t i;
+    for (i=0; i<sizeof(ap->offer); i++)
+        printf("%02x ",((uint8_t *)&ap->offer)[i]);
+    printf("\n(%s/%s) %.8f %.8f acceptdir.%d myside.%d\n",base,rel,price,volume,acceptdir,myside);
     return(hash);
 }
 
@@ -435,7 +442,7 @@ int32_t instantdex_acceptextract(struct instantdex_accept *ap,cJSON *argjson)
         } else return(-1);
         //printf("price %f vol %f baserel.%d acceptdir.%d\n",price,volume,baserel,acceptdir);
         traderpub = jbits256(argjson,"traderpub");
-        hash = instantdex_acceptset(ap,base,rel,INSTANTDEX_LOCKTIME*2,baserel,acceptdir,price,volume,traderpub.txid);
+        hash = instantdex_acceptset(ap,base,rel,INSTANTDEX_LOCKTIME*2,baserel,acceptdir,price,volume,traderpub.txid,0);
     }
     else
     {
@@ -607,12 +614,13 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
     return(retstr);
 }
 
-char *instantdex_queueaccept(struct supernet_info *myinfo,struct exchange_info *exchange,char *base,char *rel,double price,double basevolume,int32_t acceptdir,char *mysidestr,int32_t duration,uint64_t txid)
+char *instantdex_queueaccept(struct supernet_info *myinfo,struct instantdex_accept **aptrp,struct exchange_info *exchange,char *base,char *rel,double price,double basevolume,int32_t acceptdir,char *mysidestr,int32_t duration,uint64_t offerer)
 {
-    struct instantdex_accept *ap; int32_t myside;
+    struct instantdex_accept *ap; int32_t myside; char *retstr;
+    *aptrp = 0;
     if ( exchange != 0 )
     {
-        ap = calloc(1,sizeof(*ap));
+        *aptrp = ap = calloc(1,sizeof(*ap));
         if ( strcmp(mysidestr,base) == 0 )
             myside = 0;
         else if ( strcmp(mysidestr,rel) == 0 )
@@ -622,11 +630,12 @@ char *instantdex_queueaccept(struct supernet_info *myinfo,struct exchange_info *
             myside = -1;
             printf("myside.(%s) != base.%s or rel.%s\n",mysidestr,base,rel);
         }
-        instantdex_acceptset(ap,base,rel,duration,myside,acceptdir,price,basevolume,txid);
+        instantdex_acceptset(ap,base,rel,duration,myside,acceptdir,price,basevolume,offerer,0);
         queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
-        return(jprint(instantdex_acceptjson(ap),1));
-    }
-    else return(clonestr("{\"error\":\"invalid exchange\"}"));
+        retstr = jprint(instantdex_acceptjson(ap),1);
+        printf("acceptableQ %llu (%s)\n",(long long)ap->orderid,retstr);
+        return(retstr);
+    } else return(clonestr("{\"error\":\"invalid exchange\"}"));
 }
 
 void instantdex_update(struct supernet_info *myinfo)
@@ -653,65 +662,20 @@ void instantdex_update(struct supernet_info *myinfo)
 
 TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,maxaccept,base,rel,maxprice,basevolume)
 {
+    struct instantdex_accept *ap;
     myinfo = SuperNET_accountfind(json);
     if ( remoteaddr == 0 )
-        return(instantdex_queueaccept(myinfo,exchanges777_find("bitcoin"),base,rel,maxprice,basevolume,-1,rel,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits));
+        return(instantdex_queueaccept(myinfo,&ap,exchanges777_find("bitcoin"),base,rel,maxprice,basevolume,-1,rel,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits));
     else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
 }
 
 TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,minaccept,base,rel,minprice,basevolume)
 {
+    struct instantdex_accept *ap;
     myinfo = SuperNET_accountfind(json);
     if ( remoteaddr == 0 )
-        return(instantdex_queueaccept(myinfo,exchanges777_find("bitcoin"),base,rel,minprice,basevolume,1,base,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits));
+        return(instantdex_queueaccept(myinfo,&ap,exchanges777_find("bitcoin"),base,rel,minprice,basevolume,1,base,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits));
     else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
 }
-
-/*TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,BTCoffer,othercoin,otherassetid,maxprice,othervolume)
-{
-    if ( remoteaddr == 0 )
-        return(instantdex_btcoffer(myinfo,exchanges777_find("bitcoin"),othercoin[0] != 0 ? othercoin : otherassetid,othervolume,maxprice));
-    else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
-}
-
-STRING_AND_TWO_DOUBLES(InstantDEX,ALToffer,basecoin,minprice,basevolume)
-{
-    int32_t hops = INSTANTDEX_HOPS; cJSON *argjson; char *str; struct instantdex_accept A;
-    if ( remoteaddr == 0 )
-    {
-        if ( iguana_coinfind(basecoin) == 0 )
-            return(clonestr("{\"error\":\"InstantDEX basecoin is not active, need to addcoin\"}"));
-        instantdex_acceptset(&A,basecoin,"BTC",INSTANTDEX_OFFERDURATION,0,1,minprice,basevolume,myinfo->myaddr.nxt64bits);
-        argjson = instantdex_acceptsendjson(&A);
-        if ( minprice > 0. )
-        {
-            if ( (str= InstantDEX_minaccept(IGUANA_CALLARGS,basecoin,"BTC",minprice,basevolume)) != 0 )
-                free(str);
-        }
-        return(instantdex_sendcmd(myinfo,argjson,"ALToffer",myinfo->ipaddr,hops));
-    } else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
-}
-
-STRING_AND_TWO_DOUBLES(InstantDEX,NXToffer,assetid,minprice,basevolume)
-{
-    int32_t hops = INSTANTDEX_HOPS; cJSON *argjson; char *base,*str; struct instantdex_accept A;
-    if ( remoteaddr == 0 )
-    {
-        if ( assetid == 0 || assetid[0] == 0 || strcmp(assetid,"0") == 0 || strcmp(assetid,"NXT") == 0 || strcmp(assetid,"nxt") == 0 )
-            base = "NXT";
-        else if ( is_decimalstr(assetid) <= 0 )
-            return(clonestr("{\"error\":\"InstantDEX NXToffer illegal assetid\"}"));
-        else base = assetid;
-        instantdex_acceptset(&A,base,"BTC",INSTANTDEX_OFFERDURATION,0,1,minprice,basevolume,myinfo->myaddr.nxt64bits);
-        argjson = instantdex_acceptsendjson(&A);
-        if ( minprice > 0. )
-        {
-            if ( (str= InstantDEX_minaccept(IGUANA_CALLARGS,base,"BTC",minprice,basevolume)) != 0 )
-                free(str);
-        }
-        return(instantdex_sendcmd(myinfo,argjson,"NXToffer",myinfo->ipaddr,hops));
-    } else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
-}
-*/
 #include "../includes/iguana_apiundefs.h"
 
