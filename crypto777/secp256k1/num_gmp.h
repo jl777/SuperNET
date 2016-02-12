@@ -7,7 +7,7 @@
 #ifndef _SECP256K1_NUM_REPR_
 #define _SECP256K1_NUM_REPR_
 
-#include "/usr/include/gmp.h"
+#include "<gmp.h>"
 
 #define NUM_LIMBS ((256+GMP_NUMB_BITS-1)/GMP_NUMB_BITS)
 
