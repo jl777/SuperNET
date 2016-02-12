@@ -506,7 +506,7 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
         minperc = INSTANTDEX_MINPERC;
     if ( swap == 0 && strcmp(cmdstr,"offer") != 0 )
         return(clonestr("{\"error\":\"instantdex_BTCswap no swap info after offer\"}"));
-    printf("got offer.(%s/%s) %.8f vol %.8f %llu offerside.%d offerdir.%d swap.%p\n",A->offer.base,A->offer.rel,dstr(A->offer.price64),dstr(A->offer.basevolume64),(long long)A->orderid,A->offer.myside,A->offer.acceptdir,A->info);
+    printf("got offer.(%s/%s) %.8f vol %.8f %llu offerside.%d offerdir.%d swap.%p decksize.%ld\n",A->offer.base,A->offer.rel,dstr(A->offer.price64),dstr(A->offer.basevolume64),(long long)A->orderid,A->offer.myside,A->offer.acceptdir,A->info,sizeof(swap->deck));
     if ( swap != 0 )
         printf("found existing trade to match isbob.%d state.%d\n",swap->isbob,swap->state);
     if ( strcmp(cmdstr,"offer") == 0 ) // sender is Bob, receiver is network (Alice)
