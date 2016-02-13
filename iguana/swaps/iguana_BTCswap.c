@@ -411,7 +411,7 @@ char *instantdex_statemachine(struct supernet_info *myinfo,struct exchange_info 
 {
     uint32_t reftime; cJSON *newjson; char *retstr = 0;
     reftime = (uint32_t)(A->offer.expiration - INSTANTDEX_LOCKTIME*2);
-    //printf("cmd.(%s) vs next.(%s)\n",cmdstr,swap->nextstate);
+    printf("%llu/%llu cmd.(%s) vs next.(%s)\n",(long long)swap->bidid,(long long)swap->askid,cmdstr,swap->nextstate);
     if ( strcmp(cmdstr,"step1") == 0 && strcmp(swap->nextstate,cmdstr) == 0 ) // either
     {
         printf("%s got step1, should have other's choosei\n",swap->isbob!=0?"BOB":"alice");
@@ -613,10 +613,18 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
     uint64_t satoshis[2]; int32_t offerdir = 0; double minperc; uint64_t insurance,relsatoshis;
     struct instantdex_accept *ap; struct bitcoin_swapinfo *swap = 0; bits256 orderhash,traderpub;
     struct iguana_info *coinbtc,*altcoin; cJSON *newjson=0; char *retstr=0;
+    relsatoshis = instantdex_relsatoshis(A->offer.price64,A->offer.basevolume64);
+    traderpub = jbits256(argjson,"traderpub");
+    if ( (minperc= jdouble(argjson,"p")) < INSTANTDEX_MINPERC )
+        minperc = INSTANTDEX_MINPERC;
+    coinbtc = iguana_coinfind("BTC");
+    insurance = (satoshis[1] * INSTANTDEX_INSURANCERATE + coinbtc->chain->txfee); // txfee prevents papercut attack
+    offerdir = instantdex_bidaskdir(A);
+    vcalc_sha256(0,orderhash.bytes,(void *)&A->offer,sizeof(ap->offer));
+    swap = A->info;
+    printf("T.%d [%s] got %s.(%s/%s) %.8f vol %.8f %llu offerside.%d offerdir.%d swap.%p decksize.%ld\n",bits256_cmp(traderpub,myinfo->myaddr.persistent),swap!=0?swap->nextstate:"",cmdstr,A->offer.base,A->offer.rel,dstr(A->offer.price64),dstr(A->offer.basevolume64),(long long)A->orderid,A->offer.myside,A->offer.acceptdir,A->info,sizeof(swap->deck));
     if ( exchange == 0 )
         return(clonestr("{\"error\":\"instantdex_BTCswap null exchange ptr\"}"));
-    offerdir = instantdex_bidaskdir(A);
-    coinbtc = iguana_coinfind("BTC");
     if ( (altcoin= iguana_coinfind(A->offer.base)) == 0 || coinbtc == 0 )
     {
         printf("other.%p coinbtc.%p (%s/%s)\n",altcoin,coinbtc,A->offer.base,A->offer.rel);
@@ -624,17 +632,10 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
     }
     if ( strcmp(A->offer.rel,"BTC") != 0 )
         return(clonestr("{\"error\":\"instantdex_BTCswap offer non BTC rel\"}"));
-    vcalc_sha256(0,orderhash.bytes,(void *)&A->offer,sizeof(ap->offer));
     if ( orderhash.txid != A->orderid )
         return(clonestr("{\"error\":\"txid mismatches orderid\"}"));
-    if ( (swap= A->info) == 0 && strcmp(cmdstr,"offer") != 0 )
-        return(clonestr("{\"error\":\"instantdex_BTCswap no swap info after offer\"}"));
-    relsatoshis = instantdex_relsatoshis(A->offer.price64,A->offer.basevolume64);
-    traderpub = jbits256(argjson,"traderpub");
-    if ( (minperc= jdouble(argjson,"p")) < INSTANTDEX_MINPERC )
-        minperc = INSTANTDEX_MINPERC;
-    insurance = (satoshis[1] * INSTANTDEX_INSURANCERATE + coinbtc->chain->txfee); // txfee prevents papercut attack
-    printf("T.%d [%s] got %s.(%s/%s) %.8f vol %.8f %llu offerside.%d offerdir.%d swap.%p decksize.%ld\n",bits256_cmp(traderpub,myinfo->myaddr.persistent),swap!=0?swap->nextstate:"",cmdstr,A->offer.base,A->offer.rel,dstr(A->offer.price64),dstr(A->offer.basevolume64),(long long)A->orderid,A->offer.myside,A->offer.acceptdir,A->info,sizeof(swap->deck));
+    //if ( (swap= A->info) == 0 && strcmp(cmdstr,"offer") != 0 )
+     //   return(clonestr("{\"error\":\"instantdex_BTCswap no swap info after offer\"}"));
     if ( strcmp(cmdstr,"offer") == 0 && A->info == 0 ) // receiver is networkwide
     {
         if ( A->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) )

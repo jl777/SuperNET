@@ -512,11 +512,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
             return(clonestr("{\"error\":\"orderhash mismatch\"}"));
         }
         //char str[65],str2[65];
-        if ( bits256_cmp(traderpub,myinfo->myaddr.persistent) == 0 )
-        {
-            printf("got my own packet\n");
-            return(clonestr("{\"result\":\"got my own packet\"}"));
-        }
+        /**/
         //else printf("got mismatched traderpub.%s vs %s\n",bits256_str(str,traderpub),bits256_str(str2,myinfo->myaddr.persistent));
         A.orderid = orderhash.txid;
         if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,A.orderid,"*","*")) != 0 )
