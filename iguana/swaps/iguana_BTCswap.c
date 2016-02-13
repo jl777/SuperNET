@@ -571,6 +571,7 @@ char *instantdex_btcoffer(struct supernet_info *myinfo,struct exchange_info *exc
     if ( instantdex_pubkeyargs(swap,newjson,777+2,myinfo->persistent_priv,orderhash,0x02+isbob) != 777+2 )
     {
         printf("error from pubkeyargs\n");
+        free(swap);
         return(clonestr("{\"error\":\"highly unlikely run of 02 pubkeys\"}"));
     }
     if ( A->offer.price64 != 0 )

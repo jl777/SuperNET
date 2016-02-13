@@ -150,7 +150,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     reqstr = jprint(argjson,0);
     slen = (int32_t)(strlen(reqstr) + 1);
     datalen = (int32_t)slen + extralen + olen;
-    msg = calloc(1,datalen);
+    msg = calloc(1,datalen + sizeof(*msg));
     for (i=0; i<sizeof(msg->cmd); i++)
         if ( (msg->cmd[i]= cmdstr[i]) == 0 )
             break;
