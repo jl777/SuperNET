@@ -411,7 +411,8 @@ char *instantdex_statemachine(struct supernet_info *myinfo,struct exchange_info 
 {
     uint32_t reftime; cJSON *newjson; char *retstr = 0;
     reftime = (uint32_t)(A->offer.expiration - INSTANTDEX_LOCKTIME*2);
-    if ( strcmp(cmdstr,"step1") == 0 && strcmp(swap->nextstate,"cmdstr") == 0 ) // either
+    printf("cmd.(%s) vs next.(%s)\n",cmdstr,swap->nextstate);
+    if ( strcmp(cmdstr,"step1") == 0 && strcmp(swap->nextstate,cmdstr) == 0 ) // either
     {
         printf("got step1, should have other's choosei\n");
         if ( (newjson= instantdex_newjson(myinfo,swap,argjson,swap->orderhash,A,0)) == 0 )
@@ -556,7 +557,7 @@ char *instantdex_statemachine(struct supernet_info *myinfo,struct exchange_info 
     if ( retstr == 0 )
         retstr = clonestr("{\"error\":\"BTC swap null retstr\"}");
     if ( swap != 0 )
-        printf("BTCSWAP.(%s) (%s) isbob.%d state.%d verified.(%d %d)\n",retstr,cmdstr,swap->isbob,swap->state,swap->cutverified,swap->otherverifiedcut);
+        printf("BTCSWAP next.(%s) (%s) isbob.%d state.%d verified.(%d %d)\n",swap->nextstate,cmdstr,swap->isbob,swap->state,swap->cutverified,swap->otherverifiedcut);
     else printf("BTCSWAP.(%s)\n",retstr);
     return(retstr);
 }
@@ -632,7 +633,7 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
     if ( (minperc= jdouble(argjson,"p")) < INSTANTDEX_MINPERC )
         minperc = INSTANTDEX_MINPERC;
     insurance = (satoshis[1] * INSTANTDEX_INSURANCERATE + coinbtc->chain->txfee); // txfee prevents papercut attack
-    printf("T.%d [%d] got offer.(%s/%s) %.8f vol %.8f %llu offerside.%d offerdir.%d swap.%p decksize.%ld %s\n",bits256_cmp(traderpub,myinfo->myaddr.persistent),swap!=0?swap->state:-1,A->offer.base,A->offer.rel,dstr(A->offer.price64),dstr(A->offer.basevolume64),(long long)A->orderid,A->offer.myside,A->offer.acceptdir,A->info,sizeof(swap->deck),jprint(argjson,0));
+    printf("T.%d [%s] got %s.(%s/%s) %.8f vol %.8f %llu offerside.%d offerdir.%d swap.%p decksize.%ld\n",bits256_cmp(traderpub,myinfo->myaddr.persistent),swap!=0?swap->nextstate:"",cmdstr,A->offer.base,A->offer.rel,dstr(A->offer.price64),dstr(A->offer.basevolume64),(long long)A->orderid,A->offer.myside,A->offer.acceptdir,A->info,sizeof(swap->deck));
     if ( strcmp(cmdstr,"offer") == 0 && A->info == 0 ) // receiver is networkwide
     {
         if ( A->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) )
