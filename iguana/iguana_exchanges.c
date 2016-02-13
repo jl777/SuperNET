@@ -659,7 +659,7 @@ void exchanges777_loop(void *ptr)
         {
             if ( strcmp(exchange->name,"bitcoin") == 0 )
             {
-                instantdex_update(SuperNET_MYINFO(0));
+                //instantdex_update(SuperNET_MYINFO(0));
                 //printf("InstantDEX call update\n");
             }
             if ( (req= queue_dequeue(&exchange->pricesQ,0)) != 0 )

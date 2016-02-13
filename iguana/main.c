@@ -1031,69 +1031,6 @@ void iguana_main(void *arg)
     int32_t usessl = 0, ismainnet = 1;
     struct supernet_info *myinfo; char *tmpstr,*helperargs,*coinargs,helperstr[512]; int32_t i;
     mycalloc(0,0,0);
-    if ( 0 )
-    {
-        int32_t M,N;
-        for (i=0; i<1000000; i++)
-        {
-            N = (rand() % 254) + 2;
-            M = (rand () % (N-1)) + 1;
-            test(M,N,512);
-        }
-        //int test_m_of_n(int m,int n,int size,int maxiters);
-        // test_m_of_n(2,3,8,1);
-        getchar();
-    int32_t i,j,m,size,datasize = 16;
-        uint8_t *allshares,*myshares[255],sharenrs[255],*recover,*testshares[9],testnrs[255],*data;
-        memset(sharenrs,0,255);
-        N = 8, M = 8;
-        size = N * datasize;
-        data = calloc(1,datasize);
-        allshares = malloc(N * datasize);
-        for (i=0; i<N; i++)
-            myshares[i] = calloc(1,datasize);
-        init_sharenrs(sharenrs,0,N,N);
-        for (i=0; i<N; i++)
-            testshares[i] = myshares[i];
-        for (i=0; i<datasize; i++)
-            data[i] = i, printf("%02x ",data[i]);
-        printf("data\n");
-        calcmofn(allshares,myshares,sharenrs,M,data,datasize,N);
-        if ( (recover= recoverdata(testshares,sharenrs,M,datasize,N)) != 0 )
-        {
-            if ( memcmp(data,recover,size) != 0 )
-            {
-                for (i=0; i<datasize; i++)
-                    printf("%02x ",recover[i]);
-                printf("(ERROR M.%d N.%d)\n",M,N);
-            }
-            else fprintf(stderr,"reconstructed with M.%d N.%d\n",M,N);
-            free(recover);
-        } else printf("nullptr from cards777_recover\n");
-        for (j=0; j<1; j++)
-        {break;
-            memset(testnrs,0,sizeof(testnrs));
-            memset(testshares,0,sizeof(testshares));
-            m = (rand() % N) + 1;
-            if ( m < M )
-                m = M;
-            if ( init_sharenrs(testnrs,sharenrs,m,N) < 0 )
-            {
-                printf("iter.%d error init_sharenrs(m.%d of n.%d)\n",j,m,N);
-            }
-            for (i=0; i<N; i++)
-                if ( testnrs[i] == sharenrs[i] )
-                    testshares[i] = myshares[i];
-            if ( (recover= recoverdata(testshares,sharenrs,M,datasize,N)) != 0 )
-            {
-                if ( memcmp(data,recover,size) != 0 )
-                    fprintf(stderr,"(ERROR m.%d M.%d N.%d)\n",m,M,N);
-                else fprintf(stderr,"reconstructed with m.%d M.%d N.%d\n",m,M,N);
-                free(recover);
-            } else printf("nullptr from cards777_recover\n");
-        }
-        getchar();
-    }
     myinfo = SuperNET_MYINFO(0);
     if ( usessl == 0 )
         strcpy(myinfo->NXTAPIURL,"http://127.0.0.1:");
