@@ -371,10 +371,10 @@ struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,str
                 //printf("aveprice %.8f %.8f offerdir.%d first cmp: %d %d %d\n",aveprice,dstr(ap->offer.price64),offerdir,A->offer.price64 == 0,(offerdir > 0 && ap->offer.price64 >= A->offer.price64),(offerdir < 0 && ap->offer.price64 <= A->offer.price64));
                 if ( offerdir == 0 || A->offer.price64 == 0 || ((offerdir < 0 && ap->offer.price64 >= A->offer.price64) || (offerdir > 0 && ap->offer.price64 <= A->offer.price64)) )
                 {
-                    printf("passed second cmp: offerdir.%d best %.8f ap %.8f\n",offerdir,dstr(bestprice64),dstr(ap->offer.price64));
+                    //printf("passed second cmp: offerdir.%d best %.8f ap %.8f\n",offerdir,dstr(bestprice64),dstr(ap->offer.price64));
                     if ( bestprice64 == 0 || (offerdir < 0 && ap->offer.price64 < bestprice64) || (offerdir > 0 && ap->offer.price64 > bestprice64) )
                     {
-                        printf("found better price %f vs %f\n",dstr(ap->offer.price64),dstr(bestprice64));
+                        //printf("found better price %f vs %f\n",dstr(ap->offer.price64),dstr(bestprice64));
                         bestprice64 = ap->offer.price64;
                         retap = ap;
                     }

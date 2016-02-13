@@ -35,7 +35,7 @@ struct bitcoin_swapinfo
 {
     bits256 privkeys[777],mypubs[2],otherpubs[2];
     bits256 orderhash,privAm,pubAm,privBn,pubBn,dtxid,ptxid,aptxid,astxid,stxid,ftxid,othertrader;
-    uint64_t otherscut[777][2],deck[777][2],satoshis[2],insurance;
+    uint64_t otherscut[777][2],deck[777][2],satoshis[2],insurance,bidid,askid;
     int32_t isbob,choosei,otherschoosei,state,cutverified,otherverifiedcut;
     double minperc;
     char altmsigaddr[64],nextstate[16],*deposit,*payment,*altpayment,*altspend,*spendtx,*feetx;
@@ -312,7 +312,7 @@ char *instantdex_choosei(struct bitcoin_swapinfo *swap,cJSON *newjson,cJSON *arg
             swap->choosei = -swap->choosei;
         swap->choosei %= max;
         jaddnum(newjson,"mychoosei",swap->choosei);
-        printf("%s send mychoosei.%d of max.%d\n",swap->isbob!=0?"BOB":"alice",swap->choosei,max);
+        printf("%llu/%llu %s send mychoosei.%d of max.%d\n",(long long)swap->bidid,(long long)swap->askid,swap->isbob!=0?"BOB":"alice",swap->choosei,max);
         return(0);
     }
     else
@@ -439,7 +439,7 @@ char *instantdex_statemachine(struct supernet_info *myinfo,struct exchange_info 
                 }
             }*/
             if ( swap->isbob != 0 )
-                strcpy(swap->nextstate,"step4");
+                strcpy(swap->nextstate,"step2");
             else strcpy(swap->nextstate,"step3");
             return(instantdex_sendcmd(myinfo,&A->offer,newjson,swap->isbob != 0 ? "BTCstep3" : "BTCstep2",swap->othertrader,INSTANTDEX_HOPS,swap->privkeys,sizeof(swap->privkeys)));
         }
@@ -647,8 +647,11 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
                 swap->choosei = swap->otherschoosei = -1;
                 swap->state++;
                 swap->othertrader = traderpub;
+                if ( offerdir > 0 )
+                    swap->bidid = A->orderid;
+                else swap->askid = A->orderid;
                 swap->isbob = (A->offer.myside ^ 1);
-                printf("SET ISBOB.%d\n",swap->isbob);
+                printf("SET ISBOB.%d orderid.%llu\n",swap->isbob,(long long)A->orderid);
                 strcpy(swap->nextstate,"step1");
             }
             char str[65]; printf("FOUND MATCH! %p (%s/%s) other.%s myside.%d next.%s\n",A->info,A->offer.base,A->offer.rel,bits256_str(str,traderpub),swap->isbob,swap->nextstate);
@@ -667,7 +670,9 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
                     else
                     {
                         // generate feetx to send
-                        printf(">>>> step1.(%s)\n",jprint(newjson,0));
+                        if ( swap->isbob != 0 )
+                            strcpy(swap->nextstate,"step2");
+                        else strcpy(swap->nextstate,"step3");
                         return(instantdex_sendcmd(myinfo,&A->offer,newjson,"BTCstep1",traderpub,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck)));
                     }
                 }
@@ -687,6 +692,9 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
     }
     else if ( swap == 0 )
         return(clonestr("{\"error\":\"no swap info\"}"));
+    if ( offerdir > 0 )
+        swap->bidid = A->orderid;
+    else swap->askid = A->orderid;
     swap->satoshis[0] = A->offer.basevolume64;
     swap->satoshis[1] = relsatoshis;
     swap->insurance = (relsatoshis * INSTANTDEX_INSURANCERATE + coinbtc->chain->txfee); // txfee
