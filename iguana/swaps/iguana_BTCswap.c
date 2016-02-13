@@ -439,8 +439,15 @@ char *instantdex_statemachine(struct supernet_info *myinfo,struct exchange_info 
                 }
             }*/
             if ( swap->isbob != 0 )
-                strcpy(swap->nextstate,"step2");
-            else strcpy(swap->nextstate,"step3");
+            {
+                strcpy(swap->nextstate,"step4");
+                printf("BOB sends (%s), next.(%s)\n","BTCstep3",swap->nextstate);
+            }
+            else
+            {
+                strcpy(swap->nextstate,"step3");
+                printf("Alice sends (%s), next.(%s)\n","BTCstep2",swap->nextstate);
+            }
             return(instantdex_sendcmd(myinfo,&A->offer,newjson,swap->isbob != 0 ? "BTCstep3" : "BTCstep2",swap->othertrader,INSTANTDEX_HOPS,swap->privkeys,sizeof(swap->privkeys)));
         }
     }
@@ -464,6 +471,7 @@ char *instantdex_statemachine(struct supernet_info *myinfo,struct exchange_info 
                     //jaddbits256(newjson,"pubBn",bitcoin_pubkey33(pubkey,swap->pubBn));
                     // broadcast to network
                     strcpy(swap->nextstate,"step4");
+                    printf("BOB sends (%s), next.(%s)\n","BTCstep3",swap->nextstate);
                     return(instantdex_sendcmd(myinfo,&A->offer,newjson,"BTCstep3",swap->othertrader,INSTANTDEX_HOPS,0,0));
                 } else return(clonestr("{\"error\":\"instantdex_BTCswap Bob step2, cant create deposit\"}"));
             }
@@ -491,6 +499,7 @@ char *instantdex_statemachine(struct supernet_info *myinfo,struct exchange_info 
                     jaddbits256(newjson,"pubAm",swap->pubAm);
                     // broadcast to network
                     strcpy(swap->nextstate,"step5");
+                    printf("Alice sends (%s), next.(%s)\n","BTCstep4",swap->nextstate);
                     return(instantdex_sendcmd(myinfo,&A->offer,newjson,"BTCstep4",swap->othertrader,INSTANTDEX_HOPS,0,0));
                 } else return(clonestr("{\"error\":\"instantdex_BTCswap Alice step3, error making altpay\"}"));
             } else return(clonestr("{\"error\":\"instantdex_BTCswap Alice step3, invalid deposit\"}"));
@@ -622,7 +631,7 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
     offerdir = instantdex_bidaskdir(A);
     vcalc_sha256(0,orderhash.bytes,(void *)&A->offer,sizeof(ap->offer));
     swap = A->info;
-    printf("T.%d [%s] got %s.(%s/%s) %.8f vol %.8f %llu offerside.%d offerdir.%d swap.%p decksize.%ld\n",bits256_cmp(traderpub,myinfo->myaddr.persistent),swap!=0?swap->nextstate:"",cmdstr,A->offer.base,A->offer.rel,dstr(A->offer.price64),dstr(A->offer.basevolume64),(long long)A->orderid,A->offer.myside,A->offer.acceptdir,A->info,sizeof(swap->deck));
+    printf("T.%d [%s] got %s.(%s/%s) %.8f vol %.8f %llu offerside.%d offerdir.%d swap.%p decksize.%ld/datalen.%d\n",bits256_cmp(traderpub,myinfo->myaddr.persistent),swap!=0?swap->nextstate:"",cmdstr,A->offer.base,A->offer.rel,dstr(A->offer.price64),dstr(A->offer.basevolume64),(long long)A->orderid,A->offer.myside,A->offer.acceptdir,A->info,sizeof(swap->deck),serdatalen);
     if ( exchange == 0 )
         return(clonestr("{\"error\":\"instantdex_BTCswap null exchange ptr\"}"));
     if ( (altcoin= iguana_coinfind(A->offer.base)) == 0 || coinbtc == 0 )
@@ -693,6 +702,11 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
     }
     else if ( swap == 0 )
         return(clonestr("{\"error\":\"no swap info\"}"));
+    if ( bits256_cmp(traderpub,myinfo->myaddr.persistent) == 0 )
+    {
+        printf("got my own packet\n");
+        return(clonestr("{\"result\":\"got my own packet\"}"));
+    }
     if ( offerdir > 0 )
         swap->bidid = A->orderid;
     else swap->askid = A->orderid;

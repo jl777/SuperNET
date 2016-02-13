@@ -17,7 +17,7 @@
 
 #include "exchanges777.h"
 
-#define INSTANTDEX_HOPS 1
+#define INSTANTDEX_HOPS 2
 #define INSTANTDEX_DURATION 60
 
 cJSON *InstantDEX_argjson(char *reference,char *message,char *othercoinaddr,char *otherNXTaddr,int32_t iter,int32_t val,int32_t val2)
