@@ -16,9 +16,9 @@
 STRING_ARG(SuperNET,bitcoinrpc,setcoin);
 ZERO_ARGS(SuperNET,myipaddr);
 STRING_ARG(SuperNET,setmyipaddr,ipaddr);
-
 TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,minaccept,base,rel,minprice,basevolume);
 TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,maxaccept,base,rel,maxprice,basevolume);
+P2SH_SPENDAPI(iguana,spendmsig,activecoin,vintxid,vinvout,destaddress,destamount,destaddress2,destamount2,M,N,pubA,wifA,pubB,wifB,pubC,wifC);
 
 /*TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,BTCoffer,othercoin,otherassetid,maxprice,othervolume);
 STRING_AND_TWO_DOUBLES(InstantDEX,ALToffer,basecoin,minprice,basevolume);

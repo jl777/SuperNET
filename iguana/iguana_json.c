@@ -71,6 +71,15 @@ cJSON *helparray3(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2) { jaddi(arra
 cJSON *helparray4(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3) { jaddi(array,obj0); return(helparray3(array,obj1,obj2,obj3)); }
 cJSON *helparray5(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4) { jaddi(array,obj0); return(helparray4(array,obj1,obj2,obj3,obj4)); }
 cJSON *helparray6(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4,cJSON *obj5) { jaddi(array,obj0); return(helparray5(array,obj1,obj2,obj3,obj4,obj5)); }
+cJSON *helparray7(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4,cJSON *obj5,cJSON *obj6) { jaddi(array,obj0); return(helparray6(array,obj1,obj2,obj3,obj4,obj5,obj6)); }
+cJSON *helparray8(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4,cJSON *obj5,cJSON *obj6,cJSON *obj7) { jaddi(array,obj0); return(helparray7(array,obj1,obj2,obj3,obj4,obj5,obj6,obj7)); }
+cJSON *helparray9(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4,cJSON *obj5,cJSON *obj6,cJSON *obj7,cJSON *obj9) { jaddi(array,obj0); return(helparray8(array,obj1,obj2,obj3,obj4,obj5,obj6,obj7,obj9)); }
+cJSON *helparray10(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4,cJSON *obj5,cJSON *obj6,cJSON *obj7,cJSON *obj9,cJSON *obj10) { jaddi(array,obj0); return(helparray9(array,obj1,obj2,obj3,obj4,obj5,obj6,obj7,obj9,obj10)); }
+cJSON *helparray11(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4,cJSON *obj5,cJSON *obj6,cJSON *obj7,cJSON *obj9,cJSON *obj10,cJSON *obj11) { jaddi(array,obj0); return(helparray10(array,obj1,obj2,obj3,obj4,obj5,obj6,obj7,obj9,obj10,obj11)); }
+cJSON *helparray12(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4,cJSON *obj5,cJSON *obj6,cJSON *obj7,cJSON *obj9,cJSON *obj10,cJSON *obj11,cJSON *obj12) { jaddi(array,obj0); return(helparray11(array,obj1,obj2,obj3,obj4,obj5,obj6,obj7,obj9,obj10,obj11,obj12)); }
+cJSON *helparray13(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4,cJSON *obj5,cJSON *obj6,cJSON *obj7,cJSON *obj9,cJSON *obj10,cJSON *obj11,cJSON *obj12,cJSON *obj13) { jaddi(array,obj0); return(helparray12(array,obj1,obj2,obj3,obj4,obj5,obj6,obj7,obj9,obj10,obj11,obj12,obj13)); }
+cJSON *helparray14(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4,cJSON *obj5,cJSON *obj6,cJSON *obj7,cJSON *obj9,cJSON *obj10,cJSON *obj11,cJSON *obj12,cJSON *obj13,cJSON *obj14) { jaddi(array,obj0); return(helparray13(array,obj1,obj2,obj3,obj4,obj5,obj6,obj7,obj9,obj10,obj11,obj12,obj13,obj14)); }
+cJSON *helparray15(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4,cJSON *obj5,cJSON *obj6,cJSON *obj7,cJSON *obj9,cJSON *obj10,cJSON *obj11,cJSON *obj12,cJSON *obj13,cJSON *obj14,cJSON *obj15) { jaddi(array,obj0); return(helparray14(array,obj1,obj2,obj3,obj4,obj5,obj6,obj7,obj9,obj10,obj11,obj12,obj13,obj14,obj15)); }
 
 cJSON *SuperNET_helpjson()
 {
@@ -126,6 +135,8 @@ cJSON *SuperNET_helpjson()
 #define IGUANA_HELP_SAIS(agent,name,str,obj,val,str2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray4(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#obj,"array"),helpitem(#val,"int"),helpitem(#str2,"string")))
 #define IGUANA_HELP_SDSS(agent,name,str,amount,str2,str3) array = helpjson(IGUANA_ARGS,#agent,#name,helparray4(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#amount,"float"),helpitem(#str2,"string"),helpitem(#str3,"string")))
     
+#define IGUANA_HELP_SHI_SDSD_II_SSSSSS(agent,name,str,hash,val,str2,amount,str3,amount2,val2,val3,str4,str5,str6,str7,str8,str9) array = helpjson(IGUANA_ARGS,#agent,#name,helparray15(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#hash,"hash"),helpitem(#val,"int"),helpitem(#str2,"string"),helpitem(#amount,"float"),helpitem(#str3,"string"),helpitem(#amount2,"float"),helpitem(#val2,"int"),helpitem(#val3,"int"),helpitem(#str4,"string"),helpitem(#str5,"string"),helpitem(#str6,"string"),helpitem(#str7,"string"),helpitem(#str8,"string"),helpitem(#str9,"string")))
+
     // API functions
 #define ZERO_ARGS IGUANA_HELP0
 #define INT_ARG IGUANA_HELP_I
@@ -168,7 +179,8 @@ cJSON *SuperNET_helpjson()
 #define STRING_AND_DOUBLE IGUANA_HELP_SD
 #define TWO_STRINGS_AND_TWO_DOUBLES IGUANA_HELP_SSDD
 #define STRING_AND_TWO_DOUBLES IGUANA_HELP_SDD
-
+#define P2SH_SPENDAPI IGUANA_HELP_SHI_SDSD_II_SSSSSS
+    
 #include "../includes/iguana_apideclares.h"
     
 #include "../includes/iguana_apiundefs.h"
@@ -901,6 +913,8 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
 #define IGUANA_DISPATCH_SAIS(agent,name,str,array,val,str2) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jobj(json,#array),juint(json,#val),jstr(json,#str2)))
 #define IGUANA_DISPATCH_SDSS(agent,name,str,amount,str2,str3) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jdouble(json,#amount),jstr(json,#str2),jstr(json,#str3)))
     
+#define IGUANA_DISPATCH_SHI_SDSD_II_SSSSSS(agent,name,str,hash,val,str2,amount,str3,amount2,val2,val3,str4,str5,str6,str7,str8,str9) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jbits256(json,#hash),jint(json,#val),jstr(json,#str2),jdouble(json,#amount),jstr(json,#str3),jdouble(json,#amount2),juint(json,#val2),juint(json,#val3),jstr(json,#str4),jstr(json,#str5),jstr(json,#str6),jstr(json,#str7),jstr(json,#str8),jstr(json,#str9)))
+
     // API functions
 #define ZERO_ARGS IGUANA_DISPATCH0
 #define INT_ARG IGUANA_DISPATCH_I
@@ -943,6 +957,7 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
 #define STRING_AND_DOUBLE IGUANA_DISPATCH_SD
 #define TWO_STRINGS_AND_TWO_DOUBLES IGUANA_DISPATCH_SSDD
 #define STRING_AND_TWO_DOUBLES IGUANA_DISPATCH_SDD
+#define P2SH_SPENDAPI IGUANA_DISPATCH_SHI_SDSD_II_SSSSSS
 
 #include "../includes/iguana_apideclares.h"
 //#undef IGUANA_ARGS

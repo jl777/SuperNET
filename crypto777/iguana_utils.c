@@ -1001,7 +1001,12 @@ void sha256_sha256(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 void rmd160ofsha256(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 {
     uint8_t sha256[32];
-    vcalc_sha256(0,sha256,(void *)msg,len);
+    if ( is_hexstr((char *)msg,len) > 0 )
+    {
+        decode_hex((uint8_t *)hexstr,len/2,(char *)msg);
+        vcalc_sha256(0,sha256,(void *)hexstr,len/2);
+        calc_rmd160(hexstr,buf,sha256,sizeof(sha256));
+    } else vcalc_sha256(0,sha256,(void *)msg,len);
     calc_rmd160(hexstr,buf,sha256,sizeof(sha256));
 }
 

@@ -94,7 +94,7 @@ struct instantdex_offer { char base[24],rel[24]; uint64_t price64,basevolume64,o
 struct instantdex_accept
 {
     struct queueitem DL; void *info;
-    uint64_t pendingvolume64,orderid,matchid; uint32_t dead;
+    uint64_t pendingvolume64,orderid,matchid; uint32_t dead; int32_t didstate;
     struct instantdex_offer offer;
 };
 

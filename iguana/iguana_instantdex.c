@@ -149,7 +149,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     nxt64bits = acct777_nxt64bits(myinfo->myaddr.persistent);
     reqstr = jprint(argjson,0);
     slen = (int32_t)(strlen(reqstr) + 1);
-    datalen = (int32_t)sizeof(*msg) + slen + extralen + olen;
+    datalen = (int32_t)slen + extralen + olen;
     msg = calloc(1,datalen);
     for (i=0; i<sizeof(msg->cmd); i++)
         if ( (msg->cmd[i]= cmdstr[i]) == 0 )
@@ -586,7 +586,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
         {
             orderhash = instantdex_rwoffer(0,&olen,serdata,&rawoffer);
             newlen -= olen;
-            newlen -= ((long)msg->serialized - (long)msg);
+            //newlen -= ((long)msg->serialized - (long)msg);
             serdata = &serdata[olen];
             //printf("received orderhash.%llu olen.%d slen.%d newlen.%d\n",(long long)orderhash.txid,olen,slen,newlen);
         } else olen = 0;

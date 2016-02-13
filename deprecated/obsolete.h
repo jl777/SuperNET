@@ -13384,5 +13384,28 @@ len = 0;
              } else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
              }
              */
+                if ( sendprivs != 0 )
+                {
+                    printf("sendprivs.%d\n",sendprivs);
+                    if ( swap->otherschoosei < 0 )
+                        printf("instantdex_newjson otherschoosei < 0 when sendprivs != 0\n");
+                        else
+                        {
+                            if ( privs == 0 && (privs= calloc(1,sizeof(*swap->privkeys))) == 0 )
+                                printf("instantdex_newjson couldnt allocate hex\n");
+                                else if ( hexstr == 0 && (hexstr= malloc(sizeof(*swap->privkeys) * 2 + 1)) == 0 )
+                                    printf("instantdex_newjson couldnt allocate hexstr\n");
+                                    else
+                                    {
+                                        memcpy(privs,swap->privkeys,sizeof(*swap->privkeys));
+                                        memset(privs[swap->otherschoosei].bytes,0,sizeof(*privs));
+                                        for (i=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
+                                        {
+                                            iguana_rwbignum(1,serialized,sizeof(privs[i]),privs[i].bytes);
+                                            memcpy(privs[i].bytes,serialized,sizeof(privs[i]));
+                                        }
+                                    }
+                        }
+                }
 
 #endif

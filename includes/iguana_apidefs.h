@@ -10,7 +10,7 @@
 #define IGUANA_CFUNC_SAA(agent,name,str,array,array2) char *agent ## _ ## name(IGUANA_ARGS,char *str,cJSON *array,cJSON *array2)
 
 #define IGUANA_CFUNC_64A(agent,name,j64,array) char *agent ## _ ## name(IGUANA_ARGS,uint64_t j64,cJSON *array)
-
+#define IGUANA_CFUNC_SHI_SDSD_II_SSSSSS(agent,name,str,hash,val,str2,amount,str3,amount2,val2,val3,str4,str5,str6,str7,str8,str9) char *agent ## _ ## name(IGUANA_ARGS,char *str,bits256 hash,int32_t val,char *str2,double amount,char *str3,double amount2,int32_t val2,int32_t val3,char *str4,char *str5,char *str6,char *str7,char *str8,char *str9)
 
 #define IGUANA_CFUNC_IA(agent,name,val,array) char *agent ## _ ## name(IGUANA_ARGS,int32_t val,cJSON *array)
 #define IGUANA_CFUNC_IAS(agent,name,val,array,str) char *agent ## _ ## name(IGUANA_ARGS,int32_t val,cJSON *array,char *str)
@@ -90,3 +90,5 @@
 #define THREE_STRINGS_AND_DOUBLE IGUANA_CFUNC_SSSD
 #define TWO_STRINGS_AND_TWO_DOUBLES IGUANA_CFUNC_SSDD
 #define STRING_AND_TWO_DOUBLES IGUANA_CFUNC_SDD
+#define P2SH_SPENDAPI IGUANA_CFUNC_SHI_SDSD_II_SSSSSS
+

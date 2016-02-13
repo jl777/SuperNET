@@ -990,9 +990,13 @@ bits256 iguana_parsetxobj(struct iguana_info *coin,int32_t *txstartp,uint8_t *se
     int32_t i,numvins,numvouts,len = 0; cJSON *array=0; bits256 txid; char vpnstr[64];
     memset(msg,0,sizeof(*msg));
     vpnstr[0] = 0;
-    msg->version = juint(txobj,"version");
+    if ( (msg->version= juint(txobj,"version")) == 0 )
+        msg->version = 1;
     if ( coin->chain->hastimestamp != 0 )
-        msg->timestamp = juint(txobj,"timestamp");
+    {
+        if ( (msg->timestamp= juint(txobj,"timestamp")) == 0 )
+            msg->timestamp = (uint32_t)time(NULL);
+    }
     if ( (array= jarray(&numvins,txobj,"vin")) != 0 )
     {
         msg->tx_in = numvins;
@@ -1617,3 +1621,70 @@ char *WITHDRAW(struct exchange_info *exchange,char *base,double amount,char *des
 struct exchange_funcs bitcoin_funcs = EXCHANGE_FUNCS(bitcoin,EXCHANGE_NAME);
 
 #include "exchange_undefs.h"
+
+
+#include "../../includes/iguana_apidefs.h"
+#include "../../includes/iguana_apideclares.h"
+
+char *_setVsigner(struct iguana_info *coin,struct vin_info *V,int32_t ind,char *pubstr,char *wifstr)
+{
+    uint8_t addrtype;
+    decode_hex(V->signers[ind].pubkey,(int32_t)strlen(pubstr)/2,pubstr);
+    btc_wif2priv(&addrtype,V->signers[ind].privkey.bytes,wifstr);
+    if ( addrtype != coin->chain->pubtype )
+        return(clonestr("{\"error\":\"invalid wifA\"}"));
+    else return(0);
+}
+
+int32_t bitcoin_txaddspend(struct iguana_info *coin,cJSON *txobj,char *destaddress,double destamount)
+{
+    uint8_t outputscript[128],addrtype,rmd160[20]; int32_t scriptlen;
+    if ( bitcoin_validaddress(coin,destaddress) == 0 && destamount > 0. )
+    {
+        bitcoin_addr2rmd160(&addrtype,rmd160,destaddress);
+        scriptlen = bitcoin_standardspend(outputscript,0,rmd160);
+        bitcoin_addoutput(coin,txobj,outputscript,scriptlen,destamount * SATOSHIDEN);
+        return(0);
+    } else return(-1);
+}
+
+P2SH_SPENDAPI(iguana,spendmsig,activecoin,vintxid,vinvout,destaddress,destamount,destaddress2,destamount2,M,N,pubA,wifA,pubB,wifB,pubC,wifC)
+{
+    struct vin_info V; uint8_t p2sh_rmd160[20],serialized[2096];
+    char msigaddr[64],*retstr; cJSON *retjson,*txobj; struct iguana_info *active;
+    bits256 signedtxid; char *signedtx; int scriptlens[1];
+    struct iguana_msgtx msgtx;
+    if ( (active= iguana_coinfind(activecoin)) == 0 )
+        return(clonestr("{\"error\":\"activecoin isnt active\"}"));
+    if ( M > N || N > 3 )
+        return(clonestr("{\"error\":\"illegal M or N\"}"));
+    memset(&V,0,sizeof(V));
+    txobj = bitcoin_createtx(active,0);
+    if ( destaddress[0] != 0 && destamount > 0. )
+        bitcoin_txaddspend(active,txobj,destaddress,destamount);
+    if ( destaddress2[0] != 0 && destamount2 > 0. )
+        bitcoin_txaddspend(active,txobj,destaddress2,destamount2);
+    bitcoin_addinput(active,txobj,vintxid,vinvout,0xffffffff);
+    if ( pubA[0] != 0 && (retstr= _setVsigner(active,&V,0,pubA,wifA)) != 0 )
+        return(retstr);
+    if ( N >= 2 && pubB[0] != 0 && (retstr= _setVsigner(active,&V,1,pubB,wifC)) != 0 )
+        return(retstr);
+    if ( N == 3 && pubC[0] != 0 && (retstr= _setVsigner(active,&V,2,pubC,wifC)) != 0 )
+        return(retstr);
+    V.M = M, V.N = N, V.type = IGUANA_SCRIPT_P2SH;
+    V.p2shlen = bitcoin_MofNspendscript(p2sh_rmd160,V.p2shscript,0,&V);
+    bitcoin_address(msigaddr,active->chain->p2shtype,V.p2shscript,V.p2shlen);
+    scriptlens[0] = 0;
+    retjson = cJSON_CreateObject();
+    if ( bitcoin_verifyvins(active,&signedtxid,&signedtx,scriptlens,&msgtx,serialized,sizeof(serialized),&V,0) == 0 )
+    {
+        jaddstr(retjson,"result","msigtx");
+        if ( signedtx != 0 )
+            jaddstr(retjson,"signedtx",signedtx), free(signedtx);
+        jaddbits256(retjson,"txid",signedtxid);
+    } else jaddstr(retjson,"error","couldnt sign tx");
+    jaddstr(retjson,"msigaddr",msigaddr);
+    return(jprint(retjson,1));
+}
+#include "../../includes/iguana_apiundefs.h"
+
