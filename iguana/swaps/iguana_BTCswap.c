@@ -631,6 +631,11 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
     offerdir = instantdex_bidaskdir(A);
     vcalc_sha256(0,orderhash.bytes,(void *)&A->offer,sizeof(ap->offer));
     swap = A->info;
+    if ( bits256_cmp(traderpub,myinfo->myaddr.persistent) == 0 )
+    {
+        printf("got my own packet\n");
+        return(clonestr("{\"result\":\"got my own packet\"}"));
+    }
     printf("T.%d [%s] got %s.(%s/%s) %.8f vol %.8f %llu offerside.%d offerdir.%d swap.%p decksize.%ld/datalen.%d\n",bits256_cmp(traderpub,myinfo->myaddr.persistent),swap!=0?swap->nextstate:"",cmdstr,A->offer.base,A->offer.rel,dstr(A->offer.price64),dstr(A->offer.basevolume64),(long long)A->orderid,A->offer.myside,A->offer.acceptdir,A->info,sizeof(swap->deck),serdatalen);
     if ( exchange == 0 )
         return(clonestr("{\"error\":\"instantdex_BTCswap null exchange ptr\"}"));
@@ -643,7 +648,7 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
         return(clonestr("{\"error\":\"instantdex_BTCswap offer non BTC rel\"}"));
     if ( orderhash.txid != A->orderid )
         return(clonestr("{\"error\":\"txid mismatches orderid\"}"));
-    //if ( (swap= A->info) == 0 && strcmp(cmdstr,"offer") != 0 )
+ //if ( (swap= A->info) == 0 && strcmp(cmdstr,"offer") != 0 )
      //   return(clonestr("{\"error\":\"instantdex_BTCswap no swap info after offer\"}"));
     if ( strcmp(cmdstr,"offer") == 0 && A->info == 0 ) // receiver is networkwide
     {
@@ -661,12 +666,12 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
                     swap->bidid = A->orderid;
                 else swap->askid = A->orderid;
                 swap->isbob = (A->offer.myside ^ 1);
-                printf("SET ISBOB.%d orderid.%llu\n",swap->isbob,(long long)A->orderid);
-                strcpy(swap->nextstate,"step1");
+                printf("%p SET ISBOB.%d orderid.%llu\n",ap,swap->isbob,(long long)A->orderid);
             }
             char str[65]; printf("FOUND MATCH! %p (%s/%s) other.%s myside.%d next.%s\n",A->info,A->offer.base,A->offer.rel,bits256_str(str,traderpub),swap->isbob,swap->nextstate);
             if ( (A->info= swap) != 0 )
             {
+                ap->info = swap;
                 if ( (newjson= instantdex_newjson(myinfo,swap,argjson,orderhash,A,1)) == 0 )
                     return(clonestr("{\"error\":\"instantdex_BTCswap offer null newjson\"}"));
                 else
@@ -702,11 +707,6 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
     }
     else if ( swap == 0 )
         return(clonestr("{\"error\":\"no swap info\"}"));
-    if ( bits256_cmp(traderpub,myinfo->myaddr.persistent) == 0 )
-    {
-        printf("got my own packet\n");
-        return(clonestr("{\"result\":\"got my own packet\"}"));
-    }
     if ( offerdir > 0 )
         swap->bidid = A->orderid;
     else swap->askid = A->orderid;
