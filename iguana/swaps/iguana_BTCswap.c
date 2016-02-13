@@ -440,7 +440,7 @@ char *instantdex_statemachine(struct supernet_info *myinfo,struct exchange_info 
             if ( swap->isbob != 0 )
                 strcpy(swap->nextstate,"step2");
             else strcpy(swap->nextstate,"step3");
-            return(instantdex_sendcmd(myinfo,&A->offer,newjson,swap->isbob != 0 ? "BTCstep1" : "BTCstep2",swap->othertrader,INSTANTDEX_HOPS,swap->privkeys,sizeof(swap->privkeys)));
+            return(instantdex_sendcmd(myinfo,&A->offer,newjson,swap->isbob != 0 ? "BTCstep2" : "BTCstep1",swap->othertrader,INSTANTDEX_HOPS,swap->privkeys,sizeof(swap->privkeys)));
         }
     }
     else if ( strcmp(cmdstr,"step2") == 0 && strcmp(swap->nextstate,"cmdstr") == 0 ) // bob
