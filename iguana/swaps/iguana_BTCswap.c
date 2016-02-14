@@ -428,7 +428,7 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     s = instantdex_statecreate(s,n,"BTC_cleanup",BOB_processfunc,0,0,0);
     s = instantdex_statecreate(s,n,"BOB_claimdeposit",BOB_processfunc,0,0,0);
     s = instantdex_statecreate(s,n,"ALICE_reclaim",BOB_processfunc,0,0,0);
-
+ 
     s = instantdex_statecreate(s,n,"BOB_sentoffer",BOB_processfunc,0,"BTC_cleanup",0);
     s = instantdex_statecreate(s,n,"BOB_sentprivs",BOB_processfunc,0,"BTC_cleanup",0);
     s = instantdex_statecreate(s,n,"BOB_gotoffer",BOB_processfunc,0,"BTC_cleanup",0);
@@ -449,6 +449,9 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     s = instantdex_statecreate(s,n,"ALICE_sentalt",ALICE_processfunc,0,"BTC_claimdeposit",0);
     s = instantdex_statecreate(s,n,"ALICE_waitconfirms",ALICE_processfunc,0,"BTC_claimdeposit",0);
     s = instantdex_statecreate(s,n,"BOB_sentpayment",BOB_processfunc,0,"BTC_claimdeposit",0);
+  
+    s = instantdex_statecreate(s,n,"ALICE_claimedbtc",BOB_processfunc,0,0,0);
+    s = instantdex_statecreate(s,n,"BOB_claimedalt",BOB_processfunc,0,0,0);
 
     // events
     instantdex_addevent(s,*n,"BOB_sentoffer","BTCchose","BTCprivs","BOB_sentprivs");

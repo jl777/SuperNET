@@ -119,10 +119,8 @@ struct instantdex_event *instantdex_addevent(struct instantdex_stateinfo *states
     struct instantdex_stateinfo *nextstate,*state;
     if ( (state= instantdex_statefind(states,numstates,statename)) != 0 && (nextstate= instantdex_statefind(states,numstates,nextstatename)) != 0 )
     {
-        printf("realloc %p\n",state->events);
         if ( (state->events= realloc(state->events,(state->numevents + 1) * sizeof(*state->events))) != 0 )
         {
-            printf("newptr.%p\n",state->events);
             memset(&state->events[state->numevents],0,sizeof(state->events[state->numevents]));
             strcpy(state->events[state->numevents].cmdstr,cmdstr);
             if ( sendcmd != 0 )
@@ -469,7 +467,7 @@ struct instantdex_accept *instantdex_offerfind(struct supernet_info *myinfo,stru
             //printf("find cmps %d %d %d %d %d %d\n",strcmp(base,"*") == 0,strcmp(base,ap->offer.base) == 0,strcmp(rel,"*") == 0,strcmp(rel,ap->offer.rel) == 0,orderid == 0,orderid == ap->orderid);
             if ( (strcmp(base,"*") == 0 || strcmp(base,ap->offer.base) == 0) && (strcmp(rel,"*") == 0 || strcmp(rel,ap->offer.rel) == 0) && (orderid == 0 || orderid == ap->orderid) )
             {
-                printf("found match.%p\n",ap);
+                //printf("found match.%p\n",ap);
                 if ( requeue == 0 && retap != 0 )
                     queue_enqueue("acceptableQ",&exchange->acceptableQ,&retap->DL,0);
                 retap = ap;
@@ -487,7 +485,7 @@ struct instantdex_accept *instantdex_offerfind(struct supernet_info *myinfo,stru
             }
             if ( ap != retap || requeue != 0 )
             {
-                printf("requeue.%p\n",ap);
+                //printf("requeue.%p\n",ap);
                 queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
             }
         } else free(ap);
