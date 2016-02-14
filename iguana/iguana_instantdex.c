@@ -133,6 +133,7 @@ struct instantdex_event *instantdex_addevent(struct instantdex_stateinfo *states
     else
     {
         printf("cant add event (%s -> %s) without existing state and nextstate\n",statename,nextstatename);
+        exit(-1);
         return(0);
     }
 }
