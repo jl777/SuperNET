@@ -83,6 +83,13 @@ char *_get_MSoffers(struct supernet_info *myinfo,char *str)
     return(issue_NXTPOST(cmd));
 }
 
+char *issue_startForging(struct supernet_info *myinfo,char *secret)
+{
+    char cmd[4096];
+    sprintf(cmd,"requestType=startForging&secretPhrase=%s",secret);
+    return(issue_NXTPOST(cmd));
+}
+
 uint32_t get_blockutime(struct supernet_info *myinfo,uint32_t blocknum)
 {
     cJSON *json; uint32_t timestamp = 0; char cmd[4096],*jsonstr;
