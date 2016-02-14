@@ -705,7 +705,7 @@ int32_t iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp,uint8_t *
         scriptlen = iguana_scriptgen(coin,&vp->M,&vp->N,vp->coinaddr,script,asmstr,vp->rmd160,vp->type,(const struct vin_info *)vp,vout);
         if ( scriptlen != pk_scriptlen || (scriptlen != 0 && memcmp(script,pk_script,scriptlen) != 0) )
         {
-            if ( vp->type != IGUANA_SCRIPT_OPRETURN && vp->type != IGUANA_SCRIPT_DATA )
+            if ( vp->type != IGUANA_SCRIPT_OPRETURN && vp->type != IGUANA_SCRIPT_DATA && vp->type != IGUANA_SCRIPT_STRANGE )
             {
                 int32_t i;
                 printf("\n--------------------\n");
@@ -1375,7 +1375,6 @@ rawtxstr = refstr;
     V = 0;
     vpnstr[0] = 0;
     memset(&msgtx,0,sizeof(msgtx));
-
     if ( len < maxsize )
     {
         decode_hex(serialized,len,rawtxstr);
@@ -1466,7 +1465,7 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
     cJSON *retjson,*bids,*asks; double hbla;
     bids = cJSON_CreateArray();
     asks = cJSON_CreateArray();
-    instantdex_offerfind(SuperNET_MYINFO(0),exchange,bids,asks,0,base,rel);
+    instantdex_offerfind(SuperNET_MYINFO(0),exchange,bids,asks,0,base,rel,1);
     retjson = cJSON_CreateObject();
     cJSON_AddItemToObject(retjson,"bids",bids);
     cJSON_AddItemToObject(retjson,"asks",asks);
@@ -1542,19 +1541,16 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
             jaddnum(json,"volume",volume);
             jaddstr(json,"BTC",myinfo->myaddr.BTC);
             //printf("trade dir.%d (%s/%s) %.6f vol %.8f\n",dir,base,"BTC",price,volume);
-            if ( (str= instantdex_queueaccept(myinfo,&ap,exchange,base,"BTC",price,volume,-dir,dir > 0 ? "BTC" : base,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits)) != 0 )
+            if ( (str= instantdex_queueaccept(myinfo,&ap,exchange,base,"BTC",price,volume,-dir,dir > 0 ? "BTC" : base,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits,0)) != 0 )
             {
                 if ( (tmp= cJSON_Parse(str)) != 0 )
                 {
                     txid = j64bits(json,"orderid");
-                    if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,txid,"*","*")) != 0 )
+                    if ( (str= instantdex_btcoffer(myinfo,exchange,ap,json)) != 0 )
                     {
-                        if ( (str= instantdex_btcoffer(myinfo,exchange,ap)) != 0 )
-                        {
-                            json = cJSON_CreateObject();
-                            jaddstr(json,"BTCoffer",str);
-                        } else printf("null return from btcoffer\n");
-                    } else printf("couldnt find just added offer\n");
+                        json = cJSON_CreateObject();
+                        jaddstr(json,"BTCoffer",str);
+                    } else printf("null return from btcoffer\n");
                     free_json(tmp);
                 } else printf("queueaccept return parse error.(%s)\n",str);
             } else printf("null return queueaccept\n");
@@ -1570,7 +1566,7 @@ char *ORDERSTATUS(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson
 {
     struct instantdex_accept *ap; cJSON *retjson;
     struct supernet_info *myinfo = SuperNET_accountfind(argjson);
-    if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,orderid,"*","*")) != 0 )
+    if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,orderid,"*","*",1)) != 0 )
     {
         retjson = cJSON_CreateObject();
         jadd(retjson,"result",instantdex_acceptjson(ap));
@@ -1582,7 +1578,7 @@ char *CANCELORDER(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson
 {
     struct instantdex_accept *ap; cJSON *retjson;
     struct supernet_info *myinfo = SuperNET_accountfind(argjson);
-    if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,orderid,"*","*")) != 0 )
+    if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,orderid,"*","*",1)) != 0 )
     {
         ap->dead = (uint32_t)time(NULL);
         retjson = cJSON_CreateObject();
@@ -1598,7 +1594,7 @@ char *OPENORDERS(struct exchange_info *exchange,cJSON *argjson)
     struct supernet_info *myinfo = SuperNET_accountfind(argjson);
     bids = cJSON_CreateArray();
     asks = cJSON_CreateArray();
-    instantdex_offerfind(myinfo,exchange,bids,asks,0,"*","*");
+    instantdex_offerfind(myinfo,exchange,bids,asks,0,"*","*",1);
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
     jadd(retjson,"bids",bids);

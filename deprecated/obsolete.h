@@ -13407,5 +13407,163 @@ len = 0;
                                     }
                         }
                 }
+                
+            /*cJSON *instantdex_acceptsendjson(struct instantdex_accept *ap)
+             {
+             cJSON *json = cJSON_CreateObject();
+             jaddstr(json,"b",ap->offer.base);
+             jaddstr(json,"r",ap->offer.rel);
+             jaddnum(json,"n",ap->offer.nonce);
+             jaddnum(json,"e",ap->offer.expiration);
+             jaddnum(json,"s",ap->offer.myside);
+             jaddnum(json,"d",ap->offer.acceptdir);
+             jadd64bits(json,"p",ap->offer.price64);
+             jadd64bits(json,"v",ap->offer.basevolume64);
+             jadd64bits(json,"o",ap->offer.offer64);
+             jadd64bits(json,"id",ap->orderid);
+             return(json);
+             }*/
+                if ( A->offer.price64 != 0 )
+                {
+                    if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,A->orderid,"*","*",1)) != 0 )
+                    {
+                        swap->state++;
+                        A->info = swap;
+                        printf(">>>>>>>>>> PENDING ORDER %llu\n",(long long)A->orderid);
+                    }
+                }
+        if ( ap == 0 )
+        {
+            printf("couldnt find accept?? dir.%d orderid.%llu\n",ap->offer.acceptdir,(long long)A->orderid);
+            free(swap);
+            return(clonestr("{\"error\":\"couldnt find order just created\"}"));
+        }
+                if ( strncmp(cmdstr,"BTC",3) == 0 )
+                    else if ( strncmp(cmdstr,"NXT",3) == 0 )
+                        retstr = instantdex_NXTswap(myinfo,exchange,&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,serdata,datalen);
+                        else if ( strncmp(cmdstr,"ALT",3) == 0 )
+                            retstr = instantdex_ALTswap(myinfo,exchange,&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,serdata,datalen);
+                            else if ( strncmp(cmdstr,"PAX",3) == 0 )
+                                retstr = instantdex_PAXswap(myinfo,exchanges777_find("PAX"),&A,cmdstr+3,msg,argjson,remoteaddr,signerbits,serdata,datalen);
+                                else return(clonestr("{\"error\":\"unrecognized atomic swap family\"}"));
+        if ( ap != 0 )
+        {
+            ap->info = A.info;
+            ap->pendingvolume64 = A.pendingvolume64;
+        }
+        //printf("after swap ap.%p (%s)\n",ap,retstr);
+        return(retstr);
+        
+        char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,char *cmdstr,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *serdata,int32_t serdatalen) // receiving side
+        {
+            uint64_t satoshis[2]; int32_t offerdir = 0; double minperc; uint64_t insurance,relsatoshis;
+            struct instantdex_accept *ap; struct bitcoin_swapinfo *swap = 0; bits256 orderhash,traderpub;
+            struct iguana_info *coinbtc,*altcoin; cJSON *newjson=0; char *retstr=0;
+            relsatoshis = instantdex_relsatoshis(A->offer.price64,A->offer.basevolume64);
+            traderpub = jbits256(argjson,"traderpub");
+            if ( (minperc= jdouble(argjson,"p")) < INSTANTDEX_MINPERC )
+                minperc = INSTANTDEX_MINPERC;
+            coinbtc = iguana_coinfind("BTC");
+            insurance = (satoshis[1] * INSTANTDEX_INSURANCERATE + coinbtc->chain->txfee); // txfee prevents papercut attack
+            offerdir = instantdex_bidaskdir(A);
+            vcalc_sha256(0,orderhash.bytes,(void *)&A->offer,sizeof(ap->offer));
+            swap = A->info;
+            if ( bits256_cmp(traderpub,myinfo->myaddr.persistent) == 0 )
+            {
+                printf("got my own packet\n");
+                return(clonestr("{\"result\":\"got my own packet\"}"));
+            }
+            printf("T.%d [%s] got %s.(%s/%s) %.8f vol %.8f %llu offerside.%d offerdir.%d swap.%p decksize.%ld/datalen.%d\n",bits256_cmp(traderpub,myinfo->myaddr.persistent),swap!=0?swap->nextstate:"",cmdstr,A->offer.base,A->offer.rel,dstr(A->offer.price64),dstr(A->offer.basevolume64),(long long)A->orderid,A->offer.myside,A->offer.acceptdir,A->info,sizeof(swap->deck),serdatalen);
+            if ( exchange == 0 )
+                return(clonestr("{\"error\":\"instantdex_BTCswap null exchange ptr\"}"));
+            if ( (altcoin= iguana_coinfind(A->offer.base)) == 0 || coinbtc == 0 )
+            {
+                printf("other.%p coinbtc.%p (%s/%s)\n",altcoin,coinbtc,A->offer.base,A->offer.rel);
+                return(clonestr("{\"error\":\"instantdex_BTCswap cant find btc or other coin info\"}"));
+            }
+            if ( strcmp(A->offer.rel,"BTC") != 0 )
+                return(clonestr("{\"error\":\"instantdex_BTCswap offer non BTC rel\"}"));
+            if ( orderhash.txid != A->orderid )
+                return(clonestr("{\"error\":\"txid mismatches orderid\"}"));
+            if ( strcmp(cmdstr,"offer") == 0 ) // receiver is networkwide
+            {
+                if ( A->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) )
+                    return(clonestr("{\"error\":\"instantdex_BTCswap offer too close to expiration\"}"));
+                if ( (ap= instantdex_acceptable(myinfo,exchange,A,acct777_nxt64bits(traderpub),minperc)) != 0 )
+                {
+                    if ( A->info == 0 )
+                    {
+                        swap = calloc(1,sizeof(struct bitcoin_swapinfo));
+                        swap->choosei = swap->otherschoosei = -1;
+                        swap->othertrader = traderpub;
+                        if ( offerdir > 0 )
+                            swap->bidid = A->orderid;
+                        else swap->askid = A->orderid;
+                        swap->isbob = (A->offer.myside ^ 1);
+                        printf("%p SET ISBOB.%d orderid.%llu\n",ap,swap->isbob,(long long)A->orderid);
+                    }
+                    char str[65]; printf("GOT OFFER! %p (%s/%s) other.%s myside.%d next.%s\n",A->info,A->offer.base,A->offer.rel,bits256_str(str,traderpub),swap->isbob,swap->nextstate);
+                    if ( (A->info= swap) != 0 )
+                    {
+                        ap->info = swap;
+                        if ( (newjson= instantdex_newjson(myinfo,swap,argjson,orderhash,A,1)) == 0 )
+                            return(clonestr("{\"error\":\"instantdex_BTCswap offer null newjson\"}"));
+                        else
+                        {
+                            // verify feetx
+                            instantdex_pendingnotice(myinfo,exchange,ap,A->offer.basevolume64);
+                            if ( (retstr= instantdex_choosei(swap,newjson,argjson,serdata,serdatalen)) != 0 )
+                            {
+                                return(retstr);
+                            }
+                            else
+                            {
+                                // generate feetx to send
+                                if ( swap->isbob != 0 )
+                                    strcpy(swap->nextstate,"step2");
+                                else strcpy(swap->nextstate,"step3");
+                                return(instantdex_sendcmd(myinfo,&A->offer,newjson,"BTCstep1",traderpub,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck)));
+                            }
+                        }
+                    } else return(clonestr("{\"error\":\"couldnt allocate swap info\"}"));
+                }
+                else
+                {
+                    printf("no matching trade for %llu -> InstantDEX_minaccept isbob.%d\n",(long long)A->orderid,A->offer.myside);
+                    if ( instantdex_offerfind(myinfo,exchange,0,0,A->orderid,"*","*",1) == 0 )
+                    {
+                        ap = calloc(1,sizeof(*ap));
+                        *ap = *A;
+                        queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
+                        return(clonestr("{\"result\":\"added new order to orderbook\"}"));
+                    } else return(clonestr("{\"result\":\"order was already in orderbook\"}"));
+                }
+            }
+            else if ( swap == 0 )
+                return(clonestr("{\"error\":\"no swap info\"}"));
+            if ( offerdir > 0 )
+                swap->bidid = A->orderid;
+            else swap->askid = A->orderid;
+            if ( bits256_nonz(swap->othertrader) == 0 )
+                swap->othertrader = traderpub;
+            else if ( bits256_cmp(traderpub,swap->othertrader) != 0 )
+            {
+                printf("competing offer received for (%s/%s) %.8f %.8f\n",A->offer.base,A->offer.rel,dstr(A->offer.price64),dstr(A->offer.basevolume64));
+                return(clonestr("{\"error\":\"no competing offers for now\"}"));
+            }
+            if ( bits256_nonz(swap->orderhash) == 0 )
+                swap->orderhash = orderhash;
+            else if ( bits256_cmp(orderhash,swap->orderhash) != 0 )
+            {
+                printf("orderhash %llx mismatch %llx\n",(long long)swap->orderhash.txid,(long long)orderhash.txid);
+                return(clonestr("{\"error\":\"orderhash mismatch???\"}"));
+            }
+            swap->satoshis[0] = A->offer.basevolume64;
+            swap->satoshis[1] = relsatoshis;
+            swap->insurance = (relsatoshis * INSTANTDEX_INSURANCERATE + coinbtc->chain->txfee); // txfee
+            if ( swap->minperc < minperc )
+                swap->minperc = minperc;
+            return(instantdex_statemachine(myinfo,exchange,A,cmdstr,swap,argjson,serdata,serdatalen,altcoin,coinbtc));
+        }
 
 #endif
