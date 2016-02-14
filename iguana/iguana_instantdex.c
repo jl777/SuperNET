@@ -97,6 +97,7 @@ struct instantdex_stateinfo *instantdex_statecreate(struct instantdex_stateinfo 
     {
         states = realloc(states,sizeof(*states) * (*numstatesp + 1));
         state = &states[*numstatesp];
+        memset(state,0,sizeof(*state));
         strcpy(state->name,name);
         if ( (errorstate= instantdex_statefind(states,*numstatesp,errorstr)) == 0 )
             errorstate = &instantdex_errorstate;
@@ -110,7 +111,7 @@ struct instantdex_stateinfo *instantdex_statecreate(struct instantdex_stateinfo 
             state->timeout = instantdex_defaulttimeout;
         (*numstatesp)++;
     } else printf("statecreate error!!! (%s) already exists\n",name);
-    return(state);
+    return(states);
 }
 
 struct instantdex_event *instantdex_addevent(struct instantdex_stateinfo *states,int32_t numstates,char *statename,char *cmdstr,char *sendcmd,char *nextstatename)
@@ -118,10 +119,14 @@ struct instantdex_event *instantdex_addevent(struct instantdex_stateinfo *states
     struct instantdex_stateinfo *nextstate,*state;
     if ( (state= instantdex_statefind(states,numstates,statename)) != 0 && (nextstate= instantdex_statefind(states,numstates,nextstatename)) != 0 )
     {
+        printf("realloc %p\n",state->events);
         if ( (state->events= realloc(state->events,(state->numevents + 1) * sizeof(*state->events))) != 0 )
         {
+            printf("newptr.%p\n",state->events);
+            memset(&state->events[state->numevents],0,sizeof(state->events[state->numevents]));
             strcpy(state->events[state->numevents].cmdstr,cmdstr);
-            strcpy(state->events[state->numevents].sendcmd,sendcmd);
+            if ( sendcmd != 0 )
+                strcpy(state->events[state->numevents].sendcmd,sendcmd);
             state->events[state->numevents].nextstate = nextstate;
             state->numevents++;
         }

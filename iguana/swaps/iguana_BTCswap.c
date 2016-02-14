@@ -424,70 +424,72 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     // "<TX>found" means the other party's is confirmed at user specified confidence level
     // BTC_cleanup state just unwinds pending swap as nothing has been committed yet
     
-    // error recovery states
+    // states
     s = instantdex_statecreate(s,n,"BTC_cleanup",BOB_processfunc,0,0,0);
     s = instantdex_statecreate(s,n,"BOB_claimdeposit",BOB_processfunc,0,0,0);
     s = instantdex_statecreate(s,n,"ALICE_reclaim",BOB_processfunc,0,0,0);
 
-    // initial states
     s = instantdex_statecreate(s,n,"BOB_sentoffer",BOB_processfunc,0,"BTC_cleanup",0);
-    instantdex_addevent(s,*n,"BOB_sentoffer","BTCchose","BTCprivs","BOB_sentprivs");
     s = instantdex_statecreate(s,n,"BOB_sentprivs",BOB_processfunc,0,"BTC_cleanup",0);
-    instantdex_addevent(s,*n,"BOB_sentprivs","feefound","BTCdeptx","BOB_sentdeposit");
- 
+    s = instantdex_statecreate(s,n,"BOB_gotoffer",BOB_processfunc,0,"BTC_cleanup",0);
+    
     s = instantdex_statecreate(s,n,"ALICE_sentoffer",ALICE_processfunc,0,"BTC_cleanup",0);
+    s = instantdex_statecreate(s,n,"ALICE_gotoffer",ALICE_processfunc,0,"BTC_cleanup",0);
+    s = instantdex_statecreate(s,n,"ALICE_sentprivs",ALICE_processfunc,0,"BTC_cleanup",0);
+    s = instantdex_statecreate(s,n,"ALICE_wait3",ALICE_processfunc,0,"BTC_cleanup",0);
+    s = instantdex_statecreate(s,n,"ALICE_waitfee_privs",ALICE_processfunc,0,"BTC_cleanup",0);
+    s = instantdex_statecreate(s,n,"ALICE_waitdeposit_privs",ALICE_processfunc,0,"BTC_cleanup",0);
+    s = instantdex_statecreate(s,n,"ALICE_waitfee_deposit",ALICE_processfunc,0,"BTC_cleanup",0);
+    s = instantdex_statecreate(s,n,"ALICE_waitprivs",ALICE_processfunc,0,"BTC_cleanup",0);
+    s = instantdex_statecreate(s,n,"ALICE_waitfee",ALICE_processfunc,0,"BTC_cleanup",0);
+    s = instantdex_statecreate(s,n,"ALICE_waitdeposit",ALICE_processfunc,0,"BTC_cleanup",0);
+    
+    s = instantdex_statecreate(s,n,"BOB_sentdeposit",BOB_processfunc,0,"BTC_claimdeposit",0);
+    s = instantdex_statecreate(s,n,"BOB_altconfirm",BOB_processfunc,0,"BTC_claimdeposit",0);
+    s = instantdex_statecreate(s,n,"ALICE_sentalt",ALICE_processfunc,0,"BTC_claimdeposit",0);
+    s = instantdex_statecreate(s,n,"ALICE_waitconfirms",ALICE_processfunc,0,"BTC_claimdeposit",0);
+    s = instantdex_statecreate(s,n,"BOB_sentpayment",BOB_processfunc,0,"BTC_claimdeposit",0);
+
+    // events
+    instantdex_addevent(s,*n,"BOB_sentoffer","BTCchose","BTCprivs","BOB_sentprivs");
+    instantdex_addevent(s,*n,"BOB_sentprivs","feefound","BTCdeptx","BOB_sentdeposit");
     instantdex_addevent(s,*n,"ALICE_sentoffer","BTCchose","BTCprivs","ALICE_sentprivs");
     
     // gotoffer states have sent BTCchose already
-    s = instantdex_statecreate(s,n,"BOB_gotoffer",BOB_processfunc,0,"BTC_cleanup",0);
     instantdex_addevent(s,*n,"BOB_gotoffer","BTCchose","BTCprivs","BOB_sentprivs");
-    s = instantdex_statecreate(s,n,"ALICE_gotoffer",ALICE_processfunc,0,"BTC_cleanup",0);
     instantdex_addevent(s,*n,"ALICE_gotoffer","BTCchose","BTCprivs","ALICE_sentprivs");
     
     // alice needs to wait for various items
-    s = instantdex_statecreate(s,n,"ALICE_sentprivs",ALICE_processfunc,0,"BTC_cleanup",0);
     instantdex_addevent(s,*n,"ALICE_sentprivs","BTCdeptx",0,"ALICE_wait3");
 
     // following states cover all permutations of the three required events to make altpayment
-    s = instantdex_statecreate(s,n,"ALICE_wait3",ALICE_processfunc,0,"BTC_cleanup",0);
     instantdex_addevent(s,*n,"ALICE_wait3","feefound",0,"ALICE_waitdeposit_privs");
     instantdex_addevent(s,*n,"ALICE_wait3","depfound",0,"ALICE_waitfee_privs");
     instantdex_addevent(s,*n,"ALICE_wait3","BTCprivs",0,"ALICE_waitfee_deposit");
     
-    s = instantdex_statecreate(s,n,"ALICE_waitfee_privs",ALICE_processfunc,0,"BTC_cleanup",0);
     instantdex_addevent(s,*n,"ALICE_waitfee_privs","feefound",0,"ALICE_waitprivs");
     instantdex_addevent(s,*n,"ALICE_waitfee_privs","BTCprivs",0,"ALICE_waitfee");
     
-    s = instantdex_statecreate(s,n,"ALICE_waitdeposit_privs",ALICE_processfunc,0,"BTC_cleanup",0);
     instantdex_addevent(s,*n,"ALICE_waitdeposit_privs","depfound",0,"ALICE_waitprivs");
     instantdex_addevent(s,*n,"ALICE_waitdeposit_privs","BTCprivs",0,"ALICE_waitdeposit");
     
-    s = instantdex_statecreate(s,n,"ALICE_waitfee_deposit",ALICE_processfunc,0,"BTC_cleanup",0);
     instantdex_addevent(s,*n,"ALICE_waitfee_deposit","depfound",0,"ALICE_waitfee");
     instantdex_addevent(s,*n,"ALICE_waitfee_deposit","feefound",0,"ALICE_waitdeposit");
     
     // wait for last event and send out altpayment
-    s = instantdex_statecreate(s,n,"ALICE_waitprivs",ALICE_processfunc,0,"BTC_cleanup",0);
     instantdex_addevent(s,*n,"ALICE_waitprivs","BTCprivs","BTCalttx","ALICE_sentalt");
-    s = instantdex_statecreate(s,n,"ALICE_waitfee",ALICE_processfunc,0,"BTC_cleanup",0);
     instantdex_addevent(s,*n,"ALICE_waitfee","feefound","BTCalttx","ALICE_sentalt");
-    s = instantdex_statecreate(s,n,"ALICE_waitdeposit",ALICE_processfunc,0,"BTC_cleanup",0);
     instantdex_addevent(s,*n,"ALICE_waitdeposit","depfound","BTCalttx","ALICE_sentalt");
 
     // now Bob's turn to make sure altpayment is confirmed and send real payment
-    s = instantdex_statecreate(s,n,"BOB_sentdeposit",BOB_processfunc,0,"BTC_claimdeposit",0);
     instantdex_addevent(s,*n,"BOB_sentdeposit","BTCalttx",0,"BOB_altconfirm");
-    s = instantdex_statecreate(s,n,"BOB_altconfirm",BOB_processfunc,0,"BTC_claimdeposit",0);
     instantdex_addevent(s,*n,"BOB_altconfirm","altfound","BTCpaytx","BOB_sentpayment");
     
-    s = instantdex_statecreate(s,n,"ALICE_sentalt",ALICE_processfunc,0,"BTC_claimdeposit",0);
     instantdex_addevent(s,*n,"ALICE_sentalt","BTCpaytx",0,"ALICE_waitconfirms");
-    s = instantdex_statecreate(s,n,"ALICE_waitconfirms",ALICE_processfunc,0,"BTC_claimdeposit",0);
     instantdex_addevent(s,*n,"ALICE_waitconfirms","bobfound",0,"ALICE_reclaim");
     instantdex_addevent(s,*n,"ALICE_waitconfirms","payfound","BTCprivM","ALICE_claimedbtc");
   
     // if BTCprivM doesnt come in, altcoin needs to be monitored for alice's claim
-    s = instantdex_statecreate(s,n,"BOB_sentpayment",BOB_processfunc,0,"BTC_claimdeposit",0);
     instantdex_addevent(s,*n,"BOB_sentpayment","aclfound","BTCdone","BOB_claimedalt");
     instantdex_addevent(s,*n,"BOB_sentpayment","BTCprivM","BTCdone","BOB_claimedalt");
  
