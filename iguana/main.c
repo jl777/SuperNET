@@ -1036,7 +1036,7 @@ void iguana_main(void *arg)
     mycalloc(0,0,0);
     myinfo = SuperNET_MYINFO(0);
     FILE *fp; int32_t iter;
-    strcpy(myinfo->NXTAPIURL,"http://127.0.0.1:7876");
+    strcpy(myinfo->NXTAPIURL,"http://127.0.0.1:7876/nxt");
     for (iter=0; iter<2; iter++)
     {
         if ( (fp= fopen(iter == 0 ? "nxtpasswords" : "fimpasswords","rb")) != 0 )
@@ -1051,7 +1051,7 @@ void iguana_main(void *arg)
             }
             fclose(fp);
         }
-        strcpy(myinfo->NXTAPIURL,"http://127.0.0.1:7886");
+        strcpy(myinfo->NXTAPIURL,"http://127.0.0.1:7886/nxt");
     }
     if ( usessl == 0 )
         strcpy(myinfo->NXTAPIURL,"http://127.0.0.1:");
