@@ -1032,7 +1032,7 @@ void iguana_main(void *arg)
 {
     int32_t usessl = 0, ismainnet = 1;
     struct supernet_info *myinfo; char *tmpstr,*helperargs,*coinargs,helperstr[512]; int32_t i;
-    issue_startForging(0,"secret");
+    issue_startForging("http://127.0.0.1:7876","secret");
 
     mycalloc(0,0,0);
     myinfo = SuperNET_MYINFO(0);
