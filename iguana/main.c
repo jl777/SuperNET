@@ -1032,16 +1032,34 @@ void iguana_main(void *arg)
 {
     int32_t usessl = 0, ismainnet = 1;
     struct supernet_info *myinfo; char *tmpstr,*helperargs,*coinargs,helperstr[512]; int32_t i;
-    issue_startForging("http://127.0.0.1:7876","secret");
 
     mycalloc(0,0,0);
     myinfo = SuperNET_MYINFO(0);
+    FILE *fp; int32_t iter;
+    strcpy(myinfo->NXTAPIURL,"http://127.0.0.1:7876");
+    for (iter=0; iter<2; iter++)
+    {
+        if ( (fp= fopen(iter == 0 ? "nxtpasswords" : "fimpasswords","rb")) != 0 )
+        {
+            char line[4096],NXTaddr[64]; int32_t j; uint8_t pubkey[32];
+            while ( fgets(line,sizeof(line),fp) > 0 )
+            {
+                j = (int32_t)strlen(line) - 1;
+                line[j] = 0;
+                calc_NXTaddr(NXTaddr,pubkey,(uint8_t *)line,j);
+                printf("FORGING %s (%s)\n",NXTaddr,issue_startForging(myinfo,line));
+            }
+            fclose(fp);
+        }
+        strcpy(myinfo->NXTAPIURL,"http://127.0.0.1:7886");
+    }
     if ( usessl == 0 )
         strcpy(myinfo->NXTAPIURL,"http://127.0.0.1:");
     else strcpy(myinfo->NXTAPIURL,"https://127.0.0.1:");
     if ( ismainnet != 0 )
         strcat(myinfo->NXTAPIURL,"7876/nxt");
     else strcat(myinfo->NXTAPIURL,"6876/nxt");
+
 #ifndef _WIN32
     signal(SIGINT,sigint_func);
     signal(SIGILL,sigillegal_func);

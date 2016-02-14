@@ -83,11 +83,11 @@ char *_get_MSoffers(struct supernet_info *myinfo,char *str)
     return(issue_NXTPOST(cmd));
 }
 
-char *issue_startForging(char *url,char *secret)
+char *issue_startForging(struct supernet_info *myinfo,char *secret)
 {
     char cmd[4096];
     sprintf(cmd,"requestType=startForging&secretPhrase=%s",secret);
-    return(bitcoind_RPC(0,"curl",url,0,0,cmd));
+    return(issue_NXTPOST(cmd));
 }
 
 uint32_t get_blockutime(struct supernet_info *myinfo,uint32_t blocknum)
