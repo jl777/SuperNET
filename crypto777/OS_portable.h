@@ -34,6 +34,8 @@
 #include "../win/mingw.h"
 #include "../win/mman.h"
 
+#define EADDRINUSE WSAEADDRINUSE
+
 #else
 #include <poll.h>
 #include <netdb.h>
