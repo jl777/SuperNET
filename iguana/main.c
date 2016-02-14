@@ -305,6 +305,7 @@ void iguana_exit()
     exit(0);
 }
 
+#ifndef _WIN32
 #include <signal.h>
 void sigint_func() { printf("\nSIGINT\n"); iguana_exit(); }
 void sigillegal_func() { printf("\nSIGILL\n"); iguana_exit(); }
@@ -315,6 +316,7 @@ void sigquit_func() { printf("\nSIGQUIT\n"); iguana_exit(); }
 void sigchild_func() { printf("\nSIGCHLD\n"); signal(SIGCHLD,sigchild_func); }
 void sigalarm_func() { printf("\nSIGALRM\n"); signal(SIGALRM,sigalarm_func); }
 void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func); }
+#endif
 
 void mainloop(struct supernet_info *myinfo)
 {
@@ -1038,6 +1040,7 @@ void iguana_main(void *arg)
     if ( ismainnet != 0 )
         strcat(myinfo->NXTAPIURL,"7876/nxt");
     else strcat(myinfo->NXTAPIURL,"6876/nxt");
+#ifndef _WIN32
     signal(SIGINT,sigint_func);
     signal(SIGILL,sigillegal_func);
     signal(SIGHUP,sighangup_func);
@@ -1047,6 +1050,7 @@ void iguana_main(void *arg)
     signal(SIGCHLD,sigchild_func);
     signal(SIGALRM,sigalarm_func);
     signal(SIGCONT,sigcontinue_func);
+#endif
    //iguana_chaingenesis(1,1403138561,0x1e0fffff,8359109,bits256_conv("fd1751cc6963d88feca94c0d01da8883852647a37a0a67ce254d62dd8c9d5b2b")); // BTCD
     //iguana_chaingenesis(1,1409839200,0x1e0fffff,64881664,bits256_conv("698a93a1cacd495a7a4fb3864ad8d06ed4421dedbc57f9aaad733ea53b1b5828")); // VPN
     iguana_chaingenesis(1,1317972665,0x1e0ffff0,2084524493,bits256_conv("97ddfbbae6be97fd6cdf3e7ca13232a3afff2353e29badfab7f73011edd4ced9")); // LTC
