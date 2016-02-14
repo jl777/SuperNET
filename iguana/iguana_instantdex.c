@@ -631,7 +631,7 @@ char *instantdex_swapset(struct supernet_info *myinfo,struct instantdex_accept *
     traderpub = jbits256(argjson,"traderpub");
     if ( (minperc= jdouble(argjson,"p")) < INSTANTDEX_MINPERC )
         minperc = INSTANTDEX_MINPERC;
-    if ( (coinbtc= iguana_coinfind("BTC")) != 0 )
+    if ( (coinbtc= iguana_coinfind("BTC")) == 0 )
         return(clonestr("{\"error\":\"no BTC found\"}"));
     insurance = (satoshis[1] * INSTANTDEX_INSURANCERATE + coinbtc->chain->txfee); // txfee prevents papercut attack
     offerdir = instantdex_bidaskdir(A);
