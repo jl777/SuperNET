@@ -19,7 +19,7 @@
 #define SUPERNET_MAXHOPS 7
 #include "../crypto777/OS_portable.h"
 #include "../includes/cJSON.h"
-#include "../crypto777/nanosrc/nn.h"
+//#include "../crypto777/nanosrc/nn.h"
 
 #define SUPERNET_GETPEERSTR "{\"agent\":\"SuperNET\",\"method\":\"getpeers\",\"plaintext\":1}"
 #define SUPERNET_STOPSTR "{\"agent\":\"SuperNET\",\"method\":\"stop\",\"plaintext\":1}"
@@ -83,7 +83,7 @@ struct supernet_info
     struct supernet_address myaddr;
     int32_t LBsock,PUBsock,reqsock,subsock,networktimeout,maxdelay;
     uint16_t LBport,PUBport,reqport,subport;
-    struct nn_pollfd pfd[SUPERNET_MAXAGENTS]; //struct relay_info active;
+    //struct nn_pollfd pfd[SUPERNET_MAXAGENTS]; //struct relay_info active;
     struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ;
     int32_t numagents,numexchanges;
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES];

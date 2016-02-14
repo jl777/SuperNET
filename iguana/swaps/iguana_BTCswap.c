@@ -424,8 +424,8 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     // "<TX>found" means the other party's is confirmed at user specified confidence level
     // BTC_cleanup state just unwinds pending swap as nothing has been committed yet
     
-    // states
-    s = instantdex_statecreate(s,n,"BTC_cleanup",BOB_processfunc,0,0,0);
+    // states instantdex_statecreate(s,n,<Name of State>,handlerfunc,errorhandler,<Timeout State>,<Error State>
+    // a given state has a couple of handlers and custom events, with timeouts and errors invoking a bypass    s = instantdex_statecreate(s,n,"BTC_cleanup",BOB_processfunc,0,0,0);
     s = instantdex_statecreate(s,n,"BOB_claimdeposit",BOB_processfunc,0,0,0);
     s = instantdex_statecreate(s,n,"ALICE_reclaim",BOB_processfunc,0,0,0);
  
@@ -453,7 +453,7 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     s = instantdex_statecreate(s,n,"ALICE_claimedbtc",BOB_processfunc,0,0,0);
     s = instantdex_statecreate(s,n,"BOB_claimedalt",BOB_processfunc,0,0,0);
 
-    // events
+    // events instantdex_addevent(s,*n,<Current State>,<event>,<message to send>,<Next State>)
     instantdex_addevent(s,*n,"BOB_sentoffer","BTCchose","BTCprivs","BOB_sentprivs");
     instantdex_addevent(s,*n,"BOB_sentprivs","feefound","BTCdeptx","BOB_sentdeposit");
     instantdex_addevent(s,*n,"ALICE_sentoffer","BTCchose","BTCprivs","ALICE_sentprivs");

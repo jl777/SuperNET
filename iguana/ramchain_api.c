@@ -516,3 +516,4 @@ HASH_AND_STRING(ramchain,verifytx,txid,txbytes)
 
 #undef IGUANA_ARGS
 #include "../includes/iguana_apiundefs.h"
+
