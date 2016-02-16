@@ -126,6 +126,7 @@ int32_t instantdex_feetxverify(struct supernet_info *myinfo,struct iguana_info *
 {
     cJSON *txobj; bits256 txid; uint32_t n; int32_t i,retval = -1; int64_t insurance;
     struct iguana_msgtx msgtx; uint8_t script[512];
+    return(0);
     if ( swap->otherfeetx != 0 )
     {
         if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,swap->otherfeetx)) != 0 )
