@@ -239,7 +239,7 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                     height = (height * 10) + (line[k] - '0');
                 else break;
             }
-            //printf("parseline: k.%d %d height.%d m.%d bundlesize.%d (%s)\n",k,line[k],height,m,coin->chain->bundlesize,&line[k+1+65]);// + strlen(line+k+1)]);
+            printf("parseline: k.%d %d height.%d m.%d bundlesize.%d (%s)\n",k,line[k],height,m,coin->chain->bundlesize,&line[k+1+65]);// + strlen(line+k+1)]);
             if ( line[k] == ' ' )
             {
                 decode_hex(hash2.bytes,sizeof(hash2),line+k+1);
