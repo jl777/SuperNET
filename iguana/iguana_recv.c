@@ -371,7 +371,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     if ( pend >= coin->MAXPENDING*coin->MAXPEERS )
     {
         sleep(10000);
-        //printf("SKIP pend.%d vs %d: ITERATE bundle.%d n.%d r.%d s.%d finished.%d timelimit.%d\n",pend,coin->MAXPENDING*coin->MAXPEERS,bp->bundleheight,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit);
+        printf("SKIP pend.%d vs %d: ITERATE bundle.%d n.%d r.%d s.%d finished.%d timelimit.%d\n",pend,coin->MAXPENDING*coin->MAXPEERS,bp->bundleheight,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit);
         iguana_bundleQ(coin,bp,counter == 0 ? bp->n*5 : bp->n*2);
         return(0);
     }
@@ -402,9 +402,9 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         }
         if ( max <= 0 )
             break;
-        usleep(10000);
+        usleep(1000);
     }
-    if ( 0 && counter > 0 )
+    //if ( 1 && counter > 0 )
         printf("ITERATE bundle.%d h.%d n.%d r.%d s.%d finished.%d issued.%d\n",bp->bundleheight,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,counter);
     if ( bp->emitfinish == 0 )
     {
