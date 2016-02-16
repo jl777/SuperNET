@@ -1549,6 +1549,7 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
                     if ( (str= instantdex_sendoffer(myinfo,exchange,ap,json)) != 0 ) // adds to statemachine
                     {
                         json = cJSON_CreateObject();
+                        printf("from TRADE\n");
                         jaddstr(json,"BTCoffer",instantdex_selectqueue(exchange,ap,str));
                     } else printf("null return from btcoffer\n");
                     free_json(tmp);

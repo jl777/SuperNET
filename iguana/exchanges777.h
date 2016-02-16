@@ -94,8 +94,8 @@ struct instantdex_offer { char base[24],rel[24]; uint64_t price64,basevolume64,o
 struct instantdex_accept
 {
     struct queueitem DL; void *info;
-    uint64_t pendingvolume64,orderid,matchid; uint32_t dead; int32_t didstate;
-    struct instantdex_offer offer;
+    uint64_t pendingvolume64,otherorderid,orderid,matchid; uint32_t dead; int32_t didstate;
+    struct instantdex_offer otheroffer,offer;
 };
 
 struct instantdex_accept *instantdex_offerfind(struct supernet_info *myinfo,struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel,int32_t requeue);

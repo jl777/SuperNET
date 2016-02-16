@@ -684,7 +684,7 @@ cJSON *BTC_cleanupfunc(struct supernet_info *myinfo,struct exchange_info *exchan
 struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
 {
     struct instantdex_stateinfo *s = 0;
-    *n = 0;
+    *n = 2;
     // Four initial states are BOB_sentoffer, ALICE_gotoffer, ALICE_sentoffer, BOB_gotoffer
     // the initiator includes signed feetx and deck of 777 keypairs
     //
@@ -717,13 +717,13 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     s = instantdex_statecreate(s,n,"BOB_sentprivs",BTC_waitprivsfunc,0,"BTC_cleanup",0);
     s = instantdex_statecreate(s,n,"BOB_waitfee",BOB_waitfeefunc,0,"BTC_cleanup",0);
     s = instantdex_statecreate(s,n,"BOB_sentdeposit",BOB_waitBTCalttxfunc,0,"BOB_reclaim",0);
-    s = instantdex_statecreate(s,n,"BOB_altconfirm",BOB_waitaltconfirmfunc,0,"BTC_claimdeposit",0);
-    s = instantdex_statecreate(s,n,"BOB_sentpayment",BOB_waitprivMfunc,0,"BTC_claimdeposit",0);
+    s = instantdex_statecreate(s,n,"BOB_altconfirm",BOB_waitaltconfirmfunc,0,"BOB_reclaim",0);
+    s = instantdex_statecreate(s,n,"BOB_sentpayment",BOB_waitprivMfunc,0,"BOB_reclaim",0);
     s = instantdex_statecreate(s,n,"ALICE_sentprivs",BTC_waitprivsfunc,0,"BTC_cleanup",0);
     s = instantdex_statecreate(s,n,"Alice_waitfee",ALICE_waitfeefunc,0,"BTC_cleanup",0);
     s = instantdex_statecreate(s,n,"ALICE_waitdeposit",ALICE_waitdepositfunc,0,"BTC_cleanup",0);
-    s = instantdex_statecreate(s,n,"ALICE_sentalt",ALICE_waitBTCpaytxfunc,0,"BTC_claimdeposit",0);
-    s = instantdex_statecreate(s,n,"ALICE_waitconfirms",ALICE_waitpayconf_or_bobreclaimfunc,0,"BTC_claimdeposit",0);
+    s = instantdex_statecreate(s,n,"ALICE_sentalt",ALICE_waitBTCpaytxfunc,0,"ALICE_reclaim",0);
+    s = instantdex_statecreate(s,n,"ALICE_waitconfirms",ALICE_waitpayconf_or_bobreclaimfunc,0,"ALICE_reclaim",0);
 
     // events instantdex_addevent(s,*n,<Current State>,<event>,<message to send>,<Next State>)
     if ( 0 ) // following are implicit states and events handled externally to setup datastructures
@@ -772,28 +772,28 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     s = instantdex_statecreate(s,n,"BOB_sentdeposit",BOB_waitBTCalttxfunc,0,"BOB_reclaim",0);
     instantdex_addevent(s,*n,"BOB_sentdeposit","BTCalttx","poll","BOB_altconfirm");
  
-    s = instantdex_statecreate(s,n,"BOB_altconfirm",BOB_waitaltconfirmfunc,0,"BTC_claimdeposit",0);
+    s = instantdex_statecreate(s,n,"BOB_altconfirm",BOB_waitaltconfirmfunc,0,"BOB_reclaim",0);
     instantdex_addevent(s,*n,"BOB_altconfirm","altfound","BTCpaytx","BOB_sentpayment");
     instantdex_addevent(s,*n,"BOB_altconfirm","poll","poll","BOB_altconfirm");
     
     // now Alice's turn to make sure payment is confrmed and send in claim or see bob's reclaim and reclaim
-    s = instantdex_statecreate(s,n,"ALICE_sentalt",ALICE_waitBTCpaytxfunc,0,"BTC_claimdeposit",0);
+    s = instantdex_statecreate(s,n,"ALICE_sentalt",ALICE_waitBTCpaytxfunc,0,"ALICE_reclaim",0);
     instantdex_addevent(s,*n,"ALICE_sentalt","BTCpaytx","poll","ALICE_waitconfirms");
     
-    s = instantdex_statecreate(s,n,"ALICE_waitconfirms",ALICE_waitpayconf_or_bobreclaimfunc,0,"BTC_claimdeposit",0);
+    s = instantdex_statecreate(s,n,"ALICE_waitconfirms",ALICE_waitpayconf_or_bobreclaimfunc,0,"ALICE_reclaim",0);
     instantdex_addevent(s,*n,"ALICE_waitconfirms","bobfound","poll","ALICE_reclaim");
     instantdex_addevent(s,*n,"ALICE_waitconfirms","payfound","BTCprivM","ALICE_claimedbtc");
     instantdex_addevent(s,*n,"ALICE_waitconfirms","poll","poll","ALICE_waitconfirms");
 
     // Bob waits for privM either from Alice or alt blockchain
-    s = instantdex_statecreate(s,n,"BOB_sentpayment",BOB_waitprivMfunc,0,"BTC_claimdeposit",0);
+    s = instantdex_statecreate(s,n,"BOB_sentpayment",BOB_waitprivMfunc,0,"BOB_reclaim",0);
     instantdex_addevent(s,*n,"BOB_sentpayment","btcfound","BTCdone","BOB_claimedalt");
     instantdex_addevent(s,*n,"BOB_sentpayment","BTCprivM","BTCdone","BOB_claimedalt");
     instantdex_addevent(s,*n,"BOB_sentpayment","poll","poll","BOB_sentpayment");
     return(s);
 }
 
-char *instantdex_statemachine(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,char *cmdstr,cJSON *argjson,cJSON *newjson,uint8_t *serdata,int32_t serdatalen)
+char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numstates,struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,char *cmdstr,cJSON *argjson,cJSON *newjson,uint8_t *serdata,int32_t serdatalen)
 {
     uint32_t i; struct iguana_info *altcoin,*coinbtc; struct bitcoin_swapinfo *swap; struct instantdex_stateinfo *state; cJSON *origjson = newjson;
     if ( (swap= A->info) == 0 || (state= swap->state) == 0 || (coinbtc= iguana_coinfind("BTC")) == 0 || (altcoin= iguana_coinfind(A->offer.base)) == 0 )
@@ -801,7 +801,7 @@ char *instantdex_statemachine(struct supernet_info *myinfo,struct exchange_info 
     printf("%llu/%llu cmd.(%s) state.(%s)\n",(long long)swap->bidid,(long long)swap->askid,cmdstr,swap->state->name);
     if ( swap->expiration != 0 && time(NULL) > swap->expiration )
     {
-        swap->state = state->timeoutevent;
+        swap->state = &states[state->timeoutind];
         if ( (newjson= (*state->timeout)(myinfo,exchange,A,argjson,newjson,&serdata,&serdatalen)) == 0 )
             return(clonestr("{\"error\":\"instantdex_BTCswap null return from timeoutfunc\"}"));
         return(jprint(newjson,1));
@@ -821,7 +821,7 @@ char *instantdex_statemachine(struct supernet_info *myinfo,struct exchange_info 
                 else
                 {
                     printf("null return from non-poll event\n");
-                    swap->state = state->errorevent;
+                    swap->state = &states[state->errorind];
                     return(clonestr("{\"error\":\"instantdex_statemachine: null return\"}"));
                 }
             }
@@ -829,8 +829,11 @@ char *instantdex_statemachine(struct supernet_info *myinfo,struct exchange_info 
             {
                 if ( state->events[i].sendcmd != 0 )
                 {
-                    swap->state = state->events[i].nextstate;
-                    return(instantdex_sendcmd(myinfo,&A->offer,newjson,state->events[i].sendcmd,swap->othertrader,INSTANTDEX_HOPS,serdata,serdatalen));
+                    if ( state->events[i].nextstate->ind > 1 )
+                    {
+                        swap->state = &states[state->events[i].nextstate->ind];
+                        return(instantdex_sendcmd(myinfo,&A->offer,newjson,state->events[i].sendcmd,swap->othertrader,INSTANTDEX_HOPS,serdata,serdatalen));
+                    } else return(clonestr("{\"error\":\"instantdex_statemachine: illegal state\"}"));
                 } else return(clonestr("{\"result\":\"instantdex_statemachine: processed\"}"));
             }
         }
