@@ -1060,17 +1060,20 @@ void iguana_main(void *arg)
         strcat(myinfo->NXTAPIURL,"7876/nxt");
     else strcat(myinfo->NXTAPIURL,"6876/nxt");
 
+    if ( 0 )
+    {
 #ifndef _WIN32
-    signal(SIGINT,sigint_func);
-    signal(SIGILL,sigillegal_func);
-    signal(SIGHUP,sighangup_func);
-    //signal(SIGKILL,sigkill_func);
-    signal(SIGABRT,sigabort_func);
-    signal(SIGQUIT,sigquit_func);
-    signal(SIGCHLD,sigchild_func);
-    signal(SIGALRM,sigalarm_func);
-    signal(SIGCONT,sigcontinue_func);
+        signal(SIGINT,sigint_func);
+        signal(SIGILL,sigillegal_func);
+        signal(SIGHUP,sighangup_func);
+        //signal(SIGKILL,sigkill_func);
+        signal(SIGABRT,sigabort_func);
+        signal(SIGQUIT,sigquit_func);
+        signal(SIGCHLD,sigchild_func);
+        signal(SIGALRM,sigalarm_func);
+        signal(SIGCONT,sigcontinue_func);
 #endif
+    }
    //iguana_chaingenesis(1,1403138561,0x1e0fffff,8359109,bits256_conv("fd1751cc6963d88feca94c0d01da8883852647a37a0a67ce254d62dd8c9d5b2b")); // BTCD
     //iguana_chaingenesis(1,1409839200,0x1e0fffff,64881664,bits256_conv("698a93a1cacd495a7a4fb3864ad8d06ed4421dedbc57f9aaad733ea53b1b5828")); // VPN
     iguana_chaingenesis(1,1317972665,0x1e0ffff0,2084524493,bits256_conv("97ddfbbae6be97fd6cdf3e7ca13232a3afff2353e29badfab7f73011edd4ced9")); // LTC
@@ -1100,15 +1103,15 @@ void iguana_main(void *arg)
         iguana_launch(iguana_coinadd("BTCD"),"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
     else if ( 1 )
     {
-#ifdef __APPLE__
+//#ifdef __APPLE__
         sleep(1);
         char *str;
-        strcpy(MYINFO.rpcsymbol,"BTCD");
+        strcpy(MYINFO.rpcsymbol,"BTC");
         iguana_launchcoin(MYINFO.rpcsymbol,cJSON_Parse("{}"));
-        if ( 1 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":3,\"newcoin\":\"BTCD\",\"active\":0}"),0)) != 0 )
+        if ( 1 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":3,\"newcoin\":\"BTC\",\"active\":0}"),0)) != 0 )
         {
             free(str);
-            if ( (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":3,\"newcoin\":\"BTC\",\"active\":0}"),0)) != 0 )
+            if ( 0 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":3,\"newcoin\":\"BTCD\",\"active\":0}"),0)) != 0 )
             {
                 free(str);
                 if ( 0 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"login\",\"handle\":\"alice\",\"password\":\"alice\",\"passphrase\":\"alice\"}"),0)) != 0 )
@@ -1120,7 +1123,7 @@ void iguana_main(void *arg)
             }
         }
         sleep(1);
-#endif
+//#endif
     }
     if ( arg != 0 )
         SuperNET_JSON(&MYINFO,cJSON_Parse(arg),0);
