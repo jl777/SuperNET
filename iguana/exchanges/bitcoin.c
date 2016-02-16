@@ -1546,11 +1546,12 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
                 if ( (tmp= cJSON_Parse(str)) != 0 )
                 {
                     txid = j64bits(json,"orderid");
-                    if ( (str= instantdex_sendoffer(myinfo,exchange,ap,json)) != 0 ) // adds to statemachine
+                    if ( (str= instantdex_sendoffer(myinfo,exchange,ap,json)) != 0 )
                     {
+                        queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
                         json = cJSON_CreateObject();
                         printf("from TRADE\n");
-                        jaddstr(json,"BTCoffer",instantdex_selectqueue(exchange,ap,str));
+                        jaddstr(json,"BTCoffer",str);
                     } else printf("null return from btcoffer\n");
                     free_json(tmp);
                 } else printf("queueaccept return parse error.(%s)\n",str);
