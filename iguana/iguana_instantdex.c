@@ -497,6 +497,8 @@ struct instantdex_accept *instantdex_statemachinefind(struct supernet_info *myin
         else
         {
             printf("expired pending, need to take action, send timeout event\n");
+            free(ap);
+            continue;
         }
         if ( ap != retap || requeueflag != 0 )
             queue_enqueue("statemachineQ",&exchange->statemachineQ,&ap->DL,0);
@@ -751,7 +753,7 @@ char *instantdex_sendoffer(struct supernet_info *myinfo,struct exchange_info *ex
     swap->choosei = swap->otherschoosei = -1;
     swap->depositconfirms = swap->paymentconfirms = swap->altpaymentconfirms = swap->myfeeconfirms = swap->otherfeeconfirms = -1;
     ap->info = swap;
-    printf("sendoffer SETSWAP for orderid.%llu\n",(long long)ap->orderid);
+    printf("sendoffer SETSWAP for orderid.%llu (%s)\n",(long long)ap->orderid,jprint(argjson,0));
     if ( (retstr= instantdex_swapset(myinfo,ap,argjson)) != 0 )
         return(retstr);
     ap->orderid = swap->orderhash.txid;
@@ -787,7 +789,7 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
     if ( ap->info == 0 )
     {
         ap->info = swap = calloc(1,sizeof(struct bitcoin_swapinfo));
-        printf("gotoffer SETSWAP for orderid.%llu\n",(long long)ap->orderid);
+        printf("gotoffer SETSWAP for orderid.%llu (%s)\n",(long long)ap->orderid,jprint(argjson,0));
         swap->choosei = swap->otherschoosei = -1;
         swap->depositconfirms = swap->paymentconfirms = swap->altpaymentconfirms = swap->myfeeconfirms = swap->otherfeeconfirms = -1;
         swap->isbob = (ap->offer.myside ^ 1);
