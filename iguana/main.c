@@ -42,7 +42,7 @@ struct supernet_info MYINFO,**MYINFOS;
 static int32_t initflag;
 cJSON *API_json;
 #ifdef __linux__
-int32_t IGUANA_NUMHELPERS = 8;
+int32_t IGUANA_NUMHELPERS = 16;
 #else
 int32_t IGUANA_NUMHELPERS = 1;
 #endif
