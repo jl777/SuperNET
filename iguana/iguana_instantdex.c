@@ -109,27 +109,39 @@ struct instantdex_stateinfo *instantdex_statefind(struct instantdex_stateinfo *s
     return(0);
 }
 
+void instantdex_stateinit(struct instantdex_stateinfo *states,int32_t numstates,struct instantdex_stateinfo *state,char *name,char *errorstr,char *timeoutstr,void *process_func,void *timeout_func)
+{
+    struct instantdex_stateinfo *timeoutstate,*errorstate;
+    memset(state,0,sizeof(*state));
+    strcpy(state->name,name);
+    if ( (errorstate= instantdex_statefind(states,numstates,errorstr)) == 0 )
+        errorstate = &instantdex_errorstate;
+    state->errorevent = errorstate;
+    if ( (timeoutstate= instantdex_statefind(states,numstates,timeoutstr)) == 0 )
+        timeoutstate = &instantdex_timeoutstate;
+    state->timeoutevent = timeoutstate;
+    if ( (state->process= process_func) == 0 )
+        state->process = instantdex_defaultprocess;
+    if ( (state->timeout= timeout_func) == 0 )
+        state->timeout = instantdex_defaulttimeout;
+}
+
 struct instantdex_stateinfo *instantdex_statecreate(struct instantdex_stateinfo *states,int32_t *numstatesp,char *name,cJSON *(*process_func)(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp),cJSON *(*timeout_func)(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp),char *timeoutstr,char *errorstr)
 {
-    struct instantdex_stateinfo *timeoutstate,*errorstate,*state = 0;
+    struct instantdex_stateinfo S,*state = 0;
     if ( (state= instantdex_statefind(states,*numstatesp,name)) == 0 )
     {
         states = realloc(states,sizeof(*states) * (*numstatesp + 1));
         state = &states[*numstatesp];
-        memset(state,0,sizeof(*state));
-        strcpy(state->name,name);
-        if ( (errorstate= instantdex_statefind(states,*numstatesp,errorstr)) == 0 )
-            errorstate = &instantdex_errorstate;
-        state->errorevent = errorstate;
-        if ( (timeoutstate= instantdex_statefind(states,*numstatesp,timeoutstr)) == 0 )
-            timeoutstate = &instantdex_timeoutstate;
-        state->timeoutevent = timeoutstate;
-        if ( (state->process= process_func) == 0 )
-            state->process = instantdex_defaultprocess;
-        if ( (state->timeout= timeout_func) == 0 )
-            state->timeout = instantdex_defaulttimeout;
+        instantdex_stateinit(states,*numstatesp,state,name,errorstr,timeoutstr,process_func,timeout_func);
         (*numstatesp)++;
-    } else printf("statecreate error!!! (%s) already exists\n",name);
+    }
+    else
+    {
+        instantdex_stateinit(states,*numstatesp,&S,name,errorstr,timeoutstr,process_func,timeout_func);
+        if ( memcmp(&S,state,sizeof(S)) != 0 )
+            printf("statecreate error!!! (%s) already exists\n",name);
+    }
     return(states);
 }
 
@@ -786,7 +798,10 @@ char *instantdex_selectqueue(struct exchange_info *exchange,struct instantdex_ac
         free_json(retjson);
     }
     if ( flag == 0 )
+    {
+        printf("add orderid.%llu to statemachine\n",(long long)ap->orderid);
         queue_enqueue("statemachineQ",&exchange->statemachineQ,&ap->DL,0);
+    }
     return(retstr);
 }
 
