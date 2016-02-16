@@ -767,6 +767,12 @@ char *instantdex_sendoffer(struct supernet_info *myinfo,struct exchange_info *ex
         return(clonestr("{\"error\":\"instantdex_BTCswap offer null newjson\"}"));
     else if ( (retstr= instantdex_addfeetx(myinfo,newjson,ap,swap,"BOB_sentoffer","ALICE_sentoffer")) == 0 )
     {
+        {
+            int32_t i;
+            for (i=0; i<sizeof(ap->offer); i++)
+                printf("%02x ",((uint8_t *)&ap->offer)[i]);
+            printf("BTCoffer.%llu\n",(long long)ap->orderid);
+        }
         return(instantdex_sendcmd(myinfo,&ap->offer,newjson,"BTCoffer",GENESIS_PUBKEY,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck)));
     }
     else return(retstr);
@@ -782,6 +788,12 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
     {
         printf("got my own gotoffer packet orderid.%llu\n",(long long)ap->orderid);
         return(clonestr("{\"result\":\"got my own packet\"}"));
+    }
+    {
+        int32_t i;
+        for (i=0; i<sizeof(ap->offer); i++)
+            printf("%02x ",((uint8_t *)&ap->offer)[i]);
+        printf("BTCoffer.%llu\n",(long long)ap->orderid);
     }
     printf("T.%d got (%s/%s) %.8f vol %.8f %llu offerside.%d offerdir.%d swap.%p decksize.%ld/datalen.%d\n",bits256_cmp(traderpub,myinfo->myaddr.persistent),ap->offer.base,ap->offer.rel,dstr(ap->offer.price64),dstr(ap->offer.basevolume64),(long long)ap->orderid,ap->offer.myside,ap->offer.acceptdir,ap->info,sizeof(swap->deck),serdatalen);
     if ( exchange == 0 )
