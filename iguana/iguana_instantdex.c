@@ -509,8 +509,8 @@ struct instantdex_accept *instantdex_statemachinefind(struct supernet_info *myin
 struct instantdex_accept *instantdex_offerfind(struct supernet_info *myinfo,struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel,int32_t requeue)
 {
     struct instantdex_accept PAD,*ap,*retap = 0; uint32_t now; cJSON *item; char *type;
-    if ( (retap= instantdex_statemachinefind(myinfo,exchange,orderid,requeue)) != 0 )
-        return(retap);
+    //if ( (retap= instantdex_statemachinefind(myinfo,exchange,orderid,requeue)) != 0 )
+    //    return(retap);
     now = (uint32_t)time(NULL);
     memset(&PAD,0,sizeof(PAD));
     queue_enqueue("acceptableQ",&exchange->acceptableQ,&PAD.DL,0);
@@ -559,9 +559,9 @@ struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,str
     minvol = A->offer.basevolume64 * minperc * .01;
     while ( (ap= queue_dequeue(&exchange->acceptableQ,0)) != 0 && ap != &PAD )
     {
+        printf("check offerbits.%llu vs %llu: %d %d %d %d %d %d %d %d\n",(long long)offerbits,(long long)ap->offer.offer64,A->offer.basevolume64 > 0.,strcmp(A->offer.base,"*") == 0 ,strcmp(A->offer.base,ap->offer.base) == 0, strcmp(A->offer.rel,"*") == 0 ,strcmp(A->offer.rel,ap->offer.rel) == 0,A->offer.basevolume64 <= (ap->offer.basevolume64 - ap->pendingvolume64),offerdir,instantdex_bidaskdir(ap));
         if ( now < ap->offer.expiration && ap->dead == 0 && (offerbits == 0 || offerbits != ap->offer.offer64) )
         {
-            //printf("check offerbits.%llu vs %llu: %d %d %d %d %d %d %d %d\n",(long long)offerbits,(long long)ap->offer.offer64,A->offer.basevolume64 > 0.,strcmp(A->offer.base,"*") == 0 ,strcmp(A->offer.base,ap->offer.base) == 0, strcmp(A->offer.rel,"*") == 0 ,strcmp(A->offer.rel,ap->offer.rel) == 0,A->offer.basevolume64 <= (ap->offer.basevolume64 - ap->pendingvolume64),offerdir,instantdex_bidaskdir(ap));
             if ( A->offer.basevolume64 > 0. && (strcmp(A->offer.base,"*") == 0 || strcmp(A->offer.base,ap->offer.base) == 0) && (strcmp(A->offer.rel,"*") == 0 || strcmp(A->offer.rel,ap->offer.rel) == 0) && minvol <= (ap->offer.basevolume64 - ap->pendingvolume64) && offerdir*instantdex_bidaskdir(ap) < 0 )
             {
                 //printf("aveprice %.8f %.8f offerdir.%d first cmp: %d %d %d\n",aveprice,dstr(ap->offer.price64),offerdir,A->offer.price64 == 0,(offerdir > 0 && ap->offer.price64 >= A->offer.price64),(offerdir < 0 && ap->offer.price64 <= A->offer.price64));
@@ -755,11 +755,11 @@ char *instantdex_sendoffer(struct supernet_info *myinfo,struct exchange_info *ex
     isbob = (ap->offer.myside == 1);
     swap = calloc(1,sizeof(struct bitcoin_swapinfo));
     swap->isbob = isbob;
-    swap->expiration = (uint32_t)(time(NULL) + INSTANTDEX_LOCKTIME*isbob);
+    swap->expiration = ap->offer.expiration;//(uint32_t)(time(NULL) + INSTANTDEX_LOCKTIME*isbob);
     swap->choosei = swap->otherschoosei = -1;
     swap->depositconfirms = swap->paymentconfirms = swap->altpaymentconfirms = swap->myfeeconfirms = swap->otherfeeconfirms = -1;
     ap->info = swap;
-    //printf("sendoffer SETSWAP for orderid.%llu (%s)\n",(long long)ap->orderid,jprint(argjson,0));
+    printf("sendoffer SETSWAP for orderid.%llu ap.%p (%p)\n",(long long)ap->orderid,ap,swap);
     if ( (retstr= instantdex_swapset(myinfo,ap,argjson)) != 0 )
         return(retstr);
     ap->orderid = swap->orderhash.txid;
@@ -826,7 +826,7 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
             return(retstr);
         else
         {
-            return(instantdex_sendcmd(myinfo,&ap->offer,newjson,"BTCchose",traderpub,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck)));
+            return(instantdex_sendcmd(myinfo,&ap->offer,newjson,"BTCdeckC",traderpub,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck)));
         }
     } else return(retstr);
 }
@@ -872,7 +872,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
         }
         A.offer = *offer;
         A.orderid = orderhash.txid;
-        if ( strcmp(cmdstr,"BTCoffer") == 0 )
+        if ( strcmp(cmdstr,"BTCoffer") == 0 || strcmp(cmdstr,"BTCdeckC") == 0 )
         {
             if ( (minperc= jdouble(argjson,"p")) < INSTANTDEX_MINPERC )
                 minperc = INSTANTDEX_MINPERC;
@@ -883,10 +883,26 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
                     ap->otherorderid = A.orderid;
                     ap->otheroffer = A.offer;
                 }
-                if ( (retstr= instantdex_gotoffer(myinfo,exchange,ap,msg,argjson,remoteaddr,signerbits,serdata,serdatalen)) != 0 ) // adds to statemachine if no error
+                if ( strcmp(cmdstr,"BTCoffer") == 0 )
                 {
-                    printf("from GOTOFFER\n");
-                    return(instantdex_selectqueue(exchange,ap,retstr));
+                    if ( (retstr= instantdex_gotoffer(myinfo,exchange,ap,msg,argjson,remoteaddr,signerbits,serdata,serdatalen)) != 0 ) // adds to statemachine if no error
+                    {
+                        printf("from GOTOFFER\n");
+                        return(instantdex_selectqueue(exchange,ap,retstr));
+                    }
+                }
+                else
+                {
+                    if ( ap->info == 0 )
+                    {
+                        printf("A (%s) null swap for orderid.%llu p.%p\n",cmdstr,(long long)ap->orderid,ap);
+                        return(clonestr("{\"error\":\"no swap for orderid\"}"));
+                    }
+                    else
+                    {
+                        newjson = instantdex_parseargjson(myinfo,exchange,ap,argjson,0);
+                        return(instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,ap,cmdstr,argjson,newjson,serdata,serdatalen));
+                    }
                 }
             }
             else
@@ -902,12 +918,19 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
                 } else return(clonestr("{\"result\":\"order was already in orderbook\"}"));
             }
         }
-        else if ( (ap= instantdex_statemachinefind(myinfo,exchange,A.orderid,1)) != 0 )
+        else if ( (ap= instantdex_statemachinefind(myinfo,exchange,A.orderid,1)) != 0 || (ap= instantdex_offerfind(myinfo,exchange,0,0,A.orderid,"*","*",0)) != 0 )
         {
             if ( ap->info == 0 )
             {
-                printf("null swap for orderid.%llu\n",(long long)ap->orderid);
-                return(clonestr("{\"error\":\"no swap for orderid\"}"));
+                if ( strcmp(cmdstr,"BTCdeckC") != 0 )
+                {
+                    printf("B (%s) null swap for orderid.%llu p.%p\n",cmdstr,(long long)ap->orderid,ap);
+                    return(clonestr("{\"error\":\"no swap for orderid\"}"));
+                }
+                else
+                {
+                    printf("BTCdeckC ap.%p null info\n",ap->info);
+                }
             }
             newjson = instantdex_parseargjson(myinfo,exchange,ap,argjson,0);
             return(instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,ap,cmdstr,argjson,newjson,serdata,serdatalen));

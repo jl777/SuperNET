@@ -1549,6 +1549,7 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
                     if ( (str= instantdex_sendoffer(myinfo,exchange,ap,json)) != 0 )
                     {
                         queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
+                        //queue_enqueue("statemachineQ",&exchange->statemachineQ,&ap->DL,0);
                         json = cJSON_CreateObject();
                         printf("from TRADE\n");
                         jaddstr(json,"BTCoffer",str);

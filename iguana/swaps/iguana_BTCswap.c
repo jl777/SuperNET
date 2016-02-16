@@ -741,7 +741,7 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     instantdex_addevent(s,*n,"BOB_sentoffer","BTCdeckC","BTCprivC","BOB_sentprivs"); // send privs + Chose
     instantdex_addevent(s,*n,"ALICE_sentoffer","BTCdeckC","BTCprivC","ALICE_sentprivs");
     
-    // gotoffer states have received deck and sent BTCchose already (along with deck)
+    // gotoffer states have received deck and sent BTCdeckC already (along with deck)
     s = instantdex_statecreate(s,n,"BOB_gotoffer",BTC_waitprivCfunc,0,"BTC_cleanup",0);
     s = instantdex_statecreate(s,n,"ALICE_gotoffer",BTC_waitprivCfunc,0,"BTC_cleanup",0);
     instantdex_addevent(s,*n,"BOB_gotoffer","BTCprivC","BTCprivs","BOB_sentprivs"); // send privs
