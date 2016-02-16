@@ -113,6 +113,11 @@ char *instantdex_feetx(struct supernet_info *myinfo,bits256 *txidp,struct instan
             else printf("error signing %s feetx numinputs.%d\n",A->offer.myside != 0 ? "BOB" : "ALICE",spend->numinputs);
             free(spend);
         }
+        else
+        {
+            printf("no unspents to spend\n");
+            feetx = clonestr("deadbeefdeadbeef");
+        }
     }
     return(feetx);
 }
@@ -490,7 +495,7 @@ cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info
         if ( juint(argjson,"verified") != 0 )
             swap->otherverifiedcut = 1;
         jaddnum(newjson,"verified",swap->otherverifiedcut);
-        if ( instantdex_pubkeyargs(swap,newjson,2 + deckflag*777,myinfo->persistent_priv,swap->orderhash,0x02+swap->isbob) == 2 )
+        if ( instantdex_pubkeyargs(swap,newjson,2 + deckflag*777,myinfo->persistent_priv,swap->orderhash,0x02+swap->isbob) == 2 + deckflag*777 )
             instantdex_getpubs(swap,argjson,newjson);
         else printf("ERROR: couldnt generate pubkeys\n");
     }
