@@ -1,1 +1,1 @@
-../agents/iguana "{\"agent\":\"iguana\",\"method\":\"addcoin\",\"newcoin\":\"BTCD\",\"active\":1,\"maxpeers\":64,\"services\":129}"
+../agents/iguana "{\"agent\":\"iguana\",\"method\":\"addcoin\",\"newcoin\":\"BTCD\",\"active\":1,\"maxpeers\":64,\"services\":0}"
