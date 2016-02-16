@@ -440,7 +440,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     //if ( time(NULL) > lastdisp+1000 )
     {
         printf("%s\n",str);
-        myallocated(0,0);
+        //myallocated(0,0);
         lastdisp = (uint32_t)time(NULL);
     }
     strcpy(coin->statusstr,str);
