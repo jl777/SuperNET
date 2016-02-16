@@ -737,7 +737,7 @@ STRING_AND_INT(iguana,maxpeers,activecoin,max)
 char *hmac_dispatch(char *(*hmacfunc)(char *dest,char *key,int32_t key_size,char *message),char *name,char *message,char *password)
 {
     char hexstr[1025]; cJSON *json;
-    if ( message != 0 && password != 0 )
+    if ( message != 0 && password != 0 && message[0] != 0 && password[0] != 0 )
     {
         memset(hexstr,0,sizeof(hexstr));
         (*hmacfunc)(hexstr,password,password==0?0:(int32_t)strlen(password),message);
@@ -752,7 +752,7 @@ char *hmac_dispatch(char *(*hmacfunc)(char *dest,char *key,int32_t key_size,char
 char *hash_dispatch(void (*hashfunc)(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len),char *name,char *message)
 {
     char hexstr[16384]; uint8_t databuf[8192]; cJSON *json;
-    if ( message != 0 )
+    if ( message != 0 && message[0] != 0 )
     {
         memset(hexstr,0,sizeof(hexstr));
         (*hashfunc)(hexstr,databuf,(uint8_t *)message,(int32_t)strlen(message));
