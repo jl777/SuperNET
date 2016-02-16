@@ -700,7 +700,7 @@ int32_t iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp,uint8_t *
     vp->spendlen = pk_scriptlen;
     vp->vin.sequence = sequence;
     memcpy(vp->spendscript,pk_script,pk_scriptlen);
-    if ( (vp->type= _iguana_calcrmd160(coin,vp)) >= 0 )
+    if ( (vp->type= _iguana_calcrmd160(coin,vp)) >= 0 && 0 )
     {
         scriptlen = iguana_scriptgen(coin,&vp->M,&vp->N,vp->coinaddr,script,asmstr,vp->rmd160,vp->type,(const struct vin_info *)vp,vout);
         if ( scriptlen != pk_scriptlen || (scriptlen != 0 && memcmp(script,pk_script,scriptlen) != 0) )
