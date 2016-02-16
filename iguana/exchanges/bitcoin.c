@@ -675,9 +675,9 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
         memcpy(vp->rmd160,zero_rmd160,sizeof(zero_rmd160));
         return(IGUANA_SCRIPT_DATA);
     }
-    if ( type != IGUANA_SCRIPT_OPRETURN )
+    if ( type != IGUANA_SCRIPT_OPRETURN && type != IGUANA_SCRIPT_DATA )
     {
-        if ( vp->spendlen < sizeof(hexstr)/2-1)
+        if ( vp->spendlen > 0 && vp->spendlen < sizeof(hexstr)/2-1 )
         {
             static FILE *fp;
             init_hexbytes_noT(hexstr,vp->spendscript,vp->spendlen);
