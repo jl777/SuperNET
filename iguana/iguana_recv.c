@@ -384,7 +384,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         {
             if ( (block= bp->blocks[i]) != 0 )
             {
-                if ( block->fpipbits == 0 && (block->queued == 0 || bp->issued[i] == 0 || now > bp->issued[i]+13) )
+                if ( block->fpipbits == 0 && (block->queued == 0 || bp->issued[i] == 0 || now > bp->issued[i]+1) )
                 {
                     //if ( bp->bundleheight == 20000 )
                     //   printf("(%d:%d) ",bp->hdrsi,i);
@@ -434,7 +434,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
             iguana_emitQ(coin,bp);
             return(1);
         }
-        iguana_bundleQ(coin,bp,counter == 0 ? bp->n*5 : bp->n*2);
+        iguana_bundleQ(coin,bp,200);//counter == 0 ? 200);bp->n*5 : bp->n*2);
     }
     return(0);
 }
