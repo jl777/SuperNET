@@ -901,6 +901,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
                     }
                     else
                     {
+                        queue_enqueue("statemachineQ",&exchange->statemachineQ,&ap->DL,0);
                         newjson = instantdex_parseargjson(myinfo,exchange,ap,argjson,0);
                         return(instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,ap,cmdstr,argjson,newjson,serdata,serdatalen));
                     }
