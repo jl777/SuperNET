@@ -184,29 +184,42 @@ struct instantdex_event *instantdex_addevent(struct instantdex_stateinfo *states
     }
 }
 
-int32_t instantdex_FSMtest(struct instantdex_stateinfo *states,int32_t numstates)
+double instantdex_FSMtest(struct instantdex_stateinfo *states,int32_t numstates,int32_t maxiters)
 {
-    int32_t i,n,m=0,initials[100],maxiters = 1; struct instantdex_stateinfo *state; struct instantdex_event *event;
-    for (i=n=0; i<numstates; i++)
-        if ( states[i].initialstate != 0 )
+    int32_t i,most,r,n,m=0,initials[100]; struct instantdex_stateinfo *state; struct instantdex_event *event; double sum = 0.;
+    if ( maxiters < 1 )
+        maxiters = 1;
+    for (i=n=most=0; i<numstates; i++)
+        if ( states[i].initialstate > 0 )
+        {
+            printf("initialstate[%d] %d %s\n",i,states[i].initialstate,states[i].name);
             initials[n++] = i;
+        }
     if ( n > 0 && n < sizeof(initials)/sizeof(*initials) )
     {
         for (i=0; i<maxiters; i++)
         {
-            state = &states[initials[rand() % n]];
+            r = rand() % n;
+            state = &states[initials[r]];
             m = 0;
-            while ( m++ < 1000 && state->initialstate >= 0 )
+            while ( m++ < 1000 && state->initialstate >= 0 && state->numevents )
             {
+                if ( (i % 1000000) == 0 )
+                    fprintf(stderr,"%s ",state->name);
                 event = &state->events[rand() % state->numevents];
                 if ( event->nextstateind < 0 )
                     break;
                 state = &states[event->nextstateind];
             }
-            printf("reached terminal state.%s after m.%d events\n",state->name,m);
+            if ( m > most )
+                most = m;
+            sum += m;
+            if ( (i % 1000000) == 0 )
+                fprintf(stderr,"reached %s m.%d events most.%d ave %.2f\n",state->name,m,most,sum/(i+1));
         }
     }
-    return(m);
+    fprintf(stderr," most.%d ave %.2f\n",most,sum/(i+1));
+    return(sum / maxiters);
 }
 
 cJSON *InstantDEX_argjson(char *reference,char *message,char *othercoinaddr,char *otherNXTaddr,int32_t iter,int32_t val,int32_t val2)

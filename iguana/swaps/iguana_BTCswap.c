@@ -14,10 +14,11 @@
  ******************************************************************************/
 
 #include "../exchanges/bitcoin.h"
+#define INSTANTDEX_DECKSIZE 1000
 /* https://bitcointalk.org/index.php?topic=1340621.msg13828271#msg13828271
    https://bitcointalk.org/index.php?topic=1364951
 Tier Nolan's approach is followed with the following changes:
-  a) instead of cutting 1000 keypairs, only 777 are a
+  a) instead of cutting 1000 keypairs, only INSTANTDEX_DECKSIZE are a
   b) instead of sending the entire 256 bits, it is truncated to 64 bits. With odds of collision being so low, it is dwarfed by the ~0.1% insurance factor.
   c) D is set to 100x the insurance rate of 1/777 12.87% + BTC amount
   d) insurance is added to Bob's payment, which is after the deposit and bailin
@@ -496,7 +497,7 @@ cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info
         if ( juint(argjson,"verified") != 0 )
             swap->otherverifiedcut = 1;
         jaddnum(newjson,"verified",swap->otherverifiedcut);
-        if ( instantdex_pubkeyargs(swap,newjson,2 + deckflag*777,myinfo->persistent_priv,swap->orderhash,0x02+swap->isbob) == 2 + deckflag*777 )
+        if ( instantdex_pubkeyargs(swap,newjson,2 + deckflag*INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->orderhash,0x02+swap->isbob) == 2 + deckflag*INSTANTDEX_DECKSIZE )
             instantdex_getpubs(swap,argjson,newjson);
         else printf("ERROR: couldnt generate pubkeys\n");
     }
@@ -687,7 +688,7 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     struct instantdex_stateinfo *s = 0;
     *n = 2;
     // Four initial states are BOB_sentoffer, ALICE_gotoffer, ALICE_sentoffer, BOB_gotoffer
-    // the initiator includes signed feetx and deck of 777 keypairs
+    // the initiator includes signed feetx and deck of INSTANTDEX_DECKSIZE keypairs
     //
     // "BTCabcde are message events from other party (message events capped at length 8)
     // "lowercas" are special events, <TX> types: <fee>, <dep>osit, <alt>payment, <acl> is altcoin claim
@@ -696,7 +697,7 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     
     // states instantdex_statecreate(s,n,<Name of State>,handlerfunc,errorhandler,<Timeout State>,<Error State>
     // a given state has a couple of handlers and custom events, with timeouts and errors invoking a bypass
-    s = instantdex_statecreate(s,n,"BTC_cleanup",BTC_cleanupfunc,0,0,0,0); // from states without any commits
+    s = instantdex_statecreate(s,n,"BTC_cleanup",BTC_cleanupfunc,0,0,0,-1); // from states without any commits
     
     s = instantdex_statecreate(s,n,"BOB_reclaim",BOB_reclaimfunc,0,0,0,0); // Bob's gets his deposit back
     instantdex_addevent(s,*n,"BOB_reclaim","brcfound","poll","BTC_cleanup");
@@ -791,7 +792,11 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     instantdex_addevent(s,*n,"BOB_sentpayment","btcfound","BTCdone","BOB_claimedalt");
     instantdex_addevent(s,*n,"BOB_sentpayment","BTCprivM","BTCdone","BOB_claimedalt");
     instantdex_addevent(s,*n,"BOB_sentpayment","poll","poll","BOB_sentpayment");
-    instantdex_FSMtest(s,*n);
+    {
+        double startmillis = OS_milliseconds();
+        instantdex_FSMtest(s,*n,10000000);
+        printf("elapsed %.3f ave %.6f\n",OS_milliseconds() - startmillis,(OS_milliseconds() - startmillis)/10000000);
+    }
     return(s);
 }
 
