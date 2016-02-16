@@ -1103,7 +1103,7 @@ void iguana_main(void *arg)
         iguana_launch(iguana_coinadd("BTCD"),"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
     else if ( 1 )
     {
-//#ifdef __APPLE__
+#ifdef __APPLE__
         sleep(1);
         char *str;
         strcpy(MYINFO.rpcsymbol,"BTC");
@@ -1123,7 +1123,7 @@ void iguana_main(void *arg)
             }
         }
         sleep(1);
-//#endif
+#endif
     }
     if ( arg != 0 )
         SuperNET_JSON(&MYINFO,cJSON_Parse(arg),0);
