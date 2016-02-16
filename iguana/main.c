@@ -1035,7 +1035,7 @@ void iguana_main(void *arg)
 
     mycalloc(0,0,0);
     myinfo = SuperNET_MYINFO(0);
-    FILE *fp; int32_t iter;
+    FILE *fp; int32_t iter; void ztest(); ztest();
     strcpy(myinfo->NXTAPIURL,"http://127.0.0.1:7876/nxt");
     for (iter=0; iter<2; iter++)
     {

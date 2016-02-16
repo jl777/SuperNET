@@ -660,7 +660,7 @@ void exchanges777_loop(void *ptr)
         {
             if ( strcmp(exchange->name,"bitcoin") == 0 )
             {
-                //instantdex_update(SuperNET_MYINFO(0));
+                instantdex_update(SuperNET_MYINFO(0));
                 //printf("InstantDEX call update\n");
             }
             if ( (req= queue_dequeue(&exchange->pricesQ,0)) != 0 )
@@ -890,7 +890,7 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
     iguana_initQ(&exchange->requestQ,"request");
     iguana_initQ(&exchange->acceptableQ,"acceptable");
     iguana_initQ(&exchange->tradebotsQ,"tradebots");
-    iguana_initQ(&exchange->pendingQ,"pending");
+    iguana_initQ(&exchange->statemachineQ,"statemachineQ");
     exchange->exchangeid = exchangeid;
     safecopy(exchange->name,exchangestr,sizeof(exchange->name));
     exchange->exchangebits = stringbits(exchange->name);
@@ -967,7 +967,6 @@ THREE_STRINGS_AND_THREE_INTS(InstantDEX,orderbook,exchange,base,rel,depth,allfie
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
-        //instantdex_update(myinfo);
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qprices(ptr,base,rel,juint(json,"maxseconds"),allfields,depth,json,0,ptr->commission));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -979,7 +978,6 @@ THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,buy,exchange,base,rel,price,volume,do
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
-        //instantdex_update(myinfo);
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qtrade(ptr,base,rel,juint(json,"maxseconds"),dotrade,1,price,volume,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -991,7 +989,6 @@ THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,sell,exchange,base,rel,price,volume,d
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
-        //instantdex_update(myinfo);
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qtrade(ptr,base,rel,juint(json,"maxseconds"),dotrade,-1,price,volume,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -1003,7 +1000,6 @@ THREE_STRINGS_AND_DOUBLE(InstantDEX,withdraw,exchange,base,destaddr,amount)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
-        //instantdex_update(myinfo);
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qrequest(ptr,'W',base,0,juint(json,"maxseconds"),0,destaddr,amount,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -1015,7 +1011,6 @@ TWO_STRINGS(InstantDEX,balance,exchange,base)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
-        //instantdex_update(myinfo);
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qrequest(ptr,'B',base,0,juint(json,"maxseconds"),0,0,0,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -1027,7 +1022,6 @@ TWO_STRINGS(InstantDEX,orderstatus,exchange,orderid)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
-        //instantdex_update(myinfo);
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qrequest(ptr,'P',0,0,juint(json,"maxseconds"),calc_nxt64bits(orderid),0,0,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -1039,7 +1033,6 @@ TWO_STRINGS(InstantDEX,cancelorder,exchange,orderid)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
-        //instantdex_update(myinfo);
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qrequest(ptr,'C',0,0,juint(json,"maxseconds"),calc_nxt64bits(orderid),0,0,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -1051,7 +1044,6 @@ STRING_ARG(InstantDEX,openorders,exchange)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
-        //instantdex_update(myinfo);
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qrequest(ptr,'O',0,0,juint(json,"maxseconds"),0,0,0,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -1063,7 +1055,6 @@ STRING_ARG(InstantDEX,tradehistory,exchange)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
-        //instantdex_update(myinfo);
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qrequest(ptr,'H',0,0,juint(json,"maxseconds"),0,0,0,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));

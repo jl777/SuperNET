@@ -165,6 +165,7 @@ void category_posthexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits2
 void *category_subscribe(struct supernet_info *myinfo,bits256 category,bits256 subhash);
 struct category_msg *category_gethexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash);
 char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr);
+queue_t *category_Q(bits256 categoryhash,bits256 subhash);
 
 char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag,bits256 categoryhash,bits256 subhash,char *message,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext,cJSON *argjson,char *remoteaddr);
 bits256 calc_categoryhashes(bits256 *subhashp,char *category,char *subcategory);

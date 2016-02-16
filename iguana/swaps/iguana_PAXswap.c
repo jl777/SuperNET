@@ -47,3 +47,26 @@ char *instantdex_PAXswap(struct supernet_info *myinfo,struct exchange_info *exch
     else retstr = clonestr("{\"error\":\"PAX swap got unrecognized command\"}");
     return(retstr);
 }
+
+#include "../../includes/secp256k1.h"
+//#include "../../crypto777/secp256k1/modules/rangeproof/pedersen_impl.h"
+//#include "../../crypto777/secp256k1/modules/rangeproof/borromean_impl.h"
+//#include "../../crypto777/secp256k1/modules/rangeproof/rangeproof_impl.h"
+void secp256k1_pedersen_context_initialize(secp256k1_context_t *ctx);
+int secp256k1_pedersen_commit(const secp256k1_context_t* ctx, unsigned char *commit, unsigned char *blind, uint64_t value);
+// ./configure --enable-module-ecdh --enable-module-schnorr --enable-module-rangeproof
+void ztest()
+{
+#ifdef __APPLE__
+    printf("ztests\n");
+    secp256k1_context_t *ctx;  uint8_t commit[33],blind[32]; int32_t i,retval;
+    ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
+    secp256k1_pedersen_context_initialize(ctx);
+    retval = secp256k1_pedersen_commit(ctx,commit,blind,0x14234);
+    OS_randombytes(blind,sizeof(blind));
+    for (i=0; i<33; i++)
+        printf("%02x",commit[i]);
+    printf(" pederson commit.%d\n",retval);
+    //getchar();
+#endif
+}

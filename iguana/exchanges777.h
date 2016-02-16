@@ -52,7 +52,7 @@ struct exchange_info
     uint32_t exchangeid,pollgap,lastpoll;
     uint64_t lastnonce,exchangebits; double commission;
     void *privatedata;
-    CURL *cHandle; queue_t requestQ,pricesQ,pendingQ,tradebotsQ,acceptableQ;
+    CURL *cHandle; queue_t requestQ,pricesQ,statemachineQ,tradebotsQ,acceptableQ;
 };
 
 struct instantdex_msghdr
@@ -120,6 +120,7 @@ double instaforex_price(struct exchange_info *exchange,char *base,char *rel,stru
 char *instantdex_queueaccept(struct supernet_info *myinfo,struct instantdex_accept **aptrp,struct exchange_info *exchange,char *base,char *rel,double price,double basevolume,int32_t acceptdir,char *mysidestr,int32_t duration,uint64_t txid,int32_t queueflag);
 void instantdex_update(struct supernet_info *myinfo);
 char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extra,int32_t extralen);
-char *instantdex_btcoffer(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *ap,cJSON *argjson); // Bob sending to network (Alice)
+char *instantdex_sendoffer(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *ap,cJSON *argjson); // Bob sending to network (Alice)
+char *instantdex_selectqueue(struct exchange_info *exchange,struct instantdex_accept *ap,char *retstr);
 
 #endif

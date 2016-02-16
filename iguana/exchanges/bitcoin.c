@@ -1541,15 +1541,15 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
             jaddnum(json,"volume",volume);
             jaddstr(json,"BTC",myinfo->myaddr.BTC);
             //printf("trade dir.%d (%s/%s) %.6f vol %.8f\n",dir,base,"BTC",price,volume);
-            if ( (str= instantdex_queueaccept(myinfo,&ap,exchange,base,"BTC",price,volume,-dir,dir > 0 ? "BTC" : base,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits,0)) != 0 )
+            if ( (str= instantdex_queueaccept(myinfo,&ap,exchange,base,"BTC",price,volume,-dir,dir > 0 ? "BTC" : base,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits,0)) != 0 && ap != 0 )
             {
                 if ( (tmp= cJSON_Parse(str)) != 0 )
                 {
                     txid = j64bits(json,"orderid");
-                    if ( (str= instantdex_btcoffer(myinfo,exchange,ap,json)) != 0 )
+                    if ( (str= instantdex_sendoffer(myinfo,exchange,ap,json)) != 0 ) // adds to statemachine
                     {
                         json = cJSON_CreateObject();
-                        jaddstr(json,"BTCoffer",str);
+                        jaddstr(json,"BTCoffer",instantdex_selectqueue(exchange,ap,str));
                     } else printf("null return from btcoffer\n");
                     free_json(tmp);
                 } else printf("queueaccept return parse error.(%s)\n",str);
