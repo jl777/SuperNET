@@ -1108,10 +1108,10 @@ void iguana_main(void *arg)
         char *str;
         strcpy(MYINFO.rpcsymbol,"BTC");
         iguana_launchcoin(MYINFO.rpcsymbol,cJSON_Parse("{}"));
-        if ( 1 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":128,\"newcoin\":\"BTC\",\"active\":0}"),0)) != 0 )
+        if ( 1 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":3,\"newcoin\":\"BTC\",\"active\":0}"),0)) != 0 )
         {
             free(str);
-            if ( 0 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":3,\"newcoin\":\"BTCD\",\"active\":0}"),0)) != 0 )
+            if ( 1 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":3,\"newcoin\":\"BTCD\",\"active\":0}"),0)) != 0 )
             {
                 free(str);
                 if ( 0 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"login\",\"handle\":\"alice\",\"password\":\"alice\",\"passphrase\":\"alice\"}"),0)) != 0 )
