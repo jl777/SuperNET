@@ -681,7 +681,7 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
         {
             static FILE *fp;
             init_hexbytes_noT(hexstr,vp->spendscript,vp->spendlen);
-            char str[65]; printf("unparsed script.(%s).%d in %s len.%d\n",hexstr,vp->spendlen,bits256_str(str,vp->vin.prev_hash),vp->spendlen);
+            //char str[65]; printf("unparsed script.(%s).%d in %s len.%d\n",hexstr,vp->spendlen,bits256_str(str,vp->vin.prev_hash),vp->spendlen);
             if ( 1 && fp == 0 )
                 fp = fopen("unparsed.txt","w");
             if ( fp != 0 )
