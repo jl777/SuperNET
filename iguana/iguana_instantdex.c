@@ -693,6 +693,12 @@ char *instantdex_swapset(struct supernet_info *myinfo,struct instantdex_accept *
     insurance = (satoshis[1] * INSTANTDEX_INSURANCERATE + coinbtc->chain->txfee); // txfee prevents papercut attack
     offerdir = instantdex_bidaskdir(ap);
     vcalc_sha256(0,orderhash.bytes,(void *)&ap->offer,sizeof(ap->offer));
+    {
+        int32_t i;
+        for (i=0; i<sizeof(ap->offer); i++)
+            printf("%02x ",((uint8_t *)&ap->offer)[i]);
+        printf("swapset.%llu\n",(long long)ap->orderid);
+    }
     if ( offerdir > 0 )
     {
         swap->bidid = ap->orderid;
