@@ -879,13 +879,13 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
                 minperc = INSTANTDEX_MINPERC;
             if ( (ap= instantdex_acceptable(myinfo,exchange,&A,acct777_nxt64bits(traderpub),minperc)) != 0 )
             {
-                if ( ap->otherorderid == 0 )
-                {
-                    ap->otherorderid = A.orderid;
-                    ap->otheroffer = A.offer;
-                }
                 if ( strcmp(cmdstr,"BTCoffer") == 0 )
                 {
+                    if ( ap->otherorderid == 0 )
+                    {
+                        ap->otherorderid = A.orderid;
+                        ap->otheroffer = A.offer;
+                    }
                     if ( (retstr= instantdex_gotoffer(myinfo,exchange,ap,msg,argjson,remoteaddr,signerbits,serdata,serdatalen)) != 0 ) // adds to statemachine if no error
                     {
                         //printf("from GOTOFFER\n");
@@ -901,6 +901,13 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
                     }
                     else
                     {
+                        if ( ap->otherorderid == 0 )
+                        {
+                            ap->otherorderid = ap->orderid;
+                            ap->otheroffer = ap->offer;
+                            ap->offer = A.offer;
+                            ap->orderid = A.orderid;
+                        }
                         queue_enqueue("statemachineQ",&exchange->statemachineQ,&ap->DL,0);
                         newjson = instantdex_parseargjson(myinfo,exchange,ap,argjson,0);
                         return(instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,ap,cmdstr,argjson,newjson,serdata,serdatalen));
