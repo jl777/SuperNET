@@ -28,14 +28,14 @@
 #define INSTANTDEX_BTCD "RThtXup6Zo7LZAi8kRWgjAyi1s4u6U9Cpf"
 #define INSTANTDEX_MINPERC 50.
 
-struct instantdex_event { char cmdstr[24],sendcmd[16]; struct instantdex_stateinfo *nextstate; };
+struct instantdex_event { char cmdstr[24],sendcmd[16]; int16_t nextstateind; };
 
 struct instantdex_stateinfo
 {
-    char name[24]; uint16_t ind,pad;
+    char name[24]; int16_t ind,initialstate;
     cJSON *(*process)(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp);
     cJSON *(*timeout)(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp);
-    uint16_t timeoutind,errorind;
+    int16_t timeoutind,errorind;
     struct instantdex_event *events; int32_t numevents;
 };
 
@@ -127,7 +127,7 @@ void instantdex_stateinit(struct instantdex_stateinfo *states,int32_t numstates,
         state->timeout = instantdex_defaulttimeout;
 }
 
-struct instantdex_stateinfo *instantdex_statecreate(struct instantdex_stateinfo *states,int32_t *numstatesp,char *name,cJSON *(*process_func)(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp),cJSON *(*timeout_func)(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp),char *timeoutstr,char *errorstr)
+struct instantdex_stateinfo *instantdex_statecreate(struct instantdex_stateinfo *states,int32_t *numstatesp,char *name,cJSON *(*process_func)(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp),cJSON *(*timeout_func)(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp),char *timeoutstr,char *errorstr,int32_t initialstate)
 {
     struct instantdex_stateinfo S,*state = 0;
     if ( (state= instantdex_statefind(states,*numstatesp,name)) == 0 )
@@ -135,6 +135,7 @@ struct instantdex_stateinfo *instantdex_statecreate(struct instantdex_stateinfo 
         states = realloc(states,sizeof(*states) * (*numstatesp + 1));
         state = &states[*numstatesp];
         instantdex_stateinit(states,*numstatesp,state,name,errorstr,timeoutstr,process_func,timeout_func);
+        state->initialstate = initialstate;
         state->ind = (*numstatesp)++;
         printf("STATES[%d] %s %p %p %d %d\n",*numstatesp,state->name,state->process,state->timeout,state->timeoutind,state->errorind);
     }
@@ -142,6 +143,7 @@ struct instantdex_stateinfo *instantdex_statecreate(struct instantdex_stateinfo 
     {
         instantdex_stateinit(states,*numstatesp,&S,name,errorstr,timeoutstr,process_func,timeout_func);
         S.ind = state->ind;
+        S.initialstate = initialstate;
         if ( memcmp(&S,state,sizeof(S) - sizeof(void *) - sizeof(int)) != 0 )
         {
             int32_t i;
@@ -169,7 +171,7 @@ struct instantdex_event *instantdex_addevent(struct instantdex_stateinfo *states
             strcpy(state->events[state->numevents].cmdstr,cmdstr);
             if ( sendcmd != 0 )
                 strcpy(state->events[state->numevents].sendcmd,sendcmd);
-            state->events[state->numevents].nextstate = nextstate;
+            state->events[state->numevents].nextstateind = nextstate->ind;
             state->numevents++;
         }
         return(state->events);
@@ -180,6 +182,31 @@ struct instantdex_event *instantdex_addevent(struct instantdex_stateinfo *states
         exit(-1);
         return(0);
     }
+}
+
+int32_t instantdex_FSMtest(struct instantdex_stateinfo *states,int32_t numstates)
+{
+    int32_t i,n,m=0,initials[100],maxiters = 1; struct instantdex_stateinfo *state; struct instantdex_event *event;
+    for (i=n=0; i<numstates; i++)
+        if ( states[i].initialstate != 0 )
+            initials[n++] = i;
+    if ( n > 0 && n < sizeof(initials)/sizeof(*initials) )
+    {
+        for (i=0; i<maxiters; i++)
+        {
+            state = &states[initials[rand() % n]];
+            m = 0;
+            while ( m++ < 1000 && state->initialstate >= 0 )
+            {
+                event = &state->events[rand() % state->numevents];
+                if ( event->nextstateind < 0 )
+                    break;
+                state = &states[event->nextstateind];
+            }
+            printf("reached terminal state.%s after m.%d events\n",state->name,m);
+        }
+    }
+    return(m);
 }
 
 cJSON *InstantDEX_argjson(char *reference,char *message,char *othercoinaddr,char *otherNXTaddr,int32_t iter,int32_t val,int32_t val2)

@@ -696,35 +696,35 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     
     // states instantdex_statecreate(s,n,<Name of State>,handlerfunc,errorhandler,<Timeout State>,<Error State>
     // a given state has a couple of handlers and custom events, with timeouts and errors invoking a bypass
-    s = instantdex_statecreate(s,n,"BTC_cleanup",BTC_cleanupfunc,0,0,0); // from states without any commits
+    s = instantdex_statecreate(s,n,"BTC_cleanup",BTC_cleanupfunc,0,0,0,0); // from states without any commits
     
-    s = instantdex_statecreate(s,n,"BOB_reclaim",BOB_reclaimfunc,0,0,0); // Bob's gets his deposit back
+    s = instantdex_statecreate(s,n,"BOB_reclaim",BOB_reclaimfunc,0,0,0,0); // Bob's gets his deposit back
     instantdex_addevent(s,*n,"BOB_reclaim","brcfound","poll","BTC_cleanup");
     instantdex_addevent(s,*n,"BOB_reclaim","poll","poll","BOB_reclaim");
 
-    s = instantdex_statecreate(s,n,"ALICE_reclaim",ALICE_reclaimfunc,0,0,0); // Alice retrieves alt payment
+    s = instantdex_statecreate(s,n,"ALICE_reclaim",ALICE_reclaimfunc,0,0,0,0); // Alice retrieves alt payment
     instantdex_addevent(s,*n,"ALICE_reclaim","arcfound","poll","BTC_cleanup");
     instantdex_addevent(s,*n,"ALICE_reclaim","poll","poll","ALICE_reclaim");
 
-    s = instantdex_statecreate(s,n,"ALICE_claimedbtc",ALICE_claimbtcfunc,0,0,0); // mainstream cases
+    s = instantdex_statecreate(s,n,"ALICE_claimedbtc",ALICE_claimbtcfunc,0,0,0,0); // mainstream cases
     instantdex_addevent(s,*n,"ALICE_claimedbtc","aclfound","poll","BTC_cleanup");
     instantdex_addevent(s,*n,"ALICE_claimedbtc","poll","poll","ALICE_claimedbtc");
     
-    s = instantdex_statecreate(s,n,"BOB_claimedalt",BOB_claimaltfunc,0,0,0);
+    s = instantdex_statecreate(s,n,"BOB_claimedalt",BOB_claimaltfunc,0,0,0,0);
     instantdex_addevent(s,*n,"BOB_claimedalt","bclfound","poll","BTC_cleanup");
     instantdex_addevent(s,*n,"BOB_claimedalt","poll","poll","BOB_claimedalt");
 
     // need to create states before they can be referred to, that way a one pass FSM compile is possible
-    s = instantdex_statecreate(s,n,"BOB_sentprivs",BTC_waitprivsfunc,0,"BTC_cleanup",0);
-    s = instantdex_statecreate(s,n,"BOB_waitfee",BOB_waitfeefunc,0,"BTC_cleanup",0);
-    s = instantdex_statecreate(s,n,"BOB_sentdeposit",BOB_waitBTCalttxfunc,0,"BOB_reclaim",0);
-    s = instantdex_statecreate(s,n,"BOB_altconfirm",BOB_waitaltconfirmfunc,0,"BOB_reclaim",0);
-    s = instantdex_statecreate(s,n,"BOB_sentpayment",BOB_waitprivMfunc,0,"BOB_reclaim",0);
-    s = instantdex_statecreate(s,n,"ALICE_sentprivs",BTC_waitprivsfunc,0,"BTC_cleanup",0);
-    s = instantdex_statecreate(s,n,"Alice_waitfee",ALICE_waitfeefunc,0,"BTC_cleanup",0);
-    s = instantdex_statecreate(s,n,"ALICE_waitdeposit",ALICE_waitdepositfunc,0,"BTC_cleanup",0);
-    s = instantdex_statecreate(s,n,"ALICE_sentalt",ALICE_waitBTCpaytxfunc,0,"ALICE_reclaim",0);
-    s = instantdex_statecreate(s,n,"ALICE_waitconfirms",ALICE_waitpayconf_or_bobreclaimfunc,0,"ALICE_reclaim",0);
+    s = instantdex_statecreate(s,n,"BOB_sentprivs",BTC_waitprivsfunc,0,"BTC_cleanup",0,0);
+    s = instantdex_statecreate(s,n,"BOB_waitfee",BOB_waitfeefunc,0,"BTC_cleanup",0,0);
+    s = instantdex_statecreate(s,n,"BOB_sentdeposit",BOB_waitBTCalttxfunc,0,"BOB_reclaim",0,0);
+    s = instantdex_statecreate(s,n,"BOB_altconfirm",BOB_waitaltconfirmfunc,0,"BOB_reclaim",0,0);
+    s = instantdex_statecreate(s,n,"BOB_sentpayment",BOB_waitprivMfunc,0,"BOB_reclaim",0,0);
+    s = instantdex_statecreate(s,n,"ALICE_sentprivs",BTC_waitprivsfunc,0,"BTC_cleanup",0,0);
+    s = instantdex_statecreate(s,n,"Alice_waitfee",ALICE_waitfeefunc,0,"BTC_cleanup",0,0);
+    s = instantdex_statecreate(s,n,"ALICE_waitdeposit",ALICE_waitdepositfunc,0,"BTC_cleanup",0,0);
+    s = instantdex_statecreate(s,n,"ALICE_sentalt",ALICE_waitBTCpaytxfunc,0,"ALICE_reclaim",0,0);
+    s = instantdex_statecreate(s,n,"ALICE_waitconfirms",ALICE_waitpayconf_or_bobreclaimfunc,0,"ALICE_reclaim",0,0);
 
     // events instantdex_addevent(s,*n,<Current State>,<event>,<message to send>,<Next State>)
     if ( 0 ) // following are implicit states and events handled externally to setup datastructures
@@ -737,60 +737,61 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
         instantdex_addevent(s,*n,"ALICE_idle","BTCoffer","BTCdeckC","ALICE_gotoffer");
     }
     // after offer is sent, wait for other side to choose and sent their deck, then send privs
-    s = instantdex_statecreate(s,n,"BOB_sentoffer",BTC_waitdeckCfunc,0,"BTC_cleanup",0);
-    s = instantdex_statecreate(s,n,"ALICE_sentoffer",BTC_waitdeckCfunc,0,"BTC_cleanup",0);
+    s = instantdex_statecreate(s,n,"BOB_sentoffer",BTC_waitdeckCfunc,0,"BTC_cleanup",0,1);
+    s = instantdex_statecreate(s,n,"ALICE_sentoffer",BTC_waitdeckCfunc,0,"BTC_cleanup",0,1);
     instantdex_addevent(s,*n,"BOB_sentoffer","BTCdeckC","BTCprivC","BOB_sentprivs"); // send privs + Chose
     instantdex_addevent(s,*n,"ALICE_sentoffer","BTCdeckC","BTCprivC","ALICE_sentprivs");
     
     // gotoffer states have received deck and sent BTCdeckC already (along with deck)
-    s = instantdex_statecreate(s,n,"BOB_gotoffer",BTC_waitprivCfunc,0,"BTC_cleanup",0);
-    s = instantdex_statecreate(s,n,"ALICE_gotoffer",BTC_waitprivCfunc,0,"BTC_cleanup",0);
+    s = instantdex_statecreate(s,n,"BOB_gotoffer",BTC_waitprivCfunc,0,"BTC_cleanup",0,1);
+    s = instantdex_statecreate(s,n,"ALICE_gotoffer",BTC_waitprivCfunc,0,"BTC_cleanup",0,1);
     instantdex_addevent(s,*n,"BOB_gotoffer","BTCprivC","BTCprivs","BOB_sentprivs"); // send privs
     instantdex_addevent(s,*n,"ALICE_gotoffer","BTCprivC","BTCprivs","ALICE_sentprivs");
     
     // to reach sentprivs, all paths must have sent/recv deck and Chose and verified cut and choose
-    s = instantdex_statecreate(s,n,"BOB_sentprivs",BTC_waitprivsfunc,0,"BTC_cleanup",0);
+    s = instantdex_statecreate(s,n,"BOB_sentprivs",BTC_waitprivsfunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"BOB_sentprivs","BTCprivs","poll","BOB_waitfee");
     
-    s = instantdex_statecreate(s,n,"ALICE_sentprivs",BTC_waitprivsfunc,0,"BTC_cleanup",0);
+    s = instantdex_statecreate(s,n,"ALICE_sentprivs",BTC_waitprivsfunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"ALICE_sentprivs","BTCprivs","poll","Alice_waitfee");
 
     // Bob waits for fee and sends deposit when it appears
-    s = instantdex_statecreate(s,n,"BOB_waitfee",BOB_waitfeefunc,0,"BTC_cleanup",0);
+    s = instantdex_statecreate(s,n,"BOB_waitfee",BOB_waitfeefunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"BOB_waitfee","feefound","BTCdeptx","BOB_sentdeposit");
     instantdex_addevent(s,*n,"BOB_waitfee","poll","poll","BOB_waitfee");
 
     // Alice waits for fee and then waits for deposit to confirm and sends altpayment
-    s = instantdex_statecreate(s,n,"Alice_waitfee",ALICE_waitfeefunc,0,"BTC_cleanup",0);
+    s = instantdex_statecreate(s,n,"Alice_waitfee",ALICE_waitfeefunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"Alice_waitfee","feefound","poll","ALICE_waitdeposit");
     instantdex_addevent(s,*n,"Alice_waitfee","poll","poll","Alice_waitfee");
     
-    s = instantdex_statecreate(s,n,"ALICE_waitdeposit",ALICE_waitdepositfunc,0,"BTC_cleanup",0);
+    s = instantdex_statecreate(s,n,"ALICE_waitdeposit",ALICE_waitdepositfunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"ALICE_waitdeposit","depfound","BTCalttx","ALICE_sentalt");
     instantdex_addevent(s,*n,"ALICE_waitdeposit","poll","poll","ALICE_waitdeposit");
 
     // now Bob's turn to make sure altpayment is confirmed and send real payment
-    s = instantdex_statecreate(s,n,"BOB_sentdeposit",BOB_waitBTCalttxfunc,0,"BOB_reclaim",0);
+    s = instantdex_statecreate(s,n,"BOB_sentdeposit",BOB_waitBTCalttxfunc,0,"BOB_reclaim",0,0);
     instantdex_addevent(s,*n,"BOB_sentdeposit","BTCalttx","poll","BOB_altconfirm");
  
-    s = instantdex_statecreate(s,n,"BOB_altconfirm",BOB_waitaltconfirmfunc,0,"BOB_reclaim",0);
+    s = instantdex_statecreate(s,n,"BOB_altconfirm",BOB_waitaltconfirmfunc,0,"BOB_reclaim",0,0);
     instantdex_addevent(s,*n,"BOB_altconfirm","altfound","BTCpaytx","BOB_sentpayment");
     instantdex_addevent(s,*n,"BOB_altconfirm","poll","poll","BOB_altconfirm");
     
     // now Alice's turn to make sure payment is confrmed and send in claim or see bob's reclaim and reclaim
-    s = instantdex_statecreate(s,n,"ALICE_sentalt",ALICE_waitBTCpaytxfunc,0,"ALICE_reclaim",0);
+    s = instantdex_statecreate(s,n,"ALICE_sentalt",ALICE_waitBTCpaytxfunc,0,"ALICE_reclaim",0,0);
     instantdex_addevent(s,*n,"ALICE_sentalt","BTCpaytx","poll","ALICE_waitconfirms");
     
-    s = instantdex_statecreate(s,n,"ALICE_waitconfirms",ALICE_waitpayconf_or_bobreclaimfunc,0,"ALICE_reclaim",0);
+    s = instantdex_statecreate(s,n,"ALICE_waitconfirms",ALICE_waitpayconf_or_bobreclaimfunc,0,"ALICE_reclaim",0,0);
     instantdex_addevent(s,*n,"ALICE_waitconfirms","bobfound","poll","ALICE_reclaim");
     instantdex_addevent(s,*n,"ALICE_waitconfirms","payfound","BTCprivM","ALICE_claimedbtc");
     instantdex_addevent(s,*n,"ALICE_waitconfirms","poll","poll","ALICE_waitconfirms");
 
     // Bob waits for privM either from Alice or alt blockchain
-    s = instantdex_statecreate(s,n,"BOB_sentpayment",BOB_waitprivMfunc,0,"BOB_reclaim",0);
+    s = instantdex_statecreate(s,n,"BOB_sentpayment",BOB_waitprivMfunc,0,"BOB_reclaim",0,0);
     instantdex_addevent(s,*n,"BOB_sentpayment","btcfound","BTCdone","BOB_claimedalt");
     instantdex_addevent(s,*n,"BOB_sentpayment","BTCprivM","BTCdone","BOB_claimedalt");
     instantdex_addevent(s,*n,"BOB_sentpayment","poll","poll","BOB_sentpayment");
+    instantdex_FSMtest(s,*n);
     return(s);
 }
 
@@ -828,11 +829,11 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
             }
             else
             {
-                if ( state->events[i].sendcmd != 0 )
+                if ( state->events[i].sendcmd[0] != 0 )
                 {
-                    if ( state->events[i].nextstate->ind > 1 )
+                    if ( state->events[i].nextstateind > 1 )
                     {
-                        swap->state = &states[state->events[i].nextstate->ind];
+                        swap->state = &states[state->events[i].nextstateind];
                         return(instantdex_sendcmd(myinfo,&A->offer,newjson,state->events[i].sendcmd,swap->othertrader,INSTANTDEX_HOPS,serdata,serdatalen));
                     } else return(clonestr("{\"error\":\"instantdex_statemachine: illegal state\"}"));
                 } else return(clonestr("{\"result\":\"instantdex_statemachine: processed\"}"));
