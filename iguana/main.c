@@ -337,7 +337,7 @@ void mainloop(struct supernet_info *myinfo)
         }
         if ( flag == 0 )
         {
-            usleep(100000);
+            usleep(10000);
         }
     }
 }

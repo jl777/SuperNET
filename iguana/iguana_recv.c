@@ -314,7 +314,7 @@ uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bit
                 prev = block;
             }
             //printf("ALLHASHES FOUND! %d requested.%d\n",bp->bundleheight,n);
-            iguana_bundleQ(coin,bp,bp->n*2 + (rand() % 500));
+            iguana_bundleQ(coin,bp,bp->n/2 + (rand() % 500));
             return(bp->queued);
         }
     }
@@ -361,8 +361,8 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                     break;
                 }
         }
-        sleep(1);
-        iguana_bundleQ(coin,bp,bp->n * 10);
+        //sleep(1);
+        iguana_bundleQ(coin,bp,bp->n);
         return(0);
     }
     pend = queue_size(&coin->priorityQ) + queue_size(&coin->blocksQ);
@@ -370,9 +370,9 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         pend += coin->peers.active[i].pendblocks;
     if ( pend >= coin->MAXPENDING*coin->MAXPEERS )
     {
-        sleep(10000);
+        usleep(10000);
         printf("SKIP pend.%d vs %d: ITERATE bundle.%d n.%d r.%d s.%d finished.%d timelimit.%d\n",pend,coin->MAXPENDING*coin->MAXPEERS,bp->bundleheight,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit);
-        iguana_bundleQ(coin,bp,counter == 0 ? bp->n*5 : bp->n*2);
+        iguana_bundleQ(coin,bp,1000);//counter == 0 ? bp->n*5 : bp->n*2);
         return(0);
     }
     max = 1 + ((coin->MAXPENDING*coin->MAXPEERS - pend) >> 1);
@@ -422,7 +422,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                         block->fpipbits = 0;
                         bp->issued[i] = 0;
                         iguana_blockQ(coin,bp,i,block->RO.hash2,0);
-                        iguana_bundleQ(coin,bp,counter == 0 ? bp->n*5 : bp->n*2);
+                        iguana_bundleQ(coin,bp,500);//counter == 0 ? bp->n*5 : bp->n*2);
                         return(0);
                     }
                 } else printf("error getting block (%d:%d) %p vs %p\n",bp->hdrsi,i,block,iguana_blockfind(coin,bp->hashes[i]));
@@ -434,7 +434,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
             iguana_emitQ(coin,bp);
             return(1);
         }
-        iguana_bundleQ(coin,bp,200);//counter == 0 ? 200);bp->n*5 : bp->n*2);
+        iguana_bundleQ(coin,bp,500);//counter == 0 ? 200);bp->n*5 : bp->n*2);
     }
     return(0);
 }
