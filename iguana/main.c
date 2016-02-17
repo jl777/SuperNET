@@ -35,6 +35,7 @@ int32_t Showmode,Autofold,PANGEA_MAXTHREADS = 1;
 
 struct category_info *Categories;
 struct iguana_info *Coins[IGUANA_MAXCOINS];
+char Userhome[512];
 int32_t USE_JAY,FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel;
 uint32_t prices777_NXTBLOCK,MAX_DEPTH = 100;
 queue_t helperQ,jsonQ,finishedQ,bundlesQ;
@@ -1030,9 +1031,8 @@ maingen(int argc, char** argv)
 
 void iguana_main(void *arg)
 {
-    int32_t usessl = 0, ismainnet = 1;
-    struct supernet_info *myinfo; char *tmpstr,*helperargs,*coinargs,helperstr[512]; int32_t i;
-
+    cJSON *argjson; int32_t usessl = 0, ismainnet = 1;  int32_t i;
+    struct supernet_info *myinfo; char *tmpstr,*helperargs,*coinargs,helperstr[512];
     mycalloc(0,0,0);
     myinfo = SuperNET_MYINFO(0);
     FILE *fp; int32_t iter; void ztest(); ztest();
@@ -1084,6 +1084,11 @@ void iguana_main(void *arg)
     OS_ensure_directory("confs");
     OS_ensure_directory("DB"), OS_ensure_directory("DB/ECB");
     OS_ensure_directory("tmp");
+    if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
+    {
+        safecopy(Userhome,jstr(argjson,"userhome"),sizeof(Userhome));
+        free_json(argjson);
+    }
     if ( (tmpstr= SuperNET_JSON(myinfo,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"help\"}"),0)) != 0 )
     {
         if ( (API_json= cJSON_Parse(tmpstr)) != 0 && (API_json= jobj(API_json,"result")) != 0 )

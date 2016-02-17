@@ -320,6 +320,7 @@ uint64_t iguana_miningreward(struct iguana_info *coin,uint32_t blocknum)
 
 void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
 {
+    extern char Userhome[];
     char *path,*conf,*hexstr,genesisblock[1024],str[65]; bits256 hash; uint16_t port; cJSON *rpair,*genesis,*rewards,*item; int32_t i,n,m;
     if ( strcmp(chain->symbol,"NXT") != 0 )
     {
@@ -350,10 +351,13 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
             chain->txfee = (uint64_t)(SATOSHIDEN * jdouble(argjson,"txfee"));
         chain->use_addmultisig = juint(argjson,"useaddmultisig");
         chain->do_opreturn = juint(argjson,"do_opreturn");
-        if ( jobj(argjson,"oldtx_format") != 0 )
+        if ( jobj(argjson,"hastimestamp") != 0 )
+            chain->hastimestamp = juint(argjson,"hastimestamp");
+        else if ( jobj(argjson,"oldtx_format") != 0 )
             chain->hastimestamp = !juint(argjson,"oldtx_format");
         if ( jstr(argjson,"userhome") != 0 )
             strcpy(chain->userhome,jstr(argjson,"userhome"));
+        else strcpy(chain->userhome,Userhome);
         if ( (port= extract_userpass(chain->serverport,chain->userpass,chain->symbol,chain->userhome,path,conf)) != 0 )
             chain->portrpc = port;
         printf("COIN.%s serverport.(%s) userpass.(%s) port.%u\n",chain->symbol,chain->serverport,chain->userpass,chain->portrpc);
@@ -392,7 +396,6 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
             chain->ramchainport = chain->portp2p - 1;
         if ( (chain->portrpc= juint(argjson,"rpc")) == 0 )
             chain->portrpc = chain->portp2p + 1;
-        chain->hastimestamp = juint(argjson,"hastimestamp");
         if ( (rewards= jarray(&n,argjson,"rewards")) != 0 )
         {
             for (i=0; i<n; i++)
