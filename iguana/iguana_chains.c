@@ -352,6 +352,8 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
         chain->do_opreturn = juint(argjson,"do_opreturn");
         if ( jobj(argjson,"oldtx_format") != 0 )
             chain->hastimestamp = !juint(argjson,"oldtx_format");
+        if ( jstr(argjson,"userhome") != 0 )
+            strcpy(chain->userhome,jstr(argjson,"userhome"));
         if ( (port= extract_userpass(chain->serverport,chain->userpass,chain->symbol,chain->userhome,path,conf)) != 0 )
             chain->portrpc = port;
         printf("COIN.%s serverport.(%s) userpass.(%s) port.%u\n",chain->symbol,chain->serverport,chain->userpass,chain->portrpc);
@@ -416,7 +418,6 @@ struct iguana_chain *iguana_createchain(cJSON *json)
         if ( (name= jstr(json,"description")) != 0 && strlen(name) < 32 )
             strcpy(chain->name,name);
         iguana_chaininit(chain,juint(json,"hasheaders"));
-        iguana_chainparms(chain,json);
     }
     return(chain);
 }

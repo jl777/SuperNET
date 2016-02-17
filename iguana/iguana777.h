@@ -761,6 +761,7 @@ char *bitcoin_json2hex(struct iguana_info *coin,bits256 *txidp,cJSON *txjson);
 int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr);
 char *issue_startForging(struct supernet_info *myinfo,char *secret);
 struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct iguana_info *coin,char **retstrp,double *balancep,int32_t *numunspentsp,double minconfirms,char *account);
+void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson);
 
 extern queue_t bundlesQ;
 
