@@ -31,6 +31,11 @@ static const char base58_chars[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijk
 #define IGUANA_SCRIPT_DATA 11
 #define IGUANA_SCRIPT_STRANGE 15
 
+char *bitcoind_passthru(char *coinstr,char *serverport,char *userpass,char *method,char *params)
+{
+    return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params));
+}
+
 int32_t bitcoin_pubkeylen(const uint8_t *pubkey)
 {
     if ( pubkey[0] == 2 || pubkey[0] == 3 )
@@ -1440,6 +1445,54 @@ rawtxstr = refstr;
     return(cJSON_Parse("{\"error\":\"testing bitcoin txbytes\"}"));
 }
 
+uint64_t bitcoin_parseunspent(struct bitcoin_unspent *unspent,double minconfirms,char *account,cJSON *item)
+{
+    uint64_t value = 0; char *hexstr;
+    // struct bitcoin_unspent { bits256 txid,privkey; uint64_t value; int32_t vout; };
+    memset(unspent,0,sizeof(*unspent));
+    if ( jstr(item,"address") != 0 )
+        bitcoin_addr2rmd160(&unspent->addrtype,unspent->rmd160,jstr(item,"address"));
+    if ( (account == 0 || jstr(item,"account") == 0 || strcmp(account,jstr(item,"account")) == 0) && (minconfirms < 0 || juint(item,"confirmations") >= minconfirms-SMALLVAL) )
+    {
+        if ( (hexstr= jstr(item,"scriptPubKey")) != 0 && strlen(hexstr) < sizeof(unspent->script)/2 )
+            decode_hex(unspent->script,(int32_t)strlen(hexstr),hexstr);
+        unspent->txid = jbits256(item,"txid");
+        unspent->value = j64bits(item,"amount");
+        unspent->vout = jint(item,"vout");
+    }
+    return(value);
+}
+
+struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct iguana_info *coin,char **retstrp,double *balancep,int32_t *numunspentsp,double minconfirms,char *account)
+{
+    char params[128],*retstr; uint64_t value,total = 0; struct bitcoin_unspent *unspents=0; cJSON *utxo; int32_t i,n;
+    if ( account != 0 && account[0] == 0 )
+        account = 0;
+    *numunspentsp = 0;
+    if ( retstrp != 0 )
+        *retstrp = 0;
+    sprintf(params,"%.0f, 99999999",minconfirms);
+    if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",params)) != 0 )
+    {
+        if ( (utxo= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (*numunspentsp= cJSON_GetArraySize(utxo)) > 0 )
+            {
+                unspents = calloc(*numunspentsp,sizeof(*unspents));
+                for (i=n=0; i<*numunspentsp; i++)
+                    if ( (value= bitcoin_parseunspent(&unspents[n],minconfirms,account,jitem(utxo,i))) != 0 )
+                        total += value, n++;
+            }
+            free_json(utxo);
+        }
+        if ( retstrp != 0 )
+            *retstrp = retstr;
+        else free(retstr);
+    }
+    *balancep = dstr(total);
+    return(unspents);
+}
+
 #define EXCHANGE_NAME "bitcoin"
 #define UPDATE bitcoin ## _price
 #define SUPPORTS bitcoin ## _supports
@@ -1476,14 +1529,49 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
 
 char *PARSEBALANCE(struct exchange_info *exchange,double *balancep,char *coinstr,cJSON *argjson)
 {
-    //struct supernet_info *myinfo = SuperNET_accountfind(argjson);
-    return(clonestr("{\"error\":\"bitcoin is not yet\"}"));
+    cJSON *item;
+    *balancep = 0;
+    if ( (item= jobj(argjson,coinstr)) != 0 )
+    {
+        *balancep = jdouble(item,"balance");
+        return(jprint(item,0));
+    }
+    return(clonestr("{\"error\":\"no item for specified coin\"}"));
 }
 
 cJSON *BALANCES(struct exchange_info *exchange,cJSON *argjson)
 {
-    //struct supernet_info *myinfo = SuperNET_accountfind(argjson);
-    return(cJSON_Parse("{\"error\":\"bitcoin is not yet\"}"));
+    double balance; char *retstr; int32_t i,numunspents,minconfirms; struct iguana_info *coin;
+    struct supernet_info *myinfo; struct bitcoin_unspent *unspents; cJSON *item,*retjson,*utxo;
+    retjson = cJSON_CreateArray();
+    myinfo = SuperNET_accountfind(argjson);
+    for (i=0; i<IGUANA_MAXCOINS; i++)
+    {
+        if ( (coin= Coins[i]) != 0 && coin->chain->serverport[0] != 0 )
+        {
+            balance = 0.;
+            minconfirms = juint(argjson,"minconfirms");
+            if ( minconfirms < coin->minconfirms )
+                minconfirms = coin->minconfirms;
+            if ( (unspents= iguana_unspentsget(myinfo,coin,&retstr,&balance,&numunspents,minconfirms,0)) != 0 )
+            {
+                item = cJSON_CreateObject();
+                jaddnum(retjson,"balance",balance);
+                if ( retstr != 0 )
+                {
+                    if ( (utxo= cJSON_Parse(retstr)) != 0 )
+                    {
+                        jadd(item,"unspents",utxo);
+                        jaddnum(item,"numunspents",numunspents);
+                    }
+                    free(retstr);
+                }
+                free(unspents);
+                jadd(retjson,coin->symbol,item);
+            }
+        }
+    }
+    return(retjson);
 }
 
 int32_t is_valid_BTCother(char *other)
@@ -1567,34 +1655,38 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
 
 char *ORDERSTATUS(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson)
 {
-    struct instantdex_accept *ap; cJSON *retjson;
+    struct instantdex_accept *ap; cJSON *retjson = cJSON_CreateObject();
     struct supernet_info *myinfo = SuperNET_accountfind(argjson);
-    if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,orderid,"*","*",1)) != 0 )
-    {
-        retjson = cJSON_CreateObject();
+    if ( (ap= instantdex_statemachinefind(myinfo,exchange,orderid,1)) != 0 )
+        jadd(retjson,"result",instantdex_statemachinejson(ap));
+    else if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,orderid,"*","*",1)) != 0 )
         jadd(retjson,"result",instantdex_acceptjson(ap));
-        return(jprint(retjson,1));
-    } else return(clonestr("{\"error\":\"couldnt find orderid\"}"));
+    else if ( (ap= instantdex_historyfind(myinfo,exchange,orderid)) != 0 )
+        jadd(retjson,"result",instantdex_historyjson(ap));
+    else jaddstr(retjson,"error","couldnt find orderid");
+    return(jprint(retjson,1));
 }
 
 char *CANCELORDER(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson)
 {
-    struct instantdex_accept *ap; cJSON *retjson;
+    struct instantdex_accept *ap = 0; cJSON *retjson;
     struct supernet_info *myinfo = SuperNET_accountfind(argjson);
+    retjson = cJSON_CreateObject();
     if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,orderid,"*","*",1)) != 0 )
+        jadd(retjson,"orderid",instantdex_acceptjson(ap));
+    else if ( (ap= instantdex_statemachinefind(myinfo,exchange,orderid,1)) != 0 )
+        jadd(retjson,"orderid",instantdex_statemachinejson(ap));
+    if ( ap != 0 )
     {
         ap->dead = (uint32_t)time(NULL);
-        retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","killed orderid, but might have pending");
-        jadd(retjson,"order",instantdex_acceptjson(ap));
-        return(jprint(retjson,1));
-    } else return(clonestr("{\"error\":\"couldnt find orderid\"}"));
+    } else jaddstr(retjson,"error","couldnt find orderid");
+    return(jprint(retjson,1));
 }
 
 char *OPENORDERS(struct exchange_info *exchange,cJSON *argjson)
 {
-    cJSON *retjson,*bids,*asks;
-    struct supernet_info *myinfo = SuperNET_accountfind(argjson);
+    cJSON *retjson,*bids,*asks; struct supernet_info *myinfo = SuperNET_accountfind(argjson);
     bids = cJSON_CreateArray();
     asks = cJSON_CreateArray();
     instantdex_offerfind(myinfo,exchange,bids,asks,0,"*","*",1);
@@ -1607,14 +1699,22 @@ char *OPENORDERS(struct exchange_info *exchange,cJSON *argjson)
 
 char *TRADEHISTORY(struct exchange_info *exchange,cJSON *argjson)
 {
-    //struct supernet_info *myinfo = SuperNET_accountfind(argjson);
-    return(clonestr("{\"error\":\"bitcoin is not yet\"}"));
+    struct instantdex_accept PAD,*ap; cJSON *retjson = cJSON_CreateArray();
+    memset(&PAD,0,sizeof(PAD));
+    queue_enqueue("historyQ",&exchange->historyQ,&PAD.DL,0);
+    while ( (ap= queue_dequeue(&exchange->historyQ,0)) != 0 && ap != &PAD )
+    {
+        jaddi(retjson,instantdex_historyjson(ap));
+        queue_enqueue("historyQ",&exchange->historyQ,&ap->DL,0);
+    }
+    return(jprint(retjson,1));
 }
 
 char *WITHDRAW(struct exchange_info *exchange,char *base,double amount,char *destaddr,cJSON *argjson)
 {
     //struct supernet_info *myinfo = SuperNET_accountfind(argjson);
-    return(clonestr("{\"error\":\"bitcoin is not yet\"}"));
+    // invoke conversion or transfer!
+    return(clonestr("{\"error\":\"what does it mean to withdraw bitcoins that are in your wallet\"}"));
 }
 
 struct exchange_funcs bitcoin_funcs = EXCHANGE_FUNCS(bitcoin,EXCHANGE_NAME);

@@ -27,6 +27,7 @@
 #define INSTANTDEX_BTC "1KRhTPvoxyJmVALwHFXZdeeWFbcJSbkFPu"
 #define INSTANTDEX_BTCD "RThtXup6Zo7LZAi8kRWgjAyi1s4u6U9Cpf"
 #define INSTANTDEX_MINPERC 50.
+#define INSTANTDEX_DECKSIZE 1000
 
 struct instantdex_event { char cmdstr[24],sendcmd[16]; int16_t nextstateind; };
 
@@ -41,9 +42,9 @@ struct instantdex_stateinfo
 
 struct bitcoin_swapinfo
 {
-    bits256 privkeys[777],mypubs[2],otherpubs[2],privAm,pubAm,privBn,pubBn;
+    bits256 privkeys[INSTANTDEX_DECKSIZE+2],mypubs[2],otherpubs[2],privAm,pubAm,privBn,pubBn;
     bits256 orderhash,deposittxid,paymenttxid,altpaymenttxid,myfeetxid,otherfeetxid,othertrader;
-    uint64_t otherscut[777][2],deck[777][2],satoshis[2],insurance,bidid,askid;
+    uint64_t otherscut[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2],satoshis[2],insurance,bidid,askid,initiator64;
     int32_t isbob,choosei,otherschoosei,cutverified,otherverifiedcut;
     char altmsigaddr[64],expectedcmdstr[16],*deposit,*payment,*altpayment,*myfeetx,*otherfeetx;
     double minperc,depositconfirms,paymentconfirms,altpaymentconfirms,myfeeconfirms,otherfeeconfirms;
@@ -479,42 +480,144 @@ double instantdex_avehbla(struct supernet_info *myinfo,double retvals[4],char *b
     else return(0);
 }
 
-int32_t instantdex_bidaskdir(struct instantdex_accept *ap)
+int32_t instantdex_bidaskdir(struct instantdex_offer *offer)
 {
-    if ( ap->offer.myside == 0 && ap->offer.acceptdir > 0 ) // base
+    if ( offer->myside == 0 && offer->acceptdir > 0 ) // base
         return(-1);
-    else if ( ap->offer.myside == 1 && ap->offer.acceptdir < 0 ) // rel
+    else if ( offer->myside == 1 && offer->acceptdir < 0 ) // rel
         return(1);
     else return(0);
 }
 
-cJSON *instantdex_acceptjson(struct instantdex_accept *ap)
+cJSON *instantdex_offerjson(struct instantdex_offer *offer)
 {
-    int32_t dir;
-    cJSON *item = cJSON_CreateObject();
-    jadd64bits(item,"orderid",ap->orderid);
-    jadd64bits(item,"offerer",ap->offer.offer64);
-    if ( ap->dead != 0 )
-        jadd64bits(item,"dead",ap->dead);
-    if ( (dir= instantdex_bidaskdir(ap)) > 0 )
+    int32_t dir; cJSON *item = cJSON_CreateObject();
+    jadd64bits(item,"offerer",offer->offer64);
+    if ( (dir= instantdex_bidaskdir(offer)) > 0 )
         jaddstr(item,"type","bid");
     else if ( dir < 0 )
         jaddstr(item,"type","ask");
     else
     {
         jaddstr(item,"type","strange");
-        jaddnum(item,"acceptdir",ap->offer.acceptdir);
-        jaddnum(item,"myside",ap->offer.myside);
+        jaddnum(item,"acceptdir",offer->acceptdir);
+        jaddnum(item,"myside",offer->myside);
     }
-    jaddstr(item,"base",ap->offer.base);
-    jaddstr(item,"rel",ap->offer.rel);
-    jaddnum(item,"timestamp",ap->offer.expiration);
-    jaddnum(item,"price",dstr(ap->offer.price64));
-    jaddnum(item,"volume",dstr(ap->offer.basevolume64));
-    jaddnum(item,"nonce",ap->offer.nonce);
-    jaddnum(item,"pendingvolume",dstr(ap->pendingvolume64));
-    jaddnum(item,"expiresin",ap->offer.expiration - time(NULL));
+    jaddstr(item,"base",offer->base);
+    jaddstr(item,"rel",offer->rel);
+    jaddnum(item,"timestamp",offer->expiration);
+    jaddnum(item,"price",dstr(offer->price64));
+    jaddnum(item,"volume",dstr(offer->basevolume64));
+    jaddnum(item,"nonce",offer->nonce);
+    jaddnum(item,"expiresin",offer->expiration - time(NULL));
     return(item);
+}
+
+cJSON *instantdex_acceptjson(struct instantdex_accept *ap)
+{
+    cJSON *item = cJSON_CreateObject();
+    jadd64bits(item,"orderid",ap->orderid);
+    jaddnum(item,"pendingvolume",dstr(ap->pendingvolume64));
+    if ( ap->dead != 0 )
+        jadd64bits(item,"dead",ap->dead);
+    jadd(item,"offer",instantdex_offerjson(&ap->offer));
+    if ( ap->otherorderid != 0 )
+    {
+        jadd64bits(item,"otherid",ap->orderid);
+        jadd(item,"otheroffer",instantdex_offerjson(&ap->otheroffer));
+    }
+    return(item);
+}
+
+cJSON *instantdex_statemachinejson(struct instantdex_accept *ap)
+{
+    struct bitcoin_swapinfo *swap = ap->info; cJSON *confirms,*retjson,*txs;
+    retjson = cJSON_CreateObject();
+    if ( swap != 0 )
+    {
+        jaddnum(retjson,"isbob",swap->isbob);
+        jaddbits256(retjson,"privAm",swap->privAm);
+        jaddbits256(retjson,"pubAm",swap->pubAm);
+        jaddbits256(retjson,"privBn",swap->privBn);
+        jaddbits256(retjson,"pubBn",swap->pubBn);
+        jaddbits256(retjson,"othertrader",swap->othertrader);
+        jaddbits256(retjson,"orderhash",swap->orderhash);
+        if ( swap->isbob == 0 )
+        {
+            jaddbits256(retjson,"pubA0",swap->mypubs[0]);
+            jaddbits256(retjson,"pubA1",swap->mypubs[1]);
+            jaddbits256(retjson,"pubB0",swap->otherpubs[0]);
+            jaddbits256(retjson,"pubB1",swap->otherpubs[1]);
+        }
+        else
+        {
+            jaddbits256(retjson,"pubB0",swap->mypubs[0]);
+            jaddbits256(retjson,"pubB1",swap->mypubs[1]);
+            jaddbits256(retjson,"pubA0",swap->otherpubs[0]);
+            jaddbits256(retjson,"pubA1",swap->otherpubs[1]);
+        }
+        jaddnum(retjson,"choosei",swap->choosei);
+        jaddnum(retjson,"otherschoosei",swap->otherschoosei);
+        jaddnum(retjson,"otherschoosei",swap->otherschoosei);
+        jaddnum(retjson,"cutverified",swap->cutverified);
+        jaddnum(retjson,"otherverifiedcut",swap->otherverifiedcut);
+        
+        jaddnum(retjson,"expiration",swap->expiration);
+        jaddnum(retjson,"minperc",swap->minperc * 100.);
+        jaddnum(retjson,"insurance",dstr(swap->insurance));
+        jaddnum(retjson,"baseamount",dstr(swap->satoshis[0]));
+        jaddnum(retjson,"BTCamount",dstr(swap->satoshis[1]));
+        jadd64bits(retjson,"bidid",swap->bidid);
+        jadd64bits(retjson,"askid",swap->askid);
+        jaddstr(retjson,"altmsigaddr",swap->altmsigaddr);
+        if ( swap->state != 0 )
+            jaddstr(retjson,"state",swap->state->name);
+        jaddstr(retjson,"expected",swap->expectedcmdstr);
+        confirms = cJSON_CreateObject();
+        jaddnum(confirms,"deposit",swap->depositconfirms);
+        jaddnum(confirms,"payment",swap->paymentconfirms);
+        jaddnum(confirms,"altpayment",swap->altpaymentconfirms);
+        jaddnum(confirms,"myfee",swap->myfeeconfirms);
+        jaddnum(confirms,"otherfee",swap->otherfeeconfirms);
+        jadd(retjson,"confirms",confirms);
+        txs = cJSON_CreateObject();
+        if ( swap->deposit != 0 )
+            jaddstr(txs,"deposit",swap->deposit), jaddbits256(txs,"deposittxid",swap->deposittxid);
+        if ( swap->payment != 0 )
+            jaddstr(txs,"payment",swap->payment), jaddbits256(txs,"paymenttxid",swap->paymenttxid);
+        if ( swap->altpayment != 0 )
+            jaddstr(txs,"altpayment",swap->altpayment), jaddbits256(txs,"altpaymenttxid",swap->altpaymenttxid);
+        if ( swap->myfeetx != 0 )
+            jaddstr(txs,"myfee",swap->myfeetx), jaddbits256(txs,"myfeetxid",swap->myfeetxid);;
+        if ( swap->otherfeetx != 0 )
+            jaddstr(txs,"otherfee",swap->otherfeetx), jaddbits256(txs,"otherfeetxid",swap->otherfeetxid);
+        jadd(retjson,"txs",confirms);
+        jaddbits256(retjson,"othertrader",swap->othertrader);
+    }
+    jadd(retjson,"swap",instantdex_acceptjson(ap));
+    return(retjson);
+}
+
+cJSON *instantdex_historyjson(struct instantdex_accept *ap)
+{
+    // need to make sure accepts are put onto history queue when they are completed or deaded
+    // also to make permanent copy (somewhere)
+    return(instantdex_acceptjson(ap));
+}
+
+struct instantdex_accept *instantdex_historyfind(struct supernet_info *myinfo,struct exchange_info *exchange,uint64_t orderid)
+{
+    struct instantdex_accept PAD,*ap,*retap = 0; uint32_t now;
+    now = (uint32_t)time(NULL);
+    memset(&PAD,0,sizeof(PAD));
+    queue_enqueue("historyQ",&exchange->historyQ,&PAD.DL,0);
+    while ( (ap= queue_dequeue(&exchange->historyQ,0)) != 0 && ap != &PAD )
+    {
+        if ( orderid == ap->orderid )
+            retap = ap;
+        queue_enqueue("historyQ",&exchange->historyQ,&ap->DL,0);
+    }
+    return(retap);
 }
 
 struct instantdex_accept *instantdex_statemachinefind(struct supernet_info *myinfo,struct exchange_info *exchange,uint64_t orderid,int32_t requeueflag)
@@ -595,14 +698,14 @@ struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,str
     now = (uint32_t)time(NULL);
     memset(&PAD,0,sizeof(PAD));
     queue_enqueue("acceptableQ",&exchange->acceptableQ,&PAD.DL,0);
-    offerdir = instantdex_bidaskdir(A);
+    offerdir = instantdex_bidaskdir(&A->offer);
     minvol = A->offer.basevolume64 * minperc * .01;
     while ( (ap= queue_dequeue(&exchange->acceptableQ,0)) != 0 && ap != &PAD )
     {
         //printf("check offerbits.%llu vs %llu: %d %d %d %d %d %d %d %d\n",(long long)offerbits,(long long)ap->offer.offer64,A->offer.basevolume64 > 0.,strcmp(A->offer.base,"*") == 0 ,strcmp(A->offer.base,ap->offer.base) == 0, strcmp(A->offer.rel,"*") == 0 ,strcmp(A->offer.rel,ap->offer.rel) == 0,A->offer.basevolume64 <= (ap->offer.basevolume64 - ap->pendingvolume64),offerdir,instantdex_bidaskdir(ap));
         if ( now < ap->offer.expiration && ap->dead == 0 && (offerbits == 0 || offerbits != ap->offer.offer64) )
         {
-            if ( A->offer.basevolume64 > 0. && (strcmp(A->offer.base,"*") == 0 || strcmp(A->offer.base,ap->offer.base) == 0) && (strcmp(A->offer.rel,"*") == 0 || strcmp(A->offer.rel,ap->offer.rel) == 0) && minvol <= (ap->offer.basevolume64 - ap->pendingvolume64) && offerdir*instantdex_bidaskdir(ap) < 0 )
+            if ( A->offer.basevolume64 > 0. && (strcmp(A->offer.base,"*") == 0 || strcmp(A->offer.base,ap->offer.base) == 0) && (strcmp(A->offer.rel,"*") == 0 || strcmp(A->offer.rel,ap->offer.rel) == 0) && minvol <= (ap->offer.basevolume64 - ap->pendingvolume64) && offerdir*instantdex_bidaskdir(&ap->offer) < 0 )
             {
                 //printf("aveprice %.8f %.8f offerdir.%d first cmp: %d %d %d\n",aveprice,dstr(ap->offer.price64),offerdir,A->offer.price64 == 0,(offerdir > 0 && ap->offer.price64 >= A->offer.price64),(offerdir < 0 && ap->offer.price64 <= A->offer.price64));
                 if ( offerdir == 0 || A->offer.price64 == 0 || ((offerdir < 0 && ap->offer.price64 >= A->offer.price64) || (offerdir > 0 && ap->offer.price64 <= A->offer.price64)) )
@@ -731,7 +834,7 @@ char *instantdex_swapset(struct supernet_info *myinfo,struct instantdex_accept *
     if ( (coinbtc= iguana_coinfind("BTC")) == 0 )
         return(clonestr("{\"error\":\"no BTC found\"}"));
     insurance = (satoshis[1] * INSTANTDEX_INSURANCERATE + coinbtc->chain->txfee); // txfee prevents papercut attack
-    offerdir = instantdex_bidaskdir(ap);
+    offerdir = instantdex_bidaskdir(&ap->offer);
     vcalc_sha256(0,orderhash.bytes,(void *)&ap->offer,sizeof(ap->offer));
     if ( 0 )
     {
@@ -855,7 +958,7 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
     swap->isbob = (ap->offer.myside ^ 1);
     if ( (retstr= instantdex_swapset(myinfo,ap,argjson)) != 0 )
         return(retstr);
-    if ( instantdex_pubkeyargs(swap,newjson,2+777,myinfo->persistent_priv,swap->orderhash,0x02 + swap->isbob) != 2+777 )
+    if ( instantdex_pubkeyargs(swap,newjson,2+INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->orderhash,0x02 + swap->isbob) != 2+INSTANTDEX_DECKSIZE )
         return(clonestr("{\"error\":\"instantdex_BTCswap error creating pubkeyargs\"}"));
     char str[65]; printf("GOT OFFER! orderid.%llu %p (%s/%s) other.%s myside.%d\n",(long long)ap->orderid,ap->info,ap->offer.base,ap->offer.rel,bits256_str(str,traderpub),swap->isbob);
     if ( (newjson= instantdex_parseargjson(myinfo,exchange,ap,argjson,1)) == 0 )

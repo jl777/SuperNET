@@ -371,19 +371,11 @@ struct bitcoin_unspent *iguana_bestfit(struct iguana_info *coin,struct bitcoin_u
     return(vin);
 }
 
-struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *numunspentsp)
-{
-    struct bitcoin_unspent *ups = calloc(1,sizeof(*ups)); //uint8_t addrtype;
-    // struct bitcoin_unspent { bits256 txid,privkey; uint64_t value; int32_t vout; };
-    *numunspentsp = 0;
-    return(ups);
-}
-
-struct bitcoin_spend *iguana_spendset(struct supernet_info *myinfo,struct iguana_info *coin,int64_t amount,int64_t txfee)
+struct bitcoin_spend *iguana_spendset(struct supernet_info *myinfo,struct iguana_info *coin,int64_t amount,int64_t txfee,char *account)
 {
     int32_t i,mode,numunspents,maxinputs = 1024; int64_t remains; struct bitcoin_unspent *ptr,*up;
-    struct bitcoin_unspent *ups; struct bitcoin_spend *spend;
-    if ( (ups= iguana_unspentsget(myinfo,coin,&numunspents)) == 0 )
+    struct bitcoin_unspent *ups; struct bitcoin_spend *spend; double balance;
+    if ( (ups= iguana_unspentsget(myinfo,coin,0,&balance,&numunspents,coin->chain->minconfirms,account)) == 0 )
         return(0);
     spend = calloc(1,sizeof(*spend) + sizeof(*spend->inputs) * maxinputs);
     spend->txfee = txfee;

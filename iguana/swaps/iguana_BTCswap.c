@@ -14,7 +14,6 @@
  ******************************************************************************/
 
 #include "../exchanges/bitcoin.h"
-#define INSTANTDEX_DECKSIZE 1000
 /* https://bitcointalk.org/index.php?topic=1340621.msg13828271#msg13828271
    https://bitcointalk.org/index.php?topic=1364951
 Tier Nolan's approach is followed with the following changes:
@@ -104,7 +103,7 @@ char *instantdex_feetx(struct supernet_info *myinfo,bits256 *txidp,struct instan
     if ( (coinbtc= iguana_coinfind("BTC")) != 0 )
     {
         insurance = instantdex_insurance(coinbtc,instantdex_BTCsatoshis(A->offer.price64,A->offer.basevolume64));
-        if ( (spend= iguana_spendset(myinfo,coinbtc,insurance,coinbtc->chain->txfee)) != 0 )
+        if ( (spend= iguana_spendset(myinfo,coinbtc,insurance,coinbtc->chain->txfee,0)) != 0 )
         {
             txobj = bitcoin_createtx(coinbtc,0);
             n = instantdex_outputinsurance(coinbtc,txobj,insurance,A->orderid);
@@ -117,7 +116,6 @@ char *instantdex_feetx(struct supernet_info *myinfo,bits256 *txidp,struct instan
         else
         {
             printf("no unspents to spend\n");
-            feetx = clonestr("deadbeefdeadbeef");
         }
     }
     return(feetx);
@@ -127,7 +125,6 @@ int32_t instantdex_feetxverify(struct supernet_info *myinfo,struct iguana_info *
 {
     cJSON *txobj; bits256 txid; uint32_t n; int32_t i,retval = -1; int64_t insurance;
     struct iguana_msgtx msgtx; uint8_t script[512];
-    return(0);
     if ( swap->otherfeetx != 0 )
     {
         if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,swap->otherfeetx)) != 0 )
@@ -165,7 +162,7 @@ char *instantdex_bobtx(struct supernet_info *myinfo,struct iguana_info *coin,bit
     locktime = (uint32_t)(reftime + INSTANTDEX_LOCKTIME * (1 + depositflag));
     txobj = bitcoin_createtx(coin,locktime);
     insurance = instantdex_insurance(coin,amount);
-    if ( (spend= iguana_spendset(myinfo,coin,amount + insurance,coin->chain->txfee)) != 0 )
+    if ( (spend= iguana_spendset(myinfo,coin,amount + insurance,coin->chain->txfee,0)) != 0 )
     {
         calc_rmd160_sha256(secret,priv.bytes,sizeof(priv));
         n = instantdex_bobscript(script,0,&secretstart,locktime,pub1,secret,pub2);
@@ -258,7 +255,7 @@ int32_t instantdex_altpaymentverify(struct supernet_info *myinfo,struct iguana_i
 char *instantdex_alicetx(struct supernet_info *myinfo,struct iguana_info *altcoin,char *msigaddr,bits256 *txidp,bits256 pubAm,bits256 pubBn,int64_t amount)
 {
     cJSON *txobj; int32_t n; char *signedtx = 0; uint8_t script[1024]; struct bitcoin_spend *spend;
-    if ( altcoin != 0 && (spend= iguana_spendset(myinfo,altcoin,amount,altcoin->chain->txfee)) != 0 )
+    if ( altcoin != 0 && (spend= iguana_spendset(myinfo,altcoin,amount,altcoin->chain->txfee,0)) != 0 )
     {
         txobj = bitcoin_createtx(altcoin,0);
         n = instantdex_alicescript(script,0,msigaddr,altcoin->chain->p2shtype,pubAm,pubBn);
@@ -794,8 +791,8 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     instantdex_addevent(s,*n,"BOB_sentpayment","poll","poll","BOB_sentpayment");
     {
         double startmillis = OS_milliseconds();
-        instantdex_FSMtest(s,*n,10000000);
-        printf("elapsed %.3f ave %.6f\n",OS_milliseconds() - startmillis,(OS_milliseconds() - startmillis)/10000000);
+        instantdex_FSMtest(s,*n,1000);
+        printf("elapsed %.3f ave %.6f\n",OS_milliseconds() - startmillis,(OS_milliseconds() - startmillis)/1000);
     }
     return(s);
 }

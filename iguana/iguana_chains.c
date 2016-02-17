@@ -94,9 +94,39 @@ static struct iguana_chain Chains[] =
     "genesis":{"version":1,"timestamp":1403138561,"nBits":"1e0fffff","nonce":8359109,"hash":"0000044966f40703b516c5af180582d53f783bfd319bb045e2dc3e05ea695d46","merkle":"fd1751cc6963d88feca94c0d01da8883852647a37a0a67ce254d62dd8c9d5b2b"}
 }*/
 
-bits256 iguana_chaingenesis(int32_t version,uint32_t timestamp,uint32_t bits,uint32_t nonce,bits256 merkle_root)
+
+int32_t blockhash_sha256(uint8_t *blockhashp,uint8_t *serialized,int32_t len)
 {
-    struct iguana_msgblock msg; int32_t len; bits256 hash2; uint8_t serialized[1024]; char hexstr[2049];
+    bits256 hash;
+    vcalc_sha256(0,hash.bytes,serialized,len);
+    vcalc_sha256(0,blockhashp,hash.bytes,sizeof(hash));
+    return(sizeof(bits256));
+}
+
+int32_t blockhash_scrypt(uint8_t *blockhashp,uint8_t *serialized,int32_t len)
+{
+    bits256 hash;
+    vcalc_sha256(0,hash.bytes,serialized,len);
+    printf("need to implement scrypt hash here\n");
+    exit(-1);
+    return(sizeof(bits256));
+}
+
+blockhashfunc iguana_hashalgo(char *hashalgostr)
+{
+    if ( hashalgostr == 0 || hashalgostr[0] == 0 || strcmp(hashalgostr,"sha256") == 0 )
+        return(blockhash_sha256);
+    else if ( strcmp(hashalgostr,"scrypt") == 0 )
+        return(blockhash_scrypt);
+    else printf("unsupported blockhash algo.(%s)\n",hashalgostr);
+    return(0);
+}
+
+bits256 iguana_chaingenesis(char *genesisblock,char *hashalgostr,int32_t version,uint32_t timestamp,uint32_t bits,uint32_t nonce,bits256 merkle_root)
+{
+    struct iguana_msgblock msg; int32_t len,blockhashlen; bits256 hash2;
+    char blockhashstr[256]; uint8_t serialized[1024],blockhash[256];
+    int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serialized,int32_t len);
     memset(&msg,0,sizeof(msg));
     msg.H.version = version;
     msg.H.merkle_root = merkle_root;
@@ -104,28 +134,127 @@ bits256 iguana_chaingenesis(int32_t version,uint32_t timestamp,uint32_t bits,uin
     msg.H.bits = bits;
     msg.H.nonce = nonce;
     len = iguana_rwblock(1,&hash2,serialized,&msg);
-    init_hexbytes_noT(hexstr,serialized,len);
-    char str[65],str2[65]; printf("v.%d t.%u bits.%x nonce.%u merkle.(%s) genesis.(%s) hash.(%s) size.%ld\n",version,timestamp,bits,nonce,bits256_str(str2,merkle_root),hexstr,bits256_str(str,hash2),strlen(hexstr)/2);
+    blockhashstr[0] = 0;
+    if  ( hashalgostr != 0 && strcmp(hashalgostr,"sha256") != 0 && (hashalgo= iguana_hashalgo(hashalgostr)) != 0 )
+    {
+        if ( (blockhashlen= (*hashalgo)(blockhash,serialized,len)) > 0 )
+            init_hexbytes_noT(blockhashstr,blockhash,blockhashlen);
+    }
+    init_hexbytes_noT(genesisblock,serialized,len);
+    char str[65],str2[65]; printf("v.%d t.%u bits.%x nonce.%u merkle.(%s) genesis.(%s) hash2.(%s) blockhash.(%s) size.%ld\n",version,timestamp,bits,nonce,bits256_str(str2,merkle_root),genesisblock,bits256_str(str,hash2),blockhashstr,strlen(genesisblock)/2);
     return(hash2);
+}
+
+char *parse_conf_line(char *line,char *field)
+{
+    line += strlen(field);
+    for (; *line!='='&&*line!=0; line++)
+        break;
+    if ( *line == 0 )
+        return(0);
+    if ( *line == '=' )
+        line++;
+    _stripwhite(line,0);
+    if ( Debuglevel > 0 )
+        printf("[%s]\n",line);
+    return(clonestr(line));
+}
+
+char *default_coindir(char *confname,char *coinstr)
+{
+    int32_t i;
+#ifdef __APPLE__
+    char *coindirs[][3] = { {"BTC","Bitcoin","bitcoin"}, {"BTCD","BitcoinDark"}, {"LTC","Litecoin","litecoin"}, {"VRC","Vericoin","vericoin"}, {"OPAL","OpalCoin","opalcoin"}, {"BITS","Bitstar","bitstar"}, {"DOGE","Dogecoin","dogecoin"}, {"DASH","Dash","dash"}, {"BC","Blackcoin","blackcoin"}, {"FIBRE","Fibre","fibre"}, {"VPN","Vpncoin","vpncoin"} };
+#else
+    char *coindirs[][3] = { {"BTC",".bitcoin"}, {"BTCD",".BitcoinDark"}, {"LTC",".litecoin"}, {"VRC",".vericoin"}, {"OPAL",".opalcoin"}, {"BITS",".Bitstar"}, {"DOGE",".dogecoin"}, {"DASH",".dash"}, {"BC",".blackcoin"}, {"FIBRE",".Fibre"}, {"VPN",".vpncoin"} };
+#endif
+    for (i=0; i<(int32_t)(sizeof(coindirs)/sizeof(*coindirs)); i++)
+        if ( strcmp(coindirs[i][0],coinstr) == 0 )
+        {
+            if ( coindirs[i][2] != 0 )
+                strcpy(confname,coindirs[i][2]);
+            else strcpy(confname,coindirs[i][1] + (coindirs[i][1][0] == '.'));
+            return(coindirs[i][1]);
+        }
+    return(coinstr);
+}
+
+void set_coinconfname(char *fname,char *coinstr,char *userhome,char *coindir,char *confname)
+{
+    char buf[64];
+    if ( coindir == 0 || coindir[0] == 0 )
+        coindir = default_coindir(buf,coinstr);
+    if ( confname == 0 || confname[0] == 0 )
+    {
+        confname = buf;
+        sprintf(confname,"%s.conf",buf);
+    }
+    printf("userhome.(%s) coindir.(%s) confname.(%s)\n",userhome,coindir,confname);
+    sprintf(fname,"%s/%s/%s",userhome,coindir,confname);
+}
+
+uint16_t extract_userpass(char *serverport,char *userpass,char *coinstr,char *userhome,char *coindir,char *confname)
+{
+    FILE *fp; uint16_t port = 0;
+    char fname[2048],line[1024],*rpcuser,*rpcpassword,*rpcport,*str;
+    if ( strcmp(coinstr,"NXT") == 0 )
+        return(0);
+    serverport[0] = userpass[0] = 0;
+    set_coinconfname(fname,coinstr,userhome,coindir,confname);
+    printf("set_coinconfname.(%s)\n",fname);
+    if ( (fp= fopen(OS_compatible_path(fname),"r")) != 0 )
+    {
+        if ( Debuglevel > 1 )
+            printf("extract_userpass from (%s)\n",fname);
+        rpcuser = rpcpassword = rpcport = 0;
+        while ( fgets(line,sizeof(line),fp) != 0 )
+        {
+            if ( line[0] == '#' )
+                continue;
+            //printf("line.(%s) %p %p\n",line,strstr(line,"rpcuser"),strstr(line,"rpcpassword"));
+            if ( (str= strstr(line,"rpcuser")) != 0 )
+                rpcuser = parse_conf_line(str,"rpcuser");
+            else if ( (str= strstr(line,"rpcpassword")) != 0 )
+                rpcpassword = parse_conf_line(str,"rpcpassword");
+            else if ( (str= strstr(line,"rpcport")) != 0 )
+                rpcport = parse_conf_line(str,"rpcport");
+        }
+        if ( rpcuser != 0 && rpcpassword != 0 )
+        {
+            if ( userpass[0] == 0 )
+                sprintf(userpass,"%s:%s",rpcuser,rpcpassword);
+        }
+        if ( rpcport != 0 )
+        {
+            port = atoi(rpcport);
+            if ( serverport[0] == 0 )
+                sprintf(serverport,"127.0.0.1:%s",rpcport);
+            free(rpcport);
+        }
+        if ( Debuglevel > 1 )
+            printf("-> (%s):(%s) userpass.(%s) serverport.(%s)\n",rpcuser,rpcpassword,userpass,serverport);
+        if ( rpcuser != 0 )
+            free(rpcuser);
+        if ( rpcpassword != 0 )
+            free(rpcpassword);
+        fclose(fp);
+    } else printf("extract_userpass cant open.(%s)\n",fname);
+    return(port);
 }
 
 void iguana_chaininit(struct iguana_chain *chain,int32_t hasheaders)
 {
     chain->hasheaders = hasheaders;
     chain->minoutput = 10000;
+    chain->hashalgo = blockhash_sha256;
     if ( strcmp(chain->symbol,"BTC") == 0 )
     {
         chain->unitval = 0x1d;
         chain->txfee = 10000;
     }
-    else
-    {
-        if ( strcmp(chain->symbol,"LTC") == 0 )
-            chain->txfee = 100000;
-        else chain->txfee = 1000000;
-        if ( chain->unitval == 0 )
-            chain->unitval = 0x1e;
-    }
+    else chain->txfee = 1000000;
+    if ( chain->unitval == 0 )
+        chain->unitval = 0x1e;
     if ( hasheaders != 0 )
     {
         strcpy(chain->gethdrsmsg,"getheaders");
@@ -189,42 +318,80 @@ uint64_t iguana_miningreward(struct iguana_info *coin,uint32_t blocknum)
     return(reward);
 }
 
-struct iguana_chain *iguana_createchain(cJSON *json)
+void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
 {
-    char *symbol,*name,*hexstr; cJSON *rewards,*rpair,*item; int32_t i,m,n; struct iguana_chain *chain = 0;
-    if ( (symbol= jstr(json,"name")) != 0 && strlen(symbol) < 8 )
+    char *path,*conf,*hexstr,genesisblock[1024],str[65]; bits256 hash; uint16_t port; cJSON *rpair,*genesis,*rewards,*item; int32_t i,n,m;
+    if ( strcmp(chain->symbol,"NXT") != 0 )
     {
-        chain = mycalloc('C',1,sizeof(*chain));
-        strcpy(chain->symbol,symbol);
-        if ( (name= jstr(json,"description")) != 0 && strlen(name) < 32 )
-            strcpy(chain->name,name);
-        if ( (hexstr= jstr(json,"pubval")) != 0 && strlen(hexstr) == 2 )
+        if ( strcmp(chain->symbol,"BTC") != 0 )
+        {
+            if ( strcmp(chain->symbol,"LTC") == 0 )
+                chain->pubtype = 48, chain->p2shtype = 5, chain->minconfirms = 1, chain->txfee = 100000;
+            else if ( strcmp(chain->symbol,"BTCD") == 0 )
+                chain->pubtype = 60, chain->p2shtype = 85;
+            else if ( strcmp(chain->symbol,"DOGE") == 0 )
+                chain->pubtype = 30, chain->p2shtype = 35, chain->txfee = SATOSHIDEN;
+            else if ( strcmp(chain->symbol,"VRC") == 0 )
+                chain->pubtype = 70, chain->p2shtype = 85;
+            else if ( strcmp(chain->symbol,"OPAL") == 0 )
+                chain->pubtype = 115, chain->p2shtype = 28;
+            else if ( strcmp(chain->symbol,"BITS") == 0 )
+                chain->pubtype = 25, chain->p2shtype = 8;
+        }
+        chain->minoutput = j64bits(argjson,"minoutput");
+        chain->minconfirms = juint(argjson,"minconfirms");
+        chain->estblocktime = juint(argjson,"estblocktime");
+        path = jstr(argjson,"path");
+        conf = jstr(argjson,"conf");
+        chain->dust = j64bits(argjson,"dust");
+        if ( jobj(argjson,"txfee_satoshis") != 0 )
+            chain->txfee = j64bits(argjson,"txfee_satoshis");
+        if ( chain->txfee == 0 )
+            chain->txfee = (uint64_t)(SATOSHIDEN * jdouble(argjson,"txfee"));
+        chain->use_addmultisig = juint(argjson,"useaddmultisig");
+        chain->do_opreturn = juint(argjson,"do_opreturn");
+        if ( jobj(argjson,"oldtx_format") != 0 )
+            chain->hastimestamp = !juint(argjson,"oldtx_format");
+        if ( (port= extract_userpass(chain->serverport,chain->userpass,chain->symbol,chain->userhome,path,conf)) != 0 )
+            chain->portrpc = port;
+        printf("COIN.%s serverport.(%s) userpass.(%s) port.%u\n",chain->symbol,chain->serverport,chain->userpass,chain->portrpc);
+        if ( (hexstr= jstr(argjson,"pubval")) != 0 && strlen(hexstr) == 2 )
             decode_hex((uint8_t *)&chain->pubtype,1,hexstr);
-        if ( (hexstr= jstr(json,"scriptval")) != 0 && strlen(hexstr) == 2 )
+        if ( (hexstr= jstr(argjson,"scriptval")) != 0 && strlen(hexstr) == 2 )
             decode_hex((uint8_t *)&chain->p2shtype,1,hexstr);
-        if ( (hexstr= jstr(json,"wiftype")) != 0 && strlen(hexstr) == 2 )
+        if ( (hexstr= jstr(argjson,"wiftype")) != 0 && strlen(hexstr) == 2 )
             decode_hex((uint8_t *)&chain->wiftype,1,hexstr);
-        if ( (hexstr= jstr(json,"netmagic")) != 0 && strlen(hexstr) == 8 )
+        if ( (hexstr= jstr(argjson,"netmagic")) != 0 && strlen(hexstr) == 8 )
             decode_hex((uint8_t *)chain->netmagic,1,hexstr);
-        if ( (hexstr= jstr(json,"unitval")) != 0 && strlen(hexstr) == 2 )
+        if ( (hexstr= jstr(argjson,"unitval")) != 0 && strlen(hexstr) == 2 )
             decode_hex((uint8_t *)&chain->unitval,1,hexstr);
-        if ( (hexstr= jstr(json,"genesishash")) != 0 )
+        if ( (genesis= jobj(argjson,"genesis")) != 0 )
         {
-            chain->genesis_hash = mycalloc('G',1,strlen(hexstr)+1);
-            strcpy(chain->genesis_hash,hexstr);
+            chain->hashalgo = iguana_hashalgo(jstr(genesis,"hashalgo"));
+            hash = iguana_chaingenesis(genesisblock,jstr(genesis,"hashalgo"),juint(genesis,"version"),juint(genesis,"timestamp"),juint(genesis,"nbits"),juint(genesis,"nonce"),jbits256(genesis,"merkle_root"));
+            chain->genesis_hash = clonestr(bits256_str(str,hash));
+            chain->genesis_hex = clonestr(genesisblock);
         }
-        if ( (hexstr= jstr(json,"genesisblock")) != 0 )
+        else
         {
-            chain->genesis_hex = mycalloc('G',1,strlen(hexstr)+1);
-            strcpy(chain->genesis_hex,hexstr);
+            if ( (hexstr= jstr(argjson,"genesishash")) != 0 )
+            {
+                chain->genesis_hash = mycalloc('G',1,strlen(hexstr)+1);
+                strcpy(chain->genesis_hash,hexstr);
+            }
+            if ( (hexstr= jstr(argjson,"genesisblock")) != 0 )
+            {
+                chain->genesis_hex = mycalloc('G',1,strlen(hexstr)+1);
+                strcpy(chain->genesis_hex,hexstr);
+            }
         }
-        chain->portp2p = juint(json,"p2p");
-        if ( (chain->ramchainport= juint(json,"ramchain")) == 0 )
+        chain->portp2p = juint(argjson,"p2p");
+        if ( (chain->ramchainport= juint(argjson,"ramchain")) == 0 )
             chain->ramchainport = chain->portp2p - 1;
-        if ( (chain->portrpc= juint(json,"rpc")) == 0 )
+        if ( (chain->portrpc= juint(argjson,"rpc")) == 0 )
             chain->portrpc = chain->portp2p + 1;
-        chain->hastimestamp = juint(json,"hastimestamp");
-        if ( (rewards= jarray(&n,json,"rewards")) != 0 )
+        chain->hastimestamp = juint(argjson,"hastimestamp");
+        if ( (rewards= jarray(&n,argjson,"rewards")) != 0 )
         {
             for (i=0; i<n; i++)
             {
@@ -236,7 +403,20 @@ struct iguana_chain *iguana_createchain(cJSON *json)
                 }
             }
         }
+    }
+}
+
+struct iguana_chain *iguana_createchain(cJSON *json)
+{
+    char *symbol,*name; struct iguana_chain *chain = 0;
+    if ( (symbol= jstr(json,"name")) != 0 && strlen(symbol) < 8 )
+    {
+        chain = mycalloc('C',1,sizeof(*chain));
+        strcpy(chain->symbol,symbol);
+        if ( (name= jstr(json,"description")) != 0 && strlen(name) < 32 )
+            strcpy(chain->name,name);
         iguana_chaininit(chain,juint(json,"hasheaders"));
+        iguana_chainparms(chain,json);
     }
     return(chain);
 }

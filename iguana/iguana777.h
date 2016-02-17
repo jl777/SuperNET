@@ -18,6 +18,8 @@
 #include "../crypto777/OS_portable.h"
 #include "SuperNET.h"
 
+typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t len);
+
 #define IGUANA_MAXSCRIPTSIZE 8192
 
 //#define IGUANA_DISABLEPEERS
@@ -182,7 +184,11 @@ struct iguana_chain
     uint8_t genesis_hashdata[32],minconfirms;
     uint16_t ramchainport,bundlesize,hasheaders;
     char gethdrsmsg[16];
-    uint64_t txfee,minoutput;
+    uint64_t txfee,minoutput,dust;
+    blockhashfunc hashalgo;
+    char userhome[512],serverport[128],userpass[1024];
+    char use_addmultisig,do_opreturn;
+    int32_t estblocktime;
 };
 
 struct iguana_msgaddress {	uint32_t nTime; uint64_t nServices; uint8_t ip[16]; uint16_t port; } __attribute__((packed));
@@ -725,7 +731,7 @@ cJSON *SuperNET_bits2json(uint8_t *serialized,int32_t datalen);
 int32_t SuperNET_sendmsg(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,bits256 destpub,bits256 mypriv,bits256 mypub,uint8_t *msg,int32_t len,uint8_t *data,int32_t delaymillis);
 int32_t category_peer(struct supernet_info *myinfo,struct iguana_peer *addr,bits256 category,bits256 subhash);
 int32_t btc_wif2priv(uint8_t *addrtypep,uint8_t privkey[32],char *wifstr);
-bits256 iguana_chaingenesis(int32_t version,uint32_t timestamp,uint32_t nBits,uint32_t nonce,bits256 merkle_root);
+bits256 iguana_chaingenesis(char *genesisblock,char *hashalgostr,int32_t version,uint32_t timestamp,uint32_t bits,uint32_t nonce,bits256 merkle_root);
 int32_t iguana_send_ConnectTo(struct iguana_info *coin,struct iguana_peer *addr);
 cJSON *iguana_txjson(struct iguana_info *coin,struct iguana_txid *tx,int32_t height,struct vin_info *V);
 char *iguana_txscan(struct iguana_info *coin,cJSON *json,uint8_t *data,int32_t recvlen,bits256 txid);
@@ -743,7 +749,7 @@ cJSON *iguana_blockjson(struct iguana_info *coin,struct iguana_block *block,int3
 //int32_t iguana_ver(uint8_t *sig,int32_t siglen,uint8_t *data,int32_t datalen,uint8_t *pubkey);
 void calc_rmd160_sha256(uint8_t rmd160[20],uint8_t *data,int32_t datalen);
 int32_t bitcoin_checklocktimeverify(uint8_t *script,int32_t n,uint32_t locktime);
-struct bitcoin_spend *iguana_spendset(struct supernet_info *myinfo,struct iguana_info *coin,int64_t satoshis,int64_t insurance);
+struct bitcoin_spend *iguana_spendset(struct supernet_info *myinfo,struct iguana_info *coin,int64_t satoshis,int64_t insurance,char *account);
 cJSON *bitcoin_hex2json(struct iguana_info *coin,bits256 *txidp,struct iguana_msgtx *msgtx,char *txbytes);
 cJSON *iguana_signtx(struct iguana_info *coin,bits256 *txidp,char **signedtxp,struct bitcoin_spend *spend,cJSON *txobj);
 cJSON *bitcoin_createtx(struct iguana_info *coin,int32_t locktime);
@@ -754,6 +760,7 @@ int32_t bitcoin_verifytx(struct iguana_info *coin,bits256 *signedtxidp,char **si
 char *bitcoin_json2hex(struct iguana_info *coin,bits256 *txidp,cJSON *txjson);
 int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr);
 char *issue_startForging(struct supernet_info *myinfo,char *secret);
+struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct iguana_info *coin,char **retstrp,double *balancep,int32_t *numunspentsp,double minconfirms,char *account);
 
 extern queue_t bundlesQ;
 

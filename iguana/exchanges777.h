@@ -52,7 +52,7 @@ struct exchange_info
     uint32_t exchangeid,pollgap,lastpoll;
     uint64_t lastnonce,exchangebits; double commission;
     void *privatedata;
-    CURL *cHandle; queue_t requestQ,pricesQ,statemachineQ,tradebotsQ,acceptableQ;
+    CURL *cHandle; queue_t requestQ,pricesQ,statemachineQ,tradebotsQ,acceptableQ,historyQ;
 };
 
 struct instantdex_msghdr
@@ -100,6 +100,8 @@ struct instantdex_accept
 
 struct instantdex_accept *instantdex_offerfind(struct supernet_info *myinfo,struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel,int32_t requeue);
 cJSON *instantdex_acceptjson(struct instantdex_accept *ap);
+cJSON *instantdex_statemachinejson(struct instantdex_accept *ap);
+cJSON *instantdex_historyjson(struct instantdex_accept *ap);
 struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,uint64_t offerbits,double minperc);
 
 void *curl_post(void **cHandlep,char *url,char *userpass,char *postfields,char *hdr0,char *hdr1,char *hdr2,char *hdr3);
@@ -122,5 +124,7 @@ void instantdex_update(struct supernet_info *myinfo);
 char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extra,int32_t extralen);
 char *instantdex_sendoffer(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *ap,cJSON *argjson); // Bob sending to network (Alice)
 char *instantdex_selectqueue(struct exchange_info *exchange,struct instantdex_accept *ap,char *retstr);
+struct instantdex_accept *instantdex_historyfind(struct supernet_info *myinfo,struct exchange_info *exchange,uint64_t orderid);
+struct instantdex_accept *instantdex_statemachinefind(struct supernet_info *myinfo,struct exchange_info *exchange,uint64_t orderid,int32_t requeueflag);
 
 #endif

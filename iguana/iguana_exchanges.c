@@ -890,6 +890,7 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
     iguana_initQ(&exchange->requestQ,"request");
     iguana_initQ(&exchange->acceptableQ,"acceptable");
     iguana_initQ(&exchange->tradebotsQ,"tradebots");
+    iguana_initQ(&exchange->historyQ,"history");
     iguana_initQ(&exchange->statemachineQ,"statemachineQ");
     exchange->exchangeid = exchangeid;
     safecopy(exchange->name,exchangestr,sizeof(exchange->name));
