@@ -230,7 +230,7 @@ struct iguana_msgblock
     uint32_t txn_count;
 } __attribute__((packed));
 
-struct iguana_msgvin { bits256 prev_hash; uint8_t *script; uint32_t prev_vout,scriptlen,sequence; } __attribute__((packed));
+struct iguana_msgvin { bits256 prev_hash; uint8_t *sigscript,*spendscript; uint32_t prev_vout,scriptlen,spendlen,sequence; } __attribute__((packed));
 
 struct iguana_msgvout { uint64_t value; uint32_t pk_scriptlen; uint8_t *pk_script; } __attribute__((packed));
 
@@ -475,7 +475,7 @@ struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],r
 struct vin_info
 {
     struct iguana_msgvin vin;
-    int32_t M,N,validmask,spendlen,type,p2shlen;
+    int32_t M,N,validmask,spendlen,type,p2shlen; uint32_t sequence;
     struct vin_signer signers[16];
     char coinaddr[65];
     uint8_t rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE],p2shscript[IGUANA_MAXSCRIPTSIZE];
@@ -755,13 +755,14 @@ cJSON *iguana_signtx(struct iguana_info *coin,bits256 *txidp,char **signedtxp,st
 cJSON *bitcoin_createtx(struct iguana_info *coin,int32_t locktime);
 cJSON *bitcoin_addoutput(struct iguana_info *coin,cJSON *txobj,uint8_t *paymentscript,int32_t len,uint64_t satoshis);
 int32_t bitcoin_changescript(struct iguana_info *coin,uint8_t *changescript,int32_t n,uint64_t *changep,char *changeaddr,uint64_t inputsatoshis,uint64_t satoshis,uint64_t txfee);
-cJSON *bitcoin_addinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32_t vout,uint32_t sequence);
+cJSON *bitcoin_addinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32_t vout,uint32_t sequence,uint8_t *script,int32_t scriptlen);
 int32_t bitcoin_verifytx(struct iguana_info *coin,bits256 *signedtxidp,char **signedtx,char *rawtxstr,struct vin_info *V);
 char *bitcoin_json2hex(struct iguana_info *coin,bits256 *txidp,cJSON *txjson);
 int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr);
 char *issue_startForging(struct supernet_info *myinfo,char *secret);
 struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct iguana_info *coin,char **retstrp,double *balancep,int32_t *numunspentsp,double minconfirms,char *account);
 void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson);
+void iguana_addinputs(struct iguana_info *coin,struct bitcoin_spend *spend,cJSON *txobj,uint32_t sequence);
 
 extern queue_t bundlesQ;
 

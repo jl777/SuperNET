@@ -91,25 +91,36 @@ int32_t instantdex_outputinsurance(struct iguana_info *coin,cJSON *txobj,int64_t
     decode_hex(rmd160,sizeof(rmd160),(orderid % 10) == 0 ? TIERNOLAN_RMD160 : INSTANTDEX_RMD160);
     script[n++] = sizeof(uint64_t);
     n += iguana_rwnum(1,&script[n],sizeof(orderid),&orderid);
-    script[n++] = OP_DROP;
+    script[n++] = SCRIPT_OP_DROP;
     n = bitcoin_standardspend(script,n,rmd160);
     bitcoin_addoutput(coin,txobj,script,n,insurance);
     return(n);
 }
 
+void disp_tx(struct supernet_info *myinfo,struct iguana_info *coin,char *str,char *txbytes)
+{
+    cJSON *txobj; bits256 txid;
+    txobj = bitcoin_hex2json(coin,&txid,0,txbytes);
+    printf("%s.(%s)\n",str,jprint(txobj,1));
+}
+
 char *instantdex_feetx(struct supernet_info *myinfo,bits256 *txidp,struct instantdex_accept *A)
 {
-    int32_t n; char *feetx = 0; struct iguana_info *coinbtc; cJSON *txobj; struct bitcoin_spend *spend; int64_t insurance;
-    if ( (coinbtc= iguana_coinfind("BTC")) != 0 )
+    int32_t n; char *feetx = 0; struct iguana_info *coin; cJSON *txobj; struct bitcoin_spend *spend; int64_t insurance;
+    if ( (coin= iguana_coinfind("BTCD")) != 0 )
     {
-        insurance = instantdex_insurance(coinbtc,instantdex_BTCsatoshis(A->offer.price64,A->offer.basevolume64));
-        if ( (spend= iguana_spendset(myinfo,coinbtc,insurance,coinbtc->chain->txfee,0)) != 0 )
+        insurance = 40 * instantdex_insurance(coin,instantdex_BTCsatoshis(A->offer.price64,A->offer.basevolume64));
+        if ( (spend= iguana_spendset(myinfo,coin,insurance,coin->chain->txfee,0)) != 0 )
         {
-            txobj = bitcoin_createtx(coinbtc,0);
-            n = instantdex_outputinsurance(coinbtc,txobj,insurance,A->orderid);
-            txobj = iguana_signtx(coinbtc,txidp,&feetx,spend,txobj);
+            txobj = bitcoin_createtx(coin,0);
+            n = instantdex_outputinsurance(coin,txobj,insurance,A->orderid);
+            iguana_addinputs(coin,spend,txobj,0xffffffff);
+            txobj = iguana_signtx(coin,txidp,&feetx,spend,txobj);
             if ( feetx != 0  )
+            {
                 printf("%s feetx.%s\n",A->offer.myside != 0 ? "BOB" : "ALICE",feetx);
+                disp_tx(myinfo,coin,"feetx",feetx);
+            }
             else printf("error signing %s feetx numinputs.%d\n",A->offer.myside != 0 ? "BOB" : "ALICE",spend->numinputs);
             free(spend);
         }
@@ -167,10 +178,13 @@ char *instantdex_bobtx(struct supernet_info *myinfo,struct iguana_info *coin,bit
         calc_rmd160_sha256(secret,priv.bytes,sizeof(priv));
         n = instantdex_bobscript(script,0,&secretstart,locktime,pub1,secret,pub2);
         bitcoin_addoutput(coin,txobj,script,n,amount + depositflag*insurance*100);
+        iguana_addinputs(coin,spend,txobj,0xffffffff);
         txobj = iguana_signtx(coin,txidp,&signedtx,spend,txobj);
         if ( signedtx != 0  )
+        {
             printf("bob deposit.%s\n",signedtx);
-        else printf("error signing bobdeposit numinputs.%d\n",spend->numinputs);
+            disp_tx(myinfo,coin,depositflag != 0 ? "deposit" : "payment",signedtx);
+        } else printf("error signing bobdeposit numinputs.%d\n",spend->numinputs);
         free(spend);
     }
     free_json(txobj);
@@ -260,9 +274,13 @@ char *instantdex_alicetx(struct supernet_info *myinfo,struct iguana_info *altcoi
         txobj = bitcoin_createtx(altcoin,0);
         n = instantdex_alicescript(script,0,msigaddr,altcoin->chain->p2shtype,pubAm,pubBn);
         bitcoin_addoutput(altcoin,txobj,script,n,amount);
+        iguana_addinputs(altcoin,spend,txobj,0xffffffff);
         txobj = iguana_signtx(altcoin,txidp,&signedtx,spend,txobj);
         if ( signedtx != 0 )
+        {
             printf("alice payment.%s\n",signedtx);
+            disp_tx(myinfo,altcoin,"altpayment",signedtx);
+        }
         else printf("error signing alicetx numinputs.%d\n",spend->numinputs);
         free(spend);
         free_json(txobj);
@@ -683,7 +701,6 @@ cJSON *BTC_cleanupfunc(struct supernet_info *myinfo,struct exchange_info *exchan
 struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
 {
     struct instantdex_stateinfo *s = 0;
-    *n = 2;
     // Four initial states are BOB_sentoffer, ALICE_gotoffer, ALICE_sentoffer, BOB_gotoffer
     // the initiator includes signed feetx and deck of INSTANTDEX_DECKSIZE keypairs
     //
@@ -694,8 +711,9 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     
     // states instantdex_statecreate(s,n,<Name of State>,handlerfunc,errorhandler,<Timeout State>,<Error State>
     // a given state has a couple of handlers and custom events, with timeouts and errors invoking a bypass
+    *n = 2;
     s = instantdex_statecreate(s,n,"BTC_cleanup",BTC_cleanupfunc,0,0,0,-1); // from states without any commits
-    
+    memset(s,0,sizeof(*s) * 2);
     s = instantdex_statecreate(s,n,"BOB_reclaim",BOB_reclaimfunc,0,0,0,0); // Bob's gets his deposit back
     instantdex_addevent(s,*n,"BOB_reclaim","brcfound","poll","BTC_cleanup");
     instantdex_addevent(s,*n,"BOB_reclaim","poll","poll","BOB_reclaim");

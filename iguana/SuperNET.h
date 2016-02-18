@@ -122,7 +122,12 @@ struct category_msg { struct queueitem DL; struct tai t; uint64_t remoteipbits; 
 
 struct exchange_quote { uint64_t satoshis,orderid,offerNXT,exchangebits; double price,volume; uint32_t timestamp,val; };
 
-struct bitcoin_unspent { bits256 txid,privkeys[16]; uint64_t value; int32_t vout; uint8_t addrtype,rmd160[20],script[512]; };
+struct bitcoin_unspent
+{
+    bits256 txid,privkeys[16]; uint64_t value; int32_t vout,spendlen; uint32_t sequence;
+    uint8_t addrtype,rmd160[20],spendscript[2048];
+};
+
 struct bitcoin_spend
 {
     char changeaddr[64];

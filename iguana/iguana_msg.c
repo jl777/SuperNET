@@ -320,8 +320,8 @@ int32_t iguana_rwvin(int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized,
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->prev_vout),&msg->prev_vout);
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->scriptlen);
     if ( rwflag == 0 )
-        msg->script = iguana_memalloc(mem,msg->scriptlen,1);
-    len += iguana_rwmem(rwflag,&serialized[len],msg->scriptlen,msg->script);
+        msg->sigscript = iguana_memalloc(mem,msg->scriptlen,1);
+    len += iguana_rwmem(rwflag,&serialized[len],msg->scriptlen,msg->sigscript);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->sequence),&msg->sequence);
     //char str[65]; printf("MSGvin.(%s/v%d) script[%d]\n",bits256_str(str,msg->prev_hash),msg->prev_vout,msg->scriptlen);
     //int i; for (i=0; i<msg->scriptlen; i++)

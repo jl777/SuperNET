@@ -137,8 +137,8 @@ struct instantdex_stateinfo *instantdex_statecreate(struct instantdex_stateinfo 
         state = &states[*numstatesp];
         instantdex_stateinit(states,*numstatesp,state,name,errorstr,timeoutstr,process_func,timeout_func);
         state->initialstate = initialstate;
-        state->ind = (*numstatesp)++;
         printf("STATES[%d] %s %p %p %d %d\n",*numstatesp,state->name,state->process,state->timeout,state->timeoutind,state->errorind);
+        state->ind = (*numstatesp)++;
     }
     else
     {
@@ -187,7 +187,8 @@ struct instantdex_event *instantdex_addevent(struct instantdex_stateinfo *states
 
 double instantdex_FSMtest(struct instantdex_stateinfo *states,int32_t numstates,int32_t maxiters)
 {
-    int32_t i,most,r,n,m=0,initials[100]; struct instantdex_stateinfo *state; struct instantdex_event *event; double sum = 0.;
+    int32_t i,most,r,r2,n,m=0,initials[100],nextstate=-1;
+    struct instantdex_stateinfo *state; struct instantdex_event *event; double sum = 0.;
     if ( maxiters < 1 )
         maxiters = 1;
     for (i=n=most=0; i<numstates; i++)
@@ -202,14 +203,25 @@ double instantdex_FSMtest(struct instantdex_stateinfo *states,int32_t numstates,
         {
             r = rand() % n;
             state = &states[initials[r]];
+            if ( state->name[0] == 0 || state->ind >= numstates )
+            {
+                printf("illegal state.(%s) %d? ind.%d >= numstates.%d\n",state->name,nextstate,state->ind,numstates);
+                break;
+            }
             m = 0;
-            while ( m++ < 1000 && state->initialstate >= 0 && state->numevents )
+            while ( m++ < 1000 && state->initialstate >= 0 && state->numevents != 0 )
             {
                 if ( (i % 1000000) == 0 )
                     fprintf(stderr,"%s ",state->name);
-                event = &state->events[rand() % state->numevents];
-                if ( event->nextstateind < 0 )
+                r2 = rand() % state->numevents;
+                event = &state->events[r2];
+                if ( (nextstate= event->nextstateind) < 0 )
                     break;
+                if ( event->nextstateind >= numstates )
+                {
+                    printf("nextstateind overflow? %d vs %d\n",event->nextstateind,numstates);
+                    break;
+                }
                 state = &states[event->nextstateind];
             }
             if ( m > most )
@@ -911,6 +923,8 @@ char *instantdex_sendoffer(struct supernet_info *myinfo,struct exchange_info *ex
         return(clonestr("{\"error\":\"instantdex_BTCswap offer null newjson\"}"));
     else if ( (retstr= instantdex_addfeetx(myinfo,newjson,ap,swap,"BOB_sentoffer","ALICE_sentoffer")) == 0 )
     {
+        instantdex_bobtx(myinfo,iguana_coinfind("BTCD"),&swap->deposittxid,swap->otherpubs[0],swap->mypubs[0],swap->privkeys[swap->choosei],ap->offer.expiration-INSTANTDEX_LOCKTIME*2,swap->satoshis[1],1);
+        instantdex_alicetx(myinfo,iguana_coinfind("BTCD"),swap->altmsigaddr,&swap->altpaymenttxid,swap->pubAm,swap->pubBn,swap->satoshis[0]);
         if ( 0 )
         {
             int32_t i;
