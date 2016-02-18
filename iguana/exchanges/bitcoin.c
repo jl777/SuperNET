@@ -1474,9 +1474,10 @@ struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct i
     sprintf(params,"%.0f, 99999999",minconfirms);
     if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",params)) != 0 )
     {
+        printf("unspents.(%s)\n",retstr);
         if ( (utxo= cJSON_Parse(retstr)) != 0 )
         {
-            if ( (*numunspentsp= cJSON_GetArraySize(utxo)) > 0 )
+            if ( (*numunspentsp= cJSON_GetArraySize(jobj(utxo,"result"))) > 0 )
             {
                 unspents = calloc(*numunspentsp,sizeof(*unspents));
                 for (i=n=0; i<*numunspentsp; i++)
