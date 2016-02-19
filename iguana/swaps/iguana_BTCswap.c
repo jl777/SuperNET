@@ -142,7 +142,7 @@ int32_t instantdex_feetxverify(struct supernet_info *myinfo,struct iguana_info *
 {
     cJSON *txobj; bits256 txid; uint32_t n; int32_t i,retval = -1; int64_t insurance;
     struct iguana_msgtx msgtx; uint8_t script[512];
-    if ( swap->otherfeetx != 0 )
+    if ( swap->otherfeetx != 0 && swap->otherfeeconfirms < 0 )
     {
         if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,swap->otherfeetx)) != 0 )
         {
@@ -152,7 +152,9 @@ int32_t instantdex_feetxverify(struct supernet_info *myinfo,struct iguana_info *
             {
                 if ( memcmp(script,msgtx.vouts[0].pk_script,n) == 0 )
                 {
-                    printf("feetx script verified.(%s)\n",swap->otherfeetx);
+                    //printf("feetx script verified.(%s)\n",swap->otherfeetx);
+                    retval = 0;
+                    swap->otherfeeconfirms = 0;
                 }
                 else
                 {
@@ -166,7 +168,10 @@ int32_t instantdex_feetxverify(struct supernet_info *myinfo,struct iguana_info *
             } else printf("pk_scriptlen %d mismatch %d\n",msgtx.vouts[0].pk_scriptlen,n);
             free_json(txobj);
         } else printf("error converting (%s) txobj\n",swap->otherfeetx);
-    } else printf("no feetx to verify\n");
+    }
+    else if ( swap->otherfeeconfirms >= 0 )
+        retval = 0;
+    else printf("no feetx to verify\n");
     return(retval);
 }
 

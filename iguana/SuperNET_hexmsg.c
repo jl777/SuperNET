@@ -40,7 +40,7 @@ int32_t SuperNET_hexmsgfind(struct supernet_info *myinfo,bits256 category,bits25
         }
         else if ( Packetcache[i] == packethash.txid )
         {
-            printf("SuperNET_DHTsend reject duplicate packet.%llx\n",(long long)packethash.txid);
+            //printf("SuperNET_DHTsend reject duplicate packet.%llx\n",(long long)packethash.txid);
             return(i);
         }
     }

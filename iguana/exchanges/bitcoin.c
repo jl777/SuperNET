@@ -1591,12 +1591,12 @@ cJSON *bitcoin_hex2json(struct iguana_info *coin,bits256 *txidp,struct iguana_ms
         msgtx = &M;
         memset(msgtx,0,sizeof(M));
     }
-    len = (int32_t)strlen(txbytes) + 32768;
-    serialized = malloc(len);
+    len = (int32_t)strlen(txbytes);
+    serialized = malloc(len + 32768);
     decode_hex(serialized,len,txbytes);
     vpnstr[0] = 0;
     memset(txidp,0,sizeof(*txidp));
-    if ( (n= iguana_rwmsgtx(coin,0,txobj,serialized,len,msgtx,txidp,vpnstr)) <= 0 )
+    if ( (n= iguana_rwmsgtx(coin,0,txobj,serialized,len + 32768,msgtx,txidp,vpnstr)) <= 0 )
     {
         printf("error from rwmsgtx\n");
         free_json(txobj);
@@ -1636,11 +1636,11 @@ cJSON *bitcoin_addoutput(struct iguana_info *coin,cJSON *txobj,uint8_t *payments
     hexstr = malloc(len*2 + 1);
     init_hexbytes_noT(hexstr,paymentscript,len);
     jaddstr(skey,"hex",hexstr);
+    printf("addoutput.(%s %s)\n",hexstr,jprint(skey,0));
     free(hexstr);
     jadd(item,"scriptPubkey",skey);
     jaddi(vouts,item);
     jadd(txobj,"vout",vouts);
-    printf("addoutput.(%s %s)\n",hexstr,jprint(skey,0));
     return(txobj);
 }
 
@@ -2030,6 +2030,7 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
     bids = cJSON_CreateArray();
     asks = cJSON_CreateArray();
     instantdex_offerfind(SuperNET_MYINFO(0),exchange,bids,asks,0,base,rel,1);
+    //printf("bids.(%s) asks.(%s)\n",jprint(bids,0),jprint(asks,0));
     retjson = cJSON_CreateObject();
     cJSON_AddItemToObject(retjson,"bids",bids);
     cJSON_AddItemToObject(retjson,"asks",asks);
