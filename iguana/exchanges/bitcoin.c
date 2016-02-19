@@ -1691,7 +1691,7 @@ struct bitcoin_unspent *iguana_bestfit(struct iguana_info *coin,struct bitcoin_u
 struct bitcoin_spend *iguana_spendset(struct supernet_info *myinfo,struct iguana_info *coin,int64_t amount,int64_t txfee,char *account)
 {
     int32_t i,mode,numunspents,maxinputs = 1024; struct bitcoin_unspent *ptr,*up;
-    struct bitcoin_unspent *ups; struct bitcoin_spend *spend; double balance; int64_t remains;
+    struct bitcoin_unspent *ups; struct bitcoin_spend *spend; double balance; int64_t remains,smallest = 0;
     if ( (ups= iguana_unspentsget(myinfo,coin,0,&balance,&numunspents,coin->chain->minconfirms,account)) == 0 )
         return(0);
     spend = calloc(1,sizeof(*spend) + sizeof(*spend->inputs) * maxinputs);
@@ -1706,13 +1706,18 @@ struct bitcoin_spend *iguana_spendset(struct supernet_info *myinfo,struct iguana
                 break;
         if ( up != 0 )
         {
+            if ( smallest == 0 || up->value < smallest )
+            {
+                smallest = up->value;
+                memcpy(spend->change160,up->rmd160,sizeof(spend->change160));
+            }
             spend->input_satoshis += up->value;
             spend->inputs[spend->numinputs++] = *up;
             if ( spend->input_satoshis >= spend->satoshis )
             {
-                spend->netamount = (spend->input_satoshis - spend->satoshis);
-                spend->change = (spend->input_satoshis - spend->netamount) - txfee;
-                printf("numinputs %d -> (%.8f - spend %.8f) = net %.8f vs amount %.8f change %.8f -> txfee %.8f vs chainfee %.8f\n",spend->numinputs,dstr(spend->input_satoshis),dstr(spend->satoshis),dstr(spend->netamount),dstr(amount),dstr(spend->change),dstr(spend->input_satoshis - spend->change - spend->netamount),dstr(txfee));
+                // numinputs 1 -> (1.00074485 - spend 0.41030880) = net 0.59043605 vs amount 0.40030880 change 0.40030880 -> txfee 0.01000000 vs chainfee 0.01000000
+                spend->change = (spend->input_satoshis - spend->satoshis) - txfee;
+                printf("numinputs %d -> (%.8f - spend %.8f) = change %.8f -> txfee %.8f vs chainfee %.8f\n",spend->numinputs,dstr(spend->input_satoshis),dstr(spend->satoshis),dstr(spend->change),dstr(spend->input_satoshis - spend->change - spend->satoshis),dstr(txfee));
                 break;
             }
             remains -= up->value;

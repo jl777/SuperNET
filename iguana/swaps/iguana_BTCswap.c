@@ -106,7 +106,7 @@ void disp_tx(struct supernet_info *myinfo,struct iguana_info *coin,char *str,cha
 
 char *instantdex_feetx(struct supernet_info *myinfo,bits256 *txidp,struct instantdex_accept *A)
 {
-    int32_t n; char *feetx = 0; struct iguana_info *coin; cJSON *txobj; struct bitcoin_spend *spend; int64_t insurance;
+    int32_t n,len; char *feetx = 0; struct iguana_info *coin; cJSON *txobj; struct bitcoin_spend *spend; int64_t insurance; uint8_t paymentscript[128];
     if ( (coin= iguana_coinfind("BTCD")) != 0 )
     {
         insurance = 40 * instantdex_insurance(coin,instantdex_BTCsatoshis(A->offer.price64,A->offer.basevolume64));
@@ -115,6 +115,11 @@ char *instantdex_feetx(struct supernet_info *myinfo,bits256 *txidp,struct instan
             txobj = bitcoin_createtx(coin,0);
             n = instantdex_outputinsurance(coin,txobj,insurance,A->orderid);
             iguana_addinputs(coin,spend,txobj,0xffffffff);
+            if ( spend->change > coin->chain->txfee )
+            {
+                len = bitcoin_standardspend(paymentscript,0,spend->change160);
+                bitcoin_addoutput(coin,txobj,paymentscript,len,spend->change);
+            }
             txobj = iguana_signtx(coin,txidp,&feetx,spend,txobj);
             if ( feetx != 0  )
             {

@@ -130,9 +130,9 @@ struct bitcoin_unspent
 
 struct bitcoin_spend
 {
-    char changeaddr[64];
+    char changeaddr[64]; uint8_t change160[20];
     int32_t numinputs;
-    int64_t txfee,input_satoshis,satoshis,change,netamount;
+    int64_t txfee,input_satoshis,satoshis,change;
     struct bitcoin_unspent inputs[];
 };
 
