@@ -152,7 +152,7 @@ int32_t instantdex_feetxverify(struct supernet_info *myinfo,struct iguana_info *
             {
                 if ( memcmp(script,msgtx.vouts[0].pk_script,n) == 0 )
                 {
-                    printf("feetx script verified\n");
+                    printf("feetx script verified.(%s)\n",swap->otherfeetx);
                 }
                 else
                 {
@@ -167,6 +167,7 @@ int32_t instantdex_feetxverify(struct supernet_info *myinfo,struct iguana_info *
             free_json(txobj);
         } printf("error converting (%s) txobj\n",swap->otherfeetx);
     } else printf("no feetx to verify\n");
+    return(0);
     return(retval);
 }
 
