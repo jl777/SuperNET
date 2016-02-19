@@ -1,9 +1,9 @@
 
 *.o
 
-agents/iguana
 
-agents/libcrypto777.a
+
+
 
 agents/iguana.exe
 
