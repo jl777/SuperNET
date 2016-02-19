@@ -923,8 +923,8 @@ char *instantdex_sendoffer(struct supernet_info *myinfo,struct exchange_info *ex
         return(clonestr("{\"error\":\"instantdex_BTCswap offer null newjson\"}"));
     else if ( (retstr= instantdex_addfeetx(myinfo,newjson,ap,swap,"BOB_sentoffer","ALICE_sentoffer")) == 0 )
     {
-        instantdex_bobtx(myinfo,iguana_coinfind("BTCD"),&swap->deposittxid,swap->otherpubs[0],swap->mypubs[0],swap->privkeys[swap->choosei],ap->offer.expiration-INSTANTDEX_LOCKTIME*2,swap->satoshis[1],1);
-        instantdex_alicetx(myinfo,iguana_coinfind("BTCD"),swap->altmsigaddr,&swap->altpaymenttxid,swap->pubAm,swap->pubBn,swap->satoshis[0]);
+        //instantdex_bobtx(myinfo,iguana_coinfind("BTCD"),&swap->deposittxid,swap->otherpubs[0],swap->mypubs[0],swap->privkeys[swap->choosei],ap->offer.expiration-INSTANTDEX_LOCKTIME*2,swap->satoshis[1],1);
+        //instantdex_alicetx(myinfo,iguana_coinfind("BTCD"),swap->altmsigaddr,&swap->altpaymenttxid,swap->pubAm,swap->pubBn,swap->satoshis[0]);
         if ( 0 )
         {
             int32_t i;

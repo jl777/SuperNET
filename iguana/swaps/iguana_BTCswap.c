@@ -89,7 +89,7 @@ int32_t instantdex_outputinsurance(struct iguana_info *coin,cJSON *txobj,int64_t
 {
     uint8_t rmd160[20],script[128]; int32_t n = 0;
     decode_hex(rmd160,sizeof(rmd160),(orderid % 10) == 0 ? TIERNOLAN_RMD160 : INSTANTDEX_RMD160);
-    script[n++] = sizeof(uint64_t);
+    script[n++] = sizeof(orderid);
     n += iguana_rwnum(1,&script[n],sizeof(orderid),&orderid);
     script[n++] = SCRIPT_OP_DROP;
     n = bitcoin_standardspend(script,n,rmd160);
@@ -101,7 +101,7 @@ void disp_tx(struct supernet_info *myinfo,struct iguana_info *coin,char *str,cha
 {
     cJSON *txobj; bits256 txid;
     txobj = bitcoin_hex2json(coin,&txid,0,txbytes);
-    printf("%s.(%s)\n",str,jprint(txobj,1));
+    printf("disp_tx (%s) -> %s.(%s)\n",txbytes,str,jprint(txobj,1));
 }
 
 char *instantdex_feetx(struct supernet_info *myinfo,bits256 *txidp,struct instantdex_accept *A)
@@ -119,7 +119,7 @@ char *instantdex_feetx(struct supernet_info *myinfo,bits256 *txidp,struct instan
             if ( feetx != 0  )
             {
                 printf("%s feetx.%s\n",A->offer.myside != 0 ? "BOB" : "ALICE",feetx);
-                disp_tx(myinfo,coin,"feetx",feetx);
+                //disp_tx(myinfo,coin,"feetx",feetx);
             }
             else printf("error signing %s feetx numinputs.%d\n",A->offer.myside != 0 ? "BOB" : "ALICE",spend->numinputs);
             free(spend);
@@ -183,7 +183,7 @@ char *instantdex_bobtx(struct supernet_info *myinfo,struct iguana_info *coin,bit
         if ( signedtx != 0  )
         {
             printf("bob deposit.%s\n",signedtx);
-            disp_tx(myinfo,coin,depositflag != 0 ? "deposit" : "payment",signedtx);
+            //disp_tx(myinfo,coin,depositflag != 0 ? "deposit" : "payment",signedtx);
         } else printf("error signing bobdeposit numinputs.%d\n",spend->numinputs);
         free(spend);
     }
@@ -279,7 +279,7 @@ char *instantdex_alicetx(struct supernet_info *myinfo,struct iguana_info *altcoi
         if ( signedtx != 0 )
         {
             printf("alice payment.%s\n",signedtx);
-            disp_tx(myinfo,altcoin,"altpayment",signedtx);
+            //disp_tx(myinfo,altcoin,"altpayment",signedtx);
         }
         else printf("error signing alicetx numinputs.%d\n",spend->numinputs);
         free(spend);

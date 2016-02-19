@@ -754,7 +754,7 @@ int32_t bitcoin_changescript(struct iguana_info *coin,uint8_t *changescript,int3
     return(-1);
 }
 
-int32_t bitcoin_scriptsig(uint8_t *script,int32_t n,const struct vin_info *vp)
+int32_t bitcoin_scriptsig(struct iguana_info *coin,uint8_t *script,int32_t n,const struct vin_info *vp,struct iguana_msgtx *msgtx)
 {
     int32_t i,siglen;
     if ( vp->N > 1 )
@@ -768,7 +768,10 @@ int32_t bitcoin_scriptsig(uint8_t *script,int32_t n,const struct vin_info *vp)
         }
     }
     if ( vp->type == IGUANA_SCRIPT_P2SH )
+    {
+        printf("add p2sh script to sig\n");
         n = bitcoin_p2shscript(script,n,vp->p2shscript,vp->p2shlen);
+    }
     return(n);
 }
 
@@ -1173,9 +1176,18 @@ int32_t iguana_vinparse(struct iguana_info *coin,int32_t rwflag,uint8_t *seriali
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->prev_vout),&msg->prev_vout);
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->scriptlen);
     if ( rwflag == 0 )
+    {
         msg->sigscript = &serialized[len];
-    else memcpy(&serialized[len],msg->sigscript,msg->scriptlen);
-    len += msg->scriptlen;
+        len += msg->scriptlen;
+    }
+    else
+    {
+        if ( msg->scriptlen > 0 )
+        {
+            memcpy(&serialized[len],msg->sigscript,msg->scriptlen);
+            len += msg->scriptlen;
+        }
+    }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->sequence),&msg->sequence);
     if ( 0 )
     {
@@ -1438,8 +1450,6 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
     {
         //saveinput = msgtx->vins[vini].sigscript;
         vp = &V[vini];
-        //for (i=0; i<numvins; i++)
-        //    msgtx->vins[i].spendlen = 0;
         sig = &msgtx->vins[vini].sigscript[1];
         siglen = msgtx->vins[vini].sigscript[0];
         vp->vin = msgtx->vins[vini];
@@ -1479,7 +1489,6 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
                 }
                 bitcoin_address(coinaddr,coin->chain->pubtype,pubkey,plen);
                 n2 = iguana_rwmsgtx(coin,1,0,serialized,maxsize,msgtx,&txid,vpnstr);
-                //msgtx->vins[vini].script = saveinput;
                 if ( n2 > 0 )
                 {
                     n2 += iguana_rwnum(1,&serialized[n2],sizeof(hashtype),&hashtype);
@@ -1489,11 +1498,12 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
                         sigtxid.bytes[31-i] = revsigtxid.bytes[i];
                     if ( 1 && bits256_nonz(vp->signers[j].privkey) != 0 )
                     {
-                        vp->signers[j].siglen = bitcoin_sign(vp->signers[j].sig,sizeof(vp->signers[j].sig),sigtxid.bytes,sizeof(sigtxid),vp->signers[j].privkey);
+                        siglen = bitcoin_sign(vp->signers[j].sig,sizeof(vp->signers[j].sig),sigtxid.bytes,sizeof(sigtxid),vp->signers[j].privkey);
                         sig = vp->signers[j].sig;
-                        sig[vp->signers[j].siglen++] = hashtype;
-                        siglen = vp->signers[j].siglen;
-                        msgtx->vins[vini].scriptlen = bitcoin_scriptsig(msgtx->vins[vini].sigscript,0,(const struct vin_info *)vp);
+                        sig[siglen++] = hashtype;
+                        vp->signers[j].siglen = siglen;
+                        msgtx->vins[vini].sigscript = calloc(1,siglen);
+                        msgtx->vins[vini].scriptlen = bitcoin_scriptsig(coin,msgtx->vins[vini].sigscript,0,(const struct vin_info *)vp,msgtx);
                         for (i=0; i<siglen; i++)
                             printf("%02x",sig[i]);
                         printf(" SIGNEDTX.[%02x] plen.%d siglen.%d\n",sig[siglen-1],plen,siglen);
@@ -1502,12 +1512,16 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
                     {
                         init_hexbytes_noT(bigstr,serialized,n2);
                         printf("(%s) doesnt verify hash2.%s\n",bigstr,bits256_str(str,sigtxid));
+                        *signedtx = iguana_rawtxbytes(coin,0,msgtx);
+                        *signedtxidp = msgtx->txid;
+                        printf("SIG.%d ERROR %s\n",vini,*signedtx);
                     }
                     else
                     {
-                        *signedtx = iguana_rawtxbytes(coin,0,msgtx);
+                        cJSON *txobj = cJSON_CreateObject();
+                        *signedtx = iguana_rawtxbytes(coin,txobj,msgtx);
                         *signedtxidp = msgtx->txid;
-                        printf("SIG.%d VERIFIED %s\n",vini,*signedtx);
+                        printf("SIG.%d VERIFIED %s (%s)\n",vini,*signedtx,jprint(txobj,1));
                         flag = 1;
                         break;
                     }
@@ -1619,7 +1633,7 @@ cJSON *bitcoin_addoutput(struct iguana_info *coin,cJSON *txobj,uint8_t *payments
     jadd(item,"scriptPubkey",skey);
     jaddi(vouts,item);
     jadd(txobj,"vout",vouts);
-    ///printf("addoutput.(%s %s)\n",hexstr,jprint(skey,0));
+    printf("addoutput.(%s %s)\n",hexstr,jprint(skey,0));
     return(txobj);
 }
 
