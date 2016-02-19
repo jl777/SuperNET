@@ -1502,7 +1502,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
                         sig = vp->signers[j].sig;
                         sig[siglen++] = hashtype;
                         vp->signers[j].siglen = siglen;
-                        msgtx->vins[vini].sigscript = calloc(1,siglen);
+                        msgtx->vins[vini].sigscript = calloc(1,siglen*2+256); // fix this memleak!
                         msgtx->vins[vini].scriptlen = bitcoin_scriptsig(coin,msgtx->vins[vini].sigscript,0,(const struct vin_info *)vp,msgtx);
                         for (i=0; i<siglen; i++)
                             printf("%02x",sig[i]);
