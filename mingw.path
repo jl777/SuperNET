@@ -1,2 +1,2 @@
-TOOL_DIR := /usr/local/gcc-4.8.0-qt-4.8.4-for-mingw32/win32-gcc/bin
-MINGW := i586-mingw32
+TOOL_DIR := /usr/bin
+MINGW := i586-mingw32msvc
