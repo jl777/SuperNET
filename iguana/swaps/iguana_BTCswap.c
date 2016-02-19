@@ -552,7 +552,7 @@ cJSON *BTC_waitdeckCfunc(struct supernet_info *myinfo,struct exchange_info *exch
 {
     *serdatap = 0, *serdatalenp = 0; struct bitcoin_swapinfo *swap = ap->info;
     strcmp(swap->expectedcmdstr,"BTCdeckC");
-    if ( instantdex_feetxverify(myinfo,iguana_coinfind("BTC"),swap,ap,argjson) != 0 )
+    if ( instantdex_feetxverify(myinfo,iguana_coinfind("BTCD"),swap,ap,argjson) != 0 )
         return(cJSON_Parse("{\"error\":\"feetx didnt verify\"}"));
     return(newjson);
 }
@@ -562,7 +562,7 @@ cJSON *BTC_waitprivCfunc(struct supernet_info *myinfo,struct exchange_info *exch
     struct bitcoin_swapinfo *swap = ap->info;
     strcmp(swap->expectedcmdstr,"BTCprivC");
     instantdex_privkeyextract(myinfo,swap,*serdatap,*serdatalenp);
-    if ( instantdex_feetxverify(myinfo,iguana_coinfind("BTC"),swap,ap,argjson) != 0 )
+    if ( instantdex_feetxverify(myinfo,iguana_coinfind("BTCD"),swap,ap,argjson) != 0 )
         return(cJSON_Parse("{\"error\":\"feetx didnt verify\"}"));
     *serdatap = 0, *serdatalenp = 0;
     return(newjson);
