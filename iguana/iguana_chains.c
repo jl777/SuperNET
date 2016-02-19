@@ -391,7 +391,8 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
                 strcpy(chain->genesis_hex,hexstr);
             }
         }
-        chain->portp2p = juint(argjson,"p2p");
+        if ( juint(argjson,"p2p") != 0 )
+            chain->portp2p = juint(argjson,"p2p");
         if ( (chain->ramchainport= juint(argjson,"ramchain")) == 0 )
             chain->ramchainport = chain->portp2p - 1;
         if ( (chain->portrpc= juint(argjson,"rpc")) == 0 )
