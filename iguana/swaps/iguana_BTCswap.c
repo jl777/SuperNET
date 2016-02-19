@@ -13,6 +13,7 @@
  *                                                                            *
  ******************************************************************************/
 
+#define IGUANA_BTCDMULT 40.
 #include "../exchanges/bitcoin.h"
 /* https://bitcointalk.org/index.php?topic=1340621.msg13828271#msg13828271
    https://bitcointalk.org/index.php?topic=1364951
@@ -85,15 +86,14 @@ int32_t instantdex_alicescript(uint8_t *script,int32_t n,char *msigaddr,uint8_t 
     return(n);
 }
 
-int32_t instantdex_outputinsurance(struct iguana_info *coin,cJSON *txobj,int64_t insurance,uint64_t orderid)
+int32_t instantdex_outputinsurance(uint8_t *script,int32_t n,int64_t insurance,uint64_t orderid)
 {
-    uint8_t rmd160[20],script[128]; int32_t n = 0;
+    uint8_t rmd160[20];
     decode_hex(rmd160,sizeof(rmd160),(orderid % 10) == 0 ? TIERNOLAN_RMD160 : INSTANTDEX_RMD160);
     script[n++] = sizeof(orderid);
     n += iguana_rwnum(1,&script[n],sizeof(orderid),&orderid);
     script[n++] = SCRIPT_OP_DROP;
     n = bitcoin_standardspend(script,n,rmd160);
-    bitcoin_addoutput(coin,txobj,script,n,insurance);
     return(n);
 }
 
@@ -109,11 +109,12 @@ char *instantdex_feetx(struct supernet_info *myinfo,bits256 *txidp,struct instan
     int32_t n,len; char *feetx = 0; struct iguana_info *coin; cJSON *txobj; struct bitcoin_spend *spend; int64_t insurance; uint8_t paymentscript[128];
     if ( (coin= iguana_coinfind("BTCD")) != 0 )
     {
-        insurance = 40 * instantdex_insurance(coin,instantdex_BTCsatoshis(A->offer.price64,A->offer.basevolume64));
+        insurance = IGUANA_BTCDMULT * instantdex_insurance(coin,instantdex_BTCsatoshis(A->offer.price64,A->offer.basevolume64));
         if ( (spend= iguana_spendset(myinfo,coin,insurance,coin->chain->txfee,0)) != 0 )
         {
             txobj = bitcoin_createtx(coin,0);
-            n = instantdex_outputinsurance(coin,txobj,insurance,A->orderid);
+            n = instantdex_outputinsurance(paymentscript,0,insurance,A->orderid);
+            bitcoin_addoutput(coin,txobj,paymentscript,n,insurance);
             iguana_addinputs(coin,spend,txobj,0xffffffff);
             if ( spend->change > coin->chain->txfee )
             {
@@ -145,8 +146,8 @@ int32_t instantdex_feetxverify(struct supernet_info *myinfo,struct iguana_info *
     {
         if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,swap->otherfeetx)) != 0 )
         {
-            insurance = instantdex_insurance(coin,instantdex_BTCsatoshis(A->offer.price64,A->offer.basevolume64));
-            n = instantdex_outputinsurance(coin,txobj,insurance,A->orderid);
+            insurance = IGUANA_BTCDMULT * instantdex_insurance(coin,instantdex_BTCsatoshis(A->offer.price64,A->offer.basevolume64));
+            n = instantdex_outputinsurance(script,0,insurance,A->orderid);
             if ( n == msgtx.vouts[0].pk_scriptlen )
             {
                 if ( memcmp(script,msgtx.vouts[0].pk_script,n) == 0 )
@@ -156,16 +157,16 @@ int32_t instantdex_feetxverify(struct supernet_info *myinfo,struct iguana_info *
                 else
                 {
                     for (i=0; i<n; i++)
-                        printf("%02x ",script[i]);
+                        printf("%02x",script[i]);
                     printf("fee script\n");
                     for (i=0; i<n; i++)
-                        printf("%02x ",msgtx.vouts[0].pk_script[i]);
-                    printf("feetx\n");
+                        printf("%02x",msgtx.vouts[0].pk_script[i]);
+                    printf("feetx mismatched\n");
                 }
-            }
+            } else printf("pk_scriptlen %d mismatch %d\n",msgtx.vouts[0].pk_scriptlen,n);
             free_json(txobj);
-        }
-    }
+        } printf("error converting (%s) txobj\n",swap->otherfeetx);
+    } else printf("no feetx to verify\n");
     return(retval);
 }
 

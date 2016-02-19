@@ -1233,7 +1233,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
     if ( coin->chain->hastimestamp != 0 )
     {
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->timestamp),&msg->timestamp);
-        //printf("timestamp.%08x %u %s\n",msg->timestamp,msg->timestamp,utc_str(str,msg->timestamp));
+        char str[65]; printf("timestamp.%08x %u %s\n",msg->timestamp,msg->timestamp,utc_str(str,msg->timestamp));
         if ( json != 0 )
             jaddnum(json,"timestamp",msg->timestamp);
     }
@@ -1241,7 +1241,10 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
     if ( rwflag == 0 )
     {
         if ( len + sizeof(struct iguana_msgvin)*msg->tx_in > maxsize )
+        {
+            printf("len.%d + tx_in.%d > maxsize.%d\n",len,msg->tx_in,maxsize);
             return(-1);
+        }
         maxsize -= (sizeof(struct iguana_msgvin) * msg->tx_in);
         msg->vins = (struct iguana_msgvin *)&serialized[maxsize];
         memset(msg->vins,0,sizeof(struct iguana_msgvin) * msg->tx_in);
@@ -1271,9 +1274,13 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
     if ( rwflag == 0 )
     {
         if ( len + sizeof(struct iguana_msgvout)*msg->tx_out > maxsize )
+        {
+            printf("len.%d + tx_in.%d > maxsize.%d\n",len,msg->tx_in,maxsize);
             return(-1);
+        }
         maxsize -= (sizeof(struct iguana_msgvout) * msg->tx_out);
         msg->vouts = (struct iguana_msgvout *)&serialized[maxsize];
+        memset(msg->vouts,0,sizeof(struct iguana_msgvout) * msg->tx_out);
     }
     if ( msg->tx_out > 0 && msg->tx_out*sizeof(struct iguana_msgvout) < maxsize )
     {
@@ -1584,14 +1591,14 @@ cJSON *bitcoin_hex2json(struct iguana_info *coin,bits256 *txidp,struct iguana_ms
         msgtx = &M;
         memset(msgtx,0,sizeof(M));
     }
-    len = (int32_t)strlen(txbytes) >> 1;
+    len = (int32_t)strlen(txbytes) + 32768;
     serialized = malloc(len);
     decode_hex(serialized,len,txbytes);
     vpnstr[0] = 0;
     memset(txidp,0,sizeof(*txidp));
-    //char str[65]; printf("%d of %d: %s\n",i,msg.txn_count,bits256_str(str,tx.txid));
     if ( (n= iguana_rwmsgtx(coin,0,txobj,serialized,len,msgtx,txidp,vpnstr)) <= 0 )
     {
+        printf("error from rwmsgtx\n");
         free_json(txobj);
         txobj = 0;
     }
