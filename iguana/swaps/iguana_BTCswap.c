@@ -165,9 +165,8 @@ int32_t instantdex_feetxverify(struct supernet_info *myinfo,struct iguana_info *
                 }
             } else printf("pk_scriptlen %d mismatch %d\n",msgtx.vouts[0].pk_scriptlen,n);
             free_json(txobj);
-        } printf("error converting (%s) txobj\n",swap->otherfeetx);
+        } else printf("error converting (%s) txobj\n",swap->otherfeetx);
     } else printf("no feetx to verify\n");
-    return(0);
     return(retval);
 }
 

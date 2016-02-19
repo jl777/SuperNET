@@ -1135,7 +1135,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char 
     else if ( (signerbits= acct777_validate(&msg->sig,acct777_msgprivkey(serdata,datalen),msg->sig.pubkey)) != 0 || 1 )
     {
         flag++;
-        printf("InstantDEX_hexmsg <<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(msg->sig),(long)serdata-(long)msg,datalen,msg->sig.timestamp,msg->sig.allocsize,(char *)msg->serialized,serdata[datalen-1]);
+        //printf("InstantDEX_hexmsg <<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(msg->sig),(long)serdata-(long)msg,datalen,msg->sig.timestamp,msg->sig.allocsize,(char *)msg->serialized,serdata[datalen-1]);
         newlen = (int32_t)(msg->sig.allocsize - ((long)msg->serialized - (long)msg));
         serdata = msg->serialized;
         //printf("newlen.%d diff.%ld alloc.%d datalen.%d\n",newlen,((long)msg->serialized - (long)msg),msg->sig.allocsize,datalen);
@@ -1221,13 +1221,16 @@ void instantdex_update(struct supernet_info *myinfo)
 {
     struct instantdex_msghdr *pm; struct category_msg *m; bits256 instantdexhash; char *str,remote[64]; queue_t *Q; struct queueitem *item;
     instantdexhash = calc_categoryhashes(0,"InstantDEX",0);
-    //char str[65]; printf("getmsg.(%s) %llx\n",bits256_str(str,categoryhash),(long long)subhash.txid);
+    //char str2[65]; printf("instantdexhash.(%s)\n",bits256_str(str2,instantdexhash));
     if ( (Q= category_Q(instantdexhash,myinfo->myaddr.persistent)) != 0 && queue_size(Q) > 0 && (item= Q->list) != 0 )
     {
         m = (void *)item;
-        if ( m->remoteipbits == 0 && (m= queue_dequeue(Q,0)) )
+        m= queue_dequeue(Q,0);
+        pm = (struct instantdex_msghdr *)m->msg;
+        //printf("loop cmd.(%s)\n",pm->cmd);
+        //if ( m->remoteipbits == 0 && (m= queue_dequeue(Q,0)) )
         {
-            if ( (void *)m == (void *)item )
+            //if ( (void *)m == (void *)item )
             {
                 pm = (struct instantdex_msghdr *)m->msg;
                 if ( m->remoteipbits != 0 )
@@ -1235,7 +1238,7 @@ void instantdex_update(struct supernet_info *myinfo)
                 else remote[0] = 0;
                 if ( (str= InstantDEX_hexmsg(myinfo,pm,m->len,remote)) != 0 )
                     free(str);
-            } else printf("instantdex_update: unexpected m.%p changed item.%p\n",m,item);
+            } //else printf("instantdex_update: unexpected m.%p changed item.%p\n",m,item);
             free(m);
         }
     }
