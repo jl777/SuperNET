@@ -1,4 +1,4 @@
 include ../mingw.path
-LIBS := ../win/libcrypto.a ../win/libssl.a ../win/libpthreadGC2.a -lws2_32 -lgdi32
+LIBS := ../win/libcrypto.a ../win/libssl.a ../win/libpthreadGC2.a -lws2_32 -lgdi32 
 
 include mingw
