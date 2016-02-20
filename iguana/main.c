@@ -193,10 +193,9 @@ int32_t iguana_jsonQ()
     }
     if ( (ptr= queue_dequeue(&jsonQ,0)) != 0 )
     {
-        char str[65]; printf("ptr %p %s\n",&ptr->myinfo->privkey,bits256_str(str,ptr->myinfo->privkey));
         if ( *ptr->retjsonstrp != 0 && (*ptr->retjsonstrp= SuperNET_jsonstr(ptr->myinfo,ptr->jsonstr,ptr->remoteaddr)) == 0 )
             *ptr->retjsonstrp = clonestr("{\"error\":\"null return from iguana_jsonstr\"}");
-        //printf("finished.(%s) -> (%s)\n",ptr->jsonstr,*ptr->retjsonstrp!=0?*ptr->retjsonstrp:"null return");
+        printf("finished.(%s) -> (%s)\n",ptr->jsonstr,*ptr->retjsonstrp!=0?*ptr->retjsonstrp:"null return");
         queue_enqueue("finishedQ",&finishedQ,&ptr->DL,0);
         return(1);
     }

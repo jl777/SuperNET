@@ -53,6 +53,11 @@ STRING_AND_INT(InstantDEX,pollgap,exchange,pollgap);
 ZERO_ARGS(InstantDEX,allexchanges);
 STRING_ARG(InstantDEX,allpairs,exchange);
 
+THREE_STRINGS_AND_DOUBLE(atomic,offer,base,rel,orderid,basevolume);
+TWO_STRINGS(atomic,accept,myorderid,otherid);
+THREE_STRINGS(atomic,approve,myorderid,otherid,txname);
+THREE_STRINGS(atomic,claim,myorderid,otherid,txname);
+
 //TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,proposal,reference,message,basetxid,reltxid,duration,flags);
 //TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,accept,reference,message,basetxid,reltxid,duration,flags);
 //TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,confirm,reference,message,basetxid,reltxid,baseheight,relheight);

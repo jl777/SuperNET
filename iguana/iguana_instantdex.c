@@ -81,7 +81,7 @@ cJSON *instantdex_defaultprocess(struct supernet_info *myinfo,struct exchange_in
     }
     return(newjson);
 }
-
+//({"agent":"iguana","method":"addcoin","newcoin":"PPC","active":1,"maxpeers":128,"services":0,"poll":1,"RAM":4,"minoutput":100000,"minconfirms":3,"estblocktime":600,"path":"/data/ppcoin","conf":"/data/.ppcoin","txfee_satoshis":100000,"useaddmultisig":1,"hastimestamp":0,"userhome":"/data/SuperNET/iguana","pubval":"37","scriptval":"75","wiftype":"b7","netmagic":"e6e8e9e5","genesishash":"00000ffd590b1485b3caadc19b22e6379c733355108f107a430458cdf3407ab6","genesis":{"hashalgo":"sha256","version":1,"timestamp":1345084287,"nbits":"1d00ffff","nonce":2179302059,"merkleroot":"3c2d8f85fab4d17aac558cc648a1a58acff0de6deb890c29985690052c5993c2"},"p2p":9901,"rpc":9902})
 cJSON *instantdex_defaulttimeout(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp)
 {
     uint8_t *serdata = *serdatap; int32_t serdatalen = *serdatalenp;
@@ -179,6 +179,9 @@ struct instantdex_event *instantdex_addevent(struct instantdex_stateinfo *states
     }
     else
     {
+        int32_t i;
+        for (i=0; i<numstates; i++)
+            printf("%s[%d] ",states[i].name,i);
         printf("cant add event (%s -> %s) without existing state and nextstate\n",statename,nextstatename);
         exit(-1);
         return(0);
@@ -672,7 +675,7 @@ struct instantdex_accept *instantdex_offerfind(struct supernet_info *myinfo,stru
     {
         if ( now < ap->offer.expiration && ap->dead == 0 )
         {
-            //printf("find cmps %d %d %d %d %d %d\n",strcmp(base,"*") == 0,strcmp(base,ap->offer.base) == 0,strcmp(rel,"*") == 0,strcmp(rel,ap->offer.rel) == 0,orderid == 0,orderid == ap->orderid);
+            printf("%d find cmps %d %d %d %d %d %d me.%llu vs %llu o.%llu\n",ap->offer.expiration-now,strcmp(base,"*") == 0,strcmp(base,ap->offer.base) == 0,strcmp(rel,"*") == 0,strcmp(rel,ap->offer.rel) == 0,orderid == 0,orderid == ap->orderid,(long long)myinfo->myaddr.persistent.txid,(long long)ap->offer.offer64,(long long)ap->orderid);
             if ( (strcmp(base,"*") == 0 || strcmp(base,ap->offer.base) == 0) && (strcmp(rel,"*") == 0 || strcmp(rel,ap->offer.rel) == 0) && (orderid == 0 || orderid == ap->orderid) )
             {
                 if ( requeue == 0 && retap != 0 )
@@ -713,15 +716,15 @@ struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,str
     minvol = A->offer.basevolume64 * minperc * .01;
     while ( (ap= queue_dequeue(&exchange->acceptableQ,0)) != 0 && ap != &PAD )
     {
-        //printf("check offerbits.%llu vs %llu: %d %d %d %d %d %d %d %d\n",(long long)offerbits,(long long)ap->offer.offer64,A->offer.basevolume64 > 0.,strcmp(A->offer.base,"*") == 0 ,strcmp(A->offer.base,ap->offer.base) == 0, strcmp(A->offer.rel,"*") == 0 ,strcmp(A->offer.rel,ap->offer.rel) == 0,A->offer.basevolume64 <= (ap->offer.basevolume64 - ap->pendingvolume64),offerdir,instantdex_bidaskdir(ap));
+        printf("check offerbits.%llu vs %llu: %d %d %d %d %d %d %d %d\n",(long long)offerbits,(long long)ap->offer.offer64,A->offer.basevolume64 > 0.,strcmp(A->offer.base,"*") == 0 ,strcmp(A->offer.base,ap->offer.base) == 0, strcmp(A->offer.rel,"*") == 0 ,strcmp(A->offer.rel,ap->offer.rel) == 0,A->offer.basevolume64 <= (ap->offer.basevolume64 - ap->pendingvolume64),offerdir,instantdex_bidaskdir(&ap->offer));
         if ( now < ap->offer.expiration && ap->dead == 0 && (offerbits == 0 || offerbits != ap->offer.offer64) )
         {
             if ( A->offer.basevolume64 > 0. && (strcmp(A->offer.base,"*") == 0 || strcmp(A->offer.base,ap->offer.base) == 0) && (strcmp(A->offer.rel,"*") == 0 || strcmp(A->offer.rel,ap->offer.rel) == 0) && minvol <= (ap->offer.basevolume64 - ap->pendingvolume64) && offerdir*instantdex_bidaskdir(&ap->offer) < 0 )
             {
-                //printf("aveprice %.8f %.8f offerdir.%d first cmp: %d %d %d\n",aveprice,dstr(ap->offer.price64),offerdir,A->offer.price64 == 0,(offerdir > 0 && ap->offer.price64 >= A->offer.price64),(offerdir < 0 && ap->offer.price64 <= A->offer.price64));
+                printf("aveprice %.8f %.8f offerdir.%d first cmp: %d %d %d\n",aveprice,dstr(ap->offer.price64),offerdir,A->offer.price64 == 0,(offerdir > 0 && ap->offer.price64 >= A->offer.price64),(offerdir < 0 && ap->offer.price64 <= A->offer.price64));
                 if ( offerdir == 0 || A->offer.price64 == 0 || ((offerdir < 0 && ap->offer.price64 >= A->offer.price64) || (offerdir > 0 && ap->offer.price64 <= A->offer.price64)) )
                 {
-                    //printf("passed second cmp: offerdir.%d best %.8f ap %.8f\n",offerdir,dstr(bestprice64),dstr(ap->offer.price64));
+                    printf("passed second cmp: offerdir.%d best %.8f ap %.8f\n",offerdir,dstr(bestprice64),dstr(ap->offer.price64));
                     if ( bestprice64 == 0 || (offerdir < 0 && ap->offer.price64 < bestprice64) || (offerdir > 0 && ap->offer.price64 > bestprice64) )
                     {
                         printf("found better price %f vs %f\n",dstr(ap->offer.price64),dstr(bestprice64));
@@ -1283,5 +1286,38 @@ TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,minaccept,base,rel,minprice,basevolume)
         return(instantdex_queueaccept(myinfo,&ap,exchanges777_find("bitcoin"),base,rel,minprice,basevolume,1,base,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits,1));
     else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
 }
+
+THREE_STRINGS_AND_DOUBLE(atomic,offer,base,rel,orderid,basevolume)
+{
+    if ( remoteaddr == 0 )
+    {
+        return(clonestr("{\"result\":\"atomic API request is not yet\"}"));
+    } else return(clonestr("{\"error\":\"atomic API request only local usage!\"}"));
+}
+
+TWO_STRINGS(atomic,accept,myorderid,otherid)
+{
+    if ( remoteaddr == 0 )
+    {
+        return(clonestr("{\"result\":\"atomic API request is not yet\"}"));
+    } else return(clonestr("{\"error\":\"atomic API request only local usage!\"}"));
+}
+
+THREE_STRINGS(atomic,approve,myorderid,otherid,txname)
+{
+    if ( remoteaddr == 0 )
+    {
+        return(clonestr("{\"result\":\"atomic API request is not yet\"}"));
+    } else return(clonestr("{\"error\":\"atomic API request only local usage!\"}"));
+}
+
+THREE_STRINGS(atomic,claim,myorderid,otherid,txname)
+{
+    if ( remoteaddr == 0 )
+    {
+        return(clonestr("{\"result\":\"atomic API request is not yet\"}"));
+    } else return(clonestr("{\"error\":\"atomic API request only local usage!\"}"));
+}
+
 #include "../includes/iguana_apiundefs.h"
 
