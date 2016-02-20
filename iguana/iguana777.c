@@ -15,7 +15,7 @@
 
 
 #include "iguana777.h"
-const char *Hardcoded_coins[][3] = { { "BTC", "bitcoin", "0" }, { "BTCD", "BitcoinDark", "129" },  { "VPN", "VPNcoin", "129" }, { "LTC", "litecoin", "129" } };
+const char *Hardcoded_coins[][3] = { { "BTC", "bitcoin", "0" }, { "BTCD", "BitcoinDark", "129" },  { "VPN", "VPNcoin", "129" }, { "LTC", "litecoin", "129" } , { "endmarker", "", "" } };
 
 struct iguana_info *iguana_coinfind(const char *symbol)
 {
@@ -28,7 +28,7 @@ struct iguana_info *iguana_coinfind(const char *symbol)
     return(0);
 }
 
-struct iguana_info *iguana_coinadd(const char *symbol)
+struct iguana_info *iguana_coinadd(const char *symbol,cJSON *argjson)
 {
     struct iguana_info *coin; int32_t i = 0;
     if ( symbol == 0 )
@@ -41,7 +41,6 @@ struct iguana_info *iguana_coinadd(const char *symbol)
             if ( Coins[i] == 0 )
             {
                 Coins[i] = mycalloc('c',1,sizeof(*Coins[i]));
-                //memset(Coins[i],0,sizeof(*Coins[i]));
                 printf("iguana_coin.(new) -> %p\n",Coins[i]);
                 return(Coins[i]);
             } return(0);
@@ -52,20 +51,29 @@ struct iguana_info *iguana_coinadd(const char *symbol)
     {
         for (i=0; i<sizeof(Coins)/sizeof(*Coins); i++)
         {
-            if ( i >= sizeof(Hardcoded_coins)/sizeof(*Hardcoded_coins) || Hardcoded_coins[i][0] == 0 )
+            if ( i >= sizeof(Hardcoded_coins)/sizeof(*Hardcoded_coins) )
                 break;
-            if ( strcmp(symbol,Hardcoded_coins[i][0]) == 0 )
+            //printf("Hardcoded_coins[i][0] %s vs.(%s)\n",Hardcoded_coins[i][0],symbol);
+            //if ( symbol[0] == 0 )
+            //    getchar();
+            if ( strcmp("endmarker",Hardcoded_coins[i][0]) == 0 || strcmp(symbol,Hardcoded_coins[i][0]) == 0 )
             {
                 if ( Coins[i] == 0 )
                     Coins[i] = mycalloc('c',1,sizeof(*Coins[i]));
                 coin = Coins[i];
                 if ( coin->chain == 0 )
                 {
-                    strcpy(coin->name,Hardcoded_coins[i][1]);
-                    //coin->myservices = atoi(Hardcoded_coins[i][2]);
+                    if ( i < sizeof(Hardcoded_coins)/sizeof(*Hardcoded_coins) )
+                        strcpy(coin->name,Hardcoded_coins[i][1]);
+                    else if (argjson != 0 )
+                    {
+                        if ( jstr(argjson,"name") != 0 )
+                            safecopy(coin->name,jstr(argjson,"name"),sizeof(coin->name));
+                        else strcpy(coin->name,symbol);
+                    }
+                    coin->chain = iguana_chainfind((char *)symbol,argjson,1);
+                    iguana_initcoin(coin,argjson);
                     strcpy(coin->symbol,symbol);
-                    coin->chain = iguana_chainfind(coin->symbol);
-                    iguana_initcoin(coin);
                 }
                 return(coin);
             }
@@ -443,7 +451,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     struct iguana_chain *iguana_createchain(cJSON *json);
     struct iguana_info *coin; int32_t j,m,mapflags; char dirname[512]; cJSON *peers;
     mapflags = IGUANA_MAPRECVDATA | maphash*IGUANA_MAPTXIDITEMS | maphash*IGUANA_MAPPKITEMS | maphash*IGUANA_MAPBLOCKITEMS | maphash*IGUANA_MAPPEERITEMS;
-    coin = iguana_coinadd(symbol);
+    coin = iguana_coinadd(symbol,json);
     coin->launched = launched;
     if ( (coin->MAXPEERS= maxpeers) <= 0 )
         coin->MAXPEERS = (strcmp(symbol,"BTC") == 0) ? 64 : 32;
@@ -493,7 +501,7 @@ int32_t iguana_launchcoin(char *symbol,cJSON *json)
     int64_t maxrecvcache; uint64_t services; struct iguana_info **coins,*coin;
     if ( symbol == 0 )
         return(-1);
-    if ( (coin= iguana_coinadd(symbol)) == 0 )
+    if ( (coin= iguana_coinadd(symbol,json)) == 0 )
         return(-1);
     if ( coin->launched == 0 )
     {
@@ -502,7 +510,7 @@ int32_t iguana_launchcoin(char *symbol,cJSON *json)
         else maphash = 0;
         iguana_coinargs(symbol,&maxrecvcache,&minconfirms,&maxpeers,&initialheight,&services,&maxpending,&maxbundles,json);
         coins = mycalloc('A',1+1,sizeof(*coins));
-        if ( (coin= iguana_setcoin(coin->symbol,coins,maxpeers,maxrecvcache,services,initialheight,maphash,minconfirms,maxpending,maxbundles,json)) != 0 )
+        if ( (coin= iguana_setcoin(symbol,coins,maxpeers,maxrecvcache,services,initialheight,maphash,minconfirms,maxpending,maxbundles,json)) != 0 )
         {
             coins[0] = (void *)((long)1);
             coins[1] = coin;

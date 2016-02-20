@@ -537,7 +537,7 @@ int32_t iguana_updateramchain(struct iguana_info *coin);
 
 // blockchain
 int32_t iguana_needhdrs(struct iguana_info *coin);
-struct iguana_chain *iguana_chainfind(char *name);
+struct iguana_chain *iguana_chainfind(char *name,cJSON *argjson,int32_t createflag);
 int32_t iguana_chainextend(struct iguana_info *coin,struct iguana_block *newblock);
 uint64_t iguana_miningreward(struct iguana_info *coin,uint32_t blocknum);
 
@@ -582,7 +582,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str);
 
 // init
 struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialheight,int32_t mapflags);
-void iguana_initcoin(struct iguana_info *coin);
+void iguana_initcoin(struct iguana_info *coin,cJSON *argjson);
 void iguana_coinloop(void *arg);
 
 // utils
@@ -701,7 +701,7 @@ char *busdata_sync(uint32_t *noncep,char *jsonstr,char *broadcastmode,char *dest
 void peggy();
 int32_t opreturns_init(uint32_t blocknum,uint32_t blocktimestamp,char *path);
 struct iguana_info *iguana_coinfind(const char *symbol);
-struct iguana_info *iguana_coinadd(const char *symbol);
+struct iguana_info *iguana_coinadd(const char *symbol,cJSON *json);
 struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana_bundle *bp);
 int32_t iguana_sendblockreq(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2,int32_t iamthreadsafe);
 int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,char *jsonstr,int32_t delay);
@@ -731,7 +731,7 @@ cJSON *SuperNET_bits2json(uint8_t *serialized,int32_t datalen);
 int32_t SuperNET_sendmsg(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,bits256 destpub,bits256 mypriv,bits256 mypub,uint8_t *msg,int32_t len,uint8_t *data,int32_t delaymillis);
 int32_t category_peer(struct supernet_info *myinfo,struct iguana_peer *addr,bits256 category,bits256 subhash);
 int32_t btc_wif2priv(uint8_t *addrtypep,uint8_t privkey[32],char *wifstr);
-bits256 iguana_chaingenesis(char *genesisblock,char *hashalgostr,int32_t version,uint32_t timestamp,uint32_t bits,uint32_t nonce,bits256 merkle_root);
+bits256 iguana_chaingenesis(bits256 genesishash,char *genesisblock,char *hashalgostr,int32_t version,uint32_t timestamp,uint32_t bits,uint32_t nonce,bits256 merkle_root);
 int32_t iguana_send_ConnectTo(struct iguana_info *coin,struct iguana_peer *addr);
 cJSON *iguana_txjson(struct iguana_info *coin,struct iguana_txid *tx,int32_t height,struct vin_info *V);
 char *iguana_txscan(struct iguana_info *coin,cJSON *json,uint8_t *data,int32_t recvlen,bits256 txid);

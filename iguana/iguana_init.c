@@ -50,7 +50,7 @@ void iguana_initpeer(struct iguana_info *coin,struct iguana_peer *addr,uint64_t 
     iguana_initQ(&addr->sendQ,"addrsendQ");
 }
 
-void iguana_initcoin(struct iguana_info *coin)
+void iguana_initcoin(struct iguana_info *coin,cJSON *argjson)
 {
     int32_t i;
     portable_mutex_init(&coin->peers_mutex);
@@ -74,15 +74,21 @@ void iguana_initcoin(struct iguana_info *coin)
 
 bits256 iguana_genesis(struct iguana_info *coin,struct iguana_chain *chain)
 {
-    struct iguana_block block,*ptr; struct iguana_msgblock msg; bits256 hash2; char str[65]; uint8_t buf[1024]; int32_t height;
+    struct iguana_block block,*ptr; struct iguana_msgblock msg; bits256 hash2; char str[65],str2[65]; uint8_t buf[1024]; int32_t height;
+    if ( chain->genesis_hex == 0 )
+    {
+        printf("no genesis_hex for %s\n",coin->symbol);
+        memset(hash2.bytes,0,sizeof(hash2));
+        return(hash2);
+    }
     decode_hex(buf,(int32_t)strlen(chain->genesis_hex)/2,(char *)chain->genesis_hex);
     hash2 = bits256_doublesha256(0,buf,sizeof(struct iguana_msgblockhdr));
     iguana_rwblock(0,&hash2,buf,&msg);
     if  ( memcmp(hash2.bytes,chain->genesis_hashdata,sizeof(hash2)) != 0 )
     {
         bits256_str(str,hash2);
-        printf("genesis mismatch? calculated %s vs %s\n",str,(char *)chain->genesis_hex);
-        hash2 = bits256_conv("00000ac7d764e7119da60d3c832b1d4458da9bc9ef9d5dd0d91a15f690a46d99");
+        printf("genesis mismatch? calculated %s vs %s\n",str,bits256_str(str2,*(bits256 *)chain->genesis_hashdata));
+        //hash2 = bits256_conv("00000ac7d764e7119da60d3c832b1d4458da9bc9ef9d5dd0d91a15f690a46d99");
                              
         //memset(hash2.bytes,0,sizeof(hash2));
         //return(hash2);
