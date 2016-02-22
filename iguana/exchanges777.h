@@ -152,7 +152,7 @@ struct instantdex_stateinfo
     struct instantdex_event *events; int32_t numevents;
 };
 
-#define instantdex_isbob(swap) (strcmp("BTC",swap->mine.offer.rel) == 0)
+#define instantdex_isbob(swap) (swap)->mine.offer.myside
 
 struct instantdex_accept *instantdex_offerfind(struct supernet_info *myinfo,struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel,int32_t requeue);
 cJSON *instantdex_acceptjson(struct instantdex_accept *ap);
