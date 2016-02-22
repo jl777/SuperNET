@@ -2099,7 +2099,8 @@ int32_t is_valid_BTCother(char *other)
 
 uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *base,char *rel,int32_t dir,double price,double volume,cJSON *argjson)
 {
-    char *str,coinaddr[64]; uint64_t txid = 0; cJSON *tmp,*json=0; struct instantdex_accept *ap;
+    char *str,*retstr,coinaddr[64]; uint64_t txid = 0; cJSON *json=0;
+    struct instantdex_accept *ap;
     struct supernet_info *myinfo; uint8_t pubkey[33]; struct iguana_info *other;
     myinfo = SuperNET_accountfind(argjson);
     //printf("TRADE with myinfo.%p\n",myinfo);
@@ -2140,27 +2141,15 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
             jaddnum(json,dir > 0 ? "maxprice" : "minprice",price);
             jaddnum(json,"volume",volume);
             jaddstr(json,"BTC",myinfo->myaddr.BTC);
+            jaddnum(json,"minperc",jdouble(argjson,"minperc"));
             //printf("trade dir.%d (%s/%s) %.6f vol %.8f\n",dir,base,"BTC",price,volume);
-            if ( (str= instantdex_queueaccept(myinfo,&ap,exchange,base,"BTC",price,volume,-dir,dir > 0 ? "BTC" : base,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits,0)) != 0 && ap != 0 )
-            {
-                if ( (tmp= cJSON_Parse(str)) != 0 )
-                {
-                    txid = j64bits(json,"orderid");
-                    if ( (str= instantdex_sendoffer(myinfo,exchange,ap,json)) != 0 )
-                    {
-                        printf("add.%llu to acceptableQ\n",(long long)txid);
-                        queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
-                        //queue_enqueue("statemachineQ",&exchange->statemachineQ,&ap->DL,0);
-                        json = cJSON_CreateObject();
-                        printf("from TRADE\n");
-                        jaddstr(json,"BTCoffer",str);
-                    } else printf("null return from btcoffer\n");
-                    free_json(tmp);
-                } else printf("queueaccept return parse error.(%s)\n",str);
-            } else printf("null return queueaccept\n");
+            if ( (str= instantdex_createaccept(myinfo,&ap,exchange,base,"BTC",price,volume,-dir,dir > 0 ? "BTC" : base,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits,0,jdouble(argjson,"minperc"))) != 0 && ap != 0 )
+                retstr = instantdex_checkoffer(myinfo,&txid,exchange,ap,json), free(str);
+            else printf("null return queueaccept\n");
             if ( retstrp != 0 )
-                *retstrp = jprint(json,1);
-            else free_json(json);
+                *retstrp = retstr != 0 ? retstr : jprint(json,0);
+            else free(retstr);
+            free_json(json);
         }
     }
     return(txid);
@@ -2168,32 +2157,35 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
 
 char *ORDERSTATUS(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson)
 {
-    struct instantdex_accept *ap; cJSON *retjson = cJSON_CreateObject();
+    struct instantdex_accept *ap; struct bitcoin_swapinfo *swap; cJSON *retjson;
+    retjson = cJSON_CreateObject();
     struct supernet_info *myinfo = SuperNET_accountfind(argjson);
-    if ( (ap= instantdex_statemachinefind(myinfo,exchange,orderid,1)) != 0 )
-        jadd(retjson,"result",instantdex_statemachinejson(ap));
+    if ( (swap= instantdex_statemachinefind(myinfo,exchange,orderid,1)) != 0 )
+        jadd(retjson,"result",instantdex_statemachinejson(swap));
     else if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,orderid,"*","*",1)) != 0 )
         jadd(retjson,"result",instantdex_acceptjson(ap));
-    else if ( (ap= instantdex_historyfind(myinfo,exchange,orderid)) != 0 )
-        jadd(retjson,"result",instantdex_historyjson(ap));
+    else if ( (swap= instantdex_historyfind(myinfo,exchange,orderid)) != 0 )
+        jadd(retjson,"result",instantdex_historyjson(swap));
     else jaddstr(retjson,"error","couldnt find orderid");
     return(jprint(retjson,1));
 }
 
 char *CANCELORDER(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson)
 {
-    struct instantdex_accept *ap = 0; cJSON *retjson;
+    struct instantdex_accept *ap = 0; cJSON *retjson; struct bitcoin_swapinfo *swap=0;
     struct supernet_info *myinfo = SuperNET_accountfind(argjson);
     retjson = cJSON_CreateObject();
     if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,orderid,"*","*",1)) != 0 )
-        jadd(retjson,"orderid",instantdex_acceptjson(ap));
-    else if ( (ap= instantdex_statemachinefind(myinfo,exchange,orderid,1)) != 0 )
-        jadd(retjson,"orderid",instantdex_statemachinejson(ap));
-    if ( ap != 0 )
     {
         ap->dead = (uint32_t)time(NULL);
+        jadd(retjson,"orderid",instantdex_acceptjson(ap));
         jaddstr(retjson,"result","killed orderid, but might have pending");
-    } else jaddstr(retjson,"error","couldnt find orderid");
+    }
+    else if ( (swap= instantdex_statemachinefind(myinfo,exchange,orderid,1)) != 0 )
+    {
+        jadd(retjson,"orderid",instantdex_statemachinejson(swap));
+        jaddstr(retjson,"result","killed statemachine orderid, but might have pending");
+    }
     return(jprint(retjson,1));
 }
 
@@ -2212,13 +2204,13 @@ char *OPENORDERS(struct exchange_info *exchange,cJSON *argjson)
 
 char *TRADEHISTORY(struct exchange_info *exchange,cJSON *argjson)
 {
-    struct instantdex_accept PAD,*ap; cJSON *retjson = cJSON_CreateArray();
+    struct bitcoin_swapinfo PAD,*swap; cJSON *retjson = cJSON_CreateArray();
     memset(&PAD,0,sizeof(PAD));
     queue_enqueue("historyQ",&exchange->historyQ,&PAD.DL,0);
-    while ( (ap= queue_dequeue(&exchange->historyQ,0)) != 0 && ap != &PAD )
+    while ( (swap= queue_dequeue(&exchange->historyQ,0)) != 0 && swap != &PAD )
     {
-        jaddi(retjson,instantdex_historyjson(ap));
-        queue_enqueue("historyQ",&exchange->historyQ,&ap->DL,0);
+        jaddi(retjson,instantdex_historyjson(swap));
+        queue_enqueue("historyQ",&exchange->historyQ,&swap->DL,0);
     }
     return(jprint(retjson,1));
 }
