@@ -2147,9 +2147,7 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
                 retstr = instantdex_checkoffer(myinfo,&txid,exchange,ap,json), free(str);
             else printf("null return queueaccept\n");
             if ( retstrp != 0 )
-                *retstrp = retstr != 0 ? retstr : jprint(json,0);
-            else free(retstr);
-            free_json(json);
+                *retstrp = retstr;
         }
     }
     return(txid);
