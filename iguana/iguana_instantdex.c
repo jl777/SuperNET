@@ -507,7 +507,7 @@ int32_t instantdex_bidaskdir(struct instantdex_offer *offer)
 cJSON *instantdex_offerjson(struct instantdex_offer *offer,uint64_t orderid)
 {
     int32_t dir; cJSON *item = cJSON_CreateObject();
-    jadd64bits(item,"oriderid",orderid);
+    jadd64bits(item,"orderid",orderid);
     jadd64bits(item,"offerer",offer->offer64);
     if ( (dir= instantdex_bidaskdir(offer)) > 0 )
         jaddstr(item,"type","bid");
@@ -675,7 +675,7 @@ struct instantdex_accept *instantdex_offerfind(struct supernet_info *myinfo,stru
     {
         if ( now < ap->offer.expiration && ap->dead == 0 )
         {
-            printf("%d find cmps %d %d %d %d %d %d me.%llu vs %llu o.%llu\n",ap->offer.expiration-now,strcmp(base,"*") == 0,strcmp(base,ap->offer.base) == 0,strcmp(rel,"*") == 0,strcmp(rel,ap->offer.rel) == 0,orderid == 0,orderid == ap->orderid,(long long)myinfo->myaddr.persistent.txid,(long long)ap->offer.offer64,(long long)ap->orderid);
+            printf("%d find cmps %d %d %d %d %d %d me.%llu vs %llu o.%llu | vs %llu\n",ap->offer.expiration-now,strcmp(base,"*") == 0,strcmp(base,ap->offer.base) == 0,strcmp(rel,"*") == 0,strcmp(rel,ap->offer.rel) == 0,orderid == 0,orderid == ap->orderid,(long long)myinfo->myaddr.nxt64bits,(long long)ap->offer.offer64,(long long)ap->orderid,(long long)orderid);
             if ( (strcmp(base,"*") == 0 || strcmp(base,ap->offer.base) == 0) && (strcmp(rel,"*") == 0 || strcmp(rel,ap->offer.rel) == 0) && (orderid == 0 || orderid == ap->orderid) )
             {
                 if ( requeue == 0 && retap != 0 )

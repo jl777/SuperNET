@@ -2148,6 +2148,7 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
                     txid = j64bits(json,"orderid");
                     if ( (str= instantdex_sendoffer(myinfo,exchange,ap,json)) != 0 )
                     {
+                        printf("add.%llu to acceptableQ\n",(long long)txid);
                         queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
                         //queue_enqueue("statemachineQ",&exchange->statemachineQ,&ap->DL,0);
                         json = cJSON_CreateObject();
