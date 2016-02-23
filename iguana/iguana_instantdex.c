@@ -667,7 +667,7 @@ struct bitcoin_swapinfo *instantdex_statemachinefind(struct supernet_info *myinf
         if ( swap != retswap || requeueflag != 0 )
             queue_enqueue("statemachineQ",&exchange->statemachineQ,&swap->DL,0);
     }
-    printf("found statemachine.%p\n",retswap);
+    //printf("found statemachine.%p\n",retswap);
     return(retswap);
 }
 
@@ -1017,7 +1017,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
         }
         else if ( (swap= instantdex_statemachinefind(myinfo,exchange,A.orderid,1)) != 0 )
         {
-            printf("found existing state machine %llu\n",(long long)A.orderid);
+            //printf("found existing state machine %llu\n",(long long)A.orderid);
             newjson = instantdex_parseargjson(myinfo,exchange,swap,argjson,0);
             return(instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,cmdstr,argjson,newjson,serdata,serdatalen));
         }
