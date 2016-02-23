@@ -608,6 +608,7 @@ cJSON *BTC_waitdeckCfunc(struct supernet_info *myinfo,struct exchange_info *exch
 cJSON *BTC_waitprivCfunc(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp)
 {
     strcmp(swap->expectedcmdstr,"BTCprivC");
+    printf("call privkey extract from serdatalen.%d\n",*serdatalenp);
     instantdex_privkeyextract(myinfo,swap,*serdatap,*serdatalenp);
     *serdatap = 0, *serdatalenp = 0;
     return(newjson);
@@ -634,8 +635,9 @@ cJSON *BOB_waitfeefunc(struct supernet_info *myinfo,struct exchange_info *exchan
     char *retstr; struct iguana_info *coinbtc;
     coinbtc = iguana_coinfind("BTC");
     *serdatap = 0, *serdatalenp = 0;
-    if ( coinbtc != 0 && swap->deposit == 0 && (retstr= BTC_txconfirmed(myinfo,coinbtc,swap,newjson,swap->otherfee->txid,&swap->otherfee->numconfirms,"feefound",0)) != 0 )
+    if ( coinbtc != 0 && swap->otherfee != 0 )//swap->deposit == 0 && (retstr= BTC_txconfirmed(myinfo,coinbtc,swap,newjson,swap->otherfee->txid,&swap->otherfee->numconfirms,"feefound",0)) != 0 )
     {
+        retstr = swap->otherfee->txbytes;
         jaddstr(newjson,"feefound",retstr);
         if ( (swap->deposit= instantdex_bobtx(myinfo,coinbtc,swap->otherpubs[0],swap->mypubs[0],swap->privkeys[swap->choosei],swap->reftime,swap->BTCsatoshis,1)) != 0 )
         {
@@ -699,8 +701,9 @@ cJSON *ALICE_waitfeefunc(struct supernet_info *myinfo,struct exchange_info *exch
     char *retstr; struct iguana_info *coinbtc;
     coinbtc = iguana_coinfind("BTC");
     *serdatap = 0, *serdatalenp = 0;
-    if ( swap->otherfee != 0 && (retstr= BTC_txconfirmed(myinfo,coinbtc,swap,newjson,swap->otherfee->txid,&swap->otherfee->numconfirms,"feefound",0)) != 0 )
+    if ( coinbtc != 0 && swap->otherfee != 0 )//&& (retstr= BTC_txconfirmed(myinfo,coinbtc,swap,newjson,swap->otherfee->txid,&swap->otherfee->numconfirms,"feefound",0)) != 0 )
     {
+        retstr = swap->otherfee->txbytes;
         jaddstr(newjson,"feefound",retstr);
         return(newjson);
     } else return(0);
