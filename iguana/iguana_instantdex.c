@@ -917,6 +917,7 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,uint64_t *txidp,struct 
         isbob = myap->offer.myside;
         swap = bitcoin_swapinit(myinfo,exchange,myap,otherap,1,argjson,isbob != 0 ? "BOB_sentoffer" : "ALICE_sentoffer");
         printf("STATEMACHINEQ.(%llu / %llu)\n",(long long)swap->mine.orderid,(long long)swap->other.orderid);
+        queue_enqueue("acceptableQ",&exchange->acceptableQ,&swap->DL,0);
         queue_enqueue("statemachineQ",&exchange->statemachineQ,&swap->DL,0);
         if ( (newjson= instantdex_parseargjson(myinfo,exchange,swap,argjson,1)) == 0 )
             return(clonestr("{\"error\":\"instantdex_checkoffer null newjson\"}"));
@@ -960,6 +961,7 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
     }
     else //if ( (retstr= instantdex_addfeetx(myinfo,newjson,ap,swap,"BOB_gotoffer","ALICE_gotoffer")) == 0 )
     {
+        queue_enqueue("acceptableQ",&exchange->acceptableQ,&swap->DL,0);
         queue_enqueue("statemachineQ",&exchange->statemachineQ,&swap->DL,0);
         if ( (retstr= instantdex_choosei(swap,newjson,argjson,serdata,serdatalen)) != 0 )
             return(retstr);
