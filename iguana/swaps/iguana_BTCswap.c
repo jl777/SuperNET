@@ -115,7 +115,7 @@ struct bitcoin_statetx *instantdex_feetx(struct supernet_info *myinfo,struct ins
                 ptr = calloc(1,sizeof(*ptr) + strlen(feetx) + 1);
                 strcpy(ptr->txbytes,feetx);
                 ptr->txid = txid;
-                printf("%s feetx.%s\n",A->offer.myside != 0 ? "BOB" : "ALICE",feetx);
+                //printf("%s feetx.%s\n",A->offer.myside != 0 ? "BOB" : "ALICE",feetx);
                 //disp_tx(myinfo,coin,"feetx",feetx);
                 free(feetx);
             }
@@ -201,7 +201,7 @@ struct bitcoin_statetx *instantdex_bobtx(struct supernet_info *myinfo,struct igu
             ptr = calloc(1,sizeof(*ptr) + strlen(signedtx) + 1);
             strcpy(ptr->txbytes,signedtx);
             ptr->txid = txid;
-            printf("bob deposit.%s\n",signedtx);
+            //printf("bob deposit.%s\n",signedtx);
             //disp_tx(myinfo,coin,depositflag != 0 ? "deposit" : "payment",signedtx);
             free(signedtx);
         } else printf("error signing bobdeposit numinputs.%d\n",spend->numinputs);
@@ -512,7 +512,7 @@ void instantdex_swaptxupdate(struct bitcoin_statetx **ptrp,cJSON *argjson,char *
     {
         if ( *ptrp != 0 )
         {
-            printf("got replacement %s? (%s)\n",txname,str);
+            //printf("got replacement %s? (%s)\n",txname,str);
             free(*ptrp);
         }
         *ptrp = calloc(1,sizeof(**ptrp) + strlen(str) + 1);
@@ -860,9 +860,11 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     // to reach sentprivs, all paths must have sent/recv deck and Chose and verified cut and choose
     s = instantdex_statecreate(s,n,"BOB_sentprivs",BTC_waitprivsfunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"BOB_sentprivs","BTCprivs","poll","BOB_waitfee");
-    
+    instantdex_addevent(s,*n,"BOB_sentprivs","poll","poll","BOB_sentprivs");
+
     s = instantdex_statecreate(s,n,"ALICE_sentprivs",BTC_waitprivsfunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"ALICE_sentprivs","BTCprivs","poll","Alice_waitfee");
+    instantdex_addevent(s,*n,"ALICE_sentprivs","poll","poll","ALICE_sentprivs");
 
     // [BLOCKING: fee] Bob waits for fee and sends deposit when it appears
     s = instantdex_statecreate(s,n,"BOB_waitfee",BOB_waitfeefunc,0,"BTC_cleanup",0,0);

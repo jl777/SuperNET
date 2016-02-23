@@ -823,7 +823,7 @@ int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char
             init_hexbytes_noT(pubkeystr,(uint8_t *)vp->signers[0].pubkey,plen);
             sprintf(asmstr,"OP_DUP %s OP_CHECKSIG // %s",pubkeystr,coinaddr);
             scriptlen = bitcoin_pubkeyspend(script,0,(uint8_t *)vp->signers[0].pubkey);
-            printf("[%02x] scriptlen.%d (%s)\n",vp->signers[0].pubkey[0],scriptlen,asmstr);
+            //printf("[%02x] scriptlen.%d (%s)\n",vp->signers[0].pubkey[0],scriptlen,asmstr);
             break;
         case IGUANA_SCRIPT_76A988AC:
             sprintf(asmstr,"OP_DUP OP_HASH160 %s OP_EQUALVERIFY OP_CHECKSIG // %s",rmd160str,coinaddr);
@@ -1233,7 +1233,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
     if ( coin->chain->hastimestamp != 0 )
     {
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->timestamp),&msg->timestamp);
-        char str[65]; printf("timestamp.%08x %u %s\n",msg->timestamp,msg->timestamp,utc_str(str,msg->timestamp));
+        //char str[65]; printf("timestamp.%08x %u %s\n",msg->timestamp,msg->timestamp,utc_str(str,msg->timestamp));
         if ( json != 0 )
             jaddnum(json,"timestamp",msg->timestamp);
     }
@@ -1499,7 +1499,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
                 if ( n2 > 0 )
                 {
                     n2 += iguana_rwnum(1,&serialized[n2],sizeof(hashtype),&hashtype);
-                    printf("hashtype.%d [%02x]\n",hashtype,sig[siglen-1]);
+                    //printf("hashtype.%d [%02x]\n",hashtype,sig[siglen-1]);
                     revsigtxid = bits256_doublesha256(txidstr,serialized,n2);
                     for (i=0; i<sizeof(revsigtxid); i++)
                         sigtxid.bytes[31-i] = revsigtxid.bytes[i];
@@ -1511,9 +1511,9 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
                         vp->signers[j].siglen = siglen;
                         msgtx->vins[vini].sigscript = calloc(1,siglen*2+256); // fix this memleak!
                         msgtx->vins[vini].scriptlen = bitcoin_scriptsig(coin,msgtx->vins[vini].sigscript,0,(const struct vin_info *)vp,msgtx);
-                        for (i=0; i<siglen; i++)
-                            printf("%02x",sig[i]);
-                        printf(" SIGNEDTX.[%02x] plen.%d siglen.%d\n",sig[siglen-1],plen,siglen);
+                        //for (i=0; i<siglen; i++)
+                        //    printf("%02x",sig[i]);
+                        //printf(" SIGNEDTX.[%02x] plen.%d siglen.%d\n",sig[siglen-1],plen,siglen);
                     }
                     if ( bitcoin_verify(sig,siglen,sigtxid.bytes,sizeof(sigtxid),0,vp->signers[j].pubkey,bitcoin_pubkeylen(vp->signers[j].pubkey)) < 0 )
                     {
@@ -1528,7 +1528,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
                         cJSON *txobj = cJSON_CreateObject();
                         *signedtx = iguana_rawtxbytes(coin,txobj,msgtx);
                         *signedtxidp = msgtx->txid;
-                        printf("SIG.%d VERIFIED %s (%s)\n",vini,*signedtx,jprint(txobj,1));
+                        //printf("SIG.%d VERIFIED %s (%s)\n",vini,*signedtx,jprint(txobj,1));
                         flag = 1;
                         break;
                     }
@@ -1636,7 +1636,7 @@ cJSON *bitcoin_addoutput(struct iguana_info *coin,cJSON *txobj,uint8_t *payments
     hexstr = malloc(len*2 + 1);
     init_hexbytes_noT(hexstr,paymentscript,len);
     jaddstr(skey,"hex",hexstr);
-    printf("addoutput.(%s %s)\n",hexstr,jprint(skey,0));
+    //printf("addoutput.(%s %s)\n",hexstr,jprint(skey,0));
     free(hexstr);
     jadd(item,"scriptPubkey",skey);
     jaddi(vouts,item);
@@ -1656,7 +1656,7 @@ cJSON *bitcoin_addinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32
     jaddnum(item,"sequence",sequence);
     jaddi(vins,item);
     jadd(txobj,"vin",vins);
-    printf("addvin -> (%s)\n",jprint(txobj,0));
+    //printf("addvin -> (%s)\n",jprint(txobj,0));
     return(txobj);
 }
 
@@ -1992,7 +1992,7 @@ struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct i
                     }
                 }
             }
-            printf("numunspents.%d -> %d total %.8f\n",*numunspentsp,n,dstr(total));
+            //printf("numunspents.%d -> %d total %.8f\n",*numunspentsp,n,dstr(total));
             *numunspentsp = n;
             free_json(utxo);
         } else printf("error parsing.(%s)\n",retstr);
