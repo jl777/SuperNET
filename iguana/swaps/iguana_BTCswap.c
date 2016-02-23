@@ -570,7 +570,7 @@ cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info
         jaddnum(newjson,"verified",swap->otherverifiedcut);
         if ( instantdex_pubkeyargs(swap,newjson,2 + deckflag*INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myorderhash,0x02+instantdex_isbob(swap)) == 2 + deckflag*INSTANTDEX_DECKSIZE )
             instantdex_getpubs(swap,argjson,newjson);
-        else printf("ERROR: couldnt generate pubkeys\n");
+        else printf("ERROR: couldnt generate pubkeys deckflag.%d\n",deckflag);
     }
     return(newjson);
 }

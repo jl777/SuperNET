@@ -954,7 +954,10 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
     isbob = myap->offer.myside;
     swap = bitcoin_swapinit(myinfo,exchange,myap,otherap,0,argjson,isbob != 0 ? "BOB_sentoffer" : "ALICE_sentoffer");
     if ( (newjson= instantdex_parseargjson(myinfo,exchange,swap,argjson,1)) == 0 )
+    {
+        printf("error parsing argjson\n");
         return(clonestr("{\"error\":\"instantdex_BTCswap offer null newjson\"}"));
+    }
     else //if ( (retstr= instantdex_addfeetx(myinfo,newjson,ap,swap,"BOB_gotoffer","ALICE_gotoffer")) == 0 )
     {
         queue_enqueue("statemachineQ",&exchange->statemachineQ,&swap->DL,0);
@@ -1019,6 +1022,11 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
         {
             //printf("found existing state machine %llu\n",(long long)A.orderid);
             newjson = instantdex_parseargjson(myinfo,exchange,swap,argjson,0);
+            if ( serdatalen == sizeof(swap->otherdeck) && swap->choosei < 0 && (retstr= instantdex_choosei(swap,newjson,argjson,serdata,serdatalen)) != 0 )
+            {
+                printf("error choosei\n");
+                return(retstr);
+            }
             return(instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,cmdstr,argjson,newjson,serdata,serdatalen));
         }
         else
