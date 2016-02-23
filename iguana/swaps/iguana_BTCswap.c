@@ -387,6 +387,7 @@ int32_t instantdex_pubkeyargs(struct bitcoin_swapinfo *swap,cJSON *newjson,int32
 {
     char buf[3]; int32_t i,n,m,len=0; bits256 pubi; uint64_t txid; uint8_t secret160[20],pubkey[33];
     sprintf(buf,"%c0",'A' - 0x02 + firstbyte);
+    printf(">>>>>> start generating\n");
     for (i=n=m=0; i<numpubs*100 && n<numpubs; i++)
     {
         pubi = instantdex_derivekeypair(&swap->privkeys[n],pubkey,privkey,hash);
@@ -404,18 +405,19 @@ int32_t instantdex_pubkeyargs(struct bitcoin_swapinfo *swap,cJSON *newjson,int32
         {
             calc_rmd160_sha256(secret160,swap->privkeys[n].bytes,sizeof(swap->privkeys[n]));
             memcpy(&txid,secret160,sizeof(txid));
-            txid = (m+1) | ((m+1)<<16);
+            /*txid = (m+1) | ((m+1)<<16);
             txid <<= 32;
             txid = (m+1) | ((m+1)<<16);
             pubi.txid = (m+1) | ((m+1)<<16);
             pubi.txid <<= 32;
-            pubi.txid = (m+1) | ((m+1)<<16);
+            pubi.txid = (m+1) | ((m+1)<<16);*/
             len += iguana_rwnum(1,(uint8_t *)&swap->deck[m][0],sizeof(txid),&txid);
             len += iguana_rwnum(1,(uint8_t *)&swap->deck[m][1],sizeof(pubi.txid),&pubi.txid);
             m++;
         }
         n++;
     }
+    printf("n.%d m.%d len.%d\n",n,m,len);
     return(n);
 }
 
