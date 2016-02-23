@@ -650,7 +650,7 @@ struct bitcoin_swapinfo *instantdex_statemachinefind(struct supernet_info *myinf
     {
         if ( now < swap->expiration && swap->mine.dead == 0 && swap->other.dead == 0 )
         {
-            if ( orderid == swap->mine.orderid )
+            if ( orderid == swap->mine.orderid || orderid == swap->other.orderid )
             {
                 if ( retswap != 0 && requeueflag == 0 )
                     queue_enqueue("statemachineQ",&exchange->statemachineQ,&retswap->DL,0);
@@ -712,7 +712,7 @@ struct instantdex_accept *instantdex_offerfind(struct supernet_info *myinfo,stru
 
 struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,double minperc)
 {
-    struct instantdex_accept PAD,*ap,*retap = 0; double aveprice,retvals[4];
+    struct instantdex_accept PAD,*ap,*retap = 0; double aveprice;//,retvals[4];
     uint64_t minvol,bestprice64 = 0; uint32_t now; int32_t offerdir;
     aveprice = 0;//instantdex_avehbla(myinfo,retvals,A->offer.base,A->offer.rel,dstr(A->offer.basevolume64));
     now = (uint32_t)time(NULL);
@@ -725,29 +725,29 @@ struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,str
     {
         if ( now > ap->offer.expiration || ap->dead != 0 || A->offer.offer64 == ap->offer.offer64 )
         {
-            printf("now.%u skip expired %u/dead.%u or my order orderid.%llu from %llu\n",now,ap->offer.expiration,ap->dead,(long long)ap->orderid,(long long)ap->offer.offer64);
+            //printf("now.%u skip expired %u/dead.%u or my order orderid.%llu from %llu\n",now,ap->offer.expiration,ap->dead,(long long)ap->orderid,(long long)ap->offer.offer64);
         }
         else if ( strcmp(ap->offer.base,A->offer.base) != 0 || strcmp(ap->offer.rel,A->offer.rel) != 0 )
         {
-            printf("skip mismatched.(%s/%s) orderid.%llu from %llu\n",ap->offer.base,ap->offer.rel,(long long)ap->orderid,(long long)ap->offer.offer64);
+            //printf("skip mismatched.(%s/%s) orderid.%llu from %llu\n",ap->offer.base,ap->offer.rel,(long long)ap->orderid,(long long)ap->offer.offer64);
         }
         else if ( offerdir*instantdex_bidaskdir(&ap->offer) > 0 )
         {
-            printf("skip same direction %d orderid.%llu from %llu\n",instantdex_bidaskdir(&ap->offer),(long long)ap->orderid,(long long)ap->offer.offer64);
+            //printf("skip same direction %d orderid.%llu from %llu\n",instantdex_bidaskdir(&ap->offer),(long long)ap->orderid,(long long)ap->offer.offer64);
         }
         else if ( minvol > ap->offer.basevolume64 - ap->pendingvolume64 )
         {
-            printf("skip too small order %.8f vs %.8f orderid.%llu from %llu\n",dstr(minvol),dstr(ap->offer.basevolume64)-dstr(ap->pendingvolume64),(long long)ap->orderid,(long long)ap->offer.offer64);
+            //printf("skip too small order %.8f vs %.8f orderid.%llu from %llu\n",dstr(minvol),dstr(ap->offer.basevolume64)-dstr(ap->pendingvolume64),(long long)ap->orderid,(long long)ap->offer.offer64);
         }
         else if ( (offerdir > 0 && ap->offer.price64 > A->offer.price64) || (offerdir < 0 && ap->offer.price64 < A->offer.price64) )
         {
-            printf("skip out of band dir.%d offer %.8f vs %.8f orderid.%llu from %llu\n",offerdir,dstr(ap->offer.price64),dstr(A->offer.price64),(long long)ap->orderid,(long long)ap->offer.offer64);
+            //printf("skip out of band dir.%d offer %.8f vs %.8f orderid.%llu from %llu\n",offerdir,dstr(ap->offer.price64),dstr(A->offer.price64),(long long)ap->orderid,(long long)ap->offer.offer64);
         }
         else
         {
             if ( bestprice64 == 0 || (offerdir > 0 && ap->offer.price64 < bestprice64) || (offerdir < 0 && ap->offer.price64 > bestprice64) )
             {
-                printf(">>>>>>> MATCHED found better price %f vs %f\n",dstr(ap->offer.price64),dstr(bestprice64));
+                printf(">>>> MATCHED better price dir.%d offer %.8f vs %.8f orderid.%llu from %llu\n",offerdir,dstr(ap->offer.price64),dstr(A->offer.price64),(long long)ap->orderid,(long long)ap->offer.offer64);
                 bestprice64 = ap->offer.price64;
                 if ( retap != 0 )
                     queue_enqueue("acceptableQ",&exchange->acceptableQ,&retap->DL,0);
@@ -914,6 +914,7 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,uint64_t *txidp,struct 
     else
     {
         swap = bitcoin_swapinit(myinfo,exchange,myap,otherap,1,argjson);
+        printf("STATEMACHINEQ.(%llu / %llu)\n",(long long)swap->mine.orderid,(long long)swap->other.orderid);
         queue_enqueue("statemachineQ",&exchange->statemachineQ,&swap->DL,0);
         if ( (newjson= instantdex_parseargjson(myinfo,exchange,swap,argjson,1)) == 0 )
             return(clonestr("{\"error\":\"instantdex_checkoffer null newjson\"}"));
