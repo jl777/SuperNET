@@ -681,7 +681,7 @@ struct instantdex_accept *instantdex_offerfind(struct supernet_info *myinfo,stru
     {
         if ( now < ap->offer.expiration && ap->dead == 0 )
         {
-            printf("%d find cmps %d %d %d %d %d %d me.%llu vs %llu o.%llu | vs %llu\n",ap->offer.expiration-now,strcmp(base,"*") == 0,strcmp(base,ap->offer.base) == 0,strcmp(rel,"*") == 0,strcmp(rel,ap->offer.rel) == 0,orderid == 0,orderid == ap->orderid,(long long)myinfo->myaddr.nxt64bits,(long long)ap->offer.offer64,(long long)ap->orderid,(long long)orderid);
+            //printf("%d %d find cmps %d %d %d %d %d %d me.%llu vs %llu o.%llu | vs %llu\n",instantdex_bidaskdir(&ap->offer),ap->offer.expiration-now,strcmp(base,"*") == 0,strcmp(base,ap->offer.base) == 0,strcmp(rel,"*") == 0,strcmp(rel,ap->offer.rel) == 0,orderid == 0,orderid == ap->orderid,(long long)myinfo->myaddr.nxt64bits,(long long)ap->offer.offer64,(long long)ap->orderid,(long long)orderid);
             if ( (strcmp(base,"*") == 0 || strcmp(base,ap->offer.base) == 0) && (strcmp(rel,"*") == 0 || strcmp(rel,ap->offer.rel) == 0) && (orderid == 0 || orderid == ap->orderid) )
             {
                 if ( requeue == 0 && retap != 0 )
@@ -714,37 +714,49 @@ struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,str
 {
     struct instantdex_accept PAD,*ap,*retap = 0; double aveprice,retvals[4];
     uint64_t minvol,bestprice64 = 0; uint32_t now; int32_t offerdir;
-    aveprice = instantdex_avehbla(myinfo,retvals,A->offer.base,A->offer.rel,dstr(A->offer.basevolume64));
+    aveprice = 0;//instantdex_avehbla(myinfo,retvals,A->offer.base,A->offer.rel,dstr(A->offer.basevolume64));
     now = (uint32_t)time(NULL);
     memset(&PAD,0,sizeof(PAD));
     queue_enqueue("acceptableQ",&exchange->acceptableQ,&PAD.DL,0);
     offerdir = instantdex_bidaskdir(&A->offer);
-    minvol = A->offer.basevolume64 * minperc * .01;
+    minvol = (A->offer.basevolume64 * minperc * .01);
+    printf("offerdir.%d (%s/%s) minperc %.3f minvol %.8f vs %.8f\n",offerdir,A->offer.base,A->offer.rel,minperc,dstr(minvol),dstr(A->offer.basevolume64));
     while ( (ap= queue_dequeue(&exchange->acceptableQ,0)) != 0 && ap != &PAD )
     {
-        printf("check offerbits.%llu vs %llu: %d %d %d %d %d %d %d %d\n",(long long)myinfo->myaddr.nxt64bits,(long long)ap->offer.offer64,A->offer.basevolume64 > 0.,strcmp(A->offer.base,"*") == 0 ,strcmp(A->offer.base,ap->offer.base) == 0, strcmp(A->offer.rel,"*") == 0 ,strcmp(A->offer.rel,ap->offer.rel) == 0,A->offer.basevolume64 <= (ap->offer.basevolume64 - ap->pendingvolume64),offerdir,instantdex_bidaskdir(&ap->offer));
-        if ( now < ap->offer.expiration && ap->dead == 0 && myinfo->myaddr.nxt64bits != ap->offer.offer64 )
+        if ( now > ap->offer.expiration || ap->dead != 0 || A->offer.offer64 == ap->offer.offer64 )
         {
-            printf("aveprice %.8f %.8f offerdir.%d first cmp: %d %d %d\n",aveprice,dstr(ap->offer.price64),offerdir,A->offer.price64 == 0,(offerdir > 0 && ap->offer.price64 >= A->offer.price64),(offerdir < 0 && ap->offer.price64 <= A->offer.price64));
-            if ( A->offer.basevolume64 > 0. && (strcmp(A->offer.base,"*") == 0 || strcmp(A->offer.base,ap->offer.base) == 0) && (strcmp(A->offer.rel,"*") == 0 || strcmp(A->offer.rel,ap->offer.rel) == 0) && minvol <= (ap->offer.basevolume64 - ap->pendingvolume64) && offerdir*instantdex_bidaskdir(&ap->offer) < 0 )
+            printf("now.%u skip expired %u/dead.%u or my order orderid.%llu from %llu\n",now,ap->offer.expiration,ap->dead,(long long)ap->orderid,(long long)ap->offer.offer64);
+        }
+        else if ( strcmp(ap->offer.base,A->offer.base) != 0 || strcmp(ap->offer.rel,A->offer.rel) != 0 )
+        {
+            printf("skip mismatched.(%s/%s) orderid.%llu from %llu\n",ap->offer.base,ap->offer.rel,(long long)ap->orderid,(long long)ap->offer.offer64);
+        }
+        else if ( offerdir*instantdex_bidaskdir(&ap->offer) > 0 )
+        {
+            printf("skip same direction %d orderid.%llu from %llu\n",instantdex_bidaskdir(&ap->offer),(long long)ap->orderid,(long long)ap->offer.offer64);
+        }
+        else if ( minvol > ap->offer.basevolume64 - ap->pendingvolume64 )
+        {
+            printf("skip too small order %.8f vs %.8f orderid.%llu from %llu\n",dstr(minvol),dstr(ap->offer.basevolume64)-dstr(ap->pendingvolume64),(long long)ap->orderid,(long long)ap->offer.offer64);
+        }
+        else if ( (offerdir > 0 && ap->offer.price64 > A->offer.price64) || (offerdir < 0 && ap->offer.price64 < A->offer.price64) )
+        {
+            printf("skip out of band dir.%d offer %.8f vs %.8f orderid.%llu from %llu\n",offerdir,dstr(ap->offer.price64),dstr(A->offer.price64),(long long)ap->orderid,(long long)ap->offer.offer64);
+        }
+        else
+        {
+            if ( bestprice64 == 0 || (offerdir > 0 && ap->offer.price64 < bestprice64) || (offerdir < 0 && ap->offer.price64 > bestprice64) )
             {
-                printf("aveprice %.8f %.8f offerdir.%d first cmp: %d %d %d\n",aveprice,dstr(ap->offer.price64),offerdir,A->offer.price64 == 0,(offerdir > 0 && ap->offer.price64 >= A->offer.price64),(offerdir < 0 && ap->offer.price64 <= A->offer.price64));
-                if ( offerdir == 0 || A->offer.price64 == 0 || ((offerdir < 0 && ap->offer.price64 >= A->offer.price64) || (offerdir > 0 && ap->offer.price64 <= A->offer.price64)) )
-                {
-                    printf("passed second cmp: offerdir.%d best %.8f ap %.8f\n",offerdir,dstr(bestprice64),dstr(ap->offer.price64));
-                    if ( bestprice64 == 0 || (offerdir < 0 && ap->offer.price64 < bestprice64) || (offerdir > 0 && ap->offer.price64 > bestprice64) )
-                    {
-                        printf("found better price %f vs %f\n",dstr(ap->offer.price64),dstr(bestprice64));
-                        bestprice64 = ap->offer.price64;
-                        if ( retap != 0 )
-                            queue_enqueue("acceptableQ",&exchange->acceptableQ,&retap->DL,0);
-                        retap = ap;
-                    }
-                }
+                printf(">>>>>>> MATCHED found better price %f vs %f\n",dstr(ap->offer.price64),dstr(bestprice64));
+                bestprice64 = ap->offer.price64;
+                if ( retap != 0 )
+                    queue_enqueue("acceptableQ",&exchange->acceptableQ,&retap->DL,0);
+                retap = ap;
             }
-            if ( ap != retap )
-                queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
-        } else free(ap);
+        }
+        if ( ap != retap )
+            queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
+        else free(ap);
     }
     return(retap);
 }
@@ -927,8 +939,7 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
             printf("%02x ",((uint8_t *)&otherap->offer)[i]);
         printf("gotoffer.%llu\n",(long long)otherap->orderid);
     }
-    //char str[65]; printf("GOT OFFER! orderid.%llu %p (%s/%s) other.%s myside.%d\n",(long long)ap->orderid,ap->info,ap->offer.base,ap->offer.rel,bits256_str(str,traderpub),swap->isbob);*/
-    printf("T.%d got (%s/%s) %.8f vol %.8f %llu offerside.%d offerdir.%d decksize.%ld/datalen.%d\n",bits256_cmp(traderpub,myinfo->myaddr.persistent),myap->offer.base,myap->offer.rel,dstr(myap->offer.price64),dstr(myap->offer.basevolume64),(long long)myap->orderid,myap->offer.myside,myap->offer.acceptdir,sizeof(swap->deck),serdatalen);
+    printf(">>>>>>>>> GOTOFFER T.%d got (%s/%s) %.8f vol %.8f %llu offerside.%d offerdir.%d decksize.%ld/datalen.%d\n",bits256_cmp(traderpub,myinfo->myaddr.persistent),myap->offer.base,myap->offer.rel,dstr(myap->offer.price64),dstr(myap->offer.basevolume64),(long long)myap->orderid,myap->offer.myside,myap->offer.acceptdir,sizeof(swap->deck),serdatalen);
     if ( exchange == 0 )
         return(clonestr("{\"error\":\"instantdex_BTCswap null exchange ptr\"}"));
     if ( (altcoin= iguana_coinfind(myap->offer.base)) == 0 || coinbtc == 0 )
@@ -971,7 +982,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
         }
         A.offer = *offer;
         A.orderid = orderhash.txid;
-        printf("got.(%s) for %llu\n",cmdstr,(long long)A.orderid);
+        printf("got.(%s) for %llu offer64.%llu\n",cmdstr,(long long)A.orderid,(long long)A.offer.offer64);
         if ( (A.offer.minperc= jdouble(argjson,"p")) < INSTANTDEX_MINPERC )
             A.offer.minperc = INSTANTDEX_MINPERC;
         else if ( A.offer.minperc > 100 )
