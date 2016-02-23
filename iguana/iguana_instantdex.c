@@ -952,7 +952,7 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
     if ( myap->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) || otherap->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) )
         return(clonestr("{\"error\":\"instantdex_BTCswap offer too close to expiration\"}"));
     isbob = myap->offer.myside;
-    swap = bitcoin_swapinit(myinfo,exchange,myap,otherap,0,argjson,isbob != 0 ? "BOB_sentoffer" : "ALICE_sentoffer");
+    swap = bitcoin_swapinit(myinfo,exchange,myap,otherap,0,argjson,isbob != 0 ? "BOB_gottoffer" : "ALICE_gottoffer");
     if ( (newjson= instantdex_parseargjson(myinfo,exchange,swap,argjson,1)) == 0 )
     {
         printf("error parsing argjson\n");
