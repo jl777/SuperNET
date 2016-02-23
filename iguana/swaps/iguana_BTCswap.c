@@ -387,12 +387,12 @@ int32_t instantdex_pubkeyargs(struct bitcoin_swapinfo *swap,cJSON *newjson,int32
 {
     char buf[3]; int32_t i,n,m,len=0; bits256 pubi; uint64_t txid; uint8_t secret160[20],pubkey[33];
     sprintf(buf,"%c0",'A' - 0x02 + firstbyte);
-    printf(">>>>>> start generating\n");
+    printf(">>>>>> start generating %s\n",buf);
     for (i=n=m=0; i<numpubs*100 && n<numpubs; i++)
     {
         pubi = instantdex_derivekeypair(&swap->privkeys[n],pubkey,privkey,hash);
         privkey = swap->privkeys[n];
-        //printf("i.%d n.%d numpubs.%d %02x vs %02x\n",i,n,numpubs,pubkey[0],firstbyte);
+        printf("i.%d n.%d numpubs.%d %02x vs %02x\n",i,n,numpubs,pubkey[0],firstbyte);
         if ( pubkey[0] != firstbyte )
             continue;
         if ( n < 2 && numpubs > 2 )
