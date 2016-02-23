@@ -903,9 +903,12 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
 
 char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numstates,struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,char *cmdstr,cJSON *argjson,cJSON *newjson,uint8_t *serdata,int32_t serdatalen)
 {
-    uint32_t i; struct iguana_info *altcoin,*coinbtc; struct instantdex_stateinfo *state; cJSON *origjson = newjson;
+    uint32_t i; struct iguana_info *altcoin=0,*coinbtc=0; struct instantdex_stateinfo *state=0; cJSON *origjson = newjson;
     if ( swap == 0 || (state= swap->state) == 0 || (coinbtc= iguana_coinfind("BTC")) == 0 || (altcoin= iguana_coinfind(swap->mine.offer.base)) == 0 )
+    {
+        printf("state.%s btc.%p altcoin.%p\n",state->name,coinbtc,altcoin);
         return(clonestr("{\"error\":\"instantdex_BTCswap missing coin info\"}"));
+    }
     printf("%llu/%llu cmd.(%s) state.(%s)\n",(long long)swap->mine.orderid,(long long)swap->other.orderid,cmdstr,swap->state->name);
     if ( swap->expiration != 0 && time(NULL) > swap->expiration )
     {

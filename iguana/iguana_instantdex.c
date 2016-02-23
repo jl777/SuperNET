@@ -662,12 +662,12 @@ struct bitcoin_swapinfo *instantdex_statemachinefind(struct supernet_info *myinf
             strcpy(swap->status,"expired");
             printf("expired pending, need to take action, send timeout event\n");
             queue_enqueue("historyQ",&exchange->historyQ,&swap->DL,0);
-            //bitcoin_freeswap(swap);
             continue;
         }
         if ( swap != retswap || requeueflag != 0 )
             queue_enqueue("statemachineQ",&exchange->statemachineQ,&swap->DL,0);
     }
+    printf("found statemachine.%p\n",retswap);
     return(retswap);
 }
 
@@ -861,10 +861,11 @@ int32_t instantdex_acceptextract(struct instantdex_accept *ap,cJSON *argjson)
 #include "swaps/iguana_NXTswap.c"
 #include "swaps/iguana_PAXswap.c"
 
-struct bitcoin_swapinfo *bitcoin_swapinit(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *myap,struct instantdex_accept *otherap,int32_t aminitiator,cJSON *argjson)
+struct bitcoin_swapinfo *bitcoin_swapinit(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *myap,struct instantdex_accept *otherap,int32_t aminitiator,cJSON *argjson,char *statename)
 {
     struct bitcoin_swapinfo *swap = 0; struct iguana_info *coinbtc,*altcoin;
     swap = calloc(1,sizeof(struct bitcoin_swapinfo));
+    swap->state = instantdex_statefind(BTC_states,BTC_numstates,statename);
     swap->mine = *myap, swap->other = *otherap;
     if ( (swap->isinitiator= aminitiator) != 0 )
     {
@@ -901,7 +902,7 @@ struct bitcoin_swapinfo *bitcoin_swapinit(struct supernet_info *myinfo,struct ex
 
 char *instantdex_checkoffer(struct supernet_info *myinfo,uint64_t *txidp,struct exchange_info *exchange,struct instantdex_accept *myap,cJSON *argjson)
 {
-    char *retstr = 0; struct instantdex_accept *otherap; struct bitcoin_swapinfo *swap; cJSON *newjson;
+    char *retstr = 0; struct instantdex_accept *otherap; struct bitcoin_swapinfo *swap; cJSON *newjson; int32_t isbob = 0;
     *txidp = myap->orderid;
     if ( (otherap= instantdex_acceptable(myinfo,exchange,myap,myap->offer.minperc)) == 0 )
     {
@@ -913,7 +914,8 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,uint64_t *txidp,struct 
     }
     else
     {
-        swap = bitcoin_swapinit(myinfo,exchange,myap,otherap,1,argjson);
+        isbob = myap->offer.myside;
+        swap = bitcoin_swapinit(myinfo,exchange,myap,otherap,1,argjson,isbob != 0 ? "BOB_sentoffer" : "ALICE_sentoffer");
         printf("STATEMACHINEQ.(%llu / %llu)\n",(long long)swap->mine.orderid,(long long)swap->other.orderid);
         queue_enqueue("statemachineQ",&exchange->statemachineQ,&swap->DL,0);
         if ( (newjson= instantdex_parseargjson(myinfo,exchange,swap,argjson,1)) == 0 )
@@ -925,7 +927,7 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,uint64_t *txidp,struct 
 
 char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *myap,struct instantdex_accept *otherap,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *serdata,int32_t serdatalen) // receiving side
 {
-    struct bitcoin_swapinfo *swap = 0; bits256 traderpub; struct iguana_info *coinbtc,*altcoin; cJSON *newjson=0; char *retstr=0;
+    struct bitcoin_swapinfo *swap = 0; bits256 traderpub; struct iguana_info *coinbtc,*altcoin; cJSON *newjson=0; char *retstr=0; int32_t isbob;
     coinbtc = iguana_coinfind("BTC");
     traderpub = jbits256(argjson,"traderpub");
     if ( bits256_cmp(traderpub,myinfo->myaddr.persistent) == 0 )
@@ -949,7 +951,8 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
         return(clonestr("{\"error\":\"instantdex_BTCswap offer non BTC rel\"}"));
     if ( myap->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) || otherap->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) )
         return(clonestr("{\"error\":\"instantdex_BTCswap offer too close to expiration\"}"));
-    swap = bitcoin_swapinit(myinfo,exchange,myap,otherap,0,argjson);
+    isbob = myap->offer.myside;
+    swap = bitcoin_swapinit(myinfo,exchange,myap,otherap,0,argjson,isbob != 0 ? "BOB_sentoffer" : "ALICE_sentoffer");
     if ( (newjson= instantdex_parseargjson(myinfo,exchange,swap,argjson,1)) == 0 )
         return(clonestr("{\"error\":\"instantdex_BTCswap offer null newjson\"}"));
     else //if ( (retstr= instantdex_addfeetx(myinfo,newjson,ap,swap,"BOB_gotoffer","ALICE_gotoffer")) == 0 )
@@ -990,6 +993,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
             A.offer.minperc = 100;
         if ( strcmp(cmdstr,"BTCoffer") == 0 ) // incoming
         {
+            printf("BTCoffer state\n");
             if ( (ap= instantdex_acceptable(myinfo,exchange,&A,A.offer.minperc)) != 0 )
             {
                 if ( (retstr= instantdex_gotoffer(myinfo,exchange,ap,&A,msg,argjson,remoteaddr,signerbits,serdata,serdatalen)) != 0 ) // adds to statemachine if no error
@@ -1013,6 +1017,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
         }
         else if ( (swap= instantdex_statemachinefind(myinfo,exchange,A.orderid,1)) != 0 )
         {
+            printf("found existing state machine %llu\n",(long long)A.orderid);
             newjson = instantdex_parseargjson(myinfo,exchange,swap,argjson,0);
             return(instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,cmdstr,argjson,newjson,serdata,serdatalen));
         }
