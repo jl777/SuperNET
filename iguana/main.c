@@ -1136,6 +1136,27 @@ void iguana_main(void *arg)
     }
     if ( arg != 0 )
         SuperNET_JSON(&MYINFO,cJSON_Parse(arg),0);
+    {
+        int32_t i,n; int64_t total; char *coinaddr; struct iguana_pkhash *P; struct iguana_info *coin; uint8_t rmd160[20],addrtype;
+        coin = iguana_coinfind("BTCD");
+        if ( 0 && coin != 0 )
+        {
+            for (i=0; i<coin->bundlescount; i++)
+                if ( coin->bundles[i] == 0 )
+                    break;
+            if ( i > 0 )
+                iguana_spentsfile(coin,i);
+            getchar();
+            coinaddr = "RUZ9AKxy6J2okcBd1PZm4YH6atmPwqV4bo";
+            bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
+            P = calloc(coin->bundlescount,sizeof(*P));
+            n = iguana_pkhasharray(coin,&total,P,coin->bundlescount,rmd160);
+            printf("%s has total outputs %.8f from %d bundles\n",coinaddr,dstr(total),n);
+            n = iguana_pkhasharray(coin,&total,P,coin->bundlescount,rmd160);
+            printf("%s has total outputs %.8f from %d bundles\n",coinaddr,dstr(total),n);
+            getchar();
+        }
+    }
     mainloop(&MYINFO);
 }
 

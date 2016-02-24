@@ -317,6 +317,7 @@ cJSON *BOB_reclaimfunc(struct supernet_info *myinfo,struct exchange_info *exchan
     *serdatap = 0, *serdatalenp = 0;
     if ( swap->deposit != 0 )
         printf("reclaim deposit.(%s) to %s\n",swap->deposit->txbytes,myinfo->myaddr.BTC);
+    strcpy(swap->waitfortx,"bre");
     // reclaim deposit
     return(newjson);
 }
@@ -326,6 +327,7 @@ cJSON *BOB_feereclaimfunc(struct supernet_info *myinfo,struct exchange_info *exc
     *serdatap = 0, *serdatalenp = 0;
     if ( swap->myfee != 0 )
         printf("reclaim fee.(%s)\n",swap->myfee->txbytes);
+    strcpy(swap->waitfortx,"bfr");
     // reclaim deposit
     return(newjson);
 }
@@ -335,6 +337,7 @@ cJSON *BOB_claimaltfunc(struct supernet_info *myinfo,struct exchange_info *excha
     *serdatap = 0, *serdatalenp = 0; char altcoinaddr[64];
     if ( swap->altpayment != 0 )
         printf("spend altpayment.(%s) -> %s\n",swap->altpayment->txbytes,altcoinaddr);
+    strcpy(swap->waitfortx,"bcl");
     // spend altpayment
     return(newjson);
 }
@@ -345,6 +348,7 @@ cJSON *ALICE_reclaimfunc(struct supernet_info *myinfo,struct exchange_info *exch
     // reclaim altpayment
     if ( swap->altpayment != 0 )
         printf("reclaim altpayment.(%s) -> %s\n",swap->altpayment->txbytes,altcoinaddr);
+    strcpy(swap->waitfortx,"are");
     return(newjson);
 }
 
@@ -354,6 +358,7 @@ cJSON *ALICE_feereclaimfunc(struct supernet_info *myinfo,struct exchange_info *e
     // reclaim fee
     if ( swap->myfee != 0 )
         printf("reclaim fee.(%s)\n",swap->myfee->txbytes);
+    strcpy(swap->waitfortx,"afr");
     return(newjson);
 }
 
@@ -362,6 +367,7 @@ cJSON *ALICE_claimdepositfunc(struct supernet_info *myinfo,struct exchange_info 
     *serdatap = 0, *serdatalenp = 0;
     if ( swap->deposit != 0 )
         printf("reclaim deposit.(%s)\n",swap->deposit->txbytes);
+    strcpy(swap->waitfortx,"adp");
     // reclaim deposit
     return(newjson);
 }
@@ -371,6 +377,7 @@ cJSON *ALICE_claimbtcfunc(struct supernet_info *myinfo,struct exchange_info *exc
     *serdatap = 0, *serdatalenp = 0;
     if ( swap->payment != 0 )
         printf("spend BTC payment.(%s) -> %s\n",swap->payment->txbytes,myinfo->myaddr.BTC);
+    strcpy(swap->waitfortx,"acl");
     // spend BTC
     return(newjson);
 }
@@ -637,6 +644,7 @@ cJSON *BOB_waitfeefunc(struct supernet_info *myinfo,struct exchange_info *exchan
     char *retstr; struct iguana_info *coinbtc;
     coinbtc = iguana_coinfind("BTC");
     *serdatap = 0, *serdatalenp = 0;
+    strcpy(swap->waitfortx,"fee");
     if ( coinbtc != 0 && swap->otherfee != 0 )//swap->deposit == 0 && (retstr= BTC_txconfirmed(myinfo,coinbtc,swap,newjson,swap->otherfee->txid,&swap->otherfee->numconfirms,"feefound",0)) != 0 )
     {
         retstr = swap->otherfee->txbytes;
@@ -669,6 +677,7 @@ cJSON *BOB_waitaltconfirmfunc(struct supernet_info *myinfo,struct exchange_info 
     char *retstr; struct iguana_info *altcoin; //uint32_t reftime;
     altcoin = iguana_coinfind(swap->mine.offer.base);
     *serdatap = 0, *serdatalenp = 0;
+    strcpy(swap->waitfortx,"alt");
     //reftime = (uint32_t)(ap->offer.expiration - INSTANTDEX_LOCKTIME*2);
     if ( altcoin != 0 && swap->altpayment != 0 && (retstr= BTC_txconfirmed(myinfo,altcoin,swap,newjson,swap->altpayment->txid,&swap->altpayment->numconfirms,"altfound",altcoin->chain->minconfirms)) != 0 )
     {
@@ -703,6 +712,7 @@ cJSON *ALICE_waitfeefunc(struct supernet_info *myinfo,struct exchange_info *exch
     char *retstr; struct iguana_info *coinbtc;
     coinbtc = iguana_coinfind("BTC");
     *serdatap = 0, *serdatalenp = 0;
+    strcpy(swap->waitfortx,"fee");
     if ( coinbtc != 0 && swap->otherfee != 0 )//&& (retstr= BTC_txconfirmed(myinfo,coinbtc,swap,newjson,swap->otherfee->txid,&swap->otherfee->numconfirms,"feefound",0)) != 0 )
     {
         retstr = swap->otherfee->txbytes;
@@ -716,6 +726,7 @@ cJSON *ALICE_waitdepositfunc(struct supernet_info *myinfo,struct exchange_info *
     char *retstr; struct iguana_info *coinbtc,*altcoin;
     coinbtc = iguana_coinfind("BTC");
     altcoin = iguana_coinfind(swap->mine.offer.rel);
+    strcpy(swap->waitfortx,"dep");
     *serdatap = 0, *serdatalenp = 0;
     if ( swap->deposit != 0 && (retstr= BTC_txconfirmed(myinfo,coinbtc,swap,newjson,swap->deposit->txid,&swap->deposit->numconfirms,"depfound",0.5)) != 0 )
     {
@@ -732,7 +743,24 @@ cJSON *ALICE_waitdepositfunc(struct supernet_info *myinfo,struct exchange_info *
     return(newjson);
 }
 
-cJSON *ALICE_waitpayconf_or_bobreclaimfunc(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp)
+cJSON *ALICE_waitconfirmsfunc(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp)
+{
+    char *retstr; double btcconfirms; struct iguana_info *coinbtc;
+    coinbtc = iguana_coinfind("BTC");
+    *serdatap = 0, *serdatalenp = 0;
+    if ( swap->BTCsatoshis < SATOSHIDEN/10 )
+        btcconfirms = 0;
+    else btcconfirms = 1. + sqrt((double)swap->BTCsatoshis / SATOSHIDEN);
+    if ( swap->payment != 0 && (retstr= BTC_txconfirmed(myinfo,coinbtc,swap,newjson,swap->payment->txid,&swap->payment->numconfirms,"payfound",btcconfirms)) != 0 )
+    {
+        jaddstr(newjson,"payfound",retstr);
+        // if bobreclaimed is there, then reclaim altpayment
+        printf("search for Bob's reclaim in blockchain\n");
+        return(newjson);
+    } else return(0);
+}
+
+cJSON *ALICE_checkbobreclaimfunc(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp)
 {
     char *retstr; double btcconfirms; struct iguana_info *coinbtc;
     coinbtc = iguana_coinfind("BTC");
@@ -766,10 +794,35 @@ cJSON *BTC_idlerecvfunc(struct supernet_info *myinfo,struct exchange_info *excha
     return(newjson);
 }
 
+struct bitcoin_statetx *instantdex_getstatetx(struct bitcoin_swapinfo *swap,char *txname)
+{
+    //char *txnames[] = { "fee", "dep", "alt", "acl", "bre", "bcl", "bfr", "are", "adp" };
+    if ( strcmp(txname,"fee") == 0 )
+        return(swap->otherfee);
+    else if ( strcmp(txname,"dep") == 0 )
+        return(swap->deposit);
+    else if ( strcmp(txname,"alt") == 0 )
+        return(swap->altpayment);
+    else if ( strcmp(txname,"acl") == 0 )
+        return(swap->payment);
+    else if ( strcmp(txname,"bre") == 0 )
+        return(swap->deposit);
+    else if ( strcmp(txname,"bcl") == 0 )
+        return(swap->altpayment);
+    else if ( strcmp(txname,"bfr") == 0 )
+        return(swap->myfee);
+    else if ( strcmp(txname,"are") == 0 )
+        return(swap->altpayment);
+    else if ( strcmp(txname,"adp") == 0 )
+        return(swap->deposit);
+    printf("unrecognized txname.(%s)\n",txname);
+    return(0);
+}
+
 struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
 {
     struct instantdex_stateinfo *s = 0;
-    // Four initial states are BOB_sentoffer, ALICE_gotoffer, ALICE_sentoffer, BOB_gotoffer
+    // Two initial states are BOB_idle and ALICE_idle
     // Inconvenient to start statemachines before this as typically after posting something in the orderbook, it is possible for multiple offers to come in. In that case the user or designated tradebot will need to choose among the acceptable offers and also to determine how much longer to wait. Also, an orderbook entry is technically a state, but there is no assurance it will ever proceed beyond the initial state and not just expire. Once an incoming offer is accepted, then the statemachine is created to push the swap toward completion.
     
     // the initiator includes a deck of INSTANTDEX_DECKSIZE keypairs
@@ -809,7 +862,7 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     s = instantdex_statecreate(s,n,"BOB_reclaimed",BOB_reclaimfunc,0,0,0,0); // deposit back
     instantdex_addevent(s,*n,"BOB_reclaimed","brefound","poll","BOB_feereclaimed");
     instantdex_addevent(s,*n,"BOB_reclaimed","poll","poll","BOB_reclaimed");
-    
+
     // if things go wrong, alice reclaims her altpayment or claims the deposit and then fee
      s = instantdex_statecreate(s,n,"ALICE_feereclaimed",ALICE_feereclaimfunc,0,0,0,0);
     instantdex_addevent(s,*n,"ALICE_feereclaimed","afrfound","poll","BTC_cleanup");
@@ -835,7 +888,8 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     s = instantdex_statecreate(s,n,"Alice_waitfee",ALICE_waitfeefunc,0,"BTC_cleanup",0,0);
     s = instantdex_statecreate(s,n,"ALICE_waitdeposit",ALICE_waitdepositfunc,0,"BTC_cleanup",0,0);
     s = instantdex_statecreate(s,n,"ALICE_sentalt",ALICE_waitBTCpaytxfunc,0,"ALICE_reclaimed",0,0);
-    s = instantdex_statecreate(s,n,"ALICE_waitconfirms",ALICE_waitpayconf_or_bobreclaimfunc,0,"ALICE_reclaimed",0,0);
+    s = instantdex_statecreate(s,n,"ALICE_waitconfirms",ALICE_waitconfirmsfunc,0,"ALICE_reclaimed",0,0);
+    s = instantdex_statecreate(s,n,"ALICE_checkbobreclaim",ALICE_checkbobreclaimfunc,0,"ALICE_reclaimed",0,0);
 
     if ( 0 ) // following are implicit states and events handled externally to setup datastructures
     {
@@ -894,14 +948,17 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     s = instantdex_statecreate(s,n,"ALICE_sentalt",ALICE_waitBTCpaytxfunc,0,"ALICE_reclaimed",0,0);
     instantdex_addevent(s,*n,"ALICE_sentalt","BTCpaytx","poll","ALICE_waitconfirms");
     
-    s = instantdex_statecreate(s,n,"ALICE_waitconfirms",ALICE_waitpayconf_or_bobreclaimfunc,0,"ALICE_reclaimed",0,0);
-    instantdex_addevent(s,*n,"ALICE_waitconfirms","bobfound","poll","ALICE_reclaimed");
-    instantdex_addevent(s,*n,"ALICE_waitconfirms","payfound","BTCprivM","ALICE_claimedbtc");
-    instantdex_addevent(s,*n,"ALICE_waitconfirms","poll","poll","ALICE_waitconfirms");
-
+    s = instantdex_statecreate(s,n,"ALICE_waitconfirms",ALICE_waitconfirmsfunc,0,"ALICE_reclaimed",0,0);
+    instantdex_addevent(s,*n,"ALICE_waitconfirms","altfound","BTCprivM","ALICE_claimedbtc");
+    instantdex_addevent(s,*n,"ALICE_waitconfirms","poll","poll","ALICE_checkbobreclaim");
+    
+    s = instantdex_statecreate(s,n,"ALICE_checkbobreclaim",ALICE_checkbobreclaimfunc,0,"ALICE_reclaimed",0,0);
+    instantdex_addevent(s,*n,"ALICE_checkbobreclaim","brefound","poll","ALICE_reclaimed");
+    instantdex_addevent(s,*n,"ALICE_checkbobreclaim","poll","poll","ALICE_waitconfirms");
+    
     // [BLOCKING: privM] Bob waits for privM either from Alice or alt blockchain
     s = instantdex_statecreate(s,n,"BOB_sentpayment",BOB_waitprivMfunc,0,"BOB_reclaimed",0,0);
-    instantdex_addevent(s,*n,"BOB_sentpayment","btcfound","BTCdone","BOB_claimedalt");
+    instantdex_addevent(s,*n,"BOB_sentpayment","aclfound","BTCdone","BOB_claimedalt");
     instantdex_addevent(s,*n,"BOB_sentpayment","BTCprivM","BTCdone","BOB_claimedalt");
     instantdex_addevent(s,*n,"BOB_sentpayment","poll","poll","BOB_sentpayment");
     {

@@ -1197,36 +1197,56 @@ TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,minaccept,base,rel,minprice,basevolume)
     } else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
 }
 
-THREE_STRINGS_AND_DOUBLE(atomic,offer,base,rel,orderid,basevolume)
+char *instantdex_statemachineget(struct supernet_info *myinfo,struct bitcoin_swapinfo **swapp,cJSON *argjson,char *remoteaddr)
 {
-    if ( remoteaddr == 0 )
+    struct bitcoin_swapinfo *swap; uint64_t orderid,otherorderid; struct exchange_info *exchange;
+    *swapp = 0;
+    if ( remoteaddr == 0 && (exchange= exchanges777_find("bitcoin")) != 0 )
     {
-        return(clonestr("{\"result\":\"atomic API request is not yet\"}"));
-    } else return(clonestr("{\"error\":\"atomic API request only local usage!\"}"));
-}
-
-TWO_STRINGS(atomic,accept,myorderid,otherid)
-{
-    if ( remoteaddr == 0 )
-    {
-        return(clonestr("{\"result\":\"atomic API request is not yet\"}"));
+        orderid = j64bits(argjson,"myorderid");
+        otherorderid = j64bits(argjson,"otherid");
+        if ( (swap= instantdex_statemachinefind(myinfo,exchange,orderid,1)) != 0 )
+        {
+            if ( swap->other.orderid != otherorderid )
+                return(clonestr("{\"error\":\"statemachine otherid mismatch\"}"));
+            else
+            {
+                *swapp = swap;
+                return(0);
+            }
+        } else return(clonestr("{\"error\":\"statemachine not found\"}"));
     } else return(clonestr("{\"error\":\"atomic API request only local usage!\"}"));
 }
 
 THREE_STRINGS(atomic,approve,myorderid,otherid,txname)
 {
-    if ( remoteaddr == 0 )
+    char *retstr,virtualevent[16]; cJSON *newjson; struct bitcoin_statetx *tx; struct bitcoin_swapinfo *swap = 0;
+    if ( (retstr= instantdex_statemachineget(myinfo,&swap,json,remoteaddr)) != 0 )
+        return(retstr);
+    else if ( (tx= instantdex_getstatetx(swap,txname)) == 0 )
+        return(clonestr("{\"error\":\"cant find txname\"}"));
+    else
     {
-        return(clonestr("{\"result\":\"atomic API request is not yet\"}"));
-    } else return(clonestr("{\"error\":\"atomic API request only local usage!\"}"));
+        strcpy(virtualevent,txname);
+        strcat(virtualevent,"found");
+        newjson = cJSON_CreateObject();
+        if ( (retstr= instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,virtualevent,myinfo->myaddr.persistent,0,0,0)) != 0 )
+            return(retstr);
+        else return(clonestr("{\"result\":\"statemachine sent found event\"}"));
+    }
 }
 
 THREE_STRINGS(atomic,claim,myorderid,otherid,txname)
 {
-    if ( remoteaddr == 0 )
+    char *retstr; struct bitcoin_statetx *tx; struct bitcoin_swapinfo *swap = 0;
+    if ( (retstr= instantdex_statemachineget(myinfo,&swap,json,remoteaddr)) != 0 )
+        return(retstr);
+    else if ( (tx= instantdex_getstatetx(swap,txname)) == 0 )
+        return(clonestr("{\"error\":\"cant find txname\"}"));
+    else
     {
-        return(clonestr("{\"result\":\"atomic API request is not yet\"}"));
-    } else return(clonestr("{\"error\":\"atomic API request only local usage!\"}"));
+        return(clonestr("{\"result\":\"statemachine should claim tx\"}"));
+    }
 }
 
 #include "../includes/iguana_apiundefs.h"

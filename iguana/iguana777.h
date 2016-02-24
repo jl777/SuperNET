@@ -367,7 +367,8 @@ struct iguana_ramchain
     uint32_t numblocks:31,expanded:1,pkind,externalind,height;
     struct iguana_kvitem *txids,*pkhashes;
     struct OS_memspace *hashmem; long filesize; void *fileptr;
-    struct iguana_account *A,*roA; //struct iguana_Uextra *U2,*roU2; struct iguana_pkextra *P2,*roP2;
+    struct iguana_account *A,*roA; struct iguana_Uextra *spents;
+//struct iguana_Uextra *U2,*roU2; struct iguana_pkextra *P2,*roP2;
 };
 
 struct iguana_peer
@@ -685,7 +686,6 @@ struct iguana_txid *iguana_bundletx(struct iguana_info *coin,struct iguana_bundl
 int32_t iguana_txidreq(struct iguana_info *coin,char **retstrp,bits256 txid);
 void iguana_bundleiclear(struct iguana_info *coin,struct iguana_bundle *bp,int32_t bundlei);
 int32_t hcalc_bitsize(uint64_t x);
-struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_pkhash *p,uint8_t rmd160[20]);
 struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,struct iguana_txid *tx,bits256 txid);
 int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char *coinaddr,uint8_t *script,char *asmstr,uint8_t rmd160[20],uint8_t type,const struct vin_info *vp,int32_t txi);
 int32_t iguana_ramchain_spendtxid(struct iguana_info *coin,bits256 *txidp,struct iguana_txid *T,int32_t numtxids,bits256 *X,int32_t numexternaltxids,struct iguana_spend *s);
@@ -763,6 +763,8 @@ char *issue_startForging(struct supernet_info *myinfo,char *secret);
 struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct iguana_info *coin,char **retstrp,double *balancep,int32_t *numunspentsp,double minconfirms,char *account);
 void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson);
 void iguana_addinputs(struct iguana_info *coin,struct bitcoin_spend *spend,cJSON *txobj,uint32_t sequence);
+int32_t iguana_pkhasharray(struct iguana_info *coin,int64_t *totalp,struct iguana_pkhash *P,int32_t max,uint8_t rmd160[20]);
+long iguana_spentsfile(struct iguana_info *coin,int32_t n);
 
 extern queue_t bundlesQ;
 
