@@ -16,7 +16,7 @@ cp -rf css pnacl_${BUILD_NUMBER}/
 cp -rf js pnacl_${BUILD_NUMBER}/
 
 cd iguana
-find . -maxdepth 1 \( -iname \*.js -o -iname \*.html -o -iname \*.ico \) -exec cp -r {} ../test \;
+find . -maxdepth 1 \( -iname \*.js -o -iname \*.html -o -iname \*.ico \) -exec cp -r {} ../pnacl_${BUILD_NUMBER} \;
 cd -
 
 echo Listing the contents of pnacl_${BUILD_NUMBER}
