@@ -6,13 +6,14 @@ rm -rf pnacl_${BUILD_NUMBER}.zip
 mkdir -p pnacl_${BUILD_NUMBER}
 
 cp -rf iguana/manifest.json pnacl_${BUILD_NUMBER}/
-cp -f iguana/pnacl/Release/iguana.pexe pnacl_${BUILD_NUMBER}/
+cp -rf iguana/pnacl pnacl_${BUILD_NUMBER}/
+cp -rf iguana/help pnacl_${BUILD_NUMBER}/
 cp -rf confs/* pnacl_${BUILD_NUMBER}/
 cp -rf iguana/icon128.png pnacl_${BUILD_NUMBER}/
 cp -rf *.html pnacl_${BUILD_NUMBER}/
-cp -rf LEGAL/** pnacl_${BUILD_NUMBER}/
-cp -rf css/** pnacl_${BUILD_NUMBER}/
-cp -rf js/** pnacl_${BUILD_NUMBER}/
+cp -rf LEGAL pnacl_${BUILD_NUMBER}/
+cp -rf css pnacl_${BUILD_NUMBER}/
+cp -rf js pnacl_${BUILD_NUMBER}/
 
 echo Listing the contents of pnacl_${BUILD_NUMBER}
 ls -al pnacl_${BUILD_NUMBER}/
