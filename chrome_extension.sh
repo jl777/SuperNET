@@ -13,7 +13,8 @@ cp -rf iguana/confs pnacl_${BUILD_NUMBER}/
 cp -rf iguana/fonts pnacl_${BUILD_NUMBER}/
 cp -rf iguana/images pnacl_${BUILD_NUMBER}/
 cp -rf iguana/help pnacl_${BUILD_NUMBER}/
-cp -rf iguana/pnacl pnacl_${BUILD_NUMBER}/
+
+cp -rf iguana/pnacl/Release/{iguana.nmf,iguana.pexe} pnacl_${BUILD_NUMBER}/pnacl/Release/iguana.nmf
 
 cd iguana
 find . -maxdepth 1 \( -iname \*.js -o -iname \*.html -o -iname \*.ico -o -iname \*.json -o -iname \*.png \) -exec cp -r {} ../pnacl_${BUILD_NUMBER} \;
