@@ -5,19 +5,18 @@ rm -rf pnacl_${BUILD_NUMBER}.zip
 
 mkdir -p pnacl_${BUILD_NUMBER}
 
-cp -rf iguana/manifest.json pnacl_${BUILD_NUMBER}/
-cp -rf iguana/pnacl pnacl_${BUILD_NUMBER}/
+#copying required folders
+cp -rf iguana/css pnacl_${BUILD_NUMBER}/
+cp -rf iguana/js pnacl_${BUILD_NUMBER}/
+cp -rf iguana/app pnacl_${BUILD_NUMBER}/
+cp -rf iguana/confs pnacl_${BUILD_NUMBER}/
+cp -rf iguana/fonts pnacl_${BUILD_NUMBER}/
+cp -rf iguana/images pnacl_${BUILD_NUMBER}/
 cp -rf iguana/help pnacl_${BUILD_NUMBER}/
-cp -rf confs/* pnacl_${BUILD_NUMBER}/
-cp -rf iguana/icon128.png pnacl_${BUILD_NUMBER}/
-cp -rf *.html pnacl_${BUILD_NUMBER}/
-cp -rf LEGAL pnacl_${BUILD_NUMBER}/
-cp -rf css pnacl_${BUILD_NUMBER}/
-cp -rf js pnacl_${BUILD_NUMBER}/
-cp -rf iguana/images pnacl_${BUILD_NUMBER}/ 
+cp -rf iguana/pnacl pnacl_${BUILD_NUMBER}/
 
 cd iguana
-find . -maxdepth 1 \( -iname \*.js -o -iname \*.html -o -iname \*.ico \) -exec cp -r {} ../pnacl_${BUILD_NUMBER} \;
+find . -maxdepth 1 \( -iname \*.js -o -iname \*.html -o -iname \*.ico -o -iname \*.json -o -iname \*.png \) -exec cp -r {} ../pnacl_${BUILD_NUMBER} \;
 cd -
 
 echo Listing the contents of pnacl_${BUILD_NUMBER}
