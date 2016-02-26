@@ -3,7 +3,7 @@
 echo About to create a chrome extension
 rm -rf pnacl_${BUILD_NUMBER}.zip
 
-mkdir -p pnacl_${BUILD_NUMBER}
+mkdir -p pnacl_${BUILD_NUMBER}/pnacl/Release/
 
 #copying required folders
 cp -rf iguana/css pnacl_${BUILD_NUMBER}/
