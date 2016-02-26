@@ -1249,5 +1249,18 @@ THREE_STRINGS(atomic,claim,myorderid,otherid,txname)
     }
 }
 
+THREE_STRINGS_AND_DOUBLE(tradebot,aveprice,comment,base,rel,basevolume)
+{
+    double retvals[4],aveprice; cJSON *retjson = cJSON_CreateObject();
+    aveprice = instantdex_avehbla(myinfo,retvals,base,rel,basevolume);
+    jaddstr(retjson,"result","success");
+    jaddnum(retjson,"aveprice",aveprice);
+    jaddnum(retjson,"avebid",retvals[0]);
+    jaddnum(retjson,"bidvol",retvals[1]);
+    jaddnum(retjson,"aveask",retvals[2]);
+    jaddnum(retjson,"askvol",retvals[3]);
+    return(jprint(retjson,1));
+}
+
 #include "../includes/iguana_apiundefs.h"
 

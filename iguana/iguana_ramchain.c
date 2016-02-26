@@ -254,22 +254,77 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
 
 int32_t iguana_spentsinit(struct iguana_info *coin,struct iguana_Uextra *spents,struct iguana_bundle *bp,struct iguana_ramchain *ramchain)
 {
+    //struct iguana_Uextra { uint32_t spendind; uint16_t hdrsi; } __attribute__((packed)); // unspentind
     //struct iguana_spend { uint32_t spendtxidind; int16_t prevout; uint16_t tbd:14,external:1,diffsequence:1; } __attribute__((packed));
     //struct iguana_unspent { uint64_t value; uint32_t txidind,pkind,prevunspentind; uint16_t hdrsi:12,type:4,vout; } __attribute__((packed));
-    int32_t i,n,max; struct iguana_spend *S;
+    int32_t spendind,n,max,m,prev_vout,height,hdrsi,errs,flag; uint32_t sequenceid,unspentind;
+    struct iguana_bundle *spentbp; char str[65];
+    struct iguana_spend *S,*s;  struct iguana_txid *T,TX,*tp,*nextT; bits256 *X; bits256 prev_hash;
     S = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Soffset);
-    max = ramchain->H.unspentind;
-    n = ramchain->H.spendind;
-    for (i=0; i<n; i++)
+    X = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Xoffset);
+    T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
+    max = ramchain->H.data->numunspents;
+    n = ramchain->H.data->numspends;
+    nextT = &T[1];
+    for (spendind=1,errs=m=0; spendind<n; spendind++)
     {
-        
+        flag = 0;
+        hdrsi = bp->hdrsi;
+        s = &S[spendind];
+        if ( s->diffsequence == 0 )
+            sequenceid = 0xffffffff;
+        if ( s->prevout < 0 )
+        {
+            //printf("n.%d coinbase at spendind.%d firstvin.%d -> firstvout.%d -> unspentind\n",m,spendind,nextT->firstvin,nextT->firstvout);
+            nextT++;
+            m++;
+            continue;
+            unspentind = nextT->firstvout;
+            prev_vout = -1;
+        }
+        else
+        {
+            prev_vout = s->prevout;
+            iguana_ramchain_spendtxid(coin,&unspentind,&prev_hash,T,ramchain->H.data->numtxids,X,ramchain->H.data->numexternaltxids,s);
+            if ( unspentind == 0 )
+            {
+                if ( (tp= iguana_txidfind(coin,&height,&TX,prev_hash)) != 0 )
+                {
+                    unspentind = TX.firstvout + ((prev_vout > 0) ? prev_vout : 0);
+                    hdrsi = height / coin->chain->bundlesize;
+                    //printf("height.%d firstvout.%d prev.%d ->U%d\n",height,TX.firstvout,prev_vout,unspentind);
+                }
+                else
+                {
+                    printf("cant find prev_hash.(%s) for bp.[%d] spendind.%d\n",bits256_str(str,prev_hash),bp->hdrsi,spendind);
+                }
+            } else hdrsi = bp->hdrsi;
+        }
+        if ( hdrsi > bp->hdrsi || (spentbp= coin->bundles[hdrsi]) == 0 )
+            printf("illegal hdrsi.%d when [%d] spentbp.%p\n",hdrsi,bp->hdrsi,spentbp), getchar();
+        else if ( spentbp->ramchain.spents[unspentind].spendind != 0 || hdrsi < 0 )
+            printf("DOUBLE SPEND? U%d %p bp.[%d] unspentind.%u already has %u, no room for %u\n",unspentind,&spentbp->ramchain.spents[unspentind],hdrsi,unspentind,spentbp->ramchain.spents[unspentind].spendind,spendind), getchar();
+        else if ( unspentind == 0 || unspentind >= spentbp->ramchain.H.data->numunspents )
+            printf("illegal unspentind.%d vs max.%d spentbp.%p[%d]\n",unspentind,spentbp->ramchain.H.data->numunspents,spentbp,hdrsi), getchar();
+        else
+        {
+            spentbp->ramchain.spents[unspentind].spendind = spendind;
+            spentbp->ramchain.spents[unspentind].hdrsi = bp->hdrsi;
+            //printf("%p bp.[%d] U%d <- S%d.[%d] [%p %p %p]\n",&spentbp->ramchain.spents[unspentind],hdrsi,unspentind,spendind,bp->hdrsi,coin->bundles[0],coin->bundles[1],coin->bundles[2]);
+            flag = 1;
+        }
+        if ( flag == 0 )
+            errs++;
     }
-    return(0);
+    printf("processed %d spendinds for bp.[%d] -> errs.%d\n",spendind,bp->hdrsi,errs);
+    return(-errs);
 }
 
+// if file exists and is valid, load and then process only the incremental
 long iguana_spentsfile(struct iguana_info *coin,int32_t n)
 {
-    int32_t i,iter,allocated = 0; long filesize,total,count; struct iguana_Uextra *spents = 0; struct iguana_ramchain *ramchain; char fname[1024]; struct iguana_bundle *bp;
+    int32_t i,iter,allocated = 0; long filesize,total,count; struct iguana_Uextra *spents = 0; struct iguana_ramchain *ramchain; char fname[1024]; struct iguana_bundle *bp; FILE *fp;
+    fname[0] = 0;
     for (total=iter=0; iter<2; iter++)
     {
         for (count=i=0; i<n; i++)
@@ -280,13 +335,14 @@ long iguana_spentsfile(struct iguana_info *coin,int32_t n)
                 if ( iter == 1 )
                 {
                     ramchain->spents = &spents[count];
+                    //printf("bp.[%d] count.%ld %p\n",i,count,ramchain->spents);
                     if ( allocated != 0 && iguana_spentsinit(coin,spents,bp,ramchain) < 0 )
                     {
                         printf("error initializing spents bp.%d\n",i);
                         exit(-1);
                     }
                 }
-                count += ramchain->H.unspentind;
+                count += ramchain->H.data->numunspents;
             } else return(-1);
         }
         sprintf(fname,"DB/%s/spents_%d.%ld",coin->symbol,n,count);
@@ -299,6 +355,11 @@ long iguana_spentsfile(struct iguana_info *coin,int32_t n)
         }
         else if ( total != count )
             printf("%s total.%ld != count.%ld\n",fname,total,count);
+    }
+    if ( allocated != 0 && fname[0] != 0 && (fp= fopen(fname,"wb")) != 0 )
+    {
+        fwrite(spents,total,sizeof(*spents),fp);
+        fclose(fp);
     }
     return(total);
 }
@@ -337,6 +398,7 @@ int32_t iguana_pkhasharray(struct iguana_info *coin,int64_t *totalp,struct iguan
                 P[n].firstunspentind = lastunspentind;
                 P[n].flags = m;
                 total += balance;
+                   // use spents to find ! intersections(unspendinds & spents)
                 n++;
             }
         }
@@ -561,16 +623,17 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,RAMCHAIN_FUNC,bits
     return(spendind);
 }
 
-int32_t iguana_ramchain_spendtxid(struct iguana_info *coin,bits256 *txidp,struct iguana_txid *T,int32_t numtxids,bits256 *X,int32_t numexternaltxids,struct iguana_spend *s)
+int32_t iguana_ramchain_spendtxid(struct iguana_info *coin,uint32_t *unspentindp,bits256 *txidp,struct iguana_txid *T,int32_t numtxids,bits256 *X,int32_t numexternaltxids,struct iguana_spend *s)
 {
     uint32_t ind,external;
+    *unspentindp = 0;
     memset(txidp,0,sizeof(*txidp));
-    //printf("s.%p ramchaintxid vout.%x spendtxidind.%d numexternals.%d isext.%d numspendinds.%d\n",s,s->vout,s->spendtxidind,ramchain->numexternaltxids,s->external,ramchain->numspends);
-    if ( s->prevout < 0 )
-        return(-1);
     ind = s->spendtxidind;
     external = (ind >> 31) & 1;
     ind &= ~(1 << 31);
+    //printf("s.%p ramchaintxid vout.%x spendtxidind.%d isext.%d ext.%d ind.%d\n",s,s->prevout,s->spendtxidind,s->external,external,ind);
+    if ( s->prevout < 0 )
+        return(-1);
     if ( s->external != 0 && s->external == external && ind < numexternaltxids )
     {
         //printf("ind.%d externalind.%d X[%d]\n",ind,ramchain->externalind,ramchain->H.data->numexternaltxids);
@@ -580,6 +643,7 @@ int32_t iguana_ramchain_spendtxid(struct iguana_info *coin,bits256 *txidp,struct
     else if ( s->external == 0 && s->external == external && ind < numtxids )
     {
         *txidp = T[ind].txid;
+        *unspentindp = T[ind].firstvout + s->prevout;
         return(s->prevout);
     }
     return(-2);
@@ -680,14 +744,6 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
         //if ( P2[pkind].firstspendind == 0 )
         //    P2[pkind].firstspendind = spendind;
     }
-    /*if ( unspentind != 0 )
-    {
-        if ( coin->U2[hdris][unspentind].spendind == 0 )
-        {
-            coin->U2[hdris][unspentind].spendind = spendind;
-            coin->U2[hdris][unspentind].hdris = hdrsi;
-        }
-    }*/
     return(spendind);
 }
 

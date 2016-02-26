@@ -60,6 +60,7 @@ THREE_STRINGS(atomic,claim,myorderid,otherid,txname);
 //TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,accept,reference,message,basetxid,reltxid,duration,flags);
 //TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,confirm,reference,message,basetxid,reltxid,baseheight,relheight);
 
+THREE_STRINGS_AND_DOUBLE(tradebot,aveprice,comment,base,rel,basevolume);
 THREE_STRINGS_AND_DOUBLE(tradebot,monitor,exchange,base,rel,commission);
 STRING_AND_DOUBLE(tradebot,monitorall,exchange,commission);
 THREE_STRINGS(tradebot,unmonitor,exchange,base,rel);
