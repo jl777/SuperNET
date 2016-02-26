@@ -23,19 +23,19 @@ dJson._checkJson = function(json) {
 		return false;
 	};
 
-	return ogj;
+	return obj;
 };
 
-//{"agent":"SuperNET","method":"encryptjson","passphrase":"<passphrase>","permanentfile":"<filename>","fromform":"valuefromform","fromform2":"valuefromform2",...rest of form at top level}
+//{"agent":"SuperNET","method":"encryptjson","passphrase":"<passphrase>","permanentfile":"<filename>","fromform":"valuefromform", "fromform2":"valuefromform2",...rest of form at top level}
 dJson.encrypt = function(credentials, json, cb) {
 	this._init(credentials);
 
 	var jsonObj;
 
-	if(jsonObj = this._checkJson) {
+	if(jsonObj = this._checkJson(json)) {
 		this.ENCRYPTED = true;
 		this.request.method = "encryptjson";
-
+		
 		for(var attr in jsonObj) {
 			if(jsonObj.hasOwnProperty(attr)) {
 				this.request[attr] = jsonObj[attr];
@@ -54,7 +54,7 @@ dJson.encrypt = function(credentials, json, cb) {
 			cb(null);
 };
 
-//{"agent":"SuperNET","method":"encryptjson","passphrase":"<passphrase>","permanentfile":"<filename>"}
+//{"agent":"SuperNET","method":"decryptjson","passphrase":"<passphrase>","permanentfile":"<filename>"}
 dJson.decrypt = function(credentials, cb) {
 	this._init(credentials);
 	
@@ -78,20 +78,19 @@ $(document).ready(function() {
 		permFile = $('#debug_permanentfile'),
 		jsonSrc = $('#debug_json_src');
 
-
 	$(encryptBtn).click(function(e) {
 		e.preventDefault();
 		debugJsonResult.text('');
 		
 		dJson.encrypt({
-				passphrase: pass.val(),
-				permanentfile: permFile.val()
-			},
-			jsonSrc.val(), 
-			function(response) {
-				debugJsonResult.text(response || 'wrong json');
-			}
-		);
+			passphrase: pass.val(),
+			permanentfile: permFile.val()
+		},
+		jsonSrc.val(), 
+		function(response) {
+			debugJsonResult.text(response || 'wrong json');
+		});
+		
 	});
 		
 	$(decryptBtn).click(function(e) {
