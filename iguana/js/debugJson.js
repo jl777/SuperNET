@@ -68,11 +68,37 @@ dJson.decrypt = function(credentials, cb) {
 	);
 };
 
+// Read file contents from html5 file system
+var readJsonEncryptedFile = function(filename,callback){
+
+	fileSystem.root.getFile(filename, {}, function(fileEntry) {
+
+		fileEntry.file(function(file) {
+			var reader = new FileReader();
+
+			reader.onloadend = function(e) {
+				console.log("file content " + filename, this.result.toString());
+				callback(this.result.toString());
+			};
+
+			reader.readAsText(file);
+		}, function(e){
+			errorHandler(e);
+			callback(e.message);
+		});
+
+	}, function(e){
+		errorHandler(e);
+		callback(e.message);
+	});
+};
+
 $(document).ready(function() {
 
 	var encryptBtn = $('#debug_json_encrypt'),
 		decryptBtn = $('#debug_json_decrypt'),
 		debugJsonResult = $('#debug_json_result'),
+		debugFileResult = $('#debug_json_file'),
 		pass = $('#debug_passphrase'),
 		permFile = $('#debug_permanentfile'),
 		jsonSrc = $('#debug_json_src');
@@ -88,6 +114,15 @@ $(document).ready(function() {
 		jsonSrc.val(), 
 		function(response) {
 			debugJsonResult.text(response || 'wrong json');
+
+			// Get file contents
+			var resObj = dJson._checkJson(response);
+			if(resObj && resObj.filename) {
+				readJsonEncryptedFile(resObj.filename, function(filedata) {
+					//console.log('returned filedata', filedata);
+					debugFileResult.text(filedata);
+				});
+			}
 		});
 		
 	});
@@ -106,7 +141,13 @@ $(document).ready(function() {
 		}, function(response) {
 			debugJsonResult.text(response);
 		});
-	});	
+	});
+
+	$("#debug_clear_response").click(function(e) {
+		e.preventDefault();
+		debugJsonResult.text("JSON response");
+		debugFileResult.text("encrypted file content");
+	});
 });
 
 
