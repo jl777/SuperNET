@@ -5,12 +5,7 @@ dJson.ENCRYPTED = false;
 dJson.request = {};
 
 dJson._init = function(credentials) {
-	for(var attr in this.request) {
-		if(this.request.hasOwnProperty(attr)) {
-			this.request[attr] = null;
-		};
-	};
-
+	this.request={};
 	this.request.passphrase = credentials.passphrase;
 	this.request.permanentfile = credentials.permanentfile;
 	this.request.agent = "SuperNET";
@@ -29,13 +24,14 @@ dJson._checkJson = function(json) {
 //{"agent":"SuperNET","method":"encryptjson","passphrase":"<passphrase>","permanentfile":"<filename>","fromform":"valuefromform", "fromform2":"valuefromform2",...rest of form at top level}
 dJson.encrypt = function(credentials, json, cb) {
 	this._init(credentials);
-
+var root=this;
 	var jsonObj;
 
 	if(jsonObj = this._checkJson(json)) {
 		this.ENCRYPTED = true;
 		this.request.method = "encryptjson";
-		
+		var tempRequest=this.request;
+console.log(JSON.stringify(this.request));
 		for(var attr in jsonObj) {
 			if(jsonObj.hasOwnProperty(attr)) {
 				this.request[attr] = jsonObj[attr];
@@ -47,7 +43,10 @@ dJson.encrypt = function(credentials, json, cb) {
 		SPNAPI.makeRequest(
 			JSON.stringify(this.request),
 			function(request,response){
+			root.request=tempRequest;
+			console.log(JSON.stringify(root.request));
 	        	cb(response);    
+
 	    	}
 		);		
 		} else 

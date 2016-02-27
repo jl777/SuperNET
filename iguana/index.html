@@ -398,8 +398,8 @@ data-path="{tc}/{config}">
                                         </label>
                                         <div class="col-sm-7 col-md-7">
                                             <div>
-                                                <input type="file" id='debug_permanentfile'>
-                                                <input type="text" readonly class="form-control" >    
+                                                <input type="text"  class="form-control" id='debug_permanentfile'>
+                                                
                                             </div>
                                         </div>
                                     </div>
@@ -482,6 +482,21 @@ data-path="{tc}/{config}">
                     </table>
                     
                     <div class="debuglog" hidden> <pre id="log" style="font-weight: bold"></pre></div>
+                </div>
+            </div>
+ <div id="Bitmap_page" class="page">
+               <div>
+                    <select id="pic-changer">
+                      <option value="none">None selected</option>
+                      <option value="img3.jpg" data-picture="images/img3.png">Image1</option>
+                   </select>
+               </div>
+                
+                <div id="image-location">
+                    
+                </div>
+                <div>
+                    <span id="bit_mousexy"></span>
                 </div>
             </div>
 
@@ -611,6 +626,7 @@ data-path="{tc}/{config}">
         <script type="text/javascript " src="js/jquery.tablesort.js" ></script>
         <script type="text/javascript " src="js/tradeintegration.js" ></script>
         <script type="text/javascript " src="js/debugJson.js" ></script>
+ <script type="text/javascript " src="js/bitmap.js " ></script>
     </body>
 
 </html>
