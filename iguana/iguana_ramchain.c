@@ -225,7 +225,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
     return(0);
 }
 
-struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_ramchain **ramchainp,uint64_t *balancep,uint32_t *lastunspentindp,struct iguana_pkhash *p,uint8_t rmd160[20],int32_t firsti,int32_t endi)
+struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_ramchain **ramchainp,int64_t *balancep,uint32_t *lastunspentindp,struct iguana_pkhash *p,uint8_t rmd160[20],int32_t firsti,int32_t endi)
 {
     uint8_t *PKbits; struct iguana_pkhash *P; uint32_t pkind,i; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; struct iguana_account *ACCTS;
     *balancep = 0;
@@ -364,17 +364,19 @@ long iguana_spentsfile(struct iguana_info *coin,int32_t n)
     return(total);
 }
 
-int64_t iguana_pkhashbalance(struct iguana_info *coin,int32_t *nump,struct iguana_ramchain *ramchain,struct iguana_pkhash *p,uint32_t lastunspentind)
+int64_t iguana_pkhashbalance(struct iguana_info *coin,int64_t *spentp,int32_t *nump,struct iguana_ramchain *ramchain,struct iguana_pkhash *p,uint32_t lastunspentind)
 {
     struct iguana_unspent *U; struct iguana_txid *T; uint64_t unspentind; int64_t balance = 0;
-    *nump = 0;
+    *spentp = *nump = 0;
     unspentind = lastunspentind;
     U = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Uoffset);
     T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
     while ( unspentind > 0 )
     {
         (*nump)++;
-        balance += U[unspentind].value;
+        if ( ramchain->spents[unspentind].spendind == 0 )
+            balance += U[unspentind].value;
+        else (*spentp) += U[unspentind].value;
         if ( unspentind == p->firstunspentind )
             break;
         unspentind = U[unspentind].prevunspentind;
@@ -384,21 +386,20 @@ int64_t iguana_pkhashbalance(struct iguana_info *coin,int32_t *nump,struct iguan
 
 int32_t iguana_pkhasharray(struct iguana_info *coin,int64_t *totalp,struct iguana_pkhash *P,int32_t max,uint8_t rmd160[20])
 {
-    int32_t i,n,m; uint64_t balance,checkbalance,total; uint32_t lastunspentind; struct iguana_ramchain *ramchain;
+    int32_t i,n,m; int64_t spent,balance,netbalance,total; uint32_t lastunspentind; struct iguana_ramchain *ramchain;
     for (total=i=n=0; i<max && i<coin->bundlescount; i++)
     {
         if ( iguana_pkhashfind(coin,&ramchain,&balance,&lastunspentind,&P[n],rmd160,i,i) != 0 )
         {
-            if ( (checkbalance= iguana_pkhashbalance(coin,&m,ramchain,&P[n],lastunspentind)) != balance )
+            if ( (netbalance= iguana_pkhashbalance(coin,&spent,&m,ramchain,&P[n],lastunspentind)) != balance-spent )
             {
-                printf("pkhash balance mismatch from m.%d check %.8f vs %.8f\n",m,dstr(checkbalance),dstr(balance));
+                printf("pkhash balance mismatch from m.%d check %.8f vs %.8f spent %.8f [%.8f]\n",m,dstr(netbalance),dstr(balance),dstr(spent),dstr(balance)-dstr(spent));
             }
             else
             {
                 P[n].firstunspentind = lastunspentind;
                 P[n].flags = m;
-                total += balance;
-                   // use spents to find ! intersections(unspendinds & spents)
+                total += netbalance;
                 n++;
             }
         }

@@ -78,7 +78,7 @@ struct supernet_info
     char ipaddr[64],transport[8]; int32_t APISLEEP; int32_t iamrelay;
     int32_t Debuglevel,readyflag,dead,POLLTIMEOUT; char rpcsymbol[16],LBpoint[64],PUBpoint[64];
     //int32_t pullsock,subclient,lbclient,lbserver,servicesock,pubglobal,pubrelays,numservers;
-    bits256 privkey,persistent_priv; char secret[2048],NXTAPIURL[512];
+    bits256 privkey,persistent_priv,BTCmarkerhash; char secret[2048],NXTAPIURL[512];
     uint8_t *recvbuf[6];
     struct supernet_address myaddr;
     int32_t LBsock,PUBsock,reqsock,subsock,networktimeout,maxdelay;
@@ -100,21 +100,31 @@ struct supernet_info
 
 struct category_chain
 {
-    bits256 *weights,*blocks,category_hwm,cchainhash;
+    bits256 *weights,*blocks,category_hwm,genesishash,hwmhash;
     int32_t hashlen,addrlen,maxblocknum;
     struct supernet_info *myinfo;
     void *categoryinfo,*subinfo;
-    int32_t (*blockhash_func)(struct category_chain *cchain,void *blockhashp,void *data,int32_t datalen);
-    bits256 (*stake_func)(struct category_chain *cchain,void *addr,int32_t addrlen);
-    bits256 (*hit_func)(struct category_chain *cchain,int32_t height,void *prevgenerator,void *addr,void *blockhashp);
-    bits256 (*default_func)(struct category_chain *cchain,int32_t func,int32_t height,void *prevgenerator,void *addr,void *blockhashp,bits256 heaviest);
+    int32_t (*blockhash_func)(struct category_chain *catchain,void *blockhashp,void *data,int32_t datalen);
+    int32_t (*payment_func)(struct category_chain *catchain,void *src,void *dest,uint64_t amount);
+    bits256 (*stake_func)(struct category_chain *catchain,void *addr,int32_t addrlen);
+    bits256 (*hit_func)(struct category_chain *catchain,int32_t height,void *prevgenerator,void *addr,void *blockhashp);
+    bits256 (*default_func)(struct category_chain *catchain,int32_t func,int32_t height,void *prevgenerator,void *addr,void *blockhashp,bits256 heaviest);
+    int32_t (*ishwm_func)(struct category_chain *catchain,int32_t prevheight,void *prevblockhashp,void *blockhashp,void *prevgenerator,void *addr);
 };
+
+struct crypto777_msghdr
+{
+    struct acct777_sig sig __attribute__((packed));
+    bits256 prevhash,btchash;
+    uint8_t cmd[8];
+    uint8_t serialized[];
+} __attribute__((packed));
 
 struct category_info
 {
     UT_hash_handle hh; queue_t Q;
-    char *(*processfunc)(struct supernet_info *myinfo,void *data,int32_t datalen,char *remoteaddr);
-    struct category_chain *cchain;
+    char *(*processfunc)(struct supernet_info *myinfo,struct category_info *cat,void *data,int32_t datalen,char *remoteaddr);
+    struct category_chain *catchain;
     bits256 hash; void *info; struct category_info *sub;
 };
 extern struct category_info *Categories;
@@ -158,8 +168,8 @@ void *category_info(bits256 categoryhash,bits256 subhash);
 void *category_infoset(bits256 categoryhash,bits256 subhash,void *info);
 struct category_info *category_find(bits256 categoryhash,bits256 subhash);
 void SuperNET_hexmsgprocess(struct supernet_info *myinfo,cJSON *retjson,cJSON *json,char *hexmsg,char *remoteaddr);
-struct category_info *category_processfunc(bits256 categoryhash,bits256 subhash,char *(*process_func)(struct supernet_info *myinfo,void *data,int32_t datalen,char *remoteaddr));
-char *pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *remoteaddr);
+struct category_info *category_processfunc(bits256 categoryhash,bits256 subhash,char *(*process_func)(struct supernet_info *myinfo,struct category_info *cat,void *data,int32_t datalen,char *remoteaddr));
+char *pangea_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void *data,int32_t len,char *remoteaddr);
 void pangea_queues(struct supernet_info *myinfo);
 
 int32_t SuperNET_str2hex(uint8_t *hex,char *str);
@@ -168,19 +178,19 @@ void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 categoryhash,bits25
 int32_t SuperNET_hexmsgfind(struct supernet_info *myinfo,bits256 category,bits256 subhash,char *hexmsg,int32_t addflag);
 void category_posthexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,char *hexmsg,struct tai now,char *remoteaddr);
 void *category_subscribe(struct supernet_info *myinfo,bits256 category,bits256 subhash);
-struct category_msg *category_gethexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash);
+struct category_msg *category_gethexmsg(struct supernet_info *myinfo,struct category_info **catptrp,bits256 categoryhash,bits256 subhash);
 char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr);
-queue_t *category_Q(bits256 categoryhash,bits256 subhash);
+queue_t *category_Q(struct category_info **catptrp,bits256 categoryhash,bits256 subhash);
 
 char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag,bits256 categoryhash,bits256 subhash,char *message,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext,cJSON *argjson,char *remoteaddr);
 bits256 calc_categoryhashes(bits256 *subhashp,char *category,char *subcategory);
-struct category_chain *category_chain_functions(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,int32_t hashlen,int32_t addrlen,void *hash_func,void *stake_func,void *hit_func,void *default_func);
-#define category_default_latest() (*cchain->default_func)(cchain,'L',0,0,0,0,zero)
+struct category_chain *category_chain_functions(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,int32_t hashlen,int32_t addrlen,void *hash_func,void *stake_func,void *hit_func,void *default_func,void *ishwm_func,void *payment_func);
+#define category_default_latest() (*catchain->default_func)(catchain,'L',0,0,0,0,zero)
 void category_init(struct supernet_info *myinfo);
 char *SuperNET_keysinit(struct supernet_info *myinfo,char *jsonstr);
 double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *sortbuf,int32_t max,double *totalvolp,char *base,char *rel,double volume,cJSON *argjson);
 void SuperNET_setkeys(struct supernet_info *myinfo,void *pass,int32_t passlen,int32_t dosha256);
-char *InstantDEX_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *remoteaddr);
+char *InstantDEX_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void *data,int32_t len,char *remoteaddr);
 bits256 bitcoin_pubkey33(uint8_t data[33],bits256 privkey);
 char *bitcoin_address(char *coinaddr,uint8_t addrtype,uint8_t *pubkey,int32_t len);
 

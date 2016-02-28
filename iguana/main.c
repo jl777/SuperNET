@@ -1137,7 +1137,7 @@ void iguana_main(void *arg)
     if ( arg != 0 )
         SuperNET_JSON(&MYINFO,cJSON_Parse(arg),0);
     {
-        int32_t i,n; int64_t total; char *coinaddr; struct iguana_pkhash *P; struct iguana_info *coin; uint8_t rmd160[20],addrtype;
+        int32_t i,n; int64_t total; char *coinaddr; struct iguana_pkhash *P; struct iguana_info *coin; uint8_t rmd160[20],addrtype; double startmillis;
         coin = iguana_coinfind("BTCD");
         if ( 1 && coin != 0 )
         {
@@ -1152,8 +1152,10 @@ void iguana_main(void *arg)
             P = calloc(coin->bundlescount,sizeof(*P));
             n = iguana_pkhasharray(coin,&total,P,coin->bundlescount,rmd160);
             printf("%s has total outputs %.8f from %d bundles\n",coinaddr,dstr(total),n);
-            n = iguana_pkhasharray(coin,&total,P,coin->bundlescount,rmd160);
-            printf("%s has total outputs %.8f from %d bundles\n",coinaddr,dstr(total),n);
+            startmillis = OS_milliseconds();
+            for (i=0; i<1000; i++)
+                n = iguana_pkhasharray(coin,&total,P,coin->bundlescount,rmd160);
+            printf("%s has total outputs %.8f from %d bundles %.3f millis\n",coinaddr,dstr(total),n,OS_milliseconds()-startmillis);
             getchar();
         }
     }

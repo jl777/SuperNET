@@ -537,6 +537,14 @@ bool bp_key_secret_get(void *p, size_t len, const struct bp_key *key)
 	return true;
 }
 
+/*void get_shared_secret( unsigned char bytes[ 32 ], const EC_KEY* p_key )
+{
+    const EC_POINT* p_pub = EC_KEY_get0_public_key( p_key );
+    const BIGNUM* p_priv = EC_KEY_get0_private_key( p_pub_impl->p_key );
+    
+    ECDH_compute_key( &bytes[ 0 ], 32, p_pub, p_pub_impl->p_key, 0 );
+}*/
+
 bool bp_sign(EC_KEY *key, const void *data, size_t data_len,void **sig_, size_t *sig_len_)
 {
 	size_t sig_sz = ECDSA_size(key);
