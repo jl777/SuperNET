@@ -52,9 +52,13 @@ void iguana_initpeer(struct iguana_info *coin,struct iguana_peer *addr,uint64_t 
 
 void iguana_initcoin(struct iguana_info *coin,cJSON *argjson)
 {
-    int32_t i;
+    int32_t i; char dirname[512];
+    sprintf(dirname,"tmp/%s",coin->symbol), OS_portable_path(dirname);
+    OS_portable_rmdir(dirname,0);
     portable_mutex_init(&coin->peers_mutex);
     portable_mutex_init(&coin->blocks_mutex);
+    portable_mutex_init(&coin->scripts_mutex[0]);
+    portable_mutex_init(&coin->scripts_mutex[1]);
     iguana_meminit(&coin->blockMEM,"blockMEM",coin->blockspace,sizeof(coin->blockspace),0);
     iguana_initQs(coin);
     coin->bindsock = -1;
@@ -183,7 +187,7 @@ int32_t iguana_savehdrs(struct iguana_info *coin)
 
 void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
 {
-    int32_t j,k,m,c,height,flag,bundlei; char checkstr[1024],line[1024];
+    int32_t i,j,k,m,c,height,flag,bundlei; char checkstr[1024],line[1024];
     struct iguana_peer *addr; struct iguana_bundle *bp; bits256 allhash,hash2,zero,lastbundle;
     struct iguana_block *block;
     memset(&zero,0,sizeof(zero));
@@ -290,6 +294,17 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
         init_hexbytes_noT(hashstr,lastbundle.bytes,sizeof(bits256));
         printf("req lastbundle.(%s)\n",hashstr);
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
+    }
+    if ( iter == 1 )
+    {
+        for (i=0; i<coin->bundlescount; i++)
+            if ( coin->bundles[i] == 0 )
+                break;
+        if ( i > 0 )
+        {
+            iguana_spentsfile(coin,i);
+            iguana_initscripts(coin);
+        }
     }
 }
 

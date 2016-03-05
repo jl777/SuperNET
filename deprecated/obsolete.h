@@ -13899,5 +13899,49 @@ len = 0;
              return(instantdex_sendcmd(myinfo,&ap->offer,newjson,"BTCoffer",GENESIS_PUBKEY,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck)));
              }
              }*/
-
+            /*ptr = (void *)bp->scriptsmap;
+             ind = unspentind << 1;
+             for (i=0; i<bp->numscriptsmaps; i++,ptr+=2)
+             {
+             if ( ind == ptr[0] )
+             {
+             printf("bp.[%d] ind.%d offset.%d vs %ld\n",bp->hdrsi,ind,ptr[1],coin->scriptsfilesize);
+             if ( ptr[1] + sizeof(struct scriptdata) <= coin->scriptsfilesize )
+             {
+             if ( memcmp((void *)((long)coin->scriptsptr + ptr[1] + sizeof(struct scriptdata)),spendscript,spendlen) == 0 )
+             {
+             printf("matched against existing scriptsptr[%d] %d\n",ptr[1],spendlen);
+             return(ptr[1]);
+             }
+             printf("mismatch against existing scriptsptr[%d] %d\n",ptr[1],spendlen);
+             }
+             else
+             {
+             if ( (fp= fopen(coin->scriptsfname,"rb")) != 0 )
+             {
+             fseek(fp,ptr[1] + sizeof(struct scriptdata),SEEK_SET);
+             for (i=0; i<spendlen; i++)
+             if ( (c= fgetc(fp)) != spendscript[i] )
+             {
+             printf("bp.[%d] u%d: fgetc[%d] at %ld [%d,%ld) mismatch %02x v %02x\n",bp->hdrsi,unspentind,i,ftell(fp),ptr[1],ptr[1]+sizeof(struct scriptdata)+spendlen,c,spendscript[i]);
+             for (; i<spendlen; i++)
+             printf("%02x ",fgetc(fp) & 0xff);
+             printf("fgetc\n");
+             for (i=0; i<spendlen; i++)
+             printf("%02x ",spendscript[i]);
+             printf("\n");
+             break;
+             }
+             fclose(fp);
+             if ( i == spendlen )
+             {
+             printf("matched script via fgetc offset.%u scriptlen.%d\n",ptr[1],spendlen);
+             return(ptr[1]);
+             }
+             }
+             }
+             break;
+             }
+             }*/
+            
 #endif

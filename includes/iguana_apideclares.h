@@ -23,13 +23,14 @@ P2SH_SPENDAPI(iguana,spendmsig,activecoin,vintxid,vinvout,destaddress,destamount
 /*TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,BTCoffer,othercoin,otherassetid,maxprice,othervolume);
 STRING_AND_TWO_DOUBLES(InstantDEX,ALToffer,basecoin,minprice,basevolume);
 STRING_AND_TWO_DOUBLES(InstantDEX,NXToffer,assetid,minprice,basevolume);*/
+STRING_AND_INT(iguana,bundleaddresses,base,height);
 
-HASH_AND_STRING(ramchain,verifytx,txid,txbytes);
-INT_ARG(ramchain,getblockhash,height);
-HASH_AND_INT(ramchain,getblock,blockhash,remoteonly);
-HASH_AND_INT(ramchain,getrawtransaction,txid,verbose);
-HASH_ARG(ramchain,gettransaction,txid);
-STRING_ARG(ramchain,decoderawtransaction,rawtx);
+HASH_AND_STRING(bitcoinrpc,verifytx,txid,txbytes);
+INT_ARG(bitcoinrpc,getblockhash,height);
+HASH_AND_INT(bitcoinrpc,getblock,blockhash,remoteonly);
+HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose);
+HASH_ARG(bitcoinrpc,gettransaction,txid);
+STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx);
 
 FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase);
 ZERO_ARGS(SuperNET,logout);
@@ -142,68 +143,68 @@ TWO_STRINGS(iguana,removenode,activecoin,ipaddr);
 TWO_STRINGS(iguana,oneshot,activecoin,ipaddr);
 TWO_STRINGS(iguana,nodestatus,activecoin,ipaddr);
 
-ZERO_ARGS(ramchain,getinfo);
-ZERO_ARGS(ramchain,getbestblockhash);
-ZERO_ARGS(ramchain,getblockcount);
-ZERO_ARGS(ramchain,listaddressgroupings);
-ZERO_ARGS(ramchain,walletlock);
-ZERO_ARGS(ramchain,checkwallet);
-ZERO_ARGS(ramchain,repairwallet);
-ZERO_ARGS(ramchain,makekeypair);
-ZERO_ARGS(ramchain,gettxoutsetinfo);
-ZERO_ARGS(ramchain,listlockunspent);
-ZERO_ARGS(ramchain,getrawchangeaddress);
+ZERO_ARGS(bitcoinrpc,getinfo);
+ZERO_ARGS(bitcoinrpc,getbestblockhash);
+ZERO_ARGS(bitcoinrpc,getblockcount);
+ZERO_ARGS(bitcoinrpc,listaddressgroupings);
+ZERO_ARGS(bitcoinrpc,walletlock);
+ZERO_ARGS(bitcoinrpc,checkwallet);
+ZERO_ARGS(bitcoinrpc,repairwallet);
+ZERO_ARGS(bitcoinrpc,makekeypair);
+ZERO_ARGS(bitcoinrpc,gettxoutsetinfo);
+ZERO_ARGS(bitcoinrpc,listlockunspent);
+ZERO_ARGS(bitcoinrpc,getrawchangeaddress);
 
-TWO_INTS(ramchain,listaccounts,minconf,includewatchonly);
-THREE_INTS(ramchain,listreceivedbyaddress,minconf,includeempty,flag);
-TWOINTS_AND_ARRAY(ramchain,listunspent,minconf,maxconf,array);
+TWO_INTS(bitcoinrpc,listaccounts,minconf,includewatchonly);
+THREE_INTS(bitcoinrpc,listreceivedbyaddress,minconf,includeempty,flag);
+TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array);
 
-STRING_ARG(ramchain,dumpwallet,filename);
-STRING_ARG(ramchain,backupwallet,filename);
-STRING_ARG(ramchain,encryptwallet,passphrase);
-STRING_ARG(ramchain,validatepubkey,pubkey);
-STRING_ARG(ramchain,getnewaddress,account);
-STRING_ARG(ramchain,vanitygen,vanity);
+STRING_ARG(bitcoinrpc,dumpwallet,filename);
+STRING_ARG(bitcoinrpc,backupwallet,filename);
+STRING_ARG(bitcoinrpc,encryptwallet,passphrase);
+STRING_ARG(bitcoinrpc,validatepubkey,pubkey);
+STRING_ARG(bitcoinrpc,getnewaddress,account);
+STRING_ARG(bitcoinrpc,vanitygen,vanity);
 
-STRING_ARG(ramchain,getaddressesbyaccount,account);
-STRING_ARG(ramchain,getaccount,address);
-STRING_ARG(ramchain,getaccountaddress,account);
-STRING_ARG(ramchain,dumpprivkey,address);
-STRING_ARG(ramchain,importwallet,filename);
-STRING_ARG(ramchain,decodescript,script);
+STRING_ARG(bitcoinrpc,getaddressesbyaccount,account);
+STRING_ARG(bitcoinrpc,getaccount,address);
+STRING_ARG(bitcoinrpc,getaccountaddress,account);
+STRING_ARG(bitcoinrpc,dumpprivkey,address);
+STRING_ARG(bitcoinrpc,importwallet,filename);
+STRING_ARG(bitcoinrpc,decodescript,script);
 
-TWO_STRINGS(ramchain,setaccount,address,account);
-TWO_STRINGS(ramchain,walletpassphrasechange,oldpassphrase,newpassphrase);
-TWO_STRINGS(ramchain,signmessage,address,message);
+TWO_STRINGS(bitcoinrpc,setaccount,address,account);
+TWO_STRINGS(bitcoinrpc,walletpassphrasechange,oldpassphrase,newpassphrase);
+TWO_STRINGS(bitcoinrpc,signmessage,address,message);
 
-THREE_STRINGS(ramchain,verifymessage,address,sig,message);
-THREE_INTS(ramchain,listreceivedbyaccount,confirmations,includeempty,watchonly);
-THREE_INTS(ramchain,getbalance,confirmations,includeempty,watchonly);
+THREE_STRINGS(bitcoinrpc,verifymessage,address,sig,message);
+THREE_INTS(bitcoinrpc,listreceivedbyaccount,confirmations,includeempty,watchonly);
+THREE_INTS(bitcoinrpc,getbalance,confirmations,includeempty,watchonly);
 
-TWOSTRINGS_AND_INT(ramchain,importprivkey,wif,account,rescan);
-STRING_AND_INT(ramchain,getreceivedbyaccount,account,includeempty);
-STRING_AND_INT(ramchain,walletpassphrase,passphrase,timeout);
-STRING_AND_INT(ramchain,getreceivedbyaddress,address,minconf);
-STRING_AND_INT(ramchain,sendrawtransaction,rawtx,allowhighfees);
+TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan);
+STRING_AND_INT(bitcoinrpc,getreceivedbyaccount,account,includeempty);
+STRING_AND_INT(bitcoinrpc,walletpassphrase,passphrase,timeout);
+STRING_AND_INT(bitcoinrpc,getreceivedbyaddress,address,minconf);
+STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees);
 
-HASH_AND_TWOINTS(ramchain,listsinceblock,blockhash,target,flag);
+HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag);
 
-STRING_AND_THREEINTS(ramchain,listtransactions,account,count,skip,includewatchonly);
+STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatchonly);
 
-HASH_AND_TWOINTS(ramchain,gettxout,txid,vout,mempool);
+HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool);
 
-DOUBLE_ARG(ramchain,settxfee,amount);
+DOUBLE_ARG(bitcoinrpc,settxfee,amount);
 
-INT_AND_ARRAY(ramchain,lockunspent,flag,array);
-INT_ARRAY_STRING(ramchain,createmultisig,M,array,account);
+INT_AND_ARRAY(bitcoinrpc,lockunspent,flag,array);
+INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,array,account);
 
-TWO_ARRAYS(ramchain,createrawtransaction,vins,vouts);
-STRING_AND_TWOARRAYS(ramchain,signrawtransaction,rawtx,vins,privkeys);
+TWO_ARRAYS(bitcoinrpc,createrawtransaction,vins,vouts);
+STRING_AND_TWOARRAYS(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys);
 
-SS_D_I_S(ramchain,move,fromaccount,toaccount,amount,minconf,comment);
-SS_D_I_SS(ramchain,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment2);
-S_A_I_S(ramchain,sendmany,fromaccount,array,minconf,comment);
-S_D_SS(ramchain,sendtoaddress,address,amount,comment,comment2);
+SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment);
+SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment2);
+S_A_I_S(bitcoinrpc,sendmany,fromaccount,array,minconf,comment);
+S_D_SS(bitcoinrpc,sendtoaddress,address,amount,comment,comment2);
 
 STRING_ARG(hash,hex,message);
 STRING_ARG(hash,unhex,hexmsg);

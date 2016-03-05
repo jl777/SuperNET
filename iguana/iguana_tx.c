@@ -34,8 +34,11 @@ void iguana_vinset(struct iguana_info *coin,int32_t height,struct iguana_msgvin 
         T = (void *)(long)((long)rdata + rdata->Toffset);
         spendind = (tx->firstvin + i);
         s = &S[spendind];
-        if ( s->diffsequence == 0 )
+        if ( s->sequenceid == 1 )
             vin->sequence = 0xffffffff;
+        else if ( s->sequenceid == 2 )
+            vin->sequence = 0xfffffffe;
+        else vin->sequence = 0;
         vin->prev_vout = s->prevout;
         iguana_ramchain_spendtxid(coin,&unspentind,&vin->prev_hash,T,rdata->numtxids,X,rdata->numexternaltxids,s);
     }

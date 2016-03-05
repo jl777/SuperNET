@@ -45,7 +45,7 @@ cJSON *API_json;
 #ifdef __linux__
 int32_t IGUANA_NUMHELPERS = 8;
 #else
-int32_t IGUANA_NUMHELPERS = 1;
+int32_t IGUANA_NUMHELPERS = 4;
 #endif
 struct iguana_jsonitem { struct queueitem DL; struct supernet_info *myinfo; uint32_t fallback,expired,allocsize; char **retjsonstrp; char remoteaddr[64]; char jsonstr[]; };
 
@@ -172,7 +172,7 @@ char *SuperNET_jsonstr(struct supernet_info *myinfo,char *jsonstr,char *remotead
         method = jstr(json,"method");
         if ( (agent= jstr(json,"agent")) != 0 && method != 0 )
             return(SuperNET_parser(myinfo,agent,method,json,remoteaddr));
-        else if ( method != 0 && is_bitcoinrpc(method,remoteaddr) )
+        else if ( method != 0 && is_bitcoinrpc(method,remoteaddr) != 0 )
             return(iguana_bitcoinRPC(myinfo,method,json,remoteaddr));
         return(clonestr("{\"error\":\"need both agent and method\"}"));
     }
@@ -251,15 +251,19 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remote
             return(clonestr("{\"result\":\"processed remote DHT\"}"));
         }
         jsonstr = jprint(json,0);
+        //printf("RPC? (%s)\n",jsonstr);
         if ( remoteaddr == 0 || jstr(json,"immediate") != 0 )
             retjsonstr = SuperNET_jsonstr(myinfo,jsonstr,remoteaddr);
         else retjsonstr = iguana_blockingjsonstr(myinfo,jsonstr,tag,timeout,remoteaddr);
         if ( retjsonstr != 0 )
         {
-            if ( (retjson= cJSON_Parse(retjsonstr)) != 0 )
+            if ( (retjsonstr[0] == '{' || retjsonstr[0] == '[') && (retjson= cJSON_Parse(retjsonstr)) != 0 )
             {
-                jdelete(retjson,"tag");
-                jadd64bits(retjson,"tag",tag);
+                if ( j64bits(retjson,"tag") != tag )
+                {
+                    jdelete(retjson,"tag");
+                    jadd64bits(retjson,"tag",tag);
+                }
                 retstr = jprint(retjson,1);
                 //printf("retstr.(%s) retjsonstr.%p retjson.%p\n",retstr,retjsonstr,retjson);
                 free(retjsonstr);//,strlen(retjsonstr)+1);
@@ -1114,10 +1118,10 @@ void iguana_main(void *arg)
         sleep(1);
         char *str;
         //iguana_launchcoin(MYINFO.rpcsymbol,cJSON_Parse("{}"));
-        if ( 1 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":3,\"newcoin\":\"BTC\",\"active\":0}"),0)) != 0 )
+        if ( 1 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":64,\"newcoin\":\"BTC\",\"active\":0}"),0)) != 0 )
         {
             free(str);
-            if ( 1 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":3,\"newcoin\":\"BTCD\",\"active\":0}"),0)) != 0 )
+            if ( 1 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":128,\"newcoin\":\"BTCD\",\"active\":1}"),0)) != 0 )
             {
                 free(str);
                 if ( 0 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"login\",\"handle\":\"alice\",\"password\":\"alice\",\"passphrase\":\"alice\"}"),0)) != 0 )
@@ -1127,7 +1131,7 @@ void iguana_main(void *arg)
                         free(str);
                 }
             }
-            strcpy(MYINFO.rpcsymbol,"BTC");
+            strcpy(MYINFO.rpcsymbol,"BTCD");
             printf("BTC active.%d BTCD active.%d\n",iguana_coinfind("BTC")->active,iguana_coinfind("BTCD")->active);
             iguana_coinfind("BTC")->active = iguana_coinfind("BTCD")->active = 0;
         }
@@ -1137,9 +1141,9 @@ void iguana_main(void *arg)
     if ( arg != 0 )
         SuperNET_JSON(&MYINFO,cJSON_Parse(arg),0);
     {
-        int32_t i,n; int64_t total; char *coinaddr; struct iguana_pkhash *P; struct iguana_info *coin; uint8_t rmd160[20],addrtype; double startmillis;
+        int32_t i,n; int64_t total; char *coinaddr; struct iguana_pkhash *P; struct iguana_info *coin; uint8_t rmd160[20],addrtype,pubkey33[33]; double startmillis;
         coin = iguana_coinfind("BTCD");
-        if ( 1 && coin != 0 )
+        if ( 0 && coin != 0 )
         {
             getchar();
             for (i=0; i<coin->bundlescount; i++)
@@ -1150,11 +1154,12 @@ void iguana_main(void *arg)
             coinaddr = "RUZ9AKxy6J2okcBd1PZm4YH6atmPwqV4bo";
             bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
             P = calloc(coin->bundlescount,sizeof(*P));
-            n = iguana_pkhasharray(coin,&total,P,coin->bundlescount,rmd160);
+            memset(pubkey33,0,sizeof(pubkey33));
+            n = iguana_pkhasharray(coin,0,0,0,&total,P,coin->bundlescount,rmd160,coinaddr,pubkey33);
             printf("%s has total outputs %.8f from %d bundles\n",coinaddr,dstr(total),n);
             startmillis = OS_milliseconds();
             for (i=0; i<1000; i++)
-                n = iguana_pkhasharray(coin,&total,P,coin->bundlescount,rmd160);
+                n = iguana_pkhasharray(coin,0,0,0,&total,P,coin->bundlescount,rmd160,coinaddr,pubkey33);
             printf("%s has total outputs %.8f from %d bundles %.3f millis\n",coinaddr,dstr(total),n,OS_milliseconds()-startmillis);
             getchar();
         }

@@ -604,7 +604,7 @@ int32_t btc_getpubkey(char pubkeystr[67],uint8_t pubkeybuf[33],struct bp_key *ke
     return((int32_t)len);
 }
 
-int32_t btc_convrmd160(char *coinaddr,uint8_t addrtype,uint8_t rmd160[20])
+/*int32_t btc_convrmd160(char *coinaddr,uint8_t addrtype,uint8_t rmd160[20])
 {
     cstring *btc_addr;
     if ( (btc_addr= base58_encode_check(addrtype,true,rmd160,20)) != 0 )
@@ -614,13 +614,14 @@ int32_t btc_convrmd160(char *coinaddr,uint8_t addrtype,uint8_t rmd160[20])
         return(0);
     }
     return(-1);
-}
+}*/
 
 int32_t btc_coinaddr(char *coinaddr,uint8_t addrtype,char *pubkeystr)
 {
     uint8_t rmd160[20]; char hashstr[41];
     calc_OP_HASH160(hashstr,rmd160,pubkeystr);
-    return(btc_convrmd160(coinaddr,addrtype,rmd160));
+    return(bitcoin_address(coinaddr,addrtype,rmd160,20) != 0);
+    //return(btc_convrmd160(coinaddr,addrtype,rmd160));
 }
 
 int32_t btc_convaddr(char *hexaddr,char *addr58)
@@ -809,7 +810,7 @@ struct iguana_waddress *iguana_waddresscalc(uint8_t pubtype,uint8_t wiftype,stru
 {
     memset(addr,0,sizeof(*addr));
     addr->privkey = privkey;
-    if ( btc_priv2pub(addr->pubkey,addr->privkey.bytes) == 0 && btc_priv2wif(addr->wifstr,addr->privkey.bytes,wiftype) == 0 && btc_pub2rmd(addr->rmd160,addr->pubkey) == 0 && btc_convrmd160(addr->coinaddr,pubtype,addr->rmd160) == 0 )
+    if ( btc_priv2pub(addr->pubkey,addr->privkey.bytes) == 0 && btc_priv2wif(addr->wifstr,addr->privkey.bytes,wiftype) == 0 && btc_pub2rmd(addr->rmd160,addr->pubkey) == 0 && bitcoin_address(addr->coinaddr,pubtype,addr->rmd160,10) != 0 )
     {
         addr->wiftype = wiftype;
         addr->type = pubtype;

@@ -72,8 +72,8 @@ struct iguana_info *iguana_coinadd(const char *symbol,cJSON *argjson)
                         else strcpy(coin->name,symbol);
                     }
                     coin->chain = iguana_chainfind((char *)symbol,argjson,1);
-                    iguana_initcoin(coin,argjson);
                     strcpy(coin->symbol,symbol);
+                    iguana_initcoin(coin,argjson);
                 }
                 return(coin);
             }
@@ -422,7 +422,6 @@ void iguana_coinloop(void *arg)
                         //printf("metrics\n");
                         coin->peers.lastmetrics = iguana_updatemetrics(coin); // ranks peers
                     }
-                    //printf("process\n");
                     iguana_bundlestats(coin,str);
                     flag += iguana_processrecv(coin);
                 }
@@ -458,9 +457,9 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( (coin->MAXRECVCACHE= maxrecvcache) == 0 )
         coin->MAXRECVCACHE = IGUANA_MAXRECVCACHE;
     if ( (coin->MAXPENDING= maxpending) <= 0 )
-        coin->MAXPENDING = (strcmp(symbol,"BTC") == 0) ? _IGUANA_MAXPENDING : _IGUANA_MAXPENDING*32;
+        coin->MAXPENDING = (strcmp(symbol,"BTC") == 0) ? _IGUANA_MAXPENDING : _IGUANA_MAXPENDING;
     if ( (coin->MAXBUNDLES= maxbundles) <= 0 )
-        coin->MAXBUNDLES = (strcmp(symbol,"BTC") == 0) ? _IGUANA_MAXBUNDLES : _IGUANA_MAXBUNDLES*64;
+        coin->MAXBUNDLES = (strcmp(symbol,"BTC") == 0) ? _IGUANA_MAXBUNDLES : _IGUANA_MAXBUNDLES;
     coin->myservices = services;
     sprintf(dirname,"DB/%s",symbol);
     OS_ensure_directory(dirname);

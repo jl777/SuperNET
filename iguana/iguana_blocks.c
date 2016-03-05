@@ -289,7 +289,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
             }
             else
             {
-                char str[65]; printf("(%s) notready v.%d m.%d h.%d\n",bits256_str(str,prev->RO.hash2),prev->valid,prev->mainchain,prev->height);
+                //char str[65]; printf("(%s) notready v.%d m.%d h.%d\n",bits256_str(str,prev->RO.hash2),prev->valid,prev->mainchain,prev->height);
                 return(0);
             }
         }

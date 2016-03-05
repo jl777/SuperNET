@@ -647,7 +647,8 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
     //printf("SuperNET_JSON.(%s)\n",jprint(json,0));
     if ( remoteaddr != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 )
         remoteaddr = 0;
-    agent = jstr(json,"agent");
+    if ( (agent = jstr(json,"agent")) == 0 )
+        agent = "bitcoinrpc";
     method = jstr(json,"method");
     if ( agent != 0 && strcmp(agent,"pangea") == 0 && jobj(json,"categoryhash") == 0 )
     {

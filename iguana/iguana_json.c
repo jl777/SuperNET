@@ -861,8 +861,8 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
         coinstr = myinfo->rpcsymbol;
     if ( coinstr != 0 && coinstr[0] != 0 )
         coin = iguana_coinfind(coinstr);
-    if ( strcmp(agentstr,"ramchain") == 0 && coin == 0 )
-        return(clonestr("{\"error\":\"ramchain needs coin\"}"));
+    if ( strcmp(agentstr,"bitcoinrpc") == 0 && coin == 0 )
+        return(clonestr("{\"error\":\"bitcoinrpc needs coin\"}"));
 #define IGUANA_ARGS myinfo,coin,json,remoteaddr
 #define IGUANA_DISPATCH0(agent,name) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS))
 #define IGUANA_DISPATCH_S(agent,name,str) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str)))
@@ -964,7 +964,7 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
     
 #include "../includes/iguana_apiundefs.h"
     
-    return(clonestr("{\"error\":\"illegal ramchain method or missing coin\"}"));
+    return(clonestr("{\"error\":\"illegal bitcoinrpc method or missing coin\"}"));
 }
 
 

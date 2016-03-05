@@ -42,14 +42,14 @@ char *iguana_APIrequest(struct iguana_info *coin,bits256 blockhash,bits256 txid,
     return(0);
 }
 
-INT_ARG(ramchain,getblockhash,height)
+INT_ARG(bitcoinrpc,getblockhash,height)
 {
     cJSON *retjson = cJSON_CreateObject();
     jaddbits256(retjson,"result",iguana_blockhash(coin,height));
     return(jprint(retjson,1));
 }
 
-HASH_AND_INT(ramchain,getblock,blockhash,remoteonly)
+HASH_AND_INT(bitcoinrpc,getblock,blockhash,remoteonly)
 {
     char *blockstr; struct iguana_msgblock msg; struct iguana_block *block; cJSON *retjson; bits256 txid;
     retjson = cJSON_CreateObject();
@@ -134,13 +134,15 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
     *txidp = bits256_doublesha256(txidstr,serialized,len);
     if ( memcmp(txidp,tx->txid.bytes,sizeof(*txidp)) != 0 )
     {
-        char str[65],str2[65]; printf("error generating txbytes txid %s vs %s\n",bits256_str(str,*txidp),bits256_str(str2,tx->txid));
-        return(0);
+        //for (i=0; i<len; i++)
+        //    printf("%02x",serialized[i]);
+        char str[65],str2[65]; printf("\nrw.%d numvins.%d numvouts.%d error generating txbytes, probably due to running without stored sigs txid %s vs %s\n",rwflag,numvins,numvouts,bits256_str(str,*txidp),bits256_str(str2,tx->txid));
+        return(len);
     }
     return(len);
 }
 
-HASH_AND_INT(ramchain,getrawtransaction,txid,verbose)
+HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
 {
     struct iguana_txid *tx,T; char *txbytes; bits256 checktxid; int32_t len,height; cJSON *retjson;
     if ( (tx= iguana_txidfind(coin,&height,&T,txid)) != 0 )
@@ -148,10 +150,11 @@ HASH_AND_INT(ramchain,getrawtransaction,txid,verbose)
         retjson = cJSON_CreateObject();
         if ( (len= iguana_ramtxbytes(coin,coin->blockspace,sizeof(coin->blockspace),&checktxid,tx,height,0,0)) > 0 )
         {
-            txbytes = mycalloc('x',1,len*2+1);
-            init_hexbytes_noT(txbytes,coin->blockspace,len*2+1);
+            txbytes = calloc(1,len*2+1);
+            init_hexbytes_noT(txbytes,coin->blockspace,len);
             jaddstr(retjson,"result",txbytes);
-            myfree(txbytes,len*2+1);
+            //printf("txbytes.(%s)\n",txbytes);
+            free(txbytes);
             return(jprint(retjson,1));
         }
         else if ( height >= 0 )
@@ -184,7 +187,7 @@ HASH_AND_INT(ramchain,getrawtransaction,txid,verbose)
     return(clonestr("{\"error\":\"cant find txid\"}"));
 }
 
-STRING_ARG(ramchain,decoderawtransaction,rawtx)
+STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx)
 {
     uint8_t *data; int32_t datalen; cJSON *retjson = cJSON_CreateObject(); // struct iguana_msgtx msgtx; 
     datalen = (int32_t)strlen(rawtx) >> 1;
@@ -196,316 +199,324 @@ STRING_ARG(ramchain,decoderawtransaction,rawtx)
     return(jprint(retjson,1));
 }
 
-HASH_ARG(ramchain,gettransaction,txid)
+HASH_ARG(bitcoinrpc,gettransaction,txid)
 {
-    return(ramchain_getrawtransaction(IGUANA_CALLARGS,txid,1));
+    return(bitcoinrpc_getrawtransaction(IGUANA_CALLARGS,txid,1));
 }
 
-ZERO_ARGS(ramchain,getinfo)
+ZERO_ARGS(bitcoinrpc,getinfo)
 {
     cJSON *retjson = cJSON_CreateObject();
     jaddstr(retjson,"result",coin->statusstr);
     return(jprint(retjson,1));
 }
 
-ZERO_ARGS(ramchain,getbestblockhash)
+ZERO_ARGS(bitcoinrpc,getbestblockhash)
 {
     cJSON *retjson = cJSON_CreateObject();
     char str[65]; jaddstr(retjson,"result",bits256_str(str,coin->blocks.hwmchain.RO.hash2));
     return(jprint(retjson,1));
 }
 
-ZERO_ARGS(ramchain,getblockcount)
+ZERO_ARGS(bitcoinrpc,getblockcount)
 {
     cJSON *retjson = cJSON_CreateObject();
     jaddnum(retjson,"result",coin->blocks.hwmchain.height);
     return(jprint(retjson,1));
 }
 
-HASH_AND_TWOINTS(ramchain,listsinceblock,blockhash,target,flag)
+HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
 // pubkeys
-ZERO_ARGS(ramchain,makekeypair)
+ZERO_ARGS(bitcoinrpc,makekeypair)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-STRING_ARG(ramchain,validatepubkey,pubkey)
+STRING_ARG(bitcoinrpc,validatepubkey,pubkey)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-INT_ARRAY_STRING(ramchain,createmultisig,M,array,account)
+INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,array,account)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-STRING_ARG(ramchain,decodescript,script)
+STRING_ARG(bitcoinrpc,decodescript,script)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-STRING_ARG(ramchain,vanitygen,vanity)
+STRING_ARG(bitcoinrpc,vanitygen,vanity)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-TWO_STRINGS(ramchain,signmessage,address,message)
+TWO_STRINGS(bitcoinrpc,signmessage,address,message)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-THREE_STRINGS(ramchain,verifymessage,address,sig,message)
+THREE_STRINGS(bitcoinrpc,verifymessage,address,sig,message)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
 // tx
-TWO_ARRAYS(ramchain,createrawtransaction,vins,vouts)
+TWO_ARRAYS(bitcoinrpc,createrawtransaction,vins,vouts)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-STRING_AND_TWOARRAYS(ramchain,signrawtransaction,rawtx,vins,privkeys)
+STRING_AND_TWOARRAYS(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-STRING_AND_INT(ramchain,sendrawtransaction,rawtx,allowhighfees)
+STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
 // unspents
-ZERO_ARGS(ramchain,gettxoutsetinfo)
+ZERO_ARGS(bitcoinrpc,gettxoutsetinfo)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-INT_AND_ARRAY(ramchain,lockunspent,flag,array)
+INT_AND_ARRAY(bitcoinrpc,lockunspent,flag,array)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-ZERO_ARGS(ramchain,listlockunspent)
+ZERO_ARGS(bitcoinrpc,listlockunspent)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-HASH_AND_TWOINTS(ramchain,gettxout,txid,vout,mempool)
+HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-TWOINTS_AND_ARRAY(ramchain,listunspent,minconf,maxconf,array)
+TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array)
+{
+    int32_t numrmds; uint8_t *rmdarray; cJSON *retjson = cJSON_CreateArray();
+    if ( minconf == 0 )
+        minconf = 1;
+    if ( maxconf == 0 )
+        maxconf = 9999999;
+    rmdarray = iguana_rmdarray(coin,&numrmds,array,0);
+    iguana_unspents(myinfo,coin,retjson,minconf,maxconf,rmdarray,numrmds);
+    if ( rmdarray != 0 )
+        free(rmdarray);
+    return(jprint(retjson,1));
+}
+
+STRING_AND_INT(bitcoinrpc,getreceivedbyaddress,address,minconf)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-STRING_AND_INT(ramchain,getreceivedbyaddress,address,minconf)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-THREE_INTS(ramchain,listreceivedbyaddress,minconf,includeempty,flag)
+THREE_INTS(bitcoinrpc,listreceivedbyaddress,minconf,includeempty,flag)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
 // single address/account funcs
-ZERO_ARGS(ramchain,getrawchangeaddress)
+ZERO_ARGS(bitcoinrpc,getrawchangeaddress)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-STRING_ARG(ramchain,getnewaddress,account)
+STRING_ARG(bitcoinrpc,getnewaddress,account)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-TWOSTRINGS_AND_INT(ramchain,importprivkey,wif,account,rescan)
+TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-STRING_ARG(ramchain,dumpprivkey,address)
+STRING_ARG(bitcoinrpc,dumpprivkey,address)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-TWO_STRINGS(ramchain,setaccount,address,account)
+TWO_STRINGS(bitcoinrpc,setaccount,address,account)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-STRING_ARG(ramchain,getaccount,address)
+STRING_ARG(bitcoinrpc,getaccount,address)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-STRING_ARG(ramchain,getaccountaddress,account)
+STRING_ARG(bitcoinrpc,getaccountaddress,account)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
 // multiple address
-THREE_INTS(ramchain,getbalance,confirmations,includeempty,watchonly)
+THREE_INTS(bitcoinrpc,getbalance,confirmations,includeempty,watchonly)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-STRING_ARG(ramchain,getaddressesbyaccount,account)
+STRING_ARG(bitcoinrpc,getaddressesbyaccount,account)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-STRING_AND_INT(ramchain,getreceivedbyaccount,account,includeempty)
+STRING_AND_INT(bitcoinrpc,getreceivedbyaccount,account,includeempty)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-THREE_INTS(ramchain,listreceivedbyaccount,confirmations,includeempty,watchonly)
+THREE_INTS(bitcoinrpc,listreceivedbyaccount,confirmations,includeempty,watchonly)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-STRING_AND_THREEINTS(ramchain,listtransactions,account,count,skip,includewatchonly)
+STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatchonly)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
 // spend funcs
-DOUBLE_ARG(ramchain,settxfee,amount)
+DOUBLE_ARG(bitcoinrpc,settxfee,amount)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-SS_D_I_S(ramchain,move,fromaccount,toaccount,amount,minconf,comment)
+SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-SS_D_I_SS(ramchain,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment2)
+SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment2)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-S_A_I_S(ramchain,sendmany,fromaccount,array,minconf,comment)
+S_A_I_S(bitcoinrpc,sendmany,fromaccount,array,minconf,comment)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-S_D_SS(ramchain,sendtoaddress,address,amount,comment,comment2)
+S_D_SS(bitcoinrpc,sendtoaddress,address,amount,comment,comment2)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
 // entire wallet funcs
-TWO_INTS(ramchain,listaccounts,minconf,includewatchonly)
+TWO_INTS(bitcoinrpc,listaccounts,minconf,includewatchonly)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-ZERO_ARGS(ramchain,listaddressgroupings)
+ZERO_ARGS(bitcoinrpc,listaddressgroupings)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-ZERO_ARGS(ramchain,walletlock)
+ZERO_ARGS(bitcoinrpc,walletlock)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-ZERO_ARGS(ramchain,checkwallet)
+ZERO_ARGS(bitcoinrpc,checkwallet)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-ZERO_ARGS(ramchain,repairwallet)
+ZERO_ARGS(bitcoinrpc,repairwallet)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-STRING_ARG(ramchain,dumpwallet,filename)
+STRING_ARG(bitcoinrpc,dumpwallet,filename)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-STRING_ARG(ramchain,backupwallet,filename)
+STRING_ARG(bitcoinrpc,backupwallet,filename)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-STRING_ARG(ramchain,importwallet,filename)
+STRING_ARG(bitcoinrpc,importwallet,filename)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-STRING_AND_INT(ramchain,walletpassphrase,passphrase,timeout)
+STRING_AND_INT(bitcoinrpc,walletpassphrase,passphrase,timeout)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-TWO_STRINGS(ramchain,walletpassphrasechange,oldpassphrase,newpassphrase)
+TWO_STRINGS(bitcoinrpc,walletpassphrasechange,oldpassphrase,newpassphrase)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-STRING_ARG(ramchain,encryptwallet,passphrase)
+STRING_ARG(bitcoinrpc,encryptwallet,passphrase)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
-HASH_AND_STRING(ramchain,verifytx,txid,txbytes)
+HASH_AND_STRING(bitcoinrpc,verifytx,txid,txbytes)
 {
     cJSON *retjson;
     retjson = bitcoin_txtest(coin,txbytes,txid);
@@ -513,7 +524,13 @@ HASH_AND_STRING(ramchain,verifytx,txid,txbytes)
     return(jprint(retjson,1));
 }
 
-
+STRING_AND_INT(iguana,bundleaddresses,base,height)
+{
+    struct iguana_info *ptr;
+    if ( (ptr= iguana_coinfind(base)) != 0 )
+        return(iguana_bundleaddrs(ptr,height / coin->chain->bundlesize));
+    else return(clonestr("{\"error\":\"base is not active\"}"));
+}
 #undef IGUANA_ARGS
 #include "../includes/iguana_apiundefs.h"
 
