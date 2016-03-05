@@ -1641,8 +1641,9 @@ uint8_t *iguana_scriptfpget(struct iguana_info *coin,int32_t *scriptlenp,uint8_t
     if ( (fp= fopen(coin->scriptsfname[spendflag],"rb")) != 0 )
     {
         fseek(fp,scriptoffset,SEEK_SET);
-        fread(&sdata,1,sizeof(sdata),fp);
-        if ( sdata.scriptlen > 0 && sdata.scriptlen <= IGUANA_MAXSCRIPTSIZE )
+        if ( fread(&sdata,1,sizeof(sdata),fp) != sizeof(sdata) )
+            printf("iguana_scriptfpget: error reading sdata\n");
+        else if ( sdata.scriptlen > 0 && sdata.scriptlen <= IGUANA_MAXSCRIPTSIZE )
         {
             if ( fread(_script,1,sdata.scriptlen,fp) == sdata.scriptlen )
             {
