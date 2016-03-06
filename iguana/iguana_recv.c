@@ -902,7 +902,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
             }
             else if ( bp->speculative != 0 && bits256_nonz(bp->speculative[bundlei]) > 0 )
             {
-                printf("speculative next %d\n",coin->blocks.hwmchain.height+1);
+                //printf("speculative next %d\n",coin->blocks.hwmchain.height+1);
                 iguana_blockQ(coin,0,-1,bp->speculative[bundlei],0);
             }
         }

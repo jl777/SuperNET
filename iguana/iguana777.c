@@ -374,14 +374,14 @@ void iguana_coinloop(void *arg)
             coin->chain->minconfirms = coin->minconfirms;
         }
     }
+    printf("after init loop\n"), getchar();
     coin = coins[0];
     iguana_rwiAddrind(coin,0,0,0);
     iguana_possible_peer(coin,"127.0.0.1");
-    //while ( 1 ) sleep(1);
-    
     memset(zero.bytes,0,sizeof(zero));
     if ( (bp= iguana_bundlecreate(coin,&bundlei,0,*(bits256 *)coin->chain->genesis_hashdata,zero,1)) != 0 )
         bp->bundleheight = 0;
+    printf("after bundlecreate\n"), getchar();
     while ( 1 )
     {
         //printf("iter\n");
