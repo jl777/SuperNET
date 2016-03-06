@@ -329,7 +329,7 @@ struct iguana_unspent { uint64_t value; uint32_t txidind,pkind,prevunspentind,sc
 
 struct iguana_spend { uint32_t spendtxidind,scriptoffset:31,coinbase:1; int16_t prevout; uint16_t numsigs:4,numpubkeys:4,p2sh:1,sighash:4,external:1,sequenceid:2; } __attribute__((packed));
 
-struct iguana_pkhash { uint8_t rmd160[20]; uint32_t pkind,firstunspentind,pubkeyoffset; } __attribute__((packed));
+struct iguana_pkhash { uint8_t rmd160[20]; uint32_t pkind,pubkeyoffset; } __attribute__((packed)); //firstunspentind 
 
 struct scriptdata { uint32_t ind:31,spendflag:1; uint16_t hdrsi,scriptlen; }__attribute__((packed));
 
@@ -355,7 +355,7 @@ struct iguana_ramchaindata
     bits256 lhashes[IGUANA_NUMLHASHES],firsthash2,lasthash2;
     int64_t allocsize,Boffset,Toffset,Uoffset,Soffset,Poffset,Aoffset,Xoffset,TXoffset,PKoffset,Koffset;
     int32_t numblocks,height,firsti,hdrsi,txsparsebits,pksparsebits;
-    uint32_t numtxids,numunspents,numspends,numpkinds,numexternaltxids,numtxsparse,numpksparse,scriptspace,stacksize;
+    uint32_t numtxids,numunspents,numspends,numpkinds,numexternaltxids,numtxsparse,numpksparse,scriptspace,stackspace;
     uint8_t rdata[];
 };
 
@@ -368,7 +368,7 @@ struct iguana_ramchain_hdr
 struct iguana_ramchain
 {
     struct iguana_ramchain_hdr H; bits256 lasthash2; uint64_t datasize;
-    uint32_t numblocks:31,expanded:1,pkind,externalind,scriptoffset,height;
+    uint32_t numblocks:31,expanded:1,pkind,externalind,height;
     struct iguana_kvitem *txids,*pkhashes;
     struct OS_memspace *hashmem; long filesize; void *fileptr;
     struct iguana_account *A,*roA; struct iguana_Uextra *spents;

@@ -246,8 +246,8 @@ int64_t iguana_pkhashbalance(struct iguana_info *coin,cJSON *array,int64_t *spen
             if ( array != 0 )
                 jaddi(array,iguana_unspentjson(coin,hdrsi,unspentind,T,&U[unspentind],rmd160,coinaddr,pubkey33));
         } else (*spentp) += U[unspentind].value;
-        if ( unspentind == p->firstunspentind )
-            break;
+        //if ( unspentind == p->firstunspentind )
+        //    break;
         unspentind = U[unspentind].prevunspentind;
     }
     return(balance);
@@ -266,7 +266,7 @@ int32_t iguana_pkhasharray(struct iguana_info *coin,cJSON *array,int32_t minconf
             }
             else
             {
-                P[n].firstunspentind = lastunspentind;
+                //P[n].firstunspentind = lastunspentind;
                 total += netbalance;
                 n++;
             }

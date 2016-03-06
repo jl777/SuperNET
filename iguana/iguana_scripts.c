@@ -694,7 +694,8 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,int32_t *s
         {
             printf("SIGHASH mismatch %d vs %d\n",vp->signers[j].sig[siglen-1],*hashtypep);
         }
-        (*sigsizep) += (siglen + 1);
+        (*sigsizep) += siglen;
+        //printf("sigsize %d [%02x]\n",*sigsizep,vp->signers[j].sig[siglen-1]);
         n += (siglen + 1);
         j++;
         if ( spendtype == 0 && j > 1 )
@@ -738,6 +739,7 @@ int32_t iguana_vinscriptparse(struct iguana_info *coin,struct vin_info *vp,int32
 {
     int32_t hashtype;
     *sigsizep = *pubkeysizep = *p2shsizep = *suffixp = 0;
+    memset(vp,0,sizeof(*vp));
     if ( bitcoin_scriptget(coin,&hashtype,sigsizep,pubkeysizep,suffixp,vp,vinscript,scriptlen,0) < 0 )
     {
         printf("iguana_vinscriptparse: error parsing vinscript?\n");
