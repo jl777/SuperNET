@@ -595,7 +595,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
 {
     struct iguana_bundle *bp=0; int32_t bundlei = -2; struct iguana_block *block;
     bp = iguana_bundleset(coin,&block,&bundlei,origblock);
-    //static int total; char str[65]; printf("RECV %s [%d:%d] block.%08x | %d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,total++);
+    static int total; char str[65]; fprintf(stderr,"RECV %s [%d:%d] block.%08x | %d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,total++);
     if ( block != 0 )
     {
         if ( bp != 0 && bundlei > 0 && bits256_nonz(block->RO.prev_block) > 0 )
@@ -603,7 +603,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
         block->RO.recvlen = recvlen;
         if ( req->copyflag != 0 && block->queued == 0 && bp != 0 )//block->rawdata == 0 )
         {
-            //char str[65]; printf("%s copyflag.%d %d data %d %d\n",bits256_str(str,block->RO.hash2),req->copyflag,block->height,req->recvlen,recvlen);
+            char str[65]; fprintf(stderr,"%s copyflag.%d %d data %d %d\n",bits256_str(str,block->RO.hash2),req->copyflag,block->height,req->recvlen,recvlen);
             //block->rawdata = mycalloc('n',1,block->RO.recvlen);
             //memcpy(block->rawdata,req->serialized,block->RO.recvlen);
             //block->copyflag = 1;
@@ -612,14 +612,14 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
             queue_enqueue("cacheQ",&coin->cacheQ,&req->DL,0);
             return(0);
         }
-        while ( block != 0 && memcmp(block->RO.prev_block.bytes,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256)) == 0 )
+        /*while ( block != 0 && memcmp(block->RO.prev_block.bytes,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256)) == 0 )
         {
             if ( _iguana_chainlink(coin,block) != 0 )
             {
                 printf("chainlink.%d -> next.%p\n",block->height,block->hh.next);
                 block = block->hh.next;
             } else break;
-        }
+        }*/
         //printf("datalen.%d ipbits.%x\n",datalen,req->ipbits);
     } else printf("cant create block.%llx block.%p bp.%p bundlei.%d\n",(long long)origblock->RO.hash2.txid,block,bp,bundlei);
     return(req);
