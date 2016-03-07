@@ -190,7 +190,7 @@ void iguana_blockconv(struct iguana_block *dest,struct iguana_msgblock *msg,bits
 
 void iguana_blockcopy(struct iguana_info *coin,struct iguana_block *block,struct iguana_block *origblock)
 {
-    fprintf(stderr,"block copy\n");
+    fprintf(stderr,"block copy %p %p\n",block,origblock);
     block->RO.hash2 = origblock->RO.hash2;
     block->RO.prev_block = origblock->RO.prev_block;
     block->RO.merkle_root = origblock->RO.merkle_root;
@@ -198,8 +198,10 @@ void iguana_blockcopy(struct iguana_info *coin,struct iguana_block *block,struct
     fprintf(stderr,"block copy2\n");
     if ( block->fpipbits == 0 )
         block->fpipbits = origblock->fpipbits;
+    fprintf(stderr,"block copy2b\n");
     if ( block->RO.timestamp == 0 )
         block->RO.timestamp = origblock->RO.timestamp;
+    fprintf(stderr,"block copy2c\n");
     if ( block->RO.nonce == 0 )
         block->RO.nonce = origblock->RO.nonce;
     fprintf(stderr,"block copy3\n");
