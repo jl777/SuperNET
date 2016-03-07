@@ -519,9 +519,9 @@ uint32_t iguana_ramchain_pubkeyoffset(struct iguana_info *coin,RAMCHAIN_FUNC,int
         if ( (plen= bitcoin_pubkeylen(pubkey)) > 0 )
         {
             P[pkind].pubkeyoffset = *scriptoffsetp, *scriptoffsetp += plen;
-            //int32_t i; for (i=0; i<plen; i++)
-            //    printf("%02x",pubkey[i]);
-            //printf(" plen.%d -> new offset.%d\n",plen,*scriptoffsetp);
+            int32_t i; for (i=0; i<plen; i++)
+                printf("%02x",pubkey[i]);
+            printf(" plen.%d -> new offset.%d\n",plen,*scriptoffsetp);
             memcpy(&Kspace[P[pkind].pubkeyoffset],pubkey,plen);
         }
         else
@@ -690,9 +690,12 @@ int32_t iguana_vinscriptencode(struct iguana_info *coin,uint8_t *Kstackend,uint3
     }
     if ( s->numpubkeys > 0 )
     {
+        printf("metalen.%d\n",len);
         for (i=0; i<s->numpubkeys; i++)
+        {
             len += iguana_rwvarint32(1,&metascript[len],&poffsets[i]);
-        printf("EMIT pubkey.%d len.%d\n",poffsets[0],len);
+            printf("EMIT pubkey poffsets.[%x] len.%d\n",poffsets[0],len);
+        }
     }
     if ( p2shlen != 0 )
     {
