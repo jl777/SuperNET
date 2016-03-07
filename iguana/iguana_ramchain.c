@@ -745,8 +745,12 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,int32_t *metalenp,uint32
             if ( (plen= bitcoin_pubkeylen(pubkey)) <= 0 )
             {
                 int32_t j;
-                for (j=0; j<33; j++)
-                    printf("%02x",Kspace[poffset+j]);
+                for (j=0; j<totalsize; j++)
+                    printf("%02x",metascript[j]);
+                printf(" metascript\n");
+                for (j=0; j<scriptlen; j++)
+                    printf("%02x",_script[j]);
+                printf(" _script\n");
                 printf(" iguana_vinscriptdecode illegal pubkey.%d\n",i);
             }
             else
