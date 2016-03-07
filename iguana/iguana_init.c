@@ -302,9 +302,9 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                 break;
         if ( i > 0 )
         {
-            iguana_spentsfile(coin,i);
-            iguana_initscripts(coin);
+            //iguana_spentsfile(coin,i);
         }
+        iguana_initscripts(coin);
     }
 }
 
