@@ -1271,7 +1271,7 @@ int32_t iguana_ramchain_alloc(struct iguana_info *coin,struct iguana_ramchain *r
 
 long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t bundlei,struct iguana_bundle *bp)
 {
-    struct iguana_ramchaindata *rdata,tmp; char fname[1024]; long fpos = -1; int32_t c,i,hdrsi,checki; FILE *fp; uint8_t *destoffset,*srcoffset;
+    struct iguana_ramchaindata *rdata,tmp; char fname[1024]; long fpos = -1; int32_t c,i,hdrsi,checki; FILE *fp;
     if ( (rdata= ramchain->H.data) == 0 )
     {
         printf("ramchainsave no data ptr\n");
@@ -1298,17 +1298,6 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
     if ( fp != 0 )
     {
         fpos = ftell(fp);
-        if ( ramchain->expanded != 0 )
-        {
-            destoffset = &Kspace[ramchain->H.scriptoffset];
-            srcoffset = &Kspace[ramchain->H.data->scriptspace - ramchain->H.stacksize];
-            if ( 0 && destoffset != srcoffset )
-            {
-                for (i=0; i<ramchain->H.stacksize; i++)
-                    c = *srcoffset++, *destoffset++ = c;
-            }
-            printf("SAVE: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d\n",(int32_t)ramchain->H.data->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)ramchain->H.data->allocsize);
-        }
         iguana_ramchain_lhashes(RAMCHAIN_ARG,rdata,rdata,bp!=0?bp->n:1,ramchain->H.scriptoffset+ramchain->H.stacksize);
         tmp = *rdata;
         iguana_ramchain_compact(RAMCHAIN_ARG,&tmp,rdata,bp!=0?bp->n:1);
@@ -1965,7 +1954,7 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
                 }
             }
         }
-        scriptspace += tx->numvins * 16; // for metascripts
+        scriptspace += tx->numvins * 16 + 65536; // for metascripts
     }
     *sigspacep = sigspace, *pubkeyspacep = pubkeyspace;
     printf("numvouts.%d numvins.%d scriptspace.%d p2shspace.%d sigspace.%d pubkeyspace.%d\n",tx->numvouts,tx->numvins,scriptspace,p2shspace,sigspace,pubkeyspace);
@@ -2209,11 +2198,27 @@ void iguana_bundlemapfree(struct OS_memspace *mem,struct OS_memspace *hashmem,ui
 int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,struct iguana_ramchain *newchain,struct OS_memspace *hashmem,int32_t cmpflag,struct iguana_bundle *bp)
 {
     static bits256 zero;
-    bits256 firsthash2,lasthash2; int32_t err,bundlei,hdrsi,numblocks,firsti,height,retval = -1;
+    bits256 firsthash2,lasthash2; int32_t err,i,c,bundlei,hdrsi,numblocks,firsti,height,retval = -1;
     struct iguana_ramchain checkR,*mapchain; char fname[1024]; uint32_t scriptoffset,stacksize;
+    uint8_t *destoffset,*srcoffset;
     firsthash2 = ramchain->H.data->firsthash2, lasthash2 = ramchain->H.data->lasthash2;
-    height = ramchain->height, firsti = ramchain->H.data->firsti, hdrsi = ramchain->H.hdrsi, numblocks = ramchain->numblocks, scriptoffset = ramchain->H.scriptoffset, stacksize = ramchain->H.stacksize;
+    height = ramchain->height, firsti = ramchain->H.data->firsti, hdrsi = ramchain->H.hdrsi, numblocks = ramchain->numblocks;
     //printf("B[] %p\n",B);
+    if ( ramchain->expanded != 0 )
+    {
+        destoffset = &Kspace[ramchain->H.scriptoffset];
+        srcoffset = &Kspace[ramchain->H.data->scriptspace - ramchain->H.stacksize];
+        if ( 1 && destoffset != srcoffset )
+        {
+            for (i=0; i<ramchain->H.stacksize; i++)
+                c = *srcoffset++, *destoffset++ = c;
+        }
+        printf("SAVE: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d\n",(int32_t)ramchain->H.data->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)ramchain->H.data->allocsize);
+    }
+    scriptoffset = ramchain->H.scriptoffset;
+    stacksize = ramchain->H.stacksize;
+    ramchain->H.scriptoffset = ramchain->H.data->scriptspace = scriptoffset;
+    ramchain->H.stacksize = ramchain->H.data->stackspace = stacksize;
     iguana_ramchain_setsize(ramchain,ramchain->H.data,bp->n);
     //printf("Apresave T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d scriptoffset.%d stacksize.%d\n",ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,firsti,ramchain->H.scriptoffset,ramchain->H.stacksize);
     *newchain = *ramchain;
