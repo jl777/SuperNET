@@ -888,24 +888,19 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         block = 0;
         if ( priority == 0 && (bp= req->bp) != 0 && req->bundlei >= 0 && req->bundlei < bp->n && req->bundlei < coin->chain->bundlesize && (block= bp->blocks[req->bundlei]) != 0 && (block->fpipbits != 0 || block->queued != 0) )
         {
-            //if ( 1 && priority != 0 )
+            if ( 1 && priority != 0 )
                 printf("SKIP %p[%d] %d\n",bp,bp!=0?bp->bundleheight:-1,req->bundlei);
         }
         else
         {
-             if ( block != 0 )
-            {
-                //char str[65];
-                //if ( 0 && priority != 0 )
-                //printf(" issue.%s req.%d\n",bits256_str(str,hash2),block->numrequests);
+            if ( block != 0 )
                 block->numrequests++;
-            }
             iguana_sendblockreqPT(coin,addr,req->bp,req->bundlei,hash2,0);
         }
         flag++;
         myfree(req,sizeof(*req));
     }
-    else if ( addr->rank > 1 )
+    else if ( addr->rank > 0 )
     {
         struct iguana_block *bestblock = 0; struct iguana_bundle *bestbp = 0; int32_t besti = -1;
         n = coin->peers.numranked * 2;
@@ -943,18 +938,18 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
             printf("near hwm.%d gap.%d peer.%s bpranked.%d [%d:%d] pending.%d numreqs.%d\n",coin->blocks.hwmchain.height,gap,addr->ipaddr,bestbp->rank,bestbp->hdrsi,besti,addr->pendblocks,bestblock->numrequests);
             bestblock->numrequests++;
             iguana_sendblockreqPT(coin,addr,bestbp,besti,bestblock->RO.hash2,1);
-        } //else printf("addr.%s nothing near to do\n",addr->ipaddr);
-    }
-    if ( (bp= addr->bp) != 0 && bp->rank != 0 && addr->pendblocks < limit )
-    {
-        for (i=0; i<bp->n; i++)
-            if ( (block= bp->blocks[i]) != 0 && block->numrequests == bp->minrequests && block->fpipbits == 0 && block->queued == 0 )
-            {
-                printf("peer.%s ranked.%d [%d:%d] pending.%d\n",addr->ipaddr,bp->rank,bp->hdrsi,i,addr->pendblocks);
-                block->numrequests++;
-                iguana_sendblockreqPT(coin,addr,bp,i,block->RO.hash2,1);
-                break;
-            }
+        }
+        else if ( (bp= addr->bp) != 0 && bp->rank != 0 && addr->pendblocks < limit )
+        {
+            for (i=0; i<bp->n; i++)
+                if ( (block= bp->blocks[i]) != 0 && block->numrequests == bp->minrequests && block->fpipbits == 0 && block->queued == 0 )
+                {
+                    printf("peer.%s ranked.%d [%d:%d] pending.%d numreqs.%d\n",addr->ipaddr,bp->rank,bp->hdrsi,i,addr->pendblocks,block->numrequests);
+                    block->numrequests++;
+                    iguana_sendblockreqPT(coin,addr,bp,i,block->RO.hash2,1);
+                    break;
+                }
+        }
     }
     return(flag);
 }
