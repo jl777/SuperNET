@@ -378,7 +378,7 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,RAMCHAIN_FUNC,uin
     }
     if ( ramchain->H.ROflag != 0 )
     {
-        fprintf(stderr,"RO %p U[%d] txidind.%d pkind.%d\n",u,unspentind,ramchain->txidind,pkind);
+        fprintf(stderr,"RO %p U[%d] txidind.%d pkind.%d\n",u,unspentind,ramchain->H.txidind,ramchain->pkind);
         if ( u->scriptlen > 0 && u->scriptlen <= sizeof(u->script) )
         {
             if ( memcmp(script,u->script,u->scriptlen) != 0 )
@@ -405,7 +405,7 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,RAMCHAIN_FUNC,uin
         u->value = value;
         u->type = type;
         u->scriptfpos = 0;
-        fprintf(stderr,"type.% scriptlen.%d bp.%p\n",type,scriptlen,bp);
+        fprintf(stderr,"type.%d scriptlen.%d bp.%p\n",type,scriptlen,bp);
         if ( (u->scriptlen= scriptlen) != 0 )
         {
             if ( scriptlen <= sizeof(u->script) )
