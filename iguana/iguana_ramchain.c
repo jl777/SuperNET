@@ -2005,6 +2005,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         printf("fatal error getting txdataptrs %p %p %p %p\n",T,U,S,B);
         return(-1);
     }
+    return(0);
     for (i=0; i<txn_count; i++,ramchain->H.txidind++)
     {
         tx = &txarray[i];
