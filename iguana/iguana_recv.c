@@ -541,17 +541,21 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
                     firstbp = bp;
                 if ( bundlei == i+1 && bp == firstbp )
                     match++;
-                else fprintf(stderr,"recvhdr: ht.%d[%d] vs i.%d\n",bp->bundleheight,bundlei,i);
+                else
+                {
+                    if ( i != n-1 )
+                        fprintf(stderr,"recvhdr: ht.%d[%d] vs i.%d\n",bp->bundleheight,bundlei,i);
+                }
             }
         }
         if ( firstbp != 0 && match == coin->chain->bundlesize-1 && n == firstbp->n )
         {
             if ( firstbp->queued == 0 )
             {
-                //fprintf(stderr,"firstbp blockQ %d\n",firstbp->bundleheight);
-                iguana_bundleQ(coin,firstbp,1000 + 10*(rand() % (int32_t)(1+sqrt(firstbp->bundleheight))));
+                fprintf(stderr,"firstbp blockQ %d\n",firstbp->bundleheight);
+                iguana_bundleQ(coin,firstbp,1000);
             }
-        } else fprintf(stderr,"match.%d vs n.%d bp->n.%d ht.%d\n",match,n,firstbp->n,firstbp->bundleheight);
+        }
     }
     return(req);
 }
