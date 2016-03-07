@@ -1271,7 +1271,7 @@ int32_t iguana_ramchain_alloc(struct iguana_info *coin,struct iguana_ramchain *r
 
 long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t bundlei,struct iguana_bundle *bp)
 {
-    struct iguana_ramchaindata *rdata,tmp; char fname[1024]; long fpos = -1; int32_t c,i,hdrsi,checki; FILE *fp;
+    struct iguana_ramchaindata *rdata,tmp; char fname[1024]; long fpos = -1; int32_t hdrsi,checki; FILE *fp;
     if ( (rdata= ramchain->H.data) == 0 )
     {
         printf("ramchainsave no data ptr\n");
