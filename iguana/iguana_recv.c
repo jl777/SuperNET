@@ -376,7 +376,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         iguana_bundleQ(coin,bp,((bp->rank != 0) ? bp->rank : 64) * 100);
         return(0);
     }
-    else if ( 0 )
+    else //if ( 0 )
     {
         for (i=0; i<bp->n; i++)
         {
@@ -431,7 +431,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                     n++, issued++;
                 else if ( bp->issued[i] != 0 )
                     issued++;
-            } //else printf("iguana_bundleiters[%d] unexpected null block[%d]\n",bp->bundleheight,i);
+            } else printf("iguana_bundleiters[%d] unexpected null block[%d]\n",bp->bundleheight,i);
             bp->numsaved = n;
         }
         if ( max <= 0 )
@@ -439,7 +439,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         usleep(10000);
     }
     width = 1000 + sqrt(sqrt(bp->n * (1+bp->numsaved+issued)) * (10+coin->bundlescount-bp->hdrsi));
-    if ( 0 && counter > 0 )//&& bp->rank <= coin->peers.numranked )
+    //if ( 1 && counter > 0 )//&& bp->rank <= coin->peers.numranked )
         printf("ITERATE.%d bundle.%d h.%d n.%d r.%d s.%d F.%d I.%d T.%d %f %u next %f\n",bp->rank,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,issued,timelimit,endmillis-OS_milliseconds(),(uint32_t)time(NULL),width);
     if ( bp->emitfinish == 0 )
     {
