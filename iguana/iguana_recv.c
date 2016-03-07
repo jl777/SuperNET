@@ -1008,11 +1008,11 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
 int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
 {
     int32_t newhwm = 0,flag = 0;
-    //printf("process bundlesQ\n");
+    fprintf(stderr,"process bundlesQ\n");
     flag += iguana_processbundlesQ(coin,&newhwm);
-    //printf("iguana_reqhdrs\n");
+    fprintf(stderr,"iguana_reqhdrs\n");
     flag += iguana_reqhdrs(coin);
-    //printf("iguana_reqblocks\n");
+    fprintf(stderr,"iguana_reqblocks\n");
     flag += iguana_reqblocks(coin);
     return(flag);
 }

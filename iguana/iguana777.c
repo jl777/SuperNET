@@ -424,6 +424,7 @@ void iguana_coinloop(void *arg)
                     }
                     fprintf(stderr,"call stats\n");
                     iguana_bundlestats(coin,str);
+                    fprintf(stderr,"call process\n");
                     flag += iguana_processrecv(coin);
                 }
             }
