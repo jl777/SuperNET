@@ -64,7 +64,7 @@ char *iguana_bundleaddrs(struct iguana_info *coin,int32_t hdrsi)
             }
             return(jprint(retjson,1));
         }
-        iguana_bundleQ(coin,bp,bp->n);
+        //iguana_bundleQ(coin,bp,bp->n);
         return(clonestr("{\"error\":\"no bundle data\"}"));
     } return(clonestr("{\"error\":\"no bundle\"}"));
 }
