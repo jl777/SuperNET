@@ -402,7 +402,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         }
     }
     max = 1 + ((coin->MAXPENDING*coin->MAXPEERS - pend) >> 1);
-    endmillis = OS_milliseconds() + timelimit;
+    endmillis = OS_milliseconds() + timelimit*100;
     while ( bp->emitfinish == 0 && OS_milliseconds() < endmillis )
     {
         now = (uint32_t)time(NULL);
@@ -432,10 +432,10 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         }
         if ( max <= 0 )
             break;
-        usleep(1000);
+        usleep(10000);
     }
     width = 1000 + sqrt(sqrt(bp->n * (1+bp->numsaved+issued)) * (10+coin->bundlescount-bp->hdrsi));
-    if ( 0 && counter > 0 && bp->rank <= coin->peers.numranked )
+    if ( 1 && counter > 0 )//&& bp->rank <= coin->peers.numranked )
         printf("ITERATE.%d bundle.%d h.%d n.%d r.%d s.%d F.%d I.%d T.%d %f %u next %f\n",bp->rank,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,issued,timelimit,endmillis-OS_milliseconds(),(uint32_t)time(NULL),width);
     if ( bp->emitfinish == 0 )
     {

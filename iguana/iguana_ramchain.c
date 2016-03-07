@@ -550,7 +550,7 @@ uint32_t iguana_ramchain_addunspent(struct iguana_info *coin,RAMCHAIN_FUNC,uint6
     {
         //for (i=0; i<20; i++)
         //    printf("%02x",rmd160[i]);
-        //printf(" RO [%d] u%d offset.%u len.%d  txidind.%d pkind.%d pkoffset.%d\n",hdrsi,unspentind,u->scriptoffset,scriptlen,ramchain->H.txidind,pkind,P[pkind].pubkeyoffset);
+        printf(" RO [%d] u%d offset.%u len.%d  txidind.%d pkind.%d pkoffset.%d\n",hdrsi,unspentind,u->scriptoffset,scriptlen,ramchain->H.txidind,pkind,P[pkind].pubkeyoffset);
         if ( Kspace != 0 && u->scriptoffset != 0 && scriptlen > 0 )
         {
             checkscript = iguana_ramchain_scriptdecode(coin,&metalen,&checklen,Kspace,u->type,_script,u->scriptoffset,P[pkind].pubkeyoffset < ramchain->H.scriptoffset ? P[pkind].pubkeyoffset : 0);
@@ -580,8 +580,8 @@ uint32_t iguana_ramchain_addunspent(struct iguana_info *coin,RAMCHAIN_FUNC,uint6
         u->prevunspentind = A[pkind].lastunspentind;
         //for (i=0; i<20; i++)
         //    printf("%02x",rmd160[i]);
-        //printf(" U%d scriptoffset.%d pubkeyoffset.%d type.%d pkind.%d\n",unspentind,ramchain->H.scriptoffset,pubkeyoffset,type,pkind);
-        if ( scriptlen > 0 && script != 0 )
+        printf(" U%d scriptoffset.%d pubkeyoffset.%d type.%d pkind.%d\n",unspentind,ramchain->H.scriptoffset,pubkeyoffset,type,pkind);
+        if ( 0 && scriptlen > 0 && script != 0 )
         {
             //for (i=0; i<scriptlen; i++)
             //    printf("%02x",script[i]);
