@@ -350,6 +350,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
 {
     int32_t i,n,better,issued,valid,pend,max,counter = 0; uint32_t now; struct iguana_block *block; double endmillis,width;
     coin->numbundlesQ--;
+    printf("BUNDLEITERS.%d\n",bp->hdrsi);
     if ( bp->numhashes < bp->n && bp->bundleheight < coin->longestchain-coin->chain->bundlesize )
     {
         //printf("ITERATE bundle.%d vs %d: h.%d n.%d r.%d s.%d finished.%d speculative.%p\n",bp->bundleheight,coin->longestchain-coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,bp->speculative);
