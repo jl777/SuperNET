@@ -260,9 +260,10 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
     if ( err != 0 )
     {
         printf("bundlehash2add err.%d\n",err);
-        while ( 1 )
-            sleep(1);
-        exit(-1);
+        return(0);
+        //while ( 1 )
+        //    sleep(1);
+        //exit(-1);
     }
     return(-err);
 }

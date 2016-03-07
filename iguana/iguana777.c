@@ -423,7 +423,7 @@ void iguana_coinloop(void *arg)
                         coin->peers.lastmetrics = iguana_updatemetrics(coin); // ranks peers
                     }
                     //fprintf(stderr,"call stats\n");
-                    //iguana_bundlestats(coin,str);
+                    iguana_bundlestats(coin,str);
                     //fprintf(stderr,"call process\n");
                     flag += iguana_processrecv(coin);
                 }

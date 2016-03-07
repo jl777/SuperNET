@@ -969,7 +969,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
             {
                 if ( _iguana_chainlink(coin,next) != 0 )
                     lflag++, flag++;
-                else printf("chainlink error for %d\n",coin->blocks.hwmchain.height+1);
+                //else printf("chainlink error for %d\n",coin->blocks.hwmchain.height+1);
             }
             if ( queue_size(&coin->blocksQ) < _IGUANA_MAXPENDING )
             {
@@ -1012,11 +1012,11 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
 int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
 {
     int32_t newhwm = 0,flag = 0;
-    //fprintf(stderr,"process bundlesQ\n");
+    fprintf(stderr,"process bundlesQ\n");
     flag += iguana_processbundlesQ(coin,&newhwm);
-    //fprintf(stderr,"iguana_reqhdrs\n");
+    fprintf(stderr,"iguana_reqhdrs\n");
     flag += iguana_reqhdrs(coin);
-    //fprintf(stderr,"iguana_reqblocks\n");
+    fprintf(stderr,"iguana_reqblocks\n");
     flag += iguana_reqblocks(coin);
     return(flag);
 }
