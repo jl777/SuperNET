@@ -2005,7 +2005,6 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         printf("fatal error getting txdataptrs %p %p %p %p\n",T,U,S,B);
         return(-1);
     }
-    return(0);
     for (i=0; i<txn_count; i++,ramchain->H.txidind++)
     {
         tx = &txarray[i];
@@ -2013,7 +2012,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         for (j=0; j<tx->tx_out; j++)
         {
             memset(rmd160,0,sizeof(rmd160));
-            iguana_ramchain_addunspent20(coin,RAMCHAIN_ARG,tx->vouts[j].value,tx->vouts[j].pk_script,tx->vouts[j].pk_scriptlen,tx->txid,j,-1,bp,rmd160);
+            //iguana_ramchain_addunspent20(coin,RAMCHAIN_ARG,tx->vouts[j].value,tx->vouts[j].pk_script,tx->vouts[j].pk_scriptlen,tx->txid,j,-1,bp,rmd160);
         }
         ramchain->H.spendind += tx->tx_in;
     }
@@ -2024,7 +2023,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         for (j=0; j<tx->tx_in; j++)
         {
             //char str[65]; printf("PT vin.%d %s vout.%d\n",j,bits256_str(str,tx->vins[j].prev_hash),tx->vins[j].prev_vout);
-            iguana_ramchain_addspend256(coin,RAMCHAIN_ARG,tx->vins[j].prev_hash,tx->vins[j].prev_vout,tx->vins[j].vinscript,tx->vins[j].scriptlen,tx->vins[j].sequence,bp);//,bp->hdrsi,bundlei);
+            //iguana_ramchain_addspend256(coin,RAMCHAIN_ARG,tx->vins[j].prev_hash,tx->vins[j].prev_vout,tx->vins[j].vinscript,tx->vins[j].scriptlen,tx->vins[j].sequence,bp);//,bp->hdrsi,bundlei);
             //int32_t k; for (k=0; k<tx->vins[j].scriptlen; k++)
             //    printf("%02x",tx->vins[j].vinscript[k]);
             //printf(" msg spendind.%d\n",ramchain->H.spendind);
