@@ -146,6 +146,7 @@ int32_t iguana_peermetrics(struct iguana_info *coin)
         addr = &coin->peers.active[i];
         if ( addr->usock < 0 || addr->dead != 0 || addr->ready == 0 )
             continue;
+        addr->pendblocks = 0;
         if ( addr->recvblocks > coin->peers.mostreceived )
             coin->peers.mostreceived = addr->recvblocks;
         //printf("[%.0f %.0f] ",addr->recvblocks,addr->recvtotal);
