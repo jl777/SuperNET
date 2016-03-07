@@ -675,7 +675,6 @@ int32_t iguana_processbundlesQ(struct iguana_info *coin,int32_t *newhwmp) // sin
         }
         else printf("iguana_updatebundles unknown type.%c\n",req->type);
         flag++;
-        fprintf(stderr,"done %s bundlesQ.%p type.%c n.%d\n",req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
         if ( req != 0 )
             myfree(req,req->allocsize), req = 0;
     }

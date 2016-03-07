@@ -1957,7 +1957,6 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
                 if ( (scriptdata= iguana_scriptptr(coin,&scriptlen,_script,S[spendind].scriptfpos,S[spendind].vinscript,S[spendind].vinscriptlen,sizeof(S[spendind].vinscript),1)) != 0 )
                 {
                     iguana_vinscriptparse(coin,&V,&sigsize,&pubkeysize,&p2shsize,&suffixlen,scriptdata,scriptlen);
-                    scriptspace += tx->numvins * 16; // for metascripts
                     p2shspace += p2shsize;
                     if ( sequence != 0 && sequence != 0xffffffff && sequence != 0xfffffffe )
                         scriptspace += sizeof(sequence);
@@ -1966,9 +1965,10 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
                 }
             }
         }
+        scriptspace += tx->numvins * 16; // for metascripts
     }
     *sigspacep = sigspace, *pubkeyspacep = pubkeyspace;
-    printf("scriptspace.%d p2shspace.%d sigspace.%d pubkeyspace.%d\n",scriptspace,p2shspace,sigspace,pubkeyspace);
+    printf("numvouts.%d numvins.%d scriptspace.%d p2shspace.%d sigspace.%d pubkeyspace.%d\n",tx->numvouts,tx->numvins,scriptspace,p2shspace,sigspace,pubkeyspace);
     return(scriptspace + p2shspace);
 }
 
