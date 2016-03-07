@@ -885,7 +885,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         flag++;
         myfree(req,sizeof(*req));
     }
-    else if ( addr->rank > 1 )
+    else if ( 0 && addr->rank > 1 )
     {
         gap = addr->rank * coin->peers.numranked;
         for (i=0; i<coin->peers.numranked; i++,gap++)
@@ -904,7 +904,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
             }
         }
     }
-    if ( (bp= addr->bp) != 0 && bp->rank != 0 && addr->pendblocks < limit )
+    if ( 0 && (bp= addr->bp) != 0 && bp->rank != 0 && addr->pendblocks < limit )
     {
         for (i=0; i<bp->n; i++)
             if ( (block= bp->blocks[i]) != 0 && block->numrequests == bp->minrequests && block->fpipbits == 0 && block->queued == 0 )
