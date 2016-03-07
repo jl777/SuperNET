@@ -730,13 +730,13 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,int32_t *metalenp,uint32
     // expand metascript!!
     totalsize += len;
     len += iguana_rwvarint32(0,&metascript[len],(void *)&sigslen);
-    //printf("totalsize %d, len %d sigslen %d\n",totalsize,len,sigslen);
+    printf("totalsize %d, len %d sigslen %d numpubs.%d p2sh.%d\n",totalsize,len,sigslen,s->numpubkeys,s->p2sh);
     if ( sigslen > 0 && sigslen < 74*16 )
     {
         len += iguana_rwvarint32(0,&metascript[len],(void *)&stacksize);
         diff = (long)Kstackend - (long)Kspace;
         memcpy(&_script[scriptlen],&Kspace[diff - stacksize],sigslen), scriptlen += sigslen;
-        //printf("emit.%p from.%ld sigslen.%d [%02x] stacksize.%d\n",&Kspace[diff - stacksize],diff - stacksize,sigslen,Kspace[diff - stacksize + sigslen - 1],stacksize);
+        printf("emit.%p from.%ld sigslen.%d [%02x] stacksize.%d\n",&Kspace[diff - stacksize],diff - stacksize,sigslen,Kspace[diff - stacksize + sigslen - 1],stacksize);
     }
     if ( s->numpubkeys > 0 )
     {
@@ -1858,7 +1858,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
             scriptlen = 0;
             if ( ramchain->expanded != 0 )
             {
-                fprintf(stderr,"call vinscriptdecode\n");
+                fprintf(stderr,"call vinscriptdecode scriptspace.%d\n",ramchain->H.data->scriptspace);
                 scriptlen = iguana_vinscriptdecode(coin,&metalen,&sequenceid,_script,&Kspace[ramchain->H.data->scriptspace],Kspace,&Sx[ramchain->H.spendind]);
                 scriptdata = _script;
                 prevout = iguana_ramchain_txid(coin,RAMCHAIN_ARG,&prevhash,&Sx[ramchain->H.spendind]);
