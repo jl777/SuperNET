@@ -650,7 +650,10 @@ int32_t iguana_processbundlesQ(struct iguana_info *coin,int32_t *newhwmp) // sin
     *newhwmp = 0;
     while ( flag < IGUANA_BUNDLELOOP && (req= queue_dequeue(&coin->bundlesQ,0)) != 0 )
     {
-        //fprintf(stderr,"%s bundlesQ.%p type.%c n.%d\n",req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
+        flag++;
+        fprintf(stderr,"%s bundlesQ.%p type.%c n.%d\n",req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
+        if ( req->type != 'B' )
+            continue;
         if ( req->type == 'B' ) // one block with all txdata
             req = iguana_recvblock(coin,req->addr,req,&req->block,req->numtx,req->datalen,req->recvlen,newhwmp);
         else if ( req->type == 'H' ) // blockhdrs (doesnt have txn_count!)
@@ -674,7 +677,6 @@ int32_t iguana_processbundlesQ(struct iguana_info *coin,int32_t *newhwmp) // sin
                 myfree(req->hashes,(req->n+1) * sizeof(*req->hashes)), req->hashes = 0;
         }
         else printf("iguana_updatebundles unknown type.%c\n",req->type);
-        flag++;
         if ( req != 0 )
             myfree(req,req->allocsize), req = 0;
     }
@@ -1008,7 +1010,7 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
 {
     int32_t newhwm = 0,flag = 0;
     //fprintf(stderr,"process bundlesQ\n");
-    //flag += iguana_processbundlesQ(coin,&newhwm);
+    flag += iguana_processbundlesQ(coin,&newhwm);
     //fprintf(stderr,"iguana_reqhdrs\n");
     flag += iguana_reqhdrs(coin);
     //fprintf(stderr,"iguana_reqblocks\n");
