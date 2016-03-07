@@ -439,9 +439,11 @@ uint32_t iguana_ramchain_scriptencode(struct iguana_info *coin,uint8_t *Kspace,u
             *pubkeyoffsetp = pubkeyoffset = offset;
             memcpy(&Kspace[pubkeyoffset],script+1,plen);
             offset += plen;
-            //for (i=0; i<plen; i++)
-            //    printf("%02x",script[1+i]);
-            //printf(" pubkey -> pubkeyoffset.%d offset.%d\n",pubkeyoffset,offset);
+            char buf[1025];
+            buf[0] = 0;
+            for (i=0; i<plen; i++)
+                sprintf(buf+strlen(buf),"%02x",script[1+i]);
+            printf("%s pubkey -> pubkeyoffset.%d offset.%d plen.%d\n",buf,pubkeyoffset,offset,plen);
         }
         if ( memcmp(script+1,&Kspace[pubkeyoffset],plen) != 0 )
         {
@@ -580,17 +582,17 @@ uint32_t iguana_ramchain_addunspent(struct iguana_info *coin,RAMCHAIN_FUNC,uint6
         u->prevunspentind = A[pkind].lastunspentind;
         //for (i=0; i<20; i++)
         //    printf("%02x",rmd160[i]);
-        printf(" U%d scriptoffset.%d pubkeyoffset.%d type.%d pkind.%d\n",unspentind,ramchain->H.scriptoffset,pubkeyoffset,type,pkind);
+        printf(" U%d scriptoffset.%d pubkeyoffset.%d/%d type.%d pkind.%d\n",unspentind,ramchain->H.scriptoffset,pubkeyoffset,ramchain->H.data->scriptspace,type,pkind);
         if ( scriptlen > 0 && script != 0 )
         {
             //for (i=0; i<scriptlen; i++)
             //    printf("%02x",script[i]);
             //printf(" bp.[%d] u%d\n",hdrsi,unspentind);
-            if ( Kspace != 0 && ramchain->H.scriptoffset+scriptlen+3 <= ramchain->H.data->scriptspace )
+            if ( Kspace != 0 && ramchain->H.scriptoffset+scriptlen+3 <= ramchain->H.data->scriptspace-ramchain->H.stacksize )
             {
                 if ( (u->scriptoffset= iguana_ramchain_scriptencode(coin,Kspace,&ramchain->H.scriptoffset,type,script,scriptlen,&pubkeyoffset)) > 0 || type == IGUANA_SCRIPT_76AC )
                 {
-                    //printf("new offset.%d from scriptlen.%d pubkeyoffset.%d\n",ramchain->H.scriptoffset,scriptlen,pubkeyoffset);
+                    fprintf(stderr,"new offset.%d from scriptlen.%d pubkeyoffset.%d\n",ramchain->H.scriptoffset,scriptlen,pubkeyoffset);
                     if ( type == IGUANA_SCRIPT_76AC && pubkeyoffset != 0 )
                     {
                         P[pkind].pubkeyoffset = pubkeyoffset;
@@ -600,7 +602,7 @@ uint32_t iguana_ramchain_addunspent(struct iguana_info *coin,RAMCHAIN_FUNC,uint6
                     }
                 }
                 //printf("[%d] u%d offset.%u len.%d\n",hdrsi,unspentind,u->scriptoffset,scriptlen);
-            } else printf("[%d] u%d Kspace.%p scriptspace overflow! %d + %d vs space.%d\n",hdrsi,unspentind,Kspace,ramchain->H.scriptoffset,scriptlen,ramchain->H.data->scriptspace);
+            } else printf("[%d] u%d Kspace.%p scriptspace overflow! %d + %d vs space.%d - stack.%d\n",hdrsi,unspentind,Kspace,ramchain->H.scriptoffset,scriptlen,ramchain->H.data->scriptspace,ramchain->H.stacksize);
         }
     }
     //printf("%p A[%d] last <- U%d\n",&A[pkind],pkind,unspentind);
@@ -718,6 +720,7 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,int32_t *metalenp,uint32
         memcpy(sequenceidp,&metascript[len],sizeof(*sequenceidp));
         len += sizeof(*sequenceidp);
     } else (*sequenceidp) = -(*sequenceidp);
+    *metalenp = 0;
     len += iguana_rwvarint32(0,&metascript[len],(void *)&totalsize);
     if ( totalsize > IGUANA_MAXSCRIPTSIZE )
     {
@@ -752,6 +755,7 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,int32_t *metalenp,uint32
                     printf("%02x",_script[j]);
                 printf(" _script\n");
                 printf(" iguana_vinscriptdecode illegal pubkey.%d\n",i);
+                return(0);
             }
             else
             {
@@ -2445,7 +2449,6 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     {
         if ( (block= bp->blocks[i]) != 0 && block == iguana_blockfind(coin,bp->hashes[i]) )
         {
-            fprintf(stderr,"(%x:%x) ",(uint32_t)block->RO.hash2.ulongs[3],(uint32_t)bp->hashes[i].ulongs[3]);
             if ( iguana_blockvalidate(coin,&valid,block,1) != 0 || (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) )
             {
                 char str[65]; printf("null prevblock error at ht.%d patch.(%s)\n",bp->bundleheight+i,bits256_str(str,bp->hashes[i-1]));
