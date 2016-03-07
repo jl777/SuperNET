@@ -384,7 +384,7 @@ void iguana_coinloop(void *arg)
     printf("after bundlecreate\n");//, getchar();
     while ( 1 )
     {
-        fprintf(stderr,"iter\n");
+        //fprintf(stderr,"iter\n");
         flag = 0;
         for (i=0; i<n; i++)
         {
@@ -405,7 +405,7 @@ void iguana_coinloop(void *arg)
                     {
                         if ( coin->peers.numranked < 8 && now > coin->lastpossible+60 )
                         {
-                            fprintf(stderr,"possible\n");
+                            //fprintf(stderr,"possible\n");
                             coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
                         }
                     }
@@ -413,18 +413,18 @@ void iguana_coinloop(void *arg)
                     {
                         if ( coin->peers.numranked != 0 && coin->peers.numranked < (coin->MAXPEERS>>1) && now > coin->lastpossible+6 )
                         {
-                            fprintf(stderr,"possible\n");
+                            //fprintf(stderr,"possible\n");
                             coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
                         }
                     }
                     if ( now > coin->peers.lastmetrics+6 )
                     {
-                        fprintf(stderr,"metrics\n");
+                        //fprintf(stderr,"metrics\n");
                         coin->peers.lastmetrics = iguana_updatemetrics(coin); // ranks peers
                     }
-                    fprintf(stderr,"call stats\n");
+                    //fprintf(stderr,"call stats\n");
                     iguana_bundlestats(coin,str);
-                    fprintf(stderr,"call process\n");
+                    //fprintf(stderr,"call process\n");
                     flag += iguana_processrecv(coin);
                 }
             }
