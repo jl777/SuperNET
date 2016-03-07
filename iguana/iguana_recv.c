@@ -345,7 +345,6 @@ void iguana_bundlespeculate(struct iguana_info *coin,struct iguana_bundle *bp,in
 int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
 {
     int32_t i,n,better,issued,valid,pend,max,counter = 0; uint32_t now; struct iguana_block *block; double endmillis,width;
-    return(0);
     coin->numbundlesQ--;
     if ( bp->numhashes < bp->n && bp->bundleheight < coin->longestchain-coin->chain->bundlesize )
     {
