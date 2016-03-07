@@ -470,7 +470,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
             iguana_blockcopy(coin,block,origblock);
         *blockp = block;
         prevhash2 = origblock->RO.prev_block;
-        if ( 0 && bits256_nonz(prevhash2) > 0 )
+        if ( 1 && bits256_nonz(prevhash2) > 0 )
             iguana_patch(coin,block);
         if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) != 0 && bundlei < coin->chain->bundlesize )
         {
@@ -524,17 +524,17 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
                     firstbp = bp;
                 if ( bundlei == i+1 && bp == firstbp )
                     match++;
-                //else printf("recvhdr: ht.%d[%d] vs i.%d\n",bp->bundleheight,bundlei,i);
+                else fprintf(stderr,"recvhdr: ht.%d[%d] vs i.%d\n",bp->bundleheight,bundlei,i);
             }
         }
         if ( firstbp != 0 && match == coin->chain->bundlesize-1 && n == firstbp->n )
         {
             if ( firstbp->queued == 0 )
             {
-                printf("firstbp blockQ %d\n",firstbp->bundleheight);
+                fprintf(stderr,"firstbp blockQ %d\n",firstbp->bundleheight);
                 iguana_bundleQ(coin,firstbp,1000 + 10*(rand() % (int32_t)(1+sqrt(firstbp->bundleheight))));
             }
-        } else printf("match.%d vs n.%d bp->n.%d ht.%d\n",match,n,firstbp->n,firstbp->bundleheight);
+        } else fprintf(stderr,"match.%d vs n.%d bp->n.%d ht.%d\n",match,n,firstbp->n,firstbp->bundleheight);
     }
     return(req);
 }
