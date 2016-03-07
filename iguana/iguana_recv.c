@@ -466,14 +466,16 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
     hash2 = origblock->RO.hash2;
     if ( (block= iguana_blockhashset(coin,-1,hash2,1)) != 0 )
     {
+        fprintf("bundleset block.%p vs origblock.%p\n",block,origblock);
         if ( block != origblock )
             iguana_blockcopy(coin,block,origblock);
         *blockp = block;
         prevhash2 = origblock->RO.prev_block;
-        if ( 1 && bits256_nonz(prevhash2) > 0 )
+        if ( 0 && bits256_nonz(prevhash2) > 0 )
             iguana_patch(coin,block);
         if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) != 0 && bundlei < coin->chain->bundlesize )
         {
+            fprintf(stderr,"bundle found %d:%d\n",bp->hdrsi,bundlei);
             block->bundlei = bundlei;
             block->hdrsi = bp->hdrsi;
             bp->blocks[bundlei] = block;
@@ -487,9 +489,10 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
         prevbp = 0, prevbundlei = -2;
         iguana_bundlefind(coin,&prevbp,&prevbundlei,prevhash2);
         if ( block->blockhashes != 0 )
-            printf("has blockhashes bp.%p[%d] prevbp.%p[%d]\n",bp,bundlei,prevbp,prevbundlei);
+            fprintf(stderr,"has blockhashes bp.%p[%d] prevbp.%p[%d]\n",bp,bundlei,prevbp,prevbundlei);
         if ( prevbp != 0 && prevbundlei >= 0 && (prevblock= iguana_blockfind(coin,prevhash2)) != 0 )
         {
+            fprintf(stderr,"prev case\n");
             if ( prevbundlei < coin->chain->bundlesize )
             {
                 if ( prevbp->hdrsi+1 == coin->bundlescount && prevbundlei == coin->chain->bundlesize-1 )
@@ -654,7 +657,7 @@ int32_t iguana_processbundlesQ(struct iguana_info *coin,int32_t *newhwmp) // sin
     while ( flag < IGUANA_BUNDLELOOP && (req= queue_dequeue(&coin->bundlesQ,0)) != 0 )
     {
         flag++;
-        fprintf(stderr,"%s bundlesQ.%p type.%c n.%d\n",req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
+        //fprintf(stderr,"%s bundlesQ.%p type.%c n.%d\n",req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
         //if ( req->type == 'H' )
         //    continue;
         if ( req->type == 'B' ) // one block with all txdata
@@ -680,7 +683,7 @@ int32_t iguana_processbundlesQ(struct iguana_info *coin,int32_t *newhwmp) // sin
                 myfree(req->hashes,(req->n+1) * sizeof(*req->hashes)), req->hashes = 0;
         }
         else printf("iguana_updatebundles unknown type.%c\n",req->type);
-        fprintf(stderr,"finished bundlesQ\n");
+        //fprintf(stderr,"finished bundlesQ\n");
         if ( req != 0 )
             myfree(req,req->allocsize), req = 0;
     }
@@ -1014,11 +1017,11 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
 int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
 {
     int32_t newhwm = 0,flag = 0;
-    fprintf(stderr,"process bundlesQ\n");
+    //fprintf(stderr,"process bundlesQ\n");
     flag += iguana_processbundlesQ(coin,&newhwm);
-    fprintf(stderr,"iguana_reqhdrs\n");
+    //fprintf(stderr,"iguana_reqhdrs\n");
     flag += iguana_reqhdrs(coin);
-    fprintf(stderr,"iguana_reqblocks\n");
+    //fprintf(stderr,"iguana_reqblocks\n");
     flag += iguana_reqblocks(coin);
     return(flag);
 }
