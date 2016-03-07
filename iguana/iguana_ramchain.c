@@ -1954,7 +1954,7 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
                 }
             }
         }
-        scriptspace += tx->numvins * 16 + 16384; // for metascripts
+        scriptspace += tx->numvins * 16 + 128; // for metascripts
     }
     *sigspacep = sigspace, *pubkeyspacep = pubkeyspace;
     //printf("numvouts.%d numvins.%d scriptspace.%d p2shspace.%d sigspace.%d pubkeyspace.%d\n",tx->numvouts,tx->numvins,scriptspace,p2shspace,sigspace,pubkeyspace);
@@ -2204,7 +2204,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     firsthash2 = ramchain->H.data->firsthash2, lasthash2 = ramchain->H.data->lasthash2;
     height = ramchain->height, firsti = ramchain->H.data->firsti, hdrsi = ramchain->H.hdrsi, numblocks = ramchain->numblocks;
     //printf("B[] %p\n",B);
-    if ( 0 && ramchain->expanded != 0 )
+    if ( 1 && ramchain->expanded != 0 )
     {
         destoffset = &Kspace[ramchain->H.scriptoffset];
         srcoffset = &Kspace[ramchain->H.data->scriptspace - ramchain->H.stacksize];
