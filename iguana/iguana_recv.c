@@ -1012,6 +1012,6 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
     //fprintf(stderr,"iguana_reqhdrs\n");
     flag += iguana_reqhdrs(coin);
     //fprintf(stderr,"iguana_reqblocks\n");
-    //flag += iguana_reqblocks(coin);
+    flag += iguana_reqblocks(coin);
     return(flag);
 }
