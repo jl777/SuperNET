@@ -371,14 +371,13 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,RAMCHAIN_FUNC,uin
         memset(&V,0,sizeof(V));
         if ( type < 0 )
         {
-            fprintf(stderr,"call calcrmd160\n");
             type = iguana_calcrmd160(coin,&V,script,scriptlen,txid,vout,0xffffffff);
             memcpy(rmd160,V.rmd160,sizeof(V.rmd160));
         } //else printf("iguana_ramchain_addunspent20: unexpected non-neg type.%d\n",type);
     }
     if ( ramchain->H.ROflag != 0 )
     {
-        fprintf(stderr,"RO %p U[%d] txidind.%d pkind.%d\n",u,unspentind,ramchain->H.txidind,ramchain->pkind);
+        //fprintf(stderr,"RO %p U[%d] txidind.%d pkind.%d\n",u,unspentind,ramchain->H.txidind,ramchain->pkind);
         if ( u->scriptlen > 0 && u->scriptlen <= sizeof(u->script) )
         {
             if ( memcmp(script,u->script,u->scriptlen) != 0 )
@@ -405,7 +404,7 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,RAMCHAIN_FUNC,uin
         u->value = value;
         u->type = type;
         u->scriptfpos = 0;
-        fprintf(stderr,"type.%d scriptlen.%d bp.%p\n",type,scriptlen,bp);
+        //fprintf(stderr,"type.%d scriptlen.%d bp.%p\n",type,scriptlen,bp);
         if ( (u->scriptlen= scriptlen) != 0 )
         {
             if ( scriptlen <= sizeof(u->script) )
@@ -939,7 +938,9 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,RAMCHAIN_FUNC,bits
     s = &S[spendind];
     if ( vinscriptlen > sizeof(s->vinscript) )
     {
+        fprintf(stderr,"vin scriptsave\n");
         scriptfpos = iguana_scriptsave(coin,bp,spendind,1,vinscript,vinscriptlen);
+        fprintf(stderr,"done vin scriptsave\n");
         //printf("S%d added sig.%d len.%d %08x\n",spendind,scriptfpos,vinscriptlen,calc_crc32(0,vinscript,vinscriptlen));
     }
     if ( ramchain->H.ROflag != 0 )
@@ -1996,7 +1997,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
     }
     fpos = -1;
     scriptspace = iguana_scriptspaceraw(coin,&scriptsize,&sigsize,&pubkeysize,txarray,txn_count);
-    printf("bp.[%d:%d] <- scriptspace.%d expanded.%d\n",bp->hdrsi,bundlei,scriptspace,ramchain->expanded);
+    //printf("bp.[%d:%d] <- scriptspace.%d expanded.%d\n",bp->hdrsi,bundlei,scriptspace,ramchain->expanded);
     if ( iguana_ramchain_init(ramchain,&addr->TXDATA,&addr->HASHMEM,1,txn_count,origtxdata->numunspents,origtxdata->numspends,0,0,scriptspace,0,1) == 0 )
         return(-1);
     iguana_ramchain_link(ramchain,origtxdata->block.RO.hash2,origtxdata->block.RO.hash2,bp->hdrsi,bp->bundleheight+bundlei,bundlei,1,firsti,0);
@@ -2030,7 +2031,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
             //printf(" msg spendind.%d\n",ramchain->H.spendind);
         }
     }
-    char str[65]; printf("before height.%d num.%d:%d T.%d U.%d S.%d P.%d X.%d %s\n",ramchain->height,ramchain->numblocks,ramchain->H.data->numblocks,ramchain->H.txidind,ramchain->H.unspentind,ramchain->H.spendind,ramchain->pkind,ramchain->externalind,bits256_str(str,ramchain->H.data->firsthash2));
+    //char str[65]; printf("before height.%d num.%d:%d T.%d U.%d S.%d P.%d X.%d %s\n",ramchain->height,ramchain->numblocks,ramchain->H.data->numblocks,ramchain->H.txidind,ramchain->H.unspentind,ramchain->H.spendind,ramchain->pkind,ramchain->externalind,bits256_str(str,ramchain->H.data->firsthash2));
     iguana_ramchain_setsize(ramchain,ramchain->H.data,1);
     flag = 0;
     if ( ramchain->H.txidind != ramchain->H.data->numtxids || ramchain->H.unspentind != ramchain->H.data->numunspents || ramchain->H.spendind != ramchain->H.data->numspends )
@@ -2095,7 +2096,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
             }
         } else printf("ramchain verification error.%d hdrsi.%d bundlei.%d\n",err,bp->hdrsi,bundlei);
     }
-    fprintf(stderr,"finished with hdrsi.%d ht.%d\n",bp->hdrsi,bp->bundleheight);
+    //fprintf(stderr,"finished with hdrsi.%d ht.%d\n",bp->hdrsi,bp->bundleheight);
     ramchain->H.ROflag = 0;
     iguana_ramchain_free(ramchain,0);
     return(fpos);

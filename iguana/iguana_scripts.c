@@ -937,7 +937,6 @@ long iguana_scriptadd(struct iguana_info *coin,struct iguana_bundle *bp,uint32_t
     memset(vp,0,sizeof(*vp));
     asmstr[0] = 0;
     total++;
-    fprintf(stderr,"scriptgen\n");
     scriptlen = iguana_scriptgen(coin,&vp->M,&vp->N,vp->coinaddr,script,asmstr,rmd160,type,(const struct vin_info *)vp,vout);
     if ( scriptlen == spendlen && memcmp(script,spendscript,scriptlen) == 0 )
         return(0);
