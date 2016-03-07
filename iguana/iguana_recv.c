@@ -469,6 +469,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
         fprintf(stderr,"bundleset block.%p vs origblock.%p\n",block,origblock);
         if ( block != origblock )
             iguana_blockcopy(coin,block,origblock);
+        fprintf(stderr,"copy %p\n",blockp);
         *blockp = block;
         prevhash2 = origblock->RO.prev_block;
         fprintf(stderr,"set prevhash2\n");

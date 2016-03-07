@@ -276,7 +276,7 @@ struct iguana_block
     int32_t height,fpos; uint32_t fpipbits,numrequests,issued;
     uint16_t hdrsi,bundlei:12,mainchain:1,valid:1,queued:1,tbd:1,extra:8;
     UT_hash_handle hh; bits256 *blockhashes;
-} __attribute__((packed));
+};// __attribute__((packed));
 
 
 #define IGUANA_LHASH_BLOCKS 0
