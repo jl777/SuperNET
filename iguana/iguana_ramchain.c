@@ -581,7 +581,7 @@ uint32_t iguana_ramchain_addunspent(struct iguana_info *coin,RAMCHAIN_FUNC,uint6
         //for (i=0; i<20; i++)
         //    printf("%02x",rmd160[i]);
         printf(" U%d scriptoffset.%d pubkeyoffset.%d type.%d pkind.%d\n",unspentind,ramchain->H.scriptoffset,pubkeyoffset,type,pkind);
-        if ( 0 && scriptlen > 0 && script != 0 )
+        if ( scriptlen > 0 && script != 0 )
         {
             //for (i=0; i<scriptlen; i++)
             //    printf("%02x",script[i]);
