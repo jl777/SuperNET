@@ -1005,8 +1005,8 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                 _iguana_chainlink(coin,next);
             else if ( next->queued == 0 && next->fpipbits == 0 )
             {
-                printf("HWM next %d\n",coin->blocks.hwmchain.height+1);
-                iguana_blockQ(coin,bp,bundlei,next->RO.hash2,0);
+                //printf("HWM next %d\n",coin->blocks.hwmchain.height+1);
+                //iguana_blockQ(coin,bp,bundlei,next->RO.hash2,0);
             }
         }
         else
