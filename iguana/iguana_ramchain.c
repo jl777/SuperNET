@@ -331,6 +331,7 @@ uint32_t iguana_ramchain_addpkhash(struct iguana_info *coin,RAMCHAIN_FUNC,uint8_
                     printf("%02x",rmd160[i]);
                 printf(" vs rmd160\n");
                 printf("iguana_ramchain_addpkhash pkind.%d  error mismatched rmd160\n",pkind);
+                getchar();
                 return(0);
             }
             //ramchain->pkind = (pkind + 1);
@@ -832,9 +833,9 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
             {
                 if ( (ptr= iguana_hashfind(ramchain,'P',V.signers[i].rmd160)) == 0 )
                 {
-                    printf("from addspend\n");
-                    pkind = iguana_ramchain_addpkhash(coin,RAMCHAIN_ARG,V.signers[i].rmd160,0,0,0);
-                    printf("create pkind.%d from vin\n",pkind);
+                    //printf("from addspend\n");
+                    //pkind = iguana_ramchain_addpkhash(coin,RAMCHAIN_ARG,V.signers[i].rmd160,0,0,0);
+                    //printf("create pkind.%d from vin\n",pkind);
                 } else pkind = ptr->hh.itemind;
             }
         }
@@ -1301,7 +1302,7 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
         {
             destoffset = &Kspace[ramchain->H.scriptoffset];
             srcoffset = &Kspace[ramchain->H.data->scriptspace - ramchain->H.stacksize];
-            if ( destoffset != srcoffset )
+            if ( 0 && destoffset != srcoffset )
             {
                 for (i=0; i<ramchain->H.stacksize; i++)
                     c = *srcoffset++, *destoffset++ = c;
@@ -1311,7 +1312,7 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
         iguana_ramchain_lhashes(RAMCHAIN_ARG,rdata,rdata,bp!=0?bp->n:1,ramchain->H.scriptoffset+ramchain->H.stacksize);
         tmp = *rdata;
         iguana_ramchain_compact(RAMCHAIN_ARG,&tmp,rdata,bp!=0?bp->n:1);
-        if ( ramchain->expanded != 0 )
+        if ( 0 && ramchain->expanded != 0 )
             printf("compact: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d\n",(int32_t)ramchain->H.data->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)ramchain->H.data->allocsize);
         fwrite(&tmp,1,sizeof(tmp),fp);
         iguana_ramchain_saveaction(RAMCHAIN_ARG,fp,rdata,bp!=0?bp->n:1,ramchain->H.scriptoffset+ramchain->H.stacksize);
@@ -1855,11 +1856,11 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
                 //printf("from expanded iter\n");
                 if ( iguana_ramchain_addspend(coin,RAMCHAIN_ARG,prevhash,prevout,sequenceid,bp->hdrsi,scriptdata,scriptlen) == 0 )
                 {
-                    char str[65]; int32_t i;
-                    printf("txidind.%d spendind.%d spendtxid.%x %d vin.%d %s vout.%d\n",ramchain->H.txidind,ramchain->H.spendind,Sx[ramchain->H.spendind].spendtxidind,Sx[ramchain->H.spendind].spendtxidind&0xfffffff,j,bits256_str(str,prevhash),prevout);
-                    for (i=0; i<ramchain->H.data->numexternaltxids; i++)
-                        printf("%p X[%d] %s\n",X,i,bits256_str(str,X[i]));
-                    exit(-1);
+                    char str[65];
+                    printf("hdrsi.%d txidind.%d spendind.%d spendtxid.%x %d vin.%d %s vout.%d\n",bp->bundleheight,ramchain->H.txidind,ramchain->H.spendind,Sx[ramchain->H.spendind].spendtxidind,Sx[ramchain->H.spendind].spendtxidind&0xfffffff,j,bits256_str(str,prevhash),prevout);
+                    //for (i=0; i<ramchain->H.data->numexternaltxids; i++)
+                    //    printf("%p X[%d] %s\n",X,i,bits256_str(str,X[i]));
+                    //exit(-1);
                     iguana_ramchain_txid(coin,RAMCHAIN_ARG,&prevhash,&Sx[ramchain->H.spendind]);
                     return(-7);
                 }
@@ -1989,8 +1990,8 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
             return(-1);
         }
     }
-    if ( bits256_nonz(bp->hashes[bundlei]) == 0 )
-        bp->hashes[bundlei] = origtxdata->block.RO.hash2;
+    //if ( bits256_nonz(bp->hashes[bundlei]) == 0 )
+    //    bp->hashes[bundlei] = origtxdata->block.RO.hash2;
     if ( (block= bp->blocks[bundlei]) == 0 )
     {
         //char str[65]; printf("%d:%d has no block ptr %s\n",bp->hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]));

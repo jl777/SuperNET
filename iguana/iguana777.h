@@ -33,9 +33,9 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_HEIGHT 200
 
 #define IGUANA_MAXPENDHDRS 1
-#define _IGUANA_MAXPENDING 1024    //64
+#define _IGUANA_MAXPENDING 512    //64
 #define _IGUANA_MAXBUNDLES 8 
-#define IGUANA_BUNDLELOOP 10
+#define IGUANA_BUNDLELOOP 100
 #define IGUANA_RPCPORT 7778
 #define IGUANA_MAXRAMCHAINSIZE ((uint64_t)1024L * 1024L * 1024L * 16)
 
@@ -388,11 +388,10 @@ struct iguana_peer
     double recvblocks,recvtotal;
     int64_t allocated,freed;
     struct msgcounts msgcounts;
-    //FILE *fp; int32_t filecount,addrind;
     struct OS_memspace RAWMEM,TXDATA,HASHMEM;
     struct iguana_ramchain ramchain;
-    //struct iguana_kvitem *txids,*pkhashes;
     struct iguana_fileitem *filehash2; int32_t numfilehash2,maxfilehash2;
+    struct iguana_bundle *bp;
 #ifdef IGUANA_PEERALLOC
     struct OS_memspace *SEROUT[128];
 #endif
@@ -415,7 +414,7 @@ struct iguana_bundle
     struct queueitem DL; struct iguana_info *coin; struct iguana_bundle *nextbp;
     struct iguana_bloom16 bloom; uint32_t rawscriptspace;
     uint32_t issuetime,hdrtime,emitfinish,mergefinish,purgetime,queued;
-    int32_t numhashes,numrecv,numsaved,numcached;
+    int32_t numhashes,numrecv,numsaved,numcached,rank;
     int32_t minrequests,n,hdrsi,bundleheight,numtxids,numspends,numunspents,numspec;
     double avetime,threshold,metric; uint64_t datasize,estsize;
     struct iguana_block *blocks[IGUANA_MAXBUNDLESIZE]; uint32_t issued[IGUANA_MAXBUNDLESIZE];
@@ -452,11 +451,11 @@ struct iguana_info
     struct tai starttime; double startmillis;
     struct iguana_chain *chain;
     struct iguana_iAddr *iAddrs;
-    struct iguanakv *txids,*spends,*unspents,*pkhashes;
-    struct iguana_txid *T;
-    struct iguana_unspent *U; struct iguana_Uextra *Uextras;
-    struct iguana_spend *S; struct iguana_Sextra *Sextras;
-    struct iguana_pkhash *P; struct iguana_account *accounts; struct iguana_pkextra *pkextras;
+    //struct iguanakv *txids,*spends,*unspents,*pkhashes;
+    //struct iguana_txid *T;
+    //struct iguana_unspent *U; struct iguana_Uextra *Uextras;
+    //struct iguana_spend *S; struct iguana_Sextra *Sextras;
+    //struct iguana_pkhash *P; struct iguana_account *accounts; struct iguana_pkextra *pkextras;
     //struct iguana_counts latest;
     //struct iguana_ledger LEDGER,loadedLEDGER;
 

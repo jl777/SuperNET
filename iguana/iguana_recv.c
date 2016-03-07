@@ -382,7 +382,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         }
     }
     max = 1 + ((coin->MAXPENDING*coin->MAXPEERS - pend) >> 1);
-    endmillis = OS_milliseconds() + timelimit;
+    endmillis = OS_milliseconds() + timelimit*10;
     while ( bp->emitfinish == 0 && OS_milliseconds() < endmillis )
     {
         now = (uint32_t)time(NULL);
@@ -415,7 +415,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         usleep(1000);
     }
     width = 1000 + sqrt(sqrt(bp->n * (1+bp->numsaved+issued)) * (10+coin->bundlescount-bp->hdrsi));
-    //if ( 0 && counter > 0 )
+    if ( 1 && counter > 0 && bp->rank <= coin->peers.numranked )
         printf("ITERATE bundle.%d h.%d n.%d r.%d s.%d F.%d I.%d T.%d %f %u next %f\n",bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,issued,timelimit,endmillis-OS_milliseconds(),(uint32_t)time(NULL),width);
     if ( bp->emitfinish == 0 )
     {
@@ -465,7 +465,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
             iguana_blockcopy(coin,block,origblock);
         *blockp = block;
         prevhash2 = origblock->RO.prev_block;
-        if ( 1 && bits256_nonz(prevhash2) > 0 )
+        if ( 0 && bits256_nonz(prevhash2) > 0 )
             iguana_patch(coin,block);
         if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) != 0 && bundlei < coin->chain->bundlesize )
         {
@@ -873,6 +873,17 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         flag++;
         myfree(req,sizeof(*req));
     }
+    else if ( (bp= addr->bp) != 0 && bp->rank != 0 && addr->pendblocks < limit )
+    {
+        for (i=0; i<bp->n; i++)
+            if ( (block= bp->blocks[i]) != 0 && block->numrequests == bp->minrequests && block->fpipbits == 0 && block->queued == 0 )
+            {
+                //printf("peer.%s ranked.%d [%d:%d] pending.%d\n",addr->ipaddr,bp->rank,bp->hdrsi,i,addr->pendblocks);
+                block->numrequests++;
+                iguana_sendblockreqPT(coin,addr,bp,i,block->RO.hash2,1);
+                break;
+            }
+    }
     return(flag);
 }
 
@@ -937,7 +948,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                     lflag++, flag++;
                 else printf("chainlink error for %d\n",coin->blocks.hwmchain.height+1);
             }
-            if ( 1 || queue_size(&coin->blocksQ) == 0 )
+            if ( queue_size(&coin->blocksQ) < _IGUANA_MAXPENDING )
             {
                 double threshold,lag = OS_milliseconds() - coin->backstopmillis;
                 threshold = (10 + coin->longestchain - coin->blocksrecv);
@@ -948,7 +959,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                 else threshold = coin->avetime;
                 threshold *= 100. * sqrt(threshold) * .000777;
                 if ( strcmp(coin->symbol,"BTC") != 0 )
-                    threshold = 300;
+                    threshold = 1000;
                 else threshold = 10000;
                 if ( coin->blocks.hwmchain.height < coin->longestchain && (coin->backstop != coin->blocks.hwmchain.height+1 || lag > threshold) )
                 {
@@ -963,8 +974,9 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                             coin->backstopmillis = OS_milliseconds();
                             iguana_blockQ(coin,bp,bundlei,hash2,0);
                             flag++;
-                            //if ( (rand() % 100) == 0 )
-                            char str[65]; printf("%s MAINCHAIN.%d threshold %.3f %.3f lag %.3f\n",bits256_str(str,hash2),coin->blocks.hwmchain.height+1,threshold,coin->backstopmillis,lag);
+                            char str[65];
+                            if ( 0 && (rand() % 10) == 0 )
+                                printf("%s MAINCHAIN.%d threshold %.3f %.3f lag %.3f\n",bits256_str(str,hash2),coin->blocks.hwmchain.height+1,threshold,coin->backstopmillis,lag);
                         }
                     }
                 }

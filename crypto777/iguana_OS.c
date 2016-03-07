@@ -248,7 +248,7 @@ void *queue_dequeue(queue_t *queue,int32_t offsetflag)
     if ( queue->list != 0 )
     {
         item = queue->list;
-        printf("queue_dequeue name.(%s) dequeue.%p list.%p\n",queue->name,item,queue->list);
+        //printf("queue_dequeue name.(%s) dequeue.%p list.%p\n",queue->name,item,queue->list);
         DL_DELETE(queue->list,item);
     }
 	portable_mutex_unlock(&queue->mutex);

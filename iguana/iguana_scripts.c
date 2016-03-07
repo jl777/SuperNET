@@ -718,9 +718,13 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,int32_t *s
         if ( scriptsig[n] == 0x4c )
             vp->p2shlen = scriptsig[n+1], n += 2;
         else vp->p2shlen = ((uint32_t)scriptsig[n+1] + ((uint32_t)scriptsig[n+2] << 8)), n += 3;
-        memcpy(vp->p2shscript,&scriptsig[n],vp->p2shlen);
-        n += vp->p2shlen;
-        vp->type = IGUANA_SCRIPT_P2SH;
+        printf("opcode.%02x %02x %02x scriptlen.%d\n",scriptsig[n],scriptsig[n+1],scriptsig[n+2],vp->p2shlen);
+        if ( vp->p2shlen < IGUANA_MAXSCRIPTSIZE )
+        {
+            memcpy(vp->p2shscript,&scriptsig[n],vp->p2shlen);
+            n += vp->p2shlen;
+            vp->type = IGUANA_SCRIPT_P2SH;
+        } else vp->p2shlen = 0;
     }
     if ( n < len )
         *suffixp = (len - n);
@@ -817,7 +821,7 @@ long iguana_rwscript(struct iguana_info *coin,int32_t rwflag,void *fileptr,long 
         if ( fwrite(script,1,data.scriptlen,fp) != data.scriptlen )
             return(-1);
         offset = (uint32_t)ftell(fp);
-        printf("spend.%d filesize.%ld wrote.h%d u%d len.%d [%ld,%ld) crc.%08x\n",spendflag,coin->scriptsfilesize[spendflag],hdrsi,ind,data.scriptlen,scriptpos,ftell(fp),calc_crc32(0,script,data.scriptlen));
+        //printf("spend.%d filesize.%ld wrote.h%d u%d len.%d [%ld,%ld) crc.%08x\n",spendflag,coin->scriptsfilesize[spendflag],hdrsi,ind,data.scriptlen,scriptpos,ftell(fp),calc_crc32(0,script,data.scriptlen));
     }
     else if ( rwflag == 0 && fp == 0 && fileptr != 0 )
     {

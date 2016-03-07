@@ -1118,10 +1118,10 @@ void iguana_main(void *arg)
         sleep(1);
         char *str;
         //iguana_launchcoin(MYINFO.rpcsymbol,cJSON_Parse("{}"));
-        if ( 1 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":64,\"newcoin\":\"BTC\",\"active\":0}"),0)) != 0 )
+        if ( 1 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":128,\"newcoin\":\"BTCD\",\"active\":1}"),0)) != 0 )
         {
             free(str);
-            if ( 1 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":128,\"newcoin\":\"BTCD\",\"active\":1}"),0)) != 0 )
+            if ( 0 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":128,\"newcoin\":\"BTCD\",\"active\":1}"),0)) != 0 )
             {
                 free(str);
                 if ( 0 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"login\",\"handle\":\"alice\",\"password\":\"alice\",\"passphrase\":\"alice\"}"),0)) != 0 )
@@ -1133,7 +1133,7 @@ void iguana_main(void *arg)
             }
             strcpy(MYINFO.rpcsymbol,"BTCD");
             printf("BTC active.%d BTCD active.%d\n",iguana_coinfind("BTC")->active,iguana_coinfind("BTCD")->active);
-            iguana_coinfind("BTC")->active = iguana_coinfind("BTCD")->active = 0;
+            //iguana_coinfind("BTC")->active = iguana_coinfind("BTCD")->active = 0;
         }
         sleep(1);
 #endif

@@ -394,21 +394,44 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
             bp->numhashes++;
         }
     }
-    bp->metric = bp->numhashes;
+    //bp->metric = bp->numhashes;
+    bp->metric = 1000 + sqrt(sqrt(bp->n * (1 + bp->numsaved + bp->numrecv)) * (10 + coin->bundlescount - bp->hdrsi));
     return(bp->estsize);
+}
+
+static int _decreasing_double(const void *a,const void *b)
+{
+#define double_a (*(double *)a)
+#define double_b (*(double *)b)
+	if ( double_b > double_a )
+		return(1);
+	else if ( double_b < double_a )
+		return(-1);
+	return(0);
+#undef double_a
+#undef double_b
+}
+
+static int32_t revsortds(double *buf,uint32_t num,int32_t size)
+{
+	qsort(buf,num,size,_decreasing_double);
+	return(0);
 }
 
 void iguana_bundlestats(struct iguana_info *coin,char *str)
 {
     static uint32_t lastdisp;
-    int32_t i,n,dispflag,numrecv,done,numhashes,numcached,numsaved,numemit; int64_t estsize = 0;
-    struct iguana_bundle *bp,*firstgap = 0;
+    int32_t i,n,m,count,dispflag,numrecv,done,numhashes,numcached,numsaved,numemit;
+    int64_t estsize = 0; struct iguana_bundle *bp,*firstgap = 0; double *sortbuf; struct iguana_peer *addr;
     dispflag = (rand() % 1000) == 0;
     numrecv = numhashes = numcached = numsaved = numemit = done = 0;
-    for (i=n=0; i<coin->bundlescount; i++)
+    count = coin->bundlescount;
+    sortbuf = calloc(count,sizeof(*sortbuf)*2);
+    for (i=n=m=0; i<count; i++)
     {
         if ( (bp= coin->bundles[i]) != 0 )
         {
+            bp->rank = 0;
             estsize += iguana_bundlecalcs(coin,bp);
             numhashes += bp->numhashes;
             numcached += bp->numcached;
@@ -420,10 +443,31 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                 if ( bp->emitfinish > 1 )
                     numemit++;
                 iguana_bundlepurge(coin,bp);
-            } else if ( firstgap == 0 )
-                firstgap = bp;
+            }
+            else
+            {
+                if ( firstgap == 0 )
+                    firstgap = bp;
+                sortbuf[m*2] = bp->metric;
+                sortbuf[m*2 + 1] = i;
+                m++;
+            }
         }
     }
+    if ( m > 0 )
+    {
+        revsortds(sortbuf,m,sizeof(*sortbuf)*2);
+        for (i=0; i<m; i++)
+        {
+            if ( (bp= coin->bundles[(int32_t)sortbuf[i*2 + 1]]) != 0 )
+            {
+                bp->rank = i + 1;
+                if ( coin->peers.numranked > 0 && i < coin->peers.numranked && (addr= coin->peers.ranked[i]) != 0 )
+                    addr->bp = bp;
+            }
+        }
+    }
+    free(sortbuf);
     coin->numremain = n;
     coin->blocksrecv = numrecv;
     char str2[65]; uint64_t tmp; int32_t diff,p = 0; struct tai difft,t = tai_now();
@@ -435,9 +479,9 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     tmp = (difft.millis * 1000000);
     tmp %= 1000000000;
     difft.millis = ((double)tmp / 1000000.);
-    sprintf(str,"N[%d] Q.%d h.%d r.%d c.%d:%d:%d s.%d d.%d E.%d:%d M.%d L.%d est.%d %s %d:%02d:%02d %03.3f peers.%d/%d Q.(%d %d)",coin->bundlescount,coin->numbundlesQ,numhashes,coin->blocksrecv,coin->numcached,numcached,coin->cachefreed,numsaved,done,numemit,coin->numreqsent,coin->blocks.hwmchain.height,coin->longestchain,coin->MAXBUNDLES,mbstr(str2,estsize),(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,difft.millis,p,coin->MAXPEERS,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
+    sprintf(str,"N[%d] Q.%d h.%d r.%d c.%d:%d:%d s.%d d.%d E.%d:%d M.%d L.%d est.%d %s %d:%02d:%02d %03.3f peers.%d/%d Q.(%d %d)",count,coin->numbundlesQ,numhashes,coin->blocksrecv,coin->numcached,numcached,coin->cachefreed,numsaved,done,numemit,coin->numreqsent,coin->blocks.hwmchain.height,coin->longestchain,coin->MAXBUNDLES,mbstr(str2,estsize),(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,difft.millis,p,coin->MAXPEERS,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
     //sprintf(str+strlen(str),"%s.%-2d %s time %.2f files.%d Q.%d %d\n",coin->symbol,flag,str,(double)(time(NULL)-coin->starttime)/60.,coin->peers.numfiles,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
-    if ( time(NULL) > lastdisp+1000 )
+    if ( time(NULL) > lastdisp+10 )
     {
         printf("%s\n",str);
         //myallocated(0,0);
