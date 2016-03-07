@@ -931,7 +931,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         if ( bestblock != 0 )
         {
             printf("near hwm.%d gap.%d peer.%s ranked.%d [%d:%d] pending.%d numreqs.%d\n",coin->blocks.hwmchain.height,gap,addr->ipaddr,bp->rank,bp->hdrsi,i,addr->pendblocks,bestblock->numrequests);
-            block->numrequests++;
+            bestblock->numrequests++;
             iguana_sendblockreqPT(coin,addr,bp,bundlei,bestblock->RO.hash2,1);
         }
     }
