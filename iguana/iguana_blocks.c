@@ -190,6 +190,7 @@ void iguana_blockconv(struct iguana_block *dest,struct iguana_msgblock *msg,bits
 
 void iguana_blockcopy(struct iguana_info *coin,struct iguana_block *block,struct iguana_block *origblock)
 {
+    fprintf(stderr,"block copy\n");
     block->RO.hash2 = origblock->RO.hash2;
     block->RO.prev_block = origblock->RO.prev_block;
     block->RO.merkle_root = origblock->RO.merkle_root;
@@ -212,6 +213,7 @@ void iguana_blockcopy(struct iguana_info *coin,struct iguana_block *block,struct
         block->valid = origblock->valid;
     if ( block->RO.recvlen == 0 )
         block->RO.recvlen = origblock->RO.recvlen;
+    fprintf(stderr,"block copied\n");
 }
 
 double PoW_from_compact(uint32_t nBits,uint8_t unitval) // NOT consensus safe, but most of the time will be correct
