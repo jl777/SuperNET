@@ -557,7 +557,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
             if ( firstbp->queued == 0 )
             {
                 //fprintf(stderr,"firstbp blockQ %d\n",firstbp->bundleheight);
-                iguana_bundleQ(coin,firstbp,1000);
+                //iguana_bundleQ(coin,firstbp,1000);
             }
         }
     }
@@ -569,7 +569,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
     int32_t bundlei,i; struct iguana_bundle *bp;// struct iguana_block *block;
     bp = 0, bundlei = -2;
     iguana_bundlefind(coin,&bp,&bundlei,blockhashes[1]);
-   // char str[65]; printf("blockhashes[%d] %d of %d %s bp.%d[%d]\n",num,bp==0?-1:bp->hdrsi,coin->bundlescount,bits256_str(str,blockhashes[1]),bp==0?-1:bp->bundleheight,bundlei);
+    char str[65]; printf("blockhashes[%d] %d of %d %s bp.%d[%d]\n",num,bp==0?-1:bp->hdrsi,coin->bundlescount,bits256_str(str,blockhashes[1]),bp==0?-1:bp->bundleheight,bundlei);
     if ( bp != 0 )
     {
         bp->hdrtime = (uint32_t)time(NULL);
@@ -722,7 +722,7 @@ int32_t iguana_needhdrs(struct iguana_info *coin)
 int32_t iguana_reqhdrs(struct iguana_info *coin)
 {
     int32_t i,lag,n = 0; struct iguana_bundle *bp; char hashstr[65];
-    if ( iguana_needhdrs(coin) > 0 && queue_size(&coin->hdrsQ) == 0 )
+    if ( iguana_needhdrs(coin) > 0 )//&& queue_size(&coin->hdrsQ) == 0 )
     {
         ///if ( coin->zcount++ > 1 )
         {
@@ -737,7 +737,7 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                     //    continue;
                     if ( bp->numhashes < bp->n && bp->bundleheight+bp->numhashes < coin->longestchain && time(NULL) > bp->issuetime+lag )
                     {
-                        printf("LAG.%ld hdrsi.%d numhashes.%d:%d needhdrs.%d qsize.%d zcount.%d\n",time(NULL)-bp->hdrtime,i,bp->numhashes,bp->n,iguana_needhdrs(coin),queue_size(&coin->hdrsQ),coin->zcount);
+                        //printf("LAG.%ld hdrsi.%d numhashes.%d:%d needhdrs.%d qsize.%d zcount.%d\n",time(NULL)-bp->hdrtime,i,bp->numhashes,bp->n,iguana_needhdrs(coin),queue_size(&coin->hdrsQ),coin->zcount);
                         if ( bp->issuetime == 0 )
                             coin->numpendings++;
                         char str[65];
@@ -746,7 +746,10 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                         //printf("%d ",bp->bundleheight);
                         init_hexbytes_noT(hashstr,bp->hashes[0].bytes,sizeof(bits256));
                         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
+                        //printf("reqHDR.(%s)\n",hashstr);
                         iguana_blockQ(coin,bp,0,bp->hashes[0],0);
+                        if ( bits256_nonz(bp->hashes[1]) > 0 )
+                            iguana_blockQ(coin,bp,0,bp->hashes[1],0);
                         n++;
                         bp->hdrtime = bp->issuetime = (uint32_t)time(NULL);
                     }
@@ -838,7 +841,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                     bp = 0, bundlei = -2;
                     bp = iguana_bundlefind(coin,&bp,&bundlei,hash2);
                     z = m = 0;
-                    if ( bp != 0 && bp->queued == 0 )
+                    if ( bp != 0 )//&& bp->queued == 0 )
                     {
                         if ( bp->bundleheight+coin->chain->bundlesize < coin->longestchain )
                         {
@@ -846,16 +849,16 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                             if ( bp->numhashes < m )
                                 z = 1;
                         }
-                        else if ( bp->numhashes < 3 )
+                        else if ( bp->numhashes < bp->n )
                             z = 1;
                     }
                     if ( bp == 0 || z != 0 )
                     {
-                        //printf("%s request HDR.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp->numhashes);
+                        printf("%s request HDR.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp->numhashes);
                         iguana_send(coin,addr,serialized,datalen);
                         addr->pendhdrs++;
                         flag++;
-                    } //else printf("skip hdrreq.%s m.%d z.%d\n",hashstr,m,z);
+                    } else printf("skip hdrreq.%s m.%d z.%d bp.%p longest.%d queued.%d\n",hashstr,m,z,bp,bp->coin->longestchain,bp->queued);
                 }
                 //free_queueitem(hashstr);
                 //return(flag);

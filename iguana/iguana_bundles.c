@@ -496,7 +496,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     }
     strcpy(coin->statusstr,str);
     coin->estsize = estsize;
-    if ( firstgap != 0 && firstgap->queued == 0 )
-        iguana_bundleQ(coin,firstgap,1000);
+    //if ( firstgap != 0 && firstgap->queued == 0 )
+    //    iguana_bundleQ(coin,firstgap,1000);
 }
 
