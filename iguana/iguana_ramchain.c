@@ -407,7 +407,7 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,RAMCHAIN_FUNC,uin
         //fprintf(stderr,"type.%d scriptlen.%d bp.%p\n",type,scriptlen,bp);
         if ( (u->scriptlen= scriptlen) != 0 )
         {
-            if ( scriptlen <= sizeof(u->script) )
+            /*if ( scriptlen <= sizeof(u->script) )
                 memcpy(u->script,script,scriptlen);
             else
             {
@@ -416,7 +416,9 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,RAMCHAIN_FUNC,uin
                 {
                     u->scriptfpos = (uint32_t)iguana_scriptadd(coin,bp,unspentind,type,script,scriptlen,rmd160,vout);
                 }
-            }
+            }*/
+            u->script = malloc(scriptlen);
+            memcpy(u->script,script,scriptlen);
         }
         u->txidind = ramchain->H.txidind;
         memcpy(u->rmd160,rmd160,sizeof(u->rmd160));
@@ -936,13 +938,13 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,RAMCHAIN_FUNC,bits
     struct iguana_spend256 *s; uint32_t spendind,scriptfpos = 0;
     spendind = ramchain->H.spendind++;
     s = &S[spendind];
-    if ( vinscriptlen > sizeof(s->vinscript) )
+    /*if ( vinscriptlen > sizeof(s->vinscript) )
     {
         fprintf(stderr,"vin scriptsave %d\n",vinscriptlen);
         scriptfpos = iguana_scriptsave(coin,bp,spendind,1,vinscript,vinscriptlen);
         fprintf(stderr,"done vin scriptsave %d\n",vinscriptlen);
         //printf("S%d added sig.%d len.%d %08x\n",spendind,scriptfpos,vinscriptlen,calc_crc32(0,vinscript,vinscriptlen));
-    }
+    }*/
     if ( ramchain->H.ROflag != 0 )
     {
         if ( vinscriptlen != s->vinscriptlen || (s->sequenceid == 1 && sequence != 0xffffffff) || (s->sequenceid == 2 && sequence != 0xfffffffe) || memcmp(s->prevhash2.bytes,prev_hash.bytes,sizeof(bits256)) != 0 || s->prevout != prev_vout ) //|| s->hdrsi != hdrsi
@@ -960,8 +962,11 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,RAMCHAIN_FUNC,bits
         s->prevhash2 = prev_hash, s->prevout = prev_vout;
         s->spendind = spendind;
         s->scriptfpos = scriptfpos;
-        if ( (s->vinscriptlen= vinscriptlen) > 0 && vinscriptlen <= sizeof(s->vinscript) && scriptfpos == 0 )
+        if ( (s->vinscriptlen= vinscriptlen) > 0 )//&& vinscriptlen <= sizeof(s->vinscript) && scriptfpos == 0 )
+        {
+            s->vinscript = malloc(vinscriptlen);
             memcpy(s->vinscript,vinscript,vinscriptlen);
+        }
         //else printf("spend256 scriptfpos.%d\n",s->scriptfpos);
         //char str[65]; printf("W.%p s.%d vout.%d/%d [%d] %s fpos.%u slen.%d\n",s,spendind,s->prevout,prev_vout,bp->hdrsi,bits256_str(str,prev_hash),s->scriptfpos,s->vinscriptlen);
     }
