@@ -328,7 +328,7 @@ void iguana_bundlespeculate(struct iguana_info *coin,struct iguana_bundle *bp,in
     if ( bp->numhashes < bp->n && bundlei == 0 && bp->speculative == 0 && bp->bundleheight < coin->longestchain-coin->chain->bundlesize )
     {
         char str[65]; bits256_str(str,bp->hashes[0]);
-        fprintf(stderr,"Afound block -> %d %d hdr.%s\n",bp->bundleheight,coin->longestchain-coin->chain->bundlesize,str);
+        //fprintf(stderr,"Afound block -> %d %d hdr.%s\n",bp->bundleheight,coin->longestchain-coin->chain->bundlesize,str);
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(str),1);
     }
     else if ( bp->speculative != 0 && bundlei < bp->numspec && memcmp(hash2.bytes,bp->speculative[bundlei].bytes,sizeof(hash2)) == 0 )
@@ -659,7 +659,7 @@ int32_t iguana_processbundlesQ(struct iguana_info *coin,int32_t *newhwmp) // sin
     {
         flag++;
         //fprintf(stderr,"%s bundlesQ.%p type.%c n.%d\n",req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
-        if ( req->type == 'B' )
+        if ( req->type == 'H' )
             continue;
         if ( req->type == 'B' ) // one block with all txdata
             req = iguana_recvblock(coin,req->addr,req,&req->block,req->numtx,req->datalen,req->recvlen,newhwmp);
