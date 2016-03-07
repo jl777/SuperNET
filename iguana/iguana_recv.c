@@ -369,7 +369,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     }
     if ( bp->rank == 0 || bp->rank > coin->peers.numranked )
     {
-        iguana_bundleQ(coin,bp,((bp->rank != 0) ? bp->rank : 64) * 1000);
+        iguana_bundleQ(coin,bp,((bp->rank != 0) ? bp->rank : 64) * 100);
         return(0);
     }
     pend = queue_size(&coin->priorityQ) + queue_size(&coin->blocksQ);
@@ -389,7 +389,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         }
     }
     max = 1 + ((coin->MAXPENDING*coin->MAXPEERS - pend) >> 1);
-    endmillis = OS_milliseconds() + timelimit*10;
+    endmillis = OS_milliseconds() + timelimit;
     while ( bp->emitfinish == 0 && OS_milliseconds() < endmillis )
     {
         now = (uint32_t)time(NULL);
@@ -399,7 +399,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                 break;
             if ( (block= bp->blocks[i]) != 0 )
             {
-                if ( block->fpipbits == 0 && (block->queued == 0 || bp->issued[i] == 0 || now > bp->issued[i]+7) )
+                if ( block->fpipbits == 0 && block->queued == 0 && (block->numrequests == bp->minrequests || bp->issued[i] == 0 || now > bp->issued[i]+7) )
                 {
                     //if ( bp->bundleheight == 20000 )
                     //   printf("(%d:%d) ",bp->hdrsi,i);
@@ -490,7 +490,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
         }
         prevbp = 0, prevbundlei = -2;
         iguana_bundlefind(coin,&prevbp,&prevbundlei,prevhash2);
-        if ( block->blockhashes != 0 )
+        if ( 0 && block->blockhashes != 0 )
             fprintf(stderr,"has blockhashes bp.%p[%d] prevbp.%p[%d]\n",bp,bundlei,prevbp,prevbundlei);
         if ( prevbp != 0 && prevbundlei >= 0 && (prevblock= iguana_blockfind(coin,prevhash2)) != 0 )
         {
