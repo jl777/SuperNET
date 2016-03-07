@@ -882,9 +882,9 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         flag++;
         myfree(req,sizeof(*req));
     }
-    else if ( addr->rank > 1 )
+    else //if ( addr->rank > 1 )
     {
-        gap = addr->rank * coin->peers.numranked;
+        gap = addr->rank * coin->peers.numranked * 3;
         for (i=0; i<coin->peers.numranked; i++,gap++)
         {
             hdrsi = (coin->blocks.hwmchain.height + gap) / coin->chain->bundlesize;
