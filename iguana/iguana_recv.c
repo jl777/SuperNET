@@ -558,7 +558,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
             if ( firstbp->queued == 0 )
             {
                 //fprintf(stderr,"firstbp blockQ %d\n",firstbp->bundleheight);
-                //iguana_bundleQ(coin,firstbp,1000);
+                iguana_bundleQ(coin,firstbp,1000);
             }
         }
     }
@@ -835,7 +835,7 @@ int32_t iguana_blockQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t 
 int32_t iguana_neargap(struct iguana_info *coin,struct iguana_peer *addr)
 {
     struct iguana_block *block,*bestblock = 0; struct iguana_bundle *bp,*bestbp = 0;
-    int32_t height,hdrsi,i,j,r,n,bundlei,gap,besti = -1;
+    int32_t height,hdrsi,i,j,n,bundlei,gap,besti = -1; uint32_t r;
     if ( addr->rank > 0 )
     {
         n = coin->peers.numranked * 2;
@@ -872,7 +872,7 @@ int32_t iguana_neargap(struct iguana_info *coin,struct iguana_peer *addr)
         }
         if ( bestblock != 0 )
         {
-            printf("near hwm.%d gap.%d peer.%s bpranked.%d [%d:%d] pending.%d numreqs.%d\n",coin->blocks.hwmchain.height,j,addr->ipaddr,bestbp->rank,bestbp->hdrsi,besti,addr->pendblocks,bestblock->numrequests);
+            printf("near hwm.%d gap.%d peer.%s bpranked.%d [%d:%d] pending.%d numreqs.%d\n",height,j,addr->ipaddr,bestbp->rank,bestbp->hdrsi,besti,addr->pendblocks,bestblock->numrequests);
             bestblock->numrequests++;
             iguana_sendblockreqPT(coin,addr,bestbp,besti,bestblock->RO.hash2,1);
             return(1);
@@ -885,7 +885,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
 {
     uint8_t serialized[sizeof(struct iguana_msghdr) + sizeof(uint32_t)*32 + sizeof(bits256)];
     struct iguana_block *block; struct iguana_blockreq *req=0; char *hashstr=0; bits256 hash2;
-    int32_t j,r,bundlei,priority,i,m,z,pend,limit,height=-1,datalen,flag = 0;
+    int32_t j,bundlei,priority,i,m,z,pend,limit,height=-1,datalen,flag = 0; uint32_t r;
     uint32_t now; struct iguana_bundle *bp; struct iguana_peer *ptr;
     if ( addr->msgcounts.verack == 0 )
         return(0);
