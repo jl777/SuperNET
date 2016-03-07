@@ -195,12 +195,14 @@ void iguana_blockcopy(struct iguana_info *coin,struct iguana_block *block,struct
     block->RO.prev_block = origblock->RO.prev_block;
     block->RO.merkle_root = origblock->RO.merkle_root;
     block->mainchain = origblock->mainchain;
+    fprintf(stderr,"block copy2\n");
     if ( block->fpipbits == 0 )
         block->fpipbits = origblock->fpipbits;
     if ( block->RO.timestamp == 0 )
         block->RO.timestamp = origblock->RO.timestamp;
     if ( block->RO.nonce == 0 )
         block->RO.nonce = origblock->RO.nonce;
+    fprintf(stderr,"block copy3\n");
     if ( block->RO.bits == 0 )
         block->RO.bits = origblock->RO.bits;
     if ( block->RO.txn_count == 0 )
