@@ -2393,7 +2393,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         {
             iguana_bundlemapfree(0,0,ipbits,ptrs,filesizes,num,R,bp->n);
             printf("fpos error %d > %ld mapping hdrsi.%d bundlei.%d\n",fpos,filesize,bp->hdrsi,bundlei);
-            return(-1);
+            break;
         }
         if ( fpos+mapchain->H.data->allocsize > filesize || iguana_ramchain_size(MAPCHAIN_ARG,1,0*mapchain->H.scriptoffset) != mapchain->H.data->allocsize )
         {
@@ -2426,6 +2426,12 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     //printf("RObits\n");
     if ( bundlei != bp->n )
     {
+        if ( (block= bp->blocks[bundlei]) != 0 )
+        {
+            block->fpipbits = 0;
+            block->queued = 0;
+            bp->issued[bundlei] = 0;
+        }
         iguana_bundlemapfree(0,0,ipbits,ptrs,filesizes,num,R,bp->n);
         printf("error mapping hdrsi.%d bundlei.%d\n",bp->hdrsi,bundlei);
         return(-1);
