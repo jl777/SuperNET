@@ -469,12 +469,12 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
         fprintf(stderr,"bundleset block.%p vs origblock.%p\n",block,origblock);
         if ( block != origblock )
             iguana_blockcopy(coin,block,origblock);
-        fprintf(stderr,"copy %p\n",blockp);
         *blockp = block;
         prevhash2 = origblock->RO.prev_block;
         fprintf(stderr,"set prevhash2\n");
         if ( 0 && bits256_nonz(prevhash2) > 0 )
             iguana_patch(coin,block);
+        fprintf(stderr,"iguana_bundlefind \n");
         if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) != 0 && bundlei < coin->chain->bundlesize )
         {
             fprintf(stderr,"bundle found %d:%d\n",bp->hdrsi,bundlei);
