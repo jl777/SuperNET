@@ -965,7 +965,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
         if ( next != 0 )
         {
             //printf("have next %d\n",coin->blocks.hwmchain.height);
-            if ( memcmp(next->RO.prev_block.bytes,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256)) == 0 )
+            if ( 0 && memcmp(next->RO.prev_block.bytes,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256)) == 0 )
             {
                 if ( _iguana_chainlink(coin,next) != 0 )
                     lflag++, flag++;
