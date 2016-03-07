@@ -374,11 +374,11 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
     bp->datasize = bp->numhashes = bp->numsaved = bp->numcached = bp->numrecv = bp->minrequests = 0;
     for (bundlei=0; bundlei<bp->n; bundlei++)
     {
-        if ( bits256_nonz(bp->hashes[bundlei]) > 0 )
+        if ( bits256_nonz(bp->hashes[bundlei]) > 0 && (block= bp->blocks[bundlei]) != 0 )
         {
-            if ( (block= bp->blocks[bundlei]) != 0 || (block= iguana_blockfind(coin,bp->hashes[bundlei])) != 0 )
+            if ( block == iguana_blockfind(coin,bp->hashes[bundlei]) )
             {
-                bp->blocks[bundlei] = block;
+                //bp->blocks[bundlei] = block;
                 if ( bp->minrequests == 0 || (block->numrequests > 0 && block->numrequests < bp->minrequests) )
                     bp->minrequests = block->numrequests;
                 if ( block->fpipbits != 0 )
@@ -390,6 +390,12 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                     if ( block->queued != 0 )
                         bp->numcached++;
                 }
+            }
+            else
+            {
+                bp->blocks[bundlei] = iguana_blockfind(coin,bp->hashes[bundlei]);
+                if ( (block= bp->blocks[bundlei]) != 0 )
+                    block->fpipbits = block->queued = 0;
             }
             bp->numhashes++;
         }

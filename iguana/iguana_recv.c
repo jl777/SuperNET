@@ -139,7 +139,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             }
         }
     }
-    copyflag = 0 * (strcmp(coin->symbol,"BTC") != 0);
+    copyflag = 1 * (strcmp(coin->symbol,"BTC") != 0);
     req = iguana_bundlereq(coin,addr,'B',copyflag * recvlen);
     req->recvlen = recvlen;
     req->H = *H;
