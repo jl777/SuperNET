@@ -907,7 +907,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
     }
     else if ( addr->rank > 1 )
     {
-        struct iguana_block *bestblock;
+        struct iguana_block *bestblock = 0; struct iguana_bundle *bestbp = 0; int32_t besti = -1;
         n = coin->peers.numranked * 2;
         gap = addr->rank * (n + coin->peers.numranked) + coin->peers.numranked;
         for (i=0; i<n; i++,gap++)
@@ -921,18 +921,24 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                     if ( block->numrequests == 0 )
                     {
                         bestblock = block;
+                        bestbp = bp;
+                        besti = bundlei;
                         break;
                     }
                     else if ( bestblock == 0 || block->numrequests < bestblock->numrequests )
+                    {
                         bestblock = block;
+                        bestbp = bp;
+                        besti = bundlei;
+                    }
                 }
             }
         }
         if ( bestblock != 0 )
         {
-            printf("near hwm.%d gap.%d peer.%s ranked.%d [%d:%d] pending.%d numreqs.%d\n",coin->blocks.hwmchain.height,gap,addr->ipaddr,bp->rank,bp->hdrsi,i,addr->pendblocks,bestblock->numrequests);
+            printf("near hwm.%d gap.%d peer.%s bpranked.%d [%d:%d] pending.%d numreqs.%d\n",coin->blocks.hwmchain.height,gap,addr->ipaddr,bestbp->rank,bestbp->hdrsi,besti,addr->pendblocks,bestblock->numrequests);
             bestblock->numrequests++;
-            iguana_sendblockreqPT(coin,addr,bp,bundlei,bestblock->RO.hash2,1);
+            iguana_sendblockreqPT(coin,addr,bestbp,besti,bestblock->RO.hash2,1);
         }
     }
     if ( (bp= addr->bp) != 0 && bp->rank != 0 && addr->pendblocks < limit )
