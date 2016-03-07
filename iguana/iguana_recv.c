@@ -420,7 +420,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         usleep(1000);
     }
     width = 1000 + sqrt(sqrt(bp->n * (1+bp->numsaved+issued)) * (10+coin->bundlescount-bp->hdrsi));
-    if ( 1 && counter > 0 && bp->rank <= coin->peers.numranked )
+    if ( 0 && counter > 0 && bp->rank <= coin->peers.numranked )
         printf("ITERATE.%d bundle.%d h.%d n.%d r.%d s.%d F.%d I.%d T.%d %f %u next %f\n",bp->rank,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,issued,timelimit,endmillis-OS_milliseconds(),(uint32_t)time(NULL),width);
     if ( bp->emitfinish == 0 )
     {
@@ -888,7 +888,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                 bundlei = (coin->blocks.hwmchain.height + gap) % coin->chain->bundlesize;
                 if ( (block= bp->blocks[bundlei]) != 0 && block->fpipbits == 0 && block->queued == 0 )
                 {
-                    printf("near hwm gap.%d peer.%s ranked.%d [%d:%d] pending.%d\n",gap,addr->ipaddr,bp->rank,bp->hdrsi,i,addr->pendblocks);
+                    //printf("near hwm gap.%d peer.%s ranked.%d [%d:%d] pending.%d\n",gap,addr->ipaddr,bp->rank,bp->hdrsi,i,addr->pendblocks);
                     block->numrequests++;
                     iguana_sendblockreqPT(coin,addr,bp,bundlei,block->RO.hash2,1);
                     break;
@@ -965,7 +965,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
         if ( next != 0 )
         {
             //printf("have next %d\n",coin->blocks.hwmchain.height);
-            if ( 0 && memcmp(next->RO.prev_block.bytes,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256)) == 0 )
+            if ( memcmp(next->RO.prev_block.bytes,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256)) == 0 )
             {
                 if ( _iguana_chainlink(coin,next) != 0 )
                     lflag++, flag++;
