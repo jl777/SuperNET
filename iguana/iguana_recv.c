@@ -904,10 +904,11 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         flag++;
         myfree(req,sizeof(*req));
     }
-    else //if ( addr->rank > 1 )
+    else if ( addr->rank > 1 )
     {
         gap = addr->rank * coin->peers.numranked * 3;
-        for (i=0; i<coin->peers.numranked; i++,gap++)
+        gap += (long)OS_milliseconds() % (coin->peers.numranked * 3);
+        //for (i=0; i<coin->peers.numranked; i++)
         {
             hdrsi = (coin->blocks.hwmchain.height + gap) / coin->chain->bundlesize;
             if ( (bp= coin->bundles[hdrsi]) != 0 )
@@ -918,7 +919,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                     printf("near hwm gap.%d peer.%s ranked.%d [%d:%d] pending.%d\n",gap,addr->ipaddr,bp->rank,bp->hdrsi,i,addr->pendblocks);
                     block->numrequests++;
                     iguana_sendblockreqPT(coin,addr,bp,bundlei,block->RO.hash2,1);
-                    break;
+                    //break;
                 }
             }
         }
