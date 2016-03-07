@@ -139,7 +139,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             }
         }
     }
-    copyflag = 1 * (strcmp(coin->symbol,"BTC") != 0);
+    copyflag = 0 * (strcmp(coin->symbol,"BTC") != 0);
     req = iguana_bundlereq(coin,addr,'B',copyflag * recvlen);
     req->recvlen = recvlen;
     req->H = *H;
@@ -621,7 +621,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
             } else break;
         }*/
         //printf("datalen.%d ipbits.%x\n",datalen,req->ipbits);
-    } else printf("cant create block.%llx block.%p bp.%p bundlei.%d\n",(long long)origblock->RO.hash2.txid,block,bp,bundlei);
+    } else printf("cant create origblock.%p block.%p bp.%p bundlei.%d\n",origblock,block,bp,bundlei);
     return(req);
 }
 
