@@ -294,7 +294,7 @@ int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *m
             }
             else if ( ptr->type == 'E' )
             {
-                printf("emitQ coin.%p bp.%p\n",ptr->coin,ptr->bp);
+                //printf("emitQ coin.%p bp.%p\n",ptr->coin,ptr->bp);
                 if ( iguana_bundlesaveHT(coin,mem,memB,bp,ptr->starttime) == 0 )
                 {
                     bp->emitfinish = (uint32_t)time(NULL);

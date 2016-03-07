@@ -33,9 +33,9 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_HEIGHT 200
 
 #define IGUANA_MAXPENDHDRS 1
-#define _IGUANA_MAXPENDING 512    //64
+#define _IGUANA_MAXPENDING 8    //64
 #define _IGUANA_MAXBUNDLES 8 
-#define IGUANA_BUNDLELOOP 100
+#define IGUANA_BUNDLELOOP 7
 #define IGUANA_RPCPORT 7778
 #define IGUANA_MAXRAMCHAINSIZE ((uint64_t)1024L * 1024L * 1024L * 16)
 

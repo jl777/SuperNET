@@ -790,7 +790,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
 {
     uint8_t serialized[sizeof(struct iguana_msghdr) + sizeof(uint32_t)*32 + sizeof(bits256)];
     char *hashstr=0; bits256 hash2; uint32_t now; struct iguana_block *block; struct iguana_blockreq *req=0;
-    struct iguana_bundle *bp; struct iguana_peer *ptr; int32_t priority,i,m,z,pend,limit,height=-1,bundlei,datalen,flag = 0;
+    struct iguana_bundle *bp; struct iguana_peer *ptr; int32_t hdrsi,bundlei,gap,priority,i,m,z,pend,limit,height=-1,datalen,flag = 0;
     if ( addr->msgcounts.verack == 0 )
         return(0);
     now = (uint32_t)time(NULL);
@@ -873,7 +873,26 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         flag++;
         myfree(req,sizeof(*req));
     }
-    else if ( (bp= addr->bp) != 0 && bp->rank != 0 && addr->pendblocks < limit )
+    else if ( addr->rank > 1 )
+    {
+        gap = addr->rank * coin->peers.numranked;
+        for (i=0; i<coin->peers.numranked; i++,gap++)
+        {
+            hdrsi = (coin->blocks.hwmchain.height + gap) / coin->chain->bundlesize;
+            if ( (bp= coin->bundles[hdrsi]) != 0 )
+            {
+                bundlei = (coin->blocks.hwmchain.height + gap) % coin->chain->bundlesize;
+                if ( (block= bp->blocks[bundlei]) != 0 && block->fpipbits == 0 && block->queued == 0 )
+                {
+                    printf("near hwm gap.%d peer.%s ranked.%d [%d:%d] pending.%d\n",gap,addr->ipaddr,bp->rank,bp->hdrsi,i,addr->pendblocks);
+                    block->numrequests++;
+                    iguana_sendblockreqPT(coin,addr,bp,bundlei,block->RO.hash2,1);
+                    break;
+                }
+            }
+        }
+    }
+    if ( (bp= addr->bp) != 0 && bp->rank != 0 && addr->pendblocks < limit )
     {
         for (i=0; i<bp->n; i++)
             if ( (block= bp->blocks[i]) != 0 && block->numrequests == bp->minrequests && block->fpipbits == 0 && block->queued == 0 )

@@ -1114,7 +1114,7 @@ void iguana_main(void *arg)
         iguana_launch(iguana_coinadd("BTCD",0),"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
     else if ( 1 )
     {
-#ifdef __APPLE__
+//#ifdef __APPLE__
         sleep(1);
         char *str;
         //iguana_launchcoin(MYINFO.rpcsymbol,cJSON_Parse("{}"));
@@ -1136,7 +1136,7 @@ void iguana_main(void *arg)
             //iguana_coinfind("BTC")->active = iguana_coinfind("BTCD")->active = 0;
         }
         sleep(1);
-#endif
+//#endif
     }
     if ( arg != 0 )
         SuperNET_JSON(&MYINFO,cJSON_Parse(arg),0);

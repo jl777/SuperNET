@@ -1929,7 +1929,7 @@ int32_t iguana_scriptspaceraw(struct iguana_info *coin,int32_t *scriptspacep,int
 int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,int32_t *pubkeyspacep,struct iguana_ramchain *ramchain)
 {
     RAMCHAIN_DECLARE;
-    int32_t j,sigspace,pubkeyspace,scriptlen,p2shsize,pubkeysize,sigsize,scriptspace,suffixlen;
+    int32_t j,p2shspace,sigspace,pubkeyspace,scriptlen,p2shsize,pubkeysize,sigsize,scriptspace,suffixlen;
     uint32_t sequence,spendind,unspentind; struct vin_info V; uint8_t _script[IGUANA_MAXSCRIPTSIZE];
     struct iguana_txid *tx; struct iguana_ramchaindata *rdata; uint8_t *scriptdata;
     _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
@@ -1939,7 +1939,7 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
         printf("iguana_ramchain_scriptspace cant iterate without data and requires simple ramchain\n");
         return(-1);
     }
-    sigspace = pubkeyspace = scriptspace = 0;
+    sigspace = pubkeyspace = scriptspace = p2shspace = 0;
     for (ramchain->H.txidind=rdata->firsti; ramchain->H.txidind<rdata->numtxids; ramchain->H.txidind++)
     {
         tx = &T[ramchain->H.txidind];
@@ -1958,7 +1958,7 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
                 {
                     iguana_vinscriptparse(coin,&V,&sigsize,&pubkeysize,&p2shsize,&suffixlen,scriptdata,scriptlen);
                     scriptspace += tx->numvins * 16; // for metascripts
-                    scriptspace += p2shsize;
+                    p2shspace += p2shsize;
                     if ( sequence != 0 && sequence != 0xffffffff && sequence != 0xfffffffe )
                         scriptspace += sizeof(sequence);
                     sigspace += sigsize;
@@ -1968,7 +1968,8 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
         }
     }
     *sigspacep = sigspace, *pubkeyspacep = pubkeyspace;
-    return(scriptspace);
+    printf("scriptspace.%d p2shspace.%d sigspace.%d pubkeyspace.%d\n",scriptspace,p2shspace,sigspace,pubkeyspace);
+    return(scriptspace + p2shspace);
 }
 
 long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,int32_t txn_count,uint8_t *data,int32_t recvlen)
@@ -2406,7 +2407,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         printf("error mapping hdrsi.%d bundlei.%d\n",bp->hdrsi,bundlei);
         return(-1);
     }
-    //printf("iguana_bundlesaveHT -> total (%d %d %d) scriptspace.%d (pubkeys.%d sigs.%d)\n",numtxids,numunspents,numspends,scriptspace,pubkeyspace,sigspace);
+    printf("iguana_bundlesaveHT -> total (%d %d %d) scriptspace.%d (pubkeys.%d sigs.%d)\n",numtxids,numunspents,numspends,scriptspace,pubkeyspace,sigspace);
     numpkinds = numunspents;
     numexternaltxids = numspends;
     dest = &bp->ramchain;
