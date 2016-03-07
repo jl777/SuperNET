@@ -812,7 +812,6 @@ long iguana_rwscript(struct iguana_info *coin,int32_t rwflag,void *fileptr,long 
     long scriptpos; struct scriptdata data; uint8_t *script = *scriptptrp;
     if ( spendflag == 0 && (scriptpos= iguana_scriptstablefind(coin,spendflag,script,*lenp)) != 0 )
         return(scriptpos);
-return(0);
     memset(&data,0,sizeof(data));
     if ( rwflag != 0 && fp != 0 && fileptr == 0 )
     {

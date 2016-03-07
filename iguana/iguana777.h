@@ -321,7 +321,7 @@ struct iguana_ledger
 
 // ramchain append only structs -> canonical 32bit inds and ledgerhashes
 struct iguana_unspent20 { uint64_t value; uint32_t scriptfpos,txidind:28,type:4; uint16_t scriptlen; uint8_t rmd160[20],script[68]; } __attribute__((packed));
-struct iguana_spend256 { bits256 prevhash2; uint8_t vinscript[140]; uint32_t sequenceid,scriptfpos; int16_t prevout; uint16_t vinscriptlen,spendind; } __attribute__((packed));
+struct iguana_spend256 { bits256 prevhash2; uint8_t vinscript[256]; uint32_t sequenceid,scriptfpos; int16_t prevout; uint16_t vinscriptlen,spendind; } __attribute__((packed));
 
 struct iguana_txid { bits256 txid; uint32_t txidind,firstvout,firstvin,locktime,version,timestamp,extraoffset; uint16_t numvouts,numvins; } __attribute__((packed));
 
