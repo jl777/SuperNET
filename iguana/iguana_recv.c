@@ -659,8 +659,8 @@ int32_t iguana_processbundlesQ(struct iguana_info *coin,int32_t *newhwmp) // sin
     {
         flag++;
         //fprintf(stderr,"%s bundlesQ.%p type.%c n.%d\n",req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
-        if ( req->type == 'H' )
-            continue;
+        //if ( req->type == 'H' )
+        //    continue;
         if ( req->type == 'B' ) // one block with all txdata
             req = iguana_recvblock(coin,req->addr,req,&req->block,req->numtx,req->datalen,req->recvlen,newhwmp);
         else if ( req->type == 'H' ) // blockhdrs (doesnt have txn_count!)
@@ -918,7 +918,6 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
 int32_t iguana_reqblocks(struct iguana_info *coin)
 {
     int32_t hdrsi,lflag,bundlei,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp;
-    return(0);
     hdrsi = (coin->blocks.hwmchain.height+1) / coin->chain->bundlesize;
     if ( (bp= coin->bundles[hdrsi]) != 0 )
     {
@@ -1019,7 +1018,7 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
 {
     int32_t newhwm = 0,flag = 0;
     //fprintf(stderr,"process bundlesQ\n");
-    flag += iguana_processbundlesQ(coin,&newhwm);
+    //flag += iguana_processbundlesQ(coin,&newhwm);
     //fprintf(stderr,"iguana_reqhdrs\n");
     flag += iguana_reqhdrs(coin);
     //fprintf(stderr,"iguana_reqblocks\n");
