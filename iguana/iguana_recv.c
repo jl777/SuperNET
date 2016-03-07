@@ -603,7 +603,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
         block->RO.recvlen = recvlen;
         if ( req->copyflag != 0 && block->queued == 0 && bp != 0 )//block->rawdata == 0 )
         {
-            char str[65]; fprintf(stderr,"%s copyflag.%d %d data %d %d\n",bits256_str(str,block->RO.hash2),req->copyflag,block->height,req->recvlen,recvlen);
+            //char str[65]; fprintf(stderr,"%s copyflag.%d %d data %d %d\n",bits256_str(str,block->RO.hash2),req->copyflag,block->height,req->recvlen,recvlen);
             //block->rawdata = mycalloc('n',1,block->RO.recvlen);
             //memcpy(block->rawdata,req->serialized,block->RO.recvlen);
             //block->copyflag = 1;
