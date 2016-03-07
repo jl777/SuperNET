@@ -937,13 +937,14 @@ long iguana_scriptadd(struct iguana_info *coin,struct iguana_bundle *bp,uint32_t
     memset(vp,0,sizeof(*vp));
     asmstr[0] = 0;
     total++;
+    fprintf(stderr,"scriptgen\n");
     scriptlen = iguana_scriptgen(coin,&vp->M,&vp->N,vp->coinaddr,script,asmstr,rmd160,type,(const struct vin_info *)vp,vout);
     if ( scriptlen == spendlen && memcmp(script,spendscript,scriptlen) == 0 )
         return(0);
     else
     {
         saved++;
-        if ( (saved % 1000) == 0 )
+        //if ( (saved % 1000) == 0 )
             printf("add type.%d scriptlen.%d fpos.%ld saved.%ld/%ld\n",type,spendlen,coin->scriptsfp!=0?ftell(coin->scriptsfp[0]):-1,saved,total);
         fpos = iguana_scriptsave(coin,bp,unspentind,0,spendscript,spendlen);
     }
