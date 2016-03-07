@@ -1954,10 +1954,10 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
                 }
             }
         }
-        scriptspace += tx->numvins * 16 + 65536; // for metascripts
+        scriptspace += tx->numvins * 16 + 16384; // for metascripts
     }
     *sigspacep = sigspace, *pubkeyspacep = pubkeyspace;
-    printf("numvouts.%d numvins.%d scriptspace.%d p2shspace.%d sigspace.%d pubkeyspace.%d\n",tx->numvouts,tx->numvins,scriptspace,p2shspace,sigspace,pubkeyspace);
+    //printf("numvouts.%d numvins.%d scriptspace.%d p2shspace.%d sigspace.%d pubkeyspace.%d\n",tx->numvouts,tx->numvins,scriptspace,p2shspace,sigspace,pubkeyspace);
     return(scriptspace + p2shspace);
 }
 
