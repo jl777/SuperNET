@@ -72,12 +72,11 @@ int32_t iguana_bundlescan(struct iguana_info *coin,struct iguana_bundle *bp,bits
 struct iguana_bundle *iguana_bundlefind(struct iguana_info *coin,struct iguana_bundle **bpp,int32_t *bundleip,bits256 hash2)
 {
     int32_t i; struct iguana_bloominds bit; struct iguana_bundle *bp = *bpp;
-    fprintf(stderr,"inside iguana_bundlefind bp.%p\n",bp);
     bit = iguana_calcbloom(hash2);
     if ( bp == 0 )
     {
-        //for (i=coin->bundlescount-1; i>=0; i--)
-        for (i=0; i<coin->bundlescount; i++)
+        for (i=coin->bundlescount-1; i>=0; i--)
+        //for (i=0; i<coin->bundlescount; i++)
         {
             if ( (bp= coin->bundles[i]) != 0 )
             {

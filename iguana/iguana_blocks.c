@@ -190,21 +190,16 @@ void iguana_blockconv(struct iguana_block *dest,struct iguana_msgblock *msg,bits
 
 void iguana_blockcopy(struct iguana_info *coin,struct iguana_block *block,struct iguana_block *origblock)
 {
-    fprintf(stderr,"block copy %p %p\n",block,origblock);
     block->RO.hash2 = origblock->RO.hash2;
     block->RO.prev_block = origblock->RO.prev_block;
     block->RO.merkle_root = origblock->RO.merkle_root;
     block->mainchain = origblock->mainchain;
-    fprintf(stderr,"block copy2\n");
     if ( block->fpipbits == 0 )
         block->fpipbits = origblock->fpipbits;
-    fprintf(stderr,"block copy2b\n");
     if ( block->RO.timestamp == 0 )
         block->RO.timestamp = origblock->RO.timestamp;
-    fprintf(stderr,"block copy2c\n");
     if ( block->RO.nonce == 0 )
         block->RO.nonce = origblock->RO.nonce;
-    fprintf(stderr,"block copy3\n");
     if ( block->RO.bits == 0 )
         block->RO.bits = origblock->RO.bits;
     if ( block->RO.txn_count == 0 )
@@ -217,7 +212,6 @@ void iguana_blockcopy(struct iguana_info *coin,struct iguana_block *block,struct
         block->valid = origblock->valid;
     if ( block->RO.recvlen == 0 )
         block->RO.recvlen = origblock->RO.recvlen;
-    fprintf(stderr,"block copied\n");
 }
 
 double PoW_from_compact(uint32_t nBits,uint8_t unitval) // NOT consensus safe, but most of the time will be correct
