@@ -1968,7 +1968,6 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
     struct iguana_msgtx *tx; int32_t i,j,fpos,scriptsize,pubkeysize,sigsize,firsti=1,err,flag,scriptspace=0,bundlei = -2;
     char fname[1024]; uint8_t rmd160[20];
     struct iguana_bundle *bp = 0; struct iguana_block *block;
-    fprintf(stderr,"ramchaindata\n");
     if ( iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.hash2) == 0 )
     {
         if ( iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.prev_block) == 0 )
@@ -2012,7 +2011,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         for (j=0; j<tx->tx_out; j++)
         {
             memset(rmd160,0,sizeof(rmd160));
-            //iguana_ramchain_addunspent20(coin,RAMCHAIN_ARG,tx->vouts[j].value,tx->vouts[j].pk_script,tx->vouts[j].pk_scriptlen,tx->txid,j,-1,bp,rmd160);
+            iguana_ramchain_addunspent20(coin,RAMCHAIN_ARG,tx->vouts[j].value,tx->vouts[j].pk_script,tx->vouts[j].pk_scriptlen,tx->txid,j,-1,bp,rmd160);
         }
         ramchain->H.spendind += tx->tx_in;
     }
