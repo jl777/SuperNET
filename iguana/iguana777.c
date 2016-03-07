@@ -384,7 +384,7 @@ void iguana_coinloop(void *arg)
     printf("after bundlecreate\n");//, getchar();
     while ( 1 )
     {
-        //printf("iter\n");
+        fprintf(stderr,"iter\n");
         flag = 0;
         for (i=0; i<n; i++)
         {
@@ -395,7 +395,7 @@ void iguana_coinloop(void *arg)
                 {
                     if ( coin->isRT == 0 && now > coin->startutc+600 && coin->blocksrecv >= coin->longestchain-1 && coin->blocks.hwmchain.height >= coin->longestchain-1 )
                     {
-                        printf(">>>>>>> %s isRT blockrecv.%d vs longest.%d\n",coin->symbol,coin->blocksrecv,coin->longestchain);
+                        fprintf(stderr,">>>>>>> %s isRT blockrecv.%d vs longest.%d\n",coin->symbol,coin->blocksrecv,coin->longestchain);
                         coin->isRT = 1;
                         if ( coin->polltimeout > 100 )
                             coin->polltimeout = 100;
@@ -405,7 +405,7 @@ void iguana_coinloop(void *arg)
                     {
                         if ( coin->peers.numranked < 8 && now > coin->lastpossible+60 )
                         {
-                            //printf("possible\n");
+                            fprintf(stderr,"possible\n");
                             coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
                         }
                     }
@@ -413,22 +413,23 @@ void iguana_coinloop(void *arg)
                     {
                         if ( coin->peers.numranked != 0 && coin->peers.numranked < (coin->MAXPEERS>>1) && now > coin->lastpossible+6 )
                         {
-                            //printf("possible\n");
+                            fprintf(stderr,"possible\n");
                             coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
                         }
                     }
                     if ( now > coin->peers.lastmetrics+6 )
                     {
-                        //printf("metrics\n");
+                        fprintf(stderr,"metrics\n");
                         coin->peers.lastmetrics = iguana_updatemetrics(coin); // ranks peers
                     }
+                    fprintf(stderr,"call stats\n");
                     iguana_bundlestats(coin,str);
                     flag += iguana_processrecv(coin);
                 }
             }
         }
         if ( flag == 0 )
-            usleep(coin->polltimeout * 100);
+            usleep((coin->polltimeout+1) * 100);
     }
 }
 
