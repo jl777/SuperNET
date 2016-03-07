@@ -288,10 +288,10 @@ void iguana_patch(struct iguana_info *coin,struct iguana_block *block)
 uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bits256 *blockhashes,int32_t num)
 {
     bits256 allhash; int32_t err,i,n; struct iguana_block *block,*prev;
-    if ( bits256_nonz(bp->allhash) > 0 && num >= coin->chain->bundlesize )
+    if ( bits256_nonz(bp->allhash) > 0 && num >= coin->chain->bundlesize && bp->queued == 0 )
     {
         vcalc_sha256(0,allhash.bytes,blockhashes[0].bytes,coin->chain->bundlesize * sizeof(*blockhashes));
-        if ( memcmp(allhash.bytes,bp->allhash.bytes,sizeof(allhash)) == 0 && bp->queued == 0 )
+        if ( memcmp(allhash.bytes,bp->allhash.bytes,sizeof(allhash)) == 0 )
         {
             if ( bp->bundleheight > 0 )
                 prev = iguana_blockfind(coin,iguana_blockhash(coin,bp->bundleheight-1));
@@ -299,7 +299,10 @@ uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bit
             for (i=n=0; i<coin->chain->bundlesize&&i<bp->n; i++)
             {
                 if ( (err= iguana_bundlehash2add(coin,&block,bp,i,blockhashes[i])) < 0 )
+                {
+                    printf("error adding blockhash allhashes hdrsi.%d i.%d\n",bp->hdrsi,i);
                     return(err);
+                }
                 if ( block != 0 && block == bp->blocks[i] )
                 {
                     block->height = bp->bundleheight + i;
@@ -310,10 +313,11 @@ uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bit
                         prev->hh.next = block;
                         block->hh.prev = prev;
                     }
-                }
+                } else printf("no allhashes block.%p or mismatch.%p\n",block,bp->blocks[i]);
                 prev = block;
             }
-            printf("ALLHASHES FOUND! %d requested.%d\n",bp->bundleheight,n);
+            coin->allhashes++;
+            printf("ALLHASHES FOUND! %d allhashes.%d\n",bp->bundleheight,coin->allhashes);
             iguana_bundleQ(coin,bp,bp->n*5 + (rand() % 500));
             return(bp->queued);
         }
