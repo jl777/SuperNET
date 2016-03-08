@@ -2226,7 +2226,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     uint8_t *destoffset,*srcoffset;
     firsthash2 = ramchain->H.data->firsthash2, lasthash2 = ramchain->H.data->lasthash2;
     height = ramchain->height, firsti = ramchain->H.data->firsti, hdrsi = ramchain->H.hdrsi, numblocks = ramchain->numblocks;
-    if ( bp->bundleheight == 32000 )
+    if ( bp->bundleheight == 32000 || bp->bundleheight == 150000 )
     {
         printf("skip ht.%d for now\n",bp->bundleheight);
         return(-1);
@@ -2407,7 +2407,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         }
         if ( fpos+mapchain->H.data->allocsize > filesize || iguana_ramchain_size(MAPCHAIN_ARG,1,0*mapchain->H.scriptoffset) != mapchain->H.data->allocsize )
         {
-            printf("iguana_bundlesaveHT ipbits.%x size mismatch %ld vs %ld vs filesize.%ld fpos.%ld bundlei.%d expanded.%d\n",fpipbits,(long)iguana_ramchain_size(MAPCHAIN_ARG,1,0*mapchain->H.scriptoffset),(long)mapchain->H.data->allocsize,(long)filesize,(long)fpos,bundlei,mapchain->expanded);
+            printf("iguana_bundlesaveHT.%d ipbits.%x size mismatch %ld vs %ld vs filesize.%ld fpos.%ld bundlei.%d expanded.%d\n",bp->bundleheight,fpipbits,(long)iguana_ramchain_size(MAPCHAIN_ARG,1,0*mapchain->H.scriptoffset),(long)mapchain->H.data->allocsize,(long)filesize,(long)fpos,bundlei,mapchain->expanded);
             //getchar();
             break;
         }
