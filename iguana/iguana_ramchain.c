@@ -1489,7 +1489,7 @@ int32_t iguana_ramchain_free(struct iguana_ramchain *ramchain,int32_t deleteflag
     }
     if ( deleteflag != 0 )
     {
-        if ( ramchain->expanded == 0 )
+        if ( ramchain->H.data != 0 && ramchain->expanded == 0 )
         {
             U = (void *)(long)((long)ramchain->H.data + (long)ramchain->H.data->Uoffset);
             S = (void *)(long)((long)ramchain->H.data + (long)ramchain->H.data->Soffset);
