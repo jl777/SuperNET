@@ -684,7 +684,7 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,int32_t *s
     j = n = 0;
     *suffixp = *pubkeysizep = 0;
     *hashtypep = SIGHASH_ALL;
-    while ( (siglen= scriptsig[n]) >= 70 && siglen <= 73 && n+siglen+1 < len && j < 16 )
+    while ( (siglen= scriptsig[n]) >= 70 && siglen <= 73 && n+siglen < len && j < 16 )
     {
         vp->signers[j].siglen = siglen;
         memcpy(vp->signers[j].sig,&scriptsig[n+1],siglen);
