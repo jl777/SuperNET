@@ -302,13 +302,11 @@ uint32_t iguana_ramchain_addtxid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 
     }
     if ( ramchain->expanded != 0 )
     {
-        printf("call iguana_hashsetPT txids.%p <- %llx %u\n",ramchain->txids);
         if ( (ptr= iguana_hashsetPT(ramchain,'T',t->txid.bytes,txidind)) == 0 )
         {
             printf("iguana_ramchain_addtxid error adding txidind\n");
             return(0);
         }
-        printf("called iguana_hashsetPT ptr.%p\n",ptr);
     }
     return(txidind);
 }
