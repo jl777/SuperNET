@@ -2471,15 +2471,20 @@ if ( bp->bundleheight != 32000 )
     depth++;
     if ( iguana_ramchain_alloc(coin,dest,mem,&HASHMEM,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace+sigspace,bp->bundleheight,bp->n) < 0 )
     {
+        printf("error iguana_ramchain_alloc for bundleheight.%d\n",bp->bundleheight);
         iguana_bundlemapfree(mem,&HASHMEM,ipbits,ptrs,filesizes,num,R,bp->n);
         return(-1);
     }
+    printf("link ramchain\n");
     iguana_ramchain_link(dest,bp->hashes[0],bp->hashes[bp->n-1],bp->hdrsi,bp->bundleheight,0,bp->n,firsti,0);
     dest->expanded = 1;
+    printf("_iguana_ramchain_setptrs\n");
     _iguana_ramchain_setptrs(RAMCHAIN_DESTPTRS,dest->H.data);
+    printf("iguana_ramchain_extras\n");
     iguana_ramchain_extras(dest,&HASHMEM);
     for (i=0; i<bp->n; i++)
     {
+        fprintf(stderr,"i.%d of %d\n",i,bp->n);
         if ( (block= bp->blocks[i]) != 0 && block == iguana_blockfind(coin,bp->hashes[i]) )
         {
             if ( iguana_blockvalidate(coin,&valid,block,1) != 0 || (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) )
@@ -2490,12 +2495,13 @@ if ( bp->bundleheight != 32000 )
                 bp->issued[i] = 0;
                 return(-1);
             }
-            destB[i] = block->RO;
+            //destB[i] = block->RO;
         } else printf("error getting block (%d:%d) %p vs %p\n",bp->hdrsi,i,block,iguana_blockfind(coin,bp->hashes[i]));
     }
     dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
     dest->externalind = dest->H.scriptoffset = dest->H.stacksize = 0;
     //printf("\n");
+    printf("start iterations\n");
     for (bundlei=0; bundlei<bp->n; bundlei++)
     {
         if ( (block= bp->blocks[bundlei]) != 0 )
@@ -2503,7 +2509,7 @@ if ( bp->bundleheight != 32000 )
             iguana_blocksetcounters(coin,block,dest);
             coin->blocks.RO[bp->bundleheight+bundlei] = block->RO;
             destB[bundlei] = block->RO;
-            //printf("(%d %d) ",R[bundlei].H.data->numtxids,dest->H.txidind);
+            fprintf(stderr,"(%d %d).%d ",R[bundlei].H.data->numtxids,dest->H.txidind,bundlei);
             if ( (err= iguana_ramchain_iterate(coin,dest,&R[bundlei],bp)) != 0 )
             {
                 printf("error ramchain_iterate hdrs.%d bundlei.%d\n",bp->hdrsi,bundlei);
