@@ -782,7 +782,7 @@ long iguana_scriptadd(struct iguana_info *coin,struct iguana_bundle *bp,uint32_t
 uint32_t iguana_sparseaddpk(uint8_t *bits,int32_t width,uint32_t tablesize,uint8_t rmd160[20],struct iguana_pkhash *P,uint32_t pkind);
 long iguana_initscripts(struct iguana_info *coin);
 uint32_t iguana_scriptsave(struct iguana_info *coin,struct iguana_bundle *bp,uint32_t ind,int32_t spendflag,uint8_t *script,int32_t scriptlen);
-int32_t iguana_vinscriptparse(struct iguana_info *coin,struct vin_info *vp,int32_t *sigsizep,int32_t *pubkeysizep,int32_t *p2shsizep,int32_t *suffixp,uint8_t *vinscript,int32_t scriptlen);
+int32_t iguana_vinscriptparse(struct iguana_info *coin,struct vin_info *vp,uint32_t *sigsizep,uint32_t *pubkeysizep,uint32_t *p2shsizep,uint32_t *suffixp,uint8_t *vinscript,int32_t scriptlen);
 void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msghdr *H,uint8_t *buf,int32_t len);
 
 extern queue_t bundlesQ;

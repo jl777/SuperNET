@@ -678,7 +678,7 @@ int32_t iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp,uint8_t *
     return(vp->type);
 }
 
-int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,int32_t *sigsizep,int32_t *pubkeysizep,int32_t *suffixp,struct vin_info *vp,uint8_t *scriptsig,int32_t len,int32_t spendtype)
+int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *sigsizep,uint32_t *pubkeysizep,uint32_t *suffixp,struct vin_info *vp,uint8_t *scriptsig,int32_t len,int32_t spendtype)
 {
     char asmstr[IGUANA_MAXSCRIPTSIZE*3]; int32_t j,n,siglen,plen;
     j = n = 0;
@@ -747,7 +747,7 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,int32_t *s
     return(vp->spendlen);
 }
 
-int32_t iguana_vinscriptparse(struct iguana_info *coin,struct vin_info *vp,int32_t *sigsizep,int32_t *pubkeysizep,int32_t *p2shsizep,int32_t *suffixp,uint8_t *vinscript,int32_t scriptlen)
+int32_t iguana_vinscriptparse(struct iguana_info *coin,struct vin_info *vp,uint32_t *sigsizep,uint32_t *pubkeysizep,uint32_t *p2shsizep,uint32_t *suffixp,uint8_t *vinscript,int32_t scriptlen)
 {
     int32_t hashtype;
     *sigsizep = *pubkeysizep = *p2shsizep = *suffixp = 0;

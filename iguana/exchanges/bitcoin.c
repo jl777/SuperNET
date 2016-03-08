@@ -723,8 +723,8 @@ char *iguana_rawtxbytes(struct iguana_info *coin,cJSON *json,struct iguana_msgtx
 int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **signedtx,struct iguana_msgtx *msgtx,uint8_t *serialized,int32_t maxsize,struct vin_info *V,int32_t sighashsingle)
 {
     bits256 txid,sigtxid,revsigtxid; uint8_t *sig,*pubkey; struct vin_info *vp;
-    char txidstr[128],bigstr[2560],coinaddr[64],vpnstr[64],str[65];
-    int32_t n2,i,j,k,plen,suffixlen,sigsize,pubkeysize,vini=0,flag,numvins,hashtype,retval,siglen,asmtype,numvouts;
+    char txidstr[128],bigstr[2560],coinaddr[64],vpnstr[64],str[65]; uint32_t suffixlen,sigsize,pubkeysize;
+    int32_t n2,i,j,k,plen,vini=0,flag,numvins,hashtype,retval,siglen,asmtype,numvouts;
     numvouts = msgtx->tx_out;
     vpnstr[0] = 0;
     *signedtx = 0;

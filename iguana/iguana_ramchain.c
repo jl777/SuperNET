@@ -55,18 +55,21 @@ struct iguana_kvitem *iguana_hashsetPT(struct iguana_ramchain *ramchain,int32_t 
         if ( selector == 'T' )
             HASH_ADD_KEYPTR(hh,ramchain->txids,key,keylen,ptr);
         else HASH_ADD_KEYPTR(hh,ramchain->pkhashes,key,keylen,ptr);
-        if ( selector == 'T' )
-            HASH_FIND(hh,ramchain->txids,key,keylen,tmp);
-        else HASH_FIND(hh,ramchain->pkhashes,key,keylen,tmp);
         //if ( strcmp(str,"0000000000000000000000000000000000000000000000000000000000000000") == 0 )
         //    printf("added null txid?\n"), getchar();
         if ( 0 && ramchain->expanded && selector == 'T' )
             printf("selector.%c added.(%s) itemind.%x ptr.%p tmp.%p\n",selector,str,itemind,ptr,tmp);
         if ( itemind == 0 )
             printf("negative itemind\n"), exit(-1);
-        if ( tmp != ptr )
+        if ( 0 )
         {
-            printf("(%s) hashmem.%p selector.%c %s search error %p != %p itemind.%x\n",str,ramchain->hashmem,selector,str,ptr,tmp,itemind), exit(-1);
+            if ( selector == 'T' )
+                HASH_FIND(hh,ramchain->txids,key,keylen,tmp);
+            else HASH_FIND(hh,ramchain->pkhashes,key,keylen,tmp);
+            if ( tmp != ptr )
+            {
+                printf("(%s) hashmem.%p selector.%c %s search error %p != %p itemind.%x\n",str,ramchain->hashmem,selector,str,ptr,tmp,itemind), exit(-1);
+            }
         }
     }
     return(ptr);
@@ -297,13 +300,13 @@ uint32_t iguana_ramchain_addtxid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 
             iguana_sparseaddtx(TXbits,ramchain->H.data->txsparsebits,ramchain->H.data->numtxsparse,txid,T,txidind);
         //if ( txidind <= 2 )
         //    printf("%p TXID.[%d] firstvout.%d/%d firstvin.%d/%d\n",t,txidind,ramchain->unspentind,numvouts,ramchain->spendind,numvins);
-        if ( ramchain->expanded != 0 )
+    }
+    if ( ramchain->expanded != 0 )
+    {
+        if ( (ptr= iguana_hashsetPT(ramchain,'T',t->txid.bytes,txidind)) == 0 )
         {
-            if ( (ptr= iguana_hashsetPT(ramchain,'T',t->txid.bytes,txidind)) == 0 )
-            {
-                printf("iguana_ramchain_addtxid error adding txidind\n");
-                return(0);
-            }
+            printf("iguana_ramchain_addtxid error adding txidind\n");
+            return(0);
         }
     }
     return(txidind);
@@ -786,9 +789,9 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,int32_t *metalenp,uint32
 uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 prev_hash,int32_t prev_vout,uint32_t sequence,int32_t hdrsi,uint8_t *vinscript,int32_t vinscriptlen)
 {
     struct iguana_spend *s; struct iguana_kvitem *ptr = 0; bits256 txid; struct vin_info V;
-    uint32_t spendind,unspentind,txidind=0,pkind,external=0,poffsets[16],checksequenceid;
+    uint32_t spendind,sigsize,pubkeysize,p2shsize,suffixlen,unspentind,txidind=0,pkind,external=0,poffsets[16],checksequenceid;
     uint8_t sigsbuf[16*74],_script[IGUANA_MAXSCRIPTSIZE]; uint64_t value = 0;
-    int32_t metalen,sigsize,pubkeysize,p2shsize,suffixlen,i,sigslen,checklen;
+    int32_t metalen,i,sigslen,checklen;
     spendind = ramchain->H.spendind++;
     s = &Sx[spendind];
     pkind = unspentind = 0;
@@ -1917,7 +1920,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
 
 int32_t iguana_scriptspaceraw(struct iguana_info *coin,int32_t *scriptspacep,int32_t *sigspacep,int32_t *pubkeyspacep,struct iguana_msgtx *txarray,int32_t txn_count)
 {
-    int32_t i,j,sigspace,suffixlen,scriptspace,pubkeyspace,p2shspace,p2shsize,sigsize,pubkeysize,type,scriptlen; //struct iguana_spend256 *s; struct iguana_unspent20 *u;
+    uint32_t i,j,sigspace,suffixlen,scriptspace,pubkeyspace,p2shspace,p2shsize,sigsize,pubkeysize,type,scriptlen; //struct iguana_spend256 *s; struct iguana_unspent20 *u;
     struct iguana_msgtx *tx; struct vin_info V; uint8_t rmd160[20],scriptdata[IGUANA_MAXSCRIPTSIZE]; char asmstr[IGUANA_MAXSCRIPTSIZE*2+1];
     for (i=sigspace=scriptspace=pubkeyspace=p2shspace=0; i<txn_count; i++)
     {
@@ -1954,8 +1957,8 @@ int32_t iguana_scriptspaceraw(struct iguana_info *coin,int32_t *scriptspacep,int
 int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,int32_t *pubkeyspacep,struct iguana_ramchain *ramchain)
 {
     RAMCHAIN_DECLARE;
-    int32_t j,p2shspace,altspace,sigspace,pubkeyspace,scriptlen,p2shsize,pubkeysize,sigsize,scriptspace,suffixlen;
-    uint32_t sequence,spendind,unspentind; struct vin_info V; //uint8_t _script[IGUANA_MAXSCRIPTSIZE];
+    int32_t j,scriptlen;
+    uint32_t sequence,p2shspace,altspace,sigspace,pubkeyspace,spendind,unspentind,p2shsize,pubkeysize,sigsize,scriptspace,suffixlen; struct vin_info V; //uint8_t _script[IGUANA_MAXSCRIPTSIZE];
     struct iguana_txid *tx; struct iguana_ramchaindata *rdata; uint8_t *scriptdata;
     _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
     *sigspacep = *pubkeyspacep = altspace = 0;
@@ -2253,7 +2256,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     {
         destoffset = &Kspace[ramchain->H.scriptoffset];
         srcoffset = &Kspace[ramchain->H.data->scriptspace - ramchain->H.stacksize];
-        if ( 1 && (long)destoffset < (long)srcoffset )
+        if ( 0 && (long)destoffset < (long)srcoffset )
         {
             for (i=0; i<ramchain->H.stacksize; i++)
                 c = *srcoffset++, *destoffset++ = c;
