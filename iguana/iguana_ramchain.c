@@ -1476,7 +1476,7 @@ int32_t iguana_ramchain_verify(struct iguana_info *coin,struct iguana_ramchain *
 
 int32_t iguana_ramchain_free(struct iguana_ramchain *ramchain,int32_t deleteflag)
 {
-    struct iguana_kvitem *item,*tmp; int32_t i; struct iguana_unspent20 *U; struct iguana_spend256 *S;
+    struct iguana_kvitem *item,*tmp; int32_t i;
     if ( ramchain->H.ROflag != 0 && ramchain->hashmem == 0 )
     {
         //printf("Free A %p %p, U2, P2\n",ramchain->A,ramchain->roA);
@@ -1489,17 +1489,6 @@ int32_t iguana_ramchain_free(struct iguana_ramchain *ramchain,int32_t deleteflag
     }
     if ( deleteflag != 0 )
     {
-        if ( ramchain->H.data != 0 && ramchain->expanded == 0 )
-        {
-            U = (void *)(long)((long)ramchain->H.data + (long)ramchain->H.data->Uoffset);
-            S = (void *)(long)((long)ramchain->H.data + (long)ramchain->H.data->Soffset);
-            for (i=0; i<ramchain->H.data->numunspents; i++)
-                if ( U[i].scriptptr != 0 )
-                    free(U[i].scriptptr);
-            for (i=0; i<ramchain->H.data->numspends; i++)
-                if ( S[i].vinscriptptr != 0 )
-                    free(S[i].vinscriptptr);
-        }
         if ( ramchain->txids != 0 )
         {
             HASH_ITER(hh,ramchain->txids,item,tmp)
@@ -2522,6 +2511,19 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     {
         char str[65],str2[65]; printf("%s d.%d ht.%d %s saved lag.%d elapsed.%ld\n",bits256_str(str2,newchain.H.data->sha256),depth,dest->height,mbstr(str,dest->H.data->allocsize),now-starttime,time(NULL)-now);
         retval = 0;
+        for (j=0; j<num; j++)
+        {
+            mapchain = &R[j];
+            struct iguana_unspent20 *U; struct iguana_spend256 *S;
+            U = (void *)(long)((long)mapchain->H.data + (long)mapchain->H.data->Uoffset);
+            S = (void *)(long)((long)mapchain->H.data + (long)mapchain->H.data->Soffset);
+            for (i=0; i<mapchain->H.data->numunspents; i++)
+                if ( U[i].scriptptr != 0 )
+                    free(U[i].scriptptr);
+            for (i=0; i<mapchain->H.data->numspends; i++)
+                if ( S[i].vinscriptptr != 0 )
+                    free(S[i].vinscriptptr);
+        }
     }
     iguana_bundlemapfree(mem,&HASHMEM,ipbits,ptrs,filesizes,num,R,bp->n);
     if ( retval == 0 )
