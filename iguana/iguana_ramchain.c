@@ -2228,7 +2228,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     if ( bp->bundleheight == 32000 )
     {
         printf("skip ht.%d for now\n",bp->bundleheight);
-        return(0);
+        return(-1);
     }
     //printf("B[] %p\n",B);
     if ( 1 && ramchain->expanded != 0 )
