@@ -1973,6 +1973,7 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
                 scriptlen = S[spendind].vinscriptlen;
                 scriptdata = S[spendind].vinscriptptr;
                 //if ( (scriptdata= iguana_scriptptr(coin,&scriptlen,_script,S[spendind].scriptfpos,S[spendind].vinscriptptr,S[spendind].vinscriptlen,sizeof(S[spendind].vinscriptptr),1)) != 0 )
+                if ( scriptdata != 0 )
                 {
                     iguana_vinscriptparse(coin,&V,&sigsize,&pubkeysize,&p2shsize,&suffixlen,scriptdata,scriptlen);
                     p2shspace += p2shsize;
