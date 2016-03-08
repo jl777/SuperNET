@@ -710,7 +710,7 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,int32_t *s
         return(vp->spendlen);
     }
     j = 0;
-    while ( ((plen= scriptsig[n]) == 33 || plen == 65 ) && j < 16 )
+    while ( ((plen= scriptsig[n]) == 33 || plen == 65) && j < 16 && plen+n <= len )
     {
         memcpy(vp->signers[j].pubkey,&scriptsig[n+1],plen);
         calc_rmd160_sha256(vp->signers[j].rmd160,vp->signers[j].pubkey,plen);
@@ -721,13 +721,13 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,int32_t *s
         j++;
     }
     vp->numpubkeys = j;
-    if ( n < len && (scriptsig[n] == 0x4c || scriptsig[n] == 0x4d) )
+    if ( n+2 < len && (scriptsig[n] == 0x4c || scriptsig[n] == 0x4d) )
     {
         if ( scriptsig[n] == 0x4c )
             vp->p2shlen = scriptsig[n+1], n += 2;
         else vp->p2shlen = ((uint32_t)scriptsig[n+1] + ((uint32_t)scriptsig[n+2] << 8)), n += 3;
         printf("p2sh opcode.%02x %02x %02x scriptlen.%d\n",scriptsig[n],scriptsig[n+1],scriptsig[n+2],vp->p2shlen);
-        if ( vp->p2shlen < IGUANA_MAXSCRIPTSIZE )
+        if ( vp->p2shlen < IGUANA_MAXSCRIPTSIZE && n+vp->p2shlen <= len )
         {
             memcpy(vp->p2shscript,&scriptsig[n],vp->p2shlen);
             n += vp->p2shlen;
