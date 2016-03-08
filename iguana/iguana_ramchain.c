@@ -2253,16 +2253,17 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     {
         destoffset = &Kspace[ramchain->H.scriptoffset];
         srcoffset = &Kspace[ramchain->H.data->scriptspace - ramchain->H.stacksize];
-        if ( 0 && (long)destoffset < (long)srcoffset )
+        if ( 1 && (long)destoffset < (long)srcoffset )
         {
             for (i=0; i<ramchain->H.stacksize; i++)
                 c = *srcoffset++, *destoffset++ = c;
-        } else printf("smashed stack?\n");
+        } //else printf("smashed stack?\n");
         printf("%d SAVE: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d gap.%ld\n",bp->bundleheight,(int32_t)ramchain->H.data->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)ramchain->H.data->allocsize,(long)destoffset - (long)srcoffset);
     }
     scriptoffset = ramchain->H.scriptoffset;
     stacksize = ramchain->H.stacksize;
-    ramchain->H.scriptoffset = ramchain->H.data->scriptspace = scriptoffset;
+    ramchain->H.scriptoffset = scriptoffset;
+    ramchain->H.data->scriptspace = scriptoffset + stacksize;
     ramchain->H.stacksize = ramchain->H.data->stackspace = stacksize;
     iguana_ramchain_setsize(ramchain,ramchain->H.data,bp->n);
     //printf("Apresave T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d scriptoffset.%d stacksize.%d\n",ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,firsti,ramchain->H.scriptoffset,ramchain->H.stacksize);
