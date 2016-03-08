@@ -2521,7 +2521,7 @@ if ( bp->bundleheight != 32000 )
         printf("bundlesave: stack smashed %d+%d > %d\n",dest->H.scriptoffset,dest->H.stacksize,dest->H.data->scriptspace);
         bundlei = -1;
     }
-    //printf("dest scriptoffset.%d stacksize.%d data scriptspace.%d\n",dest->H.scriptoffset,dest->H.stacksize,dest->H.data->scriptspace);
+    printf("GETCHAR! about to save dest scriptoffset.%d stacksize.%d data scriptspace.%d\n",dest->H.scriptoffset,dest->H.stacksize,dest->H.data->scriptspace), getchar();
     depth--;
     if ( bundlei == bp->n && iguana_ramchain_expandedsave(coin,RAMCHAIN_DESTARG,&newchain,&HASHMEM,0,bp) == 0 )
     {
