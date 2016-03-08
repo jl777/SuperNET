@@ -927,7 +927,7 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
                 printf(" vinscript\n");
                 printf("addspend: vinscript expand error (%d vs %d) %d seq.(%u %u)\n",checklen,vinscriptlen,memcmp(_script,vinscript,vinscriptlen),sequence,checksequenceid);
             } else s->coinbase = 1, printf("vin reconstructed metalen.%d vinlen.%d\n",metalen,checklen);
-        }
+        } else printf("sigslen.%d numsigs.%d numpubs.%d suffixlen.%d\n",sigslen,numsigs,numpubs,suffixlen);
         //s->hdrsi = hdrsi;
         //s->bundlei = bundlei;
         //char str[65]; printf("%s set prevout.%d -> %d\n",bits256_str(str,prev_hash),prev_vout,s->prevout);
@@ -1857,7 +1857,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
             scriptlen = 0;
             if ( ramchain->expanded != 0 )
             {
-                fprintf(stderr,"call vinscriptdecode scriptspace.%d\n",ramchain->H.data->scriptspace);
+                fprintf(stderr,"spendind.%d txidind.%d vin.%d call vinscriptdecode scriptspace.%d\n",ramchain->H.spendind,ramchain->H.txidind,j,ramchain->H.data->scriptspace);
                 scriptlen = iguana_vinscriptdecode(coin,&metalen,&sequenceid,_script,&Kspace[ramchain->H.data->scriptspace],Kspace,&Sx[ramchain->H.spendind]);
                 scriptdata = _script;
                 prevout = iguana_ramchain_txid(coin,RAMCHAIN_ARG,&prevhash,&Sx[ramchain->H.spendind]);

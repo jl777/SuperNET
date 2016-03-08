@@ -704,6 +704,7 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,int32_t *s
     vp->type = spendtype;
     if ( j == 0 )
     {
+        *suffixp = len;
         vp->spendlen = len;
         return(vp->spendlen);
     }
