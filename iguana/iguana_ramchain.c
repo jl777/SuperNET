@@ -1946,7 +1946,7 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
 {
     RAMCHAIN_DECLARE;
     int32_t j,p2shspace,sigspace,pubkeyspace,scriptlen,p2shsize,pubkeysize,sigsize,scriptspace,suffixlen;
-    uint32_t sequence,spendind,unspentind; struct vin_info V; uint8_t _script[IGUANA_MAXSCRIPTSIZE];
+    uint32_t sequence,spendind,unspentind; struct vin_info V; //uint8_t _script[IGUANA_MAXSCRIPTSIZE];
     struct iguana_txid *tx; struct iguana_ramchaindata *rdata; uint8_t *scriptdata;
     _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
     *sigspacep = *pubkeyspacep = 0;
@@ -2244,12 +2244,12 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     {
         destoffset = &Kspace[ramchain->H.scriptoffset];
         srcoffset = &Kspace[ramchain->H.data->scriptspace - ramchain->H.stacksize];
-        if ( 0 && destoffset != srcoffset )
+        if ( (long)destoffset < (long)srcoffset )
         {
             for (i=0; i<ramchain->H.stacksize; i++)
                 c = *srcoffset++, *destoffset++ = c;
-        }
-        printf("SAVE: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d\n",(int32_t)ramchain->H.data->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)ramchain->H.data->allocsize);
+        } else printf("smashed stack?\n");
+        printf("SAVE: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d gap.%ld\n",(int32_t)ramchain->H.data->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)ramchain->H.data->allocsize,(long)destoffset - (long)srcoffset);
     }
     scriptoffset = ramchain->H.scriptoffset;
     stacksize = ramchain->H.stacksize;
@@ -2373,6 +2373,8 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     struct iguana_ramchain *R,*mapchain,*dest,newchain; uint32_t fpipbits,now = (uint32_t)time(NULL);
     int32_t i,numtxids,valid,sigspace,sigsize,pubkeysize,pubkeyspace,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,fpos; struct iguana_block *block;
     struct OS_memspace HASHMEM; int32_t err,j,num,hdrsi,bundlei,firsti= 1,retval = -1;
+if ( bp->bundleheight != 32000 )
+    return(0);
     B = 0, Ux = 0, Sx = 0, P = 0, A = 0, X = 0, Kspace = TXbits = PKbits = 0, U = 0, S = 0, T = 0;//U2 = 0, P2 = 0,
     R = mycalloc('s',bp->n,sizeof(*R));
     ptrs = mycalloc('w',bp->n,sizeof(*ptrs));
