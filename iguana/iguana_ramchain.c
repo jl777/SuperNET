@@ -1500,6 +1500,7 @@ int32_t iguana_ramchain_free(struct iguana_ramchain *ramchain,int32_t deleteflag
                 if ( ramchain->hashmem == 0 )
                     myfree(item,sizeof(*item));
             }
+            ramchain->txids = 0;
         }
         if ( ramchain->pkhashes != 0 )
         {
@@ -1509,13 +1510,15 @@ int32_t iguana_ramchain_free(struct iguana_ramchain *ramchain,int32_t deleteflag
                 if ( ramchain->hashmem == 0 )
                     myfree(item,sizeof(*item));
             }
+            ramchain->pkhashes = 0;
         }
     }
     if ( ramchain->hashmem != 0 )
-        iguana_memreset(ramchain->hashmem);
+        iguana_memreset(ramchain->hashmem), ramchain->hashmem = 0;
     if ( ramchain->filesize != 0 )
-        munmap(ramchain->fileptr,ramchain->filesize);
-    memset(ramchain,0,sizeof(*ramchain));
+        munmap(ramchain->fileptr,ramchain->filesize), ramchain->fileptr = 0;
+    if ( deleteflag != 0 )
+        memset(ramchain,0,sizeof(*ramchain));
     return(0);
 }
 
@@ -2001,13 +2004,11 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
         }
         altspace += tx->numvins * 16 + 128; // for metascripts
         scriptspace += tx->numvins * 16 + 128; // for metascripts
-        fprintf(stderr,"scriptspace.%u altspace.%u\n",scriptspace,altspace);
+        fprintf(stderr,"scriptspace.%u altspace.%u, ",scriptspace,altspace);
     }
     *sigspacep = sigspace, *pubkeyspacep = pubkeyspace;
     printf("altspace.%d numvouts.%d numvins.%d scriptspace.%d p2shspace.%d sigspace.%d pubkeyspace.%d\n",altspace,tx->numvouts,tx->numvins,scriptspace,p2shspace,sigspace,pubkeyspace);
-    if ( altspace < scriptspace+p2shspace )
-        return(altspace);
-    else return(scriptspace + p2shspace);
+    return(scriptspace + p2shspace);
 }
 
 long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,int32_t txn_count,uint8_t *data,int32_t recvlen)
@@ -2475,7 +2476,7 @@ if ( bp->bundleheight != 32000 )
         printf("error mapping hdrsi.%d bundlei.%d\n",bp->hdrsi,bundlei);
         return(-1);
     }
-    printf("iguana_bundlesaveHT.%d -> total (%d %d %d) scriptspace.%d (pubkeys.%d sigs.%d)\n",bp->bundleheight,numtxids,numunspents,numspends,scriptspace,pubkeyspace,sigspace);
+    printf("iguana_bundlesaveHT.%d -> total (%d %d %d) scriptspace.%d (pubkeys.%d sigs.%d) dest->txids %p\n",bp->bundleheight,numtxids,numunspents,numspends,scriptspace,pubkeyspace,sigspace,dest->txids);
     numpkinds = numunspents;
     numexternaltxids = numspends;
     dest = &bp->ramchain;
@@ -2496,7 +2497,6 @@ if ( bp->bundleheight != 32000 )
     iguana_ramchain_extras(dest,&HASHMEM);
     for (i=0; i<bp->n; i++)
     {
-        fprintf(stderr,"i.%d of %d\n",i,bp->n);
         if ( (block= bp->blocks[i]) != 0 && block == iguana_blockfind(coin,bp->hashes[i]) )
         {
             if ( iguana_blockvalidate(coin,&valid,block,1) != 0 || (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) )
@@ -2518,7 +2518,7 @@ if ( bp->bundleheight != 32000 )
     {
         if ( (block= bp->blocks[bundlei]) != 0 )
         {
-            printf("blocksetcounters\n");
+            printf("blocksetcounters dest->txids %p\n",dest->txids);
             iguana_blocksetcounters(coin,block,dest);
             coin->blocks.RO[bp->bundleheight+bundlei] = block->RO;
             destB[bundlei] = block->RO;
@@ -2560,15 +2560,7 @@ if ( bp->bundleheight != 32000 )
     }
     iguana_ramchain_free(dest,0);
     bp->ramchain = newchain;
-    if ( 0 )
-    {
-        bp->ramchain.hashmem = 0;
-        bp->ramchain.txids = 0;
-        bp->ramchain.pkhashes = 0;
-        bp->ramchain.fileptr = 0;
-        bp->ramchain.filesize = 0;
-    }
-    else iguana_bundleload(coin,bp);
+    iguana_bundleload(coin,bp);
     return(retval);
 }
 
