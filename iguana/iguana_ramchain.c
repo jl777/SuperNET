@@ -690,7 +690,7 @@ int32_t iguana_vinscriptencode(struct iguana_info *coin,uint8_t *Kstackend,uint3
     }
     if ( s->numpubkeys > 0 )
     {
-        //printf("metalen.%d\n",len);
+         //printf("metalen.%d\n",len);
         for (i=0; i<s->numpubkeys; i++)
         {
             len += iguana_rwvarint32(1,&metascript[len],&poffsets[i]);
@@ -912,6 +912,12 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
         }
         s->numsigs = numsigs;
         s->numpubkeys = numpubs;
+        if ( vinscriptlen-72*numsigs < numpubs*33 )
+        {
+            for (i=0; i<vinscriptlen; i++)
+                printf("%02x",vinscript[i]);
+            printf(" vinscript numsigs.%d numpubs.%d?\n",numsigs,numpubs);
+        }
         if ( p2shsize != 0 )
             s->p2sh = 1;
         if ( sigslen+numsigs+numpubs+suffixlen != 0 || s->sequenceid == 3 )
@@ -2446,7 +2452,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         printf("error mapping hdrsi.%d bundlei.%d\n",bp->hdrsi,bundlei);
         return(-1);
     }
-    printf("iguana_bundlesaveHT -> total (%d %d %d) scriptspace.%d (pubkeys.%d sigs.%d)\n",numtxids,numunspents,numspends,scriptspace,pubkeyspace,sigspace);
+    printf("iguana_bundlesaveHT.%d -> total (%d %d %d) scriptspace.%d (pubkeys.%d sigs.%d)\n",bp->bundleheight,numtxids,numunspents,numspends,scriptspace,pubkeyspace,sigspace);
     numpkinds = numunspents;
     numexternaltxids = numspends;
     dest = &bp->ramchain;
