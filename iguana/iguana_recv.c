@@ -634,7 +634,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
 {
     struct iguana_bundle *bp=0; int32_t bundlei = -2; struct iguana_block *block;
     bp = iguana_bundleset(coin,&block,&bundlei,origblock);
-    static int total; char str[65]; fprintf(stderr,"RECV %s [%d:%d] block.%08x | %d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,total++);
+    //static int total; char str[65]; fprintf(stderr,"RECV %s [%d:%d] block.%08x | %d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,total++);
     if ( block != 0 )
     {
         if ( 0 && bp != 0 && bundlei > 0 && bits256_nonz(block->RO.prev_block) > 0 )
