@@ -1476,7 +1476,7 @@ int32_t iguana_ramchain_verify(struct iguana_info *coin,struct iguana_ramchain *
 
 int32_t iguana_ramchain_free(struct iguana_ramchain *ramchain,int32_t deleteflag)
 {
-    struct iguana_kvitem *item,*tmp;
+    struct iguana_kvitem *item,*tmp; int32_t i; struct iguana_unspent20 *U; struct iguana_spend256 *S;
     if ( ramchain->H.ROflag != 0 && ramchain->hashmem == 0 )
     {
         //printf("Free A %p %p, U2, P2\n",ramchain->A,ramchain->roA);
@@ -1489,6 +1489,17 @@ int32_t iguana_ramchain_free(struct iguana_ramchain *ramchain,int32_t deleteflag
     }
     if ( deleteflag != 0 )
     {
+        if ( ramchain->expanded == 0 )
+        {
+            U = (void *)(long)((long)ramchain->H.data + (long)ramchain->H.data->Uoffset);
+            S = (void *)(long)((long)ramchain->H.data + (long)ramchain->H.data->Soffset);
+            for (i=0; i<ramchain->H.data->numunspents; i++)
+                if ( U[i].scriptptr != 0 )
+                    free(U[i].scriptptr);
+            for (i=0; i<ramchain->H.data->numspends; i++)
+                if ( S[i].vinscriptptr != 0 )
+                    free(S[i].vinscriptptr);
+        }
         if ( ramchain->txids != 0 )
         {
             HASH_ITER(hh,ramchain->txids,item,tmp)
