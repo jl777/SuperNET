@@ -664,7 +664,7 @@ int32_t iguana_ramchain_txid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 *txi
 int32_t iguana_vinscriptencode(struct iguana_info *coin,uint8_t *Kstackend,uint32_t stacksize,uint8_t *Kspace,uint32_t scriptoffset,struct iguana_spend *s,uint32_t sequence,uint8_t *sigsbuf,int32_t sigslen,uint32_t *poffsets,uint8_t *p2shscript,int32_t p2shlen,uint8_t *suffix,int32_t suffixlen)
 {
     int32_t i,len = 0; long diff; uint8_t metascript[IGUANA_MAXSCRIPTSIZE]; uint32_t origoffset = scriptoffset;
-    printf("vinencode[%d] <- stacksize.%d sigslen.%d numsigs.%d numpubs.%d p2shlen.%d suffixlen.%d\n",scriptoffset,stacksize,sigslen,s->numsigs,s->numpubkeys,p2shlen,suffixlen);
+    //printf("vinencode[%d] <- stacksize.%d sigslen.%d numsigs.%d numpubs.%d p2shlen.%d suffixlen.%d\n",scriptoffset,stacksize,sigslen,s->numsigs,s->numpubkeys,p2shlen,suffixlen);
     if ( sigslen == 0 && s->numpubkeys == 0 && p2shlen == 0 && suffixlen == 0 )
     {
         printf("spendencode: null script??\n");
@@ -733,13 +733,13 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,int32_t *metalenp,uint32
     // expand metascript!!
     totalsize += len;
     len += iguana_rwvarint32(0,&metascript[len],(void *)&sigslen);
-    printf("totalsize %d, len %d sigslen %d numpubs.%d p2sh.%d\n",totalsize,len,sigslen,s->numpubkeys,s->p2sh);
+    //printf("totalsize %d, len %d sigslen %d numpubs.%d p2sh.%d\n",totalsize,len,sigslen,s->numpubkeys,s->p2sh);
     if ( sigslen > 0 && sigslen < 74*16 )
     {
         len += iguana_rwvarint32(0,&metascript[len],(void *)&stacksize);
         diff = (long)Kstackend - (long)Kspace;
         memcpy(&_script[scriptlen],&Kspace[diff - stacksize],sigslen), scriptlen += sigslen;
-        printf("emit.%p from.%ld sigslen.%d [%02x] stacksize.%d\n",&Kspace[diff - stacksize],diff - stacksize,sigslen,Kspace[diff - stacksize + sigslen - 1],stacksize);
+        //printf("emit.%p from.%ld sigslen.%d [%02x] stacksize.%d\n",&Kspace[diff - stacksize],diff - stacksize,sigslen,Kspace[diff - stacksize + sigslen - 1],stacksize);
     }
     if ( s->numpubkeys > 0 )
     {
@@ -926,7 +926,7 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
                     printf("%02x",vinscript[i]);
                 printf(" vinscript\n");
                 printf("addspend: vinscript expand error (%d vs %d) %d seq.(%u %u)\n",checklen,vinscriptlen,memcmp(_script,vinscript,vinscriptlen),sequence,checksequenceid);
-            } else s->coinbase = 1, printf("vin reconstructed metalen.%d vinlen.%d\n",metalen,checklen);
+            } else s->coinbase = 1;//, printf("vin reconstructed metalen.%d vinlen.%d\n",metalen,checklen);
         } else printf("sigslen.%d numsigs.%d numpubs.%d suffixlen.%d\n",sigslen,numsigs,numpubs,suffixlen);
         //s->hdrsi = hdrsi;
         //s->bundlei = bundlei;
