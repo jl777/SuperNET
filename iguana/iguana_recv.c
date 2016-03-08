@@ -385,10 +385,10 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
             {
                 block->numrequests++;
                 iguana_blockQ(coin,bp,i,block->RO.hash2,1);
-                printf("%d ",i);
+                //printf("%d ",i);
             }
         }
-        printf("initial requests for hdrs.%d\n",bp->hdrsi);
+        //printf("initial requests for hdrs.%d\n",bp->hdrsi);
     }
     pend = queue_size(&coin->priorityQ) + queue_size(&coin->blocksQ);
     for (i=0; i<IGUANA_MAXPEERS; i++)
@@ -1019,8 +1019,8 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
             }
             else if ( bp->speculative != 0 && bits256_nonz(bp->speculative[bundlei]) > 0 )
             {
-                printf("speculative next %d\n",coin->blocks.hwmchain.height+1);
-                iguana_blockQ(coin,0,-1,bp->speculative[bundlei],0);
+                //printf("speculative next %d\n",coin->blocks.hwmchain.height+1);
+                //iguana_blockQ(coin,0,-1,bp->speculative[bundlei],0);
             }
         }
     }

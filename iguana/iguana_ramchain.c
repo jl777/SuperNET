@@ -664,7 +664,7 @@ int32_t iguana_ramchain_txid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 *txi
 int32_t iguana_vinscriptencode(struct iguana_info *coin,uint8_t *Kstackend,uint32_t stacksize,uint8_t *Kspace,uint32_t scriptoffset,struct iguana_spend *s,uint32_t sequence,uint8_t *sigsbuf,int32_t sigslen,uint32_t *poffsets,uint8_t *p2shscript,int32_t p2shlen,uint8_t *suffix,int32_t suffixlen)
 {
     int32_t i,len = 0; long diff; uint8_t metascript[IGUANA_MAXSCRIPTSIZE]; uint32_t origoffset = scriptoffset;
-    //printf("vinencode[%d] <- stacksize.%d sigslen.%d numsigs.%d numpubs.%d p2shlen.%d suffixlen.%d\n",scriptoffset,stacksize,sigslen,s->numsigs,s->numpubkeys,p2shlen,suffixlen);
+    printf("vinencode[%d] <- stacksize.%d sigslen.%d numsigs.%d numpubs.%d p2shlen.%d suffixlen.%d\n",scriptoffset,stacksize,sigslen,s->numsigs,s->numpubkeys,p2shlen,suffixlen);
     if ( sigslen == 0 && s->numpubkeys == 0 && p2shlen == 0 && suffixlen == 0 )
     {
         printf("spendencode: null script??\n");
@@ -680,21 +680,21 @@ int32_t iguana_vinscriptencode(struct iguana_info *coin,uint8_t *Kstackend,uint3
         memcpy(&Kspace[diff - stacksize],sigsbuf,sigslen);
         //printf("Kspace.%p Kstackend.%p diff.%ld stacksize.%d sigsbuf.%p sigslen.%d [%02x]\n",Kspace,Kstackend,diff,stacksize,sigsbuf,sigslen,Kspace[diff - stacksize + sigslen - 1]);
         for (i=0; i<sigslen; i++)
-        {//break;
+        {break;
             printf("%02x",sigsbuf[i]);
             //printf("i.%d [%p] (%d)\n",i,&Kspace[diff - stacksize + i],i-stacksize);
             //Kspace[diff - stacksize + i] = sigsbuf[i];
         }
         len += iguana_rwvarint32(1,&metascript[len],&stacksize);
-        printf(" sigsbuf len.%d -> %p stacksize.%d\n",len,&Kspace[diff - stacksize],stacksize);
+        //printf(" sigsbuf len.%d -> %p stacksize.%d\n",len,&Kspace[diff - stacksize],stacksize);
     }
     if ( s->numpubkeys > 0 )
     {
-        printf("metalen.%d\n",len);
+        //printf("metalen.%d\n",len);
         for (i=0; i<s->numpubkeys; i++)
         {
             len += iguana_rwvarint32(1,&metascript[len],&poffsets[i]);
-            printf("EMIT pubkey poffsets.[%x] len.%d\n",poffsets[0],len);
+            //printf("EMIT pubkey poffsets.[%x] len.%d\n",poffsets[0],len);
         }
     }
     if ( p2shlen != 0 )
@@ -704,14 +704,14 @@ int32_t iguana_vinscriptencode(struct iguana_info *coin,uint8_t *Kstackend,uint3
     }
     if ( suffixlen != 0 )
     {
-        printf("[%d] <- SUFFIX.(%02x) len.%d\n",len,suffix[0],suffixlen);
+        //printf("[%d] <- SUFFIX.(%02x) len.%d\n",len,suffix[0],suffixlen);
         memcpy(&metascript[len],suffix,suffixlen), len += suffixlen;
     }
     scriptoffset += iguana_rwvarint32(1,&Kspace[scriptoffset],(void *)&len);
     memcpy(&Kspace[scriptoffset],metascript,len);
-    for (i=0; i<scriptoffset + len - origoffset; i++)
-        printf("%02x",Kspace[origoffset+i]);
-    printf(" ret METAscript scriptoffset.%d + len.%d - orig.%d = %d\n",scriptoffset,len,origoffset,scriptoffset + len - origoffset);
+    //for (i=0; i<scriptoffset + len - origoffset; i++)
+    //    printf("%02x",Kspace[origoffset+i]);
+    //printf(" ret METAscript scriptoffset.%d + len.%d - orig.%d = %d\n",scriptoffset,len,origoffset,scriptoffset + len - origoffset);
     return(scriptoffset + len - origoffset);
 }
 
@@ -868,9 +868,9 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
     else
     {
         // struct iguana_spend { uint32_t spendtxidind,scriptoffset; int16_t prevout; uint16_t numsigs:4,numpubkeys:4,p2sh:1,sighash:4,external:1,sequenceid:2; } __attribute__((packed));
-        for (i=0; i<vinscriptlen; i++)
-            printf("%02x",vinscript[i]);
-        printf(" SAVE vinscript len.%d\n",vinscriptlen);
+        //for (i=0; i<vinscriptlen; i++)
+        //    printf("%02x",vinscript[i]);
+        //printf(" SAVE vinscript len.%d\n",vinscriptlen);
         if ( sequence == 0xffffffff )
             s->sequenceid = 1;
         else if ( sequence == 0xfffffffe )
@@ -2224,7 +2224,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     firsthash2 = ramchain->H.data->firsthash2, lasthash2 = ramchain->H.data->lasthash2;
     height = ramchain->height, firsti = ramchain->H.data->firsti, hdrsi = ramchain->H.hdrsi, numblocks = ramchain->numblocks;
     //printf("B[] %p\n",B);
-    if ( 1 && ramchain->expanded != 0 )
+    if ( 0 && ramchain->expanded != 0 )
     {
         destoffset = &Kspace[ramchain->H.scriptoffset];
         srcoffset = &Kspace[ramchain->H.data->scriptspace - ramchain->H.stacksize];
