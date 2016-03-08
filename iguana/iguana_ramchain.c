@@ -297,13 +297,13 @@ uint32_t iguana_ramchain_addtxid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 
             iguana_sparseaddtx(TXbits,ramchain->H.data->txsparsebits,ramchain->H.data->numtxsparse,txid,T,txidind);
         //if ( txidind <= 2 )
         //    printf("%p TXID.[%d] firstvout.%d/%d firstvin.%d/%d\n",t,txidind,ramchain->unspentind,numvouts,ramchain->spendind,numvins);
-    }
-    if ( ramchain->expanded != 0 )
-    {
-        if ( (ptr= iguana_hashsetPT(ramchain,'T',t->txid.bytes,txidind)) == 0 )
+        if ( ramchain->expanded != 0 )
         {
-            printf("iguana_ramchain_addtxid error adding txidind\n");
-            return(0);
+            if ( (ptr= iguana_hashsetPT(ramchain,'T',t->txid.bytes,txidind)) == 0 )
+            {
+                printf("iguana_ramchain_addtxid error adding txidind\n");
+                return(0);
+            }
         }
     }
     return(txidind);
