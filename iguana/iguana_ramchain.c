@@ -1476,7 +1476,7 @@ int32_t iguana_ramchain_verify(struct iguana_info *coin,struct iguana_ramchain *
 
 int32_t iguana_ramchain_free(struct iguana_ramchain *ramchain,int32_t deleteflag)
 {
-    struct iguana_kvitem *item,*tmp; int32_t i;
+    struct iguana_kvitem *item,*tmp;
     if ( ramchain->H.ROflag != 0 && ramchain->hashmem == 0 )
     {
         //printf("Free A %p %p, U2, P2\n",ramchain->A,ramchain->roA);
