@@ -1753,6 +1753,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
     int32_t j,metalen,hdrsi,prevout,scriptlen; uint32_t sequenceid,destspendind=0,desttxidind=0;
     bits256 prevhash; uint64_t value; uint8_t type,_script[IGUANA_MAXSCRIPTSIZE]; struct iguana_unspent *u;  struct scriptdata *script;
     struct iguana_txid *tx; struct iguana_ramchaindata *rdata; uint8_t *rmd160,*scriptdata;
+    printf("iterate ramchain.%p rdata.%p dest.%p ht.%d/%d\n",ramchain,ramchain->H.data,dest,bp->bundleheight,bp->n);
     if ( (rdata= ramchain->H.data) == 0 )
     {
         printf("iguana_ramchain_iterate cant iterate without data\n");
@@ -1760,7 +1761,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
     }
     if ( dest != 0 )
         _iguana_ramchain_setptrs(RAMCHAIN_DESTPTRS,dest->H.data);
-    else printf("iterate %d/%d dest.%p ramchain.%p rdata.%p\n",bp->bundleheight,bp->n,dest,ramchain,rdata);
+    else fprintf(stderr,"iterate %d/%d dest.%p ramchain.%p rdata.%p\n",bp->bundleheight,bp->n,dest,ramchain,rdata);
     _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
     ramchain->H.ROflag = 1;
     ramchain->H.unspentind = ramchain->H.spendind = ramchain->pkind = rdata->firsti;
@@ -1770,6 +1771,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
         desttxidind = dest->H.txidind;
         destspendind = dest->H.spendind;
     }
+    printf("txid loop\n");
     for (ramchain->H.txidind=rdata->firsti; ramchain->H.txidind<rdata->numtxids; ramchain->H.txidind++)
     {
         if ( 1 && ramchain->expanded != 0 )
@@ -2506,6 +2508,7 @@ if ( bp->bundleheight != 32000 )
     {
         if ( (block= bp->blocks[bundlei]) != 0 )
         {
+            printf("blocksetcounters\n");
             iguana_blocksetcounters(coin,block,dest);
             coin->blocks.RO[bp->bundleheight+bundlei] = block->RO;
             destB[bundlei] = block->RO;
