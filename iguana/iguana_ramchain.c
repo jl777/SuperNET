@@ -419,7 +419,7 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,RAMCHAIN_FUNC,uin
             }*/
             u->scriptptr = malloc(scriptlen);
             memcpy(u->scriptptr,script,scriptlen);
-        }
+        } else u->scriptptr = 0;
         u->txidind = ramchain->H.txidind;
         memcpy(u->rmd160,rmd160,sizeof(u->rmd160));
     }
@@ -981,7 +981,7 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,RAMCHAIN_FUNC,bits
         {
             s->vinscriptptr = malloc(vinscriptlen);
             memcpy(s->vinscriptptr,vinscript,vinscriptlen);
-        }
+        } else s->vinscriptptr = 0;
         //else printf("spend256 scriptfpos.%d\n",s->scriptfpos);
         //char str[65]; printf("W.%p s.%d vout.%d/%d [%d] %s fpos.%u slen.%d\n",s,spendind,s->prevout,prev_vout,bp->hdrsi,bits256_str(str,prev_hash),s->scriptfpos,s->vinscriptlen);
     }
