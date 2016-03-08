@@ -288,11 +288,13 @@ uint32_t iguana_ramchain_addtxid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 
     }
     else
     {
-        if ( 0 && ramchain->expanded != 0 )
+        if ( 1 && ramchain->expanded != 0 )
             printf("T.%p txidind.%d numvouts.%d numvins.%d\n",T,txidind,numvouts,numvins);
         t->txidind = txidind, t->txid = txid, t->numvouts = numvouts, t->numvins = numvins;
         t->firstvout = ramchain->H.unspentind, t->firstvin = ramchain->H.spendind;
         t->locktime = locktime, t->version = version, t->timestamp = timestamp;
+        if ( 1 && ramchain->expanded != 0 )
+            printf("call sparseaddtx\n");
         if ( ramchain->expanded != 0 )
             iguana_sparseaddtx(TXbits,ramchain->H.data->txsparsebits,ramchain->H.data->numtxsparse,txid,T,txidind);
         //if ( txidind <= 2 )
@@ -300,6 +302,7 @@ uint32_t iguana_ramchain_addtxid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 
     }
     if ( ramchain->expanded != 0 )
     {
+        printf("call iguana_hashsetPT txids.%p\n",ramchain->txids);
         if ( (ptr= iguana_hashsetPT(ramchain,'T',t->txid.bytes,txidind)) == 0 )
         {
             printf("iguana_ramchain_addtxid error adding txidind\n");
@@ -1753,7 +1756,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
     int32_t j,metalen,hdrsi,prevout,scriptlen; uint32_t sequenceid,destspendind=0,desttxidind=0;
     bits256 prevhash; uint64_t value; uint8_t type,_script[IGUANA_MAXSCRIPTSIZE]; struct iguana_unspent *u;  struct scriptdata *script;
     struct iguana_txid *tx; struct iguana_ramchaindata *rdata; uint8_t *rmd160,*scriptdata;
-    printf("iterate ramchain.%p rdata.%p dest.%p ht.%d/%d\n",ramchain,ramchain->H.data,dest,bp->bundleheight,bp->n);
+    printf("iterate ramchain.%p rdata.%p dest.%p ht.%d/%d txids.%p\n",ramchain,ramchain->H.data,dest,bp->bundleheight,bp->n,ramchain->txids);
     if ( (rdata= ramchain->H.data) == 0 )
     {
         printf("iguana_ramchain_iterate cant iterate without data\n");
@@ -1774,7 +1777,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
     printf("txid loop\n");
     for (ramchain->H.txidind=rdata->firsti; ramchain->H.txidind<rdata->numtxids; ramchain->H.txidind++)
     {
-        if ( 1 && ramchain->expanded != 0 )
+        if ( 1 && ramchain->expanded == 0 && dest != 0 )
             printf("ITER TXID.%d -> dest.%p desttxid.%d dest->hashmem.%p numtxids.%d\n",ramchain->H.txidind,dest,dest!=0?dest->H.txidind:0,dest!=0?dest->hashmem:0,rdata->numtxids);
         tx = &T[ramchain->H.txidind];
         if ( iguana_ramchain_addtxid(coin,RAMCHAIN_ARG,tx->txid,tx->numvouts,tx->numvins,tx->locktime,tx->version,tx->timestamp) == 0 )
@@ -1782,7 +1785,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
         if ( dest != 0 )
         {
             char str[65];
-            if ( 0 && ramchain->expanded != 0 )
+            if ( 1 && ramchain->expanded == 0 )
                 printf("add hdrsi.%d dest.%p txidind.%d %s\n",dest->H.hdrsi,ramchain,dest->H.txidind,bits256_str(str,tx->txid));
             if ( iguana_ramchain_addtxid(coin,RAMCHAIN_DESTARG,tx->txid,tx->numvouts,tx->numvins,tx->locktime,tx->version,tx->timestamp) == 0 )
                 return(-2);
@@ -1794,7 +1797,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
             scriptdata = 0;
             scriptlen = 0;
             u = &Ux[ramchain->H.unspentind];
-            if ( 1 && ramchain->expanded == 0 )
+            if ( 1 && ramchain->expanded == 0 && dest != 0 )
                 fprintf(stderr,"unspentind.%d pkind.%d Ux.%p scriptoffset.%d pubkeyoffset.%d\n",ramchain->H.unspentind,Ux[ramchain->H.unspentind].pkind,Ux,u->scriptoffset,P[u->pkind].pubkeyoffset);
             if ( ramchain->H.unspentind < rdata->numunspents )
             {
@@ -2450,9 +2453,10 @@ if ( bp->bundleheight != 32000 )
         //printf("%x ",(uint32_t)block->RO.hash2.ulongs[3]);
         //printf("(%d %d %d) ",numtxids,numunspents,numspends);
         //printf("%d ",numtxids);
+        fprintf(stderr,"%p ",mapchain->txids);
     }
     scriptspace += pubkeyspace*1.1 + sigspace*1.1;
-    //printf("RObits\n");
+    printf("mapchain txid tables, scriptspace.%u\n",scriptspace);
     if ( bundlei != bp->n )
     {
         if ( (block= bp->blocks[bundlei]) != 0 )
