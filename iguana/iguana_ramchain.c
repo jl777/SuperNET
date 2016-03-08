@@ -912,11 +912,11 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
         }
         s->numsigs = numsigs;
         s->numpubkeys = numpubs;
-        if ( vinscriptlen-72*numsigs < numpubs*33 )
+        if ( vinscriptlen-71*numsigs < numpubs*33 )
         {
             for (i=0; i<vinscriptlen; i++)
                 printf("%02x",vinscript[i]);
-            printf(" vinscript numsigs.%d numpubs.%d?\n",numsigs,numpubs);
+            printf(" vinscript numsigs.%d numpubs.%d vinscriptlen.%d?\n",numsigs,numpubs,vinscriptlen);
         }
         if ( p2shsize != 0 )
             s->p2sh = 1;
