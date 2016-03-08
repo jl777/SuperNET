@@ -701,6 +701,7 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,int32_t *s
         if ( spendtype == 0 && j > 1 )
             spendtype = IGUANA_SCRIPT_MSIG;
     }
+    vp->numsigs = j;
     vp->type = spendtype;
     if ( j == 0 )
     {
@@ -719,6 +720,7 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,int32_t *s
         (*pubkeysizep) += plen;
         j++;
     }
+    vp->numpubkeys = j;
     if ( n < len && (scriptsig[n] == 0x4c || scriptsig[n] == 0x4d) )
     {
         if ( scriptsig[n] == 0x4c )
