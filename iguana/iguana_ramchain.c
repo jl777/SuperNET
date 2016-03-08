@@ -2227,7 +2227,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     uint8_t *destoffset,*srcoffset;
     firsthash2 = ramchain->H.data->firsthash2, lasthash2 = ramchain->H.data->lasthash2;
     height = ramchain->height, firsti = ramchain->H.data->firsti, hdrsi = ramchain->H.hdrsi, numblocks = ramchain->numblocks;
-    if ( bp->bundleheight == 32000 || bp->bundleheight == 150000 || bp->bundleheight == 116000 || bp->bundleheight == 166000 || bp->bundleheight == 180000 || bp->bundleheight == 140000 )
+    if ( bp->bundleheight == 32000 || bp->bundleheight == 150000 || bp->bundleheight == 116000 || bp->bundleheight == 166000 || bp->bundleheight == 180000 || bp->bundleheight == 140000  || bp->bundleheight == 90000 )
     {
         printf("skip ht.%d for now\n",bp->bundleheight);
         return(-1);
