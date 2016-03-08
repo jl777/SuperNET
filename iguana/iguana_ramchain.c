@@ -2463,7 +2463,7 @@ if ( bp->bundleheight != 32000 )
         //printf("%d ",numtxids);
     }
     scriptspace += pubkeyspace*1.1 + sigspace*1.1;
-    printf("mapchain txid tables, scriptspace.%u sigspace.%u pubkeyspace.%u\n",scriptspace,sigspace,pubkeyspace);
+    printf("mapchain txid tables, scriptspace.%u sigspace.%u pubkeyspace.%u bundlei.%d/%d\n",scriptspace,sigspace,pubkeyspace,bundlei,bp->n);
     if ( bundlei != bp->n )
     {
         if ( (block= bp->blocks[bundlei]) != 0 )
@@ -2476,10 +2476,11 @@ if ( bp->bundleheight != 32000 )
         printf("error mapping hdrsi.%d bundlei.%d\n",bp->hdrsi,bundlei);
         return(-1);
     }
+    dest = &bp->ramchain;
     printf("iguana_bundlesaveHT.%d -> total (%d %d %d) scriptspace.%d (pubkeys.%d sigs.%d) dest->txids %p\n",bp->bundleheight,numtxids,numunspents,numspends,scriptspace,pubkeyspace,sigspace,dest->txids);
+    dest->txids = dest->pkhashes = 0;
     numpkinds = numunspents;
     numexternaltxids = numspends;
-    dest = &bp->ramchain;
     //printf("E.%d depth.%d start bundle ramchain %d at %u started.%u lag.%d\n",coin->numemitted,depth,bp->bundleheight,now,starttime,now-starttime);
     depth++;
     if ( iguana_ramchain_alloc(coin,dest,mem,&HASHMEM,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace+sigspace,bp->bundleheight,bp->n) < 0 )
