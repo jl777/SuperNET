@@ -288,13 +288,11 @@ uint32_t iguana_ramchain_addtxid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 
     }
     else
     {
-        if ( 1 && ramchain->expanded != 0 )
+        if ( 0 && ramchain->expanded != 0 )
             printf("T.%p txidind.%d numvouts.%d numvins.%d\n",T,txidind,numvouts,numvins);
         t->txidind = txidind, t->txid = txid, t->numvouts = numvouts, t->numvins = numvins;
         t->firstvout = ramchain->H.unspentind, t->firstvin = ramchain->H.spendind;
         t->locktime = locktime, t->version = version, t->timestamp = timestamp;
-        if ( 1 && ramchain->expanded != 0 )
-            printf("call sparseaddtx\n");
         if ( ramchain->expanded != 0 )
             iguana_sparseaddtx(TXbits,ramchain->H.data->txsparsebits,ramchain->H.data->numtxsparse,txid,T,txidind);
         //if ( txidind <= 2 )
@@ -2255,12 +2253,12 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     {
         destoffset = &Kspace[ramchain->H.scriptoffset];
         srcoffset = &Kspace[ramchain->H.data->scriptspace - ramchain->H.stacksize];
-        if ( 1 && (long)destoffset < (long)srcoffset )
+        if ( 0 && (long)destoffset < (long)srcoffset )
         {
             for (i=0; i<ramchain->H.stacksize; i++)
                 c = *srcoffset++, *destoffset++ = c;
         } else printf("smashed stack?\n");
-        printf("SAVE: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d gap.%ld\n",(int32_t)ramchain->H.data->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)ramchain->H.data->allocsize,(long)destoffset - (long)srcoffset);
+        printf("%d SAVE: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d gap.%ld\n",bp->bundleheight,(int32_t)ramchain->H.data->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)ramchain->H.data->allocsize,(long)destoffset - (long)srcoffset);
     }
     scriptoffset = ramchain->H.scriptoffset;
     stacksize = ramchain->H.stacksize;
