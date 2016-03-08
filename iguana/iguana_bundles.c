@@ -403,6 +403,8 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
     }
     //bp->metric = bp->numhashes;
     bp->metric = 1000 + sqrt(sqrt(bp->n * (1 + bp->numsaved + bp->numrecv)) * (10 + coin->bundlescount - bp->hdrsi));
+    if ( bp->hdrsi > coin->bundlescount*.95 )
+        bp->metric *= 1000;
     return(bp->estsize);
 }
 
