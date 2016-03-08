@@ -757,8 +757,9 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,int32_t *metalenp,uint32
                 for (j=0; j<scriptlen; j++)
                     printf("%02x",_script[j]);
                 printf(" _script\n");
-                printf(" iguana_vinscriptdecode illegal pubkey.%d\n",i);
-                return(0);
+                printf(" iguana_vinscriptdecode illegal pubkey.%d numpubs.%d numsigs.%d\n",i,s->numpubkeys,s->numsigs);
+                *metalenp = len;
+                return(scriptlen);
             }
             else
             {
