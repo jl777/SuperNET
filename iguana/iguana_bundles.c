@@ -364,7 +364,7 @@ void iguana_bundlepurge(struct iguana_info *coin,struct iguana_bundle *bp)
     }
 }
 
-int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
+int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int32_t done)
 {
     int32_t bundlei; struct iguana_block *block;
     if ( bp->emitfinish > coin->startutc )
@@ -403,7 +403,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
     }
     //bp->metric = bp->numhashes;
     bp->metric = 1000 + sqrt(sqrt(bp->n * (1 + bp->numsaved + bp->numrecv)) * (10 + coin->bundlescount - bp->hdrsi));
-    if ( bp->hdrsi > coin->bundlescount*.9 )
+    if ( done > coin->bundlescount/3 && bp->hdrsi > coin->bundlescount*.9 )
         bp->metric *= 1000;
     return(bp->estsize);
 }
@@ -441,7 +441,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
         if ( (bp= coin->bundles[i]) != 0 )
         {
             bp->rank = 0;
-            estsize += iguana_bundlecalcs(coin,bp);
+            estsize += iguana_bundlecalcs(coin,bp,done);
             numhashes += bp->numhashes;
             numcached += bp->numcached;
             numrecv += bp->numrecv;

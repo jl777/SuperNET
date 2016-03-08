@@ -1970,7 +1970,9 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
             if ( (spendind= ramchain->H.spendind++) < rdata->numspends )
             {
                 sequence = S[spendind].sequenceid;
-                if ( (scriptdata= iguana_scriptptr(coin,&scriptlen,_script,S[spendind].scriptfpos,S[spendind].vinscriptptr,S[spendind].vinscriptlen,sizeof(S[spendind].vinscriptptr),1)) != 0 )
+                scriptlen = S[spendind].vinscriptlen;
+                scriptdata = S[spendind].vinscriptptr;
+                //if ( (scriptdata= iguana_scriptptr(coin,&scriptlen,_script,S[spendind].scriptfpos,S[spendind].vinscriptptr,S[spendind].vinscriptlen,sizeof(S[spendind].vinscriptptr),1)) != 0 )
                 {
                     iguana_vinscriptparse(coin,&V,&sigsize,&pubkeysize,&p2shsize,&suffixlen,scriptdata,scriptlen);
                     p2shspace += p2shsize;
@@ -2231,7 +2233,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     uint8_t *destoffset,*srcoffset;
     firsthash2 = ramchain->H.data->firsthash2, lasthash2 = ramchain->H.data->lasthash2;
     height = ramchain->height, firsti = ramchain->H.data->firsti, hdrsi = ramchain->H.hdrsi, numblocks = ramchain->numblocks;
-    if ( bp->bundleheight == 32000 || bp->bundleheight == 150000 || bp->bundleheight == 116000 || bp->bundleheight == 166000 || bp->bundleheight == 130000 || bp->bundleheight == 180000 || bp->bundleheight == 140000 || bp->bundleheight == 90000 || bp->bundleheight == 176000 || bp->bundleheight == 340000 )
+    if ( bp->bundleheight == 32000 || bp->bundleheight == 150000 || bp->bundleheight == 116000 || bp->bundleheight == 166000 || bp->bundleheight == 130000 || bp->bundleheight == 180000 || bp->bundleheight == 140000 || bp->bundleheight == 90000 || bp->bundleheight == 176000 || bp->bundleheight == 340000 || bp->bundleheight == 374000 )
     {
         printf("skip ht.%d for now\n",bp->bundleheight);
         return(-1);
