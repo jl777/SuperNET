@@ -302,12 +302,13 @@ uint32_t iguana_ramchain_addtxid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 
     }
     if ( ramchain->expanded != 0 )
     {
-        printf("call iguana_hashsetPT txids.%p\n",ramchain->txids);
+        printf("call iguana_hashsetPT txids.%p <- %llx %u\n",ramchain->txids);
         if ( (ptr= iguana_hashsetPT(ramchain,'T',t->txid.bytes,txidind)) == 0 )
         {
             printf("iguana_ramchain_addtxid error adding txidind\n");
             return(0);
         }
+        printf("called iguana_hashsetPT ptr.%p\n",ptr);
     }
     return(txidind);
 }
@@ -1799,14 +1800,13 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
             script = 0;
             scriptdata = 0;
             scriptlen = 0;
-            u = &Ux[ramchain->H.unspentind];
-            if ( 1 && ramchain->expanded == 0 && dest != 0 )
-                fprintf(stderr,"unspentind.%d pkind.%d Ux.%p scriptoffset.%d pubkeyoffset.%d\n",ramchain->H.unspentind,Ux[ramchain->H.unspentind].pkind,Ux,u->scriptoffset,P[u->pkind].pubkeyoffset);
             if ( ramchain->H.unspentind < rdata->numunspents )
             {
                 if ( ramchain->expanded != 0 )
                 {
                     u = &Ux[ramchain->H.unspentind];
+                    if ( 1 && ramchain->expanded == 0 && dest != 0 )
+                        fprintf(stderr,"unspentind.%d pkind.%d Ux.%p scriptoffset.%d pubkeyoffset.%d\n",ramchain->H.unspentind,Ux[ramchain->H.unspentind].pkind,Ux,u->scriptoffset,P[u->pkind].pubkeyoffset);
                     value = u->value;
                     hdrsi = u->hdrsi;
                     type = u->type;
@@ -2264,7 +2264,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     {
         destoffset = &Kspace[ramchain->H.scriptoffset];
         srcoffset = &Kspace[ramchain->H.data->scriptspace - ramchain->H.stacksize];
-        if ( 0 && (long)destoffset < (long)srcoffset )
+        if ( 1 && (long)destoffset < (long)srcoffset )
         {
             for (i=0; i<ramchain->H.stacksize; i++)
                 c = *srcoffset++, *destoffset++ = c;
@@ -2463,7 +2463,7 @@ if ( bp->bundleheight != 32000 )
         //printf("%d ",numtxids);
     }
     scriptspace += pubkeyspace*1.1 + sigspace*1.1;
-    printf("mapchain txid tables, scriptspace.%u sigspace.%u pubkeyspace.%u bundlei.%d/%d\n",scriptspace,sigspace,pubkeyspace,bundlei,bp->n);
+    printf("mem.%p mapchain txid tables, scriptspace.%u sigspace.%u pubkeyspace.%u bundlei.%d/%d\n",mem,scriptspace,sigspace,pubkeyspace,bundlei,bp->n);
     if ( bundlei != bp->n )
     {
         if ( (block= bp->blocks[bundlei]) != 0 )
