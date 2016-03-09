@@ -750,11 +750,17 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
         if ( stacksize < diff )
         {
             if ( ramchain->sigsfileptr != 0 && stacksize < ramchain->sigsfilesize )
+            {
                 memcpy(&_script[scriptlen],(void *)((long)ramchain->sigsfileptr + ramchain->sigsfilesize - stacksize),sigslen);
-            else memcpy(&_script[scriptlen],&Kspace[diff - stacksize],sigslen);
-            //printf("emit.%p from.%ld sigslen.%d [%02x] stacksize.%d\n",&Kspace[diff - stacksize],diff - stacksize,sigslen,Kspace[diff - stacksize + sigslen - 1],stacksize);
+                printf("emit.%p from.%ld sigslen.%d [%02x] stacksize.%d\n",&Kspace[diff - stacksize],diff - stacksize,sigslen,*(uint8_t *)((long)ramchain->sigsfileptr + ramchain->sigsfilesize - stacksize + sigslen - 1),stacksize);
+            }
+            else
+            {
+                memcpy(&_script[scriptlen],&Kspace[diff - stacksize],sigslen);
+                printf("emit.%p from.%ld sigslen.%d [%02x] stacksize.%d\n",&Kspace[diff - stacksize],diff - stacksize,sigslen,Kspace[diff - stacksize + sigslen - 1],stacksize);
+            }
+            scriptlen += sigslen;
         }
-        scriptlen += sigslen;
     }
     if ( s->numpubkeys > 0 )
     {
@@ -855,7 +861,9 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
         }
         if ( s->sighash != iguana_vinscriptparse(coin,&V,&sigsize,&pubkeysize,&p2shsize,&suffixlen,vinscript,vinscriptlen) )
         {
-            printf("ramchain_addspend RO sighash mismatch %d\n",s->sighash);
+            for (i=0; i<vinscriptlen; i++)
+                printf("%02x",vinscript[i]);
+            printf(" ramchain_addspend RO sighash mismatch %d\n",s->sighash);
             return(spendind);
         }
         //ramchain->H.stacksize += sigsize;// + 1 + (sigsize >= 0xfd)*2;
@@ -2297,7 +2305,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     scriptoffset = ramchain->H.scriptoffset;
     stacksize = ramchain->H.stacksize;
     //ramchain->H.scriptoffset = scriptoffset;
-    //ramchain->H.data->scriptspace = scriptoffset;
+    ramchain->H.data->scriptspace = scriptoffset;
     ramchain->H.stacksize = ramchain->H.data->stackspace = stacksize;
     iguana_ramchain_setsize(ramchain,ramchain->H.data,bp->n);
     printf("Apresave T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d scriptoffset.%d stacksize.%d\n",ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,firsti,ramchain->H.scriptoffset,ramchain->H.stacksize);
@@ -2321,7 +2329,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     }
     printf("postiterateA.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d scripts.%d:%d stack.%d:%d\n",bp->bundleheight,ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,firsti,(int32_t)ramchain->H.scriptoffset,scriptoffset,(int32_t)ramchain->H.stacksize,stacksize);
     ramchain->H.scriptoffset = scriptoffset;
-    ramchain->H.data->scriptspace = scriptspace;
+    ramchain->H.data->scriptspace = scriptoffset;
     ramchain->H.stacksize = ramchain->H.data->stackspace = stacksize;
     if ( iguana_ramchain_save(coin,RAMCHAIN_ARG,0,firsthash2,zero,0,bp) < 0 )
         printf("ERROR saving ramchain hdrsi.%d\n",hdrsi);
@@ -2330,6 +2338,8 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
         //printf("DEST T.%d U.%d S.%d P.%d X.%d -> size.%ld Xoffset.%d\n",ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,(int32_t)ramchain->H.data->Xoffset);
         //printf("free dest hdrs.%d retval.%d\n",bp->hdrsi,retval);
         memset(&checkR,0,sizeof(checkR));
+        checkR.sigsfileptr = ramchain->sigsfileptr;
+        checkR.sigsfilesize = ramchain->sigsfilesize;
         bundlei = 0;
         if ( cmpflag == 0 )
             iguana_memreset(hashmem);
