@@ -48,6 +48,7 @@ char *instantdex_PAXswap(struct supernet_info *myinfo,struct exchange_info *exch
     return(retstr);
 }
 
+#ifdef __APPLE__
 #include "../../includes/secp256k1.h"
 //#include "../../crypto777/secp256k1/modules/rangeproof/pedersen_impl.h"
 //#include "../../crypto777/secp256k1/modules/rangeproof/borromean_impl.h"
@@ -230,6 +231,7 @@ void test_pedersen(void) {
     CHECK(secp256k1_pedersen_verify_tally(ctx, &cptr[1], 1, &cptr[0], 1, -INT64_MAX));
     printf("g\n");
 }
+#endif
 
 void ztest()
 {

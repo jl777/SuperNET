@@ -1682,6 +1682,7 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
             }
             
         }
+        printf("mapped %s scriptspace %d:%d\n",fname,ramchain->H.scriptoffset,ramchain->H.data->scriptspace);
         return(ramchain);
     } else printf("iguana_ramchain_map.(%s) cant map file\n",fname);
     return(0);
@@ -2075,7 +2076,7 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
                         sigspace += sigsize;
                         pubkeyspace += pubkeysize;
                         sigspace += suffixlen;
-                        //fprintf(stderr,"(%d %d %d %d).%d ",sigsize,pubkeysize,p2shsize,suffixlen,scriptlen);
+                        fprintf(stderr,"(%d %d %d %d).%d ",sigsize,pubkeysize,p2shsize,suffixlen,scriptlen);
                     } //else fprintf(stderr,"(none)" );
                 }
             }
@@ -2085,7 +2086,7 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
         //fprintf(stderr,"scriptspace.%u altspace.%u, ",scriptspace,altspace);
     }
     *sigspacep = sigspace, *pubkeyspacep = pubkeyspace;
-    //printf("altspace.%d numvouts.%d numvins.%d scriptspace.%d p2shspace.%d sigspace.%d pubkeyspace.%d\n",altspace,tx->numvouts,tx->numvins,scriptspace,p2shspace,sigspace,pubkeyspace);
+    printf("altspace.%d numvouts.%d numvins.%d scriptspace.%d p2shspace.%d sigspace.%d pubkeyspace.%d\n",altspace,tx->numvouts,tx->numvins,scriptspace,p2shspace,sigspace,pubkeyspace);
     return(scriptspace + p2shspace);
 }
 
