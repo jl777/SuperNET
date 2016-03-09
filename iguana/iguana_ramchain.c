@@ -1314,7 +1314,7 @@ int64_t iguana_ramchain_init(struct iguana_ramchain *ramchain,struct OS_memspace
         iguana_mempurge(mem);
         iguana_meminit(mem,"ramchain",0,offset,0);
     }
-    if ( rdata->allocsize > 3000*1000 || rdata->allocsize > mem->totalsize )
+    if ( rdata->allocsize > mem->totalsize )
     {
         printf("init.(%d %d %d %d %d) rdata->allocsize.%ld mem->totalsize.%ld hashmemsize.%ld\n",numtxids,numunspents,numspends,numpkinds,numexternaltxids,(long)rdata->allocsize,mem->totalsize,hashmem!=0?hashmem->totalsize:0);
         exit(-1);
