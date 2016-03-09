@@ -32,7 +32,7 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_WIDTH 1024
 #define IGUANA_HEIGHT 200
 
-#define IGUANA_HEADPERCENTAGE .0777
+#define IGUANA_HEADPERCENTAGE .00777
 #define IGUANA_TAILPERCENTAGE .777
 #define IGUANA_MAXPENDHDRS 1
 #define _IGUANA_MAXPENDING 3    //64
