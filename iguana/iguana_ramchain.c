@@ -468,6 +468,7 @@ uint32_t iguana_ramchain_scriptencode(struct iguana_info *coin,uint8_t *Kspace,u
                 memcpy(&Kspace[pubkeyoffset],script+1,plen);
                 offset += plen;
                 *offsetp = offset;
+                return(0);
             }
             if ( memcmp(script+1,&Kspace[pubkeyoffset],plen) != 0 )
             {
@@ -480,7 +481,6 @@ uint32_t iguana_ramchain_scriptencode(struct iguana_info *coin,uint8_t *Kspace,u
                 printf("iguana_ramchain_scriptencode: mismatched pubkey?\n");
                 //getchar();
             }
-            return(0);
         }
     }
     if ( scriptlen < 0xfd )
