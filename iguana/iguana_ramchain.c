@@ -2287,7 +2287,8 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
         else retval = 0;
     }
     printf("postiterateA T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d scripts.%d:%d stack.%d:%d\n",ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,firsti,(int32_t)ramchain->H.scriptoffset,scriptoffset,(int32_t)ramchain->H.stacksize,stacksize);
-    ramchain->H.scriptoffset = ramchain->H.data->scriptspace = scriptoffset;
+    ramchain->H.scriptoffset = scriptoffset;
+    ramchain->H.data->scriptspace = scriptoffset + stacksize;
     ramchain->H.stacksize = ramchain->H.data->stackspace = stacksize;
     if ( iguana_ramchain_save(coin,RAMCHAIN_ARG,0,firsthash2,zero,0,bp) < 0 )
         printf("ERROR saving ramchain hdrsi.%d\n",hdrsi);
