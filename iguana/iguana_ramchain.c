@@ -709,13 +709,13 @@ int32_t iguana_vinscriptencode(struct iguana_info *coin,uint8_t *Kstackend,uint3
         memcpy(&Kspace[diff - stacksize],sigsbuf,sigslen);
         //printf("Kspace.%p Kstackend.%p diff.%ld stacksize.%d sigsbuf.%p sigslen.%d [%02x]\n",Kspace,Kstackend,diff,stacksize,sigsbuf,sigslen,Kspace[diff - stacksize + sigslen - 1]);
         for (i=0; i<sigslen; i++)
-        {//break;
+        {break;
             printf("%02x",sigsbuf[i]);
             //printf("i.%d [%p] (%d)\n",i,&Kspace[diff - stacksize + i],i-stacksize);
             //Kspace[diff - stacksize + i] = sigsbuf[i];
         }
         len += iguana_rwvarint32(1,&metascript[len],&stacksize);
-        printf(" sigsbuf len.%d -> %p stacksize.%d\n",len,&Kspace[diff - stacksize],stacksize);
+        //printf(" sigsbuf len.%d -> %p stacksize.%d\n",len,&Kspace[diff - stacksize],stacksize);
     }
     if ( s->numpubkeys > 0 )
     {
@@ -777,12 +777,12 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
             if ( stacksize < diff )
             {
                 memcpy(&_script[scriptlen],&Kspace[diff - stacksize],sigslen);
-                printf("emit.%p from.%ld sigslen.%d [%02x] stacksize.%d\n",&Kspace[diff - stacksize],diff - stacksize,sigslen,Kspace[diff - stacksize + sigslen - 1],stacksize);
+                //printf("emit.%p from.%ld sigslen.%d [%02x] stacksize.%d\n",&Kspace[diff - stacksize],diff - stacksize,sigslen,Kspace[diff - stacksize + sigslen - 1],stacksize);
             }
         }
-        for (i=0; i<sigslen; i++)
-            printf("%02x",_script[scriptlen+i]);
-        printf(" decodedsig.%d\n",sigslen);
+        //for (i=0; i<sigslen; i++)
+        //    printf("%02x",_script[scriptlen+i]);
+        //printf(" decodedsig.%d\n",sigslen);
         scriptlen += sigslen;
     }
     if ( s->numpubkeys > 0 )
