@@ -1329,13 +1329,14 @@ int32_t iguana_ramchain_alloc(struct iguana_info *coin,struct iguana_ramchain *r
     memset(ramchain,0,sizeof(*ramchain));
     ramchain->height = height;
     allocsize = _iguana_rdata_action(0,0,0,0,1,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,0,0,0,0,0,RAMCHAIN_ARG,numblocks);
-    //printf("T.%d U.%d S.%d P.%d X.%d -> %ld\n",numtxids,numunspents,numspends,numpkinds,numexternaltxids,(long)allocsize);
+    if ( ramchain->expanded != 0 )
+        printf("T.%d U.%d S.%d P.%d X.%d -> %ld\n",numtxids,numunspents,numspends,numpkinds,numexternaltxids,(long)allocsize);
     memset(mem,0,sizeof(*mem));
     memset(hashmem,0,sizeof(*hashmem));
     hashsize = iguana_hashmemsize(numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace);
     while ( (x= (myallocated(0,-1)+hashsize+allocsize)) > coin->MAXMEM )
     {
-        char str[65],str2[65]; fprintf(stderr,"ht.%d wait for allocated %s < MAXMEM %s | elapsed %.2f minutes\n",height,mbstr(str,hashsize+allocsize),mbstr(str2,coin->MAXMEM),(double)(time(NULL)-coin->startutc)/60.);
+        char str[65],str2[65]; fprintf(stderr,"ht.%d wait for allocated %s < MAXMEM %s | elapsed %.2f minutes hashsize.%ld allocsize.%ld\n",height,mbstr(str,hashsize+allocsize),mbstr(str2,coin->MAXMEM),(double)(time(NULL)-coin->startutc)/60.,(long)hashsize,(long)allocsize);
         sleep(3);
     }
     iguana_meminit(hashmem,"ramhashmem",0,hashsize,0);
