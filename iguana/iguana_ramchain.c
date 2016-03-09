@@ -922,7 +922,7 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
                 for (i=0; i<vinscriptlen; i++)
                     printf("%02x",vinscript[i]);
                 printf(" vinscript\n");
-                printf("addspend: vinscript expand error (%d vs %d) %d seq.(%x %x)\n",checklen,vinscriptlen,memcmp(_script,vinscript,vinscriptlen),sequence,checksequenceid);
+                printf("A addspend: vinscript expand error (%d vs %d) %d seq.(%x %x)\n",checklen,vinscriptlen,memcmp(_script,vinscript,vinscriptlen),sequence,checksequenceid);
             }
         }
         //ramchain->H.scriptoffset += metalen;
@@ -982,13 +982,17 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
             //printf("checklen.%d scriptoffset.%d\n",checklen,ramchain->H.scriptoffset);
             if ( (checklen= iguana_vinscriptdecode(coin,ramchain,&metalen,&checksequenceid,_script,&Kspace[ramchain->H.data->scriptspace],Kspace,s)) != vinscriptlen || memcmp(_script,vinscript,vinscriptlen) != 0 || sequence != checksequenceid )
             {
-                for (i=0; i<checklen; i++)
-                    printf("%02x",_script[i]);
-                printf(" decoded\n");
-                for (i=0; i<checklen; i++)
-                    printf("%02x",vinscript[i]);
-                printf(" vinscript\n");
-                printf("addspend: vinscript expand error (%d vs %d) %d seq.(%u %u)\n",checklen,vinscriptlen,memcmp(_script,vinscript,vinscriptlen),sequence,checksequenceid);
+                static uint64_t counter;
+                if ( counter++ < 100 )
+                {
+                    for (i=0; i<checklen; i++)
+                        printf("%02x",_script[i]);
+                    printf(" decoded\n");
+                    for (i=0; i<checklen; i++)
+                        printf("%02x",vinscript[i]);
+                    printf(" vinscript\n");
+                    printf("B addspend: vinscript expand error (%d vs %d) %d seq.(%u %u)\n",checklen,vinscriptlen,memcmp(_script,vinscript,vinscriptlen),sequence,checksequenceid);
+                }
             } else s->coinbase = 1;//, printf("vin reconstructed metalen.%d vinlen.%d\n",metalen,checklen);
         } else printf("sigslen.%d numsigs.%d numpubs.%d suffixlen.%d\n",sigslen,V.numsigs,V.numpubkeys,suffixlen);
         //s->hdrsi = hdrsi;
@@ -2140,7 +2144,8 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
     {
         static int32_t numredundant; static double redundantsize; char str[65],str2[65];
         numredundant++, redundantsize += recvlen;
-        printf("ramchaindata have %d:%d at %d | %d blocks %s redundant xfers total %s %.2f%% wasted\n",bp->hdrsi,bundlei,block->fpos,numredundant,mbstr(str,redundantsize),mbstr(str2,totalrecv),100.*redundantsize/totalrecv);
+        if ( (rand() % 1000) == 0 )
+            printf("ramchaindata have %d:%d at %d | %d blocks %s redundant xfers total %s %.2f%% wasted\n",bp->hdrsi,bundlei,block->fpos,numredundant,mbstr(str,redundantsize),mbstr(str2,totalrecv),100.*redundantsize/totalrecv);
         return(block->fpos);
     }
     fpos = -1;
