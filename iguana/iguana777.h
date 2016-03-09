@@ -67,7 +67,7 @@ struct iguana_txdatabits { uint64_t addrind:IGUANA_LOG2MAXPEERS,filecount:10,fpo
 
 #define IGUANA_DEDICATED_THREADS
 #ifdef IGUANA_DEDICATED_THREADS
-#define IGUANA_MAXCONNTHREADS 32
+#define IGUANA_MAXCONNTHREADS 128
 #define IGUANA_MAXSENDTHREADS IGUANA_MAXPEERS
 #define IGUANA_MAXRECVTHREADS IGUANA_MAXPEERS
 #else
@@ -109,7 +109,7 @@ extern int32_t IGUANA_NUMHELPERS;
 #define NODE_GETUTXO (1 << 1)
 #define NODE_BLOOM (1 << 2)
 
-#define PROTOCOL_VERSION 70011
+#define PROTOCOL_VERSION 70012
 #define INIT_PROTO_VERSION 209 // initial proto version, to be increased after version/verack negotiation
 #define GETHEADERS_VERSION 31800 // In this version, 'getheaders' was introduced.
 #define MIN_PEER_PROTO_VERSION GETHEADERS_VERSION // disconnect from peers older than this proto version

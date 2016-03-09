@@ -182,7 +182,7 @@ int32_t iguana_send_version(struct iguana_info *coin,struct iguana_peer *addr,ui
 	msg.nServices = myservices;
 	msg.nTime = (int64_t)time(NULL);
 	msg.nonce = coin->instance_nonce;
-	sprintf(msg.strSubVer,"/Satoshi:0.11.99/");
+	sprintf(msg.strSubVer,"/Satoshi:0.12.0/");
 	msg.nStartingHeight = coin->blocks.hwmchain.height;
     iguana_gotdata(coin,addr,msg.nStartingHeight);
     len = iguana_rwversion(1,&serialized[sizeof(struct iguana_msghdr)],&msg,addr->ipaddr,0);
