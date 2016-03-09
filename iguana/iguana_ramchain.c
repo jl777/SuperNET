@@ -909,7 +909,7 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
                 } else pkind = ptr->hh.itemind;
             }
         }
-        if ( s->numsigs > 0 )
+        if ( 0 && s->numsigs > 0 )
             printf("autoverify numsigs.%d\n",s->numsigs);
         if ( (checklen= iguana_vinscriptdecode(coin,ramchain,&metalen,&checksequenceid,_script,&Kspace[ramchain->H.data->scriptspace],Kspace,s)) != vinscriptlen || memcmp(_script,vinscript,vinscriptlen) != 0 || sequence != checksequenceid )
         {
