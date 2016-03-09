@@ -726,7 +726,7 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *
         if ( scriptsig[n] == 0x4c )
             vp->p2shlen = scriptsig[n+1], n += 2;
         else vp->p2shlen = ((uint32_t)scriptsig[n+1] + ((uint32_t)scriptsig[n+2] << 8)), n += 3;
-        printf("p2sh opcode.%02x %02x %02x scriptlen.%d\n",scriptsig[n],scriptsig[n+1],scriptsig[n+2],vp->p2shlen);
+        //printf("p2sh opcode.%02x %02x %02x scriptlen.%d\n",scriptsig[n],scriptsig[n+1],scriptsig[n+2],vp->p2shlen);
         if ( vp->p2shlen < IGUANA_MAXSCRIPTSIZE && n+vp->p2shlen <= len )
         {
             memcpy(vp->p2shscript,&scriptsig[n],vp->p2shlen);
@@ -760,7 +760,7 @@ int32_t iguana_vinscriptparse(struct iguana_info *coin,struct vin_info *vp,uint3
     if ( vp->type == IGUANA_SCRIPT_P2SH )
     {
         *p2shsizep = vp->p2shlen + 1 + (vp->p2shlen >= 0xfd)*2;
-        printf("P2SHSIZE.%d\n",*p2shsizep);
+        //printf("P2SHSIZE.%d\n",*p2shsizep);
     }
     return(hashtype);
 }
