@@ -313,6 +313,7 @@ uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bit
                         prev->hh.next = block;
                         block->hh.prev = prev;
                     }
+                    iguana_blockQ(coin,bp,i,blockhashes[i],0);
                 } else printf("no allhashes block.%p or mismatch.%p\n",block,bp->blocks[i]);
                 prev = block;
             }
@@ -644,7 +645,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     //static int total; char str[65]; fprintf(stderr,"RECV %s [%d:%d] block.%08x | %d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,total++);
     if ( block != 0 )
     {
-        if ( 1 && bits256_nonz(block->RO.prev_block) > 0 )
+        if ( 0 && bits256_nonz(block->RO.prev_block) > 0 )
         {
             iguana_blockQ(coin,bundlei > 0 ? bp : 0,bundlei-1,block->RO.prev_block,0);
             //printf("recv autoreq prev [%d:%d]\n",bp!=0?bp->hdrsi:-1,bundlei);
