@@ -1610,7 +1610,7 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
         ramchain->H.ROflag = 1;
         ramchain->expanded = expanded;
         ramchain->numblocks = (bp == 0) ? 1 : bp->n;
-        //printf("ptr.%p %p mapped P[%d] fpos.%d + %ld -> %ld vs %ld\n",ptr,ramchain->H.data,(int32_t)ramchain->H.data->Poffset,(int32_t)fpos,(long)ramchain->H.data->allocsize,(long)(fpos + ramchain->H.data->allocsize),ramchain->filesize);
+        printf("ptr.%p %p mapped P[%d] fpos.%d + %ld -> %ld vs %ld offset.%u:%u stack.%u:%u\n",ptr,ramchain->H.data,(int32_t)ramchain->H.data->Poffset,(int32_t)fpos,(long)ramchain->H.data->allocsize,(long)(fpos + ramchain->H.data->allocsize),ramchain->filesize,ramchain->H.scriptoffset,ramchain->H.data->scriptspace,ramchain->H.stacksize,ramchain->H.data->stackspace);
         if ( 0 && bp != 0 )
         {
             /*blocksRO = (struct iguana_blockRO *)ramchain->H.data;
@@ -2143,7 +2143,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
             ramchain->H.data->stackspace = ramchain->H.stacksize = stackspace;
             if ( (fpos= (int32_t)iguana_ramchain_save(coin,RAMCHAIN_ARG,(uint32_t)addr->ipbits,origtxdata->block.RO.hash2,origtxdata->block.RO.prev_block,bundlei,0)) >= 0 )
             {
-                //printf("set fpos.%d\n",fpos);
+                //printf("saved.%d:%d\n",scriptspace,stackspace);
                 //bp->ipbits[bundlei] = addr->ipbits;
                 origtxdata->datalen = (int32_t)ramchain->H.data->allocsize;
                 ramchain->H.ROflag = 0;
@@ -2194,7 +2194,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
             }
         } else printf("ramchain verification error.%d hdrsi.%d bundlei.%d\n",err,bp->hdrsi,bundlei);
     }
-    //fprintf(stderr,"finished with hdrsi.%d ht.%d\n",bp->hdrsi,bp->bundleheight);
+    //fprintf(stderr,"finished with hdrsi.%d ht.%d scripts.%u:%u\n",bp->hdrsi,bp->bundleheight,ramchain->H.scriptoffset,ramchain->H.data->scriptspace);
     ramchain->H.ROflag = 0;
     iguana_ramchain_free(ramchain,0);
     return(fpos);
@@ -2508,7 +2508,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         }
         if ( fpos+mapchain->H.data->allocsize > filesize || iguana_ramchain_size(MAPCHAIN_ARG,1,mapchain->H.scriptoffset) != mapchain->H.data->allocsize )
         {
-            printf("iguana_bundlesaveHT.%d ipbits.%x size mismatch %ld vs %ld vs filesize.%ld fpos.%ld bundlei.%d expanded.%d\n",bp->bundleheight,fpipbits,(long)iguana_ramchain_size(MAPCHAIN_ARG,1,mapchain->H.scriptoffset),(long)mapchain->H.data->allocsize,(long)filesize,(long)fpos,bundlei,mapchain->expanded);
+            printf("iguana_bundlesaveHT.%d ipbits.%x size mismatch %ld vs %ld vs filesize.%ld fpos.%ld bundlei.%d expanded.%d soff.%d\n",bp->bundleheight,fpipbits,(long)iguana_ramchain_size(MAPCHAIN_ARG,1,mapchain->H.scriptoffset),(long)mapchain->H.data->allocsize,(long)filesize,(long)fpos,bundlei,mapchain->expanded,mapchain->H.scriptoffset);
             //getchar();
             break;
         }
