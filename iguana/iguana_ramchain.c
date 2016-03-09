@@ -1907,7 +1907,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
                         scriptlen = U[ramchain->H.unspentind].scriptlen;
                     }
                     //scriptdata = iguana_scriptptr(coin,&scriptlen,_script,U[ramchain->H.unspentind].scriptfpos,U[ramchain->H.unspentind].scriptptr,U[ramchain->H.unspentind].scriptlen,sizeof(U[ramchain->H.unspentind].scriptptr),0);
-                    if ( 1 && scriptdata != 0 && scriptlen > 0 )
+                    if ( 0 && scriptdata != 0 && scriptlen > 0 )
                     {
                         int32_t i; for (i=0; i<scriptlen; i++)
                             printf("%02x",scriptdata[i]);
@@ -2078,7 +2078,7 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
                         sigspace += sigsize;
                         pubkeyspace += pubkeysize;
                         sigspace += suffixlen;
-                        fprintf(stderr,"(%d %d %d %d).%d ",sigsize,pubkeysize,p2shsize,suffixlen,scriptlen);
+                       // fprintf(stderr,"(%d %d %d %d).%d ",sigsize,pubkeysize,p2shsize,suffixlen,scriptlen);
                     } //else fprintf(stderr,"(none)" );
                 }
             }
@@ -2088,7 +2088,7 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
         //fprintf(stderr,"scriptspace.%u altspace.%u, ",scriptspace,altspace);
     }
     *sigspacep = sigspace, *pubkeyspacep = pubkeyspace;
-    printf("altspace.%d numvouts.%d numvins.%d scriptspace.%d p2shspace.%d sigspace.%d pubkeyspace.%d\n",altspace,tx->numvouts,tx->numvins,scriptspace,p2shspace,sigspace,pubkeyspace);
+    //printf("altspace.%d numvouts.%d numvins.%d scriptspace.%d p2shspace.%d sigspace.%d pubkeyspace.%d\n",altspace,tx->numvouts,tx->numvins,scriptspace,p2shspace,sigspace,pubkeyspace);
     return(scriptspace + p2shspace);
 }
 
