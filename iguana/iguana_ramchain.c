@@ -1304,7 +1304,7 @@ int64_t iguana_ramchain_init(struct iguana_ramchain *ramchain,struct OS_memspace
         printf("offset.%ld scriptspace.%d allocsize.%ld vs memsize.%ld\n",(long)offset,scriptspace,(long)rdata->allocsize,(long)iguana_ramchain_size(RAMCHAIN_ARG,numblocks,scriptspace));
         exit(-1);
     }
-    if ( offset < mem->totalsize )
+    if ( offset <= mem->totalsize )
         iguana_memreset(mem);
     else
     {
