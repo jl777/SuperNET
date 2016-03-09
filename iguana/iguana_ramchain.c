@@ -1287,9 +1287,9 @@ int64_t iguana_ramchain_init(struct iguana_ramchain *ramchain,struct OS_memspace
     rdata = ramchain->H.data = mem->ptr;//, offset += sizeof(struct iguana_ramchaindata);
     if ( (rdata->firsti= firsti) != 0 )
     {
-        numtxids++, numunspents++, numspends++;
-        if ( numpkinds != 0 )
-            numpkinds++;
+        //numtxids++, numunspents++, numspends++;
+        //if ( numpkinds != 0 )
+        //    numpkinds++;
     }
     if ( numexternaltxids == 0 )
         numexternaltxids = numspends;
@@ -1328,6 +1328,12 @@ int32_t iguana_ramchain_alloc(struct iguana_info *coin,struct iguana_ramchain *r
     B = 0, Ux = 0, Sx = 0, P = 0, A = 0, X = 0, Kspace = TXbits = PKbits = 0, U = 0, S = 0, T = 0;
     memset(ramchain,0,sizeof(*ramchain));
     ramchain->height = height;
+    if ( ramchain->H.data->firsti != 0 )
+    {
+        numtxids++, numunspents++, numspends++;
+        if ( numpkinds != 0 )
+            numpkinds++;
+    }
     allocsize = _iguana_rdata_action(0,0,0,0,1,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,0,0,0,0,0,RAMCHAIN_ARG,numblocks);
     //printf("T.%d U.%d S.%d P.%d X.%d -> %ld\n",numtxids,numunspents,numspends,numpkinds,numexternaltxids,(long)allocsize);
     memset(mem,0,sizeof(*mem));
