@@ -268,6 +268,8 @@ int32_t iguana_peerfile_exists(struct iguana_info *coin,struct iguana_peer *addr
 #define _RAMCHAIN_ARG B,T,U,S,P,A,X,Ux,Sx,TXbits,PKbits,Kspace
 #define RAMCHAIN_ARG ramchain,_RAMCHAIN_ARG
 #define MAPCHAIN_ARG mapchain,_RAMCHAIN_ARG
+#define MAPCHAIN_PTRS mapchain,&B,&T,&U,&S,&P,&A,&X,&Ux,&Sx,&TXbits,&PKbits,&Kspace
+
 #define RAMCHAIN_PTRS ramchain,&B,&T,&U,&S,&P,&A,&X,&Ux,&Sx,&TXbits,&PKbits,&Kspace
 #define RAMCHAIN_DECLARE struct iguana_blockRO *B; struct iguana_txid *T; struct iguana_unspent20 *U; struct iguana_spend256 *S; struct iguana_pkhash *P; struct iguana_account *A; bits256 *X; struct iguana_unspent *Ux; struct iguana_spend *Sx; uint8_t *TXbits,*PKbits,*Kspace;
 
@@ -2555,6 +2557,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
             break;
         }
         iguana_ramchain_link(mapchain,bp->hashes[bundlei],bp->hashes[bundlei],bp->hdrsi,bp->bundleheight+bundlei,bundlei,1,firsti,1);
+        _iguana_ramchain_setptrs(MAPCHAIN_PTRS,mapchain->H.data);
         numtxids += (mapchain->H.data->numtxids - 1);
         numunspents += (mapchain->H.data->numunspents - 1);
         numspends += (mapchain->H.data->numspends - 1);
