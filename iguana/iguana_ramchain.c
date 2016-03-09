@@ -2098,11 +2098,12 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
 
 long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,int32_t txn_count,uint8_t *data,int32_t recvlen)
 {
-    int32_t verifyflag = 0;
+    int32_t verifyflag = 0; static uint64_t totalrecv;
     RAMCHAIN_DECLARE; struct iguana_ramchain R,*mapchain,*ramchain = &addr->ramchain;
     struct iguana_msgtx *tx; char fname[1024]; uint8_t rmd160[20]; long fsize; void *ptr;
     int32_t i,j,fpos,scriptsize,pubkeysize,sigsize,firsti=1,err,flag,bundlei = -2;
     struct iguana_bundle *bp = 0; struct iguana_block *block; uint32_t scriptspace,stackspace;
+    totalrecv += recvlen;
     if ( iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.hash2) == 0 )
     {
         if ( iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.prev_block) == 0 )
@@ -2124,9 +2125,9 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
     }
     if ( block->fpipbits != 0 )
     {
-        static int32_t numredundant; static double redundantsize; char str[65];
+        static int32_t numredundant; static double redundantsize; char str[65],str2[65];
         numredundant++, redundantsize += recvlen;
-        printf("ramchaindata have %d:%d at %d | %d blocks %s redundant xfers\n",bp->hdrsi,bundlei,block->fpos,numredundant,mbstr(str,redundantsize));
+        printf("ramchaindata have %d:%d at %d | %d blocks %s redundant xfers total %s\n",bp->hdrsi,bundlei,block->fpos,numredundant,mbstr(str,redundantsize),mbstr(str2,totalrecv));
         return(block->fpos);
     }
     fpos = -1;
