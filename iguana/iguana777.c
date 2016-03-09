@@ -534,7 +534,8 @@ void iguana_coins(void *arg)
 {
     struct iguana_info **coins,*coin; char *jsonstr,*symbol; cJSON *array,*item,*json;
     int32_t i,n,maxpeers,maphash,initialheight,minconfirms,maxpending,maxbundles;
-    int64_t maxrecvcache; uint64_t services;
+    int64_t maxrecvcache; uint64_t services; struct vin_info V;
+    memset(&V,0,sizeof(V));
     if ( (jsonstr= arg) != 0 && (json= cJSON_Parse(jsonstr)) != 0 )
     {
         if ( (array= jarray(&n,json,"coins")) == 0 )
@@ -543,6 +544,7 @@ void iguana_coins(void *arg)
             {
                 coins = mycalloc('A',1+1,sizeof(*coins));
                 coins[1] = iguana_setcoin(symbol,coins,0,0,0,0,0,0,0,0,json);
+                _iguana_calcrmd160(coins[1],&V);
                 coins[0] = (void *)((long)1);
                 iguana_coinloop(coins);
             } else printf("no coins[] array in JSON.(%s) only BTCD and BTC can be quicklaunched\n",jsonstr);
