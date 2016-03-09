@@ -749,7 +749,7 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
         diff = (long)Kstackend - (long)Kspace;
         if ( stacksize < diff )
         {
-            if ( ramchain->sigsfileptr != 0 && stacksize < ramchain->sigsfilesize )
+            if ( ramchain->sigsfileptr != 0 )//&& stacksize < ramchain->sigsfilesize )
             {
                 memcpy(&_script[scriptlen],(void *)((long)ramchain->sigsfileptr + ramchain->sigsfilesize - stacksize),sigslen);
                 printf("mapped emit.%p from.%ld sigslen.%d [%02x] stacksize.%d\n",(uint8_t *)((long)ramchain->sigsfileptr + ramchain->sigsfilesize - stacksize + sigslen - 1),diff - stacksize,sigslen,*(uint8_t *)((long)ramchain->sigsfileptr + ramchain->sigsfilesize - stacksize + sigslen - 1),stacksize);
@@ -2316,7 +2316,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     memset(ramchain->A,0,sizeof(*ramchain->A) * ramchain->H.data->numpkinds);
     //printf("presave T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d\n",ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,firsti);
     //printf("0 preSAVE: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d\n",(int32_t)ramchain->H.data->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)ramchain->H.data->allocsize);
-    if ( 0 && (err= iguana_ramchain_iterate(coin,0,ramchain,bp)) != 0 )
+    if ( (err= iguana_ramchain_iterate(coin,0,ramchain,bp)) != 0 )
         printf("ERROR.%d iterating presave ramchain hdrsi.%d\n",err,hdrsi);
     else
     {
