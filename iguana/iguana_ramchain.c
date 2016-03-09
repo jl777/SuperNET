@@ -433,33 +433,39 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,RAMCHAIN_FUNC,uin
 
 uint32_t iguana_ramchain_scriptencode(struct iguana_info *coin,uint8_t *Kspace,uint32_t *offsetp,int32_t type,uint8_t *script,int32_t scriptlen,uint32_t *pubkeyoffsetp)
 {
-    uint32_t i,uoffset,plen,offset = *offsetp,pubkeyoffset = *pubkeyoffsetp;
+    uint32_t i,uoffset,offset = *offsetp,pubkeyoffset = *pubkeyoffsetp; int32_t plen;
     if ( type == IGUANA_SCRIPT_76AC )
     {
         plen = bitcoin_pubkeylen(script+1);
-        if ( pubkeyoffset == 0 )
+        if ( plen <= 0 )
         {
-            if ( offset == 0 )
-                offset = 1;
-            *pubkeyoffsetp = pubkeyoffset = offset;
-            memcpy(&Kspace[pubkeyoffset],script+1,plen);
-            offset += plen;
-            //char buf[1025];
-            //buf[0] = 0;
-            //for (i=0; i<plen; i++)
-            //    sprintf(buf+strlen(buf),"%02x",script[1+i]);
-            //printf("%s pubkey -> pubkeyoffset.%d offset.%d plen.%d\n",buf,pubkeyoffset,offset,plen);
+            char buf[1025];
+            buf[0] = 0;
+            for (i=0; i<plen; i++)
+                sprintf(buf+strlen(buf),"%02x",script[1+i]);
+            printf("%s pubkey -> pubkeyoffset.%d offset.%d plen.%d\n",buf,pubkeyoffset,offset,plen);
         }
-        if ( memcmp(script+1,&Kspace[pubkeyoffset],plen) != 0 )
+        else
         {
-            for (i=0; i<plen; i++)
-                printf("%02x",script[1+i]);
-            printf("  script arg\n");
-            for (i=0; i<plen; i++)
-                printf("%02x",Kspace[pubkeyoffset+i]);
-            printf(" Kspace[%d] len.%d pubkeyoffset.%d\n",pubkeyoffset,offset,pubkeyoffset);
-            printf("iguana_ramchain_scriptencode: mismatched pubkey?\n");
-            getchar();
+            if ( pubkeyoffset == 0 )
+            {
+                if ( offset == 0 )
+                    offset = 1;
+                *pubkeyoffsetp = pubkeyoffset = offset;
+                memcpy(&Kspace[pubkeyoffset],script+1,plen);
+                offset += plen;
+            }
+            if ( memcmp(script+1,&Kspace[pubkeyoffset],plen) != 0 )
+            {
+                for (i=0; i<plen; i++)
+                    printf("%02x",script[1+i]);
+                printf("  script arg\n");
+                for (i=0; i<plen; i++)
+                    printf("%02x",Kspace[pubkeyoffset+i]);
+                printf(" Kspace[%d] len.%d pubkeyoffset.%d\n",pubkeyoffset,offset,pubkeyoffset);
+                printf("iguana_ramchain_scriptencode: mismatched pubkey?\n");
+                getchar();
+            }
         }
         *offsetp = offset;
         return(0);
@@ -2075,7 +2081,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         return(-1);
     iguana_ramchain_link(ramchain,origtxdata->block.RO.hash2,origtxdata->block.RO.hash2,bp->hdrsi,bp->bundleheight+bundlei,bundlei,1,firsti,0);
     _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
-    printf("Kspace.%p bp.[%d:%d] <- scriptspace.%d expanded.%d\n",Kspace,bp->hdrsi,bundlei,scriptspace,ramchain->expanded);
+    //printf("Kspace.%p bp.[%d:%d] <- scriptspace.%d expanded.%d\n",Kspace,bp->hdrsi,bundlei,scriptspace,ramchain->expanded);
     if ( T == 0 || U == 0 || S == 0 || B == 0 )
     {
         printf("fatal error getting txdataptrs %p %p %p %p\n",T,U,S,B);
