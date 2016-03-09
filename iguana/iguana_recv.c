@@ -385,7 +385,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
             if ( (block= bp->blocks[i]) != 0 && block->numrequests == 0 && block->mainchain != 0 )
             {
                 block->numrequests++;
-                iguana_blockQ(coin,bp,i,block->RO.hash2,0);
+                iguana_blockQ(coin,bp,i,block->RO.hash2,bp->hdrsi == 0);
                 //printf("%d ",i);
             }
         }
