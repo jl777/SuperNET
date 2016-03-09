@@ -1277,7 +1277,7 @@ int64_t iguana_ramchain_saveaction(RAMCHAIN_FUNC,FILE *fp,struct iguana_ramchain
 int64_t iguana_ramchain_init(struct iguana_ramchain *ramchain,struct OS_memspace *mem,struct OS_memspace *hashmem,int32_t firsti,int32_t numtxids,int32_t numunspents,int32_t numspends,int32_t numpkinds,int32_t numexternaltxids,int32_t scriptspace,int32_t expanded,int32_t numblocks)
 {
     RAMCHAIN_DECLARE; int64_t offset = 0; struct iguana_ramchaindata *rdata;
-    B = 0, Ux = 0, Sx = 0, P = 0, A = 0, X = 0, Kspace = TXbits = PKbits = 0, U = 0, S = 0, T = 0; //U2 = 0, P2 = 0,
+    B = 0, Ux = 0, Sx = 0, P = 0, A = 0, X = 0, Kspace = TXbits = PKbits = 0, U = 0, S = 0, T = 0;
     if ( mem == 0 )
         return(0);
     memset(ramchain,0,sizeof(*ramchain));
@@ -1313,14 +1313,14 @@ int64_t iguana_ramchain_init(struct iguana_ramchain *ramchain,struct OS_memspace
         iguana_mempurge(mem);
         iguana_meminit(mem,"ramchain",0,offset,0);
     }
-    //printf("init.(%d %d %d %d %d)\n",numtxids,numunspents,numspends,numpkinds,numexternaltxids);
+    printf("init.(%d %d %d %d %d) totalsize.%ld allocsize.%ld\n",numtxids,numunspents,numspends,numpkinds,numexternaltxids,mem->totalsize,(long)rdata->allocsize);
     return(offset);
 }
 
 int32_t iguana_ramchain_alloc(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct OS_memspace *mem,struct OS_memspace *hashmem,uint32_t numtxids,uint32_t numunspents,uint32_t numspends,uint32_t numpkinds,uint32_t numexternaltxids,uint32_t scriptspace,int32_t height,int32_t numblocks)
 {
     RAMCHAIN_DECLARE; int64_t hashsize,allocsize,x;
-    B = 0, Ux = 0, Sx = 0, P = 0, A = 0, X = 0, Kspace = TXbits = PKbits = 0, U = 0, S = 0, T = 0; //U2 = 0, P2 = 0,
+    B = 0, Ux = 0, Sx = 0, P = 0, A = 0, X = 0, Kspace = TXbits = PKbits = 0, U = 0, S = 0, T = 0;
     memset(ramchain,0,sizeof(*ramchain));
     ramchain->height = height;
     allocsize = _iguana_rdata_action(0,0,0,0,1,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,0,0,0,0,0,RAMCHAIN_ARG,numblocks) + IGUANA_MAXSCRIPTSIZE;

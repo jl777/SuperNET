@@ -694,7 +694,7 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *
             *hashtypep = vp->signers[j].sig[siglen-1];
         else if ( vp->signers[j].sig[siglen-1] != *hashtypep )
         {
-            printf("SIGHASH.%d  mismatch %d vs %d\n",j,vp->signers[j].sig[siglen-1],*hashtypep);
+            //printf("SIGHASH.%d  mismatch %d vs %d\n",j,vp->signers[j].sig[siglen-1],*hashtypep);
             break;
         }
         (*sigsizep) += siglen;
