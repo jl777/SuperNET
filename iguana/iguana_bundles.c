@@ -403,7 +403,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
     }
     //bp->metric = bp->numhashes;
     bp->metric = 1000 + sqrt(sqrt(bp->n * (1 + bp->numsaved + bp->numrecv)) * (10 + coin->bundlescount - bp->hdrsi));
-    if ( done > coin->bundlescount*IGUANA_HEADPERCENTAGE && bp->hdrsi > coin->bundlescount*IGUANA_TAILPERCENTAGE )
+    if ( 0 && done > coin->bundlescount*IGUANA_HEADPERCENTAGE && bp->hdrsi > coin->bundlescount*IGUANA_TAILPERCENTAGE )
         bp->metric *= 1000;
     return(bp->estsize);
 }
