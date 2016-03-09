@@ -337,7 +337,7 @@ uint32_t iguana_ramchain_addpkhash(struct iguana_info *coin,RAMCHAIN_FUNC,uint8_
                 printf(" vs rmd160\n");
                 printf("iguana_ramchain_addpkhash pkind.%d  error mismatched rmd160\n",pkind);
                 //getchar();
-                return(0);
+                return(pkind);
             }
             //ramchain->pkind = (pkind + 1);
         }
@@ -467,6 +467,7 @@ uint32_t iguana_ramchain_scriptencode(struct iguana_info *coin,uint8_t *Kspace,u
                 *pubkeyoffsetp = pubkeyoffset = offset;
                 memcpy(&Kspace[pubkeyoffset],script+1,plen);
                 offset += plen;
+                *offsetp = offset;
             }
             if ( memcmp(script+1,&Kspace[pubkeyoffset],plen) != 0 )
             {
@@ -479,7 +480,6 @@ uint32_t iguana_ramchain_scriptencode(struct iguana_info *coin,uint8_t *Kspace,u
                 printf("iguana_ramchain_scriptencode: mismatched pubkey?\n");
                 //getchar();
             }
-            *offsetp = offset;
             return(0);
         }
     }
