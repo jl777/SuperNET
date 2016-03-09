@@ -680,6 +680,11 @@ int32_t iguana_vinscriptencode(struct iguana_info *coin,uint8_t *Kstackend,uint3
     if ( sigslen > 0 )
     {
         diff = (long)Kstackend - (long)Kspace;
+        if ( diff < stacksize )
+        {
+            printf("vinscriptencode error diff.%ld < stacksize.%u\n",diff,stacksize);
+            return(0);
+        }
         memcpy(&Kspace[diff - stacksize],sigsbuf,sigslen);
         //printf("Kspace.%p Kstackend.%p diff.%ld stacksize.%d sigsbuf.%p sigslen.%d [%02x]\n",Kspace,Kstackend,diff,stacksize,sigsbuf,sigslen,Kspace[diff - stacksize + sigslen - 1]);
         for (i=0; i<sigslen; i++)
@@ -846,7 +851,7 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
             printf("ramchain_addspend RO sighash mismatch %d\n",s->sighash);
             return(0);
         }
-        ramchain->H.stacksize += sigsize + 1 + (sigsize >= 0xfd)*2;
+        //ramchain->H.stacksize += sigsize;// + 1 + (sigsize >= 0xfd)*2;
         if ( s->numpubkeys > 0 )
         {
             for (i=0; i<s->numpubkeys; i++)
@@ -869,7 +874,7 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
             printf(" vinscript\n");
             printf("addspend: vinscript expand error (%d vs %d) %d seq.(%u %u)\n",checklen,vinscriptlen,memcmp(_script,vinscript,vinscriptlen),sequence,checksequenceid);
         }
-        ramchain->H.scriptoffset += metalen;
+        //ramchain->H.scriptoffset += metalen;
     }
     else
     {
@@ -994,7 +999,7 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,RAMCHAIN_FUNC,bits
 int64_t iguana_hashmemsize(uint32_t numtxids,uint32_t numunspents,uint32_t numspends,uint32_t numpkinds,uint32_t numexternaltxids,int32_t scriptspace)
 {
     int64_t allocsize = 0;
-    allocsize += (scriptspace + 65536*4 + ((numtxids + numpkinds) * (sizeof(UT_hash_handle)*2)) + (((sizeof(struct iguana_account)) * 2 * numpkinds)) + (2 * numunspents * sizeof(struct iguana_Uextra)));
+    allocsize += (scriptspace + IGUANA_MAXSCRIPTSIZE + ((numtxids + numpkinds) * (sizeof(UT_hash_handle)*2)) + (((sizeof(struct iguana_account)) * 2 * numpkinds)) + (2 * numunspents * sizeof(struct iguana_Uextra)));
     //printf("iguana_hashmemsize T.%d U.%d S.%d P.%d X.%d -> %ld\n",numtxids,numunspents,numspends,numpkinds,numexternaltxids,(long)allocsize);
     return(allocsize);
 }
@@ -1276,7 +1281,7 @@ int32_t iguana_ramchain_alloc(struct iguana_info *coin,struct iguana_ramchain *r
     B = 0, Ux = 0, Sx = 0, P = 0, A = 0, X = 0, Kspace = TXbits = PKbits = 0, U = 0, S = 0, T = 0; //U2 = 0, P2 = 0,
     memset(ramchain,0,sizeof(*ramchain));
     ramchain->height = height;
-    allocsize = _iguana_rdata_action(0,0,0,0,1,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,0,0,0,0,0,RAMCHAIN_ARG,numblocks);
+    allocsize = _iguana_rdata_action(0,0,0,0,1,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,0,0,0,0,0,RAMCHAIN_ARG,numblocks) + IGUANA_MAXSCRIPTSIZE;
     //printf("T.%d U.%d S.%d P.%d X.%d -> %ld\n",numtxids,numunspents,numspends,numpkinds,numexternaltxids,(long)allocsize);
     memset(mem,0,sizeof(*mem));
     memset(hashmem,0,sizeof(*hashmem));
@@ -1286,8 +1291,8 @@ int32_t iguana_ramchain_alloc(struct iguana_info *coin,struct iguana_ramchain *r
         char str[65],str2[65]; fprintf(stderr,"ht.%d wait for allocated %s < MAXMEM %s | elapsed %.2f minutes\n",height,mbstr(str,hashsize+allocsize),mbstr(str2,coin->MAXMEM),(double)(time(NULL)-coin->startutc)/60.);
         sleep(3);
     }
-    iguana_meminit(hashmem,"ramhashmem",0,hashsize + IGUANA_MAXSCRIPTSIZE,0);
-    iguana_meminit(mem,"ramchain",0,allocsize + IGUANA_MAXSCRIPTSIZE,0);
+    iguana_meminit(hashmem,"ramhashmem",0,hashsize,0);
+    iguana_meminit(mem,"ramchain",0,allocsize,0);
     mem->alignflag = sizeof(uint32_t);
     hashmem->alignflag = sizeof(uint32_t);
     if ( iguana_ramchain_init(ramchain,mem,hashmem,1,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,1,numblocks) == 0 )
@@ -2389,6 +2394,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     struct OS_memspace HASHMEM; int32_t err,j,num,hdrsi,bundlei,firsti= 1,retval = -1;
 //if ( bp->bundleheight != 32000 )
 //    return(0);
+    memset(&HASHMEM,0,sizeof(HASHMEM));
     B = 0, Ux = 0, Sx = 0, P = 0, A = 0, X = 0, Kspace = TXbits = PKbits = 0, U = 0, S = 0, T = 0;
     R = mycalloc('s',bp->n,sizeof(*R));
     ptrs = mycalloc('w',bp->n,sizeof(*ptrs));
