@@ -772,7 +772,7 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
         if ( ramchain->sigsfileptr != 0 && stacksize < ramchain->sigsfilesize )
         {
             memcpy(&_script[scriptlen],(void *)((long)ramchain->sigsfileptr + ramchain->sigsfilesize - stacksize),sigslen);
-            printf("mapped emit.%p sigslen.%d [%02x] stacksize.%d\n",(uint8_t *)((long)ramchain->sigsfileptr + ramchain->sigsfilesize - stacksize + sigslen - 1),sigslen,*(uint8_t *)((long)ramchain->sigsfileptr + ramchain->sigsfilesize - stacksize + sigslen - 1),stacksize);
+            //printf("mapped emit.%p sigslen.%d [%02x] stacksize.%d\n",(uint8_t *)((long)ramchain->sigsfileptr + ramchain->sigsfilesize - stacksize + sigslen - 1),sigslen,*(uint8_t *)((long)ramchain->sigsfileptr + ramchain->sigsfilesize - stacksize + sigslen - 1),stacksize);
         }
         else
         {
