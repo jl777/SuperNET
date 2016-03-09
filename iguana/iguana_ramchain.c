@@ -1351,7 +1351,7 @@ int32_t iguana_ramchain_verify(struct iguana_info *coin,struct iguana_ramchain *
         return(-100);
     _iguana_ramchain_setptrs(RAMCHAIN_PTRS,rdata);
     ramchain->pkind = ramchain->H.unspentind = ramchain->H.spendind = rdata->firsti;
-    ramchain->externalind = 0;
+    ramchain->externalind = ramchain->H.scriptoffset = ramchain->H.stacksize = 0;
     for (ramchain->H.txidind=rdata->firsti; ramchain->H.txidind<rdata->numtxids; ramchain->H.txidind++)
     {
         t = &T[ramchain->H.txidind];
@@ -2291,7 +2291,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
             printf("ERROR.%d verifying presave ramchain hdrsi.%d\n",err,hdrsi);
         else retval = 0;
     }
-    printf("postiterateA T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d scripts.%d:%d stack.%d:%d\n",ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,firsti,(int32_t)ramchain->H.scriptoffset,scriptoffset,(int32_t)ramchain->H.stacksize,stacksize);
+    printf("postiterateA.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d scripts.%d:%d stack.%d:%d\n",bp->bundleheight,ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,firsti,(int32_t)ramchain->H.scriptoffset,scriptoffset,(int32_t)ramchain->H.stacksize,stacksize);
     ramchain->H.scriptoffset = scriptoffset;
     ramchain->H.data->scriptspace = scriptoffset + stacksize;
     ramchain->H.stacksize = ramchain->H.data->stackspace = stacksize;
