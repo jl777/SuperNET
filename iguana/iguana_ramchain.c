@@ -609,9 +609,9 @@ uint32_t iguana_ramchain_addunspent(struct iguana_info *coin,RAMCHAIN_FUNC,uint6
         //printf(" U%d scriptoffset.%d pubkeyoffset.%d/%d type.%d pkind.%d\n",unspentind,ramchain->H.scriptoffset,pubkeyoffset,ramchain->H.data->scriptspace,type,pkind);
         if ( scriptlen > 0 && script != 0 )
         {
-            int32_t i; for (i=0; i<scriptlen; i++)
-                printf("%02x",script[i]);
-            printf(" bp.[%d] u%d\n",hdrsi,unspentind);
+            //int32_t i; for (i=0; i<scriptlen; i++)
+            //    printf("%02x",script[i]);
+            //printf(" bp.[%d] u%d\n",hdrsi,unspentind);
             if ( Kspace != 0 && ramchain->H.scriptoffset+scriptlen+3 <= ramchain->H.data->scriptspace-ramchain->H.stacksize )
             {
                 if ( (u->scriptoffset= iguana_ramchain_scriptencode(coin,Kspace,&ramchain->H.scriptoffset,type,script,scriptlen,&pubkeyoffset)) > 0 || type == IGUANA_SCRIPT_76AC )
