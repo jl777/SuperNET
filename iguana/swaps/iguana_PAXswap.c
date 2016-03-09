@@ -236,6 +236,7 @@ void test_pedersen(void) {
 void ztest()
 {
 #ifdef __APPLE__
+    return;
     printf("ztests\n");
     //test_pedersen();
     secp256k1_context_t *ctx;  uint8_t commits[13][33],blinds[13][32]; int32_t i,j,ret,retvals[13]; int64_t val,excess = 0; const uint8_t *commitptrs[13],*blindptrs[13]; bits256 s;
