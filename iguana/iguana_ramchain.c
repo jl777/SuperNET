@@ -375,7 +375,7 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,RAMCHAIN_FUNC,uin
         if ( type < 0 )
         {
             type = iguana_calcrmd160(coin,&V,script,scriptlen,txid,vout,0xffffffff);
-            if ( type == 1 && bitcoin_pubkeylen(script+1) < 0 )
+            if ( type == 1 && bitcoin_pubkeylen(script+1) <= 0 )
             {
                 int32_t i; for (i=0; i<scriptlen; i++)
                     printf("%02x",script[i]);
@@ -445,15 +445,15 @@ uint32_t iguana_ramchain_scriptencode(struct iguana_info *coin,uint8_t *Kspace,u
     if ( type == IGUANA_SCRIPT_76AC )
     {
         plen = bitcoin_pubkeylen(script+1);
-        if ( plen <= 0 )
+        /*if ( plen <= 0 )
         {
             char buf[1025];
             buf[0] = 0;
             for (i=0; i<33; i++)
                 sprintf(buf+strlen(buf),"%02x",script[1+i]);
             printf("%s pubkey -> pubkeyoffset.%d offset.%d plen.%d\n",buf,pubkeyoffset,offset,plen);
-        }
-        else
+        }*/
+        if ( plen > 0 )
         {
             if ( pubkeyoffset == 0 )
             {
