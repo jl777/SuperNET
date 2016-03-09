@@ -336,7 +336,7 @@ uint32_t iguana_ramchain_addpkhash(struct iguana_info *coin,RAMCHAIN_FUNC,uint8_
                     printf("%02x",rmd160[i]);
                 printf(" vs rmd160\n");
                 printf("iguana_ramchain_addpkhash pkind.%d  error mismatched rmd160\n",pkind);
-                getchar();
+                //getchar();
                 return(0);
             }
             //ramchain->pkind = (pkind + 1);
@@ -477,7 +477,7 @@ uint32_t iguana_ramchain_scriptencode(struct iguana_info *coin,uint8_t *Kspace,u
                     printf("%02x",Kspace[pubkeyoffset+i]);
                 printf(" Kspace[%d] len.%d pubkeyoffset.%d\n",pubkeyoffset,offset,pubkeyoffset);
                 printf("iguana_ramchain_scriptencode: mismatched pubkey?\n");
-                getchar();
+                //getchar();
             }
             *offsetp = offset;
             return(0);
@@ -1155,8 +1155,8 @@ int64_t _iguana_rdata_action(FILE *fp,bits256 lhashes[IGUANA_NUMLHASHES],void *d
         if ( 0 && fparg != 0 && numblocks > 1 )
         {
             printf("%s %p\n",bits256_str(str,B[0].hash2),B);
-            if ( bits256_nonz(B[0].hash2) == 0 )
-                getchar();
+            //if ( bits256_nonz(B[0].hash2) == 0 )
+             //   getchar();
         }
         T = iguana_ramchain_offset(rdata,RAMCHAIN_LARG(IGUANA_LHASH_TXIDS),fparg,fpos,T,&offset,(sizeof(struct iguana_txid) * numtxids),srcsize);
         if ( expanded != 0 )
