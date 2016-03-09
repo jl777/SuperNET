@@ -35,9 +35,9 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_HEADPERCENTAGE .00777
 #define IGUANA_TAILPERCENTAGE 1.0
 #define IGUANA_MAXPENDHDRS 1
-#define _IGUANA_MAXPENDING 3    //64
+#define _IGUANA_MAXPENDING 8    //64
 #define _IGUANA_MAXBUNDLES 8 
-#define IGUANA_BUNDLELOOP 128
+#define IGUANA_BUNDLELOOP 64
 #define IGUANA_RPCPORT 7778
 #define IGUANA_MAXRAMCHAINSIZE ((uint64_t)1024L * 1024L * 1024L * 16)
 
@@ -416,7 +416,7 @@ struct iguana_bundle
     struct queueitem DL; struct iguana_info *coin; struct iguana_bundle *nextbp;
     struct iguana_bloom16 bloom; uint32_t rawscriptspace;
     uint32_t issuetime,hdrtime,emitfinish,mergefinish,purgetime,queued,startutxo,utxofinish;
-    int32_t numhashes,numrecv,numsaved,numcached,rank;
+    int32_t numhashes,numrecv,numsaved,numcached,rank,generrs;
     int32_t minrequests,n,hdrsi,bundleheight,numtxids,numspends,numunspents,numspec;
     double avetime,threshold,metric; uint64_t datasize,estsize;
     struct iguana_block *blocks[IGUANA_MAXBUNDLESIZE]; uint32_t issued[IGUANA_MAXBUNDLESIZE];
@@ -468,8 +468,8 @@ struct iguana_info
     double parsemillis,avetime; uint32_t Launched[8],Terminated[8];
     portable_mutex_t peers_mutex,blocks_mutex;
     portable_mutex_t scripts_mutex[2]; FILE *scriptsfp[2]; void *scriptsptr[2]; long scriptsfilesize[2];
-    struct scriptinfo *scriptstable[2];
-    struct iguana_bundle *bundles[IGUANA_MAXBUNDLES];
+    //struct scriptinfo *scriptstable[2];
+    struct iguana_bundle *bundles[IGUANA_MAXBUNDLES],*current;
     int32_t numremain,numpendings,zcount,recvcount,bcount,pcount,lastbundle;
     uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ,lastbundleitime;
     double backstopmillis; bits256 backstophash2;
