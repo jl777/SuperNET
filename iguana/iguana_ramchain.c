@@ -2064,7 +2064,7 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
             {
                 sequence = S[spendind].sequenceid;
                 scriptlen = S[spendind].vinscriptlen;
-                if ( S[spendind].scriptoffset != 0 )
+                if ( S[spendind].scriptoffset != 0 && S[spendind].scriptoffset+scriptlen < ramchain->H.data->scriptspace )
                 {
                     scriptdata = &Kspace[S[spendind].scriptoffset];
                     //if ( (scriptdata= iguana_scriptptr(coin,&scriptlen,_script,S[spendind].scriptfpos,S[spendind].vinscriptptr,S[spendind].vinscriptlen,sizeof(S[spendind].vinscriptptr),1)) != 0 )
