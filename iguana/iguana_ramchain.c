@@ -1874,7 +1874,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
                     scriptdata = &Kspace[U[ramchain->H.unspentind].scriptoffset];
                     scriptlen = U[ramchain->H.unspentind].scriptlen;
                     //scriptdata = iguana_scriptptr(coin,&scriptlen,_script,U[ramchain->H.unspentind].scriptfpos,U[ramchain->H.unspentind].scriptptr,U[ramchain->H.unspentind].scriptlen,sizeof(U[ramchain->H.unspentind].scriptptr),0);
-                    if ( scriptdata != 0 && scriptlen > 0 )
+                    if ( 0 && scriptdata != 0 && scriptlen > 0 )
                     {
                         int32_t i; for (i=0; i<scriptlen; i++)
                             printf("%02x",scriptdata[i]);
