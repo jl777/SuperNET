@@ -37,7 +37,7 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_MAXPENDHDRS 1
 #define _IGUANA_MAXPENDING 8    //64
 #define _IGUANA_MAXBUNDLES 8 
-#define IGUANA_BUNDLELOOP 512
+#define IGUANA_BUNDLELOOP 64
 #define IGUANA_RPCPORT 7778
 #define IGUANA_MAXRAMCHAINSIZE ((uint64_t)1024L * 1024L * 1024L * 16)
 
@@ -322,8 +322,8 @@ struct iguana_ledger
 } __attribute__((packed));
 
 // ramchain append only structs -> canonical 32bit inds and ledgerhashes
-struct iguana_unspent20 { uint64_t value; uint32_t scriptfpos,txidind:28,type:4; uint16_t scriptlen; uint8_t rmd160[20],*scriptptr; } __attribute__((packed));
-struct iguana_spend256 { bits256 prevhash2; uint8_t *vinscriptptr; uint32_t sequenceid,scriptfpos; int16_t prevout; uint16_t vinscriptlen,spendind; } __attribute__((packed));
+struct iguana_unspent20 { uint64_t value; uint32_t scriptoffset,txidind:28,type:4; uint16_t scriptlen; uint8_t rmd160[20]; } __attribute__((packed));
+struct iguana_spend256 { bits256 prevhash2; uint32_t sequenceid,scriptoffset; int16_t prevout; uint16_t vinscriptlen,spendind; } __attribute__((packed));
 
 struct iguana_txid { bits256 txid; uint32_t txidind,firstvout,firstvin,locktime,version,timestamp,extraoffset; uint16_t numvouts,numvins; } __attribute__((packed));
 
