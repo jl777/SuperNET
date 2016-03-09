@@ -1056,7 +1056,7 @@ void _iguana_ramchain_setptrs(RAMCHAIN_PTRPS,struct iguana_ramchaindata *rdata)
     {
         *U = (void *)(long)((long)rdata + (long)rdata->Uoffset);
         *S = (void *)(long)((long)rdata + (long)rdata->Soffset);
-        *Ux = 0, *Sx = 0, *P = 0, *X = 0, *A = 0, *TXbits = 0, *Kspace = 0, *PKbits = 0; //*U2 = 0, *P2 = 0,
+        *Ux = 0, *Sx = 0, *P = 0, *X = 0, *A = 0, *TXbits = 0, *PKbits = 0; //*U2 = 0, *P2 = 0,
     }
 }
 
@@ -1364,7 +1364,6 @@ int32_t iguana_ramchain_verify(struct iguana_info *coin,struct iguana_ramchain *
 {
     RAMCHAIN_DECLARE; struct iguana_txid *t; struct iguana_unspent *u; struct iguana_pkhash *p;
     struct iguana_ramchaindata *rdata; int32_t k,pkind,vout; struct iguana_kvitem *ptr; bits256 txid;
-    // iguana_txid { bits256 txid; uint32_t txidind,firstvout,firstvin; uint16_t numvouts,numvins;}
     if ( (rdata= ramchain->H.data) == 0 )
         return(-100);
     _iguana_ramchain_setptrs(RAMCHAIN_PTRS,rdata);
@@ -2040,9 +2039,9 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
 long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,int32_t txn_count,uint8_t *data,int32_t recvlen)
 {
     int32_t verifyflag = 0;
-    RAMCHAIN_DECLARE; long fsize; void *ptr; struct iguana_ramchain R,*mapchain,*ramchain = &addr->ramchain;
-    struct iguana_msgtx *tx; int32_t i,j,fpos,scriptsize,pubkeysize,sigsize,firsti=1,err,flag,scriptspace=0,bundlei = -2;
-    char fname[1024]; uint8_t rmd160[20];
+    RAMCHAIN_DECLARE; struct iguana_ramchain R,*mapchain,*ramchain = &addr->ramchain;
+    struct iguana_msgtx *tx; char fname[1024]; uint8_t rmd160[20]; long fsize; void *ptr;
+    int32_t i,j,fpos,scriptsize,pubkeysize,sigsize,firsti=1,err,flag,scriptspace=0,bundlei = -2;
     struct iguana_bundle *bp = 0; struct iguana_block *block;
     if ( iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.hash2) == 0 )
     {
@@ -2072,11 +2071,11 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
     }
     fpos = -1;
     scriptspace = iguana_scriptspaceraw(coin,&scriptsize,&sigsize,&pubkeysize,txarray,txn_count);
-    //printf("bp.[%d:%d] <- scriptspace.%d expanded.%d\n",bp->hdrsi,bundlei,scriptspace,ramchain->expanded);
     if ( iguana_ramchain_init(ramchain,&addr->TXDATA,&addr->HASHMEM,1,txn_count,origtxdata->numunspents,origtxdata->numspends,0,0,(scriptspace+sigsize+pubkeysize)*1.1,0,1) == 0 )
         return(-1);
     iguana_ramchain_link(ramchain,origtxdata->block.RO.hash2,origtxdata->block.RO.hash2,bp->hdrsi,bp->bundleheight+bundlei,bundlei,1,firsti,0);
     _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
+    printf("Kspace.%p bp.[%d:%d] <- scriptspace.%d expanded.%d\n",Kspace,bp->hdrsi,bundlei,scriptspace,ramchain->expanded);
     if ( T == 0 || U == 0 || S == 0 || B == 0 )
     {
         printf("fatal error getting txdataptrs %p %p %p %p\n",T,U,S,B);
