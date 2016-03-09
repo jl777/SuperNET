@@ -1298,6 +1298,7 @@ int64_t iguana_ramchain_init(struct iguana_ramchain *ramchain,struct OS_memspace
     if ( 0 && expanded != 0 )
         printf("init T.%d U.%d S.%d P.%d X.%d -> %ld\n",numtxids,numunspents,numspends,numpkinds,numexternaltxids,(long)offset);
     _iguana_rdata_action(0,0,rdata,0,expanded,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,0,0,0,0,0,RAMCHAIN_ARG,numblocks);
+    offset += rdata->allocsize;
     if ( rdata->allocsize != iguana_ramchain_size(RAMCHAIN_ARG,numblocks,scriptspace) )
     {
         printf("offset.%ld scriptspace.%d allocsize.%ld vs memsize.%ld\n",(long)offset,scriptspace,(long)rdata->allocsize,(long)iguana_ramchain_size(RAMCHAIN_ARG,numblocks,scriptspace));
@@ -1313,8 +1314,11 @@ int64_t iguana_ramchain_init(struct iguana_ramchain *ramchain,struct OS_memspace
         iguana_mempurge(mem);
         iguana_meminit(mem,"ramchain",0,offset,0);
     }
-    if ( rdata->allocsize > 3000*1000 )
-    printf("init.(%d %d %d %d %d) totalsize.%ld allocsize.%ld hashmemsize.%ld\n",numtxids,numunspents,numspends,numpkinds,numexternaltxids,mem->totalsize,(long)rdata->allocsize,hashmem!=0?hashmem->totalsize:0);
+    if ( rdata->allocsize > 3000*1000 || rdata->allocsize > mem->totalsize )
+    {
+        printf("init.(%d %d %d %d %d) totalsize.%ld allocsize.%ld hashmemsize.%ld\n",numtxids,numunspents,numspends,numpkinds,numexternaltxids,mem->totalsize,(long)rdata->allocsize,hashmem!=0?hashmem->totalsize:0);
+        exit(-1);
+    }
     return(offset);
 }
 
@@ -1324,7 +1328,7 @@ int32_t iguana_ramchain_alloc(struct iguana_info *coin,struct iguana_ramchain *r
     B = 0, Ux = 0, Sx = 0, P = 0, A = 0, X = 0, Kspace = TXbits = PKbits = 0, U = 0, S = 0, T = 0;
     memset(ramchain,0,sizeof(*ramchain));
     ramchain->height = height;
-    allocsize = _iguana_rdata_action(0,0,0,0,1,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,0,0,0,0,0,RAMCHAIN_ARG,numblocks);
+    allocsize = _iguana_rdata_action(0,0,0,0,1,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,0,0,0,0,0,RAMCHAIN_ARG,numblocks) + sizeof(struct iguana_ramchaindata);
     //printf("T.%d U.%d S.%d P.%d X.%d -> %ld\n",numtxids,numunspents,numspends,numpkinds,numexternaltxids,(long)allocsize);
     memset(mem,0,sizeof(*mem));
     memset(hashmem,0,sizeof(*hashmem));
