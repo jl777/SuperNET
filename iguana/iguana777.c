@@ -464,6 +464,8 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->myservices = services;
     sprintf(dirname,"DB/%s",symbol);
     OS_ensure_directory(dirname);
+    sprintf(dirname,"sigs/%s",symbol);
+    OS_ensure_directory(dirname);
     sprintf(dirname,"tmp/%s",symbol);
     OS_ensure_directory(dirname);
     coin->initialheight = initialheight;
