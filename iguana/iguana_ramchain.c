@@ -2127,7 +2127,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
     {
         static int32_t numredundant; static double redundantsize; char str[65],str2[65];
         numredundant++, redundantsize += recvlen;
-        printf("ramchaindata have %d:%d at %d | %d blocks %s redundant xfers total %s %.1f%% wasted\n",bp->hdrsi,bundlei,block->fpos,numredundant,mbstr(str,redundantsize),mbstr(str2,totalrecv),100.*redundantsize/totalrecv);
+        printf("ramchaindata have %d:%d at %d | %d blocks %s redundant xfers total %s %.2f%% wasted\n",bp->hdrsi,bundlei,block->fpos,numredundant,mbstr(str,redundantsize),mbstr(str2,totalrecv),100.*redundantsize/totalrecv);
         return(block->fpos);
     }
     fpos = -1;
