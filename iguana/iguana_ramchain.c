@@ -597,9 +597,9 @@ uint32_t iguana_ramchain_addunspent(struct iguana_info *coin,RAMCHAIN_FUNC,uint6
         //printf(" U%d scriptoffset.%d pubkeyoffset.%d/%d type.%d pkind.%d\n",unspentind,ramchain->H.scriptoffset,pubkeyoffset,ramchain->H.data->scriptspace,type,pkind);
         if ( scriptlen > 0 && script != 0 )
         {
-            //for (i=0; i<scriptlen; i++)
-            //    printf("%02x",script[i]);
-            //printf(" bp.[%d] u%d\n",hdrsi,unspentind);
+            int32_t i; for (i=0; i<scriptlen; i++)
+                printf("%02x",script[i]);
+            printf(" bp.[%d] u%d\n",hdrsi,unspentind);
             if ( Kspace != 0 && ramchain->H.scriptoffset+scriptlen+3 <= ramchain->H.data->scriptspace-ramchain->H.stacksize )
             {
                 if ( (u->scriptoffset= iguana_ramchain_scriptencode(coin,Kspace,&ramchain->H.scriptoffset,type,script,scriptlen,&pubkeyoffset)) > 0 || type == IGUANA_SCRIPT_76AC )
@@ -2285,8 +2285,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     static bits256 zero;
     bits256 firsthash2,lasthash2; int32_t err,bundlei,hdrsi,numblocks,firsti,height,retval= -1;
     struct iguana_ramchain checkR,*mapchain; char fname[1024],str[65]; FILE *fp;
-    uint32_t scriptspace,scriptoffset,stacksize;
-    uint8_t *destoffset,*srcoffset;
+    uint32_t scriptspace,scriptoffset,stacksize,izero = 0; uint8_t *destoffset,*srcoffset;
     firsthash2 = ramchain->H.data->firsthash2, lasthash2 = ramchain->H.data->lasthash2;
     height = ramchain->height, firsti = ramchain->H.data->firsti, hdrsi = ramchain->H.hdrsi, numblocks = ramchain->numblocks;
     //printf("B[] %p\n",B);
@@ -2299,8 +2298,16 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
             sprintf(fname,"sigs/%s/%s.%d",coin->symbol,bits256_str(str,bp->hashes[0]),bp->bundleheight);
              if ( (fp= fopen(fname,"wb")) != 0 )
             {
-                if ( fwrite(srcoffset,1,ramchain->H.stacksize,fp) != ramchain->H.stacksize )
-                    printf("error writing %d sigs to %s\n",ramchain->H.stacksize,fname);
+                if ( ramchain->H.stacksize > 0 )
+                {
+                    if ( fwrite(srcoffset,1,ramchain->H.stacksize,fp) != ramchain->H.stacksize )
+                        printf("error writing %d sigs to %s\n",ramchain->H.stacksize,fname);
+                }
+                else
+                {
+                    if ( fwrite(&izero,1,sizeof(izero),fp) != sizeof(izero) )
+                        printf("error writing izero to %s\n",fname);
+                }
                 fclose(fp);
             }
             if ( (ramchain->sigsfileptr= OS_mapfile(fname,&ramchain->sigsfilesize,0)) == 0 )
