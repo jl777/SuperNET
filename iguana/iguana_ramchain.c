@@ -2316,7 +2316,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     memset(ramchain->A,0,sizeof(*ramchain->A) * ramchain->H.data->numpkinds);
     //printf("presave T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d\n",ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,firsti);
     //printf("0 preSAVE: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d\n",(int32_t)ramchain->H.data->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)ramchain->H.data->allocsize);
-    if ( 1 || (err= iguana_ramchain_iterate(coin,0,ramchain,bp)) != 0 )
+    if ( 0 && (err= iguana_ramchain_iterate(coin,0,ramchain,bp)) != 0 )
         printf("ERROR.%d iterating presave ramchain hdrsi.%d\n",err,hdrsi);
     else
     {
