@@ -570,7 +570,7 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
         return(IGUANA_SCRIPT_76A988AC);
     }
     // 21035f1321ed17d387e4433b2fa229c53616057964af065f98bfcae2233c5108055eac
-    else if ( vp->spendscript[0] > 0 && vp->spendscript[0] < 76 && vp->spendscript[vp->spendlen-1] == SCRIPT_OP_CHECKSIG && vp->spendscript[0] == vp->spendlen-2 )
+    else if ( vp->spendscript[0] > 0 && vp->spendscript[0] < 76 && vp->spendscript[vp->spendlen-1] == SCRIPT_OP_CHECKSIG && vp->spendscript[0] == vp->spendlen-2 && bitcoin_pubkeylen(&vp->spendscript[1]) > 0 )
     {
         memcpy(vp->signers[0].pubkey,&vp->spendscript[1],vp->spendscript[0]);
         calc_rmd160_sha256(vp->rmd160,vp->signers[0].pubkey,vp->spendscript[0]);
