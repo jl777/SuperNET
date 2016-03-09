@@ -887,9 +887,13 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
         }
         if ( s->sighash != iguana_vinscriptparse(coin,&V,&sigsize,&pubkeysize,&p2shsize,&suffixlen,vinscript,vinscriptlen) )
         {
-            for (i=0; i<vinscriptlen; i++)
-                printf("%02x",vinscript[i]);
-            printf(" ramchain_addspend RO sighash mismatch %d\n",s->sighash);
+            static uint64_t counter;
+            if  ( counter++ < 100 )
+            {
+                for (i=0; i<vinscriptlen; i++)
+                    printf("%02x",vinscript[i]);
+                printf(" ramchain_addspend RO sighash mismatch %d\n",s->sighash);
+            }
             return(spendind);
         }
         //ramchain->H.stacksize += sigsize;// + 1 + (sigsize >= 0xfd)*2;
@@ -909,13 +913,17 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
             printf("autoverify numsigs.%d\n",s->numsigs);
         if ( (checklen= iguana_vinscriptdecode(coin,ramchain,&metalen,&checksequenceid,_script,&Kspace[ramchain->H.data->scriptspace],Kspace,s)) != vinscriptlen || memcmp(_script,vinscript,vinscriptlen) != 0 || sequence != checksequenceid )
         {
-            for (i=0; i<checklen; i++)
-                printf("%02x",_script[i]);
-            printf(" decoded\n");
-            for (i=0; i<vinscriptlen; i++)
-                printf("%02x",vinscript[i]);
-            printf(" vinscript\n");
-            printf("addspend: vinscript expand error (%d vs %d) %d seq.(%x %x)\n",checklen,vinscriptlen,memcmp(_script,vinscript,vinscriptlen),sequence,checksequenceid);
+            static uint64_t counter;
+            if ( counter++ < 100 )
+            {
+                for (i=0; i<checklen; i++)
+                    printf("%02x",_script[i]);
+                printf(" decoded\n");
+                for (i=0; i<vinscriptlen; i++)
+                    printf("%02x",vinscript[i]);
+                printf(" vinscript\n");
+                printf("addspend: vinscript expand error (%d vs %d) %d seq.(%x %x)\n",checklen,vinscriptlen,memcmp(_script,vinscript,vinscriptlen),sequence,checksequenceid);
+            }
         }
         //ramchain->H.scriptoffset += metalen;
     }
