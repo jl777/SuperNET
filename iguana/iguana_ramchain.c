@@ -519,7 +519,8 @@ uint32_t iguana_ramchain_pubkeyoffset(struct iguana_info *coin,RAMCHAIN_FUNC,int
     } else pkind = ptr->hh.itemind;
     if ( P[pkind].pubkeyoffset == 0 )
     {
-        if ( (plen= bitcoin_pubkeylen(pubkey)) > 0 )
+        plen = bitcoin_pubkeylen(pubkey);
+        if ( plen > 0 )
         {
             P[pkind].pubkeyoffset = *scriptoffsetp, *scriptoffsetp += plen;
            // printf(" plen.%d -> new offset.%d\n",plen,*scriptoffsetp);
@@ -849,7 +850,7 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
         if ( s->sighash != iguana_vinscriptparse(coin,&V,&sigsize,&pubkeysize,&p2shsize,&suffixlen,vinscript,vinscriptlen) )
         {
             printf("ramchain_addspend RO sighash mismatch %d\n",s->sighash);
-            return(0);
+            return(spendind);
         }
         //ramchain->H.stacksize += sigsize;// + 1 + (sigsize >= 0xfd)*2;
         if ( s->numpubkeys > 0 )
@@ -2254,26 +2255,27 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
 {
     static bits256 zero;
     bits256 firsthash2,lasthash2; int32_t err,i,c,bundlei,hdrsi,numblocks,firsti,height,retval = -1;
-    struct iguana_ramchain checkR,*mapchain; char fname[1024]; uint32_t scriptoffset,stacksize;
+    struct iguana_ramchain checkR,*mapchain; char fname[1024]; uint32_t scriptspace,scriptoffset,stacksize;
     uint8_t *destoffset,*srcoffset;
     firsthash2 = ramchain->H.data->firsthash2, lasthash2 = ramchain->H.data->lasthash2;
     height = ramchain->height, firsti = ramchain->H.data->firsti, hdrsi = ramchain->H.hdrsi, numblocks = ramchain->numblocks;
     //printf("B[] %p\n",B);
-    if ( 1 && ramchain->expanded != 0 )
+    destoffset = &Kspace[ramchain->H.scriptoffset];
+    srcoffset = &Kspace[ramchain->H.data->scriptspace - ramchain->H.stacksize];
+    if ( 0 && ramchain->expanded != 0 )
     {
-        destoffset = &Kspace[ramchain->H.scriptoffset];
-        srcoffset = &Kspace[ramchain->H.data->scriptspace - ramchain->H.stacksize];
         if ( 0 && (long)destoffset < (long)srcoffset )
         {
             for (i=0; i<ramchain->H.stacksize; i++)
                 c = *srcoffset, *destoffset++ = c, *srcoffset++ = 0;
         } //else printf("smashed stack?\n");
-        printf("%d SAVE: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d gap.%ld\n",bp->bundleheight,(int32_t)ramchain->H.data->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)ramchain->H.data->allocsize,(long)destoffset - (long)srcoffset);
     }
+    printf("%d SAVE: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d gap.%ld\n",bp->bundleheight,(int32_t)ramchain->H.data->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)ramchain->H.data->allocsize,(long)destoffset - (long)srcoffset);
+    scriptspace = ramchain->H.data->scriptspace;
     scriptoffset = ramchain->H.scriptoffset;
     stacksize = ramchain->H.stacksize;
-    ramchain->H.scriptoffset = scriptoffset;
-    ramchain->H.data->scriptspace = scriptoffset;
+    //ramchain->H.scriptoffset = scriptoffset;
+    //ramchain->H.data->scriptspace = scriptoffset;
     ramchain->H.stacksize = ramchain->H.data->stackspace = stacksize;
     iguana_ramchain_setsize(ramchain,ramchain->H.data,bp->n);
     printf("Apresave T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d scriptoffset.%d stacksize.%d\n",ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,firsti,ramchain->H.scriptoffset,ramchain->H.stacksize);
@@ -2297,7 +2299,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     }
     printf("postiterateA.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d scripts.%d:%d stack.%d:%d\n",bp->bundleheight,ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,firsti,(int32_t)ramchain->H.scriptoffset,scriptoffset,(int32_t)ramchain->H.stacksize,stacksize);
     ramchain->H.scriptoffset = scriptoffset;
-    ramchain->H.data->scriptspace = scriptoffset;
+    ramchain->H.data->scriptspace = scriptspace;
     ramchain->H.stacksize = ramchain->H.data->stackspace = stacksize;
     if ( iguana_ramchain_save(coin,RAMCHAIN_ARG,0,firsthash2,zero,0,bp) < 0 )
         printf("ERROR saving ramchain hdrsi.%d\n",hdrsi);
