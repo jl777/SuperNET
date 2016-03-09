@@ -1316,7 +1316,7 @@ int64_t iguana_ramchain_init(struct iguana_ramchain *ramchain,struct OS_memspace
     }
     if ( rdata->allocsize > 3000*1000 || rdata->allocsize > mem->totalsize )
     {
-        printf("init.(%d %d %d %d %d) totalsize.%ld allocsize.%ld hashmemsize.%ld\n",numtxids,numunspents,numspends,numpkinds,numexternaltxids,mem->totalsize,(long)rdata->allocsize,hashmem!=0?hashmem->totalsize:0);
+        printf("init.(%d %d %d %d %d) rdata->allocsize.%ld mem->totalsize.%ld hashmemsize.%ld\n",numtxids,numunspents,numspends,numpkinds,numexternaltxids,(long)rdata->allocsize,mem->totalsize,hashmem!=0?hashmem->totalsize:0);
         exit(-1);
     }
     return(offset);
@@ -1338,8 +1338,8 @@ int32_t iguana_ramchain_alloc(struct iguana_info *coin,struct iguana_ramchain *r
         char str[65],str2[65]; fprintf(stderr,"ht.%d wait for allocated %s < MAXMEM %s | elapsed %.2f minutes\n",height,mbstr(str,hashsize+allocsize),mbstr(str2,coin->MAXMEM),(double)(time(NULL)-coin->startutc)/60.);
         sleep(3);
     }
-    iguana_meminit(hashmem,"ramhashmem",0,hashsize + 8192,0);
-    iguana_meminit(mem,"ramchain",0,allocsize + 8192,0);
+    iguana_meminit(hashmem,"ramhashmem",0,hashsize,0);
+    iguana_meminit(mem,"ramchain",0,allocsize,0);
     mem->alignflag = sizeof(uint32_t);
     hashmem->alignflag = sizeof(uint32_t);
     if ( iguana_ramchain_init(ramchain,mem,hashmem,1,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,1,numblocks) == 0 )
