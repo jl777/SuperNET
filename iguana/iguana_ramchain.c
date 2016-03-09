@@ -466,9 +466,9 @@ uint32_t iguana_ramchain_scriptencode(struct iguana_info *coin,uint8_t *Kspace,u
                 printf("iguana_ramchain_scriptencode: mismatched pubkey?\n");
                 getchar();
             }
+            *offsetp = offset;
+            return(0);
         }
-        *offsetp = offset;
-        return(0);
     }
     if ( scriptlen < 0xfd )
         Kspace[offset] = scriptlen, offset++;
