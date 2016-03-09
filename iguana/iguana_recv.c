@@ -377,7 +377,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         iguana_bundleQ(coin,bp,((bp->rank != 0) ? bp->rank : 64) * 100);
         return(0);
     }
-    else if ( 0 )
+    else if ( 1 )
     {
         for (i=0; i<bp->n; i++)
         {
@@ -948,7 +948,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
     priority = 1;
     if ( (req= queue_dequeue(&coin->priorityQ,0)) == 0 )
     {
-        if ( (rand() & 1) == 0 )
+        if ( (rand() % 7) == 0 )
             flag = iguana_neargap(coin,addr);
         else if ( (bp= addr->bp) != 0 && bp->rank != 0 && addr->pendblocks < limit )
         {
