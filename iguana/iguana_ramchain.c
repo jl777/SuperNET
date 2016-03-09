@@ -375,6 +375,12 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,RAMCHAIN_FUNC,uin
         if ( type < 0 )
         {
             type = iguana_calcrmd160(coin,&V,script,scriptlen,txid,vout,0xffffffff);
+            if ( type == 1 && bitcoin_pubkeylen(script+1) < 0 )
+            {
+                int32_t i; for (i=0; i<scriptlen; i++)
+                    printf("%02x",script[i]);
+                printf(" script type.%d\n",type);
+            }
             memcpy(rmd160,V.rmd160,sizeof(V.rmd160));
         } //else printf("iguana_ramchain_addunspent20: unexpected non-neg type.%d\n",type);
     }
@@ -420,6 +426,8 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,RAMCHAIN_FUNC,uin
                     u->scriptfpos = (uint32_t)iguana_scriptadd(coin,bp,unspentind,type,script,scriptlen,rmd160,vout);
                 }
             }*/
+            if ( ramchain->H.scriptoffset == 0 )
+                ramchain->H.scriptoffset++;
             u->scriptoffset = ramchain->H.scriptoffset;
             scriptptr = &Kspace[u->scriptoffset];//malloc(scriptlen);
             ramchain->H.scriptoffset += scriptlen;
@@ -1014,6 +1022,8 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,RAMCHAIN_FUNC,bits
         s->spendind = spendind;
         if ( (s->vinscriptlen= vinscriptlen) > 0 )//&& vinscriptlen <= sizeof(s->vinscript) && scriptfpos == 0 )
         {
+            if ( ramchain->H.scriptoffset == 0 )
+                ramchain->H.scriptoffset++;
             s->scriptoffset = ramchain->H.scriptoffset;
             vinscriptptr = &Kspace[s->scriptoffset];
             ramchain->H.scriptoffset += vinscriptlen;
@@ -1863,12 +1873,12 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
                     scriptdata = &Kspace[U[ramchain->H.unspentind].scriptoffset];
                     scriptlen = U[ramchain->H.unspentind].scriptlen;
                     //scriptdata = iguana_scriptptr(coin,&scriptlen,_script,U[ramchain->H.unspentind].scriptfpos,U[ramchain->H.unspentind].scriptptr,U[ramchain->H.unspentind].scriptlen,sizeof(U[ramchain->H.unspentind].scriptptr),0);
-                    /*if ( scriptdata != 0 && scriptlen > 0 )
+                    if ( scriptdata != 0 && scriptlen > 0 )
                     {
                         int32_t i; for (i=0; i<scriptlen; i++)
                             printf("%02x",scriptdata[i]);
-                        fprintf(stderr," raw unspent script type.%d U%d\n",type,ramchain->H.unspentind);
-                    } else printf("no script\n");*/
+                        fprintf(stderr," raw unspent script type.%d U%d offset.%d\n",type,ramchain->H.unspentind,U[ramchain->H.unspentind].scriptoffset);
+                    } else printf("no script\n");
                     //for (i=0; i<20; i++)
                     //    printf("%02x",rmd160[i]);
                     //printf(" raw rmd160\n");
