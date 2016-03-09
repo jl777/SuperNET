@@ -377,7 +377,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         iguana_bundleQ(coin,bp,((bp->rank != 0) ? bp->rank : 64) * 100);
         return(0);
     }
-    else //if ( 0 )
+    else if ( 0 )
     {
         for (i=0; i<bp->n; i++)
         {
@@ -468,9 +468,16 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
             bp->emitfinish = 1;
             sleep(1);
             iguana_emitQ(coin,bp);
+            iguana_bundleQ(coin,bp,width);
             return(1);
         }
         iguana_bundleQ(coin,bp,width);
+    }
+    else if ( bp->startutxo == 0 )
+        iguana_bundleQ(coin,bp,width);
+    else if ( bp->utxofinish == 0 )
+    {
+        printf("GENERATE UTXO, verify sigs, etc for ht.%d\n",bp->bundleheight);
     }
     return(0);
 }

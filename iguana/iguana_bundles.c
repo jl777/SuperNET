@@ -448,6 +448,8 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             numsaved += bp->numsaved;
             if ( bp->emitfinish != 0 )
             {
+                if ( firstgap == 0 )
+                    bp->startutxo = (uint32_t)time(NULL);
                 done++;
                 if ( bp->emitfinish > 1 )
                     numemit++;
@@ -498,7 +500,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     }
     strcpy(coin->statusstr,str);
     coin->estsize = estsize;
-    //if ( firstgap != 0 && firstgap->queued == 0 )
-    //    iguana_bundleQ(coin,firstgap,1000);
+    if ( firstgap != 0 && firstgap->queued == 0 )
+        iguana_bundleQ(coin,firstgap,1000);
 }
 
