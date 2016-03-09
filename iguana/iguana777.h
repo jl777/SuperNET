@@ -778,10 +778,7 @@ uint8_t *iguana_rmdarray(struct iguana_info *coin,int32_t *numrmdsp,cJSON *array
 void iguana_unspents(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,uint8_t *rmdarray,int32_t numrmds);
 uint8_t *iguana_walletrmds(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *numrmdsp);
 char *iguana_bundleaddrs(struct iguana_info *coin,int32_t hdrsi);
-long iguana_scriptadd(struct iguana_info *coin,struct iguana_bundle *bp,uint32_t unspentind,int32_t type,uint8_t *spendscript,int32_t spendlen,uint8_t rmd160[20],int32_t vout);
 uint32_t iguana_sparseaddpk(uint8_t *bits,int32_t width,uint32_t tablesize,uint8_t rmd160[20],struct iguana_pkhash *P,uint32_t pkind);
-long iguana_initscripts(struct iguana_info *coin);
-uint32_t iguana_scriptsave(struct iguana_info *coin,struct iguana_bundle *bp,uint32_t ind,int32_t spendflag,uint8_t *script,int32_t scriptlen);
 int32_t iguana_vinscriptparse(struct iguana_info *coin,struct vin_info *vp,uint32_t *sigsizep,uint32_t *pubkeysizep,uint32_t *p2shsizep,uint32_t *suffixp,uint8_t *vinscript,int32_t scriptlen);
 void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msghdr *H,uint8_t *buf,int32_t len);
 

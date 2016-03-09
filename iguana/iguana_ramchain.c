@@ -428,12 +428,15 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,RAMCHAIN_FUNC,uin
                     u->scriptfpos = (uint32_t)iguana_scriptadd(coin,bp,unspentind,type,script,scriptlen,rmd160,vout);
                 }
             }*/
-            if ( ramchain->H.scriptoffset == 0 )
-                ramchain->H.scriptoffset++;
-            u->scriptoffset = ramchain->H.scriptoffset;
-            scriptptr = &Kspace[u->scriptoffset];//malloc(scriptlen);
-            ramchain->H.scriptoffset += scriptlen;
-            memcpy(scriptptr,script,scriptlen);
+            if ( type != 0 ) // IGUANA_SCRIPT_NULL
+            {
+                if ( ramchain->H.scriptoffset == 0 )
+                    ramchain->H.scriptoffset++;
+                u->scriptoffset = ramchain->H.scriptoffset;
+                scriptptr = &Kspace[u->scriptoffset];//malloc(scriptlen);
+                ramchain->H.scriptoffset += scriptlen;
+                memcpy(scriptptr,script,scriptlen);
+            }
         } else u->scriptoffset = 0;
         u->txidind = ramchain->H.txidind;
         memcpy(u->rmd160,rmd160,sizeof(u->rmd160));
@@ -909,10 +912,10 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
             for (i=0; i<checklen; i++)
                 printf("%02x",_script[i]);
             printf(" decoded\n");
-            for (i=0; i<checklen; i++)
+            for (i=0; i<vinscriptlen; i++)
                 printf("%02x",vinscript[i]);
             printf(" vinscript\n");
-            printf("addspend: vinscript expand error (%d vs %d) %d seq.(%u %u)\n",checklen,vinscriptlen,memcmp(_script,vinscript,vinscriptlen),sequence,checksequenceid);
+            printf("addspend: vinscript expand error (%d vs %d) %d seq.(%x %x)\n",checklen,vinscriptlen,memcmp(_script,vinscript,vinscriptlen),sequence,checksequenceid);
         }
         //ramchain->H.scriptoffset += metalen;
     }
@@ -2038,8 +2041,8 @@ int32_t iguana_scriptspaceraw(struct iguana_info *coin,int32_t *scriptspacep,int
 int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,int32_t *pubkeyspacep,struct iguana_ramchain *ramchain)
 {
     RAMCHAIN_DECLARE;
-    int32_t j,scriptlen;
-    uint32_t sequence,p2shspace,altspace,sigspace,pubkeyspace,spendind,unspentind,p2shsize,pubkeysize,sigsize,scriptspace,suffixlen; struct vin_info V; //uint8_t _script[IGUANA_MAXSCRIPTSIZE];
+    int32_t j,scriptlen; struct vin_info V;
+    uint32_t sequence,p2shspace,altspace,sigspace,pubkeyspace,spendind,unspentind,p2shsize,pubkeysize,sigsize,scriptspace,suffixlen;
     struct iguana_txid *tx; struct iguana_ramchaindata *rdata; uint8_t *scriptdata;
     _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
     *sigspacep = *pubkeyspacep = altspace = 0;

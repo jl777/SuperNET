@@ -304,7 +304,6 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
         {
             //iguana_spentsfile(coin,i);
         }
-        iguana_initscripts(coin);
     }
 }
 
