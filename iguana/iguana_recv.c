@@ -511,11 +511,11 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
             block->bundlei = bundlei;
             block->hdrsi = bp->hdrsi;
             bp->blocks[bundlei] = block;
-            printf("bundlehashadd set.%d\n",bundlei);
+            //printf("bundlehashadd set.%d\n",bundlei);
             iguana_bundlehash2add(coin,0,bp,bundlei,hash2);
             if ( bundlei > 0 )
             {
-                printf("bundlehashadd prev %d\n",bundlei);
+                //printf("bundlehashadd prev %d\n",bundlei);
                 iguana_bundlehash2add(coin,0,bp,bundlei-1,prevhash2);
             }
             else if ( bp->hdrsi > 0 && (bp= coin->bundles[bp->hdrsi-1]) != 0 )
