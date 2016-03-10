@@ -1037,7 +1037,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                 break;
             if ( coin->peers.ranked[hdrsi] == 0 || coin->peers.ranked[hdrsi]->msgcounts.verack == 0 )
                 continue;
-            for (bundlei=n=0; bundlei<bp->n; bundlei++)
+            for (bundlei=n=flag=0; bundlei<bp->n; bundlei++)
                 if ( (block= bp->blocks[bundlei]) != 0 )
                 {
                     if ( bits256_nonz(block->RO.hash2) > 0 && block->fpipbits != 0 )
@@ -1058,7 +1058,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                     }
                 }
             if ( flag != 0 )
-                printf("issued %d priority blocks for current.[%d] have %d blocks emit.%u\n",flag,bp->hdrsi,n,bp->emitfinish);
+                printf("issued %d priority blocks for %d current.[%d] have %d blocks emit.%u\n",flag,hdrsi,bp->hdrsi,n,bp->emitfinish);
         }
     }
     hdrsi = (coin->blocks.hwmchain.height+1) / coin->chain->bundlesize;

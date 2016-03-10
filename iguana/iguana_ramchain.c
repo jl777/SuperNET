@@ -713,6 +713,7 @@ int32_t iguana_metascript(struct iguana_info *coin,RAMCHAIN_FUNC,struct iguana_s
     uint32_t poffsets[16],sigsize,pubkeysize,p2shsize,sigslen,suffixlen;
     uint8_t sigsbuf[16*128],_script[IGUANA_MAXSCRIPTSIZE],*suffix;
     sigslen = 0;
+    memset(&V,0,sizeof(V));
     if ( vinscript != 0 && vinscriptlen > 0 )
     {
         if ( rawflag == 0 )
@@ -754,9 +755,13 @@ int32_t iguana_metascript(struct iguana_info *coin,RAMCHAIN_FUNC,struct iguana_s
         }
         else
         {
+            sigslen = 0;
             s->sighash = s->numsigs = s->numpubkeys = s->p2sh = s->coinbase = 0;
             suffix = vinscript;
             suffixlen = vinscriptlen;
+            for (i=0; i<vinscriptlen; i++)
+                printf("%02x",vinscript[i]);
+            printf(" suffix mode.%d\n",vinscriptlen);
         }
         if ( sigslen+V.numsigs+V.numpubkeys+suffixlen != 0 || s->sequenceid == 3 )
         {
