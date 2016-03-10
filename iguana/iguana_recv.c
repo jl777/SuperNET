@@ -534,7 +534,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
                     iguana_bundlecreate(coin,&prevbundlei,prevbp->bundleheight + coin->chain->bundlesize,hash2,zero,0);
                 if ( prevbundlei < coin->chain->bundlesize-1 )
                 {
-                    printf("bundlehash2add next %d\n",prevbundlei);
+                    //printf("bundlehash2add next %d\n",prevbundlei);
                     iguana_bundlehash2add(coin,0,prevbp,prevbundlei+1,hash2);
                 }
                 iguana_bundlespeculate(coin,prevbp,prevbundlei,prevhash2,2);
