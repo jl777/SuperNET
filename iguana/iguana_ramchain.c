@@ -477,7 +477,7 @@ uint32_t iguana_ramchain_scriptencode(struct iguana_info *coin,uint8_t *Kspace,u
                 printf("  script arg\n");
                 for (i=0; i<plen; i++)
                     printf("%02x",Kspace[pubkeyoffset+i]);
-                printf(" Kspace[%d] len.%d pubkeyoffset.%d\n",pubkeyoffset,offset,pubkeyoffset);
+                printf(" Kspace[%d] len.%d pubkeyoffset.%d\n",offset,plen,pubkeyoffset);
                 printf("iguana_ramchain_scriptencode: mismatched pubkey?\n");
                 //getchar();
             }
@@ -870,7 +870,9 @@ uint32_t iguana_ramchain_addunspent(struct iguana_info *coin,RAMCHAIN_FUNC,uint6
                     //fprintf(stderr,"new offset.%d from scriptlen.%d pubkeyoffset.%d\n",ramchain->H.scriptoffset,scriptlen,pubkeyoffset);
                     if ( type == IGUANA_SCRIPT_76AC && pubkeyoffset != 0 )
                     {
-                        P[pkind].pubkeyoffset = pubkeyoffset;
+                        if ( P[pkind].pubkeyoffset == 0 )
+                            P[pkind].pubkeyoffset = pubkeyoffset;
+                        else printf("mismatched P[%d].pubkeyoffset %d vs %d\n",pkind,P[pkind].pubkeyoffset,pubkeyoffset);
                         //int32_t i; for (i=0; i<33; i++)
                         //    printf("%02x",Kspace[P[pkind].pubkeyoffset+i]);
                         //printf(" set pubkey.[%d] <- scriptoffset.%d\n",pkind,P[pkind].pubkeyoffset);
@@ -878,6 +880,11 @@ uint32_t iguana_ramchain_addunspent(struct iguana_info *coin,RAMCHAIN_FUNC,uint6
                 }
                 //printf("[%d] u%d offset.%u len.%d\n",hdrsi,unspentind,u->scriptoffset,scriptlen);
             } else printf("[%d] u%d Kspace.%p scriptspace overflow! %d + %d vs space.%d - stack.%d\n",hdrsi,unspentind,Kspace,ramchain->H.scriptoffset,scriptlen,ramchain->H.data->scriptspace,ramchain->H.stacksize);
+            checkscript = iguana_ramchain_scriptdecode(&metalen,&checklen,Kspace,u->type,_script,u->scriptoffset,P[pkind].pubkeyoffset < ramchain->H.scriptoffset ? P[pkind].pubkeyoffset : 0);
+            if ( checklen != scriptlen || (scriptlen > 0 && memcmp(checkscript,script,scriptlen) != 0) )
+            {
+                printf("create script mismatch len.%d vs %d or cmp error.%d\n",scriptlen,checklen,script!=0?memcmp(checkscript,script,scriptlen):0);
+            } //else printf("RO spendscript match.%d\n",scriptlen);
         }
     }
     //printf("%p A[%d] last <- U%d\n",&A[pkind],pkind,unspentind);
