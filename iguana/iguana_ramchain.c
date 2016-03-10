@@ -564,12 +564,22 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
     int32_t i,suffixlen,len = 0; long diff; uint8_t *pubkey,*metascript = &Kspace[s->scriptoffset]; uint32_t poffset; int32_t totalsize,sigslen,plen,stacksize=0,p2shlen=0,scriptlen = 0;
     if ( (*sequenceidp= s->sequenceid) == 3 )
     {
-        memcpy(sequenceidp,&metascript[len],sizeof(*sequenceidp));
+        len += iguana_rwvarint32(0,&metascript[len],(void *)sequenceidp);
         printf("nonstandard sequence decoded.%x\n",*sequenceidp);
-        len += sizeof(*sequenceidp);
     } else (*sequenceidp) = -(*sequenceidp);
     *metalenp = 0;
     len += iguana_rwvarint32(0,&metascript[len],(void *)&totalsize);
+    if ( s->rawmode != 0 )
+    {
+        *metalenp = 0;
+        if ( totalsize < IGUANA_MAXSCRIPTSIZE )
+        {
+            memcpy(_script,&metascript[len],totalsize);
+            return(totalsize);
+        }
+        printf("illegal rawmode vinscript totalsize.%d\n",totalsize);
+        return(-1);
+    }
     if ( totalsize > IGUANA_MAXSCRIPTSIZE )
     {
         fprintf(stderr,"totalsize too big %d\n",totalsize);
@@ -655,8 +665,7 @@ int32_t iguana_vinscriptencode(struct iguana_info *coin,int32_t *metalenp,uint8_
     }
     if ( s->sequenceid == 3 )
     {
-        memcpy(&metascript[len],&sequence,sizeof(sequence));
-        len += sizeof(sequence);
+        len += iguana_rwvarint32(1,&metascript[len],(void *)&sequence);
         printf("nonstandard sequence encoded.%x\n",sequence);
     }
     len += iguana_rwvarint32(1,&metascript[len],(void *)&sigslen);
@@ -713,9 +722,9 @@ int32_t iguana_metascript(struct iguana_info *coin,RAMCHAIN_FUNC,struct iguana_s
     uint32_t poffsets[16],sigsize,pubkeysize,p2shsize,sigslen,suffixlen;
     uint8_t sigsbuf[16*128],_script[IGUANA_MAXSCRIPTSIZE],*suffix;
     sigslen = 0;
-    memset(&V,0,sizeof(V));
     if ( vinscript != 0 && vinscriptlen > 0 )
     {
+        memset(&V,0,sizeof(V));
         if ( rawflag == 0 )
         {
             s->sighash = iguana_vinscriptparse(coin,&V,&sigsize,&pubkeysize,&p2shsize,&suffixlen,vinscript,vinscriptlen);
@@ -752,42 +761,52 @@ int32_t iguana_metascript(struct iguana_info *coin,RAMCHAIN_FUNC,struct iguana_s
             if ( p2shsize != 0 )
                 s->p2sh = 1;
             suffix = &vinscript[vinscriptlen-suffixlen];
+            if ( sigslen+V.numsigs+V.numpubkeys+suffixlen != 0 || s->sequenceid == 3 )
+            {
+                ramchain->H.stacksize += sigslen;
+                s->scriptoffset = ramchain->H.scriptoffset;
+                len = iguana_vinscriptencode(coin,&metalen,&Kspace[ramchain->H.data->scriptspace],ramchain->H.stacksize,Kspace,ramchain->H.scriptoffset,s,sequence,sigsbuf,sigslen,poffsets,V.p2shscript,V.p2shlen,suffix,suffixlen);
+            } else printf("sigslen.%d numsigs.%d numpubs.%d suffixlen.%d\n",sigslen,V.numsigs,V.numpubkeys,suffixlen);
         }
         else
         {
-            sigslen = 0;
-            s->sighash = s->numsigs = s->numpubkeys = s->p2sh = s->coinbase = 0;
+            metalen = sigslen = 0;
+            s->sighash = s->numsigs = s->numpubkeys = s->p2sh = 0;
             suffix = vinscript;
             suffixlen = vinscriptlen;
             for (i=0; i<vinscriptlen; i++)
                 printf("%02x",vinscript[i]);
-            printf(" suffix mode.%d\n",vinscriptlen);
-        }
-        if ( sigslen+V.numsigs+V.numpubkeys+suffixlen != 0 || s->sequenceid == 3 )
-        {
-            ramchain->H.stacksize += sigslen;
+            printf(" rawmode mode.%d\n",vinscriptlen);
             s->scriptoffset = ramchain->H.scriptoffset;
-            len = iguana_vinscriptencode(coin,&metalen,&Kspace[ramchain->H.data->scriptspace],ramchain->H.stacksize,Kspace,ramchain->H.scriptoffset,s,sequence,sigsbuf,sigslen,poffsets,V.p2shscript,V.p2shlen,suffix,suffixlen);
-            //printf("checklen.%d scriptoffset.%d\n",checklen,ramchain->H.scriptoffset);
-            if ( (decodelen= iguana_vinscriptdecode(coin,ramchain,&checkmetalen,&checksequenceid,_script,&Kspace[ramchain->H.data->scriptspace],Kspace,s)) != vinscriptlen || memcmp(_script,vinscript,vinscriptlen) != 0 || sequence != checksequenceid || checkmetalen != metalen )
+            s->rawmode = 1;
+            if ( s->sequenceid == 3 )
             {
-                static uint64_t counter;
-                if ( counter++ < 100 )
-                {
-                    for (i=0; i<decodelen; i++)
-                        printf("%02x",_script[i]);
-                    printf(" decoded\n");
-                    for (i=0; i<vinscriptlen; i++)
-                        printf("%02x",vinscript[i]);
-                    printf(" vinscript\n");
-                    printf("B addspend: vinscript expand error (%d vs %d) %d seq.(%u %u)\n",decodelen,vinscriptlen,memcmp(_script,vinscript,vinscriptlen),sequence,checksequenceid);
-                }
-                ramchain->H.stacksize -= sigslen;
-                return(-1);
-            } else s->coinbase = 1;//, printf("vin reconstructed metalen.%d vinlen.%d\n",metalen,checklen);
-            ramchain->H.scriptoffset += len;
-            return(metalen);
-        } else printf("sigslen.%d numsigs.%d numpubs.%d suffixlen.%d\n",sigslen,V.numsigs,V.numpubkeys,suffixlen);
+                ramchain->H.scriptoffset += iguana_rwvarint32(1,&Kspace[s->scriptoffset],(void *)&sequence);
+                printf("nonstandard sequence encoded.%x\n",sequence);
+            }
+            ramchain->H.scriptoffset += iguana_rwvarint32(1,&Kspace[s->scriptoffset],(void *)&vinscriptlen);
+            memcpy(&Kspace[ramchain->H.scriptoffset],vinscript,vinscriptlen);
+            ramchain->H.scriptoffset += vinscriptlen;
+        }
+        //printf("checklen.%d scriptoffset.%d\n",checklen,ramchain->H.scriptoffset);
+        if ( (decodelen= iguana_vinscriptdecode(coin,ramchain,&checkmetalen,&checksequenceid,_script,&Kspace[ramchain->H.data->scriptspace],Kspace,s)) != vinscriptlen || memcmp(_script,vinscript,vinscriptlen) != 0 || sequence != checksequenceid || checkmetalen != metalen )
+        {
+            static uint64_t counter;
+            if ( counter++ < 100 )
+            {
+                for (i=0; i<decodelen; i++)
+                    printf("%02x",_script[i]);
+                printf(" decoded\n");
+                for (i=0; i<vinscriptlen; i++)
+                    printf("%02x",vinscript[i]);
+                printf(" vinscript\n");
+                printf("B addspend: vinscript expand error (%d vs %d) %d seq.(%u %u)\n",decodelen,vinscriptlen,memcmp(_script,vinscript,vinscriptlen),sequence,checksequenceid);
+            }
+            ramchain->H.stacksize -= sigslen;
+            return(-1);
+        } //else s->coinbase = 1;//, printf("vin reconstructed metalen.%d vinlen.%d\n",metalen,checklen);
+        ramchain->H.scriptoffset += len;
+        return(metalen);
     }
     return(0);
 }
