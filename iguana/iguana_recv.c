@@ -1031,7 +1031,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
     int32_t hdrsi,lflag,n,bundlei,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp;
     if ( queue_size(&coin->priorityQ) == 0 && (bp= coin->current) != 0 && bp->numsaved < bp->n )
     {
-        for (hdrsi=0; hdrsi<8&&coin->current->hdrsi+hdrsi<coin->bundlescount; hdrsi++)
+        for (hdrsi=0; hdrsi<coin->peers.numranked&&coin->current->hdrsi+hdrsi<coin->bundlescount; hdrsi++)
         {
             if ( (bp= coin->bundles[hdrsi + coin->current->hdrsi]) == 0 )
                 break;
@@ -1050,7 +1050,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                          block->issued = 0;
                          bp->issued[bundlei] = 0;*/
                         block->issued = (uint32_t)time(NULL);
-                        iguana_sendblockreqPT(coin,coin->peers.ranked[0],bp,bundlei,block->RO.hash2,0);
+                        iguana_sendblockreqPT(coin,coin->peers.ranked[hdrsi],bp,bundlei,block->RO.hash2,0);
                         //iguana_blockQ(coin,bp,bundlei,block->RO.hash2,1);
                         flag++;
                     }
