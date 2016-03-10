@@ -1033,15 +1033,15 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
                 for (i=0; i<vinscriptlen; i++)
                     sprintf(errbuf+strlen(errbuf),"%02x",vinscript[i]);
                 printf("%s <- second error with ",errbuf);
+                printf(" vinscript.%d errlens %ld %ld\n",vinscriptlen,errlen,err2len);
             }
-            else if ( vinscriptlen > 138 )
+            else if ( 0 && vinscriptlen > 138 )
             {
                 errbuf[0] = 0;
                 for (i=0; i<vinscriptlen; i++)
                     sprintf(errbuf+strlen(errbuf),"%02x",vinscript[i]);
                 printf("%s bigscript ",errbuf);
             }
-            printf(" vinscript.%d errlens %ld %ld\n",vinscriptlen,errlen,err2len);
         }
         //s->hdrsi = hdrsi;
         //s->bundlei = bundlei;
