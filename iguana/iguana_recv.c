@@ -37,16 +37,16 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
     char hexstr[65]; init_hexbytes_noT(hexstr,hash2.bytes,sizeof(hash2));
     if ( memcmp(lastreq.bytes,hash2.bytes,sizeof(hash2)) == 0 || memcmp(lastreq2.bytes,hash2.bytes,sizeof(hash2)) == 0 )
     {
-        //printf("duplicate req\n");
+        printf("duplicate req %s\n",bits256_str(hexstr,hash2));
         return(0);
     }
-    lastreq2 = lastreq;
-    lastreq = hash2;
     if ( addr->msgcounts.verack == 0 )
     {
         printf("iguana_sendblockreq %s hasn't verack'ed yet\n",addr->ipaddr);
         return(-1);
     }
+    lastreq2 = lastreq;
+    lastreq = hash2;
     if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,hexstr)) > 0 )
     {
         iguana_send(coin,addr,serialized,len);
@@ -656,7 +656,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     struct iguana_bundle *bp=0; int32_t bundlei = -2; struct iguana_block *block;
     bp = iguana_bundleset(coin,&block,&bundlei,origblock);
     static int total; char str[65];
-    if ( 0 && bp != 0 && bp->hdrsi == 0 )
+    if ( 1 && bp != 0 && bp->hdrsi == 0 )
         fprintf(stderr,"RECV %s [%d:%d] block.%08x | %d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,total++);
     if ( bundlei == 1 && bp != 0 && bp->numhashes < bp->n )
     {
@@ -905,7 +905,7 @@ int32_t iguana_neargap(struct iguana_info *coin,struct iguana_peer *addr)
         {
             printf("near hwm.%d gap.%d peer.%s bpranked.%d [%d:%d] pending.%d numreqs.%d\n",height,j,addr->ipaddr,bestbp->rank,bestbp->hdrsi,besti,addr->pendblocks,bestblock->numrequests);
             bestblock->numrequests++;
-            iguana_sendblockreqPT(coin,addr,bestbp,besti,bestblock->RO.hash2,1);
+            iguana_sendblockreqPT(coin,addr,bestbp,besti,bestblock->RO.hash2,0);
             return(1);
         }
     }
@@ -985,7 +985,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                     printf("peer.%s BPranked.%d [%d:%d] pending.%d numreqs.%d\n",addr->ipaddr,bp->rank,bp->hdrsi,i,addr->pendblocks,block->numrequests);
                     block->numrequests++;
                     flag++;
-                    iguana_sendblockreqPT(coin,addr,bp,i,block->RO.hash2,1);
+                    iguana_sendblockreqPT(coin,addr,bp,i,block->RO.hash2,0);
                     break;
                 }
             }
@@ -1014,8 +1014,11 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         }
         else
         {
+            char str[65];
             if ( block != 0 )
                 block->numrequests++;
+            if ( priority != 0 )
+                printf("PRIORITY %s [%d:%d]\n",bits256_str(str,hash2),bp!=0?bp->bundleheight:-1,req->bundlei);
             iguana_sendblockreqPT(coin,addr,req->bp,req->bundlei,hash2,0);
         }
         flag++;
