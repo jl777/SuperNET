@@ -1031,28 +1031,33 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
     int32_t hdrsi,lflag,n,bundlei,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp;
     if ( queue_size(&coin->priorityQ) == 0 && (bp= coin->current) != 0 && bp->numsaved < bp->n )
     {
-        for (bundlei=n=0; bundlei<bp->n; bundlei++)
-            if ( (block= bp->blocks[bundlei]) != 0 )
-            {
-                if ( bits256_nonz(block->RO.hash2) > 0 && block->fpipbits != 0 )
-                    n++;
-                else if ( bp->numsaved > bp->n*.9 && time(NULL) > block->issued+13 )
+        for (hdrsi=0; hdrsi<8&&coin->current->hdrsi+hdrsi<coin->bundlescount; hdrsi++)
+        {
+            if ( (bp= coin->bundles[hdrsi + coin->current->hdrsi]) == 0 )
+                break;
+            for (bundlei=n=0; bundlei<bp->n; bundlei++)
+                if ( (block= bp->blocks[bundlei]) != 0 )
                 {
-                    char str[65];
-                    //printf("%d ",bundlei);
-                    printf("[%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
-                    /*block->fpipbits = 0;
-                     block->queued = 0;
-                     block->issued = 0;
-                     bp->issued[bundlei] = 0;*/
-                    block->issued = (uint32_t)time(NULL);
-                    iguana_sendblockreqPT(coin,coin->peers.ranked[0],bp,bundlei,block->RO.hash2,0);
-                    //iguana_blockQ(coin,bp,bundlei,block->RO.hash2,1);
-                    flag++;
+                    if ( bits256_nonz(block->RO.hash2) > 0 && block->fpipbits != 0 )
+                        n++;
+                    else if ( bp->numsaved > bp->n*.9 && time(NULL) > block->issued+13 )
+                    {
+                        char str[65];
+                        //printf("%d ",bundlei);
+                        printf("[%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
+                        /*block->fpipbits = 0;
+                         block->queued = 0;
+                         block->issued = 0;
+                         bp->issued[bundlei] = 0;*/
+                        block->issued = (uint32_t)time(NULL);
+                        iguana_sendblockreqPT(coin,coin->peers.ranked[0],bp,bundlei,block->RO.hash2,0);
+                        //iguana_blockQ(coin,bp,bundlei,block->RO.hash2,1);
+                        flag++;
+                    }
                 }
-            }
-        if ( flag != 0 )
-            printf("issued %d priority blocks for current.[%d] have %d blocks emit.%u\n",flag,bp->hdrsi,n,bp->emitfinish);
+            if ( flag != 0 )
+                printf("issued %d priority blocks for current.[%d] have %d blocks emit.%u\n",flag,bp->hdrsi,n,bp->emitfinish);
+        }
     }
     hdrsi = (coin->blocks.hwmchain.height+1) / coin->chain->bundlesize;
     if ( (bp= coin->bundles[hdrsi]) != 0 )
