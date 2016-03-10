@@ -1031,12 +1031,12 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
 int32_t iguana_reqblocks(struct iguana_info *coin)
 {
     int32_t hdrsi,lflag,n,bundlei,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp;
-    if ( queue_size(&coin->priorityQ) == 0 && (bp= coin->current) != 0 && bp->numsaved < bp->n )
+    if ( (bp= coin->current) != 0 && bp->numsaved < bp->n ) // queue_size(&coin->priorityQ) == 0 &&
     {
         for (hdrsi=0; hdrsi<coin->peers.numranked&&coin->current->hdrsi+hdrsi<coin->bundlescount; hdrsi++)
         {
             if ( (bp= coin->bundles[hdrsi + coin->current->hdrsi]) == 0 )
-                break;
+                continue;
             if ( coin->peers.ranked[hdrsi] == 0 || coin->peers.ranked[hdrsi]->msgcounts.verack == 0 )
                 continue;
             for (bundlei=n=flag=0; bundlei<bp->n; bundlei++)
@@ -1044,7 +1044,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                 {
                     if ( bits256_nonz(block->RO.hash2) > 0 && block->fpipbits != 0 )
                         n++;
-                    else if ( bp->numsaved > bp->n*.9 && time(NULL) > block->issued+13 )
+                    else if ( time(NULL) > block->issued+13 ) //bp->numsaved > bp->n*.9 &&
                     {
                         char str[65];
                         //printf("%d ",bundlei);
