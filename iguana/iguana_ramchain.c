@@ -472,7 +472,7 @@ uint32_t iguana_ramchain_scriptencode(struct iguana_info *coin,uint8_t *Kspace,u
             }
             if ( memcmp(script+1,&Kspace[pubkeyoffset],plen) != 0 )
             {
-                for (i=0; i<plen; i++)
+                for (i=-1; i<=plen; i++)
                     printf("%02x",script[1+i]);
                 printf("  script arg\n");
                 for (i=0; i<plen; i++)
@@ -484,13 +484,12 @@ uint32_t iguana_ramchain_scriptencode(struct iguana_info *coin,uint8_t *Kspace,u
         }
     }
     if ( scriptlen < 0xfd )
-        Kspace[offset] = scriptlen, offset++;
+        Kspace[offset++] = scriptlen;
     else
     {
-        Kspace[offset] = (scriptlen >> 8) & 0xff;
-        Kspace[offset+1] = scriptlen & 0xff;
-        Kspace[offset+2] = 0xfd;
-        offset += 3;
+        Kspace[offset++] = (scriptlen >> 8) & 0xff;
+        Kspace[offset++] = scriptlen & 0xff;
+        Kspace[offset++] = 0xfd;
     }
     uoffset = offset;
     memcpy(&Kspace[uoffset],script,scriptlen);
