@@ -758,7 +758,7 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
     len += iguana_rwvarint32(0,&metascript[len],(void *)&totalsize);
     if ( totalsize > IGUANA_MAXSCRIPTSIZE )
     {
-        printf("totalsize too big %d\n",totalsize);
+        fprintf(stderr,"totalsize too big %d\n",totalsize);
         return(0);
     }
     // expand metascript!!
@@ -2544,7 +2544,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     struct iguana_ramchain *R,*mapchain,*dest,newchain; uint32_t fpipbits,now = (uint32_t)time(NULL);
     int32_t i,numtxids,valid,sigspace,sigsize,pubkeysize,pubkeyspace,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,fpos; struct iguana_block *block;
     struct OS_memspace HASHMEM; int32_t err,j,num,hdrsi,bundlei,firsti= 1,retval = -1;
-    if ( bp->bundleheight == 142000 || bp->bundleheight == 306000 || bp->bundleheight == 128000 || bp->bundleheight == 254000 || bp->bundleheight == 190000 || bp->bundleheight == 118000 || bp->bundleheight == 62000 || bp->bundleheight == 148000 )
+    if ( bp->bundleheight == 316000 || bp->bundleheight == 142000 || bp->bundleheight == 306000 || bp->bundleheight == 128000 || bp->bundleheight == 254000 || bp->bundleheight == 190000 || bp->bundleheight == 118000 || bp->bundleheight == 62000 || bp->bundleheight == 148000 )
         return(0);
     memset(&HASHMEM,0,sizeof(HASHMEM));
     B = 0, Ux = 0, Sx = 0, P = 0, A = 0, X = 0, Kspace = TXbits = PKbits = 0, U = 0, S = 0, T = 0;
