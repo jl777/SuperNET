@@ -774,9 +774,9 @@ int32_t iguana_metascript(struct iguana_info *coin,RAMCHAIN_FUNC,struct iguana_s
             s->sighash = s->numsigs = s->numpubkeys = s->p2sh = 0;
             suffix = vinscript;
             suffixlen = vinscriptlen;
-            for (i=0; i<vinscriptlen; i++)
-                printf("%02x",vinscript[i]);
-            printf(" rawmode mode.%d\n",vinscriptlen);
+            //for (i=0; i<vinscriptlen; i++)
+            //    printf("%02x",vinscript[i]);
+            //printf(" rawmode mode.%d\n",vinscriptlen);
             s->scriptoffset = ramchain->H.scriptoffset;
             s->rawmode = 1;
             if ( s->sequenceid == 3 )
