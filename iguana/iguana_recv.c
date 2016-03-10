@@ -1016,7 +1016,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
             char str[65];
             if ( block != 0 )
                 block->numrequests++;
-            if ( priority != 0 )
+            if ( 0 && priority != 0 )
                 printf("PRIORITY %s [%d:%d]\n",bits256_str(str,hash2),bp!=0?bp->bundleheight:-1,req->bundlei);
             iguana_sendblockreqPT(coin,addr,req->bp,req->bundlei,hash2,0);
         }
