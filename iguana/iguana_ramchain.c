@@ -1000,11 +1000,14 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
         s->prevout = prev_vout;
         if ( iguana_metascript(coin,RAMCHAIN_ARG,s,vinscript,vinscriptlen,sequence,0) < 0 )
         {
+            static long errlen,err2len;
+            errlen += vinscriptlen;
             if ( iguana_metascript(coin,RAMCHAIN_ARG,s,vinscript,vinscriptlen,sequence,1) < 0 )
             {
+                err2len += vinscriptlen;
                 for (i=0; i<vinscriptlen; i++)
                     printf("%02x",vinscript[i]);
-                printf(" <- second error with vinscript.%d\n",vinscriptlen);
+                printf(" <- second error with vinscript.%d errlens %ld %ld\n",vinscriptlen,errlen,err2len);
             }
         }
         //s->hdrsi = hdrsi;
