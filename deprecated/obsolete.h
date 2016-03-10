@@ -14124,5 +14124,30 @@ len = 0;
                 }
                 return(fpos);
             }
-
+            if ( s->sighash != iguana_vinscriptparse(coin,&V,&sigsize,&pubkeysize,&p2shsize,&suffixlen,vinscript,vinscriptlen) )
+            {
+                static uint64_t counter;
+                if  ( counter++ < 100 )
+                {
+                    for (i=0; i<vinscriptlen; i++)
+                        printf("%02x",vinscript[i]);
+                    printf(" ramchain_addspend RO sighash mismatch %d\n",s->sighash);
+                }
+                return(spendind);
+            }
+            //ramchain->H.stacksize += sigsize;// + 1 + (sigsize >= 0xfd)*2;
+            if ( s->numpubkeys > 0 )
+            {
+                for (i=0; i<s->numpubkeys; i++)
+                {
+                    if ( (ptr= iguana_hashfind(ramchain,'P',V.signers[i].rmd160)) == 0 )
+                    {
+                        //printf("from addspend\n");
+                        //pkind = iguana_ramchain_addpkhash(coin,RAMCHAIN_ARG,V.signers[i].rmd160,0,0,0);
+                        //printf("create pkind.%d from vin\n",pkind);
+                    } else pkind = ptr->hh.itemind;
+                }
+            }
+            if ( 0 && s->numsigs > 0 )
+                printf("autoverify numsigs.%d\n",s->numsigs);
 #endif

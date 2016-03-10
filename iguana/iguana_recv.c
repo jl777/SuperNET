@@ -1035,6 +1035,8 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
         {
             if ( (bp= coin->bundles[hdrsi + coin->current->hdrsi]) == 0 )
                 break;
+            if ( coin->peers.ranked[hdrsi] == 0 || coin->peers.ranked[hdrsi]->msgcounts.verack == 0 )
+                continue;
             for (bundlei=n=0; bundlei<bp->n; bundlei++)
                 if ( (block= bp->blocks[bundlei]) != 0 )
                 {
