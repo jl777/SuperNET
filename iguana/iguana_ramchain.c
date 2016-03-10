@@ -1001,7 +1001,11 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
         if ( iguana_metascript(coin,RAMCHAIN_ARG,s,vinscript,vinscriptlen,sequence,0) < 0 )
         {
             if ( iguana_metascript(coin,RAMCHAIN_ARG,s,vinscript,vinscriptlen,sequence,1) < 0 )
-                printf("second error with script\n");
+            {
+                for (i=0; i<vinscriptlen; i++)
+                    printf("%02x",vinscript[i]);
+                printf(" <- second error with vinscript.%d\n",vinscriptlen);
+            }
         }
         //s->hdrsi = hdrsi;
         //s->bundlei = bundlei;
@@ -2550,8 +2554,8 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     struct iguana_ramchain *R,*mapchain,*dest,newchain; uint32_t fpipbits,now = (uint32_t)time(NULL);
     int32_t i,numtxids,valid,sigspace,sigsize,pubkeysize,pubkeyspace,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,fpos; struct iguana_block *block;
     struct OS_memspace HASHMEM; int32_t err,j,num,hdrsi,bundlei,firsti= 1,retval = -1;
-    if ( bp->bundleheight == 166000 || bp->bundleheight == 316000 || bp->bundleheight == 142000 || bp->bundleheight == 306000 || bp->bundleheight == 128000 || bp->bundleheight == 254000 || bp->bundleheight == 190000 || bp->bundleheight == 118000 || bp->bundleheight == 62000 || bp->bundleheight == 148000 )
-        return(0);
+    //if ( bp->bundleheight == 166000 || bp->bundleheight == 316000 || bp->bundleheight == 142000 || bp->bundleheight == 306000 || bp->bundleheight == 128000 || bp->bundleheight == 254000 || bp->bundleheight == 190000 || bp->bundleheight == 118000 || bp->bundleheight == 62000 || bp->bundleheight == 148000 )
+        //return(0);
     memset(&HASHMEM,0,sizeof(HASHMEM));
     B = 0, Ux = 0, Sx = 0, P = 0, A = 0, X = 0, Kspace = TXbits = PKbits = 0, U = 0, S = 0, T = 0;
     R = mycalloc('s',bp->n,sizeof(*R));
