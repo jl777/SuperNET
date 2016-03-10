@@ -2384,7 +2384,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     bits256 firsthash2,lasthash2; int32_t err,bundlei,hdrsi,numblocks,firsti,height,retval= -1;
     struct iguana_ramchain checkR,*mapchain; char fname[1024],str[65]; FILE *fp;
     uint32_t scriptspace,scriptoffset,stacksize,izero = 0; uint8_t *destoffset,*srcoffset;
-    if ( bp->bundleheight == 118000 )
+    if ( bp->bundleheight == 118000 || bp->bundleheight == 62000 )
         return(0);
     firsthash2 = ramchain->H.data->firsthash2, lasthash2 = ramchain->H.data->lasthash2;
     height = ramchain->height, firsti = ramchain->H.data->firsti, hdrsi = ramchain->H.hdrsi, numblocks = ramchain->numblocks;
