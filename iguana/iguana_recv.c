@@ -318,7 +318,7 @@ uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bit
                 prev = block;
             }
             coin->allhashes++;
-            if ( bp->hdrsi == 0 )
+           // if ( bp->hdrsi == 0 )
                 printf("ALLHASHES FOUND! %d allhashes.%d\n",bp->bundleheight,coin->allhashes);
             iguana_bundleQ(coin,bp,bp->n*5 + (rand() % 500));
             return(bp->queued);
@@ -511,9 +511,13 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
             block->bundlei = bundlei;
             block->hdrsi = bp->hdrsi;
             bp->blocks[bundlei] = block;
+            printf("bundlehashadd set.%d\n",bundlei);
             iguana_bundlehash2add(coin,0,bp,bundlei,hash2);
             if ( bundlei > 0 )
+            {
+                printf("bundlehashadd prev %d\n",bundlei);
                 iguana_bundlehash2add(coin,0,bp,bundlei-1,prevhash2);
+            }
             else if ( bp->hdrsi > 0 && (bp= coin->bundles[bp->hdrsi-1]) != 0 )
                 iguana_bundlehash2add(coin,0,bp,coin->chain->bundlesize-1,prevhash2);
             iguana_bundlespeculate(coin,bp,bundlei,hash2,1);
@@ -529,7 +533,10 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
                 if ( prevbp->hdrsi+1 == coin->bundlescount && prevbundlei == coin->chain->bundlesize-1 )
                     iguana_bundlecreate(coin,&prevbundlei,prevbp->bundleheight + coin->chain->bundlesize,hash2,zero,0);
                 if ( prevbundlei < coin->chain->bundlesize-1 )
+                {
+                    printf("bundlehash2add next %d\n",prevbundlei);
                     iguana_bundlehash2add(coin,0,prevbp,prevbundlei+1,hash2);
+                }
                 iguana_bundlespeculate(coin,prevbp,prevbundlei,prevhash2,2);
             }
         }
