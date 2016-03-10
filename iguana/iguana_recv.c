@@ -35,9 +35,9 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
     static bits256 lastreq,lastreq2;
     int32_t len; uint8_t serialized[sizeof(struct iguana_msghdr) + sizeof(uint32_t)*32 + sizeof(bits256)];
     char hexstr[65]; init_hexbytes_noT(hexstr,hash2.bytes,sizeof(hash2));
-    if ( memcmp(lastreq.bytes,hash2.bytes,sizeof(hash2)) == 0 || memcmp(lastreq2.bytes,hash2.bytes,sizeof(hash2)) == 0 )
+    if ( addr == 0 || memcmp(lastreq.bytes,hash2.bytes,sizeof(hash2)) == 0 || memcmp(lastreq2.bytes,hash2.bytes,sizeof(hash2)) == 0 )
     {
-        printf("duplicate req %s\n",bits256_str(hexstr,hash2));
+        printf("duplicate req %s or null addr.%p\n",bits256_str(hexstr,hash2),addr);
         return(0);
     }
     if ( addr->msgcounts.verack == 0 )
@@ -398,7 +398,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         if ( better > 2*coin->peers.numranked )
         {
             usleep(1000);
-            //printf("SKIP pend.%d vs %d: better.%d ITERATE bundle.%d n.%d r.%d s.%d finished.%d timelimit.%d\n",pend,coin->MAXPENDING*coin->peers.numranked,better,bp->bundleheight,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit);
+            printf("SKIP pend.%d vs %d: better.%d ITERATE bundle.%d n.%d r.%d s.%d finished.%d timelimit.%d\n",pend,coin->MAXPENDING*coin->peers.numranked,better,bp->bundleheight,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit);
             iguana_bundleQ(coin,bp,counter == 0 ? bp->n*5 : bp->n*2);
             return(0);
         }
@@ -438,7 +438,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         usleep(10000);
     }
     width = 1000 + sqrt(sqrt(bp->n * (1+bp->numsaved+issued)) * (10+coin->bundlescount-bp->hdrsi));
-    if ( 0 && counter > 0 )//&& bp->rank <= coin->peers.numranked )
+    if ( 1 && counter > 0 )//&& bp->rank <= coin->peers.numranked )
         printf("ITERATE.%d bundle.%d h.%d n.%d r.%d s.%d F.%d I.%d T.%d %f %u next %f\n",bp->rank,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,issued,timelimit,endmillis-OS_milliseconds(),(uint32_t)time(NULL),width);
     if ( bp->emitfinish == 0 )
     {
@@ -1047,7 +1047,8 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                      block->issued = 0;
                      bp->issued[bundlei] = 0;*/
                     block->issued = (uint32_t)time(NULL);
-                    iguana_blockQ(coin,bp,bundlei,block->RO.hash2,1);
+                    iguana_sendblockreqPT(coin,coin->peers.ranked[0],bp,bundlei,block->RO.hash2,0);
+                    //iguana_blockQ(coin,bp,bundlei,block->RO.hash2,1);
                     flag++;
                 }
             }
