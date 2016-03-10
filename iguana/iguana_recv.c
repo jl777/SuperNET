@@ -1006,22 +1006,27 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
 
 int32_t iguana_reqblocks(struct iguana_info *coin)
 {
-    int32_t hdrsi,lflag,bundlei,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp;
+    int32_t hdrsi,lflag,n,bundlei,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp;
     if ( queue_size(&coin->priorityQ) == 0 && (bp= coin->current) != 0 )
     {
-        for (bundlei=0; bundlei<bp->n; bundlei++)
-            if ( (block= bp->blocks[bundlei]) != 0 && ((block->fpipbits == 0 && block->queued == 0) || time(NULL) > block->issued+30) )
+        for (bundlei=n=0; bundlei<bp->n; bundlei++)
+            if ( (block= bp->blocks[bundlei]) != 0 )
             {
-                printf("%d ",bundlei);
-                block->fpipbits = 0;
-                block->queued = 0;
-                block->issued = 0;
-                bp->issued[bundlei] = 0;
-                iguana_blockQ(coin,bp,bundlei,block->RO.hash2,1);
-                flag++;
+                if ( bits256_nonz(block->RO.hash2) > 0 && ((block->fpipbits == 0 && block->queued == 0) || time(NULL) > block->issued+30) )
+                {
+                    char str[65];
+                    //printf("%d ",bundlei);
+                    printf("[%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
+                    /*block->fpipbits = 0;
+                     block->queued = 0;
+                     block->issued = 0;
+                     bp->issued[bundlei] = 0;*/
+                    iguana_blockQ(coin,bp,bundlei,block->RO.hash2,1);
+                    flag++;
+                } else n++;
             }
         if ( flag != 0 )
-            printf("issued %d priority blocks for current.[%d]\n",flag,bp->hdrsi);
+            printf("issued %d priority blocks for current.[%d] have %d blocks\n",flag,bp->hdrsi,n);
     }
     hdrsi = (coin->blocks.hwmchain.height+1) / coin->chain->bundlesize;
     if ( (bp= coin->bundles[hdrsi]) != 0 )
