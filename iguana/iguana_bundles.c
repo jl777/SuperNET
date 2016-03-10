@@ -220,6 +220,7 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
 //char str[65]; printf(">>>>>>>>>>>>>> bundlehash2.(%s) ht.(%d %d)\n",bits256_str(str,hash2),bp->bundleheight,bundlei);
                 block->hdrsi = bp->hdrsi;
                 block->bundlei = bundlei;
+                bp->hashes[bundlei] = block->RO.hash2;
                 bp->blocks[bundlei] = block;
                 otherbp = 0;
                 if ( (otherbp= iguana_bundlefind(coin,&otherbp,&otherbundlei,hash2)) != 0 || (bundlei % (bundlesize-1)) == 0)
@@ -392,9 +393,10 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
                         bp->numcached++;
                 }
             }
-            else
+            else if ( 1 )
             {
                 bp->blocks[bundlei] = iguana_blockfind(coin,bp->hashes[bundlei]);
+                bp->hashes[bundlei] = bp->blocks[bundlei]->RO.hash2;
                 if ( (block= bp->blocks[bundlei]) != 0 )
                     block->fpipbits = block->queued = 0;
             }
@@ -448,8 +450,6 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             numsaved += bp->numsaved;
             if ( bp->emitfinish != 0 )
             {
-                if ( firstgap == 0 )
-                    bp->startutxo = (uint32_t)time(NULL);
                 done++;
                 if ( bp->emitfinish > 1 )
                     numemit++;
@@ -501,7 +501,5 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     }
     strcpy(coin->statusstr,str);
     coin->estsize = estsize;
-    if ( firstgap != 0 && firstgap->queued == 0 )
-        iguana_bundleQ(coin,firstgap,1000);
 }
 
