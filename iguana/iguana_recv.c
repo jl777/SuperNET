@@ -390,7 +390,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     pend = queue_size(&coin->priorityQ) + queue_size(&coin->blocksQ);
     for (i=0; i<IGUANA_MAXPEERS; i++)
         pend += coin->peers.active[i].pendblocks;
-    if ( 0 && pend >= coin->MAXPENDING*coin->peers.numranked )
+    if ( pend >= coin->MAXPENDING*coin->peers.numranked )
     {
         for (i=better=0; i<coin->bundlescount; i++)
             if ( coin->bundles[i] != 0 && coin->bundles[i]->numsaved > bp->numsaved )
@@ -978,6 +978,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         return(0);
     }
     priority = 1;
+    req = queue_dequeue(&coin->priorityQ,0);
     if ( flag == 0 && req == 0 && addr->pendblocks < limit )
     {
         priority = 0;
