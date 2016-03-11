@@ -168,7 +168,11 @@ void iguana_gotversion(struct iguana_info *coin,struct iguana_peer *addr,struct 
     }
     if ( (vers->nServices & (1<<7)) == (1<<7) )
         addr->supernet = 1;
-    else printf("nServices.%lld nonce.%llu non-relay node.(%s) supernet.%d\n",(long long)vers->nServices,(long long)vers->nonce,addr->ipaddr,addr->supernet);
+    else
+    {
+        printf("nServices.%lld nonce.%llu non-relay node.(%s) supernet.%d\n",(long long)vers->nServices,(long long)vers->nonce,addr->ipaddr,addr->supernet);
+        addr->dead = (uint32_t)time(NULL);
+    }
     if ( vers->nStartingHeight > coin->longestchain )
         coin->longestchain = vers->nStartingHeight;
     iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);

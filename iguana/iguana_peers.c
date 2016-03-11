@@ -1034,8 +1034,8 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
                     usleep(100000);
                 }
                 else if ( addr->rank != 1 )
-                    usleep(coin->polltimeout*10 + 1*(rand() % (coin->polltimeout*10)));
-                else usleep(10);
+                    usleep(coin->polltimeout*3000 + 1*(rand() % (coin->polltimeout*3000)));
+                else usleep(1000);
             } else run >>= 2;
         }
         if ( flag != 0 )
