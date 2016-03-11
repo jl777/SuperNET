@@ -648,8 +648,9 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
     }
     if ( (suffixlen= (totalsize - len)) != 0 )
     {
-        printf("suffixlen.%d\n",suffixlen);
-        memcpy(&_script[scriptlen],&metascript[len],suffixlen), scriptlen += suffixlen, len += suffixlen;
+        if ( suffixlen < 0 || suffixlen >= IGUANA_MAXSCRIPTSIZE )
+            printf("suffixlen.%d\n",suffixlen);
+        else memcpy(&_script[scriptlen],&metascript[len],suffixlen), scriptlen += suffixlen, len += suffixlen;
     }
     //printf("vindecode[%d] -> stacksize.%d sigslen.%d numsigs.%d numpubs.%d p2shlen.%d suffixlen.%d = %d totalsize.%d len.%d\n",s->scriptoffset,stacksize,sigslen,s->numsigs,s->numpubkeys,p2shlen,suffixlen,scriptlen,totalsize,len);
     if ( (*sequenceidp= s->sequenceid) == 3 )
