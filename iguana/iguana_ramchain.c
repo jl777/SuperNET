@@ -864,10 +864,13 @@ uint32_t iguana_ramchain_addunspent(struct iguana_info *coin,RAMCHAIN_FUNC,uint6
         }
         if ( type == IGUANA_SCRIPT_DATA || type == IGUANA_SCRIPT_OPRETURN || type == IGUANA_SCRIPT_STRANGE )
         {
-            u->scriptoffset = origoffset;
-            origoffset += iguana_rwvarint32(1,&Kspace[origoffset],(void *)&scriptlen);
-            memcpy(&Kspace[origoffset],script,scriptlen);
-            ramchain->H.scriptoffset = origoffset + scriptlen;
+            if ( script != 0 && scriptlen > 0 )
+            {
+                u->scriptoffset = origoffset;
+                origoffset += iguana_rwvarint32(1,&Kspace[origoffset],(void *)&scriptlen);
+                memcpy(&Kspace[origoffset],script,scriptlen);
+                ramchain->H.scriptoffset = origoffset + scriptlen;
+            }
         }
         else if ( type == IGUANA_SCRIPT_76AC && pubkeyoffset != 0 && P[pkind].pubkeyoffset == 0 )
             P[pkind].pubkeyoffset = pubkeyoffset;
