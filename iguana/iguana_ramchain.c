@@ -817,7 +817,7 @@ uint32_t iguana_ramchain_addunspent(struct iguana_info *coin,RAMCHAIN_FUNC,uint6
         printf("addunspent error getting pkind\n");
         return(0);
     }
-    printf("ROflag.%d pkind.%d unspentind.%d script.%p[%d] uoffset.%d %d:%d type.%d\n",ramchain->H.ROflag,pkind,unspentind,script,scriptlen,u->scriptoffset,ramchain->H.scriptoffset,ramchain->H.data->scriptspace,type);
+    //printf("ROflag.%d pkind.%d unspentind.%d script.%p[%d] uoffset.%d %d:%d type.%d\n",ramchain->H.ROflag,pkind,unspentind,script,scriptlen,u->scriptoffset,ramchain->H.scriptoffset,ramchain->H.data->scriptspace,type);
     if ( ramchain->H.ROflag != 0 )
     {
         if ( Kspace != 0 && ((u->scriptoffset != 0 && scriptlen > 0) || type == IGUANA_SCRIPT_76AC) )
@@ -1949,7 +1949,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
                 }
                 if ( dest != 0 )
                 {
-                    fprintf(stderr,"dest add %p[%d] type.%d offset.%d vs %d\n",scriptdata,scriptlen,type,dest->H.scriptoffset,dest->H.data->scriptspace);
+                    //fprintf(stderr,"dest add %p[%d] type.%d offset.%d vs %d\n",scriptdata,scriptlen,type,dest->H.scriptoffset,dest->H.data->scriptspace);
                     if ( iguana_ramchain_addunspent(coin,RAMCHAIN_DESTARG,value,hdrsi,rmd160,j,type,scriptdata,scriptlen) == 0 )
                         return(-5);
                 } //else printf("addunspent20 done\n");
