@@ -471,19 +471,22 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         }
         iguana_bundleQ(coin,bp,width);
     }
-    else if ( bp->startutxo == 0 )
+    else if ( bp->emitfinish > coin->startutc )
     {
-        if ( bp->hdrsi == 0 || coin->bundles[bp->hdrsi-1]->emitfinish != 0 )
+        if ( bp->startutxo == 0 )
         {
-            bp->startutxo = (uint32_t)time(NULL);
-            printf("GENERATE UTXO, verify sigs, etc for ht.%d\n",bp->bundleheight);
+            if ( bp->hdrsi == 0 || coin->bundles[bp->hdrsi-1]->emitfinish != 0 )
+            {
+                bp->startutxo = (uint32_t)time(NULL);
+                printf("GENERATE UTXO, verify sigs, etc for ht.%d\n",bp->bundleheight);
+            }
+            iguana_bundleQ(coin,bp,width);
         }
-        iguana_bundleQ(coin,bp,width);
-    }
-    else if ( bp->utxofinish == 0 )
-    {
-        printf("UTXO FINISHED ht.%d\n",bp->bundleheight);
-    }
+        else if ( bp->utxofinish == 0 )
+        {
+            printf("UTXO FINISHED ht.%d\n",bp->bundleheight);
+        }
+    } else iguana_bundleQ(coin,bp,width);
     return(0);
 }
 
