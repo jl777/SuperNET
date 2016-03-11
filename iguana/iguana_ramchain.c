@@ -564,7 +564,7 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
         *metalenp = 0;
         if ( totalsize < IGUANA_MAXSCRIPTSIZE )
         {
-            printf("rawmode.%d\n",totalsize);
+            //printf("rawmode.%d\n",totalsize);
             memcpy(_script,&metascript[len],totalsize);
             return(totalsize);
         }
