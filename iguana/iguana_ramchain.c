@@ -2023,7 +2023,6 @@ int32_t iguana_scriptspaceraw(struct iguana_info *coin,int32_t *scriptspacep,int
 {
     uint32_t i,j,sigspace,suffixlen,scriptspace,pubkeyspace,p2shspace,p2shsize,sigsize,pubkeysize,type,scriptlen; //struct iguana_spend256 *s; struct iguana_unspent20 *u;
     struct iguana_msgtx *tx; struct vin_info V; uint8_t rmd160[20],scriptdata[IGUANA_MAXSCRIPTSIZE]; char asmstr[IGUANA_MAXSCRIPTSIZE*2+1];
-    return(16);
     for (i=sigspace=scriptspace=pubkeyspace=p2shspace=0; i<txn_count; i++)
     {
         tx = &txarray[i];
@@ -2080,7 +2079,7 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
                     scriptspace += U[unspentind].scriptlen + 3;
         }
         for (j=0; j<tx->numvins; j++)
-        {break;
+        {
             if ( (spendind= ramchain->H.spendind++) < rdata->numspends )
             {
                 sequence = S[spendind].sequenceid;
@@ -2101,8 +2100,8 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
                 }
             }
         }
-        //altspace += tx->numvins * 16 + 128; // for metascripts
-        //scriptspace += tx->numvins * 16 + 128; // for metascripts
+        altspace += tx->numvins * 16 + 128; // for metascripts
+        scriptspace += tx->numvins * 16 + 128; // for metascripts
         //fprintf(stderr,"scriptspace.%u altspace.%u, ",scriptspace,altspace);
     }
     *sigspacep = sigspace, *pubkeyspacep = pubkeyspace;
