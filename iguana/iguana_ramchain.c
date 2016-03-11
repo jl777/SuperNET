@@ -243,7 +243,11 @@ int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,
     }
     hash2 = bp->hashes[0], *hdrsip = bp->hdrsi;
     if ( numblocks == 1 )
-        sprintf(fname,"%s/%s/%s.%u",dirname,coin->symbol,bits256_str(str,hash2),ipbits!=0?ipbits:*hdrsip);
+    {
+        if ( bits256_nonz(bp->hashes[bundlei]) != 0 )
+            sprintf(fname,"%s/%s/%d/%s.%u",dirname,coin->symbol,bp->bundleheight,bits256_str(str,bp->hashes[bundlei]),ipbits!=0?ipbits:*hdrsip);
+        else return(-3);
+    }
     else sprintf(fname,"%s/%s/%s_%d.%u",dirname,coin->symbol,bits256_str(str,hash2),numblocks,ipbits!=0?ipbits:*hdrsip);
     OS_compatible_path(fname);
     return(bundlei);
@@ -2707,7 +2711,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         retval = 0;
     } else bp->generrs++;
     iguana_bundlemapfree(mem,&HASHMEM,ipbits,ptrs,filesizes,num,R,bp->n);
-    if ( retval == 0 || bp->generrs > 3 )
+    if ( retval == 0 )//|| bp->generrs > 3 )
     {
         //printf("delete %d files hdrs.%d retval.%d\n",num,bp->hdrsi,retval);
         for (j=0; j<num; j++)
