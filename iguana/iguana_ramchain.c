@@ -472,13 +472,13 @@ uint32_t iguana_ramchain_scriptencode(struct iguana_info *coin,uint8_t *Kspace,u
             }
             if ( memcmp(script+1,&Kspace[pubkeyoffset],plen) != 0 )
             {
-                for (i=-1; i<=plen; i++)
+                /*for (i=-1; i<=plen; i++)
                     printf("%02x",script[1+i]);
                 printf("  script arg\n");
                 for (i=0; i<plen; i++)
                     printf("%02x",Kspace[pubkeyoffset+i]);
                 printf(" Kspace[%d] len.%d pubkeyoffset.%d\n",offset,plen,pubkeyoffset);
-                printf("iguana_ramchain_scriptencode: mismatched pubkey?\n");
+                printf("iguana_ramchain_scriptencode: mismatched pubkey?\n");*/
                 //getchar();
             }
         }
@@ -540,9 +540,9 @@ uint32_t iguana_ramchain_pubkeyoffset(struct iguana_info *coin,RAMCHAIN_FUNC,int
         }
         else
         {
-            int32_t i; for (i=0; i<plen; i++)
-                printf("%02x",pubkey[i]);
-            printf("iguana_ramchain_pubkeyoffset: illegal pubkey?\n");
+            //int32_t i; for (i=0; i<plen; i++)
+            //    printf("%02x",pubkey[i]);
+            //printf("iguana_ramchain_pubkeyoffset: illegal pubkey?\n");
             return(0);
         }
     }
@@ -618,14 +618,14 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
             pubkey = &Kspace[poffset];
             if ( (plen= bitcoin_pubkeylen(pubkey)) <= 0 )
             {
-                int32_t j;
+                /*int32_t j;
                 for (j=0; j<totalsize; j++)
                     printf("%02x",metascript[j]);
                 printf(" metascript\n");
                 for (j=0; j<scriptlen; j++)
                     printf("%02x",_script[j]);
                 printf(" _script\n");
-                printf(" iguana_vinscriptdecode illegal pubkey.%d numpubs.%d numsigs.%d\n",i,s->numpubkeys,s->numsigs);
+                printf(" iguana_vinscriptdecode illegal pubkey.%d numpubs.%d numsigs.%d\n",i,s->numpubkeys,s->numsigs);*/
                 *metalenp = len;
                 return(scriptlen);
             }
@@ -749,7 +749,7 @@ int32_t iguana_metascript(struct iguana_info *coin,RAMCHAIN_FUNC,struct iguana_s
                 {
                     if ( (poffsets[i]= iguana_ramchain_pubkeyoffset(coin,RAMCHAIN_ARG,1,&ramchain->pkind,&ramchain->H.scriptoffset,V.signers[i].pubkey,V.signers[i].rmd160)) == 0 )
                     {
-                        printf("addspend: error couldnt get pubkeyoffset\n");
+                        //printf("addspend: error couldnt get pubkeyoffset\n");
                         return(-1);
                     } //else printf("poffset[%d] <- 0x%x (%02x %02x)\n",i,poffsets[i],Kspace[poffsets[i]],Kspace[poffsets[i]+32]);
                 }
