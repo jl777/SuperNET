@@ -390,7 +390,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     pend = queue_size(&coin->priorityQ) + queue_size(&coin->blocksQ);
     for (i=0; i<IGUANA_MAXPEERS; i++)
         pend += coin->peers.active[i].pendblocks;
-    if ( pend >= coin->MAXPENDING*coin->peers.numranked )
+    if ( 0 && pend >= coin->MAXPENDING*coin->peers.numranked )
     {
         for (i=better=0; i<coin->bundlescount; i++)
             if ( coin->bundles[i] != 0 && coin->bundles[i]->numsaved > bp->numsaved )
@@ -978,7 +978,18 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         return(0);
     }
     priority = 1;
-    if ( (req= queue_dequeue(&coin->priorityQ,0)) == 0 && 0 )//(rand() % 100) == 0 )
+    if ( flag == 0 && req == 0 && addr->pendblocks < limit )
+    {
+        priority = 0;
+        for (i=m=pend=0; i<coin->peers.numranked; i++)
+        {
+            if ( (ptr= coin->peers.ranked[i]) != 0 && ptr->msgcounts.verack > 0 )
+                pend += ptr->pendblocks, m++;
+        }
+        if ( pend < coin->MAXPENDING*m )
+            req = queue_dequeue(&coin->blocksQ,0);
+    }
+    if ( req == 0 )
     {
         if ( (rand() % 1) == 0 )
             flag = iguana_neargap(coin,addr);
@@ -998,17 +1009,6 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                 }
             }
         }
-    }
-    if ( flag == 0 && req == 0 && addr->pendblocks < limit )
-    {
-        priority = 0;
-        for (i=m=pend=0; i<coin->peers.numranked; i++)
-        {
-            if ( (ptr= coin->peers.ranked[i]) != 0 && ptr->msgcounts.verack > 0 )
-                pend += ptr->pendblocks, m++;
-        }
-        if ( pend < coin->MAXPENDING*m )
-            req = queue_dequeue(&coin->blocksQ,0);
     }
     if ( req != 0 )
     {
@@ -1040,7 +1040,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
     int32_t hdrsi,lflag,n,bundlei,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp; struct iguana_peer *addr;
     if ( (bp= coin->current) != 0 && bp->numsaved < bp->n ) // queue_size(&coin->priorityQ) == 0 &&
     {
-        for (hdrsi=0; hdrsi<coin->peers.numranked&&coin->current->hdrsi+hdrsi<coin->bundlescount; hdrsi++)
+        for (hdrsi=0; hdrsi<1; hdrsi++)//coin->peers.numranked&&coin->current->hdrsi+hdrsi<coin->bundlescount; hdrsi++)
         {
             if ( (bp= coin->bundles[hdrsi + coin->current->hdrsi]) == 0 )
                 continue;
