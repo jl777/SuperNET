@@ -1161,7 +1161,7 @@ void *iguana_ramchain_offset(void *dest,uint8_t *lhash,FILE *fp,uint64_t fpos,vo
 int64_t _iguana_rdata_action(FILE *fp,bits256 lhashes[IGUANA_NUMLHASHES],void *destptr,uint64_t fpos,uint32_t expanded,uint32_t numtxids,uint32_t numunspents,uint32_t numspends,uint32_t numpkinds,uint32_t numexternaltxids,uint32_t scriptspace,uint32_t txsparsebits,uint64_t numtxsparse,uint32_t pksparsebits,uint64_t numpksparse,uint64_t srcsize,RAMCHAIN_FUNC,int32_t numblocks)
 {
 #define RAMCHAIN_LARG(ind) ((lhashes == 0) ? 0 : lhashes[ind].bytes)
-#define SPARSECOUNT(x) ((x) << 1)
+#define SPARSECOUNT(x) ((x) << 2)
     FILE *fparg = 0; int32_t iter; uint64_t txbits,pkbits,offset = 0; struct iguana_ramchaindata *rdata = destptr;
     if ( expanded != 0 )
     {
@@ -1981,7 +1981,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
                 scriptdata = _script;
                 prevout = iguana_ramchain_txid(coin,RAMCHAIN_ARG,&prevhash,&Sx[ramchain->H.spendind]);
                 //fprintf(stderr,"from expanded iter\n");
-                if ( iguana_ramchain_addspend(coin,RAMCHAIN_ARG,prevhash,prevout,Sx[ramchain->H.spendind].sequenceid,bp->hdrsi,scriptdata,scriptlen) == 0 )
+                if ( iguana_ramchain_addspend(coin,RAMCHAIN_ARG,prevhash,prevout,Sx[ramchain->H.spendind].sequenceid,bp->hdrsi,scriptdata,0*scriptlen) == 0 )
                 {
                     char str[65];
                     printf("hdrsi.%d txidind.%d spendind.%d spendtxid.%x %d vin.%d %s vout.%d\n",bp->bundleheight,ramchain->H.txidind,ramchain->H.spendind,Sx[ramchain->H.spendind].spendtxidind,Sx[ramchain->H.spendind].spendtxidind&0xfffffff,j,bits256_str(str,prevhash),prevout);
@@ -2014,7 +2014,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
             }
             if ( dest != 0 )
             {
-                if ( iguana_ramchain_addspend(coin,RAMCHAIN_DESTARG,prevhash,prevout,sequenceid,bp->hdrsi,scriptdata,scriptlen) == 0 )
+                if ( iguana_ramchain_addspend(coin,RAMCHAIN_DESTARG,prevhash,prevout,sequenceid,bp->hdrsi,scriptdata,0*scriptlen) == 0 )
                     return(-9);
                 //printf("from dest iter scriptspace.%d\n",dest->H.stacksize);
             }
