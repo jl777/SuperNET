@@ -18,6 +18,8 @@
 #include "../crypto777/OS_portable.h"
 #include "SuperNET.h"
 
+#define SPARSECOUNT(x) ((x) << 2)
+
 typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t len);
 
 #define IGUANA_MAXSCRIPTSIZE 10001
