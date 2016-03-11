@@ -558,7 +558,7 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
         return(0);
     }
     len += iguana_rwvarint32(0,&metascript[len],(void *)&totalsize);
-    *metalenp = -len;
+    *metalenp = 0;
     if ( s->rawmode != 0 )
     {
         *metalenp = 0;
@@ -655,7 +655,7 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
             printf("suffixlen.%d totalsize.%d vs len.%d\n",suffixlen,totalsize,len);
         else memcpy(&_script[scriptlen],&metascript[len],suffixlen), scriptlen += suffixlen, len += suffixlen;
     }
-    *metalenp = len;
+    *metalenp = len - 1;
     return(scriptlen);
 }
 
