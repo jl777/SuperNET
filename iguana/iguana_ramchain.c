@@ -2154,10 +2154,15 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
     }
     if ( block->fpipbits != 0 )
     {
-        static int32_t numredundant; static double redundantsize; char str[65],str2[65];
+        static int32_t numredundant; static double redundantsize; static uint32_t lastdisp;
+        char str[65],str2[65];
         numredundant++, redundantsize += recvlen;
         //if ( (rand() % 1000) == 0 )
+        if ( time(NULL) > lastdisp+30 )
+        {
+            lastdisp = (uint32_t)time(NULL);
             printf("ramchaindata have %d:%d at %d | %d blocks %s redundant xfers total %s %.2f%% wasted\n",bp->hdrsi,bundlei,block->fpos,numredundant,mbstr(str,redundantsize),mbstr(str2,totalrecv),100.*redundantsize/totalrecv);
+        }
         return(block->fpos);
     }
     fpos = -1;
