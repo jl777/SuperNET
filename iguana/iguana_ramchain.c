@@ -653,7 +653,7 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
             printf("suffixlen.%d\n",suffixlen);
         else memcpy(&_script[scriptlen],&metascript[len],suffixlen), scriptlen += suffixlen, len += suffixlen;
     }
-    if ( s->sequenceid != 0 )
+    if ( s->sequenceid != 1 )
         printf("vindecode[%d] -> stacksize.%d sigslen.%d numsigs.%d numpubs.%d p2shlen.%d suffixlen.%d = %d totalsize.%d len.%d seq.%d\n",s->scriptoffset,stacksize,sigslen,s->numsigs,s->numpubkeys,p2shlen,suffixlen,scriptlen,totalsize,len,s->sequenceid);
     if ( s->sequenceid == 3 )
     {
