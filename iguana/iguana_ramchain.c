@@ -245,7 +245,7 @@ int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,
     if ( numblocks == 1 )
     {
         if ( bits256_nonz(bp->hashes[bundlei]) != 0 )
-            sprintf(fname,"%s/%s/%d/%s.%u",dirname,coin->symbol,bp->bundleheight,bits256_str(str,bp->hashes[bundlei]),ipbits!=0?ipbits:*hdrsip);
+            sprintf(fname,"%s/%s/%d/%s_%u.%d",dirname,coin->symbol,bp->bundleheight,bits256_str(str,bp->hashes[bundlei]),ipbits!=0?ipbits:*hdrsip,bundlei);
         else return(-3);
     }
     else sprintf(fname,"%s/%s/%s_%d.%u",dirname,coin->symbol,bits256_str(str,hash2),numblocks,ipbits!=0?ipbits:*hdrsip);
