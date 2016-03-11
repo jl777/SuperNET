@@ -817,14 +817,15 @@ uint32_t iguana_ramchain_addunspent(struct iguana_info *coin,RAMCHAIN_FUNC,uint6
         printf("addunspent error getting pkind\n");
         return(0);
     }
+    printf("ROflag.%d pkind.%d unspentind.%d script.%p[%d] uoffset.%d %d:%d type.%d\n",ramchain->H.ROflag,pkind,unspentind,script,scriptlen,u->scriptoffset,ramchain->H.scriptoffset,ramchain->H.data->scriptspace,type);
     if ( ramchain->H.ROflag != 0 )
     {
         if ( Kspace != 0 && ((u->scriptoffset != 0 && scriptlen > 0) || type == IGUANA_SCRIPT_76AC) )
         {
             checkscript = iguana_ramchain_scriptdecode(&metalen,&checklen,Kspace,u->type,_script,u->scriptoffset,P[pkind].pubkeyoffset < ramchain->H.scriptoffset ? P[pkind].pubkeyoffset : 0);
-            if ( checklen != scriptlen || (script != 0 && memcmp(checkscript,script,scriptlen) != 0) )
+            if ( checklen != scriptlen || (script != 0 && checkscript != 0 && memcmp(checkscript,script,scriptlen) != 0) )
             {
-                printf("script mismatch len.%d vs %d or cmp error.%d\n",scriptlen,checklen,script != 0 ?memcmp(checkscript,script,scriptlen):0);
+                printf("script mismatch len.%d vs %d or cmp error.%d\n",scriptlen,checklen,(checkscript != 0 && script != 0) ? memcmp(checkscript,script,scriptlen):0);
             } //else printf("RO spendscript match.%d\n",scriptlen);
         }
         if ( u->value != value || u->pkind != pkind || u->value != value || u->txidind != ramchain->H.txidind || (pkind != 0 && u->prevunspentind != A[pkind].lastunspentind) || u->vout != vout || u->hdrsi != hdrsi )
@@ -855,9 +856,9 @@ uint32_t iguana_ramchain_addunspent(struct iguana_info *coin,RAMCHAIN_FUNC,uint6
                 //printf("[%d] u%d offset.%u len.%d\n",hdrsi,unspentind,u->scriptoffset,scriptlen);
             } else printf("[%d] u%d Kspace.%p scriptspace overflow! %d + %d vs space.%d - stack.%d\n",hdrsi,unspentind,Kspace,ramchain->H.scriptoffset,scriptlen,ramchain->H.data->scriptspace,ramchain->H.stacksize);
             checkscript = iguana_ramchain_scriptdecode(&metalen,&checklen,Kspace,u->type,_script,u->scriptoffset,P[pkind].pubkeyoffset < ramchain->H.scriptoffset ? P[pkind].pubkeyoffset : 0);
-            if ( checklen != scriptlen || (script != 0 && memcmp(checkscript,script,scriptlen) != 0) )
+            if ( checklen != scriptlen || (script != 0 && checkscript != 0 && memcmp(checkscript,script,scriptlen) != 0) )
             {
-                printf("create script mismatch len.%d vs %d or cmp error.%d\n",scriptlen,checklen,script!=0?memcmp(checkscript,script,scriptlen):0);
+                printf("create script mismatch len.%d vs %d or cmp error.%d\n",scriptlen,checklen,(script!=0&&checkscript!=0)?memcmp(checkscript,script,scriptlen):0);
                 type = IGUANA_SCRIPT_STRANGE;
             } //else printf("RO spendscript match.%d\n",scriptlen);
         }
@@ -1918,7 +1919,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
                         {
                             scriptdata = iguana_ramchain_scriptdecode(&metalen,&scriptlen,Kspace,type,_script,u->scriptoffset,P[u->pkind].pubkeyoffset < ramchain->H.scriptoffset ? P[u->pkind].pubkeyoffset : 0);
                         }
-                        fprintf(stderr,"iter add %p[%d] type.%d\n",scriptdata,scriptlen,type);
+                        //fprintf(stderr,"iter add %p[%d] type.%d\n",scriptdata,scriptlen,type);
                         if ( iguana_ramchain_addunspent(coin,RAMCHAIN_ARG,value,hdrsi,rmd160,j,type,scriptdata,scriptlen) == 0 )
                             return(-3);
                     }
