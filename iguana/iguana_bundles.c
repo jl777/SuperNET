@@ -136,7 +136,7 @@ int32_t iguana_hash2set(struct iguana_info *coin,char *debugstr,struct iguana_bu
     if ( bits256_nonz(newhash2) == 0 || (orighash2p= iguana_bundleihash2p(coin,&isinside,bp,bundlei)) == 0 )
     {
         printf("iguana_hash2set warning: bundlei.%d newhash2.%s orighash2p.%p\n",bundlei,bits256_str(str,newhash2),orighash2p);
-        *orighash2p = newhash2;
+        //*orighash2p = newhash2;
       //getchar();
         return(-1);
     }
@@ -144,8 +144,8 @@ int32_t iguana_hash2set(struct iguana_info *coin,char *debugstr,struct iguana_bu
     {
         char str2[65],str3[65];
         bits256_str(str2,*orighash2p), bits256_str(str3,newhash2);
-        printf("WARNING iguana_hash2set overwrite [%s] %s with %s [%d:%d]\n",debugstr,str2,str3,bp->hdrsi,bundlei);
-        *orighash2p = newhash2;
+        printf("WARNING iguana_hash2set REFUSE overwrite [%s] %s with %s [%d:%d]\n",debugstr,str2,str3,bp->hdrsi,bundlei);
+        //*orighash2p = newhash2;
         //getchar();
         return(-1);
     }
