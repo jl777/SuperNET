@@ -1859,8 +1859,8 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
     int32_t j,metalen,hdrsi,prevout,scriptlen; uint32_t sequenceid,destspendind=0,desttxidind=0;
     bits256 prevhash; uint64_t value; uint8_t type,_script[IGUANA_MAXSCRIPTSIZE]; struct iguana_unspent *u;  struct scriptdata *script;
     struct iguana_txid *tx; struct iguana_ramchaindata *rdata; uint8_t *rmd160,*scriptdata;
-    if ( dest != 0 )
-        printf("iterate ramchain.%p rdata.%p dest.%p ht.%d/%d txids.%p destoffset.%d\n",ramchain,ramchain->H.data,dest,bp->bundleheight,bp->n,ramchain->txids,dest->H.scriptoffset);
+    //if ( dest != 0 )
+    //    printf("iterate ramchain.%p rdata.%p dest.%p ht.%d/%d txids.%p destoffset.%d\n",ramchain,ramchain->H.data,dest,bp->bundleheight,bp->n,ramchain->txids,dest->H.scriptoffset);
     if ( (rdata= ramchain->H.data) == 0 )
     {
         printf("iguana_ramchain_iterate cant iterate without data\n");
@@ -2432,12 +2432,12 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     memcpy(ramchain->roA,ramchain->A,sizeof(*ramchain->A) * ramchain->H.data->numpkinds);
     memset(ramchain->A,0,sizeof(*ramchain->A) * ramchain->H.data->numpkinds);
     //printf("presave T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d\n",ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,firsti);
-    printf("0 preSAVE: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d\n",(int32_t)ramchain->H.data->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)ramchain->H.data->allocsize);
+    //printf("0 preSAVE: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d\n",(int32_t)ramchain->H.data->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)ramchain->H.data->allocsize);
     if ( (err= iguana_ramchain_iterate(coin,0,ramchain,bp)) != 0 )
         printf("ERROR.%d iterating presave ramchain hdrsi.%d\n",err,hdrsi);
     else
     {
-        printf("postiterate0.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d scripts.%d:%d stack.%d:%d\n",bp->bundleheight,ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,firsti,(int32_t)ramchain->H.scriptoffset,scriptoffset,(int32_t)ramchain->H.stacksize,stacksize);
+        //printf("postiterate0.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d scripts.%d:%d stack.%d:%d\n",bp->bundleheight,ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,firsti,(int32_t)ramchain->H.scriptoffset,scriptoffset,(int32_t)ramchain->H.stacksize,stacksize);
         if ( ramchain->H.scriptoffset > scriptoffset || ramchain->H.stacksize > stacksize )
             printf("MEMORY OVERFLOW\n");
         if ( (err= iguana_ramchain_verify(coin,ramchain)) != 0 )
