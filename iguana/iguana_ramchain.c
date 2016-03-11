@@ -1096,10 +1096,15 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,RAMCHAIN_FUNC,bits
     return(spendind);
 }
 
-int64_t iguana_hashmemsize(uint32_t numtxids,uint32_t numunspents,uint32_t numspends,uint32_t numpkinds,uint32_t numexternaltxids,int32_t scriptspace)
+int64_t iguana_hashmemsize(int64_t numtxids,int64_t numunspents,int64_t numspends,int64_t numpkinds,int64_t numexternaltxids,int64_t scriptspace)
 {
     int64_t allocsize = 0;
     allocsize += (scriptspace + IGUANA_MAXSCRIPTSIZE + ((numtxids + numpkinds) * (sizeof(UT_hash_handle)*2)) + (((sizeof(struct iguana_account)) * 2 * numpkinds)) + (2 * numunspents * sizeof(struct iguana_Uextra)));
+    if ( allocsize >= (1LL << 32) )
+    {
+        printf("REALLY big hashmemsize %llu, truncate and hope for best\n",(long long)allocsize);
+        allocsize = (1LL << 32) - 1;
+    }
     //printf("iguana_hashmemsize T.%d U.%d S.%d P.%d X.%d -> %ld\n",numtxids,numunspents,numspends,numpkinds,numexternaltxids,(long)allocsize);
     return(allocsize);
 }
@@ -2100,8 +2105,6 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
                     {
                         iguana_vinscriptparse(coin,&V,&sigsize,&pubkeysize,&p2shsize,&suffixlen,scriptdata,scriptlen);
                         p2shspace += p2shsize;
-                        if ( sequence != 0 && sequence != 0xffffffff && sequence != 0xfffffffe )
-                            scriptspace += sizeof(sequence);
                         sigspace += sigsize;
                         pubkeyspace += pubkeysize;
                         sigspace += suffixlen;
@@ -2110,8 +2113,8 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
                 }
             }
         }
-        altspace += tx->numvins * 16 + 128; // for metascripts
-        scriptspace += tx->numvins * 16 + 128; // for metascripts
+        altspace += tx->numvins * 8 + 16; // for metascripts
+        scriptspace += tx->numvins * 8 + 16; // for metascripts
         //fprintf(stderr,"scriptspace.%u altspace.%u, ",scriptspace,altspace);
     }
     *sigspacep = sigspace, *pubkeyspacep = pubkeyspace;
