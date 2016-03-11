@@ -552,6 +552,7 @@ uint32_t iguana_ramchain_pubkeyoffset(struct iguana_info *coin,RAMCHAIN_FUNC,int
 int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *ramchain,int32_t *metalenp,uint32_t *sequenceidp,uint8_t _script[IGUANA_MAXSCRIPTSIZE],uint8_t *Kstackend,uint8_t *Kspace,struct iguana_spend *s)
 {
     int32_t i,suffixlen,len = 0; long diff; uint8_t *pubkey,*metascript = &Kspace[s->scriptoffset]; uint32_t poffset; int32_t totalsize,sigslen,plen,stacksize=0,p2shlen=0,scriptlen = 0;
+    *sequenceidp = 0xffffffff;
     if ( s->scriptoffset == 0 )
     {
         printf("iguana_vinscriptdecode: null scriptoffset\n");
@@ -659,7 +660,7 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
         len += iguana_rwvarint32(0,&metascript[len],(void *)sequenceidp);
         printf("nonstandard sequence decoded.%x offset.[%d]\n",*sequenceidp,s->scriptoffset);
     }
-    else if ( s->sequenceid == 1 )
+    else if ( s->sequenceid == 0 )
         *sequenceidp = 0xffffffff;
     else if ( s->sequenceid == 2 )
         *sequenceidp = 0xfffffffe;
@@ -1999,7 +2000,8 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
             scriptlen = 0;
             if ( ramchain->expanded != 0 )
             {
-                //fprintf(stderr,"spendind.%d txidind.%d vin.%d call vinscriptdecode scriptspace.%d\n",ramchain->H.spendind,ramchain->H.txidind,j,ramchain->H.data->scriptspace);
+                if ( Sx[ramchain->H.spendind].sequenceid != 1 )
+                    fprintf(stderr,"s->seq.%d spendind.%d txidind.%d vin.%d call vinscriptdecode scriptspace.%d\n",Sx[ramchain->H.spendind].sequenceid,ramchain->H.spendind,ramchain->H.txidind,j,ramchain->H.data->scriptspace);
                 scriptlen = iguana_vinscriptdecode(coin,ramchain,&metalen,&sequenceid,_script,&Kspace[ramchain->H.data->scriptspace],Kspace,&Sx[ramchain->H.spendind]);
                 scriptdata = _script;
                 prevout = iguana_ramchain_txid(coin,RAMCHAIN_ARG,&prevhash,&Sx[ramchain->H.spendind]);
