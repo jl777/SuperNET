@@ -554,7 +554,7 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
     int32_t i,suffixlen,len = 0; long diff; uint8_t *pubkey,*metascript = &Kspace[s->scriptoffset]; uint32_t poffset; int32_t totalsize,sigslen,plen,stacksize=0,p2shlen=0,scriptlen = 0;
     if ( s->scriptoffset == 0 )
     {
-        printf("iguana_vinscriptdecode: null scriptoffset\n");
+        //printf("iguana_vinscriptdecode: null scriptoffset\n");
         return(0);
     }
     *metalenp = 0;
