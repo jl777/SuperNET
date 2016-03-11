@@ -2422,6 +2422,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
             }
             if ( (ramchain->sigsfileptr= OS_mapfile(fname,&ramchain->sigsfilesize,0)) == 0 )
                 return(0);
+            printf("%s bp.[%d] ht.%d stacksize.%u filesize.%u\n",fname,bp->hdrsi,bp->bundleheight,ramchain->H.stacksize,(uint32_t)ramchain->sigsfilesize);
             //for (i=0; i<ramchain->H.stacksize; i++)
             //    c = *srcoffset, *destoffset++ = c, *srcoffset++ = 0;
         } //else printf("smashed stack?\n");
