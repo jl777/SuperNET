@@ -2147,9 +2147,9 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
     }
     //if ( bits256_nonz(bp->hashes[bundlei]) == 0 )
     //    bp->hashes[bundlei] = origtxdata->block.RO.hash2;
-    if ( (block= bp->blocks[bundlei]) == 0 || bits256_cmp(block->RO.hash2,origtxdata->block.RO.hash2) != 0 )
+    if ( (block= bp->blocks[bundlei]) == 0 || bits256_cmp(block->RO.hash2,origtxdata->block.RO.hash2) != 0 || bits256_cmp(bp->hashes[bundlei],origtxdata->block.RO.hash2) != 0 )
     {
-        char str[65]; printf("%d:%d has no block ptr %s\n",bp->hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]));
+        char str[65]; printf("%d:%d has no block ptr %s or wrong hash\n",bp->hdrsi,bundlei,bits256_str(str,origtxdata->block.RO.hash2));
         return(-1);
     }
     if ( block->fpipbits != 0 )
