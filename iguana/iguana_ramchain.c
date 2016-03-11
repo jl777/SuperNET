@@ -855,7 +855,7 @@ uint32_t iguana_ramchain_addunspent(struct iguana_info *coin,RAMCHAIN_FUNC,uint6
                 //printf("[%d] u%d offset.%u len.%d\n",hdrsi,unspentind,u->scriptoffset,scriptlen);
             } else printf("[%d] u%d Kspace.%p scriptspace overflow! %d + %d vs space.%d - stack.%d\n",hdrsi,unspentind,Kspace,ramchain->H.scriptoffset,scriptlen,ramchain->H.data->scriptspace,ramchain->H.stacksize);
             checkscript = iguana_ramchain_scriptdecode(&metalen,&checklen,Kspace,u->type,_script,u->scriptoffset,P[pkind].pubkeyoffset < ramchain->H.scriptoffset ? P[pkind].pubkeyoffset : 0);
-            if ( checklen != scriptlen || (scriptlen > 0 && memcmp(checkscript,script,scriptlen) != 0) )
+            if ( checklen != scriptlen || (script != 0 && memcmp(checkscript,script,scriptlen) != 0) )
             {
                 printf("create script mismatch len.%d vs %d or cmp error.%d\n",scriptlen,checklen,script!=0?memcmp(checkscript,script,scriptlen):0);
                 type = IGUANA_SCRIPT_STRANGE;
