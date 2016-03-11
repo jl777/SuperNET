@@ -1266,7 +1266,7 @@ int64_t iguana_ramchain_size(RAMCHAIN_FUNC,int32_t numblocks,int32_t scriptspace
 {
     int64_t allocsize;
     allocsize = iguana_ramchain_action(RAMCHAIN_ARG,0,0,0,0,ramchain->H.data,numblocks,scriptspace);
-    //if ( 0 && ramchain->expanded != 0 )
+    if ( 0 && ramchain->expanded != 0 )
         printf("%p iguana_ramchain_size.expanded.%d %u: Koffset.%u scriptoffset.%u stacksize.%u stackspace.%u [%u]\n",ramchain,ramchain->expanded,(int32_t)allocsize,(int32_t)ramchain->H.data->Koffset,(int32_t)ramchain->H.scriptoffset,(int32_t)ramchain->H.stacksize,(int32_t)ramchain->H.data->stackspace,scriptspace);
     return(allocsize);
 }
