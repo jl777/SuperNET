@@ -1983,7 +1983,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
                 }
                 if ( dest != 0 )
                 {
-                    fprintf(stderr,"dest add %p[%d] type.%d\n",scriptdata,scriptlen,type);
+                    fprintf(stderr,"dest add %p[%d] type.%d offset.%d vs %d\n",scriptdata,scriptlen,type,ramchain->H.scriptoffset,ramchain->H.data->scriptspace);
                     if ( iguana_ramchain_addunspent(coin,RAMCHAIN_DESTARG,value,hdrsi,rmd160,j,type,scriptdata,scriptlen) == 0 )
                         return(-5);
                 } //else printf("addunspent20 done\n");
