@@ -1076,12 +1076,13 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,RAMCHAIN_FUNC,bits
         s->spendind = spendind;
         if ( (s->vinscriptlen= vinscriptlen) > 0 && vinscriptlen < IGUANA_MAXSCRIPTSIZE )
         {
-            if ( ramchain->H.scriptoffset == 0 )
-                ramchain->H.scriptoffset++;
-            s->scriptoffset = ramchain->H.scriptoffset;
-            vinscriptptr = &Kspace[s->scriptoffset];
-            ramchain->H.scriptoffset += vinscriptlen;
-            memcpy(vinscriptptr,vinscript,vinscriptlen);
+            if ( 0 )
+            {
+                s->scriptoffset = ramchain->H.scriptoffset;
+                vinscriptptr = &Kspace[s->scriptoffset];
+                ramchain->H.scriptoffset += vinscriptlen;
+                memcpy(vinscriptptr,vinscript,vinscriptlen);
+            }
         } else s->scriptoffset = 0;
         //else printf("spend256 scriptfpos.%d\n",s->scriptfpos);
         //char str[65]; printf("W.%p s.%d vout.%d/%d [%d] %s fpos.%u slen.%d\n",s,spendind,s->prevout,prev_vout,bp->hdrsi,bits256_str(str,prev_hash),s->scriptfpos,s->vinscriptlen);
@@ -2027,6 +2028,7 @@ int32_t iguana_scriptspaceraw(struct iguana_info *coin,int32_t *scriptspacep,int
 {
     uint32_t i,j,sigspace,suffixlen,scriptspace,pubkeyspace,p2shspace,p2shsize,sigsize,pubkeysize,type,scriptlen; //struct iguana_spend256 *s; struct iguana_unspent20 *u;
     struct iguana_msgtx *tx; struct vin_info V; uint8_t rmd160[20],scriptdata[IGUANA_MAXSCRIPTSIZE]; char asmstr[IGUANA_MAXSCRIPTSIZE*2+1];
+    return(0);
     for (i=sigspace=scriptspace=pubkeyspace=p2shspace=0; i<txn_count; i++)
     {
         tx = &txarray[i];
@@ -2705,11 +2707,18 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         retval = 0;
     } else bp->generrs++;
     iguana_bundlemapfree(mem,&HASHMEM,ipbits,ptrs,filesizes,num,R,bp->n);
-    if ( retval == 0 || bp->generrs > 3 )
+    if ( retval == 0 || bp->generrs > 0 )
     {
         //printf("delete %d files hdrs.%d retval.%d\n",num,bp->hdrsi,retval);
         for (j=0; j<num; j++)
         {
+            if ( (block= bp->blocks[j]) != 0 )
+            {
+                block->fpipbits = 0;
+                block->RO.recvlen = 0;
+                block->issued = 0;
+                bp->issued[j] = 0;
+            }
             if ( iguana_peerfname(coin,&hdrsi,"tmp",fname,ipbits[j],bp->hashes[0],zero,1) >= 0 )
                 coin->peers.numfiles -= OS_removefile(fname,0);
             else printf("error removing.(%s)\n",fname);
