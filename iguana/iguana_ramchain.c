@@ -557,8 +557,8 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
         //printf("iguana_vinscriptdecode: null scriptoffset\n");
         return(0);
     }
-    *metalenp = 0;
     len += iguana_rwvarint32(0,&metascript[len],(void *)&totalsize);
+    *metalenp = -len;
     if ( s->rawmode != 0 )
     {
         *metalenp = 0;
