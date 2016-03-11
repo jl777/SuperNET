@@ -1112,7 +1112,8 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                         iguana_sendblockreqPT(coin,addr,bp,bundlei,block->RO.hash2,0);
                         //iguana_blockQ(coin,bp,bundlei,block->RO.hash2,1);
                         flag++;
-                        numissued++;
+                        if ( numissued++ > 10 )
+                            break;
                     }
                 }
             if ( flag != 0 )
