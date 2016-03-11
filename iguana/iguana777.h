@@ -20,7 +20,7 @@
 
 typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t len);
 
-#define IGUANA_MAXSCRIPTSIZE 8192
+#define IGUANA_MAXSCRIPTSIZE 10001
 
 //#define IGUANA_DISABLEPEERS
 #define IGUANA_MAXCOINS 64
