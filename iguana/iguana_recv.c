@@ -110,6 +110,48 @@ void iguana_gotunconfirmedM(struct iguana_info *coin,struct iguana_peer *addr,st
     queue_enqueue("bundlesQ",&coin->bundlesQ,&req->DL,0);
 }
 
+struct iguana_txblock *iguana_peertxdata(struct iguana_info *coin,int32_t *bundleip,char *fname,struct OS_memspace *mem,uint32_t ipbits,bits256 hash2)
+{
+    int32_t bundlei,datalen,checki,hdrsi,fpos; char str[65],str2[65]; FILE *fp;
+    bits256 checkhash2; struct iguana_txblock *txdata = 0; static bits256 zero;
+    if ( (bundlei= iguana_peerfname(coin,&hdrsi,"tmp",fname,ipbits,hash2,zero,1)) >= 0 )
+    //if ( (bundlei= iguana_peerfname(coin,&hdrsi,fname,ipbits,hash2)) >= 0 )
+    {
+        if ( (fp= fopen(fname,"rb")) != 0 )
+        {
+            fseek(fp,bundlei * sizeof(bundlei),SEEK_SET);
+            fread(&fpos,1,sizeof(fpos),fp);
+            fseek(fp,fpos,SEEK_SET);
+            fread(&checki,1,sizeof(checki),fp);
+            if ( ftell(fp)-sizeof(checki) == fpos && bundlei == checki )
+            {
+                fread(&checkhash2,1,sizeof(checkhash2),fp);
+                if ( memcmp(hash2.bytes,checkhash2.bytes,sizeof(hash2)) == 0 )
+                {
+                    fread(&datalen,1,sizeof(datalen),fp);
+                    if ( datalen < (mem->totalsize - mem->used - 4) )
+                    {
+                        if ( (txdata= iguana_memalloc(mem,datalen,0)) != 0 )
+                        {
+                            fread(txdata,1,datalen,fp);
+                            if ( txdata->datalen != datalen || txdata->block.bundlei != bundlei )
+                            {
+                                printf("%s peertxdata txdata->datalen.%d != %d bundlei.%d vs %d\n",bits256_str(str,txdata->block.RO.hash2),txdata->datalen,datalen,txdata->block.bundlei,bundlei);
+                                getchar();
+                                txdata = 0;
+                                iguana_memreset(mem);
+                            } //else printf("SUCCESS txdata.%s bundlei.%d fpos.%d T.%d U.%d S.%d P.%d\n",bits256_str(str,txdata->block.hash2),bundlei,fpos,txdata->numtxids,txdata->numunspents,txdata->numspends,txdata->numpkinds);
+                        } else printf("peertxdata error allocating txdata\n");
+                    } else printf("mismatch peertxdata datalen %d vs %ld totalsize %ld\n",datalen,mem->totalsize - mem->used - 4,(long)mem->totalsize);
+                } else printf("peertxdata hash mismatch %s != %s\n",bits256_str(str,hash2),bits256_str(str2,checkhash2));
+            } else printf("peertxdata bundlei.%d != checki.%d, fpos.%d ftell.%ld\n",bundlei,checki,fpos,ftell(fp));
+            fclose(fp);
+        } else printf("cant find file.(%s)\n",fname);
+    } //else printf("bundlei.%d\n",bundlei);
+    *bundleip = bundlei;
+    return(txdata);
+}
+
 void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,struct iguana_msghdr *H,uint8_t *data,int32_t recvlen)
 {
     struct iguana_bundlereq *req; struct iguana_txblock *txdata = 0; int32_t i,j,bundlei,copyflag; char fname[1024];
@@ -168,7 +210,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             txdata->block.fpipbits = (uint32_t)addr->ipbits;
             req->datalen = txdata->datalen;
             req->ipbits = txdata->block.fpipbits;
-            if ( 0 )
+            if ( 1 )
             {
                 struct iguana_txblock *checktxdata; struct OS_memspace checkmem; int32_t checkbundlei;
                 memset(&checkmem,0,sizeof(checkmem));
