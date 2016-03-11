@@ -2022,7 +2022,7 @@ int32_t iguana_scriptspaceraw(struct iguana_info *coin,int32_t *scriptspacep,int
 {
     uint32_t i,j,sigspace,suffixlen,scriptspace,pubkeyspace,p2shspace,p2shsize,sigsize,pubkeysize,type,scriptlen; //struct iguana_spend256 *s; struct iguana_unspent20 *u;
     struct iguana_msgtx *tx; struct vin_info V; uint8_t rmd160[20],scriptdata[IGUANA_MAXSCRIPTSIZE]; char asmstr[IGUANA_MAXSCRIPTSIZE*2+1];
-    return(0);
+    return(16);
     for (i=sigspace=scriptspace=pubkeyspace=p2shspace=0; i<txn_count; i++)
     {
         tx = &txarray[i];
@@ -2063,7 +2063,7 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
     struct iguana_txid *tx; struct iguana_ramchaindata *rdata; uint8_t *scriptdata;
     _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
     *sigspacep = *pubkeyspacep = altspace = 0;
-    return(0);
+    return(16);
     if ( (rdata= ramchain->H.data) == 0 || ramchain->expanded != 0 )
     {
         printf("iguana_ramchain_scriptspace cant iterate without data and requires simple ramchain\n");
