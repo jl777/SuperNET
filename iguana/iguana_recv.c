@@ -1037,14 +1037,14 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
 
 int32_t iguana_reqblocks(struct iguana_info *coin)
 {
-    int32_t hdrsi,lflag,n,bundlei,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp;
+    int32_t hdrsi,lflag,n,bundlei,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp; struct iguana_peer *addr;
     if ( (bp= coin->current) != 0 && bp->numsaved < bp->n ) // queue_size(&coin->priorityQ) == 0 &&
     {
         for (hdrsi=0; hdrsi<3*coin->peers.numranked&&coin->current->hdrsi+hdrsi<coin->bundlescount; hdrsi++)
         {
             if ( (bp= coin->bundles[hdrsi/3 + coin->current->hdrsi]) == 0 )
                 continue;
-            if ( coin->peers.ranked[hdrsi/3] == 0 || coin->peers.ranked[hdrsi/3]->msgcounts.verack == 0 )
+            if ( (addr= coin->peers.ranked[hdrsi/3]) == 0 || addr->msgcounts.verack == 0 )
                 continue;
             for (bundlei=n=flag=0; bundlei<bp->n; bundlei++)
                 if ( (block= bp->blocks[bundlei]) != 0 )
@@ -1055,13 +1055,13 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                     {
                         char str[65];
                         //printf("%d ",bundlei);
-                        printf("[%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
+                        printf("%d) %p [%d:%d] %s\n",hdrsi,addr,bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
                         /*block->fpipbits = 0;
                          block->queued = 0;
                          block->issued = 0;
                          bp->issued[bundlei] = 0;*/
                         block->issued = (uint32_t)time(NULL);
-                        iguana_sendblockreqPT(coin,coin->peers.ranked[hdrsi],bp,bundlei,block->RO.hash2,0);
+                        iguana_sendblockreqPT(coin,addr,bp,bundlei,block->RO.hash2,0);
                         //iguana_blockQ(coin,bp,bundlei,block->RO.hash2,1);
                         flag++;
                     }
