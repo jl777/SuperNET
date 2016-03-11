@@ -418,7 +418,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         iguana_bundleQ(coin,bp,bp->n*5);
         return(0);
     }
-    if ( 0 && coin->current != 0 && bp->rank != 0 && bp->rank <= coin->current->hdrsi + coin->peers.numranked )
+    if ( 1 && coin->current != 0 && bp->rank != 0 && bp->rank <= coin->current->hdrsi + coin->peers.numranked )
     {
         for (i=0; i<bp->n; i++)
         {
@@ -1037,7 +1037,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         if ( pend < coin->MAXPENDING*m )
             req = queue_dequeue(&coin->blocksQ,0);
     }
-    if ( req == 0 )
+    if ( req == 0 && 0 )
     {
         if ( (rand() % 100) == 0 )
             flag = iguana_neargap(coin,addr);
@@ -1086,7 +1086,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
 int32_t iguana_reqblocks(struct iguana_info *coin)
 {
     int32_t hdrsi,lflag,n,bundlei,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp; struct iguana_peer *addr;
-    if ( 0 && (bp= coin->current) != 0 && bp->numsaved < bp->n ) // queue_size(&coin->priorityQ) == 0 &&
+    if ( 1 && (bp= coin->current) != 0 && bp->numsaved < bp->n ) // queue_size(&coin->priorityQ) == 0 &&
     {
         for (hdrsi=0; hdrsi<coin->peers.numranked&&coin->current->hdrsi+hdrsi<coin->bundlescount; hdrsi++)
         {
