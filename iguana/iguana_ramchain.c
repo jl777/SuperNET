@@ -446,7 +446,7 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,RAMCHAIN_FUNC,uin
 
 uint32_t iguana_ramchain_scriptencode(struct iguana_info *coin,uint8_t *Kspace,uint32_t *offsetp,int32_t type,uint8_t *script,int32_t scriptlen,uint32_t *pubkeyoffsetp)
 {
-    uint32_t i,uoffset,offset = *offsetp,pubkeyoffset = *pubkeyoffsetp; int32_t plen;
+    uint32_t uoffset,offset = *offsetp,pubkeyoffset = *pubkeyoffsetp; int32_t plen;
     if ( type == IGUANA_SCRIPT_76AC )
     {
         plen = bitcoin_pubkeylen(script+1);
@@ -640,11 +640,14 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
     if ( s->p2sh != 0 )
     {
         len += iguana_rwvarint32(0,&metascript[len],(void *)&p2shlen);
-        if ( p2shlen <= 75 )
-            _script[scriptlen++] = 0x4c, _script[scriptlen++] = p2shlen;
-        else _script[scriptlen++] = 0x4d, _script[scriptlen++] = p2shlen & 0xff, _script[scriptlen++] = (p2shlen>>8) & 0xff;
-        printf("p2shlen.%d\n",p2shlen);
-        memcpy(&_script[scriptlen],&metascript[len],p2shlen), scriptlen += p2shlen, len += p2shlen;
+        if ( p2shlen > 0 && p2shlen < IGUANA_MAXSCRIPTSIZE )
+        {
+            if ( p2shlen <= 75 )
+                _script[scriptlen++] = 0x4c, _script[scriptlen++] = p2shlen;
+            else _script[scriptlen++] = 0x4d, _script[scriptlen++] = p2shlen & 0xff, _script[scriptlen++] = (p2shlen>>8) & 0xff;
+            //printf("p2shlen.%d\n",p2shlen);
+            memcpy(&_script[scriptlen],&metascript[len],p2shlen), scriptlen += p2shlen, len += p2shlen;
+        }
     }
     if ( (suffixlen= (totalsize - len)) != 0 )
     {
