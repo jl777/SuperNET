@@ -14150,4 +14150,44 @@ len = 0;
             }
             if ( 0 && s->numsigs > 0 )
                 printf("autoverify numsigs.%d\n",s->numsigs);
+            
+            
+            uint8_t *iguana_scriptptr(struct iguana_info *coin,int32_t *scriptlenp,uint8_t _script[IGUANA_MAXSCRIPTSIZE],uint32_t scriptfpos,uint8_t *scriptdata,int32_t scriptlen,int32_t maxsize,int32_t spendflag)
+            {
+                *scriptlenp = scriptlen;
+                if ( 0 && scriptlen > 0 )
+                {
+                    if ( scriptfpos != 0 )
+                        scriptdata = iguana_scriptfpget(coin,scriptlenp,_script,scriptfpos,spendflag);
+                }
+                return(scriptdata);
+            }
+            
+            uint8_t *iguana_scriptfpget(struct iguana_info *coin,int32_t *scriptlenp,uint8_t _script[IGUANA_MAXSCRIPTSIZE],uint32_t scriptoffset,int32_t spendflag)
+            {
+                FILE *fp; uint8_t *scriptdata=0; int32_t scriptlen=0; struct scriptdata sdata;
+                *scriptlenp = 0;
+                if ( (fp= fopen(coin->scriptsfname[spendflag],"rb")) != 0 )
+                {
+                    fseek(fp,scriptoffset,SEEK_SET);
+                    if ( fread(&sdata,1,sizeof(sdata),fp) != sizeof(sdata) )
+                        printf("iguana_scriptfpget: error reading sdata\n");
+                    else if ( sdata.scriptlen > 0 && sdata.scriptlen <= IGUANA_MAXSCRIPTSIZE )
+                    {
+                        if ( fread(_script,1,sdata.scriptlen,fp) == sdata.scriptlen )
+                        {
+                            scriptdata = _script;
+                            *scriptlenp = scriptlen = sdata.scriptlen;
+                            //printf("raw [%d] offset.%d scriptlen.%d\n",bp->hdrsi,scriptoffset,scriptlen);
+                            //for (i=0; i<16; i++)
+                            //    printf("%02x",_script[i]);
+                            //printf(" set script.%d\n",scriptlen);
+                        }
+                    }
+                    fclose(fp);
+                }
+                return(scriptdata);
+            }
+
+            
 #endif
