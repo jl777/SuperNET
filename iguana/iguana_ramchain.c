@@ -79,7 +79,7 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
 {
     static long sparsesearches,sparseiters,sparsehits,sparsemax;
     static uint8_t masks[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
-    int32_t i,j,x,n,modval; int64_t bitoffset; uint8_t *ptr;
+    int32_t i,j,n,modval; int64_t bitoffset; uint8_t *ptr; uint32_t x;
     if ( tablesize == 0 )
     {
         printf("iguana_sparseadd tablesize zero illegal\n");
@@ -164,7 +164,7 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
             if ( setind == 0 )
                 sparsehits++;
             else if ( setind != x )
-                printf("sparseadd index collision setind.%d != x.%d\n",setind,x);
+                printf("sparseadd index collision setind.%d != x.%d | width.%d\n",setind,x,width);
             return(x);
         }
     }
