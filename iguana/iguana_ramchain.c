@@ -657,7 +657,11 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
     {
         len += iguana_rwvarint32(0,&metascript[len],(void *)sequenceidp);
         printf("nonstandard sequence decoded.%x offset.[%d]\n",*sequenceidp,s->scriptoffset);
-    } else (*sequenceidp) = -(int32_t)(*sequenceidp);
+    }
+    else if ( *sequenceidp == 1 )
+        *sequenceidp = 0xffffffff;
+    else if ( *sequenceidp == 2 )
+        *sequenceidp = 0xfffffffe;
     *metalenp = len;
     return(scriptlen);
 }

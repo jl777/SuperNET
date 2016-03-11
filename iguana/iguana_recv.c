@@ -1053,7 +1053,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                         n++;
                     else if ( time(NULL) > block->issued+13 ) //bp->numsaved > bp->n*.9 &&
                     {
-                        char str[65];
+                        //char str[65];
                         //printf("%d ",bundlei);
                         //printf("%d) %p [%d:%d] %s\n",hdrsi,addr,bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
                         /*block->fpipbits = 0;
