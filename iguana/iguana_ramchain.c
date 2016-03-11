@@ -1631,7 +1631,7 @@ int32_t iguana_ramchain_free(struct iguana_ramchain *ramchain,int32_t deleteflag
         }
     }
     if ( ramchain->hashmem != 0 )
-        iguana_memreset(ramchain->hashmem), ramchain->hashmem = 0;
+        iguana_mempurge(ramchain->hashmem), ramchain->hashmem = 0;
     if ( ramchain->filesize != 0 )
         munmap(ramchain->fileptr,ramchain->filesize), ramchain->fileptr = 0;
     if ( deleteflag != 0 )
