@@ -1040,11 +1040,11 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
     int32_t hdrsi,lflag,n,bundlei,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp; struct iguana_peer *addr;
     if ( (bp= coin->current) != 0 && bp->numsaved < bp->n ) // queue_size(&coin->priorityQ) == 0 &&
     {
-        for (hdrsi=0; hdrsi<3*coin->peers.numranked&&coin->current->hdrsi+hdrsi<coin->bundlescount; hdrsi++)
+        for (hdrsi=0; hdrsi<coin->peers.numranked&&coin->current->hdrsi+hdrsi<coin->bundlescount; hdrsi++)
         {
-            if ( (bp= coin->bundles[hdrsi/3 + coin->current->hdrsi]) == 0 )
+            if ( (bp= coin->bundles[hdrsi + coin->current->hdrsi]) == 0 )
                 continue;
-            if ( (addr= coin->peers.ranked[hdrsi/3]) == 0 || addr->msgcounts.verack == 0 )
+            if ( (addr= coin->peers.ranked[hdrsi]) == 0 || addr->msgcounts.verack == 0 )
                 continue;
             for (bundlei=n=flag=0; bundlei<bp->n; bundlei++)
                 if ( (block= bp->blocks[bundlei]) != 0 )
