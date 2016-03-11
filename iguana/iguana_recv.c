@@ -374,7 +374,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         iguana_bundleQ(coin,bp,bp->n*5);
         return(0);
     }
-    if ( coin->current != 0 && bp->rank != 0 && bp->rank <= coin->current->hdrsi + coin->peers.numranked )
+    if ( 1 )//coin->current != 0 && bp->rank != 0 && bp->rank <= coin->current->hdrsi + coin->peers.numranked )
     {
         for (i=0; i<bp->n; i++)
         {
