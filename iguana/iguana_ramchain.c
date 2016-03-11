@@ -2704,7 +2704,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         retval = 0;
     } else bp->generrs++;
     iguana_bundlemapfree(mem,&HASHMEM,ipbits,ptrs,filesizes,num,R,bp->n);
-    if ( retval == 0 || bp->generrs > 0 )
+    if ( retval == 0 || bp->generrs > 1 )
     {
         //printf("delete %d files hdrs.%d retval.%d\n",num,bp->hdrsi,retval);
         for (j=0; j<num; j++)
