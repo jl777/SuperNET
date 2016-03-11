@@ -374,7 +374,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         iguana_bundleQ(coin,bp,bp->n*5);
         return(0);
     }
-    if ( coin->current != 0 && bp->rank != 0 && bp->rank <= coin->current->hdrsi + coin->peers.numranked )
+    if ( 0 && coin->current != 0 && bp->rank != 0 && bp->rank <= coin->current->hdrsi + coin->peers.numranked )
     {
         for (i=0; i<bp->n; i++)
         {
@@ -395,7 +395,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         for (i=better=0; i<coin->bundlescount; i++)
             if ( coin->bundles[i] != 0 && coin->bundles[i]->numsaved > bp->numsaved )
                 better++;
-        if ( better > 2*coin->peers.numranked )
+        if ( better > coin->peers.numranked )
         {
             usleep(10000);
             //printf("SKIP pend.%d vs %d: better.%d ITERATE bundle.%d n.%d r.%d s.%d finished.%d timelimit.%d\n",pend,coin->MAXPENDING*coin->peers.numranked,better,bp->bundleheight,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit);
@@ -995,9 +995,9 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
     }
     if ( req == 0 )
     {
-        if ( (rand() % 1) == 0 )
+        if ( (rand() % 100) == 0 )
             flag = iguana_neargap(coin,addr);
-        else if ( (bp= addr->bp) != 0 && bp->rank != 0 && addr->pendblocks < limit )
+        else if ( 0 && (bp= addr->bp) != 0 && bp->rank != 0 && addr->pendblocks < limit )
         {
             r = rand();
             for (j=0; j<bp->n; j++)
@@ -1044,7 +1044,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
     int32_t hdrsi,lflag,n,bundlei,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp; struct iguana_peer *addr;
     if ( (bp= coin->current) != 0 && bp->numsaved < bp->n ) // queue_size(&coin->priorityQ) == 0 &&
     {
-        for (hdrsi=0; hdrsi<1; hdrsi++)//coin->peers.numranked&&coin->current->hdrsi+hdrsi<coin->bundlescount; hdrsi++)
+        for (hdrsi=0; hdrsi<coin->peers.numranked&&coin->current->hdrsi+hdrsi<coin->bundlescount; hdrsi++)
         {
             if ( (bp= coin->bundles[hdrsi + coin->current->hdrsi]) == 0 )
                 continue;
