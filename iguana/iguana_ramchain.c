@@ -1952,6 +1952,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
                         {
                             scriptdata = iguana_ramchain_scriptdecode(&metalen,&scriptlen,Kspace,type,_script,u->scriptoffset,P[u->pkind].pubkeyoffset < ramchain->H.scriptoffset ? P[u->pkind].pubkeyoffset : 0);
                         }
+                        fprintf(stderr,"iter add %p[%d] type.%d\n",scriptdata,scriptlen,type);
                         if ( iguana_ramchain_addunspent(coin,RAMCHAIN_ARG,value,hdrsi,rmd160,j,type,scriptdata,scriptlen) == 0 )
                             return(-3);
                     }
@@ -1982,6 +1983,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
                 }
                 if ( dest != 0 )
                 {
+                    fprintf(stderr,"dest add %p[%d] type.%d\n",scriptdata,scriptlen,type);
                     if ( iguana_ramchain_addunspent(coin,RAMCHAIN_DESTARG,value,hdrsi,rmd160,j,type,scriptdata,scriptlen) == 0 )
                         return(-5);
                 } //else printf("addunspent20 done\n");
