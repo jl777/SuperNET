@@ -1016,6 +1016,7 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
         s->sequenceid = sequence;
         s->external = external, s->spendtxidind = txidind,
         s->prevout = prev_vout;
+        static uint64_t good,bad;
         if ( iguana_metascript(coin,RAMCHAIN_ARG,s,vinscript,vinscriptlen,0) < 0 )
         {
             static long errlen,err2len; char errbuf[1024];
@@ -1036,7 +1037,10 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
                     sprintf(errbuf+strlen(errbuf),"%02x",vinscript[i]);
                 printf("%s bigscript ",errbuf);
             }
-        }
+            bad += vinscriptlen;
+        } else good += vinscriptlen;
+        if ( (rand() % 100000) == 0 )
+            printf("good.%llu bad.%llu vinstats\n",(long long)good,(long long)bad);
         //s->hdrsi = hdrsi;
         //s->bundlei = bundlei;
         //char str[65]; printf("%s set prevout.%d -> %d\n",bits256_str(str,prev_hash),prev_vout,s->prevout);
@@ -1395,8 +1399,8 @@ int32_t iguana_ramchain_alloc(struct iguana_info *coin,struct iguana_ramchain *r
     hashsize = iguana_hashmemsize(numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace);
     while ( (x= (myallocated(0,-1)+hashsize+allocsize)) > coin->MAXMEM )
     {
-        char str[65],str2[65]; fprintf(stderr,"ht.%d wait for allocated %s < MAXMEM %s | elapsed %.2f minutes hashsize.%ld allocsize.%ld\n",height,mbstr(str,hashsize+allocsize),mbstr(str2,coin->MAXMEM),(double)(time(NULL)-coin->startutc)/60.,(long)hashsize,(long)allocsize);
-        sleep(3);
+        char str[65],str2[65]; fprintf(stderr,"ht.%d wait for allocated %s < MAXMEM %s | elapsed %.2f minutes hashsize.%ld allocsize.%ld\n",height,mbstr(str,myallocated(0,-1)+hashsize+allocsize),mbstr(str2,coin->MAXMEM),(double)(time(NULL)-coin->startutc)/60.,(long)hashsize,(long)allocsize);
+        sleep(13);
     }
     iguana_meminit(hashmem,"ramhashmem",0,hashsize,0);
     iguana_meminit(mem,"ramchain",0,allocsize + 65536,0);
