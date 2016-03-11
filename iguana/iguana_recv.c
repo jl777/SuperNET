@@ -1055,7 +1055,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                     {
                         char str[65];
                         //printf("%d ",bundlei);
-                        printf("%d) %p [%d:%d] %s\n",hdrsi,addr,bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
+                        //printf("%d) %p [%d:%d] %s\n",hdrsi,addr,bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
                         /*block->fpipbits = 0;
                          block->queued = 0;
                          block->issued = 0;
