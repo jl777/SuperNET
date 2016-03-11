@@ -368,7 +368,7 @@ void iguana_bundlepurge(struct iguana_info *coin,struct iguana_bundle *bp)
 
 int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int32_t done)
 {
-    int32_t bundlei; struct iguana_block *block;
+    FILE *fp; int32_t bundlei,checki,hdrsi; struct iguana_block *block; char fname[1024]; static bits256 zero;
     if ( bp->emitfinish > coin->startutc )
     {
         bp->numhashes = bp->numsaved = bp->numcached = bp->numrecv = bp->n;
@@ -381,7 +381,23 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
         {
             if ( block == iguana_blockfind(coin,bp->hashes[bundlei]) )
             {
-                //bp->blocks[bundlei] = block;
+                if ( (checki= iguana_peerfname(coin,&hdrsi,"tmp",fname,0,bp->hashes[bundlei],zero,1)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
+                {
+                    printf("iguana_bundlecalcs.(%s) illegal hdrsi.%d bundlei.%d checki.%d\n",fname,hdrsi,bundlei,checki);
+                    continue;
+                }
+                if ( (fp= fopen(fname,"rb")) != 0 )
+                {
+                    fseek(fp,0,SEEK_END);
+                    if ( block->RO.recvlen == 0 )
+                    {
+                        block->RO.recvlen = (uint32_t)ftell(fp);
+                        block->fpipbits = 1;
+                        //printf("[%d:%d] len.%d\n",hdrsi,bundlei,block->RO.recvlen);
+                    }
+                    fclose(fp);
+                }
+               //bp->blocks[bundlei] = block;
                 if ( bp->minrequests == 0 || (block->numrequests > 0 && block->numrequests < bp->minrequests) )
                     bp->minrequests = block->numrequests;
                 if ( block->fpipbits != 0 )
@@ -394,7 +410,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
                         bp->numcached++;
                 }
             }
-            else if ( 1 )
+            else if ( 0 )
             {
                 bp->blocks[bundlei] = iguana_blockfind(coin,bp->hashes[bundlei]);
                 bp->hashes[bundlei] = bp->blocks[bundlei]->RO.hash2;
