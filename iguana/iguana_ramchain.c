@@ -2064,6 +2064,7 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
     int32_t j,scriptlen; struct vin_info V;
     uint32_t sequence,p2shspace,altspace,sigspace,pubkeyspace,spendind,unspentind,p2shsize,pubkeysize,sigsize,scriptspace,suffixlen;
     struct iguana_txid *tx; struct iguana_ramchaindata *rdata; uint8_t *scriptdata;
+    return(0);
     _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
     *sigspacep = *pubkeyspacep = altspace = 0;
     if ( (rdata= ramchain->H.data) == 0 || ramchain->expanded != 0 )

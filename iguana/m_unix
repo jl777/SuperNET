@@ -1,2 +1,2 @@
 git pull
-gcc  -o ../agents/iguana -O2 *.c ../agents/libcrypto777.a  -lcurl -lssl -lcrypto -lpthread -lm ../includes/libsecp256k1.a -lgmp
+gcc -g -o ../agents/iguana -O2 *.c ../agents/libcrypto777.a  -lcurl -lssl -lcrypto -lpthread -lm ../includes/libsecp256k1.a -lgmp
