@@ -2338,7 +2338,7 @@ int32_t iguana_oldbundlefiles(struct iguana_info *coin,uint32_t *ipbits,void **p
             }
             if ( (ptrs[num]= OS_mapfile(fname,&filesizes[num],0)) == 0 )
             {
-                printf("error mapping bundlei.%d\n",bundlei);
+                printf("error mapping bundlei.%d (%s)\n",bundlei,fname);
                 block->queued = 0;
                 block->fpipbits = 0;
                 bp->issued[bundlei] = 0;
