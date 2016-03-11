@@ -632,7 +632,7 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
             else
             {
                 _script[scriptlen++] = plen;
-                printf("plen.%d\n",i);
+                //printf("plen.%d\n",i);
                 memcpy(&_script[scriptlen],pubkey,plen), scriptlen += plen;
             }
         }
@@ -652,15 +652,16 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
             printf("suffixlen.%d\n",suffixlen);
         else memcpy(&_script[scriptlen],&metascript[len],suffixlen), scriptlen += suffixlen, len += suffixlen;
     }
-    //printf("vindecode[%d] -> stacksize.%d sigslen.%d numsigs.%d numpubs.%d p2shlen.%d suffixlen.%d = %d totalsize.%d len.%d\n",s->scriptoffset,stacksize,sigslen,s->numsigs,s->numpubkeys,p2shlen,suffixlen,scriptlen,totalsize,len);
-    if ( (*sequenceidp= s->sequenceid) == 3 )
+    if ( s->sequenceid != 0 )
+        printf("vindecode[%d] -> stacksize.%d sigslen.%d numsigs.%d numpubs.%d p2shlen.%d suffixlen.%d = %d totalsize.%d len.%d seq.%d\n",s->scriptoffset,stacksize,sigslen,s->numsigs,s->numpubkeys,p2shlen,suffixlen,scriptlen,totalsize,len,s->sequenceid);
+    if ( s->sequenceid == 3 )
     {
         len += iguana_rwvarint32(0,&metascript[len],(void *)sequenceidp);
         printf("nonstandard sequence decoded.%x offset.[%d]\n",*sequenceidp,s->scriptoffset);
     }
-    else if ( *sequenceidp == 1 )
+    else if ( s->sequenceid == 1 )
         *sequenceidp = 0xffffffff;
-    else if ( *sequenceidp == 2 )
+    else if ( s->sequenceid == 2 )
         *sequenceidp = 0xfffffffe;
     *metalenp = len;
     return(scriptlen);
