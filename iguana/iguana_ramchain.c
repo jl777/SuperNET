@@ -789,11 +789,11 @@ int32_t iguana_metascript(struct iguana_info *coin,RAMCHAIN_FUNC,struct iguana_s
     if ( (decodelen= iguana_vinscriptdecode(coin,ramchain,&checkmetalen,_script,&Kspace[ramchain->H.data->scriptspace],Kspace,s)) != vinscriptlen || (vinscript != 0 && memcmp(_script,vinscript,vinscriptlen) != 0) || checkmetalen != metalen )
     {
         static uint64_t counter;
-        if ( counter++ < 100 )
+        //if ( counter++ < 100 )
         {
             for (i=0; i<decodelen; i++)
                 printf("%02x",_script[i]);
-            printf(" decoded\n");
+            printf(" decoded checklen.%d metalen.%d\n",checkmetalen,metalen);
             if ( vinscript != 0 )
             {
                 for (i=0; i<vinscriptlen; i++)
@@ -2706,7 +2706,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         printf("bundlesave: stack smashed %d+%d > %d\n",dest->H.scriptoffset,dest->H.stacksize,dest->H.data->scriptspace);
         bundlei = -1;
     }
-    //printf("GETCHAR! about to save dest scriptoffset.%d stacksize.%d data scriptspace.%d\n",dest->H.scriptoffset,dest->H.stacksize,dest->H.data->scriptspace), getchar();
+    printf(" about to save dest scriptoffset.%d stacksize.%d data scriptspace.%d\n",dest->H.scriptoffset,dest->H.stacksize,dest->H.data->scriptspace);
     depth--;
     if ( bundlei == bp->n && iguana_ramchain_expandedsave(coin,RAMCHAIN_DESTARG,&newchain,&HASHMEM,0,bp) == 0 )
     {
