@@ -2600,6 +2600,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
             break;
         }*/
         ptr = ptrs[bundlei];
+        filesize = filesizes[bundlei];
         mapchain->fileptr = ptr;
         mapchain->filesize = filesize;
         mapchain->H.data = (void *)(long)((long)ptr + fpos);
