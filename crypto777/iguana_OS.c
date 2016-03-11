@@ -540,7 +540,7 @@ void OS_ensure_directory(char *dirname)
         if ( (fp= fopen(fname,"wb")) != 0 )
             fclose(fp), printf("created.(%s)\n",fname);
         else printf("cant create.(%s) errno.%d %s\n",fname,errno,strerror(errno));
-    } else fclose(fp), printf("%s exists\n",fname);
+    } else fclose(fp);//, printf("%s exists\n",fname);
 }
 
 uint64_t OS_filesize(char *fname)

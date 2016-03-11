@@ -246,7 +246,11 @@ int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,
     {
         if ( bits256_nonz(bp->hashes[bundlei]) != 0 )
             sprintf(fname,"%s/%s/%d/%s_%u.%d",dirname,coin->symbol,bp->bundleheight,bits256_str(str,bp->hashes[bundlei]),ipbits!=0?ipbits:*hdrsip,bundlei);
-        else return(-3);
+        else
+        {
+            printf("no hash for [%d:%d]\n",bp->hdrsi,bundlei);
+            return(-3);
+        }
     }
     else sprintf(fname,"%s/%s/%s_%d.%u",dirname,coin->symbol,bits256_str(str,hash2),numblocks,ipbits!=0?ipbits:*hdrsip);
     OS_compatible_path(fname);
@@ -2359,7 +2363,7 @@ int32_t iguana_bundlefiles(struct iguana_info *coin,uint32_t *ipbits,void **ptrs
         }
         if ( (ptrs[num]= OS_mapfile(fname,&filesizes[num],0)) == 0 )
         {
-            printf("error mapping.%s bundlei.%d\n",fname,bundlei);
+            printf("error mapping.(%s) bundlei.%d\n",fname,bundlei);
             return(0);
         }
         //printf("%s mapped ptrs[%d] filesize.%ld bundlei.%d ipbits.%x fpos.%d\n",fname,num,(long)filesizes[num],bundlei,fpipbits,bp->fpos[bundlei]);
