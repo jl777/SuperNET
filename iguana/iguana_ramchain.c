@@ -2359,7 +2359,7 @@ int32_t iguana_bundlefiles(struct iguana_info *coin,uint32_t *ipbits,void **ptrs
         }
         if ( (ptrs[num]= OS_mapfile(fname,&filesizes[num],0)) == 0 )
         {
-            printf("error mapping bundlei.%d\n",bundlei);
+            printf("error mapping.%s bundlei.%d\n",fname,bundlei);
             return(0);
         }
         //printf("%s mapped ptrs[%d] filesize.%ld bundlei.%d ipbits.%x fpos.%d\n",fname,num,(long)filesizes[num],bundlei,fpipbits,bp->fpos[bundlei]);
