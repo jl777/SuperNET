@@ -1051,7 +1051,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                 {
                     if ( bits256_nonz(block->RO.hash2) > 0 && block->fpipbits != 0 )
                         n++;
-                    else if ( time(NULL) > block->issued+13 ) //bp->numsaved > bp->n*.9 &&
+                    else if ( time(NULL) > block->issued+60 ) //bp->numsaved > bp->n*.9 &&
                     {
                         //char str[65];
                         //printf("%d ",bundlei);
