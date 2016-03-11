@@ -2398,7 +2398,6 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     uint32_t scriptspace,scriptoffset,stacksize,izero = 0; uint8_t *destoffset,*srcoffset;
     firsthash2 = ramchain->H.data->firsthash2, lasthash2 = ramchain->H.data->lasthash2;
     height = ramchain->height, firsti = ramchain->H.data->firsti, hdrsi = ramchain->H.hdrsi, numblocks = ramchain->numblocks;
-    //printf("B[] %p\n",B);
     destoffset = &Kspace[ramchain->H.scriptoffset];
     srcoffset = &Kspace[ramchain->H.data->scriptspace - ramchain->H.stacksize];
     if ( ramchain->expanded != 0 )
@@ -2425,7 +2424,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
             printf("%s bp.[%d] ht.%d stacksize.%u filesize.%u\n",fname,bp->hdrsi,bp->bundleheight,ramchain->H.stacksize,(uint32_t)ramchain->sigsfilesize);
             //for (i=0; i<ramchain->H.stacksize; i++)
             //    c = *srcoffset, *destoffset++ = c, *srcoffset++ = 0;
-        } //else printf("smashed stack?\n");
+        } else printf("smashed stack? dest.%ld vs src %ld offset.%u stacksize.%u space.%u\n",(long)destoffset,(long)srcoffset,(uint32_t)ramchain->H.scriptoffset,(uint32_t)ramchain->H.stacksize,(uint32_t)ramchain->H.scriptoffset);
     }
     //printf("%d SAVE: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d gap.%ld RO.%d\n",bp->bundleheight,(int32_t)ramchain->H.data->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)ramchain->H.data->allocsize,(long)destoffset - (long)srcoffset,ramchain->H.ROflag);
     scriptspace = ramchain->H.data->scriptspace;
