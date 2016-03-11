@@ -984,9 +984,9 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
     if ( ramchain->H.ROflag != 0 )
     {
         iguana_ramchain_txid(coin,RAMCHAIN_ARG,&txid,s);
-        if ( s->sequenceid != sequence != 0xffffffff || memcmp(txid.bytes,prev_hash.bytes,sizeof(bits256)) != 0 || s->prevout != prev_vout )
+        if ( s->sequenceid != sequence || memcmp(txid.bytes,prev_hash.bytes,sizeof(bits256)) != 0 || s->prevout != prev_vout )
         {
-            char str[65],str2[65]; printf("ramchain_addspend RO value mismatch diffseq.%d v %x (%d) vs (%d) %s vs %s\n",s->sequenceid,sequence,s->prevout,prev_vout,bits256_str(str,txid),bits256_str(str2,prev_hash));
+            char str[65],str2[65]; printf("ramchain_addspend RO value mismatch diffseq.%x v %x (%d) vs (%d) %s vs %s\n",s->sequenceid,sequence,s->prevout,prev_vout,bits256_str(str,txid),bits256_str(str2,prev_hash));
             return(0);
         }
         if ( (checklen= iguana_vinscriptdecode(coin,ramchain,&metalen,_script,&Kspace[ramchain->H.data->scriptspace],Kspace,s)) != vinscriptlen || (vinscript != 0 && memcmp(_script,vinscript,vinscriptlen) != 0) )
