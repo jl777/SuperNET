@@ -1036,7 +1036,7 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
             }
             bad += vinscriptlen;
         } else good += vinscriptlen;
-        if ( (rand() % 100000) == 0 )
+        if ( 0 && (rand() % 100000) == 0 )
             printf("good.%llu bad.%llu vinstats\n",(long long)good,(long long)bad);
         //s->hdrsi = hdrsi;
         //s->bundlei = bundlei;
@@ -1428,7 +1428,9 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
             coin->peers.numfiles++;
     }
     else if ( ipbits != 0 )
-        fseek(fp,0,SEEK_END);
+    {
+        //fseek(fp,0,SEEK_END);
+    }
     else
     {
         fclose(fp);
@@ -2082,7 +2084,8 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
         printf("iguana_ramchain_scriptspace cant iterate without data and requires simple ramchain\n");
         return(-1);
     }
-    sigspace = pubkeyspace = scriptspace = p2shspace = 0;
+    sigspace = pubkeyspace = p2shspace = 0;
+    scriptspace = 1;
     for (ramchain->H.txidind=rdata->firsti; ramchain->H.txidind<rdata->numtxids; ramchain->H.txidind++)
     {
         tx = &T[ramchain->H.txidind];
@@ -2093,7 +2096,7 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
                     scriptspace += U[unspentind].scriptlen + 3;
         }
         for (j=0; j<tx->numvins; j++)
-        {
+        {break;
             if ( (spendind= ramchain->H.spendind++) < rdata->numspends )
             {
                 sequence = S[spendind].sequenceid;
@@ -2114,8 +2117,8 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
                 }
             }
         }
-        altspace += tx->numvins * 16 + 128; // for metascripts
-        scriptspace += tx->numvins * 16 + 128; // for metascripts
+        //altspace += tx->numvins * 16 + 128; // for metascripts
+        //scriptspace += tx->numvins * 16 + 128; // for metascripts
         //fprintf(stderr,"scriptspace.%u altspace.%u, ",scriptspace,altspace);
     }
     *sigspacep = sigspace, *pubkeyspacep = pubkeyspace;
@@ -2704,6 +2707,13 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
             //fprintf(stderr,"(%d %d).%d ",R[bundlei].H.data->numtxids,dest->H.txidind,bundlei);
             if ( (err= iguana_ramchain_iterate(coin,dest,&R[bundlei],bp)) != 0 )
             {
+                if ( (block= bp->blocks[bundlei]) != 0 )
+                {
+                    block->queued = 0;
+                    block->fpipbits = 0;
+                    bp->issued[bundlei] = 0;
+                    block->issued = 0;
+                }
                 printf("error ramchain_iterate hdrs.%d bundlei.%d\n",bp->hdrsi,bundlei);
                 break;
             }
