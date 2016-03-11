@@ -108,7 +108,7 @@ struct iguana_iAddr *iguana_iAddrhashfind(struct iguana_info *coin,uint64_t ipbi
 uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana_iAddr *iA,uint32_t ind)
 {
     FILE *fp; char fname[512],hexstr[65]; int32_t i,n,m,retval = 0; struct iguana_iAddr tmp,*ptr;
-    sprintf(fname,"DB/%s/peers.dat",coin->symbol);
+    sprintf(fname,"DB/%s_peers.dat",coin->symbol);
     OS_compatible_path(fname);
     if ( rwflag < 0 || iA == 0 )
     {
