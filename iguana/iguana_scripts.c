@@ -622,7 +622,7 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
             else if ( m == 1 )
                 return(IGUANA_SCRIPT_1of2);
         }
-        printf("strange msig M.%d of N.%d\n",m,n);
+        //printf("strange msig M.%d of N.%d\n",m,n);
         return(IGUANA_SCRIPT_MSIG);
     }
     else if ( vp->spendlen == vp->spendscript[0]+1 )
