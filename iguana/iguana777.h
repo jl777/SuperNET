@@ -329,7 +329,7 @@ struct iguana_txid { bits256 txid; uint32_t txidind,firstvout,firstvin,locktime,
 
 struct iguana_unspent { uint64_t value; uint32_t txidind,pkind,prevunspentind,scriptoffset; uint16_t hdrsi:14,type:4,vout:14; } __attribute__((packed));
 
-struct iguana_spend { uint32_t spendtxidind,scriptoffset:31,rawmode:1; int16_t prevout; uint16_t numsigs:4,numpubkeys:4,p2sh:1,sighash:4,external:1,sequenceid:2; } __attribute__((packed));
+struct iguana_spend { uint32_t spendtxidind,sequenceid,scriptoffset:31,rawmode:1; int16_t prevout; uint16_t numsigs:4,numpubkeys:4,p2sh:1,sighash:4,external:1; } __attribute__((packed));
 
 struct iguana_pkhash { uint8_t rmd160[20]; uint32_t pkind,pubkeyoffset; } __attribute__((packed)); //firstunspentind 
 
