@@ -1088,7 +1088,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
     int32_t hdrsi,lflag,n,numissued,bundlei,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp; struct iguana_peer *addr;
     if ( 1 && (bp= coin->current) != 0 && bp->numsaved < bp->n ) // queue_size(&coin->priorityQ) == 0 &&
     {
-        for (hdrsi=numissued=0; hdrsi<coin->peers.numranked && coin->current->hdrsi+hdrsi<coin->bundlescount && numissued<10; hdrsi++)
+        for (hdrsi=numissued=0; hdrsi<coin->peers.numranked && coin->current->hdrsi+hdrsi<coin->bundlescount && numissued<bp->n; hdrsi++)
         {
             if ( (bp= coin->bundles[hdrsi + coin->current->hdrsi]) == 0 )
                 continue;
@@ -1112,11 +1112,11 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                         iguana_sendblockreqPT(coin,addr,bp,bundlei,block->RO.hash2,0);
                         //iguana_blockQ(coin,bp,bundlei,block->RO.hash2,1);
                         flag++;
-                        if ( numissued++ > 10 )
+                        if ( numissued++ > bp->n )
                             break;
                     }
                 }
-            if ( flag != 0 )
+            if ( 0 && flag != 0 )
                 printf("issued %d priority blocks for %d current.[%d] have %d blocks emit.%u\n",flag,hdrsi,bp->hdrsi,n,bp->emitfinish);
         }
     }
