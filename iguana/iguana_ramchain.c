@@ -1046,20 +1046,15 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
     return(spendind);
 }
 
-uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 prev_hash,int32_t prev_vout,uint8_t *vinscript,int32_t vinscriptlen,uint32_t sequence,struct iguana_bundle *bp)
+uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,struct iguana_peer *addr,RAMCHAIN_FUNC,bits256 prev_hash,int32_t prev_vout,uint8_t *vinscript,int32_t vinscriptlen,uint32_t sequence,struct iguana_bundle *bp)
 {
     struct iguana_spend256 *s; uint32_t spendind; uint8_t *vinscriptptr;
     spendind = ramchain->H.spendind++;
     s = &S[spendind];
-    /*if ( vinscriptlen > sizeof(s->vinscript) )
-    {
-        fprintf(stderr,"vin scriptsave %d\n",vinscriptlen);
-        scriptfpos = iguana_scriptsave(coin,bp,spendind,1,vinscript,vinscriptlen);
-        fprintf(stderr,"done vin scriptsave %d\n",vinscriptlen);
-        //printf("S%d added sig.%d len.%d %08x\n",spendind,scriptfpos,vinscriptlen,calc_crc32(0,vinscript,vinscriptlen));
-    }*/
     if ( ramchain->H.ROflag != 0 )
     {
+        if ( addr != 0 )
+            printf("iguana_ramchain_addspend256 unexpected nonz addr for RO\n");
         if ( vinscriptlen != s->vinscriptlen || s->sequenceid != sequence || memcmp(s->prevhash2.bytes,prev_hash.bytes,sizeof(bits256)) != 0 || s->prevout != prev_vout ) //|| s->hdrsi != hdrsi
         {
             char str[65],str2[65]; printf("check offset %d (%d %d) addspend.%d v %d RO value mismatch sequenceid.%x seq.%x prev_vout(%d vs %d) %s vs %s\n",s->scriptoffset,vinscriptlen,s->vinscriptlen,spendind,s->spendind,s->sequenceid,sequence,s->prevout,prev_vout,bits256_str(str,s->prevhash2),bits256_str(str2,prev_hash));
@@ -1071,6 +1066,8 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,RAMCHAIN_FUNC,bits
     }
     else
     {
+        if ( addr == 0 )
+            printf("iguana_ramchain_addspend256 unexpected zero addr for RO\n");
         s->sequenceid = sequence;
         s->prevhash2 = prev_hash, s->prevout = prev_vout;
         s->spendind = spendind;
@@ -1999,8 +1996,8 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
                 prevout = S[ramchain->H.spendind].prevout;
                 if ( S[ramchain->H.spendind].scriptoffset != 0 )
                 {
-                    scriptdata = &Kspace[S[ramchain->H.spendind].scriptoffset];
-                    scriptlen = S[ramchain->H.spendind].vinscriptlen;
+                    //scriptdata = &Kspace[S[ramchain->H.spendind].scriptoffset];
+                    //scriptlen = S[ramchain->H.spendind].vinscriptlen;
                 }
                 /*if ( scriptdata != 0 && scriptlen > 0 )
                 {
@@ -2008,7 +2005,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
                         printf("%02x",scriptdata[i]);
                     printf(" spendind.%d vinscript\n",ramchain->H.spendind);
                 }*/
-                if ( iguana_ramchain_addspend256(coin,RAMCHAIN_ARG,prevhash,prevout,scriptdata,scriptlen,sequenceid,bp) == 0 )
+                if ( iguana_ramchain_addspend256(coin,0,RAMCHAIN_ARG,prevhash,prevout,scriptdata,scriptlen,sequenceid,bp) == 0 )
                     return(-8);
             }
             if ( dest != 0 )
@@ -2198,7 +2195,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         for (j=0; j<tx->tx_in; j++)
         {
             //char str[65]; printf("PT vin.%d %s vout.%d\n",j,bits256_str(str,tx->vins[j].prev_hash),tx->vins[j].prev_vout);
-            iguana_ramchain_addspend256(coin,RAMCHAIN_ARG,tx->vins[j].prev_hash,tx->vins[j].prev_vout,tx->vins[j].vinscript,tx->vins[j].scriptlen,tx->vins[j].sequence,bp);//,bp->hdrsi,bundlei);
+            iguana_ramchain_addspend256(coin,addr,RAMCHAIN_ARG,tx->vins[j].prev_hash,tx->vins[j].prev_vout,tx->vins[j].vinscript,tx->vins[j].scriptlen,tx->vins[j].sequence,bp);//,bp->hdrsi,bundlei);
             //int32_t k; for (k=0; k<tx->vins[j].scriptlen; k++)
             //    printf("%02x",tx->vins[j].vinscript[k]);
             //printf(" msg spendind.%d\n",ramchain->H.spendind);
