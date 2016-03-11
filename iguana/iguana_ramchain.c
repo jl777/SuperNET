@@ -2113,8 +2113,8 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
                 }
             }
         }
-        altspace += tx->numvins * 8 + 16; // for metascripts
-        scriptspace += tx->numvins * 8 + 16; // for metascripts
+        altspace += tx->numvins * 16 + 128; // for metascripts
+        scriptspace += tx->numvins * 16 + 128; // for metascripts
         //fprintf(stderr,"scriptspace.%u altspace.%u, ",scriptspace,altspace);
     }
     *sigspacep = sigspace, *pubkeyspacep = pubkeyspace;
