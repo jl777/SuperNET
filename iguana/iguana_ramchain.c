@@ -703,7 +703,7 @@ int32_t iguana_vinscriptencode(struct iguana_info *coin,int32_t *metalenp,uint8_
         len += iguana_rwvarint32(1,&metascript[len],(void *)&p2shlen);
         memcpy(&metascript[len],p2shscript,p2shlen), len += p2shlen;
     }
-    if ( suffixlen != 0 )
+    if ( suffixlen > 0 && suffixlen < IGUANA_MAXSCRIPTSIZE )
     {
         //printf("[%d] <- SUFFIX.(%02x) len.%d\n",len,suffix[0],suffixlen);
         memcpy(&metascript[len],suffix,suffixlen), len += suffixlen;
