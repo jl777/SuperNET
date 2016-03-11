@@ -1397,7 +1397,7 @@ int32_t iguana_ramchain_alloc(struct iguana_info *coin,struct iguana_ramchain *r
     memset(mem,0,sizeof(*mem));
     memset(hashmem,0,sizeof(*hashmem));
     hashsize = iguana_hashmemsize(numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace);
-    while ( (x= (myallocated(0,-1)+hashsize+allocsize)) > coin->MAXMEM )
+    while ( 0 && (x= (myallocated(0,-1)+hashsize+allocsize)) > coin->MAXMEM )
     {
         char str[65],str2[65]; fprintf(stderr,"ht.%d wait for allocated %s < MAXMEM %s | elapsed %.2f minutes hashsize.%ld allocsize.%ld\n",height,mbstr(str,myallocated(0,-1)+hashsize+allocsize),mbstr(str2,coin->MAXMEM),(double)(time(NULL)-coin->startutc)/60.,(long)hashsize,(long)allocsize);
         sleep(13);
