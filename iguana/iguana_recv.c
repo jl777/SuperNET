@@ -110,6 +110,7 @@ void iguana_gotunconfirmedM(struct iguana_info *coin,struct iguana_peer *addr,st
     queue_enqueue("bundlesQ",&coin->bundlesQ,&req->DL,0);
 }
 
+#ifdef later
 struct iguana_txblock *iguana_peertxdata(struct iguana_info *coin,int32_t *bundleip,char *fname,struct OS_memspace *mem,uint32_t ipbits,bits256 hash2)
 {
     int32_t bundlei,datalen,checki,hdrsi,fpos; char str[65],str2[65]; FILE *fp;
@@ -151,6 +152,7 @@ struct iguana_txblock *iguana_peertxdata(struct iguana_info *coin,int32_t *bundl
     *bundleip = bundlei;
     return(txdata);
 }
+#endif
 
 void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,struct iguana_msghdr *H,uint8_t *data,int32_t recvlen)
 {
@@ -210,7 +212,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             txdata->block.fpipbits = (uint32_t)addr->ipbits;
             req->datalen = txdata->datalen;
             req->ipbits = txdata->block.fpipbits;
-            if ( 1 )
+            if ( 0 )
             {
                 struct iguana_txblock *checktxdata; struct OS_memspace checkmem; int32_t checkbundlei;
                 memset(&checkmem,0,sizeof(checkmem));
