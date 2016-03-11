@@ -655,7 +655,7 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
             printf("suffixlen.%d totalsize.%d vs len.%d\n",suffixlen,totalsize,len);
         else memcpy(&_script[scriptlen],&metascript[len],suffixlen), scriptlen += suffixlen, len += suffixlen;
     }
-    *metalenp = len - 1;
+    *metalenp = len - 1 - (len>=0xfd ? 2 : 0);
     return(scriptlen);
 }
 
@@ -788,7 +788,7 @@ int32_t iguana_metascript(struct iguana_info *coin,RAMCHAIN_FUNC,struct iguana_s
     //printf("checklen.%d scriptoffset.%d\n",checklen,ramchain->H.scriptoffset);
     if ( (decodelen= iguana_vinscriptdecode(coin,ramchain,&checkmetalen,_script,&Kspace[ramchain->H.data->scriptspace],Kspace,s)) != vinscriptlen || (vinscript != 0 && memcmp(_script,vinscript,vinscriptlen) != 0) || checkmetalen != metalen )
     {
-        static uint64_t counter;
+        //static uint64_t counter;
         //if ( counter++ < 100 )
         {
             for (i=0; i<decodelen; i++)
