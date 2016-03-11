@@ -2156,12 +2156,14 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         }
         return(block->fpos);
     }
-    fpos = -1;
+    block->fpipbits = (uint32_t)addr->ipbits;
+    block->fpos = fpos = -1;
     scriptspace = iguana_scriptspaceraw(coin,&scriptsize,&sigsize,&pubkeysize,txarray,txn_count);
     if ( iguana_ramchain_init(ramchain,&addr->TXDATA,&addr->HASHMEM,1,txn_count,origtxdata->numunspents,origtxdata->numspends,0,0,(scriptspace+sigsize+pubkeysize)*1.1,0,1) == 0 )
     {
         block->issued = 0;
         block->RO.recvlen = 0;
+        block->fpipbits = 0;
         return(-1);
     }
     iguana_ramchain_link(ramchain,block->RO.hash2,block->RO.hash2,bp->hdrsi,bp->bundleheight+bundlei,bundlei,1,firsti,0);
@@ -2171,6 +2173,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
     {
         block->issued = 0;
         block->RO.recvlen = 0;
+        block->fpipbits = 0;
         printf("fatal error getting txdataptrs %p %p %p %p\n",T,U,S,B);
         return(-1);
     }
@@ -2211,6 +2214,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         printf("error creating PT ramchain.[%d:%d] ramchain->txidind %d != %d ramchain->data->numtxids || ramchain->unspentind %d != %d ramchain->data->numunspents || ramchain->spendind %d != %d ramchain->data->numspends space.(%d v %d)\n",bp->hdrsi,bp->bundleheight,ramchain->H.txidind,ramchain->H.data->numtxids,ramchain->H.unspentind,ramchain->H.data->numunspents,ramchain->H.spendind,ramchain->H.data->numspends,ramchain->H.scriptoffset,ramchain->H.data->scriptspace);
         block->issued = 0;
         block->RO.recvlen = 0;
+        block->fpipbits = 0;
     }
     else
     {
@@ -2270,7 +2274,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
                     bp->rawscriptspace += ramchain->H.data->scriptspace;
                 }
                 if ( fpos >= 0 )
-                    block->fpos = fpos, block->fpipbits = (uint32_t)addr->ipbits;
+                    block->fpos = fpos;
             }
         } else printf("ramchain verification error.%d hdrsi.%d bundlei.%d\n",err,bp->hdrsi,bundlei);
     }
