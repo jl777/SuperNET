@@ -978,7 +978,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         return(0);
     }
     priority = 1;
-    if ( (req= queue_dequeue(&coin->priorityQ,0)) == 0 && (rand() % 100) == 0 )
+    if ( (req= queue_dequeue(&coin->priorityQ,0)) == 0 && 0 )//(rand() % 100) == 0 )
     {
         if ( (rand() % 1) == 0 )
             flag = iguana_neargap(coin,addr);
