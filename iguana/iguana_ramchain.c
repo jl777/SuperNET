@@ -2587,7 +2587,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
             fpipbits = block->fpipbits, fpos = block->fpos;
         else fpipbits = fpos = 0;
         mapchain = &R[bundlei];
-        for (j=0; j<num; j++)
+        /*for (j=0; j<num; j++)
             if ( ipbits[j] == fpipbits )
             {
                 ptr = ptrs[j];
@@ -2598,7 +2598,8 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         {
             printf("j.%d num.%d bundlei.%d\n",j,num,bundlei);
             break;
-        }
+        }*/
+        ptr = ptrs[bundlei];
         mapchain->fileptr = ptr;
         mapchain->filesize = filesize;
         mapchain->H.data = (void *)(long)((long)ptr + fpos);
