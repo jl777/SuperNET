@@ -467,14 +467,14 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         {
             if ( OS_milliseconds() > endmillis )
                 break;
-            if ( (block= bp->blocks[i]) != 0 )
+            if ( (block= bp->blocks[i]) != 0 && block->RO.recvlen == 0 )
             {
-                if ( block->fpipbits == 0 && (bp->issued[i] == 0 || now > bp->issued[i]+13) )
+                if (  bp->issued[i] == 0 || now > bp->issued[i]+13 )
                 {
-                    //if ( bp->bundleheight == 20000 )
-                    //   printf("(%d:%d) ",bp->hdrsi,i);
                     block->numrequests++;
-                    iguana_blockQ(coin,bp,i,block->RO.hash2,bp->hdrsi == starti);
+                    if ( bp->hdrsi == starti )
+                        printf("bundleQ issue [%d:%d]\n",bp->hdrsi,i);
+                    iguana_blockQ(coin,bp,i,block->RO.hash2,0);
                     bp->issued[i] = block->issued = now;
                     counter++;
                     if ( --max <= 0 )
