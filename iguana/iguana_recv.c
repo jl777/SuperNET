@@ -394,7 +394,7 @@ void iguana_bundlespeculate(struct iguana_info *coin,struct iguana_bundle *bp,in
 
 int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
 {
-    int32_t i,n,range,better,issued,valid,pend,max,counter = 0; uint32_t now; struct iguana_block *block; double endmillis,width;
+    int32_t i,n,range,starti,better,issued,valid,pend,max,counter = 0; uint32_t now; struct iguana_block *block; double endmillis,width;
     coin->numbundlesQ--;
     //printf("BUNDLEITERS.%d\n",bp->hdrsi);
     if ( bp->numhashes < bp->n && bp->bundleheight < coin->longestchain-coin->chain->bundlesize )
@@ -420,22 +420,25 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     }
     if ( (range= coin->peers.numranked) > IGUANA_MAXBUNDLES )
         range = IGUANA_MAXBUNDLES;
-    if ( 1 && coin->current != 0 )
+    starti = coin->current == 0 ? 0 : coin->current->hdrsi;
+    if ( bp->hdrsi < starti + range )
     {
-        if ( bp->rank != 0 && bp->rank <= coin->current->hdrsi + range )
+        for (i=0; i<bp->n; i++)
         {
-            for (i=0; i<bp->n; i++)
+            if ( (block= bp->blocks[i]) != 0 && block->numrequests == 0 && block->mainchain != 0 )
             {
-                if ( (block= bp->blocks[i]) != 0 && block->numrequests == 0 && block->mainchain != 0 )
-                {
-                    block->numrequests++;
-                    iguana_blockQ(coin,bp,i,block->RO.hash2,bp == coin->current);
-                    //printf("%d ",i);
-                }
+                block->numrequests++;
+                iguana_blockQ(coin,bp,i,block->RO.hash2,bp == coin->current);
+                //printf("%d ",i);
             }
         }
-        //printf("initial requests for hdrs.%d\n",bp->hdrsi);
     }
+    else
+    {
+        iguana_bundleQ(coin,bp,counter == 0 ? bp->n*5 : bp->n*2);
+        return(0);
+    }
+        //printf("initial requests for hdrs.%d\n",bp->hdrsi);
     pend = queue_size(&coin->priorityQ) + queue_size(&coin->blocksQ);
     for (i=0; i<IGUANA_MAXPEERS; i++)
         pend += coin->peers.active[i].pendblocks;
