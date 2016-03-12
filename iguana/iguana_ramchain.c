@@ -2291,7 +2291,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         numtxids += (mapchain->H.data->numtxids - 1);
         numunspents += (mapchain->H.data->numunspents - 1);
         numspends += (mapchain->H.data->numspends - 1);
-        scriptspace += 0;//iguana_ramchain_scriptspace(coin,&sigsize,&pubkeysize,mapchain);
+        scriptspace += 1;//iguana_ramchain_scriptspace(coin,&sigsize,&pubkeysize,mapchain);
         //sigspace += sigsize;
         //pubkeyspace += pubkeysize;
         if ( (block= bp->blocks[bundlei]) == 0 || bits256_nonz(block->RO.hash2) == 0 || block != iguana_blockfind(coin,block->RO.hash2) || memcmp(block->RO.hash2.bytes,bp->hashes[bundlei].bytes,sizeof(bits256)) != 0 )
