@@ -1393,8 +1393,8 @@ void iguana_ramchain_extras(struct iguana_ramchain *ramchain,struct OS_memspace 
 struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname,struct iguana_bundle *bp,int32_t numblocks,struct iguana_ramchain *ramchain,struct OS_memspace *hashmem,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t bundlei,long fpos,int32_t allocextras,int32_t expanded)
 {
     RAMCHAIN_DECLARE; int32_t valid,i,checki,hdrsi;
-    char str[65],str2[65],sigsfname[512]; long filesize; void *ptr; struct iguana_block *block;
-    if ( ramchain->expanded != 0 && (ramchain->sigsfileptr == 0 || ramchain->sigsfilesize == 0) )
+    char str[65],str2[65]; long filesize; void *ptr; struct iguana_block *block;
+    /*if ( ramchain->expanded != 0 && (ramchain->sigsfileptr == 0 || ramchain->sigsfilesize == 0) )
     {
         sprintf(sigsfname,"sigs/%s/%s",coin->symbol,bits256_str(str,hash2));
         if ( (ramchain->sigsfileptr= OS_mapfile(sigsfname,&ramchain->sigsfilesize,0)) == 0 )
@@ -1402,7 +1402,7 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
             printf("couldnt map.(%s)\n",sigsfname);
             return(0);
         }
-    }
+    }*/
     if ( ramchain->fileptr == 0 || ramchain->filesize <= 0 )
     {
         if ( (checki= iguana_peerfname(coin,&hdrsi,ipbits==0?"DB":"tmp",fname,ipbits,hash2,prevhash2,numblocks)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
@@ -2078,7 +2078,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     {
         if ( (long)destoffset < (long)srcoffset )
         {
-            sprintf(fname,"sigs/%s/%s",coin->symbol,bits256_str(str,bp->hashes[0]));
+            /*sprintf(fname,"sigs/%s/%s",coin->symbol,bits256_str(str,bp->hashes[0]));
              if ( (fp= fopen(fname,"wb")) != 0 )
             {
                 if ( ramchain->H.stacksize > 0 )
@@ -2095,7 +2095,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
             }
             if ( (ramchain->sigsfileptr= OS_mapfile(fname,&ramchain->sigsfilesize,0)) == 0 )
                 return(-1);
-            printf("%s bp.[%d] ht.%d stacksize.%u filesize.%u\n",fname,bp->hdrsi,bp->bundleheight,ramchain->H.stacksize,(uint32_t)ramchain->sigsfilesize);
+            printf("%s bp.[%d] ht.%d stacksize.%u filesize.%u\n",fname,bp->hdrsi,bp->bundleheight,ramchain->H.stacksize,(uint32_t)ramchain->sigsfilesize);*/
             //for (i=0; i<ramchain->H.stacksize; i++)
             //    c = *srcoffset, *destoffset++ = c, *srcoffset++ = 0;
         } else printf("smashed stack? dest.%ld vs src %ld offset.%u stacksize.%u space.%u\n",(long)destoffset,(long)srcoffset,(uint32_t)ramchain->H.scriptoffset,(uint32_t)ramchain->H.stacksize,(uint32_t)ramchain->H.scriptoffset);

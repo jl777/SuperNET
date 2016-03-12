@@ -1087,7 +1087,8 @@ void iguana_main(void *arg)
     OS_ensure_directory("confs");
     OS_ensure_directory("DB"), OS_ensure_directory("DB/ECB");
     OS_ensure_directory("tmp");
-    OS_ensure_directory("sigs");
+    OS_ensure_directory("vins");
+    OS_ensure_directory("vouts");
     iguana_coinadd("BTC",0);
     iguana_coinadd("BTCD",0);
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
