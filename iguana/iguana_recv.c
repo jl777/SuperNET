@@ -1088,7 +1088,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
     int32_t hdrsi,lflag,n,numissued,bundlei,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp; struct iguana_peer *addr;
     if ( 1 && (bp= coin->current) != 0 && bp->numsaved < bp->n ) // queue_size(&coin->priorityQ) == 0 &&
     {
-        for (hdrsi=numissued=0; hdrsi<coin->peers.numranked && coin->current->hdrsi+hdrsi<coin->bundlescount && numissued<3; hdrsi++)
+        for (hdrsi=numissued=0; hdrsi<coin->peers.numranked && coin->current->hdrsi+hdrsi<coin->bundlescount && numissued<bp->n; hdrsi++)
         {
             if ( (bp= coin->bundles[hdrsi + coin->current->hdrsi]) == 0 )
                 continue;
@@ -1101,9 +1101,10 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                         n++;
                     else if ( time(NULL) > block->issued+60 ) //bp->numsaved > bp->n*.9 &&
                     {
-                        //char str[65];
+                        char str[65];
                         //printf("%d ",bundlei);
-                        //printf("%d) %p [%d:%d] %s\n",hdrsi,addr,bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
+                        if ( hdrsi == 0 )
+                            printf("%d) %p [%d:%d] %s\n",hdrsi,addr,bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
                         /*block->fpipbits = 0;
                          block->queued = 0;
                          block->issued = 0;
@@ -1112,7 +1113,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                         iguana_sendblockreqPT(coin,addr,bp,bundlei,block->RO.hash2,0);
                         //iguana_blockQ(coin,bp,bundlei,block->RO.hash2,1);
                         flag++;
-                        if ( ++numissued > 2 )
+                        if ( ++numissued > bp->n )
                             break;
                     }
                 }

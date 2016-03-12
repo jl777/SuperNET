@@ -462,12 +462,10 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( (coin->MAXBUNDLES= maxbundles) <= 0 )
         coin->MAXBUNDLES = (strcmp(symbol,"BTC") == 0) ? _IGUANA_MAXBUNDLES : _IGUANA_MAXBUNDLES;
     coin->myservices = services;
-    sprintf(dirname,"DB/%s",symbol);
-    OS_ensure_directory(dirname);
-    sprintf(dirname,"sigs/%s",symbol);
-    OS_ensure_directory(dirname);
-    sprintf(dirname,"tmp/%s",symbol);
-    OS_ensure_directory(dirname);
+    sprintf(dirname,"DB/%s",symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"vouts/%s",symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"vins/%s",symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"tmp/%s",symbol), OS_ensure_directory(dirname);
     coin->initialheight = initialheight;
     coin->mapflags = mapflags;
     coin->MAXMEM = juint(json,"RAM");

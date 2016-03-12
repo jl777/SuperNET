@@ -324,14 +324,14 @@ struct iguana_ledger
 } __attribute__((packed));
 
 // ramchain append only structs -> canonical 32bit inds and ledgerhashes
-struct iguana_unspent20 { uint64_t value; uint32_t scriptoffset,txidind:28,type:4; uint16_t scriptlen,ipbits; uint8_t rmd160[20]; } __attribute__((packed));
-struct iguana_spend256 { bits256 prevhash2; uint32_t sequenceid,scriptoffset; int16_t prevout; uint16_t vinscriptlen,spendind,ipbits; } __attribute__((packed));
+struct iguana_unspent20 { uint64_t value; uint32_t scriptpos,txidind:28,type:4; uint16_t scriptlen,ipbits; uint8_t rmd160[20]; } __attribute__((packed));
+struct iguana_spend256 { bits256 prevhash2; uint32_t sequenceid,scriptpos; int16_t prevout; uint16_t vinscriptlen,spendind,ipbits; } __attribute__((packed));
 
 struct iguana_txid { bits256 txid; uint32_t txidind,firstvout,firstvin,locktime,version,timestamp,extraoffset; uint16_t numvouts,numvins; } __attribute__((packed));
 
-struct iguana_unspent { uint64_t value; uint32_t txidind,pkind,prevunspentind,scriptoffset; uint16_t hdrsi:14,type:4,vout:14; } __attribute__((packed));
+struct iguana_unspent { uint64_t value; uint32_t txidind,pkind,prevunspentind,scriptpos,ipbits; uint16_t hdrsi,type:4,scriptlen:14; int16_t vout; } __attribute__((packed));
 
-struct iguana_spend { uint32_t spendtxidind,sequenceid,scriptoffset:31,rawmode:1; int16_t prevout; uint16_t numsigs:4,numpubkeys:4,p2sh:1,sighash:4,external:1; } __attribute__((packed));
+struct iguana_spend { uint32_t spendtxidind,sequenceid,scriptpos,ipbits; int16_t prevout; uint16_t scriptlen:15,external:1; } __attribute__((packed)); // numsigs:4,numpubkeys:4,p2sh:1,sighash:4
 
 struct iguana_pkhash { uint8_t rmd160[20]; uint32_t pkind,pubkeyoffset; } __attribute__((packed)); //firstunspentind 
 
