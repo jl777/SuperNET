@@ -38,7 +38,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
     if ( addr == 0 || memcmp(lastreq.bytes,hash2.bytes,sizeof(hash2)) == 0 || memcmp(lastreq2.bytes,hash2.bytes,sizeof(hash2)) == 0 )
     {
         printf("duplicate req %s or null addr.%p\n",bits256_str(hexstr,hash2),addr);
-        return(0);
+        //return(0);
     }
     if ( addr->msgcounts.verack == 0 )
     {
