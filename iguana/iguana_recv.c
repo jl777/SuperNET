@@ -394,7 +394,7 @@ void iguana_bundlespeculate(struct iguana_info *coin,struct iguana_bundle *bp,in
 
 int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
 {
-    int32_t i,n,better,issued,valid,pend,max,counter = 0; uint32_t now; struct iguana_block *block; double endmillis,width;
+    int32_t i,n,range,better,issued,valid,pend,max,counter = 0; uint32_t now; struct iguana_block *block; double endmillis,width;
     coin->numbundlesQ--;
     //printf("BUNDLEITERS.%d\n",bp->hdrsi);
     if ( bp->numhashes < bp->n && bp->bundleheight < coin->longestchain-coin->chain->bundlesize )
@@ -418,15 +418,20 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         iguana_bundleQ(coin,bp,bp->n*5);
         return(0);
     }
-    if ( 1 && coin->current != 0 && bp->rank != 0 && bp->rank <= coin->current->hdrsi + coin->peers.numranked )
+    if ( (range= coin->peers.numranked) > IGUANA_MAXBUNDLES )
+        range = IGUANA_MAXBUNDLES;
+    if ( 1 && coin->current != 0 )
     {
-        for (i=0; i<bp->n; i++)
+        if ( bp->rank != 0 && bp->rank <= coin->current->hdrsi + range )
         {
-            if ( (block= bp->blocks[i]) != 0 && block->numrequests == 0 && block->mainchain != 0 )
+            for (i=0; i<bp->n; i++)
             {
-                block->numrequests++;
-                iguana_blockQ(coin,bp,i,block->RO.hash2,bp == coin->current);
-                //printf("%d ",i);
+                if ( (block= bp->blocks[i]) != 0 && block->numrequests == 0 && block->mainchain != 0 )
+                {
+                    block->numrequests++;
+                    iguana_blockQ(coin,bp,i,block->RO.hash2,bp == coin->current);
+                    //printf("%d ",i);
+                }
             }
         }
         //printf("initial requests for hdrs.%d\n",bp->hdrsi);
@@ -1039,9 +1044,9 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
     }
     if ( req == 0 )
     {
-        if ( (rand() % 1) == 0 )
+        if ( (rand() % 10) == 0 )
             flag = iguana_neargap(coin,addr);
-        else if ( 1 && (bp= addr->bp) != 0 && bp->rank != 0 && addr->pendblocks < limit )
+        else if ( 0 && (bp= addr->bp) != 0 && bp->rank != 0 && addr->pendblocks < limit )
         {
             r = rand();
             for (j=0; j<bp->n; j++)
