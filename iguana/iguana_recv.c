@@ -193,6 +193,11 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
         //printf("copy %p serialized[%d]\n",req,req->recvlen);
         memcpy(req->serialized,data,recvlen), req->copyflag = 1;
     }
+    if ( bp != 0 && bundlei >= 0 && bp->blocks[bundlei] != 0 )//&& bits256_cmp(bp->blocks[bundlei]->RO.prev_block,origtxdata->block.RO.prev_block) != 0 )
+    {
+        bp->blocks[bundlei]->RO = origtxdata->block.RO;
+        printf("update prev for [%d:%d]\n",bp->hdrsi,bundlei);
+    }
     if ( bits256_cmp(origtxdata->block.RO.hash2,coin->APIblockhash) == 0 )
     {
         printf("MATCHED APIblockhash\n");
@@ -349,6 +354,8 @@ uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bit
                 }
                 if ( block != 0 && block == bp->blocks[i] )
                 {
+                    if ( i > 0 )
+                        block->RO.prev_block = blockhashes[i-1];
                     block->height = bp->bundleheight + i;
                     block->mainchain = 1;
                     if ( prev != 0 )
@@ -471,18 +478,19 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         {
             if ( (block= bp->blocks[i]) != 0 )
             {
-                if ( block->RO.recvlen == 0 && block->fpipbits == 0 && block->queued == 0 )
+                if ( block->RO.recvlen == 0 && (block->fpipbits == 0 || block->fpos < 0) && block->queued == 0 )
                 {
-                    if (  bp->issued[i] == 0 || now > bp->issued[i]+13 )
+                    if (  bp->issued[i] == 0 || now > bp->issued[i]+60 )
                     {
                         block->numrequests++;
                         if ( bp->hdrsi == starti )
                         {
-                            printf("bundleQ issue [%d:%d]\n",bp->hdrsi,i);
+                            //printf("bundleQ issue [%d:%d]\n",bp->hdrsi,i);
                             if ( coin->peers.ranked[0] != 0 )
                                 iguana_sendblockreqPT(coin,coin->peers.ranked[0],bp,bp->hdrsi,block->RO.hash2,0);
                             else iguana_blockQ(coin,bp,i,block->RO.hash2,1);
-                        } else iguana_blockQ(coin,bp,i,block->RO.hash2,0);
+                        }
+                        iguana_blockQ(coin,bp,i,block->RO.hash2,0);
                         bp->issued[i] = block->issued = now;
                         counter++;
                         if ( --max <= 0 )
@@ -515,7 +523,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                     //printf("(%x:%x) ",(uint32_t)block->RO.hash2.ulongs[3],(uint32_t)bp->hashes[i].ulongs[3]);
                     if ( (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) || iguana_blockvalidate(coin,&valid,block,1) != 0 )
                     {
-                        //char str[65]; printf(">>>>>>> null prevblock error at ht.%d patch.(%s) and reissue\n",bp->bundleheight+i,bits256_str(str,block->RO.prev_block));
+                        char str[65]; printf(">>>>>>> null prevblock error at ht.%d patch.(%s) and reissue\n",bp->bundleheight+i,bits256_str(str,block->RO.prev_block));
                         block->queued = 0;
                         block->fpipbits = 0;
                         block->issued = 0;
@@ -732,7 +740,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     struct iguana_bundle *bp=0; int32_t bundlei = -2; struct iguana_block *block;
     bp = iguana_bundleset(coin,&block,&bundlei,origblock);
     static int total; char str[65];
-    if ( 0 && bp != 0 && bp->hdrsi == 0 )
+    //if ( bundlei == 1 || bp == coin->current )
         fprintf(stderr,"RECV %s [%d:%d] block.%08x | %d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,total++);
     if ( bundlei == 1 && bp != 0 && bp->numhashes < bp->n )
     {
