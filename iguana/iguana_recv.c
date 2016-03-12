@@ -395,7 +395,7 @@ void iguana_bundlespeculate(struct iguana_info *coin,struct iguana_bundle *bp,in
 
 int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
 {
-    int32_t i,n,range,starti,better,issued,valid,pend,max,counter = 0; uint32_t now; struct iguana_block *block; double endmillis,width;
+    int32_t i,n,range,starti,issued,valid,max,counter = 0; uint32_t now; struct iguana_block *block; double endmillis,width;
     coin->numbundlesQ--;
     //printf("BUNDLEITERS.%d\n",bp->hdrsi);
     if ( bp->numhashes < bp->n && bp->bundleheight < coin->longestchain-coin->chain->bundlesize )
@@ -457,7 +457,8 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         }
     }
     max = 1 + ((coin->MAXPENDING*coin->MAXPEERS - pend) >> 1);*/
-    max = 100 + 100*(bp->hdrsi - starti);
+    issued = 0;
+    max = 100 + (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
     endmillis = OS_milliseconds() + timelimit + (rand() % 1000);
     while ( bp->emitfinish == 0 && OS_milliseconds() < endmillis )
     {
@@ -1049,7 +1050,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
     }
     if ( req == 0 )
     {
-        if ( (rand() % 10) == 0 )
+        if ( 1 )//(rand() % 10) == 0 )
             flag = iguana_neargap(coin,addr);
         else if ( 0 && (bp= addr->bp) != 0 && bp->rank != 0 && addr->pendblocks < limit )
         {
