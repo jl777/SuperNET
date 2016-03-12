@@ -156,7 +156,7 @@ struct iguana_txblock *iguana_peertxdata(struct iguana_info *coin,int32_t *bundl
 
 void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,struct iguana_msghdr *H,uint8_t *data,int32_t recvlen)
 {
-    struct iguana_bundlereq *req; struct iguana_txblock *txdata = 0; int32_t i,j,bundlei,copyflag; char fname[1024];
+    struct iguana_bundlereq *req; struct iguana_txblock *txdata = 0; int32_t valid,i,j,bundlei,copyflag; char fname[1024];
     struct iguana_bundle *bp;
     if ( 0 )
     {
@@ -183,7 +183,13 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             }
         }
     }
-    copyflag = 0 * (strcmp(coin->symbol,"BTC") != 0);
+    char str[65];
+    if ( iguana_blockvalidate(coin,&valid,&origtxdata->block,1) < 0 )
+    {
+        printf("got block that doesnt validate? %s\n",bits256_str(str,origtxdata->block.RO.hash2));
+        return;
+    } //else printf("validated.%s\n",bits256_str(str,origtxdata->block.RO.hash2));
+    copyflag = 1 * (strcmp(coin->symbol,"BTC") != 0);
     req = iguana_bundlereq(coin,addr,'B',copyflag * recvlen);
     req->recvlen = recvlen;
     req->H = *H;
@@ -196,7 +202,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
     if ( bp != 0 && bundlei >= 0 && bp->blocks[bundlei] != 0 )//&& bits256_cmp(bp->blocks[bundlei]->RO.prev_block,origtxdata->block.RO.prev_block) != 0 )
     {
         bp->blocks[bundlei]->RO = origtxdata->block.RO;
-        printf("update prev for [%d:%d]\n",bp->hdrsi,bundlei);
+        //printf("update prev for [%d:%d]\n",bp->hdrsi,bundlei);
     }
     if ( bits256_cmp(origtxdata->block.RO.hash2,coin->APIblockhash) == 0 )
     {
@@ -215,6 +221,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
         if ( iguana_ramchain_data(coin,addr,origtxdata,txarray,origtxdata->block.RO.txn_count,data,recvlen) >= 0 )
         {
             txdata->block.fpipbits = (uint32_t)addr->ipbits;
+            txdata->block.fpipbits = recvlen;
             req->datalen = txdata->datalen;
             req->ipbits = txdata->block.fpipbits;
             if ( 0 )
@@ -494,7 +501,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         {
             if ( (block= bp->blocks[i]) != 0 )
             {
-                if ( block->RO.recvlen == 0 && (block->fpipbits == 0 || block->fpos < 0) && block->queued == 0 )
+                if ( block->RO.recvlen == 0 )//&& (block->fpipbits == 0 || block->fpos < 0) && block->queued == 0 )
                 {
                     if (  bp->issued[i] == 0 || now > bp->issued[i]+10 )
                     {
@@ -503,7 +510,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                         {
                             //printf("bundleQ issue [%d:%d]\n",bp->hdrsi,i);
                             if ( coin->peers.ranked[0] != 0 )
-                                iguana_sendblockreqPT(coin,coin->peers.ranked[0],bp,bp->hdrsi,block->RO.hash2,0);
+                                iguana_sendblockreqPT(coin,coin->peers.ranked[0],bp,i,block->RO.hash2,0);
                             iguana_blockQ(coin,bp,i,block->RO.hash2,1);
                         }
                         iguana_blockQ(coin,bp,i,block->RO.hash2,0);
@@ -537,7 +544,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                 if ( (block= bp->blocks[i]) != 0 )
                 {
                     //printf("(%x:%x) ",(uint32_t)block->RO.hash2.ulongs[3],(uint32_t)bp->hashes[i].ulongs[3]);
-                    if ( block->fpipbits == 0 || (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) || iguana_blockvalidate(coin,&valid,block,1) != 0 )
+                    if ( block->fpipbits == 0 || (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) || iguana_blockvalidate(coin,&valid,block,1) < 0 )
                     {
                         char str[65]; printf(">>>>>>> ipbits.%x null prevblock error at ht.%d patch.(%s) and reissue\n",block->fpipbits,bp->bundleheight+i,bits256_str(str,block->RO.prev_block));
                         block->queued = 0;
@@ -576,7 +583,12 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
     {
         //fprintf(stderr,"bundleset block.%p vs origblock.%p\n",block,origblock);
         if ( block != origblock )
+        {
             iguana_blockcopy(coin,block,origblock);
+            block->fpipbits = origblock->fpipbits;
+            block->fpos = origblock->fpos;
+            block->RO.recvlen = origblock->RO.recvlen;
+        }
         *blockp = block;
         prevhash2 = origblock->RO.prev_block;
         if ( 0 && bits256_nonz(prevhash2) > 0 )
@@ -743,8 +755,8 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     struct iguana_bundle *bp=0; int32_t bundlei = -2; struct iguana_block *block;
     bp = iguana_bundleset(coin,&block,&bundlei,origblock);
     static int total; char str[65];
-    if ( bundlei == 1 || bp == coin->current )
-        fprintf(stderr,"RECV %s [%d:%d] block.%08x | %d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,total++);
+    if ( 0 )//bundlei == 1 || bp == coin->current )
+        fprintf(stderr,"blockRECV %s [%d:%d] block.%08x | %d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,total++);
     if ( bundlei == 1 && bp != 0 && bp->numhashes < bp->n )
     {
         printf("reissue hdrs request for [%d]\n",bp->hdrsi);
@@ -757,7 +769,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
             iguana_blockQ(coin,bundlei > 0 ? bp : 0,bundlei-1,block->RO.prev_block,0);
             //printf("recv autoreq prev [%d:%d]\n",bp!=0?bp->hdrsi:-1,bundlei);
         }
-        block->RO.recvlen = recvlen;
+        //block->RO.recvlen = recvlen;
         if ( req->copyflag != 0 && block->queued == 0 && bp != 0 )
         {
             //char str[65]; fprintf(stderr,"req.%p %s copyflag.%d %d data %d %d\n",req,bits256_str(str,block->RO.hash2),req->copyflag,block->height,req->recvlen,recvlen);

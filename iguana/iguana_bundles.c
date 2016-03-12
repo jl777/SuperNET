@@ -396,13 +396,13 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
                     }
                     fclose(fp);
                 }
-               //bp->blocks[bundlei] = block;
+                bp->blocks[bundlei] = block;
                 if ( bp->minrequests == 0 || (block->numrequests > 0 && block->numrequests < bp->minrequests) )
                     bp->minrequests = block->numrequests;
+                if ( block->fpipbits != 0 )
+                    bp->numsaved++;
                 if ( block->RO.recvlen != 0 )
                 {
-                    if ( block->fpipbits != 0 )
-                        bp->numsaved++;
                     bp->numrecv++;
                     bp->datasize += block->RO.recvlen;
                     if ( block->queued != 0 )
