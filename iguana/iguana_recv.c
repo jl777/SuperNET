@@ -480,7 +480,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
             {
                 if ( block->RO.recvlen == 0 && (block->fpipbits == 0 || block->fpos < 0) && block->queued == 0 )
                 {
-                    if (  bp->issued[i] == 0 || now > bp->issued[i]+60 )
+                    if (  bp->issued[i] == 0 || now > bp->issued[i]+10 )
                     {
                         block->numrequests++;
                         if ( bp->hdrsi == starti )
