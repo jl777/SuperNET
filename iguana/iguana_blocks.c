@@ -141,7 +141,10 @@ int32_t iguana_blockvalidate(struct iguana_info *coin,int32_t *validp,struct igu
     if ( *validp == 0 )
     {
         if ( dispflag != 0 )
+        {
             printf("iguana_blockvalidate: miscompare (%s) vs (%s)\n",bits256_str(str,hash2),bits256_str(str2,block->RO.hash2));
+            //getchar();
+        }
         return(-1);
     }
     return(0);
