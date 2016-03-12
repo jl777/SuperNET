@@ -324,8 +324,8 @@ struct iguana_ledger
 } __attribute__((packed));
 
 // ramchain append only structs -> canonical 32bit inds and ledgerhashes
-struct iguana_unspent20 { uint64_t value; uint32_t scriptoffset,txidind:28,type:4; uint16_t scriptlen; uint8_t rmd160[20]; } __attribute__((packed));
-struct iguana_spend256 { bits256 prevhash2; uint32_t sequenceid,scriptoffset; int16_t prevout; uint16_t vinscriptlen,spendind; } __attribute__((packed));
+struct iguana_unspent20 { uint64_t value; uint32_t scriptoffset,txidind:28,type:4; uint16_t scriptlen,ipbits; uint8_t rmd160[20]; } __attribute__((packed));
+struct iguana_spend256 { bits256 prevhash2; uint32_t sequenceid,scriptoffset; int16_t prevout; uint16_t vinscriptlen,spendind,ipbits; } __attribute__((packed));
 
 struct iguana_txid { bits256 txid; uint32_t txidind,firstvout,firstvin,locktime,version,timestamp,extraoffset; uint16_t numvouts,numvins; } __attribute__((packed));
 
@@ -388,14 +388,14 @@ struct iguana_peer
     char ipaddr[64],lastcommand[16],coinstr[16],symbol[16];
     uint64_t pingnonce,totalsent,totalrecv,ipbits; double pingtime,sendmillis,pingsum,getdatamillis;
     uint32_t lastcontact,sendtime,ready,startsend,startrecv,pending,lastgotaddr,lastblockrecv,pendtime,lastflush,lastpoll,myipbits,persistent_peer;
-    int32_t supernet,dead,addrind,usock,lastheight,protover,relayflag,numpackets,numpings,ipv6,height,rank,pendhdrs,pendblocks,recvhdrs,lastlefti,validpub,othervalid;
+    int32_t supernet,dead,addrind,usock,lastheight,protover,relayflag,numpackets,numpings,ipv6,height,rank,pendhdrs,pendblocks,recvhdrs,lastlefti,validpub,othervalid,dirty[2];
     double recvblocks,recvtotal;
     int64_t allocated,freed;
     struct msgcounts msgcounts;
     struct OS_memspace RAWMEM,TXDATA,HASHMEM;
     struct iguana_ramchain ramchain;
     struct iguana_fileitem *filehash2; int32_t numfilehash2,maxfilehash2;
-    struct iguana_bundle *bp;
+    struct iguana_bundle *bp; FILE *voutsfp,*vinsfp;
 #ifdef IGUANA_PEERALLOC
     struct OS_memspace *SEROUT[128];
 #endif
@@ -418,7 +418,7 @@ struct iguana_bundle
     struct queueitem DL; struct iguana_info *coin; struct iguana_bundle *nextbp;
     struct iguana_bloom16 bloom; uint32_t rawscriptspace;
     uint32_t issuetime,hdrtime,emitfinish,mergefinish,purgetime,queued,startutxo,utxofinish;
-    int32_t numhashes,numrecv,numsaved,numcached,rank,generrs;
+    int32_t numhashes,numrecv,numsaved,numcached,rank,generrs,checkedtmp;
     int32_t minrequests,n,hdrsi,bundleheight,numtxids,numspends,numunspents,numspec;
     double avetime,threshold,metric; uint64_t datasize,estsize;
     struct iguana_block *blocks[IGUANA_MAXBUNDLESIZE]; uint32_t issued[IGUANA_MAXBUNDLESIZE];
