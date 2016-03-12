@@ -485,10 +485,10 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                         block->numrequests++;
                         if ( bp->hdrsi == starti )
                         {
-                            //printf("bundleQ issue [%d:%d]\n",bp->hdrsi,i);
+                            printf("bundleQ issue [%d:%d]\n",bp->hdrsi,i);
                             if ( coin->peers.ranked[0] != 0 )
                                 iguana_sendblockreqPT(coin,coin->peers.ranked[0],bp,bp->hdrsi,block->RO.hash2,0);
-                            else iguana_blockQ(coin,bp,i,block->RO.hash2,1);
+                            iguana_blockQ(coin,bp,i,block->RO.hash2,1);
                         }
                         iguana_blockQ(coin,bp,i,block->RO.hash2,0);
                         bp->issued[i] = block->issued = now;
