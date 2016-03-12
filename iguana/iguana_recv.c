@@ -418,8 +418,8 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         iguana_bundleQ(coin,bp,bp->n*5);
         return(0);
     }
-    if ( (range= coin->peers.numranked) > IGUANA_MAXBUNDLES )
-        range = IGUANA_MAXBUNDLES;
+    if ( (range= coin->peers.numranked) > coin->MAXBUNDLES )
+        range = coin->MAXBUNDLES;
     starti = coin->current == 0 ? 0 : coin->current->hdrsi;
     if ( bp->hdrsi < starti + range )
     {
