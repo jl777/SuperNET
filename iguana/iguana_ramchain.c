@@ -2243,7 +2243,8 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         printf("iguana_bundlesaveHT: no bundlefiles error\n");
         return(-1);
     }
-    scriptspace = sigspace = pubkeyspace = 0;
+    scriptspace = 1;
+    sigspace = pubkeyspace = 0;
     for (bundlei=numtxids=numunspents=numspends=scriptspace=0; bundlei<bp->n; bundlei++)
     {
         if ( (block= bp->blocks[bundlei]) != 0 )
