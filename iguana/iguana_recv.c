@@ -1037,9 +1037,9 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         if ( pend < coin->MAXPENDING*m )
             req = queue_dequeue(&coin->blocksQ,0);
     }
-    if ( req == 0 && 0 )
+    if ( req == 0 )
     {
-        if ( (rand() % 100) == 0 )
+        if ( (rand() % 10) == 0 )
             flag = iguana_neargap(coin,addr);
         else if ( 0 && (bp= addr->bp) != 0 && bp->rank != 0 && addr->pendblocks < limit )
         {
