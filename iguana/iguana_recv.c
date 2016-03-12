@@ -467,23 +467,26 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         {
             if ( OS_milliseconds() > endmillis )
                 break;
-            if ( (block= bp->blocks[i]) != 0 && block->RO.recvlen == 0 )
+            if ( (block= bp->blocks[i]) != 0 )
             {
-                if (  bp->issued[i] == 0 || now > bp->issued[i]+13 )
+                if ( block->RO.recvlen == 0 )
                 {
-                    block->numrequests++;
-                    if ( bp->hdrsi == starti )
-                        printf("bundleQ issue [%d:%d]\n",bp->hdrsi,i);
-                    iguana_blockQ(coin,bp,i,block->RO.hash2,0);
-                    bp->issued[i] = block->issued = now;
-                    counter++;
-                    if ( --max <= 0 )
-                        break;
+                    if (  bp->issued[i] == 0 || now > bp->issued[i]+13 )
+                    {
+                        block->numrequests++;
+                        if ( bp->hdrsi == starti )
+                            printf("bundleQ issue [%d:%d]\n",bp->hdrsi,i);
+                        iguana_blockQ(coin,bp,i,block->RO.hash2,0);
+                        bp->issued[i] = block->issued = now;
+                        counter++;
+                        if ( --max <= 0 )
+                            break;
+                    }
+                    else if ( block->fpipbits != 0 && ((bp->hdrsi == 0 && i == 0) || bits256_nonz(block->RO.prev_block) != 0) )
+                        n++, issued++;
+                    else if ( bp->issued[i] != 0 )
+                        issued++;
                 }
-                else if ( block->fpipbits != 0 && ((bp->hdrsi == 0 && i == 0) || bits256_nonz(block->RO.prev_block) != 0) )
-                    n++, issued++;
-                else if ( bp->issued[i] != 0 )
-                    issued++;
             } else printf("iguana_bundleiters[%d] unexpected null block[%d]\n",bp->bundleheight,i);
             bp->numsaved = n;
         }
