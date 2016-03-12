@@ -2094,7 +2094,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
                 fclose(fp);
             }
             if ( (ramchain->sigsfileptr= OS_mapfile(fname,&ramchain->sigsfilesize,0)) == 0 )
-                return(0);
+                return(-1);
             printf("%s bp.[%d] ht.%d stacksize.%u filesize.%u\n",fname,bp->hdrsi,bp->bundleheight,ramchain->H.stacksize,(uint32_t)ramchain->sigsfilesize);
             //for (i=0; i<ramchain->H.stacksize; i++)
             //    c = *srcoffset, *destoffset++ = c, *srcoffset++ = 0;
@@ -2392,9 +2392,10 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     }
     printf(" about to save dest scriptoffset.%d stacksize.%d data scriptspace.%d\n",dest->H.scriptoffset,dest->H.stacksize,dest->H.data->scriptspace);
     depth--;
+    memset(&newchain,0,sizeof(newchain));
     if ( bundlei == bp->n && iguana_ramchain_expandedsave(coin,RAMCHAIN_DESTARG,&newchain,&HASHMEM,0,bp) == 0 )
     {
-        char str[65],str2[65]; printf("%s d.%d ht.%d %s saved lag.%d elapsed.%ld\n",bits256_str(str2,newchain.H.data->sha256),depth,dest->height,mbstr(str,dest->H.data->allocsize),now-starttime,time(NULL)-now);
+        char str[65],str2[65]; printf("%s d.%d ht.%d saved lag.%d elapsed.%ld\n",depth,dest->height,mbstr(str,dest->H.data->allocsize),now-starttime,time(NULL)-now);
         retval = 0;
     } else bp->generrs++;
     iguana_bundlemapfree(mem,&HASHMEM,ipbits,ptrs,filesizes,num,R,bp->n);
