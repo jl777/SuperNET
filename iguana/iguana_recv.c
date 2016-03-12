@@ -541,7 +541,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                 if ( (block= bp->blocks[i]) != 0 )
                 {
                     //printf("(%x:%x) ",(uint32_t)block->RO.hash2.ulongs[3],(uint32_t)bp->hashes[i].ulongs[3]);
-                    if ( (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) || iguana_blockvalidate(coin,&valid,block,1) != 0 )
+                    if ( block->fpipbits == 0 || (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) )//|| iguana_blockvalidate(coin,&valid,block,1) != 0 )
                     {
                         char str[65]; printf(">>>>>>> null prevblock error at ht.%d patch.(%s) and reissue\n",bp->bundleheight+i,bits256_str(str,block->RO.prev_block));
                         block->queued = 0;
@@ -681,6 +681,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
     {
         bp->hdrtime = (uint32_t)time(NULL);
         blockhashes[0] = bp->hashes[0];
+        iguana_blockQ(coin,bp,0,blockhashes[0],1);
         if ( num >= coin->chain->bundlesize )
         {
             iguana_blockQ(coin,0,-1,blockhashes[coin->chain->bundlesize],0);
