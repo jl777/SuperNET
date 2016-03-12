@@ -1887,10 +1887,13 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
                 origtxdata->datalen = (int32_t)ramchain->H.data->allocsize;
                 ramchain->H.ROflag = 0;
                 flag = 1;
-                if ( addr->dirty[0] != 0 && addr->voutsfp != 0 )
-                    fflush(addr->voutsfp);
-                if ( addr->dirty[1] != 0 && addr->vinsfp != 0 )
-                    fflush(addr->vinsfp);
+                if ( 0 )
+                {
+                    if ( addr->dirty[0] != 0 && addr->voutsfp != 0 )
+                        fflush(addr->voutsfp);
+                    if ( addr->dirty[1] != 0 && addr->vinsfp != 0 )
+                        fflush(addr->vinsfp);
+                }
                 memset(&R,0,sizeof(R));
                 if ( verifyflag != 0 && (mapchain= iguana_ramchain_map(coin,fname,0,1,&R,0,(uint32_t)addr->ipbits,block->RO.hash2,block->RO.prev_block,bundlei,fpos,1,0)) != 0 )
                 {
