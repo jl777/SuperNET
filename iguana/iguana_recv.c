@@ -1086,9 +1086,9 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
 int32_t iguana_reqblocks(struct iguana_info *coin)
 {
     int32_t hdrsi,lflag,n,numissued,bundlei,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp; struct iguana_peer *addr;
-    if ( 0 && (bp= coin->current) != 0 && bp->numsaved < bp->n ) // queue_size(&coin->priorityQ) == 0 &&
+    if ( 1 && (bp= coin->current) != 0 && bp->numsaved < bp->n ) // queue_size(&coin->priorityQ) == 0 &&
     {
-        for (hdrsi=numissued=0; hdrsi<coin->peers.numranked && coin->current->hdrsi+hdrsi<coin->bundlescount && numissued<bp->n; hdrsi++)
+        for (hdrsi=numissued=0; hdrsi<coin->peers.numranked && coin->current->hdrsi+hdrsi<coin->bundlescount && numissued<1; hdrsi++)
         {
             if ( (bp= coin->bundles[hdrsi + coin->current->hdrsi]) == 0 )
                 continue;
@@ -1113,7 +1113,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                         iguana_sendblockreqPT(coin,addr,bp,bundlei,block->RO.hash2,0);
                         //iguana_blockQ(coin,bp,bundlei,block->RO.hash2,1);
                         flag++;
-                        if ( ++numissued > bp->n )
+                        if ( ++numissued > 0 )
                             break;
                     }
                 }
