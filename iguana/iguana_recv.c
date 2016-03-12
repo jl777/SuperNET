@@ -469,7 +469,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                 break;
             if ( (block= bp->blocks[i]) != 0 )
             {
-                if ( block->RO.recvlen == 0 )
+                if ( block->RO.recvlen == 0 && block->fpipbits == 0 && block->queued == 0 )
                 {
                     if (  bp->issued[i] == 0 || now > bp->issued[i]+13 )
                     {
@@ -488,7 +488,6 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                         issued++;
                 }
             } else printf("iguana_bundleiters[%d] unexpected null block[%d]\n",bp->bundleheight,i);
-            bp->numsaved = n;
         }
         //if ( max <= 0 )
             break;
@@ -1022,8 +1021,8 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                         flag++;
                     } else printf("skip hdrreq.%s m.%d z.%d bp.%p longest.%d queued.%d\n",hashstr,m,z,bp,bp->coin->longestchain,bp->queued);
                 }
-                //free_queueitem(hashstr);
-                //return(flag);
+                free_queueitem(hashstr);
+                return(flag);
             } else printf("datalen.%d from gethdrs\n",datalen);
             free_queueitem(hashstr);
             hashstr = 0;
