@@ -474,7 +474,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                     //if ( bp->bundleheight == 20000 )
                     //   printf("(%d:%d) ",bp->hdrsi,i);
                     block->numrequests++;
-                    iguana_blockQ(coin,bp,i,block->RO.hash2,bp->numsaved > bp->n*.99);
+                    iguana_blockQ(coin,bp,i,block->RO.hash2,bp->hdrsi == starti);
                     bp->issued[i] = block->issued = now;
                     counter++;
                     if ( --max <= 0 )
@@ -510,7 +510,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                         block->fpipbits = 0;
                         block->issued = 0;
                         bp->issued[i] = 0;
-                        iguana_blockQ(coin,bp,i,block->RO.hash2,0);
+                        iguana_blockQ(coin,bp,i,block->RO.hash2,bp->hdrsi == starti);
                         iguana_bundleQ(coin,bp,counter == 0 ? bp->n*5 : bp->n*2);
                         return(0);
                     }
