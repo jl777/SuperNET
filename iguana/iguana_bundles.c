@@ -298,8 +298,7 @@ struct iguana_bundle *iguana_bundlecreate(struct iguana_info *coin,int32_t *bund
                 coin->bundles[coin->bundlescount-1]->nextbp = bp;
             *bundleip = 0;
             bits256_str(str,bundlehash2);
-            sprintf(dirname,"tmp/%s/%d",coin->symbol,bp->bundleheight);
-            OS_ensure_directory(dirname);
+            sprintf(dirname,"tmp/%s/%d",coin->symbol,bp->bundleheight), OS_ensure_directory(dirname);
             //printf("ht.%d alloc.[%d] new hdrs.%s %s\n",bp->bundleheight,coin->bundlescount,str,bits256_str(str2,allhash));
             iguana_bundlehash2add(coin,0,bp,0,bundlehash2);
             if ( issueflag != 0 )
@@ -386,7 +385,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
                     printf("iguana_bundlecalcs.(%s) illegal hdrsi.%d bundlei.%d checki.%d\n",fname,hdrsi,bundlei,checki);
                     continue;
                 }
-                if ( bp->checkedtmp < bp->n && (fp= fopen(fname,"rb")) != 0 )
+                if ( 0 && bp->checkedtmp < bp->n && (fp= fopen(fname,"rb")) != 0 )
                 {
                     fseek(fp,0,SEEK_END);
                     if ( block->RO.recvlen == 0 )
