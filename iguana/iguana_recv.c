@@ -404,6 +404,26 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
 {
     int32_t i,n,range,starti,issued,valid,max,counter = 0; uint32_t now; struct iguana_block *block; double endmillis,width;
     coin->numbundlesQ--;
+    if ( bp->emitfinish != 0 )
+    {
+        if ( bp->emitfinish > coin->startutc )
+        {
+            if ( bp->startutxo == 0 )
+            {
+                if ( bp->hdrsi == 0 || coin->bundles[bp->hdrsi-1]->emitfinish != 0 )
+                {
+                    bp->startutxo = (uint32_t)time(NULL);
+                    printf("GENERATE UTXO, verify sigs, etc for ht.%d\n",bp->bundleheight);
+                }
+                iguana_bundleQ(coin,bp,1000);
+            }
+            else if ( bp->utxofinish == 0 )
+            {
+                printf("UTXO FINISHED ht.%d\n",bp->bundleheight);
+            }
+        }
+        return(0);
+    }
     //printf("BUNDLEITERS.%d\n",bp->hdrsi);
     if ( bp->numhashes < bp->n && bp->bundleheight < coin->longestchain-coin->chain->bundlesize )
     {
@@ -542,24 +562,8 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
             iguana_bundleQ(coin,bp,width);
             return(1);
         }
-        iguana_bundleQ(coin,bp,width);
     }
-    else if ( bp->emitfinish > coin->startutc )
-    {
-        if ( bp->startutxo == 0 )
-        {
-            if ( bp->hdrsi == 0 || coin->bundles[bp->hdrsi-1]->emitfinish != 0 )
-            {
-                bp->startutxo = (uint32_t)time(NULL);
-                printf("GENERATE UTXO, verify sigs, etc for ht.%d\n",bp->bundleheight);
-            }
-            iguana_bundleQ(coin,bp,width);
-        }
-        else if ( bp->utxofinish == 0 )
-        {
-            printf("UTXO FINISHED ht.%d\n",bp->bundleheight);
-        }
-    } else iguana_bundleQ(coin,bp,width);
+    iguana_bundleQ(coin,bp,width);
     return(0);
 }
 
@@ -668,6 +672,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
     if ( num < 2 )
         return(req);
     iguana_bundlefind(coin,&bp,&bundlei,blockhashes[1]);
+    iguana_blockQ(coin,0,-1,blockhashes[1],0);
     iguana_blockQ(coin,0,-1,blockhashes[1],1);
     //char str[65];
     //if ( bp != 0 && bp->hdrsi == 0 )
@@ -730,9 +735,9 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
         struct iguana_block *block;
         if ( num == coin->chain->bundlesize+1 && (block= iguana_blockhashset(coin,-1,blockhashes[1],1)) != 0 )
             block->blockhashes = blockhashes, req->hashes = 0;
-        iguana_blockQ(coin,0,-1,blockhashes[1],0);
+        //iguana_blockQ(coin,0,-1,blockhashes[1],0);
     }
-    else iguana_blockQ(coin,0,-1,blockhashes[1],0); // should be RT block
+    //else iguana_blockQ(coin,0,-1,blockhashes[1],0); // should be RT block
     return(req);
 }
 
