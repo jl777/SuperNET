@@ -226,7 +226,7 @@ int32_t category_default_ishwm(struct category_chain *catchain,int32_t prevheigh
 
 int32_t category_default_payment(struct category_chain *catchain,void *src,void *dest,uint64_t amount)
 {
-    uint32_t srcind=0,destind=0;
+    //uint32_t srcind=0,destind=0;
     // catchain->balances[destind] += amount;
     // catchain->balances[srcind] -= amount;
     return(0);
