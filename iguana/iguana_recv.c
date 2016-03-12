@@ -440,7 +440,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         return(0);
     }
         //printf("initial requests for hdrs.%d\n",bp->hdrsi);
-    pend = queue_size(&coin->priorityQ) + queue_size(&coin->blocksQ);
+    /*pend = queue_size(&coin->priorityQ) + queue_size(&coin->blocksQ);
     for (i=0; i<IGUANA_MAXPEERS; i++)
         pend += coin->peers.active[i].pendblocks;
     if ( pend >= coin->MAXPENDING*coin->peers.numranked )
@@ -456,8 +456,9 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
             return(0);
         }
     }
-    max = 1 + ((coin->MAXPENDING*coin->MAXPEERS - pend) >> 1);
-    endmillis = OS_milliseconds() + timelimit;
+    max = 1 + ((coin->MAXPENDING*coin->MAXPEERS - pend) >> 1);*/
+    max = 100;
+    endmillis = OS_milliseconds() + timelimit + (rand() % 1000);
     while ( bp->emitfinish == 0 && OS_milliseconds() < endmillis )
     {
         now = (uint32_t)time(NULL);
@@ -491,7 +492,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     }
     width = 1000 + sqrt(sqrt(bp->n * (1+bp->numsaved+issued)) * (10+coin->bundlescount-bp->hdrsi));
     //if ( 0 && counter > 0 )//&& bp->rank <= coin->peers.numranked )
-        printf("ITERATE.%d bundle.%d h.%d n.%d r.%d s.%d F.%d I.%d T.%d %f %u next %f counter.%d\n",bp->rank,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,issued,timelimit,endmillis-OS_milliseconds(),(uint32_t)time(NULL),width,counter);
+        printf("ITERATE.%d max.%d bundle.%d h.%d n.%d r.%d s.%d F.%d I.%d T.%d %f %u next %f counter.%d\n",bp->rank,max,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,issued,timelimit,endmillis-OS_milliseconds(),(uint32_t)time(NULL),width,counter);
     if ( bp->emitfinish == 0 )
     {
         if ( bp->numsaved >= bp->n )
