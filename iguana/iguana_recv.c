@@ -508,7 +508,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                         block->numrequests++;
                         if ( bp->hdrsi == starti )
                         {
-                            printf("bundleQ issue [%d:%d] numsaved.%d\n",bp->hdrsi,i,bp->numsaved);
+                            printf("bundleQ issue %x %d %d [%d:%d] numsaved.%d\n",block->RO.recvlen,block->fpipbits,block->fpos,bp->hdrsi,i,bp->numsaved);
                             if ( coin->peers.ranked[0] != 0 )
                                 iguana_sendblockreqPT(coin,coin->peers.ranked[0],bp,i,block->RO.hash2,0);
                             iguana_blockQ(coin,bp,i,block->RO.hash2,1);
