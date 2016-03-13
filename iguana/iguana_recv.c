@@ -267,6 +267,7 @@ void iguana_gotheadersM(struct iguana_info *coin,struct iguana_peer *addr,struct
     }
     req = iguana_bundlereq(coin,addr,'H',0);
     req->blocks = blocks, req->n = n;
+    char str[65]; printf("PTblockhdrs.%s\n",bits256_str(str,blocks[0].RO.hash2));
     queue_enqueue("bundlesQ",&coin->bundlesQ,&req->DL,0);
 }
 
