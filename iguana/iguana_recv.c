@@ -678,7 +678,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
             bp = 0, bundlei = -1;
             if ( (bp= iguana_bundleset(coin,&block,&bundlei,&blocks[i])) != 0 )
             {
-                printf("{%d:%d} ",bp->hdrsi,bundlei);
+                //printf("{%d:%d} ",bp->hdrsi,bundlei);
                 if ( i == 0 )
                     firstbp = bp;
                 if ( bundlei == i+1 && bp == firstbp )
@@ -690,6 +690,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
                 }
             } else printf("blockhash[%d] cant be found\n",i);
         }
+        char str[65]; printf("blockhdrs.%s hdrsi.%d\n",bits256_str(str,blocks[0].RO.hash2),firstbp!=0?firstbp->hdrsi:-1);
         if ( firstbp != 0 && match == coin->chain->bundlesize-1 && n == firstbp->n )
         {
             if ( firstbp->queued == 0 )
