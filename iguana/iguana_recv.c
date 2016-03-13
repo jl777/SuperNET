@@ -468,11 +468,15 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
             char str[64];
             queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
         }
-        else if ( time(NULL) > bp->lastspeculative+600 )
+        else if ( time(NULL) > bp->lastspeculative+600 || (bp->hdrsi == starti && time(NULL) > bp->lastspeculative+90) )
         {
-            for (i=1,counter=0; i<bp->n; i++)
-                if ( bits256_nonz(bp->hashes[i]) == 0 && bits256_nonz(bp->speculative[i]) > 0 )
+            for (i=1,counter=0; i<bp->n && i<bp->numspec; i++)
+            {
+                if ( bp->speculative != 0 && bits256_nonz(bp->hashes[i]) == 0 && bits256_nonz(bp->speculative[i]) > 0 )
                     iguana_blockQ(coin,0,-1,bp->speculative[i],0), counter++;
+                else if ( bits256_nonz(bp->hashes[i]) != 0 )
+                    iguana_blockQ(coin,0,-1,bp->hashes[i],0), counter++;
+            }
             if ( counter != 0 )
                 printf("SPECULATIVE issue.%d bp.[%d]\n",counter,bp->hdrsi);
             bp->lastspeculative = (uint32_t)time(NULL);
@@ -1273,14 +1277,15 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
             }
             else*/ if ( bp->speculative != 0 && (bits256_cmp(bp->hashes[bundlei],bp->speculative[bundlei]) != 0 || (rand() % 100) == 0) )
             {
-                if ( iguana_blockfind(coin,bp->speculative[bundlei]) == 0 )
+                if ( time(NULL) > bp->issued[bundlei]+30 && iguana_blockfind(coin,bp->speculative[bundlei]) == 0 )
                 {
                     bp->hashes[bundlei] = bp->speculative[bundlei];
                     struct iguana_bloominds bit = iguana_calcbloom(bp->speculative[bundlei]);
                     if ( iguana_bloomfind(coin,&bp->bloom,0,bit) < 0 )
                         iguana_bloomset(coin,&bp->bloom,0,bit);
-                    printf("speculative next %d\n",coin->blocks.hwmchain.height+1);
+                    //printf("speculative next %d\n",coin->blocks.hwmchain.height+1);
                     iguana_blockQ(coin,0,-1,bp->speculative[bundlei],0);
+                    bp->issued[bundlei] = (uint32_t)time(NULL);
                 }
             }
         }
