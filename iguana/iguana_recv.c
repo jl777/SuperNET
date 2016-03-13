@@ -1283,7 +1283,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                     struct iguana_bloominds bit = iguana_calcbloom(bp->speculative[bundlei]);
                     if ( iguana_bloomfind(coin,&bp->bloom,0,bit) < 0 )
                         iguana_bloomset(coin,&bp->bloom,0,bit);
-                    //printf("speculative next %d\n",coin->blocks.hwmchain.height+1);
+                    printf("speculative next %d\n",coin->blocks.hwmchain.height+1);
                     iguana_blockQ(coin,0,-1,bp->speculative[bundlei],0);
                     bp->issued[bundlei] = (uint32_t)time(NULL);
                 }
