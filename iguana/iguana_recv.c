@@ -678,6 +678,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
             bp = 0, bundlei = -1;
             if ( (bp= iguana_bundleset(coin,&block,&bundlei,&blocks[i])) != 0 )
             {
+                printf("{%d:%d} ",bp->hdrsi,bundlei);
                 if ( i == 0 )
                     firstbp = bp;
                 if ( bundlei == i+1 && bp == firstbp )
