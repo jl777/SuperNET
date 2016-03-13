@@ -494,7 +494,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     issued = 0;
     max = 100 + (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
     endmillis = OS_milliseconds() + timelimit + (rand() % 1000);
-    while ( bp->emitfinish == 0 && OS_milliseconds() < endmillis )
+    while ( bp->numsaved < bp->n && OS_milliseconds() < endmillis )
     {
         now = (uint32_t)time(NULL);
         for (i=n=issued=counter=0; i<bp->n; i++)
@@ -558,7 +558,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                 } else printf("error getting block (%d:%d) %p vs %p\n",bp->hdrsi,i,block,iguana_blockfind(coin,bp->hashes[i]));
             }
             // merkle
-            printf(">>>>>>>>>>>>>>>>>>>>>>> EMIT bundle.%d | 1st.%d maxbundles.%d\n",bp->bundleheight,coin->current!=0?coin->current->hdrsi:-1,coin->MAXBUNDLES);
+            printf(">>>>>>>>>>>>>>>>>>>>>>> EMIT bundle.%d | 1st.%d [%d] maxbundles.%d\n",bp->bundleheight,coin->current!=0?coin->current->hdrsi:-1,coin->current!=0?coin->current->numsaved:-1,coin->MAXBUNDLES);
             bp->emitfinish = 1;
             coin->MAXBUNDLES++;
             sleep(1);
