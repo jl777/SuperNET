@@ -533,7 +533,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         //usleep(10000);
     }
     width = 100 + max*100;//sqrt(sqrt(bp->n * (1+bp->numsaved+issued)) * (10+coin->bundlescount-bp->hdrsi));
-    if ( 1 && bp->hdrsi == starti )
+   // if ( 1 && bp->hdrsi == starti )
         printf("ITERATE.%d max.%d bundle.%d h.%d n.%d r.%d s.%d F.%d I.%d T.%d %f %u next %f counter.%d\n",bp->rank,max,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,issued,timelimit,endmillis-OS_milliseconds(),(uint32_t)time(NULL),width,counter);
     if ( bp->emitfinish == 0 )
     {
