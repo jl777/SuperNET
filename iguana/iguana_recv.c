@@ -656,6 +656,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
             {
                 if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish == 0 )
                 {
+                    blockhashes[0] = bp->hashes[0];
                     vcalc_sha256(0,allhash.bytes,blockhashes[0].bytes,coin->chain->bundlesize * sizeof(*blockhashes));
                     if ( bits256_cmp(allhash,bp->allhash) == 0 )
                     {
