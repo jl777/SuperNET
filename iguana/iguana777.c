@@ -332,7 +332,7 @@ void iguana_helper(void *arg)
         flag = 0;
         if ( (ptr= queue_dequeue(&helperQ,0)) != 0 )
         {
-            if ( (coin= ptr->coin) != 0 && myallocated(0,-1) > coin->MAXMEM )
+            if ( (coin= ptr->coin) != 0 && 0 )//myallocated(0,-1) > coin->MAXMEM )
                 queue_enqueue("reQ",&helperQ,&ptr->DL,0);
             else
             {
@@ -353,7 +353,7 @@ void iguana_helper(void *arg)
             }
         }
         if ( flag == 0 )
-            sleep(10);
+            usleep(100000);
     }
 }
 
