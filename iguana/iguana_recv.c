@@ -440,7 +440,7 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
                 else if ( bp->issued[i] != 0 )
                     issued++;
             } else n++, issued++;
-        } else printf("iguana_bundleiters[%d] unexpected null block[%d]\n",bp->bundleheight,i);
+        } //else printf("iguana_bundleiters[%d] unexpected null block[%d]\n",bp->bundleheight,i);
     }
     return(issued);
 }
@@ -662,7 +662,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
                     if ( i != n-1 )
                         fprintf(stderr,"recvhdr: ht.%d[%d] vs i.%d\n",bp->bundleheight,bundlei,i);
                 }
-            }
+            } else printf("blockhash[%d] cant be found\n",i);
         }
         if ( firstbp != 0 && match == coin->chain->bundlesize-1 && n == firstbp->n )
         {
