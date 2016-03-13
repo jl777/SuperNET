@@ -639,7 +639,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
 
 struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct iguana_bundlereq *req,struct iguana_block *blocks,int32_t n,int32_t *newhwmp)
 {
-    int32_t i,bundlei,match; struct iguana_block *block; struct iguana_bundle *bp,*firstbp = 0;
+    int32_t i,bundlei,match; bits256 *blockhashes,allhash; struct iguana_block *block; struct iguana_bundle *bp,*firstbp = 0;
     if ( blocks == 0 )
     {
         printf("iguana_recvblockhdrs null blocks?\n");
@@ -647,6 +647,30 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
     }
     if ( blocks != 0 && n > 0 )
     {
+        if ( n >= coin->chain->bundlesize )
+        {
+            blockhashes = malloc(sizeof(*blockhashes) * coin->chain->bundlesize);
+            for (i=0; i<coin->chain->bundlesize; i++)
+                blockhashes[i] = blocks[i].RO.hash2;
+            for (i=0; i<coin->bundlescount; i++)
+            {
+                if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish == 0 )
+                {
+                    vcalc_sha256(0,allhash.bytes,blockhashes[0].bytes,coin->chain->bundlesize * sizeof(*blockhashes));
+                    if ( bits256_cmp(allhash,bp->allhash) == 0 )
+                    {
+                        if ( bp->queued != 0 )
+                            bp->queued = 0;
+                        if ( iguana_allhashcmp(coin,bp,blockhashes,coin->chain->bundlesize) > 0 )
+                        {
+                            free(blockhashes);
+                            return(req);
+                        }
+                    }
+                }
+            }
+            free(blockhashes);
+        }
         for (i=match=0; i<n; i++)
         {
             //fprintf(stderr,"i.%d of %d bundleset\n",i,n);
