@@ -255,6 +255,7 @@ void iguana_gottxidsM(struct iguana_info *coin,struct iguana_peer *addr,bits256 
     queue_enqueue("bundlesQ",&coin->bundlesQ,&req->DL,0);
 }
 
+static int32_t HDRnet;
 void iguana_gotheadersM(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_block *blocks,int32_t n)
 {
     struct iguana_bundlereq *req;
@@ -267,7 +268,8 @@ void iguana_gotheadersM(struct iguana_info *coin,struct iguana_peer *addr,struct
     }
     req = iguana_bundlereq(coin,addr,'H',0);
     req->blocks = blocks, req->n = n;
-    char str[65]; printf("PTblockhdrs.%s\n",bits256_str(str,blocks[0].RO.hash2));
+    HDRnet++;
+    char str[65]; printf("PTblockhdrs.%s net.%d\n",bits256_str(str,blocks[0].RO.hash2),HDRnet);
     queue_enqueue("bundlesQ",&coin->bundlesQ,&req->DL,0);
 }
 
@@ -869,6 +871,7 @@ int32_t iguana_processbundlesQ(struct iguana_info *coin,int32_t *newhwmp) // sin
         }
         else if ( req->type == 'H' ) // blockhdrs (doesnt have txn_count!)
         {
+            HDRnet--;
             if ( (req= iguana_recvblockhdrs(coin,req,req->blocks,req->n,newhwmp)) != 0 )
             {
                 if ( req->blocks != 0 )
