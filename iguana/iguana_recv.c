@@ -501,7 +501,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         {
             if ( (block= bp->blocks[i]) != 0 )
             {
-                if ( block->RO.recvlen == 0 && block->fpipbits == 0 )//|| block->fpipbits == 0 || block->fpos < 0 )
+                if ( block->fpipbits == 0 )//|| block->fpipbits == 0 || block->fpos < 0 )
                 {
                     if (  bp->issued[i] == 0 || now > bp->issued[i]+10 )
                     {
@@ -560,6 +560,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
             // merkle
             printf(">>>>>>>>>>>>>>>>>>>>>>> EMIT bundle.%d\n",bp->bundleheight);
             bp->emitfinish = 1;
+            coin->MAXBUNDLES++;
             sleep(1);
             iguana_emitQ(coin,bp);
             iguana_bundleQ(coin,bp,width);
