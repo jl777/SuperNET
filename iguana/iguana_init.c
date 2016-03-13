@@ -27,13 +27,13 @@ void iguana_initQs(struct iguana_info *coin)
 {
     int32_t i;
     iguana_initQ(&coin->acceptQ,"acceptQ");
-    iguana_initQ(&coin->bundlesQ,"bundlesQ");
     iguana_initQ(&coin->hdrsQ,"hdrsQ");
     iguana_initQ(&coin->blocksQ,"blocksQ");
     iguana_initQ(&coin->priorityQ,"priorityQ");
     iguana_initQ(&coin->possibleQ,"possibleQ");
     iguana_initQ(&coin->cacheQ,"cacheQ");
     iguana_initQ(&coin->TerminateQ,"TerminateQ");
+    iguana_initQ(&coin->recvQ,"recvQ");
     for (i=0; i<IGUANA_MAXPEERS; i++)
         iguana_initQ(&coin->peers.active[i].sendQ,"addrsendQ");
 }
@@ -53,7 +53,7 @@ void iguana_initpeer(struct iguana_info *coin,struct iguana_peer *addr,uint64_t 
 void iguana_initcoin(struct iguana_info *coin,cJSON *argjson)
 {
     int32_t i; 
-    //sprintf(dirname,"tmp/%s",coin->symbol), OS_portable_path(dirname);
+    //sprintf(dirname,"%s/%s",GLOBALTMPDIR,coin->symbol), OS_portable_path(dirname);
     //OS_portable_rmdir(dirname,0);
     portable_mutex_init(&coin->peers_mutex);
     portable_mutex_init(&coin->blocks_mutex);
@@ -135,7 +135,7 @@ int32_t iguana_savehdrs(struct iguana_info *coin)
     n = coin->blocks.hwmchain.height + 1;
     hashes = mycalloc('h',coin->chain->bundlesize,sizeof(*hashes));
     sprintf(oldfname,"confs/%s_oldhdrs.txt",coin->symbol), OS_compatible_path(oldfname);
-    sprintf(tmpfname,"tmp/%s/hdrs.txt",coin->symbol), OS_compatible_path(tmpfname);
+    sprintf(tmpfname,"%s/%s/hdrs.txt",GLOBALTMPDIR,coin->symbol), OS_compatible_path(tmpfname);
     sprintf(fname,"confs/%s_hdrs.txt",coin->symbol), OS_compatible_path(fname);
     if ( (fp= fopen(tmpfname,"w")) != 0 )
     {
@@ -273,9 +273,9 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                             {
                                 bp->emitfinish = (uint32_t)time(NULL) + 1;
                                 //printf("LOADED bundle.%d\n",bp->bundleheight);
-                                if ( bp->hdrsi == 0 || coin->bundles[bp->hdrsi-1]->emitfinish != 0 )
+                                //if ( bp->hdrsi == 0 || coin->bundles[bp->hdrsi-1]->emitfinish != 0 )
                                 {
-                                    bp->startutxo = (uint32_t)time(NULL);
+                                    //bp->startutxo = (uint32_t)time(NULL);
                                     printf("GENERATE UTXO, verify sigs, etc for ht.%d\n",bp->bundleheight);
                                     iguana_bundleQ(coin,bp,1000);
                                 }
@@ -286,6 +286,7 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                                 init_hexbytes_noT(str,hash2.bytes,sizeof(hash2));
                                 bp->emitfinish = 0;
                                 iguana_blockQ(coin,bp,0,hash2,1);
+                                printf("init reqhdrs.%d\n",bp->bundleheight);
                                 queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(str),1);
                             }
                         }

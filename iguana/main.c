@@ -35,10 +35,10 @@ int32_t Showmode,Autofold,PANGEA_MAXTHREADS = 1;
 
 struct category_info *Categories;
 struct iguana_info *Coins[IGUANA_MAXCOINS];
-char Userhome[512];
+char Userhome[512],GLOBALTMPDIR[512] = "tmp";
 int32_t USE_JAY,FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel;
 uint32_t prices777_NXTBLOCK,MAX_DEPTH = 100;
-queue_t helperQ,jsonQ,finishedQ,bundlesQ;
+queue_t helperQ,jsonQ,finishedQ,bundlesQ,validateQ;
 struct supernet_info MYINFO,**MYINFOS;
 static int32_t initflag;
 cJSON *API_json;
@@ -324,20 +324,21 @@ void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func
 
 void mainloop(struct supernet_info *myinfo)
 {
-    struct iguana_helper *ptr; int32_t flag;
+    int32_t flag;
     while ( 1 )
     {
         flag = 0;
         iguana_jsonQ();
         if ( flag == 0 )
         {
-            if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
+            /*if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
             {
                 if ( ptr->bp != 0 && ptr->coin != 0 )
                     flag += iguana_bundleiters(ptr->coin,ptr->bp,ptr->timelimit);
                 myfree(ptr,ptr->allocsize);
             }
-            else pangea_queues(SuperNET_MYINFO(0));
+            else*/
+                pangea_queues(SuperNET_MYINFO(0));
         }
         if ( flag == 0 )
         {
@@ -1083,19 +1084,29 @@ void iguana_main(void *arg)
     //iguana_chaingenesis(genesisblock,"sha256",1,1317972665,0x1e0ffff0,2084524493,bits256_conv("97ddfbbae6be97fd6cdf3e7ca13232a3afff2353e29badfab7f73011edd4ced9")); // LTC
 
     iguana_initQ(&helperQ,"helperQ");
+    iguana_initQ(&jsonQ,"jsonQ");
+    iguana_initQ(&finishedQ,"finishedQ");
+    iguana_initQ(&bundlesQ,"bundlesQ");
+    iguana_initQ(&validateQ,"validateQ");
+    if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
+    {
+        safecopy(Userhome,jstr(argjson,"userhome"),sizeof(Userhome));
+        if ( jstr(argjson,"tmpdir") != 0 )
+        {
+            safecopy(GLOBALTMPDIR,jstr(argjson,"tmpdir"),sizeof(GLOBALTMPDIR));
+            printf("GLOBAL tmpdir.(%s)\n",GLOBALTMPDIR);
+        }
+        free_json(argjson);
+    }
     OS_ensure_directory("help");
     OS_ensure_directory("confs");
     OS_ensure_directory("DB"), OS_ensure_directory("DB/ECB");
     OS_ensure_directory("tmp");
+    OS_ensure_directory(GLOBALTMPDIR);
     OS_ensure_directory("vins");
     OS_ensure_directory("vouts");
     iguana_coinadd("BTC",0);
     iguana_coinadd("BTCD",0);
-    if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
-    {
-        safecopy(Userhome,jstr(argjson,"userhome"),sizeof(Userhome));
-        free_json(argjson);
-    }
     if ( (tmpstr= SuperNET_JSON(myinfo,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"help\"}"),0)) != 0 )
     {
         if ( (API_json= cJSON_Parse(tmpstr)) != 0 && (API_json= jobj(API_json,"result")) != 0 )
@@ -1120,10 +1131,10 @@ void iguana_main(void *arg)
         sleep(1);
         char *str;
         //iguana_launchcoin(MYINFO.rpcsymbol,cJSON_Parse("{}"));
-        if ( 1 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":64,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":1,\"poll\":1}"),0)) != 0 )
+        if ( 1 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":256,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":1,\"poll\":1}"),0)) != 0 )
         {
             free(str);
-            if ( 0 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":128,\"newcoin\":\"BTCD\",\"active\":1}"),0)) != 0 )
+            if ( 0 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":256,\"maxpeers\":256,\"newcoin\":\"BTCD\",\"active\":1}"),0)) != 0 )
             {
                 free(str);
                 if ( 0 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"login\",\"handle\":\"alice\",\"password\":\"alice\",\"passphrase\":\"alice\"}"),0)) != 0 )

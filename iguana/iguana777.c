@@ -212,7 +212,7 @@ uint32_t iguana_updatemetrics(struct iguana_info *coin)
     iguana_peermetrics(coin);
     sprintf(fname,"confs/%s_peers.txt",coin->symbol), OS_compatible_path(fname);
     sprintf(oldfname,"confs/%s_oldpeers.txt",coin->symbol), OS_compatible_path(oldfname);
-    sprintf(tmpfname,"tmp/%s/peers.txt",coin->symbol), OS_compatible_path(tmpfname);
+    sprintf(tmpfname,"%s/%s/peers.txt",GLOBALTMPDIR,coin->symbol), OS_compatible_path(tmpfname);
     if ( (fp= fopen(tmpfname,"w")) != 0 )
     {
         for (i=0; i<coin->peers.numranked; i++)
@@ -272,6 +272,20 @@ void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t ti
     queue_enqueue("bundlesQ",&bundlesQ,&ptr->DL,0);
 }
 
+void iguana_validateQ(struct iguana_info *coin,struct iguana_bundle *bp)
+{
+    struct iguana_helper *ptr;
+    ptr = mycalloc('i',1,sizeof(*ptr));
+    ptr->allocsize = sizeof(*ptr);
+    ptr->coin = coin;
+    ptr->bp = bp, ptr->hdrsi = bp->hdrsi;
+    ptr->type = 'V';
+    ptr->starttime = (uint32_t)time(NULL);
+    ptr->timelimit = 0;
+    printf("VALIDATE Q %s bundle.%d[%d] utxofinish.%u balancefinish.%u\n",coin->symbol,ptr->hdrsi,bp->n,bp->utxofinish,bp->balancefinish);
+    queue_enqueue("validateQ",&validateQ,&ptr->DL,0);
+}
+
 int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_helper *ptr)
 {
     struct iguana_info *coin; struct iguana_peer *addr; struct iguana_bundle *bp,*nextbp;
@@ -300,8 +314,7 @@ int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *m
                 {
                     bp->emitfinish = (uint32_t)time(NULL);
                     coin->numemitted++;
-                }
-                else bp->emitfinish = 0;
+                } else bp->emitfinish = 0;
             }
         } else printf("no bundle in helperrequest\n");
     } else printf("no coin in helperrequest\n");
@@ -310,7 +323,7 @@ int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *m
 
 void iguana_helper(void *arg)
 {
-    FILE *fp = 0; char fname[512],name[64],*helpername = 0; cJSON *argjson=0; int32_t flag;
+    FILE *fp = 0; char fname[512],name[64],*helpername = 0; cJSON *argjson=0; int32_t flag,idle=0;
     struct iguana_helper *ptr; struct iguana_info *coin; struct OS_memspace MEM,*MEMB;
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
         helpername = jstr(argjson,"name");
@@ -319,7 +332,7 @@ void iguana_helper(void *arg)
         sprintf(name,"helper.%d",rand());
         helpername = name;
     }
-    sprintf(fname,"tmp/%s",helpername);
+    sprintf(fname,"%s/%s",GLOBALTMPDIR,helpername);
     OS_compatible_path(fname);
     fp = fopen(fname,"wb");
     if ( argjson != 0 )
@@ -332,10 +345,11 @@ void iguana_helper(void *arg)
         flag = 0;
         if ( (ptr= queue_dequeue(&helperQ,0)) != 0 )
         {
-            if ( (coin= ptr->coin) != 0 && 0 )//myallocated(0,-1) > coin->MAXMEM )
+            if ( (coin= ptr->coin) != 0 && 0 )
                 queue_enqueue("reQ",&helperQ,&ptr->DL,0);
             else
             {
+                idle = 0;
                 coin->helperdepth++;
                 iguana_helpertask(fp,&MEM,MEMB,ptr);
                 coin->helperdepth--;
@@ -343,17 +357,28 @@ void iguana_helper(void *arg)
             }
             flag++;
         }
-        else
+        else if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
         {
-            if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
+            idle = 0;
+            if ( ptr->bp != 0 && ptr->coin != 0 )
+                flag += iguana_bundleiters(ptr->coin,ptr->bp,ptr->timelimit);
+            else printf("helper missing param? %p %p %u\n",ptr->coin,ptr->bp,ptr->timelimit);
+            myfree(ptr,ptr->allocsize);
+            flag++;
+        }
+        else if ( idle++ > 100 )
+        {
+            if ( (ptr= queue_dequeue(&validateQ,0)) != 0 )
             {
                 if ( ptr->bp != 0 && ptr->coin != 0 )
-                    flag += iguana_bundleiters(ptr->coin,ptr->bp,ptr->timelimit);
+                    flag += iguana_bundlevalidate(ptr->coin,ptr->bp);
+                else printf("helper validate missing param? %p %p\n",ptr->coin,ptr->bp);
                 myfree(ptr,ptr->allocsize);
+                flag++;
             }
         }
         if ( flag == 0 )
-            usleep(100000);
+            usleep(10000);
     }
 }
 
@@ -454,7 +479,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin = iguana_coinadd(symbol,json);
     coin->launched = launched;
     if ( (coin->MAXPEERS= maxpeers) <= 0 )
-        coin->MAXPEERS = (strcmp(symbol,"BTC") == 0) ? 64 : 32;
+        coin->MAXPEERS = (strcmp(symbol,"BTC") == 0) ? 128 : 64;
     if ( (coin->MAXRECVCACHE= maxrecvcache) == 0 )
         coin->MAXRECVCACHE = IGUANA_MAXRECVCACHE;
     if ( (coin->MAXPENDING= maxpending) <= 0 )
@@ -465,7 +490,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     sprintf(dirname,"DB/%s",symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"vouts/%s",symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"vins/%s",symbol), OS_ensure_directory(dirname);
-    sprintf(dirname,"tmp/%s",symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/%s",GLOBALTMPDIR,symbol), OS_ensure_directory(dirname);
     coin->initialheight = initialheight;
     coin->mapflags = mapflags;
     coin->MAXMEM = juint(json,"RAM");

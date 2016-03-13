@@ -418,7 +418,7 @@ struct iguana_bundle
 {
     struct queueitem DL; struct iguana_info *coin; struct iguana_bundle *nextbp;
     struct iguana_bloom16 bloom; uint32_t rawscriptspace;
-    uint32_t issuetime,hdrtime,emitfinish,mergefinish,purgetime,queued,startutxo,utxofinish;
+    uint32_t issuetime,hdrtime,emitfinish,mergefinish,purgetime,queued,startutxo,utxofinish,balancefinish,validated,lastspeculative;
     int32_t numhashes,numrecv,numsaved,numcached,rank,generrs,checkedtmp;
     int32_t minrequests,n,hdrsi,bundleheight,numtxids,numspends,numunspents,numspec;
     double avetime,threshold,metric; uint64_t datasize,estsize;
@@ -467,7 +467,7 @@ struct iguana_info
     struct iguana_bitmap screen;
     //struct pollfd fds[IGUANA_MAXPEERS]; struct iguana_peer bindaddr; int32_t numsocks;
     struct OS_memspace TXMEM;
-    queue_t acceptQ,bundlesQ,hdrsQ,blocksQ,priorityQ,possibleQ,TerminateQ,cacheQ;
+    queue_t acceptQ,hdrsQ,blocksQ,priorityQ,possibleQ,TerminateQ,cacheQ,recvQ;
     double parsemillis,avetime; uint32_t Launched[8],Terminated[8];
     portable_mutex_t peers_mutex,blocks_mutex;
     portable_mutex_t scripts_mutex[2]; FILE *scriptsfp[2]; void *scriptsptr[2]; long scriptsfilesize[2];
@@ -785,8 +785,13 @@ uint32_t iguana_sparseaddpk(uint8_t *bits,int32_t width,uint32_t tablesize,uint8
 int32_t iguana_vinscriptparse(struct iguana_info *coin,struct vin_info *vp,uint32_t *sigsizep,uint32_t *pubkeysizep,uint32_t *p2shsizep,uint32_t *suffixp,uint8_t *vinscript,int32_t scriptlen);
 void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msghdr *H,uint8_t *buf,int32_t len);
 int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp);
+int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp);
+int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp);
+int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp);
+void iguana_validateQ(struct iguana_info *coin,struct iguana_bundle *bp);
 
-extern queue_t bundlesQ;
+extern queue_t bundlesQ,validateQ;
+extern char GLOBALTMPDIR[];
 
 #include "../includes/iguana_api.h"
 

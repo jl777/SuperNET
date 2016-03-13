@@ -298,7 +298,7 @@ struct iguana_bundle *iguana_bundlecreate(struct iguana_info *coin,int32_t *bund
                 coin->bundles[coin->bundlescount-1]->nextbp = bp;
             *bundleip = 0;
             bits256_str(str,bundlehash2);
-            sprintf(dirname,"tmp/%s/%d",coin->symbol,bp->bundleheight), OS_ensure_directory(dirname);
+            sprintf(dirname,"%s/%s/%d",GLOBALTMPDIR,coin->symbol,bp->bundleheight), OS_ensure_directory(dirname);
             //printf("ht.%d alloc.[%d] new hdrs.%s %s\n",bp->bundleheight,coin->bundlescount,str,bits256_str(str2,allhash));
             iguana_bundlehash2add(coin,0,bp,0,bundlehash2);
             if ( issueflag != 0 )
@@ -352,7 +352,7 @@ void iguana_bundlepurge(struct iguana_info *coin,struct iguana_bundle *bp)
         {
             if ( (ipbits= (uint32_t)coin->peers.active[j].ipbits) != 0 )
             {
-                if ( iguana_peerfname(coin,&hdrsi,"tmp",fname,ipbits,bp->hashes[0],zero,1) >= 0 )
+                if ( iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,ipbits,bp->hashes[0],zero,1) >= 0 )
                 {
                     if ( OS_removefile(fname,0) > 0 )
                         coin->peers.numfiles--, m++;
@@ -380,7 +380,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
         {
             if ( block == iguana_blockfind(coin,bp->hashes[bundlei]) )
             {
-                if ( (checki= iguana_peerfname(coin,&hdrsi,"tmp",fname,0,bp->hashes[bundlei],zero,1)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
+                if ( (checki= iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,bp->hashes[bundlei],zero,1)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
                 {
                     printf("iguana_bundlecalcs.(%s) illegal hdrsi.%d bundlei.%d checki.%d\n",fname,hdrsi,bundlei,checki);
                     continue;

@@ -318,3 +318,21 @@ uint8_t *iguana_rmdarray(struct iguana_info *coin,int32_t *numrmdsp,cJSON *array
     }
     return(rmdarray);
 }
+
+int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
+{
+    printf("UTXOGEN.%d\n",bp->bundleheight);
+    return(0);
+}
+
+int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
+{
+    printf("BALANCEGEN.%d\n",bp->bundleheight);
+    return(0);
+}
+
+int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp)
+{
+    printf("VALIDATE.%d\n",bp->bundleheight);
+    return(0);
+}
