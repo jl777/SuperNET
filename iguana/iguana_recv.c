@@ -398,7 +398,7 @@ void iguana_bundlespeculate(struct iguana_info *coin,struct iguana_bundle *bp,in
     if ( bp->numhashes < bp->n && bundlei == 0 && bp->speculative == 0 && bp->bundleheight < coin->longestchain-coin->chain->bundlesize )
     {
         char str[65]; bits256_str(str,bp->hashes[0]);
-        //fprintf(stderr,"Afound block -> %d %d hdr.%s\n",bp->bundleheight,coin->longestchain-coin->chain->bundlesize,str);
+        fprintf(stderr,"Afound block -> %d %d hdr.%s\n",bp->bundleheight,coin->longestchain-coin->chain->bundlesize,str);
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(str),1);
     }
     else if ( bp->speculative != 0 && bundlei < bp->numspec && memcmp(hash2.bytes,bp->speculative[bundlei].bytes,sizeof(hash2)) == 0 )
@@ -456,10 +456,10 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     coin->numbundlesQ--;
     if ( bp->numhashes < bp->n && bp->bundleheight < coin->longestchain-coin->chain->bundlesize )
     {
-         //printf("hdr ITERATE bundle.%d vs %d: h.%d n.%d r.%d s.%d finished.%d speculative.%p\n",bp->bundleheight,coin->longestchain-coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,bp->speculative);
-        if ( bp->speculative == 0 || bp->numhashes < 3 )
+        if ( bp->speculative == 0 )//|| bp->numhashes < 3 )
         {
             char str[64];
+            printf("hdr ITERATE bundle.%d vs %d: h.%d n.%d r.%d s.%d finished.%d speculative.%p\n",bp->bundleheight,coin->longestchain-coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,bp->speculative);
             queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
         }
         /*else
