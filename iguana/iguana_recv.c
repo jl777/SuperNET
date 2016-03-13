@@ -617,7 +617,8 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
             }
             else if ( bp->hdrsi > 0 && (bp= coin->bundles[bp->hdrsi-1]) != 0 )
                 iguana_bundlehash2add(coin,0,bp,coin->chain->bundlesize-1,prevhash2);
-            iguana_bundlespeculate(coin,bp,bundlei,hash2,1);
+            if ( strcmp(coin->symbol,"BTC") != 0 )
+                iguana_bundlespeculate(coin,bp,bundlei,hash2,1);
         }
         prevbp = 0, prevbundlei = -2;
         iguana_bundlefind(coin,&prevbp,&prevbundlei,prevhash2);
@@ -800,7 +801,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     }
     if ( block != 0 )
     {
-        if ( block->mainchain != 0 && bp != 0 && bits256_nonz(block->RO.prev_block) > 0 && bits256_nonz(bp->hashes[bundlei-1]) == 0 )
+        if ( 0 && block->mainchain != 0 && bp != 0 && bits256_nonz(block->RO.prev_block) > 0 && bits256_nonz(bp->hashes[bundlei-1]) == 0 )
         {
             if ( bundlei > 0 )
             {
