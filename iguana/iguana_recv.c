@@ -795,10 +795,18 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     }
     if ( block != 0 )
     {
-        if ( bp != 0 && bundlei > 0 && bits256_nonz(block->RO.prev_block) > 0 && bits256_nonz(bp->hashes[bundlei-1]) == 0 )
+        if ( bp != 0 && bits256_nonz(block->RO.prev_block) > 0 && bits256_nonz(bp->hashes[bundlei-1]) == 0 )
         {
-            printf("backfill [%d:%d]\n",bp->hdrsi,bundlei-1);
-            bp->hashes[bundlei-1] = block->RO.prev_block;
+            if ( bundlei > 0 )
+            {
+                printf("backfill [%d:%d]\n",bp->hdrsi,bundlei-1);
+                bp->hashes[bundlei-1] = block->RO.prev_block;
+            }
+            else if ( bp->hdrsi > 0 && coin->bundles[bp->hdrsi-1] != 0 )
+            {
+                printf("prev backfill [%d:%d]\n",bp->hdrsi-1,coin->chain->bundlesize-1);
+                iguana_blockQ(coin,coin->bundles[bp->hdrsi-1],coin->chain->bundlesize-1,block->RO.prev_block,0);
+            }
             //iguana_blockQ(coin,bundlei > 0 ? bp : 0,bundlei-1,block->RO.prev_block,0);
             //printf("recv autoreq prev [%d:%d]\n",bp!=0?bp->hdrsi:-1,bundlei);
         }
