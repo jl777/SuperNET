@@ -802,7 +802,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     }
     if ( block != 0 )
     {
-        if ( 1 && block->mainchain != 0 && bp != 0 && bits256_nonz(block->RO.prev_block) > 0 && bits256_nonz(bp->hashes[bundlei-1]) == 0 )
+        if ( 0 && block->mainchain != 0 && bp != 0 && bits256_nonz(block->RO.prev_block) > 0 && bits256_nonz(bp->hashes[bundlei-1]) == 0 )
         {
             if ( bundlei > 0 )
             {
