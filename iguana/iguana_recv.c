@@ -566,7 +566,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                 } else printf("error getting block (%d:%d) %p vs %p\n",bp->hdrsi,i,block,iguana_blockfind(coin,bp->hashes[i]));
             }
             // merkle
-            printf(">>>>>>>>>>>>>>>>>>>>>>> EMIT bundle.%d | 1st.%d h.%d s.[%d] maxbundles.%d\n",bp->bundleheight,coin->current!=0?coin->current->hdrsi:-1,coin->current!=0?coin->current->numhashes:-1,coin->current!=0?coin->current->numsaved:-1,coin->MAXBUNDLES);
+            printf(">>>>>>>>>>>>>>>>>>>>>>> EMIT bundle.%d | 1st.%d h.%d s.[%d] maxbundles.%d NET.(h%d b%d)\n",bp->bundleheight,coin->current!=0?coin->current->hdrsi:-1,coin->current!=0?coin->current->numhashes:-1,coin->current!=0?coin->current->numsaved:-1,coin->MAXBUNDLES,HDRnet,BLOCKnet);
             bp->emitfinish = 1;
             coin->MAXBUNDLES++;
             sleep(1);
@@ -802,7 +802,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     }
     if ( block != 0 )
     {
-        if ( 0 && block->mainchain != 0 && bp != 0 && bits256_nonz(block->RO.prev_block) > 0 && bits256_nonz(bp->hashes[bundlei-1]) == 0 )
+        if ( 1 && block->mainchain != 0 && bp != 0 && bits256_nonz(block->RO.prev_block) > 0 && bits256_nonz(bp->hashes[bundlei-1]) == 0 )
         {
             if ( bundlei > 0 )
             {
