@@ -911,13 +911,13 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                         //printf("LAG.%ld hdrsi.%d numhashes.%d:%d needhdrs.%d qsize.%d zcount.%d\n",time(NULL)-bp->hdrtime,i,bp->numhashes,bp->n,iguana_needhdrs(coin),queue_size(&coin->hdrsQ),coin->zcount);
                         if ( bp->issuetime == 0 )
                             coin->numpendings++;
-                        char str[65];
-                        bits256_str(str,bp->hashes[0]);
+                        //char str[65];
+                        //bits256_str(str,bp->hashes[0]);
                         //printf("(%s %d).%d ",str,bp->bundleheight,i);
                         //printf("%d ",bp->bundleheight);
                         init_hexbytes_noT(hashstr,bp->hashes[0].bytes,sizeof(bits256));
                         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
-                        //printf("reqHDR.(%s)\n",hashstr);
+                        printf("hdrsi.%d reqHDR.(%s)\n",bp->hdrsi,hashstr);
                         iguana_blockQ(coin,bp,0,bp->hashes[0],0);
                         if ( bits256_nonz(bp->hashes[1]) > 0 )
                             iguana_blockQ(coin,bp,1,bp->hashes[1],0);
