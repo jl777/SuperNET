@@ -1113,7 +1113,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         }
     }
     if ( netBLOCKS > coin->MAXPEERS*coin->MAXPENDING )
-        usleep(10000);
+        usleep(netBLOCKS);
     if ( (limit= addr->recvblocks) > coin->MAXPENDING )
         limit = coin->MAXPENDING;
     if ( limit < 1 )
