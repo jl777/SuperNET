@@ -647,7 +647,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
     }
     if ( blocks != 0 && n > 0 )
     {
-        if ( n >= coin->chain->bundlesize )
+        if ( 0 && n >= coin->chain->bundlesize )
         {
             blockhashes = malloc(sizeof(*blockhashes) * coin->chain->bundlesize);
             for (i=0; i<coin->chain->bundlesize; i++)
