@@ -51,7 +51,7 @@ struct iguana_block *iguana_blockhashset(struct iguana_info *coin,int32_t height
     struct iguana_block *block,*prev;
     if ( height > 0 && (height > coin->blocks.maxbits || depth != 0) )
     {
-        printf("illegal height.%d when max.%d, depth.%d\n",height,coin->blocks.maxbits,depth);
+        printf("illegal height.%d when max.%d, or nonz depth.%d\n",height,coin->blocks.maxbits,depth);
         //getchar();
         return(0);
     }
