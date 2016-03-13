@@ -456,7 +456,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     coin->numbundlesQ--;
     if ( bp->numhashes < bp->n && bp->bundleheight < coin->longestchain-coin->chain->bundlesize )
     {
-        if ( bp->speculative == 0 && bp->numhashes < 3 )
+        if ( strcmp(coin->symbol,"BTC") != 0 && bp->speculative == 0 && bp->numhashes < 3 )
         {
             char str[64];
             printf("hdr ITERATE bundle.%d vs %d: h.%d n.%d r.%d s.%d finished.%d speculative.%p\n",bp->bundleheight,coin->longestchain-coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,bp->speculative);
