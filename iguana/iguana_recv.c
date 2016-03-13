@@ -558,7 +558,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                 } else printf("error getting block (%d:%d) %p vs %p\n",bp->hdrsi,i,block,iguana_blockfind(coin,bp->hashes[i]));
             }
             // merkle
-            printf(">>>>>>>>>>>>>>>>>>>>>>> EMIT bundle.%d\n",bp->bundleheight);
+            printf(">>>>>>>>>>>>>>>>>>>>>>> EMIT bundle.%d | 1st.%d maxbundles.%d\n",bp->bundleheight,coin->current!=0?coin->current->hdrsi:-1,coin->MAXBUNDLES);
             bp->emitfinish = 1;
             coin->MAXBUNDLES++;
             sleep(1);
@@ -1131,7 +1131,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
 int32_t iguana_reqblocks(struct iguana_info *coin)
 {
     int32_t hdrsi,lflag,n,numissued,bundlei,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp; struct iguana_peer *addr;
-    if ( 1 && (bp= coin->current) != 0 && bp->numsaved < bp->n ) // queue_size(&coin->priorityQ) == 0 &&
+    if ( 0 && (bp= coin->current) != 0 && bp->numsaved < bp->n ) // queue_size(&coin->priorityQ) == 0 &&
     {
         for (hdrsi=numissued=0; hdrsi<coin->MAXBUNDLES && coin->current->hdrsi+hdrsi<coin->bundlescount && numissued<100; hdrsi++)
         {
