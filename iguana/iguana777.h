@@ -38,8 +38,8 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_TAILPERCENTAGE 1.0
 #define IGUANA_MAXPENDHDRS 1
 #define _IGUANA_MAXPENDING 8
-#define IGUANA_MINPENDBUNDLES 200
-#define IGUANA_MAXPENDBUNDLES 128
+#define IGUANA_MINPENDBUNDLES 128
+#define IGUANA_MAXPENDBUNDLES 64
 #define IGUANA_BUNDLELOOP 10000
 #define IGUANA_RPCPORT 7778
 #define IGUANA_MAXRAMCHAINSIZE ((uint64_t)1024L * 1024L * 1024L * 16)
@@ -413,6 +413,7 @@ struct iguana_peers
 };
 
 struct iguana_bloom16 { uint8_t hash2bits[65536 / 8]; };
+struct iguana_bloominds { uint16_t inds[8]; };
 
 struct iguana_bundle
 {
@@ -789,6 +790,9 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp);
 int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp);
 int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp);
 void iguana_validateQ(struct iguana_info *coin,struct iguana_bundle *bp);
+struct iguana_bloominds iguana_calcbloom(bits256 hash2);
+int32_t iguana_bloomfind(struct iguana_info *coin,struct iguana_bloom16 *bloom,int32_t incr,struct iguana_bloominds bit);
+struct iguana_bloominds iguana_bloomset(struct iguana_info *coin,struct iguana_bloom16 *bloom,int32_t incr,struct iguana_bloominds bit);
 
 extern queue_t bundlesQ,validateQ;
 extern char GLOBALTMPDIR[];

@@ -17,7 +17,6 @@
 
 static uint16_t iguana_primes[] = { 65353, 65357, 65371, 65381, 65393, 65407, 65413, 65419, 65423, 65437, 65447, 65449, 65479, 65497, 65519, 65521 };
 
-struct iguana_bloominds { uint16_t inds[8]; };
 
 struct iguana_bloominds iguana_calcbloom(bits256 hash2)
 {
@@ -380,7 +379,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
         {
             if ( block == iguana_blockfind(coin,bp->hashes[bundlei]) )
             {
-                if ( (checki= iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,bp->hashes[bundlei],zero,1)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
+                if ( (checki= iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,bp->hashes[bundlei],bundlei>0?bp->hashes[bundlei-1]:zero,1)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
                 {
                     printf("iguana_bundlecalcs.(%s) illegal hdrsi.%d bundlei.%d checki.%d\n",fname,hdrsi,bundlei,checki);
                     continue;
