@@ -512,8 +512,6 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     //sprintf(str+strlen(str),"%s.%-2d %s time %.2f files.%d Q.%d %d\n",coin->symbol,flag,str,(double)(time(NULL)-coin->starttime)/60.,coin->peers.numfiles,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
     if ( time(NULL) > lastdisp+10 )
     {
-        if ( firstgap != 0 )
-            iguana_bundleQ(coin,firstgap,1000);
         printf("%s\n",str);
         //myallocated(0,0);
         lastdisp = (uint32_t)time(NULL);
