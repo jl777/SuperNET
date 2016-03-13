@@ -859,7 +859,7 @@ int32_t iguana_processbundlesQ(struct iguana_info *coin,int32_t *newhwmp) // sin
     *newhwmp = 0;
     while ( (req= queue_dequeue(&coin->bundlesQ,0)) != 0 )
     {
-        //fprintf(stderr,"%s bundlesQ.%p type.%c n.%d\n",req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
+        fprintf(stderr,"%s bundlesQ.%p type.%c n.%d\n",req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
         //if ( req->type == 'H' )
         //    continue;
         if ( req->type == 'B' ) // one block with all txdata
@@ -888,7 +888,7 @@ int32_t iguana_processbundlesQ(struct iguana_info *coin,int32_t *newhwmp) // sin
                 myfree(req->hashes,(req->n+1) * sizeof(*req->hashes)), req->hashes = 0;
         }
         else printf("iguana_updatebundles unknown type.%c\n",req->type);
-        //fprintf(stderr,"finished bundlesQ\n");
+        fprintf(stderr,"finished bundlesQ\n");
         if ( req != 0 )
             myfree(req,req->allocsize), req = 0;
         if ( flag >= IGUANA_BUNDLELOOP )
