@@ -635,7 +635,8 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
                     //printf("bundlehash2add next %d\n",prevbundlei);
                     iguana_bundlehash2add(coin,0,prevbp,prevbundlei+1,hash2);
                 }
-                iguana_bundlespeculate(coin,prevbp,prevbundlei,prevhash2,2);
+                if ( strcmp(coin->symbol,"BTC") != 0 )
+                    iguana_bundlespeculate(coin,prevbp,prevbundlei,prevhash2,2);
             }
         }
     } else printf("iguana_bundleset: error adding blockhash\n");
