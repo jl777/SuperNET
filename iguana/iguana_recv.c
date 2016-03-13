@@ -901,12 +901,12 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                     if ( i == coin->bundlescount-1 )
                         lag = 30;
                     else lag = 30 + (rand() % 30);
-                    lag = 10;
+                    lag = 30;
                     //if ( i < coin->bundlescount-1 && (bp->numhashes >= (rand() % bp->n) || time(NULL) < bp->hdrtime+lag) )
                     //    continue;
                     if ( bp->bundleheight+bp->numhashes < coin->longestchain && time(NULL) > bp->issuetime+lag )
                     {
-                        printf("LAG.%ld hdrsi.%d numhashes.%d:%d needhdrs.%d qsize.%d zcount.%d\n",time(NULL)-bp->hdrtime,i,bp->numhashes,bp->n,iguana_needhdrs(coin),queue_size(&coin->hdrsQ),coin->zcount);
+                        //printf("LAG.%ld hdrsi.%d numhashes.%d:%d needhdrs.%d qsize.%d zcount.%d\n",time(NULL)-bp->hdrtime,i,bp->numhashes,bp->n,iguana_needhdrs(coin),queue_size(&coin->hdrsQ),coin->zcount);
                         if ( bp->issuetime == 0 )
                             coin->numpendings++;
                         char str[65];
