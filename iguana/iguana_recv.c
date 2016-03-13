@@ -795,7 +795,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     }
     if ( block != 0 )
     {
-        if ( bp != 0 && bits256_nonz(block->RO.prev_block) > 0 && bits256_nonz(bp->hashes[bundlei-1]) == 0 )
+        if ( block->mainchain != 0 && bp != 0 && bits256_nonz(block->RO.prev_block) > 0 && bits256_nonz(bp->hashes[bundlei-1]) == 0 )
         {
             if ( bundlei > 0 )
             {
@@ -927,7 +927,7 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                         //printf("%d ",bp->bundleheight);
                         init_hexbytes_noT(hashstr,bp->hashes[0].bytes,sizeof(bits256));
                         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
-                        printf("hdrsi.%d reqHDR.(%s)\n",bp->hdrsi,hashstr);
+                        printf("hdrsi.%d reqHDR.(%s) numhashes.%d\n",bp->hdrsi,hashstr,bp->numhashes);
                         iguana_blockQ(coin,bp,0,bp->hashes[0],0);
                         if ( bits256_nonz(bp->hashes[1]) > 0 )
                             iguana_blockQ(coin,bp,1,bp->hashes[1],0);
