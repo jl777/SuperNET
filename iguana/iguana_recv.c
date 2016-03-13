@@ -857,14 +857,16 @@ int32_t iguana_processbundlesQ(struct iguana_info *coin,int32_t *newhwmp) // sin
 {
     int32_t flag = 0; struct iguana_bundlereq *req;
     *newhwmp = 0;
-    while ( flag < IGUANA_BUNDLELOOP && (req= queue_dequeue(&coin->bundlesQ,0)) != 0 )
+    while ( (req= queue_dequeue(&coin->bundlesQ,0)) != 0 )
     {
-        flag++;
         //fprintf(stderr,"%s bundlesQ.%p type.%c n.%d\n",req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
         //if ( req->type == 'H' )
         //    continue;
         if ( req->type == 'B' ) // one block with all txdata
+        {
             req = iguana_recvblock(coin,req->addr,req,&req->block,req->numtx,req->datalen,req->recvlen,newhwmp);
+            flag++;
+        }
         else if ( req->type == 'H' ) // blockhdrs (doesnt have txn_count!)
         {
             if ( (req= iguana_recvblockhdrs(coin,req,req->blocks,req->n,newhwmp)) != 0 )
@@ -889,6 +891,8 @@ int32_t iguana_processbundlesQ(struct iguana_info *coin,int32_t *newhwmp) // sin
         //fprintf(stderr,"finished bundlesQ\n");
         if ( req != 0 )
             myfree(req,req->allocsize), req = 0;
+        if ( flag >= IGUANA_BUNDLELOOP )
+            break;
     }
     return(flag);
 }
