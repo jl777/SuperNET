@@ -366,7 +366,7 @@ void iguana_helper(void *arg)
             myfree(ptr,ptr->allocsize);
             flag++;
         }
-        else if ( idle++ > 100 )
+        else if ( idle++ > 10 )
         {
             if ( (ptr= queue_dequeue(&validateQ,0)) != 0 )
             {
@@ -378,7 +378,8 @@ void iguana_helper(void *arg)
             }
         }
         if ( flag == 0 )
-            usleep(10000);
+            usleep(100000);
+        else usleep(1000);
     }
 }
 
