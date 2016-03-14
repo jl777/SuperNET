@@ -489,7 +489,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     }
     if ( bp->emitfinish > coin->startutc )
     {
-        if ( bp->hdrsi == 0 || ((prevbp= coin->bundles[bp->hdrsi-1]) != 0 && coin->current != 0 && coin->current->hdrsi >= prevbp->hdrsi) )
+        if ( bp->hdrsi == 0 || ((prevbp= coin->bundles[bp->hdrsi-1]) != 0 && coin->current != 0 && coin->current->hdrsi >= bp->hdrsi) )
         {
             if ( bp->startutxo == 0 )
             {
