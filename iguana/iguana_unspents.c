@@ -314,21 +314,23 @@ uint8_t *iguana_rmdarray(struct iguana_info *coin,int32_t *numrmdsp,cJSON *array
 
 int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
 {
+    static uint64_t total,emitted;
     int32_t spendind,n,emit=0; uint32_t unspentind; struct iguana_bundle *spentbp;
     FILE *fp; char fname[1024],str[65],dirname[128]; int32_t hdrsi,retval = -1; bits256 zero,sha256;
     struct iguana_spend *S,*s; struct iguana_bundleind *ptr; struct iguana_ramchain *ramchain;
     ramchain = &bp->ramchain;
-    printf("UTXO gen.%d ramchain data.%p\n",bp->bundleheight,ramchain->H.data);
+    //printf("UTXO gen.%d ramchain data.%p\n",bp->bundleheight,ramchain->H.data);
     if ( ramchain->H.data == 0 || (n= ramchain->H.data->numspends) < 1 )
         return(0);
     S = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Soffset);
     if ( ramchain->Xspendinds != 0 )
     {
-        printf("iguana_utxogen: already have Xspendinds[%d]\n",ramchain->numXspends);
+        //printf("iguana_utxogen: already have Xspendinds[%d]\n",ramchain->numXspends);
         return(0);
     }
     ptr = malloc(sizeof(*ptr) * n);
-    printf("start UTXOGEN.%d max.%d ptr.%p\n",bp->bundleheight,n,ptr);
+    total += n;
+    //printf("start UTXOGEN.%d max.%d ptr.%p\n",bp->bundleheight,n,ptr);
     for (spendind=ramchain->H.data->firsti; spendind<n; spendind++)
     {
         s = &S[spendind];
@@ -348,6 +350,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
     }
     if ( emit >= 0 )
     {
+        emitted += emit;
         memset(zero.bytes,0,sizeof(zero));
         sprintf(dirname,"DB/%s/utxo",coin->symbol);
         vcalc_sha256(0,sha256.bytes,(void *)ptr,(int32_t)(sizeof(*ptr) * emit));
@@ -371,7 +374,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
         } else printf("error getting utxo fname\n");
     }
     free(ptr);
-    printf("processed %d spendinds for bp.[%d] emitted.%d %s of %d\n",spendind,bp->hdrsi,emit,mbstr(str,sizeof(*ptr) * emit),n);
+    printf("utxo %d spendinds.[%d] [%.2f%%] emitted.%d %s of %d | ",spendind,bp->hdrsi,100.*(double)emitted/(total+1),emit,mbstr(str,sizeof(*ptr) * emit),n);
     return(0);
 }
 
