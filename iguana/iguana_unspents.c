@@ -318,9 +318,9 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
     FILE *fp; char fname[1024],str[65],dirname[128]; int32_t hdrsi,retval = -1; bits256 zero,sha256;
     struct iguana_spend *S,*s; struct iguana_bundleind *ptr; struct iguana_ramchain *ramchain;
     ramchain = &bp->ramchain;
-    S = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Soffset);
-    if ( (n= ramchain->H.data->numspends) < 1 )
+    if ( ramchain->H.data == 0 || (n= ramchain->H.data->numspends) < 1 )
         return(0);
+    S = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Soffset);
     if ( ramchain->Xspendinds != 0 )
     {
         printf("iguana_utxogen: already have Xspendinds[%d]\n",ramchain->numXspends);
