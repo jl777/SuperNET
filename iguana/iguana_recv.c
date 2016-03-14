@@ -635,6 +635,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
             block->fpos = origblock->fpos;
             block->RO.recvlen = origblock->RO.recvlen;
         }
+        block->RO.txn_count = origblock->RO.txn_count;
         *blockp = block;
         prevhash2 = origblock->RO.prev_block;
         if ( 0 && bits256_nonz(prevhash2) > 0 )
