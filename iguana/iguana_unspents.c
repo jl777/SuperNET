@@ -69,7 +69,7 @@ char *iguana_bundleaddrs(struct iguana_info *coin,int32_t hdrsi)
     } return(clonestr("{\"error\":\"no bundle\"}"));
 }
 
-struct iguana_bundle *iguana_spent(struct iguana_info *coin,uint32_t *unspentindp,struct iguana_ramchain *ramchain,int32_t spend_hdrsi,struct iguana_spend *s)
+struct iguana_bundle *iguana_spent(struct iguana_info *coin,bits256 *prevhashp,uint32_t *unspentindp,struct iguana_ramchain *ramchain,int32_t spend_hdrsi,struct iguana_spend *s)
 {
     int32_t prev_vout,height,hdrsi; uint32_t sequenceid,unspentind; char str[65];
     struct iguana_bundle *spentbp=0; struct iguana_txid *T,TX,*tp; bits256 *X; bits256 prev_hash;
@@ -77,6 +77,7 @@ struct iguana_bundle *iguana_spent(struct iguana_info *coin,uint32_t *unspentind
     T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
     sequenceid = s->sequenceid;
     hdrsi = spend_hdrsi;
+    memset(prevhashp,0,sizeof(*prevhashp));
     if ( s->prevout < 0 )
     {
         //printf("n.%d coinbase at spendind.%d firstvin.%d -> firstvout.%d -> unspentind\n",m,spendind,nextT->firstvin,nextT->firstvout);
@@ -88,6 +89,7 @@ struct iguana_bundle *iguana_spent(struct iguana_info *coin,uint32_t *unspentind
     {
         prev_vout = s->prevout;
         iguana_ramchain_spendtxid(coin,&unspentind,&prev_hash,T,ramchain->H.data->numtxids,X,ramchain->H.data->numexternaltxids,s);
+        *prevhashp = prev_hash;
         *unspentindp = unspentind;
         if ( unspentind == 0 )
         {
@@ -116,7 +118,7 @@ struct iguana_bundle *iguana_spent(struct iguana_info *coin,uint32_t *unspentind
 int32_t iguana_spentsinit(struct iguana_info *coin,struct iguana_bundleind *spents,struct iguana_bundle *bp,struct iguana_ramchain *ramchain)
 {
     int32_t spendind,n,max,hdrsi,errs,flag; uint32_t unspentind; struct iguana_bundle *spentbp;
-    struct iguana_spend *S;
+    struct iguana_spend *S; bits256 prevhash;
     S = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Soffset);
     max = ramchain->H.data->numunspents;
     n = ramchain->H.data->numspends;
@@ -124,7 +126,7 @@ int32_t iguana_spentsinit(struct iguana_info *coin,struct iguana_bundleind *spen
     {
         flag = 0;
         hdrsi = bp->hdrsi;
-        if ( (spentbp= iguana_spent(coin,&unspentind,ramchain,bp->hdrsi,&S[spendind])) != 0 )
+        if ( (spentbp= iguana_spent(coin,&prevhash,&unspentind,ramchain,bp->hdrsi,&S[spendind])) != 0 )
         {
             spentbp->ramchain.spents[unspentind].ind = spendind;
             spentbp->ramchain.spents[unspentind].hdrsi = bp->hdrsi;
@@ -316,7 +318,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     static uint64_t total,emitted;
     int32_t spendind,n,errs=0,emit=0; uint32_t unspentind; struct iguana_bundle *spentbp;
-    FILE *fp; char fname[1024],str[65],dirname[128]; int32_t hdrsi,retval = -1; bits256 zero,sha256;
+    FILE *fp; char fname[1024],str[65],dirname[128]; int32_t hdrsi,retval = -1; bits256 prevhash,zero,sha256;
     struct iguana_spend *S,*s; struct iguana_bundleind *ptr; struct iguana_ramchain *ramchain;
     ramchain = &bp->ramchain;
     printf("UTXO gen.%d ramchain data.%p\n",bp->bundleheight,ramchain->H.data);
@@ -336,7 +338,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
         s = &S[spendind];
         if ( s->external != 0 && s->prevout >= 0 )
         {
-            if ( (spentbp= iguana_spent(coin,&unspentind,ramchain,bp->hdrsi,s)) != 0 )
+            if ( (spentbp= iguana_spent(coin,&prevhash,&unspentind,ramchain,bp->hdrsi,s)) != 0 )
             {
                 ptr[emit].ind = unspentind;
                 ptr[emit].hdrsi = spentbp->hdrsi;
@@ -345,7 +347,8 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
                 //spentbp->ramchain.spents[unspentind].hdrsi = bp->hdrsi;
                 if ( spentbp == bp )
                 {
-                    printf("unexpected spendbp: %p bp.[%d] U%d <- S%d.[%d] [ext.%d prev.%d]\n",&spentbp->ramchain.spents[unspentind],spentbp->hdrsi,unspentind,spendind,bp->hdrsi,s->external,s->prevout);
+                    char str[65];
+                    printf("unexpected spendbp: %p bp.[%d] U%d <- S%d.[%d] [ext.%d %s prev.%d]\n",&spentbp->ramchain.spents[unspentind],spentbp->hdrsi,unspentind,spendind,bp->hdrsi,s->external,bits256_str(str,prevhash),s->prevout);
                     errs++;
                 }
             } else printf("unresolved spendind.%d hdrsi.%d\n",spendind,bp->hdrsi);
