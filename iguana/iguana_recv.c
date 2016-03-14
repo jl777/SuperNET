@@ -452,7 +452,7 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
 
 int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
 {
-    int32_t i,range,starti,numhashes,issued,valid,max,counter = 0; struct iguana_block *block; double endmillis,width; struct iguana_bundle *prevbp; uint32_t starttime;
+    int32_t i,r,range,starti,numhashes,issued,valid,max,counter = 0; struct iguana_block *block; double endmillis,width; struct iguana_bundle *prevbp; uint32_t starttime;
     if ( (range= coin->peers.numranked) > coin->MAXBUNDLES )
         range = coin->MAXBUNDLES;
     starti = coin->current == 0 ? 0 : coin->current->hdrsi;
@@ -571,7 +571,9 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     issued = 0;
     max = 100 + (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
     iguana_bundlekick(coin,bp,starti,max);
-    iguana_bundlekick(coin,coin->current,starti,bp->n);
+    r = (rand() % 8);
+    if ( starti+r < coin->bundlescount && coin->bundles[starti+r] != 0 )
+        iguana_bundlekick(coin,coin->bundles[starti+r],starti+r,coin->bundles[starti+r]->n);
     endmillis = OS_milliseconds() + timelimit + (rand() % 1000);
     if ( bp->numsaved < bp->n )
         width = 100 + max*100;//sqrt(sqrt(bp->n * (1+bp->numsaved+issued)) * (10+coin->bundlescount-bp->hdrsi));
