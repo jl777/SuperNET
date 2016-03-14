@@ -1242,7 +1242,18 @@ int32_t iguana_ramchain_free(struct iguana_ramchain *ramchain,int32_t deleteflag
     if ( ramchain->hashmem != 0 )
         iguana_mempurge(ramchain->hashmem), ramchain->hashmem = 0;
     if ( ramchain->filesize != 0 )
-        munmap(ramchain->fileptr,ramchain->filesize), ramchain->fileptr = 0;
+    {
+        munmap(ramchain->fileptr,ramchain->filesize);
+        ramchain->fileptr = 0;
+        ramchain->filesize = 0;
+    }
+    if ( ramchain->Xspendptr != 0 )
+    {
+        munmap(ramchain->Xspendptr,ramchain->filesize);
+        ramchain->Xspendptr = 0;
+        ramchain->numXspends = 0;
+        ramchain->Xspendinds = 0;
+    }
     if ( deleteflag != 0 )
         memset(ramchain,0,sizeof(*ramchain));
     return(0);
@@ -1263,6 +1274,31 @@ void iguana_ramchain_extras(struct iguana_ramchain *ramchain,struct OS_memspace 
         //memcpy(ramchain->U2,ramchain->roU2,sizeof(*ramchain->U2) * ramchain->H.data->numunspents);
         //memcpy(ramchain->P2,ramchain->roP2,sizeof(*ramchain->P2) * ramchain->H.data->numpkinds);
     }
+}
+
+int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct iguana_bundle *bp)
+{
+    int32_t hdrsi; bits256 sha256; char fname[1024]; void *ptr; long filesize; static bits256 zero;
+    if ( iguana_peerfname(coin,&hdrsi,"DB/utxo",fname,0,bp->hashes[0],zero,bp->n) >= 0 )
+    {
+        if ( (ptr= OS_mapfile(fname,&filesize,0)) != 0 )
+        {
+            ramchain->Xspendinds = (void *)((long)ptr + sizeof(sha256));
+            vcalc_sha256(0,sha256.bytes,(void *)ramchain->Xspendinds,(int32_t)(filesize - sizeof(sha256)));
+            if ( memcmp(sha256.bytes,ptr,sizeof(sha256)) == 0 )
+            {
+                ramchain->Xspendptr = ptr;
+                ramchain->numXspends = (int32_t)((filesize - sizeof(sha256)) / sizeof(*ramchain->Xspendinds));
+                printf("mapped utxo vector[%d] from (%s)\n",ramchain->numXspends,fname);
+            }
+            else
+            {
+                munmap(ptr,filesize);
+                ramchain->Xspendinds = 0;
+            }
+        }
+    }
+    return(ramchain->numXspends);
 }
 
 struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname,struct iguana_bundle *bp,int32_t numblocks,struct iguana_ramchain *ramchain,struct OS_memspace *hashmem,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t bundlei,long fpos,int32_t allocextras,int32_t expanded)
@@ -1293,6 +1329,7 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
         if ( (ramchain->hashmem= hashmem) != 0 )
             iguana_memreset(hashmem);
     }
+    iguana_Xspendmap(coin,ramchain,bp);
     if ( ramchain->fileptr != 0 && ramchain->filesize > 0 )
     {
         // verify hashes
@@ -1317,7 +1354,7 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
              }
              ramchain->H.data = (void *)&blocksRO[bp->n];*/
              for (valid=0,i=bp->n=1; i>=0; i--)
-            {
+             {
                 if ( (block= bp->blocks[i]) != 0 )
                 {
                     if ( memcmp(block->RO.hash2.bytes,bp->hashes[i].bytes,sizeof(block->RO.hash2)) == 0 )

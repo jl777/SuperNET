@@ -418,7 +418,7 @@ void iguana_coinloop(void *arg)
                 now = (uint32_t)time(NULL);
                 if ( coin->active != 0 )
                 {
-                    if ( coin->isRT == 0 && now > coin->startutc+600 && coin->blocksrecv >= coin->longestchain-1 && coin->blocks.hwmchain.height >= coin->longestchain-1 )
+                    if ( coin->isRT == 0 && now > coin->startutc+600 && coin->blocksrecv >= (coin->longestchain/coin->chain->bundlesize)*coin->chain->bundlesize && coin->blocks.hwmchain.height >= coin->longestchain-30 )
                     {
                         fprintf(stderr,">>>>>>> %s isRT blockrecv.%d vs longest.%d\n",coin->symbol,coin->blocksrecv,coin->longestchain);
                         coin->isRT = 1;
@@ -489,8 +489,9 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         coin->MAXBUNDLES = (strcmp(symbol,"BTC") == 0) ? IGUANA_MAXPENDBUNDLES : IGUANA_MAXPENDBUNDLES * 3;
     coin->myservices = services;
     sprintf(dirname,"DB/%s",symbol), OS_ensure_directory(dirname);
-    sprintf(dirname,"vouts/%s",symbol), OS_ensure_directory(dirname);
-    sprintf(dirname,"vins/%s",symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"DB/%s/utxo",symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"DB/%s/vouts",symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"purgeable/%s",symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/%s",GLOBALTMPDIR,symbol), OS_ensure_directory(dirname);
     coin->initialheight = initialheight;
     coin->mapflags = mapflags;

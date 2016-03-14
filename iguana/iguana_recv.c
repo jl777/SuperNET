@@ -468,7 +468,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
             char str[64];
             queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
         }
-        else if ( time(NULL) > bp->lastspeculative+3600 || (bp->hdrsi == starti && time(NULL) > bp->lastspeculative+90) )
+        else if ( bp->hdrsi == starti && time(NULL) > bp->lastspeculative+90 )
         {
             for (i=1,counter=0; i<bp->n && i<bp->numspec; i++)
             {
@@ -494,15 +494,13 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
             if ( bp->startutxo == 0 )
             {
                 bp->startutxo = (uint32_t)time(NULL);
-                if ( iguana_utxogen(coin,bp) < 0 )
+                if ( iguana_utxogen(coin,bp) >= 0 )
                 {
-                    printf("GENERATE UTXO ERROR ht.%d\n",bp->bundleheight);
-                    exit(-1);
-                }
-                printf("GENERATED UTXO for ht.%d duration %d seconds\n",bp->bundleheight,(uint32_t)time(NULL)-bp->startutxo);
-                bp->utxofinish = (uint32_t)time(NULL);
+                    printf("GENERATED UTXO for ht.%d duration %d seconds\n",bp->bundleheight,(uint32_t)time(NULL)-bp->startutxo);
+                    bp->utxofinish = (uint32_t)time(NULL);
+                } else printf("UTXO write error\n");
             }
-            if ( bp->balancefinish == 0 && (bp->hdrsi == 0 || (prevbp != 0 && prevbp->utxofinish != 0)) )
+            if ( bp->utxofinish != 0 && bp->balancefinish == 0 && (bp->hdrsi == 0 || (prevbp != 0 && prevbp->utxofinish != 0)) )
             {
                 starttime = (uint32_t)time(NULL);
                 if ( iguana_balancegen(coin,bp) < 0 )
@@ -588,7 +586,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
             // merkle
             printf(">>>>>>>>>>>>>>>>>>>>>>> EMIT bundle.%d | 1st.%d h.%d s.[%d] maxbundles.%d NET.(h%d b%d)\n",bp->bundleheight,coin->current!=0?coin->current->hdrsi:-1,coin->current!=0?coin->current->numhashes:-1,coin->current!=0?coin->current->numsaved:-1,coin->MAXBUNDLES,HDRnet,netBLOCKS);
             bp->emitfinish = 1;
-            if ( coin->MAXBUNDLES > IGUANA_MINPENDBUNDLES )
+            if ( coin->MAXBUNDLES > IGUANA_MINPENDBUNDLES && (rand() % 1) == 0 )
                 coin->MAXBUNDLES--;
             else if ( coin->MAXBUNDLES < IGUANA_MINPENDBUNDLES )
                 coin->MAXBUNDLES++;
@@ -1353,7 +1351,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                             iguana_blockQ(coin,bp,bundlei,bp->hashes[bundlei],0);
                             flag++;
                             char str[65];
-                            //if ( 1 && (rand() % 1000) == 0 )
+                            if ( 1 && (rand() % 1000) == 0 || bp == coin->current )
                                 printf("%s MAINCHAIN.%d threshold %.3f %.3f lag %.3f\n",bits256_str(str,hash2),coin->blocks.hwmchain.height+1,threshold,coin->backstopmillis,lag);
                         }
                         else if ( bp != 0 && bundlei < bp->n-1 && bits256_nonz(bp->hashes[bundlei+1]) > 0 )

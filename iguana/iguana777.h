@@ -38,8 +38,8 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_TAILPERCENTAGE 1.0
 #define IGUANA_MAXPENDHDRS 1
 #define _IGUANA_MAXPENDING 16
-#define IGUANA_MINPENDBUNDLES 128
-#define IGUANA_MAXPENDBUNDLES 64
+#define IGUANA_MINPENDBUNDLES 64
+#define IGUANA_MAXPENDBUNDLES 128
 #define IGUANA_BUNDLELOOP 10000
 #define IGUANA_RPCPORT 7778
 #define IGUANA_MAXRAMCHAINSIZE ((uint64_t)1024L * 1024L * 1024L * 16)
@@ -371,10 +371,10 @@ struct iguana_ramchain_hdr
 struct iguana_ramchain
 {
     struct iguana_ramchain_hdr H; bits256 lasthash2; uint64_t datasize;
-    uint32_t numblocks:31,expanded:1,pkind,externalind,height;
+    uint32_t numblocks:31,expanded:1,pkind,externalind,height,numXspends;
     struct iguana_kvitem *txids,*pkhashes;
-    struct OS_memspace *hashmem; long filesize,sigsfilesize; void *fileptr,*sigsfileptr;
-    struct iguana_account *A,*creditsA; struct iguana_bundleind *spents;
+    struct OS_memspace *hashmem; long filesize,sigsfilesize; void *fileptr,*sigsfileptr,*Xspendptr;
+    struct iguana_account *A,*creditsA; struct iguana_bundleind *Xspendinds,*spents;
 //struct iguana_Uextra *U2,*roU2; struct iguana_pkextra *P2,*roP2;
 };
 

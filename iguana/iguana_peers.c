@@ -954,11 +954,11 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
 #endif
     addr->addrind = (int32_t)(((long)addr - (long)&coin->peers.active[0]) / sizeof(*addr));
     ipbits = (uint32_t)addr->ipbits;
-    sprintf(fname,"vouts/%s/%08x.vouts",coin->symbol,ipbits);
+    sprintf(fname,"DB/%s/vouts/%08x.vouts",coin->symbol,ipbits);
     if ( (addr->voutsfp= fopen(fname,"rb+")) != 0 )
         fseek(addr->voutsfp,0,SEEK_END);
     else addr->voutsfp = fopen(fname,"wb+");
-    sprintf(fname,"vins/%s/%08x.vins",coin->symbol,ipbits);
+    sprintf(fname,"purgeable/%s/%08x.vins",coin->symbol,ipbits);
     if ( (addr->vinsfp= fopen(fname,"rb+")) != 0 )
         fseek(addr->vinsfp,0,SEEK_END);
     else addr->vinsfp = fopen(fname,"wb+");

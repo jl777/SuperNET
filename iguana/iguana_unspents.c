@@ -120,7 +120,6 @@ int32_t iguana_spentsinit(struct iguana_info *coin,struct iguana_bundleind *spen
     S = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Soffset);
     max = ramchain->H.data->numunspents;
     n = ramchain->H.data->numspends;
-    //nextT = &T[1];
     for (spendind=1,errs=0; spendind<n; spendind++)
     {
         flag = 0;
@@ -315,7 +314,57 @@ uint8_t *iguana_rmdarray(struct iguana_info *coin,int32_t *numrmdsp,cJSON *array
 
 int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    printf("UTXOGEN.%d\n",bp->bundleheight);
+    int32_t spendind,n,emit=0; uint32_t unspentind; struct iguana_bundle *spentbp;
+    FILE *fp; char fname[1024],str[65]; int32_t hdrsi,retval = -1; bits256 zero,sha256;
+    struct iguana_spend *S,*s; struct iguana_bundleind *ptr; struct iguana_ramchain *ramchain;
+    ramchain = &bp->ramchain;
+    S = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Soffset);
+    if ( (n= ramchain->H.data->numspends) < 1 )
+        return(0);
+    if ( ramchain->Xspendinds != 0 )
+    {
+        printf("iguana_utxogen: already have Xspendinds[%d]\n",ramchain->numXspends);
+        return(0);
+    }
+    printf("start UTXOGEN.%d max.%d\n",bp->bundleheight,n);
+    ptr = malloc(sizeof(*ptr) * n);
+    for (spendind=ramchain->H.data->firsti; spendind<n; spendind++)
+    {
+        s = &S[spendind];
+        if ( s->external != 0 && s->prevout >= 0 )
+        {
+            if ( (spentbp= iguana_spent(coin,&unspentind,ramchain,bp->hdrsi,s)) != 0 )
+            {
+                ptr->ind = unspentind;
+                ptr->hdrsi = spentbp->hdrsi;
+                ptr++;
+                emit++;
+                //spentbp->ramchain.spents[unspentind].ind = spendind;
+                //spentbp->ramchain.spents[unspentind].hdrsi = bp->hdrsi;
+                if ( spentbp == bp )
+                    printf("unexpected spendbp: %p bp.[%d] U%d <- S%d.[%d] [%p %p %p]\n",&spentbp->ramchain.spents[unspentind],spentbp->hdrsi,unspentind,spendind,bp->hdrsi,coin->bundles[0],coin->bundles[1],coin->bundles[2]);
+            } else printf("unresolved spendind.%d hdrsi.%d\n",spendind,bp->hdrsi);
+        }
+    }
+    if ( emit != 0 )
+    {
+        memset(zero.bytes,0,sizeof(zero));
+        vcalc_sha256(0,sha256.bytes,(void *)ptr,(int32_t)(sizeof(*ptr) * emit));
+        if ( iguana_peerfname(coin,&hdrsi,"DB/utxo",fname,0,bp->hashes[0],zero,bp->n) >= 0 )
+        {
+            if ( (fp= fopen(fname,"wb")) != 0 )
+            {
+                if ( fwrite(sha256.bytes,1,sizeof(sha256),fp) != sizeof(sha256) )
+                    printf("error writing hash for %ld -> (%s)\n",sizeof(*ptr) * emit,fname);
+                else if ( fwrite(ptr,sizeof(*ptr),emit,fp) != emit )
+                    printf("error writing %d of %d -> (%s)\n",emit,n,fname);
+                else retval = 0;
+                fclose(fp);
+            }
+        } else printf("error getting utxo fname\n");
+    }
+    free(ptr);
+    printf("processed %d spendinds for bp.[%d] emitted.%d %s of %d\n",spendind,bp->hdrsi,emit,mbstr(str,sizeof(*ptr) * emit),n);
     return(0);
 }
 
