@@ -330,7 +330,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
         //printf("iguana_utxogen: already have Xspendinds[%d]\n",ramchain->numXspends);
         return(0);
     }
-    ptr = malloc(sizeof(*ptr) * n);
+    ptr = mycalloc('x',sizeof(*ptr),n);
     total += n;
     //printf("start UTXOGEN.%d max.%d ptr.%p\n",bp->bundleheight,n,ptr);
     for (spendind=ramchain->H.data->firsti; spendind<n; spendind++)
@@ -379,7 +379,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
             } else printf("Error creating.(%s)\n",fname);
         } else printf("error getting utxo fname\n");
     }
-    free(ptr);
+    myfree(ptr,sizeof(*ptr) * n);
     printf("utxo %d spendinds.[%d] errs.%d [%.2f%%] emitted.%d %s of %d | ",spendind,bp->hdrsi,errs,100.*(double)emitted/(total+1),emit,mbstr(str,sizeof(*ptr) * emit),n);
     return(-errs);
 }
