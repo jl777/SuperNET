@@ -843,8 +843,8 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
             iguana_bloomset(coin,&bp->bloom,0,bit);
     }*/
     char str[65];
-    if ( 0 && bundlei >= 0 )
-        fprintf(stderr,"blockRECV %s [%d:%d] block.%08x | h.%d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,bp!=0?bp->numhashes:-1);
+    //if ( 0 && bundlei >= 0 )
+        fprintf(stderr,"blockRECV.%d %s [%d:%d] block.%08x | h.%d\n",req->numtx,bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,bp!=0?bp->numhashes:-1);
     if ( bundlei == 1 && bp != 0 && bp->numhashes < bp->n )
     {
         //printf("reissue hdrs request for [%d]\n",bp->hdrsi);
@@ -852,7 +852,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     }
     if ( block != 0 )
     {
-        block->RO.txn_count = origblock->RO.txn_count;
+        block->RO.txn_count = req->numtx;
         if (  0 && bp != 0 && bundlei > 0 && bits256_nonz(block->RO.prev_block) > 0 && bits256_cmp(block->RO.prev_block,bp->hashes[bundlei-1]) != 0 )
         {
             if ( bundlei > 0 )
