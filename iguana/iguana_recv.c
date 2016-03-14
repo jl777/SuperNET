@@ -498,7 +498,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                 {
                     printf("GENERATED UTXO for ht.%d duration %d seconds\n",bp->bundleheight,(uint32_t)time(NULL)-bp->startutxo);
                     bp->utxofinish = (uint32_t)time(NULL);
-                } else printf("UTXO write error\n");
+                } else printf("UTXO gen error\n");
             }
             if ( bp->utxofinish != 0 && bp->balancefinish == 0 && (bp->hdrsi == 0 || (prevbp != 0 && prevbp->utxofinish != 0)) )
             {

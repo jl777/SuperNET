@@ -130,7 +130,7 @@ int32_t iguana_spentsinit(struct iguana_info *coin,struct iguana_bundleind *spen
             spentbp->ramchain.spents[unspentind].hdrsi = bp->hdrsi;
             flag = 1;
             if ( S[spendind].external == 0 && spentbp != bp )
-                printf("unexpected spendbp: %p bp.[%d] U%d <- S%d.[%d] [%p %p %p]\n",&spentbp->ramchain.spents[unspentind],hdrsi,unspentind,spendind,bp->hdrsi,coin->bundles[0],coin->bundles[1],coin->bundles[2]);
+                printf("spentsinit unexpected spendbp: %p bp.[%d] U%d <- S%d.[%d] [%p %p %p]\n",&spentbp->ramchain.spents[unspentind],hdrsi,unspentind,spendind,bp->hdrsi,coin->bundles[0],coin->bundles[1],coin->bundles[2]);
         }
         else if ( S[spendind].prevout < 0 )
             flag = 1;
@@ -315,7 +315,7 @@ uint8_t *iguana_rmdarray(struct iguana_info *coin,int32_t *numrmdsp,cJSON *array
 int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     static uint64_t total,emitted;
-    int32_t spendind,n,emit=0; uint32_t unspentind; struct iguana_bundle *spentbp;
+    int32_t spendind,n,errs=0,emit=0; uint32_t unspentind; struct iguana_bundle *spentbp;
     FILE *fp; char fname[1024],str[65],dirname[128]; int32_t hdrsi,retval = -1; bits256 zero,sha256;
     struct iguana_spend *S,*s; struct iguana_bundleind *ptr; struct iguana_ramchain *ramchain;
     ramchain = &bp->ramchain;
@@ -344,11 +344,14 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
                 //spentbp->ramchain.spents[unspentind].ind = spendind;
                 //spentbp->ramchain.spents[unspentind].hdrsi = bp->hdrsi;
                 if ( spentbp == bp )
-                    printf("unexpected spendbp: %p bp.[%d] U%d <- S%d.[%d] [%p %p %p]\n",&spentbp->ramchain.spents[unspentind],spentbp->hdrsi,unspentind,spendind,bp->hdrsi,coin->bundles[0],coin->bundles[1],coin->bundles[2]);
+                {
+                    printf("unexpected spendbp: %p bp.[%d] U%d <- S%d.[%d] [ext.%d prev.%d]\n",&spentbp->ramchain.spents[unspentind],spentbp->hdrsi,unspentind,spendind,bp->hdrsi,s->external,s->prevout);
+                    errs++;
+                }
             } else printf("unresolved spendind.%d hdrsi.%d\n",spendind,bp->hdrsi);
         }
     }
-    if ( emit >= 0 )
+    if ( errs == 0 && emit >= 0 )
     {
         emitted += emit;
         memset(zero.bytes,0,sizeof(zero));
@@ -374,8 +377,8 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
         } else printf("error getting utxo fname\n");
     }
     free(ptr);
-    printf("utxo %d spendinds.[%d] [%.2f%%] emitted.%d %s of %d | ",spendind,bp->hdrsi,100.*(double)emitted/(total+1),emit,mbstr(str,sizeof(*ptr) * emit),n);
-    return(0);
+    printf("utxo %d spendinds.[%d] errs.%d [%.2f%%] emitted.%d %s of %d | ",spendind,bp->hdrsi,errs,100.*(double)emitted/(total+1),emit,mbstr(str,sizeof(*ptr) * emit),n);
+    return(-errs);
 }
 
 int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
