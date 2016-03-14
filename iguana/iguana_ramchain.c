@@ -443,7 +443,7 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
             static uint64_t totalsize;
             totalsize += scriptlen;
             char str[65];
-            if ( (rand() % 1000000) == 0 )
+            if ( (rand() % 10000) == 0 )
                 fprintf(stderr,"IGUANA_SCRIPT_76AC type.%d scriptlen.%d bp.%p %s\n",type,scriptlen,bp,mbstr(str,totalsize));
         }
         u->scriptlen = scriptlen;
@@ -2081,7 +2081,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
             }
             int32_t i; for (i=0; i<IGUANA_NUMLHASHES; i++)
                 printf("%08x ",mapchain->H.data->lhashes[i].uints[0]);
-            printf("%llx ht.%d\n",(long long)mapchain->H.data->sha256.txid,mapchain->height);
+            printf("%llx ht.%d bundlehashes\n",(long long)mapchain->H.data->sha256.txid,mapchain->height);
             iguana_ramchain_free(mapchain,cmpflag);
         }
         iguana_mempurge(hashmem);
