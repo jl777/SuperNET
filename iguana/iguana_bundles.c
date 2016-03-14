@@ -464,7 +464,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             numcached += bp->numcached;
             numrecv += bp->numrecv;
             numsaved += bp->numsaved;
-            if ( bp->emitfinish != 0 )
+            if ( bp->emitfinish > coin->startutc )
             {
                 done++;
                 if ( bp->emitfinish > 1 )
