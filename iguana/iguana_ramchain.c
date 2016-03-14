@@ -2224,11 +2224,11 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
             break;
         }
         //printf("%x ",(uint32_t)block->RO.hash2.ulongs[3]);
-        //printf("(%d %d %d) ",numtxids,numunspents,numspends);
+        printf("(%d %d).%d ",mapchain->H.data->numtxids,bp->blocks[bundlei]->RO.txn_count,numtxids);
         //printf("%d ",numtxids);
     }
     scriptspace += pubkeyspace*1.1 + sigspace*1.1;
-    //printf("mem.%p mapchain txid tables, scriptspace.%u sigspace.%u pubkeyspace.%u bundlei.%d/%d\n",mem,scriptspace,sigspace,pubkeyspace,bundlei,bp->n);
+    printf("mem.%p mapchain txid tables, scriptspace.%u sigspace.%u pubkeyspace.%u bundlei.%d/%d\n",mem,scriptspace,sigspace,pubkeyspace,bundlei,bp->n);
     if ( bundlei != bp->n )
     {
         if ( (block= bp->blocks[bundlei]) != 0 )
