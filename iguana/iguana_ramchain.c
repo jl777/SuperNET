@@ -216,7 +216,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                 //printf("search bp.%p TXbits.%p T.%p %d %d\n",bp,TXbits,T,(int32_t)ramchain->H.data->TXoffset,(int32_t)ramchain->H.data->Toffset);
                 if ( (txidind= iguana_sparseaddtx(TXbits,ramchain->H.data->txsparsebits,ramchain->H.data->numtxsparse,txid,T,0)) > 0 )
                 {
-                    printf("found txidind.%d\n",txidind);
+                    //printf("found txidind.%d\n",txidind);
                     if ( bits256_cmp(txid,T[txidind].txid) == 0 )
                     {
                         for (j=0; j<bp->n; j++)
@@ -225,7 +225,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                         if ( j < bp->n )
                         {
                             *heightp = bp->bundleheight + j;
-                            printf("found height.%d\n",*heightp);
+                            //printf("found height.%d\n",*heightp);
                             *tx = T[txidind];
                             return(tx);
                         }

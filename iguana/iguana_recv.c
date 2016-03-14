@@ -635,7 +635,6 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
             block->fpos = origblock->fpos;
             block->RO.recvlen = origblock->RO.recvlen;
         }
-        block->RO.txn_count = origblock->RO.txn_count;
         *blockp = block;
         prevhash2 = origblock->RO.prev_block;
         if ( 0 && bits256_nonz(prevhash2) > 0 )
@@ -853,7 +852,8 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     }
     if ( block != 0 )
     {
-        if (  0&&bp != 0 && bundlei > 0 && bits256_nonz(block->RO.prev_block) > 0 && bits256_cmp(block->RO.prev_block,bp->hashes[bundlei-1]) != 0 )
+        block->RO.txn_count = origblock->RO.txn_count;
+        if (  0 && bp != 0 && bundlei > 0 && bits256_nonz(block->RO.prev_block) > 0 && bits256_cmp(block->RO.prev_block,bp->hashes[bundlei-1]) != 0 )
         {
             if ( bundlei > 0 )
             {
