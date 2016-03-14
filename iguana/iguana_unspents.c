@@ -97,7 +97,7 @@ struct iguana_bundle *iguana_spent(struct iguana_info *coin,bits256 *prevhashp,u
             {
                 unspentind = TX.firstvout + ((prev_vout > 0) ? prev_vout : 0);
                 hdrsi = height / coin->chain->bundlesize;
-                //printf("height.%d firstvout.%d prev.%d ->U%d\n",height,TX.firstvout,prev_vout,unspentind);
+                printf("%s height.%d firstvout.%d prev.%d ->U%d\n",bits256_str(str,prev_hash),height,TX.firstvout,prev_vout,unspentind);
             }
             else
             {
