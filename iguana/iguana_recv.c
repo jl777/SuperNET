@@ -579,7 +579,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     }
     else
     {
-        r = (rand() % 16);
+        r = (rand() % 8);
         if ( starti+r < coin->bundlescount && coin->bundles[starti+r] != 0 )
             iguana_bundlekick(coin,coin->bundles[starti+r],starti+r,coin->bundles[starti+r]->n);
     }
