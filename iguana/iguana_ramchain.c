@@ -197,12 +197,14 @@ void iguana_blocksetcounters(struct iguana_info *coin,struct iguana_block *block
     block->RO.firstexternalind = ramchain->externalind;
 }
 
-struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,struct iguana_txid *tx,bits256 txid)
+struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,struct iguana_txid *tx,bits256 txid,int32_t lasthdrsi)
 {
     uint8_t *TXbits; struct iguana_txid *T; uint32_t txidind; int32_t i,j;
     struct iguana_bundle *bp; struct iguana_ramchain *ramchain; struct iguana_block *block;
     *heightp = -1;
-    for (i=coin->bundlescount-1; i>=0; i--)
+    if ( lasthdrsi < 0 )
+        return(0);
+    for (i=lasthdrsi; i>=0; i--)
     {
         if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish > coin->startutc )
         {
@@ -211,7 +213,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
             {
                 TXbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->TXoffset);
                 T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
-                printf("search bp.%p TXbits.%p T.%p %d %d\n",bp,TXbits,T,(int32_t)ramchain->H.data->TXoffset,(int32_t)ramchain->H.data->Toffset);
+                //printf("search bp.%p TXbits.%p T.%p %d %d\n",bp,TXbits,T,(int32_t)ramchain->H.data->TXoffset,(int32_t)ramchain->H.data->Toffset);
                 if ( (txidind= iguana_sparseaddtx(TXbits,ramchain->H.data->txsparsebits,ramchain->H.data->numtxsparse,txid,T,0)) > 0 )
                 {
                     printf("found txidind.%d\n",txidind);

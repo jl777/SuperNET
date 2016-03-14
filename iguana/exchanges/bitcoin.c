@@ -1165,7 +1165,7 @@ rawtxstr = refstr;
         if ( bitcoin_verifytx(coin,&signedtxid,&signedtx,rawtxstr,V) != 0 )
             printf("bitcoin_verifytx error\n");
         jadd(retjson,"result",txjson);
-        if ( (tp= iguana_txidfind(coin,&height,&T,txid)) != 0 )
+        if ( (tp= iguana_txidfind(coin,&height,&T,txid,coin->bundlescount-1)) != 0 )
         {
             if ( height >= 0 )
             {

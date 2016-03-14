@@ -93,7 +93,7 @@ struct iguana_bundle *iguana_spent(struct iguana_info *coin,bits256 *prevhashp,u
         *unspentindp = unspentind;
         if ( unspentind == 0 )
         {
-            if ( (tp= iguana_txidfind(coin,&height,&TX,prev_hash)) != 0 )
+            if ( (tp= iguana_txidfind(coin,&height,&TX,prev_hash,spend_hdrsi-1)) != 0 )
             {
                 unspentind = TX.firstvout + ((prev_vout > 0) ? prev_vout : 0);
                 hdrsi = height / coin->chain->bundlesize;
@@ -216,7 +216,7 @@ cJSON *iguana_unspentjson(struct iguana_info *coin,int32_t hdrsi,uint32_t unspen
     if ( iguana_scriptget(coin,scriptstr,asmstr,sizeof(scriptstr),hdrsi,unspentind,T[up->txidind].txid,up->vout,rmd160,up->type,pubkey33) != 0 )
         jaddstr(item,"scriptPubKey",scriptstr);
     jaddnum(item,"amount",dstr(up->value));
-    if ( iguana_txidfind(coin,&height,&TX,T[up->txidind].txid) != 0 )
+    if ( iguana_txidfind(coin,&height,&TX,T[up->txidind].txid,coin->bundlescount-1) != 0 )
         jaddnum(item,"confirmations",coin->longestchain - height);
     return(item);
 }

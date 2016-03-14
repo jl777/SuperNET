@@ -597,7 +597,7 @@ char *BTC_txconfirmed(struct supernet_info *myinfo,struct iguana_info *coin,stru
     *numconfirmsp = -1.;
     if ( coin != 0 && *numconfirmsp < 0 )
     {
-        if ( (tx= iguana_txidfind(coin,&height,&T,txid)) != 0 && (confs= iguana_numconfs(coin,txid,height)) >= requiredconfs )
+        if ( (tx= iguana_txidfind(coin,&height,&T,txid,coin->bundlescount-1)) != 0 && (confs= iguana_numconfs(coin,txid,height)) >= requiredconfs )
         {
             *numconfirmsp = confs;
             if ( (retstr= instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,virtualevent,myinfo->myaddr.persistent,0,0,0)) != 0 )
