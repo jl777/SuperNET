@@ -2224,6 +2224,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
             break;
         }
         //printf("%x ",(uint32_t)block->RO.hash2.ulongs[3]);
+        bp->blocks[bundlei]->RO.txn_count = mapchain->H.data->numtxids - 1;
         printf("(%d %d).%d ",mapchain->H.data->numtxids,bp->blocks[bundlei]->RO.txn_count,numtxids);
         //printf("%d ",numtxids);
     }
