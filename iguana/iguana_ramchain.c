@@ -430,7 +430,7 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
         {
             static uint64_t totalsize;
             totalsize += scriptlen;
-            char str[65]; fprintf(stderr,"type.%d scriptlen.%d bp.%p %s\n",type,scriptlen,bp,mbstr(str,totalsize));
+            //char str[65]; fprintf(stderr,"type.%d scriptlen.%d bp.%p %s\n",type,scriptlen,bp,mbstr(str,totalsize));
         }
         u->scriptlen = scriptlen;
         if ( scriptlen > 0 && script != 0 )
