@@ -376,7 +376,7 @@ uint32_t iguana_ramchain_addpkhash(struct iguana_info *coin,RAMCHAIN_FUNC,uint8_
 
 uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_peer *addr,RAMCHAIN_FUNC,uint64_t value,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vout,int8_t type,struct iguana_bundle *bp,uint8_t rmd160[20])
 {
-    uint32_t unspentind; struct iguana_unspent20 *u; struct vin_info V;
+    uint32_t unspentind; struct iguana_unspent20 *u; struct vin_info V; char asmstr[IGUANA_MAXSCRIPTSIZE*2+1];
     unspentind = ramchain->H.unspentind++;
     u = &U[unspentind];
     if ( scriptlen > 0 )
@@ -428,7 +428,7 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
         u->scriptlen = scriptlen;
         if ( scriptlen > 0 && script != 0 )
         {
-            V.spendlen = iguana_scriptgen(coin,&V.M,&V.N,V.coinaddr,V.spendscript,0,u->rmd160,type,(const struct vin_info *)&V,vout);
+            V.spendlen = iguana_scriptgen(coin,&V.M,&V.N,V.coinaddr,V.spendscript,asmstr,u->rmd160,type,(const struct vin_info *)&V,vout);
             if ( (V.spendlen != scriptlen || memcmp(V.spendscript,script,scriptlen) != 0) && addr != 0 && addr->voutsfp != 0 )
             {
                 u->ipbits = (uint32_t)addr->ipbits;
