@@ -422,7 +422,7 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
     {
         if ( (block= bp->blocks[i]) != 0 )
         {
-            if ( block->fpipbits == 0 )//|| block->RO.recvlen == 0 )
+            if ( block->fpipbits == 0 || block->RO.recvlen == 0 )
             {
                 if (  bp->issued[i] == 0 || now > bp->issued[i]+10 )
                 {
@@ -571,9 +571,18 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     issued = 0;
     max = 100 + (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
     iguana_bundlekick(coin,bp,starti,max);
-    r = (rand() % 8);
-    if ( starti+r < coin->bundlescount && coin->bundles[starti+r] != 0 )
-        iguana_bundlekick(coin,coin->bundles[starti+r],starti+r,coin->bundles[starti+r]->n);
+    if ( coin->numsaved > coin->longestchain*.99 )
+    {
+        printf("last percent via hdrsi.%d\n",bp->hdrsi);
+        for (r=starti; r<coin->bundlescount; r++)
+            iguana_bundlekick(coin,coin->bundles[r],r,coin->bundles[r]->n);
+    }
+    else
+    {
+        r = (rand() % 16);
+        if ( starti+r < coin->bundlescount && coin->bundles[starti+r] != 0 )
+            iguana_bundlekick(coin,coin->bundles[starti+r],starti+r,coin->bundles[starti+r]->n);
+    }
     endmillis = OS_milliseconds() + timelimit + (rand() % 1000);
     if ( bp->numsaved < bp->n )
         width = 100 + max*100;//sqrt(sqrt(bp->n * (1+bp->numsaved+issued)) * (10+coin->bundlescount-bp->hdrsi));

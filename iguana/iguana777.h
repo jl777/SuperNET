@@ -472,7 +472,7 @@ struct iguana_info
     portable_mutex_t scripts_mutex[2]; FILE *scriptsfp[2]; void *scriptsptr[2]; long scriptsfilesize[2];
     //struct scriptinfo *scriptstable[2];
     struct iguana_bundle *bundles[IGUANA_MAXBUNDLES],*current;
-    int32_t numremain,numpendings,zcount,recvcount,bcount,pcount,lastbundle;
+    int32_t numremain,numpendings,zcount,recvcount,bcount,pcount,lastbundle,numsaved;
     uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ,lastbundleitime;
     double backstopmillis; bits256 backstophash2;
     int32_t initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,polltimeout,numreqtxids,allhashes; bits256 reqtxids[64];
