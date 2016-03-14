@@ -311,7 +311,7 @@ int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *m
             {
                 if ( iguana_bundlesaveHT(coin,mem,memB,bp,ptr->starttime) == 0 )
                 {
-                    fprintf(stderr,"emitQ coin.%p bp.[%d]\n",ptr->coin,bp->bundleheight);
+                    //fprintf(stderr,"emitQ coin.%p bp.[%d]\n",ptr->coin,bp->bundleheight);
                     bp->emitfinish = (uint32_t)time(NULL) + 1;
                     coin->numemitted++;
                 } else bp->emitfinish = 0;

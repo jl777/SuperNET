@@ -1306,7 +1306,7 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
                 munmap(ptr,filesize);
                 ramchain->Xspendinds = 0;
             }
-        } else printf("no Xspendfile\n");
+        } //else printf("no Xspendfile\n");
     } else printf("couldnt open.(%s)\n",fname);
     return(ramchain->numXspends);
 }
@@ -2122,7 +2122,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
     }
     else
     {
-        printf("couldnt load bundle.%d\n",bp->bundleheight);
+        //printf("couldnt load bundle.%d\n",bp->bundleheight);
         memset(&bp->ramchain,0,sizeof(bp->ramchain));
     }
     if ( mapchain != 0 )
@@ -2322,9 +2322,9 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         }
         sprintf(dirname,"%s/%s/%d",GLOBALTMPDIR,coin->symbol,bp->bundleheight), OS_portable_rmdir(dirname,1);
         //bp->ramchain = newchain;
-        printf("load bundle.%d\n",bp->bundleheight);
+        //printf("load bundle.%d\n",bp->bundleheight);
         iguana_bundleload(coin,&newchain,bp);
-        printf("loaded bundle.%d data.%p\n",bp->bundleheight,newchain.H.data);
+        //printf("loaded bundle.%d data.%p\n",bp->bundleheight,newchain.H.data);
     }
     iguana_ramchain_free(dest,0);
     bp->ramchain = newchain;
