@@ -452,7 +452,8 @@ int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char
 {
     uint8_t addrtype; char rmd160str[41],pubkeystr[256]; int32_t plen,i,m,n,flag = 0,scriptlen = 0;
     m = n = 1;
-    asmstr[0] = 0;
+    if ( asmstr != 0 )
+        asmstr[0] = 0;
     if ( type == IGUANA_SCRIPT_76A988AC || type == IGUANA_SCRIPT_76AC || type == IGUANA_SCRIPT_P2SH )
     {
         if ( type == IGUANA_SCRIPT_P2SH )
@@ -464,7 +465,8 @@ int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char
     switch ( type )
     {
         case IGUANA_SCRIPT_NULL:
-            strcpy(asmstr,txi == 0 ? "coinbase " : "PoSbase ");
+            if ( asmstr != 0 )
+                strcpy(asmstr,txi == 0 ? "coinbase " : "PoSbase ");
             flag++;
             coinaddr[0] = 0;
             break;
@@ -472,20 +474,24 @@ int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char
             if ( (plen= bitcoin_pubkeylen(vp->signers[0].pubkey)) < 0 )
                 return(0);
             init_hexbytes_noT(pubkeystr,(uint8_t *)vp->signers[0].pubkey,plen);
-            sprintf(asmstr,"OP_DUP %s OP_CHECKSIG // %s",pubkeystr,coinaddr);
+            if ( asmstr != 0 )
+                sprintf(asmstr,"OP_DUP %s OP_CHECKSIG // %s",pubkeystr,coinaddr);
             scriptlen = bitcoin_pubkeyspend(script,0,(uint8_t *)vp->signers[0].pubkey);
             //printf("[%02x] scriptlen.%d (%s)\n",vp->signers[0].pubkey[0],scriptlen,asmstr);
             break;
         case IGUANA_SCRIPT_76A988AC:
-            sprintf(asmstr,"OP_DUP OP_HASH160 %s OP_EQUALVERIFY OP_CHECKSIG // %s",rmd160str,coinaddr);
+            if ( asmstr != 0 )
+                sprintf(asmstr,"OP_DUP OP_HASH160 %s OP_EQUALVERIFY OP_CHECKSIG // %s",rmd160str,coinaddr);
             scriptlen = bitcoin_standardspend(script,0,rmd160);
             break;
         case IGUANA_SCRIPT_P2SH:
-            sprintf(asmstr,"OP_HASH160 %s OP_EQUAL // %s",rmd160str,coinaddr);
+            if ( asmstr != 0 )
+                sprintf(asmstr,"OP_HASH160 %s OP_EQUAL // %s",rmd160str,coinaddr);
             scriptlen = bitcoin_p2shspend(script,0,rmd160);
             break;
         case IGUANA_SCRIPT_OPRETURN:
-            strcpy(asmstr,"OP_RETURN ");
+            if ( asmstr != 0 )
+                strcpy(asmstr,"OP_RETURN ");
             flag++;
             break;
         case IGUANA_SCRIPT_3of3: m = 3, n = 3; break;
@@ -495,11 +501,13 @@ int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char
         case IGUANA_SCRIPT_1of2: m = 1, n = 2; break;
         case IGUANA_SCRIPT_MSIG: m = vp->M, n = vp->N; break;
         case IGUANA_SCRIPT_DATA:
-            strcpy(asmstr,"DATA ONLY");
+            if ( asmstr != 0 )
+                strcpy(asmstr,"DATA ONLY");
             flag++;
             break;
         case IGUANA_SCRIPT_STRANGE:
-            strcpy(asmstr,"STRANGE SCRIPT ");
+            if ( asmstr != 0 )
+                strcpy(asmstr,"STRANGE SCRIPT ");
             flag++;
             break;
         default: break;//printf("unexpected script type.%d\n",type); break;
@@ -507,21 +515,28 @@ int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char
     if ( n > 1 )
     {
         scriptlen = bitcoin_MofNspendscript(rmd160,script,0,vp);
-        sprintf(asmstr,"%d ",m);
+        if ( asmstr != 0 )
+            sprintf(asmstr,"%d ",m);
         for (i=0; i<n; i++)
         {
             if ( (plen= bitcoin_pubkeylen(vp->signers[i].pubkey)) > 0 )
             {
                 init_hexbytes_noT(asmstr + strlen(asmstr),(uint8_t *)vp->signers[i].pubkey,plen);
-                strcat(asmstr," ");
-            } else strcat(asmstr,"NOPUBKEY ");
+                if ( asmstr != 0 )
+                    strcat(asmstr," ");
+            }
+            else if ( asmstr != 0 )
+                strcat(asmstr,"NOPUBKEY ");
         }
-        sprintf(asmstr + strlen(asmstr),"%d // M.%d of N.%d [",n,m,n);
+        if ( asmstr != 0 )
+        {
+            sprintf(asmstr + strlen(asmstr),"%d // M.%d of N.%d [",n,m,n);
         for (i=0; i<n; i++)
             sprintf(asmstr + strlen(asmstr),"%s%s",vp->signers[i].coinaddr,i<n-1?" ":"");
         strcat(asmstr,"]\n");
+        }
     }
-    if ( flag != 0 && vp->spendlen > 0 )
+    if ( flag != 0 && asmstr != 0 && vp->spendlen > 0 )
         init_hexbytes_noT(asmstr + strlen(asmstr),(uint8_t *)vp->spendscript,vp->spendlen);
     *Mp = m, *nump = n;
     return(scriptlen);
@@ -1069,7 +1084,6 @@ int32_t iguana_metascript(struct iguana_info *coin,RAMCHAIN_FUNC,struct iguana_s
     return(metalen);
 }
 
-
 int32_t iguana_scriptspaceraw(struct iguana_info *coin,int32_t *scriptspacep,int32_t *sigspacep,int32_t *pubkeyspacep,struct iguana_msgtx *txarray,int32_t txn_count)
 {
     uint32_t i,j,sigspace,suffixlen,scriptspace,pubkeyspace,p2shspace,p2shsize,sigsize,pubkeysize,type,scriptlen; //struct iguana_spend256 *s; struct iguana_unspent20 *u;
@@ -1162,5 +1176,103 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
     //printf("altspace.%d numvouts.%d numvins.%d scriptspace.%d p2shspace.%d sigspace.%d pubkeyspace.%d\n",altspace,tx->numvouts,tx->numvins,scriptspace,p2shspace,sigspace,pubkeyspace);
     return(scriptspace + p2shspace);
 }
+
+uint32_t iguana_ramchain_scriptencode(struct iguana_info *coin,uint8_t *Kspace,uint32_t *offsetp,int32_t type,uint8_t *script,int32_t scriptlen,uint32_t *pubkeyoffsetp)
+{
+    uint32_t uoffset,offset = *offsetp,pubkeyoffset = *pubkeyoffsetp; int32_t plen;
+    if ( type == IGUANA_SCRIPT_76AC )
+    {
+        plen = bitcoin_pubkeylen(script+1);
+        /*if ( plen <= 0 )
+         {
+         char buf[1025];
+         buf[0] = 0;
+         for (i=0; i<33; i++)
+         sprintf(buf+strlen(buf),"%02x",script[1+i]);
+         printf("%s pubkey -> pubkeyoffset.%d offset.%d plen.%d\n",buf,pubkeyoffset,offset,plen);
+         }*/
+        if ( plen > 0 )
+        {
+            if ( pubkeyoffset == 0 )
+            {
+                if ( offset == 0 )
+                    offset = 1;
+                *pubkeyoffsetp = pubkeyoffset = offset;
+                memcpy(&Kspace[pubkeyoffset],script+1,plen);
+                offset += plen;
+                *offsetp = offset;
+                return(0);
+            }
+            if ( memcmp(script+1,&Kspace[pubkeyoffset],plen) != 0 )
+            {
+                /*for (i=-1; i<=plen; i++)
+                 printf("%02x",script[1+i]);
+                 printf("  script arg\n");
+                 for (i=0; i<plen; i++)
+                 printf("%02x",Kspace[pubkeyoffset+i]);
+                 printf(" Kspace[%d] len.%d pubkeyoffset.%d\n",offset,plen,pubkeyoffset);
+                 printf("iguana_ramchain_scriptencode: mismatched pubkey?\n");*/
+                //getchar();
+            }
+        }
+    }
+    uoffset = offset;
+    offset += iguana_rwvarint32(1,&Kspace[offset],(void *)&scriptlen);
+    memcpy(&Kspace[offset],script,scriptlen);
+    (*offsetp) = (offset + scriptlen);
+    return(uoffset);
+}
+
+uint8_t *iguana_ramchain_scriptdecode(int32_t *metalenp,int32_t *scriptlenp,uint8_t *Kspace,int32_t type,uint8_t _script[IGUANA_MAXSCRIPTSIZE],uint32_t uoffset,uint32_t pubkeyoffset)
+{
+    uint32_t plen,len = 0;
+    *metalenp = *scriptlenp = 0;
+    if ( type == IGUANA_SCRIPT_76AC && pubkeyoffset != 0 )
+    {
+        plen = bitcoin_pubkeylen(&Kspace[pubkeyoffset]);
+        _script[0] = 0x76;
+        memcpy(&_script[1],&Kspace[pubkeyoffset],plen);
+        _script[plen + 1] = 0xac;
+        *scriptlenp = plen + 2;
+        //printf("76AC special case\n");
+        return(_script);
+    }
+    if ( uoffset != 0 )
+    {
+        uoffset += iguana_rwvarint32(0,&Kspace[uoffset],(void *)scriptlenp);
+        *metalenp = len + *scriptlenp;
+        return(&Kspace[uoffset]);
+    } else return(0);
+}
+/*origoffset = ramchain->H.scriptoffset;
+ if ( type != IGUANA_SCRIPT_STRANGE && type != IGUANA_SCRIPT_DATA && type != IGUANA_SCRIPT_OPRETURN && scriptlen > 0 && script != 0 )
+ {
+ if ( Kspace != 0 && ramchain->H.scriptoffset+scriptlen+3 <= ramchain->H.data->scriptspace-ramchain->H.stacksize )
+ {
+ if ( (u->scriptoffset= iguana_ramchain_scriptencode(coin,Kspace,&ramchain->H.scriptoffset,type,script,scriptlen,&pubkeyoffset)) > 0 || type == IGUANA_SCRIPT_76AC )
+ {
+ fprintf(stderr,"new offset.%d from scriptlen.%d pubkeyoffset.%d\n",ramchain->H.scriptoffset,scriptlen,pubkeyoffset);
+ }
+ //printf("[%d] u%d offset.%u len.%d\n",hdrsi,unspentind,u->scriptoffset,scriptlen);
+ } else printf("[%d] u%d Kspace.%p scriptspace overflow! %d + %d vs space.%d - stack.%d\n",hdrsi,unspentind,Kspace,ramchain->H.scriptoffset,scriptlen,ramchain->H.data->scriptspace,ramchain->H.stacksize);
+ checkscript = iguana_ramchain_scriptdecode(&metalen,&checklen,Kspace,u->type,_script,u->scriptoffset,P[pkind].pubkeyoffset < ramchain->H.scriptoffset ? P[pkind].pubkeyoffset : 0);
+ if ( checklen != scriptlen || (script != 0 && checkscript != 0 && memcmp(checkscript,script,scriptlen) != 0) )
+ {
+ //printf("create script mismatch len.%d vs %d or cmp error.%d\n",scriptlen,checklen,(script!=0&&checkscript!=0)?memcmp(checkscript,script,scriptlen):0);
+ type = IGUANA_SCRIPT_STRANGE;
+ } //else printf("RO spendscript match.%d\n",scriptlen);
+ }
+ if ( type == IGUANA_SCRIPT_DATA || type == IGUANA_SCRIPT_OPRETURN || type == IGUANA_SCRIPT_STRANGE )
+ {
+ if ( script != 0 && scriptlen > 0 )
+ {
+ u->scriptoffset = origoffset;
+ origoffset += iguana_rwvarint32(1,&Kspace[origoffset],(void *)&scriptlen);
+ memcpy(&Kspace[origoffset],script,scriptlen);
+ ramchain->H.scriptoffset = origoffset + scriptlen;
+ }
+ }
+ else if ( type == IGUANA_SCRIPT_76AC && pubkeyoffset != 0 && P[pkind].pubkeyoffset == 0 )
+ P[pkind].pubkeyoffset = pubkeyoffset;*/
 
 #endif
