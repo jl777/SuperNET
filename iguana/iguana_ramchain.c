@@ -2315,10 +2315,11 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
                 coin->peers.numfiles -= OS_removefile(fname,0);
             else printf("error removing.(%s)\n",fname);
         }
-        //sprintf(dirname,"%s/%s/%d",GLOBALTMPDIR,coin->symbol,bp->bundleheight), OS_portable_rmdir(dirname,1);
+        sprintf(dirname,"%s/%s/%d",GLOBALTMPDIR,coin->symbol,bp->bundleheight), OS_portable_rmdir(dirname,1);
         //bp->ramchain = newchain;
         printf("load bundle.%d\n",bp->bundleheight);
         iguana_bundleload(coin,bp);
+        printf("loaded bundle.%d data.%p\n",bp->bundleheight,bp->ramchain.H.data);
     }
     iguana_ramchain_free(dest,0);
     return(retval);
