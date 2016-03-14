@@ -231,7 +231,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                         }
                         for (j=0; j<bp->n; j++)
                             if ( (block= bp->blocks[j]) != 0 )
-                                printf("%d ",block->RO.firsttxidind);
+                                printf("(%d %d).%d ",block->RO.firsttxidind,block->RO.txn_count,txidind >= block->RO.firsttxidind && txidind < block->RO.firsttxidind+block->RO.txn_count);
                         printf(" <- firsttxidind txidind.%d not in block range\n",txidind);
                     } else printf("mismatched sparse entry\n");
                 }
