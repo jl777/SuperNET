@@ -602,10 +602,13 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
             // merkle
             printf(">>>>>>>>>>>>>>>>>>>>>>> EMIT bundle.%d | 1st.%d h.%d s.[%d] maxbundles.%d NET.(h%d b%d)\n",bp->bundleheight,coin->current!=0?coin->current->hdrsi:-1,coin->current!=0?coin->current->numhashes:-1,coin->current!=0?coin->current->numsaved:-1,coin->MAXBUNDLES,HDRnet,netBLOCKS);
             bp->emitfinish = 1;
-            if ( coin->MAXBUNDLES > IGUANA_MINPENDBUNDLES && (rand() % 1) == 0 )
-                coin->MAXBUNDLES--;
-            else if ( coin->MAXBUNDLES < IGUANA_MINPENDBUNDLES )
-                coin->MAXBUNDLES++;
+            if ( (rand() % 1) == 0 )
+            {
+                if ( coin->MAXBUNDLES > IGUANA_MINPENDBUNDLES )
+                    coin->MAXBUNDLES--;
+                else if ( coin->MAXBUNDLES < IGUANA_MINPENDBUNDLES )
+                    coin->MAXBUNDLES++;
+            }
             sleep(1);
             iguana_emitQ(coin,bp);
             iguana_bundleQ(coin,bp,width);
