@@ -1292,7 +1292,7 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
             {
                 ramchain->Xspendptr = ptr;
                 ramchain->numXspends = (int32_t)((filesize - sizeof(sha256)) / sizeof(*ramchain->Xspendinds));
-                //printf("mapped utxo vector[%d] from (%s)\n",ramchain->numXspends,fname);
+                printf("mapped utxo vector[%d] from (%s)\n",ramchain->numXspends,fname);
             }
             else
             {
