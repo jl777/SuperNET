@@ -334,15 +334,13 @@ struct iguana_unspent { uint64_t value; uint32_t txidind,pkind,prevunspentind,sc
 
 struct iguana_spend { uint32_t spendtxidind,sequenceid,scriptpos,ipbits; int16_t prevout; uint16_t scriptlen:15,external:1; } __attribute__((packed)); // numsigs:4,numpubkeys:4,p2sh:1,sighash:4
 
-struct iguana_pkhash { uint8_t rmd160[20]; uint32_t pkind,pubkeyoffset; } __attribute__((packed)); //firstunspentind 
-
-struct scriptdata { uint32_t ind:31,spendflag:1; uint16_t hdrsi,scriptlen; }__attribute__((packed));
+struct iguana_pkhash { uint8_t rmd160[20]; uint32_t pkind; } __attribute__((packed)); //firstunspentind,pubkeyoffset
 
 // dynamic
-struct iguana_account { uint64_t balance; uint32_t lastunspentind; } __attribute__((packed)); // pkind
+struct iguana_account { int64_t total; uint32_t lastind; } __attribute__((packed));
 
 // GLOBAL one zero to non-zero write (unless reorg)
-struct iguana_Uextra { uint32_t spendind; uint16_t hdrsi; } __attribute__((packed)); // unspentind
+struct iguana_bundleind { uint32_t ind; uint16_t hdrsi; } __attribute__((packed)); // unspentind
 //struct iguana_pkextra { uint32_t firstspendind; } __attribute__((packed)); // pkind
 
 struct iguana_txblock
@@ -376,7 +374,7 @@ struct iguana_ramchain
     uint32_t numblocks:31,expanded:1,pkind,externalind,height;
     struct iguana_kvitem *txids,*pkhashes;
     struct OS_memspace *hashmem; long filesize,sigsfilesize; void *fileptr,*sigsfileptr;
-    struct iguana_account *A,*roA; struct iguana_Uextra *spents;
+    struct iguana_account *A,*creditsA; struct iguana_bundleind *spents;
 //struct iguana_Uextra *U2,*roU2; struct iguana_pkextra *P2,*roP2;
 };
 

@@ -14147,6 +14147,7 @@ len = 0;
                 }
                 return(scriptdata);
             }
+            //struct scriptdata { uint32_t ind:31,spendflag:1; uint16_t hdrsi,scriptlen; }__attribute__((packed));
 
             
 #endif

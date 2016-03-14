@@ -783,6 +783,43 @@ char *iguana_scriptget(struct iguana_info *coin,char *scriptstr,char *asmstr,int
 
 #ifdef later
 
+uint32_t iguana_ramchain_pubkeyoffset(struct iguana_info *coin,RAMCHAIN_FUNC,int32_t createflag,uint32_t *pkindp,uint32_t *scriptoffsetp,uint8_t *pubkey,uint8_t rmd160[20])
+{
+    uint32_t pkind; int32_t plen; struct iguana_kvitem *ptr;
+    if ( (ptr= iguana_hashfind(ramchain,'P',rmd160)) == 0 )
+    {
+        if ( createflag != 0 )
+        {
+            //printf("from pubkeyoffset\n");
+            pkind = iguana_ramchain_addpkhash(coin,RAMCHAIN_ARG,rmd160,0,0,0);
+            //int32_t i; for (i=0; i<33; i++)
+            //    printf("%02x",pubkey[i]);
+            //printf(" pkind.%d created from pubkeyoffset\n",pkind);
+            *pkindp = pkind + 1;
+        } else return(0);
+    } else pkind = ptr->hh.itemind;
+    if ( P[pkind].pubkeyoffset == 0 )
+    {
+        plen = bitcoin_pubkeylen(pubkey);
+        if ( plen > 0 )
+        {
+            if ( *scriptoffsetp == 0 )
+                *scriptoffsetp++ = 0;
+            P[pkind].pubkeyoffset = *scriptoffsetp, *scriptoffsetp += plen;
+            // printf(" plen.%d -> new offset.%d\n",plen,*scriptoffsetp);
+            memcpy(&Kspace[P[pkind].pubkeyoffset],pubkey,plen);
+        }
+        else
+        {
+            //int32_t i; for (i=0; i<plen; i++)
+            //    printf("%02x",pubkey[i]);
+            //printf("iguana_ramchain_pubkeyoffset: illegal pubkey?\n");
+            return(0);
+        }
+    }
+    return(P[pkind].pubkeyoffset);
+}
+
 int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *ramchain,int32_t *metalenp,uint8_t _script[IGUANA_MAXSCRIPTSIZE],uint8_t *Kstackend,uint8_t *Kspace,struct iguana_spend *s)
 {
     int32_t i,suffixlen,len = 0; long diff; uint8_t *pubkey,*metascript = &Kspace[s->scriptoffset]; uint32_t poffset; int32_t totalsize,sigslen,plen,stacksize=0,p2shlen=0,scriptlen = 0;

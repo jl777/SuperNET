@@ -35,8 +35,8 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                 if ( (pkind= iguana_sparseaddpk(PKbits,ramchain->H.data->pksparsebits,ramchain->H.data->numpksparse,rmd160,P,0)) > 0 && pkind < ramchain->H.data->numpkinds )
                 {
                     *ramchainp = ramchain;
-                    *balancep = ACCTS[pkind].balance;
-                    *lastunspentindp = ACCTS[pkind].lastunspentind;
+                    *balancep = ACCTS[pkind].total;
+                    *lastunspentindp = ACCTS[pkind].lastind;
                     *p = P[pkind];
                     return(p);
                 } //else printf("not found pkind.%d vs num.%d\n",pkind,ramchain->H.data->numpkinds);
@@ -75,11 +75,7 @@ struct iguana_bundle *iguana_spent(struct iguana_info *coin,uint32_t *unspentind
     struct iguana_bundle *spentbp=0; struct iguana_txid *T,TX,*tp; bits256 *X; bits256 prev_hash;
     X = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Xoffset);
     T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
-    if ( s->sequenceid == 1 )
-        sequenceid = 0xffffffff;
-    else if ( s->sequenceid == 2 )
-        sequenceid = 0xfffffffe;
-    else sequenceid = 0;
+    sequenceid = s->sequenceid;
     hdrsi = spend_hdrsi;
     if ( s->prevout < 0 )
     {
@@ -109,15 +105,15 @@ struct iguana_bundle *iguana_spent(struct iguana_info *coin,uint32_t *unspentind
     }
     if ( hdrsi > spend_hdrsi || (spentbp= coin->bundles[hdrsi]) == 0 )
         printf("illegal hdrsi.%d when [%d] spentbp.%p\n",hdrsi,spend_hdrsi,spentbp);//, getchar();
-    else if ( spentbp->ramchain.spents[unspentind].spendind != 0 || hdrsi < 0 )
-        printf("DOUBLE SPEND? U%d %p bp.[%d] unspentind.%u already has %u, no room\n",unspentind,&spentbp->ramchain.spents[unspentind],hdrsi,unspentind,spentbp->ramchain.spents[unspentind].spendind);//, getchar();
+    else if ( spentbp->ramchain.spents[unspentind].ind != 0 || hdrsi < 0 )
+        printf("DOUBLE SPEND? U%d %p bp.[%d] unspentind.%u already has %u, no room\n",unspentind,&spentbp->ramchain.spents[unspentind],hdrsi,unspentind,spentbp->ramchain.spents[unspentind].ind);//, getchar();
     else if ( unspentind == 0 || unspentind >= spentbp->ramchain.H.data->numunspents )
         printf("illegal unspentind.%d vs max.%d spentbp.%p[%d]\n",unspentind,spentbp->ramchain.H.data->numunspents,spentbp,hdrsi);//, getchar();
     else return(spentbp);
     return(0);
 }
 
-int32_t iguana_spentsinit(struct iguana_info *coin,struct iguana_Uextra *spents,struct iguana_bundle *bp,struct iguana_ramchain *ramchain)
+int32_t iguana_spentsinit(struct iguana_info *coin,struct iguana_bundleind *spents,struct iguana_bundle *bp,struct iguana_ramchain *ramchain)
 {
     //struct iguana_Uextra { uint32_t spendind; uint16_t hdrsi; } __attribute__((packed)); // unspentind
     //struct iguana_spend { uint32_t spendtxidind; int16_t prevout; uint16_t tbd:14,external:1,diffsequence:1; } __attribute__((packed));
@@ -134,7 +130,7 @@ int32_t iguana_spentsinit(struct iguana_info *coin,struct iguana_Uextra *spents,
         hdrsi = bp->hdrsi;
         if ( (spentbp= iguana_spent(coin,&unspentind,ramchain,bp->hdrsi,&S[spendind])) != 0 )
         {
-            spentbp->ramchain.spents[unspentind].spendind = spendind;
+            spentbp->ramchain.spents[unspentind].ind = spendind;
             spentbp->ramchain.spents[unspentind].hdrsi = bp->hdrsi;
             printf("%p bp.[%d] U%d <- S%d.[%d] [%p %p %p]\n",&spentbp->ramchain.spents[unspentind],hdrsi,unspentind,spendind,bp->hdrsi,coin->bundles[0],coin->bundles[1],coin->bundles[2]);
             flag = 1;
@@ -150,7 +146,7 @@ int32_t iguana_spentsinit(struct iguana_info *coin,struct iguana_Uextra *spents,
 // if file exists and is valid, load and then process only the incremental
 long iguana_spentsfile(struct iguana_info *coin,int32_t n)
 {
-    int32_t i,iter,allocated = 0; long filesize,total,count; struct iguana_Uextra *spents = 0; struct iguana_ramchain *ramchain; char fname[1024]; struct iguana_bundle *bp; FILE *fp;
+    int32_t i,iter,allocated = 0; long filesize,total,count; struct iguana_bundleind *spents = 0; struct iguana_ramchain *ramchain; char fname[1024]; struct iguana_bundle *bp; FILE *fp;
     fname[0] = 0;
     for (total=iter=0; iter<2; iter++)
     {
@@ -240,14 +236,12 @@ int64_t iguana_pkhashbalance(struct iguana_info *coin,cJSON *array,int64_t *spen
     {
         (*nump)++;
         printf("%s u.%d %.8f\n",jprint(iguana_unspentjson(coin,hdrsi,unspentind,T,&U[unspentind],rmd160,coinaddr,pubkey33),1),unspentind,dstr(U[unspentind].value));
-        if ( ramchain->spents[unspentind].spendind == 0 )
+        if ( ramchain->spents[unspentind].ind == 0 )
         {
             balance += U[unspentind].value;
             if ( array != 0 )
                 jaddi(array,iguana_unspentjson(coin,hdrsi,unspentind,T,&U[unspentind],rmd160,coinaddr,pubkey33));
         } else (*spentp) += U[unspentind].value;
-        //if ( unspentind == p->firstunspentind )
-        //    break;
         unspentind = U[unspentind].prevunspentind;
     }
     return(balance);
