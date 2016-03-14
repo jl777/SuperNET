@@ -435,6 +435,7 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
         u->scriptlen = scriptlen;
         if ( scriptlen > 0 && script != 0 )
         {
+            memset(&V,0,sizeof(V));
             V.spendlen = iguana_scriptgen(coin,&V.M,&V.N,V.coinaddr,V.spendscript,asmstr,u->rmd160,type,(const struct vin_info *)&V,vout);
             if ( (V.spendlen != scriptlen || memcmp(V.spendscript,script,scriptlen) != 0) && addr != 0 && addr->voutsfp != 0 )
             {
@@ -1338,7 +1339,6 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
         if ( (ramchain->hashmem= hashmem) != 0 )
             iguana_memreset(hashmem);
     }
-    iguana_Xspendmap(coin,ramchain,bp);
     if ( ramchain->fileptr != 0 && ramchain->filesize > 0 )
     {
         // verify hashes
@@ -1412,6 +1412,7 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
             }
         }
         //printf("mapped %s scriptspace %d:%d\n",fname,ramchain->H.scriptoffset,ramchain->H.data->scriptspace);
+        iguana_Xspendmap(coin,ramchain,bp);
         return(ramchain);
     } else printf("iguana_ramchain_map.(%s) cant map file\n",fname);
     return(0);
