@@ -516,24 +516,23 @@ int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char
     {
         scriptlen = bitcoin_MofNspendscript(rmd160,script,0,vp);
         if ( asmstr != 0 )
+        {
             sprintf(asmstr,"%d ",m);
-        for (i=0; i<n; i++)
-        {
-            if ( (plen= bitcoin_pubkeylen(vp->signers[i].pubkey)) > 0 )
+            for (i=0; i<n; i++)
             {
-                init_hexbytes_noT(asmstr + strlen(asmstr),(uint8_t *)vp->signers[i].pubkey,plen);
-                if ( asmstr != 0 )
-                    strcat(asmstr," ");
+                if ( (plen= bitcoin_pubkeylen(vp->signers[i].pubkey)) > 0 )
+                {
+                    init_hexbytes_noT(asmstr + strlen(asmstr),(uint8_t *)vp->signers[i].pubkey,plen);
+                    if ( asmstr != 0 )
+                        strcat(asmstr," ");
+                }
+                else if ( asmstr != 0 )
+                    strcat(asmstr,"NOPUBKEY ");
+                sprintf(asmstr + strlen(asmstr),"%d // M.%d of N.%d [",n,m,n);
+                for (i=0; i<n; i++)
+                    sprintf(asmstr + strlen(asmstr),"%s%s",vp->signers[i].coinaddr,i<n-1?" ":"");
             }
-            else if ( asmstr != 0 )
-                strcat(asmstr,"NOPUBKEY ");
-        }
-        if ( asmstr != 0 )
-        {
-            sprintf(asmstr + strlen(asmstr),"%d // M.%d of N.%d [",n,m,n);
-        for (i=0; i<n; i++)
-            sprintf(asmstr + strlen(asmstr),"%s%s",vp->signers[i].coinaddr,i<n-1?" ":"");
-        strcat(asmstr,"]\n");
+            strcat(asmstr,"]\n");
         }
     }
     if ( flag != 0 && asmstr != 0 && vp->spendlen > 0 )
