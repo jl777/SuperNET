@@ -252,7 +252,9 @@ int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,
             return(-3);
         }
     }
-    else sprintf(fname,"%s/%s/%s_%d.%u",dirname,coin->symbol,bits256_str(str,hash2),numblocks,ipbits!=0?ipbits:*hdrsip);
+    else if ( strcmp("DB",dirname) == 0 )
+        sprintf(fname,"%s/%s/%s_%d.%u",dirname,coin->symbol,bits256_str(str,hash2),numblocks,ipbits!=0?ipbits:*hdrsip);
+    else sprintf(fname,"%s/%s.%u",dirname,bits256_str(str,hash2),bp->bundleheight);
     OS_compatible_path(fname);
     return(bundlei);
 }
@@ -1278,8 +1280,9 @@ void iguana_ramchain_extras(struct iguana_ramchain *ramchain,struct OS_memspace 
 
 int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct iguana_bundle *bp)
 {
-    int32_t hdrsi; bits256 sha256; char fname[1024]; void *ptr; long filesize; static bits256 zero;
-    if ( iguana_peerfname(coin,&hdrsi,"DB/utxo",fname,0,bp->hashes[0],zero,bp->n) >= 0 )
+    int32_t hdrsi; bits256 sha256; char fname[1024],dirname[128]; void *ptr; long filesize; static bits256 zero;
+    sprintf(dirname,"DB/%s/utxo",coin->symbol);
+    if ( iguana_peerfname(coin,&hdrsi,dirname,fname,0,bp->hashes[0],zero,bp->n) >= 0 )
     {
         if ( (ptr= OS_mapfile(fname,&filesize,0)) != 0 )
         {
@@ -1289,15 +1292,16 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
             {
                 ramchain->Xspendptr = ptr;
                 ramchain->numXspends = (int32_t)((filesize - sizeof(sha256)) / sizeof(*ramchain->Xspendinds));
-                printf("mapped utxo vector[%d] from (%s)\n",ramchain->numXspends,fname);
+                //printf("mapped utxo vector[%d] from (%s)\n",ramchain->numXspends,fname);
             }
             else
             {
+                char str[65]; printf("hash cmp error.%d vs (%s)\n",memcmp(sha256.bytes,ptr,sizeof(sha256)),bits256_str(str,sha256));
                 munmap(ptr,filesize);
                 ramchain->Xspendinds = 0;
             }
         }
-    }
+    } else printf("couldnt open.(%s)\n",fname);
     return(ramchain->numXspends);
 }
 

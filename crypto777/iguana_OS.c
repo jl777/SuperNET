@@ -536,7 +536,7 @@ void OS_ensure_directory(char *dirname)
 #endif
                            );
             //printf("mkdir.(%s) retval.%d errno.%d %s\n",dirname,retval,errno,strerror(errno));
-        } else fclose(fp), printf("dirname.(%s) exists\n",dirname);
+        } else fclose(fp);//, printf("dirname.(%s) exists\n",dirname);
         if ( (fp= fopen(fname,"wb")) != 0 )
             fclose(fp);//, printf("created.(%s)\n",fname);
         else printf("cant create.(%s) errno.%d %s\n",fname,errno,strerror(errno));

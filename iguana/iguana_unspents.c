@@ -105,8 +105,8 @@ struct iguana_bundle *iguana_spent(struct iguana_info *coin,uint32_t *unspentind
     }
     if ( hdrsi > spend_hdrsi || (spentbp= coin->bundles[hdrsi]) == 0 )
         printf("illegal hdrsi.%d when [%d] spentbp.%p\n",hdrsi,spend_hdrsi,spentbp);//, getchar();
-    else if ( spentbp->ramchain.spents[unspentind].ind != 0 || hdrsi < 0 )
-        printf("DOUBLE SPEND? U%d %p bp.[%d] unspentind.%u already has %u, no room\n",unspentind,&spentbp->ramchain.spents[unspentind],hdrsi,unspentind,spentbp->ramchain.spents[unspentind].ind);//, getchar();
+    //else if ( spentbp->ramchain.spents[unspentind].ind != 0 || hdrsi < 0 )
+     //   printf("DOUBLE SPEND? U%d %p bp.[%d] unspentind.%u already has %u, no room\n",unspentind,&spentbp->ramchain.spents[unspentind],hdrsi,unspentind,spentbp->ramchain.spents[unspentind].ind);//, getchar();
     else if ( unspentind == 0 || unspentind >= spentbp->ramchain.H.data->numunspents )
         printf("illegal unspentind.%d vs max.%d spentbp.%p[%d]\n",unspentind,spentbp->ramchain.H.data->numunspents,spentbp,hdrsi);//, getchar();
     else return(spentbp);
@@ -315,7 +315,7 @@ uint8_t *iguana_rmdarray(struct iguana_info *coin,int32_t *numrmdsp,cJSON *array
 int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     int32_t spendind,n,emit=0; uint32_t unspentind; struct iguana_bundle *spentbp;
-    FILE *fp; char fname[1024],str[65]; int32_t hdrsi,retval = -1; bits256 zero,sha256;
+    FILE *fp; char fname[1024],str[65],dirname[128]; int32_t hdrsi,retval = -1; bits256 zero,sha256;
     struct iguana_spend *S,*s; struct iguana_bundleind *ptr; struct iguana_ramchain *ramchain;
     ramchain = &bp->ramchain;
     S = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Soffset);
@@ -326,8 +326,8 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
         printf("iguana_utxogen: already have Xspendinds[%d]\n",ramchain->numXspends);
         return(0);
     }
-    printf("start UTXOGEN.%d max.%d\n",bp->bundleheight,n);
     ptr = malloc(sizeof(*ptr) * n);
+    printf("start UTXOGEN.%d max.%d ptr.%p\n",bp->bundleheight,n,ptr);
     for (spendind=ramchain->H.data->firsti; spendind<n; spendind++)
     {
         s = &S[spendind];
@@ -335,9 +335,8 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
         {
             if ( (spentbp= iguana_spent(coin,&unspentind,ramchain,bp->hdrsi,s)) != 0 )
             {
-                ptr->ind = unspentind;
-                ptr->hdrsi = spentbp->hdrsi;
-                ptr++;
+                ptr[emit].ind = unspentind;
+                ptr[emit].hdrsi = spentbp->hdrsi;
                 emit++;
                 //spentbp->ramchain.spents[unspentind].ind = spendind;
                 //spentbp->ramchain.spents[unspentind].hdrsi = bp->hdrsi;
@@ -346,11 +345,12 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
             } else printf("unresolved spendind.%d hdrsi.%d\n",spendind,bp->hdrsi);
         }
     }
-    if ( emit != 0 )
+    if ( emit >= 0 )
     {
         memset(zero.bytes,0,sizeof(zero));
+        sprintf(dirname,"DB/%s/utxo",coin->symbol);
         vcalc_sha256(0,sha256.bytes,(void *)ptr,(int32_t)(sizeof(*ptr) * emit));
-        if ( iguana_peerfname(coin,&hdrsi,"DB/utxo",fname,0,bp->hashes[0],zero,bp->n) >= 0 )
+        if ( iguana_peerfname(coin,&hdrsi,dirname,fname,0,bp->hashes[0],zero,bp->n) >= 0 )
         {
             if ( (fp= fopen(fname,"wb")) != 0 )
             {
@@ -360,7 +360,13 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
                     printf("error writing %d of %d -> (%s)\n",emit,n,fname);
                 else retval = 0;
                 fclose(fp);
-            }
+                if ( iguana_Xspendmap(coin,ramchain,bp) < 0 )
+                {
+                    printf("error mapping Xspendmap.(%s)\n",fname);
+                    retval = -1;
+                }
+                //printf("filesize %ld Xspendptr.%p %p num.%d\n",ftell(fp),ramchain->Xspendptr,ramchain->Xspendinds,ramchain->numXspends);
+            } else printf("Error creating.(%s)\n",fname);
         } else printf("error getting utxo fname\n");
     }
     free(ptr);
