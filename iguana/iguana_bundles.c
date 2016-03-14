@@ -512,7 +512,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     if ( time(NULL) > lastdisp+10 )
     {
         printf("%s\n",str);
-        //myallocated(0,0);
+        myallocated(0,0);
         lastdisp = (uint32_t)time(NULL);
         if ( firstgap != 0 && firstgap->queued == 0 )
             iguana_bundleQ(coin,firstgap,1000);

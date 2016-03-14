@@ -14149,5 +14149,31 @@ len = 0;
             }
             //struct scriptdata { uint32_t ind:31,spendflag:1; uint16_t hdrsi,scriptlen; }__attribute__((packed));
 
-            
+            if ( ramchain->expanded != 0 )
+            {
+                if ( (long)destoffset < (long)srcoffset )
+                {
+                    /*sprintf(fname,"sigs/%s/%s",coin->symbol,bits256_str(str,bp->hashes[0]));
+                     if ( (fp= fopen(fname,"wb")) != 0 )
+                     {
+                     if ( ramchain->H.stacksize > 0 )
+                     {
+                     if ( fwrite(srcoffset,1,ramchain->H.stacksize,fp) != ramchain->H.stacksize )
+                     printf("error writing %d sigs to %s\n",ramchain->H.stacksize,fname);
+                     }
+                     else
+                     {
+                     if ( fwrite(&izero,1,sizeof(izero),fp) != sizeof(izero) )
+                     printf("error writing izero to %s\n",fname);
+                     }
+                     fclose(fp);
+                     }
+                     if ( (ramchain->sigsfileptr= OS_mapfile(fname,&ramchain->sigsfilesize,0)) == 0 )
+                     return(-1);
+                     printf("%s bp.[%d] ht.%d stacksize.%u filesize.%u\n",fname,bp->hdrsi,bp->bundleheight,ramchain->H.stacksize,(uint32_t)ramchain->sigsfilesize);*/
+                    //for (i=0; i<ramchain->H.stacksize; i++)
+                    //    c = *srcoffset, *destoffset++ = c, *srcoffset++ = 0;
+                } else printf("smashed stack? dest.%ld vs src %ld offset.%u stacksize.%u space.%u\n",(long)destoffset,(long)srcoffset,(uint32_t)ramchain->H.scriptoffset,(uint32_t)ramchain->H.stacksize,(uint32_t)ramchain->H.scriptoffset);
+            }
+
 #endif

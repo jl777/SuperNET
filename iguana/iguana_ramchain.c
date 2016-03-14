@@ -1004,7 +1004,7 @@ int32_t iguana_ramchain_alloc(struct iguana_info *coin,struct iguana_ramchain *r
     memset(mem,0,sizeof(*mem));
     memset(hashmem,0,sizeof(*hashmem));
     hashsize = iguana_hashmemsize(numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace);
-    while ( 0 && (x= (myallocated(0,-1)+hashsize+allocsize)) > coin->MAXMEM )
+    while ( 0 && (x= (myallocated(0,-1)+hashsize+allocsize + 65536)) > coin->MAXMEM )
     {
         char str[65],str2[65]; fprintf(stderr,"ht.%d wait for allocated %s < MAXMEM %s | elapsed %.2f minutes hashsize.%ld allocsize.%ld\n",height,mbstr(str,myallocated(0,-1)+hashsize+allocsize),mbstr(str2,coin->MAXMEM),(double)(time(NULL)-coin->startutc)/60.,(long)hashsize,(long)allocsize);
         sleep(13);
@@ -1364,7 +1364,6 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
                 bp->blocks[i]->RO = B[i];//coin->blocks.RO[bp->bundleheight + i];
                 coin->blocks.RO[bp->bundleheight+i] = B[i];
             }
-            
         }
         //printf("mapped %s scriptspace %d:%d\n",fname,ramchain->H.scriptoffset,ramchain->H.data->scriptspace);
         return(ramchain);
@@ -1948,7 +1947,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
 {
     static bits256 zero;
     bits256 firsthash2,lasthash2; int32_t err,bundlei,hdrsi,numblocks,firsti,height,retval= -1;
-    struct iguana_ramchain checkR,*mapchain; char fname[1024];//,str[65]; //FILE *fp;
+    struct iguana_ramchain checkR,*mapchain; char fname[1024];
     uint32_t scriptspace,scriptoffset,stacksize; uint8_t *destoffset,*srcoffset;
     firsthash2 = ramchain->H.data->firsthash2, lasthash2 = ramchain->H.data->lasthash2;
     height = ramchain->height, firsti = ramchain->H.data->firsti, hdrsi = ramchain->H.hdrsi, numblocks = ramchain->numblocks;
@@ -1956,29 +1955,8 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     srcoffset = &Kspace[ramchain->H.data->scriptspace - ramchain->H.stacksize];
     if ( ramchain->expanded != 0 )
     {
-        if ( (long)destoffset < (long)srcoffset )
-        {
-            /*sprintf(fname,"sigs/%s/%s",coin->symbol,bits256_str(str,bp->hashes[0]));
-             if ( (fp= fopen(fname,"wb")) != 0 )
-            {
-                if ( ramchain->H.stacksize > 0 )
-                {
-                    if ( fwrite(srcoffset,1,ramchain->H.stacksize,fp) != ramchain->H.stacksize )
-                        printf("error writing %d sigs to %s\n",ramchain->H.stacksize,fname);
-                }
-                else
-                {
-                    if ( fwrite(&izero,1,sizeof(izero),fp) != sizeof(izero) )
-                        printf("error writing izero to %s\n",fname);
-                }
-                fclose(fp);
-            }
-            if ( (ramchain->sigsfileptr= OS_mapfile(fname,&ramchain->sigsfilesize,0)) == 0 )
-                return(-1);
-            printf("%s bp.[%d] ht.%d stacksize.%u filesize.%u\n",fname,bp->hdrsi,bp->bundleheight,ramchain->H.stacksize,(uint32_t)ramchain->sigsfilesize);*/
-            //for (i=0; i<ramchain->H.stacksize; i++)
-            //    c = *srcoffset, *destoffset++ = c, *srcoffset++ = 0;
-        } else printf("smashed stack? dest.%ld vs src %ld offset.%u stacksize.%u space.%u\n",(long)destoffset,(long)srcoffset,(uint32_t)ramchain->H.scriptoffset,(uint32_t)ramchain->H.stacksize,(uint32_t)ramchain->H.scriptoffset);
+        if ( (long)destoffset > (long)srcoffset )
+            printf("smashed stack? dest.%ld vs src %ld offset.%u stacksize.%u space.%u\n",(long)destoffset,(long)srcoffset,(uint32_t)ramchain->H.scriptoffset,(uint32_t)ramchain->H.stacksize,(uint32_t)ramchain->H.scriptoffset);
     }
     printf("%d SAVE: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d gap.%ld RO.%d\n",bp->bundleheight,(int32_t)ramchain->H.data->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)ramchain->H.data->allocsize,(long)destoffset - (long)srcoffset,ramchain->H.ROflag);
     scriptspace = ramchain->H.data->scriptspace;
@@ -2230,6 +2208,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
                 block->fpipbits = 0;
                 bp->issued[i] = 0;
                 block->issued = 0;
+                iguana_bundlemapfree(mem,&HASHMEM,ipbits,ptrs,filesizes,num,R,bp->n);
                 return(-1);
             }
             //destB[i] = block->RO;
