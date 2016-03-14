@@ -426,7 +426,8 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
         u->value = value;
         u->type = type;
         memcpy(u->rmd160,rmd160,sizeof(u->rmd160));
-        //fprintf(stderr,"type.%d scriptlen.%d bp.%p\n",type,scriptlen,bp);
+        if ( type == IGUANA_SCRIPT_76AC )
+            fprintf(stderr,"type.%d scriptlen.%d bp.%p\n",type,scriptlen,bp);
         u->scriptlen = scriptlen;
         if ( scriptlen > 0 && script != 0 )
         {
