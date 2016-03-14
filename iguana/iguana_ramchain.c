@@ -2075,17 +2075,17 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     return(retval);
 }
 
-struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana_bundle *bp)
+struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct iguana_bundle *bp)
 {
     static bits256 zero;
     struct iguana_blockRO *B; struct iguana_txid *T; int32_t i,firsti = 1; char fname[512];
     struct iguana_block *block; struct iguana_ramchain *mapchain;
-    memset(&bp->ramchain,0,sizeof(bp->ramchain));
-    if ( (mapchain= iguana_ramchain_map(coin,fname,bp,bp->n,&bp->ramchain,0,0,bp->hashes[0],zero,0,0,0,1)) != 0 )
+    memset(ramchain,0,sizeof(*ramchain));
+    if ( (mapchain= iguana_ramchain_map(coin,fname,bp,bp->n,ramchain,0,0,bp->hashes[0],zero,0,0,0,1)) != 0 )
     {
-        iguana_ramchain_link(mapchain,bp->hashes[0],bp->ramchain.lasthash2,bp->hdrsi,bp->bundleheight,0,bp->ramchain.numblocks,firsti,1);
-        char str[65]; printf("bp.%d: T.%d U.%d S.%d P%d X.%d MAPPED %s %p\n",bp->hdrsi,bp->ramchain.H.data->numtxids,bp->ramchain.H.data->numunspents,bp->ramchain.H.data->numspends,bp->ramchain.H.data->numpkinds,bp->ramchain.H.data->numexternaltxids,mbstr(str,bp->ramchain.H.data->allocsize),bp->ramchain.H.data);
-        //ramcoder_test(bp->ramchain.H.data,bp->ramchain.H.data->allocsize);
+        iguana_ramchain_link(mapchain,bp->hashes[0],bp->hashes[bp->n-1],bp->hdrsi,bp->bundleheight,0,bp->n,firsti,1);
+        char str[65]; printf("bp.%d: T.%d U.%d S.%d P%d X.%d MAPPED %s %p\n",bp->hdrsi,mapchain->H.data->numtxids,mapchain->H.data->numunspents,mapchain->H.data->numspends,mapchain->H.data->numpkinds,mapchain->H.data->numexternaltxids,mbstr(str,mapchain->H.data->allocsize),mapchain->H.data);
+        //ramcoder_test(mapchain->H.data,mapchain->H.data->allocsize);
         B = (void *)(long)((long)mapchain->H.data + mapchain->H.data->Boffset);
         T = (void *)(long)((long)mapchain->H.data + mapchain->H.data->Toffset);
         for (i=0; i<bp->n; i++)
@@ -2110,7 +2110,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
                 }
             }
         }
-        printf("mapped bundle.%d\n",bp->bundleheight);
+        //printf("mapped bundle.%d\n",bp->bundleheight);
         bp->emitfinish = (uint32_t)time(NULL) + 1;
         /*for (i=1; i<mapchain->H.data->numtxids; i++)
         {break;
@@ -2323,10 +2323,11 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         sprintf(dirname,"%s/%s/%d",GLOBALTMPDIR,coin->symbol,bp->bundleheight), OS_portable_rmdir(dirname,1);
         //bp->ramchain = newchain;
         printf("load bundle.%d\n",bp->bundleheight);
-        iguana_bundleload(coin,bp);
-        printf("loaded bundle.%d data.%p\n",bp->bundleheight,bp->ramchain.H.data);
+        iguana_bundleload(coin,&newchain,bp);
+        printf("loaded bundle.%d data.%p\n",bp->bundleheight,newchain.H.data);
     }
     iguana_ramchain_free(dest,0);
+    bp->ramchain = newchain;
     return(retval);
 }
 

@@ -713,7 +713,7 @@ void peggy();
 int32_t opreturns_init(uint32_t blocknum,uint32_t blocktimestamp,char *path);
 struct iguana_info *iguana_coinfind(const char *symbol);
 struct iguana_info *iguana_coinadd(const char *symbol,cJSON *json);
-struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana_bundle *bp);
+struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct iguana_bundle *bp);
 int32_t iguana_sendblockreq(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2,int32_t iamthreadsafe);
 int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,char *jsonstr,int32_t delay);
 
