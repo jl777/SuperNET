@@ -443,7 +443,7 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
             static uint64_t totalsize;
             totalsize += scriptlen;
             char str[65];
-            if ( (rand() % 10000) == 0 )
+            if ( (rand() % 100000) == 0 )
                 fprintf(stderr,"IGUANA_SCRIPT_76AC type.%d scriptlen.%d bp.%p %s\n",type,scriptlen,bp,mbstr(str,totalsize));
         }
         u->scriptlen = scriptlen;
