@@ -1351,7 +1351,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                             iguana_blockQ(coin,bp,bundlei,bp->hashes[bundlei],0);
                             flag++;
                             char str[65];
-                            if ( 1 && (rand() % 1000) == 0 || bp == coin->current )
+                            if ( 1 && (rand() % 1000) == 0 || bp->bundleheight > coin->longestchain-coin->chain->bundlesize )
                                 printf("%s MAINCHAIN.%d threshold %.3f %.3f lag %.3f\n",bits256_str(str,hash2),coin->blocks.hwmchain.height+1,threshold,coin->backstopmillis,lag);
                         }
                         else if ( bp != 0 && bundlei < bp->n-1 && bits256_nonz(bp->hashes[bundlei+1]) > 0 )

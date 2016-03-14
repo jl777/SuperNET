@@ -1306,7 +1306,7 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
                 munmap(ptr,filesize);
                 ramchain->Xspendinds = 0;
             }
-        }
+        } else printf("no Xspendfile\n");
     } else printf("couldnt open.(%s)\n",fname);
     return(ramchain->numXspends);
 }
@@ -2084,7 +2084,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
     if ( (mapchain= iguana_ramchain_map(coin,fname,bp,bp->n,&bp->ramchain,0,0,bp->hashes[0],zero,0,0,0,1)) != 0 )
     {
         iguana_ramchain_link(mapchain,bp->hashes[0],bp->ramchain.lasthash2,bp->hdrsi,bp->bundleheight,0,bp->ramchain.numblocks,firsti,1);
-        //char str[65]; printf("bp.%d: T.%d U.%d S.%d P%d X.%d MAPPED %s %p\n",bp->hdrsi,bp->ramchain.H.data->numtxids,bp->ramchain.H.data->numunspents,bp->ramchain.H.data->numspends,bp->ramchain.H.data->numpkinds,bp->ramchain.H.data->numexternaltxids,mbstr(str,bp->ramchain.H.data->allocsize),bp->ramchain.H.data);
+        char str[65]; printf("bp.%d: T.%d U.%d S.%d P%d X.%d MAPPED %s %p\n",bp->hdrsi,bp->ramchain.H.data->numtxids,bp->ramchain.H.data->numunspents,bp->ramchain.H.data->numspends,bp->ramchain.H.data->numpkinds,bp->ramchain.H.data->numexternaltxids,mbstr(str,bp->ramchain.H.data->allocsize),bp->ramchain.H.data);
         //ramcoder_test(bp->ramchain.H.data,bp->ramchain.H.data->allocsize);
         B = (void *)(long)((long)mapchain->H.data + mapchain->H.data->Boffset);
         T = (void *)(long)((long)mapchain->H.data + mapchain->H.data->Toffset);
@@ -2110,7 +2110,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
                 }
             }
         }
-        //printf("bundle.%d\n",bp->bundleheight);
+        printf("mapped bundle.%d\n",bp->bundleheight);
         bp->emitfinish = (uint32_t)time(NULL) + 1;
         /*for (i=1; i<mapchain->H.data->numtxids; i++)
         {break;
@@ -2119,6 +2119,11 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
             else if ( memcmp(&tx,&T[i],sizeof(T[i])) != 0 )
                 printf("compare error T[%d] %s\n",i,bits256_str(str,T[i].txid));
         }*/
+    }
+    else
+    {
+        printf("couldnt load bundle.%d\n",bp->bundleheight);
+        memset(&bp->ramchain,0,sizeof(bp->ramchain));
     }
     if ( mapchain != 0 )
         coin->newramchain++;
