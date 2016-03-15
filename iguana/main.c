@@ -1123,6 +1123,7 @@ void iguana_main(void *arg)
     }
     OS_ensure_directory("help");
     OS_ensure_directory("confs");
+    OS_ensure_directory("accounts");
     OS_ensure_directory("DB"), OS_ensure_directory("DB/ECB");
     OS_ensure_directory("tmp");
     OS_ensure_directory("purgeable");

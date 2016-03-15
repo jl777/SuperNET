@@ -393,13 +393,14 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
             u = &spentU[unspentind];
             if ( (pkind= u->pkind) != 0 && pkind < spentbp->ramchain.H.data->numpkinds )
             {
-                if ( 1 )//(spentbp->ramchain.Uextras[unspentind] & (1 << 31)) == 0 )
+                if ( (spentbp->ramchain.Uextras[unspentind] & (1 << 31)) == 0 )
                 {
-                    /*if ( spentbp->ramchain.Uextras[unspentind] == 0 )
+                    if ( spentbp->ramchain.Uextras[unspentind] == 0 )
                         spentbp->ramchain.Uextras[unspentind] |= A2[pkind].lastind;
                     spentbp->ramchain.Uextras[unspentind] |= (1 << 31);
                     A2[pkind].total += u->value;
-                    A2[pkind].lastind = spendind;*/
+                    A2[pkind].lastind = spendind;
+                    spentbp->dirty = (uint32_t)time(NULL);
                 }
                 else
                 {

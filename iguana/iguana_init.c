@@ -269,7 +269,7 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                             lastbundle = hash2;
                             if ( (block= iguana_blockfind(coin,hash2)) != 0 )
                                 block->mainchain = 1, block->height = height;
-                            if ( iguana_bundleload(coin,&bp->ramchain,bp) != 0 )
+                            if ( iguana_bundleload(coin,&bp->ramchain,bp,2) != 0 )
                             {
                                 bp->emitfinish = (uint32_t)time(NULL) + 1;
                                 //printf("LOADED bundle.%d\n",bp->bundleheight);
