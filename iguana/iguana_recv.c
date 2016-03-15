@@ -407,8 +407,8 @@ void iguana_bundlespeculate(struct iguana_info *coin,struct iguana_bundle *bp,in
         bundlei += offset;
         if ( bundlei < bp->n && bundlei < bp->numspec )
         {
-            char str[65]; printf("speculative req[%d] %s\n",bundlei,bits256_str(str,bp->speculative[bundlei]));
-            iguana_blockQ(coin,0,-1,bp->speculative[bundlei],0);
+            //char str[65]; printf("speculative req[%d] %s\n",bundlei,bits256_str(str,bp->speculative[bundlei]));
+            //iguana_blockQ(coin,0,-1,bp->speculative[bundlei],0);
         }
     } //else printf("speculative.%p %d vs %d cmp.%d\n",bp->speculative,bundlei,bp->numspec,bp->speculative!=0?memcmp(hash2.bytes,bp->speculative[bundlei].bytes,sizeof(hash2)):-1);
 }
@@ -494,7 +494,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     {
         if ( bp->hdrsi == 0 || ((prevbp= coin->bundles[bp->hdrsi-1]) != 0 && coin->current != 0 && coin->current->hdrsi >= prevbp->hdrsi && prevbp->emitfinish > coin->startutc && time(NULL) > prevbp->emitfinish+3) )
         {
-            printf("postfinish.%d startutxo.%u prevbp.%p current.%p\n",bp->hdrsi,bp->startutxo,coin->bundles[bp->hdrsi-1],coin->current);
+            //printf("postfinish.%d startutxo.%u prevbp.%p current.%p\n",bp->hdrsi,bp->startutxo,coin->bundles[bp->hdrsi-1],coin->current);
             if ( bp->startutxo == 0 )
             {
                 bp->startutxo = (uint32_t)time(NULL);

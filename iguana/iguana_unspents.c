@@ -245,7 +245,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
     bits256 prevhash,zero,sha256; struct iguana_unspent *u; long fsize;
     struct iguana_spend *S,*s; struct iguana_bundleind *ptr; struct iguana_ramchain *ramchain;
     ramchain = &bp->ramchain;
-    printf("UTXO gen.%d ramchain data.%p\n",bp->bundleheight,ramchain->H.data);
+    //printf("UTXO gen.%d ramchain data.%p\n",bp->bundleheight,ramchain->H.data);
     if ( ramchain->H.data == 0 || (n= ramchain->H.data->numspends) < 1 )
         return(0);
     S = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Soffset);
@@ -256,7 +256,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
     }
     ptr = mycalloc('x',sizeof(*ptr),n);
     total += n;
-    printf("start UTXOGEN.%d max.%d ptr.%p\n",bp->bundleheight,n,ptr);
+    //printf("start UTXOGEN.%d max.%d ptr.%p\n",bp->bundleheight,n,ptr);
     for (spendind=ramchain->H.data->firsti; spendind<n; spendind++)
     {
         s = &S[spendind];

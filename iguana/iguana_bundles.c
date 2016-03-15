@@ -476,7 +476,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                 if ( ++pending == coin->MAXBUNDLES )
                 {
                     lastpending = bp;
-                    printf("SET MAXBUNDLES.%d pend.%d\n",bp->hdrsi,pending);
+                    //printf("SET MAXBUNDLES.%d pend.%d\n",bp->hdrsi,pending);
                 }
                 if ( firstgap == 0 )
                     firstgap = bp;

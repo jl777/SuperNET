@@ -238,7 +238,7 @@ void iguana_emitQ(struct iguana_info *coin,struct iguana_bundle *bp)
     ptr->bp = bp, ptr->hdrsi = bp->hdrsi;
     ptr->type = 'E';
     ptr->starttime = (uint32_t)time(NULL);
-    printf("%s EMIT.%d[%d] emitfinish.%u\n",coin->symbol,ptr->hdrsi,bp->n,bp->emitfinish);
+    //printf("%s EMIT.%d[%d] emitfinish.%u\n",coin->symbol,ptr->hdrsi,bp->n,bp->emitfinish);
     queue_enqueue("emitQ",&emitQ,&ptr->DL,0);
 }
 

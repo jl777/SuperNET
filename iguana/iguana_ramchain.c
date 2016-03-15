@@ -992,7 +992,7 @@ int64_t iguana_ramchain_init(struct iguana_ramchain *ramchain,struct OS_memspace
         numpkinds = numunspents;
     _iguana_rdata_action(0,0,rdata,0,expanded,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,0,0,0,0,0,RAMCHAIN_ARG,numblocks);
     offset += rdata->allocsize;
-    if ( 1 && expanded != 0 )
+    if ( 0 && expanded != 0 )
         printf("init T.%d U.%d S.%d P.%d X.%d -> %ld\n",numtxids,numunspents,numspends,numpkinds,numexternaltxids,(long)offset);
     if ( rdata->allocsize != iguana_ramchain_size(RAMCHAIN_ARG,numblocks,scriptspace) )
     {
@@ -1295,6 +1295,7 @@ void iguana_ramchain_extras(struct iguana_ramchain *ramchain,struct OS_memspace 
         _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
         if ( (ramchain->hashmem= hashmem) != 0 )
             iguana_memreset(hashmem);
+        else printf("alloc ramchain->A %ld\n",sizeof(struct iguana_account) * ramchain->H.data->numpkinds);
         ramchain->A = (hashmem != 0) ? iguana_memalloc(hashmem,sizeof(struct iguana_account) * ramchain->H.data->numpkinds,1) : mycalloc('p',ramchain->H.data->numpkinds,sizeof(struct iguana_account));
         //printf("hashmem.%p A allocated.%p numpkinds.%d %ld\n",hashmem,ramchain->A,ramchain->H.data->numpkinds,sizeof(struct iguana_account)*ramchain->H.data->numpkinds);
         //ramchain->P2 = (hashmem != 0) ? iguana_memalloc(hashmem,sizeof(struct iguana_pkextra) * ramchain->H.data->numpkinds,1) : mycalloc('2',ramchain->H.data->numpkinds,sizeof(struct iguana_pkextra));
@@ -2330,7 +2331,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     //printf(" about to save dest scriptoffset.%d stacksize.%d data scriptspace.%d\n",dest->H.scriptoffset,dest->H.stacksize,dest->H.data->scriptspace);
     depth--;
     memset(&newchain,0,sizeof(newchain));
-    if ( bundlei == bp->n )//&& iguana_ramchain_expandedsave(coin,RAMCHAIN_DESTARG,&newchain,&HASHMEM,0,bp) == 0 )
+    if ( bundlei == bp->n && iguana_ramchain_expandedsave(coin,RAMCHAIN_DESTARG,&newchain,&HASHMEM,0,bp) == 0 )
     {
         //char str[65]; printf("d.%d ht.%d %s saved lag.%d elapsed.%ld\n",depth,dest->height,mbstr(str,dest->H.data->allocsize),now-starttime,time(NULL)-now);
         retval = 0;
@@ -2347,10 +2348,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
             else printf("error removing.(%s)\n",fname);
         }
         sprintf(dirname,"%s/%s/%d",GLOBALTMPDIR,coin->symbol,bp->bundleheight), OS_portable_rmdir(dirname,1);
-        //bp->ramchain = newchain;
-        //printf("load bundle.%d\n",bp->bundleheight);
         iguana_bundleload(coin,&newchain,bp);
-        //printf("loaded bundle.%d data.%p\n",bp->bundleheight,newchain.H.data);
     }
     iguana_ramchain_free(dest,0);
     bp->ramchain = newchain;
