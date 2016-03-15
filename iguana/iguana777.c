@@ -404,7 +404,7 @@ void iguana_coinflush(struct iguana_info *coin)
         {
             sprintf(fname,"accounts/%s/debits.%d",coin->symbol,bp->bundleheight);
             sprintf(fname2,"accounts/%s/lastspends.%d",coin->symbol,bp->bundleheight);
-            printf("save (%s) and (%s), numpkinds.%d numunspentinds.%d\n",fname,fname2,bp->ramchain.H.data->numpkinds,bp->ramchain.H.data->numunspents);
+            printf("save (%s) and (%s) %p %p\n",fname,fname2,bp,bp->ramchain.H.data);//,bp->ramchain.H.data->numpkinds,bp->ramchain.H.data->numunspents);
             if ( (fp= fopen(fname,"wb")) != 0 && (fp2= fopen(fname2,"wb")) != 0 )
             {
                 if ( fwrite(bp->ramchain.A,sizeof(*bp->ramchain.A),bp->ramchain.H.data->numpkinds,fp) == bp->ramchain.H.data->numpkinds )
