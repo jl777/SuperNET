@@ -304,7 +304,6 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
                 else if ( fwrite(ptr,sizeof(*ptr),emit,fp) != emit )
                     printf("error writing %d of %d -> (%s)\n",emit,n,fname);
                 else retval = 0;
-                fclose(fp);
                 if ( iguana_Xspendmap(coin,ramchain,bp) < 0 )
                 {
                     printf("error mapping Xspendmap.(%s)\n",fname);
@@ -313,10 +312,12 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
                 int32_t i; for (i=0; i<ramchain->numXspends; i++)
                     printf("(%d u%d) ",ramchain->Xspendinds[i].hdrsi,ramchain->Xspendinds[i].ind);
                 printf("filesize %ld Xspendptr.%p %p num.%d\n",ftell(fp),ramchain->Xspendptr,ramchain->Xspendinds,ramchain->numXspends);
+                fclose(fp);
             } else printf("Error creating.(%s)\n",fname);
         } else printf("error getting utxo fname\n");
     }
-    myfree(ptr,sizeof(*ptr) * n);
+    if ( ptr != 0 )
+        myfree(ptr,sizeof(*ptr) * n);
     printf("utxo %d spendinds.[%d] errs.%d [%.2f%%] emitted.%d %s of %d | ",spendind,bp->hdrsi,errs,100.*(double)emitted/(total+1),emit,mbstr(str,sizeof(*ptr) * emit),n);
     return(-errs);
 }
@@ -356,7 +357,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
                     printf("iguana_balancegen[%d] s.%d illegal hdrsi.%d emit.%d\n",bp->hdrsi,spendind,hdrsi,emit);
                     errs++;
                 }
-                printf("%d of %d: [%d] X spendind.%d -> (%d u%d)\n",emit,ramchain->numXspends,bp->hdrsi,spendind,unspentind,hdrsi);
+                printf("%d of %d: [%d] X spendind.%d -> (%d u%d)\n",emit,ramchain->numXspends,bp->hdrsi,spendind,hdrsi,unspentind);
                 emit++;
             }
         }
