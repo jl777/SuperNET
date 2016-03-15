@@ -467,11 +467,10 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             if ( bp->emitfinish > coin->startutc )
             {
                 done++;
-                if ( bp->emitfinish > 1 )
-                    numemit++;
+                numemit++;
                 iguana_bundlepurge(coin,bp);
             }
-            else
+            else if ( bp->emitfinish == 0 )
             {
                 if ( firstgap == 0 )
                     firstgap = lastpending = bp;

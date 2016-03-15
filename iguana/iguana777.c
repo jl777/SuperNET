@@ -238,8 +238,8 @@ void iguana_emitQ(struct iguana_info *coin,struct iguana_bundle *bp)
     ptr->bp = bp, ptr->hdrsi = bp->hdrsi;
     ptr->type = 'E';
     ptr->starttime = (uint32_t)time(NULL);
-    //printf("%s EMIT.%d[%d] emitfinish.%u\n",coin->symbol,ptr->hdrsi,bp->n,bp->emitfinish);
-    queue_enqueue("helperQ",&helperQ,&ptr->DL,0);
+    printf("%s EMIT.%d[%d] emitfinish.%u\n",coin->symbol,ptr->hdrsi,bp->n,bp->emitfinish);
+    queue_enqueue("emitQ",&emitQ,&ptr->DL,0);
 }
 
 void iguana_mergeQ(struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_bundle *nextbp)
@@ -305,15 +305,7 @@ int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *m
             }
             else if ( ptr->type == 'B' )
             {
-                if ( iguana_bundleiters(coin,bp,ptr->timelimit) == 'E' )
-                {
-                    if ( iguana_bundlesaveHT(coin,mem,memB,bp,ptr->starttime) == 0 )
-                    {
-                        //fprintf(stderr,"emitQ coin.%p bp.[%d]\n",ptr->coin,bp->bundleheight);
-                        bp->emitfinish = (uint32_t)time(NULL) + 1;
-                        coin->numemitted++;
-                    } else bp->emitfinish = 0;
-                }
+                iguana_bundleiters(coin,bp,ptr->timelimit);
             }
             else if ( ptr->type == 'E' )
             {
@@ -351,19 +343,17 @@ void iguana_helper(void *arg)
     {
         //iguana_jsonQ();
         flag = 0;
-        if ( (ptr= queue_dequeue(&helperQ,0)) != 0 )
+        if ( (ptr= queue_dequeue(&emitQ,0)) != 0 || (ptr= queue_dequeue(&helperQ,0)) != 0 )
         {
-            if ( (coin= ptr->coin) != 0 && 0 )
-                queue_enqueue("reQ",&helperQ,&ptr->DL,0);
-            else
+            if ( ptr->bp != 0 && (coin= ptr->coin) != 0 )
             {
                 idle = 0;
                 coin->helperdepth++;
                 iguana_helpertask(fp,&MEM,MEMB,ptr);
                 coin->helperdepth--;
-                myfree(ptr,ptr->allocsize);
+                flag++;
             }
-            flag++;
+            myfree(ptr,ptr->allocsize);
         }
         else if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
         {

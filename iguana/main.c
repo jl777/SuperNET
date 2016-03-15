@@ -38,7 +38,7 @@ struct iguana_info *Coins[IGUANA_MAXCOINS];
 char Userhome[512],GLOBALTMPDIR[512] = "tmp";
 int32_t USE_JAY,FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel;
 uint32_t prices777_NXTBLOCK,MAX_DEPTH = 100;
-queue_t helperQ,jsonQ,finishedQ,bundlesQ,validateQ;
+queue_t helperQ,jsonQ,finishedQ,bundlesQ,validateQ,emitQ;
 struct supernet_info MYINFO,**MYINFOS;
 static int32_t initflag;
 cJSON *API_json;
@@ -1085,6 +1085,7 @@ void iguana_main(void *arg)
 
     iguana_initQ(&helperQ,"helperQ");
     iguana_initQ(&jsonQ,"jsonQ");
+    iguana_initQ(&emitQ,"emitQ");
     iguana_initQ(&finishedQ,"finishedQ");
     iguana_initQ(&bundlesQ,"bundlesQ");
     iguana_initQ(&validateQ,"validateQ");

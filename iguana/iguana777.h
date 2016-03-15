@@ -793,7 +793,7 @@ int32_t iguana_bloomfind(struct iguana_info *coin,struct iguana_bloom16 *bloom,i
 struct iguana_bloominds iguana_bloomset(struct iguana_info *coin,struct iguana_bloom16 *bloom,int32_t incr,struct iguana_bloominds bit);
 int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct iguana_bundle *bp);
 
-extern queue_t bundlesQ,validateQ;
+extern queue_t bundlesQ,validateQ,emitQ;
 extern char GLOBALTMPDIR[];
 
 #include "../includes/iguana_api.h"

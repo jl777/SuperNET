@@ -629,9 +629,9 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                     coin->MAXBUNDLES++;
             }
             sleep(1);
-            //iguana_emitQ(coin,bp);
+            iguana_emitQ(coin,bp);
             iguana_bundleQ(coin,bp,width);
-            return('E');
+            return(1);
         }
     }
     iguana_bundleQ(coin,bp,width);
