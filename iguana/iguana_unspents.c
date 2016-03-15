@@ -376,7 +376,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
                     printf("iguana_balancegen unspentind overflow %u vs %u\n",unspentind,spentbp->ramchain.H.data->numunspents);
                     errs++;
                 }
-                printf("txidind.%d 1st.%d prevout.%d\n",txidind,T[txidind].firstvout,s->prevout);
+                //printf("txidind.%d 1st.%d prevout.%d\n",txidind,T[txidind].firstvout,s->prevout);
             }
             else
             {
