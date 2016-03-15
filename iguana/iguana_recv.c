@@ -566,20 +566,20 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
             pend += coin->peers.active[i].pendblocks;
         if ( pend >= (IGUANA_BUNDLELOOP + coin->MAXPENDING*coin->peers.numranked) )
         {
-            for (i=better=0; i<coin->bundlescount; i++)
-                if ( coin->bundles[i] != 0 && coin->bundles[i]->numsaved > bp->numsaved )
-                    better++;
-            if ( better > coin->peers.numranked )
+            //for (i=better=0; i<coin->bundlescount; i++)
+            //    if ( coin->bundles[i] != 0 && coin->bundles[i]->numsaved > bp->numsaved )
+            //        better++;
+            //if ( better > coin->peers.numranked )
             {
-                usleep(10000);
+                //usleep(10000);
                 //printf("SKIP pend.%d vs %d: better.%d ITERATE bundle.%d n.%d r.%d s.%d finished.%d timelimit.%d\n",pend,coin->MAXPENDING*coin->peers.numranked,better,bp->bundleheight,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit);
-                iguana_bundleQ(coin,bp,counter == 0 ? bp->n*5 : bp->n*2);
+                iguana_bundleQ(coin,bp,1000);
                 return(0);
             }
         }
     }
     issued = 0;
-    max = 100 + (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
+    max = bp->n;//100 + (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
     iguana_bundlekick(coin,bp,starti,max);
     if ( coin->numsaved > coin->longestchain*.99 )
     {
@@ -629,6 +629,8 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
             sleep(1);
             iguana_emitQ(coin,bp);
             iguana_bundleQ(coin,bp,width);
+            if ( bp == currentbp && bp->hdrsi < coin->bundlescount-1 && (bp= coin->bundles[currentbp->hdrsi+1]) != 0 )
+                iguana_bundlekick(coin,bp,bp->hdrsi,bp->n);
             return(1);
         }
     }
