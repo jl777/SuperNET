@@ -38,7 +38,7 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_TAILPERCENTAGE 1.0
 #define IGUANA_MAXPENDHDRS 1
 #define _IGUANA_MAXPENDING 7
-#define IGUANA_MINPENDBUNDLES 64
+#define IGUANA_MINPENDBUNDLES 8
 #define IGUANA_MAXPENDBUNDLES 64
 #define IGUANA_BUNDLELOOP 10000
 #define IGUANA_RPCPORT 7778
@@ -471,7 +471,7 @@ struct iguana_info
     portable_mutex_t peers_mutex,blocks_mutex;
     portable_mutex_t scripts_mutex[2]; FILE *scriptsfp[2]; void *scriptsptr[2]; long scriptsfilesize[2];
     //struct scriptinfo *scriptstable[2];
-    struct iguana_bundle *bundles[IGUANA_MAXBUNDLES],*current;
+    struct iguana_bundle *bundles[IGUANA_MAXBUNDLES],*current,*lastpending;
     int32_t numremain,numpendings,zcount,recvcount,bcount,pcount,lastbundle,numsaved;
     uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ,lastbundleitime;
     double backstopmillis; bits256 backstophash2;

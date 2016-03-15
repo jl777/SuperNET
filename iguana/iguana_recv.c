@@ -452,10 +452,11 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
 
 int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
 {
-    int32_t i,r,range,starti,numhashes,issued,valid,max,counter = 0; struct iguana_block *block; double endmillis,width; struct iguana_bundle *prevbp; uint32_t starttime;
+    int32_t i,r,range,starti,lasti,numhashes,issued,valid,max,counter = 0; struct iguana_block *block; double endmillis,width; struct iguana_bundle *prevbp; uint32_t starttime;
     if ( (range= coin->peers.numranked) > coin->MAXBUNDLES )
         range = coin->MAXBUNDLES;
     starti = coin->current == 0 ? 0 : coin->current->hdrsi;
+    lasti = coin->lastpending == 0 ? coin->bundlescount-1 : coin->lastpending->hdrsi;
     coin->numbundlesQ--;
     for (i=numhashes=0; i<bp->n; i++)
         numhashes += bits256_nonz(bp->hashes[i]);
@@ -533,7 +534,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         return(0);
     }
     //printf("BUNDLEITERS.%d\n",bp->hdrsi);
-    if ( bp->hdrsi < starti + range )
+    if ( bp->hdrsi <= lasti && coin->lastpending != 0 )
     {
         for (i=0; i<bp->n; i++)
         {
@@ -547,7 +548,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     }
     else
     {
-        iguana_bundleQ(coin,bp,counter == 0 ? bp->n*5 : bp->n*2);
+        iguana_bundleQ(coin,bp,1000);
         return(0);
     }
         //printf("initial requests for hdrs.%d\n",bp->hdrsi);
@@ -579,7 +580,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     }
     else
     {
-        r = (rand() % 4);
+        r = (rand() % 16);
         if ( starti+r < coin->bundlescount && coin->bundles[starti+r] != 0 )
             iguana_bundlekick(coin,coin->bundles[starti+r],starti+r,coin->bundles[starti+r]->n);
     }
@@ -599,7 +600,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                     //printf("(%x:%x) ",(uint32_t)block->RO.hash2.ulongs[3],(uint32_t)bp->hashes[i].ulongs[3]);
                     if ( block->fpipbits == 0 || (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) || iguana_blockvalidate(coin,&valid,block,1) < 0 )
                     {
-                        //char str[65]; printf(">>>>>>> ipbits.%x null prevblock error at ht.%d patch.(%s) and reissue\n",block->fpipbits,bp->bundleheight+i,bits256_str(str,block->RO.prev_block));
+                        char str[65]; printf(">>>>>>> ipbits.%x null prevblock error at ht.%d patch.(%s) and reissue\n",block->fpipbits,bp->bundleheight+i,bits256_str(str,block->RO.prev_block));
                         block->queued = 0;
                         block->fpipbits = 0;
                         block->issued = 0;
