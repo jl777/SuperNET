@@ -419,7 +419,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
             bp->checkedtmp++;
         }
     }
-    bp->estsize = (bp->datasize * bp->n) / (bp->numrecv+1);
+    bp->estsize = ((int64_t)bp->datasize * bp->n) / (bp->numrecv+1);
     //bp->metric = bp->numhashes;
     bp->metric = coin->bundlescount - bp->hdrsi;//1000 + sqrt(sqrt(bp->n * (1 + bp->numsaved + bp->numrecv)) * (10 + coin->bundlescount - bp->hdrsi));
     if ( done > coin->bundlescount*IGUANA_HEADPERCENTAGE && bp->hdrsi > coin->bundlescount*IGUANA_TAILPERCENTAGE )
@@ -477,9 +477,11 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                     firstgap = lastpending = bp;
                 else if ( ++pending == coin->MAXBUNDLES )
                     lastpending = bp;
-                spaceused += bp->estsize;
                 if ( spaceused < coin->MAXMEM )
+                {
+                    spaceused += bp->estsize;
                     lastpending = bp;
+                }
                 sortbuf[m*2] = bp->metric;
                 sortbuf[m*2 + 1] = i;
                 m++;

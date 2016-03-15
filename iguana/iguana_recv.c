@@ -377,8 +377,8 @@ uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bit
                         prev->hh.next = block;
                         block->hh.prev = prev;
                     }
-                    if ( bp->hdrsi < coin->MAXBUNDLES )
-                        iguana_blockQ(coin,bp,i,blockhashes[i],0);
+                    //if ( bp->hdrsi < coin->MAXBUNDLES )
+                    //    iguana_blockQ(coin,bp,i,blockhashes[i],0);
                 } else printf("no allhashes block.%p or mismatch.%p\n",block,bp->blocks[i]);
                 prev = block;
             }
@@ -1050,9 +1050,11 @@ int32_t iguana_blockQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t 
     block = iguana_blockfind(coin,hash2);
     if ( priority != 0 || block == 0 || (block->queued == 0 && block->fpipbits == 0) )
     {
+        if ( bp != 0 && bundlei >= 0 && bundlei < bp->n && block == 0 )
+            block = bp->blocks[bundlei];
         if ( block != 0 && bits256_cmp(coin->APIblockhash,hash2) != 0 )
         {
-            if ( block->fpipbits != 0 || block->queued != 0 || block->issued > time(NULL)-60 )
+            if ( block->fpipbits != 0 || block->queued != 0 || block->RO.recvlen != 0 )//block->issued > time(NULL)-60 )
                 return(0);
         }
         if ( priority != 0 )
@@ -1060,19 +1062,6 @@ int32_t iguana_blockQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t 
         else str = "blocksQ", Q = &coin->blocksQ;
         if ( Q != 0 )
         {
-            if ( bp != 0 && bundlei >= 0 && bundlei < bp->n )
-            {
-                if ( bp->issued[bundlei] == 0 || time(NULL) > bp->issued[bundlei]+30 )
-                {
-                    bp->issued[bundlei] = (uint32_t)time(NULL);
-                    if ( bp->bundleheight >= 0 )
-                        height = (bp->bundleheight + bundlei);
-                }
-                else
-                {
-                    return(1);
-                }
-            }
             req = mycalloc('y',1,sizeof(*req));
             req->hash2 = hash2;
             req->bp = bp;
