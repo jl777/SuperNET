@@ -1228,13 +1228,12 @@ int32_t iguana_ramchain_verify(struct iguana_info *coin,struct iguana_ramchain *
 int32_t iguana_ramchain_free(struct iguana_ramchain *ramchain,int32_t deleteflag)
 {
     struct iguana_kvitem *item,*tmp;
-    //if ( ramchain->H.ROflag != 0 && ramchain->hashmem == 0 )
+    if ( ramchain->H.ROflag != 0 && ramchain->hashmem == 0 )
     {
         if ( ramchain->A != ramchain->creditsA )
         {
-            printf("hashmem.%p Free A %p %p, numpkinds.%d %ld\n",ramchain->hashmem,ramchain->A,ramchain->creditsA,ramchain->H.data->numpkinds,sizeof(*ramchain->A) * ramchain->H.data->numpkinds);
-            if ( ramchain->hashmem == 0 )
-                myfree(ramchain->A,sizeof(*ramchain->A) * ramchain->H.data->numpkinds), ramchain->A = 0;
+            //printf("hashmem.%p Free A %p %p, numpkinds.%d %ld\n",ramchain->hashmem,ramchain->A,ramchain->creditsA,ramchain->H.data->numpkinds,sizeof(*ramchain->A) * ramchain->H.data->numpkinds);
+            myfree(ramchain->A,sizeof(*ramchain->A) * ramchain->H.data->numpkinds), ramchain->A = 0;
         }
         //if ( ramchain->U2 != ramchain->roU2 )
         //    myfree(ramchain->U2,sizeof(*ramchain->U2) * ramchain->H.data->numunspents), ramchain->U2 = 0;
@@ -1293,7 +1292,7 @@ void iguana_ramchain_extras(struct iguana_ramchain *ramchain,struct OS_memspace 
         if ( (ramchain->hashmem= hashmem) != 0 )
             iguana_memreset(hashmem);
         ramchain->A = (hashmem != 0) ? iguana_memalloc(hashmem,sizeof(struct iguana_account) * ramchain->H.data->numpkinds,1) : mycalloc('p',ramchain->H.data->numpkinds,sizeof(struct iguana_account));
-        printf("hashmem.%p A allocated.%p numpkinds.%d %ld\n",hashmem,ramchain->A,ramchain->H.data->numpkinds,sizeof(struct iguana_account)*ramchain->H.data->numpkinds);
+        //printf("hashmem.%p A allocated.%p numpkinds.%d %ld\n",hashmem,ramchain->A,ramchain->H.data->numpkinds,sizeof(struct iguana_account)*ramchain->H.data->numpkinds);
         //ramchain->P2 = (hashmem != 0) ? iguana_memalloc(hashmem,sizeof(struct iguana_pkextra) * ramchain->H.data->numpkinds,1) : mycalloc('2',ramchain->H.data->numpkinds,sizeof(struct iguana_pkextra));
         ///ramchain->U2 = (hashmem != 0) ? iguana_memalloc(hashmem,sizeof(struct iguana_Uextra) * ramchain->H.data->numunspents,1) : mycalloc('3',ramchain->H.data->numunspents,sizeof(struct iguana_Uextra));
         //printf("iguana_ramchain_extras A.%p:%p U2.%p:%p P2.%p:%p\n",ramchain->A,ramchain->roA,ramchain->U2,ramchain->roU2,ramchain->P2,ramchain->roP2);
