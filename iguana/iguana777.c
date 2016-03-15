@@ -467,6 +467,8 @@ void iguana_coinloop(void *arg)
                             coin->polltimeout = 100;
                         coin->MAXPEERS = 8;
                     }
+                    if ( coin->isRT != 0 )
+                        iguana_coinflush(coin);
                     if ( coin->bindsock >= 0 )
                     {
                         if ( coin->peers.numranked < 8 && now > coin->lastpossible+60 )
