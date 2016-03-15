@@ -475,10 +475,10 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             {
                 if ( firstgap == 0 )
                     firstgap = lastpending = bp;
+                if ( ++pending == coin->MAXBUNDLES )
+                    lastpending = bp;
                 if ( bp->emitfinish == 0 )
                 {
-                    if ( ++pending == coin->MAXBUNDLES )
-                        lastpending = bp;
                     spaceused += bp->estsize;
                     sortbuf[m*2] = bp->metric;
                     sortbuf[m*2 + 1] = i;
