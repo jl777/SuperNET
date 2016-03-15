@@ -46,7 +46,11 @@ struct iguana_kvitem *iguana_hashsetPT(struct iguana_ramchain *ramchain,int32_t 
     {
         if ( ramchain->hashmem != 0 )
             ptr = iguana_memalloc(ramchain->hashmem,allocsize,1);
-        else ptr = mycalloc('e',1,allocsize);
+        else
+        {
+            ptr = mycalloc('e',1,allocsize);
+            printf("alloc.%d\n",allocsize);
+        }
         if ( ptr == 0 )
             printf("fatal alloc error in hashset\n"), exit(-1);
         if ( 0 && ramchain->expanded && selector == 'T' )

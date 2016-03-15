@@ -312,9 +312,9 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
                     printf("error mapping Xspendmap.(%s)\n",fname);
                     retval = -1;
                 }
-                int32_t i; for (i=0; i<ramchain->numXspends; i++)
-                    printf("(%d u%d) ",ramchain->Xspendinds[i].hdrsi,ramchain->Xspendinds[i].ind);
-                printf("filesize %ld Xspendptr.%p %p num.%d\n",fsize,ramchain->Xspendptr,ramchain->Xspendinds,ramchain->numXspends);
+                //int32_t i; for (i=0; i<ramchain->numXspends; i++)
+                //    printf("(%d u%d) ",ramchain->Xspendinds[i].hdrsi,ramchain->Xspendinds[i].ind);
+                //printf("filesize %ld Xspendptr.%p %p num.%d\n",fsize,ramchain->Xspendptr,ramchain->Xspendinds,ramchain->numXspends);
             } else printf("Error creating.(%s)\n",fname);
         } else printf("error getting utxo fname\n");
     }
@@ -359,7 +359,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
                     printf("iguana_balancegen[%d] s.%d illegal hdrsi.%d emit.%d\n",bp->hdrsi,spendind,hdrsi,emit);
                     errs++;
                 }
-                printf("%d of %d: [%d] X spendind.%d -> (%d u%d)\n",emit,ramchain->numXspends,bp->hdrsi,spendind,hdrsi,unspentind);
+                //printf("%d of %d: [%d] X spendind.%d -> (%d u%d)\n",emit,ramchain->numXspends,bp->hdrsi,spendind,hdrsi,unspentind);
                 emit++;
             }
         }
@@ -383,7 +383,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
                 printf("iguana_balancegen txidind overflow %u vs %u\n",txidind,spentbp->ramchain.H.data->numtxids);
                 errs++;
             }
-            printf("[%d] spendind.%d -> (hdrsi.%d u%d)\n",bp->hdrsi,spendind,hdrsi,unspentind);
+            //printf("[%d] spendind.%d -> (hdrsi.%d u%d)\n",bp->hdrsi,spendind,hdrsi,unspentind);
         }
         else continue;
         if ( unspentind > 0 && unspentind < spentbp->ramchain.H.data->numunspents )
@@ -421,7 +421,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
     }
     if ( emit != ramchain->numXspends )
         errs++;
-    printf(">>>>>>>> balances.%d done errs.%d\n",bp->hdrsi,errs);
+    printf(">>>>>>>> balances.%d done errs.%d spendind.%d\n",bp->hdrsi,errs,n);
     return(-errs);
 }
 
