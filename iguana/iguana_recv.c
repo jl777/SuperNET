@@ -53,7 +53,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
         coin->numreqsent++;
         addr->pendblocks++;
         addr->pendtime = (uint32_t)time(NULL);
-        if ( coin->current == bp )
+        if ( 0 && coin->current == bp )
             printf("REQ.%s bundlei.%d hdrsi.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);
@@ -428,7 +428,7 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
                 if ( block->issued == 0 || now > block->issued+60 )
                 {
                     block->numrequests++;
-                    printf("bundleQ issue %d %x %d [%d:%d] numsaved.%d\n",block->RO.recvlen,block->fpipbits,block->fpos,bp->hdrsi,i,bp->numsaved);
+                    //printf("bundleQ issue %d %x %d [%d:%d] numsaved.%d\n",block->RO.recvlen,block->fpipbits,block->fpos,bp->hdrsi,i,bp->numsaved);
                     if ( bp->hdrsi == starti )
                     {
                         if ( coin->peers.ranked[0] != 0 )
@@ -564,7 +564,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         pend = queue_size(&coin->priorityQ) + queue_size(&coin->blocksQ);
         for (i=0; i<IGUANA_MAXPEERS; i++)
             pend += coin->peers.active[i].pendblocks;
-        if ( pend >= coin->MAXPENDING*coin->peers.numranked )
+        if ( pend >= (IGUANA_BUNDLELOOP + coin->MAXPENDING*coin->peers.numranked) )
         {
             for (i=better=0; i<coin->bundlescount; i++)
                 if ( coin->bundles[i] != 0 && coin->bundles[i]->numsaved > bp->numsaved )

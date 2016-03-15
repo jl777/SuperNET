@@ -471,20 +471,19 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                 numemit++;
                 iguana_bundlepurge(coin,bp);
             }
-            else if ( bp->emitfinish == 0 )
+            else
             {
                 if ( firstgap == 0 )
                     firstgap = lastpending = bp;
-                else if ( ++pending == coin->MAXBUNDLES )
-                    lastpending = bp;
-                if ( spaceused < coin->MAXMEM )
+                if ( bp->emitfinish == 0 )
                 {
+                    if ( ++pending == coin->MAXBUNDLES )
+                        lastpending = bp;
                     spaceused += bp->estsize;
-                    lastpending = bp;
+                    sortbuf[m*2] = bp->metric;
+                    sortbuf[m*2 + 1] = i;
+                    m++;
                 }
-                sortbuf[m*2] = bp->metric;
-                sortbuf[m*2 + 1] = i;
-                m++;
             }
         }
     }
