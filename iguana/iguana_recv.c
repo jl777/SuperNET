@@ -452,11 +452,13 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
 
 int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
 {
-    int32_t i,r,range,starti,lasti,numhashes,issued,valid,max,counter = 0; struct iguana_block *block; double endmillis,width; struct iguana_bundle *prevbp,*lastbp; uint32_t starttime;
+    int32_t i,r,range,starti,lasti,numhashes,issued,valid,max,counter = 0; struct iguana_block *block; double endmillis,width; struct iguana_bundle *prevbp,*currentbp,*lastbp; uint32_t starttime;
     if ( (range= coin->peers.numranked) > coin->MAXBUNDLES )
         range = coin->MAXBUNDLES;
-    starti = coin->current == 0 ? 0 : coin->current->hdrsi;
-    lasti = coin->lastpending == 0 ? coin->bundlescount-1 : coin->lastpending->hdrsi;
+    currentbp = coin->current;
+    lastbp = coin->lastpending;
+    starti = currentbp == 0 ? 0 : currentbp->hdrsi;
+    lasti = lastbp == 0 ? coin->bundlescount-1 : lastbp->hdrsi;
     coin->numbundlesQ--;
     for (i=numhashes=0; i<bp->n; i++)
         numhashes += bits256_nonz(bp->hashes[i]);
@@ -577,8 +579,8 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     issued = 0;
     max = 100 + (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
     iguana_bundlekick(coin,bp,starti,max);
-    if ( coin->current != 0 )
-        iguana_bundlekick(coin,coin->current,starti,max);
+    if ( currentbp != 0 )
+        iguana_bundlekick(coin,currentbp,starti,max);
     if ( coin->numsaved > coin->longestchain*.99 )
     {
         printf("last percent via hdrsi.%d\n",bp->hdrsi);
