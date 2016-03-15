@@ -388,30 +388,36 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
         else continue;
         if ( unspentind > 0 && unspentind < spentbp->ramchain.H.data->numunspents )
         {
-            spentU = (void *)(long)((long)spentbp->ramchain.H.data + spentbp->ramchain.H.data->Uoffset);
-            A2 = spentbp->ramchain.A;
-            u = &spentU[unspentind];
-            if ( (pkind= u->pkind) != 0 && pkind < spentbp->ramchain.H.data->numpkinds )
+            if ( spentbp->ramchain.Uextras == 0 || (A2= spentbp->ramchain.A) == 0 )
             {
-                if ( (spentbp->ramchain.Uextras[unspentind] & (1 << 31)) == 0 )
+                printf("null ptrs %p %p\n",spentbp->ramchain.Uextras,spentbp->ramchain.A);
+                errs++;
+            }
+            else
+            {
+                spentU = (void *)(long)((long)spentbp->ramchain.H.data + spentbp->ramchain.H.data->Uoffset);
+                u = &spentU[unspentind];
+                if ( (pkind= u->pkind) != 0 && pkind < spentbp->ramchain.H.data->numpkinds )
                 {
-                    if ( spentbp->ramchain.Uextras[unspentind] == 0 )
-                        spentbp->ramchain.Uextras[unspentind] |= A2[pkind].lastind;
-                    spentbp->ramchain.Uextras[unspentind] |= (1 << 31);
-                    A2[pkind].total += u->value;
-                    A2[pkind].lastind = spendind;
-                    spentbp->dirty = (uint32_t)time(NULL);
+                    if ( (spentbp->ramchain.Uextras[unspentind] & (1 << 31)) == 0 )
+                    {
+                        spentbp->ramchain.Uextras[unspentind] |= (A2[pkind].lastind & 0x7fffffff);
+                        spentbp->ramchain.Uextras[unspentind] |= (1 << 31);
+                        A2[pkind].total += u->value;
+                        A2[pkind].lastind = spendind;
+                        spentbp->dirty = (uint32_t)time(NULL);
+                    }
+                    else
+                    {
+                        errs++;
+                        printf("iguana_balancegen: double spend of hdrsi.%d unspentind.%d\n",spentbp->hdrsi,unspentind);
+                    }
                 }
                 else
                 {
                     errs++;
-                    printf("iguana_balancegen: double spend of hdrsi.%d unspentind.%d\n",spentbp->hdrsi,unspentind);
+                    printf("iguana_balancegen: pkind overflow %d vs %d\n",pkind,spentbp->ramchain.H.data->numpkinds);
                 }
-            }
-            else
-            {
-                errs++;
-                printf("iguana_balancegen: pkind overflow %d vs %d\n",pkind,spentbp->ramchain.H.data->numpkinds);
             }
         }
         else
