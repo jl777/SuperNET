@@ -451,6 +451,8 @@ void iguana_coinloop(void *arg)
                     iguana_bundlestats(coin,str);
                     //fprintf(stderr,"call process\n");
                     flag += iguana_processrecv(coin);
+                    if ( coin->longestchain+10000 > coin->blocks.maxbits )
+                        iguana_recvalloc(coin,coin->longestchain + 100000);
                 }
             }
         }
