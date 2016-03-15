@@ -358,12 +358,15 @@ void mainloop(struct supernet_info *myinfo)
         {
             flag++;
             if ( ptr->bp != 0 && ptr->coin != 0 )
+            {
                 iguana_balancecalc(ptr->coin,ptr->bp);
+                iguana_coinflush(ptr->coin);
+            }
             myfree(ptr,ptr->allocsize);
         }
-        for (i=0; i<IGUANA_MAXCOINS; i++)
-            if ( (coin= Coins[i]) != 0 && coin->active != 0 )
-                iguana_coinflush(coin);
+        //for (i=0; i<IGUANA_MAXCOINS; i++)
+        //    if ( (coin= Coins[i]) != 0 && coin->active != 0 )
+        //        iguana_coinflush(coin);
         if ( flag == 0 )
         {
             usleep(10000);
