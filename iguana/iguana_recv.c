@@ -580,7 +580,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     }
     else
     {
-        r = (rand() % 16);
+        r = (rand() % 7);
         if ( starti+r < coin->bundlescount && coin->bundles[starti+r] != 0 )
             iguana_bundlekick(coin,coin->bundles[starti+r],starti+r,coin->bundles[starti+r]->n);
     }
@@ -614,7 +614,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
             // merkle
             printf(">>>>>>>>>>>>>>>>>>>>>>> EMIT bundle.%d | 1st.%d h.%d s.[%d] maxbundles.%d NET.(h%d b%d)\n",bp->bundleheight,coin->current!=0?coin->current->hdrsi:-1,coin->current!=0?coin->current->numhashes:-1,coin->current!=0?coin->current->numsaved:-1,coin->MAXBUNDLES,HDRnet,netBLOCKS);
             bp->emitfinish = 1;
-            if ( (rand() % 4) == 0 )
+            if ( (rand() % 2) == 0 )
             {
                 if ( coin->MAXBUNDLES > IGUANA_MINPENDBUNDLES )
                     coin->MAXBUNDLES--;
