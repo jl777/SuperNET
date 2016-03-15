@@ -331,6 +331,7 @@ void iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp)
         printf("GENERATE BALANCES ERROR ht.%d\n",bp->bundleheight);
         exit(-1);
     }
+    iguana_coinflush(coin);
     bp->balancefinish = (uint32_t)time(NULL);
     printf("GENERATED BALANCES for ht.%d duration %d seconds\n",bp->bundleheight,(uint32_t)starttime - bp->balancefinish);
     iguana_validateQ(coin,bp);
@@ -349,9 +350,9 @@ void mainloop(struct supernet_info *myinfo)
                 iguana_balancecalc(ptr->coin,ptr->bp);
             myfree(ptr,ptr->allocsize);
         }
-        for (i=0; i<IGUANA_MAXCOINS; i++)
-            if ( (coin= Coins[i]) != 0 && coin->active != 0 )
-                iguana_coinflush(coin);
+        //for (i=0; i<IGUANA_MAXCOINS; i++)
+        //    if ( (coin= Coins[i]) != 0 && coin->active != 0 )
+        //        iguana_coinflush(coin);
         iguana_jsonQ();
         if ( flag == 0 )
         {
