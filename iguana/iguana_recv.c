@@ -579,14 +579,14 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     }
     else
     {
-        r = (rand() % 8);
+        r = (rand() % 4);
         if ( starti+r < coin->bundlescount && coin->bundles[starti+r] != 0 )
             iguana_bundlekick(coin,coin->bundles[starti+r],starti+r,coin->bundles[starti+r]->n);
     }
     endmillis = OS_milliseconds() + timelimit + (rand() % 1000);
     if ( bp->numsaved < bp->n )
         width = 100 + max*100;//sqrt(sqrt(bp->n * (1+bp->numsaved+issued)) * (10+coin->bundlescount-bp->hdrsi));
-    if ( 0 && bp->hdrsi == starti )
+    if ( 1 && bp->hdrsi == starti )
         printf("ITERATE.%d max.%d bundle.%d h.%d n.%d r.%d s.%d F.%d I.%d T.%d %f %u next %f counter.%d\n",bp->rank,max,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,issued,timelimit,endmillis-OS_milliseconds(),(uint32_t)time(NULL),width,counter);
     if ( bp->emitfinish == 0 )
     {
