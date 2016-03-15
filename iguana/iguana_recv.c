@@ -423,9 +423,9 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
     {
         if ( (block= bp->blocks[i]) != 0 )
         {
-            if ( block->fpipbits == 0 || block->RO.recvlen == 0 )
+            if ( block->fpipbits == 0 )//|| block->RO.recvlen == 0 )
             {
-                if (  bp->issued[i] == 0 || now > bp->issued[i]+10 )
+                if (  block->issued == 0 || now > block->issued+60 )
                 {
                     block->numrequests++;
                     if ( bp->hdrsi == starti )
@@ -580,7 +580,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     issued = 0;
     max = 100 + (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
     iguana_bundlekick(coin,bp,starti,max);
-    if ( currentbp != 0 && queue_size(&coin->blocksQ) == 0 )
+    if ( 0 && currentbp != 0 && queue_size(&coin->blocksQ) == 0 )
         iguana_bundlekick(coin,currentbp,starti,max);
     if ( coin->numsaved > coin->longestchain*.99 )
     {
