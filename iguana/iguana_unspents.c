@@ -265,7 +265,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
         {
             if ( (spentbp= iguana_spent(coin,&prevhash,&unspentind,ramchain,bp->hdrsi,s)) != 0 )
             {
-                if ( (ptr[emit].ind= unspentind) != 0 )
+                if ( (ptr[emit].ind= unspentind) != 0 && spentbp->hdrsi < bp->hdrsi )
                 {
                     ptr[emit].hdrsi = spentbp->hdrsi;
                     //printf("(%d u%d).%d ",spentbp->hdrsi,unspentind,emit);
@@ -352,7 +352,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
             else
             {
                 unspentind = ramchain->Xspendinds[emit].ind;
-                if ( (hdrsi= ramchain->Xspendinds[emit].hdrsi) >= 0 && hdrsi < coin->bundlescount )
+                if ( (hdrsi= ramchain->Xspendinds[emit].hdrsi) >= 0 && hdrsi <= bp->hdrsi )
                     spentbp = coin->bundles[hdrsi];
                 else
                 {
