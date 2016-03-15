@@ -424,7 +424,7 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
         {
             if ( block->fpipbits == 0 || block->RO.recvlen == 0 )
             {
-                if (  bp->issued[i] == 0 || now > bp->issued[i]+10 )
+                if (  bp->issued[i] == 0 || now > bp->issued[i]+60 )
                 {
                     block->numrequests++;
                     if ( bp->hdrsi == starti )
