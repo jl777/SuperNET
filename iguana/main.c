@@ -331,7 +331,7 @@ void iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp)
         printf("GENERATE BALANCES ERROR ht.%d\n",bp->bundleheight);
         exit(-1);
     }
-    iguana_coinflush(coin);
+    //iguana_coinflush(coin);
     bp->balancefinish = (uint32_t)time(NULL);
     printf("GENERATED BALANCES for ht.%d duration %d seconds\n",bp->bundleheight,(uint32_t)starttime - bp->balancefinish);
     iguana_validateQ(coin,bp);
