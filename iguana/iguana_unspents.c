@@ -242,7 +242,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
     static uint64_t total,emitted;
     int32_t spendind,n,errs=0,emit=0; uint32_t unspentind; struct iguana_bundle *spentbp;
     FILE *fp; char fname[1024],str[65],dirname[128]; int32_t hdrsi,retval = -1;
-    bits256 prevhash,zero,sha256; struct iguana_unspent *u;
+    bits256 prevhash,zero,sha256; struct iguana_unspent *u; long fsize;
     struct iguana_spend *S,*s; struct iguana_bundleind *ptr; struct iguana_ramchain *ramchain;
     ramchain = &bp->ramchain;
     printf("UTXO gen.%d ramchain data.%p\n",bp->bundleheight,ramchain->H.data);
@@ -256,7 +256,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
     }
     ptr = mycalloc('x',sizeof(*ptr),n);
     total += n;
-    //printf("start UTXOGEN.%d max.%d ptr.%p\n",bp->bundleheight,n,ptr);
+    printf("start UTXOGEN.%d max.%d ptr.%p\n",bp->bundleheight,n,ptr);
     for (spendind=ramchain->H.data->firsti; spendind<n; spendind++)
     {
         s = &S[spendind];
@@ -268,6 +268,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
                 if ( (ptr[emit].ind= unspentind) != 0 )
                 {
                     ptr[emit].hdrsi = spentbp->hdrsi;
+                    //printf("(%d u%d).%d ",spentbp->hdrsi,unspentind,emit);
                     emit++;
                 }
                 else
@@ -304,6 +305,8 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
                 else if ( fwrite(ptr,sizeof(*ptr),emit,fp) != emit )
                     printf("error writing %d of %d -> (%s)\n",emit,n,fname);
                 else retval = 0;
+                fsize = ftell(fp);
+                fclose(fp);
                 if ( iguana_Xspendmap(coin,ramchain,bp) < 0 )
                 {
                     printf("error mapping Xspendmap.(%s)\n",fname);
@@ -311,8 +314,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
                 }
                 int32_t i; for (i=0; i<ramchain->numXspends; i++)
                     printf("(%d u%d) ",ramchain->Xspendinds[i].hdrsi,ramchain->Xspendinds[i].ind);
-                printf("filesize %ld Xspendptr.%p %p num.%d\n",ftell(fp),ramchain->Xspendptr,ramchain->Xspendinds,ramchain->numXspends);
-                fclose(fp);
+                printf("filesize %ld Xspendptr.%p %p num.%d\n",fsize,ramchain->Xspendptr,ramchain->Xspendinds,ramchain->numXspends);
             } else printf("Error creating.(%s)\n",fname);
         } else printf("error getting utxo fname\n");
     }
