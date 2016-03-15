@@ -349,12 +349,9 @@ void mainloop(struct supernet_info *myinfo)
                 iguana_balancecalc(ptr->coin,ptr->bp);
             myfree(ptr,ptr->allocsize);
         }
-        if ( flag != 0 )
-        {
-            for (i=0; i<IGUANA_MAXCOINS; i++)
-                if ( (coin= Coins[i]) != 0 && coin->active != 0 )
-                    iguana_coinflush(coin);
-        } else usleep(10000);
+        for (i=0; i<IGUANA_MAXCOINS; i++)
+            if ( (coin= Coins[i]) != 0 && coin->active != 0 )
+                iguana_coinflush(coin);
         iguana_jsonQ();
         if ( flag == 0 )
         {
@@ -366,6 +363,7 @@ void mainloop(struct supernet_info *myinfo)
              }
              else*/
             pangea_queues(SuperNET_MYINFO(0));
+            usleep(10000);
         }
     }
 }

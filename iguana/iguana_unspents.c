@@ -328,7 +328,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     int32_t spendind,n,errs=0,emit=0; uint32_t unspentind,pkind,txidind; struct iguana_account *A2;
     struct iguana_unspent *u,*spentU; struct iguana_spend *S,*s; struct iguana_ramchain *ramchain;
-    struct iguana_bundle *spentbp; struct iguana_txid *T; int32_t hdrsi;
+    struct iguana_bundle *spentbp; struct iguana_txid *T; int32_t hdrsi; uint32_t now;
     ramchain = &bp->ramchain;
     printf("BALANCEGEN.%d\n",bp->bundleheight);
     if ( ramchain->H.data == 0 || (n= ramchain->H.data->numspends) < 1 )
@@ -386,6 +386,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
             //printf("[%d] spendind.%d -> (hdrsi.%d u%d)\n",bp->hdrsi,spendind,hdrsi,unspentind);
         }
         else continue;
+        now = (uint32_t)time(NULL);
         if ( unspentind > 0 && unspentind < spentbp->ramchain.H.data->numunspents )
         {
             if ( spentbp->ramchain.Uextras == 0 )
@@ -413,7 +414,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
                         spentbp->ramchain.Uextras[unspentind] |= (1 << 31);
                         A2[pkind].total += u->value;
                         A2[pkind].lastind = spendind;
-                        spentbp->dirty = (uint32_t)time(NULL);
+                        spentbp->dirty = now;
                     }
                     else
                     {
