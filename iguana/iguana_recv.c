@@ -452,7 +452,7 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
 
 int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
 {
-    int32_t i,r,range,starti,pend,better,lasti,numhashes,issued,valid,max,counter = 0; struct iguana_block *block; double endmillis,width; struct iguana_bundle *prevbp,*currentbp,*lastbp; uint32_t starttime;
+    int32_t i,r,range,starti,pend,lasti,numhashes,issued,valid,max,counter = 0; struct iguana_block *block; double endmillis,width; struct iguana_bundle *prevbp,*currentbp,*lastbp; uint32_t starttime;
     if ( (range= coin->peers.numranked) > coin->MAXBUNDLES )
         range = coin->MAXBUNDLES;
     currentbp = coin->current;
@@ -865,7 +865,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
             iguana_bloomset(coin,&bp->bloom,0,bit);
     }*/
     char str[65];
-    if ( bp == coin->current )
+    if ( 0 && bp == coin->current )
         fprintf(stderr,"blockRECV.%d %s [%d:%d] block.%08x | h.%d\n",req->numtx,bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,bp!=0?bp->numhashes:-1);
     if ( bundlei == 1 && bp != 0 && bp->numhashes < bp->n )
     {
