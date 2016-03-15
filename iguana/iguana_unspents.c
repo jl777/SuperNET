@@ -342,6 +342,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
             {
                 ptr[emit].ind = unspentind;
                 ptr[emit].hdrsi = spentbp->hdrsi;
+                //pkind = spendU[unspentind].pkind;
                 emit++;
                 //spentbp->ramchain.spents[unspentind].ind = spendind;
                 //spentbp->ramchain.spents[unspentind].hdrsi = bp->hdrsi;
