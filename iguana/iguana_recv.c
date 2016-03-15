@@ -533,6 +533,11 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         iguana_bundleQ(coin,bp,1000);
         return(0);
     }
+    else if ( bp->emitfinish != 0 )
+    {
+        iguana_bundleQ(coin,bp,1000);
+        return(0);
+    }
     //printf("BUNDLEITERS.%d\n",bp->hdrsi);
     if ( bp->hdrsi <= lasti && coin->lastpending != 0 )
     {
@@ -622,9 +627,9 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                     coin->MAXBUNDLES++;
             }
             sleep(1);
-            iguana_emitQ(coin,bp);
+            //iguana_emitQ(coin,bp);
             iguana_bundleQ(coin,bp,width);
-            return(1);
+            return('E');
         }
     }
     iguana_bundleQ(coin,bp,width);

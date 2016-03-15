@@ -305,7 +305,15 @@ int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *m
             }
             else if ( ptr->type == 'B' )
             {
-                iguana_bundleiters(coin,bp,ptr->timelimit);
+                if ( iguana_bundleiters(coin,bp,ptr->timelimit) == 'E' )
+                {
+                    if ( iguana_bundlesaveHT(coin,mem,memB,bp,ptr->starttime) == 0 )
+                    {
+                        //fprintf(stderr,"emitQ coin.%p bp.[%d]\n",ptr->coin,bp->bundleheight);
+                        bp->emitfinish = (uint32_t)time(NULL) + 1;
+                        coin->numemitted++;
+                    } else bp->emitfinish = 0;
+                }
             }
             else if ( ptr->type == 'E' )
             {
@@ -378,8 +386,8 @@ void iguana_helper(void *arg)
             }
         }
         if ( flag == 0 )
-            usleep(100000);
-        else usleep(5000);
+            usleep(500000);
+        else usleep(50000);
     }
 }
 
