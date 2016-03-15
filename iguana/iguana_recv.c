@@ -580,7 +580,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     issued = 0;
     max = 100 + (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
     iguana_bundlekick(coin,bp,starti,max);
-    if ( currentbp != 0 )
+    if ( currentbp != 0 && queue_size(&coin->blocksQ) == 0 )
         iguana_bundlekick(coin,currentbp,starti,max);
     if ( coin->numsaved > coin->longestchain*.99 )
     {
