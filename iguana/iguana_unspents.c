@@ -413,7 +413,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
                     }
                     else
                     {
-                        errs++;
+                        //errs++;
                         printf("iguana_balancegen: double spend of hdrsi.%d unspentind.%d\n",spentbp->hdrsi,unspentind);
                     }
                 }
