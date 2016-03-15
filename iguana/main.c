@@ -338,7 +338,7 @@ void iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp)
 
 void mainloop(struct supernet_info *myinfo)
 {
-    int32_t flag; struct iguana_helper *ptr;
+    int32_t flag,i; struct iguana_helper *ptr; struct iguana_info *coin;
     while ( 1 )
     {
         flag = 0;
@@ -361,6 +361,9 @@ void mainloop(struct supernet_info *myinfo)
                 iguana_balancecalc(ptr->coin,ptr->bp);
             myfree(ptr,ptr->allocsize);
         }
+        for (i=0; i<IGUANA_MAXCOINS; i++)
+            if ( (coin= Coins[i]) != 0 && coin->active != 0 )
+                iguana_coinflush(coin);
         if ( flag == 0 )
         {
             usleep(10000);
