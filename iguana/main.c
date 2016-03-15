@@ -342,34 +342,30 @@ void mainloop(struct supernet_info *myinfo)
     while ( 1 )
     {
         flag = 0;
+        while ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
+        {
+            flag++;
+            if ( ptr->bp != 0 && ptr->coin != 0 )
+                iguana_balancecalc(ptr->coin,ptr->bp);
+            myfree(ptr,ptr->allocsize);
+        }
+        if ( flag != 0 )
+        {
+            for (i=0; i<IGUANA_MAXCOINS; i++)
+                if ( (coin= Coins[i]) != 0 && coin->active != 0 )
+                    iguana_coinflush(coin);
+        } else usleep(10000);
         iguana_jsonQ();
         if ( flag == 0 )
         {
             /*if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
-            {
-                if ( ptr->bp != 0 && ptr->coin != 0 )
-                    flag += iguana_bundleiters(ptr->coin,ptr->bp,ptr->timelimit);
-                myfree(ptr,ptr->allocsize);
-            }
-            else*/
-                pangea_queues(SuperNET_MYINFO(0));
-        }
-        if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
-        {
-            flag++;
-            if ( ptr->bp != 0 && ptr->coin != 0 )
-            {
-                iguana_balancecalc(ptr->coin,ptr->bp);
-                iguana_coinflush(ptr->coin);
-            }
-            myfree(ptr,ptr->allocsize);
-        }
-        //for (i=0; i<IGUANA_MAXCOINS; i++)
-        //    if ( (coin= Coins[i]) != 0 && coin->active != 0 )
-        //        iguana_coinflush(coin);
-        if ( flag == 0 )
-        {
-            usleep(10000);
+             {
+             if ( ptr->bp != 0 && ptr->coin != 0 )
+             flag += iguana_bundleiters(ptr->coin,ptr->bp,ptr->timelimit);
+             myfree(ptr,ptr->allocsize);
+             }
+             else*/
+            pangea_queues(SuperNET_MYINFO(0));
         }
     }
 }
