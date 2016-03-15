@@ -515,7 +515,8 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     tmp = (difft.millis * 1000000);
     tmp %= 1000000000;
     difft.millis = ((double)tmp / 1000000.);
-    coin->current = firstgap;
+    if ( (coin->current= firstgap) == 0 )
+        coin->current = coin->bundles[0];
     if ( lastpending != 0 )
         coin->lastpending = lastpending;
     else coin->lastpending = coin->bundles[coin->bundlescount - 1];

@@ -38,7 +38,7 @@ struct iguana_info *Coins[IGUANA_MAXCOINS];
 char Userhome[512],GLOBALTMPDIR[512] = "tmp";
 int32_t USE_JAY,FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel;
 uint32_t prices777_NXTBLOCK,MAX_DEPTH = 100;
-queue_t helperQ,jsonQ,finishedQ,bundlesQ,validateQ,emitQ;
+queue_t helperQ,jsonQ,finishedQ,bundlesQ,validateQ,emitQ,balancesQ;
 struct supernet_info MYINFO,**MYINFOS;
 static int32_t initflag;
 cJSON *API_json;
@@ -322,9 +322,23 @@ void sigalarm_func() { printf("\nSIGALRM\n"); signal(SIGALRM,sigalarm_func); }
 void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func); }
 #endif
 
+void iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp)
+{
+    uint32_t starttime;
+    starttime = (uint32_t)time(NULL);
+    if ( iguana_balancegen(coin,bp) < 0 )
+    {
+        printf("GENERATE BALANCES ERROR ht.%d\n",bp->bundleheight);
+        exit(-1);
+    }
+    bp->balancefinish = (uint32_t)time(NULL);
+    printf("GENERATED BALANCES for ht.%d duration %d seconds\n",bp->bundleheight,(uint32_t)starttime - bp->balancefinish);
+    iguana_validateQ(coin,bp);
+}
+
 void mainloop(struct supernet_info *myinfo)
 {
-    int32_t flag;
+    int32_t flag; struct iguana_helper *ptr;
     while ( 1 )
     {
         flag = 0;
@@ -339,6 +353,13 @@ void mainloop(struct supernet_info *myinfo)
             }
             else*/
                 pangea_queues(SuperNET_MYINFO(0));
+        }
+        if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
+        {
+            flag++;
+            if ( ptr->bp != 0 && ptr->coin != 0 )
+                iguana_balancecalc(ptr->coin,ptr->bp);
+            myfree(ptr,ptr->allocsize);
         }
         if ( flag == 0 )
         {
@@ -1089,6 +1110,7 @@ void iguana_main(void *arg)
     iguana_initQ(&finishedQ,"finishedQ");
     iguana_initQ(&bundlesQ,"bundlesQ");
     iguana_initQ(&validateQ,"validateQ");
+    iguana_initQ(&balancesQ,"balancesQ");
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
     {
         safecopy(Userhome,jstr(argjson,"userhome"),sizeof(Userhome));

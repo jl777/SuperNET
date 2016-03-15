@@ -286,6 +286,20 @@ void iguana_validateQ(struct iguana_info *coin,struct iguana_bundle *bp)
     queue_enqueue("validateQ",&validateQ,&ptr->DL,0);
 }
 
+void iguana_balancesQ(struct iguana_info *coin,struct iguana_bundle *bp)
+{
+    struct iguana_helper *ptr;
+    ptr = mycalloc('i',1,sizeof(*ptr));
+    ptr->allocsize = sizeof(*ptr);
+    ptr->coin = coin;
+    ptr->bp = bp, ptr->hdrsi = bp->hdrsi;
+    ptr->type = 'B';
+    ptr->starttime = (uint32_t)time(NULL);
+    ptr->timelimit = 0;
+    printf("BALANCES Q %s bundle.%d[%d] balances.%u balancefinish.%u\n",coin->symbol,ptr->hdrsi,bp->n,bp->utxofinish,bp->balancefinish);
+    queue_enqueue("balancesQ",&balancesQ,&ptr->DL,0);
+}
+
 int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_helper *ptr)
 {
     struct iguana_info *coin; struct iguana_peer *addr; struct iguana_bundle *bp,*nextbp;

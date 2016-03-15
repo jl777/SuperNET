@@ -374,7 +374,7 @@ struct iguana_ramchain
     uint32_t numblocks:31,expanded:1,pkind,externalind,height,numXspends;
     struct iguana_kvitem *txids,*pkhashes;
     struct OS_memspace *hashmem; long filesize,sigsfilesize; void *fileptr,*sigsfileptr,*Xspendptr;
-    struct iguana_account *A,*creditsA; struct iguana_bundleind *Xspendinds,*spents;
+    struct iguana_account *A,*creditsA; struct iguana_bundleind *Xspendinds; uint32_t *Uextras;
 //struct iguana_Uextra *U2,*roU2; struct iguana_pkextra *P2,*roP2;
 };
 
@@ -792,8 +792,9 @@ struct iguana_bloominds iguana_calcbloom(bits256 hash2);
 int32_t iguana_bloomfind(struct iguana_info *coin,struct iguana_bloom16 *bloom,int32_t incr,struct iguana_bloominds bit);
 struct iguana_bloominds iguana_bloomset(struct iguana_info *coin,struct iguana_bloom16 *bloom,int32_t incr,struct iguana_bloominds bit);
 int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct iguana_bundle *bp);
+void iguana_balancesQ(struct iguana_info *coin,struct iguana_bundle *bp);
 
-extern queue_t bundlesQ,validateQ,emitQ;
+extern queue_t bundlesQ,validateQ,emitQ,balancesQ;
 extern char GLOBALTMPDIR[];
 
 #include "../includes/iguana_api.h"

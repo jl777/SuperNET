@@ -14175,5 +14175,82 @@ len = 0;
                     //    c = *srcoffset, *destoffset++ = c, *srcoffset++ = 0;
                 } else printf("smashed stack? dest.%ld vs src %ld offset.%u stacksize.%u space.%u\n",(long)destoffset,(long)srcoffset,(uint32_t)ramchain->H.scriptoffset,(uint32_t)ramchain->H.stacksize,(uint32_t)ramchain->H.scriptoffset);
             }
+            // if file exists and is valid, load and then process only the incremental
+            long iguana_spentsfile(struct iguana_info *coin,int32_t n)
+            {
+                int32_t i,iter,allocated = 0; long filesize,total,count; struct iguana_bundleind *spents = 0; struct iguana_ramchain *ramchain; char fname[1024]; struct iguana_bundle *bp; FILE *fp;
+                fname[0] = 0;
+                for (total=iter=0; iter<2; iter++)
+                {
+                    for (count=i=0; i<n; i++)
+                    {
+                        if ( (bp= coin->bundles[i]) != 0 )
+                        {
+                            ramchain = &bp->ramchain;
+                            if ( ramchain->H.data != 0 )
+                            {
+                                if ( iter == 1 )
+                                {
+                                    ramchain->spents = &spents[count];
+                                    //printf("bp.[%d] count.%ld %p\n",i,count,ramchain->spents);
+                                    if ( allocated != 0 && iguana_spentsinit(coin,spents,bp,ramchain) < 0 )
+                                    {
+                                        printf("error initializing spents bp.%d\n",i);
+                                        exit(-1);
+                                    }
+                                }
+                                count += ramchain->H.data->numunspents;
+                            } else break;
+                        } else return(-1);
+                    }
+                    if ( i < n )
+                        n = (i + 1);
+                    sprintf(fname,"DB/%s/spents_%d.%ld",coin->symbol,n,count);
+                    printf("%s total unspents.%ld\n",fname,count);
+                    if ( iter == 0 )
+                    {
+                        total = count;
+                        if ( (spents= OS_filestr(&filesize,fname)) == 0 )
+                            spents = calloc(total,sizeof(*spents)), allocated = 1;
+                    }
+                    else if ( total != count )
+                        printf("%s total.%ld != count.%ld\n",fname,total,count);
+                }
+                if ( allocated != 0 && fname[0] != 0 && (fp= fopen(fname,"wb")) != 0 )
+                {
+                    fwrite(spents,total,sizeof(*spents),fp);
+                    fclose(fp);
+                }
+                return(total);
+            }
+            
+            int32_t iguana_spentsinit(struct iguana_info *coin,struct iguana_bundleind *spents,struct iguana_bundle *bp,struct iguana_ramchain *ramchain)
+            {
+                int32_t spendind,n,max,hdrsi,errs,flag; uint32_t unspentind; struct iguana_bundle *spentbp;
+                struct iguana_spend *S; bits256 prevhash;
+                S = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Soffset);
+                max = ramchain->H.data->numunspents;
+                n = ramchain->H.data->numspends;
+                for (spendind=1,errs=0; spendind<n; spendind++)
+                {
+                    flag = 0;
+                    hdrsi = bp->hdrsi;
+                    if ( (spentbp= iguana_spent(coin,&prevhash,&unspentind,ramchain,bp->hdrsi,&S[spendind])) != 0 )
+                    {
+                        spentbp->ramchain.spents[unspentind].ind = spendind;
+                        spentbp->ramchain.spents[unspentind].hdrsi = bp->hdrsi;
+                        flag = 1;
+                        if ( S[spendind].external == 0 && spentbp != bp )
+                            printf("spentsinit unexpected spendbp: %p bp.[%d] U%d <- S%d.[%d] [%p %p %p]\n",&spentbp->ramchain.spents[unspentind],hdrsi,unspentind,spendind,bp->hdrsi,coin->bundles[0],coin->bundles[1],coin->bundles[2]);
+                    }
+                    else if ( S[spendind].prevout < 0 )
+                        flag = 1;
+                    else printf("unresolved spendind.%d hdrsi.%d\n",spendind,bp->hdrsi);
+                    if ( flag == 0 )
+                        errs++;
+                }
+                printf("processed %d spendinds for bp.[%d] -> errs.%d\n",spendind,bp->hdrsi,errs);
+                return(-errs);
+            }
 
 #endif

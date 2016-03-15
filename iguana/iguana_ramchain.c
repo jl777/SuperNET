@@ -1228,7 +1228,7 @@ int32_t iguana_ramchain_verify(struct iguana_info *coin,struct iguana_ramchain *
 int32_t iguana_ramchain_free(struct iguana_ramchain *ramchain,int32_t deleteflag)
 {
     struct iguana_kvitem *item,*tmp;
-    if ( ramchain->H.ROflag != 0 && ramchain->hashmem == 0 )
+    //if ( ramchain->H.ROflag != 0 && ramchain->hashmem == 0 )
     {
         //printf("Free A %p %p, U2, P2\n",ramchain->A,ramchain->creditsA);
         if ( ramchain->A != ramchain->creditsA )
@@ -1312,6 +1312,9 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
             {
                 ramchain->Xspendptr = ptr;
                 ramchain->numXspends = (int32_t)((filesize - sizeof(sha256)) / sizeof(*ramchain->Xspendinds));
+                //int32_t i; for (i=0; i<ramchain->numXspends; i++)
+                //    printf("(%d u%d) ",ramchain->Xspendinds[i].hdrsi,ramchain->Xspendinds[i].ind);
+                //printf("filesize %ld Xspendptr.%p %p num.%d\n",ftell(fp),ramchain->Xspendptr,ramchain->Xspendinds,ramchain->numXspends);
                 //printf("mapped utxo vector[%d] from (%s)\n",ramchain->numXspends,fname);
             }
             else
@@ -2344,6 +2347,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     }
     iguana_ramchain_free(dest,0);
     bp->ramchain = newchain;
+    
     return(retval);
 }
 

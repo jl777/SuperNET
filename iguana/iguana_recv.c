@@ -452,7 +452,7 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
 
 int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
 {
-    int32_t i,r,range,starti,pend,lasti,numhashes,issued,valid,max,counter = 0; struct iguana_block *block; double endmillis,width; struct iguana_bundle *prevbp,*currentbp,*lastbp; uint32_t starttime;
+    int32_t i,range,starti,pend,lasti,numhashes,issued,valid,max,counter = 0; struct iguana_block *block; double endmillis,width; struct iguana_bundle *prevbp,*currentbp,*lastbp;
     if ( (range= coin->peers.numranked) > coin->MAXBUNDLES )
         range = coin->MAXBUNDLES;
     currentbp = coin->current;
@@ -492,8 +492,9 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     }
     if ( bp->emitfinish > coin->startutc )
     {
-        if ( bp->hdrsi == 0 || ((prevbp= coin->bundles[bp->hdrsi-1]) != 0 && coin->current != 0 && coin->current->hdrsi >= bp->hdrsi && prevbp->emitfinish > coin->startutc && time(NULL) > prevbp->emitfinish+3) )
+        if ( bp->hdrsi == 0 || ((prevbp= coin->bundles[bp->hdrsi-1]) != 0 && coin->current != 0 && coin->current->hdrsi >= prevbp->hdrsi && prevbp->emitfinish > coin->startutc && time(NULL) > prevbp->emitfinish+3) )
         {
+            printf("postfinish.%d startutxo.%u prevbp.%p current.%p\n",bp->hdrsi,bp->startutxo,coin->bundles[bp->hdrsi-1],coin->current);
             if ( bp->startutxo == 0 )
             {
                 bp->startutxo = (uint32_t)time(NULL);
@@ -521,15 +522,8 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
             }
             if ( bp->utxofinish != 0 && bp->balancefinish == 0 && (bp->hdrsi == 0 || (prevbp != 0 && prevbp->utxofinish != 0)) )
             {
-                starttime = (uint32_t)time(NULL);
-                if ( iguana_balancegen(coin,bp) < 0 )
-                {
-                    printf("GENERATE BALANCES ERROR ht.%d\n",bp->bundleheight);
-                    exit(-1);
-                }
-                bp->balancefinish = (uint32_t)time(NULL);
-                printf("GENERATED BALANCES for ht.%d duration %d seconds\n",bp->bundleheight,(uint32_t)starttime - bp->balancefinish);
-                iguana_validateQ(coin,bp);
+                iguana_balancesQ(coin,bp);
+                return(0);
             }
         }
         iguana_bundleQ(coin,bp,1000);
@@ -581,12 +575,12 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     issued = 0;
     max = bp->n;//100 + (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
     iguana_bundlekick(coin,bp,starti,max);
-    if ( coin->numsaved > coin->longestchain*.99 )
+    /*if ( coin->numsaved > coin->longestchain*.99 )
     {
         printf("last percent via hdrsi.%d\n",bp->hdrsi);
         for (r=starti; r<coin->bundlescount; r++)
             iguana_bundlekick(coin,coin->bundles[r],r,coin->bundles[r]->n);
-    }
+    }*/
     endmillis = OS_milliseconds() + timelimit + (rand() % 1000);
     if ( bp->numsaved < bp->n )
         width = 100 + max*100;//sqrt(sqrt(bp->n * (1+bp->numsaved+issued)) * (10+coin->bundlescount-bp->hdrsi));
