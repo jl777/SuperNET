@@ -619,7 +619,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
             bp->emitfinish = 1;
             if ( (lastbp= coin->lastpending) != 0 && lastbp->hdrsi < coin->bundlescount-1 )
                 coin->lastpending = coin->bundles[lastbp->hdrsi + 1];
-            if ( (rand() % 2) == 0 )
+            if ( (rand() % 3) == 0 )
             {
                 if ( coin->MAXBUNDLES > IGUANA_MINPENDBUNDLES )
                     coin->MAXBUNDLES--;
