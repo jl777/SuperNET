@@ -388,6 +388,10 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
         else continue;
         if ( unspentind > 0 && unspentind < spentbp->ramchain.H.data->numunspents )
         {
+            if ( spentbp->ramchain.Uextras == 0 )
+                spentbp->ramchain.Uextras = calloc(sizeof(*spentbp->ramchain.Uextras),spentbp->ramchain.H.data->numunspents);
+            if ( spentbp->ramchain.A == 0 )
+                spentbp->ramchain.A = calloc(sizeof(*spentbp->ramchain.A),spentbp->ramchain.H.data->numpkinds);
             if ( spentbp->ramchain.Uextras == 0 || (A2= spentbp->ramchain.A) == 0 )
             {
                 printf("null ptrs %p %p\n",spentbp->ramchain.Uextras,spentbp->ramchain.A);

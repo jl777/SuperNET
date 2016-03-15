@@ -2372,6 +2372,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         }
         sprintf(dirname,"%s/%s/%d",GLOBALTMPDIR,coin->symbol,bp->bundleheight), OS_portable_rmdir(dirname,1);
         iguana_bundleload(coin,&newchain,bp,0);
+        newchain.A = 0;
     }
     iguana_ramchain_free(dest,0);
     bp->ramchain = newchain;
