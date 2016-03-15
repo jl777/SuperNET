@@ -404,6 +404,7 @@ void iguana_coinflush(struct iguana_info *coin)
         {
             sprintf(fname,"accounts/%s/debits.%d",coin->symbol,bp->bundleheight);
             sprintf(fname2,"accounts/%s/lastspends.%d",coin->symbol,bp->bundleheight);
+            printf("save (%s) and (%s), numpkinds.%d numunspentinds.%d\n",fname,fname2,bp->ramchain.H.data->numpkinds,bp->ramchain.H.data->numunspents);
             if ( (fp= fopen(fname,"wb")) != 0 && (fp2= fopen(fname2,"wb")) != 0 )
             {
                 if ( fwrite(bp->ramchain.A,sizeof(*bp->ramchain.A),bp->ramchain.H.data->numpkinds,fp) == bp->ramchain.H.data->numpkinds )
@@ -532,7 +533,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->myservices = services;
     sprintf(dirname,"accounts/%s",symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"DB/%s",symbol), OS_ensure_directory(dirname);
-    sprintf(dirname,"DB/%s/utxo",symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"DB/%s/spends",symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"DB/%s/vouts",symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"purgeable/%s",symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/%s",GLOBALTMPDIR,symbol), OS_ensure_directory(dirname);

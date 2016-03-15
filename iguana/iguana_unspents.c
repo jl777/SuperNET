@@ -294,7 +294,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
     {
         emitted += emit;
         memset(zero.bytes,0,sizeof(zero));
-        sprintf(dirname,"DB/%s/utxo",coin->symbol);
+        sprintf(dirname,"DB/%s/spends",coin->symbol);
         vcalc_sha256(0,sha256.bytes,(void *)ptr,(int32_t)(sizeof(*ptr) * emit));
         if ( iguana_peerfname(coin,&hdrsi,dirname,fname,0,bp->hashes[0],zero,bp->n) >= 0 )
         {

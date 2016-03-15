@@ -1332,7 +1332,7 @@ void iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *ram
 int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct iguana_bundle *bp)
 {
     int32_t hdrsi; bits256 sha256; char fname[1024],dirname[128]; void *ptr; long filesize; static bits256 zero;
-    sprintf(dirname,"DB/%s/utxo",coin->symbol);
+    sprintf(dirname,"DB/%s/spends",coin->symbol);
     if ( iguana_peerfname(coin,&hdrsi,dirname,fname,0,bp->hashes[0],zero,bp->n) >= 0 )
     {
         if ( (ptr= OS_mapfile(fname,&filesize,0)) != 0 )
