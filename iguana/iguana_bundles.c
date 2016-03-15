@@ -449,7 +449,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
 {
     static uint32_t lastdisp;
     int32_t i,n,m,count,pending,dispflag,numrecv,done,numhashes,numcached,numsaved,numemit;
-    int64_t estsize = 0; struct iguana_bundle *bp,*lastpending = 0,*firstgap = 0; double *sortbuf; struct iguana_peer *addr;
+    int64_t spaceused=0,estsize = 0; struct iguana_bundle *bp,*lastpending = 0,*firstgap = 0; double *sortbuf; struct iguana_peer *addr;
     dispflag = (rand() % 1000) == 0;
     numrecv = numhashes = numcached = numsaved = numemit = done = 0;
     count = coin->bundlescount;
@@ -474,7 +474,8 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             {
                 if ( firstgap == 0 )
                     firstgap = lastpending = bp;
-                else if ( ++pending == coin->MAXBUNDLES )
+                spaceused += bp->datasize;
+                if ( lastpending == 0 && spaceused > coin->MAXMEM )
                     lastpending = bp;
                 sortbuf[m*2] = bp->metric;
                 sortbuf[m*2 + 1] = i;
@@ -511,7 +512,9 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     if ( lastpending != 0 )
         coin->lastpending = lastpending;
     coin->numsaved = numsaved;
-    sprintf(str,"%d 1st.%d-%d N[%d] Q.%d h.%d r.%d c.%d:%d:%d s.%d d.%d E.%d:%d M.%d L.%d est.%d %s %d:%02d:%02d %03.3f peers.%d/%d Q.(%d %d)",firstgap!=0?firstgap->numsaved:0,firstgap!=0?firstgap->hdrsi:0,lastpending!=0?lastpending->hdrsi:0,count,coin->numbundlesQ,numhashes,coin->blocksrecv,coin->numcached,numcached,coin->cachefreed,numsaved,done,numemit,coin->numreqsent,coin->blocks.hwmchain.height,coin->longestchain,coin->MAXBUNDLES,mbstr(str2,estsize),(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,difft.millis,p,coin->MAXPEERS,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
+    coin->spaceused = spaceused;
+    char str4[65];
+    sprintf(str,"%d 1st.%d-%d N[%d] Q.%d h.%d r.%d c.%s s.%d d.%d E.%d:%d M.%d L.%d est.%d %s %d:%02d:%02d %03.3f peers.%d/%d Q.(%d %d)",firstgap!=0?firstgap->numsaved:0,firstgap!=0?firstgap->hdrsi:0,lastpending!=0?lastpending->hdrsi:0,count,coin->numbundlesQ,numhashes,coin->blocksrecv,mbstr(str4,spaceused),numsaved,done,numemit,coin->numreqsent,coin->blocks.hwmchain.height,coin->longestchain,coin->MAXBUNDLES,mbstr(str2,estsize),(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,difft.millis,p,coin->MAXPEERS,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
     //sprintf(str+strlen(str),"%s.%-2d %s time %.2f files.%d Q.%d %d\n",coin->symbol,flag,str,(double)(time(NULL)-coin->starttime)/60.,coin->peers.numfiles,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
     if ( time(NULL) > lastdisp+10 )
     {

@@ -39,7 +39,7 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_MAXPENDHDRS 1
 #define _IGUANA_MAXPENDING 3
 #define IGUANA_MINPENDBUNDLES 16
-#define IGUANA_MAXPENDBUNDLES 128
+#define IGUANA_MAXPENDBUNDLES 64
 #define IGUANA_BUNDLELOOP 7777
 #define IGUANA_RPCPORT 7778
 #define IGUANA_MAXRAMCHAINSIZE ((uint64_t)1024L * 1024L * 1024L * 16)
@@ -474,7 +474,7 @@ struct iguana_info
     struct iguana_bundle *bundles[IGUANA_MAXBUNDLES],*current,*lastpending;
     int32_t numremain,numpendings,zcount,recvcount,bcount,pcount,lastbundle,numsaved;
     uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ,lastbundleitime;
-    double backstopmillis; bits256 backstophash2;
+    double backstopmillis; bits256 backstophash2; int64_t spaceused;
     int32_t initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,polltimeout,numreqtxids,allhashes; bits256 reqtxids[64];
     void *launched,*started;
     uint64_t bloomsearches,bloomhits,bloomfalse,collisions; uint8_t blockspace[IGUANA_MAXPACKETSIZE + 8192]; struct OS_memspace blockMEM;
