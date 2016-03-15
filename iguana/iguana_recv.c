@@ -1339,7 +1339,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                 next = 0;
             }
         }
-        else if ( bits256_nonz(bp->hashes[bundlei]) != 0 )
+        else if ( bp != 0 && bits256_nonz(bp->hashes[bundlei]) != 0 )
             iguana_blockQ(coin,bp,bundlei,bp->hashes[bundlei],0);
         if ( next != 0 )
         {

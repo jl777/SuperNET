@@ -276,7 +276,7 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                                 //if ( bp->hdrsi == 0 || coin->bundles[bp->hdrsi-1]->emitfinish != 0 )
                                 {
                                     //bp->startutxo = (uint32_t)time(NULL);
-                                    printf("GENERATE UTXO, verify sigs, etc for ht.%d\n",bp->bundleheight);
+                                    //printf("GENERATE UTXO, verify sigs, etc for ht.%d\n",bp->bundleheight);
                                     iguana_bundleQ(coin,bp,1000);
                                 }
                             }
