@@ -97,6 +97,7 @@ void iguana_recvalloc(struct iguana_info *coin,int32_t numitems)
 {
     //coin->blocks.ptrs = myrealloc('W',coin->blocks.ptrs,coin->blocks.ptrs==0?0:coin->blocks.maxbits * sizeof(*coin->blocks.ptrs),numitems * sizeof(*coin->blocks.ptrs));
     coin->blocks.RO = myrealloc('W',coin->blocks.RO,coin->blocks.RO==0?0:coin->blocks.maxbits * sizeof(*coin->blocks.RO),numitems * sizeof(*coin->blocks.RO));
+    coin->utxobits = myrealloc('u',coin->utxobits,coin->utxobits==0?0:coin->blocks.maxbits/8+1,numitems/8+1);
     printf("realloc waitingbits.%d -> %d\n",coin->blocks.maxbits,numitems);
     coin->blocks.maxbits = numitems;
 }

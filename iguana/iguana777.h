@@ -38,7 +38,7 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_TAILPERCENTAGE 1.0
 #define IGUANA_MAXPENDHDRS 1
 #define _IGUANA_MAXPENDING 7
-#define IGUANA_MINPENDBUNDLES 32
+#define IGUANA_MINPENDBUNDLES 50
 #define IGUANA_MAXPENDBUNDLES 64
 #define IGUANA_BUNDLELOOP 10000
 #define IGUANA_RPCPORT 7778
@@ -476,7 +476,7 @@ struct iguana_info
     uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ,lastbundleitime;
     double backstopmillis; bits256 backstophash2; int64_t spaceused;
     int32_t initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,polltimeout,numreqtxids,allhashes; bits256 reqtxids[64];
-    void *launched,*started;
+    void *launched,*started; uint8_t *utxobits;
     uint64_t bloomsearches,bloomhits,bloomfalse,collisions; uint8_t blockspace[IGUANA_MAXPACKETSIZE + 8192]; struct OS_memspace blockMEM;
     struct iguana_blocks blocks; bits256 APIblockhash,APItxid; char *APIblockstr;
     struct iguana_waccount *wallet;
