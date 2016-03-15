@@ -431,8 +431,8 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
                     //printf("bundleQ issue %d %x %d [%d:%d] numsaved.%d\n",block->RO.recvlen,block->fpipbits,block->fpos,bp->hdrsi,i,bp->numsaved);
                     if ( bp->hdrsi == starti )
                     {
-                        if ( coin->peers.ranked[0] != 0 )
-                            iguana_sendblockreqPT(coin,coin->peers.ranked[0],bp,i,block->RO.hash2,0);
+                        //if ( coin->peers.ranked[0] != 0 )
+                        //    iguana_sendblockreqPT(coin,coin->peers.ranked[0],bp,i,block->RO.hash2,0);
                         iguana_blockQ(coin,bp,i,block->RO.hash2,1);
                     } else iguana_blockQ(coin,bp,i,block->RO.hash2,0);
                     bp->issued[i] = block->issued = now;
@@ -608,7 +608,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                         block->fpipbits = 0;
                         block->issued = 0;
                         bp->issued[i] = 0;
-                        iguana_blockQ(coin,bp,i,block->RO.hash2,bp == currentbp);
+                        iguana_blockQ(coin,bp,i,block->RO.hash2,0);
                         iguana_bundleQ(coin,bp,counter == 0 ? bp->n*5 : bp->n*2);
                         return(0);
                     }
