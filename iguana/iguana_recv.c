@@ -423,9 +423,9 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
     {
         if ( (block= bp->blocks[i]) != 0 )
         {
-            if ( block->fpipbits == 0 )//|| block->RO.recvlen == 0 )
+            if ( block->fpipbits == 0 || block->RO.recvlen == 0 )
             {
-                if ( bp->numsaved > bp->n*.95 || block->issued == 0 || now > block->issued+60 )
+                if ( block->issued == 0 || now > block->issued+60 )
                 {
                     block->numrequests++;
                     if ( bp->hdrsi == starti )
@@ -434,8 +434,7 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
                         if ( coin->peers.ranked[0] != 0 )
                             iguana_sendblockreqPT(coin,coin->peers.ranked[0],bp,i,block->RO.hash2,0);
                         iguana_blockQ(coin,bp,i,block->RO.hash2,1);
-                    }
-                    iguana_blockQ(coin,bp,i,block->RO.hash2,0);
+                    } else iguana_blockQ(coin,bp,i,block->RO.hash2,0);
                     bp->issued[i] = block->issued = now;
                     counter++;
                     if ( --max <= 0 )
@@ -453,7 +452,7 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
 
 int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
 {
-    int32_t i,r,range,starti,lasti,numhashes,issued,valid,max,counter = 0; struct iguana_block *block; double endmillis,width; struct iguana_bundle *prevbp,*currentbp,*lastbp; uint32_t starttime;
+    int32_t i,r,range,starti,pend,better,lasti,numhashes,issued,valid,max,counter = 0; struct iguana_block *block; double endmillis,width; struct iguana_bundle *prevbp,*currentbp,*lastbp; uint32_t starttime;
     if ( (range= coin->peers.numranked) > coin->MAXBUNDLES )
         range = coin->MAXBUNDLES;
     currentbp = coin->current;
@@ -559,40 +558,34 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         iguana_bundleQ(coin,bp,1000);
         return(0);
     }
-        //printf("initial requests for hdrs.%d\n",bp->hdrsi);
-    /*pend = queue_size(&coin->priorityQ) + queue_size(&coin->blocksQ);
-    for (i=0; i<IGUANA_MAXPEERS; i++)
-        pend += coin->peers.active[i].pendblocks;
-    if ( pend >= coin->MAXPENDING*coin->peers.numranked )
+    if ( bp != currentbp )
     {
-        for (i=better=0; i<coin->bundlescount; i++)
-            if ( coin->bundles[i] != 0 && coin->bundles[i]->numsaved > bp->numsaved )
-                better++;
-        if ( better > coin->peers.numranked )
+        //printf("initial requests for hdrs.%d\n",bp->hdrsi);
+        pend = queue_size(&coin->priorityQ) + queue_size(&coin->blocksQ);
+        for (i=0; i<IGUANA_MAXPEERS; i++)
+            pend += coin->peers.active[i].pendblocks;
+        if ( pend >= coin->MAXPENDING*coin->peers.numranked )
         {
-            usleep(10000);
-            //printf("SKIP pend.%d vs %d: better.%d ITERATE bundle.%d n.%d r.%d s.%d finished.%d timelimit.%d\n",pend,coin->MAXPENDING*coin->peers.numranked,better,bp->bundleheight,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit);
-            iguana_bundleQ(coin,bp,counter == 0 ? bp->n*5 : bp->n*2);
-            return(0);
+            for (i=better=0; i<coin->bundlescount; i++)
+                if ( coin->bundles[i] != 0 && coin->bundles[i]->numsaved > bp->numsaved )
+                    better++;
+            if ( better > coin->peers.numranked )
+            {
+                usleep(10000);
+                //printf("SKIP pend.%d vs %d: better.%d ITERATE bundle.%d n.%d r.%d s.%d finished.%d timelimit.%d\n",pend,coin->MAXPENDING*coin->peers.numranked,better,bp->bundleheight,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit);
+                iguana_bundleQ(coin,bp,counter == 0 ? bp->n*5 : bp->n*2);
+                return(0);
+            }
         }
     }
-    max = 1 + ((coin->MAXPENDING*coin->MAXPEERS - pend) >> 1);*/
     issued = 0;
     max = 100 + (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
     iguana_bundlekick(coin,bp,starti,max);
-    if ( 0 && currentbp != 0 && queue_size(&coin->blocksQ) == 0 )
-        iguana_bundlekick(coin,currentbp,starti,max);
     if ( coin->numsaved > coin->longestchain*.99 )
     {
         printf("last percent via hdrsi.%d\n",bp->hdrsi);
         for (r=starti; r<coin->bundlescount; r++)
             iguana_bundlekick(coin,coin->bundles[r],r,coin->bundles[r]->n);
-    }
-    else if ( 0 )
-    {
-        r = (rand() % 7);
-        if ( starti+r < coin->bundlescount && coin->bundles[starti+r] != 0 )
-            iguana_bundlekick(coin,coin->bundles[starti+r],starti+r,coin->bundles[starti+r]->n);
     }
     endmillis = OS_milliseconds() + timelimit + (rand() % 1000);
     if ( bp->numsaved < bp->n )

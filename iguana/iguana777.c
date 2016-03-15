@@ -376,8 +376,8 @@ void iguana_helper(void *arg)
             }
         }
         if ( flag == 0 )
-            usleep(500000);
-        else usleep(5000);
+            usleep(1000000);
+        else usleep(100000);
     }
 }
 
