@@ -460,6 +460,7 @@ void iguana_coinloop(void *arg)
                 {
                     if ( coin->isRT == 0 && now > coin->startutc+600 && coin->blocksrecv >= (coin->longestchain/coin->chain->bundlesize)*coin->chain->bundlesize && coin->blocks.hwmchain.height >= coin->longestchain-30 )
                     {
+                        iguana_coinflush(coin);
                         fprintf(stderr,">>>>>>> %s isRT blockrecv.%d vs longest.%d\n",coin->symbol,coin->blocksrecv,coin->longestchain);
                         coin->isRT = 1;
                         if ( coin->polltimeout > 100 )
