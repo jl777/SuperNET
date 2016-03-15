@@ -475,11 +475,8 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             {
                 if ( firstgap == 0 )
                     firstgap = lastpending = bp;
-                else if ( ++pending == coin->MAXPENDING )
-                {
+                else if ( ++pending == coin->MAXBUNDLES )
                     lastpending = bp;
-                    printf("pending.%d == MAX.%d hdrsi.%d\n",pending,coin->MAXPENDING,bp->hdrsi);
-                }
                 sortbuf[m*2] = bp->metric;
                 sortbuf[m*2 + 1] = i;
                 m++;
