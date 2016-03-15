@@ -405,9 +405,9 @@ void iguana_bundlespeculate(struct iguana_info *coin,struct iguana_bundle *bp,in
     else if ( bp->speculative != 0 && bundlei < bp->numspec && memcmp(hash2.bytes,bp->speculative[bundlei].bytes,sizeof(hash2)) == 0 )
     {
         bundlei += offset;
-        //char str[65]; printf("speculative req[%d] %s\n",bundlei,bits256_str(str,bp->speculative[bundlei]));
         if ( bundlei < bp->n && bundlei < bp->numspec )
         {
+            char str[65]; printf("speculative req[%d] %s\n",bundlei,bits256_str(str,bp->speculative[bundlei]));
             iguana_blockQ(coin,0,-1,bp->speculative[bundlei],0);
         }
     } //else printf("speculative.%p %d vs %d cmp.%d\n",bp->speculative,bundlei,bp->numspec,bp->speculative!=0?memcmp(hash2.bytes,bp->speculative[bundlei].bytes,sizeof(hash2)):-1);
@@ -428,9 +428,9 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
                 if ( block->issued == 0 || now > block->issued+60 )
                 {
                     block->numrequests++;
+                    printf("bundleQ issue %d %x %d [%d:%d] numsaved.%d\n",block->RO.recvlen,block->fpipbits,block->fpos,bp->hdrsi,i,bp->numsaved);
                     if ( bp->hdrsi == starti )
                     {
-                        //printf("bundleQ issue %d %x %d [%d:%d] numsaved.%d\n",block->RO.recvlen,block->fpipbits,block->fpos,bp->hdrsi,i,bp->numsaved);
                         if ( coin->peers.ranked[0] != 0 )
                             iguana_sendblockreqPT(coin,coin->peers.ranked[0],bp,i,block->RO.hash2,0);
                         iguana_blockQ(coin,bp,i,block->RO.hash2,1);
@@ -541,7 +541,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         return(0);
     }
     //printf("BUNDLEITERS.%d\n",bp->hdrsi);
-    if ( bp->hdrsi <= lasti && coin->lastpending != 0 )
+    if ( bp->hdrsi <= starti+coin->MAXBUNDLES && coin->lastpending != 0 )
     {
         for (i=0; i<bp->n; i++)
         {
@@ -1159,7 +1159,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                     }
                     if ( bp == 0 || z != 0 )
                     {
-                        printf("%s request HDR.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp!=0?bp->numhashes:0);
+                        //printf("%s request HDR.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp!=0?bp->numhashes:0);
                         iguana_send(coin,addr,serialized,datalen);
                         addr->pendhdrs++;
                         flag++;
