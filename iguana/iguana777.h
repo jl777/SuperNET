@@ -338,9 +338,10 @@ struct iguana_pkhash { uint8_t rmd160[20]; uint32_t pkind; } __attribute__((pack
 
 // dynamic
 struct iguana_account { int64_t total; uint32_t lastind; } __attribute__((packed));
+struct iguana_utxo { uint32_t prevspendind,height:31,spentflag:1; } __attribute__((packed));
 
 // GLOBAL one zero to non-zero write (unless reorg)
-struct iguana_bundleind { uint32_t ind; uint16_t hdrsi; } __attribute__((packed)); // unspentind
+struct iguana_spendvector { uint32_t ind,height; uint16_t hdrsi; } __attribute__((packed)); // unspentind
 //struct iguana_pkextra { uint32_t firstspendind; } __attribute__((packed)); // pkind
 
 struct iguana_txblock
@@ -374,7 +375,7 @@ struct iguana_ramchain
     uint32_t numblocks:31,expanded:1,pkind,externalind,height,numXspends;
     struct iguana_kvitem *txids,*pkhashes;
     struct OS_memspace *hashmem; long filesize,sigsfilesize; void *fileptr,*sigsfileptr,*Xspendptr;
-    struct iguana_account *A,*creditsA; struct iguana_bundleind *Xspendinds; uint32_t *Uextras;
+    struct iguana_account *A,*creditsA; struct iguana_spendvector *Xspendinds; struct iguana_utxo *Uextras;
 //struct iguana_Uextra *U2,*roU2; struct iguana_pkextra *P2,*roP2;
 };
 
