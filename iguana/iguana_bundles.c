@@ -533,7 +533,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                             bp->numcached++;
                     }
                 }
-                else
+                else if ( 0 )
                 {
                     printf("clear block?\n");
                     block->RO.recvlen = 0;
