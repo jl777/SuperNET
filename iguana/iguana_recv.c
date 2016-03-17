@@ -460,12 +460,12 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
     }
     if ( minblock != 0 )
     {
-        issued++;
+        counter++;
         minblock->numrequests++;
         iguana_blockQ("kick",coin,bp,mini,minblock->RO.hash2,0);
         bp->issued[i] = minblock->issued = now;
     }
-    return(issued);
+    return(counter);
 }
 
 int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
