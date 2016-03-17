@@ -643,7 +643,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     struct iguana_bundle *bp=0; int32_t bundlei = -2; struct iguana_block *block;
     bp = iguana_bundleset(coin,&block,&bundlei,origblock);
     char str[65];
-    if ( 1 && bp == coin->current )
+    //if ( 1 && bp == coin->current )
         fprintf(stderr,"blockRECV.%d %s [%d:%d] block.%08x | h.%d\n",req->numtx,bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,bp!=0?bp->numhashes:-1);
     if ( bundlei == 1 && bp != 0 && bp->numhashes < bp->n )
     {
@@ -779,10 +779,11 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
         }
         else if ( bp != 0 && bits256_nonz(bp->hashes[bundlei]) == 0 && time(NULL) > bp->issued[bundlei]+60 )
         {
-            if ( bundlei < bp->n-1 && bits256_nonz(bp->hashes[bundlei+1]) != 0 )
+            if ( bundlei > 0 && bits256_nonz(bp->hashes[bundlei+1]) != 0 )
             {
                 if ( (block= iguana_blockfind(coin,bp->hashes[bundlei+1])) != 0 && bits256_nonz(block->RO.prev_block) != 0 )
                 {
+                    bp->hashes[bundlei] = block->RO.prev_block;
                     printf("reqblock [%d:%d]\n",bp->hdrsi,bundlei);
                     iguana_blockQ("reqblocks1",coin,bp,bundlei,bp->hashes[bundlei],0);
                 }

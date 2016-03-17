@@ -310,6 +310,8 @@ int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *m
     {
         if ( (bp= ptr->bp) != 0 )
         {
+            if ( time(NULL) > bp->nexttime )
+                return(0);
             if ( 0 && ptr->type == 'M' )
             {
                 if ( (nextbp= ptr->nextbp) != 0 )

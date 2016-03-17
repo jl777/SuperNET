@@ -391,6 +391,8 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     }
     for (i=counter=0; i<bp->n; i++)
     {
+        if ( bp != coin->current )
+            break;
         if ( (block= bp->blocks[i]) != 0 )
         {
             if ( block->fpipbits == 0 || block->RO.recvlen == 0 )
@@ -398,6 +400,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                 if ( block->issued == 0 || now > block->issued+60 )
                 {
                     block->numrequests++;
+                    printf("kick [%d:%d]\n",bp->hdrsi,i);
                     iguana_blockQ("kick",coin,bp,i,block->RO.hash2,0);
                     bp->issued[i] = block->issued = now;
                     counter++;
