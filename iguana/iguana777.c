@@ -372,15 +372,7 @@ void iguana_helper(void *arg)
     {
         //iguana_jsonQ();
         flag = 0;
-        if ( (ptr= queue_dequeue(&validateQ,0)) != 0 )
-        {
-            if ( ptr->bp != 0 && ptr->coin != 0 )
-                flag += iguana_bundlevalidate(ptr->coin,ptr->bp);
-            else printf("helper validate missing param? %p %p\n",ptr->coin,ptr->bp);
-            myfree(ptr,ptr->allocsize);
-            flag++;
-        }
-        else if ( (ptr= queue_dequeue(&emitQ,0)) != 0 || (ptr= queue_dequeue(&helperQ,0)) != 0 )
+        if ( (ptr= queue_dequeue(&emitQ,0)) != 0 || (ptr= queue_dequeue(&helperQ,0)) != 0 )
         {
             if ( ptr->bp != 0 && (coin= ptr->coin) != 0 )
             {
@@ -407,6 +399,17 @@ void iguana_helper(void *arg)
             if ( ptr->bp != 0 && ptr->coin != 0 )
                 iguana_balancecalc(ptr->coin,ptr->bp);
             myfree(ptr,ptr->allocsize);
+        }
+        else
+        {
+            if ( (ptr= queue_dequeue(&validateQ,0)) != 0 )
+            {
+                if ( ptr->bp != 0 && ptr->coin != 0 )
+                    flag += iguana_bundlevalidate(ptr->coin,ptr->bp);
+                else printf("helper validate missing param? %p %p\n",ptr->coin,ptr->bp);
+                myfree(ptr,ptr->allocsize);
+                flag++;
+            }
         }
         if ( flag == 0 )
             usleep(1000000);

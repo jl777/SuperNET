@@ -439,6 +439,8 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
     if ( emit != ramchain->numXspends )
         errs++;
     printf(">>>>>>>> balances.%d done errs.%d spendind.%d\n",bp->hdrsi,errs,n);
+    if ( errs == 0 )
+        bp->validated = (uint32_t)time(NULL);
     return(-errs);
 }
 
