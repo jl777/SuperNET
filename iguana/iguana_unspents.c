@@ -416,10 +416,11 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
                         A2[pkind].lastind = spendind;
                         spentbp->dirty = now;
                     }
-                    else
+                    else if ( spentbp->ramchain.Uextras[unspentind] != ((1 << 31) | (A2[pkind].lastind & 0x7fffffff)) )
                     {
                         errs++;
-                        printf("iguana_balancegen: double spend of hdrsi.%d unspentind.%d\n",spentbp->hdrsi,unspentind);
+                        printf("iguana_balancegen: pkind.%d double spend of hdrsi.%d unspentind.%d %x vs %x\n",pkind,spentbp->hdrsi,unspentind,spentbp->ramchain.Uextras[unspentind],(1 << 31) | (A2[pkind].lastind & 0x7fffffff));
+                        getchar();
                     }
                 }
                 else

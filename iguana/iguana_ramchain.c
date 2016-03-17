@@ -1303,22 +1303,29 @@ void iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *ram
         }
         else
         {
-            if ( extraflag == 2 )
+            if ( 1 && extraflag == 2 )
             {
                 sprintf(fname,"accounts/%s/debits.%d",coin->symbol,ramchain->H.data->height);
-                ramchain->A = OS_filestr(&filesize,fname);
-                if ( filesize != sizeof(*ramchain->A)*ramchain->H.data->numpkinds )
-                    printf("%s unexpected filesize %ld vs %ld\n",fname,filesize,sizeof(*ramchain->A)*ramchain->H.data->numpkinds);
+                //ramchain->A = OS_filestr(&filesize,fname);
+                //if ( filesize != sizeof(*ramchain->A)*ramchain->H.data->numpkinds )
+               //     printf("%s unexpected filesize %ld vs %ld\n",fname,filesize,sizeof(*ramchain->A)*ramchain->H.data->numpkinds);
                 sprintf(fname,"accounts/%s/lastspends.%d",coin->symbol,ramchain->H.data->height);
-                ramchain->Uextras = OS_filestr(&filesize,fname);
-                if ( filesize != sizeof(*ramchain->Uextras)*ramchain->H.data->numpkinds )
-                    printf("%s unexpected filesize %ld vs %ld\n",fname,filesize,sizeof(*ramchain->Uextras)*ramchain->H.data->numpkinds);
+                //ramchain->Uextras = OS_filestr(&filesize,fname);
+                //if ( filesize != sizeof(*ramchain->Uextras)*ramchain->H.data->numpkinds )
+                //    printf("%s unexpected filesize %ld vs %ld\n",fname,filesize,sizeof(*ramchain->Uextras)*ramchain->H.data->numpkinds);
+                //if ( ramchain->A == 0 )
+                    ramchain->A = myaligned_alloc(sizeof(*ramchain->A) * ramchain->H.data->numpkinds);
+                //if ( ramchain->Uextras == 0 )
+                    ramchain->Uextras = myaligned_alloc(sizeof(*ramchain->Uextras) * ramchain->H.data->numunspents);
             }
-            if ( ramchain->A == 0 )
-                ramchain->A = mycalloc('g',sizeof(*ramchain->A),ramchain->H.data->numpkinds);
-            if ( ramchain->Uextras == 0 )
-                ramchain->Uextras = mycalloc('x',sizeof(*ramchain->Uextras),ramchain->H.data->numunspents);
-            printf("ALLOC RAMCHAIN A.%p Uextras.%p\n",ramchain->A,ramchain->Uextras);
+            else
+            {
+            //if ( ramchain->A == 0 )
+                ramchain->A = myaligned_alloc(sizeof(*ramchain->A) * ramchain->H.data->numpkinds);
+            //if ( ramchain->Uextras == 0 )
+                ramchain->Uextras = myaligned_alloc(sizeof(*ramchain->Uextras) * ramchain->H.data->numunspents);
+            }
+            printf("ALLOC RAMCHAIN A.%p Uextras.%p | extraflag.%d hashmem.%p\n",ramchain->A,ramchain->Uextras,extraflag,ramchain->hashmem);
         }
         //printf("hashmem.%p A allocated.%p numpkinds.%d %ld\n",hashmem,ramchain->A,ramchain->H.data->numpkinds,sizeof(struct iguana_account)*ramchain->H.data->numpkinds);
         //ramchain->P2 = (hashmem != 0) ? iguana_memalloc(hashmem,sizeof(struct iguana_pkextra) * ramchain->H.data->numpkinds,1) : mycalloc('2',ramchain->H.data->numpkinds,sizeof(struct iguana_pkextra));
