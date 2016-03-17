@@ -324,13 +324,24 @@ void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func
 
 void mainloop(struct supernet_info *myinfo)
 {
-    int32_t i,flag; struct iguana_info *coin; struct iguana_bundle *bp;
+    int32_t i,flag; struct iguana_info *coin; struct iguana_bundle *bp; struct iguana_helper *ptr;
     while ( 1 )
     {
         flag = 0;
         for (i=0; i<IGUANA_MAXCOINS; i++)
             if ( (coin= Coins[i]) != 0 && coin->active != 0 && (bp= coin->current) != 0 )
+            {
                 iguana_bundlekick(coin,bp,bp->hdrsi,bp->n);
+                if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
+                {
+                    if ( ptr->bp != 0 && ptr->coin != 0 )
+                    {
+                        iguana_balancecalc(ptr->coin,ptr->bp);
+                        iguana_coinflush(ptr->coin);
+                    }
+                    myfree(ptr,ptr->allocsize);
+                }
+            }
         iguana_jsonQ();
         if ( flag == 0 )
         {

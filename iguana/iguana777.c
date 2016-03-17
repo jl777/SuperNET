@@ -371,14 +371,7 @@ void iguana_helper(void *arg)
     {
         //iguana_jsonQ();
         flag = 0;
-        if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
-        {
-            flag++;
-            if ( ptr->bp != 0 && ptr->coin != 0 )
-                iguana_balancecalc(ptr->coin,ptr->bp);
-            myfree(ptr,ptr->allocsize);
-        }
-        else if ( (ptr= queue_dequeue(&emitQ,0)) != 0 || (ptr= queue_dequeue(&helperQ,0)) != 0 )
+        if ( (ptr= queue_dequeue(&emitQ,0)) != 0 || (ptr= queue_dequeue(&helperQ,0)) != 0 )
         {
             if ( ptr->bp != 0 && (coin= ptr->coin) != 0 )
             {
@@ -418,7 +411,12 @@ void iguana_helper(void *arg)
 
 void iguana_coinflush(struct iguana_info *coin)
 {
-    int32_t hdrsi; struct iguana_bundle *bp; char fname[1024],fname2[1024]; FILE *fp,*fp2=0;
+    int32_t hdrsi,blen; struct iguana_bundle *bp; char fname[1024],fname2[1024]; FILE *fp,*fp2=0;
+    memset(coin->bundlebits,0,sizeof(coin->bundlebits));
+    for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
+        if ( (bp= coin->bundles[hdrsi]) != 0 && bp->validated != 0 )
+            SETBIT(coin->bundlebits,hdrsi);
+    blen = (int32_t)hconv_bitlen(coin->bundlescount);
     for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
     {
         if ( (bp= coin->bundles[hdrsi]) != 0 && bp->dirty != 0 && time(NULL) > bp->dirty+60 && bp->ramchain.H.data != 0 && bp->ramchain.A != 0 && bp->ramchain.Uextras != 0 )
@@ -428,15 +426,20 @@ void iguana_coinflush(struct iguana_info *coin)
             printf("save (%s) and (%s) %p %p\n",fname,fname2,bp,bp->ramchain.H.data);//,bp->ramchain.H.data->numpkinds,bp->ramchain.H.data->numunspents);
             if ( (fp= fopen(fname,"wb")) != 0 && (fp2= fopen(fname2,"wb")) != 0 )
             {
-                if ( fwrite(bp->ramchain.A,sizeof(*bp->ramchain.A),bp->ramchain.H.data->numpkinds,fp) == bp->ramchain.H.data->numpkinds )
+                if ( fwrite(coin->bundlebits,1,blen,fp) == blen && fwrite(coin->bundlebits,1,blen,fp2) == blen )
                 {
-                    if ( fwrite(bp->ramchain.Uextras,sizeof(*bp->ramchain.Uextras),bp->ramchain.H.data->numunspents,fp2) == bp->ramchain.H.data->numunspents )
+                    if ( fwrite(bp->ramchain.A,sizeof(*bp->ramchain.A),bp->ramchain.H.data->numpkinds,fp) == bp->ramchain.H.data->numpkinds )
                     {
-                        bp->dirty = 0;
-                        printf("saved (%s) and (%s)\n",fname,fname2);
+                        if ( fwrite(bp->ramchain.Uextras,sizeof(*bp->ramchain.Uextras),bp->ramchain.H.data->numunspents,fp2) == bp->ramchain.H.data->numunspents )
+                        {
+                            bp->dirty = 0;
+                            printf("saved (%s) and (%s)\n",fname,fname2);
+                        }
                     }
                 }
                 fclose(fp), fclose(fp2);
+                if ( bp->dirty != 0 )
+                    printf("error writing %s\n",fname);
             }
             else if ( fp != 0 )
                 fclose(fp);
@@ -488,7 +491,7 @@ void iguana_coinloop(void *arg)
                         coin->MAXPEERS = 8;
                     }
                     //if ( coin->isRT != 0 )
-                        iguana_coinflush(coin);
+                    //    iguana_coinflush(coin);
                     if ( coin->bindsock >= 0 )
                     {
                         if ( coin->peers.numranked < 8 && now > coin->lastpossible+60 )

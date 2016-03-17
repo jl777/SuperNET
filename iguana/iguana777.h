@@ -47,7 +47,7 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_MAPHASHTABLES 1
 #define IGUANA_DEFAULTRAM 4
 #define IGUANA_MAXRECVCACHE ((int64_t)1024L * 1024 * 1024L)
-#define IGUANA_MAXBUNDLES (5000000 / 500)
+#define IGUANA_MAXBUNDLES (50000000 / 500)
 #define IGUANA_LOG2MAXPEERS 9
 #define IGUANA_LOG2PACKETSIZE 21
 #define IGUANA_LOG2PEERFILESIZE 23
@@ -478,7 +478,7 @@ struct iguana_info
     double backstopmillis; bits256 backstophash2; int64_t spaceused;
     int32_t initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,polltimeout,numreqtxids,allhashes; bits256 reqtxids[64];
     void *launched,*started;
-    uint64_t bloomsearches,bloomhits,bloomfalse,collisions; uint8_t blockspace[IGUANA_MAXPACKETSIZE + 8192]; struct OS_memspace blockMEM;
+    uint64_t bloomsearches,bloomhits,bloomfalse,collisions; uint8_t blockspace[IGUANA_MAXPACKETSIZE + 8192],bundlebits[IGUANA_MAXBUNDLES/8+1]; struct OS_memspace blockMEM;
     struct iguana_blocks blocks; bits256 APIblockhash,APItxid; char *APIblockstr;
     struct iguana_waccount *wallet;
 };
@@ -796,6 +796,7 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
 void iguana_balancesQ(struct iguana_info *coin,struct iguana_bundle *bp);
 void iguana_coinflush(struct iguana_info *coin);
 int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int32_t starti,int32_t max);
+void iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp);
 
 extern queue_t bundlesQ,validateQ,emitQ,balancesQ;
 extern char GLOBALTMPDIR[];
