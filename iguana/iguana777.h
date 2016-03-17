@@ -649,7 +649,7 @@ int32_t iguana_ramchainfree(struct iguana_info *coin,struct OS_memspace *mem,str
 struct iguana_ramchain *iguana_ramchainmergeHT(struct iguana_info *coin,struct OS_memspace *mem,struct iguana_ramchain *ramchains[],int32_t n,struct iguana_bundle *bp);
 void iguana_ramchainmerge(struct iguana_info *coin);
 
-int32_t iguana_blockQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2,int32_t priority);
+int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2,int32_t priority);
 void iguana_blockcopy(struct iguana_info *coin,struct iguana_block *block,struct iguana_block *origblock);
 int32_t iguana_rpctest(struct iguana_info *coin);
 extern queue_t helperQ;

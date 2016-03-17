@@ -302,7 +302,7 @@ struct iguana_bundle *iguana_bundlecreate(struct iguana_info *coin,int32_t *bund
             iguana_bundlehash2add(coin,0,bp,0,bundlehash2);
             if ( issueflag != 0 )
             {
-                iguana_blockQ(coin,bp,0,bundlehash2,1);
+                iguana_blockQ("bundlecreate",coin,bp,0,bundlehash2,1);
                 queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(str),1);
             }
             coin->bundlescount++;

@@ -285,7 +285,7 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                                 char str[65];
                                 init_hexbytes_noT(str,hash2.bytes,sizeof(hash2));
                                 bp->emitfinish = 0;
-                                iguana_blockQ(coin,bp,0,hash2,1);
+                                iguana_blockQ("init",coin,bp,0,hash2,1);
                                 //printf("init reqhdrs.%d\n",bp->bundleheight);
                                 queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(str),1);
                             }
