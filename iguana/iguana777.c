@@ -496,10 +496,15 @@ void iguana_coinloop(void *arg)
                     {
                         fprintf(stderr,">>>>>>> %s isRT blockrecv.%d vs longest.%d\n",coin->symbol,coin->blocksrecv,coin->longestchain);
                         coin->isRT = 1;
-                        iguana_coinflush(coin,1);
                         if ( coin->polltimeout > 100 )
                             coin->polltimeout = 100;
                         coin->MAXPEERS = 8;
+                    }
+                    if ( coin->isRT != 0 && coin->numverified >= coin->bundlescount )
+                    {
+                        static int32_t saved;
+                        if ( saved++ == 0 )
+                            iguana_coinflush(coin,1);
                     }
                     if ( coin->bindsock >= 0 )
                     {
