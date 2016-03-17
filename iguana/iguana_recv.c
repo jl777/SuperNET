@@ -437,16 +437,17 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
     hash2 = origblock->RO.hash2;
     if ( (block= iguana_blockhashset(coin,-1,hash2,1)) != 0 )
     {
-        //fprintf(stderr,"bundleset block.%p vs origblock.%p\n",block,origblock);
+        prevhash2 = origblock->RO.prev_block;
         if ( block != origblock )
         {
             iguana_blockcopy(coin,block,origblock);
             block->fpipbits = origblock->fpipbits;
             block->fpos = origblock->fpos;
+            block->RO.prev_block = prevhash2;
             block->RO.recvlen = origblock->RO.recvlen;
+            fprintf(stderr,"bundleset block.%p vs origblock.%p prev.%d\n",block,origblock,bits256_nonz(prevhash2));
         }
         *blockp = block;
-        prevhash2 = origblock->RO.prev_block;
         //if ( 0 && bits256_nonz(prevhash2) > 0 )
         //    iguana_patch(coin,block);
         if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) != 0 && bundlei < coin->chain->bundlesize )
@@ -646,9 +647,9 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     char str[65];
     //if ( 1 && bp == coin->current )
         fprintf(stderr,"blockRECV %s [%d:%d] block.%08x | h.%d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,bp!=0?bp->numhashes:-1);
-    if ( bundlei == 1 && bp != 0 && bp->numhashes < bp->n )
+    if ( bundlei == 1 && bp != 0 && bp->numhashes < bp->n && strcmp(coin->symbol,"BTC") != 0 )
     {
-        //printf("reissue hdrs request for [%d]\n",bp->hdrsi);
+        printf("reissue hdrs request for [%d]\n",bp->hdrsi);
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
     }
     if ( block != 0 )
