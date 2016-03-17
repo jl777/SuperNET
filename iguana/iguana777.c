@@ -391,7 +391,7 @@ void iguana_helper(void *arg)
             }
             myfree(ptr,ptr->allocsize);
         }
-        /*else if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
+        else if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
         {
             idle = 0;
             if ( ptr->bp != 0 && ptr->coin != 0 )
@@ -399,7 +399,7 @@ void iguana_helper(void *arg)
             else printf("helper missing param? %p %p %u\n",ptr->coin,ptr->bp,ptr->timelimit);
             myfree(ptr,ptr->allocsize);
             flag++;
-        }*/
+        }
         else
         {
             if ( (ptr= queue_dequeue(&validateQ,0)) != 0 )
