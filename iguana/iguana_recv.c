@@ -440,7 +440,7 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
                         iguana_blockQ(coin,bp,i,block->RO.hash2,1);
                     } else*/
                         
-                        iguana_blockQ("kick",coin,bp,i,block->RO.hash2,1);
+                        iguana_blockQ("kick",coin,bp,i,block->RO.hash2,(rand() % 10) == 0);
                     bp->issued[i] = block->issued = now;
                     counter++;
                     if ( --max <= 0 )
@@ -558,11 +558,11 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         iguana_bundleQ(coin,bp,1000);
         return(0);
     }
-    max = bp->n;//sqrt(bp->n) - (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
-    /*if ( max > bp->n )
-        max = bp->n;
+    max = sqrt(bp->n) - (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
+    if ( max > 100 )
+        max = 100;
     else if ( max < 10 )
-        max = 10;*/
+        max = 10;
     if ( bp != currentbp )
     {
         //printf("initial requests for hdrs.%d\n",bp->hdrsi);
