@@ -795,6 +795,7 @@ struct iguana_bloominds iguana_bloomset(struct iguana_info *coin,struct iguana_b
 int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct iguana_bundle *bp);
 void iguana_balancesQ(struct iguana_info *coin,struct iguana_bundle *bp);
 void iguana_coinflush(struct iguana_info *coin);
+int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int32_t starti,int32_t max);
 
 extern queue_t bundlesQ,validateQ,emitQ,balancesQ;
 extern char GLOBALTMPDIR[];

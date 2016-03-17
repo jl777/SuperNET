@@ -554,6 +554,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         iguana_bundleQ(coin,bp,1000);
         return(0);
     }
+    max = bp->n;
     if ( bp != currentbp )
     {
         //printf("initial requests for hdrs.%d\n",bp->hdrsi);
@@ -573,10 +574,10 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                 return(0);
             }
         }
+        iguana_bundlekick(coin,bp,starti,bp->n);
     }
     issued = 0;
-    max = bp->n;//100 + (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
-    iguana_bundlekick(coin,bp,starti,max);
+    //100 + (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
     /*if ( coin->numsaved > coin->longestchain*.99 )
     {
         printf("last percent via hdrsi.%d\n",bp->hdrsi);
