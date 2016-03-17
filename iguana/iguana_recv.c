@@ -644,7 +644,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     bp = iguana_bundleset(coin,&block,&bundlei,origblock);
     char str[65];
     //if ( 1 && bp == coin->current )
-        fprintf(stderr,"blockRECV.%d %s [%d:%d] block.%08x | h.%d\n",req->numtx,bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,bp!=0?bp->numhashes:-1);
+        fprintf(stderr,"blockRECV %s [%d:%d] block.%08x | h.%d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,bp!=0?bp->numhashes:-1);
     if ( bundlei == 1 && bp != 0 && bp->numhashes < bp->n )
     {
         //printf("reissue hdrs request for [%d]\n",bp->hdrsi);
@@ -956,7 +956,7 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
         }
         if ( block != 0 )
         {
-            if ( bits256_cmp(coin->APIblockhash,hash2) != 0 && (block->fpipbits != 0 || block->queued != 0 || block->RO.recvlen != 0) )
+            if ( bits256_cmp(coin->APIblockhash,hash2) != 0 && block->fpipbits != 0 && block->fpos >= 0 )
                 return(0);
             height = block->height;
         }
