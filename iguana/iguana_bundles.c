@@ -372,11 +372,11 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     now = (uint32_t)time(NULL);
     if ( bp == coin->current )
     {
-        if ( time(NULL) > bp->lastspeculative+60 )
+        if ( 0 && time(NULL) > bp->lastspeculative+60 )
         {
             for (i=1,counter=0; i<bp->n; i++)
             {
-                if ( (block= bp->blocks[i]) == 0 || block->RO.recvlen == 0 )
+                if ( (block= bp->blocks[i]) == 0 || block->fpos < 0 || block->fpipbits == 0 )
                 {
                     if ( bp->speculative != 0 && bits256_nonz(bp->hashes[i]) == 0 && bits256_nonz(bp->speculative[i]) > 0 && i < bp->numspec )
                         iguana_blockQ("speculate0",coin,0,-2,bp->speculative[i],0), counter++;
