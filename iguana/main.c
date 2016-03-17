@@ -339,7 +339,7 @@ void iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp)
 
 void mainloop(struct supernet_info *myinfo)
 {
-    int32_t flag,i; struct iguana_helper *ptr; struct iguana_info *coin;
+    int32_t flag; struct iguana_helper *ptr; struct iguana_info *coin;
     while ( 1 )
     {
         flag = 0;
