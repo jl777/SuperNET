@@ -558,11 +558,11 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         iguana_bundleQ(coin,bp,1000);
         return(0);
     }
-    max = bp->n - (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
-    if ( max > bp->n )
-        max = bp->n;
-    else if ( max < 100 )
+    max = sqrt(bp->n) - (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
+    if ( max > 100 )
         max = 100;
+    else if ( max < 10 )
+        max = 10;
     if ( bp != currentbp )
     {
         //printf("initial requests for hdrs.%d\n",bp->hdrsi);
