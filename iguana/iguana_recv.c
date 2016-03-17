@@ -432,7 +432,7 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
                 if ( block->issued == 0 || now > block->issued+60 )
                 {
                     block->numrequests++;
-                    printf("bundleQ issue %d %x %d [%d:%d] numsaved.%d\n",block->RO.recvlen,block->fpipbits,block->fpos,bp->hdrsi,i,bp->numsaved);
+                    //printf("bundleQ issue %d %x %d [%d:%d] numsaved.%d\n",block->RO.recvlen,block->fpipbits,block->fpos,bp->hdrsi,i,bp->numsaved);
                     /*if ( bp->hdrsi == starti )
                     {
                         //if ( coin->peers.ranked[0] != 0 )
@@ -1229,7 +1229,7 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
             req->height = height;
             req->bundlei = bundlei;
             char str2[65];
-            //if ( 0 && (bundlei % 250) == 0 )
+            if ( 0 && (bundlei % 250) == 0 )
             printf("%s %s [%d:%d] %d %s %d numranked.%d qsize.%d\n",argstr,str,bp!=0?bp->hdrsi:-1,bundlei,req->height,bits256_str(str2,hash2),coin->blocks.recvblocks,coin->peers.numranked,queue_size(Q));
             if ( block != 0 )
             {
