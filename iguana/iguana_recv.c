@@ -415,7 +415,7 @@ void iguana_bundlespeculate(struct iguana_info *coin,struct iguana_bundle *bp,in
 
 int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int32_t starti,int32_t max)
 {
-    int32_t i,n,issued,counter = 0; uint32_t now; struct iguana_block *block;
+    int32_t i,n,issued,mini=0,counter = 0; uint32_t now; struct iguana_block *block,*minblock = 0;
     if ( bp == 0 )
         return(0);
     now = (uint32_t)time(NULL);
@@ -431,7 +431,6 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
             {
                 if ( block->issued == 0 || now > block->issued+60 )
                 {
-                    block->numrequests++;
                     //printf("bundleQ issue %d %x %d [%d:%d] numsaved.%d\n",block->RO.recvlen,block->fpipbits,block->fpos,bp->hdrsi,i,bp->numsaved);
                     /*if ( bp->hdrsi == starti )
                     {
@@ -440,18 +439,30 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
                         iguana_blockQ(coin,bp,i,block->RO.hash2,1);
                     } else*/
                         
-                        iguana_blockQ("kick",coin,bp,i,block->RO.hash2,0);
+                    block->numrequests++;
+                    iguana_blockQ("kick",coin,bp,i,block->RO.hash2,0);
                     bp->issued[i] = block->issued = now;
                     counter++;
                     if ( --max <= 0 )
                         break;
                 }
-                else if ( block->fpipbits != 0 && ((bp->hdrsi == 0 && i == 0) || bits256_nonz(block->RO.prev_block) != 0) )
-                    n++, issued++;
-                else if ( bp->issued[i] != 0 )
-                    issued++;
+                else
+                {
+                    if ( minblock == 0 || block->numrequests < minblock->numrequests )
+                        minblock = block, mini = i;
+                    if ( block->fpipbits != 0 && ((bp->hdrsi == 0 && i == 0) || bits256_nonz(block->RO.prev_block) != 0) )
+                        n++, issued++;
+                    else if ( bp->issued[i] != 0 )
+                        issued++;
+                }
             } else n++, issued++;
         } //else printf("iguana_bundleiters[%d] unexpected null block[%d]\n",bp->bundleheight,i);
+    }
+    if ( minblock != 0 )
+    {
+        minblock->numrequests++;
+        iguana_blockQ("kick",coin,bp,mini,minblock->RO.hash2,0);
+        bp->issued[i] = minblock->issued = now;
     }
     return(issued);
 }
@@ -558,7 +569,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         iguana_bundleQ(coin,bp,1000);
         return(0);
     }
-    max = sqrt(bp->n) - (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
+    max = bp->n - (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
     if ( max > 100 )
         max = 100;
     else if ( max < 10 )
