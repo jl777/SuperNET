@@ -41,6 +41,7 @@ uint32_t prices777_NXTBLOCK,MAX_DEPTH = 100;
 queue_t helperQ,jsonQ,finishedQ,bundlesQ,validateQ,emitQ,balancesQ;
 struct supernet_info MYINFO,**MYINFOS;
 static int32_t initflag;
+int32_t HDRnet,netBLOCKS;
 cJSON *API_json;
 #ifdef __linux__
 int32_t IGUANA_NUMHELPERS = 8;
@@ -331,7 +332,7 @@ void mainloop(struct supernet_info *myinfo)
         for (i=0; i<IGUANA_MAXCOINS; i++)
             if ( (coin= Coins[i]) != 0 && coin->active != 0 && (bp= coin->current) != 0 )
             {
-                iguana_bundlekick(coin,bp,bp->hdrsi,100);
+                iguana_bundleissue(coin,bp,bp->hdrsi,100);
                 if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
                 {
                     if ( ptr->bp != 0 && ptr->coin != 0 )

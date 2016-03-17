@@ -14252,5 +14252,26 @@ len = 0;
                 printf("processed %d spendinds for bp.[%d] -> errs.%d\n",spendind,bp->hdrsi,errs);
                 return(-errs);
             }
+            if ( bp != currentbp )
+            {
+                //printf("initial requests for hdrs.%d\n",bp->hdrsi);
+                pend = queue_size(&coin->priorityQ) + queue_size(&coin->blocksQ);
+                for (i=0; i<IGUANA_MAXPEERS; i++)
+                    pend += coin->peers.active[i].pendblocks;
+                if ( 0 && pend >= IGUANA_BUNDLELOOP )
+                {
+                    //for (i=better=0; i<coin->bundlescount; i++)
+                    //    if ( coin->bundles[i] != 0 && coin->bundles[i]->numsaved > bp->numsaved )
+                    //        better++;
+                    //if ( better > coin->peers.numranked )
+                    {
+                        //usleep(10000);
+                        //printf("SKIP pend.%d vs %d: better.%d ITERATE bundle.%d n.%d r.%d s.%d finished.%d timelimit.%d\n",pend,coin->MAXPENDING*coin->peers.numranked,better,bp->bundleheight,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit);
+                        iguana_bundleQ(coin,bp,1000);
+                        return(0);
+                    }
+                }
+                counter = iguana_bundlekick(coin,bp,starti,max);
+            }
 
 #endif

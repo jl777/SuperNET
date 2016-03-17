@@ -1755,16 +1755,56 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
     return(0);
 }
 
+bits256 iguana_merkle(struct iguana_info *coin,bits256 *tree,struct iguana_msgtx *txarray,int32_t txn_count)
+{
+    int32_t i,n=0,prev; uint8_t serialized[sizeof(bits256) * 2];
+    if ( txn_count == 1 )
+        return(txarray[0].txid);
+    for (i=0; i<txn_count; i++)
+        tree[i] = txarray[i].txid;
+    prev = 0;
+    while ( txn_count > 1 )
+    {
+        if ( (txn_count & 1) != 0 )
+            tree[prev + txn_count] = tree[prev + txn_count-1], txn_count++;
+        n += txn_count;
+        for (i=0; i<txn_count; i+=2)
+        {
+            //printf("prev.%d n.%d txn_count.%d dest.%d src2.%d\n",prev,n,txn_count,n+(i>>1),prev+i);
+            iguana_rwbignum(1,serialized,sizeof(*tree),tree[prev + i].bytes);
+            iguana_rwbignum(1,&serialized[sizeof(*tree)],sizeof(*tree),tree[prev + i + 1].bytes);
+            tree[n + (i >> 1)] = bits256_doublesha256(0,serialized,sizeof(serialized));
+        }
+        prev = n;
+        txn_count >>= 1;
+    }
+    return(tree[n]);
+}
+
 long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,int32_t txn_count,uint8_t *data,int32_t recvlen)
 {
     int32_t verifyflag = 0; static uint64_t totalrecv;
     RAMCHAIN_DECLARE; struct iguana_ramchain R,*mapchain,*ramchain = &addr->ramchain;
     struct iguana_msgtx *tx; char fname[1024]; uint8_t rmd160[20]; long fsize; void *ptr;
-    int32_t i,j,fpos,pubkeysize,sigsize,firsti=1,err,flag,bundlei = -2;
+    int32_t i,j,fpos,pubkeysize,msize,sigsize,firsti=1,err,flag,bundlei = -2; bits256 merkle_root;
     struct iguana_bundle *bp = 0; struct iguana_block *block; uint32_t scriptspace,stackspace;
     totalrecv += recvlen;
     for (i=0; i<sizeof(addr->dirty)/sizeof(*addr->dirty); i++)
         addr->dirty[i] = 0;
+    msize = (int32_t)sizeof(bits256) * (txn_count+1) * 2;
+    if ( msize <= addr->TXDATA.totalsize )
+    {
+        iguana_memreset(&addr->TXDATA);
+        merkle_root = iguana_merkle(coin,addr->TXDATA.ptr,txarray,txn_count);
+        if ( bits256_cmp(merkle_root,origtxdata->block.RO.merkle_root) != 0 )
+        {
+            char str[65],str2[65];
+            printf(">>>>>>>>>> merkle mismatch.[%d] calc.(%s) vs (%s)\n",txn_count,bits256_str(str,merkle_root),bits256_str(str2,origtxdata->block.RO.merkle_root));
+            origtxdata->block.RO.recvlen = 0;
+            origtxdata->block.issued = 0;
+            return(-1);
+        } //else printf("matched merkle.%d\n",txn_count);
+    } else printf("not enough memory for merkle verify %ld vs %lu\n",sizeof(bits256)*(txn_count+1),(long)addr->TXDATA.totalsize);
     if ( iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.hash2) == 0 )
     {
         if ( iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.prev_block) == 0 )
@@ -1798,7 +1838,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         if ( time(NULL) > lastdisp+30 )
         {
             lastdisp = (uint32_t)time(NULL);
-            printf("ramchaindata have %d:%d at %d | %d blocks %s redundant xfers total %s %.2f%% wasted\n",bp->hdrsi,bundlei,block->fpos,numredundant,mbstr(str,redundantsize),mbstr(str2,totalrecv),100.*redundantsize/totalrecv);
+            printf("ramchaindata have %d:%d at %ld | %d blocks %s redundant xfers total %s %.2f%% wasted\n",bp->hdrsi,bundlei,block->fpos,numredundant,mbstr(str,redundantsize),mbstr(str2,totalrecv),100.*redundantsize/totalrecv);
         }
         //return(block->fpos);
     }
@@ -2192,7 +2232,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     RAMCHAIN_DESTDECLARE; RAMCHAIN_DECLARE;
     void **ptrs,*ptr; long *filesizes,filesize; uint32_t *ipbits; char fname[1024];
     struct iguana_ramchain *R,*mapchain,*dest,newchain; uint32_t fpipbits;
-    int32_t i,numtxids,valid,sigspace,pubkeyspace,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,fpos; struct iguana_block *block;
+    int32_t i,numtxids,valid,sigspace,pubkeyspace,numunspents,numspends,numpkinds,numexternaltxids,scriptspace; struct iguana_block *block; long fpos;
     struct OS_memspace HASHMEM; int32_t err,j,num,hdrsi,bundlei,firsti= 1,retval = -1;
     //if ( bp->bundleheight == 166000 || bp->bundleheight == 316000 || bp->bundleheight == 142000 || bp->bundleheight == 306000 || bp->bundleheight == 128000 || bp->bundleheight == 254000 || bp->bundleheight == 190000 || bp->bundleheight == 118000 || bp->bundleheight == 62000 || bp->bundleheight == 148000 )
         //return(0);
@@ -2237,7 +2277,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         if ( fpos > filesize )
         {
             iguana_bundlemapfree(0,0,ipbits,ptrs,filesizes,num,R,bp->n);
-            printf("fpos error %d > %ld mapping hdrsi.%d bundlei.%d\n",fpos,filesize,bp->hdrsi,bundlei);
+            printf("fpos error %ld > %ld mapping hdrsi.%d bundlei.%d\n",fpos,filesize,bp->hdrsi,bundlei);
             break;
         }
         if ( fpos+mapchain->H.data->allocsize > filesize || iguana_ramchain_size(MAPCHAIN_ARG,1,mapchain->H.data->scriptspace) != mapchain->H.data->allocsize )

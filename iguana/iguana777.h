@@ -278,7 +278,7 @@ struct iguana_block
 {
     struct iguana_blockRO RO;
     double PoW; // NOT consensus safe, for estimation purposes only
-    int32_t height,fpos; uint32_t fpipbits,numrequests,issued;
+    int32_t height; uint32_t fpipbits,numrequests,issued; long fpos;
     uint16_t hdrsi,bundlei:12,mainchain:1,valid:1,queued:1,tbd:1,extra:8;
     UT_hash_handle hh; bits256 *blockhashes;
 };// __attribute__((packed));
@@ -418,7 +418,7 @@ struct iguana_bundle
 {
     struct queueitem DL; struct iguana_info *coin; struct iguana_bundle *nextbp;
     struct iguana_bloom16 bloom; uint32_t rawscriptspace;
-    uint32_t issuetime,hdrtime,emitfinish,mergefinish,purgetime,queued,startutxo,utxofinish,balancefinish,validated,lastspeculative,dirty;
+    uint32_t issuetime,hdrtime,emitfinish,mergefinish,purgetime,queued,startutxo,utxofinish,balancefinish,validated,lastspeculative,dirty,nexttime;
     int32_t numhashes,numrecv,numsaved,numcached,rank,generrs,checkedtmp;
     int32_t minrequests,n,hdrsi,bundleheight,numtxids,numspends,numunspents,numspec;
     double avetime,threshold,metric; uint64_t datasize,estsize;
@@ -795,8 +795,9 @@ struct iguana_bloominds iguana_bloomset(struct iguana_info *coin,struct iguana_b
 int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct iguana_bundle *bp);
 void iguana_balancesQ(struct iguana_info *coin,struct iguana_bundle *bp);
 void iguana_coinflush(struct iguana_info *coin,int32_t forceflag);
-int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int32_t starti,int32_t max);
+int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int32_t starti,int32_t max);
 void iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp);
+extern int32_t HDRnet,netBLOCKS;
 
 extern queue_t bundlesQ,validateQ,emitQ,balancesQ;
 extern char GLOBALTMPDIR[];
