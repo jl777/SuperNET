@@ -1028,12 +1028,15 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
             if ( bits256_nonz(next->RO.prev_block) == 0 )
             {
                 printf(" next has null prev [%d:%d]\n",bp->hdrsi,bundlei);
-                iguana_blockQ("recvblocks0",coin,bp,bundlei,next->RO.hash2,0);
+                iguana_blockQ("reqblocks0",coin,bp,bundlei,next->RO.hash2,0);
                 next = 0;
             }
         }
-        else if ( bp != 0 && bits256_nonz(bp->hashes[bundlei]) != 0 )
-            iguana_blockQ("recvblocks1",coin,bp,bundlei,bp->hashes[bundlei],0);
+        else if ( bp != 0 && bits256_nonz(bp->hashes[bundlei]) != 0 && time(NULL) > bp->issued[bundlei]+60 )
+        {
+            bp->issued[bundlei] = (uint32_t)time(NULL);
+            iguana_blockQ("reqblocks1",coin,bp,bundlei,bp->hashes[bundlei],0);
+        }
         if ( next != 0 )
         {
             //printf("have next %d\n",coin->blocks.hwmchain.height);
