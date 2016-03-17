@@ -777,11 +777,17 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                 next = 0;
             }
         }
-        else if ( bp != 0 && bits256_nonz(bp->hashes[bundlei]) != 0 && time(NULL) > bp->issued[bundlei]+60 )
+        else if ( bp != 0 && bits256_nonz(bp->hashes[bundlei]) == 0 && time(NULL) > bp->issued[bundlei]+60 )
         {
-            printf("reqblock [%d:%d]\n",bp->hdrsi,bundlei);
-            iguana_blockQ("reqblocks1",coin,bp,bundlei,bp->hashes[bundlei],0);
-        }
+            if ( bundlei < bp->n-1 && bits256_nonz(bp->hashes[bundlei+1]) != 0 )
+            {
+                if ( (block= iguana_blockfind(coin,bp->hashes[bundlei+1])) != 0 && bits256_nonz(block->RO.prev_block) != 0 )
+                {
+                    printf("reqblock [%d:%d]\n",bp->hdrsi,bundlei);
+                    iguana_blockQ("reqblocks1",coin,bp,bundlei,bp->hashes[bundlei],0);
+                }
+            }
+         }
         if ( next != 0 )
         {
             //printf("have next %d\n",coin->blocks.hwmchain.height);
