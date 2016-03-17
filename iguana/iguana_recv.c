@@ -595,7 +595,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
                 return(0);
             }
         }
-        iguana_bundlekick(coin,bp,starti,max);
+        counter = iguana_bundlekick(coin,bp,starti,max);
     }
     issued = 0;
     /*if ( coin->numsaved > coin->longestchain*.99 )
