@@ -372,7 +372,14 @@ void iguana_helper(void *arg)
     {
         //iguana_jsonQ();
         flag = 0;
-        if ( (ptr= queue_dequeue(&emitQ,0)) != 0 || (ptr= queue_dequeue(&helperQ,0)) != 0 )
+        if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
+        {
+            flag++;
+            if ( ptr->bp != 0 && ptr->coin != 0 )
+                iguana_balancecalc(ptr->coin,ptr->bp);
+            myfree(ptr,ptr->allocsize);
+        }
+        else if ( (ptr= queue_dequeue(&emitQ,0)) != 0 || (ptr= queue_dequeue(&helperQ,0)) != 0 )
         {
             if ( ptr->bp != 0 && (coin= ptr->coin) != 0 )
             {
@@ -384,7 +391,7 @@ void iguana_helper(void *arg)
             }
             myfree(ptr,ptr->allocsize);
         }
-        else if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
+        /*else if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
         {
             idle = 0;
             if ( ptr->bp != 0 && ptr->coin != 0 )
@@ -392,14 +399,7 @@ void iguana_helper(void *arg)
             else printf("helper missing param? %p %p %u\n",ptr->coin,ptr->bp,ptr->timelimit);
             myfree(ptr,ptr->allocsize);
             flag++;
-        }
-        else if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
-        {
-            flag++;
-            if ( ptr->bp != 0 && ptr->coin != 0 )
-                iguana_balancecalc(ptr->coin,ptr->bp);
-            myfree(ptr,ptr->allocsize);
-        }
+        }*/
         else
         {
             if ( (ptr= queue_dequeue(&validateQ,0)) != 0 )
