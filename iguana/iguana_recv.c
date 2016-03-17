@@ -1206,7 +1206,7 @@ int32_t iguana_blockQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t 
             block = bp->blocks[bundlei];
         if ( block != 0 )
         {
-            if ( bits256_cmp(coin->APIblockhash,hash2) != 0 && block->fpipbits != 0 || block->queued != 0 || block->RO.recvlen != 0 )//block->issued > time(NULL)-60 )
+            if ( bits256_cmp(coin->APIblockhash,hash2) != 0 && (block->fpipbits != 0 || block->queued != 0 || block->RO.recvlen != 0) )
                 return(0);
         }
         if ( priority != 0 )
@@ -1220,7 +1220,7 @@ int32_t iguana_blockQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t 
             req->height = height;
             req->bundlei = bundlei;
             char str2[65];
-            if ( 0 && (bundlei % 250) == 0 )
+            //if ( 0 && (bundlei % 250) == 0 )
                 printf("%s %d %s %d numranked.%d qsize.%d\n",str,req->height,bits256_str(str2,hash2),coin->blocks.recvblocks,coin->peers.numranked,queue_size(Q));
             if ( block != 0 )
             {
