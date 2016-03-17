@@ -296,6 +296,7 @@ void iguana_balancesQ(struct iguana_info *coin,struct iguana_bundle *bp)
     ptr->type = 'B';
     ptr->starttime = (uint32_t)time(NULL);
     ptr->timelimit = 0;
+    coin->pendbalances++;
     printf("BALANCES Q %s bundle.%d[%d] balances.%u balancefinish.%u\n",coin->symbol,ptr->hdrsi,bp->n,bp->utxofinish,bp->balancefinish);
     queue_enqueue("balancesQ",&balancesQ,&ptr->DL,0);
 }
@@ -409,7 +410,7 @@ void iguana_helper(void *arg)
     }
 }
 
-void iguana_coinflush(struct iguana_info *coin)
+void iguana_coinflush(struct iguana_info *coin,int32_t forceflag)
 {
     int32_t hdrsi,blen; struct iguana_bundle *bp; char fname[1024],fname2[1024]; FILE *fp,*fp2=0;
     memset(coin->bundlebits,0,sizeof(coin->bundlebits));
@@ -419,14 +420,22 @@ void iguana_coinflush(struct iguana_info *coin)
     blen = (int32_t)hconv_bitlen(coin->bundlescount);
     for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
     {
-        if ( (bp= coin->bundles[hdrsi]) != 0 && bp->dirty != 0 && time(NULL) > bp->dirty+60 && bp->ramchain.H.data != 0 && bp->ramchain.A != 0 && bp->ramchain.Uextras != 0 )
+        if ( (bp= coin->bundles[hdrsi]) != 0 && (forceflag != 0 || (bp->dirty != 0 && time(NULL) > bp->dirty+60)) && bp->ramchain.H.data != 0 && bp->ramchain.A != 0 && bp->ramchain.Uextras != 0 )
         {
-            sprintf(fname,"accounts/%s/debits.%d",coin->symbol,bp->bundleheight);
-            sprintf(fname2,"accounts/%s/lastspends.%d",coin->symbol,bp->bundleheight);
-            printf("save (%s) and (%s) %p %p\n",fname,fname2,bp,bp->ramchain.H.data);//,bp->ramchain.H.data->numpkinds,bp->ramchain.H.data->numunspents);
+            if ( forceflag == 0 )
+            {
+                sprintf(fname,"accounts/%s/debits.%d",coin->symbol,bp->bundleheight);
+                sprintf(fname2,"accounts/%s/lastspends.%d",coin->symbol,bp->bundleheight);
+            }
+            else
+            {
+                sprintf(fname,"DB/%s/accounts/debits_%d.%d",coin->symbol,coin->bundlescount,bp->bundleheight);
+                sprintf(fname2,"DB/%s/accounts/lastspends_%d.%d",coin->symbol,coin->bundlescount,bp->bundleheight);
+            }
+            //printf("save (%s) and (%s) %p %p\n",fname,fname2,bp,bp->ramchain.H.data);//,bp->ramchain.H.data->numpkinds,bp->ramchain.H.data->numunspents);
             if ( (fp= fopen(fname,"wb")) != 0 && (fp2= fopen(fname2,"wb")) != 0 )
             {
-                if ( fwrite(coin->bundlebits,1,blen,fp) == blen && fwrite(coin->bundlebits,1,blen,fp2) == blen )
+                if ( fwrite(&coin->bundlescount,1,sizeof(coin->bundlescount),fp) == sizeof(coin->bundlescount) && fwrite(&coin->bundlescount,1,sizeof(coin->bundlescount),fp2) == sizeof(coin->bundlescount) && fwrite(coin->bundlebits,1,blen,fp) == blen && fwrite(coin->bundlebits,1,blen,fp2) == blen )
                 {
                     if ( fwrite(bp->ramchain.A,sizeof(*bp->ramchain.A),bp->ramchain.H.data->numpkinds,fp) == bp->ramchain.H.data->numpkinds )
                     {
@@ -486,12 +495,11 @@ void iguana_coinloop(void *arg)
                     {
                         fprintf(stderr,">>>>>>> %s isRT blockrecv.%d vs longest.%d\n",coin->symbol,coin->blocksrecv,coin->longestchain);
                         coin->isRT = 1;
+                        iguana_coinflush(coin,1);
                         if ( coin->polltimeout > 100 )
                             coin->polltimeout = 100;
                         coin->MAXPEERS = 8;
                     }
-                    //if ( coin->isRT != 0 )
-                    //    iguana_coinflush(coin);
                     if ( coin->bindsock >= 0 )
                     {
                         if ( coin->peers.numranked < 8 && now > coin->lastpossible+60 )
@@ -558,6 +566,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->myservices = services;
     sprintf(dirname,"accounts/%s",symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"DB/%s",symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"DB/%s/accounts",symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"DB/%s/spends",symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"DB/%s/vouts",symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"purgeable/%s",symbol), OS_ensure_directory(dirname);

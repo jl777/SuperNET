@@ -38,8 +38,8 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_TAILPERCENTAGE 1.0
 #define IGUANA_MAXPENDHDRS 1
 #define _IGUANA_MAXPENDING 7
-#define IGUANA_MINPENDBUNDLES 64
-#define IGUANA_MAXPENDBUNDLES 64
+#define IGUANA_MINPENDBUNDLES 32
+#define IGUANA_MAXPENDBUNDLES 32
 #define IGUANA_BUNDLELOOP 10000
 #define IGUANA_RPCPORT 7778
 #define IGUANA_MAXRAMCHAINSIZE ((uint64_t)1024L * 1024L * 1024L * 16)
@@ -473,7 +473,7 @@ struct iguana_info
     portable_mutex_t scripts_mutex[2]; FILE *scriptsfp[2]; void *scriptsptr[2]; long scriptsfilesize[2];
     //struct scriptinfo *scriptstable[2];
     struct iguana_bundle *bundles[IGUANA_MAXBUNDLES],*current,*lastpending;
-    int32_t numremain,numpendings,zcount,recvcount,bcount,pcount,lastbundle,numsaved;
+    int32_t numremain,numpendings,zcount,recvcount,bcount,pcount,lastbundle,numsaved,pendbalances;
     uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ,lastbundleitime;
     double backstopmillis; bits256 backstophash2; int64_t spaceused;
     int32_t initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,polltimeout,numreqtxids,allhashes; bits256 reqtxids[64];
@@ -794,7 +794,7 @@ int32_t iguana_bloomfind(struct iguana_info *coin,struct iguana_bloom16 *bloom,i
 struct iguana_bloominds iguana_bloomset(struct iguana_info *coin,struct iguana_bloom16 *bloom,int32_t incr,struct iguana_bloominds bit);
 int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct iguana_bundle *bp);
 void iguana_balancesQ(struct iguana_info *coin,struct iguana_bundle *bp);
-void iguana_coinflush(struct iguana_info *coin);
+void iguana_coinflush(struct iguana_info *coin,int32_t forceflag);
 int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int32_t starti,int32_t max);
 void iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp);
 
