@@ -400,7 +400,7 @@ void iguana_helper(void *arg)
                 iguana_balancecalc(ptr->coin,ptr->bp);
             myfree(ptr,ptr->allocsize);
         }
-        else if ( idle++ > 10 )
+        else
         {
             if ( (ptr= queue_dequeue(&validateQ,0)) != 0 )
             {
