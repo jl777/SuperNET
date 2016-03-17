@@ -1221,7 +1221,8 @@ int32_t iguana_blockQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t 
         {
             req = mycalloc('y',1,sizeof(*req));
             req->hash2 = hash2;
-            req->bp = bp;
+            if ( (req->bp= bp) != 0 && bundlei >= 0 )
+                height = bp->bundleheight + bundlei;
             req->height = height;
             req->bundlei = bundlei;
             char str2[65];
