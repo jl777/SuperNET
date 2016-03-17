@@ -1226,7 +1226,7 @@ int32_t iguana_blockQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t 
             req->height = height;
             req->bundlei = bundlei;
             char str2[65];
-            //if ( 0 && (bundlei % 250) == 0 )
+            if ( 0 && (bundlei % 250) == 0 )
             printf("%s [%d:%d] %d %s %d numranked.%d qsize.%d\n",str,bp!=0?bp->hdrsi:-1,bundlei,req->height,bits256_str(str2,hash2),coin->blocks.recvblocks,coin->peers.numranked,queue_size(Q));
             if ( block != 0 )
             {
