@@ -236,6 +236,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
         {
             txdata->block.fpipbits = (uint32_t)addr->ipbits;
             txdata->block.fpipbits = recvlen;
+            txdata->block.fpos = 0;
             req->datalen = txdata->datalen;
             req->ipbits = txdata->block.fpipbits;
             /*if ( 0 )
