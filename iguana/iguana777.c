@@ -335,6 +335,21 @@ int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *m
     return(0);
 }
 
+void iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp)
+{
+    uint32_t starttime;
+    starttime = (uint32_t)time(NULL);
+    if ( iguana_balancegen(coin,bp) < 0 )
+    {
+        printf("GENERATE BALANCES ERROR ht.%d\n",bp->bundleheight);
+        exit(-1);
+    }
+    //iguana_coinflush(coin);
+    bp->balancefinish = (uint32_t)time(NULL);
+    printf("GENERATED BALANCES for ht.%d duration %d seconds\n",bp->bundleheight,bp->balancefinish - (uint32_t)starttime);
+    iguana_validateQ(coin,bp);
+}
+
 void iguana_helper(void *arg)
 {
     FILE *fp = 0; char fname[512],name[64],*helpername = 0; cJSON *argjson=0; int32_t flag,idle=0;
@@ -377,6 +392,13 @@ void iguana_helper(void *arg)
             else printf("helper missing param? %p %p %u\n",ptr->coin,ptr->bp,ptr->timelimit);
             myfree(ptr,ptr->allocsize);
             flag++;
+        }
+        else if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
+        {
+            flag++;
+            if ( ptr->bp != 0 && ptr->coin != 0 )
+                iguana_balancecalc(ptr->coin,ptr->bp);
+            myfree(ptr,ptr->allocsize);
         }
         else if ( idle++ > 10 )
         {

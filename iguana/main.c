@@ -322,24 +322,9 @@ void sigalarm_func() { printf("\nSIGALRM\n"); signal(SIGALRM,sigalarm_func); }
 void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func); }
 #endif
 
-void iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp)
-{
-    uint32_t starttime;
-    starttime = (uint32_t)time(NULL);
-    if ( iguana_balancegen(coin,bp) < 0 )
-    {
-        printf("GENERATE BALANCES ERROR ht.%d\n",bp->bundleheight);
-        exit(-1);
-    }
-    //iguana_coinflush(coin);
-    bp->balancefinish = (uint32_t)time(NULL);
-    printf("GENERATED BALANCES for ht.%d duration %d seconds\n",bp->bundleheight,bp->balancefinish - (uint32_t)starttime);
-    iguana_validateQ(coin,bp);
-}
-
 void mainloop(struct supernet_info *myinfo)
 {
-    int32_t flag; struct iguana_helper *ptr; //struct iguana_info *coin;
+    int32_t flag; //struct iguana_helper *ptr; //struct iguana_info *coin;
     while ( 1 )
     {
         flag = 0;
