@@ -521,9 +521,9 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                 block->hdrsi = bp->hdrsi, block->bundlei = bundlei;
                 if ( bp->minrequests == 0 || (block->numrequests > 0 && block->numrequests < bp->minrequests) )
                     bp->minrequests = block->numrequests;
-                if ( bits256_nonz(block->RO.prev_block) > 0 )
+                //if ( bits256_nonz(block->RO.prev_block) > 0 )
                 {
-                    if ( block->fpipbits != 0 )
+                    if ( block->fpos >= 0 && block->fpipbits != 0 )
                         bp->numsaved++;
                     if ( block->RO.recvlen != 0 )
                     {
@@ -533,14 +533,14 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                             bp->numcached++;
                     }
                 }
-                else //if ( 0 )
+                /*else //if ( 0 )
                 {
                     printf("cleared block?\n");
                     //block->RO.recvlen = 0;
                     //block->fpipbits = 0;
                     //block->fpos = -1;
                     //block->issued = bp->issued[bundlei] = 0;
-                }
+                }*/
             }
             else if ( 0 )
             {
