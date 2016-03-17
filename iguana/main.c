@@ -339,17 +339,10 @@ void iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp)
 
 void mainloop(struct supernet_info *myinfo)
 {
-    int32_t flag; struct iguana_helper *ptr; struct iguana_info *coin;
+    int32_t flag; struct iguana_helper *ptr; //struct iguana_info *coin;
     while ( 1 )
     {
         flag = 0;
-        while ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
-        {
-            flag++;
-            if ( ptr->bp != 0 && ptr->coin != 0 )
-                iguana_balancecalc(ptr->coin,ptr->bp);
-            myfree(ptr,ptr->allocsize);
-        }
         //for (i=0; i<IGUANA_MAXCOINS; i++)
         //    if ( (coin= Coins[i]) != 0 && coin->active != 0 )
         //        iguana_coinflush(coin);

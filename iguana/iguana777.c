@@ -400,7 +400,7 @@ void iguana_coinflush(struct iguana_info *coin)
     int32_t hdrsi; struct iguana_bundle *bp; char fname[1024],fname2[1024]; FILE *fp,*fp2=0;
     for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
     {
-        if ( (bp= coin->bundles[hdrsi]) != 0 && time(NULL) > bp->dirty+60 && bp->ramchain.H.data != 0 && bp->ramchain.A != 0 && bp->ramchain.Uextras != 0 )
+        if ( (bp= coin->bundles[hdrsi]) != 0 && bp->dirty != 0 && time(NULL) > bp->dirty+60 && bp->ramchain.H.data != 0 && bp->ramchain.A != 0 && bp->ramchain.Uextras != 0 )
         {
             sprintf(fname,"accounts/%s/debits.%d",coin->symbol,bp->bundleheight);
             sprintf(fname2,"accounts/%s/lastspends.%d",coin->symbol,bp->bundleheight);

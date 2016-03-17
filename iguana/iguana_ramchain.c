@@ -1289,7 +1289,7 @@ int32_t iguana_ramchain_free(struct iguana_ramchain *ramchain,int32_t deleteflag
 
 void iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct OS_memspace *hashmem,int32_t extraflag)
 {
-    RAMCHAIN_DECLARE; char fname[1024]; long filesize;
+    RAMCHAIN_DECLARE; char fname[1024]; //long filesize;
     if ( ramchain->expanded != 0 )
     {
         _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
