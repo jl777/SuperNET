@@ -432,7 +432,7 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
                 if ( block->issued == 0 || now > block->issued+60 )
                 {
                     block->numrequests++;
-                    printf("bundleQ issue %d %x %d [%d:%d] numsaved.%d\n",block->RO.recvlen,block->fpipbits,block->fpos,bp->hdrsi,i,bp->numsaved);
+                    //printf("bundleQ issue %d %x %d [%d:%d] numsaved.%d\n",block->RO.recvlen,block->fpipbits,block->fpos,bp->hdrsi,i,bp->numsaved);
                     /*if ( bp->hdrsi == starti )
                     {
                         //if ( coin->peers.ranked[0] != 0 )
@@ -541,7 +541,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         return(0);
     }
     //printf("BUNDLEITERS.%d\n",bp->hdrsi);
-    if ( bp->hdrsi <= starti+8 && coin->lastpending != 0 )
+    if ( bp->hdrsi <= starti+range && coin->lastpending != 0 )
     {
         for (i=0; i<bp->n; i++)
         {
@@ -558,11 +558,11 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         iguana_bundleQ(coin,bp,1000);
         return(0);
     }
-    max = sqrt(bp->n) - (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
+    max = bp->n - (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
     if ( max > bp->n )
         max = bp->n;
-    else if ( max < 10 )
-        max = 10;
+    else if ( max < 100 )
+        max = 100;
     if ( bp != currentbp )
     {
         //printf("initial requests for hdrs.%d\n",bp->hdrsi);
