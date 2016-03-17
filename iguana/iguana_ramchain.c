@@ -1830,7 +1830,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         return(-1);
     }
     block->txvalid = 1;
-    if ( block->fpipbits != 0 )
+    if ( block->fpipbits != 0 && block->fpos >= 0 )
     {
         static int32_t numredundant; static double redundantsize; static uint32_t lastdisp;
         char str[65],str2[65];
@@ -1840,14 +1840,14 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
             lastdisp = (uint32_t)time(NULL);
             printf("ramchaindata have %d:%d at %ld | %d blocks %s redundant xfers total %s %.2f%% wasted\n",bp->hdrsi,bundlei,block->fpos,numredundant,mbstr(str,redundantsize),mbstr(str2,totalrecv),100.*redundantsize/totalrecv);
         }
-        //return(block->fpos);
+        return(block->fpos);
     }
     sigsize = pubkeysize = 0;
     scriptspace = 1;//iguana_scriptspaceraw(coin,&scriptsize,&sigsize,&pubkeysize,txarray,txn_count);
     if ( iguana_ramchain_init(ramchain,&addr->TXDATA,&addr->HASHMEM,1,txn_count,origtxdata->numunspents,origtxdata->numspends,0,0,(scriptspace+sigsize+pubkeysize)*1.1,0,1) == 0 )
     {
         if ( block->fpipbits == 0 )
-            block->issued = block->RO.recvlen = 0;
+            block->issued = block->RO.recvlen = 0, block->fpos = -1;
         return(-1);
     }
     block->fpos = fpos = -1;
