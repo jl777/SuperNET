@@ -444,7 +444,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
 
 int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    printf("VALIDATE.%d\n",bp->bundleheight);
     bp->validated = (uint32_t)time(NULL);
+    printf("VALIDATE.%d %u\n",bp->bundleheight,bp->validated);
     return(0);
 }
