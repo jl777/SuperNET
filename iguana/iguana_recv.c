@@ -575,6 +575,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
             //    if ( coin->bundles[i] != 0 && coin->bundles[i]->numsaved > bp->numsaved )
             //        better++;
             //if ( better > coin->peers.numranked )
+            if ( 0 )
             {
                 //usleep(10000);
                 //printf("SKIP pend.%d vs %d: better.%d ITERATE bundle.%d n.%d r.%d s.%d finished.%d timelimit.%d\n",pend,coin->MAXPENDING*coin->peers.numranked,better,bp->bundleheight,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit);
