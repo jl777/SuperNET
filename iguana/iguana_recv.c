@@ -1217,6 +1217,8 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
                 return(0);
             height = block->height;
         }
+        if ( bp != 0 && bp->emitfinish != 0 )
+            return(0);
         if ( priority != 0 )
             str = "priorityQ", Q = &coin->priorityQ;
         else str = "blocksQ", Q = &coin->blocksQ;
