@@ -385,7 +385,7 @@ uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bit
                     block->mainchain = 1;
                     if ( prev != 0 )
                     {
-                        //block->RO.prev_block = prev->RO.hash2;
+                        block->RO.prev_block = prev->RO.hash2;
                         prev->hh.next = block;
                         block->hh.prev = prev;
                     }
