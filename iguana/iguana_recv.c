@@ -429,7 +429,7 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
         {
             if ( block->fpipbits == 0 || block->RO.recvlen == 0 )
             {
-                if ( block->issued == 0 || (now > block->issued+60 || (rand() % 100) == 0) )
+                if ( block->issued == 0 || now > block->issued+60 )//|| (rand() % 100) == 0) )
                 {
                     block->numrequests++;
                     //printf("bundleQ issue %d %x %d [%d:%d] numsaved.%d\n",block->RO.recvlen,block->fpipbits,block->fpos,bp->hdrsi,i,bp->numsaved);
@@ -440,7 +440,7 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
                         iguana_blockQ(coin,bp,i,block->RO.hash2,1);
                     } else*/
                         
-                        iguana_blockQ("kick",coin,bp,i,block->RO.hash2,(rand() % 10) == 0);
+                        iguana_blockQ("kick",coin,bp,i,block->RO.hash2,0);
                     bp->issued[i] = block->issued = now;
                     counter++;
                     if ( --max <= 0 )
@@ -1335,8 +1335,8 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                         flag++;
                     } else printf("skip hdrreq.%s m.%d z.%d bp.%p longest.%d queued.%d\n",hashstr,m,z,bp,bp->coin->longestchain,bp->queued);
                 }
-                //free_queueitem(hashstr);
-                //return(flag);
+                free_queueitem(hashstr);
+                return(flag);
             } else printf("datalen.%d from gethdrs\n",datalen);
             free_queueitem(hashstr);
             hashstr = 0;
