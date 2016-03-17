@@ -1032,7 +1032,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                 next = 0;
             }
         }
-        else if ( bp != 0 && bits256_nonz(bp->hashes[bundlei]) != 0 && time(NULL) > bp->issued[bundlei]+60 )
+        else if ( bp != 0 && bits256_nonz(bp->hashes[bundlei]) != 0 && time(NULL) > bp->issued[bundlei]+60 && bp->blocks[bundlei] == 0 )
         {
             bp->issued[bundlei] = (uint32_t)time(NULL);
             iguana_blockQ("reqblocks1",coin,bp,bundlei,bp->hashes[bundlei],0);
