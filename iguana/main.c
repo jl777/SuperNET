@@ -331,7 +331,7 @@ void mainloop(struct supernet_info *myinfo)
         for (i=0; i<IGUANA_MAXCOINS; i++)
             if ( (coin= Coins[i]) != 0 && coin->active != 0 && (bp= coin->current) != 0 )
             {
-                iguana_bundlekick(coin,bp,bp->hdrsi,bp->n);
+                iguana_bundlekick(coin,bp,bp->hdrsi,100);
                 if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
                 {
                     if ( ptr->bp != 0 && ptr->coin != 0 )
@@ -355,6 +355,7 @@ void mainloop(struct supernet_info *myinfo)
             pangea_queues(SuperNET_MYINFO(0));
             usleep(10000);
         }
+        else usleep(1000);
     }
 }
 
