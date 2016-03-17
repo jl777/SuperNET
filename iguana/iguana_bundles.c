@@ -523,7 +523,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                     bp->minrequests = block->numrequests;
                 if ( bits256_nonz(block->RO.prev_block) > 0 )
                 {
-                    if ( block->fpos >= 0 && block->fpipbits != 0 )
+                    if ( block->fpipbits != 0 )
                         bp->numsaved++;
                     if ( block->RO.recvlen != 0 )
                     {
