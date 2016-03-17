@@ -798,7 +798,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                     lflag++, flag++;
                 //else printf("chainlink error for %d\n",coin->blocks.hwmchain.height+1);
             }
-            if ( queue_size(&coin->blocksQ) < _IGUANA_MAXPENDING )
+            if ( strcmp(coin->symbol,"BTC") != 0 && queue_size(&coin->blocksQ) < _IGUANA_MAXPENDING )
             {
                 double threshold,lag = OS_milliseconds() - coin->backstopmillis;
                 threshold = (10 + coin->longestchain - coin->blocksrecv);
