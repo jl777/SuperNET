@@ -460,6 +460,7 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
     }
     if ( minblock != 0 )
     {
+        issued++;
         minblock->numrequests++;
         iguana_blockQ("kick",coin,bp,mini,minblock->RO.hash2,0);
         bp->issued[i] = minblock->issued = now;
@@ -552,7 +553,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         return(0);
     }
     //printf("BUNDLEITERS.%d\n",bp->hdrsi);
-    if ( bp->hdrsi <= starti+sqrt(range) && coin->lastpending != 0 )
+    if ( bp->hdrsi <= starti+range && coin->lastpending != 0 )
     {
         for (i=0; i<bp->n; i++)
         {
@@ -569,11 +570,11 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         iguana_bundleQ(coin,bp,1000);
         return(0);
     }
-    max = bp->n - (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
-    if ( max > 100 )
+    max = bp->n;// - (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
+    /*if ( max > 100 )
         max = 100;
     else if ( max < 10 )
-        max = 10;
+        max = 10;*/
     if ( bp != currentbp )
     {
         //printf("initial requests for hdrs.%d\n",bp->hdrsi);
