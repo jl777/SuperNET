@@ -419,6 +419,10 @@ int32_t iguana_bundlekick(struct iguana_info *coin,struct iguana_bundle *bp,int3
     if ( bp == 0 )
         return(0);
     now = (uint32_t)time(NULL);
+    if ( bp == coin->current )
+    {
+        
+    }
     for (i=n=counter=issued=0; i<bp->n; i++)
     {
         if ( (block= bp->blocks[i]) != 0 )
@@ -616,7 +620,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
             bp->emitfinish = 1;
             if ( (lastbp= coin->lastpending) != 0 && lastbp->hdrsi < coin->bundlescount-1 )
                 coin->lastpending = coin->bundles[lastbp->hdrsi + 1];
-            if ( (rand() % 3) == 0 )
+            if ( (rand() % 2) == 0 )
             {
                 if ( coin->MAXBUNDLES > IGUANA_MINPENDBUNDLES )
                     coin->MAXBUNDLES--;
