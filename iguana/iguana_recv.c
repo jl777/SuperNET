@@ -569,7 +569,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         pend = queue_size(&coin->priorityQ) + queue_size(&coin->blocksQ);
         for (i=0; i<IGUANA_MAXPEERS; i++)
             pend += coin->peers.active[i].pendblocks;
-        if ( pend >= (IGUANA_BUNDLELOOP + coin->MAXPENDING*coin->peers.numranked) )
+        if ( pend >= IGUANA_BUNDLELOOP )
         {
             //for (i=better=0; i<coin->bundlescount; i++)
             //    if ( coin->bundles[i] != 0 && coin->bundles[i]->numsaved > bp->numsaved )
