@@ -510,16 +510,18 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                     {
                         block->RO.recvlen = (uint32_t)ftell(fp);
                         block->fpipbits = 1;
+                        block->fpos = 0;
                         //printf("[%d:%d] len.%d\n",hdrsi,bundlei,block->RO.recvlen);
                     }
                     fclose(fp);
                 }
                 bp->blocks[bundlei] = block;
+                block->hdrsi = bp->hdrsi, block->bundlei = bundlei;
                 if ( bp->minrequests == 0 || (block->numrequests > 0 && block->numrequests < bp->minrequests) )
                     bp->minrequests = block->numrequests;
                 if ( bits256_nonz(block->RO.prev_block) > 0 )
                 {
-                    if ( block->fpipbits != 0 )
+                    if ( block->fpos >= 0 )
                         bp->numsaved++;
                     if ( block->RO.recvlen != 0 )
                     {

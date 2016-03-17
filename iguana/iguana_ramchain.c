@@ -1770,7 +1770,6 @@ bits256 iguana_merkle(struct iguana_info *coin,bits256 *tree,struct iguana_msgtx
         n += txn_count;
         for (i=0; i<txn_count; i+=2)
         {
-            //printf("prev.%d n.%d txn_count.%d dest.%d src2.%d\n",prev,n,txn_count,n+(i>>1),prev+i);
             iguana_rwbignum(1,serialized,sizeof(*tree),tree[prev + i].bytes);
             iguana_rwbignum(1,&serialized[sizeof(*tree)],sizeof(*tree),tree[prev + i + 1].bytes);
             tree[n + (i >> 1)] = bits256_doublesha256(0,serialized,sizeof(serialized));
@@ -1830,6 +1829,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
             printf("%d:%d has no block ptr.%p %s or wrong hash\n",bp->hdrsi,bundlei,block,bits256_str(str,origtxdata->block.RO.hash2));
         return(-1);
     }
+    block->txvalid = 1;
     if ( block->fpipbits != 0 )
     {
         static int32_t numredundant; static double redundantsize; static uint32_t lastdisp;
@@ -1861,6 +1861,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         printf("fatal error getting txdataptrs %p %p %p %p\n",T,U,S,B);
         return(-1);
     }
+    block->fpipbits = 1;
     for (i=0; i<txn_count; i++,ramchain->H.txidind++)
     {
         tx = &txarray[i];
@@ -1889,6 +1890,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
     if ( ramchain->H.txidind != ramchain->H.data->numtxids || ramchain->H.unspentind != ramchain->H.data->numunspents || ramchain->H.spendind != ramchain->H.data->numspends )
     {
         printf("error creating PT ramchain.[%d:%d] ramchain->txidind %d != %d ramchain->data->numtxids || ramchain->unspentind %d != %d ramchain->data->numunspents || ramchain->spendind %d != %d ramchain->data->numspends space.(%d v %d)\n",bp->hdrsi,bp->bundleheight,ramchain->H.txidind,ramchain->H.data->numtxids,ramchain->H.unspentind,ramchain->H.data->numunspents,ramchain->H.spendind,ramchain->H.data->numspends,ramchain->H.scriptoffset,ramchain->H.data->scriptspace);
+        block->fpipbits = 0;
         block->issued = 0;
         block->RO.recvlen = 0;
     }
@@ -1920,13 +1922,16 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
                     if ( 1 ) // unix issues?
                     {
                         if ( (err= iguana_ramchain_cmp(ramchain,mapchain,0)) != 0 )
-                            printf("error.%d comparing ramchains\n",err);
-                        ptr = mapchain->fileptr; fsize = mapchain->filesize;
-                        mapchain->fileptr = 0, mapchain->filesize = 0;
-                        iguana_ramchain_free(mapchain,1);
-                        memset(&R,0,sizeof(R));
-                        R.H.data = (void *)(long)((long)ptr + fpos), R.filesize = fsize;
-                        iguana_ramchain_link(&R,block->RO.hash2,block->RO.hash2,bp->hdrsi,bp->bundleheight+bundlei,bundlei,1,firsti,1);
+                            fpos = -1, printf("error.%d comparing ramchains\n",err);
+                        else
+                        {
+                            ptr = mapchain->fileptr; fsize = mapchain->filesize;
+                            mapchain->fileptr = 0, mapchain->filesize = 0;
+                            iguana_ramchain_free(mapchain,1);
+                            memset(&R,0,sizeof(R));
+                            R.H.data = (void *)(long)((long)ptr + fpos), R.filesize = fsize;
+                            iguana_ramchain_link(&R,block->RO.hash2,block->RO.hash2,bp->hdrsi,bp->bundleheight+bundlei,bundlei,1,firsti,1);
+                        }
                     }
                     if ( (err= iguana_ramchain_cmp(ramchain,&R,0)) != 0 )
                     {
@@ -1960,6 +1965,8 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
             }
         } else printf("ramchain verification error.%d hdrsi.%d bundlei.%d\n",err,bp->hdrsi,bundlei);
     }
+    if ( fpos < 0 )
+        block->fpos = -1, block->fpipbits = block->RO.recvlen = 0;
     //fprintf(stderr,"finished with hdrsi.%d ht.%d scripts.%u:%u\n",bp->hdrsi,bp->bundleheight,ramchain->H.scriptoffset,ramchain->H.data->scriptspace);
     ramchain->H.ROflag = 0;
     iguana_ramchain_free(ramchain,0);

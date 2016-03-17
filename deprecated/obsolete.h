@@ -14273,5 +14273,75 @@ len = 0;
                 }
                 counter = iguana_bundlekick(coin,bp,starti,max);
             }
+            if ( req == 0 && 0 )
+            {
+                if ( 1 )//(rand() % 10) == 0 )
+                    flag = iguana_neargap(coin,addr);
+                else if ( 0 && (bp= addr->bp) != 0 && bp->rank != 0 && addr->pendblocks < limit )
+                {
+                    r = rand();
+                    for (j=0; j<bp->n; j++)
+                    {
+                        i = (r + j) % bp->n;
+                        if ( (block= bp->blocks[i]) != 0 && block->numrequests == bp->minrequests && block->fpipbits == 0 && block->queued == 0 )
+                        {
+                            printf("peer.%s BPranked.%d [%d:%d] pending.%d numreqs.%d\n",addr->ipaddr,bp->rank,bp->hdrsi,i,addr->pendblocks,block->numrequests);
+                            block->numrequests++;
+                            flag++;
+                            iguana_sendblockreqPT(coin,addr,bp,i,block->RO.hash2,0);
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            int32_t iguana_neargap(struct iguana_info *coin,struct iguana_peer *addr)
+            {
+                struct iguana_block *block,*bestblock = 0; struct iguana_bundle *bp,*bestbp = 0;
+                int32_t height,hdrsi,i,j,n,bundlei,gap,besti = -1; uint32_t r;
+                if ( addr->rank > 0 )
+                {
+                    n = coin->peers.numranked * 2;
+                    gap = addr->rank * (1 + n + coin->peers.numranked) + coin->peers.numranked;
+                    for (i=0; i<coin->bundlescount; i++)
+                        if ( (bp= coin->bundles[i]) == 0 || bp->emitfinish == 0 )
+                            break;
+                    height = (i * coin->chain->bundlesize);
+                    r = rand();
+                    for (i=0; i<n; i++)
+                    {
+                        j = (gap + r + i) % n;
+                        hdrsi = (height + j) / coin->chain->bundlesize;
+                        if ( (bp= coin->bundles[hdrsi]) != 0 )
+                        {
+                            bundlei = (height + j) % coin->chain->bundlesize;
+                            if ( (block= bp->blocks[bundlei]) != 0 && block->fpipbits == 0 && block->queued == 0 )
+                            {
+                                if ( block->numrequests == bp->minrequests )
+                                {
+                                    bestblock = block;
+                                    bestbp = bp;
+                                    besti = bundlei;
+                                    break;
+                                }
+                                else if ( bestblock == 0 || block->numrequests < bestblock->numrequests )
+                                {
+                                    bestblock = block;
+                                    bestbp = bp;
+                                    besti = bundlei;
+                                }
+                            }
+                        }
+                    }
+                    if ( bestblock != 0 )
+                    {
+                        printf("near hwm.%d gap.%d peer.%s bpranked.%d [%d:%d] pending.%d numreqs.%d\n",height,j,addr->ipaddr,bestbp->rank,bestbp->hdrsi,besti,addr->pendblocks,bestblock->numrequests);
+                        bestblock->numrequests++;
+                        iguana_sendblockreqPT(coin,addr,bestbp,besti,bestblock->RO.hash2,0);
+                        return(1);
+                    }
+                }
+                return(0);
+            }
 
 #endif

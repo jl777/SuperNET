@@ -22,7 +22,7 @@ char *iguana_APIrequest(struct iguana_info *coin,bits256 blockhash,bits256 txid,
     coin->APIblockhash = blockhash;
     coin->APItxid = txid;
     printf("request block.(%s) txid.%llx\n",bits256_str(str,blockhash),(long long)txid.txid);
-    if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,bits256_str(str,blockhash))) > 0 )
+    if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,&blockhash,1)) > 0 )
     {
         for (i=0; i<seconds; i++)
         {
