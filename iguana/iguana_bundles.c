@@ -389,10 +389,9 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
             bp->lastspeculative = (uint32_t)time(NULL);
         }
     }
+    return(counter);
     for (i=counter=0; i<bp->n; i++)
     {
-        if ( bp != coin->current )
-            break;
         if ( (block= bp->blocks[i]) != 0 )
         {
             if ( block->fpipbits == 0 || block->RO.recvlen == 0 )
