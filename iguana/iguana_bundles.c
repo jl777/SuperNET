@@ -391,7 +391,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                             {
                                 if ( block->peerid == 0 )
                                 {
-                                    printf("<%d>.%d ",i,j);
+                                    //printf("<%d>.%d ",i,j);
                                     if ( block->fpipbits != 0 )
                                     {
                                         hashes[k++] = bp->hashes[i];
