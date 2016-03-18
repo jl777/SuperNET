@@ -442,7 +442,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
             //printf("doneval.%d maxval.%d\n",doneval,maxval);
             for (i=laggard=finished=0; i<numpeers; i++)
             {
-                if ( donecounts[i] == 0 )
+                if ( peercounts[i] > 10*donecounts[i] )
                     laggard++;
                 if ( peercounts[i] == 0 && donecounts[i] > 2 )
                     finished++;
