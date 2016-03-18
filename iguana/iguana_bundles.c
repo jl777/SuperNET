@@ -440,7 +440,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                 }
             }
             //printf("minval.%d maxval.%d\n",minval,maxval);
-            if ( minval != maxval )
+            //if ( minval != maxval )
             {
                 r = rand() % numpeers;
                 oldest = 0;
@@ -458,6 +458,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                                 {
                                     for (k=0; k<numpeers; k++)
                                     {
+                                        r = rand();
                                         z = (k + r) % numpeers;
                                         if ( donecounts[z] > 0 && (addr= coin->peers.ranked[z]) != 0 )
                                         {
