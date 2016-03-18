@@ -37,10 +37,10 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_HEADPERCENTAGE 0.
 #define IGUANA_TAILPERCENTAGE 1.0
 #define IGUANA_MAXPENDHDRS 1
-#define _IGUANA_MAXPENDING 7
+#define _IGUANA_MAXPENDING 3
 #define IGUANA_MINPENDBUNDLES 64
 #define IGUANA_MAXPENDBUNDLES 64
-#define IGUANA_BUNDLELOOP 777
+#define IGUANA_BUNDLELOOP 3
 #define IGUANA_RPCPORT 7778
 #define IGUANA_MAXRAMCHAINSIZE ((uint64_t)1024L * 1024L * 1024L * 16)
 
@@ -279,7 +279,7 @@ struct iguana_block
     struct iguana_blockRO RO;
     double PoW; // NOT consensus safe, for estimation purposes only
     int32_t height; uint32_t fpipbits,numrequests,issued; long fpos;
-    uint16_t hdrsi,bundlei:12,mainchain:1,valid:1,queued:1,txvalid:1,extra:8;
+    uint16_t hdrsi,bundlei:12,mainchain:1,valid:1,queued:1,txvalid:1,peerid:8;
     UT_hash_handle hh; bits256 *blockhashes;
 };// __attribute__((packed));
 
