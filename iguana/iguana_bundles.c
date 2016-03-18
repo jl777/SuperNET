@@ -472,20 +472,15 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                         }
                     }
                 }
-                if ( bp->numsaved < bp->n*.95 )
-                {
-                    for (i=0; i<numpeers; i++)
-                        printf("%d ",peercounts[i]);
-                }
-                else
-                {
-                    for (i=0; i<bp->n; i++)
-                        if ( (block= bp->blocks[i]) != 0 && block->fpipbits == 0 && now > block->issued+10 )
-                        {
-                            iguana_blockQ("kick",coin,bp,i,block->RO.hash2,1);
-                            printf("[%d:%d] ",bp->hdrsi,i);
-                        }
-                }
+                for (i=0; i<numpeers; i++)
+                    printf("%d ",peercounts[i]);
+                printf("peercounts\n");
+                for (i=0; i<bp->n; i++)
+                    if ( (block= bp->blocks[i]) != 0 && block->fpipbits == 0 && now > block->issued+10 )
+                    {
+                        iguana_blockQ("kick",coin,bp,i,block->RO.hash2,1);
+                        printf("[%d:%d] ",bp->hdrsi,i);
+                    }
                 printf("currentflag.%d ht.%d s.%d done.%d maxunfinished.%d\n",bp->currentflag,bp->bundleheight,bp->numsaved,doneval,maxval);
             }
             /*if ( doneval != maxval )
