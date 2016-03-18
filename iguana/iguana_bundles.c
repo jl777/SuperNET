@@ -368,7 +368,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
 {
     int32_t i,j,k,r,z,len,minval,maxval,numpeers,peercounts[IGUANA_MAXPEERS],donecounts[IGUANA_MAXPEERS],counter = 0;
     struct iguana_peer *addr; uint32_t now; struct iguana_block *block,*oldest;
-    bits256 hashes[500]; uint8_t serialized[sizeof(hashes) + 256];
+    bits256 hashes[50]; uint8_t serialized[sizeof(hashes) + 256];
     if ( bp == 0 )
         return(0);
     now = (uint32_t)time(NULL);
