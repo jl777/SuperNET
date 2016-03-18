@@ -374,9 +374,9 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     now = (uint32_t)time(NULL);
     memset(peercounts,0,sizeof(peercounts));
     memset(donecounts,0,sizeof(donecounts));
-    //if ( bp == coin->current )
+    if ( (numpeers= coin->peers.numranked) > 8 )
     {
-        if ( bp->numhashes >= bp->n && (numpeers= coin->peers.numranked) > 8 )
+        if ( bp->numhashes >= bp->n )
         {
             for (j=0; j<numpeers; j++)
             {
@@ -391,7 +391,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                             {
                                 if ( block->peerid == 0 )
                                 {
-                                    //printf("<%d> ",i);
+                                    printf("<%d>.%d ",i,j);
                                     if ( block->fpipbits != 0 )
                                     {
                                         hashes[k++] = bp->hashes[i];
@@ -490,8 +490,8 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                 }
                 printf("currentflag.%d %d\n",bp->currentflag,bp->bundleheight);
             }
-            return(counter);
         }
+        return(counter);
         /*if ( 0 && time(NULL) > bp->lastspeculative+60 )
         {
             for (i=1,counter=0; i<bp->n; i++)
@@ -510,7 +510,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
         }*/
     }
    // if ( bp != coin->current )
-        return(counter);
+    //    return(counter);
     for (i=counter=0; i<bp->n; i++)
     {
         if ( (block= bp->blocks[i]) != 0 )
