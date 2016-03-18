@@ -366,7 +366,7 @@ void iguana_bundlepurge(struct iguana_info *coin,struct iguana_bundle *bp)
 
 int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int32_t max,int32_t timelimit)
 {
-    int32_t i,j,k,r,len,minval,maxval,numpeers,peercounts[IGUANA_MAXPEERS],donecounts[IGUANA_MAXPEERS],counter = 0;
+    int32_t i,j,k,r,z,len,minval,maxval,numpeers,peercounts[IGUANA_MAXPEERS],donecounts[IGUANA_MAXPEERS],counter = 0;
     struct iguana_peer *addr; uint32_t now; struct iguana_block *block,*oldest;
     bits256 hashes[500]; uint8_t serialized[sizeof(hashes) + 256];
     if ( bp == 0 )
@@ -450,28 +450,27 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     if ( peercounts[j] == maxval )
                     {
                         for (i=j; i<bp->n; i+=numpeers)
-                            if ( (block= bp->blocks[i]) != 0 && block->fpipbits == 0 && (oldest == 0 || block->issued < oldest->issued) )
+                            if ( (block= bp->blocks[i]) != 0 && block->fpipbits == 0 )
                             {
-                                if ( now > block->issued+1+60*(bp!=coin->current) )
+                                if ( oldest == 0 || block->issued < oldest->issued )
                                     oldest = block;
+                                if ( now > block->issued+60*(bp!=coin->current) )
+                                {
+                                    for (k=0; k<numpeers; k++)
+                                    {
+                                        z = (k + r) % numpeers;
+                                        if ( donecounts[z] > 0 && (addr= coin->peers.ranked[z]) != 0 )
+                                        {
+                                            if ( bp == coin->current )
+                                                printf("send [%d:%d] to addr[%d]\n",bp->hdrsi,block->bundlei,z);
+                                            block->issued = (uint32_t)time(NULL);
+                                            counter++;
+                                            iguana_sendblockreqPT(coin,addr,bp,block->bundlei,block->RO.hash2,0);
+                                            break;
+                                        }
+                                    }
+                                }
                             }
-                    }
-                }
-                if ( oldest != 0 )
-                {
-                    //printf("reissue oldest.%d\n",block->bundlei);
-                    for (i=0; i<numpeers; i++)
-                    {
-                        j = (i + r) % numpeers;
-                        if ( donecounts[j] > 0 && (addr= coin->peers.ranked[j]) != 0 )
-                        {
-                            if ( bp == coin->current )
-                                printf("send [%d:%d] to addr[%d]\n",bp->hdrsi,oldest->bundlei,j);
-                            oldest->issued = (uint32_t)time(NULL);
-                            counter++;
-                            iguana_sendblockreqPT(coin,addr,bp,oldest->bundlei,oldest->RO.hash2,0);
-                            break;
-                        }
                     }
                 }
             }
