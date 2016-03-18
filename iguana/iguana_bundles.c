@@ -392,9 +392,10 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                                 if ( block->peerid == 0 )
                                 {
                                     //printf("<%d>.%d ",i,j);
-                                    if ( 1 || block->fpipbits != 0 )
+                                    if ( block->fpipbits != 0 )
                                     {
                                         hashes[k++] = bp->hashes[i];
+                                        bp->issued[i] = now;
                                         block->issued = now;
                                         block->peerid = j + 1;
                                         block->numrequests++;
@@ -422,7 +423,6 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                                 }
                             }
                         }
-                        bp->issued[i] = now;
                     }
                     if ( k > 0 )
                     {
@@ -440,7 +440,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                 }
             }
             //printf("minval.%d maxval.%d\n",minval,maxval);
-            //if ( 0 && minval != maxval )
+            if ( minval != maxval )
             {
                 r = rand() % numpeers;
                 oldest = 0;
