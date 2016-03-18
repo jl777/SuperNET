@@ -354,9 +354,9 @@ void mainloop(struct supernet_info *myinfo)
              }
              else*/
             pangea_queues(SuperNET_MYINFO(0));
-            usleep(10000);
+            usleep(1000000);
         }
-        else usleep(1000);
+        else usleep(100000);
     }
 }
 

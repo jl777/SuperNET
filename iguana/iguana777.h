@@ -797,6 +797,7 @@ void iguana_balancesQ(struct iguana_info *coin,struct iguana_bundle *bp);
 void iguana_coinflush(struct iguana_info *coin,int32_t forceflag);
 int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int32_t starti,int32_t max);
 void iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp);
+int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2,int32_t iamthreadsafe);
 extern int32_t HDRnet,netBLOCKS;
 
 extern queue_t bundlesQ,validateQ,emitQ,balancesQ;
