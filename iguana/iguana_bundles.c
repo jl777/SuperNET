@@ -374,7 +374,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     now = (uint32_t)time(NULL);
     memset(peercounts,0,sizeof(peercounts));
     memset(donecounts,0,sizeof(donecounts));
-    if ( bp == coin->current )
+    //if ( bp == coin->current )
     {
         if ( bp->numhashes >= bp->n && (numpeers= coin->peers.numranked) > 8 )
         {
@@ -421,6 +421,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                         if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,hashes,k)) > 0 )
                         {
                             iguana_send(coin,addr,serialized,len);
+                            counter += k;
                             coin->numreqsent += k;
                             addr->pendblocks += k;
                             addr->pendtime = (uint32_t)time(NULL);
@@ -430,7 +431,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     }
                 }
             }
-            printf("minval.%d maxval.%d\n",minval,maxval);
+            //printf("minval.%d maxval.%d\n",minval,maxval);
             if ( minval != maxval )
             {
                 r = rand() % numpeers;
@@ -454,19 +455,29 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     for (i=0; i<numpeers; i++)
                     {
                         j = (i + r) % numpeers;
-                        if ( donecounts[j] == minval && (addr= coin->peers.ranked[j]) != 0 )
+                        if ( (addr= coin->peers.ranked[j]) != 0 )
                         {
                             printf("send to addr[%d]\n",j);
                             oldest->issued = (uint32_t)time(NULL);
                             oldest->peerid = j + 1;
+                            counter++;
                             iguana_sendblockreqPT(coin,addr,bp,oldest->bundlei,oldest->RO.hash2,0);
                             break;
                         }
                     }
                 }
             }
-            for (i=0; i<numpeers; i++)
-                printf("%d ",peercounts[i]);
+            if ( bp->numsaved < bp->n*.95 )
+            {
+                for (i=0; i<numpeers; i++)
+                    printf("%d ",peercounts[i]);
+            }
+            else
+            {
+                for (i=0; i<bp->n; i++)
+                    if ( (block= bp->blocks[i]) != 0 && block->fpipbits == 0 )
+                        printf("%d ",i);
+            }
             printf("currentflag.%d\n",bp->currentflag);
             return(counter);
         }
