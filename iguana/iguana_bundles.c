@@ -443,7 +443,8 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                         for (i=j; i<bp->n; i+=numpeers)
                             if ( (block= bp->blocks[i]) != 0 && (oldest == 0 || block->issued < oldest->issued) )
                             {
-                                oldest = block;
+                                if ( now > block->issued+10 )
+                                    oldest = block;
                             }
                     }
                 }
