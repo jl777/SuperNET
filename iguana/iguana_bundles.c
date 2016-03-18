@@ -449,7 +449,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
             }
             if ( finished > laggard*10 )
             {
-                printf("90% finished %d, laggards.%d\n",finished,laggards);
+                printf("90%% finished %d, laggards.%d\n",finished,laggard);
             }
             /*if ( doneval != maxval )
             {
