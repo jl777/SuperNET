@@ -368,7 +368,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
 {
     int32_t i,j,k,r,len,minval,maxval,numpeers,peercounts[IGUANA_MAXPEERS],donecounts[IGUANA_MAXPEERS],counter = 0;
     struct iguana_peer *addr; uint32_t now; struct iguana_block *block,*oldest;
-    bits256 hashes[32]; uint8_t serialized[sizeof(hashes) + 256];
+    bits256 hashes[500]; uint8_t serialized[sizeof(hashes) + 256];
     if ( bp == 0 )
         return(0);
     now = (uint32_t)time(NULL);
@@ -383,7 +383,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                 if ( (addr= coin->peers.ranked[j]) != 0 )
                 {
                     now = (uint32_t)time(NULL);
-                    for (i=j,k=minval=maxval=0; i<bp->n; i+=numpeers)
+                    for (i=j,k=minval=maxval=0; i<bp->n&&k<sizeof(hashes)/sizeof(*hashes); i+=numpeers)
                     {
                         if ( bits256_nonz(bp->hashes[i]) != 0 )
                         {
@@ -475,7 +475,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     }
                 }
             }
-            if ( bp == coin->current )
+            if ( 0 && bp == coin->current )
             {
                 if ( bp->numsaved < bp->n*.95 )
                 {
