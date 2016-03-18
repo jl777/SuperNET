@@ -446,9 +446,9 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
             {
                 for (i=laggard=finished=0; i<numpeers; i++)
                 {
-                    if ( peercounts[i] > (bp->n/numpeers)-2 )
+                    if ( peercounts[i] > 10 )
                         laggard++;
-                    if ( peercounts[i] == 0 && donecounts[i] > 2 )
+                    if ( peercounts[i] == 0 && donecounts[i] > 10 )
                         finished++;
                 }
                 if ( finished > laggard*10 && numpeers > 2*laggard )
@@ -456,9 +456,8 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     printf("90%% finished %d, laggards.%d\n",finished,laggard);
                     for (i=laggard=finished=0; i<numpeers; i++)
                     {
-                        if ( peercounts[i] > (bp->n/numpeers)-2 && (addr= coin->peers.ranked[i]) != 0 && now > bp->currenttime+30 )
+                        if ( peercounts[i] > 10 && (addr= coin->peers.ranked[i]) != 0 && now > bp->currenttime+30 )
                         {
-                            printf("kill peer.%d %s\n",i,addr->ipaddr);
                             addr->dead = (uint32_t)time(NULL);
                             for (j=0; j<bp->n; j++)
                             {
@@ -469,6 +468,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                                     iguana_blockQ("kick",coin,bp,j,block->RO.hash2,1);
                                 }
                             }
+                            printf("kill peer.%d %s reissued\n",i,addr->ipaddr);
                         }
                     }
                 }
