@@ -456,15 +456,8 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                         j = (i + r) % numpeers;
                         if ( donecounts[j] == minval && (addr= coin->peers.ranked[j]) != 0 )
                         {
-                            for (i=j; i<bp->n; i+=numpeers)
-                            {
-                                if ( (block= bp->blocks[i]) != 0 )
-                                {
-                                    printf("send to addr[%d]\n",j);
-                                    iguana_sendblockreqPT(coin,addr,bp,i,block->RO.hash2,0);
-                                    break;
-                                }
-                            }
+                            printf("send to addr[%d]\n",j);
+                            iguana_sendblockreqPT(coin,addr,bp,oldest->bundlei,oldest->RO.hash2,0);
                             break;
                         }
                     }
