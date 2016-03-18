@@ -454,7 +454,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                             {
                                 if ( oldest == 0 || block->issued < oldest->issued )
                                     oldest = block;
-                                if ( now > block->issued+60*(bp!=coin->current) )
+                                if ( now > block->issued+10+60*(bp!=coin->current) )
                                 {
                                     for (k=0; k<numpeers; k++)
                                     {
