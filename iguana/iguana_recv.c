@@ -913,7 +913,7 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                         init_hexbytes_noT(hashstr,bp->hashes[0].bytes,sizeof(bits256));
                         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
                         //printf("hdrsi.%d reqHDR.(%s) numhashes.%d\n",bp->hdrsi,hashstr,bp->numhashes);
-                        if ( 0 )
+                        if ( 1 )
                         {
                             iguana_blockQ("reqhdrs0",coin,bp,0,bp->hashes[0],0);
                             if ( bits256_nonz(bp->hashes[1]) > 0 )
