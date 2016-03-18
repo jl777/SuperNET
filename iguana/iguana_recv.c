@@ -441,10 +441,6 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
         if ( block != origblock )
         {
             iguana_blockcopy(coin,block,origblock);
-            block->fpipbits = origblock->fpipbits;
-            block->fpos = origblock->fpos;
-            block->RO.prev_block = prevhash2;
-            block->RO.recvlen = origblock->RO.recvlen;
             fprintf(stderr,"bundleset block.%p vs origblock.%p prev.%d bits.%x fpos.%ld\n",block,origblock,bits256_nonz(prevhash2),block->fpipbits,block->fpos);
         }
         *blockp = block;
