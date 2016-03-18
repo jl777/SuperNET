@@ -392,10 +392,18 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                                 if ( block->peerid == 0 )
                                 {
                                     //printf("<%d> ",i);
-                                    hashes[k++] = bp->hashes[i];
-                                    block->issued = now;
-                                    block->peerid = j + 1;
-                                    block->numrequests++;
+                                    if ( block->fpipbits != 0 )
+                                    {
+                                        hashes[k++] = bp->hashes[i];
+                                        block->issued = now;
+                                        block->peerid = j + 1;
+                                        block->numrequests++;
+                                    }
+                                    else
+                                    {
+                                        block->peerid = 1;
+                                        block->numrequests++;
+                                    }
                                 }
                                 else
                                 {
@@ -405,7 +413,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                                         if ( peercounts[block->peerid - 1] > maxval )
                                             maxval = peercounts[block->peerid - 1];
                                     }
-                                    else if ( block->fpipbits != 0 && block->fpos >= 0 )
+                                    else if ( block->fpipbits != 0 )//&& block->fpos >= 0 )
                                     {
                                         donecounts[block->peerid - 1]++;
                                         if ( donecounts[block->peerid - 1] > minval )
@@ -444,7 +452,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                         for (i=j; i<bp->n; i+=numpeers)
                             if ( (block= bp->blocks[i]) != 0 && (oldest == 0 || block->issued < oldest->issued) )
                             {
-                                if ( now > block->issued+10 )
+                                if ( now > block->issued+1 )
                                     oldest = block;
                             }
                     }
@@ -467,18 +475,21 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     }
                 }
             }
-            /*if ( bp->numsaved < bp->n*.95 )
+            if ( bp == coin->current )
             {
-                for (i=0; i<numpeers; i++)
-                    printf("%d ",peercounts[i]);
+                if ( bp->numsaved < bp->n*.95 )
+                {
+                    for (i=0; i<numpeers; i++)
+                        printf("%d ",peercounts[i]);
+                }
+                else
+                {
+                    for (i=0; i<bp->n; i++)
+                        if ( (block= bp->blocks[i]) != 0 && block->fpipbits == 0 )
+                            printf("[%d:%d] ",bp->hdrsi,i);
+                }
+                printf("currentflag.%d %d\n",bp->currentflag,bp->bundleheight);
             }
-            else
-            {
-                for (i=0; i<bp->n; i++)
-                    if ( (block= bp->blocks[i]) != 0 && block->fpipbits == 0 )
-                        printf("[%d:%d] ",bp->hdrsi,i);
-            }
-            printf("currentflag.%d %d\n",bp->currentflag,bp->bundleheight);*/
             return(counter);
         }
         /*if ( 0 && time(NULL) > bp->lastspeculative+60 )
