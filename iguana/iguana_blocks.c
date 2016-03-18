@@ -194,9 +194,11 @@ void iguana_blockconv(struct iguana_block *dest,struct iguana_msgblock *msg,bits
 void iguana_blockcopy(struct iguana_info *coin,struct iguana_block *block,struct iguana_block *origblock)
 {
     block->RO.hash2 = origblock->RO.hash2;
-    block->RO.prev_block = origblock->RO.prev_block;
     block->RO.merkle_root = origblock->RO.merkle_root;
-    block->mainchain = origblock->mainchain;
+    if ( bits256_nonz(block->RO.prev_block) == 0 )
+        block->RO.prev_block = origblock->RO.prev_block;
+    if ( block->mainchain == 0 )
+        block->mainchain = origblock->mainchain;
     if ( block->fpos < 0 )
         block->fpos = origblock->fpos;
     if ( block->fpipbits == 0 )
