@@ -408,7 +408,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     }
                 }
             }
-            //printf("currentflag.%d\n",bp->currentflag);
+            printf("currentflag.%d\n",bp->currentflag);
             return(counter);
         }
         if ( 0 && time(NULL) > bp->lastspeculative+60 )
