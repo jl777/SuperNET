@@ -456,7 +456,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     printf("90%% finished %d, laggards.%d\n",finished,laggard);
                     for (i=laggard=finished=0; i<numpeers; i++)
                     {
-                        if ( peercounts[i] > 10*donecounts[i] && (addr= coin->peers.ranked[i]) != 0 && now > bp->currenttime+30 )
+                        if ( peercounts[i] > (bp->n/numpeers)-2 && (addr= coin->peers.ranked[i]) != 0 && now > bp->currenttime+30 )
                         {
                             printf("kill peer.%d %s\n",i,addr->ipaddr);
                             addr->dead = (uint32_t)time(NULL);
