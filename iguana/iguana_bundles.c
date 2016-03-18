@@ -457,7 +457,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     {
                         if ( peercounts[i] > 10 && (addr= coin->peers.ranked[i]) != 0 && now > bp->currenttime+30 )
                         {
-                            if ( numpeers > 100 )
+                            if ( numpeers > 100 || addr->laggard++ > 10 )
                                 addr->dead = (uint32_t)time(NULL);
                             for (j=0; j<bp->n; j++)
                             {
