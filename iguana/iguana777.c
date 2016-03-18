@@ -502,7 +502,7 @@ void iguana_coinloop(void *arg)
                             coin->polltimeout = 100;
                         coin->MAXPEERS = 8;
                     }
-                    if ( coin->isRT != 0 && coin->numverified >= coin->bundlescount )
+                    if ( coin->isRT != 0 && coin->numverified >= coin->bundlescount-1 )
                     {
                         static int32_t saved;
                         if ( saved++ == 0 )
