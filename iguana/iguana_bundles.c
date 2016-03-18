@@ -457,6 +457,8 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                         if ( donecounts[j] == minval && (addr= coin->peers.ranked[j]) != 0 )
                         {
                             printf("send to addr[%d]\n",j);
+                            oldest->issued = (uint32_t)time(NULL);
+                            oldest->peerid = j + 1;
                             iguana_sendblockreqPT(coin,addr,bp,oldest->bundlei,oldest->RO.hash2,0);
                             break;
                         }
