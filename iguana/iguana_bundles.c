@@ -450,9 +450,9 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     if ( peercounts[j] == maxval )
                     {
                         for (i=j; i<bp->n; i+=numpeers)
-                            if ( (block= bp->blocks[i]) != 0 && (oldest == 0 || block->issued < oldest->issued) )
+                            if ( (block= bp->blocks[i]) != 0 && block->fpipbits == 0 && (oldest == 0 || block->issued < oldest->issued) )
                             {
-                                if ( now > block->issued+60 )
+                                if ( now > block->issued+13 )
                                     oldest = block;
                             }
                     }
