@@ -326,6 +326,8 @@ void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func
 void mainloop(struct supernet_info *myinfo)
 {
     int32_t i,flag; struct iguana_info *coin; struct iguana_bundle *bp; struct iguana_helper *ptr;
+    sleep(3);
+    printf("mainloop\n");
     while ( 1 )
     {
         flag = 0;
@@ -346,13 +348,6 @@ void mainloop(struct supernet_info *myinfo)
         iguana_jsonQ();
         if ( flag == 0 )
         {
-            /*if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
-             {
-             if ( ptr->bp != 0 && ptr->coin != 0 )
-             flag += iguana_bundleiters(ptr->coin,ptr->bp,ptr->timelimit);
-             myfree(ptr,ptr->allocsize);
-             }
-             else*/
             pangea_queues(SuperNET_MYINFO(0));
             usleep(1000000);
         }
