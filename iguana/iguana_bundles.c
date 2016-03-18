@@ -447,7 +447,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                 for (i=0; i<numpeers; i++)
                 {
                     j = (i + r) % numpeers;
-                    if ( peercounts[j] == maxval )
+                    if ( peercounts[j] > 0 )
                     {
                         for (i=j; i<bp->n; i+=numpeers)
                             if ( (block= bp->blocks[i]) != 0 && block->fpipbits == 0 )
