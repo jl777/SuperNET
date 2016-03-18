@@ -366,7 +366,7 @@ void iguana_bundlepurge(struct iguana_info *coin,struct iguana_bundle *bp)
 
 int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int32_t max,int32_t timelimit)
 {
-    int32_t i,j,k,r,z,len,minval,maxval,numpeers,peercounts[IGUANA_MAXPEERS],donecounts[IGUANA_MAXPEERS],counter = 0;
+    int32_t i,j,k,r,z,len,doneval,maxval,numpeers,laggard,finished,peercounts[IGUANA_MAXPEERS],donecounts[IGUANA_MAXPEERS],counter = 0;
     struct iguana_peer *addr; uint32_t now; struct iguana_block *block,*oldest;
     bits256 hashes[50]; uint8_t serialized[sizeof(hashes) + 256];
     if ( bp == 0 )
@@ -383,7 +383,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                 if ( (addr= coin->peers.ranked[j]) != 0 )
                 {
                     now = (uint32_t)time(NULL);
-                    for (i=j,k=minval=maxval=0; i<bp->n&&k<sizeof(hashes)/sizeof(*hashes); i+=numpeers)
+                    for (i=j,k=doneval=maxval=0; i<bp->n&&k<sizeof(hashes)/sizeof(*hashes); i+=numpeers)
                     {
                         if ( bits256_nonz(bp->hashes[i]) != 0 )
                         {
@@ -411,8 +411,8 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                                     if ( block->fpipbits != 0 && block->fpos >= 0 )
                                     {
                                         donecounts[block->peerid - 1]++;
-                                        if ( donecounts[block->peerid - 1] > minval )
-                                            minval = donecounts[block->peerid - 1];
+                                        if ( donecounts[block->peerid - 1] > doneval )
+                                            doneval = donecounts[block->peerid - 1];
                                     }
                                     else
                                     {
@@ -439,8 +439,19 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     }
                 }
             }
-            //printf("minval.%d maxval.%d\n",minval,maxval);
-            if ( minval != maxval )
+            //printf("doneval.%d maxval.%d\n",doneval,maxval);
+            for (i=laggard=finished=0; i<numpeers; i++)
+            {
+                if ( donecounts[i] == 0 )
+                    laggard++;
+                if ( peercounts[i] == 0 && donecounts[i] > 2 )
+                    finished++;
+            }
+            if ( finished > laggard*10 )
+            {
+                printf("90% finished %d, laggards.%d\n",finished,laggards);
+            }
+            /*if ( doneval != maxval )
             {
                 r = rand() % numpeers;
                 oldest = 0;
@@ -474,7 +485,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                             }
                     }
                 }
-            }
+            }*/
             if ( bp == coin->current )
             {
                 if ( bp->numsaved < bp->n*.95 )
@@ -491,7 +502,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                             printf("[%d:%d] ",bp->hdrsi,i);
                         }
                 }
-                printf("currentflag.%d ht.%d s.%d\n",bp->currentflag,bp->bundleheight,bp->numsaved);
+                printf("currentflag.%d ht.%d s.%d done.%d maxunfinished.%d\n",bp->currentflag,bp->bundleheight,bp->numsaved,doneval,maxval);
             }
         }
         //return(counter);
