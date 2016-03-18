@@ -1135,9 +1135,9 @@ void iguana_main(void *arg)
     category_init(&MYINFO);
     if ( (coinargs= SuperNET_keysinit(&MYINFO,arg)) != 0 )
         iguana_launch(iguana_coinadd("BTCD",0),"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
+#ifdef __APPLE__
     else if ( 1 )
     {
-#ifdef __APPLE__
         sleep(1);
         char *str;
         //iguana_launchcoin(MYINFO.rpcsymbol,cJSON_Parse("{}"));
@@ -1159,10 +1159,7 @@ void iguana_main(void *arg)
             //iguana_coinfind("BTC")->active = iguana_coinfind("BTCD")->active = 0;
         }
         sleep(1);
-#endif
     }
-    if ( arg != 0 )
-        SuperNET_JSON(&MYINFO,cJSON_Parse(arg),0);
     {
         int32_t i,n; int64_t total; char *coinaddr; struct iguana_pkhash *P; struct iguana_info *coin; uint8_t rmd160[20],addrtype,pubkey33[33]; double startmillis;
         coin = iguana_coinfind("BTCD");
@@ -1187,6 +1184,9 @@ void iguana_main(void *arg)
             getchar();
         }
     }
+#endif
+    if ( arg != 0 )
+        SuperNET_JSON(&MYINFO,cJSON_Parse(arg),0);
     mainloop(&MYINFO);
 }
 
