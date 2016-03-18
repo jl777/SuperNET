@@ -376,6 +376,8 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     memset(donecounts,0,sizeof(donecounts));
     if ( (numpeers= coin->peers.numranked) > 8 )//&& bp->currentflag < bp->n )
     {
+        if ( bp->currentflag == 0 )
+            bp->currenttime = now;
         if ( bp->numhashes >= bp->n )
         {
             for (j=0; j<numpeers; j++)
@@ -444,7 +446,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
             {
                 for (i=laggard=finished=0; i<numpeers; i++)
                 {
-                    if ( peercounts[i] > 10*donecounts[i] )
+                    if ( peercounts[i] > (bp->n/numpeers)-2 )
                         laggard++;
                     if ( peercounts[i] == 0 && donecounts[i] > 2 )
                         finished++;
@@ -454,7 +456,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     printf("90%% finished %d, laggards.%d\n",finished,laggard);
                     for (i=laggard=finished=0; i<numpeers; i++)
                     {
-                        if ( peercounts[i] > 10*donecounts[i] && (addr= coin->peers.ranked[i]) != 0 )
+                        if ( peercounts[i] > 10*donecounts[i] && (addr= coin->peers.ranked[i]) != 0 && now > bp->currenttime+30 )
                         {
                             printf("kill peer.%d %s\n",i,addr->ipaddr);
                             addr->dead = (uint32_t)time(NULL);
