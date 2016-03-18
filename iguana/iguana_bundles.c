@@ -523,7 +523,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                 if ( block->issued == 0 || now > block->issued+60 )
                 {
                     block->numrequests++;
-                    //if ( 0 && bp == coin->current )
+                    if ( bp == coin->current )
                         printf("kick [%d:%d]\n",bp->hdrsi,i);
                     iguana_blockQ("kick",coin,bp,i,block->RO.hash2,0);
                     bp->issued[i] = block->issued = now;
