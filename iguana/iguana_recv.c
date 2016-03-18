@@ -694,6 +694,19 @@ struct iguana_bundlereq *iguana_recvunconfirmed(struct iguana_info *coin,struct 
     return(req);
 }
 
+int32_t iguana_blockreq(struct iguana_info *coin,int32_t height,int32_t priority)
+{
+    int32_t hdrsi,bundlei; struct iguana_bundle *bp;
+    hdrsi = height / coin->chain->bundlesize;
+    bundlei = height % coin->chain->bundlesize;
+    if ( (bp= coin->bundles[hdrsi]) != 0 && bits256_nonz(bp->hashes[bundlei]) != 0 )
+    {
+        iguana_blockQ("blockreq",coin,bp,hdrsi,bp->speculative[bundlei],priority);
+        return(height);
+    }
+    return(-1);
+}
+
 int32_t iguana_reqblocks(struct iguana_info *coin)
 {
     int32_t hdrsi,lflag,bundlei,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp;
@@ -796,7 +809,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                     iguana_blockQ("reqblocks1",coin,bp,bundlei,bp->hashes[bundlei],0);
                 }
             }
-         }
+        }
         if ( next != 0 )
         {
             //printf("have next %d\n",coin->blocks.hwmchain.height);

@@ -451,9 +451,8 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     if ( peercounts[i] == 0 && donecounts[i] > 10 )
                         finished++;
                 }
-                if ( finished > laggard*10 && numpeers > 2*laggard )
+                if ( finished > laggard*10 && numpeers > 2*laggard && laggard > 0 )
                 {
-                    printf("90%% finished %d, laggards.%d\n",finished,laggard);
                     for (i=laggard=finished=0; i<numpeers; i++)
                     {
                         if ( peercounts[i] > 10 && (addr= coin->peers.ranked[i]) != 0 && now > bp->currenttime+30 )
@@ -471,17 +470,17 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                             printf("kill peer.%d %s reissued\n",i,addr->ipaddr);
                         }
                     }
+                    for (i=0; i<numpeers; i++)
+                        printf("%d ",peercounts[i]);
+                    printf("peercounts, 90%% finished %d, laggards.%d\n",finished,laggard);
                 }
-                for (i=0; i<numpeers; i++)
-                    printf("%d ",peercounts[i]);
-                printf("peercounts\n");
                 for (i=0; i<bp->n; i++)
                     if ( (block= bp->blocks[i]) != 0 && block->fpipbits == 0 && now > block->issued+10 )
                     {
                         iguana_blockQ("kick",coin,bp,i,block->RO.hash2,1);
                         printf("[%d:%d] ",bp->hdrsi,i);
                     }
-                printf("currentflag.%d ht.%d s.%d done.%d maxunfinished.%d\n",bp->currentflag,bp->bundleheight,bp->numsaved,doneval,maxval);
+                printf("currentflag.%d ht.%d s.%d finished.%d most.%d laggards.%d maxunfinished.%d\n",bp->currentflag,bp->bundleheight,bp->numsaved,finished,doneval,laggard,maxval);
             }
             /*if ( doneval != maxval )
             {
