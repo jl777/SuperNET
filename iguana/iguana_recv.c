@@ -701,7 +701,7 @@ int32_t iguana_blockreq(struct iguana_info *coin,int32_t height,int32_t priority
     bundlei = height % coin->chain->bundlesize;
     if ( (bp= coin->bundles[hdrsi]) != 0 && bits256_nonz(bp->hashes[bundlei]) != 0 )
     {
-        iguana_blockQ("blockreq",coin,bp,hdrsi,bp->speculative[bundlei],priority);
+        iguana_blockQ("blockreq",coin,bp,hdrsi,bp->hashes[bundlei],priority);
         return(height);
     }
     return(-1);
