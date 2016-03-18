@@ -366,12 +366,51 @@ void iguana_bundlepurge(struct iguana_info *coin,struct iguana_bundle *bp)
 
 int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int32_t max,int32_t timelimit)
 {
-    int32_t i,counter = 0; uint32_t now; struct iguana_block *block;
+    int32_t i,j,k,len,numpeers,counter = 0; struct iguana_peer *addr; uint32_t now;
+    struct iguana_block *block; bits256 hashes[32]; uint8_t serialized[sizeof(hashes) + 256];
     if ( bp == 0 )
         return(0);
     now = (uint32_t)time(NULL);
     if ( bp == coin->current )
     {
+        if ( bp->numhashes >= bp->n && bp->currentflag < bp->n && (numpeers= coin->peers.numranked) > 8 )
+        {
+            for (j=0; j<numpeers; j++)
+            {
+                if ( (addr= coin->peers.ranked[j]) != 0 )
+                {
+                    now = (uint32_t)time(NULL);
+                    for (i=j,k=0; i<bp->n; i+=numpeers)
+                    {
+                        if ( bits256_nonz(bp->hashes[i]) != 0 )
+                        {
+                            if ( (block= bp->blocks[i]) != 0 && block->fpipbits == 0 && (block->numrequests == 0 || now > block->issued+60) )
+                            {
+                                printf("<%d> ",i);
+                                hashes[k++] = bp->hashes[i];
+                                block->issued = now;
+                                block->numrequests++;
+                            }
+                        }
+                        bp->issued[i] = now;
+                    }
+                    if ( k > 0 )
+                    {
+                        if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,hashes,k)) > 0 )
+                        {
+                            iguana_send(coin,addr,serialized,len);
+                            coin->numreqsent += k;
+                            addr->pendblocks += k;
+                            addr->pendtime = (uint32_t)time(NULL);
+                            bp->currentflag += k;
+                        }
+                        printf("a%d/%d ",j,k);
+                    }
+                }
+            }
+            //printf("currentflag.%d\n",bp->currentflag);
+            return(counter);
+        }
         if ( 0 && time(NULL) > bp->lastspeculative+60 )
         {
             for (i=1,counter=0; i<bp->n; i++)
@@ -389,7 +428,8 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
             bp->lastspeculative = (uint32_t)time(NULL);
         }
     }
-    return(counter);
+   // if ( bp != coin->current )
+        return(counter);
     for (i=counter=0; i<bp->n; i++)
     {
         if ( (block= bp->blocks[i]) != 0 )
@@ -579,7 +619,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         iguana_bundlehdr(coin,bp,starti);
     else if ( bp->emitfinish > coin->startutc && (retval= iguana_bundlefinish(coin,bp)) < 0 )
         return(0);
-    else if ( bp->emitfinish != 0  && bp->numsaved >= bp->n )
+    else if ( bp->emitfinish == 0 && bp->numsaved >= bp->n )
     {
         if ( iguana_bundleready(coin,bp) == bp->n )
         {
