@@ -465,7 +465,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                         j = (i + r) % numpeers;
                         if ( donecounts[j] > 0 && (addr= coin->peers.ranked[j]) != 0 )
                         {
-                            //printf("send to addr[%d]\n",j);
+                            printf("send [%d:%d] to addr[%d]\n",bp->hdrsi,oldest->bundlei,j);
                             oldest->issued = (uint32_t)time(NULL);
                             oldest->peerid = j + 1;
                             counter++;
@@ -488,7 +488,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                         if ( (block= bp->blocks[i]) != 0 && block->fpipbits == 0 )
                             printf("[%d:%d] ",bp->hdrsi,i);
                 }
-                printf("currentflag.%d %d\n",bp->currentflag,bp->bundleheight);
+                printf("currentflag.%d ht.%d s.%d\n",bp->currentflag,bp->bundleheight,bp->numsaved);
             }
         }
         return(counter);
