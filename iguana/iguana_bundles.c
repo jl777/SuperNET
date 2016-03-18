@@ -455,7 +455,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     for (i=0; i<numpeers; i++)
                     {
                         j = (i + r) % numpeers;
-                        if ( donecount[j] > 0 && (addr= coin->peers.ranked[j]) != 0 )
+                        if ( donecounts[j] > 0 && (addr= coin->peers.ranked[j]) != 0 )
                         {
                             //printf("send to addr[%d]\n",j);
                             oldest->issued = (uint32_t)time(NULL);
