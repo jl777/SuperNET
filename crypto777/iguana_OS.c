@@ -520,7 +520,7 @@ int32_t OS_removefile(char *fname,int32_t scrubflag)
 void OS_ensure_directory(char *dirname)
 {
     FILE *fp; int32_t retval; char fname[512];
-    if ( OS_removefile(dirname,0) < 0 )
+    if ( 0 && OS_removefile(dirname,0) < 0 )
     {
         sprintf(fname,"tmp/%d",rand());
         OS_renamefile(dirname,fname);
