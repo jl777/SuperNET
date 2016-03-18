@@ -406,19 +406,19 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                                         block->numrequests++;
                                     }
                                 }
-                                else
+                                else if ( block->peerid > 0 )
                                 {
-                                    if ( block->fpipbits == 0 )
-                                    {
-                                        peercounts[block->peerid - 1]++;
-                                        if ( peercounts[block->peerid - 1] > maxval )
-                                            maxval = peercounts[block->peerid - 1];
-                                    }
-                                    else if ( block->fpipbits != 0 )//&& block->fpos >= 0 )
+                                    if ( block->fpipbits != 0 && block->fpos >= 0 )
                                     {
                                         donecounts[block->peerid - 1]++;
                                         if ( donecounts[block->peerid - 1] > minval )
                                             minval = donecounts[block->peerid - 1];
+                                    }
+                                    else
+                                    {
+                                        peercounts[block->peerid - 1]++;
+                                        if ( peercounts[block->peerid - 1] > maxval )
+                                            maxval = peercounts[block->peerid - 1];
                                     }
                                 }
                             }
@@ -475,7 +475,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     }
                 }
             }
-            if ( 1 && bp == coin->current )
+            if ( 0 && bp == coin->current )
             {
                 if ( bp->numsaved < bp->n*.95 )
                 {
