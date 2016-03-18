@@ -468,7 +468,6 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                             if ( bp == coin->current )
                                 printf("send [%d:%d] to addr[%d]\n",bp->hdrsi,oldest->bundlei,j);
                             oldest->issued = (uint32_t)time(NULL);
-                            oldest->peerid = j + 1;
                             counter++;
                             iguana_sendblockreqPT(coin,addr,bp,oldest->bundlei,oldest->RO.hash2,0);
                             break;
