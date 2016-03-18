@@ -374,7 +374,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     now = (uint32_t)time(NULL);
     memset(peercounts,0,sizeof(peercounts));
     memset(donecounts,0,sizeof(donecounts));
-    if ( (numpeers= coin->peers.numranked) > 8 && bp->currentflag < bp->n )
+    if ( (numpeers= coin->peers.numranked) > 8 )//&& bp->currentflag < bp->n )
     {
         if ( bp->numhashes >= bp->n )
         {
@@ -440,7 +440,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                 }
             }
             //printf("minval.%d maxval.%d\n",minval,maxval);
-            if ( 0 && minval != maxval )
+            //if ( 0 && minval != maxval )
             {
                 r = rand() % numpeers;
                 oldest = 0;
@@ -522,7 +522,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     block->numrequests++;
                     if ( bp == coin->current )
                         printf("kick [%d:%d]\n",bp->hdrsi,i);
-                    iguana_blockQ("kick",coin,bp,i,block->RO.hash2,bp == coin->current);
+                    iguana_blockQ("kick",coin,bp,i,block->RO.hash2,0);
                     bp->issued[i] = block->issued = now;
                     counter++;
                     if ( --max <= 0 )
