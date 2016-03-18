@@ -585,8 +585,11 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
                 init_hexbytes_noT(hashstr,blockhashes[coin->chain->bundlesize].bytes,sizeof(bits256));
                 queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
                 bp = iguana_bundlecreate(coin,&bundlei,bp->bundleheight+coin->chain->bundlesize,blockhashes[coin->chain->bundlesize],zero,1);
-                printf("EXTEND last bundle %s ht.%d\n",hashstr,bp->bundleheight+coin->chain->bundlesize);
-                iguana_bundleQ(coin,bp,1000);
+                if ( bp != 0 )
+                {
+                    printf("EXTEND last bundle %s ht.%d\n",hashstr,bp->bundleheight+coin->chain->bundlesize);
+                    iguana_bundleQ(coin,bp,1000);
+                }
             }
             else if ( iguana_allhashcmp(coin,bp,blockhashes,num) > 0 )
                 return(req);
