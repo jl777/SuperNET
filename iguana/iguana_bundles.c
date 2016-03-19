@@ -378,6 +378,11 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
         starti = coin->current->hdrsi;
     else starti = 0;
     lag = (bp->hdrsi - starti);
+    lag *= lag;
+    if ( lag < 10 )
+        lag = 10;
+    else if ( lag > 300 )
+        lag = 300;
     if ( (numpeers= coin->peers.numranked) > 8 )//&& bp->currentflag < bp->n )
     {
         if ( bp->currentflag == 0 )
@@ -498,7 +503,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                             printf("[%d:%d] ",bp->hdrsi,i);
                         }
                         flag++;
-                    } else printf("%d ",now - block->issued);
+                    } //else printf("%d ",now - block->issued);
                 }
             }
             if ( flag != 0 && bp == coin->current )
@@ -709,7 +714,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         }
         retval = 1;
     }
-    else if ( bp->hdrsi > starti && bp->hdrsi <= starti+range )
+    else if ( bp->hdrsi >= starti && bp->hdrsi <= starti+range )
     {
         max = sqrt(bp->n) - (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
         if ( max > 100 )
