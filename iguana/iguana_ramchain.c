@@ -1417,7 +1417,7 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
              bp->blocks[i]->RO = blocksRO[i];
              }
              ramchain->H.data = (void *)&blocksRO[bp->n];*/
-             for (valid=0,i=bp->n=1; i>=0; i--)
+             for (valid=0,i=bp->n-1; i>=0; i--)
              {
                 if ( (block= bp->blocks[i]) != 0 )
                 {
@@ -1464,6 +1464,7 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
                 }
                 bp->blocks[i]->RO = B[i];//coin->blocks.RO[bp->bundleheight + i];
                 coin->blocks.RO[bp->bundleheight+i] = B[i];
+                bp->hashes[i] = B[i].hash2;
             }
         }
         //printf("mapped %s scriptspace %d:%d\n",fname,ramchain->H.scriptoffset,ramchain->H.data->scriptspace);
@@ -2221,6 +2222,8 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
         }
         //printf("mapped bundle.%d\n",bp->bundleheight);
         bp->emitfinish = (uint32_t)time(NULL) + 1;
+        iguana_bundlecalcs(coin,bp);
+
         /*for (i=1; i<mapchain->H.data->numtxids; i++)
         {break;
             if ( iguana_txidfind(coin,&height,&tx,T[i].txid) == 0 )
