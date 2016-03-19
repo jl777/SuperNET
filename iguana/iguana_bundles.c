@@ -493,10 +493,10 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                                 printf("kill peer.%d %s reissued\n",i,addr->ipaddr);
                             }
                         }
-                        for (i=0; i<numpeers; i++)
-                            printf("%d ",peercounts[i]);
-                        printf("peercounts: finished %d, laggards.%d threshold %f\n",finished,laggard,threshold);
                     }
+                    for (i=0; i<numpeers; i++)
+                        printf("%d ",peercounts[i]);
+                    printf("peercounts: finished %d, laggards.%d threshold %f\n",finished,laggard,threshold);
                 }
             }
             for (i=0; i<bp->n; i++)
