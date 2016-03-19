@@ -2425,7 +2425,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     {
         char dirname[1024];
         //printf("delete %d files hdrs.%d retval.%d\n",num,bp->hdrsi,retval);
-        if ( bp_n == bp->n )
+        if ( bp_n == bp->n && bp->n == coin->chain->bundlesize )
         {
             for (j=starti; j<=endi; j++)
             {
