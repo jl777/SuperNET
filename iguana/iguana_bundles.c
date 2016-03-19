@@ -660,7 +660,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                 {
                     if ( block->fpipbits != 0 ) //block->fpos >= 0 &&
                         numsaved++;
-                    if ( block->RO.recvlen != 0 )
+                    if ( block->RO.recvlen != 0 || block->fpipbits != 0 || block->fpos >= 0 || block->queued != 0 )
                     {
                         numrecv++;
                         datasize += block->RO.recvlen;
