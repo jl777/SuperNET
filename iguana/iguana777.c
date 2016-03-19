@@ -494,7 +494,7 @@ void iguana_coinloop(void *arg)
                 now = (uint32_t)time(NULL);
                 if ( coin->active != 0 )
                 {
-                    if ( coin->isRT == 0 && now > coin->startutc+600 && coin->blocksrecv >= (coin->longestchain/coin->chain->bundlesize)*coin->chain->bundlesize && coin->blocks.hwmchain.height >= coin->longestchain-30 )
+                    if ( coin->isRT == 0 && now > coin->startutc+600 && coin->numsaved >= (coin->longestchain/coin->chain->bundlesize)*coin->chain->bundlesize && coin->blocks.hwmchain.height >= coin->longestchain-30 )
                     {
                         fprintf(stderr,">>>>>>> %s isRT blockrecv.%d vs longest.%d\n",coin->symbol,coin->blocksrecv,coin->longestchain);
                         coin->isRT = 1;
