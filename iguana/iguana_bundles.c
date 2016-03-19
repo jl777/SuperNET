@@ -510,8 +510,8 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                 printf("currentflag.%d ht.%d s.%d finished.%d most.%d laggards.%d maxunfinished.%d\n",bp->currentflag,bp->bundleheight,bp->numsaved,finished,doneval,laggard,maxval);
          }
     }
-    //if ( bp == coin->current )
-    //    return(counter);
+    if ( bp == coin->current )
+        return(counter);
     for (i=0; i<bp->n; i++)
     {
         if ( (block= bp->blocks[i]) != 0 )
@@ -522,7 +522,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                 {
                     block->numrequests++;
                     if ( bp == coin->current )
-                        printf("kick [%d:%d]\n",bp->hdrsi,i);
+                        printf("[%d:%d] ",bp->hdrsi,i);
                     iguana_blockQ("kick",coin,bp,i,block->RO.hash2,0);
                     bp->issued[i] = block->issued = now;
                     counter++;
@@ -647,7 +647,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                     bp->minrequests = block->numrequests;
                 if ( (bp->hdrsi == 0 && bundlei == 0) || bits256_nonz(block->RO.prev_block) > 0 )
                 {
-                    if ( block->fpos >= 0 && block->fpipbits != 0 )
+                    if ( block->fpipbits != 0 ) //block->fpos >= 0 &&
                         numsaved++;
                     if ( block->RO.recvlen != 0 )
                     {
