@@ -570,7 +570,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( (coin->MAXPENDING= maxpending) <= 0 )
         coin->MAXPENDING = (strcmp(symbol,"BTC") == 0) ? _IGUANA_MAXPENDING : 64*_IGUANA_MAXPENDING;
     if ( (coin->MAXBUNDLES= maxbundles) <= 0 )
-        coin->MAXBUNDLES = (strcmp(symbol,"BTC") == 0) ? IGUANA_MAXPENDBUNDLES : IGUANA_MAXPENDBUNDLES * 3;
+        coin->MAXBUNDLES = (strcmp(symbol,"BTC") == 0) ? IGUANA_MAXPENDBUNDLES : IGUANA_MAXPENDBUNDLES * 64;
     coin->myservices = services;
     printf("ensure directories\n");
     sprintf(dirname,"accounts/%s",symbol), OS_ensure_directory(dirname);
