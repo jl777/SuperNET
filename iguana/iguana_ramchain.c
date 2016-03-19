@@ -2425,13 +2425,16 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     {
         char dirname[1024];
         //printf("delete %d files hdrs.%d retval.%d\n",num,bp->hdrsi,retval);
-        for (j=starti; j<=endi; j++)
+        if ( bp_n == bp->n )
         {
-            if ( iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,1,bp->hashes[j],zero,1) >= 0 ) // ipbits[j]
-                coin->peers.numfiles -= OS_removefile(fname,0);
-            else printf("error removing.(%s)\n",fname);
+            for (j=starti; j<=endi; j++)
+            {
+                if ( iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,1,bp->hashes[j],zero,1) >= 0 ) // ipbits[j]
+                    coin->peers.numfiles -= OS_removefile(fname,0);
+                else printf("error removing.(%s)\n",fname);
+            }
+            sprintf(dirname,"%s/%s/%d",GLOBALTMPDIR,coin->symbol,bp->bundleheight), OS_portable_rmdir(dirname,1);
         }
-        sprintf(dirname,"%s/%s/%d",GLOBALTMPDIR,coin->symbol,bp->bundleheight), OS_portable_rmdir(dirname,1);
         iguana_bundleload(coin,&newchain,bp,0);
         newchain.A = 0;
     }
