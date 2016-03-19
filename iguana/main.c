@@ -325,7 +325,7 @@ void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func
 
 void mainloop(struct supernet_info *myinfo)
 {
-    int32_t i,flag; struct iguana_info *coin; struct iguana_helper *ptr;
+    int32_t i,flag; struct iguana_info *coin; struct iguana_helper *ptr; struct iguana_bundle *bp;
     sleep(3);
     printf("mainloop\n");
     while ( 1 )
@@ -334,9 +334,9 @@ void mainloop(struct supernet_info *myinfo)
         if ( 1 )
         {
             for (i=0; i<IGUANA_MAXCOINS; i++)
-                if ( (coin= Coins[i]) != 0 && coin->active != 0 )//&& (bp= coin->current) != 0 )
+                if ( (coin= Coins[i]) != 0 && coin->active != 0 && (bp= coin->current) != 0 )
                 {
-                    //iguana_bundleissue(coin,bp,bp->n,100);
+                    iguana_bundleissue(coin,bp,bp->n,100);
                     if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
                     {
                         if ( ptr->bp != 0 && ptr->coin != 0 )

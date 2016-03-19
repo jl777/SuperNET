@@ -861,6 +861,13 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                         printf("MAINCHAIN skip issue %d\n",bundlei+1);
                         iguana_blockQ("mainskip",coin,bp,bundlei,bp->hashes[bundlei+1],0);
                     }
+                    else if ( bp != 0 && time(NULL) > bp->hdrtime+10 )
+                    {
+                        char str[65];
+                        printf("MAINCHAIN gethdr %d\n",bp->bundleheight);
+                        queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
+                        bp->hdrtime = (uint32_t)time(NULL);
+                    }
                 }
             }
         }
@@ -927,7 +934,7 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
     int32_t i,lag,n = 0; struct iguana_bundle *bp; char hashstr[65];
     if ( queue_size(&coin->hdrsQ) == 0 )
     {
-        //if ( iguana_needhdrs(coin) > 0 )
+        if ( iguana_needhdrs(coin) > 0 )
         {
             for (i=0; i<coin->bundlescount; i++)
             {
