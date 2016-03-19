@@ -336,7 +336,7 @@ void mainloop(struct supernet_info *myinfo)
             for (i=0; i<IGUANA_MAXCOINS; i++)
                 if ( (coin= Coins[i]) != 0 && coin->active != 0 && (bp= coin->current) != 0 )
                 {
-                    iguana_bundleissue(coin,bp,bp->n,100);
+                    //iguana_bundleissue(coin,bp,bp->n,100);
                     if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
                     {
                         if ( ptr->bp != 0 && ptr->coin != 0 )
