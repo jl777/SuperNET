@@ -190,7 +190,7 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
     int32_t otherbundlei,setval,bundlesize,err = 0;
     if ( blockp != 0 )
         *blockp = 0;
-    if ( bp == 0 )
+    if ( bp == 0 || bits256_nonz(hash2) == 0 )
         return(-1111);
     if ( bits256_nonz(hash2) > 0 && (block= iguana_blockhashset(coin,-1,hash2,1)) != 0 )
     {
