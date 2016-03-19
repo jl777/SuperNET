@@ -497,8 +497,8 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                         if ( bp == coin->current )
                         {
                             counter++;
-                            iguana_blockQ("kick",coin,bp,i,block->RO.hash2,1);
-                            if ( (addr= coin->peers.ranked[rand() % numpeers]) != 0 )
+                            iguana_blockQ("kick",coin,bp,i,block->RO.hash2,bp == coin->current);
+                            if ( bp == coin->current && (addr= coin->peers.ranked[rand() % numpeers]) != 0 )
                                 iguana_sendblockreqPT(coin,addr,bp,i,block->RO.hash2,0);
                             printf("[%d:%d] ",bp->hdrsi,i);
                         }
