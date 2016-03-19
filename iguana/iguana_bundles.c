@@ -478,7 +478,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                                     flag++;
                                     counter++;
                                     block->peerid = 0;
-                                    iguana_blockQ("kick",coin,bp,j,block->RO.hash2,now > block->issued+lag*10);
+                                    iguana_blockQ("kick",coin,bp,j,block->RO.hash2,0*(now > block->issued+lag*10));
                                     bp->issued[i] = block->issued = now;
                                 }
                             }
@@ -499,7 +499,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                         if ( bp == coin->current )
                         {
                             counter++;
-                            iguana_blockQ("kick",coin,bp,i,block->RO.hash2,now > block->issued+lag*10);
+                            iguana_blockQ("kick",coin,bp,i,block->RO.hash2,0*(now > block->issued+lag*10));
                             //if ( bp == coin->current && (addr= coin->peers.ranked[rand() % numpeers]) != 0 )
                             //    iguana_sendblockreqPT(coin,addr,bp,i,block->RO.hash2,0);
                             printf("[%d:%d] ",bp->hdrsi,i);
