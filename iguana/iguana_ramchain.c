@@ -1788,8 +1788,15 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
     int32_t i,j,fpos,pubkeysize,msize,sigsize,firsti=1,err,flag,bundlei = -2; bits256 merkle_root;
     struct iguana_bundle *bp = 0; struct iguana_block *block; uint32_t scriptspace,stackspace;
     totalrecv += recvlen;
+    if ( bits256_nonz(origtxdata->block.RO.merkle_root) == 0 )
+        return(-1);
     for (i=0; i<sizeof(addr->dirty)/sizeof(*addr->dirty); i++)
+    {
+        memset(&origtxdata->block.RO.prev_block,0,sizeof(bits256));
+        origtxdata->block.RO.recvlen = 0;
+        origtxdata->block.issued = 0;
         addr->dirty[i] = 0;
+    }
     msize = (int32_t)sizeof(bits256) * (txn_count+1) * 2;
     if ( msize <= addr->TXDATA.totalsize )
     {
