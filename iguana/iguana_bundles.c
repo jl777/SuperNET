@@ -727,11 +727,11 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     }
     else if ( bp->hdrsi > starti && bp->hdrsi <= starti+range )
     {
-        max = sqrt(bp->n) - (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
-        if ( max > 500 )
+        max = bp->n;//sqrt(bp->n) - (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
+        /*if ( max > 500 )
             max = 500;
         else if ( max < 10 )
-            max = 10;
+            max = 10;*/
         counter = iguana_bundleissue(coin,bp,max,timelimit);
         //if ( 0 && bp->hdrsi == starti )
             printf("ITERATE.%d max.%d bundle.%d h.%d n.%d r.%d s.%d F.%d T.%d counter.%d\n",bp->rank,max,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter);
