@@ -377,7 +377,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     if ( coin->current != 0 )
         starti = coin->current->hdrsi;
     else starti = 0;
-    priority = (bp->hdrsi < starti+8);
+    priority = 1;//(bp->hdrsi < starti+8);
     lag = (bp->hdrsi - starti);
     lag *= lag;
     if ( (i= sqrt(bp->hdrsi)) < 2 )
@@ -471,9 +471,9 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                         if ( peercounts[i] == 0 && donecounts[i] > threshold )
                             finished++;
                     }
-                    if ( finished > laggard*10 && numpeers > 2*laggard && laggard > 0 )
+                    if ( laggard == 1 )//finished > laggard*10 && numpeers > 2*laggard && laggard > 0 )
                     {
-                        for (i=laggard=finished=0; i<numpeers; i++)
+                        for (i=0; i<numpeers; i++)
                         {
                             if ( peercounts[i] > threshold && (addr= coin->peers.ranked[i]) != 0 && now > bp->currenttime+lag )
                             {
@@ -495,8 +495,11 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                             }
                         }
                     }
-                    for (i=0; i<numpeers; i++)
-                        printf("%d ",peercounts[i]);
+                    if ( laggard != 0 )
+                    {
+                        for (i=0; i<numpeers; i++)
+                            printf("%d ",peercounts[i]);
+                    }
                     printf("peercounts.%d: finished %d, laggards.%d threshold %f\n",bp->hdrsi,finished,laggard,threshold);
                 }
             }
