@@ -366,7 +366,7 @@ void iguana_bundlepurge(struct iguana_info *coin,struct iguana_bundle *bp)
 
 int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int32_t max,int32_t timelimit)
 {
-    int32_t i,j,k,len,starti,lag,doneval,nonz,total=0,maxval,numpeers,laggard,flag=0,finished,peercounts[IGUANA_MAXPEERS],donecounts[IGUANA_MAXPEERS],counter = 0;
+    int32_t i,j,k,len,starti,lag,doneval,nonz,total=0,maxval,numpeers,laggard,flag=0,finished,peercounts[IGUANA_MAXPEERS],donecounts[IGUANA_MAXPEERS],priority,counter = 0;
     struct iguana_peer *addr; uint32_t now; struct iguana_block *block;
     bits256 hashes[50]; uint8_t serialized[sizeof(hashes) + 256];
     if ( bp == 0 )
@@ -377,6 +377,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     if ( coin->current != 0 )
         starti = coin->current->hdrsi;
     else starti = 0;
+    priority = (bp->hdris < starti+8);
     lag = (bp->hdrsi - starti);
     lag *= lag;
     if ( (i= sqrt(bp->hdrsi)) < 2 )
@@ -454,7 +455,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                 }
             }
             //printf("doneval.%d maxval.%d\n",doneval,maxval);
-            if ( bp == coin->current )
+            if ( priority != 0 )
             {
                 double threshold;
                 for (i=nonz=0; i<numpeers; i++)
@@ -486,7 +487,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                                         flag++;
                                         counter++;
                                         block->peerid = 0;
-                                        iguana_blockQ("kick",coin,bp,j,block->RO.hash2,1);
+                                        iguana_blockQ("kick",coin,bp,j,block->RO.hash2,0);
                                         bp->issued[i] = block->issued = now;
                                     }
                                 }
@@ -496,7 +497,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     }
                     for (i=0; i<numpeers; i++)
                         printf("%d ",peercounts[i]);
-                    printf("peercounts: finished %d, laggards.%d threshold %f\n",finished,laggard,threshold);
+                    printf("peercounts.%d: finished %d, laggards.%d threshold %f\n",bp->hdrsi,finished,laggard,threshold);
                 }
             }
             for (i=0; i<bp->n; i++)
@@ -506,9 +507,9 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     if ( now > block->issued+lag )
                     {
                         counter++;
-                        if ( bp == coin->current )
+                        if ( priority != 0 )
                         {
-                            if ( bp == coin->current && (addr= coin->peers.ranked[rand() % numpeers]) != 0 )
+                            if ( (addr= coin->peers.ranked[rand() % numpeers]) != 0 )
                                 iguana_sendblockreqPT(coin,addr,bp,i,block->RO.hash2,0);
                             printf("[%d:%d] ",bp->hdrsi,i);
                         }
@@ -517,7 +518,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     } //else printf("%d ",now - block->issued);
                 }
             }
-            if ( flag != 0 && bp == coin->current )
+            if ( flag != 0 && priority != 0 && laggard != 0 )
                 printf("currentflag.%d ht.%d s.%d finished.%d most.%d laggards.%d maxunfinished.%d\n",bp->currentflag,bp->bundleheight,bp->numsaved,finished,doneval,laggard,maxval);
          }
     }
