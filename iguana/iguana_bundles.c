@@ -377,7 +377,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     if ( coin->current != 0 )
         starti = coin->current->hdrsi;
     else starti = 0;
-    lag = (bp->hdrsi - starti) * 3;
+    lag = (bp->hdrsi - starti);
     if ( (numpeers= coin->peers.numranked) > 8 )//&& bp->currentflag < bp->n )
     {
         if ( bp->currentflag == 0 )
@@ -461,7 +461,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     {
                         if ( peercounts[i] > 10 && (addr= coin->peers.ranked[i]) != 0 && now > bp->currenttime+lag )
                         {
-                            if ( numpeers > 64 || addr->laggard++ > 3 )
+                            if ( numpeers > 64 || addr->laggard++ > 5 )
                                 addr->dead = (uint32_t)time(NULL);
                             for (j=0; j<bp->n; j++)
                             {
@@ -469,6 +469,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                                 {
                                     printf("%d ",j);
                                     flag++;
+                                    counter++;
                                     block->peerid = 0;
                                     iguana_blockQ("kick",coin,bp,j,block->RO.hash2,1);
                                 }
@@ -480,84 +481,33 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                         printf("%d ",peercounts[i]);
                     printf("peercounts, 90%% finished %d, laggards.%d\n",finished,laggard);
                 }
-                for (i=0; i<bp->n; i++)
+            }
+            for (i=0; i<bp->n; i++)
+            {
+                if ( (block= bp->blocks[i]) != 0 && block->fpipbits == 0 )
                 {
-                    if ( (block= bp->blocks[i]) != 0 && block->fpipbits == 0 )
+                    if ( now > block->issued+lag )
                     {
-                        if ( now > block->issued+lag )
+                        iguana_blockQ("kick",coin,bp,i,block->RO.hash2,0);
+                        if ( bp == coin->current )
                         {
-                            iguana_blockQ("kick",coin,bp,i,block->RO.hash2,0);
-                            if ( bp == coin->current )
-                            {
-                                iguana_blockQ("kick",coin,bp,i,block->RO.hash2,1);
-                                if ( (addr= coin->peers.ranked[rand() % numpeers]) != 0 )
-                                    iguana_sendblockreqPT(coin,addr,bp,i,block->RO.hash2,0);
-                                printf("[%d:%d] ",bp->hdrsi,i);
-                            }
-                            flag++;
-                        } else printf("%d ",now - block->issued);
-                    }
-                }
-                if ( flag != 0 )
-                    printf("currentflag.%d ht.%d s.%d finished.%d most.%d laggards.%d maxunfinished.%d\n",bp->currentflag,bp->bundleheight,bp->numsaved,finished,doneval,laggard,maxval);
-            }
-            /*if ( doneval != maxval )
-            {
-                r = rand() % numpeers;
-                oldest = 0;
-                for (i=0; i<numpeers; i++)
-                {
-                    j = (i + r) % numpeers;
-                    if ( peercounts[j] > 0 )
-                    {
-                        for (i=j; i<bp->n; i+=numpeers)
-                            if ( (block= bp->blocks[i]) != 0 && block->fpipbits == 0 )
-                            {
-                                if ( oldest == 0 || block->issued < oldest->issued )
-                                    oldest = block;
-                                if ( now > block->issued+10+60*(bp!=coin->current) )
-                                {
-                                    for (k=0; k<numpeers; k++)
-                                    {
-                                        r = rand();
-                                        z = (k + r) % numpeers;
-                                        if ( donecounts[z] > 0 && (addr= coin->peers.ranked[z]) != 0 )
-                                        {
-                                            if ( bp == coin->current )
-                                                printf("send [%d:%d] to addr[%d]\n",bp->hdrsi,block->bundlei,z);
-                                            block->issued = (uint32_t)time(NULL);
-                                            counter++;
-                                            iguana_sendblockreqPT(coin,addr,bp,block->bundlei,block->RO.hash2,0);
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                    }
-                }
-            }*/
-        }
-        //return(counter);
-        /*if ( 0 && time(NULL) > bp->lastspeculative+60 )
-        {
-            for (i=1,counter=0; i<bp->n; i++)
-            {
-                if ( (block= bp->blocks[i]) == 0 || block->fpos < 0 || block->fpipbits == 0 )
-                {
-                    if ( bp->speculative != 0 && bits256_nonz(bp->hashes[i]) == 0 && bits256_nonz(bp->speculative[i]) > 0 && i < bp->numspec )
-                        iguana_blockQ("speculate0",coin,0,-2,bp->speculative[i],0), counter++;
-                    else if ( bits256_nonz(bp->hashes[i]) != 0 )
-                        iguana_blockQ("speculate1",coin,0,-3,bp->hashes[i],0), counter++;
+                            counter++;
+                            iguana_blockQ("kick",coin,bp,i,block->RO.hash2,1);
+                            if ( (addr= coin->peers.ranked[rand() % numpeers]) != 0 )
+                                iguana_sendblockreqPT(coin,addr,bp,i,block->RO.hash2,0);
+                            printf("[%d:%d] ",bp->hdrsi,i);
+                        }
+                        flag++;
+                    } else printf("%d ",now - block->issued);
                 }
             }
-            if ( counter != 0 )
-                printf("SPECULATIVE issue.%d bp.[%d]\n",counter,bp->hdrsi);
-            bp->lastspeculative = (uint32_t)time(NULL);
-        }*/
+            if ( flag != 0 && bp == coin->current )
+                printf("currentflag.%d ht.%d s.%d finished.%d most.%d laggards.%d maxunfinished.%d\n",bp->currentflag,bp->bundleheight,bp->numsaved,finished,doneval,laggard,maxval);
+         }
     }
     if ( bp == coin->current )
         return(counter);
-    for (i=counter=0; i<bp->n; i++)
+    for (i=0; i<bp->n; i++)
     {
         if ( (block= bp->blocks[i]) != 0 )
         {

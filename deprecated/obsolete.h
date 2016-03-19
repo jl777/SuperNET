@@ -14343,5 +14343,57 @@ len = 0;
                 }
                 return(0);
             }
+            /*if ( doneval != maxval )
+             {
+             r = rand() % numpeers;
+             oldest = 0;
+             for (i=0; i<numpeers; i++)
+             {
+             j = (i + r) % numpeers;
+             if ( peercounts[j] > 0 )
+             {
+             for (i=j; i<bp->n; i+=numpeers)
+             if ( (block= bp->blocks[i]) != 0 && block->fpipbits == 0 )
+             {
+             if ( oldest == 0 || block->issued < oldest->issued )
+             oldest = block;
+             if ( now > block->issued+10+60*(bp!=coin->current) )
+             {
+             for (k=0; k<numpeers; k++)
+             {
+             r = rand();
+             z = (k + r) % numpeers;
+             if ( donecounts[z] > 0 && (addr= coin->peers.ranked[z]) != 0 )
+             {
+             if ( bp == coin->current )
+             printf("send [%d:%d] to addr[%d]\n",bp->hdrsi,block->bundlei,z);
+             block->issued = (uint32_t)time(NULL);
+             counter++;
+             iguana_sendblockreqPT(coin,addr,bp,block->bundlei,block->RO.hash2,0);
+             break;
+             }
+             }
+             }
+             }
+             }
+             }
+             }*/
+            //return(counter);
+            /*if ( 0 && time(NULL) > bp->lastspeculative+60 )
+             {
+             for (i=1,counter=0; i<bp->n; i++)
+             {
+             if ( (block= bp->blocks[i]) == 0 || block->fpos < 0 || block->fpipbits == 0 )
+             {
+             if ( bp->speculative != 0 && bits256_nonz(bp->hashes[i]) == 0 && bits256_nonz(bp->speculative[i]) > 0 && i < bp->numspec )
+             iguana_blockQ("speculate0",coin,0,-2,bp->speculative[i],0), counter++;
+             else if ( bits256_nonz(bp->hashes[i]) != 0 )
+             iguana_blockQ("speculate1",coin,0,-3,bp->hashes[i],0), counter++;
+             }
+             }
+             if ( counter != 0 )
+             printf("SPECULATIVE issue.%d bp.[%d]\n",counter,bp->hdrsi);
+             bp->lastspeculative = (uint32_t)time(NULL);
+             }*/
 
 #endif
