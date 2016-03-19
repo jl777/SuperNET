@@ -838,7 +838,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                     hash2 = iguana_blockhash(coin,coin->backstop);
                     bp = coin->bundles[(coin->blocks.hwmchain.height+1)/coin->chain->bundlesize];
                     bundlei = (coin->blocks.hwmchain.height+1) % coin->chain->bundlesize;
-                    if ( bits256_nonz(hash2) == 0 )
+                    if ( bp != 0 && bits256_nonz(hash2) == 0 )
                     {
                         hash2 = bp->hashes[bundlei];
                         if ( bits256_nonz(hash2) == 0 && bp->speculative != 0 )

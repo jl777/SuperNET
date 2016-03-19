@@ -715,7 +715,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
         }
         retval = 1;
     }
-    else if ( bp->hdrsi > starti && bp->hdrsi <= starti+range )
+    else if ( bp->hdrsi >= starti && bp->hdrsi <= starti+range )
     {
         max = sqrt(bp->n) - (bp->n/coin->MAXBUNDLES)*(bp->hdrsi - starti);
         if ( max > 100 )
