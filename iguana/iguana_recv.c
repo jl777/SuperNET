@@ -836,24 +836,30 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                 {
                     coin->backstop = coin->blocks.hwmchain.height+1;
                     hash2 = iguana_blockhash(coin,coin->backstop);
+                    bp = coin->bundles[(coin->blocks.hwmchain.height+1)/coin->chain->bundlesize];
+                    bundlei = (coin->blocks.hwmchain.height+1) % coin->chain->bundlesize;
+                    if ( bits256_nonz(hash2) == 0 )
+                    {
+                        hash2 = bp->hashes[bundlei];
+                        if ( bits256_nonz(hash2) == 0 && bp->speculative != 0 )
+                            hash2 = bp->speculative[bundlei];
+                    }
                     if ( bits256_nonz(hash2) > 0 )
                     {
-                        bp = coin->bundles[(coin->blocks.hwmchain.height+1)/coin->chain->bundlesize];
-                        bundlei = (coin->blocks.hwmchain.height+1) % coin->chain->bundlesize;
-                        if ( bp != 0 && bits256_nonz(bp->hashes[bundlei]) > 0 )
+                        if ( bp != 0 && bits256_nonz(hash2) > 0 )
                         {
                             coin->backstopmillis = OS_milliseconds();
-                            iguana_blockQ("mainchain",coin,bp,bundlei,bp->hashes[bundlei],0);
+                            iguana_blockQ("mainchain",coin,bp,bundlei,hash2,0);
                             flag++;
                             char str[65];
                             if ( 1 && (rand() % 1000) == 0 || bp->bundleheight > coin->longestchain-coin->chain->bundlesize )
                                 printf("%s MAINCHAIN.%d threshold %.3f %.3f lag %.3f\n",bits256_str(str,hash2),coin->blocks.hwmchain.height+1,threshold,coin->backstopmillis,lag);
                         }
-                        else if ( bp != 0 && bundlei < bp->n-1 && bits256_nonz(bp->hashes[bundlei+1]) > 0 )
-                        {
-                            printf("MAINCHAIN skip issue %d\n",bundlei+1);
-                            iguana_blockQ("mainskip",coin,bp,bundlei,bp->hashes[bundlei+1],0);
-                        }
+                    }
+                    else if ( bp != 0 && bundlei < bp->n-1 && bits256_nonz(bp->hashes[bundlei+1]) > 0 )
+                    {
+                        printf("MAINCHAIN skip issue %d\n",bundlei+1);
+                        iguana_blockQ("mainskip",coin,bp,bundlei,bp->hashes[bundlei+1],0);
                     }
                 }
             }

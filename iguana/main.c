@@ -325,7 +325,7 @@ void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func
 
 void mainloop(struct supernet_info *myinfo)
 {
-    int32_t i,flag; struct iguana_info *coin; struct iguana_bundle *bp; struct iguana_helper *ptr;
+    int32_t i,flag; struct iguana_info *coin; struct iguana_helper *ptr;
     sleep(3);
     printf("mainloop\n");
     while ( 1 )
