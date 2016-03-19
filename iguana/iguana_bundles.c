@@ -379,10 +379,10 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     else starti = 0;
     lag = (bp->hdrsi - starti);
     lag *= lag;
-    if ( lag < 10 )
-        lag = 10;
-    else if ( lag > 300 )
-        lag = 300;
+    if ( lag < 30 )
+        lag = 30;
+    else if ( lag > 600 )
+        lag = 600;
     if ( (numpeers= coin->peers.numranked) > 8 )//&& bp->currentflag < bp->n )
     {
         if ( bp->currentflag == 0 )

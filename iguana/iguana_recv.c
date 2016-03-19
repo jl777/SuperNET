@@ -37,8 +37,8 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
     char hexstr[65]; init_hexbytes_noT(hexstr,hash2.bytes,sizeof(hash2));
     if ( addr == 0 || memcmp(lastreq.bytes,hash2.bytes,sizeof(hash2)) == 0 || memcmp(lastreq2.bytes,hash2.bytes,sizeof(hash2)) == 0 )
     {
-        printf("duplicate req %s or null addr.%p\n",bits256_str(hexstr,hash2),addr);
-        //return(0);
+        //printf("duplicate req %s or null addr.%p\n",bits256_str(hexstr,hash2),addr);
+        return(0);
     }
     if ( addr->msgcounts.verack == 0 )
     {
@@ -568,9 +568,9 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
     iguana_bundlefind(coin,&bp,&bundlei,blockhashes[1]);
     //iguana_blockQ(coin,0,-1,blockhashes[1],0);
     //iguana_blockQ(coin,0,-4,blockhashes[1],1);
-    //char str[65];
-    //if ( bp != 0 && bp->hdrsi == 0 )
-    //    printf("blockhashes[%d] %d of %d %s bp.%d[%d]\n",num,bp==0?-1:bp->hdrsi,coin->bundlescount,bits256_str(str,blockhashes[1]),bp==0?-1:bp->bundleheight,bundlei);
+    char str[65];
+    if ( bp != 0 && bp->hdrsi == coin->bundlescount-1 )
+        printf("blockhashes[%d] %d of %d %s bp.%d[%d]\n",num,bp==0?-1:bp->hdrsi,coin->bundlescount,bits256_str(str,blockhashes[1]),bp==0?-1:bp->bundleheight,bundlei);
     if ( bp != 0 )
     {
         bp->hdrtime = (uint32_t)time(NULL);
@@ -644,7 +644,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     struct iguana_bundle *bp=0; int32_t numsaved,bundlei = -2; struct iguana_block *block,*tmpblock;
     bp = iguana_bundleset(coin,&block,&bundlei,origblock);
     char str[65];
-    if ( 0 && bp == coin->current && bp != 0 )
+    if ( 1 && bp != 0 && bp->hdrsi == coin->bundlescount-1 )
     {
         int32_t i; static int32_t numrecv;
         numrecv++;
@@ -927,7 +927,7 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
     int32_t i,lag,n = 0; struct iguana_bundle *bp; char hashstr[65];
     if ( queue_size(&coin->hdrsQ) == 0 )
     {
-        if ( iguana_needhdrs(coin) > 0 )
+        //if ( iguana_needhdrs(coin) > 0 )
         {
             for (i=0; i<coin->bundlescount; i++)
             {
@@ -956,10 +956,6 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
             if ( 0 && n > 0 )
                 printf("REQ HDRS pending.%d\n",n);
             coin->zcount = 0;
-        }
-        else
-        {
-            
         }
     } else coin->zcount = 0;
     return(n);
