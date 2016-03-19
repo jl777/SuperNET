@@ -644,7 +644,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     struct iguana_bundle *bp=0; int32_t numsaved=0,bundlei = -2; struct iguana_block *block,*tmpblock;
     bp = iguana_bundleset(coin,&block,&bundlei,origblock);
     char str[65];
-    //if ( 1 && bp != 0 && bp->hdrsi == coin->bundlescount-1 )
+    if ( 1 && bp != 0 && bp->hdrsi == coin->bundlescount-1 )
     {
         int32_t i; static int32_t numrecv;
         numrecv++;
