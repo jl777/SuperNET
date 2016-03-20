@@ -642,7 +642,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                 {
                     if ( block->fpipbits != 0 ) //block->fpos >= 0 &&
                         numsaved++;
-                    if ( block->RO.recvlen != 0 || block->fpipbits != 0 || block->fpos >= 0 || block->queued != 0 )
+                    if ( block->RO.recvlen != 0 || block->fpipbits != 0 || block->fpos >= 0 )//|| block->queued != 0 )
                     {
                         numrecv++;
                         datasize += block->RO.recvlen;
@@ -723,7 +723,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
     lasti = lastbp == 0 ? coin->bundlescount-1 : lastbp->hdrsi;
     coin->numbundlesQ--;
     iguana_bundlecalcs(coin,bp);
-    //printf("ITERATE.%d bundle.%d h.%d n.%d r.%d s.%d F.%d T.%d counter.%d\n",bp->rank,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter);
+    printf("ITERATE.%d bundle.%d h.%d n.%d r.%d s.%d F.%d T.%d counter.%d\n",bp->rank,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter);
     if ( bp->numhashes < bp->n && bp->bundleheight < coin->longestchain-coin->chain->bundlesize )
         iguana_bundlehdr(coin,bp,starti);
     else if ( bp->emitfinish != 0 )
@@ -752,10 +752,15 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
             {
                 if ( iguana_bundlesaveHT(coin,mem,memB,bp,(uint32_t)time(NULL)) == 0 )
                 {
-                    //fprintf(stderr,"emitQ coin.%p bp.[%d]\n",coin,bp->bundleheight);
+                    fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d\n",coin,bp->hdrsi,bp->bundleheight);
                     bp->emitfinish = (uint32_t)time(NULL) + 1;
                     coin->numemitted++;
-                } else bp->emitfinish = 0;
+                }
+                else
+                {
+                    fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d error\n",coin,bp->hdrsi,bp->bundleheight);
+                    bp->emitfinish = 0;
+                }
             }
         }
         retval = 1;
