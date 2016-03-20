@@ -296,7 +296,7 @@ int64_t peggy_txind_bets(uint8_t *txbuf,int32_t len,struct accts777_info *accts,
 
 int32_t peggy_univ2addr(char *coinaddr,struct peggy_univaddr *ua)
 {
-    return(btc_convrmd160(coinaddr,ua->addrtype,ua->rmd160));
+    return(bitcoin_address(coinaddr,ua->addrtype,ua->rmd160,20) != 0);
 }
 
 int32_t peggy_addr2univ(struct peggy_univaddr *ua,char *coinaddr,char *coin)

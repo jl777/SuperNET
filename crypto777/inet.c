@@ -225,13 +225,13 @@ static int inet_pton4(char *src, unsigned char *dst) {
             saw_digit = 0;
         } else
         {
-            printf("inet_pton4 4 error.(%s)\n",savestr); getchar();
+            printf("inet_pton4 4 error.(%s)\n",savestr); //getchar();
             return EINVAL;
         }
     }
     if (octets < 4)
     {
-        printf("inet_pton4 5 error.(%s)\n",savestr); getchar();
+        printf("inet_pton4 5 error.(%s)\n",savestr); //getchar();
         return EINVAL;
     }
     memcpy(dst, tmp, sizeof(struct in_addr));

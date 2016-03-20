@@ -51,7 +51,7 @@ struct iguana_block *iguana_blockhashset(struct iguana_info *coin,int32_t height
     struct iguana_block *block,*prev;
     if ( height > 0 && (height > coin->blocks.maxbits || depth != 0) )
     {
-        printf("illegal height.%d when max.%d, depth.%d\n",height,coin->blocks.maxbits,depth);
+        printf("illegal height.%d when max.%d, or nonz depth.%d\n",height,coin->blocks.maxbits,depth);
         //getchar();
         return(0);
     }
@@ -141,7 +141,10 @@ int32_t iguana_blockvalidate(struct iguana_info *coin,int32_t *validp,struct igu
     if ( *validp == 0 )
     {
         if ( dispflag != 0 )
+        {
             printf("iguana_blockvalidate: miscompare (%s) vs (%s)\n",bits256_str(str,hash2),bits256_str(str2,block->RO.hash2));
+            //getchar();
+        }
         return(-1);
     }
     return(0);
@@ -191,9 +194,13 @@ void iguana_blockconv(struct iguana_block *dest,struct iguana_msgblock *msg,bits
 void iguana_blockcopy(struct iguana_info *coin,struct iguana_block *block,struct iguana_block *origblock)
 {
     block->RO.hash2 = origblock->RO.hash2;
-    block->RO.prev_block = origblock->RO.prev_block;
     block->RO.merkle_root = origblock->RO.merkle_root;
-    block->mainchain = origblock->mainchain;
+    if ( bits256_nonz(block->RO.prev_block) == 0 )
+        block->RO.prev_block = origblock->RO.prev_block;
+    if ( block->mainchain == 0 )
+        block->mainchain = origblock->mainchain;
+    if ( block->fpos < 0 )
+        block->fpos = origblock->fpos;
     if ( block->fpipbits == 0 )
         block->fpipbits = origblock->fpipbits;
     if ( block->RO.timestamp == 0 )
@@ -289,7 +296,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
             }
             else
             {
-                char str[65]; printf("(%s) notready v.%d m.%d h.%d\n",bits256_str(str,prev->RO.hash2),prev->valid,prev->mainchain,prev->height);
+                //char str[65]; printf("(%s) notready v.%d m.%d h.%d\n",bits256_str(str,prev->RO.hash2),prev->valid,prev->mainchain,prev->height);
                 return(0);
             }
         }
@@ -300,7 +307,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
             return(0);
         }
         //char str[65]; printf("extend? %s.h%d: %.15f vs %.15f ht.%d vs %d\n",bits256_str(str,block->RO.hash2),height,block->PoW,coin->blocks.hwmchain.PoW,height,coin->blocks.hwmchain.height);
-        if ( iguana_blockvalidate(coin,&valid,newblock,1) < 0 || valid == 0 )
+        if ( iguana_blockvalidate(coin,&valid,newblock,0) < 0 || valid == 0 )
             return(0);
         block->height = height;
         block->valid = 1;
@@ -330,7 +337,14 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                     printf("EXTENDMAIN %s %d <- (%s) n.%u max.%u PoW %f numtx.%d valid.%d\n",str,block->height,str2,hwmchain->height+1,coin->blocks.maxblocks,block->PoW,block->RO.txn_count,block->valid);
                 struct iguana_bundle *bp;
                 if ( (block->height % coin->chain->bundlesize) == 0 )
+                {
                     bp = iguana_bundlecreate(coin,&bundlei,block->height,block->RO.hash2,zero,0);
+                    if ( bp != 0 && bp->hdrsi == coin->bundlescount-1 )
+                    {
+                        //printf("created last bundle ht.%d\n",bp->bundleheight);
+                        iguana_blockreq(coin,block->height,1);
+                    }
+                }
                 else
                 {
                     if ( (bp= coin->bundles[block->height / coin->chain->bundlesize]) != 0 )
@@ -356,6 +370,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                 //if ( block->fpipbits == 0 )
                 //    iguana_blockQ(coin,bp,block->height % coin->chain->bundlesize,block->RO.hash2,1);
                 block->mainchain = 1;
+                //iguana_blockreq(coin,block->height+1,0);
                 return(block);
             }
         }
@@ -379,7 +394,7 @@ void iguana_blocksetheights(struct iguana_info *coin,struct iguana_block *block)
 int32_t iguana_chainextend(struct iguana_info *coin,struct iguana_block *newblock)
 {
     struct iguana_block *block,*prev; int32_t valid,oldhwm; char str[65];
-    if ( iguana_blockvalidate(coin,&valid,newblock,1) < 0 || valid == 0 )
+    if ( iguana_blockvalidate(coin,&valid,newblock,0) < 0 || valid == 0 )
     {
         printf("chainextend: newblock.%s didnt validate\n",bits256_str(str,newblock->RO.hash2));
         return(-1);

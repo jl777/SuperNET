@@ -725,6 +725,7 @@ uint64_t submit_triggered_nxtae(struct supernet_info *myinfo,int32_t dotrade,cha
     }
     if ( (jsonstr= issue_NXTPOST(cmd)) != 0 )
     {
+        printf("NXT.(%s) -> (%s)\n",cmd,jsonstr);
         _stripwhite(jsonstr,' ');
         if ( (json= cJSON_Parse(jsonstr)) != 0 )
         {

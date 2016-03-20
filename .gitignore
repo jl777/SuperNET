@@ -1,13 +1,17 @@
 
 *.o
 
-agents/iguana
 
-agents/libcrypto777.a
+
+
 
 agents/iguana.exe
 
 iguana/pnacl/Release/iguana_unstripped.pexe
+
+iguana/pnacl/Release/iguana.pexe
+
+agents/libcrypto777.a
 
 iguana/pnacl/Release/iguana_unstripped.bc
 

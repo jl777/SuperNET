@@ -654,7 +654,8 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
     //printf("SuperNET_JSON.(%s)\n",jprint(json,0));
     if ( remoteaddr != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 )
         remoteaddr = 0;
-    agent = jstr(json,"agent");
+    if ( (agent = jstr(json,"agent")) == 0 )
+        agent = "bitcoinrpc";
     method = jstr(json,"method");
     if ( agent != 0 && strcmp(agent,"pangea") == 0 && jobj(json,"categoryhash") == 0 )
     {
@@ -701,7 +702,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
     }
     if ( (destflag & SUPERNET_ISMINE) != 0 && agent != 0 && method != 0 )
     {
-        if ( hexmsg != 0 && SuperNET_hexmsgfind(myinfo,category,subhash,hexmsg,0) < 0 )
+        if ( newflag == 0 && hexmsg != 0 && SuperNET_hexmsgfind(myinfo,category,subhash,hexmsg,0) < 0 )
             SuperNET_hexmsgadd(myinfo,category,subhash,hexmsg,tai_now(),remoteaddr);
         if ( (retstr= SuperNET_processJSON(myinfo,json,remoteaddr)) != 0 )
         {
@@ -1210,11 +1211,11 @@ TWO_STRINGS(SuperNET,subscribe,category,subcategory)
 
 TWO_STRINGS(SuperNET,gethexmsg,category,subcategory)
 {
-    bits256 categoryhash,subhash; struct category_msg *m; char *hexstr; cJSON *retjson;
+    bits256 categoryhash,subhash; struct category_msg *m; char *hexstr; cJSON *retjson; struct category_info *cat;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     categoryhash = calc_categoryhashes(&subhash,category,subcategory);
-    if ( (m= category_gethexmsg(myinfo,categoryhash,subhash)) != 0 )
+    if ( (m= category_gethexmsg(myinfo,&cat,categoryhash,subhash)) != 0 )
     {
         hexstr = calloc(1,m->len*2+1);
         init_hexbytes_noT(hexstr,m->msg,m->len);

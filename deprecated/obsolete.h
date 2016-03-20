@@ -8440,48 +8440,7 @@ void iguana_dedicatedrecv(void *arg)
         }
         return(0);
     }
-    
-    struct iguana_txblock *iguana_peertxdata(struct iguana_info *coin,int32_t *bundleip,char *fname,struct iguana_memspace *mem,uint32_t ipbits,bits256 hash2)
-    {
-        int32_t bundlei,datalen,checki,hdrsi,fpos; char str[65],str2[65]; FILE *fp;
-        bits256 checkhash2; struct iguana_txblock *txdata = 0;
-        if ( (bundlei= iguana_peerfname(coin,&hdrsi,fname,ipbits,hash2)) >= 0 )
-        {
-            if ( (fp= fopen(fname,"rb")) != 0 )
-            {
-                fseek(fp,bundlei * sizeof(bundlei),SEEK_SET);
-                fread(&fpos,1,sizeof(fpos),fp);
-                fseek(fp,fpos,SEEK_SET);
-                fread(&checki,1,sizeof(checki),fp);
-                if ( ftell(fp)-sizeof(checki) == fpos && bundlei == checki )
-                {
-                    fread(&checkhash2,1,sizeof(checkhash2),fp);
-                    if ( memcmp(hash2.bytes,checkhash2.bytes,sizeof(hash2)) == 0 )
-                    {
-                        fread(&datalen,1,sizeof(datalen),fp);
-                        if ( datalen < (mem->totalsize - mem->used - 4) )
-                        {
-                            if ( (txdata= iguana_memalloc(mem,datalen,0)) != 0 )
-                            {
-                                fread(txdata,1,datalen,fp);
-                                if ( txdata->datalen != datalen || txdata->block.bundlei != bundlei )
-                                {
-                                    printf("%s peertxdata txdata->datalen.%d != %d bundlei.%d vs %d\n",bits256_str(str,txdata->block.hash2),txdata->datalen,datalen,txdata->block.bundlei,bundlei);
-                                    getchar();
-                                    txdata = 0;
-                                    iguana_memreset(mem);
-                                } //else printf("SUCCESS txdata.%s bundlei.%d fpos.%d T.%d U.%d S.%d P.%d\n",bits256_str(str,txdata->block.hash2),bundlei,fpos,txdata->numtxids,txdata->numunspents,txdata->numspends,txdata->numpkinds);
-                            } else printf("peertxdata error allocating txdata\n");
-                        } else printf("mismatch peertxdata datalen %d vs %ld totalsize %ld\n",datalen,mem->totalsize - mem->used - 4,(long)mem->totalsize);
-                    } else printf("peertxdata hash mismatch %s != %s\n",bits256_str(str,hash2),bits256_str(str2,checkhash2));
-                } else printf("peertxdata bundlei.%d != checki.%d, fpos.%d ftell.%ld\n",bundlei,checki,fpos,ftell(fp));
-                fclose(fp);
-            } else printf("cant find file.(%s)\n",fname);
-        } //else printf("bundlei.%d\n",bundlei);
-        *bundleip = bundlei;
-        return(txdata);
-    }
-    
+        
     /*if ( (n= ramchain->data->numtxids) > 0 )
      {
      for (ramchain->txidind=ramchain->data->firsti; ramchain->txidind<n; ramchain->txidind++)
@@ -13721,5 +13680,720 @@ len = 0;
                             else printf("BTCSWAP.(%s)\n",retstr);
                                 return(retstr);
 #endif
+        else if ( strcmp(cmdstr,"BTCdeckC") == 0 )
+        {
+            if ( ap->info == 0 )
+            {
+                printf("A (%s) null swap for orderid.%llu p.%p\n",cmdstr,(long long)ap->orderid,ap);
+                return(clonestr("{\"error\":\"no swap for orderid\"}"));
+            }
+            else
+            {
+                if ( ap->otherorderid == 0 )
+                {
+                    ap->otherorderid = ap->orderid;
+                    ap->otheroffer = ap->offer;
+                    ap->offer = A.offer;
+                    ap->orderid = A.orderid;
+                    ((struct bitcoin_swapinfo *)ap->info)->feetag64 = ap->orderid;
+                }
+                printf("add to statemachine\n");
+                queue_enqueue("statemachineQ",&exchange->statemachineQ,&ap->DL,0);
+                newjson = instantdex_parseargjson(myinfo,exchange,ap,argjson,0);
+                if ( (retstr= instantdex_addfeetx(myinfo,newjson,ap,ap->info,"BOB_sentoffer","ALICE_sentoffer")) == 0 )
+                {
+                    return(instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,ap,cmdstr,argjson,newjson,serdata,serdatalen));
+                } else return(clonestr("{\"error\":\"couldnt add fee\"}"));
+            }
+            /*
+             for (iter=0; iter<2; iter++)
+             {
+             while ( (m= category_gethexmsg(myinfo,instantdexhash,iter == 0 ? GENESIS_PUBKEY : myinfo->myaddr.persistent)) != 0 )
+             {
+             //printf("gothexmsg len.%d\n",m->len);
+             pm = (struct instantdex_msghdr *)m->msg;
+             if ( m->remoteipbits != 0 )
+             expand_ipbits(remote,m->remoteipbits);
+             else remote[0] = 0;
+             if ( (str= InstantDEX_hexmsg(myinfo,pm,m->len,remote)) != 0 )
+             free(str);
+             free(m);
+             }
+             }*/
+            
+            /*  uint64_t satoshis[2]; int32_t offerdir = 0; double minperc; uint64_t insurance,relsatoshis;
+             bits256 orderhash,traderpub; struct iguana_info *coinbtc;
+             if ( (swap= ap->info) == 0 )
+             return(clonestr("{\"error\":\"no swapinfo set\"}"));
+             relsatoshis = instantdex_BTCsatoshis(ap->offer.price64,ap->offer.basevolume64);
+             if ( (minperc= jdouble(argjson,"m")) < INSTANTDEX_MINPERC )
+             minperc = INSTANTDEX_MINPERC;
+             offerdir = instantdex_bidaskdir(&ap->offer);
+             if ( 0 )
+             {
+             int32_t i;
+             for (i=0; i<sizeof(ap->offer); i++)
+             printf("%02x ",((uint8_t *)&ap->offer)[i]);
+             printf("swapset.%llu\n",(long long)ap->orderid);
+             }
+             if ( offerdir > 0 )
+             {
+             swap->bidid = ap->orderid;
+             swap->askid = ap->otherorderid;
+             }
+             else
+             {
+             swap->askid = ap->orderid;
+             swap->bidid = ap->otherorderid;
+             }
+             if ( bits256_nonz(swap->othertrader) == 0 )
+             swap->othertrader = traderpub;
+             else if ( bits256_cmp(traderpub,swap->othertrader) != 0 )
+             {
+             printf("competing offer received for (%s/%s) %.8f %.8f\n",ap->offer.base,ap->offer.rel,dstr(ap->offer.price64),dstr(ap->offer.basevolume64));
+             return(clonestr("{\"error\":\"no competing offers for now\"}"));
+             }
+             if ( bits256_nonz(swap->orderhash) == 0 )
+             swap->orderhash = orderhash;
+             else if ( bits256_cmp(orderhash,swap->orderhash) != 0 )
+             {
+             printf("orderhash %llx mismatch %llx\n",(long long)swap->orderhash.txid,(long long)orderhash.txid);
+             return(clonestr("{\"error\":\"orderhash mismatch???\"}"));
+             }
+             swap->satoshis[0] = ap->offer.basevolume64;
+             swap->satoshis[1] = relsatoshis;
+             swap->insurance = (relsatoshis * INSTANTDEX_INSURANCERATE + coinbtc->chain->txfee); // txfee
+             /*  if ( ap->info == 0 )
+             //printf("gotoffer SETSWAP for orderid.%llu (%s)\n",(long long)ap->orderid,jprint(argjson,0));
+             swap->choosei = swap->otherschoosei = -1;
+             if ( (retstr= instantdex_swapset(myinfo,ap,argjson)) != 0 )
+             return(retstr);
+             swap->feetag64 = ap->orderid;*/
+            
+            /*char *instantdex_swapset(struct supernet_info *myinfo,struct instantdex_accept *ap,cJSON *argjson)
+             {
+             uint64_t satoshis[2]; int32_t offerdir = 0; double minperc; uint64_t insurance,relsatoshis;
+             struct bitcoin_swapinfo *swap; bits256 orderhash,traderpub; struct iguana_info *coinbtc;
+             if ( (swap= ap->info) == 0 )
+             return(clonestr("{\"error\":\"no swapinfo set\"}"));
+             relsatoshis = instantdex_BTCsatoshis(ap->offer.price64,ap->offer.basevolume64);
+             traderpub = jbits256(argjson,"traderpub");
+             if ( (minperc= jdouble(argjson,"m")) < INSTANTDEX_MINPERC )
+             minperc = INSTANTDEX_MINPERC;
+             if ( (coinbtc= iguana_coinfind("BTC")) == 0 )
+             return(clonestr("{\"error\":\"no BTC found\"}"));
+             insurance = (satoshis[1] * INSTANTDEX_INSURANCERATE + coinbtc->chain->txfee);
+             offerdir = instantdex_bidaskdir(&ap->offer);
+             vcalc_sha256(0,orderhash.bytes,(void *)&ap->offer,sizeof(ap->offer));
+             if ( 0 )
+             {
+             int32_t i;
+             for (i=0; i<sizeof(ap->offer); i++)
+             printf("%02x ",((uint8_t *)&ap->offer)[i]);
+             printf("swapset.%llu\n",(long long)ap->orderid);
+             }
+             if ( offerdir > 0 )
+             {
+             swap->bidid = ap->orderid;
+             swap->askid = ap->otherorderid;
+             }
+             else
+             {
+             swap->askid = ap->orderid;
+             swap->bidid = ap->otherorderid;
+             }
+             if ( bits256_nonz(swap->othertrader) == 0 )
+             swap->othertrader = traderpub;
+             else if ( bits256_cmp(traderpub,swap->othertrader) != 0 )
+             {
+             printf("competing offer received for (%s/%s) %.8f %.8f\n",ap->offer.base,ap->offer.rel,dstr(ap->offer.price64),dstr(ap->offer.basevolume64));
+             return(clonestr("{\"error\":\"no competing offers for now\"}"));
+             }
+             if ( bits256_nonz(swap->orderhash) == 0 )
+             swap->orderhash = orderhash;
+             else if ( bits256_cmp(orderhash,swap->orderhash) != 0 )
+             {
+             printf("orderhash %llx mismatch %llx\n",(long long)swap->orderhash.txid,(long long)orderhash.txid);
+             return(clonestr("{\"error\":\"orderhash mismatch???\"}"));
+             }
+             swap->satoshis[0] = ap->offer.basevolume64;
+             swap->satoshis[1] = relsatoshis;
+             swap->insurance = (relsatoshis * INSTANTDEX_INSURANCERATE + coinbtc->chain->txfee); // txfee
+             return(0);
+             }
+             
+             char *instantdex_sendoffer(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *ap,cJSON *argjson) // Bob sending to network (Alice)
+             {
+             struct iguana_info *other; struct bitcoin_swapinfo *swap; int32_t isbob; cJSON *newjson; char *retstr;
+             if ( strcmp(ap->offer.rel,"BTC") != 0 )
+             return(clonestr("{\"error\":\"invalid othercoin\"}"));
+             else if ( (other= iguana_coinfind(ap->offer.base)) == 0 )
+             return(clonestr("{\"error\":\"invalid othercoin\"}"));
+             else if ( ap->offer.price64 <= 0 || ap->offer.basevolume64 <= 0 )
+             return(clonestr("{\"error\":\"illegal price or volume\"}"));
+             isbob = (ap->offer.myside == 1);
+             swap = calloc(1,sizeof(struct bitcoin_swapinfo));
+             swap->isbob = isbob;
+             swap->expiration = ap->offer.expiration;//(uint32_t)(time(NULL) + INSTANTDEX_LOCKTIME*isbob);
+             swap->choosei = swap->otherschoosei = -1;
+             swap->depositconfirms = swap->paymentconfirms = swap->altpaymentconfirms = swap->myfeeconfirms = swap->otherfeeconfirms = -1;
+             ap->info = swap;
+             printf("sendoffer SETSWAP for orderid.%llu ap.%p (%p)\n",(long long)ap->orderid,ap,swap);
+             if ( (retstr= instantdex_swapset(myinfo,ap,argjson)) != 0 )
+             return(retstr);
+             ap->orderid = swap->orderhash.txid;
+             if ( (newjson= instantdex_parseargjson(myinfo,exchange,ap,argjson,1)) == 0 )
+             return(clonestr("{\"error\":\"instantdex_BTCswap offer null newjson\"}"));
+             else
+             {
+             //instantdex_bobtx(myinfo,iguana_coinfind("BTCD"),&swap->deposittxid,swap->otherpubs[0],swap->mypubs[0],swap->privkeys[swap->choosei],ap->offer.expiration-INSTANTDEX_LOCKTIME*2,swap->satoshis[1],1);
+             //instantdex_alicetx(myinfo,iguana_coinfind("BTCD"),swap->altmsigaddr,&swap->altpaymenttxid,swap->pubAm,swap->pubBn,swap->satoshis[0]);
+             if ( 0 )
+             {
+             int32_t i;
+             for (i=0; i<sizeof(ap->offer); i++)
+             printf("%02x ",((uint8_t *)&ap->offer)[i]);
+             printf("BTCoffer.%llu\n",(long long)ap->orderid);
+             }
+             return(instantdex_sendcmd(myinfo,&ap->offer,newjson,"BTCoffer",GENESIS_PUBKEY,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck)));
+             }
+             }*/
+            /*ptr = (void *)bp->scriptsmap;
+             ind = unspentind << 1;
+             for (i=0; i<bp->numscriptsmaps; i++,ptr+=2)
+             {
+             if ( ind == ptr[0] )
+             {
+             printf("bp.[%d] ind.%d offset.%d vs %ld\n",bp->hdrsi,ind,ptr[1],coin->scriptsfilesize);
+             if ( ptr[1] + sizeof(struct scriptdata) <= coin->scriptsfilesize )
+             {
+             if ( memcmp((void *)((long)coin->scriptsptr + ptr[1] + sizeof(struct scriptdata)),spendscript,spendlen) == 0 )
+             {
+             printf("matched against existing scriptsptr[%d] %d\n",ptr[1],spendlen);
+             return(ptr[1]);
+             }
+             printf("mismatch against existing scriptsptr[%d] %d\n",ptr[1],spendlen);
+             }
+             else
+             {
+             if ( (fp= fopen(coin->scriptsfname,"rb")) != 0 )
+             {
+             fseek(fp,ptr[1] + sizeof(struct scriptdata),SEEK_SET);
+             for (i=0; i<spendlen; i++)
+             if ( (c= fgetc(fp)) != spendscript[i] )
+             {
+             printf("bp.[%d] u%d: fgetc[%d] at %ld [%d,%ld) mismatch %02x v %02x\n",bp->hdrsi,unspentind,i,ftell(fp),ptr[1],ptr[1]+sizeof(struct scriptdata)+spendlen,c,spendscript[i]);
+             for (; i<spendlen; i++)
+             printf("%02x ",fgetc(fp) & 0xff);
+             printf("fgetc\n");
+             for (i=0; i<spendlen; i++)
+             printf("%02x ",spendscript[i]);
+             printf("\n");
+             break;
+             }
+             fclose(fp);
+             if ( i == spendlen )
+             {
+             printf("matched script via fgetc offset.%u scriptlen.%d\n",ptr[1],spendlen);
+             return(ptr[1]);
+             }
+             }
+             }
+             break;
+             }
+             }*/
+            
+            /*void iguana_bundlescript(struct iguana_info *coin,uint32_t offset,struct iguana_bundle *bp,uint32_t ind,uint8_t *spendscript,int32_t spendlen)
+             {
+             long size = sizeof(offset) + sizeof(ind); uint32_t *ptr;
+             if ( bp->numscriptsmaps >= bp->maxscriptsmaps )
+             {
+             bp->scriptsmap = realloc(bp->scriptsmap,(1000+bp->maxscriptsmaps) * (sizeof(offset) + sizeof(ind)));
+             bp->maxscriptsmaps += 1000;
+             }
+             ptr = (void *)((long)bp->scriptsmap + bp->numscriptsmaps*size);
+             ptr[0] = ind;
+             ptr[1] = offset;
+             bp->numscriptsmaps++;
+             }*/
+            
+            uint32_t iguana_scriptstableadd(struct iguana_info *coin,int32_t spendflag,uint32_t fpos,uint8_t *script,uint16_t scriptlen)
+            {
+                struct scriptinfo *ptr;
+                HASH_FIND(hh,coin->scriptstable[spendflag],script,scriptlen,ptr);
+                if ( ptr == 0 )
+                {
+                    ptr = mycalloc('w',1,sizeof(*ptr) + scriptlen);
+                    ptr->fpos = fpos;
+                    ptr->scriptlen = scriptlen;
+                    memcpy(ptr->script,script,scriptlen);
+                    HASH_ADD(hh,coin->scriptstable[spendflag],script,scriptlen,ptr);
+                }
+                return(fpos);
+            }
+            
+            uint32_t iguana_scriptstablefind(struct iguana_info *coin,int32_t spendflag,uint8_t *script,int32_t scriptlen)
+            {
+                struct scriptinfo *ptr;
+                HASH_FIND(hh,coin->scriptstable[spendflag],script,scriptlen,ptr);
+                if ( ptr != 0 )
+                    return(ptr->fpos);
+                else return(0);
+            }
+            
+            long iguana_rwscript(struct iguana_info *coin,int32_t rwflag,void *fileptr,long offset,long filesize,FILE *fp,struct iguana_bundle *bp,uint8_t **scriptptrp,int32_t *lenp,int32_t hdrsi,uint32_t ind,int32_t spendflag)
+            {
+                long scriptpos; struct scriptdata data; uint8_t *script = *scriptptrp;
+                if ( spendflag == 0 && (scriptpos= iguana_scriptstablefind(coin,spendflag,script,*lenp)) != 0 )
+                    return(scriptpos);
+                memset(&data,0,sizeof(data));
+                if ( rwflag != 0 && fp != 0 && fileptr == 0 )
+                {
+                    scriptpos = ftell(fp);
+                    data.ind = ind, data.spendflag = spendflag;
+                    data.hdrsi = hdrsi;
+                    data.scriptlen = *lenp;
+                    if ( fwrite(&data,1,sizeof(data),fp) != sizeof(data) )
+                        return(-1);
+                    if ( fwrite(script,1,data.scriptlen,fp) != data.scriptlen )
+                        return(-1);
+                    offset = (uint32_t)ftell(fp);
+                    //printf("spend.%d filesize.%ld wrote.h%d u%d len.%d [%ld,%ld) crc.%08x\n",spendflag,coin->scriptsfilesize[spendflag],hdrsi,ind,data.scriptlen,scriptpos,ftell(fp),calc_crc32(0,script,data.scriptlen));
+                }
+                else if ( rwflag == 0 && fp == 0 && fileptr != 0 )
+                {
+                    scriptpos = offset;
+                    if ( offset+sizeof(data) <= filesize )
+                    {
+                        memcpy(&data,(void *)((long)fileptr + offset),sizeof(data));
+                        if ( data.scriptlen > 0 && data.scriptlen < *lenp && offset+sizeof(data)+data.scriptlen <= filesize )
+                        {
+                            if ( data.scriptlen > 0 )
+                            {
+                                *scriptptrp = script = (void *)((long)fileptr + offset);
+                                offset += data.scriptlen + sizeof(data);
+                                if ( data.hdrsi < coin->bundlescount )
+                                    bp = coin->bundles[data.hdrsi];
+                                else printf("illegal hdrsi.%d/%d\n",data.hdrsi,coin->bundlescount);
+                            } else printf("illegal scriptlen %d\n",data.scriptlen);
+                            //printf("hdrsi.%d loaded script.%d %u s%d\n",data.hdrsi,data.scriptlen,data.ind,data.spendflag);
+                        }
+                        else if ( data.scriptlen > 0 )
+                        {
+                            printf("spendlen overflow.%d vs %d\n",data.scriptlen,*lenp);
+                            return(-1);
+                        }
+                    }
+                    else
+                    {
+                        printf("error reading from %ld\n",scriptpos);
+                        return(-1);
+                    }
+                    //printf("hdrsi.%d scriptlen.%d\n",data.hdrsi,data.scriptlen);
+                    *lenp = data.scriptlen;
+                }
+                if ( bp != 0 )
+                {
+                    //if ( spendflag == 0 )
+                    iguana_scriptstableadd(coin,spendflag,(uint32_t)scriptpos,script,*lenp);
+                }
+                else if ( rwflag == 0 )
+                {
+                    printf("null bp for iguana_rwscript hdrsi.%d/%d\n",data.hdrsi,coin->bundlescount);
+                    return(-1);
+                }
+                return(offset);
+            }
+            
+            long iguana_initscripts(struct iguana_info *coin)
+            {
+                long fpos=0,offset = 0; uint8_t scriptdata[IGUANA_MAXSCRIPTSIZE],*scriptptr; int32_t spendflag,size,n=0; struct scriptdata script;
+                for (spendflag=0; spendflag<2; spendflag++)
+                {
+                    portable_mutex_lock(&coin->scripts_mutex[spendflag]);
+                    sprintf(coin->scriptsfname[spendflag],"tmp/%s/%sscripts",coin->symbol,spendflag==0?"":"sig"), OS_portable_path(coin->scriptsfname[spendflag]);
+                    printf("scripts fname.(%s)\n",coin->scriptsfname[spendflag]);
+                    if ( (coin->scriptsptr[spendflag]= OS_mapfile(coin->scriptsfname[spendflag],&coin->scriptsfilesize[spendflag],0)) == 0 )
+                    {
+                        coin->scriptsfp[spendflag] = fopen(coin->scriptsfname[spendflag],"wb");
+                        memset(&script,0,sizeof(script));
+                        fwrite(&script,1,sizeof(script),coin->scriptsfp[spendflag]);
+                    }
+                    else
+                    {
+                        while ( 1 )
+                        {
+                            size = sizeof(scriptdata);
+                            scriptptr = scriptdata;
+                            if ( (offset= iguana_rwscript(coin,0,coin->scriptsptr[spendflag],offset,coin->scriptsfilesize[spendflag],0,0,&scriptptr,&size,0,0,spendflag)) < 0 )
+                                break;
+                            else fpos = offset;
+                            n++;
+                        }
+                        coin->scriptsfp[spendflag] = fopen(coin->scriptsfname[spendflag],"ab");
+                        portable_mutex_unlock(&coin->scripts_mutex[spendflag]);
+                        printf("initialized %d scripts, fpos %ld\n",n,fpos);
+                        return(offset);
+                    }
+                    portable_mutex_unlock(&coin->scripts_mutex[spendflag]);
+                }
+                return(-1);
+            }
+            
+            uint32_t iguana_scriptsave(struct iguana_info *coin,struct iguana_bundle *bp,uint32_t ind,int32_t spendflag,uint8_t *script,int32_t scriptlen)
+            {
+                FILE *fp; long fpos = 0;
+                if ( scriptlen > 0 && (fp= coin->scriptsfp[spendflag]) != 0 )
+                {
+                    portable_mutex_lock(&coin->scripts_mutex[spendflag]);
+                    fpos = ftell(fp);
+                    if ( iguana_rwscript(coin,1,0,0,0,fp,bp,&script,&scriptlen,bp->hdrsi,ind,spendflag) < 0 )
+                    {
+                        fseek(fp,fpos,SEEK_SET);
+                        fpos = -1;
+                        printf("error saving script at %ld\n",fpos);
+                    } else fflush(fp);
+                    portable_mutex_unlock(&coin->scripts_mutex[spendflag]);
+                } else printf("cant scriptsave.%d to (%s).%p scriptlen.%d\n",spendflag,coin->scriptsfname[spendflag],coin->scriptsfp[spendflag],scriptlen);
+                return((uint32_t)fpos);
+            }
+            
+            long iguana_scriptadd(struct iguana_info *coin,struct iguana_bundle *bp,uint32_t unspentind,int32_t type,uint8_t *spendscript,int32_t spendlen,uint8_t rmd160[20],int32_t vout)
+            {
+                static long total,saved;
+                int32_t scriptlen; char asmstr[IGUANA_MAXSCRIPTSIZE*2+1]; uint8_t script[IGUANA_MAXSCRIPTSIZE]; long fpos=0; struct vin_info V,*vp = &V;
+                if ( spendlen == 0 )
+                {
+                    printf("null script?\n");
+                    getchar();
+                    return(0);
+                }
+                memset(vp,0,sizeof(*vp));
+                asmstr[0] = 0;
+                total++;
+                scriptlen = iguana_scriptgen(coin,&vp->M,&vp->N,vp->coinaddr,script,asmstr,rmd160,type,(const struct vin_info *)vp,vout);
+                if ( scriptlen == spendlen && memcmp(script,spendscript,scriptlen) == 0 )
+                    return(0);
+                else
+                {
+                    saved++;
+                    //if ( (saved % 1000) == 0 )
+                    printf("add type.%d scriptlen.%d fpos.%ld saved.%ld/%ld\n",type,spendlen,coin->scriptsfp!=0?ftell(coin->scriptsfp[0]):-1,saved,total);
+                    fpos = iguana_scriptsave(coin,bp,unspentind,0,spendscript,spendlen);
+                }
+                return(fpos);
+            }
+            if ( s->sighash != iguana_vinscriptparse(coin,&V,&sigsize,&pubkeysize,&p2shsize,&suffixlen,vinscript,vinscriptlen) )
+            {
+                static uint64_t counter;
+                if  ( counter++ < 100 )
+                {
+                    for (i=0; i<vinscriptlen; i++)
+                        printf("%02x",vinscript[i]);
+                    printf(" ramchain_addspend RO sighash mismatch %d\n",s->sighash);
+                }
+                return(spendind);
+            }
+            //ramchain->H.stacksize += sigsize;// + 1 + (sigsize >= 0xfd)*2;
+            if ( s->numpubkeys > 0 )
+            {
+                for (i=0; i<s->numpubkeys; i++)
+                {
+                    if ( (ptr= iguana_hashfind(ramchain,'P',V.signers[i].rmd160)) == 0 )
+                    {
+                        //printf("from addspend\n");
+                        //pkind = iguana_ramchain_addpkhash(coin,RAMCHAIN_ARG,V.signers[i].rmd160,0,0,0);
+                        //printf("create pkind.%d from vin\n",pkind);
+                    } else pkind = ptr->hh.itemind;
+                }
+            }
+            if ( 0 && s->numsigs > 0 )
+                printf("autoverify numsigs.%d\n",s->numsigs);
+            
+            
+            uint8_t *iguana_scriptptr(struct iguana_info *coin,int32_t *scriptlenp,uint8_t _script[IGUANA_MAXSCRIPTSIZE],uint32_t scriptfpos,uint8_t *scriptdata,int32_t scriptlen,int32_t maxsize,int32_t spendflag)
+            {
+                *scriptlenp = scriptlen;
+                if ( 0 && scriptlen > 0 )
+                {
+                    if ( scriptfpos != 0 )
+                        scriptdata = iguana_scriptfpget(coin,scriptlenp,_script,scriptfpos,spendflag);
+                }
+                return(scriptdata);
+            }
+            
+            uint8_t *iguana_scriptfpget(struct iguana_info *coin,int32_t *scriptlenp,uint8_t _script[IGUANA_MAXSCRIPTSIZE],uint32_t scriptoffset,int32_t spendflag)
+            {
+                FILE *fp; uint8_t *scriptdata=0; int32_t scriptlen=0; struct scriptdata sdata;
+                *scriptlenp = 0;
+                if ( (fp= fopen(coin->scriptsfname[spendflag],"rb")) != 0 )
+                {
+                    fseek(fp,scriptoffset,SEEK_SET);
+                    if ( fread(&sdata,1,sizeof(sdata),fp) != sizeof(sdata) )
+                        printf("iguana_scriptfpget: error reading sdata\n");
+                    else if ( sdata.scriptlen > 0 && sdata.scriptlen <= IGUANA_MAXSCRIPTSIZE )
+                    {
+                        if ( fread(_script,1,sdata.scriptlen,fp) == sdata.scriptlen )
+                        {
+                            scriptdata = _script;
+                            *scriptlenp = scriptlen = sdata.scriptlen;
+                            //printf("raw [%d] offset.%d scriptlen.%d\n",bp->hdrsi,scriptoffset,scriptlen);
+                            //for (i=0; i<16; i++)
+                            //    printf("%02x",_script[i]);
+                            //printf(" set script.%d\n",scriptlen);
+                        }
+                    }
+                    fclose(fp);
+                }
+                return(scriptdata);
+            }
+            //struct scriptdata { uint32_t ind:31,spendflag:1; uint16_t hdrsi,scriptlen; }__attribute__((packed));
+
+            if ( ramchain->expanded != 0 )
+            {
+                if ( (long)destoffset < (long)srcoffset )
+                {
+                    /*sprintf(fname,"sigs/%s/%s",coin->symbol,bits256_str(str,bp->hashes[0]));
+                     if ( (fp= fopen(fname,"wb")) != 0 )
+                     {
+                     if ( ramchain->H.stacksize > 0 )
+                     {
+                     if ( fwrite(srcoffset,1,ramchain->H.stacksize,fp) != ramchain->H.stacksize )
+                     printf("error writing %d sigs to %s\n",ramchain->H.stacksize,fname);
+                     }
+                     else
+                     {
+                     if ( fwrite(&izero,1,sizeof(izero),fp) != sizeof(izero) )
+                     printf("error writing izero to %s\n",fname);
+                     }
+                     fclose(fp);
+                     }
+                     if ( (ramchain->sigsfileptr= OS_mapfile(fname,&ramchain->sigsfilesize,0)) == 0 )
+                     return(-1);
+                     printf("%s bp.[%d] ht.%d stacksize.%u filesize.%u\n",fname,bp->hdrsi,bp->bundleheight,ramchain->H.stacksize,(uint32_t)ramchain->sigsfilesize);*/
+                    //for (i=0; i<ramchain->H.stacksize; i++)
+                    //    c = *srcoffset, *destoffset++ = c, *srcoffset++ = 0;
+                } else printf("smashed stack? dest.%ld vs src %ld offset.%u stacksize.%u space.%u\n",(long)destoffset,(long)srcoffset,(uint32_t)ramchain->H.scriptoffset,(uint32_t)ramchain->H.stacksize,(uint32_t)ramchain->H.scriptoffset);
+            }
+            // if file exists and is valid, load and then process only the incremental
+            long iguana_spentsfile(struct iguana_info *coin,int32_t n)
+            {
+                int32_t i,iter,allocated = 0; long filesize,total,count; struct iguana_bundleind *spents = 0; struct iguana_ramchain *ramchain; char fname[1024]; struct iguana_bundle *bp; FILE *fp;
+                fname[0] = 0;
+                for (total=iter=0; iter<2; iter++)
+                {
+                    for (count=i=0; i<n; i++)
+                    {
+                        if ( (bp= coin->bundles[i]) != 0 )
+                        {
+                            ramchain = &bp->ramchain;
+                            if ( ramchain->H.data != 0 )
+                            {
+                                if ( iter == 1 )
+                                {
+                                    ramchain->spents = &spents[count];
+                                    //printf("bp.[%d] count.%ld %p\n",i,count,ramchain->spents);
+                                    if ( allocated != 0 && iguana_spentsinit(coin,spents,bp,ramchain) < 0 )
+                                    {
+                                        printf("error initializing spents bp.%d\n",i);
+                                        exit(-1);
+                                    }
+                                }
+                                count += ramchain->H.data->numunspents;
+                            } else break;
+                        } else return(-1);
+                    }
+                    if ( i < n )
+                        n = (i + 1);
+                    sprintf(fname,"DB/%s/spents_%d.%ld",coin->symbol,n,count);
+                    printf("%s total unspents.%ld\n",fname,count);
+                    if ( iter == 0 )
+                    {
+                        total = count;
+                        if ( (spents= OS_filestr(&filesize,fname)) == 0 )
+                            spents = calloc(total,sizeof(*spents)), allocated = 1;
+                    }
+                    else if ( total != count )
+                        printf("%s total.%ld != count.%ld\n",fname,total,count);
+                }
+                if ( allocated != 0 && fname[0] != 0 && (fp= fopen(fname,"wb")) != 0 )
+                {
+                    fwrite(spents,total,sizeof(*spents),fp);
+                    fclose(fp);
+                }
+                return(total);
+            }
+            
+            int32_t iguana_spentsinit(struct iguana_info *coin,struct iguana_bundleind *spents,struct iguana_bundle *bp,struct iguana_ramchain *ramchain)
+            {
+                int32_t spendind,n,max,hdrsi,errs,flag; uint32_t unspentind; struct iguana_bundle *spentbp;
+                struct iguana_spend *S; bits256 prevhash;
+                S = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Soffset);
+                max = ramchain->H.data->numunspents;
+                n = ramchain->H.data->numspends;
+                for (spendind=1,errs=0; spendind<n; spendind++)
+                {
+                    flag = 0;
+                    hdrsi = bp->hdrsi;
+                    if ( (spentbp= iguana_spent(coin,&prevhash,&unspentind,ramchain,bp->hdrsi,&S[spendind])) != 0 )
+                    {
+                        spentbp->ramchain.spents[unspentind].ind = spendind;
+                        spentbp->ramchain.spents[unspentind].hdrsi = bp->hdrsi;
+                        flag = 1;
+                        if ( S[spendind].external == 0 && spentbp != bp )
+                            printf("spentsinit unexpected spendbp: %p bp.[%d] U%d <- S%d.[%d] [%p %p %p]\n",&spentbp->ramchain.spents[unspentind],hdrsi,unspentind,spendind,bp->hdrsi,coin->bundles[0],coin->bundles[1],coin->bundles[2]);
+                    }
+                    else if ( S[spendind].prevout < 0 )
+                        flag = 1;
+                    else printf("unresolved spendind.%d hdrsi.%d\n",spendind,bp->hdrsi);
+                    if ( flag == 0 )
+                        errs++;
+                }
+                printf("processed %d spendinds for bp.[%d] -> errs.%d\n",spendind,bp->hdrsi,errs);
+                return(-errs);
+            }
+            if ( bp != currentbp )
+            {
+                //printf("initial requests for hdrs.%d\n",bp->hdrsi);
+                pend = queue_size(&coin->priorityQ) + queue_size(&coin->blocksQ);
+                for (i=0; i<IGUANA_MAXPEERS; i++)
+                    pend += coin->peers.active[i].pendblocks;
+                if ( 0 && pend >= IGUANA_BUNDLELOOP )
+                {
+                    //for (i=better=0; i<coin->bundlescount; i++)
+                    //    if ( coin->bundles[i] != 0 && coin->bundles[i]->numsaved > bp->numsaved )
+                    //        better++;
+                    //if ( better > coin->peers.numranked )
+                    {
+                        //usleep(10000);
+                        //printf("SKIP pend.%d vs %d: better.%d ITERATE bundle.%d n.%d r.%d s.%d finished.%d timelimit.%d\n",pend,coin->MAXPENDING*coin->peers.numranked,better,bp->bundleheight,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit);
+                        iguana_bundleQ(coin,bp,1000);
+                        return(0);
+                    }
+                }
+                counter = iguana_bundlekick(coin,bp,starti,max);
+            }
+            if ( req == 0 && 0 )
+            {
+                if ( 1 )//(rand() % 10) == 0 )
+                    flag = iguana_neargap(coin,addr);
+                else if ( 0 && (bp= addr->bp) != 0 && bp->rank != 0 && addr->pendblocks < limit )
+                {
+                    r = rand();
+                    for (j=0; j<bp->n; j++)
+                    {
+                        i = (r + j) % bp->n;
+                        if ( (block= bp->blocks[i]) != 0 && block->numrequests == bp->minrequests && block->fpipbits == 0 && block->queued == 0 )
+                        {
+                            printf("peer.%s BPranked.%d [%d:%d] pending.%d numreqs.%d\n",addr->ipaddr,bp->rank,bp->hdrsi,i,addr->pendblocks,block->numrequests);
+                            block->numrequests++;
+                            flag++;
+                            iguana_sendblockreqPT(coin,addr,bp,i,block->RO.hash2,0);
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            int32_t iguana_neargap(struct iguana_info *coin,struct iguana_peer *addr)
+            {
+                struct iguana_block *block,*bestblock = 0; struct iguana_bundle *bp,*bestbp = 0;
+                int32_t height,hdrsi,i,j,n,bundlei,gap,besti = -1; uint32_t r;
+                if ( addr->rank > 0 )
+                {
+                    n = coin->peers.numranked * 2;
+                    gap = addr->rank * (1 + n + coin->peers.numranked) + coin->peers.numranked;
+                    for (i=0; i<coin->bundlescount; i++)
+                        if ( (bp= coin->bundles[i]) == 0 || bp->emitfinish == 0 )
+                            break;
+                    height = (i * coin->chain->bundlesize);
+                    r = rand();
+                    for (i=0; i<n; i++)
+                    {
+                        j = (gap + r + i) % n;
+                        hdrsi = (height + j) / coin->chain->bundlesize;
+                        if ( (bp= coin->bundles[hdrsi]) != 0 )
+                        {
+                            bundlei = (height + j) % coin->chain->bundlesize;
+                            if ( (block= bp->blocks[bundlei]) != 0 && block->fpipbits == 0 && block->queued == 0 )
+                            {
+                                if ( block->numrequests == bp->minrequests )
+                                {
+                                    bestblock = block;
+                                    bestbp = bp;
+                                    besti = bundlei;
+                                    break;
+                                }
+                                else if ( bestblock == 0 || block->numrequests < bestblock->numrequests )
+                                {
+                                    bestblock = block;
+                                    bestbp = bp;
+                                    besti = bundlei;
+                                }
+                            }
+                        }
+                    }
+                    if ( bestblock != 0 )
+                    {
+                        printf("near hwm.%d gap.%d peer.%s bpranked.%d [%d:%d] pending.%d numreqs.%d\n",height,j,addr->ipaddr,bestbp->rank,bestbp->hdrsi,besti,addr->pendblocks,bestblock->numrequests);
+                        bestblock->numrequests++;
+                        iguana_sendblockreqPT(coin,addr,bestbp,besti,bestblock->RO.hash2,0);
+                        return(1);
+                    }
+                }
+                return(0);
+            }
+            /*if ( doneval != maxval )
+             {
+             r = rand() % numpeers;
+             oldest = 0;
+             for (i=0; i<numpeers; i++)
+             {
+             j = (i + r) % numpeers;
+             if ( peercounts[j] > 0 )
+             {
+             for (i=j; i<bp->n; i+=numpeers)
+             if ( (block= bp->blocks[i]) != 0 && block->fpipbits == 0 )
+             {
+             if ( oldest == 0 || block->issued < oldest->issued )
+             oldest = block;
+             if ( now > block->issued+10+60*(bp!=coin->current) )
+             {
+             for (k=0; k<numpeers; k++)
+             {
+             r = rand();
+             z = (k + r) % numpeers;
+             if ( donecounts[z] > 0 && (addr= coin->peers.ranked[z]) != 0 )
+             {
+             if ( bp == coin->current )
+             printf("send [%d:%d] to addr[%d]\n",bp->hdrsi,block->bundlei,z);
+             block->issued = (uint32_t)time(NULL);
+             counter++;
+             iguana_sendblockreqPT(coin,addr,bp,block->bundlei,block->RO.hash2,0);
+             break;
+             }
+             }
+             }
+             }
+             }
+             }
+             }*/
+            //return(counter);
+            /*if ( 0 && time(NULL) > bp->lastspeculative+60 )
+             {
+             for (i=1,counter=0; i<bp->n; i++)
+             {
+             if ( (block= bp->blocks[i]) == 0 || block->fpos < 0 || block->fpipbits == 0 )
+             {
+             if ( bp->speculative != 0 && bits256_nonz(bp->hashes[i]) == 0 && bits256_nonz(bp->speculative[i]) > 0 && i < bp->numspec )
+             iguana_blockQ("speculate0",coin,0,-2,bp->speculative[i],0), counter++;
+             else if ( bits256_nonz(bp->hashes[i]) != 0 )
+             iguana_blockQ("speculate1",coin,0,-3,bp->hashes[i],0), counter++;
+             }
+             }
+             if ( counter != 0 )
+             printf("SPECULATIVE issue.%d bp.[%d]\n",counter,bp->hdrsi);
+             bp->lastspeculative = (uint32_t)time(NULL);
+             }*/
 
 #endif

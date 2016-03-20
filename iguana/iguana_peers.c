@@ -108,7 +108,7 @@ struct iguana_iAddr *iguana_iAddrhashfind(struct iguana_info *coin,uint64_t ipbi
 uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana_iAddr *iA,uint32_t ind)
 {
     FILE *fp; char fname[512],hexstr[65]; int32_t i,n,m,retval = 0; struct iguana_iAddr tmp,*ptr;
-    sprintf(fname,"DB/%s/peers.dat",coin->symbol);
+    sprintf(fname,"DB/%s_peers.dat",coin->symbol);
     OS_compatible_path(fname);
     if ( rwflag < 0 || iA == 0 )
     {
@@ -371,7 +371,7 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
     }
     else if ( addr->msgcounts.verack == 0 && (strcmp((char *)&serialized[4],"version") != 0 && strcmp((char *)&serialized[4],"ConnectTo") != 0 && strcmp((char *)&serialized[4],"verack") != 0) != 0 )
     {
-        printf("skip.(%s) since no verack yet\n",(char *)&serialized[4]);
+        //printf("skip.(%s) since no verack yet\n",(char *)&serialized[4]);
         return(-1);
     }
     if ( strcmp((char *)&serialized[4],"ping") == 0 )
@@ -474,9 +474,9 @@ void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct ig
         if ( strcmp(H->command,"block") == 0 || strcmp(H->command,"tx") == 0 )
         {
             if ( addr->RAWMEM.ptr == 0 )
-                iguana_meminit(&addr->RAWMEM,addr->ipaddr,0,IGUANA_MAXPACKETSIZE,0);
+                iguana_meminit(&addr->RAWMEM,addr->ipaddr,0,IGUANA_MAXPACKETSIZE + 65536*3,0);
             if ( addr->TXDATA.ptr == 0 )
-                iguana_meminit(&addr->TXDATA,"txdata",0,IGUANA_MAXPACKETSIZE,0);
+                iguana_meminit(&addr->TXDATA,"txdata",0,IGUANA_MAXPACKETSIZE*1.5,0);
             if ( addr->HASHMEM.ptr == 0 )
                 iguana_meminit(&addr->HASHMEM,"HASHPTRS",0,256,0);//IGUANA_MAXPACKETSIZE*16,0);
             //printf("Init %s memory %p %p %p\n",addr->ipaddr,addr->RAWMEM.ptr,addr->TXDATA.ptr,addr->HASHMEM.ptr);
@@ -604,7 +604,7 @@ void iguana_startconnection(void *arg)
     if ( addr->usock < 0 || coin->peers.shuttingdown != 0 )
     {
         strcpy(ipaddr,addr->ipaddr);
-        printf("refused PEER KILLED. for %s:%d usock.%d\n",ipaddr,coin->chain->portp2p,addr->usock);
+        //printf("refused PEER KILLED. slot.%d for %s:%d usock.%d\n",addr->addrind,ipaddr,coin->chain->portp2p,addr->usock);
         iguana_iAkill(coin,addr,1);
     }
     else
@@ -693,13 +693,18 @@ void *iguana_iAddriterator(struct iguana_info *coin,struct iguana_iAddr *iA)
             //printf("pend.%d status.%d possible peer.(%s).%x threads %d %d %d %d\n",addr->pending,iA->status,addr->ipaddr,addr->ipbits,iguana_numthreads(coin,0),iguana_numthreads(coin,1),iguana_numthreads(coin,2),iguana_numthreads(coin,3));
             if ( addr->pending == 0 && iA->status != IGUANA_PEER_CONNECTING )
             {
-                iA->status = IGUANA_PEER_CONNECTING;
-                addr->pending = (uint32_t)time(NULL);
                 if ( iguana_rwiAddrind(coin,1,iA,iA->hh.itemind) > 0 )
                 {
                     //printf("iA.%p iguana_startconnection.(%s) status.%d pending.%d\n",iA,addr->ipaddr,iA->status,addr->pending);
+                    iA->status = IGUANA_PEER_CONNECTING;
+                    addr->pending = (uint32_t)time(NULL);
                     iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
-                } else printf("error rwiAddrind.%d\n",iA->hh.itemind);
+                }
+                else
+                {
+                    addr->ipbits = 0;
+                    printf("error rwiAddrind.%d\n",iA->hh.itemind);
+                }
             }
         } else printf("no open peer slots left\n");
     }
@@ -936,7 +941,7 @@ int64_t iguana_peerallocated(struct iguana_info *coin,struct iguana_peer *addr)
 void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
 {
     static uint32_t lastping;
-    struct pollfd fds; struct iguana_bundlereq *req; uint8_t *buf;//,serialized[64];
+    struct pollfd fds; struct iguana_bundlereq *req; char fname[1024]; uint8_t *buf;//,serialized[64];
     uint32_t ipbits; int32_t bufsize,flag,run,timeout = coin->polltimeout == 0 ? 10 : coin->polltimeout;
 #ifdef IGUANA_PEERALLOC
     int32_t i;  int64_t remaining; struct OS_memspace *mem[sizeof(addr->SEROUT)/sizeof(*addr->SEROUT)];
@@ -954,9 +959,17 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
 #endif
     addr->addrind = (int32_t)(((long)addr - (long)&coin->peers.active[0]) / sizeof(*addr));
     ipbits = (uint32_t)addr->ipbits;
+    sprintf(fname,"DB/%s/vouts/%08x.vouts",coin->symbol,ipbits);
+    if ( (addr->voutsfp= fopen(fname,"rb+")) != 0 )
+        fseek(addr->voutsfp,0,SEEK_END);
+    else addr->voutsfp = fopen(fname,"wb+");
+    sprintf(fname,"purgeable/%s/%08x.vins",coin->symbol,ipbits);
+    if ( (addr->vinsfp= fopen(fname,"rb+")) != 0 )
+        fseek(addr->vinsfp,0,SEEK_END);
+    else addr->vinsfp = fopen(fname,"wb+");
     //addr->pubkey = GENESIS_PUBKEY;
     vcalc_sha256(0,addr->iphash.bytes,(uint8_t *)&ipbits,sizeof(ipbits));
-    char str[65]; printf("start dedicatedloop.%s addrind.%d %s\n",addr->ipaddr,addr->addrind,bits256_str(str,addr->iphash));
+    //char str[65]; printf("start dedicatedloop.%s addrind.%d %s\n",addr->ipaddr,addr->addrind,bits256_str(str,addr->iphash));
     addr->maxfilehash2 = IGUANA_MAXFILEITEMS;
     bufsize = IGUANA_MAXPACKETSIZE;
     buf = mycalloc('r',1,bufsize);
@@ -979,7 +992,7 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
         {
             if ( req->datalen != 0 )
             {
-                //char str[65]; printf("CACHE parse[%d] %s %s\n",req->recvlen,req->H.command,bits256_str(str,req->block.RO.hash2));
+                char str[65]; printf("CACHE.%p parse[%d] %s %s\n",req,req->recvlen,req->H.command,bits256_str(str,req->block.RO.hash2));
                 iguana_parsebuf(coin,addr,&req->H,req->serialized,req->recvlen);
             } else printf("CACHE error no datalen\n");
             coin->cachefreed++;
@@ -1034,8 +1047,8 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
                     usleep(100000);
                 }
                 else if ( addr->rank != 1 )
-                    usleep(coin->polltimeout*100 + 1*(rand() % (coin->polltimeout*100)));
-                else usleep(100);
+                    usleep(coin->polltimeout*3000 + 1*(rand() % (coin->polltimeout*3000)));
+                else usleep(1000);
             } else run >>= 2;
         }
         if ( flag != 0 )
@@ -1070,8 +1083,10 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
         }
     }
     printf(">>>>>>>>>>>>>> finish dedicatedloop.%s\n",addr->ipaddr);
-    //if ( addr->fp != 0 )
-    //    fclose(addr->fp);
+    if ( addr->vinsfp != 0 )
+        fclose(addr->vinsfp);
+    if ( addr->voutsfp != 0 )
+        fclose(addr->voutsfp);
     iguana_iAkill(coin,addr,addr->dead != 0);
     myfree(buf,bufsize);
     if ( addr->filehash2 != 0 )
