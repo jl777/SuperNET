@@ -495,12 +495,12 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                             }
                         }
                     }
-                    if ( laggard != 0 )
+                    if ( 0 && laggard != 0 )
                     {
                         for (i=0; i<numpeers; i++)
                             printf("%d ",peercounts[i]);
+                        printf("peercounts.%d: finished %d, laggards.%d threshold %f\n",bp->hdrsi,finished,laggard,threshold);
                     }
-                    printf("peercounts.%d: finished %d, laggards.%d threshold %f\n",bp->hdrsi,finished,laggard,threshold);
                 }
             }
             for (i=0; i<bp->n; i++)
