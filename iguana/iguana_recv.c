@@ -189,8 +189,10 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
     {
         printf("got block that doesnt validate? %s\n",bits256_str(str,origtxdata->block.RO.hash2));
         return;
-    } //else printf("validated prev.%s\n",bits256_str(str,origtxdata->block.RO.prev_block));
-    copyflag = 1 * (strcmp(coin->symbol,"BTC") != 0);
+    }
+    else if ( coin->enableCACHE != 0 )
+        printf("validated.(%s)\n",bits256_str(str,origtxdata->block.RO.hash2));
+    copyflag = coin->enableCACHE * (strcmp(coin->symbol,"BTC") != 0);
     bp = 0, bundlei = -2;
     if ( copyflag != 0 && recvlen != 0 && ((bp= iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.hash2)) == 0 || (bp->blocks[bundlei] != 0 && bp->blocks[bundlei]->fpipbits == 0)) )
     {
@@ -691,7 +693,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
         }
         fprintf(stderr,"%s [%d:%d] block.%x | s.%d r.%d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,numsaved,numrecv);
     }
-    if ( bundlei == 1 && bp != 0 && bp->numhashes < bp->n && strcmp(coin->symbol,"BTC") != 0 )
+    if ( 0 && bundlei == 1 && bp != 0 && bp->numhashes < bp->n && strcmp(coin->symbol,"BTC") != 0 )
     {
         printf("reissue hdrs request for [%d]\n",bp->hdrsi);
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
@@ -707,6 +709,23 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
             block->queued = 1;
             queue_enqueue("cacheQ",&coin->cacheQ,&req->DL,0);
             return(0);
+        }
+        else
+        {
+            if ( (block= iguana_blockhashset(coin,-1,origblock->RO.hash2,1)) != 0 )
+            {
+                if ( block != origblock )
+                {
+                    iguana_blockcopy(coin,block,origblock);
+                    coin->numcached++;
+                    if ( block->req == 0 )
+                    {
+                        block->req = req;
+                        req = 0;
+                    } else printf("already have cache entry.(%s)\n",bits256_str(str,origblock->RO.hash2));
+                    //fprintf(stderr,"bundleset block.%p vs origblock.%p prev.%d bits.%x fpos.%ld\n",block,origblock,bits256_nonz(prevhash2),block->fpipbits,block->fpos);
+                } else printf("got origblock.%s to cache\n",bits256_str(str,origblock->RO.hash2));
+            }
         }
         //printf("datalen.%d ipbits.%x\n",datalen,req->ipbits);
     } else printf("cant create origblock.%p block.%p bp.%p bundlei.%d\n",origblock,block,bp,bundlei);
@@ -1027,8 +1046,17 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
         }
         if ( block != 0 )
         {
-            if ( bits256_cmp(coin->APIblockhash,hash2) != 0 && block->fpipbits != 0 && block->fpos >= 0 )
+            if ( bits256_cmp(coin->APIblockhash,hash2) != 0 && (block->fpipbits != 0 || block->req != 0 || block->queued != 0) )
+            {
+                if ( block->fpipbits == 0 && block->queued == 0 && block->req != 0 )
+                {
+                    block->queued = 1;
+                    queue_enqueue("cacheQ",&coin->cacheQ,&block->req->DL,0);
+                    block->req = 0;
+                    char str2[65]; printf("already have.(%s)\n",bits256_str(str2,block->RO.hash2));
+                }
                 return(0);
+            }
             height = block->height;
         }
         if ( bp != 0 && bp->emitfinish != 0 )

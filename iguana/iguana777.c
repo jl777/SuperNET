@@ -583,8 +583,6 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         coin->MAXRECVCACHE = IGUANA_MAXRECVCACHE;
     if ( (coin->MAXPENDING= maxpending) <= 0 )
         coin->MAXPENDING = (strcmp(symbol,"BTC") == 0) ? _IGUANA_MAXPENDING : 64*_IGUANA_MAXPENDING;
-    if ( (coin->MAXBUNDLES= maxbundles) <= 0 )
-        coin->MAXBUNDLES = (strcmp(symbol,"BTC") == 0) ? IGUANA_MAXPENDBUNDLES : IGUANA_MAXPENDBUNDLES * 64;
     coin->myservices = services;
     printf("ensure directories\n");
     sprintf(dirname,"accounts/%s",symbol), OS_ensure_directory(dirname);
@@ -596,6 +594,16 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     sprintf(dirname,"%s/%s",GLOBALTMPDIR,symbol), OS_ensure_directory(dirname);
     coin->initialheight = initialheight;
     coin->mapflags = mapflags;
+    if ( (coin->startPEND= juint(json,"startpend")) == 0 )
+        coin->startPEND = IGUANA_MAXPENDBUNDLES;
+    else if ( coin->startPEND > 128 )
+        coin->startPEND = 128;
+    coin->MAXBUNDLES = coin->startPEND;
+    if ( (coin->endPEND= juint(json,"endpend")) == 0 )
+        coin->endPEND = IGUANA_MINPENDBUNDLES;
+    else if ( coin->endPEND > 128 )
+        coin->endPEND = 128;
+    coin->enableCACHE = juint(json,"cache");
     coin->MAXMEM = juint(json,"RAM");
     if ( coin->MAXMEM == 0 )
         coin->MAXMEM = IGUANA_DEFAULTRAM;

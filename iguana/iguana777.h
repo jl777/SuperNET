@@ -280,7 +280,7 @@ struct iguana_block
     double PoW; // NOT consensus safe, for estimation purposes only
     int32_t height; uint32_t fpipbits,numrequests,issued; long fpos;
     uint16_t hdrsi,bundlei:12,mainchain:1,valid:1,queued:1,txvalid:1,peerid:8;
-    UT_hash_handle hh; bits256 *blockhashes;
+    UT_hash_handle hh; bits256 *blockhashes; struct iguana_bundlereq *req;
 };// __attribute__((packed));
 
 
@@ -451,7 +451,7 @@ struct iguana_info
     struct iguana_peers peers;
     uint64_t instance_nonce,myservices,totalsize,totalrecv,totalpackets,sleeptime;
     int64_t mining,totalfees,TMPallocated,MAXRECVCACHE,MAXMEM,estsize,activebundles;
-    int32_t MAXPEERS,MAXPENDING,MAXBUNDLES,active,closestbundle,numemitted,lastsweep,startutc,newramchain,numcached,cachefreed,helperdepth;
+    int32_t MAXPEERS,MAXPENDING,MAXBUNDLES,active,closestbundle,numemitted,lastsweep,startutc,newramchain,numcached,cachefreed,helperdepth,startPEND,endPEND,enableCACHE;
     uint32_t longestchain,lastsync,parsetime,numiAddrs,firstblock,lastpossible,bundlescount,savedblocks;
     struct tai starttime; double startmillis;
     struct iguana_chain *chain;

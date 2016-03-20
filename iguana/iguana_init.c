@@ -359,7 +359,6 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
 #ifndef IGUANA_DEDICATED_THREADS
     coin->peers.peersloop = iguana_launch("peersloop",iguana_peersloop,coin,IGUANA_PERMTHREAD);
 #endif
-    coin->MAXBUNDLES = IGUANA_MAXPENDBUNDLES;
     printf("started.%s\n",coin->symbol);
     return(coin);
 }
