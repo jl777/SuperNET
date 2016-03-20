@@ -449,15 +449,15 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
         //    iguana_patch(coin,block);
         if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) != 0 && bundlei < coin->chain->bundlesize )
         {
-            fprintf(stderr,"bundle found %d:%d\n",bp->hdrsi,bundlei);
+            //fprintf(stderr,"bundle found %d:%d\n",bp->hdrsi,bundlei);
             block->bundlei = bundlei;
             block->hdrsi = bp->hdrsi;
             bp->blocks[bundlei] = block;
-            printf("bundlehashadd set.%d\n",bundlei);
+            //printf("bundlehashadd set.%d\n",bundlei);
             iguana_bundlehash2add(coin,0,bp,bundlei,hash2);
             if ( bundlei > 0 )
             {
-                printf("bundlehashadd prev %d\n",bundlei);
+                //printf("bundlehashadd prev %d\n",bundlei);
                 iguana_bundlehash2add(coin,0,bp,bundlei-1,prevhash2);
             }
             else if ( bp->hdrsi > 0 && (bp= coin->bundles[bp->hdrsi-1]) != 0 )
@@ -1125,7 +1125,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
             if ( block != 0 )
                 block->numrequests++;
             if ( 0 && priority != 0 )
-                printf("PRIORITY %s [%d:%d]\n",bits256_str(str,hash2),bp!=0?bp->bundleheight:-1,req->bundlei);
+                printf("sendreq %s [%d:%d]\n",bits256_str(str,hash2),bp!=0?bp->bundleheight:-1,req->bundlei);
             iguana_sendblockreqPT(coin,addr,req->bp,req->bundlei,hash2,0);
         }
         flag++;
