@@ -599,7 +599,7 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
             }
             else printf("UTXO gen.[%d] error\n",bp->hdrsi);
         }
-        if ( bp->utxofinish != 0 && bp->balancefinish == 0 && (bp->hdrsi == 0 || (prevbp != 0 && prevbp->utxofinish != 0)) )
+        if ( bp->utxofinish != 0 && bp->balancefinish == 0 && (bp->hdrsi == 0 || (prevbp != 0 && prevbp->balancefinish != 0)) )
         {
             iguana_balancesQ(coin,bp);
             return(-1);

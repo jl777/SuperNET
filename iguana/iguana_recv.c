@@ -587,7 +587,8 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
                 bp = iguana_bundlecreate(coin,&bundlei,bp->bundleheight+coin->chain->bundlesize,blockhashes[coin->chain->bundlesize],zero,1);
                 if ( bp != 0 )
                 {
-                    printf("EXTEND last bundle %s ht.%d\n",bits256_str(str,bp->hashes[0]),bp->bundleheight+coin->chain->bundlesize);
+                    char str2[65];
+                    printf("EXTEND last bundle %s/%s ht.%d\n",bits256_str(str,bp->hashes[0]),bits256_str(str2,blockhashes[coin->chain->bundlesize]),bp->bundleheight);
                     iguana_bundleQ(coin,bp,1000);
                 }
             }

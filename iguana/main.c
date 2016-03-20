@@ -342,7 +342,7 @@ void mainloop(struct supernet_info *myinfo)
                         if ( ptr->bp != 0 && ptr->coin != 0 )
                         {
                             iguana_balancecalc(ptr->coin,ptr->bp);
-                            //iguana_coinflush(ptr->coin,0);
+                            iguana_coinflush(ptr->coin,0);
                         }
                         myfree(ptr,ptr->allocsize);
                     }
