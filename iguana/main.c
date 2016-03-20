@@ -1162,7 +1162,14 @@ void iguana_main(void *arg)
     }
 #endif
     if ( arg != 0 )
-        SuperNET_JSON(&MYINFO,cJSON_Parse(arg),0);
+    {
+        cJSON *argjson;
+        if ( (argjson= cJSON_Parse(arg)) != 0 )
+        {
+            SuperNET_JSON(&MYINFO,argjson,0);
+            free_json(argjson);
+        }
+    }
     mainloop(&MYINFO);
 }
 

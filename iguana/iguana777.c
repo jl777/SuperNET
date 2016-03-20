@@ -596,13 +596,17 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->mapflags = mapflags;
     if ( (coin->startPEND= juint(json,"startpend")) == 0 )
         coin->startPEND = IGUANA_MAXPENDBUNDLES;
-    else if ( coin->startPEND > 128 )
-        coin->startPEND = 128;
+    else if ( coin->startPEND > 1024 )
+        coin->startPEND = 1024;
+    else if ( coin->startPEND < 2 )
+        coin->startPEND = 2;
     coin->MAXBUNDLES = coin->startPEND;
     if ( (coin->endPEND= juint(json,"endpend")) == 0 )
         coin->endPEND = IGUANA_MINPENDBUNDLES;
-    else if ( coin->endPEND > 128 )
-        coin->endPEND = 128;
+    else if ( coin->endPEND > 1024 )
+        coin->endPEND = 1024;
+    else if ( coin->endPEND < 2 )
+        coin->endPEND = 2;
     coin->enableCACHE = juint(json,"cache");
     coin->MAXMEM = juint(json,"RAM");
     if ( coin->MAXMEM == 0 )
