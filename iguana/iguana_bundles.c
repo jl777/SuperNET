@@ -704,7 +704,7 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
     return(0);
 }
 
-int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
+int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_bundle *bp,int32_t timelimit)
 {
     int32_t range,starti,lasti,retval=0,max,counter = 0; struct iguana_bundle *currentbp,*lastbp;
     bp->nexttime = (uint32_t)time(NULL) + 1;
@@ -746,7 +746,17 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
             bp->emitfinish = 1;
             iguana_bundletweak(coin,bp);
             sleep(1); // just in case data isnt totally sync'ed to HDD
-            iguana_emitQ(coin,bp);
+            if ( 0 )
+                iguana_emitQ(coin,bp);
+            else
+            {
+                if ( iguana_bundlesaveHT(coin,mem,memB,bp,(uint32_t)time(NULL)) == 0 )
+                {
+                    fprintf(stderr,"emitQ coin.%p bp.[%d]\n",coin,bp->bundleheight);
+                    bp->emitfinish = (uint32_t)time(NULL) + 1;
+                    coin->numemitted++;
+                } else bp->emitfinish = 0;
+            }
         }
         retval = 1;
     }

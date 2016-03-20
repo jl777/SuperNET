@@ -336,7 +336,7 @@ int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *m
             }
             else if ( ptr->type == 'B' )
             {
-                iguana_bundleiters(coin,bp,ptr->timelimit);
+                iguana_bundleiters(coin,mem,memB,bp,ptr->timelimit);
             }
             else if ( ptr->type == 'E' )
             {
@@ -404,7 +404,7 @@ void iguana_helper(void *arg)
         {
             idle = 0;
             if ( ptr->bp != 0 && ptr->coin != 0 )
-                flag += iguana_bundleiters(ptr->coin,ptr->bp,ptr->timelimit);
+                flag += iguana_bundleiters(ptr->coin,&MEM,MEMB,ptr->bp,ptr->timelimit);
             else printf("helper missing param? %p %p %u\n",ptr->coin,ptr->bp,ptr->timelimit);
             myfree(ptr,ptr->allocsize);
             flag++;
