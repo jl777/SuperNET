@@ -702,29 +702,32 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     {
         block->RO.txn_count = req->numtx;
         //block->RO.recvlen = recvlen;
-        if ( req->copyflag != 0 && block->queued == 0 && bp != 0 )
+        if ( req->copyflag != 0 )
         {
-            char str[65]; fprintf(stderr,"req.%p %s copyflag.%d %d data %d %d\n",req,bits256_str(str,block->RO.hash2),req->copyflag,block->height,req->recvlen,recvlen);
-            coin->numcached++;
-            block->queued = 1;
-            queue_enqueue("cacheQ",&coin->cacheQ,&req->DL,0);
-            return(0);
-        }
-        else
-        {
-            if ( (block= iguana_blockhashset(coin,-1,origblock->RO.hash2,1)) != 0 )
+            if ( block->queued == 0 && bp != 0 )
             {
-                if ( block != origblock )
+                char str[65]; fprintf(stderr,"req.%p %s copyflag.%d %d data %d %d\n",req,bits256_str(str,block->RO.hash2),req->copyflag,block->height,req->recvlen,recvlen);
+                coin->numcached++;
+                block->queued = 1;
+                queue_enqueue("cacheQ",&coin->cacheQ,&req->DL,0);
+                return(0);
+            }
+            else
+            {
+                if ( (block= iguana_blockhashset(coin,-1,origblock->RO.hash2,1)) != 0 )
                 {
-                    iguana_blockcopy(coin,block,origblock);
-                    coin->numcached++;
-                    if ( block->req == 0 )
+                    if ( block != origblock )
                     {
-                        block->req = req;
-                        req = 0;
-                    } else printf("already have cache entry.(%s)\n",bits256_str(str,origblock->RO.hash2));
-                    //fprintf(stderr,"bundleset block.%p vs origblock.%p prev.%d bits.%x fpos.%ld\n",block,origblock,bits256_nonz(prevhash2),block->fpipbits,block->fpos);
-                } else printf("got origblock.%s to cache\n",bits256_str(str,origblock->RO.hash2));
+                        iguana_blockcopy(coin,block,origblock);
+                        coin->numcached++;
+                        if ( block->req == 0 )
+                        {
+                            block->req = req;
+                            req = 0;
+                        } else printf("already have cache entry.(%s)\n",bits256_str(str,origblock->RO.hash2));
+                        //fprintf(stderr,"bundleset block.%p vs origblock.%p prev.%d bits.%x fpos.%ld\n",block,origblock,bits256_nonz(prevhash2),block->fpipbits,block->fpos);
+                    } else printf("got origblock.%s to cache\n",bits256_str(str,origblock->RO.hash2));
+                }
             }
         }
         //printf("datalen.%d ipbits.%x\n",datalen,req->ipbits);
