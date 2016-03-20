@@ -576,10 +576,17 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
     int32_t counter=0;
     //if ( bp->speculative != 0 )
     //    printf("hdr ITERATE bundle.%d vs %d: h.%d n.%d r.%d s.%d finished.%d speculative.%p\n",bp->bundleheight,coin->longestchain-coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,bp->speculative);
-    if ( strcmp(coin->symbol,"BTC") != 0 && bp->speculative == 0 && bp->numhashes < bp->n )
+    int32_t i; struct iguana_block *block;
+    if ( coin->enableCACHE != 0 && bp->speculative == 0 && bp->numhashes < bp->n )
     {
         char str[64];
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
+    }
+    else if ( bp->speculative != 0 )
+    {
+        for (i=0; i<bp->numspec; i++)
+            if ( bits256_nonz(bp->speculative[i]) != 0 && ((block= iguana_blockfind(coin,bp->speculative[i])) == 0 || block->req == 0) )
+                iguana_blockQ("speculative",coin,0,-1,bp->speculative[i],0);
     }
     return(counter);
 }

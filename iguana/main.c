@@ -1117,7 +1117,7 @@ void iguana_main(void *arg)
         sleep(1);
         char *str;
         //iguana_launchcoin(MYINFO.rpcsymbol,cJSON_Parse("{}"));
-        if ( 1 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":64,\"newcoin\":\"BTC\",\"active\":1,\"numhelpers\":1,\"poll\":1,\"startpend\":2,\"endpend\":2,\"cache\":0}"),0)) != 0 )
+        if ( 1 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":64,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":1,\"poll\":1,\"startpend\":2,\"endpend\":2,\"cache\":0}"),0)) != 0 )
         {
             free(str);
             if ( 0 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":1024,\"maxpeers\":256,\"newcoin\":\"BTCD\",\"active\":1}"),0)) != 0 )
@@ -1166,7 +1166,7 @@ void iguana_main(void *arg)
         cJSON *argjson;
         if ( (argjson= cJSON_Parse(arg)) != 0 )
         {
-            printf("call argv JSON\n");
+            printf("call argv JSON.(%s)\n",(char *)arg);
             SuperNET_JSON(&MYINFO,argjson,0);
             free_json(argjson);
         } else printf("error parsing.(%s)\n",(char *)arg);
