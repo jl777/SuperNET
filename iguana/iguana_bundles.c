@@ -153,7 +153,7 @@ int32_t iguana_hash2set(struct iguana_info *coin,char *debugstr,struct iguana_bu
         bit = iguana_calcbloom(newhash2);
         if ( iguana_bloomfind(coin,&bp->bloom,0,bit) < 0 )
         {
-            //printf("bloomset (%s)\n",bits256_str(str,newhash2));
+            printf("bloomset (%s) -> [%d:%d]\n",bits256_str(str,newhash2),bp->hdrsi,bundlei);
             iguana_bloomset(coin,&bp->bloom,0,bit);
             if ( 0 )
             {
