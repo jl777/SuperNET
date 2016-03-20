@@ -1168,7 +1168,7 @@ void iguana_main(void *arg)
         {
             SuperNET_JSON(&MYINFO,argjson,0);
             free_json(argjson);
-        }
+        } else printf("error parsing.(%s)\n",arg);
     }
     mainloop(&MYINFO);
 }
