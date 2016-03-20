@@ -472,7 +472,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                         if ( peercounts[i] == 0 && donecounts[i] > threshold )
                             finished++;
                     }
-                    if ( laggard == 1 )//finished > laggard*10 && numpeers > 2*laggard && laggard > 0 )
+                    if ( finished > laggard*10 && numpeers > 2*laggard && laggard > 0 )
                     {
                         for (i=0; i<numpeers; i++)
                         {
@@ -496,7 +496,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                             }
                         }
                     }
-                    if ( 0 && laggard != 0 )
+                    if ( 1 && laggard != 0 )
                     {
                         for (i=0; i<numpeers; i++)
                             printf("%d ",peercounts[i]);
