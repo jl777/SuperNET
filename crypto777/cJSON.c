@@ -26,10 +26,10 @@
 #include <math.h>
 
 #include "../includes/cJSON.h"
-//#define DEFINES_ONLY
-//#include "../common/system777.c"
-//#undef DEFINES_ONLY
+
+#ifndef DBL_EPSILON
 #define DBL_EPSILON 2.2204460492503131E-16
+#endif
 
 static const char *ep;
 
