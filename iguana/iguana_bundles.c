@@ -754,7 +754,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct iguana_bundle *bp,int
     {
         max = bp->n;
         counter = iguana_bundleissue(coin,bp,max,timelimit);
-       // if ( 0 && counter > 0 )
+        if ( 0 && counter > 0 )
             printf("ITERATE.%d max.%d bundle.%d h.%d n.%d r.%d s.%d F.%d T.%d counter.%d\n",bp->rank,max,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter);
     }
     iguana_bundleQ(coin,bp,1000);
