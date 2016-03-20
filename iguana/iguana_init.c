@@ -228,13 +228,13 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                 {
                     addr = &coin->peers.active[m++];
                     iguana_initpeer(coin,addr,(uint32_t)calc_ipbits("127.0.0.1"));
-                    printf("call initpeer.(%s)\n",addr->ipaddr);
+                    //printf("call initpeer.(%s)\n",addr->ipaddr);
                     iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
                 }
 #ifndef IGUANA_DISABLEPEERS
                 addr = &coin->peers.active[m++];
                 iguana_initpeer(coin,addr,(uint32_t)calc_ipbits(line));
-                printf("call initpeer.(%s)\n",addr->ipaddr);
+                //printf("call initpeer.(%s)\n",addr->ipaddr);
                 iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
 #endif
             }
@@ -266,13 +266,17 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                         if ( (bp= iguana_bundlecreate(coin,&bundlei,height,hash2,allhash,0)) != 0 )
                         {
                             bp->bundleheight = height;
+                            if ( height == 0 && coin->current == 0 )
+                                coin->current = coin->bundles[0] = bp;
                             lastbundle = hash2;
                             if ( (block= iguana_blockfind(coin,hash2)) != 0 )
                                 block->mainchain = 1, block->height = height;
                             if ( iguana_bundleload(coin,&bp->ramchain,bp,2) != 0 )
                             {
                                 bp->emitfinish = (uint32_t)time(NULL) + 1;
-                                //printf("LOADED bundle.%d\n",bp->bundleheight);
+                                if ( coin->current != 0 && coin->current->hdrsi+1 == bp->hdrsi )
+                                    coin->current = bp;
+                                //printf("LOADED bundle.%d %p current %p\n",bp->bundleheight,bp,coin->current);
                                 //if ( bp->hdrsi == 0 || coin->bundles[bp->hdrsi-1]->emitfinish != 0 )
                                 {
                                     //bp->startutxo = (uint32_t)time(NULL);
@@ -307,10 +311,13 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
         for (i=0; i<coin->bundlescount; i++)
             if ( coin->bundles[i] == 0 )
                 break;
+        printf("INIT bundles i.%d\n",i);
         if ( i > 0 )
         {
             //iguana_spentsfile(coin,i);
         }
+        char buf[1024];
+        iguana_bundlestats(coin,buf);
     }
 }
 

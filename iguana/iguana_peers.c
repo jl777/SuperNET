@@ -604,7 +604,7 @@ void iguana_startconnection(void *arg)
     if ( addr->usock < 0 || coin->peers.shuttingdown != 0 )
     {
         strcpy(ipaddr,addr->ipaddr);
-        printf("refused PEER KILLED. slot.%d for %s:%d usock.%d\n",addr->addrind,ipaddr,coin->chain->portp2p,addr->usock);
+        //printf("refused PEER KILLED. slot.%d for %s:%d usock.%d\n",addr->addrind,ipaddr,coin->chain->portp2p,addr->usock);
         iguana_iAkill(coin,addr,1);
     }
     else
@@ -969,7 +969,7 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     else addr->vinsfp = fopen(fname,"wb+");
     //addr->pubkey = GENESIS_PUBKEY;
     vcalc_sha256(0,addr->iphash.bytes,(uint8_t *)&ipbits,sizeof(ipbits));
-    char str[65]; printf("start dedicatedloop.%s addrind.%d %s\n",addr->ipaddr,addr->addrind,bits256_str(str,addr->iphash));
+    //char str[65]; printf("start dedicatedloop.%s addrind.%d %s\n",addr->ipaddr,addr->addrind,bits256_str(str,addr->iphash));
     addr->maxfilehash2 = IGUANA_MAXFILEITEMS;
     bufsize = IGUANA_MAXPACKETSIZE;
     buf = mycalloc('r',1,bufsize);

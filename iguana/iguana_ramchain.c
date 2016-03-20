@@ -1325,7 +1325,7 @@ void iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *ram
             //if ( ramchain->Uextras == 0 )
                 ramchain->Uextras = myaligned_alloc(sizeof(*ramchain->Uextras) * ramchain->H.data->numunspents);
             }
-            printf("ALLOC RAMCHAIN A.%p Uextras.%p | extraflag.%d hashmem.%p\n",ramchain->A,ramchain->Uextras,extraflag,ramchain->hashmem);
+            //printf("ALLOC RAMCHAIN A.%p Uextras.%p | extraflag.%d hashmem.%p\n",ramchain->A,ramchain->Uextras,extraflag,ramchain->hashmem);
         }
         //printf("hashmem.%p A allocated.%p numpkinds.%d %ld\n",hashmem,ramchain->A,ramchain->H.data->numpkinds,sizeof(struct iguana_account)*ramchain->H.data->numpkinds);
         //ramchain->P2 = (hashmem != 0) ? iguana_memalloc(hashmem,sizeof(struct iguana_pkextra) * ramchain->H.data->numpkinds,1) : mycalloc('2',ramchain->H.data->numpkinds,sizeof(struct iguana_pkextra));

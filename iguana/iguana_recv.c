@@ -397,7 +397,8 @@ uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bit
             coin->allhashes++;
            // if ( bp->hdrsi == 0 )
                 printf("ALLHASHES FOUND! %d allhashes.%d\n",bp->bundleheight,coin->allhashes);
-            iguana_bundleQ(coin,bp,bp->n*5 + (rand() % 500));
+            if ( bp->queued == 0 )
+                iguana_bundleQ(coin,bp,bp->n*5 + (rand() % 500));
             return(bp->queued);
         }
     }
@@ -476,7 +477,8 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
                 {
                     printf("AUTOCREATE.%d\n",prevbp->bundleheight + coin->chain->bundlesize);
                     bp = iguana_bundlecreate(coin,bundleip,prevbp->bundleheight + coin->chain->bundlesize,hash2,zero,0);
-                    iguana_bundleQ(coin,bp,1000);
+                    if ( bp->queued == 0 )
+                        iguana_bundleQ(coin,bp,1000);
                 }
                 if ( prevbundlei < coin->chain->bundlesize-1 )
                 {
@@ -589,7 +591,8 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
                 {
                     char str2[65];
                     printf("EXTEND last bundle %s/%s ht.%d\n",bits256_str(str,bp->hashes[0]),bits256_str(str2,blockhashes[coin->chain->bundlesize]),bp->bundleheight);
-                    iguana_bundleQ(coin,bp,1000);
+                    if ( bp->queued == 0 )
+                        iguana_bundleQ(coin,bp,1000);
                 }
             }
             else if ( iguana_allhashcmp(coin,bp,blockhashes,num) > 0 )

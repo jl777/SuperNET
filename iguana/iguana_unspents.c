@@ -253,7 +253,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
     numtxid = 1;
     if ( ramchain->Xspendinds != 0 )
     {
-        //printf("iguana_utxogen: already have Xspendinds[%d]\n",ramchain->numXspends);
+        printf("iguana_utxogen: already have Xspendinds[%d]\n",ramchain->numXspends);
         return(0);
     }
     ptr = mycalloc('x',sizeof(*ptr),n);

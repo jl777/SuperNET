@@ -97,7 +97,7 @@ void iguana_recvalloc(struct iguana_info *coin,int32_t numitems)
 {
     //coin->blocks.ptrs = myrealloc('W',coin->blocks.ptrs,coin->blocks.ptrs==0?0:coin->blocks.maxbits * sizeof(*coin->blocks.ptrs),numitems * sizeof(*coin->blocks.ptrs));
     coin->blocks.RO = myrealloc('W',coin->blocks.RO,coin->blocks.RO==0?0:coin->blocks.maxbits * sizeof(*coin->blocks.RO),numitems * sizeof(*coin->blocks.RO));
-    printf("realloc waitingbits.%d -> %d\n",coin->blocks.maxbits,numitems);
+    //printf("realloc waitingbits.%d -> %d\n",coin->blocks.maxbits,numitems);
     coin->blocks.maxbits = numitems;
 }
 
@@ -208,7 +208,7 @@ void *iguana_kviAddriterator(struct iguana_info *coin,struct iguanakv *kv,struct
 
 uint32_t iguana_updatemetrics(struct iguana_info *coin)
 {
-    char fname[512],tmpfname[512],oldfname[512]; int32_t i; struct iguana_peer *addr; FILE *fp;
+    char fname[512],tmpfname[512],oldfname[512],ipaddr[64]; int32_t i,j; struct iguana_peer *addr,*tmpaddr; FILE *fp;
     iguana_peermetrics(coin);
     sprintf(fname,"confs/%s_peers.txt",coin->symbol), OS_compatible_path(fname);
     sprintf(oldfname,"confs/%s_oldpeers.txt",coin->symbol), OS_compatible_path(oldfname);
@@ -216,8 +216,21 @@ uint32_t iguana_updatemetrics(struct iguana_info *coin)
     if ( (fp= fopen(tmpfname,"w")) != 0 )
     {
         for (i=0; i<coin->peers.numranked; i++)
+        {
             if ( (addr= coin->peers.ranked[i]) != 0 && addr->relayflag != 0 && strcmp(addr->ipaddr,"127.0.0.1") != 0 )
-                fprintf(fp,"%s\n",addr->ipaddr);
+            {
+                for (j=0; j<coin->peers.numranked; j++)
+                {
+                    if ( i != 0 && (tmpaddr= coin->peers.ranked[j]) != 0 && (uint32_t)addr->ipbits == (uint32_t)tmpaddr->ipbits )
+                        break;
+                }
+                if ( j == coin->peers.numranked )
+                {
+                    expand_ipbits(ipaddr,(uint32_t)addr->ipbits);
+                    fprintf(fp,"%s\n",ipaddr);
+                }
+            }
+        }
         if ( ftell(fp) > OS_filesize(fname) )
         {
             printf("new peers.txt %ld vs (%s) %ld\n",ftell(fp),fname,(long)OS_filesize(fname));
