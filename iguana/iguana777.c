@@ -573,7 +573,7 @@ void iguana_coinargs(char *symbol,int64_t *maxrecvcachep,int32_t *minconfirmsp,i
 struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,int64_t maxrecvcache,uint64_t services,int32_t initialheight,int32_t maphash,int32_t minconfirms,int32_t maxpending,int32_t maxbundles,cJSON *json)
 {
     struct iguana_chain *iguana_createchain(cJSON *json);
-    struct iguana_info *coin; int32_t j,m,mapflags; char dirname[512]; cJSON *peers;
+    struct iguana_info *coin; int32_t j,m,mult,mapflags; char dirname[512]; cJSON *peers;
     mapflags = IGUANA_MAPRECVDATA | maphash*IGUANA_MAPTXIDITEMS | maphash*IGUANA_MAPPKITEMS | maphash*IGUANA_MAPBLOCKITEMS | maphash*IGUANA_MAPPEERITEMS;
     coin = iguana_coinadd(symbol,json);
     coin->launched = launched;
@@ -594,16 +594,17 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     sprintf(dirname,"%s/%s",GLOBALTMPDIR,symbol), OS_ensure_directory(dirname);
     coin->initialheight = initialheight;
     coin->mapflags = mapflags;
+    mult = (strcmp("BTC",coin->symbol) != 0) ? 64 : 1;
     if ( (coin->startPEND= juint(json,"startpend")) == 0 )
-        coin->startPEND = IGUANA_MAXPENDBUNDLES;
-    else if ( coin->startPEND > 1024 )
+        coin->startPEND = IGUANA_MAXPENDBUNDLES * mult;
+    if ( coin->startPEND > 1024 )
         coin->startPEND = 1024;
     else if ( coin->startPEND < 2 )
         coin->startPEND = 2;
     coin->MAXBUNDLES = coin->startPEND;
     if ( (coin->endPEND= juint(json,"endpend")) == 0 )
-        coin->endPEND = IGUANA_MINPENDBUNDLES;
-    else if ( coin->endPEND > 1024 )
+        coin->endPEND = IGUANA_MINPENDBUNDLES * mult;
+    if ( coin->endPEND > 1024 )
         coin->endPEND = 1024;
     else if ( coin->endPEND < 2 )
         coin->endPEND = 2;

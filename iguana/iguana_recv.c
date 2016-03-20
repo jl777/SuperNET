@@ -891,7 +891,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
              else threshold = coin->avetime;
              threshold *= 100. * sqrt(threshold) * .000777;*/
             double threshold,lag = OS_milliseconds() - coin->backstopmillis;
-            threshold = 1000;
+            threshold = 300;
             if ( coin->blocks.hwmchain.height < coin->longestchain && (coin->backstop != coin->blocks.hwmchain.height+1 || lag > threshold) )
             {
                 coin->backstop = coin->blocks.hwmchain.height+1;
@@ -909,7 +909,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                     if ( bp != 0 && bits256_nonz(hash2) > 0 )
                     {
                         coin->backstopmillis = OS_milliseconds();
-                        iguana_blockQ("mainchain",coin,bp,bundlei,hash2,0);
+                        iguana_blockQ("mainchain",coin,0,-1,hash2,lag > 100 * threshold);
                         flag++;
                         char str[65];
                         if ( 1 && (rand() % 1000) == 0 || bp->bundleheight > coin->longestchain-coin->chain->bundlesize )

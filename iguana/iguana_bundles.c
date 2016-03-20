@@ -576,7 +576,7 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
     int32_t counter=0;
     //if ( bp->speculative != 0 )
     //    printf("hdr ITERATE bundle.%d vs %d: h.%d n.%d r.%d s.%d finished.%d speculative.%p\n",bp->bundleheight,coin->longestchain-coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,bp->speculative);
-    int32_t i; struct iguana_block *block;
+    int32_t i; struct iguana_block *block; uint32_t now;
     if ( coin->enableCACHE != 0 && bp->speculative == 0 && bp->numhashes < bp->n )
     {
         char str[64];
@@ -584,9 +584,13 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
     }
     else if ( bp->speculative != 0 )
     {
+        now = (uint32_t)time(NULL);
         for (i=0; i<bp->numspec; i++)
-            if ( bits256_nonz(bp->speculative[i]) != 0 && ((block= iguana_blockfind(coin,bp->speculative[i])) == 0 || block->req == 0) )
+            if ( bits256_nonz(bp->speculative[i]) != 0 && bp->issued[i] > now+10 && ((block= iguana_blockfind(coin,bp->speculative[i])) == 0 || block->req == 0) )
+            {
+                bp->issued[i] = now;
                 iguana_blockQ("speculative",coin,0,-1,bp->speculative[i],0);
+            }
     }
     return(counter);
 }
