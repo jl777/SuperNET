@@ -251,7 +251,7 @@ void iguana_emitQ(struct iguana_info *coin,struct iguana_bundle *bp)
     ptr->bp = bp, ptr->hdrsi = bp->hdrsi;
     ptr->type = 'E';
     ptr->starttime = (uint32_t)time(NULL);
-    //printf("%s EMIT.%d[%d] emitfinish.%u\n",coin->symbol,ptr->hdrsi,bp->n,bp->emitfinish);
+    printf("%s EMIT.%d[%d] emitfinish.%u\n",coin->symbol,ptr->hdrsi,bp->n,bp->emitfinish);
     queue_enqueue("emitQ",&emitQ,&ptr->DL,0);
 }
 
@@ -342,7 +342,7 @@ int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *m
             {
                 if ( iguana_bundlesaveHT(coin,mem,memB,bp,ptr->starttime) == 0 )
                 {
-                    //fprintf(stderr,"emitQ coin.%p bp.[%d]\n",ptr->coin,bp->bundleheight);
+                    fprintf(stderr,"emitQ coin.%p bp.[%d]\n",ptr->coin,bp->bundleheight);
                     bp->emitfinish = (uint32_t)time(NULL) + 1;
                     coin->numemitted++;
                 } else bp->emitfinish = 0;
