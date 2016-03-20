@@ -189,7 +189,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
     {
         printf("got block that doesnt validate? %s\n",bits256_str(str,origtxdata->block.RO.hash2));
         return;
-    } else printf("validated.%s\n",bits256_str(str,origtxdata->block.RO.hash2));
+    } //else printf("validated.%s\n",bits256_str(str,origtxdata->block.RO.hash2));
     copyflag = 1 * (strcmp(coin->symbol,"BTC") != 0);
     bp = 0, bundlei = -2;
     if ( copyflag != 0 && recvlen != 0 && ((bp= iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.hash2)) == 0 || (bp->blocks[bundlei] != 0 && bp->blocks[bundlei]->fpipbits == 0)) )
@@ -202,6 +202,17 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
     {
         copyflag = 0;
         req = iguana_bundlereq(coin,addr,'B',0);
+    }
+    if ( bp == 0 )
+    {
+        bp = 0, bundlei = -2;
+        bp = iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.prev_block);
+        if ( bp != 0 && bundlei < bp->n-1 )
+        {
+            bundlei++;
+            bp->hashes[bundlei] = origtxdata->block.RO.hash2;
+        }
+        else bp = 0, bundlei = -2;
     }
     if ( bp != 0 && bundlei >= 0 && bp->blocks[bundlei] != 0 )//&& bits256_cmp(bp->blocks[bundlei]->RO.prev_block,origtxdata->block.RO.prev_block) != 0 )
     {
@@ -562,7 +573,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
 
 struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct iguana_bundlereq *req,bits256 *blockhashes,int32_t num)
 {
-    int32_t bundlei,i; struct iguana_bundle *bp; bits256 allhash,zero; char hashstr[65];
+    int32_t bundlei,i,len; struct iguana_bundle *bp; bits256 allhash,zero; char hashstr[65]; uint8_t serialized[512]; struct iguana_peer *addr;
     memset(zero.bytes,0,sizeof(zero));
     bp = 0, bundlei = -2;
     if ( num < 2 )
@@ -641,10 +652,14 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
             block->blockhashes = blockhashes, req->hashes = 0;
             printf("set block->blockhashes[%d]\n",num);
         }
-        iguana_blockQ("recvhash5",coin,0,-1,blockhashes[1],0);
-        iguana_blockQ("recvhash5",coin,0,-1,blockhashes[1],1);
-        if ( coin->peers.ranked[0] != 0 )
-            iguana_sendblockreqPT(coin,coin->peers.ranked[0],0,-1,blockhashes[1],0);
+        if ( (addr= coin->peers.ranked[0]) != 0 )
+        {
+            if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,&blockhashes[1],1)) > 0 )
+            {
+                iguana_send(coin,addr,serialized,len);
+                char str[65]; printf("REQ.%s\n",bits256_str(str,blockhashes[1]));
+            }
+        }
     } else iguana_blockQ("recvhash6",coin,0,-6,blockhashes[1],0); // should be RT block
     return(req);
 }
