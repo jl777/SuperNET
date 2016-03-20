@@ -29,6 +29,7 @@
 //#define DEFINES_ONLY
 //#include "../common/system777.c"
 //#undef DEFINES_ONLY
+#define DBL_EPSILON 2.2204460492503131E-16
 
 static const char *ep;
 
@@ -129,8 +130,8 @@ static char *print_number(cJSON *item)
 {
 	char *str;
 	double d = item->valuedouble;
-	if ( fabs(((double)item->valueint) - d) <= DBL_EPSILON && d >= (1. - DBL_EPSILON) && d < (1LL << 62) )//d <= INT_MAX && d >= INT_MIN )
-	{
+        if ( fabs(((double)item->valueint) - d) <= DBL_EPSILON && d >= (1. - DBL_EPSILON) && d < (1LL << 62) )//d <= INT_MAX && d >= INT_MIN )
+        {
 		str = (char *)cJSON_malloc(24);	/* 2^64+1 can be represented in 21 chars + sign. */
 		if ( str != 0 )
             sprintf(str,"%lld",(long long)item->valueint);

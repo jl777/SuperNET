@@ -1,3 +1,3 @@
 include ../mingw.path64
-LIBS := ../win/libcrypto.a ../win/libs/libssl.a ../win/libpthreadGC2_64.a -lws2_64 -lgdi64
-include mingw
+LIBS := ../win/libsecp256k1.a ../win/libcrypto.a ../win/libssl.a ../win/libpthreadGC2_64.a ../agents/win64/libcrypto777.a ../win/libcurldll.a /usr/share/mingw-w64/lib/libws2_32.a /usr/share/mingw-w64/lib/libgdi32.a -I/usr/share/mingw-w64/include -I/usr/i386/include -I/usr/i386/include/curl -I/home/user/SuperNET/iguana -I/home/user/SuperNET/includes -I/home/user/SuperNET/crypto777 
+include mingw64_inc

@@ -23,7 +23,7 @@
 #include "../pnacl_main.h"
 #include "iguana777.h"
 #include "SuperNET.h"
-
+#include <stdio.h>
 // ALL globals must be here!
 char *Iguana_validcommands[] =
 {
@@ -554,15 +554,10 @@ extern gfshare_rand_func_t gfshare_fill_rand;
 /* ------------------------------------------------------[ Preparation ]---- */
 
 /* Initialise a gfshare context for producing shares */
-gfshare_ctx* gfshare_ctx_init_enc(uint8_t* /* sharenrs */,
-                                  unsigned int /* sharecount */,
-                                  uint8_t /* threshold */,
-                                  unsigned int /* size */);
+gfshare_ctx* gfshare_ctx_init_enc(uint8_t* /* sharenrs */,unsigned int /* sharecount */, uint8_t /* threshold */,unsigned int /* size */);
 
 /* Initialise a gfshare context for recombining shares */
-gfshare_ctx* gfshare_ctx_init_dec(uint8_t* /* sharenrs */,
-                                  unsigned int /* sharecount */,
-                                  unsigned int /* size */);
+gfshare_ctx* gfshare_ctx_init_dec(uint8_t* /* sharenrs */,unsigned int /* sharecount */,unsigned int /* size */);
 
 /* Free a share context's memory. */
 void gfshare_ctx_free(gfshare_ctx* /* ctx */);
@@ -570,35 +565,28 @@ void gfshare_ctx_free(gfshare_ctx* /* ctx */);
 /* --------------------------------------------------------[ Splitting ]---- */
 
 /* Provide a secret to the encoder. (this re-scrambles the coefficients) */
-void gfshare_ctx_enc_setsecret(gfshare_ctx* /* ctx */,
-                               uint8_t* /* secret */);
+void gfshare_ctx_enc_setsecret(gfshare_ctx* /* ctx */,uint8_t* /* secret */);
 
 /* Extract a share from the context.
  * 'share' must be preallocated and at least 'size' bytes long.
  * 'sharenr' is the index into the 'sharenrs' array of the share you want.
  */
-void gfshare_ctx_enc_getshare(gfshare_ctx* /* ctx */,
-                              uint8_t /* sharenr */,
-                              uint8_t* /* share */);
+void gfshare_ctx_enc_getshare(gfshare_ctx* /* ctx */,uint8_t /* sharenr */,uint8_t* /* share */);
 
 /* ----------------------------------------------------[ Recombination ]---- */
 
 /* Inform a recombination context of a change in share indexes */
-void gfshare_ctx_dec_newshares(gfshare_ctx* /* ctx */,
-                               uint8_t* /* sharenrs */);
+void gfshare_ctx_dec_newshares(gfshare_ctx* /* ctx */, uint8_t* /* sharenrs */);
 
 /* Provide a share context with one of the shares.
  * The 'sharenr' is the index into the 'sharenrs' array
  */
-void gfshare_ctx_dec_giveshare(gfshare_ctx* /* ctx */,
-                               uint8_t /* sharenr */,
-                               uint8_t* /* share */);
+void gfshare_ctx_dec_giveshare(gfshare_ctx* /* ctx */,uint8_t /* sharenr */,uint8_t* /* share */);
 
 /* Extract the secret by interpolation of the shares.
  * secretbuf must be allocated and at least 'size' bytes long
  */
-void gfshare_ctx_dec_extract(gfshare_ctx* /* ctx */,
-                             uint8_t* /* secretbuf */);
+void gfshare_ctx_dec_extract(gfshare_ctx* /* ctx */,uint8_t* /* secretbuf */);
 
 #endif /* LIBGFSHARE_H */
 
@@ -619,9 +607,7 @@ struct _gfshare_ctx {
     unsigned int buffersize;
 };
 
-static void
-_gfshare_fill_rand_using_random( uint8_t* buffer,
-                                unsigned int count )
+static void _gfshare_fill_rand_using_random( uint8_t* buffer,unsigned int count )
 {
     OS_randombytes(buffer,count);
     /*unsigned int i;
@@ -636,11 +622,7 @@ gfshare_rand_func_t gfshare_fill_rand = NULL;
 
 /* ------------------------------------------------------[ Preparation ]---- */
 
-static gfshare_ctx *
-_gfshare_ctx_init_core( uint8_t *sharenrs,
-                       unsigned int sharecount,
-                       uint8_t threshold,
-                       unsigned int size )
+static gfshare_ctx * _gfshare_ctx_init_core( uint8_t *sharenrs,unsigned int sharecount,uint8_t threshold,unsigned int size )
 {
     gfshare_ctx *ctx;
     
@@ -676,11 +658,7 @@ _gfshare_ctx_init_core( uint8_t *sharenrs,
 }
 
 /* Initialise a gfshare context for producing shares */
-gfshare_ctx *
-gfshare_ctx_init_enc( uint8_t* sharenrs,
-                     unsigned int sharecount,
-                     uint8_t threshold,
-                     unsigned int size )
+gfshare_ctx * gfshare_ctx_init_enc( uint8_t* sharenrs,unsigned int sharecount,uint8_t threshold,unsigned int size )
 {
     unsigned int i;
     
@@ -698,10 +676,7 @@ gfshare_ctx_init_enc( uint8_t* sharenrs,
 }
 
 /* Initialise a gfshare context for recombining shares */
-gfshare_ctx*
-gfshare_ctx_init_dec( uint8_t* sharenrs,
-                     unsigned int sharecount,
-                     unsigned int size )
+gfshare_ctx* gfshare_ctx_init_dec( uint8_t* sharenrs,unsigned int sharecount,unsigned int size )
 {
     gfshare_ctx *ctx = _gfshare_ctx_init_core( sharenrs, sharecount, sharecount, size );
     
@@ -712,8 +687,7 @@ gfshare_ctx_init_dec( uint8_t* sharenrs,
 }
 
 /* Free a share context's memory. */
-void
-gfshare_ctx_free( gfshare_ctx* ctx )
+void gfshare_ctx_free( gfshare_ctx* ctx )
 {
     gfshare_fill_rand( ctx->buffer, ctx->buffersize );
     gfshare_fill_rand( ctx->sharenrs, ctx->sharecount );
@@ -726,9 +700,7 @@ gfshare_ctx_free( gfshare_ctx* ctx )
 /* --------------------------------------------------------[ Splitting ]---- */
 
 /* Provide a secret to the encoder. (this re-scrambles the coefficients) */
-void
-gfshare_ctx_enc_setsecret( gfshare_ctx* ctx,
-                          uint8_t* secret)
+void gfshare_ctx_enc_setsecret( gfshare_ctx* ctx,uint8_t* secret)
 {
     memcpy( ctx->buffer + ((ctx->threshold-1) * ctx->size),
            secret,
@@ -740,10 +712,7 @@ gfshare_ctx_enc_setsecret( gfshare_ctx* ctx,
  * 'share' must be preallocated and at least 'size' bytes long.
  * 'sharenr' is the index into the 'sharenrs' array of the share you want.
  */
-void
-gfshare_ctx_enc_getshare( gfshare_ctx* ctx,
-                         uint8_t sharenr,
-                         uint8_t* share)
+void gfshare_ctx_enc_getshare( gfshare_ctx* ctx,uint8_t sharenr,uint8_t* share)
 {
     unsigned int pos, coefficient;
     unsigned int ilog = logs[ctx->sharenrs[sharenr]];
@@ -765,9 +734,7 @@ gfshare_ctx_enc_getshare( gfshare_ctx* ctx,
 /* ----------------------------------------------------[ Recombination ]---- */
 
 /* Inform a recombination context of a change in share indexes */
-void
-gfshare_ctx_dec_newshares( gfshare_ctx* ctx,
-                          uint8_t* sharenrs)
+void gfshare_ctx_dec_newshares( gfshare_ctx* ctx,uint8_t* sharenrs)
 {
     memcpy( ctx->sharenrs, sharenrs, ctx->sharecount );
 }
@@ -775,10 +742,7 @@ gfshare_ctx_dec_newshares( gfshare_ctx* ctx,
 /* Provide a share context with one of the shares.
  * The 'sharenr' is the index into the 'sharenrs' array
  */
-void
-gfshare_ctx_dec_giveshare( gfshare_ctx* ctx,
-                          uint8_t sharenr,
-                          uint8_t* share )
+void gfshare_ctx_dec_giveshare( gfshare_ctx* ctx,uint8_t sharenr,uint8_t* share )                       
 {
     memcpy( ctx->buffer + (sharenr * ctx->size), share, ctx->size );
 }
@@ -786,9 +750,7 @@ gfshare_ctx_dec_giveshare( gfshare_ctx* ctx,
 /* Extract the secret by interpolation of the shares.
  * secretbuf must be allocated and at least 'size' bytes long
  */
-void
-gfshare_ctx_dec_extract( gfshare_ctx* ctx,
-                        uint8_t* secretbuf )
+void gfshare_ctx_dec_extract( gfshare_ctx* ctx,uint8_t* secretbuf )
 {
     unsigned int i, j;
     uint8_t *secret_ptr, *share_ptr, sharei,sharej;
@@ -866,7 +828,7 @@ void calc_shares(uint8_t *shares,uint8_t *secret,int32_t size,int32_t width,int3
     free(buffer);
 }
 
-#include <stdio.h>
+//#include <stdio.h>
 
 int32_t test(int32_t M,int32_t N,int32_t datasize)
 {
@@ -994,8 +956,7 @@ int32_t init_sharenrs(uint8_t sharenrs[255],uint8_t *orig,int32_t m,int32_t n)
 
 /* Construct and write out the tables for the gfshare code */
 
-int
-maingen(int argc, char** argv)
+int maingen(int argc, char** argv)
 {
     uint8_t logs[256];
     uint8_t exps[255];

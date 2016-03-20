@@ -14,12 +14,16 @@
  ******************************************************************************/
 
 #include "OS_portable.h"
-#include "../includes/cJSON.h"
+//#include "../includes/cJSON.h"
 
-#include <curl/curl.h>
-#include <curl/easy.h>
+#include <curl.h>
+#include <easy.h>
 
 // return data from the server
+#define CURL_GLOBAL_ALL (CURL_GLOBAL_SSL|CURL_GLOBAL_WIN32)
+#define CURL_GLOBAL_SSL (1<<0)
+#define CURL_GLOBAL_WIN32 (1<<1)
+
 struct return_string {
     char *ptr;
     size_t len;

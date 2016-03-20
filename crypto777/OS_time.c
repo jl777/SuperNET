@@ -31,6 +31,8 @@ uint32_t First_utc;
 int32_t UTC_ADJUST;
 
 #ifdef _WIN32
+
+
 struct tm *gmtime_r(const time_t *timep,struct tm *result)
 {
 	struct tm *p = gmtime(timep);
@@ -47,7 +49,7 @@ struct tm *_gmtime32(const time_t *timep,struct tm *result) { return(gmtime_r(ti
 time_t _time32(struct tm *tm) { return(time(NULL)); }
 time_t _localtime32(struct tm *tm) { return(time(NULL)); }
 
-#include <Windows.h>
+#include <windows.h>
 #include <stdint.h> // portable: uint64_t   MSVC: __int64
 
 // MSVC defines this in winsock2.h!?
