@@ -16,6 +16,7 @@
  
 #include "OS_portable.h"
 
+
 #ifdef __PNACL
 int32_t OS_nonportable_syncmap(struct OS_mappedptr *mp,long len)
 {
@@ -34,11 +35,10 @@ void *OS_nonportable_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,l
 #include <share.h>
 #include <errno.h>
 #include <string.h>
-#include <windows.h>
+//#include <windows.h>
 #include <inttypes.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <errno.h>
+//#include <winsock2.h>
+//#include <ws2tcpip.h>
 #include <fcntl.h> /*  _O_BINARY */
 #include <stdlib.h>
 #include <wincrypt.h>
@@ -47,9 +47,6 @@ void *OS_nonportable_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,l
 #include <tlhelp32.h>
 #include <time.h>
 
-#include <windows.h>
-#include <errno.h>
-#include <io.h>
 
 #include "../win/mman.h"
 

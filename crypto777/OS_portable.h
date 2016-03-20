@@ -27,22 +27,24 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/time.h>
+#include <time.h>
 
 #ifdef __MINGW
 #define sleep(x) Sleep(1000*(x))
 #include "../win/mingw.h"
 #include "../win/mman.h"
 
-#define EADDRINUSE WSAEADDRINUSE
+//#define EADDRINUSE WSAEADDRINUSE
 
 #else
-#include <poll.h>
+#include <sys/poll.h>
 #include <netdb.h>
 #include <pthread.h>
-#include <netinet/in.h>
+//#include <netinet/in.h>
+//#include "in.h"
 #include <sys/mman.h>
 #include <sys/socket.h>
+//#include <winsock2.h>
 #define closesocket close
 #endif
 #ifndef MIN

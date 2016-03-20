@@ -19,12 +19,12 @@
 #ifndef crypto777_inet_h
 #define crypto777_inet_h
 #include "OS_portable.h"
-#include <netinet/in.h>
+//#include <in.h>
 
 #ifdef _WIN32
-#include <windows.h>
-#include <io.h>
-#include <winsock2.h>
+//#include <windows.h>
+//#include <io.h>
+//#include <winsock2.h>
 #define in6_addr sockaddr
 #define in_addr_t struct sockaddr_storage
 #define EAFNOSUPPORT WSAEAFNOSUPPORT
@@ -37,7 +37,7 @@ struct sockaddr_in6 {
     u_long  sin6_scope_id;
 };
 #endif
-
+#define AF_INET6	23
 static int inet_ntop4(unsigned char *src, char *dst, size_t size);
 static int inet_ntop6(unsigned char *src, char *dst, size_t size);
 static int inet_pton4(char *src, unsigned char *dst);

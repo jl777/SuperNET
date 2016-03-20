@@ -148,9 +148,9 @@
 /* Configure process defines this to 1 when it finds out that system    */
 /* header file sys/socket.h must be included by the external interface. */
 #define CURL_PULL_SYS_SOCKET_H 1
-#ifdef CURL_PULL_SYS_SOCKET_H
-#  include <sys/socket.h>
-#endif
+//#ifdef CURL_PULL_SYS_SOCKET_H
+//#  include <sys/socket.h>
+//#endif
 
 /* Configure process defines this to 1 when it finds out that system  */
 /* header file sys/poll.h must be included by the external interface. */

@@ -1,4 +1,4 @@
 include ../mingw.path
-LIBS := ../win/libcrypto.a ../win/libssl.a ../win/libpthreadGC2.a -lws2_32 -lgdi32 
+LIBS := ../win/libsecp256k1.a ../win/libcrypto.a ../win/libssl.a /usr/share/mingw-w64/lib/libpthread.a ../agents/win32/libcrypto777.a ../win/libcurldll.a  /usr/i586-mingw32msvc/lib/libws2_32.a  /usr/i586-mingw32msvc/lib/libgdi32.a  -I/usr/mingw32/include  -I/usr/i386/include/curl -I/home/user/SuperNET/iguana -I/home/user/SuperNET/includes -I/home/user/SuperNET/crypto777 
 
 include mingw
