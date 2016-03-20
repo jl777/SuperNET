@@ -389,7 +389,7 @@ void iguana_helper(void *arg)
     {
         //iguana_jsonQ();
         flag = 0;
-        if ( type == 0 && ((ptr= queue_dequeue(&emitQ,0)) != 0 || (ptr= queue_dequeue(&helperQ,0)) != 0) )
+        if ( ((ptr= queue_dequeue(&emitQ,0)) != 0 || (ptr= queue_dequeue(&helperQ,0)) != 0) )
         {
             if ( ptr->bp != 0 && (coin= ptr->coin) != 0 )
             {
@@ -401,7 +401,7 @@ void iguana_helper(void *arg)
             }
             myfree(ptr,ptr->allocsize);
         }
-        else if ( type == 1 && (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
+        else if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
         {
             idle = 0;
             if ( ptr->bp != 0 && ptr->coin != 0 )
