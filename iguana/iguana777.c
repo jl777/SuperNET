@@ -370,14 +370,14 @@ void iguana_helper(void *arg)
 {
     FILE *fp = 0; char fname[512],name[64],*helpername = 0; cJSON *argjson=0; int32_t type,flag,idle=0;
     struct iguana_helper *ptr; struct iguana_info *coin; struct OS_memspace MEM,*MEMB;
-    type = rand();
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
         helpername = jstr(argjson,"name");
     if ( helpername == 0 )
     {
-        sprintf(name,"helper.%d",rand());
+        sprintf(name,"%d",rand());
         helpername = name;
     }
+    type = (name[0] % 2);
     sprintf(fname,"%s/%s",GLOBALTMPDIR,helpername);
     OS_compatible_path(fname);
     fp = fopen(fname,"wb");
@@ -389,7 +389,7 @@ void iguana_helper(void *arg)
     {
         //iguana_jsonQ();
         flag = 0;
-        if ( (type % 2) == 0 && ((ptr= queue_dequeue(&emitQ,0)) != 0 || (ptr= queue_dequeue(&helperQ,0)) != 0) )
+        if ( type == 0 && ((ptr= queue_dequeue(&emitQ,0)) != 0 || (ptr= queue_dequeue(&helperQ,0)) != 0) )
         {
             if ( ptr->bp != 0 && (coin= ptr->coin) != 0 )
             {
@@ -401,7 +401,7 @@ void iguana_helper(void *arg)
             }
             myfree(ptr,ptr->allocsize);
         }
-        else if ( (type % 2) == 1 && (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
+        else if ( type == 1 && (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
         {
             idle = 0;
             if ( ptr->bp != 0 && ptr->coin != 0 )

@@ -1142,7 +1142,7 @@ void iguana_main(void *arg)
         IGUANA_NUMHELPERS = 1;
     for (i=0; i<IGUANA_NUMHELPERS; i++)
     {
-        sprintf(helperstr,"{\"name\":\"helper.%d\"}",i);
+        sprintf(helperstr,"{\"name\":\"%d\"}",i);
         helperargs = clonestr(helperstr);
         iguana_launch(iguana_coinadd("BTCD",0),"iguana_helper",iguana_helper,helperargs,IGUANA_PERMTHREAD);
     }
