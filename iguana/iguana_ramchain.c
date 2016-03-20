@@ -2443,7 +2443,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     }
     iguana_ramchain_free(dest,0);
     bp->ramchain = newchain;
-    printf("finished bundlesave.%d\n",bp->bundleheight);
+    //printf("finished bundlesave.%d\n",bp->bundleheight);
     return(retval);
 }
 

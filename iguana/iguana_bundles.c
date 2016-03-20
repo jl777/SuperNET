@@ -496,7 +496,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                             }
                         }
                     }
-                    if ( 1 && laggard != 0 )
+                    if ( 0 && laggard != 0 )
                     {
                         for (i=0; i<numpeers; i++)
                             printf("%d ",peercounts[i]);
@@ -752,7 +752,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
             {
                 if ( iguana_bundlesaveHT(coin,mem,memB,bp,(uint32_t)time(NULL)) == 0 )
                 {
-                    fprintf(stderr,"emitQ coin.%p bp.[%d]\n",coin,bp->bundleheight);
+                    //fprintf(stderr,"emitQ coin.%p bp.[%d]\n",coin,bp->bundleheight);
                     bp->emitfinish = (uint32_t)time(NULL) + 1;
                     coin->numemitted++;
                 } else bp->emitfinish = 0;
