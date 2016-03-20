@@ -346,7 +346,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
     struct iguana_bundle *spentbp; struct iguana_txid *T,*nextT; int32_t hdrsi;
     uint32_t numtxid,now,h,refheight; struct iguana_utxo *utxo;
     ramchain = &bp->ramchain;
-    printf("BALANCEGEN.%d\n",bp->bundleheight);
+    //printf("BALANCEGEN.%d\n",bp->bundleheight);
     if ( ramchain->H.data == 0 || (n= ramchain->H.data->numspends) < 1 )
         return(0);
     S = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Soffset);

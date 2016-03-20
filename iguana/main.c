@@ -325,7 +325,7 @@ void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func
 
 void mainloop(struct supernet_info *myinfo)
 {
-    int32_t i,flag; struct iguana_info *coin; struct iguana_helper *ptr; struct iguana_bundle *bp;
+    int32_t i,flag; struct iguana_info *coin; struct iguana_helper *ptr; struct iguana_bundle *bp,*prevbp = 0;
     sleep(3);
     printf("mainloop\n");
     while ( 1 )
@@ -334,15 +334,26 @@ void mainloop(struct supernet_info *myinfo)
         if ( 1 )
         {
             for (i=0; i<IGUANA_MAXCOINS; i++)
-                if ( (coin= Coins[i]) != 0 && coin->active != 0 && (bp= coin->current) != 0 )
+                if ( (coin= Coins[i]) != 0 && coin->active != 0 && (bp= coin->current) != 0 && coin->started != 0 )
                 {
-                    //iguana_bundleissue(coin,bp,bp->n,100);
+                    flag++;
+                    iguana_bundleissue(coin,bp,bp->n,100);
                     if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
                     {
-                        if ( ptr->bp != 0 && ptr->coin != 0 )
+                        if ( (bp= ptr->bp) != 0 && ptr->coin != 0 && (bp->hdrsi == 0 || (prevbp= coin->bundles[bp->hdrsi-1]) != 0) )
                         {
-                            iguana_balancecalc(ptr->coin,ptr->bp);
-                            iguana_coinflush(ptr->coin,0);
+                            if ( bp->utxofinish != 0 && bp->balancefinish <= 1 && (bp->hdrsi == 0 || (prevbp != 0 && prevbp->utxofinish != 0)) )
+                            {
+                                printf("hdrsi.%d start balances.%d\n",bp->hdrsi,bp->bundleheight);
+                                iguana_balancecalc(ptr->coin,bp);
+                                bp->queued = 0;
+                            }
+                            else
+                            {
+                                printf("third case.%d utxo.%u balance.%u prev.%u\n",bp->hdrsi,bp->utxofinish,bp->balancefinish,prevbp!=0?prevbp->utxofinish:-1);
+                                iguana_balancesQ(coin,bp);
+                            }
+                            //iguana_coinflush(ptr->coin,0);
                         }
                         myfree(ptr,ptr->allocsize);
                     }
@@ -1144,7 +1155,7 @@ void iguana_main(void *arg)
         sleep(1);
         char *str;
         //iguana_launchcoin(MYINFO.rpcsymbol,cJSON_Parse("{}"));
-        if ( 1 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":1024,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":1,\"poll\":1}"),0)) != 0 )
+        if ( 1 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":64,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":1,\"poll\":1}"),0)) != 0 )
         {
             free(str);
             if ( 0 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":1024,\"maxpeers\":256,\"newcoin\":\"BTCD\",\"active\":1}"),0)) != 0 )
