@@ -997,7 +997,7 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
         {
             for (i=0; i<coin->bundlescount; i++)
             {
-                if ( (bp= coin->bundles[i]) != 0 && (bp->numhashes < bp->n || i == coin->bundlescount-1) )
+                if ( (bp= coin->bundles[i]) != 0 && (bp->numhashes < bp->n || i == coin->bundlescount-1) && (bp->speculative == 0 || bp->numspec < bp->n) )
                 {
                     lag = 10;
                     if ( bp->bundleheight+bp->numhashes < coin->longestchain && time(NULL) > bp->issuetime+lag )
@@ -1179,7 +1179,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
             char str[65];
             if ( block != 0 )
                 block->numrequests++;
-            if ( 1 && priority != 0 )
+            if ( 0 && priority != 0 )
                 printf("sendreq %s [%d:%d]\n",bits256_str(str,hash2),bp!=0?bp->bundleheight:-1,req->bundlei);
             iguana_sendblockreqPT(coin,addr,req->bp,req->bundlei,hash2,0);
         }
