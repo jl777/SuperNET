@@ -486,7 +486,7 @@ void iguana_coinloop(void *arg)
         if ( (coin= coins[i]) != 0 && coin->started == 0 )
         {
             iguana_coinstart(coin,coin->initialheight,coin->mapflags);
-            printf("init.(%s) maxpeers.%d maxrecvcache.%s services.%llx MAXMEM.%s polltimeout.%d\n",coin->symbol,coin->MAXPEERS,mbstr(str,coin->MAXRECVCACHE),(long long)coin->myservices,mbstr(str,coin->MAXMEM),coin->polltimeout);
+            printf("init.(%s) maxpeers.%d maxrecvcache.%s services.%llx MAXMEM.%s polltimeout.%d cache.%d pend.(%d -> %d)\n",coin->symbol,coin->MAXPEERS,mbstr(str,coin->MAXRECVCACHE),(long long)coin->myservices,mbstr(str,coin->MAXMEM),coin->polltimeout,coin->enableCACHE,coin->startPEND,coin->endPEND);
             coin->started = coin;
             coin->chain->minconfirms = coin->minconfirms;
         }
