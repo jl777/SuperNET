@@ -454,7 +454,7 @@ void pangea_addfunds(PANGEA_HANDARGS)
     printf("got remote addfunds\n");
 }
 
-char *pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *remoteaddr)
+char *pangea_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void *data,int32_t len,char *remoteaddr)
 {
     static struct { char *cmdstr; void (*func)(PANGEA_HANDARGS); uint64_t cmdbits; } tablecmds[] =
     {
@@ -541,15 +541,15 @@ char *pangea_hexmsg(struct supernet_info *myinfo,void *data,int32_t len,char *re
 
 void pangea_update(struct supernet_info *myinfo)
 {
-    struct pangea_msghdr *pm; struct category_msg *m; bits256 pangeahash; char remoteaddr[64],*str;
+    struct pangea_msghdr *pm; struct category_msg *m; bits256 pangeahash; char remoteaddr[64],*str; struct category_info *cat = 0;
     pangeahash = calc_categoryhashes(0,"pangea",0);
-    while ( (m= category_gethexmsg(myinfo,pangeahash,GENESIS_PUBKEY)) != 0 )
+    while ( (m= category_gethexmsg(myinfo,&cat,pangeahash,GENESIS_PUBKEY)) != 0 )
     {
         pm = (struct pangea_msghdr *)m->msg;
         if ( m->remoteipbits != 0 )
             expand_ipbits(remoteaddr,m->remoteipbits);
         else remoteaddr[0] = 0;
-        if ( (str= pangea_hexmsg(myinfo,pm,m->len,remoteaddr)) != 0 )
+        if ( (str= pangea_hexmsg(myinfo,cat,pm,m->len,remoteaddr)) != 0 )
             free(str);
         free(m);
     }

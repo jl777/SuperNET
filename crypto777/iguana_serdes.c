@@ -170,19 +170,19 @@ int32_t iguana_rwvarint(int32_t rwflag,uint8_t *serialized,uint64_t *varint64p)
         n = *varint64p;
         if ( n < 0xfd )
             *serialized++ = (uint8_t)n;
-        else if ( n == 0xfd )
+        else if ( n <= 0xffff )
         {
             *serialized++ = 0xfd;
             iguana_varint16(rwflag,serialized,(uint16_t *)varint64p);
             vlen += 2;
         }
-        else if ( n == 0xfe )
+        else if ( n <= 0xffffffff )
         {
             *serialized++ = 0xfe;
             iguana_varint32(rwflag,serialized,(uint16_t *)varint64p);
             vlen += 4;
         }
-        else if ( n == 0xff )
+        else
         {
             *serialized++ = 0xff;
             iguana_varint64(rwflag,serialized,(uint32_t *)varint64p);

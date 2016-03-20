@@ -248,8 +248,8 @@ void *queue_dequeue(queue_t *queue,int32_t offsetflag)
     if ( queue->list != 0 )
     {
         item = queue->list;
-        DL_DELETE(queue->list,item);
         //printf("queue_dequeue name.(%s) dequeue.%p list.%p\n",queue->name,item,queue->list);
+        DL_DELETE(queue->list,item);
     }
 	portable_mutex_unlock(&queue->mutex);
     if ( item != 0 && offsetflag != 0 )
@@ -434,7 +434,12 @@ void *iguana_memalloc(struct OS_memspace *mem,long size,int32_t clearflag)
         }
 #endif
         //printf(">>>>>>>>> USED.%s alloc %ld used %ld alloc.%ld -> %s %p\n",mem->name,size,(long)mem->used,(long)mem->totalsize,mem->name,ptr);
-    } else printf("error memalloc mem.%p %s alloc %ld used %ld totalsize.%ld -> %s %p\n",mem,mem->name,size,(long)mem->used,(long)mem->totalsize,mem->name,ptr), getchar();//exit(-1);
+    }
+    else
+    {
+        printf("error memalloc mem.%p (%s) alloc %ld used %ld totalsize.%ld -> %s %p\n",mem,mem->name,size,(long)mem->used,(long)mem->totalsize,mem->name,ptr);
+        ptr = calloc(1,size);
+    }
     //if ( mem->threadsafe != 0 )
     //    portable_mutex_unlock(&mem->mutex);
     return(ptr);
@@ -515,7 +520,7 @@ int32_t OS_removefile(char *fname,int32_t scrubflag)
 void OS_ensure_directory(char *dirname)
 {
     FILE *fp; int32_t retval; char fname[512];
-    if ( OS_removefile(dirname,0) < 0 )
+    if ( 0 && OS_removefile(dirname,0) < 0 )
     {
         sprintf(fname,"tmp/%d",rand());
         OS_renamefile(dirname,fname);
@@ -530,12 +535,12 @@ void OS_ensure_directory(char *dirname)
                            ,511
 #endif
                            );
-            printf("mkdir.(%s) retval.%d errno.%d %s\n",dirname,retval,errno,strerror(errno));
-        } else fclose(fp), printf("dirname.(%s) exists\n",dirname);
+            //printf("mkdir.(%s) retval.%d errno.%d %s\n",dirname,retval,errno,strerror(errno));
+        } else fclose(fp);//, printf("dirname.(%s) exists\n",dirname);
         if ( (fp= fopen(fname,"wb")) != 0 )
-            fclose(fp), printf("created.(%s)\n",fname);
+            fclose(fp);//, printf("created.(%s)\n",fname);
         else printf("cant create.(%s) errno.%d %s\n",fname,errno,strerror(errno));
-    } else fclose(fp), printf("%s exists\n",fname);
+    } else fclose(fp);//, printf("%s exists\n",fname);
 }
 
 uint64_t OS_filesize(char *fname)

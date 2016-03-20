@@ -358,6 +358,7 @@ bits256 bits256_from_compact(uint32_t c);
 bits256 bits256_conv(char *hexstr);
 int32_t btc_priv2pub(uint8_t pubkey[33],uint8_t privkey[32]);
 void calc_shares(unsigned char *shares,unsigned char *secret,int32_t size,int32_t width,int32_t M,int32_t N,unsigned char *sharenrs);
+int32_t OS_portable_rmdir(char *dirname,int32_t diralso);
 
 extern char *Iguana_validcommands[];
 extern bits256 GENESIS_PUBKEY,GENESIS_PRIVKEY;

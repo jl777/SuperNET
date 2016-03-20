@@ -24,7 +24,7 @@
 
 void iguana_vinset(struct iguana_info *coin,int32_t height,struct iguana_msgvin *vin,struct iguana_txid *tx,int32_t i)
 {
-    struct iguana_spend *s,*S; uint32_t spendind; struct iguana_bundle *bp;
+    struct iguana_spend *s,*S; uint32_t spendind,unspentind; struct iguana_bundle *bp;
     struct iguana_ramchaindata *rdata; struct iguana_txid *T; bits256 *X;
     memset(vin,0,sizeof(*vin));
     if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0 && (rdata= bp->ramchain.H.data) != 0 )
@@ -34,10 +34,13 @@ void iguana_vinset(struct iguana_info *coin,int32_t height,struct iguana_msgvin 
         T = (void *)(long)((long)rdata + rdata->Toffset);
         spendind = (tx->firstvin + i);
         s = &S[spendind];
-        if ( s->diffsequence == 0 )
+        if ( s->sequenceid == 1 )
             vin->sequence = 0xffffffff;
+        else if ( s->sequenceid == 2 )
+            vin->sequence = 0xfffffffe;
+        else vin->sequence = 0;
         vin->prev_vout = s->prevout;
-        iguana_ramchain_spendtxid(coin,&vin->prev_hash,T,rdata->numtxids,X,rdata->numexternaltxids,s);
+        iguana_ramchain_spendtxid(coin,&unspentind,&vin->prev_hash,T,rdata->numtxids,X,rdata->numexternaltxids,s);
     }
 }
 

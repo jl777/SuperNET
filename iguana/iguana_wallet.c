@@ -42,6 +42,36 @@ struct iguana_waccount *iguana_waccountadd(struct iguana_info *coin,char *wallet
     return(acct);
 }
 
+uint8_t *iguana_walletrmds(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *numrmdsp)
+{
+    int32_t iter,n,m; struct iguana_waccount *acct,*tmp; uint8_t *pubkeys,*addrtypes,*rmdarray = 0; struct iguana_waddress *waddr,*tmp2;
+    for (iter=n=m=0; iter<2; iter++)
+    {
+        HASH_ITER(hh,coin->wallet,acct,tmp)
+        {
+            HASH_ITER(hh,acct->waddrs,waddr,tmp2)
+            {
+                if ( iter == 0 )
+                    n++;
+                else if ( m < n )
+                {
+                    addrtypes[m] = waddr->type;
+                    memcpy(&rmdarray[m * 20],waddr->rmd160,20);
+                    memcpy(&pubkeys[m * 33],waddr->pubkey,33);
+                    m++;
+                }
+            }
+        }
+        if ( iter == 0 )
+        {
+            rmdarray = calloc(n,20 + 1 + 33);
+            addrtypes = &rmdarray[n * 20];
+            pubkeys = &rmdarray[n * 21];
+        }
+    }
+    return(rmdarray);
+}
+
 int32_t iguana_waccountswitch(struct iguana_info *coin,char *account,struct iguana_waccount *oldwaddr,int32_t oldind,char *coinaddr)
 {
     // what if coinaddr is already in an account?
@@ -51,6 +81,20 @@ int32_t iguana_waccountswitch(struct iguana_info *coin,char *account,struct igua
 
 struct iguana_waccount *iguana_waddressfind(struct iguana_info *coin,int32_t *indp,char *coinaddr)
 {
+    int32_t n=0; struct iguana_waccount *acct,*tmp; struct iguana_waddress *waddr,*tmp2;
+    *indp = -1;
+    HASH_ITER(hh,coin->wallet,acct,tmp)
+    {
+        HASH_ITER(hh,acct->waddrs,waddr,tmp2)
+        {
+            if ( strcmp(coinaddr,waddr->coinaddr) == 0 )
+            {
+                *indp = n;
+                return(acct);
+            }
+            n++;
+        }
+    }
     return(0);
 }
 
