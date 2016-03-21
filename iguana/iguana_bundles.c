@@ -182,8 +182,7 @@ int32_t iguana_hash2set(struct iguana_info *coin,char *debugstr,struct iguana_bu
     //printf("set [%d] <- %s\n",bundlei,bits256_str(str,newhash2));
     if ( bits256_cmp(*orighash2p,newhash2) != 0 )
     {
-        *orighash2p = newhash2;
-        if ( bp->bundleheight+bundlei <= coin->blocks.hwmchain.height )
+        if ( bits256_nonz(*orighash2p) != 0 && bp->bundleheight+bundlei <= coin->blocks.hwmchain.height )
         {
             printf("changing [%d:%d] -> %d < hwmheight %d\n",bp->hdrsi,bundlei,bp->bundleheight+bundlei,coin->blocks.hwmchain.height);
             if ( bp->bundleheight+bundlei > 0 )
@@ -191,6 +190,7 @@ int32_t iguana_hash2set(struct iguana_info *coin,char *debugstr,struct iguana_bu
                 printf("REORG %d blocks\n",coin->blocks.hwmchain.height - (bp->bundleheight+bundlei));
             }
         }
+        *orighash2p = newhash2;
     }
     return(retval);
 }
@@ -643,7 +643,7 @@ int32_t iguana_bundletweak(struct iguana_info *coin,struct iguana_bundle *bp)
 
 int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    int32_t bundlei,checki,hdrsi,numhashes,numsaved,numcached,numrecv,minrequests; //FILE *fp;
+    int32_t bundlei,checki,hdrsi,numhashes,numsaved,numcached,numrecv,minrequests; FILE *fp;
     int64_t datasize; struct iguana_block *block; char fname[1024]; static bits256 zero;
     if ( bp->emitfinish > coin->startutc )
     {
@@ -662,7 +662,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                     printf("iguana_bundlecalcs.(%s) illegal hdrsi.%d bundlei.%d checki.%d\n",fname,hdrsi,bundlei,checki);
                     continue;
                 }
-                /*if ( 1 && bp->checkedtmp < bp->n && (fp= fopen(fname,"rb")) != 0 )
+                if ( coin->current == bp && (fp= fopen(fname,"rb")) != 0 )
                 {
                     fseek(fp,0,SEEK_END);
                     if ( block->RO.recvlen == 0 )
@@ -673,7 +673,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                         //printf("[%d:%d] len.%d\n",hdrsi,bundlei,block->RO.recvlen);
                     }
                     fclose(fp);
-                }*/
+                }
                 //bp->blocks[bundlei] = block;
                 block->hdrsi = bp->hdrsi, block->bundlei = bundlei;
                 if ( bp->minrequests == 0 || (block->numrequests > 0 && block->numrequests < bp->minrequests) )
