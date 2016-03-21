@@ -404,9 +404,9 @@ void iguana_helper(void *arg)
             idle = 0;
             if ( (bp= ptr->bp) != 0 && (coin= ptr->coin) != 0 )
             {
-                //if ( coin->started != 0 && time(NULL) >= bp->nexttime )
+                if ( coin->started != 0 && time(NULL) >= bp->nexttime )
                     flag += iguana_bundleiters(ptr->coin,&MEM,MEMB,bp,ptr->timelimit);
-                //else iguana_bundleQ(ptr->coin,bp,1000);
+                else iguana_bundleQ(ptr->coin,bp,1000);
             }  else printf("helper missing param? %p %p %u\n",ptr->coin,bp,ptr->timelimit);
             myfree(ptr,ptr->allocsize);
             flag++;

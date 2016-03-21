@@ -738,7 +738,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
     }
     if ( coin->current == 0 )
         coin->current = coin->bundles[0];
-    //if ( (range= coin->peers.numranked) > coin->MAXBUNDLES )
+    if ( (range= coin->peers.numranked) > coin->MAXBUNDLES )
         range = coin->MAXBUNDLES;
     currentbp = coin->current;
     lastbp = coin->lastpending;
