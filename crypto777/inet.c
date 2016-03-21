@@ -33,7 +33,10 @@ struct sockaddr_in6 {
     u_long  sin6_scope_id;
 };
 #endif
-#ifndef AF_INET6
+#ifdef _WIN32
+#ifdef AF_INET6
+#undef AF_INET6
+#endif
 #define AF_INET6	23
 #endif
 static int inet_ntop4(unsigned char *src, char *dst, size_t size);
