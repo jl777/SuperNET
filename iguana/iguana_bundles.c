@@ -405,6 +405,8 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     else lag = 3;
     if ( (numpeers= coin->peers.numranked) > 8 )//&& bp->currentflag < bp->n )
     {
+        if ( numpeers > 0xff )
+            numpeers = 0xff; // fit into 8 bitfield
         if ( bp->currentflag == 0 )
             bp->currenttime = now;
         if ( bp->numhashes >= bp->n )
@@ -550,13 +552,13 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     {
         if ( (block= bp->blocks[i]) != 0 )
         {
-            if ( block->fpipbits == 0 || block->RO.recvlen == 0 )
+            if ( block->fpipbits == 0 )//|| block->RO.recvlen == 0 )
             {
                 if ( block->issued == 0 || now > block->issued+lag )
                 {
                     block->numrequests++;
                     if ( bp == coin->current )
-                        printf("[%d:%d] ",bp->hdrsi,i);
+                        printf("[%d:%d].%x ",bp->hdrsi,i,block->fpipbits);
                     iguana_blockQ("kick",coin,bp,i,block->RO.hash2,bp == coin->current);
                     bp->issued[i] = block->issued = now;
                     counter++;
