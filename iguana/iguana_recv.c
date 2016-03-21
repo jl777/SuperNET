@@ -53,7 +53,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
         coin->numreqsent++;
         addr->pendblocks++;
         addr->pendtime = (uint32_t)time(NULL);
-        if ( 0 && coin->current == bp )
+        //if ( 0 && coin->current == bp )
             printf("REQ.%s bundlei.%d hdrsi.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);
@@ -1202,20 +1202,19 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
     {
         hash2 = req->hash2;
         height = req->height;
-        block = 0;
-        if ( priority == 0 && (bp= req->bp) != 0 && req->bundlei >= 0 && req->bundlei < bp->n && req->bundlei < coin->chain->bundlesize && (block= bp->blocks[req->bundlei]) != 0 && (block->fpipbits != 0 || block->queued != 0) )
+        if ( (bp= req->bp) != 0 && req->bundlei >= 0 && req->bundlei < bp->n )
+            block = bp->blocks[req->bundlei];
+        else block = 0;
+        if ( priority == 0 && bp != 0 && req->bundlei >= 0 && req->bundlei < bp->n && req->bundlei < coin->chain->bundlesize && block != 0 && (block->fpipbits != 0 || block->queued != 0) )
         {
-            if ( 1 && priority != 0 )
+            //if ( 1 && priority != 0 )
                 printf("SKIP %p[%d] %d\n",bp,bp!=0?bp->bundleheight:-1,req->bundlei);
         }
         else
         {
-            char str[65];
             if ( block != 0 )
                 block->numrequests++;
-            //if ( 0 && priority != 0 )
-                printf("sendreq %s [%d:%d]\n",bits256_str(str,hash2),bp!=0?bp->bundleheight:-1,req->bundlei);
-            iguana_sendblockreqPT(coin,addr,req->bp,req->bundlei,hash2,0);
+            iguana_sendblockreqPT(coin,addr,bp,req->bundlei,hash2,0);
         }
         flag++;
         myfree(req,sizeof(*req));
