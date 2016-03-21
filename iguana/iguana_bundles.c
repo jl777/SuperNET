@@ -180,7 +180,18 @@ int32_t iguana_hash2set(struct iguana_info *coin,char *debugstr,struct iguana_bu
         retval = 0;
     } else retval = (bundlei >= 0 && bundlei < coin->chain->bundlesize) ? 0 : 1;
     //printf("set [%d] <- %s\n",bundlei,bits256_str(str,newhash2));
-    *orighash2p = newhash2;
+    if ( bits256_cmp(*orighash2p,newhash2) != 0 )
+    {
+        *orighash2p = newhash2;
+        if ( bp->bundleheight+bundlei <= coin->blocks.hwmchain.height )
+        {
+            printf("changing [%d:%d] -> %d < hwmheight %d\n",bp->hdrsi,bundlei,bp->bundleheight+bundlei,coin->blocks.hwmchain.height);
+            if ( bp->bundleheight+bundlei > 0 )
+            {
+                printf("REORG %d blocks\n",coin->blocks.hwmchain.height - (bp->bundleheight+bundlei));
+            }
+        }
+    }
     return(retval);
 }
 
