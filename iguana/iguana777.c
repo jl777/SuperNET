@@ -405,12 +405,10 @@ void iguana_helper(void *arg)
             if ( (bp= ptr->bp) != 0 && ptr->coin != 0 )
             {
                 if ( time(NULL) >= bp->nexttime )
-                {
-                    //printf("t.%lu vs next.%u\n",time(NULL),bp->nexttime);
                     flag += iguana_bundleiters(ptr->coin,&MEM,MEMB,bp,ptr->timelimit);
-                    myfree(ptr,ptr->allocsize);
-                } else queue_enqueue("requeue",&bundlesQ,&ptr->DL,0);
+                else iguana_bundleQ(ptr->coin,bp,1000);
             }  else printf("helper missing param? %p %p %u\n",ptr->coin,bp,ptr->timelimit);
+            myfree(ptr,ptr->allocsize);
             flag++;
         }
         else
