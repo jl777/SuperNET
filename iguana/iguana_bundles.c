@@ -875,7 +875,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                         continue;
                     prev = bp->blocks[j-1];
                     //printf("[%d:%d] prev.%p nonz.%d speculative.%d block.%p\n",bp->hdrsi,j,bp->blocks[j-1],bits256_nonz(bp->hashes[j]),bits256_nonz(bp->speculative[j]),bp->blocks[j]);
-                    if ( block != 0 && prev != 0 && bp->blocks[j] == 0 )
+                    if ( block != 0 && bp->blocks[j] == 0 ) //prev != 0 && 
                     {
                         //char str2[65]; printf("[%d:%d] prev.%p nonz.%d speculative.%d prev.%s vs %s ipbits.%x q.%d\n",bp->hdrsi,j,bp->blocks[j-1],bits256_nonz(bp->hashes[j]),bits256_nonz(bp->speculative[j]),bits256_str(str,prev->RO.hash2),bits256_str(str2,block->RO.prev_block),block->fpipbits,block->queued);
                         if ( block->fpipbits == 0 && block->queued == 0 )

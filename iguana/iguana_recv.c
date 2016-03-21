@@ -607,11 +607,11 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
         if ( bp != 0 && (bp->speculative == 0 || num > bp->numspec) && bp->emitfinish == 0 )
         {
             printf("FOUND speculative.%s BLOCKHASHES[%d] ht.%d\n",bits256_str(str,blockhashes[1]),num,bp->bundleheight);
-            if ( bp->speculative != 0 )
-                myfree(bp->speculative,sizeof(*bp->speculative) * bp->numspec);
-            bp->speculative = blockhashes;
-            bp->numspec = num;
-            req->hashes = 0;
+            if ( bp->speculative == 0 )
+                bp->speculative = mycalloc('s',bp->n+1,sizeof(*bp->speculative));
+            for (i=bp->numspec; i<num&&i<=bp->n; i++)
+                bp->speculative[i] = blockhashes[i];
+            bp->numspec = num <= bp->n+1 ? num : bp->n+1;
             //iguana_blockQ(coin,0,-1,blockhashes[2],1);
         }
     }
@@ -714,8 +714,13 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
         }
         //printf("i.%d ref prev.(%s)\n",i,bits256_str(str,origblock->RO.prev_block));
     }
-    else
+    else if ( bp == coin->current && bp != 0 && block != 0 && bundlei >= 0 )
     {
+        if ( bp->speculative != 0 && bp->numspec <= bundlei )
+        {
+            bp->speculative[bundlei] = block->RO.hash2;
+            bp->numspec = bundlei+1;
+        }
     }
     if ( 1 )//&& bp != 0 && bp->hdrsi == coin->bundlescount-1 )
     {
@@ -744,7 +749,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
                 prev = iguana_blockhashset(coin,-1,block->RO.prev_block,1);
             if ( prev != 0 && (bits256_nonz(prev->RO.prev_block) == 0 || prev->fpipbits == 0) )
             {
-                printf("auto prev newtx %s\n",bits256_str(str,prev->RO.prev_block));
+                printf("auto prev newtx %s\n",bits256_str(str,prev->RO.hash2));
                 prev->newtx = 1;
                 iguana_blockQ("autoprev",coin,0,-1,prev->RO.hash2,0);
             }
