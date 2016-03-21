@@ -402,9 +402,9 @@ void iguana_helper(void *arg)
         if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
         {
             idle = 0;
-            if ( (bp= ptr->bp) != 0 && ptr->coin != 0 )
+            if ( (bp= ptr->bp) != 0 && (coin= ptr->coin) != 0 )
             {
-                if ( time(NULL) >= bp->nexttime )
+                if ( coin->started != 0 && time(NULL) >= bp->nexttime )
                     flag += iguana_bundleiters(ptr->coin,&MEM,MEMB,bp,ptr->timelimit);
                 else iguana_bundleQ(ptr->coin,bp,1000);
             }  else printf("helper missing param? %p %p %u\n",ptr->coin,bp,ptr->timelimit);
