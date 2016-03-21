@@ -53,7 +53,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
         coin->numreqsent++;
         addr->pendblocks++;
         addr->pendtime = (uint32_t)time(NULL);
-        //if ( 0 && coin->current == bp )
+        if ( 0 && coin->current == bp )
             printf("REQ.%s bundlei.%d hdrsi.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);
@@ -256,7 +256,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
         }
     }
     req->block = txdata->block;
-    printf("recvlen.%d ipbits.%x prev.(%s)\n",req->block.RO.recvlen,req->block.fpipbits,bits256_str(str,txdata->block.RO.prev_block));
+    //printf("recvlen.%d ipbits.%x prev.(%s)\n",req->block.RO.recvlen,req->block.fpipbits,bits256_str(str,txdata->block.RO.prev_block));
     req->block.RO.txn_count = req->numtx = txdata->block.RO.txn_count;
     coin->recvcount++;
     coin->recvtime = (uint32_t)time(NULL);
@@ -982,7 +982,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                 else if ( bp != 0 && time(NULL) > bp->hdrtime+10 )
                 {
                     char str[65];
-                    printf("MAINCHAIN gethdr %d %s\n",bp->bundleheight,bits256_str(str,bp->hashes[0]));
+                    //printf("MAINCHAIN gethdr %d %s\n",bp->bundleheight,bits256_str(str,bp->hashes[0]));
                     queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
                     bp->hdrtime = (uint32_t)time(NULL);
                 }
@@ -1185,7 +1185,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                     }
                     if ( bp == 0 || z != 0 )
                     {
-                        printf("%s request HDR.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp!=0?bp->numhashes:0);
+                        //printf("%s request HDR.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp!=0?bp->numhashes:0);
                         iguana_send(coin,addr,serialized,datalen);
                         addr->pendhdrs++;
                         flag++;

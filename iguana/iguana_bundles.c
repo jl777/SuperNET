@@ -662,17 +662,23 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                     printf("iguana_bundlecalcs.(%s) illegal hdrsi.%d bundlei.%d checki.%d\n",fname,hdrsi,bundlei,checki);
                     continue;
                 }
-                if ( coin->current == bp && (fp= fopen(fname,"rb")) != 0 )
+                if ( coin->current == bp )
                 {
-                    fseek(fp,0,SEEK_END);
-                    if ( block->RO.recvlen == 0 )
+                    if ( (fp= fopen(fname,"rb")) != 0 )
                     {
+                        fseek(fp,0,SEEK_END);
                         block->RO.recvlen = (uint32_t)ftell(fp);
                         block->fpipbits = 1;
                         block->fpos = 0;
-                        //printf("[%d:%d] len.%d\n",hdrsi,bundlei,block->RO.recvlen);
+                        //printf("fp.[%d:%d] len.%d\n",hdrsi,bundlei,block->RO.recvlen);
+                        fclose(fp);
                     }
-                    fclose(fp);
+                    else
+                    {
+                        block->RO.recvlen = 0;
+                        block->fpipbits = 0;
+                        block->fpos = 0;
+                    }
                 }
                 //bp->blocks[bundlei] = block;
                 block->hdrsi = bp->hdrsi, block->bundlei = bundlei;
