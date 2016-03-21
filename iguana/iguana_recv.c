@@ -415,7 +415,7 @@ void iguana_bundlespeculate(struct iguana_info *coin,struct iguana_bundle *bp,in
     if ( bp->numhashes < bp->n && bundlei == 0 && bp->speculative == 0 && bp->bundleheight < coin->longestchain-coin->chain->bundlesize )
     {
         char str[65]; bits256_str(str,bp->hashes[0]);
-        fprintf(stderr,"Afound block -> %d %d hdr.%s\n",bp->bundleheight,coin->longestchain-coin->chain->bundlesize,str);
+        //fprintf(stderr,"Afound block -> %d %d hdr.%s\n",bp->bundleheight,coin->longestchain-coin->chain->bundlesize,str);
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(str),1);
     }
     /*else if ( bp->speculative != 0 && bundlei < bp->numspec && memcmp(hash2.bytes,bp->speculative[bundlei].bytes,sizeof(hash2)) == 0 )
@@ -574,7 +574,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
     //iguana_blockQ(coin,0,-1,blockhashes[1],0);
     //iguana_blockQ(coin,0,-4,blockhashes[1],1);
     char str[65];
-    if ( num > 2 )//&& bp->hdrsi == coin->bundlescount-1 )
+    if ( 0 && num > 2 )//&& bp->hdrsi == coin->bundlescount-1 )
         printf("blockhashes[%d] %d of %d %s bp.%d[%d]\n",num,bp==0?-1:bp->hdrsi,coin->bundlescount,bits256_str(str,blockhashes[1]),bp==0?-1:bp->bundleheight,bundlei);
     if ( bp != 0 )
     {
@@ -649,7 +649,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
             if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,&blockhashes[1],1)) > 0 )
             {
                 iguana_send(coin,addr,serialized,len);
-                char str[65]; printf("REQ.%s\n",bits256_str(str,blockhashes[1]));
+                //char str[65]; printf("REQ.%s\n",bits256_str(str,blockhashes[1]));
             }
         }
     } else iguana_blockQ("recvhash6",coin,0,-6,blockhashes[1],0); // should be RT block
@@ -700,7 +700,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
         }
         //printf("i.%d ref prev.(%s)\n",i,bits256_str(str,origblock->RO.prev_block));
     }
-    if ( 1 )//&& bp != 0 && bp->hdrsi == coin->bundlescount-1 )
+    if ( 0 )//&& bp != 0 && bp->hdrsi == coin->bundlescount-1 )
     {
         int32_t i; static int32_t numrecv;
         numrecv++;
@@ -714,7 +714,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     }
     if ( 1 && bundlei == 1 && bp != 0 && bp->numhashes < bp->n && coin->enableCACHE != 0 )
     {
-        printf("reissue hdrs request for [%d]\n",bp->hdrsi);
+        //printf("reissue hdrs request for [%d]\n",bp->hdrsi);
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
     }
     if ( block != 0 )

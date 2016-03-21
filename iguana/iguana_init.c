@@ -43,7 +43,7 @@ void iguana_initpeer(struct iguana_info *coin,struct iguana_peer *addr,uint64_t 
     memset(addr,0,sizeof(*addr));
     addr->ipbits = ipbits;
     addr->usock = -1;
-    expand_ipbits(addr->ipaddr,addr->ipbits);
+    expand_ipbits(addr->ipaddr,(uint32_t)addr->ipbits);
     //addr->pending = (uint32_t)time(NULL);
     strcpy(addr->symbol,coin->symbol);
     strcpy(addr->coinstr,coin->name);
