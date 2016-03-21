@@ -746,7 +746,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
     lasti = lastbp == 0 ? coin->bundlescount-1 : lastbp->hdrsi;
     coin->numbundlesQ--;
     iguana_bundlecalcs(coin,bp);
-    printf("ITER.%-4d now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",bp->rank,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
+    printf("ITER now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
     bp->nexttime = (uint32_t)(time(NULL) + 3);//(bp->hdrsi - starti) + 1);
     if ( bp->numhashes < bp->n && bp->bundleheight < coin->longestchain-coin->chain->bundlesize )
         iguana_bundlehdr(coin,bp,starti);
@@ -795,13 +795,13 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
         max = bp->n;
         counter = iguana_bundleissue(coin,bp,max,timelimit);
         if ( 0 && counter > 0 )
-            printf("ITER.%-4d now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",bp->rank,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
+            printf("ITER now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
     }
     iguana_bundleQ(coin,bp,1000);
     return(retval);
 }
 
-static int _decreasing_double(const void *a,const void *b)
+/*static int _decreasing_double(const void *a,const void *b)
 {
 #define double_a (*(double *)a)
 #define double_b (*(double *)b)
@@ -818,18 +818,18 @@ static int32_t revsortds(double *buf,uint32_t num,int32_t size)
 {
 	qsort(buf,num,size,_decreasing_double);
 	return(0);
-}
+}*/
 
 void iguana_bundlestats(struct iguana_info *coin,char *str)
 {
     static uint32_t lastdisp;
     int32_t i,n,m,j,numv,count,pending,dispflag,numutxo,numbalances,numrecv,done,numhashes,numcached,numsaved,numemit;
-    int64_t spaceused=0,estsize = 0; struct iguana_bundle *bp,*lastpending = 0,*firstgap = 0; double *sortbuf; struct iguana_peer *addr; struct iguana_block *block,*prev; uint32_t now;
+    int64_t spaceused=0,estsize = 0; struct iguana_bundle *bp,*lastpending = 0,*firstgap = 0; struct iguana_block *block,*prev; uint32_t now;
     now = (uint32_t)time(NULL);
     dispflag = (rand() % 1000) == 0;
     numrecv = numhashes = numcached = numsaved = numemit = done = numutxo = numbalances = 0;
     count = coin->bundlescount;
-    sortbuf = calloc(count,sizeof(*sortbuf)*2);
+    //sortbuf = calloc(count,sizeof(*sortbuf)*2);
     for (i=n=m=numv=pending=0; i<count; i++)
     {
         if ( (bp= coin->bundles[i]) != 0 )
@@ -875,7 +875,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                     } // else break;
                 }
             }
-            bp->rank = 0;
+            //bp->rank = 0;
             estsize += bp->estsize;//iguana_bundlecalcs(coin,bp,done);
             //bp->metric = bp->numhashes;
             bp->metric = coin->bundlescount - bp->hdrsi;
@@ -909,14 +909,14 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                 if ( bp->emitfinish == 0 )
                 {
                     spaceused += bp->estsize;
-                    sortbuf[m*2] = bp->metric;
-                    sortbuf[m*2 + 1] = i;
+                    //sortbuf[m*2] = bp->metric;
+                    //sortbuf[m*2 + 1] = i;
                     m++;
                 }
             }
         }
     }
-    if ( m > 0 )
+    /*if ( m > 0 )
     {
         revsortds(sortbuf,m,sizeof(*sortbuf)*2);
         for (i=0; i<m; i++)
@@ -929,7 +929,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             }
         }
     }
-    free(sortbuf);
+    free(sortbuf);*/
     coin->numremain = n;
     coin->blocksrecv = numrecv;
     char str2[65]; uint64_t tmp; int32_t diff,p = 0; struct tai difft,t = tai_now();

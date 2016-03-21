@@ -395,7 +395,8 @@ struct iguana_peer
     struct OS_memspace RAWMEM,TXDATA,HASHMEM;
     struct iguana_ramchain ramchain;
     struct iguana_fileitem *filehash2; int32_t numfilehash2,maxfilehash2;
-    struct iguana_bundle *bp; FILE *voutsfp,*vinsfp;
+    //struct iguana_bundle *bp;
+    FILE *voutsfp,*vinsfp;
 #ifdef IGUANA_PEERALLOC
     struct OS_memspace *SEROUT[128];
 #endif
@@ -419,7 +420,7 @@ struct iguana_bundle
     struct queueitem DL; struct iguana_info *coin; struct iguana_bundle *nextbp;
     struct iguana_bloom16 bloom; uint32_t rawscriptspace;
     uint32_t issuetime,hdrtime,emitfinish,mergefinish,purgetime,queued,startutxo,utxofinish,balancefinish,validated,lastspeculative,dirty,nexttime,currenttime;
-    int32_t numhashes,numrecv,numsaved,numcached,rank,generrs,checkedtmp,currentflag;
+    int32_t numhashes,numrecv,numsaved,numcached,generrs,checkedtmp,currentflag;
     int32_t minrequests,n,hdrsi,bundleheight,numtxids,numspends,numunspents,numspec;
     double avetime,threshold,metric; uint64_t datasize,estsize;
     struct iguana_block *blocks[IGUANA_MAXBUNDLESIZE]; uint32_t issued[IGUANA_MAXBUNDLESIZE];
