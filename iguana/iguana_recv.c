@@ -948,9 +948,11 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                 }
                 else if ( bp != 0 && bundlei < bp->n-1 && bits256_nonz(bp->hashes[bundlei+1]) > 0 )
                 {
-                    printf("MAINCHAIN skip issue %d\n",bundlei+1);
                     if ( time(NULL) > bp->issued[bundlei+1]+10 )
+                    {
+                        printf("MAINCHAIN skip issue %d\n",bundlei+1);
                         iguana_blockQ("mainskip",coin,bp,bundlei,bp->hashes[bundlei+1],0);
+                    }
                 }
                 else if ( bp != 0 && time(NULL) > bp->hdrtime+10 )
                 {
