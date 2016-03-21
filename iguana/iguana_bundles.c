@@ -389,7 +389,9 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
         lag = i;
     else if ( lag > 10*i )
         lag = 10*i;*/
-    lag = 10;
+    if ( strcmp("BTC",coin->symbol) == 0 )
+        lag = 10;
+    else lag = 3;
     if ( (numpeers= coin->peers.numranked) > 8 )//&& bp->currentflag < bp->n )
     {
         if ( bp->currentflag == 0 )
@@ -516,10 +518,12 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                         counter++;
                         if ( priority != 0 )
                         {
-                            //if ( (addr= coin->peers.ranked[rand() % numpeers]) != 0 )
-                            //    iguana_sendblockreqPT(coin,addr,bp,i,block->RO.hash2,0);
-                            iguana_blockQ("kick",coin,bp,i,block->RO.hash2,bp == coin->current && now > block->issued+lag*10);
-                            //printf("[%d:%d] ",bp->hdrsi,i);
+                            iguana_blockQ("kick",coin,bp,i,block->RO.hash2,bp == coin->current && now > block->issued+lag);
+                            if ( bp == coin->current && now > block->issued+lag*3 && (addr= coin->peers.ranked[rand() % numpeers]) != 0 )
+                            {
+                                printf("[%d:%d] ",bp->hdrsi,i);
+                                iguana_sendblockreqPT(coin,addr,bp,i,block->RO.hash2,0);
+                            }
                         } else iguana_blockQ("kick",coin,bp,i,block->RO.hash2,0);
                         flag++;
                     } //else printf("%d ",now - block->issued);
@@ -626,7 +630,7 @@ int32_t iguana_bundletweak(struct iguana_info *coin,struct iguana_bundle *bp)
 
 int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    FILE *fp; int32_t bundlei,checki,hdrsi,numhashes,numsaved,numcached,numrecv,minrequests;
+    int32_t bundlei,checki,hdrsi,numhashes,numsaved,numcached,numrecv,minrequests; //FILE *fp;
     int64_t datasize; struct iguana_block *block; char fname[1024]; static bits256 zero;
     if ( bp->emitfinish > coin->startutc )
     {
