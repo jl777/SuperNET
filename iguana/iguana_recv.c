@@ -631,7 +631,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
                         iguana_blockQ("recvhash2",coin,bp,1,blockhashes[1],0);
                         iguana_blockQ("recvhash3",coin,bp,0,blockhashes[0],0);
                         iguana_blockQ("recvhash4",coin,bp,coin->chain->bundlesize-1,blockhashes[coin->chain->bundlesize-1],0);
-                        printf("matched bundle.%d\n",bp->bundleheight);
+                        //printf("matched bundle.%d\n",bp->bundleheight);
                         return(req);
                     } else printf("unexpected mismatch??\n");
                 }
