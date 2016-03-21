@@ -249,6 +249,7 @@ int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,
 {
     struct iguana_bundle *bp = 0; int32_t bundlei = -2; char str[65];
     *hdrsip = -1; ipbits = 0;
+    fname[0] = 0;
     //if ( ipbits == 0 )
     //    printf("illegal ipbits.%d\n",ipbits), getchar();
     if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) == 0 )
