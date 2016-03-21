@@ -234,6 +234,7 @@ void queue_enqueue(char *name,queue_t *queue,struct queueitem *origitem,int32_t 
         printf("FATAL type error: queueing empty value\n");//, getchar();
         return;
     }
+    fprintf(stderr,"enqueue.(%s) %p offset.%d\n",queue->name,origitem,offsetflag);
     lock_queue(queue);
     item = (struct queueitem *)((long)origitem - offsetflag*sizeof(struct queueitem));
     DL_APPEND(queue->list,item);
