@@ -958,7 +958,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                 else if ( bp != 0 && time(NULL) > bp->hdrtime+10 )
                 {
                     char str[65];
-                    printf("MAINCHAIN gethdr %d\n",bp->bundleheight);
+                    printf("MAINCHAIN gethdr %d %s\n",bp->bundleheight,bits256_str(str,bp->hashes[0]));
                     queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
                     bp->hdrtime = (uint32_t)time(NULL);
                 }
@@ -1161,7 +1161,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                     }
                     if ( bp == 0 || z != 0 )
                     {
-                        //printf("%s request HDR.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp!=0?bp->numhashes:0);
+                        printf("%s request HDR.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp!=0?bp->numhashes:0);
                         iguana_send(coin,addr,serialized,datalen);
                         addr->pendhdrs++;
                         flag++;

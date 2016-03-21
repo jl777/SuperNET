@@ -557,7 +557,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     block->numrequests++;
                     if ( bp == coin->current )
                         printf("[%d:%d] ",bp->hdrsi,i);
-                    iguana_blockQ("kick",coin,bp,i,block->RO.hash2,0);
+                    iguana_blockQ("kick",coin,bp,i,block->RO.hash2,bp == coin->current);
                     bp->issued[i] = block->issued = now;
                     counter++;
                     if ( --max <= 0 )
@@ -854,8 +854,8 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             //    printf("UNEXPECTED null block for bundlehash.%d\n",bp->hdrsi);
             if ( bp->numhashes < bp->n && bp->speculative != 0 )
             {
-                for (j=1; j<bp->numspec&&j<bp->n; j++)
-                    iguana_blockhashset(coin,-1,bp->speculative[j],1);
+                //for (j=1; j<bp->numspec&&j<bp->n; j++)
+                //    iguana_blockhashset(coin,-1,bp->speculative[j],1);
                 //char str[65],str2[65];
                 for (j=1; j<bp->numspec&&j<bp->n; j++)
                 {
@@ -864,7 +864,10 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                         if ( bits256_nonz(bp->hashes[j]) != 0 )
                             block = iguana_blockfind(coin,bp->hashes[j]);
                         else if ( bits256_nonz(bp->speculative[j]) != 0 )
-                            block = iguana_blockfind(coin,bp->speculative[j]);
+                        {
+                            if ( (block= iguana_blockfind(coin,bp->speculative[j])) == 0 )
+                                block = iguana_blockhashset(coin,-1,bp->speculative[j],1);
+                        }
                     }
                     else if ( bits256_nonz(block->RO.prev_block) != 0 && block->fpipbits != 0 )
                         continue;
@@ -885,6 +888,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                             else if ( now > block->issued+10 )
                             {
                                 block->issued = now;
+                                printf("submit speculative [%d:%d]\n",bp->hdrsi,j);
                                 iguana_blockQ("spec",coin,0,-1,block->RO.hash2,0);
                             }
                         }
