@@ -645,7 +645,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                     printf("iguana_bundlecalcs.(%s) illegal hdrsi.%d bundlei.%d checki.%d\n",fname,hdrsi,bundlei,checki);
                     continue;
                 }
-                if ( 1 && bp->checkedtmp < bp->n && (fp= fopen(fname,"rb")) != 0 )
+                /*if ( 1 && bp->checkedtmp < bp->n && (fp= fopen(fname,"rb")) != 0 )
                 {
                     fseek(fp,0,SEEK_END);
                     if ( block->RO.recvlen == 0 )
@@ -656,7 +656,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                         //printf("[%d:%d] len.%d\n",hdrsi,bundlei,block->RO.recvlen);
                     }
                     fclose(fp);
-                }
+                }*/
                 bp->blocks[bundlei] = block;
                 block->hdrsi = bp->hdrsi, block->bundlei = bundlei;
                 if ( bp->minrequests == 0 || (block->numrequests > 0 && block->numrequests < bp->minrequests) )
