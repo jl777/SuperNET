@@ -1030,7 +1030,7 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
             {
                 if ( (bp= coin->bundles[i]) != 0 && (bp->numhashes < bp->n || i == coin->bundlescount-1) && (bp->speculative == 0 || bp->numspec < bp->n) )
                 {
-                    lag = 10;
+                    lag = 30;
                     if ( bp->bundleheight+bp->numhashes < coin->longestchain && time(NULL) > bp->issuetime+lag )
                     {
                         //printf("LAG.%ld hdrsi.%d numhashes.%d:%d needhdrs.%d qsize.%d zcount.%d\n",time(NULL)-bp->hdrtime,i,bp->numhashes,bp->n,iguana_needhdrs(coin),queue_size(&coin->hdrsQ),coin->zcount);
@@ -1158,7 +1158,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                     }
                     if ( bp == 0 || z != 0 )
                     {
-                        printf("%s request HDR.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp!=0?bp->numhashes:0);
+                        //printf("%s request HDR.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp!=0?bp->numhashes:0);
                         iguana_send(coin,addr,serialized,datalen);
                         addr->pendhdrs++;
                         flag++;
