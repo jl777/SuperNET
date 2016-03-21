@@ -253,8 +253,15 @@ int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,
     //    printf("illegal ipbits.%d\n",ipbits), getchar();
     if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) == 0 )
     {
+        int32_t i;
+        if ( (bp= coin->bundles[0]) != 0 && bp->speculative != 0 )
+            for (i=0; i<100; i++)
+                printf("(%d %d %d).%d ",bits256_nonz(bp->hashes[i]),bits256_nonz(bp->speculative[i]),bits256_cmp(bp->hashes[i],bp->speculative[i]),bits256_cmp(hash2,bp->hashes[i]));
+        printf("iguana_peerfname error finding.(%s)\n",bits256_str(str,hash2));
         if ( bits256_nonz(prevhash2) == 0 || (bp= iguana_bundlefind(coin,&bp,&bundlei,prevhash2)) == 0 || bundlei >= coin->chain->bundlesize-1 )
+        {
             return(-2);
+        }
         else bundlei++;
     }
     hash2 = bp->hashes[0], *hdrsip = bp->hdrsi;

@@ -323,8 +323,6 @@ int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *m
     {
         if ( (bp= ptr->bp) != 0 )
         {
-            if ( time(NULL) > bp->nexttime )
-                return(0);
             if ( 0 && ptr->type == 'M' )
             {
                 if ( (nextbp= ptr->nextbp) != 0 )
@@ -369,7 +367,7 @@ void iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp)
 void iguana_helper(void *arg)
 {
     FILE *fp = 0; char fname[512],name[64],*helpername = 0; cJSON *argjson=0; int32_t type,flag,idle=0;
-    struct iguana_helper *ptr; struct iguana_info *coin; struct OS_memspace MEM,*MEMB;
+    struct iguana_helper *ptr; struct iguana_info *coin; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp;
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
         helpername = jstr(argjson,"name");
     if ( helpername == 0 )
@@ -404,10 +402,15 @@ void iguana_helper(void *arg)
         else if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
         {
             idle = 0;
-            if ( ptr->bp != 0 && ptr->coin != 0 )
-                flag += iguana_bundleiters(ptr->coin,&MEM,MEMB,ptr->bp,ptr->timelimit);
-            else printf("helper missing param? %p %p %u\n",ptr->coin,ptr->bp,ptr->timelimit);
-            myfree(ptr,ptr->allocsize);
+            if ( (bp= ptr->bp) != 0 && ptr->coin != 0 )
+            {
+                if ( time(NULL) >= bp->nexttime )
+                {
+                    //printf("t.%lu vs next.%u\n",time(NULL),bp->nexttime);
+                    flag += iguana_bundleiters(ptr->coin,&MEM,MEMB,bp,ptr->timelimit);
+                    myfree(ptr,ptr->allocsize);
+                } else queue_enqueue("requeue",&bundlesQ,&ptr->DL,0);
+            }  else printf("helper missing param? %p %p %u\n",ptr->coin,bp,ptr->timelimit);
             flag++;
         }
         else
@@ -608,7 +611,9 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         coin->endPEND = 1024;
     else if ( coin->endPEND < 2 )
         coin->endPEND = 2;
-    coin->enableCACHE = juint(json,"cache");
+    if ( jobj(json,"cache") != 0 )
+        coin->enableCACHE = juint(json,"cache");
+    else coin->enableCACHE = mult != 0;
     coin->MAXMEM = juint(json,"RAM");
     if ( coin->MAXMEM == 0 )
         coin->MAXMEM = IGUANA_DEFAULTRAM;
