@@ -380,7 +380,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     if ( coin->current != 0 )
         starti = coin->current->hdrsi;
     else starti = 0;
-    priority = 1;//(bp->hdrsi < starti+8);
+    priority = (bp->hdrsi < starti + coin->peers.numranked);
     lag = (bp->hdrsi - starti);
     lag *= lag;
     if ( (i= sqrt(bp->hdrsi)) < 2 )
@@ -746,7 +746,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
     lasti = lastbp == 0 ? coin->bundlescount-1 : lastbp->hdrsi;
     coin->numbundlesQ--;
     iguana_bundlecalcs(coin,bp);
-    //printf("ITER.%-4d now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",bp->rank,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
+    printf("ITER.%-4d now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",bp->rank,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
     bp->nexttime = (uint32_t)(time(NULL) + 3);//(bp->hdrsi - starti) + 1);
     if ( bp->numhashes < bp->n && bp->bundleheight < coin->longestchain-coin->chain->bundlesize )
         iguana_bundlehdr(coin,bp,starti);
