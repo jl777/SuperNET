@@ -950,6 +950,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                 {
                     if ( time(NULL) > bp->issued[bundlei+1]+10 )
                     {
+                        bp->issued[bundlei+1] = (uint32_t)time(NULL);
                         printf("MAINCHAIN skip issue %d\n",bundlei+1);
                         iguana_blockQ("mainskip",coin,bp,bundlei,bp->hashes[bundlei+1],0);
                     }
@@ -1040,7 +1041,7 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                             coin->numpendings++;
                         init_hexbytes_noT(hashstr,bp->hashes[0].bytes,sizeof(bits256));
                         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
-                        printf("hdrsi.%d reqHDR.(%s) numhashes.%d\n",bp->hdrsi,hashstr,bp->numhashes);
+                        //printf("hdrsi.%d reqHDR.(%s) numhashes.%d\n",bp->hdrsi,hashstr,bp->numhashes);
                         if ( 1 )
                         {
                             iguana_blockQ("reqhdrs0",coin,bp,0,bp->hashes[0],0);
@@ -1088,7 +1089,7 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
                     block->queued = 1;
                     queue_enqueue("cacheQ",&coin->cacheQ,&block->req->DL,0);
                     block->req = 0;
-                    char str2[65]; printf("already have.(%s)\n",bits256_str(str2,block->RO.hash2));
+                    //char str2[65]; printf("already have.(%s)\n",bits256_str(str2,block->RO.hash2));
                 }
                 return(0);
             }

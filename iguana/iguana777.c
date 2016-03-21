@@ -221,7 +221,7 @@ uint32_t iguana_updatemetrics(struct iguana_info *coin)
             {
                 for (j=0; j<coin->peers.numranked; j++)
                 {
-                    if ( i != 0 && (tmpaddr= coin->peers.ranked[j]) != 0 && (uint32_t)addr->ipbits == (uint32_t)tmpaddr->ipbits )
+                    if ( i != j && (tmpaddr= coin->peers.ranked[j]) != 0 && (uint32_t)addr->ipbits == (uint32_t)tmpaddr->ipbits )
                         break;
                 }
                 if ( j == coin->peers.numranked )
