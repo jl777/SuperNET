@@ -722,7 +722,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
             bp->numspec = bundlei+1;
         }
     }
-    if ( 1 )//&& bp != 0 && bp->hdrsi == coin->bundlescount-1 )
+    if ( 0 )//&& bp != 0 && bp->hdrsi == coin->bundlescount-1 )
     {
         int32_t i; static int32_t numrecv;
         numrecv++;
@@ -749,7 +749,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
                 prev = iguana_blockhashset(coin,-1,block->RO.prev_block,1);
             if ( prev != 0 && (bits256_nonz(prev->RO.prev_block) == 0 || prev->fpipbits == 0) )
             {
-                printf("auto prev newtx %s\n",bits256_str(str,prev->RO.hash2));
+                //printf("auto prev newtx %s\n",bits256_str(str,prev->RO.hash2));
                 prev->newtx = 1;
                 iguana_blockQ("autoprev",coin,0,-1,prev->RO.hash2,0);
             }

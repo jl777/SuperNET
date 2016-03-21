@@ -313,9 +313,11 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
             if ( coin->bundles[i] == 0 )
                 break;
         printf("INIT bundles i.%d\n",i);
-        if ( i > 0 )
+        if ( i == coin->bundlescount && i > 1 )
         {
-            //iguana_spentsfile(coin,i);
+            bp = coin->bundles[coin->bundlescount - 2];
+            bp->emitfinish = bp->startutxo = bp->utxofinish = bp->balancefinish = 0;
+            iguana_bundleQ(coin,bp,1000);
         }
         char buf[1024];
         iguana_bundlestats(coin,buf);

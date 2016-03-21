@@ -353,7 +353,8 @@ void mainloop(struct supernet_info *myinfo)
                                 coin->pendbalances--;
                                 iguana_balancesQ(coin,bp);
                             }
-                            //iguana_coinflush(ptr->coin,0);
+                            if ( bp->hdrsi == coin->bundlescount-1 )
+                                iguana_coinflush(ptr->coin,1);
                         }
                         myfree(ptr,ptr->allocsize);
                     }

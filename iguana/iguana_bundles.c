@@ -891,12 +891,12 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                                 block->queued = 1;
                                 queue_enqueue("cacheQ",&coin->cacheQ,&block->req->DL,0);
                                 block->req = 0;
-                                printf("submit cached [%d:%d]\n",bp->hdrsi,j);
+                                //printf("submit cached [%d:%d]\n",bp->hdrsi,j);
                             }
                             else if ( now > block->issued+10 )
                             {
                                 block->issued = now;
-                                printf("submit speculative [%d:%d]\n",bp->hdrsi,j);
+                                //printf("submit speculative [%d:%d]\n",bp->hdrsi,j);
                                 iguana_blockQ("spec",coin,0,-1,block->RO.hash2,0);
                             }
                         }
