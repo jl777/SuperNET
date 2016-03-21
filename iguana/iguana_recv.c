@@ -743,7 +743,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
                         {
                             block->req = req;
                             req = 0;
-                        } else printf("already have cache entry.(%s)\n",bits256_str(str,origblock->RO.hash2));
+                        } //else printf("already have cache entry.(%s)\n",bits256_str(str,origblock->RO.hash2));
                         //fprintf(stderr,"bundleset block.%p vs origblock.%p prev.%d bits.%x fpos.%ld\n",block,origblock,bits256_nonz(prevhash2),block->fpipbits,block->fpos);
                     } else printf("got origblock.%s to cache\n",bits256_str(str,origblock->RO.hash2));
                 }
@@ -1158,7 +1158,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                     }
                     if ( bp == 0 || z != 0 )
                     {
-                        //printf("%s request HDR.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp!=0?bp->numhashes:0);
+                        printf("%s request HDR.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp!=0?bp->numhashes:0);
                         iguana_send(coin,addr,serialized,datalen);
                         addr->pendhdrs++;
                         flag++;
