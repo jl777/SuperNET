@@ -370,6 +370,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
         u = 0;
         unspentind = 0;
         hdrsi = -1;
+        spentbp = 0;
         if ( s->external != 0 && s->prevout >= 0 )
         {
             if ( emit >= ramchain->numXspends )
@@ -414,7 +415,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
         }
         else continue;
         now = (uint32_t)time(NULL);
-        if ( unspentind > 0 && unspentind < spentbp->ramchain.H.data->numunspents )
+        if ( spentbp != 0 && unspentind > 0 && unspentind < spentbp->ramchain.H.data->numunspents )
         {
             if ( spentbp->ramchain.Uextras == 0 )
             {
@@ -462,7 +463,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
         else
         {
             errs++;
-            printf("iguana_balancegen: error with unspentind.%d vs max.%d\n",unspentind,spentbp->ramchain.H.data->numunspents);
+            printf("iguana_balancegen: error with unspentind.%d vs max.%d spentbp.%p\n",unspentind,spentbp!=0?spentbp->ramchain.H.data->numunspents:-1,spentbp);
         }
     }
     if ( numtxid != bp->ramchain.H.data->numtxids )
