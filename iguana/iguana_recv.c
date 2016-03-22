@@ -768,7 +768,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
                     break;
                 if ( prev->fpipbits == 0 )
                 {
-                    printf("width.%d auto prev newtx %s\n",width,bits256_str(str,prev->RO.hash2));
+                    //printf("width.%d auto prev newtx %s\n",width,bits256_str(str,prev->RO.hash2));
                     prev->newtx = 1;
                     iguana_blockQ("autoprev",coin,0,-1,prev->RO.hash2,0);
                 }
@@ -1084,10 +1084,10 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
         {
             for (i=0; i<coin->bundlescount; i++)
             {
-                if ( (bp= coin->bundles[i]) != 0 && (bp->numhashes < bp->n || i == coin->bundlescount-1) && (bp->speculative == 0 || bp->numspec < bp->n) )
+                if ( (bp= coin->bundles[i]) != 0 && (bp == coin->current || i == coin->bundlescount-1 || bp->numhashes < bp->n) )
                 {
                     lag = 30;
-                    if ( bp->bundleheight+bp->numhashes < coin->longestchain && time(NULL) > bp->issuetime+lag )
+                    if ( bp->bundleheight < coin->longestchain && time(NULL) > bp->issuetime+lag )
                     {
                         //printf("LAG.%ld hdrsi.%d numhashes.%d:%d needhdrs.%d qsize.%d zcount.%d\n",time(NULL)-bp->hdrtime,i,bp->numhashes,bp->n,iguana_needhdrs(coin),queue_size(&coin->hdrsQ),coin->zcount);
                         if ( bp->issuetime == 0 )
@@ -1213,7 +1213,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                         else if ( bp->numhashes < bp->n )
                             z = 1;
                     }
-                    if ( bp == 0 || z != 0 )
+                    if ( bp == 0 || z != 0 || bp == coin->current )
                     {
                         //printf("%s request HDR.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp!=0?bp->numhashes:0);
                         iguana_send(coin,addr,serialized,datalen);
@@ -1261,7 +1261,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         else block = 0;
         if ( priority == 0 && bp != 0 && req->bundlei >= 0 && req->bundlei < bp->n && req->bundlei < coin->chain->bundlesize && block != 0 && (block->fpipbits != 0 || block->queued != 0) )
         {
-            //if ( 1 && priority != 0 )
+            if ( 1 && priority != 0 )
                 printf("SKIP %p[%d] %d\n",bp,bp!=0?bp->bundleheight:-1,req->bundlei);
         }
         else
