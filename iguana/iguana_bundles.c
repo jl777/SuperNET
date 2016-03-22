@@ -403,13 +403,13 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     if ( strcmp("BTC",coin->symbol) == 0 )
         lag = 10;
     else lag = 3;
-    if ( (numpeers= coin->peers.numranked) > 8 )//&& bp->currentflag < bp->n )
+    if ( (numpeers= coin->peers.numranked) > 3 )//&& bp->currentflag < bp->n )
     {
         if ( numpeers > 0xff )
             numpeers = 0xff; // fit into 8 bitfield
         if ( bp->currentflag == 0 )
             bp->currenttime = now;
-        if ( bp->numhashes >= bp->n )
+        if ( bp->numhashes >= 1 )
         {
             for (j=0; j<numpeers; j++)
             {
@@ -542,7 +542,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     } //else printf("%d ",now - block->issued);
                 }
             }
-            if ( flag != 0 && priority != 0 && laggard != 0 )
+            //if ( flag != 0 && priority != 0 && laggard != 0 )
                 printf("[%d] reissued.%d currentflag.%d ht.%d s.%d finished.%d most.%d laggards.%d maxunfinished.%d\n",bp->hdrsi,flag,bp->currentflag,bp->bundleheight,bp->numsaved,finished,doneval,laggard,maxval);
          }
         if ( bp == coin->current )
