@@ -323,54 +323,90 @@ void sigalarm_func() { printf("\nSIGALRM\n"); signal(SIGALRM,sigalarm_func); }
 void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func); }
 #endif
 
-int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
+int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t purgedist)
 {
-    int32_t hdrsi,numpkinds; struct iguana_bundle *bp; char fname[1024],fname2[1024]; struct iguana_utxo *Uptr; struct iguana_account *Aptr;
+     int32_t hdrsi,numpkinds,iter,numhdrsi,numunspents,err; struct iguana_bundle *bp;
+    char fname[1024],fname2[1024],destfname[1024]; bits256 balancehash; FILE *fp,*fp2;
+    struct iguana_utxo *Uptr; struct iguana_account *Aptr; struct sha256_vstate vstate;
+    vupdate_sha256(balancehash.bytes,&vstate,0,0);
     memset(coin->bundlebits,0,sizeof(coin->bundlebits));
     for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
         if ( (bp= coin->bundles[hdrsi]) == 0 || bp->balancefinish <= 1 || bp->ramchain.H.data == 0 || bp->ramchain.A == 0 || bp->ramchain.Uextras == 0 )
             break;
     if ( hdrsi <= coin->balanceswritten || hdrsi < refhdrsi )
         return(0);
-    refhdrsi = hdrsi;
-    for (hdrsi=0; hdrsi<refhdrsi; hdrsi++)
+    numhdrsi = hdrsi+1;
+    vupdate_sha256(balancehash.bytes,&vstate,0,0);
+    for (iter=0; iter<3; iter++)
     {
-        if ( (bp= coin->bundles[hdrsi]) != 0 && bp->ramchain.H.data != 0 && (numpkinds= bp->ramchain.H.data->numpkinds) > 0 && (Aptr= bp->ramchain.A) != 0 && (Uptr= bp->ramchain.Uextras) != 0 )
+        for (hdrsi=0; hdrsi<numhdrsi; hdrsi++)
         {
-            if ( 1 )//forceflag == 0 )
+            if ( (bp= coin->bundles[hdrsi]) != 0 && bp->ramchain.H.data != 0 && (numpkinds= bp->ramchain.H.data->numpkinds) > 0 && (numunspents= bp->ramchain.H.data->numunspents) > 0 && (Aptr= bp->ramchain.A) != 0 && (Uptr= bp->ramchain.Uextras) != 0 )
             {
                 sprintf(fname,"accounts/%s/debits.%d",coin->symbol,bp->bundleheight);
                 sprintf(fname2,"accounts/%s/lastspends.%d",coin->symbol,bp->bundleheight);
-            }
-            else
-            {
-                sprintf(fname,"DB/%s/accounts/debits_%d.%d",coin->symbol,coin->bundlescount,bp->bundleheight);
-                sprintf(fname2,"DB/%s/accounts/lastspends_%d.%d",coin->symbol,coin->bundlescount,bp->bundleheight);
-            }
-            //printf("save (%s) and (%s) %p %p\n",fname,fname2,bp,bp->ramchain.H.data);//,bp->ramchain.H.data->numpkinds,bp->ramchain.H.data->numunspents);
-           /* if ( (fp= fopen(fname,"wb")) != 0 && (fp2= fopen(fname2,"wb")) != 0 )
-            {
-                if ( fwrite(&coin->bundlescount,1,sizeof(coin->bundlescount),fp) == sizeof(coin->bundlescount) && fwrite(&coin->bundlescount,1,sizeof(coin->bundlescount),fp2) == sizeof(coin->bundlescount) && fwrite(coin->bundlebits,1,blen,fp) == blen && fwrite(coin->bundlebits,1,blen,fp2) == blen )
+                if ( iter == 0 )
                 {
-                    if ( fwrite(bp->ramchain.A,sizeof(*bp->ramchain.A),bp->ramchain.H.data->numpkinds,fp) == bp->ramchain.H.data->numpkinds )
-                    {
-                        if ( fwrite(bp->ramchain.Uextras,sizeof(*bp->ramchain.Uextras),bp->ramchain.H.data->numunspents,fp2) == bp->ramchain.H.data->numunspents )
-                        {
-                            bp->dirty = 0;
-                            printf("saved (%s) and (%s)\n",fname,fname2);
-                        }
-                    }
+                    vupdate_sha256(balancehash.bytes,&vstate,(void *)Aptr,sizeof(*Aptr)*numpkinds);
+                    vupdate_sha256(balancehash.bytes,&vstate,(void *)Uptr,sizeof(*Uptr)*numunspents);
                 }
-                fclose(fp), fclose(fp2);
-                if ( bp->dirty != 0 )
-                    printf("error writing %s\n",fname);
+                else if ( iter == 1 )
+                {
+                    if ( (fp= fopen(fname,"wb")) != 0 && (fp2= fopen(fname2,"wb")) != 0 )
+                    {
+                        err = -1;
+                        if ( fwrite(&numhdrsi,1,sizeof(numhdrsi),fp) == sizeof(numhdrsi) && fwrite(&numhdrsi,1,sizeof(numhdrsi),fp2) == sizeof(numhdrsi) && fwrite(balancehash.bytes,1,sizeof(balancehash),fp) == sizeof(balancehash) && fwrite(balancehash.bytes,1,sizeof(balancehash),fp2) == sizeof(balancehash) )
+                        {
+                            if ( fwrite(Aptr,sizeof(*Aptr),numpkinds,fp) == numpkinds )
+                            {
+                                if ( fwrite(Uptr,sizeof(*Uptr),numunspents,fp2) == numunspents )
+                                {
+                                    bp->dirty = 0;
+                                    err = 0;
+                                    //printf("saved (%s) and (%s)\n",fname,fname2);
+                                }
+                            }
+                        }
+                        if ( err != 0 )
+                        {
+                            printf("balanceflush.%s error iter.%d hdrsi.%d\n",coin->symbol,iter,hdrsi);
+                            fclose(fp);
+                            fclose(fp2);
+                            return(-1);
+                        }
+                        fclose(fp), fclose(fp2);
+                    }
+                    else if ( fp != 0 )
+                        fclose(fp);
+                }
+                else if ( iter == 2 )
+                {
+                    sprintf(destfname,"DB/%s/accounts/debits_%d.%d",coin->symbol,numhdrsi,bp->bundleheight);
+                    if ( OS_copyfile(fname,destfname,1) < 0 )
+                    {
+                        printf("balances error copying (%s) -> (%s)\n",fname,destfname);
+                        return(-1);
+                    }
+                    sprintf(destfname,"DB/%s/accounts/lastspends_%d.%d",coin->symbol,numhdrsi,bp->bundleheight);
+                    if ( OS_copyfile(fname2,destfname,1) < 0 )
+                    {
+                        printf("balances error copying (%s) -> (%s)\n",fname2,destfname);
+                        return(-1);
+                    }
+                    if ( hdrsi > numhdrsi-purgedist && numhdrsi >= purgedist )
+                    {
+                        sprintf(destfname,"DB/%s/accounts/debits_%d.%d",coin->symbol,numhdrsi-purgedist,bp->bundleheight);
+                        OS_removefile(destfname,0);
+                        sprintf(destfname,"DB/%s/accounts/lastspends_%d.%d",coin->symbol,numhdrsi-purgedist,bp->bundleheight);
+                        OS_removefile(destfname,0);
+                    }
+                    continue;
+                }
             }
-            else if ( fp != 0 )
-                fclose(fp);*/
         }
-        else return(-1);
     }
-    coin->balanceswritten = refhdrsi + 1;
+    coin->balanceswritten = numhdrsi;
+    printf("BALANCES WRITTEN for %d bundles\n",coin->balanceswritten);
     return(coin->balanceswritten);
 }
 
@@ -400,7 +436,7 @@ void mainloop(struct supernet_info *myinfo)
                                 //printf("hdrsi.%d start balances.%d\n",bp->hdrsi,bp->bundleheight);
                                 iguana_balancecalc(ptr->coin,bp);
                                 bp->queued = 0;
-                                iguana_balanceflush(ptr->coin,bp->hdrsi);
+                                iguana_balanceflush(ptr->coin,bp->hdrsi,3);
                                 printf("flushed bp->hdrsi %d vs %d coin->longestchain/coin->chain->bundlesize\n",bp->hdrsi,coin->longestchain/coin->chain->bundlesize);
                             }
                             else
