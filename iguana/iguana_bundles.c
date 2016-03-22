@@ -550,9 +550,9 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     {
         if ( (block= bp->blocks[i]) != 0 )
         {
-            if ( block->fpipbits == 0 || block->RO.recvlen == 0 || block->fpos < 0 || bits256_nonz(block->RO.prev_block) == 0 )
+            if ( block->fpipbits == 0 || block->RO.recvlen == 0 || block->fpos < 0 || (bp->hdrsi == 0 && i == 0) || bits256_nonz(block->RO.prev_block) > 0 )
             {
-                if ( block->issued == 0 || now > block->issued+lag )
+                //if ( block->issued == 0 || now > block->issued+lag )
                 {
                     block->numrequests++;
                     if ( bp == coin->current )
@@ -730,7 +730,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
         {
             if ( bp->speculative != 0 && bits256_nonz(bp->speculative[bundlei]) != 0 && bits256_nonz(bp->hashes[bundlei]) == 0 && time(NULL) > bp->issued[bundlei]+10 )
             {
-                char str[65]; printf(" mismatched [%d:%d] %s block.%p\n",bp->hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]),block);
+                char str[65]; printf(" mismatched [%d:%d] %s block.%p\n",bp->hdrsi,bundlei,bits256_str(str,bp->speculative[bundlei]),block);
                 iguana_blockQ("missing",coin,0,-1,bp->speculative[bundlei],0);
                 //bp->issued[bundlei] = (uint32_t)time(NULL);
             }
