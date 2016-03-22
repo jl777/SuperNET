@@ -2062,12 +2062,12 @@ int32_t iguana_bundlefiles(struct iguana_info *coin,uint32_t *ipbits,void **ptrs
         if ( (checki= iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,bp->hashes[bundlei],zero,1)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
         {
             printf("B iguana_ramchain_map.(%s) illegal hdrsi.%d bundlei.%d checki.%d\n",fname,hdrsi,bundlei,checki);
-            return(0);
+            return(bp == coin->current ? num : 0);
         }
         if ( (ptrs[num]= OS_mapfile(fname,&filesizes[num],0)) == 0 )
         {
             printf("error mapping.(%s) bundlei.%d\n",fname,bundlei);
-            return(0);
+            return(bp == coin->current ? num : 0);
         }
         //printf("%s mapped ptrs[%d] filesize.%ld bundlei.%d ipbits.%x fpos.%d\n",fname,num,(long)filesizes[num],bundlei,fpipbits,bp->fpos[bundlei]);
         num++;
@@ -2257,7 +2257,6 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     struct OS_memspace HASHMEM; int32_t err,j,num,hdrsi,bundlei,firsti= 1,retval = -1;
     memset(&HASHMEM,0,sizeof(HASHMEM));
     starti = 0, endi = bp->n - 1;
-    bp_n = (endi - starti + 1);
     B = 0, Ux = 0, Sx = 0, P = 0, A = 0, X = 0, Kspace = TXbits = PKbits = 0, U = 0, S = 0, T = 0;
     R = mycalloc('s',bp->n,sizeof(*R));
     ptrs = mycalloc('w',bp->n,sizeof(*ptrs));
@@ -2269,6 +2268,9 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         printf("iguana_bundlesaveHT: no bundlefiles error\n");
         return(-1);
     }
+    if ( bp == coin->current )
+        endi = num-1;
+    bp_n = (endi - starti + 1);
     scriptspace = 1;
     sigspace = pubkeyspace = 0;
     for (bundlei=starti,numtxids=numunspents=numspends=scriptspace=0; bundlei<=endi; bundlei++)
