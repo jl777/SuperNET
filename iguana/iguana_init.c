@@ -52,9 +52,9 @@ void iguana_initpeer(struct iguana_info *coin,struct iguana_peer *addr,uint64_t 
 
 void iguana_initcoin(struct iguana_info *coin,cJSON *argjson)
 {
-    int32_t i; 
-    //sprintf(dirname,"%s/%s",GLOBALTMPDIR,coin->symbol), OS_portable_path(dirname);
-    //OS_portable_rmdir(dirname,0);
+    int32_t i; char dirname[1024];
+    sprintf(dirname,"%s/%s",GLOBALTMPDIR,coin->symbol), OS_portable_path(dirname);
+    sprintf(dirname,"tmp/%s",coin->symbol), OS_portable_path(dirname);
     portable_mutex_init(&coin->peers_mutex);
     portable_mutex_init(&coin->blocks_mutex);
     portable_mutex_init(&coin->scripts_mutex[0]);

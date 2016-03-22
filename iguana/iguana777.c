@@ -74,6 +74,7 @@ struct iguana_info *iguana_coinadd(const char *symbol,cJSON *argjson)
                     coin->chain = iguana_chainfind((char *)symbol,argjson,1);
                     strcpy(coin->symbol,symbol);
                     iguana_initcoin(coin,argjson);
+                    printf("coin.%s initialized\n",symbol);
                 }
                 return(coin);
             }

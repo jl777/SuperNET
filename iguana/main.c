@@ -1022,7 +1022,7 @@ int maingen(int argc, char** argv)
 
 void iguana_main(void *arg)
 {
-    cJSON *argjson; int32_t usessl = 0, ismainnet = 1;  int32_t i;
+    cJSON *argjson; int32_t usessl = 0, ismainnet = 1;  int32_t i; struct iguana_info *btc,*btcd;
     struct supernet_info *myinfo; char *tmpstr,*helperargs,*coinargs,helperstr[512];
     mycalloc(0,0,0);
     myinfo = SuperNET_MYINFO(0);
@@ -1094,8 +1094,13 @@ void iguana_main(void *arg)
     OS_ensure_directory("tmp");
     OS_ensure_directory("purgeable");
     OS_ensure_directory(GLOBALTMPDIR);
-    iguana_coinadd("BTC",0);
-    iguana_coinadd("BTCD",0);
+    btc = iguana_coinadd("BTC",0);
+    btcd = iguana_coinadd("BTCD",0);
+    if ( btc == 0 || btcd == 0 )
+    {
+        printf("error adding BTC.%p or BTCD.%p\n",btc,btcd);
+        exit(-1);
+    }
     if ( (tmpstr= SuperNET_JSON(myinfo,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"help\"}"),0)) != 0 )
     {
         if ( (API_json= cJSON_Parse(tmpstr)) != 0 && (API_json= jobj(API_json,"result")) != 0 )
@@ -1108,12 +1113,13 @@ void iguana_main(void *arg)
     {
         sprintf(helperstr,"{\"name\":\"%d\"}",i);
         helperargs = clonestr(helperstr);
-        iguana_launch(iguana_coinadd("BTCD",0),"iguana_helper",iguana_helper,helperargs,IGUANA_PERMTHREAD);
+        iguana_launch(btcd,"iguana_helper",iguana_helper,helperargs,IGUANA_PERMTHREAD);
+        free(helperstr);
     }
-    iguana_launch(iguana_coinadd("BTCD",0),"rpcloop",iguana_rpcloop,SuperNET_MYINFO(0),IGUANA_PERMTHREAD);
+    iguana_launch(btcd,"rpcloop",iguana_rpcloop,SuperNET_MYINFO(0),IGUANA_PERMTHREAD);
     category_init(&MYINFO);
     if ( (coinargs= SuperNET_keysinit(&MYINFO,arg)) != 0 )
-        iguana_launch(iguana_coinadd("BTCD",0),"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
+        iguana_launch(btcd,"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
 #ifdef __APPLE__
     else if ( 1 )
     {
