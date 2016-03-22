@@ -974,9 +974,9 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
              threshold *= 100. * sqrt(threshold) * .000777;*/
             double threshold,lag = OS_milliseconds() - coin->backstopmillis;
             if ( coin->blocks.hwmchain.height >= coin->longestchain-1 )
-                threshold = 10000;
+                threshold = 1000;
             else threshold = 300;
-            if ( coin->blocks.hwmchain.height < coin->longestchain && (coin->backstop != coin->blocks.hwmchain.height+1 || lag > threshold) )
+            if ( coin->blocks.hwmchain.height < coin->longestchain && ((strcmp(coin->symbol,"BTC") != 0 && coin->backstop != coin->blocks.hwmchain.height+1) || lag > threshold) )
             {
                 coin->backstop = coin->blocks.hwmchain.height+1;
                 hash2 = iguana_blockhash(coin,coin->backstop);
