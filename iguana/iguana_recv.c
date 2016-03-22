@@ -198,7 +198,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
     bp = iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.hash2);
     if ( bp != 0 && bp->emitfinish != 0 )
     {
-        printf("got [%d:%d] with emitfinish.%u\n",bp->hdrsi,bundlei,bp->emitfinish);
+        //printf("got [%d:%d] with emitfinish.%u\n",bp->hdrsi,bundlei,bp->emitfinish);
         return;
     }
     if ( copyflag != 0 && recvlen != 0 && (bp == 0 || (bp->blocks[bundlei] != 0 && bp->blocks[bundlei]->fpipbits == 0)) )
