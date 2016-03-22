@@ -529,9 +529,9 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     if ( now > block->issued+lag )
                     {
                         counter++;
-                        printf("[%d:%d] ",bp->hdrsi,i);
                         if ( priority != 0 )
                         {
+                            printf("[%d:%d] ",bp->hdrsi,i);
                             iguana_blockQ("kick",coin,bp,i,block->RO.hash2,bp == coin->current && now > block->issued+lag);
                             if ( bp == coin->current && now > block->issued+lag*3 && (addr= coin->peers.ranked[rand() % numpeers]) != 0 )
                                 iguana_sendblockreqPT(coin,addr,bp,i,block->RO.hash2,0);
@@ -555,7 +555,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                 if ( block->issued == 0 || now > block->issued+lag )
                 {
                     block->numrequests++;
-                    //if ( bp == coin->current )
+                    if ( bp == coin->current )
                         printf("[%d:%d].%x ",bp->hdrsi,i,block->fpipbits);
                     iguana_blockQ("kick",coin,bp,i,block->RO.hash2,bp == coin->current);
                     bp->issued[i] = block->issued = now;
@@ -569,7 +569,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
         }
         else if ( bits256_nonz(bp->hashes[i]) != 0 && now > bp->issued[i]+lag )
         {
-            //if ( bp == coin->current )
+            if ( bp == coin->current )
                 printf("[%d:%d].%x ",bp->hdrsi,i,block->fpipbits);
             iguana_blockQ("kick",coin,bp,i,bp->hashes[i],bp == coin->current);
             bp->issued[i] = now;
@@ -577,7 +577,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
         }
         else if ( bp->speculative != 0 && bits256_nonz(bp->speculative[i]) != 0 && now > bp->issued[i]+lag )
         {
-            //if ( bp == coin->current )
+            if ( bp == coin->current )
                 printf("[%d:%d].%x ",bp->hdrsi,i,block->fpipbits);
             iguana_blockQ("kick",coin,bp,i,bp->speculative[i],0);
             bp->issued[i] = now;
