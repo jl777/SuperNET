@@ -531,12 +531,10 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                         counter++;
                         if ( priority != 0 )
                         {
+                            printf("[%d:%d] ",bp->hdrsi,i);
                             iguana_blockQ("kick",coin,bp,i,block->RO.hash2,bp == coin->current && now > block->issued+lag);
                             if ( bp == coin->current && now > block->issued+lag*3 && (addr= coin->peers.ranked[rand() % numpeers]) != 0 )
-                            {
-                                printf("[%d:%d] ",bp->hdrsi,i);
                                 iguana_sendblockreqPT(coin,addr,bp,i,block->RO.hash2,0);
-                            }
                         } else iguana_blockQ("kick",coin,bp,i,block->RO.hash2,0);
                         flag++;
                     } //else printf("%d ",now - block->issued);

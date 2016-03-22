@@ -732,7 +732,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
             if ( bp->bundleheight+bundlei-1 >= coin->blocks.hwmchain.height )
             {
                 printf("prev issue.%s\n",bits256_str(str,prev->RO.hash2));
-                iguana_blockQ("previssue",coin,bp,bundlei-1,prev->RO.hash2,1);
+                iguana_blockQ("previssue",coin,bp,bundlei-1,prev->RO.hash2,0);
             }
         }
     }
