@@ -666,6 +666,11 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
                 iguana_blockQ("recvhash6",coin,0,-6,blockhashes[1],1); // should be RT block
             }
         }
+        else
+        {
+            block->newtx = 1;
+            iguana_blockQ("recvhash6",coin,0,-7,blockhashes[1],0); // should be RT block
+        }
     }
     return(req);
 }
