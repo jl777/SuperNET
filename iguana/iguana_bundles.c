@@ -550,7 +550,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     {
         if ( (block= bp->blocks[i]) != 0 )
         {
-            if ( block->fpipbits == 0 || block->RO.recvlen == 0 || block->fpos < 0 )
+            if ( block->fpipbits == 0 || block->RO.recvlen == 0 || block->fpos < 0 || bits256_nonz(block->RO.prev_block) == 0 )
             {
                 if ( block->issued == 0 || now > block->issued+lag )
                 {
@@ -569,12 +569,16 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
         }
         else if ( bits256_nonz(bp->hashes[i]) > 0 && now > bp->issued[i]+lag )
         {
+            if ( bp == coin->current )
+                printf("[%d:%d].%x ",bp->hdrsi,i,block->fpipbits);
             iguana_blockQ("kick",coin,bp,i,bp->hashes[i],bp == coin->current);
             bp->issued[i] = now;
             counter++;
         }
         else if ( bp->speculative != 0 && bits256_nonz(bp->speculative[i]) > 0 && now > bp->issued[i]+lag )
         {
+            if ( bp == coin->current )
+                printf("[%d:%d].%x ",bp->hdrsi,i,block->fpipbits);
             iguana_blockQ("kick",coin,bp,i,bp->speculative[i],0);
             bp->issued[i] = now;
             counter++;
