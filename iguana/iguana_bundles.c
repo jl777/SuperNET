@@ -401,7 +401,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     else if ( lag > 10*i )
         lag = 10*i;*/
     if ( strcmp("BTC",coin->symbol) == 0 )
-        lag = 10;
+        lag = 30;
     else lag = 3;
     if ( (numpeers= coin->peers.numranked) > 3 )//&& bp->currentflag < bp->n )
     {
@@ -629,7 +629,7 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
         {
             if ( bits256_nonz(bp->hashes[i]) == 0 && bits256_nonz(bp->speculative[i]) != 0 )
             {
-                if ( now > bp->issued[i]+10 )
+                if ( now > bp->issued[i]+60 )
                 {
                     bp->issued[i] = now;
                     //printf("speculative.[%d:%d]\n",bp->hdrsi,i);
