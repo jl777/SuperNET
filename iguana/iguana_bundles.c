@@ -721,7 +721,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                         iguana_blockQ("missing",coin,bp,bundlei,bp->hashes[bundlei],0);
                 }
             }
-            else
+            /*else
             {
                 char str[65],str2[65]; printf(" mismatched [%d:%d] %s vs %s\n",bp->hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]),bits256_str(str2,block->RO.hash2));
                 //iguana_blockQ("missing",coin,0,-1,block->RO.hash2,1);
@@ -729,7 +729,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                 bp->blocks[bundlei] = 0;
                 memset(bp->hashes[bundlei].bytes,0,sizeof(bp->hashes[bundlei]));
                 OS_removefile(fname,0);
-            }
+            }*/
             numhashes++;
             bp->checkedtmp++;
         }
@@ -853,7 +853,10 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
             printf("ITER now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
         if ( bp == coin->current )
         {
-            
+            if ( iguana_bundlesaveHT(coin,mem,memB,bp,(uint32_t)time(NULL)) == 0 )
+            {
+                
+            }
         }
     }
     iguana_bundleQ(coin,bp,1000);
