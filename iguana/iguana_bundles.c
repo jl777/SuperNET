@@ -598,7 +598,13 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp)
             if ( block->fpipbits == 0 || (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) || iguana_blockvalidate(coin,&valid,block,1) < 0 )
             {
                 char str[65]; printf(">>>>>>> ipbits.%x null prevblock error at ht.%d patch.(%s) and reissue\n",block->fpipbits,bp->bundleheight+i,bits256_str(str,block->RO.prev_block));
-                iguana_blockQ("null retry",coin,bp,i,block->RO.hash2,1);
+                block->fpipbits = 0;
+                block->fpos = -1;
+                block->queued = 0;
+                block->RO.recvlen = 0;
+                memset(bp->hashes[i].bytes,0,sizeof(bp->hashes[i]));
+                bp->blocks[i] = 0;
+                //iguana_blockQ("null retry",coin,bp,i,block->RO.hash2,1);
             } else ready++;
         } else printf("error getting block (%d:%d) %p\n",bp->hdrsi,i,block);
     }
