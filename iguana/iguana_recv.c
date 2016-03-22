@@ -195,7 +195,13 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
         printf("validated.(%s)\n",bits256_str(str,origtxdata->block.RO.hash2));
     copyflag = coin->enableCACHE;
     bp = 0, bundlei = -2;
-    if ( copyflag != 0 && recvlen != 0 && ((bp= iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.hash2)) == 0 || (bp->blocks[bundlei] != 0 && bp->blocks[bundlei]->fpipbits == 0)) )
+    bp = iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.hash2);
+    if ( bp != 0 && bp->emitfinish != 0 )
+    {
+        printf("got [%d:%d] with emitfinish.%u\n",bp->hdrsi,bundlei,bp->emitfinish);
+        return;
+    }
+    if ( copyflag != 0 && recvlen != 0 && (bp == 0 || (bp->blocks[bundlei] != 0 && bp->blocks[bundlei]->fpipbits == 0)) )
     {
         req = iguana_bundlereq(coin,addr,'B',copyflag * recvlen);
         req->copyflag = 1;
