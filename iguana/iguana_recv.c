@@ -37,7 +37,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
     char hexstr[65]; init_hexbytes_noT(hexstr,hash2.bytes,sizeof(hash2));
     if ( addr == 0 || memcmp(lastreq.bytes,hash2.bytes,sizeof(hash2)) == 0 || memcmp(lastreq2.bytes,hash2.bytes,sizeof(hash2)) == 0 )
     {
-        printf("duplicate req %s or null addr.%p\n",bits256_str(hexstr,hash2),addr);
+        //printf("duplicate req %s or null addr.%p\n",bits256_str(hexstr,hash2),addr);
         if ( (rand() % 10 ) != 0 )
             return(0);
     }
@@ -726,6 +726,14 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
         {
             bp->speculative[bundlei] = block->RO.hash2;
             bp->numspec = bundlei+1;
+        }
+        if ( block != 0 && bundlei > 0 && (prev= iguana_blockfind(coin,block->RO.prev_block)) != 0 )
+        {
+            if ( bp->bundleheight+bundlei-1 >= coin->blocks.hwmchain.height )
+            {
+                printf("prev issue.%s\n",bits256_str(str,prev->RO.hash2));
+                iguana_blockQ("previssue",coin,bp,bundlei-1,prev->RO.hash2,1);
+            }
         }
     }
     if ( 0 )//&& bp != 0 && bp->hdrsi == coin->bundlescount-1 )
