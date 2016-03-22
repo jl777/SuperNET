@@ -190,8 +190,8 @@ double dxblend(double *destp,double val,double decay)
 	return(slope);
 }
 
-/*queue_t TerminateQ; int32_t TerminateQ_queued;
-void iguana_terminator(void *arg)
+queue_t TerminateQ; int32_t TerminateQ_queued;
+/*void iguana_terminator(void *arg)
 {
     struct iguana_thread *t; uint32_t lastdisp = 0; int32_t terminated = 0;
     printf("iguana_terminator\n");
@@ -229,7 +229,7 @@ void iguana_launcher(void *ptr)
     coin = t->coin;
     t->funcp(t->arg);
     coin->Terminated[t->type % (sizeof(coin->Terminated)/sizeof(*coin->Terminated))]++;
-    queue_enqueue("TerminateQ",&coin->TerminateQ,&t->DL,0);
+    queue_enqueue("TerminateQ",&TerminateQ,&t->DL,0);
 }
 
 void iguana_terminate(struct iguana_info *coin,struct iguana_thread *t)
@@ -254,7 +254,7 @@ struct iguana_thread *iguana_launch(struct iguana_info *coin,char *name,iguana_f
     retval = OS_thread_create(&t->handle,NULL,(void *)iguana_launcher,(void *)t);
     if ( retval != 0 )
         printf("error launching %s\n",t->name);
-    while ( (t= queue_dequeue(&coin->TerminateQ,0)) != 0 )
+    while ( (t= queue_dequeue(&TerminateQ,0)) != 0 )
     {
         if ( (rand() % 100000) == 0 )
             printf("terminated.%d launched.%d terminate.%p\n",coin->Terminated[t->type],coin->Launched[t->type],t);

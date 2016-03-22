@@ -374,21 +374,17 @@ void iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp)
 
 void iguana_helper(void *arg)
 {
-    FILE *fp = 0; char fname[512],name[64],*helpername = 0; cJSON *argjson=0; int32_t type,flag,idle=0;
+    FILE *fp = 0; cJSON *argjson=0; int32_t type,helperid=rand(),flag,idle=0;
     struct iguana_helper *ptr; struct iguana_info *coin; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp;
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
-        helpername = jstr(argjson,"name");
-    if ( helpername == 0 )
-    {
-        sprintf(name,"%d",rand());
-        helpername = name;
-    }
-    type = (name[0] % 2);
-    sprintf(fname,"%s/%s",GLOBALTMPDIR,helpername);
+        helperid = juint(argjson,"helperid");
+    type = (helperid % 2);
+    /*sprintf(fname,"%s/%s",GLOBALTMPDIR,helpername);
     OS_compatible_path(fname);
-    fp = fopen(fname,"wb");
+    fp = fopen(fname,"wb");*/
     if ( argjson != 0 )
         free_json(argjson);
+    printf("HELPER.%d started\n",helperid);
     memset(&MEM,0,sizeof(MEM));
     MEMB = mycalloc('b',IGUANA_MAXBUNDLESIZE,sizeof(*MEMB));
     while ( 1 )

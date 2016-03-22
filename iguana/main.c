@@ -1107,12 +1107,14 @@ void iguana_main(void *arg)
             API_json = jobj(API_json,"API");
         free(tmpstr);
     }
+    printf("generated API_json\n");
     if ( IGUANA_NUMHELPERS == 0 )
         IGUANA_NUMHELPERS = 1;
     for (i=0; i<IGUANA_NUMHELPERS; i++)
     {
-        sprintf(helperstr,"{\"name\":\"%d\"}",i);
+        sprintf(helperstr,"{\"name\":%d}",i);
         helperargs = clonestr(helperstr);
+        printf("launch[%d] of %d (%s)\n",i,IGUANA_NUMHELPERS,helperstr);
         iguana_launch(btcd,"iguana_helper",iguana_helper,helperargs,IGUANA_PERMTHREAD);
         free(helperstr);
     }
