@@ -297,6 +297,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
             {
                 errs++;
                 printf("utxogen: unresolved spendind.%d hdrsi.%d\n",spendind,bp->hdrsi);
+                break;
             }
         }
     }
