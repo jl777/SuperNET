@@ -494,7 +494,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     {
                         for (i=0; i<numpeers; i++)
                         {
-                            if ( peercounts[i] > threshold && (addr= coin->peers.ranked[i]) != 0 && now > bp->currenttime+lag )
+                            if ( peercounts[i] > threshold && (addr= coin->peers.ranked[i]) != 0 && now > bp->currenttime+lag && addr->dead == 0 )
                             {
                                 if ( numpeers > 64 || addr->laggard++ > 3 )
                                     addr->dead = (uint32_t)time(NULL);
