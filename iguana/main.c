@@ -341,7 +341,7 @@ void mainloop(struct supernet_info *myinfo)
                     {
                         if ( (bp= ptr->bp) != 0 && ptr->coin != 0 && (bp->hdrsi == 0 || (prevbp= coin->bundles[bp->hdrsi-1]) != 0) )
                         {
-                            if ( bp->utxofinish != 0 && bp->balancefinish <= 1 && (bp->hdrsi == 0 || (prevbp != 0 && prevbp->utxofinish != 0)) )
+                            if ( bp->utxofinish != 0 && bp->balancefinish <= 1 && (bp->hdrsi == 0 || (prevbp != 0 && prevbp->utxofinish > 1 && time(NULL) > prevbp->utxofinish+13)) )
                             {
                                 //printf("hdrsi.%d start balances.%d\n",bp->hdrsi,bp->bundleheight);
                                 iguana_balancecalc(ptr->coin,bp);
