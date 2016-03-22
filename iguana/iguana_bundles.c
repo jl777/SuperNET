@@ -669,9 +669,10 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
     {
         if ( bits256_nonz(bp->hashes[bundlei]) > 0 && (block= bp->blocks[bundlei]) != 0 )
         {
+            checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,bp->hashes[bundlei],bundlei>0?bp->hashes[bundlei-1]:zero,1);
             if ( bits256_cmp(block->RO.hash2,bp->hashes[bundlei]) == 0 )
             {
-                if ( (checki= iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,bp->hashes[bundlei],bundlei>0?bp->hashes[bundlei-1]:zero,1)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
+                if ( checki != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
                 {
                     printf("iguana_bundlecalcs.(%s) illegal hdrsi.%d bundlei.%d checki.%d\n",fname,hdrsi,bundlei,checki);
                     continue;
@@ -696,7 +697,6 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                         iguana_blockQ("missing",coin,0,-1,block->RO.hash2,1);
                     }
                 }
-                //bp->blocks[bundlei] = block;
                 block->hdrsi = bp->hdrsi, block->bundlei = bundlei;
                 if ( bp->minrequests == 0 || (block->numrequests > 0 && block->numrequests < bp->minrequests) )
                     bp->minrequests = block->numrequests;
@@ -715,11 +715,12 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
             }
             else
             {
-                printf(" mismatched [%d:%d]\n",bp->hdrsi,bundlei);
+                char str[65],str2[65]; printf(" mismatched [%d:%d] %s vs %s\n",bp->hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]),bits256_str(str2,block->RO.hash2));
                 //iguana_blockQ("missing",coin,0,-1,block->RO.hash2,1);
                 bp->issued[bundlei] = 0;
                 bp->blocks[bundlei] = 0;
                 memset(bp->hashes[bundlei].bytes,0,sizeof(bp->hashes[bundlei]));
+                OS_removefile(fname,0);
             }
             numhashes++;
             bp->checkedtmp++;
