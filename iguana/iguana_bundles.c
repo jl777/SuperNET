@@ -667,7 +667,8 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
     datasize = numhashes = numsaved = numcached = numrecv = minrequests = 0;
     for (bundlei=0; bundlei<bp->n; bundlei++)
     {
-        if ( bits256_nonz(bp->hashes[bundlei]) > 0 && (block= bp->blocks[bundlei]) != 0 )
+        block = bp->blocks[bundlei];
+        if ( bits256_nonz(bp->hashes[bundlei]) > 0 && block != 0 )
         {
             checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,bp->hashes[bundlei],bundlei>0?bp->hashes[bundlei-1]:zero,1);
             if ( bits256_cmp(block->RO.hash2,bp->hashes[bundlei]) == 0 )
@@ -725,11 +726,14 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
             numhashes++;
             bp->checkedtmp++;
         }
-        else if ( bp == coin->current && bits256_nonz(bp->hashes[bundlei]) != 0 && time(NULL) > bp->issued[bundlei]+30 )
+        else if ( bp == coin->current )
         {
-            printf(" missingB [%d:%d]\n",bp->hdrsi,bundlei);
-            //iguana_blockQ("missing",coin,0,-1,bp->hashes[bundlei],0);
-            //bp->issued[bundlei] = (uint32_t)time(NULL);
+            if ( bp->speculative != 0 && bits256_nonz(bp->speculative[bundlei]) != 0 && bits256_nonz(bp->hashes[bundlei]) == 0 && time(NULL) > bp->issued[bundlei]+10 )
+            {
+                char str[65]; printf(" mismatched [%d:%d] %s block.%p\n",bp->hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]),block);
+                iguana_blockQ("missing",coin,0,-1,bp->speculative[bundlei],0);
+                //bp->issued[bundlei] = (uint32_t)time(NULL);
+            }
         }
     }
     bp->datasize = datasize;
