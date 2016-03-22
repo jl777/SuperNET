@@ -429,15 +429,18 @@ void mainloop(struct supernet_info *myinfo)
                         if ( (bp= ptr->bp) != 0 && ptr->coin != 0 && (bp->hdrsi == 0 || (prevbp= coin->bundles[bp->hdrsi-1]) != 0) )
                         {
                             for (j=0; j<bp->hdrsi; j++)
-                                if ( (prevbp= coin->bundles[j]) == 0 || prevbp->emitfinish <= 1 )
+                                if ( (prevbp= coin->bundles[j]) == 0 || prevbp->balancefinish <= 1 )
                                     break;
                             if ( bp->utxofinish > 1 && bp->balancefinish <= 1 && bp->hdrsi == j )
                             {
                                 //printf("hdrsi.%d start balances.%d\n",bp->hdrsi,bp->bundleheight);
                                 iguana_balancecalc(ptr->coin,bp);
                                 bp->queued = 0;
-                                iguana_balanceflush(ptr->coin,bp->hdrsi,3);
-                                printf("flushed bp->hdrsi %d vs %d coin->longestchain/coin->chain->bundlesize\n",bp->hdrsi,coin->longestchain/coin->chain->bundlesize);
+                                if ( bp->hdrsi > coin->longestchain/coin->chain->bundlesize-20 )
+                                {
+                                    iguana_balanceflush(ptr->coin,bp->hdrsi,3);
+                                    printf("flushed bp->hdrsi %d vs %d coin->longestchain/coin->chain->bundlesize\n",bp->hdrsi,coin->longestchain/coin->chain->bundlesize);
+                                }
                             }
                             else
                             {
