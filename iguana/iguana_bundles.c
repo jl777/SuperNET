@@ -698,11 +698,11 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                     }
                     else
                     {
-                        char str[65]; printf("missing.(%s) issue.%s\n",fname,bits256_str(str,bp->hashes[bundlei]));
+                        //char str[65]; printf("missing.(%s) issue.%s\n",fname,bits256_str(str,bp->hashes[bundlei]));
                         block->RO.recvlen = 0;
                         block->fpipbits = 0;
                         block->fpos = -1;
-                        iguana_blockQ("missing",coin,0,-1,block->RO.hash2,1);
+                        //iguana_blockQ("missing",coin,0,-1,block->RO.hash2,1);
                     }
                 }
                 block->hdrsi = bp->hdrsi, block->bundlei = bundlei;
