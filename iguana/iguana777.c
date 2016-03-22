@@ -353,6 +353,12 @@ int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *m
 void iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     uint32_t starttime;
+    if ( bp->balancefinish > 1 )
+    {
+        printf("make sure DB files have this bp.%d\n",bp->hdrsi);
+        iguana_validateQ(coin,bp);
+        return;
+    }
     starttime = (uint32_t)time(NULL);
     if ( iguana_balancegen(coin,bp) < 0 )
     {
