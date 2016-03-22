@@ -2275,7 +2275,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     ptrs = mycalloc('w',bp->n,sizeof(*ptrs));
     ipbits = mycalloc('w',bp->n,sizeof(*ipbits));
     filesizes = mycalloc('f',bp->n,sizeof(*filesizes));
-    if ( (num= iguana_bundlefiles(coin,ipbits,ptrs,filesizes,bp,starti,endi)) == 0 )
+    if ( (num= iguana_bundlefiles(coin,ipbits,ptrs,filesizes,bp,starti,endi)) != bp->n )
     {
         iguana_bundlemapfree(0,0,ipbits,ptrs,filesizes,num,R,starti,endi);
         printf("iguana_bundlesaveHT: no bundlefiles error\n");
