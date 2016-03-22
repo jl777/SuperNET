@@ -37,12 +37,12 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
     char hexstr[65]; init_hexbytes_noT(hexstr,hash2.bytes,sizeof(hash2));
     if ( addr == 0 || memcmp(lastreq.bytes,hash2.bytes,sizeof(hash2)) == 0 || memcmp(lastreq2.bytes,hash2.bytes,sizeof(hash2)) == 0 )
     {
-        //printf("duplicate req %s or null addr.%p\n",bits256_str(hexstr,hash2),addr);
+        printf("duplicate req %s or null addr.%p\n",bits256_str(hexstr,hash2),addr);
         return(0);
     }
     if ( addr->msgcounts.verack == 0 )
     {
-        //printf("iguana_sendblockreq (%s) hasn't verack'ed yet\n",addr->ipaddr);
+        printf("iguana_sendblockreq (%s) hasn't verack'ed yet\n",addr->ipaddr);
         return(-1);
     }
     lastreq2 = lastreq;
@@ -53,7 +53,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
         coin->numreqsent++;
         addr->pendblocks++;
         addr->pendtime = (uint32_t)time(NULL);
-        if ( 0 && coin->current == bp )
+        //if ( 0 && coin->current == bp )
             printf("REQ.%s bundlei.%d hdrsi.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);
@@ -641,9 +641,9 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
         }
         //printf("no match to allhashes issue block1\n");
         struct iguana_block *block;
-        if ( num == coin->chain->bundlesize+1 && (block= iguana_blockhashset(coin,-1,blockhashes[1],1)) != 0 )
+        if ( (block= iguana_blockhashset(coin,-1,blockhashes[1],1)) != 0 )
         {
-            block->blockhashes = blockhashes, req->hashes = 0;
+            //block->blockhashes = blockhashes, req->hashes = 0;
             //printf("set block->blockhashes[%d]\n",num);
         }
         if ( (addr= coin->peers.ranked[0]) != 0 )
@@ -653,7 +653,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
                 iguana_send(coin,addr,serialized,len);
                 //char str[65]; printf("REQ.%s\n",bits256_str(str,blockhashes[1]));
             }
-        }
+        } else iguana_blockQ("hdr1",coin,0,-1,blockhashes[1],1);
     }
     else
     {
