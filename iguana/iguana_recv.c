@@ -1000,7 +1000,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                     int32_t j;
                     memset(bp->hashes[bundlei].bytes,0,sizeof(bp->hashes[bundlei]));
                     bp->blocks[bundlei] = 0;
-                    for (j=0; j<5&&bundlei+j+1<bp->n; j++)
+                    for (j=0; j<1&&bundlei+j+1<bp->n; j++)
                     {
                         if ( time(NULL) > bp->issued[bundlei+1+j]+10 )
                         {
