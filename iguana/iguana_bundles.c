@@ -552,7 +552,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
         {
             if ( block->fpipbits == 0 || block->RO.recvlen == 0 || block->fpos < 0 || (bp->hdrsi == 0 && i == 0) || bits256_nonz(block->RO.prev_block) > 0 )
             {
-                //if ( block->issued == 0 || now > block->issued+lag )
+                if ( block->issued == 0 || now > block->issued+lag )
                 {
                     block->numrequests++;
                     if ( bp == coin->current )
@@ -658,12 +658,13 @@ int32_t iguana_bundletweak(struct iguana_info *coin,struct iguana_bundle *bp)
 int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     int32_t bundlei,checki,hdrsi,numhashes,numsaved,numcached,numrecv,minrequests; FILE *fp;
-    int64_t datasize; struct iguana_block *block; char fname[1024]; static bits256 zero;
+    int64_t datasize; struct iguana_block *block; uint32_t now;  char fname[1024]; static bits256 zero;
     if ( bp->emitfinish > coin->startutc )
     {
         bp->numhashes = bp->numsaved = bp->numcached = bp->numrecv = bp->n;
         return(bp->datasize);
     }
+    now = (uint32_t)time(NULL);
     datasize = numhashes = numsaved = numcached = numrecv = minrequests = 0;
     for (bundlei=0; bundlei<bp->n; bundlei++)
     {
@@ -703,15 +704,21 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                     bp->minrequests = block->numrequests;
                 if ( (bp->hdrsi == 0 && bundlei == 0) || bits256_nonz(block->RO.prev_block) > 0 )
                 {
-                    if ( block->fpipbits != 0 ) //block->fpos >= 0 &&
+                    if ( block->queued != 0 )
+                        numcached++;
+                    if ( block->fpipbits != 0 && block->fpos >= 0 )
                         numsaved++;
-                    if ( block->RO.recvlen != 0 || block->fpipbits != 0 || block->fpos >= 0 )//|| block->queued != 0 )
+                    if ( block->RO.recvlen != 0 || block->fpipbits != 0 || block->fpos >= 0 )
                     {
                         numrecv++;
                         datasize += block->RO.recvlen;
-                        if ( block->queued != 0 )
-                            numcached++;
-                    }
+                     }
+                }
+                else if ( bp == coin->current )
+                {
+                    printf("missing [%d:%d]\n",bp->hdrsi,bundlei);
+                    if ( now > bp->issued[bundlei]+10 )
+                        iguana_blockQ("missing",coin,bp,bundlei,bp->hashes[bundlei],0);
                 }
             }
             else
