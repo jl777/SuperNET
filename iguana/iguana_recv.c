@@ -762,7 +762,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     {
         if ( block != origblock )
             iguana_blockcopy(coin,block,origblock);
-        if ( block->newtx != 0 && 0 )
+        if ( block->newtx != 0 )
         {
             if ( (prev= iguana_blockfind(coin,block->RO.prev_block)) == 0 )
                 prev = iguana_blockhashset(coin,-1,block->RO.prev_block,1);
