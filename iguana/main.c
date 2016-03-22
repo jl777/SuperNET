@@ -38,7 +38,7 @@ struct iguana_info *Coins[IGUANA_MAXCOINS];
 char Userhome[512],GLOBALTMPDIR[512] = "tmp";
 int32_t USE_JAY,FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel;
 uint32_t prices777_NXTBLOCK,MAX_DEPTH = 100;
-queue_t helperQ,jsonQ,finishedQ,bundlesQ,validateQ,emitQ,balancesQ;
+queue_t helperQ,jsonQ,finishedQ,bundlesQ,validateQ,emitQ,balancesQ,TerminateQ;
 struct supernet_info MYINFO,**MYINFOS;
 static int32_t initflag;
 int32_t HDRnet,netBLOCKS;
@@ -1181,7 +1181,6 @@ void iguana_main(void *arg)
         helperargs = clonestr(helperstr);
         printf("launch[%d] of %d (%s)\n",i,IGUANA_NUMHELPERS,helperstr);
         iguana_launch(btcd,"iguana_helper",iguana_helper,helperargs,IGUANA_PERMTHREAD);
-        free(helperstr);
     }
     mainloop(&MYINFO);
 }
