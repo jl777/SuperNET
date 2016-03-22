@@ -622,7 +622,7 @@ void iguana_startconnection(void *arg)
                 n++;
         iguana_iAconnected(coin,addr);
         coin->peers.numconnected++;
-        printf("PEER CONNECTED.%d:%d of max.%d! %s:%d usock.%d\n",coin->peers.numconnected,n,coin->MAXPEERS,addr->ipaddr,coin->chain->portp2p,addr->usock);
+        printf("%s.PEER CONNECTED.%d:%d of max.%d! %s:%d usock.%d\n",coin->symbol,coin->peers.numconnected,n,coin->MAXPEERS,addr->ipaddr,coin->chain->portp2p,addr->usock);
         if ( strcmp("127.0.0.1",addr->ipaddr) == 0 )
             coin->peers.localaddr = addr;
         else if ( coin->peers.numranked == 0 )

@@ -323,9 +323,60 @@ void sigalarm_func() { printf("\nSIGALRM\n"); signal(SIGALRM,sigalarm_func); }
 void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func); }
 #endif
 
+int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
+{
+    int32_t hdrsi,numpkinds; struct iguana_bundle *bp; char fname[1024],fname2[1024]; struct iguana_utxo *Uptr; struct iguana_account *Aptr;
+    memset(coin->bundlebits,0,sizeof(coin->bundlebits));
+    for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
+        if ( (bp= coin->bundles[hdrsi]) == 0 || bp->balancefinish <= 1 || bp->ramchain.H.data == 0 || bp->ramchain.A == 0 || bp->ramchain.Uextras == 0 )
+            break;
+    if ( hdrsi <= coin->balanceswritten || hdrsi < refhdrsi )
+        return(0);
+    refhdrsi = hdrsi;
+    for (hdrsi=0; hdrsi<refhdrsi; hdrsi++)
+    {
+        if ( (bp= coin->bundles[hdrsi]) != 0 && bp->ramchain.H.data != 0 && (numpkinds= bp->ramchain.H.data->numpkinds) > 0 && (Aptr= bp->ramchain.A) != 0 && (Uptr= bp->ramchain.Uextras) != 0 )
+        {
+            if ( 1 )//forceflag == 0 )
+            {
+                sprintf(fname,"accounts/%s/debits.%d",coin->symbol,bp->bundleheight);
+                sprintf(fname2,"accounts/%s/lastspends.%d",coin->symbol,bp->bundleheight);
+            }
+            else
+            {
+                sprintf(fname,"DB/%s/accounts/debits_%d.%d",coin->symbol,coin->bundlescount,bp->bundleheight);
+                sprintf(fname2,"DB/%s/accounts/lastspends_%d.%d",coin->symbol,coin->bundlescount,bp->bundleheight);
+            }
+            //printf("save (%s) and (%s) %p %p\n",fname,fname2,bp,bp->ramchain.H.data);//,bp->ramchain.H.data->numpkinds,bp->ramchain.H.data->numunspents);
+           /* if ( (fp= fopen(fname,"wb")) != 0 && (fp2= fopen(fname2,"wb")) != 0 )
+            {
+                if ( fwrite(&coin->bundlescount,1,sizeof(coin->bundlescount),fp) == sizeof(coin->bundlescount) && fwrite(&coin->bundlescount,1,sizeof(coin->bundlescount),fp2) == sizeof(coin->bundlescount) && fwrite(coin->bundlebits,1,blen,fp) == blen && fwrite(coin->bundlebits,1,blen,fp2) == blen )
+                {
+                    if ( fwrite(bp->ramchain.A,sizeof(*bp->ramchain.A),bp->ramchain.H.data->numpkinds,fp) == bp->ramchain.H.data->numpkinds )
+                    {
+                        if ( fwrite(bp->ramchain.Uextras,sizeof(*bp->ramchain.Uextras),bp->ramchain.H.data->numunspents,fp2) == bp->ramchain.H.data->numunspents )
+                        {
+                            bp->dirty = 0;
+                            printf("saved (%s) and (%s)\n",fname,fname2);
+                        }
+                    }
+                }
+                fclose(fp), fclose(fp2);
+                if ( bp->dirty != 0 )
+                    printf("error writing %s\n",fname);
+            }
+            else if ( fp != 0 )
+                fclose(fp);*/
+        }
+        else return(-1);
+    }
+    coin->balanceswritten = refhdrsi + 1;
+    return(coin->balanceswritten);
+}
+
 void mainloop(struct supernet_info *myinfo)
 {
-    int32_t i,flag; struct iguana_info *coin; struct iguana_helper *ptr; struct iguana_bundle *bp,*prevbp = 0;
+    int32_t i,j,flag; struct iguana_info *coin; struct iguana_helper *ptr; struct iguana_bundle *bp,*prevbp = 0;
     sleep(3);
     printf("mainloop\n");
     while ( 1 )
@@ -341,22 +392,22 @@ void mainloop(struct supernet_info *myinfo)
                     {
                         if ( (bp= ptr->bp) != 0 && ptr->coin != 0 && (bp->hdrsi == 0 || (prevbp= coin->bundles[bp->hdrsi-1]) != 0) )
                         {
-                            if ( bp->utxofinish != 0 && bp->balancefinish <= 1 && (bp->hdrsi == 0 || (prevbp != 0 && prevbp->utxofinish > 1 && time(NULL) > prevbp->utxofinish+13)) )
+                            for (j=0; j<bp->hdrsi; j++)
+                                if ( (prevbp= coin->bundles[j]) == 0 || prevbp->emitfinish <= 1 )
+                                    break;
+                            if ( bp->utxofinish > 1 && bp->balancefinish <= 1 && bp->hdrsi == j )
                             {
                                 //printf("hdrsi.%d start balances.%d\n",bp->hdrsi,bp->bundleheight);
                                 iguana_balancecalc(ptr->coin,bp);
                                 bp->queued = 0;
+                                iguana_balanceflush(ptr->coin,bp->hdrsi);
+                                printf("flushed bp->hdrsi %d vs %d coin->longestchain/coin->chain->bundlesize\n",bp->hdrsi,coin->longestchain/coin->chain->bundlesize);
                             }
                             else
                             {
                                 //printf("third case.%d utxo.%u balance.%u prev.%u\n",bp->hdrsi,bp->utxofinish,bp->balancefinish,prevbp!=0?prevbp->utxofinish:-1);
                                 coin->pendbalances--;
                                 iguana_balancesQ(coin,bp);
-                            }
-                            if ( bp->hdrsi == coin->longestchain/coin->chain->bundlesize )
-                            {
-                                //iguana_coinflush(ptr->coin,1);
-                                printf("flushed bp->hdrsi %d == %d coin->longestchain/coin->chain->bundlesize\n",bp->hdrsi,coin->longestchain/coin->chain->bundlesize);
                             }
                         }
                         myfree(ptr,ptr->allocsize);

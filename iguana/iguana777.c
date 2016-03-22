@@ -252,7 +252,7 @@ void iguana_emitQ(struct iguana_info *coin,struct iguana_bundle *bp)
     ptr->bp = bp, ptr->hdrsi = bp->hdrsi;
     ptr->type = 'E';
     ptr->starttime = (uint32_t)time(NULL);
-    printf("%s EMIT.%d[%d] emitfinish.%u\n",coin->symbol,ptr->hdrsi,bp->n,bp->emitfinish);
+    //printf("%s EMIT.%d[%d] emitfinish.%u\n",coin->symbol,ptr->hdrsi,bp->n,bp->emitfinish);
     queue_enqueue("emitQ",&emitQ,&ptr->DL,0);
 }
 
@@ -429,52 +429,6 @@ void iguana_helper(void *arg)
         if ( flag == 0 )
             usleep(1000000);
         else usleep(100000);
-    }
-}
-
-void iguana_coinflush(struct iguana_info *coin,int32_t forceflag)
-{
-    int32_t hdrsi,blen; struct iguana_bundle *bp; char fname[1024],fname2[1024]; FILE *fp,*fp2=0;
-    memset(coin->bundlebits,0,sizeof(coin->bundlebits));
-    for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
-        if ( (bp= coin->bundles[hdrsi]) != 0 && bp->validated != 0 )
-            SETBIT(coin->bundlebits,hdrsi);
-    blen = (int32_t)hconv_bitlen(coin->bundlescount);
-    for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
-    {
-        if ( (bp= coin->bundles[hdrsi]) != 0 && (forceflag != 0 || (bp->dirty != 0 && time(NULL) > bp->dirty+60)) && bp->ramchain.H.data != 0 && bp->ramchain.A != 0 && bp->ramchain.Uextras != 0 )
-        {
-            if ( forceflag == 0 )
-            {
-                sprintf(fname,"accounts/%s/debits.%d",coin->symbol,bp->bundleheight);
-                sprintf(fname2,"accounts/%s/lastspends.%d",coin->symbol,bp->bundleheight);
-            }
-            else
-            {
-                sprintf(fname,"DB/%s/accounts/debits_%d.%d",coin->symbol,coin->bundlescount,bp->bundleheight);
-                sprintf(fname2,"DB/%s/accounts/lastspends_%d.%d",coin->symbol,coin->bundlescount,bp->bundleheight);
-            }
-            //printf("save (%s) and (%s) %p %p\n",fname,fname2,bp,bp->ramchain.H.data);//,bp->ramchain.H.data->numpkinds,bp->ramchain.H.data->numunspents);
-            if ( (fp= fopen(fname,"wb")) != 0 && (fp2= fopen(fname2,"wb")) != 0 )
-            {
-                if ( fwrite(&coin->bundlescount,1,sizeof(coin->bundlescount),fp) == sizeof(coin->bundlescount) && fwrite(&coin->bundlescount,1,sizeof(coin->bundlescount),fp2) == sizeof(coin->bundlescount) && fwrite(coin->bundlebits,1,blen,fp) == blen && fwrite(coin->bundlebits,1,blen,fp2) == blen )
-                {
-                    if ( fwrite(bp->ramchain.A,sizeof(*bp->ramchain.A),bp->ramchain.H.data->numpkinds,fp) == bp->ramchain.H.data->numpkinds )
-                    {
-                        if ( fwrite(bp->ramchain.Uextras,sizeof(*bp->ramchain.Uextras),bp->ramchain.H.data->numunspents,fp2) == bp->ramchain.H.data->numunspents )
-                        {
-                            bp->dirty = 0;
-                            printf("saved (%s) and (%s)\n",fname,fname2);
-                        }
-                    }
-                }
-                fclose(fp), fclose(fp2);
-                if ( bp->dirty != 0 )
-                    printf("error writing %s\n",fname);
-            }
-            else if ( fp != 0 )
-                fclose(fp);
-        }
     }
 }
 

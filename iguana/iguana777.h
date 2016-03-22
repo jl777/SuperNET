@@ -452,7 +452,7 @@ struct iguana_info
     struct iguana_peers peers;
     uint64_t instance_nonce,myservices,totalsize,totalrecv,totalpackets,sleeptime;
     int64_t mining,totalfees,TMPallocated,MAXRECVCACHE,MAXMEM,estsize,activebundles;
-    int32_t MAXPEERS,MAXPENDING,MAXBUNDLES,active,closestbundle,numemitted,lastsweep,startutc,newramchain,numcached,cachefreed,helperdepth,startPEND,endPEND,enableCACHE,RELAYNODE,VALIDATENODE;
+    int32_t MAXPEERS,MAXPENDING,MAXBUNDLES,active,closestbundle,numemitted,lastsweep,startutc,newramchain,numcached,cachefreed,helperdepth,startPEND,endPEND,enableCACHE,RELAYNODE,VALIDATENODE,balanceswritten;
     uint32_t longestchain,lastsync,parsetime,numiAddrs,firstblock,lastpossible,bundlescount,savedblocks;
     struct tai starttime; double startmillis;
     struct iguana_chain *chain;
@@ -788,7 +788,7 @@ int32_t iguana_bloomfind(struct iguana_info *coin,struct iguana_bloom16 *bloom,i
 struct iguana_bloominds iguana_bloomset(struct iguana_info *coin,struct iguana_bloom16 *bloom,int32_t incr,struct iguana_bloominds bit);
 int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct iguana_bundle *bp);
 void iguana_balancesQ(struct iguana_info *coin,struct iguana_bundle *bp);
-void iguana_coinflush(struct iguana_info *coin,int32_t forceflag);
+int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi);
 int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int32_t starti,int32_t max);
 void iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp);
 int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2,int32_t iamthreadsafe);
