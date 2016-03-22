@@ -737,8 +737,8 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
         {
             if ( bp->speculative != 0 && bits256_nonz(bp->speculative[bundlei]) != 0 && bits256_nonz(bp->hashes[bundlei]) == 0 && time(NULL) > bp->issued[bundlei]+10 )
             {
-                char str[65]; printf(" mismatched [%d:%d] %s block.%p\n",bp->hdrsi,bundlei,bits256_str(str,bp->speculative[bundlei]),block);
-                iguana_blockQ("missing",coin,0,-1,bp->speculative[bundlei],0);
+                //char str[65]; printf(" mismatched [%d:%d] %s block.%p\n",bp->hdrsi,bundlei,bits256_str(str,bp->speculative[bundlei]),block);
+                //iguana_blockQ("missing",coin,0,-1,bp->speculative[bundlei],0);
                 //bp->issued[bundlei] = (uint32_t)time(NULL);
             }
         }
@@ -986,7 +986,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                 }
                 if ( firstgap == 0 && (bp->emitfinish == 0 || bp->n < coin->chain->bundlesize) )
                 {
-                    printf("firstgap <- [%d] emit.%u bp->n.%d\n",bp->hdrsi,bp->emitfinish,bp->n);
+                    //printf("firstgap <- [%d] emit.%u bp->n.%d\n",bp->hdrsi,bp->emitfinish,bp->n);
                     firstgap = bp;
                 }
                 if ( bp->emitfinish == 0 )
