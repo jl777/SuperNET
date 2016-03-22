@@ -1919,7 +1919,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
                 origtxdata->datalen = (int32_t)ramchain->H.data->allocsize;
                 ramchain->H.ROflag = 0;
                 flag = 1;
-                if ( 1 )
+                if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
                 {
                     if ( addr->dirty[0] != 0 && addr->voutsfp != 0 )
                         fflush(addr->voutsfp);

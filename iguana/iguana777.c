@@ -635,8 +635,8 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         printf("cant initialize chain.(%s)\n",jstr(json,0));
         return(0);
     } else iguana_chainparms(coin->chain,json);
-    //coin->RELAY = juint(json,"RELAY");
-    //coin->VALIDATE = juint(json,"VALIDATE");
+    coin->RELAYNODE = juint(json,"RELAY");
+    coin->VALIDATENODE = juint(json,"VALIDATE");
     if ( (peers= jarray(&m,json,"peers")) != 0 )
     {
         for (j=0; j<m; j++)

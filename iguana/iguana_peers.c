@@ -963,10 +963,13 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     if ( (addr->voutsfp= fopen(fname,"rb+")) != 0 )
         fseek(addr->voutsfp,0,SEEK_END);
     else addr->voutsfp = fopen(fname,"wb+");
-    sprintf(fname,"purgeable/%s/%08x.vins",coin->symbol,ipbits);
-    if ( (addr->vinsfp= fopen(fname,"rb+")) != 0 )
-        fseek(addr->vinsfp,0,SEEK_END);
-    else addr->vinsfp = fopen(fname,"wb+");
+    if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
+    {
+        sprintf(fname,"purgeable/%s/%08x.vins",coin->symbol,ipbits);
+        if ( (addr->vinsfp= fopen(fname,"rb+")) != 0 )
+            fseek(addr->vinsfp,0,SEEK_END);
+        else addr->vinsfp = fopen(fname,"wb+");
+    }
     //addr->pubkey = GENESIS_PUBKEY;
     vcalc_sha256(0,addr->iphash.bytes,(uint8_t *)&ipbits,sizeof(ipbits));
     //char str[65]; printf("start dedicatedloop.%s addrind.%d %s\n",addr->ipaddr,addr->addrind,bits256_str(str,addr->iphash));
