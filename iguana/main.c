@@ -1121,7 +1121,6 @@ void iguana_main(void *arg)
     if ( IGUANA_NUMHELPERS == 0 )
         IGUANA_NUMHELPERS = 1;
     iguana_initQ(&TerminateQ,"TerminateQ");
-    iguana_launch(btcd,"rpcloop",iguana_rpcloop,SuperNET_MYINFO(0),IGUANA_PERMTHREAD);
     category_init(&MYINFO);
     if ( (coinargs= SuperNET_keysinit(&MYINFO,arg)) != 0 )
         iguana_launch(btcd,"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
@@ -1182,6 +1181,7 @@ void iguana_main(void *arg)
         printf("launch[%d] of %d (%s)\n",i,IGUANA_NUMHELPERS,helperstr);
         iguana_launch(btcd,"iguana_helper",iguana_helper,helperargs,IGUANA_PERMTHREAD);
     }
+    iguana_launch(btcd,"rpcloop",iguana_rpcloop,SuperNET_MYINFO(0),IGUANA_PERMTHREAD);
     mainloop(&MYINFO);
 }
 
