@@ -303,6 +303,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
         else
         {
             char str[65]; printf("chainlink error: cant find prev.(%s)\n",bits256_str(str,block->RO.prev_block));
+            memset(&block->RO.prev_block.bytes,0,sizeof(block->RO.prev_block));
             //getchar();
             return(0);
         }
