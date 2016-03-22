@@ -916,6 +916,12 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     {
         if ( (bp= coin->bundles[i]) != 0 )
         {
+            if ( bp->emitfinish > 1 )
+            {
+                for (j=0; j<bp->n; j++)
+                    if ( bp->blocks[j] == 0 )
+                        bp->blocks[j] = iguana_blockfind(coin,bp->hashes[j]);
+            }
             //if ( iguana_blockfind(coin,bp->hashes[0]) == 0 )
             //    printf("UNEXPECTED null block for bundlehash.%d\n",bp->hdrsi);
             if ( bp->numhashes < bp->n && bp->speculative != 0 )

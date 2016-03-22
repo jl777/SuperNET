@@ -992,9 +992,9 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                         {
                             if ( (block= iguana_blockfind(coin,hash2)) != 0 && bits256_cmp(block->RO.prev_block,coin->blocks.hwmchain.RO.hash2) == 0 )
                             {
-                                printf("speculative is next at %d\n",coin->backstop);
+                                //printf("speculative is next at %d\n",coin->backstop);
                                 if ( _iguana_chainlink(coin,block) != 0 )
-                                    lflag++, flag++, printf("NEWHWM.%d\n",coin->backstop);
+                                    lflag++, flag++;//, printf("NEWHWM.%d\n",coin->backstop);
                             }
                         }
                     }
