@@ -355,7 +355,7 @@ void mainloop(struct supernet_info *myinfo)
                             }
                             if ( bp->hdrsi == coin->longestchain/coin->chain->bundlesize )
                             {
-                                iguana_coinflush(ptr->coin,1);
+                                //iguana_coinflush(ptr->coin,1);
                                 printf("flushed bp->hdrsi %d == %d coin->longestchain/coin->chain->bundlesize\n",bp->hdrsi,coin->longestchain/coin->chain->bundlesize);
                             }
                         }

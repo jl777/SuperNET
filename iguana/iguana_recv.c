@@ -970,7 +970,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                 if ( bp != 0 && bits256_nonz(hash2) == 0 )
                 {
                     hash2 = bp->hashes[bundlei];
-                    /*if ( bits256_nonz(hash2) == 0 && bp->speculative != 0 )
+                    if ( bits256_nonz(hash2) == 0 && bp->speculative != 0 )
                     {
                         hash2 = bp->speculative[bundlei];
                         if ( bits256_nonz(hash2) > 0 )
@@ -982,7 +982,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                                     lflag++, flag++, printf("NEWHWM.%d\n",coin->backstop);
                             }
                         }
-                    }*/
+                    }
                 }
                 if ( bits256_nonz(hash2) > 0 )
                 {
