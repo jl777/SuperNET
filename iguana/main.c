@@ -1108,6 +1108,16 @@ void iguana_main(void *arg)
         free(tmpstr);
     }
     printf("generated API_json\n");
+    if ( arg != 0 )
+    {
+        cJSON *argjson;
+        if ( (argjson= cJSON_Parse(arg)) != 0 )
+        {
+            printf("call argv JSON.(%s)\n",(char *)arg);
+            SuperNET_JSON(&MYINFO,argjson,0);
+            free_json(argjson);
+        } else printf("error parsing.(%s)\n",(char *)arg);
+    }
     if ( IGUANA_NUMHELPERS == 0 )
         IGUANA_NUMHELPERS = 1;
     for (i=0; i<IGUANA_NUMHELPERS; i++)
@@ -1172,16 +1182,6 @@ void iguana_main(void *arg)
         }
     }
 #endif
-    if ( arg != 0 )
-    {
-        cJSON *argjson;
-        if ( (argjson= cJSON_Parse(arg)) != 0 )
-        {
-            printf("call argv JSON.(%s)\n",(char *)arg);
-            SuperNET_JSON(&MYINFO,argjson,0);
-            free_json(argjson);
-        } else printf("error parsing.(%s)\n",(char *)arg);
-    }
     mainloop(&MYINFO);
 }
 
