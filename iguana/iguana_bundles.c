@@ -905,7 +905,6 @@ static int32_t revsortds(double *buf,uint32_t num,int32_t size)
 
 void iguana_bundlestats(struct iguana_info *coin,char *str)
 {
-    static uint32_t lastdisp;
     int32_t i,n,m,j,numv,count,pending,dispflag,numutxo,numbalances,numrecv,done,numhashes,numcached,numsaved,numemit;
     int64_t spaceused=0,estsize = 0; struct iguana_bundle *bp,*lastpending = 0,*firstgap = 0; struct iguana_block *block,*prev; uint32_t now;
     now = (uint32_t)time(NULL);
@@ -955,7 +954,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                             else if ( now > block->issued+10 )
                             {
                                 block->issued = now;
-                                printf("submit speculative [%d:%d]\n",bp->hdrsi,j);
+                                //printf("submit speculative [%d:%d]\n",bp->hdrsi,j);
                                 iguana_blockQ("spec",coin,0,-1,block->RO.hash2,0);
                             }
                         }
@@ -1046,12 +1045,12 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     char str4[65],str5[65];
     sprintf(str,"%s u.%d b.%d v.%d/%d (%d 1st.%d) to %d N[%d] Q.%d h.%d r.%d c.%s s.%d d.%d E.%d:%d est.%d %s %d:%02d:%02d %03.3f peers.%d/%d Q.(%d %d) L.%d M.%d %s",coin->symbol,numutxo,numbalances,numv,coin->pendbalances,firstgap!=0?firstgap->numsaved:-1,firstgap!=0?firstgap->hdrsi:-1,coin->lastpending!=0?coin->lastpending->hdrsi:0,count,coin->numbundlesQ,numhashes,coin->blocksrecv,mbstr(str4,spaceused),numsaved,done,numemit,coin->numreqsent,coin->MAXBUNDLES,mbstr(str2,estsize),(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,difft.millis,p,coin->MAXPEERS,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ),coin->longestchain,coin->blocks.hwmchain.height,bits256_str(str5,coin->blocks.hwmchain.RO.hash2));
     //sprintf(str+strlen(str),"%s.%-2d %s time %.2f files.%d Q.%d %d\n",coin->symbol,flag,str,(double)(time(NULL)-coin->starttime)/60.,coin->peers.numfiles,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
-    if ( time(NULL) > lastdisp+10 )
+    if ( time(NULL) > coin->lastdisp+10 )
     {
         printf("%s\n",str);
         if ( (rand() % 100) == 0 )
             myallocated(0,0);
-        lastdisp = (uint32_t)time(NULL);
+        coin->lastdisp = (uint32_t)time(NULL);
         if ( firstgap != 0 && firstgap->queued == 0 )
             iguana_bundleQ(coin,firstgap,1000);
     }

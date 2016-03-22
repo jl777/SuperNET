@@ -1278,7 +1278,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         {
             if ( bp->emitfinish != 0 )
             {
-                printf("skip emitting bundle [%d:%d]\n",bp->hdrsi,req->bundlei);
+                //printf("skip emitting bundle [%d:%d]\n",bp->hdrsi,req->bundlei);
                 return(0);
             }
             block = bp->blocks[req->bundlei];
