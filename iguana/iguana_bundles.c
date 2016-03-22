@@ -699,16 +699,18 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
             }
             else if ( bp == coin->current && time(NULL) > bp->issued[bundlei]+10 )
             {
-                iguana_blockQ("missing",coin,0,-1,bp->hashes[bundlei],1);
-                bp->issued[bundlei] = (uint32_t)time(NULL);
+                printf(" missing [%d:%d]\n",bp->hdrsi,bundlei);
+                //iguana_blockQ("missing",coin,0,-1,block->RO.hash2,1);
+                //bp->issued[bundlei] = (uint32_t)time(NULL);
             }
             numhashes++;
             bp->checkedtmp++;
         }
         else if ( bp == coin->current && bits256_nonz(bp->hashes[bundlei]) != 0 && time(NULL) > bp->issued[bundlei]+30 )
         {
-            iguana_blockQ("missing",coin,0,-1,bp->hashes[bundlei],0);
-            bp->issued[bundlei] = (uint32_t)time(NULL);
+            printf(" missing [%d:%d]\n",bp->hdrsi,bundlei);
+            //iguana_blockQ("missing",coin,0,-1,bp->hashes[bundlei],0);
+            //bp->issued[bundlei] = (uint32_t)time(NULL);
         }
     }
     bp->datasize = datasize;
