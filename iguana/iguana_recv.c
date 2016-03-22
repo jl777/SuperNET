@@ -603,6 +603,11 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
             }
             else if ( iguana_allhashcmp(coin,bp,blockhashes,num) > 0 )
                 return(req);
+            else if ( bp == coin->current )
+            {
+                for (i=0; i<bp->n; i++)
+                    iguana_blockQ("reissue",coin,bp,i,bp->hashes[i],0);
+            }
             //printf("done allhashes\n");
         }
         if ( bp != 0 && (bp->speculative == 0 || num > bp->numspec) && bp->emitfinish == 0 )
