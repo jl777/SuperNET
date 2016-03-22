@@ -629,7 +629,7 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
                     //printf("speculative.[%d:%d]\n",bp->hdrsi,i);
                     iguana_blockQ("speculative",coin,0,-1,bp->speculative[i],0);
                 }
-                break;
+                //break;
             }
            // else if ( bp->blocks[i] == 0 )
            //     break;
