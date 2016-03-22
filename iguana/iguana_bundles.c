@@ -540,7 +540,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     } //else printf("%d ",now - block->issued);
                 }
             }
-            if ( flag != 0 && priority != 0 && laggard != 0 )
+            if ( flag != 0 && priority != 0 && laggard != 0 && coin->current == bp )
                 printf("[%d] reissued.%d currentflag.%d ht.%d s.%d finished.%d most.%d laggards.%d maxunfinished.%d\n",bp->hdrsi,flag,bp->currentflag,bp->bundleheight,bp->numsaved,finished,doneval,laggard,maxval);
          }
         if ( bp == coin->current )
