@@ -1120,6 +1120,7 @@ void iguana_main(void *arg)
     }
     if ( IGUANA_NUMHELPERS == 0 )
         IGUANA_NUMHELPERS = 1;
+    iguana_initQ(&TerminateQ,"TerminateQ");
     iguana_launch(btcd,"rpcloop",iguana_rpcloop,SuperNET_MYINFO(0),IGUANA_PERMTHREAD);
     category_init(&MYINFO);
     if ( (coinargs= SuperNET_keysinit(&MYINFO,arg)) != 0 )

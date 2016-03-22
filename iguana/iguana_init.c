@@ -32,7 +32,6 @@ void iguana_initQs(struct iguana_info *coin)
     iguana_initQ(&coin->priorityQ,"priorityQ");
     iguana_initQ(&coin->possibleQ,"possibleQ");
     iguana_initQ(&coin->cacheQ,"cacheQ");
-    iguana_initQ(&coin->TerminateQ,"TerminateQ");
     iguana_initQ(&coin->recvQ,"recvQ");
     for (i=0; i<IGUANA_MAXPEERS; i++)
         iguana_initQ(&coin->peers.active[i].sendQ,"addrsendQ");

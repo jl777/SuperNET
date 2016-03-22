@@ -457,18 +457,11 @@ struct iguana_info
     struct tai starttime; double startmillis;
     struct iguana_chain *chain;
     struct iguana_iAddr *iAddrs;
-    //struct iguanakv *txids,*spends,*unspents,*pkhashes;
-    //struct iguana_txid *T;
-    //struct iguana_unspent *U; struct iguana_Uextra *Uextras;
-    //struct iguana_spend *S; struct iguana_Sextra *Sextras;
-    //struct iguana_pkhash *P; struct iguana_account *accounts; struct iguana_pkextra *pkextras;
-    //struct iguana_counts latest;
-    //struct iguana_ledger LEDGER,loadedLEDGER;
 
     struct iguana_bitmap screen;
     //struct pollfd fds[IGUANA_MAXPEERS]; struct iguana_peer bindaddr; int32_t numsocks;
     struct OS_memspace TXMEM;
-    queue_t acceptQ,hdrsQ,blocksQ,priorityQ,possibleQ,TerminateQ,cacheQ,recvQ;
+    queue_t acceptQ,hdrsQ,blocksQ,priorityQ,possibleQ,cacheQ,recvQ;
     double parsemillis,avetime; uint32_t Launched[8],Terminated[8];
     portable_mutex_t peers_mutex,blocks_mutex;
     portable_mutex_t scripts_mutex[2]; FILE *scriptsfp[2]; void *scriptsptr[2]; long scriptsfilesize[2];
@@ -804,7 +797,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp);
 
 extern int32_t HDRnet,netBLOCKS;
 
-extern queue_t bundlesQ,validateQ,emitQ,balancesQ;
+extern queue_t bundlesQ,validateQ,emitQ,balancesQ,TerminateQ;
 extern char GLOBALTMPDIR[];
 
 #include "../includes/iguana_api.h"
