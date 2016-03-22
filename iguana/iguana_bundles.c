@@ -716,7 +716,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                 }
                 else if ( bp == coin->current )
                 {
-                    printf("missing [%d:%d]\n",bp->hdrsi,bundlei);
+                    char str[65]; printf("missing [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]));
                     if ( now > bp->issued[bundlei]+10 )
                         iguana_blockQ("missing",coin,bp,bundlei,bp->hashes[bundlei],0);
                 }
