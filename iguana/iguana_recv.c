@@ -960,7 +960,9 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
              else threshold = coin->avetime;
              threshold *= 100. * sqrt(threshold) * .000777;*/
             double threshold,lag = OS_milliseconds() - coin->backstopmillis;
-            threshold = 300;
+            if ( coin->blocks.hwmchain.height >= coin->longestchain-1 )
+                threshold = 10000;
+            else threshold = 300;
             if ( coin->blocks.hwmchain.height < coin->longestchain && (coin->backstop != coin->blocks.hwmchain.height+1 || lag > threshold) )
             {
                 coin->backstop = coin->blocks.hwmchain.height+1;
