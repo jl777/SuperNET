@@ -764,7 +764,7 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
     struct iguana_bundle *prevbp; int32_t prevdone = 0;
     if ( (prevbp= coin->bundles[bp->hdrsi-1]) != 0 && prevbp->balancefinish > 1 )
         prevdone = 1;
-    else if ( coin->current != 0 && prevbp != 0 && coin->current->hdrsi >= prevbp->hdrsi && prevbp->emitfinish > 1 && time(NULL) > prevbp->emitfinish+3 )
+    else if ( coin->current != 0 && prevbp != 0 && coin->current->hdrsi >= prevbp->hdrsi && prevbp->emitfinish > 1 && time(NULL) > prevbp->emitfinish+13 )
         prevdone = 1;
     if ( bp->hdrsi == 0 || prevdone != 0 )
     {
