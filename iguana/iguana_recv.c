@@ -927,7 +927,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                 next = 0;
             }
         }
-        else if ( bp != 0 && bits256_nonz(bp->hashes[bundlei]) == 0 && time(NULL) > bp->issued[bundlei]+60 )
+        /*else if ( bp != 0 && bits256_nonz(bp->hashes[bundlei]) == 0 && time(NULL) > bp->issued[bundlei]+60 )
         {
             if ( bundlei > 0 && bits256_nonz(bp->hashes[bundlei+1]) != 0 )
             {
@@ -938,7 +938,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                     iguana_blockQ("reqblocks1",coin,bp,bundlei,bp->hashes[bundlei],0);
                 }
             }
-        }
+        }*/
         if ( next != 0 )
         {
             //printf("have next %d\n",coin->blocks.hwmchain.height);
@@ -996,13 +996,16 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                             printf("%s MAINCHAIN.%d threshold %.3f %.3f lag %.3f\n",bits256_str(str,hash2),coin->blocks.hwmchain.height+1,threshold,coin->backstopmillis,lag);
                     }
                 }
-                else if ( bp != 0 && bundlei < bp->n-1 && bits256_nonz(bp->hashes[bundlei+1]) > 0 )
+                else if ( bp != 0 && bundlei < bp->n-1 && (bits256_nonz(bp->hashes[bundlei+1]) != 0 || (bp->speculative != 0 && bits256_nonz(bp->speculative[bundlei+1]) != 0)) )
                 {
                     if ( time(NULL) > bp->issued[bundlei+1]+10 )
                     {
                         bp->issued[bundlei+1] = (uint32_t)time(NULL);
                         printf("MAINCHAIN skip issue %d\n",bundlei+1);
-                        iguana_blockQ("mainskip",coin,bp,bundlei,bp->hashes[bundlei+1],0);
+                        if ( bits256_nonz(bp->hashes[bundlei+1]) != 0 )
+                            iguana_blockQ("mainskip",coin,bp,bundlei,bp->hashes[bundlei+1],0);
+                        else if ( bp->speculative != 0 && bundlei+1 < bp->numspec )
+                            iguana_blockQ("mainskip",coin,bp,bundlei,bp->speculative[bundlei+1],0);
                     }
                 }
                 else if ( bp != 0 && time(NULL) > bp->hdrtime+10 )
@@ -1119,6 +1122,7 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
     if ( bits256_nonz(hash2) == 0 )
     {
         printf("cant queue zerohash bundlei.%d\n",bundlei);
+        //getchar();
         return(-1);
     }
     block = iguana_blockfind(coin,hash2);
