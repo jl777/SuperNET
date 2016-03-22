@@ -256,7 +256,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
         }
     }
     req->block = txdata->block;
-    //printf("recvlen.%d ipbits.%x prev.(%s)\n",req->block.RO.recvlen,req->block.fpipbits,bits256_str(str,txdata->block.RO.prev_block));
+    printf("recvlen.%d ipbits.%x prev.(%s)\n",req->block.RO.recvlen,req->block.fpipbits,bits256_str(str,txdata->block.RO.prev_block));
     req->block.RO.txn_count = req->numtx = txdata->block.RO.txn_count;
     coin->recvcount++;
     coin->recvtime = (uint32_t)time(NULL);
