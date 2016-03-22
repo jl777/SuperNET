@@ -309,7 +309,8 @@ void iguana_balancesQ(struct iguana_info *coin,struct iguana_bundle *bp)
     ptr->type = 'B';
     ptr->starttime = (uint32_t)time(NULL);
     ptr->timelimit = 0;
-    bp->balancefinish = 1;
+    if ( bp->balancefinish == 0 )
+        bp->balancefinish = 1;
     coin->pendbalances++;
     //printf("BALANCES Q[%d] %s bundle.%d[%d] balances.%u balancefinish.%u\n",coin->pendbalances,coin->symbol,ptr->hdrsi,bp->n,bp->utxofinish,bp->balancefinish);
     queue_enqueue("balancesQ",&balancesQ,&ptr->DL,0);
