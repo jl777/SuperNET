@@ -1275,8 +1275,14 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         hash2 = req->hash2;
         height = req->height;
         if ( (bp= req->bp) != 0 && req->bundlei >= 0 && req->bundlei < bp->n )
+        {
+            if ( bp->emitfinish != 0 )
+            {
+                printf("skip emitting bundle [%d:%d]\n",bp->hdrsi,req->bundlei);
+                return(0);
+            }
             block = bp->blocks[req->bundlei];
-        else block = 0;
+        } else block = 0;
         if ( priority == 0 && bp != 0 && req->bundlei >= 0 && req->bundlei < bp->n && req->bundlei < coin->chain->bundlesize && block != 0 && (block->fpipbits != 0 || block->queued != 0) )
         {
             if ( 1 && priority != 0 )
