@@ -337,6 +337,8 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
     if ( ptr != 0 )
         myfree(ptr,sizeof(*ptr) * n);
     printf("utxo %d spendinds.[%d] errs.%d [%.2f%%] emitted.%d %s of %d | ",spendind,bp->hdrsi,errs,100.*(double)emitted/(total+1),emit,mbstr(str,sizeof(*ptr) * emit),n);
+    if ( errs != 0 )
+        exit(-1);
     return(-errs);
 }
 
