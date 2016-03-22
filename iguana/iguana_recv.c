@@ -756,6 +756,8 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
             width = coin->chain->bundlesize;
             while ( prev != 0 && width-- > 0 )
             {
+                if ( prev->mainchain != 0 )
+                    break;
                 if ( prev->fpipbits == 0 )
                 {
                     printf("width.%d auto prev newtx %s\n",width,bits256_str(str,prev->RO.hash2));
@@ -767,7 +769,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
                     if ( (prev= iguana_blockfind(coin,prev->RO.prev_block)) == 0 )
                         prev = iguana_blockhashset(coin,-1,prev->RO.prev_block,1);
                     prev->newtx = 1;
-                }
+                } else prev = 0;
             }
         }
         if ( req->copyflag != 0 )
