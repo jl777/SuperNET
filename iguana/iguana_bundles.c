@@ -738,8 +738,8 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
             if ( bp->speculative != 0 && bits256_nonz(bp->speculative[bundlei]) != 0 && bits256_nonz(bp->hashes[bundlei]) == 0 && time(NULL) > bp->issued[bundlei]+10 )
             {
                 //char str[65]; printf(" mismatched [%d:%d] %s block.%p\n",bp->hdrsi,bundlei,bits256_str(str,bp->speculative[bundlei]),block);
-                //iguana_blockQ("missing",coin,0,-1,bp->speculative[bundlei],0);
-                //bp->issued[bundlei] = (uint32_t)time(NULL);
+                iguana_blockQ("missing",coin,0,-1,bp->speculative[bundlei],0);
+                bp->issued[bundlei] = (uint32_t)time(NULL);
             }
         }
     }
