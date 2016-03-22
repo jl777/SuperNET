@@ -2246,6 +2246,19 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
     return(mapchain);
 }
 
+
+/*{
+    RAMCHAIN_DESTDECLARE; RAMCHAIN_DECLARE;
+    if ( iguana_ramchain_alloc(coin,dest,mem,&HASHMEM,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace+sigspace,bp->bundleheight+starti,bp_n) == 0 )
+    {
+        iguana_ramchain_link(dest,bp->hashes[starti],bp->hashes[endi],bp->hdrsi,bp->bundleheight,0,bp->n,firsti,0);
+        dest->expanded = 1;
+        dest->H.scriptoffset = 1;
+        _iguana_ramchain_setptrs(RAMCHAIN_DESTPTRS,dest->H.data);
+        iguana_ramchain_extras(coin,dest,&HASHMEM,0);
+    }
+}*/
+
 // helper threads: NUM_HELPERS
 int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_bundle *bp,uint32_t starttime) // helper thread
 {

@@ -761,11 +761,9 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
 
 int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    struct iguana_bundle *prevbp; int32_t i;//prevdone = 0;
-    /*if ( (prevbp= coin->bundles[bp->hdrsi-1]) != 0 && prevbp->balancefinish > 1 )
-        prevdone = 1;
-    else if ( coin->current != 0 && prevbp != 0 && coin->current->hdrsi >= prevbp->hdrsi && prevbp->emitfinish > 1 && time(NULL) > prevbp->emitfinish+13 )
-        prevdone = 1;*/
+    struct iguana_bundle *prevbp; int32_t i;
+    if ( (prevbp= coin->current) != 0 && prevbp->hdrsi < (coin->longestchain / coin->chain->bundlesize)-1 )
+        return(0);
     for (i=0; i<bp->hdrsi; i++)
         if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish < coin->startutc )
             break;
@@ -816,7 +814,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
         iguana_bundlehdr(coin,bp,starti);
     else if ( bp->emitfinish != 0 )
     {
-        //bp->nexttime -= 60;
+        bp->nexttime += 10;
         if ( bp->emitfinish > 1 )
         {
             if ( (retval= iguana_bundlefinish(coin,bp)) > 0 )
