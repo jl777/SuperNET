@@ -1420,7 +1420,7 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
     int32_t iter; bits256 sha256; char str[65],fname[1024]; void *ptr; long filesize;
     for (iter=0; iter<2; iter++)
     {
-        sprintf(fname,"DB/%s%s/spends/%s_%d.%d",iter==0?"ro/":"",coin->symbol,bits256_str(str,bp->hashes[0]),bp->n,bp->bundleheight);
+        sprintf(fname,"DB/%s%s/spends/%s.%d",iter==0?"ro/":"",coin->symbol,bits256_str(str,bp->hashes[0]),bp->bundleheight);
         //sprintf(dirname,"DB/%s%s/spends",iter==0?"ro/":"",coin->symbol);
         //if ( iguana_peerfname(coin,&hdrsi,dirname,fname,0,bp->hashes[0],zero,bp->n) >= 0 )
         {
@@ -1446,7 +1446,7 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
                     munmap(ptr,filesize);
                     ramchain->Xspendinds = 0;
                 }
-            } else printf("no Xspendfile.(%s)\n",fname);
+            } //else printf("no Xspendfile.(%s)\n",fname);
         }
     }
     return(ramchain->numXspends);
