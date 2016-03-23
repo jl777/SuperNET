@@ -463,7 +463,7 @@ void mainloop(struct supernet_info *myinfo)
                                 //bp->ramchain.Uextras = 0;
                                 iguana_balancecalc(ptr->coin,bp,bp == coin->current);
                                 bp->queued = 0;
-                                if ( bp->hdrsi >= coin->longestchain/coin->chain->bundlesize-1 )
+                                if ( bp->hdrsi == coin->longestchain/coin->chain->bundlesize-1 )
                                 {
                                     iguana_balanceflush(ptr->coin,bp->hdrsi,3);
                                     printf("flushed bp->hdrsi %d vs %d coin->longestchain/coin->chain->bundlesize\n",bp->hdrsi,coin->longestchain/coin->chain->bundlesize);
