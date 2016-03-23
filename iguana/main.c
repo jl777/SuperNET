@@ -327,7 +327,7 @@ void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func
 // mksquashfs DB/BTC BTC.xz -b 1048576 -comp xz -Xdict-size 512K
 int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t purgedist)
 {
-     int32_t hdrsi,numpkinds,iter,numhdrsi,numunspents,err; struct iguana_bundle *bp;
+    int32_t hdrsi,numpkinds,iter,numhdrsi,numunspents,err; struct iguana_bundle *bp;
     char fname[1024],fname2[1024],destfname[1024]; bits256 balancehash; FILE *fp,*fp2;
     struct iguana_utxo *Uptr; struct iguana_account *Aptr; struct sha256_vstate vstate;
     vupdate_sha256(balancehash.bytes,&vstate,0,0);
@@ -342,6 +342,10 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
     {
         for (hdrsi=0; hdrsi<numhdrsi; hdrsi++)
         {
+            Aptr = 0;
+            Uptr = 0;
+            numunspents = 0;
+            numpkinds = 0;
             if ( (bp= coin->bundles[hdrsi]) != 0 && bp->ramchain.H.data != 0 && (numpkinds= bp->ramchain.H.data->numpkinds) > 0 && (numunspents= bp->ramchain.H.data->numunspents) > 0 && (Aptr= bp->ramchain.A) != 0 && (Uptr= bp->ramchain.Uextras) != 0 )
             {
                 sprintf(fname,"accounts/%s/debits.%d",coin->symbol,bp->bundleheight);
@@ -403,11 +407,12 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
                     }*/
                     continue;
                 }
-            }
+            } else printf("error loading [%d] Aptr.%p Uptr.%p numpkinds.%u numunspents.%u\n",hdrsi,Aptr,Uptr,numpkinds,numunspents);
         }
     }
+    coin->balancehash = balancehash;
     coin->balanceswritten = numhdrsi;
-    printf("BALANCES WRITTEN for %d bundles\n",coin->balanceswritten);
+    char str[65]; printf("BALANCES WRITTEN for %d bundles %s\n",coin->balanceswritten,bits256_str(str,coin->balancehash));
     return(coin->balanceswritten);
 }
 
