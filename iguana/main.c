@@ -381,25 +381,25 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
                 }
                 else if ( iter == 2 )
                 {
-                    sprintf(destfname,"DB/%s/accounts/debits_%d.%d",coin->symbol,numhdrsi,bp->bundleheight);
+                    sprintf(destfname,"DB/%s/accounts/debits.%d",coin->symbol,bp->bundleheight);
                     if ( OS_copyfile(fname,destfname,1) < 0 )
                     {
                         printf("balances error copying (%s) -> (%s)\n",fname,destfname);
                         return(-1);
                     }
-                    sprintf(destfname,"DB/%s/accounts/lastspends_%d.%d",coin->symbol,numhdrsi,bp->bundleheight);
+                    sprintf(destfname,"DB/%s/accounts/lastspends.%d",coin->symbol,bp->bundleheight);
                     if ( OS_copyfile(fname2,destfname,1) < 0 )
                     {
                         printf("balances error copying (%s) -> (%s)\n",fname2,destfname);
                         return(-1);
                     }
-                    if ( hdrsi > numhdrsi-purgedist && numhdrsi >= purgedist )
+                    /*if ( hdrsi > numhdrsi-purgedist && numhdrsi >= purgedist )
                     {
                         sprintf(destfname,"DB/%s/accounts/debits_%d.%d",coin->symbol,numhdrsi-purgedist,bp->bundleheight);
                         OS_removefile(destfname,0);
                         sprintf(destfname,"DB/%s/accounts/lastspends_%d.%d",coin->symbol,numhdrsi-purgedist,bp->bundleheight);
                         OS_removefile(destfname,0);
-                    }
+                    }*/
                     continue;
                 }
             }

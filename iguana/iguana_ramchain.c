@@ -1286,14 +1286,26 @@ int32_t iguana_ramchain_free(struct iguana_ramchain *ramchain,int32_t deleteflag
         ramchain->numXspends = 0;
         ramchain->Xspendinds = 0;
     }
+    if ( ramchain->debitsfileptr != 0 )
+    {
+        munmap(ramchain->debitsfileptr,ramchain->debitsfilesize);
+        ramchain->debitsfileptr = 0;
+        ramchain->debitsfilesize = 0;
+    }
+    if ( ramchain->lastspendsfileptr != 0 )
+    {
+        munmap(ramchain->lastspendsfileptr,ramchain->lastspendsfilesize);
+        ramchain->lastspendsfileptr = 0;
+        ramchain->lastspendsfilesize = 0;
+    }
     if ( deleteflag != 0 )
         memset(ramchain,0,sizeof(*ramchain));
     return(0);
 }
 
-void iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct OS_memspace *hashmem,int32_t extraflag)
+int32_t iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct OS_memspace *hashmem,int32_t extraflag)
 {
-    RAMCHAIN_DECLARE; char fname[1024]; //long filesize;
+    RAMCHAIN_DECLARE; int32_t err=0,numhdrsi; char fname[1024]; //long filesize;
     if ( ramchain->expanded != 0 )
     {
         _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
@@ -1307,37 +1319,48 @@ void iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *ram
         }
         else
         {
-            if ( 1 && extraflag == 2 )
+            err = -1;
+            sprintf(fname,"DB/%s/accounts/debits.%d",coin->symbol,ramchain->H.data->height);
+            if ( (ramchain->debitsfileptr= OS_mapfile(fname,&ramchain->debitsfilesize,0)) != 0 && ramchain->debitsfilesize == sizeof(int32_t) + sizeof(bits256) + sizeof(*ramchain->A) * ramchain->H.data->numpkinds )
             {
-                sprintf(fname,"accounts/%s/debits.%d",coin->symbol,ramchain->H.data->height);
-                //ramchain->A = OS_filestr(&filesize,fname);
-                //if ( filesize != sizeof(*ramchain->A)*ramchain->H.data->numpkinds )
-               //     printf("%s unexpected filesize %ld vs %ld\n",fname,filesize,sizeof(*ramchain->A)*ramchain->H.data->numpkinds);
-                sprintf(fname,"accounts/%s/lastspends.%d",coin->symbol,ramchain->H.data->height);
-                //ramchain->Uextras = OS_filestr(&filesize,fname);
-                //if ( filesize != sizeof(*ramchain->Uextras)*ramchain->H.data->numpkinds )
-                //    printf("%s unexpected filesize %ld vs %ld\n",fname,filesize,sizeof(*ramchain->Uextras)*ramchain->H.data->numpkinds);
-                //if ( ramchain->A == 0 )
-                    ramchain->A = myaligned_alloc(sizeof(*ramchain->A) * ramchain->H.data->numpkinds);
-                //if ( ramchain->Uextras == 0 )
-                    ramchain->Uextras = myaligned_alloc(sizeof(*ramchain->Uextras) * ramchain->H.data->numunspents);
+                numhdrsi = *(int32_t *)ramchain->debitsfileptr;
+                if ( coin->balanceswritten == 0 && numhdrsi > 0 && numhdrsi <= coin->bundlescount )
+                    coin->balanceswritten = numhdrsi;
+                else if ( numhdrsi == coin->balanceswritten )
+                {
+                    ramchain->A = (void *)((long)ramchain->debitsfileptr + sizeof(numhdrsi) + sizeof(bits256));
+                    sprintf(fname,"DB/%s/accounts/lastspends.%d",coin->symbol,ramchain->H.data->height);
+                    if ( (ramchain->lastspendsfileptr= OS_mapfile(fname,&ramchain->lastspendsfilesize,0)) != 0 && ramchain->lastspendsfilesize == sizeof(int32_t) + sizeof(bits256) + sizeof(*ramchain->Uextras) * ramchain->H.data->numunspents )
+                    {
+                        numhdrsi = *(int32_t *)ramchain->lastspendsfileptr;
+                        if ( numhdrsi == coin->balanceswritten )
+                        {
+                            ramchain->Uextras = (void *)((long)ramchain->lastspendsfileptr + sizeof(numhdrsi) + sizeof(bits256));
+                            err = 0;
+                        }
+                    }
+                } else printf("ramchain map error balanceswritten %d vs %d\n",coin->balanceswritten,numhdrsi);
             }
-            else
+            if ( err != 0 )
             {
-            //if ( ramchain->A == 0 )
-                ramchain->A = myaligned_alloc(sizeof(*ramchain->A) * ramchain->H.data->numpkinds);
-            //if ( ramchain->Uextras == 0 )
-                ramchain->Uextras = myaligned_alloc(sizeof(*ramchain->Uextras) * ramchain->H.data->numunspents);
-            }
-            //printf("ALLOC RAMCHAIN A.%p Uextras.%p | extraflag.%d hashmem.%p\n",ramchain->A,ramchain->Uextras,extraflag,ramchain->hashmem);
+                ramchain->A = 0;
+                ramchain->Uextras = 0;
+                if ( ramchain->debitsfileptr != 0 )
+                {
+                    munmap(ramchain->debitsfileptr,ramchain->debitsfilesize);
+                    ramchain->debitsfileptr = 0;
+                    ramchain->debitsfilesize = 0;
+                }
+                if ( ramchain->lastspendsfileptr != 0 )
+                {
+                    munmap(ramchain->lastspendsfileptr,ramchain->lastspendsfilesize);
+                    ramchain->lastspendsfileptr = 0;
+                    ramchain->lastspendsfilesize = 0;
+                }
+           }
         }
-        //printf("hashmem.%p A allocated.%p numpkinds.%d %ld\n",hashmem,ramchain->A,ramchain->H.data->numpkinds,sizeof(struct iguana_account)*ramchain->H.data->numpkinds);
-        //ramchain->P2 = (hashmem != 0) ? iguana_memalloc(hashmem,sizeof(struct iguana_pkextra) * ramchain->H.data->numpkinds,1) : mycalloc('2',ramchain->H.data->numpkinds,sizeof(struct iguana_pkextra));
-        ///ramchain->U2 = (hashmem != 0) ? iguana_memalloc(hashmem,sizeof(struct iguana_Uextra) * ramchain->H.data->numunspents,1) : mycalloc('3',ramchain->H.data->numunspents,sizeof(struct iguana_Uextra));
-        //printf("iguana_ramchain_extras A.%p:%p U2.%p:%p P2.%p:%p\n",ramchain->A,ramchain->roA,ramchain->U2,ramchain->roU2,ramchain->P2,ramchain->roP2);
-        //memcpy(ramchain->U2,ramchain->roU2,sizeof(*ramchain->U2) * ramchain->H.data->numunspents);
-        //memcpy(ramchain->P2,ramchain->roP2,sizeof(*ramchain->P2) * ramchain->H.data->numpkinds);
     }
+    return(err);
 }
 
 int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct iguana_bundle *bp)
@@ -1455,7 +1478,10 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
         else if ( ramchain->expanded != 0 )
         {
             if ( allocextras > 0 )
-                iguana_ramchain_extras(coin,ramchain,ramchain->hashmem,allocextras);
+            {
+                if ( iguana_ramchain_extras(coin,ramchain,ramchain->hashmem,allocextras) == 0 && bp != 0 )
+                    bp->balancefinish = (uint32_t)time(NULL);
+            }
         }
         if ( B != 0 && bp != 0 )
         {

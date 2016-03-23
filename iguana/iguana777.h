@@ -374,8 +374,10 @@ struct iguana_ramchain
     struct iguana_ramchain_hdr H; bits256 lasthash2; uint64_t datasize;
     uint32_t numblocks:31,expanded:1,pkind,externalind,height,numXspends;
     struct iguana_kvitem *txids,*pkhashes;
-    struct OS_memspace *hashmem; long filesize,sigsfilesize; void *fileptr,*sigsfileptr,*Xspendptr;
-    struct iguana_account *A,*creditsA; struct iguana_spendvector *Xspendinds; struct iguana_utxo *Uextras;
+    struct OS_memspace *hashmem; long filesize,sigsfilesize,debitsfilesize,lastspendsfilesize;
+    void *fileptr,*sigsfileptr,*Xspendptr,*debitsfileptr,*lastspendsfileptr;
+    struct iguana_account *A,*creditsA; struct iguana_spendvector *Xspendinds;
+    struct iguana_utxo *Uextras;
 //struct iguana_Uextra *U2,*roU2; struct iguana_pkextra *P2,*roP2;
 };
 
