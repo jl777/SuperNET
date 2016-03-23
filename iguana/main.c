@@ -450,33 +450,29 @@ void mainloop(struct supernet_info *myinfo)
                 if ( (coin= Coins[i]) != 0 && coin->active != 0 && (bp= coin->current) != 0 && coin->started != 0 )
                 {
                     flag++;
+                    iguana_realtime_update(coin);
                     if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
                     {
                         if ( (bp= ptr->bp) != 0 && ptr->coin != 0 && (bp->hdrsi == 0 || (prevbp= coin->bundles[bp->hdrsi-1]) != 0) )
                         {
-                            if ( bp->ramchain.Uextras == 0 )
-                            {
-                                printf("alloc Uextras.[%d]\n",bp->hdrsi);
-                                bp->ramchain.Uextras = calloc(sizeof(*bp->ramchain.Uextras),bp->ramchain.H.data->numunspents + 16);
-                            }
-                            if ( bp->ramchain.A == 0 )
-                            {
-                                printf("alloc A2.[%d]\n",bp->hdrsi);
-                                bp->ramchain.A = calloc(sizeof(*bp->ramchain.A),bp->ramchain.H.data->numpkinds + 16);
-                            }
                             for (j=0; j<bp->hdrsi; j++)
                             {
                                 if ( (prevbp= coin->bundles[j]) == 0 || prevbp->utxofinish <= 1 )
                                     break;
-                                //prevbp->ramchain.A = 0;
-                                //prevbp->ramchain.Uextras = 0;
                             }
                             if ( bp->utxofinish > 1 && bp->balancefinish <= 1 && bp->hdrsi == j )
                             {
-                                //printf("hdrsi.%d start balances.%d\n",bp->hdrsi,bp->bundleheight);
-                                //bp->ramchain.A = 0;
-                                //bp->ramchain.Uextras = 0;
-                                iguana_balancecalc(ptr->coin,bp,bp == coin->current);
+                                if ( bp->ramchain.Uextras == 0 )
+                                {
+                                    printf("alloc Uextras.[%d]\n",bp->hdrsi);
+                                    bp->ramchain.Uextras = calloc(sizeof(*bp->ramchain.Uextras),bp->ramchain.H.data->numunspents + 16);
+                                }
+                                if ( bp->ramchain.A == 0 )
+                                {
+                                    printf("alloc A2.[%d]\n",bp->hdrsi);
+                                    bp->ramchain.A = calloc(sizeof(*bp->ramchain.A),bp->ramchain.H.data->numpkinds + 16);
+                                }
+                                iguana_balancecalc(ptr->coin,bp,bp->hdrsi >= coin->balanceswritten);
                                 bp->queued = 0;
                                 if ( bp->hdrsi == coin->longestchain/coin->chain->bundlesize-1 )
                                 {
@@ -496,12 +492,9 @@ void mainloop(struct supernet_info *myinfo)
                 }
         }
         iguana_jsonQ();
+        pangea_queues(SuperNET_MYINFO(0));
         if ( flag == 0 )
-        {
-            pangea_queues(SuperNET_MYINFO(0));
-            usleep(1000000);
-        }
-        else usleep(100000);
+            usleep(100000);
     }
 }
 

@@ -44,6 +44,11 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,uint16_t spent_hdris,uint32_t
     return(0);
 }
 
+void iguana_realtime_update(struct iguana_info *coin)
+{
+    
+}
+
 struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_ramchain **ramchainp,int64_t *balancep,uint32_t *lastunspentindp,struct iguana_pkhash *p,uint8_t rmd160[20],int32_t firsti,int32_t endi)
 {
     uint8_t *PKbits; struct iguana_pkhash *P; uint32_t pkind,i; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; struct iguana_account *ACCTS;

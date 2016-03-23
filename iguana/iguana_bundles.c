@@ -514,7 +514,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                                         bp->issued[i] = block->issued = now;
                                     }
                                 }
-                                printf("kill peer.%d %s reissued\n",i,addr->ipaddr);
+                                printf("slow peer.%d dead.%u (%s) reissued.%d\n",i,addr->dead,addr->ipaddr,flag);
                             }
                         }
                     }
@@ -848,7 +848,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
             {
                 if ( iguana_bundlesaveHT(coin,mem,memB,bp,(uint32_t)time(NULL)) == 0 )
                 {
-                    fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d\n",coin,bp->hdrsi,bp->bundleheight);
+                    //fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d\n",coin,bp->hdrsi,bp->bundleheight);
                     bp->emitfinish = (uint32_t)time(NULL) + 1;
                     coin->numemitted++;
                 }
