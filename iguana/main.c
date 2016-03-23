@@ -338,7 +338,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
             break;
     if ( hdrsi <= coin->balanceswritten || hdrsi < refhdrsi )
         return(0);
-    numhdrsi = hdrsi+1;
+    numhdrsi = hdrsi;
     vupdate_sha256(balancehash.bytes,&vstate,0,0);
     for (iter=0; iter<3; iter++)
     {
