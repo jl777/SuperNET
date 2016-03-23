@@ -1325,7 +1325,7 @@ int32_t iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *
             {
                 numhdrsi = *(int32_t *)ramchain->debitsfileptr;
                 memcpy(balancehash.bytes,(void *)((long)ramchain->debitsfileptr + sizeof(numhdrsi)),sizeof(balancehash));
-                if ( coin->balanceswritten == 0 && numhdrsi > 0 && numhdrsi <= coin->bundlescount )
+                if ( coin->balanceswritten == 0 )
                 {
                     coin->balanceswritten = numhdrsi;
                     coin->balancehash = balancehash;

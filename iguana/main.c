@@ -323,6 +323,8 @@ void sigalarm_func() { printf("\nSIGALRM\n"); signal(SIGALRM,sigalarm_func); }
 void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func); }
 #endif
 
+// mksquashfs DB/BTC BTC.lzo -comp lzo -b 1048576
+// mksquashfs DB/BTC BTC.xz -b 1048576 -comp xz -Xdict-size 512K
 int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t purgedist)
 {
      int32_t hdrsi,numpkinds,iter,numhdrsi,numunspents,err; struct iguana_bundle *bp;
