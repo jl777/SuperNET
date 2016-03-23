@@ -456,7 +456,7 @@ void mainloop(struct supernet_info *myinfo)
                         {
                             for (j=0; j<bp->hdrsi; j++)
                             {
-                                if ( (prevbp= coin->bundles[j]) == 0 || prevbp->utxofinish <= 1 )
+                                if ( (prevbp= coin->bundles[j]) == 0 || prevbp->utxofinish <= 1 || prevbp->balancefinish <= 1 )
                                     break;
                             }
                             if ( bp->utxofinish > 1 && bp->balancefinish <= 1 && bp->hdrsi == j )
