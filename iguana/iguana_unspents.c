@@ -20,6 +20,8 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,uint16_t spent_hdris,uint32_t
 {
     struct iguana_hhutxo *hhutxo; struct iguana_hhaccount *hhacct;
     uint8_t buf[sizeof(spent_hdris) + sizeof(uint32_t)];
+    printf("unexpected utxoupdate\n");
+    exit(-1);
     memcpy(&buf[sizeof(uint32_t)],(void *)&spent_hdris,sizeof(spent_hdris));
     memcpy(buf,(void *)&spent_unspentind,sizeof(spent_unspentind));
     HASH_FIND(hh,coin->utxotable,buf,sizeof(buf),hhutxo);
