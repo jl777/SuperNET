@@ -334,7 +334,10 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
             for (i=0; i<coin->balanceswritten; i++)
             {
                 if ( (bp= coin->bundles[i]) == 0 || bp->emitfinish <= 1 || bp->utxofinish <= 1 )
+                {
+                    printf("hdrsi.[%d] emitfinish.%u utxofinish.%u\n",i,bp->emitfinish,bp->utxofinish);
                     break;
+                }
                 if ( bp->ramchain.from_ro == 0 || bp->ramchain.from_roX == 0 || bp->ramchain.from_roA == 0 || bp->ramchain.from_roU == 0 )
                     from_ro = 0;
             }

@@ -1417,11 +1417,12 @@ int32_t iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *
 
 int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct iguana_bundle *bp)
 {
-    int32_t hdrsi,iter; bits256 sha256; char fname[1024],dirname[128]; void *ptr; long filesize; static bits256 zero;
+    int32_t hdrsi,iter; bits256 sha256; char str[65],fname[1024],dirname[128]; void *ptr; long filesize; static bits256 zero;
     for (iter=0; iter<2; iter++)
     {
-        sprintf(dirname,"DB/%s%s/spends",iter==0?"ro/":"",coin->symbol);
-        if ( iguana_peerfname(coin,&hdrsi,dirname,fname,0,bp->hashes[0],zero,bp->n) >= 0 )
+        sprintf(fname,"DB/%s%s/spends/%s_%d.%d",iter==0?"ro/":"",coin->symbol,bits256_str(str,bp->hashes[0]),bp->n,bp->hdrsi);
+        //sprintf(dirname,"DB/%s%s/spends",iter==0?"ro/":"",coin->symbol);
+        //if ( iguana_peerfname(coin,&hdrsi,dirname,fname,0,bp->hashes[0],zero,bp->n) >= 0 )
         {
             if ( (ptr= OS_mapfile(fname,&filesize,0)) != 0 )
             {
@@ -1446,7 +1447,7 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
                     ramchain->Xspendinds = 0;
                 }
             } //else printf("no Xspendfile\n");
-        } else printf("couldnt open.(%s)\n",fname);
+        } 
     }
     return(ramchain->numXspends);
 }
@@ -1482,6 +1483,7 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
             ramchain->filesize = (long)filesize;
             if ( (ramchain->hashmem= hashmem) != 0 )
                 iguana_memreset(hashmem);
+            break;
         }
         if ( ramchain->fileptr == 0 )
             return(0);

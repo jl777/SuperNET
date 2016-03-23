@@ -269,7 +269,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     static uint64_t total,emitted;
     int32_t spendind,height,n,numtxid,errs=0,emit=0; uint32_t unspentind; struct iguana_bundle *spentbp;
-    FILE *fp; char fname[1024],str[65],dirname[128]; int32_t hdrsi,retval = -1;
+    FILE *fp; char fname[1024],str[65]; int32_t retval = -1;
     bits256 prevhash,zero,sha256; struct iguana_unspent *u; long fsize; struct iguana_txid *nextT;
     struct iguana_spend *S,*s; struct iguana_spendvector *ptr; struct iguana_ramchain *ramchain;
     ramchain = &bp->ramchain;
@@ -338,9 +338,9 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
     {
         emitted += emit;
         memset(zero.bytes,0,sizeof(zero));
-        sprintf(dirname,"DB/%s/spends",coin->symbol);
+        sprintf(fname,"DB/%s/spends/%s_%d.%d",coin->symbol,bits256_str(str,bp->hashes[0]),bp->n,bp->hdrsi);
         vcalc_sha256(0,sha256.bytes,(void *)ptr,(int32_t)(sizeof(*ptr) * emit));
-        if ( iguana_peerfname(coin,&hdrsi,dirname,fname,0,bp->hashes[0],zero,bp->n) >= 0 )
+        //if ( iguana_peerfname(coin,&hdrsi,dirname,fname,0,bp->hashes[0],zero,bp->n) >= 0 )
         {
             if ( (fp= fopen(fname,"wb")) != 0 )
             {
@@ -360,7 +360,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
                 //    printf("(%d u%d) ",ramchain->Xspendinds[i].hdrsi,ramchain->Xspendinds[i].ind);
                 //printf("filesize %ld Xspendptr.%p %p num.%d\n",fsize,ramchain->Xspendptr,ramchain->Xspendinds,ramchain->numXspends);
             } else printf("Error creating.(%s)\n",fname);
-        } else printf("error getting utxo fname\n");
+        } 
     }
     if ( ptr != 0 )
         myfree(ptr,sizeof(*ptr) * n);
