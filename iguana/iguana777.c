@@ -352,7 +352,7 @@ int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *m
     return(0);
 }
 
-void iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp)
+void iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int32_t incremental)
 {
     uint32_t starttime;
     if ( bp->balancefinish > 1 )
@@ -362,7 +362,7 @@ void iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp)
         return;
     }
     starttime = (uint32_t)time(NULL);
-    if ( iguana_balancegen(coin,bp) < 0 )
+    if ( iguana_balancegen(coin,bp,incremental) < 0 )
     {
         printf("GENERATE BALANCES ERROR ht.%d\n",bp->bundleheight);
         exit(-1);

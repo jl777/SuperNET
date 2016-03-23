@@ -323,6 +323,7 @@ void sigalarm_func() { printf("\nSIGALRM\n"); signal(SIGALRM,sigalarm_func); }
 void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func); }
 #endif
 
+// mksquashfs DB/BTC BTC.squash -b 1048576
 // mksquashfs DB/BTC BTC.lzo -comp lzo -b 1048576
 // mksquashfs DB/BTC BTC.xz -b 1048576 -comp xz -Xdict-size 512K
 int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t purgedist)
@@ -450,7 +451,7 @@ void mainloop(struct supernet_info *myinfo)
                                 //printf("hdrsi.%d start balances.%d\n",bp->hdrsi,bp->bundleheight);
                                 bp->ramchain.A = 0;
                                 bp->ramchain.Uextras = 0;
-                                iguana_balancecalc(ptr->coin,bp);
+                                iguana_balancecalc(ptr->coin,bp,bp == coin->current);
                                 bp->queued = 0;
                                 if ( bp->hdrsi > coin->longestchain/coin->chain->bundlesize-3 )
                                 {

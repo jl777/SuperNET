@@ -338,7 +338,9 @@ struct iguana_pkhash { uint8_t rmd160[20]; uint32_t pkind; } __attribute__((pack
 
 // dynamic
 struct iguana_account { int64_t total; uint32_t lastind; } __attribute__((packed));
-struct iguana_utxo { uint32_t prevspendind,height:31,spentflag:1; } __attribute__((packed));
+struct iguana_utxo { uint32_t prevunspentind,height:31,spentflag:1; } __attribute__((packed));
+struct iguana_hhaccount { UT_hash_handle hh; uint8_t buf[6]; struct iguana_account a; } __attribute__((packed));
+struct iguana_hhutxo { UT_hash_handle hh; uint8_t buf[6]; struct iguana_utxo u; } __attribute__((packed));
 
 // GLOBAL one zero to non-zero write (unless reorg)
 struct iguana_spendvector { uint32_t ind,height; uint16_t hdrsi; } __attribute__((packed)); // unspentind
@@ -478,6 +480,7 @@ struct iguana_info
     uint8_t blockspace[IGUANA_MAXPACKETSIZE + 8192]; struct OS_memspace blockMEM;
     struct iguana_blocks blocks; bits256 APIblockhash,APItxid; char *APIblockstr;
     struct iguana_waccount *wallet;
+    struct iguana_hhutxo *utxotable; struct iguana_hhaccount *accountstable;
 };
 
 struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };
@@ -783,7 +786,7 @@ int32_t iguana_vinscriptparse(struct iguana_info *coin,struct vin_info *vp,uint3
 void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msghdr *H,uint8_t *buf,int32_t len);
 int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp);
 int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp);
-int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp);
+int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int32_t incremental);
 int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp);
 void iguana_validateQ(struct iguana_info *coin,struct iguana_bundle *bp);
 struct iguana_bloominds iguana_calcbloom(bits256 hash2);
@@ -793,10 +796,11 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
 void iguana_balancesQ(struct iguana_info *coin,struct iguana_bundle *bp);
 int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t purgedist);
 int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int32_t starti,int32_t max);
-void iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp);
+void iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int32_t incremental);
 int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2,int32_t iamthreadsafe);
 int32_t iguana_blockreq(struct iguana_info *coin,int32_t height,int32_t priority);
 int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp);
+void iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain *ramchain);
 
 extern int32_t HDRnet,netBLOCKS;
 
