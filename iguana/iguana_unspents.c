@@ -473,16 +473,19 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
             if ( spentbp->dirty == 0 )
             {
                 spentbp->dirty = now;
+                printf("prefetch.[%d]\n",spentbp->hdrsi);
                 iguana_ramchain_prefetch(coin,&spentbp->ramchain);
             }
             if ( incremental == 0 )
             {
                 if ( spentbp->ramchain.Uextras == 0 )
                 {
+                    printf("alloc Uextras.[%d]\n",spentbp->hdrsi);
                     spentbp->ramchain.Uextras = calloc(sizeof(*spentbp->ramchain.Uextras),spentbp->ramchain.H.data->numunspents + 16);
                 }
                 if ( spentbp->ramchain.A == 0 )
                 {
+                    printf("alloc A2.[%d]\n",spentbp->hdrsi);
                     spentbp->ramchain.A = calloc(sizeof(*spentbp->ramchain.A),spentbp->ramchain.H.data->numpkinds + 16);
                 }
             }
