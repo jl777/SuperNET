@@ -378,6 +378,7 @@ struct iguana_ramchain
     struct iguana_kvitem *txids,*pkhashes;
     struct OS_memspace *hashmem; long filesize,sigsfilesize,debitsfilesize,lastspendsfilesize;
     void *fileptr,*sigsfileptr,*Xspendptr,*debitsfileptr,*lastspendsfileptr;
+    char from_ro,from_roX,from_roA,from_roU;
     struct iguana_account *A,*creditsA; struct iguana_spendvector *Xspendinds;
     struct iguana_utxo *Uextras;
 //struct iguana_Uextra *U2,*roU2; struct iguana_pkextra *P2,*roP2;

@@ -1365,6 +1365,7 @@ int32_t iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *
                 sprintf(fname,"DB/%s%s/accounts/debits.%d",iter==0?"ro":"",coin->symbol,ramchain->H.data->height);
                 if ( (ramchain->debitsfileptr= OS_mapfile(fname,&ramchain->debitsfilesize,0)) != 0 && ramchain->debitsfilesize == sizeof(int32_t) + sizeof(bits256) + sizeof(*ramchain->A) * ramchain->H.data->numpkinds )
                 {
+                    ramchain->from_roA = (iter == 0);
                     numhdrsi = *(int32_t *)ramchain->debitsfileptr;
                     memcpy(balancehash.bytes,(void *)((long)ramchain->debitsfileptr + sizeof(numhdrsi)),sizeof(balancehash));
                     if ( coin->balanceswritten == 0 )
@@ -1383,6 +1384,7 @@ int32_t iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *
                             if ( numhdrsi == coin->balanceswritten || memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) == 0 )
                             {
                                 ramchain->Uextras = (void *)((long)ramchain->lastspendsfileptr + sizeof(numhdrsi) + sizeof(bits256));
+                                ramchain->from_roU = (iter == 0);
                                 err = 0;
                             } else printf("ramchain map error2 balanceswritten %d vs %d hashes %x %x\n",coin->balanceswritten,numhdrsi,coin->balancehash.uints[0],balancehash.uints[0]);
                         } else printf("ramchain map error3 %s\n",fname);
@@ -1430,6 +1432,7 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
                     bp->startutxo = bp->utxofinish = (uint32_t)time(NULL);
                     ramchain->Xspendptr = ptr;
                     ramchain->numXspends = (int32_t)((filesize - sizeof(sha256)) / sizeof(*ramchain->Xspendinds));
+                    ramchain->from_roX = (iter == 0);
                     return(ramchain->numXspends);
                     //int32_t i; for (i=0; i<ramchain->numXspends; i++)
                     //    printf("(%d u%d) ",ramchain->Xspendinds[i].hdrsi,ramchain->Xspendinds[i].ind);
@@ -1474,6 +1477,7 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
             memset(ramchain,0,sizeof(*ramchain));
             if ( (ptr= OS_mapfile(fname,&filesize,0)) == 0 )
                 continue;
+            ramchain->from_ro = (iter == 0);
             ramchain->fileptr = ptr;
             ramchain->filesize = (long)filesize;
             if ( (ramchain->hashmem= hashmem) != 0 )
@@ -1543,7 +1547,7 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
                 if ( iguana_ramchain_extras(coin,ramchain,ramchain->hashmem,allocextras) == 0 && bp != 0 )
                 {
                     bp->balancefinish = (uint32_t)time(NULL);
-                    printf("found balances for %d\n",bp->hdrsi);
+                    //printf("found balances for %d\n",bp->hdrsi);
                 } else printf("error with extras\n");
             }
         }

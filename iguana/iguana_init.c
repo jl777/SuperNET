@@ -214,7 +214,7 @@ void iguana_truncatebalances(struct iguana_info *coin)
 
 void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
 {
-    int32_t i,j,k,m,c,height,flag,bundlei; char checkstr[1024],line[1024];
+    int32_t i,j,k,m,c,height,flag,bundlei,from_ro; char checkstr[1024],line[1024];
     struct iguana_peer *addr; struct iguana_bundle *bp; bits256 allhash,hash2,zero,lastbundle;
     struct iguana_block *block;
     memset(&zero,0,sizeof(zero));
@@ -330,9 +330,14 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
     {
         if ( coin->balanceswritten > 0 )
         {
+            from_ro = 1;
             for (i=0; i<coin->balanceswritten; i++)
+            {
                 if ( (bp= coin->bundles[i]) == 0 || bp->emitfinish <= 1 || bp->utxofinish <= 1 )
                     break;
+                if ( bp->ramchain.from_ro == 0 || bp->ramchain.from_roX == 0 || bp->ramchain.from_roA == 0 || bp->ramchain.from_roU == 0 )
+                    from_ro = 0;
+            }
             if ( i != coin->balanceswritten )
             {
                 printf("TRUNCATE balances written.%d -> %d\n",coin->balanceswritten,i);
@@ -356,24 +361,27 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                 }
                 if ( filecrc != 0 )
                     printf("have filecrc.%08x for %s milli.%.0f\n",filecrc,bits256_str(str,balancehash),OS_milliseconds());
-                if ( filecrc == 0 )
-                    vupdate_sha256(balancehash.bytes,&vstate,0,0);
-                for (i=crc=0; i<coin->balanceswritten; i++)
+                if ( from_ro == 0 )
                 {
-                    numpkinds = numunspents = 0;
-                    Aptr = 0, Uptr = 0;
-                    if ( (bp= coin->bundles[i]) != 0 && bp->ramchain.H.data != 0 && (numpkinds= bp->ramchain.H.data->numpkinds) > 0 && (numunspents= bp->ramchain.H.data->numunspents) > 0 && (Aptr= bp->ramchain.A) != 0 && (Uptr= bp->ramchain.Uextras) != 0 )
+                    if ( filecrc == 0 )
+                        vupdate_sha256(balancehash.bytes,&vstate,0,0);
+                    for (i=crc=0; i<coin->balanceswritten; i++)
                     {
-                        if ( filecrc == 0 )
+                        numpkinds = numunspents = 0;
+                        Aptr = 0, Uptr = 0;
+                        if ( (bp= coin->bundles[i]) != 0 && bp->ramchain.H.data != 0 && (numpkinds= bp->ramchain.H.data->numpkinds) > 0 && (numunspents= bp->ramchain.H.data->numunspents) > 0 && (Aptr= bp->ramchain.A) != 0 && (Uptr= bp->ramchain.Uextras) != 0 )
                         {
-                            vupdate_sha256(balancehash.bytes,&vstate,(void *)Aptr,sizeof(*Aptr)*numpkinds);
-                            vupdate_sha256(balancehash.bytes,&vstate,(void *)Uptr,sizeof(*Uptr)*numunspents);
-                        }
-                        crc = calc_crc32(crc,(void *)Aptr,(int32_t)(sizeof(*Aptr) * numpkinds));
-                        crc = calc_crc32(crc,(void *)Uptr,(int32_t)(sizeof(*Uptr) * numunspents));
-                    } else printf("missing hdrs.[%d] data.%p num.(%u %d) %p %p\n",i,bp->ramchain.H.data,numpkinds,numunspents,Aptr,Uptr);
-                }
-                printf("millis %.0f written.%d crc.%08x/%08x balancehash.(%s) vs (%s)\n",OS_milliseconds(),coin->balanceswritten,crc,filecrc,bits256_str(str,balancehash),bits256_str(str2,coin->balancehash));
+                            if ( filecrc == 0 )
+                            {
+                                vupdate_sha256(balancehash.bytes,&vstate,(void *)Aptr,sizeof(*Aptr)*numpkinds);
+                                vupdate_sha256(balancehash.bytes,&vstate,(void *)Uptr,sizeof(*Uptr)*numunspents);
+                            }
+                            crc = calc_crc32(crc,(void *)Aptr,(int32_t)(sizeof(*Aptr) * numpkinds));
+                            crc = calc_crc32(crc,(void *)Uptr,(int32_t)(sizeof(*Uptr) * numunspents));
+                        } else printf("missing hdrs.[%d] data.%p num.(%u %d) %p %p\n",i,bp->ramchain.H.data,numpkinds,numunspents,Aptr,Uptr);
+                    }
+                } else crc = filecrc;
+                printf("millis %.0f from_ro.%d written.%d crc.%08x/%08x balancehash.(%s) vs (%s)\n",OS_milliseconds(),from_ro,coin->balanceswritten,crc,filecrc,bits256_str(str,balancehash),bits256_str(str2,coin->balancehash));
                 if ( (filecrc != 0 && filecrc != crc) || memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) != 0 )
                 {
                     printf("balancehash or crc mismatch\n");
