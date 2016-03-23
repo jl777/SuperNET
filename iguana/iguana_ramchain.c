@@ -1390,7 +1390,7 @@ int32_t iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *
                 }
                 if ( err == 0 )
                 {
-                    printf("mapped extra.%s\n",fname);
+                    //printf("mapped extra.%s\n",fname);
                     break;
                 }
                 ramchain->A = 0;
@@ -1489,7 +1489,7 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
         ramchain->H.ROflag = 1;
         ramchain->expanded = expanded;
         ramchain->numblocks = (bp == 0) ? 1 : bp->n;
-        printf("ptr.%p exp.%d extra.%d %p mapped P[%d] fpos.%d + %ld -> %ld vs %ld offset.%u:%u stack.%u:%u\n",ptr,expanded,allocextras,ramchain->H.data,(int32_t)ramchain->H.data->Poffset,(int32_t)fpos,(long)ramchain->H.data->allocsize,(long)(fpos + ramchain->H.data->allocsize),ramchain->filesize,ramchain->H.scriptoffset,ramchain->H.data->scriptspace,ramchain->H.stacksize,ramchain->H.data->stackspace);
+        //printf("ptr.%p exp.%d extra.%d %p mapped P[%d] fpos.%d + %ld -> %ld vs %ld offset.%u:%u stack.%u:%u\n",ptr,expanded,allocextras,ramchain->H.data,(int32_t)ramchain->H.data->Poffset,(int32_t)fpos,(long)ramchain->H.data->allocsize,(long)(fpos + ramchain->H.data->allocsize),ramchain->filesize,ramchain->H.scriptoffset,ramchain->H.data->scriptspace,ramchain->H.stacksize,ramchain->H.data->stackspace);
         if ( 0 && bp != 0 )
         {
             /*blocksRO = (struct iguana_blockRO *)ramchain->H.data;

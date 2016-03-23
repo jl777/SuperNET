@@ -545,6 +545,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->myservices = services;
     printf("ensure directories\n");
     sprintf(dirname,"accounts/%s",symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"DB/ro"), OS_ensure_directory(dirname);
     sprintf(dirname,"DB/%s",symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"DB/%s/accounts",symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"DB/%s/spends",symbol), OS_ensure_directory(dirname);
