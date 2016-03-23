@@ -191,7 +191,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
         printf("got block that doesnt validate? %s\n",bits256_str(str,origtxdata->block.RO.hash2));
         return;
     }
-    else if ( 0 && coin->enableCACHE != 0 )
+    else //if ( 0 && coin->enableCACHE != 0 )
         printf("validated.(%s)\n",bits256_str(str,origtxdata->block.RO.hash2));
     copyflag = coin->enableCACHE;
     bp = 0, bundlei = -2;

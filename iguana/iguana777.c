@@ -570,16 +570,16 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         coin->endPEND = 1024;
     else if ( coin->endPEND < 2 )
         coin->endPEND = 2;
+    coin->enableCACHE = (strcmp("BTC",coin->symbol) != 0);
     if ( jobj(json,"cache") != 0 )
         coin->enableCACHE = juint(json,"cache");
-    else coin->enableCACHE = (strcmp("BTC",coin->symbol) != 0);
     coin->MAXMEM = juint(json,"RAM");
     if ( coin->MAXMEM == 0 )
         coin->MAXMEM = IGUANA_DEFAULTRAM;
     coin->MAXMEM *= (1024 * 1024 * 1024);
     if ( (coin->polltimeout= juint(json,"poll")) <= 0 )
         coin->polltimeout = 10;
-    char str[65]; printf("MAXMEM.%s\n",mbstr(str,coin->MAXMEM));
+    char str[65]; printf("MAXMEM.%s enablecache.%d\n",mbstr(str,coin->MAXMEM),coin->enableCACHE);
     coin->active = juint(json,"active");
     if ( (coin->minconfirms = minconfirms) == 0 )
         coin->minconfirms = (strcmp(symbol,"BTC") == 0) ? 3 : 10;
