@@ -337,6 +337,7 @@ mksquashfs DB/BTC BTC.lzo1m -comp lzo -b 1048576
 mksquashfs DB/BTC BTC.squash
 mksquashfs DB/BTC BTC.squash1M -b 1048576
  
+ mksquashfs DB/BTC BTC.xz -comp xz
  sudo mount BTC.xz DB/ro/BTC -t squashfs -o loop
 */
 
