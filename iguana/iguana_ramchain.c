@@ -1372,7 +1372,7 @@ int32_t iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *
                         coin->balanceswritten = numhdrsi;
                         coin->balancehash = balancehash;
                     }
-                    else if ( numhdrsi == coin->balanceswritten || memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) == 0 )
+                    if ( numhdrsi == coin->balanceswritten || memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) == 0 )
                     {
                         ramchain->A = (void *)((long)ramchain->debitsfileptr + sizeof(numhdrsi) + sizeof(bits256));
                         sprintf(fname,"DB/%s%s/accounts/lastspends.%d",iter==0?"ro":"",coin->symbol,ramchain->H.data->height);

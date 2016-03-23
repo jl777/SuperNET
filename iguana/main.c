@@ -483,7 +483,7 @@ void mainloop(struct supernet_info *myinfo)
                             }
                             else
                             {
-                                //printf("third case.%d utxo.%u balance.%u prev.%u\n",bp->hdrsi,bp->utxofinish,bp->balancefinish,prevbp!=0?prevbp->utxofinish:-1);
+                                printf("third case.%d utxo.%u balance.%u prev.%u\n",bp->hdrsi,bp->utxofinish,bp->balancefinish,prevbp!=0?prevbp->utxofinish:-1);
                                 coin->pendbalances--;
                                 iguana_balancesQ(coin,bp);
                             }
