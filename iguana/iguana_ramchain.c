@@ -1345,14 +1345,14 @@ int32_t iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *
                                 ramchain->Uextras = (void *)((long)ramchain->lastspendsfileptr + sizeof(numhdrsi) + sizeof(bits256));
                                 err = 0;
                             } else printf("ramchain map error2 balanceswritten %d vs %d hashes %x %x\n",coin->balanceswritten,numhdrsi,coin->balancehash.uints[0],balancehash.uints[0]);
-                        }
+                        } else printf("ramchain map error3 %s\n",fname);
                     } else printf("ramchain map error balanceswritten %d vs %d hashes %x %x\n",coin->balanceswritten,numhdrsi,coin->balancehash.uints[0],balancehash.uints[0]);
                 }
                 if ( err == 0 )
+                {
+                    printf("mapped extra.%s\n",fname);
                     break;
-            }
-            if ( err != 0 )
-            {
+                }
                 ramchain->A = 0;
                 ramchain->Uextras = 0;
                 if ( ramchain->debitsfileptr != 0 )
@@ -1367,7 +1367,7 @@ int32_t iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *
                     ramchain->lastspendsfileptr = 0;
                     ramchain->lastspendsfilesize = 0;
                 }
-           }
+            }
         }
     }
     return(err);
