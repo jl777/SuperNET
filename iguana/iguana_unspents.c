@@ -457,7 +457,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
         {
             if ( (bp == spentbp && spentbp->dirty == 0) || (bp == spentbp != 0 && (spentbp->dirty % 100000) == 3) )
             {
-                printf("prefetch.[%d]\n",spentbp->hdrsi);
+                printf("current.%d prefetch.[%d]\n",spentbp == bp,spentbp->hdrsi);
                 iguana_ramchain_prefetch(coin,&spentbp->ramchain);
             }
             spentbp->dirty++;
