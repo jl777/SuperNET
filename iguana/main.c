@@ -449,7 +449,6 @@ void mainloop(struct supernet_info *myinfo)
             for (i=0; i<IGUANA_MAXCOINS; i++)
                 if ( (coin= Coins[i]) != 0 && coin->active != 0 && (bp= coin->current) != 0 && coin->started != 0 )
                 {
-                    flag++;
                     iguana_realtime_update(coin);
                     if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
                     {
@@ -476,13 +475,14 @@ void mainloop(struct supernet_info *myinfo)
                                 bp->queued = 0;
                                 if ( bp->hdrsi == coin->longestchain/coin->chain->bundlesize-1 )
                                 {
+                                    flag++;
                                     iguana_balanceflush(ptr->coin,bp->hdrsi,3);
                                     printf("flushed bp->hdrsi %d vs %d coin->longestchain/coin->chain->bundlesize\n",bp->hdrsi,coin->longestchain/coin->chain->bundlesize);
                                 }
                             }
                             else
                             {
-                                printf("third case.%d utxo.%u balance.%u prev.%u\n",bp->hdrsi,bp->utxofinish,bp->balancefinish,prevbp!=0?prevbp->utxofinish:-1);
+                                //printf("third case.%d utxo.%u balance.%u prev.%u\n",bp->hdrsi,bp->utxofinish,bp->balancefinish,prevbp!=0?prevbp->utxofinish:-1);
                                 coin->pendbalances--;
                                 iguana_balancesQ(coin,bp);
                             }
