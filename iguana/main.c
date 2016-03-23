@@ -449,8 +449,8 @@ void mainloop(struct supernet_info *myinfo)
                             if ( bp->utxofinish > 1 && bp->balancefinish <= 1 && bp->hdrsi == j )
                             {
                                 //printf("hdrsi.%d start balances.%d\n",bp->hdrsi,bp->bundleheight);
-                                bp->ramchain.A = 0;
-                                bp->ramchain.Uextras = 0;
+                                //bp->ramchain.A = 0;
+                                //bp->ramchain.Uextras = 0;
                                 iguana_balancecalc(ptr->coin,bp,bp == coin->current);
                                 bp->queued = 0;
                                 if ( bp->hdrsi > coin->longestchain/coin->chain->bundlesize-3 )
