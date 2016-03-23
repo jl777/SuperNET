@@ -368,7 +368,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
                                 {
                                     bp->dirty = 0;
                                     err = 0;
-                                    //printf("saved (%s) and (%s)\n",fname,fname2);
+                                    printf("saved (%s) and (%s)\n",fname,fname2);
                                 }
                             }
                         }
@@ -381,8 +381,12 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
                         }
                         fclose(fp), fclose(fp2);
                     }
-                    else if ( fp != 0 )
-                        fclose(fp);
+                    else
+                    {
+                        printf("error opening %s or %s %p\n",fname,fname2,fp);
+                        if ( fp != 0 )
+                            fclose(fp);
+                    }
                 }
                 else if ( iter == 2 )
                 {
@@ -398,6 +402,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
                         printf("balances error copying (%s) -> (%s)\n",fname2,destfname);
                         return(-1);
                     }
+                    printf("%s %s\n",fname,destfname);
                     /*if ( hdrsi > numhdrsi-purgedist && numhdrsi >= purgedist )
                     {
                         sprintf(destfname,"DB/%s/accounts/debits_%d.%d",coin->symbol,numhdrsi-purgedist,bp->bundleheight);
@@ -405,7 +410,6 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
                         sprintf(destfname,"DB/%s/accounts/lastspends_%d.%d",coin->symbol,numhdrsi-purgedist,bp->bundleheight);
                         OS_removefile(destfname,0);
                     }*/
-                    continue;
                 }
             } else printf("error loading [%d] Aptr.%p Uptr.%p numpkinds.%u numunspents.%u\n",hdrsi,Aptr,Uptr,numpkinds,numunspents);
         }

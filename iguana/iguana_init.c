@@ -365,8 +365,12 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
             for (i=coin->balanceswritten; i<coin->bundlescount; i++)
             {
                 if ( (bp= coin->bundles[i]) != 0 && bp->queued == 0 )
+                {
+                    printf("%d ",i);
                     iguana_bundleQ(coin,bp,1000);
+                }
             }
+            printf("BALANCESQ\n");
         }
     }
 }

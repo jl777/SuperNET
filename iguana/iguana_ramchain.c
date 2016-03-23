@@ -1305,7 +1305,7 @@ int32_t iguana_ramchain_free(struct iguana_ramchain *ramchain,int32_t deleteflag
 
 int32_t iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct OS_memspace *hashmem,int32_t extraflag)
 {
-    RAMCHAIN_DECLARE; int32_t err=0,numhdrsi; char fname[1024]; bits256 balancehash;
+    RAMCHAIN_DECLARE; int32_t iter,err=0,numhdrsi; char fname[1024]; bits256 balancehash;
     if ( ramchain->expanded != 0 )
     {
         _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
@@ -1320,31 +1320,36 @@ int32_t iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *
         else
         {
             err = -1;
-            sprintf(fname,"DB/%s/accounts/debits.%d",coin->symbol,ramchain->H.data->height);
-            if ( (ramchain->debitsfileptr= OS_mapfile(fname,&ramchain->debitsfilesize,0)) != 0 && ramchain->debitsfilesize == sizeof(int32_t) + sizeof(bits256) + sizeof(*ramchain->A) * ramchain->H.data->numpkinds )
+            for (iter=0; iter<2; iter++)
             {
-                numhdrsi = *(int32_t *)ramchain->debitsfileptr;
-                memcpy(balancehash.bytes,(void *)((long)ramchain->debitsfileptr + sizeof(numhdrsi)),sizeof(balancehash));
-                if ( coin->balanceswritten == 0 )
+                sprintf(fname,"DB/%s%s/accounts/debits.%d",iter==0?"ro":"",coin->symbol,ramchain->H.data->height);
+                if ( (ramchain->debitsfileptr= OS_mapfile(fname,&ramchain->debitsfilesize,0)) != 0 && ramchain->debitsfilesize == sizeof(int32_t) + sizeof(bits256) + sizeof(*ramchain->A) * ramchain->H.data->numpkinds )
                 {
-                    coin->balanceswritten = numhdrsi;
-                    coin->balancehash = balancehash;
-                }
-                else if ( numhdrsi == coin->balanceswritten || memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) == 0 )
-                {
-                    ramchain->A = (void *)((long)ramchain->debitsfileptr + sizeof(numhdrsi) + sizeof(bits256));
-                    sprintf(fname,"DB/%s/accounts/lastspends.%d",coin->symbol,ramchain->H.data->height);
-                    if ( (ramchain->lastspendsfileptr= OS_mapfile(fname,&ramchain->lastspendsfilesize,0)) != 0 && ramchain->lastspendsfilesize == sizeof(int32_t) + sizeof(bits256) + sizeof(*ramchain->Uextras) * ramchain->H.data->numunspents )
+                    numhdrsi = *(int32_t *)ramchain->debitsfileptr;
+                    memcpy(balancehash.bytes,(void *)((long)ramchain->debitsfileptr + sizeof(numhdrsi)),sizeof(balancehash));
+                    if ( coin->balanceswritten == 0 )
                     {
-                        numhdrsi = *(int32_t *)ramchain->lastspendsfileptr;
-                        memcpy(balancehash.bytes,(void *)((long)ramchain->lastspendsfileptr + sizeof(numhdrsi)),sizeof(balancehash));
-                        if ( numhdrsi == coin->balanceswritten || memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) == 0 )
-                        {
-                            ramchain->Uextras = (void *)((long)ramchain->lastspendsfileptr + sizeof(numhdrsi) + sizeof(bits256));
-                            err = 0;
-                        } else printf("ramchain map error2 balanceswritten %d vs %d hashes %x %x\n",coin->balanceswritten,numhdrsi,coin->balancehash.uints[0],balancehash.uints[0]);
+                        coin->balanceswritten = numhdrsi;
+                        coin->balancehash = balancehash;
                     }
-                } else printf("ramchain map error balanceswritten %d vs %d hashes %x %x\n",coin->balanceswritten,numhdrsi,coin->balancehash.uints[0],balancehash.uints[0]);
+                    else if ( numhdrsi == coin->balanceswritten || memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) == 0 )
+                    {
+                        ramchain->A = (void *)((long)ramchain->debitsfileptr + sizeof(numhdrsi) + sizeof(bits256));
+                        sprintf(fname,"DB/%s%s/accounts/lastspends.%d",iter==0?"ro":"",coin->symbol,ramchain->H.data->height);
+                        if ( (ramchain->lastspendsfileptr= OS_mapfile(fname,&ramchain->lastspendsfilesize,0)) != 0 && ramchain->lastspendsfilesize == sizeof(int32_t) + sizeof(bits256) + sizeof(*ramchain->Uextras) * ramchain->H.data->numunspents )
+                        {
+                            numhdrsi = *(int32_t *)ramchain->lastspendsfileptr;
+                            memcpy(balancehash.bytes,(void *)((long)ramchain->lastspendsfileptr + sizeof(numhdrsi)),sizeof(balancehash));
+                            if ( numhdrsi == coin->balanceswritten || memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) == 0 )
+                            {
+                                ramchain->Uextras = (void *)((long)ramchain->lastspendsfileptr + sizeof(numhdrsi) + sizeof(bits256));
+                                err = 0;
+                            } else printf("ramchain map error2 balanceswritten %d vs %d hashes %x %x\n",coin->balanceswritten,numhdrsi,coin->balancehash.uints[0],balancehash.uints[0]);
+                        }
+                    } else printf("ramchain map error balanceswritten %d vs %d hashes %x %x\n",coin->balanceswritten,numhdrsi,coin->balancehash.uints[0],balancehash.uints[0]);
+                }
+                if ( err == 0 )
+                    break;
             }
             if ( err != 0 )
             {
@@ -1370,39 +1375,43 @@ int32_t iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *
 
 int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct iguana_bundle *bp)
 {
-    int32_t hdrsi; bits256 sha256; char fname[1024],dirname[128]; void *ptr; long filesize; static bits256 zero;
-    sprintf(dirname,"DB/%s/spends",coin->symbol);
-    if ( iguana_peerfname(coin,&hdrsi,dirname,fname,0,bp->hashes[0],zero,bp->n) >= 0 )
+    int32_t hdrsi,iter; bits256 sha256; char fname[1024],dirname[128]; void *ptr; long filesize; static bits256 zero;
+    for (iter=0; iter<2; iter++)
     {
-        if ( (ptr= OS_mapfile(fname,&filesize,0)) != 0 )
+        sprintf(dirname,"DB/%s%s/spends",iter==0?"ro/":"",coin->symbol);
+        if ( iguana_peerfname(coin,&hdrsi,dirname,fname,0,bp->hashes[0],zero,bp->n) >= 0 )
         {
-            ramchain->Xspendinds = (void *)((long)ptr + sizeof(sha256));
-            vcalc_sha256(0,sha256.bytes,(void *)ramchain->Xspendinds,(int32_t)(filesize - sizeof(sha256)));
-            if ( memcmp(sha256.bytes,ptr,sizeof(sha256)) == 0 )
+            if ( (ptr= OS_mapfile(fname,&filesize,0)) != 0 )
             {
-                bp->startutxo = bp->utxofinish = (uint32_t)time(NULL);
-                ramchain->Xspendptr = ptr;
-                ramchain->numXspends = (int32_t)((filesize - sizeof(sha256)) / sizeof(*ramchain->Xspendinds));
-                //int32_t i; for (i=0; i<ramchain->numXspends; i++)
-                //    printf("(%d u%d) ",ramchain->Xspendinds[i].hdrsi,ramchain->Xspendinds[i].ind);
-                //printf("filesize %ld Xspendptr.%p %p num.%d\n",ftell(fp),ramchain->Xspendptr,ramchain->Xspendinds,ramchain->numXspends);
-                //printf("mapped utxo vector[%d] from (%s)\n",ramchain->numXspends,fname);
-            }
-            else
-            {
-                char str[65]; printf("hash cmp error.%d vs (%s)\n",memcmp(sha256.bytes,ptr,sizeof(sha256)),bits256_str(str,sha256));
-                munmap(ptr,filesize);
-                ramchain->Xspendinds = 0;
-            }
-        } //else printf("no Xspendfile\n");
-    } else printf("couldnt open.(%s)\n",fname);
+                ramchain->Xspendinds = (void *)((long)ptr + sizeof(sha256));
+                vcalc_sha256(0,sha256.bytes,(void *)ramchain->Xspendinds,(int32_t)(filesize - sizeof(sha256)));
+                if ( memcmp(sha256.bytes,ptr,sizeof(sha256)) == 0 )
+                {
+                    bp->startutxo = bp->utxofinish = (uint32_t)time(NULL);
+                    ramchain->Xspendptr = ptr;
+                    ramchain->numXspends = (int32_t)((filesize - sizeof(sha256)) / sizeof(*ramchain->Xspendinds));
+                    return(ramchain->numXspends);
+                    //int32_t i; for (i=0; i<ramchain->numXspends; i++)
+                    //    printf("(%d u%d) ",ramchain->Xspendinds[i].hdrsi,ramchain->Xspendinds[i].ind);
+                    //printf("filesize %ld Xspendptr.%p %p num.%d\n",ftell(fp),ramchain->Xspendptr,ramchain->Xspendinds,ramchain->numXspends);
+                    //printf("mapped utxo vector[%d] from (%s)\n",ramchain->numXspends,fname);
+                }
+                else
+                {
+                    char str[65]; printf("hash cmp error.%d vs (%s)\n",memcmp(sha256.bytes,ptr,sizeof(sha256)),bits256_str(str,sha256));
+                    munmap(ptr,filesize);
+                    ramchain->Xspendinds = 0;
+                }
+            } //else printf("no Xspendfile\n");
+        } else printf("couldnt open.(%s)\n",fname);
+    }
     return(ramchain->numXspends);
 }
 
 struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname,struct iguana_bundle *bp,int32_t numblocks,struct iguana_ramchain *ramchain,struct OS_memspace *hashmem,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t bundlei,long fpos,int32_t allocextras,int32_t expanded)
 {
-    RAMCHAIN_DECLARE; int32_t valid,i,checki,hdrsi;
-    char str[65],str2[65]; long filesize; void *ptr; struct iguana_block *block;
+    RAMCHAIN_DECLARE; int32_t valid,iter,i,checki,hdrsi;
+    char str[65],str2[65],*dirstr; long filesize; void *ptr; struct iguana_block *block;
     /*if ( ramchain->expanded != 0 && (ramchain->sigsfileptr == 0 || ramchain->sigsfilesize == 0) )
     {
         sprintf(sigsfname,"sigs/%s/%s",coin->symbol,bits256_str(str,hash2));
@@ -1414,18 +1423,24 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
     }*/
     if ( ramchain->fileptr == 0 || ramchain->filesize <= 0 )
     {
-        if ( (checki= iguana_peerfname(coin,&hdrsi,ipbits==0?"DB":GLOBALTMPDIR,fname,ipbits,hash2,prevhash2,numblocks)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
+        for (iter=0; iter<2; iter++)
         {
-            printf("iguana_ramchain_map.(%s) illegal hdrsi.%d bundlei.%d %s\n",fname,hdrsi,bundlei,bits256_str(str,hash2));
-            return(0);
+            dirstr = (iter == 0) ? "DB/ro" : "DB";
+            if ( (checki= iguana_peerfname(coin,&hdrsi,ipbits==0?dirstr:GLOBALTMPDIR,fname,ipbits,hash2,prevhash2,numblocks)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
+            {
+                printf("iguana_ramchain_map.(%s) illegal hdrsi.%d bundlei.%d %s\n",fname,hdrsi,bundlei,bits256_str(str,hash2));
+                continue;
+            }
+            memset(ramchain,0,sizeof(*ramchain));
+            if ( (ptr= OS_mapfile(fname,&filesize,0)) == 0 )
+                continue;
+            ramchain->fileptr = ptr;
+            ramchain->filesize = (long)filesize;
+            if ( (ramchain->hashmem= hashmem) != 0 )
+                iguana_memreset(hashmem);
         }
-        memset(ramchain,0,sizeof(*ramchain));
-        if ( (ptr= OS_mapfile(fname,&filesize,0)) == 0 )
+        if ( ramchain->fileptr == 0 )
             return(0);
-        ramchain->fileptr = ptr;
-        ramchain->filesize = (long)filesize;
-        if ( (ramchain->hashmem= hashmem) != 0 )
-            iguana_memreset(hashmem);
     }
     if ( ramchain->fileptr != 0 && ramchain->filesize > 0 )
     {

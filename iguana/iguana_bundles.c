@@ -336,22 +336,26 @@ struct iguana_bundle *iguana_bundlecreate(struct iguana_info *coin,int32_t *bund
 struct iguana_txid *iguana_bundletx(struct iguana_info *coin,struct iguana_bundle *bp,int32_t bundlei,struct iguana_txid *tx,int32_t txidind)
 {
     static bits256 zero;
-    int32_t hdrsi; int64_t Toffset; char fname[1024]; FILE *fp; struct iguana_ramchaindata rdata;
-    iguana_peerfname(coin,&hdrsi,"DB",fname,0,bp->hashes[0],zero,bp->n);
-    if ( (fp= fopen(fname,"rb")) != 0 )
+    int32_t hdrsi,iter; int64_t Toffset; char fname[1024]; FILE *fp; struct iguana_ramchaindata rdata;
+    for (iter=0; iter<2; iter++)
     {
-        fseek(fp,(long)&rdata.Toffset - (long)&rdata,SEEK_SET);
-        if ( fread(&Toffset,1,sizeof(Toffset),fp) == sizeof(Toffset) )
+        iguana_peerfname(coin,&hdrsi,iter==0?"DB/ro":"DB",fname,0,bp->hashes[0],zero,bp->n);
+        if ( (fp= fopen(fname,"rb")) != 0 )
         {
-            fseek(fp,Toffset + sizeof(struct iguana_txid) * txidind,SEEK_SET);
-            if ( fread(tx,1,sizeof(*tx),fp) == sizeof(*tx) )
+            fseek(fp,(long)&rdata.Toffset - (long)&rdata,SEEK_SET);
+            if ( fread(&Toffset,1,sizeof(Toffset),fp) == sizeof(Toffset) )
             {
-                fclose(fp);
-                return(tx);
-            } else printf("bundletx read error\n");
-        } else printf("bundletx Toffset read error\n");
-        fclose(fp);
-    } else printf("bundletx couldnt open.(%s)\n",fname);
+                fseek(fp,Toffset + sizeof(struct iguana_txid) * txidind,SEEK_SET);
+                if ( fread(tx,1,sizeof(*tx),fp) == sizeof(*tx) )
+                {
+                    fclose(fp);
+                    return(tx);
+                } else printf("bundletx read error\n");
+            } else printf("bundletx Toffset read error\n");
+            fclose(fp);
+        }
+    }
+    printf("bundletx couldnt open.(%s)\n",fname);
     return(0);
 }
 
