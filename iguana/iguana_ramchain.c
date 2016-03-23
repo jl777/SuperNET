@@ -1550,7 +1550,7 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
                 {
                     bp->balancefinish = (uint32_t)time(NULL);
                     //printf("found balances for %d\n",bp->hdrsi);
-                } else printf("error with extras\n");
+                } //else printf("error with extras\n");
             }
         }
         if ( B != 0 && bp != 0 )
