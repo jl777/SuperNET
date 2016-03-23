@@ -420,9 +420,17 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
         now = (uint32_t)time(NULL);
         if ( spentbp != 0 && unspentind > 0 && unspentind < spentbp->ramchain.H.data->numunspents )
         {
+            if ( spentbp->ramchain.Uextras == 0 )
+            {
+                spentbp->ramchain.Uextras = calloc(sizeof(*spentbp->ramchain.Uextras),spentbp->ramchain.H.data->numunspents + 16);
+            }
+            if ( spentbp->ramchain.A == 0 )
+            {
+                spentbp->ramchain.A = calloc(sizeof(*spentbp->ramchain.A),spentbp->ramchain.H.data->numpkinds + 16);
+            }
             if ( (Uextras= spentbp->ramchain.Uextras) == 0 || (A2= spentbp->ramchain.A) == 0 )
             {
-                printf("null ptrs %p %p\n",spentbp->ramchain.Uextras,spentbp->ramchain.A);
+                printf("null ptrs.[%d] %p %p\n",spentbp->hdrsi,spentbp->ramchain.Uextras,spentbp->ramchain.A);
                 errs++;
             }
             else
