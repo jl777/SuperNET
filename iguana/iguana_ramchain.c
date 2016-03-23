@@ -272,7 +272,7 @@ int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,
             return(-3);
         }
     }
-    else if ( strcmp("DB",dirname) == 0 )
+    else if ( strncmp("DB",dirname,strlen("DB")) == 0 )
         sprintf(fname,"%s/%s/%s_%d.%u",dirname,coin->symbol,bits256_str(str,hash2),numblocks,ipbits>1?ipbits:*hdrsip);
     else sprintf(fname,"%s/%s.%u",dirname,bits256_str(str,hash2),bp->bundleheight);
     OS_compatible_path(fname);
