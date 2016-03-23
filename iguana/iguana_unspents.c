@@ -46,7 +46,7 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,uint16_t spent_hdris,uint32_t
 
 void iguana_realtime_update(struct iguana_info *coin)
 {
-    
+    //bp->hdrsi >= coin->longestchain/coin->chain->bundlesize && bp->hdrsi >= coin->balanceswritten
 }
 
 struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_ramchain **ramchainp,int64_t *balancep,uint32_t *lastunspentindp,struct iguana_pkhash *p,uint8_t rmd160[20],int32_t firsti,int32_t endi)
@@ -455,7 +455,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
         now = (uint32_t)time(NULL);
         if ( spentbp != 0 && unspentind > 0 && unspentind < spentbp->ramchain.H.data->numunspents )
         {
-            if ( spentbp->dirty++ == 3 )
+            if ( (spentbp->dirty++ % 100000) == 3 )
             {
                 printf("prefetch.[%d]\n",spentbp->hdrsi);
                 iguana_ramchain_prefetch(coin,&spentbp->ramchain);

@@ -802,6 +802,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
 int32_t iguana_blockreq(struct iguana_info *coin,int32_t height,int32_t priority);
 int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp);
 void iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain *ramchain);
+void iguana_realtime_update(struct iguana_info *coin);
 
 extern int32_t HDRnet,netBLOCKS;
 

@@ -471,7 +471,7 @@ void mainloop(struct supernet_info *myinfo)
                                     printf("alloc A2.[%d]\n",bp->hdrsi);
                                     bp->ramchain.A = calloc(sizeof(*bp->ramchain.A),bp->ramchain.H.data->numpkinds + 16);
                                 }
-                                iguana_balancecalc(ptr->coin,bp,bp->hdrsi >= coin->longestchain/coin->chain->bundlesize && bp->hdrsi >= coin->balanceswritten);
+                                iguana_balancecalc(ptr->coin,bp,0);
                                 bp->queued = 0;
                                 if ( bp->hdrsi == coin->longestchain/coin->chain->bundlesize-1 )
                                 {
