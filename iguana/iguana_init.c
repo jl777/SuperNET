@@ -340,28 +340,64 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
             }
             else
             {
-                bits256 balancehash; struct iguana_utxo *Uptr; struct iguana_account *Aptr; struct sha256_vstate vstate; int32_t numpkinds,numunspents;
+                bits256 balancehash; struct iguana_utxo *Uptr; struct iguana_account *Aptr; struct sha256_vstate vstate; int32_t numpkinds,numunspents;  uint32_t crc,filecrc; FILE *fp; char crcfname[512],str[65],str2[65];
                 vupdate_sha256(balancehash.bytes,&vstate,0,0);
-                for (i=0; i<coin->balanceswritten; i++)
+                    filecrc = 0;
+                sprintf(crcfname,"DB/%s/balancecrc.%d",coin->symbol,coin->balanceswritten);
+                if ( (fp= fopen(crcfname,"rb")) != 0 )
+                {
+                    if ( fread(&filecrc,1,sizeof(filecrc),fp) != sizeof(filecrc) )
+                        filecrc = 0;
+                    else if ( fread(&balancehash,1,sizeof(balancehash),fp) != sizeof(balancehash) )
+                        filecrc = 0;
+                    else if ( memcmp(&balancehash,&coin->balancehash,sizeof(balancehash)) != 0 )
+                        filecrc = 0;
+                    fclose(fp);
+                }
+                if ( filecrc != 0 )
+                    printf("have filecrc.%08x for %s\n",filecrc,bits256_str(str,balancehash));
+                if ( filecrc == 0 )
+                    vupdate_sha256(balancehash.bytes,&vstate,0,0);
+                for (i=crc=0; i<coin->balanceswritten; i++)
                 {
                     numpkinds = numunspents = 0;
                     Aptr = 0, Uptr = 0;
                     if ( (bp= coin->bundles[i]) != 0 && bp->ramchain.H.data != 0 && (numpkinds= bp->ramchain.H.data->numpkinds) > 0 && (numunspents= bp->ramchain.H.data->numunspents) > 0 && (Aptr= bp->ramchain.A) != 0 && (Uptr= bp->ramchain.Uextras) != 0 )
                     {
-                        vupdate_sha256(balancehash.bytes,&vstate,(void *)Aptr,sizeof(*Aptr)*numpkinds);
-                        vupdate_sha256(balancehash.bytes,&vstate,(void *)Uptr,sizeof(*Uptr)*numunspents);
+                        if ( filecrc == 0 )
+                        {
+                            vupdate_sha256(balancehash.bytes,&vstate,(void *)Aptr,sizeof(*Aptr)*numpkinds);
+                            vupdate_sha256(balancehash.bytes,&vstate,(void *)Uptr,sizeof(*Uptr)*numunspents);
+                        }
+                        crc = calc_crc32(crc,(void *)Aptr,(int32_t)(sizeof(*Aptr) * numpkinds));
+                        crc = calc_crc32(crc,(void *)Uptr,(int32_t)(sizeof(*Uptr) * numunspents));
                     } else printf("missing hdrs.[%d] data.%p num.(%u %d) %p %p\n",i,bp->ramchain.H.data,numpkinds,numunspents,Aptr,Uptr);
                 }
-                char str[65],str2[65]; printf("written.%d balancehash.(%s) vs (%s)\n",coin->balanceswritten,bits256_str(str,balancehash),bits256_str(str2,coin->balancehash));
-                if ( memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) != 0 )
+                printf("written.%d crc.%08x/%08x balancehash.(%s) vs (%s)\n",coin->balanceswritten,crc,filecrc,bits256_str(str,balancehash),bits256_str(str2,coin->balancehash));
+                if ( (filecrc != 0 && filecrc != crc) || memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) != 0 )
                 {
-                    printf("balancehash mismatch\n");
+                    printf("balancehash or crc mismatch\n");
                     iguana_truncatebalances(coin);
-                } else printf("MATCHED balancehash numhdrsi.%d\n",coin->balanceswritten);
+                }
+                else
+                {
+                    printf("MATCHED balancehash numhdrsi.%d crc.%08x\n",coin->balanceswritten,crc);
+                    if ( (fp= fopen(crcfname,"wb")) != 0 )
+                    {
+                        if ( fwrite(&crc,1,sizeof(crc),fp) != sizeof(crc) || fwrite(&balancehash,1,sizeof(balancehash),fp) != sizeof(balancehash) )
+                            printf("error writing.(%s)\n",crcfname);
+                        fclose(fp);
+                    }
+                }
             }
         }
         char buf[2048];
         iguana_bundlestats(coin,buf);
+        if ( coin->balanceswritten > 0 )
+        {
+            for (i=0; i<coin->balanceswritten; i++)
+                iguana_validateQ(coin,coin->bundles[i]);
+        }
         if ( coin->balanceswritten < coin->bundlescount )
         {
             for (i=coin->balanceswritten; i<coin->bundlescount; i++)
