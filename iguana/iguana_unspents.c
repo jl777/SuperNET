@@ -547,7 +547,7 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp)
     if ( bp->validated <= 1 )
     {
         bp->validated = (uint32_t)time(NULL);
-        printf("VALIDATE.%d %u\n",bp->bundleheight,bp->validated);
+        //printf("VALIDATE.%d %u\n",bp->bundleheight,bp->validated);
     }
     return(0);
 }

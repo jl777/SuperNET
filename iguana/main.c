@@ -336,6 +336,8 @@ mksquashfs DB/BTC BTC.lzo -comp lzo
 mksquashfs DB/BTC BTC.lzo1m -comp lzo -b 1048576
 mksquashfs DB/BTC BTC.squash
 mksquashfs DB/BTC BTC.squash1M -b 1048576
+ 
+ sudo mount BTC.xz DB/ro/BTC -t squashfs -o loop
 */
 
 int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t purgedist)
