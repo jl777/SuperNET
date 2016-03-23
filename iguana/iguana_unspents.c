@@ -347,7 +347,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
     int32_t spendind,n,errs=0,emit=0; uint32_t unspentind,pkind,txidind; struct iguana_account *A2;
     struct iguana_unspent *u,*spentU; struct iguana_spend *S,*s; struct iguana_ramchain *ramchain;
     struct iguana_bundle *spentbp; struct iguana_txid *T,*nextT; int32_t hdrsi;
-    uint32_t numtxid,now,h,refheight; struct iguana_utxo *utxo;
+    uint32_t numtxid,now,h,refheight; struct iguana_utxo *utxo,*Uextras;
     ramchain = &bp->ramchain;
     //printf("BALANCEGEN.%d\n",bp->bundleheight);
     if ( ramchain->H.data == 0 || (n= ramchain->H.data->numspends) < 1 )
@@ -420,15 +420,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
         now = (uint32_t)time(NULL);
         if ( spentbp != 0 && unspentind > 0 && unspentind < spentbp->ramchain.H.data->numunspents )
         {
-            if ( spentbp->ramchain.Uextras == 0 )
-            {
-                spentbp->ramchain.Uextras = calloc(sizeof(*spentbp->ramchain.Uextras),spentbp->ramchain.H.data->numunspents + 16);
-            }
-            if ( spentbp->ramchain.A == 0 )
-            {
-                spentbp->ramchain.A = calloc(sizeof(*spentbp->ramchain.A),spentbp->ramchain.H.data->numpkinds + 16);
-            }
-            if ( spentbp->ramchain.Uextras == 0 || (A2= spentbp->ramchain.A) == 0 )
+            if ( (Uextras= spentbp->ramchain.Uextras) == 0 || (A2= spentbp->ramchain.A) == 0 )
             {
                 printf("null ptrs %p %p\n",spentbp->ramchain.Uextras,spentbp->ramchain.A);
                 errs++;
@@ -439,7 +431,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp)
                 u = &spentU[unspentind];
                 if ( (pkind= u->pkind) != 0 && pkind < spentbp->ramchain.H.data->numpkinds )
                 {
-                    utxo = &spentbp->ramchain.Uextras[unspentind];
+                    utxo = &Uextras[unspentind];
                     if ( utxo->spentflag == 0 )
                     {
                         utxo->prevspendind = A2[pkind].lastind;

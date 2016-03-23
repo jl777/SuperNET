@@ -342,6 +342,19 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
     {
         for (hdrsi=0; hdrsi<numhdrsi; hdrsi++)
         {
+            if ( (bp= coin->bundles[hdrsi]) == 0 || bp->ramchain.H.data == 0 )
+            {
+                printf("balance flush null bp[%d]??\n",hdrsi);
+                exit(-1);
+            }
+            if ( bp->ramchain.Uextras == 0 )
+            {
+                bp->ramchain.Uextras = calloc(sizeof(*bp->ramchain.Uextras),bp->ramchain.H.data->numunspents + 16);
+            }
+            if ( bp->ramchain.A == 0 )
+            {
+                bp->ramchain.A = calloc(sizeof(*bp->ramchain.A),bp->ramchain.H.data->numpkinds + 16);
+            }
             Aptr = 0;
             Uptr = 0;
             numunspents = 0;
@@ -368,7 +381,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
                                 {
                                     bp->dirty = 0;
                                     err = 0;
-                                    printf("saved (%s) and (%s)\n",fname,fname2);
+                                    printf("[%d] of %d saved (%s) and (%s)\n",hdrsi,numhdrsi,fname,fname2);
                                 }
                             }
                         }
