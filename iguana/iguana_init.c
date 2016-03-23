@@ -289,7 +289,7 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                     if ( strcmp(checkstr,line+k+1 + 64 + 1) == 0 )
                     {
                         init_hexbytes_noT(checkstr,hash2.bytes,sizeof(hash2));
-                        char str[65],str2[65]; printf(">>>> bundle.%d got (%s)/(%s) allhash.(%s)\n",height,bits256_str(str,hash2),checkstr,bits256_str(str2,allhash));
+                        //char str[65],str2[65]; printf(">>>> bundle.%d got (%s)/(%s) allhash.(%s)\n",height,bits256_str(str,hash2),checkstr,bits256_str(str2,allhash));
                         if ( (bp= iguana_bundlecreate(coin,&bundlei,height,hash2,allhash,0)) != 0 )
                         {
                             bp->bundleheight = height;
@@ -355,7 +355,7 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                     fclose(fp);
                 }
                 if ( filecrc != 0 )
-                    printf("have filecrc.%08x for %s\n",filecrc,bits256_str(str,balancehash));
+                    printf("have filecrc.%08x for %s milli.%.0f\n",filecrc,bits256_str(str,balancehash),OS_milliseconds());
                 if ( filecrc == 0 )
                     vupdate_sha256(balancehash.bytes,&vstate,0,0);
                 for (i=crc=0; i<coin->balanceswritten; i++)
@@ -373,7 +373,7 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                         crc = calc_crc32(crc,(void *)Uptr,(int32_t)(sizeof(*Uptr) * numunspents));
                     } else printf("missing hdrs.[%d] data.%p num.(%u %d) %p %p\n",i,bp->ramchain.H.data,numpkinds,numunspents,Aptr,Uptr);
                 }
-                printf("written.%d crc.%08x/%08x balancehash.(%s) vs (%s)\n",coin->balanceswritten,crc,filecrc,bits256_str(str,balancehash),bits256_str(str2,coin->balancehash));
+                printf("millis %.0f written.%d crc.%08x/%08x balancehash.(%s) vs (%s)\n",OS_milliseconds(),coin->balanceswritten,crc,filecrc,bits256_str(str,balancehash),bits256_str(str2,coin->balancehash));
                 if ( (filecrc != 0 && filecrc != crc) || memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) != 0 )
                 {
                     printf("balancehash or crc mismatch\n");
