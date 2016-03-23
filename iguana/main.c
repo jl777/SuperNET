@@ -443,8 +443,8 @@ void mainloop(struct supernet_info *myinfo)
                             {
                                 if ( (prevbp= coin->bundles[j]) == 0 || prevbp->utxofinish <= 1 )//prevbp->balancefinish <= 1 )
                                     break;
-                                prevbp->ramchain.A = 0;
-                                prevbp->ramchain.Uextras = 0;
+                                //prevbp->ramchain.A = 0;
+                                //prevbp->ramchain.Uextras = 0;
                             }
                             if ( bp->utxofinish > 1 && bp->balancefinish <= 1 && bp->hdrsi == j )
                             {
