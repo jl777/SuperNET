@@ -455,10 +455,11 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
         now = (uint32_t)time(NULL);
         if ( spentbp != 0 && unspentind > 0 && unspentind < spentbp->ramchain.H.data->numunspents )
         {
-            if ( (bp == spentbp && spentbp->dirty == 0) || (spentbp != bp && (spentbp->dirty % 10000) == 3) )
+            if ( now > bp->lastprefetch+30 )
             {
                 //printf("current.%d prefetch.[%d]\n",spentbp == bp,spentbp->hdrsi);
                 iguana_ramchain_prefetch(coin,&spentbp->ramchain);
+                bp->lastprefetch = now;
             }
             spentbp->dirty++;
             //if ( incremental == 0 )

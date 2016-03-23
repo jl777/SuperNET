@@ -435,7 +435,7 @@ void iguana_helper(void *arg)
 void iguana_coinloop(void *arg)
 {
     struct iguana_info *coin,**coins = arg;
-    struct iguana_bundle *bp; int32_t flag,i,n,bundlei; bits256 zero; char str[1024];
+    struct iguana_bundle *bp; int32_t flag,i,n,bundlei; bits256 zero; char str[65];
     uint32_t now;
     n = (int32_t)(long)coins[0];
     coins++;
@@ -502,9 +502,6 @@ void iguana_coinloop(void *arg)
                         //fprintf(stderr,"metrics\n");
                         coin->peers.lastmetrics = iguana_updatemetrics(coin); // ranks peers
                     }
-                    //fprintf(stderr,"call stats\n");
-                    iguana_bundlestats(coin,str);
-                    //fprintf(stderr,"call process\n");
                     flag += iguana_processrecv(coin);
                     if ( coin->longestchain+10000 > coin->blocks.maxbits )
                         iguana_recvalloc(coin,coin->longestchain + 100000);

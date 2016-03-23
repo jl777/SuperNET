@@ -438,7 +438,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
 
 void mainloop(struct supernet_info *myinfo)
 {
-    int32_t i,j,flag; struct iguana_info *coin; struct iguana_helper *ptr; struct iguana_bundle *bp,*prevbp = 0;
+    int32_t i,j,flag; char str[2048]; struct iguana_info *coin; struct iguana_helper *ptr; struct iguana_bundle *bp,*prevbp = 0;
     sleep(3);
     printf("mainloop\n");
     while ( 1 )
@@ -449,6 +449,7 @@ void mainloop(struct supernet_info *myinfo)
             for (i=0; i<IGUANA_MAXCOINS; i++)
                 if ( (coin= Coins[i]) != 0 && coin->active != 0 && (bp= coin->current) != 0 && coin->started != 0 )
                 {
+                    iguana_bundlestats(coin,str);
                     iguana_realtime_update(coin);
                     if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
                     {
