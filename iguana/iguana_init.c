@@ -348,13 +348,13 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                     {
                         vupdate_sha256(balancehash.bytes,&vstate,(void *)Aptr,sizeof(*Aptr)*numpkinds);
                         vupdate_sha256(balancehash.bytes,&vstate,(void *)Uptr,sizeof(*Uptr)*numunspents);
-                    }
+                    } else printf("missing hdrs.[%d]\n",i);
                 }
-                char str[65],str2[65]; printf("balancehash.(%s) vs (%s)\n",bits256_str(str,balancehash),bits256_str(str2,coin->balancehash));
+                char str[65],str2[65]; printf("written.%d balancehash.(%s) vs (%s)\n",coin->balanceswritten,bits256_str(str,balancehash),bits256_str(str2,coin->balancehash));
                 if ( memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) != 0 )
                 {
                     printf("balancehash mismatch\n");
-                    iguana_truncatebalances(coin);
+                    //iguana_truncatebalances(coin);
                 } else printf("MATCHED balancehash numhdrsi.%d\n",coin->balanceswritten);
             }
         }

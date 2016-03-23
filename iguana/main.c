@@ -323,9 +323,18 @@ void sigalarm_func() { printf("\nSIGALRM\n"); signal(SIGALRM,sigalarm_func); }
 void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func); }
 #endif
 
-// mksquashfs DB/BTC BTC.squash -b 1048576
-// mksquashfs DB/BTC BTC.lzo -comp lzo -b 1048576 -> takes a really long time 2:1 compress
-// mksquashfs DB/BTC BTC.xz -b 1048576 -comp xz -Xdict-size 512K -> takes a long time 2:1 compress
+// mksquashfs DB/BTC BTC.squash -b 1048576 -> 19GB?
+// mksquashfs DB/BTC BTC.lzo -comp lzo -b 1048576 -> takes a really long time -> 20GB
+// mksquashfs DB/BTC BTC.xz -b 1048576 -comp xz -Xdict-size 512K -> takes a long time -> 16GB
+// mksquashfs DB/BTC BTC.xz1m -b 1048576 -comp xz -Xdict-size 1024K -> takes a long time ->
+/*
+ mksquashfs DB/BTC BTC.xz -comp xz
+mksquashfs DB/BTC BTC.xz1m -b 1048576 -comp xz -Xdict-size 1024K
+mksquashfs DB/BTC BTC.lzo -comp lzo
+mksquashfs DB/BTC BTC.lzo1m -comp lzo -b 1048576
+mksquashfs DB/BTC BTC.squash
+mksquashfs DB/BTC BTC.squash1M -b 1048576
+*/
 
 int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t purgedist)
 {
