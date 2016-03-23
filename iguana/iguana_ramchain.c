@@ -1362,7 +1362,7 @@ int32_t iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *
             err = -1;
             for (iter=0; iter<2; iter++)
             {
-                sprintf(fname,"DB/%s%s/accounts/debits.%d",iter==0?"ro":"",coin->symbol,ramchain->H.data->height);
+                sprintf(fname,"DB/%s%s/accounts/debits.%d",iter==0?"ro/":"",coin->symbol,ramchain->H.data->height);
                 if ( (ramchain->debitsfileptr= OS_mapfile(fname,&ramchain->debitsfilesize,0)) != 0 && ramchain->debitsfilesize == sizeof(int32_t) + sizeof(bits256) + sizeof(*ramchain->A) * ramchain->H.data->numpkinds )
                 {
                     ramchain->from_roA = (iter == 0);
@@ -1376,7 +1376,7 @@ int32_t iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *
                     if ( numhdrsi == coin->balanceswritten || memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) == 0 )
                     {
                         ramchain->A = (void *)((long)ramchain->debitsfileptr + sizeof(numhdrsi) + sizeof(bits256));
-                        sprintf(fname,"DB/%s%s/accounts/lastspends.%d",iter==0?"ro":"",coin->symbol,ramchain->H.data->height);
+                        sprintf(fname,"DB/%s%s/accounts/lastspends.%d",iter==0?"ro/":"",coin->symbol,ramchain->H.data->height);
                         if ( (ramchain->lastspendsfileptr= OS_mapfile(fname,&ramchain->lastspendsfilesize,0)) != 0 && ramchain->lastspendsfilesize == sizeof(int32_t) + sizeof(bits256) + sizeof(*ramchain->Uextras) * ramchain->H.data->numunspents )
                         {
                             numhdrsi = *(int32_t *)ramchain->lastspendsfileptr;
