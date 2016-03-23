@@ -333,7 +333,7 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
             for (i=0; i<coin->balanceswritten; i++)
                 if ( (bp= coin->bundles[i]) == 0 || bp->emitfinish <= 1 || bp->utxofinish <= 1 )
                     break;
-            if ( i != coin->balanceswritten )
+            if ( i != coin->balanceswritten-1 )
             {
                 printf("TRUNCATE balances written.%d -> %d\n",coin->balanceswritten,i);
                 iguana_truncatebalances(coin);
