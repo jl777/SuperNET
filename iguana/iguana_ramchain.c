@@ -814,7 +814,7 @@ void iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain *r
         for (i=0; i<ramchain->filesize; i++)
             if ( ptr[i] != 0 )
                 nonz++;
-        printf("nonz.%d of %d\n",nonz,(int32_t)ramchain->filesize);
+        //printf("nonz.%d of %d\n",nonz,(int32_t)ramchain->filesize);
         return;
         U = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Uoffset);
         T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
