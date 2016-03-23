@@ -1081,7 +1081,7 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
         }
         else if ( coin->isRT != 0 && addr->rank > coin->MAXPEERS && (rand() % 100) == 0 )
         {
-            printf("isRT and low rank.%d ",addr->rank);
+            //printf("isRT and low rank.%d ",addr->rank);
             addr->dead = 1;
         }
     }
