@@ -1085,7 +1085,7 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
             addr->dead = 1;
         }
     }
-    printf(">>>>>>>>>>>>>> finish %s dedicatedloop.%s\n",coin->symbol,addr->ipaddr);
+    //printf(">>>>>>>>>>>>>> finish %s dedicatedloop.%s\n",coin->symbol,addr->ipaddr);
     if ( addr->vinsfp != 0 )
         fclose(addr->vinsfp);
     if ( addr->voutsfp != 0 )

@@ -917,7 +917,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     int32_t i,n,m,j,numv,count,pending,dispflag,numutxo,numbalances,numrecv,done,numhashes,numcached,numsaved,numemit;
     int64_t spaceused=0,estsize = 0; struct iguana_bundle *bp,*lastpending = 0,*firstgap = 0; struct iguana_block *block,*prev; uint32_t now;
     now = (uint32_t)time(NULL);
-    dispflag = (rand() % 1000) == 0;
+    dispflag = 1;//(rand() % 1000) == 0;
     numrecv = numhashes = numcached = numsaved = numemit = done = numutxo = numbalances = 0;
     count = coin->bundlescount;
     //sortbuf = calloc(count,sizeof(*sortbuf)*2);

@@ -341,104 +341,10 @@ mksquashfs DB/BTC BTC.squash1M -b 1048576
  sudo mount BTC.xz DB/ro/BTC -t squashfs -o loop
 */
 
-int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t purgedist)
-{
-    int32_t hdrsi,numpkinds,iter,numhdrsi,numunspents,err; struct iguana_bundle *bp;
-    char fname[1024],fname2[1024],destfname[1024]; bits256 balancehash; FILE *fp,*fp2;
-    struct iguana_utxo *Uptr; struct iguana_account *Aptr; struct sha256_vstate vstate;
-    vupdate_sha256(balancehash.bytes,&vstate,0,0);
-    for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
-        if ( (bp= coin->bundles[hdrsi]) == 0 || bp->balancefinish <= 1 || bp->ramchain.H.data == 0 || bp->ramchain.A == 0 || bp->ramchain.Uextras == 0 )
-            break;
-    if ( hdrsi <= coin->balanceswritten || hdrsi < refhdrsi )
-        return(0);
-    numhdrsi = hdrsi;
-    vupdate_sha256(balancehash.bytes,&vstate,0,0);
-    for (iter=0; iter<3; iter++)
-    {
-        for (hdrsi=0; hdrsi<numhdrsi; hdrsi++)
-        {
-            Aptr = 0;
-            Uptr = 0;
-            numunspents = 0;
-            numpkinds = 0;
-            if ( (bp= coin->bundles[hdrsi]) != 0 && bp->ramchain.H.data != 0 && (numpkinds= bp->ramchain.H.data->numpkinds) > 0 && (numunspents= bp->ramchain.H.data->numunspents) > 0 && (Aptr= bp->ramchain.A) != 0 && (Uptr= bp->ramchain.Uextras) != 0 )
-            {
-                sprintf(fname,"accounts/%s/debits.%d",coin->symbol,bp->bundleheight);
-                sprintf(fname2,"accounts/%s/lastspends.%d",coin->symbol,bp->bundleheight);
-                if ( iter == 0 )
-                {
-                    vupdate_sha256(balancehash.bytes,&vstate,(void *)Aptr,sizeof(*Aptr)*numpkinds);
-                    vupdate_sha256(balancehash.bytes,&vstate,(void *)Uptr,sizeof(*Uptr)*numunspents);
-                }
-                else if ( iter == 1 )
-                {
-                    if ( (fp= fopen(fname,"wb")) != 0 && (fp2= fopen(fname2,"wb")) != 0 )
-                    {
-                        err = -1;
-                        if ( fwrite(&numhdrsi,1,sizeof(numhdrsi),fp) == sizeof(numhdrsi) && fwrite(&numhdrsi,1,sizeof(numhdrsi),fp2) == sizeof(numhdrsi) && fwrite(balancehash.bytes,1,sizeof(balancehash),fp) == sizeof(balancehash) && fwrite(balancehash.bytes,1,sizeof(balancehash),fp2) == sizeof(balancehash) )
-                        {
-                            if ( fwrite(Aptr,sizeof(*Aptr),numpkinds,fp) == numpkinds )
-                            {
-                                if ( fwrite(Uptr,sizeof(*Uptr),numunspents,fp2) == numunspents )
-                                {
-                                    //bp->dirty = 0;
-                                    err = 0;
-                                    printf("[%d] of %d saved (%s) and (%s)\n",hdrsi,numhdrsi,fname,fname2);
-                                }
-                            }
-                        }
-                        if ( err != 0 )
-                        {
-                            printf("balanceflush.%s error iter.%d hdrsi.%d\n",coin->symbol,iter,hdrsi);
-                            fclose(fp);
-                            fclose(fp2);
-                            return(-1);
-                        }
-                        fclose(fp), fclose(fp2);
-                    }
-                    else
-                    {
-                        printf("error opening %s or %s %p\n",fname,fname2,fp);
-                        if ( fp != 0 )
-                            fclose(fp);
-                    }
-                }
-                else if ( iter == 2 )
-                {
-                    sprintf(destfname,"DB/%s/accounts/debits.%d",coin->symbol,bp->bundleheight);
-                    if ( OS_copyfile(fname,destfname,1) < 0 )
-                    {
-                        printf("balances error copying (%s) -> (%s)\n",fname,destfname);
-                        return(-1);
-                    }
-                    sprintf(destfname,"DB/%s/accounts/lastspends.%d",coin->symbol,bp->bundleheight);
-                    if ( OS_copyfile(fname2,destfname,1) < 0 )
-                    {
-                        printf("balances error copying (%s) -> (%s)\n",fname2,destfname);
-                        return(-1);
-                    }
-                    printf("%s %s\n",fname,destfname);
-                    /*if ( hdrsi > numhdrsi-purgedist && numhdrsi >= purgedist )
-                    {
-                        sprintf(destfname,"DB/%s/accounts/debits_%d.%d",coin->symbol,numhdrsi-purgedist,bp->bundleheight);
-                        OS_removefile(destfname,0);
-                        sprintf(destfname,"DB/%s/accounts/lastspends_%d.%d",coin->symbol,numhdrsi-purgedist,bp->bundleheight);
-                        OS_removefile(destfname,0);
-                    }*/
-                }
-            } else printf("error loading [%d] Aptr.%p Uptr.%p numpkinds.%u numunspents.%u\n",hdrsi,Aptr,Uptr,numpkinds,numunspents);
-        }
-    }
-    coin->balancehash = balancehash;
-    coin->balanceswritten = numhdrsi;
-    char str[65]; printf("BALANCES WRITTEN for %d bundles %s\n",coin->balanceswritten,bits256_str(str,coin->balancehash));
-    return(coin->balanceswritten);
-}
 
 void mainloop(struct supernet_info *myinfo)
 {
-    int32_t i,j,flag; char str[2048]; struct iguana_info *coin; struct iguana_helper *ptr; struct iguana_bundle *bp,*prevbp = 0;
+    int32_t i,flag; struct iguana_info *coin; struct iguana_helper *ptr; struct iguana_bundle *bp;
     sleep(3);
     printf("mainloop\n");
     while ( 1 )
@@ -449,45 +355,10 @@ void mainloop(struct supernet_info *myinfo)
             for (i=0; i<IGUANA_MAXCOINS; i++)
                 if ( (coin= Coins[i]) != 0 && coin->active != 0 && (bp= coin->current) != 0 && coin->started != 0 )
                 {
-                    iguana_bundlestats(coin,str);
                     iguana_realtime_update(coin);
                     if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
                     {
-                        if ( (bp= ptr->bp) != 0 && ptr->coin != 0 && (bp->hdrsi == 0 || (prevbp= coin->bundles[bp->hdrsi-1]) != 0) )
-                        {
-                            for (j=0; j<bp->hdrsi; j++)
-                            {
-                                if ( (prevbp= coin->bundles[j]) == 0 || prevbp->utxofinish <= 1 || prevbp->balancefinish == 0 )
-                                    break;
-                            }
-                            if ( bp->utxofinish > 1 && bp->balancefinish <= 1 && bp->hdrsi == j )
-                            {
-                                if ( bp->ramchain.Uextras == 0 )
-                                {
-                                    printf("alloc Uextras.[%d]\n",bp->hdrsi);
-                                    bp->ramchain.Uextras = calloc(sizeof(*bp->ramchain.Uextras),bp->ramchain.H.data->numunspents + 16);
-                                }
-                                if ( bp->ramchain.A == 0 )
-                                {
-                                    printf("alloc A2.[%d]\n",bp->hdrsi);
-                                    bp->ramchain.A = calloc(sizeof(*bp->ramchain.A),bp->ramchain.H.data->numpkinds + 16);
-                                }
-                                iguana_balancecalc(ptr->coin,bp,0);
-                                bp->queued = 0;
-                                if ( bp->hdrsi == coin->longestchain/coin->chain->bundlesize-1 )
-                                {
-                                    flag++;
-                                    iguana_balanceflush(ptr->coin,bp->hdrsi,3);
-                                    printf("flushed bp->hdrsi %d vs %d coin->longestchain/coin->chain->bundlesize\n",bp->hdrsi,coin->longestchain/coin->chain->bundlesize);
-                                }
-                            }
-                            else
-                            {
-                                //printf("third case.%d utxo.%u balance.%u prev.%u\n",bp->hdrsi,bp->utxofinish,bp->balancefinish,prevbp!=0?prevbp->utxofinish:-1);
-                                coin->pendbalances--;
-                                iguana_balancesQ(coin,bp);
-                            }
-                        }
+                        iguana_balancecalc(ptr->coin,ptr->bp,0);
                         myfree(ptr,ptr->allocsize);
                     }
                 }

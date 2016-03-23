@@ -352,26 +352,6 @@ int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *m
     return(0);
 }
 
-void iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int32_t incremental)
-{
-    uint32_t starttime;
-    if ( bp->balancefinish > 1 )
-    {
-        printf("make sure DB files have this bp.%d\n",bp->hdrsi);
-        iguana_validateQ(coin,bp);
-        return;
-    }
-    starttime = (uint32_t)time(NULL);
-    if ( iguana_balancegen(coin,bp,incremental) < 0 )
-    {
-        printf("GENERATE BALANCES ERROR ht.%d\n",bp->bundleheight);
-        exit(-1);
-    }
-    bp->balancefinish = (uint32_t)time(NULL);
-    printf("GENERATED BALANCES for ht.%d duration %d seconds\n",bp->bundleheight,bp->balancefinish - (uint32_t)starttime);
-    iguana_validateQ(coin,bp);
-}
-
 void iguana_helper(void *arg)
 {
     FILE *fp = 0; cJSON *argjson=0; int32_t type,helperid=rand(),flag,idle=0;
@@ -435,7 +415,7 @@ void iguana_helper(void *arg)
 void iguana_coinloop(void *arg)
 {
     struct iguana_info *coin,**coins = arg;
-    struct iguana_bundle *bp; int32_t flag,i,n,bundlei; bits256 zero; char str[65];
+    struct iguana_bundle *bp; int32_t flag,i,n,bundlei; bits256 zero; char str[2065];
     uint32_t now;
     n = (int32_t)(long)coins[0];
     coins++;
@@ -502,6 +482,7 @@ void iguana_coinloop(void *arg)
                         //fprintf(stderr,"metrics\n");
                         coin->peers.lastmetrics = iguana_updatemetrics(coin); // ranks peers
                     }
+                    iguana_bundlestats(coin,str);
                     flag += iguana_processrecv(coin);
                     if ( coin->longestchain+10000 > coin->blocks.maxbits )
                         iguana_recvalloc(coin,coin->longestchain + 100000);
