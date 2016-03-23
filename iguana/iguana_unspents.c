@@ -224,26 +224,6 @@ int32_t iguana_pkhasharray(struct iguana_info *coin,cJSON *array,int32_t minconf
     return(n);
 }
 
-void iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain *ramchain)
-{
-    struct iguana_pkhash *P,p; struct iguana_unspent *U,u; struct iguana_txid *T,txid; uint32_t i,numpkinds,numtxids,numunspents;
-    if ( ramchain->H.data != 0 )
-    {
-        U = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Uoffset);
-        T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
-        P = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Poffset);
-        numpkinds = ramchain->H.data->numpkinds;
-        numunspents = ramchain->H.data->numunspents;
-        numtxids = ramchain->H.data->numtxids;
-        for (i=1; i<numtxids; i++)
-            memcpy(&txid,&T[i],sizeof(txid));
-        for (i=1; i<numunspents; i++)
-            memcpy(&u,&U[i],sizeof(u));
-        for (i=1; i<numpkinds; i++)
-            memcpy(&p,&P[i],sizeof(p));
-    }
-}
-
 void iguana_unspents(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,uint8_t *rmdarray,int32_t numrmds)
 {
     int64_t total,sum=0; struct iguana_pkhash *P; uint8_t *addrtypes,*pubkeys; int32_t i,flag = 0; char coinaddr[64];
@@ -470,7 +450,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
         now = (uint32_t)time(NULL);
         if ( spentbp != 0 && unspentind > 0 && unspentind < spentbp->ramchain.H.data->numunspents )
         {
-            if ( spentbp->dirty++ == 100 )
+            if ( spentbp->dirty++ == 3 )
             {
                 printf("prefetch.[%d]\n",spentbp->hdrsi);
                 iguana_ramchain_prefetch(coin,&spentbp->ramchain);
@@ -479,12 +459,12 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
             {
                 if ( spentbp->ramchain.Uextras == 0 )
                 {
-                    //printf("alloc Uextras.[%d]\n",spentbp->hdrsi);
+                    printf("unspent alloc Uextras.[%d]\n",spentbp->hdrsi);
                     spentbp->ramchain.Uextras = calloc(sizeof(*spentbp->ramchain.Uextras),spentbp->ramchain.H.data->numunspents + 16);
                 }
                 if ( spentbp->ramchain.A == 0 )
                 {
-                    //printf("alloc A2.[%d]\n",spentbp->hdrsi);
+                    printf("unspent alloc A2.[%d]\n",spentbp->hdrsi);
                     spentbp->ramchain.A = calloc(sizeof(*spentbp->ramchain.A),spentbp->ramchain.H.data->numpkinds + 16);
                 }
             }

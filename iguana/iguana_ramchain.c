@@ -805,6 +805,46 @@ void *iguana_ramchain_offset(void *dest,uint8_t *lhash,FILE *fp,uint64_t fpos,vo
     return((void *)(long)((long)destptr + fpos));
 }
 
+void iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain *ramchain)
+{
+    struct iguana_pkhash *P,p; struct iguana_unspent *U,u; struct iguana_txid *T,txid; uint32_t i,numpkinds,numtxids,numunspents,tlen,plen,nonz=0; uint8_t *PKbits,*TXbits,*ptr;
+    if ( ramchain->H.data != 0 )
+    {
+        ptr = ramchain->fileptr;
+        for (i=0; i<ramchain->filesize; i++)
+            if ( ptr[i] != 0 )
+                nonz++;
+        printf("nonz.%d of %d\n",nonz,(int32_t)ramchain->filesize);
+        return;
+        U = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Uoffset);
+        T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
+        P = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Poffset);
+        TXbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->TXoffset);
+        PKbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->PKoffset);
+        numpkinds = ramchain->H.data->numpkinds;
+        numunspents = ramchain->H.data->numunspents;
+        numtxids = ramchain->H.data->numtxids;
+        tlen = ramchain->H.data->numtxsparse * ramchain->H.data->txsparsebits;
+        plen = ramchain->H.data->numpksparse * ramchain->H.data->pksparsebits;
+        if ( 0 )
+        {
+            for (i=1; i<numtxids; i++)
+                memcpy(&txid,&T[i],sizeof(txid));
+            for (i=1; i<numunspents; i++)
+                memcpy(&u,&U[i],sizeof(u));
+            for (i=1; i<numpkinds; i++)
+                memcpy(&p,&P[i],sizeof(p));
+        }
+        for (i=0; i<tlen; i++)
+            if ( TXbits[i] != 0 )
+                nonz++;
+        for (i=0; i<plen; i++)
+            if ( PKbits[i] != 0 )
+                nonz++;
+        printf("nonz.%d\n",nonz);
+    }
+}
+
 int64_t _iguana_rdata_action(FILE *fp,bits256 lhashes[IGUANA_NUMLHASHES],void *destptr,uint64_t fpos,uint32_t expanded,uint32_t numtxids,uint32_t numunspents,uint32_t numspends,uint32_t numpkinds,uint32_t numexternaltxids,uint32_t scriptspace,uint32_t txsparsebits,uint64_t numtxsparse,uint32_t pksparsebits,uint64_t numpksparse,uint64_t srcsize,RAMCHAIN_FUNC,int32_t numblocks)
 {
 #define RAMCHAIN_LARG(ind) ((lhashes == 0) ? 0 : lhashes[ind].bytes)
@@ -1449,7 +1489,7 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
         ramchain->H.ROflag = 1;
         ramchain->expanded = expanded;
         ramchain->numblocks = (bp == 0) ? 1 : bp->n;
-        printf("ptr.%p %p mapped P[%d] fpos.%d + %ld -> %ld vs %ld offset.%u:%u stack.%u:%u\n",ptr,ramchain->H.data,(int32_t)ramchain->H.data->Poffset,(int32_t)fpos,(long)ramchain->H.data->allocsize,(long)(fpos + ramchain->H.data->allocsize),ramchain->filesize,ramchain->H.scriptoffset,ramchain->H.data->scriptspace,ramchain->H.stacksize,ramchain->H.data->stackspace);
+        printf("ptr.%p exp.%d extra.%d %p mapped P[%d] fpos.%d + %ld -> %ld vs %ld offset.%u:%u stack.%u:%u\n",ptr,expanded,allocextras,ramchain->H.data,(int32_t)ramchain->H.data->Poffset,(int32_t)fpos,(long)ramchain->H.data->allocsize,(long)(fpos + ramchain->H.data->allocsize),ramchain->filesize,ramchain->H.scriptoffset,ramchain->H.data->scriptspace,ramchain->H.stacksize,ramchain->H.data->stackspace);
         if ( 0 && bp != 0 )
         {
             /*blocksRO = (struct iguana_blockRO *)ramchain->H.data;
@@ -1504,7 +1544,7 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
                 {
                     bp->balancefinish = (uint32_t)time(NULL);
                     printf("found balances for %d\n",bp->hdrsi);
-                }
+                } else printf("error with extras\n");
             }
         }
         if ( B != 0 && bp != 0 )
