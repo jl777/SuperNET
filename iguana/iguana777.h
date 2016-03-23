@@ -454,7 +454,7 @@ struct iguana_info
     struct iguana_peers peers;
     uint64_t instance_nonce,myservices,totalsize,totalrecv,totalpackets,sleeptime;
     int64_t mining,totalfees,TMPallocated,MAXRECVCACHE,MAXMEM,estsize,activebundles;
-    int32_t MAXPEERS,MAXPENDING,MAXBUNDLES,active,closestbundle,numemitted,lastsweep,startutc,newramchain,numcached,cachefreed,helperdepth,startPEND,endPEND,enableCACHE,RELAYNODE,VALIDATENODE,balanceswritten;
+    int32_t MAXPEERS,MAXPENDING,MAXBUNDLES,active,closestbundle,numemitted,lastsweep,startutc,newramchain,numcached,cachefreed,helperdepth,startPEND,endPEND,enableCACHE,RELAYNODE,VALIDATENODE,balanceswritten; bits256 balancehash;
     uint32_t longestchain,lastsync,parsetime,numiAddrs,firstblock,lastpossible,bundlescount,savedblocks;
     struct tai starttime; double startmillis;
     struct iguana_chain *chain;
@@ -474,7 +474,8 @@ struct iguana_info
     double backstopmillis; bits256 backstophash2; int64_t spaceused;
     int32_t initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,polltimeout,numreqtxids,allhashes; bits256 reqtxids[64];
     void *launched,*started;
-    uint64_t bloomsearches,bloomhits,bloomfalse,collisions; uint8_t blockspace[IGUANA_MAXPACKETSIZE + 8192],bundlebits[IGUANA_MAXBUNDLES/8+1]; struct OS_memspace blockMEM;
+    uint64_t bloomsearches,bloomhits,bloomfalse,collisions;
+    uint8_t blockspace[IGUANA_MAXPACKETSIZE + 8192]; struct OS_memspace blockMEM;
     struct iguana_blocks blocks; bits256 APIblockhash,APItxid; char *APIblockstr;
     struct iguana_waccount *wallet;
 };

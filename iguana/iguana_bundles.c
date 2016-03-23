@@ -761,7 +761,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
 
 int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    struct iguana_bundle *prevbp; int32_t i;
+    struct iguana_bundle *prevbp; int32_t i,retval;
     if ( (prevbp= coin->current) != 0 && prevbp->hdrsi < (coin->longestchain / coin->chain->bundlesize)-1 )
         return(0);
     for (i=0; i<bp->hdrsi; i++)
@@ -772,11 +772,16 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
         if ( bp->startutxo == 0 )
         {
             bp->startutxo = (uint32_t)time(NULL);
-            if ( iguana_utxogen(coin,bp) >= 0 )
+            if ( (retval= iguana_utxogen(coin,bp)) >= 0 )
             {
-                printf("GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL)-bp->startutxo);
-                bp->utxofinish = (uint32_t)time(NULL);
-                iguana_balancesQ(coin,bp);
+                if ( retval > 0 )
+                {
+                    printf("GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL)-bp->startutxo);
+                    bp->utxofinish = (uint32_t)time(NULL);
+                    bp->balancefinish = 0;
+                }
+                if ( bp->balancefinish <= 1 )
+                    iguana_balancesQ(coin,bp);
                 return(1);
             } else printf("UTXO gen.[%d] utxo error\n",bp->hdrsi);
         }

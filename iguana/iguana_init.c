@@ -184,6 +184,34 @@ int32_t iguana_savehdrs(struct iguana_info *coin)
     return(retval);
 }
 
+void iguana_truncatebalances(struct iguana_info *coin)
+{
+    int32_t i; struct iguana_bundle *bp; struct iguana_ramchain *ramchain;
+    for (i=0; i<coin->balanceswritten; i++)
+    {
+        if ( (bp= coin->bundles[i]) != 0 )
+        {
+            bp->balancefinish = 0;
+            ramchain = &bp->ramchain;
+            if ( ramchain->debitsfileptr != 0 )
+            {
+                munmap(ramchain->debitsfileptr,ramchain->debitsfilesize);
+                ramchain->debitsfileptr = 0;
+                ramchain->debitsfilesize = 0;
+                ramchain->A = 0;
+            }
+            if ( ramchain->lastspendsfileptr != 0 )
+            {
+                munmap(ramchain->lastspendsfileptr,ramchain->lastspendsfilesize);
+                ramchain->lastspendsfileptr = 0;
+                ramchain->lastspendsfilesize = 0;
+                ramchain->Uextras = 0;
+            }
+        }
+    }
+    coin->balanceswritten = 0;
+}
+
 void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
 {
     int32_t i,j,k,m,c,height,flag,bundlei; char checkstr[1024],line[1024];
@@ -275,14 +303,6 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                                 bp->emitfinish = (uint32_t)time(NULL) + 1;
                                 if ( coin->current != 0 && coin->current->hdrsi+1 == bp->hdrsi )
                                     coin->current = bp;
-                                //printf("LOADED bundle.%d %p current %p\n",bp->bundleheight,bp,coin->current);
-                                //if ( bp->hdrsi == 0 || coin->bundles[bp->hdrsi-1]->emitfinish != 0 )
-                                {
-                                    if ( 0 )
-                                        bp->validated = bp->balancefinish = bp->startutxo = bp->utxofinish = (uint32_t)time(NULL);
-                                    //printf("GENERATE UTXO, verify sigs, etc for ht.%d\n",bp->bundleheight);
-                                    iguana_bundleQ(coin,bp,1000);
-                                }
                             }
                             else
                             {
@@ -308,18 +328,46 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
     }
     if ( iter == 1 )
     {
-        for (i=0; i<coin->bundlescount; i++)
-            if ( coin->bundles[i] == 0 )
-                break;
-        printf("INIT bundles i.%d\n",i);
-        if ( 0 && i == coin->bundlescount && i > 1 )
+        if ( coin->balanceswritten > 0 )
         {
-            bp = coin->bundles[coin->bundlescount - 2];
-            bp->emitfinish = bp->startutxo = bp->utxofinish = bp->balancefinish = 0;
-            iguana_bundleQ(coin,bp,1000);
+            for (i=0; i<coin->balanceswritten; i++)
+                if ( (bp= coin->bundles[i]) == 0 || bp->emitfinish <= 1 || bp->utxofinish <= 1 )
+                    break;
+            if ( i != coin->balanceswritten )
+            {
+                printf("TRUNCATE balances written.%d -> %d\n",coin->balanceswritten,i);
+                iguana_truncatebalances(coin);
+            }
+            else
+            {
+                bits256 balancehash; struct iguana_utxo *Uptr; struct iguana_account *Aptr; struct sha256_vstate vstate; int32_t numpkinds,numunspents;
+                vupdate_sha256(balancehash.bytes,&vstate,0,0);
+                for (i=0; i<coin->balanceswritten; i++)
+                {
+                    if ( (bp= coin->bundles[i]) != 0 && bp->ramchain.H.data != 0 && (numpkinds= bp->ramchain.H.data->numpkinds) > 0 && (numunspents= bp->ramchain.H.data->numunspents) > 0 && (Aptr= bp->ramchain.A) != 0 && (Uptr= bp->ramchain.Uextras) != 0 )
+                    {
+                        vupdate_sha256(balancehash.bytes,&vstate,(void *)Aptr,sizeof(*Aptr)*numpkinds);
+                        vupdate_sha256(balancehash.bytes,&vstate,(void *)Uptr,sizeof(*Uptr)*numunspents);
+                    }
+                }
+                char str[65],str2[65]; printf("balancehash.(%s) vs (%s)\n",bits256_str(str,balancehash),bits256_str(str2,coin->balancehash));
+                if ( memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) != 0 )
+                {
+                    printf("balancehash mismatch\n");
+                    iguana_truncatebalances(coin);
+                } else printf("MATCHED balancehash numhdrsi.%d\n",coin->balanceswritten);
+            }
         }
         char buf[2048];
         iguana_bundlestats(coin,buf);
+        if ( coin->balanceswritten < coin->bundlescount )
+        {
+            for (i=coin->balanceswritten; i<coin->bundlescount; i++)
+            {
+                if ( (bp= coin->bundles[i]) != 0 && bp->queued == 0 )
+                    iguana_bundleQ(coin,bp,1000);
+            }
+        }
     }
 }
 

@@ -1305,7 +1305,7 @@ int32_t iguana_ramchain_free(struct iguana_ramchain *ramchain,int32_t deleteflag
 
 int32_t iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct OS_memspace *hashmem,int32_t extraflag)
 {
-    RAMCHAIN_DECLARE; int32_t err=0,numhdrsi; char fname[1024]; //long filesize;
+    RAMCHAIN_DECLARE; int32_t err=0,numhdrsi; char fname[1024]; bits256 balancehash;
     if ( ramchain->expanded != 0 )
     {
         _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
@@ -1324,22 +1324,27 @@ int32_t iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *
             if ( (ramchain->debitsfileptr= OS_mapfile(fname,&ramchain->debitsfilesize,0)) != 0 && ramchain->debitsfilesize == sizeof(int32_t) + sizeof(bits256) + sizeof(*ramchain->A) * ramchain->H.data->numpkinds )
             {
                 numhdrsi = *(int32_t *)ramchain->debitsfileptr;
+                memcpy(balancehash.bytes,(void *)((long)ramchain->debitsfileptr + sizeof(numhdrsi)),sizeof(balancehash));
                 if ( coin->balanceswritten == 0 && numhdrsi > 0 && numhdrsi <= coin->bundlescount )
+                {
                     coin->balanceswritten = numhdrsi;
-                else if ( numhdrsi == coin->balanceswritten )
+                    coin->balancehash = balancehash;
+                }
+                else if ( numhdrsi == coin->balanceswritten || memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) == 0 )
                 {
                     ramchain->A = (void *)((long)ramchain->debitsfileptr + sizeof(numhdrsi) + sizeof(bits256));
                     sprintf(fname,"DB/%s/accounts/lastspends.%d",coin->symbol,ramchain->H.data->height);
                     if ( (ramchain->lastspendsfileptr= OS_mapfile(fname,&ramchain->lastspendsfilesize,0)) != 0 && ramchain->lastspendsfilesize == sizeof(int32_t) + sizeof(bits256) + sizeof(*ramchain->Uextras) * ramchain->H.data->numunspents )
                     {
                         numhdrsi = *(int32_t *)ramchain->lastspendsfileptr;
-                        if ( numhdrsi == coin->balanceswritten )
+                        memcpy(balancehash.bytes,(void *)((long)ramchain->lastspendsfileptr + sizeof(numhdrsi)),sizeof(balancehash));
+                        if ( numhdrsi == coin->balanceswritten || memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) == 0 )
                         {
                             ramchain->Uextras = (void *)((long)ramchain->lastspendsfileptr + sizeof(numhdrsi) + sizeof(bits256));
                             err = 0;
-                        }
+                        } else printf("ramchain map error2 balanceswritten %d vs %d hashes %x %x\n",coin->balanceswritten,numhdrsi,coin->balancehash.uints[0],balancehash.uints[0]);
                     }
-                } else printf("ramchain map error balanceswritten %d vs %d\n",coin->balanceswritten,numhdrsi);
+                } else printf("ramchain map error balanceswritten %d vs %d hashes %x %x\n",coin->balanceswritten,numhdrsi,coin->balancehash.uints[0],balancehash.uints[0]);
             }
             if ( err != 0 )
             {
@@ -1480,7 +1485,10 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
             if ( allocextras > 0 )
             {
                 if ( iguana_ramchain_extras(coin,ramchain,ramchain->hashmem,allocextras) == 0 && bp != 0 )
+                {
                     bp->balancefinish = (uint32_t)time(NULL);
+                    printf("found balances for %d\n",bp->hdrsi);
+                }
             }
         }
         if ( B != 0 && bp != 0 )
