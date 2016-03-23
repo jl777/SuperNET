@@ -439,9 +439,19 @@ void mainloop(struct supernet_info *myinfo)
                     {
                         if ( (bp= ptr->bp) != 0 && ptr->coin != 0 && (bp->hdrsi == 0 || (prevbp= coin->bundles[bp->hdrsi-1]) != 0) )
                         {
+                            if ( bp->ramchain.Uextras == 0 )
+                            {
+                                printf("alloc Uextras.[%d]\n",bp->hdrsi);
+                                bp->ramchain.Uextras = calloc(sizeof(*bp->ramchain.Uextras),bp->ramchain.H.data->numunspents + 16);
+                            }
+                            if ( bp->ramchain.A == 0 )
+                            {
+                                printf("alloc A2.[%d]\n",bp->hdrsi);
+                                bp->ramchain.A = calloc(sizeof(*bp->ramchain.A),bp->ramchain.H.data->numpkinds + 16);
+                            }
                             for (j=0; j<bp->hdrsi; j++)
                             {
-                                if ( (prevbp= coin->bundles[j]) == 0 || prevbp->utxofinish <= 1 )//prevbp->balancefinish <= 1 )
+                                if ( (prevbp= coin->bundles[j]) == 0 || prevbp->utxofinish <= 1 ||prevbp->balancefinish <= 1 )
                                     break;
                                 //prevbp->ramchain.A = 0;
                                 //prevbp->ramchain.Uextras = 0;
@@ -453,7 +463,7 @@ void mainloop(struct supernet_info *myinfo)
                                 //bp->ramchain.Uextras = 0;
                                 iguana_balancecalc(ptr->coin,bp,bp == coin->current);
                                 bp->queued = 0;
-                                if ( bp->hdrsi > coin->longestchain/coin->chain->bundlesize-3 )
+                                if ( bp->hdrsi >= coin->longestchain/coin->chain->bundlesize-1 )
                                 {
                                     iguana_balanceflush(ptr->coin,bp->hdrsi,3);
                                     printf("flushed bp->hdrsi %d vs %d coin->longestchain/coin->chain->bundlesize\n",bp->hdrsi,coin->longestchain/coin->chain->bundlesize);
