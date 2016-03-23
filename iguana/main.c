@@ -367,7 +367,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
                             {
                                 if ( fwrite(Uptr,sizeof(*Uptr),numunspents,fp2) == numunspents )
                                 {
-                                    bp->dirty = 0;
+                                    //bp->dirty = 0;
                                     err = 0;
                                     printf("[%d] of %d saved (%s) and (%s)\n",hdrsi,numhdrsi,fname,fname2);
                                 }

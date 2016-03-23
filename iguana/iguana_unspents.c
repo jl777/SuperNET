@@ -469,7 +469,10 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
         if ( spentbp != 0 && unspentind > 0 && unspentind < spentbp->ramchain.H.data->numunspents )
         {
             if ( spentbp->dirty == 0 )
+            {
+                spentbp->dirty = now;
                 iguana_ramchain_prefetch(coin,&spentbp->ramchain);
+            }
             if ( incremental == 0 )
             {
                 if ( spentbp->ramchain.Uextras == 0 )
@@ -489,7 +492,6 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
                 u = &spentU[unspentind];
                 if ( (pkind= u->pkind) != 0 && pkind < spentbp->ramchain.H.data->numpkinds )
                 {
-                    spentbp->dirty = now;
                     flag = -1;
                     if ( incremental == 0 )
                     {
