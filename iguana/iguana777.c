@@ -181,7 +181,7 @@ int32_t iguana_peermetrics(struct iguana_info *coin)
             coin->peers.avemetric = (sum / i);
             if ( i >= (coin->MAXPEERS - 1) && slowest != 0 )
             {
-                printf("prune slowest peer.(%s) numranked.%d\n",slowest->ipaddr,n);
+                printf("prune slowest peer.(%s) numranked.%d MAXPEERS.%d\n",slowest->ipaddr,n,coin->MAXPEERS);
                 slowest->dead = 1;
             }
         }
@@ -364,7 +364,7 @@ void iguana_helper(void *arg)
     fp = fopen(fname,"wb");*/
     if ( argjson != 0 )
         free_json(argjson);
-    printf("HELPER.%d started arg.(%s)\n",helperid,arg!=0?arg:0);
+    printf("HELPER.%d started arg.(%s)\n",helperid,(char *)(arg!=0?arg:0));
     memset(&MEM,0,sizeof(MEM));
     MEMB = mycalloc('b',IGUANA_MAXBUNDLESIZE,sizeof(*MEMB));
     while ( 1 )
