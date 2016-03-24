@@ -458,7 +458,7 @@ struct iguana_info
     struct iguana_peers peers;
     uint64_t instance_nonce,myservices,totalsize,totalrecv,totalpackets,sleeptime;
     int64_t mining,totalfees,TMPallocated,MAXRECVCACHE,MAXMEM,estsize,activebundles;
-    int32_t MAXPEERS,MAXPENDING,MAXBUNDLES,active,closestbundle,numemitted,lastsweep,startutc,newramchain,numcached,cachefreed,helperdepth,startPEND,endPEND,enableCACHE,RELAYNODE,VALIDATENODE,balanceswritten; bits256 balancehash;
+    int32_t MAXPEERS,MAXPENDING,MAXBUNDLES,active,closestbundle,numemitted,lastsweep,startutc,newramchain,numcached,cachefreed,helperdepth,startPEND,endPEND,enableCACHE,RELAYNODE,VALIDATENODE,balanceswritten,RTheight; bits256 balancehash;
     uint32_t longestchain,lastsync,parsetime,numiAddrs,firstblock,lastpossible,bundlescount,savedblocks;
     struct tai starttime; double startmillis;
     struct iguana_chain *chain;
@@ -806,6 +806,7 @@ void iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain *r
 void iguana_realtime_update(struct iguana_info *coin);
 int32_t iguana_mapvolatiles(struct iguana_info *coin,struct iguana_ramchain *ramchain);
 void iguana_purgevolatiles(struct iguana_info *coin,struct iguana_ramchain *ramchain);
+int32_t iguana_volatileinit(struct iguana_info *coin);
 
 extern int32_t HDRnet,netBLOCKS;
 

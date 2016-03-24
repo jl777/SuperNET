@@ -535,26 +535,28 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->mapflags = mapflags;
     mult = (strcmp("BTC",coin->symbol) != 0) ? 512 : 1;
     maxval = (strcmp("BTC",coin->symbol) != 0) ? 2048 : 64;
+    coin->MAXMEM = juint(json,"RAM");
+    if ( coin->MAXMEM == 0 )
+        coin->MAXMEM = IGUANA_DEFAULTRAM;
+    if ( strcmp("BTC",coin->symbol) == 0 && coin->MAXMEM <= 4 )
+        maxval = coin->MAXMEM;
+    coin->MAXMEM *= (1024L * 1024 * 1024);
     if ( (coin->startPEND= juint(json,"startpend")) == 0 )
         coin->startPEND = IGUANA_MAXPENDBUNDLES * mult;
-    if ( coin->startPEND > 2048 )
-        coin->startPEND = 2048;
+    if ( coin->startPEND > maxval )
+        coin->startPEND = maxval;
     else if ( coin->startPEND < 2 )
         coin->startPEND = 2;
     coin->MAXBUNDLES = coin->startPEND;
     if ( (coin->endPEND= juint(json,"endpend")) == 0 )
         coin->endPEND = IGUANA_MINPENDBUNDLES * mult;
-    if ( coin->endPEND > 2048 )
-        coin->endPEND = 2048;
+    if ( coin->endPEND > maxval )
+        coin->endPEND = maxval;
     else if ( coin->endPEND < 2 )
         coin->endPEND = 2;
     coin->enableCACHE = (strcmp("BTC",coin->symbol) != 0);
     if ( jobj(json,"cache") != 0 )
         coin->enableCACHE = juint(json,"cache");
-    coin->MAXMEM = juint(json,"RAM");
-    if ( coin->MAXMEM == 0 )
-        coin->MAXMEM = IGUANA_DEFAULTRAM;
-    coin->MAXMEM *= (1024 * 1024 * 1024);
     if ( (coin->polltimeout= juint(json,"poll")) <= 0 )
         coin->polltimeout = 10;
     char str[65]; printf("MAXMEM.%s enablecache.%d\n",mbstr(str,coin->MAXMEM),coin->enableCACHE);

@@ -557,7 +557,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     {
         if ( (block= bp->blocks[i]) != 0 )
         {
-            if ( block->fpipbits == 0 || block->RO.recvlen == 0 || block->fpos < 0 || (bp->hdrsi == 0 && i == 0) || bits256_nonz(block->RO.prev_block) > 0 )
+            if ( block->fpipbits == 0 || block->RO.recvlen == 0 || block->fpos < 0 || ((bp->hdrsi != 0 || i > 0) && bits256_nonz(block->RO.prev_block) == 0) )
             {
                 if ( block->issued == 0 || now > block->issued+lag )
                 {
@@ -769,10 +769,11 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
 int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     struct iguana_bundle *prevbp; int32_t i,retval;
-#ifdef IGUANA_SERIALIZE_BALANCEGEN
-    if ( (prevbp= coin->current) != 0 && prevbp->hdrsi < (coin->longestchain / coin->chain->bundlesize)-0*coin->MAXBUNDLES )
-        return(0);
-#endif
+    if ( coin->MAXMEM <= 4*(1024L * 1024 * 1024) )
+    {
+        if ( (prevbp= coin->current) != 0 && prevbp->hdrsi < (coin->longestchain / coin->chain->bundlesize)-0*coin->MAXBUNDLES )
+            return(0);
+    }
     for (i=0; i<bp->hdrsi; i++)
         if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish < coin->startutc )
             break;
