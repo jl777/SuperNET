@@ -23,8 +23,9 @@
 typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t len);
 
 #define IGUANA_MAXSCRIPTSIZE 10001
-
+//#define IGUANA_SERIALIZE_BALANCEGEN
 //#define IGUANA_DISABLEPEERS
+
 #define IGUANA_MAXCOINS 64
 #define IGUANA_MAXDELAY_MILLIS (3600 * 1000) 
 
@@ -338,12 +339,12 @@ struct iguana_pkhash { uint8_t rmd160[20]; uint32_t pkind; } __attribute__((pack
 
 // dynamic
 struct iguana_account { int64_t total; uint32_t lastind; } __attribute__((packed));
-struct iguana_utxo { uint32_t prevunspentind,height:31,spentflag:1; } __attribute__((packed));
+struct iguana_utxo { uint64_t prevunspentind:26,height:24,spentflag:1,tbd:13; } __attribute__((packed));
 struct iguana_hhaccount { UT_hash_handle hh; uint8_t buf[6]; struct iguana_account a; } __attribute__((packed));
 struct iguana_hhutxo { UT_hash_handle hh; uint8_t buf[6]; struct iguana_utxo u; } __attribute__((packed));
 
 // GLOBAL one zero to non-zero write (unless reorg)
-struct iguana_spendvector { uint32_t ind,height; uint16_t hdrsi; } __attribute__((packed)); // unspentind
+struct iguana_spendvector { uint64_t hdrsi:14,ind:26,height:24; } __attribute__((packed)); // unspentind
 //struct iguana_pkextra { uint32_t firstspendind; } __attribute__((packed)); // pkind
 
 struct iguana_txblock
