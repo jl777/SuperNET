@@ -495,7 +495,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
                 spentbp->lastprefetch = now;
             }
             spentbp->dirty++;
-            if ( incremental == 0 )
+            /*if ( incremental == 0 )
             {
                 if ( spentbp->ramchain.Uextras == 0 )
                 {
@@ -507,7 +507,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
                     printf("unspent alloc A2.[%d]\n",spentbp->hdrsi);
                     spentbp->ramchain.A = calloc(sizeof(*spentbp->ramchain.A),spentbp->ramchain.H.data->numpkinds + 16);
                 }
-            }
+            }*/
             Uextras = spentbp->ramchain.Uextras;
             A2 = spentbp->ramchain.A;
             if ( incremental != 0 || (A2 != 0 && Uextras != 0) )
@@ -718,8 +718,8 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
                                 {
                                     //bp->dirty = 0;
                                     err = 0;
-                                    free(bp->ramchain.A), bp->ramchain.A = 0;
-                                    free(bp->ramchain.Uextras), bp->ramchain.Uextras = 0;
+                                    //free(bp->ramchain.A), bp->ramchain.A = 0;
+                                    //free(bp->ramchain.Uextras), bp->ramchain.Uextras = 0;
                                     printf("[%d] of %d saved (%s) and (%s)\n",hdrsi,numhdrsi,fname,fname2);
                                 }
                             }
@@ -766,7 +766,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
             }
             else
             {
-                printf("error loading [%d] Aptr.%p Uptr.%p numpkinds.%u numunspents.%u\n",hdrsi,Aptr,Uptr,numpkinds,numunspents);
+                printf("balanceflush iter.%d error loading [%d] Aptr.%p Uptr.%p numpkinds.%u numunspents.%u\n",iter,hdrsi,Aptr,Uptr,numpkinds,numunspents);
                 return(-1);
             }
         }
