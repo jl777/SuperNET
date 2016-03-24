@@ -425,7 +425,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
 
 int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int32_t startheight,int32_t endheight)
 {
-    uint32_t unspentind,pkind,txidind,h,i,j,k,refheight; struct iguana_account *A2;
+    uint32_t unspentind,pkind,txidind,h,i,j,k,ind; struct iguana_account *A2;
     struct iguana_unspent *u,*spentU; struct iguana_spend *S,*s; struct iguana_ramchain *ramchain;
     struct iguana_bundle *spentbp; struct iguana_txid *T,*nextT; struct iguana_blockRO *B;
     int32_t flag,hdrsi,spendind,n,errs=0,incremental,emit=0; struct iguana_utxo *utxo,*Uextras;
@@ -440,7 +440,6 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
     S = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Soffset);
     B = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Boffset);
     nextT = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
-    refheight = bp->bundleheight;
     if ( ramchain->Xspendinds == 0 )
     {
         printf("iguana_balancegen.%d: no Xspendinds[%d]\n",bp->hdrsi,ramchain->numXspends);
@@ -495,16 +494,16 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
                 {
                     spentbp = bp;
                     hdrsi = bp->hdrsi;
-                    h = refheight;
-                    if ( (txidind= s->spendtxidind) != 0 && txidind < spentbp->ramchain.H.data->numtxids )
+                    h = bp->bundleheight + i;
+                    if ( (ind= s->spendtxidind) != 0 && ind < spentbp->ramchain.H.data->numtxids )
                     {
                         T = (void *)(long)((long)spentbp->ramchain.H.data + spentbp->ramchain.H.data->Toffset);
-                        unspentind = T[txidind].firstvout + s->prevout;
+                        unspentind = T[ind].firstvout + s->prevout;
                         //printf("txidind.%d 1st.%d prevout.%d\n",txidind,T[txidind].firstvout,s->prevout);
                     }
                     else
                     {
-                        printf("iguana_balancegen txidind overflow %u vs %u\n",txidind,spentbp->ramchain.H.data->numtxids);
+                        printf("iguana_balancegen txidind overflow %u vs %u\n",ind,spentbp->ramchain.H.data->numtxids);
                         errs++;
                     }
                     //printf("[%d] spendind.%d -> (hdrsi.%d u%d)\n",bp->hdrsi,spendind,hdrsi,unspentind);
