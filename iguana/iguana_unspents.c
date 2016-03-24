@@ -20,8 +20,6 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,uint16_t spent_hdrsi,uint32_t
 {
     struct iguana_hhutxo *hhutxo,*tmputxo; struct iguana_hhaccount *hhacct,*tmpacct;
     uint8_t buf[sizeof(spent_hdrsi) + sizeof(uint32_t)];
-    printf("unexpected utxoupdate\n");
-    exit(-1);
     if ( spent_hdrsi < 0 )
     {
         if ( coin->utxotable != 0 )
@@ -44,6 +42,8 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,uint16_t spent_hdrsi,uint32_t
         }
         return(0);
     }
+    printf("unexpected utxoupdate\n");
+    exit(-1);
     memcpy(&buf[sizeof(uint32_t)],(void *)&spent_hdrsi,sizeof(spent_hdrsi));
     memcpy(buf,(void *)&spent_unspentind,sizeof(spent_unspentind));
     HASH_FIND(hh,coin->utxotable,buf,sizeof(buf),hhutxo);
@@ -440,9 +440,15 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
             numtxid++;
         }
         if ( refheight < startheight )
+        {
+            printf("balancegen: refheight.%d < startheight.%d\n",refheight,startheight);
             continue;
+        }
         if ( refheight > endheight )
+        {
+            printf("balancegen: refheight.%d > endheight.%d\n",refheight,endheight);
             break;
+        }
         s = &S[spendind];
         u = 0;
         unspentind = 0;
@@ -803,7 +809,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
     return(coin->balanceswritten);
 }
 
-int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int32_t incremental)
+int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int32_t startheight,int32_t endheight)
 {
     uint32_t starttime,j,flag = 0; struct iguana_bundle *prevbp;
     if ( bp->balancefinish > 1 )
@@ -824,7 +830,7 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
             starttime = (uint32_t)time(NULL);
             for (j=0; j<=bp->hdrsi; j++)
                 iguana_allocvolatile(coin,&coin->bundles[j]->ramchain);
-            if ( iguana_balancegen(coin,bp,bp->bundleheight,bp->bundleheight+bp->n-1) < 0 )
+            if ( iguana_balancegen(coin,bp,startheight,endheight) < 0 )
             {
                 printf("GENERATE BALANCES ERROR ht.%d\n",bp->bundleheight);
                 exit(-1);
