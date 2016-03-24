@@ -60,7 +60,7 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,uint16_t spent_hdrsi,uint32_t
         }
         return(0);
     }
-    printf("unexpected utxoupdate spenthdrsi.%d pkind.%d %.8f from [%d:%d] spendind.%u\n",spent_hdrsi,spent_pkind,dstr(spent_value),hdrsi,height%coin->chain->bundlesize,spendind);
+    //printf("unexpected utxoupdate spenthdrsi.%d pkind.%d %.8f from [%d:%d] spendind.%u\n",spent_hdrsi,spent_pkind,dstr(spent_value),hdrsi,height%coin->chain->bundlesize,spendind);
     if ( (hhutxo= iguana_hhutxofind(coin,spent_hdrsi,spent_unspentind)) != 0 && hhutxo->u.spentflag != 0 )
         return(-1);
     hhutxo = calloc(1,sizeof(*hhutxo));
