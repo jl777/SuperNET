@@ -373,7 +373,7 @@ struct iguana_ramchain_hdr
 
 struct iguana_ramchain
 {
-    struct iguana_ramchain_hdr H; bits256 lasthash2; uint64_t datasize;
+    struct iguana_ramchain_hdr H; bits256 lasthash2; uint64_t datasize,allocatedA,allocatedU;
     uint32_t numblocks:31,expanded:1,pkind,externalind,height,numXspends;
     struct iguana_kvitem *txids,*pkhashes;
     struct OS_memspace *hashmem; long filesize,sigsfilesize,debitsfilesize,lastspendsfilesize;

@@ -648,8 +648,16 @@ void iguana_allocvolatile(struct iguana_info *coin,struct iguana_ramchain *ramch
 {
     if ( ramchain != 0 && ramchain->H.data != 0 )
     {
-        ramchain->A = calloc(sizeof(*ramchain->A),ramchain->H.data->numpkinds + 16);
-        ramchain->Uextras = calloc(sizeof(*ramchain->Uextras),ramchain->H.data->numunspents + 16);
+        if ( ramchain->allocatedA == 0 )
+        {
+            ramchain->A = calloc(sizeof(*ramchain->A),ramchain->H.data->numpkinds + 16);
+            ramchain->allocatedA = sizeof(*ramchain->A) * ramchain->H.data->numpkinds;
+        }
+        if ( ramchain->allocatedU == 0 )
+        {
+            ramchain->Uextras = calloc(sizeof(*ramchain->Uextras),ramchain->H.data->numunspents + 16);
+            ramchain->allocatedU = sizeof(*ramchain->Uextras) * ramchain->H.data->numunspents;
+        }
         if ( ramchain->debitsfileptr != 0 )
         {
             memcpy(ramchain->A,(void *)((long)ramchain->debitsfileptr + sizeof(int32_t) + sizeof(bits256)),sizeof(*ramchain->A) * ramchain->H.data->numpkinds);
@@ -770,9 +778,17 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
         if ( (bp= coin->bundles[hdrsi]) == 0 )
         {
             if ( bp->ramchain.A != 0 )
+            {
                 free(bp->ramchain.A);
+                bp->ramchain.A = 0;
+                bp->ramchain.allocatedA = 0;
+            }
             if ( bp->ramchain.Uextras != 0 )
+            {
                 free(bp->ramchain.Uextras);
+                bp->ramchain.Uextras = 0;
+                bp->ramchain.allocatedU = 0;
+            }
             if ( iguana_mapvolatiles(coin,&bp->ramchain) != 0 )
             printf("error mapping bundle.[%d]\n",hdrsi);
         }
