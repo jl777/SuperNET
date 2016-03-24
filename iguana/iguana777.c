@@ -425,6 +425,7 @@ void iguana_coinloop(void *arg)
     {
         if ( (coin= coins[i]) != 0 && coin->started == 0 )
         {
+            iguana_rwiAddrind(coin,0,0,0);
             iguana_coinstart(coin,coin->initialheight,coin->mapflags);
             printf("init.(%s) maxpeers.%d maxrecvcache.%s services.%llx MAXMEM.%s polltimeout.%d cache.%d pend.(%d -> %d)\n",coin->symbol,coin->MAXPEERS,mbstr(str,coin->MAXRECVCACHE),(long long)coin->myservices,mbstr(str,coin->MAXMEM),coin->polltimeout,coin->enableCACHE,coin->startPEND,coin->endPEND);
             coin->started = coin;
@@ -432,7 +433,6 @@ void iguana_coinloop(void *arg)
         }
     }
     coin = coins[0];
-    iguana_rwiAddrind(coin,0,0,0);
     iguana_possible_peer(coin,"127.0.0.1");
     memset(zero.bytes,0,sizeof(zero));
     if ( (bp= iguana_bundlecreate(coin,&bundlei,0,*(bits256 *)coin->chain->genesis_hashdata,zero,1)) != 0 )

@@ -636,7 +636,7 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
         {
             if ( bits256_nonz(bp->hashes[i]) == 0 && bits256_nonz(bp->speculative[i]) != 0 )
             {
-                if ( now > bp->issued[i]+60 )
+                if ( now > bp->issued[i]+20 )
                 {
                     bp->issued[i] = now;
                     //printf("speculative.[%d:%d]\n",bp->hdrsi,i);
