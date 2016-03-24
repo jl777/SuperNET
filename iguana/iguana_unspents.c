@@ -297,7 +297,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
     static uint64_t total,emitted;
     int32_t spendind,n,txidind,errs=0,emit=0,i,j,k,retval = -1; uint32_t unspentind;
     struct iguana_bundle *spentbp; struct iguana_blockRO *B;
-    FILE *fp; char fname[1024],str[65]; uint32_t now=0;
+    FILE *fp; char fname[1024],str[65];
     bits256 prevhash,zero,sha256; struct iguana_unspent *u; long fsize; struct iguana_txid *nextT;
     struct iguana_spend *S,*s; struct iguana_spendvector *ptr; struct iguana_ramchain *ramchain;
     ramchain = &bp->ramchain;
@@ -314,7 +314,6 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
     }
     ptr = mycalloc('x',sizeof(*ptr),n);
     total += n;
-    now = (uint32_t)time(NULL);
     //printf("start UTXOGEN.%d max.%d ptr.%p\n",bp->bundleheight,n,ptr);
     txidind = spendind = ramchain->H.data->firsti;
     for (i=0; i<bp->n; i++)
@@ -327,7 +326,6 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
         }
         for (j=0; j<B[i].txn_count && errs==0; j++,txidind++)
         {
-            now = (uint32_t)time(NULL);
             if ( txidind != nextT[txidind].txidind || spendind != nextT[txidind].firstvin )
             {
                 printf("utxogen: txidind %u != %u nextT[txidind].firsttxidind || spendind %u != %u nextT[txidind].firstvin\n",txidind,nextT[txidind].txidind,spendind,nextT[txidind].firstvin);
@@ -427,7 +425,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
 
 int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int32_t startheight,int32_t endheight)
 {
-    uint32_t unspentind,pkind,txidind,numtxid,now=0,h,i,j,k,refheight; struct iguana_account *A2;
+    uint32_t unspentind,pkind,txidind,h,i,j,k,refheight; struct iguana_account *A2;
     struct iguana_unspent *u,*spentU; struct iguana_spend *S,*s; struct iguana_ramchain *ramchain;
     struct iguana_bundle *spentbp; struct iguana_txid *T,*nextT; struct iguana_blockRO *B;
     int32_t flag,hdrsi,spendind,n,errs=0,incremental,emit=0; struct iguana_utxo *utxo,*Uextras;
@@ -442,7 +440,6 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
     S = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Soffset);
     B = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Boffset);
     nextT = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
-    numtxid = 1;
     refheight = bp->bundleheight;
     if ( ramchain->Xspendinds == 0 )
     {
@@ -454,19 +451,20 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
     txidind = spendind = ramchain->H.data->firsti;
     for (i=0; i<bp->n; i++)
     {
+        printf("hdrs.[%d] B[%d] 1st txidind.%d txn_count.%d firstvin.%d firstvout.%d\n",bp->hdrsi,i,B[i].firsttxidind,B[i].txn_count,B[i].firstvin,B[i].firstvout);
         if ( txidind != B[i].firsttxidind || spendind != B[i].firstvin )
         {
-            printf("balancegen: txidind %u != %u B[%d].firsttxidind || spendind %u != %u B[%d].firstvin\n",txidind,B[i].firsttxidind,i,spendind,B[i].firstvin,i);
+            printf("balancegen: txidind %u != %u B[%d].firsttxidind || spendind %u != %u B[%d].firstvin errs.%d\n",txidind,B[i].firsttxidind,i,spendind,B[i].firstvin,i,errs);
             return(-1);
         }
         for (j=0; j<B[i].txn_count && errs==0; j++,txidind++)
         {
-            now = (uint32_t)time(NULL);
             if ( txidind != nextT[txidind].txidind || spendind != nextT[txidind].firstvin )
             {
-                printf("balancegen: txidind %u != %u nextT[txidind].firsttxidind || spendind %u != %u nextT[txidind].firstvin\n",txidind,nextT[txidind].txidind,spendind,nextT[txidind].firstvin);
+                printf("balancegen: txidind %u != %u nextT[txidind].firsttxidind || spendind %u != %u nextT[txidind].firstvin errs.%d\n",txidind,nextT[txidind].txidind,spendind,nextT[txidind].firstvin,errs);
                 return(-1);
             }
+            printf("txidind.%d txi.%d numvins.%d spendind.%d\n",txidind,j,nextT[txidind].numvins,spendind);
             for (k=0; k<nextT[txidind].numvins && errs==0; k++,spendind++)
             {
                 s = &S[spendind];
