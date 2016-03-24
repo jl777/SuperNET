@@ -315,11 +315,16 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
     total += n;
     height = bp->bundleheight;
     now = (uint32_t)time(NULL);
-    // iterate by height!
     //printf("start UTXOGEN.%d max.%d ptr.%p\n",bp->bundleheight,n,ptr);
     for (spendind=ramchain->H.data->firsti; spendind<n; spendind++)
     {
         s = &S[spendind];
+        if ( spendind == nextT[numtxid].firstvin )
+        {
+            height = bp->bundleheight + numtxid;
+            //printf("height.%d firstvin.%d\n",height,nextT[numtxid].firstvin);
+            numtxid++;
+        }
         u = 0;
         if ( (spendind & 0xff) == 1 )
             now = (uint32_t)time(NULL);
@@ -359,12 +364,6 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
                 printf("utxogen: unresolved spendind.%d hdrsi.%d\n",spendind,bp->hdrsi);
                 break;
             }
-        }
-        if ( spendind == nextT[numtxid].firstvin )
-        {
-            height = bp->bundleheight++;
-            //printf("height.%d firstvin.%d\n",height,nextT[numtxid].firstvin);
-            numtxid++;
         }
     }
     if ( numtxid != bp->ramchain.H.data->numtxids )
@@ -434,6 +433,12 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
     printf("BALANCEGEN.%d hdrs.%d\n",bp->bundleheight,bp->hdrsi);
     for (spendind=ramchain->H.data->firsti; spendind<n; spendind++)
     {
+        if ( spendind == nextT[numtxid].firstvin )
+        {
+            refheight = bp->bundleheight + numtxid;
+            //printf("height.%d firstvin.%d\n",height,nextT[numtxid].firstvin);
+            numtxid++;
+        }
         if ( refheight < startheight )
         {
             printf("balancegen: refheight.%d < startheight.%d\n",refheight,startheight);
@@ -441,7 +446,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
         }
         if ( 0 && refheight > endheight )
         {
-            printf("balancegen: refheight.%d > endheight.%d\n",refheight,endheight);
+            printf("balancegen: refheight.%d < startheight.%d\n",refheight,startheight);
             break;
         }
         s = &S[spendind];
@@ -491,16 +496,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
             }
             //printf("[%d] spendind.%d -> (hdrsi.%d u%d)\n",bp->hdrsi,spendind,hdrsi,unspentind);
         }
-        else
-        {
-            if ( spendind == nextT[numtxid].firstvin )
-            {
-                refheight = bp->bundleheight++;
-                printf("height.%d firstvin.%d\n",refheight,nextT[numtxid].firstvin);
-                numtxid++;
-            }
-            continue;
-        }
+        else continue;
         if ( (spendind & 0xff) == 1 )
             now = (uint32_t)time(NULL);
         if ( spentbp != 0 && unspentind > 0 && unspentind < spentbp->ramchain.H.data->numunspents )
@@ -583,12 +579,6 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
         {
             errs++;
             printf("iguana_balancegen: error with unspentind.%d vs max.%d spentbp.%p\n",unspentind,spentbp!=0?spentbp->ramchain.H.data->numunspents:-1,spentbp);
-        }
-        if ( spendind == nextT[numtxid].firstvin )
-        {
-            refheight = bp->bundleheight++;
-            printf("height.%d firstvin.%d\n",refheight,nextT[numtxid].firstvin);
-            numtxid++;
         }
     }
     if ( numtxid != bp->ramchain.H.data->numtxids )
