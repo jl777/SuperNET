@@ -207,7 +207,7 @@ uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana
                     if ( (iA= iguana_iAddrhashset(coin,iA,ind)) != 0 )
                     {
                         retval = iA->hh.itemind+1;
-                        printf("W status.%d ipbits.%x ind.%d saved iA->ind.%d retval.%d numiAddrs.%d\n",iA->status,(uint32_t)ipbits,ind,iA->hh.itemind,retval,coin->numiAddrs);
+                        //printf("W status.%d ipbits.%x ind.%d saved iA->ind.%d retval.%d numiAddrs.%d\n",iA->status,(uint32_t)ipbits,ind,iA->hh.itemind,retval,coin->numiAddrs);
                     }
                 }
             } else printf("iAddr: error seeking.[%d] %ld vs %ld\n",ind,ftell(fp),ind * sizeof(*iA));
@@ -711,7 +711,7 @@ void *iguana_iAddriterator(struct iguana_info *coin,struct iguana_iAddr *iA)
             {
                 if ( iguana_rwiAddrind(coin,1,iA,iA->hh.itemind) > 0 )
                 {
-                    printf("iA.%p iguana_startconnection.(%s) status.%d pending.%d\n",iA,addr->ipaddr,iA->status,addr->pending);
+                    //printf("iA.%p iguana_startconnection.(%s) status.%d pending.%d\n",iA,addr->ipaddr,iA->status,addr->pending);
                     iA->status = IGUANA_PEER_CONNECTING;
                     addr->pending = (uint32_t)time(NULL);
                     iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
