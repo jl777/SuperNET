@@ -425,7 +425,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
 
 int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int32_t startheight,int32_t endheight)
 {
-    uint32_t unspentind,pkind,txidind,h,i,j,k,ind; struct iguana_account *A2;
+    uint32_t unspentind,pkind,txidind,h,i,j,k,ind,now; struct iguana_account *A2;
     struct iguana_unspent *u,*spentU; struct iguana_spend *S,*s; struct iguana_ramchain *ramchain;
     struct iguana_bundle *spentbp; struct iguana_txid *T,*nextT; struct iguana_blockRO *B;
     int32_t flag,hdrsi,spendind,n,errs=0,incremental,emit=0; struct iguana_utxo *utxo,*Uextras;
@@ -458,6 +458,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
         }
         for (j=0; j<B[i].txn_count && errs==0; j++,txidind++)
         {
+            now = (uint32_t)time(NULL);
             if ( txidind != nextT[txidind].txidind || spendind != nextT[txidind].firstvin )
             {
                 printf("balancegen: txidind %u != %u nextT[txidind].firsttxidind || spendind %u != %u nextT[txidind].firstvin errs.%d\n",txidind,nextT[txidind].txidind,spendind,nextT[txidind].firstvin,errs);
@@ -509,16 +510,14 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
                     //printf("[%d] spendind.%d -> (hdrsi.%d u%d)\n",bp->hdrsi,spendind,hdrsi,unspentind);
                 }
                 else continue;
-                //if ( (spendind & 0xff) == 1 )
-                //    now = (uint32_t)time(NULL);
                 if ( spentbp != 0 && unspentind > 0 && unspentind < spentbp->ramchain.H.data->numunspents )
                 {
-                    /*if ( now > spentbp->lastprefetch+20 || (spentbp->dirty % 50000) == 0 )
-                     {
-                     //printf("current.%d prefetch.[%d] lag.%u\n",spentbp == bp,spentbp->hdrsi,now - spentbp->lastprefetch);
-                     iguana_ramchain_prefetch(coin,&spentbp->ramchain);
-                     spentbp->lastprefetch = now;
-                     }*/
+                    if ( now > spentbp->lastprefetch+20 || (spentbp->dirty % 50000) == 0 )
+                    {
+                        //printf("current.%d prefetch.[%d] lag.%u\n",spentbp == bp,spentbp->hdrsi,now - spentbp->lastprefetch);
+                        iguana_ramchain_prefetch(coin,&spentbp->ramchain);
+                        spentbp->lastprefetch = now;
+                    }
                     spentbp->dirty++;
                     Uextras = spentbp->ramchain.Uextras;
                     A2 = spentbp->ramchain.A;
