@@ -816,8 +816,7 @@ void iguana_RTramchainalloc(struct iguana_info *coin,struct iguana_bundle *bp)
     int32_t mult; struct iguana_ramchain *dest = &coin->RTramchain;
     if ( coin->RTramchain.H.data == 0 )
     {
-        mult = (strcmp("BTC",coin->symbol) == 0) ? 2048 : 4;
-        printf("mult.%d\n",mult);
+        mult = (strcmp("BTC",coin->symbol) == 0) ? 1024 : 4;
         if ( coin->RTmem.ptr == 0 )
             iguana_meminit(&coin->RTmem,coin->symbol,0,(uint64_t)IGUANA_MAXPACKETSIZE*mult + 65536*3,0);
         if ( coin->RThashmem.ptr == 0 )
@@ -876,7 +875,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             }
         }
     }
-    printf(" bp->hdrsi %d == %d coin->longestchain/coin->chain->bundlesize && bp->hdrsi %d == %d coin->balanceswritten && coin->RTheight %d >= %d bp->bundleheight && coin->RTheight %d < %d bp->bundleheight+bp->n\n",bp->hdrsi,coin->longestchain/coin->chain->bundlesize,bp->hdrsi,coin->balanceswritten,coin->RTheight,bp->bundleheight,coin->RTheight,bp->bundleheight+bp->n);
+    //printf(" bp->hdrsi %d == %d coin->longestchain/coin->chain->bundlesize && bp->hdrsi %d == %d coin->balanceswritten && coin->RTheight %d >= %d bp->bundleheight && coin->RTheight %d < %d bp->bundleheight+bp->n\n",bp->hdrsi,coin->longestchain/coin->chain->bundlesize,bp->hdrsi,coin->balanceswritten,coin->RTheight,bp->bundleheight,coin->RTheight,bp->bundleheight+bp->n);
     return(0);
 }
 
