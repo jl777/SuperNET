@@ -60,7 +60,7 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,uint16_t spent_hdrsi,uint32_t
         }
         return(0);
     }
-    //printf("unexpected utxoupdate spenthdrsi.%d pkind.%d %.8f from [%d:%d] spendind.%u\n",spent_hdrsi,spent_pkind,dstr(spent_value),hdrsi,height%coin->chain->bundlesize,spendind);
+    printf("unexpected utxoupdate spenthdrsi.%d pkind.%d %.8f from [%d:%d] spendind.%u\n",spent_hdrsi,spent_pkind,dstr(spent_value),hdrsi,height%coin->chain->bundlesize,spendind);
     if ( (hhutxo= iguana_hhutxofind(coin,spent_hdrsi,spent_unspentind)) != 0 && hhutxo->u.spentflag != 0 )
         return(-1);
     hhutxo = calloc(1,sizeof(*hhutxo));
@@ -108,9 +108,9 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
                 }
                 else
                 {
-                    if ( 1 )
+                    if ( 0 )
                         flag = iguana_utxoupdate(coin,spentbp->hdrsi,unspentind,pkind,u->value,bp->hdrsi,spendind,height);
-                    else
+                    else if ( 0 )
                     {
                         utxo = &Uextras[unspentind];
                         if ( utxo->spentflag == 0 )
