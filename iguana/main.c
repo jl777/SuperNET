@@ -355,7 +355,6 @@ void mainloop(struct supernet_info *myinfo)
             for (i=0; i<IGUANA_MAXCOINS; i++)
                 if ( (coin= Coins[i]) != 0 && coin->active != 0 && (bp= coin->current) != 0 )
                 {
-                    printf("check %s started.%p\n",coin->symbol,coin->started);
                     if ( coin->started != 0 )
                     {
                         iguana_realtime_update(coin);

@@ -866,11 +866,11 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                         coin->RTheight++;
                         coin->RTramchain.H.data->numblocks = bundlei + 1;
                     } else printf("error mapchaininit\n");
-                } else printf("no ptr for RTheight.%d\n",coin->RTheight);
+                } //else printf("no ptr for RTheight.%d\n",coin->RTheight);
             }
             else
             {
-                printf("no blockptr for RTheight.%d\n",coin->RTheight);
+                //printf("no blockptr for RTheight.%d\n",coin->RTheight);
                 return(-1);
             }
         }
