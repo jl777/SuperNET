@@ -813,10 +813,9 @@ void iguana_RTramchainfree(struct iguana_info *coin)
 
 void iguana_RTramchainalloc(struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    int32_t mult,i,changed = 0; struct iguana_ramchain *dest = &coin->RTramchain; struct iguana_blockRO *B;
+    uint32_t size,i,changed = 0; struct iguana_ramchain *dest = &coin->RTramchain; struct iguana_blockRO *B;
     if ( coin->RTramchain.H.data != 0 )
     {
-        changed = (rand() % 1000) == 0;
         if ( coin->RTheight != bp->bundleheight + coin->RTramchain.H.data->numblocks )
             changed++;
         else
@@ -840,11 +839,11 @@ void iguana_RTramchainalloc(struct iguana_info *coin,struct iguana_bundle *bp)
     if ( coin->RTramchain.H.data == 0 )
     {
         printf("ALLOC RTramchain\n");
-        mult = (strcmp("BTC",coin->symbol) == 0) ? 1024 : 4;
+        size = (strcmp("BTC",coin->symbol) == 0) ? 1.5*1024*1024*1024 : 16*1024*1024;
         if ( coin->RTmem.ptr == 0 )
-            iguana_meminit(&coin->RTmem,coin->symbol,0,(uint64_t)IGUANA_MAXPACKETSIZE*mult + 65536*3,0);
-        if ( coin->RThashmem.ptr == 0 )
-            iguana_meminit(&coin->RThashmem,coin->symbol,0,(uint64_t)IGUANA_MAXPACKETSIZE*mult + 65536*3,0);
+            iguana_meminit(&coin->RTmem,coin->symbol,0,size + 65536*3,0);
+        //if ( coin->RThashmem.ptr == 0 )
+        //    iguana_meminit(&coin->RThashmem,coin->symbol,0,(uint64_t)IGUANA_MAXPACKETSIZE*mult + 65536*3,0);
         iguana_ramchainopen(coin,dest,&coin->RTmem,&coin->RThashmem,bp->bundleheight,bp->hashes[0]);
         dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
         dest->externalind = dest->H.stacksize = 0;
