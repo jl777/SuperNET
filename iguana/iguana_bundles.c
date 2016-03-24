@@ -806,7 +806,7 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
 
 int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_bundle *bp,int32_t timelimit)
 {
-    int32_t range,starti,lasti,checki,retval=0,max,bundlei,hdrsi,counter = 0; char fname[1024]; struct iguana_bundle *currentbp,*lastbp; FILE *fp; static bits256 zero;
+    int32_t range,starti,lasti,retval=0,max,counter = 0; struct iguana_bundle *currentbp,*lastbp; 
     if ( coin->started == 0 )
     {
         printf("%s not ready yet\n",coin->symbol);
@@ -872,27 +872,6 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
         counter = iguana_bundleissue(coin,bp,max,timelimit);
         if ( bp->hdrsi == starti && counter > 0 )
             printf("ITER now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
-        if ( 0 && coin->blocks.hwmchain.height > coin->chain->bundlesize && bp->hdrsi == coin->blocks.hwmchain.height/coin->chain->bundlesize )
-        {
-            for (bundlei=0; bundlei<bp->n; bundlei++)
-            {
-                checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,bp->hashes[bundlei],bundlei>0?bp->hashes[bundlei-1]:zero,1);
-                if ( checki == bundlei )
-                {
-                    if ( (fp= fopen(fname,"rb")) != 0 )
-                        fclose(fp);
-                    else break;
-                }
-            }
-            if ( bp == coin->current && (bp->ramchain.H.data == 0 || bp->ramchain.H.data->numblocks != bundlei) )
-            {
-                printf("RT bundls\n");
-                if ( iguana_bundlesaveHT(coin,mem,memB,bp,(uint32_t)time(NULL)) == 0 )
-                {
-                    
-                }
-            }
-        }
     }
     iguana_bundleQ(coin,bp,1000);
     return(retval);

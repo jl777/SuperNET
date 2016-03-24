@@ -14482,5 +14482,26 @@ len = 0;
                 }
                 
             }
+            if ( 0 && coin->blocks.hwmchain.height > coin->chain->bundlesize && bp->hdrsi == coin->blocks.hwmchain.height/coin->chain->bundlesize )
+            {
+                for (bundlei=0; bundlei<bp->n; bundlei++)
+                {
+                    checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,bp->hashes[bundlei],bundlei>0?bp->hashes[bundlei-1]:zero,1);
+                    if ( checki == bundlei )
+                    {
+                        if ( (fp= fopen(fname,"rb")) != 0 )
+                            fclose(fp);
+                        else break;
+                    }
+                }
+                if ( bp == coin->current && (bp->ramchain.H.data == 0 || bp->ramchain.H.data->numblocks != bundlei) )
+                {
+                    printf("RT bundls\n");
+                    if ( iguana_bundlesaveHT(coin,mem,memB,bp,(uint32_t)time(NULL)) == 0 )
+                    {
+                        
+                    }
+                }
+            }
 
 #endif
