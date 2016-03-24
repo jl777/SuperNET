@@ -542,7 +542,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                             iguana_blockQ("kicka",coin,bp,i,block->RO.hash2,bp == coin->current && now > block->issued+lag);
                             if ( bp == coin->current && now > block->issued+lag*3 && (addr= coin->peers.ranked[rand() % numpeers]) != 0 )
                                 iguana_sendblockreqPT(coin,addr,bp,i,block->RO.hash2,0);
-                        } else iguana_blockQ("kickb",coin,bp,i,block->RO.hash2,0);
+                        } else iguana_blockQ("kickb",coin,bp,i,block->RO.hash2,now > block->issued+lag*3);
                         flag++;
                     } //else printf("%d ",now - block->issued);
                 }
@@ -564,21 +564,19 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     block->numrequests++;
                     if ( bp == coin->current )
                         printf("[%d:%d].%x ",bp->hdrsi,i,block->fpipbits);
-                    iguana_blockQ("kickc",coin,bp,i,block->RO.hash2,bp == coin->current);
+                    iguana_blockQ("kickc",coin,bp,i,block->RO.hash2,bp == coin->current || now > block->issued+lag*3);
                     bp->issued[i] = block->issued = now;
                     counter++;
                     if ( --max <= 0 )
                         break;
                 }
-                //else if ( block->fpipbits != 0 && ((bp->hdrsi == 0 && i == 0) || bits256_nonz(block->RO.prev_block) != 0) )
-                  //  n++;
             }
         }
         else if ( bits256_nonz(bp->hashes[i]) != 0 && now > bp->issued[i]+lag )
         {
             if ( bp == coin->current )
                 printf("[%d:%d].%x ",bp->hdrsi,i,block->fpipbits);
-            iguana_blockQ("kickd",coin,bp,i,bp->hashes[i],bp == coin->current);
+            iguana_blockQ("kickd",coin,bp,i,bp->hashes[i],bp == coin->current || now > bp->issued[i]+lag*3);
             bp->issued[i] = now;
             counter++;
         }
@@ -1042,7 +1040,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     coin->spaceused = spaceused;
     coin->numverified = numv;
     char str4[65],str5[65];
-    sprintf(str,"%s u.%d b.%d v.%d/%d (%d 1st.%d) to %d N[%d] Q.%d h.%d r.%d c.%s s.%d d.%d E.%d:%d est.%d %s %d:%02d:%02d %03.3f peers.%d/%d Q.(%d %d) L.%d [%d:%d] M.%d %s",coin->symbol,numutxo,numbalances,numv,coin->pendbalances,firstgap!=0?firstgap->numsaved:-1,firstgap!=0?firstgap->hdrsi:-1,coin->lastpending!=0?coin->lastpending->hdrsi:0,count,coin->numbundlesQ,numhashes,coin->blocksrecv,mbstr(str4,spaceused),numsaved,done,numemit,coin->numreqsent,coin->MAXBUNDLES,mbstr(str2,estsize),(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,difft.millis,p,coin->MAXPEERS,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ),coin->longestchain,coin->blocks.hwmchain.height/coin->chain->bundlesize,coin->blocks.hwmchain.height%coin->chain->bundlesize,coin->blocks.hwmchain.height,bits256_str(str5,coin->blocks.hwmchain.RO.hash2));
+    sprintf(str,"%s u.%d b.%d v.%d/%d (%d/%d 1st.%d) to %d N[%d] Q.%d h.%d r.%d c.%s s.%d d.%d E.%d:%d est.%d %s %d:%02d:%02d %03.3f peers.%d/%d Q.(%d %d) L.%d [%d:%d] M.%d %s",coin->symbol,numutxo,numbalances,numv,coin->pendbalances,firstgap!=0?firstgap->numsaved:-1,firstgap!=0?firstgap->numhashes:-1,firstgap!=0?firstgap->hdrsi:-1,coin->lastpending!=0?coin->lastpending->hdrsi:0,count,coin->numbundlesQ,numhashes,coin->blocksrecv,mbstr(str4,spaceused),numsaved,done,numemit,coin->numreqsent,coin->MAXBUNDLES,mbstr(str2,estsize),(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,difft.millis,p,coin->MAXPEERS,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ),coin->longestchain,coin->blocks.hwmchain.height/coin->chain->bundlesize,coin->blocks.hwmchain.height%coin->chain->bundlesize,coin->blocks.hwmchain.height,bits256_str(str5,coin->blocks.hwmchain.RO.hash2));
     //sprintf(str+strlen(str),"%s.%-2d %s time %.2f files.%d Q.%d %d\n",coin->symbol,flag,str,(double)(time(NULL)-coin->starttime)/60.,coin->peers.numfiles,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
     if ( time(NULL) > coin->lastdisp+10 )
     {

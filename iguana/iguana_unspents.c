@@ -108,15 +108,20 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
                 }
                 else
                 {
-                    utxo = &Uextras[unspentind];
-                    if ( utxo->spentflag == 0 )
+                    if ( 1 )
+                        flag = iguana_utxoupdate(coin,spentbp->hdrsi,unspentind,pkind,u->value,bp->hdrsi,spendind,height);
+                    else
                     {
-                        utxo->prevunspentind = A2[pkind].lastind;
-                        utxo->spentflag = 1;
-                        utxo->height = height;
-                        A2[pkind].total += u->value;
-                        A2[pkind].lastind = unspentind;
-                        flag = 0;
+                        utxo = &Uextras[unspentind];
+                        if ( utxo->spentflag == 0 )
+                        {
+                            utxo->prevunspentind = A2[pkind].lastind;
+                            utxo->spentflag = 1;
+                            utxo->height = height;
+                            A2[pkind].total += u->value;
+                            A2[pkind].lastind = unspentind;
+                            flag = 0;
+                        }
                     }
                 }
             }
@@ -616,15 +621,6 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
     return(-errs);
 }
 
-void iguana_realtime_update(struct iguana_info *coin)
-{
-    struct iguana_bundle *bp;
-    if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten )
-    {
-        
-    }
-}
-
 void iguana_purgevolatiles(struct iguana_info *coin,struct iguana_ramchain *ramchain)
 {
     if ( ramchain->allocatedA != 0 && ramchain->A != 0 )
@@ -723,14 +719,13 @@ void iguana_allocvolatile(struct iguana_info *coin,struct iguana_ramchain *ramch
 
 void iguana_truncatebalances(struct iguana_info *coin)
 {
-    int32_t i; struct iguana_bundle *bp; struct iguana_ramchain *ramchain;
+    int32_t i; struct iguana_bundle *bp;
     for (i=0; i<coin->balanceswritten; i++)
     {
         if ( (bp= coin->bundles[i]) != 0 )
         {
             bp->balancefinish = 0;
-            ramchain = &bp->ramchain;
-            iguana_purgevolatiles(coin,ramchain);
+            iguana_purgevolatiles(coin,&bp->ramchain);
         }
     }
     coin->balanceswritten = 0;
@@ -814,6 +809,28 @@ int32_t iguana_volatileinit(struct iguana_info *coin)
     coin->RTheight = coin->balanceswritten * coin->chain->bundlesize;
     iguana_bundlestats(coin,buf);
     return(coin->balanceswritten);
+}
+
+void iguana_RTramchainfree(struct iguana_info *coin)
+{
+    
+}
+
+void iguana_RTramchainalloc(struct iguana_info *coin)
+{
+    if ( coin->RTramchain.H.data == 0 )
+    {
+        
+    }
+}
+
+void iguana_realtime_update(struct iguana_info *coin)
+{
+    struct iguana_bundle *bp;
+    if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten )
+    {
+        iguana_RTramchainalloc(coin);
+    }
 }
 
 int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t purgedist)
@@ -935,6 +952,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
     char str[65]; printf("BALANCES WRITTEN for %d bundles %s\n",coin->balanceswritten,bits256_str(str,coin->balancehash));
     coin->balanceswritten = iguana_volatileinit(coin);
     iguana_utxoupdate(coin,-1,0,0,0,-1,0,-1); // free hashtables
+    iguana_RTramchainfree(coin);
     return(coin->balanceswritten);
 }
 

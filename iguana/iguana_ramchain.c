@@ -2279,17 +2279,27 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
 }
 
 
-/*{
-    RAMCHAIN_DESTDECLARE; RAMCHAIN_DECLARE;
-    if ( iguana_ramchain_alloc(coin,dest,mem,&HASHMEM,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace+sigspace,bp->bundleheight+starti,bp_n) == 0 )
+int64_t iguana_ramchainopen(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct OS_memspace *mem,struct OS_memspace *hashmem,int32_t bundleheight,bits256 hash2)
+{
+    RAMCHAIN_DECLARE; int32_t i,numblocks = 0; uint32_t numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata;
+    mem->alignflag = sizeof(uint32_t);
+    hashmem->alignflag = sizeof(uint32_t);
+    scriptspace = numexternaltxids = numtxids = coin->chain->bundlesize * 2;
+    numunspents = numspends = numpkinds = numtxids * 2;
+    for (i=0; i<coin->bundlescount; i++)
+        if ( (bp= coin->bundles[i]) != 0 && (rdata= bp->ramchain.H.data) != 0 )
+        {
+        }
+    if ( iguana_ramchain_init(ramchain,mem,hashmem,1,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,1,numblocks) > 0 )
     {
-        iguana_ramchain_link(dest,bp->hashes[starti],bp->hashes[endi],bp->hdrsi,bp->bundleheight,0,bp->n,firsti,0);
-        dest->expanded = 1;
-        dest->H.scriptoffset = 1;
-        _iguana_ramchain_setptrs(RAMCHAIN_DESTPTRS,dest->H.data);
-        iguana_ramchain_extras(coin,dest,&HASHMEM,0);
+        iguana_ramchain_link(ramchain,hash2,hash2,bundleheight/coin->chain->bundlesize,bundleheight,0,0,1,0);
+        ramchain->expanded = 1;
+        ramchain->H.scriptoffset = 1;
+        _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
+        iguana_ramchain_extras(coin,ramchain,hashmem,0);
     }
-}*/
+    return(rdata->allocsize);
+}
 
 // helper threads: NUM_HELPERS
 int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_bundle *bp,uint32_t starttime) // helper thread
