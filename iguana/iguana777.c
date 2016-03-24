@@ -385,6 +385,7 @@ void iguana_helper(void *arg)
         }
         if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
         {
+            coin->numbundlesQ--;
             idle = 0;
             if ( (bp= ptr->bp) != 0 && (coin= ptr->coin) != 0 )
             {
@@ -539,7 +540,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( coin->MAXMEM == 0 )
         coin->MAXMEM = IGUANA_DEFAULTRAM;
     if ( strcmp("BTC",coin->symbol) == 0 && coin->MAXMEM <= 4 )
-        maxval = coin->MAXMEM;
+        maxval = (int32_t)coin->MAXMEM;
     coin->MAXMEM *= (1024L * 1024 * 1024);
     if ( (coin->startPEND= juint(json,"startpend")) == 0 )
         coin->startPEND = IGUANA_MAXPENDBUNDLES * mult;

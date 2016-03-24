@@ -16,6 +16,24 @@
 #include "iguana777.h"
 #include "exchanges/bitcoin.h"
 
+struct iguana_hhutxo *iguana_hhutxofind(struct iguana_info *coin,uint16_t spent_hdrsi,uint32_t spent_unspentind)
+{
+    struct iguana_hhutxo *hhutxo; uint8_t buf[sizeof(spent_unspentind) + sizeof(spent_hdrsi)];
+    memcpy(&buf[sizeof(spent_unspentind)],(void *)&spent_hdrsi,sizeof(spent_hdrsi));
+    memcpy(buf,(void *)&spent_unspentind,sizeof(spent_unspentind));
+    HASH_FIND(hh,coin->utxotable,buf,sizeof(buf),hhutxo);
+    return(hhutxo);
+}
+
+struct iguana_hhaccount *iguana_hhaccountfind(struct iguana_info *coin,uint16_t spent_hdrsi,uint32_t spent_pkind)
+{
+    struct iguana_hhaccount *hhacct; uint8_t buf[sizeof(spent_pkind) + sizeof(spent_hdrsi)];
+    memcpy(&buf[sizeof(spent_pkind)],(void *)&spent_hdrsi,sizeof(spent_hdrsi));
+    memcpy(buf,(void *)&spent_pkind,sizeof(spent_pkind));
+    HASH_FIND(hh,coin->utxotable,buf,sizeof(buf),hhacct);
+    return(hhacct);
+}
+
 int32_t iguana_utxoupdate(struct iguana_info *coin,uint16_t spent_hdrsi,uint32_t spent_unspentind,uint32_t spent_pkind,uint64_t spent_value,int32_t hdrsi,uint32_t spendind,uint32_t height)
 {
     struct iguana_hhutxo *hhutxo,*tmputxo; struct iguana_hhaccount *hhacct,*tmpacct;
@@ -44,16 +62,11 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,uint16_t spent_hdrsi,uint32_t
     }
     printf("unexpected utxoupdate\n");
     exit(-1);
-    memcpy(&buf[sizeof(uint32_t)],(void *)&spent_hdrsi,sizeof(spent_hdrsi));
-    memcpy(buf,(void *)&spent_unspentind,sizeof(spent_unspentind));
-    HASH_FIND(hh,coin->utxotable,buf,sizeof(buf),hhutxo);
-    if ( hhutxo != 0 && hhutxo->u.spentflag != 0 )
+    if ( (hhutxo= iguana_hhutxofind(coin,spent_hdrsi,spent_unspentind)) != 0 && hhutxo->u.spentflag != 0 )
         return(-1);
     hhutxo = calloc(1,sizeof(*hhutxo));
     HASH_ADD(hh,coin->utxotable,buf,sizeof(buf),hhutxo);
-    memcpy(buf,(void *)&spent_pkind,sizeof(spent_pkind));
-    HASH_FIND(hh,coin->accountstable,buf,sizeof(buf),hhacct);
-    if ( hhacct == 0 )
+    if ( (hhacct= iguana_hhaccountfind(coin,spent_hdrsi,spent_pkind)) == 0 )
     {
         hhacct = calloc(1,sizeof(*hhacct));
         HASH_ADD(hh,coin->accountstable,buf,sizeof(buf),hhacct);
@@ -132,11 +145,6 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
         }
     }
     return(-errs);
-}
-
-void iguana_realtime_update(struct iguana_info *coin)
-{
-    //bp->hdrsi >= coin->longestchain/coin->chain->bundlesize && bp->hdrsi >= coin->balanceswritten
 }
 
 struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_ramchain **ramchainp,int64_t *balancep,uint32_t *lastunspentindp,struct iguana_pkhash *p,uint8_t rmd160[20],int32_t firsti,int32_t endi)
@@ -609,6 +617,15 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
     return(-errs);
 }
 
+void iguana_realtime_update(struct iguana_info *coin)
+{
+    struct iguana_bundle *bp;
+    if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten )
+    {
+        
+    }
+}
+
 void iguana_purgevolatiles(struct iguana_info *coin,struct iguana_ramchain *ramchain)
 {
     if ( ramchain->allocatedA != 0 && ramchain->A != 0 )
@@ -898,7 +915,6 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
     }
     coin->balancehash = balancehash;
     coin->balanceswritten = numhdrsi;
-    iguana_utxoupdate(coin,-1,0,0,0,-1,0,-1); // free hashtables
     for (hdrsi=0; hdrsi<numhdrsi; hdrsi++)
         if ( (bp= coin->bundles[hdrsi]) == 0 )
         {
@@ -919,6 +935,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
         }
     char str[65]; printf("BALANCES WRITTEN for %d bundles %s\n",coin->balanceswritten,bits256_str(str,coin->balancehash));
     coin->balanceswritten = iguana_volatileinit(coin);
+    iguana_utxoupdate(coin,-1,0,0,0,-1,0,-1); // free hashtables
     return(coin->balanceswritten);
 }
 
