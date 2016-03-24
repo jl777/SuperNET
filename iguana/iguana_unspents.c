@@ -319,12 +319,6 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
     for (spendind=ramchain->H.data->firsti; spendind<n; spendind++)
     {
         s = &S[spendind];
-        if ( spendind == nextT[numtxid].firstvin )
-        {
-            height = bp->bundleheight + numtxid;
-            //printf("height.%d firstvin.%d\n",height,nextT[numtxid].firstvin);
-            numtxid++;
-        }
         u = 0;
         if ( (spendind & 0xff) == 1 )
             now = (uint32_t)time(NULL);
@@ -364,6 +358,12 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
                 printf("utxogen: unresolved spendind.%d hdrsi.%d\n",spendind,bp->hdrsi);
                 break;
             }
+        }
+        if ( spendind == nextT[numtxid].firstvin )
+        {
+            height = bp->bundleheight++;
+            //printf("height.%d firstvin.%d\n",height,nextT[numtxid].firstvin);
+            numtxid++;
         }
     }
     if ( numtxid != bp->ramchain.H.data->numtxids )
