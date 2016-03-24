@@ -14503,5 +14503,17 @@ len = 0;
                     }
                 }
             }
+            /*for (j=0; j<num; j++)
+             if ( ipbits[j] == fpipbits )
+             {
+             ptr = ptrs[j];
+             filesize = filesizes[j];
+             break;
+             }
+             if ( j == num )
+             {
+             printf("j.%d num.%d bundlei.%d\n",j,num,bundlei);
+             break;
+             }*/
 
 #endif

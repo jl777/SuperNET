@@ -695,7 +695,7 @@ void *iguana_iAddriterator(struct iguana_info *coin,struct iguana_iAddr *iA)
             {
                 if ( iguana_rwiAddrind(coin,1,iA,iA->hh.itemind) > 0 )
                 {
-                    //printf("iA.%p iguana_startconnection.(%s) status.%d pending.%d\n",iA,addr->ipaddr,iA->status,addr->pending);
+                    printf("iA.%p iguana_startconnection.(%s) status.%d pending.%d\n",iA,addr->ipaddr,iA->status,addr->pending);
                     iA->status = IGUANA_PEER_CONNECTING;
                     addr->pending = (uint32_t)time(NULL);
                     iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
@@ -755,7 +755,7 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
             expand_ipbits(checkaddr,ipbits);
             if ( strcmp(checkaddr,ipaddr) == 0 )
             {
-                //printf("valid ipaddr.(%s) MAXPEERS.%d\n",ipaddr,coin->MAXPEERS);
+                printf("valid ipaddr.(%s) MAXPEERS.%d\n",ipaddr,coin->MAXPEERS);
                 if ( (iA= iguana_iAddrhashfind(coin,ipbits,1)) != 0 )
                 {
                     if ( iA->status != IGUANA_PEER_CONNECTING && iA->status != IGUANA_PEER_READY && iA->status != IGUANA_PEER_ELIGIBLE )

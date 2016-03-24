@@ -34,7 +34,7 @@ struct iguana_hhaccount *iguana_hhaccountfind(struct iguana_info *coin,uint16_t 
     return(hhacct);
 }
 
-int32_t iguana_utxoupdate(struct iguana_info *coin,uint16_t spent_hdrsi,uint32_t spent_unspentind,uint32_t spent_pkind,uint64_t spent_value,int32_t hdrsi,uint32_t spendind,uint32_t height)
+int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t spent_unspentind,uint32_t spent_pkind,uint64_t spent_value,int32_t hdrsi,uint32_t spendind,uint32_t height)
 {
     struct iguana_hhutxo *hhutxo,*tmputxo; struct iguana_hhaccount *hhacct,*tmpacct;
     uint8_t buf[sizeof(spent_hdrsi) + sizeof(uint32_t)];
@@ -808,24 +808,64 @@ int32_t iguana_volatileinit(struct iguana_info *coin)
 
 void iguana_RTramchainfree(struct iguana_info *coin)
 {
-    
+    iguana_ramchain_free(coin,&coin->RTramchain,1);
 }
 
-void iguana_RTramchainalloc(struct iguana_info *coin)
+void iguana_RTramchainalloc(struct iguana_info *coin,struct iguana_bundle *bp)
 {
+    struct iguana_ramchain *dest = &coin->RTramchain;
     if ( coin->RTramchain.H.data == 0 )
     {
-        
+        iguana_ramchainopen(coin,dest,&coin->RTmem,&coin->RThashmem,bp->bundleheight,bp->hashes[0]);
+        dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
+        dest->externalind = dest->H.stacksize = 0;
+        dest->H.scriptoffset = 1;
     }
 }
 
-void iguana_realtime_update(struct iguana_info *coin)
+int32_t iguana_realtime_update(struct iguana_info *coin)
 {
-    struct iguana_bundle *bp;
-    if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten )
+    struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,err;
+    struct iguana_block *block; struct iguana_blockRO *B; struct iguana_ramchain *dest,blockR;
+    long filesize; void *ptr;
+    if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n )
     {
-        iguana_RTramchainalloc(coin);
+        iguana_RTramchainalloc(coin,bp);
+        if ( (rdata= coin->RTramchain.H.data) != 0 && coin->RTheight < coin->blocks.hwmchain.height)
+        {
+            dest = &coin->RTramchain;
+            B = (void *)(long)((long)rdata + rdata->Boffset);
+            bundlei = (coin->RTheight % coin->chain->bundlesize);
+            if ( (block= bp->blocks[bundlei]) != 0 )
+            {
+                iguana_blocksetcounters(coin,block,dest);
+                coin->blocks.RO[bp->bundleheight+bundlei] = block->RO;
+                B[bundlei] = block->RO;
+                if ( (ptr= iguana_bundlefile(coin,&filesize,bp,bundlei)) != 0 )
+                {
+                    if ( iguana_mapchaininit(coin,&blockR,bp,bundlei,block,ptr,filesize) == 0 )
+                    {
+                        if ( (err= iguana_ramchain_iterate(coin,dest,&blockR,bp)) != 0 )
+                        {
+                            printf("error adding height.%d\n",bp->bundleheight+bundlei);
+                            if ( (block= bp->blocks[bundlei]) != 0 )
+                            {
+                                block->queued = 0;
+                                block->fpipbits = 0;
+                                bp->issued[bundlei] = 0;
+                                block->issued = 0;
+                            }
+                            return(-1);
+                        }
+                        printf("added RTheight.%d hwm.%d longest.%d\n",coin->RTheight,coin->blocks.hwmchain.height,coin->longestchain);
+                        coin->RTheight++;
+                        coin->RTramchain.H.data->numblocks = bundlei + 1;
+                    } else printf("error mapchaininit\n");
+                }
+            } else return(-1);
+        }
     }
+    return(0);
 }
 
 int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t purgedist)

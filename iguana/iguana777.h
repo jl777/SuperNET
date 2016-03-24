@@ -473,7 +473,7 @@ struct iguana_info
     portable_mutex_t scripts_mutex[2]; FILE *scriptsfp[2]; void *scriptsptr[2]; long scriptsfilesize[2];
     //struct scriptinfo *scriptstable[2];
     struct iguana_bundle *bundles[IGUANA_MAXBUNDLES],*current,*lastpending;
-    struct iguana_ramchain RTramchain;
+    struct iguana_ramchain RTramchain; struct OS_memspace RTmem,RThashmem;
     int32_t numremain,numpendings,zcount,recvcount,bcount,pcount,lastbundle,numsaved,pendbalances,numverified;
     uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ,lastbundleitime,lastdisp;
     double backstopmillis; bits256 backstophash2; int64_t spaceused;
@@ -804,10 +804,16 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
 int32_t iguana_blockreq(struct iguana_info *coin,int32_t height,int32_t priority);
 int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp);
 void iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain *ramchain);
-void iguana_realtime_update(struct iguana_info *coin);
+int32_t iguana_realtime_update(struct iguana_info *coin);
 int32_t iguana_mapvolatiles(struct iguana_info *coin,struct iguana_ramchain *ramchain);
 void iguana_purgevolatiles(struct iguana_info *coin,struct iguana_ramchain *ramchain);
 int32_t iguana_volatileinit(struct iguana_info *coin);
+int64_t iguana_ramchainopen(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct OS_memspace *mem,struct OS_memspace *hashmem,int32_t bundleheight,bits256 hash2);
+int32_t iguana_ramchain_free(struct iguana_info *coin,struct iguana_ramchain *ramchain,int32_t deleteflag);
+void iguana_blocksetcounters(struct iguana_info *coin,struct iguana_block *block,struct iguana_ramchain * ramchain);
+int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain *dest,struct iguana_ramchain *ramchain,struct iguana_bundle *bp);
+void *iguana_bundlefile(struct iguana_info *coin,long *filesizep,struct iguana_bundle *bp,int32_t bundlei);
+int32_t iguana_mapchaininit(struct iguana_info *coin,struct iguana_ramchain *mapchain,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block,void *ptr,long filesize);
 
 extern int32_t HDRnet,netBLOCKS;
 

@@ -594,7 +594,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
 
 int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    int32_t i,ready,valid; struct iguana_block *block;
+    int32_t i,ready,valid,hdrsi,checki; struct iguana_block *block; char fname[1024]; static bits256 zero;
     for (i=ready=0; i<bp->n; i++)
     {
         if ( (block= bp->blocks[i]) != 0 )
@@ -602,7 +602,9 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp)
             //printf("(%x:%x) ",(uint32_t)block->RO.hash2.ulongs[3],(uint32_t)bp->hashes[i].ulongs[3]);
             if ( block->fpipbits == 0 || (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) || iguana_blockvalidate(coin,&valid,block,1) < 0 )
             {
-                char str[65]; printf(">>>>>>> ipbits.%x null prevblock error at ht.%d patch.(%s) and reissue\n",block->fpipbits,bp->bundleheight+i,bits256_str(str,block->RO.prev_block));
+                if ( (checki= iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,block->RO.hash2,zero,1)) == i )
+                    OS_removefile(fname,0);
+                char str[65]; printf(">>>>>>> ipbits.%x null prevblock error at ht.%d patch.(%s) and reissue %s\n",block->fpipbits,bp->bundleheight+i,bits256_str(str,block->RO.prev_block),fname);
                 block->fpipbits = 0;
                 block->fpos = -1;
                 block->queued = 0;
