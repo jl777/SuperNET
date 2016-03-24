@@ -976,6 +976,8 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
             if ( coin->blocks.hwmchain.height >= coin->longestchain-1 )
                 threshold = 1000;
             else threshold = 300;
+            if ( strcmp(coin->symbol,"BTC") != 0 )
+                threshold *= 10;
             if ( coin->blocks.hwmchain.height < coin->longestchain && ((strcmp(coin->symbol,"BTC") != 0 && coin->backstop != coin->blocks.hwmchain.height+1) || lag > threshold) )
             {
                 coin->backstop = coin->blocks.hwmchain.height+1;
@@ -1005,7 +1007,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                     iguana_blockQ("mainchain",coin,0,-1,hash2,lag > 100 * threshold);
                     flag++;
                     char str[65];
-                    if ( 1 && (rand() % 1000) == 0 || bp->bundleheight > coin->longestchain-coin->chain->bundlesize )
+                    if ( 1 && (rand() % 1000) == 0 )//|| bp->bundleheight > coin->longestchain-coin->chain->bundlesize )
                         printf("%s %s MAINCHAIN.%d threshold %.3f %.3f lag %.3f\n",coin->symbol,bits256_str(str,hash2),coin->blocks.hwmchain.height+1,threshold,coin->backstopmillis,lag);
                 }
                 else if ( bp != 0 && bundlei < bp->n-1 && (bits256_nonz(bp->hashes[bundlei+1]) != 0 || (bp->speculative != 0 && bits256_nonz(bp->speculative[bundlei+1]) != 0)) )

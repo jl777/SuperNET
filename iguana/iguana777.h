@@ -787,7 +787,7 @@ int32_t iguana_vinscriptparse(struct iguana_info *coin,struct vin_info *vp,uint3
 void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msghdr *H,uint8_t *buf,int32_t len);
 int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp);
 int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp);
-int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int32_t incremental);
+int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int32_t startheight,int32_t endheight);
 int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp);
 void iguana_validateQ(struct iguana_info *coin,struct iguana_bundle *bp);
 struct iguana_bloominds iguana_calcbloom(bits256 hash2);
