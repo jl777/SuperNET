@@ -842,8 +842,8 @@ void iguana_RTramchainalloc(struct iguana_info *coin,struct iguana_bundle *bp)
         size = (strcmp("BTC",coin->symbol) == 0) ? 1.5*1024*1024*1024 : 16*1024*1024;
         if ( coin->RTmem.ptr == 0 )
             iguana_meminit(&coin->RTmem,coin->symbol,0,size + 65536*3,0);
-        //if ( coin->RThashmem.ptr == 0 )
-        //    iguana_meminit(&coin->RThashmem,coin->symbol,0,(uint64_t)IGUANA_MAXPACKETSIZE*mult + 65536*3,0);
+        if ( coin->RThashmem.ptr == 0 )
+            iguana_meminit(&coin->RThashmem,coin->symbol,0,65536*3,0);
         iguana_ramchainopen(coin,dest,&coin->RTmem,&coin->RThashmem,bp->bundleheight,bp->hashes[0]);
         dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
         dest->externalind = dest->H.stacksize = 0;
