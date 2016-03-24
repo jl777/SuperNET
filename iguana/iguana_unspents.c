@@ -862,7 +862,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                             }
                             return(-1);
                         }
-                        char str[65]; printf("RTheight.%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld %s\n",coin->RTheight,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize,mbstr(str,dest->H.data->allocsize));
+                        char str[65]; printf(">>>> RTheight.%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld %s\n",coin->RTheight,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize,mbstr(str,dest->H.data->allocsize));
                         coin->RTheight++;
                         coin->RTramchain.H.data->numblocks = bundlei + 1;
                     } else printf("error mapchaininit\n");
@@ -875,6 +875,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             }
         }
     }
+    printf(" bp->hdrsi %d == %d coin->longestchain/coin->chain->bundlesize && bp->hdrsi %d == %d coin->balanceswritten && coin->RTheight %d >= %d bp->bundleheight && coin->RTheight %d < %d bp->bundleheight+bp->n\n",bp->hdrsi,coin->longestchain/coin->chain->bundlesize,bp->hdrsi,coin->balanceswritten,coin->RTheight,bp->bundleheight,coin->RTheight,bp->bundleheight+bp->n);
     return(0);
 }
 
