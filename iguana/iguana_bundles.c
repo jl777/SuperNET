@@ -290,7 +290,10 @@ struct iguana_bundle *iguana_bundlecreate(struct iguana_info *coin,int32_t *bund
         if ( iguana_bundlefind(coin,&bp,bundleip,bundlehash2) != 0 )
         {
             if ( bp->bundleheight >= 0 && bp->bundleheight != (bundleheight - *bundleip) )
+            {
                 printf("bundlecreate warning: bp->bundleheight %d != %d (bundleheight %d - %d bundlei)\n",bp->bundleheight,(bundleheight - *bundleip),bundleheight,*bundleip);
+                return(0);
+            }
             else if ( bits256_nonz(bp->allhash) == 0 )
                 bp->allhash = allhash;
             return(bp);
