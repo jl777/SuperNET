@@ -385,10 +385,10 @@ void iguana_helper(void *arg)
         }
         if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
         {
-            coin->numbundlesQ--;
             idle = 0;
             if ( (bp= ptr->bp) != 0 && (coin= ptr->coin) != 0 )
             {
+                coin->numbundlesQ--;
                 if ( coin->started != 0 && time(NULL) >= bp->nexttime )
                     flag += iguana_bundleiters(ptr->coin,&MEM,MEMB,bp,ptr->timelimit);
                 else iguana_bundleQ(ptr->coin,bp,1000);
