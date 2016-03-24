@@ -66,6 +66,74 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,uint16_t spent_hdrsi,uint32_t
     return(0);
 }
 
+int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struct iguana_bundle *bp,int32_t height,uint32_t spendind,struct iguana_bundle *spentbp,uint32_t unspentind)
+{
+    struct iguana_unspent *u,*spentU; struct iguana_account *A2;
+    int32_t flag,errs=0; struct iguana_utxo *utxo,*Uextras; uint32_t pkind;
+    if ( incremental == 0 )
+    {
+        Uextras = spentbp->ramchain.Uextras;
+        A2 = spentbp->ramchain.A;
+    }
+    else
+    {
+        Uextras = 0;
+        A2 = 0;
+    }
+    if ( incremental != 0 || (A2 != 0 && Uextras != 0) )
+    {
+        spentU = (void *)(long)((long)spentbp->ramchain.H.data + spentbp->ramchain.H.data->Uoffset);
+        u = &spentU[unspentind];
+        if ( (pkind= u->pkind) != 0 && pkind < spentbp->ramchain.H.data->numpkinds )
+        {
+            flag = -1;
+            if ( incremental == 0 )
+            {
+                if ( Uextras == 0 || A2 == 0 )
+                {
+                    printf("null ptrs.[%d] %p %p\n",spentbp->hdrsi,spentbp->ramchain.Uextras,spentbp->ramchain.A);
+                    errs++;
+                }
+                else
+                {
+                    utxo = &Uextras[unspentind];
+                    if ( utxo->spentflag == 0 )
+                    {
+                        utxo->prevunspentind = A2[pkind].lastind;
+                        utxo->spentflag = 1;
+                        utxo->height = height;
+                        A2[pkind].total += u->value;
+                        A2[pkind].lastind = unspentind;
+                        flag = 0;
+                    }
+                }
+            }
+            else
+            {
+                if ( bp != spentbp )
+                {
+                    utxo = &Uextras[unspentind];
+                    if ( utxo->spentflag == 0 )
+                        flag = iguana_utxoupdate(coin,spentbp->hdrsi,unspentind,pkind,u->value,bp->hdrsi,spendind,height);
+                }
+                else flag = iguana_utxoupdate(coin,spentbp->hdrsi,unspentind,pkind,u->value,bp->hdrsi,spendind,height);
+            }
+            if ( flag != 0 )
+            {
+                errs++;
+                printf("iguana_balancegen: pkind.%d double spend of hdrsi.%d unspentind.%d prev.%u spentflag.%d height.%d\n",pkind,spentbp->hdrsi,unspentind,utxo->prevunspentind,utxo->spentflag,utxo->height);
+                getchar();
+            }
+        }
+        else
+        {
+            errs++;
+            printf("iguana_balancegen: pkind overflow %d vs %d\n",pkind,spentbp->ramchain.H.data->numpkinds);
+        }
+    }
+    return(-errs);
+}
+
 void iguana_realtime_update(struct iguana_info *coin)
 {
     //bp->hdrsi >= coin->longestchain/coin->chain->bundlesize && bp->hdrsi >= coin->balanceswritten
@@ -425,13 +493,10 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
 
 int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int32_t startheight,int32_t endheight)
 {
-    uint32_t unspentind,pkind,txidind,h,i,j,k,ind,now; struct iguana_account *A2;
-    struct iguana_unspent *u,*spentU; struct iguana_spend *S,*s; struct iguana_ramchain *ramchain;
+    uint32_t unspentind,txidind,h,i,j,k,ind,now;  struct iguana_ramchain *ramchain;
     struct iguana_bundle *spentbp; struct iguana_txid *T,*nextT; struct iguana_blockRO *B;
-    int32_t flag,hdrsi,spendind,n,errs=0,incremental,emit=0; struct iguana_utxo *utxo,*Uextras;
+    int32_t hdrsi,spendind,n,errs=0,incremental,emit=0; struct iguana_spend *S,*s;
     ramchain = &bp->ramchain;
-    Uextras = 0;
-    A2 = 0;
     if ( startheight == bp->bundleheight && endheight == bp->bundleheight+bp->n-1 )
         incremental = 0;
     else incremental = 1;
@@ -468,9 +533,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
             for (k=0; k<nextT[txidind].numvins && errs==0; k++,spendind++)
             {
                 s = &S[spendind];
-                u = 0;
                 unspentind = 0;
-                hdrsi = -1;
                 spentbp = 0;
                 if ( s->external != 0 && s->prevout >= 0 )
                 {
@@ -480,7 +543,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
                     {
                         h = ramchain->Xspendinds[emit].height;
                         unspentind = ramchain->Xspendinds[emit].ind;
-                        if ( (hdrsi= ramchain->Xspendinds[emit].hdrsi) >= 0 && hdrsi <= bp->hdrsi )
+                        if ( (hdrsi= ramchain->Xspendinds[emit].hdrsi) >= 0 && hdrsi < bp->hdrsi )
                             spentbp = coin->bundles[hdrsi];
                         else
                         {
@@ -494,7 +557,6 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
                 else if ( s->prevout >= 0 )
                 {
                     spentbp = bp;
-                    hdrsi = bp->hdrsi;
                     h = bp->bundleheight + i;
                     if ( (ind= s->spendtxidind) != 0 && ind < spentbp->ramchain.H.data->numtxids )
                     {
@@ -507,71 +569,18 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
                         printf("iguana_balancegen txidind overflow %u vs %u\n",ind,spentbp->ramchain.H.data->numtxids);
                         errs++;
                     }
-                    //printf("[%d] spendind.%d -> (hdrsi.%d u%d)\n",bp->hdrsi,spendind,hdrsi,unspentind);
                 }
                 else continue;
                 if ( spentbp != 0 && unspentind > 0 && unspentind < spentbp->ramchain.H.data->numunspents )
                 {
                     if ( now > spentbp->lastprefetch+20 || (spentbp->dirty % 50000) == 0 )
                     {
-                        //printf("current.%d prefetch.[%d] lag.%u\n",spentbp == bp,spentbp->hdrsi,now - spentbp->lastprefetch);
                         iguana_ramchain_prefetch(coin,&spentbp->ramchain);
                         spentbp->lastprefetch = now;
                     }
                     spentbp->dirty++;
-                    Uextras = spentbp->ramchain.Uextras;
-                    A2 = spentbp->ramchain.A;
-                    if ( incremental != 0 || (A2 != 0 && Uextras != 0) )
-                    {
-                        spentU = (void *)(long)((long)spentbp->ramchain.H.data + spentbp->ramchain.H.data->Uoffset);
-                        u = &spentU[unspentind];
-                        if ( (pkind= u->pkind) != 0 && pkind < spentbp->ramchain.H.data->numpkinds )
-                        {
-                            flag = -1;
-                            if ( incremental == 0 )
-                            {
-                                if ( Uextras == 0 || A2 == 0 )
-                                {
-                                    printf("null ptrs.[%d] %p %p\n",spentbp->hdrsi,spentbp->ramchain.Uextras,spentbp->ramchain.A);
-                                    errs++;
-                                }
-                                else
-                                {
-                                    utxo = &Uextras[unspentind];
-                                    if ( utxo->spentflag == 0 )
-                                    {
-                                        utxo->prevunspentind = A2[pkind].lastind;
-                                        utxo->spentflag = 1;
-                                        utxo->height = h;
-                                        A2[pkind].total += u->value;
-                                        A2[pkind].lastind = unspentind;//spendind;
-                                        flag = 0;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                if ( bp != spentbp )
-                                {
-                                    utxo = &Uextras[unspentind];
-                                    if ( utxo->spentflag == 0 )
-                                        flag = iguana_utxoupdate(coin,spentbp->hdrsi,unspentind,pkind,u->value,bp->hdrsi,spendind,h);
-                                }
-                                else flag = iguana_utxoupdate(coin,spentbp->hdrsi,unspentind,pkind,u->value,bp->hdrsi,spendind,h);
-                            }
-                            if ( flag != 0 )
-                            {
-                                errs++;
-                                printf("iguana_balancegen: pkind.%d double spend of hdrsi.%d unspentind.%d prev.%u spentflag.%d height.%d\n",pkind,spentbp->hdrsi,unspentind,utxo->prevunspentind,utxo->spentflag,utxo->height);
-                                getchar();
-                            }
-                        }
-                        else
-                        {
-                            errs++;
-                            printf("iguana_balancegen: pkind overflow %d vs %d\n",pkind,spentbp->ramchain.H.data->numpkinds);
-                        }
-                    }
+                    if ( iguana_volatileupdate(coin,incremental,bp,h,spendind,spentbp,unspentind) < 0 )
+                        errs++;
                 }
                 else
                 {
