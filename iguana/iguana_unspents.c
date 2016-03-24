@@ -315,6 +315,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
     total += n;
     height = bp->bundleheight;
     now = (uint32_t)time(NULL);
+    // iterate by height!
     //printf("start UTXOGEN.%d max.%d ptr.%p\n",bp->bundleheight,n,ptr);
     for (spendind=ramchain->H.data->firsti; spendind<n; spendind++)
     {
@@ -438,7 +439,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
             printf("balancegen: refheight.%d < startheight.%d\n",refheight,startheight);
             continue;
         }
-        if ( refheight > endheight )
+        if ( 0 && refheight > endheight )
         {
             printf("balancegen: refheight.%d > endheight.%d\n",refheight,endheight);
             break;
