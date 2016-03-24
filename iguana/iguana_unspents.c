@@ -16,13 +16,35 @@
 #include "iguana777.h"
 #include "exchanges/bitcoin.h"
 
-int32_t iguana_utxoupdate(struct iguana_info *coin,uint16_t spent_hdris,uint32_t spent_unspentind,uint32_t spent_pkind,uint64_t spent_value,int32_t hdrsi,uint32_t spendind,uint32_t height)
+int32_t iguana_utxoupdate(struct iguana_info *coin,uint16_t spent_hdrsi,uint32_t spent_unspentind,uint32_t spent_pkind,uint64_t spent_value,int32_t hdrsi,uint32_t spendind,uint32_t height)
 {
-    struct iguana_hhutxo *hhutxo; struct iguana_hhaccount *hhacct;
-    uint8_t buf[sizeof(spent_hdris) + sizeof(uint32_t)];
+    struct iguana_hhutxo *hhutxo,*tmputxo; struct iguana_hhaccount *hhacct,*tmpacct;
+    uint8_t buf[sizeof(spent_hdrsi) + sizeof(uint32_t)];
     printf("unexpected utxoupdate\n");
     exit(-1);
-    memcpy(&buf[sizeof(uint32_t)],(void *)&spent_hdris,sizeof(spent_hdris));
+    if ( spent_hdrsi < 0 )
+    {
+        if ( coin->utxotable != 0 )
+        {
+            HASH_ITER(hh,coin->utxotable,hhutxo,tmputxo)
+            {
+                HASH_DEL(coin->utxotable,hhutxo);
+                free(hhutxo);
+            }
+            coin->utxotable = 0;
+        }
+        if ( coin->accountstable != 0 )
+        {
+            HASH_ITER(hh,coin->accountstable,hhacct,tmpacct)
+            {
+                HASH_DEL(coin->accountstable,hhacct);
+                free(hhacct);
+            }
+            coin->accountstable = 0;
+        }
+        return(0);
+    }
+    memcpy(&buf[sizeof(uint32_t)],(void *)&spent_hdrsi,sizeof(spent_hdrsi));
     memcpy(buf,(void *)&spent_unspentind,sizeof(spent_unspentind));
     HASH_FIND(hh,coin->utxotable,buf,sizeof(buf),hhutxo);
     if ( hhutxo != 0 && hhutxo->u.spentflag != 0 )
@@ -310,7 +332,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
         {
             if ( (spentbp= iguana_spent(coin,&prevhash,&unspentind,ramchain,bp->hdrsi,s)) != 0 )
             {
-                if ( now > spentbp->lastprefetch+30 )//|| (spentbp->dirty % 100000) == 0 )
+                if ( now > spentbp->lastprefetch+600 || (spentbp->dirty % 100000) == 0 )
                 {
                     //printf("u current.%d prefetch.[%d] lag.%u\n",spentbp == bp,spentbp->hdrsi,now - spentbp->lastprefetch);
                     iguana_ramchain_prefetch(coin,&spentbp->ramchain);
@@ -466,7 +488,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
             now = (uint32_t)time(NULL);
         if ( spentbp != 0 && unspentind > 0 && unspentind < spentbp->ramchain.H.data->numunspents )
         {
-            if ( now > spentbp->lastprefetch+30 )//|| (spentbp->dirty % 100000) == 0 )
+            if ( now > spentbp->lastprefetch+600 || (spentbp->dirty % 100000) == 0 )
             {
                 //printf("current.%d prefetch.[%d] lag.%u\n",spentbp == bp,spentbp->hdrsi,now - spentbp->lastprefetch);
                 iguana_ramchain_prefetch(coin,&spentbp->ramchain);
@@ -743,6 +765,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
     }
     coin->balancehash = balancehash;
     coin->balanceswritten = numhdrsi;
+    iguana_utxoupdate(coin,-1,0,0,0,-1,0,-1); // free hashtables
     for (hdrsi=0; hdrsi<numhdrsi; hdrsi++)
         if ( (bp= coin->bundles[hdrsi]) == 0 || iguana_mapvolatiles(coin,&bp->ramchain) != 0 )
             printf("error mapping bundle.[%d]\n",hdrsi);

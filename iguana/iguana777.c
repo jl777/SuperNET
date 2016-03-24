@@ -533,19 +533,19 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     sprintf(dirname,"%s/%s",GLOBALTMPDIR,symbol), OS_ensure_directory(dirname);
     coin->initialheight = initialheight;
     coin->mapflags = mapflags;
-    mult = (strcmp("BTC",coin->symbol) != 0) ? 64 : 1;
+    mult = (strcmp("BTC",coin->symbol) != 0) ? 512 : 1;
     maxval = (strcmp("BTC",coin->symbol) != 0) ? 2048 : 64;
     if ( (coin->startPEND= juint(json,"startpend")) == 0 )
         coin->startPEND = IGUANA_MAXPENDBUNDLES * mult;
-    if ( coin->startPEND > 1024 )
-        coin->startPEND = 1024;
+    if ( coin->startPEND > 2048 )
+        coin->startPEND = 2048;
     else if ( coin->startPEND < 2 )
         coin->startPEND = 2;
     coin->MAXBUNDLES = coin->startPEND;
     if ( (coin->endPEND= juint(json,"endpend")) == 0 )
         coin->endPEND = IGUANA_MINPENDBUNDLES * mult;
-    if ( coin->endPEND > 1024 )
-        coin->endPEND = 1024;
+    if ( coin->endPEND > 2048 )
+        coin->endPEND = 2048;
     else if ( coin->endPEND < 2 )
         coin->endPEND = 2;
     coin->enableCACHE = (strcmp("BTC",coin->symbol) != 0);
