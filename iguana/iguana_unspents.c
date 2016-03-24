@@ -819,6 +819,8 @@ void iguana_RTramchainalloc(struct iguana_info *coin,struct iguana_bundle *bp)
         mult = (strcmp("BTC",coin->symbol) == 0) ? 2048 : 4;
         if ( coin->RTmem.ptr == 0 )
             iguana_meminit(&coin->RTmem,coin->symbol,0,IGUANA_MAXPACKETSIZE*mult + 65536*3,0);
+        if ( coin->RThashmem.ptr == 0 )
+            iguana_meminit(&coin->RThashmem,coin->symbol,0,IGUANA_MAXPACKETSIZE*mult + 65536*3,0);
         iguana_ramchainopen(coin,dest,&coin->RTmem,&coin->RThashmem,bp->bundleheight,bp->hashes[0]);
         dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
         dest->externalind = dest->H.stacksize = 0;
@@ -834,7 +836,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n )
     {
         iguana_RTramchainalloc(coin,bp);
-        if ( (rdata= coin->RTramchain.H.data) != 0 && coin->RTheight < coin->blocks.hwmchain.height)
+        while ( (rdata= coin->RTramchain.H.data) != 0 && coin->RTheight <= coin->blocks.hwmchain.height)
         {
             dest = &coin->RTramchain;
             B = (void *)(long)((long)rdata + rdata->Boffset);
@@ -860,7 +862,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                             }
                             return(-1);
                         }
-                        printf("added RTheight.%d hwm.%d longest.%d\n",coin->RTheight,coin->blocks.hwmchain.height,coin->longestchain);
+                        char str[65]; printf("RTheight.%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld %s\n",coin->RTheight,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize,mbstr(str,dest->H.data->allocsize));
                         coin->RTheight++;
                         coin->RTramchain.H.data->numblocks = bundlei + 1;
                     } else printf("error mapchaininit\n");

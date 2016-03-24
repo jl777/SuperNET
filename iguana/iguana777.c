@@ -289,15 +289,19 @@ void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t ti
 void iguana_validateQ(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     struct iguana_helper *ptr;
-    ptr = mycalloc('i',1,sizeof(*ptr));
-    ptr->allocsize = sizeof(*ptr);
-    ptr->coin = coin;
-    ptr->bp = bp, ptr->hdrsi = bp->hdrsi;
-    ptr->type = 'V';
-    ptr->starttime = (uint32_t)time(NULL);
-    ptr->timelimit = 0;
-    //printf("VALIDATE Q %s bundle.%d[%d] utxofinish.%u balancefinish.%u\n",coin->symbol,ptr->hdrsi,bp->n,bp->utxofinish,bp->balancefinish);
-    queue_enqueue("validateQ",&validateQ,&ptr->DL,0);
+    if ( bp->validated == 0 )
+    {
+        ptr = mycalloc('i',1,sizeof(*ptr));
+        ptr->allocsize = sizeof(*ptr);
+        ptr->coin = coin;
+        ptr->bp = bp, ptr->hdrsi = bp->hdrsi;
+        ptr->type = 'V';
+        ptr->starttime = (uint32_t)time(NULL);
+        ptr->timelimit = 0;
+        bp->validated = 1;
+        //printf("VALIDATE Q %s bundle.%d[%d] utxofinish.%u balancefinish.%u\n",coin->symbol,ptr->hdrsi,bp->n,bp->utxofinish,bp->balancefinish);
+        queue_enqueue("validateQ",&validateQ,&ptr->DL,0);
+    }
 }
 
 void iguana_balancesQ(struct iguana_info *coin,struct iguana_bundle *bp)

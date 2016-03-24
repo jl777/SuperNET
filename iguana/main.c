@@ -358,6 +358,7 @@ void mainloop(struct supernet_info *myinfo)
                     iguana_realtime_update(coin);
                     if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
                     {
+                        flag++;
                         if ( ptr->coin != 0 && (bp= ptr->bp) != 0 )
                             iguana_balancecalc(ptr->coin,bp,bp->bundleheight,bp->bundleheight+bp->n-1);
                         myfree(ptr,ptr->allocsize);
