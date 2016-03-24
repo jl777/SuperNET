@@ -787,9 +787,8 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
                 }
                 if ( bits256_nonz(prev->RO.prev_block) != 0 )
                 {
-                    if ( (prev= iguana_blockfind(coin,prev->RO.prev_block)) == 0 )
-                        prev = iguana_blockhashset(coin,-1,prev->RO.prev_block,1);
-                    prev->newtx = 1;
+                    if ( (prev = iguana_blockhashset(coin,-1,prev->RO.prev_block,1)) != 0 )
+                        prev->newtx = 1;
                 } else prev = 0;
             }
         }
