@@ -123,6 +123,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
                             flag = 0;
                         }
                     }
+                    flag = 0;
                 }
             }
             else
@@ -138,7 +139,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
             if ( flag != 0 )
             {
                 errs++;
-                printf("iguana_balancegen: pkind.%d double spend of hdrsi.%d unspentind.%d prev.%u spentflag.%d height.%d\n",pkind,spentbp->hdrsi,unspentind,utxo->prevunspentind,utxo->spentflag,utxo->height);
+                printf("iguana_balancegen: pkind.%d double spend of hdrsi.%d unspentind.%d\n",pkind,spentbp->hdrsi,unspentind);
                 getchar();
             }
         }
