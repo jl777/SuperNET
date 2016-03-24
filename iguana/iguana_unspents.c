@@ -108,22 +108,16 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
                 }
                 else
                 {
-                    if ( 0 )
-                        flag = iguana_utxoupdate(coin,spentbp->hdrsi,unspentind,pkind,u->value,bp->hdrsi,spendind,height);
-                    else if ( 0 )
+                    utxo = &Uextras[unspentind];
+                    if ( utxo->spentflag == 0 )
                     {
-                        utxo = &Uextras[unspentind];
-                        if ( utxo->spentflag == 0 )
-                        {
-                            utxo->prevunspentind = A2[pkind].lastind;
-                            utxo->spentflag = 1;
-                            utxo->height = height;
-                            A2[pkind].total += u->value;
-                            A2[pkind].lastind = unspentind;
-                            flag = 0;
-                        }
+                        utxo->prevunspentind = A2[pkind].lastind;
+                        utxo->spentflag = 1;
+                        utxo->height = height;
+                        A2[pkind].total += u->value;
+                        A2[pkind].lastind = unspentind;
+                        flag = 0;
                     }
-                    flag = 0;
                 }
             }
             else
@@ -523,7 +517,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
         printf("iguana_balancegen.%d: no Xspendinds[%d]\n",bp->hdrsi,ramchain->numXspends);
         return(0);
     }
-    iguana_ramchain_prefetch(coin,&bp->ramchain);
+    iguana_ramchain_prefetch(coin,ramchain);
     printf("BALANCEGEN.%d hdrs.%d\n",bp->bundleheight,bp->hdrsi);
     txidind = spendind = ramchain->H.data->firsti;
     for (i=0; i<bp->n; i++)
@@ -592,8 +586,8 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
                         spentbp->lastprefetch = now;
                     }
                     spentbp->dirty++;
-                    if ( iguana_volatileupdate(coin,incremental,bp,h,spendind,spentbp,unspentind) < 0 )
-                        errs++;
+                    //if ( iguana_volatileupdate(coin,incremental,bp,h,spendind,spentbp,unspentind) < 0 )
+                    //    errs++;
                 }
                 else
                 {
