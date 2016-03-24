@@ -580,14 +580,14 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
                 else continue;
                 if ( spentbp != 0 && unspentind > 0 && unspentind < spentbp->ramchain.H.data->numunspents )
                 {
-                    if ( now > spentbp->lastprefetch+20 || (spentbp->dirty % 50000) == 0 )
+                    if ( now > spentbp->lastprefetch || (spentbp->dirty % 50000) == 0 )
                     {
                         iguana_ramchain_prefetch(coin,&spentbp->ramchain);
                         spentbp->lastprefetch = now;
                     }
                     spentbp->dirty++;
-                    //if ( iguana_volatileupdate(coin,incremental,bp,h,spendind,spentbp,unspentind) < 0 )
-                    //    errs++;
+                    if ( iguana_volatileupdate(coin,incremental,bp,h,spendind,spentbp,unspentind) < 0 )
+                        errs++;
                 }
                 else
                 {
