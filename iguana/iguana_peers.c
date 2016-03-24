@@ -18,7 +18,7 @@
 #define _iguana_hashfind(coin,ipbits) _iguana_hashset(coin,ipbits,-1)
 struct iguana_iAddr *iguana_iAddrhashfind(struct iguana_info *coin,uint64_t ipbits,int32_t createflag);
 
-struct iguana_iAddr *_iguana_hashset(struct iguana_info *coin,uint64_t ipbits,int32_t itemind)
+struct iguana_iAddr *_iguana_hashset(struct iguana_info *coin,uint32_t ipbits,int32_t itemind)
 {
     struct iguana_iAddr *ptr = 0; int32_t allocsize; char str[65]; struct OS_memspace *mem = 0;
     expand_ipbits(str,ipbits);
@@ -61,7 +61,7 @@ struct iguana_iAddr *iguana_iAddrhashset(struct iguana_info *coin,struct iguana_
         return(0);
     }
     portable_mutex_lock(&coin->peers_mutex);
-    if ( (item= _iguana_hashfind(coin,iA->ipbits)) == 0 )
+    if ( (item= _iguana_hashfind(coin,(uint32_t)iA->ipbits)) == 0 )
     {
         tmp = mycalloc('i',1,sizeof(*iA));
         *tmp = *iA;
@@ -69,7 +69,7 @@ struct iguana_iAddr *iguana_iAddrhashset(struct iguana_info *coin,struct iguana_
         if ( ind <= 0 )
             ind = coin->numiAddrs + 1;
         printf("coin->iAddrs.%p call set.(%x) ind.%d\n",coin->iAddrs,(uint32_t)iA->ipbits,ind);
-        if ( (item= _iguana_hashset(coin,iA->ipbits,ind)) != 0 && item->hh.itemind == coin->numiAddrs+1 )
+        if ( (item= _iguana_hashset(coin,(uint32_t)iA->ipbits,ind)) != 0 && item->hh.itemind == coin->numiAddrs+1 )
         {
             *item = *iA;
             iA = item;
@@ -93,11 +93,11 @@ struct iguana_iAddr *iguana_iAddrhashfind(struct iguana_info *coin,uint64_t ipbi
     portable_mutex_lock(&coin->peers_mutex);
     if ( ipbits != 0 )
     {
-        if ( (item= _iguana_hashfind(coin,ipbits)) == 0 && createflag != 0 )
+        if ( (item= _iguana_hashfind(coin,(uint32_t)ipbits)) == 0 && createflag != 0 )
         {
             ind = coin->numiAddrs + 1;
-            _iguana_hashset(coin,ipbits,ind);
-            if ( (item= _iguana_hashfind(coin,ipbits)) != 0 )
+            _iguana_hashset(coin,(uint32_t)ipbits,ind);
+            if ( (item= _iguana_hashfind(coin,(uint32_t)ipbits)) != 0 )
                 coin->numiAddrs++;
         }
     }
@@ -107,7 +107,7 @@ struct iguana_iAddr *iguana_iAddrhashfind(struct iguana_info *coin,uint64_t ipbi
 
 uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana_iAddr *iA,uint32_t ind)
 {
-    FILE *fp; char fname[512],hexstr[65]; int32_t i,n,m,retval = 0; struct iguana_iAddr tmp,*ptr;
+    FILE *fp; char fname[512],hexstr[65]; uint32_t ipbits; int32_t i,n,m,retval = 0; struct iguana_iAddr tmp,*ptr;
     sprintf(fname,"DB/%s_peers.dat",coin->symbol);
     OS_compatible_path(fname);
     if ( rwflag < 0 || iA == 0 )
@@ -123,7 +123,8 @@ uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana
                 if ( ftell(fp) == i*sizeof(tmp) && fread(&tmp,1,sizeof(tmp),fp) == sizeof(tmp) && tmp.ipbits != 0 )
                 {
                     portable_mutex_lock(&coin->peers_mutex);
-                    HASH_FIND(hh,coin->iAddrs,&tmp.ipbits,sizeof(tmp.ipbits),ptr);
+                    ipbits = (uint32_t)tmp.ipbits;
+                    HASH_FIND(hh,coin->iAddrs,&ipbits,sizeof(ipbits),ptr);
                     if ( ptr == 0 )
                     {
                         ptr = mycalloc('t',1,sizeof(*ptr));
@@ -131,7 +132,7 @@ uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana
                             printf("fatal alloc error in hashset\n"), exit(-1);
                         ptr->hh.itemind = m;
                         ptr->ipbits = tmp.ipbits;
-                        HASH_ADD(hh,coin->iAddrs,ipbits,sizeof(tmp.ipbits),ptr);
+                        HASH_ADD(hh,coin->iAddrs,ipbits,sizeof(ipbits),ptr);
                         if ( i != m )
                         {
                             tmp.hh.itemind = m;
@@ -141,20 +142,20 @@ uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana
                         //printf("rwiAddrind m.%d %x\n",m,(uint32_t)tmp.ipbits);
                         m++;
                         coin->numiAddrs = m;
-                        expand_ipbits(hexstr,tmp.ipbits);
+                        expand_ipbits(hexstr,ipbits);
                         iguana_possible_peer(coin,hexstr);
                     }
                     else
                     {
-                        expand_ipbits(hexstr,tmp.ipbits);
-                        printf("status.%d ipbits.%x\n",tmp.status,(uint32_t)tmp.ipbits);
+                        expand_ipbits(hexstr,ipbits);
+                        printf("status.%d ipbits.%x\n",tmp.status,(uint32_t)ipbits);
                         tmp.status = 0;
                         fseek(fp,i * sizeof(tmp),SEEK_SET);
                         if ( fwrite(&tmp,1,sizeof(tmp),fp) != sizeof(tmp) )
                             printf("error writing peer.%d\n",i);
                     }
                     portable_mutex_unlock(&coin->peers_mutex);
-                } else printf("skip.%d ipbits.%x\n",i,(uint32_t)tmp.ipbits);
+                } else printf("skip.%d ipbits.%x\n",i,(uint32_t)ipbits);
             }
             fclose(fp);
             printf("i.%d m.%d numiAddrs.%d\n",i,m,coin->numiAddrs);
@@ -189,6 +190,13 @@ uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana
             fp = fopen(fname,"wb");
         if ( fp != 0 )
         {
+            ipbits = (uint32_t)iA->ipbits;
+            HASH_FIND(hh,coin->iAddrs,&ipbits,sizeof(ipbits),ptr);
+            if ( ptr != 0 && ptr->hh.itemind != ind )
+            {
+                printf("mismatch iAddr ind.%d != %d\n",ptr->hh.itemind,ind);
+                ind = ptr->hh.itemind;
+            }
             if ( ind <= 0 )
                 ind = coin->numiAddrs++;
             fseek(fp,ind * sizeof(*iA),SEEK_SET);
@@ -202,7 +210,7 @@ uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana
                     if ( (iA= iguana_iAddrhashset(coin,iA,ind)) != 0 )
                     {
                         retval = iA->hh.itemind+1;
-                        printf("W %p ipbits.%x ind.%d saved iA->ind.%d retval.%d\n",iA,(uint32_t)iA->ipbits,ind,iA->hh.   itemind,retval);
+                        printf("W %p ipbits.%x ind.%d saved iA->ind.%d retval.%d numiAddrs.%d\n",iA,(uint32_t)ipbits,ind,iA->hh.itemind,retval,coin->numiAddrs);
                     }
                 }
             } else printf("iAddr: error seeking.[%d] %ld vs %ld\n",ind,ftell(fp),ind * sizeof(*iA));

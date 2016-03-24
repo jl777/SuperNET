@@ -364,7 +364,7 @@ void iguana_helper(void *arg)
     fp = fopen(fname,"wb");*/
     if ( argjson != 0 )
         free_json(argjson);
-    printf("HELPER.%d started\n",helperid);
+    printf("HELPER.%d started arg.(%s)\n",helperid,arg!=0?arg:0);
     memset(&MEM,0,sizeof(MEM));
     MEMB = mycalloc('b',IGUANA_MAXBUNDLESIZE,sizeof(*MEMB));
     while ( 1 )
