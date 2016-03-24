@@ -767,8 +767,15 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
     coin->balanceswritten = numhdrsi;
     iguana_utxoupdate(coin,-1,0,0,0,-1,0,-1); // free hashtables
     for (hdrsi=0; hdrsi<numhdrsi; hdrsi++)
-        if ( (bp= coin->bundles[hdrsi]) == 0 || iguana_mapvolatiles(coin,&bp->ramchain) != 0 )
+        if ( (bp= coin->bundles[hdrsi]) == 0 )
+        {
+            if ( bp->ramchain.A != 0 )
+                free(bp->ramchain.A);
+            if ( bp->ramchain.Uextras != 0 )
+                free(bp->ramchain.Uextras);
+            if ( iguana_mapvolatiles(coin,&bp->ramchain) != 0 )
             printf("error mapping bundle.[%d]\n",hdrsi);
+        }
     char str[65]; printf("BALANCES WRITTEN for %d bundles %s\n",coin->balanceswritten,bits256_str(str,coin->balancehash));
     return(coin->balanceswritten);
 }
