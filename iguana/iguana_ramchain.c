@@ -1048,7 +1048,7 @@ int64_t iguana_ramchain_init(struct iguana_ramchain *ramchain,struct OS_memspace
     else
     {
         printf("offset.%ld vs memsize.%ld\n",(long)offset,(long)iguana_ramchain_size(RAMCHAIN_ARG,numblocks,scriptspace));
-        printf("NEED %ld realloc for %ld\n",(long)offset,(long)mem->totalsize);
+        printf("NEED %ld realloc for totalsize %ld\n",(long)offset,(long)mem->totalsize);
         getchar();
         exit(-1);
         iguana_mempurge(mem);
