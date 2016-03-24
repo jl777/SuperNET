@@ -494,7 +494,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
         {
             if ( spendind == nextT[numtxid].firstvin )
             {
-                refheight = bp->bundleheight + numtxid;
+                refheight = bp->bundleheight++;
                 printf("height.%d firstvin.%d\n",refheight,nextT[numtxid].firstvin);
                 numtxid++;
             }
@@ -585,7 +585,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
         }
         if ( spendind == nextT[numtxid].firstvin )
         {
-            refheight = bp->bundleheight + numtxid;
+            refheight = bp->bundleheight++;
             printf("height.%d firstvin.%d\n",refheight,nextT[numtxid].firstvin);
             numtxid++;
         }
