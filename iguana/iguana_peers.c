@@ -745,12 +745,12 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
         return((uint32_t)time(NULL));
     }
 #endif
-    printf("check possible peer.(%s)\n",ipaddr);
+    //printf("check possible peer.(%s)\n",ipaddr);
     for (i=n=0; i<coin->MAXPEERS; i++)
     {
         if ( strcmp(ipaddr,coin->peers.active[i].ipaddr) == 0 )
         {
-            printf("(%s) already active\n",ipaddr);
+            //printf("(%s) already active\n",ipaddr);
             free_queueitem(ipaddr);
             return((uint32_t)time(NULL));
         }
