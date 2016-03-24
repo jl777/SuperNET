@@ -353,15 +353,19 @@ void mainloop(struct supernet_info *myinfo)
         if ( 1 )
         {
             for (i=0; i<IGUANA_MAXCOINS; i++)
-                if ( (coin= Coins[i]) != 0 && coin->active != 0 && (bp= coin->current) != 0 && coin->started != 0 )
+                if ( (coin= Coins[i]) != 0 && coin->active != 0 && (bp= coin->current) != 0 )
                 {
-                    iguana_realtime_update(coin);
-                    if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
+                    printf("check %s started.%p\n",coin->symbol,coin->started);
+                    if ( coin->started != 0 )
                     {
-                        flag++;
-                        if ( ptr->coin != 0 && (bp= ptr->bp) != 0 )
-                            iguana_balancecalc(ptr->coin,bp,bp->bundleheight,bp->bundleheight+bp->n-1);
-                        myfree(ptr,ptr->allocsize);
+                        iguana_realtime_update(coin);
+                        if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
+                        {
+                            flag++;
+                            if ( ptr->coin != 0 && (bp= ptr->bp) != 0 )
+                                iguana_balancecalc(ptr->coin,bp,bp->bundleheight,bp->bundleheight+bp->n-1);
+                            myfree(ptr,ptr->allocsize);
+                        }
                     }
                 }
         }
