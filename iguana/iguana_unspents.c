@@ -102,7 +102,6 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
         }
         else // do the equivalent of historical, ie mark as spent, linked list, balance
         {
-            printf("call RT utxo\n");
             if ( iguana_utxoupdate(coin,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,fromheight) == 0 )
                 return(0);
         }
@@ -494,7 +493,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
     txidind = spendind = rdata->firsti;
     for (i=0; i<bp->n; i++)
     {
-        printf("hdrs.[%d] B[%d] 1st txidind.%d txn_count.%d firstvin.%d firstvout.%d\n",bp->hdrsi,i,B[i].firsttxidind,B[i].txn_count,B[i].firstvin,B[i].firstvout);
+        //printf("hdrs.[%d] B[%d] 1st txidind.%d txn_count.%d firstvin.%d firstvout.%d\n",bp->hdrsi,i,B[i].firsttxidind,B[i].txn_count,B[i].firstvin,B[i].firstvout);
         if ( txidind != B[i].firsttxidind || spendind != B[i].firstvin )
         {
             printf("balancegen: txidind %u != %u B[%d].firsttxidind || spendind %u != %u B[%d].firstvin errs.%d\n",txidind,B[i].firsttxidind,i,spendind,B[i].firstvin,i,errs);
@@ -508,7 +507,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
                 printf("balancegen: txidind %u != %u T[txidind].firsttxidind || spendind %u != %u T[txidind].firstvin errs.%d\n",txidind,T[txidind].txidind,spendind,T[txidind].firstvin,errs);
                 return(-1);
             }
-            printf("txidind.%d txi.%d numvins.%d spendind.%d\n",txidind,j,T[txidind].numvins,spendind);
+            //printf("txidind.%d txi.%d numvins.%d spendind.%d\n",txidind,j,T[txidind].numvins,spendind);
             for (k=0; k<T[txidind].numvins && errs==0; k++,spendind++)
             {
                 s = &S[spendind];
