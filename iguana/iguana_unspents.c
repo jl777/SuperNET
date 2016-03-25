@@ -407,7 +407,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp)
                 {
                     if ( (spentbp= iguana_spent(coin,&prevhash,&unspentind,ramchain,bp->hdrsi,s)) != 0 )
                     {
-                        if ( now > spentbp->lastprefetch+20 || (spentbp->dirty % 50000) == 0 )
+                        if ( now > spentbp->lastprefetch+60 || (spentbp->dirty % 150000) == 0 )
                         {
                             //printf("u current.%d prefetch.[%d] lag.%u\n",spentbp == bp,spentbp->hdrsi,now - spentbp->lastprefetch);
                             iguana_ramchain_prefetch(coin,&spentbp->ramchain);
@@ -572,7 +572,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
                 else continue;
                 if ( spentbp != 0 && unspentind > 0 && unspentind < spentbp->ramchain.H.data->numunspents )
                 {
-                    if ( 1 && (now > spentbp->lastprefetch+10 || (spentbp->dirty % 50000) == 0) )
+                    if ( 1 && (now > spentbp->lastprefetch+60 || (spentbp->dirty % 150000) == 0) )
                     {
                         iguana_ramchain_prefetch(coin,&spentbp->ramchain);
                         spentbp->lastprefetch = now;
