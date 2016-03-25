@@ -137,7 +137,7 @@ uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana
                         fseek(fp,m*sizeof(tmp),SEEK_SET);
                         fwrite(&tmp,1,sizeof(tmp),fp);
                         expand_ipbits(hexstr,ipbits);
-                        printf("create rwiAddrind m.%-4d %08x %s\n",m,(uint32_t)tmp.ipbits,hexstr);
+                        //printf("create rwiAddrind m.%-4d %08x %s\n",m,(uint32_t)tmp.ipbits,hexstr);
                         m++;
                         coin->numiAddrs = m;
                         iguana_possible_peer(coin,hexstr);

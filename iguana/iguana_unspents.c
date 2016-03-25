@@ -1091,7 +1091,7 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
     if ( bp != 0 && coin != 0 && (bp->hdrsi == 0 || (prevbp= coin->bundles[bp->hdrsi-1]) != 0) )
     {
 #ifdef IGUANA_SERIALIZE_BALANCEGEN
-        for (j=0; j<coin->bundlescount; j++)
+        for (j=0; j<coin->bundlescount-1; j++)
         {
             if ( (prevbp= coin->bundles[j]) == 0 || prevbp->utxofinish <= 1 )
             {
