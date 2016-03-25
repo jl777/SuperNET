@@ -583,7 +583,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
         else if ( bp->speculative != 0 && bits256_nonz(bp->speculative[i]) != 0 && now > bp->issued[i]+lag )
         {
             if ( bp == coin->current )
-                printf("[%d:%d].%x ",bp->hdrsi,i,block->fpipbits);
+                printf("[%d:%d] ",bp->hdrsi,i);
             iguana_blockQ("kicke",coin,bp,i,bp->speculative[i],0);
             bp->issued[i] = now;
             counter++;
@@ -1046,7 +1046,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     //sprintf(str+strlen(str),"%s.%-2d %s time %.2f files.%d Q.%d %d\n",coin->symbol,flag,str,(double)(time(NULL)-coin->starttime)/60.,coin->peers.numfiles,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
     if ( time(NULL) > coin->lastdisp+3 && strcmp(str,coin->lastdispstr) != 0 )
     {
-        printf("%s bQ.%d %d:%02d:%02d %03.3f\n",str,coin->numbundlesQ,(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,difft.millis);
+        printf("\n%s bQ.%d %d:%02d:%02d %03.3f\n",str,coin->numbundlesQ,(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,difft.millis);
         strcpy(coin->lastdispstr,str);
         if ( (rand() % 100) == 0 )
             myallocated(0,0);
