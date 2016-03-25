@@ -629,7 +629,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
                 }
                 else
                 {
-                    printf("RTutxo txidind overflow %u vs %u\n",s->spendtxidind,spentbp->ramchain.H.data != 0?spentbp->ramchain.H.data->numtxids:-1);
+                    printf("RTutxo txidind overflow %u vs %d\n",s->spendtxidind,spentbp->ramchain.H.data != 0?spentbp->ramchain.H.data->numtxids:-1);
                     return(-1);
                 }
             }
