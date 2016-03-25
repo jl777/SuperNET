@@ -870,7 +870,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
                     return(-1);
                 }
             }
-            else if ( s->prevout >= 0 )
+            else if ( 0 && s->prevout >= 0 )
             {
                 printf("s.%p bp.%p data.%p\n",s,bp,spentbp->ramchain.H.data);
                 spentbp = bp;
@@ -889,7 +889,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
             else continue;
             if ( spentbp != 0 && unspentind != 0 && unspentind < spentbp->ramchain.H.data->numunspents )
             {
-                if ( 0 && iguana_volatileupdate(coin,1,bp,bp->bundleheight+bundlei,spendind,spentbp,unspentind) < 0 )
+                if ( iguana_volatileupdate(coin,1,bp,bp->bundleheight+bundlei,spendind,spentbp,unspentind) < 0 )
                 {
                     printf("iguana_volatileupdate error h.%d spendind.%d spent.%d u.%d\n",bp->bundleheight+bundlei,spendind,spentbp->hdrsi,unspentind);
                     return(-1);
