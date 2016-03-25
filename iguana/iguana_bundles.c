@@ -602,8 +602,8 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp)
                     printf("checki.%d vs %d mismatch?\n",checki,i);
                 if ( fname[0] != 0 )
                     OS_removefile(fname,0);
-                char str[65]; printf(">>>>>>> ipbits.%x block contents error at ht.%d\n",bp->bundleheight+i);
-                //patch.(%s) and reissue %s checki.%d vs %d\n",block->fpipbits,bp->bundleheight+i,bits256_str(str,block->RO.prev_block),fname,checki,i);
+                printf(">>>>>>> block contents error at ht.%d\n",bp->bundleheight+i);
+                //char str[65];  patch.(%s) and reissue %s checki.%d vs %d\n",block->fpipbits,bp->bundleheight+i,bits256_str(str,block->RO.prev_block),fname,checki,i);
                 block->fpipbits = 0;
                 block->fpos = -1;
                 block->queued = 0;
