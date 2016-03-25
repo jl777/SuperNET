@@ -872,6 +872,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
             }
             else if ( s->prevout >= 0 )
             {
+                printf("s.%p bp.%p data.%p\n",s,bp,spentbp->ramchain.H.data);
                 spentbp = bp;
                 if ( (ind= s->spendtxidind) != 0 && ind < spentbp->ramchain.H.data->numtxids )
                 {
