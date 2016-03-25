@@ -987,11 +987,6 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             }
             else
             {
-                if ( ++pending == coin->MAXBUNDLES )
-                {
-                    lastpending = bp;
-                    //printf("SET MAXBUNDLES.%d pend.%d\n",bp->hdrsi,pending);
-                }
                 if ( firstgap == 0 && (bp->emitfinish == 0 || bp->n < coin->chain->bundlesize) )
                 {
                     //printf("firstgap <- [%d] emit.%u bp->n.%d\n",bp->hdrsi,bp->emitfinish,bp->n);
@@ -999,6 +994,11 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                 }
                 if ( bp->emitfinish == 0 )
                 {
+                    if ( ++pending == coin->MAXBUNDLES )
+                    {
+                        lastpending = bp;
+                        //printf("SET MAXBUNDLES.%d pend.%d\n",bp->hdrsi,pending);
+                    }
                     spaceused += bp->estsize;
                     //sortbuf[m*2] = bp->metric;
                     //sortbuf[m*2 + 1] = i;
