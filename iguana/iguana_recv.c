@@ -508,7 +508,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
 
 struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct iguana_bundlereq *req,struct iguana_block *blocks,int32_t n,int32_t *newhwmp)
 {
-    int32_t i,bundlei,match; bits256 *blockhashes,allhash; struct iguana_block *block; struct iguana_bundle *bp,*firstbp = 0;
+    int32_t i,bundlei,match; struct iguana_block *block; struct iguana_bundle *bp,*firstbp = 0;
     if ( blocks == 0 )
     {
         printf("iguana_recvblockhdrs null blocks?\n");
@@ -516,7 +516,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
     }
     if ( blocks != 0 && n > 0 )
     {
-        if ( 0 && n >= coin->chain->bundlesize )
+        /*if ( 0 && n >= coin->chain->bundlesize )
         {
             blockhashes = malloc(sizeof(*blockhashes) * coin->chain->bundlesize);
             for (i=0; i<coin->chain->bundlesize; i++)
@@ -540,7 +540,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
                 }
             }
             free(blockhashes);
-        }
+        }*/
         for (i=match=0; i<n; i++)
         {
             //fprintf(stderr,"i.%d of %d bundleset\n",i,n);
@@ -1003,7 +1003,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                 if ( bits256_nonz(hash2) > 0 )
                 {
                     coin->backstopmillis = OS_milliseconds();
-                    iguana_blockQ("mainchain",coin,0,-1,hash2,lag > 100 * threshold);
+                    iguana_blockQ("mainchain",coin,0,-1,hash2,lag > threshold);
                     flag++;
                     char str[65];
                     if ( 1 && (rand() % 1000) == 0 )//|| bp->bundleheight > coin->longestchain-coin->chain->bundlesize )
@@ -1012,7 +1012,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                 else if ( bp != 0 && bundlei < bp->n-1 && (bits256_nonz(bp->hashes[bundlei+1]) != 0 || (bp->speculative != 0 && bits256_nonz(bp->speculative[bundlei+1]) != 0)) )
                 {
                     int32_t j;
-                    memset(bp->hashes[bundlei].bytes,0,sizeof(bp->hashes[bundlei]));
+                    //memset(bp->hashes[bundlei].bytes,0,sizeof(bp->hashes[bundlei]));
                     bp->blocks[bundlei] = 0;
                     for (j=0; j<1&&bundlei+j+1<bp->n; j++)
                     {

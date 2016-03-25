@@ -270,10 +270,12 @@ int32_t iguana_blockunmain(struct iguana_info *coin,struct iguana_block *block)
 struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_block *newblock)
 {
     int32_t valid,bundlei,height=-1; struct iguana_block *hwmchain,*block = 0,*prev=0,*next;
-    bits256 *hash2p=0; double prevPoW = 0.;
+    bits256 *hash2p=0; double prevPoW = 0.; struct iguana_bundle *bp;
     if ( newblock == 0 )
         return(0);
     hwmchain = &coin->blocks.hwmchain;
+    if ( hwmchain->height > 0 && ((bp= coin->current) == 0 || hwmchain->height/coin->chain->bundlesize > bp->hdrsi) )
+        return(0);
     if ( (block= iguana_blockfind(coin,newblock->RO.hash2)) != 0 )
     {
         if ( memcmp(coin->chain->genesis_hashdata,block->RO.hash2.bytes,sizeof(bits256)) == 0 )
