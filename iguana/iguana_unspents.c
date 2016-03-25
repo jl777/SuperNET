@@ -1079,7 +1079,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
 
 int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int32_t startheight,int32_t endheight)
 {
-    uint32_t starttime,j,flag = 0; struct iguana_bundle *prevbp;
+    uint32_t starttime,j=0,flag = 0; struct iguana_bundle *prevbp;
     if ( bp->balancefinish > 1 )
     {
         printf("make sure DB files have this bp.%d\n",bp->hdrsi);
@@ -1088,10 +1088,23 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
     }
     if ( bp != 0 && coin != 0 && (bp->hdrsi == 0 || (prevbp= coin->bundles[bp->hdrsi-1]) != 0) )
     {
-        for (j=0; j<bp->hdrsi; j++)
+#ifdef IGUANA_SERIALIZE_BALANCEGEN
+        for (j=0; j<coin->bundlescount; j++)
         {
-            if ( (prevbp= coin->bundles[j]) == 0 || prevbp->utxofinish <= 1 || prevbp->balancefinish <= 1 )
+            if ( (prevbp= coin->bundles[j]) == 0 || prevbp->utxofinish <= 1 )
+            {
+                j = -1;
                 break;
+            }
+        }
+#endif
+        if ( j == 0 )
+        {
+            for (; j<bp->hdrsi; j++)
+            {
+                if ( (prevbp= coin->bundles[j]) == 0 || prevbp->utxofinish <= 1 || prevbp->balancefinish <= 1 )
+                    break;
+            }
         }
         if ( bp->utxofinish > 1 && bp->balancefinish <= 1 && bp->hdrsi == j )
         {
