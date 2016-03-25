@@ -390,7 +390,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
                         }
                         if ( now > spentbp->lastprefetch+10 )//|| (spentbp->dirty % 10000) == 0 )
                         {
-                            printf("prefetch[%d]\n",spentbp->hdrsi);
+                            printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
                             iguana_ramchain_prefetch(coin,&spentbp->ramchain);
                             spentbp->lastprefetch = now;
                         }
