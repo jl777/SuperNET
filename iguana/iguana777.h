@@ -325,26 +325,27 @@ struct iguana_ledger
     //struct iguana_account accounts[];
 } __attribute__((packed));
 
-// ramchain append only structs -> canonical 32bit inds and ledgerhashes
-struct iguana_unspent20 { uint64_t value; uint32_t scriptpos,txidind:28,type:4; uint16_t scriptlen,ipbits; uint8_t rmd160[20]; } __attribute__((packed));
-struct iguana_spend256 { bits256 prevhash2; uint32_t sequenceid,scriptpos; int16_t prevout; uint16_t vinscriptlen,spendind,ipbits; } __attribute__((packed));
+// ramchain temp file structures
+struct iguana_unspent20 { uint64_t value; uint32_t scriptpos,txidind:28,type:4; uint16_t scriptlen,fileid; uint8_t rmd160[20]; } __attribute__((packed));
+struct iguana_spend256 { bits256 prevhash2; uint32_t sequenceid,scriptpos; int16_t prevout; uint16_t vinscriptlen,spendind,fileid; } __attribute__((packed));
 
+// permanent readonly structs
 struct iguana_txid { bits256 txid; uint32_t txidind,firstvout,firstvin,locktime,version,timestamp,extraoffset; uint16_t numvouts,numvins; } __attribute__((packed));
 
-struct iguana_unspent { uint64_t value; uint32_t txidind,pkind,prevunspentind,scriptpos,ipbits; uint16_t hdrsi,type:4,scriptlen:14; int16_t vout; } __attribute__((packed));
+struct iguana_unspent { uint64_t value; uint32_t txidind,pkind,prevunspentind,scriptpos; uint16_t fileid,scriptlen; uint16_t hdrsi:11,type:5; int16_t vout; } __attribute__((packed));
 
-struct iguana_spend { uint32_t spendtxidind,sequenceid,scriptpos,ipbits; int16_t prevout; uint16_t scriptlen:15,external:1; } __attribute__((packed)); // numsigs:4,numpubkeys:4,p2sh:1,sighash:4
+struct iguana_spend { uint32_t spendtxidind,sequenceid,scriptpos; int16_t prevout; uint16_t fileid,scriptlen:15,external:1; } __attribute__((packed)); // numsigs:4,numpubkeys:4,p2sh:1,sighash:4
 
 struct iguana_pkhash { uint8_t rmd160[20]; uint32_t pkind; } __attribute__((packed)); //firstunspentind,pubkeyoffset
 
 // dynamic
-struct iguana_account { int64_t total; uint32_t lastind; } __attribute__((packed));
-struct iguana_utxo { uint64_t prevunspentind:26,height:24,spentflag:1,tbd:13; } __attribute__((packed));
+struct iguana_account { int64_t total; uint32_t lastunspentind; } __attribute__((packed));
+struct iguana_utxo { uint32_t fromheight,prevunspentind:31,spentflag:1; } __attribute__((packed));
 struct iguana_hhaccount { UT_hash_handle hh; uint8_t buf[6]; struct iguana_account a; } __attribute__((packed));
 struct iguana_hhutxo { UT_hash_handle hh; uint8_t buf[6]; struct iguana_utxo u; } __attribute__((packed));
 
 // GLOBAL one zero to non-zero write (unless reorg)
-struct iguana_spendvector { uint64_t hdrsi:14,ind:26,height:24; } __attribute__((packed)); // unspentind
+struct iguana_spendvector { uint64_t value; uint32_t pkind,unspentind; uint16_t hdrsi,bundlei; } __attribute__((packed)); // unspentind
 //struct iguana_pkextra { uint32_t firstspendind; } __attribute__((packed)); // pkind
 
 struct iguana_txblock
@@ -475,7 +476,7 @@ struct iguana_info
     struct iguana_bundle *bundles[IGUANA_MAXBUNDLES],*current,*lastpending;
     struct iguana_ramchain RTramchain; struct OS_memspace RTmem,RThashmem;
     int32_t numremain,numpendings,zcount,recvcount,bcount,pcount,lastbundle,numsaved,pendbalances,numverified;
-    uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ,lastbundleitime,lastdisp;
+    uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ,lastbundleitime,lastdisp,RTgenesis;
     double backstopmillis; bits256 backstophash2; int64_t spaceused;
     int32_t initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,polltimeout,numreqtxids,allhashes; bits256 reqtxids[64];
     void *launched,*started;
@@ -788,7 +789,7 @@ uint32_t iguana_sparseaddpk(uint8_t *bits,int32_t width,uint32_t tablesize,uint8
 int32_t iguana_vinscriptparse(struct iguana_info *coin,struct vin_info *vp,uint32_t *sigsizep,uint32_t *pubkeysizep,uint32_t *p2shsizep,uint32_t *suffixp,uint8_t *vinscript,int32_t scriptlen);
 void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msghdr *H,uint8_t *buf,int32_t len);
 int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp);
-int32_t iguana_utxogen(struct iguana_info *coin,struct iguana_bundle *bp);
+int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp);
 int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int32_t startheight,int32_t endheight);
 int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp);
 void iguana_validateQ(struct iguana_info *coin,struct iguana_bundle *bp);

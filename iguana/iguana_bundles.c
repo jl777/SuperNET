@@ -784,7 +784,7 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
         if ( bp->startutxo == 0 )
         {
             bp->startutxo = (uint32_t)time(NULL);
-            if ( (retval= iguana_utxogen(coin,bp)) >= 0 )
+            if ( (retval= iguana_spendvectors(coin,bp)) >= 0 )
             {
                 if ( retval > 0 )
                 {

@@ -959,8 +959,8 @@ int64_t iguana_peerallocated(struct iguana_info *coin,struct iguana_peer *addr)
 void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
 {
     static uint32_t lastping;
-    struct pollfd fds; struct iguana_bundlereq *req; char fname[1024]; uint8_t *buf;//,serialized[64];
-    uint32_t ipbits; int32_t bufsize,flag,run,timeout = coin->polltimeout == 0 ? 10 : coin->polltimeout;
+    struct pollfd fds; struct iguana_bundlereq *req; char fname[1024]; uint8_t *buf; uint32_t ipbits;
+    int32_t bufsize,flag,run,timeout = coin->polltimeout == 0 ? 10 : coin->polltimeout;
 #ifdef IGUANA_PEERALLOC
     int32_t i;  int64_t remaining; struct OS_memspace *mem[sizeof(addr->SEROUT)/sizeof(*addr->SEROUT)];
     for (i=0; i<sizeof(addr->SEROUT)/sizeof(*addr->SEROUT); i++)
@@ -976,19 +976,19 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     }
 #endif
     addr->addrind = (int32_t)(((long)addr - (long)&coin->peers.active[0]) / sizeof(*addr));
-    ipbits = (uint32_t)addr->ipbits;
-    sprintf(fname,"DB/%s/vouts/%08x.vouts",coin->symbol,ipbits);
+    sprintf(fname,"DB/%s/vouts/%04d.vouts",coin->symbol,addr->addrind);
     if ( (addr->voutsfp= fopen(fname,"rb+")) != 0 )
         fseek(addr->voutsfp,0,SEEK_END);
     else addr->voutsfp = fopen(fname,"wb+");
     if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
     {
-        sprintf(fname,"purgeable/%s/%08x.vins",coin->symbol,ipbits);
+        sprintf(fname,"purgeable/%s/%04d.vins",coin->symbol,addr->addrind);
         if ( (addr->vinsfp= fopen(fname,"rb+")) != 0 )
             fseek(addr->vinsfp,0,SEEK_END);
         else addr->vinsfp = fopen(fname,"wb+");
     }
     //addr->pubkey = GENESIS_PUBKEY;
+    ipbits = (uint32_t)addr->ipbits;
     vcalc_sha256(0,addr->iphash.bytes,(uint8_t *)&ipbits,sizeof(ipbits));
     //char str[65]; printf("start dedicatedloop.%s addrind.%d %s\n",addr->ipaddr,addr->addrind,bits256_str(str,addr->iphash));
     addr->maxfilehash2 = IGUANA_MAXFILEITEMS;
