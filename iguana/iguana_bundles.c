@@ -769,7 +769,9 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
 int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     struct iguana_bundle *prevbp; int32_t i,retval;
+#ifndef IGUANA_SERIALIZE_BALANCEGEN 
     if ( coin->MAXMEM <= 4*(1024L * 1024 * 1024) )
+#endif
     {
         if ( (prevbp= coin->current) != 0 && prevbp->hdrsi < (coin->longestchain / coin->chain->bundlesize)-0*coin->MAXBUNDLES )
             return(0);
