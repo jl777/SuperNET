@@ -1100,14 +1100,19 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
             }
         }
 #endif
+        printf("A [%d] j.%d\n",bp->hdrsi,j);
         if ( j == 0 )
         {
             for (; j<bp->hdrsi; j++)
             {
                 if ( (prevbp= coin->bundles[j]) == 0 || prevbp->utxofinish <= 1 || prevbp->balancefinish <= 1 )
+                {
+                    j = -1
                     break;
+                }
             }
         }
+        printf("B [%d] j.%d u.%u b.%u\n",bp->hdrsi,j,bp->utxofinish,bp->balancefinish);
         if ( bp->utxofinish > 1 && bp->balancefinish <= 1 && bp->hdrsi == j )
         {
             starttime = (uint32_t)time(NULL);
