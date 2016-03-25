@@ -889,7 +889,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
             else continue;
             if ( spentbp != 0 && unspentind != 0 && unspentind < spentbp->ramchain.H.data->numunspents )
             {
-                if ( iguana_volatileupdate(coin,1,bp,bp->bundleheight+bundlei,spendind,spentbp,unspentind) < 0 )
+                if ( 0 && iguana_volatileupdate(coin,1,bp,bp->bundleheight+bundlei,spendind,spentbp,unspentind) < 0 )
                 {
                     printf("iguana_volatileupdate error h.%d spendind.%d spent.%d u.%d\n",bp->bundleheight+bundlei,spendind,spentbp->hdrsi,unspentind);
                     return(-1);
