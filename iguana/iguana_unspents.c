@@ -1107,7 +1107,7 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
             {
                 if ( (prevbp= coin->bundles[j]) == 0 || prevbp->utxofinish <= 1 || prevbp->balancefinish <= 1 )
                 {
-                    j = -1
+                    j = -1;
                     break;
                 }
             }
