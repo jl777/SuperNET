@@ -78,17 +78,17 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
     return(0);
 }
 
-int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struct iguana_ramchain *ramchain,int16_t spent_hdrsi,uint32_t spent_unspentind,uint32_t spent_pkind,uint64_t spent_value,uint32_t spendind,uint32_t fromheight)
+int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struct iguana_ramchain *spentchain,int16_t spent_hdrsi,uint32_t spent_unspentind,uint32_t spent_pkind,uint64_t spent_value,uint32_t spendind,uint32_t fromheight)
 {
     struct iguana_account *A2; struct iguana_ramchaindata *rdata; struct iguana_utxo *utxo;
-    if ( (rdata= ramchain->H.data) != 0 )
+    if ( (rdata= spentchain->H.data) != 0 )
     {
         if ( incremental == 0 )
         {
-            A2 = ramchain->A;
-            if ( ramchain->Uextras != 0 && A2 != 0 )
+            A2 = spentchain->A;
+            if ( spentchain->Uextras != 0 && A2 != 0 )
             {
-                utxo = &ramchain->Uextras[spent_unspentind];
+                utxo = &spentchain->Uextras[spent_unspentind];
                 if ( utxo->spentflag == 0 )
                 {
                     utxo->prevunspentind = A2[spent_pkind].lastunspentind;
@@ -476,7 +476,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
     uint32_t spent_unspentind,spent_pkind,txidind,h,i,j,k,now; uint64_t spent_value;
     struct iguana_ramchain *ramchain; struct iguana_ramchaindata *rdata;
     struct iguana_spendvector *spend; struct iguana_unspent *spentU,*u;
-    struct iguana_txid *T; struct iguana_blockRO *B;
+    struct iguana_txid *T; struct iguana_blockRO *B; struct iguana_bundle *spentbp;
     int32_t spent_hdrsi,spendind,n,errs=0,emit=0; struct iguana_spend *S,*s;
     ramchain = &bp->ramchain;
     if ( (rdata= ramchain->H.data) == 0 || (n= ramchain->H.data->numspends) < 1 )
@@ -550,9 +550,9 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
                     }
                 }
                 else continue;
-                if ( spent_unspentind > 0 && spent_pkind > 0 )
+                if ( spent_unspentind > 0 && spent_pkind > 0 && (spentbp= coin->bundles[spent_hdrsi]) != 0 )
                 {
-                    if ( iguana_volatileupdate(coin,0,ramchain,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,h) < 0 )
+                    if ( iguana_volatileupdate(coin,0,&spentbp->ramchain,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,h) < 0 )
                         errs++;
                 }
                 else
@@ -638,7 +638,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
             {
                 spentU = (void *)(long)((long)spentbp->ramchain.H.data + spentbp->ramchain.H.data->Uoffset);
                 u = &spentU[spent_unspentind];
-                return(iguana_volatileupdate(coin,1,RTramchain,spentbp->hdrsi,spent_unspentind,u->pkind,u->value,spendind,height));
+                return(iguana_volatileupdate(coin,1,spentbp == bp ? RTramchain : &spentbp->ramchain,spentbp->hdrsi,spent_unspentind,u->pkind,u->value,spendind,height));
             }
         }
     }
