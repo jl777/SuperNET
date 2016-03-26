@@ -823,6 +823,7 @@ int32_t iguana_mapchaininit(struct iguana_info *coin,struct iguana_ramchain *map
 void iguana_autoextend(struct iguana_info *coin,struct iguana_bundle *bp);
 void iguana_RTramchainfree(struct iguana_info *coin);
 void iguana_coinpurge(struct iguana_info *coin);
+int32_t iguana_setmaxbundles(struct iguana_info *coin);
 
 extern int32_t HDRnet,netBLOCKS;
 

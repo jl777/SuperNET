@@ -663,19 +663,26 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
     return(counter);
 }
 
-int32_t iguana_bundletweak(struct iguana_info *coin,struct iguana_bundle *bp)
+int32_t iguana_setmaxbundles(struct iguana_info *coin)
 {
-    struct iguana_bundle *lastbp; double completed;
-    if ( coin->current == bp )
-        coin->current = coin->bundles[bp->hdrsi+1];
-    if ( (lastbp= coin->lastpending) != 0 && lastbp->hdrsi < coin->bundlescount-1 )
-        coin->lastpending = coin->bundles[lastbp->hdrsi + 1];
+    double completed;
     if ( coin->current != 0 && coin->bundlescount != 0 )
     {
         completed = ((double)coin->current->hdrsi + 1) / coin->bundlescount;
         coin->MAXBUNDLES = (double)(coin->endPEND - coin->startPEND)*completed + coin->startPEND;
         printf("MAXBUNDLES %d (%d -> %d) completed %.3f\n",coin->MAXBUNDLES,coin->startPEND,coin->endPEND,completed);
     }
+    return(coin->MAXBUNDLES);
+}
+
+int32_t iguana_bundletweak(struct iguana_info *coin,struct iguana_bundle *bp)
+{
+    struct iguana_bundle *lastbp;
+    if ( coin->current == bp )
+        coin->current = coin->bundles[bp->hdrsi+1];
+    if ( (lastbp= coin->lastpending) != 0 && lastbp->hdrsi < coin->bundlescount-1 )
+        coin->lastpending = coin->bundles[lastbp->hdrsi + 1];
+    iguana_setmaxbundles(coin);
     /*if ( (rand() % 3) == 0 )
     {
         if ( coin->MAXBUNDLES > coin->endPEND )
@@ -1149,6 +1156,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
         if ( firstgap != 0 && firstgap->queued == 0 )
             iguana_bundleQ(coin,firstgap,1000);
     }
+    iguana_setmaxbundles(coin);
     strcpy(coin->statusstr,str);
     coin->estsize = estsize;
 }
