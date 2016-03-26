@@ -595,7 +595,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
     struct iguana_txid *T; int32_t height,spendind,txidind,j,k; bits256 prevhash;
     struct iguana_bundle *spentbp; struct iguana_unspent *spentU,*u;
     struct iguana_ramchaindata *RTdata,*rdata;
-    uint32_t spent_unspentind; struct iguana_blockRO *B; struct iguana_spend *S,*s;
+    uint32_t spent_unspentind,now; struct iguana_blockRO *B; struct iguana_spend *S,*s;
     if ( (RTdata= RTramchain->H.data) == 0 || RTdata->numspends < 1 )
     {
         printf("iguana_RTutxo null data or no spends %p\n",RTramchain->H.data);
@@ -607,6 +607,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
     txidind = B[bundlei].firsttxidind;
     spendind = B[bundlei].firstvin;
     height = bp->bundleheight + bundlei;
+    now = (uint32_t)time(NULL);
     for (j=0; j<B[bundlei].txn_count; j++,txidind++)
     {
         //printf("RTutxo.[%d:%d] txn_count.%d\n",bp->hdrsi,bundlei,B[bundlei].txn_count);
@@ -627,6 +628,12 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
                     return(-1);
                 }
                 rdata = spentbp->ramchain.H.data;
+                if ( now > spentbp->lastprefetch+10 )
+                {
+                    printf("RT prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
+                    iguana_ramchain_prefetch(coin,&spentbp->ramchain);
+                    spentbp->lastprefetch = now;
+                }
             }
             else if ( s->prevout >= 0 )
             {
