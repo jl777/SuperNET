@@ -79,6 +79,7 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
         memcpy(buf,pkbuf,sizeof(buf));
         HASH_ADD(hh,coin->accountstable,buf,sizeof(buf),hhacct);
     }
+    printf("create hhutxo.%p hhacct.%p from.%d\n",hhutxo,hhacct,fromheight);
     hhutxo->u.spentflag = 1;
     hhutxo->u.fromheight = fromheight;
     hhutxo->u.prevunspentind = hhacct->a.lastunspentind;
@@ -111,7 +112,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
         }
         else // do the equivalent of historical, ie mark as spent, linked list, balance
         {
-            if ( iguana_utxoupdate(coin,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,fromheight) < 0 )
+            if ( iguana_utxoupdate(coin,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,fromheight) == 0 )
                 return(0);
         }
         printf("iguana_volatileupdate: [%d] spent.(u%u %.8f pkind.%d) double spend? at ht.%d [%d] spendind.%d\n",spent_hdrsi,spent_unspentind,dstr(spent_value),spent_pkind,fromheight,fromheight/coin->chain->bundlesize,spendind);
