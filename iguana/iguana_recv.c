@@ -630,7 +630,20 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
                 return(req);
             //printf("done allhashes\n");
         }
-        if ( bp != 0 && (bp->speculative == 0 || num > bp->numspec) && bp->emitfinish == 0 )
+        else if ( bp->hdrsi == coin->bundlescount-1 )
+        {
+            if ( num < bp->n && coin->longestchain > bp->bundleheight+bp->n )
+            {
+                printf("suspicious longestchain.%d vs [%d:%d] %d\n",coin->longestchain,bp->hdrsi,num,bp->bundleheight+num);
+                if ( coin->longestchain_strange++ > 10 )
+                {
+                    coin->badlongestchain = coin->longestchain;
+                    coin->longestchain = bp->bundleheight+num;
+                    coin->longestchain_strange = 0;
+                }
+            }
+        }
+        if ( (bp->speculative == 0 || num > bp->numspec) && bp->emitfinish == 0 )
         {
             //printf("FOUND speculative.%s BLOCKHASHES[%d] ht.%d\n",bits256_str(str,blockhashes[1]),num,bp->bundleheight);
             if ( bp->speculative == 0 )
