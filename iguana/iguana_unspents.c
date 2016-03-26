@@ -885,7 +885,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n )
     {
         iguana_RTramchainalloc(coin,bp);
-        while ( (rdata= coin->RTramchain.H.data) != 0 && coin->RTheight <= coin->blocks.hwmchain.height)
+        while ( (rdata= coin->RTramchain.H.data) != 0 && coin->RTheight < coin->blocks.hwmchain.height)
         {
             dest = &coin->RTramchain;
             B = (void *)(long)((long)rdata + rdata->Boffset);
