@@ -1120,6 +1120,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
                 printf("error mapping bundle.[%d]\n",hdrsi);
         }
     char str[65]; printf("BALANCES WRITTEN for %d bundles %s\n",coin->balanceswritten,bits256_str(str,coin->balancehash));
+    exit(-1);
     coin->balanceswritten = iguana_volatileinit(coin);
     iguana_RTramchainfree(coin);
     return(coin->balanceswritten);
