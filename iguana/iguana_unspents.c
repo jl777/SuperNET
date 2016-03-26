@@ -629,7 +629,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
                     return(-1);
                 }
                 rdata = spentbp->ramchain.H.data;
-                if ( now > spentbp->lastprefetch+10 )
+                if ( now > spentbp->lastprefetch+1 )
                 {
                     //printf("RT prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
                     iguana_ramchain_prefetch(coin,&spentbp->ramchain);
