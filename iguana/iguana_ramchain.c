@@ -1637,7 +1637,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
     }
     if ( dest != 0 )
         _iguana_ramchain_setptrs(RAMCHAIN_DESTPTRS,dest->H.data);
-    fprintf(stderr,"iterate %d/%d dest.%p ramchain.%p rdata.%p\n",bp->bundleheight,bp->n,dest,ramchain,rdata);
+    //fprintf(stderr,"iterate %d/%d dest.%p ramchain.%p rdata.%p\n",bp->bundleheight,bp->n,dest,ramchain,rdata);
     _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
     ramchain->H.ROflag = 1;
     ramchain->H.unspentind = ramchain->H.spendind = ramchain->pkind = rdata->firsti;

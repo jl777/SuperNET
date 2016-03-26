@@ -64,7 +64,7 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
         }
         return(0);
     }
-    printf("utxoupdate spenthdrsi.%d pkind.%d %.8f from [%d:%d] spendind.%u\n",spent_hdrsi,spent_pkind,dstr(spent_value),fromheight/coin->chain->bundlesize,fromheight%coin->chain->bundlesize,spendind);
+    //printf("utxoupdate spenthdrsi.%d pkind.%d %.8f from [%d:%d] spendind.%u\n",spent_hdrsi,spent_pkind,dstr(spent_value),fromheight/coin->chain->bundlesize,fromheight%coin->chain->bundlesize,spendind);
     if ( (hhutxo= iguana_hhutxofind(coin,ubuf,spent_hdrsi,spent_unspentind)) != 0 && hhutxo->u.spentflag != 0 )
     {
         printf("hhutxo.%p spentflag.%d\n",hhutxo,hhutxo->u.spentflag);
@@ -79,7 +79,7 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
         memcpy(buf,pkbuf,sizeof(buf));
         HASH_ADD(hh,coin->accountstable,buf,sizeof(buf),hhacct);
     }
-    printf("create hhutxo.%p hhacct.%p from.%d\n",hhutxo,hhacct,fromheight);
+    //printf("create hhutxo.%p hhacct.%p from.%d\n",hhutxo,hhacct,fromheight);
     hhutxo->u.spentflag = 1;
     hhutxo->u.fromheight = fromheight;
     hhutxo->u.prevunspentind = hhacct->a.lastunspentind;
