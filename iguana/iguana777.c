@@ -402,7 +402,9 @@ void iguana_helper(void *arg)
                 else iguana_bundleQ(ptr->coin,bp,1000);
                 if ( coin->current != 0 && coin->current->hdrsi != coin->bundlescount-1 )
                     allcurrent = 0;
-            }  else printf("helper missing param? %p %p %u\n",ptr->coin,bp,ptr->timelimit);
+            }
+            else if ( coin->active != 0 )
+                printf("helper missing param? %p %p %u\n",ptr->coin,bp,ptr->timelimit);
             myfree(ptr,ptr->allocsize);
             flag++;
         }
