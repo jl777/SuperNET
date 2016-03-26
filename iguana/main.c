@@ -1178,7 +1178,7 @@ void iguana_main(void *arg)
 #endif
     for (i=0; i<IGUANA_NUMHELPERS; i++)
     {
-        sprintf(helperstr,"{\"name\":%d}",i);
+        sprintf(helperstr,"{\"helperid\":%d}",i);
         helperargs = clonestr(helperstr);
         printf("launch[%d] of %d (%s)\n",i,IGUANA_NUMHELPERS,helperstr);
         iguana_launch(btcd,"iguana_helper",iguana_helper,helperargs,IGUANA_PERMTHREAD);
