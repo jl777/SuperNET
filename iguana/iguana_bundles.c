@@ -916,8 +916,10 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
         {
             if ( counter > 0 )
                 printf("ITER now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
-            if ( coin->stucktime != 0 && time(NULL)-coin->stucktime == IGUANA_MAXSTUCKTIME/2 )
+            if ( coin->stucktime != 0 )
             {
+                if ( time(NULL)-coin->stucktime == IGUANA_MAXSTUCKTIME/2 )
+                {
                 for (i=n=0; i<bp->n; i++)
                 {
                     if ( (block= bp->blocks[i]) != 0 && (block->RO.recvlen == 0 || block->fpos < 0 || block->fpipbits == 0 || bits256_nonz(block->RO.prev_block) == 0) )
@@ -936,6 +938,11 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
                     }
                 }
                 printf("issued %d priority requests [%d] to unstick\n",n,bp->hdrsi);
+                }
+                else if ( time(NULL)-coin->stucktime == 3*IGUANA_MAXSTUCKTIME/4 )
+                {
+                    
+                }
             }
         }
     }
