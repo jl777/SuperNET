@@ -621,6 +621,16 @@ STRING_ARG(iguana,startcoin,activecoin)
     } else return(clonestr("{\"error\":\"startcoin needs coin\"}"));
 }
 
+STRING_ARG(iguana,stopcoin,activecoin)
+{
+    if ( coin != 0 )
+    {
+        coin->active = 0;
+        iguana_coinpurge(coin);
+        return(clonestr("{\"result\":\"coin stopped\"}"));
+    } else return(clonestr("{\"error\":\"stopcoin needs coin\"}"));
+}
+
 STRING_ARG(iguana,pausecoin,activecoin)
 {
     if ( coin != 0 )

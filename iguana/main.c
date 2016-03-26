@@ -353,18 +353,27 @@ void mainloop(struct supernet_info *myinfo)
         if ( 1 )
         {
             for (i=0; i<IGUANA_MAXCOINS; i++)
-                if ( (coin= Coins[i]) != 0 && coin->active != 0 && (bp= coin->current) != 0 )
+                if ( (coin= Coins[i]) != 0 && (bp= coin->current) != 0 )
                 {
-                    if ( coin->started != 0 )
+                    if ( coin->active != 0 && coin->started != 0 )
                     {
+                        coin->RTramchain_busy = 1;
                         iguana_realtime_update(coin);
                         if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
                         {
                             flag++;
                             if ( ptr->coin != 0 && (bp= ptr->bp) != 0 )
+                            {
                                 iguana_balancecalc(ptr->coin,bp,bp->bundleheight,bp->bundleheight+bp->n-1);
+                                if ( coin->active == 0 )
+                                {
+                                    printf("detected autopurge after account filecreation. restarting.%s\n",coin->symbol);
+                                    coin->active = 1;
+                                }
+                            }
                             myfree(ptr,ptr->allocsize);
                         }
+                        coin->RTramchain_busy = (coin->RTgenesis == 0 || queue_size(&balancesQ) != 0);
                     }
                 }
         }

@@ -484,8 +484,8 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
         }
         prevbp = 0, prevbundlei = -2;
         iguana_bundlefind(coin,&prevbp,&prevbundlei,prevhash2);
-        if ( 0 && block->blockhashes != 0 )
-            fprintf(stderr,"has blockhashes bp.%p[%d] prevbp.%p[%d]\n",bp,bundlei,prevbp,prevbundlei);
+        //if ( 0 && block->blockhashes != 0 )
+        //    fprintf(stderr,"has blockhashes bp.%p[%d] prevbp.%p[%d]\n",bp,bundlei,prevbp,prevbundlei);
         if ( prevbp != 0 && prevbundlei >= 0 && (prevblock= iguana_blockfind(coin,prevhash2)) != 0 )
         {
             if ( prevbundlei < coin->chain->bundlesize )
@@ -816,7 +816,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
             if ( (prev= iguana_blockfind(coin,block->RO.prev_block)) == 0 )
                 prev = iguana_blockhashset(coin,-1,block->RO.prev_block,1);
             width = sqrt(coin->chain->bundlesize);
-            while ( prev != 0 && width-- > 0 )
+            while ( coin->active != 0 && prev != 0 && width-- > 0 )
             {
                 if ( prev->mainchain != 0 )
                     break;
@@ -961,7 +961,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
     }*/
     lflag = 1;
-    while ( lflag != 0 )
+    while ( coin->active != 0 && lflag != 0 )
     {
         lflag = 0;
         hdrsi = (coin->blocks.hwmchain.height+1) / coin->chain->bundlesize;
@@ -1085,7 +1085,7 @@ int32_t iguana_processrecvQ(struct iguana_info *coin,int32_t *newhwmp) // single
 {
     int32_t flag = 0; struct iguana_bundlereq *req;
     *newhwmp = 0;
-    while ( (req= queue_dequeue(&coin->recvQ,0)) != 0 )
+    while ( coin->active != 0 && (req= queue_dequeue(&coin->recvQ,0)) != 0 )
     {
         //fprintf(stderr,"%s recvQ.%p type.%c n.%d\n",req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
         if ( req->type == 'B' ) // one block with all txdata
@@ -1140,7 +1140,7 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
     int32_t i,lag,n = 0; struct iguana_bundle *bp; char hashstr[65];
     if ( queue_size(&coin->hdrsQ) == 0 )
     {
-        //if ( iguana_needhdrs(coin) > 0 )
+        if ( coin->active != 0 )
         {
             for (i=0; i<coin->bundlescount; i++)
             {
@@ -1176,8 +1176,6 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
     } else coin->zcount = 0;
     return(n);
 }
-
-struct iguana_blockreq { struct queueitem DL; bits256 hash2,*blockhashes; struct iguana_bundle *bp; int32_t n,height,bundlei; };
 
 int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2,int32_t priority)
 {

@@ -149,6 +149,8 @@ void _myfree(uint8_t type,int32_t origallocsize,void *origptr,int32_t allocsize)
     else
     {
         printf("myfree size error %d vs %d at %p\n",allocsize,origallocsize,origptr);
+        static int32_t y,z;
+        printf("div by zero! %d\n",y/z);
         getchar();
     }
     //portable_mutex_unlock(&MEMmutex);

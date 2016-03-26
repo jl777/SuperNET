@@ -365,7 +365,7 @@ struct iguana_txid *iguana_bundletx(struct iguana_info *coin,struct iguana_bundl
     return(0);
 }
 
-void iguana_bundlepurge(struct iguana_info *coin,struct iguana_bundle *bp)
+void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     static bits256 zero;
     char fname[1024]; int32_t hdrsi,m,j; uint32_t ipbits;
@@ -1029,7 +1029,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                 done++;
                 numemit++;
                 if ( firstgap != 0 && bp->hdrsi > firstgap->hdrsi-3 )
-                    iguana_bundlepurge(coin,bp);
+                    iguana_bundlepurgefiles(coin,bp);
             }
             else
             {

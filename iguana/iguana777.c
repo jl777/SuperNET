@@ -433,14 +433,6 @@ void iguana_coinloop(void *arg)
     printf("begin coinloop[%d]\n",n);
     for (i=0; i<n; i++)
     {
-        if ( (coin= coins[i]) != 0 && coin->started == 0 )
-        {
-            iguana_rwiAddrind(coin,0,0,0);
-            iguana_coinstart(coin,coin->initialheight,coin->mapflags);
-            printf("init.(%s) maxpeers.%d maxrecvcache.%s services.%llx MAXMEM.%s polltimeout.%d cache.%d pend.(%d -> %d)\n",coin->symbol,coin->MAXPEERS,mbstr(str,coin->MAXRECVCACHE),(long long)coin->myservices,mbstr(str,coin->MAXMEM),coin->polltimeout,coin->enableCACHE,coin->startPEND,coin->endPEND);
-            coin->started = coin;
-            coin->chain->minconfirms = coin->minconfirms;
-        }
     }
     coin = coins[0];
     iguana_possible_peer(coin,"127.0.0.1");
@@ -455,8 +447,17 @@ void iguana_coinloop(void *arg)
         {
             if ( (coin= coins[i]) != 0 )
             {
+                if ( coin->started == 0 && coin->active != 0 )
+                {
+                    iguana_rwiAddrind(coin,0,0,0);
+                    iguana_coinstart(coin,coin->initialheight,coin->mapflags);
+                    printf("init.(%s) maxpeers.%d maxrecvcache.%s services.%llx MAXMEM.%s polltimeout.%d cache.%d pend.(%d -> %d)\n",coin->symbol,coin->MAXPEERS,mbstr(str,coin->MAXRECVCACHE),(long long)coin->myservices,mbstr(str,coin->MAXMEM),coin->polltimeout,coin->enableCACHE,coin->startPEND,coin->endPEND);
+                    coin->started = coin;
+                    coin->chain->minconfirms = coin->minconfirms;
+                }
                 now = (uint32_t)time(NULL);
-                if ( coin->active != 0 )
+                coin->idletime = 0;
+                if ( coin->started != 0 && coin->active != 0 )
                 {
                     if ( coin->isRT == 0 && now > coin->startutc+77 && coin->numsaved >= (coin->longestchain/coin->chain->bundlesize)*coin->chain->bundlesize && coin->blocks.hwmchain.height >= coin->longestchain-30 )
                     {
@@ -498,6 +499,7 @@ void iguana_coinloop(void *arg)
                     if ( coin->longestchain+10000 > coin->blocks.maxbits )
                         iguana_recvalloc(coin,coin->longestchain + 100000);
                 }
+                coin->idletime = (uint32_t)time(NULL);
             }
         }
         if ( flag == 0 )

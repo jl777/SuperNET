@@ -15,6 +15,28 @@
 
 #include "iguana777.h"
 
+
+uint8_t *iguana_rmdarray(struct iguana_info *coin,int32_t *numrmdsp,cJSON *array,int32_t firsti)
+{
+    int32_t i,n,j=0; char *coinaddr; uint8_t *addrtypes,*rmdarray = 0;
+    *numrmdsp = 0;
+    if ( array != 0 && (n= cJSON_GetArraySize(array)) > 0 )
+    {
+        *numrmdsp = n - firsti;
+        rmdarray = calloc(1,(n-firsti) * 21);
+        addrtypes = &rmdarray[(n-firsti) * 20];
+        for (i=firsti; i<n; i++)
+        {
+            if ( (coinaddr= jstr(jitem(array,i),0)) != 0 )
+            {
+                bitcoin_addr2rmd160(&addrtypes[j],&rmdarray[20 * j],coinaddr);
+                j++;
+            }
+        }
+    }
+    return(rmdarray);
+}
+
 struct iguana_waccount *iguana_waccountcreate(struct iguana_info *coin,char *account)
 {
     struct iguana_waccount *waddr; int32_t len = (int32_t)strlen(account)+1;

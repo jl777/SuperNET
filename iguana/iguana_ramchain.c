@@ -2004,7 +2004,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
                         bp->numtxids += ramchain->H.data->numtxids;
                         bp->numunspents += ramchain->H.data->numunspents;
                         bp->numspends += ramchain->H.data->numspends;
-                        bp->rawscriptspace += ramchain->H.data->scriptspace;
+                        //bp->rawscriptspace += ramchain->H.data->scriptspace;
                     }
                     iguana_ramchain_free(coin,&R,1);
                 }
@@ -2013,7 +2013,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
                     bp->numtxids += ramchain->H.data->numtxids;
                     bp->numunspents += ramchain->H.data->numunspents;
                     bp->numspends += ramchain->H.data->numspends;
-                    bp->rawscriptspace += ramchain->H.data->scriptspace;
+                    //bp->rawscriptspace += ramchain->H.data->scriptspace;
                 }
                 if ( fpos >= 0 )
                     block->fpos = fpos, block->fpipbits = (uint32_t)addr->ipbits;

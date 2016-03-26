@@ -56,8 +56,8 @@ void iguana_initcoin(struct iguana_info *coin,cJSON *argjson)
     sprintf(dirname,"tmp/%s",coin->symbol), OS_portable_path(dirname);
     portable_mutex_init(&coin->peers_mutex);
     portable_mutex_init(&coin->blocks_mutex);
-    portable_mutex_init(&coin->scripts_mutex[0]);
-    portable_mutex_init(&coin->scripts_mutex[1]);
+    //portable_mutex_init(&coin->scripts_mutex[0]);
+    //portable_mutex_init(&coin->scripts_mutex[1]);
     iguana_meminit(&coin->blockMEM,"blockMEM",coin->blockspace,sizeof(coin->blockspace),0);
     iguana_initQs(coin);
     coin->bindsock = -1;
@@ -322,6 +322,89 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
     }
 }
 
+void iguana_ramchainpurge(struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_ramchain *ramchain)
+{
+}
+
+void iguana_bundlepurge(struct iguana_info *coin,struct iguana_bundle *bp)
+{
+    static bits256 zero;
+    if ( bp->speculative != 0 )
+        myfree(bp->speculative,sizeof(*bp->speculative) * bp->numspec);
+    bp->numspec = 0;
+    bp->speculative = 0;
+    memset(bp->hashes,0,sizeof(bp->hashes));
+    memset(bp->issued,0,sizeof(bp->issued));
+    bp->prevbundlehash2 = bp->nextbundlehash2 = bp->allhash = zero;
+    iguana_ramchain_free(coin,&bp->ramchain,1);
+}
+
+void iguana_blockpurge(struct iguana_info *coin,struct iguana_block *block)
+{
+    if ( block->req != 0 )
+    {
+        printf("purge req inside block\n");
+        myfree(block->req,block->req->allocsize);
+    }
+    free(block);
+}
+
+void iguana_blockspurge(struct iguana_info *coin)
+{
+    struct iguana_block *block,*tmp;
+    if ( coin->blocks.hash != 0 )
+    {
+        HASH_ITER(hh,coin->blocks.hash,block,tmp)
+        {
+            HASH_DEL(coin->blocks.hash,block);
+            iguana_blockpurge(coin,block);
+        }
+        coin->blocks.hash = 0;
+    }
+    if ( coin->blocks.RO != 0 )
+    {
+        myfree(coin->blocks.RO,coin->blocks.maxbits * sizeof(*coin->blocks.RO));
+        coin->blocks.RO = 0;
+    }
+    coin->blocks.maxbits = coin->blocks.maxblocks = coin->blocks.initblocks = coin->blocks.hashblocks = coin->blocks.issuedblocks = coin->blocks.recvblocks = coin->blocks.emitblocks = coin->blocks.parsedblocks = coin->blocks.dirty = 0;
+    memset(&coin->blocks.hwmchain,0,sizeof(coin->blocks.hwmchain));
+}
+
+void iguana_coinpurge(struct iguana_info *coin)
+{
+    int32_t i; struct iguana_bundle *bp; char *hashstr; struct iguana_bundlereq *req; struct iguana_blockreq *breq;
+    coin->started = 0; coin->active = 0;
+    while ( (hashstr= queue_dequeue(&coin->hdrsQ,1)) != 0 )
+        free_queueitem(hashstr);
+    while ( (breq= queue_dequeue(&coin->blocksQ,0)) != 0 )
+        myfree(breq,sizeof(*breq));
+    while ( (breq= queue_dequeue(&coin->priorityQ,0)) != 0 )
+        myfree(breq,sizeof(*breq));
+    while ( (req= queue_dequeue(&coin->cacheQ,0)) != 0 )
+        myfree(req,req->allocsize);
+    while ( (req= queue_dequeue(&coin->recvQ,0)) != 0 )
+    {
+        if ( req->blocks != 0 )
+            myfree(req->blocks,sizeof(*req->blocks) * req->n), req->blocks = 0;
+        if ( req->hashes != 0 )
+            myfree(req->hashes,sizeof(*req->hashes) * req->n), req->hashes = 0;
+        myfree(req,req->allocsize);
+    }
+    while ( coin->idletime == 0 )
+    {
+        printf("coinpurge.%s waiting for idle %lu\n",coin->symbol,time(NULL));
+        sleep(1);
+    }
+    iguana_RTramchainfree(coin);
+    coin->bundlescount = 0;
+    for (i=0; i<coin->bundlescount; i++)
+        if ( (bp= coin->bundles[i]) != 0 )
+            iguana_bundlepurge(coin,bp);
+    coin->current = coin->lastpending = 0;
+    memset(coin->bundles,0,sizeof(coin->bundles));
+    iguana_blockspurge(coin);
+}
+
 struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialheight,int32_t mapflags)
 {
     FILE *fp; char fname[512],*symbol; int32_t iter;
@@ -331,8 +414,9 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
         initialheight = coin->chain->bundlesize*10;
     iguana_recvalloc(coin,initialheight);
     coin->longestchain = 1;
+    memset(&coin->blocks.hwmchain,0,sizeof(coin->blocks.hwmchain));
     coin->blocks.hwmchain.height = 0;
-    if ( (coin->myservices & NODE_NETWORK) != 0 )
+    if ( (coin->myservices & NODE_NETWORK) != 0 && coin->peers.acceptloop == 0 )
     {
         printf("MYSERVICES.%llx\n",(long long)coin->myservices);
         coin->peers.acceptloop = malloc(sizeof(pthread_t));
@@ -343,7 +427,7 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
             printf("error launching accept thread for port.%u\n",coin->chain->portp2p);
         }
     }
-    coin->firstblock = coin->blocks.parsedblocks + 1;
+    //coin->firstblock = coin->blocks.parsedblocks + 1;
     iguana_genesis(coin,coin->chain);
     for (iter=0; iter<2; iter++)
     {
@@ -360,6 +444,6 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
 #ifndef IGUANA_DEDICATED_THREADS
     coin->peers.peersloop = iguana_launch("peersloop",iguana_peersloop,coin,IGUANA_PERMTHREAD);
 #endif
-    printf("started.%s\n",coin->symbol);
+    printf("started.%s %p active.%d\n",coin->symbol,coin->started,coin->active);
     return(coin);
 }
