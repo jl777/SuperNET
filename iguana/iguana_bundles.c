@@ -710,7 +710,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                     printf("iguana_bundlecalcs.(%s) illegal hdrsi.%d bundlei.%d checki.%d\n",fname,hdrsi,bundlei,checki);
                     continue;
                 }
-                if ( coin->current == bp && bp->isRT != 0 )
+                if ( coin->current == bp && (bp->isRT != 0 || bp->hdrsi > coin->bundlescount-3) )
                 {
                     if ( (fp= fopen(fname,"rb")) != 0 )
                     {
@@ -912,9 +912,10 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
         counter = iguana_bundleissue(coin,bp,max,timelimit);
         if ( bp == coin->current && coin->isRT == 0 )
             bp->nexttime--;
-        if ( bp->hdrsi == starti )
+        if ( bp->hdrsi == starti && bp->isRT == 0 )
         {
-            printf("ITER now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
+            if ( counter > 0 )
+                printf("ITER now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
             if ( coin->stucktime != 0 && time(NULL)-coin->stucktime == IGUANA_MAXSTUCKTIME/2 )
             {
                 for (i=n=0; i<bp->n; i++)
@@ -934,7 +935,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
                         n++;
                     }
                 }
-                printf("issued %d priority requests [%d] to unstick\n",bp->hdrsi,n);
+                printf("issued %d priority requests [%d] to unstick\n",n,bp->hdrsi);
             }
         }
     }
