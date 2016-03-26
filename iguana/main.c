@@ -1187,3 +1187,20 @@ void iguana_main(void *arg)
     mainloop(&MYINFO);
 }
 
+/*
+getinfo
+sendtoaddress
+encryptwallet
+sendfrom
+walletlock
+walletpassphrase
+validateaddress
+walletpassphrasechange
+listreceivedbyaddress
+listtransactions
+
+not implemented yet but needed by GUI
+
+addmultisigaddress (for generating address)
+setaccount       (to give labels to address)
+ */
