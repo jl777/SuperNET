@@ -513,6 +513,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
 
 void iguana_checklongestchain(struct iguana_info *coin,struct iguana_bundle *bp,int32_t num)
 {
+    int32_t i; struct iguana_peer *addr;
     if ( num > 10 && num < bp->n && coin->longestchain > bp->bundleheight+num+3 )
     {
         printf("strange.%d suspicious longestchain.%d vs [%d:%d] %d bp->n %d\n",coin->longestchain_strange,coin->longestchain,bp->hdrsi,num,bp->bundleheight+num,bp->n);
@@ -521,6 +522,12 @@ void iguana_checklongestchain(struct iguana_info *coin,struct iguana_bundle *bp,
             coin->badlongestchain = coin->longestchain;
             coin->longestchain = bp->bundleheight+num;
             coin->longestchain_strange = 0;
+            for (i=0; i<coin->peers.numranked; i++)
+                if ( (addr= coin->peers.ranked[i]) != 0 && addr->height >= coin->badlongestchain )
+                {
+                    printf("blacklist addr.(%s) height %d\n",addr->ipaddr,addr->height);
+                    addr->dead = 1;
+                }
         }
     }
 }
@@ -1139,11 +1146,11 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                 if ( (bp= coin->bundles[i]) != 0 && (bp->hdrsi == coin->longestchain/coin->chain->bundlesize || i == coin->bundlescount-1 || bp->numhashes < bp->n) )
                 {
                     if ( bp == coin->current )
-                        lag = 3;
+                        lag = 13;
                     else lag = 30;
                     if ( time(NULL) > bp->issuetime+lag )
                     {
-                        if ( bp == coin->current )
+                        if ( 0 && bp == coin->current )
                             printf("LAG.%ld hdrsi.%d numhashes.%d:%d needhdrs.%d qsize.%d zcount.%d\n",time(NULL)-bp->hdrtime,i,bp->numhashes,bp->n,iguana_needhdrs(coin),queue_size(&coin->hdrsQ),coin->zcount);
                         if ( bp->issuetime == 0 )
                             coin->numpendings++;

@@ -611,13 +611,12 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp)
                     printf("checki.%d vs %d mismatch?\n",checki,i);
                 if ( fname[0] != 0 )
                     OS_removefile(fname,0);
-                printf(">>>>>>> block contents error at ht.%d\n",bp->bundleheight+i);
+                printf(">>>>>>> block contents error at ht.%d (%s)\n",bp->bundleheight+i,fname);
                 //char str[65];  patch.(%s) and reissue %s checki.%d vs %d\n",block->fpipbits,bp->bundleheight+i,bits256_str(str,block->RO.prev_block),fname,checki,i);
                 block->fpipbits = 0;
                 block->fpos = -1;
                 block->queued = 0;
                 block->RO.recvlen = 0;
-                //iguana_blockQ("null retry",coin,bp,i,block->RO.hash2,1);
             } else ready++;
         } else printf("error getting block (%d:%d) %p\n",bp->hdrsi,i,block);
     }
@@ -928,8 +927,8 @@ static int32_t revsortds(double *buf,uint32_t num,int32_t size)
 
 void iguana_bundlestats(struct iguana_info *coin,char *str)
 {
-    int32_t i,n,m,j,numv,count,pending,dispflag,numutxo,numbalances,numrecv,done,numhashes,numcached,numsaved,numemit;
-    int64_t spaceused=0,estsize = 0; struct iguana_bundle *bp,*lastpending = 0,*firstgap = 0; struct iguana_block *block,*prev; uint32_t now;
+    int32_t i,n,m,j,numv,r,count,pending,dispflag,numutxo,numbalances,numrecv,done,numhashes,numcached,numsaved,numemit;
+    int64_t spaceused=0,estsize = 0; struct iguana_bundle *bp,*lastpending = 0,*firstgap = 0; struct iguana_block *block,*prev; uint32_t now; struct iguana_peer *addr;
     now = (uint32_t)time(NULL);
     dispflag = 1;//(rand() % 1000) == 0;
     numrecv = numhashes = numcached = numsaved = numemit = done = numutxo = numbalances = 0;
@@ -993,11 +992,13 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             else if ( bp == coin->current )
             {
                 for (j=0; j<bp->n; j++)
-                    if ( (block= bp->blocks[j]) != 0 && block->fpipbits == 0 && time(NULL) > block->issued+10 )
+                    if ( (block= bp->blocks[j]) != 0 && block->fpipbits == 0 && time(NULL) > block->issued+3 )
                     {
-                        printf("current stop [%d:%d]\n",bp->hdrsi,j);
-                        iguana_blockQ("currentstop",coin,0,-1,block->RO.hash2,1);
+                        if ( (r= coin->peers.numranked) != 0 && (addr= coin->peers.ranked[rand() % r]) != 0 && addr->dead == 0 && addr->usock >= 0 )
+                            iguana_sendblockreqPT(coin,addr,bp,j,block->RO.hash2,0);                        printf("current stop [%d:%d]\n",bp->hdrsi,j);
+                        iguana_blockQ("currentstop",coin,bp,j,block->RO.hash2,1);
                         block->issued = (uint32_t)time(NULL);
+                        break;
                     }
             }
             //bp->rank = 0;
