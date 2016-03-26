@@ -345,12 +345,14 @@ int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *m
             }
             else if ( ptr->type == 'E' )
             {
+                coin->emitbusy++;
                 if ( iguana_bundlesaveHT(coin,mem,memB,bp,ptr->starttime) == 0 )
                 {
                     //fprintf(stderr,"emitQ coin.%p bp.[%d]\n",ptr->coin,bp->bundleheight);
                     bp->emitfinish = (uint32_t)time(NULL) + 1;
                     coin->numemitted++;
                 } else bp->emitfinish = 0;
+                coin->emitbusy--;
             }
         } else printf("no bundle in helperrequest\n");
     } else printf("no coin in helperrequest\n");
@@ -379,7 +381,7 @@ void iguana_helper(void *arg)
         allcurrent = 1;
         if ( ((ptr= queue_dequeue(&emitQ,0)) != 0 || (ptr= queue_dequeue(&helperQ,0)) != 0) )
         {
-            if ( ptr->bp != 0 && (coin= ptr->coin) != 0 )
+            if ( ptr->bp != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
             {
                 idle = 0;
                 coin->helperdepth++;
@@ -392,7 +394,7 @@ void iguana_helper(void *arg)
         else if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
         {
             idle = 0;
-            if ( (bp= ptr->bp) != 0 && (coin= ptr->coin) != 0 )
+            if ( (bp= ptr->bp) != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
             {
                 coin->numbundlesQ--;
                 if ( coin->started != 0 && time(NULL) >= bp->nexttime )
@@ -408,7 +410,7 @@ void iguana_helper(void *arg)
         {
             if ( (ptr= queue_dequeue(&validateQ,0)) != 0 )
             {
-                if ( ptr->bp != 0 && ptr->coin != 0 )
+                if ( ptr->bp != 0 && ptr->coin != 0 && coin->active != 0 )
                     flag += iguana_bundlevalidate(ptr->coin,ptr->bp);
                 else printf("helper validate missing param? %p %p\n",ptr->coin,ptr->bp);
                 myfree(ptr,ptr->allocsize);

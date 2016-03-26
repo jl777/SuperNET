@@ -391,9 +391,9 @@ void iguana_coinpurge(struct iguana_info *coin)
             myfree(req->hashes,sizeof(*req->hashes) * req->n), req->hashes = 0;
         myfree(req,req->allocsize);
     }
-    while ( coin->idletime == 0 )
+    while ( coin->idletime == 0 && coin->emitbusy > 0 )
     {
-        printf("coinpurge.%s waiting for idle %lu\n",coin->symbol,time(NULL));
+        printf("coinpurge.%s waiting for idle %lu emitbusy.%d\n",coin->symbol,time(NULL),coin->emitbusy);
         sleep(1);
     }
     iguana_RTramchainfree(coin);

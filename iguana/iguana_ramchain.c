@@ -1650,6 +1650,8 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
     }
     for (ramchain->H.txidind=rdata->firsti; ramchain->H.txidind<rdata->numtxids; ramchain->H.txidind++)
     {
+        if ( coin->active == 0 )
+            return(-1);;
         if ( 0 && ramchain->expanded == 0 && dest != 0 )
             printf("ITER [%d] TXID.%d -> dest.%p desttxid.%d dest->hashmem.%p numtxids.%d\n",ramchain->H.data->height,ramchain->H.txidind,dest,dest!=0?dest->H.txidind:0,dest!=0?dest->hashmem:0,rdata->numtxids);
         tx = &T[ramchain->H.txidind];
@@ -1665,6 +1667,8 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
         }
         for (j=0; j<tx->numvouts; j++)
         {
+            if ( coin->active == 0 )
+                return(-1);
             fileid = 0;
             scriptpos = 0;
             scriptlen = 0;
@@ -1744,6 +1748,8 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
         tx = &T[ramchain->H.txidind];
         for (j=0; j<tx->numvins; j++)
         {
+            if ( coin->active == 0 )
+                return(-1);
             fileid = 0;
             scriptpos = 0;
             scriptlen = 0;
@@ -2482,6 +2488,8 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     dest->H.scriptoffset = 1;
     for (bundlei=starti; bundlei<=endi; bundlei++)
     {
+        if ( coin->active == 0 )
+            break;
         if ( (block= bp->blocks[bundlei]) != 0 )
         {
             iguana_blocksetcounters(coin,block,dest);
