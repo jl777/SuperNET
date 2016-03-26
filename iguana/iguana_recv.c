@@ -1319,12 +1319,11 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
 
 int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
 {
-    int32_t newhwm = 0,flag = 0;
-    //fprintf(stderr,"process coin->recvQ\n");
+    int32_t newhwm = 0,hwmheight,flag = 0;
+    hwmheight = coin->blocks.hwmchain.height;
     flag += iguana_processrecvQ(coin,&newhwm);
-    //fprintf(stderr,"iguana_reqhdrs\n");
     flag += iguana_reqhdrs(coin);
-    //fprintf(stderr,"iguana_reqblocks\n");
-    //flag += iguana_reqblocks(coin);
+    if ( hwmheight != coin->blocks.hwmchain.height )
+        flag = 1;
     return(flag);
 }

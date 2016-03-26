@@ -415,7 +415,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
         {
             for (j=0; j<numpeers; j++)
             {
-                if ( (addr= coin->peers.ranked[j]) != 0 && addr->dead == 0 && addr->usock >= 0 )
+                if ( (addr= coin->peers.ranked[j]) != 0 && addr->dead == 0 && addr->usock >= 0 && addr->msgcounts.verack != 0 )
                 {
                     now = (uint32_t)time(NULL);
                     for (i=j,k=doneval=maxval=0; i<bp->n&&k<sizeof(hashes)/sizeof(*hashes); i+=numpeers)
