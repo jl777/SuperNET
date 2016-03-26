@@ -924,7 +924,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
                     {
                         printf("[%d:%d] ",bp->hdrsi,i);
                         iguana_blockQ("stuck",coin,bp,i,block->RO.hash2,1);
-                        if ( (addr= coin->peers.ranked[n % 8]) != 0 && addr->usock >= 0 && addr->dead == 0 && addr->msgcounts.verack != 0 )
+                        if ( coin->peers.numranked > 8 && (addr= coin->peers.ranked[n % 8]) != 0 && addr->usock >= 0 && addr->dead == 0 && addr->msgcounts.verack != 0 )
                         {
                             if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,&block->RO.hash2,1)) > 0 )
                             {
