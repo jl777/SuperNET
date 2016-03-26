@@ -185,7 +185,7 @@ void *OS_portable_mapfile(char *fname,long *filesizep,int32_t enablewrite)
 		return(0);
 	}
 	*filesizep = filesize;
-    //printf("mapped %ld -> %p\n",(long)filesize,ptr);
+    //printf("mapped rw.%d %ld -> %s\n",enablewrite,(long)filesize,fname);
 	return(ptr);
 #endif
 }

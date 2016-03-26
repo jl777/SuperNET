@@ -32,7 +32,6 @@ void iguana_initQs(struct iguana_info *coin)
     iguana_initQ(&coin->priorityQ,"priorityQ");
     iguana_initQ(&coin->possibleQ,"possibleQ");
     iguana_initQ(&coin->cacheQ,"cacheQ");
-    iguana_initQ(&coin->TerminateQ,"TerminateQ");
     iguana_initQ(&coin->recvQ,"recvQ");
     for (i=0; i<IGUANA_MAXPEERS; i++)
         iguana_initQ(&coin->peers.active[i].sendQ,"addrsendQ");
@@ -43,7 +42,7 @@ void iguana_initpeer(struct iguana_info *coin,struct iguana_peer *addr,uint64_t 
     memset(addr,0,sizeof(*addr));
     addr->ipbits = ipbits;
     addr->usock = -1;
-    expand_ipbits(addr->ipaddr,addr->ipbits);
+    expand_ipbits(addr->ipaddr,(uint32_t)addr->ipbits);
     //addr->pending = (uint32_t)time(NULL);
     strcpy(addr->symbol,coin->symbol);
     strcpy(addr->coinstr,coin->name);
@@ -52,9 +51,9 @@ void iguana_initpeer(struct iguana_info *coin,struct iguana_peer *addr,uint64_t 
 
 void iguana_initcoin(struct iguana_info *coin,cJSON *argjson)
 {
-    int32_t i; 
-    //sprintf(dirname,"%s/%s",GLOBALTMPDIR,coin->symbol), OS_portable_path(dirname);
-    //OS_portable_rmdir(dirname,0);
+    int32_t i; char dirname[1024];
+    sprintf(dirname,"%s/%s",GLOBALTMPDIR,coin->symbol), OS_portable_path(dirname);
+    sprintf(dirname,"tmp/%s",coin->symbol), OS_portable_path(dirname);
     portable_mutex_init(&coin->peers_mutex);
     portable_mutex_init(&coin->blocks_mutex);
     portable_mutex_init(&coin->scripts_mutex[0]);
@@ -276,13 +275,6 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                                 bp->emitfinish = (uint32_t)time(NULL) + 1;
                                 if ( coin->current != 0 && coin->current->hdrsi+1 == bp->hdrsi )
                                     coin->current = bp;
-                                //printf("LOADED bundle.%d %p current %p\n",bp->bundleheight,bp,coin->current);
-                                //if ( bp->hdrsi == 0 || coin->bundles[bp->hdrsi-1]->emitfinish != 0 )
-                                {
-                                    //bp->startutxo = (uint32_t)time(NULL);
-                                    //printf("GENERATE UTXO, verify sigs, etc for ht.%d\n",bp->bundleheight);
-                                    iguana_bundleQ(coin,bp,1000);
-                                }
                             }
                             else
                             {
@@ -308,16 +300,25 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
     }
     if ( iter == 1 )
     {
-        for (i=0; i<coin->bundlescount; i++)
-            if ( coin->bundles[i] == 0 )
-                break;
-        printf("INIT bundles i.%d\n",i);
-        if ( i > 0 )
+        if ( coin->balanceswritten > 0 )
+            coin->balanceswritten = iguana_volatileinit(coin);
+        if ( coin->balanceswritten > 0 )
         {
-            //iguana_spentsfile(coin,i);
+            for (i=0; i<coin->balanceswritten; i++)
+                iguana_validateQ(coin,coin->bundles[i]);
         }
-        char buf[1024];
-        iguana_bundlestats(coin,buf);
+        if ( coin->balanceswritten < coin->bundlescount )
+        {
+            for (i=coin->balanceswritten; i<coin->bundlescount; i++)
+            {
+                if ( (bp= coin->bundles[i]) != 0 && bp->queued == 0 )
+                {
+                    printf("%d ",i);
+                    iguana_bundleQ(coin,bp,1000);
+                }
+            }
+            printf("BALANCESQ\n");
+        }
     }
 }
 
@@ -359,7 +360,6 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
 #ifndef IGUANA_DEDICATED_THREADS
     coin->peers.peersloop = iguana_launch("peersloop",iguana_peersloop,coin,IGUANA_PERMTHREAD);
 #endif
-    coin->MAXBUNDLES = IGUANA_MAXPENDBUNDLES;
     printf("started.%s\n",coin->symbol);
     return(coin);
 }

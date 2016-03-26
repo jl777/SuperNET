@@ -270,10 +270,12 @@ int32_t iguana_blockunmain(struct iguana_info *coin,struct iguana_block *block)
 struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_block *newblock)
 {
     int32_t valid,bundlei,height=-1; struct iguana_block *hwmchain,*block = 0,*prev=0,*next;
-    bits256 *hash2p=0; double prevPoW = 0.;
+    bits256 *hash2p=0; double prevPoW = 0.; struct iguana_bundle *bp;
     if ( newblock == 0 )
         return(0);
     hwmchain = &coin->blocks.hwmchain;
+    if ( hwmchain->height > 0 && ((bp= coin->current) == 0 || hwmchain->height/coin->chain->bundlesize > bp->hdrsi) )
+        return(0);
     if ( (block= iguana_blockfind(coin,newblock->RO.hash2)) != 0 )
     {
         if ( memcmp(coin->chain->genesis_hashdata,block->RO.hash2.bytes,sizeof(bits256)) == 0 )
@@ -303,6 +305,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
         else
         {
             char str[65]; printf("chainlink error: cant find prev.(%s)\n",bits256_str(str,block->RO.prev_block));
+            memset(&block->RO.prev_block.bytes,0,sizeof(block->RO.prev_block));
             //getchar();
             return(0);
         }
@@ -356,10 +359,13 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                                 printf("ERROR: need to fix up bundle for height.%d\n",block->height);
                                 //getchar();
                             }
-                            bp->hashes[block->height % coin->chain->bundlesize] = block->RO.hash2;
-                            bp->blocks[block->height % coin->chain->bundlesize] = block;
+                            iguana_bundlehash2add(coin,0,bp,block->height % coin->chain->bundlesize,block->RO.hash2);
+                           /* bp->hashes[block->height % coin->chain->bundlesize] = block->RO.hash2;
+                            if ( bp->speculative != 0 )
+                                bp->speculative[block->height % coin->chain->bundlesize] = block->RO.hash2;
+                            bp->blocks[block->height % coin->chain->bundlesize] = block;*/
                         }
-                        if ( coin->started != 0 && (block->height % coin->chain->bundlesize) == 10 )
+                        if ( coin->started != 0 && (block->height % coin->chain->bundlesize) == 10 && block->height > coin->longestchain-coin->chain->bundlesize*2 )
                         {
                             //printf("savehdrs\n");
                             iguana_savehdrs(coin);

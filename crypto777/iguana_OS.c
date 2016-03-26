@@ -81,8 +81,8 @@ long myallocated(uint8_t type,long change)
         Total_allocated += change;
         if ( Total_allocated > HWM_allocated )
         {
-            printf("HWM allocated %ld %s\n",(long)Total_allocated,mbstr(str,Total_allocated));
             HWM_allocated = Total_allocated * 1.5;
+            printf("HWM allocated %ld %s\n",(long)Total_allocated,mbstr(str,Total_allocated));
         }
     }
     return(total);
@@ -234,6 +234,7 @@ void queue_enqueue(char *name,queue_t *queue,struct queueitem *origitem,int32_t 
         printf("FATAL type error: queueing empty value\n");//, getchar();
         return;
     }
+    //fprintf(stderr,"enqueue.(%s) %p offset.%d\n",queue->name,origitem,offsetflag);
     lock_queue(queue);
     item = (struct queueitem *)((long)origitem - offsetflag*sizeof(struct queueitem));
     DL_APPEND(queue->list,item);
