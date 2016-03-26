@@ -511,6 +511,20 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
     return(iguana_bundlefind(coin,&bp,bundleip,hash2));
 }
 
+void iguana_checklongestchain(struct iguana_info *coin,struct iguana_bundle *bp,int32_t num)
+{
+    if ( num < bp->n && coin->longestchain > bp->bundleheight+bp->n )
+    {
+        printf("suspicious longestchain.%d vs [%d:%d] %d\n",coin->longestchain,bp->hdrsi,num,bp->bundleheight+num);
+        if ( coin->longestchain_strange++ > 3 )
+        {
+            coin->badlongestchain = coin->longestchain;
+            coin->longestchain = bp->bundleheight+num;
+            coin->longestchain_strange = 0;
+        }
+    }
+}
+
 struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct iguana_bundlereq *req,struct iguana_block *blocks,int32_t n,int32_t *newhwmp)
 {
     int32_t i,bundlei,match; struct iguana_block *block; struct iguana_bundle *bp,*firstbp = 0;
@@ -555,7 +569,10 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
                 bp->dirty++;
                 //printf("{%d:%d} ",bp->hdrsi,bundlei);
                 if ( i == 0 )
+                {
                     firstbp = bp;
+                    iguana_checklongestchain(coin,bp,n);
+                }
                 if ( bundlei == i+1 && bp == firstbp )
                     match++;
                 else
@@ -608,7 +625,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
     //iguana_blockQ(coin,0,-1,blockhashes[1],0);
     //iguana_blockQ(coin,0,-4,blockhashes[1],1);
     char str[65];
-    //if ( 0 && num > 2 )
+    if ( 0 && num > 2 )
         printf("blockhashes[%d] %d of %d %s bp.%d[%d]\n",num,bp==0?-1:bp->hdrsi,coin->bundlescount,bits256_str(str,blockhashes[1]),bp==0?-1:bp->bundleheight,bundlei);
     if ( bp != 0 )
     {
@@ -631,19 +648,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
             //printf("done allhashes\n");
         }
         else if ( bp->hdrsi == coin->bundlescount-1 )
-        {
-            printf("blockhashes[%d] %d of %d %s bp.%d[%d]\n",num,bp==0?-1:bp->hdrsi,coin->bundlescount,bits256_str(str,blockhashes[1]),bp==0?-1:bp->bundleheight,bundlei);
-            if ( num < bp->n && coin->longestchain > bp->bundleheight+bp->n )
-            {
-                printf("suspicious longestchain.%d vs [%d:%d] %d\n",coin->longestchain,bp->hdrsi,num,bp->bundleheight+num);
-                if ( coin->longestchain_strange++ > 3 )
-                {
-                    coin->badlongestchain = coin->longestchain;
-                    coin->longestchain = bp->bundleheight+num;
-                    coin->longestchain_strange = 0;
-                }
-            }
-        }
+            iguana_checklongestchain(coin,bp,num);
         if ( (bp->speculative == 0 || num > bp->numspec) && bp->emitfinish == 0 )
         {
             //printf("FOUND speculative.%s BLOCKHASHES[%d] ht.%d\n",bits256_str(str,blockhashes[1]),num,bp->bundleheight);
