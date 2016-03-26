@@ -513,7 +513,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
 
 void iguana_checklongestchain(struct iguana_info *coin,struct iguana_bundle *bp,int32_t num)
 {
-    if ( num < bp->n && coin->longestchain > bp->bundleheight+bp->n )
+    if ( num > 10 && num < bp->n && coin->longestchain > bp->bundleheight+bp->n )
     {
         printf("suspicious longestchain.%d vs [%d:%d] %d\n",coin->longestchain,bp->hdrsi,num,bp->bundleheight+num);
         if ( coin->longestchain_strange++ > 3 )
