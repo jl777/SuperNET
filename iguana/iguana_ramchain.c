@@ -183,7 +183,7 @@ uint32_t iguana_sparseaddtx(uint8_t *bits,int32_t width,uint32_t tablesize,bits2
     if ( (retval= iguana_sparseadd(bits,ind,width,tablesize,txid.bytes,sizeof(txid),0,T,sizeof(*T))) != 0 )
     {
         char str[65];
-        if ( txidind != 0 )
+        if ( txidind != 0 && retval != txidind )
             printf("sparse tx collision %s %u vs %u\n",bits256_str(str,txid),retval,txidind);
         return(retval);
     }
