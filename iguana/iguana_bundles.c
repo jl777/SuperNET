@@ -505,7 +505,8 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                                 {
                                     if ( (block= bp->blocks[j]) != 0 && block->peerid == i && block->fpipbits == 0 )
                                     {
-                                        printf("%d ",j);
+                                        if ( bp == coin->current )
+                                            printf("%d ",j);
                                         flag++;
                                         counter++;
                                         block->peerid = 0;
@@ -514,7 +515,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                                             bp->issued[i] = block->issued = now;
                                     }
                                 }
-                                if ( flag != 0 )
+                                if ( flag != 0 && bp == coin->current )
                                     printf("slow peer.%d dead.%u (%s) reissued.%d [%d]\n",i,addr->dead,addr->ipaddr,flag,bp->hdrsi);
                             }
                         }
