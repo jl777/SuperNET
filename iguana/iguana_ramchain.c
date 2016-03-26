@@ -1658,7 +1658,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
         if ( dest != 0 )
         {
             char str[65];
-            if ( 0 && ramchain->expanded == 0 )
+            //if ( 0 && ramchain->expanded == 0 )
                 printf("add hdrsi.%d dest.%p txidind.%d %s\n",dest->H.hdrsi,ramchain,dest->H.txidind,bits256_str(str,tx->txid));
             if ( iguana_ramchain_addtxid(coin,RAMCHAIN_DESTARG,tx->txid,tx->numvouts,tx->numvins,tx->locktime,tx->version,tx->timestamp) == 0 )
                 return(-2);
