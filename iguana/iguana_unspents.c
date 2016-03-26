@@ -102,8 +102,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
         }
         else // do the equivalent of historical, ie mark as spent, linked list, balance
         {
-            printf("RT ");
-            if ( iguana_utxoupdate(coin,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,fromheight) == 0 )
+            if ( iguana_utxoupdate(coin,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,fromheight) < 0 )
                 return(0);
         }
         printf("iguana_volatileupdate: [%d] spent.(u%u %.8f pkind.%d) double spend? at ht.%d [%d] spendind.%d\n",spent_hdrsi,spent_unspentind,dstr(spent_value),spent_pkind,fromheight,fromheight/coin->chain->bundlesize,spendind);
@@ -838,6 +837,7 @@ int32_t iguana_volatileinit(struct iguana_info *coin)
 void iguana_RTramchainfree(struct iguana_info *coin)
 {
     iguana_utxoupdate(coin,-1,0,0,0,0,-1); // free hashtables
+    coin->RTheight = coin->balanceswritten * coin->chain->bundlesize;
     iguana_ramchain_free(coin,&coin->RTramchain,1);
 }
 
@@ -863,7 +863,7 @@ void iguana_RTramchainalloc(struct iguana_info *coin,struct iguana_bundle *bp)
         if ( changed != 0 )
         {
             printf("RTramchain changed %d bundlei.%d | coin->RTheight %d != %d bp->bundleheight +  %d coin->RTramchain.H.data->numblocks\n",coin->RTheight,i,coin->RTheight,bp->bundleheight, coin->RTramchain.H.data->numblocks);
-            coin->RTheight = coin->balanceswritten * coin->chain->bundlesize;
+            //coin->RTheight = coin->balanceswritten * coin->chain->bundlesize;
             iguana_RTramchainfree(coin);
         }
     }
@@ -885,7 +885,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n )
     {
         iguana_RTramchainalloc(coin,bp);
-        while ( (rdata= coin->RTramchain.H.data) != 0 && coin->RTheight < coin->blocks.hwmchain.height)
+        while ( (rdata= coin->RTramchain.H.data) != 0 && coin->RTheight <= coin->blocks.hwmchain.height)
         {
             dest = &coin->RTramchain;
             B = (void *)(long)((long)rdata + rdata->Boffset);
@@ -911,11 +911,15 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                                 block->issued = 0;
                                 OS_removefile(fname,0);
                             }
+                            iguana_RTramchainfree(coin);
                             return(-1);
                         }
                         flag++;
                         if ( iguana_RTutxo(coin,bp,dest,bundlei) < 0 )
+                        {
+                            iguana_RTramchainfree(coin);
                             return(-1);
+                        }
                         coin->RTheight++;
                         printf(">>>> RT.%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",coin->RTheight,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize);
                         coin->RTramchain.H.data->numblocks = bundlei + 1;
