@@ -599,7 +599,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
     if ( (RTdata= RTramchain->H.data) == 0 || RTdata->numspends < 1 )
     {
         printf("iguana_RTutxo null data or no spends %p\n",RTramchain->H.data);
-        return(0);
+        return(-1);
     }
     B = (void *)(long)((long)RTdata + RTdata->Boffset);
     S = (void *)(long)((long)RTdata + RTdata->Soffset);
@@ -650,10 +650,15 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
                 u = &spentU[spent_unspentind];
                 if ( iguana_volatileupdate(coin,1,spentbp == bp ? RTramchain : &spentbp->ramchain,spentbp->hdrsi,spent_unspentind,u->pkind,u->value,spendind,height) < 0 )
                     return(-1);
-            } else printf("RTutxo error spentbp.%p u.%u vs %d\n",spentbp,spent_unspentind,rdata->numunspents);
+            }
+            else
+            {
+                printf("RTutxo error spentbp.%p u.%u vs %d\n",spentbp,spent_unspentind,rdata->numunspents);
+                return(-1);
+            }
         }
     }
-    return(-1);
+    return(0);
 }
 
 void iguana_purgevolatiles(struct iguana_info *coin,struct iguana_ramchain *ramchain)
@@ -897,7 +902,6 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n )
     {
         iguana_RTramchainalloc(coin,bp);
-        printf("RTheight.%d rdata.%p\n",coin->RTheight,coin->RTramchain.H.data);
         while ( (rdata= coin->RTramchain.H.data) != 0 && coin->RTheight <= coin->blocks.hwmchain.height)
         {
             dest = &coin->RTramchain;
