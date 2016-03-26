@@ -911,9 +911,10 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,err,n,flag=0;
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
     long filesize; void *ptr; char str[65],fname[1024];
-    if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n )
+    if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && coin->blocks.hwmchain.height >= coin->longestchain-1 )
     {
         iguana_RTramchainalloc(coin,bp);
+        bp->isRT = 1;
         while ( (rdata= coin->RTramchain.H.data) != 0 && coin->RTheight <= coin->blocks.hwmchain.height)
         {
             dest = &coin->RTramchain;
@@ -982,9 +983,9 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             }
         }
     }
-    if ( dest != 0 && flag != 0 )
+    n = 0;
+    if ( dest != 0 && flag != 0 && coin->RTheight >= coin->longestchain )
     {
-        n = 0;
         while ( block != 0 )
         {
             if ( bits256_cmp(iguana_blockhash(coin,coin->RTheight-n-1),block->RO.hash2) != 0 )
@@ -1002,8 +1003,8 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             printf("RTgenesis verified\n");
             coin->RTgenesis = (uint32_t)time(NULL);
         }
-        printf(">>>> RT.%d:%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",coin->RTheight,n,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize);
     }
+    printf(">>>> RT.%d:%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",coin->RTheight,n,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize);
     return(0);
 }
 

@@ -1873,7 +1873,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         {
             origtxdata->block.issued = 0;
             origtxdata->block.RO.recvlen = 0;
-            printf("ramchain data: error finding block\n");
+            char str[65]; printf("ramchain data: error finding block %s\n",bits256_str(str,origtxdata->block.RO.hash2));
             return(-1);
         }
     }

@@ -373,6 +373,12 @@ void mainloop(struct supernet_info *myinfo)
                             }
                             myfree(ptr,ptr->allocsize);
                         }
+                        if ( coin->isRT == 0 && coin->RTheight == 0 && (time(NULL) - coin->stucktime) > IGUANA_MAXSTUCKTIME )
+                        {
+                            printf("%s is stuck too long, restarting\n",coin->symbol);
+                            iguana_coinpurge(coin);
+                            coin->active = 1;
+                        }
                         coin->RTramchain_busy = (coin->RTgenesis == 0 || queue_size(&balancesQ) != 0);
                     }
                 }

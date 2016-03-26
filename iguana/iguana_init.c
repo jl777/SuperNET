@@ -374,6 +374,7 @@ void iguana_coinpurge(struct iguana_info *coin)
 {
     int32_t i; struct iguana_bundle *bp; char *hashstr; struct iguana_bundlereq *req; struct iguana_blockreq *breq;
     coin->started = 0; coin->active = 0;
+    coin->RTgenesis = 0;
     while ( (hashstr= queue_dequeue(&coin->hdrsQ,1)) != 0 )
         free_queueitem(hashstr);
     while ( (breq= queue_dequeue(&coin->blocksQ,0)) != 0 )
