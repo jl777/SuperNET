@@ -648,7 +648,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
                 u = &spentU[spent_unspentind];
                 if ( iguana_volatileupdate(coin,1,spentbp == bp ? RTramchain : &spentbp->ramchain,spentbp->hdrsi,spent_unspentind,u->pkind,u->value,spendind,height) < 0 )
                     return(-1);
-            } else printf("RTutxo error spentbp.%p u.%u\n",spentbp,spent_unspentind);
+            } else printf("RTutxo error spentbp.%p u.%u vs %d\n",spentbp,spent_unspentind,spentbp!=0?spentbp->ramchain.H.data->numunspents:-1);
         }
     }
     return(-1);
