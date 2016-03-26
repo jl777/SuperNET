@@ -928,9 +928,9 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
             if ( coin->stucktime != 0 )
             {
                 lag = time(NULL)-coin->stucktime;
-                if ( lag == IGUANA_MAXSTUCKTIME/2 || lag == 3*IGUANA_MAXSTUCKTIME/4 )
+                if ( lag == coin->MAXSTUCKTIME/2 || lag == 3*coin->MAXSTUCKTIME/4 )
                 {
-                    if ( lag > IGUANA_MAXSTUCKTIME/2 )
+                    if ( lag > coin->MAXSTUCKTIME/2 )
                     {
                         struct iguana_blockreq *breq;
                         while ( (breq= queue_dequeue(&coin->blocksQ,0)) != 0 )

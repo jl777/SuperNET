@@ -373,7 +373,7 @@ void mainloop(struct supernet_info *myinfo)
                             }
                             myfree(ptr,ptr->allocsize);
                         }
-                        if ( coin->stucktime != 0 && coin->isRT == 0 && coin->RTheight == 0 && (time(NULL) - coin->stucktime) > IGUANA_MAXSTUCKTIME )
+                        if ( coin->stucktime != 0 && coin->isRT == 0 && coin->RTheight == 0 && (time(NULL) - coin->stucktime) > coin->MAXSTUCKTIME )
                         {
                             printf("%s is stuck too long, restarting\n",coin->symbol);
                             iguana_coinpurge(coin);
