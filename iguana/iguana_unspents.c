@@ -608,6 +608,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
     spendind = B[bundlei].firstvin;
     height = bp->bundleheight + bundlei;
     now = (uint32_t)time(NULL);
+    iguana_ramchain_prefetch(coin,RTramchain);
     for (j=0; j<B[bundlei].txn_count; j++,txidind++)
     {
         //printf("RTutxo.[%d:%d] txn_count.%d\n",bp->hdrsi,bundlei,B[bundlei].txn_count);
