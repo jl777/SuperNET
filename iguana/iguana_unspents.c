@@ -398,9 +398,9 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
                             printf("unexpected spendbp: height.%d bp.[%d] U%d <- S%d.[%d] [ext.%d %s prev.%d]\n",bp->bundleheight+i,spentbp->hdrsi,spent_unspentind,spendind,bp->hdrsi,s->external,bits256_str(str,prevhash),s->prevout);
                             errs++;
                         }
-                        if ( now > spentbp->lastprefetch+30 )
+                        if ( now > spentbp->lastprefetch+10 )
                         {
-                            //printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
+                            printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
                             iguana_ramchain_prefetch(coin,&spentbp->ramchain);
                             spentbp->lastprefetch = now;
                         }
@@ -951,13 +951,21 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                 }
                 else
                 {
-                    printf("no ptr for RTheight.%d\n",coin->RTheight);
+                    //printf("no fileptr for RTheight.%d\n",coin->RTheight);
                     return(-1);
                 }
             }
             else
             {
-                printf("no blockptr for RTheight.%d\n",coin->RTheight);
+                if ( block == 0 )
+                    printf("no blockptr.%p for RTheight.%d\n",block,coin->RTheight);
+                else
+                {
+                    block->queued = 0;
+                    block->fpipbits = 0;
+                    bp->issued[bundlei] = 0;
+                    block->issued = 0;
+                }
                 return(-1);
             }
         }
