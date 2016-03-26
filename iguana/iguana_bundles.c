@@ -999,7 +999,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             else if ( bp == coin->current )
             {
                 for (j=0; j<bp->n; j++)
-                    if ( (block= bp->blocks[j]) != 0 && block->fpipbits == 0 && time(NULL) > block->issued+3 )
+                    if ( (block= bp->blocks[j]) != 0 && (block->RO.recvlen == 0 || block->fpipbits == 0 || block->fpos < 0) && time(NULL) > block->issued+3 )
                     {
                         if ( (r= coin->peers.numranked) != 0 && (addr= coin->peers.ranked[rand() % r]) != 0 && addr->dead == 0 && addr->usock >= 0 )
                             iguana_sendblockreqPT(coin,addr,bp,j,block->RO.hash2,0);                        printf("current stop [%d:%d]\n",bp->hdrsi,j);
