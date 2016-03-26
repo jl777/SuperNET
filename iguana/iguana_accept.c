@@ -77,7 +77,7 @@ void iguana_acceptloop(void *args)
         if ( poll(&pfd,1,100) <= 0 )
             continue;
         clilen = sizeof(cli_addr);
-        printf("ACCEPT (%s:%d) on sock.%d\n","127.0.0.1",coin->chain->portp2p,coin->bindsock);
+        //printf("ACCEPT (%s:%d) on sock.%d\n","127.0.0.1",coin->chain->portp2p,coin->bindsock);
         sock = accept(coin->bindsock,(struct sockaddr *)&cli_addr,&clilen);
         if ( sock < 0 )
         {
@@ -86,7 +86,6 @@ void iguana_acceptloop(void *args)
         }
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
         expand_ipbits(ipaddr,ipbits);
-        printf("NEWSOCK.%d for %x (%s)\n",sock,ipbits,ipaddr);
         for (i=0; i<IGUANA_MAXPEERS; i++)
         {
             if ( coin->peers.active[i].ipbits == (uint32_t)ipbits && coin->peers.active[i].usock >= 0 )
@@ -101,6 +100,7 @@ void iguana_acceptloop(void *args)
         }
         if ( sock < 0 )
             continue;
+        printf("NEWSOCK.%d for %x (%s)\n",sock,ipbits,ipaddr);
         /*if ( (uint32_t)ipbits == myinfo->myaddr.myipbits )
         {
             
@@ -119,6 +119,7 @@ void iguana_acceptloop(void *args)
         {
             printf("LAUNCH DEDICATED THREAD for %s\n",ipaddr);
             addr->usock = sock;
+            addr->dead = 0;
             strcpy(addr->symbol,coin->symbol);
             iguana_launch(coin,"accept",iguana_dedicatedglue,addr,IGUANA_CONNTHREAD);
             //iguana_dedicatedloop(coin,addr);

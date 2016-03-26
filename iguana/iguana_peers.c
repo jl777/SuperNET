@@ -576,8 +576,8 @@ void iguana_gotdata(struct iguana_info *coin,struct iguana_peer *addr,int32_t he
         //iguana_set_iAddrheight(coin,addr->ipbits,height);
         addr->height = height;
     }
-    if ( height > coin->longestchain )
-        coin->longestchain = height;
+    if ( height > 0 && height > coin->longestchain )
+        coin->longestchain = (height + coin->longestchain + 1) >> 1;
 }
 
 int32_t iguana_iAddrheight(struct iguana_info *coin,uint64_t ipbits)

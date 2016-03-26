@@ -403,8 +403,10 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     else starti = 0;
     priority = (bp->hdrsi < starti + coin->peers.numranked);
     if ( strcmp("BTC",coin->symbol) == 0 )
-        lag = 30 + (bp->hdrsi - starti);
+        lag = 10 + (bp->hdrsi - starti);
     else lag = 3 + (bp->hdrsi - starti)/10;
+    if ( coin->current != bp )
+        lag *= 3;
     if ( (numpeers= coin->peers.numranked) > 3 )//&& bp->currentflag < bp->n )
     {
         if ( numpeers > 0xff )
@@ -987,6 +989,16 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                         }
                     } // else break;
                 }
+            }
+            else if ( bp == coin->current )
+            {
+                for (j=0; j<bp->n; j++)
+                    if ( (block= bp->blocks[j]) != 0 && block->fpipbits == 0 && time(NULL) > block->issued+10 )
+                    {
+                        printf("current stop [%d:%d]\n",bp->hdrsi,j);
+                        iguana_blockQ("currentstop",coin,0,-1,block->RO.hash2,1);
+                        block->issued = (uint32_t)time(NULL);
+                    }
             }
             //bp->rank = 0;
             estsize += bp->estsize;//iguana_bundlecalcs(coin,bp,done);

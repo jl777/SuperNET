@@ -886,7 +886,7 @@ void iguana_RTramchainalloc(struct iguana_info *coin,struct iguana_bundle *bp)
     }
     if ( coin->RTramchain.H.data == 0 )
     {
-        printf("ALLOC RTramchain\n");
+        //printf("ALLOC RTramchain\n");
         iguana_ramchainopen(coin,dest,&coin->RTmem,&coin->RThashmem,bp->bundleheight,bp->hashes[0]);
         dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
         dest->externalind = dest->H.stacksize = 0;
@@ -941,13 +941,23 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                         coin->RTheight++;
                         printf(">>>> RT.%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",coin->RTheight,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize);
                         coin->RTramchain.H.data->numblocks = bundlei + 1;
-                    } else printf("error mapchaininit\n");
-                    iguana_ramchain_free(coin,&blockR,1);
-                } //else printf("no ptr for RTheight.%d\n",coin->RTheight);
+                    }
+                    else
+                    {
+                        printf("error mapchaininit\n");
+                        iguana_ramchain_free(coin,&blockR,1);
+                        return(-1);
+                    }
+                }
+                else
+                {
+                    printf("no ptr for RTheight.%d\n",coin->RTheight);
+                    return(-1);
+                }
             }
             else
             {
-                //printf("no blockptr for RTheight.%d\n",coin->RTheight);
+                printf("no blockptr for RTheight.%d\n",coin->RTheight);
                 return(-1);
             }
         }
@@ -1131,8 +1141,8 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
                 }
             }
         }
-        //printf("B [%d] j.%d u.%u b.%u\n",bp->hdrsi,j,bp->utxofinish,bp->balancefinish);
-        if ( bp->bundleheight+bp->n >= coin->blocks.hwmchain.height && bp->utxofinish > 1 && bp->balancefinish <= 1 && bp->hdrsi == j )
+        // printf("B [%d] j.%d u.%u b.%u\n",bp->hdrsi,j,bp->utxofinish,bp->balancefinish);
+        if ( bp->bundleheight+bp->n < coin->blocks.hwmchain.height && bp->utxofinish > 1 && bp->balancefinish <= 1 && (bp->hdrsi == 0 || bp->hdrsi == j) )
         {
             starttime = (uint32_t)time(NULL);
             for (j=0; j<=bp->hdrsi; j++)
