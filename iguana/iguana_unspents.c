@@ -886,7 +886,6 @@ void iguana_RTramchainalloc(struct iguana_info *coin,struct iguana_bundle *bp)
         dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
         dest->externalind = dest->H.stacksize = 0;
         dest->H.scriptoffset = 1;
-        printf("ALLOC RTramchain %p\n");
     }
 }
 
@@ -898,7 +897,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n )
     {
         iguana_RTramchainalloc(coin,bp);
-        printf("RTheight.%d rdata.%p\n",coin->RTheight,dest->H.data);
+        printf("RTheight.%d rdata.%p\n",coin->RTheight,coin->RTramchain.H.data);
         while ( (rdata= coin->RTramchain.H.data) != 0 && coin->RTheight <= coin->blocks.hwmchain.height)
         {
             dest = &coin->RTramchain;
