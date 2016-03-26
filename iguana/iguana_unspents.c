@@ -592,7 +592,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
 
 int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_ramchain *RTramchain,int32_t bundlei)
 {
-    struct iguana_txid *T,*spentT; int32_t height,spendind,txidind,j,k; bits256 prevhash;
+    struct iguana_txid *T; int32_t height,spendind,txidind,j,k; bits256 prevhash;
     struct iguana_bundle *spentbp; struct iguana_unspent *spentU,*u;
     struct iguana_ramchaindata *RTdata;
     uint32_t spent_unspentind; struct iguana_blockRO *B; struct iguana_spend *S,*s;
@@ -630,15 +630,14 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
             else if ( s->prevout >= 0 )
             {
                 spentbp = bp;
-                if ( spentbp->ramchain.H.data != 0 && s->spendtxidind != 0 && s->spendtxidind < spentbp->ramchain.H.data->numtxids )
+                if ( s->spendtxidind != 0 && s->spendtxidind < RTdata->numtxids )
                 {
-                    spentT = (void *)(long)((long)spentbp->ramchain.H.data + spentbp->ramchain.H.data->Toffset);
-                    spent_unspentind = spentT[s->spendtxidind].firstvout + s->prevout;
+                    spent_unspentind = T[s->spendtxidind].firstvout + s->prevout;
                     //printf("txidind.%d 1st.%d prevout.%d\n",txidind,T[txidind].firstvout,s->prevout);
                 }
                 else
                 {
-                    printf("RTutxo txidind overflow %u vs %d\n",s->spendtxidind,spentbp->ramchain.H.data != 0?spentbp->ramchain.H.data->numtxids:-1);
+                    printf("RTutxo txidind overflow %u vs %d\n",s->spendtxidind,RTdata->numtxids);
                     return(-1);
                 }
             }
@@ -647,7 +646,8 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
             {
                 spentU = (void *)(long)((long)spentbp->ramchain.H.data + spentbp->ramchain.H.data->Uoffset);
                 u = &spentU[spent_unspentind];
-                return(iguana_volatileupdate(coin,1,spentbp == bp ? RTramchain : &spentbp->ramchain,spentbp->hdrsi,spent_unspentind,u->pkind,u->value,spendind,height));
+                if ( iguana_volatileupdate(coin,1,spentbp == bp ? RTramchain : &spentbp->ramchain,spentbp->hdrsi,spent_unspentind,u->pkind,u->value,spendind,height) < 0 )
+                    return(-1);
             } else printf("RTutxo error spentbp.%p u.%u\n",spentbp,spent_unspentind);
         }
     }
@@ -1124,7 +1124,7 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
             }
         }
         //printf("B [%d] j.%d u.%u b.%u\n",bp->hdrsi,j,bp->utxofinish,bp->balancefinish);
-        if ( bp->utxofinish > 1 && bp->balancefinish <= 1 && bp->hdrsi == j )
+        if ( bp->bundleheight+bp->n >= coin->blocks.hwmchain.height && bp->utxofinish > 1 && bp->balancefinish <= 1 && bp->hdrsi == j )
         {
             starttime = (uint32_t)time(NULL);
             for (j=0; j<=bp->hdrsi; j++)
