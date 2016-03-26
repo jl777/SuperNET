@@ -81,8 +81,8 @@ long myallocated(uint8_t type,long change)
         Total_allocated += change;
         if ( Total_allocated > HWM_allocated )
         {
-            printf("HWM allocated %ld %s\n",(long)Total_allocated,mbstr(str,Total_allocated));
             HWM_allocated = Total_allocated * 1.5;
+            printf("HWM allocated %ld %s\n",(long)Total_allocated,mbstr(str,Total_allocated));
         }
     }
     return(total);
