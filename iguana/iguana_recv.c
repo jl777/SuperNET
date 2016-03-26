@@ -527,6 +527,7 @@ void iguana_checklongestchain(struct iguana_info *coin,struct iguana_bundle *bp,
                 {
                     printf("blacklist addr.(%s) height %d\n",addr->ipaddr,addr->height);
                     addr->dead = 1;
+                    addr->rank = 0;
                 }
         }
     }

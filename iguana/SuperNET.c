@@ -788,6 +788,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
         if ( method != 0 && strcmp(method,"stop") == 0 )
         {
             addr->dead = (uint32_t)time(NULL);
+            addr->rank = 0;
             free_json(json);
             if ( ptr != 0 )
                 free(ptr);

@@ -500,7 +500,10 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                             if ( peercounts[i] > threshold && (addr= coin->peers.ranked[i]) != 0 && now > bp->currenttime+lag && addr->dead == 0 )
                             {
                                 if ( (numpeers > 64 || addr->laggard++ > 13) && coin->current == bp )
+                                {
                                     addr->dead = (uint32_t)time(NULL);
+                                    addr->rank = 0;
+                                }
                                 for (j=0; j<bp->n; j++)
                                 {
                                     if ( (block= bp->blocks[j]) != 0 && block->peerid == i && block->fpipbits == 0 )
@@ -545,7 +548,9 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                             iguana_blockQ("kicka",coin,bp,i,block->RO.hash2,forceflag);
                             if ( forceflag != 0 && (addr= coin->peers.ranked[rand() % numpeers]) != 0 )
                                 iguana_sendblockreqPT(coin,addr,bp,i,block->RO.hash2,0);
-                        } else iguana_blockQ("kickb",coin,bp,i,block->RO.hash2,0);
+                        }
+                        else if ( forceflag != 0 )
+                            iguana_blockQ("kickb",coin,bp,i,block->RO.hash2,0);
                         if ( forceflag != 0 )
                             bp->issued[i] = block->issued = now;
                         else bp->issued[i] = block->issued = saved;
@@ -785,7 +790,7 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
 //#ifdef IGUANA_SERIALIZE_SPENDVECTORGEN
     //if ( coin->MAXMEM <= 4*(1024L * 1024 * 1024) )
     {
-        if ( (prevbp= coin->current) != 0 && prevbp->hdrsi < (coin->longestchain / coin->chain->bundlesize)-coin->MAXBUNDLES )
+        if ( (prevbp= coin->current) != 0 && prevbp->hdrsi < (coin->longestchain / coin->chain->bundlesize)-0*coin->MAXBUNDLES )
             return(0);
     }
 //#endif
