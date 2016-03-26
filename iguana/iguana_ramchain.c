@@ -2410,6 +2410,11 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     sigspace = pubkeyspace = 0;
     for (bundlei=starti,numtxids=numunspents=scriptspace=numspends=0; bundlei<=endi; bundlei++)
     {
+        if ( coin->active == 0 )
+        {
+            iguana_bundlemapfree(coin,mem,&HASHMEM,ipbits,ptrs,filesizes,num,R,starti,endi);
+            return(-1);
+        }
         if ( (block= bp->blocks[bundlei]) == 0 || bits256_nonz(block->RO.hash2) == 0 || block != iguana_blockfind(coin,block->RO.hash2) || memcmp(block->RO.hash2.bytes,bp->hashes[bundlei].bytes,sizeof(bits256)) != 0 )
         {
             printf("block.%p error vs %p\n",block,iguana_blockfind(coin,block->RO.hash2));
@@ -2466,6 +2471,11 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     iguana_ramchain_extras(coin,dest,&HASHMEM,0);
     for (i=starti; i<=endi; i++)
     {
+        if ( coin->active == 0 )
+        {
+            iguana_bundlemapfree(coin,mem,&HASHMEM,ipbits,ptrs,filesizes,num,R,starti,endi);
+            return(-1);
+        }
         if ( (block= bp->blocks[i]) != 0 && block == iguana_blockfind(coin,bp->hashes[i]) )
         {
             if ( bits256_nonz(block->RO.prev_block) == 0 && i > 0 )
@@ -2505,7 +2515,8 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
                     bp->issued[bundlei] = 0;
                     block->issued = 0;
                 }
-                printf("error ramchain_iterate hdrs.%d bundlei.%d\n",bp->hdrsi,bundlei);
+                if ( coin->active != 0 )
+                    printf("error ramchain_iterate hdrs.%d bundlei.%d\n",bp->hdrsi,bundlei);
                 break;
             }
         }
