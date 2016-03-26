@@ -541,7 +541,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                         saved = block->issued;
                         if ( bp == coin->current )
                             forceflag = (now > block->issued + lag);
-                        else forceflag = (now > block->issued + 3*lag);
+                        else forceflag = (now > block->issued + 10*lag);
                         if ( priority != 0 )
                         {
                             //printf("[%d:%d] ",bp->hdrsi,i);
@@ -561,8 +561,8 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
             if ( flag != 0 && priority != 0 && laggard != 0 && coin->current == bp )
                 printf("[%d] reissued.%d currentflag.%d ht.%d s.%d finished.%d most.%d laggards.%d maxunfinished.%d\n",bp->hdrsi,flag,bp->currentflag,bp->bundleheight,bp->numsaved,finished,doneval,laggard,maxval);
         }
-        if ( bp == coin->current )
-            return(counter);
+        //if ( bp == coin->current )
+        //    return(counter);
     }
     for (i=0; i<bp->n; i++)
     {
@@ -575,7 +575,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     block->numrequests++;
                     if ( bp == coin->current )
                         printf("[%d:%d].%x ",bp->hdrsi,i,block->fpipbits);
-                    iguana_blockQ("kickc",coin,bp,i,block->RO.hash2,bp == coin->current || now > block->issued+lag*3);
+                    iguana_blockQ("kickc",coin,bp,i,block->RO.hash2,bp == coin->current && now > block->issued+lag);
                     bp->issued[i] = block->issued = now;
                     counter++;
                     if ( --max <= 0 )
@@ -587,7 +587,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
         {
             if ( bp == coin->current )
                 printf("[%d:%d].%x ",bp->hdrsi,i,block->fpipbits);
-            iguana_blockQ("kickd",coin,bp,i,bp->hashes[i],bp == coin->current || now > bp->issued[i]+lag*3);
+            iguana_blockQ("kickd",coin,bp,i,bp->hashes[i],bp == coin->current && now > bp->issued[i]+lag*3);
             bp->issued[i] = now;
             counter++;
         }
