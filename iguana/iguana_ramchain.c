@@ -177,18 +177,25 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
 
 uint32_t iguana_sparseaddtx(uint8_t *bits,int32_t width,uint32_t tablesize,bits256 txid,struct iguana_txid *T,uint32_t txidind)
 {
-    uint32_t ind;
-    char str[65]; printf("sparseaddtx %s txidind.%d bits.%p\n",bits256_str(str,txid),txidind,bits);
+    uint32_t ind,retval;
+    //char str[65]; printf("sparseaddtx %s txidind.%d bits.%p\n",bits256_str(str,txid),txidind,bits);
     ind = (txid.ulongs[0] ^ txid.ulongs[1] ^ txid.ulongs[2] ^ txid.ulongs[3]) % tablesize;
+    if ( (retval= iguana_sparseadd(bits,ind,width,tablesize,txid.bytes,sizeof(txid),0,T,sizeof(*T))) != 0 )
+    {
+        char str[65];
+        if ( txidind != 0 )
+            printf("sparse tx collision %s %u vs %u\n",bits256_str(str,txid),retval,txidind);
+        return(retval);
+    }
     return(iguana_sparseadd(bits,ind,width,tablesize,txid.bytes,sizeof(txid),txidind,T,sizeof(*T)));
 }
 
 uint32_t iguana_sparseaddpk(uint8_t *bits,int32_t width,uint32_t tablesize,uint8_t rmd160[20],struct iguana_pkhash *P,uint32_t pkind)
 {
     uint32_t ind,key2; uint64_t key0,key1;
-    int32_t i; for (i=0; i<20; i++)
-        printf("%02x",rmd160[i]);
-    char str[65]; printf(" sparseaddpk pkind.%d bits.%p\n",pkind,bits);
+    //int32_t i; for (i=0; i<20; i++)
+    //    printf("%02x",rmd160[i]);
+    //char str[65]; printf(" sparseaddpk pkind.%d bits.%p\n",pkind,bits);
     memcpy(&key0,rmd160,sizeof(key0));
     memcpy(&key1,&rmd160[sizeof(key0)],sizeof(key1));
     memcpy(&key2,&rmd160[sizeof(key0) + sizeof(key1)],sizeof(key2));

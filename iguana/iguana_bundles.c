@@ -865,6 +865,11 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
         if ( iguana_bundleready(coin,bp) == bp->n )
         {
             printf(">>>>>>>>>>>>>>>>>>>>>>> EMIT.%s bundle.%d | 1st.%d h.%d s.[%d] maxbundles.%d NET.(h%d b%d)\n",coin->symbol,bp->bundleheight,coin->current!=0?coin->current->hdrsi:-1,coin->current!=0?coin->current->numhashes:-1,coin->current!=0?coin->current->numsaved:-1,coin->MAXBUNDLES,HDRnet,netBLOCKS);
+            if ( bp->emitfinish != 0 )
+            {
+                printf("already EMIT for bundle.%d\n",bp->hdrsi);
+                return(0);
+            }
             bp->emitfinish = 1;
             iguana_bundletweak(coin,bp);
             sleep(1); // just in case data isnt totally sync'ed to HDD
