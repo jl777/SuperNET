@@ -4,6 +4,7 @@ include ../mingw.path64
 all: clean build
 
 build:
+	mkdir -p ../agents/win64 || true
 	@echo "\nBuilding crypto......"
 	$(TOOL_DIR)/$(MINGW)-gcc -w -D __MINGW -c $(CRYPTO777_SRCS) -I/usr/share/mingw-w64/include -I /usr/share/mingw-w64/include/sys -I/home/user/SuperNET/includes/openssl || (echo "\033[4m ERROR: Compilation failed for win64\033[0m"; exit 1; )
  

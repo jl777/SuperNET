@@ -1,0 +1,22 @@
+include iguana.sources
+include mingw32
+include ../mingw.path
+
+all: clean check build
+
+build:
+	@echo "\nBuilding iguana......"
+	$(TOOL_DIR)/$(MINGW)-gcc -w -o ../agents/win32/iguana.exe -D __MINGW -D __CURL_CURLBUILD_H -D __CURL_CURL_H -D __CURL_EASY_H $(SOURCES) $(LIBS)  || (echo -e "\033[4mERROR: Failed to build iguana\033[0m"; exit 1; )
+
+ 
+	$(TOOL_DIR)/$(MINGW)-strip --strip-all ../agents/win32/iguana.exe
+	@echo "\nBuild successfully......"
+
+check:
+	@echo "\nChecking if libcrypto.a exists......"
+	test -s ../agents/win32/libcrypto777.a  || (echo -e "\033[4mERROR: libcrypto777.a does not exists\033[0m"; exit 1; )
+
+clean:
+	@echo "\nCleaning iguana......"
+	rm -rf ../agents/win32/iguana.* || true 
+	@echo "\n Iguana Cleaned......"
