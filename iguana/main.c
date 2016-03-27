@@ -344,7 +344,7 @@ mksquashfs DB/BTC BTC.squash1M -b 1048576
 
 void mainloop(struct supernet_info *myinfo)
 {
-    int32_t i,flag; struct iguana_info *coin; struct iguana_helper *ptr; struct iguana_bundle *bp;
+    int32_t i,j,flag; struct iguana_info *coin; struct iguana_block *block; struct iguana_helper *ptr; struct iguana_bundle *bp;
     sleep(3);
     printf("mainloop\n");
     while ( 1 )
@@ -377,7 +377,16 @@ void mainloop(struct supernet_info *myinfo)
                         {
                             printf("%s is stuck too long, restarting\n",coin->symbol);
                             if ( bp->emitfinish == 0 )
+                            {
                                 iguana_bundlepurgefiles(coin,bp);
+                                for (j=0; j<bp->n; j++)
+                                    if ( (block= bp->blocks[j]) != 0 )
+                                    {
+                                        block->fpipbits = 0;
+                                        block->RO.recvlen = 0;
+                                        block->fpos = -1;
+                                    }
+                            }
                             //iguana_coinpurge(coin);
                             sleep(5);
                         }
