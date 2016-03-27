@@ -329,16 +329,19 @@ uint32_t iguana_sparseaddpk(uint8_t *bits,int32_t width,uint32_t tablesize,uint8
 
 struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,struct iguana_txid *tx,bits256 txid,int16_t *permutation,int32_t numhdrs)
 {
+    static int64_t ksum,kiters;
     uint8_t *TXbits; struct iguana_txid *T; uint32_t txidind; int32_t i,j,k; int16_t tmp,pendingval;
     struct iguana_bundle *bp; struct iguana_ramchain *ramchain; struct iguana_block *block;
     *heightp = -1;
     if ( numhdrs < 0 )
         return(0);
+    permutation = 0;
     if ( permutation != 0 && permutation[0] == permutation[1] )
     {
         for (k=0; k<numhdrs; k++)
             permutation[k] = numhdrs - 1 - k;
     }
+    ksum++;
     for (k=0; k<numhdrs; k++)
     {
         i = permutation != 0 ? permutation[k] : (numhdrs - 1 - k);
@@ -360,6 +363,9 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                                 break;
                         if ( j < bp->n )
                         {
+                            kiters += (k+1);
+                            if ( (ksum % 100000) == 0 )
+                                printf("kiters.%llu/%llu %.1f\n",(long long)kiters,(long long)ksum,(double)kiters/ksum);
                             *heightp = bp->bundleheight + j;
                             //printf("found height.%d\n",*heightp);
                             *tx = T[txidind];
