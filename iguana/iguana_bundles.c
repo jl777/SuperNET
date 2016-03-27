@@ -881,7 +881,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
             } //else printf("finish incomplete.%d\n",bp->hdrsi);
         }
     }
-    else if ( bp->numsaved >= bp->n && (bp->isRT == 0 || coin->RTheight > bp->bundleheight+bp->n+coin->minconfirms) )
+    else if ( bp->numsaved >= bp->n )//&& (bp->isRT == 0 || coin->RTheight > bp->bundleheight+bp->n+coin->minconfirms) )
     {
         if ( iguana_bundleready(coin,bp) == bp->n )
         {
