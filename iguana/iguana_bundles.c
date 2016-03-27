@@ -810,7 +810,7 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
     for (i=0; i<bp->hdrsi; i++)
         if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish < coin->startutc
 #ifdef IGUANA_SERIALIZE_SPENDVECTORGEN
-            || prevbp->utxofinish <= 1 
+            || (i < bp->hdrsi-8 && prevbp->utxofinish <= 1)
 #endif
            )
             break;
