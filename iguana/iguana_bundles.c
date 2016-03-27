@@ -844,7 +844,7 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
 
 int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_bundle *bp,int32_t timelimit)
 {
-    int32_t range,starti,lasti,i,n,len,retval=0,max,counter = 0; struct iguana_block *block; struct iguana_bundle *currentbp,*lastbp; uint8_t serialized[512]; struct iguana_peer *addr; long lag;
+    int32_t range,starti,lasti,i,n,len,retval=0,max,counter = 0; struct iguana_block *block; struct iguana_bundle *currentbp,*lastbp; uint8_t serialized[512]; struct iguana_peer *addr; long lag; struct iguana_blockreq *breq;
     if ( coin->started == 0 )
     {
         printf("%s not ready yet\n",coin->symbol);
@@ -932,16 +932,12 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
             if ( coin->stucktime != 0 )
             {
                 lag = time(NULL)-coin->stucktime;
-                if ( lag == coin->MAXSTUCKTIME/2 || lag == 3*coin->MAXSTUCKTIME/4 )
+                if ( (lag % 60) == 30 )
                 {
-                    //if ( lag > coin->MAXSTUCKTIME/2 )
-                    {
-                        struct iguana_blockreq *breq;
-                        while ( (breq= queue_dequeue(&coin->blocksQ,0)) != 0 )
-                            myfree(breq,sizeof(*breq));
-                        while ( (breq= queue_dequeue(&coin->priorityQ,0)) != 0 )
-                            myfree(breq,sizeof(*breq));
-                    }
+                    while ( (breq= queue_dequeue(&coin->blocksQ,0)) != 0 )
+                        myfree(breq,sizeof(*breq));
+                    while ( (breq= queue_dequeue(&coin->priorityQ,0)) != 0 )
+                        myfree(breq,sizeof(*breq));
                     for (i=n=0; i<bp->n; i++)
                     {
                         if ( (block= bp->blocks[i]) != 0 && (block->RO.recvlen == 0 || block->fpos < 0 || block->fpipbits == 0 || bits256_nonz(block->RO.prev_block) == 0) )
