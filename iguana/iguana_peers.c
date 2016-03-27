@@ -608,7 +608,7 @@ void iguana_startconnection(void *arg)
         return;
     }
     //printf("MYSERVICES.%llx\n",(long long)coin->myservices);
-    if ( strcmp("127.0.0.1",addr->ipaddr) == 0 && (coin->myservices & NODE_NETWORK) != 0 )
+    if ( strcmp("127.0.0.1",addr->ipaddr) == 0 )//&& (coin->myservices & NODE_NETWORK) != 0 )
     {
         iguana_iAkill(coin,addr,0);
         printf("avoid self-loopback\n");

@@ -159,7 +159,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
 uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tablesize,uint8_t *key,int32_t keylen,uint32_t setind,void *refdata,int32_t refsize,struct iguana_ramchain *ramchain)
 {
     static uint8_t masks[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
-    int32_t i,j,x,n,modval; int64_t bitoffset; uint8_t *ptr; uint32_t *table;
+    int32_t i,j,x,n,modval; int64_t bitoffset; uint8_t *ptr; uint32_t *table,retval = 0;
     if ( tablesize == 0 )
     {
         printf("iguana_sparseadd tablesize zero illegal\n");
@@ -188,10 +188,32 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
     ramchain->sparsesearches++;
     if ( (ramchain->sparsesearches % 10000000) == 0 )
         printf("%7d.[%-2d %8d] %5.3f sparse searches.%-10ld iters.%-10ld hits.%-10ld %5.2f%% max.%ld\n",ramchain->height,width,tablesize,(double)ramchain->sparseiters/(1+ramchain->sparsesearches),ramchain->sparsesearches,ramchain->sparseiters,ramchain->sparsehits,100.*(double)ramchain->sparsehits/(1+ramchain->sparsesearches),ramchain->sparsemax+1);
-    if ( 0 && width == 32 )
+    if ( width == 32 )
     {
         table = (uint32_t *)bits;
         for (i=0; i<tablesize; i++,ind++)
+        {
+            if ( ind >= tablesize )
+                ind = 0;
+            if ( (x= table[ind]) == 0 )
+            {
+                if ( (retval= setind) != 0 )
+                    table[ind] = setind;
+            }
+            else if ( memcmp((void *)(long)((long)refdata + x*refsize),key,keylen) == 0 )
+            {
+                if ( setind == 0 )
+                    ramchain->sparsehits++;
+                else if ( setind != x )
+                    printf("sparseadd index collision setind.%d != x.%d refsize.%d keylen.%d\n",setind,x,refsize,keylen);
+                retval = x;
+            } else continue;
+            if ( ++i > ramchain->sparsemax )
+                ramchain->sparsemax = i;
+            ramchain->sparseiters += i;
+            return(retval);
+        }
+        /*for (i=0; i<tablesize; i++,ind++)
         {
             if ( ind >= tablesize )
                 ind = 0;
@@ -215,7 +237,7 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
                 ramchain->sparseiters += i;
                 return(x);
             }
-        }
+        }*/
     }
     else
     {

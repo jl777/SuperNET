@@ -377,7 +377,7 @@ void iguana_coinpurge(struct iguana_info *coin)
     coin->RTgenesis = 0;
     while ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
         myfree(ptr,ptr->allocsize);
-    if ( 0 )
+    if ( 1 )
     {
         while ( (hashstr= queue_dequeue(&coin->hdrsQ,1)) != 0 )
             free_queueitem(hashstr);
