@@ -187,7 +187,7 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
     }
     ramchain->sparsesearches++;
     if ( (ramchain->sparsesearches % 10000) == 0 )
-        printf("%7d.[%-2d %8d] %5.3f sparse searches.%-10ld iters.%-10ld hits.%-10ld %5.2f%% max.%ld\n",ramchain->height,width,tablesize,(double)ramchain->sparseiters/(1+ramchain->sparsesearches),ramchain->sparsesearches,ramchain->sparseiters,ramchain->sparsehits,100.*(double)ramchain->sparsehits/(1+ramchain->sparsesearches),ramchain->sparsemax+1);
+        printf("[%3d] %7d.[%-2d %8d] %5.3f sparse searches.%-10ld iters.%-10ld hits.%-10ld %5.2f%% max.%ld\n",ramchain->height/ramchain->H.data->numblocks,ramchain->height,width,tablesize,(double)ramchain->sparseiters/(1+ramchain->sparsesearches),ramchain->sparsesearches,ramchain->sparseiters,ramchain->sparsehits,100.*(double)ramchain->sparsehits/(1+ramchain->sparsesearches),ramchain->sparsemax+1);
     if ( width == 32 )
     {
         table = (uint32_t *)bits;
@@ -681,7 +681,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
                             printf("unexpected spendbp: height.%d bp.[%d] U%d <- S%d.[%d] [ext.%d %s prev.%d]\n",bp->bundleheight+i,spentbp->hdrsi,spent_unspentind,spendind,bp->hdrsi,s->external,bits256_str(str,prevhash),s->prevout);
                             errs++;
                         }
-                        if ( now > spentbp->lastprefetch+coin->emitbusy )
+                        if ( now > spentbp->lastprefetch+5+5*coin->emitbusy )
                         {
                             //printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
                             iguana_ramchain_prefetch(coin,&spentbp->ramchain);
@@ -786,7 +786,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
     for (i=0; i<bp->n; i++)
     {
         now = (uint32_t)time(NULL);
-        if ( now > bp->lastprefetch+coin->emitbusy )
+        if ( now > bp->lastprefetch+5+5*coin->emitbusy )
         {
             //printf("RT prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
             iguana_ramchain_prefetch(coin,&bp->ramchain);
@@ -919,7 +919,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
                     return(-1);
                 }
                 rdata = spentbp->ramchain.H.data;
-                if ( now > spentbp->lastprefetch+coin->emitbusy )
+                if ( now > spentbp->lastprefetch+5+5*coin->emitbusy )
                 {
                     //printf("RT prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
                     iguana_ramchain_prefetch(coin,&spentbp->ramchain);
