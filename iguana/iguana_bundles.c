@@ -634,10 +634,10 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
 {
     int32_t counter=0;
     int32_t i; uint32_t now;
-    if ( coin->enableCACHE != 0 && bp->speculative == 0 && bp->numhashes < bp->n )
+    if ( coin->enableCACHE != 0 && bp->numhashes < bp->n )
     {
         char str[64];
-        if ( 0 && bp == coin->current )
+        if ( bp->hdrsi == coin->bundlescount-1 || bp == coin->current )
             printf("hdr ITERATE bundle.%d vs %d: h.%d n.%d r.%d s.%d finished.%d speculative.%p\n",bp->bundleheight,coin->longestchain-coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,bp->speculative);
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
     }
