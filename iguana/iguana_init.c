@@ -352,7 +352,7 @@ void iguana_blockpurge(struct iguana_info *coin,struct iguana_block *block)
 void iguana_blockspurge(struct iguana_info *coin)
 {
     struct iguana_block *block,*tmp;
-    if ( coin->blocks.hash != 0 )
+    if ( 0 && coin->blocks.hash != 0 )
     {
         HASH_ITER(hh,coin->blocks.hash,block,tmp)
         {
