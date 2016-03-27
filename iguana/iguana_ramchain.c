@@ -1707,7 +1707,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
             origtxdata->block.RO.recvlen = 0;
             origtxdata->block.issued = 0;
             return(-1);
-        } else printf("matched merkle.%d\n",txn_count);
+        } //else printf("matched merkle.%d\n",txn_count);
     } else printf("not enough memory for merkle verify %ld vs %lu\n",sizeof(bits256)*(txn_count+1),(long)addr->TXDATA.totalsize);
     if ( iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.hash2) == 0 )
     {
