@@ -363,13 +363,13 @@ void mainloop(struct supernet_info *myinfo)
                             flag++;
                         if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
                         {
-                            if ( ptr->coin != coin )
+                            if ( ptr->coin != coin || (bp= ptr->bp) == 0 || time(NULL) < bp->nexttime )
                             {
                                 queue_enqueue("balanceQ",&balancesQ,&ptr->DL,0);
                                 continue;
                             }
                             flag++;
-                            if ( coin != 0 && (bp= ptr->bp) != 0 )
+                            if ( coin != 0 )
                             {
                                 iguana_balancecalc(coin,bp,bp->bundleheight,bp->bundleheight+bp->n-1);
                                 if ( coin->active == 0 )

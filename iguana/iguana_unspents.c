@@ -247,9 +247,9 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
                 for (x=j=0; j<width; j++)
                 {
                     x <<= 1;
-                    x |= GETBIT(bits,bitoffset+width-1-j) != 0;
+                    x |= GETBIT(bits,bitoffset+j) != 0;
                 }
-                if ( x != setind )
+                //if ( x != setind )
                     printf("x.%d vs setind.%d ind.%d bitoffset.%d\n",x,setind,ind,(int32_t)bitoffset);
             }
             if ( i > ramchain->sparsemax )
@@ -1374,6 +1374,7 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
         iguana_validateQ(coin,bp);
         return(flag);
     }
+    bp->nexttime = (uint32_t)time(NULL) + 1 + cbrt(bp->hdrsi);
     if ( bp != 0 && coin != 0 && (bp->hdrsi == 0 || (prevbp= coin->bundles[bp->hdrsi-1]) != 0) )
     {
 #ifdef IGUANA_SERIALIZE_BALANCEGEN

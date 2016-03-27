@@ -607,7 +607,7 @@ void iguana_startconnection(void *arg)
         printf("iguana_startconnection.%s mismatched coin.%p (%s) vs (%s)\n",addr->ipaddr,coin,coin->symbol,addr->coinstr);
         return;
     }
-    printf("MYSERVICES.%llx\n",(long long)coin->myservices);
+    //printf("MYSERVICES.%llx\n",(long long)coin->myservices);
     if ( strcmp("127.0.0.1",addr->ipaddr) == 0 && (coin->myservices & NODE_NETWORK) != 0 )
     {
         iguana_iAkill(coin,addr,0);
