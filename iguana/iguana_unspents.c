@@ -485,7 +485,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
                             printf("unexpected spendbp: height.%d bp.[%d] U%d <- S%d.[%d] [ext.%d %s prev.%d]\n",bp->bundleheight+i,spentbp->hdrsi,spent_unspentind,spendind,bp->hdrsi,s->external,bits256_str(str,prevhash),s->prevout);
                             errs++;
                         }
-                        if ( now > spentbp->lastprefetch+10 )
+                        if ( now > spentbp->lastprefetch+1 )
                         {
                             //printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
                             iguana_ramchain_prefetch(coin,&spentbp->ramchain);
@@ -589,6 +589,13 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
     txidind = spendind = rdata->firsti;
     for (i=0; i<bp->n; i++)
     {
+        now = (uint32_t)time(NULL);
+        if ( now > bp->lastprefetch+1 )
+        {
+            //printf("RT prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
+            iguana_ramchain_prefetch(coin,&bp->ramchain);
+            bp->lastprefetch = now;
+        }
         //printf("hdrs.[%d] B[%d] 1st txidind.%d txn_count.%d firstvin.%d firstvout.%d\n",bp->hdrsi,i,B[i].firsttxidind,B[i].txn_count,B[i].firstvin,B[i].firstvout);
         if ( txidind != B[i].firsttxidind || spendind != B[i].firstvin )
         {
@@ -1251,19 +1258,24 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
         // printf("B [%d] j.%d u.%u b.%u\n",bp->hdrsi,j,bp->utxofinish,bp->balancefinish);
         if ( bp->bundleheight+bp->n < coin->blocks.hwmchain.height && bp->utxofinish > 1 && bp->balancefinish <= 1 && (bp->hdrsi == 0 || bp->hdrsi == j) )
         {
-            starttime = (uint32_t)time(NULL);
-            for (j=0; j<=bp->hdrsi; j++)
-                iguana_allocvolatile(coin,&coin->bundles[j]->ramchain);
-            if ( iguana_balancegen(coin,bp,startheight,endheight) < 0 )
+            if ( bp->hdrsi >= coin->balanceswritten )
             {
-                printf("GENERATE BALANCES ERROR ht.%d\n",bp->bundleheight);
-                exit(-1);
+                printf("balancecalc for %d when %d\n",bp->hdrsi,coin->balanceswritten);
+                starttime = (uint32_t)time(NULL);
+                for (j=0; j<=bp->hdrsi; j++)
+                    iguana_allocvolatile(coin,&coin->bundles[j]->ramchain);
+                if ( iguana_balancegen(coin,bp,startheight,endheight) < 0 )
+                {
+                    printf("GENERATE BALANCES ERROR ht.%d\n",bp->bundleheight);
+                    exit(-1);
+                }
+                printf("GENERATED BALANCES for ht.%d duration %d seconds\n",bp->bundleheight,(uint32_t)time(NULL) - (uint32_t)starttime);
+                coin->balanceswritten++;
             }
             bp->balancefinish = (uint32_t)time(NULL);
-            printf("GENERATED BALANCES for ht.%d duration %d seconds\n",bp->bundleheight,bp->balancefinish - (uint32_t)starttime);
             bp->queued = 0;
             iguana_validateQ(coin,bp);
-            if ( bp->hdrsi >= coin->longestchain/coin->chain->bundlesize-1 && bp->hdrsi >= coin->balanceswritten )
+            if ( bp->hdrsi >= coin->longestchain/coin->chain->bundlesize-1  )
             {
                 iguana_balanceflush(coin,bp->hdrsi,3);
                 printf("balanceswritten.%d flushed bp->hdrsi %d vs %d coin->longestchain/coin->chain->bundlesize\n",coin->balanceswritten,bp->hdrsi,coin->longestchain/coin->chain->bundlesize);

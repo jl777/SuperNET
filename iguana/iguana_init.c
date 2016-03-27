@@ -372,24 +372,29 @@ void iguana_blockspurge(struct iguana_info *coin)
 
 void iguana_coinpurge(struct iguana_info *coin)
 {
-    int32_t i; struct iguana_bundle *bp; char *hashstr; struct iguana_bundlereq *req; struct iguana_blockreq *breq;
+    int32_t i; struct iguana_bundle *bp; char *hashstr; struct iguana_bundlereq *req; struct iguana_blockreq *breq; struct iguana_helper *ptr;
     coin->started = 0; coin->active = 0;
     coin->RTgenesis = 0;
-    while ( (hashstr= queue_dequeue(&coin->hdrsQ,1)) != 0 )
-        free_queueitem(hashstr);
-    while ( (breq= queue_dequeue(&coin->blocksQ,0)) != 0 )
-        myfree(breq,sizeof(*breq));
-    while ( (breq= queue_dequeue(&coin->priorityQ,0)) != 0 )
-        myfree(breq,sizeof(*breq));
-    while ( (req= queue_dequeue(&coin->cacheQ,0)) != 0 )
-        myfree(req,req->allocsize);
-    while ( (req= queue_dequeue(&coin->recvQ,0)) != 0 )
+    while ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
+        myfree(ptr,ptr->allocsize);
+    if ( 0 )
     {
-        if ( req->blocks != 0 )
-            myfree(req->blocks,sizeof(*req->blocks) * req->n), req->blocks = 0;
-        if ( req->hashes != 0 )
-            myfree(req->hashes,sizeof(*req->hashes) * req->n), req->hashes = 0;
-        myfree(req,req->allocsize);
+        while ( (hashstr= queue_dequeue(&coin->hdrsQ,1)) != 0 )
+            free_queueitem(hashstr);
+        while ( (breq= queue_dequeue(&coin->blocksQ,0)) != 0 )
+            myfree(breq,sizeof(*breq));
+        while ( (breq= queue_dequeue(&coin->priorityQ,0)) != 0 )
+            myfree(breq,sizeof(*breq));
+        while ( (req= queue_dequeue(&coin->cacheQ,0)) != 0 )
+            myfree(req,req->allocsize);
+        while ( (req= queue_dequeue(&coin->recvQ,0)) != 0 )
+        {
+            if ( req->blocks != 0 )
+                myfree(req->blocks,sizeof(*req->blocks) * req->n), req->blocks = 0;
+            if ( req->hashes != 0 )
+                myfree(req->hashes,sizeof(*req->hashes) * req->n), req->hashes = 0;
+            myfree(req,req->allocsize);
+        }
     }
     while ( coin->idletime == 0 && coin->emitbusy > 0 )
     {

@@ -363,10 +363,15 @@ void mainloop(struct supernet_info *myinfo)
                             flag++;
                         if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
                         {
-                            flag++;
-                            if ( ptr->coin != 0 && (bp= ptr->bp) != 0 )
+                            if ( ptr->coin != coin )
                             {
-                                iguana_balancecalc(ptr->coin,bp,bp->bundleheight,bp->bundleheight+bp->n-1);
+                                queue_enqueue("balanceQ",&balancesQ,&ptr->DL,0);
+                                continue;
+                            }
+                            flag++;
+                            if ( coin != 0 && (bp= ptr->bp) != 0 )
+                            {
+                                iguana_balancecalc(coin,bp,bp->bundleheight,bp->bundleheight+bp->n-1);
                                 if ( coin->active == 0 )
                                 {
                                     printf("detected autopurge after account filecreation. restarting.%s\n",coin->symbol);
