@@ -375,7 +375,7 @@ void mainloop(struct supernet_info *myinfo)
                         }
                         if ( (bp= coin->current) != 0 && coin->stucktime != 0 && coin->isRT == 0 && coin->RTheight == 0 && (time(NULL) - coin->stucktime) > coin->MAXSTUCKTIME )
                         {
-                            if ( bp->emitfinish == 0 )
+                            if ( bp->emitfinish == 0 && 0 )
                             {
                                 printf("%s is stuck too long, purging files for %d\n",coin->symbol,bp->hdrsi);
                                 iguana_bundlepurgefiles(coin,bp);
