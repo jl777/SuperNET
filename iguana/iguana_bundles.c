@@ -810,7 +810,7 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
     for (i=0; i<bp->hdrsi; i++)
         if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish < coin->startutc
 #ifdef IGUANA_SERIALIZE_SPENDVECTORGEN
-            || (i < bp->hdrsi-8 && prevbp->utxofinish <= 1)
+            || (i < bp->hdrsi-16 && prevbp->utxofinish <= 1)
 #endif
            )
             break;
@@ -1157,7 +1157,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     //sprintf(str+strlen(str),"%s.%-2d %s time %.2f files.%d Q.%d %d\n",coin->symbol,flag,str,(double)(time(NULL)-coin->starttime)/60.,coin->peers.numfiles,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
     if ( time(NULL) > coin->lastdisp+3 && strcmp(str,coin->lastdispstr) != 0 )
     {
-        printf("\n%s bQ.%d %d:%02d:%02d stuck.%d max.%d\n",str,coin->numbundlesQ,(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,(uint32_t)time(NULL) - coin->stucktime,coin->maxstuck);
+        printf("\n%s bQ.%d %d:%02d:%02d stuck.%d max.%d\n",str,coin->numbundlesQ,(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,coin->stucktime!=0?(uint32_t)time(NULL) - coin->stucktime:0,coin->maxstuck);
         strcpy(coin->lastdispstr,str);
         if ( (rand() % 100) == 0 )
             myallocated(0,0);
