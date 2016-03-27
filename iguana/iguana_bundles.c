@@ -932,8 +932,9 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
             if ( coin->stucktime != 0 )
             {
                 lag = time(NULL)-coin->stucktime;
-                if ( (lag % 60) == 30 )
+                if ( lag/60 > coin->stuckiters )
                 {
+                    coin->stuckiters = (int32_t)lag/60;
                     while ( (breq= queue_dequeue(&coin->blocksQ,0)) != 0 )
                         myfree(breq,sizeof(*breq));
                     while ( (breq= queue_dequeue(&coin->priorityQ,0)) != 0 )
@@ -955,7 +956,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
                             n++;
                         }
                     }
-                    printf("issued %d priority requests [%d] to unstick\n",n,bp->hdrsi);
+                    printf("issued %d priority requests [%d] to unstick stuckiters.%d lag.%ld\n",n,bp->hdrsi,coin->stuckiters,lag);
                 }
             }
         }
@@ -1147,10 +1148,11 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
         {
             coin->stuckmonitor = (firstgap->hdrsi * coin->chain->bundlesize) + firstgap->numsaved;
             coin->stucktime = (uint32_t)time(NULL);
+            coin->stuckiters = 0;
         }
     }
     if ( coin->isRT != 0 || (firstgap != 0 && firstgap->hdrsi == coin->bundlescount-1) )
-        coin->stucktime = 0;
+        coin->stucktime = coin->stuckiters = 0;
     if ( coin->stucktime != 0 && time(NULL)-coin->stucktime > coin->maxstuck )
         coin->maxstuck = (uint32_t)time(NULL) - coin->stucktime;
     sprintf(str,"%s.RT%d u.%d b.%d v.%d/%d (%d/%d 1st.%d) to %d N[%d] h.%d r.%d c.%s s.%d d.%d E.%d maxB.%d peers.%d/%d Q.(%d %d) L.%d [%d:%d] M.%d %s",coin->symbol,coin->RTheight,numutxo,numbalances,numv,coin->pendbalances,firstgap!=0?firstgap->numsaved:-1,firstgap!=0?firstgap->numhashes:-1,firstgap!=0?firstgap->hdrsi:-1,coin->lastpending!=0?coin->lastpending->hdrsi:0,count,numhashes,coin->blocksrecv,mbstr(str4,spaceused),numsaved,done,numemit,coin->MAXBUNDLES,p,coin->MAXPEERS,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ),coin->longestchain,coin->blocks.hwmchain.height/coin->chain->bundlesize,coin->blocks.hwmchain.height%coin->chain->bundlesize,coin->blocks.hwmchain.height,bits256_str(str5,coin->blocks.hwmchain.RO.hash2));

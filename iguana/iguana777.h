@@ -465,7 +465,7 @@ struct iguana_info
     int64_t mining,totalfees,TMPallocated,MAXRECVCACHE,MAXMEM,estsize,activebundles;
     int32_t MAXPEERS,MAXPENDING,MAXBUNDLES,MAXSTUCKTIME,active,closestbundle,numemitted,lastsweep,startutc,newramchain,numcached,cachefreed,helperdepth,startPEND,endPEND,enableCACHE,RELAYNODE,VALIDATENODE,balanceswritten,RTheight; bits256 balancehash;
     uint32_t lastsync,parsetime,numiAddrs,lastpossible,bundlescount,savedblocks,backlog;
-    int32_t longestchain,badlongestchain,longestchain_strange,RTramchain_busy,emitbusy;
+    int32_t longestchain,badlongestchain,longestchain_strange,RTramchain_busy,emitbusy,stuckiters;
     struct tai starttime; double startmillis;
     struct iguana_chain *chain;
     struct iguana_iAddr *iAddrs;
