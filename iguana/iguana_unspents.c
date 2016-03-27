@@ -1287,3 +1287,14 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp)
     }
     return(0);
 }
+
+
+#include "../includes/iguana_apidefs.h"
+#include "../includes/iguana_apideclares.h"
+
+TWOSTRINGS_AND_INT(iguana,balance,activecoin,address,height)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+#include "../includes/iguana_apiundefs.h"

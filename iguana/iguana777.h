@@ -576,7 +576,7 @@ struct iguana_block *iguana_blockhashset(struct iguana_info *coin,int32_t height
 
 uint32_t iguana_syncs(struct iguana_info *coin);
 void iguana_gotdata(struct iguana_info *coin,struct iguana_peer *addr,int32_t height);
-int64_t iguana_balance(struct iguana_info *coin,uint64_t *creditsp,uint64_t *debitsp,int32_t *nump,uint32_t *unspents,long max,struct iguana_pkhash *P,uint32_t pkind);
+//int64_t iguana_getbalance(struct iguana_info *coin,uint64_t *creditsp,uint64_t *debitsp,int32_t *nump,uint32_t *unspents,long max,struct iguana_pkhash *P,uint32_t pkind);
 int32_t iguana_queueblock(struct iguana_info *coin,int32_t height,bits256 hash2,int32_t priority);
 int32_t iguana_updatewaiting(struct iguana_info *coin,int32_t starti,int32_t max);
 

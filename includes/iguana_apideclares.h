@@ -143,6 +143,7 @@ TWO_STRINGS(iguana,persistent,activecoin,ipaddr);
 TWO_STRINGS(iguana,removenode,activecoin,ipaddr);
 TWO_STRINGS(iguana,oneshot,activecoin,ipaddr);
 TWO_STRINGS(iguana,nodestatus,activecoin,ipaddr);
+TWOSTRINGS_AND_INT(iguana,balance,activecoin,address,height);
 
 ZERO_ARGS(bitcoinrpc,getinfo);
 ZERO_ARGS(bitcoinrpc,getbestblockhash);
