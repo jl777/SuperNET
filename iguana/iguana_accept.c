@@ -66,7 +66,14 @@ void iguana_acceptloop(void *args)
     struct pollfd pfd; int32_t sock; struct iguana_accept *ptr; uint16_t port = coin->chain->portp2p;
     socklen_t clilen; struct sockaddr_in cli_addr; char ipaddr[64]; uint32_t i,ipbits;
     while ( (coin->bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
+    {
+        if ( coin->peers.localaddr != 0 )
+        {
+            printf("another daemon running, no need to have iguana accept connections\n");
+            return;
+        }
         sleep(5);
+    }
     printf(">>>>>>>>>>>>>>>> iguana_bindloop 127.0.0.1:%d bind sock.%d\n",port,coin->bindsock);
     printf("START ACCEPTING\n");
     while ( coin->bindsock >= 0 )

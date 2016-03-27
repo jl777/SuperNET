@@ -929,7 +929,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
             if ( coin->stucktime != 0 )
             {
                 lag = time(NULL)-coin->stucktime;
-                if ( lag/coin->MAXSTUCKTIME > coin->stuckiters )
+                if ( ((lag/coin->MAXSTUCKTIME)>>1) > coin->stuckiters )
                 {
                     coin->stuckiters = (int32_t)lag/60;
                     while ( (breq= queue_dequeue(&coin->blocksQ,0)) != 0 )

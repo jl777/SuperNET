@@ -423,9 +423,9 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
         coin->longestchain = 1;
     memset(&coin->blocks.hwmchain,0,sizeof(coin->blocks.hwmchain));
     coin->blocks.hwmchain.height = 0;
-    if ( (coin->myservices & NODE_NETWORK) != 0 && coin->peers.acceptloop == 0 )
+    printf("MYSERVICES.%llx\n",(long long)coin->myservices);
+    if ( (coin->myservices & NODE_NETWORK) != 0 && coin->peers.acceptloop == 0 && coin->peers.localaddr == 0 )
     {
-        printf("MYSERVICES.%llx\n",(long long)coin->myservices);
         coin->peers.acceptloop = malloc(sizeof(pthread_t));
         if ( OS_thread_create(coin->peers.acceptloop,NULL,(void *)iguana_acceptloop,(void *)coin) != 0 )
         {

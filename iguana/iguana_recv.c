@@ -903,7 +903,7 @@ int32_t iguana_blockreq(struct iguana_info *coin,int32_t height,int32_t priority
 
 int32_t iguana_reqblocks(struct iguana_info *coin)
 {
-    int32_t hdrsi,lflag,bundlei,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp;
+    int32_t hdrsi,lflag,bundlei,iters=0,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp;
     /*if ( 0 && (bp= coin->current) != 0 && bp->numsaved < bp->n )
     {
         for (hdrsi=numissued=0; hdrsi<coin->MAXBUNDLES && coin->current->hdrsi+hdrsi<coin->bundlescount && numissued<100; hdrsi++)
@@ -973,8 +973,9 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
     }*/
     lflag = 1;
-    while ( coin->active != 0 && lflag != 0 )
+    while ( coin->active != 0 && iters < IGUANA_MAXITERATIONS )
     {
+        iters++;
         lflag = 0;
         hdrsi = (coin->blocks.hwmchain.height+1) / coin->chain->bundlesize;
         bundlei = (coin->blocks.hwmchain.height+1) % coin->chain->bundlesize;
@@ -1099,12 +1100,14 @@ int32_t iguana_processrecvQ(struct iguana_info *coin,int32_t *newhwmp) // single
     *newhwmp = 0;
     while ( coin->active != 0 && (req= queue_dequeue(&coin->recvQ,0)) != 0 )
     {
-        //fprintf(stderr,"%s recvQ.%p type.%c n.%d\n",req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
+        if ( (flag % 100) == 50 )
+            iguana_reqblocks(coin);
+        flag++;
+        //fprintf(stderr,"flag.%d %s recvQ.%p type.%c n.%d\n",flag,req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
         if ( req->type == 'B' ) // one block with all txdata
         {
             netBLOCKS--;
             req = iguana_recvblock(coin,req->addr,req,&req->block,req->numtx,req->datalen,req->recvlen,newhwmp);
-            flag++;
         }
         else if ( req->type == 'H' ) // blockhdrs (doesnt have txn_count!)
         {
@@ -1133,8 +1136,6 @@ int32_t iguana_processrecvQ(struct iguana_info *coin,int32_t *newhwmp) // single
             myfree(req,req->allocsize), req = 0;
         if ( flag >= IGUANA_BUNDLELOOP )
             break;
-        if ( (flag % 100) == 0 )
-            iguana_reqblocks(coin);
     }
     iguana_reqblocks(coin);
     return(flag);

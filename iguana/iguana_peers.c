@@ -607,6 +607,7 @@ void iguana_startconnection(void *arg)
         printf("iguana_startconnection.%s mismatched coin.%p (%s) vs (%s)\n",addr->ipaddr,coin,coin->symbol,addr->coinstr);
         return;
     }
+    printf("MYSERVICES.%llx\n",(long long)coin->myservices);
     if ( strcmp("127.0.0.1",addr->ipaddr) == 0 && (coin->myservices & NODE_NETWORK) != 0 )
     {
         iguana_iAkill(coin,addr,0);
@@ -697,6 +698,13 @@ struct iguana_peer *iguana_peerslot(struct iguana_info *coin,uint64_t ipbits,int
         }
     }
     return(0);
+}
+
+void iguana_launchpeer(struct iguana_info *coin,char *ipaddr)
+{
+    struct iguana_peer *addr; uint32_t ipbits = (uint32_t)calc_ipbits(ipaddr);
+    if ( (addr= iguana_peerslot(coin,ipbits,0)) != 0 )
+        iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
 }
 
 void *iguana_iAddriterator(struct iguana_info *coin,struct iguana_iAddr *iA)

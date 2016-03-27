@@ -440,7 +440,7 @@ void iguana_coinloop(void *arg)
     {
     }
     coin = coins[0];
-    iguana_possible_peer(coin,"127.0.0.1");
+    iguana_launchpeer(coin,"127.0.0.1");
     memset(zero.bytes,0,sizeof(zero));
     if ( (bp= iguana_bundlecreate(coin,&bundlei,0,*(bits256 *)coin->chain->genesis_hashdata,zero,1)) != 0 )
         bp->bundleheight = 0;
@@ -494,15 +494,15 @@ void iguana_coinloop(void *arg)
                             coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
                         }
                     }
-                    if ( now > coin->peers.lastmetrics+6 )
+                    if ( now > coin->peers.lastmetrics+3 )
                     {
                         //fprintf(stderr,"metrics\n");
                         coin->peers.lastmetrics = iguana_updatemetrics(coin); // ranks peers
                         iguana_bundlestats(coin,str);
                     }
-                    flag += iguana_processrecv(coin);
                     if ( coin->longestchain+10000 > coin->blocks.maxbits )
                         iguana_recvalloc(coin,coin->longestchain + 100000);
+                    flag += iguana_processrecv(coin);
                 }
                 coin->idletime = (uint32_t)time(NULL);
             }

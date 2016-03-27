@@ -27,6 +27,7 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 //#define IGUANA_SERIALIZE_BALANCEGEN
 //#define IGUANA_DISABLEPEERS
 #define _IGUANA_MAXSTUCKTIME 300
+#define IGUANA_MAXITERATIONS 10000
 
 #define IGUANA_MAXCOINS 64
 #define IGUANA_MAXDELAY_MILLIS (3600 * 1000) 
@@ -827,6 +828,7 @@ void iguana_coinpurge(struct iguana_info *coin);
 int32_t iguana_setmaxbundles(struct iguana_info *coin);
 void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp);
 uint32_t iguana_sparseaddtx(uint8_t *bits,int32_t width,uint32_t tablesize,bits256 txid,struct iguana_txid *T,uint32_t txidind,struct iguana_ramchain *ramchain);
+void iguana_launchpeer(struct iguana_info *coin,char *ipaddr);
 
 extern int32_t HDRnet,netBLOCKS;
 

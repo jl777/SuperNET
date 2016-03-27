@@ -247,7 +247,7 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
                 for (x=j=0; j<width; j++)
                 {
                     x <<= 1;
-                    x |= GETBIT(bits,bitoffset+j) != 0;
+                    x |= GETBIT(bits,bitoffset+width-1-j) != 0;
                 }
                 if ( x != setind )
                     printf("x.%d vs setind.%d ind.%d bitoffset.%d\n",x,setind,ind,(int32_t)bitoffset);
@@ -727,7 +727,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
         return(-1);
     }
     iguana_ramchain_prefetch(coin,ramchain);
-    printf("BALANCEGEN.%d hdrs.%d\n",bp->bundleheight,bp->hdrsi);
+    //printf("BALANCEGEN.%d hdrs.%d\n",bp->bundleheight,bp->hdrsi);
     txidind = spendind = rdata->firsti;
     for (i=0; i<bp->n; i++)
     {
@@ -822,7 +822,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
         printf("iguana_balancegen: emit %d != %d ramchain->numXspends\n",emit,ramchain->numXspends);
         errs++;
     }
-    printf(">>>>>>>> balances.%d done errs.%d spendind.%d\n",bp->hdrsi,errs,n);
+    //printf(">>>>>>>> balances.%d done errs.%d spendind.%d\n",bp->hdrsi,errs,n);
     return(-errs);
 }
 
@@ -1402,7 +1402,7 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
         {
             if ( bp->hdrsi >= coin->balanceswritten )
             {
-                printf("balancecalc for %d when %d\n",bp->hdrsi,coin->balanceswritten);
+                //printf("balancecalc for %d when %d\n",bp->hdrsi,coin->balanceswritten);
                 starttime = (uint32_t)time(NULL);
                 for (j=0; j<=bp->hdrsi; j++)
                     iguana_allocvolatile(coin,&coin->bundles[j]->ramchain);
