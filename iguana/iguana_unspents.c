@@ -336,7 +336,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
     if ( numhdrs < 0 )
         return(0);
     /*permutation = 0;
-    /*if ( permutation != 0 && permutation[0] == permutation[1] )
+    if ( permutation != 0 && permutation[0] == permutation[1] )
     {
         for (k=0; k<numhdrs; k++)
             permutation[k] = numhdrs - 1 - k;
@@ -365,7 +365,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                         {
                             kiters += (k+1);
                             if ( (ksum % 100000) == 0 )
-                                printf("kiters.%llu/%llu %.1f\n",(long long)kiters,(long long)ksum,(double)kiters/ksum);
+                                printf("kiters.%llu/%llu %.1f\n",(long long)kiters,(long long)ksum,(double)kiters/(1+ksum));
                             *heightp = bp->bundleheight + j;
                             //printf("found height.%d\n",*heightp);
                             *tx = T[txidind];
