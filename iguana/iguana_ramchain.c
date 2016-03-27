@@ -212,50 +212,6 @@ void iguana_blocksetcounters(struct iguana_info *coin,struct iguana_block *block
     block->RO.firstexternalind = ramchain->externalind;
 }
 
-struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,struct iguana_txid *tx,bits256 txid,int32_t lasthdrsi)
-{
-    uint8_t *TXbits; struct iguana_txid *T; uint32_t txidind; int32_t i,j;
-    struct iguana_bundle *bp; struct iguana_ramchain *ramchain; struct iguana_block *block;
-    *heightp = -1;
-    if ( lasthdrsi < 0 )
-        return(0);
-    for (i=lasthdrsi; i>=0; i--)
-    {
-        if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish > coin->startutc )
-        {
-            ramchain = &bp->ramchain;
-            if ( ramchain->H.data != 0 )
-            {
-                TXbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->TXoffset);
-                T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
-                //printf("search bp.%p TXbits.%p T.%p %d %d\n",bp,TXbits,T,(int32_t)ramchain->H.data->TXoffset,(int32_t)ramchain->H.data->Toffset);
-                if ( (txidind= iguana_sparseaddtx(TXbits,ramchain->H.data->txsparsebits,ramchain->H.data->numtxsparse,txid,T,0)) > 0 )
-                {
-                    //printf("found txidind.%d\n",txidind);
-                    if ( bits256_cmp(txid,T[txidind].txid) == 0 )
-                    {
-                        for (j=0; j<bp->n; j++)
-                            if ( (block= bp->blocks[j]) != 0 && txidind >= block->RO.firsttxidind && txidind < block->RO.firsttxidind+block->RO.txn_count )
-                                break;
-                        if ( j < bp->n )
-                        {
-                            *heightp = bp->bundleheight + j;
-                            //printf("found height.%d\n",*heightp);
-                            *tx = T[txidind];
-                            return(tx);
-                        }
-                        for (j=0; j<bp->n; j++)
-                            if ( (block= bp->blocks[j]) != 0 )
-                                printf("(%d %d).%d ",block->RO.firsttxidind,block->RO.txn_count,txidind >= block->RO.firsttxidind && txidind < block->RO.firsttxidind+block->RO.txn_count);
-                        printf(" <- firsttxidind txidind.%d not in block range\n",txidind);
-                    } else printf("mismatched sparse entry\n");
-                }
-            }
-        }
-    }
-    return(0);
-}
-
 int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,char *fname,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t numblocks)
 {
     struct iguana_bundle *bp = 0; int32_t bundlei = -2; char str[65];
@@ -1650,6 +1606,8 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
     }
     for (ramchain->H.txidind=rdata->firsti; ramchain->H.txidind<rdata->numtxids; ramchain->H.txidind++)
     {
+        if ( coin->active == 0 )
+            return(-1);;
         if ( 0 && ramchain->expanded == 0 && dest != 0 )
             printf("ITER [%d] TXID.%d -> dest.%p desttxid.%d dest->hashmem.%p numtxids.%d\n",ramchain->H.data->height,ramchain->H.txidind,dest,dest!=0?dest->H.txidind:0,dest!=0?dest->hashmem:0,rdata->numtxids);
         tx = &T[ramchain->H.txidind];
@@ -1665,6 +1623,8 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
         }
         for (j=0; j<tx->numvouts; j++)
         {
+            if ( coin->active == 0 )
+                return(-1);
             fileid = 0;
             scriptpos = 0;
             scriptlen = 0;
@@ -1744,6 +1704,8 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
         tx = &T[ramchain->H.txidind];
         for (j=0; j<tx->numvins; j++)
         {
+            if ( coin->active == 0 )
+                return(-1);
             fileid = 0;
             scriptpos = 0;
             scriptlen = 0;
@@ -1873,7 +1835,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         {
             origtxdata->block.issued = 0;
             origtxdata->block.RO.recvlen = 0;
-            printf("ramchain data: error finding block\n");
+            char str[65]; printf("ramchain data: error finding block %s\n",bits256_str(str,origtxdata->block.RO.hash2));
             return(-1);
         }
     }
@@ -2004,7 +1966,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
                         bp->numtxids += ramchain->H.data->numtxids;
                         bp->numunspents += ramchain->H.data->numunspents;
                         bp->numspends += ramchain->H.data->numspends;
-                        bp->rawscriptspace += ramchain->H.data->scriptspace;
+                        //bp->rawscriptspace += ramchain->H.data->scriptspace;
                     }
                     iguana_ramchain_free(coin,&R,1);
                 }
@@ -2013,7 +1975,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
                     bp->numtxids += ramchain->H.data->numtxids;
                     bp->numunspents += ramchain->H.data->numunspents;
                     bp->numspends += ramchain->H.data->numspends;
-                    bp->rawscriptspace += ramchain->H.data->scriptspace;
+                    //bp->rawscriptspace += ramchain->H.data->scriptspace;
                 }
                 if ( fpos >= 0 )
                     block->fpos = fpos, block->fpipbits = (uint32_t)addr->ipbits;
@@ -2404,6 +2366,11 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     sigspace = pubkeyspace = 0;
     for (bundlei=starti,numtxids=numunspents=scriptspace=numspends=0; bundlei<=endi; bundlei++)
     {
+        if ( coin->active == 0 )
+        {
+            iguana_bundlemapfree(coin,mem,&HASHMEM,ipbits,ptrs,filesizes,num,R,starti,endi);
+            return(-1);
+        }
         if ( (block= bp->blocks[bundlei]) == 0 || bits256_nonz(block->RO.hash2) == 0 || block != iguana_blockfind(coin,block->RO.hash2) || memcmp(block->RO.hash2.bytes,bp->hashes[bundlei].bytes,sizeof(bits256)) != 0 )
         {
             printf("block.%p error vs %p\n",block,iguana_blockfind(coin,block->RO.hash2));
@@ -2460,6 +2427,11 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     iguana_ramchain_extras(coin,dest,&HASHMEM,0);
     for (i=starti; i<=endi; i++)
     {
+        if ( coin->active == 0 )
+        {
+            iguana_bundlemapfree(coin,mem,&HASHMEM,ipbits,ptrs,filesizes,num,R,starti,endi);
+            return(-1);
+        }
         if ( (block= bp->blocks[i]) != 0 && block == iguana_blockfind(coin,bp->hashes[i]) )
         {
             if ( bits256_nonz(block->RO.prev_block) == 0 && i > 0 )
@@ -2482,6 +2454,8 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     dest->H.scriptoffset = 1;
     for (bundlei=starti; bundlei<=endi; bundlei++)
     {
+        if ( coin->active == 0 )
+            break;
         if ( (block= bp->blocks[bundlei]) != 0 )
         {
             iguana_blocksetcounters(coin,block,dest);
@@ -2497,7 +2471,8 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
                     bp->issued[bundlei] = 0;
                     block->issued = 0;
                 }
-                printf("error ramchain_iterate hdrs.%d bundlei.%d\n",bp->hdrsi,bundlei);
+                if ( coin->active != 0 )
+                    printf("error ramchain_iterate hdrs.%d bundlei.%d\n",bp->hdrsi,bundlei);
                 break;
             }
         }
@@ -2538,9 +2513,12 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         iguana_bundleload(coin,&newchain,bp,0);
         newchain.A = 0;
     }
-    iguana_ramchain_free(coin,dest,0);
-    bp->ramchain = newchain;
-    //printf("finished bundlesave.%d\n",bp->bundleheight);
+    if ( coin->active != 0 )
+    {
+        iguana_ramchain_free(coin,dest,0);
+        bp->ramchain = newchain;
+    }
+    //printf("finished bundlesave.%d retval.%d\n",bp->bundleheight,retval);
     return(retval);
 }
 

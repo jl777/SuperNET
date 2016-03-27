@@ -345,12 +345,14 @@ int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *m
             }
             else if ( ptr->type == 'E' )
             {
+                coin->emitbusy++;
                 if ( iguana_bundlesaveHT(coin,mem,memB,bp,ptr->starttime) == 0 )
                 {
                     //fprintf(stderr,"emitQ coin.%p bp.[%d]\n",ptr->coin,bp->bundleheight);
                     bp->emitfinish = (uint32_t)time(NULL) + 1;
                     coin->numemitted++;
                 } else bp->emitfinish = 0;
+                coin->emitbusy--;
             }
         } else printf("no bundle in helperrequest\n");
     } else printf("no coin in helperrequest\n");
@@ -379,7 +381,7 @@ void iguana_helper(void *arg)
         allcurrent = 1;
         if ( ((ptr= queue_dequeue(&emitQ,0)) != 0 || (ptr= queue_dequeue(&helperQ,0)) != 0) )
         {
-            if ( ptr->bp != 0 && (coin= ptr->coin) != 0 )
+            if ( ptr->bp != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
             {
                 idle = 0;
                 coin->helperdepth++;
@@ -392,7 +394,7 @@ void iguana_helper(void *arg)
         else if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
         {
             idle = 0;
-            if ( (bp= ptr->bp) != 0 && (coin= ptr->coin) != 0 )
+            if ( (bp= ptr->bp) != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
             {
                 coin->numbundlesQ--;
                 if ( coin->started != 0 && time(NULL) >= bp->nexttime )
@@ -400,7 +402,9 @@ void iguana_helper(void *arg)
                 else iguana_bundleQ(ptr->coin,bp,1000);
                 if ( coin->current != 0 && coin->current->hdrsi != coin->bundlescount-1 )
                     allcurrent = 0;
-            }  else printf("helper missing param? %p %p %u\n",ptr->coin,bp,ptr->timelimit);
+            }
+            else if ( coin->active != 0 )
+                printf("helper missing param? %p %p %u\n",ptr->coin,bp,ptr->timelimit);
             myfree(ptr,ptr->allocsize);
             flag++;
         }
@@ -408,7 +412,7 @@ void iguana_helper(void *arg)
         {
             if ( (ptr= queue_dequeue(&validateQ,0)) != 0 )
             {
-                if ( ptr->bp != 0 && ptr->coin != 0 )
+                if ( ptr->bp != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
                     flag += iguana_bundlevalidate(ptr->coin,ptr->bp);
                 else printf("helper validate missing param? %p %p\n",ptr->coin,ptr->bp);
                 myfree(ptr,ptr->allocsize);
@@ -433,14 +437,6 @@ void iguana_coinloop(void *arg)
     printf("begin coinloop[%d]\n",n);
     for (i=0; i<n; i++)
     {
-        if ( (coin= coins[i]) != 0 && coin->started == 0 )
-        {
-            iguana_rwiAddrind(coin,0,0,0);
-            iguana_coinstart(coin,coin->initialheight,coin->mapflags);
-            printf("init.(%s) maxpeers.%d maxrecvcache.%s services.%llx MAXMEM.%s polltimeout.%d cache.%d pend.(%d -> %d)\n",coin->symbol,coin->MAXPEERS,mbstr(str,coin->MAXRECVCACHE),(long long)coin->myservices,mbstr(str,coin->MAXMEM),coin->polltimeout,coin->enableCACHE,coin->startPEND,coin->endPEND);
-            coin->started = coin;
-            coin->chain->minconfirms = coin->minconfirms;
-        }
     }
     coin = coins[0];
     iguana_possible_peer(coin,"127.0.0.1");
@@ -455,8 +451,17 @@ void iguana_coinloop(void *arg)
         {
             if ( (coin= coins[i]) != 0 )
             {
+                if ( coin->started == 0 && coin->active != 0 )
+                {
+                    iguana_rwiAddrind(coin,0,0,0);
+                    iguana_coinstart(coin,coin->initialheight,coin->mapflags);
+                    printf("init.(%s) maxpeers.%d maxrecvcache.%s services.%llx MAXMEM.%s polltimeout.%d cache.%d pend.(%d -> %d)\n",coin->symbol,coin->MAXPEERS,mbstr(str,coin->MAXRECVCACHE),(long long)coin->myservices,mbstr(str,coin->MAXMEM),coin->polltimeout,coin->enableCACHE,coin->startPEND,coin->endPEND);
+                    coin->started = coin;
+                    coin->chain->minconfirms = coin->minconfirms;
+                }
                 now = (uint32_t)time(NULL);
-                if ( coin->active != 0 )
+                coin->idletime = 0;
+                if ( coin->started != 0 && coin->active != 0 )
                 {
                     if ( coin->isRT == 0 && now > coin->startutc+77 && coin->numsaved >= (coin->longestchain/coin->chain->bundlesize)*coin->chain->bundlesize && coin->blocks.hwmchain.height >= coin->longestchain-30 )
                     {
@@ -498,6 +503,7 @@ void iguana_coinloop(void *arg)
                     if ( coin->longestchain+10000 > coin->blocks.maxbits )
                         iguana_recvalloc(coin,coin->longestchain + 100000);
                 }
+                coin->idletime = (uint32_t)time(NULL);
             }
         }
         if ( flag == 0 )
@@ -547,6 +553,8 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     mult = (strcmp("BTC",coin->symbol) != 0) ? 512 : 1;
     maxval = (strcmp("BTC",coin->symbol) != 0) ? 2048 : 64;
     coin->MAXMEM = juint(json,"RAM");
+    if ( (coin->MAXSTUCKTIME= juint(json,"maxstuck")) == 0 )
+        coin->MAXSTUCKTIME = _IGUANA_MAXSTUCKTIME;
     if ( coin->MAXMEM == 0 )
         coin->MAXMEM = IGUANA_DEFAULTRAM;
     if ( strcmp("BTC",coin->symbol) == 0 && coin->MAXMEM <= 4 )
