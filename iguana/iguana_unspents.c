@@ -432,7 +432,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     static uint64_t total,emitted;
     int32_t spendind,n,txidind,errs=0,emit=0,i,j,k,retval = -1; long fsize;
-    uint32_t spent_unspentind,spent_pkind,now; struct iguana_ramchaindata *rdata;
+    uint32_t spent_unspentind,spent_pkind,now,starttime; struct iguana_ramchaindata *rdata;
     struct iguana_bundle *spentbp; struct iguana_blockRO *B; FILE *fp; char fname[1024],str[65];
     bits256 prevhash,zero,sha256; struct iguana_unspent *u,*spentU;  struct iguana_txid *T;
     struct iguana_spend *S,*s; struct iguana_spendvector *ptr; struct iguana_ramchain *ramchain;
@@ -448,6 +448,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
         //printf("iguana_spendvectors: already have Xspendinds[%d]\n",ramchain->numXspends);
         return(0);
     }
+    starttime = (uint32_t)time(NULL);
     ptr = mycalloc('x',sizeof(*ptr),n);
     total += n;
     //printf("start UTXOGEN.%d max.%d ptr.%p\n",bp->bundleheight,n,ptr);
@@ -559,7 +560,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     }
     if ( ptr != 0 )
         myfree(ptr,sizeof(*ptr) * n);
-    printf("utxo %d spendinds.[%d] errs.%d [%.2f%%] emitted.%d %s of %d\n",spendind,bp->hdrsi,errs,100.*(double)emitted/(total+1),emit,mbstr(str,sizeof(*ptr) * emit),n);
+    printf("duration.%d spendvectors %d spendinds.[%d] errs.%d [%.2f%%] emitted.%d %s of %d\n",(uint32_t)time(NULL)-starttime,spendind,bp->hdrsi,errs,100.*(double)emitted/(total+1),emit,mbstr(str,sizeof(*ptr) * emit),n);
     if ( errs != 0 )
         exit(-1);
     return(-errs);
