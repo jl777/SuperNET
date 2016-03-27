@@ -190,7 +190,7 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
     if ( 0 && setind == 0 )
         printf("tablesize.%d width.%d bitoffset.%d\n",tablesize,width,(int32_t)bitoffset);
     if ( (ramchain->sparsesearches % 100000) == 0 )
-        printf("[%d %d] %.3f sparse searches.%ld iters.%ld hits.%ld %.2f%% max.%ld\n",width,tablesize,(double)ramchain->sparseiters/(1+ramchain->sparsesearches),ramchain->sparsesearches,ramchain->sparseiters,ramchain->sparsehits,100.*(double)ramchain->sparsehits/(1+ramchain->sparsesearches),ramchain->sparsemax+1);
+        printf("%7d.[%-2d %8d] %5.3f sparse searches.%-8ld iters.%-8ld hits.%-8ld %5.2f%% max.%ld\n",ramchain->height,width,tablesize,(double)ramchain->sparseiters/(1+ramchain->sparsesearches),ramchain->sparsesearches,ramchain->sparseiters,ramchain->sparsehits,100.*(double)ramchain->sparsehits/(1+ramchain->sparsesearches),ramchain->sparsemax+1);
     for (i=0; i<tablesize; i++,ind++,bitoffset+=width)
     {
         ramchain->sparseiters++;
@@ -199,33 +199,50 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
             ind = 0;
             bitoffset = 0;
         }
-        ptr = &bits[bitoffset >> 3];
-        modval = (bitoffset & 7);
-        if ( 0 && setind == 0 )
-            printf("tablesize.%d width.%d bitoffset.%d modval.%d i.%d\n",tablesize,width,(int32_t)bitoffset,modval,i);
-        for (x=j=0; j<width; j++,modval++)
+        x = 0;
+        if ( width == 32 )
+            memcpy(&x,&bits[bitoffset >> 5],4);
+        else if ( width == 16 )
+            memcpy(&x,&bits[bitoffset >> 4],2);
+        else if ( width != 8 )
         {
-            if ( modval >= 8 )
-                ptr++, modval = 0;
-            x <<= 1;
-            x |= (*ptr & masks[modval]) >> modval;
+            ptr = &bits[bitoffset >> 3];
+            modval = (bitoffset & 7);
+            if ( 0 && setind == 0 )
+                printf("tablesize.%d width.%d bitoffset.%d modval.%d i.%d\n",tablesize,width,(int32_t)bitoffset,modval,i);
+            for (x=j=0; j<width; j++,modval++)
+            {
+                if ( modval >= 8 )
+                    ptr++, modval = 0;
+                x <<= 1;
+                x |= (*ptr & masks[modval]) >> modval;
+            }
         }
+        else x = bits[bitoffset >> 3];
         if ( 0 && setind == 0 )
             printf("x.%d\n",x);
         if ( x == 0 )
         {
             if ( (x= setind) == 0 )
                 return(0);
-            ptr = &bits[(bitoffset+width-1) >> 3];
-            modval = ((bitoffset+width-1) & 7);
-            for (j=0; j<width; j++,x>>=1,modval--)
+            if ( width == 32 )
+                memcpy(&bits[bitoffset >> 5],&x,4);
+            else if ( width == 16 )
+                memcpy(&bits[bitoffset >> 4],&x,2);
+            else if ( width != 8 )
             {
-                if ( modval < 0 )
-                    ptr--, modval = 7;
-                if ( (x & 1) != 0 )
-                    *ptr |= masks[modval];
+                ptr = &bits[(bitoffset+width-1) >> 3];
+                modval = ((bitoffset+width-1) & 7);
+                for (j=0; j<width; j++,x>>=1,modval--)
+                {
+                    if ( modval < 0 )
+                        ptr--, modval = 7;
+                    if ( (x & 1) != 0 )
+                        *ptr |= masks[modval];
+                }
             }
-            if ( 0 )
+            else bits[bitoffset >> 3] = x;
+            if ( 1 )
             {
                 for (x=j=0; j<width; j++)
                 {
