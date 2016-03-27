@@ -159,7 +159,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
 uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tablesize,uint8_t *key,int32_t keylen,uint32_t setind,void *refdata,int32_t refsize,struct iguana_ramchain *ramchain)
 {
     static uint8_t masks[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
-    int32_t i,j,x,n,modval; int64_t bitoffset; uint8_t *ptr;
+    int32_t i,j,x,n,modval,offset; int64_t bitoffset; uint8_t *ptr; uint32_t *table;
     if ( tablesize == 0 )
     {
         printf("iguana_sparseadd tablesize zero illegal\n");
@@ -189,82 +189,117 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
     ramchain->sparsesearches++;
     if ( 0 && setind == 0 )
         printf("tablesize.%d width.%d bitoffset.%d\n",tablesize,width,(int32_t)bitoffset);
-    if ( (ramchain->sparsesearches % 100000) == 0 )
-        printf("%7d.[%-2d %8d] %5.3f sparse searches.%-8ld iters.%-8ld hits.%-8ld %5.2f%% max.%ld\n",ramchain->height,width,tablesize,(double)ramchain->sparseiters/(1+ramchain->sparsesearches),ramchain->sparsesearches,ramchain->sparseiters,ramchain->sparsehits,100.*(double)ramchain->sparsehits/(1+ramchain->sparsesearches),ramchain->sparsemax+1);
-    for (i=0; i<tablesize; i++,ind++,bitoffset+=width)
+    if ( (ramchain->sparsesearches % 10000000) == 0 )
+        printf("%7d.[%-2d %8d] %5.3f sparse searches.%-10ld iters.%-10ld hits.%-10ld %5.2f%% max.%ld\n",ramchain->height,width,tablesize,(double)ramchain->sparseiters/(1+ramchain->sparsesearches),ramchain->sparsesearches,ramchain->sparseiters,ramchain->sparsehits,100.*(double)ramchain->sparsehits/(1+ramchain->sparsesearches),ramchain->sparsemax+1);
+    if ( width == 32 )
     {
-        ramchain->sparseiters++;
-        if ( ind >= tablesize )
+        table = (uint32_t *)ptr;
+        offset = (int32_t)(bitoffset >> 5);
+        for (i=0; i<tablesize; i++,ind++,offset++)
         {
-            ind = 0;
-            bitoffset = 0;
-        }
-        x = 0;
-        if ( width == 32 )
-            memcpy(&x,&bits[bitoffset >> 3],4);
-        else if ( width == 16 )
-            memcpy(&x,&bits[bitoffset >> 3],2);
-        else if ( width != 8 )
-        {
-            ptr = &bits[bitoffset >> 3];
-            modval = (bitoffset & 7);
-            if ( 0 && setind == 0 )
-                printf("tablesize.%d width.%d bitoffset.%d modval.%d i.%d\n",tablesize,width,(int32_t)bitoffset,modval,i);
-            for (x=j=0; j<width; j++,modval++)
+            if ( ind >= tablesize )
             {
-                if ( modval >= 8 )
-                    ptr++, modval = 0;
-                x <<= 1;
-                x |= (*ptr & masks[modval]) >> modval;
+                ind = 0;
+                offset = 0;
+            }
+            if ( (x= table[offset]) == 0 )
+            {
+                if ( ++i > ramchain->sparsemax )
+                    ramchain->sparsemax = i;
+                ramchain->sparseiters += i;
+                table[offset] = setind;
+                return(setind);
+            }
+            else if ( memcmp((void *)(long)((long)refdata + x*refsize),key,keylen) == 0 )
+            {
+                if ( setind == 0 )
+                    ramchain->sparsehits++;
+                else if ( setind != x )
+                    printf("sparseadd index collision setind.%d != x.%d refsize.%d keylen.%d\n",setind,x,refsize,keylen);
+                if ( ++i > ramchain->sparsemax )
+                    ramchain->sparsemax = i;
+                ramchain->sparseiters += i;
+                return(x);
             }
         }
-        else x = bits[bitoffset >> 3];
-        if ( 0 && setind == 0 )
-            printf("x.%d\n",x);
-        if ( x == 0 )
+    }
+    else
+    {
+        for (i=0; i<tablesize; i++,ind++,bitoffset+=width)
         {
-            if ( (x= setind) == 0 )
-                return(0);
+            ramchain->sparseiters++;
+            if ( ind >= tablesize )
+            {
+                ind = 0;
+                bitoffset = 0;
+            }
+            x = 0;
             if ( width == 32 )
-                memcpy(&bits[bitoffset >> 3],&setind,4);
+                memcpy(&x,&bits[bitoffset >> 3],4);
             else if ( width == 16 )
-                memcpy(&bits[bitoffset >> 3],&setind,2);
+                memcpy(&x,&bits[bitoffset >> 3],2);
             else if ( width != 8 )
             {
-                ptr = &bits[(bitoffset+width-1) >> 3];
-                modval = ((bitoffset+width-1) & 7);
-                for (j=0; j<width; j++,x>>=1,modval--)
+                ptr = &bits[bitoffset >> 3];
+                modval = (bitoffset & 7);
+                if ( 0 && setind == 0 )
+                    printf("tablesize.%d width.%d bitoffset.%d modval.%d i.%d\n",tablesize,width,(int32_t)bitoffset,modval,i);
+                for (x=j=0; j<width; j++,modval++)
                 {
-                    if ( modval < 0 )
-                        ptr--, modval = 7;
-                    if ( (x & 1) != 0 )
-                        *ptr |= masks[modval];
-                }
-            }
-            else bits[bitoffset >> 3] = setind;
-            if ( 0 )
-            {
-                for (x=j=0; j<width; j++)
-                {
+                    if ( modval >= 8 )
+                        ptr++, modval = 0;
                     x <<= 1;
-                    x |= GETBIT(bits,bitoffset+width-1-j) != 0;
+                    x |= (*ptr & masks[modval]) >> modval;
                 }
-                //if ( x != setind )
-                    printf("x.%u vs setind.%d ind.%d bitoffset.%d, width.%d\n",x,setind,ind,(int32_t)bitoffset,width);
             }
-            if ( i > ramchain->sparsemax )
-                ramchain->sparsemax = i;
-            return(setind);
-        }
-        else if ( memcmp((void *)(long)((long)refdata + x*refsize),key,keylen) == 0 )
-        {
-            if ( setind == 0 )
-                ramchain->sparsehits++;
-            else if ( setind != x )
-                printf("sparseadd index collision setind.%d != x.%d refsize.%d keylen.%d\n",setind,x,refsize,keylen);
-            if ( i > ramchain->sparsemax )
-                ramchain->sparsemax = i;
-            return(x);
+            else x = bits[bitoffset >> 3];
+            if ( 0 && setind == 0 )
+                printf("x.%d\n",x);
+            if ( x == 0 )
+            {
+                if ( (x= setind) == 0 )
+                    return(0);
+                if ( width == 32 )
+                    memcpy(&bits[bitoffset >> 3],&setind,4);
+                else if ( width == 16 )
+                    memcpy(&bits[bitoffset >> 3],&setind,2);
+                else if ( width != 8 )
+                {
+                    ptr = &bits[(bitoffset+width-1) >> 3];
+                    modval = ((bitoffset+width-1) & 7);
+                    for (j=0; j<width; j++,x>>=1,modval--)
+                    {
+                        if ( modval < 0 )
+                            ptr--, modval = 7;
+                        if ( (x & 1) != 0 )
+                            *ptr |= masks[modval];
+                    }
+                }
+                else bits[bitoffset >> 3] = setind;
+                if ( 0 )
+                {
+                    for (x=j=0; j<width; j++)
+                    {
+                        x <<= 1;
+                        x |= GETBIT(bits,bitoffset+width-1-j) != 0;
+                    }
+                    //if ( x != setind )
+                    printf("x.%u vs setind.%d ind.%d bitoffset.%d, width.%d\n",x,setind,ind,(int32_t)bitoffset,width);
+                }
+                if ( i > ramchain->sparsemax )
+                    ramchain->sparsemax = i;
+                return(setind);
+            }
+            else if ( memcmp((void *)(long)((long)refdata + x*refsize),key,keylen) == 0 )
+            {
+                if ( setind == 0 )
+                    ramchain->sparsehits++;
+                else if ( setind != x )
+                    printf("sparseadd index collision setind.%d != x.%d refsize.%d keylen.%d\n",setind,x,refsize,keylen);
+                if ( i > ramchain->sparsemax )
+                    ramchain->sparsemax = i;
+                return(x);
+            }
         }
     }
     return(0);
