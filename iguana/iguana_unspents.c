@@ -369,7 +369,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                             *heightp = bp->bundleheight + j;
                             //printf("found height.%d\n",*heightp);
                             *tx = T[txidind];
-                            if ( k != 0 )
+                            if ( 0 && k != 0 )
                             {
                                 i = 0;
                                 j = 1;
