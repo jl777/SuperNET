@@ -201,7 +201,7 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
                     ramchain->sparsemax = i;
                 ramchain->sparseiters += i;
                 fprintf(stderr,"set table[%d] of %d <- setind.%u\n",ind,tablesize,setind);
-                table[ind] = setind;
+                //table[ind] = setind;
                 return(setind);
             }
             else if ( memcmp((void *)(long)((long)refdata + x*refsize),key,keylen) == 0 )
