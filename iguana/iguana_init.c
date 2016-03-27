@@ -391,7 +391,7 @@ void iguana_coinpurge(struct iguana_info *coin)
         {
             if ( req->blocks != 0 )
                 myfree(req->blocks,sizeof(*req->blocks) * req->n), req->blocks = 0;
-            if ( req->hashes != 0 )
+            if ( 0 && req->hashes != 0 )
                 myfree(req->hashes,sizeof(*req->hashes) * req->n), req->hashes = 0;
             myfree(req,req->allocsize);
         }

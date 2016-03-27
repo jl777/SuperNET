@@ -372,32 +372,6 @@ uint32_t iguana_ramchain_addunspent(struct iguana_info *coin,RAMCHAIN_FUNC,uint6
     return(unspentind);
 }
 
-int32_t iguana_ramchain_spendtxid(struct iguana_info *coin,uint32_t *unspentindp,bits256 *txidp,struct iguana_txid *T,int32_t numtxids,bits256 *X,int32_t numexternaltxids,struct iguana_spend *s)
-{
-    uint32_t ind,external;
-    *unspentindp = 0;
-    memset(txidp,0,sizeof(*txidp));
-    ind = s->spendtxidind;
-    external = (ind >> 31) & 1;
-    ind &= ~(1 << 31);
-    //printf("s.%p ramchaintxid vout.%x spendtxidind.%d isext.%d ext.%d ind.%d\n",s,s->prevout,s->spendtxidind,s->external,external,ind);
-    if ( s->prevout < 0 )
-        return(-1);
-    if ( s->external != 0 && s->external == external && ind < numexternaltxids )
-    {
-        //printf("ind.%d externalind.%d X[%d]\n",ind,ramchain->externalind,ramchain->H.data->numexternaltxids);
-        *txidp = X[ind];
-        return(s->prevout);
-    }
-    else if ( s->external == 0 && s->external == external && ind < numtxids )
-    {
-        *txidp = T[ind].txid;
-        *unspentindp = T[ind].firstvout + s->prevout;
-        return(s->prevout);
-    }
-    return(-2);
-}
-
 int32_t iguana_ramchain_txid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 *txidp,struct iguana_spend *s)
 {
     uint32_t ind,external;
