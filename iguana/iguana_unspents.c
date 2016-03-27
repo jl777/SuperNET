@@ -303,9 +303,10 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                     *balancep = ACCTS[pkind].total;
                     *lastunspentindp = ACCTS[pkind].lastunspentind;
                     *p = P[pkind];
+                    printf("return pkind.%u %.8f\n",pkind,dstr(*balancep));
                     return(p);
                 } //else printf("not found pkind.%d vs num.%d\n",pkind,ramchain->H.data->numpkinds);
-            } else printf("%s.[%d] error null ramchain->H.data\n",coin->symbol,i);
+            } else printf("%s.[%d] error null ramchain->H.data isRT.%d\n",coin->symbol,i,bp->isRT);
         }
     }
     return(0);

@@ -355,14 +355,12 @@ void mainloop(struct supernet_info *myinfo)
             for (i=0; i<IGUANA_MAXCOINS; i++)
                 if ( (coin= Coins[i]) != 0 && coin->current != 0 )
                 {
+                    printf("main active.%d started.%p\n",coin->active,coin->started);
                     if ( coin->active != 0 && coin->started != 0 )
                     {
                         coin->RTramchain_busy = 1;
                         if ( iguana_realtime_update(coin) > 0 )
-                        {
-                            printf("call RT update\n");
                             flag++;
-                        }
                         if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
                         {
                             flag++;
@@ -394,6 +392,8 @@ void mainloop(struct supernet_info *myinfo)
                             }
                         }
                         coin->RTramchain_busy = (coin->RTgenesis == 0 || queue_size(&balancesQ) != 0);
+                        if ( flag != 0 )
+                            printf("call RT update busy.%d\n",coin->RTramchain_busy);
                     }
                 }
         }

@@ -820,19 +820,28 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
             width = sqrt(coin->chain->bundlesize);
             while ( coin->active != 0 && prev != 0 && width-- > 0 )
             {
-                if ( prev->mainchain != 0 )
-                    break;
-                if ( prev->fpipbits == 0 )
+                if ( prev->fpipbits == 0 || prev->RO.recvlen == 0 || prev->fpos < 0 || bits256_nonz(prev->RO.prev_block) == 0 )
                 {
                     //printf("width.%d auto prev newtx %s\n",width,bits256_str(str,prev->RO.hash2));
                     prev->newtx = 1;
                     iguana_blockQ("autoprev",coin,0,-1,prev->RO.hash2,0);
                 }
+                tmpblock = prev;
                 if ( bits256_nonz(prev->RO.prev_block) != 0 )
                 {
                     if ( (prev = iguana_blockhashset(coin,-1,prev->RO.prev_block,1)) != 0 )
                         prev->newtx = 1;
-                } else prev = 0;
+                    prev->hh.next = tmpblock;
+                    if ( prev->mainchain != 0 )
+                    {
+                        while ( tmpblock != 0 && _iguana_chainlink(coin,tmpblock) != 0 )
+                        {
+                            printf("NEWHWM.%d\n",tmpblock->height);
+                            tmpblock = tmpblock->hh.next;
+                        }
+                        break;
+                    }
+               } else prev = 0;
             }
         }
         if ( req->copyflag != 0 )
