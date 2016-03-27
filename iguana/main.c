@@ -344,7 +344,7 @@ mksquashfs DB/BTC BTC.squash1M -b 1048576
 
 void mainloop(struct supernet_info *myinfo)
 {
-    int32_t i,j,flag; struct iguana_info *coin; struct iguana_block *block; struct iguana_helper *ptr; struct iguana_bundle *bp;
+    int32_t i,flag; struct iguana_info *coin; struct iguana_helper *ptr; struct iguana_bundle *bp;
     sleep(3);
     printf("mainloop\n");
     while ( 1 )
@@ -382,10 +382,10 @@ void mainloop(struct supernet_info *myinfo)
                         }
                         if ( (bp= coin->current) != 0 && coin->stucktime != 0 && coin->isRT == 0 && coin->RTheight == 0 && (time(NULL) - coin->stucktime) > coin->MAXSTUCKTIME )
                         {
-                            if ( bp->emitfinish == 0 && 0 )
+                            if ( bp->emitfinish == 0 )
                             {
                                 printf("%s is stuck too long, purging files for %d\n",coin->symbol,bp->hdrsi);
-                                iguana_bundlepurgefiles(coin,bp);
+                                /*iguana_bundlepurgefiles(coin,bp);
                                 for (j=0; j<bp->n; j++)
                                     if ( (block= bp->blocks[j]) != 0 )
                                     {
@@ -393,7 +393,14 @@ void mainloop(struct supernet_info *myinfo)
                                         block->RO.recvlen = 0;
                                         block->fpos = -1;
                                     }
-                                sleep(5);
+                                sleep(5);*/
+                                while ( coin->started != 0 )
+                                    iguana_coinpurge(coin);
+                                while ( coin->started == 0 )
+                                {
+                                    printf("wait for coin to reactivate\n");
+                                    sleep(1);
+                                }
                             }
                         }
                         coin->RTramchain_busy = (coin->RTgenesis == 0 || queue_size(&balancesQ) != 0);

@@ -313,11 +313,11 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
             {
                 if ( (bp= coin->bundles[i]) != 0 && bp->queued == 0 )
                 {
-                    printf("%d ",i);
+                    //printf("%d ",i);
                     iguana_bundleQ(coin,bp,1000);
                 }
             }
-            printf("BALANCESQ\n");
+            //printf("iguana_bundleQ\n");
         }
     }
 }
@@ -419,7 +419,8 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
     if ( initialheight < coin->chain->bundlesize*10 )
         initialheight = coin->chain->bundlesize*10;
     iguana_recvalloc(coin,initialheight);
-    coin->longestchain = 1;
+    if ( coin->longestchain == 0 )
+        coin->longestchain = 1;
     memset(&coin->blocks.hwmchain,0,sizeof(coin->blocks.hwmchain));
     coin->blocks.hwmchain.height = 0;
     if ( (coin->myservices & NODE_NETWORK) != 0 && coin->peers.acceptloop == 0 )
