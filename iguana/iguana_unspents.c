@@ -226,9 +226,9 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
             if ( (x= setind) == 0 )
                 return(0);
             if ( width == 32 )
-                memcpy(&bits[bitoffset >> 5],&x,4);
+                memcpy(&bits[bitoffset >> 5],&setind,4);
             else if ( width == 16 )
-                memcpy(&bits[bitoffset >> 4],&x,2);
+                memcpy(&bits[bitoffset >> 4],&setind,2);
             else if ( width != 8 )
             {
                 ptr = &bits[(bitoffset+width-1) >> 3];
@@ -241,7 +241,7 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
                         *ptr |= masks[modval];
                 }
             }
-            else bits[bitoffset >> 3] = x;
+            else bits[bitoffset >> 3] = setind;
             if ( 1 )
             {
                 for (x=j=0; j<width; j++)
