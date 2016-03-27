@@ -247,10 +247,10 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
                 for (x=j=0; j<width; j++)
                 {
                     x <<= 1;
-                    x |= GETBIT(bits,bitoffset+j) != 0;
+                    x |= GETBIT(bits,bitoffset+width-1-j) != 0;
                 }
                 //if ( x != setind )
-                    printf("x.%d vs setind.%d ind.%d bitoffset.%d, width.%d\n",x,setind,ind,(int32_t)bitoffset,width);
+                    printf("x.%u vs setind.%d ind.%d bitoffset.%d, width.%d\n",x,setind,ind,(int32_t)bitoffset,width);
             }
             if ( i > ramchain->sparsemax )
                 ramchain->sparsemax = i;
