@@ -335,16 +335,16 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
     *heightp = -1;
     if ( numhdrs < 0 )
         return(0);
-    permutation = 0;
-    if ( permutation != 0 && permutation[0] == permutation[1] )
+    /*permutation = 0;
+    /*if ( permutation != 0 && permutation[0] == permutation[1] )
     {
         for (k=0; k<numhdrs; k++)
             permutation[k] = numhdrs - 1 - k;
-    }
+    }*/
     ksum++;
     for (k=0; k<numhdrs; k++)
     {
-        i = permutation != 0 ? permutation[k] : (numhdrs - 1 - k);
+        i = (numhdrs - 1 - k);//permutation != 0 ? permutation[k] : (numhdrs - 1 - k);
         if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish > coin->startutc )
         {
             ramchain = (bp->isRT != 0) ? &coin->RTramchain : &bp->ramchain;
