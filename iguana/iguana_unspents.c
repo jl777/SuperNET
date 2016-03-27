@@ -201,9 +201,9 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
         }
         x = 0;
         if ( width == 32 )
-            memcpy(&x,&bits[bitoffset >> 5],4);
+            memcpy(&x,&bits[bitoffset >> 3],4);
         else if ( width == 16 )
-            memcpy(&x,&bits[bitoffset >> 4],2);
+            memcpy(&x,&bits[bitoffset >> 3],2);
         else if ( width != 8 )
         {
             ptr = &bits[bitoffset >> 3];
@@ -226,9 +226,9 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
             if ( (x= setind) == 0 )
                 return(0);
             if ( width == 32 )
-                memcpy(&bits[bitoffset >> 5],&setind,4);
+                memcpy(&bits[bitoffset >> 3],&setind,4);
             else if ( width == 16 )
-                memcpy(&bits[bitoffset >> 4],&setind,2);
+                memcpy(&bits[bitoffset >> 3],&setind,2);
             else if ( width != 8 )
             {
                 ptr = &bits[(bitoffset+width-1) >> 3];
@@ -250,7 +250,7 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
                     x |= GETBIT(bits,bitoffset+j) != 0;
                 }
                 //if ( x != setind )
-                    printf("x.%d vs setind.%d ind.%d bitoffset.%d\n",x,setind,ind,(int32_t)bitoffset);
+                    printf("x.%d vs setind.%d ind.%d bitoffset.%d, width.%d\n",x,setind,ind,(int32_t)bitoffset,width);
             }
             if ( i > ramchain->sparsemax )
                 ramchain->sparsemax = i;
