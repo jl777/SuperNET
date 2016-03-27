@@ -376,10 +376,9 @@ void mainloop(struct supernet_info *myinfo)
                         if ( (bp= coin->current) != 0 && coin->stucktime != 0 && coin->isRT == 0 && coin->RTheight == 0 && (time(NULL) - coin->stucktime) > coin->MAXSTUCKTIME )
                         {
                             printf("%s is stuck too long, restarting\n",coin->symbol);
-                            iguana_bundlepurgefiles(coin,bp);
-                            iguana_coinpurge(coin);
-                            sleep(5);
-                            coin->active = 1;
+                            if ( bp->emitfinish == 0 )
+                                iguana_bundlepurgefiles(coin,bp);
+                            //iguana_coinpurge(coin);
                             sleep(5);
                         }
                         coin->RTramchain_busy = (coin->RTgenesis == 0 || queue_size(&balancesQ) != 0);
