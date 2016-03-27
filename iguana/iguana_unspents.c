@@ -1108,7 +1108,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
     for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
         if ( (bp= coin->bundles[hdrsi]) == 0 || bp->balancefinish <= 1 || bp->ramchain.H.data == 0 || bp->ramchain.A == 0 || bp->ramchain.Uextras == 0 )
             break;
-    if ( hdrsi <= coin->balanceswritten || hdrsi < refhdrsi )
+    if ( hdrsi < coin->balanceswritten || hdrsi < refhdrsi )
         return(0);
     numhdrsi = hdrsi;
     vupdate_sha256(balancehash.bytes,&vstate,0,0);
@@ -1274,12 +1274,12 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
             }
             bp->balancefinish = (uint32_t)time(NULL);
             bp->queued = 0;
-            iguana_validateQ(coin,bp);
             if ( bp->hdrsi >= coin->longestchain/coin->chain->bundlesize-1  )
             {
-                iguana_balanceflush(coin,bp->hdrsi,3);
-                printf("balanceswritten.%d flushed bp->hdrsi %d vs %d coin->longestchain/coin->chain->bundlesize\n",coin->balanceswritten,bp->hdrsi,coin->longestchain/coin->chain->bundlesize);
+                if ( iguana_balanceflush(coin,bp->hdrsi,3) > 0 )
+                    printf("balanceswritten.%d flushed bp->hdrsi %d vs %d coin->longestchain/coin->chain->bundlesize\n",coin->balanceswritten,bp->hdrsi,coin->longestchain/coin->chain->bundlesize);
             }
+            iguana_validateQ(coin,bp);
             flag++;
         }
         else

@@ -1090,11 +1090,11 @@ void iguana_main(void *arg)
     if ( 0 )
     {
 #ifndef _WIN32
+        signal(SIGABRT,sigabort_func);
         signal(SIGINT,sigint_func);
         signal(SIGILL,sigillegal_func);
         signal(SIGHUP,sighangup_func);
         //signal(SIGKILL,sigkill_func);
-        signal(SIGABRT,sigabort_func);
         signal(SIGQUIT,sigquit_func);
         signal(SIGCHLD,sigchild_func);
         signal(SIGALRM,sigalarm_func);
