@@ -633,7 +633,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     bits256 prevhash,zero,sha256; struct iguana_unspent *u,*spentU;  struct iguana_txid *T;
     struct iguana_spend *S,*s; struct iguana_spendvector *ptr; struct iguana_ramchain *ramchain;
     ramchain = &bp->ramchain;
-    //printf("iguana_spendvectors gen.%d ramchain data.%p\n",bp->bundleheight,ramchain->H.data);
+    printf("iguana_spendvectors.[%d] gen.%d ramchain data.%p\n",bp->hdrsi,bp->bundleheight,ramchain->H.data);
     if ( (rdata= ramchain->H.data) == 0 || (n= rdata->numspends) < 1 )
         return(0);
     B = (void *)(long)((long)rdata + rdata->Boffset);
