@@ -208,14 +208,14 @@ char *bitcoin_address(char *coinaddr,uint8_t addrtype,uint8_t *pubkey,int32_t le
 
 int32_t bitcoin_validaddress(struct iguana_info *coin,char *coinaddr)
 {
-    uint8_t rmd160[20],addrtype;
+    uint8_t rmd160[20],addrtype; char checkaddr[128];
     if ( coin == 0 || coinaddr == 0 || coinaddr[0] == 0 )
         return(-1);
     else if ( bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr) < 0 )
         return(-1);
     else if ( addrtype != coin->chain->pubtype && addrtype != coin->chain->p2shtype )
         return(-1);
-    else if ( bitcoin_address(coinaddr,addrtype,rmd160,sizeof(rmd160)) != coinaddr )
+    else if ( bitcoin_address(checkaddr,addrtype,rmd160,sizeof(rmd160)) != checkaddr || strcmp(checkaddr,coinaddr) != 0 )
         return(-1);
     return(0);
 }

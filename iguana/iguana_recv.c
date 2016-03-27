@@ -641,7 +641,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
     //iguana_blockQ(coin,0,-1,blockhashes[1],0);
     //iguana_blockQ(coin,0,-4,blockhashes[1],1);
     char str[65];
-    if ( 0 && num > 2 )
+    //if ( 0 && num > 2 )
         printf("blockhashes[%d] %d of %d %s bp.%d[%d]\n",num,bp==0?-1:bp->hdrsi,coin->bundlescount,bits256_str(str,blockhashes[1]),bp==0?-1:bp->bundleheight,bundlei);
     if ( bp != 0 )
     {
@@ -722,16 +722,10 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
         {
             iguana_blockhashset(coin,-1,blockhashes[1],1);
             if ( (block= iguana_blockfind(coin,blockhashes[1])) != 0 )
-            {
-                block->newtx = 1;
                 iguana_blockQ("recvhash6",coin,0,-6,blockhashes[1],1); // should be RT block
-            }
         }
-        else
-        {
-            block->newtx = 1;
-            iguana_blockQ("recvhash6",coin,0,-7,blockhashes[1],0); // should be RT block
-        }
+        block->newtx = 1;
+        iguana_blockQ("recvhash6",coin,0,-7,blockhashes[1],0); // should be RT block
     }
     return(req);
 }
@@ -798,7 +792,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     }
     if ( bp != 0 )
         bp->dirty++;
-    if ( 0 )//&& bp != 0 && bp->hdrsi == coin->bundlescount-1 )
+    if ( 1 )//&& bp != 0 && bp->hdrsi == coin->bundlescount-1 )
     {
         int32_t i; static int32_t numrecv;
         numrecv++;

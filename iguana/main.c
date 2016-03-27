@@ -358,7 +358,11 @@ void mainloop(struct supernet_info *myinfo)
                     if ( coin->active != 0 && coin->started != 0 )
                     {
                         coin->RTramchain_busy = 1;
-                        iguana_realtime_update(coin);
+                        if ( iguana_realtime_update(coin) > 0 )
+                        {
+                            printf("call RT update\n");
+                            flag++;
+                        }
                         if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
                         {
                             flag++;
@@ -396,7 +400,7 @@ void mainloop(struct supernet_info *myinfo)
         iguana_jsonQ();
         pangea_queues(SuperNET_MYINFO(0));
         if ( flag == 0 )
-            usleep(100000);
+            usleep(1000000);
     }
 }
 
@@ -1152,12 +1156,12 @@ void iguana_main(void *arg)
     if ( (coinargs= SuperNET_keysinit(&MYINFO,arg)) != 0 )
         iguana_launch(btcd,"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
 #ifdef __APPLE__
-    else if ( 1 )
+    else if ( 0 )
     {
         sleep(1);
         char *str;
         //iguana_launchcoin(MYINFO.rpcsymbol,cJSON_Parse("{}"));
-        if ( 1 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"startpend\":512,\"endpend\":128,\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":129,\"maxpeers\":512,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":4,\"poll\":1}"),0)) != 0 )
+        if ( 1 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"startpend\":512,\"endpend\":128,\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":512,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":4,\"poll\":1}"),0)) != 0 )
         {
             free(str);
             if ( 0 && (str= SuperNET_JSON(&MYINFO,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":1024,\"maxpeers\":256,\"newcoin\":\"BTCD\",\"active\":1}"),0)) != 0 )

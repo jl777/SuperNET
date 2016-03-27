@@ -267,7 +267,7 @@ cJSON *iguana_unspentjson(struct iguana_info *coin,int32_t hdrsi,uint32_t unspen
     jaddstr(item,"address",coinaddr);
     if ( (wacct= iguana_waddressfind(coin,&ind,coinaddr)) != 0 )
         jaddstr(item,"account",wacct->account);
-    if ( iguana_scriptget(coin,scriptstr,asmstr,sizeof(scriptstr),hdrsi,unspentind,T[up->txidind].txid,up->vout,rmd160,up->type,pubkey33) != 0 )
+    if ( bitcoin_pubkeylen(pubkey33) > 0 && iguana_scriptget(coin,scriptstr,asmstr,sizeof(scriptstr),hdrsi,unspentind,T[up->txidind].txid,up->vout,rmd160,up->type,pubkey33) != 0 )
         jaddstr(item,"scriptPubKey",scriptstr);
     jaddnum(item,"amount",dstr(up->value));
     if ( iguana_txidfind(coin,&height,&TX,T[up->txidind].txid,coin->bundlescount-1) != 0 )
@@ -1087,7 +1087,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     }
     if ( dest != 0 )
         printf(">>>> RT.%d:%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",coin->RTheight,n,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize);
-    return(0);
+    return(flag);
 }
 
 int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t purgedist)
@@ -1294,7 +1294,31 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp)
 
 TWOSTRINGS_AND_INT(iguana,balance,activecoin,address,height)
 {
-    cJSON *retjson = cJSON_CreateObject();
+    int32_t minconf=1,maxconf=SATOSHIDEN; int64_t total; uint8_t rmd160[20],pubkey33[33],addrtype;
+    struct iguana_pkhash *P; cJSON *array,*retjson = cJSON_CreateObject();
+    if ( coin != 0 )
+    {
+        jaddstr(retjson,"address",address);
+        if ( bitcoin_validaddress(coin,address) < 0 )
+        {
+            jaddstr(retjson,"error","illegal address");
+            return(jprint(retjson,1));
+        }
+        if ( bitcoin_addr2rmd160(&addrtype,rmd160,address) < 0 )
+        {
+            jaddstr(retjson,"error","cant convert address");
+            return(jprint(retjson,1));
+        }
+        if ( height != 0 )
+            jaddnum(retjson,"height",height);
+        memset(pubkey33,0,sizeof(pubkey33));
+        P = calloc(coin->bundlescount,sizeof(*P));
+        array = cJSON_CreateArray();
+        iguana_pkhasharray(coin,array,minconf,maxconf,&total,P,coin->bundlescount,rmd160,address,pubkey33);
+        free(P);
+        jadd(retjson,"unspents",array);
+        jaddnum(retjson,"balance",dstr(total));
+    }
     return(jprint(retjson,1));
 }
 #include "../includes/iguana_apiundefs.h"
