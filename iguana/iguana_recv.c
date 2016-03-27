@@ -514,21 +514,29 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
 void iguana_checklongestchain(struct iguana_info *coin,struct iguana_bundle *bp,int32_t num)
 {
     int32_t i; struct iguana_peer *addr;
-    if ( num > 10 && num < bp->n && coin->longestchain > bp->bundleheight+num+3 )
+    if ( num > 10 && num < bp->n )
     {
-        printf("strange.%d suspicious longestchain.%d vs [%d:%d] %d bp->n %d\n",coin->longestchain_strange,coin->longestchain,bp->hdrsi,num,bp->bundleheight+num,bp->n);
-        if ( coin->longestchain_strange++ > 10 )
+        if ( coin->longestchain > bp->bundleheight+num+3 )
         {
-            coin->badlongestchain = coin->longestchain;
-            coin->longestchain = bp->bundleheight+num;
-            coin->longestchain_strange = 0;
-            for (i=0; i<coin->peers.numranked; i++)
-                if ( (addr= coin->peers.ranked[i]) != 0 && addr->height >= coin->badlongestchain )
-                {
-                    printf("blacklist addr.(%s) height %d\n",addr->ipaddr,addr->height);
-                    addr->dead = 1;
-                    addr->rank = 0;
-                }
+            printf("strange.%d suspicious longestchain.%d vs [%d:%d] %d bp->n %d\n",coin->longestchain_strange,coin->longestchain,bp->hdrsi,num,bp->bundleheight+num,bp->n);
+            if ( coin->longestchain_strange++ > 10 )
+            {
+                coin->badlongestchain = coin->longestchain;
+                coin->longestchain = bp->bundleheight+num;
+                coin->longestchain_strange = 0;
+                for (i=0; i<coin->peers.numranked; i++)
+                    if ( (addr= coin->peers.ranked[i]) != 0 && addr->height >= coin->badlongestchain )
+                    {
+                        printf("blacklist addr.(%s) height %d\n",addr->ipaddr,addr->height);
+                        addr->dead = 1;
+                        addr->rank = 0;
+                    }
+            }
+        }
+        else if ( coin->longestchain_strange > 0 )
+        {
+            printf("not strange.%d suspicious longestchain.%d vs [%d:%d] %d bp->n %d\n",coin->longestchain_strange,coin->longestchain,bp->hdrsi,num,bp->bundleheight+num,bp->n);
+            coin->longestchain_strange--;
         }
     }
 }
