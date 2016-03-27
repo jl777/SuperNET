@@ -429,16 +429,17 @@ void iguana_bundlespeculate(struct iguana_info *coin,struct iguana_bundle *bp,in
     if ( bp->numhashes < bp->n && bundlei == 0 && bp->speculative == 0 && bp->bundleheight < coin->longestchain-coin->chain->bundlesize )
     {
         char str[65]; bits256_str(str,bp->hashes[0]);
-        //fprintf(stderr,"Afound block -> %d %d hdr.%s\n",bp->bundleheight,coin->longestchain-coin->chain->bundlesize,str);
+        fprintf(stderr,"Afound block -> %d %d hdr.%s\n",bp->bundleheight,coin->longestchain-coin->chain->bundlesize,str);
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(str),1);
     }
-    /*else if ( bp->speculative != 0 && bundlei < bp->numspec && memcmp(hash2.bytes,bp->speculative[bundlei].bytes,sizeof(hash2)) == 0 )
+    else if ( bp->speculative != 0 && bundlei < bp->numspec && memcmp(hash2.bytes,bp->speculative[bundlei].bytes,sizeof(hash2)) == 0 )
     {
         bundlei += offset;
-        if ( bundlei < bp->n && bundlei < bp->numspec )
+        if ( bundlei < bp->n && bundlei < bp->numspec && time(NULL) > bp->issued[bundlei]+30 )
         {
-            //char str[65]; printf("speculative req[%d] %s\n",bundlei,bits256_str(str,bp->speculative[bundlei]));
-            //iguana_blockQ(coin,0,-1,bp->speculative[bundlei],0);
+            char str[65]; printf("speculative req[%d] %s\n",bundlei,bits256_str(str,bp->speculative[bundlei]));
+            iguana_blockQ("speculate",coin,0,-1,bp->speculative[bundlei],0);
+            bp->issued[bundlei] = (uint32_t)time(NULL);
         }
     } //else printf("speculative.%p %d vs %d cmp.%d\n",bp->speculative,bundlei,bp->numspec,bp->speculative!=0?memcmp(hash2.bytes,bp->speculative[bundlei].bytes,sizeof(hash2)):-1);*/
 }
@@ -641,7 +642,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
     //iguana_blockQ(coin,0,-1,blockhashes[1],0);
     //iguana_blockQ(coin,0,-4,blockhashes[1],1);
     char str[65];
-    if ( 0 && num > 2 )
+    //if ( 0 && num > 2 )
         printf("blockhashes[%d] %d of %d %s bp.%d[%d]\n",num,bp==0?-1:bp->hdrsi,coin->bundlescount,bits256_str(str,blockhashes[1]),bp==0?-1:bp->bundleheight,bundlei);
     if ( bp != 0 )
     {
@@ -817,12 +818,12 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
         {
             if ( (prev= iguana_blockfind(coin,block->RO.prev_block)) == 0 )
                 prev = iguana_blockhashset(coin,-1,block->RO.prev_block,1);
-            width = sqrt(coin->chain->bundlesize);
+            width = 10 * coin->chain->bundlesize;
             while ( coin->active != 0 && prev != 0 && width-- > 0 )
             {
                 if ( prev->fpipbits == 0 || prev->RO.recvlen == 0 || prev->fpos < 0 || bits256_nonz(prev->RO.prev_block) == 0 )
                 {
-                    //printf("width.%d auto prev newtx %s\n",width,bits256_str(str,prev->RO.hash2));
+                    //printf("width.%d auto prev newtx %s ht.%d\n",width,bits256_str(str,prev->RO.hash2),prev->height);
                     prev->newtx = 1;
                     iguana_blockQ("autoprev",coin,0,-1,prev->RO.hash2,0);
                 }
@@ -1184,7 +1185,7 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                 printf("REQ HDRS pending.%d\n",n);
             coin->zcount = 0;
         }
-    } else coin->zcount = 0;
+    } //else coin->zcount = 0;
     return(n);
 }
 
@@ -1294,14 +1295,14 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                     }
                     if ( bp == 0 || z != 0 || bp == coin->current )
                     {
-                        //printf("%s request HDR.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp!=0?bp->numhashes:0);
+                        printf("%s request HDR.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp!=0?bp->numhashes:0);
                         iguana_send(coin,addr,serialized,datalen);
                         addr->pendhdrs++;
                         flag++;
                     } else printf("skip hdrreq.%s m.%d z.%d bp.%p longest.%d queued.%d\n",hashstr,m,z,bp,bp->coin->longestchain,bp->queued);
                 }
-                //free_queueitem(hashstr);
-                //return(flag);
+                free_queueitem(hashstr);
+                return(flag);
             } else printf("datalen.%d from gethdrs\n",datalen);
             free_queueitem(hashstr);
             hashstr = 0;
