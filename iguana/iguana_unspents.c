@@ -242,7 +242,7 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
                 }
             }
             else bits[bitoffset >> 3] = setind;
-            if ( 1 )
+            if ( 0 )
             {
                 for (x=j=0; j<width; j++)
                 {
