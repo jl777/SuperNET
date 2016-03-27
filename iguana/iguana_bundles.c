@@ -808,7 +808,11 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
     }
 #endif
     for (i=0; i<bp->hdrsi; i++)
-        if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish < coin->startutc )
+        if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish < coin->startutc
+#ifdef IGUANA_SERIALIZE_SPENDVECTORGEN
+            || prevbp->utxofinish <= 1 
+#endif
+           )
             break;
     if ( i == bp->hdrsi )
     {
@@ -1141,7 +1145,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
     coin->spaceused = spaceused;
     coin->numverified = numv;
     char str4[65],str5[65];
-    if ( firstgap != 0 && firstgap->hdrsi < coin->bundlescount-1 )
+    if ( coin->isRT == 0 && firstgap != 0 && firstgap->hdrsi < coin->bundlescount-1 )
     {
         if ( coin->stuckmonitor != (firstgap->hdrsi * coin->chain->bundlesize) + firstgap->numsaved )
         {
@@ -1149,6 +1153,8 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             coin->stucktime = (uint32_t)time(NULL);
         }
     }
+    if ( coin->isRT != 0 || (firstgap != 0 && firstgap->hdrsi == coin->bundlescount-1) )
+        coin->stucktime = 0;
     if ( coin->stucktime != 0 && time(NULL)-coin->stucktime > coin->maxstuck )
         coin->maxstuck = (uint32_t)time(NULL) - coin->stucktime;
     sprintf(str,"%s.RT%d u.%d b.%d v.%d/%d (%d/%d 1st.%d) to %d N[%d] h.%d r.%d c.%s s.%d d.%d E.%d maxB.%d peers.%d/%d Q.(%d %d) L.%d [%d:%d] M.%d %s",coin->symbol,coin->RTheight,numutxo,numbalances,numv,coin->pendbalances,firstgap!=0?firstgap->numsaved:-1,firstgap!=0?firstgap->numhashes:-1,firstgap!=0?firstgap->hdrsi:-1,coin->lastpending!=0?coin->lastpending->hdrsi:0,count,numhashes,coin->blocksrecv,mbstr(str4,spaceused),numsaved,done,numemit,coin->MAXBUNDLES,p,coin->MAXPEERS,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ),coin->longestchain,coin->blocks.hwmchain.height/coin->chain->bundlesize,coin->blocks.hwmchain.height%coin->chain->bundlesize,coin->blocks.hwmchain.height,bits256_str(str5,coin->blocks.hwmchain.RO.hash2));

@@ -212,50 +212,6 @@ void iguana_blocksetcounters(struct iguana_info *coin,struct iguana_block *block
     block->RO.firstexternalind = ramchain->externalind;
 }
 
-struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,struct iguana_txid *tx,bits256 txid,int32_t lasthdrsi)
-{
-    uint8_t *TXbits; struct iguana_txid *T; uint32_t txidind; int32_t i,j;
-    struct iguana_bundle *bp; struct iguana_ramchain *ramchain; struct iguana_block *block;
-    *heightp = -1;
-    if ( lasthdrsi < 0 )
-        return(0);
-    for (i=lasthdrsi; i>=0; i--)
-    {
-        if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish > coin->startutc )
-        {
-            ramchain = &bp->ramchain;
-            if ( ramchain->H.data != 0 )
-            {
-                TXbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->TXoffset);
-                T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
-                //printf("search bp.%p TXbits.%p T.%p %d %d\n",bp,TXbits,T,(int32_t)ramchain->H.data->TXoffset,(int32_t)ramchain->H.data->Toffset);
-                if ( (txidind= iguana_sparseaddtx(TXbits,ramchain->H.data->txsparsebits,ramchain->H.data->numtxsparse,txid,T,0)) > 0 )
-                {
-                    //printf("found txidind.%d\n",txidind);
-                    if ( bits256_cmp(txid,T[txidind].txid) == 0 )
-                    {
-                        for (j=0; j<bp->n; j++)
-                            if ( (block= bp->blocks[j]) != 0 && txidind >= block->RO.firsttxidind && txidind < block->RO.firsttxidind+block->RO.txn_count )
-                                break;
-                        if ( j < bp->n )
-                        {
-                            *heightp = bp->bundleheight + j;
-                            //printf("found height.%d\n",*heightp);
-                            *tx = T[txidind];
-                            return(tx);
-                        }
-                        for (j=0; j<bp->n; j++)
-                            if ( (block= bp->blocks[j]) != 0 )
-                                printf("(%d %d).%d ",block->RO.firsttxidind,block->RO.txn_count,txidind >= block->RO.firsttxidind && txidind < block->RO.firsttxidind+block->RO.txn_count);
-                        printf(" <- firsttxidind txidind.%d not in block range\n",txidind);
-                    } else printf("mismatched sparse entry\n");
-                }
-            }
-        }
-    }
-    return(0);
-}
-
 int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,char *fname,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t numblocks)
 {
     struct iguana_bundle *bp = 0; int32_t bundlei = -2; char str[65];

@@ -825,6 +825,7 @@ void iguana_RTramchainfree(struct iguana_info *coin);
 void iguana_coinpurge(struct iguana_info *coin);
 int32_t iguana_setmaxbundles(struct iguana_info *coin);
 void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp);
+uint32_t iguana_sparseaddtx(uint8_t *bits,int32_t width,uint32_t tablesize,bits256 txid,struct iguana_txid *T,uint32_t txidind);
 
 extern int32_t HDRnet,netBLOCKS;
 
