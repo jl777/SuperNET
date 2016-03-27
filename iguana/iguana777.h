@@ -381,6 +381,7 @@ struct iguana_ramchain
 {
     struct iguana_ramchain_hdr H; bits256 lasthash2; uint64_t datasize,allocatedA,allocatedU;
     uint32_t numblocks:31,expanded:1,pkind,externalind,height,numXspends;
+    long sparsesearches,sparseiters,sparsehits,sparsemax;
     struct iguana_kvitem *txids,*pkhashes;
     struct OS_memspace *hashmem; long filesize,sigsfilesize,debitsfilesize,lastspendsfilesize;
     void *fileptr,*sigsfileptr,*Xspendptr,*debitsfileptr,*lastspendsfileptr;
@@ -790,7 +791,7 @@ uint8_t *iguana_rmdarray(struct iguana_info *coin,int32_t *numrmdsp,cJSON *array
 void iguana_unspents(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,uint8_t *rmdarray,int32_t numrmds);
 uint8_t *iguana_walletrmds(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *numrmdsp);
 char *iguana_bundleaddrs(struct iguana_info *coin,int32_t hdrsi);
-uint32_t iguana_sparseaddpk(uint8_t *bits,int32_t width,uint32_t tablesize,uint8_t rmd160[20],struct iguana_pkhash *P,uint32_t pkind);
+uint32_t iguana_sparseaddpk(uint8_t *bits,int32_t width,uint32_t tablesize,uint8_t rmd160[20],struct iguana_pkhash *P,uint32_t pkind,struct iguana_ramchain *ramchain);
 int32_t iguana_vinscriptparse(struct iguana_info *coin,struct vin_info *vp,uint32_t *sigsizep,uint32_t *pubkeysizep,uint32_t *p2shsizep,uint32_t *suffixp,uint8_t *vinscript,int32_t scriptlen);
 void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msghdr *H,uint8_t *buf,int32_t len);
 int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp);
@@ -825,7 +826,7 @@ void iguana_RTramchainfree(struct iguana_info *coin);
 void iguana_coinpurge(struct iguana_info *coin);
 int32_t iguana_setmaxbundles(struct iguana_info *coin);
 void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp);
-uint32_t iguana_sparseaddtx(uint8_t *bits,int32_t width,uint32_t tablesize,bits256 txid,struct iguana_txid *T,uint32_t txidind);
+uint32_t iguana_sparseaddtx(uint8_t *bits,int32_t width,uint32_t tablesize,bits256 txid,struct iguana_txid *T,uint32_t txidind,struct iguana_ramchain *ramchain);
 
 extern int32_t HDRnet,netBLOCKS;
 

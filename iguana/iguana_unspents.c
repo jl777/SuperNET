@@ -156,9 +156,8 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
     return(-1);
 }
 
-uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tablesize,uint8_t *key,int32_t keylen,uint32_t setind,void *refdata,int32_t refsize)
+uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tablesize,uint8_t *key,int32_t keylen,uint32_t setind,void *refdata,int32_t refsize,struct iguana_ramchain *ramchain)
 {
-    static long sparsesearches,sparseiters,sparsehits,sparsemax;
     static uint8_t masks[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
     int32_t i,j,x,n,modval; int64_t bitoffset; uint8_t *ptr;
     if ( tablesize == 0 )
@@ -187,14 +186,14 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
         printf("tableentries.%d\n",n);
     }
     bitoffset = (ind * width);
-    sparsesearches++;
+    ramchain->sparsesearches++;
     if ( 0 && setind == 0 )
         printf("tablesize.%d width.%d bitoffset.%d\n",tablesize,width,(int32_t)bitoffset);
-    if ( (sparsesearches % 100000) == 0 )
-        printf("[%d %d] %.3f sparse searches.%ld iters.%ld hits.%ld %.2f%% max.%ld\n",width,tablesize,(double)sparseiters/(1+sparsesearches),sparsesearches,sparseiters,sparsehits,100.*(double)sparsehits/(1+sparsesearches),sparsemax+1);
+    if ( (ramchain->sparsesearches % 100000) == 0 )
+        printf("[%d %d] %.3f sparse searches.%ld iters.%ld hits.%ld %.2f%% max.%ld\n",width,tablesize,(double)ramchain->sparseiters/(1+ramchain->sparsesearches),ramchain->sparsesearches,ramchain->sparseiters,ramchain->sparsehits,100.*(double)ramchain->sparsehits/(1+ramchain->sparsesearches),ramchain->sparsemax+1);
     for (i=0; i<tablesize; i++,ind++,bitoffset+=width)
     {
-        sparseiters++;
+        ramchain->sparseiters++;
         if ( ind >= tablesize )
         {
             ind = 0;
@@ -236,40 +235,40 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
                 if ( x != setind )
                     printf("x.%d vs setind.%d ind.%d bitoffset.%d\n",x,setind,ind,(int32_t)bitoffset);
             }
-            if ( i > sparsemax )
-                sparsemax = i;
+            if ( i > ramchain->sparsemax )
+                ramchain->sparsemax = i;
             return(setind);
         }
         else if ( memcmp((void *)(long)((long)refdata + x*refsize),key,keylen) == 0 )
         {
             if ( setind == 0 )
-                sparsehits++;
+                ramchain->sparsehits++;
             else if ( setind != x )
                 printf("sparseadd index collision setind.%d != x.%d refsize.%d keylen.%d\n",setind,x,refsize,keylen);
-            if ( i > sparsemax )
-                sparsemax = i;
+            if ( i > ramchain->sparsemax )
+                ramchain->sparsemax = i;
             return(x);
         }
     }
     return(0);
 }
 
-uint32_t iguana_sparseaddtx(uint8_t *bits,int32_t width,uint32_t tablesize,bits256 txid,struct iguana_txid *T,uint32_t txidind)
+uint32_t iguana_sparseaddtx(uint8_t *bits,int32_t width,uint32_t tablesize,bits256 txid,struct iguana_txid *T,uint32_t txidind,struct iguana_ramchain *ramchain)
 {
     uint32_t ind,retval;
     //char str[65]; printf("sparseaddtx %s txidind.%d bits.%p\n",bits256_str(str,txid),txidind,bits);
     ind = (txid.ulongs[0] ^ txid.ulongs[1] ^ txid.ulongs[2] ^ txid.ulongs[3]) % tablesize;
-    if ( (retval= iguana_sparseadd(bits,ind,width,tablesize,txid.bytes,sizeof(txid),0,T,sizeof(*T))) != 0 )
+    if ( (retval= iguana_sparseadd(bits,ind,width,tablesize,txid.bytes,sizeof(txid),0,T,sizeof(*T),ramchain)) != 0 )
     {
         char str[65];
         if ( txidind != 0 && retval != txidind )
             printf("sparse tx collision %s %u vs %u\n",bits256_str(str,txid),retval,txidind);
         return(retval);
     }
-    return(iguana_sparseadd(bits,ind,width,tablesize,txid.bytes,sizeof(txid),txidind,T,sizeof(*T)));
+    return(iguana_sparseadd(bits,ind,width,tablesize,txid.bytes,sizeof(txid),txidind,T,sizeof(*T),ramchain));
 }
 
-uint32_t iguana_sparseaddpk(uint8_t *bits,int32_t width,uint32_t tablesize,uint8_t rmd160[20],struct iguana_pkhash *P,uint32_t pkind)
+uint32_t iguana_sparseaddpk(uint8_t *bits,int32_t width,uint32_t tablesize,uint8_t rmd160[20],struct iguana_pkhash *P,uint32_t pkind,struct iguana_ramchain *ramchain)
 {
     uint32_t ind,key2; uint64_t key0,key1;
     //int32_t i; for (i=0; i<20; i++)
@@ -279,7 +278,7 @@ uint32_t iguana_sparseaddpk(uint8_t *bits,int32_t width,uint32_t tablesize,uint8
     memcpy(&key1,&rmd160[sizeof(key0)],sizeof(key1));
     memcpy(&key2,&rmd160[sizeof(key0) + sizeof(key1)],sizeof(key2));
     ind = (key0 ^ key1 ^ key2) % tablesize;
-    return(iguana_sparseadd(bits,ind,width,tablesize,rmd160,20,pkind,P,sizeof(*P)));
+    return(iguana_sparseadd(bits,ind,width,tablesize,rmd160,20,pkind,P,sizeof(*P),ramchain));
 }
 
 struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,struct iguana_txid *tx,bits256 txid,int32_t lasthdrsi)
@@ -299,7 +298,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                 TXbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->TXoffset);
                 T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
                 //printf("search bp.%p TXbits.%p T.%p %d %d\n",bp,TXbits,T,(int32_t)ramchain->H.data->TXoffset,(int32_t)ramchain->H.data->Toffset);
-                if ( (txidind= iguana_sparseaddtx(TXbits,ramchain->H.data->txsparsebits,ramchain->H.data->numtxsparse,txid,T,0)) > 0 )
+                if ( (txidind= iguana_sparseaddtx(TXbits,ramchain->H.data->txsparsebits,ramchain->H.data->numtxsparse,txid,T,0,ramchain)) > 0 )
                 {
                     //printf("found txidind.%d\n",txidind);
                     if ( bits256_cmp(txid,T[txidind].txid) == 0 )
@@ -423,7 +422,7 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                 PKbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->PKoffset);
                 P = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Poffset);
                 ACCTS = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Aoffset);
-                if ( (pkind= iguana_sparseaddpk(PKbits,ramchain->H.data->pksparsebits,ramchain->H.data->numpksparse,rmd160,P,0)) > 0 && pkind < numpkinds )
+                if ( (pkind= iguana_sparseaddpk(PKbits,ramchain->H.data->pksparsebits,ramchain->H.data->numpksparse,rmd160,P,0,ramchain)) > 0 && pkind < numpkinds )
                 {
                     *ramchainp = ramchain;
                     *balancep = ACCTS[pkind].total;
