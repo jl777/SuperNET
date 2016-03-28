@@ -440,9 +440,6 @@ void iguana_coinloop(void *arg)
     n = (int32_t)(long)coins[0];
     coins++;
     printf("begin coinloop[%d]\n",n);
-    for (i=0; i<n; i++)
-    {
-    }
     coin = coins[0];
     iguana_launchpeer(coin,"127.0.0.1");
     memset(zero.bytes,0,sizeof(zero));

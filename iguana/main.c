@@ -390,9 +390,6 @@ void mainloop(struct supernet_info *myinfo)
                                 printf("%s is stuck too long, purging files for %d\n",coin->symbol,bp->hdrsi);
                                 if ( coin->started != 0 )
                                 {
-                                    struct iguana_helper *ptr;
-                                    while ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
-                                        myfree(ptr,ptr->allocsize);
                                     iguana_coinpurge(coin);
                                     while ( coin->started == 0 )
                                     {

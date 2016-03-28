@@ -352,7 +352,7 @@ void iguana_blockpurge(struct iguana_info *coin,struct iguana_block *block)
 void iguana_blockspurge(struct iguana_info *coin)
 {
     struct iguana_block *block,*tmp;
-    if ( 0 && coin->blocks.hash != 0 )
+    if ( coin->blocks.hash != 0 )
     {
         HASH_ITER(hh,coin->blocks.hash,block,tmp)
         {
@@ -372,9 +372,12 @@ void iguana_blockspurge(struct iguana_info *coin)
 
 void iguana_coinpurge(struct iguana_info *coin)
 {
-    int32_t i; struct iguana_bundle *bp; char *hashstr; struct iguana_bundlereq *req; struct iguana_blockreq *breq;
-    coin->started = 0; coin->active = 0;
+    int32_t i,saved; struct iguana_bundle *bp; char *hashstr; struct iguana_bundlereq *req; struct iguana_blockreq *breq; struct iguana_helper *ptr;
+    saved = coin->active, coin->active = 0;
+    coin->started = 0;
     coin->RTgenesis = 0;
+    while ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
+        myfree(ptr,ptr->allocsize);
     if ( 1 )
     {
         while ( (hashstr= queue_dequeue(&coin->hdrsQ,1)) != 0 )
@@ -389,7 +392,7 @@ void iguana_coinpurge(struct iguana_info *coin)
         {
             if ( req->blocks != 0 )
                 myfree(req->blocks,sizeof(*req->blocks) * req->n), req->blocks = 0;
-            if ( 0 && req->hashes != 0 )
+            if ( req->hashes != 0 )
                 myfree(req->hashes,sizeof(*req->hashes) * req->n), req->hashes = 0;
             myfree(req,req->allocsize);
         }
@@ -407,6 +410,7 @@ void iguana_coinpurge(struct iguana_info *coin)
     coin->current = coin->lastpending = 0;
     memset(coin->bundles,0,sizeof(coin->bundles));
     iguana_blockspurge(coin);
+    coin->active = saved;
 }
 
 struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialheight,int32_t mapflags)
