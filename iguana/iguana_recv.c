@@ -315,7 +315,7 @@ void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bi
     req = iguana_bundlereq(coin,addr,'S',0);
     req->hashes = blockhashes, req->n = n;
     char str[65];
-    if ( 0 && n > 2 )
+    //if ( 0 && n > 2 )
         printf("bundlesQ blockhashes.%s [%d]\n",bits256_str(str,blockhashes[1]),n);
     queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
 }
@@ -432,7 +432,7 @@ void iguana_bundlespeculate(struct iguana_info *coin,struct iguana_bundle *bp,in
         fprintf(stderr,"Afound block -> %d %d hdr.%s\n",bp->bundleheight,coin->longestchain-coin->chain->bundlesize,str);
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(str),1);
     }
-    else if ( bp->speculative != 0 && bundlei < bp->numspec && memcmp(hash2.bytes,bp->speculative[bundlei].bytes,sizeof(hash2)) == 0 )
+    /*else if ( bp->speculative != 0 && bundlei < bp->numspec && memcmp(hash2.bytes,bp->speculative[bundlei].bytes,sizeof(hash2)) == 0 )
     {
         bundlei += offset;
         if ( bundlei < bp->n && bundlei < bp->numspec && time(NULL) > bp->issued[bundlei]+30 )
@@ -441,7 +441,7 @@ void iguana_bundlespeculate(struct iguana_info *coin,struct iguana_bundle *bp,in
             iguana_blockQ("speculate",coin,0,-1,bp->speculative[bundlei],0);
             bp->issued[bundlei] = (uint32_t)time(NULL);
         }
-    } //else printf("speculative.%p %d vs %d cmp.%d\n",bp->speculative,bundlei,bp->numspec,bp->speculative!=0?memcmp(hash2.bytes,bp->speculative[bundlei].bytes,sizeof(hash2)):-1);*/
+    } */ //else printf("speculative.%p %d vs %d cmp.%d\n",bp->speculative,bundlei,bp->numspec,bp->speculative!=0?memcmp(hash2.bytes,bp->speculative[bundlei].bytes,sizeof(hash2)):-1);*/
 }
 
 

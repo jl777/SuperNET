@@ -641,7 +641,7 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
             printf("hdr ITERATE.%d bundle.%d vs %d: h.%d n.%d r.%d s.%d finished.%d speculative.%p[%d]\n",bp->hdrsi,bp->bundleheight,coin->longestchain-coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->emitfinish,bp->speculative,bp->numspec);
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
     }
-    if ( bp->speculative != 0 )
+    if ( bp->speculative != 0 && bp == coin->current )
     {
         now = (uint32_t)time(NULL);
         for (i=0; i<bp->numspec; i++)
@@ -656,8 +656,8 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
                 }
                 //break;
             }
-            //else if ( bp->blocks[i] == 0 )
-              //  break;
+            else if ( bp->blocks[i] == 0 )
+                break;
         }
     }
     return(counter);
@@ -808,10 +808,10 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
     }
 #endif
     for (i=0; i<bp->hdrsi; i++)
-        if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish < coin->startutc || (i < bp->hdrsi-IGUANA_NUMHELPERS && prevbp->utxofinish <= 1)
+        if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish < coin->startutc || (i < bp->hdrsi-IGUANA_NUMHELPERS/3 && prevbp->utxofinish <= 1)
            )
             break;
-    if ( i == bp->hdrsi && coin->emitbusy <= (coin->MAXBUNDLES>>1) )
+    if ( i == bp->hdrsi && coin->emitbusy <= (IGUANA_NUMHELPERS/3) )
     {
         if ( bp->startutxo == 0 )
         {
@@ -905,7 +905,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
         counter = iguana_bundleissue(coin,bp,max,timelimit);
         if ( bp == coin->current && coin->isRT == 0 )
             bp->nexttime--;
-        if ( bp == coin->current )
+        if ( 0 && bp == coin->current && counter > 0 )
             printf("ITER.rt%d now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",bp->isRT,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
         if ( bp->hdrsi == starti && bp->isRT == 0 )
         {
