@@ -381,7 +381,7 @@ void iguana_helper(void *arg)
         helperid = juint(argjson,"helperid");
     if ( IGUANA_NUMHELPERS < 3 )
         type = 7;
-    else type = (1 << (helperid % IGUANA_NUMHELPERS));
+    else type = (1 << (helperid % 3));
     if ( argjson != 0 )
         free_json(argjson);
     printf("HELPER.%d started arg.(%s) type.%d\n",helperid,(char *)(arg!=0?arg:0),type);
@@ -431,11 +431,11 @@ void iguana_helper(void *arg)
         }
         if ( (type & (1 << 1)) != 0 && (ptr= queue_dequeue(&spendvectorsQ,0)) != 0 )
         {
-            printf("spendvectorsQ size.%d\n",queue_size(&spendvectorsQ));
+            //printf("spendvectorsQ size.%d\n",queue_size(&spendvectorsQ));
             coin = ptr->coin;
             if ( (bp= ptr->bp) != 0 && coin != 0 )
             {
-                printf("call spendvectors.%d\n",bp->hdrsi);
+                //printf("call spendvectors.%d\n",bp->hdrsi);
                 if ( (retval= iguana_spendvectors(coin,bp)) >= 0 )
                 {
                     flag++;
