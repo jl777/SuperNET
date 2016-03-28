@@ -185,9 +185,9 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
         }
         printf("tableentries.%d\n",n);
     }
-    ramchain->sparsesearches++;
+    /*ramchain->sparsesearches++;
     if ( (ramchain->sparsesearches % 100000) == 0 )
-        printf("[%3d] %7d.[%-2d %8d] %5.3f sparse searches.%-10ld iters.%-10ld hits.%-10ld %5.2f%% max.%ld\n",ramchain->height/ramchain->H.data->numblocks,ramchain->height,width,tablesize,(double)ramchain->sparseiters/(1+ramchain->sparsesearches),ramchain->sparsesearches,ramchain->sparseiters,ramchain->sparsehits,100.*(double)ramchain->sparsehits/(1+ramchain->sparsesearches),ramchain->sparsemax+1);
+        printf("[%3d] %7d.[%-2d %8d] %5.3f sparse searches.%-10ld iters.%-10ld hits.%-10ld %5.2f%% max.%ld\n",ramchain->height/ramchain->H.data->numblocks,ramchain->height,width,tablesize,(double)ramchain->sparseiters/(1+ramchain->sparsesearches),ramchain->sparsesearches,ramchain->sparseiters,ramchain->sparsehits,100.*(double)ramchain->sparsehits/(1+ramchain->sparsesearches),ramchain->sparsemax+1);*/
     if ( width == 32 )
     {
         table = (uint32_t *)bits;
@@ -199,19 +199,18 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
             {
                 if ( (retval= setind) != 0 )
                     table[ind] = setind;
+                return(setind);
             }
             else if ( memcmp((void *)(long)((long)refdata + x*refsize),key,keylen) == 0 )
             {
-                if ( setind == 0 )
-                    ramchain->sparsehits++;
-                else if ( setind != x )
+                if ( setind != x )
                     printf("sparseadd index collision setind.%d != x.%d refsize.%d keylen.%d\n",setind,x,refsize,keylen);
-                retval = x;
-            } else continue;
-            if ( ++i > ramchain->sparsemax )
-                ramchain->sparsemax = i;
-            ramchain->sparseiters += i;
-            return(retval);
+                //else ramchain->sparsehits++;
+                return(x);
+            }
+            //if ( ++i > ramchain->sparsemax )
+            //    ramchain->sparsemax = i;
+            //ramchain->sparseiters += i;
         }
     }
     else
