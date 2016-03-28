@@ -453,7 +453,7 @@ void iguana_helper(void *arg)
                 printf("helper missing param? %p %p\n",coin,bp);
             myfree(ptr,ptr->allocsize);
         }
-        if ( (type & (1 << 2)) != 0 &&  && (ptr= queue_dequeue(&validateQ,0)) != 0 )
+        if ( (type & (1 << 2)) != 0 && (ptr= queue_dequeue(&validateQ,0)) != 0 )
         {
             if ( ptr->bp != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
                 flag += iguana_bundlevalidate(ptr->coin,ptr->bp);
