@@ -203,7 +203,7 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
             }
             else if ( memcmp((void *)(long)((long)refdata + x*refsize),key,keylen) == 0 )
             {
-                if ( setind != x )
+                if ( setind != 0 && setind != x )
                     printf("sparseadd index collision setind.%d != x.%d refsize.%d keylen.%d\n",setind,x,refsize,keylen);
                 //else ramchain->sparsehits++;
                 return(x);
