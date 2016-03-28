@@ -379,9 +379,9 @@ void iguana_helper(void *arg)
     struct iguana_helper *ptr; struct iguana_info *coin; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp;
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
         helperid = juint(argjson,"helperid");
-    if ( IGUANA_NUMHELPERS < 3 )
-        type = 7;
-    else type = (1 << (helperid % 3));
+    if ( IGUANA_NUMHELPERS < 2 )
+        type = 3;
+    else type = (1 << (helperid % 2));
     if ( argjson != 0 )
         free_json(argjson);
     printf("HELPER.%d started arg.(%s) type.%d\n",helperid,(char *)(arg!=0?arg:0),type);
@@ -406,28 +406,40 @@ void iguana_helper(void *arg)
                 flag++;
             }
             myfree(ptr,ptr->allocsize);
-        }*/
-        if ( (type & (1 << 0)) != 0 && (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
+         }*/
+        if ( (type & (1 << 0)) != 0 )
         {
-            //printf("bundleQ size.%d\n",queue_size(&bundlesQ));
-            idle = 0;
-            coin = ptr->coin;
-            if ( (bp= ptr->bp) != 0 && coin != 0 )
+            if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
             {
-                coin->numbundlesQ--;
-                if ( coin->started != 0 && time(NULL) >= bp->nexttime && coin->active != 0 )
-                    flag += iguana_bundleiters(ptr->coin,&MEM,MEMB,bp,ptr->timelimit);
-                else
+                idle = 0;
+                coin = ptr->coin;
+                if ( (bp= ptr->bp) != 0 && coin != 0 )
                 {
-                    //printf("skip.%d lag.%ld coin->active.%d\n",bp->hdrsi,time(NULL)-bp->nexttime,coin->active);
-                    iguana_bundleQ(ptr->coin,bp,1000);
+                    //printf("[%d] bundleQ size.%d\n",bp->hdrsi,queue_size(&bundlesQ));
+                    coin->numbundlesQ--;
+                    if ( coin->started != 0 && time(NULL) >= bp->nexttime && coin->active != 0 )
+                        flag += iguana_bundleiters(ptr->coin,&MEM,MEMB,bp,ptr->timelimit);
+                    else
+                    {
+                        //printf("skip.%d lag.%ld coin->active.%d\n",bp->hdrsi,time(NULL)-bp->nexttime,coin->active);
+                        iguana_bundleQ(ptr->coin,bp,1000);
+                    }
+                    if ( coin->current != 0 && coin->current->hdrsi != coin->bundlescount-1 )
+                        allcurrent = 0;
                 }
-                if ( coin->current != 0 && coin->current->hdrsi != coin->bundlescount-1 )
-                    allcurrent = 0;
+                else //if ( coin->active != 0 )
+                    printf("helper missing param? %p %p %u\n",ptr->coin,bp,ptr->timelimit);
+                myfree(ptr,ptr->allocsize);
             }
-            else //if ( coin->active != 0 )
-                printf("helper missing param? %p %p %u\n",ptr->coin,bp,ptr->timelimit);
-            myfree(ptr,ptr->allocsize);
+            else if ( (ptr= queue_dequeue(&validateQ,0)) != 0 )
+            {
+                if ( ptr->bp != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
+                    flag += iguana_bundlevalidate(ptr->coin,ptr->bp);
+                else if ( coin->active != 0 )
+                    printf("helper validate missing param? %p %p\n",ptr->coin,ptr->bp);
+                myfree(ptr,ptr->allocsize);
+                flag++;
+            }
         }
         if ( (type & (1 << 1)) != 0 && (ptr= queue_dequeue(&spendvectorsQ,0)) != 0 )
         {
@@ -453,20 +465,11 @@ void iguana_helper(void *arg)
                 printf("helper missing param? %p %p\n",coin,bp);
             myfree(ptr,ptr->allocsize);
         }
-        if ( (type & (1 << 2)) != 0 && (ptr= queue_dequeue(&validateQ,0)) != 0 )
-        {
-            if ( ptr->bp != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
-                flag += iguana_bundlevalidate(ptr->coin,ptr->bp);
-            else if ( coin->active != 0 )
-                printf("helper validate missing param? %p %p\n",ptr->coin,ptr->bp);
-            myfree(ptr,ptr->allocsize);
-            flag++;
-        }
         if ( flag == 0 )
-            usleep(100000);
-        else if ( allcurrent != 0 )
             usleep(25000);
-        else usleep(2500);
+        else if ( allcurrent != 0 )
+            usleep(100000);
+        else usleep(10000);
     }
 }
 
