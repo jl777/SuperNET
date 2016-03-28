@@ -1,3 +1,4 @@
+git pull
 gcc -Wno-deprecated -c -O2 *.c 
 gcc -Wno-deprecated -c main.c iguana777.c iguana_bundles.c
 gcc -Wno-deprecated -o ../agents/iguana *.o ../agents/libcrypto777.a ../osx/libcurl.a ../osx/libssl.a ../osx/libcrypto.a ../osx/libsecp256k1.a ../osx/libgmp.a -lpthread -lm

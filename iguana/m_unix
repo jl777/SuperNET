@@ -1,2 +1,4 @@
 git pull
-gcc -g -o ../agents/iguana -O2 *.c ../agents/libcrypto777.a  -lcurl -lssl -lcrypto -lpthread -lm ../includes/libsecp256k1.a -lgmp
+gcc -Wno-deprecated -c -O2 *.c 
+gcc -Wno-deprecated -c main.c iguana777.c iguana_bundles.c
+gcc -o ../agents/iguana *.o ../agents/libcrypto777.a  -lcurl -lssl -lcrypto -lpthread -lm ../includes/libsecp256k1.a -lgmp

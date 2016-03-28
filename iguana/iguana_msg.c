@@ -600,7 +600,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
         struct iguana_txblock txdata;
         if ( addr != 0 )
             addr->msgcounts.block++;
-        iguana_memreset(rawmem), iguana_memreset(txmem);//, iguana_memreset(hashmem);
+        iguana_memreset(rawmem), iguana_memreset(txmem);
         memset(&txdata,0,sizeof(txdata));
         if ( (len= iguana_gentxarray(coin,rawmem,&txdata,&len,data,recvlen)) == recvlen )
             iguana_gotblockM(coin,addr,&txdata,rawmem->ptr,H,data,recvlen);
