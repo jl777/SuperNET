@@ -159,7 +159,6 @@ struct iguana_txblock *iguana_peertxdata(struct iguana_info *coin,int32_t *bundl
 
 void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,struct iguana_msghdr *H,uint8_t *data,int32_t recvlen)
 {
-    static uint64_t received[IGUANA_MAXPEERS];
     struct iguana_bundlereq *req; struct iguana_txblock *txdata = 0; int32_t valid,i,j,bundlei,copyflag;
     struct iguana_bundle *bp;
     if ( 0 )
@@ -187,14 +186,18 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             }
         }
     }
-    received[addr->addrind] += recvlen;
     char str[65];
-    if ( (rand() % 1000) == 0 )
+    if ( addr != 0 )
     {
-        uint64_t sum = 0;
-        for (i=0; i<sizeof(received)/sizeof(*received); i++)
-            sum += received[i];
-        printf("TOTAL RECEIVED %s\n",mbstr(str,sum));
+        static uint64_t received[IGUANA_MAXPEERS];
+        if ( (rand() % 1000) == 0 )
+        {
+            uint64_t sum = 0;
+            received[addr->addrind] += recvlen;
+            for (i=0; i<sizeof(received)/sizeof(*received); i++)
+                sum += received[i];
+            printf("TOTAL RECEIVED %s\n",mbstr(str,sum));
+        }
     }
     if ( iguana_blockvalidate(coin,&valid,&origtxdata->block,1) < 0 )
     {
