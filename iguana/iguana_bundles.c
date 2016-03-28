@@ -922,7 +922,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
         counter = iguana_bundleissue(coin,bp,max,timelimit);
         if ( bp == coin->current && coin->isRT == 0 )
             bp->nexttime--;
-        if ( counter > 0 && bp == coin->current )
+        if ( bp == coin->current )
             printf("ITER now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
         if ( bp->hdrsi == starti && bp->isRT == 0 )
         {
@@ -1176,9 +1176,9 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
         if ( (rand() % 100) == 0 )
             myallocated(0,0);
         coin->lastdisp = (uint32_t)time(NULL);
-        if ( firstgap != 0 && firstgap->queued == 0 )
-            iguana_bundleQ(coin,firstgap,1000);
     }
+    if ( (bp= coin->current) != 0 && bp->queued == 0 )
+        iguana_bundleQ(coin,firstgap,1000);
     iguana_setmaxbundles(coin);
     strcpy(coin->statusstr,str);
     coin->estsize = estsize;
