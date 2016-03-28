@@ -579,7 +579,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         coin->enableCACHE = juint(json,"cache");
     if ( (coin->polltimeout= juint(json,"poll")) <= 0 )
         coin->polltimeout = 10;
-    char str[65]; printf("MAXMEM.%s enablecache.%d\n",mbstr(str,coin->MAXMEM),coin->enableCACHE);
+    char str[65]; printf("pend.(%d -> %d) MAXMEM.%s enablecache.%d\n",coin->startPEND,coin->endPEND,mbstr(str,coin->MAXMEM),coin->enableCACHE);
     coin->active = juint(json,"active");
     if ( (coin->minconfirms = minconfirms) == 0 )
         coin->minconfirms = (strcmp(symbol,"BTC") == 0) ? 3 : 10;
