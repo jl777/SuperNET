@@ -145,7 +145,7 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
 HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
 {
     struct iguana_txid *tx,T; char *txbytes; bits256 checktxid; int32_t len,height; cJSON *retjson;
-    if ( (tx= iguana_txidfind(coin,&height,&T,txid,0,coin->bundlescount)) != 0 )
+    if ( (tx= iguana_txidfind(coin,&height,&T,txid,coin->bundlescount-1)) != 0 )
     {
         retjson = cJSON_CreateObject();
         if ( (len= iguana_ramtxbytes(coin,coin->blockspace,sizeof(coin->blockspace),&checktxid,tx,height,0,0)) > 0 )
