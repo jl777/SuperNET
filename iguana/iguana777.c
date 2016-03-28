@@ -282,7 +282,8 @@ void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t ti
     ptr->starttime = (uint32_t)time(NULL);
     ptr->timelimit = timelimit;
     coin->numbundlesQ++;
-    //printf("%s %p bundle.%d[%d] ht.%d emitfinish.%u\n",coin->symbol,bp,ptr->hdrsi,bp->n,bp->bundleheight,bp->emitfinish);
+    if ( bp->hdrsi > 170 )
+    printf("%s %p bundle.%d[%d] ht.%d emitfinish.%u\n",coin->symbol,bp,ptr->hdrsi,bp->n,bp->bundleheight,bp->emitfinish);
     queue_enqueue("bundlesQ",&bundlesQ,&ptr->DL,0);
 }
 
@@ -379,7 +380,7 @@ void iguana_helper(void *arg)
         //iguana_jsonQ(); cant do this here
         flag = 0;
         allcurrent = 1;
-        printf("helper.%d\n",helperid);
+        //printf("helper.%d\n",helperid);
         if ( ((ptr= queue_dequeue(&emitQ,0)) != 0 || (ptr= queue_dequeue(&helperQ,0)) != 0) )
         {
             printf("unexpected emitQ or helperQ\n");
@@ -404,7 +405,7 @@ void iguana_helper(void *arg)
                     flag += iguana_bundleiters(ptr->coin,&MEM,MEMB,bp,ptr->timelimit);
                 else
                 {
-                    if ( bp != 0 )
+                    if ( 0 && bp != 0 )
                         printf("skip.%d lag.%ld\n",bp->hdrsi,time(NULL)-bp->nexttime);
                         iguana_bundleQ(ptr->coin,bp,1000);
                 }
