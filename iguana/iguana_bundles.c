@@ -813,9 +813,9 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
 #endif
     for (i=0; i<bp->hdrsi; i++)
         if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish < coin->startutc
-#ifdef IGUANA_SERIALIZE_SPENDVECTORGEN
+//#ifdef IGUANA_SERIALIZE_SPENDVECTORGEN
             || (i < bp->hdrsi-16 && prevbp->utxofinish <= 1 )
-#endif
+//#endif
           )
             break;
     if ( i == bp->hdrsi && coin->emitbusy < (IGUANA_NUMHELPERS/3) )
