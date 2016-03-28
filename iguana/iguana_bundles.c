@@ -811,6 +811,7 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
         if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish < coin->startutc || (i < bp->hdrsi-8 && prevbp->utxofinish <= 1)
            )
             break;
+    printf("i.%d hdrsi.%d busy.%d helpers.%d\n",i,bp->hdrsi,coin->emitbusy,IGUANA_NUMHELPERS);
     if ( i == bp->hdrsi && coin->emitbusy <= (IGUANA_NUMHELPERS/3) )
     {
         if ( bp->startutxo == 0 )
