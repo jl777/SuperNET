@@ -338,9 +338,17 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                     coin->longestchain = block->height+1;
                 if ( 0 && (block->height % 1000) == 0 )
                     printf("EXTENDMAIN %s %d <- (%s) n.%u max.%u PoW %f numtx.%d valid.%d\n",str,block->height,str2,hwmchain->height+1,coin->blocks.maxblocks,block->PoW,block->RO.txn_count,block->valid);
-                struct iguana_bundle *bp;
+                struct iguana_bundle *bp; int32_t hdrsi;
                 if ( (block->height % coin->chain->bundlesize) == 0 )
                 {
+                    if ( (hdrsi= block->height/coin->chain->bundlesize) < coin->bundlescount )
+                    {
+                        if ( (bp= coin->bundles[hdrsi]) != 0 && bits256_cmp(block->RO.hash2,bp->hashes[0]) != 0 )
+                        {
+                            printf(">>>>>>>>>>>>>> interloper bundle.[%d] ht.%d %s != %s\n",hdrsi,block->height,bits256_str(str,bp->hashes[0]),bits256_str(str2,block->RO.hash2));
+                            coin->bundles[hdrsi] = 0;
+                        }
+                    }
                     bp = iguana_bundlecreate(coin,&bundlei,block->height,block->RO.hash2,zero,0);
                     if ( bp != 0 && bp->hdrsi == coin->bundlescount-1 )
                     {

@@ -1127,7 +1127,6 @@ int32_t iguana_ramchain_free(struct iguana_info *coin,struct iguana_ramchain *ra
                 if ( ramchain->hashmem == 0 )
                     myfree(item,sizeof(*item));
             }
-            ramchain->txids = 0;
         }
         if ( ramchain->pkhashes != 0 )
         {
@@ -1137,9 +1136,10 @@ int32_t iguana_ramchain_free(struct iguana_info *coin,struct iguana_ramchain *ra
                 if ( ramchain->hashmem == 0 )
                     myfree(item,sizeof(*item));
             }
-            ramchain->pkhashes = 0;
         }
     }
+    ramchain->txids = 0;
+    ramchain->pkhashes = 0;
     if ( ramchain->hashmem != 0 )
         iguana_mempurge(ramchain->hashmem), ramchain->hashmem = 0;
     if ( ramchain->filesize != 0 )

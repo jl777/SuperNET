@@ -14515,5 +14515,46 @@ len = 0;
              printf("j.%d num.%d bundlei.%d\n",j,num,bundlei);
              break;
              }*/
+            if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,origblock->RO.prev_block)) != 0 )
+            {
+                printf("iguana_recvblock got prev block [%d:%d]\n",bp->hdrsi,bundlei);
+                if ( bundlei < bp->n-1 )
+                    bundlei++;
+                else bp = 0, bundlei = -2;
+                /*if ( bits256_cmp(prev->RO.hash2,block->RO.prev_block) == 0 && bundlei < bp->n-1 )
+                 {
+                 bundlei++;
+                 iguana_bundlehash2add(coin,&tmpblock,bp,bundlei,block->RO.hash2);
+                 if ( tmpblock == block )
+                 {
+                 printf("[%d:%d] speculative block.%p\n",bp->hdrsi,bundlei,block);
+                 bp->blocks[bundlei] = block;
+                 bp->hashes[bundlei] = block->RO.hash2;
+                 block->bundlei = bundlei;
+                 block->hdrsi = bp->hdrsi;
+                 block->mainchain = prev->mainchain;
+                 } else printf("error adding speculative prev [%d:%d]\n",bp->hdrsi,bundlei);
+                 }*/
+            }
+            /*for (i=coin->bundlescount-1; i>=0; i--)
+             {
+             //if ( coin->bundles[i] != 0 )
+             //    printf("compare vs %s\n",bits256_str(str,coin->bundles[i]->hashes[0]));
+             if ( coin->bundles[i] != 0 && bits256_cmp(origblock->RO.prev_block,coin->bundles[i]->hashes[0]) == 0 )
+             {
+             bp = coin->bundles[i];
+             bundlei = 1;
+             iguana_bundlehash2add(coin,&block,bp,bundlei,origblock->RO.hash2);
+             printf("iguana_recvblock [%d] bundlehashadd set.%d block.%p\n",i,bundlei,block);
+             if ( block != 0 )
+             {
+             bp->blocks[bundlei] = block;
+             block->bundlei = bundlei;
+             block->hdrsi = bp->hdrsi;
+             }
+             break;
+             }
+             }*/
+            //printf("i.%d ref prev.(%s)\n",i,bits256_str(str,origblock->RO.prev_block));
 
 #endif

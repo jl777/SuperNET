@@ -437,7 +437,9 @@ struct iguana_bundle
     int32_t numhashes,numrecv,numsaved,numcached,generrs,checkedtmp,currentflag;
     int32_t minrequests,n,hdrsi,bundleheight,numtxids,numspends,numunspents,numspec,isRT;
     double avetime,threshold,metric; uint64_t datasize,estsize;
-    struct iguana_block *blocks[IGUANA_MAXBUNDLESIZE]; uint32_t issued[IGUANA_MAXBUNDLESIZE];
+    struct iguana_block *blocks[IGUANA_MAXBUNDLESIZE];
+    uint8_t *speculativecache[IGUANA_MAXBUNDLESIZE];
+    uint32_t issued[IGUANA_MAXBUNDLESIZE];
     bits256 prevbundlehash2,hashes[IGUANA_MAXBUNDLESIZE+1],nextbundlehash2,allhash,*speculative;
     struct iguana_ramchain ramchain; uint8_t red,green,blue;
 };
@@ -831,6 +833,7 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp);
 uint32_t iguana_sparseaddtx(uint8_t *bits,int32_t width,uint32_t tablesize,bits256 txid,struct iguana_txid *T,uint32_t txidind,struct iguana_ramchain *ramchain);
 void iguana_launchpeer(struct iguana_info *coin,char *ipaddr);
 void iguana_spendvectorsQ(struct iguana_info *coin,struct iguana_bundle *bp);
+int8_t iguana_blockstatus(struct iguana_info *coin,struct iguana_block *block);
 
 extern int32_t HDRnet,netBLOCKS;
 

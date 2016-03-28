@@ -324,19 +324,28 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
 
 void iguana_ramchainpurge(struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_ramchain *ramchain)
 {
+    iguana_ramchain_free(coin,ramchain,1);
 }
 
 void iguana_bundlepurge(struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    static bits256 zero;
+    int32_t i; static bits256 zero;
+    iguana_ramchainpurge(coin,bp,&bp->ramchain);
     if ( bp->speculative != 0 )
+    {
+        for (i=0; i<bp->n; i++)
+            if ( bp->speculativecache[i] != 0 )
+            {
+                myfree(bp->speculativecache[i],*(int32_t *)bp->speculativecache[i]);
+                bp->speculativecache[i] = 0;
+            }
         myfree(bp->speculative,sizeof(*bp->speculative) * bp->numspec);
+    }
     bp->numspec = 0;
     bp->speculative = 0;
     memset(bp->hashes,0,sizeof(bp->hashes));
     memset(bp->issued,0,sizeof(bp->issued));
     bp->prevbundlehash2 = bp->nextbundlehash2 = bp->allhash = zero;
-    iguana_ramchain_free(coin,&bp->ramchain,1);
 }
 
 void iguana_blockpurge(struct iguana_info *coin,struct iguana_block *block)
@@ -352,7 +361,7 @@ void iguana_blockpurge(struct iguana_info *coin,struct iguana_block *block)
 void iguana_blockspurge(struct iguana_info *coin)
 {
     struct iguana_block *block,*tmp;
-    if ( 0 && coin->blocks.hash != 0 )
+    if ( 1 && coin->blocks.hash != 0 )
     {
         HASH_ITER(hh,coin->blocks.hash,block,tmp)
         {
