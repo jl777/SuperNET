@@ -506,14 +506,14 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                                 }
                                 for (j=0; j<bp->n; j++)
                                 {
-                                    if ( (block= bp->blocks[j]) != 0 && block->peerid == i && block->fpipbits == 0 )
+                                    if ( (block= bp->blocks[j]) != 0 && block->peerid == i && iguana_blockstatus(coin,block) == 0 )
                                     {
                                         if ( bp == coin->current )
                                             printf("%d ",j);
                                         flag++;
                                         counter++;
                                         block->peerid = 0;
-                                        iguana_blockQ("kick",coin,bp,j,block->RO.hash2,0);
+                                        iguana_blockQ("kick",coin,bp,j,block->RO.hash2,bp == coin->current);
                                         if ( bp == coin->current )
                                             bp->issued[i] = block->issued = now;
                                     }
@@ -963,7 +963,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
                         {
                             printf("[%d:%d] ",bp->hdrsi,i);
                             iguana_blockQ("stuck",coin,bp,i,block->RO.hash2,0);
-                            //iguana_blockQ("stuck",coin,bp,i,block->RO.hash2,1);
+                            iguana_blockQ("stuck",coin,bp,i,block->RO.hash2,1);
                             if ( coin->peers.numranked > 8 && (addr= coin->peers.ranked[n % 8]) != 0 && addr->usock >= 0 && addr->dead == 0 && addr->msgcounts.verack != 0 )
                             {
                                 if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,&block->RO.hash2,1)) > 0 )
