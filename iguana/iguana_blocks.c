@@ -345,7 +345,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                     if ( bp != 0 && bp->hdrsi == coin->bundlescount-1 )
                     {
                         //printf("created last bundle ht.%d\n",bp->bundleheight);
-                        iguana_blockreq(coin,block->height,1);
+                        iguana_blockreq(coin,block->height,0);
                     }
                 }
                 else

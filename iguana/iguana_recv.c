@@ -780,7 +780,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
                 iguana_send(coin,addr,serialized,len);
                 //char str[65]; printf("REQ.%s\n",bits256_str(str,blockhashes[1]));
             }
-        } else iguana_blockQ("hdr1",coin,0,-1,blockhashes[1],1);
+        } else iguana_blockQ("hdr1",coin,0,-1,blockhashes[1],0);
     }
     else
     {
@@ -788,7 +788,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
         {
             iguana_blockhashset(coin,-1,blockhashes[1],1);
             if ( (block= iguana_blockfind(coin,blockhashes[1])) != 0 )
-                iguana_blockQ("recvhash6",coin,0,-6,blockhashes[1],1); // should be RT block
+                iguana_blockQ("recvhash6",coin,0,-6,blockhashes[1],0); // should be RT block
         }
         block->newtx = 1;
         iguana_blockQ("recvhash6",coin,0,-7,blockhashes[1],0); // should be RT block
