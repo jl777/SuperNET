@@ -429,10 +429,11 @@ void iguana_helper(void *arg)
         }
         if ( (helperid % IGUANA_NUMHELPERS) == (1 % IGUANA_NUMHELPERS) && (ptr= queue_dequeue(&spendvectorsQ,0)) != 0 )
         {
-            //printf("spendvectorsQ size.%d\n",queue_size(&spendvectorsQ));
+            printf("spendvectorsQ size.%d\n",queue_size(&spendvectorsQ));
             coin = ptr->coin;
             if ( (bp= ptr->bp) != 0 && coin != 0 )
             {
+                printf("call spendvectors.%d\n",bp->hdrsi);
                 if ( (retval= iguana_spendvectors(coin,bp)) >= 0 )
                 {
                     flag++;

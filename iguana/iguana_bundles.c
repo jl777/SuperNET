@@ -811,12 +811,13 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
         if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish < coin->startutc || (i < bp->hdrsi-8 && prevbp->utxofinish <= 1)
            )
             break;
-    printf("i.%d hdrsi.%d busy.%d helpers.%d\n",i,bp->hdrsi,coin->emitbusy,IGUANA_NUMHELPERS);
-    if ( i == bp->hdrsi && coin->emitbusy <= (IGUANA_NUMHELPERS/3) )
+    //printf("i.%d hdrsi.%d busy.%d helpers.%d\n",i,bp->hdrsi,coin->emitbusy,IGUANA_NUMHELPERS);
+    if ( i == bp->hdrsi && coin->emitbusy < (IGUANA_NUMHELPERS/3) )
     {
         if ( bp->startutxo == 0 )
         {
             bp->startutxo = (uint32_t)time(NULL);
+            printf("spendvectorQ.%d\n",bp->hdrsi);
             iguana_spendvectorsQ(coin,bp);
         }
         else if ( bp->utxofinish != 0 )
@@ -862,7 +863,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
     {
         if ( bp->emitfinish > 1 )
         {
-            printf("ITER now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
+            //printf("ITER now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
             if ( (retval= iguana_bundlefinish(coin,bp)) > 0 )
             {
                 //printf("moved to balancesQ.%d bundleiters.%d\n",bp->hdrsi,bp->bundleheight);
