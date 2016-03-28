@@ -250,7 +250,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
     }
     else if ( 0 && coin->enableCACHE != 0 )
         printf("cache.%d validated.(%s)\n",coin->enableCACHE,bits256_str(str,origtxdata->block.RO.hash2));
-    copyflag = (coin->enableCACHE != 0) && (strcmp(coin->symbol,"BTC") != 0);
+    copyflag = 0;//(coin->enableCACHE != 0) && (strcmp(coin->symbol,"BTC") != 0);
     bp = 0, bundlei = -2;
     bp = iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.hash2);
     if ( bp != 0 && bundlei >= 0 && bundlei < bp->n )
@@ -727,7 +727,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
     //iguana_blockQ(coin,0,-1,blockhashes[1],0);
     //iguana_blockQ(coin,0,-4,blockhashes[1],1);
     char str[65];
-    //if ( 0 && num > 2 )
+    if ( 0 && num > 2 )
         printf("blockhashes[%d] %d of %d %s bp.%d[%d]\n",num,bp==0?-1:bp->hdrsi,coin->bundlescount,bits256_str(str,blockhashes[1]),bp==0?-1:bp->bundleheight,bundlei);
     if ( num < 2 )
         return(req);

@@ -611,7 +611,7 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp)
         if ( (block= bp->blocks[i]) != 0 )
         {
             //printf("(%x:%x) ",(uint32_t)block->RO.hash2.ulongs[3],(uint32_t)bp->hashes[i].ulongs[3]);
-            if ( iguana_blockvalidate(coin,&valid,block,1) < 0 || (iguana_blockstatus(coin,block)&7) != 7 || (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) )
+            if ( iguana_blockvalidate(coin,&valid,block,1) < 0 || block->fpipbits == 0 || block->fpos < 0 || (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) )
             {
                 fname[0] = 0;
                 if ( (checki= iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,block->RO.hash2,zero,1)) != i )
