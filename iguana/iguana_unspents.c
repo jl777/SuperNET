@@ -188,7 +188,7 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
     ramchain->sparsesearches++;
     if ( (ramchain->sparsesearches % 1000) == 0 )
         printf("[%3d] %7d.[%-2d %8d] %5.3f sparse searches.%-10ld iters.%-10ld hits.%-10ld %5.2f%% max.%ld\n",ramchain->height/ramchain->H.data->numblocks,ramchain->height,width,tablesize,(double)ramchain->sparseiters/(1+ramchain->sparsesearches),ramchain->sparsesearches,ramchain->sparseiters,ramchain->sparsehits,100.*(double)ramchain->sparsehits/(1+ramchain->sparsesearches),ramchain->sparsemax+1);
-    if ( width == 32 )
+    if ( 0 && width == 32 )
     {
         table = (uint32_t *)bits;
         for (i=0; i<tablesize; i++,ind++)
