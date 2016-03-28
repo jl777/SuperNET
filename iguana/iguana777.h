@@ -23,7 +23,7 @@
 typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t len);
 
 #define IGUANA_MAXSCRIPTSIZE 10001
-#define IGUANA_SERIALIZE_SPENDVECTORGEN
+//#define IGUANA_SERIALIZE_SPENDVECTORGEN
 //#define IGUANA_SERIALIZE_BALANCEGEN
 //#define IGUANA_DISABLEPEERS
 #define _IGUANA_MAXSTUCKTIME 3600
@@ -382,7 +382,7 @@ struct iguana_ramchain
 {
     struct iguana_ramchain_hdr H; bits256 lasthash2; uint64_t datasize,allocatedA,allocatedU;
     uint32_t numblocks:31,expanded:1,pkind,externalind,height,numXspends;
-    long sparsesearches,sparseiters,sparsehits,sparsemax;
+    long sparseadds,sparsesearches,sparseadditers,sparsesearchiters,sparsehits,sparsemax;
     struct iguana_kvitem *txids,*pkhashes;
     struct OS_memspace *hashmem; long filesize,sigsfilesize,debitsfilesize,lastspendsfilesize;
     void *fileptr,*sigsfileptr,*Xspendptr,*debitsfileptr,*lastspendsfileptr;
