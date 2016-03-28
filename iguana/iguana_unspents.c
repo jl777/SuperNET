@@ -1496,7 +1496,7 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
             }
             bp->balancefinish = (uint32_t)time(NULL);
             bp->queued = 0;
-            if ( bp->hdrsi >= coin->blocks.hwmchain.height/coin->chain->bundlesize-1  )
+            if ( bp->hdrsi >= coin->blocks.hwmchain.height/coin->chain->bundlesize-1 && bp->hdrsi >= coin->longestchain/coin->chain->bundlesize-3  )
             {
                 printf("TRIGGER FLUSH %d vs %d\n",bp->hdrsi,coin->blocks.hwmchain.height/coin->chain->bundlesize);
                 sleep(1);
