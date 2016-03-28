@@ -1493,7 +1493,7 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
             {
                 printf("TRIGGER FLUSH %d vs %d\n",bp->hdrsi,coin->blocks.hwmchain.height/coin->chain->bundlesize);
                 sleep(1);
-                if ( bp->hdrsi >= coin->blocks.hwmchain.height/coin->chain->bundlesize  )
+                if ( bp->hdrsi >= coin->blocks.hwmchain.height/coin->chain->bundlesize-1  )
                 {
                     if ( iguana_balanceflush(coin,bp->hdrsi,3) > 0 )
                         printf("balanceswritten.%d flushed bp->hdrsi %d vs %d coin->longestchain/coin->chain->bundlesize\n",coin->balanceswritten,bp->hdrsi,coin->longestchain/coin->chain->bundlesize);
