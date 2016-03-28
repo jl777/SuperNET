@@ -382,6 +382,8 @@ void iguana_helper(void *arg)
         printf("helper.%d\n",helperid);
         if ( ((ptr= queue_dequeue(&emitQ,0)) != 0 || (ptr= queue_dequeue(&helperQ,0)) != 0) )
         {
+            printf("unexpected emitQ or helperQ\n");
+            exit(-1);
             if ( ptr->bp != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
             {
                 idle = 0;
@@ -392,7 +394,7 @@ void iguana_helper(void *arg)
             }
             myfree(ptr,ptr->allocsize);
         }
-        if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
+        if ( (helperid % IGUANA_NUMHELPERS) == (0 % IGUANA_NUMHELPERS) && (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
         {
             idle = 0;
             if ( (bp= ptr->bp) != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
@@ -414,17 +416,14 @@ void iguana_helper(void *arg)
             myfree(ptr,ptr->allocsize);
             flag++;
         }
-        else
+        if ( (helperid % IGUANA_NUMHELPERS) == (1 % IGUANA_NUMHELPERS) && (ptr= queue_dequeue(&validateQ,0)) != 0 )
         {
-            if ( (ptr= queue_dequeue(&validateQ,0)) != 0 )
-            {
-                if ( ptr->bp != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
-                    flag += iguana_bundlevalidate(ptr->coin,ptr->bp);
-                else if ( coin->active != 0 )
-                    printf("helper validate missing param? %p %p\n",ptr->coin,ptr->bp);
-                myfree(ptr,ptr->allocsize);
-                flag++;
-            }
+            if ( ptr->bp != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
+                flag += iguana_bundlevalidate(ptr->coin,ptr->bp);
+            else //if ( coin->active != 0 )
+                printf("helper validate missing param? %p %p\n",ptr->coin,ptr->bp);
+            myfree(ptr,ptr->allocsize);
+            flag++;
         }
         if ( flag == 0 )
             usleep(100000);
