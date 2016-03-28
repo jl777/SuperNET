@@ -379,10 +379,12 @@ void iguana_helper(void *arg)
     struct iguana_helper *ptr; struct iguana_info *coin; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp;
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
         helperid = juint(argjson,"helperid");
-    type = (helperid % 2);
+    if ( IGUANA_NUMHELPERS < 3 )
+        type = 7;
+    else type = (1 << (helperid % IGUANA_NUMHELPERS));
     if ( argjson != 0 )
         free_json(argjson);
-    printf("HELPER.%d started arg.(%s)\n",helperid,(char *)(arg!=0?arg:0));
+    printf("HELPER.%d started arg.(%s) type.%d\n",helperid,(char *)(arg!=0?arg:0),type);
     memset(&MEM,0,sizeof(MEM));
     MEMB = mycalloc('b',IGUANA_MAXBUNDLESIZE,sizeof(*MEMB));
     while ( 1 )
@@ -405,7 +407,7 @@ void iguana_helper(void *arg)
             }
             myfree(ptr,ptr->allocsize);
         }*/
-        if ( (helperid % IGUANA_NUMHELPERS) == (0 % IGUANA_NUMHELPERS) && (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
+        if ( (type & (1 << 0)) != 0 && (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
         {
             //printf("bundleQ size.%d\n",queue_size(&bundlesQ));
             idle = 0;
@@ -427,7 +429,7 @@ void iguana_helper(void *arg)
                 printf("helper missing param? %p %p %u\n",ptr->coin,bp,ptr->timelimit);
             myfree(ptr,ptr->allocsize);
         }
-        if ( (helperid % IGUANA_NUMHELPERS) == (1 % IGUANA_NUMHELPERS) && (ptr= queue_dequeue(&spendvectorsQ,0)) != 0 )
+        if ( (type & (1 << 1)) != 0 && (ptr= queue_dequeue(&spendvectorsQ,0)) != 0 )
         {
             printf("spendvectorsQ size.%d\n",queue_size(&spendvectorsQ));
             coin = ptr->coin;
@@ -451,7 +453,7 @@ void iguana_helper(void *arg)
                 printf("helper missing param? %p %p\n",coin,bp);
             myfree(ptr,ptr->allocsize);
         }
-        if ( (helperid % IGUANA_NUMHELPERS) == (2 % IGUANA_NUMHELPERS) && (ptr= queue_dequeue(&validateQ,0)) != 0 )
+        if ( (type & (1 << 2)) != 0 &&  && (ptr= queue_dequeue(&validateQ,0)) != 0 )
         {
             if ( ptr->bp != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
                 flag += iguana_bundlevalidate(ptr->coin,ptr->bp);
