@@ -210,16 +210,16 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
                             //block->bundlei = i;
                             //block->hdrsi = bp->hdrsi;
                             //bp->blocks[i] = block;
-                            printf("cache bundlehashadd set.%d\n",i);
+                            //printf("cache bundlehashadd set.%d\n",i);
                             iguana_bundlehash2add(coin,0,bp,i,origtxdata->block.RO.hash2);
                             //if ( block->req != 0 )
                             {
-                                printf("cacheQ ");
+                                //printf("cacheQ ");
                                 //queue_enqueue("cacheQ",&coin->cacheQ,&req->DL,0);
                                 //block->req = 0;
                             }
                         }
-                        printf("speculative recv.[%d:%d] numcached.%d\n",bp->hdrsi,i,bp->numcached);
+                        //printf("speculative recv.[%d:%d] numcached.%d\n",bp->hdrsi,i,bp->numcached);
                         bp = 0;
                         break;
                     }
