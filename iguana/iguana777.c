@@ -396,15 +396,14 @@ void iguana_helper(void *arg)
         {
             idle = 0;
             coin = ptr->coin;
-            if ( (bp= ptr->bp) != 0 && coin != 0 && coin->active != 0 )
+            if ( (bp= ptr->bp) != 0 && coin != 0 )
             {
                 coin->numbundlesQ--;
-                if ( coin->started != 0 )//&& time(NULL) >= bp->nexttime )
+                if ( coin->started != 0 && time(NULL) >= bp->nexttime && coin->active != 0 )
                     flag += iguana_bundleiters(ptr->coin,&MEM,MEMB,bp,ptr->timelimit);
                 else
                 {
-                    if ( 0 && bp != 0 )
-                        printf("skip.%d lag.%ld\n",bp->hdrsi,time(NULL)-bp->nexttime);
+                    printf("skip.%d lag.%ld\n",bp->hdrsi,time(NULL)-bp->nexttime);
                     iguana_bundleQ(ptr->coin,bp,1000);
                 }
                 if ( coin->current != 0 && coin->current->hdrsi != coin->bundlescount-1 )

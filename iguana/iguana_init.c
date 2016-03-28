@@ -352,7 +352,7 @@ void iguana_blockpurge(struct iguana_info *coin,struct iguana_block *block)
 void iguana_blockspurge(struct iguana_info *coin)
 {
     struct iguana_block *block,*tmp;
-    if ( coin->blocks.hash != 0 )
+    if ( 0 && coin->blocks.hash != 0 )
     {
         HASH_ITER(hh,coin->blocks.hash,block,tmp)
         {
@@ -375,6 +375,11 @@ void iguana_coinpurge(struct iguana_info *coin)
     int32_t i,saved; struct iguana_bundle *bp; char *hashstr; struct iguana_bundlereq *req; struct iguana_blockreq *breq; struct iguana_helper *ptr;
     saved = coin->active, coin->active = 0;
     coin->started = 0;
+    while ( coin->idletime == 0 && coin->emitbusy > 0 )
+    {
+        printf("coinpurge.%s waiting for idle %lu emitbusy.%d\n",coin->symbol,time(NULL),coin->emitbusy);
+        sleep(1);
+    }
     coin->RTgenesis = 0;
     while ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
         myfree(ptr,ptr->allocsize);
@@ -396,11 +401,6 @@ void iguana_coinpurge(struct iguana_info *coin)
                 myfree(req->hashes,sizeof(*req->hashes) * req->n), req->hashes = 0;
             myfree(req,req->allocsize);
         }
-    }
-    while ( coin->idletime == 0 && coin->emitbusy > 0 )
-    {
-        printf("coinpurge.%s waiting for idle %lu emitbusy.%d\n",coin->symbol,time(NULL),coin->emitbusy);
-        sleep(1);
     }
     iguana_RTramchainfree(coin);
     coin->bundlescount = 0;
