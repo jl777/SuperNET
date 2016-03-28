@@ -875,7 +875,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
         {
             if ( (retval= iguana_bundlefinish(coin,bp)) > 0 )
             {
-                //printf("moved to balancesQ.%d bundleiters.%d\n",bp->hdrsi,bp->bundleheight);
+                printf("moved to balancesQ.%d bundleiters.%d\n",bp->hdrsi,bp->bundleheight);
                 bp->queued = 0;
                 return(0);
             } //else printf("finish incomplete.%d\n",bp->hdrsi);
@@ -894,24 +894,19 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
             bp->emitfinish = 1;
             iguana_bundletweak(coin,bp);
             sleep(1); // just in case data isnt totally sync'ed to HDD
-            if ( 0 )
-                iguana_emitQ(coin,bp);
+            coin->emitbusy++;
+            if ( iguana_bundlesaveHT(coin,mem,memB,bp,(uint32_t)time(NULL)) == 0 )
+            {
+                //fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d\n",coin,bp->hdrsi,bp->bundleheight);
+                bp->emitfinish = (uint32_t)time(NULL) + 1;
+                coin->numemitted++;
+            }
             else
             {
-                coin->emitbusy++;
-                if ( iguana_bundlesaveHT(coin,mem,memB,bp,(uint32_t)time(NULL)) == 0 )
-                {
-                    //fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d\n",coin,bp->hdrsi,bp->bundleheight);
-                    bp->emitfinish = (uint32_t)time(NULL) + 1;
-                    coin->numemitted++;
-                }
-                else
-                {
-                    fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d error\n",coin,bp->hdrsi,bp->bundleheight);
-                    bp->emitfinish = 0;
-                }
-                coin->emitbusy--;
+                fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d error\n",coin,bp->hdrsi,bp->bundleheight);
+                bp->emitfinish = 0;
             }
+            coin->emitbusy--;
         }
         retval = 1;
     }
@@ -971,6 +966,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
             }
         }
     }
+    printf("done hdrs.%d\n",bp->hdrsi);
     iguana_bundleQ(coin,bp,1000);
     return(retval);
 }

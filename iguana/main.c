@@ -366,7 +366,7 @@ void mainloop(struct supernet_info *myinfo)
                             bp = ptr->bp;
                             if ( ptr->coin != coin || bp == 0 || time(NULL) < bp->nexttime )
                             {
-                                if ( bp != 0 )
+                                if ( 0 && bp != 0 )
                                     printf("skip.%d lag.%ld\n",bp->hdrsi,bp->nexttime-time(NULL));
                                 queue_enqueue("balanceQ",&balancesQ,&ptr->DL,0);
                                 continue;
