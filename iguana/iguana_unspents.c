@@ -1427,7 +1427,7 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
         iguana_validateQ(coin,bp);
         return(flag);
     }
-    bp->nexttime = (uint32_t)time(NULL) + 1 + cbrt(bp->hdrsi);
+    bp->nexttime = (uint32_t)time(NULL) + 1;// + cbrt(bp->hdrsi);
     if ( bp != 0 && coin != 0 && (bp->hdrsi == 0 || (prevbp= coin->bundles[bp->hdrsi-1]) != 0) )
     {
 #ifdef IGUANA_SERIALIZE_BALANCEGEN

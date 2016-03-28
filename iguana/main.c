@@ -363,8 +363,11 @@ void mainloop(struct supernet_info *myinfo)
                             flag++;
                         if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
                         {
-                            if ( ptr->coin != coin || (bp= ptr->bp) == 0 || time(NULL) < bp->nexttime )
+                            bp = ptr->bp;
+                            if ( ptr->coin != coin || bp == 0 || time(NULL) < bp->nexttime )
                             {
+                                if ( bp != 0 )
+                                    printf("skip.%d lag.%ld\n",bp->hdrsi,bp->nexttime-time(NULL));
                                 queue_enqueue("balanceQ",&balancesQ,&ptr->DL,0);
                                 continue;
                             }
@@ -412,7 +415,7 @@ void mainloop(struct supernet_info *myinfo)
         iguana_jsonQ();
         pangea_queues(SuperNET_MYINFO(0));
         if ( flag == 0 )
-            usleep(1000000);
+            usleep(50000);
     }
 }
 

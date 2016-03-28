@@ -871,7 +871,6 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
         iguana_bundlehdr(coin,bp,starti);
     else if ( bp->emitfinish != 0 )
     {
-        bp->nexttime += 10;
         if ( bp->emitfinish > 1 )
         {
             if ( (retval= iguana_bundlefinish(coin,bp)) > 0 )
