@@ -1,3 +1,2 @@
 git pull
 cd iguana; ./m_osx; cd ..
-cd SuperNET; ./m_osx; cd ..
