@@ -656,9 +656,9 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     //printf("start UTXOGEN.%d max.%d ptr.%p\n",bp->bundleheight,n,ptr);
     txidind = spendind = rdata->firsti;
     iguana_ramchain_prefetch(coin,ramchain);
-    if ( bp->hdrsi > 5 )
+    if ( bp->hdrsi > 10 )
     {
-        for (i=1; i<5; i++)
+        for (i=1; i<10; i++)
         {
             if ( (spentbp= coin->bundles[bp->hdrsi - i]) != 0 )
             {
@@ -1475,7 +1475,7 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
         {
             if ( bp->hdrsi >= coin->balanceswritten )
             {
-                printf("balancecalc for %d when %d\n",bp->hdrsi,coin->balanceswritten);
+                //printf("balancecalc for %d when %d\n",bp->hdrsi,coin->balanceswritten);
                 starttime = (uint32_t)time(NULL);
                 for (j=0; j<=bp->hdrsi; j++)
                     iguana_allocvolatile(coin,&coin->bundles[j]->ramchain);
@@ -1484,12 +1484,12 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
                     printf("GENERATE BALANCES.%d ERROR ht.%d\n",bp->hdrsi,bp->bundleheight);
                     exit(-1);
                 }
-                printf("GENERATED BALANCES.%d for ht.%d duration %d seconds, (%d %d).%d\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - (uint32_t)starttime,bp->hdrsi,coin->blocks.hwmchain.height/coin->chain->bundlesize,bp->hdrsi >= coin->blocks.hwmchain.height/coin->chain->bundlesize);
+                printf("GENERATED BALANCES.%d for ht.%d duration %d seconds, (%d %d).%d\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - (uint32_t)starttime,bp->hdrsi,coin->blocks.hwmchain.height/coin->chain->bundlesize-1,bp->hdrsi >= coin->blocks.hwmchain.height/coin->chain->bundlesize-1);
                 coin->balanceswritten++;
             }
             bp->balancefinish = (uint32_t)time(NULL);
             bp->queued = 0;
-            if ( bp->hdrsi >= coin->blocks.hwmchain.height/coin->chain->bundlesize  )
+            if ( bp->hdrsi >= coin->blocks.hwmchain.height/coin->chain->bundlesize-1  )
             {
                 printf("TRIGGER FLUSH %d vs %d\n",bp->hdrsi,coin->blocks.hwmchain.height/coin->chain->bundlesize);
                 sleep(1);
