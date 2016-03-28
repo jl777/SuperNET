@@ -387,15 +387,17 @@ void mainloop(struct supernet_info *myinfo)
                         {
                             if ( 1 )
                             {
-                                printf("%s is stuck too long, purging files for %d\n",coin->symbol,bp->hdrsi);
+                                printf("%s is stuck too long, restarting due to %d\n",coin->symbol,bp->hdrsi);
                                 if ( coin->started != 0 )
                                 {
                                     iguana_coinpurge(coin);
+                                    sleep(3);
                                     while ( coin->started == 0 )
                                     {
                                         printf("wait for coin to reactivate\n");
                                         sleep(1);
                                     }
+                                    sleep(3);
                                 }
                             }
                         }
