@@ -808,11 +808,8 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     struct iguana_bundle *prevbp; int32_t i;
 #ifdef IGUANA_SERIALIZE_SPENDVECTORGEN
-    //if ( coin->MAXMEM <= 4*(1024L * 1024 * 1024) )
-    {
-        if ( (prevbp= coin->current) != 0 && prevbp->hdrsi < (coin->longestchain / coin->chain->bundlesize)-0*coin->MAXBUNDLES )
-            return(0);
-    }
+    if ( (prevbp= coin->current) != 0 && prevbp->hdrsi < (coin->longestchain / coin->chain->bundlesize)-0*coin->MAXBUNDLES )
+        return(0);
 #endif
     for (i=0; i<bp->hdrsi; i++)
         if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish < coin->startutc
@@ -821,7 +818,7 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
 #endif
           )
             break;
-    //printf("i.%d hdrsi.%d busy.%d helpers.%d\n",i,bp->hdrsi,coin->emitbusy,IGUANA_NUMHELPERS);
+    printf("i.%d hdrsi.%d busy.%d helpers.%d\n",i,bp->hdrsi,coin->emitbusy,IGUANA_NUMHELPERS);
     if ( i == bp->hdrsi && coin->emitbusy < (IGUANA_NUMHELPERS/3) )
     {
         if ( bp->startutxo == 0 )
@@ -872,7 +869,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
         iguana_bundlehdr(coin,bp,starti);
     else if ( bp->emitfinish != 0 )
     {
-        //printf("ITER utxo.%u now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",bp->utxofinish,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
+        printf("ITER utxo.%u now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",bp->utxofinish,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
         if ( bp->utxofinish != 0 )
         {
             if ( bp->balancefinish == 0 )

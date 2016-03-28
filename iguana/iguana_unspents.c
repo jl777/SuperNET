@@ -689,7 +689,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
                             printf("unexpected spendbp: height.%d bp.[%d] U%d <- S%d.[%d] [ext.%d %s prev.%d]\n",bp->bundleheight+i,spentbp->hdrsi,spent_unspentind,spendind,bp->hdrsi,s->external,bits256_str(str,prevhash),s->prevout);
                             errs++;
                         }
-                        if ( 0 && now > spentbp->lastprefetch+1+5*coin->emitbusy )
+                        if ( 1 && now > spentbp->lastprefetch+30 )
                         {
                             //printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
                             iguana_ramchain_prefetch(coin,ramchain);
@@ -795,7 +795,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
     for (i=0; i<bp->n; i++)
     {
         now = (uint32_t)time(NULL);
-        if ( 0 && now > bp->lastprefetch+1+5*coin->emitbusy )
+        if ( 1 && now > bp->lastprefetch+30 )
         {
             //printf("RT prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
             iguana_ramchain_prefetch(coin,&bp->ramchain);
@@ -927,7 +927,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
                     return(-1);
                 }
                 rdata = spentbp->ramchain.H.data;
-                if ( 0 && now > spentbp->lastprefetch+1+5*coin->emitbusy )
+                if ( 1 && now > spentbp->lastprefetch+30 )
                 {
                     //printf("RT prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
                     iguana_ramchain_prefetch(coin,&spentbp->ramchain);
@@ -1474,7 +1474,7 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
                     printf("GENERATE BALANCES ERROR ht.%d\n",bp->bundleheight);
                     exit(-1);
                 }
-                printf("GENERATED BALANCES for ht.%d duration %d seconds\n",bp->bundleheight,(uint32_t)time(NULL) - (uint32_t)starttime);
+                printf("GENERATED BALANCES for ht.%d duration %d seconds, (%d %d).%d\n",bp->bundleheight,(uint32_t)time(NULL) - (uint32_t)starttime,bp->hdrsi,coin->longestchain/coin->chain->bundlesize-1,bp->hdrsi >= coin->longestchain/coin->chain->bundlesize-1);
                 coin->balanceswritten++;
             }
             bp->balancefinish = (uint32_t)time(NULL);

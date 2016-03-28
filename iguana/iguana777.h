@@ -26,7 +26,7 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_SERIALIZE_SPENDVECTORGEN
 //#define IGUANA_SERIALIZE_BALANCEGEN
 //#define IGUANA_DISABLEPEERS
-#define _IGUANA_MAXSTUCKTIME 77
+#define _IGUANA_MAXSTUCKTIME 3600
 #define IGUANA_MAXITERATIONS 10000
 
 #define IGUANA_MAXCOINS 64
@@ -337,7 +337,7 @@ struct iguana_spend256 { bits256 prevhash2; uint32_t sequenceid,scriptpos; int16
 // permanent readonly structs
 struct iguana_txid { bits256 txid; uint32_t txidind,firstvout,firstvin,locktime,version,timestamp,extraoffset; uint16_t numvouts,numvins; } __attribute__((packed));
 
-struct iguana_unspent { uint64_t value; uint32_t txidind,pkind,prevunspentind,scriptpos; uint16_t fileid,scriptlen; uint16_t hdrsi:11,type:5; int16_t vout; } __attribute__((packed));
+struct iguana_unspent { uint64_t value; uint32_t txidind,pkind,prevunspentind,scriptpos; uint16_t scriptlen,hdrsi; uint16_t fileid:11,type:5; int16_t vout; } __attribute__((packed));
 
 struct iguana_spend { uint32_t spendtxidind,sequenceid,scriptpos; int16_t prevout; uint16_t fileid,scriptlen:15,external:1; } __attribute__((packed)); // numsigs:4,numpubkeys:4,p2sh:1,sighash:4
 
