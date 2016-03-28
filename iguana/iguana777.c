@@ -282,7 +282,7 @@ void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t ti
     ptr->starttime = (uint32_t)time(NULL);
     ptr->timelimit = timelimit;
     coin->numbundlesQ++;
-    if ( bp->hdrsi > 170 )
+    if ( 0 && bp->hdrsi > 170 )
         printf("%s %p bundle.%d[%d] ht.%d emitfinish.%u\n",coin->symbol,bp,ptr->hdrsi,bp->n,bp->bundleheight,bp->emitfinish);
     queue_enqueue("bundlesQ",&bundlesQ,&ptr->DL,0);
 }
@@ -407,7 +407,7 @@ void iguana_helper(void *arg)
         }*/
         if ( (helperid % IGUANA_NUMHELPERS) == (0 % IGUANA_NUMHELPERS) && (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
         {
-            printf("bundleQ size.%d\n",queue_size(&bundlesQ));
+            //printf("bundleQ size.%d\n",queue_size(&bundlesQ));
             idle = 0;
             coin = ptr->coin;
             if ( (bp= ptr->bp) != 0 && coin != 0 )
@@ -417,7 +417,7 @@ void iguana_helper(void *arg)
                     flag += iguana_bundleiters(ptr->coin,&MEM,MEMB,bp,ptr->timelimit);
                 else
                 {
-                    printf("skip.%d lag.%ld coin->active.%d\n",bp->hdrsi,time(NULL)-bp->nexttime,coin->active);
+                    //printf("skip.%d lag.%ld coin->active.%d\n",bp->hdrsi,time(NULL)-bp->nexttime,coin->active);
                     iguana_bundleQ(ptr->coin,bp,1000);
                 }
                 if ( coin->current != 0 && coin->current->hdrsi != coin->bundlescount-1 )
@@ -429,7 +429,7 @@ void iguana_helper(void *arg)
         }
         if ( (helperid % IGUANA_NUMHELPERS) == (1 % IGUANA_NUMHELPERS) && (ptr= queue_dequeue(&spendvectorsQ,0)) != 0 )
         {
-            printf("spendvectorsQ size.%d\n",queue_size(&spendvectorsQ));
+            //printf("spendvectorsQ size.%d\n",queue_size(&spendvectorsQ));
             coin = ptr->coin;
             if ( (bp= ptr->bp) != 0 && coin != 0 )
             {

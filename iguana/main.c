@@ -410,7 +410,7 @@ void mainloop(struct supernet_info *myinfo)
         iguana_jsonQ();
         pangea_queues(SuperNET_MYINFO(0));
         if ( flag == 0 )
-            usleep(50000);
+            usleep(10000);
     }
 }
 
