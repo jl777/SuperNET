@@ -663,9 +663,9 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     //printf("start UTXOGEN.%d max.%d ptr.%p\n",bp->bundleheight,n,ptr);
     txidind = spendind = rdata->firsti;
     iguana_ramchain_prefetch(coin,ramchain);
-    if ( bp->hdrsi > 10 )
+    if ( bp->hdrsi > 5 )
     {
-        for (i=1; i<10; i++)
+        for (i=1; i<5; i++)
         {
             if ( (spentbp= coin->bundles[bp->hdrsi - i]) != 0 )
             {
@@ -707,7 +707,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
                             printf("unexpected spendbp: height.%d bp.[%d] U%d <- S%d.[%d] [ext.%d %s prev.%d]\n",bp->bundleheight+i,spentbp->hdrsi,spent_unspentind,spendind,bp->hdrsi,s->external,bits256_str(str,prevhash),s->prevout);
                             errs++;
                         }
-                        if ( 1 && now > spentbp->lastprefetch+30 )
+                        if ( 1 && now > spentbp->lastprefetch+10 )
                         {
                             //printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
                             iguana_ramchain_prefetch(coin,&spentbp->ramchain);
@@ -812,7 +812,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
     for (i=0; i<bp->n; i++)
     {
         now = (uint32_t)time(NULL);
-        if ( 1 && now > bp->lastprefetch+30 )
+        if ( 0 && now > bp->lastprefetch+30 )
         {
             //printf("RT prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
             iguana_ramchain_prefetch(coin,&bp->ramchain);
@@ -944,7 +944,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
                     return(-1);
                 }
                 rdata = spentbp->ramchain.H.data;
-                if ( 1 && now > spentbp->lastprefetch+30 )
+                if ( 1 && now > spentbp->lastprefetch+10 )
                 {
                     //printf("RT prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
                     iguana_ramchain_prefetch(coin,&spentbp->ramchain);
