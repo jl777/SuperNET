@@ -186,7 +186,7 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
         printf("tableentries.%d\n",n);
     }
     ramchain->sparsesearches++;
-    if ( (ramchain->sparsesearches % 1000) == 0 )
+    if ( (ramchain->sparsesearches % 10000) == 0 )
         printf("[%3d] %7d.[%-2d %8d] %5.3f sparse searches.%-10ld iters.%-10ld hits.%-10ld %5.2f%% max.%ld\n",ramchain->height/ramchain->H.data->numblocks,ramchain->height,width,tablesize,(double)ramchain->sparseiters/(1+ramchain->sparsesearches),ramchain->sparsesearches,ramchain->sparseiters,ramchain->sparsehits,100.*(double)ramchain->sparsehits/(1+ramchain->sparsesearches),ramchain->sparsemax+1);
     if ( width == 32 )
     {
@@ -328,6 +328,7 @@ uint32_t iguana_sparseaddpk(uint8_t *bits,int32_t width,uint32_t tablesize,uint8
     ind = (key0 ^ key1 ^ key2) % tablesize;
     return(iguana_sparseadd(bits,ind,width,tablesize,rmd160,20,pkind,P,sizeof(*P),ramchain));
 }
+
 int32_t iguana_ramchain_spendtxid(struct iguana_info *coin,uint32_t *unspentindp,bits256 *txidp,struct iguana_txid *T,int32_t numtxids,bits256 *X,int32_t numexternaltxids,struct iguana_spend *s)
 {
     uint32_t ind,external;
@@ -657,7 +658,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     iguana_ramchain_prefetch(coin,ramchain);
     for (i=0; i<bp->n; i++)
     {
-        printf("[%d:%d] numtx.%d numvins.%d\n",bp->hdrsi,i,B[i].txn_count,T[txidind].numvins);
+        printf("spendvectors [%d:%d] numtx.%d\n",bp->hdrsi,i,B[i].txn_count);
         if ( txidind != B[i].firsttxidind || spendind != B[i].firstvin )
         {
             printf("utxogen: txidind %u != %u B[%d].firsttxidind || spendind %u != %u B[%d].firstvin\n",txidind,B[i].firsttxidind,i,spendind,B[i].firstvin,i);
