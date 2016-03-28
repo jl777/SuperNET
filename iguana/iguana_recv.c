@@ -813,8 +813,10 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
                 iguana_blockQ("recvhash6",coin,0,-6,blockhashes[1],0); // should be RT block
         }
         block->newtx = 1;
-        iguana_blockQ("recvhash6",coin,0,-7,blockhashes[1],0); // should be RT block
+        iguana_blockQ("RTblock",coin,0,-7,blockhashes[1],0); // should be RT block
     }
+    if ( coin->enableCACHE != 0 && num >= coin->chain->bundlesize )
+        iguana_blockQ("recvhash7",coin,0,-7,blockhashes[coin->chain->bundlesize],0);
     return(req);
 }
 
@@ -1356,7 +1358,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                     }
                     if ( bp == 0 || bp->speculative == 0 || bp == coin->current )
                     {
-                        printf("%s request HDR.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp!=0?bp->numhashes:0);
+                        //printf("%s request HDR.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp!=0?bp->numhashes:0);
                         iguana_send(coin,addr,serialized,datalen);
                         addr->pendhdrs++;
                         flag++;
