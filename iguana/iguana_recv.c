@@ -189,14 +189,15 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
     char str[65];
     if ( addr != 0 )
     {
-        static uint64_t received[IGUANA_MAXPEERS];
+        static uint64_t received[IGUANA_MAXPEERS],count[IGUANA_MAXPEERS];
+        received[addr->addrind] += recvlen;
+        count[addr->addrind]++;
         if ( (rand() % 1000) == 0 )
         {
-            uint64_t sum = 0;
-            received[addr->addrind] += recvlen;
+            uint64_t sum2 = 0,sum = 0;
             for (i=0; i<sizeof(received)/sizeof(*received); i++)
-                sum += received[i];
-            printf("TOTAL RECEIVED %s\n",mbstr(str,sum));
+                sum += received[i], sum2 += count[i];
+            printf("TOTAL BLOCKS.%llu RECEIVED %s\n",(long long)sum2,mbstr(str,sum));
         }
     }
     if ( iguana_blockvalidate(coin,&valid,&origtxdata->block,1) < 0 )
