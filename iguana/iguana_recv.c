@@ -315,9 +315,11 @@ void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bi
     req = iguana_bundlereq(coin,addr,'S',0);
     req->hashes = blockhashes, req->n = n;
     char str[65];
-    //if ( 0 && n > 2 )
+    if ( 0 && n > 2 )
         printf("bundlesQ blockhashes.%s [%d]\n",bits256_str(str,blockhashes[1]),n);
     queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
+    if ( n > coin->chain->bundlesize )
+        iguana_blockQ("hashesM",coin,0,-1,blockhashes[1],0);
 }
 
 /*void iguana_patch(struct iguana_info *coin,struct iguana_block *block)
@@ -793,7 +795,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     }
     if ( bp != 0 )
         bp->dirty++;
-    if ( 0 )//&& bp != 0 && bp->hdrsi == coin->bundlescount-1 )
+    if ( 1 )//&& bp != 0 && bp->hdrsi == coin->bundlescount-1 )
     {
         int32_t i; static int32_t numrecv;
         numrecv++;
