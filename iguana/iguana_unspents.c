@@ -658,7 +658,6 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     iguana_ramchain_prefetch(coin,ramchain);
     for (i=0; i<bp->n; i++)
     {
-        printf("spendvectors elapsed.%-3d [%-3d:%4d] numtx.%d\n",(uint32_t)time(NULL)-starttime,bp->hdrsi,i,B[i].txn_count);
         if ( txidind != B[i].firsttxidind || spendind != B[i].firstvin )
         {
             printf("utxogen: txidind %u != %u B[%d].firsttxidind || spendind %u != %u B[%d].firstvin\n",txidind,B[i].firsttxidind,i,spendind,B[i].firstvin,i);
@@ -676,6 +675,8 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
             }
             for (k=0; k<T[txidind].numvins && errs==0; k++,spendind++)
             {
+                if ( (spendind % 10000) == 0 )
+                    printf("spendvectors elapsed.%-3d [%-3d:%4d] spendind.%d\n",(uint32_t)time(NULL)-starttime,bp->hdrsi,i,spendind);
                 s = &S[spendind];
                 u = 0;
                 if ( s->external != 0 && s->prevout >= 0 )

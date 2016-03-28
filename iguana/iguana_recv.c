@@ -780,18 +780,18 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
         }*/
         //printf("i.%d ref prev.(%s)\n",i,bits256_str(str,origblock->RO.prev_block));
     }
-    if ( bp == coin->current && bp != 0 && block != 0 && bundlei >= 0 )
+    if ( bp != 0 && block != 0 && bundlei >= 0 )
     {
         if ( bp->speculative != 0 && bp->numspec <= bundlei )
         {
             bp->speculative[bundlei] = block->RO.hash2;
             bp->numspec = bundlei+1;
         }
-        if ( block != 0 && bundlei > 0 && (prev= iguana_blockfind(coin,block->RO.prev_block)) != 0 )
+        if ( bp == coin->current && block != 0 && bundlei > 0 && (prev= iguana_blockfind(coin,block->RO.prev_block)) != 0 )
         {
             if ( bp->bundleheight+bundlei-1 >= coin->blocks.hwmchain.height )
             {
-                //printf("prev issue.%s\n",bits256_str(str,prev->RO.hash2));
+                printf("prev issue.%s\n",bits256_str(str,prev->RO.hash2));
                 iguana_blockQ("previssue",coin,bp,bundlei-1,prev->RO.hash2,0);
             }
         }
