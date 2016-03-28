@@ -735,7 +735,24 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
 
 struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundlereq *req,struct iguana_block *origblock,int32_t numtx,int32_t datalen,int32_t recvlen,int32_t *newhwmp)
 {
-    struct iguana_bundle *bp=0; int32_t width,numsaved=0,bundlei = -2; struct iguana_block *block,*tmpblock,*prev; char str[65];
+    struct iguana_bundle *bp=0; int32_t i,width,numsaved=0,bundlei = -2; struct iguana_block *block,*tmpblock,*prev; char str[65];
+    if ( (bp= coin->current) != 0 && bp->speculative != 0 )
+    {
+        for (i=0; i<bp->n; i++)
+            if ( bits256_cmp(bp->speculative[i],origblock->RO.hash2) == 0 )
+            {
+                if ( (block= iguana_blockfind(coin,origblock->RO.hash2)) != 0 )
+                {
+                    if ( req->copyflag != 0 )
+                    {
+                        block->queued = 1; // this prevents it from being used
+                        block->req = req;
+                        printf("CACHED ");
+                    }
+                }
+                printf("speculative recv.[%d:%d]\n",bp->hdrsi,i);
+            }
+    }
     if ( (bp= iguana_bundleset(coin,&block,&bundlei,origblock)) == 0 )
     {
         if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,origblock->RO.prev_block)) != 0 )
@@ -780,14 +797,14 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
         }*/
         //printf("i.%d ref prev.(%s)\n",i,bits256_str(str,origblock->RO.prev_block));
     }
-    if ( bp != 0 && block != 0 && bundlei >= 0 )
+    if ( bp == coin->current && bp != 0 && block != 0 && bp->speculative != 0 && bundlei >= 0 )
     {
         if ( bp->speculative != 0 && bp->numspec <= bundlei )
         {
             bp->speculative[bundlei] = block->RO.hash2;
             bp->numspec = bundlei+1;
         }
-        if ( bp == coin->current && block != 0 && bundlei > 0 && (prev= iguana_blockfind(coin,block->RO.prev_block)) != 0 )
+        if ( block != 0 && bundlei > 0 && (prev= iguana_blockfind(coin,block->RO.prev_block)) != 0 )
         {
             if ( bp->bundleheight+bundlei-1 >= coin->blocks.hwmchain.height )
             {
@@ -823,7 +840,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
         {
             if ( (prev= iguana_blockfind(coin,block->RO.prev_block)) == 0 )
                 prev = iguana_blockhashset(coin,-1,block->RO.prev_block,1);
-            width = 10 * coin->chain->bundlesize;
+            width = coin->chain->bundlesize;
             while ( coin->active != 0 && prev != 0 && width-- > 0 )
             {
                 if ( prev->fpipbits == 0 || prev->RO.recvlen == 0 || prev->fpos < 0 || bits256_nonz(prev->RO.prev_block) == 0 )
