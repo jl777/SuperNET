@@ -283,8 +283,21 @@ void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t ti
     ptr->timelimit = timelimit;
     coin->numbundlesQ++;
     if ( bp->hdrsi > 170 )
-    printf("%s %p bundle.%d[%d] ht.%d emitfinish.%u\n",coin->symbol,bp,ptr->hdrsi,bp->n,bp->bundleheight,bp->emitfinish);
+        printf("%s %p bundle.%d[%d] ht.%d emitfinish.%u\n",coin->symbol,bp,ptr->hdrsi,bp->n,bp->bundleheight,bp->emitfinish);
     queue_enqueue("bundlesQ",&bundlesQ,&ptr->DL,0);
+}
+
+void iguana_spendvectorsQ(struct iguana_info *coin,struct iguana_bundle *bp)
+{
+    struct iguana_helper *ptr;
+    bp->queued = (uint32_t)time(NULL);
+    ptr = mycalloc('i',1,sizeof(*ptr));
+    ptr->allocsize = sizeof(*ptr);
+    ptr->coin = coin;
+    ptr->bp = bp, ptr->hdrsi = bp->hdrsi;
+    ptr->type = 's';
+    ptr->starttime = (uint32_t)time(NULL);
+    queue_enqueue("spendvectorsQ",&spendvectorsQ,&ptr->DL,0);
 }
 
 void iguana_validateQ(struct iguana_info *coin,struct iguana_bundle *bp)
@@ -362,7 +375,7 @@ void iguana_balancesQ(struct iguana_info *coin,struct iguana_bundle *bp)
 
 void iguana_helper(void *arg)
 {
-    cJSON *argjson=0; int32_t type,helperid=rand(),flag,allcurrent,idle=0;
+    cJSON *argjson=0; int32_t retval,type,helperid=rand(),flag,allcurrent,idle=0;
     struct iguana_helper *ptr; struct iguana_info *coin; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp;
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
         helperid = juint(argjson,"helperid");
@@ -413,13 +426,35 @@ void iguana_helper(void *arg)
             else //if ( coin->active != 0 )
                 printf("helper missing param? %p %p %u\n",ptr->coin,bp,ptr->timelimit);
             myfree(ptr,ptr->allocsize);
-            flag++;
         }
-        if ( (helperid % IGUANA_NUMHELPERS) == (1 % IGUANA_NUMHELPERS) && (ptr= queue_dequeue(&validateQ,0)) != 0 )
+        if ( (helperid % IGUANA_NUMHELPERS) == (1 % IGUANA_NUMHELPERS) && (ptr= queue_dequeue(&spendvectorsQ,0)) != 0 )
+        {
+            printf("spendvectorsQ size.%d\n",queue_size(&spendvectorsQ));
+            coin = ptr->coin;
+            if ( (bp= ptr->bp) != 0 && coin != 0 )
+            {
+                if ( (retval= iguana_spendvectors(coin,bp)) >= 0 )
+                {
+                    flag++;
+                    if ( retval > 0 )
+                    {
+                        printf("GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL)-bp->startutxo);
+                        bp->utxofinish = (uint32_t)time(NULL);
+                        bp->balancefinish = 0;
+                    }
+                    if ( bp->balancefinish == 0 )
+                        iguana_balancesQ(coin,bp);
+                } else printf("UTXO gen.[%d] utxo error\n",bp->hdrsi);
+            }
+            else if ( coin->active != 0 )
+                printf("helper missing param? %p %p\n",coin,bp);
+            myfree(ptr,ptr->allocsize);
+        }
+        if ( (helperid % IGUANA_NUMHELPERS) == (2 % IGUANA_NUMHELPERS) && (ptr= queue_dequeue(&validateQ,0)) != 0 )
         {
             if ( ptr->bp != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
                 flag += iguana_bundlevalidate(ptr->coin,ptr->bp);
-            else //if ( coin->active != 0 )
+            else if ( coin->active != 0 )
                 printf("helper validate missing param? %p %p\n",ptr->coin,ptr->bp);
             myfree(ptr,ptr->allocsize);
             flag++;

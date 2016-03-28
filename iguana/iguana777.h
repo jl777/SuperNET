@@ -830,10 +830,11 @@ int32_t iguana_setmaxbundles(struct iguana_info *coin);
 void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp);
 uint32_t iguana_sparseaddtx(uint8_t *bits,int32_t width,uint32_t tablesize,bits256 txid,struct iguana_txid *T,uint32_t txidind,struct iguana_ramchain *ramchain);
 void iguana_launchpeer(struct iguana_info *coin,char *ipaddr);
+void iguana_spendvectorsQ(struct iguana_info *coin,struct iguana_bundle *bp);
 
 extern int32_t HDRnet,netBLOCKS;
 
-extern queue_t bundlesQ,validateQ,emitQ,balancesQ,TerminateQ;
+extern queue_t bundlesQ,validateQ,emitQ,balancesQ,TerminateQ,spendvectorsQ;
 extern char GLOBALTMPDIR[];
 
 #include "../includes/iguana_api.h"
