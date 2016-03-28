@@ -670,7 +670,7 @@ int32_t iguana_setmaxbundles(struct iguana_info *coin)
     {
         completed = sqrt(((double)coin->current->hdrsi + 1) / coin->bundlescount);
         coin->MAXBUNDLES = (double)(coin->endPEND - coin->startPEND)*completed + coin->startPEND;
-        printf("MAXBUNDLES %d (%d -> %d) completed %.3f\n",coin->MAXBUNDLES,coin->startPEND,coin->endPEND,completed);
+        //printf("MAXBUNDLES %d (%d -> %d) completed %.3f\n",coin->MAXBUNDLES,coin->startPEND,coin->endPEND,completed);
     }
     return(coin->MAXBUNDLES);
 }
@@ -811,7 +811,7 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
         if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish < coin->startutc || (i < bp->hdrsi-IGUANA_NUMHELPERS && prevbp->utxofinish <= 1)
            )
             break;
-    if ( i == bp->hdrsi && coin->emitbusy < (IGUANA_NUMHELPERS >> 1) )
+    if ( i == bp->hdrsi && coin->emitbusy == 0 )
     {
         if ( bp->startutxo == 0 )
         {
