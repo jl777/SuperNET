@@ -379,6 +379,7 @@ void iguana_helper(void *arg)
         //iguana_jsonQ(); cant do this here
         flag = 0;
         allcurrent = 1;
+        printf("helper.%d\n",helperid);
         if ( ((ptr= queue_dequeue(&emitQ,0)) != 0 || (ptr= queue_dequeue(&helperQ,0)) != 0) )
         {
             if ( ptr->bp != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
