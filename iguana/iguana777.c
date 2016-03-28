@@ -394,6 +394,7 @@ void iguana_helper(void *arg)
         }*/
         if ( (helperid % IGUANA_NUMHELPERS) == (0 % IGUANA_NUMHELPERS) && (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
         {
+            printf("bundleQ size.%d\n",queue_size(&bundlesQ));
             idle = 0;
             coin = ptr->coin;
             if ( (bp= ptr->bp) != 0 && coin != 0 )

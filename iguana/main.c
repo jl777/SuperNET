@@ -385,7 +385,7 @@ void mainloop(struct supernet_info *myinfo)
                         }
                         if ( (bp= coin->current) != 0 && coin->stucktime != 0 && coin->isRT == 0 && coin->RTheight == 0 && (time(NULL) - coin->stucktime) > coin->MAXSTUCKTIME )
                         {
-                            if ( 1 )
+                            if ( 0 )
                             {
                                 printf("%s is stuck too long, restarting due to %d\n",coin->symbol,bp->hdrsi);
                                 if ( coin->started != 0 )
