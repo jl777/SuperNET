@@ -282,7 +282,7 @@ void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t ti
     ptr->starttime = (uint32_t)time(NULL);
     ptr->timelimit = timelimit;
     coin->numbundlesQ++;
-    //printf("%s %p bundle.%d[%d] ht.%d emitfinish.%u\n",coin->symbol,bp,ptr->hdrsi,bp->n,bp->bundleheight,bp->emitfinish);
+    printf("%s %p bundle.%d[%d] ht.%d emitfinish.%u\n",coin->symbol,bp,ptr->hdrsi,bp->n,bp->bundleheight,bp->emitfinish);
     queue_enqueue("bundlesQ",&bundlesQ,&ptr->DL,0);
 }
 
@@ -391,7 +391,7 @@ void iguana_helper(void *arg)
             }
             myfree(ptr,ptr->allocsize);
         }
-        else if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
+        if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
         {
             idle = 0;
             if ( (bp= ptr->bp) != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
@@ -408,7 +408,7 @@ void iguana_helper(void *arg)
                 if ( coin->current != 0 && coin->current->hdrsi != coin->bundlescount-1 )
                     allcurrent = 0;
             }
-            else if ( coin->active != 0 )
+            else //if ( coin->active != 0 )
                 printf("helper missing param? %p %p %u\n",ptr->coin,bp,ptr->timelimit);
             myfree(ptr,ptr->allocsize);
             flag++;
