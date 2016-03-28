@@ -313,11 +313,11 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
             {
                 if ( (bp= coin->bundles[i]) != 0 && bp->queued == 0 )
                 {
-                    //printf("%d ",i);
+                    printf("%d ",i);
                     iguana_bundleQ(coin,bp,1000);
                 }
             }
-            //printf("iguana_bundleQ\n");
+            printf("iguana_bundleQ\n");
         }
     }
 }
@@ -372,11 +372,9 @@ void iguana_blockspurge(struct iguana_info *coin)
 
 void iguana_coinpurge(struct iguana_info *coin)
 {
-    int32_t i; struct iguana_bundle *bp; char *hashstr; struct iguana_bundlereq *req; struct iguana_blockreq *breq; struct iguana_helper *ptr;
+    int32_t i; struct iguana_bundle *bp; char *hashstr; struct iguana_bundlereq *req; struct iguana_blockreq *breq;
     coin->started = 0; coin->active = 0;
     coin->RTgenesis = 0;
-    while ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
-        myfree(ptr,ptr->allocsize);
     if ( 1 )
     {
         while ( (hashstr= queue_dequeue(&coin->hdrsQ,1)) != 0 )

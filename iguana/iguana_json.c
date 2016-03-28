@@ -623,9 +623,12 @@ STRING_ARG(iguana,startcoin,activecoin)
 
 STRING_ARG(iguana,stopcoin,activecoin)
 {
+    struct iguana_helper *ptr;
     if ( coin != 0 )
     {
         coin->active = 0;
+        while ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
+            myfree(ptr,ptr->allocsize);
         iguana_coinpurge(coin);
         return(clonestr("{\"result\":\"coin stopped\"}"));
     } else return(clonestr("{\"error\":\"stopcoin needs coin\"}"));

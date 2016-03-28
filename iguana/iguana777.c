@@ -322,7 +322,7 @@ void iguana_balancesQ(struct iguana_info *coin,struct iguana_bundle *bp)
     queue_enqueue("balancesQ",&balancesQ,&ptr->DL,0);
 }
 
-int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_helper *ptr)
+/*int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_helper *ptr)
 {
     struct iguana_info *coin; struct iguana_peer *addr; struct iguana_bundle *bp,*nextbp;
     addr = ptr->addr;
@@ -358,18 +358,15 @@ int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *m
         } else printf("no bundle in helperrequest\n");
     } else printf("no coin in helperrequest\n");
     return(0);
-}
+}*/
 
 void iguana_helper(void *arg)
 {
-    FILE *fp = 0; cJSON *argjson=0; int32_t type,helperid=rand(),flag,allcurrent,idle=0;
+    cJSON *argjson=0; int32_t type,helperid=rand(),flag,allcurrent,idle=0;
     struct iguana_helper *ptr; struct iguana_info *coin; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp;
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
         helperid = juint(argjson,"helperid");
     type = (helperid % 2);
-    /*sprintf(fname,"%s/%s",GLOBALTMPDIR,helpername);
-    OS_compatible_path(fname);
-    fp = fopen(fname,"wb");*/
     if ( argjson != 0 )
         free_json(argjson);
     printf("HELPER.%d started arg.(%s)\n",helperid,(char *)(arg!=0?arg:0));
@@ -381,7 +378,7 @@ void iguana_helper(void *arg)
         flag = 0;
         allcurrent = 1;
         //printf("helper.%d\n",helperid);
-        if ( ((ptr= queue_dequeue(&emitQ,0)) != 0 || (ptr= queue_dequeue(&helperQ,0)) != 0) )
+        /*if ( ((ptr= queue_dequeue(&emitQ,0)) != 0 || (ptr= queue_dequeue(&helperQ,0)) != 0) )
         {
             printf("unexpected emitQ or helperQ\n");
             exit(-1);
@@ -394,11 +391,12 @@ void iguana_helper(void *arg)
                 flag++;
             }
             myfree(ptr,ptr->allocsize);
-        }
+        }*/
         if ( (helperid % IGUANA_NUMHELPERS) == (0 % IGUANA_NUMHELPERS) && (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
         {
             idle = 0;
-            if ( (bp= ptr->bp) != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
+            coin = ptr->coin;
+            if ( (bp= ptr->bp) != 0 && coin != 0 && coin->active != 0 )
             {
                 coin->numbundlesQ--;
                 if ( coin->started != 0 )//&& time(NULL) >= bp->nexttime )

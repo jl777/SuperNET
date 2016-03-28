@@ -385,24 +385,20 @@ void mainloop(struct supernet_info *myinfo)
                         }
                         if ( (bp= coin->current) != 0 && coin->stucktime != 0 && coin->isRT == 0 && coin->RTheight == 0 && (time(NULL) - coin->stucktime) > coin->MAXSTUCKTIME )
                         {
-                            if ( 0 && bp->emitfinish == 0 )
+                            if ( 1 )
                             {
                                 printf("%s is stuck too long, purging files for %d\n",coin->symbol,bp->hdrsi);
-                                /*iguana_bundlepurgefiles(coin,bp);
-                                for (j=0; j<bp->n; j++)
-                                    if ( (block= bp->blocks[j]) != 0 )
-                                    {
-                                        block->fpipbits = 0;
-                                        block->RO.recvlen = 0;
-                                        block->fpos = -1;
-                                    }
-                                sleep(5);*/
-                                while ( coin->started != 0 )
-                                    iguana_coinpurge(coin);
-                                while ( coin->started == 0 )
+                                if ( coin->started != 0 )
                                 {
-                                    printf("wait for coin to reactivate\n");
-                                    sleep(1);
+                                    struct iguana_helper *ptr;
+                                    while ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
+                                        myfree(ptr,ptr->allocsize);
+                                    iguana_coinpurge(coin);
+                                    while ( coin->started == 0 )
+                                    {
+                                        printf("wait for coin to reactivate\n");
+                                        sleep(1);
+                                    }
                                 }
                             }
                         }
