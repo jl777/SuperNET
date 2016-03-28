@@ -735,12 +735,15 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
 
 struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundlereq *req,struct iguana_block *origblock,int32_t numtx,int32_t datalen,int32_t recvlen,int32_t *newhwmp)
 {
-    struct iguana_bundle *bp=0; int32_t i,width,numsaved=0,bundlei = -2; struct iguana_block *block,*tmpblock,*prev; char str[65];
+    struct iguana_bundle *bp=0; int32_t width,numsaved=0,bundlei = -2; struct iguana_block *block,*tmpblock,*prev; char str[65];
     if ( (bp= iguana_bundleset(coin,&block,&bundlei,origblock)) == 0 )
     {
-        if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,origblock->RO.hash2)) != 0 )
+        if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,origblock->RO.prev_block)) != 0 )
         {
-            printf("iguana_recvblock got block [%d:%d]\n",bp->hdrsi,bundlei);
+            printf("iguana_recvblock got prev block [%d:%d]\n",bp->hdrsi,bundlei);
+            if ( bundlei < bp->n-1 )
+                bundlei++;
+            else bp = 0, bundlei = -2;
             /*if ( bits256_cmp(prev->RO.hash2,block->RO.prev_block) == 0 && bundlei < bp->n-1 )
             {
                 bundlei++;
@@ -756,7 +759,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
                 } else printf("error adding speculative prev [%d:%d]\n",bp->hdrsi,bundlei);
             }*/
         }
-        for (i=coin->bundlescount-1; i>=0; i--)
+        /*for (i=coin->bundlescount-1; i>=0; i--)
         {
             //if ( coin->bundles[i] != 0 )
             //    printf("compare vs %s\n",bits256_str(str,coin->bundles[i]->hashes[0]));
@@ -774,10 +777,10 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
                 }
                 break;
             }
-        }
+        }*/
         //printf("i.%d ref prev.(%s)\n",i,bits256_str(str,origblock->RO.prev_block));
     }
-    else if ( bp == coin->current && bp != 0 && block != 0 && bundlei >= 0 )
+    if ( bp == coin->current && bp != 0 && block != 0 && bundlei >= 0 )
     {
         if ( bp->speculative != 0 && bp->numspec <= bundlei )
         {

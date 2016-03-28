@@ -658,7 +658,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     iguana_ramchain_prefetch(coin,ramchain);
     for (i=0; i<bp->n; i++)
     {
-        printf("spendvectors [%d:%d] numtx.%d\n",bp->hdrsi,i,B[i].txn_count);
+        printf("spendvectors elapsed.%-3d [%-3d:%4d] numtx.%d\n",(uint32_t)time(NULL)-starttime,bp->hdrsi,i,B[i].txn_count);
         if ( txidind != B[i].firsttxidind || spendind != B[i].firstvin )
         {
             printf("utxogen: txidind %u != %u B[%d].firsttxidind || spendind %u != %u B[%d].firstvin\n",txidind,B[i].firsttxidind,i,spendind,B[i].firstvin,i);
