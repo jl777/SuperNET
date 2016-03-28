@@ -683,8 +683,9 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
                         if ( now > spentbp->lastprefetch+5+5*coin->emitbusy )
                         {
                             //printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
+                            iguana_ramchain_prefetch(coin,ramchain);
                             iguana_ramchain_prefetch(coin,&spentbp->ramchain);
-                            spentbp->lastprefetch = now;
+                            bp->lastprefetch = spentbp->lastprefetch = now;
                         }
                         spentU = (void *)(long)((long)spentbp->ramchain.H.data + spentbp->ramchain.H.data->Uoffset);
                         u = &spentU[spent_unspentind];
@@ -897,7 +898,6 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
     spendind = B[bundlei].firstvin;
     height = bp->bundleheight + bundlei;
     now = (uint32_t)time(NULL);
-    iguana_ramchain_prefetch(coin,RTramchain);
     for (j=0; j<B[bundlei].txn_count; j++,txidind++)
     {
         //printf("RTutxo.[%d:%d] txn_count.%d\n",bp->hdrsi,bundlei,B[bundlei].txn_count);
