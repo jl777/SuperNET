@@ -1105,7 +1105,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                         hash2 = bp->speculative[j];
                     if ( bits256_nonz(hash2) == 0 )
                         continue;
-                    if ( (rand() % 100) == 0 || now > bp->issued[j]+30 )//|| bp->numcached >= bp->n-2 )
+                    if ( now > bp->issued[j]+30 )//|| bp->numcached >= bp->n-2 )
                     {
                         fprintf(stderr,"-[%d:%d] ",bp->hdrsi,j);
                         struct iguana_peer *addr; int32_t r;
