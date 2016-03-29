@@ -1252,6 +1252,8 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
     {
         if ( bp != 0 )
         {
+            if (  bits256_cmp(coin->APIblockhash,hash2) != 0 && bp->emitfinish != 0 )
+                return(0);
             if ( bundlei >= 0 && bundlei < bp->n )
             {
                 if ( block == 0 )
