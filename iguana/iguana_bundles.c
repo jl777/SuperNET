@@ -1081,7 +1081,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                     {
                         struct iguana_peer *addr; int32_t r;
                         if ( 1 && (r= coin->peers.numranked) != 0 && (addr= coin->peers.ranked[rand() % r]) != 0 && addr->dead == 0 && addr->usock >= 0 )
-                            iguana_sendblockreqPT(coin,addr,bp,j,block->RO.hash2,0);
+                            iguana_sendblockreqPT(coin,addr,bp,j,block->RO.hash2,0), printf("%s ",addr->ipaddr);
                         printf("currentstop [%d:%d]\n",bp->hdrsi,j);
                         iguana_blockQ("currentstop",coin,bp,j,block->RO.hash2,0);
                         block->issued = (uint32_t)time(NULL);
