@@ -684,11 +684,11 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
         {
             if ( bits256_nonz(bp->hashes[i]) == 0 && bits256_nonz(bp->speculative[i]) != 0 )
             {
-                if ( (block= bp->blocks[i]) == 0 && bp->speculativecache[i] == 0 && now > bp->issued[i]+3 )
+                if ( (block= bp->blocks[i]) == 0 && bp->speculativecache[i] == 0 && now > bp->issued[i]+60 )
                 {
                     printf("speculative.[%d:%d]\n",bp->hdrsi,i);
                     iguana_blockQ("speculative",coin,bp,-i,bp->speculative[i],0);//now > bp->issued[i]+60);
-                    //bp->issued[i] = now;
+                    bp->issued[i] = now;
                     continue;
                 }
             }
@@ -1104,9 +1104,9 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                         hash2 = bp->speculative[j];
                     if ( bits256_nonz(hash2) == 0 )
                         continue;
+                    fprintf(stderr,"-[%d:%d].%d ",bp->hdrsi,j,now-bp->issued[j]);
                     if ( now > bp->issued[j]+30 )//|| bp->numcached >= bp->n-2 )
                     {
-                        fprintf(stderr,"-[%d:%d] ",bp->hdrsi,j);
                         struct iguana_peer *addr; int32_t r;
                         if ( (rand() % 10) == 0 && (r= coin->peers.numranked) != 0 && (addr= coin->peers.ranked[rand() % r]) != 0 && addr->dead == 0 && addr->usock >= 0 )
                             iguana_sendblockreqPT(coin,addr,bp,j,hash2,0), printf("%s ",addr->ipaddr);
