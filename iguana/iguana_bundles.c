@@ -407,7 +407,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     else lag = 3 + (bp->hdrsi - starti)/10;
     if ( coin->current != bp )
         lag *= 3;
-    if ( (numpeers= coin->peers.numranked) > 3 && (bp->numhashes == bp->n || bp->speculative != 0) )//&& bp->currentflag < bp->n )
+    if ( (numpeers= coin->peers.numranked) > 3 && 0 )//(bp->numhashes == bp->n || bp->speculative != 0) )//&& bp->currentflag < bp->n )
     {
         if ( numpeers > 0xff )
             numpeers = 0xff; // fit into 8 bitfield
