@@ -1150,14 +1150,14 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                         }
                         continue;
                     }
-                    if ( now > bp->issued[j]+60 || (rand() % 100) == 0 )
+                    if ( now > bp->issued[j]+3 || (rand() % 10) == 0 )
                     {
                         //fprintf(stderr,"-[%d:%d].%d ",bp->hdrsi,j,now-bp->issued[j]);
                         struct iguana_peer *addr; int32_t r;
                         if ( (rand() % 10) == 0 && (r= coin->peers.numranked) != 0 && (addr= coin->peers.ranked[rand() % r]) != 0 && addr->dead == 0 && addr->usock >= 0 )
-                            iguana_sendblockreqPT(coin,addr,bp,j,hash2,0);//, printf("%s ",addr->ipaddr);
-                        //fprintf(stderr,"currentstop [%d:%d]\n",bp->hdrsi,j);
+                            iguana_sendblockreqPT(coin,addr,bp,j,hash2,0);
                         else iguana_blockQ("currentstop",coin,bp,j,hash2,1);
+                        //fprintf(stderr,"currentstop [%d:%d]\n",bp->hdrsi,j);
                         bp->issued[j] = now;
                     }
                 }
