@@ -1102,14 +1102,14 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                             hash2 = bp->speculative[j];
                         if ( bits256_nonz(hash2) == 0 )
                             continue;
-                        fprintf(stderr,"-[%d:%d] ",bp->hdrsi,j);
-                        if ( (rand() % 10) == 0 || bp->numcached >= bp->n-2 )
+                        if ( (rand() % 100) == 0 )//|| bp->numcached >= bp->n-2 )
                         {
+                            fprintf(stderr,"-[%d:%d] ",bp->hdrsi,j);
                             struct iguana_peer *addr; int32_t r;
-                            if ( 1 && (r= coin->peers.numranked) != 0 && (addr= coin->peers.ranked[rand() % r]) != 0 && addr->dead == 0 && addr->usock >= 0 )
+                            if ( (rand() % 10) == 0 && (r= coin->peers.numranked) != 0 && (addr= coin->peers.ranked[rand() % r]) != 0 && addr->dead == 0 && addr->usock >= 0 )
                                 iguana_sendblockreqPT(coin,addr,bp,j,hash2,0), printf("%s ",addr->ipaddr);
                             fprintf(stderr,"currentstop [%d:%d]\n",bp->hdrsi,j);
-                            iguana_blockQ("currentstop",coin,bp,j,hash2,1);
+                            iguana_blockQ("currentstop",coin,bp,j,hash2,0);
                             //bp->issued[j] = (uint32_t)time(NULL);
                         }
                     }
