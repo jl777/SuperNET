@@ -1119,7 +1119,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                         continue;
                     }
                     checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,hash2,zero,1,0);
-                    if ( (fp= fopen(fname,"rb")) != 0 )
+                    if ( 0 && (fp= fopen(fname,"rb")) != 0 )
                     {
                         havefile++;
                         fclose(fp);
@@ -1153,6 +1153,11 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                                 printf("error parsing speculativecache.[%d:%d]\n",bp->hdrsi,j);
                             myfree(bp->speculativecache[j],recvlen + sizeof(recvlen));
                             bp->speculativecache[j] = 0;
+                        }
+                        else if ( bits256_nonz(bp->hashes[j]) != 0 )
+                        {
+                            iguana_blockQ("currentstop",coin,bp,j,hash2,0);
+    
                         }
                         continue;
                     }
