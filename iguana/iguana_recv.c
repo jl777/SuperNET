@@ -671,7 +671,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
             {
                 bp->dirty++;
                 if ( bp->issued[bundlei] == 0 )
-                    iguana_blockQ("recvhdr",coin,bp,bundlei,block[i].RO.hash2,0);
+                    iguana_blockQ("recvhdr",coin,bp,bundlei,blocks[i].RO.hash2,0);
 
                 //printf("{%d:%d} ",bp->hdrsi,bundlei);
                 if ( i == 0 )
