@@ -88,7 +88,7 @@ void iguana_blocksetcounters(struct iguana_info *coin,struct iguana_block *block
     block->RO.firstexternalind = ramchain->externalind;
 }
 
-int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,char *fname,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t numblocks)
+int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,char *fname,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t numblocks,int32_t dispflag)
 {
     struct iguana_bundle *bp = 0; int32_t bundlei = -2; char str[65];
     *hdrsip = -1; ipbits = 0;
@@ -99,7 +99,8 @@ int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,
     {
         if ( bits256_nonz(prevhash2) == 0 || (bp= iguana_bundlefind(coin,&bp,&bundlei,prevhash2)) == 0 || bundlei >= coin->chain->bundlesize-1 )
         {
-            printf("iguana_peerfname error finding.(%s) spec.%p bp.%p\n",bits256_str(str,hash2),bp!=0?bp->speculative:0,bp);
+            if ( dispflag != 0 )
+                printf("iguana_peerfname error finding.(%s) spec.%p bp.%p\n",bits256_str(str,hash2),bp!=0?bp->speculative:0,bp);
             return(-2);
         }
         else bundlei++;
@@ -125,7 +126,7 @@ int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,
 int32_t iguana_peerfile_exists(struct iguana_info *coin,struct iguana_peer *addr,char *dirname,char *fname,bits256 hash2,bits256 prevhash2,int32_t numblocks)
 {
     FILE *fp; int32_t bundlei,hdrsi;
-    if ( (bundlei= iguana_peerfname(coin,&hdrsi,dirname,fname,addr!=0?(uint32_t)addr->ipbits:0,hash2,prevhash2,numblocks)) >= 0 )
+    if ( (bundlei= iguana_peerfname(coin,&hdrsi,dirname,fname,addr!=0?(uint32_t)addr->ipbits:0,hash2,prevhash2,numblocks,1)) >= 0 )
     {
         OS_compatible_path(fname);
         if ( (fp= fopen(fname,"rb")) == 0 )
@@ -925,7 +926,7 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
         printf("ramchainsave no data ptr\n");
         return(-1);
     }
-    if ( (checki= iguana_peerfname(coin,&hdrsi,ipbits==0?"DB":GLOBALTMPDIR,fname,ipbits,hash2,prevhash2,ramchain->numblocks)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
+    if ( (checki= iguana_peerfname(coin,&hdrsi,ipbits==0?"DB":GLOBALTMPDIR,fname,ipbits,hash2,prevhash2,ramchain->numblocks,1)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
     {
         printf(" wont save.(%s) bundlei.%d != checki.%d\n",fname,bundlei,checki);
         return(-1);
@@ -1235,7 +1236,7 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
         for (iter=0; iter<2; iter++)
         {
             dirstr = (iter == 0) ? "DB/ro" : "DB";
-            if ( (checki= iguana_peerfname(coin,&hdrsi,ipbits==0?dirstr:GLOBALTMPDIR,fname,ipbits,hash2,prevhash2,numblocks)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
+            if ( (checki= iguana_peerfname(coin,&hdrsi,ipbits==0?dirstr:GLOBALTMPDIR,fname,ipbits,hash2,prevhash2,numblocks,1)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
             {
                 printf("iguana_ramchain_map.(%s) illegal hdrsi.%d bundlei.%d %s\n",fname,hdrsi,bundlei,bits256_str(str,hash2));
                 continue;
@@ -1901,7 +1902,7 @@ int32_t iguana_oldbundlefiles(struct iguana_info *coin,uint32_t *ipbits,void **p
         if ( j == num )
         {
             ipbits[num] = fpipbits;
-            if ( (checki= iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,fpipbits,bp->hashes[bundlei],zero,1)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
+            if ( (checki= iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,fpipbits,bp->hashes[bundlei],zero,1,1)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
             {
                 printf("B iguana_ramchain_map.(%s) illegal hdrsi.%d bundlei.%d checki.%d\n",fname,hdrsi,bundlei,checki);
                 return(0);
@@ -1925,7 +1926,7 @@ void *iguana_bundlefile(struct iguana_info *coin,char *fname,long *filesizep,str
 {
     int32_t checki,hdrsi; void *ptr = 0; static bits256 zero;
     *filesizep = 0;
-    if ( (checki= iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,bp->hashes[bundlei],zero,1)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
+    if ( (checki= iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,bp->hashes[bundlei],zero,1,1)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
     {
         printf("B iguana_ramchain_map.(%s) illegal hdrsi.%d bundlei.%d checki.%d\n",fname,hdrsi,bundlei,checki);
         return(0);
@@ -2366,7 +2367,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         {
             for (j=starti; j<=endi; j++)
             {
-                if ( iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,1,bp->hashes[j],zero,1) >= 0 ) // ipbits[j]
+                if ( iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,1,bp->hashes[j],zero,1,1) >= 0 ) // ipbits[j]
                     coin->peers.numfiles -= OS_removefile(fname,0);
                 else printf("error removing.(%s)\n",fname);
             }
