@@ -1077,13 +1077,13 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             else if ( bp == coin->current )
             {
                 for (j=0; j<bp->n; j++)
-                    if ( (block= bp->blocks[j]) != 0 && (block->RO.recvlen == 0 || block->fpipbits == 0 || block->fpos < 0) && time(NULL) > block->issued+10 && (rand() % 10) == 0 )
+                    if ( (block= bp->blocks[j]) != 0 && (block->RO.recvlen == 0 || block->fpipbits == 0 || block->fpos < 0) && time(NULL) > block->issued+30 && (rand() % 10) == 0 )
                     {
                         struct iguana_peer *addr; int32_t r;
                         if ( 1 && (r= coin->peers.numranked) != 0 && (addr= coin->peers.ranked[rand() % r]) != 0 && addr->dead == 0 && addr->usock >= 0 )
                             iguana_sendblockreqPT(coin,addr,bp,j,block->RO.hash2,0), printf("%s ",addr->ipaddr);
                         printf("currentstop [%d:%d]\n",bp->hdrsi,j);
-                        iguana_blockQ("currentstop",coin,bp,j,block->RO.hash2,0);
+                        iguana_blockQ("currentstop",coin,bp,j,block->RO.hash2,1);
                         block->issued = (uint32_t)time(NULL);
                     }
             }
