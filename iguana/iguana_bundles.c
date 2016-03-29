@@ -606,7 +606,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                 }
             }
         }
-        else if ( block != 0 && block->fpipbits != 0 && bits256_nonz(bp->hashes[i]) != 0 && now > bp->issued[i]+lag )
+        else if ( block != 0 && block->fpipbits == 0 && bits256_nonz(bp->hashes[i]) != 0 && now > bp->issued[i]+lag )
         {
             if ( bp == coin->current )
                 printf("[%d:%d].%x ",bp->hdrsi,i,block->fpipbits);
@@ -951,7 +951,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
             return(0);
         retval = 1;
     }
-    else if ( bp->hdrsi == starti || (bp->hdrsi >= starti && bp->hdrsi <= starti+range) ) //bits256_nonz(bp->allhash) != 0 && 
+    else if ( bp->hdrsi == starti || (bp->hdrsi >= starti && bp->hdrsi <= starti+range) ) //bits256_nonz(bp->allhash) != 0 &&
     {
         max = bp->n;
         counter = iguana_bundleissue(coin,bp,max,timelimit);
