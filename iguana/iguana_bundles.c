@@ -606,7 +606,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                 }
             }
         }
-        else if ( bits256_nonz(bp->hashes[i]) != 0 && now > bp->issued[i]+lag )
+        else if ( block != 0 && block->fpipbits != 0 && bits256_nonz(bp->hashes[i]) != 0 && now > bp->issued[i]+lag )
         {
             if ( bp == coin->current )
                 printf("[%d:%d].%x ",bp->hdrsi,i,block->fpipbits);
