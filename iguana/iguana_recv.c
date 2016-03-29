@@ -1238,6 +1238,25 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
     return(n);
 }
 
+int32_t iguana_speculativesearch(struct iguana_info *coin,bits256 hash2)
+{
+    int32_t i,j; struct iguana_bundle *bp;
+    for (i=0; i<coin->bundlescount; i++)
+    {
+        if ( (bp= coin->bundles[i]) != 0 && bp->speculative != 0 )
+        {
+            for (j=0; j<bp->n&&j<bp->numspec; j++)
+                if ( bits256_cmp(hash2,bp->speculative[j]) == 0 )
+                {
+                    if ( bp->speculativecache[j] != 0 )
+                        return(1);
+                    else return(-1);
+                }
+        }
+    }
+    return(0);
+}
+
 int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2,int32_t priority)
 {
     queue_t *Q; char *str; int32_t n,height = -1; struct iguana_blockreq *req; struct iguana_block *block = 0;
@@ -1247,6 +1266,8 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
         //getchar();
         return(-1);
     }
+    if ( coin->enableCACHE != 0 || iguana_speculativesearch(coin,hash2) > 0 )
+        return(0);
     block = iguana_blockfind(coin,hash2);
     if ( priority != 0 || block == 0 || iguana_blockstatus(coin,block) == 0 )
     {

@@ -1191,8 +1191,11 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                     }
                     hash2 = block->RO.hash2;
                 }
-                if ( i == bp->n )
-                    iguana_bundlefinalize(coin,bp,&coin->MEM,coin->MEMB);
+                if ( i == bp->n && iguana_bundlefinalize(coin,bp,&coin->MEM,coin->MEMB) == 0 )
+                {
+                    //free(bp->speculative);
+                    //bp->speculative = 0;
+                }
             }
             /*if ( bp->speculative != 0 && missing == 0 )
             {
