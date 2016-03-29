@@ -177,7 +177,7 @@ int32_t iguana_speculativefind(struct iguana_info *coin,struct iguana_bundle *bp
             for (j=numcached=0; j<bp->n; j++)
                 if ( bp->speculativecache[j] != 0 )
                     numcached++;
-            printf("cache %s [%d:%d] h.%d s.%d c.%d -> %d\n",bits256_str(str,block->RO.hash2),bp->hdrsi,i,bp->numhashes,bp->numsaved,bp->numcached,numcached);
+            //printf("cache %s [%d:%d] h.%d s.%d c.%d -> %d\n",bits256_str(str,block->RO.hash2),bp->hdrsi,i,bp->numhashes,bp->numsaved,bp->numcached,numcached);
             return(i);
         }
     }

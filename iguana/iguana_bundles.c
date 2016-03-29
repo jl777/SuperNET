@@ -1104,7 +1104,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                 }
             }
             int32_t checki,hdrsi,havefile,missing,recvlen; char fname[1024]; FILE *fp;     struct iguana_msghdr H; static bits256 zero;
-            if ( bp->speculative != 0 )
+            //if ( bp->speculative != 0 )
             {
                 now = (int32_t)time(NULL);
                 for (j=havefile=missing=0; j<bp->n; j++)
@@ -1163,7 +1163,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                     }
                     if ( bp == coin->current && (now > bp->issued[j]+3 || (rand() % 10) == 0) )
                     {
-                        //fprintf(stderr,"-[%d:%d].%d ",bp->hdrsi,j,now-bp->issued[j]);
+                        fprintf(stderr,"-[%d:%d].%d ",bp->hdrsi,j,now-bp->issued[j]);
                         struct iguana_peer *addr; int32_t r;
                         if ( (rand() % 10) == 0 && (r= coin->peers.numranked) != 0 && (addr= coin->peers.ranked[rand() % r]) != 0 && addr->dead == 0 && addr->usock >= 0 )
                             iguana_sendblockreqPT(coin,addr,bp,j,hash2,0);
