@@ -587,7 +587,6 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
         if ( bp == coin->current )
             return(counter);
     }
-    return(counter);
     for (i=0; i<bp->n; i++)
     {
         if ( (block= bp->blocks[i]) != 0 && bp->speculativecache[i] == 0 )
@@ -663,7 +662,7 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
 {
     int32_t counter=0;
     int32_t i; uint32_t now; struct iguana_block *block;
-    if ( bp->isRT == 0 && (bp->hdrsi == coin->bundlescount-1 || bp == coin->current) )
+    if ( 0 && bp->isRT == 0 && (bp->hdrsi == coin->bundlescount-1 || bp == coin->current) )
         printf("hdr ITERATE.%d bundle.%d vs %d: h.%d n.%d r.%d s.%d c.%d finished.%d spec.%p[%d]\n",bp->hdrsi,bp->bundleheight,coin->longestchain-coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->numcached,bp->emitfinish,bp->speculative,bp->numspec);
     if ( coin->enableCACHE != 0 && bp->numhashes < bp->n && (bp->speculative == 0 || bp->hdrsi >= coin->longestchain/bp->n) )
     {
@@ -1150,7 +1149,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                         }
                         continue;
                     }
-                    if ( now > bp->issued[j]+3 || (rand() % 10) == 0 )
+                    if ( bp == coin->current && (now > bp->issued[j]+3 || (rand() % 10) == 0) )
                     {
                         //fprintf(stderr,"-[%d:%d].%d ",bp->hdrsi,j,now-bp->issued[j]);
                         struct iguana_peer *addr; int32_t r;
@@ -1161,7 +1160,8 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                         bp->issued[j] = now;
                     }
                 }
-                fprintf(stderr,"[%d] check numcached.%d numhashes.%d numsaved.%d havefile.%d missing.%d\n",bp->hdrsi,bp->numcached,bp->numhashes,bp->numsaved,havefile,missing);
+                if ( bp == coin->current )
+                    fprintf(stderr,"[%d] check numcached.%d numhashes.%d numsaved.%d havefile.%d missing.%d\n",bp->hdrsi,bp->numcached,bp->numhashes,bp->numsaved,havefile,missing);
             }
             if ( bp->speculative != 0 && missing == 0 )
             {

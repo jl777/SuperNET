@@ -257,7 +257,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
     {
         if ( bp->emitfinish != 0 )
         {
-            printf("got [%d:%d] with emitfinish.%u\n",bp->hdrsi,bundlei,bp->emitfinish);
+            //printf("got [%d:%d] with emitfinish.%u\n",bp->hdrsi,bundlei,bp->emitfinish);
             return;
         }
         bp->dirty++;
@@ -702,7 +702,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
 
 void iguana_autoextend(struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    char hashstr[65],str[65],str2[65]; struct iguana_bundle *newbp; int32_t bundlei; static bits256 zero;
+    char hashstr[65]; struct iguana_bundle *newbp; int32_t bundlei; static bits256 zero;
     if ( bp->hdrsi == coin->bundlescount-1 && bits256_nonz(bp->nextbundlehash2) != 0 )
     {
         init_hexbytes_noT(hashstr,bp->nextbundlehash2.bytes,sizeof(bits256));
@@ -711,7 +711,7 @@ void iguana_autoextend(struct iguana_info *coin,struct iguana_bundle *bp)
         {
             if ( newbp->speculative == 0 )
                 queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
-            printf("EXTEND last bundle %s/%s ht.%d\n",bits256_str(str,newbp->hashes[0]),bits256_str(str2,bp->nextbundlehash2),newbp->bundleheight);
+            //printf("EXTEND last bundle %s/%s ht.%d\n",bits256_str(str,newbp->hashes[0]),bits256_str(str2,bp->nextbundlehash2),newbp->bundleheight);
             if ( newbp->queued == 0 )
                 iguana_bundleQ(coin,newbp,1000);
         }
