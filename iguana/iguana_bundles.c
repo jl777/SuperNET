@@ -407,7 +407,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     else lag = 3 + (bp->hdrsi - starti)/10;
     if ( coin->current != bp )
         lag *= 3;
-    if ( (numpeers= coin->peers.numranked) > 3 && 0 )//(bp->numhashes == bp->n || bp->speculative != 0) )//&& bp->currentflag < bp->n )
+    if ( (numpeers= coin->peers.numranked) > 3 )//(bp->numhashes == bp->n || bp->speculative != 0) )//&& bp->currentflag < bp->n )
     {
         if ( numpeers > 0xff )
             numpeers = 0xff; // fit into 8 bitfield
@@ -609,7 +609,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
         else if ( block != 0 && block->fpipbits == 0 && bits256_nonz(bp->hashes[i]) != 0 && now > bp->issued[i]+lag )
         {
             if ( bp == coin->current )
-                printf("[%d:%d].%x ",bp->hdrsi,i,block->fpipbits);
+                printf("b[%d:%d].%x ",bp->hdrsi,i,block->fpipbits);
             iguana_blockQ("kickd",coin,bp,i,bp->hashes[i],0);//bp == coin->current && now > bp->issued[i]+lag*3);
             bp->issued[i] = now;
             counter++;
