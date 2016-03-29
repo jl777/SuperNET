@@ -177,7 +177,7 @@ int32_t iguana_speculativefind(struct iguana_info *coin,struct iguana_bundle *bp
             for (j=numcached=0; j<bp->n; j++)
                 if ( bp->speculativecache[j] != 0 )
                     numcached++;
-            //printf("cache %s [%d:%d] h.%d s.%d c.%d -> %d\n",bits256_str(str,block->RO.hash2),bp->hdrsi,i,bp->numhashes,bp->numsaved,bp->numcached,numcached);
+            printf("cache %s [%d:%d] h.%d s.%d c.%d -> %d\n",bits256_str(str,block->RO.hash2),bp->hdrsi,i,bp->numhashes,bp->numsaved,bp->numcached,numcached);
             return(i);
         }
     }
@@ -670,6 +670,9 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
             if ( (bp= iguana_bundleset(coin,&block,&bundlei,&blocks[i])) != 0 )
             {
                 bp->dirty++;
+                if ( bp->issued[bundlei] == 0 )
+                    iguana_blockQ("recvhdr",coin,bp,bundlei,block[i].RO.hash2,0);
+
                 //printf("{%d:%d} ",bp->hdrsi,bundlei);
                 if ( i == 0 )
                 {
@@ -759,7 +762,11 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
             if ( bp->speculative == 0 )
                 bp->speculative = mycalloc('s',bp->n+1,sizeof(*bp->speculative));
             for (i=bp->numspec; i<num&&i<=bp->n; i++)
+            {
                 bp->speculative[i] = blockhashes[i];
+                //printf("speculate new issue [%d:%d]\n",bp->hdrsi,i);
+                iguana_blockQ("speculate",coin,bp,-i,blockhashes[i],0);
+            }
             bp->numspec = num <= bp->n+1 ? num : bp->n+1;
             //iguana_blockQ(coin,0,-1,blockhashes[2],1);
         }

@@ -696,10 +696,13 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
             {
                 printf("speculativeB.[%d:%d]\n",bp->hdrsi,i);
                 iguana_blockQ("speculativeB",coin,bp,i,block->RO.hash2,1);
+                continue;
             }
-            else if ( bits256_nonz(bp->hashes[i]) != 0 )//&& now > bp->issued[i]+60 )
+            if ( bits256_nonz(bp->speculative[i]) != 0 && now > bp->issued[i]+13 )
             {
-                iguana_blockQ("speculativeC",coin,bp,i,bp->hashes[i],0);
+                //printf("speculativeC [%d:%d]\n",bp->hdrsi,i);
+                iguana_blockQ("speculativeC",coin,bp,-i,bp->speculative[i],0);
+                bp->issued[i] = now;
             }
         }
     }
@@ -1101,7 +1104,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                 }
             }
             int32_t checki,hdrsi,havefile,missing,recvlen; char fname[1024]; FILE *fp;     struct iguana_msghdr H; static bits256 zero;
-            //if ( bp->speculative != 0 )
+            if ( bp->speculative != 0 )
             {
                 now = (int32_t)time(NULL);
                 for (j=havefile=missing=0; j<bp->n; j++)
