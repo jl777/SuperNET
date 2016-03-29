@@ -760,7 +760,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                         datasize += block->RO.recvlen;
                      }
                 }
-                else if ( 0 && bp == coin->current && bp->speculativecache[bundlei] == 0 )
+                else if ( 1 && bp == coin->current && bp->speculativecache[bundlei] == 0 )
                 {
                     char str[65]; printf("missing prev_block [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]));
                     if ( block != 0 )
@@ -769,7 +769,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                         block->fpipbits = 0;
                         block->fpos = -1;
                     }
-                    //else if ( now > bp->issued[bundlei]+1 )
+                    else if ( now > bp->issued[bundlei]+13 )
                         iguana_blockQ("missing",coin,bp,bundlei,bp->hashes[bundlei],1);
                 }
             }
@@ -801,9 +801,9 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                                 iguana_blockQ("missing",coin,0,-1,bp->speculative[bundlei],0);
                                 bp->issued[bundlei] = (uint32_t)time(NULL);
                             }
-                        } else if ( (block= bp->blocks[bundlei]) != 0 && iguana_blockstatus(coin,block) != 0 )
-                            numcached++;
-                    } else numcached++;
+                        } //else if ( (block= bp->blocks[bundlei]) != 0 && iguana_blockstatus(coin,block) != 0 )
+                           // numcached++;
+                    } //else numcached++;
                 } else numcached++;
             }
         }
