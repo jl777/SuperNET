@@ -390,9 +390,9 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
 
 int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int32_t max,int32_t timelimit)
 {
-    int32_t i,j,k,len,forceflag,saved,starti,lag,doneval,nonz,total=0,maxval,numpeers,laggard,flag=0,finished,peercounts[IGUANA_MAXPEERS],donecounts[IGUANA_MAXPEERS],priority,counter = 0;
+    int32_t i,j,k,peerid,doneflag,len,forceflag,saved,starti,lag,doneval,nonz,total=0,maxval,numpeers,laggard,flag=0,finished,peercounts[IGUANA_MAXPEERS],donecounts[IGUANA_MAXPEERS],priority,counter = 0;
     struct iguana_peer *addr; uint32_t now; struct iguana_block *block;
-    bits256 hashes[50]; uint8_t serialized[sizeof(hashes) + 256];
+    bits256 hashes[50],hash2; uint8_t serialized[sizeof(hashes) + 256];
     if ( bp == 0 )
         return(0);
     now = (uint32_t)time(NULL);
@@ -422,41 +422,62 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                     now = (uint32_t)time(NULL);
                     for (i=j,k=doneval=maxval=0; i<bp->n&&k<sizeof(hashes)/sizeof(*hashes); i+=numpeers)
                     {
+                        doneflag = peerid = 0;
                         if ( bits256_nonz(bp->hashes[i]) != 0 )
                         {
+                            hash2 = bp->hashes[i];
                             if ( (block= bp->blocks[i]) != 0 )
                             {
-                                if ( block->peerid == 0 )
+                                if ( (peerid= block->peerid) == 0 )
                                 {
                                     //printf("<%d>.%d ",i,j);
-                                    if ( block->fpipbits == 0 )
-                                    {
-                                        hashes[k++] = bp->hashes[i];
-                                        bp->issued[i] = block->issued = now;
-                                        block->peerid = j + 1;
-                                        block->numrequests++;
-                                    }
-                                    else
-                                    {
-                                        block->peerid = 1;
-                                        block->numrequests++;
-                                    }
+                                    if ( block->fpipbits != 0 )
+                                        doneflag = 1;
                                 }
-                                else if ( block->peerid > 0 )
+                            }
+                        }
+                        else if ( bp->speculative != 0 && i < bp->numspec && bits256_nonz(bp->speculative[i]) != 0 )
+                        {
+                            hash2 = bp->speculative[i];
+                            if ( bp->speculativecache[i] != 0 )
+                                doneflag = peerid = 1;
+                        }
+                        if ( doneflag == 0 )
+                        {
+                            hashes[k++] = hash2;
+                            bp->issued[i] = now;
+                            if ( block != 0 )
+                            {
+                                block->issued = now;
+                                block->peerid = j + 1;
+                                block->numrequests++;
+                            }
+                        }
+                        else
+                        {
+                            doneflag = 1;
+                            if ( block != 0 )
+                            {
+                                block->peerid = 1;
+                                block->numrequests++;
+                            }
+                        }
+                        if ( bits256_nonz(hash2) != 0 )
+                        {
+                            if ( peerid > 0 )
+                            {
+                                total++;
+                                if ( doneflag != 0 )
                                 {
-                                    total++;
-                                    if ( iguana_blockstatus(coin,block) != 0 || bp->speculativecache[i] != 0 )//block->fpipbits != 0 )//&& block->fpos >= 0 )
-                                    {
-                                        donecounts[block->peerid - 1]++;
-                                        if ( donecounts[block->peerid - 1] > doneval )
-                                            doneval = donecounts[block->peerid - 1];
-                                    }
-                                    else
-                                    {
-                                        peercounts[block->peerid - 1]++;
-                                        if ( peercounts[block->peerid - 1] > maxval )
-                                            maxval = peercounts[block->peerid - 1];
-                                    }
+                                    donecounts[peerid - 1]++;
+                                    if ( donecounts[peerid - 1] > doneval )
+                                        doneval = donecounts[peerid - 1];
+                                }
+                                else
+                                {
+                                    peercounts[peerid - 1]++;
+                                    if ( peercounts[peerid - 1] > maxval )
+                                        maxval = peercounts[peerid - 1];
                                 }
                             }
                         }
@@ -506,16 +527,20 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                                 }
                                 for (j=0; j<bp->n; j++)
                                 {
-                                    if ( (block= bp->blocks[j]) != 0 && block->peerid == i && iguana_blockstatus(coin,block) == 0 )
+                                    if ( ((block= bp->blocks[j]) != 0 && block->peerid == i && block->fpipbits == 0) || bp->speculativecache[i] == 0 )
                                     {
                                         if ( bp == coin->current )
                                             printf("%d ",j);
                                         flag++;
                                         counter++;
-                                        block->peerid = 0;
-                                        iguana_blockQ("kick",coin,bp,j,block->RO.hash2,bp == coin->current);
+                                        if ( block != 0 )
+                                        {
+                                            block->issued = now;
+                                            block->peerid = 0;
+                                            iguana_blockQ("kick",coin,bp,j,block->RO.hash2,bp == coin->current);
+                                        } else iguana_blockQ("kick",coin,bp,j,block->RO.hash2,bp == coin->current);
                                         if ( bp == coin->current )
-                                            bp->issued[i] = block->issued = now;
+                                            bp->issued[i] = now;
                                     }
                                 }
                                 if ( flag != 0 && bp == coin->current )
@@ -966,7 +991,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
                             if ( bits256_nonz(bp->hashes[i]) != 0 )
                                 iguana_blockQ("stuck",coin,bp,i,bp->hashes[i],0);
                         }
-                        if ( (block= bp->blocks[i]) != 0 && block->fpipbits == 0 )
+                        if ( (block= bp->blocks[i]) != 0 && block->fpipbits == 0 && bp->speculativecache[i] == 0 )
                         {
                             printf("[%d:%d] ",bp->hdrsi,i);
                             iguana_blockQ("stuck",coin,bp,i,block->RO.hash2,0);
@@ -1100,7 +1125,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             }
             if ( bp == coin->current )
                 printf("[%d] check numcached.%d numhashes.%d numsaved.%d\n",bp->hdrsi,bp->numcached,bp->numhashes,bp->numsaved);
-            if ( bp->speculative != 0 && bp->numcached == bp->n )
+            if ( bp->speculative != 0 && (bp->numsaved + bp->numcached) == bp->n )
             {
                 hash2 = bp->hashes[0];
                 for (i=1; i<bp->n; i++)
