@@ -697,6 +697,10 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
                 printf("speculativeB.[%d:%d]\n",bp->hdrsi,i);
                 iguana_blockQ("speculativeB",coin,bp,i,block->RO.hash2,1);
             }
+            else if ( bits256_nonz(bp->hashes[i]) != 0 && now > bp->issued[i]+60 )
+            {
+                iguana_blockQ("speculativeC",coin,bp,i,bp->hashes[i],0);
+            }
         }
     }
     return(counter);
