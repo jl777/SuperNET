@@ -734,8 +734,8 @@ int32_t iguana_bundletweak(struct iguana_info *coin,struct iguana_bundle *bp)
 
 int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    int32_t bundlei,checki,hdrsi,numhashes,numsaved,numcached,numrecv,minrequests; FILE *fp;
-    int64_t datasize; struct iguana_block *block; uint32_t now;  char fname[1024]; static bits256 zero;
+    int32_t bundlei,numhashes,numsaved,numcached,numrecv,minrequests; FILE *fp;
+    int64_t datasize; struct iguana_block *block; uint32_t now;  char fname[1024];
     if ( bp->emitfinish > coin->startutc )
     {
         bp->numhashes = bp->numsaved = bp->numcached = bp->numrecv = bp->n;
@@ -748,14 +748,14 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
         block = bp->blocks[bundlei];
         if ( bits256_nonz(bp->hashes[bundlei]) > 0 && block != 0 )
         {
-            checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,bp->hashes[bundlei],bundlei>0?bp->hashes[bundlei-1]:zero,1);
+            //checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,bp->hashes[bundlei],bundlei>0?bp->hashes[bundlei-1]:zero,1);
             if ( bits256_cmp(block->RO.hash2,bp->hashes[bundlei]) == 0 )
             {
-                if ( checki != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
+                /*if ( checki != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
                 {
                     printf("iguana_bundlecalcs.(%s) illegal hdrsi.%d bundlei.%d checki.%d\n",fname,hdrsi,bundlei,checki);
                     continue;
-                }
+                }*/
                 if ( 0 && coin->current == bp )//&& (bp->isRT != 0 || bp->hdrsi > coin->bundlescount-3) )
                 {
                     if ( (fp= fopen(fname,"rb")) != 0 )
@@ -1049,7 +1049,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                     }
                 }
             }
-            if ( bp->numhashes < bp->n && bp->speculative != 0 )
+            if ( 0 && bp->numhashes < bp->n && bp->speculative != 0 )
             {
                 for (j=1; j<bp->numspec&&j<bp->n; j++)
                 {
@@ -1091,18 +1091,28 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             }
             if ( bp == coin->current )
             {
+                int32_t checki,hdrsi,havefile; char fname[1024]; FILE *fp; static bits256 zero;
                 now = (int32_t)time(NULL);
-                for (j=0; j<bp->n; j++)
+                for (j=havefile=0; j<bp->n; j++)
                 {
-                    if ( (block= bp->blocks[j]) != 0 && block->fpipbits != 0 && block->fpos >= 0 && block->RO.recvlen > 0 && bits256_nonz(block->RO.prev_block) != 0 )
-                        continue;
-                    if ( bp->speculativecache[j] != 0 )
-                        continue;
                     if ( bits256_nonz(bp->hashes[j]) != 0 )
                         hash2 = bp->hashes[j];
                     else if ( bp->speculative != 0 )
                         hash2 = bp->speculative[j];
                     if ( bits256_nonz(hash2) == 0 )
+                        continue;
+                    checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,hash2,zero,1);
+                    if ( (fp= fopen(fname,"rb")) != 0 )
+                    {
+                        havefile++;
+                        fclose(fp);
+                        continue;
+                    }
+                    
+                    
+                    /*if ( (block= bp->blocks[j]) != 0 && block->fpipbits != 0 && block->fpos >= 0 && block->RO.recvlen > 0 && bits256_nonz(block->RO.prev_block) != 0 )
+                        continue;
+                    if ( bp->speculativecache[j] != 0 )
                         continue;
                     fprintf(stderr,"-[%d:%d].%d ",bp->hdrsi,j,now-bp->issued[j]);
                     if ( now > bp->issued[j]+30 )//|| bp->numcached >= bp->n-2 )
@@ -1113,9 +1123,9 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                         fprintf(stderr,"currentstop [%d:%d]\n",bp->hdrsi,j);
                         iguana_blockQ("currentstop",coin,bp,j,hash2,now > bp->issued[j]+30);
                         bp->issued[j] = now;
-                    }
+                    }*/
                 }
-                fprintf(stderr,"[%d] check numcached.%d numhashes.%d numsaved.%d\n",bp->hdrsi,bp->numcached,bp->numhashes,bp->numsaved);
+                fprintf(stderr,"[%d] check numcached.%d numhashes.%d numsaved.%d havefile.%d\n",bp->hdrsi,bp->numcached,bp->numhashes,bp->numsaved,havefile);
             }
             if ( bp->speculative != 0 && (bp->numsaved + bp->numcached) == bp->n )
             {
