@@ -407,7 +407,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     else lag = 3 + (bp->hdrsi - starti)/10;
     if ( coin->current != bp )
         lag *= 3;
-    if ( (numpeers= coin->peers.numranked) > 3 )//(bp->numhashes == bp->n || bp->speculative != 0) )//&& bp->currentflag < bp->n )
+    if ( (numpeers= coin->peers.numranked) > 3 && 0 )//(bp->numhashes == bp->n || bp->speculative != 0) )//&& bp->currentflag < bp->n )
     {
         if ( numpeers > 0xff )
             numpeers = 0xff; // fit into 8 bitfield
@@ -1104,7 +1104,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                 }
             }
             int32_t checki,hdrsi,havefile,missing,recvlen; char fname[1024]; FILE *fp;     struct iguana_msghdr H; static bits256 zero;
-            //if ( bp->speculative != 0 )
+            if ( bp->speculative != 0 )
             {
                 now = (int32_t)time(NULL);
                 for (j=havefile=missing=0; j<bp->n; j++)
@@ -1119,7 +1119,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                         continue;
                     }
                     checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,hash2,zero,1,0);
-                    if ( 0 && (fp= fopen(fname,"rb")) != 0 )
+                    if ( 1 && (fp= fopen(fname,"rb")) != 0 )
                     {
                         havefile++;
                         fclose(fp);
