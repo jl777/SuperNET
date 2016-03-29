@@ -1301,7 +1301,7 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
             req->height = height;
             req->bundlei = bundlei;
             char str2[65];
-            //printf("%s %s %s [%d:%d] %d %s %d numranked.%d qsize.%d\n",coin->symbol,argstr,str,bp!=0?bp->hdrsi:-1,bundlei,req->height,bits256_str(str2,hash2),coin->blocks.recvblocks,coin->peers.numranked,queue_size(Q));
+            printf("%s %s %s [%d:%d] %d %s %d numranked.%d qsize.%d\n",coin->symbol,argstr,str,bp!=0?bp->hdrsi:-1,bundlei,req->height,bits256_str(str2,hash2),coin->blocks.recvblocks,coin->peers.numranked,queue_size(Q));
             if ( Q == &coin->blocksQ )
             {
                 if ( (n= queue_size(Q)) > 100000 )
