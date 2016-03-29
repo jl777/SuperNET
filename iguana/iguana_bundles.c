@@ -431,7 +431,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                                 if ( (peerid= block->peerid) == 0 )
                                 {
                                     //printf("<%d>.%d ",i,j);
-                                    if ( block->fpipbits != 0 )
+                                    if ( block->fpipbits != 0 || bp->speculativecache[i] != 0 )
                                         doneflag = 1;
                                 }
                             }
@@ -464,7 +464,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                         }
                         if ( bits256_nonz(hash2) != 0 )
                         {
-                            if ( peerid > 0 )
+                            if ( peerid > 1 )
                             {
                                 total++;
                                 if ( doneflag != 0 )
@@ -558,7 +558,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
             }
             for (i=0; i<bp->n; i++)
             {
-                if ( (block= bp->blocks[i]) != 0 && iguana_blockstatus(coin,block) == 0 && bp->speculativecache[i] == 0 )
+                if ( 0 && (block= bp->blocks[i]) != 0 && iguana_blockstatus(coin,block) == 0 && bp->speculativecache[i] == 0 )
                 {
                     if ( now > block->issued+lag )
                     {
@@ -587,6 +587,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
         if ( bp == coin->current )
             return(counter);
     }
+    return(counter);
     for (i=0; i<bp->n; i++)
     {
         if ( (block= bp->blocks[i]) != 0 && bp->speculativecache[i] == 0 )
