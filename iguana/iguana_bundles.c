@@ -1123,7 +1123,10 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                     missing++;
                     if ( bp->speculativecache[j] != 0 )
                     {
-                        if ( bp->speculativecache[j] != 0 && (block= iguana_blockfind(coin,bp->speculative[j])) != 0 )
+                        block = iguana_blockfind(coin,bp->speculative[j]);
+                        if ( block != 0 )
+                            block->queued = 1;
+                        if ( bp->speculativecache[j] != 0 && block != 0 )
                         {
                             block->bundlei = j;
                             block->hdrsi = bp->hdrsi;
