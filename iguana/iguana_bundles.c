@@ -1094,7 +1094,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             {
                 for (j=0; j<bp->n; j++)
                 {
-                    if ( ((block= bp->blocks[j]) == 0 || block->fpipbits == 0) && bp->speculativecache[j] == 0 )
+                    if ( ((block= bp->blocks[j]) == 0 || block->fpipbits == 0 || block->fpos < 0 || block->RO.recvlen == 0 || bits256_nonz(block->RO.prev_block) == 0) && bp->speculativecache[j] == 0 )
                     {
                         if ( bits256_nonz(bp->hashes[j]) != 0 )
                             hash2 = bp->hashes[j];
