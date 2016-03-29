@@ -567,7 +567,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     {
         if ( (block= bp->blocks[i]) != 0 && bp->speculativecache[i] == 0 )
         {
-            if ( (block->fpipbits == 0 || ((bp->hdrsi != 0 || i > 0) && bits256_nonz(block->RO.prev_block) == 0) )
+            if ( block->fpipbits == 0 || ((bp->hdrsi != 0 || i > 0) && bits256_nonz(block->RO.prev_block) == 0) )
             {
                 if ( now > block->issued+lag )
                 {
