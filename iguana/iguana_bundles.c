@@ -697,7 +697,7 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
                 printf("speculativeB.[%d:%d]\n",bp->hdrsi,i);
                 iguana_blockQ("speculativeB",coin,bp,i,block->RO.hash2,1);
             }
-            else if ( bits256_nonz(bp->hashes[i]) != 0 && now > bp->issued[i]+60 )
+            else if ( bits256_nonz(bp->hashes[i]) != 0 )//&& now > bp->issued[i]+60 )
             {
                 iguana_blockQ("speculativeC",coin,bp,i,bp->hashes[i],0);
             }
@@ -1318,7 +1318,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
         coin->stucktime = coin->stuckiters = 0;
     if ( coin->stucktime != 0 && time(NULL)-coin->stucktime > coin->maxstuck )
         coin->maxstuck = (uint32_t)time(NULL) - coin->stucktime;
-    sprintf(str,"%s.RT%d u.%d b.%d v.%d/%d (%d+%d/%d 1st.%d) to %d N[%d] h.%d r.%d c.%s s.%d d.%d E.%d maxB.%d peers.%d/%d Q.(%d %d) L.%d [%d:%d] M.%d %s",coin->symbol,coin->RTheight,numutxo,numbalances,numv,coin->pendbalances,firstgap!=0?firstgap->numcached:-1,firstgap!=0?firstgap->numsaved:-1,firstgap!=0?firstgap->numhashes:-1,firstgap!=0?firstgap->hdrsi:-1,coin->lastpending!=0?coin->lastpending->hdrsi:0,count,numhashes,coin->blocksrecv,mbstr(str4,spaceused),numsaved,done,numemit,coin->MAXBUNDLES,p,coin->MAXPEERS,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ),coin->longestchain,coin->blocks.hwmchain.height/coin->chain->bundlesize,coin->blocks.hwmchain.height%coin->chain->bundlesize,coin->blocks.hwmchain.height,bits256_str(str5,coin->blocks.hwmchain.RO.hash2));
+    sprintf(str,"%s.RT%d u.%d b.%d v.%d/%d (%d+%d/%d 1st.%d) to %d N[%d] h.%d r.%d c.%d s.%d d.%d E.%d maxB.%d peers.%d/%d Q.(%d %d) L.%d [%d:%d] M.%d %s",coin->symbol,coin->RTheight,numutxo,numbalances,numv,coin->pendbalances,firstgap!=0?firstgap->numcached:-1,firstgap!=0?firstgap->numsaved:-1,firstgap!=0?firstgap->numhashes:-1,firstgap!=0?firstgap->hdrsi:-1,coin->lastpending!=0?coin->lastpending->hdrsi:0,count,numhashes,coin->blocksrecv,numcached,numsaved,done,numemit,coin->MAXBUNDLES,p,coin->MAXPEERS,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ),coin->longestchain,coin->blocks.hwmchain.height/coin->chain->bundlesize,coin->blocks.hwmchain.height%coin->chain->bundlesize,coin->blocks.hwmchain.height,bits256_str(str5,coin->blocks.hwmchain.RO.hash2));
     //sprintf(str+strlen(str),"%s.%-2d %s time %.2f files.%d Q.%d %d\n",coin->symbol,flag,str,(double)(time(NULL)-coin->starttime)/60.,coin->peers.numfiles,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
     if ( time(NULL) > coin->lastdisp+3 && (strcmp(str,coin->lastdispstr) != 0 || time(NULL) > coin->lastdisp+60) )
     {
