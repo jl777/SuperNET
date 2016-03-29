@@ -815,7 +815,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
             numhashes++;
             bp->checkedtmp++;
         }
-        if ( ((block= bp->blocks[bundlei]) != 0 && block->fpipbits != 0) || bp->speculativecache[bundlei] != 0 )
+        if ( ((block= bp->blocks[bundlei]) != 0 && block->fpipbits != 0 && block->fpos >= 0 && block->RO.recvlen != 0 && bits256_nonz(block->RO.prev_block) != 0) || bp->speculativecache[bundlei] != 0 )
             numcached++;
     }
     bp->datasize = datasize;
