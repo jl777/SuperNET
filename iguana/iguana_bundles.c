@@ -1083,8 +1083,9 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             }
             else if ( bp == coin->current )
             {
+                printf("numcached.%d\n",numcached);
                 for (j=0; j<bp->n; j++)
-                    if ( (block= bp->blocks[j]) != 0 && iguana_blockstatus(coin,block) == 0 && time(NULL) > block->issued+30 && (rand() % 10) == 0 )
+                    if ( (block= bp->blocks[j]) != 0 && iguana_blockstatus(coin,block) == 0 && time(NULL) > block->issued+3 && (rand() % 10) == 0 )
                     {
                         struct iguana_peer *addr; int32_t r;
                         if ( 1 && (r= coin->peers.numranked) != 0 && (addr= coin->peers.ranked[rand() % r]) != 0 && addr->dead == 0 && addr->usock >= 0 )
