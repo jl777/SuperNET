@@ -171,9 +171,9 @@ void iguana_gotversion(struct iguana_info *coin,struct iguana_peer *addr,struct 
     if ( (vers->nServices & (1<<7)) == (1<<7) )
         addr->supernet = 1;
     printf("height.%d nServices.%lld nonce.%llu %srelay node.(%s) supernet.%d\n",vers->nStartingHeight,(long long)vers->nServices,(long long)vers->nonce,addr->relayflag==0?"non-":"",addr->ipaddr,addr->supernet);
-    if ( vers->nStartingHeight > coin->longestchain )
+    if ( (int32_t)vers->nStartingHeight > coin->longestchain )
     {
-        if ( coin->badlongestchain != 0 && vers->nStartingHeight >= coin->badlongestchain )
+        if ( coin->badlongestchain != 0 && (int32_t)vers->nStartingHeight >= coin->badlongestchain )
         {
             printf("peer.(%s) gives badlongestchain.%d\n",addr->ipaddr,vers->nStartingHeight);
             addr->dead = 1;

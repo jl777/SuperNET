@@ -445,7 +445,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
                                 else if ( block->peerid > 0 )
                                 {
                                     total++;
-                                    if ( block->fpipbits != 0 )//&& block->fpos >= 0 )
+                                    if ( iguana_blockstatus(coin,block) != 0 || bp->speculativecache[i] != 0 )//block->fpipbits != 0 )//&& block->fpos >= 0 )
                                     {
                                         donecounts[block->peerid - 1]++;
                                         if ( donecounts[block->peerid - 1] > doneval )
@@ -935,7 +935,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
         counter = iguana_bundleissue(coin,bp,max,timelimit);
         //if ( bp == coin->current && coin->isRT == 0 )
         //    bp->nexttime--;
-        if ( 0 && bp == coin->current && counter > 0 )
+        if ( bp->isRT == 0 && bp == coin->current && counter > 0 )
             printf("ITER.rt%d now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",bp->isRT,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
         if ( bp->hdrsi == starti && bp->isRT == 0 )
         {
@@ -1074,19 +1074,20 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                     } // else break;
                 }
             }
-            /*else if ( 0 && bp == coin->current )
+            else if ( bp == coin->current )
             {
                 for (j=0; j<bp->n; j++)
-                    if ( (block= bp->blocks[j]) != 0 && (block->RO.recvlen == 0 || block->fpipbits == 0 || block->fpos < 0) && time(NULL) > block->issued+3 && (rand() % 10) == 0 )
+                    if ( (block= bp->blocks[j]) != 0 && (block->RO.recvlen == 0 || block->fpipbits == 0 || block->fpos < 0) && time(NULL) > block->issued+30 )
                     {
-                        if ( 0 && (r= coin->peers.numranked) != 0 && (addr= coin->peers.ranked[rand() % r]) != 0 && addr->dead == 0 && addr->usock >= 0 )
+                        struct iguana_peer *addr; int32_t r;
+                        if ( 1 && (r= coin->peers.numranked) != 0 && (addr= coin->peers.ranked[rand() % r]) != 0 && addr->dead == 0 && addr->usock >= 0 )
                             iguana_sendblockreqPT(coin,addr,bp,j,block->RO.hash2,0);
                         printf("currentstop [%d:%d]\n",bp->hdrsi,j);
                         iguana_blockQ("currentstop",coin,bp,j,block->RO.hash2,0);
                         block->issued = (uint32_t)time(NULL);
                         break;
                     }
-            }*/
+            }
             if ( bp->speculative != 0 && numcached == bp->n )
             {
                 hash2 = bp->hashes[0];
