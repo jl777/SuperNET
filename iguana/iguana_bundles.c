@@ -966,7 +966,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
                             if ( bits256_nonz(bp->hashes[i]) != 0 )
                                 iguana_blockQ("stuck",coin,bp,i,bp->hashes[i],0);
                         }
-                        if ( (block= bp->blocks[i]) != 0 && (iguana_blockstatus(coin,block)&0xf) != 0xf )
+                        if ( (block= bp->blocks[i]) != 0 && block->fpipbits == 0 )
                         {
                             printf("[%d:%d] ",bp->hdrsi,i);
                             iguana_blockQ("stuck",coin,bp,i,block->RO.hash2,0);
@@ -1038,7 +1038,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
             {
                 for (j=0; j<bp->n; j++)
                 {
-                    if ( bp->speculativecache[j] != 0 && (block= bp->blocks[j]) != 0 && iguana_blockstatus(coin,block) != 0 )
+                    if ( bp->speculativecache[j] != 0 )
                     {
                         iguana_blockhashset(coin,-1,bp->speculative[j],1);
                         numcached++;
