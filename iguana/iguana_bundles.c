@@ -624,7 +624,12 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp)
                 block->queued = 0;
                 block->RO.recvlen = 0;
             } else ready++;
-        } else printf("error getting block (%d:%d) %p\n",bp->hdrsi,i,block);
+        }
+        else
+        {
+            printf("error getting block (%d:%d) %p\n",bp->hdrsi,i,block);
+            return(-1);
+        }
     }
     return(ready);
 }
@@ -727,7 +732,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
                     printf("iguana_bundlecalcs.(%s) illegal hdrsi.%d bundlei.%d checki.%d\n",fname,hdrsi,bundlei,checki);
                     continue;
                 }
-                if ( coin->current == bp && (bp->isRT != 0 || bp->hdrsi > coin->bundlescount-3) )
+                if ( coin->current == bp )//&& (bp->isRT != 0 || bp->hdrsi > coin->bundlescount-3) )
                 {
                     if ( (fp= fopen(fname,"rb")) != 0 )
                     {
