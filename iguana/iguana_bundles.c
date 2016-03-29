@@ -407,7 +407,7 @@ int32_t iguana_bundleissue(struct iguana_info *coin,struct iguana_bundle *bp,int
     else lag = 3 + (bp->hdrsi - starti)/10;
     if ( coin->current != bp )
         lag *= 3;
-    if ( (numpeers= coin->peers.numranked) > 3 )//&& bp->currentflag < bp->n )
+    if ( (numpeers= coin->peers.numranked) > 3 && (bp->numhashes == bp->n || bp->speculative != 0) )//&& bp->currentflag < bp->n )
     {
         if ( numpeers > 0xff )
             numpeers = 0xff; // fit into 8 bitfield
@@ -689,11 +689,11 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
                 {
                     printf("speculative.[%d:%d]\n",bp->hdrsi,i);
                     iguana_blockQ("speculative",coin,bp,-i,bp->speculative[i],now > bp->issued[i]+60);
-                    bp->issued[i] = now;
+                    //bp->issued[i] = now;
                     continue;
                 }
             }
-            else if ( (block= bp->blocks[i]) != 0  && bp->speculativecache[i] == 0 && iguana_blockstatus(coin,block) == 0 && now > bp->issued[i]+60 )
+            else if ( (block= bp->blocks[i]) != 0  && bp->speculativecache[i] == 0 && block->fpipbits == 0 && now > bp->issued[i]+60 )
             {
                 printf("speculativeB.[%d:%d]\n",bp->hdrsi,i);
                 iguana_blockQ("speculativeB",coin,bp,i,block->RO.hash2,1);
@@ -815,27 +815,24 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp)
             numhashes++;
             bp->checkedtmp++;
         }
-        else
+        if ( bp->speculative != 0 && bits256_nonz(bp->speculative[bundlei]) != 0 )
         {
-            if ( bp->speculative != 0 && bits256_nonz(bp->speculative[bundlei]) != 0 )
+            if ( bp->speculativecache[bundlei] == 0 )
             {
-                if ( bp->speculativecache[bundlei] == 0 )
+                if ( (block= bp->blocks[bundlei]) == 0 || iguana_blockstatus(coin,block) == 0 )
                 {
-                    if ( (block= bp->blocks[bundlei]) == 0 || iguana_blockstatus(coin,block) == 0 )
+                    if ( bits256_nonz(bp->hashes[bundlei]) == 0 )
                     {
-                        if ( bits256_nonz(bp->hashes[bundlei]) == 0 )
+                        if ( 0 && time(NULL) > bp->issued[bundlei]+60 )
                         {
-                            if ( 0 && time(NULL) > bp->issued[bundlei]+60 )
-                            {
-                                //char str[65]; printf(" mismatched [%d:%d] %s block.%p\n",bp->hdrsi,bundlei,bits256_str(str,bp->speculative[bundlei]),block);
-                                iguana_blockQ("missing",coin,0,-1,bp->speculative[bundlei],0);
-                                bp->issued[bundlei] = (uint32_t)time(NULL);
-                            }
-                        } //else if ( (block= bp->blocks[bundlei]) != 0 && iguana_blockstatus(coin,block) != 0 )
-                           // numcached++;
-                    } //else numcached++;
-                } else numcached++;
-            }
+                            //char str[65]; printf(" mismatched [%d:%d] %s block.%p\n",bp->hdrsi,bundlei,bits256_str(str,bp->speculative[bundlei]),block);
+                            iguana_blockQ("missing",coin,0,-1,bp->speculative[bundlei],0);
+                            bp->issued[bundlei] = (uint32_t)time(NULL);
+                        }
+                    } //else if ( (block= bp->blocks[bundlei]) != 0 && iguana_blockstatus(coin,block) != 0 )
+                    // numcached++;
+                } //else numcached++;
+            } else numcached++;
         }
     }
     bp->datasize = datasize;
@@ -1110,21 +1107,33 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
                     } // else break;
                 }
             }
-            else if ( bp == coin->current )
+            if ( bp == coin->current )
             {
                 for (j=0; j<bp->n; j++)
-                    if ( (block= bp->blocks[j]) != 0 && iguana_blockstatus(coin,block) == 0 && time(NULL) > block->issued+3 && (rand() % 10) == 0 )
+                {
+                    if ( bp->speculativecache[j] != 0 )
+                        continue;
+                    if ( (block= bp->blocks[j]) != 0 && block->fpipbits != 0 )
+                        continue;
+                    if ( bits256_nonz(bp->hashes[j]) != 0 )
+                        hash2 = bp->hashes[j];
+                    else if ( bp->speculative != 0 )
+                        hash2 = bp->speculative[j];
+                    if ( bits256_nonz(hash2) == 0 )
+                        continue;
+                    fprintf(stderr,"-[%d:%d] ",bp->hdrsi,j);
+                    if ( (rand() % 10) == 0 )
                     {
                         struct iguana_peer *addr; int32_t r;
                         if ( 1 && (r= coin->peers.numranked) != 0 && (addr= coin->peers.ranked[rand() % r]) != 0 && addr->dead == 0 && addr->usock >= 0 )
-                            iguana_sendblockreqPT(coin,addr,bp,j,block->RO.hash2,0), printf("%s ",addr->ipaddr);
+                            iguana_sendblockreqPT(coin,addr,bp,j,hash2,0), printf("%s ",addr->ipaddr);
                         printf("currentstop [%d:%d]\n",bp->hdrsi,j);
-                        iguana_blockQ("currentstop",coin,bp,j,block->RO.hash2,1);
-                        block->issued = (uint32_t)time(NULL);
+                        iguana_blockQ("currentstop",coin,bp,j,hash2,1);
+                        //bp->issued[j] = (uint32_t)time(NULL);
                     }
-            }
-            if ( bp == coin->current )
+                }
                 printf("[%d] check numcached.%d numhashes.%d numsaved.%d\n",bp->hdrsi,bp->numcached,bp->numhashes,bp->numsaved);
+            }
             if ( bp->speculative != 0 && (bp->numsaved + bp->numcached) == bp->n )
             {
                 hash2 = bp->hashes[0];
@@ -1252,7 +1261,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str)
         coin->stucktime = coin->stuckiters = 0;
     if ( coin->stucktime != 0 && time(NULL)-coin->stucktime > coin->maxstuck )
         coin->maxstuck = (uint32_t)time(NULL) - coin->stucktime;
-    sprintf(str,"%s.RT%d u.%d b.%d v.%d/%d ((%d+%d)/%d 1st.%d) to %d N[%d] h.%d r.%d c.%s s.%d d.%d E.%d maxB.%d peers.%d/%d Q.(%d %d) L.%d [%d:%d] M.%d %s",coin->symbol,coin->RTheight,numutxo,numbalances,numv,coin->pendbalances,firstgap!=0?firstgap->numsaved:-1,firstgap!=0?firstgap->numcached:-1,firstgap!=0?firstgap->numhashes:-1,firstgap!=0?firstgap->hdrsi:-1,coin->lastpending!=0?coin->lastpending->hdrsi:0,count,numhashes,coin->blocksrecv,mbstr(str4,spaceused),numsaved,done,numemit,coin->MAXBUNDLES,p,coin->MAXPEERS,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ),coin->longestchain,coin->blocks.hwmchain.height/coin->chain->bundlesize,coin->blocks.hwmchain.height%coin->chain->bundlesize,coin->blocks.hwmchain.height,bits256_str(str5,coin->blocks.hwmchain.RO.hash2));
+    sprintf(str,"%s.RT%d u.%d b.%d v.%d/%d (%d+%d/%d 1st.%d) to %d N[%d] h.%d r.%d c.%s s.%d d.%d E.%d maxB.%d peers.%d/%d Q.(%d %d) L.%d [%d:%d] M.%d %s",coin->symbol,coin->RTheight,numutxo,numbalances,numv,coin->pendbalances,firstgap!=0?firstgap->numcached:-1,firstgap!=0?firstgap->numsaved:-1,firstgap!=0?firstgap->numhashes:-1,firstgap!=0?firstgap->hdrsi:-1,coin->lastpending!=0?coin->lastpending->hdrsi:0,count,numhashes,coin->blocksrecv,mbstr(str4,spaceused),numsaved,done,numemit,coin->MAXBUNDLES,p,coin->MAXPEERS,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ),coin->longestchain,coin->blocks.hwmchain.height/coin->chain->bundlesize,coin->blocks.hwmchain.height%coin->chain->bundlesize,coin->blocks.hwmchain.height,bits256_str(str5,coin->blocks.hwmchain.RO.hash2));
     //sprintf(str+strlen(str),"%s.%-2d %s time %.2f files.%d Q.%d %d\n",coin->symbol,flag,str,(double)(time(NULL)-coin->starttime)/60.,coin->peers.numfiles,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
     if ( time(NULL) > coin->lastdisp+3 && (strcmp(str,coin->lastdispstr) != 0 || time(NULL) > coin->lastdisp+60) )
     {
