@@ -461,7 +461,7 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
             {
                 if ( nonz < capacity )
                 {
-                    iguana_blockQ("missing",coin,bp,i,hash2,0);
+                    iguana_blockQ("missing",coin,bp,i,hash2,now > bp->issued[i]+lag);
                     if ( hashes != 0 )
                         hashes[nonz] = hash2;
                 }
