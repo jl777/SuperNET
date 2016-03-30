@@ -459,8 +459,12 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
             }
             if ( bits256_nonz(hash2) != 0 && now > bp->issued[i]+lag )
             {
-                if ( nonz < capacity && hashes != 0 )
-                    hashes[nonz] = hash2;
+                if ( nonz < capacity )
+                {
+                    iguana_blockQ("missing",coin,bp,i,hash2,0);
+                    if ( hashes != 0 )
+                        hashes[nonz] = hash2;
+                }
                 nonz++;
             }
             SETBIT(missings,i);
@@ -729,7 +733,7 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
 
 int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_bundle *bp,int32_t timelimit,int32_t lag)
 {
-    int32_t range,starti,lasti,i,n,len,retval=0,max,counter = 0; struct iguana_block *block; struct iguana_bundle *currentbp,*lastbp; uint8_t serialized[512]; struct iguana_peer *addr; struct iguana_blockreq *breq;
+    int32_t range,starti,lasti,avail,i,n,len,retval=0,max,counter = 0; struct iguana_block *block; struct iguana_bundle *currentbp,*lastbp; uint8_t serialized[512],missings[IGUANA_MAXBUNDLESIZE/8+1]; struct iguana_peer *addr; struct iguana_blockreq *breq;
     if ( coin->started == 0 || coin->active == 0 )
     {
         printf("%s not ready yet\n",coin->symbol);
@@ -801,7 +805,8 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
                         while ( (breq= queue_dequeue(&coin->priorityQ,0)) != 0 )
                             myfree(breq,sizeof(*breq));
                     }
-                    for (i=n=0; i<bp->n; i++)
+                    iguana_blocksmissing(coin,&avail,missings,0,bp,bp->n,1);
+                    /*for (i=n=0; i<bp->n; i++)
                     {
                         if ( lag < coin->MAXSTUCKTIME )
                         {
@@ -826,7 +831,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
                         }
                     }
                     if ( n > 0 )
-                        printf("issued %d priority requests [%d] to unstick stuckiters.%d lag.%d\n",n,bp->hdrsi,coin->stuckiters,lag);
+                        printf("issued %d priority requests [%d] to unstick stuckiters.%d lag.%d\n",n,bp->hdrsi,coin->stuckiters,lag);*/
                 }
             }
         }
@@ -890,7 +895,7 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
     if ( bp->numissued < bp->n )
         max = bp->numissued;
     else max = bp->origmissings;
-    if ( bp->missingstime == 0 || bp->numissued < bp->n )//|| (bp == coin->current && time(NULL) > bp->missingstime+lag) ) //
+    //if ( bp->missingstime == 0 || bp->numissued < bp->n )//|| (bp == coin->current && time(NULL) > bp->missingstime+lag) ) //
     {
         if ( (n= iguana_bundlerequests(coin,missings,&bp->origmissings,&tmp,bp,lag)) > 0 )
         {
