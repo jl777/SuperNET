@@ -907,7 +907,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
         if ( (bp= coin->bundles[i]) != 0 )
         {
             iguana_bundlecalcs(coin,bp,lag);
-            if ( coin->blocks.hwmchain.height >= bp->bundleheight && coin->blocks.hwmchain.height < bp->bundleheight+bp->n )
+            if ( bp == coin->current && coin->blocks.hwmchain.height >= bp->bundleheight && coin->blocks.hwmchain.height < bp->bundleheight+bp->n )
             {
                 for (i=coin->blocks.hwmchain.height-bp->bundleheight+1; i<=bp->n; i++)
                 {
