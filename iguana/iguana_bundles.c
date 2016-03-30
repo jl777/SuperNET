@@ -868,7 +868,7 @@ int32_t iguana_cacheprocess(struct iguana_info *coin,struct iguana_bundle *bp,in
 
 int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,int32_t capacity,int32_t lag)
 {
-    uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t tmp,missing,avail,n,max;
+    uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t tmp,missing,avail,n=0,max;
     missing = iguana_blocksmissing(coin,&avail,missings,0,bp,0,lag);
     if ( strcmp("BTC",coin->symbol) != 0 )
         lag = 3;
@@ -880,11 +880,11 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
         if ( (n= iguana_bundlerequests(coin,missings,&bp->origmissings,&tmp,bp,lag)) > 0 )
         {
             bp->numissued += n;
-            //printf("bundle.[%d] numissued.%d missings.%d n.%d capacity %d -> %d\n",bp->hdrsi,bp->numissued,bp->origmissings,n,capacity,capacity-n);
             capacity -= n;
             bp->missingstime = (uint32_t)time(NULL);
         }
     }
+    printf("bundle.[%d] numissued.%d missings.%d n.%d capacity %d -> %d\n",bp->hdrsi,bp->numissued,bp->origmissings,n,capacity,capacity-n);
     return(capacity);
 }
         
