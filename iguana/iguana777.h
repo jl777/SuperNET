@@ -28,6 +28,7 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 //#define IGUANA_DISABLEPEERS
 #define _IGUANA_MAXSTUCKTIME 77
 #define IGUANA_MAXITERATIONS 10000
+#define IGUANA_DEFAULTLAG 20
 
 #define IGUANA_MAXCOINS 64
 #define IGUANA_MAXDELAY_MILLIS (3600 * 1000) 
@@ -63,7 +64,6 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 struct iguana_txdatabits { uint64_t addrind:IGUANA_LOG2MAXPEERS,filecount:10,fpos:IGUANA_LOG2PEERFILESIZE,datalen:IGUANA_LOG2PACKETSIZE,isdir:1; };
 
 #define IGUANA_MAXFILEITEMS 8192
-#define IGUANA_DEFAULTLAG 60
 #define IGUANA_RECENTPEER (3600 * 24 * 7)
 
 #define IGUANA_PERMTHREAD 0
