@@ -360,7 +360,7 @@ void mainloop(struct supernet_info *myinfo)
                         printf("main active.%d started.%p\n",coin->active,coin->started);
                         iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
                         printf("done main active.%d started.%p\n",coin->active,coin->started);
-                        //iguana_reqblocks(coin);
+                        iguana_reqblocks(coin);
                         coin->RTramchain_busy = 1;
                         if ( iguana_realtime_update(coin) > 0 )
                             flag++;

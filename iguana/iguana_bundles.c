@@ -929,13 +929,16 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
             {
                 if ( bp->hdrsi >= starti && bp->hdrsi < lasti )
                     capacity = iguana_bundlemissings(coin,bp,capacity,lag);
-                for (j=0; j<bp->n; j++)
+                if ( coin->enableCACHE != 0 )
                 {
-                    if ( bp->speculativecache[j] != 0 )
+                    for (j=0; j<bp->n; j++)
                     {
-                        if ( (block= iguana_blockhashset(coin,-1,bp->speculative[j],1)) != 0 && block->processed == 0 )
-                            iguana_cacheprocess(coin,bp,j);
+                        if ( bp->speculativecache[j] != 0 )
+                        {
+                            if ( (block= iguana_blockhashset(coin,-1,bp->speculative[j],1)) != 0 && block->processed == 0 )
+                                iguana_cacheprocess(coin,bp,j);
                             numcached++;
+                        }
                     }
                 }
             }
