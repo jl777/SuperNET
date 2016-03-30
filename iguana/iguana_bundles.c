@@ -477,9 +477,9 @@ int32_t iguana_sendhashes(struct iguana_info *coin,struct iguana_peer *addr,int3
     int32_t len; uint8_t *serialized = malloc((sizeof(int32_t) + sizeof(*hashes))*n + 1024);
     if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,hashes,n)) > 0 )
     {
-        if ( len > sizeof(serialized) )
+        if ( len > (sizeof(int32_t) + sizeof(*hashes))*n + 1024 )
         {
-            printf("FATAL ERROR iguana_sendhashes: len.%d size.%ld\n",len,sizeof(serialized));
+            printf("FATAL ERROR iguana_sendhashes: len.%d size.%ld\n",len,(sizeof(int32_t) + sizeof(*hashes))*n + 1024);
             exit(-1);
         }
         iguana_send(coin,addr,serialized,len);
