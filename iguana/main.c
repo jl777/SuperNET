@@ -359,7 +359,7 @@ void mainloop(struct supernet_info *myinfo)
                     if ( coin->active != 0 && coin->started != 0 )
                     {
                         iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
-                        iguana_reqblocks(coin);
+                        //iguana_reqblocks(coin);
                         coin->RTramchain_busy = 1;
                         if ( iguana_realtime_update(coin) > 0 )
                             flag++;
