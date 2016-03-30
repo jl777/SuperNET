@@ -530,7 +530,7 @@ int32_t iguana_bundlerequests(struct iguana_info *coin,uint8_t missings[IGUANA_M
                                 if ( (block= iguana_bundleblock(coin,&hash2,bp,nonz)) != 0 )
                                     hash2 = block->RO.hash2;
                                 bp->issued[nonz] = now;
-                                char str[65]; printf("issue.[%d:%d] %s %u\n",bp->hdrsi,nonz,bits256_str(str,hash2),now);
+                                //char str[65]; printf("issue.[%d:%d] %s %u\n",bp->hdrsi,nonz,bits256_str(str,hash2),now);
                                 nonz++;
                             } else printf("bundlerequests unexpected nonz.%d c.%d m.%d n.%d numsent.%d i.%d\n",nonz,c,m,n,numsent,i);
                         }
