@@ -881,7 +881,7 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
         if ( (n= iguana_bundlerequests(coin,missings,&bp->origmissings,&tmp,bp,lag)) > 0 )
         {
             bp->numissued += n;
-            printf("bundle.[%d] missings.%d n.%d capacity %d -> %d\n",bp->hdrsi,bp->origmissings,n,capacity,capacity-n);
+            printf("bundle.[%d] numissued.%d missings.%d n.%d capacity %d -> %d\n",bp->hdrsi,bp->numissued,bp->origmissings,n,capacity,capacity-n);
             capacity -= n;
             bp->missingstime = (uint32_t)time(NULL);
         }
