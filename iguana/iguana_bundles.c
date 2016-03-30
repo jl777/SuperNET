@@ -474,12 +474,12 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
 
 int32_t iguana_sendhashes(struct iguana_info *coin,struct iguana_peer *addr,int32_t msgtype,bits256 hashes[],int32_t n)
 {
-    int32_t len; uint8_t serialized[(sizeof(int32_t) + sizeof(*hashes))*IGUANA_PENDINGREQUESTS + 1024];
+    int32_t len; uint8_t *serialized = malloc((sizeof(int32_t) + sizeof(*hashes))*n + 1024);
     if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,hashes,n)) > 0 )
     {
         if ( len > sizeof(serialized) )
         {
-            printf("iguana_sendhashes: len.%d size.%ld\n",len,sizeof(serialized));
+            printf("FATAL ERROR iguana_sendhashes: len.%d size.%ld\n",len,sizeof(serialized));
             exit(-1);
         }
         iguana_send(coin,addr,serialized,len);
@@ -488,6 +488,7 @@ int32_t iguana_sendhashes(struct iguana_info *coin,struct iguana_peer *addr,int3
         addr->pendtime = (uint32_t)time(NULL);
         //printf("sendhashes[%d] -> %s\n",n,addr->ipaddr);
     } else n = 0;
+    free(serialized);
     return(n);
 }
 
