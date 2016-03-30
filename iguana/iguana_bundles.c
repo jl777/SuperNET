@@ -927,7 +927,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
             }
             else
             {
-                if ( bp->hdrsi >= starti && bp->hdrsi < lasti )
+                if ( bp->hdrsi >= starti && bp->hdrsi < lasti && capacity > 0 )
                     capacity = iguana_bundlemissings(coin,bp,capacity,lag);
                 for (j=0; j<bp->n; j++)
                 {
