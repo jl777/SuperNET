@@ -484,7 +484,18 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
     }
     retval = 0;
     //printf("iguana_msgparser %s parse.(%s)\n",addr->ipaddr,H->command);
-    if ( strncmp(H->command,"SuperNET",strlen("SuperNET")) == 0 )
+    if ( strcmp(H->command,"block") == 0 )
+    {
+        struct iguana_txblock txdata;
+        if ( addr != 0 )
+            addr->msgcounts.block++;
+        iguana_memreset(rawmem), iguana_memreset(txmem);
+        memset(&txdata,0,sizeof(txdata));
+        if ( (len= iguana_gentxarray(coin,rawmem,&txdata,&len,data,recvlen)) == recvlen )
+            iguana_gotblockM(coin,addr,&txdata,rawmem->ptr,H,data,recvlen);
+        else printf("parse error block txn_count.%d, len.%d vs recvlen.%d\n",txdata.block.RO.txn_count,len,recvlen);
+    }
+    else if ( strncmp(H->command,"SuperNET",strlen("SuperNET")) == 0 )
     {
         addr->supernet = 1;
         addr->msgcounts.verack++;
@@ -594,17 +605,6 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
         iguana_gotunconfirmedM(coin,addr,tx,data,recvlen);
         printf("tx recvlen.%d vs len.%d\n",recvlen,len);
         addr->msgcounts.tx++;
-    }
-    else if ( strcmp(H->command,"block") == 0 )
-    {
-        struct iguana_txblock txdata;
-        if ( addr != 0 )
-            addr->msgcounts.block++;
-        iguana_memreset(rawmem), iguana_memreset(txmem);
-        memset(&txdata,0,sizeof(txdata));
-        if ( (len= iguana_gentxarray(coin,rawmem,&txdata,&len,data,recvlen)) == recvlen )
-            iguana_gotblockM(coin,addr,&txdata,rawmem->ptr,H,data,recvlen);
-        else printf("parse error block txn_count.%d, len.%d vs recvlen.%d\n",txdata.block.RO.txn_count,len,recvlen);
     }
     else if ( strcmp(H->command,"reject") == 0 )
     {

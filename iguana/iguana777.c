@@ -418,7 +418,7 @@ void iguana_helper(void *arg)
                     //printf("[%d] bundleQ size.%d\n",bp->hdrsi,queue_size(&bundlesQ));
                     coin->numbundlesQ--;
                     if ( coin->started != 0 && time(NULL) >= bp->nexttime && coin->active != 0 )
-                        flag += iguana_bundleiters(ptr->coin,&MEM,MEMB,bp,ptr->timelimit);
+                        flag += iguana_bundleiters(ptr->coin,&MEM,MEMB,bp,ptr->timelimit,IGUANA_DEFAULTLAG);
                     else
                     {
                         //printf("skip.%d lag.%ld coin->active.%d\n",bp->hdrsi,time(NULL)-bp->nexttime,coin->active);
@@ -540,7 +540,7 @@ void iguana_coinloop(void *arg)
                     {
                         //fprintf(stderr,"metrics\n");
                         coin->peers.lastmetrics = iguana_updatemetrics(coin); // ranks peers
-                        iguana_bundlestats(coin,str);
+                        iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
                     }
                     if ( coin->longestchain+10000 > coin->blocks.maxbits )
                         iguana_recvalloc(coin,coin->longestchain + 100000);
@@ -554,20 +554,20 @@ void iguana_coinloop(void *arg)
     }
 }
 
-void iguana_coinargs(char *symbol,int64_t *maxrecvcachep,int32_t *minconfirmsp,int32_t *maxpeersp,int32_t *initialheightp,uint64_t *servicesp,int32_t *maxpendingp,int32_t *maxbundlesp,cJSON *json)
+void iguana_coinargs(char *symbol,int64_t *maxrecvcachep,int32_t *minconfirmsp,int32_t *maxpeersp,int32_t *initialheightp,uint64_t *servicesp,int32_t *maxrequestsp,int32_t *maxbundlesp,cJSON *json)
 {
     if ( (*maxrecvcachep= j64bits(json,"maxrecvcache")) != 0 )
         *maxrecvcachep *= 1024 * 1024 * 1024L;
     *minconfirmsp = juint(json,"minconfirms");
     *maxpeersp = juint(json,"maxpeers");
-    *maxpendingp = juint(json,"maxpending");
+    *maxrequestsp = juint(json,"maxrequests");
     *maxbundlesp = juint(json,"maxbundles");
     if ( (*initialheightp= juint(json,"initialheight")) == 0 )
         *initialheightp = (strcmp(symbol,"BTC") == 0) ? 400000 : 100000;
     *servicesp = j64bits(json,"services");
 }
 
-struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,int64_t maxrecvcache,uint64_t services,int32_t initialheight,int32_t maphash,int32_t minconfirms,int32_t maxpending,int32_t maxbundles,cJSON *json)
+struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,int64_t maxrecvcache,uint64_t services,int32_t initialheight,int32_t maphash,int32_t minconfirms,int32_t maxrequests,int32_t maxbundles,cJSON *json)
 {
     struct iguana_chain *iguana_createchain(cJSON *json);
     struct iguana_info *coin; int32_t j,m,mult,maxval,mapflags; char dirname[512]; cJSON *peers;
@@ -578,8 +578,8 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         coin->MAXPEERS = (strcmp(symbol,"BTC") == 0) ? 128 : 64;
     if ( (coin->MAXRECVCACHE= maxrecvcache) == 0 )
         coin->MAXRECVCACHE = IGUANA_MAXRECVCACHE;
-    if ( (coin->MAXPENDING= maxpending) <= 0 )
-        coin->MAXPENDING = (strcmp(symbol,"BTC") == 0) ? _IGUANA_MAXPENDING : 4*_IGUANA_MAXPENDING;
+    if ( (coin->MAXPENDINGREQUESTS= maxrequests) <= 0 )
+        coin->MAXPENDINGREQUESTS = (strcmp(symbol,"BTC") == 0) ? IGUANA_MAXPENDINGREQUESTS : IGUANA_PENDINGREQUESTS;
     coin->myservices = services;
     printf("ensure directories\n");
     sprintf(dirname,"accounts/%s",symbol), OS_ensure_directory(dirname);
@@ -646,7 +646,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
 
 int32_t iguana_launchcoin(char *symbol,cJSON *json)
 {
-    int32_t maxpeers,maphash,initialheight,minconfirms,maxpending,maxbundles;
+    int32_t maxpeers,maphash,initialheight,minconfirms,maxrequests,maxbundles;
     int64_t maxrecvcache; uint64_t services; struct iguana_info **coins,*coin;
     if ( symbol == 0 )
         return(-1);
@@ -657,9 +657,9 @@ int32_t iguana_launchcoin(char *symbol,cJSON *json)
         if ( juint(json,"GBavail") < 8 )
             maphash = IGUANA_MAPHASHTABLES;
         else maphash = 0;
-        iguana_coinargs(symbol,&maxrecvcache,&minconfirms,&maxpeers,&initialheight,&services,&maxpending,&maxbundles,json);
+        iguana_coinargs(symbol,&maxrecvcache,&minconfirms,&maxpeers,&initialheight,&services,&maxrequests,&maxbundles,json);
         coins = mycalloc('A',1+1,sizeof(*coins));
-        if ( (coin= iguana_setcoin(symbol,coins,maxpeers,maxrecvcache,services,initialheight,maphash,minconfirms,maxpending,maxbundles,json)) != 0 )
+        if ( (coin= iguana_setcoin(symbol,coins,maxpeers,maxrecvcache,services,initialheight,maphash,minconfirms,maxrequests,maxbundles,json)) != 0 )
         {
             coins[0] = (void *)((long)1);
             coins[1] = coin;
@@ -680,7 +680,7 @@ int32_t iguana_launchcoin(char *symbol,cJSON *json)
 void iguana_coins(void *arg)
 {
     struct iguana_info **coins,*coin; char *jsonstr,*symbol; cJSON *array,*item,*json;
-    int32_t i,n,maxpeers,maphash,initialheight,minconfirms,maxpending,maxbundles;
+    int32_t i,n,maxpeers,maphash,initialheight,minconfirms,maxrequests,maxbundles;
     int64_t maxrecvcache; uint64_t services; struct vin_info V;
     memset(&V,0,sizeof(V));
     if ( (jsonstr= arg) != 0 && (json= cJSON_Parse(jsonstr)) != 0 )
@@ -710,8 +710,8 @@ void iguana_coins(void *arg)
                 printf("skip strange coin.(%s)\n",symbol);
                 continue;
             }
-            iguana_coinargs(symbol,&maxrecvcache,&minconfirms,&maxpeers,&initialheight,&services,&maxpending,&maxbundles,item);
-            coins[1 + i] = coin = iguana_setcoin(symbol,coins,maxpeers,maxrecvcache,services,initialheight,maphash,minconfirms,maxpending,maxbundles,item);
+            iguana_coinargs(symbol,&maxrecvcache,&minconfirms,&maxpeers,&initialheight,&services,&maxrequests,&maxbundles,item);
+            coins[1 + i] = coin = iguana_setcoin(symbol,coins,maxpeers,maxrecvcache,services,initialheight,maphash,minconfirms,maxrequests,maxbundles,item);
         }
         coins[0] = (void *)((long)n);
         iguana_coinloop(coins);

@@ -1178,7 +1178,7 @@ int32_t iguana_volatileinit(struct iguana_info *coin)
         }
     }
     coin->RTheight = coin->balanceswritten * coin->chain->bundlesize;
-    iguana_bundlestats(coin,buf);
+    iguana_bundlestats(coin,buf,IGUANA_DEFAULTLAG);
     return(coin->balanceswritten);
 }
 

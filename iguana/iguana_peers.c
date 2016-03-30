@@ -342,7 +342,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
                     return(-1);
                 }
                 sleep(13);
-                continue;
+                //continue;
             }
             if ( errno != ECONNRESET && errno != ENOTCONN && errno != ECONNREFUSED && errno != ETIMEDOUT && errno != EHOSTUNREACH )
             {
@@ -964,10 +964,28 @@ int64_t iguana_peerallocated(struct iguana_info *coin,struct iguana_peer *addr)
 }
 #endif
 
+void iguana_peerslotinit(struct iguana_info *coin,struct iguana_peer *addr,int32_t slotid,uint64_t ipbits)
+{
+    char fname[1024];
+    addr->ipbits = ipbits;
+    addr->addrind = slotid;
+    sprintf(fname,"DB/%s/vouts/%04d.vouts",coin->symbol,addr->addrind);
+    if ( (addr->voutsfp= fopen(fname,"rb+")) != 0 )
+        fseek(addr->voutsfp,0,SEEK_END);
+    else addr->voutsfp = fopen(fname,"wb+");
+    if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
+    {
+        sprintf(fname,"purgeable/%s/%04d.vins",coin->symbol,addr->addrind);
+        if ( (addr->vinsfp= fopen(fname,"rb+")) != 0 )
+            fseek(addr->vinsfp,0,SEEK_END);
+        else addr->vinsfp = fopen(fname,"wb+");
+    }
+}
+
 void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
 {
     static uint32_t lastping;
-    struct pollfd fds; struct iguana_bundlereq *req; char fname[1024]; uint8_t *buf; uint32_t ipbits;
+    struct pollfd fds; struct iguana_bundlereq *req; uint8_t *buf; uint32_t ipbits;
     int32_t bufsize,flag,run,timeout = coin->polltimeout == 0 ? 10 : coin->polltimeout;
 #ifdef IGUANA_PEERALLOC
     int32_t i;  int64_t remaining; struct OS_memspace *mem[sizeof(addr->SEROUT)/sizeof(*addr->SEROUT)];
@@ -983,18 +1001,7 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
         iguana_memreset(mem[i]);
     }
 #endif
-    addr->addrind = (int32_t)(((long)addr - (long)&coin->peers.active[0]) / sizeof(*addr));
-    sprintf(fname,"DB/%s/vouts/%04d.vouts",coin->symbol,addr->addrind);
-    if ( (addr->voutsfp= fopen(fname,"rb+")) != 0 )
-        fseek(addr->voutsfp,0,SEEK_END);
-    else addr->voutsfp = fopen(fname,"wb+");
-    if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
-    {
-        sprintf(fname,"purgeable/%s/%04d.vins",coin->symbol,addr->addrind);
-        if ( (addr->vinsfp= fopen(fname,"rb+")) != 0 )
-            fseek(addr->vinsfp,0,SEEK_END);
-        else addr->vinsfp = fopen(fname,"wb+");
-    }
+    iguana_peerslotinit(coin,addr,(int32_t)(((long)addr - (long)&coin->peers.active[0]) / sizeof(*addr)),calc_ipbits(addr->ipaddr));
     //addr->pubkey = GENESIS_PUBKEY;
     ipbits = (uint32_t)addr->ipbits;
     vcalc_sha256(0,addr->iphash.bytes,(uint8_t *)&ipbits,sizeof(ipbits));

@@ -274,7 +274,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
     if ( newblock == 0 )
         return(0);
     hwmchain = &coin->blocks.hwmchain;
-    if ( hwmchain->height > 0 && ((bp= coin->current) == 0 || hwmchain->height/coin->chain->bundlesize >= bp->hdrsi+bp->isRT) )
+    if ( hwmchain->height > 0 && ((bp= coin->current) == 0 || hwmchain->height/coin->chain->bundlesize > bp->hdrsi+0*bp->isRT) )
         return(0);
     if ( (block= iguana_blockfind(coin,newblock->RO.hash2)) != 0 )
     {
@@ -373,7 +373,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                                 bp->speculative[block->height % coin->chain->bundlesize] = block->RO.hash2;
                             bp->blocks[block->height % coin->chain->bundlesize] = block;*/
                         }
-                        if ( coin->started != 0 && (block->height % coin->chain->bundlesize) == 10 && block->height > coin->longestchain-coin->chain->bundlesize*2 )
+                        if ( coin->started != 0 && (block->height % coin->chain->bundlesize) == coin->minconfirms && (block->height > coin->longestchain-coin->chain->bundlesize*2 || ((block->height / coin->chain->bundlesize) % 50) == 49) )
                         {
                             //printf("savehdrs\n");
                             iguana_savehdrs(coin);

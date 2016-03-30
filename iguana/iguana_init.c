@@ -427,6 +427,7 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
     FILE *fp; char fname[512],*symbol; int32_t iter;
     coin->sleeptime = 10000;
     symbol = coin->symbol;
+    iguana_peerslotinit(coin,&coin->internaladdr,IGUANA_MAXPEERS,calc_ipbits("127.0.0.1:7777"));
     if ( initialheight < coin->chain->bundlesize*10 )
         initialheight = coin->chain->bundlesize*10;
     iguana_recvalloc(coin,initialheight);

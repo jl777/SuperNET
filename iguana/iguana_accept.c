@@ -72,6 +72,7 @@ void iguana_acceptloop(void *args)
             printf("another daemon running, no need to have iguana accept connections\n");
             return;
         }
+        return;
         sleep(5);
     }
     printf(">>>>>>>>>>>>>>>> iguana_bindloop 127.0.0.1:%d bind sock.%d\n",port,coin->bindsock);
