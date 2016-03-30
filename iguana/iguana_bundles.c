@@ -906,7 +906,6 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
     {
         if ( (bp= coin->bundles[i]) != 0 )
         {
-            //iguana_bundlecalcs(coin,bp,lag);
             if ( bp == coin->current && coin->blocks.hwmchain.height >= bp->bundleheight && coin->blocks.hwmchain.height < bp->bundleheight+bp->n )
             {
                 for (i=coin->blocks.hwmchain.height-bp->bundleheight+1; i<=bp->n; i++)
@@ -942,10 +941,11 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
                     }
                 }
             }
-            estsize += bp->estsize;
             bp->metric = coin->bundlescount - bp->hdrsi;
             if ( done > coin->bundlescount*IGUANA_HEADPERCENTAGE && bp->hdrsi > coin->bundlescount*IGUANA_TAILPERCENTAGE )
                 bp->metric *= 1000;
+            iguana_bundlecalcs(coin,bp,lag);
+            estsize += bp->estsize;
             numhashes += bp->numhashes;
             numcached += bp->numcached;
             numrecv += bp->numrecv;
