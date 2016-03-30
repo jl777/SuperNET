@@ -876,10 +876,11 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
     if ( bp == coin->current )
         lag = 10;
     missing = iguana_blocksmissing(coin,&avail,missings,0,bp,0,lag);
-    if ( bp->missingstime == 0 || (bp == coin->current && missing < (bp->origmissings >> 1)) || missing < (bp->origmissings>>3) || time(NULL) > bp->missingstime+lag )
+    if ( bp->missingstime == 0 || bp->numissued < bp->n || (bp == coin->current && missing < (bp->origmissings >> 1)) || missing < (bp->origmissings>>3) || time(NULL) > bp->missingstime+lag )
     {
         if ( (n= iguana_bundlerequests(coin,missings,&bp->origmissings,&tmp,bp,lag)) > 0 )
         {
+            bp->numissued += n;
             printf("bundle.[%d] missings.%d n.%d capacity %d -> %d\n",bp->hdrsi,bp->origmissings,n,capacity,capacity-n);
             capacity -= n;
             bp->missingstime = (uint32_t)time(NULL);
