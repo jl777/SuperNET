@@ -610,7 +610,7 @@ int32_t iguana_setmaxbundles(struct iguana_info *coin)
     double completed;
     if ( coin->current != 0 && coin->bundlescount != 0 )
     {
-        completed = cbrt(((double)coin->current->hdrsi + 1) / coin->bundlescount);
+        completed = sqrt(((double)coin->current->hdrsi + 1) / coin->bundlescount);
         coin->MAXBUNDLES = (double)(coin->endPEND - coin->startPEND)*completed + coin->startPEND;
         //printf("MAXBUNDLES %d (%d -> %d) completed %.3f\n",coin->MAXBUNDLES,coin->startPEND,coin->endPEND,completed);
     }
@@ -791,9 +791,9 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
             if ( coin->stucktime != 0 )
             {
                 lag = (int32_t)time(NULL)-coin->stucktime;
-                if ( ((lag/coin->MAXSTUCKTIME)>>1) > coin->stuckiters )
+                if ( (lag/coin->MAXSTUCKTIME) > coin->stuckiters )
                 {
-                    coin->stuckiters = (int32_t)lag/60;
+                    coin->stuckiters = (int32_t)(lag/coin->MAXSTUCKTIME);
                     if ( 0 && lag > coin->MAXSTUCKTIME )
                     {
                         while ( (breq= queue_dequeue(&coin->blocksQ,0)) != 0 )
@@ -890,7 +890,7 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
     if ( bp->numissued < bp->n )
         max = bp->numissued;
     else max = bp->origmissings;
-    if ( bp->missingstime == 0 || bp->numissued < bp->n || (bp == coin->current && time(NULL) > bp->missingstime+lag) ) //
+    if ( bp->missingstime == 0 || bp->numissued < bp->n )//|| (bp == coin->current && time(NULL) > bp->missingstime+lag) ) //
     {
         if ( (n= iguana_bundlerequests(coin,missings,&bp->origmissings,&tmp,bp,lag)) > 0 )
         {
