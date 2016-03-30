@@ -1309,7 +1309,7 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
 
 int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2,int32_t priority)
 {
-    queue_t *Q; char *str; uint32_t now; int32_t n,height = -1; struct iguana_blockreq *req; struct iguana_block *block = 0;
+    queue_t *Q; char *str; uint32_t now; int32_t n,lag,height = -1; struct iguana_blockreq *req; struct iguana_block *block = 0;
     if ( bits256_nonz(hash2) == 0 )
     {
         printf("cant queue zerohash bundlei.%d\n",bundlei);
@@ -1321,6 +1321,7 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
         //printf("found valid [%d:%d] in blockQ\n",block!=0?block->hdrsi:-1,block!=0?block->bundlei:-1);
         return(0);
     }
+    lag = (priority == 0) ? 60 : 10;
     now = (uint32_t)time(NULL);
     block = iguana_blockfind(coin,hash2);
     if ( priority != 0 || block == 0 || iguana_blockstatus(coin,block) == 0 )
@@ -1329,7 +1330,7 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
         {
             if (  bits256_cmp(coin->APIblockhash,hash2) != 0 && bp->emitfinish != 0 )
                 return(0);
-            if ( now < bp->issued[bundlei]+10 )
+            if ( now < bp->issued[bundlei]+lag )
                 return(0);
             if ( bundlei >= 0 && bundlei < bp->n )
             {
@@ -1361,7 +1362,7 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
                 }
                 return(0);
             }
-            if ( block->queued != 0 || block->txvalid != 0 || now < block->issued+10 )
+            if ( block->queued != 0 || block->txvalid != 0 || now < block->issued+lag )
                 return(0);
             height = block->height;
         }
