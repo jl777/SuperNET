@@ -871,11 +871,11 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
     uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t tmp,missing,avail,n,max;
     missing = iguana_blocksmissing(coin,&avail,missings,0,bp,0,lag);
     if ( strcmp("BTC",coin->symbol) != 0 )
-        lag /= 10;
+        lag = 3;
     if ( bp->numissued < bp->n )
         max = bp->numissued;
-    else max = bp->origmissings;
-    if ( bp->missingstime == 0 || bp->numissued < bp->n || (bp == coin->current && missing < (max >> 2)) || missing < (max >> 4) || time(NULL) > bp->missingstime+lag )
+    else max = bp->n;
+    if ( bp->missingstime == 0 || bp->numissued < bp->n || bp == coin->current || time(NULL) > bp->missingstime+lag )
     {
         if ( (n= iguana_bundlerequests(coin,missings,&bp->origmissings,&tmp,bp,lag)) > 0 )
         {

@@ -550,7 +550,7 @@ void iguana_coinloop(void *arg)
             }
         }
         if ( flag == 0 )
-            usleep(1000 + coin->isRT*90000);
+            usleep(100000 + coin->isRT*290000);
     }
 }
 
