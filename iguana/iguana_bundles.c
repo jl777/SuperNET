@@ -451,7 +451,7 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
             }
             if ( (block= iguana_bundleblock(coin,&hash2,bp,i)) != 0 )
             {
-                if ( block->txvalid != 0 || block->fpipbits != 0 || block->RO.recvlen != 0 )
+                if ( block->txvalid != 0 || block->fpos < 0 || block->fpipbits != 0 || block->RO.recvlen != 0 )
                 {
                     //printf("[%d:%d].block ",bp->hdrsi,i);
                     continue;
@@ -474,7 +474,7 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
 
 int32_t iguana_sendhashes(struct iguana_info *coin,struct iguana_peer *addr,int32_t msgtype,bits256 hashes[],int32_t n)
 {
-    /*int32_t len; uint8_t *serialized = malloc((sizeof(int32_t) + sizeof(*hashes))*n + 1024);
+    int32_t len; uint8_t *serialized = malloc((sizeof(int32_t) + sizeof(*hashes))*n + 1024);
     if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,hashes,n)) > 0 )
     {
         if ( len > (sizeof(int32_t) + sizeof(*hashes))*n + 1024 )
@@ -488,11 +488,14 @@ int32_t iguana_sendhashes(struct iguana_info *coin,struct iguana_peer *addr,int3
         addr->pendtime = (uint32_t)time(NULL);
         //printf("sendhashes[%d] -> %s\n",n,addr->ipaddr);
     } else n = 0;
-    free(serialized);*/
-    int32_t i; for (i=0; i<n; i++)
-    iguana_sendblockreqPT(coin,addr,0,-1,hashes[i],0);
+    free(serialized);
+    /*int32_t i;
+    for (i=0; i<n; i++)
+    {
+        //iguana_sendblockreqPT(coin,addr,0,-1,hashes[i],0);
 
-        //iguana_blockQ("test",coin,0,-1,hashes[i],0);
+        iguana_blockQ("test",coin,0,-1,hashes[i],1);
+    }*/
     return(n);
 }
 
@@ -880,7 +883,7 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
     if ( bp->numissued < bp->n )
         max = bp->numissued;
     else max = bp->origmissings;
-    if ( bp->missingstime == 0 || bp == coin->current || missing < (max >> 3) || time(NULL) > bp->missingstime+lag ) //
+    if ( bp->missingstime == 0 || missing < (max >> 3) || bp->numissued < bp->n )//|| time(NULL) > bp->missingstime+lag ) //
     {
         if ( (n= iguana_bundlerequests(coin,missings,&bp->origmissings,&tmp,bp,lag)) > 0 )
         {
