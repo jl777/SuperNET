@@ -490,7 +490,9 @@ int32_t iguana_sendhashes(struct iguana_info *coin,struct iguana_peer *addr,int3
     } else n = 0;
     free(serialized);*/
     int32_t i; for (i=0; i<n; i++)
-        iguana_blockQ("test",coin,0,-1,hashes[i],0);
+    iguana_sendblockreqPT(coin,addr,0,-1,hashes[i],0);
+
+        //iguana_blockQ("test",coin,0,-1,hashes[i],0);
     return(n);
 }
 
