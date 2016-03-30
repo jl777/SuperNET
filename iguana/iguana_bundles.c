@@ -661,11 +661,7 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
         return(0);
 #endif
     for (i=0; i<bp->hdrsi; i++)
-        if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish < coin->startutc || prevbp->startutxo == 0
-//#ifdef IGUANA_SERIALIZE_SPENDVECTORGEN
-            || (i < bp->hdrsi-16 && prevbp->utxofinish <= 1)
-//#endif
-          )
+        if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish < coin->startutc || prevbp->utxofinish == 0 )
             break;
     if ( bp->hdrsi < coin->blocks.hwmchain.height/coin->chain->bundlesize && i == bp->hdrsi && time(NULL) > bp->emitfinish+10 )//&& coin->emitbusy <= 4 )
     {
