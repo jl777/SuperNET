@@ -732,7 +732,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
             if ( (bp= iguana_bundleset(coin,&block,&bundlei,&blocks[i])) != 0 )
             {
                 bp->dirty++;
-                if ( 1 && bp->issued[bundlei] == 0 )
+                if ( 0 && bp->issued[bundlei] == 0 )
                     iguana_blockQ("recvhdr",coin,bp,bundlei,blocks[i].RO.hash2,0);
                 //printf("{%d:%d} ",bp->hdrsi,bundlei);
                 if ( i == 0 )
@@ -826,7 +826,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
             {
                 bp->speculative[i] = blockhashes[i];
                 //printf("speculate new issue [%d:%d]\n",bp->hdrsi,i);
-                //iguana_blockQ("speculate",coin,bp,-i,blockhashes[i],0);
+                iguana_blockQ("speculate",coin,bp,-i,blockhashes[i],0);
             }
             bp->speculative[0] = bp->hashes[0];
             bp->numspec = num <= bp->n+1 ? num : bp->n+1;

@@ -381,8 +381,8 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                         }
                     }
                 }
-                //if ( block->fpipbits == 0 )
-                //    iguana_blockQ(coin,bp,block->height % coin->chain->bundlesize,block->RO.hash2,1);
+                if ( strcmp("BTC",coin->symbol) == 0 && block->fpipbits == 0 )
+                    iguana_blockQ("mainchain",coin,bp,block->height % coin->chain->bundlesize,block->RO.hash2,0);
                 block->mainchain = 1;
                 //iguana_blockreq(coin,block->height+1,0);
                 return(block);
