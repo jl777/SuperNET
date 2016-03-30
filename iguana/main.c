@@ -344,7 +344,7 @@ mksquashfs DB/BTC BTC.squash1M -b 1048576
 
 void mainloop(struct supernet_info *myinfo)
 {
-    int32_t i,flag; struct iguana_info *coin; struct iguana_helper *ptr; struct iguana_bundle *bp;
+    int32_t i,flag; char str[65]; struct iguana_info *coin; struct iguana_helper *ptr; struct iguana_bundle *bp;
     sleep(3);
     printf("mainloop\n");
     while ( 1 )
@@ -358,6 +358,8 @@ void mainloop(struct supernet_info *myinfo)
                     //printf("main active.%d started.%p\n",coin->active,coin->started);
                     if ( coin->active != 0 && coin->started != 0 )
                     {
+                        iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
+                        iguana_reqblocks(coin);
                         coin->RTramchain_busy = 1;
                         if ( iguana_realtime_update(coin) > 0 )
                             flag++;

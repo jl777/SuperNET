@@ -541,7 +541,7 @@ void iguana_coinloop(void *arg)
                         //fprintf(stderr,"metrics\n");
                         coin->peers.lastmetrics = iguana_updatemetrics(coin); // ranks peers
                     }
-                    iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
+                    //iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
                     if ( coin->longestchain+10000 > coin->blocks.maxbits )
                         iguana_recvalloc(coin,coin->longestchain + 100000);
                     flag += iguana_processrecv(coin);
