@@ -479,7 +479,7 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
 int32_t iguana_sendhashes(struct iguana_info *coin,struct iguana_peer *addr,int32_t msgtype,bits256 hashes[],int32_t n)
 {
     int32_t len; uint8_t *serialized;
-    if ( 1 )// && strcmp("BTC",coin->symbol) != 0 )
+    if ( (rand() % 10) == 0 || strcmp("BTC",coin->symbol) != 0 )
     {
         serialized = malloc((sizeof(int32_t) + sizeof(*hashes))*n + 1024);
         if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,hashes,n)) > 0 )
@@ -502,8 +502,8 @@ int32_t iguana_sendhashes(struct iguana_info *coin,struct iguana_peer *addr,int3
         int32_t i;
         for (i=0; i<n; i++)
         {
-            //iguana_sendblockreqPT(coin,addr,0,-1,hashes[i],0);
-            iguana_blockQ("test",coin,0,-1,hashes[i],0);
+            iguana_sendblockreqPT(coin,addr,0,-1,hashes[i],0);
+            //iguana_blockQ("test",coin,0,-1,hashes[i],0);
         }
     }
     return(n);
@@ -804,7 +804,8 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
                         while ( (breq= queue_dequeue(&coin->priorityQ,0)) != 0 )
                             myfree(breq,sizeof(*breq));
                     }
-                    iguana_blocksmissing(coin,&avail,missings,0,bp,bp->n,coin->MAXSTUCKTIME);
+                    n = iguana_blocksmissing(coin,&avail,missings,0,bp,bp->n,0*coin->MAXSTUCKTIME);
+                    printf("issued %d priority requests [%d] to unstick stuckiters.%d lag.%d\n",n,bp->hdrsi,coin->stuckiters,lag);
                     /*for (i=n=0; i<bp->n; i++)
                     {
                         if ( lag < coin->MAXSTUCKTIME )
