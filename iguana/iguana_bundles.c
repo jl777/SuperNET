@@ -474,7 +474,10 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
 
 int32_t iguana_sendhashes(struct iguana_info *coin,struct iguana_peer *addr,int32_t msgtype,bits256 hashes[],int32_t n)
 {
-    int32_t len; uint8_t *serialized = malloc((sizeof(int32_t) + sizeof(*hashes))*n + 1024);
+    int32_t len; uint8_t *serialized;
+    if ( strcmp("BTC",coin->symbol) != 0 )
+    {
+    serialized = malloc((sizeof(int32_t) + sizeof(*hashes))*n + 1024);
     if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,hashes,n)) > 0 )
     {
         if ( len > (sizeof(int32_t) + sizeof(*hashes))*n + 1024 )
@@ -489,13 +492,17 @@ int32_t iguana_sendhashes(struct iguana_info *coin,struct iguana_peer *addr,int3
         //printf("sendhashes[%d] -> %s\n",n,addr->ipaddr);
     } else n = 0;
     free(serialized);
-    /*int32_t i;
-    for (i=0; i<n; i++)
+    }
+    else
     {
-        //iguana_sendblockreqPT(coin,addr,0,-1,hashes[i],0);
-
-        iguana_blockQ("test",coin,0,-1,hashes[i],1);
-    }*/
+        int32_t i;
+        for (i=0; i<n; i++)
+        {
+            //iguana_sendblockreqPT(coin,addr,0,-1,hashes[i],0);
+            
+            iguana_blockQ("test",coin,0,-1,hashes[i],0);
+        }
+    }
     return(n);
 }
 
@@ -879,7 +886,7 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
     uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t tmp,missing,avail,n=0,max;
     missing = iguana_blocksmissing(coin,&avail,missings,0,bp,0,lag);
     if ( strcmp("BTC",coin->symbol) != 0 )
-        lag = 3;
+        lag = 13;
     if ( bp->numissued < bp->n )
         max = bp->numissued;
     else max = bp->origmissings;
