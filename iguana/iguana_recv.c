@@ -1321,7 +1321,7 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
         //printf("found valid [%d:%d] in blockQ\n",block!=0?block->hdrsi:-1,block!=0?block->bundlei:-1);
         return(0);
     }
-    lag = (priority == 0) ? 60 : 10;
+    lag = (priority == 0) ? IGUANA_DEFAULTLAG*3 : IGUANA_DEFAULTLAG;
     now = (uint32_t)time(NULL);
     block = iguana_blockfind(coin,hash2);
     if ( priority != 0 || block == 0 || iguana_blockstatus(coin,block) == 0 )

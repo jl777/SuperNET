@@ -451,7 +451,7 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
             }
             if ( (block= iguana_bundleblock(coin,&hash2,bp,i)) != 0 )
             {
-                if ( block->txvalid != 0 )
+                if ( block->txvalid != 0 || block->fpipbits != 0 || block->RO.recvlen != 0 )
                 {
                     //printf("[%d:%d].block ",bp->hdrsi,i);
                     continue;
@@ -907,6 +907,16 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
         if ( (bp= coin->bundles[i]) != 0 )
         {
             iguana_bundlecalcs(coin,bp,lag);
+            if ( coin->blocks.hwmchain.height >= bp->bundleheight && coin->blocks.hwmchain.height < bp->bundleheight+bp->n )
+            {
+                for (i=coin->blocks.hwmchain.height-bp->bundleheight+1; i<=bp->n; i++)
+                {
+                    if ( (block= iguana_bundleblock(coin,&hash2,bp,i)) == 0 && bits256_nonz(hash2) != 0 )
+                        block = iguana_blockfind(coin,hash2);
+                    if ( block == 0 || bits256_nonz(block->RO.prev_block) == 0 || _iguana_chainlink(coin,block) == 0 )
+                        break;
+                }
+            }
             if ( bp->emitfinish > 1 )
             {
                 for (j=0; j<bp->n; j++)
@@ -1034,16 +1044,6 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
     }
     if ( (bp= coin->current) != 0 )
     {
-        if ( coin->blocks.hwmchain.height >= bp->bundleheight && coin->blocks.hwmchain.height < bp->bundleheight+bp->n )
-        {
-            for (i=coin->blocks.hwmchain.height-bp->bundleheight+1; i<=bp->n; i++)
-            {
-                if ( (block= iguana_bundleblock(coin,&hash2,bp,i)) == 0 && bits256_nonz(hash2) != 0 )
-                    block = iguana_blockfind(coin,hash2);
-               if ( block == 0 || bits256_nonz(block->RO.prev_block) == 0 || _iguana_chainlink(coin,block) == 0 )
-                    break;
-            }
-        }
         if ( bp->queued == 0 )
             iguana_bundleQ(coin,firstgap,1000);
     }
