@@ -466,7 +466,7 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
             SETBIT(missings,i);
             m++;
         }
-    } else printf("[%d] emitfinish.%u\n",bp->hdrsi,bp->emitfinish);
+    } //else printf("[%d] emitfinish.%u\n",bp->hdrsi,bp->emitfinish);
     *nonzp = nonz;
     //printf("missings.[%d] m.%d nonz.%d spec.%p[%d]\n",bp->hdrsi,m,nonz,bp->speculative,bp->numspec);
     return(m);
@@ -872,16 +872,17 @@ int32_t iguana_cacheprocess(struct iguana_info *coin,struct iguana_bundle *bp,in
 
 int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,int32_t capacity,int32_t lag)
 {
-    uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t tmp,missing,avail,n;
+    uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t tmp,missing,avail,n,max;
     if ( bp == coin->current )
         lag = 10;
     missing = iguana_blocksmissing(coin,&avail,missings,0,bp,0,lag);
-    if ( bp->missingstime == 0 || bp->numissued < bp->n || (bp == coin->current && missing < (bp->origmissings >> 1)) || missing < (bp->origmissings>>3) || time(NULL) > bp->missingstime+lag )
+    max = (bp->origmissings < bp->n) ? bp->origmissings : bp->n;
+    if ( bp->missingstime == 0 || bp->numissued < bp->n || (bp == coin->current && missing < (max >> 1)) || missing < (max >> 3) || time(NULL) > bp->missingstime+lag )
     {
         if ( (n= iguana_bundlerequests(coin,missings,&bp->origmissings,&tmp,bp,lag)) > 0 )
         {
             bp->numissued += n;
-            printf("bundle.[%d] numissued.%d missings.%d n.%d capacity %d -> %d\n",bp->hdrsi,bp->numissued,bp->origmissings,n,capacity,capacity-n);
+            //printf("bundle.[%d] numissued.%d missings.%d n.%d capacity %d -> %d\n",bp->hdrsi,bp->numissued,bp->origmissings,n,capacity,capacity-n);
             capacity -= n;
             bp->missingstime = (uint32_t)time(NULL);
         }
