@@ -874,9 +874,8 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
         lag = 3;
     if ( bp->numissued < bp->n )
         max = bp->numissued;
-    else if ( bp != coin->current )
-        return(0);//max = bp->n;//origmissings;
-    if ( bp->missingstime == 0 || bp == coin->current || bp->numissued < bp->n || missing < (max >> 3) || time(NULL) > bp->missingstime+lag ) //
+    else max = origmissings;
+    if ( bp->missingstime == 0 || bp == coin->current || missing < (max >> 3) || time(NULL) > bp->missingstime+lag ) //
     {
         if ( (n= iguana_bundlerequests(coin,missings,&bp->origmissings,&tmp,bp,lag)) > 0 )
         {
@@ -907,7 +906,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
     {
         if ( (bp= coin->bundles[i]) != 0 )
         {
-            iguana_bundlecalcs(coin,bp,lag);
+            //iguana_bundlecalcs(coin,bp,lag);
             if ( bp == coin->current && coin->blocks.hwmchain.height >= bp->bundleheight && coin->blocks.hwmchain.height < bp->bundleheight+bp->n )
             {
                 for (i=coin->blocks.hwmchain.height-bp->bundleheight+1; i<=bp->n; i++)
