@@ -874,8 +874,9 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
         lag = 3;
     if ( bp->numissued < bp->n )
         max = bp->numissued;
-    else return(0);//max = bp->n;//origmissings;
-    if ( bp->missingstime == 0 || bp->numissued < bp->n || missing < (max >> 3) || time(NULL) > bp->missingstime+lag ) //bp == coin->current ||
+    else if ( bp != coin->current )
+        return(0);//max = bp->n;//origmissings;
+    if ( bp->missingstime == 0 || bp == coin->current || bp->numissued < bp->n || missing < (max >> 3) || time(NULL) > bp->missingstime+lag ) //
     {
         if ( (n= iguana_bundlerequests(coin,missings,&bp->origmissings,&tmp,bp,lag)) > 0 )
         {
