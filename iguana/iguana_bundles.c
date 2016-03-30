@@ -530,7 +530,7 @@ int32_t iguana_bundlerequests(struct iguana_info *coin,uint8_t missings[IGUANA_M
                                 if ( (block= iguana_bundleblock(coin,&hash2,bp,nonz)) != 0 )
                                     hash2 = block->RO.hash2;
                                 bp->issued[nonz] = now;
-                                //char str[65]; printf("issue.[%d:%d] %s %u\n",bp->hdrsi,nonz,bits256_str(str,hash2),now);
+                                char str[65]; printf("issue.[%d:%d] %s %u\n",bp->hdrsi,nonz,bits256_str(str,hash2),now);
                                 nonz++;
                             } else printf("bundlerequests unexpected nonz.%d c.%d m.%d n.%d numsent.%d i.%d\n",nonz,c,m,n,numsent,i);
                         }
@@ -870,6 +870,8 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
 {
     uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t tmp,missing,avail,n,max;
     missing = iguana_blocksmissing(coin,&avail,missings,0,bp,0,lag);
+    if ( strcmp("BTC",coin->symbol) != 0 )
+        lag /= 10;
     if ( bp->numissued < bp->n )
         max = bp->numissued;
     else max = bp->origmissings;
@@ -1038,7 +1040,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
             {
                 if ( (block= iguana_bundleblock(coin,&hash2,bp,i)) == 0 && bits256_nonz(hash2) != 0 )
                     block = iguana_blockfind(coin,hash2);
-               if ( block == 0 || _iguana_chainlink(coin,block) == 0 )
+               if ( block == 0 || bits256_nonz(block->RO.prev_block) == 0 || _iguana_chainlink(coin,block) == 0 )
                     break;
             }
         }

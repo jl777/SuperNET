@@ -309,13 +309,13 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             {
                 numDuplicates++;
                 sizeDuplicates += recvlen;
-                //printf("duplicate [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
+                printf("duplicate [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
                 if ( bits256_cmp(origtxdata->block.RO.hash2,block->RO.hash2) == 0 )
                     return;
                 else printf("mismatched tx received? mainchain.%d\n",block->mainchain);
                 if ( block->mainchain != 0 )
                     return;
-            } //else printf("recv [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
+            } else printf("recv [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
             block->RO = origtxdata->block.RO;
             block->txvalid = 1;
             //printf("update prev for [%d:%d]\n",bp->hdrsi,bundlei);
