@@ -826,7 +826,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
             {
                 bp->speculative[i] = blockhashes[i];
                 //printf("speculate new issue [%d:%d]\n",bp->hdrsi,i);
-                iguana_blockQ("speculate",coin,bp,-i,blockhashes[i],0);
+                //iguana_blockQ("speculate",coin,bp,-i,blockhashes[i],0);
             }
             bp->speculative[0] = bp->hashes[0];
             bp->numspec = num <= bp->n+1 ? num : bp->n+1;
