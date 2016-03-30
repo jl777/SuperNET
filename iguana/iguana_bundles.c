@@ -804,7 +804,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
                         while ( (breq= queue_dequeue(&coin->priorityQ,0)) != 0 )
                             myfree(breq,sizeof(*breq));
                     }
-                    iguana_blocksmissing(coin,&avail,missings,0,bp,bp->n,1);
+                    iguana_blocksmissing(coin,&avail,missings,0,bp,bp->n,coin->MAXSTUCKTIME);
                     /*for (i=n=0; i<bp->n; i++)
                     {
                         if ( lag < coin->MAXSTUCKTIME )
