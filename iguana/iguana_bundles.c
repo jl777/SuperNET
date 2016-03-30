@@ -873,8 +873,6 @@ int32_t iguana_cacheprocess(struct iguana_info *coin,struct iguana_bundle *bp,in
 int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,int32_t capacity,int32_t lag)
 {
     uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t tmp,missing,avail,n,max;
-    if ( bp == coin->current )
-        lag = 10;
     missing = iguana_blocksmissing(coin,&avail,missings,0,bp,0,lag);
     max = (bp->origmissings < bp->n) ? bp->origmissings : bp->n;
     if ( bp->missingstime == 0 || bp->numissued < bp->n || (bp == coin->current && missing < (max >> 1)) || missing < (max >> 3) || time(NULL) > bp->missingstime+lag )
