@@ -67,6 +67,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
        // if ( (rand() % 10 ) != 0 )
             return(0);
     }
+    checkbp = 0, j = -2;
     if ( (checkbp= iguana_bundlefind(coin,&checkbp,&j,hash2)) != 0 && j >= 0 && j < checkbp->n )
     {
         if ( checkbp->emitfinish != 0 || ((block= checkbp->blocks[j]) != 0 && block->txvalid != 0) )
@@ -596,6 +597,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
         *blockp = block;
         //if ( 0 && bits256_nonz(prevhash2) > 0 )
         //    iguana_patch(coin,block);
+        bp = 0, bundlei = -2;
         if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) != 0 && bundlei < coin->chain->bundlesize )
         {
             //fprintf(stderr,"bundle found %d:%d\n",bp->hdrsi,bundlei);

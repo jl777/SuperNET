@@ -90,13 +90,15 @@ void iguana_blocksetcounters(struct iguana_info *coin,struct iguana_block *block
 
 int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,char *fname,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t numblocks,int32_t dispflag)
 {
-    struct iguana_bundle *bp = 0; int32_t bundlei = -2; char str[65];
+    struct iguana_bundle *bp; int32_t bundlei; char str[65];
     *hdrsip = -1; ipbits = 0;
     fname[0] = 0;
     //if ( ipbits == 0 )
     //    printf("illegal ipbits.%d\n",ipbits), getchar();
+    bp = 0, bundlei = -2;
     if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) == 0 )
     {
+        bp = 0, bundlei = -2;
         if ( bits256_nonz(prevhash2) == 0 || (bp= iguana_bundlefind(coin,&bp,&bundlei,prevhash2)) == 0 || bundlei >= coin->chain->bundlesize-1 )
         {
             if ( dispflag != 0 )
@@ -1684,8 +1686,10 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
             return(-1);
         } //else printf("matched merkle.%d\n",txn_count);
     } else printf("not enough memory for merkle verify %ld vs %lu\n",sizeof(bits256)*(txn_count+1),(long)addr->TXDATA.totalsize);
+    bp = 0, bundlei = -2;
     if ( iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.hash2) == 0 )
     {
+        bp = 0, bundlei = -2;
         if ( iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.prev_block) == 0 )
         {
             origtxdata->block.RO.recvlen = 0;
