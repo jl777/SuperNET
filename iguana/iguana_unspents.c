@@ -640,10 +640,10 @@ void iguana_unspents(struct supernet_info *myinfo,struct iguana_info *coin,cJSON
 void iguana_prefetch(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     int32_t i; struct iguana_bundle *spentbp; uint32_t starttime = (uint32_t)time(NULL);
-    if ( bp->hdrsi > 30 )
+    if ( bp->hdrsi > 7 )
     {
         //printf("start prefetch for [%d]\n",bp->hdrsi);
-        for (i=1; i<30; i++)
+        for (i=1; i<7; i++)
         {
             if ( (spentbp= coin->bundles[bp->hdrsi - i]) != 0 )
             {
