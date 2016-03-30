@@ -642,7 +642,7 @@ void iguana_prefetch(struct iguana_info *coin,struct iguana_bundle *bp)
     int32_t i; struct iguana_bundle *spentbp; uint32_t starttime = (uint32_t)time(NULL);
     if ( bp->hdrsi > 30 )
     {
-        printf("start prefetch for [%d]\n",bp->hdrsi);
+        //printf("start prefetch for [%d]\n",bp->hdrsi);
         for (i=1; i<30; i++)
         {
             if ( (spentbp= coin->bundles[bp->hdrsi - i]) != 0 )
@@ -651,7 +651,7 @@ void iguana_prefetch(struct iguana_info *coin,struct iguana_bundle *bp)
                 spentbp->lastprefetch = starttime;
             }
         }
-        printf("end prefetch for [%d] elapsed %d\n",bp->hdrsi,(uint32_t)time(NULL)-starttime);
+        //printf("end prefetch for [%d] elapsed %d\n",bp->hdrsi,(uint32_t)time(NULL)-starttime);
     }
 }
 
@@ -664,7 +664,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     bits256 prevhash,zero,sha256; struct iguana_unspent *u,*spentU;  struct iguana_txid *T;
     struct iguana_spend *S,*s; struct iguana_spendvector *ptr; struct iguana_ramchain *ramchain;
     ramchain = &bp->ramchain;
-    printf("iguana_spendvectors.[%d] gen.%d ramchain data.%p\n",bp->hdrsi,bp->bundleheight,ramchain->H.data);
+    //printf("iguana_spendvectors.[%d] gen.%d ramchain data.%p\n",bp->hdrsi,bp->bundleheight,ramchain->H.data);
     if ( (rdata= ramchain->H.data) == 0 || (n= rdata->numspends) < 1 )
         return(0);
     B = (void *)(long)((long)rdata + rdata->Boffset);

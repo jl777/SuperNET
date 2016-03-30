@@ -661,13 +661,13 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
         return(0);
 #endif
     for (i=0; i<bp->hdrsi; i++)
-        if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish < coin->startutc
+        if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish < coin->startutc || prevbp->startutxo == 0
 //#ifdef IGUANA_SERIALIZE_SPENDVECTORGEN
-            || (i < bp->hdrsi-16 && prevbp->utxofinish <= 1 )
+            || (i < bp->hdrsi-16 && prevbp->utxofinish <= 1)
 //#endif
           )
             break;
-    if ( bp->hdrsi < coin->blocks.hwmchain.height/coin->chain->bundlesize && i == bp->hdrsi )//&& coin->emitbusy <= 4 )
+    if ( bp->hdrsi < coin->blocks.hwmchain.height/coin->chain->bundlesize && i == bp->hdrsi && time(NULL) > bp->emitfinish+10 )//&& coin->emitbusy <= 4 )
     {
         if ( bp->startutxo == 0 )
         {
@@ -755,7 +755,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
         {
             if ( (retval= iguana_bundlefinish(coin,bp)) > 0 )
             {
-                printf("moved to balancesQ.%d bundleiters.%d\n",bp->hdrsi,bp->bundleheight);
+                //printf("moved to balancesQ.%d bundleiters.%d\n",bp->hdrsi,bp->bundleheight);
                 bp->queued = 0;
                 return(0);
             } //else printf("finish incomplete.%d\n",bp->hdrsi);
