@@ -875,7 +875,7 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
     if ( bp->numissued < bp->n )
         max = bp->numissued;
     else max = bp->n;//origmissings;
-    if ( bp->missingstime == 0 || bp->numissued < bp->n || bp == coin->current || missing < (max >> 3) || time(NULL) > bp->missingstime+lag )
+    if ( bp->missingstime == 0 || bp->numissued < bp->n || missing < (max >> 3) || time(NULL) > bp->missingstime+lag )
     {
         if ( (n= iguana_bundlerequests(coin,missings,&bp->origmissings,&tmp,bp,lag)) > 0 )
         {
@@ -965,7 +965,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
             }
             else
             {
-                if ( firstgap == 0 && (bp->emitfinish == 0 || bp->n < coin->chain->bundlesize) )
+                if ( firstgap == 0 && bp->numsaved < bp->n && bp->numcached < bp->n && (bp->emitfinish == 0 || bp->n < coin->chain->bundlesize) )
                 {
                     //printf("firstgap <- [%d] emit.%u bp->n.%d\n",bp->hdrsi,bp->emitfinish,bp->n);
                     firstgap = bp;
