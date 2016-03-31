@@ -890,10 +890,21 @@ int32_t iguana_cacheprocess(struct iguana_info *coin,struct iguana_bundle *bp,in
 
 int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,int32_t capacity,int32_t lag)
 {
-    uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t tmp,missing,avail,n=0,max;
+    uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t tmp,missing,avail,n=0,max; double aveduration,aveduplicates;
     missing = iguana_blocksmissing(coin,&avail,missings,0,bp,0,lag);
     if ( strcmp("BTC",coin->symbol) != 0 )
         lag = 13;
+    if ( bp->numcached == bp->n-1 )
+        lag = 3;
+    if ( bp->durationscount != 0 )
+    {
+        aveduration = (double)bp->totaldurations / bp->durationscount;
+        if ( bp->duplicatescount != 0 )
+            aveduplicates = (double)bp->duplicatedurations / bp->duplicatescount;
+        else aveduplicates = 3 * aveduration;
+        printf("[%d] durations %.2f vs %.2f counts[%d %d]\n",bp->hdrsi,aveduration,aveduplicates,(int32_t)bp->durationscount,bp->duplicatescount);
+        lag = 3 * aveduration;
+    }
     if ( bp->numissued < bp->n )
         max = bp->numissued;
     else max = bp->origmissings;

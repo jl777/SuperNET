@@ -433,7 +433,7 @@ struct iguana_bloominds { uint16_t inds[8]; };
 struct iguana_bundle
 {
     struct queueitem DL; struct iguana_info *coin; struct iguana_bundle *nextbp;
-    struct iguana_bloom16 bloom; //uint32_t rawscriptspace;
+    struct iguana_bloom16 bloom; int64_t totaldurations,duplicatedurations; int32_t durationscount,duplicatescount;
     uint32_t issuetime,hdrtime,emitfinish,mergefinish,purgetime,queued,startutxo,utxofinish,balancefinish,validated,lastspeculative,dirty,nexttime,currenttime,lastprefetch,missingstime;
     int32_t numhashes,numrecv,numsaved,numcached,generrs,currentflag,origmissings,numissued;
     int32_t minrequests,n,hdrsi,bundleheight,numtxids,numspends,numunspents,numspec,isRT;
