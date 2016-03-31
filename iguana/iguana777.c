@@ -506,6 +506,7 @@ void iguana_coinloop(void *arg)
                     printf("init.(%s) maxpeers.%d maxrecvcache.%s services.%llx MAXMEM.%s polltimeout.%d cache.%d pend.(%d -> %d)\n",coin->symbol,coin->MAXPEERS,mbstr(str,coin->MAXRECVCACHE),(long long)coin->myservices,mbstr(str,coin->MAXMEM),coin->polltimeout,coin->enableCACHE,coin->startPEND,coin->endPEND);
                     coin->chain->minconfirms = coin->minconfirms;
                     coin->started = coin;
+                    coin->startutc = (uint32_t)time(NULL);
                 }
                 now = (uint32_t)time(NULL);
                 coin->idletime = 0;

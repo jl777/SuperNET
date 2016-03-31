@@ -902,8 +902,9 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
         if ( bp->duplicatescount != 0 )
             aveduplicates = (double)bp->duplicatedurations / bp->duplicatescount;
         else aveduplicates = 3 * aveduration;
-        printf("[%d] durations %.2f vs %.2f counts[%d %d]\n",bp->hdrsi,aveduration,aveduplicates,(int32_t)bp->durationscount,bp->duplicatescount);
-        lag = 3 * aveduration;
+        if ( (rand() % 1000) == 0 )
+            printf("[%d] durations %.2f vs %.2f counts[%d %d]\n",bp->hdrsi,aveduration,aveduplicates,(int32_t)bp->durationscount,bp->duplicatescount);
+        lag = 5 * aveduration;
     }
     if ( bp->numissued < bp->n )
         max = bp->numissued;
