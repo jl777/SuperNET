@@ -456,7 +456,7 @@ THREE_INTS(bitcoinrpc,listreceivedbyaccount,confirmations,includeempty,watchonly
 
 THREE_INTS(bitcoinrpc,listreceivedbyaddress,minconf,includeempty,flag)
 {
-    cJSON *retjson;
+    //cJSON *retjson;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     return(jsuccess());
@@ -464,7 +464,7 @@ THREE_INTS(bitcoinrpc,listreceivedbyaddress,minconf,includeempty,flag)
 
 STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatchonly)
 {
-    cJSON *retjson;
+    //cJSON *retjson;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     return(jsuccess());
@@ -472,7 +472,7 @@ STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatch
 
 S_D_SS(bitcoinrpc,sendtoaddress,address,amount,comment,comment2)
 {
-    cJSON *retjson;
+    //cJSON *retjson;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     return(jsuccess());
@@ -480,7 +480,7 @@ S_D_SS(bitcoinrpc,sendtoaddress,address,amount,comment,comment2)
 
 SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment2)
 {
-    cJSON *retjson;
+    //cJSON *retjson;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     return(jsuccess());

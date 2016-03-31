@@ -733,7 +733,8 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
 
 int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_bundle *bp,int32_t timelimit,int32_t lag)
 {
-    int32_t range,starti,lasti,avail,i,n,len,retval=0,max,counter = 0; struct iguana_block *block; struct iguana_bundle *currentbp,*lastbp; uint8_t serialized[512],missings[IGUANA_MAXBUNDLESIZE/8+1]; struct iguana_peer *addr; struct iguana_blockreq *breq;
+    int32_t range,starti,lasti,avail,n,retval=0,max,counter = 0; struct iguana_bundle *currentbp,*lastbp; uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; struct iguana_blockreq *breq;
+    //serialized[512],
     if ( coin->started == 0 || coin->active == 0 )
     {
         printf("%s not ready yet\n",coin->symbol);
