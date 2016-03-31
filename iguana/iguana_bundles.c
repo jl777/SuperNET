@@ -461,7 +461,7 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
             {
                 if ( nonz < capacity )
                 {
-                    iguana_blockQ("missing",coin,bp,i,hash2,now > bp->issued[i]+lag);
+                    //iguana_blockQ("missing",coin,bp,i,hash2,now > bp->issued[i]+lag);
                     if ( hashes != 0 )
                         hashes[nonz] = hash2;
                 }
@@ -476,10 +476,10 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
     return(m);
 }
 
-int32_t iguana_sendhashes(struct iguana_info *coin,struct iguana_peer *addr,int32_t msgtype,bits256 hashes[],int32_t n)
+int32_t iguana_sendhashes(struct iguana_info *coin,struct iguana_peer *addr,int32_t msgtype,bits256 hashes[],int32_t n,int32_t priority)
 {
     int32_t len; uint8_t *serialized;
-    if ( (rand() % 10) == 0 || strcmp("BTC",coin->symbol) != 0 )
+    if ( priority > 1 )
     {
         serialized = malloc((sizeof(int32_t) + sizeof(*hashes))*n + 1024);
         if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,hashes,n)) > 0 )
@@ -502,8 +502,12 @@ int32_t iguana_sendhashes(struct iguana_info *coin,struct iguana_peer *addr,int3
         int32_t i;
         for (i=0; i<n; i++)
         {
-            //iguana_sendblockreqPT(coin,addr,0,-1,hashes[i],0);
-            iguana_blockQ("test",coin,0,-1,hashes[i],(rand() % 10) == 0);
+            if ( priority == 1 )
+            {
+                if ( (rand() & 1) == 0 )
+                    iguana_sendblockreqPT(coin,addr,0,-1,hashes[i],0);
+                else iguana_blockQ("test",coin,0,-1,hashes[i],1);
+            } else iguana_blockQ("test",coin,0,-1,hashes[i],priority);
         }
     }
     return(n);
@@ -517,7 +521,7 @@ int32_t iguana_nextnonz(uint8_t *missings,int32_t i,int32_t max)
     return(i);
 }
 
-int32_t iguana_bundlerequests(struct iguana_info *coin,uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1],int32_t *missingp,int32_t *capacityp,struct iguana_bundle *bp,int32_t lag)
+int32_t iguana_bundlerequests(struct iguana_info *coin,uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1],int32_t *missingp,int32_t *capacityp,struct iguana_bundle *bp,int32_t lag,int32_t priority)
 {
     uint8_t numpeers; int32_t i,j,avail,nonz=0,c,n,m=0,max,capacity,numsent; bits256 hashes[500],hash2;
     struct iguana_block *block; struct iguana_peer *peers[256],*addr; uint32_t now = (uint32_t)time(NULL);
@@ -539,7 +543,7 @@ int32_t iguana_bundlerequests(struct iguana_info *coin,uint8_t missings[IGUANA_M
                     if ( avail < c )
                         c = avail;
                     //printf("i.%d c.%d avail.%d m.%d max.%d\n",i,c,avail,m,max);
-                    if ( c > 0 && (numsent= iguana_sendhashes(coin,addr,MSG_BLOCK,&hashes[m],c)) > 0 )
+                    if ( c > 0 && (numsent= iguana_sendhashes(coin,addr,MSG_BLOCK,&hashes[m],c,priority)) > 0 )
                     {
                         for (j=0; j<numsent; j++)
                         {
@@ -890,12 +894,21 @@ int32_t iguana_cacheprocess(struct iguana_info *coin,struct iguana_bundle *bp,in
 
 int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,int32_t capacity,int32_t lag)
 {
-    uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t tmp,missing,avail,n=0,max; double aveduration,aveduplicates;
+    uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t tmp,dist=0,missing,priority,avail,n=0,max; double aveduration,aveduplicates;
     missing = iguana_blocksmissing(coin,&avail,missings,0,bp,0,lag);
-    if ( strcmp("BTC",coin->symbol) != 0 )
-        lag = 13;
-    if ( bp->numcached == bp->n-1 )
-        lag = 3;
+    priority = 0;
+    lag = IGUANA_DEFAULTLAG;
+    if ( bp->numissued < bp->n )
+        max = bp->numissued;
+    else max = bp->origmissings;
+    if ( coin->current != 0 )
+    {
+        dist = bp->hdrsi - coin->current->hdrsi;
+        if ( bp->numcached > bp->n - (coin->MAXBUNDLES - dist) )
+            priority++;
+        if ( bp == coin->current )
+            priority++;
+    }
     if ( bp->durationscount != 0 )
     {
         aveduration = (double)bp->totaldurations / bp->durationscount;
@@ -903,15 +916,12 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
             aveduplicates = (double)bp->duplicatedurations / bp->duplicatescount;
         else aveduplicates = 3 * aveduration;
         if ( (rand() % 1000) == 0 )
-            printf("[%d] durations %.2f vs %.2f counts[%d %d]\n",bp->hdrsi,aveduration,aveduplicates,(int32_t)bp->durationscount,bp->duplicatescount);
+            printf("priority.%d [%d] dist.%d durations %.2f vs %.2f counts[%d %d] \n",priority,bp->hdrsi,dist,aveduration,aveduplicates,(int32_t)bp->durationscount,bp->duplicatescount);
         lag = 5 * aveduration;
     }
-    if ( bp->numissued < bp->n )
-        max = bp->numissued;
-    else max = bp->origmissings;
-    //if ( bp->missingstime == 0 || bp->numissued < bp->n )//|| (bp == coin->current && time(NULL) > bp->missingstime+lag) ) //
+   //if ( bp->missingstime == 0 || bp->numissued < bp->n )//|| (bp == coin->current && time(NULL) > bp->missingstime+lag) ) //
     {
-        if ( (n= iguana_bundlerequests(coin,missings,&bp->origmissings,&tmp,bp,lag)) > 0 )
+        if ( (n= iguana_bundlerequests(coin,missings,&bp->origmissings,&tmp,bp,lag,bp == coin->current)) > 0 )
         {
             //printf("bundle.[%d] numissued.%d missings.%d n.%d capacity %d -> %d\n",bp->hdrsi,bp->numissued,bp->origmissings,n,capacity,capacity-n);
             bp->numissued += n;
