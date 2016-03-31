@@ -810,7 +810,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
                         while ( (breq= queue_dequeue(&coin->priorityQ,0)) != 0 )
                             myfree(breq,sizeof(*breq));
                     }
-                    n = iguana_blocksmissing(coin,&avail,missings,0,bp,bp->n,30);
+                    n = iguana_blocksmissing(coin,&avail,missings,0,bp,bp->n,3);
                     printf("issued %d priority requests [%d] to unstick stuckiters.%d lag.%d\n",n,bp->hdrsi,coin->stuckiters,lag);
                     /*for (i=n=0; i<bp->n; i++)
                     {
@@ -919,7 +919,7 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
         else aveduplicates = 3 * aveduration;
         if ( (rand() % 1000) == 0 )
             printf("priority.%d [%d] dist.%d durations %.2f vs %.2f counts[%d %d] \n",priority,bp->hdrsi,dist,aveduration,aveduplicates,(int32_t)bp->durationscount,bp->duplicatescount);
-        lag = 5 * aveduration;
+        lag = 3 * aveduration;
     }
    //if ( bp->missingstime == 0 || bp->numissued < bp->n )//|| (bp == coin->current && time(NULL) > bp->missingstime+lag) ) //
     {
