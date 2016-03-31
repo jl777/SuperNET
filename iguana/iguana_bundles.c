@@ -618,7 +618,7 @@ int32_t iguana_setmaxbundles(struct iguana_info *coin)
     double completed;
     if ( coin->current != 0 && coin->bundlescount != 0 )
     {
-        completed = cbrt(((double)coin->current->hdrsi + 1) / coin->bundlescount);
+        completed = sqrt(((double)coin->current->hdrsi + 1) / coin->bundlescount);
         coin->MAXBUNDLES = (double)(coin->endPEND - coin->startPEND)*completed + coin->startPEND;
         //printf("MAXBUNDLES %d (%d -> %d) completed %.3f\n",coin->MAXBUNDLES,coin->startPEND,coin->endPEND,completed);
     }
