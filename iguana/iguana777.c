@@ -605,7 +605,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         coin->MAXSTUCKTIME = _IGUANA_MAXSTUCKTIME;
     if ( coin->MAXMEM == 0 )
         coin->MAXMEM = IGUANA_DEFAULTRAM;
-    if ( strcmp("BTC",coin->symbol) == 0 && coin->MAXMEM <= 4 )
+    if ( strcmp("BTC",coin->symbol) == 0 && coin->MAXMEM < 4 )
         maxval = (int32_t)coin->MAXMEM;
     coin->MAXMEM *= (1024L * 1024 * 1024);
     if ( (coin->startPEND= juint(json,"startpend")) == 0 )
