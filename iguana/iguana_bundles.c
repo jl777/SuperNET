@@ -901,6 +901,8 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
     if ( bp->numissued < bp->n )
         max = bp->numissued;
     else max = bp->origmissings;
+    if ( strcmp(coin->symbol,"BTC") != 0 )
+        priority++;
     if ( coin->current != 0 )
     {
         dist = bp->hdrsi - coin->current->hdrsi;
@@ -921,7 +923,7 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
     }
    //if ( bp->missingstime == 0 || bp->numissued < bp->n )//|| (bp == coin->current && time(NULL) > bp->missingstime+lag) ) //
     {
-        if ( (n= iguana_bundlerequests(coin,missings,&bp->origmissings,&tmp,bp,lag,bp == coin->current)) > 0 )
+        if ( (n= iguana_bundlerequests(coin,missings,&bp->origmissings,&tmp,bp,lag,priority)) > 0 )
         {
             //printf("bundle.[%d] numissued.%d missings.%d n.%d capacity %d -> %d\n",bp->hdrsi,bp->numissued,bp->origmissings,n,capacity,capacity-n);
             bp->numissued += n;

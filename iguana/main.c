@@ -1183,7 +1183,7 @@ void iguana_main(void *arg)
     if ( (coinargs= SuperNET_keysinit(myinfo,arg)) != 0 )
         iguana_launch(btcd,"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
 #ifdef __APPLE__
-    else if ( 0 )
+    else if ( 1 )
     {
         sleep(1);
         char *str;
