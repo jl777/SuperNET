@@ -23,7 +23,7 @@
 typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t len);
 
 #define IGUANA_MAXSCRIPTSIZE 10001
-#define IGUANA_SERIALIZE_SPENDVECTORGEN
+//#define IGUANA_SERIALIZE_SPENDVECTORGEN
 //#define IGUANA_SERIALIZE_BALANCEGEN
 //#define IGUANA_DISABLEPEERS
 #define _IGUANA_MAXSTUCKTIME 300
@@ -42,8 +42,8 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_HEADPERCENTAGE 0.
 #define IGUANA_TAILPERCENTAGE 1.0
 #define IGUANA_MAXPENDHDRS 1
-#define IGUANA_MAXPENDINGREQUESTS 512
-#define IGUANA_PENDINGREQUESTS 512
+#define IGUANA_MAXPENDINGREQUESTS 3
+#define IGUANA_PENDINGREQUESTS 64
 #define IGUANA_MINPENDBUNDLES 2
 #define IGUANA_MAXPENDBUNDLES 64
 #define IGUANA_BUNDLELOOP 77
@@ -190,7 +190,7 @@ struct iguana_chain
     char name[32],symbol[8];
     uint8_t pubtype,p2shtype,wiftype,netmagic[4];
     char *genesis_hash,*genesis_hex; // hex string
-    uint16_t portp2p,portrpc;
+    uint16_t portp2p,rpcport;
     uint8_t hastimestamp,unitval;
     uint64_t rewards[512][2];
     uint8_t genesis_hashdata[32],minconfirms;
@@ -621,7 +621,7 @@ double dxblend(double *destp,double val,double decay);
 
 // json
 int32_t iguana_processjsonQ(struct iguana_info *coin); // reentrant, can be called during any idletime
-char *iguana_JSON(char *);
+char *iguana_JSON(char *,uint16_t port);
 char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *delaymillisp,char *ipaddr,uint8_t *data,int32_t datalen,int32_t compressed);
 
 char *mbstr(char *str,double);
@@ -744,15 +744,15 @@ int32_t btc_priv2wif(char *wifstr,uint8_t privkey[32],uint8_t addrtype);
 int32_t btc_pub2rmd(uint8_t rmd160[20],uint8_t pubkey[33]);
 int32_t iguana_launchcoin(char *symbol,cJSON *json);
 int32_t iguana_jsonQ();
-int32_t is_bitcoinrpc(char *method,char *remoteaddr);
-char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr);
+int32_t is_bitcoinrpc(struct supernet_info *myinfo,char *method,char *remoteaddr);
+char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr,uint16_t port);
 cJSON *iguana_pubkeyjson(struct iguana_info *coin,char *pubkeystr);
 void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit);
 int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_bundle *bp,int32_t timelimit,int32_t lag);
 void ramcoder_test(void *data,int64_t len);
 void iguana_exit();
 int32_t iguana_pendingaccept(struct iguana_info *coin);
-char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t tag,int32_t maxmillis,char *remoteaddr);
+char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t tag,int32_t maxmillis,char *remoteaddr,uint16_t port);
 void iguana_iAkill(struct iguana_info *coin,struct iguana_peer *addr,int32_t markflag);
 cJSON *SuperNET_bits2json(uint8_t *serialized,int32_t datalen);
 int32_t SuperNET_sendmsg(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,bits256 destpub,bits256 mypriv,bits256 mypub,uint8_t *msg,int32_t len,uint8_t *data,int32_t delaymillis);
@@ -838,6 +838,9 @@ int8_t iguana_blockstatus(struct iguana_info *coin,struct iguana_block *block);
 void iguana_peerslotinit(struct iguana_info *coin,struct iguana_peer *addr,int32_t slotid,uint64_t ipbits);
 void iguana_blockunmark(struct iguana_info *coin,struct iguana_block *block,struct iguana_bundle *bp,int32_t i,int32_t deletefile);
 int32_t iguana_reqblocks(struct iguana_info *coin);
+void iguana_walletlock(struct supernet_info *myinfo);
+int32_t _SuperNET_encryptjson(char *destfname,char *passphrase,int32_t passsize,char *fname2fa,int32_t fnamesize,cJSON *argjson);
+int32_t bitcoin_pubkeylen(const uint8_t *pubkey);
 
 extern int32_t HDRnet,netBLOCKS;
 

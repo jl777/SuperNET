@@ -149,9 +149,6 @@ ZERO_ARGS(bitcoinrpc,getinfo);
 ZERO_ARGS(bitcoinrpc,getbestblockhash);
 ZERO_ARGS(bitcoinrpc,getblockcount);
 ZERO_ARGS(bitcoinrpc,listaddressgroupings);
-ZERO_ARGS(bitcoinrpc,walletlock);
-ZERO_ARGS(bitcoinrpc,checkwallet);
-ZERO_ARGS(bitcoinrpc,repairwallet);
 ZERO_ARGS(bitcoinrpc,makekeypair);
 ZERO_ARGS(bitcoinrpc,gettxoutsetinfo);
 ZERO_ARGS(bitcoinrpc,listlockunspent);
@@ -161,9 +158,17 @@ TWO_INTS(bitcoinrpc,listaccounts,minconf,includewatchonly);
 THREE_INTS(bitcoinrpc,listreceivedbyaddress,minconf,includeempty,flag);
 TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array);
 
+ZERO_ARGS(bitcoinrpc,walletlock);
+ZERO_ARGS(bitcoinrpc,checkwallet);
+ZERO_ARGS(bitcoinrpc,repairwallet);
 STRING_ARG(bitcoinrpc,dumpwallet,filename);
 STRING_ARG(bitcoinrpc,backupwallet,filename);
-STRING_ARG(bitcoinrpc,encryptwallet,passphrase);
+THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile);
+FOUR_STRINGS(bitcoinrpc,walletpassphrasechange,oldpassword,newpassword,oldpermanentfile,permanentfile);
+STRING_ARG(bitcoinrpc,importwallet,filename);
+TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout);
+
+STRING_ARG(bitcoinrpc,validateaddress,address);
 STRING_ARG(bitcoinrpc,validatepubkey,pubkey);
 STRING_ARG(bitcoinrpc,getnewaddress,account);
 STRING_ARG(bitcoinrpc,vanitygen,vanity);
@@ -172,11 +177,10 @@ STRING_ARG(bitcoinrpc,getaddressesbyaccount,account);
 STRING_ARG(bitcoinrpc,getaccount,address);
 STRING_ARG(bitcoinrpc,getaccountaddress,account);
 STRING_ARG(bitcoinrpc,dumpprivkey,address);
-STRING_ARG(bitcoinrpc,importwallet,filename);
 STRING_ARG(bitcoinrpc,decodescript,script);
 
 TWO_STRINGS(bitcoinrpc,setaccount,address,account);
-TWO_STRINGS(bitcoinrpc,walletpassphrasechange,oldpassphrase,newpassphrase);
+
 TWO_STRINGS(bitcoinrpc,signmessage,address,message);
 
 THREE_STRINGS(bitcoinrpc,verifymessage,address,sig,message);
@@ -185,7 +189,6 @@ THREE_INTS(bitcoinrpc,getbalance,confirmations,includeempty,watchonly);
 
 TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan);
 STRING_AND_INT(bitcoinrpc,getreceivedbyaccount,account,includeempty);
-STRING_AND_INT(bitcoinrpc,walletpassphrase,passphrase,timeout);
 STRING_AND_INT(bitcoinrpc,getreceivedbyaddress,address,minconf);
 STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees);
 

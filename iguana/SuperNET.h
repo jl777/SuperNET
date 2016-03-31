@@ -75,14 +75,14 @@ struct supernet_address
 
 struct supernet_info
 {
-    char ipaddr[64],transport[8]; int32_t APISLEEP; int32_t iamrelay;
+    char ipaddr[64],transport[8]; int32_t APISLEEP; int32_t iamrelay; uint32_t expiration;
     int32_t Debuglevel,readyflag,dead,POLLTIMEOUT; char rpcsymbol[16],LBpoint[64],PUBpoint[64];
     //int32_t pullsock,subclient,lbclient,lbserver,servicesock,pubglobal,pubrelays,numservers;
     bits256 privkey,persistent_priv,BTCmarkerhash; char secret[2048],NXTAPIURL[512];
     uint8_t *recvbuf[6];
     struct supernet_address myaddr;
     int32_t LBsock,PUBsock,reqsock,subsock,networktimeout,maxdelay;
-    uint16_t LBport,PUBport,reqport,subport;
+    uint16_t LBport,PUBport,reqport,subport,rpcport,publicRPC;
     //struct nn_pollfd pfd[SUPERNET_MAXAGENTS]; //struct relay_info active;
     struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ;
     int32_t numagents,numexchanges;
@@ -151,12 +151,12 @@ struct endpoint calc_epbits(char *transport,uint32_t ipbits,uint16_t port,int32_
 
 struct supernet_info *SuperNET_MYINFO(char *passphrase);
 void SuperNET_init(void *args);
-char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr);
+char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,uint16_t port);
 
-char *SuperNET_jsonstr(struct supernet_info *myinfo,char *jsonstr,char *remoteaddr);
+char *SuperNET_jsonstr(struct supernet_info *myinfo,char *jsonstr,char *remoteaddr,uint16_t port);
 char *SuperNET_DHTencode(struct supernet_info *myinfo,char *destip,bits256 category,bits256 subhash,char *hexmsg,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext);
 char *SuperNET_parser(struct supernet_info *myinfo,char *agent,char *method,cJSON *json,char *remoteaddr);
-char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr);
+char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,uint16_t port);
 char *SuperNET_DHTsend(struct supernet_info *myinfo,uint64_t destipbits,bits256 category,bits256 subhash,char *hexmsg,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext);
 uint16_t SuperNET_API2num(char *agent,char *method);
 int32_t SuperNET_num2API(char *agent,char *method,uint16_t num);

@@ -204,13 +204,6 @@ HASH_ARG(bitcoinrpc,gettransaction,txid)
     return(bitcoinrpc_getrawtransaction(IGUANA_CALLARGS,txid,1));
 }
 
-ZERO_ARGS(bitcoinrpc,getinfo)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    jaddstr(retjson,"result",coin->statusstr);
-    return(jprint(retjson,1));
-}
-
 ZERO_ARGS(bitcoinrpc,getbestblockhash)
 {
     cJSON *retjson = cJSON_CreateObject();
@@ -225,13 +218,6 @@ ZERO_ARGS(bitcoinrpc,getblockcount)
     return(jprint(retjson,1));
 }
 
-HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-// pubkeys
 ZERO_ARGS(bitcoinrpc,makekeypair)
 {
     cJSON *retjson = cJSON_CreateObject();
@@ -244,7 +230,7 @@ STRING_ARG(bitcoinrpc,validatepubkey,pubkey)
     return(jprint(retjson,1));
 }
 
-INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,array,account)
+HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
@@ -338,179 +324,9 @@ STRING_AND_INT(bitcoinrpc,getreceivedbyaddress,address,minconf)
     return(jprint(retjson,1));
 }
 
-THREE_INTS(bitcoinrpc,listreceivedbyaddress,minconf,includeempty,flag)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
 
 // single address/account funcs
 ZERO_ARGS(bitcoinrpc,getrawchangeaddress)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-STRING_ARG(bitcoinrpc,getnewaddress,account)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-STRING_ARG(bitcoinrpc,dumpprivkey,address)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-TWO_STRINGS(bitcoinrpc,setaccount,address,account)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-STRING_ARG(bitcoinrpc,getaccount,address)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-STRING_ARG(bitcoinrpc,getaccountaddress,account)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-// multiple address
-THREE_INTS(bitcoinrpc,getbalance,confirmations,includeempty,watchonly)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-STRING_ARG(bitcoinrpc,getaddressesbyaccount,account)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-STRING_AND_INT(bitcoinrpc,getreceivedbyaccount,account,includeempty)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-THREE_INTS(bitcoinrpc,listreceivedbyaccount,confirmations,includeempty,watchonly)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatchonly)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-// spend funcs
-DOUBLE_ARG(bitcoinrpc,settxfee,amount)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment2)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-S_A_I_S(bitcoinrpc,sendmany,fromaccount,array,minconf,comment)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-S_D_SS(bitcoinrpc,sendtoaddress,address,amount,comment,comment2)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-// entire wallet funcs
-TWO_INTS(bitcoinrpc,listaccounts,minconf,includewatchonly)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-ZERO_ARGS(bitcoinrpc,listaddressgroupings)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-ZERO_ARGS(bitcoinrpc,walletlock)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-ZERO_ARGS(bitcoinrpc,checkwallet)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-ZERO_ARGS(bitcoinrpc,repairwallet)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-STRING_ARG(bitcoinrpc,dumpwallet,filename)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-STRING_ARG(bitcoinrpc,backupwallet,filename)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-STRING_ARG(bitcoinrpc,importwallet,filename)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-STRING_AND_INT(bitcoinrpc,walletpassphrase,passphrase,timeout)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-TWO_STRINGS(bitcoinrpc,walletpassphrasechange,oldpassphrase,newpassphrase)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-STRING_ARG(bitcoinrpc,encryptwallet,passphrase)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));

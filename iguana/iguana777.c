@@ -375,7 +375,7 @@ void iguana_balancesQ(struct iguana_info *coin,struct iguana_bundle *bp)
 
 void iguana_helper(void *arg)
 {
-    cJSON *argjson=0; int32_t retval,type,helperid=rand(),flag,allcurrent,idle=0;
+    cJSON *argjson=0; int32_t retval,polltimeout,type,helperid=rand(),flag,allcurrent,idle=0;
     struct iguana_helper *ptr; struct iguana_info *coin; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp;
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
         helperid = juint(argjson,"helperid");
@@ -392,6 +392,7 @@ void iguana_helper(void *arg)
         //iguana_jsonQ(); cant do this here
         flag = 0;
         allcurrent = 1;
+        polltimeout = 100;
         //printf("helper.%d\n",helperid);
         /*if ( ((ptr= queue_dequeue(&emitQ,0)) != 0 || (ptr= queue_dequeue(&helperQ,0)) != 0) )
         {
@@ -415,6 +416,8 @@ void iguana_helper(void *arg)
                 coin = ptr->coin;
                 if ( (bp= ptr->bp) != 0 && coin != 0 )
                 {
+                    if ( coin->polltimeout < polltimeout )
+                        polltimeout = coin->polltimeout;
                     //printf("[%d] bundleQ size.%d\n",bp->hdrsi,queue_size(&bundlesQ));
                     coin->numbundlesQ--;
                     if ( coin->started != 0 && time(NULL) >= bp->nexttime && coin->active != 0 )
@@ -447,6 +450,8 @@ void iguana_helper(void *arg)
             coin = ptr->coin;
             if ( (bp= ptr->bp) != 0 && coin != 0 )
             {
+                if ( coin->polltimeout < polltimeout )
+                    polltimeout = coin->polltimeout;
                 //printf("call spendvectors.%d\n",bp->hdrsi);
                 if ( (retval= iguana_spendvectors(coin,bp)) >= 0 )
                 {
@@ -465,11 +470,11 @@ void iguana_helper(void *arg)
                 printf("helper missing param? %p %p\n",coin,bp);
             myfree(ptr,ptr->allocsize);
         }
-        if ( flag == 0 )
-            usleep(25000);
+        if ( flag != 0 )
+            usleep(polltimeout * 250);
         else if ( allcurrent != 0 )
-            usleep(100000);
-        else usleep(10000);
+            usleep(polltimeout * 100000);
+        else usleep(polltimeout * 10000);
     }
 }
 
@@ -506,7 +511,7 @@ void iguana_coinloop(void *arg)
                 coin->idletime = 0;
                 if ( coin->started != 0 && coin->active != 0 )
                 {
-                    if ( coin->isRT == 0 && now > coin->startutc+77 && coin->numsaved >= (coin->longestchain/coin->chain->bundlesize)*coin->chain->bundlesize && coin->blocks.hwmchain.height >= coin->longestchain-30 )
+                    if ( coin->peers.numranked > 4 && coin->isRT == 0 && now > coin->startutc+77 && coin->numsaved >= (coin->longestchain/coin->chain->bundlesize)*coin->chain->bundlesize && coin->blocks.hwmchain.height >= coin->longestchain-30 )
                     {
                         fprintf(stderr,">>>>>>> %s isRT blockrecv.%d vs longest.%d\n",coin->symbol,coin->blocksrecv,coin->longestchain);
                         coin->isRT = 1;
@@ -550,7 +555,7 @@ void iguana_coinloop(void *arg)
             }
         }
         if ( flag == 0 )
-            usleep(10000 + coin->isRT*90000);
+            usleep(coin->polltimeout*1000 + coin->isRT*90000 + (coin->peers.numranked == 0)*1000000);
     }
 }
 

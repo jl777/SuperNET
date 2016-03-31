@@ -15,6 +15,26 @@
 
 #include "iguana777.h"
 
+void iguana_walletlock(struct supernet_info *myinfo)
+{
+    memset(&myinfo->persistent_priv,0,sizeof(myinfo->persistent_priv));
+    memset(myinfo->secret,0,sizeof(myinfo->secret));
+    printf("wallet locked\n");
+}
+
+int32_t iguana_ismine(struct supernet_info *myinfo,uint8_t pubkey[65],uint8_t rmd160[20])
+{
+    /*int32_t i;
+    for (i=0; i<myinfo->numaddrs; i++)
+    {
+        if ( memcmp(myinfo->addrs[i].rmd160,rmd160,sizeof(myinfo->addrs[i].rmd160)) == 0 )
+        {
+            memcpy(pubkey,myinfo->addrs[i].pubkey,bitcoin_pubkeylen(myinfo->addrs[i].pubkey));
+            return(i);
+        }
+    }*/
+    return(0);
+}
 
 uint8_t *iguana_rmdarray(struct iguana_info *coin,int32_t *numrmdsp,cJSON *array,int32_t firsti)
 {
@@ -120,9 +140,13 @@ struct iguana_waccount *iguana_waddressfind(struct iguana_info *coin,int32_t *in
     return(0);
 }
 
-int32_t iguana_addressvalidate(struct iguana_info *coin,char *coinaddr)
+int32_t iguana_addressvalidate(struct iguana_info *coin,uint8_t *addrtypep,uint8_t rmd160[20],char *address)
 {
-    return(0);
+    char checkaddr[64];
+    bitcoin_addr2rmd160(addrtypep,rmd160,address);
+    if ( bitcoin_address(checkaddr,*addrtypep,rmd160,20) == checkaddr && strcmp(address,checkaddr) == 0 && (*addrtypep == coin->chain->pubtype || *addrtypep == coin->chain->p2shtype) )
+        return(0);
+    else return(-1);
 }
 
 char *getnewaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
@@ -171,10 +195,10 @@ char *getaccountaddress(struct supernet_info *myinfo,struct iguana_info *coin,ch
 
 char *setaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account,char *coinaddr)
 {
-    struct iguana_waccount *wacct; struct iguana_waddress *waddr=0,addr; int32_t ind=-1;
+    struct iguana_waccount *wacct; uint8_t addrtype,rmd160[20]; struct iguana_waddress *waddr=0,addr; int32_t ind=-1;
     if ( coinaddr != 0 && coinaddr[0] != 0 && account != 0 && account[0] != 0 )
     {
-        if ( iguana_addressvalidate(coin,coinaddr) < 0 )
+        if ( iguana_addressvalidate(coin,&addrtype,rmd160,coinaddr) < 0 )
             return(clonestr("{\"error\":\"invalid coin address\"}"));
         if ( (wacct= iguana_waddressfind(coin,&ind,coinaddr)) == 0 )
         {
@@ -189,8 +213,8 @@ char *setaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *acc
 
 char *getaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr)
 {
-    struct iguana_waccount *wacct; cJSON *retjson; int32_t ind;
-    if ( iguana_addressvalidate(coin,coinaddr) < 0 )
+    struct iguana_waccount *wacct; uint8_t addrtype,rmd160[20]; cJSON *retjson; int32_t ind;
+    if ( iguana_addressvalidate(coin,&addrtype,rmd160,coinaddr) < 0 )
         return(clonestr("{\"error\":\"invalid coin address\"}"));
     if ( (wacct= iguana_waddressfind(coin,&ind,coinaddr)) == 0 )
         return(clonestr("{\"result\":\"no account for address\"}"));
@@ -217,11 +241,11 @@ char *getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_info *coi
 
 char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,double amount,char *comment,char *comment2)
 {
-    //char *coinaddr;
+    uint8_t addrtype,rmd160[20];
     //sendtoaddress	<bitcoinaddress> <amount> [comment] [comment-to]	<amount> is a real and is rounded to 8 decimal places. Returns the transaction ID <txid> if successful.	Y
     if ( coinaddr != 0 && coinaddr[0] != 0 && amount > 0. )
     {
-        if ( iguana_addressvalidate(coin,coinaddr) < 0 )
+        if ( iguana_addressvalidate(coin,&addrtype,rmd160,coinaddr) < 0 )
             return(clonestr("{\"error\":\"invalid coin address\"}"));
         //amount = jdouble(params[1],0);
         //comment = jstr(params[2],0);
@@ -230,3 +254,317 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
     }
     return(clonestr("{\"error\":\"need address and amount\"}"));
 }
+
+char *jsuccess()
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+
+#include "../includes/iguana_apidefs.h"
+#include "../includes/iguana_apideclares.h"
+
+INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,array,account)
+{
+    cJSON *retjson;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+
+char *iguana_addressconv(struct iguana_info *coin,char *destaddr,struct iguana_info *other,int32_t isp2sh,uint8_t rmd160[20])
+{
+    if ( bitcoin_address(destaddr,isp2sh != 0 ? other->chain->pubtype : other->chain->p2shtype,rmd160,20) == destaddr )
+        return(destaddr);
+    else return(0);
+}
+
+STRING_ARG(bitcoinrpc,validateaddress,address)
+{
+    cJSON *retjson; int32_t i; uint8_t addrtype,rmd160[20],pubkey[65]; struct iguana_info *other; char checkaddr[64],str[256];
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    if ( iguana_addressvalidate(coin,&addrtype,rmd160,address) < 0 )
+        return(clonestr("{\"error\":\"invalid coin address\"}"));
+    if ( strcmp(address,checkaddr) == 0 )
+    {
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"result","success");
+        jaddnum(retjson,"addrtype",addrtype);
+        init_hexbytes_noT(str,rmd160,sizeof(rmd160));
+        jaddstr(retjson,"rmd160",str);
+        if ( iguana_ismine(myinfo,pubkey,rmd160) > 0 )
+        {
+            init_hexbytes_noT(str,pubkey,bitcoin_pubkeylen(pubkey));
+            jaddstr(retjson,"pubkey",str);
+            cJSON_AddTrueToObject(retjson,"ismine");
+        }
+        else cJSON_AddFalseToObject(retjson,"ismine");
+        for (i=0; i<IGUANA_MAXCOINS; i++)
+        {
+            if ( (other= Coins[i]) != 0 && strcmp(other->symbol,coin->symbol) != 0 )
+            {
+                iguana_addressconv(coin,str,other,addrtype == coin->chain->p2shtype,rmd160);
+                jaddstr(retjson,other->symbol,str);
+            }
+        }
+        return(jprint(retjson,1));
+    } else return(clonestr("{\"error\":\"couldnt regenerate address\"}"));
+}
+
+ZERO_ARGS(bitcoinrpc,getinfo)
+{
+    cJSON *retjson;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result",coin->statusstr);
+    return(jprint(retjson,1));
+}
+
+ZERO_ARGS(bitcoinrpc,walletlock)
+{
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    iguana_walletlock(myinfo);
+    return(jsuccess());
+}
+
+TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
+{
+    char *retstr;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    if ( timeout <= 0 )
+        return(clonestr("{\"error\":\"timeout must be positive\"}"));
+    retstr = SuperNET_login(IGUANA_CALLARGS,myinfo->handle,password,permanentfile,0);
+    myinfo->expiration = (uint32_t)time(NULL) + timeout;
+    return(retstr);
+}
+
+THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
+{
+    char *retstr;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    if ( password == 0 || password[0] == 0 )
+        password = passphrase;
+    retstr = SuperNET_login(IGUANA_CALLARGS,myinfo->handle,password,permanentfile,passphrase);
+    iguana_walletlock(myinfo);
+    return(retstr);
+}
+
+FOUR_STRINGS(bitcoinrpc,walletpassphrasechange,oldpassword,newpassword,oldpermanentfile,newpermanentfile)
+{
+    char destfname[1024],*tmpstr,*loginstr,*passphrase,*retstr = 0; cJSON *tmpjson,*payload,*loginjson;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    if ( (tmpstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,oldpassword,oldpermanentfile,0)) != 0 )
+    {
+        if ( (tmpjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (loginstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,newpassword,newpermanentfile,0)) != 0 )
+            {
+                if ( (loginjson= cJSON_Parse(loginstr)) != 0 )
+                {
+                    if ( (passphrase= jstr(loginjson,"passphrase")) != 0 )
+                    {
+                        if ( (payload= jobj(loginjson,"payload")) != 0 )
+                            jadd(loginjson,"payload",payload);
+                        _SuperNET_encryptjson(destfname,passphrase,0,newpermanentfile,0,loginjson);
+                        iguana_walletlock(myinfo);
+                        retstr = SuperNET_login(IGUANA_CALLARGS,myinfo->handle,newpassword,newpermanentfile,0);
+                    }
+                    free_json(loginjson);
+                }
+                free(loginstr);
+            }
+            free_json(tmpjson);
+        }
+        free(tmpstr);
+    }
+    if ( retstr == 0 )
+        retstr = clonestr("{\"error\":\"error changing walletpassphrase\"}");
+    return(retstr);
+}
+
+TWO_STRINGS(bitcoinrpc,setaccount,address,account)
+{
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    return(setaccount(myinfo,coin,account,address));
+}
+
+STRING_ARG(bitcoinrpc,getaccount,address)
+{
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    return(getaccount(myinfo,coin,address));
+}
+
+STRING_ARG(bitcoinrpc,getnewaddress,account)
+{
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    return(getnewaddress(myinfo,coin,account));
+}
+
+STRING_ARG(bitcoinrpc,getaccountaddress,account)
+{
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    return(getaccountaddress(myinfo,coin,account));
+}
+
+TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+
+STRING_ARG(bitcoinrpc,dumpprivkey,address)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+
+// multiple address
+THREE_INTS(bitcoinrpc,getbalance,confirmations,includeempty,watchonly)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+
+STRING_ARG(bitcoinrpc,getaddressesbyaccount,account)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+
+STRING_AND_INT(bitcoinrpc,getreceivedbyaccount,account,includeempty)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+
+THREE_INTS(bitcoinrpc,listreceivedbyaccount,confirmations,includeempty,watchonly)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+
+THREE_INTS(bitcoinrpc,listreceivedbyaddress,minconf,includeempty,flag)
+{
+    cJSON *retjson;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    return(jsuccess());
+}
+
+STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatchonly)
+{
+    cJSON *retjson;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    return(jsuccess());
+}
+
+S_D_SS(bitcoinrpc,sendtoaddress,address,amount,comment,comment2)
+{
+    cJSON *retjson;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    return(jsuccess());
+}
+
+SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment2)
+{
+    cJSON *retjson;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    return(jsuccess());
+}
+DOUBLE_ARG(bitcoinrpc,settxfee,amount)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+
+SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+
+S_A_I_S(bitcoinrpc,sendmany,fromaccount,array,minconf,comment)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+
+
+// entire wallet funcs
+TWO_INTS(bitcoinrpc,listaccounts,minconf,includewatchonly)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+
+ZERO_ARGS(bitcoinrpc,listaddressgroupings)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+
+ZERO_ARGS(bitcoinrpc,checkwallet)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+
+ZERO_ARGS(bitcoinrpc,repairwallet)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+
+STRING_ARG(bitcoinrpc,dumpwallet,filename)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+
+STRING_ARG(bitcoinrpc,backupwallet,filename)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+
+STRING_ARG(bitcoinrpc,importwallet,filename)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+
+#include "../includes/iguana_apiundefs.h"
+
+/*
+ 
+ sendtoaddress
+ encryptwallet
+ sendfrom
+ walletlock
+ walletpassphrase
+ walletpassphrasechange
+ 
+ validateaddress
+ 
+ listreceivedbyaddress
+ listtransactions
+ 
+ not implemented yet but needed by GUI
+ 
+ addmultisigaddress (for generating address)
+ setaccount       (to give labels to address)
+ */

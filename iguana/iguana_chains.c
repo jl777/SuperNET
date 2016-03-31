@@ -286,8 +286,8 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
             strcpy(chain->userhome,jstr(argjson,"userhome"));
         else strcpy(chain->userhome,Userhome);
         if ( (port= extract_userpass(chain->serverport,chain->userpass,chain->symbol,chain->userhome,path,conf)) != 0 )
-            chain->portrpc = port;
-        printf("COIN.%s serverport.(%s) userpass.(%s) port.%u\n",chain->symbol,chain->serverport,chain->userpass,chain->portrpc);
+            chain->rpcport = port;
+        printf("COIN.%s serverport.(%s) userpass.(%s) port.%u\n",chain->symbol,chain->serverport,chain->userpass,chain->rpcport);
         if ( (hexstr= jstr(argjson,"pubval")) != 0 && strlen(hexstr) == 2 )
             decode_hex((uint8_t *)&chain->pubtype,1,hexstr);
         if ( (hexstr= jstr(argjson,"scriptval")) != 0 && strlen(hexstr) == 2 )
@@ -332,8 +332,8 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
             chain->portp2p = juint(argjson,"p2p");
         if ( (chain->ramchainport= juint(argjson,"ramchain")) == 0 )
             chain->ramchainport = chain->portp2p - 1;
-        if ( (chain->portrpc= juint(argjson,"rpc")) == 0 )
-            chain->portrpc = chain->portp2p + 1;
+        if ( (chain->rpcport= juint(argjson,"rpc")) == 0 )
+            chain->rpcport = chain->portp2p + 1;
         if ( (rewards= jarray(&n,argjson,"rewards")) != 0 )
         {
             for (i=0; i<n; i++)
@@ -377,8 +377,8 @@ void iguana_chaininit(struct iguana_chain *chain,int32_t hasheaders,cJSON *argjs
     decode_hex((uint8_t *)chain->genesis_hashdata,32,(char *)chain->genesis_hash);
     if ( chain->ramchainport == 0 )
         chain->ramchainport = chain->portp2p - 1;
-    if ( chain->portrpc == 0 )
-        chain->portrpc = chain->portp2p + 1;
+    if ( chain->rpcport == 0 )
+        chain->rpcport = chain->portp2p + 1;
 }
 
 struct iguana_chain *iguana_chainfind(char *name,cJSON *argjson,int32_t createflag)

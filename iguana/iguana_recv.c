@@ -1438,13 +1438,13 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                         else if ( bp->numhashes < bp->n )
                             z = 1;
                     }
-                    if ( bp == 0 || bp->speculative == 0 || bp == coin->current )
+                    if ( bp == 0 || bp->speculative == 0 || bp == coin->current || bp->hdrsi == coin->bundlescount-1 )
                     {
-                        //printf("%s request HDR.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp!=0?bp->numhashes:0);
+                        printf("%s request HDR.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp!=0?bp->numhashes:0);
                         iguana_send(coin,addr,serialized,datalen);
                         addr->pendhdrs++;
                         flag++;
-                    } //else printf("skip hdrreq.%s m.%d z.%d bp.%p longest.%d queued.%d\n",hashstr,m,z,bp,bp->coin->longestchain,bp->queued);
+                    } else printf("skip hdrreq.%s m.%d z.%d bp.%p longest.%d queued.%d\n",hashstr,m,z,bp,bp->coin->longestchain,bp->queued);
                 }
                 free_queueitem(hashstr);
                 return(flag);

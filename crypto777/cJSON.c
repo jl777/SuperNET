@@ -468,10 +468,20 @@ static char *print_object(cJSON *item,int32_t depth,int32_t fmt)
 {
 	char **entries=0,**names=0;
 	char *out=0,*ptr,*ret,*str;int32_t len=7,i=0,j;
-	cJSON *child=item->child;
+	cJSON *child=item->child,*firstchild;
 	int32_t numentries=0,fail=0;
-	/* Count the number of entries. */
-	while (child) numentries++,child=child->next;
+	// Count the number of entries
+    firstchild = child;
+	while ( child )
+    {
+        numentries++;
+        child = child->next;
+        if ( child == firstchild )
+        {
+            printf("cJSON infinite loop detected\n");
+            break;
+        }
+    }
 	/* Explicitly handle empty object case */
 	if (!numentries)
 	{
@@ -492,12 +502,14 @@ static char *print_object(cJSON *item,int32_t depth,int32_t fmt)
     
 	/* Collect all the results into our arrays: */
 	child=item->child;depth++;if (fmt) len+=depth;
-	while (child)
+	while ( child )
 	{
 		names[i]=str=print_string_ptr(child->string);
 		entries[i++]=ret=print_value(child,depth,fmt);
 		if (str && ret) len+=strlen(ret)+strlen(str)+2+(fmt?2+depth:0); else fail=1;
 		child=child->next;
+        if ( child == firstchild )
+            break;
 	}
 	
 	/* Try to allocate the output string */

@@ -646,7 +646,7 @@ int32_t SuperNET_destination(struct supernet_info *myinfo,uint32_t *destipbitsp,
     return(destflag);
 }
 
-char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
+char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,uint16_t port)
 {
     char hexbuf[8192]; bits256 category,subhash;
     int32_t hexlen,destflag,maxdelay,flag=0,newflag=0; uint32_t destipbits,timestamp; cJSON *retjson;
@@ -704,7 +704,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
     {
         if ( newflag == 0 && hexmsg != 0 && SuperNET_hexmsgfind(myinfo,category,subhash,hexmsg,0) < 0 )
             SuperNET_hexmsgadd(myinfo,category,subhash,hexmsg,tai_now(),remoteaddr);
-        if ( (retstr= SuperNET_processJSON(myinfo,json,remoteaddr)) != 0 )
+        if ( (retstr= SuperNET_processJSON(myinfo,json,remoteaddr,port)) != 0 )
         {
             //printf("retstr.(%s)\n",retstr);
             if ( remoteaddr != 0 && (retjson= cJSON_Parse(retstr)) != 0 )
@@ -795,7 +795,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
             //return(clonestr("{\"result\":\"peer marked as dead\"}"));
             return(0);
         }
-        retstr = SuperNET_JSON(myinfo,json,ipaddr);
+        retstr = SuperNET_JSON(myinfo,json,ipaddr,addr->A.port);
         //printf("p2pret.(%s)\n",retstr);
         *delaymillisp = SuperNET_delaymillis(myinfo,maxdelay);
         senderpub = jbits256(json,"mypub");
@@ -1384,7 +1384,7 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
         {
             printf("decrypted.(%s)\n",decryptstr);
             free(decryptstr);
-            if ( (passphrase= jstr(argjson,"result")) != 0 )
+            if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
             {
                 SuperNET_setkeys(myinfo,passphrase,(int32_t)strlen(passphrase),1);
                 free_json(argjson);
