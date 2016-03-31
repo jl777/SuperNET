@@ -806,7 +806,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
                         while ( (breq= queue_dequeue(&coin->priorityQ,0)) != 0 )
                             myfree(breq,sizeof(*breq));
                     }
-                    n = iguana_blocksmissing(coin,&avail,missings,0,bp,bp->n,0*coin->MAXSTUCKTIME);
+                    n = iguana_blocksmissing(coin,&avail,missings,0,bp,bp->n,30);
                     printf("issued %d priority requests [%d] to unstick stuckiters.%d lag.%d\n",n,bp->hdrsi,coin->stuckiters,lag);
                     /*for (i=n=0; i<bp->n; i++)
                     {
