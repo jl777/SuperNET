@@ -372,7 +372,8 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
         return(0);
     for (i=lasthdrsi; i>=0; i--)
     {
-        if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish > coin->startutc )
+        printf("search.[%d] %p finish.%u vs %u\n",i,coin->bundles[i],coin->bundles[i]!=0?coin->bundles[i]->emitfinish:-1,coin->startutc);
+        if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish > 1 )
         {
             ramchain = (bp->isRT != 0) ? &coin->RTramchain : &bp->ramchain;
             if ( ramchain->H.data != 0 )
