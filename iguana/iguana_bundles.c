@@ -911,15 +911,15 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
         if ( bp->numcached > bp->n - (coin->MAXBUNDLES - dist) )
         {
             priority += 1 + (bp == coin->current);
-            if ( bp == coin->current )
-            {
-                for (i=0; i<bp->n; i++)
-                    if ( GETBIT(missings,i) != 0 && bits256_nonz(bp->hashes[i]) != 0 )
-                        iguana_blockQ("missings",coin,bp,i,bp->hashes[i],1);
-            }
         }
         //if ( bp == coin->current )
         //    priority++;
+    }
+    if ( bp == coin->current && queue_size(&coin->priorityQ) == 0 )
+    {
+        for (i=0; i<bp->n; i++)
+            if ( GETBIT(missings,i) != 0 && bits256_nonz(bp->hashes[i]) != 0 )
+                iguana_blockQ("missings",coin,bp,i,bp->hashes[i],1);
     }
     if ( bp->durationscount != 0 )
     {
