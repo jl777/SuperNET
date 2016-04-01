@@ -901,8 +901,6 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
     if ( bp->numissued < bp->n )
         max = bp->numissued;
     else max = bp->origmissings;
-    if ( strcmp(coin->symbol,"BTC") != 0 )
-        priority += 2;
     if ( coin->current != 0 )
     {
         dist = bp->hdrsi - coin->current->hdrsi;
