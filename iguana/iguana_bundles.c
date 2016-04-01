@@ -902,7 +902,7 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
         max = bp->numissued;
     else max = bp->origmissings;
     if ( strcmp(coin->symbol,"BTC") != 0 )
-        priority++;
+        priority += 2;
     if ( coin->current != 0 )
     {
         dist = bp->hdrsi - coin->current->hdrsi;
@@ -954,9 +954,9 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
         {
             if ( bp == coin->current && coin->blocks.hwmchain.height >= bp->bundleheight && coin->blocks.hwmchain.height < bp->bundleheight+bp->n )
             {
-                for (i=coin->blocks.hwmchain.height-bp->bundleheight+1; i<=bp->n; i++)
+                for (j=coin->blocks.hwmchain.height-bp->bundleheight+1; j<=bp->n; j++)
                 {
-                    if ( (block= iguana_bundleblock(coin,&hash2,bp,i)) == 0 && bits256_nonz(hash2) != 0 )
+                    if ( (block= iguana_bundleblock(coin,&hash2,bp,j)) == 0 && bits256_nonz(hash2) != 0 )
                         block = iguana_blockfind(coin,hash2);
                     if ( block == 0 || bits256_nonz(block->RO.prev_block) == 0 || _iguana_chainlink(coin,block) == 0 )
                         break;
@@ -1083,7 +1083,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
         coin->maxstuck = (uint32_t)time(NULL) - coin->stucktime;
     sprintf(str,"%s.RT%d u.%d b.%d v.%d/%d (%d+%d/%d 1st.%d) to %d N[%d] h.%d r.%d c.%d s.%d d.%d E.%d maxB.%d peers.%d/%d Q.(%d %d) L.%d [%d:%d] M.%d %s",coin->symbol,coin->RTheight,numutxo,numbalances,numv,coin->pendbalances,firstgap!=0?firstgap->numcached:-1,firstgap!=0?firstgap->numsaved:-1,firstgap!=0?firstgap->numhashes:-1,firstgap!=0?firstgap->hdrsi:-1,coin->lastpending!=0?coin->lastpending->hdrsi:0,count,numhashes,coin->blocksrecv,numcached,numsaved,done,numemit,coin->MAXBUNDLES,p,coin->MAXPEERS,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ),coin->longestchain,coin->blocks.hwmchain.height/coin->chain->bundlesize,coin->blocks.hwmchain.height%coin->chain->bundlesize,coin->blocks.hwmchain.height,bits256_str(str5,coin->blocks.hwmchain.RO.hash2));
     //sprintf(str+strlen(str),"%s.%-2d %s time %.2f files.%d Q.%d %d\n",coin->symbol,flag,str,(double)(time(NULL)-coin->starttime)/60.,coin->peers.numfiles,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
-    if ( time(NULL) > coin->lastdisp+3 && (strcmp(str,coin->lastdispstr) != 0 || time(NULL) > coin->lastdisp+60) )
+   // if ( time(NULL) > coin->lastdisp+3 && (strcmp(str,coin->lastdispstr) != 0 || time(NULL) > coin->lastdisp+60) )
     {
         printf("\n%s bQ.%d %d:%02d:%02d stuck.%d max.%d\n",str,coin->numbundlesQ,(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,coin->stucktime!=0?(uint32_t)time(NULL) - coin->stucktime:0,coin->maxstuck);
         strcpy(coin->lastdispstr,str);
