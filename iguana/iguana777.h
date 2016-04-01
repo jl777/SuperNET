@@ -26,7 +26,7 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_SERIALIZE_SPENDVECTORGEN
 //#define IGUANA_SERIALIZE_BALANCEGEN
 //#define IGUANA_DISABLEPEERS
-#define _IGUANA_MAXSTUCKTIME 777
+#define _IGUANA_MAXSTUCKTIME 77
 #define IGUANA_MAXITERATIONS 10000
 #define IGUANA_DEFAULTLAG 30
 
