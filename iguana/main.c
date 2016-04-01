@@ -1185,7 +1185,7 @@ void iguana_main(void *arg)
         iguana_launch(btcd,"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
     char *str;
     
-    if ( (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"prefetchlag\":2,\"VALIDATE\":1,\"active\":1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"newcoin\":\"BTC\",\"startpend\":166,\"services\":1}"),0,myinfo->rpcport)) != 0 )
+    if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"prefetchlag\":2,\"VALIDATE\":1,\"active\":1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"newcoin\":\"BTC\",\"startpend\":166,\"services\":1}"),0,myinfo->rpcport)) != 0 )
         free(str);
 #ifdef __APPLE__
     if ( 1 )
