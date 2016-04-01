@@ -156,6 +156,8 @@ int32_t iguana_peerfile_exists(struct iguana_info *coin,struct iguana_peer *addr
 uint32_t iguana_ramchain_addtxid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp,int16_t bundlei)
 {
     uint32_t txidind; struct iguana_txid *t; struct iguana_kvitem *ptr;
+    if ( sizeof(*t) != 64 )
+        printf("sizeof iguana_txid.%ld != 64?\n",sizeof(*t));
     txidind = ramchain->H.txidind;
     t = &T[txidind];
     if ( ramchain->H.ROflag != 0 )
@@ -172,8 +174,14 @@ uint32_t iguana_ramchain_addtxid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 
         if ( 0 && ramchain->expanded != 0 )
             printf("T.%p txidind.%d numvouts.%d numvins.%d\n",T,txidind,numvouts,numvins);
         t->txidind = txidind, t->txid = txid, t->numvouts = numvouts, t->numvins = numvins;
+        t->bundlei = bundlei;
         t->firstvout = ramchain->H.unspentind, t->firstvin = ramchain->H.spendind;
         t->locktime = locktime, t->version = version, t->timestamp = timestamp;
+        if ( t->txidind != txidind || t->firstvout != ramchain->H.unspentind || t->firstvin != ramchain->H.spendind || t->bundlei != bundlei )
+        {
+            printf("addtxid error: t->txidind %u != %u txidind || t->firstvout %u != %u ramchain->H.unspentind || t->firstvin %u != %u ramchain->H.spendind || t->bundlei %u != %u bundlei\n",t->txidind,txidind,t->firstvout,ramchain->H.unspentind,t->firstvin,ramchain->H.spendind,t->bundlei,bundlei);
+            return(0);
+        }
         if ( ramchain->expanded != 0 )
             iguana_sparseaddtx(TXbits,ramchain->H.data->txsparsebits,ramchain->H.data->numtxsparse,txid,T,txidind,ramchain);
         //if ( txidind <= 2 )

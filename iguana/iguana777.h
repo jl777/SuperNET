@@ -18,7 +18,7 @@
 #include "../crypto777/OS_portable.h"
 #include "SuperNET.h"
 
-#define SPARSECOUNT(x) ((x) << 1)
+#define SPARSECOUNT(x) ((x) << 2)
 
 typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t len);
 
@@ -336,7 +336,7 @@ struct iguana_unspent20 { uint64_t value; uint32_t scriptpos,txidind:28,type:4; 
 struct iguana_spend256 { bits256 prevhash2; uint32_t sequenceid,scriptpos; int16_t prevout; uint16_t vinscriptlen,spendind,fileid; } __attribute__((packed));
 
 // permanent readonly structs
-struct iguana_txid { bits256 txid; uint32_t txidind,firstvout,firstvin,locktime,version,timestamp,extraoffset; uint16_t numvouts,numvins; } __attribute__((packed));
+struct iguana_txid { bits256 txid; uint32_t txidind:29,firstvout:28,firstvin:28,bundlei:11,locktime,version,timestamp,extraoffset; uint16_t numvouts,numvins; } __attribute__((packed));
 
 struct iguana_unspent { uint64_t value; uint32_t txidind,pkind,prevunspentind,scriptpos; uint16_t scriptlen,hdrsi; uint16_t fileid:11,type:5; int16_t vout; } __attribute__((packed));
 

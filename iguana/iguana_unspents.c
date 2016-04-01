@@ -388,15 +388,21 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                     //printf("found txidind.%d\n",txidind);
                     if ( bits256_cmp(txid,T[txidind].txid) == 0 )
                     {
-                        /*for (j=0; j<bp->n; j++)
+                        int32_t j; struct iguana_block *block;
+                        for (j=0; j<bp->n; j++)
                             if ( (block= bp->blocks[j]) != 0 && txidind >= block->RO.firsttxidind && txidind < block->RO.firsttxidind+block->RO.txn_count )
                                 break;
-                        if ( j < bp->n )*/
+                        if ( j < bp->n )
                         {
-                            *heightp = bp->bundleheight + T[txidind].extraoffset;//bundlei;
-                            //printf("found height.%d\n",*heightp);
-                            *tx = T[txidind];
-                            return(tx);
+                            if ( j != T[txidind].bundlei )
+                                printf("bundlei mismatch j.%d != %d\n",j,T[txidind].bundlei);
+                            else
+                            {
+                                *heightp = bp->bundleheight + T[txidind].bundlei;
+                                //printf("found height.%d\n",*heightp);
+                                *tx = T[txidind];
+                                return(tx);
+                            }
                         }
                         /*for (j=0; j<bp->n; j++)
                             if ( (block= bp->blocks[j]) != 0 )
@@ -939,7 +945,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
     spendind = B[bundlei].firstvin;
     height = bp->bundleheight + bundlei;
     now = (uint32_t)time(NULL);
-    printf("RTutxo.[%d:%d] txn_count.%d\n",bp->hdrsi,bundlei,B[bundlei].txn_count);
+    //printf("RTutxo.[%d:%d] txn_count.%d\n",bp->hdrsi,bundlei,B[bundlei].txn_count);
     for (j=0; j<B[bundlei].txn_count; j++,txidind++)
     {
         if ( txidind != T[txidind].txidind || spendind != T[txidind].firstvin )
@@ -1294,7 +1300,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                         }
                         totalmillis += (OS_milliseconds() - startmillis);
                         num++;
-                        printf("RTutxo.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
+                        //printf("RTutxo.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
                         coin->RTheight++;
                         printf(">>>> RT.%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",coin->RTheight,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize);
                         coin->RTramchain.H.data->numblocks = bundlei + 1;
