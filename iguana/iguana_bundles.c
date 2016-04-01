@@ -328,7 +328,7 @@ struct iguana_bundle *iguana_bundlecreate(struct iguana_info *coin,int32_t *bund
             iguana_bundlehash2add(coin,0,bp,0,bundlehash2);
             if ( issueflag != 0 )
             {
-                iguana_blockQ("bundlecreate",coin,bp,0,bundlehash2,0);
+                iguana_blockQ("bundlecreate",coin,bp,0,bundlehash2,1);
                 queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(str),1);
             }
             if ( bp->hdrsi >= coin->bundlescount )
@@ -611,7 +611,7 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
         if ( time(NULL) > bp->issued[1]+10 )
         {
             printf("request speculative[1] for bp.[%d] bp->speculative.%p enable.%d\n",bp->hdrsi,bp->speculative,coin->enableCACHE);
-            iguana_blockQ("getnexthdr",coin,bp,-1,bp->speculative[1],0);
+            iguana_blockQ("getnexthdr",coin,bp,-1,bp->speculative[1],1);
             bp->issued[1] = (uint32_t)time(NULL);
         }
     }
@@ -685,7 +685,7 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     struct iguana_bundle *prevbp; int32_t i;
 #ifdef IGUANA_SERIALIZE_SPENDVECTORGEN
-    if ( coin->PREFETCHLAG != 0 && (prevbp= coin->current) != 0 && prevbp->hdrsi < (coin->longestchain / coin->chain->bundlesize)-coin->MAXBUNDLES )
+    if ( coin->PREFETCHLAG != 0 && (prevbp= coin->current) != 0 && prevbp->hdrsi < (coin->longestchain / coin->chain->bundlesize)-0*coin->MAXBUNDLES )
         return(0);
 #endif
     for (i=0; i<bp->hdrsi; i++)
@@ -914,7 +914,7 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
         {
             priority += 1 + (bp == coin->current);
         }
-        if ( queue_size(&coin->priorityQ) < bp->n/(dist+1) )
+        if ( queue_size(&coin->priorityQ) < (2 * bp->n)/(dist+1) )
         {
             for (i=0; i<bp->n; i++)
                 if ( GETBIT(missings,i) != 0 && bits256_nonz(bp->hashes[i]) != 0 )
