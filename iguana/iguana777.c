@@ -418,13 +418,14 @@ void iguana_helper(void *arg)
                 {
                     if ( coin->polltimeout < polltimeout )
                         polltimeout = coin->polltimeout;
-                    printf("[%d] bundleQ size.%d lag.%ld\n",bp->hdrsi,queue_size(&bundlesQ),time(NULL) - bp->nexttime);
+                    //printf("[%d] bundleQ size.%d lag.%ld\n",bp->hdrsi,queue_size(&bundlesQ),time(NULL) - bp->nexttime);
                     coin->numbundlesQ--;
                     if ( coin->started != 0 && time(NULL) >= bp->nexttime && coin->active != 0 )
                         flag += iguana_bundleiters(ptr->coin,&MEM,MEMB,bp,ptr->timelimit,IGUANA_DEFAULTLAG);
                     else
                     {
                         //printf("skip.%d lag.%ld coin->active.%d\n",bp->hdrsi,time(NULL)-bp->nexttime,coin->active);
+                        allcurrent = 0;
                         iguana_bundleQ(ptr->coin,bp,1000);
                     }
                     if ( coin->current != 0 && coin->current->hdrsi != coin->bundlescount-1 )
