@@ -15139,5 +15139,31 @@ len = 0;
          threshold = (bp->avetime + coin->avetime) * .5;
          else threshold = coin->avetime;
          threshold *= 100. * sqrt(threshold) * .000777;*/
+            /*for (i=n=0; i<bp->n; i++)
+             {
+             if ( lag < coin->MAXSTUCKTIME )
+             {
+             if ( bits256_nonz(bp->hashes[i]) != 0 )
+             iguana_blockQ("stuck",coin,bp,i,bp->hashes[i],0);
+             }
+             if ( (block= bp->blocks[i]) != 0 && block->fpipbits == 0 && bp->speculativecache[i] == 0 )
+             {
+             printf("s.[%d:%d] ",bp->hdrsi,i);
+             iguana_blockQ("stuck",coin,bp,i,block->RO.hash2,0);
+             iguana_blockQ("stuck",coin,bp,i,block->RO.hash2,1);
+             if ( coin->peers.numranked > 8 && (addr= coin->peers.ranked[n % 8]) != 0 && addr->usock >= 0 && addr->dead == 0 && addr->msgcounts.verack != 0 )
+             {
+             if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,&block->RO.hash2,1)) > 0 )
+             {
+             printf("%s, ",addr->ipaddr);
+             iguana_send(coin,addr,serialized,len);
+             }
+             }
+             block->issued = (uint32_t)time(NULL);
+             n++;
+             }
+             }
+             if ( n > 0 )
+             printf("issued %d priority requests [%d] to unstick stuckiters.%d lag.%d\n",n,bp->hdrsi,coin->stuckiters,lag);*/
 
 #endif

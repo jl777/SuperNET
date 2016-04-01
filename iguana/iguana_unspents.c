@@ -444,23 +444,23 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
         *unspentindp = unspentind;
         if ( unspentind == 0 )
         {
-            double duration,startmillis = OS_milliseconds(); static double totalmillis; static int32_t num;
+            double duration,startmillis = OS_milliseconds();
             if ( (tp= iguana_txidfind(coin,&height,&TX,prev_hash,spent_hdrsi-1)) != 0 )
             {
                 *unspentindp = unspentind = TX.firstvout + ((prev_vout > 0) ? prev_vout : 0);
                 hdrsi = height / coin->chain->bundlesize;
                 //printf("%s height.%d firstvout.%d prev.%d ->U%d\n",bits256_str(str,prev_hash),height,TX.firstvout,prev_vout,unspentind);
                 duration = (OS_milliseconds() - startmillis);
-                totalmillis += duration;
-                num++;
-                if ( coin->PREFETCHLAG != 0 && duration > (coin->PREFETCHLAG * totalmillis)/num )
+                coin->txidfind_totalmillis += duration;
+                coin->txidfind_num += 1.;
+                if ( coin->PREFETCHLAG != 0 && duration > (coin->PREFETCHLAG * coin->txidfind_totalmillis)/coin->txidfind_num )
                 {
-                    printf("slow txidfind %.2f vs %.2f prefetch[%d] from.[%d] lag.%ld\n",duration,totalmillis/num,spentbp->hdrsi,ramchain->H.data->height/coin->chain->bundlesize,time(NULL) - spentbp->lastprefetch);
+                    printf("slow txidfind %.2f vs %.2f prefetch[%d] from.[%d] lag.%ld\n",duration,coin->txidfind_totalmillis/coin->txidfind_num,spentbp->hdrsi,ramchain->H.data->height/coin->chain->bundlesize,time(NULL) - spentbp->lastprefetch);
                     iguana_ramchain_prefetch(coin,&spentbp->ramchain);
                     spentbp->lastprefetch = (uint32_t)time(NULL);
                 }
-                if ( (num % 1000000) == 0 )
-                    printf("iguana_txidfind.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
+                if ( ((uint64_t)coin->txidfind_num % 1000000) == 0 )
+                    printf("iguana_txidfind.[%.0f] ave %.2f micros, total %.2f seconds\n",coin->txidfind_num,(coin->txidfind_totalmillis*1000.)/coin->txidfind_num,coin->txidfind_totalmillis/1000.);
             }
             else
             {

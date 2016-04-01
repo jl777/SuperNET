@@ -742,7 +742,7 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
 
 int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_bundle *bp,int32_t timelimit,int32_t lag)
 {
-    int32_t range,starti,lasti,avail,n,retval=0,max,counter = 0; struct iguana_bundle *currentbp,*lastbp; uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; struct iguana_blockreq *breq;
+    int32_t range,starti,lasti,tmp,tmp2,n,retval=0,max,counter = 0; struct iguana_bundle *currentbp,*lastbp; uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; struct iguana_blockreq *breq;
     //serialized[512],
     if ( coin->started == 0 || coin->active == 0 )
     {
@@ -809,41 +809,15 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
                 if ( (lag/coin->MAXSTUCKTIME) > coin->stuckiters )
                 {
                     coin->stuckiters = (int32_t)(lag/coin->MAXSTUCKTIME);
-                    if ( 0 && lag > coin->MAXSTUCKTIME )
+                    if ( lag > 2*coin->MAXSTUCKTIME )
                     {
                         while ( (breq= queue_dequeue(&coin->blocksQ,0)) != 0 )
                             myfree(breq,sizeof(*breq));
                         while ( (breq= queue_dequeue(&coin->priorityQ,0)) != 0 )
                             myfree(breq,sizeof(*breq));
                     }
-                    n = iguana_blocksmissing(coin,&avail,missings,0,bp,bp->n,3);
-                    printf("issued %d priority requests [%d] to unstick stuckiters.%d lag.%d\n",n,bp->hdrsi,coin->stuckiters,lag);
-                    /*for (i=n=0; i<bp->n; i++)
-                    {
-                        if ( lag < coin->MAXSTUCKTIME )
-                        {
-                            if ( bits256_nonz(bp->hashes[i]) != 0 )
-                                iguana_blockQ("stuck",coin,bp,i,bp->hashes[i],0);
-                        }
-                        if ( (block= bp->blocks[i]) != 0 && block->fpipbits == 0 && bp->speculativecache[i] == 0 )
-                        {
-                            printf("s.[%d:%d] ",bp->hdrsi,i);
-                            iguana_blockQ("stuck",coin,bp,i,block->RO.hash2,0);
-                            iguana_blockQ("stuck",coin,bp,i,block->RO.hash2,1);
-                            if ( coin->peers.numranked > 8 && (addr= coin->peers.ranked[n % 8]) != 0 && addr->usock >= 0 && addr->dead == 0 && addr->msgcounts.verack != 0 )
-                            {
-                                if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,&block->RO.hash2,1)) > 0 )
-                                {
-                                    printf("%s, ",addr->ipaddr);
-                                    iguana_send(coin,addr,serialized,len);
-                                }
-                            }
-                            block->issued = (uint32_t)time(NULL);
-                            n++;
-                        }
-                    }
-                    if ( n > 0 )
-                        printf("issued %d priority requests [%d] to unstick stuckiters.%d lag.%d\n",n,bp->hdrsi,coin->stuckiters,lag);*/
+                    if ( (n= iguana_bundlerequests(coin,missings,&tmp,&tmp2,bp,30,3)) > 0 )
+                        printf("issued %d priority requests [%d] to unstick stuckiters.%d lag.%d\n",n,bp->hdrsi,coin->stuckiters,lag);
                 }
             }
         }
