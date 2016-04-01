@@ -471,7 +471,7 @@ void iguana_helper(void *arg)
                 printf("helper missing param? %p %p\n",coin,bp);
             myfree(ptr,ptr->allocsize);
         }
-        if ( queue_size(&spendvectorsQ) != 0 )
+        if ( queue_size(&spendvectorsQ) != 0 || queue_size(&bundlesQ) > 10 )
             allcurrent = 0;
         if ( flag != 0 )
             usleep(polltimeout * 250);
