@@ -459,7 +459,7 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
             }
             if ( bits256_nonz(hash2) != 0 )
             {
-                if ( bp->issued[i] == 0 )
+                if ( 0 && bp->issued[i] == 0 )
                     iguana_blockQ("missing",coin,bp,i,hash2,0);
                 if ( now > bp->issued[i]+lag )
                 {

@@ -633,23 +633,27 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
             block->bundlei = bundlei;
             block->hdrsi = bp->hdrsi;
             bp->blocks[bundlei] = block;
-            if ( bits256_nonz(bp->hashes[bundlei]) == 0 && bp->emitfinish == 0 )
+            iguana_bundlehash2add(coin,0,bp,bundlei,hash2);
+            if ( bp->emitfinish == 0 )
             {
-                block->fpos = -1;
-                checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,bp->hashes[bundlei],bundlei>0?bp->hashes[bundlei-1]:zero,1,0);
-                if ( (fp= fopen(fname,"rb")) != 0 )
+                if ( bits256_nonz(bp->hashes[bundlei]) != 0 )
                 {
-                    fseek(fp,0,SEEK_END);
-                    block->RO.recvlen = (uint32_t)ftell(fp);
-                    block->fpipbits = 1;
-                    block->txvalid = 1;
-                    block->fpos = 0;
-                    printf("initialize with fp.[%d:%d] len.%d\n",hdrsi,bundlei,block->RO.recvlen);
-                    fclose(fp);
+                    block->fpos = -1;
+                    checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,bp->hashes[bundlei],bundlei>0?bp->hashes[bundlei-1]:zero,1,0);
+                    if ( (fp= fopen(fname,"rb")) != 0 )
+                    {
+                        fseek(fp,0,SEEK_END);
+                        block->RO.recvlen = (uint32_t)ftell(fp);
+                        block->fpipbits = 1;
+                        block->txvalid = 1;
+                        block->fpos = 0;
+                        //printf("initialize with fp.[%d:%d] len.%d\n",hdrsi,bundlei,block->RO.recvlen);
+                        fclose(fp);
+                    }
                 }
+                else iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,0);
             }
             //printf("bundlehashadd set.%d\n",bundlei);
-            iguana_bundlehash2add(coin,0,bp,bundlei,hash2);
             if ( bundlei > 0 )
             {
                 //printf("bundlehashadd prev %d\n",bundlei);
