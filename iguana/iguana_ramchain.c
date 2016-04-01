@@ -2496,7 +2496,7 @@ void iguana_ramchainmerge(struct iguana_info *coin) // jl777: verify prev/next h
     while ( bp != 0 && (nextbp= bp->nextbp) != 0 )
     {
         n++;
-        if ( nextbp != 0 && bp != 0 && bp->emitfinish > coin->startutc && nextbp->emitfinish > coin->startutc && bp->mergefinish == 0 && nextbp->mergefinish == 0 && bp->ramchain.datasize + nextbp->ramchain.datasize < IGUANA_MAXRAMCHAINSIZE )
+        if ( nextbp != 0 && bp != 0 && bp->emitfinish > 1 && nextbp->emitfinish > 1 && bp->mergefinish == 0 && nextbp->mergefinish == 0 && bp->ramchain.datasize + nextbp->ramchain.datasize < IGUANA_MAXRAMCHAINSIZE )
         {
             if ( total == 0 || (bp->ramchain.datasize + nextbp->ramchain.datasize) < total )
             {

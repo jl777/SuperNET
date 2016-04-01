@@ -376,7 +376,7 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     static bits256 zero;
     char fname[1024]; int32_t hdrsi,m,j; uint32_t ipbits;
-    if ( bp->emitfinish > coin->startutc && bp->purgetime == 0 && time(NULL) > bp->emitfinish+30 )
+    if ( bp->purgetime == 0 && time(NULL) > bp->emitfinish+30 )
     {
         for (j=m=0; j<sizeof(coin->peers.active)/sizeof(*coin->peers.active); j++)
         {
@@ -644,7 +644,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
 {
     int32_t bundlei,numhashes,avail,numsaved,numrecv,minrequests; uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1];
     int64_t datasize; struct iguana_block *block;
-    if ( bp->emitfinish > coin->startutc )
+    if ( bp->emitfinish > 1 )
     {
         bp->numhashes = bp->numsaved = bp->numcached = bp->numrecv = bp->n;
         return(bp->datasize);
@@ -688,7 +688,7 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
         return(0);
 #endif
     for (i=0; i<bp->hdrsi; i++)
-        if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish < coin->startutc || prevbp->utxofinish == 0 )
+        if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish <= 1 || prevbp->utxofinish == 0 )
             break;
     if ( bp->hdrsi < coin->blocks.hwmchain.height/coin->chain->bundlesize && i == bp->hdrsi && time(NULL) > bp->emitfinish+10 )//&& coin->emitbusy <= 4 )
     {
