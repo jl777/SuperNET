@@ -344,12 +344,12 @@ int32_t iguana_ramchain_spendtxid(struct iguana_info *coin,uint32_t *unspentindp
     ind = s->spendtxidind;
     external = (ind >> 31) & 1;
     ind &= ~(1 << 31);
-    printf("s.%p ramchaintxid vout.%x spendtxidind.%d isext.%d ext.%d ind.%d\n",s,s->prevout,s->spendtxidind,s->external,external,ind);
+    printf("s.%p ramchaintxid vout.%x spendtxidind.%d isext.%d ext.%d ind.%d\n",s,s->prevout,ind,s->external,external,ind);
     if ( s->prevout < 0 )
         return(-1);
     if ( s->external != 0 && s->external == external && ind < numexternaltxids )
     {
-        //printf("ind.%d externalind.%d X[%d]\n",ind,ramchain->externalind,ramchain->H.data->numexternaltxids);
+        printf("ind.%d X[%d]\n",ind,numexternaltxids);
         *txidp = X[ind];
         return(s->prevout);
     }
