@@ -926,7 +926,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
 
 struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundlereq *req,struct iguana_block *origblock,int32_t numtx,int32_t datalen,int32_t recvlen,int32_t *newhwmp)
 {
-    struct iguana_bundle *bp=0; int32_t width,numsaved=0,bundlei = -2; struct iguana_block *block,*tmpblock,*prev; char str[65];
+    struct iguana_bundle *bp=0; int32_t numsaved=0,bundlei = -2; struct iguana_block *block,*tmpblock; char str[65];
     if ( (bp= iguana_bundleset(coin,&block,&bundlei,origblock)) != 0 && bp == coin->current && block != 0 && bp->speculative != 0 && bundlei >= 0 )
     {
         if ( bp->speculative != 0 && bp->numspec <= bundlei )
