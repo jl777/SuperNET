@@ -898,7 +898,7 @@ int32_t iguana_cacheprocess(struct iguana_info *coin,struct iguana_bundle *bp,in
 
 int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,int32_t capacity,int32_t lag)
 {
-    uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t tmp,dist=0,missing,priority,avail,n=0,max; double aveduration,aveduplicates;
+    uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t i,tmp,dist=0,missing,priority,avail,n=0,max; double aveduration,aveduplicates;
     missing = iguana_blocksmissing(coin,&avail,missings,0,bp,0,lag);
     priority = (strcmp("BTC",coin->symbol) != 0) * 2;
     lag = IGUANA_DEFAULTLAG;
@@ -909,7 +909,15 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
     {
         dist = bp->hdrsi - coin->current->hdrsi;
         if ( bp->numcached > bp->n - (coin->MAXBUNDLES - dist) )
+        {
             priority += 1 + (bp == coin->current);
+            if ( bp == coin->current )
+            {
+                for (i=0; i<bp->n; i++)
+                    if ( GETBIT(missings,i) != 0 && bits256_nonz(bp->hashes[i]) != 0 )
+                        iguana_blockQ("missings",coin,bp,i,bp->hashes[i],1);
+            }
+        }
         //if ( bp == coin->current )
         //    priority++;
     }
