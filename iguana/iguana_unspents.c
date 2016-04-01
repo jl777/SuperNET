@@ -151,8 +151,8 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
             if ( iguana_utxoupdate(coin,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,fromheight) == 0 )
             {
                 totalmillis += (OS_milliseconds() - startmillis);
-                if ( (++utxon % 1000) == 0 )
-                    printf("ave utxo[%d] %.2f micros\n",utxon,(1000. * totalmillis)/utxon);
+                if ( (++utxon % 10000) == 0 )
+                    printf("ave utxo[%d] %.2f micros total %.2f seconds\n",utxon,(1000. * totalmillis)/utxon,totalmillis/1000.);
                 return(0);
             }
         }
@@ -439,11 +439,15 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
         *unspentindp = unspentind;
         if ( unspentind == 0 )
         {
+            double startmillis = OS_milliseconds(); static double totalmillis; static int32_t num;
             if ( (tp= iguana_txidfind(coin,&height,&TX,prev_hash,spent_hdrsi-1)) != 0 )
             {
                 *unspentindp = unspentind = TX.firstvout + ((prev_vout > 0) ? prev_vout : 0);
                 hdrsi = height / coin->chain->bundlesize;
                 //printf("%s height.%d firstvout.%d prev.%d ->U%d\n",bits256_str(str,prev_hash),height,TX.firstvout,prev_vout,unspentind);
+                totalmillis += (OS_milliseconds() - startmillis);
+                if ( (++num % 10000) == 0 )
+                    printf("iguana_txidfind.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
             }
             else
             {
@@ -938,9 +942,9 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
     spendind = B[bundlei].firstvin;
     height = bp->bundleheight + bundlei;
     now = (uint32_t)time(NULL);
+    printf("RTutxo.[%d:%d] txn_count.%d\n",bp->hdrsi,bundlei,B[bundlei].txn_count);
     for (j=0; j<B[bundlei].txn_count; j++,txidind++)
     {
-        printf("RTutxo.[%d:%d] txn_count.%d\n",bp->hdrsi,bundlei,B[bundlei].txn_count);
         if ( txidind != T[txidind].txidind || spendind != T[txidind].firstvin )
         {
             printf("RTutxogen: txidind %u != %u nextT[txidind].firsttxidind || spendind %u != %u nextT[txidind].firstvin\n",txidind,T[txidind].txidind,spendind,T[txidind].firstvin);
@@ -951,12 +955,16 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
             s = &S[spendind];
             if ( s->external != 0 && s->prevout >= 0 )
             {
+                double startmillis = OS_milliseconds(); static double totalmillis; static int32_t num;
                 if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,RTramchain,bp->hdrsi,s)) == 0 || spent_unspentind == 0 || spent_unspentind >= spentbp->ramchain.H.data->numunspents || spentbp->hdrsi < 0 || spentbp->hdrsi >= bp->hdrsi || spentbp == bp )
                 {
                     char str[65];
                     printf("RTutxo: unexpected spendbp: height.%d bp.[%d] U%d <- S%d.[%d] [ext.%d %s prev.%d]\n",height,spentbp!=0?spentbp->hdrsi:-1,spent_unspentind,spendind,bp->hdrsi,s->external,bits256_str(str,prevhash),s->prevout);
                     return(-1);
                 }
+                totalmillis += (OS_milliseconds() - startmillis);
+                if ( (++num % 10000) == 0 )
+                    printf("externalspents.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
                 rdata = spentbp->ramchain.H.data;
                 if ( now > spentbp->lastprefetch+10 )
                 {
