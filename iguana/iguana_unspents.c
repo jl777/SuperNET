@@ -1261,7 +1261,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                     if ( iguana_mapchaininit(coin,&blockR,bp,bundlei,block,ptr,filesize) == 0 )
                     {
                         double startmillis0 = OS_milliseconds(); static double totalmillis0; static int32_t num0;
-                        if ( (err= iguana_ramchain_iterate(coin,dest,&blockR,bp)) != 0 || bits256_cmp(blockR.H.data->firsthash2,block->RO.hash2) != 0 )
+                        if ( (err= iguana_ramchain_iterate(coin,dest,&blockR,bp,bundlei)) != 0 || bits256_cmp(blockR.H.data->firsthash2,block->RO.hash2) != 0 )
                         {
                             printf("ERROR [%d:%d] %s vs ",bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
                             printf("mapped.%s\n",bits256_str(str,blockR.H.data->firsthash2));

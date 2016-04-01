@@ -1442,7 +1442,7 @@ int32_t iguana_ramchain_cmp(struct iguana_ramchain *A,struct iguana_ramchain *B,
     return(-1);
 }
 
-int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain *dest,struct iguana_ramchain *ramchain,struct iguana_bundle *bp)
+int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain *dest,struct iguana_ramchain *ramchain,struct iguana_bundle *bp,int16_t bundlei)
 {
     RAMCHAIN_DECLARE; RAMCHAIN_DESTDECLARE;
     int32_t j,hdrsi,prevout,scriptlen; uint32_t scriptpos,sequenceid,destspendind=0,desttxidind=0; uint16_t fileid;
@@ -1475,14 +1475,14 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
         if ( 0 && ramchain->expanded == 0 && dest != 0 )
             printf("ITER [%d] TXID.%d -> dest.%p desttxid.%d dest->hashmem.%p numtxids.%d\n",ramchain->H.data->height,ramchain->H.txidind,dest,dest!=0?dest->H.txidind:0,dest!=0?dest->hashmem:0,rdata->numtxids);
         tx = &T[ramchain->H.txidind];
-        if ( iguana_ramchain_addtxid(coin,RAMCHAIN_ARG,tx->txid,tx->numvouts,tx->numvins,tx->locktime,tx->version,tx->timestamp) == 0 )
+        if ( iguana_ramchain_addtxid(coin,RAMCHAIN_ARG,tx->txid,tx->numvouts,tx->numvins,tx->locktime,tx->version,tx->timestamp,bundlei) == 0 )
             return(-1);
         if ( dest != 0 )
         {
             //char str[65];
             if ( 0 && ramchain->expanded == 0 )
                 printf("ITER [%d] TXID.%d -> dest.%p desttxid.%d dest->hashmem.%p numtxids.%d\n",ramchain->H.data->height,ramchain->H.txidind,dest,dest!=0?dest->H.txidind:0,dest!=0?dest->hashmem:0,rdata->numtxids);
-            if ( iguana_ramchain_addtxid(coin,RAMCHAIN_DESTARG,tx->txid,tx->numvouts,tx->numvins,tx->locktime,tx->version,tx->timestamp) == 0 )
+            if ( iguana_ramchain_addtxid(coin,RAMCHAIN_DESTARG,tx->txid,tx->numvouts,tx->numvins,tx->locktime,tx->version,tx->timestamp,bundlei) == 0 )
                 return(-2);
         }
         for (j=0; j<tx->numvouts; j++)
@@ -1748,7 +1748,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
     for (i=0; i<txn_count; i++,ramchain->H.txidind++)
     {
         tx = &txarray[i];
-        iguana_ramchain_addtxid(coin,RAMCHAIN_ARG,tx->txid,tx->tx_out,tx->tx_in,tx->lock_time,tx->version,tx->timestamp);
+        iguana_ramchain_addtxid(coin,RAMCHAIN_ARG,tx->txid,tx->tx_out,tx->tx_in,tx->lock_time,tx->version,tx->timestamp,bundlei);
         for (j=0; j<tx->tx_out; j++)
         {
             memset(rmd160,0,sizeof(rmd160));
@@ -1826,7 +1826,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
                     else
                     {
                         iguana_ramchain_extras(coin,&R,0,0);
-                        if ( (err= iguana_ramchain_iterate(coin,0,&R,bp)) != 0 )
+                        if ( (err= iguana_ramchain_iterate(coin,0,&R,bp,bundlei)) != 0 )
                             printf("err.%d iterate ",err);
                         //printf("SUCCESS REMAP\n");
                         bp->numtxids += ramchain->H.data->numtxids;
@@ -2037,7 +2037,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     memset(ramchain->A,0,sizeof(*ramchain->A) * ramchain->H.data->numpkinds);
     //printf("presave T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d\n",ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,firsti);
     //printf("0 preSAVE: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d\n",(int32_t)ramchain->H.data->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)ramchain->H.data->allocsize);
-    if ( (err= iguana_ramchain_iterate(coin,0,ramchain,bp)) != 0 )
+    if ( (err= iguana_ramchain_iterate(coin,0,ramchain,bp,-1)) != 0 )
         printf("ERROR.%d iterating presave ramchain hdrsi.%d\n",err,hdrsi);
     else
     {
@@ -2069,7 +2069,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
             iguana_ramchain_link(mapchain,firsthash2,lasthash2,hdrsi,height,0,numblocks,firsti,1);
             iguana_ramchain_extras(coin,mapchain,hashmem,0);
             //printf("expSAVE: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d\n",(int32_t)mapchain->H.data->Koffset,mapchain->H.scriptoffset,mapchain->H.stacksize,(int32_t)mapchain->H.data->allocsize);
-            if ( (err= iguana_ramchain_iterate(coin,0,mapchain,bp)) != 0 )
+            if ( (err= iguana_ramchain_iterate(coin,0,mapchain,bp,bundlei)) != 0 )
                 printf("err.%d iterate mapped dest\n",err);
             else if ( cmpflag != 0 )
             {
@@ -2341,7 +2341,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
             coin->blocks.RO[bp->bundleheight+bundlei] = block->RO;
             destB[bundlei] = block->RO;
             //fprintf(stderr,"(%d %d).%d ",R[bundlei].H.data->numtxids,dest->H.txidind,bundlei);
-            if ( (err= iguana_ramchain_iterate(coin,dest,&R[bundlei],bp)) != 0 )
+            if ( (err= iguana_ramchain_iterate(coin,dest,&R[bundlei],bp,bundlei)) != 0 )
             {
                 if ( (block= bp->blocks[bundlei]) != 0 )
                 {
@@ -2455,9 +2455,9 @@ int32_t iguana_bundlemergeHT(struct iguana_info *coin,struct OS_memspace *mem,st
         iguana_ramchain_extras(coin,dest,&HASHMEM,0);
         dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
         dest->externalind = 0;
-        if ( (err= iguana_ramchain_iterate(coin,dest,A,bp)) != 0 )
+        if ( (err= iguana_ramchain_iterate(coin,dest,A,bp,-1)) != 0 )
             printf("error.%d ramchain_iterate A.%d\n",err,A->height);
-        else if ( (err= iguana_ramchain_iterate(coin,dest,B,nextbp)) != 0 )
+        else if ( (err= iguana_ramchain_iterate(coin,dest,B,nextbp,-1)) != 0 )
             printf("error.%d ramchain_iterate B.%d\n",err,B->height);
         else if ( iguana_ramchain_expandedsave(coin,RAMCHAIN_DESTARG,&newchain,&HASHMEM,0,0) == 0 )
         {
