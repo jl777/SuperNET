@@ -685,7 +685,7 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     struct iguana_bundle *prevbp; int32_t i;
 #ifdef IGUANA_SERIALIZE_SPENDVECTORGEN
-    if ( (prevbp= coin->current) != 0 && prevbp->hdrsi < (coin->longestchain / coin->chain->bundlesize)-coin->MAXBUNDLES )
+    if ( coin->PREFETCHLAG != 0 && (prevbp= coin->current) != 0 && prevbp->hdrsi < (coin->longestchain / coin->chain->bundlesize)-coin->MAXBUNDLES )
         return(0);
 #endif
     for (i=0; i<bp->hdrsi; i++)
