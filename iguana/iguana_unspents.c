@@ -147,8 +147,14 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
         }
         else // do the equivalent of historical, ie mark as spent, linked list, balance
         {
-            if ( 1 || iguana_utxoupdate(coin,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,fromheight) == 0 )
+            double startmillis = OS_milliseconds(); static double totalmillis; static int32_t utxon;
+            if ( iguana_utxoupdate(coin,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,fromheight) == 0 )
+            {
+                totalmillis += (OS_milliseconds() - startmillis);
+                if ( (++utxon % 1000) == 0 )
+                    printf("ave utxo[%d] %.2f micros\n",utxon,(1000. * totalmillis)/utxon);
                 return(0);
+            }
         }
         printf("iguana_volatileupdate: [%d] spent.(u%u %.8f pkind.%d) double spend? at ht.%d [%d] spendind.%d\n",spent_hdrsi,spent_unspentind,dstr(spent_value),spent_pkind,fromheight,fromheight/coin->chain->bundlesize,spendind);
         exit(-1);
