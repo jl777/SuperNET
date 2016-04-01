@@ -609,7 +609,7 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
     {
         if ( time(NULL) > bp->issued[1]+10 )
         {
-            printf("request speculative[1] for bp.[%d]\n",bp->hdrsi);
+            printf("request speculative[1] for bp.[%d] bp->speculative.%p enable.%d\n",bp->hdrsi,bp->speculative,coin->enableCACHE);
             iguana_blockQ("getnexthdr",coin,bp,-1,bp->speculative[1],0);
             bp->issued[1] = (uint32_t)time(NULL);
         }
