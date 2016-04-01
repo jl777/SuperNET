@@ -691,7 +691,7 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
     for (i=0; i<bp->hdrsi; i++)
         if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish <= 1 || prevbp->utxofinish == 0 )
             break;
-    if ( bp->hdrsi < coin->blocks.hwmchain.height/coin->chain->bundlesize && i == bp->hdrsi && time(NULL) > bp->emitfinish+10 )//&& coin->emitbusy <= 4 )
+    if ( bp->hdrsi < coin->blocks.hwmchain.height/coin->chain->bundlesize && i >= bp->hdrsi-8 && time(NULL) > bp->emitfinish+10 )//&& coin->emitbusy <= 4 )
     {
         if ( bp->startutxo == 0 )
         {
