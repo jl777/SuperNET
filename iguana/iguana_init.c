@@ -319,6 +319,7 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
             }
             printf("iguana_bundleQ\n");
         }
+        coin->origbalanceswritten = coin->balanceswritten;
     }
 }
 

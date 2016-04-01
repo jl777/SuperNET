@@ -599,7 +599,7 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
     int32_t counter=0;
     if ( 0 && bp->isRT == 0 && (bp->hdrsi == coin->bundlescount-1 || bp == coin->current) )
         printf("hdr ITERATE.%d bundle.%d vs %d: h.%d n.%d r.%d s.%d c.%d finished.%d spec.%p[%d]\n",bp->hdrsi,bp->bundleheight,coin->longestchain-coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->numcached,bp->emitfinish,bp->speculative,bp->numspec);
-    if ( bp->hdrsi == coin->bundlescount-1 || (coin->enableCACHE != 0 && bp->numhashes < bp->n && (bp->speculative == 0 || bp->hdrsi >= coin->longestchain/bp->n)) )
+    if ( bp->hdrsi >= coin->bundlescount-2 || (coin->enableCACHE != 0 && bp->numhashes < bp->n && (bp->speculative == 0 || bp->hdrsi >= coin->longestchain/bp->n)) )
     {
         char str[64];
         //printf("hdrs.%s\n",bits256_str(str,bp->hashes[0]));

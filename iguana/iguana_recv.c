@@ -587,7 +587,7 @@ void iguana_bundlespeculate(struct iguana_info *coin,struct iguana_bundle *bp,in
 {
     if ( bp == 0 )
         return;
-    if ( bp->numhashes < bp->n && bundlei == 0 && bp->speculative == 0 && bp->bundleheight < coin->longestchain-coin->chain->bundlesize )
+    if ( coin->enableCACHE != 0 && bp->numhashes < bp->n && bundlei == 0 && bp->speculative == 0 && bp->bundleheight < coin->longestchain-coin->chain->bundlesize )
     {
         char str[65]; bits256_str(str,bp->hashes[0]);
         fprintf(stderr,"Afound block -> %d %d hdr.%s\n",bp->bundleheight,coin->longestchain-coin->chain->bundlesize,str);
@@ -849,7 +849,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
         }
         else if ( bp->hdrsi == coin->bundlescount-1 )
             iguana_checklongestchain(coin,bp,num);
-        if ( (bp->speculative == 0 || num > bp->numspec) && bp->emitfinish == 0 )
+        if ( coin->enableCACHE != 0 && (bp->speculative == 0 || num > bp->numspec) && bp->emitfinish == 0 )
         {
             //printf("FOUND speculative.%s BLOCKHASHES[%d] ht.%d\n",bits256_str(str,blockhashes[1]),num,bp->bundleheight);
             if ( bp->speculative == 0 )

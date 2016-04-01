@@ -1350,11 +1350,10 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
 
 int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t purgedist)
 {
-    int32_t hdrsi,numpkinds,iter,numhdrsi,numunspents,err,origcount; struct iguana_bundle *bp;
+    int32_t hdrsi,numpkinds,iter,numhdrsi,numunspents,err; struct iguana_bundle *bp;
     char fname[1024],fname2[1024],destfname[1024]; bits256 balancehash; FILE *fp,*fp2;
     struct iguana_utxo *Uptr; struct iguana_account *Aptr; struct sha256_vstate vstate;
     vupdate_sha256(balancehash.bytes,&vstate,0,0);
-    origcount = coin->balanceswritten;
     for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
         if ( (bp= coin->bundles[hdrsi]) == 0 || bp->balancefinish <= 1 || bp->ramchain.H.data == 0 || bp->ramchain.A == 0 || bp->ramchain.Uextras == 0 )
             break;
@@ -1466,7 +1465,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
                 printf("error mapping bundle.[%d]\n",hdrsi);
         }
     char str[65]; printf("BALANCES WRITTEN for %d/%d bundles %s\n",coin->balanceswritten,origcount,bits256_str(str,coin->balancehash));
-    if ( strcmp(coin->symbol,"BTC") == 0 && coin->balanceswritten > origcount+10 )
+    if ( strcmp(coin->symbol,"BTC") == 0 && coin->balanceswritten > coin->balanceswritten+10 )
     {
         int32_t i;
         coin->active = 0;
