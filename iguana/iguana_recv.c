@@ -636,7 +636,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
             iguana_bundlehash2add(coin,0,bp,bundlei,hash2);
             if ( bp->emitfinish == 0 )
             {
-                if ( 0 && bits256_nonz(block->RO.hash2) != 0 && block->fpipbits == 0 )
+                if ( bp->hdrsi == coin->longestchain/bp->n && bits256_nonz(block->RO.hash2) != 0 && block->fpipbits == 0 )
                 {
                     block->fpos = -1;
                     checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,block->RO.hash2,zero,1,0);
@@ -647,7 +647,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
                         block->fpipbits = 1;
                         block->txvalid = 1;
                         block->fpos = 0;
-                        //printf("initialize with fp.[%d:%d] len.%d\n",hdrsi,bundlei,block->RO.recvlen);
+                        printf("initialize with fp.[%d:%d] len.%d\n",hdrsi,bundlei,block->RO.recvlen);
                         fclose(fp);
                     }
                 } else iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,coin->current == 0 || bp->hdrsi <= coin->current->hdrsi+coin->MAXBUNDLES);
