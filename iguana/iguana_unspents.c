@@ -966,7 +966,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
                 if ( (++num % 10000) == 0 )
                     printf("externalspents.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
                 rdata = spentbp->ramchain.H.data;
-                if ( now > spentbp->lastprefetch+10 )
+                if ( 0 && now > spentbp->lastprefetch+10 )
                 {
                     printf("RT prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
                     iguana_ramchain_prefetch(coin,&spentbp->ramchain);
@@ -991,10 +991,14 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
             else continue; // coinbase always already spent
             if ( spentbp != 0 && rdata != 0 && spent_unspentind != 0 && spent_unspentind < rdata->numunspents )
             {
+                double startmillis = OS_milliseconds(); static double totalmillis; static int32_t num;
                 spentU = (void *)(long)((long)rdata + rdata->Uoffset);
                 u = &spentU[spent_unspentind];
                 if ( iguana_volatileupdate(coin,1,spentbp == bp ? RTramchain : &spentbp->ramchain,spentbp->hdrsi,spent_unspentind,u->pkind,u->value,spendind,height) < 0 )
                     return(-1);
+                totalmillis += (OS_milliseconds() - startmillis);
+                if ( (++num % 10000) == 0 )
+                    printf("volatile.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
             }
             else
             {
@@ -1263,6 +1267,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                 {
                     if ( iguana_mapchaininit(coin,&blockR,bp,bundlei,block,ptr,filesize) == 0 )
                     {
+                        double startmillis0 = OS_milliseconds(); static double totalmillis0; static int32_t num0;
                         if ( (err= iguana_ramchain_iterate(coin,dest,&blockR,bp)) != 0 || bits256_cmp(blockR.H.data->firsthash2,block->RO.hash2) != 0 )
                         {
                             printf("ERROR [%d:%d] %s vs ",bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
@@ -1278,13 +1283,20 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                             iguana_RTramchainfree(coin);
                             return(-1);
                         }
+                        totalmillis0 += (OS_milliseconds() - startmillis0);
+                        num0++;
+                        printf("ramchainiterate.[%d] ave %.2f micros, total %.2f seconds\n",num0,(totalmillis0*100.)/num0,totalmillis0/100.);
                         flag++;
+                        double startmillis = OS_milliseconds(); static double totalmillis; static int32_t num;
                         if ( iguana_RTutxo(coin,bp,dest,bundlei) < 0 )
                         {
                             printf("RTutxo error -> RTramchainfree\n");
                             iguana_RTramchainfree(coin);
                             return(-1);
                         }
+                        totalmillis += (OS_milliseconds() - startmillis);
+                        num++;
+                        printf("RTutxo.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*100.)/num,totalmillis/100.);
                         coin->RTheight++;
                         printf(">>>> RT.%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",coin->RTheight,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize);
                         coin->RTramchain.H.data->numblocks = bundlei + 1;
