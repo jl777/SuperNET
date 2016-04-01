@@ -696,7 +696,7 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
         if ( bp->startutxo == 0 )
         {
             bp->startutxo = (uint32_t)time(NULL);
-            printf("spendvectorQ.%d\n",bp->hdrsi);
+            //printf("spendvectorQ.%d\n",bp->hdrsi);
             iguana_spendvectorsQ(coin,bp);
         }
         else if ( bp->utxofinish != 0 )
