@@ -912,14 +912,12 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
         {
             priority += 1 + (bp == coin->current);
         }
-        //if ( bp == coin->current )
-        //    priority++;
-    }
-    if ( bp == coin->current && queue_size(&coin->priorityQ) < bp->n )
-    {
-        for (i=0; i<bp->n; i++)
-            if ( GETBIT(missings,i) != 0 && bits256_nonz(bp->hashes[i]) != 0 )
-                iguana_blockQ("missings",coin,bp,i,bp->hashes[i],1);
+        if ( queue_size(&coin->priorityQ) < bp->n/(dist+1) )
+        {
+            for (i=0; i<bp->n; i++)
+                if ( GETBIT(missings,i) != 0 && bits256_nonz(bp->hashes[i]) != 0 )
+                    iguana_blockQ("missings",coin,bp,i,bp->hashes[i],1);
+        }
     }
     if ( bp->durationscount != 0 )
     {

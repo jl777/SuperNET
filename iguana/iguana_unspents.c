@@ -1446,8 +1446,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
             if ( iguana_mapvolatiles(coin,&bp->ramchain) != 0 )
                 printf("error mapping bundle.[%d]\n",hdrsi);
         }
-    char str[65]; printf("BALANCES WRITTEN for %d bundles %s\n",coin->balanceswritten,bits256_str(str,coin->balancehash));
-    iguana_coinpurge(coin);
+    char str[65]; printf("BALANCES WRITTEN for %d/%d bundles %s\n",coin->balanceswritten,origcount,bits256_str(str,coin->balancehash));
     if ( strcmp(coin->symbol,"BTC") == 0 && coin->balanceswritten > origcount+10 )
     {
         int32_t i;
@@ -1462,6 +1461,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
         }
         exit(-1);
     }
+    iguana_coinpurge(coin);
     //coin->balanceswritten = iguana_volatileinit(coin);
     //iguana_RTramchainfree(coin);
     return(coin->balanceswritten);
