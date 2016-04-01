@@ -888,7 +888,7 @@ double iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,d
         {
             priority += 1 + (bp == coin->current);
         }
-        if ( queue_size(&coin->priorityQ) < (2 * bp->n)/(dist+1) )
+        if ( queue_size(&coin->priorityQ) < (3 * bp->n)/(dist+1) )
         {
             for (i=0; i<bp->n; i++)
                 if ( GETBIT(missings,i) != 0 && bits256_nonz(bp->hashes[i]) != 0 )
