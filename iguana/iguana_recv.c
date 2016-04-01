@@ -200,7 +200,7 @@ struct iguana_txblock *iguana_peertxdata(struct iguana_info *coin,int32_t *bundl
 
 int32_t iguana_speculativefind(struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_block *block,uint8_t *data,int32_t recvlen)
 {
-    int32_t i,j,numcached; uint8_t *tmp; char str[65];
+    int32_t i,j,numcached; uint8_t *tmp; //char str[65];
     for (i=1; i<bp->n; i++)
     {
         if ( bits256_cmp(bp->speculative[i],block->RO.hash2) == 0 )
