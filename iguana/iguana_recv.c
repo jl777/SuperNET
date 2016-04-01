@@ -650,7 +650,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
                         //printf("initialize with fp.[%d:%d] len.%d\n",hdrsi,bundlei,block->RO.recvlen);
                         fclose(fp);
                     }
-                } else iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,0);
+                } else iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,coin->current == 0 || bp->hdrsi <= coin->current->hdrsi+coin->MAXBUNDLES);
             }
             //printf("bundlehashadd set.%d\n",bundlei);
             if ( bundlei > 0 )
@@ -1357,10 +1357,6 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
     {
         //printf("found valid [%d:%d] in blockQ\n",block!=0?block->hdrsi:-1,block!=0?block->bundlei:-1);
         return(0);
-    }
-    if ( strcmp(argstr,"bundleset") == 0 )
-    {
-        
     }
   //lag = (priority == 0) ? IGUANA_DEFAULTLAG*3 : IGUANA_DEFAULTLAG;
     now = (uint32_t)time(NULL);
