@@ -649,10 +649,10 @@ void iguana_unspents(struct supernet_info *myinfo,struct iguana_info *coin,cJSON
 void iguana_prefetch(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     int32_t i; struct iguana_bundle *spentbp; uint32_t starttime = (uint32_t)time(NULL);
-    if ( bp->hdrsi > 7 )
+    if ( bp->hdrsi > 4 )
     {
-        //printf("start prefetch for [%d]\n",bp->hdrsi);
-        for (i=1; i<7; i++)
+        printf("start prefetch4 for [%d]\n",bp->hdrsi);
+        for (i=1; i<4; i++)
         {
             if ( (spentbp= coin->bundles[bp->hdrsi - i]) != 0 )
             {
@@ -660,7 +660,7 @@ void iguana_prefetch(struct iguana_info *coin,struct iguana_bundle *bp)
                 spentbp->lastprefetch = starttime;
             }
         }
-        //printf("end prefetch for [%d] elapsed %d\n",bp->hdrsi,(uint32_t)time(NULL)-starttime);
+        printf("end prefetch4 for [%d] elapsed %d\n",bp->hdrsi,(uint32_t)time(NULL)-starttime);
     }
 }
 
@@ -689,7 +689,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     printf("start UTXOGEN.%d max.%d ptr.%p\n",bp->bundleheight,n,ptr);
     txidind = spendind = rdata->firsti;
     iguana_ramchain_prefetch(coin,ramchain);
-    //iguana_prefetch(coin,bp);
+    iguana_prefetch(coin,bp);
     starttime = (uint32_t)time(NULL);
     for (i=0; i<bp->n; i++)
     {
@@ -724,9 +724,9 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
                             printf("unexpected spendbp: height.%d bp.[%d] U%d <- S%d.[%d] [ext.%d %s prev.%d]\n",bp->bundleheight+i,spentbp->hdrsi,spent_unspentind,spendind,bp->hdrsi,s->external,bits256_str(str,prevhash),s->prevout);
                             errs++;
                         }
-                        if ( 0 && now > spentbp->lastprefetch+10 )
+                        if ( now > spentbp->lastprefetch+300 )
                         {
-                            //printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
+                            printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
                             iguana_ramchain_prefetch(coin,&spentbp->ramchain);
                             spentbp->lastprefetch = now;
                         }
@@ -829,12 +829,6 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
     for (i=0; i<bp->n; i++)
     {
         now = (uint32_t)time(NULL);
-        if ( 0 && now > bp->lastprefetch+30 )
-        {
-            //printf("RT prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
-            iguana_ramchain_prefetch(coin,&bp->ramchain);
-            bp->lastprefetch = now;
-        }
         //printf("hdrs.[%d] B[%d] 1st txidind.%d txn_count.%d firstvin.%d firstvout.%d\n",bp->hdrsi,i,B[i].firsttxidind,B[i].txn_count,B[i].firstvin,B[i].firstvout);
         if ( txidind != B[i].firsttxidind || spendind != B[i].firstvin )
         {
@@ -965,7 +959,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
                 if ( (++num % 1000) == 0 )
                     printf("externalspents.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
                 rdata = spentbp->ramchain.H.data;
-                if ( 0 && now > spentbp->lastprefetch+10 )
+                if ( now > spentbp->lastprefetch+60 )
                 {
                     printf("RT prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
                     iguana_ramchain_prefetch(coin,&spentbp->ramchain);
@@ -1234,12 +1228,12 @@ void iguana_RTramchainalloc(struct iguana_info *coin,struct iguana_bundle *bp)
     }
     if ( coin->RTramchain.H.data == 0 )
     {
-        //printf("ALLOC RTramchain\n");
+        printf("ALLOC RTramchain\n");
         iguana_ramchainopen(coin,dest,&coin->RTmem,&coin->RThashmem,bp->bundleheight,bp->hashes[0]);
         dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
         dest->externalind = dest->H.stacksize = 0;
         dest->H.scriptoffset = 1;
-        //iguana_prefetch(coin,bp);
+        iguana_prefetch(coin,bp);
     }
 }
 
