@@ -650,7 +650,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
                         //printf("initialize with fp.[%d:%d] len.%d\n",hdrsi,bundlei,block->RO.recvlen);
                         fclose(fp);
                     }
-                } else iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,0);
+                } else iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,1);
             }
             //printf("bundlehashadd set.%d\n",bundlei);
             if ( bundlei > 0 )
