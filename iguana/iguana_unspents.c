@@ -130,8 +130,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
     {
         if ( incremental == 0 )
         {
-            A2 = spentchain->A;
-            if ( spentchain->Uextras != 0 && A2 != 0 )
+            if ( spentchain->Uextras != 0 && (A2= spentchain->A) != 0 )
             {
                 utxo = &spentchain->Uextras[spent_unspentind];
                 if ( utxo->spentflag == 0 )
@@ -151,7 +150,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
             if ( iguana_utxoupdate(coin,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,fromheight) == 0 )
             {
                 totalmillis += (OS_milliseconds() - startmillis);
-                if ( (++utxon % 10000) == 0 )
+                if ( (++utxon % 1000) == 0 )
                     printf("ave utxo[%d] %.2f micros total %.2f seconds\n",utxon,(1000. * totalmillis)/utxon,totalmillis/1000.);
                 return(0);
             }
@@ -370,14 +369,13 @@ int32_t iguana_ramchain_spendtxid(struct iguana_info *coin,uint32_t *unspentindp
 
 struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,struct iguana_txid *tx,bits256 txid,int32_t lasthdrsi)
 {
-    uint8_t *TXbits; struct iguana_txid *T; uint32_t txidind; int32_t i,j;
-    struct iguana_bundle *bp; struct iguana_ramchain *ramchain; struct iguana_block *block;
+    uint8_t *TXbits; struct iguana_txid *T; uint32_t txidind; int32_t i;
+    struct iguana_bundle *bp; struct iguana_ramchain *ramchain; //struct iguana_block *block;
     *heightp = -1;
     if ( lasthdrsi < 0 )
         return(0);
     for (i=lasthdrsi; i>=0; i--)
     {
-        //printf("search.[%d] %p finish.%u vs %u\n",i,coin->bundles[i],coin->bundles[i]!=0?coin->bundles[i]->emitfinish:-1,coin->startutc);
         if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish > 1 )
         {
             ramchain = (bp->isRT != 0) ? &coin->RTramchain : &bp->ramchain;
@@ -385,27 +383,28 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
             {
                 TXbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->TXoffset);
                 T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
-//printf("[%p] search bp.%p TXbits.%p T.%p %d %d\n",ramchain,bp,TXbits,T,(int32_t)ramchain->H.data->TXoffset,(int32_t)ramchain->H.data->Toffset);
                 if ( (txidind= iguana_sparseaddtx(TXbits,ramchain->H.data->txsparsebits,ramchain->H.data->numtxsparse,txid,T,0,ramchain)) > 0 )
                 {
                     //printf("found txidind.%d\n",txidind);
                     if ( bits256_cmp(txid,T[txidind].txid) == 0 )
                     {
-                        for (j=0; j<bp->n; j++)
+                        /*for (j=0; j<bp->n; j++)
                             if ( (block= bp->blocks[j]) != 0 && txidind >= block->RO.firsttxidind && txidind < block->RO.firsttxidind+block->RO.txn_count )
                                 break;
-                        if ( j < bp->n )
+                        if ( j < bp->n )*/
                         {
-                            *heightp = bp->bundleheight + j;
+                            *heightp = bp->bundleheight + T[txidind].extraoffset;//bundlei;
                             //printf("found height.%d\n",*heightp);
                             *tx = T[txidind];
                             return(tx);
                         }
-                        for (j=0; j<bp->n; j++)
+                        /*for (j=0; j<bp->n; j++)
                             if ( (block= bp->blocks[j]) != 0 )
                                 printf("(%d %d).%d ",block->RO.firsttxidind,block->RO.txn_count,txidind >= block->RO.firsttxidind && txidind < block->RO.firsttxidind+block->RO.txn_count);
-                        printf(" <- firsttxidind txidind.%d not in block range\n",txidind);
-                    } else printf("mismatched sparse entry\n");
+                        printf(" <- firsttxidind txidind.%d not in block range\n",txidind);*/
+                    }
+                    char str[65],str2[65]; printf("iguana_txidfind mismatch.[%d:%d] %d %s vs %s\n",bp->hdrsi,T[txidind].extraoffset,txidind,bits256_str(str,txid),bits256_str(str2,T[txidind].txid));
+                    return(0);
                 }
             }
         }
