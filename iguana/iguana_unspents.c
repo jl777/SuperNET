@@ -150,7 +150,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
             if ( iguana_utxoupdate(coin,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,fromheight) == 0 )
             {
                 totalmillis += (OS_milliseconds() - startmillis);
-                if ( (++utxon % 1000) == 0 )
+                if ( (++utxon % 100000) == 0 )
                     printf("ave utxo[%d] %.2f micros total %.2f seconds\n",utxon,(1000. * totalmillis)/utxon,totalmillis/1000.);
                 return(0);
             }
@@ -445,7 +445,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                 hdrsi = height / coin->chain->bundlesize;
                 //printf("%s height.%d firstvout.%d prev.%d ->U%d\n",bits256_str(str,prev_hash),height,TX.firstvout,prev_vout,unspentind);
                 totalmillis += (OS_milliseconds() - startmillis);
-                if ( (++num % 1000) == 0 )
+                if ( (++num % 100000) == 0 )
                     printf("iguana_txidfind.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
             }
             else
@@ -956,7 +956,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
                     return(-1);
                 }
                 totalmillis += (OS_milliseconds() - startmillis);
-                if ( (++num % 1000) == 0 )
+                if ( (++num % 100000) == 0 )
                     printf("externalspents.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
                 rdata = spentbp->ramchain.H.data;
                 if ( 0 && now > spentbp->lastprefetch+60 )
@@ -990,7 +990,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
                 if ( iguana_volatileupdate(coin,1,spentbp == bp ? RTramchain : &spentbp->ramchain,spentbp->hdrsi,spent_unspentind,u->pkind,u->value,spendind,height) < 0 )
                     return(-1);
                 totalmillis += (OS_milliseconds() - startmillis);
-                if ( (++num % 1000) == 0 )
+                if ( (++num % 100000) == 0 )
                     printf("volatile.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
             }
             else
