@@ -1138,6 +1138,7 @@ void iguana_main(void *arg)
         cJSON *argjson;
         if ( (argjson= cJSON_Parse(arg)) != 0 )
         {
+            IGUANA_NUMHELPERS = juint(argjson,"numhelpers");
             if ( (myinfo->rpcport= juint(argjson,"port")) == 0 )
                 myinfo->rpcport = IGUANA_RPCPORT;
             if ( (myinfo->publicRPC= juint(argjson,"publicRPC")) != 0 && myinfo->publicRPC != myinfo->rpcport )
