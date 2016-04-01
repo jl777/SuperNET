@@ -908,7 +908,7 @@ int32_t iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,
     if ( coin->current != 0 )
     {
         dist = bp->hdrsi - coin->current->hdrsi;
-        if ( 0 && bp->numcached > bp->n - (coin->MAXBUNDLES - dist) )
+        if ( bp->numcached > bp->n - (coin->MAXBUNDLES - dist) )
             priority++;
         if ( bp == coin->current )
             priority++;
