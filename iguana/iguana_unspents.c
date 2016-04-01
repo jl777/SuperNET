@@ -724,7 +724,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
                             printf("unexpected spendbp: height.%d bp.[%d] U%d <- S%d.[%d] [ext.%d %s prev.%d]\n",bp->bundleheight+i,spentbp->hdrsi,spent_unspentind,spendind,bp->hdrsi,s->external,bits256_str(str,prevhash),s->prevout);
                             errs++;
                         }
-                        if ( 0 && now > spentbp->lastprefetch+300 )
+                        if ( 1 && now > spentbp->lastprefetch+300 )
                         {
                             printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
                             iguana_ramchain_prefetch(coin,&spentbp->ramchain);
@@ -1465,7 +1465,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
                 printf("error mapping bundle.[%d]\n",hdrsi);
         }
     char str[65]; printf("BALANCES WRITTEN for %d/%d bundles %s\n",coin->balanceswritten,coin->origbalanceswritten,bits256_str(str,coin->balancehash));
-    if ( strcmp(coin->symbol,"BTC") == 0 && coin->balanceswritten > coin->balanceswritten+10 )
+    if ( strcmp(coin->symbol,"BTC") == 0 && coin->balanceswritten > coin->origbalanceswritten+10 )
     {
         int32_t i;
         coin->active = 0;
