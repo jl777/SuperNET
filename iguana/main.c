@@ -1188,7 +1188,9 @@ void iguana_main(void *arg)
     {
         sleep(1);
         char *str;
-        //iguana_launchcoin(myinfo->rpcsymbol,cJSON_Parse("{}"));
+        
+        if ( (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"VALIDATE\":1,\"active\":1,\"numhelpers\":16,\"agent\":\"iguana\",\"method\":\"addcoin\",\"newcoin\":\"BTC\",\"startpend\":166,\"services\":1,\"RAM\":16}"),0,myinfo->rpcport)) != 0 )
+            free(str);
         if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"startpend\":128,\"endpend\":64,\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":128,\"maxpeers\":512,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":4,\"poll\":1}"),0,myinfo->rpcport)) != 0 )
         {
             free(str);
