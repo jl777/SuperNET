@@ -710,7 +710,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
             }
             for (k=0; k<T[txidind].numvins && errs==0; k++,spendind++)
             {
-                if ( (spendind % 100000) == 0 )
+                if ( (spendind % 1000000) == 0 )
                     printf("spendvectors elapsed.%-3d [%-3d:%4d] spendind.%d\n",(uint32_t)time(NULL)-starttime,bp->hdrsi,i,spendind);
                 s = &S[spendind];
                 u = 0;
@@ -724,7 +724,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
                             printf("unexpected spendbp: height.%d bp.[%d] U%d <- S%d.[%d] [ext.%d %s prev.%d]\n",bp->bundleheight+i,spentbp->hdrsi,spent_unspentind,spendind,bp->hdrsi,s->external,bits256_str(str,prevhash),s->prevout);
                             errs++;
                         }
-                        if ( 1 && now > spentbp->lastprefetch+10 )
+                        if ( coin->PREFETCHLAG != 0 && now > spentbp->lastprefetch+coin->PREFETCHLAG )
                         {
                             printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
                             iguana_ramchain_prefetch(coin,&spentbp->ramchain);
