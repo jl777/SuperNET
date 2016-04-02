@@ -1002,7 +1002,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
                 if ( (++num % 100000) == 0 )
                     printf("externalspents.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
                 rdata = spentbp->ramchain.H.data;
-                if ( coin->PREFETCHLAG != 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
+                if ( 0 && coin->PREFETCHLAG != 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
                 {
                     printf("RT prefetch[%d] from.[%d] lag.%d bundlei.%d numspends.%d of %d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch,bundlei,spendind,RTramchain->H.spendind);
                     iguana_ramchain_prefetch(coin,&spentbp->ramchain);
@@ -1508,6 +1508,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
         coin->started = 0;
         for (i=0; i<IGUANA_MAXPEERS; i++)
             coin->peers.active[i].dead = (uint32_t)time(NULL);
+#ifdef __linux__ || __APPLE__
         sprintf(cmd,"DB/%s %s.%d -comp xz",coin->symbol,coin->symbol,coin->balanceswritten);
         if ( system(cmd) != 0 )
             printf("error system(%s)\n",cmd);
@@ -1523,6 +1524,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
                     printf("error system(%s)\n",cmd);
             }
         }
+#endif
         for (i=0; i<30; i++)
         {
             printf("need to exit, please restart after shutdown in %d seconds, or just ctrl-C\n",100-i);
