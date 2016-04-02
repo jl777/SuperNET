@@ -949,7 +949,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
         }
         fprintf(stderr,"%s [%d:%d] block.%x | s.%d r.%d copy.%d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,numsaved,numrecv,req->copyflag);
     }
-    if ( 0 && bundlei == 1 && bp != 0 && bp->numhashes < bp->n && coin->enableCACHE != 0 && bp->speculative == 0 )
+    if ( 1 && bundlei == 1 && bp != 0 && bp->numhashes < bp->n && coin->enableCACHE != 0 && bp->speculative == 0 )
     {
         //printf("reissue hdrs request for [%d]\n",bp->hdrsi);
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
