@@ -638,7 +638,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
             iguana_bundlehash2add(coin,0,bp,bundlei,hash2);
             if ( bp->hdrsi == coin->longestchain/bp->n && bp->emitfinish == 0 )
             {
-                printf("[%d] last block emit.%u fpipbits.%d txvalid.%d\n",bp->hdrsi,bp->emitfinish,block->fpipbits,block->txvalid);
+                //printf("[%d] last block emit.%u fpipbits.%d txvalid.%d\n",bp->hdrsi,bp->emitfinish,block->fpipbits,block->txvalid);
                 if ( block->txvalid == 0 ) //bits256_nonz(block->RO.hash2) != 0 && b
                 {
                     block->fpos = -1;
@@ -653,7 +653,9 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
                         printf("initialize with fp.[%d:%d] len.%d\n",hdrsi,bundlei,block->RO.recvlen);
                         fclose(fp);
                     }
-                } else iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,coin->current == 0 || bp->hdrsi <= coin->current->hdrsi+coin->MAXBUNDLES);
+                }
+                else if ( block->issued == 0 )
+                    iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,coin->current == 0 || bp->hdrsi <= coin->current->hdrsi+coin->MAXBUNDLES);
             }
             //printf("bundlehashadd set.%d\n",bundlei);
             if ( bundlei > 0 )
