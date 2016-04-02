@@ -1567,7 +1567,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
         int32_t i; struct iguana_bundle *prevbp;
         for (i=0; i<=bp->hdrsi; i++)
         {
-            if ( (prevbp= coin->bundles[i]) != 0 )
+            if ( (prevbp= coin->bundles[i]) != 0 && prevbp->tmpspends != 0 )
             {
                 if ( iguana_spendvectorsave(coin,prevbp,&prevbp->ramchain,prevbp->tmpspends,prevbp->numtmpspends,prevbp->ramchain.H.data->numspends) < 0 )
                     break;
