@@ -797,7 +797,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
     if ( bp->hdrsi == coin->bundlescount-1 )
         iguana_autoextend(coin,bp);
     //printf("ITER utxo.%u now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",bp->utxofinish,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
-    bp->nexttime = (uint32_t)(time(NULL) + 1*0);
+    bp->nexttime = (uint32_t)(time(NULL) + 1);
     if ( bp->hdrsi == coin->bundlescount-1 || (bp->numhashes < bp->n && bp->bundleheight < coin->longestchain-coin->chain->bundlesize) )
         iguana_bundlehdr(coin,bp,starti);
     else if ( bp->emitfinish != 0 )
@@ -820,6 +820,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
                 return(0);
             } //else printf("finish incomplete.%d\n",bp->hdrsi);
         }
+        bp->nexttime--;
     }
     else if ( bp->numsaved >= bp->n )//&& (bp->isRT == 0 || coin->RTheight > bp->bundleheight+bp->n+coin->minconfirms) )
     {
