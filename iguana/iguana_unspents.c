@@ -721,7 +721,7 @@ int32_t iguana_spendvectorsave(struct iguana_info *coin,struct iguana_bundle *bp
     return(retval);
 }
 
-int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,int32_t RTmode)
+int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     static uint64_t total,emitted;
     int32_t spendind,n,txidind,errs=0,emit=0,i,j,k;
@@ -785,7 +785,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,in
                             errs++;
                             break;
                         }
-                        if ( RTmode != 0 )
+                        if ( coin->balanceswritten > 1 )
                         {
                             if ( coin->PREFETCHLAG != 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
                             {
@@ -855,7 +855,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,in
     if ( errs == 0 && emit >= 0 )
     {
         emitted += emit;
-        if ( RTmode != 0 )
+        if ( coin->balanceswritten > 1 )
             iguana_spendvectorsave(coin,bp,ramchain,ptr,emit,n);
         else
         {
@@ -891,7 +891,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
         printf("iguana_balancegen.%d: no Xspendinds[%d]\n",bp->hdrsi,ramchain->numXspends);
         return(-1);
     }
-    if ( coin->PREFETCHLAG != 0 )
+    //if ( coin->PREFETCHLAG != 0 )
         iguana_ramchain_prefetch(coin,ramchain,0);
     //printf("BALANCEGEN.%d hdrs.%d\n",bp->bundleheight,bp->hdrsi);
     txidind = spendind = rdata->firsti;

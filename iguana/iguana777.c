@@ -459,7 +459,7 @@ void iguana_helper(void *arg)
                 if ( coin->polltimeout < polltimeout )
                     polltimeout = coin->polltimeout;
                 //printf("call spendvectors.%d\n",bp->hdrsi);
-                if ( (retval= iguana_spendvectors(coin,bp,0)) >= 0 )
+                if ( (retval= iguana_spendvectors(coin,bp)) >= 0 )
                 {
                     flag++;
                     if ( retval > 0 )
