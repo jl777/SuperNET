@@ -1290,15 +1290,16 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     {
         iguana_RTramchainalloc(coin,bp);
         bp->isRT = 1;
-        while ( (rdata= coin->RTramchain.H.data) != 0 && coin->RTheight <= coin->blocks.hwmchain.height)
+        while ( (rdata= coin->RTramchain.H.data) != 0 && coin->RTheight <= coin->blocks.hwmchain.height )
         {
+            printf("RT.%d vs hwm.%d\n",coin->RTheight,coin->blocks.hwmchain.height);
             dest = &coin->RTramchain;
             B = (void *)(long)((long)rdata + rdata->Boffset);
             bundlei = (coin->RTheight % coin->chain->bundlesize);
             if ( (block= bp->blocks[bundlei]) != 0 && bits256_nonz(block->RO.prev_block) != 0 )
             {
                 iguana_blocksetcounters(coin,block,dest);
-                //coin->blocks.RO[bp->bundleheight+bundlei] = block->RO;
+                coin->blocks.RO[bp->bundleheight+bundlei] = block->RO;
                 B[bundlei] = block->RO;
                 if ( (ptr= iguana_bundlefile(coin,fname,&filesize,bp,bundlei)) != 0 )
                 {
@@ -1347,7 +1348,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                 }
                 else
                 {
-                    //printf("no fileptr for RTheight.%d\n",coin->RTheight);
+                    printf("no fileptr for RTheight.%d\n",coin->RTheight);
                     return(-1);
                 }
             }
@@ -1355,13 +1356,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             {
                 if ( block == 0 )
                     printf("no blockptr.%p for RTheight.%d\n",block,coin->RTheight);
-                else
-                {
-                    block->queued = 0;
-                    block->fpipbits = 0;
-                    bp->issued[bundlei] = 0;
-                    block->issued = 0;
-                }
+                else iguana_blockunmark(coin,block,bp,bundlei,1);
                 return(-1);
             }
         }
