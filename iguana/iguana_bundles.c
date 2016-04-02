@@ -507,11 +507,8 @@ int32_t iguana_sendhashes(struct iguana_info *coin,struct iguana_peer *addr,int3
         for (i=0; i<n; i++)
         {
             if ( priority == 1 )
-            {
-                if ( (rand() & 1) == 0 )
-                    iguana_sendblockreqPT(coin,addr,0,-1,hashes[i],0);
-                else iguana_blockQ("test",coin,0,-1,hashes[i],1);
-            } else iguana_blockQ("test",coin,0,-1,hashes[i],priority);
+                iguana_sendblockreqPT(coin,addr,0,-1,hashes[i],0);
+            else iguana_blockQ("sendhash",coin,0,-1,hashes[i],1);
         }
     }
     return(n);
