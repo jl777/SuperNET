@@ -862,6 +862,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
             if ( bp->tmpspends != 0 )
                 printf("unexpected tmpspends? [%d] numtmpspends.%d vs emit.%d\n",bp->hdrsi,bp->numtmpspends,emit);
             bp->tmpspends = myrealloc('x',ptr,sizeof(*ptr)*n,sizeof(*ptr)*emit);
+            ptr = 0;
         }
         bp->numtmpspends = emit;
     }
