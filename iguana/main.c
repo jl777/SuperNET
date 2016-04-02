@@ -44,9 +44,9 @@ static int32_t initflag;
 int32_t HDRnet,netBLOCKS;
 cJSON *API_json;
 #ifdef __linux__
-int32_t IGUANA_NUMHELPERS = 16;
+int32_t IGUANA_NUMHELPERS = 4;
 #else
-int32_t IGUANA_NUMHELPERS = 8;
+int32_t IGUANA_NUMHELPERS = 2;
 #endif
 struct iguana_jsonitem { struct queueitem DL; struct supernet_info *myinfo; uint32_t fallback,expired,allocsize; char **retjsonstrp; char remoteaddr[64]; uint16_t port; char jsonstr[]; };
 

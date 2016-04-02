@@ -1314,6 +1314,7 @@ void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,
 
 int32_t iguana_realtime_update(struct iguana_info *coin)
 {
+    double startmillis0; static double totalmillis0; static int32_t num0;
     struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,n,flag=0;
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
     if ( (bp= coin->current) != 0 && time(NULL) > bp->lastRT && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n )//&& coin->blocks.hwmchain.height >= coin->longestchain-1 && coin->RTramchain.H.data->numblocks < bp->n )
@@ -1323,7 +1324,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         bp->isRT = 1;
         while ( (rdata= coin->RTramchain.H.data) != 0 && coin->RTheight <= coin->blocks.hwmchain.height )
         {
-            printf("RT.%d vs hwm.%d\n",coin->RTheight,coin->blocks.hwmchain.height);
+            //printf("RT.%d vs hwm.%d\n",coin->RTheight,coin->blocks.hwmchain.height);
             dest = &coin->RTramchain;
             B = (void *)(long)((long)rdata + rdata->Boffset);
             bundlei = (coin->RTheight % coin->chain->bundlesize);
@@ -1331,7 +1332,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             {
                 iguana_blocksetcounters(coin,block,dest);
                 B[bundlei] = block->RO;
-                double startmillis0 = OS_milliseconds(); static double totalmillis0; static int32_t num0;
+                startmillis0 = OS_milliseconds();
                 if ( iguana_ramchainfile(coin,dest,&blockR,bp,bundlei,block) == 0 )
                 {
                     iguana_RTramchainfree(coin);
@@ -1339,7 +1340,6 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                 } else iguana_ramchain_free(coin,&blockR,1);
                 totalmillis0 += (OS_milliseconds() - startmillis0);
                 num0++;
-                printf("ramchainiterate.[%d] ave %.2f micros, total %.2f seconds\n",num0,(totalmillis0*1000.)/num0,totalmillis0/1000.);
                 flag++;
                 coin->blocks.RO[bp->bundleheight+bundlei] = block->RO;
                 double startmillis = OS_milliseconds(); static double totalmillis; static int32_t num;
@@ -1361,6 +1361,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     n = 0;
     if ( dest != 0 && flag != 0 && coin->RTheight >= coin->longestchain )
     {
+        printf("ramchainiterate.[%d] ave %.2f micros, total %.2f seconds\n",num0,(totalmillis0*1000.)/num0,totalmillis0/1000.);
         while ( block != 0 )
         {
             if ( bits256_cmp(iguana_blockhash(coin,coin->RTheight-n-1),block->RO.hash2) != 0 )
