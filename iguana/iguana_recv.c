@@ -652,7 +652,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
             }
             else if ( block->issued == 0 )
                 iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,coin->current == 0 || bp->hdrsi <= coin->current->hdrsi+coin->MAXBUNDLES);*/
-            if ( bp->emitfinish == 0 && block->txvalid == 0 ) //bp->hdrsi == coin->longestchain/bp->n && bits256_nonz(block->RO.hash2) != 0 && b
+            if ( bp->emitfinish == 0 && block->txvalid == 0 && bp->hdrsi == coin->longestchain/bp->n )//&& bits256_nonz(block->RO.hash2) != 0 && b
             {
                 block->fpos = -1;
                 checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,block->RO.hash2,zero,1,0);
