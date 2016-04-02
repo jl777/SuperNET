@@ -1583,7 +1583,7 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
     {
         for (j=0; j<coin->bundlescount-1; j++)
         {
-            if ( (prevbp= coin->bundles[j]) == 0 || prevbp->utxofinish <= 1 || prevbp->tmpspends == 0 )
+            if ( (prevbp= coin->bundles[j]) == 0 || prevbp->tmpspends == 0 )
             {
                 j = -1;
                 break;
