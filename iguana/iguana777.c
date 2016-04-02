@@ -502,6 +502,8 @@ void iguana_coinloop(void *arg)
         {
             if ( (coin= coins[i]) != 0 )
             {
+                if ( coin->MAXPEERS > IGUANA_MAXPEERS )
+                    coin->MAXPEERS = IGUANA_MAXPEERS;
                 if ( coin->started == 0 && coin->active != 0 )
                 {
                     iguana_rwiAddrind(coin,0,0,0);

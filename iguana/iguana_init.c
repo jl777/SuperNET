@@ -191,6 +191,8 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
     struct iguana_block *block;
     memset(&zero,0,sizeof(zero));
     lastbundle = zero;
+    if ( coin->MAXPEERS > IGUANA_MAXPEERS )
+        coin->MAXPEERS = IGUANA_MAXPEERS;
     if ( iter == 1 )
     {
         int32_t i; FILE *fp; char fname[512]; struct iguana_blockRO blockRO;
