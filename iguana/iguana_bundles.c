@@ -889,7 +889,7 @@ double iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,d
         {
             priority += 1 + (bp == coin->current);
         }
-        if ( queue_size(&coin->priorityQ) < (3 * bp->n)/(dist+1) )
+        if ( queue_size(&coin->priorityQ) < (4 * bp->n)/(dist+1) )
         {
             printf("[%d] dist.%d numcached.%d priority.%d\n",bp->hdrsi,dist,bp->numcached,priority);
             for (i=0; i<bp->n; i++)

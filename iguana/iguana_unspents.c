@@ -462,7 +462,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                             iguana_ramchain_prefetch(coin,&spentbp->ramchain);
                             spentbp->lastprefetch = (uint32_t)time(NULL);
                         }
-                        else if ( duration > 1 && duration > (10 * coin->txidfind_totalmillis)/coin->txidfind_num && time(NULL) > spentbp->lastprefetch+coin->PREFETCHLAG && (rand() % 10) == 0 )
+                        else if ( duration > 1 && duration > (10 * coin->txidfind_totalmillis)/coin->txidfind_num && time(NULL) >= spentbp->lastprefetch+coin->PREFETCHLAG && (rand() % 10) == 0 )
                         {
                             printf("slow txidfind %.2f vs %.2f prefetch[%d] from.[%d] lag.%ld last.%u\n",duration,coin->txidfind_totalmillis/coin->txidfind_num,spentbp->hdrsi,ramchain->H.data->height/coin->chain->bundlesize,time(NULL) - spentbp->lastprefetch,spentbp->lastprefetch);
                             iguana_ramchain_prefetch(coin,&spentbp->ramchain);
@@ -674,10 +674,10 @@ void iguana_unspents(struct supernet_info *myinfo,struct iguana_info *coin,cJSON
 void iguana_prefetch(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     int32_t i; struct iguana_bundle *spentbp; uint32_t starttime = (uint32_t)time(NULL);
-    if ( bp->hdrsi > 4 )
+    if ( bp->hdrsi > 5 )
     {
         //printf("start prefetch4 for [%d]\n",bp->hdrsi);
-        for (i=1; i<4; i++)
+        for (i=1; i<5; i++)
         {
             if ( (spentbp= coin->bundles[bp->hdrsi - i]) != 0 )
             {
@@ -988,12 +988,12 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
                 if ( (++num % 100000) == 0 )
                     printf("externalspents.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
                 rdata = spentbp->ramchain.H.data;
-                if ( coin->PREFETCHLAG != 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
+                /*if ( coin->PREFETCHLAG != 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
                 {
                     //printf("RT prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
                     iguana_ramchain_prefetch(coin,&spentbp->ramchain);
                     spentbp->lastprefetch = now;
-                }
+                }*/
             }
             else if ( s->prevout >= 0 )
             {
