@@ -596,7 +596,11 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp)
 
 void iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle *bp,uint8_t *missings)
 {
-    int32_t i,tmp,tmp2; bits256 hash2;
+    int32_t i,tmp,tmp2,priority = 3; bits256 hash2; double aveduration;
+    if ( bp->durationscount != 0 )
+        aveduration = (double)bp->totaldurations / bp->durationscount;
+    else aveduration = IGUANA_DEFAULTLAG/3 + 1;
+    aveduration *= 3.;
     for (i=0; i<bp->n; i++)
     {
         if ( GETBIT(missings,i) != 0 )
@@ -614,7 +618,7 @@ void iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle *bp
             }
         }
     }
-    iguana_bundlerequests(coin,missings,&tmp,&tmp2,bp,3,3);
+    iguana_bundlerequests(coin,missings,&tmp,&tmp2,bp,aveduration,priority);
 }
 
 int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32_t starti)
@@ -773,7 +777,7 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
 
 int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_bundle *bp,int32_t timelimit,int32_t lag)
 {
-    int32_t range,starti,lasti,tmp,tmp2,n,retval=0,max,counter = 0; struct iguana_bundle *currentbp,*lastbp; uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; struct iguana_blockreq *breq;
+    int32_t range,starti,lasti,tmp,tmp2,n,retval=0,max,priority=3,counter = 0; struct iguana_bundle *currentbp,*lastbp; uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; struct iguana_blockreq *breq; double aveduration;
     //serialized[512],
     if ( coin->started == 0 || coin->active == 0 )
     {
@@ -847,7 +851,11 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
                         while ( (breq= queue_dequeue(&coin->priorityQ,0)) != 0 )
                             myfree(breq,sizeof(*breq));
                     }
-                    if ( (n= iguana_bundlerequests(coin,missings,&tmp,&tmp2,bp,30,3)) > 0 )
+                    if ( bp->durationscount != 0 )
+                        aveduration = (double)bp->totaldurations / bp->durationscount;
+                    else aveduration = IGUANA_DEFAULTLAG/3 + 1;
+                    aveduration *= 3.;
+                    if ( (n= iguana_bundlerequests(coin,missings,&tmp,&tmp2,bp,aveduration,priority)) > 0 )
                         printf("issued %d priority requests [%d] to unstick stuckiters.%d lag.%d\n",n,bp->hdrsi,coin->stuckiters,lag);
                 }
             }
@@ -935,7 +943,7 @@ double iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,d
             printf("priority.%d [%d] dist.%d durations %.2f vs %.2f counts[%d %d] \n",priority,bp->hdrsi,dist,aveduration,aveduplicates,(int32_t)bp->durationscount,bp->duplicatescount);
     }
     if ( aveduration != 0. )
-        lag = 7 * aveduration;
+        lag = 7 * aveduration + 3;
     if ( (n= iguana_bundlerequests(coin,missings,&bp->origmissings,&tmp,bp,lag,priority)) > 0 )
     {
         bp->numissued += n;
