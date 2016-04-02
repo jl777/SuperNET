@@ -839,7 +839,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
                                     ptr[emit].hdrsi = spentbp->hdrsi;
                                     ptr[emit].pkind = spent_pkind;
                                     ptr[emit].value = u->value;
-                                    printf("ht.%d [%d] SPENDVECTOR u%d %.8f p%u\n",ptr[emit].fromheight,ptr[emit].hdrsi,ptr[emit].unspentind,dstr(ptr[emit].value),ptr[emit].pkind);
+                                    //printf("ht.%d [%d] SPENDVECTOR u%d %.8f p%u\n",ptr[emit].fromheight,ptr[emit].hdrsi,ptr[emit].unspentind,dstr(ptr[emit].value),ptr[emit].pkind);
                                     //printf("(%d u%d).%d ",spentbp->hdrsi,unspentind,emit);
                                     emit++;
                                 }
@@ -863,7 +863,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
                             ptr[emit].unspentind = spent_unspentind;
                             ptr[emit].fromheight = bp->bundleheight + i;
                             ptr[emit].tmpflag = 1;
-                            printf("ht.%d [%d] TMPVECTOR u%d\n",ptr[emit].fromheight,ptr[emit].hdrsi,ptr[emit].unspentind);
+                            //printf("ht.%d [%d] TMPVECTOR u%d\n",ptr[emit].fromheight,ptr[emit].hdrsi,ptr[emit].unspentind);
                             emit++;
                         }
                     }
