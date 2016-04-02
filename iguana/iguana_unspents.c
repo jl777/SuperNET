@@ -1354,9 +1354,14 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             }
             else
             {
-                if ( block == 0 )
+                if ( block != 0 )
+                {
+                    iguana_blockunmark(coin,block,bp,bundlei,1);
                     printf("no blockptr.%p for RTheight.%d\n",block,coin->RTheight);
-                else iguana_blockunmark(coin,block,bp,bundlei,1);
+                }
+                else
+                {
+                }
                 return(-1);
             }
         }
