@@ -693,7 +693,7 @@ void iguana_prefetch(struct iguana_info *coin,struct iguana_bundle *bp,int32_t w
 uint32_t iguana_spendvectorconv(struct iguana_info *coin,struct iguana_spendvector *ptr,struct iguana_bundle *bp)
 {
     static uint64_t count,converted,errs;
-    struct iguana_bundle *spentbp; struct iguana_unspent *spentU,*u; uint32_t spent_pkind,spent_unspentind;
+    struct iguana_bundle *spentbp; struct iguana_unspent *spentU,*u; uint32_t spent_pkind;
     count++;
     if ( (count % 10000) == 0 )
         printf("iguana_spendvectorconv.[%llu] errs.%llu converted.%llu %.2f%%\n",(long long)count,(long long)errs,(long long)converted,100. * (long long)converted/count);
@@ -701,9 +701,8 @@ uint32_t iguana_spendvectorconv(struct iguana_info *coin,struct iguana_spendvect
     {
         if ( ptr->hdrsi >= 0 && ptr->hdrsi < coin->bundlescount && (spentbp= coin->bundles[ptr->hdrsi]) != 0 )
         {
-            spent_unspentind = ptr->pkind;
             spentU = (void *)(long)((long)spentbp->ramchain.H.data + spentbp->ramchain.H.data->Uoffset);
-            u = &spentU[spent_unspentind];
+            u = &spentU[ptr->unspentind];
             if ( (spent_pkind= u->pkind) != 0 && spent_pkind < spentbp->ramchain.H.data->numpkinds )
             {
                 ptr->pkind = spent_pkind;
@@ -711,8 +710,8 @@ uint32_t iguana_spendvectorconv(struct iguana_info *coin,struct iguana_spendvect
                 ptr->tmpflag = 0;
                 converted++;
                 return(spent_pkind);
-            }
-        }
+            } else printf("illegal [%d].u%u pkind.%u vs %u\n",ptr->hdrsi,ptr->unspentind,spent_pkind,spentbp->ramchain.H.data->numpkinds);
+        } else printf("illegal [%d].u%u\n",ptr->hdrsi,ptr->unspentind);
         errs++;
     }
     return(ptr->pkind);
