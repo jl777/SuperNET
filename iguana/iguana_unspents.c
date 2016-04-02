@@ -890,14 +890,14 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     if ( errs == 0 && emit >= 0 )
     {
         emitted += emit;
-        if ( coin->balanceswritten <= 1 )
+        if ( 0 && coin->balanceswritten <= 1 )
         {
             if ( bp->tmpspends != 0 )
                 printf("unexpected tmpspends? [%d] numtmpspends.%d vs emit.%d\n",bp->hdrsi,bp->numtmpspends,emit);
             bp->tmpspends = myrealloc('x',ptr,sizeof(*ptr)*n,sizeof(*ptr)*emit);
             bp->numtmpspends = emit;
             ptr = 0;
-        } /*else*/ errs = -iguana_spendvectorsave(coin,bp,ramchain,ptr!=0?ptr:bp->tmpspends,emit,n);
+        } else errs = -iguana_spendvectorsave(coin,bp,ramchain,ptr!=0?ptr:bp->tmpspends,emit,n);
     }
     if ( ptr != 0 )
         myfree(ptr,sizeof(*ptr) * n);
@@ -1567,15 +1567,18 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
         int32_t i; struct iguana_bundle *prevbp;
         for (i=0; i<=bp->hdrsi; i++)
         {
-            if ( (prevbp= coin->bundles[i]) != 0 && prevbp->tmpspends != 0 )
+            if ( (prevbp= coin->bundles[i]) != 0 )
             {
-                if ( iguana_spendvectorsave(coin,prevbp,&prevbp->ramchain,prevbp->tmpspends,prevbp->numtmpspends,prevbp->ramchain.H.data->numspends) < 0 )
-                    break;
-                else
+                if ( prevbp->tmpspends != 0 )
                 {
-                    myfree(prevbp->tmpspends,sizeof(*prevbp->tmpspends) * prevbp->numtmpspends);
-                    prevbp->numtmpspends = 0;
-                    prevbp->tmpspends = 0;
+                    if ( iguana_spendvectorsave(coin,prevbp,&prevbp->ramchain,prevbp->tmpspends,prevbp->numtmpspends,prevbp->ramchain.H.data->numspends) < 0 )
+                        break;
+                    else
+                    {
+                        myfree(prevbp->tmpspends,sizeof(*prevbp->tmpspends) * prevbp->numtmpspends);
+                        prevbp->numtmpspends = 0;
+                        prevbp->tmpspends = 0;
+                    }
                 }
             } else break;
         }
