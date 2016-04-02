@@ -593,8 +593,8 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp)
 
 void iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle *bp,uint8_t *missings)
 {
-    int32_t i,tmp,tmp2,priority = 3; bits256 hash2; double aveduration;
-    if ( bp->emitfinish != 0 || time(NULL) bp->missingstime+10 )
+    int32_t i; bits256 hash2; double aveduration;
+    if ( bp->emitfinish != 0 || time(NULL) < bp->missingstime+10 )
         return;
     if ( bp->durationscount != 0 )
         aveduration = (double)bp->totaldurations / bp->durationscount;
@@ -925,7 +925,7 @@ double iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,d
         dist = bp->hdrsi - coin->current->hdrsi;
         if ( bp->numcached > bp->n - (coin->MAXBUNDLES - dist) )
             priority += 1 + (bp == coin->current);
-        if ( queue_size(&coin->priorityQ) < (2 * bp->n)/(dist+1) )
+        if ( queue_size(&coin->priorityQ) < (3 * bp->n)/(dist+1) )
         {
             //printf("[%d] dist.%d numcached.%d priority.%d\n",bp->hdrsi,dist,bp->numcached,priority);
             iguana_bundleissuemissing(coin,bp,missings);
