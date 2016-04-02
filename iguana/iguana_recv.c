@@ -345,7 +345,8 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
                 else printf("mismatched tx received? mainchain.%d\n",block->mainchain);
                 if ( block->mainchain != 0 )
                     return;
-            } else if ( bp == coin->current )
+            }
+            else if ( 0 && bp == coin->current )
                 printf("recv [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
             iguana_bundletime(coin,bp,bundlei,block,0);
             block->RO = origtxdata->block.RO;
@@ -942,12 +943,12 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
         {
             bp->speculative[bundlei] = block->RO.hash2;
             bp->numspec = bundlei+1;
-            while ( bundlei < bp->n && block != 0 && bp->bundleheight+bundlei == coin->blocks.hwmchain.height+1 && _iguana_chainlink(coin,block) != 0 )
+            /*while ( bundlei < bp->n && block != 0 && bp->bundleheight+bundlei == coin->blocks.hwmchain.height+1 && _iguana_chainlink(coin,block) != 0 )
             {
                 printf("MAIN.%d ",bp->bundleheight+bundlei);
                 bundlei++;
                 block = iguana_bundleblock(coin,&hash2,bp,bundlei);
-            }
+            }*/
             printf("autoadd [%d:%d]\n",bp->hdrsi,bundlei);
         }
     }
