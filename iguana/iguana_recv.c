@@ -455,7 +455,7 @@ void iguana_gotheadersM(struct iguana_info *coin,struct iguana_peer *addr,struct
             uint32_t i,sum = 0;
             for (i=0; i<sizeof(hdrsreceived)/sizeof(*hdrsreceived); i++)
                 sum += hdrsreceived[i];
-            printf("TOTAL HRS RECEIVED %u -> %s\n",sum,mbstr(str,sum*80));
+            printf("TOTAL HDRS RECEIVED %u -> %s\n",sum,mbstr(str,sum*80));
         }
         addr->recvhdrs++;
         if ( addr->pendhdrs > 0 )
