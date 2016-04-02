@@ -1511,7 +1511,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
             coin->peers.active[i].dead = (uint32_t)time(NULL);
 #ifdef __linux__
         char cmd[1024];
-        sprintf(cmd,"DB/%s %s.%d -comp xz",coin->symbol,coin->symbol,coin->balanceswritten);
+        sprintf(cmd,"mksquashfs DB/%s %s.%d -comp xz",coin->symbol,coin->symbol,coin->balanceswritten);
         if ( system(cmd) != 0 )
             printf("error system(%s)\n",cmd);
         else
