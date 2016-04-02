@@ -642,7 +642,14 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
             bp->blocks[bundlei] = block;
             iguana_bundlehash2add(coin,0,bp,bundlei,hash2);
             if ( iguana_ramchainfile(coin,0,&blockR,bp,bundlei,block) == 0 )
+            {
+                block->RO.recvlen = (uint32_t)blockR.H.data->allocsize;
                 iguana_ramchain_free(coin,&blockR,1);
+                block->fpipbits = 1;
+                block->txvalid = 1;
+                block->fpos = 0;
+                block->issued = (uint32_t)time(NULL);
+            }
             else if ( block->issued == 0 )
                 iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,coin->current == 0 || bp->hdrsi <= coin->current->hdrsi+coin->MAXBUNDLES);
             /*if ( bp->hdrsi == coin->longestchain/bp->n && bp->emitfinish == 0 && block->txvalid == 0 ) //bits256_nonz(block->RO.hash2) != 0 && b
