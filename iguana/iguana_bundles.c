@@ -629,7 +629,7 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
     dist = 30 + (coin->current != 0 ? bp->hdrsi - coin->current->hdrsi : 0);
     if ( bp == coin->current )
         dist = 3;
-    if ( time(NULL) > bp->hdrtime+dist && (bp->hdrsi >= coin->bundlescount-2 || (coin->enableCACHE != 0 && bp->numhashes < bp->n && (bp->speculative == 0 || bp->hdrsi >= coin->longestchain/bp->n))) )
+    if ( time(NULL) > bp->hdrtime+dist && (bp == coin->current || bp->hdrsi >= coin->bundlescount-2 || (coin->enableCACHE != 0 && bp->numhashes < bp->n && (bp->speculative == 0 || bp->hdrsi >= coin->longestchain/bp->n))) )
     {
         char str[64];
         bp->hdrtime = (uint32_t)time(NULL);
@@ -726,7 +726,7 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
     for (i=0; i<bp->hdrsi; i++)
         if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish <= 1 || prevbp->utxofinish == 0 )
             break;
-    if ( bp->hdrsi < coin->blocks.hwmchain.height/coin->chain->bundlesize && i > bp->hdrsi-IGUANA_NUMHELPERS/2 && time(NULL) > bp->emitfinish+10 )//&& coin->emitbusy <= 4 )
+    if ( bp->hdrsi < coin->blocks.hwmchain.height/coin->chain->bundlesize && i >= bp->hdrsi-IGUANA_NUMHELPERS/4 && time(NULL) > bp->emitfinish+10 )//&& coin->emitbusy <= 4 )
     {
         if ( bp->startutxo == 0 )
         {
