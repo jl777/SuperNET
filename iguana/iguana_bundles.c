@@ -597,8 +597,8 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp)
 void iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle *bp,uint8_t *missings)
 {
     int32_t i,tmp,tmp2,priority = 3; bits256 hash2; double aveduration;
-    //if ( bp->emitfinish != 0 )
-    //    return;
+    if ( bp->emitfinish != 0 )
+        return;
     if ( bp->durationscount != 0 )
         aveduration = (double)bp->totaldurations / bp->durationscount;
     else aveduration = IGUANA_DEFAULTLAG/3 + 1;
