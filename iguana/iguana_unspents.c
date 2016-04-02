@@ -1306,7 +1306,7 @@ void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,
                 printf("mapped.%s\n",bits256_str(str,R->H.data->firsthash2));
             } else return(ptr);
             iguana_ramchain_free(coin,R,1);
-            iguana_blockunmark(coin,block,bp,bundlei,1);
+            iguana_blockunmark(coin,block,bp,bundlei,0);
         }
     }
     return(0);
@@ -1503,12 +1503,27 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
     char str[65]; printf("BALANCES WRITTEN for %d/%d bundles %s\n",coin->balanceswritten,coin->origbalanceswritten,bits256_str(str,coin->balancehash));
     if ( coin->balanceswritten > coin->origbalanceswritten+10 ) // strcmp(coin->symbol,"BTC") == 0 && 
     {
-        int32_t i;
+        int32_t i; char cmd[1024];
         coin->active = 0;
         coin->started = 0;
         for (i=0; i<IGUANA_MAXPEERS; i++)
             coin->peers.active[i].dead = (uint32_t)time(NULL);
-        for (i=0; i<100; i++)
+        sprintf(cmd,"DB/%s %s.%d -comp xz",coin->symbol,coin->symbol,coin->balanceswritten);
+        if ( system(cmd) != 0 )
+            printf("error system(%s)\n",cmd);
+        else
+        {
+            sprintf(cmd,"sudo umount DB/ro/%s",coin->symbol);
+            if ( system(cmd) != 0 )
+                printf("error system(%s)\n",cmd);
+            else
+            {
+                sprintf(cmd,"sudo mount %s.%d DB/ro/%s -t squashfs -o loop",coin->symbol,coin->balanceswritten,coin->symbol);
+                if ( system(cmd) != 0 )
+                    printf("error system(%s)\n",cmd);
+            }
+        }
+        for (i=0; i<30; i++)
         {
             printf("need to exit, please restart after shutdown in %d seconds, or just ctrl-C\n",100-i);
             sleep(1);
