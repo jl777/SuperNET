@@ -636,9 +636,10 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
             block->hdrsi = bp->hdrsi;
             bp->blocks[bundlei] = block;
             iguana_bundlehash2add(coin,0,bp,bundlei,hash2);
-            if ( bp->emitfinish == 0 )
+            if ( bp->hdrsi == coin->longestchain/bp->n && bp->emitfinish == 0 )
             {
-                if ( bp->hdrsi == coin->longestchain/bp->n && block->fpipbits == 0 ) //bits256_nonz(block->RO.hash2) != 0 && b
+                printf("[%d] last block emit.%u fpipbits.%d txvalid.%d\n",bp->hdrsi,bp->emitfinish,block->fpipbits,block->txvalid);
+                if ( block->txvalid == 0 ) //bits256_nonz(block->RO.hash2) != 0 && b
                 {
                     block->fpos = -1;
                     checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,block->RO.hash2,zero,1,0);
