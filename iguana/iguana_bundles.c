@@ -606,7 +606,7 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
     {
         char str[64];
         bp->hdrtime = (uint32_t)time(NULL);
-        if ( bp == coin->current )
+        if ( bp == coin->current && bp->speculative != 0 )
         {
             printf("iguana_bundlehdr.[%d] %d %s\n",bp->hdrsi,bp->numspec,bits256_str(str,bp->hashes[0]));
         }
@@ -720,7 +720,7 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
 {
     if ( iguana_bundleready(coin,bp) == bp->n )
     {
-        printf(">>>>>>>>>>>>>>>>>>>>>>> EMIT.%s bundle.%d | 1st.%d h.%d s.[%d] maxbundles.%d NET.(h%d b%d)\n",coin->symbol,bp->bundleheight,coin->current!=0?coin->current->hdrsi:-1,coin->current!=0?coin->current->numhashes:-1,coin->current!=0?coin->current->numsaved:-1,coin->MAXBUNDLES,HDRnet,netBLOCKS);
+        printf(">>>>>>>>>>>>>>>>>>>>>>> EMIT.%s bundle.%d | 1st.%d h.%d c.%d s.[%d] maxbundles.%d NET.(h%d b%d)\n",coin->symbol,bp->bundleheight,coin->current!=0?coin->current->hdrsi:-1,coin->current!=0?coin->current->numhashes:-1,coin->current!=0?coin->current->numcached:-1,coin->current!=0?coin->current->numsaved:-1,coin->MAXBUNDLES,HDRnet,netBLOCKS);
         if ( bp->emitfinish != 0 )
         {
             printf("already EMIT for bundle.%d\n",bp->hdrsi);

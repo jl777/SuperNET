@@ -988,12 +988,12 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
                 if ( (++num % 100000) == 0 )
                     printf("externalspents.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
                 rdata = spentbp->ramchain.H.data;
-                /*if ( coin->PREFETCHLAG != 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
+                if ( coin->PREFETCHLAG != 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
                 {
-                    //printf("RT prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
+                    printf("RT prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
                     iguana_ramchain_prefetch(coin,&spentbp->ramchain);
                     spentbp->lastprefetch = now;
-                }*/
+                }
             }
             else if ( s->prevout >= 0 )
             {
@@ -1263,7 +1263,7 @@ void iguana_RTramchainalloc(struct iguana_info *coin,struct iguana_bundle *bp)
         dest->externalind = dest->H.stacksize = 0;
         dest->H.scriptoffset = 1;
         if ( coin->PREFETCHLAG != 0 )
-            iguana_prefetch(coin,bp,22);
+            iguana_prefetch(coin,bp,7);
     }
 }
 

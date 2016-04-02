@@ -822,7 +822,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
     memset(zero.bytes,0,sizeof(zero));
     bp = 0, bundlei = -2;
     iguana_bundlefind(coin,&bp,&bundlei,blockhashes[1]);
-    if ( 0 && num > 2 )
+    if ( 1 && num >= 2*coin->chain->bundlesize )
         printf("blockhashes[%d] %d of %d %s bp.%d[%d]\n",num,bp==0?-1:bp->hdrsi,coin->bundlescount,bits256_str(str,blockhashes[1]),bp==0?-1:bp->bundleheight,bundlei);
     if ( num < 2 )
         return(req);
@@ -1375,8 +1375,8 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                     }
                     if ( bp == 0 || bp->speculative == 0 || bp == coin->current || bp->hdrsi == coin->bundlescount-1 )
                     {
-                        if ( bp == coin->current )
-                            printf("%s request HDR.(%s) numhashes.%d\n",addr!=0?addr->ipaddr:"local",hashstr,bp!=0?bp->numhashes:0);
+                        //if ( bp == coin->current )
+                        printf("%s request HDR.(%s) numhashes.%d [%d]\n",addr!=0?addr->ipaddr:"local",hashstr,bp!=0?bp->numhashes:0,bp!=0?bp->hdrsi:-1);
                         iguana_send(coin,addr,serialized,datalen);
                         addr->pendhdrs++;
                         flag++;
