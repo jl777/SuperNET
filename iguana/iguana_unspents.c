@@ -714,6 +714,7 @@ uint32_t iguana_spendvectorconv(struct iguana_info *coin,struct iguana_spendvect
             } else printf("illegal [%d].u%u pkind.%u vs %u\n",ptr->hdrsi,ptr->unspentind,spent_pkind,spentbp->ramchain.H.data->numpkinds);
         } else printf("illegal [%d].u%u\n",ptr->hdrsi,ptr->unspentind);
         errs++;
+        return(0);
     }
     return(ptr->pkind);
 }
@@ -806,8 +807,8 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
             {
                 if ( (spendind % 1000000) == 0 )
                     printf("spendvectors elapsed.%-3d [%-3d:%4d] spendind.%d\n",(uint32_t)time(NULL)-starttime,bp->hdrsi,i,spendind);
-                s = &S[spendind];
                 u = 0;
+                s = &S[spendind];
                 if ( s->external != 0 && s->prevout >= 0 )
                 {
                     if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s)) != 0 && spentbp->ramchain.H.data != 0 )
@@ -859,6 +860,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
                         else
                         {
                             ptr[emit].hdrsi = spentbp->hdrsi;
+                            ptr[emit].unspentind = spent_unspentind;
                             ptr[emit].fromheight = bp->bundleheight + i;
                             ptr[emit].tmpflag = 1;
                             printf("ht.%d [%d] TMPVECTOR u%d\n",ptr[emit].fromheight,ptr[emit].hdrsi,ptr[emit].unspentind);
