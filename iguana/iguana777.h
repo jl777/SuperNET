@@ -43,7 +43,7 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_TAILPERCENTAGE 1.0
 #define IGUANA_MAXPENDHDRS 1
 #define IGUANA_MAXPENDINGREQUESTS 2
-#define IGUANA_PENDINGREQUESTS 512
+#define IGUANA_PENDINGREQUESTS 32
 #define IGUANA_MINPENDBUNDLES 2
 #define IGUANA_MAXPENDBUNDLES 128
 #define IGUANA_BUNDLELOOP 77
@@ -842,6 +842,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin);
 void iguana_walletlock(struct supernet_info *myinfo);
 int32_t _SuperNET_encryptjson(char *destfname,char *passphrase,int32_t passsize,char *fname2fa,int32_t fnamesize,cJSON *argjson);
 int32_t bitcoin_pubkeylen(const uint8_t *pubkey);
+struct iguana_block *iguana_bundleblock(struct iguana_info *coin,bits256 *hash2p,struct iguana_bundle *bp,int32_t i);
 
 extern int32_t HDRnet,netBLOCKS;
 
