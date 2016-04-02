@@ -200,7 +200,7 @@ struct iguana_txblock *iguana_peertxdata(struct iguana_info *coin,int32_t *bundl
 
 int32_t iguana_speculativefind(struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_block *block,uint8_t *data,int32_t recvlen)
 {
-    int32_t i,j,numcached; uint8_t *tmp; //char str[65];
+    int32_t i,j,numcached; uint8_t *tmp; char str[65];
     for (i=1; i<bp->n; i++)
     {
         if ( bits256_cmp(bp->speculative[i],block->RO.hash2) == 0 )
@@ -209,7 +209,8 @@ int32_t iguana_speculativefind(struct iguana_info *coin,struct iguana_bundle *bp
             {
                 if ( memcmp(&recvlen,tmp,sizeof(recvlen)) != 0 || memcmp(&tmp[sizeof(recvlen)],data,recvlen) != 0 )
                     printf("ERROR ");
-                //printf("[%d:%d] already has recvlen.%d for %s\n",bp->hdrsi,i,recvlen,bits256_str(str,block->RO.hash2));
+                if ( bp == coin->current )
+                    printf("[%d:%d] already has recvlen.%d for %s\n",bp->hdrsi,i,recvlen,bits256_str(str,block->RO.hash2));
                 return(0);
             }
             bp->speculativecache[i] = mycalloc('p',1,recvlen + sizeof(recvlen));
@@ -218,7 +219,8 @@ int32_t iguana_speculativefind(struct iguana_info *coin,struct iguana_bundle *bp
             for (j=numcached=0; j<bp->n; j++)
                 if ( bp->speculativecache[j] != 0 )
                     numcached++;
-            //printf("cache %s [%d:%d] h.%d s.%d c.%d -> %d\n",bits256_str(str,block->RO.hash2),bp->hdrsi,i,bp->numhashes,bp->numsaved,bp->numcached,numcached);
+            if ( bp == coin->current )
+                printf("cache %s [%d:%d] h.%d s.%d c.%d -> %d\n",bits256_str(str,block->RO.hash2),bp->hdrsi,i,bp->numhashes,bp->numsaved,bp->numcached,numcached);
             return(i);
         }
     }
@@ -660,7 +662,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
             }
             else if ( bp->hdrsi > 0 && (bp= coin->bundles[bp->hdrsi-1]) != 0 )
                 iguana_bundlehash2add(coin,0,bp,coin->chain->bundlesize-1,prevhash2);
-            if ( 0 && coin->enableCACHE != 0 )
+            if ( 1 && coin->enableCACHE != 0 )
                 iguana_bundlespeculate(coin,bp,bundlei,hash2,1);
         }
         prevbp = 0, prevbundlei = -2;
@@ -683,7 +685,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
                     //printf("bundlehash2add next %d\n",prevbundlei);
                     iguana_bundlehash2add(coin,0,prevbp,prevbundlei+1,hash2);
                 }
-                if ( 0 && coin->enableCACHE != 0 )
+                if ( 1 && coin->enableCACHE != 0 )
                     iguana_bundlespeculate(coin,prevbp,prevbundlei,prevhash2,2);
             }
         }
