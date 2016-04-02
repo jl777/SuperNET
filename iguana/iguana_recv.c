@@ -652,11 +652,13 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
                     block->fpipbits = 1;
                     block->txvalid = 1;
                     block->fpos = 0;
+                    block->issued = (uint32_t)time(NULL);
                     printf("initialize with fp.[%d:%d] len.%d\n",hdrsi,bundlei,block->RO.recvlen);
                     fclose(fp);
                 }
+                else iguana_blockunmark(coin,block,bp,bundlei,1);
             }
-            else if ( block->issued == 0 )
+            if ( block->issued == 0 )
                 iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,coin->current == 0 || bp->hdrsi <= coin->current->hdrsi+coin->MAXBUNDLES);
             //printf("bundlehashadd set.%d\n",bundlei);
             if ( bundlei > 0 )
