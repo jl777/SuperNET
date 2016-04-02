@@ -350,7 +350,7 @@ struct iguana_hhaccount { UT_hash_handle hh; uint8_t buf[6]; struct iguana_accou
 struct iguana_hhutxo { UT_hash_handle hh; uint8_t buf[6]; struct iguana_utxo u; } __attribute__((packed));
 
 // GLOBAL one zero to non-zero write (unless reorg)
-struct iguana_spendvector { uint64_t value; uint32_t pkind,unspentind; uint16_t hdrsi,bundlei:11,tbd:4,tmpflag:1; } __attribute__((packed)); // unspentind
+struct iguana_spendvector { uint64_t value; uint32_t pkind,unspentind; int32_t fromheight; uint16_t hdrsi:15,tmpflag:1; } __attribute__((packed)); // unspentind
 //struct iguana_pkextra { uint32_t firstspendind; } __attribute__((packed)); // pkind
 
 struct iguana_txblock
