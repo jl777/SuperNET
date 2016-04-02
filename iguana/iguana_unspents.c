@@ -695,7 +695,7 @@ uint32_t iguana_spendvectorconv(struct iguana_info *coin,struct iguana_spendvect
     static uint64_t count,converted,errs;
     struct iguana_bundle *spentbp; struct iguana_unspent *spentU,*u; uint32_t spent_pkind;
     count++;
-    if ( (count % 10000) == 0 )
+    if ( (count % 1000000) == 0 )
         printf("iguana_spendvectorconv.[%llu] errs.%llu converted.%llu %.2f%%\n",(long long)count,(long long)errs,(long long)converted,100. * (long long)converted/count);
     //printf("[%d] tmpflag.%d u%d %.8f p%u\n",ptr->hdrsi,ptr->tmpflag,ptr->unspentind,dstr(ptr->value),ptr->pkind);
     if ( ptr->tmpflag != 0 )
@@ -1565,7 +1565,20 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
     char str[65]; printf("BALANCES WRITTEN for %d/%d bundles %s\n",coin->balanceswritten,coin->origbalanceswritten,bits256_str(str,coin->balancehash));
     if ( coin->balanceswritten > coin->origbalanceswritten+10 ) // strcmp(coin->symbol,"BTC") == 0 && 
     {
-        int32_t i;
+        int32_t i; struct iguana_bundle *prevbp;
+        for (i=0; i<=bp->hdrsi; i++)
+        {
+            if ( (prevbp= coin->bundles[i]) != 0 )
+            {
+                if ( iguana_spendvectorsave(coin,prevbp,&prevbp->ramchain,prevbp->tmpspends,prevbp->numtmpspends,prevbp->ramchain.H.data->numspends) < 0 )
+                    break;
+            } else break;
+        }
+        if ( i != bp->hdrsi+1 )
+        {
+            printf("error doing spendvectorsave\n");
+            return(-1);
+        }
         coin->active = 0;
         coin->started = 0;
         for (i=0; i<IGUANA_MAXPEERS; i++)
