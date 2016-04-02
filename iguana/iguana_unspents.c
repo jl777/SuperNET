@@ -697,7 +697,7 @@ uint32_t iguana_spendvectorconv(struct iguana_info *coin,struct iguana_spendvect
     count++;
     if ( (count % 10000) == 0 )
         printf("iguana_spendvectorconv.[%llu] errs.%llu converted.%llu %.2f%%\n",(long long)count,(long long)errs,(long long)converted,100. * (long long)converted/count);
-    printf("[%d] tmpflag.%d u%d %.8f p%u\n",ptr->hdrsi,ptr->tmpflag,ptr->unspentind,dstr(ptr->value),ptr->pkind);
+    //printf("[%d] tmpflag.%d u%d %.8f p%u\n",ptr->hdrsi,ptr->tmpflag,ptr->unspentind,dstr(ptr->value),ptr->pkind);
     if ( ptr->tmpflag != 0 )
     {
         if ( ptr->hdrsi >= 0 && ptr->hdrsi < coin->bundlescount && (spentbp= coin->bundles[ptr->hdrsi]) != 0 )
