@@ -24,7 +24,6 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 
 #define IGUANA_MAXSCRIPTSIZE 10001
 #define IGUANA_SERIALIZE_SPENDVECTORGEN
-#define IGUANA_SERIALIZE_BALANCEGEN
 //#define IGUANA_DISABLEPEERS
 #define _IGUANA_MAXSTUCKTIME 30
 #define IGUANA_MAXITERATIONS 10000
@@ -443,6 +442,7 @@ struct iguana_bundle
     uint32_t issued[IGUANA_MAXBUNDLESIZE];
     bits256 prevbundlehash2,hashes[IGUANA_MAXBUNDLESIZE+1],nextbundlehash2,allhash,*speculative;
     struct iguana_ramchain ramchain; uint8_t red,green,blue;
+    struct iguana_spendvector *tmpspends; int32_t numtmpspends;
 };
 
 struct iguana_bundlereq
@@ -801,7 +801,7 @@ uint32_t iguana_sparseaddpk(uint8_t *bits,int32_t width,uint32_t tablesize,uint8
 int32_t iguana_vinscriptparse(struct iguana_info *coin,struct vin_info *vp,uint32_t *sigsizep,uint32_t *pubkeysizep,uint32_t *p2shsizep,uint32_t *suffixp,uint8_t *vinscript,int32_t scriptlen);
 void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msghdr *H,uint8_t *buf,int32_t len);
 int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp);
-int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp);
+int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,int32_t RTmode);
 int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int32_t startheight,int32_t endheight);
 int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp);
 void iguana_validateQ(struct iguana_info *coin,struct iguana_bundle *bp);
