@@ -616,7 +616,7 @@ void iguana_bundlespeculate(struct iguana_info *coin,struct iguana_bundle *bp,in
 // main context, ie single threaded
 struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_block **blockp,int32_t *bundleip,struct iguana_block *origblock)
 {
-    struct iguana_block *block,*prevblock; bits256 zero,hash2,prevhash2; struct iguana_bundle *prevbp,*bp = 0; int32_t prevbundlei,bundlei = -2; struct iguana_ramchain blockR;
+    struct iguana_block *block,*prevblock; bits256 zero,hash2,prevhash2; struct iguana_bundle *prevbp,*bp = 0; int32_t prevbundlei,hdrsi,checki,bundlei = -2; FILE *fp; char fname[1024]; // struct iguana_ramchain blockR;
     *bundleip = -2; *blockp = 0;
     if ( origblock == 0 )
         return(0);
@@ -641,7 +641,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
             block->hdrsi = bp->hdrsi;
             bp->blocks[bundlei] = block;
             iguana_bundlehash2add(coin,0,bp,bundlei,hash2);
-            if ( iguana_ramchainfile(coin,0,&blockR,bp,bundlei,block) == 0 )
+            /*if ( iguana_ramchainfile(coin,0,&blockR,bp,bundlei,block) == 0 )
             {
                 block->RO.recvlen = sizeof(blockR);
                 iguana_ramchain_free(coin,&blockR,1);
@@ -651,8 +651,8 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
                 block->issued = (uint32_t)time(NULL);
             }
             else if ( block->issued == 0 )
-                iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,coin->current == 0 || bp->hdrsi <= coin->current->hdrsi+coin->MAXBUNDLES);
-            /*if ( bp->hdrsi == coin->longestchain/bp->n && bp->emitfinish == 0 && block->txvalid == 0 ) //bits256_nonz(block->RO.hash2) != 0 && b
+                iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,coin->current == 0 || bp->hdrsi <= coin->current->hdrsi+coin->MAXBUNDLES);*/
+            if ( bp->emitfinish == 0 && block->txvalid == 0 ) //bp->hdrsi == coin->longestchain/bp->n && bits256_nonz(block->RO.hash2) != 0 && b
             {
                 block->fpos = -1;
                 checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,block->RO.hash2,zero,1,0);
@@ -671,7 +671,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
             }
             if ( block->issued == 0 )
                 iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,coin->current == 0 || bp->hdrsi <= coin->current->hdrsi+coin->MAXBUNDLES);
-*/
+
             //printf("bundlehashadd set.%d\n",bundlei);
             if ( bundlei > 0 )
             {
