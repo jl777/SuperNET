@@ -636,8 +636,8 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
         if ( bp == coin->current && bp->speculative != 0 )
         {
             //printf("iguana_bundlehdr.[%d] %d %s\n",bp->hdrsi,bp->numspec,bits256_str(str,bp->hashes[0]));
-            if ( iguana_blocksmissing(coin,&avail,missings,0,bp,0,30) > 0 )
-                iguana_bundleissuemissing(coin,bp,missings,0);
+            if ( iguana_blocksmissing(coin,&avail,missings,0,bp,0,7) > 0 )
+                iguana_bundleissuemissing(coin,bp,missings,3);
         }
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
     }
@@ -921,14 +921,14 @@ double iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,d
     else max = bp->origmissings;
     if ( coin->current != 0 )
     {
-        if ( (dist= bp->hdrsi - coin->current->hdrsi) < 3 )
+        if ( (dist= bp->hdrsi - coin->current->hdrsi) < coin->MAXBUNDLES )
         {
             if ( bp->numcached > bp->n - (coin->MAXBUNDLES - dist) )
                 priority += 1 + (bp == coin->current);
             if ( queue_size(&coin->priorityQ) < (2 * bp->n)/(dist+1) )
             {
                 //printf("[%d] dist.%d numcached.%d priority.%d\n",bp->hdrsi,dist,bp->numcached,priority);
-                iguana_bundleissuemissing(coin,bp,missings,3);
+                iguana_bundleissuemissing(coin,bp,missings,((rand() % 10) == 0)*3);
             }
         }
     }

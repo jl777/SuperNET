@@ -936,21 +936,21 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
 
 struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundlereq *req,struct iguana_block *origblock,int32_t numtx,int32_t datalen,int32_t recvlen,int32_t *newhwmp)
 {
-    struct iguana_bundle *bp=0,*prev; int32_t numsaved=0,bundlei = -2; struct iguana_block *block,*tmpblock; char str[65];
+    struct iguana_bundle *bp=0,*prev; int32_t numsaved=0,bundlei = -2; struct iguana_block *block,*tmpblock; char str[65]; bits256 hash2;
     if ( (bp= iguana_bundleset(coin,&block,&bundlei,origblock)) != 0 && bp == coin->current && block != 0 && bp->speculative != 0 && bundlei >= 0 )
     {
         if ( bp->speculative != 0 && bp->numspec <= bundlei )
         {
             bp->speculative[bundlei] = block->RO.hash2;
             bp->numspec = bundlei+1;
-            /*while ( bundlei < bp->n && block != 0 && bp->bundleheight+bundlei == coin->blocks.hwmchain.height+1 && _iguana_chainlink(coin,block) != 0 )
-            {
-                printf("MAIN.%d ",bp->bundleheight+bundlei);
-                bundlei++;
-                block = iguana_bundleblock(coin,&hash2,bp,bundlei);
-            }*/
-            printf("autoadd [%d:%d]\n",bp->hdrsi,bundlei);
         }
+        while ( bundlei < bp->n && block != 0 && bp->bundleheight+bundlei == coin->blocks.hwmchain.height+1 && _iguana_chainlink(coin,block) != 0 )
+        {
+            //printf("MAIN.%d ",bp->bundleheight+bundlei);
+            bundlei++;
+            block = iguana_bundleblock(coin,&hash2,bp,bundlei);
+        }
+        //printf("autoadd [%d:%d]\n",bp->hdrsi,bundlei);
     }
     if ( bp != 0 )
     {

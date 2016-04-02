@@ -565,7 +565,7 @@ void iguana_coinloop(void *arg)
                 coin->idletime = (uint32_t)time(NULL);
             }
         }
-        if ( flag == 0 )
+        if ( flag == 0 || coin->RTheight >= coin->longestchain-3 )
             usleep(coin->polltimeout*1000 + coin->isRT*90000 + (coin->peers.numranked == 0)*1000000);
     }
 }
