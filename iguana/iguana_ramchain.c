@@ -945,6 +945,11 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
     {
         if ( (fp= fopen(fname,"wb")) != 0 )
             coin->peers.numfiles++;
+        else
+        {
+            printf("iguana_ramchain_save: couldnt create.(%s)\n",fname);
+            return(-1);
+        }
     }
     else if ( ipbits != 0 )
     {
@@ -953,7 +958,11 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
     else
     {
         fclose(fp);
-        fp = fopen(fname,"wb");
+        if ( (fp= fopen(fname,"wb")) != 0 )
+        {
+            printf("iguana_ramchain_save b: couldnt create.(%s)\n",fname);
+            return(-1);
+        }
     }
     if ( fp != 0 )
     {

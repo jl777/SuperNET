@@ -240,6 +240,11 @@ uint32_t iguana_updatemetrics(struct iguana_info *coin)
             OS_copyfile(tmpfname,fname,1);
         } else fclose(fp);
     }
+    else
+    {
+        printf("iguana_updatemetrics: couldnt create.(%s)\n",tmpfname);
+        return(0);
+    }
     return((uint32_t)time(NULL));
 }
 

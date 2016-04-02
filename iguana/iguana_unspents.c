@@ -823,7 +823,12 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
             //int32_t i; for (i=0; i<ramchain->numXspends; i++)
             //    printf("(%d u%d) ",ramchain->Xspendinds[i].hdrsi,ramchain->Xspendinds[i].ind);
             //printf("filesize %ld Xspendptr.%p %p num.%d\n",fsize,ramchain->Xspendptr,ramchain->Xspendinds,ramchain->numXspends);
-        } else printf("Error creating.(%s)\n",fname);
+        }
+        else
+        {
+            printf("iguana_spendvectors: Error creating.(%s)\n",fname);
+            retval = -1;
+        }
     }
     if ( ptr != 0 )
         myfree(ptr,sizeof(*ptr) * n);
@@ -1214,6 +1219,11 @@ int32_t iguana_volatileinit(struct iguana_info *coin)
                 if ( fwrite(&crc,1,sizeof(crc),fp) != sizeof(crc) || fwrite(&balancehash,1,sizeof(balancehash),fp) != sizeof(balancehash) )
                     printf("error writing.(%s)\n",crcfname);
                 fclose(fp);
+            }
+            else
+            {
+                printf("volatileinit: cant create.(%s)\n",crcfname);
+                return(-1);
             }
         }
     }

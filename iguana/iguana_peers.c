@@ -184,7 +184,13 @@ uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana
     else
     {
         if ( (fp= fopen(fname,"rb+")) == 0 )
-            fp = fopen(fname,"wb");
+        {
+            if ( (fp= fopen(fname,"wb")) == 0 )
+            {
+                printf("iguana_rwAddrind: couldnt create.(%s)\n",fname);
+                return(-1);
+            }
+        }
         if ( fp != 0 )
         {
             ipbits = (uint32_t)iA->ipbits;
@@ -212,7 +218,12 @@ uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana
                 }
             } else printf("iAddr: error seeking.[%d] %ld vs %ld\n",ind,ftell(fp),ind * sizeof(*iA));
             fclose(fp);
-        } else printf("error creating.(%s)\n",fname);
+        }
+        else
+        {
+            printf("iguana_rwAddrind: couldnt create.(%s)\n",fname);
+            return(-1);
+        }
     }
     return(retval);
 }
@@ -964,7 +975,7 @@ int64_t iguana_peerallocated(struct iguana_info *coin,struct iguana_peer *addr)
 }
 #endif
 
-void iguana_peerslotinit(struct iguana_info *coin,struct iguana_peer *addr,int32_t slotid,uint64_t ipbits)
+int32_t iguana_peerslotinit(struct iguana_info *coin,struct iguana_peer *addr,int32_t slotid,uint64_t ipbits)
 {
     char fname[1024];
     addr->ipbits = ipbits;
@@ -972,14 +983,17 @@ void iguana_peerslotinit(struct iguana_info *coin,struct iguana_peer *addr,int32
     sprintf(fname,"DB/%s/vouts/%04d.vouts",coin->symbol,addr->addrind);
     if ( (addr->voutsfp= fopen(fname,"rb+")) != 0 )
         fseek(addr->voutsfp,0,SEEK_END);
-    else addr->voutsfp = fopen(fname,"wb+");
+    else if ( (addr->voutsfp= fopen(fname,"wb+")) == 0 )
+        return(-1);
     if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
     {
         sprintf(fname,"purgeable/%s/%04d.vins",coin->symbol,addr->addrind);
         if ( (addr->vinsfp= fopen(fname,"rb+")) != 0 )
             fseek(addr->vinsfp,0,SEEK_END);
-        else addr->vinsfp = fopen(fname,"wb+");
+        else if ( (addr->vinsfp= fopen(fname,"wb+")) == 0 )
+            return(-1);
     }
+    return(0);
 }
 
 void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
@@ -987,6 +1001,11 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     static uint32_t lastping;
     struct pollfd fds; struct iguana_bundlereq *req; uint8_t *buf; uint32_t ipbits;
     int32_t bufsize,flag,run,timeout = coin->polltimeout == 0 ? 10 : coin->polltimeout;
+    if ( iguana_peerslotinit(coin,addr,(int32_t)(((long)addr - (long)&coin->peers.active[0]) / sizeof(*addr)),calc_ipbits(addr->ipaddr)) < 0 )
+    {
+        printf("error creating peer's files\n");
+        return;
+    }
 #ifdef IGUANA_PEERALLOC
     int32_t i;  int64_t remaining; struct OS_memspace *mem[sizeof(addr->SEROUT)/sizeof(*addr->SEROUT)];
     for (i=0; i<sizeof(addr->SEROUT)/sizeof(*addr->SEROUT); i++)
@@ -1001,8 +1020,7 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
         iguana_memreset(mem[i]);
     }
 #endif
-    iguana_peerslotinit(coin,addr,(int32_t)(((long)addr - (long)&coin->peers.active[0]) / sizeof(*addr)),calc_ipbits(addr->ipaddr));
-    //addr->pubkey = GENESIS_PUBKEY;
+     //addr->pubkey = GENESIS_PUBKEY;
     ipbits = (uint32_t)addr->ipbits;
     vcalc_sha256(0,addr->iphash.bytes,(uint8_t *)&ipbits,sizeof(ipbits));
     //char str[65]; printf("start dedicatedloop.%s addrind.%d %s\n",addr->ipaddr,addr->addrind,bits256_str(str,addr->iphash));

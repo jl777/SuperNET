@@ -836,7 +836,7 @@ uint32_t iguana_sparseaddtx(uint8_t *bits,int32_t width,uint32_t tablesize,bits2
 void iguana_launchpeer(struct iguana_info *coin,char *ipaddr);
 void iguana_spendvectorsQ(struct iguana_info *coin,struct iguana_bundle *bp);
 int8_t iguana_blockstatus(struct iguana_info *coin,struct iguana_block *block);
-void iguana_peerslotinit(struct iguana_info *coin,struct iguana_peer *addr,int32_t slotid,uint64_t ipbits);
+int32_t iguana_peerslotinit(struct iguana_info *coin,struct iguana_peer *addr,int32_t slotid,uint64_t ipbits);
 void iguana_blockunmark(struct iguana_info *coin,struct iguana_block *block,struct iguana_bundle *bp,int32_t i,int32_t deletefile);
 int32_t iguana_reqblocks(struct iguana_info *coin);
 void iguana_walletlock(struct supernet_info *myinfo);
