@@ -1281,7 +1281,7 @@ void iguana_RTramchainalloc(struct iguana_info *coin,struct iguana_bundle *bp)
     }
 }
 
-int32_t iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,struct iguana_ramchain *R,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block)
+void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,struct iguana_ramchain *R,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block)
 {
     char fname[1024]; long filesize; int32_t err; void *ptr;
     if ( block == bp->blocks[bundlei] && (ptr= iguana_bundlefile(coin,fname,&filesize,bp,bundlei)) != 0 )
@@ -1296,12 +1296,12 @@ int32_t iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *des
                 char str[65];
                 printf("ERROR [%d:%d] %s vs ",bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
                 printf("mapped.%s\n",bits256_str(str,R->H.data->firsthash2));
-                iguana_blockunmark(coin,block,bp,bundlei,1);
-                iguana_RTramchainfree(coin);
-            } else return(0);
+            } else return(ptr);
+            iguana_ramchain_free(coin,R,1);
+            iguana_blockunmark(coin,block,bp,bundlei,1);
         }
     }
-    return(-1);
+    return(0);
 }
 
 int32_t iguana_realtime_update(struct iguana_info *coin)
@@ -1324,9 +1324,11 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                 iguana_blocksetcounters(coin,block,dest);
                 B[bundlei] = block->RO;
                 double startmillis0 = OS_milliseconds(); static double totalmillis0; static int32_t num0;
-                if ( iguana_ramchainfile(coin,dest,&blockR,bp,bundlei,block) < 0 )
+                if ( iguana_ramchainfile(coin,dest,&blockR,bp,bundlei,block) == 0 )
+                {
+                    iguana_RTramchainfree(coin);
                     return(-1);
-                iguana_ramchain_free(coin,&blockR,1);
+                } else iguana_ramchain_free(coin,&blockR,1);
                 totalmillis0 += (OS_milliseconds() - startmillis0);
                 num0++;
                 printf("ramchainiterate.[%d] ave %.2f micros, total %.2f seconds\n",num0,(totalmillis0*1000.)/num0,totalmillis0/1000.);

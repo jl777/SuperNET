@@ -1966,18 +1966,20 @@ int32_t iguana_oldbundlefiles(struct iguana_info *coin,uint32_t *ipbits,void **p
 
 void *iguana_bundlefile(struct iguana_info *coin,char *fname,long *filesizep,struct iguana_bundle *bp,int32_t bundlei)
 {
-    int32_t checki,hdrsi; void *ptr = 0; static bits256 zero;
+    int32_t checki,hdrsi; void *ptr = 0; struct iguana_ramchain blockR; static bits256 zero;
     *filesizep = 0;
     if ( (checki= iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,bp->hashes[bundlei],zero,1,1)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
     {
         printf("B iguana_ramchain_map.(%s) illegal hdrsi.%d bundlei.%d checki.%d\n",fname,hdrsi,bundlei,checki);
         return(0);
     }
-    if ( (ptr= OS_mapfile(fname,filesizep,0)) == 0 )
+    if ( (ptr= iguana_ramchainfile(coin,0,&blockR,bp,bundlei,bp->blocks[bundlei])) == 0 )
+        return(0);
+    iguana_ramchain_free(coin,&blockR,1);
+    /*if ( (ptr= OS_mapfile(fname,filesizep,0)) == 0 )
     {
         //printf("error mapping.(%s) bundlei.%d\n",fname,bundlei);
-        return(0);
-    }
+    }*/
     return(ptr);
 }
 
