@@ -716,7 +716,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     if ( coin->PREFETCHLAG != 0 )
     {
         iguana_ramchain_prefetch(coin,ramchain);
-        iguana_prefetch(coin,bp);
+        iguana_prefetch(coin,bp,5);
     }
     starttime = (uint32_t)time(NULL);
     for (i=0; i<bp->n; i++)
