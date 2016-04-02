@@ -641,27 +641,23 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
             block->hdrsi = bp->hdrsi;
             bp->blocks[bundlei] = block;
             iguana_bundlehash2add(coin,0,bp,bundlei,hash2);
-            if ( bp->hdrsi == coin->longestchain/bp->n && bp->emitfinish == 0 )
+            if ( bp->hdrsi == coin->longestchain/bp->n && bp->emitfinish == 0 && block->txvalid == 0 ) //bits256_nonz(block->RO.hash2) != 0 && b
             {
-                //printf("[%d] last block emit.%u fpipbits.%d txvalid.%d\n",bp->hdrsi,bp->emitfinish,block->fpipbits,block->txvalid);
-                if ( block->txvalid == 0 ) //bits256_nonz(block->RO.hash2) != 0 && b
+                block->fpos = -1;
+                checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,block->RO.hash2,zero,1,0);
+                if ( (fp= fopen(fname,"rb")) != 0 )
                 {
-                    block->fpos = -1;
-                    checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,block->RO.hash2,zero,1,0);
-                    if ( (fp= fopen(fname,"rb")) != 0 )
-                    {
-                        fseek(fp,0,SEEK_END);
-                        block->RO.recvlen = (uint32_t)ftell(fp);
-                        block->fpipbits = 1;
-                        block->txvalid = 1;
-                        block->fpos = 0;
-                        printf("initialize with fp.[%d:%d] len.%d\n",hdrsi,bundlei,block->RO.recvlen);
-                        fclose(fp);
-                    }
+                    fseek(fp,0,SEEK_END);
+                    block->RO.recvlen = (uint32_t)ftell(fp);
+                    block->fpipbits = 1;
+                    block->txvalid = 1;
+                    block->fpos = 0;
+                    printf("initialize with fp.[%d:%d] len.%d\n",hdrsi,bundlei,block->RO.recvlen);
+                    fclose(fp);
                 }
-                else if ( block->issued == 0 )
-                    iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,coin->current == 0 || bp->hdrsi <= coin->current->hdrsi+coin->MAXBUNDLES);
             }
+            else if ( block->issued == 0 )
+                iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,coin->current == 0 || bp->hdrsi <= coin->current->hdrsi+coin->MAXBUNDLES);
             //printf("bundlehashadd set.%d\n",bundlei);
             if ( bundlei > 0 )
             {
