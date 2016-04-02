@@ -1128,7 +1128,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                 if ( strcmp("BTC",coin->symbol) == 0 && bits256_nonz(hash2) > 0 )
                 {
                     coin->backstopmillis = OS_milliseconds();
-                    iguana_blockQ("mainchain",coin,0,-1,hash2,1);//lag > threshold);
+                    iguana_blockQ("mainchain",coin,0,-1,hash2,0);//lag > threshold);
                     flag++;
                     char str[65];
                     if ( 1 && (rand() % 10000) == 0 )//|| bp->bundleheight > coin->longestchain-coin->chain->bundlesize )
