@@ -1292,7 +1292,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         bp->isRT = 1;
         while ( (rdata= coin->RTramchain.H.data) != 0 && coin->RTheight <= coin->blocks.hwmchain.height )
         {
-            printf("RT.%d vs hwm.%d\n",coin->RTheight,coin->blocks.hwmchain.height);
+            //printf("RT.%d vs hwm.%d\n",coin->RTheight,coin->blocks.hwmchain.height);
             dest = &coin->RTramchain;
             B = (void *)(long)((long)rdata + rdata->Boffset);
             bundlei = (coin->RTheight % coin->chain->bundlesize);
@@ -1348,6 +1348,10 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                 }
                 else
                 {
+                    if ( bits256_nonz(bp->hashes[bundlei]) != 0 )
+                        iguana_blockQ("RT",coin,bp,bundlei,bp->hashes[bundlei],3);
+                    else if ( bp->speculative != 0 && bits256_nonz(bp->speculative[bundlei]) != 0 )
+                        iguana_blockQ("RT",coin,bp,bundlei,bp->speculative[bundlei],3);
                     printf("no fileptr for RTheight.%d\n",coin->RTheight);
                     return(-1);
                 }
