@@ -643,7 +643,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
             iguana_bundlehash2add(coin,0,bp,bundlei,hash2);
             if ( iguana_ramchainfile(coin,0,&blockR,bp,bundlei,block) == 0 )
             {
-                block->RO.recvlen = (uint32_t)blockR.H.data->allocsize;
+                block->RO.recvlen = sizeof(blockR);
                 iguana_ramchain_free(coin,&blockR,1);
                 block->fpipbits = 1;
                 block->txvalid = 1;
