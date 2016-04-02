@@ -690,10 +690,44 @@ void iguana_prefetch(struct iguana_info *coin,struct iguana_bundle *bp,int32_t w
     }
 }
 
+uint32_t iguana_spendvectorconv(struct iguana_info *coin,struct iguana_spendvector *ptr,struct iguana_bundle *bp)
+{
+    static uint64_t count,converted,errs;
+    struct iguana_bundle *spentbp; struct iguana_unspent *spentU,*u; uint32_t spent_pkind,spent_unspentind;
+    count++;
+    if ( (count % 10000) == 0 )
+        printf("iguana_spendvectorconv.[%llu] errs.%llu converted.%llu %.2f%%\n",(long long)count,(long long)errs,(long long)converted,100. * (long long)converted/count);
+    if ( ptr->tmpflag != 0 )
+    {
+        if ( ptr->hdrsi >= 0 && ptr->hdrsi < coin->bundlescount && (spentbp= coin->bundles[ptr->hdrsi]) != 0 )
+        {
+            spent_unspentind = ptr->pkind;
+            spentU = (void *)(long)((long)spentbp->ramchain.H.data + spentbp->ramchain.H.data->Uoffset);
+            u = &spentU[spent_unspentind];
+            if ( (spent_pkind= u->pkind) != 0 && spent_pkind < spentbp->ramchain.H.data->numpkinds )
+            {
+                ptr->pkind = spent_pkind;
+                ptr->value = u->value;
+                ptr->tmpflag = 0;
+                converted++;
+                return(spent_pkind);
+            }
+        }
+        errs++;
+    }
+    return(ptr->pkind);
+}
+
 int32_t iguana_spendvectorsave(struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_ramchain *ramchain,struct iguana_spendvector *ptr,int32_t emit,int32_t n)
 {
-    int32_t retval = -1; FILE *fp; char fname[1024],str[65]; long fsize; bits256 zero,sha256;
+    int32_t i,retval = -1; FILE *fp; char fname[1024],str[65]; long fsize; bits256 zero,sha256;
     memset(zero.bytes,0,sizeof(zero));
+    for (i=0; i<emit; i++)
+        if ( iguana_spendvectorconv(coin,&ptr[i],bp) == 0 )
+        {
+            printf("iguana_spendvectorconv error [%d] at %d of %d/%d\n",bp->hdrsi,i,emit,n);
+            return(-1);
+        }
     sprintf(fname,"DB/%s/spends/%s.%d",coin->symbol,bits256_str(str,bp->hashes[0]),bp->bundleheight);
     vcalc_sha256(0,sha256.bytes,(void *)ptr,(int32_t)(sizeof(*ptr) * emit));
     if ( (fp= fopen(fname,"wb")) != 0 )
@@ -797,13 +831,13 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
                             u = &spentU[spent_unspentind];
                             if ( (spent_pkind= u->pkind) != 0 && spent_pkind < spentbp->ramchain.H.data->numpkinds )
                             {
-                                
+                                memset(&ptr[emit],0,sizeof(ptr[emit]));
                                 if ( (ptr[emit].unspentind= spent_unspentind) != 0 && spentbp->hdrsi < bp->hdrsi )
                                 {
                                     ptr[emit].hdrsi = spentbp->hdrsi;
+                                    ptr[emit].bundlei = i;
                                     ptr[emit].pkind = spent_pkind;
                                     ptr[emit].value = u->value;
-                                    ptr[emit].bundlei = i;
                                     //ptr[emit].txi = j;
                                     //printf("(%d u%d).%d ",spentbp->hdrsi,unspentind,emit);
                                     emit++;
@@ -825,8 +859,8 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
                         else
                         {
                             ptr[emit].hdrsi = spentbp->hdrsi;
-                            ptr[emit].pkind = spent_unspentind; // temp overload
                             ptr[emit].bundlei = i;
+                            ptr[emit].tmpflag = 1;
                             //ptr[emit].txi = j;
                             //printf("(%d u%d).%d ",spentbp->hdrsi,unspentind,emit);
                             emit++;
@@ -855,15 +889,14 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     if ( errs == 0 && emit >= 0 )
     {
         emitted += emit;
-        if ( coin->balanceswritten > 1 )
-            iguana_spendvectorsave(coin,bp,ramchain,ptr,emit,n);
-        else
+        if ( coin->balanceswritten <= 1 )
         {
             if ( bp->tmpspends != 0 )
                 printf("unexpected tmpspends? [%d] numtmpspends.%d vs emit.%d\n",bp->hdrsi,bp->numtmpspends,emit);
             bp->tmpspends = myrealloc('x',ptr,sizeof(*ptr)*n,sizeof(*ptr)*emit);
             ptr = 0;
         }
+        errs = -iguana_spendvectorsave(coin,bp,ramchain,ptr,emit,n);
         bp->numtmpspends = emit;
     }
     if ( ptr != 0 )
