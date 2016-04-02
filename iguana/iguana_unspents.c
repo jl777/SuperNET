@@ -895,10 +895,9 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
             if ( bp->tmpspends != 0 )
                 printf("unexpected tmpspends? [%d] numtmpspends.%d vs emit.%d\n",bp->hdrsi,bp->numtmpspends,emit);
             bp->tmpspends = myrealloc('x',ptr,sizeof(*ptr)*n,sizeof(*ptr)*emit);
+            bp->numtmpspends = emit;
             ptr = 0;
-        }
-        errs = -iguana_spendvectorsave(coin,bp,ramchain,ptr!=0?ptr:bp->tmpspends,emit,n);
-        bp->numtmpspends = emit;
+        } /*else*/ errs = -iguana_spendvectorsave(coin,bp,ramchain,ptr!=0?ptr:bp->tmpspends,emit,n);
     }
     if ( ptr != 0 )
         myfree(ptr,sizeof(*ptr) * n);
@@ -1572,6 +1571,12 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
             {
                 if ( iguana_spendvectorsave(coin,prevbp,&prevbp->ramchain,prevbp->tmpspends,prevbp->numtmpspends,prevbp->ramchain.H.data->numspends) < 0 )
                     break;
+                else
+                {
+                    myfree(prevbp->tmpspends,sizeof(*prevbp->tmpspends) * prevbp->numtmpspends);
+                    prevbp->numtmpspends = 0;
+                    prevbp->tmpspends = 0;
+                }
             } else break;
         }
         if ( i != bp->hdrsi+1 )

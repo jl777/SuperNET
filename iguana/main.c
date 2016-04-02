@@ -373,6 +373,7 @@ void mainloop(struct supernet_info *myinfo)
                         coin->RTramchain_busy = 1;
                         if ( iguana_realtime_update(coin) > 0 )
                             flag++;
+                        
                         if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
                         {
                             bp = ptr->bp;
