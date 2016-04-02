@@ -219,7 +219,7 @@ int32_t iguana_speculativefind(struct iguana_info *coin,struct iguana_bundle *bp
             for (j=numcached=0; j<bp->n; j++)
                 if ( bp->speculativecache[j] != 0 )
                     numcached++;
-            if ( bp == coin->current )
+            if ( 0 && bp == coin->current )
                 printf("cache %s [%d:%d] h.%d s.%d c.%d -> %d\n",bits256_str(str,block->RO.hash2),bp->hdrsi,i,bp->numhashes,bp->numsaved,bp->numcached,numcached);
             return(i);
         }
@@ -339,7 +339,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
                 numDuplicates++;
                 sizeDuplicates += recvlen;
                 iguana_bundletime(coin,bp,bundlei,block,1);
-                printf("duplicate [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
+                //printf("duplicate [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
                 if ( bits256_cmp(origtxdata->block.RO.hash2,block->RO.hash2) == 0 )
                     return;
                 else printf("mismatched tx received? mainchain.%d\n",block->mainchain);
