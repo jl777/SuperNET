@@ -882,7 +882,8 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
                     printf("vcalc.(%s) [%d].(%s)\n",bits256_str(str,allhash),bp->hdrsi,bits256_str(str2,bp->hashes[0]));
                 if ( bits256_cmp(allhash,bp->allhash) == 0 )
                 {
-                    printf("matched allhashes.[%d]\n",bp->hdrsi);
+                    if ( bp->speculative == 0 )
+                        printf("matched allhashes.[%d]\n",bp->hdrsi);
                     if ( bp->queued != 0 )
                         bp->queued = 0;
                     if ( iguana_allhashcmp(coin,bp,blockhashes,coin->chain->bundlesize) > 0 )

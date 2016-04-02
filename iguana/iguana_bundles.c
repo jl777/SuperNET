@@ -594,12 +594,12 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp)
 void iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle *bp,uint8_t *missings)
 {
     int32_t i,tmp,tmp2,priority = 3; bits256 hash2; double aveduration;
-    if ( bp->emitfinish != 0 )
+    if ( bp->emitfinish != 0 || time(NULL) bp->missingstime+10 )
         return;
     if ( bp->durationscount != 0 )
         aveduration = (double)bp->totaldurations / bp->durationscount;
     else aveduration = IGUANA_DEFAULTLAG/3 + 1;
-    aveduration *= 3.;
+    aveduration *= 7.;
     for (i=0; i<bp->n; i++)
     {
         if ( GETBIT(missings,i) != 0 )
@@ -617,7 +617,8 @@ void iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle *bp
             }
         }
     }
-    iguana_bundlerequests(coin,missings,&tmp,&tmp2,bp,aveduration,priority);
+    //iguana_bundlerequests(coin,missings,&tmp,&tmp2,bp,aveduration,priority);
+    bp->missingstime = (uint32_t)time(NULL);
 }
 
 int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32_t starti)
@@ -926,7 +927,7 @@ double iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,d
             priority += 1 + (bp == coin->current);
         if ( queue_size(&coin->priorityQ) < (2 * bp->n)/(dist+1) )
         {
-            printf("[%d] dist.%d numcached.%d priority.%d\n",bp->hdrsi,dist,bp->numcached,priority);
+            //printf("[%d] dist.%d numcached.%d priority.%d\n",bp->hdrsi,dist,bp->numcached,priority);
             iguana_bundleissuemissing(coin,bp,missings);
         }
     }
