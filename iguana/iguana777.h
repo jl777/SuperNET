@@ -23,7 +23,7 @@
 typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t len);
 
 #define IGUANA_MAXSCRIPTSIZE 10001
-#define IGUANA_SERIALIZE_SPENDVECTORGEN
+//#define IGUANA_SERIALIZE_SPENDVECTORGEN
 //#define IGUANA_DISABLEPEERS
 #define _IGUANA_MAXSTUCKTIME 30
 #define IGUANA_MAXITERATIONS 10000
@@ -816,7 +816,7 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
 int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2,int32_t iamthreadsafe);
 int32_t iguana_blockreq(struct iguana_info *coin,int32_t height,int32_t priority);
 int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int32_t lag);
-void iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain *ramchain);
+void iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain *ramchain,int32_t txonly);
 int32_t iguana_realtime_update(struct iguana_info *coin);
 int32_t iguana_mapvolatiles(struct iguana_info *coin,struct iguana_ramchain *ramchain);
 void iguana_purgevolatiles(struct iguana_info *coin,struct iguana_ramchain *ramchain);

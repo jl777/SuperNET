@@ -633,43 +633,48 @@ void *iguana_ramchain_offset(void *dest,uint8_t *lhash,FILE *fp,uint64_t fpos,vo
     return((void *)(long)((long)destptr + fpos));
 }
 
-void iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain *ramchain)
+void iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain *ramchain,int32_t txonly)
 {
     struct iguana_pkhash *P,p; struct iguana_unspent *U,u; struct iguana_txid *T,txid; uint32_t i,numpkinds,numtxids,numunspents,tlen,plen,nonz=0; uint8_t *PKbits,*TXbits,*ptr;
     if ( ramchain->H.data != 0 )
     {
-        ptr = ramchain->fileptr;
-        for (i=0; i<ramchain->filesize; i++)
-            if ( ptr[i] != 0 )
-                nonz++;
-        //printf("nonz.%d of %d\n",nonz,(int32_t)ramchain->filesize);
-        return;
-        U = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Uoffset);
-        T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
-        P = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Poffset);
-        TXbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->TXoffset);
-        PKbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->PKoffset);
-        numpkinds = ramchain->H.data->numpkinds;
-        numunspents = ramchain->H.data->numunspents;
-        numtxids = ramchain->H.data->numtxids;
-        tlen = ramchain->H.data->numtxsparse * ramchain->H.data->txsparsebits;
-        plen = ramchain->H.data->numpksparse * ramchain->H.data->pksparsebits;
-        if ( 0 )
+        if ( txonly == 0 )
         {
+            ptr = ramchain->fileptr;
+            for (i=0; i<ramchain->filesize; i++)
+                if ( ptr[i] != 0 )
+                    nonz++;
+        }
+        else
+        {
+            //printf("nonz.%d of %d\n",nonz,(int32_t)ramchain->filesize);
+            T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
+            TXbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->TXoffset);
+            numtxids = ramchain->H.data->numtxids;
+            tlen = ramchain->H.data->numtxsparse * ramchain->H.data->txsparsebits;
             for (i=1; i<numtxids; i++)
                 memcpy(&txid,&T[i],sizeof(txid));
-            for (i=1; i<numunspents; i++)
-                memcpy(&u,&U[i],sizeof(u));
-            for (i=1; i<numpkinds; i++)
-                memcpy(&p,&P[i],sizeof(p));
+            for (i=0; i<tlen; i++)
+                if ( TXbits[i] != 0 )
+                    nonz++;
+            if ( 0 )
+            {
+                U = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Uoffset);
+                P = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Poffset);
+                PKbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->PKoffset);
+                numpkinds = ramchain->H.data->numpkinds;
+                numunspents = ramchain->H.data->numunspents;
+                plen = ramchain->H.data->numpksparse * ramchain->H.data->pksparsebits;
+                for (i=1; i<numunspents; i++)
+                    memcpy(&u,&U[i],sizeof(u));
+                for (i=1; i<numpkinds; i++)
+                    memcpy(&p,&P[i],sizeof(p));
+                for (i=0; i<plen; i++)
+                    if ( PKbits[i] != 0 )
+                        nonz++;
+                printf("nonz.%d\n",nonz);
+            }
         }
-        for (i=0; i<tlen; i++)
-            if ( TXbits[i] != 0 )
-                nonz++;
-        for (i=0; i<plen; i++)
-            if ( PKbits[i] != 0 )
-                nonz++;
-        printf("nonz.%d\n",nonz);
     }
 }
 
