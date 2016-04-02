@@ -1633,7 +1633,7 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
         else
         {
             //printf("third case.%d utxo.%u balance.%u prev.%u\n",bp->hdrsi,bp->utxofinish,bp->balancefinish,prevbp!=0?prevbp->utxofinish:-1);
-            //coin->pendbalances--;
+            coin->pendbalances--;
             iguana_balancesQ(coin,bp);
         }
     }
