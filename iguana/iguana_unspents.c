@@ -896,7 +896,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
             bp->tmpspends = myrealloc('x',ptr,sizeof(*ptr)*n,sizeof(*ptr)*emit);
             ptr = 0;
         }
-        errs = -iguana_spendvectorsave(coin,bp,ramchain,ptr,emit,n);
+        errs = -iguana_spendvectorsave(coin,bp,ramchain,ptr!=0?ptr:bp->tmpspends,emit,n);
         bp->numtmpspends = emit;
     }
     if ( ptr != 0 )
