@@ -1129,10 +1129,8 @@ int32_t iguana_processrecvQ(struct iguana_info *coin,int32_t *newhwmp) // single
 {
     int32_t flag = 0; struct iguana_bundlereq *req;
     *newhwmp = 0;
-    while ( coin->active != 0 && (req= queue_dequeue(&coin->recvQ,0)) != 0 )
+    while ( flag < IGUANA_MAXITERATIONS && coin->active != 0 && (req= queue_dequeue(&coin->recvQ,0)) != 0 )
     {
-        if ( (flag % 1000) == 500 )
-            iguana_reqblocks(coin);
         flag++;
         //fprintf(stderr,"flag.%d %s recvQ.%p type.%c n.%d\n",flag,req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
         if ( req->type == 'B' ) // one block with all txdata
@@ -1165,8 +1163,6 @@ int32_t iguana_processrecvQ(struct iguana_info *coin,int32_t *newhwmp) // single
         //fprintf(stderr,"finished coin->recvQ\n");
         if ( req != 0 )
             myfree(req,req->allocsize), req = 0;
-        if ( flag >= IGUANA_BUNDLELOOP )
-            break;
     }
     return(flag);
 }
