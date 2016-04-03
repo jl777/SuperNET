@@ -391,9 +391,9 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                         }
                         if ( coin->started != 0 && (block->height % coin->chain->bundlesize) == coin->minconfirms && (block->height > coin->longestchain-coin->chain->bundlesize*2 || ((block->height / coin->chain->bundlesize) % 10) == 9) )
                         {
-                            printf("savehdrs.[%d] ht.%d\n",bp->hdrsi,block->height);
+                            //printf("savehdrs.[%d] ht.%d\n",bp->hdrsi,block->height);
                             iguana_savehdrs(coin);
-                            printf("done savehdrs.%d\n",bp->hdrsi);
+                            //printf("done savehdrs.%d\n",bp->hdrsi);
                         }
                     }
                 }

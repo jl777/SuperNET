@@ -587,7 +587,7 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
     iguana_bundlehash2add(coin,0,bp,bundlei,block->RO.hash2);
     if ( bp->emitfinish == 0 )
     {
-        block->fpos = -1;
+        //block->fpos = -1;
         if ( 0 && iguana_ramchainfile(coin,0,&blockR,bp,bundlei,block) == 0 )
         {
             size = sizeof(blockR);
@@ -642,9 +642,8 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
         {
             if ( iguana_bundlehashadd(coin,bp,bundlei,block) < 0 )
             {
-                if ( block->issued == 0 )
+                if ( bp->emitfinish == 0 && block->issued == 0 )
                     iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,coin->current == 0 || bp->hdrsi <= coin->current->hdrsi+coin->MAXBUNDLES);
-                //iguana_blockunmark(coin,block,bp,bundlei,0);
             }
             //fprintf(stderr,"bundle found %d:%d\n",bp->hdrsi,bundlei);
              //printf("bundlehashadd set.%d\n",bundlei);

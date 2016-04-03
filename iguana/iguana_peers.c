@@ -813,7 +813,7 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
                                 printf("error updating status for (%s) ind.%d\n",ipaddr,iA->hh.itemind);
                             iguana_iAddriterator(coin,iA);
                         } else printf("ignore.(%s) lastconnect.%u lastkilled.%u numconnects.%d\n",ipaddr,iA->lastconnect,iA->lastkilled,iA->numconnects);
-                    } else printf("skip.(%s) ind.%d status.%d\n",ipaddr,iA->hh.itemind,iA->status);
+                    } //else printf("skip.(%s) ind.%d status.%d\n",ipaddr,iA->hh.itemind,iA->status);
                 } else printf("cant find (%s) which should have been created\n",ipaddr);
             } else printf("reject ipaddr.(%s)\n",ipaddr);
         }
