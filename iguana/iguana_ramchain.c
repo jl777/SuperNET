@@ -627,7 +627,13 @@ void *iguana_ramchain_offset(void *dest,uint8_t *lhash,FILE *fp,uint64_t fpos,vo
     else if ( fp != 0 )
     {
         if ( (err= fwrite(srcptr,1,len,fp)) != len )
+        {
             printf("iguana_ramchain_sizefunc: error.%ld writing len.%ld to fp.%p\n",err,(long)len,fp);
+            printf("probably out of disk space. please free up space\n");
+            fprintf(stderr,"iguana_ramchain_sizefunc: error.%ld writing len.%ld to fp.%p\n",err,(long)len,fp);
+            fprintf(stderr,"probably out of disk space. please free up space\n");
+            sleep(3);
+        }
         //else printf("fp.(%ld <- %d) ",ftell(fp),(int32_t)len);
     }
     (*offsetp) += len;
