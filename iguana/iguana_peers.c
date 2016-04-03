@@ -996,7 +996,7 @@ int32_t iguana_peerslotinit(struct iguana_info *coin,struct iguana_peer *addr,in
         return(-1);
     if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
     {
-        sprintf(fname,"purgeable/%s/%04d.vins",coin->symbol,addr->addrind);
+        sprintf(fname,"%s/%s/%04d.vins",coin->VALIDATEDIR,coin->symbol,addr->addrind);
         if ( (addr->vinsfp= fopen(fname,"rb+")) != 0 )
             fseek(addr->vinsfp,0,SEEK_END);
         else if ( (addr->vinsfp= fopen(fname,"wb+")) == 0 )

@@ -612,7 +612,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     sprintf(dirname,"DB/%s/accounts",symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"DB/%s/spends",symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"DB/%s/vouts",symbol), OS_ensure_directory(dirname);
-    sprintf(dirname,"purgeable/%s",symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/%s",coin->VALIDATEDIR,symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/%s",GLOBALTMPDIR,symbol), OS_ensure_directory(dirname);
     coin->initialheight = initialheight;
     coin->mapflags = mapflags;
@@ -658,6 +658,9 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     } else iguana_chainparms(coin->chain,json);
     coin->RELAYNODE = juint(json,"RELAY");
     coin->VALIDATENODE = juint(json,"VALIDATE");
+    if ( jobj(json,"validatedir") != 0 )
+        safecopy(coin->VALIDATEDIR,jstr(json,"validatedir"),sizeof(coin->VALIDATEDIR));
+    else strcpy(coin->VALIDATEDIR,"purgeable");
     if ( (peers= jarray(&m,json,"peers")) != 0 )
     {
         for (j=0; j<m; j++)
