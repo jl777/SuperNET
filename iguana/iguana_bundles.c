@@ -769,6 +769,7 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
         }
         return(1);
     }
+    bp->nexttime--;
     //else printf("%u notready.%d postfinish.%d startutxo.%u prevbp.%d %u current.%d\n",(uint32_t)time(NULL),bp->hdrsi,i,bp->startutxo,prevbp!=0?prevbp->hdrsi:-1,prevbp!=0?prevbp->emitfinish:0,coin->current!=0?coin->current->hdrsi:-1);
     return(0);
 }
