@@ -1032,7 +1032,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
         }
     }
     lflag = 1;
-    while ( coin->active != 0 && iters < IGUANA_MAXITERATIONS )
+    while ( coin->active != 0 && iters < 10*IGUANA_MAXITERATIONS )
     {
         iters++;
         lflag = 0;

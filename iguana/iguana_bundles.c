@@ -214,9 +214,10 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
         {
             char str[65],str2[65];
             printf("bp->hashes[%d] mismatch %s != %s%s\n",bundlei,bits256_str(str,bp->hashes[bundlei]),bits256_str(str2,block->RO.hash2),block->mainchain?".main":"");
-            if ( block->mainchain != 0 )
-                bp->hashes[bundlei] = block->RO.hash2;
-            else return(-1);
+            //if ( block->mainchain != 0 )
+              //  bp->hashes[bundlei] = block->RO.hash2;
+            
+            return(-1);
         }
         /*if ( (block->hdrsi != bp->hdrsi || block->bundlei != bundlei) && (block->hdrsi != 0 || block->bundlei != 0) )
         {
@@ -1024,8 +1025,8 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
                 {
                     for (j=0; j<bp->n; j++)
                     {
-                        if ( bp->blocks[j] == 0 && bp->speculative != 0 && bits256_nonz(bp->speculative[j]) != 0 )
-                            bp->blocks[j] = iguana_blockhashset("speculative3",coin,bp->bundleheight+j,bp->speculative[j],1);
+                        //if ( bp->blocks[j] == 0 && bp->speculative != 0 && bits256_nonz(bp->speculative[j]) != 0 )
+                          //  bp->blocks[j] = iguana_blockhashset("speculative3",coin,bp->bundleheight+j,bp->speculative[j],1);
                         if ( bp->speculativecache[j] != 0 )
                         {
                             if ( (block= iguana_blockhashset("bundlestats3",coin,-1,bp->speculative[j],1)) != 0 && block->processed == 0 )

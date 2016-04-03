@@ -1346,7 +1346,7 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
         {
             for (i=0; i<bp->n; i++)
             {
-                if ( bp->blocks[i] == 0 )// iguana_blockhashset("mapchain",coin,-1,B[i].hash2,1)) == 0 )
+                if ( bp->blocks[i] == 0 &&  (bp->blocks[i]= iguana_blockhashset("mapchain",coin,-1,B[i].hash2,1)) == 0 )
                 {
                     printf("Error getting blockptr\n");
                     return(0);
@@ -2129,7 +2129,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
         T = (void *)(long)((long)mapchain->H.data + mapchain->H.data->Toffset);
         for (i=0; i<bp->n; i++)
         {
-            if ( (block= bp->blocks[i]) != 0 )//|| (block= iguana_blockhashset("bundleload",coin,bp->bundleheight+i,bp->hashes[i],1)) != 0 )
+            if ( (block= bp->blocks[i]) != 0 || (block= iguana_blockhashset("bundleload",coin,bp->bundleheight+i,bp->hashes[i],1)) != 0 )
             {
                 block->queued = 1;
                 block->height = bp->bundleheight + i;
