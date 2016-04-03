@@ -863,6 +863,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
             if ( coin->stucktime != 0 )
             {
                 lag = (int32_t)time(NULL) - coin->stucktime;
+                printf("NONZ stucktime.%u lag.%d iters.%d vs %d\n",coin->stucktime,lag,coin->stuckiters,lag/coin->MAXSTUCKTIME);
                 if ( (lag/coin->MAXSTUCKTIME) > coin->stuckiters )
                 {
                     coin->stuckiters = (int32_t)(lag/coin->MAXSTUCKTIME);
@@ -1050,18 +1051,19 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
             {
                 done++;
                 numemit++;
-                printf("finished.[%d]\n",bp->hdrsi);
+                //printf("finished.[%d]\n",bp->hdrsi);
                 if ( firstgap != 0 && bp->hdrsi > firstgap->hdrsi-3 )
                     iguana_bundlepurgefiles(coin,bp);
             }
             else
             {
-                if ( firstgap == 0 && bp->numsaved < bp->n && bp->numcached < bp->n && (bp->emitfinish == 0 || bp->n < coin->chain->bundlesize) )
+                if ( firstgap == 0 && bp->numsaved < bp->n && bp->numcached < bp->n && (bp->emitfinish == 0 || bp->hdrsi == coin->longestchain/coin->chain->bundlesize) )
                 {
                     printf("firstgap <- [%d] emit.%u bp->n.%d numsaved.%d numcached.%d numhashes.%d\n",bp->hdrsi,bp->emitfinish,bp->n,bp->numsaved,bp->numcached,bp->numhashes);
                     firstgap = bp;
                 }
-                else printf("[%d] emit.%u bp->n.%d numsaved.%d numcached.%d numhashes.%d\n",bp->hdrsi,bp->emitfinish,bp->n,bp->numsaved,bp->numcached,bp->numhashes);
+                printf("%d ",bp->numsaved);
+                //else printf("[%d] emit.%u bp->n.%d numsaved.%d numcached.%d numhashes.%d\n",bp->hdrsi,bp->emitfinish,bp->n,bp->numsaved,bp->numcached,bp->numhashes);
 
                 if ( bp->emitfinish == 0 )
                 {
@@ -1078,6 +1080,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
             }
         }
     }
+    printf("lastbp.[%d]\n",lastpending!=0?lastpending->hdrsi:-1);
     /*if ( m > 0 )
     {
         revsortds(sortbuf,m,sizeof(*sortbuf)*2);

@@ -563,7 +563,7 @@ void iguana_bundlespeculate(struct iguana_info *coin,struct iguana_bundle *bp,in
 int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block)
 {
     static const bits256 zero;
-    struct iguana_ramchain blockR; int32_t hdrsi,checki,retval=-1; long size = 0; FILE *fp; char fname[1024];
+    struct iguana_ramchain blockR; int32_t hdrsi,firstflag=0,checki,retval=-1; long size = 0; FILE *fp; char fname[1024];
     block->bundlei = bundlei;
     block->hdrsi = bp->hdrsi;
     if ( bits256_nonz(bp->hashes[bundlei]) != 0 && bits256_cmp(bp->hashes[bundlei],block->RO.hash2) != 0 )
@@ -583,9 +583,11 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
             return(-1);
         }
     }
+    if ( bp->blocks[bundlei] == 0 )
+        firstflag = 1;
     bp->blocks[bundlei] = block;
     iguana_bundlehash2add(coin,0,bp,bundlei,block->RO.hash2);
-    if ( bp->emitfinish == 0 )
+    if ( firstflag != 0 && bp->emitfinish == 0 )
     {
         //block->fpos = -1;
         if ( 0 && iguana_ramchainfile(coin,0,&blockR,bp,bundlei,block) == 0 )
