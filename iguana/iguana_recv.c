@@ -1420,13 +1420,13 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
 {
     int32_t newhwm = 0,hwmheight,flag = 0; char str[2000];
     hwmheight = coin->blocks.hwmchain.height;
-    iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
     flag += iguana_processrecvQ(coin,&newhwm);
     flag += iguana_reqblocks(coin);
     flag += iguana_reqhdrs(coin);
     coin->RTramchain_busy = 1;
     flag += (iguana_realtime_update(coin) > 0);
     coin->RTramchain_busy = (coin->RTgenesis == 0 || queue_size(&balancesQ) != 0);
+    iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
     iguana_jsonQ();
     if ( hwmheight != coin->blocks.hwmchain.height )
         flag = 1;
