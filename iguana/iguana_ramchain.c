@@ -963,7 +963,7 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
     else
     {
         fclose(fp);
-        if ( (fp= fopen(fname,"wb")) != 0 )
+        if ( (fp= fopen(fname,"wb")) == 0 )
         {
             printf("iguana_ramchain_save b: couldnt create.(%s)\n",fname);
             return(-1);

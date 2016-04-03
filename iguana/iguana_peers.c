@@ -107,7 +107,7 @@ struct iguana_iAddr *iguana_iAddrhashfind(struct iguana_info *coin,uint64_t ipbi
 
 uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana_iAddr *iA,uint32_t ind)
 {
-    FILE *fp; char fname[512],hexstr[65]; uint32_t ipbits; int32_t i,n,m,retval = 0; struct iguana_iAddr tmp,*ptr;
+    FILE *fp; char fname[512],hexstr[65],ipaddr[64]; uint32_t ipbits; int32_t i,n,m,retval = 0; struct iguana_iAddr tmp,*ptr;
     sprintf(fname,"DB/%s_peers.dat",coin->symbol);
     OS_compatible_path(fname);
     if ( rwflag < 0 || iA == 0 )
@@ -171,6 +171,7 @@ uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana
                     printf("iAddr: error loading.[%d]\n",ind);
                 else
                 {
+                    iA->status = 0;
                     if ( (iA= iguana_iAddrhashset(coin,iA,ind)) != 0 )
                     {
                         retval = iA->hh.itemind+1;
@@ -213,7 +214,8 @@ uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana
                     if ( (iA= iguana_iAddrhashset(coin,iA,ind)) != 0 )
                     {
                         retval = iA->hh.itemind+1;
-                        //printf("W status.%d ipbits.%x ind.%d saved iA->ind.%d retval.%d numiAddrs.%d\n",iA->status,(uint32_t)ipbits,ind,iA->hh.itemind,retval,coin->numiAddrs);
+                        expand_ipbits(ipaddr,iA->ipbits);
+                        printf("%s status.%d lastkilled.%u ipbits.%x ind.%d saved iA->ind.%d retval.%d numiAddrs.%d\n",ipaddr,iA->status,iA->lastkilled,(uint32_t)ipbits,ind,iA->hh.itemind,retval,coin->numiAddrs);
                     }
                 }
             } else printf("iAddr: error seeking.[%d] %ld vs %ld\n",ind,ftell(fp),ind * sizeof(*iA));
