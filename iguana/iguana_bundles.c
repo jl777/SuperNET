@@ -1114,8 +1114,10 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
             if ( (lag/coin->MAXSTUCKTIME) > coin->stuckiters )
             {
                 printf("UNSTICK\n");
+                if ( bp->numhashes < bp->n )
+                    queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
                 coin->stuckiters = (int32_t)(lag/coin->MAXSTUCKTIME);
-                //if ( lag > 2*coin->MAXSTUCKTIME )
+                if ( coin->stuckiters > 2 )
                 {
                     while ( (breq= queue_dequeue(&coin->blocksQ,0)) != 0 )
                         myfree(breq,sizeof(*breq));
