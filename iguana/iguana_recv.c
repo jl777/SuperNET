@@ -589,6 +589,7 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
         {
             size = sizeof(blockR);
             iguana_ramchain_free(coin,&blockR,1);
+            //iguana_blockunmark(coin,block,bp,bundlei,0);
         }
         else if ( block->txvalid == 0 && bp->hdrsi == coin->longestchain/bp->n )
         {
@@ -613,7 +614,6 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
         {
             if ( block->issued == 0 )
                 iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,coin->current == 0 || bp->hdrsi <= coin->current->hdrsi+coin->MAXBUNDLES);
-            iguana_blockunmark(coin,block,bp,bundlei,0);
         }
     }
     return(0);
