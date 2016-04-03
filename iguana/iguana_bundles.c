@@ -1050,6 +1050,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
             {
                 done++;
                 numemit++;
+                printf("finished.[%d]\n",bp->hdrsi);
                 if ( firstgap != 0 && bp->hdrsi > firstgap->hdrsi-3 )
                     iguana_bundlepurgefiles(coin,bp);
             }
