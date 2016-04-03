@@ -945,7 +945,7 @@ double iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,d
     else max = bp->origmissings;
     if ( coin->current != 0 )
     {
-        if ( (dist= bp->hdrsi - coin->current->hdrsi) < coin->MAXBUNDLES && (bp == coin->current || netBLOCKS < bp->n) )
+        if ( (dist= bp->hdrsi - coin->current->hdrsi) < coin->MAXBUNDLES && netBLOCKS < bp->n )
         {
             iguana_unstickhdr(coin,bp,60);
             if ( bp->numcached > bp->n - (coin->MAXBUNDLES - dist) )
