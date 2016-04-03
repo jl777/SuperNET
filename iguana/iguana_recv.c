@@ -1224,7 +1224,7 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
 
 int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2,int32_t priority)
 {
-    queue_t *Q; char *str; uint32_t now; int32_t n,height = -1; struct iguana_blockreq *req; struct iguana_block *block = 0;
+    queue_t *Q; char *str; uint32_t now; int32_t n,height = -1; struct iguana_blockreq *req,*ptr; struct iguana_block *block = 0;
     if ( bits256_nonz(hash2) == 0 )
     {
         printf("cant queue zerohash bundlei.%d\n",bundlei);
@@ -1303,6 +1303,8 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
             {
                 if ( 1 && n > 200000 )
                     printf("%s %s %s [%d:%d] %d %s %d numranked.%d qsize.%d\n",coin->symbol,argstr,str,bp!=0?bp->hdrsi:-1,bundlei,req->height,bits256_str(str2,hash2),coin->blocks.recvblocks,coin->peers.numranked,queue_size(Q));
+                while ( (ptr= queue_dequeue(Q,0)) != 0 )
+                    myfree(ptr,sizeof(*ptr));
                 coin->backlog = n*10 + 1000000;
             } else coin->backlog >>= 1;
             if ( block != 0 )

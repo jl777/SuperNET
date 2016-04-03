@@ -953,7 +953,7 @@ double iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,d
             if ( bp == coin->current || queue_size(&coin->priorityQ) < (1 * bp->n)/(dist+1) )
             {
                 //printf("[%d] dist.%d numcached.%d priority.%d\n",bp->hdrsi,dist,bp->numcached,priority);
-                iguana_bundleissuemissing(coin,bp,missings,(bp == coin->current)*3);
+                iguana_bundleissuemissing(coin,bp,missings,((rand() % 100) == 0 && bp == coin->current)*3);
             }
         }
     }
@@ -1051,7 +1051,6 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
                 numv++;
             if ( bp->emitfinish > 1 )
             {
-                done++;
                 numemit++;
                 //printf("finished.[%d]\n",bp->hdrsi);
                 if ( firstgap != 0 && bp->hdrsi > firstgap->hdrsi-3 )
@@ -1079,7 +1078,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
                     m++;
                     if ( 0 && lastpending == 0 )
                         printf("%d ",bp->numsaved);
-                }
+                } else done++;
             }
         }
     }

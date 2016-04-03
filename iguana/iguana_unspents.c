@@ -714,7 +714,7 @@ uint32_t iguana_spendvectorconv(struct iguana_info *coin,struct iguana_spendvect
         } else printf("illegal [%d].u%u\n",ptr->hdrsi,ptr->unspentind);
         errs++;
         return(0);
-    } // else printf("[%d] tmpflag.%d u%d %.8f p%u\n",ptr->hdrsi,ptr->tmpflag,ptr->unspentind,dstr(ptr->value),ptr->pkind);
+    } else printf("[%d] tmpflag.%d u%d %.8f p%u\n",ptr->hdrsi,ptr->tmpflag,ptr->unspentind,dstr(ptr->value),ptr->pkind);
     return(ptr->pkind);
 }
 
@@ -782,7 +782,8 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     ptr = mycalloc('x',sizeof(*ptr),n);
     total += n;
     startmillis = OS_milliseconds();
-    printf("start UTXOGEN.%d max.%d ptr.%p millis.%.3f\n",bp->bundleheight,n,ptr,startmillis);
+    if ( strcmp(coin->symbol,"BTC") == 0 )
+        printf("start UTXOGEN.%d max.%d ptr.%p millis.%.3f\n",bp->bundleheight,n,ptr,startmillis);
     txidind = spendind = rdata->firsti;
     if ( coin->PREFETCHLAG != 0 )
     {
@@ -906,7 +907,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     }
     if ( ptr != 0 )
         myfree(ptr,sizeof(*ptr) * n);
-    printf("[%d].%d duration.%d [millis %.3f] vectors %d errs.%d [%.2f%%] %d %s of %d\n",bp->hdrsi,bp->numtmpspends,(uint32_t)time(NULL)-starttime,OS_milliseconds()-startmillis,spendind,errs,100.*(double)emitted/(total+1),emit,mbstr(str,sizeof(*ptr) * emit),n);
+    printf("[%4d].%-6d duration.%-2d [millis %.3f] vectors %d errs.%d [%.2f%%] %d %s of %d\n",bp->hdrsi,bp->numtmpspends,(uint32_t)time(NULL)-starttime,OS_milliseconds()-startmillis,spendind,errs,100.*(double)emitted/(total+1),emit,mbstr(str,sizeof(*ptr) * emit),n);
     if ( errs != 0 )
         exit(-1);
     return(-errs);
@@ -1651,32 +1652,45 @@ int32_t iguana_balancenormal(struct iguana_info *coin,struct iguana_bundle *bp,i
 
 int32_t iguana_spendvectorsaves(struct iguana_info *coin)
 {
-    int32_t i,n; struct iguana_bundle *bp;
+    int32_t i,j,n,iter; struct iguana_bundle *bp;
     if ( coin->spendvectorsaved != 0 )
         return(0);
     printf("SAVE SPEND VECTORS\n");
     coin->spendvectorsaved = 1;
     n = coin->bundlescount;
-    for (i=0; i<n; i++)
+    for (iter=0; iter<2; iter++)
     {
-        if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish > 1 )
+        for (i=0; i<n; i++)
         {
-            if ( bp->tmpspends != 0 )
+            if ( (bp= coin->bundles[i]) != 0 && bp->converted != 0 )
             {
-                if ( iguana_spendvectorsave(coin,bp,&bp->ramchain,bp->tmpspends,bp->numtmpspends,bp->ramchain.H.data->numspends) == 0 )
+                if ( bp->tmpspends != 0 )
                 {
-                    myfree(bp->tmpspends,sizeof(*bp->tmpspends) * bp->numtmpspends);
-                    bp->numtmpspends = 0;
-                    bp->tmpspends = 0;
+                    if ( iter == 0 )
+                    {
+                        for (j=0; j<bp->numtmpspends; j++)
+                            if ( bp->tmpspends[j].tmpflag != 0 )
+                            {
+                                printf("vectorsave.[%d] vec.%d still has tmpflag\n",i,j);
+                                return(-1);
+                            }
+                    }
+                    else if ( iguana_spendvectorsave(coin,bp,&bp->ramchain,bp->tmpspends,bp->numtmpspends,bp->ramchain.H.data->numspends) == 0 )
+                    {
+                        myfree(bp->tmpspends,sizeof(*bp->tmpspends) * bp->numtmpspends);
+                        bp->numtmpspends = 0;
+                        bp->tmpspends = 0;
+                    }
                 }
             }
-        } else break;
+            else
+            {
+                printf("error doing spendvectorsaves.[%d] null bp.%p or not converted\n",i,bp);
+                return(-1);
+            }
+        }
     }
-    if ( i != n )
-    {
-        printf("error doing spendvectorsave\n");
-        return(-1);
-    } else coin->spendvectorsaved = (uint32_t)time(NULL);
+    coin->spendvectorsaved = (uint32_t)time(NULL);
     return(0);
 }
 
@@ -1692,7 +1706,9 @@ int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *r
                 vec = &bp->tmpspends[j];
                 if ( vec->hdrsi == refbp->hdrsi )
                 {
-                    if ( iguana_spendvectorconv(coin,vec,bp) == 0 )
+                    if ( vec->tmpflag == 0 )
+                        printf("unexpected null tmpflag [%d] j.%d ref.[%d]\n",bp->hdrsi,j,refbp->hdrsi);
+                    else if ( iguana_spendvectorconv(coin,vec,bp) == 0 )
                     {
                         printf("iguana_spendvectorconv error [%d] at %d of %d/%d\n",bp->hdrsi,j,bp->numtmpspends,n);
                         return(-1);
@@ -1702,7 +1718,7 @@ int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *r
         }
     }
     bp->converted = (uint32_t)time(NULL);
-    //printf("spendvectorconvs.[%d] converted.%d\n",refbp->hdrsi,converted);
+    printf("spendvectorconvs.[%d] converted.%d\n",refbp->hdrsi,converted);
     return(0);
 }
 
@@ -1728,13 +1744,11 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
                 {
                     n = coin->bundlescount;
                     for (i=0; i<n; i++)
-                        if ( coin->bundles[i] == 0 || coin->bundles[i]->emitfinish <= 1 )
+                        if ( coin->bundles[i] == 0 || coin->bundles[i]->converted == 0 )
                             break;
+                    printf("balance calc.%d of %d\n",i,n);
                     if ( i == n )
-                    {
-                        printf("balance calc.%d of %d\n",i,n);
                         iguana_spendvectorsaves(coin);
-                    }
                 }
             } //else printf("error with invalid tmpspends.[%d]\n",bp->hdrsi), getchar();
         } else retval = iguana_balancenormal(coin,bp,startheight,endheight);
