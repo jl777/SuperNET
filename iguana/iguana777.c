@@ -552,7 +552,7 @@ void iguana_coinloop(void *arg)
                             coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
                         }
                     }
-                    if ( now > coin->peers.lastmetrics+3 )
+                    if ( now > coin->peers.lastmetrics+10 )
                     {
                         //fprintf(stderr,"metrics\n");
                         coin->peers.lastmetrics = iguana_updatemetrics(coin); // ranks peers
