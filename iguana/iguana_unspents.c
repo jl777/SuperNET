@@ -1690,15 +1690,19 @@ int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *r
             for (j=0; j<bp->numtmpspends; j++)
             {
                 vec = &bp->tmpspends[j];
-                if ( vec->hdrsi == refbp->hdrsi && iguana_spendvectorconv(coin,vec,bp) == 0 )
+                if ( vec->hdrsi == refbp->hdrsi )
                 {
-                    printf("iguana_spendvectorconv error [%d] at %d of %d/%d\n",bp->hdrsi,j,bp->numtmpspends,n);
-                    return(-1);
+                    if ( iguana_spendvectorconv(coin,vec,bp) == 0 )
+                    {
+                        printf("iguana_spendvectorconv error [%d] at %d of %d/%d\n",bp->hdrsi,j,bp->numtmpspends,n);
+                        return(-1);
+                    } else converted++;
                 }
             }
         }
     }
-    printf("spendvectorconvs.[%d] converted.%d\n",refbp->hdrsi,converted);
+    bp->converted = (uint32_t)time(NULL);
+    //printf("spendvectorconvs.[%d] converted.%d\n",refbp->hdrsi,converted);
     return(0);
 }
 
@@ -1716,7 +1720,7 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
     {
         if ( coin->origbalanceswritten <= 1 && coin->spendvectorsaved == 0 )
         {
-            if ( bp->tmpspends != 0 && bp->ramchain.H.data != 0 && (n= bp->ramchain.H.data->numspends) != 0 )
+            if ( bp->tmpspends != 0 && bp->ramchain.H.data != 0 && (n= bp->ramchain.H.data->numspends) != 0 && bp->converted == 0 )
             {
                 if ( iguana_spendvectorconvs(coin,bp) != 0 )
                     printf("error ram balancecalc.[%d]\n",bp->hdrsi);
@@ -1727,9 +1731,12 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
                         if ( coin->bundles[i] == 0 || coin->bundles[i]->emitfinish <= 1 )
                             break;
                     if ( i == n )
+                    {
+                        printf("balance calc.%d of %d\n",i,n);
                         iguana_spendvectorsaves(coin);
+                    }
                 }
-            } else printf("error with invalid tmpspends.[%d]\n",bp->hdrsi), getchar();
+            } //else printf("error with invalid tmpspends.[%d]\n",bp->hdrsi), getchar();
         } else retval = iguana_balancenormal(coin,bp,startheight,endheight);
         if ( retval < 0 )
         {
