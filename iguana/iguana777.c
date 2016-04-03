@@ -487,7 +487,7 @@ void iguana_helper(void *arg)
             usleep(polltimeout * 250);
         else if ( allcurrent != 0 )
             usleep(polltimeout * 100000);
-        else usleep(polltimeout * 10000);
+        else usleep(polltimeout * 100);
     }
 }
 
