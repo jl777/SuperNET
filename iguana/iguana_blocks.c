@@ -74,7 +74,7 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
     }
     if ( createflag > 0 )
     {
-        portable_mutex_lock(&coin->blocks_mutex);
+        //portable_mutex_lock(&coin->blocks_mutex);
         block = calloc(1,sizeof(*block));
         block->RO.hash2 = hash2;
         block->hh.itemind = height, block->height = -1;
@@ -96,7 +96,7 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
             if ( tmp != block )
                 printf("%s height.%d search error %p != %p\n",str,height,block,tmp);
         }
-        portable_mutex_unlock(&coin->blocks_mutex);
+        //portable_mutex_unlock(&coin->blocks_mutex);
     }
     depth--;
     while ( depth != 0 )

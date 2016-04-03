@@ -412,7 +412,7 @@ void mainloop(struct supernet_info *myinfo)
                 }
         }
         pangea_queues(SuperNET_MYINFO(0));
-        //if ( flag == 0 )
+        if ( flag == 0 )
             usleep(1000 + isRT*100000 + (numpeers == 0)*1000000);
     }
 }

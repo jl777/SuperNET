@@ -1219,10 +1219,10 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
                 vcalc_sha256(0,sha256.bytes,(void *)ramchain->Xspendinds,(int32_t)(filesize - sizeof(sha256)));
                 if ( memcmp(sha256.bytes,ptr,sizeof(sha256)) == 0 )
                 {
-                    bp->startutxo = bp->utxofinish = (uint32_t)time(NULL);
                     ramchain->Xspendptr = ptr;
                     ramchain->numXspends = (int32_t)((filesize - sizeof(sha256)) / sizeof(*ramchain->Xspendinds));
                     ramchain->from_roX = (iter == 0);
+                    bp->startutxo = bp->utxofinish = (uint32_t)time(NULL);
                     return(ramchain->numXspends);
                     //int32_t i; for (i=0; i<ramchain->numXspends; i++)
                     //    printf("(%d u%d) ",ramchain->Xspendinds[i].hdrsi,ramchain->Xspendinds[i].ind);
