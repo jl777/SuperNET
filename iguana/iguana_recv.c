@@ -585,11 +585,10 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
     if ( bp->emitfinish == 0 )
     {
         block->fpos = -1;
-        if ( 0 && iguana_ramchainfile(coin,0,&blockR,bp,bundlei,block) == 0 )
+        if ( 1 && iguana_ramchainfile(coin,0,&blockR,bp,bundlei,block) == 0 )
         {
             size = sizeof(blockR);
             iguana_ramchain_free(coin,&blockR,1);
-            //iguana_blockunmark(coin,block,bp,bundlei,0);
         }
         else if ( block->txvalid == 0 && bp->hdrsi == coin->longestchain/bp->n )
         {
@@ -603,7 +602,7 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
         }
         if ( size != 0 )
         {
-            //printf("initialize with fp.[%d:%d] len.%ld\n",bp->hdrsi,bundlei,size);
+            printf("initialize with fp.[%d:%d] len.%ld\n",bp->hdrsi,bundlei,size);
             block->RO.recvlen = (int32_t)size;
             block->fpipbits = 1;
             block->txvalid = 1;
@@ -614,6 +613,7 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
         {
             if ( block->issued == 0 )
                 iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,coin->current == 0 || bp->hdrsi <= coin->current->hdrsi+coin->MAXBUNDLES);
+            iguana_blockunmark(coin,block,bp,bundlei,0);
         }
     }
     return(0);

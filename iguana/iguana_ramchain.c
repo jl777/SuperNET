@@ -1356,7 +1356,7 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
                 bp->hashes[i] = B[i].hash2;
             }
         }
-        printf("iguana_ramchain_map.(%s) size %ld vs %ld vs filesize.%ld numblocks.%d expanded.%d fpos.%d sum %ld\n",fname,(long)iguana_ramchain_size(RAMCHAIN_ARG,ramchain->numblocks,ramchain->H.data->scriptspace),(long)ramchain->H.data->allocsize,(long)filesize,ramchain->numblocks,expanded,(int32_t)fpos,(long)(fpos+ramchain->H.data->allocsize));
+        //printf("iguana_ramchain_map.(%s) size %ld vs %ld vs filesize.%ld numblocks.%d expanded.%d fpos.%d sum %ld\n",fname,(long)iguana_ramchain_size(RAMCHAIN_ARG,ramchain->numblocks,ramchain->H.data->scriptspace),(long)ramchain->H.data->allocsize,(long)filesize,ramchain->numblocks,expanded,(int32_t)fpos,(long)(fpos+ramchain->H.data->allocsize));
         iguana_Xspendmap(coin,ramchain,bp);
         return(ramchain);
     } else printf("iguana_ramchain_map.(%s) cant map file\n",fname);
@@ -2144,7 +2144,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
                 if ( bp->bundleheight+i == coin->blocks.hwmchain.height+1 )
                 {
                     //printf("try extend.%d\n",bp->bundleheight+i);
-                    _iguana_chainlink(coin,block);
+                    //_iguana_chainlink(coin,block); wrong context
                 }
             }
         }
