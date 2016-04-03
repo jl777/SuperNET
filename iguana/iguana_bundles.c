@@ -1133,10 +1133,10 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
         {
             uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; struct iguana_blockreq *breq; double aveduration; int32_t tmp,tmp2,n,priority=3,lag;
             lag = (int32_t)time(NULL) - coin->stucktime;
-            printf("NONZ stucktime.%u lag.%d iters.%d vs %d\n",coin->stucktime,lag,coin->stuckiters,lag/coin->MAXSTUCKTIME);
+            //printf("NONZ stucktime.%u lag.%d iters.%d vs %d\n",coin->stucktime,lag,coin->stuckiters,lag/coin->MAXSTUCKTIME);
             if ( (lag/coin->MAXSTUCKTIME) > coin->stuckiters )
             {
-                printf("UNSTICK\n");
+                //printf("UNSTICK\n");
                 iguana_unstickhdr(coin,bp,6);
                 coin->stuckiters = (int32_t)(lag/coin->MAXSTUCKTIME);
                 if ( coin->stuckiters > 2 )
@@ -1149,9 +1149,9 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
                 if ( bp->durationscount != 0 )
                     aveduration = (double)bp->totaldurations / bp->durationscount;
                 else aveduration = IGUANA_DEFAULTLAG/3 + 1;
-                if ( (n= iguana_bundlerequests(coin,missings,&tmp,&tmp2,bp,5*aveduration,priority)) > 0 )
+                if ( (n= iguana_bundlerequests(coin,missings,&tmp,&tmp2,bp,aveduration,priority)) > 0 )
                     printf("issued %d priority requests [%d] to unstick stuckiters.%d lag.%d\n",n,bp->hdrsi,coin->stuckiters,lag);
-                else printf("no bundlerequests issued\n");
+                //else printf("no bundlerequests issued\n");
             }
         }
     }
