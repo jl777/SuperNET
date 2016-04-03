@@ -1724,7 +1724,7 @@ int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *r
 
 int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int32_t startheight,int32_t endheight)
 {
-    int32_t converted,retval=-1,i,n,flag = 0;
+    int32_t converted,retval=-1,i,n,flag = 0; int64_t total_tmpspends; static int64_t total;
     if ( bp->balancefinish > 1 )
     {
         printf("make sure DB files have this bp.%d\n",bp->hdrsi);
@@ -1743,11 +1743,18 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
                 else
                 {
                     n = coin->bundlescount;
-                    for (i=0; i<n; i++)
-                        if ( coin->bundles[i] == 0 || coin->bundles[i]->converted == 0 )
+                    for (i=total_tmpspends=0; i<n; i++)
+                    {
+                        if ( coin->bundles[i] == 0 )
+                        {
+                            total_tmpspends += coin->bundles[i]->numtmpspends;
+                            if ( coin->bundles[i]->converted == 0 )
                             break;
-                    printf("[%d] converted.%d balance calc.%d of %d\n",i,converted,i,n);
-                    if ( i == n )
+                        }
+                    }
+                    total += converted;
+                    printf("[%4d] converted.%-7d balance calc.%-4d of %4d | total.%llu of %llu\n",i,converted,i,n,(long long)total,(long long)total_tmpspends);
+                    if ( i == n-1 )
                         iguana_spendvectorsaves(coin);
                 }
             } //else printf("error with invalid tmpspends.[%d]\n",bp->hdrsi), getchar();
