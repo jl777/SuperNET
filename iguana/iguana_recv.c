@@ -563,7 +563,7 @@ void iguana_bundlespeculate(struct iguana_info *coin,struct iguana_bundle *bp,in
 int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block)
 {
     static const bits256 zero;
-    struct iguana_ramchain blockR; int32_t hdrsi,checki; long size = 0; FILE *fp; char fname[1024];
+    struct iguana_ramchain blockR; int32_t hdrsi,checki,retval=-1; long size = 0; FILE *fp; char fname[1024];
     block->bundlei = bundlei;
     block->hdrsi = bp->hdrsi;
     if ( bits256_nonz(bp->hashes[bundlei]) != 0 && bits256_cmp(bp->hashes[bundlei],block->RO.hash2) != 0 )
@@ -572,7 +572,10 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
         if ( block == bp->blocks[bundlei] )
         {
             if ( block->mainchain == 0 )
+            {
+                printf("mainchain blockptr.%p vs %p\n",block,bp->blocks[bundlei]);
                 return(-1);
+            }
         }
         else if ( bp->blocks[bundlei] != 0 )
         {
@@ -585,7 +588,7 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
     if ( bp->emitfinish == 0 )
     {
         block->fpos = -1;
-        if ( 0 && iguana_ramchainfile(coin,0,&blockR,bp,bundlei,block) == 0 )
+        if ( 1 && iguana_ramchainfile(coin,0,&blockR,bp,bundlei,block) == 0 )
         {
             size = sizeof(blockR);
             iguana_ramchain_free(coin,&blockR,1);
@@ -602,6 +605,7 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
         }
         if ( size != 0 )
         {
+            retval = 0;
             printf("initialize with fp.[%d:%d] len.%ld\n",bp->hdrsi,bundlei,size);
             block->RO.recvlen = (int32_t)size;
             block->fpipbits = 1;
@@ -609,14 +613,8 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
             block->fpos = 0;
             block->issued = (uint32_t)time(NULL);
         }
-        else
-        {
-            if ( block->issued == 0 )
-                iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,coin->current == 0 || bp->hdrsi <= coin->current->hdrsi+coin->MAXBUNDLES);
-            iguana_blockunmark(coin,block,bp,bundlei,0);
-        }
     }
-    return(0);
+    return(retval);
 }
 
 // main context, ie single threaded
@@ -642,7 +640,12 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
         bp = 0, bundlei = -2;
         if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) != 0 && bundlei < coin->chain->bundlesize )
         {
-            iguana_bundlehashadd(coin,bp,bundlei,block);
+            if ( iguana_bundlehashadd(coin,bp,bundlei,block) < 0 )
+            {
+                if ( block->issued == 0 )
+                    iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,coin->current == 0 || bp->hdrsi <= coin->current->hdrsi+coin->MAXBUNDLES);
+                //iguana_blockunmark(coin,block,bp,bundlei,0);
+            }
             //fprintf(stderr,"bundle found %d:%d\n",bp->hdrsi,bundlei);
              //printf("bundlehashadd set.%d\n",bundlei);
             if ( bundlei > 0 )
@@ -1008,7 +1011,7 @@ int32_t iguana_blockreq(struct iguana_info *coin,int32_t height,int32_t priority
 
 int32_t iguana_reqblocks(struct iguana_info *coin)
 {
-    int32_t hdrsi,lflag,bundlei,iters=0,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp; char str[1024];
+    int32_t hdrsi,lflag,bundlei,iters=0,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp;
     if ( time(NULL) < coin->lastreqtime+2 )
         return(0);
     coin->lastreqtime = (uint32_t)time(NULL);
@@ -1107,7 +1110,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                 {
                     int32_t j;
                     //memset(bp->hashes[bundlei].bytes,0,sizeof(bp->hashes[bundlei]));
-                    bp->blocks[bundlei] = 0;
+                    //bp->blocks[bundlei] = 0;
                     for (j=0; j<1&&bundlei+j+1<bp->n; j++)
                     {
                         if ( time(NULL) > bp->issued[bundlei+1+j]+10 )

@@ -434,7 +434,10 @@ struct iguana_block *iguana_bundleblock(struct iguana_info *coin,bits256 *hash2p
         if ( bits256_nonz(bp->nextbundlehash2) != 0 )
         {
             if ( bp->hdrsi < coin->bundlescount && (nextbp= coin->bundles[bp->hdrsi+1]) != 0 )
-                block = nextbp->blocks[0];
+            {
+                *hash2p = nextbp->hashes[0];
+                return(nextbp->blocks[0]);
+            }
         } else return(0);
     }
     if ( block != 0 || (block= bp->blocks[i]) != 0 )//|| bits256_nonz(bp->hashes[i]) != 0 )//&& (block= iguana_blockfind("bundleblock2",coin,bp->hashes[i])) != 0) )
@@ -474,8 +477,6 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
             }
             if ( bits256_nonz(hash2) != 0 )
             {
-                if ( 0 && bp->issued[i] == 0 )
-                    iguana_blockQ("missing",coin,bp,i,hash2,0);
                 if ( now > bp->issued[i]+lag )
                 {
                     if ( nonz < capacity )
@@ -709,11 +710,10 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
     datasize = numhashes = numsaved = numrecv = minrequests = 0;
     for (bundlei=0; bundlei<bp->n; bundlei++)
     {
-        block = bp->blocks[bundlei];
         if ( bits256_nonz(bp->hashes[bundlei]) > 0 )
         {
             numhashes++;
-            if ( block != 0 && bits256_cmp(block->RO.hash2,bp->hashes[bundlei]) == 0 )
+            if ( (block= bp->blocks[bundlei]) != 0 && bits256_cmp(block->RO.hash2,bp->hashes[bundlei]) == 0 )
             {
                 //if ( bp->minrequests == 0 || (block->numrequests > 0 && block->numrequests < bp->minrequests) )
                 //    bp->minrequests = block->numrequests;

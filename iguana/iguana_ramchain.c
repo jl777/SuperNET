@@ -1905,6 +1905,7 @@ void iguana_ramchain_disp(struct iguana_ramchain *ramchain)
 void iguana_blockunmark(struct iguana_info *coin,struct iguana_block *block,struct iguana_bundle *bp,int32_t i,int32_t deletefile)
 {
     void *ptr; int32_t recvlen,hdrsi,checki; char fname[1024]; static const bits256 zero;
+    printf("UNMARK.[%d:%d]\n",block->hdrsi,i);
     block->queued = 0;
     block->fpipbits = 0;
     block->fpos = -1;
@@ -2137,8 +2138,6 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
                 block->fpipbits = (uint32_t)calc_ipbits("127.0.0.1");
                 block->RO = B[i];
                 //printf("%x ",(int32_t)B[i].hash2.ulongs[3]);
-                if ( bp->blocks[i] == 0 )
-                    bp->blocks[i] = block;
                 if ( bits256_nonz(bp->hashes[i]) == 0 )
                     bp->hashes[i] = B[i].hash2;
                 if ( bp->bundleheight+i == coin->blocks.hwmchain.height+1 )
