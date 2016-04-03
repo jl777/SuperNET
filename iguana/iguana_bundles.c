@@ -926,7 +926,7 @@ void iguana_unstickhdr(struct iguana_info *coin,struct iguana_bundle *bp,int32_t
     {
         if ( (addr= coin->peers.ranked[rand() % m]) != 0 && (datalen= iguana_gethdrs(coin,serialized,coin->chain->gethdrsmsg,bits256_str(str,bp->hashes[0]))) > 0 )
         {
-            printf("UNSTICK HDR.[%d]\n",bp->hdrsi);
+            //printf("UNSTICK HDR.[%d]\n",bp->hdrsi);
             iguana_send(coin,addr,serialized,datalen);
             addr->pendhdrs++;
             bp->unsticktime = (uint32_t)time(NULL);
@@ -1061,7 +1061,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
             {
                 if ( firstgap == 0 && bp->numsaved < bp->n && bp->numcached < bp->n && (bp->emitfinish == 0 || bp->hdrsi == coin->longestchain/coin->chain->bundlesize) )
                 {
-                    printf("firstgap <- [%d] emit.%u bp->n.%d numsaved.%d numcached.%d numhashes.%d\n",bp->hdrsi,bp->emitfinish,bp->n,bp->numsaved,bp->numcached,bp->numhashes);
+                    //printf("firstgap <- [%d] emit.%u bp->n.%d numsaved.%d numcached.%d numhashes.%d\n",bp->hdrsi,bp->emitfinish,bp->n,bp->numsaved,bp->numcached,bp->numhashes);
                     firstgap = bp;
                 }
                 //else printf("[%d] emit.%u bp->n.%d numsaved.%d numcached.%d numhashes.%d\n",bp->hdrsi,bp->emitfinish,bp->n,bp->numsaved,bp->numcached,bp->numhashes);
@@ -1077,13 +1077,13 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
                     //sortbuf[m*2] = bp->metric;
                     //sortbuf[m*2 + 1] = i;
                     m++;
-                    if ( lastpending == 0 )
+                    if ( 0 && lastpending == 0 )
                         printf("%d ",bp->numsaved);
                 }
             }
         }
     }
-    printf("lastbp.[%d]\n",lastpending!=0?lastpending->hdrsi:-1);
+    //printf("lastbp.[%d]\n",lastpending!=0?lastpending->hdrsi:-1);
     /*if ( m > 0 )
     {
         revsortds(sortbuf,m,sizeof(*sortbuf)*2);
