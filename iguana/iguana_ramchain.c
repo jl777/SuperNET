@@ -612,6 +612,7 @@ void _iguana_ramchain_setptrs(RAMCHAIN_PTRPS,struct iguana_ramchaindata *rdata)
 
 void *iguana_ramchain_offset(void *dest,uint8_t *lhash,FILE *fp,uint64_t fpos,void *srcptr,uint64_t *offsetp,uint64_t len,uint64_t srcsize)
 {
+    long err;
     void *destptr = (void *)(long)((long)dest + *offsetp);
     if ( (lhash != 0 || fp != 0) && (*offsetp + len) > srcsize )
     {
@@ -625,8 +626,8 @@ void *iguana_ramchain_offset(void *dest,uint8_t *lhash,FILE *fp,uint64_t fpos,vo
     }
     else if ( fp != 0 )
     {
-        if ( fwrite(srcptr,1,len,fp) != len )
-            printf("iguana_ramchain_sizefunc: error writing len.%ld to fp.%p\n",(long)len,fp);
+        if ( (err= fwrite(srcptr,1,len,fp)) != len )
+            printf("iguana_ramchain_sizefunc: error.%ld writing len.%ld to fp.%p\n",err,(long)len,fp);
         //else printf("fp.(%ld <- %d) ",ftell(fp),(int32_t)len);
     }
     (*offsetp) += len;
