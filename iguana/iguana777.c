@@ -166,7 +166,7 @@ int32_t iguana_peermetrics(struct iguana_info *coin)
                 coin->peers.topmetrics[i] = sortbuf[i*2];
                 ind = (int32_t)sortbuf[i*2 +1];
                 coin->peers.ranked[i] = &coin->peers.active[ind];
-                if ( sortbuf[i*2] > SMALLVAL && (double)i/n > .8 )
+                if ( sortbuf[i*2] > SMALLVAL && (double)i/n > .8 && (time(NULL) - addr->ready) > 77 )
                     slowest = coin->peers.ranked[i];
                 //printf("(%.5f %s) ",sortbuf[i*2],coin->peers.ranked[i]->ipaddr);
                 coin->peers.ranked[i]->rank = i + 1;
