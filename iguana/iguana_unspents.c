@@ -759,7 +759,7 @@ int32_t iguana_spendvectorsave(struct iguana_info *coin,struct iguana_bundle *bp
 int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     static uint64_t total,emitted;
-    int32_t spendind,n,txidind,errs=0,emit=0,i,j,k;
+    int32_t spendind,n,txidind,errs=0,emit=0,i,j,k; double startmillis;
     uint32_t spent_unspentind,spent_pkind,now,starttime; struct iguana_ramchaindata *rdata;
     struct iguana_bundle *spentbp; struct iguana_blockRO *B; char str[65];
     bits256 prevhash; struct iguana_unspent *u,*spentU;  struct iguana_txid *T;
@@ -778,7 +778,8 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     }
     ptr = mycalloc('x',sizeof(*ptr),n);
     total += n;
-    printf("start UTXOGEN.%d max.%d ptr.%p\n",bp->bundleheight,n,ptr);
+    startmillis = OS_milliseconds();
+    printf("start UTXOGEN.%d max.%d ptr.%p millis.%.3f\n",bp->bundleheight,n,ptr,startmillis);
     txidind = spendind = rdata->firsti;
     if ( coin->PREFETCHLAG != 0 )
     {
@@ -891,7 +892,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     if ( errs == 0 && emit >= 0 )
     {
         emitted += emit;
-        if ( 0 && coin->balanceswritten <= 1 )
+        if ( coin->balanceswritten <= 1 )
         {
             if ( bp->tmpspends != 0 )
                 printf("unexpected tmpspends? [%d] numtmpspends.%d vs emit.%d\n",bp->hdrsi,bp->numtmpspends,emit);
@@ -902,7 +903,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     }
     if ( ptr != 0 )
         myfree(ptr,sizeof(*ptr) * n);
-    printf("duration.%d spendvectors %d spendinds.[%d] errs.%d [%.2f%%] emitted.%d %s of %d\n",(uint32_t)time(NULL)-starttime,spendind,bp->hdrsi,errs,100.*(double)emitted/(total+1),emit,mbstr(str,sizeof(*ptr) * emit),n);
+    printf("duration.%d [millis %.3f] vectors %d inds.[%d] errs.%d [%.2f%%] emitted.%d %s of %d\n",(uint32_t)time(NULL)-starttime,OS_milliseconds()-startmillis,spendind,bp->hdrsi,errs,100.*(double)emitted/(total+1),emit,mbstr(str,sizeof(*ptr) * emit),n);
     if ( errs != 0 )
         exit(-1);
     return(-errs);

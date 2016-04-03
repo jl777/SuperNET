@@ -637,7 +637,7 @@ void iguana_startconnection(void *arg)
     if ( addr->usock < 0 || coin->peers.shuttingdown != 0 )
     {
         strcpy(ipaddr,addr->ipaddr);
-        printf("refused PEER KILLED. slot.%d for %s:%d usock.%d\n",addr->addrind,ipaddr,coin->chain->portp2p,addr->usock);
+        //printf("refused PEER KILLED. slot.%d for %s:%d usock.%d\n",addr->addrind,ipaddr,coin->chain->portp2p,addr->usock);
         iguana_iAkill(coin,addr,1);
     }
     else
@@ -736,7 +736,7 @@ void *iguana_iAddriterator(struct iguana_info *coin,struct iguana_iAddr *iA)
                 //printf("call rwIaddrInd\n");
                 if ( iguana_rwiAddrind(coin,1,iA,iA->hh.itemind) > 0 )
                 {
-                    printf("iA.%p iguana_startconnection.(%s) status.%d pending.%d\n",iA,addr->ipaddr,iA->status,addr->pending);
+                    //printf("iA.%p iguana_startconnection.(%s) status.%d pending.%d\n",iA,addr->ipaddr,iA->status,addr->pending);
                     iA->status = IGUANA_PEER_CONNECTING;
                     addr->pending = (uint32_t)time(NULL);
                     iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);

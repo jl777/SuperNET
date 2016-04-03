@@ -44,9 +44,9 @@ static int32_t initflag;
 int32_t HDRnet,netBLOCKS;
 cJSON *API_json;
 #ifdef __linux__
-int32_t IGUANA_NUMHELPERS = 4;
+int32_t IGUANA_NUMHELPERS = 16;
 #else
-int32_t IGUANA_NUMHELPERS = 2;
+int32_t IGUANA_NUMHELPERS = 4;
 #endif
 struct iguana_jsonitem { struct queueitem DL; struct supernet_info *myinfo; uint32_t fallback,expired,allocsize; char **retjsonstrp; char remoteaddr[64]; uint16_t port; char jsonstr[]; };
 
@@ -365,12 +365,7 @@ void mainloop(struct supernet_info *myinfo)
                     {
                         isRT *= coin->isRT;
                         numpeers += coin->peers.numranked;
-                        //printf("main active.%d started.%p\n",coin->active,coin->started);
-                        //iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
-                        //printf("done main active.%d started.%p\n",coin->active,coin->started);
-                        //iguana_reqblocks(coin);
-                        //printf("done2 main active.%d started.%p\n",coin->active,coin->started);
-                        if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
+                        if ( queue_size(&bundlesQ) < 2 && (ptr= queue_dequeue(&balancesQ,0)) != 0 )
                         {
                             bp = ptr->bp;
                             if ( ptr->coin != coin || bp == 0 || time(NULL) < bp->nexttime )

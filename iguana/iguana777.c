@@ -380,7 +380,7 @@ void iguana_balancesQ(struct iguana_info *coin,struct iguana_bundle *bp)
 
 void iguana_helper(void *arg)
 {
-    cJSON *argjson=0; int32_t retval,polltimeout,type,helperid=rand(),flag,allcurrent,idle=0;
+    cJSON *argjson=0; int32_t iter,retval,polltimeout,type,helperid=rand(),flag,allcurrent,idle=0;
     struct iguana_helper *ptr; struct iguana_info *coin; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp;
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
         helperid = juint(argjson,"helperid");
@@ -415,32 +415,37 @@ void iguana_helper(void *arg)
          }*/
         if ( (type & (1 << 0)) != 0 )
         {
-            if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
+            for (iter=0; iter<2048; iter++)
             {
-                idle = 0;
-                coin = ptr->coin;
-                if ( (bp= ptr->bp) != 0 && coin != 0 )
+                if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
                 {
-                    if ( coin->polltimeout < polltimeout )
-                        polltimeout = coin->polltimeout;
-                    //printf("[%d] bundleQ size.%d lag.%ld\n",bp->hdrsi,queue_size(&bundlesQ),time(NULL) - bp->nexttime);
-                    coin->numbundlesQ--;
-                    if ( coin->started != 0 && time(NULL) >= bp->nexttime && coin->active != 0 )
-                        flag += iguana_bundleiters(ptr->coin,&MEM,MEMB,bp,ptr->timelimit,IGUANA_DEFAULTLAG);
-                    else
+                    idle = 0;
+                    coin = ptr->coin;
+                    if ( (bp= ptr->bp) != 0 && coin != 0 )
                     {
-                        //printf("skip.%d lag.%ld coin->active.%d\n",bp->hdrsi,time(NULL)-bp->nexttime,coin->active);
-                        allcurrent = 0;
-                        iguana_bundleQ(ptr->coin,bp,1000);
+                        if ( coin->polltimeout < polltimeout )
+                            polltimeout = coin->polltimeout;
+                        if ( coin->current != 0 && coin->current->hdrsi != coin->bundlescount-1 )
+                            allcurrent = 0;
+                        //printf("[%d] bundleQ size.%d lag.%ld\n",bp->hdrsi,queue_size(&bundlesQ),time(NULL) - bp->nexttime);
+                        coin->numbundlesQ--;
+                        if ( coin->started != 0 && (bp->nexttime == 0 || time(NULL) >= bp->nexttime) && coin->active != 0 )
+                        {
+                            flag += iguana_bundleiters(ptr->coin,&MEM,MEMB,bp,ptr->timelimit,IGUANA_DEFAULTLAG);
+                        }
+                        else
+                        {
+                            //printf("skip.[%d] nexttime.%u lag.%ld coin->active.%d\n",bp->hdrsi,bp->nexttime,time(NULL)-bp->nexttime,coin->active);
+                            allcurrent = 0;
+                            iguana_bundleQ(ptr->coin,bp,1000);
+                        }
                     }
-                    if ( coin->current != 0 && coin->current->hdrsi != coin->bundlescount-1 )
-                        allcurrent = 0;
-                }
-                else //if ( coin->active != 0 )
-                    printf("helper missing param? %p %p %u\n",ptr->coin,bp,ptr->timelimit);
-                myfree(ptr,ptr->allocsize);
+                    else //if ( coin->active != 0 )
+                        printf("helper missing param? %p %p %u\n",ptr->coin,bp,ptr->timelimit);
+                    myfree(ptr,ptr->allocsize);
+                } else break;
             }
-            else if ( (ptr= queue_dequeue(&validateQ,0)) != 0 )
+            if ( (ptr= queue_dequeue(&validateQ,0)) != 0 )
             {
                 if ( ptr->bp != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
                     flag += iguana_bundlevalidate(ptr->coin,ptr->bp);
