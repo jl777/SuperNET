@@ -546,7 +546,7 @@ void iguana_coinloop(void *arg)
                     }
                     else
                     {
-                        if ( coin->peers.numranked != 0 && coin->peers.numranked < (coin->MAXPEERS>>1) && now > coin->lastpossible )
+                        if ( coin->peers.numranked != 0 && coin->peers.numranked < ((7*coin->MAXPEERS)>>3) && now > coin->lastpossible )
                         {
                             //fprintf(stderr,"possible\n");
                             coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers

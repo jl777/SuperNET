@@ -1346,7 +1346,7 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
         {
             for (i=0; i<bp->n; i++)
             {
-                if ( (bp->blocks[i]= iguana_blockhashset("mapchain",coin,-1,B[i].hash2,1)) == 0 )
+                if ( bp->blocks[i] == 0 )// iguana_blockhashset("mapchain",coin,-1,B[i].hash2,1)) == 0 )
                 {
                     printf("Error getting blockptr\n");
                     return(0);
@@ -1356,7 +1356,7 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
                 bp->hashes[i] = B[i].hash2;
             }
         }
-        //printf("mapped %s scriptspace %d:%d\n",fname,ramchain->H.scriptoffset,ramchain->H.data->scriptspace);
+        printf("iguana_ramchain_map.(%s) size %ld vs %ld vs filesize.%ld numblocks.%d expanded.%d fpos.%d sum %ld\n",fname,(long)iguana_ramchain_size(RAMCHAIN_ARG,ramchain->numblocks,ramchain->H.data->scriptspace),(long)ramchain->H.data->allocsize,(long)filesize,ramchain->numblocks,expanded,(int32_t)fpos,(long)(fpos+ramchain->H.data->allocsize));
         iguana_Xspendmap(coin,ramchain,bp);
         return(ramchain);
     } else printf("iguana_ramchain_map.(%s) cant map file\n",fname);
@@ -2128,7 +2128,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
         T = (void *)(long)((long)mapchain->H.data + mapchain->H.data->Toffset);
         for (i=0; i<bp->n; i++)
         {
-            if ( (block= bp->blocks[i]) != 0 || (block= iguana_blockhashset("bundleload",coin,bp->bundleheight+i,bp->hashes[i],1)) != 0 )
+            if ( (block= bp->blocks[i]) != 0 )//|| (block= iguana_blockhashset("bundleload",coin,bp->bundleheight+i,bp->hashes[i],1)) != 0 )
             {
                 block->queued = 1;
                 block->height = bp->bundleheight + i;
@@ -2234,6 +2234,7 @@ int32_t iguana_mapchaininit(struct iguana_info *coin,struct iguana_ramchain *map
     if ( block->fpos+mapchain->H.data->allocsize > filesize || iguana_ramchain_size(MAPCHAIN_ARG,1,mapchain->H.data->scriptspace) != mapchain->H.data->allocsize )
     {
         printf("iguana_mapchaininit.%d ipbits.%x size mismatch %ld vs %ld vs filesize.%ld fpos.%ld bundlei.%d expanded.%d soff.%d\n",bp->bundleheight,block->fpipbits,(long)iguana_ramchain_size(MAPCHAIN_ARG,1,mapchain->H.data->scriptspace),(long)mapchain->H.data->allocsize,(long)filesize,(long)block->fpos,bundlei,mapchain->expanded,mapchain->H.data->scriptspace);
+        getchar();
         return(-1);
     }
     else if ( memcmp(bp->hashes[bundlei].bytes,mapchain->H.data->firsthash2.bytes,sizeof(bits256)) != 0 )

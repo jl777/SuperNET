@@ -325,11 +325,14 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
     bp = iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.hash2);
     if ( bp != 0 && bundlei >= 0 && bundlei < bp->n )
     {
+        block = bp->blocks[bundlei];
+        if ( block != 0 )
+            block->peerid = 0;
         if ( bp->emitfinish != 0 )
         {
             numAfteremit++;
             sizeAfteremit += recvlen;
-            if ( (block= bp->blocks[bundlei]) != 0 )
+            if ( block != 0 )
                 iguana_bundletime(coin,bp,bundlei,block,1);
             //printf("got [%d:%d] with emitfinish.%u\n",bp->hdrsi,bundlei,bp->emitfinish);
             return;
@@ -491,7 +494,7 @@ void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bi
 uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bits256 *blockhashes,int32_t num)
 {
     bits256 allhash; int32_t err,i,n; struct iguana_block *block,*prev;
-    if ( bits256_nonz(bp->allhash) > 0 && num >= coin->chain->bundlesize && bp->queued == 0 )
+    if ( bits256_nonz(bp->allhash) > 0 && num >= coin->chain->bundlesize && bp->emitfinish == 0 )
     {
         vcalc_sha256(0,allhash.bytes,blockhashes[0].bytes,coin->chain->bundlesize * sizeof(*blockhashes));
         if ( memcmp(allhash.bytes,bp->allhash.bytes,sizeof(allhash)) == 0 )
@@ -524,7 +527,7 @@ uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bit
                 prev = block;
             }
             coin->allhashes++;
-            if ( bp->hdrsi == 0 )
+            if ( 0 && bp->hdrsi == 0 )
                 printf("ALLHASHES FOUND! %d allhashes.%d\n",bp->bundleheight,coin->allhashes);
             if ( bp->queued == 0 )
                 iguana_bundleQ(coin,bp,bp->n*5 + (rand() % 500));
@@ -581,12 +584,12 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
     if ( bp->emitfinish == 0 )
     {
         block->fpos = -1;
-        if ( iguana_ramchainfile(coin,0,&blockR,bp,bundlei,block) == 0 )
+        if ( 0 && iguana_ramchainfile(coin,0,&blockR,bp,bundlei,block) == 0 )
         {
             size = sizeof(blockR);
             iguana_ramchain_free(coin,&blockR,1);
         }
-        else if ( 0 && block->txvalid == 0 && bp->hdrsi == coin->longestchain/bp->n )
+        else if ( block->txvalid == 0 && bp->hdrsi == coin->longestchain/bp->n )
         {
             checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,block->RO.hash2,zero,1,0);
             if ( (fp= fopen(fname,"rb")) != 0 )
@@ -598,7 +601,7 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
         }
         if ( size != 0 )
         {
-            printf("initialize with fp.[%d:%d] len.%ld\n",bp->hdrsi,bundlei,size);
+            //printf("initialize with fp.[%d:%d] len.%ld\n",bp->hdrsi,bundlei,size);
             block->RO.recvlen = (int32_t)size;
             block->fpipbits = 1;
             block->txvalid = 1;
@@ -784,7 +787,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
     memset(zero.bytes,0,sizeof(zero));
     bp = 0, bundlei = -2;
     iguana_bundlefind(coin,&bp,&bundlei,blockhashes[1]);
-    if ( 1 && num >= coin->chain->bundlesize )
+    if ( 0 && num >= coin->chain->bundlesize )
         printf("blockhashes[%d] %d of %d %s bp.%d[%d]\n",num,bp==0?-1:bp->hdrsi,coin->bundlescount,bits256_str(str,blockhashes[1]),bp==0?-1:bp->bundleheight,bundlei);
     if ( num < 2 )
         return(req);
@@ -858,7 +861,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
                 }
             }
         }
-        //printf("%s no match to allhashes\n",bits256_str(str,blockhashes[1]));
+        printf("%s.[%d] no match to allhashes\n",bits256_str(str,blockhashes[1]),num);
         struct iguana_block *block;
         if ( (block= iguana_blockhashset("recvhashes",coin,-1,blockhashes[1],1)) != 0 )
         {
