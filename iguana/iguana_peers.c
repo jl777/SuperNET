@@ -134,23 +134,24 @@ uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana
                         ptr->ipbits = tmp.ipbits;
                         HASH_ADD(hh,coin->iAddrs,ipbits,sizeof(ipbits),ptr);
                         tmp.hh.itemind = m;
+                        tmp.status = 0;
                         fseek(fp,m*sizeof(tmp),SEEK_SET);
                         fwrite(&tmp,1,sizeof(tmp),fp);
                         expand_ipbits(hexstr,ipbits);
-                        //printf("create rwiAddrind m.%-4d %08x %s\n",m,(uint32_t)tmp.ipbits,hexstr);
+                        //printf("create rwiAddrind m.%-4d %08x %s status.%d\n",m,(uint32_t)tmp.ipbits,hexstr,tmp.status);
                         m++;
                         coin->numiAddrs = m;
                         iguana_possible_peer(coin,hexstr);
                     }
-                    /*else
+                    else
                     {
                         expand_ipbits(hexstr,ipbits);
-                        //printf("status.%d ipbits.%x\n",tmp.status,(uint32_t)ipbits);
+                        //printf("peer.%d status.%d ipbits.%x\n",i,tmp.status,(uint32_t)ipbits);
                         tmp.status = 0;
                         fseek(fp,i * sizeof(tmp),SEEK_SET);
                         if ( fwrite(&tmp,1,sizeof(tmp),fp) != sizeof(tmp) )
                             printf("error writing peer.%d\n",i);
-                    }*/
+                    }
                     portable_mutex_unlock(&coin->peers_mutex);
                 }
             }
@@ -175,7 +176,7 @@ uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana
                     if ( (iA= iguana_iAddrhashset(coin,iA,ind)) != 0 )
                     {
                         retval = iA->hh.itemind+1;
-                        //printf("r %p ipbits.%x ind.%d saved iA->ind.%d retval.%d\n",iA,iA->ipbits,ind,iA->hh.itemind,retval);
+                        //printf("r %p status.%d ipbits.%x ind.%d saved iA->ind.%d retval.%d\n",iA,iA->status,(uint32_t)iA->ipbits,ind,iA->hh.itemind,retval);
                     }
                 }
             } else printf("iAddr: error seeking.[%d] %ld vs %ld\n",ind,ftell(fp),ind * sizeof(*iA));
@@ -215,7 +216,7 @@ uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana
                     {
                         retval = iA->hh.itemind+1;
                         expand_ipbits(ipaddr,iA->ipbits);
-                        printf("%s status.%d lastkilled.%u ipbits.%x ind.%d saved iA->ind.%d retval.%d numiAddrs.%d\n",ipaddr,iA->status,iA->lastkilled,(uint32_t)ipbits,ind,iA->hh.itemind,retval,coin->numiAddrs);
+                        //printf("%s status.%d lastkilled.%u ipbits.%x ind.%d saved iA->ind.%d retval.%d numiAddrs.%d\n",ipaddr,iA->status,iA->lastkilled,(uint32_t)ipbits,ind,iA->hh.itemind,retval,coin->numiAddrs);
                     }
                 }
             } else printf("iAddr: error seeking.[%d] %ld vs %ld\n",ind,ftell(fp),ind * sizeof(*iA));
