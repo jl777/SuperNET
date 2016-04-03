@@ -907,7 +907,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     }
     if ( ptr != 0 )
         myfree(ptr,sizeof(*ptr) * n);
-    printf("[%4d].%-6d duration.%-2d [millis %.3f] vectors %d errs.%d [%.2f%%] %d %s of %d\n",bp->hdrsi,bp->numtmpspends,(uint32_t)time(NULL)-starttime,OS_milliseconds()-startmillis,spendind,errs,100.*(double)emitted/(total+1),emit,mbstr(str,sizeof(*ptr) * emit),n);
+    printf("[%4d].%-6d duration.%-2d [millis %8.3f] vectors %-6d errs.%d [%5.2f%%] %d %9s of %d\n",bp->hdrsi,bp->numtmpspends,(uint32_t)time(NULL)-starttime,OS_milliseconds()-startmillis,spendind,errs,100.*(double)emitted/(total+1),emit,mbstr(str,sizeof(*ptr) * emit),n);
     if ( errs != 0 )
         exit(-1);
     return(-errs);
@@ -1717,14 +1717,14 @@ int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *r
             }
         }
     }
-    bp->converted = (uint32_t)time(NULL);
-    printf("spendvectorconvs.[%d] converted.%d\n",refbp->hdrsi,converted);
-    return(0);
+    refbp->converted = (uint32_t)time(NULL);
+    //printf("spendvectorconvs.[%d] converted.%d\n",refbp->hdrsi,converted);
+    return(converted);
 }
 
 int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int32_t startheight,int32_t endheight)
 {
-    int32_t retval=-1,i,n,flag = 0;
+    int32_t converted,retval=-1,i,n,flag = 0;
     if ( bp->balancefinish > 1 )
     {
         printf("make sure DB files have this bp.%d\n",bp->hdrsi);
@@ -1738,7 +1738,7 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
         {
             if ( bp->tmpspends != 0 && bp->ramchain.H.data != 0 && (n= bp->ramchain.H.data->numspends) != 0 && bp->converted == 0 )
             {
-                if ( iguana_spendvectorconvs(coin,bp) != 0 )
+                if ( (converted= iguana_spendvectorconvs(coin,bp)) < 0 )
                     printf("error ram balancecalc.[%d]\n",bp->hdrsi);
                 else
                 {
@@ -1746,7 +1746,7 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
                     for (i=0; i<n; i++)
                         if ( coin->bundles[i] == 0 || coin->bundles[i]->converted == 0 )
                             break;
-                    printf("balance calc.%d of %d\n",i,n);
+                    printf("[%d] converted.%d balance calc.%d of %d\n",i,converted,i,n);
                     if ( i == n )
                         iguana_spendvectorsaves(coin);
                 }
