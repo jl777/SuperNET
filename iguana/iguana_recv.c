@@ -588,7 +588,7 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
     if ( bp->emitfinish == 0 )
     {
         block->fpos = -1;
-        if ( 1 && iguana_ramchainfile(coin,0,&blockR,bp,bundlei,block) == 0 )
+        if ( 0 && iguana_ramchainfile(coin,0,&blockR,bp,bundlei,block) == 0 )
         {
             size = sizeof(blockR);
             iguana_ramchain_free(coin,&blockR,1);
