@@ -591,7 +591,7 @@ int32_t iguana_bundlerequests(struct iguana_info *coin,uint8_t missings[IGUANA_M
 
 int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    int32_t i,ready,valid; struct iguana_block *block;
+    int32_t i,ready,valid; struct iguana_block *block; int32_t sum[0x100],counts[0x100];
     for (i=ready=0; i<bp->n; i++)
     {
         if ( (block= bp->blocks[i]) != 0 )
@@ -927,7 +927,7 @@ double iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,d
         {
             if ( bp->numcached > bp->n - (coin->MAXBUNDLES - dist) )
                 priority += 1 + (bp == coin->current);
-            if ( queue_size(&coin->priorityQ) < (2 * bp->n)/(dist+1) )
+            if ( bp == coin->current || queue_size(&coin->priorityQ) < (coin->MAXBUNDLES * bp->n)/(dist*dist+1) )
             {
                 //printf("[%d] dist.%d numcached.%d priority.%d\n",bp->hdrsi,dist,bp->numcached,priority);
                 iguana_bundleissuemissing(coin,bp,missings,((rand() % 10) == 0)*3);
