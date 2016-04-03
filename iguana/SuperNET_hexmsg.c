@@ -152,7 +152,7 @@ bits256 catgory_default_hit(struct category_chain *catchain,int32_t height,void 
 
 bits256 category_default_func(struct category_chain *catchain,int32_t func,int32_t height,void *prevgenerator,void *addr,void *blockhashp,bits256 heaviest)
 {
-    static bits256 zero;
+    static const bits256 zero;
     if ( catchain->hashlen != sizeof(bits256) || catchain->addrlen != sizeof(bits256) )
     {
         printf("unsupported hashlen.%d or addrlen.%d\n",catchain->hashlen,catchain->addrlen);
@@ -205,7 +205,7 @@ bits256 category_default_func(struct category_chain *catchain,int32_t func,int32
 
 int32_t category_default_ishwm(struct category_chain *catchain,int32_t prevheight,void *prevblockhashp,void *blockhashp,void *prevgenerator,void *addr)
 {
-    bits256 checkhash,prevwt,oldhit,hit,heaviest; static bits256 zero;
+    bits256 checkhash,prevwt,oldhit,hit,heaviest; static const bits256 zero;
     checkhash = category_default_blockfind(prevheight);
     if ( memcmp(checkhash.bytes,prevblockhashp,catchain->hashlen) == 0 )
     {

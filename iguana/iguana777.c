@@ -557,7 +557,6 @@ void iguana_coinloop(void *arg)
                         //fprintf(stderr,"metrics\n");
                         coin->peers.lastmetrics = iguana_updatemetrics(coin); // ranks peers
                     }
-                    iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
                     if ( coin->longestchain+10000 > coin->blocks.maxbits )
                         iguana_recvalloc(coin,coin->longestchain + 100000);
                     flag += iguana_processrecv(coin);
@@ -565,8 +564,11 @@ void iguana_coinloop(void *arg)
                 coin->idletime = (uint32_t)time(NULL);
             }
         }
-        if ( flag == 0 || coin->RTheight >= coin->longestchain-3 )
+        if ( flag == 0 && coin->isRT == 0 )
+            usleep(coin->polltimeout*1000 + (coin->peers.numranked == 0)*1000000);
+        else if ( coin->RTheight >= coin->longestchain-3 )
             usleep(coin->polltimeout*1000 + coin->isRT*90000 + (coin->peers.numranked == 0)*1000000);
+        else usleep(25000);
     }
 }
 

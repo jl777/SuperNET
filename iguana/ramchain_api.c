@@ -54,7 +54,7 @@ HASH_AND_INT(bitcoinrpc,getblock,blockhash,remoteonly)
     char *blockstr; struct iguana_msgblock msg; struct iguana_block *block; cJSON *retjson; bits256 txid;
     retjson = cJSON_CreateObject();
     memset(&msg,0,sizeof(msg));
-    if ( remoteonly == 0 && (block= iguana_blockfind(coin,blockhash)) != 0 )
+    if ( remoteonly == 0 && (block= iguana_blockfind("getblockRPC",coin,blockhash)) != 0 )
     {
         return(jprint(iguana_blockjson(coin,block,1),1));
 /* int32_t len,i; char str[65],hexstr[(sizeof(uint32_t)+sizeof(struct iguana_msgblock))*2+1],*blockstr;

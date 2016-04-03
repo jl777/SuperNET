@@ -487,7 +487,7 @@ struct iguana_info
     struct iguana_bundle *bundles[IGUANA_MAXBUNDLES],*current,*lastpending;
     struct iguana_ramchain RTramchain; struct OS_memspace RTmem,RThashmem;
     int32_t numremain,numpendings,zcount,recvcount,bcount,pcount,lastbundle,numsaved,pendbalances,numverified;
-    uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ,lastbundleitime,lastdisp,RTgenesis,idletime,stucktime,stuckmonitor,maxstuck;
+    uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ,lastbundleitime,lastdisp,RTgenesis,idletime,stucktime,stuckmonitor,maxstuck,lastreqtime;
     double backstopmillis; bits256 backstophash2; int64_t spaceused;
     int32_t initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,polltimeout,numreqtxids,allhashes; bits256 reqtxids[64];
     void *launched,*started;
@@ -578,8 +578,8 @@ void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bi
 
 // blocks
 bits256 iguana_blockhash(struct iguana_info *coin,int32_t height);
-#define iguana_blockfind(coin,hash2) iguana_blockhashset(coin,-1,hash2,0)
-struct iguana_block *iguana_blockhashset(struct iguana_info *coin,int32_t height,bits256 hash2,int32_t createflag);
+#define iguana_blockfind(str,coin,hash2) iguana_blockhashset(str,coin,-1,hash2,0)
+struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin,int32_t height,bits256 hash2,int32_t createflag);
 
 uint32_t iguana_syncs(struct iguana_info *coin);
 void iguana_gotdata(struct iguana_info *coin,struct iguana_peer *addr,int32_t height);
@@ -592,7 +592,7 @@ int32_t iguana_recvinit(struct iguana_info *coin,int32_t initialheight);
 int32_t ramcoder_decompress(uint8_t *data,int32_t maxlen,uint8_t *bits,uint32_t numbits,bits256 seed);
 int32_t ramcoder_compress(uint8_t *bits,int32_t maxlen,uint8_t *data,int32_t datalen,bits256 seed);
 uint64_t hconv_bitlen(uint64_t bitlen);
-struct iguana_block *iguana_blockptr(struct iguana_info *coin,int32_t height);
+struct iguana_block *iguana_blockptr(char *debugstr,struct iguana_info *coin,int32_t height);
 int32_t iguana_processrecv(struct iguana_info *coin); // single threaded
 void iguana_recvalloc(struct iguana_info *coin,int32_t numitems);
 void iguana_coins(void *arg);
@@ -844,6 +844,7 @@ int32_t _SuperNET_encryptjson(char *destfname,char *passphrase,int32_t passsize,
 int32_t bitcoin_pubkeylen(const uint8_t *pubkey);
 struct iguana_block *iguana_bundleblock(struct iguana_info *coin,bits256 *hash2p,struct iguana_bundle *bp,int32_t i);
 void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,struct iguana_ramchain *R,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block);
+int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block);
 
 extern int32_t HDRnet,netBLOCKS;
 

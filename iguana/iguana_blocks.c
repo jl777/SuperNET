@@ -15,7 +15,7 @@
 
 #include "iguana777.h"
 
-#define iguana_blockfind(coin,hash2) iguana_blockhashset(coin,-1,hash2,0)
+#define iguana_blockfind(str,coin,hash2) iguana_blockhashset(str,coin,-1,hash2,0)
 
 void _iguana_blocklink(struct iguana_info *coin,struct iguana_block *prev,struct iguana_block *block)
 {
@@ -45,27 +45,36 @@ void _iguana_blocklink(struct iguana_info *coin,struct iguana_block *prev,struct
     printf("link.(%s) -> (%s)\n",bits256_str(str,prev->RO.hash2),bits256_str(str,block->RO.hash2));
 }
 
-struct iguana_block *iguana_blockhashset(struct iguana_info *coin,int32_t height,bits256 hash2,int32_t createflag)
+struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin,int32_t height,bits256 hash2,int32_t createflag)
 {
     static int depth;
     struct iguana_block *block,*prev;
-    if ( height > 0 && (height > coin->blocks.maxbits || depth != 0) )
+    if ( height > 0 && height > coin->blocks.maxbits )
     {
-        printf("illegal height.%d when max.%d, or nonz depth.%d\n",height,coin->blocks.maxbits,depth);
+        printf("%s: illegal height.%d when max.%d, or nonz depth.%d\n",debugstr,height,coin->blocks.maxbits,depth);
         //getchar();
         return(0);
     }
+    while ( depth != 0 )
+    {
+        printf("%s blockhashset.%d depth.%d\n",debugstr,height,depth);
+        printf("%d\n",1/(1 - depth/depth));
+    }
     depth++;
-    //portable_mutex_lock(&coin->blocks_mutex);
     HASH_FIND(hh,coin->blocks.hash,&hash2,sizeof(hash2),block);
     if ( block != 0 )
     {
-       // portable_mutex_unlock(&coin->blocks_mutex);
         depth--;
+        while ( depth != 0 )
+        {
+            printf("%s match blockhashset.%d depth.%d\n",debugstr,height,depth);
+            printf("%d\n",1/(1 - depth/depth));
+        }
         return(block);
     }
     if ( createflag > 0 )
     {
+        portable_mutex_lock(&coin->blocks_mutex);
         block = calloc(1,sizeof(*block));
         block->RO.hash2 = hash2;
         block->hh.itemind = height, block->height = -1;
@@ -87,18 +96,29 @@ struct iguana_block *iguana_blockhashset(struct iguana_info *coin,int32_t height
             if ( tmp != block )
                 printf("%s height.%d search error %p != %p\n",str,height,block,tmp);
         }
+        portable_mutex_unlock(&coin->blocks_mutex);
     }
-    //portable_mutex_unlock(&coin->blocks_mutex);
     depth--;
+    while ( depth != 0 )
+    {
+        printf("%s create blockhashset.%d depth.%d\n",debugstr,height,depth);
+        printf("%d\n",1/(1 - depth/depth));
+    }
     return(block);
 }
 
 bits256 *iguana_blockhashptr(struct iguana_info *coin,int32_t height)
 {
-    int32_t i; struct iguana_bundle *bp; bits256 *hashptr;
-    if ( height >= 0 )
+    int32_t hdrsi,bundlei,bundlesize; struct iguana_bundle *bp; //bits256 *hashptr;
+    if ( height >= 0 && (bundlesize= coin->chain->bundlesize) != 0 )
     {
-        for (i=0; i<coin->bundlescount; i++)
+        hdrsi = (height / bundlesize);
+        bundlei = height - (hdrsi * bundlesize);
+        if ( hdrsi >= 0 && hdrsi < bundlesize && bundlei >= 0 && bundlei < bundlesize && (bp= coin->bundles[hdrsi]) != 0 )
+        {
+            return(&bp->hashes[bundlei]);
+        }
+        /*for (i=0; i<coin->bundlescount; i++)
         {
             if ( (bp= coin->bundles[i]) != 0 )
             {
@@ -109,7 +129,7 @@ bits256 *iguana_blockhashptr(struct iguana_info *coin,int32_t height)
                     return(hashptr);
                 }
             }
-        }
+        }*/
     }
     return(0);
 }
@@ -122,11 +142,11 @@ bits256 iguana_blockhash(struct iguana_info *coin,int32_t height)
     return(zero);
 }
 
-struct iguana_block *iguana_blockptr(struct iguana_info *coin,int32_t height)
+struct iguana_block *iguana_blockptr(char *debugstr,struct iguana_info *coin,int32_t height)
 {
      static const bits256 zero; bits256 hash2 = iguana_blockhash(coin,height);
     if ( memcmp(zero.bytes,hash2.bytes,sizeof(zero)) != 0 )
-        return(iguana_blockfind(coin,hash2));
+        return(iguana_blockfind(debugstr,coin,hash2));
     return(0);
 }
 
@@ -276,11 +296,11 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
     hwmchain = &coin->blocks.hwmchain;
     if ( 0 && hwmchain->height > 0 && ((bp= coin->current) == 0 || hwmchain->height/coin->chain->bundlesize > bp->hdrsi+0*bp->isRT) )
         return(0);
-    if ( (block= iguana_blockfind(coin,newblock->RO.hash2)) != 0 )
+    if ( (block= iguana_blockfind("chainlink",coin,newblock->RO.hash2)) != 0 )
     {
         if ( memcmp(coin->chain->genesis_hashdata,block->RO.hash2.bytes,sizeof(bits256)) == 0 )
             block->PoW = PoW_from_compact(block->RO.bits,coin->chain->unitval), height = 0;
-        else if ( (prev= iguana_blockfind(coin,block->RO.prev_block)) != 0 )
+        else if ( (prev= iguana_blockfind("chainprev",coin,block->RO.prev_block)) != 0 )
         {
             if ( memcmp(prev->RO.hash2.bytes,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256)) == 0 )
                 prev->mainchain = 1;
@@ -375,9 +395,9 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                         }
                         if ( coin->started != 0 && (block->height % coin->chain->bundlesize) == coin->minconfirms && (block->height > coin->longestchain-coin->chain->bundlesize*2 || ((block->height / coin->chain->bundlesize) % 10) == 9) )
                         {
-                            //printf("savehdrs\n");
+                            printf("savehdrs.[%d] ht.%d\n",bp->hdrsi,block->height);
                             iguana_savehdrs(coin);
-                            //printf("done savehdrs\n");
+                            printf("done savehdrs.%d\n",bp->hdrsi);
                         }
                     }
                 }
@@ -417,18 +437,18 @@ int32_t iguana_chainextend(struct iguana_info *coin,struct iguana_block *newbloc
     }
     else
     {
-        block = iguana_blockhashset(coin,-1,newblock->RO.hash2,1);
+        block = iguana_blockhashset("chainextend",coin,-1,newblock->RO.hash2,1);
         if ( block != newblock )
             iguana_blockcopy(coin,block,newblock);
         block->valid = 1;
-        if ( block->hh.prev == 0 && (prev= iguana_blockfind(coin,block->RO.prev_block)) != 0 )
+        if ( block->hh.prev == 0 && (prev= iguana_blockfind("extendprev",coin,block->RO.prev_block)) != 0 )
         {
             if ( prev->hh.next == 0 && block->hh.prev == 0 )
                 prev->hh.next = block, block->hh.prev = prev;
             //printf("extend newblock.%s prevm.%d\n",bits256_str(str,block->prev_block),prev->mainchain);
             if ( prev->mainchain == 0 )
             {
-                if ( (block= iguana_blockfind(coin,coin->blocks.hwmchain.RO.hash2)) != 0 && block->mainchain == 0 )
+                if ( (block= iguana_blockfind("extendmain",coin,coin->blocks.hwmchain.RO.hash2)) != 0 && block->mainchain == 0 )
                 {
                     //printf("c hwmchain is not mainchain anymore?\n");
                     prev->mainchain = 1;
@@ -454,7 +474,7 @@ int32_t iguana_chainextend(struct iguana_info *coin,struct iguana_block *newbloc
             }
         }
     }
-    if ( (block= iguana_blockfind(coin,coin->blocks.hwmchain.RO.hash2)) != 0 && block->mainchain == 0 )
+    if ( (block= iguana_blockfind("extendcheck",coin,coin->blocks.hwmchain.RO.hash2)) != 0 && block->mainchain == 0 )
     {
         printf("hwmchain is not mainchain anymore?\n");
         block->mainchain = 1;

@@ -370,10 +370,6 @@ void mainloop(struct supernet_info *myinfo)
                         //printf("done main active.%d started.%p\n",coin->active,coin->started);
                         //iguana_reqblocks(coin);
                         //printf("done2 main active.%d started.%p\n",coin->active,coin->started);
-                        coin->RTramchain_busy = 1;
-                        if ( iguana_realtime_update(coin) > 0 )
-                            flag++;
-                        
                         if ( (ptr= queue_dequeue(&balancesQ,0)) != 0 )
                         {
                             bp = ptr->bp;
@@ -415,15 +411,13 @@ void mainloop(struct supernet_info *myinfo)
                                 }
                             }
                         }
-                        coin->RTramchain_busy = (coin->RTgenesis == 0 || queue_size(&balancesQ) != 0);
                         if ( 0 && flag != 0 )
                             printf("call RT update busy.%d\n",coin->RTramchain_busy);
                     }
                 }
         }
-        iguana_jsonQ();
         pangea_queues(SuperNET_MYINFO(0));
-        if ( flag == 0 )
+        //if ( flag == 0 )
             usleep(1000 + isRT*100000 + (numpeers == 0)*1000000);
     }
 }

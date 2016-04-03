@@ -15165,5 +15165,87 @@ len = 0;
              }
              if ( n > 0 )
              printf("issued %d priority requests [%d] to unstick stuckiters.%d lag.%d\n",n,bp->hdrsi,coin->stuckiters,lag);*/
+            /*if ( 0 && n >= coin->chain->bundlesize )
+             {
+             blockhashes = malloc(sizeof(*blockhashes) * coin->chain->bundlesize);
+             for (i=0; i<coin->chain->bundlesize; i++)
+             blockhashes[i] = blocks[i].RO.hash2;
+             for (i=0; i<coin->bundlescount; i++)
+             {
+             if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish == 0 )
+             {
+             blockhashes[0] = bp->hashes[0];
+             vcalc_sha256(0,allhash.bytes,blockhashes[0].bytes,coin->chain->bundlesize * sizeof(*blockhashes));
+             if ( bits256_cmp(allhash,bp->allhash) == 0 )
+             {
+             if ( bp->queued != 0 )
+             bp->queued = 0;
+             if ( iguana_allhashcmp(coin,bp,blockhashes,coin->chain->bundlesize) > 0 )
+             {
+             free(blockhashes);
+             return(req);
+             }
+             }
+             }
+             }
+             free(blockhashes);
+             }*/
+                
+                
+            /*void iguana_patch(struct iguana_info *coin,struct iguana_block *block)
+             {
+             int32_t i,j,origheight,height; struct iguana_block *prev,*next; struct iguana_bundle *bp;
+             prev = iguana_blockhashset(coin,-1,block->RO.prev_block,1);
+             block->hh.prev = prev;
+             if ( prev != 0 )
+             {
+             if ( prev->mainchain != 0 )
+             {
+             prev->hh.next = block;
+             if ( memcmp(block->RO.prev_block.bytes,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256)) == 0 )
+             _iguana_chainlink(coin,block);
+             if ( (next= block->hh.next) != 0 && bits256_nonz(next->RO.hash2) > 0 )
+             next->height = block->height + 1;
+             }
+             else if ( 0 && block->height < 0 )
+             {
+             for (i=0; i<1; i++)
+             {
+             if ( (prev= prev->hh.prev) == 0 )
+             break;
+             if ( prev->mainchain != 0 && prev->height >= 0 )
+             {
+             j = i;
+             origheight = (prev->height + i + 2);
+             prev = block->hh.prev;
+             height = (origheight - 1);
+             while ( i > 0 && prev != 0 )
+             {
+             if ( prev->mainchain != 0 && prev->height != height )
+             {
+             printf("mainchain height mismatch j.%d at i.%d %d != %d\n",j,i,prev->height,height);
+             break;
+             }
+             prev = prev->hh.prev;
+             height--;
+             }
+             if ( i == 0 )
+             {
+             //printf("SET HEIGHT.%d j.%d\n",origheight,j);
+             if ( (bp= coin->bundles[origheight / coin->chain->bundlesize]) != 0 )
+             {
+             iguana_bundlehash2add(coin,0,bp,origheight % coin->chain->bundlesize,block->RO.hash2);
+             block->height = origheight;
+             block->mainchain = 1;
+             prev = block->hh.prev;
+             prev->hh.next = block;
+             }
+             } //else printf("break at i.%d for j.%d origheight.%d\n",i,j,origheight);
+             break;
+             }
+             }
+             }
+             }
+             }*/
 
 #endif

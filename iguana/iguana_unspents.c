@@ -697,7 +697,6 @@ uint32_t iguana_spendvectorconv(struct iguana_info *coin,struct iguana_spendvect
     count++;
     if ( (count % 1000000) == 0 )
         printf("iguana_spendvectorconv.[%llu] errs.%llu converted.%llu %.2f%%\n",(long long)count,(long long)errs,(long long)converted,100. * (long long)converted/count);
-    //printf("[%d] tmpflag.%d u%d %.8f p%u\n",ptr->hdrsi,ptr->tmpflag,ptr->unspentind,dstr(ptr->value),ptr->pkind);
     if ( ptr->tmpflag != 0 )
     {
         if ( ptr->hdrsi >= 0 && ptr->hdrsi < coin->bundlescount && (spentbp= coin->bundles[ptr->hdrsi]) != 0 )
@@ -716,6 +715,7 @@ uint32_t iguana_spendvectorconv(struct iguana_info *coin,struct iguana_spendvect
         errs++;
         return(0);
     }
+    else printf("[%d] tmpflag.%d u%d %.8f p%u\n",ptr->hdrsi,ptr->tmpflag,ptr->unspentind,dstr(ptr->value),ptr->pkind);
     return(ptr->pkind);
 }
 
@@ -859,6 +859,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
                         }
                         else
                         {
+                            memset(&ptr[emit],0,sizeof(ptr[emit]));
                             ptr[emit].hdrsi = spentbp->hdrsi;
                             ptr[emit].unspentind = spent_unspentind;
                             ptr[emit].fromheight = bp->bundleheight + i;
@@ -1253,7 +1254,7 @@ int32_t iguana_volatileinit(struct iguana_info *coin)
             fclose(fp);
         }
         if ( filecrc != 0 )
-            printf("have filecrc.%08x for %s milli.%.0f\n",filecrc,bits256_str(str,balancehash),OS_milliseconds());
+            printf("have filecrc.%08x for %s milli.%.0f from_ro.%d\n",filecrc,bits256_str(str,balancehash),OS_milliseconds(),from_ro);
         if ( from_ro == 0 )
         {
             if ( filecrc == 0 )
@@ -1429,7 +1430,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                 printf("blockhash error at %d\n",coin->RTheight-n-1);
                 break;
             }
-            block = iguana_blockfind(coin,block->RO.prev_block);
+            block = iguana_blockfind("RTupdate",coin,block->RO.prev_block);
             n++;
             if ( coin->RTgenesis != 0 && n >= bp->n )
                 break;
