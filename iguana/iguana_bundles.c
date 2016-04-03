@@ -967,7 +967,7 @@ double iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,d
             printf("priority.%d [%d] dist.%d durations %.2f vs %.2f counts[%d %d] \n",priority,bp->hdrsi,dist,aveduration,aveduplicates,(int32_t)bp->durationscount,bp->duplicatescount);
     }
     if ( aveduration != 0. )
-        lag = 7 * aveduration + 3;
+        lag = ((bp == coin->current) ? 2 : 7) * aveduration + 3;
     if ( (n= iguana_bundlerequests(coin,missings,&bp->origmissings,&tmp,bp,lag,priority)) > 0 )
     {
         bp->numissued += n;
