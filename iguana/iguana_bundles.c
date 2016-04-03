@@ -592,10 +592,17 @@ int32_t iguana_bundlerequests(struct iguana_info *coin,uint8_t missings[IGUANA_M
 int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     int32_t i,ready,valid; struct iguana_block *block; int32_t sum[0x100],counts[0x100];
+    memset(sum,0,sizeof(sum));
+    memset(counts,0,sizeof(counts));
     for (i=ready=0; i<bp->n; i++)
     {
         if ( (block= bp->blocks[i]) != 0 )
         {
+            if ( block->lag != 0 && block->peerid != 0 )
+            {
+                sum[block->peerid] += block->lag;
+                counts[block->peerid]++;
+            }
             //printf("(%x:%x) ",(uint32_t)block->RO.hash2.ulongs[3],(uint32_t)bp->hashes[i].ulongs[3]);
             if ( iguana_blockvalidate(coin,&valid,block,1) < 0 || block->fpipbits == 0 || block->fpos < 0 || (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) )
             {
