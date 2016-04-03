@@ -569,11 +569,12 @@ int32_t iguana_bundlerequests(struct iguana_info *coin,uint8_t missings[IGUANA_M
                                 {
                                     hash2 = block->RO.hash2;
                                     lagaddr = &coin->peers.active[block->peerid];
-                                    if ( priority > 2 && block->issued != 0 && block->issued < now-10 && block->peerid != 0 )
+                                    if ( block->issued != 0 && block->peerid != 0 )
                                     {
-                                        lagaddr->laggard++;
+                                        if ( (now - block->issued) > 60 )
+                                            lagaddr->laggard++;
                                         printf("addr.%s laggard.%d lag.%d\n",lagaddr->ipaddr,lagaddr->laggard,block->issued - now);
-                                        if ( coin->peers.numranked > 64 )
+                                        if ( lagaddr->laggard > 10 && coin->peers.numranked > 64 )
                                             lagaddr->dead = (uint32_t)time(NULL);
                                     }
                                     if ( addr->addrind < 0x100 )

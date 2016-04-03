@@ -312,7 +312,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
         static uint64_t received[IGUANA_MAXPEERS],count[IGUANA_MAXPEERS];
         received[addr->addrind] += recvlen;
         count[addr->addrind]++;
-        if ( (rand() % 1000) == 0 )
+        if ( (rand() % 10000) == 0 )
         {
             uint64_t sum2 = 0,sum = 0;
             for (i=0; i<sizeof(received)/sizeof(*received); i++)
@@ -327,7 +327,11 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
     {
         block = bp->blocks[bundlei];
         if ( block != 0 )
+        {
+            if ( block->peerid != 0 && block->issued != 0 && time(NULL)-block->issued < 60 )
+                addr->laggard--;
             block->peerid = 0;
+        }
         if ( bp->emitfinish != 0 )
         {
             numAfteremit++;
@@ -861,7 +865,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
                 }
             }
         }
-        printf("%s.[%d] no match to allhashes\n",bits256_str(str,blockhashes[1]),num);
+        //printf("%s.[%d] no match to allhashes\n",bits256_str(str,blockhashes[1]),num);
         struct iguana_block *block;
         if ( (block= iguana_blockhashset("recvhashes",coin,-1,blockhashes[1],1)) != 0 )
         {
