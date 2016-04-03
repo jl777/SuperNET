@@ -1011,7 +1011,6 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
     int32_t hdrsi,lflag,bundlei,iters=0,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp; char str[1024];
     if ( time(NULL) < coin->lastreqtime+2 )
         return(0);
-    iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
     coin->lastreqtime = (uint32_t)time(NULL);
     hdrsi = (coin->blocks.hwmchain.height+1) / coin->chain->bundlesize;
     if ( (bp= coin->bundles[hdrsi]) != 0 )
@@ -1419,8 +1418,9 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
 
 int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
 {
-    int32_t newhwm = 0,hwmheight,flag = 0;
+    int32_t newhwm = 0,hwmheight,flag = 0; char str[2000];
     hwmheight = coin->blocks.hwmchain.height;
+    iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
     flag += iguana_processrecvQ(coin,&newhwm);
     flag += iguana_reqblocks(coin);
     flag += iguana_reqhdrs(coin);
