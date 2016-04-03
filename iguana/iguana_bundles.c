@@ -1080,7 +1080,8 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
                     m++;
                     if ( 0 && lastpending == 0 )
                         printf("%d ",bp->numsaved);
-                } else done++;
+                } else if ( bp->numsaved == bp->n )
+                    done++;
             }
         }
     }

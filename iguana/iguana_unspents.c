@@ -811,7 +811,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
             for (k=0; k<T[txidind].numvins && errs==0; k++,spendind++)
             {
                 if ( (spendind % 1000000) == 0 )
-                    printf("spendvectors elapsed.%-3d [%-3d:%4d] spendind.%d\n",(uint32_t)time(NULL)-starttime,bp->hdrsi,i,spendind);
+                    printf("[%-3d:%4d] spendvectors elapsed t.%-3d spendind.%d\n",bp->hdrsi,i,(uint32_t)time(NULL)-starttime,spendind);
                 u = 0;
                 s = &S[spendind];
                 if ( s->external != 0 && s->prevout >= 0 )
@@ -1724,7 +1724,7 @@ int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *r
 
 int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int32_t startheight,int32_t endheight)
 {
-    int32_t converted,retval=-1,i,n,flag = 0; int64_t total_tmpspends; static int64_t total;
+    int32_t converted,retval=-1,i,n,m,flag = 0; int64_t total_tmpspends; static int64_t total;
     if ( bp->balancefinish > 1 )
     {
         printf("make sure DB files have this bp.%d\n",bp->hdrsi);
@@ -1743,18 +1743,18 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
                 else
                 {
                     n = coin->bundlescount;
-                    for (i=total_tmpspends=0; i<n; i++)
+                    for (i=m=total_tmpspends=0; i<n; i++)
                     {
-                        if ( coin->bundles[i] == 0 )
+                        if ( coin->bundles[i] != 0 )
                         {
                             total_tmpspends += coin->bundles[i]->numtmpspends;
-                            if ( coin->bundles[i]->converted == 0 )
-                            break;
+                            if ( coin->bundles[i]->converted != 0 )
+                                m++;
                         }
                     }
                     total += converted;
-                    printf("[%4d] converted.%-7d balance calc.%-4d of %4d | total.%llu of %llu\n",i,converted,i,n,(long long)total,(long long)total_tmpspends);
-                    if ( i == n-1 )
+                    printf("[%4d] converted.%-7d balance calc.%-4d of %4d | total.%llu of %llu\n",bp->hdrsi,converted,m,n,(long long)total,(long long)total_tmpspends);
+                    if ( m == n-1 )
                         iguana_spendvectorsaves(coin);
                 }
             } //else printf("error with invalid tmpspends.[%d]\n",bp->hdrsi), getchar();
