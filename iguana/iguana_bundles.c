@@ -914,7 +914,7 @@ int32_t iguana_cacheprocess(struct iguana_info *coin,struct iguana_bundle *bp,in
 
 double iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,double aveduration,int32_t lag)
 {
-    uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t tmp,dist=0,missing,priority,avail,n=0,max; double aveduplicates; //bits256 hash2;
+    uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t tmp,m,dist=0,missing,priority,avail,n=0,max; double aveduplicates; //bits256 hash2;
     missing = iguana_blocksmissing(coin,&avail,missings,0,bp,0,lag);
     priority = (strcmp("BTC",coin->symbol) != 0) * 2;
     lag = IGUANA_DEFAULTLAG;
@@ -925,6 +925,16 @@ double iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,d
     {
         if ( (dist= bp->hdrsi - coin->current->hdrsi) < coin->MAXBUNDLES )
         {
+            if ( (m= coin->peers.numranked) > 0 && bp->numcached < bp->n && bp->hdrsi < coin->longestchain/coin->chain->bundlesize )
+            {
+                int32_t datalen; uint8_t serialized[512]; char str[65]; struct iguana_peer *addr;
+                if ( (addr= coin->peers.ranked[rand() % m]) != 0 && (datalen= iguana_gethdrs(coin,serialized,coin->chain->gethdrsmsg,bits256_str(str,bp->hashes[0]))) > 0 )
+                {
+                    printf("UNSTICK HDR.[%d]\n",bp->hdrsi);
+                    iguana_send(coin,addr,serialized,datalen);
+                    addr->pendhdrs++;
+                }
+            }
             if ( bp->numcached > bp->n - (coin->MAXBUNDLES - dist) )
                 priority += 1 + (bp == coin->current);
             if ( bp == coin->current || queue_size(&coin->priorityQ) < (coin->MAXBUNDLES * bp->n)/(dist*dist+1) )
