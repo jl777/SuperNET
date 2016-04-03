@@ -59,7 +59,7 @@ int32_t iguana_speculativesearch(struct iguana_info *coin,struct iguana_block **
 int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2,int32_t iamthreadsafe)
 {
     static bits256 lastreq,lastreq2;
-    int32_t len,j; struct iguana_bundle *checkbp; uint8_t serialized[sizeof(struct iguana_msghdr) + sizeof(uint32_t)*32 + sizeof(bits256)]; struct iguana_block *block;
+    int32_t len,j; struct iguana_bundle *checkbp; uint8_t serialized[sizeof(struct iguana_msghdr) + sizeof(uint32_t)*32 + sizeof(bits256)]; struct iguana_block *block=0;
     char hexstr[65]; init_hexbytes_noT(hexstr,hash2.bytes,sizeof(hash2));
     if ( addr == 0 || memcmp(lastreq.bytes,hash2.bytes,sizeof(hash2)) == 0 || memcmp(lastreq2.bytes,hash2.bytes,sizeof(hash2)) == 0 )
     {
@@ -99,6 +99,8 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
         coin->numreqsent++;
         addr->pendblocks++;
         addr->pendtime = (uint32_t)time(NULL);
+        if ( block != 0 )
+            block->issued = addr->pendtime;
         if ( 0 && coin->current == bp )
             printf("REQ.%s bundlei.%d hdrsi.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
@@ -325,13 +327,8 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
     bp = iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.hash2);
     if ( bp != 0 && bundlei >= 0 && bundlei < bp->n )
     {
-        block = bp->blocks[bundlei];
-        if ( block != 0 )
-        {
-            if ( block->peerid != 0 && block->issued != 0 && time(NULL)-block->issued < 60 )
-                addr->laggard--;
-            block->peerid = 0;
-        }
+        if ( (block= bp->blocks[bundlei]) != 0 && block->lag == 0 && block->issued != 0 )
+            block->lag = (uint32_t)time(NULL) - block->issued;
         if ( bp->emitfinish != 0 )
         {
             numAfteremit++;
@@ -342,7 +339,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             return;
         }
         bp->dirty++;
-        if ( bundlei >= 0 && (block= bp->blocks[bundlei]) != 0 )
+        if ( bundlei >= 0 && block != 0 )
         {
             if ( iguana_blockstatus(coin,block) != 0 && block->txvalid != 0 )
             {
@@ -951,6 +948,8 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     {
         if ( block != origblock )
             iguana_blockcopy(coin,block,origblock);
+        if ( block->lag != 0 && block->issued != 0 )
+            block->lag = (uint32_t)time(NULL) - block->issued;
         if ( req->copyflag != 0 )
         {
             if ( block->queued == 0 && bp != 0 )
@@ -1305,7 +1304,7 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
             } else coin->backlog >>= 1;
             if ( block != 0 )
             {
-                block->numrequests++;
+                //block->numrequests++;
                 block->issued = now;
             }
             queue_enqueue(str,Q,&req->DL,0);
@@ -1355,7 +1354,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                         iguana_send(coin,addr,serialized,datalen);
                         addr->pendhdrs++;
                         flag++;
-                    } else printf("skip hdrreq.%s m.%d z.%d bp.%p longest.%d queued.%d\n",hashstr,m,z,bp,bp->coin->longestchain,bp->queued);
+                    } //else printf("skip hdrreq.%s m.%d z.%d bp.%p longest.%d queued.%d\n",hashstr,m,z,bp,bp->coin->longestchain,bp->queued);
                 }
                 free_queueitem(hashstr);
                 return(flag);
@@ -1408,8 +1407,8 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         }
         else
         {
-            if ( block != 0 )
-                block->numrequests++;
+            //if ( block != 0 )
+            //    block->numrequests++;
             iguana_sendblockreqPT(coin,addr,bp,req->bundlei,hash2,0);
         }
         flag++;
