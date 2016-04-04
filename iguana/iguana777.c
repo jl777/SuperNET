@@ -477,7 +477,7 @@ void iguana_helper(void *arg)
                         if ( retval > 0 )
                         {
                             printf("GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL)-bp->startutxo);
-                        } else printf("null retval from iguana_spendvectors.[%d]\n",bp->hdrsi);
+                        } // else printf("null retval from iguana_spendvectors.[%d]\n",bp->hdrsi);
                         bp->utxofinish = (uint32_t)time(NULL);
                         iguana_balancesQ(coin,bp);
                     } else printf("UTXO gen.[%d] utxo error\n",bp->hdrsi);

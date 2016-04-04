@@ -1405,9 +1405,9 @@ void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,
 int32_t iguana_realtime_update(struct iguana_info *coin)
 {
     double startmillis0; static double totalmillis0; static int32_t num0;
-    struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,n,flag=0;
+    struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,i,n,flag=0; bits256 hash2;
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
-    if ( (bp= coin->current) != 0 && time(NULL) > bp->lastRT && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n )//&& coin->blocks.hwmchain.height >= coin->longestchain-1 && coin->RTramchain.H.data->numblocks < bp->n )
+    if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && (coin->RTheight < coin->blocks.hwmchain.height-3 || time(NULL) > bp->lastRT) )//&& coin->blocks.hwmchain.height >= coin->longestchain-1 && coin->RTramchain.H.data->numblocks < bp->n )
     {
         bp->lastRT = (uint32_t)time(NULL);
         iguana_RTramchainalloc(coin,bp);
@@ -1424,15 +1424,19 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                 startmillis0 = OS_milliseconds();
                 if ( iguana_ramchainfile(coin,dest,&blockR,bp,bundlei,block) == 0 )
                 {
-                    //iguana_RTramchainfree(coin);
-                    if ( bits256_nonz(bp->hashes[bundlei]) != 0 )
+                    for (i=bundlei; i<bp->n; i++)
                     {
-                        uint8_t serialized[512]; int32_t len; struct iguana_peer *addr;
-                        char str[65]; printf("RT error [%d:%d] %s %p\n",bp->hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]),block);
-                        addr = coin->peers.ranked[rand() % 8];
-                        if ( addr != 0 && (len= iguana_getdata(coin,serialized,MSG_BLOCK,&bp->hashes[bundlei],1)) > 0 )
-                            iguana_send(coin,addr,serialized,len);
-                        coin->RTgenesis = 0;
+                        block = iguana_bundleblock(coin,&hash2,bp,bundlei+i);
+                        if ( i == 0 || (bits256_nonz(hash2) != 0 && (block == 0 || block->txvalid == 0)) )
+                        {
+                            uint8_t serialized[512]; int32_t len; struct iguana_peer *addr;
+                            char str[65]; printf("RT error [%d:%d] %s %p\n",bp->hdrsi,bundlei+i,bits256_str(str,hash2),block);
+                            addr = coin->peers.ranked[rand() % 8];
+                            if ( addr != 0 && (len= iguana_getdata(coin,serialized,MSG_BLOCK,&hash2,1)) > 0 )
+                                iguana_send(coin,addr,serialized,len);
+                            coin->RTgenesis = 0;
+                        }
+                        break;
                     }
                     return(-1);
                 } else iguana_ramchain_free(coin,&blockR,1);
@@ -1451,10 +1455,11 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                 totalmillis += (OS_milliseconds() - startmillis);
                 num++;
                 //printf("RTutxo.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
+                //_iguana_chainlink(coin,block);
                 coin->RTheight++;
                 printf(">>>> RT.%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",coin->RTheight,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize);
                 coin->RTramchain.H.data->numblocks = bundlei + 1;
-            }
+            } else break;
         }
     }
     n = 0;
@@ -1480,7 +1485,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         }
     }
     if ( dest != 0 )
-        printf(">>>> RT.%d:%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",coin->RTheight,n,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize);
+        printf(">>>>flag.%d RT.%d:%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",flag,coin->RTheight,n,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize);
     return(flag);
 }
 
