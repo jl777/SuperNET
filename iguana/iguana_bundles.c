@@ -1080,7 +1080,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
                 }
                 //else printf("[%d] emit.%u bp->n.%d numsaved.%d numcached.%d numhashes.%d\n",bp->hdrsi,bp->emitfinish,bp->n,bp->numsaved,bp->numcached,bp->numhashes);
 
-                if ( bp->emitfinish == 0 )
+                if ( bp->emitfinish == 0 && firstgap != 0 )
                 {
                     if ( ++pending == coin->MAXBUNDLES )
                     {
