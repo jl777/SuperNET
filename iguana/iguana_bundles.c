@@ -848,7 +848,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
         {
             if ( bp->balancefinish == 0 )
             {
-                bp->queued = 0;
+                //bp->queued = 0;
                 iguana_balancesQ(coin,bp);
             }
             return(1);
@@ -858,7 +858,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
             if ( (retval= iguana_bundlefinish(coin,bp)) > 0 )
             {
                 //printf("moved to balancesQ.%d bundleiters.%d\n",bp->hdrsi,bp->bundleheight);
-                bp->queued = 0;
+                //bp->queued = 0;
                 return(0);
             } //else printf("finish incomplete.%d\n",bp->hdrsi);
         }

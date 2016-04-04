@@ -395,7 +395,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                             }
                             iguana_bundlehash2add(coin,0,bp,block->height % coin->chain->bundlesize,block->RO.hash2);
                         }
-                        if ( coin->started != 0 && (block->height % coin->chain->bundlesize) == coin->minconfirms && (block->height > coin->longestchain-coin->chain->bundlesize*2 || ((block->height / coin->chain->bundlesize) % 10) == 9) )
+                        if ( coin->started != 0 && (block->height % coin->chain->bundlesize) == coin->minconfirms )//&& (block->height > coin->longestchain-coin->chain->bundlesize*2 || ((block->height / coin->chain->bundlesize) % 10) == 9) )
                         {
                             //printf("savehdrs.[%d] ht.%d\n",bp->hdrsi,block->height);
                             iguana_savehdrs(coin);
