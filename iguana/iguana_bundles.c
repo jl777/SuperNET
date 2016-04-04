@@ -867,15 +867,15 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
     {
         if ( iguana_bundlefinalize(coin,bp,mem,memB) == 0 )
             return(0);
-        else bp->nexttime--;
+        //else bp->nexttime--;
         retval = 1;
     }
     else if ( bp->hdrsi == starti || (bp->hdrsi >= starti && bp->hdrsi <= starti+range) ) //bits256_nonz(bp->allhash) != 0 &&
     {
         max = bp->n;
         counter = 0;//iguana_bundleissue(coin,bp,max,timelimit);
-        if ( bp == coin->current && coin->isRT == 0 )
-            bp->nexttime--;
+        //if ( bp == coin->current && coin->isRT == 0 )
+        //    bp->nexttime--;
         if ( bp->isRT == 0 && bp == coin->current && counter > 0 )
             printf("ITER.rt%d now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",bp->isRT,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
         if ( bp->hdrsi == starti && bp->isRT == 0 )
