@@ -473,7 +473,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                     duration = (OS_milliseconds() - startmillis);
                     coin->txidfind_totalmillis += duration;
                     coin->txidfind_num += 1.;
-                    if ( 0 && coin->PREFETCHLAG != 0 )
+                    if ( 1 && coin->PREFETCHLAG != 0 )
                     {
                         /*if ( spentbp->lastprefetch == 0 )
                         {
