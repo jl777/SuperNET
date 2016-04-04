@@ -473,7 +473,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                     duration = (OS_milliseconds() - startmillis);
                     coin->txidfind_totalmillis += duration;
                     coin->txidfind_num += 1.;
-                    if ( 1 && coin->PREFETCHLAG != 0 )
+                    if ( prefetchflag >= 0 && coin->PREFETCHLAG != 0 )
                     {
                         /*if ( spentbp->lastprefetch == 0 )
                         {
@@ -850,7 +850,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                 s = &S[spendind];
                 if ( s->external != 0 && s->prevout >= 0 )
                 {
-                    if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s,2)) != 0 && spentbp->ramchain.H.data != 0 )
+                    if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s,convertflag != 0 ? 2 : -1)) != 0 && spentbp->ramchain.H.data != 0 )
                     {
                         if ( spentbp == bp )
                         {
