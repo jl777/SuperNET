@@ -351,7 +351,6 @@ void mainloop(struct supernet_info *myinfo)
     printf("mainloop\n");
     while ( 1 )
     {
-        iguana_jsonQ(); // cant do this here safely, need to send to coin specific queue
         if ( myinfo->expiration != 0 && time(NULL) > myinfo->expiration )
             iguana_walletlock(myinfo);
         flag = 0;
@@ -418,7 +417,10 @@ void mainloop(struct supernet_info *myinfo)
         }
         pangea_queues(SuperNET_MYINFO(0));
         if ( flag == 0 )
+        {
             usleep(1000 + isRT*100000 + (numpeers == 0)*1000000);
+            iguana_jsonQ(); // cant do this here safely, need to send to coin specific queue
+        }
     }
 }
 
