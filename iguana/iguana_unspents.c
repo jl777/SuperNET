@@ -1080,6 +1080,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
             s = &S[spendind];
             if ( s->external != 0 && s->prevout >= 0 )
             {
+                continue;
                 double startmillis = OS_milliseconds(); static double totalmillis; static int32_t num;
                 if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,RTramchain,bp->hdrsi,s,2)) == 0 || spent_unspentind == 0 || spent_unspentind >= spentbp->ramchain.H.data->numunspents || spentbp->hdrsi < 0 || spentbp->hdrsi >= bp->hdrsi || spentbp == bp )
                 {
@@ -1252,6 +1253,7 @@ int32_t iguana_volatileinit(struct iguana_info *coin)
     struct sha256_vstate vstate; int32_t i,from_ro,numpkinds,numunspents; struct iguana_bundle *bp;
     uint32_t crc,filecrc; FILE *fp; char crcfname[512],str[65],str2[65],buf[2048];
     from_ro = 1;
+    printf("volatile init\n");
     for (i=0; i<coin->balanceswritten; i++)
     {
         if ( (bp= coin->bundles[i]) == 0 || bp->emitfinish <= 1 || bp->utxofinish <= 1 )
@@ -1479,14 +1481,17 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             if ( coin->RTgenesis != 0 && n >= bp->n )
                 break;
         }
-        if ( coin->RTgenesis == 0 && n == coin->RTheight )
+        if ( coin->RTgenesis == 0)
         {
-            printf("RTgenesis verified\n");
-            coin->RTgenesis = (uint32_t)time(NULL);
+            if ( n == coin->RTheight )
+            {
+                printf("RTgenesis verified\n");
+                coin->RTgenesis = (uint32_t)time(NULL);
+            } else printf("RTgenesis failed to verify\n");
         }
     }
-    if ( dest != 0 )
-        printf(">>>>flag.%d RT.%d:%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",flag,coin->RTheight,n,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize);
+    if ( dest != 0 && flag != 0 )
+        printf("<<<< flag.%d RT.%d:%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",flag,coin->RTheight,n,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize);
     return(flag);
 }
 
