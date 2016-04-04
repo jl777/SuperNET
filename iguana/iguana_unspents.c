@@ -1402,8 +1402,14 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                 if ( iguana_ramchainfile(coin,dest,&blockR,bp,bundlei,block) == 0 )
                 {
                     //iguana_RTramchainfree(coin);
-                    char str[65]; printf("RT error [%d:%d] %s %p\n",bp->hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]),block);
-                    iguana_blockQ("RT",coin,bp,bundlei,bp->hashes[bundlei],1);
+                    if ( bits256_nonz(bp->hashes[bundlei]) != 0 )
+                    {
+                        uint8_t serialized[512]; int32_t len; struct iguana_peer *addr;
+                        char str[65]; printf("RT error [%d:%d] %s %p\n",bp->hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]),block);
+                        addr = coin->peers.ranked[rand() % 8];
+                        if ( addr != 0 && (len= iguana_getdata(coin,serialized,MSG_BLOCK,&bp->hashes[bundlei],1)) > 0 )
+                            iguana_send(coin,addr,serialized,len);
+                    }
                     return(-1);
                 } else iguana_ramchain_free(coin,&blockR,1);
                 B[bundlei] = block->RO;
