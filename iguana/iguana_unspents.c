@@ -1770,7 +1770,7 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
             {
                 for (i=0; i<coin->bundlescount-1; i++)
                 {
-                    if ( coin->bundles[i] == 0 || coin->bundles[i]->emitfinish <= 1 )
+                    if ( coin->bundles[i] == 0 || coin->bundles[i]->utxofinish <= 1 )
                         break;
                 }
                 if ( i == coin->bundlescount-1 )

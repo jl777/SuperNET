@@ -941,7 +941,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
                 if ( (tmpblock= bp->blocks[i]) != 0 && tmpblock->fpipbits != 0 && tmpblock->fpos >= 0 && ((bp->hdrsi == 0 && i == 0) || bits256_nonz(tmpblock->RO.prev_block) != 0) )
                     numsaved++;
         }
-        fprintf(stderr,"%s [%d:%d] block.%x | s.%d r.%d copy.%d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block->fpipbits,numsaved,numrecv,req->copyflag);
+        fprintf(stderr,"%s [%d:%d] block.%x | s.%d r.%d copy.%d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block!=0?block->fpipbits:0,numsaved,numrecv,req->copyflag);
     }
     if ( 0 && bundlei == 1 && bp != 0 && bp->numhashes < bp->n && coin->enableCACHE != 0 && bp->speculative == 0 && bp == coin->current )
     {
