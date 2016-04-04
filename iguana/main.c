@@ -1159,6 +1159,8 @@ void iguana_main(void *arg)
     OS_ensure_directory("DB"), OS_ensure_directory("DB/ECB");
     OS_ensure_directory("tmp");
     OS_ensure_directory("purgeable");
+    OS_ensure_directory("purgeable/BTC");
+    OS_ensure_directory("purgeable/BTCD");
     OS_ensure_directory(GLOBALTMPDIR);
     btc = iguana_coinadd("BTC",0);
     btcd = iguana_coinadd("BTCD",0);
