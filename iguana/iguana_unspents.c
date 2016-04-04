@@ -1075,7 +1075,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
                 if ( (++num % 100000) == 0 )
                     printf("externalspents.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
                 rdata = spentbp->ramchain.H.data;
-                if ( 0 && coin->PREFETCHLAG != 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
+                if ( 1 && coin->PREFETCHLAG != 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
                 {
                     printf("RT prefetch[%d] from.[%d] lag.%d bundlei.%d numspends.%d of %d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch,bundlei,spendind,RTramchain->H.spendind);
                     iguana_ramchain_prefetch(coin,&spentbp->ramchain,1);
@@ -1716,7 +1716,10 @@ int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *s
 {
     struct iguana_bundle *bp; int16_t spent_hdrsi; uint32_t numpkinds; struct iguana_unspent *spentU; struct iguana_spendvector *vec; int32_t i,converted,j,n = coin->bundlescount;
     if ( spentbp->converted != 0 )
+    {
+        printf("[%d] already converted.%u\n",spentbp->hdrsi,spentbp->converted);
         return(-1);
+    }
     spentbp->converted = 1;
     spent_hdrsi = spentbp->hdrsi;
     numpkinds = spentbp->ramchain.H.data->numpkinds;
@@ -1757,6 +1760,7 @@ void iguana_convert(struct iguana_info *coin,struct iguana_bundle *bp)
     static int64_t total,depth;
     int32_t i,n,m,converted; int64_t total_tmpspends; double startmillis = OS_milliseconds();
     depth++;
+    printf("iguana_convert.[%d] depth.%d %u\n",bp->hdrsi,(int32_t)depth,bp->converted);
     if ( (converted= iguana_spendvectorconvs(coin,bp)) < 0 )
         printf("error ram balancecalc.[%d]\n",bp->hdrsi);
     else
