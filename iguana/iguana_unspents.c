@@ -1311,6 +1311,7 @@ void iguana_RTramchainfree(struct iguana_info *coin)
 {
     iguana_utxoupdate(coin,-1,0,0,0,0,-1); // free hashtables
     coin->RTheight = coin->balanceswritten * coin->chain->bundlesize;
+    coin->RTgenesis = 0;
     iguana_ramchain_free(coin,&coin->RTramchain,1);
 }
 
@@ -1397,13 +1398,13 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             if ( (block= bp->blocks[bundlei]) != 0 && bits256_nonz(block->RO.prev_block) != 0 )
             {
                 iguana_blocksetcounters(coin,block,dest);
-                B[bundlei] = block->RO;
                 startmillis0 = OS_milliseconds();
                 if ( iguana_ramchainfile(coin,dest,&blockR,bp,bundlei,block) == 0 )
                 {
-                    iguana_RTramchainfree(coin);
+                    //iguana_RTramchainfree(coin);
                     return(-1);
                 } else iguana_ramchain_free(coin,&blockR,1);
+                B[bundlei] = block->RO;
                 totalmillis0 += (OS_milliseconds() - startmillis0);
                 num0++;
                 flag++;
@@ -1608,16 +1609,16 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
 int32_t iguana_balancenormal(struct iguana_info *coin,struct iguana_bundle *bp,int32_t startheight,int32_t endheight)
 {
     uint32_t starttime; int32_t j=0,n; struct iguana_bundle *prevbp;
-    n = coin->bundlescount;
+    n = coin->bundlescount - 1;
     for (j=0; j<n; j++)
     {
         if ( (prevbp= coin->bundles[j]) == 0 )
             break;
-        if ( prevbp->balancefinish <= 1 || (j < bp->hdrsi && prevbp->utxofinish <= 1) )
+        if ( prevbp->utxofinish <= 1 || (j < bp->hdrsi && prevbp->balancefinish <= 1) )
             break;
     }
     //printf("B [%d] j.%d u.%u b.%u\n",bp->hdrsi,j,bp->utxofinish,bp->balancefinish);
-    if ( j == n && bp->bundleheight+bp->n <= coin->blocks.hwmchain.height && bp->utxofinish > 1 && bp->balancefinish <= 1 )
+    if ( (j == n || bp->hdrsi == 0) && bp->bundleheight+bp->n <= coin->blocks.hwmchain.height && bp->utxofinish > 1 && bp->balancefinish <= 1 )
     {
         if ( bp->hdrsi >= coin->balanceswritten )
         {
@@ -1757,7 +1758,20 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
                     if ( m == n-1 )
                         iguana_spendvectorsaves(coin);
                 }
-            } //else printf("error with invalid tmpspends.[%d]\n",bp->hdrsi), getchar();
+            }
+            else
+            {
+                for (i=0; i<coin->bundlescount-1; i++)
+                {
+                    if ( coin->bundles[i] == 0 || coin->bundles[i]->emitfinish <= 1 )
+                        break;
+                }
+                if ( i == coin->bundlescount-1 )
+                {
+                    printf("must be restart after all the spendvectors are saved\n");
+                    coin->spendvectorsaved = (uint32_t)time(NULL);
+                }
+            }
         } else retval = iguana_balancenormal(coin,bp,startheight,endheight);
         if ( retval < 0 )
         {

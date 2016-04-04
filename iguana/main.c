@@ -346,7 +346,7 @@ mksquashfs DB/BTC BTC.squash1M -b 1048576
 
 void mainloop(struct supernet_info *myinfo)
 {
-    int32_t i,flag,isRT,numpeers; struct iguana_info *coin; struct iguana_helper *ptr; struct iguana_bundle *bp;
+    int32_t i,n,iter,flag,isRT,numpeers; struct iguana_info *coin; struct iguana_helper *ptr; struct iguana_bundle *bp;
     sleep(3);
     printf("mainloop\n");
     while ( 1 )
@@ -365,28 +365,32 @@ void mainloop(struct supernet_info *myinfo)
                     {
                         isRT *= coin->isRT;
                         numpeers += coin->peers.numranked;
-                        if ( queue_size(&bundlesQ) < 2 && (ptr= queue_dequeue(&balancesQ,0)) != 0 )
+                        n = queue_size(&balancesQ);
+                        for (iter=0; iter<n; iter++)
                         {
-                            bp = ptr->bp;
-                            if ( ptr->coin != coin || bp == 0 || time(NULL) < bp->nexttime )
+                            if ( queue_size(&bundlesQ) < 2 && (ptr= queue_dequeue(&balancesQ,0)) != 0 )
                             {
-                                if ( 0 && bp != 0 )
-                                    printf("skip.%d lag.%ld\n",bp->hdrsi,bp->nexttime-time(NULL));
-                                bp->nexttime = (uint32_t)time(NULL);
-                                queue_enqueue("balanceQ",&balancesQ,&ptr->DL,0);
-                                continue;
-                            }
-                            flag++;
-                            if ( coin != 0 )
-                            {
-                                iguana_balancecalc(coin,bp,bp->bundleheight,bp->bundleheight+bp->n-1);
-                                if ( coin->active == 0 )
+                                bp = ptr->bp;
+                                if ( ptr->coin != coin || bp == 0 || time(NULL) < bp->nexttime )
                                 {
-                                    printf("detected autopurge after account filecreation. restarting.%s\n",coin->symbol);
-                                    coin->active = 1;
+                                    if ( 0 && bp != 0 )
+                                        printf("skip.%d lag.%ld\n",bp->hdrsi,bp->nexttime-time(NULL));
+                                    //bp->nexttime = (uint32_t)time(NULL);
+                                    queue_enqueue("balanceQ",&balancesQ,&ptr->DL,0);
+                                    continue;
                                 }
+                                flag++;
+                                if ( coin != 0 )
+                                {
+                                    iguana_balancecalc(coin,bp,bp->bundleheight,bp->bundleheight+bp->n-1);
+                                    if ( coin->active == 0 )
+                                    {
+                                        printf("detected autopurge after account filecreation. restarting.%s\n",coin->symbol);
+                                        coin->active = 1;
+                                    }
+                                }
+                                myfree(ptr,ptr->allocsize);
                             }
-                            myfree(ptr,ptr->allocsize);
                         }
                         if ( (bp= coin->current) != 0 && coin->stucktime != 0 && coin->isRT == 0 && coin->RTheight == 0 && (time(NULL) - coin->stucktime) > coin->MAXSTUCKTIME )
                         {

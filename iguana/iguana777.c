@@ -380,7 +380,7 @@ void iguana_balancesQ(struct iguana_info *coin,struct iguana_bundle *bp)
 
 void iguana_helper(void *arg)
 {
-    cJSON *argjson=0; int32_t iter,retval,polltimeout,type,helperid=rand(),flag,allcurrent,idle=0;
+    cJSON *argjson=0; int32_t iter,n,retval,polltimeout,type,helperid=rand(),flag,allcurrent,idle=0;
     struct iguana_helper *ptr; struct iguana_info *coin; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp;
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
         helperid = juint(argjson,"helperid");
@@ -396,7 +396,7 @@ void iguana_helper(void *arg)
     {
         //iguana_jsonQ(); cant do this here
         flag = 0;
-        allcurrent = 1;
+        allcurrent = 2;
         polltimeout = 100;
         //printf("helper.%d\n",helperid);
         /*if ( ((ptr= queue_dequeue(&emitQ,0)) != 0 || (ptr= queue_dequeue(&helperQ,0)) != 0) )
@@ -415,7 +415,8 @@ void iguana_helper(void *arg)
          }*/
         if ( (type & (1 << 0)) != 0 )
         {
-            for (iter=0; iter<2048; iter++)
+            n = queue_size(&bundlesQ);
+            for (iter=0; iter<n; iter++)
             {
                 if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
                 {
@@ -436,7 +437,7 @@ void iguana_helper(void *arg)
                         else
                         {
                             //printf("skip.[%d] nexttime.%u lag.%ld coin->active.%d\n",bp->hdrsi,bp->nexttime,time(NULL)-bp->nexttime,coin->active);
-                            allcurrent = 0;
+                            allcurrent--;
                             iguana_bundleQ(ptr->coin,bp,1000);
                         }
                     }
@@ -485,8 +486,11 @@ void iguana_helper(void *arg)
             allcurrent = 0;
         if ( flag != 0 )
             usleep(polltimeout * 250);
-        else if ( allcurrent != 0 )
+        else if ( allcurrent > 0 )
+        {
+            //printf("bundlesQ allcurrent\n");
             usleep(polltimeout * 100000);
+        }
         else usleep(polltimeout * 100);
     }
 }
