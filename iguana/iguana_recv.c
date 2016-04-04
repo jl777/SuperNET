@@ -595,7 +595,7 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
             size = sizeof(blockR);
             iguana_ramchain_free(coin,&blockR,1);
         }
-        else if ( block->txvalid == 0 && bp->hdrsi == coin->longestchain/bp->n )
+        else if ( bp->hdrsi == coin->longestchain/bp->n )
         {
             checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,block->RO.hash2,zero,1,0);
             if ( (fp= fopen(fname,"rb")) != 0 )
