@@ -608,7 +608,7 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
         if ( size != 0 )
         {
             retval = 0;
-            printf("initialize with fp.[%d:%d] len.%ld\n",bp->hdrsi,bundlei,size);
+            //printf("initialize with fp.[%d:%d] len.%ld\n",bp->hdrsi,bundlei,size);
             block->RO.recvlen = (int32_t)size;
             block->fpipbits = 1;
             block->txvalid = 1;
