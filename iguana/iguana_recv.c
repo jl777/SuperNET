@@ -931,7 +931,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
             }
         }
     }
-    if ( 0 )//&& bp != 0 && bp->hdrsi == coin->bundlescount-1 )
+    if ( 1 )//&& bp != 0 && bp->hdrsi == coin->bundlescount-1 )
     {
         int32_t i; static int32_t numrecv;
         numrecv++;
@@ -1429,10 +1429,14 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
     flag += iguana_processrecvQ(coin,&newhwm);
     flag += iguana_reqblocks(coin);
     flag += iguana_reqhdrs(coin);
-    coin->RTramchain_busy = 1;
-    flag += (iguana_realtime_update(coin) > 0);
-    coin->RTramchain_busy = (coin->RTgenesis == 0 || queue_size(&balancesQ) != 0);
-    iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
+    if ( time(NULL) > coin->laststats )
+    {
+        coin->RTramchain_busy = 1;
+        flag += (iguana_realtime_update(coin) > 0);
+        coin->RTramchain_busy = (coin->RTgenesis == 0 || queue_size(&balancesQ) != 0);
+        iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
+        coin->laststats = (uint32_t)time(NULL);
+    }
     iguana_jsonQ();
     if ( hwmheight != coin->blocks.hwmchain.height )
         flag = 1;

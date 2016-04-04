@@ -1372,9 +1372,9 @@ void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,
                 printf("ERROR [%d:%d] %s vs ",bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
                 printf("mapped.%s\n",bits256_str(str,R->H.data->firsthash2));
             } else return(ptr);
-            iguana_ramchain_free(coin,R,1);
-            iguana_blockunmark(coin,block,bp,bundlei,0);
+            iguana_blockunmark(coin,block,bp,bundlei,1);
         }
+        iguana_ramchain_free(coin,R,1);
     }
     return(0);
 }
@@ -1402,6 +1402,8 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                 if ( iguana_ramchainfile(coin,dest,&blockR,bp,bundlei,block) == 0 )
                 {
                     //iguana_RTramchainfree(coin);
+                    char str[65]; printf("RT error [%d:%d] %s %p\n",bp->hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]),block);
+                    iguana_blockQ("RT",coin,bp,bundlei,bp->hashes[bundlei],1);
                     return(-1);
                 } else iguana_ramchain_free(coin,&blockR,1);
                 B[bundlei] = block->RO;
@@ -1737,7 +1739,12 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
     {
         if ( coin->origbalanceswritten <= 1 && coin->spendvectorsaved == 0 )
         {
-            if ( bp->tmpspends != 0 && bp->ramchain.H.data != 0 && (n= bp->ramchain.H.data->numspends) != 0 && bp->converted == 0 )
+            for (i=0; i<coin->bundlescount-1; i++)
+            {
+                if ( coin->bundles[i] == 0 || coin->bundles[i]->tmpspends == 0 )
+                    break;
+            }
+            if ( i == coin->bundlescount-1 && bp->tmpspends != 0 && bp->ramchain.H.data != 0 && (n= bp->ramchain.H.data->numspends) != 0 && bp->converted == 0 )
             {
                 if ( (converted= iguana_spendvectorconvs(coin,bp)) < 0 )
                     printf("error ram balancecalc.[%d]\n",bp->hdrsi);
