@@ -810,7 +810,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
             }
             for (k=0; k<T[txidind].numvins && errs==0; k++,spendind++)
             {
-                if ( (spendind % 1000000) == 0 )
+                if ( (spendind % 10000000) == 0 )
                     printf("[%-3d:%4d] spendvectors elapsed t.%-3d spendind.%d\n",bp->hdrsi,i,(uint32_t)time(NULL)-starttime,spendind);
                 u = 0;
                 s = &S[spendind];
@@ -1752,6 +1752,7 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
             }
             if ( i == coin->bundlescount-1 && bp->tmpspends != 0 && bp->ramchain.H.data != 0 && (n= bp->ramchain.H.data->numspends) != 0 && bp->converted == 0 )
             {
+                double startmillis = OS_milliseconds();
                 if ( (converted= iguana_spendvectorconvs(coin,bp)) < 0 )
                     printf("error ram balancecalc.[%d]\n",bp->hdrsi);
                 else
@@ -1767,7 +1768,7 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
                         }
                     }
                     total += converted;
-                    printf("[%4d] converted.%-7d balance calc.%-4d of %4d | total.%llu of %llu\n",bp->hdrsi,converted,m,n,(long long)total,(long long)total_tmpspends);
+                    printf("[%4d] millis %7.3f converted.%-7d balance calc.%-4d of %4d | total.%llu of %llu\n",bp->hdrsi,OS_milliseconds()-startmillis,converted,m,n,(long long)total,(long long)total_tmpspends);
                     if ( m == n-1 )
                         iguana_spendvectorsaves(coin);
                 }

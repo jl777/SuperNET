@@ -1432,6 +1432,7 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
     coin->RTramchain_busy = 1;
     if ( time(NULL) > coin->laststats )
     {
+        flag += (iguana_realtime_update(coin) > 0);
         iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
         coin->laststats = (uint32_t)time(NULL);
     }
