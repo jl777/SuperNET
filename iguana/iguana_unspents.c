@@ -64,7 +64,7 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
         }
         return(0);
     }
-    //printf("utxoupdate spenthdrsi.%d pkind.%d %.8f from [%d:%d] spendind.%u\n",spent_hdrsi,spent_pkind,dstr(spent_value),fromheight/coin->chain->bundlesize,fromheight%coin->chain->bundlesize,spendind);
+    printf("utxoupdate spenthdrsi.%d pkind.%d %.8f from [%d:%d] spendind.%u\n",spent_hdrsi,spent_pkind,dstr(spent_value),fromheight/coin->chain->bundlesize,fromheight%coin->chain->bundlesize,spendind);
     if ( (hhutxo= iguana_hhutxofind(coin,ubuf,spent_hdrsi,spent_unspentind)) != 0 && hhutxo->u.spentflag != 0 )
     {
         printf("hhutxo.%p spentflag.%d\n",hhutxo,hhutxo->u.spentflag);
@@ -1606,7 +1606,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
                 printf("error mapping bundle.[%d]\n",hdrsi);
         }
     char str[65]; printf("BALANCES WRITTEN for %d/%d bundles %s\n",coin->balanceswritten,coin->origbalanceswritten,bits256_str(str,coin->balancehash));
-    if ( coin->balanceswritten > coin->origbalanceswritten+10 ) // strcmp(coin->symbol,"BTC") == 0 && 
+    if ( 0 && coin->balanceswritten > coin->origbalanceswritten+10 ) // strcmp(coin->symbol,"BTC") == 0 &&
     {
         coin->active = 0;
         coin->started = 0;
@@ -1637,9 +1637,9 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
         }
         exit(-1);
     }
-    iguana_coinpurge(coin);
-    //coin->balanceswritten = iguana_volatileinit(coin);
-    //iguana_RTramchainfree(coin);
+    //iguana_coinpurge(coin);
+    coin->balanceswritten = iguana_volatileinit(coin);
+    iguana_RTramchainfree(coin);
     return(coin->balanceswritten);
 }
 
