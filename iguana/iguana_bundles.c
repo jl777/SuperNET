@@ -667,7 +667,7 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
         bp->hdrtime = (uint32_t)time(NULL);
         if ( bp == coin->current && bp->speculative != 0 )
         {
-            //printf("iguana_bundlehdr.[%d] %d %s\n",bp->hdrsi,bp->numspec,bits256_str(str,bp->hashes[0]));
+            printf("iguana_bundlehdr.[%d] %d %s\n",bp->hdrsi,bp->numspec,bits256_str(str,bp->hashes[0]));
             //if ( iguana_blocksmissing(coin,&avail,missings,0,bp,0,7) > 0 )
             //    iguana_bundleissuemissing(coin,bp,missings,3);
         }
@@ -699,11 +699,21 @@ int32_t iguana_setmaxbundles(struct iguana_info *coin)
 
 int32_t iguana_bundletweak(struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    struct iguana_bundle *lastbp;
+    struct iguana_bundle *lastbp; int32_t i,pending;
     if ( coin->current == bp )
         coin->current = coin->bundles[bp->hdrsi+1];
-    if ( (lastbp= coin->lastpending) != 0 && lastbp->hdrsi < coin->bundlescount-1 )
-        coin->lastpending = coin->bundles[lastbp->hdrsi + 1];
+    if ( (lastbp= coin->current) != 0 )
+    {
+        for (pending=0,i=lastbp->hdrsi+1; i<coin->bundlescount; i++)
+        {
+            if ( (lastbp= coin->bundles[i]) != 0 && lastbp->emitfinish == 0 )
+            {
+                if ( ++pending == coin->MAXBUNDLES )
+                    break;
+            }
+        }
+        coin->lastpending = lastbp;
+    }
     iguana_setmaxbundles(coin);
     return(coin->MAXBUNDLES);
 }

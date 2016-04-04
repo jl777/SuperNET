@@ -792,7 +792,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
     memset(zero.bytes,0,sizeof(zero));
     bp = 0, bundlei = -2;
     iguana_bundlefind(coin,&bp,&bundlei,blockhashes[1]);
-    if ( 0 && num >= coin->chain->bundlesize )
+    if ( 1 && num >= coin->chain->bundlesize )
         printf("blockhashes[%d] %d of %d %s bp.%d[%d]\n",num,bp==0?-1:bp->hdrsi,coin->bundlescount,bits256_str(str,blockhashes[1]),bp==0?-1:bp->bundleheight,bundlei);
     if ( num < 2 )
         return(req);
@@ -826,11 +826,11 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
             for (i=bp->numspec; i<num&&i<=bp->n; i++)
             {
                 bp->speculative[i] = blockhashes[i];
+                if ( bp->blocks[i] == 0 || bp->blocks[i]->issued == 0 )
+                    iguana_blockQ("speculate",coin,bp,-i,blockhashes[i],0);
                 if ( bp->blocks[i] == 0 )
                     bp->blocks[i] = iguana_blockhashset("recvhashes3",coin,bp->bundleheight+i,blockhashes[i],1);
                 //printf("speculate new issue [%d:%d]\n",bp->hdrsi,i);
-                if ( 0 && bp->blocks[i] == 0 )
-                    iguana_blockQ("speculate",coin,bp,-i,blockhashes[i],0);
             }
             bp->speculative[0] = bp->hashes[0];
             bp->numspec = num <= bp->n+1 ? num : bp->n+1;
@@ -931,7 +931,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
             }
         }
     }
-    if ( 0 )//&& bp != 0 && bp->hdrsi == coin->bundlescount-1 )
+    if ( 1 )//&& bp != 0 && bp->hdrsi == coin->bundlescount-1 )
     {
         int32_t i; static int32_t numrecv;
         numrecv++;
