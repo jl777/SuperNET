@@ -13,6 +13,10 @@
  *                                                                            *
  ******************************************************************************/
 
+
+#define uthash_malloc(size) iguana_memalloc(&coin->RThashmem,size,1)
+#define uthash_free(ptr,size)
+
 #include "iguana777.h"
 #include "exchanges/bitcoin.h"
 
@@ -1351,6 +1355,7 @@ void iguana_RTramchainfree(struct iguana_info *coin)
     coin->RTheight = coin->balanceswritten * coin->chain->bundlesize;
     coin->RTgenesis = 0;
     iguana_ramchain_free(coin,&coin->RTramchain,1);
+    iguana_mempurge(&coin->RTHASHMEM);
 }
 
 void iguana_RTramchainalloc(struct iguana_info *coin,struct iguana_bundle *bp)
@@ -1386,6 +1391,8 @@ void iguana_RTramchainalloc(struct iguana_info *coin,struct iguana_bundle *bp)
         dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
         dest->externalind = dest->H.stacksize = 0;
         dest->H.scriptoffset = 1;
+        if ( coin->RTHASHMEM.ptr == 0 )
+            iguana_meminit(&coin->RTHASHMEM,"RTHASH",0,1024L*1024L*1024L,0);
         if ( coin->PREFETCHLAG != 0 )
         {
             iguana_ramchain_prefetch(coin,&coin->RTramchain,0);

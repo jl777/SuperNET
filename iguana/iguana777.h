@@ -477,7 +477,7 @@ struct iguana_info
 
     struct iguana_bitmap screen;
     //struct pollfd fds[IGUANA_MAXPEERS]; struct iguana_peer bindaddr; int32_t numsocks;
-    struct OS_memspace TXMEM,MEM,MEMB[IGUANA_MAXBUNDLESIZE];
+    struct OS_memspace RTHASHMEM,TXMEM,MEM,MEMB[IGUANA_MAXBUNDLESIZE];
     queue_t acceptQ,hdrsQ,blocksQ,priorityQ,possibleQ,cacheQ,recvQ;
     double parsemillis,avetime; uint32_t Launched[8],Terminated[8];
     portable_mutex_t peers_mutex,blocks_mutex;
