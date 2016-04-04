@@ -583,7 +583,7 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
             return(-1);
         }
     }
-    if ( bp->blocks[bundlei] == 0 )
+    //if ( bp->blocks[bundlei] == 0 )
         firstflag = 1;
     bp->blocks[bundlei] = block;
     iguana_bundlehash2add(coin,0,bp,bundlei,block->RO.hash2);
