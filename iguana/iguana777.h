@@ -844,10 +844,12 @@ int32_t bitcoin_pubkeylen(const uint8_t *pubkey);
 struct iguana_block *iguana_bundleblock(struct iguana_info *coin,bits256 *hash2p,struct iguana_bundle *bp,int32_t i);
 void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,struct iguana_ramchain *R,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block);
 int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block);
+void iguana_convertQ(struct iguana_info *coin,struct iguana_bundle *bp);
+void iguana_convert(struct iguana_info *coin,struct iguana_bundle *bp);
 
 extern int32_t HDRnet,netBLOCKS;
 
-extern queue_t bundlesQ,validateQ,emitQ,balancesQ,TerminateQ,spendvectorsQ;
+extern queue_t bundlesQ,validateQ,emitQ,balancesQ,TerminateQ,spendvectorsQ,convertQ;
 extern char GLOBALTMPDIR[];
 
 #include "../includes/iguana_api.h"
