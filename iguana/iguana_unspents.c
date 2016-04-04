@@ -418,7 +418,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
     return(0);
 }
 
-struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *prevhashp,uint32_t *unspentindp,struct iguana_ramchain *ramchain,int32_t spent_hdrsi,struct iguana_spend *s,int32_t txonly)
+struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *prevhashp,uint32_t *unspentindp,struct iguana_ramchain *ramchain,int32_t spent_hdrsi,struct iguana_spend *s,int32_t prefetchflag)
 {
     int32_t prev_vout,height,hdrsi; uint32_t sequenceid,unspentind,now; char str[65];
     struct iguana_bundle *spentbp=0; struct iguana_txid *T,TX,*tp; bits256 *X; bits256 prev_hash;
@@ -458,15 +458,15 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                     coin->txidfind_num += 1.;
                     if ( coin->PREFETCHLAG != 0 )
                     {
-                        if ( spentbp->lastprefetch == 0 || now >= spentbp->lastprefetch+5*coin->PREFETCHLAG )
+                        if ( spentbp->lastprefetch == 0 )
                         {
-                            iguana_ramchain_prefetch(coin,&spentbp->ramchain,txonly);
+                            iguana_ramchain_prefetch(coin,&spentbp->ramchain,prefetchflag);
                             spentbp->lastprefetch = now;
                         }
-                        else if ( duration > 1 && duration > (10 * coin->txidfind_totalmillis)/coin->txidfind_num && (rand() % (IGUANA_NUMHELPERS>>1)) == 0 )//&& now >= spentbp->lastprefetch+coin->PREFETCHLAG )
+                        else if ( (duration > 1 || duration > (10 * coin->txidfind_totalmillis)/coin->txidfind_num) && (rand() % (IGUANA_NUMHELPERS>>1)) == 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
                         {
                             //printf("slow txidfind %.2f vs %.2f prefetch[%d] from.[%d] lag.%ld last.%u\n",duration,coin->txidfind_totalmillis/coin->txidfind_num,spentbp->hdrsi,ramchain->H.data->height/coin->chain->bundlesize,time(NULL) - spentbp->lastprefetch,spentbp->lastprefetch);
-                            iguana_ramchain_prefetch(coin,&spentbp->ramchain,txonly);
+                            iguana_ramchain_prefetch(coin,&spentbp->ramchain,prefetchflag);
                             spentbp->lastprefetch = now;
                         }
                     }
@@ -832,7 +832,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
                 s = &S[spendind];
                 if ( s->external != 0 && s->prevout >= 0 )
                 {
-                    if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s,1)) != 0 && spentbp->ramchain.H.data != 0 )
+                    if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s,2)) != 0 && spentbp->ramchain.H.data != 0 )
                     {
                         if ( spentbp == bp )
                         {
@@ -1080,7 +1080,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
             if ( s->external != 0 && s->prevout >= 0 )
             {
                 double startmillis = OS_milliseconds(); static double totalmillis; static int32_t num;
-                if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,RTramchain,bp->hdrsi,s,3)) == 0 || spent_unspentind == 0 || spent_unspentind >= spentbp->ramchain.H.data->numunspents || spentbp->hdrsi < 0 || spentbp->hdrsi >= bp->hdrsi || spentbp == bp )
+                if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,RTramchain,bp->hdrsi,s,2)) == 0 || spent_unspentind == 0 || spent_unspentind >= spentbp->ramchain.H.data->numunspents || spentbp->hdrsi < 0 || spentbp->hdrsi >= bp->hdrsi || spentbp == bp )
                 {
                     char str[65];
                     printf("RTutxo: unexpected spendbp: height.%d bp.[%d] U%d <- S%d.[%d] [ext.%d %s prev.%d]\n",height,spentbp!=0?spentbp->hdrsi:-1,spent_unspentind,spendind,bp->hdrsi,s->external,bits256_str(str,prevhash),s->prevout);
