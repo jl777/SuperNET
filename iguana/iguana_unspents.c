@@ -1373,8 +1373,8 @@ void iguana_RTramchainalloc(struct iguana_info *coin,struct iguana_bundle *bp)
         if ( coin->PREFETCHLAG != 0 )
         {
             iguana_ramchain_prefetch(coin,&coin->RTramchain,0);
-            iguana_prefetch(coin,bp,7,0);
-            iguana_prefetch(coin,bp,22,1);
+            //iguana_prefetch(coin,bp,7,0);
+            //iguana_prefetch(coin,bp,22,1);
         }
     }
 }
