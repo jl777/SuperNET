@@ -1115,7 +1115,6 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
                 }
             }
             else continue; // coinbase always already spent
-            continue;
             if ( spentbp != 0 && rdata != 0 && spent_unspentind != 0 && spent_unspentind < rdata->numunspents )
             {
                 double startmillis = OS_milliseconds(); static double totalmillis; static int32_t num;
