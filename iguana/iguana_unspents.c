@@ -458,7 +458,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                     coin->txidfind_num += 1.;
                     if ( coin->PREFETCHLAG != 0 )
                     {
-                        if ( spentbp->lastprefetch == 0 || now >= spentbp->lastprefetch+5*coin->PREFETCHLAG )
+                        if ( 0 && (spentbp->lastprefetch == 0 || now >= spentbp->lastprefetch+coin->PREFETCHLAG) )
                         {
                             iguana_ramchain_prefetch(coin,&spentbp->ramchain,txonly);
                             spentbp->lastprefetch = now;
