@@ -861,7 +861,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                         }
                         if ( convertflag != 0 )
                         {
-                            if ( 0 && coin->PREFETCHLAG != 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
+                            if ( coin->PREFETCHLAG != 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
                             {
                                 //printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
                                 iguana_ramchain_prefetch(coin,&spentbp->ramchain,2);
@@ -1494,7 +1494,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     if ( dest != 0 && flag != 0 && coin->RTheight >= coin->longestchain )
     {
         printf("ramchainiterate.[%d] ave %.2f micros, total %.2f seconds starti.%d num.%d\n",num0,(totalmillis0*1000.)/num0,totalmillis0/1000.,starti,coin->RTheight%bp->n);
-        if ( iguana_spendvectors(coin,bp,dest,starti,coin->RTheight%bp->n,1) < 0 )
+        if ( iguana_spendvectors(coin,bp,dest,starti,coin->RTheight%bp->n,0) < 0 )
         {
             printf("RTutxo error -> RTramchainfree\n");
             iguana_RTramchainfree(coin);
