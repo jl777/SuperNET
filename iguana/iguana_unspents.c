@@ -1706,9 +1706,10 @@ int32_t iguana_spendvectorsaves(struct iguana_info *coin)
 int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *refbp)
 {
     struct iguana_bundle *bp; struct iguana_spendvector *vec; int32_t i,converted,j,n = coin->bundlescount;
+    iguana_ramchain_prefetch(coin,&refbp->ramchain,0);
     for (i=converted=0; i<n; i++)
     {
-        if ( coin->origbalanceswritten <= 1 && coin->spendvectorsaved == 0 && (bp= coin->bundles[i]) != 0 && bp->tmpspends != 0 && bp->numtmpspends > 0 )
+        if ( (bp= coin->bundles[i]) != 0 && bp->tmpspends != 0 && bp->numtmpspends > 0 )
         {
             for (j=0; j<bp->numtmpspends; j++)
             {

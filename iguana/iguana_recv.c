@@ -894,10 +894,10 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
         block->newtx = 1;
         iguana_blockQ("RTblock",coin,0,-7,blockhashes[1],1); // should be RT block
     }
-    if ( coin->enableCACHE != 0 && num >= coin->chain->bundlesize )
+    if ( coin->enableCACHE != 0 )//&& num >= coin->chain->bundlesize )
     {
         iguana_blockQ("recvhash7",coin,0,-7,blockhashes[1],1);
-        iguana_blockQ("recvhash7",coin,0,-7,blockhashes[coin->chain->bundlesize],1);
+        iguana_blockQ("recvhash7",coin,0,-7,blockhashes[num-1],1);
     }
     return(req);
 }
@@ -931,7 +931,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
             }
         }
     }
-    if ( 1 )//&& bp != 0 && bp->hdrsi == coin->bundlescount-1 )
+    if ( 0 )//&& bp != 0 && bp->hdrsi == coin->bundlescount-1 )
     {
         int32_t i; static int32_t numrecv;
         numrecv++;

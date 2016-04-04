@@ -446,15 +446,35 @@ void iguana_helper(void *arg)
                     myfree(ptr,ptr->allocsize);
                 } else break;
             }
-            if ( (ptr= queue_dequeue(&validateQ,0)) != 0 )
+           /* if ( (ptr= queue_dequeue(&convertQ,0)) != 0 )
             {
-                if ( ptr->bp != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
-                    flag += iguana_bundlevalidate(ptr->coin,ptr->bp);
-                else if ( coin->active != 0 )
-                    printf("helper validate missing param? %p %p\n",ptr->coin,ptr->bp);
+                coin = ptr->coin;
+                if ( (bp= ptr->bp) != 0 && coin != 0 )
+                {
+                    double startmillis = OS_milliseconds();
+                    printf("start conversion.[%d]\n",bp->hdrsi);
+                    if ( (converted= iguana_spendvectorconvs(coin,bp)) < 0 )
+                        printf("error ram balancecalc.[%d]\n",bp->hdrsi);
+                    else
+                    {
+                        n = coin->bundlescount;
+                        for (i=m=total_tmpspends=0; i<n; i++)
+                        {
+                            if ( coin->bundles[i] != 0 )
+                            {
+                                total_tmpspends += coin->bundles[i]->numtmpspends;
+                                if ( coin->bundles[i]->converted != 0 )
+                                    m++;
+                            }
+                        }
+                        total += converted;
+                        printf("[%4d] millis %7.3f converted.%-7d balance calc.%-4d of %4d | total.%llu of %llu\n",bp->hdrsi,OS_milliseconds()-startmillis,converted,m,n,(long long)total,(long long)total_tmpspends);
+                        if ( m == n-1 )
+                            iguana_spendvectorsaves(coin);
+                    }
+                }
                 myfree(ptr,ptr->allocsize);
-                flag++;
-            }
+            }*/
         }
         if ( (type & (1 << 1)) != 0 && (ptr= queue_dequeue(&spendvectorsQ,0)) != 0 )
         {
@@ -481,6 +501,15 @@ void iguana_helper(void *arg)
             else if ( coin->active != 0 )
                 printf("helper missing param? %p %p\n",coin,bp);
             myfree(ptr,ptr->allocsize);
+            if ( (ptr= queue_dequeue(&validateQ,0)) != 0 )
+            {
+                if ( ptr->bp != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
+                    flag += iguana_bundlevalidate(ptr->coin,ptr->bp);
+                else if ( coin->active != 0 )
+                    printf("helper validate missing param? %p %p\n",ptr->coin,ptr->bp);
+                myfree(ptr,ptr->allocsize);
+                flag++;
+            }
         }
         if ( queue_size(&spendvectorsQ) != 0 || queue_size(&bundlesQ) > 10 )
             allcurrent = 0;

@@ -208,6 +208,7 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
         if ( bp->blocks[bundlei] != 0 && bp->blocks[bundlei] != block )
         {
             printf("bp->blocks[%d] mismatch %p != %p\n",bundlei,bp->blocks[bundlei],block);
+            bp->blocks[bundlei] = 0;
             return(-1);
         }
         if ( bits256_nonz(bp->hashes[bundlei]) != 0 && bits256_cmp(bp->hashes[bundlei],block->RO.hash2) != 0 )
@@ -665,7 +666,7 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
         bp->hdrtime = (uint32_t)time(NULL);
         if ( bp == coin->current && bp->speculative != 0 )
         {
-            //printf("iguana_bundlehdr.[%d] %d %s\n",bp->hdrsi,bp->numspec,bits256_str(str,bp->hashes[0]));
+            printf("iguana_bundlehdr.[%d] %d %s\n",bp->hdrsi,bp->numspec,bits256_str(str,bp->hashes[0]));
             if ( iguana_blocksmissing(coin,&avail,missings,0,bp,0,7) > 0 )
                 iguana_bundleissuemissing(coin,bp,missings,3);
         }
