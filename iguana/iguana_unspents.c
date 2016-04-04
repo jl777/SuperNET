@@ -150,7 +150,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
             if ( iguana_utxoupdate(coin,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,fromheight) == 0 )
             {
                 totalmillis += (OS_milliseconds() - startmillis);
-                if ( (++utxon % 100000) == 0 )
+                if ( (++utxon % 10000) == 0 )
                     printf("ave utxo[%d] %.2f micros total %.2f seconds\n",utxon,(1000. * totalmillis)/utxon,totalmillis/1000.);
                 return(0);
             }
@@ -458,19 +458,19 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                     coin->txidfind_num += 1.;
                     if ( coin->PREFETCHLAG != 0 )
                     {
-                        if ( 0 && (spentbp->lastprefetch == 0 || now >= spentbp->lastprefetch+coin->PREFETCHLAG) )
+                        if ( spentbp->lastprefetch == 0 || now >= spentbp->lastprefetch+5*coin->PREFETCHLAG )
                         {
                             iguana_ramchain_prefetch(coin,&spentbp->ramchain,txonly);
                             spentbp->lastprefetch = now;
                         }
-                        else if ( (duration > 1 || duration > (10 * coin->txidfind_totalmillis)/coin->txidfind_num) && (rand() % (IGUANA_NUMHELPERS>>1)) == 0 )//&& now >= spentbp->lastprefetch+coin->PREFETCHLAG )
+                        else if ( duration > 1 && duration > (10 * coin->txidfind_totalmillis)/coin->txidfind_num && (rand() % (IGUANA_NUMHELPERS>>1)) == 0 )//&& now >= spentbp->lastprefetch+coin->PREFETCHLAG )
                         {
-                            printf("slow txidfind %.2f vs %.2f prefetch[%d] from.[%d] lag.%ld last.%u\n",duration,coin->txidfind_totalmillis/coin->txidfind_num,spentbp->hdrsi,ramchain->H.data->height/coin->chain->bundlesize,time(NULL) - spentbp->lastprefetch,spentbp->lastprefetch);
+                            //printf("slow txidfind %.2f vs %.2f prefetch[%d] from.[%d] lag.%ld last.%u\n",duration,coin->txidfind_totalmillis/coin->txidfind_num,spentbp->hdrsi,ramchain->H.data->height/coin->chain->bundlesize,time(NULL) - spentbp->lastprefetch,spentbp->lastprefetch);
                             iguana_ramchain_prefetch(coin,&spentbp->ramchain,txonly);
                             spentbp->lastprefetch = now;
                         }
                     }
-                    if ( ((uint64_t)coin->txidfind_num % 1000000) == 0 )
+                    if ( ((uint64_t)coin->txidfind_num % 10000) == 0 )
                         printf("iguana_txidfind.[%.0f] ave %.2f micros, total %.2f seconds\n",coin->txidfind_num,(coin->txidfind_totalmillis*1000.)/coin->txidfind_num,coin->txidfind_totalmillis/1000.);
                 } else printf("illegal hdrsi.%d prev_hash.(%s) for bp.[%d]\n",hdrsi,bits256_str(str,prev_hash),spent_hdrsi);
             }
@@ -803,8 +803,8 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     txidind = spendind = rdata->firsti;
     if ( coin->PREFETCHLAG != 0 )
     {
-        iguana_ramchain_prefetch(coin,ramchain,1);
-        iguana_prefetch(coin,bp,4,1);
+        iguana_ramchain_prefetch(coin,ramchain,0);
+        iguana_prefetch(coin,bp,5,2);
     }
     starttime = (uint32_t)time(NULL);
     for (i=0; i<bp->n; i++)
@@ -846,7 +846,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
                             if ( coin->PREFETCHLAG != 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
                             {
                                 //printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
-                                iguana_ramchain_prefetch(coin,&spentbp->ramchain,0);
+                                iguana_ramchain_prefetch(coin,&spentbp->ramchain,2);
                                 spentbp->lastprefetch = now;
                             }
                             spentU = (void *)(long)((long)spentbp->ramchain.H.data + spentbp->ramchain.H.data->Uoffset);
@@ -1080,20 +1080,20 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
             if ( s->external != 0 && s->prevout >= 0 )
             {
                 double startmillis = OS_milliseconds(); static double totalmillis; static int32_t num;
-                if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,RTramchain,bp->hdrsi,s,0)) == 0 || spent_unspentind == 0 || spent_unspentind >= spentbp->ramchain.H.data->numunspents || spentbp->hdrsi < 0 || spentbp->hdrsi >= bp->hdrsi || spentbp == bp )
+                if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,RTramchain,bp->hdrsi,s,3)) == 0 || spent_unspentind == 0 || spent_unspentind >= spentbp->ramchain.H.data->numunspents || spentbp->hdrsi < 0 || spentbp->hdrsi >= bp->hdrsi || spentbp == bp )
                 {
                     char str[65];
                     printf("RTutxo: unexpected spendbp: height.%d bp.[%d] U%d <- S%d.[%d] [ext.%d %s prev.%d]\n",height,spentbp!=0?spentbp->hdrsi:-1,spent_unspentind,spendind,bp->hdrsi,s->external,bits256_str(str,prevhash),s->prevout);
                     return(-1);
                 }
                 totalmillis += (OS_milliseconds() - startmillis);
-                if ( (++num % 100000) == 0 )
+                if ( (++num % 10000) == 0 )
                     printf("externalspents.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
                 rdata = spentbp->ramchain.H.data;
                 if ( 0 && coin->PREFETCHLAG != 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
                 {
                     printf("RT prefetch[%d] from.[%d] lag.%d bundlei.%d numspends.%d of %d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch,bundlei,spendind,RTramchain->H.spendind);
-                    iguana_ramchain_prefetch(coin,&spentbp->ramchain,0);
+                    iguana_ramchain_prefetch(coin,&spentbp->ramchain,2);
                     spentbp->lastprefetch = now;
                 }
             }
@@ -1121,7 +1121,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
                 if ( iguana_volatileupdate(coin,1,spentbp == bp ? RTramchain : &spentbp->ramchain,spentbp->hdrsi,spent_unspentind,u->pkind,u->value,spendind,height) < 0 )
                     return(-1);
                 totalmillis += (OS_milliseconds() - startmillis);
-                if ( (++num % 100000) == 0 )
+                if ( (++num % 10000) == 0 )
                     printf("volatile.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
             }
             else
@@ -1373,8 +1373,7 @@ void iguana_RTramchainalloc(struct iguana_info *coin,struct iguana_bundle *bp)
         if ( coin->PREFETCHLAG != 0 )
         {
             iguana_ramchain_prefetch(coin,&coin->RTramchain,0);
-            //iguana_prefetch(coin,bp,7,0);
-            iguana_prefetch(coin,bp,3,0);
+            iguana_prefetch(coin,bp,66,2);
         }
     }
 }
