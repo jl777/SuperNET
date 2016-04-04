@@ -242,6 +242,7 @@ void gfshare_ctx_enc_getshare(gfshare_ctx *ctx,uint8_t sharenr,uint8_t *share)
     calc_share(ctx->buffer,ctx->size,ctx->threshold,ctx_logs[ctx->sharenrs[sharenr]],share);
 }
 
+#ifdef notnow
 void calc_shares(uint8_t *shares,uint8_t *secret,int32_t size,int32_t width,int32_t M,int32_t N,uint8_t *sharenrs)
 {
     int32_t i;
@@ -258,6 +259,7 @@ void calc_shares(uint8_t *shares,uint8_t *secret,int32_t size,int32_t width,int3
     }
     free(buffer);
 }
+#endif
 
 // ----------------------------------------------------[ Recombination ]----
 
