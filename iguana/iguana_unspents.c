@@ -1753,6 +1753,7 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
             if ( i == coin->bundlescount-1 && bp->tmpspends != 0 && bp->ramchain.H.data != 0 && (n= bp->ramchain.H.data->numspends) != 0 && bp->converted == 0 )
             {
                 double startmillis = OS_milliseconds();
+                printf("start conversion.[%d]\n",bp->hdrsi);
                 if ( (converted= iguana_spendvectorconvs(coin,bp)) < 0 )
                     printf("error ram balancecalc.[%d]\n",bp->hdrsi);
                 else
