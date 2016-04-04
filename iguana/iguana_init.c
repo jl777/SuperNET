@@ -302,6 +302,20 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
     }
     if ( iter == 1 )
     {
+        for (i=0; i<coin->bundlescount-1; i++)
+        {
+            if ( coin->bundles[i] == 0 || coin->bundles[i]->utxofinish <= 1 )
+                break;
+        }
+        if ( i < coin->bundlescount-1 )
+        {
+            printf("spendvectors.[%d] missing, will regen all of them\n",i);
+            for (i=0; i<coin->bundlescount-1; i++)
+            {
+                //iguana_purgevolatiles(coin,&coin->bundles[i]->ramchain);
+                coin->bundles[i]->startutxo = coin->bundles[i]->utxofinish = 0;
+            }
+        }
         if ( coin->balanceswritten > 0 )
             coin->balanceswritten = iguana_volatileinit(coin);
         if ( coin->balanceswritten > 0 )

@@ -1426,18 +1426,31 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
 {
     int32_t newhwm = 0,hwmheight,flag = 0; char str[2000];
     hwmheight = coin->blocks.hwmchain.height;
-    flag += iguana_processrecvQ(coin,&newhwm);
-    flag += iguana_reqblocks(coin);
-    flag += iguana_reqhdrs(coin);
     coin->RTramchain_busy = 1;
-    if ( time(NULL) > coin->laststats )
+    if ( coin->RTheight != 0 )
     {
-        flag += (iguana_realtime_update(coin) > 0);
-        iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
-        coin->laststats = (uint32_t)time(NULL);
+        if ( time(NULL) > coin->laststats+2 )
+        {
+            flag += iguana_processrecvQ(coin,&newhwm);
+            flag += iguana_reqblocks(coin);
+            flag += iguana_reqhdrs(coin);
+            iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
+            coin->laststats = (uint32_t)time(NULL);
+        }
+        //if ( coin->RTheight < coin->longestchain-3 )
     }
-    else if ( coin->RTheight < coin->longestchain-3 )
-        flag += (iguana_realtime_update(coin) > 0);
+    else
+    {
+        flag += iguana_processrecvQ(coin,&newhwm);
+        flag += iguana_reqblocks(coin);
+        flag += iguana_reqhdrs(coin);
+        if ( time(NULL) > coin->laststats+1 )
+        {
+            iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
+            flag += (iguana_realtime_update(coin) > 0);
+            coin->laststats = (uint32_t)time(NULL);
+        }
+    }
     coin->RTramchain_busy = (coin->RTgenesis == 0 || queue_size(&balancesQ) != 0);
     iguana_jsonQ();
     if ( hwmheight != coin->blocks.hwmchain.height )

@@ -751,18 +751,19 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     struct iguana_bundle *prevbp; int32_t i;
 #ifdef IGUANA_SERIALIZE_SPENDVECTORGEN
-    if ( (prevbp= coin->current) != 0 && prevbp->hdrsi < (coin->longestchain / coin->chain->bundlesize)-0*coin->MAXBUNDLES )
+    if ( (prevbp= coin->current) != 0 && prevbp->hdrsi < (coin->longestchain / coin->chain->bundlesize)-coin->MAXBUNDLES )
         return(0);
 #endif
     for (i=0; i<bp->hdrsi; i++)
         if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish <= 1 || (prevbp->utxofinish == 0 && prevbp->tmpspends == 0) )
             break;
-    if ( bp->hdrsi < coin->blocks.hwmchain.height/coin->chain->bundlesize && i >= bp->hdrsi-IGUANA_NUMHELPERS/2 && time(NULL) > bp->emitfinish+10 )//&& coin->emitbusy <= 4 )
+    //printf("[%d] vs %d i.%d vs %d\n",bp->hdrsi,coin->blocks.hwmchain.height/coin->chain->bundlesize,i,bp->hdrsi-IGUANA_NUMHELPERS/2);
+    if ( bp->hdrsi < coin->blocks.hwmchain.height/coin->chain->bundlesize && i >= bp->hdrsi-IGUANA_NUMHELPERS && time(NULL) > bp->emitfinish+10 )
     {
         if ( bp->startutxo == 0 )
         {
             bp->startutxo = (uint32_t)time(NULL);
-            //printf("spendvectorQ.%d\n",bp->hdrsi);
+            //printf("spendvectorsQ.%d\n",bp->hdrsi);
             iguana_spendvectorsQ(coin,bp);
         }
         else if ( bp->utxofinish != 0 )
