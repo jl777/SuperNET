@@ -669,12 +669,12 @@ int32_t iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain
                 if ( bits256_nonz(txid.txid) != 0 )
                     nonz++;
             }
-            for (i=0; i<numexternal; i++)
+            /*for (i=0; i<numexternal; i++)
             {
                 memcpy(&txid.txid,&X[i],sizeof(txid.txid));
                 if ( bits256_nonz(txid.txid) != 0 )
                     nonz++;
-            }
+            }*/
             for (i=0; i<tlen; i++)
                 if ( TXbits[i] != 0 )
                     nonz++;
