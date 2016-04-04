@@ -654,7 +654,8 @@ void iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle *bp
 
 int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32_t starti)
 {
-    uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t avail,dist,counter=0;
+    //uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t avail;
+    int32_t dist,counter=0;
     if ( 0 && bp->isRT == 0 && (bp->hdrsi == coin->bundlescount-1 || bp == coin->current) )
         printf("hdr ITERATE.%d bundle.%d vs %d: h.%d n.%d r.%d s.%d c.%d finished.%d spec.%p[%d]\n",bp->hdrsi,bp->bundleheight,coin->longestchain-coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->numcached,bp->emitfinish,bp->speculative,bp->numspec);
     dist = 30 + (coin->current != 0 ? bp->hdrsi - coin->current->hdrsi : 0);
@@ -667,8 +668,8 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
         if ( bp == coin->current && bp->speculative != 0 )
         {
             //printf("iguana_bundlehdr.[%d] %d %s\n",bp->hdrsi,bp->numspec,bits256_str(str,bp->hashes[0]));
-            if ( iguana_blocksmissing(coin,&avail,missings,0,bp,0,7) > 0 )
-                iguana_bundleissuemissing(coin,bp,missings,3);
+            //if ( iguana_blocksmissing(coin,&avail,missings,0,bp,0,7) > 0 )
+            //    iguana_bundleissuemissing(coin,bp,missings,3);
         }
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
     }
@@ -677,8 +678,8 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
         if ( time(NULL) > (bp->issued[1] + 10 + dist) )
         {
             //printf("request speculative[1] numspec.%d for bp.[%d] bp->speculative.%p enable.%d\n",bp->numspec,bp->hdrsi,bp->speculative,coin->enableCACHE);
-            iguana_blockQ("getnexthdr",coin,bp,-1,bp->speculative[1],1);
-            bp->issued[1] = (uint32_t)time(NULL);
+            //iguana_blockQ("getnexthdr",coin,bp,-1,bp->speculative[1],1);
+            //bp->issued[1] = (uint32_t)time(NULL);
         }
     }
     return(counter);

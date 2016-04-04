@@ -459,48 +459,55 @@ void iguana_helper(void *arg)
                     myfree(ptr,ptr->allocsize);
                 } else break;
             }
-            if ( (ptr= queue_dequeue(&convertQ,0)) != 0 )
+        }
+        if ( (type & (1 << 1)) != 0 )
+        {
+            if ( (ptr= queue_dequeue(&spendvectorsQ,0)) != 0 )
             {
+                //printf("spendvectorsQ size.%d\n",queue_size(&spendvectorsQ));
                 coin = ptr->coin;
                 if ( (bp= ptr->bp) != 0 && coin != 0 )
-                    iguana_convert(coin,bp);
-                myfree(ptr,ptr->allocsize);
-            }
-        }
-        if ( (type & (1 << 1)) != 0 && (ptr= queue_dequeue(&spendvectorsQ,0)) != 0 )
-        {
-            //printf("spendvectorsQ size.%d\n",queue_size(&spendvectorsQ));
-            coin = ptr->coin;
-            if ( (bp= ptr->bp) != 0 && coin != 0 )
-            {
-                if ( coin->polltimeout < polltimeout )
-                    polltimeout = coin->polltimeout;
-                //printf("call spendvectors.%d\n",bp->hdrsi);
-                if ( (retval= iguana_spendvectors(coin,bp)) >= 0 )
                 {
-                    flag++;
-                    if ( retval > 0 )
+                    if ( coin->polltimeout < polltimeout )
+                        polltimeout = coin->polltimeout;
+                    //printf("call spendvectors.%d\n",bp->hdrsi);
+                    if ( (retval= iguana_spendvectors(coin,bp)) >= 0 )
                     {
-                        printf("GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL)-bp->startutxo);
-                        bp->utxofinish = (uint32_t)time(NULL);
-                        bp->balancefinish = 0;
-                    }
-                    if ( bp->balancefinish == 0 )
-                        iguana_balancesQ(coin,bp);
-                } else printf("UTXO gen.[%d] utxo error\n",bp->hdrsi);
-            }
-            else if ( coin->active != 0 )
-                printf("helper missing param? %p %p\n",coin,bp);
-            myfree(ptr,ptr->allocsize);
-            if ( (ptr= queue_dequeue(&validateQ,0)) != 0 )
-            {
-                if ( ptr->bp != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
-                    flag += iguana_bundlevalidate(ptr->coin,ptr->bp);
+                        flag++;
+                        if ( retval > 0 )
+                        {
+                            printf("GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL)-bp->startutxo);
+                            bp->utxofinish = (uint32_t)time(NULL);
+                            bp->balancefinish = 0;
+                        }
+                        if ( bp->balancefinish == 0 )
+                            iguana_balancesQ(coin,bp);
+                    } else printf("UTXO gen.[%d] utxo error\n",bp->hdrsi);
+                }
                 else if ( coin->active != 0 )
-                    printf("helper validate missing param? %p %p\n",ptr->coin,ptr->bp);
+                    printf("helper missing param? %p %p\n",coin,bp);
                 myfree(ptr,ptr->allocsize);
-                flag++;
             }
+            n = queue_size(&convertQ);
+            for (iter=0; iter<n; iter++)
+                if ( (ptr= queue_dequeue(&convertQ,0)) != 0 )
+                {
+                    coin = ptr->coin;
+                    if ( (bp= ptr->bp) != 0 && coin != 0 && coin->active != 0 )
+                        iguana_convert(coin,bp);
+                    myfree(ptr,ptr->allocsize);
+                }
+            n = queue_size(&validateQ);
+            for (iter=0; iter<n; iter++)
+                if ( (ptr= queue_dequeue(&validateQ,0)) != 0 )
+                {
+                    if ( ptr->bp != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
+                        flag += iguana_bundlevalidate(ptr->coin,ptr->bp);
+                    else if ( coin->active != 0 )
+                        printf("helper validate missing param? %p %p\n",ptr->coin,ptr->bp);
+                    myfree(ptr,ptr->allocsize);
+                    flag++;
+                }
         }
         if ( queue_size(&spendvectorsQ) != 0 || queue_size(&bundlesQ) > 10 )
             allcurrent = 0;

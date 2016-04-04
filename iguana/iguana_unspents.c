@@ -1358,7 +1358,8 @@ void iguana_RTramchainalloc(struct iguana_info *coin,struct iguana_bundle *bp)
         if ( coin->PREFETCHLAG != 0 )
         {
             iguana_ramchain_prefetch(coin,&coin->RTramchain,0);
-            iguana_prefetch(coin,bp,3,0);
+            iguana_prefetch(coin,bp,7,0);
+            iguana_prefetch(coin,bp,22,1);
         }
     }
 }
@@ -1714,6 +1715,9 @@ int32_t iguana_spendvectorsaves(struct iguana_info *coin)
 int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *spentbp)
 {
     struct iguana_bundle *bp; int16_t spent_hdrsi; uint32_t numpkinds; struct iguana_unspent *spentU; struct iguana_spendvector *vec; int32_t i,converted,j,n = coin->bundlescount;
+    if ( spentbp->converted != 0 )
+        return(-1);
+    spentbp->converted = 1;
     spent_hdrsi = spentbp->hdrsi;
     numpkinds = spentbp->ramchain.H.data->numpkinds;
     iguana_ramchain_prefetch(coin,&spentbp->ramchain,0);
@@ -1750,9 +1754,9 @@ int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *s
 
 void iguana_convert(struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    static int64_t total;
+    static int64_t total,depth;
     int32_t i,n,m,converted; int64_t total_tmpspends; double startmillis = OS_milliseconds();
-    printf("start conversion.[%d]\n",bp->hdrsi);
+    depth++;
     if ( (converted= iguana_spendvectorconvs(coin,bp)) < 0 )
         printf("error ram balancecalc.[%d]\n",bp->hdrsi);
     else
@@ -1763,15 +1767,16 @@ void iguana_convert(struct iguana_info *coin,struct iguana_bundle *bp)
             if ( coin->bundles[i] != 0 )
             {
                 total_tmpspends += coin->bundles[i]->numtmpspends;
-                if ( coin->bundles[i]->converted != 0 )
+                if ( coin->bundles[i]->converted > 1 )
                     m++;
             }
         }
         total += converted;
-        printf("[%4d] millis %7.3f converted.%-7d balance calc.%-4d of %4d | total.%llu of %llu\n",bp->hdrsi,OS_milliseconds()-startmillis,converted,m,n,(long long)total,(long long)total_tmpspends);
+        printf("[%4d] millis %7.3f converted.%-7d balance calc.%-4d of %4d | total.%llu of %llu depth.%d\n",bp->hdrsi,OS_milliseconds()-startmillis,converted,m,n,(long long)total,(long long)total_tmpspends,(int32_t)depth);
         if ( m == n-1 )
             iguana_spendvectorsaves(coin);
     }
+    depth--;
 }
 
 int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int32_t startheight,int32_t endheight)
