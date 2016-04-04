@@ -931,7 +931,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
             }
         }
     }
-    if ( 1 )//&& bp != 0 && bp->hdrsi == coin->bundlescount-1 )
+    if ( 0 )//&& bp != 0 && bp->hdrsi == coin->bundlescount-1 )
     {
         int32_t i; static int32_t numrecv;
         numrecv++;
