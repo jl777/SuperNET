@@ -767,9 +767,9 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
     for (i=0; i<bp->hdrsi; i++)
         if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish <= 1 || (prevbp->utxofinish == 0 && prevbp->tmpspends == 0) )
             break;
-    if ( bp->hdrsi < coin->blocks.hwmchain.height/coin->chain->bundlesize && i >= bp->hdrsi-IGUANA_NUMHELPERS && time(NULL) > bp->emitfinish )
+    if ( bp->hdrsi < coin->blocks.hwmchain.height/coin->chain->bundlesize && i >= bp->hdrsi-IGUANA_NUMHELPERS && time(NULL) > bp->emitfinish+3 )
     {
-        printf("[%d] vs %d i.%d vs %d emitted.%ld (%d %d %d)\n",bp->hdrsi,coin->blocks.hwmchain.height/coin->chain->bundlesize,i,bp->hdrsi-IGUANA_NUMHELPERS/2,time(NULL) - bp->emitfinish,bp->hdrsi < coin->blocks.hwmchain.height/coin->chain->bundlesize,i >= bp->hdrsi-IGUANA_NUMHELPERS, time(NULL) > bp->emitfinish+10);
+        printf("[%d] vs %d i.%d vs %d emitted.%ld (%d %d %d) s.%u f.%u\n",bp->hdrsi,coin->blocks.hwmchain.height/coin->chain->bundlesize,i,bp->hdrsi-IGUANA_NUMHELPERS/2,time(NULL) - bp->emitfinish,bp->hdrsi < coin->blocks.hwmchain.height/coin->chain->bundlesize,i >= bp->hdrsi-IGUANA_NUMHELPERS, time(NULL) > bp->emitfinish,bp->startutxo,bp->utxofinish);
         if ( bp->startutxo == 0 )
         {
             bp->startutxo = (uint32_t)time(NULL);
