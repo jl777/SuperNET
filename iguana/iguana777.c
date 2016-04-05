@@ -507,7 +507,7 @@ void iguana_helper(void *arg)
                     flag++;
                 }
         }
-        if ( queue_size(&spendvectorsQ) != 0 || queue_size(&convertQ) != 0 || queue_size(&bundlesQ) > 10 )
+        if ( queue_size(&spendvectorsQ) != 0 || queue_size(&convertQ) != 0 || queue_size(&bundlesQ) > 1 )
             allcurrent = 0;
         if ( flag != 0 )
             usleep(polltimeout * 250);

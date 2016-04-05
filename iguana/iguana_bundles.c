@@ -769,11 +769,11 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
             break;
     if ( bp->hdrsi < coin->blocks.hwmchain.height/coin->chain->bundlesize && i >= bp->hdrsi-IGUANA_NUMHELPERS && time(NULL) > bp->emitfinish+3 )
     {
-        printf("[%d] vs %d i.%d vs %d emitted.%ld (%d %d %d) s.%u f.%u\n",bp->hdrsi,coin->blocks.hwmchain.height/coin->chain->bundlesize,i,bp->hdrsi-IGUANA_NUMHELPERS/2,time(NULL) - bp->emitfinish,bp->hdrsi < coin->blocks.hwmchain.height/coin->chain->bundlesize,i >= bp->hdrsi-IGUANA_NUMHELPERS, time(NULL) > bp->emitfinish,bp->startutxo,bp->utxofinish);
+        //printf("[%d] vs %d i.%d vs %d emitted.%ld (%d %d %d) s.%u f.%u\n",bp->hdrsi,coin->blocks.hwmchain.height/coin->chain->bundlesize,i,bp->hdrsi-IGUANA_NUMHELPERS/2,time(NULL) - bp->emitfinish,bp->hdrsi < coin->blocks.hwmchain.height/coin->chain->bundlesize,i >= bp->hdrsi-IGUANA_NUMHELPERS, time(NULL) > bp->emitfinish,bp->startutxo,bp->utxofinish);
         if ( bp->startutxo == 0 )
         {
             bp->startutxo = (uint32_t)time(NULL);
-            printf("spendvectorsQ.%d\n",bp->hdrsi);
+            //printf("spendvectorsQ.%d\n",bp->hdrsi);
             iguana_spendvectorsQ(coin,bp);
         }
         else if ( bp->utxofinish != 0 )

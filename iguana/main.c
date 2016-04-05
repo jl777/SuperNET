@@ -386,7 +386,7 @@ void mainloop(struct supernet_info *myinfo)
                                     {
                                         if ( (bp= coin->bundles[j]) != 0 )
                                         {
-                                            printf("bundleQ.[%d]\n",j);
+                                            //printf("bundleQ.[%d]\n",j);
                                             bp->balancefinish = bp->startutxo = 0;
                                             bp->utxofinish = 1;
                                             iguana_bundleQ(coin,bp,1000);
