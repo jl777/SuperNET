@@ -451,6 +451,7 @@ void iguana_helper(void *arg)
                         {
                             //printf("skip.[%d] nexttime.%u lag.%ld coin->active.%d\n",bp->hdrsi,bp->nexttime,time(NULL)-bp->nexttime,coin->active);
                             allcurrent--;
+                            bp->nexttime += cbrt(bp->hdrsi);
                             iguana_bundleQ(coin,bp,1000);
                         }
                     }
