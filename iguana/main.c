@@ -386,14 +386,15 @@ void mainloop(struct supernet_info *myinfo)
                                     {
                                         if ( (bp= coin->bundles[j]) != 0 )
                                         {
+                                            printf("bundleQ.[%d]\n",j);
                                             bp->balancefinish = bp->utxofinish = 0;
                                             bp->startutxo = (uint32_t)time(NULL);
                                             iguana_bundleQ(coin,bp,1000);
                                         }
                                     }
-                                } else printf("skip A j.%d vs n.%d\n",j,n);
-                            } else printf("skip j.%d vs n.%d\n",j,n);
-                        } else printf("skip hdrsi.%d vs %d\n",coin->current->hdrsi,coin->longestchain/coin->chain->bundlesize);
+                                } //else printf("skip A j.%d vs n.%d\n",j,n);
+                            } //else printf("skip j.%d vs n.%d\n",j,n);
+                        } //else printf("skip hdrsi.%d vs %d\n",coin->current->hdrsi,coin->longestchain/coin->chain->bundlesize);
                         n = queue_size(&balancesQ);
                         for (iter=0; iter<n; iter++)
                         {

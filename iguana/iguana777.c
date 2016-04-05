@@ -449,7 +449,7 @@ void iguana_helper(void *arg)
                         }
                         else
                         {
-                            //printf("skip.[%d] nexttime.%u lag.%ld coin->active.%d\n",bp->hdrsi,bp->nexttime,time(NULL)-bp->nexttime,coin->active);
+                            printf("skip.[%d] nexttime.%u lag.%ld coin->active.%d\n",bp->hdrsi,bp->nexttime,time(NULL)-bp->nexttime,coin->active);
                             allcurrent--;
                             iguana_bundleQ(coin,bp,1000);
                         }
