@@ -648,10 +648,7 @@ char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,ch
         {
             if ( (array= jarray(&n,json,"params")) == 0 )
             {
-                i= 0, n = 1;
-                if ( jobj(json,"params") != 0 )
-                    params[0] = cJSON_DetachItemFromArray(array,0);//;
-                //printf("add params[%d] of %d <- (%s) %p\n",i,n,jprint(params[0],0),params[0]);
+                i= 0, n = 0;
             }
             else if ( n > 0 )
             {
