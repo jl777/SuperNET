@@ -492,7 +492,7 @@ void iguana_helper(void *arg)
                 {
                     coin = ptr->coin;
                     if ( (bp= ptr->bp) != 0 && coin != 0 && coin->active != 0 )
-                        iguana_convert(coin,bp,&bp->ramchain);
+                        iguana_convert(coin,bp);//,&bp->ramchain);
                     myfree(ptr,ptr->allocsize);
                 }
             n = queue_size(&validateQ);
