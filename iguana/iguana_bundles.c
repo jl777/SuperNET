@@ -844,7 +844,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
         iguana_bundlehdr(coin,bp,starti);
     else if ( bp->emitfinish != 0 )
     {
-        if ( bp->utxofinish != 0 )
+        if ( bp->utxofinish > 1 )
         {
             if ( bp->balancefinish == 0 )
             {
