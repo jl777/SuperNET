@@ -516,7 +516,7 @@ int32_t iguana_sendhashes(struct iguana_info *coin,struct iguana_peer *addr,int3
             coin->numreqsent += n;
             addr->pendblocks += n;
             addr->pendtime = (uint32_t)time(NULL);
-            printf("sendhashes[%d] -> %s\n",n,addr->ipaddr);
+            //printf("sendhashes[%d] -> %s\n",n,addr->ipaddr);
         } else n = 0;
         free(serialized);
     }

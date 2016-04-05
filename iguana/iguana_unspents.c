@@ -473,7 +473,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                     duration = (OS_milliseconds() - startmillis);
                     coin->txidfind_totalmillis += duration;
                     coin->txidfind_num += 1.;
-                    if ( 1 && coin->PREFETCHLAG != 0 )
+                    if ( 1 && coin->PREFETCHLAG > 0 )
                     {
                         /*if ( spentbp->lastprefetch == 0 )
                         {
@@ -817,7 +817,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
     if ( strcmp(coin->symbol,"BTC") == 0 )
         printf("start UTXOGEN.%d max.%d ptr.%p millis.%.3f\n",bp->bundleheight,n,ptr,startmillis);
     //txidind = spendind = rdata->firsti;
-    if ( coin->PREFETCHLAG != 0 )
+    if ( coin->PREFETCHLAG > 0 )
     {
         iguana_ramchain_prefetch(coin,ramchain,0);
         if ( bp->hdrsi > 0 )
@@ -860,7 +860,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                             errs++;
                             break;
                         }
-                        if ( coin->PREFETCHLAG != 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
+                        if ( coin->PREFETCHLAG > 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
                         {
                             //printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
                             iguana_ramchain_prefetch(coin,&spentbp->ramchain,2);
@@ -1002,7 +1002,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
                 if ( (++num % 10000) == 0 )
                     printf("externalspents.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
                 rdata = spentbp->ramchain.H.data;
-                if ( 0 && coin->PREFETCHLAG != 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
+                if ( 0 && coin->PREFETCHLAG > 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
                 {
                     printf("RT prefetch[%d] from.[%d] lag.%d bundlei.%d numspends.%d of %d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch,bundlei,spendind,RTramchain->H.spendind);
                     iguana_ramchain_prefetch(coin,&spentbp->ramchain,2);
@@ -1064,7 +1064,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
         printf("iguana_balancegen.%d: no Xspendinds[%d]\n",bp->hdrsi,ramchain->numXspends);
         return(-1);
     }
-    //if ( coin->PREFETCHLAG != 0 )
+    //if ( coin->PREFETCHLAG > 0 )
         iguana_ramchain_prefetch(coin,ramchain,0);
     //printf("BALANCEGEN.%d hdrs.%d\n",bp->bundleheight,bp->hdrsi);
     txidind = spendind = rdata->firsti;
@@ -1891,7 +1891,7 @@ void iguana_RTramchainalloc(struct iguana_info *coin,struct iguana_bundle *bp)
         dest->H.scriptoffset = 1;
         //if ( coin->RTHASHMEM.ptr == 0 )
         //    iguana_meminit(&coin->RTHASHMEM,"RTHASH",0,1024L*1024L*1024L,0);
-        if ( coin->PREFETCHLAG != 0 )
+        if ( coin->PREFETCHLAG > 0 )
         {
             iguana_ramchain_prefetch(coin,&coin->RTramchain,0);
             iguana_prefetch(coin,bp,coin->bundlescount,1);
