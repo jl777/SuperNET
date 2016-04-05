@@ -820,7 +820,8 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
     if ( coin->PREFETCHLAG != 0 )
     {
         iguana_ramchain_prefetch(coin,ramchain,0);
-        //iguana_prefetch(coin,bp,5,2);
+        if ( bp->hdrsi > 0 )
+            iguana_prefetch(coin,bp,bp->hdrsi-1,1);
     }
     starttime = (uint32_t)time(NULL);
     txidind = B[starti].firsttxidind;
