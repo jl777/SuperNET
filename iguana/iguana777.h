@@ -42,7 +42,7 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_TAILPERCENTAGE 1.0
 #define IGUANA_MAXPENDHDRS 1
 #define IGUANA_MAXPENDINGREQUESTS 64
-#define IGUANA_PENDINGREQUESTS 512
+#define IGUANA_PENDINGREQUESTS 128
 #define IGUANA_MINPENDBUNDLES 2
 #define IGUANA_MAXPENDBUNDLES 256
 #define IGUANA_RPCPORT 7778
@@ -404,6 +404,7 @@ struct iguana_peer
     int32_t supernet,dead,addrind,usock,lastheight,protover,relayflag,numpackets,numpings,ipv6,height,rank,pendhdrs,pendblocks,recvhdrs,lastlefti,validpub,othervalid,dirty[2],laggard;
     double recvblocks,recvtotal;
     int64_t allocated,freed;
+    bits256 RThashes[IGUANA_MAXBUNDLESIZE]; int32_t numRThashes;
     struct msgcounts msgcounts;
     struct OS_memspace RAWMEM,TXDATA,HASHMEM;
     struct iguana_ramchain ramchain;

@@ -1914,23 +1914,6 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     n = 0;
     if ( dest != 0 && flag != 0 && coin->RTheight >= coin->longestchain )
     {
-        struct iguana_ramchain R; struct iguana_ramchaindata RDATA;
-        iguana_rdataset(&R,&RDATA,dest);
-        printf("ramchainiterate.[%d] ave %.2f micros, total %.2f seconds starti.%d num.%d\n",num0,(totalmillis0*1000.)/num0,totalmillis0/1000.,coin->RTstarti,coin->RTheight%bp->n);
-        if ( iguana_spendvectors(coin,bp,dest,coin->RTstarti,coin->RTheight%bp->n,0) < 0 )
-        {
-            printf("RTutxo error -> RTramchainfree\n");
-            iguana_RTramchainfree(coin);
-            return(-1);
-        }
-        else
-        {
-            coin->RTstarti = (coin->RTheight % bp->n);
-            printf("spendvectors calculated to %d\n",coin->RTheight);
-            iguana_convert(coin,bp,dest);
-            printf("spendvectors converted to %d\n",coin->RTheight);
-        }
-        iguana_rdatarestore(&R,&RDATA,dest);
         while ( block != 0 )
         {
             if ( bits256_cmp(iguana_blockhash(coin,coin->RTheight-n-1),block->RO.hash2) != 0 )
@@ -1950,6 +1933,26 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                 printf("RTgenesis verified\n");
                 coin->RTgenesis = (uint32_t)time(NULL);
             } else printf("RTgenesis failed to verify\n");
+        }
+        if ( coin->RTgenesis != 0 )
+        {
+            struct iguana_ramchain R; struct iguana_ramchaindata RDATA;
+            iguana_rdataset(&R,&RDATA,dest);
+            printf("ramchainiterate.[%d] ave %.2f micros, total %.2f seconds starti.%d num.%d\n",num0,(totalmillis0*1000.)/num0,totalmillis0/1000.,coin->RTstarti,coin->RTheight%bp->n);
+            if ( iguana_spendvectors(coin,bp,dest,coin->RTstarti,coin->RTheight%bp->n,0) < 0 )
+            {
+                printf("RTutxo error -> RTramchainfree\n");
+                iguana_RTramchainfree(coin);
+                return(-1);
+            }
+            else
+            {
+                coin->RTstarti = (coin->RTheight % bp->n);
+                printf("spendvectors calculated to %d\n",coin->RTheight);
+                iguana_convert(coin,bp,dest);
+                printf("spendvectors converted to %d\n",coin->RTheight);
+            }
+            iguana_rdatarestore(&R,&RDATA,dest);
         }
     }
     if ( dest != 0 && flag != 0 )

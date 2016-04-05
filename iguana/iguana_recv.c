@@ -823,7 +823,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
             //printf("FOUND speculative.%s BLOCKHASHES[%d] ht.%d\n",bits256_str(str,blockhashes[1]),num,bp->bundleheight);
             if ( bp->speculative == 0 )
                 bp->speculative = mycalloc('s',bp->n+1,sizeof(*bp->speculative));
-            for (i=bp->numspec; i<num&&i<=bp->n; i++)
+            for (i=1; i<num&&i<=bp->n; i++)
             {
                 bp->speculative[i] = blockhashes[i];
                 if ( bp->blocks[i] == 0 || bp->blocks[i]->issued == 0 )
@@ -834,6 +834,11 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
             }
             bp->speculative[0] = bp->hashes[0];
             bp->numspec = num <= bp->n+1 ? num : bp->n+1;
+            if ( bp == coin->current && (addr= req->addr) != 0 )
+            {
+                memcpy(addr->RThashes,blockhashes,bp->numspec * sizeof(*addr->RThashes));
+                addr->numRThashes = bp->numspec;
+            }
             //iguana_blockQ(coin,0,-1,blockhashes[2],1);
         }
     }
