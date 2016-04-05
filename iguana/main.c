@@ -346,7 +346,7 @@ mksquashfs DB/BTC BTC.squash1M -b 1048576
 
 void mainloop(struct supernet_info *myinfo)
 {
-    int32_t i,n,iter,flag,isRT,numpeers; struct iguana_info *coin; struct iguana_helper *ptr; struct iguana_bundle *bp;
+    int32_t i,j,n,iter,flag,isRT,numpeers; struct iguana_info *coin; struct iguana_helper *ptr; struct iguana_bundle *bp;
     sleep(3);
     printf("mainloop\n");
     while ( 1 )
@@ -365,6 +365,34 @@ void mainloop(struct supernet_info *myinfo)
                     {
                         isRT *= coin->isRT;
                         numpeers += coin->peers.numranked;
+                        if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize )
+                        {
+                            n = bp->hdrsi;
+                            for (j=0; j<n; j++)
+                            {
+                                if ( (bp= coin->bundles[j]) == 0 || bp->emitfinish <= 1 )
+                                    break;
+                            }
+                            if ( j == n )
+                            {
+                                for (j=0; j<n; j++)
+                                {
+                                    if ( (bp= coin->bundles[j]) == 0 || bp->utxofinish <= 1 )
+                                        break;
+                                }
+                                if ( j != n )
+                                {
+                                    for (j=0; j<n; j++)
+                                    {
+                                        if ( (bp= coin->bundles[j]) != 0 )
+                                        {
+                                            bp->balancefinish = bp->startutxo = bp->utxofinish = 0;
+                                            iguana_bundleQ(coin,bp,1000);
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         n = queue_size(&balancesQ);
                         for (iter=0; iter<n; iter++)
                         {

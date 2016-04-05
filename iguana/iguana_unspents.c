@@ -167,7 +167,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
             if ( iguana_utxoupdate(coin,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,fromheight) == 0 )
             {
                 totalmillis += (OS_milliseconds() - startmillis);
-                if ( (++utxon % 10000) == 0 )
+                if ( (++utxon % 1000000) == 0 )
                     printf("ave utxo[%d] %.2f micros total %.2f seconds\n",utxon,(1000. * totalmillis)/utxon,totalmillis/1000.);
                 return(0);
             }
@@ -463,7 +463,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
         duration = (OS_milliseconds() - startmillis);
         coin->spendtxid_totalmillis += duration;
         coin->spendtxid_num += 1.;
-        if ( ((uint64_t)coin->spendtxid_num % 1000) == 0 )
+        if ( ((uint64_t)coin->spendtxid_num % 1000000) == 0 )
             printf("spendtxid_num.[%.0f] ave %.2f micros, total %.2f seconds\n",coin->spendtxid_num,(coin->spendtxid_totalmillis*1000.)/coin->spendtxid_num,coin->spendtxid_totalmillis/1000.);
         if ( prefetchflag >= 0 && coin->PREFETCHLAG != 0 )
         {
@@ -489,7 +489,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                     duration = (OS_milliseconds() - startmillis);
                     coin->txidfind_totalmillis += duration;
                     coin->txidfind_num += 1.;
-                    if ( ((uint64_t)coin->txidfind_num % 1000) == 0 )
+                    if ( ((uint64_t)coin->txidfind_num % 1000000) == 0 )
                         printf("iguana_txidfind.[%.0f] ave %.2f micros, total %.2f seconds\n",coin->txidfind_num,(coin->txidfind_totalmillis*1000.)/coin->txidfind_num,coin->txidfind_totalmillis/1000.);
                     if ( prefetchflag >= 0 && coin->PREFETCHLAG != 0 )
                     {
@@ -871,7 +871,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                     if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,bp,ramchain,bp->hdrsi,s,convertflag != 0 ? 2 : -1)) != 0 && spentbp->ramchain.H.data != 0 )
                     {
                         totalmillis += (OS_milliseconds() - startmillis);
-                        if ( (++num % 100000) == 0 )
+                        if ( (++num % 1000000) == 0 )
                             printf("externalspents.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
                         if ( spentbp == bp )
                         {
