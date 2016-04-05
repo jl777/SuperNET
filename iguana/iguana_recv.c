@@ -545,7 +545,7 @@ uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bit
             if ( bp->hdrsi < coin->MAXBUNDLES || (coin->current != 0 && coin->lastpending != 0 && bp->hdrsi >= coin->current->hdrsi && bp->hdrsi <= coin->lastpending->hdrsi) )
             {
                 int32_t avail; uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1];
-                for (i=0; i<10; i++)
+                for (i=0; i<1; i++)
                 {
                     if ( iguana_blocksmissing(coin,&avail,missings,0,1,bp,bp->n) > 0 )
                         n += iguana_bundleissuemissing(coin,bp,missings,3,1);
