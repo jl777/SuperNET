@@ -377,7 +377,7 @@ void mainloop(struct supernet_info *myinfo)
                             {
                                 for (j=0; j<n; j++)
                                 {
-                                    if ( (bp= coin->bundles[j]) == 0 || (bp->startutxo == 0 && bp->utxofinish <= 1) )
+                                    if ( (bp= coin->bundles[j]) == 0 || (bp->startutxo == 0 && bp->utxofinish == 0) )
                                         break;
                                 }
                                 if ( j != n )
