@@ -42,7 +42,7 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_TAILPERCENTAGE 1.0
 #define IGUANA_MAXPENDHDRS 1
 #define IGUANA_MAXPENDINGREQUESTS 64
-#define IGUANA_PENDINGREQUESTS 3
+#define IGUANA_PENDINGREQUESTS 16
 #define IGUANA_MINPENDBUNDLES 2
 #define IGUANA_MAXPENDBUNDLES 256
 #define IGUANA_RPCPORT 7778
@@ -847,6 +847,8 @@ void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,
 int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block);
 void iguana_convertQ(struct iguana_info *coin,struct iguana_bundle *bp);
 void iguana_convert(struct iguana_info *coin,struct iguana_bundle *bp);//,struct iguana_ramchain *ramchain);
+int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle *bp,uint8_t *missings,int32_t priority,double mult);
+int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1],bits256 hashes[],double mult,struct iguana_bundle *bp,int32_t capacity);
 
 extern int32_t HDRnet,netBLOCKS;
 

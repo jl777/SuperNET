@@ -541,8 +541,19 @@ uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bit
                 prev = block;
             }
             coin->allhashes++;
-            if ( 0 && bp->hdrsi == 0 )
-                printf("ALLHASHES FOUND! %d allhashes.%d\n",bp->bundleheight,coin->allhashes);
+            n = 0;
+            if ( bp->hdrsi < coin->MAXBUNDLES || (coin->current != 0 && coin->lastpending != 0 && bp->hdrsi >= coin->current->hdrsi && bp->hdrsi <= coin->lastpending->hdrsi) )
+            {
+                int32_t avail; uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1];
+                for (i=0; i<10; i++)
+                {
+                    if ( iguana_blocksmissing(coin,&avail,missings,0,1,bp,bp->n) > 0 )
+                        n += iguana_bundleissuemissing(coin,bp,missings,3,1);
+                    else break;
+                    usleep(100000);
+                }
+            }
+            printf("ALLHASHES FOUND! %d allhashes.%d issued %d\n",bp->bundleheight,coin->allhashes,n);
             if ( bp->queued == 0 )
                 iguana_bundleQ(coin,bp,bp->n*5 + (rand() % 500));
             return(bp->queued);
