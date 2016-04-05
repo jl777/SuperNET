@@ -871,7 +871,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                     if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,bp,ramchain,bp->hdrsi,s,convertflag != 0 ? 2 : -1)) != 0 && spentbp->ramchain.H.data != 0 )
                     {
                         totalmillis += (OS_milliseconds() - startmillis);
-                        if ( (++num % 1000) == 0 )
+                        if ( (++num % 100000) == 0 )
                             printf("externalspents.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
                         if ( spentbp == bp )
                         {
@@ -1019,7 +1019,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
                     return(-1);
                 }
                 totalmillis += (OS_milliseconds() - startmillis);
-                if ( (++num % 10000) == 0 )
+                if ( (++num % 1000000) == 0 )
                     printf("externalspents.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
                 rdata = spentbp->ramchain.H.data;
                 if ( 0 && coin->PREFETCHLAG != 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
@@ -1053,7 +1053,7 @@ int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct i
                 if ( iguana_volatileupdate(coin,1,spentbp == bp ? RTramchain : &spentbp->ramchain,spentbp->hdrsi,spent_unspentind,u->pkind,u->value,spendind,height) < 0 )
                     return(-1);
                 totalmillis += (OS_milliseconds() - startmillis);
-                if ( (++num % 10000) == 0 )
+                if ( (++num % 1000000) == 0 )
                     printf("volatile.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
             }
             else
@@ -1842,7 +1842,7 @@ void iguana_convert(struct iguana_info *coin,struct iguana_bundle *bp)
     static int64_t total,depth;
     int32_t i,n,m,converted; int64_t total_tmpspends; double startmillis = OS_milliseconds();
     depth++;
-    printf("iguana_convert.[%d] depth.%d %u\n",bp->hdrsi,(int32_t)depth,bp->converted);
+    //printf("iguana_convert.[%d] depth.%d %u\n",bp->hdrsi,(int32_t)depth,bp->converted);
     if ( (converted= iguana_spendvectorconvs(coin,bp)) < 0 )
         printf("error ram balancecalc.[%d]\n",bp->hdrsi);
     else

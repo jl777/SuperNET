@@ -974,7 +974,7 @@ double iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,d
             iguana_unstickhdr(coin,bp,60);
             if ( bp->numcached > bp->n - (coin->MAXBUNDLES - dist) )
                 priority += 1 + (bp == coin->current);
-            if ( bp == coin->current || queue_size(&coin->priorityQ) < (1 * bp->n)/(dist+1) )
+            if ( bp == coin->current || queue_size(&coin->priorityQ) < (2 * bp->n)/(dist+1) )
             {
                 //printf("[%d] dist.%d numcached.%d priority.%d\n",bp->hdrsi,dist,bp->numcached,priority);
                 //iguana_bundleissuemissing(coin,bp,missings,((rand() % 100) == 0 && bp == coin->current)*3);
