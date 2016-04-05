@@ -1596,7 +1596,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
 #endif
         for (i=0; i<30; i++)
         {
-            printf("need to exit, please restart after shutdown in %d seconds, or just ctrl-C\n",100-i);
+            printf("need to exit, please restart after shutdown in %d seconds, or just ctrl-C\n",30-i);
             sleep(1);
         }
         exit(-1);
