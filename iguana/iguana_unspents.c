@@ -1851,14 +1851,42 @@ void iguana_rdatarestore(struct iguana_ramchain *dest,struct iguana_ramchaindata
     src->H.spendind = rdest->numspends;
 }
 
+void iguana_RThdrs(struct iguana_info *coin,struct iguana_bundle *bp,int32_t numaddrs)
+{
+    int32_t datalen,i; uint8_t serialized[512]; char str[65]; struct iguana_peer *addr;
+    for (i=0; i<numaddrs && i<coin->peers.numranked; i++)
+    {
+        queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
+        if ( 0 && (addr= coin->peers.ranked[i]) != 0 && (datalen= iguana_gethdrs(coin,serialized,coin->chain->gethdrsmsg,bits256_str(str,bp->hashes[0]))) > 0 )
+        {
+            //printf("UNSTICK HDR.[%d]\n",bp->hdrsi);
+            iguana_send(coin,addr,serialized,datalen);
+            addr->pendhdrs++;
+        }
+    }
+}
+
 int32_t iguana_realtime_update(struct iguana_info *coin)
 {
     double startmillis0; static double totalmillis0; static int32_t num0;
-    struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,i,n,flag=0; bits256 hash2;
+    struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,i,n,flag=0; bits256 hash2; struct iguana_peer *addr;
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
     if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && (coin->RTheight < coin->blocks.hwmchain.height-3 || time(NULL) > bp->lastRT) )//&& coin->blocks.hwmchain.height >= coin->longestchain-1 && coin->RTramchain.H.data->numblocks < bp->n )
     {
+        if ( bits256_cmp(coin->RThash1,bp->hashes[1]) != 0 )
+            coin->RThash1 = bp->hashes[1];
         bp->lastRT = (uint32_t)time(NULL);
+        if ( coin->peers.numranked > 0 && time(NULL) > coin->RThdrstime+10 )
+        {
+            iguana_RThdrs(coin,bp,coin->peers.numranked);
+            coin->RThdrstime = bp->lastRT;
+            for (i=0; i<coin->peers.numranked; i++)
+            {
+                if ( (addr= coin->peers.ranked[i]) != 0 )
+                    printf("%d ",addr->numRThashes);
+            }
+            printf("RTheaders\n");
+        }
         iguana_RTramchainalloc(coin,bp);
         bp->isRT = 1;
         while ( (rdata= coin->RTramchain.H.data) != 0 && coin->RTheight <= coin->blocks.hwmchain.height )
@@ -1878,8 +1906,8 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                         block = iguana_bundleblock(coin,&hash2,bp,bundlei+i);
                         if ( i == 0 || (bits256_nonz(hash2) != 0 && (block == 0 || block->txvalid == 0)) )
                         {
-                            uint8_t serialized[512]; int32_t len; struct iguana_peer *addr;
-                            char str[65]; printf("RT error [%d:%d] %s %p\n",bp->hdrsi,i,bits256_str(str,hash2),block);
+                            uint8_t serialized[512]; int32_t len;
+                            //char str[65]; printf("RT error [%d:%d] %s %p\n",bp->hdrsi,i,bits256_str(str,hash2),block);
                             addr = coin->peers.ranked[rand() % 8];
                             if ( addr != 0 && (len= iguana_getdata(coin,serialized,MSG_BLOCK,&hash2,1)) > 0 )
                                 iguana_send(coin,addr,serialized,len);
