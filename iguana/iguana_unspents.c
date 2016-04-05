@@ -868,7 +868,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                 if ( s->external != 0 && s->prevout >= 0 )
                 {
                     double startmillis = OS_milliseconds(); static double totalmillis; static int32_t num;
-                    if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,bp,ramchain,bp->hdrsi,s,convertflag != 0 ? 2 : -1)) != 0 && spentbp->ramchain.H.data != 0 )
+                    if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,bp,ramchain,bp->hdrsi,s,2)) != 0 && spentbp->ramchain.H.data != 0 )
                     {
                         totalmillis += (OS_milliseconds() - startmillis);
                         if ( (++num % 1000000) == 0 )
@@ -1520,7 +1520,11 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             printf("RTutxo error -> RTramchainfree\n");
             iguana_RTramchainfree(coin);
             return(-1);
-        } else printf("spendvectors calculated to %d\n",coin->RTheight);
+        }
+        else
+        {
+            printf("spendvectors calculated to %d\n",coin->RTheight);
+        }
         while ( block != 0 )
         {
             if ( bits256_cmp(iguana_blockhash(coin,coin->RTheight-n-1),block->RO.hash2) != 0 )
