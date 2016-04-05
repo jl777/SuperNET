@@ -2036,6 +2036,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         {
             struct iguana_ramchain R; struct iguana_ramchaindata RDATA;
             iguana_rdataset(&R,&RDATA,dest);
+            bp->ramchain = coin->RTramchain;
             printf("ramchainiterate.[%d] ave %.2f micros, total %.2f seconds starti.%d num.%d\n",num0,(totalmillis0*1000.)/num0,totalmillis0/1000.,coin->RTstarti,coin->RTheight%bp->n);
             if ( iguana_spendvectors(coin,bp,dest,coin->RTstarti,coin->RTheight%bp->n,0) < 0 )
             {
