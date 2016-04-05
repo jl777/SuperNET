@@ -456,6 +456,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
     }
     else
     {
+        now = (uint32_t)time(NULL);
         prev_vout = s->prevout;
         startmillis = OS_milliseconds();
         iguana_ramchain_spendtxid(coin,&unspentind,&prev_hash,T,ramchain->H.data->numtxids,X,ramchain->H.data->numexternaltxids,s);
@@ -477,7 +478,6 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
         *unspentindp = unspentind;
         if ( unspentind == 0 )
         {
-            now = (uint32_t)time(NULL);
             startmillis = OS_milliseconds();
             if ( (tp= iguana_txidfind(coin,&height,&TX,prev_hash,spent_hdrsi-1)) != 0 )
             {
@@ -1788,7 +1788,7 @@ int32_t iguana_spendvectorsaves(struct iguana_info *coin)
         }
     }
     coin->spendvectorsaved = (uint32_t)time(NULL);
-    return(0);
+    return(n);
 }
 
 int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *spentbp)
@@ -1860,7 +1860,13 @@ void iguana_convert(struct iguana_info *coin,struct iguana_bundle *bp)
         total += converted;
         printf("[%4d] millis %7.3f converted.%-7d balance calc.%-4d of %4d | total.%llu of %llu depth.%d\n",bp->hdrsi,OS_milliseconds()-startmillis,converted,m,n,(long long)total,(long long)total_tmpspends,(int32_t)depth);
         if ( m == n-1 )
-            iguana_spendvectorsaves(coin);
+        {
+            if ( iguana_spendvectorsaves(coin) == m )
+            {
+                for (i=0; i<m; i++)
+                    iguana_balancesQ(coin,coin->bundles[i]);
+            }
+        }
     }
     depth--;
 }
