@@ -845,7 +845,7 @@ struct iguana_block *iguana_bundleblock(struct iguana_info *coin,bits256 *hash2p
 void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,struct iguana_ramchain *R,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block);
 int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block);
 void iguana_convertQ(struct iguana_info *coin,struct iguana_bundle *bp);
-void iguana_convert(struct iguana_info *coin,struct iguana_bundle *bp);
+void iguana_convert(struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_ramchain *ramchain);
 
 extern int32_t HDRnet,netBLOCKS;
 
