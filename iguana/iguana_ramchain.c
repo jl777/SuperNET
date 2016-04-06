@@ -2265,9 +2265,9 @@ int32_t iguana_mapchaininit(struct iguana_info *coin,struct iguana_ramchain *map
     mapchain->filesize = filesize;
     mapchain->H.data = (void *)(long)((long)ptr + block->fpos);
     mapchain->H.ROflag = 1;
-    if ( block->fpos > filesize )
+    if ( ptr == 0 || block->fpos > filesize )
     {
-        printf("fpos error %d > %ld mapping hdrsi.%d bundlei.%d\n",block->fpos,filesize,bp->hdrsi,bundlei);
+        printf("ptr.%p fpos error %d > %ld mapping hdrsi.%d bundlei.%d\n",ptr,block->fpos,filesize,bp->hdrsi,bundlei);
         return(-1);
     }
     _iguana_ramchain_setptrs(MAPCHAIN_PTRS,mapchain->H.data);
