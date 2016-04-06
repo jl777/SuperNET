@@ -585,7 +585,7 @@ void *_iguana_ramchain_setptrs(RAMCHAIN_PTRPS,struct iguana_ramchaindata *rdata)
         printf("_iguana_ramchain_setptrs: null rdata\n");
         return(0);
     }
-    printf("rdata.%p\n",rdata);
+    //printf("rdata.%p\n",rdata);
     *B = (void *)(long)((long)rdata + (long)rdata->Boffset);
     *T = (void *)(long)((long)rdata + (long)rdata->Toffset);
     *Kspace = (void *)(long)((long)rdata + (long)rdata->Koffset);
@@ -615,6 +615,7 @@ void *_iguana_ramchain_setptrs(RAMCHAIN_PTRPS,struct iguana_ramchaindata *rdata)
         *S = (void *)(long)((long)rdata + (long)rdata->Soffset);
         *Ux = 0, *Sx = 0, *P = 0, *X = 0, *A = 0, *TXbits = 0, *PKbits = 0; //*U2 = 0, *P2 = 0,
     }
+    return(rdata);
 }
 
 void *iguana_ramchain_offset(void *dest,uint8_t *lhash,FILE *fp,uint64_t fpos,void *srcptr,uint64_t *offsetp,uint64_t len,uint64_t srcsize)

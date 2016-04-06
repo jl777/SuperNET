@@ -603,7 +603,7 @@ int32_t iguana_bundlerequests(struct iguana_info *coin,uint8_t missings[IGUANA_M
 
 int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    int32_t i,ready,valid; char fname[1024]; void *ptr; long filesize; struct iguana_block *block; int32_t sum[0x100],counts[0x100];
+    int32_t i,ready,valid,checki,hdrsi; char fname[1024]; struct iguana_block *block; int32_t sum[0x100],counts[0x100]; static bits256 zero; FILE *fp;
     memset(sum,0,sizeof(sum));
     memset(counts,0,sizeof(counts));
     for (i=ready=0; i<bp->n; i++)
@@ -624,12 +624,14 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp)
             }
             else
             {
-                if ( (ptr= iguana_bundlefile(coin,fname,&filesize,bp,i)) != 0 )
+                checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,block->RO.hash2,zero,1,0);
+                if ( (fp= fopen(fname,"rb")) != 0 )
                 {
-                    munmap(ptr,filesize);
-                    ready++;
-                }
-                else iguana_blockunmark(coin,block,bp,i,0);
+                    fseek(fp,0,SEEK_END);
+                    if ( ftell(fp) > sizeof(struct iguana_ramchaindata) )
+                        ready++;
+                    fclose(fp);
+                } else iguana_blockunmark(coin,block,bp,i,0);
             }
         }
         else
