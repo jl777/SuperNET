@@ -2228,7 +2228,7 @@ int64_t iguana_ramchainopen(struct iguana_info *coin,struct iguana_ramchain *ram
     numunspents *= 2.5, numspends *= 2.5, numpkinds *= 2.5;
     if ( mem->ptr == 0 )
     {
-        while ( (allocsize= _iguana_rdata_action(0,0,0,0,1,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,0,0,0,0,0,RAMCHAIN_ARG,numblocks)) > 1024L*1024L*1024L )
+        while ( (allocsize= _iguana_rdata_action(0,0,0,0,1,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,0,0,0,0,0,RAMCHAIN_ARG,numblocks)) > 2*1024LL*1024L*1024L )
         {
             numtxids *= .9;
             numunspents *= .9;
