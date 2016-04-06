@@ -680,7 +680,7 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
     {
         char str[64];
         bp->hdrtime = (uint32_t)time(NULL);
-        if ( bp == coin->current )//&& bp->speculative != 0 )
+        if ( bp == coin->current && bp->speculative != 0 )
         {
             //printf("iguana_bundlehdr.[%d] %d %s\n",bp->hdrsi,bp->numspec,bits256_str(str,bp->hashes[0]));
             if ( iguana_blocksmissing(coin,&avail,missings,0,mult,bp,bp->n) > 0 )

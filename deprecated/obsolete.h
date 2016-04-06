@@ -15247,5 +15247,118 @@ len = 0;
              }
              }
              }*/
-
+                
+#ifdef newstuff
+                int32_t iguana_realtime_update(struct iguana_info *coin)
+            {
+                double startmillis0; static double totalmillis0; static int32_t num0;
+                struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,i,n,flag=0; bits256 hash2; struct iguana_peer *addr;
+                struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
+                if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && (coin->RTheight < coin->blocks.hwmchain.height-3 || time(NULL) > bp->lastRT) )//&& coin->blocks.hwmchain.height >= coin->longestchain-1 && coin->RTramchain.H.data->numblocks < bp->n )
+                {
+                    if ( bits256_cmp(coin->RThash1,bp->hashes[1]) != 0 )
+                        coin->RThash1 = bp->hashes[1];
+                    bp->lastRT = (uint32_t)time(NULL);
+                    if ( coin->peers.numranked > 0 && time(NULL) > coin->RThdrstime+10 )
+                    {
+                        iguana_RThdrs(coin,bp,coin->peers.numranked);
+                        coin->RThdrstime = bp->lastRT;
+                        for (i=0; i<coin->peers.numranked; i++)
+                        {
+                            if ( (addr= coin->peers.ranked[i]) != 0 )
+                                printf("%d ",addr->numRThashes);
+                        }
+                        printf("RTheaders\n");
+                    }
+                    iguana_RTramchainalloc(coin,bp);
+                    bp->isRT = 1;
+                    while ( (rdata= coin->RTramchain.H.data) != 0 && coin->RTheight <= coin->blocks.hwmchain.height )
+                    {
+                        //printf("RT.%d vs hwm.%d starti.%d bp->n %d\n",coin->RTheight,coin->blocks.hwmchain.height,starti,bp->n);
+                        dest = &coin->RTramchain;
+                        B = (void *)(long)((long)rdata + rdata->Boffset);
+                        bundlei = (coin->RTheight % coin->chain->bundlesize);
+                        if ( (block= bp->blocks[bundlei]) != 0 && bits256_nonz(block->RO.prev_block) != 0 )
+                        {
+                            iguana_blocksetcounters(coin,block,dest);
+                            startmillis0 = OS_milliseconds();
+                            if ( iguana_ramchainfile(coin,dest,&blockR,bp,bundlei,block) == 0 )
+                            {
+                                for (i=bundlei; i<bp->n; i++)
+                                {
+                                    block = iguana_bundleblock(coin,&hash2,bp,bundlei+i);
+                                    if ( i == 0 || (bits256_nonz(hash2) != 0 && (block == 0 || block->txvalid == 0)) )
+                                    {
+                                        uint8_t serialized[512]; int32_t len;
+                                        //char str[65]; printf("RT error [%d:%d] %s %p\n",bp->hdrsi,i,bits256_str(str,hash2),block);
+                                        addr = coin->peers.ranked[rand() % 8];
+                                        if ( addr != 0 && (len= iguana_getdata(coin,serialized,MSG_BLOCK,&hash2,1)) > 0 )
+                                            iguana_send(coin,addr,serialized,len);
+                                        coin->RTgenesis = 0;
+                                    }
+                                    break;
+                                }
+                                return(-1);
+                            } else iguana_ramchain_free(coin,&blockR,1);
+                            B[bundlei] = block->RO;
+                            totalmillis0 += (OS_milliseconds() - startmillis0);
+                            num0++;
+                            flag++;
+                            coin->blocks.RO[bp->bundleheight+bundlei] = block->RO;
+                            coin->RTheight++;
+                            printf(">>>> RT.%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",coin->RTheight,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize);
+                            coin->RTramchain.H.data->numblocks = bundlei + 1;
+                        } else break;
+                    }
+                }
+                n = 0;
+                if ( dest != 0 && flag != 0 && coin->RTheight >= coin->longestchain )
+                {
+                    while ( block != 0 )
+                    {
+                        if ( bits256_cmp(iguana_blockhash(coin,coin->RTheight-n-1),block->RO.hash2) != 0 )
+                        {
+                            printf("blockhash error at %d\n",coin->RTheight-n-1);
+                            break;
+                        }
+                        block = iguana_blockfind("RTupdate",coin,block->RO.prev_block);
+                        n++;
+                        if ( coin->RTgenesis != 0 && n >= bp->n )
+                            break;
+                    }
+                    if ( coin->RTgenesis == 0)
+                    {
+                        if ( n == coin->RTheight )
+                        {
+                            printf("RTgenesis verified\n");
+                            coin->RTgenesis = (uint32_t)time(NULL);
+                        } else printf("RTgenesis failed to verify\n");
+                    }
+                    if ( coin->RTgenesis != 0 )
+                    {
+                        struct iguana_ramchain R; struct iguana_ramchaindata RDATA;
+                        iguana_rdataset(&R,&RDATA,dest);
+                        bp->ramchain = coin->RTramchain;
+                        printf("ramchainiterate.[%d] ave %.2f micros, total %.2f seconds starti.%d num.%d\n",num0,(totalmillis0*1000.)/num0,totalmillis0/1000.,coin->RTstarti,coin->RTheight%bp->n);
+                        if ( iguana_spendvectors(coin,bp,dest,coin->RTstarti,coin->RTheight%bp->n,0) < 0 )
+                        {
+                            printf("RTutxo error -> RTramchainfree\n");
+                            iguana_RTramchainfree(coin);
+                            return(-1);
+                        }
+                        else
+                        {
+                            coin->RTstarti = (coin->RTheight % bp->n);
+                            printf("spendvectors calculated to %d\n",coin->RTheight);
+                            iguana_convert(coin,bp);//,dest);
+                            printf("spendvectors converted to %d\n",coin->RTheight);
+                        }
+                        iguana_rdatarestore(&R,&RDATA,dest);
+                    }
+                }
+                if ( dest != 0 && flag != 0 )
+                    printf("<<<< flag.%d RT.%d:%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",flag,coin->RTheight,n,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize);
+                return(flag);
+            }
+#endif
 #endif
