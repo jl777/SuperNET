@@ -441,7 +441,7 @@ void iguana_coinpurge(struct iguana_info *coin)
 
 struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialheight,int32_t mapflags)
 {
-    FILE *fp; char fname[512],*symbol; int32_t iter;
+    FILE *fp,*fp2; char fname[512],*symbol; int32_t iter;
     coin->sleeptime = 10000;
     symbol = coin->symbol;
     if ( iguana_peerslotinit(coin,&coin->internaladdr,IGUANA_MAXPEERS,calc_ipbits("127.0.0.1:7777")) < 0 )
@@ -471,10 +471,35 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
     iguana_genesis(coin,coin->chain);
     for (iter=coin->peers.numranked>8; iter<2; iter++)
     {
-        sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
+        sprintf(fname,"tmp/%s/%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
         OS_compatible_path(fname);
         printf("parsefile.%d %s\n",iter,fname);
-        if ( (fp= fopen(fname,"r")) != 0 )
+        if ( (fp= fopen(fname,"r")) == 0 )
+        {
+            sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
+            OS_compatible_path(fname);
+            fp = fopen(fname,"r");
+        }
+        else if ( iter == 1 )
+        {
+            sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
+            OS_compatible_path(fname);
+            if ( (fp2= fopen(fname,"r")) != 0 )
+            {
+                fseek(fp,0,SEEK_END), fseek(fp2,0,SEEK_END);
+                if ( ftell(fp2) > ftell(fp) )
+                {
+                    fclose(fp);
+                    fp = fp2;
+                }
+                else
+                {
+                    fclose(fp2);
+                    printf("%s is not used as tmp version is bigger\n",fname);
+                }
+            }
+        }
+        if ( fp != 0 )
         {
             iguana_parseline(coin,iter,fp);
             fclose(fp);

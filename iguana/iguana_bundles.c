@@ -521,7 +521,7 @@ int32_t iguana_sendhashes(struct iguana_info *coin,struct iguana_peer *addr,int3
             coin->numreqsent += n;
             addr->pendblocks += n;
             addr->pendtime = (uint32_t)time(NULL);
-            printf("sendhashes[%d] -> %s\n",n,addr->ipaddr);
+            //printf("sendhashes[%d] -> %s\n",n,addr->ipaddr);
         } else n = 0;
         free(serialized);
     }
@@ -954,9 +954,9 @@ void iguana_unstickhdr(struct iguana_info *coin,struct iguana_bundle *bp,int32_t
     }
 }
 
-double iguana_bundlemissings(struct iguana_info *coin,double mult,struct iguana_bundle *bp,double aveduration)
+double iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,double aveduration)
 {
-    uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t lag,tmp,dist=0,missing,priority,avail,n=0,max; double aveduplicates; //bits256 hash2;
+    uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t lag,tmp,dist=0,missing,priority,avail,n=0,max; double aveduplicates,mult; //bits256 hash2;
     missing = iguana_blocksmissing(coin,&avail,missings,0,mult,bp,0);
     priority = (strcmp("BTC",coin->symbol) != 0) * 2;
     lag = IGUANA_DEFAULTLAG;
@@ -970,11 +970,12 @@ double iguana_bundlemissings(struct iguana_info *coin,double mult,struct iguana_
             printf("priority.%d [%d] dist.%d durations %.2f vs %.2f counts[%d %d] \n",priority,bp->hdrsi,dist,aveduration,aveduplicates,(int32_t)bp->durationscount,bp->duplicatescount);
     }
     if ( aveduration != 0. )
-        lag = ((bp == coin->current) ? .5 : 5) * aveduration + 3;
+        mult = ((bp == coin->current) ? 1. : 5.);
+    else mult = 3.;
     if ( bp->numissued < bp->n )
         max = bp->numissued;
     else max = bp->origmissings;
-    if ( coin->current != 0 )
+    /*if ( coin->current != 0 )
     {
         if ( (dist= bp->hdrsi - coin->current->hdrsi) < coin->MAXBUNDLES && (bp == coin->current || netBLOCKS < 50*bp->n) )
         {
@@ -994,7 +995,7 @@ double iguana_bundlemissings(struct iguana_info *coin,double mult,struct iguana_
                 return(aveduration);
             }
         }
-    }
+    }*/
     if ( (n= iguana_bundlerequests(coin,missings,&bp->origmissings,&tmp,mult,bp,priority)) > 0 )
     {
         bp->numissued += n;
@@ -1045,7 +1046,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
             {
                 if ( bp->hdrsi >= starti && bp->hdrsi < lasti && (displag % 3) == 2 )
                 {
-                    if ( (aveduration= iguana_bundlemissings(coin,mult,bp,recentduration)) != 0 )
+                    if ( (aveduration= iguana_bundlemissings(coin,bp,recentduration)) != 0 )
                         dxblend(&recentduration,aveduration,.5);
                 }
                 if ( coin->enableCACHE != 0 )
