@@ -2019,10 +2019,10 @@ void *iguana_bundlefile(struct iguana_info *coin,char *fname,long *filesizep,str
     }
     if ( (ptr= OS_mapfile(fname,filesizep,0)) == 0 )
     {
-        printf("%p[%ld] ",ptr,*filesizep);
-        //printf("error mapping.(%s) bundlei.%d\n",fname,bundlei);
+        printf("error mapping.(%s) bundlei.%d\n",fname,bundlei);
         return(0);
     }
+    printf("mapped.(%s) bundlei.[%d:%d] %p[%ld]\n",fname,hdrsi,bundlei,ptr,*filesizep);
     return(ptr);
 }
 
