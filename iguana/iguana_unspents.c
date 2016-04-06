@@ -385,6 +385,22 @@ int32_t iguana_ramchain_spendtxid(struct iguana_info *coin,uint32_t *unspentindp
     return(-2);
 }
 
+int32_t iguana_alloctxbits(struct iguana_info *coin,struct iguana_ramchain *ramchain)
+{
+    static int64_t total;
+    if ( coin->PREFETCHLAG > 0 && ramchain->txbits == 0 )
+    {
+        int32_t tlen; uint8_t *TXbits = (uint8_t *)((long)ramchain->H.data + ramchain->H.data->TXoffset);
+        tlen = (int32_t)hconv_bitlen(ramchain->H.data->numtxsparse * ramchain->H.data->txsparsebits);
+        ramchain->txbits = calloc(1,tlen);
+        memcpy(ramchain->txbits,TXbits,tlen);
+        total += tlen;
+        char str[65]; printf("alloc.[%d] txbits.%p[%d] total %s\n",ramchain->H.data->height/coin->chain->bundlesize,ramchain->txbits,tlen,mbstr(str,total));
+        return(tlen);
+    }
+    return(-1);
+}
+
 struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,struct iguana_txid *tx,bits256 txid,int32_t lasthdrsi)
 {
     uint8_t *TXbits; struct iguana_txid *T; uint32_t txidind; int32_t i;
@@ -400,7 +416,11 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
             if ( ramchain->H.data != 0 )
             {
                 if ( (TXbits= ramchain->txbits) == 0 )
-                    TXbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->TXoffset);
+                {
+                    iguana_alloctxbits(coin,ramchain);
+                    if ( (TXbits= ramchain->txbits) == 0 )
+                        TXbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->TXoffset);
+                }
                 T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
                 if ( (txidind= iguana_sparseaddtx(TXbits,ramchain->H.data->txsparsebits,ramchain->H.data->numtxsparse,txid,T,0,ramchain)) > 0 )
                 {
@@ -786,20 +806,6 @@ int32_t iguana_spendvectorsave(struct iguana_info *coin,struct iguana_bundle *bp
     }
     else printf("iguana_spendvectors: Error creating.(%s)\n",fname);
     return(retval);
-}
-
-int32_t iguana_alloctxbits(struct iguana_info *coin,struct iguana_ramchain *ramchain)
-{
-    if ( coin->PREFETCHLAG > 0 && ramchain->txbits == 0 )
-    {
-        int32_t tlen; uint8_t *TXbits = (uint8_t *)((long)ramchain->H.data + ramchain->H.data->TXoffset);
-        tlen = (int32_t)hconv_bitlen(ramchain->H.data->numtxsparse * ramchain->H.data->txsparsebits);
-        ramchain->txbits = calloc(1,tlen);
-        memcpy(ramchain->txbits,TXbits,tlen);
-        printf("alloc.[%d] txbits.%p[%d]\n",ramchain->H.data->height/coin->chain->bundlesize,ramchain->txbits,tlen);
-        return(tlen);
-    }
-    return(-1);
 }
 
 int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_ramchain *ramchain,int32_t starti,int32_t numblocks,int32_t convertflag)
@@ -1229,7 +1235,7 @@ int32_t iguana_mapvolatiles(struct iguana_info *coin,struct iguana_ramchain *ram
         if ( err == 0 )
         {
             //printf("mapped extra.%s flag.%d txbits.%p\n",fname,(int32_t)coin->PREFETCHLAG,ramchain->txbits);
-            iguana_alloctxbits(coin,ramchain);
+            //iguana_alloctxbits(coin,ramchain);
             break;
         }
         iguana_purgevolatiles(coin,ramchain);
