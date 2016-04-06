@@ -398,7 +398,8 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
             ramchain = (bp->isRT != 0) ? &coin->RTramchain : &bp->ramchain;
             if ( ramchain->H.data != 0 )
             {
-                TXbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->TXoffset);
+                if ( (TXbits= ramchain->txbits) == 0 )
+                    TXbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->TXoffset);
                 T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
                 if ( (txidind= iguana_sparseaddtx(TXbits,ramchain->H.data->txsparsebits,ramchain->H.data->numtxsparse,txid,T,0,ramchain)) > 0 )
                 {
@@ -1211,6 +1212,10 @@ int32_t iguana_mapvolatiles(struct iguana_info *coin,struct iguana_ramchain *ram
         if ( err == 0 )
         {
             //printf("mapped extra.%s\n",fname);
+            int32_t tlen; uint8_t *TXbits = (uint8_t *)((long)ramchain->H.data + ramchain->H.data->TXoffset);
+            tlen = (int32_t)hconv_bitlen(ramchain->H.data->numtxsparse * ramchain->H.data->txsparsebits);
+            ramchain->txbits = calloc(1,tlen);
+            memcpy(ramchain->txbits,TXbits,tlen);
             break;
         }
         iguana_purgevolatiles(coin,ramchain);
