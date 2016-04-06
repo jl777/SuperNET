@@ -1095,9 +1095,11 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
                 numbalances++;
             if ( bp->validated != 0 )
                 numv++;
-            if ( bp->emitfinish > 1 )
+            if ( bp->emitfinish >= 1 )
             {
-                numemit++;
+                if ( bp->emitfinish == 1 )
+                    done++;
+                else numemit++;
                 //printf("finished.[%d]\n",bp->hdrsi);
                 if ( firstgap != 0 && bp->hdrsi > firstgap->hdrsi-3 )
                     iguana_bundlepurgefiles(coin,bp);
@@ -1124,8 +1126,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
                     m++;
                     if ( 0 && lastpending == 0 )
                         printf("%d ",bp->numsaved);
-                } else if ( bp->numsaved == bp->n )
-                    done++;
+                }
             }
         }
     }
