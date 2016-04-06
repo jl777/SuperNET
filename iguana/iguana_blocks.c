@@ -70,7 +70,7 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
         {
             printf(">>>>>>>>>> OK only if rare%s match blockhashset.%d depth.%d\n",debugstr,height,depth);
             fprintf(stderr,">>>>>>>>>> OK only if rare%s match blockhashset.%d depth.%d\n",debugstr,height,depth);
-            //printf("%d\n",1/(1 - depth/depth));
+            printf("%d\n",1/(1 - depth/depth));
         }
         return(block);
     }
