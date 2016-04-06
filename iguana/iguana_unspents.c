@@ -1212,7 +1212,7 @@ int32_t iguana_mapvolatiles(struct iguana_info *coin,struct iguana_ramchain *ram
         if ( err == 0 )
         {
             //printf("mapped extra.%s\n",fname);
-            if ( ramchain->txbits == 0 )
+            if ( coin->PREFETCHLAG > 0 && ramchain->txbits == 0 )
             {
                 int32_t tlen; uint8_t *TXbits = (uint8_t *)((long)ramchain->H.data + ramchain->H.data->TXoffset);
                 tlen = (int32_t)hconv_bitlen(ramchain->H.data->numtxsparse * ramchain->H.data->txsparsebits);
