@@ -2304,7 +2304,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     if ( (num= iguana_bundlefiles(coin,ipbits,ptrs,filesizes,bp,starti,endi)) != bp->n )
     {
         iguana_bundlemapfree(coin,0,0,ipbits,ptrs,filesizes,num,R,starti,endi);
-        printf("iguana_bundlesaveHT: no bundlefiles error\n");
+        printf("iguana_bundlesaveHT: no bundlefiles error.[%d]\n",bp->hdrsi);
         return(-1);
     }
     if ( bp == coin->current )

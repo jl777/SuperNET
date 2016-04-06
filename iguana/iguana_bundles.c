@@ -814,7 +814,7 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
         }
         bp->emitfinish = 1;
         iguana_bundletweak(coin,bp);
-        sleep(1); // just in case data isnt totally sync'ed to HDD
+        sleep(3); // just in case data isnt totally sync'ed to HDD
         coin->emitbusy++;
         if ( iguana_bundlesaveHT(coin,mem,memB,bp,(uint32_t)time(NULL)) == 0 )
         {
