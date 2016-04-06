@@ -629,6 +629,7 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp)
                     munmap(ptr,filesize);
                     ready++;
                 }
+                else iguana_blockunmark(coin,block,bp,i,0);
             }
         }
         else
