@@ -1959,7 +1959,7 @@ void iguana_blockunmark(struct iguana_info *coin,struct iguana_block *block,stru
             bp->speculativecache[i] = 0;
         }
     }
-    if ( deletefile != 0 )
+    if ( deletefile != 0 && 0 )
     {
         if ( (checki= iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,block->RO.hash2,zero,1,1)) != i )
             printf("checki.%d vs %d mismatch?\n",checki,i);
