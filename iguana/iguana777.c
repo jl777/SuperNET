@@ -474,7 +474,7 @@ void iguana_helper(void *arg)
                     if ( coin->PREFETCHLAG > 0 )
                     {
                         iguana_ramchain_prefetch(coin,&bp->ramchain,0);
-                        if ( bp->hdrsi > 0 )
+                        if ( 0 && bp->hdrsi > 0 )
                             iguana_prefetch(coin,bp,bp->hdrsi-1,1);
                     }
                     if ( (retval= iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,0)) >= 0 )

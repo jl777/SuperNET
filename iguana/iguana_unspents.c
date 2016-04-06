@@ -1212,10 +1212,13 @@ int32_t iguana_mapvolatiles(struct iguana_info *coin,struct iguana_ramchain *ram
         if ( err == 0 )
         {
             //printf("mapped extra.%s\n",fname);
-            int32_t tlen; uint8_t *TXbits = (uint8_t *)((long)ramchain->H.data + ramchain->H.data->TXoffset);
-            tlen = (int32_t)hconv_bitlen(ramchain->H.data->numtxsparse * ramchain->H.data->txsparsebits);
-            ramchain->txbits = calloc(1,tlen);
-            memcpy(ramchain->txbits,TXbits,tlen);
+            if ( ramchain->txbits == 0 )
+            {
+                int32_t tlen; uint8_t *TXbits = (uint8_t *)((long)ramchain->H.data + ramchain->H.data->TXoffset);
+                tlen = (int32_t)hconv_bitlen(ramchain->H.data->numtxsparse * ramchain->H.data->txsparsebits);
+                ramchain->txbits = calloc(1,tlen);
+                memcpy(ramchain->txbits,TXbits,tlen);
+            }
             break;
         }
         iguana_purgevolatiles(coin,ramchain);
@@ -1802,7 +1805,7 @@ void iguana_RTramchainalloc(struct iguana_info *coin,struct iguana_bundle *bp)
         if ( coin->PREFETCHLAG > 0 )
         {
             iguana_ramchain_prefetch(coin,&coin->RTramchain,0);
-            iguana_prefetch(coin,bp,coin->bundlescount,1);
+            //iguana_prefetch(coin,bp,coin->bundlescount,1);
         }
     }
 }
