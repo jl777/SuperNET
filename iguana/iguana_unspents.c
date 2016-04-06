@@ -1982,11 +1982,25 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
 int32_t iguana_realtime_update(struct iguana_info *coin)
 {
     double startmillis0; static double totalmillis0; static int32_t num0;
-    struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t starti,bundlei,i,n,flag=0; bits256 hash2;
+    struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,i,n,flag=0; bits256 hash2; struct iguana_peer *addr;
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
-    starti = coin->RTheight % coin->chain->bundlesize;
-    if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && (coin->RTheight < coin->blocks.hwmchain.height-3 || time(NULL) > bp->lastRT) )//&& coin->blocks.hwmchain.height >= coin->longestchain-1 && coin->RTramchain.H.data->numblocks < bp->n )
+    //starti = coin->RTheight % coin->chain->bundlesize;
+    if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && (coin->RTheight <= coin->blocks.hwmchain.height || time(NULL) > bp->lastRT) )
     {
+        if ( bits256_cmp(coin->RThash1,bp->hashes[1]) != 0 )
+            coin->RThash1 = bp->hashes[1];
+        bp->lastRT = (uint32_t)time(NULL);
+        if ( coin->peers.numranked > 0 && time(NULL) > coin->RThdrstime+10 )
+        {
+            iguana_RThdrs(coin,bp,coin->peers.numranked);
+            coin->RThdrstime = bp->lastRT;
+            for (i=0; i<coin->peers.numranked; i++)
+            {
+                if ( (addr= coin->peers.ranked[i]) != 0 )
+                    printf("%d ",addr->numRThashes);
+            }
+            printf("RTheaders\n");
+        }
         bp->lastRT = (uint32_t)time(NULL);
         iguana_RTramchainalloc(coin,bp);
         bp->isRT = 1;
@@ -2032,7 +2046,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     n = 0;
     if ( dest != 0 && flag != 0 && coin->RTheight >= coin->longestchain )
     {
-        printf("ramchainiterate.[%d] ave %.2f micros, total %.2f seconds starti.%d num.%d\n",num0,(totalmillis0*1000.)/num0,totalmillis0/1000.,starti,coin->RTheight%bp->n);
+        printf("ramchainiterate.[%d] ave %.2f micros, total %.2f seconds starti.%d num.%d\n",num0,(totalmillis0*1000.)/num0,totalmillis0/1000.,coin->RTstarti,coin->RTheight%bp->n);
         /*if ( iguana_spendvectors(coin,bp,dest,starti,coin->RTheight%bp->n,0) < 0 )
         {
             printf("RTutxo error -> RTramchainfree\n");
