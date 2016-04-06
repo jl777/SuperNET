@@ -2224,8 +2224,8 @@ int64_t iguana_ramchainopen(struct iguana_info *coin,struct iguana_ramchain *ram
             if ( rdata->scriptspace > scriptspace )
                 scriptspace = rdata->scriptspace;
         }
-    numtxids *= 1.5; numexternaltxids *= 1.5, scriptspace *= 1.5;
-    numunspents *= 1.5, numspends *= 1.5, numpkinds *= 1.5;
+    numtxids *= 2.5; numexternaltxids *= 2.5, scriptspace *= 2.5;
+    numunspents *= 2.5, numspends *= 2.5, numpkinds *= 2.5;
     if ( mem->ptr == 0 )
     {
         allocsize = _iguana_rdata_action(0,0,0,0,1,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,0,0,0,0,0,RAMCHAIN_ARG,numblocks);

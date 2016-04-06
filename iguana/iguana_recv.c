@@ -1069,10 +1069,19 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
         lflag = 0;
         hdrsi = (coin->blocks.hwmchain.height+1) / coin->chain->bundlesize;
         bundlei = (coin->blocks.hwmchain.height+1) % coin->chain->bundlesize;
-        if ( (next= iguana_blockfind("reqloop",coin,iguana_blockhash(coin,coin->blocks.hwmchain.height+1))) == 0 )
+        if ( 1 )
         {
-            if ( (block= iguana_blockfind("reqloop2",coin,coin->blocks.hwmchain.RO.hash2)) != 0 )
-                next = block->hh.next; //, next/block->mainchain = 1;
+            if ( (next= iguana_bundleblock(coin,&hash2,coin->bundles[hdrsi],bundlei)) == 0 )
+            {
+                if ( (block= iguana_blockfind("reqloop2",coin,coin->blocks.hwmchain.RO.hash2)) != 0 )
+                    next = block->hh.next; //, next/block->mainchain = 1;
+            }
+        }
+        else
+        {
+            if ( (next= iguana_blockfind("reqloop",coin,iguana_blockhash(coin,coin->blocks.hwmchain.height+1))) == 0 )
+            {
+            }
         }
         if ( next == 0 && hdrsi < coin->bundlescount && (bp= coin->bundles[hdrsi]) != 0 && (next= bp->blocks[bundlei]) != 0 )
         {

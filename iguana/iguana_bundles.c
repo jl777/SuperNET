@@ -432,6 +432,8 @@ struct iguana_block *iguana_bundleblock(struct iguana_info *coin,bits256 *hash2p
 {
     struct iguana_bundle *nextbp; struct iguana_block *block = 0;
     memset(hash2p,0,sizeof(*hash2p));
+    if ( bp == 0 )
+        return(0);
     if ( i == bp->n )
     {
         if ( bits256_nonz(bp->nextbundlehash2) != 0 )

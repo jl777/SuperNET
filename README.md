@@ -4,7 +4,7 @@
 
 > #TL;DR#
 > 
-> ```sudo apt-get update; sudo apt-get install libcurl4-gnutls-dev libssl-dev libgmp3-dev; git clone https://github.com/jl777/SuperNET; cd SuperNET; ./m_onetime m_unix; ./m_unix; agents/iguana```
+> ```sudo apt-get update; sudo apt-get install build-essentials libcurl4-gnutls-dev autotools-dev autoconf libgmp3-dev libssl-dev libgmp3-dev; git clone https://github.com/jl777/SuperNET; cd SuperNET; ./m_onetime m_unix; ./m_unix; agents/iguana```
 > 
 > The above one line gets SuperNET installed, built and launched for unix. 
 > 
