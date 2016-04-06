@@ -641,9 +641,9 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
         aveduration = (double)bp->totaldurations / bp->durationscount;
     else aveduration = IGUANA_DEFAULTLAG/3 + 1;
     aveduration *= mult;
-    if ( priority == 3 )
+    if ( 1 || priority == 3 )
         n = iguana_bundlerequests(coin,missings,&tmp,&tmp2,mult,bp,priority);
-    else
+    else if ( 0 )
     {
         for (i=0; i<bp->n; i++)
         {

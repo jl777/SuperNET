@@ -1051,7 +1051,7 @@ int32_t iguana_blockreq(struct iguana_info *coin,int32_t height,int32_t priority
 
 int32_t iguana_reqblocks(struct iguana_info *coin)
 {
-    int32_t hdrsi,lflag,bundlei,iters=0,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp;
+    int32_t hdrsi,hdrsi0,bundlei0,lflag,bundlei,iters=0,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp;
     if ( time(NULL) < coin->lastreqtime+2 )
         return(0);
     coin->lastreqtime = (uint32_t)time(NULL);
@@ -1082,7 +1082,9 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
         {
             if ( (next= iguana_bundleblock(coin,&hash2,coin->bundles[hdrsi],bundlei)) == 0 )
             {
-                if ( (block= iguana_blockfind("reqloop2",coin,coin->blocks.hwmchain.RO.hash2)) != 0 )
+                hdrsi0 = (coin->blocks.hwmchain.height) / coin->chain->bundlesize;
+                bundlei0 = (coin->blocks.hwmchain.height) % coin->chain->bundlesize;
+                if ( (block= iguana_bundleblock(coin,&hash2,coin->bundles[hdrsi0],bundlei0)) == 0 )
                     next = block->hh.next; //, next/block->mainchain = 1;
             }
         }
