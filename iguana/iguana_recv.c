@@ -745,7 +745,7 @@ void iguana_checklongestchain(struct iguana_info *coin,struct iguana_bundle *bp,
 
 struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct iguana_bundlereq *req,struct iguana_block *blocks,int32_t n,int32_t *newhwmp)
 {
-    int32_t i,bundlei,match; struct iguana_block *block; struct iguana_bundle *bp,*firstbp = 0;
+    int32_t i,bundlei,match; struct iguana_block *block; struct iguana_peer *addr; struct iguana_bundle *bp,*firstbp = 0;
     if ( blocks == 0 )
     {
         printf("iguana_recvblockhdrs null blocks?\n");
@@ -762,7 +762,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
                 bp->dirty++;
                 if ( 0 && bp->issued[bundlei] == 0 && bp->hdrsi < coin->MAXBUNDLES )
                     iguana_blockQ("recvhdr",coin,bp,bundlei,blocks[i].RO.hash2,0);
-                printf("{%d:%d} ",bp->hdrsi,bundlei);
+                //printf("{%d:%d} ",bp->hdrsi,bundlei);
                 if ( i == 0 )
                 {
                     firstbp = bp;
@@ -779,7 +779,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
             else if ( bp != firstbp )
                 printf("blockhash[%d] cant be found\n",i);
         }
-        char str[65]; printf("blockhdrs.%s hdrsi.%d\n",bits256_str(str,blocks[0].RO.hash2),firstbp!=0?firstbp->hdrsi:-1);
+        char str[65]; printf("i.%d n.%d match.%d blockhdrs.%s hdrsi.%d\n",i,n,match,bits256_str(str,blocks[0].RO.hash2),firstbp!=0?firstbp->hdrsi:-1);
         if ( firstbp != 0 && match == coin->chain->bundlesize-1 && n == firstbp->n )
         {
             if ( firstbp->queued == 0 )
@@ -787,6 +787,14 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
                 //fprintf(stderr,"firstbp blockQ %d\n",firstbp->bundleheight);
                 iguana_bundleQ(coin,firstbp,1000);
             }
+        }
+        if ( firstbp == coin->current && (addr= req->addr) != 0 )
+        {
+            addr->RThashes[i] = firstbp->hashes[0];
+            for (i=1; i<n; i++)
+                addr->RThashes[i] = blocks[i].RO.hash2;
+            //memcpy(addr->RThashes,blockhashes,bp->numspec * sizeof(*addr->RThashes));
+            addr->numRThashes = n;
         }
     }
     return(req);
