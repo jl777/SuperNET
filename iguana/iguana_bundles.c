@@ -1200,6 +1200,10 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
     if ( coin->stucktime != 0 && time(NULL)-coin->stucktime > coin->maxstuck )
         coin->maxstuck = (uint32_t)time(NULL) - coin->stucktime;
     sprintf(str,"%s.RT%d u.%d b.%d/%d v.%d/%d (%d+%d/%d 1st.%d).s%d to %d N[%d] h.%d r.%d c.%d s.%d d.%d E.%d maxB.%d peers.%d/%d Q.(%d %d) L.%d [%d:%d] M.%d %s",coin->symbol,coin->RTheight,numutxo,numbalances,numconverted,numv,coin->pendbalances,firstgap!=0?firstgap->numcached:-1,firstgap!=0?firstgap->numsaved:-1,firstgap!=0?firstgap->numhashes:-1,firstgap!=0?firstgap->hdrsi:-1,firstgap!=0?firstgap->numspec:-1,coin->lastpending!=0?coin->lastpending->hdrsi:0,count,numhashes,coin->blocksrecv,numcached,numsaved,done,numemit,coin->MAXBUNDLES,p,coin->MAXPEERS,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ),coin->longestchain,coin->blocks.hwmchain.height/coin->chain->bundlesize,coin->blocks.hwmchain.height%coin->chain->bundlesize,coin->blocks.hwmchain.height,bits256_str(str5,coin->blocks.hwmchain.RO.hash2));
+    if ( coin->current != 0 && coin->current->hdrsi == coin->longestchain/coin->chain->bundlesize && done+numemit < coin->current->hdrsi )
+    {
+        printf("missing bundles d.%d + E.%d != %d\n",done,numemit,coin->current->hdrsi);
+    }
     // u.202 b.0/202 v.202/202
     if ( coin->current != 0 && numutxo == coin->bundlescount-1 && numutxo == coin->current->hdrsi && numbalances == 0 && numconverted == numutxo )
     {
