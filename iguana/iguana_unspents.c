@@ -788,6 +788,20 @@ int32_t iguana_spendvectorsave(struct iguana_info *coin,struct iguana_bundle *bp
     return(retval);
 }
 
+int32_t iguana_alloctxbits(struct iguana_info *coin,struct iguana_ramchain *ramchain)
+{
+    if ( coin->PREFETCHLAG > 0 && ramchain->txbits == 0 )
+    {
+        int32_t tlen; uint8_t *TXbits = (uint8_t *)((long)ramchain->H.data + ramchain->H.data->TXoffset);
+        tlen = (int32_t)hconv_bitlen(ramchain->H.data->numtxsparse * ramchain->H.data->txsparsebits);
+        ramchain->txbits = calloc(1,tlen);
+        memcpy(ramchain->txbits,TXbits,tlen);
+        printf("alloc.[%d] txbits.%p[%d]\n",ramchain->H.data->height/coin->chain->bundlesize,ramchain->txbits,tlen);
+        return(tlen);
+    }
+    return(-1);
+}
+
 int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_ramchain *ramchain,int32_t starti,int32_t numblocks,int32_t convertflag)
 {
     static uint64_t total,emitted;
@@ -810,9 +824,11 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
         bp->numtmpspends = ramchain->numXspends;
         bp->utxofinish = (uint32_t)time(NULL);
         bp->balancefinish = 0;
-        //printf("iguana_spendvectors: already have Xspendinds[%d]\n",ramchain->numXspends);
+        printf("iguana_spendvectors: already have Xspendinds[%d]\n",ramchain->numXspends);
         return(ramchain->numXspends);
     }
+    for (i=0; i<bp->hdrsi; i++)
+        iguana_alloctxbits(coin,&coin->bundles[i]->ramchain);
     ptr = mycalloc('x',sizeof(*ptr),n);
     total += n;
     startmillis = OS_milliseconds();
@@ -1212,15 +1228,8 @@ int32_t iguana_mapvolatiles(struct iguana_info *coin,struct iguana_ramchain *ram
         }
         if ( err == 0 )
         {
-            printf("mapped extra.%s flag.%d txbits.%p\n",fname,(int32_t)coin->PREFETCHLAG,ramchain->txbits);
-            if ( coin->PREFETCHLAG > 0 && ramchain->txbits == 0 )
-            {
-                int32_t tlen; uint8_t *TXbits = (uint8_t *)((long)ramchain->H.data + ramchain->H.data->TXoffset);
-                tlen = (int32_t)hconv_bitlen(ramchain->H.data->numtxsparse * ramchain->H.data->txsparsebits);
-                ramchain->txbits = calloc(1,tlen);
-                memcpy(ramchain->txbits,TXbits,tlen);
-                printf("alloc.[%d] txbits.%p[%d]\n",ramchain->H.data->height,ramchain->txbits,tlen);
-            }
+            //printf("mapped extra.%s flag.%d txbits.%p\n",fname,(int32_t)coin->PREFETCHLAG,ramchain->txbits);
+            iguana_alloctxbits(coin,ramchain);
             break;
         }
         iguana_purgevolatiles(coin,ramchain);
