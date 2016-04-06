@@ -1871,12 +1871,12 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp,str
 int32_t iguana_realtime_update(struct iguana_info *coin)
 {
     double startmillis0; static double totalmillis0; static int32_t num0;
-    struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,i,j,n,flag=0; bits256 hash2; struct iguana_peer *addr;
+    struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,i,j,n,m,flag=0; bits256 hash2; struct iguana_peer *addr;
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
     //starti = coin->RTheight % coin->chain->bundlesize;
     if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && ((coin->RTheight <= coin->blocks.hwmchain.height && time(NULL) > bp->lastRT) || time(NULL) > bp->lastRT+10) )
     {
-        printf("check RTheight.%d hwm.%d longest.%d\n",coin->RTheight,coin->blocks.hwmchain.height,coin->longestchain);
+        printf("check longest.%d RTheight.%d hwm.%d\n",coin->longestchain,coin->RTheight,coin->blocks.hwmchain.height);
         if ( bits256_cmp(coin->RThash1,bp->hashes[1]) != 0 )
             coin->RThash1 = bp->hashes[1];
         bp->lastRT = (uint32_t)time(NULL);
@@ -1892,7 +1892,14 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                     for (j=coin->RTheight; j<addr->numRThashes; j++)
                     {
                         if ( (block= bp->blocks[j]) == 0 || block->txvalid == 0 )
-                            iguana_blockQ("RT",coin,bp,j,block->RO.hash2,1);
+                        {
+                            uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t avail; double mult=1.;
+                            if ( (m= iguana_blocksmissing(coin,&avail,missings,0,mult,bp,bp->n)) > 0 )
+                            {
+                                n = iguana_bundleissuemissing(coin,bp,missings,3,mult);
+                                printf("issued n.%d of m.%d\n",n,m);
+                            }
+                        }
                     }
                 }
             }
