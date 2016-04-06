@@ -578,8 +578,14 @@ int64_t iguana_hashmemsize(int64_t numtxids,int64_t numunspents,int64_t numspend
     return(allocsize);
 }
 
-void _iguana_ramchain_setptrs(RAMCHAIN_PTRPS,struct iguana_ramchaindata *rdata)
+void *_iguana_ramchain_setptrs(RAMCHAIN_PTRPS,struct iguana_ramchaindata *rdata)
 {
+    if ( rdata == 0 )
+    {
+        printf("_iguana_ramchain_setptrs: null rdata\n");
+        return(0);
+    }
+    printf("rdata.%p\n",rdata);
     *B = (void *)(long)((long)rdata + (long)rdata->Boffset);
     *T = (void *)(long)((long)rdata + (long)rdata->Toffset);
     *Kspace = (void *)(long)((long)rdata + (long)rdata->Koffset);
