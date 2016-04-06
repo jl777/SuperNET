@@ -228,7 +228,8 @@ void iguana_launcher(void *ptr)
     struct iguana_thread *t = ptr; struct iguana_info *coin;
     coin = t->coin;
     t->funcp(t->arg);
-    coin->Terminated[t->type % (sizeof(coin->Terminated)/sizeof(*coin->Terminated))]++;
+    if ( coin != 0 )
+        coin->Terminated[t->type % (sizeof(coin->Terminated)/sizeof(*coin->Terminated))]++;
     queue_enqueue("TerminateQ",&TerminateQ,&t->DL,0);
 }
 
@@ -250,13 +251,14 @@ struct iguana_thread *iguana_launch(struct iguana_info *coin,char *name,iguana_f
     t->funcp = funcp;
     t->arg = arg;
     t->type = (type % (sizeof(coin->Terminated)/sizeof(*coin->Terminated)));
-    coin->Launched[t->type]++;
+    if ( coin != 0 )
+        coin->Launched[t->type]++;
     retval = OS_thread_create(&t->handle,NULL,(void *)iguana_launcher,(void *)t);
     if ( retval != 0 )
         printf("error launching %s\n",t->name);
     while ( (t= queue_dequeue(&TerminateQ,0)) != 0 )
     {
-        if ( (rand() % 100000) == 0 )
+        if ( (rand() % 100000) == 0 && coin != 0 )
             printf("terminated.%d launched.%d terminate.%p\n",coin->Terminated[t->type],coin->Launched[t->type],t);
         iguana_terminate(coin,t);
     }

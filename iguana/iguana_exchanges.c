@@ -907,9 +907,9 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
         safecopy(exchange->tradepassword,tradepassword,sizeof(exchange->tradepassword));
     if ( (exchange->commission= jdouble(argjson,"commission")) > 0. )
         exchange->commission *= .01;
-    printf("ADDEXCHANGE.(%s) [%s, %s, %s] commission %.3f%%\n",exchangestr,exchange->apikey,exchange->userid,exchange->apisecret,exchange->commission * 100.);
+    printf("ADDEXCHANGE.(%s) [%s, %s, %s] commission %.3f%% -> exchangeid.%d\n",exchangestr,exchange->apikey,exchange->userid,exchange->apisecret,exchange->commission * 100.,exchangeid);
     Exchanges[exchangeid] = exchange;
-    iguana_launch(iguana_coinadd("BTCD",0),"exchangeloop",(void *)exchanges777_loop,exchange,IGUANA_EXCHANGETHREAD);
+    iguana_launch(0,"exchangeloop",(void *)exchanges777_loop,exchange,IGUANA_EXCHANGETHREAD);
     return(exchange);
 }
 
