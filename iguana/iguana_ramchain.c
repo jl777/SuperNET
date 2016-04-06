@@ -2025,8 +2025,11 @@ int32_t iguana_bundlefiles(struct iguana_info *coin,uint32_t *ipbits,void **ptrs
     {
         if ( (ptrs[num]= iguana_bundlefile(coin,fname,&filesizes[num],bp,bundlei)) != 0 )
             num++;
-        else return(bp == coin->current ? num : 0);
-        //printf("%s mapped ptrs[%d] filesize.%ld bundlei.%d ipbits.%x fpos.%d\n",fname,num,(long)filesizes[num],bundlei,fpipbits,bp->fpos[bundlei]);
+        else
+        {
+            printf("%s error ptrs[%d] filesize.%ld bundlei.%d ipbits.%x\n",fname,num,(long)filesizes[num],bundlei,ipbits[bundlei]);
+            return(bp == coin->current ? num : 0);
+        }
     }
     return(num);
 }
