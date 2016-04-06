@@ -788,7 +788,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
                 iguana_bundleQ(coin,firstbp,1000);
             }
         }
-        if ( firstbp == coin->current && (addr= req->addr) != 0 )
+        if ( i == n && i == match && firstbp == coin->current && (addr= req->addr) != 0 )
         {
             addr->RThashes[i] = firstbp->hashes[0];
             for (i=1; i<n; i++)
