@@ -156,7 +156,7 @@ int32_t iguana_savehdrs(struct iguana_info *coin)
                 fprintf(fp,"%d %s %s %s\n",bp->bundleheight,bits256_str(str,bp->hashes[0]),shastr,bits256_str(str2,bp->hashes[1]));
             } else break;
         }
-        //printf("compare hdrs.txt %ld vs (%s) %ld\n",ftell(fp),fname,(long)OS_filesize(fname));
+        printf("compare hdrs.txt %ld vs (%s) %ld\n",ftell(fp),fname,(long)OS_filesize(fname));
         if ( ftell(fp) > OS_filesize(fname) )
         {
             printf("new hdrs.txt %ld vs (%s) %ld\n",ftell(fp),fname,(long)OS_filesize(fname));
@@ -441,7 +441,7 @@ void iguana_coinpurge(struct iguana_info *coin)
 
 struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialheight,int32_t mapflags)
 {
-    FILE *fp; char fname[512],*symbol; int32_t iter;
+    FILE *fp; char fname[512],*symbol; int32_t iter; long fpos;
     coin->sleeptime = 10000;
     symbol = coin->symbol;
     if ( iguana_peerslotinit(coin,&coin->internaladdr,IGUANA_MAXPEERS,calc_ipbits("127.0.0.1:7777")) < 0 )
@@ -503,9 +503,10 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
         if ( (fp= fopen(fname,"r")) != 0 )
         {
             iguana_parseline(coin,iter,fp);
+            fpos = ftell(fp);
             fclose(fp);
         }
-        printf("done parsefile.%d\n",iter);
+        printf("done parsefile.%d (%s) size.%ld\n",iter,fname,fpos);
     }
 #ifndef IGUANA_DEDICATED_THREADS
     coin->peers.peersloop = iguana_launch("peersloop",iguana_peersloop,coin,IGUANA_PERMTHREAD);
