@@ -1601,7 +1601,7 @@ int32_t iguana_spendvectorsaves(struct iguana_info *coin)
 
 int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *spentbp)
 {
-    struct iguana_bundle *bp; int16_t spent_hdrsi; uint32_t numpkinds; struct iguana_unspent *spentU; struct iguana_spendvector *vec; int32_t i,converted,j,n = coin->bundlescount;
+    struct iguana_bundle *bp; int16_t spent_hdrsi; uint32_t numpkinds; struct iguana_unspent *spentU; struct iguana_spendvector *vec; int32_t i,converted,j,n = coin->bundlescount; struct iguana_ramchain *ramchain;
     if ( spentbp->converted != 0 )
     {
         printf("[%d] already converted.%u\n",spentbp->hdrsi,spentbp->converted);
@@ -1609,9 +1609,10 @@ int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *s
     }
     spentbp->converted = 1;
     spent_hdrsi = spentbp->hdrsi;
-    numpkinds = spentbp->ramchain.H.data->numpkinds;
+    ramchain = (spentbp == coin->current) ? &coin->RTramchain : &spentbp->ramchain;
+    numpkinds = ramchain->H.data->numpkinds;
     iguana_ramchain_prefetch(coin,&spentbp->ramchain,0);
-    spentU = (void *)(long)((long)spentbp->ramchain.H.data + spentbp->ramchain.H.data->Uoffset);
+    spentU = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Uoffset);
     for (i=converted=0; i<n; i++)
     {
         if ( (bp= coin->bundles[i]) != 0 && bp->tmpspends != 0 && bp->numtmpspends > 0 )
