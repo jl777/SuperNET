@@ -201,6 +201,8 @@ struct supernet_info *SuperNET_MYINFOfind(int32_t *nump,bits256 pubkey);
 void SuperNET_MYINFOadd(struct supernet_info *myinfo);
 struct supernet_info *SuperNET_accountfind(cJSON *argjson);
 int32_t SuperNET_MYINFOS(struct supernet_info **myinfos,int32_t max);
+FILE *myfopen(char *fname,char *mode);
+int32_t myfclose(FILE *fp);
 
 #endif
 

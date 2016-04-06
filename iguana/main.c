@@ -23,7 +23,30 @@
 #include "../pnacl_main.h"
 #include "iguana777.h"
 #include "SuperNET.h"
-#include <stdio.h>
+
+#undef fopen
+#undef fclose
+int32_t Fopen_count,Fclose_count;
+
+FILE *myfopen(char *fname,char *mode)
+{
+    FILE *fp;
+    if ( (fp= fopen(fname,mode)) != 0 )
+    {
+        Fopen_count++;
+        if ( Fopen_count > 2*Fclose_count )
+            printf("Fopens.%d vs Fcloses.%d [%d]\n",Fopen_count,Fclose_count,Fopen_count-Fclose_count);
+        return(fp);
+    }
+    return(0);
+}
+
+int32_t myfclose(FILE *fp)
+{
+    Fclose_count++;
+    return(fclose(fp));
+}
+
 // ALL globals must be here!
 char *Iguana_validcommands[] =
 {
