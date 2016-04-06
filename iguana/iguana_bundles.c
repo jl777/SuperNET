@@ -971,7 +971,7 @@ double iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,d
             printf("priority.%d [%d] dist.%d durations %.2f vs %.2f counts[%d %d] \n",priority,bp->hdrsi,dist,aveduration,aveduplicates,(int32_t)bp->durationscount,bp->duplicatescount);
     }
     if ( aveduration != 0. )
-        mult = ((bp == coin->current) ? 1. : 5.);
+        mult = ((bp == coin->current) ? .5 : 5.);
     else mult = 3.;
     if ( bp->numissued < bp->n )
         max = bp->numissued;
@@ -1009,7 +1009,7 @@ double iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,d
 void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
 {
     int32_t i,n,m,j,numv,numconverted,count,starti,lasti,pending,capacity,displag,numutxo,numbalances,numrecv,done,numhashes,numcached,numsaved,numemit; struct iguana_block *block; bits256 hash2;
-    int64_t spaceused=0,estsize = 0; struct iguana_bundle *currentbp,*lastbp,*bp,*lastpending = 0,*firstgap = 0; uint32_t now; double mult=7,aveduration,recentduration = 0.;
+    int64_t spaceused=0,estsize = 0; struct iguana_bundle *currentbp,*lastbp,*bp,*lastpending = 0,*firstgap = 0; uint32_t now; double aveduration,recentduration = 0.;
     now = (uint32_t)time(NULL);
     displag = (now - coin->lastdisp);
     numrecv = numhashes = numcached = numconverted = numsaved = numemit = done = numutxo = numbalances = 0;
@@ -1187,7 +1187,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
                 if ( bp->durationscount != 0 )
                     aveduration = (double)bp->totaldurations / bp->durationscount;
                 else aveduration = IGUANA_DEFAULTLAG/3 + 1;
-                if ( (n= iguana_bundlerequests(coin,missings,&tmp,&tmp2,1.,bp,priority)) > 0 )
+                if ( (n= iguana_bundlerequests(coin,missings,&tmp,&tmp2,.25,bp,priority)) > 0 )
                     printf("issued %d priority requests [%d] to unstick stuckiters.%d lag.%d\n",n,bp->hdrsi,coin->stuckiters,lag);
                 //else printf("no bundlerequests issued\n");
             }
