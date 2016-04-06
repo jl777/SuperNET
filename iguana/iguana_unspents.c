@@ -1767,7 +1767,13 @@ void iguana_convert(struct iguana_info *coin,struct iguana_bundle *bp)
         total += converted;
         printf("[%4d] millis %7.3f converted.%-7d balance calc.%-4d of %4d | total.%llu of %llu depth.%d\n",bp->hdrsi,OS_milliseconds()-startmillis,converted,m,n,(long long)total,(long long)total_tmpspends,(int32_t)depth);
         if ( m == n-1 )
-            iguana_spendvectorsaves(coin);
+        {
+            if ( iguana_spendvectorsaves(coin) == 0 )
+            {
+                for (i=0; i<m; i++)
+                    iguana_balancesQ(coin,coin->bundles[i]);
+            }
+        }
     }
     depth--;
 }
