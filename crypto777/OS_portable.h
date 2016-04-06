@@ -62,8 +62,8 @@
 #define MAP_FILE        0
 #endif
 
-#define fopen myfopen
-#define fclose myfclose
+//#define fopen myfopen
+//#define fclose myfclose
 FILE *myfopen(char *fname,char *mode);
 int32_t myfclose(FILE *fp);
 
