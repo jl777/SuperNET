@@ -1212,13 +1212,14 @@ int32_t iguana_mapvolatiles(struct iguana_info *coin,struct iguana_ramchain *ram
         }
         if ( err == 0 )
         {
-            //printf("mapped extra.%s\n",fname);
+            printf("mapped extra.%s flag.%d txbits.%p\n",fname,(int32_t)coin->PREFETCHLAG,ramchain->txbits);
             if ( coin->PREFETCHLAG > 0 && ramchain->txbits == 0 )
             {
                 int32_t tlen; uint8_t *TXbits = (uint8_t *)((long)ramchain->H.data + ramchain->H.data->TXoffset);
                 tlen = (int32_t)hconv_bitlen(ramchain->H.data->numtxsparse * ramchain->H.data->txsparsebits);
                 ramchain->txbits = calloc(1,tlen);
                 memcpy(ramchain->txbits,TXbits,tlen);
+                printf("alloc.[%d] txbits.%p[%d]\n",ramchain->H.data->height,ramchain->txbits,tlen);
             }
             break;
         }
