@@ -817,12 +817,6 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
     if ( strcmp(coin->symbol,"BTC") == 0 )
         printf("start UTXOGEN.%d max.%d ptr.%p millis.%.3f\n",bp->bundleheight,n,ptr,startmillis);
     //txidind = spendind = rdata->firsti;
-    if ( coin->PREFETCHLAG > 0 )
-    {
-        iguana_ramchain_prefetch(coin,ramchain,0);
-        if ( bp->hdrsi > 0 )
-            iguana_prefetch(coin,bp,bp->hdrsi-1,1);
-    }
     starttime = (uint32_t)time(NULL);
     txidind = B[starti].firsttxidind;
     spendind = B[starti].firstvin;
@@ -862,7 +856,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                         }
                         if ( coin->PREFETCHLAG > 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
                         {
-                            //printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
+                            printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
                             iguana_ramchain_prefetch(coin,&spentbp->ramchain,2);
                             spentbp->lastprefetch = now;
                         }
@@ -1611,7 +1605,7 @@ int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *s
     spent_hdrsi = spentbp->hdrsi;
     ramchain = (spentbp == coin->current) ? &coin->RTramchain : &spentbp->ramchain;
     numpkinds = ramchain->H.data->numpkinds;
-    iguana_ramchain_prefetch(coin,&spentbp->ramchain,0);
+    iguana_ramchain_prefetch(coin,ramchain,0);
     spentU = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Uoffset);
     for (i=converted=0; i<n; i++)
     {

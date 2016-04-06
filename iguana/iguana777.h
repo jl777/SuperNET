@@ -851,6 +851,7 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
 int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1],bits256 hashes[],double mult,struct iguana_bundle *bp,int32_t capacity);
 FILE *myfopen(char *fname,char *mode);
 int32_t myfclose(FILE *fp);
+void iguana_prefetch(struct iguana_info *coin,struct iguana_bundle *bp,int32_t width,int32_t flags);
 
 extern int32_t HDRnet,netBLOCKS;
 
