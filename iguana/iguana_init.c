@@ -480,7 +480,7 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
             OS_compatible_path(fname);
             fp = fopen(fname,"r");
         }
-        else if ( iter == 1 )
+        else if ( 0 && iter == 1 )
         {
             sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
             OS_compatible_path(fname);
