@@ -717,23 +717,23 @@ int64_t _iguana_rdata_action(FILE *fp,bits256 lhashes[IGUANA_NUMLHASHES],void *d
         if( txsparsebits == 0 || numtxsparse == 0 )
         {
             txsparsebits = hcalc_bitsize(numtxids);
-            /*if ( txsparsebits < 8 )
+            if ( txsparsebits < 8 )
                 txsparsebits = 8;
             else if ( txsparsebits < 16 )
                 txsparsebits = 16;
             else if ( txsparsebits < 32 )
-                txsparsebits = 32;*/
+                txsparsebits = 32;
             numtxsparse = SPARSECOUNT(numtxids);
         }
         if ( pksparsebits == 0 || numpksparse == 0 )
         {
             pksparsebits = hcalc_bitsize(numpkinds);
-            /*if ( pksparsebits < 8 )
+            if ( pksparsebits < 8 )
                 pksparsebits = 8;
             else if ( pksparsebits < 16 )
                 pksparsebits = 16;
             else if ( pksparsebits < 32 )
-                pksparsebits = 32;*/
+                pksparsebits = 32;
             numpksparse = SPARSECOUNT(numpkinds);
         }
         txbits = numtxsparse * txsparsebits; pkbits = numpksparse * pksparsebits;
