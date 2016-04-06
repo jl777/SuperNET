@@ -1959,7 +1959,7 @@ void iguana_blockunmark(struct iguana_info *coin,struct iguana_block *block,stru
             bp->speculativecache[i] = 0;
         }
     }
-    if ( deletefile != 0 && 0 )
+    if ( deletefile != 0 )
     {
         if ( (checki= iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,block->RO.hash2,zero,1,1)) != i )
             printf("checki.%d vs %d mismatch?\n",checki,i);
@@ -2019,6 +2019,7 @@ void *iguana_bundlefile(struct iguana_info *coin,char *fname,long *filesizep,str
     }
     if ( (ptr= OS_mapfile(fname,filesizep,0)) == 0 )
     {
+        printf("%p[%ld] ",ptr,*filesizep);
         //printf("error mapping.(%s) bundlei.%d\n",fname,bundlei);
         return(0);
     }
@@ -2047,7 +2048,7 @@ void iguana_bundlemapfree(struct iguana_info *coin,struct OS_memspace *mem,struc
     for (j=0; j<num; j++)
         if ( ptrs[j] != 0 && filesizes[j] != 0 )
         {
-            //printf("unmap.%d/%d: %p %ld\n",j,num,ptrs[j],filesizes[j]);
+            printf("unmap.%d/%d: %p %ld\n",j,num,ptrs[j],filesizes[j]);
             munmap(ptrs[j],filesizes[j]);
         }
     myfree(ptrs,n * sizeof(*ptrs));
@@ -2336,8 +2337,10 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         }
         fpipbits = block->fpipbits, fpos = block->fpos;
         mapchain = &R[bundlei];
+        printf("mapchain.[%d:%d] %p[%ld]\n",bp->hdrsi,bundlei,ptrs[bundlei],filesizes[bundlei]);
         if ( iguana_mapchaininit(coin,mapchain,bp,bundlei,block,ptrs[bundlei],filesizes[bundlei]) < 0 )
             break;
+        printf("done mapchain.[%d:%d]\n",bp->hdrsi,bundlei);
         numtxids += (mapchain->H.data->numtxids - 1);
         numunspents += (mapchain->H.data->numunspents - 1);
         numspends += (mapchain->H.data->numspends - 1);
