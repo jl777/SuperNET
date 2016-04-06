@@ -607,9 +607,9 @@ void iguana_coinloop(void *arg)
         }
         if ( flag == 0 && coin->isRT == 0 )
             usleep(coin->polltimeout*1000 + (coin->peers.numranked == 0)*1000000);
-        else if ( coin->RTheight >= coin->longestchain-3 )
-            usleep(coin->polltimeout*1000 + coin->isRT*90000 + (coin->peers.numranked == 0)*1000000);
-        else usleep(25000);
+        else if ( coin->current != 0 && coin->current->hdrsi == coin->longestchain/coin->chain->bundlesize )
+            usleep(coin->polltimeout*1000 + 90000 + (coin->peers.numranked == 0)*1000000);
+        else usleep(coin->polltimeout*1000);
     }
 }
 
@@ -672,7 +672,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( jobj(json,"cache") != 0 )
         coin->enableCACHE = juint(json,"cache");
     if ( (coin->polltimeout= juint(json,"poll")) <= 0 )
-        coin->polltimeout = 10;
+        coin->polltimeout = IGUANA_DEFAULT_POLLTIMEOUT;
     coin->active = juint(json,"active");
     if ( (coin->minconfirms = minconfirms) == 0 )
         coin->minconfirms = (strcmp(symbol,"BTC") == 0) ? 3 : 10;

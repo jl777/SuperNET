@@ -31,6 +31,7 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 
 #define IGUANA_MAXCOINS 64
 #define IGUANA_MAXDELAY_MILLIS (3600 * 1000) 
+#define IGUANA_DEFAULT_POLLTIMEOUT 10
 
 #define IGUANA_EXCHANGEIDLE 10
 #define IGUANS_JSMILLIS 100
