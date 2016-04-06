@@ -511,7 +511,7 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
 int32_t iguana_sendhashes(struct iguana_info *coin,struct iguana_peer *addr,int32_t msgtype,bits256 hashes[],int32_t n,int32_t priority)
 {
     int32_t len; uint8_t *serialized;
-    if ( priority > 1 )
+    if ( addr->usock >= 0 && addr->dead == 0 && priority > 1 )
     {
         serialized = malloc((sizeof(int32_t) + sizeof(*hashes))*n + 1024);
         if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,hashes,n)) > 0 )
@@ -565,7 +565,7 @@ int32_t iguana_bundlerequests(struct iguana_info *coin,uint8_t missings[IGUANA_M
             //printf("n.%d avail.%d numpeers.%d\n",n,avail,numpeers);
             for (i=0; i<numpeers && avail>0; i++)
             {
-                if ( (addr= peers[i]) != 0 && (c= (coin->MAXPENDINGREQUESTS - addr->pendblocks)) > 0  )
+                if ( (addr= peers[i]) != 0 && addr->usock >= 0 && addr->dead == 0 && (c= (coin->MAXPENDINGREQUESTS - addr->pendblocks)) > 0  )
                 {
                     if ( c+m > max )
                         c = max - m;
@@ -949,15 +949,17 @@ int32_t iguana_cacheprocess(struct iguana_info *coin,struct iguana_bundle *bp,in
 
 void iguana_unstickhdr(struct iguana_info *coin,struct iguana_bundle *bp,int32_t lag)
 {
-    int32_t datalen,m; uint8_t serialized[512]; char str[65]; struct iguana_peer *addr;
+    int32_t datalen,m,i; uint8_t serialized[512]; char str[65]; struct iguana_peer *addr;
     if ( (m= coin->peers.numranked) > 0 && bp->numhashes < bp->n && bp->hdrsi < coin->longestchain/coin->chain->bundlesize && time(NULL) > bp->unsticktime+lag )
     {
-        if ( (addr= coin->peers.ranked[rand() % m]) != 0 && (datalen= iguana_gethdrs(coin,serialized,coin->chain->gethdrsmsg,bits256_str(str,bp->hashes[0]))) > 0 )
+        for (i=0; i<10; i++)
+        if ( (addr= coin->peers.ranked[rand() % m]) != 0 && addr->usock >= 0 && addr->dead == 0 && (datalen= iguana_gethdrs(coin,serialized,coin->chain->gethdrsmsg,bits256_str(str,bp->hashes[0]))) > 0 )
         {
             //printf("UNSTICK HDR.[%d]\n",bp->hdrsi);
             iguana_send(coin,addr,serialized,datalen);
             addr->pendhdrs++;
             bp->unsticktime = (uint32_t)time(NULL);
+            break;
         }
     }
 }
