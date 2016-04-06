@@ -1841,7 +1841,7 @@ void iguana_RThdrs(struct iguana_info *coin,struct iguana_bundle *bp,int32_t num
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
         if ( (addr= coin->peers.ranked[i]) != 0 && (datalen= iguana_gethdrs(coin,serialized,coin->chain->gethdrsmsg,bits256_str(str,bp->hashes[0]))) > 0 )
         {
-            //printf("UNSTICK HDR.[%d]\n",bp->hdrsi);
+            printf("%s UNSTICK HDR.[%d]\n",addr->ipaddr,bp->hdrsi);
             iguana_send(coin,addr,serialized,datalen);
             addr->pendhdrs++;
         }
@@ -1880,7 +1880,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         if ( bits256_cmp(coin->RThash1,bp->hashes[1]) != 0 )
             coin->RThash1 = bp->hashes[1];
         bp->lastRT = (uint32_t)time(NULL);
-        if ( 1 && coin->peers.numranked > 0 && time(NULL) > coin->RThdrstime+10 )
+        if ( coin->RTheight < coin->longestchain && coin->peers.numranked > 0 && time(NULL) > coin->RThdrstime+10 )
         {
             iguana_RThdrs(coin,bp,coin->peers.numranked);
             coin->RThdrstime = bp->lastRT;

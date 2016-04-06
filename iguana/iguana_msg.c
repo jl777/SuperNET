@@ -632,22 +632,29 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
             intvectors = 'N', addr->msgcounts.notfound++;
         else if ( strcmp(H->command,"getdata") == 0 ) // for servers
         {
+            printf("%s SERVER getdata\n",addr->ipaddr);
             intvectors = srvmsg = 'D', addr->msgcounts.getdata++;
         }
         else if ( strcmp(H->command,"getblocks") == 0 ) // for servers
         {
+            printf("%s SERVER getblocks\n",addr->ipaddr);
             srvmsg = 'B', addr->msgcounts.getblocks++;
         }
         else if ( strcmp(H->command,"getheaders") == 0 ) // for servers
         {
+            printf("%s SERVER getheaders\n",addr->ipaddr);
             srvmsg = 'H', addr->msgcounts.getheaders++;
         }
         else if ( strcmp(H->command,"getaddr") == 0 )
         {
+            printf("%s SERVER getaddr\n",addr->ipaddr);
             srvmsg = 'A', addr->msgcounts.getaddr++;
         }
         else if ( strcmp(H->command,"mempool") == 0 )
+        {
+            printf("%s SERVER mempool\n",addr->ipaddr);
             srvmsg = 'M', addr->msgcounts.mempool++;
+        }
         else if ( strcmp(H->command,"filterload") == 0 ) // for bloom
             bloom = 'L', addr->msgcounts.filterload++;
         else if ( strcmp(H->command,"filteradd") == 0 ) // for bloom

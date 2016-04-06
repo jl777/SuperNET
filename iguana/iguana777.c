@@ -568,8 +568,8 @@ void iguana_coinloop(void *arg)
                         coin->isRT = 1;
                         if ( coin->polltimeout > 100 )
                             coin->polltimeout = 100;
-                        if ( coin->MAXPEERS > 32 )
-                            coin->MAXPEERS = 32;
+                        if ( coin->MAXPEERS > IGUANA_MINPEERS )
+                            coin->MAXPEERS = IGUANA_MINPEERS;
                     }
                     if ( coin->isRT != 0 && coin->current != 0 && coin->numverified >= coin->current->hdrsi )
                     {
