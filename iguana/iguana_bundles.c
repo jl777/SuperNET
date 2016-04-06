@@ -957,7 +957,6 @@ void iguana_unstickhdr(struct iguana_info *coin,struct iguana_bundle *bp,int32_t
 double iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,double aveduration)
 {
     uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t lag,tmp,dist=0,missing,priority,avail,n=0,max; double aveduplicates,mult; //bits256 hash2;
-    missing = iguana_blocksmissing(coin,&avail,missings,0,mult,bp,0);
     priority = (strcmp("BTC",coin->symbol) != 0) * 2;
     lag = IGUANA_DEFAULTLAG;
     if ( bp->durationscount != 0 )
@@ -975,6 +974,7 @@ double iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,d
     if ( bp->numissued < bp->n )
         max = bp->numissued;
     else max = bp->origmissings;
+    missing = iguana_blocksmissing(coin,&avail,missings,0,mult,bp,0);
     /*if ( coin->current != 0 )
     {
         if ( (dist= bp->hdrsi - coin->current->hdrsi) < coin->MAXBUNDLES && (bp == coin->current || netBLOCKS < 50*bp->n) )
