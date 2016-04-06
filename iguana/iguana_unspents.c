@@ -1988,12 +1988,13 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,i,n,flag=0; bits256 hash2; struct iguana_peer *addr;
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
     //starti = coin->RTheight % coin->chain->bundlesize;
-    if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && (coin->RTheight <= coin->blocks.hwmchain.height || time(NULL) > bp->lastRT) )
+    if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && (coin->RTheight <= coin->blocks.hwmchain.height || time(NULL) > bp->lastRT+10) )
     {
+        printf("check RTheight.%d hwm.%d longest.%d\n",coin->RTheight,coin->blocks.hwmchain.height,coin->longestchain);
         if ( bits256_cmp(coin->RThash1,bp->hashes[1]) != 0 )
             coin->RThash1 = bp->hashes[1];
         bp->lastRT = (uint32_t)time(NULL);
-        if ( 0 && coin->peers.numranked > 0 && time(NULL) > coin->RThdrstime+10 )
+        if ( 1 && coin->peers.numranked > 0 && time(NULL) > coin->RThdrstime+10 )
         {
             iguana_RThdrs(coin,bp,coin->peers.numranked);
             coin->RThdrstime = bp->lastRT;

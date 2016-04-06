@@ -979,6 +979,12 @@ double iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,d
     if ( aveduration != 0. )
         mult = ((bp == coin->current) ? (strcmp("BTC",coin->symbol) != 0 ? .5 : 2) : 7.);
     else mult = 3.;
+    if ( mult > 2 && bp->numcached > .95*bp->n )
+    {
+        if ( bp->numcached > .99*bp->n )
+            mult = 2.;
+        else mult = 1.;
+    }
     if ( bp->numissued < bp->n )
         max = bp->numissued;
     else max = bp->origmissings;
