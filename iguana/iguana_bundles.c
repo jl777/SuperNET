@@ -603,7 +603,7 @@ int32_t iguana_bundlerequests(struct iguana_info *coin,uint8_t missings[IGUANA_M
 
 int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    int32_t i,ready,valid; struct iguana_block *block; int32_t sum[0x100],counts[0x100];
+    int32_t i,ready,valid; char fname[1024]; void *ptr; long filesize; struct iguana_block *block; int32_t sum[0x100],counts[0x100];
     memset(sum,0,sizeof(sum));
     memset(counts,0,sizeof(counts));
     for (i=ready=0; i<bp->n; i++)
@@ -621,7 +621,15 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp)
                 printf(">>>>>>> block contents error at ht.%d [%d:%d]\n",bp->bundleheight+i,bp->hdrsi,i);
                 //char str[65];  patch.(%s) and reissue %s checki.%d vs %d\n",block->fpipbits,bp->bundleheight+i,bits256_str(str,block->RO.prev_block),fname,checki,i);
                 iguana_blockunmark(coin,block,bp,i,1);
-            } else ready++;
+            }
+            else
+            {
+                if ( (ptr= iguana_bundlefile(coin,fname,&filesize,bp,i)) != 0 )
+                {
+                    munmap(ptr,filesize);
+                    ready++;
+                }
+            }
         }
         else
         {
