@@ -465,6 +465,8 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
     else aveduration = IGUANA_DEFAULTLAG/3 + 1;
     aveduration *= mult;
     lag = aveduration;
+    if ( lag > IGUANA_DEFAULTLAG )
+        lag = IGUANA_DEFAULTLAG * 8;
     memset(missings,0,IGUANA_MAXBUNDLESIZE/8+1);
     if ( bp->emitfinish == 0 )
     {
@@ -1185,7 +1187,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
                 if ( bp->durationscount != 0 )
                     aveduration = (double)bp->totaldurations / bp->durationscount;
                 else aveduration = IGUANA_DEFAULTLAG/3 + 1;
-                if ( (n= iguana_bundlerequests(coin,missings,&tmp,&tmp2,mult,bp,priority)) > 0 )
+                if ( (n= iguana_bundlerequests(coin,missings,&tmp,&tmp2,1.,bp,priority)) > 0 )
                     printf("issued %d priority requests [%d] to unstick stuckiters.%d lag.%d\n",n,bp->hdrsi,coin->stuckiters,lag);
                 //else printf("no bundlerequests issued\n");
             }
