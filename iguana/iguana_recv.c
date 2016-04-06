@@ -553,7 +553,8 @@ uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bit
                     usleep(100000);
                 }
             }
-            printf("ALLHASHES FOUND! %d allhashes.%d issued %d\n",bp->bundleheight,coin->allhashes,n);
+            if ( n > 0 )
+                printf("ALLHASHES FOUND! %d allhashes.%d issued %d\n",bp->bundleheight,coin->allhashes,n);
             if ( bp->queued == 0 )
                 iguana_bundleQ(coin,bp,bp->n*5 + (rand() % 500));
             return(bp->queued);
@@ -887,7 +888,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
                     printf("vcalc.(%s) [%d].(%s)\n",bits256_str(str,allhash),bp->hdrsi,bits256_str(str2,bp->hashes[0]));
                 if ( bits256_cmp(allhash,bp->allhash) == 0 )
                 {
-                    if ( bp->speculative == 0 )
+                    if ( 0 && bp->speculative == 0 )
                         printf("matched allhashes.[%d]\n",bp->hdrsi);
                     if ( bp->queued != 0 )
                         bp->queued = 0;
