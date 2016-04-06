@@ -680,18 +680,18 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
     {
         char str[64];
         bp->hdrtime = (uint32_t)time(NULL);
-        if ( bp == coin->current && bp->speculative != 0 )
-        {
-            //printf("iguana_bundlehdr.[%d] %d %s\n",bp->hdrsi,bp->numspec,bits256_str(str,bp->hashes[0]));
-            if ( iguana_blocksmissing(coin,&avail,missings,0,mult,bp,bp->n) > 0 )
-                iguana_bundleissuemissing(coin,bp,missings,3,mult);
-        }
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
     }
     if ( bp->hdrsi == coin->bundlescount-1 && bp->speculative != 0 && bits256_nonz(bp->nextbundlehash2) == 0 )
     {
         if ( time(NULL) > (bp->issued[1] + 10 + dist) )
         {
+            if ( bp == coin->current && bp->speculative != 0 )
+            {
+                //printf("iguana_bundlehdr.[%d] %d %s\n",bp->hdrsi,bp->numspec,bits256_str(str,bp->hashes[0]));
+                if ( iguana_blocksmissing(coin,&avail,missings,0,mult,bp,bp->n) > 0 )
+                    iguana_bundleissuemissing(coin,bp,missings,3,mult);
+            }
             //printf("request speculative[1] numspec.%d for bp.[%d] bp->speculative.%p enable.%d\n",bp->numspec,bp->hdrsi,bp->speculative,coin->enableCACHE);
             //iguana_blockQ("getnexthdr",coin,bp,-1,bp->speculative[1],1);
             //bp->issued[1] = (uint32_t)time(NULL);
