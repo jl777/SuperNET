@@ -96,6 +96,8 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
     if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,&hash2,1)) > 0 )
     {
         iguana_send(coin,addr,serialized,len);
+        if ( bp != 0 && bundlei >= 0 && bundlei < bp->n )
+            bp->issued[bundlei] = (uint32_t)time(NULL);
         coin->numreqsent++;
         addr->pendblocks++;
         addr->pendtime = (uint32_t)time(NULL);
