@@ -502,7 +502,7 @@ int32_t OS_removefile(char *fname,int32_t scrubflag)
     OS_compatible_path(tmp);
     if ( (fp= fopen(tmp,"rb+")) != 0 )
     {
-        printf("delete(%s)\n",fname);
+        //printf("delete(%s)\n",fname);
         if ( scrubflag != 0 )
         {
             fseek(fp,0,SEEK_END);

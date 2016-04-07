@@ -2010,17 +2010,24 @@ int32_t iguana_oldbundlefiles(struct iguana_info *coin,uint32_t *ipbits,void **p
 
 void *iguana_bundlefile(struct iguana_info *coin,char *fname,long *filesizep,struct iguana_bundle *bp,int32_t bundlei)
 {
-    int32_t checki,hdrsi; void *ptr = 0; static const bits256 zero;
+    int32_t checki,hdrsi; void *ptr = 0; FILE *fp; static const bits256 zero;
     *filesizep = 0;
+    fname[0] = 0;
     if ( (checki= iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,bp->hashes[bundlei],zero,1,1)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
     {
         printf("B iguana_ramchain_map.(%s) illegal hdrsi.%d bundlei.%d checki.%d\n",fname,hdrsi,bundlei,checki);
         return(0);
     }
-    if ( (ptr= OS_mapfile(fname,filesizep,0)) == 0 )
-    {
-        printf("error mapping.(%s) bundlei.%d\n",fname,bundlei);
+    if ( (fp= fopen(fname,"rb")) == 0 )
         return(0);
+    else
+    {
+        fclose(fp);
+        if ( (ptr= OS_mapfile(fname,filesizep,0)) == 0 )
+        {
+            printf("error mapping.(%s) bundlei.%d\n",fname,bundlei);
+            return(0);
+        }
     }
     printf("mapped.(%s) bundlei.[%d:%d] %p[%ld]\n",fname,hdrsi,bundlei,ptr,*filesizep);
     return(ptr);
