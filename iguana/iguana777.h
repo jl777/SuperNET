@@ -43,7 +43,7 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_TAILPERCENTAGE 1.0
 #define IGUANA_MAXPENDHDRS 1
 #define IGUANA_MAXPENDINGREQUESTS 64
-#define IGUANA_PENDINGREQUESTS 16
+#define IGUANA_PENDINGREQUESTS 512
 #define IGUANA_MINPENDBUNDLES 2
 #define IGUANA_MAXPENDBUNDLES 32
 #define IGUANA_RPCPORT 7778
@@ -855,6 +855,7 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
 FILE *myfopen(char *fname,char *mode);
 int32_t myfclose(FILE *fp);
 void iguana_prefetch(struct iguana_info *coin,struct iguana_bundle *bp,int32_t width,int32_t flags);
+int32_t iguana_walkchain(struct iguana_info *coin);
 
 extern int32_t HDRnet,netBLOCKS;
 

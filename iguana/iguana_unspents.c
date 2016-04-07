@@ -1894,7 +1894,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     //starti = coin->RTheight % coin->chain->bundlesize;
     if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && ((coin->RTheight <= coin->blocks.hwmchain.height && time(NULL) > bp->lastRT) || time(NULL) > bp->lastRT+10) )
     {
-        printf("check longest.%d RTheight.%d hwm.%d\n",coin->longestchain,coin->RTheight,coin->blocks.hwmchain.height);
+        //printf("check longest.%d RTheight.%d hwm.%d\n",coin->longestchain,coin->RTheight,coin->blocks.hwmchain.height);
         if ( bits256_cmp(coin->RThash1,bp->hashes[1]) != 0 )
             coin->RThash1 = bp->hashes[1];
         bp->lastRT = (uint32_t)time(NULL);
@@ -1932,7 +1932,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             B = (void *)(long)((long)rdata + rdata->Boffset);
             bundlei = (coin->RTheight % coin->chain->bundlesize);
             block = iguana_bundleblock(coin,&hash2,bp,bundlei);
-            printf("RT.%d vs hwm.%d starti.%d bp->n %d block.%p/%p ramchain.%p\n",coin->RTheight,coin->blocks.hwmchain.height,coin->RTstarti,bp->n,block,bp->blocks[bundlei],dest->H.data);
+            //printf("RT.%d vs hwm.%d starti.%d bp->n %d block.%p/%p ramchain.%p\n",coin->RTheight,coin->blocks.hwmchain.height,coin->RTstarti,bp->n,block,bp->blocks[bundlei],dest->H.data);
             if ( block != 0 && bits256_nonz(block->RO.prev_block) != 0 )
             {
                 iguana_blocksetcounters(coin,block,dest);
@@ -1976,7 +1976,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             iguana_RTramchainfree(coin);
             return(-1);
         } else printf("spendvectors calculated to %d\n",coin->RTheight);*/
-        while ( block != 0 )
+        /*while ( block != 0 )
         {
             if ( bits256_cmp(iguana_blockhash(coin,coin->RTheight-n-1),block->RO.hash2) != 0 )
             {
@@ -1987,17 +1987,13 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             n++;
             if ( coin->RTgenesis != 0 && n >= bp->n )
                 break;
-        }
-        if ( coin->RTgenesis == 0)
+        }*/
+        if ( (n= iguana_walkchain(coin)) == coin->RTheight )
         {
-            if ( n == coin->RTheight )
-            {
-                printf("RTgenesis verified\n");
-                coin->RTgenesis = (uint32_t)time(NULL);
-            } else printf("RTgenesis failed to verify\n");
-        }
-        if ( coin->RTgenesis != 0 )
+            printf("RTgenesis verified\n");
+            coin->RTgenesis = (uint32_t)time(NULL);
             iguana_RTspendvectors(coin,bp,&coin->RTramchain);
+        } else printf("RTgenesis failed to verify n.%d vs %d\n",n,coin->RTheight);
     }
     if ( dest != 0 && flag != 0 )
         printf("<<<< flag.%d RT.%d:%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",flag,coin->RTheight,n,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize);

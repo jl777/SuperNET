@@ -787,7 +787,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
                         datasize += block->RO.recvlen;
                     }
                 } else printf("hash mismatch [%d:%d]\n",bp->hdrsi,bundlei);
-            } else printf("[null %d:%d] ",bp->hdrsi,bundlei);
+            } //else printf("[null %d:%d] ",bp->hdrsi,bundlei);
         }
     }
     bp->numcached = bp->n - iguana_blocksmissing(coin,&avail,missings,0,0,bp,0);
