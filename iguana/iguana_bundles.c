@@ -845,7 +845,7 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
                 bp->emitfinish = 0;
             }
             coin->emitbusy--;
-        } else printf("interloper! [%d] save interupted\n",bp->hdrsi);
+        } else printf("interloper! [%d] save interupted, will retry next iteration\n",bp->hdrsi);
     }
     return(1);
 }

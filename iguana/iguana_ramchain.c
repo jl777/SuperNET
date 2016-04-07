@@ -2029,7 +2029,7 @@ void *iguana_bundlefile(struct iguana_info *coin,char *fname,long *filesizep,str
             return(0);
         }
     }
-    printf("mapped.(%s) bundlei.[%d:%d] %p[%ld]\n",fname,hdrsi,bundlei,ptr,*filesizep);
+    //printf("mapped.(%s) bundlei.[%d:%d] %p[%ld]\n",fname,hdrsi,bundlei,ptr,*filesizep);
     return(ptr);
 }
 
@@ -2055,7 +2055,7 @@ void iguana_bundlemapfree(struct iguana_info *coin,struct OS_memspace *mem,struc
     for (j=0; j<num; j++)
         if ( ptrs[j] != 0 && filesizes[j] != 0 )
         {
-            printf("unmap.%d/%d: %p %ld\n",j,num,ptrs[j],filesizes[j]);
+            //printf("unmap.%d/%d: %p %ld\n",j,num,ptrs[j],filesizes[j]);
             munmap(ptrs[j],filesizes[j]);
         }
     myfree(ptrs,n * sizeof(*ptrs));
