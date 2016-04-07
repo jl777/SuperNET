@@ -1476,7 +1476,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
 
 int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
 {
-    int32_t i,newhwm = 0,hwmheight,flag = 0; struct iguana_bundle *bp; struct iguana_block *block; char str[2000];
+    int32_t i,n,newhwm = 0,hwmheight,flag = 0; struct iguana_bundle *bp; struct iguana_block *block; char str[2000];
     hwmheight = coin->blocks.hwmchain.height;
     coin->RTramchain_busy = 1;
     flag += iguana_processrecvQ(coin,&newhwm);
@@ -1517,5 +1517,18 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
     iguana_jsonQ();
     if ( hwmheight != coin->blocks.hwmchain.height )
         flag = 1;
+    n = 1;
+    block = iguana_blockfind("main",coin,iguana_blockhash(coin,coin->blocks.hwmchain.height-n));
+    while ( block != 0 )
+    {
+        if ( bits256_cmp(iguana_blockhash(coin,coin->blocks.hwmchain.height-n),block->RO.hash2) != 0 )
+        {
+            printf("blockhash error at %d %s\n",coin->blocks.hwmchain.height-n,bits256_str(str,block->RO.hash2));
+            break;
+        }
+        block = iguana_blockfind("RTupdate",coin,block->RO.prev_block);
+        n++;
+    }
+    printf("n.%d vs hwm.%d %s\n",n,coin->blocks.hwmchain.height,bits256_str(str,coin->blocks.hwmchain.RO.hash2));
     return(flag);
 }

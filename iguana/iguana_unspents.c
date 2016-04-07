@@ -1932,7 +1932,8 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             dest = &coin->RTramchain;
             B = (void *)(long)((long)rdata + rdata->Boffset);
             bundlei = (coin->RTheight % coin->chain->bundlesize);
-            if ( (block= bp->blocks[bundlei]) != 0 && bits256_nonz(block->RO.prev_block) != 0 )
+            block = iguana_bundleblock(coin,&hash2,bp,bundlei);
+            if ( block != 0 && bits256_nonz(block->RO.prev_block) != 0 )
             {
                 iguana_blocksetcounters(coin,block,dest);
                 startmillis0 = OS_milliseconds();
