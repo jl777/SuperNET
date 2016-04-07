@@ -1137,7 +1137,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
             }
             else
             {
-                if ( firstgap == 0 && bp->numsaved < bp->n && bp->numcached < bp->n && (iguana_bundleready(coin,bp,0) != bp->n || bp->hdrsi == coin->longestchain/coin->chain->bundlesize) )
+                if ( firstgap == 0 && bp->numsaved < bp->n && bp->numcached < bp->n && (bp->ramchain.H.data == 0 || iguana_bundleready(coin,bp,0) != bp->n || bp->hdrsi == coin->longestchain/coin->chain->bundlesize) )
                 {
                     //printf("firstgap <- [%d] emit.%u bp->n.%d numsaved.%d numcached.%d numhashes.%d\n",bp->hdrsi,bp->emitfinish,bp->n,bp->numsaved,bp->numcached,bp->numhashes);
                     firstgap = bp;
