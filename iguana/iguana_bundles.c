@@ -621,7 +621,7 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp)
                 counts[block->peerid]++;
             }
             //printf("(%x:%x) ",(uint32_t)block->RO.hash2.ulongs[3],(uint32_t)bp->hashes[i].ulongs[3]);
-            if ( iguana_blockvalidate(coin,&valid,block,1) < 0 || block->fpipbits == 0 || block->fpos < 0 || (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) )
+            if ( block->fpipbits == 0 || block->fpos < 0 || (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) || iguana_blockvalidate(coin,&valid,block,1) < 0 )
             {
                 printf(">>>>>>> block contents error at ht.%d [%d:%d]\n",bp->bundleheight+i,bp->hdrsi,i);
                 //char str[65];  patch.(%s) and reissue %s checki.%d vs %d\n",block->fpipbits,bp->bundleheight+i,bits256_str(str,block->RO.prev_block),fname,checki,i);
@@ -704,11 +704,11 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
         bp->hdrtime = (uint32_t)time(NULL);
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
     }
-    if ( bp->hdrsi == coin->bundlescount-1 && bp->speculative != 0 && bits256_nonz(bp->nextbundlehash2) == 0 )
+    if ( coin->enableCACHE != 0 && bp->hdrsi == coin->bundlescount-1 && bits256_nonz(bp->nextbundlehash2) == 0 )
     {
         if ( time(NULL) > (bp->issued[1] + 10 + dist) )
         {
-            if ( bp == coin->current && bp->speculative != 0 )
+            if ( bp == coin->current )
             {
                 //printf("iguana_bundlehdr.[%d] %d %s\n",bp->hdrsi,bp->numspec,bits256_str(str,bp->hashes[0]));
                 if ( iguana_blocksmissing(coin,&avail,missings,0,mult,bp,bp->n) > 0 )
