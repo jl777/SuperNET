@@ -551,7 +551,8 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
         }
         if ( firsti >= 0 ) //firsti == lasti &&
         {
-            printf("[%d] first missing.%d of %d\n",bp->hdrsi,firsti,nonz);
+            if( bp == coin->current )
+                printf("[%d] first missing.%d of %d\n",bp->hdrsi,firsti,nonz);
             iguana_bundleblock(coin,&hash2,bp,firsti);
             if ( bits256_nonz(hash2) != 0 )
             {
