@@ -518,7 +518,7 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
         now = (uint32_t)time(NULL);
         for (i=0; i<bp->n; i++)
         {
-            if ( bp->issued[i] > 1 && GETBIT(bp->haveblock,i) == 0 && now > bp->issued[i]+lag )
+            if ( (bp->issued[i] == 0 || bp->issued[i] > 1) && GETBIT(bp->haveblock,i) == 0 && now > bp->issued[i]+lag )
             {
                 iguana_bundleblock(coin,&hash2,bp,i);
                 if ( bits256_nonz(hash2) != 0 )
@@ -535,9 +535,9 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
                         req->bundlei = i;
                         bp->issued[i] = 1;
                         queue_enqueue("missing",&coin->priorityQ,&req->DL,0);
+                        n++;
                         //iguana_sendblockreqPT(coin,addr,bp,i,hash2,0);
                     }
-                    n++;
                 }
             }
         }
@@ -910,8 +910,8 @@ void iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,uin
     {
         if ( coin->current != 0 )
             mult = bp->hdrsi - coin->current->hdrsi;
-        if ( mult < 2 )
-            mult = 2;
+        if ( mult < 3 )
+            mult = 3;
         else if ( mult > 7 )
             mult = 7;
         if ( (n= iguana_bundleissuemissing(coin,bp,1,mult)) > 0 )
@@ -1076,7 +1076,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
     coin->spaceused = spaceused;
     coin->numverified = numv;
     char str5[65];
-    if ( coin->isRT == 0 && firstgap != 0 && firstgap->hdrsi < coin->bundlescount-1 )
+    if ( firstgap != 0 && firstgap->hdrsi < coin->bundlescount-1 ) // coin->isRT
     {
         if ( coin->stuckmonitor != (firstgap->hdrsi * coin->chain->bundlesize * 10) + firstgap->numsaved + firstgap->numhashes + firstgap->numcached )
         {
@@ -1089,10 +1089,10 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
             struct iguana_blockreq *breq; int32_t n,lag; //priority=3,
             lag = (int32_t)time(NULL) - coin->stucktime;
             bp = firstgap;
+            printf("NONZ stucktime.%u lag.%d iters.%d vs %d metric.%d\n",coin->stucktime,lag,coin->stuckiters,lag/coin->MAXSTUCKTIME,(firstgap->hdrsi * coin->chain->bundlesize * 10) + firstgap->numsaved + firstgap->numhashes + firstgap->numcached);
             if ( (lag/coin->MAXSTUCKTIME) > coin->stuckiters )
             {
-                printf("NONZ stucktime.%u lag.%d iters.%d vs %d metric.%d\n",coin->stucktime,lag,coin->stuckiters,lag/coin->MAXSTUCKTIME,(firstgap->hdrsi * coin->chain->bundlesize * 10) + firstgap->numsaved + firstgap->numhashes + firstgap->numcached);
-                //printf("UNSTICK\n");
+                printf("UNSTICK\n");
                 iguana_unstickhdr(coin,bp,6);
                 coin->stuckiters = (int32_t)(lag/coin->MAXSTUCKTIME);
                 if ( coin->stuckiters > 2 )
