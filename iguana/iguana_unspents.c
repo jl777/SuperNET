@@ -1921,14 +1921,14 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                     }
                 }
             }
-            printf("RTheaders\n");
+            printf("RTheaders RTdata.%p\n",coin->RTramchain.H.data);
         }
         bp->lastRT = (uint32_t)time(NULL);
         iguana_RTramchainalloc(coin,bp);
         bp->isRT = 1;
         while ( (rdata= coin->RTramchain.H.data) != 0 && coin->RTheight <= coin->blocks.hwmchain.height )
         {
-            //printf("RT.%d vs hwm.%d starti.%d bp->n %d\n",coin->RTheight,coin->blocks.hwmchain.height,starti,bp->n);
+            printf("RT.%d vs hwm.%d starti.%d bp->n %d\n",coin->RTheight,coin->blocks.hwmchain.height,coin->RTstarti,bp->n);
             dest = &coin->RTramchain;
             B = (void *)(long)((long)rdata + rdata->Boffset);
             bundlei = (coin->RTheight % coin->chain->bundlesize);
