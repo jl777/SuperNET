@@ -709,10 +709,11 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
     }
     if ( coin->enableCACHE != 0 && bp->hdrsi == coin->bundlescount-1 && bits256_nonz(bp->nextbundlehash2) == 0 )
     {
-        if ( time(NULL) > (bp->issued[1] + 10 + dist) )
+        //if ( time(NULL) > (bp->issued[1] + 10 + dist) )
         {
             if ( bp == coin->current )
             {
+                mult = 1.;
                 //printf("iguana_bundlehdr.[%d] %d %s\n",bp->hdrsi,bp->numspec,bits256_str(str,bp->hashes[0]));
                 if ( iguana_blocksmissing(coin,&avail,missings,0,mult,bp,bp->n) > 0 )
                     iguana_bundleissuemissing(coin,bp,missings,3,mult);
