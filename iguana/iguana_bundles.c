@@ -518,7 +518,7 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
         now = (uint32_t)time(NULL);
         for (i=0; i<bp->n; i++)
         {
-            if ( GETBIT(bp->haveblock,i) == 0 && now > bp->issued[i]+lag )
+            if ( bp->issued[i] > 1 && GETBIT(bp->haveblock,i) == 0 && now > bp->issued[i]+lag )
             {
                 iguana_bundleblock(coin,&hash2,bp,i);
                 if ( bits256_nonz(hash2) != 0 )
@@ -527,8 +527,15 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
                         printf("iguana_bundleissuemissing.[%d:%d]\n",bp->hdrsi,i);
                     if ( (addr= coin->peers.ranked[rand() % max]) != 0 && addr->usock >= 0 && addr->dead == 0 )
                     {
-                        bp->issued[i] = now;
-                        iguana_sendblockreqPT(coin,addr,bp,i,hash2,0);
+                        struct iguana_blockreq *req = 0;
+                        req = mycalloc('y',1,sizeof(*req));
+                        req->hash2 = hash2;
+                        req->bp = bp;
+                        req->height = bp->bundleheight + i;
+                        req->bundlei = i;
+                        bp->issued[i] = 1;
+                        queue_enqueue("missing",&coin->priorityQ,&req->DL,0);
+                        //iguana_sendblockreqPT(coin,addr,bp,i,hash2,0);
                     }
                     n++;
                 }

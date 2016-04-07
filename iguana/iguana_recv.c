@@ -503,7 +503,7 @@ void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bi
     if ( 0 && n > 2 && addr != 0 )
         printf("addr.%d %s [%d]\n",addr->rank,bits256_str(str,blockhashes[1]),n);
     queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
-    if ( n > coin->chain->bundlesize )
+    if ( coin->enableCACHE != 0 && n > coin->chain->bundlesize )
         iguana_sendblockreqPT(coin,addr,0,-1,blockhashes[1],0);
 }
 
@@ -1340,7 +1340,7 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
             if ( (req->bp= bp) != 0 && bundlei >= 0 )
             {
                 height = bp->bundleheight + bundlei;
-                bp->issued[bundlei] = now;
+                bp->issued[bundlei] = 1;
             }
             req->height = height;
             req->bundlei = bundlei;
