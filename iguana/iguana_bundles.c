@@ -1020,12 +1020,12 @@ double iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,d
     if ( aveduration != 0. )
         mult = ((bp == coin->current) ? (strcmp("BTC",coin->symbol) != 0 ? 1. : 3) : 7.);
     else mult = 5.;
-    /*if ( mult > 2 && bp->numcached > .95*bp->n )
+    if ( mult > 2 && bp->numcached > .95*bp->n )
     {
         if ( bp->numcached > .99*bp->n )
             mult = 2.;
         else mult = 1.;
-    }*/
+    }
     if ( bp->numissued < bp->n )
         max = bp->numissued;
     else max = bp->origmissings;
@@ -1204,7 +1204,11 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
         //printf("bundlescount.%d %p[%d]\n",coin->bundlescount,coin->current,coin->current->hdrsi);
     }
     if ( lastpending != 0 )
-        coin->lastpending = lastpending;
+    {
+        if ( lastpending->hdrsi+done > coin->bundlescount-1 )
+            lastpending = coin->bundles[coin->bundlescount-1];
+        else lastpending = coin->bundles[lastpending->hdrsi+done];
+    }
     else coin->lastpending = coin->bundles[coin->bundlescount - 1];
     coin->numsaved = numsaved;
     coin->numemit = numemit;

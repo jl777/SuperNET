@@ -1243,7 +1243,7 @@ void iguana_main(void *arg)
     if ( 1 )
     {
         sleep(1);
-        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"VALIDATE\":1,\"prefetchlag\":13,\"startpend\":2048,\"endpend\":2048,\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":0,\"maxpeers\":256,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":8,\"poll\":10}"),0,myinfo->rpcport)) != 0 )
+        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"VALIDATE\":1,\"prefetchlag\":13,\"startpend\":128,\"endpend\":128,\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":0,\"maxpeers\":256,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":8,\"poll\":10}"),0,myinfo->rpcport)) != 0 )
         {
             free(str);
             if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":1024,\"maxpeers\":256,\"newcoin\":\"BTCD\",\"active\":1}"),0,myinfo->rpcport)) != 0 )
