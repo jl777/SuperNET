@@ -394,7 +394,7 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
     char fname[1024]; FILE *fp; int32_t hdrsi,m,j; uint32_t ipbits;
     if ( bp->purgetime == 0 && time(NULL) > bp->emitfinish+30 )
     {
-        printf("purged hdrsi.[%d] lag.%ld\n",bp->hdrsi,time(NULL) - bp->emitfinish);
+        //printf("purged hdrsi.[%d] lag.%ld\n",bp->hdrsi,time(NULL) - bp->emitfinish);
         for (j=m=0; j<sizeof(coin->peers.active)/sizeof(*coin->peers.active); j++)
         {
             if ( (ipbits= (uint32_t)coin->peers.active[j].ipbits) != 0 )
@@ -403,7 +403,7 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
                 {
                     if ( (fp= fopen(fname,"rb")) != 0 )
                     {
-                        printf("purge.(%s)\n",fname);
+                        //printf("purge.(%s)\n",fname);
                         fclose(fp);
                         if ( OS_removefile(fname,0) > 0 )
                             coin->peers.numfiles--, m++;
