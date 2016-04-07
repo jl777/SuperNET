@@ -1722,10 +1722,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
     struct iguana_bundle *bp = 0; struct iguana_block *block; uint32_t scriptspace,stackspace;
     totalrecv += recvlen;
     if ( (addr_ipbits= (uint32_t)addr->ipbits) == 0 )
-    {
-        printf("killed addr? calling ramchain data\n");
-        return(-1);
-    }
+        addr_ipbits = 1;
     if ( bits256_nonz(origtxdata->block.RO.merkle_root) == 0 )
     {
         memset(&origtxdata->block.RO.prev_block,0,sizeof(bits256));
@@ -1862,7 +1859,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
                         fflush(addr->vinsfp);
                 }
                 memset(&R,0,sizeof(R));
-                if ( verifyflag != 0 && (mapchain= iguana_ramchain_map(coin,fname,0,1,&R,0,(uint32_t)addr->ipbits,block->RO.hash2,block->RO.prev_block,bundlei,fpos,1,0)) != 0 )
+                if ( verifyflag != 0 && (mapchain= iguana_ramchain_map(coin,fname,0,1,&R,0,addr_ipbits,block->RO.hash2,block->RO.prev_block,bundlei,fpos,1,0)) != 0 )
                 {
                     //printf("mapped Soffset.%ld\n",(long)mapchain->data->Soffset);
                     iguana_ramchain_link(&R,block->RO.hash2,block->RO.hash2,bp->hdrsi,bp->bundleheight+bundlei,bundlei,1,firsti,1);
@@ -1908,7 +1905,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
                     //bp->rawscriptspace += ramchain->H.data->scriptspace;
                 }
                 if ( fpos >= 0 )
-                    block->fpos = fpos, block->fpipbits = (uint32_t)addr->ipbits;
+                    block->fpos = fpos, block->fpipbits = addr_ipbits;
             }
         } else printf("ramchain verification error.%d hdrsi.%d bundlei.%d\n",err,bp->hdrsi,bundlei);
     }
