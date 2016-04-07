@@ -624,12 +624,16 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp)
             }
             else
             {
+                fname[0] = 0;
                 checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,block->RO.hash2,zero,1,0);
-                if ( (fp= fopen(fname,"rb")) != 0 )
+                if ( hdrsi == bp->hdrsi && checki == i && (fp= fopen(fname,"rb")) != 0 )
                 {
                     fseek(fp,0,SEEK_END);
                     if ( ftell(fp) > sizeof(struct iguana_ramchaindata) )
-                        ready++;
+                    {
+                        printf("[%d:%d] %s %ld\n",bp->hdrsi,i,fname,ftell(fp));
+                               ready++;
+                    }
                     fclose(fp);
                 } else iguana_blockunmark(coin,block,bp,i,0);
             }
