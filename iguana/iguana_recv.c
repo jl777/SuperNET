@@ -1189,7 +1189,7 @@ int32_t iguana_processrecvQ(struct iguana_info *coin,int32_t *newhwmp) // single
 {
     int32_t flag = 0; struct iguana_bundlereq *req;
     *newhwmp = 0;
-    while ( (netBLOCKS > IGUANA_NUMHELPERS*1000 || flag < IGUANA_MAXITERATIONS) && coin->active != 0 && (req= queue_dequeue(&coin->recvQ,0)) != 0 )
+    while ( flag < IGUANA_MAXITERATIONS && coin->active != 0 && (req= queue_dequeue(&coin->recvQ,0)) != 0 )
     {
         flag++;
         //fprintf(stderr,"flag.%d %s recvQ.%p type.%c n.%d\n",flag,req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
@@ -1381,8 +1381,8 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
     uint32_t now; struct iguana_bundle *bp; struct iguana_peer *ptr;
     if ( addr->msgcounts.verack == 0 )
         return(0);
-    if ( netBLOCKS > IGUANA_NUMHELPERS*1000 )
-        usleep(netBLOCKS);
+    //if ( netBLOCKS > IGUANA_NUMHELPERS*1000 )
+    //    usleep(netBLOCKS);
     now = (uint32_t)time(NULL);
     if ( iguana_needhdrs(coin) != 0 && addr->pendhdrs < IGUANA_MAXPENDHDRS )
     {
