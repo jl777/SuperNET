@@ -1150,7 +1150,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                         }
                     }
                 }
-                if ( bits256_nonz(hash2) > 0 ) //strcmp("BTC",coin->symbol) == 0 && 
+                if ( bits256_nonz(hash2) > 0 ) //strcmp("BTC",coin->symbol) == 0 &&
                 {
                     coin->backstopmillis = OS_milliseconds();
                     iguana_blockQ("mainchain",coin,0,-1,hash2,1);//lag > threshold);
