@@ -798,7 +798,7 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     struct iguana_bundle *prevbp; int32_t i;
 #ifdef IGUANA_SERIALIZE_SPENDVECTORGEN
-    if ( (prevbp= coin->current) != 0 && prevbp->hdrsi < (coin->longestchain / coin->chain->bundlesize) - 0*coin->MAXBUNDLES )
+    if ( ((prevbp= coin->current) != 0 && prevbp->hdrsi < (coin->longestchain / coin->chain->bundlesize)) || coin->numemit < prevbp->hdrsi )
         return(0);
 #endif
     for (i=0; i<bp->hdrsi; i++)
@@ -1193,6 +1193,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
         coin->lastpending = lastpending;
     else coin->lastpending = coin->bundles[coin->bundlescount - 1];
     coin->numsaved = numsaved;
+    coin->numemit = numemit;
     coin->spaceused = spaceused;
     coin->numverified = numv;
     char str5[65];

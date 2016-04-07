@@ -156,7 +156,7 @@ int32_t iguana_savehdrs(struct iguana_info *coin)
                 fprintf(fp,"%d %s %s %s\n",bp->bundleheight,bits256_str(str,bp->hashes[0]),shastr,bits256_str(str2,bp->hashes[1]));
             } else break;
         }
-        printf("compare hdrs.txt %ld vs (%s) %ld\n",ftell(fp),fname,(long)OS_filesize(fname));
+        //printf("compare hdrs.txt %ld vs (%s) %ld\n",ftell(fp),fname,(long)OS_filesize(fname));
         if ( ftell(fp) > OS_filesize(fname) )
         {
             printf("new hdrs.txt %ld vs (%s) %ld\n",ftell(fp),fname,(long)OS_filesize(fname));

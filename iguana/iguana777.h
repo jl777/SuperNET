@@ -437,7 +437,7 @@ struct iguana_bundle
     struct queueitem DL; struct iguana_info *coin; struct iguana_bundle *nextbp;
     struct iguana_bloom16 bloom; int64_t totaldurations,duplicatedurations; int32_t durationscount,duplicatescount;
     uint32_t issuetime,hdrtime,emitfinish,mergefinish,purgetime,queued,startutxo,utxofinish,balancefinish,validated,lastspeculative,dirty,nexttime,currenttime,lastprefetch,lastRT,missingstime,unsticktime,converted;
-    int32_t numhashes,numrecv,numsaved,numcached,generrs,currentflag,origmissings,numissued;
+    int32_t numhashes,numrecv,numemit,numsaved,numcached,generrs,currentflag,origmissings,numissued;
     int32_t minrequests,n,hdrsi,bundleheight,numtxids,numspends,numunspents,numspec,isRT;
     double avetime,threshold,metric; uint64_t datasize,estsize;
     struct iguana_block *blocks[IGUANA_MAXBUNDLESIZE];
