@@ -631,8 +631,8 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp)
                     fseek(fp,0,SEEK_END);
                     if ( ftell(fp) > sizeof(struct iguana_ramchaindata) )
                     {
-                        printf("[%d:%d] %s %ld\n",bp->hdrsi,i,fname,ftell(fp));
-                               ready++;
+                        //printf("[%d:%d] %s %ld\n",bp->hdrsi,i,fname,ftell(fp));
+                        ready++;
                     }
                     fclose(fp);
                 } else iguana_blockunmark(coin,block,bp,i,0);
@@ -828,7 +828,7 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
             return(0);
         }
         bp->emitfinish = 1;
-        sleep(3); // make sure new incoming packet didnt overwrite
+        usleep(100000); // make sure new incoming packet didnt overwrite
         if ( iguana_bundleready(coin,bp) == bp->n )
         {
             coin->emitbusy++;

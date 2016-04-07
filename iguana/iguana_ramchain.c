@@ -2344,10 +2344,10 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         }
         fpipbits = block->fpipbits, fpos = block->fpos;
         mapchain = &R[bundlei];
-        printf("mapchain.[%d:%d] %p[%ld]\n",bp->hdrsi,bundlei,ptrs[bundlei],filesizes[bundlei]);
+        //printf("mapchain.[%d:%d] %p[%ld]\n",bp->hdrsi,bundlei,ptrs[bundlei],filesizes[bundlei]);
         if ( iguana_mapchaininit(coin,mapchain,bp,bundlei,block,ptrs[bundlei],filesizes[bundlei]) < 0 )
             break;
-        printf("done mapchain.[%d:%d]\n",bp->hdrsi,bundlei);
+        //printf("done mapchain.[%d:%d]\n",bp->hdrsi,bundlei);
         numtxids += (mapchain->H.data->numtxids - 1);
         numunspents += (mapchain->H.data->numunspents - 1);
         numspends += (mapchain->H.data->numspends - 1);
