@@ -1890,7 +1890,7 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp,str
 int32_t iguana_realtime_update(struct iguana_info *coin)
 {
     double startmillis0; static double totalmillis0; static int32_t num0;
-    struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,i,j,n,m,flag=0; bits256 hash2; struct iguana_peer *addr;
+    struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,i,n,flag=0; bits256 hash2; struct iguana_peer *addr;
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
     //starti = coin->RTheight % coin->chain->bundlesize;
     if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && ((coin->RTheight <= coin->blocks.hwmchain.height && time(NULL) > bp->lastRT) || time(NULL) > bp->lastRT+10) )
@@ -1908,18 +1908,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                 if ( (addr= coin->peers.ranked[i]) != 0 && addr->usock >= 0 && addr->dead == 0 )
                 {
                     printf("%d ",addr->numRThashes);
-                    for (j=coin->RTheight; j<addr->numRThashes; j++)
-                    {
-                        if ( (block= bp->blocks[j]) == 0 || block->txvalid == 0 )
-                        {
-                            uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; int32_t avail; double mult=1.;
-                            if ( (m= iguana_blocksmissing(coin,&avail,missings,0,mult,bp,bp->n)) > 0 )
-                            {
-                                n = iguana_bundleissuemissing(coin,bp,missings,3,mult);
-                                printf("issued n.%d of m.%d\n",n,m);
-                            }
-                        }
-                    }
+                    //for (j=coin->RTheight; j<addr->numRThashes; j++)
                 }
             }
             printf("RTheaders RTdata.%p\n",coin->RTramchain.H.data);

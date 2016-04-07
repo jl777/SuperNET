@@ -441,7 +441,7 @@ struct iguana_bundle
     int32_t minrequests,n,hdrsi,bundleheight,numtxids,numspends,numunspents,numspec,isRT;
     double avetime,threshold,metric; uint64_t datasize,estsize;
     struct iguana_block *blocks[IGUANA_MAXBUNDLESIZE];
-    uint8_t *speculativecache[IGUANA_MAXBUNDLESIZE];
+    uint8_t *speculativecache[IGUANA_MAXBUNDLESIZE],haveblock[IGUANA_MAXBUNDLESIZE/3+1];
     uint32_t issued[IGUANA_MAXBUNDLESIZE];
     bits256 prevbundlehash2,hashes[IGUANA_MAXBUNDLESIZE+1],nextbundlehash2,allhash,*speculative;
     struct iguana_ramchain ramchain; uint8_t red,green,blue;
@@ -850,8 +850,8 @@ void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,
 int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block);
 void iguana_convertQ(struct iguana_info *coin,struct iguana_bundle *bp);
 void iguana_convert(struct iguana_info *coin,struct iguana_bundle *bp);//,struct iguana_ramchain *ramchain);
-int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle *bp,uint8_t *missings,int32_t priority,double mult);
-int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1],bits256 hashes[],double mult,struct iguana_bundle *bp,int32_t capacity);
+int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle *bp,int32_t priority,double mult);
+//int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1],bits256 hashes[],double mult,struct iguana_bundle *bp,int32_t capacity);
 FILE *myfopen(char *fname,char *mode);
 int32_t myfclose(FILE *fp);
 void iguana_prefetch(struct iguana_info *coin,struct iguana_bundle *bp,int32_t width,int32_t flags);
