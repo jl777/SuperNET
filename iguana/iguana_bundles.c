@@ -516,7 +516,7 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
 int32_t iguana_sendhashes(struct iguana_info *coin,struct iguana_peer *addr,int32_t msgtype,bits256 hashes[],int32_t n,int32_t priority)
 {
     int32_t len; uint8_t *serialized;
-    if ( addr->usock >= 0 && addr->dead == 0 && priority > 1 && netBLOCKS < coin->chain->bundlesize*100 )
+    if ( addr->usock >= 0 && addr->dead == 0 && priority > 1 && netBLOCKS < coin->chain->bundlesize*10 )
     {
         serialized = malloc((sizeof(int32_t) + sizeof(*hashes))*n + 1024);
         if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,hashes,n)) > 0 )
