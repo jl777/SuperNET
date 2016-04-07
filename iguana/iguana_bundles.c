@@ -1111,7 +1111,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
                     printf("issued %d priority requests [%d] to unstick stuckiters.%d lag.%d\n",n,bp->hdrsi,coin->stuckiters,lag);
                 //else printf("no bundlerequests issued\n");
             }
-        } //else printf("stuck metric.%d\n",(firstgap->hdrsi * coin->chain->bundlesize * 10) + firstgap->numsaved + firstgap->numhashes + firstgap->numcached);
+        } else printf("stuck metric.%d\n",(firstgap->hdrsi * coin->chain->bundlesize * 10) + firstgap->numsaved + firstgap->numhashes + firstgap->numcached);
     }
     if ( coin->isRT != 0 || (firstgap != 0 && firstgap->hdrsi == coin->bundlescount-1) )
         coin->stucktime = coin->stuckiters = 0;
