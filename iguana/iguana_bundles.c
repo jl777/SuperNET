@@ -1219,12 +1219,12 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
             coin->stucktime = (uint32_t)time(NULL);
             coin->stuckiters = 0;
         }
-        else if ( coin->stucktime != 0 && (displag % 3) == 1 )
+        else if ( coin->stucktime != 0 )//&& (displag % 3) == 1 )
         {
             uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; struct iguana_blockreq *breq; double aveduration; int32_t tmp,tmp2,n,lag; //priority=3,
             lag = (int32_t)time(NULL) - coin->stucktime;
             bp = firstgap;
-            //printf("NONZ stucktime.%u lag.%d iters.%d vs %d\n",coin->stucktime,lag,coin->stuckiters,lag/coin->MAXSTUCKTIME);
+            printf("NONZ stucktime.%u lag.%d iters.%d vs %d\n",coin->stucktime,lag,coin->stuckiters,lag/coin->MAXSTUCKTIME);
             if ( (lag/coin->MAXSTUCKTIME) > coin->stuckiters )
             {
                 //printf("UNSTICK\n");
@@ -1249,7 +1249,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
                     printf("issued %d priority requests [%d] to unstick stuckiters.%d lag.%d\n",n,bp->hdrsi,coin->stuckiters,lag);
                 //else printf("no bundlerequests issued\n");
             }
-        }
+        } else printf("stuck metric.%d\n",(firstgap->hdrsi * coin->chain->bundlesize * 10) + firstgap->numsaved + firstgap->numhashes + firstgap->numcached);
     }
     if ( coin->isRT != 0 || (firstgap != 0 && firstgap->hdrsi == coin->bundlescount-1) )
         coin->stucktime = coin->stuckiters = 0;
