@@ -486,7 +486,7 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
             }
             if ( (block= iguana_bundleblock(coin,&hash2,bp,i)) != 0 )
             {
-                if ( block->txvalid != 0 && block->fpos >= 0 && block->fpipbits != 0 && block->RO.recvlen != 0 && (bp->bundleheight+i == 0 || bits256_nonz(block->RO.prev_block) != 0) )
+                if ( block->fpipbits != 0 )//block->txvalid != 0 && block->fpos >= 0 &&  && block->RO.recvlen != 0 && (bp->bundleheight+i == 0 || bits256_nonz(block->RO.prev_block) != 0) )
                 {
                     //printf("[%d:%d].have ",bp->hdrsi,i);
                     continue;
