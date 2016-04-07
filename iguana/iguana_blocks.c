@@ -416,7 +416,6 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                         //printf("created last bundle ht.%d\n",bp->bundleheight);
                         iguana_blockreq(coin,block->height,1);
                     }
-                    iguana_walkchain(coin);
                 }
                 else
                 {
@@ -445,6 +444,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                     //iguana_blockQ("mainchain",coin,bp,block->height % coin->chain->bundlesize,block->RO.hash2,0);
                 }
                 block->mainchain = 1;
+                iguana_walkchain(coin);
                 return(block);
             }
         }
