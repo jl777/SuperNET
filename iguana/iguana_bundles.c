@@ -501,7 +501,7 @@ struct iguana_block *iguana_bundleblock(struct iguana_info *coin,bits256 *hash2p
 
 int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle *bp,int32_t priority,double mult)
 {
-    int32_t i,max,lasti,firsti,lag,num,n=0; uint32_t now; bits256 hash2; double aveduration; struct iguana_peer *addr;
+    int32_t i,max,nonz,lasti,firsti,lag,num,n=0; uint32_t now; bits256 hash2; double aveduration; struct iguana_peer *addr;
     if ( bp->emitfinish != 0 || (priority == 0 && time(NULL) < bp->missingstime+30) )
         return(0);
     bp->missingstime = (uint32_t)time(NULL);
@@ -519,10 +519,11 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
         max = log2(num * num) + 1;
         now = (uint32_t)time(NULL);
         lasti = firsti = -1;
-        for (i=0; i<bp->n; i++)
+        for (i=nonz=0; i<bp->n; i++)
         {
             if ( GETBIT(bp->haveblock,i) != 0 )
                 continue;
+            nonz++;
             if ( firsti < 0 )
                 firsti = i;
             lasti = i;
@@ -548,9 +549,9 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
                 }
             }
         }
-        if ( firsti == lasti && firsti >= 0 )
+        if ( firsti >= 0 ) //firsti == lasti &&
         {
-            printf("[%d] single missing.%d\n",bp->hdrsi,firsti);
+            printf("[%d] first missing.%d of %d\n",bp->hdrsi,firsti,nonz);
             iguana_bundleblock(coin,&hash2,bp,firsti);
             if ( bits256_nonz(hash2) != 0 )
             {
