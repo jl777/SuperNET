@@ -2155,7 +2155,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
             }
             int32_t i; for (i=0; i<IGUANA_NUMLHASHES; i++)
                 printf("%08x ",mapchain->H.data->lhashes[i].uints[0]);
-            printf("%llx ht.%d bundlehashes.%s\n",(long long)mapchain->H.data->sha256.txid,mapchain->height,coin->symbol);
+            printf("%x ht.%d bundlehashes.%s\n",(uint32_t)mapchain->H.data->sha256.txid,mapchain->height,coin->symbol);
             iguana_ramchain_free(coin,mapchain,cmpflag);
         }
         iguana_mempurge(hashmem);

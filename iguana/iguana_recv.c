@@ -1118,17 +1118,18 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
         {
             double threshold,lag = OS_milliseconds() - coin->backstopmillis;
             bp = coin->bundles[(coin->blocks.hwmchain.height+1)/coin->chain->bundlesize];
-            threshold = 1000;
             if ( bp != 0 && bp->durationscount != 0 )
                 threshold = (double)bp->totaldurations / bp->durationscount;
             else
             {
                 if ( coin->blocks.hwmchain.height >= coin->longestchain-1 )
                     threshold = 1000;
-                else threshold = 300;
+                else threshold = 500;
                 if ( strcmp(coin->symbol,"BTC") == 0 )
                     threshold *= 10;
             }
+            if ( threshold < 500 )
+                threshold = 500;
             if ( coin->blocks.hwmchain.height < coin->longestchain && ((strcmp(coin->symbol,"BTC") != 0 && coin->backstop != coin->blocks.hwmchain.height+1) || lag > threshold) )
             {
                 coin->backstop = coin->blocks.hwmchain.height+1;
@@ -1188,7 +1189,7 @@ int32_t iguana_processrecvQ(struct iguana_info *coin,int32_t *newhwmp) // single
 {
     int32_t flag = 0; struct iguana_bundlereq *req;
     *newhwmp = 0;
-    while ( flag < IGUANA_MAXITERATIONS && coin->active != 0 && (req= queue_dequeue(&coin->recvQ,0)) != 0 )
+    while ( (netBLOCKS > IGUANA_NUMHELPERS*1000 || flag < IGUANA_MAXITERATIONS) && coin->active != 0 && (req= queue_dequeue(&coin->recvQ,0)) != 0 )
     {
         flag++;
         //fprintf(stderr,"flag.%d %s recvQ.%p type.%c n.%d\n",flag,req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
@@ -1378,7 +1379,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
     struct iguana_block *block; struct iguana_blockreq *req=0; char *hashstr=0; bits256 hash2;
     int32_t bundlei,priority,i,m,z,pend,limit,height=-1,datalen,flag = 0;
     uint32_t now; struct iguana_bundle *bp; struct iguana_peer *ptr;
-    if ( addr->msgcounts.verack == 0 )
+    if ( addr->msgcounts.verack == 0 || netBLOCKS > IGUANA_NUMHELPERS*5000 )
         return(0);
     now = (uint32_t)time(NULL);
     if ( iguana_needhdrs(coin) != 0 && addr->pendhdrs < IGUANA_MAXPENDHDRS )
@@ -1477,7 +1478,8 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
 
 int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
 {
-    int32_t i,newhwm = 0,hwmheight,flag = 0; struct iguana_bundle *bp; struct iguana_block *block; char str[2000];
+    int32_t i,newhwm = 0,hwmheight,flag = 0; //struct iguana_bundle *bp; struct iguana_block *block;
+    char str[2000];
     hwmheight = coin->blocks.hwmchain.height;
     coin->RTramchain_busy = 1;
     flag += iguana_processrecvQ(coin,&newhwm);
