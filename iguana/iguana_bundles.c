@@ -475,7 +475,7 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
     if ( lag > IGUANA_DEFAULTLAG )
         lag = IGUANA_DEFAULTLAG * 8;
     memset(missings,0,IGUANA_MAXBUNDLESIZE/8+1);
-    //if ( bp->emitfinish == 0 )
+    if ( bp->emitfinish == 0 || bp->ramchain.H.data == 0 )
     {
         for (i=0; i<bp->n; i++)
         {
@@ -486,7 +486,7 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
             }
             if ( (block= iguana_bundleblock(coin,&hash2,bp,i)) != 0 )
             {
-                if ( block->txvalid != 0 && block->fpos >= 0 && block->fpipbits != 0 )//block->RO.recvlen != 0 )
+                if ( block->txvalid != 0 && block->fpos >= 0 && block->fpipbits != 0 && block->RO.recvlen != 0 && (bp->bundleheight+i == 0 || bits256_nonz(block->RO.prev_block) != 0) )
                 {
                     //printf("[%d:%d].have ",bp->hdrsi,i);
                     continue;
@@ -621,7 +621,7 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
                 counts[block->peerid]++;
             }
             //printf("(%x:%x) ",(uint32_t)block->RO.hash2.ulongs[3],(uint32_t)bp->hashes[i].ulongs[3]);
-            if ( block->fpipbits == 0 || block->fpos < 0 || (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) || iguana_blockvalidate(coin,&valid,block,1) < 0 )
+            if ( block->txvalid == 0 || block->fpipbits == 0 || block->fpos < 0 || (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) || iguana_blockvalidate(coin,&valid,block,1) < 0 )
             {
                 if ( requiredflag != 0 )
                 {
@@ -779,7 +779,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
                 {
                     //if ( bp->minrequests == 0 || (block->numrequests > 0 && block->numrequests < bp->minrequests) )
                     //    bp->minrequests = block->numrequests;
-                    if ( block->txvalid != 0 && block->fpipbits != 0 && block->fpos >= 0 )
+                    if ( block->txvalid != 0 && block->fpipbits != 0 && block->fpos >= 0 && (bp->bundleheight+bundlei == 0 || bits256_nonz(block->RO.prev_block) != 0) )
                         numsaved++;
                     if ( block->RO.recvlen != 0 )
                     {
@@ -1257,7 +1257,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
     sprintf(str,"%s.RT%d u.%d b.%d/%d v.%d/%d (%d+%d/%d 1st.%d).s%d to %d N[%d] h.%d r.%d c.%d s.%d d.%d E.%d maxB.%d peers.%d/%d Q.(%d %d) (L.%d %d:%d) M.%d %s",coin->symbol,coin->RTheight,numutxo,numbalances,numconverted,numv,coin->pendbalances,firstgap!=0?firstgap->numcached:-1,firstgap!=0?firstgap->numsaved:-1,firstgap!=0?firstgap->numhashes:-1,firstgap!=0?firstgap->hdrsi:-1,firstgap!=0?firstgap->numspec:-1,coin->lastpending!=0?coin->lastpending->hdrsi:0,count,numhashes,coin->blocksrecv,numcached,numsaved,done,numemit,coin->MAXBUNDLES,p,coin->MAXPEERS,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ),coin->longestchain,coin->longestchain/coin->chain->bundlesize,coin->longestchain%coin->chain->bundlesize,coin->blocks.hwmchain.height,bits256_str(str5,coin->blocks.hwmchain.RO.hash2));
     if ( coin->current != 0 && coin->current->hdrsi == coin->longestchain/coin->chain->bundlesize && numemit == coin->current->hdrsi && numutxo == coin->bundlescount-1 )
     {
-        printf("have all utxo, generate balances\n");
+        //printf("have all utxo, generate balances\n");
     }
     // u.202 b.0/202 v.202/202
     if ( coin->current != 0 && numutxo == coin->bundlescount-1 && numutxo == coin->current->hdrsi && numbalances == 0 && numconverted == numutxo )

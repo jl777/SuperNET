@@ -2380,7 +2380,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         return(-1);
     }
     dest = &bp->ramchain;
-    printf("iguana_bundlesaveHT.%d -> total (%d %d %d) scriptspace.%d (pubkeys.%d sigs.%d) dest->txids %p\n",bp->bundleheight,numtxids,numunspents,numspends,scriptspace,pubkeyspace,sigspace,dest->txids);
+    //printf("iguana_bundlesaveHT.%d -> total (%d %d %d) scriptspace.%d (pubkeys.%d sigs.%d) dest->txids %p\n",bp->bundleheight,numtxids,numunspents,numspends,scriptspace,pubkeyspace,sigspace,dest->txids);
     dest->txids = dest->pkhashes = 0;
     numpkinds = numunspents;
     numexternaltxids = numspends;
