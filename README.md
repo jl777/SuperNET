@@ -1,7 +1,5 @@
 #SuperNET Client "iguana"
 
-[![Join the chat at https://gitter.im/jl777/SuperNET](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/jl777/SuperNET?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
 > #TL;DR#
 > 
 > ```sudo apt-get update; sudo apt-get install build-essential libcurl4-gnutls-dev autotools-dev libtool autoconf libgmp3-dev libssl-dev libgmp3-dev; git clone https://github.com/jl777/SuperNET; cd SuperNET; ./m_onetime m_unix; ./m_unix; agents/iguana```
