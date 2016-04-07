@@ -1379,8 +1379,14 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
     struct iguana_block *block; struct iguana_blockreq *req=0; char *hashstr=0; bits256 hash2;
     int32_t bundlei,priority,i,m,z,pend,limit,height=-1,datalen,flag = 0;
     uint32_t now; struct iguana_bundle *bp; struct iguana_peer *ptr;
-    if ( addr->msgcounts.verack == 0 || netBLOCKS > IGUANA_NUMHELPERS*5000 )
+    if ( addr->msgcounts.verack == 0 )
         return(0);
+    if ( netBLOCKS > IGUANA_NUMHELPERS*1000 )
+    {
+        usleep(netBLOCKS);
+        if ( netBLOCKS > IGUANA_NUMHELPERS*5000 )
+            return(0);
+    }
     now = (uint32_t)time(NULL);
     if ( iguana_needhdrs(coin) != 0 && addr->pendhdrs < IGUANA_MAXPENDHDRS )
     {
