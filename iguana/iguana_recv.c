@@ -1085,7 +1085,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
             {
                 hdrsi0 = (coin->blocks.hwmchain.height) / coin->chain->bundlesize;
                 bundlei0 = (coin->blocks.hwmchain.height) % coin->chain->bundlesize;
-                if ( (block= iguana_bundleblock(coin,&hash2,coin->bundles[hdrsi0],bundlei0)) == 0 )
+                if ( coin->bundles[hdrsi0] != 0 && (block= iguana_bundleblock(coin,&hash2,coin->bundles[hdrsi0],bundlei0)) != 0 )
                     next = block->hh.next; //, next/block->mainchain = 1;
             }
         }

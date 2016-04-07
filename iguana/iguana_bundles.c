@@ -828,21 +828,24 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
             return(0);
         }
         bp->emitfinish = 1;
-        iguana_bundletweak(coin,bp);
-        //sleep(3); // just in case data isnt totally sync'ed to HDD
-        coin->emitbusy++;
-        if ( iguana_bundlesaveHT(coin,mem,memB,bp,(uint32_t)time(NULL)) == 0 )
+        sleep(3); // make sure new incoming packet didnt overwrite
+        if ( iguana_bundleready(coin,bp) == bp->n )
         {
-            //fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d\n",coin,bp->hdrsi,bp->bundleheight);
-            bp->emitfinish = (uint32_t)time(NULL) + 1;
-            coin->numemitted++;
-        }
-        else
-        {
-            fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d error\n",coin,bp->hdrsi,bp->bundleheight);
-            bp->emitfinish = 0;
-        }
-        coin->emitbusy--;
+            coin->emitbusy++;
+            if ( iguana_bundlesaveHT(coin,mem,memB,bp,(uint32_t)time(NULL)) == 0 )
+            {
+                //fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d\n",coin,bp->hdrsi,bp->bundleheight);
+                bp->emitfinish = (uint32_t)time(NULL) + 1;
+                iguana_bundletweak(coin,bp);
+                coin->numemitted++;
+            }
+            else
+            {
+                fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d error\n",coin,bp->hdrsi,bp->bundleheight);
+                bp->emitfinish = 0;
+            }
+            coin->emitbusy--;
+        } else printf("interloper! [%d] save interupted\n",bp->hdrsi);
     }
     return(1);
 }
