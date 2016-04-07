@@ -834,9 +834,13 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
 
 int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,struct OS_memspace *mem,struct OS_memspace *memB)
 {
+    int32_t i,numemit = 0;
     if ( iguana_bundleready(coin,bp,0) == bp->n )
     {
-        printf(">>>>>>>>>>>>>> EMIT.[%3d] %s E.-3%d | 1st.%-3d h.%-3d c.%-3d s.[%3d] maxB.%d NET.(h%d b%d) %ld:%02ld\n",bp->hdrsi,coin->symbol,coin->numemit,coin->current!=0?coin->current->hdrsi:-1,coin->current!=0?coin->current->numhashes:-1,coin->current!=0?coin->current->numcached:-1,coin->current!=0?coin->current->numsaved:-1,coin->MAXBUNDLES,HDRnet,netBLOCKS,(time(NULL)-coin->startutc)/60,(time(NULL)-coin->startutc)%60);
+        for (i=0; i<coin->bundlescount; i++)
+            if ( coin->bundles[i] != 0 && coin->bundles[i]->ramchain.H.data != 0 )
+                numemit++;
+        printf(">>>>>>>>>>>>>> EMIT.[%3d] %s E.-3%d | 1st.%-3d h.%-3d c.%-3d s.[%3d] maxB.%d NET.(h%d b%d) %ld:%02ld\n",bp->hdrsi,coin->symbol,numemit,coin->current!=0?coin->current->hdrsi:-1,coin->current!=0?coin->current->numhashes:-1,coin->current!=0?coin->current->numcached:-1,coin->current!=0?coin->current->numsaved:-1,coin->MAXBUNDLES,HDRnet,netBLOCKS,(time(NULL)-coin->startutc)/60,(time(NULL)-coin->startutc)%60);
         if ( bp->emitfinish != 0 )
         {
             printf("already EMIT for bundle.%d\n",bp->hdrsi);
@@ -1098,7 +1102,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
             }
             else
             {
-                if ( bp->hdrsi >= starti && bp->hdrsi < lasti && (displag % 3) == 2 && netBLOCKS < IGUANA_NUMHELPERS*1000 )
+                if ( bp->hdrsi >= starti && bp->hdrsi < lasti && (displag % 3) == 2 )
                 {
                     if ( (aveduration= iguana_bundlemissings(coin,bp,recentduration)) != 0 )
                         dxblend(&recentduration,aveduration,.5);
