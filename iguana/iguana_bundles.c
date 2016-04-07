@@ -486,7 +486,7 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
             }
             if ( (block= iguana_bundleblock(coin,&hash2,bp,i)) != 0 )
             {
-                if ( block->fpipbits != 0 )//block->txvalid != 0 && block->fpos >= 0 &&  && block->RO.recvlen != 0 && (bp->bundleheight+i == 0 || bits256_nonz(block->RO.prev_block) != 0) )
+                if ( block->fpipbits != 0 && block->txvalid != 0 && block->fpos >= 0 && block->RO.recvlen != 0 && (bp->bundleheight+i == 0 || bits256_nonz(block->RO.prev_block) != 0) )
                 {
                     //printf("[%d:%d].have ",bp->hdrsi,i);
                     continue;
@@ -780,7 +780,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
                 {
                     //if ( bp->minrequests == 0 || (block->numrequests > 0 && block->numrequests < bp->minrequests) )
                     //    bp->minrequests = block->numrequests;
-                    if ( block->fpipbits != 0 )//&& block->txvalid != 0 &&  block->fpos >= 0 && (bp->bundleheight+bundlei == 0 || bits256_nonz(block->RO.prev_block) != 0) )
+                    if ( block->fpipbits != 0 && block->txvalid != 0 &&  block->fpos >= 0 && (bp->bundleheight+bundlei == 0 || bits256_nonz(block->RO.prev_block) != 0) )
                         numsaved++;
                     if ( block->RO.recvlen != 0 )
                     {
