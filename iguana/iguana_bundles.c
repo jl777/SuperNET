@@ -1049,6 +1049,7 @@ double iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,d
     }*/
     if ( (n= iguana_bundlerequests(coin,missings,&bp->origmissings,&tmp,mult,bp,priority)) > 0 )
     {
+        printf("bundle.[%d] n.%d issued.%d\n",bp->hdrsi,n,bp->numissued);
         bp->numissued += n;
         bp->missingstime = (uint32_t)time(NULL);
     }
