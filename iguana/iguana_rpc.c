@@ -652,10 +652,11 @@ char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,ch
             }
             else if ( n > 0 )
             {
+                printf("n.%d (%s)\n",n,jstr(array,0));
                 for (i=n-1; i>=0; i--)
                 {
-                    params[i] = cJSON_DetachItemFromArray(array,i);//;
-                    //printf("add params[%d] of %d <- (%s) %p.(%p %p)\n",i,n,jprint(params[i],0),params[i],params[i]->next,params[i]->prev);
+                    params[i] = jduplicate(jitem(array,i));//;
+                    printf("add params[%d] of %d <- (%s) %p.(%p %p)\n",i,n,jprint(params[i],0),params[i],params[i]->next,params[i]->prev);
                 }
             }
             retstr = iguana_bitcoinrpc(myinfo,port,coin,method,params,n,json,remoteaddr,array);
