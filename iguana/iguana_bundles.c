@@ -501,7 +501,7 @@ int32_t iguana_sendhashes(struct iguana_info *coin,struct iguana_peer *addr,int3
 
 int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle *bp,int32_t priority,double mult)
 {
-    int32_t i,max,lag,num,n=0; uint32_t now; bits256 hash2; double aveduration; struct iguana_peer *addr;
+    int32_t i,max,lasti,firsti,lag,num,n=0; uint32_t now; bits256 hash2; double aveduration; struct iguana_peer *addr;
     if ( bp->emitfinish != 0 || (priority == 0 && time(NULL) < bp->missingstime+30) )
         return(0);
     bp->missingstime = (uint32_t)time(NULL);
@@ -516,9 +516,15 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
     {
         max = log2(num * num) + 1;
         now = (uint32_t)time(NULL);
+        lasti = firsti = -1;
         for (i=0; i<bp->n; i++)
         {
-            if ( (bp->issued[i] == 0 || bp->issued[i] > 1) && GETBIT(bp->haveblock,i) == 0 && now > bp->issued[i]+lag )
+            if ( GETBIT(bp->haveblock,i) != 0 )
+                continue;
+            if ( firsti < 0 )
+                firsti = i;
+            lasti = i;
+            if ( (bp->issued[i] == 0 || bp->issued[i] > 1) && now > bp->issued[i]+lag )
             {
                 iguana_bundleblock(coin,&hash2,bp,i);
                 if ( bits256_nonz(hash2) != 0 )
@@ -536,9 +542,18 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
                         bp->issued[i] = 1;
                         queue_enqueue("missing",&coin->priorityQ,&req->DL,0);
                         n++;
-                        //iguana_sendblockreqPT(coin,addr,bp,i,hash2,0);
                     }
                 }
+            }
+        }
+        if ( firsti == lasti && firsti >= 0 )
+        {
+            printf("[%d] single missing.%d\n",bp->hdrsi,firsti);
+            iguana_bundleblock(coin,&hash2,bp,firsti);
+            if ( bits256_nonz(hash2) != 0 )
+            {
+                if ( (addr= coin->peers.ranked[rand() % max]) != 0 && addr->usock >= 0 && addr->dead == 0 )
+                    iguana_sendblockreqPT(coin,addr,bp,firsti,hash2,0);
             }
         }
     }
@@ -1090,7 +1105,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
             struct iguana_blockreq *breq; int32_t n,lag; //priority=3,
             lag = (int32_t)time(NULL) - coin->stucktime;
             bp = firstgap;
-            printf("NONZ stucktime.%u lag.%d iters.%d vs %d metric.%d\n",coin->stucktime,lag,coin->stuckiters,lag/coin->MAXSTUCKTIME,smetric);
+            //printf("NONZ stucktime.%u lag.%d iters.%d vs %d metric.%d\n",coin->stucktime,lag,coin->stuckiters,lag/coin->MAXSTUCKTIME,smetric);
             if ( (lag/coin->MAXSTUCKTIME) > coin->stuckiters )
             {
                 printf("UNSTICK\n");
