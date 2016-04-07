@@ -55,7 +55,7 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_MAXBUNDLES (50000000 / 500)
 
 #define IGUANA_MINPEERS 8
-#define IGUANA_LOG2MAXPEERS 8
+#define IGUANA_LOG2MAXPEERS 10
 #define IGUANA_LOG2PACKETSIZE 21
 #define IGUANA_LOG2PEERFILESIZE 23
 
