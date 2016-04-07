@@ -394,6 +394,7 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
     char fname[1024]; FILE *fp; int32_t hdrsi,m,j; uint32_t ipbits;
     if ( bp->purgetime == 0 && time(NULL) > bp->emitfinish+30 )
     {
+        printf("purged hdrsi.[%d] lag.%ld\n",bp->hdrsi,time(NULL) - bp->emitfinish);
         for (j=m=0; j<sizeof(coin->peers.active)/sizeof(*coin->peers.active); j++)
         {
             if ( (ipbits= (uint32_t)coin->peers.active[j].ipbits) != 0 )
@@ -411,7 +412,6 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
                 else printf("error removing.(%s)\n",fname);
             }
         }
-        //printf("purged hdrsi.%d m.%d\n",bp->hdrsi,m);
         bp->purgetime = (uint32_t)time(NULL);
     }
 }
@@ -826,7 +826,7 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
 {
     if ( iguana_bundleready(coin,bp) == bp->n )
     {
-        printf(">>>>>>>>>>>>>>>>>>>>>>> EMIT.%s bundle.%d | 1st.%d h.%d c.%d s.[%d] maxbundles.%d NET.(h%d b%d)\n",coin->symbol,bp->bundleheight,coin->current!=0?coin->current->hdrsi:-1,coin->current!=0?coin->current->numhashes:-1,coin->current!=0?coin->current->numcached:-1,coin->current!=0?coin->current->numsaved:-1,coin->MAXBUNDLES,HDRnet,netBLOCKS);
+        printf(">>>>>>>>>>>>>>>>>>>>>>> EMIT.[%d] %s bundle.%d | 1st.%d h.%d c.%d s.[%d] maxbundles.%d NET.(h%d b%d)\n",bp->hdrsi,coin->symbol,bp->bundleheight,coin->current!=0?coin->current->hdrsi:-1,coin->current!=0?coin->current->numhashes:-1,coin->current!=0?coin->current->numcached:-1,coin->current!=0?coin->current->numsaved:-1,coin->MAXBUNDLES,HDRnet,netBLOCKS);
         if ( bp->emitfinish != 0 )
         {
             printf("already EMIT for bundle.%d\n",bp->hdrsi);
@@ -839,7 +839,7 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
             coin->emitbusy++;
             if ( iguana_bundlesaveHT(coin,mem,memB,bp,(uint32_t)time(NULL)) == 0 )
             {
-                //fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d\n",coin,bp->hdrsi,bp->bundleheight);
+                fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d\n",coin,bp->hdrsi,bp->bundleheight);
                 bp->emitfinish = (uint32_t)time(NULL) + 1;
                 iguana_bundletweak(coin,bp);
                 coin->numemitted++;
@@ -1122,10 +1122,13 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
             {
                 if ( bp->emitfinish == 1 )
                     done++;
-                else numemit++;
-                //printf("finished.[%d]\n",bp->hdrsi);
-                if ( firstgap != 0 && bp->hdrsi > firstgap->hdrsi-3 )
-                    iguana_bundlepurgefiles(coin,bp);
+                else
+                {
+                    numemit++;
+                    //printf("finished.[%d]\n",bp->hdrsi);
+                    if ( firstgap != 0 && bp->hdrsi > firstgap->hdrsi-3 )
+                        iguana_bundlepurgefiles(coin,bp);
+                }
             }
             else
             {
