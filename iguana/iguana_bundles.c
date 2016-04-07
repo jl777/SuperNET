@@ -1220,14 +1220,14 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
             coin->stucktime = (uint32_t)time(NULL);
             coin->stuckiters = 0;
         }
-        else if ( coin->stucktime != 0 && (displag % 3) == 1 )
+        else if ( coin->stucktime != 0 )
         {
             uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1]; struct iguana_blockreq *breq; double aveduration; int32_t tmp,tmp2,n,lag; //priority=3,
             lag = (int32_t)time(NULL) - coin->stucktime;
             bp = firstgap;
-            printf("NONZ stucktime.%u lag.%d iters.%d vs %d metric.%d\n",coin->stucktime,lag,coin->stuckiters,lag/coin->MAXSTUCKTIME,(firstgap->hdrsi * coin->chain->bundlesize * 10) + firstgap->numsaved + firstgap->numhashes + firstgap->numcached);
             if ( (lag/coin->MAXSTUCKTIME) > coin->stuckiters )
             {
+                printf("NONZ stucktime.%u lag.%d iters.%d vs %d metric.%d\n",coin->stucktime,lag,coin->stuckiters,lag/coin->MAXSTUCKTIME,(firstgap->hdrsi * coin->chain->bundlesize * 10) + firstgap->numsaved + firstgap->numhashes + firstgap->numcached);
                 //printf("UNSTICK\n");
                 iguana_unstickhdr(coin,bp,6);
                 coin->stuckiters = (int32_t)(lag/coin->MAXSTUCKTIME);

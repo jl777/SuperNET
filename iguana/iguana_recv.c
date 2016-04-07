@@ -314,7 +314,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
         static uint64_t received[IGUANA_MAXPEERS],count[IGUANA_MAXPEERS];
         received[addr->addrind] += recvlen;
         count[addr->addrind]++;
-        if ( (rand() % 10000) == 0 )
+        if ( (rand() % 1000) == 0 )
         {
             uint64_t sum2 = 0,sum = 0;
             for (i=0; i<sizeof(received)/sizeof(*received); i++)
