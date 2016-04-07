@@ -838,7 +838,7 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
 {
     if ( iguana_bundleready(coin,bp,0) == bp->n )
     {
-        printf(">>>>>>>>>>>>>>>> EMIT.[%d] %s bundle.%d | 1st.%d h.%d c.%d s.[%d] maxbundles.%d NET.(h%d b%d)\n",bp->hdrsi,coin->symbol,bp->bundleheight,coin->current!=0?coin->current->hdrsi:-1,coin->current!=0?coin->current->numhashes:-1,coin->current!=0?coin->current->numcached:-1,coin->current!=0?coin->current->numsaved:-1,coin->MAXBUNDLES,HDRnet,netBLOCKS);
+        printf(">>>>>>>>>>>>>> EMIT.[%d] %s E.%d | 1st.%d h.%d c.%d s.[%d] maxbundles.%d NET.(h%d b%d)\n",bp->hdrsi,coin->symbol,coin->numemit,coin->current!=0?coin->current->hdrsi:-1,coin->current!=0?coin->current->numhashes:-1,coin->current!=0?coin->current->numcached:-1,coin->current!=0?coin->current->numsaved:-1,coin->MAXBUNDLES,HDRnet,netBLOCKS);
         if ( bp->emitfinish != 0 )
         {
             printf("already EMIT for bundle.%d\n",bp->hdrsi);
