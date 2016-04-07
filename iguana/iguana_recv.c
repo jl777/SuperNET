@@ -1382,11 +1382,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
     if ( addr->msgcounts.verack == 0 )
         return(0);
     if ( netBLOCKS > IGUANA_NUMHELPERS*1000 )
-    {
         usleep(netBLOCKS);
-        if ( netBLOCKS > IGUANA_NUMHELPERS*5000 )
-            return(0);
-    }
     now = (uint32_t)time(NULL);
     if ( iguana_needhdrs(coin) != 0 && addr->pendhdrs < IGUANA_MAXPENDHDRS )
     {

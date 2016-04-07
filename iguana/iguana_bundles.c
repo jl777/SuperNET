@@ -516,8 +516,6 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
 int32_t iguana_sendhashes(struct iguana_info *coin,struct iguana_peer *addr,int32_t msgtype,bits256 hashes[],int32_t n,int32_t priority)
 {
     int32_t len; uint8_t *serialized;
-    if ( netBLOCKS > IGUANA_NUMHELPERS*1000 )
-        return(0);
     if ( addr->usock >= 0 && addr->dead == 0 && priority > 1 )
     {
         serialized = malloc((sizeof(int32_t) + sizeof(*hashes))*n + 1024);
@@ -1100,7 +1098,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
             }
             else
             {
-                if ( bp->hdrsi >= starti && bp->hdrsi < lasti && (displag % 3) == 2 )
+                if ( bp->hdrsi >= starti && bp->hdrsi < lasti && (displag % 3) == 2 && netBLOCKS < IGUANA_NUMHELPERS*1000 )
                 {
                     if ( (aveduration= iguana_bundlemissings(coin,bp,recentduration)) != 0 )
                         dxblend(&recentduration,aveduration,.5);
