@@ -1540,8 +1540,9 @@ int32_t iguana_balancenormal(struct iguana_info *coin,struct iguana_bundle *bp,i
             break;
     }
     //printf("B [%d] j.%d u.%u b.%u\n",bp->hdrsi,j,bp->utxofinish,bp->balancefinish);
-    if ( (j == n || bp->hdrsi == 0) && bp->bundleheight+bp->n <= coin->blocks.hwmchain.height && bp->utxofinish > 1 && bp->balancefinish <= 1 )
+    if ( (j == n || bp->hdrsi == 0) && bp->bundleheight+bp->n <= coin->blocks.hwmchain.height && bp->utxofinish > 1 && bp->balancefinish == 0 )
     {
+        bp->balancefinish = 1;
         if ( bp->hdrsi >= coin->balanceswritten )
         {
             //printf("balancecalc for %d when %d\n",bp->hdrsi,coin->balanceswritten);
