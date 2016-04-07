@@ -475,7 +475,7 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
     if ( lag > IGUANA_DEFAULTLAG )
         lag = IGUANA_DEFAULTLAG * 8;
     memset(missings,0,IGUANA_MAXBUNDLESIZE/8+1);
-    if ( bp->emitfinish == 0 )
+    //if ( bp->emitfinish == 0 )
     {
         for (i=0; i<bp->n; i++)
         {
@@ -486,9 +486,9 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
             }
             if ( (block= iguana_bundleblock(coin,&hash2,bp,i)) != 0 )
             {
-                if ( block->txvalid != 0 || block->fpos < 0 || block->fpipbits != 0 || block->RO.recvlen != 0 )
+                if ( block->txvalid != 0 && block->fpos >= 0 && block->fpipbits != 0 )//block->RO.recvlen != 0 )
                 {
-                    //printf("[%d:%d].block ",bp->hdrsi,i);
+                    //printf("[%d:%d].have ",bp->hdrsi,i);
                     continue;
                 }
             }
@@ -773,21 +773,26 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
         if ( bits256_nonz(bp->hashes[bundlei]) > 0 )
         {
             numhashes++;
-            if ( (block= bp->blocks[bundlei]) != 0 && bits256_cmp(block->RO.hash2,bp->hashes[bundlei]) == 0 )
+            if ( (block= bp->blocks[bundlei]) != 0 )
             {
-                //if ( bp->minrequests == 0 || (block->numrequests > 0 && block->numrequests < bp->minrequests) )
-                //    bp->minrequests = block->numrequests;
-                if ( block->fpipbits != 0 && block->fpos >= 0 )
-                    numsaved++;
-                if ( block->RO.recvlen != 0 )
+                if ( bits256_cmp(block->RO.hash2,bp->hashes[bundlei]) == 0 )
                 {
-                    numrecv++;
-                    datasize += block->RO.recvlen;
-                }
-            }
+                    //if ( bp->minrequests == 0 || (block->numrequests > 0 && block->numrequests < bp->minrequests) )
+                    //    bp->minrequests = block->numrequests;
+                    if ( block->txvalid != 0 && block->fpipbits != 0 && block->fpos >= 0 )
+                        numsaved++;
+                    if ( block->RO.recvlen != 0 )
+                    {
+                        numrecv++;
+                        datasize += block->RO.recvlen;
+                    }
+                } else printf("hash mismatch [%d:%d]\n",bp->hdrsi,bundlei);
+            } else printf("[null %d:%d] ",bp->hdrsi,bundlei);
         }
     }
-    bp->numcached = bp->n - iguana_blocksmissing(coin,&avail,missings,0,1.,bp,0);
+    bp->numcached = bp->n - iguana_blocksmissing(coin,&avail,missings,0,0,bp,0);
+    if ( 0 && bp->numcached != numsaved )
+        printf("[%d] emit.%u ramchain.%p numcached.%d vs numsaved.%d numhashes.%d\n",bp->hdrsi,bp->emitfinish,bp->ramchain.H.data,bp->numcached,numsaved,numhashes);
     bp->datasize = datasize;
     bp->numhashes = numhashes;
     bp->numsaved = numsaved;

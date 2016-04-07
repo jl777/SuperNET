@@ -318,8 +318,18 @@ int32_t iguana_walkchain(struct iguana_info *coin)
             printf("walk error [%d:%d] vs [%d:%d]\n",hdrsi,bundlei,block->hdrsi,block->bundlei);
             break;
         }
-        n++;
-        height--;
+        if ( (height % coin->chain->bundlesize) == 0 )
+        {
+            if ( bp->ramchain.H.data == 0 )
+                printf("NULL RAMCHAIN.[%d]\n",bp->hdrsi);
+            n += coin->chain->bundlesize;
+            height -= coin->chain->bundlesize;
+        }
+        else
+        {
+            n++;
+            height--;
+        }
     }
     printf("walkd n.%d hwm.%d %s\n",n,coin->blocks.hwmchain.height,bits256_str(str,coin->blocks.hwmchain.RO.hash2));
     return(n);
@@ -397,8 +407,11 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                 else str2[0] = 0;
                 if ( block->height+1 > coin->longestchain )
                     coin->longestchain = block->height+1;
-                if ( 0 && (block->height % 1000) == 0 )
-                    printf("EXTENDMAIN %s %d <- (%s) n.%u max.%u PoW %f numtx.%d valid.%d\n",str,block->height,str2,hwmchain->height+1,coin->blocks.maxblocks,block->PoW,block->RO.txn_count,block->valid);
+                if ( 1 && (block->height % 1000) == 0 )
+                {
+                    //printf("EXTENDMAIN %s %d <- (%s) n.%u max.%u PoW %f numtx.%d valid.%d\n",str,block->height,str2,hwmchain->height+1,coin->blocks.maxblocks,block->PoW,block->RO.txn_count,block->valid);
+                    iguana_walkchain(coin);
+                }
                 struct iguana_bundle *bp; int32_t hdrsi;
                 if ( (block->height % coin->chain->bundlesize) == 0 )
                 {
@@ -444,7 +457,6 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                     //iguana_blockQ("mainchain",coin,bp,block->height % coin->chain->bundlesize,block->RO.hash2,0);
                 }
                 block->mainchain = 1;
-                iguana_walkchain(coin);
                 return(block);
             }
         }

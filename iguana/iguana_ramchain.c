@@ -2181,6 +2181,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
             if ( (block= bp->blocks[i]) != 0 || (block= iguana_blockhashset("bundleload",coin,bp->bundleheight+i,bp->hashes[i],1)) != 0 )
             {
                 block->queued = 1;
+                block->txvalid = 1;
                 block->height = bp->bundleheight + i;
                 block->hdrsi = bp->hdrsi;
                 block->bundlei = i;
