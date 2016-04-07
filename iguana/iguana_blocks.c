@@ -292,7 +292,7 @@ int32_t iguana_blockunmain(struct iguana_info *coin,struct iguana_block *block)
 
 int32_t iguana_walkchain(struct iguana_info *coin)
 {
-    char str[65]; int32_t height,hdrsi,bundlei,n = 0; struct iguana_block *block;
+    char str[65]; int32_t height,hdrsi,bundlei,n = 0; struct iguana_bundle *bp; struct iguana_block *block;
     height = coin->blocks.hwmchain.height;
     while ( (block= iguana_blockfind("main",coin,iguana_blockhash(coin,height))) != 0 )
     {
@@ -300,13 +300,28 @@ int32_t iguana_walkchain(struct iguana_info *coin)
         bundlei = (height % coin->chain->bundlesize);
         if ( bits256_cmp(iguana_blockhash(coin,height),block->RO.hash2) != 0 )
         {
-            printf("blockhash error at %d %s\n",height,bits256_str(str,block->RO.hash2));
+            printf("walk error blockhash error at %d %s\n",height,bits256_str(str,block->RO.hash2));
+            break;
+        }
+        else if ( (bp= coin->bundles[hdrsi]) == 0 || block != bp->blocks[bundlei] )
+        {
+            printf("walk error [%d:%d] %p vs %p\n",hdrsi,bundlei,block,bp->blocks[bundlei]);
+            break;
+        }
+        else if ( bits256_cmp(bp->hashes[bundlei],block->RO.hash2) != 0 )
+        {
+            printf("walk error [%d:%d] %s vs %s\n",hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]),bits256_str(str,block->RO.hash2));
+            break;
+        }
+        else if ( block->hdrsi != hdrsi || block->bundlei != bundlei )
+        {
+            printf("walk error [%d:%d] vs [%d:%d]\n",hdrsi,bundlei,block->hdrsi,block->bundlei);
             break;
         }
         n++;
         height--;
     }
-    printf("n.%d vs hwm.%d %s\n",n,coin->blocks.hwmchain.height,bits256_str(str,coin->blocks.hwmchain.RO.hash2));
+    printf("walkd n.%d hwm.%d %s\n",n,coin->blocks.hwmchain.height,bits256_str(str,coin->blocks.hwmchain.RO.hash2));
     return(n);
 }
 
@@ -401,6 +416,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                         //printf("created last bundle ht.%d\n",bp->bundleheight);
                         iguana_blockreq(coin,block->height,1);
                     }
+                    iguana_walkchain(coin);
                 }
                 else
                 {
@@ -429,7 +445,6 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                     //iguana_blockQ("mainchain",coin,bp,block->height % coin->chain->bundlesize,block->RO.hash2,0);
                 }
                 block->mainchain = 1;
-                iguana_walkchain(coin);
                 return(block);
             }
         }
