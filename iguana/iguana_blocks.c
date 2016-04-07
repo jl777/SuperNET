@@ -290,6 +290,26 @@ int32_t iguana_blockunmain(struct iguana_info *coin,struct iguana_block *block)
     return(n);
 }
 
+int32_t iguana_walkchain(struct iguana_info *coin)
+{
+    char str[65]; int32_t height,hdrsi,bundlei,n = 0; struct iguana_block *block;
+    height = coin->blocks.hwmchain.height;
+    while ( (block= iguana_blockfind("main",coin,iguana_blockhash(coin,height))) != 0 )
+    {
+        hdrsi = (height / coin->chain->bundlesize);
+        bundlei = (height % coin->chain->bundlesize);
+        if ( bits256_cmp(iguana_blockhash(coin,height),block->RO.hash2) != 0 )
+        {
+            printf("blockhash error at %d %s\n",height,bits256_str(str,block->RO.hash2));
+            break;
+        }
+        n++;
+        height--;
+    }
+    printf("n.%d vs hwm.%d %s\n",n,coin->blocks.hwmchain.height,bits256_str(str,coin->blocks.hwmchain.RO.hash2));
+    return(n);
+}
+
 struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_block *newblock)
 {
     int32_t valid,bundlei,height=-1; struct iguana_block *hwmchain,*block = 0,*prev=0,*next;
@@ -386,7 +406,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                 {
                     if ( (bp= coin->bundles[block->height / coin->chain->bundlesize]) != 0 )
                     {
-                        if ( memcmp(bp->hashes[block->height % coin->chain->bundlesize].bytes,block->RO.hash2.bytes,sizeof(bits256)) != 0 )
+                        if ( memcmp(bp->hashes[block->height % coin->chain->bundlesize].bytes,block->RO.hash2.bytes,sizeof(bits256)) != 0 || block != bp->blocks[block->height % coin->chain->bundlesize] )
                         {
                             if ( bits256_nonz(bp->hashes[block->height % coin->chain->bundlesize]) > 0 )
                             {
@@ -409,6 +429,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                     //iguana_blockQ("mainchain",coin,bp,block->height % coin->chain->bundlesize,block->RO.hash2,0);
                 }
                 block->mainchain = 1;
+                iguana_walkchain(coin);
                 return(block);
             }
         }

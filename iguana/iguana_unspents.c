@@ -1928,11 +1928,11 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         bp->isRT = 1;
         while ( (rdata= coin->RTramchain.H.data) != 0 && coin->RTheight <= coin->blocks.hwmchain.height )
         {
-            printf("RT.%d vs hwm.%d starti.%d bp->n %d\n",coin->RTheight,coin->blocks.hwmchain.height,coin->RTstarti,bp->n);
             dest = &coin->RTramchain;
             B = (void *)(long)((long)rdata + rdata->Boffset);
             bundlei = (coin->RTheight % coin->chain->bundlesize);
             block = iguana_bundleblock(coin,&hash2,bp,bundlei);
+            char str[65]; printf("RT.%d vs hwm.%d starti.%d bp->n %d block.%p prev %s\n",coin->RTheight,coin->blocks.hwmchain.height,coin->RTstarti,bp->n,block,bits256_str(str,block->RO.prev_block));
             if ( block != 0 && bits256_nonz(block->RO.prev_block) != 0 )
             {
                 iguana_blocksetcounters(coin,block,dest);
