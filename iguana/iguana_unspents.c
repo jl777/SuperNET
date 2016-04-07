@@ -1723,7 +1723,7 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
                 iguana_convertQ(coin,bp);
                 retval = 0;
             }
-            else
+            else if ( bp->converted == 0 )
             {
                 for (i=0; i<coin->bundlescount-1; i++)
                 {
