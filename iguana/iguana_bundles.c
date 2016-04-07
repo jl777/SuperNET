@@ -1080,6 +1080,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
     {
         if ( coin->stuckmonitor != (firstgap->hdrsi * coin->chain->bundlesize * 10) + firstgap->numsaved + firstgap->numhashes + firstgap->numcached )
         {
+            printf("stuckmonitor.%d -> %d\n",coin->stuckmonitor,(firstgap->hdrsi * 10000) + firstgap->numsaved + firstgap->numhashes + firstgap->numcached);
             coin->stuckmonitor = (firstgap->hdrsi * 10000) + firstgap->numsaved + firstgap->numhashes + firstgap->numcached;
             coin->stucktime = (uint32_t)time(NULL);
             coin->stuckiters = 0;
