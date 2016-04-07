@@ -516,13 +516,13 @@ void iguana_helper(void *arg)
         if ( queue_size(&spendvectorsQ) != 0 || queue_size(&convertQ) != 0 || queue_size(&bundlesQ) > 1 )
             allcurrent = 0;
         if ( flag != 0 )
-            usleep(polltimeout * 250);
+            usleep(polltimeout * 100 + 1);
         else if ( allcurrent > 0 )
         {
             //printf("bundlesQ allcurrent\n");
             usleep(polltimeout * 100000);
         }
-        else usleep(polltimeout * 100);
+        else usleep(polltimeout * 1000);
     }
 }
 
