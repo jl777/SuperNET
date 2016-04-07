@@ -391,7 +391,7 @@ struct iguana_txid *iguana_bundletx(struct iguana_info *coin,struct iguana_bundl
 void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     static const bits256 zero;
-    char fname[1024]; int32_t hdrsi,m,j; uint32_t ipbits;
+    char fname[1024]; FILE *fp; int32_t hdrsi,m,j; uint32_t ipbits;
     if ( bp->purgetime == 0 && time(NULL) > bp->emitfinish+30 )
     {
         for (j=m=0; j<sizeof(coin->peers.active)/sizeof(*coin->peers.active); j++)
@@ -400,8 +400,13 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
             {
                 if ( iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,ipbits,bp->hashes[0],zero,1,1) >= 0 )
                 {
-                    if ( OS_removefile(fname,0) > 0 )
-                        coin->peers.numfiles--, m++;
+                    if ( (fp= fopen(fname,"rb")) != 0 )
+                    {
+                        printf("purge.(%s)\n",fname);
+                        fclose(fp);
+                        if ( OS_removefile(fname,0) > 0 )
+                            coin->peers.numfiles--, m++;
+                    }
                 }
                 else printf("error removing.(%s)\n",fname);
             }
