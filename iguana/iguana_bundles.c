@@ -512,11 +512,11 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
             printf("priority.%d [%d] durations %.2f counts[%d %d] \n",priority,bp->hdrsi,aveduration,(int32_t)bp->durationscount,bp->duplicatescount);
     } else aveduration = IGUANA_DEFAULTLAG;
     lag = aveduration * mult;
-    if ( lag < 10 )
-        lag = 10;
+    if ( lag < 20 )
+        lag = 20;
     if ( (num= coin->peers.numranked) != 0 )
     {
-        max = log2(num * num) + 1;
+        max = num;//log2(num * num) + 1;
         now = (uint32_t)time(NULL);
         lasti = firsti = -1;
         for (i=nonz=0; i<bp->n; i++)
@@ -549,7 +549,7 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
                 }
             }
         }
-        if ( firsti >= 0 && firsti == lasti )
+        if ( firsti >= 0 && firsti == lasti && bp == coin->current )
         {
             printf("[%d] first missing.%d of %d\n",bp->hdrsi,firsti,nonz);
             iguana_bundleblock(coin,&hash2,bp,firsti);
