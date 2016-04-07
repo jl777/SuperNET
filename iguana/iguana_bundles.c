@@ -843,7 +843,7 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
             return(0);
         }
         bp->emitfinish = 1;
-        usleep(100000); // make sure new incoming packet didnt overwrite
+        sleep(2); // make sure new incoming packet didnt overwrite
         if ( iguana_bundleready(coin,bp,1) == bp->n )
         {
             coin->emitbusy++;
