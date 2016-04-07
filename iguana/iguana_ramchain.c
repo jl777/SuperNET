@@ -1716,11 +1716,16 @@ bits256 iguana_merkle(struct iguana_info *coin,bits256 *tree,struct iguana_msgtx
 long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,int32_t txn_count,uint8_t *data,int32_t recvlen)
 {
     int32_t verifyflag = 0; static uint64_t totalrecv;
-    RAMCHAIN_DECLARE; struct iguana_ramchain R,*mapchain,*ramchain = &addr->ramchain;
+    RAMCHAIN_DECLARE; uint32_t addr_ipbits; struct iguana_ramchain R,*mapchain,*ramchain = &addr->ramchain;
     struct iguana_msgtx *tx; char fname[1024]; uint8_t rmd160[20]; long fsize; void *ptr;
     int32_t i,j,fpos,pubkeysize,msize,sigsize,firsti=1,err,flag,bundlei = -2; bits256 merkle_root;
     struct iguana_bundle *bp = 0; struct iguana_block *block; uint32_t scriptspace,stackspace;
     totalrecv += recvlen;
+    if ( (addr_ipbits= (uint32_t)addr->ipbits) == 0 )
+    {
+        printf("killed addr? calling ramchain data\n");
+        return(-1);
+    }
     if ( bits256_nonz(origtxdata->block.RO.merkle_root) == 0 )
     {
         memset(&origtxdata->block.RO.prev_block,0,sizeof(bits256));
@@ -1843,7 +1848,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
             B[0] = block->RO;
             ramchain->H.data->scriptspace = ramchain->H.scriptoffset = scriptspace;
             ramchain->H.data->stackspace = ramchain->H.stacksize = stackspace;
-            if ( (fpos= (int32_t)iguana_ramchain_save(coin,RAMCHAIN_ARG,(uint32_t)addr->ipbits,block->RO.hash2,block->RO.prev_block,bundlei,0)) >= 0 )
+            if ( (fpos= (int32_t)iguana_ramchain_save(coin,RAMCHAIN_ARG,addr_ipbits,block->RO.hash2,block->RO.prev_block,bundlei,0)) >= 0 )
             {
                 //char str[65]; printf("saved.%s [%d:%d]\n",bits256_str(str,block->RO.hash2),bp->hdrsi,bundlei);
                 origtxdata->datalen = (int32_t)ramchain->H.data->allocsize;

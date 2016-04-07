@@ -340,7 +340,7 @@ struct iguana_bundle *iguana_bundlecreate(struct iguana_info *coin,int32_t *bund
             *bundleip = 0;
             bits256_str(str,bundlehash2);
             sprintf(dirname,"%s/%s/%d",GLOBALTMPDIR,coin->symbol,bp->bundleheight), OS_ensure_directory(dirname);
-            sprintf(dirname,"DB/%s/%d",coin->symbol,bp->bundleheight), OS_ensure_directory(dirname);
+            //sprintf(dirname,"DB/%s/%d",coin->symbol,bp->bundleheight), OS_ensure_directory(dirname);
             //printf("ht.%d alloc.[%d] new hdrs.%s %s\n",bp->bundleheight,coin->bundlescount,str,bits256_str(str2,allhash));
             iguana_bundlehash2add(coin,0,bp,0,bundlehash2);
             if ( issueflag != 0 )
@@ -513,8 +513,8 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
             printf("priority.%d [%d] durations %.2f counts[%d %d] \n",priority,bp->hdrsi,aveduration,(int32_t)bp->durationscount,bp->duplicatescount);
     } else aveduration = IGUANA_DEFAULTLAG;
     lag = aveduration * mult;
-    if ( lag < 20 )
-        lag = 20;
+    if ( bp != coin->current && lag < 30 )
+        lag = 30;
     if ( (num= coin->peers.numranked) != 0 )
     {
         max = num;//log2(num * num) + 1;
