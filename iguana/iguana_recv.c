@@ -256,8 +256,9 @@ void iguana_bundletime(struct iguana_info *coin,struct iguana_bundle *bp,int32_t
     if ( bp != 0 && bundlei >= 0 && bundlei < bp->n )
     {
         starttime = block->issued;
-        if ( bp->issued[bundlei] != 0 && (starttime == 0 || bp->issued[bundlei] < block->issued) )
+        if ( starttime == 0 || bp->issued[bundlei] > block->issued )
             starttime = bp->issued[bundlei];
+        bp->issued[bundlei] = 1;
         if ( starttime != 0 )
         {
             duration = (uint32_t)time(NULL) - starttime;
@@ -271,6 +272,8 @@ void iguana_bundletime(struct iguana_info *coin,struct iguana_bundle *bp,int32_t
                 bp->totaldurations += duration;
                 bp->durationscount++;
             }
+            if ( (block= bp->blocks[bundlei]) != 0 && block->lag == 0 )
+                block->lag = duration;
         }
     }
 }
@@ -329,8 +332,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
     bp = iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.hash2);
     if ( bp != 0 && bundlei >= 0 && bundlei < bp->n )
     {
-        if ( (block= bp->blocks[bundlei]) != 0 && block->lag == 0 && block->issued != 0 )
-            block->lag = (uint32_t)time(NULL) - block->issued;
+        block = bp->blocks[bundlei];
         if ( bp->emitfinish != 0 )
         {
             numAfteremit++;
@@ -355,9 +357,12 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
                 if ( block->mainchain != 0 )
                     return;
             }
-            else if ( 0 && bp == coin->current )
-                printf("recv [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
-            iguana_bundletime(coin,bp,bundlei,block,0);
+            else
+            {
+                iguana_bundletime(coin,bp,bundlei,block,0);
+                if ( 0 && bp == coin->current )
+                    printf("recv [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
+            }
             block->RO = origtxdata->block.RO;
             block->txvalid = 1;
             //printf("update prev for [%d:%d]\n",bp->hdrsi,bundlei);
@@ -371,10 +376,11 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             {
                 if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish == 0 && bp->speculative != 0 && bp->numhashes < bp->n )
                 {
-                    if ( iguana_speculativefind(coin,bp,&origtxdata->block,data,recvlen) >= 0 )
+                    if ( (j= iguana_speculativefind(coin,bp,&origtxdata->block,data,recvlen)) >= 0 )
                     {
                         copyflag = 0;
                         speculative = 1;
+                        iguana_bundletime(coin,bp,j,bp->blocks[j],0);
                         break;
                     }
                 }
