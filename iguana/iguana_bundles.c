@@ -1075,13 +1075,13 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
     coin->numemit = numemit;
     coin->spaceused = spaceused;
     coin->numverified = numv;
-    char str5[65];
+    char str5[65]; int32_t smetric;
     if ( firstgap != 0 && firstgap->hdrsi < coin->bundlescount-1 ) // coin->isRT
     {
-        if ( coin->stuckmonitor != (firstgap->hdrsi * coin->chain->bundlesize * 10) + firstgap->numsaved + firstgap->numhashes + firstgap->numcached )
+        smetric = (firstgap->hdrsi * 10000) + firstgap->numsaved + firstgap->numhashes + firstgap->numcached;
+        if ( coin->stuckmonitor != smetric )
         {
-            printf("stuckmonitor.%d -> %d\n",coin->stuckmonitor,(firstgap->hdrsi * 10000) + firstgap->numsaved + firstgap->numhashes + firstgap->numcached);
-            coin->stuckmonitor = (firstgap->hdrsi * 10000) + firstgap->numsaved + firstgap->numhashes + firstgap->numcached;
+            coin->stuckmonitor = smetric;
             coin->stucktime = (uint32_t)time(NULL);
             coin->stuckiters = 0;
         }
@@ -1090,7 +1090,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
             struct iguana_blockreq *breq; int32_t n,lag; //priority=3,
             lag = (int32_t)time(NULL) - coin->stucktime;
             bp = firstgap;
-            printf("NONZ stucktime.%u lag.%d iters.%d vs %d metric.%d\n",coin->stucktime,lag,coin->stuckiters,lag/coin->MAXSTUCKTIME,(firstgap->hdrsi * coin->chain->bundlesize * 10) + firstgap->numsaved + firstgap->numhashes + firstgap->numcached);
+            printf("NONZ stucktime.%u lag.%d iters.%d vs %d metric.%d\n",coin->stucktime,lag,coin->stuckiters,lag/coin->MAXSTUCKTIME,smetric);
             if ( (lag/coin->MAXSTUCKTIME) > coin->stuckiters )
             {
                 printf("UNSTICK\n");
@@ -1112,7 +1112,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
                     printf("issued %d priority requests [%d] to unstick stuckiters.%d lag.%d\n",n,bp->hdrsi,coin->stuckiters,lag);
                 //else printf("no bundlerequests issued\n");
             }
-        } else printf("stuck metric.%d\n",(firstgap->hdrsi * coin->chain->bundlesize * 10) + firstgap->numsaved + firstgap->numhashes + firstgap->numcached);
+        } //else printf("stuck metric.%d\n",smetric);
     }
     if ( coin->isRT != 0 || (firstgap != 0 && firstgap->hdrsi == coin->bundlescount-1) )
         coin->stucktime = coin->stuckiters = 0;
