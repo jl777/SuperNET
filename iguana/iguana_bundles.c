@@ -509,7 +509,7 @@ int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t mis
         }
     } //else printf("[%d] emitfinish.%u\n",bp->hdrsi,bp->emitfinish);
     *nonzp = nonz;
-    //printf("missings.[%d] m.%d nonz.%d spec.%p[%d]\n",bp->hdrsi,m,nonz,bp->speculative,bp->numspec);
+    printf("missings.[%d] m.%d nonz.%d spec.%p[%d]\n",bp->hdrsi,m,nonz,bp->speculative,bp->numspec);
     return(m);
 }
 
@@ -530,7 +530,7 @@ int32_t iguana_sendhashes(struct iguana_info *coin,struct iguana_peer *addr,int3
             coin->numreqsent += n;
             addr->pendblocks += n;
             addr->pendtime = (uint32_t)time(NULL);
-            //printf("sendhashes[%d] -> %s\n",n,addr->ipaddr);
+            printf("sendhashes[%d] -> %s\n",n,addr->ipaddr);
         } else n = 0;
         free(serialized);
     }
@@ -543,6 +543,7 @@ int32_t iguana_sendhashes(struct iguana_info *coin,struct iguana_peer *addr,int3
                 iguana_sendblockreqPT(coin,addr,0,-1,hashes[i],0);
             //else iguana_blockQ("sendhash",coin,0,-1,hashes[i],1);
         }
+        printf("sendhashes[%d]\n",n);
     }
     return(n);
 }
@@ -567,7 +568,7 @@ int32_t iguana_bundlerequests(struct iguana_info *coin,uint8_t missings[IGUANA_M
         if ( (n= iguana_blocksmissing(coin,&avail,missings,hashes,mult,bp,capacity < max ? capacity : max)) > 0 && avail > 0 )
         {
             *missingp = n;
-            //printf("n.%d avail.%d numpeers.%d\n",n,avail,numpeers);
+            printf("n.%d avail.%d numpeers.%d\n",n,avail,numpeers);
             for (i=0; i<numpeers && avail>0; i++)
             {
                 if ( (addr= peers[i]) != 0 && addr->usock >= 0 && addr->dead == 0 && (c= (coin->MAXPENDINGREQUESTS - addr->pendblocks)) > 0  )
@@ -576,7 +577,7 @@ int32_t iguana_bundlerequests(struct iguana_info *coin,uint8_t missings[IGUANA_M
                         c = max - m;
                     if ( avail < c )
                         c = avail;
-                    //printf("i.%d c.%d avail.%d m.%d max.%d\n",i,c,avail,m,max);
+                    printf("i.%d c.%d avail.%d m.%d max.%d\n",i,c,avail,m,max);
                     if ( c > 0 && (numsent= iguana_sendhashes(coin,addr,MSG_BLOCK,&hashes[m],c,priority)) > 0 )
                     {
                         for (j=0; j<numsent; j++)
