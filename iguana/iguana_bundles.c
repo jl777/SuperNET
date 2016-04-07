@@ -844,7 +844,7 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
             coin->emitbusy++;
             if ( iguana_bundlesaveHT(coin,mem,memB,bp,(uint32_t)time(NULL)) == 0 )
             {
-                fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d\n",coin,bp->hdrsi,bp->bundleheight);
+                //fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d\n",coin,bp->hdrsi,bp->bundleheight);
                 bp->emitfinish = (uint32_t)time(NULL) + 1;
                 iguana_bundletweak(coin,bp);
                 coin->numemitted++;
@@ -855,7 +855,12 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
                 bp->emitfinish = 0;
             }
             coin->emitbusy--;
-        } else printf("interloper! [%d] save interupted, will retry next iteration\n",bp->hdrsi);
+        }
+        else
+        {
+            bp->emitfinish = 0;
+            printf("interloper! [%d] save interupted, will retry next iteration\n",bp->hdrsi);
+        }
     }
     return(1);
 }
@@ -1137,7 +1142,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
             }
             else
             {
-                if ( firstgap == 0 && bp->numsaved < bp->n && bp->numcached < bp->n && (bp->ramchain.H.data == 0 || iguana_bundleready(coin,bp,0) != bp->n || bp->hdrsi == coin->longestchain/coin->chain->bundlesize) )
+                if ( firstgap == 0 && bp->numsaved < bp->n && bp->numcached < bp->n && (bp->ramchain.H.data == 0 || bp->hdrsi == coin->longestchain/coin->chain->bundlesize) ) //iguana_bundleready(coin,bp,0) != bp->n || 
                 {
                     //printf("firstgap <- [%d] emit.%u bp->n.%d numsaved.%d numcached.%d numhashes.%d\n",bp->hdrsi,bp->emitfinish,bp->n,bp->numsaved,bp->numcached,bp->numhashes);
                     firstgap = bp;
