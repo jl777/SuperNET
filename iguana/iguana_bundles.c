@@ -504,7 +504,7 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
 {
     int32_t i,max,nonz,starti,lasti,firsti,lag,num,n=0; uint32_t now; bits256 hash2; double aveduration; struct iguana_peer *addr;
     starti = coin->current == 0 ? 0 : coin->current->hdrsi;
-    lasti = coin->lastpending == 0 ? coin->bundlescount-1 : coin->lastpending->hdrsi;
+    lasti = coin->lastpending == 0 ? starti+coin->MAXBUNDLES : coin->lastpending->hdrsi;
     if ( bp->hdrsi < starti || bp->hdrsi > lasti || bp->emitfinish != 0 || ((priority > 0 || bp == coin->current) && time(NULL) < bp->missingstime+3) || time(NULL) < bp->missingstime+30 )
         return(0);
     bp->missingstime = (uint32_t)time(NULL);
