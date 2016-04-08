@@ -342,9 +342,12 @@ int32_t iguana_balancefinished(struct iguana_info *coin)
 
 int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convertflag)
 {
-    int32_t hdrsi,retval,n,max,num = 0; struct iguana_bundle *bp;
+    int32_t hdrsi,retval,n,max,incr,num = 0; struct iguana_bundle *bp;
+    if ( coin->PREFETCHLAG >= 0 && helperid != 0 )
+        return(0);
     max = coin->bundlescount-1;
-    for (hdrsi=helperid; hdrsi<max; hdrsi+=IGUANA_NUMHELPERS)
+    incr = (coin->PREFETCHLAG >= 0) ? 1 : IGUANA_NUMHELPERS;
+    for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
     {
         if ( (bp= coin->bundles[hdrsi]) == 0 )
             return(-1);
@@ -368,7 +371,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
     }
     if ( convertflag == 0 )
     {
-        for (hdrsi=helperid; hdrsi<max; hdrsi+=IGUANA_NUMHELPERS)
+        for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
         {
             if ( (bp= coin->bundles[hdrsi]) == 0 )
                 return(-1);
