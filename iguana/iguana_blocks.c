@@ -308,9 +308,9 @@ int32_t iguana_walkchain(struct iguana_info *coin)
         }
         else if ( block->height >= 0 && block->height != height )
             printf("walkchain height mismatch %d vs %d\n",block->height,height);
-        if ( bits256_cmp(iguana_blockhash(coin,height),block->RO.hash2) != 0 )
+        if ( bits256_nonz(iguana_blockhash(coin,height)) != 0 && bits256_cmp(iguana_blockhash(coin,height),block->RO.hash2) != 0 )
         {
-            printf("walk error blockhash error at %d %s\n",height,bits256_str(str,block->RO.hash2));
+            printf("walk error blockhash error at %d %s\n",height,bits256_str(str,iguana_blockhash(coin,height)));
             break;
         }
         else if ( bits256_cmp(bp->hashes[bundlei],block->RO.hash2) != 0 )

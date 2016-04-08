@@ -1505,17 +1505,18 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
     coin->RTramchain_busy = 1;
     flag += iguana_processrecvQ(coin,&newhwm);
     flag += iguana_reqhdrs(coin);
-    flag += iguana_reqblocks(coin);
     if ( coin->RTheight != 0 )
     {
         if ( time(NULL) > coin->laststats+5 )
         {
+            flag += iguana_reqblocks(coin);
             iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
             coin->laststats = (uint32_t)time(NULL);
         }
     }
     else
     {
+        flag += iguana_reqblocks(coin);
         iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
     }
     //printf("call _iguana_chainlink\n");
