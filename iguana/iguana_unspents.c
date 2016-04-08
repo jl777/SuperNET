@@ -1745,6 +1745,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     double startmillis0; static double totalmillis0; static int32_t num0;
     struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,i,n,flag=0; bits256 hash2; struct iguana_peer *addr;
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
+    return(0);
     //starti = coin->RTheight % coin->chain->bundlesize;
     if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && ((coin->RTheight <= coin->blocks.hwmchain.height && time(NULL) > bp->lastRT) || time(NULL) > bp->lastRT+10) )
     {
