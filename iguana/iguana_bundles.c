@@ -641,7 +641,7 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
         bp->hdrtime = (uint32_t)time(NULL);
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
     }
-    if ( coin->isRT == 0 && coin->enableCACHE != 0 && (bp == coin->current || bp->hdrsi == coin->bundlescount-1) && bits256_nonz(bp->nextbundlehash2) == 0 )
+    if ( coin->enableCACHE != 0 && (bp == coin->current || bp->hdrsi == coin->bundlescount-1) && bits256_nonz(bp->nextbundlehash2) == 0 )
     {
         iguana_bundleissuemissing(coin,bp,3,1.);
         /*if ( bp == coin->current )
