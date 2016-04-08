@@ -387,15 +387,13 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             for (hdrsi=0; hdrsi<max; hdrsi++)
                 coin->bundles[hdrsi]->converted = (uint32_t)time(NULL);
         }
-        while ( convertflag == 0 && (n= iguana_convertfinished(coin)) < max )
+        while ( (n= iguana_convertfinished(coin)) < max )
         {
             printf("helperid.%d convertfinished.%d vs max %d bundlescount.%d\n",helperid,n,max,coin->bundlescount);
             sleep(3);
         }
         if ( iguana_spendvectorsaves(coin) == 0 )
         {
-            //for (hdrsi=0; hdrsi<max; hdrsi++)
-            //    iguana_allocvolatile(coin,&coin->bundles[hdrsi]->ramchain);
             if ( coin->origbalanceswritten <= 1 )
                 hdrsi = 0;
             else hdrsi = coin->origbalanceswritten;
@@ -440,7 +438,7 @@ void iguana_helper(void *arg)
             if ( (coin= Coins[i]) != 0 )
             {
                 if ( coin->spendvectorsaved == 1 )
-                    iguana_utxogen(coin,helperid,coin->PREFETCHLAG >= 0);
+                    iguana_utxogen(coin,helperid,coin->PREFETCHLAG < 0);
             }
         }
         //if ( (type & (1 << 0)) != 0 )

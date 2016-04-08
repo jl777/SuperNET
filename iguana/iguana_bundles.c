@@ -589,7 +589,7 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
             }
         }
     }
-    if ( n > 0 )
+    if ( n > 0 && bp != coin->current )
         printf("issue.[%d] %d priority.%d\n",bp->hdrsi,n,priority);
     return(n);
 }

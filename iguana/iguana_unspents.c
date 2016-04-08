@@ -983,14 +983,14 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                             errs++;
                             break;
                         }
-                        if ( 0 && coin->PREFETCHLAG > 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
-                        {
-                            printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
-                            iguana_ramchain_prefetch(coin,&spentbp->ramchain,2);
-                            spentbp->lastprefetch = now;
-                        }
                         if ( convertflag != 0 )
                         {
+                            if ( coin->PREFETCHLAG > 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
+                            {
+                                printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
+                                iguana_ramchain_prefetch(coin,&spentbp->ramchain,2);
+                                spentbp->lastprefetch = now;
+                            }
                             spentU = (void *)(long)((long)spentbp->ramchain.H.data + spentbp->ramchain.H.data->Uoffset);
                             u = &spentU[spent_unspentind];
                             if ( (spent_pkind= u->pkind) != 0 && spent_pkind < spentbp->ramchain.H.data->numpkinds )
