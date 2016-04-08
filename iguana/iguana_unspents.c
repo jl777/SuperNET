@@ -493,7 +493,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                     //printf("%s height.%d firstvout.%d prev.%d ->U%d\n",bits256_str(str,prev_hash),height,TX.firstvout,prev_vout,unspentind);
                     now = (uint32_t)time(NULL);
                     duration = (OS_milliseconds() - startmillis);
-                    if ( ((uint64_t)coin->txidfind_num % 100000) == 0 )
+                    if ( ((uint64_t)coin->txidfind_num % 5000000) == 2000000 )
                         printf("%p iguana_txidfind.[%.0f] ave %.2f micros, total %.2f seconds | duration %.3f millis\n",spentbp->ramchain.txbits,coin->txidfind_num,(coin->txidfind_totalmillis*1000.)/coin->txidfind_num,coin->txidfind_totalmillis/1000.,duration);
                     coin->txidfind_totalmillis += duration;
                     coin->txidfind_num += 1.;
@@ -512,22 +512,27 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                             spentbp->lastprefetch = now;
                         }
                     }
-                } else printf("illegal hdrsi.%d prev_hash.(%s) for bp.[%d]\n",hdrsi,bits256_str(str,prev_hash),spent_hdrsi);
+                }
+                else
+                {
+                    printf("illegal hdrsi.%d prev_hash.(%s) for bp.[%d]\n",hdrsi,bits256_str(str,prev_hash),spent_hdrsi);
+                    exit(-1);
+                }
             }
             else
             {
                 printf("cant find prev_hash.(%s) for bp.[%d]\n",bits256_str(str,prev_hash),spent_hdrsi);
+                exit(-1);
                 return(0);
             }
         } else printf("external spent unexpected nonz unspentind [%d]\n",spent_hdrsi);
     }
     if ( (spentbp= coin->bundles[hdrsi]) == 0 || hdrsi > spent_hdrsi )
-        printf("illegal hdrsi.%d when [%d] spentbp.%p\n",hdrsi,spent_hdrsi,spentbp);//, getchar();
+        printf("illegal hdrsi.%d when [%d] spentbp.%p\n",hdrsi,spent_hdrsi,spentbp);
     else if ( unspentind == 0 || unspentind >= spentbp->ramchain.H.data->numunspents )
-    {
         printf("illegal unspentind.%d vs max.%d spentbp.%p[%d]\n",unspentind,spentbp->ramchain.H.data->numunspents,spentbp,hdrsi);
-        exit(-1);
-    } else return(spentbp);
+    else return(spentbp);
+    exit(-1);
     return(0);
 }
 
@@ -863,7 +868,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
             }
             for (k=0; k<T[txidind].numvins && errs==0; k++,spendind++)
             {
-                if ( (spendind % 1000000) == 0 )
+                if ( (spendind % 5000000) == 2000000 )
                     printf("[%-3d:%4d] spendvectors elapsed t.%-3d spendind.%d\n",bp->hdrsi,i,(uint32_t)time(NULL)-starttime,spendind);
                 u = 0;
                 s = &S[spendind];
