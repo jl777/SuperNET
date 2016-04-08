@@ -502,8 +502,10 @@ struct iguana_block *iguana_bundleblock(struct iguana_info *coin,bits256 *hash2p
 
 int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle *bp,int32_t priority,double mult)
 {
-    int32_t i,max,nonz,lasti,firsti,lag,num,n=0; uint32_t now; bits256 hash2; double aveduration; struct iguana_peer *addr;
-    if ( bp->emitfinish != 0 || (priority > 0 && time(NULL) < bp->missingstime+3) || time(NULL) < bp->missingstime+30 )
+    int32_t i,max,nonz,starti,lasti,firsti,lag,num,n=0; uint32_t now; bits256 hash2; double aveduration; struct iguana_peer *addr;
+    starti = coin->current == 0 ? 0 : coin->current->hdrsi;
+    lasti = coin->lastpending == 0 ? coin->bundlescount-1 : coin->lastpending->hdrsi;
+    if ( bp->hdrsi < starti || bp->hdrsi > lasti || bp->emitfinish != 0 || ((priority > 0 || bp == coin->current) && time(NULL) < bp->missingstime+3) || time(NULL) < bp->missingstime+30 )
         return(0);
     bp->missingstime = (uint32_t)time(NULL);
     if ( bp->durationscount != 0 )
@@ -1128,9 +1130,9 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
     coin->spaceused = spaceused;
     coin->numverified = numv;
     char str5[65]; int32_t smetric;
-    if ( firstgap != 0 && firstgap->hdrsi < coin->bundlescount-1 ) // coin->isRT
+    if ( (bp= firstgap) != 0 && bp->hdrsi < coin->bundlescount-1 ) // coin->isRT
     {
-        smetric = (firstgap->hdrsi * 10000) + firstgap->numsaved + firstgap->numhashes + firstgap->numcached;
+        smetric = (bp->hdrsi * 10000) + bp->numsaved + bp->numhashes + bp->numcached;
         if ( coin->stuckmonitor != smetric )
         {
             coin->stuckmonitor = smetric;
@@ -1141,7 +1143,6 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
         {
             struct iguana_blockreq *breq; int32_t n,lag; //priority=3,
             lag = (int32_t)time(NULL) - coin->stucktime;
-            bp = firstgap;
             //printf("NONZ stucktime.%u lag.%d iters.%d vs %d metric.%d\n",coin->stucktime,lag,coin->stuckiters,lag/coin->MAXSTUCKTIME,smetric);
             if ( (lag/coin->MAXSTUCKTIME) > coin->stuckiters )
             {
