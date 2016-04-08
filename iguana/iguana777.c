@@ -432,7 +432,7 @@ void iguana_helper(void *arg)
             if ( (coin= Coins[i]) != 0 )
             {
                 if ( coin->spendvectorsaved == 1 )
-                    iguana_utxogen(coin,helperid,coin->enableCACHE < 0);
+                    iguana_utxogen(coin,helperid,coin->enableCACHE >= 0);
             }
         }
         //if ( (type & (1 << 0)) != 0 )
