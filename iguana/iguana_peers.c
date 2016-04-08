@@ -1051,7 +1051,7 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     run = 0;
     while ( addr->usock >= 0 && addr->dead == 0 && coin->peers.shuttingdown == 0 )
     {
-        if ( 1 && (req= queue_dequeue(&coin->cacheQ,0)) != 0 )
+        if ( 0 && (req= queue_dequeue(&coin->cacheQ,0)) != 0 )
         {
             if ( req->datalen != 0 )
             {
