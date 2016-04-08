@@ -271,7 +271,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
         if ( spentchain->allocatedA == 0 || spentchain->allocatedU == 0 )
         {
             iguana_volatilesalloc(coin,spentchain);
-            printf("volatilesalloc.[%d]\n",spent_hdrsi);
+            printf("volatilesalloc.[%d] ",spent_hdrsi);
         }
         if ( incremental == 0 )
         {
@@ -1103,7 +1103,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
     }
     //if ( coin->PREFETCHLAG > 0 )
         iguana_ramchain_prefetch(coin,ramchain,0);
-    printf("BALANCEGEN.%d hdrs.%d\n",bp->bundleheight,bp->hdrsi);
+    printf("BALANCEGEN.[%d] ",bp->hdrsi);
     txidind = spendind = rdata->firsti;
     for (i=0; i<bp->n; i++)
     {
