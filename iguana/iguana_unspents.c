@@ -1548,7 +1548,7 @@ int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *s
     struct iguana_bundle *bp; int16_t spent_hdrsi; uint32_t numpkinds; struct iguana_unspent *spentU; struct iguana_spendvector *vec; int32_t i,converted,j,n = coin->bundlescount; struct iguana_ramchain *ramchain;
     if ( spentbp->converted != 0 )
     {
-        printf("[%d] already converted.%u\n",spentbp->hdrsi,spentbp->converted);
+        //printf("[%d] already converted.%u\n",spentbp->hdrsi,spentbp->converted);
         return(-1);
     }
     spentbp->converted = 1;
