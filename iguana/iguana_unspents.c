@@ -753,7 +753,7 @@ uint32_t iguana_spendvectorconv(struct iguana_info *coin,struct iguana_spendvect
     static uint64_t count,converted,errs;
     struct iguana_bundle *spentbp; struct iguana_unspent *spentU; uint32_t spent_pkind;
     count++;
-    if ( (count % 1000000) == 0 )
+    if ( 0 && (count % 1000000) == 0 )
         printf("iguana_spendvectorconv.[%llu] errs.%llu converted.%llu %.2f%%\n",(long long)count,(long long)errs,(long long)converted,100. * (long long)converted/count);
     if ( ptr->tmpflag != 0 )
     {
@@ -1677,7 +1677,7 @@ void iguana_convert(struct iguana_info *coin,struct iguana_bundle *bp,int32_t RT
     static int64_t total,depth;
     int32_t i,n,m,converted; int64_t total_tmpspends; double startmillis = OS_milliseconds();
     depth++;
-    printf("iguana_convert.[%d] depth.%d %u\n",bp->hdrsi,(int32_t)depth,bp->converted);
+    //printf("iguana_convert.[%d] depth.%d %u\n",bp->hdrsi,(int32_t)depth,bp->converted);
     if ( (converted= iguana_spendvectorconvs(coin,bp)) < 0 )
         printf("error ram balancecalc.[%d]\n",bp->hdrsi);
     else

@@ -69,7 +69,7 @@ cJSON *API_json;
 #ifdef __linux__
 int32_t IGUANA_NUMHELPERS = 8;
 #else
-int32_t IGUANA_NUMHELPERS = 4;
+int32_t IGUANA_NUMHELPERS = 1;
 #endif
 struct iguana_jsonitem { struct queueitem DL; struct supernet_info *myinfo; uint32_t fallback,expired,allocsize; char **retjsonstrp; char remoteaddr[64]; uint16_t port; char jsonstr[]; };
 
@@ -388,7 +388,7 @@ void mainloop(struct supernet_info *myinfo)
                     {
                         isRT *= coin->isRT;
                         numpeers += coin->peers.numranked;
-                        if ( coin->spendvectorsaved == 0 && coin->blocks.hwmchain.height >= coin->longestchain-3 )
+                        if ( time(NULL) > coin->startutc+10 && coin->spendvectorsaved == 0 && coin->blocks.hwmchain.height >= coin->longestchain-3 )
                         {
                             n = coin->bundlescount-1;
                             if ( iguana_emitfinished(coin) >= n )
