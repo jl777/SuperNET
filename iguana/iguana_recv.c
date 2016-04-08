@@ -668,7 +668,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
         {
             if ( iguana_bundlehashadd(coin,bp,bundlei,block) < 0 )
             {
-                if ( bp->emitfinish == 0 && block->issued == 0 && (coin->enableCACHE != 0 || coin->PREFETCHLAG < 0) )
+                if ( bp->emitfinish == 0 && block->issued == 0 && coin->enableCACHE != 0 )//|| coin->PREFETCHLAG < 0) )
                     iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,1);//coin->current == 0 || bp->hdrsi <= coin->current->hdrsi+coin->MAXBUNDLES);
             }
             //fprintf(stderr,"bundle found %d:%d\n",bp->hdrsi,bundlei);
@@ -1367,7 +1367,7 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
             req->height = height;
             req->bundlei = bundlei;
             char str2[65];
-            printf("%s %s %s [%d:%d] %d %s %d numranked.%d qsize.%d\n",coin->symbol,argstr,str,bp!=0?bp->hdrsi:-1,bundlei,req->height,bits256_str(str2,hash2),coin->blocks.recvblocks,coin->peers.numranked,queue_size(Q));
+            //printf("%s %s %s [%d:%d] %d %s %d numranked.%d qsize.%d\n",coin->symbol,argstr,str,bp!=0?bp->hdrsi:-1,bundlei,req->height,bits256_str(str2,hash2),coin->blocks.recvblocks,coin->peers.numranked,queue_size(Q));
             if ( (n= queue_size(Q)) > 100000 )
             {
                 if ( 1 && n > 200000 )
