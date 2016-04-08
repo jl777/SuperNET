@@ -1663,7 +1663,9 @@ int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *s
                     }
                 }
             }
-        } else printf("iguana_spendvectorconvs: [%d] null bp.%p or null tmpspends\n",i,bp);
+        }
+        else if ( bp->hdrsi > 0 && bp->hdrsi < coin->bundlescount-1 )
+            printf("iguana_spendvectorconvs: [%d] null bp.%p or null tmpspends\n",i,bp);
     }
     spentbp->converted = (uint32_t)time(NULL);
     //printf("spendvectorconvs.[%d] converted.%d\n",refbp->hdrsi,converted);

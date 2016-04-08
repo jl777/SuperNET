@@ -342,8 +342,9 @@ int32_t iguana_balancefinished(struct iguana_info *coin)
 
 int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid)
 {
-    int32_t hdrsi,retval,n,num = 0; struct iguana_bundle *bp;
-    for (hdrsi=helperid; hdrsi<coin->bundlescount-1; hdrsi+=IGUANA_NUMHELPERS)
+    int32_t hdrsi,retval,n,max,num = 0; struct iguana_bundle *bp;
+    max = coin->bundlescount-1;
+    for (hdrsi=helperid; hdrsi<max; hdrsi+=IGUANA_NUMHELPERS)
     {
         if ( (bp= coin->bundles[hdrsi]) == 0 )
             return(-1);
@@ -360,12 +361,12 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid)
             //iguana_balancesQ(coin,bp);
         } else printf("UTXO gen.[%d] utxo error\n",bp->hdrsi);
     }
-    while ( (n= iguana_utxofinished(coin)) < coin->bundlescount-1 )
+    while ( (n= iguana_utxofinished(coin)) < max )
     {
-        printf("helperid.%d utxofinished.%d vs %d\n",helperid,n,coin->bundlescount-1);
+        printf("helperid.%d utxofinished.%d vs %d\n",helperid,n,max);
         sleep(3);
     }
-    for (hdrsi=helperid; hdrsi<coin->bundlescount-1; hdrsi+=IGUANA_NUMHELPERS)
+    for (hdrsi=helperid; hdrsi<max; hdrsi+=IGUANA_NUMHELPERS)
     {
         if ( (bp= coin->bundles[hdrsi]) == 0 )
             return(-1);
@@ -373,18 +374,18 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid)
     }
     if ( helperid == 0 )
     {
-        while ( (n= iguana_convertfinished(coin)) < coin->bundlescount-1 )
+        while ( (n= iguana_convertfinished(coin)) < max )
         {
-            printf("helperid.%d convertfinished.%d vs %d\n",helperid,n,coin->bundlescount-1);
+            printf("helperid.%d convertfinished.%d vs max %d bundlescount.%d\n",helperid,n,max,coin->bundlescount);
             sleep(3);
         }
         if ( iguana_spendvectorsaves(coin) == 0 )
         {
-            for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
+            for (hdrsi=0; hdrsi<max; hdrsi++)
                 iguana_allocvolatile(coin,&coin->bundles[hdrsi]->ramchain);
-            for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
+            for (hdrsi=0; hdrsi<max; hdrsi++)
                 iguana_balancegen(coin,bp,0,bp->n-1);
-            if ( iguana_balanceflush(coin,coin->bundlescount-1,3) > 0 )
+            if ( iguana_balanceflush(coin,max,3) > 0 )
                 printf("balanceswritten.%d flushed bp->hdrsi %d vs %d coin->longestchain/coin->chain->bundlesize\n",coin->balanceswritten,bp->hdrsi,coin->longestchain/coin->chain->bundlesize);
         } else printf("error saving spendvectors\n");
         coin->spendvectorsaved = (uint32_t)time(NULL);
