@@ -559,7 +559,7 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
                 }
             }
         }
-        if ( firsti >= 0 && (coin->enableCACHE != 0 || nonz < 10 || bp == coin->current) )
+        if ( firsti >= 0 && (coin->enableCACHE != 0 || bp == coin->current) )
         {
             //printf("[%d] first missing.%d of %d\n",bp->hdrsi,firsti,nonz);
             iguana_bundleblock(coin,&hash2,bp,firsti);
