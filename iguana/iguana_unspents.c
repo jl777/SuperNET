@@ -1010,7 +1010,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
     }
     //if ( coin->PREFETCHLAG > 0 )
         iguana_ramchain_prefetch(coin,ramchain,0);
-    //printf("BALANCEGEN.%d hdrs.%d\n",bp->bundleheight,bp->hdrsi);
+    printf("BALANCEGEN.%d hdrs.%d\n",bp->bundleheight,bp->hdrsi);
     txidind = spendind = rdata->firsti;
     for (i=0; i<bp->n; i++)
     {
