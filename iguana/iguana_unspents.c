@@ -977,7 +977,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
     }
     if ( ptr != 0 )
         myfree(ptr,sizeof(*ptr) * n);
-    printf("[%4d].%-6d duration.%-2d [millis %8.3f] vectors %-6d errs.%d [%5.2f%%] %7d %9s of %d\n",bp->hdrsi,bp->numtmpspends,(uint32_t)time(NULL)-starttime,OS_milliseconds()-startmillis,spendind,errs,100.*(double)emitted/(total+1),emit,mbstr(str,sizeof(*ptr) * emit),n);
+    printf("UTXO [%4d].%-6d duration.%-2d [millis %8.3f] vectors %-6d errs.%d [%5.2f%%] %7d %9s of %d\n",bp->hdrsi,bp->numtmpspends,(uint32_t)time(NULL)-starttime,OS_milliseconds()-startmillis,spendind,errs,100.*(double)emitted/(total+1),emit,mbstr(str,sizeof(*ptr) * emit),n);
     if ( errs != 0 )
         exit(-1);
     return(-errs);
