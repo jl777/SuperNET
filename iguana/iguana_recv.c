@@ -720,7 +720,7 @@ void iguana_checklongestchain(struct iguana_info *coin,struct iguana_bundle *bp,
     {
         if ( coin->longestchain > bp->bundleheight+num+coin->chain->minconfirms )
         {
-            printf("strange.%d suspicious longestchain.%d vs [%d:%d] %d bp->n %d\n",coin->longestchain_strange,coin->longestchain,bp->hdrsi,num,bp->bundleheight+num,bp->n);
+            //printf("strange.%d suspicious longestchain.%d vs [%d:%d] %d bp->n %d\n",coin->longestchain_strange,coin->longestchain,bp->hdrsi,num,bp->bundleheight+num,bp->n);
             if ( coin->longestchain_strange++ > 10 )
             {
                 coin->badlongestchain = coin->longestchain;
@@ -737,7 +737,7 @@ void iguana_checklongestchain(struct iguana_info *coin,struct iguana_bundle *bp,
         }
         else if ( coin->longestchain_strange > 0 )
         {
-            printf("not strange.%d suspicious longestchain.%d vs [%d:%d] %d bp->n %d\n",coin->longestchain_strange,coin->longestchain,bp->hdrsi,num,bp->bundleheight+num,bp->n);
+            //printf("not strange.%d suspicious longestchain.%d vs [%d:%d] %d bp->n %d\n",coin->longestchain_strange,coin->longestchain,bp->hdrsi,num,bp->bundleheight+num,bp->n);
             coin->longestchain_strange--;
         }
     }
