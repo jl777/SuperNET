@@ -324,7 +324,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             uint64_t sum2 = 0,sum = 0;
             for (i=0; i<sizeof(received)/sizeof(*received); i++)
                 sum += received[i], sum2 += count[i];
-            char str[65],str2[65],str3[65]; printf("TOTAL BLOCKS.%llu RECEIVED %s ave %.1f | duplicates.%d %s afteremit.%d %s\n",(long long)sum2,mbstr(str,sum),(double)sum/(sum2!=0?sum2:1),numDuplicates,mbstr(str2,sizeDuplicates),numAfteremit,mbstr(str3,sizeAfteremit));
+            char str[65],str2[65],str3[65]; printf("%s TOTAL BLOCKS.%llu RECEIVED %s ave %.1f | duplicates.%d %s afteremit.%d %s\n",coin->symbol,(long long)sum2,mbstr(str,sum),(double)sum/(sum2!=0?sum2:1),numDuplicates,mbstr(str2,sizeDuplicates),numAfteremit,mbstr(str3,sizeAfteremit));
         }
     }
     copyflag = 0;//(coin->enableCACHE != 0) && (strcmp(coin->symbol,"BTC") != 0);
