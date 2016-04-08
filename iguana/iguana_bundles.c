@@ -1138,7 +1138,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
                             iguana_blockQ("stuck",coin,bp,i,block->RO.hash2,1);
                     }*/
                 }
-                 if (  (n= iguana_bundleissuemissing(coin,bp,1,1.)) > 0 )
+                 if (  (n= iguana_bundleissuemissing(coin,bp,3,1.)) > 0 )
                     printf("issued %d priority requests [%d] to unstick stuckiters.%d lag.%d\n",n,bp->hdrsi,coin->stuckiters,lag);
                 //else printf("no bundlerequests issued\n");
             }
