@@ -394,7 +394,10 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
         {
             //for (hdrsi=0; hdrsi<max; hdrsi++)
             //    iguana_allocvolatile(coin,&coin->bundles[hdrsi]->ramchain);
-            for (hdrsi=coin->balanceswritten; hdrsi<max; hdrsi++,coin->balanceswritten++)
+            if ( coin->origbalanceswritten <= 1 )
+                hdrsi = 0;
+            else hdrsi = coin->origbalanceswritten;
+            for (; hdrsi<max; hdrsi++,coin->balanceswritten++)
                 iguana_balancegen(coin,0,coin->bundles[hdrsi],0,coin->chain->bundlesize-1);
             if ( iguana_balanceflush(coin,max) > 0 )
                 printf("balanceswritten.%d flushed bp->hdrsi %d vs %d coin->longestchain/coin->chain->bundlesize\n",coin->balanceswritten,bp->hdrsi,coin->longestchain/coin->chain->bundlesize);

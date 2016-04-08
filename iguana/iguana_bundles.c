@@ -517,10 +517,10 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
     lag = aveduration * mult;
     if ( coin->PREFETCHLAG < 0 )
     {
-        if ( bp != coin->current )
-            lag = 20;
-        else if ( lag < 10 )
-            lag = 10;
+        if ( bp != coin->current && lag < 60 )
+            lag = 60;
+        else if ( lag < 30 )
+            lag = 30;
     }
     else if ( lag < 120 && coin->enableCACHE == 0 )
     {

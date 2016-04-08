@@ -1164,6 +1164,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
                     }
                 }
                 else continue;
+                spentbp = 0;
                 if ( spent_unspentind > 0 && spent_pkind > 0 && (spentbp= coin->bundles[spent_hdrsi]) != 0 )
                 {
                     if ( iguana_volatileupdate(coin,0,&spentbp->ramchain,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,h) < 0 )
@@ -1172,7 +1173,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
                 else
                 {
                     errs++;
-                    printf("iguana_balancegen: error with unspentind.%d [%d]\n",spent_unspentind,spent_hdrsi);
+                    printf("iguana_balancegen: error spentbp.%p with unspentind.%d [%d]\n",spentbp,spent_unspentind,spent_hdrsi);
                 }
             }
         }
