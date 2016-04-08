@@ -381,10 +381,20 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid)
         if ( iguana_spendvectorsaves(coin) == 0 )
         {
             for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
-                iguana_balancenormal(coin,bp,0,bp->n-1);
+                iguana_allocvolatile(coin,&coin->bundles[hdrsi]->ramchain);
+            for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
+                iguana_balancegen(coin,bp,0,bp->n-1);
+            if ( iguana_balanceflush(coin,coin->bundlescount-1,3) > 0 )
+                printf("balanceswritten.%d flushed bp->hdrsi %d vs %d coin->longestchain/coin->chain->bundlesize\n",coin->balanceswritten,bp->hdrsi,coin->longestchain/coin->chain->bundlesize);
         } else printf("error saving spendvectors\n");
         coin->spendvectorsaved = (uint32_t)time(NULL);
     }
+    while ( coin->spendvectorsaved == 1 )
+    {
+        printf("helperid.%d waiting for spendvectorsaved.%u\n",helperid,coin->spendvectorsaved);
+        sleep(3);
+    }
+    printf("helper.%d finished utxogen\n",helperid);
     return(num);
 }
 
@@ -413,14 +423,7 @@ void iguana_helper(void *arg)
             if ( (coin= Coins[i]) != 0 )
             {
                 if ( coin->spendvectorsaved == 1 )
-                {
                     iguana_utxogen(coin,helperid);
-                    while ( coin->spendvectorsaved == 1 )
-                    {
-                        printf("helperid.%d waiting for spendvectorsaved.%u\n",helperid,coin->spendvectorsaved);
-                        sleep(3);
-                    }
-                }
             }
         }
         //if ( (type & (1 << 0)) != 0 )

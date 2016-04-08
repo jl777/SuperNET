@@ -1384,12 +1384,12 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
     char fname[1024],fname2[1024],destfname[1024]; bits256 balancehash; FILE *fp,*fp2;
     struct iguana_utxo *Uptr; struct iguana_account *Aptr; struct sha256_vstate vstate;
     vupdate_sha256(balancehash.bytes,&vstate,0,0);
-    for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
+    /*for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
         if ( (bp= coin->bundles[hdrsi]) == 0 || bp->balancefinish <= 1 || bp->ramchain.H.data == 0 || bp->ramchain.A == 0 || bp->ramchain.Uextras == 0 )
             break;
     if ( hdrsi < coin->balanceswritten || hdrsi < refhdrsi )
-        return(0);
-    numhdrsi = hdrsi;
+        return(0);*/
+    numhdrsi = refhdrsi;
     vupdate_sha256(balancehash.bytes,&vstate,0,0);
     for (iter=0; iter<3; iter++)
     {
@@ -1532,7 +1532,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
     return(coin->balanceswritten);
 }
 
-int32_t iguana_balancenormal(struct iguana_info *coin,struct iguana_bundle *bp,int32_t startheight,int32_t endheight)
+/*int32_t iguana_balancenormal(struct iguana_info *coin,struct iguana_bundle *bp,int32_t startheight,int32_t endheight)
 {
     uint32_t starttime; int32_t j=0,n; struct iguana_bundle *prevbp;
     n = coin->bundlescount - 1;
@@ -1576,7 +1576,7 @@ int32_t iguana_balancenormal(struct iguana_info *coin,struct iguana_bundle *bp,i
         return(0);
     }
     return(-1);
-}
+}*/
 
 int32_t iguana_spendvectorsaves(struct iguana_info *coin)
 {
