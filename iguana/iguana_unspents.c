@@ -1214,7 +1214,7 @@ void iguana_truncatebalances(struct iguana_info *coin)
 int32_t iguana_volatilesinit(struct iguana_info *coin)
 {
     bits256 balancehash,allbundles; struct iguana_utxo *Uptr; struct iguana_account *Aptr;
-    struct sha256_vstate vstate,bstate; int32_t i,from_ro,numpkinds,numunspents; struct iguana_bundle *bp;
+    struct sha256_vstate vstate,bstate; int32_t i,n,from_ro,numpkinds,numunspents; struct iguana_bundle *bp;
     uint32_t crc,filecrc; FILE *fp; char crcfname[512],str[65],str2[65],buf[2048];
     from_ro = 1;
     printf("volatile init\n");
@@ -1305,7 +1305,10 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
     }
     coin->RTheight = coin->balanceswritten * coin->chain->bundlesize;
     iguana_bundlestats(coin,buf,IGUANA_DEFAULTLAG);
-    iguana_fastlink(coin,coin->balanceswritten * coin->chain->bundlesize - 1);
+    if ( (n= iguana_walkchain(coin,0)) > 0 )
+        printf("iguana_walkchain n.%d vs hwmheight.%d\n",n,coin->blocks.hwmchain.height);
+
+    //iguana_fastlink(coin,coin->balanceswritten * coin->chain->bundlesize - 1);
     return(coin->balanceswritten);
 }
 
