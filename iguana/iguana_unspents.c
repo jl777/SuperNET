@@ -838,8 +838,6 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
         printf("iguana_spendvectors: already have Xspendinds[%d]\n",ramchain->numXspends);
         return(ramchain->numXspends);
     }
-    for (i=0; i<bp->hdrsi; i++)
-        iguana_alloctxbits(coin,&coin->bundles[i]->ramchain);
     ptr = mycalloc('x',sizeof(*ptr),n);
     total += n;
     startmillis = OS_milliseconds();

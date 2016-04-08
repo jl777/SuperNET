@@ -67,7 +67,7 @@ static int32_t initflag;
 int32_t HDRnet,netBLOCKS;
 cJSON *API_json;
 #ifdef __linux__
-int32_t IGUANA_NUMHELPERS = 1;
+int32_t IGUANA_NUMHELPERS = 8;
 #else
 int32_t IGUANA_NUMHELPERS = 4;
 #endif
@@ -369,7 +369,7 @@ mksquashfs DB/BTC BTC.squash1M -b 1048576
 
 void mainloop(struct supernet_info *myinfo)
 {
-    int32_t i,flag,isRT,numpeers; struct iguana_info *coin; struct iguana_bundle *bp;
+    int32_t i,j,flag,isRT,numpeers; struct iguana_info *coin; struct iguana_bundle *bp;
     sleep(3);
     printf("mainloop\n");
     while ( 1 )
@@ -392,6 +392,8 @@ void mainloop(struct supernet_info *myinfo)
                         {
                             if ( iguana_emitfinished(coin) >= coin->bundlescount-1 )
                             {
+                                for (j=0; j<bp->hdrsi; j++)
+                                    iguana_alloctxbits(coin,&coin->bundles[j]->ramchain);
                                 if ( iguana_utxofinished(coin) < coin->bundlescount-1 || iguana_balancefinished(coin) < coin->bundlescount-1 )
                                     coin->spendvectorsaved = 1;
                                 else coin->spendvectorsaved = (uint32_t)time(NULL);

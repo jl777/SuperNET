@@ -862,6 +862,7 @@ int32_t iguana_convertfinished(struct iguana_info *coin);
 int32_t iguana_emitfinished(struct iguana_info *coin);
 int32_t iguana_utxofinished(struct iguana_info *coin);
 int32_t iguana_balancefinished(struct iguana_info *coin);
+int32_t iguana_alloctxbits(struct iguana_info *coin,struct iguana_ramchain *ramchain);
 
 extern int32_t HDRnet,netBLOCKS;
 
