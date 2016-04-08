@@ -1612,7 +1612,7 @@ int32_t iguana_spendvectorsaves(struct iguana_info *coin)
                     }
                 }
             }
-            else
+            else if ( bp->hdrsi > 0 && bp->hdrsi < coin->bundlescount-1 )
             {
                 printf("error doing spendvectorsaves.[%d] null bp.%p or not converted\n",i,bp);
                 return(-1);
@@ -1856,7 +1856,6 @@ void iguana_RThdrs(struct iguana_info *coin,struct iguana_bundle *bp,int32_t num
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
         if ( (addr= coin->peers.ranked[i]) != 0 && addr->usock >= 0 && addr->dead == 0 && (datalen= iguana_gethdrs(coin,serialized,coin->chain->gethdrsmsg,bits256_str(str,bp->hashes[0]))) > 0 )
         {
-            printf("%s UNSTICK HDR.[%d]\n",addr->ipaddr,bp->hdrsi);
             iguana_send(coin,addr,serialized,datalen);
             addr->pendhdrs++;
         }
