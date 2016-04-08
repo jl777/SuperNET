@@ -103,7 +103,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
             bp->issued[bundlei] = addr->pendtime;
         if ( block != 0 )
             block->issued = addr->pendtime;
-        //if ( 0 && coin->current == bp )
+        if ( 0 && coin->current == bp )
             printf("REQ.%s bundlei.%d hdrsi.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);
@@ -668,7 +668,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
         {
             if ( iguana_bundlehashadd(coin,bp,bundlei,block) < 0 )
             {
-                if ( bp->emitfinish == 0 && block->issued == 0 )
+                if ( bp->emitfinish == 0 && block->issued == 0 && (coin->enableCACHE != 0 || coin->PREFETCHLAG < 0) )
                     iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,1);//coin->current == 0 || bp->hdrsi <= coin->current->hdrsi+coin->MAXBUNDLES);
             }
             //fprintf(stderr,"bundle found %d:%d\n",bp->hdrsi,bundlei);
