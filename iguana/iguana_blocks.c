@@ -477,9 +477,10 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                     {
                         if ( memcmp(bp->hashes[block->height % coin->chain->bundlesize].bytes,block->RO.hash2.bytes,sizeof(bits256)) != 0 || block != bp->blocks[block->height % coin->chain->bundlesize] )
                         {
-                            if ( bits256_nonz(bp->hashes[block->height % coin->chain->bundlesize]) > 0 )
+                            if ( bits256_nonz(bp->hashes[block->height % coin->chain->bundlesize]) != 0 )
                             {
-                                printf("ERROR: need to fix up bundle for height.%d\n",block->height);
+                                char str[65],str2[65];
+                                printf("ERROR: need to fix up bundle for height.%d (%p %p) (%s %s)\n",block->height,block,bp->blocks[block->height % coin->chain->bundlesize],bits256_str(str,block->RO.hash2),bits256_str(str2,bp->hashes[block->height % coin->chain->bundlesize]));
                                 //getchar();
                             }
                             iguana_bundlehash2add(coin,0,bp,block->height % coin->chain->bundlesize,block->RO.hash2);

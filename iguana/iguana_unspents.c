@@ -1253,7 +1253,6 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
                 filecrc = 0;
             fclose(fp);
         }
-        filecrc = 0;
         if ( filecrc != 0 )
             printf("have filecrc.%08x for %s milli.%.0f from_ro.%d\n",filecrc,bits256_str(str,balancehash),OS_milliseconds(),from_ro);
         if ( from_ro == 0 )
