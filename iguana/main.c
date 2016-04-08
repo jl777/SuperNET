@@ -369,7 +369,7 @@ mksquashfs DB/BTC BTC.squash1M -b 1048576
 
 void mainloop(struct supernet_info *myinfo)
 {
-    int32_t i,j,flag,isRT,numpeers; struct iguana_info *coin; struct iguana_bundle *bp;
+    int32_t i,j,n,flag,isRT,numpeers; struct iguana_info *coin; struct iguana_bundle *bp;
     sleep(3);
     printf("mainloop\n");
     while ( 1 )
@@ -390,11 +390,12 @@ void mainloop(struct supernet_info *myinfo)
                         numpeers += coin->peers.numranked;
                         if ( coin->spendvectorsaved == 0 )
                         {
-                            if ( iguana_emitfinished(coin) >= coin->bundlescount-1 )
+                            n = coin->bundlescount-1;
+                            if ( iguana_emitfinished(coin) >= n )
                             {
-                                for (j=0; j<bp->hdrsi; j++)
+                                for (j=0; j<n; j++)
                                     iguana_alloctxbits(coin,&coin->bundles[j]->ramchain);
-                                if ( iguana_utxofinished(coin) < coin->bundlescount-1 || iguana_balancefinished(coin) < coin->bundlescount-1 )
+                                if ( iguana_utxofinished(coin) < n || iguana_balancefinished(coin) < n )
                                     coin->spendvectorsaved = 1;
                                 else coin->spendvectorsaved = (uint32_t)time(NULL);
                             }
