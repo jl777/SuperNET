@@ -366,7 +366,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
         printf("helperid.%d utxofinished.%d vs %d\n",helperid,n,max);
         sleep(3);
     }
-    if ( convertflag != 0 )
+    if ( convertflag == 0 )
     {
         for (hdrsi=helperid; hdrsi<max; hdrsi+=IGUANA_NUMHELPERS)
         {
@@ -377,8 +377,11 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
     }
     if ( helperid == 0 )
     {
-        for (hdrsi=0; hdrsi<max; hdrsi++)
-            coin->bundles[hdrsi]->converted = (uint32_t)time(NULL);
+        if ( convertflag != 0 )
+        {
+            for (hdrsi=0; hdrsi<max; hdrsi++)
+                coin->bundles[hdrsi]->converted = (uint32_t)time(NULL);
+        }
         while ( convertflag == 0 && (n= iguana_convertfinished(coin)) < max )
         {
             printf("helperid.%d convertfinished.%d vs max %d bundlescount.%d\n",helperid,n,max,coin->bundlescount);
