@@ -323,7 +323,9 @@ int32_t iguana_walkchain(struct iguana_info *coin)
             printf("walk error [%d:%d] vs [%d:%d]\n",hdrsi,bundlei,block->hdrsi,block->bundlei);
             break;
         }
-        if ( (height % coin->chain->bundlesize) == 0 )
+        if ( height == 0 )
+            break;
+        else if ( (height % coin->chain->bundlesize) == 0 )
         {
             if ( 0 && bp->ramchain.H.data == 0 )
                 printf("NULL RAMCHAIN.[%d]\n",bp->hdrsi);
