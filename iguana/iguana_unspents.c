@@ -150,8 +150,6 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
             if ( spentchain->Uextras != 0 && (A2= spentchain->A) != 0 )
             {
                 utxo = &spentchain->Uextras[spent_unspentind];
-                if ( spent_hdrsi == 181 && spent_unspentind == 5155555 )
-                    printf(" ptrs.[%d] u.%u p.%u %.8f from ht.%d s.%u\n",spent_hdrsi,spent_unspentind,spent_pkind,dstr(spent_value),fromheight,spendind);
                 if ( utxo->spentflag == 0 )
                 {
                     utxo->prevunspentind = A2[spent_pkind].lastunspentind;
@@ -1862,6 +1860,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                                 iguana_send(coin,addr,serialized,len);
                             coin->RTgenesis = 0;
                         }
+                        iguana_blockQ("RTerr",coin,bp,i,hash2,1);
                         break;
                     }
                     return(-1);
@@ -1899,7 +1898,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             if ( coin->RTgenesis != 0 && n >= bp->n )
                 break;
         }*/
-        if ( (n= iguana_walkchain(coin)) == coin->RTheight )
+        if ( (n= iguana_walkchain(coin)) == coin->RTheight-1 )
         {
             printf("RTgenesis verified\n");
             coin->RTgenesis = (uint32_t)time(NULL);
