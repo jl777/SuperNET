@@ -301,6 +301,8 @@ int32_t iguana_walkchain(struct iguana_info *coin)
     {
         hdrsi = (height / coin->chain->bundlesize);
         bundlei = (height % coin->chain->bundlesize);
+        if ( block->height >= 0 && block->height != height )
+            printf("walkchain height mismatch %d vs %d\n",block->height,height);
         if ( bits256_cmp(iguana_blockhash(coin,height),block->RO.hash2) != 0 )
         {
             printf("walk error blockhash error at %d %s\n",height,bits256_str(str,block->RO.hash2));
