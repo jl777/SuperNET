@@ -531,7 +531,9 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
     }
     if ( (num= coin->peers.numranked) != 0 )
     {
-        max = num;//log2(num * num) + 1;
+        if ( num > 64 )
+            max = log2(num * num) + 1;
+        else max = num;
         if ( max < IGUANA_MINPEERS )
             max = IGUANA_MINPEERS;
         if ( max > num )
