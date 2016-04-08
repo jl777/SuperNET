@@ -503,7 +503,7 @@ struct iguana_block *iguana_bundleblock(struct iguana_info *coin,bits256 *hash2p
 int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle *bp,int32_t priority,double mult)
 {
     int32_t i,max,nonz,lasti,firsti,lag,num,n=0; uint32_t now; bits256 hash2; double aveduration; struct iguana_peer *addr;
-    if ( bp->emitfinish != 0 || (priority == 0 && time(NULL) < bp->missingstime+30) )
+    if ( bp->emitfinish != 0 || (priority > 0 && time(NULL) < bp->missingstime+3) || time(NULL) < bp->missingstime+30 )
         return(0);
     bp->missingstime = (uint32_t)time(NULL);
     if ( bp->durationscount != 0 )
@@ -1123,7 +1123,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
             //printf("NONZ stucktime.%u lag.%d iters.%d vs %d metric.%d\n",coin->stucktime,lag,coin->stuckiters,lag/coin->MAXSTUCKTIME,smetric);
             if ( (lag/coin->MAXSTUCKTIME) > coin->stuckiters )
             {
-                printf("UNSTICK\n");
+                //printf("UNSTICK\n");
                 iguana_unstickhdr(coin,bp,6);
                 coin->stuckiters = (int32_t)(lag/coin->MAXSTUCKTIME);
                 if ( coin->stuckiters > 2 )
