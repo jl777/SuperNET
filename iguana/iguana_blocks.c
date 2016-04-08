@@ -57,8 +57,9 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
     }
     while ( depth != 0 )
     {
-        printf(">>>>>>>>>> OK only if rare %s blockhashset.%d depth.%d\n",debugstr,height,depth);
-        fprintf(stderr,">>>>>>>>>> OK only if rare %s blockhashset.%d depth.%d\n",debugstr,height,depth);
+        sleep(1);
+        //printf(">>>>>>>>>> OK only if rare %s blockhashset.%d depth.%d\n",debugstr,height,depth);
+        //fprintf(stderr,">>>>>>>>>> OK only if rare %s blockhashset.%d depth.%d\n",debugstr,height,depth);
         //printf("%d\n",1/(1 - depth/depth));
     }
     depth++;
@@ -68,9 +69,10 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
         depth--;
         while ( depth != 0 )
         {
-            printf(">>>>>>>>>> OK only if rare%s match blockhashset.%d depth.%d\n",debugstr,height,depth);
-            fprintf(stderr,">>>>>>>>>> OK only if rare%s match blockhashset.%d depth.%d\n",debugstr,height,depth);
-            printf("%d\n",1/(1 - depth/depth));
+            sleep(1);
+            //printf(">>>>>>>>>> OK only if rare%s match blockhashset.%d depth.%d\n",debugstr,height,depth);
+            //fprintf(stderr,">>>>>>>>>> OK only if rare%s match blockhashset.%d depth.%d\n",debugstr,height,depth);
+            //printf("%d\n",1/(1 - depth/depth));
         }
         return(block);
     }
@@ -103,8 +105,9 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
     depth--;
     while ( depth != 0 )
     {
-        printf(">>>>>>>>>> OK only if rare%s create blockhashset.%d depth.%d\n",debugstr,height,depth);
-        fprintf(stderr,">>>>>>>>>> OK only if rare%s create blockhashset.%d depth.%d\n",debugstr,height,depth);
+        sleep(1);
+        //printf(">>>>>>>>>> OK only if rare%s create blockhashset.%d depth.%d\n",debugstr,height,depth);
+        //fprintf(stderr,">>>>>>>>>> OK only if rare%s create blockhashset.%d depth.%d\n",debugstr,height,depth);
         //printf("%d\n",1/(1 - depth/depth));
     }
     return(block);
