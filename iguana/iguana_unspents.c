@@ -1851,8 +1851,8 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                 {
                     for (i=bundlei; i<bp->n; i++)
                     {
-                        block = iguana_bundleblock(coin,&hash2,bp,bundlei+i);
-                        if ( i == 0 || (bits256_nonz(hash2) != 0 && (block == 0 || block->txvalid == 0)) )
+                        block = iguana_bundleblock(coin,&hash2,bp,i);
+                        if ( bits256_nonz(hash2) != 0 && (block == 0 || block->txvalid == 0) )
                         {
                             uint8_t serialized[512]; int32_t len; struct iguana_peer *addr;
                             char str[65]; printf("RT error [%d:%d] %s %p\n",bp->hdrsi,i,bits256_str(str,hash2),block);
