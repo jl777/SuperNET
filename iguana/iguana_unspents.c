@@ -841,7 +841,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
     ptr = mycalloc('x',sizeof(*ptr),n);
     total += n;
     startmillis = OS_milliseconds();
-    if ( strcmp(coin->symbol,"BTC") == 0 )
+    if ( 0 && strcmp(coin->symbol,"BTC") == 0 )
         printf("start UTXOGEN.%d max.%d ptr.%p millis.%.3f\n",bp->bundleheight,n,ptr,startmillis);
     //txidind = spendind = rdata->firsti;
     starttime = (uint32_t)time(NULL);
@@ -968,7 +968,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
             {
                 bp->tmpspends = myrealloc('x',ptr,sizeof(*ptr)*n,sizeof(*ptr)*emit);
                 bp->numtmpspends = emit;
-                printf("ALLOC tmpspends.[%d]\n",bp->hdrsi);
+                //printf("ALLOC tmpspends.[%d]\n",bp->hdrsi);
                 ptr = 0;
             }
         } else errs = -iguana_spendvectorsave(coin,bp,ramchain,ptr!=0?ptr:bp->tmpspends,emit,n);
@@ -1081,7 +1081,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
     S = (void *)(long)((long)rdata + rdata->Soffset);
     B = (void *)(long)((long)rdata + rdata->Boffset);
     T = (void *)(long)((long)rdata + rdata->Toffset);
-    if ( ramchain->Xspendinds == 0 )
+    if ( bp->hdrsi > 0 && ramchain->Xspendinds == 0 )
     {
         printf("iguana_balancegen.%d: no Xspendinds[%d]\n",bp->hdrsi,ramchain->numXspends);
         return(-1);

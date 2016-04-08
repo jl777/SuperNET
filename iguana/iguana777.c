@@ -392,7 +392,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid)
     }
     while ( coin->spendvectorsaved == 1 )
     {
-        printf("helperid.%d waiting for spendvectorsaved.%u\n",helperid,coin->spendvectorsaved);
+        //printf("helperid.%d waiting for spendvectorsaved.%u\n",helperid,coin->spendvectorsaved);
         sleep(3);
     }
     printf("helper.%d finished utxogen\n",helperid);
