@@ -1138,13 +1138,13 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
             else
             {
                 if ( coin->blocks.hwmchain.height >= coin->longestchain-1 )
-                    threshold = 1000;
-                else threshold = 500;
+                    threshold = 10000;
+                else threshold = 5000;
                 if ( strcmp(coin->symbol,"BTC") == 0 )
-                    threshold *= 10;
+                    threshold *= 3;
             }
-            if ( threshold < 500 )
-                threshold = 500;
+            if ( threshold < 1500 )
+                threshold = 1500;
             if ( coin->blocks.hwmchain.height < coin->longestchain && ((strcmp(coin->symbol,"BTC") != 0 && coin->backstop != coin->blocks.hwmchain.height+1) || lag > threshold) )
             {
                 coin->backstop = coin->blocks.hwmchain.height+1;

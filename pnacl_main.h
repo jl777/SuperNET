@@ -625,14 +625,14 @@ static int GetParamString(struct PP_Var params,
 
 int CHROMEAPP_HANDLER(struct PP_Var params,struct PP_Var *output,const char **out_error)
 {
-    char *CHROMEAPP_JSON(char *);
+    char *CHROMEAPP_JSON(char *,uint16_t port);
     char *retstr;
     PNACL_message("inside Handle_%s\n",CHROMEAPP_STR);
     CHECK_PARAM_COUNT(CHROMEAPP_STR, 1);
     PARAM_STRING(0,jsonstr);
     if ( jsonstr == 0 )
         retstr = clonestr("{\"error\":\"illegal null jsonstr received\"}");
-    else if ( (retstr= CHROMEAPP_JSON(jsonstr)) == 0 )
+    else if ( (retstr= CHROMEAPP_JSON(jsonstr,7778)) == 0 )
         retstr = clonestr("{\"error\":\"null return\"}");
     CREATE_RESPONSE(CHROMEAPP_STR);
     RESPONSE_STRING(retstr);

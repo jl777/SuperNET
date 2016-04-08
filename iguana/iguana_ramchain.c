@@ -1216,7 +1216,7 @@ int32_t iguana_ramchain_free(struct iguana_info *coin,struct iguana_ramchain *ra
         ramchain->numXspends = 0;
         ramchain->Xspendinds = 0;
     }
-    iguana_purgevolatiles(coin,ramchain);
+    iguana_volatilespurge(coin,ramchain);
     if ( deleteflag != 0 )
         memset(ramchain,0,sizeof(*ramchain));
     return(0);
@@ -1236,7 +1236,7 @@ int32_t iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *
             ramchain->A = (hashmem != 0) ? iguana_memalloc(hashmem,sizeof(struct iguana_account) * ramchain->H.data->numpkinds,1) : mycalloc('p',ramchain->H.data->numpkinds,sizeof(struct iguana_account));
             ramchain->Uextras = (hashmem != 0) ? iguana_memalloc(hashmem,sizeof(*ramchain->Uextras) * ramchain->H.data->numunspents,1) : mycalloc('p',ramchain->H.data->numunspents,sizeof(*ramchain->Uextras));
         }
-        else err = iguana_mapvolatiles(coin,ramchain);
+        else err = iguana_volatilesmap(coin,ramchain);
     }
     return(err);
 }

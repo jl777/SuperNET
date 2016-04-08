@@ -293,7 +293,7 @@ int32_t iguana_blockunmain(struct iguana_info *coin,struct iguana_block *block)
     return(n);
 }
 
-int32_t iguana_walkchain(struct iguana_info *coin)
+int32_t iguana_walkchain(struct iguana_info *coin,int32_t skipflag)
 {
     char str[65]; int32_t height,hdrsi,bundlei,n = 0; struct iguana_bundle *bp; struct iguana_block *block;
     height = coin->blocks.hwmchain.height;
@@ -325,10 +325,8 @@ int32_t iguana_walkchain(struct iguana_info *coin)
         }
         if ( height == 0 )
             break;
-        else if ( (height % coin->chain->bundlesize) == 0 )
+        else if ( skipflag != 0 && (height % coin->chain->bundlesize) == 0 )
         {
-            if ( 0 && bp->ramchain.H.data == 0 )
-                printf("NULL RAMCHAIN.[%d]\n",bp->hdrsi);
             n += coin->chain->bundlesize;
             height -= coin->chain->bundlesize;
         }
@@ -338,8 +336,44 @@ int32_t iguana_walkchain(struct iguana_info *coin)
             height--;
         }
     }
-    printf("walkd n.%d hwm.%d %s\n",n,coin->blocks.hwmchain.height,bits256_str(str,coin->blocks.hwmchain.RO.hash2));
+    printf("walk skip.%d n.%d hwm.%d %s\n",skipflag,n,coin->blocks.hwmchain.height,bits256_str(str,coin->blocks.hwmchain.RO.hash2));
     return(n);
+}
+
+struct iguana_block *iguana_fastlink(struct iguana_info *coin,int32_t hwmheight)
+{
+    int32_t hdrsi,bundlei,height; struct iguana_block *block = 0,*prev=0; double prevPoW = 0.; struct iguana_bundle *bp;
+    for (height=0; height<=hwmheight; height++)
+    {
+        hdrsi = (height / coin->chain->bundlesize);
+        bundlei = (height % coin->chain->bundlesize);
+        if ( (bp= coin->bundles[bundlei]) == 0 )
+        {
+            printf("iguana_fastlink null bundle.[%d]\n",hdrsi);
+            break;
+        }
+        if ( (block= bp->blocks[bundlei]) == 0 )
+        {
+            printf("iguana_fastlink null block.[%d:%d]\n",hdrsi,bundlei);
+            break;
+        }
+        coin->blocks.maxblocks = (block->height + 1);
+        if ( coin->blocks.maxblocks > coin->longestchain )
+            coin->longestchain = coin->blocks.maxblocks;
+        coin->blocks.hwmchain = *block;
+        block->valid = block->mainchain = 1;
+        block->hdrsi = hdrsi, block->bundlei = bundlei;
+        block->height = height;
+        block->PoW = PoW_from_compact(block->RO.bits,coin->chain->unitval) + prevPoW;
+        block->hh.prev = prev;
+        if ( prev != 0 )
+            prev->hh.next = block;
+        prev = block;
+        prevPoW = block->PoW;
+    }
+    iguana_walkchain(coin,0);
+    iguana_walkchain(coin,1);
+    return(block);
 }
 
 struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_block *newblock)
@@ -412,8 +446,8 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                 if ( hash2p != 0 )
                     bits256_str(str2,*hash2p);
                 else str2[0] = 0;
-                if ( block->height+1 > coin->longestchain )
-                    coin->longestchain = block->height+1;
+                if ( coin->blocks.maxblocks > coin->longestchain )
+                    coin->longestchain = coin->blocks.maxblocks;
                 if ( 1 && (block->height % 1000) == 0 )
                 {
                     //printf("EXTENDMAIN %s %d <- (%s) n.%u max.%u PoW %f numtx.%d valid.%d\n",str,block->height,str2,hwmchain->height+1,coin->blocks.maxblocks,block->PoW,block->RO.txn_count,block->valid);
@@ -457,11 +491,6 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                             //printf("done savehdrs.%d\n",bp->hdrsi);
                         }
                     }
-                }
-                if ( 0 && block->fpipbits == 0 ) //strcmp("BTC",coin->symbol) == 0 &&
-                {
-                    iguana_blockreq(coin,block->height+1,0);
-                    //iguana_blockQ("mainchain",coin,bp,block->height % coin->chain->bundlesize,block->RO.hash2,0);
                 }
                 block->mainchain = 1;
                 return(block);

@@ -513,16 +513,23 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
             printf("priority.%d [%d] durations %.2f counts[%d %d] \n",priority,bp->hdrsi,aveduration,(int32_t)bp->durationscount,bp->duplicatescount);
     } else aveduration = IGUANA_DEFAULTLAG;
     lag = aveduration * mult;
-    if ( lag < 60 && coin->enableCACHE == 0 )
+    if ( coin->PREFETCHLAG < 0 )
     {
         if ( bp != coin->current )
+            lag = 20;
+        else if ( lag < 10 )
+            lag = 10;
+    }
+    else if ( lag < 120 && coin->enableCACHE == 0 )
+    {
+        if ( bp != coin->current )
+            lag = 120;
+        else if ( lag < 60 )
             lag = 60;
-        else if ( lag < 30 )
-            lag = 30;
     }
     if ( (num= coin->peers.numranked) != 0 )
     {
-        max = log2(num * num) + 1;
+        max = num;//log2(num * num) + 1;
         if ( max < IGUANA_MINPEERS )
             max = IGUANA_MINPEERS;
         if ( max > num )

@@ -175,7 +175,7 @@ int32_t iguana_savehdrs(struct iguana_info *coin)
 
 void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
 {
-    int32_t i,j,k,m,c,height,flag,bundlei; char checkstr[1024],line[1024];
+    int32_t j,k,m,c,height,flag,bundlei; char checkstr[1024],line[1024];
     struct iguana_peer *addr; struct iguana_bundle *bp; bits256 allhash,hash2,hash1,zero,lastbundle;
     struct iguana_block *block;
     memset(&zero,0,sizeof(zero));
@@ -293,50 +293,8 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
             }
         }
     }
-    if ( bits256_nonz(lastbundle) > 0 )
-    {
-        char hashstr[65];
-        init_hexbytes_noT(hashstr,lastbundle.bytes,sizeof(bits256));
-        printf("req lastbundle.(%s)\n",hashstr);
-        queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
-    }
     if ( iter == 1 )
-    {
-        for (i=0; i<coin->bundlescount-1; i++)
-        {
-            if ( coin->bundles[i] == 0 || coin->bundles[i]->utxofinish <= 1 )
-                break;
-        }
-        if ( i < coin->bundlescount-1 )
-        {
-            printf("spendvectors.[%d] missing, will regen all of them\n",i);
-            for (i=0; i<coin->bundlescount-1; i++)
-            {
-                //iguana_purgevolatiles(coin,&coin->bundles[i]->ramchain);
-                coin->bundles[i]->startutxo = coin->bundles[i]->utxofinish = 0;
-            }
-        }
-        if ( coin->balanceswritten > 0 )
-            coin->balanceswritten = iguana_volatileinit(coin);
-        if ( coin->balanceswritten > 0 )
-        {
-            for (i=0; i<coin->balanceswritten; i++)
-                iguana_validateQ(coin,coin->bundles[i]);
-        }
-        if ( coin->balanceswritten < coin->bundlescount )
-        {
-            for (i=coin->balanceswritten; i<coin->bundlescount; i++)
-            {
-                if ( (bp= coin->bundles[i]) != 0 && bp->queued == 0 )
-                {
-                    printf("%d ",i);
-                    iguana_bundleQ(coin,bp,1000);
-                }
-            }
-            printf("iguana_bundleQ\n");
-        }
-        coin->origbalanceswritten = coin->balanceswritten;
-    }
+        iguana_initfinal(coin,lastbundle);
 }
 
 void iguana_ramchainpurge(struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_ramchain *ramchain)

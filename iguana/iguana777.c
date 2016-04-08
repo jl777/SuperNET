@@ -389,11 +389,11 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
         }
         if ( iguana_spendvectorsaves(coin) == 0 )
         {
-            for (hdrsi=0; hdrsi<max; hdrsi++)
-                iguana_allocvolatile(coin,&coin->bundles[hdrsi]->ramchain);
-            for (hdrsi=0; hdrsi<max; hdrsi++)
-                iguana_balancegen(coin,coin->bundles[hdrsi],0,coin->chain->bundlesize-1);
-            if ( iguana_balanceflush(coin,max,3) > 0 )
+            //for (hdrsi=0; hdrsi<max; hdrsi++)
+            //    iguana_allocvolatile(coin,&coin->bundles[hdrsi]->ramchain);
+            for (hdrsi=coin->balanceswritten; hdrsi<max; hdrsi++,coin->balanceswritten++)
+                iguana_balancegen(coin,0,coin->bundles[hdrsi],0,coin->chain->bundlesize-1);
+            if ( iguana_balanceflush(coin,max) > 0 )
                 printf("balanceswritten.%d flushed bp->hdrsi %d vs %d coin->longestchain/coin->chain->bundlesize\n",coin->balanceswritten,bp->hdrsi,coin->longestchain/coin->chain->bundlesize);
         } else printf("error saving spendvectors\n");
         coin->spendvectorsaved = (uint32_t)time(NULL);
@@ -452,7 +452,7 @@ void iguana_helper(void *arg)
                             allcurrent = 0;
                         //printf("[%d] bundleQ size.%d lag.%ld\n",bp->hdrsi,queue_size(&bundlesQ),time(NULL) - bp->nexttime);
                         coin->numbundlesQ--;
-                        if ( coin->started != 0 && (bp->nexttime == 0 || time(NULL) >= bp->nexttime) && coin->active != 0 )
+                        if ( coin->started != 0 && (bp->nexttime == 0 || time(NULL) > bp->nexttime) && coin->active != 0 )
                         {
                             flag += iguana_bundleiters(ptr->coin,&MEM,MEMB,bp,ptr->timelimit,IGUANA_DEFAULTLAG);
                         }
@@ -647,7 +647,6 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( (coin->minconfirms = minconfirms) == 0 )
         coin->minconfirms = (strcmp(symbol,"BTC") == 0) ? 3 : 10;
     printf("ensure directories\n");
-    sprintf(dirname,"accounts/%s",symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"DB/ro/%s",symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"DB/ro"), OS_ensure_directory(dirname);
     sprintf(dirname,"DB/%s",symbol), OS_ensure_directory(dirname);
