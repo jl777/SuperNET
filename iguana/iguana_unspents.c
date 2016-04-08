@@ -842,7 +842,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
         bp->numtmpspends = ramchain->numXspends;
         bp->utxofinish = (uint32_t)time(NULL);
         bp->balancefinish = 0;
-        printf("iguana_spendvectors: already have Xspendinds[%d]\n",ramchain->numXspends);
+        printf("iguana_spendvectors.[%d]: already have Xspendinds[%d]\n",bp->hdrsi,ramchain->numXspends);
         return(ramchain->numXspends);
     }
     ptr = mycalloc('x',sizeof(*ptr),n);
