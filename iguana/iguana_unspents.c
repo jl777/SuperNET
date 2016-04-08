@@ -614,7 +614,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                         printf("%p iguana_txidfind.[%.0f] ave %.2f micros, total %.2f seconds | duration %.3f millis\n",spentbp->ramchain.txbits,coin->txidfind_num,(coin->txidfind_totalmillis*1000.)/coin->txidfind_num,coin->txidfind_totalmillis/1000.,duration);
                     coin->txidfind_totalmillis += duration;
                     coin->txidfind_num += 1.;
-                    if ( 0 && coin->PREFETCHLAG > 0 )
+                    if ( 1 && coin->PREFETCHLAG > 0 )
                     {
                         if ( spentbp->lastprefetch == 0 )
                         {
