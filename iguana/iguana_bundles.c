@@ -563,25 +563,29 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
                             req->bp = bp;
                             req->height = bp->bundleheight + i;
                             req->bundlei = i;
-                            bp->issued[i] = 1;
                             queue_enqueue("missing",&coin->priorityQ,&req->DL,0);
                         }
+                        bp->issued[i] = 1;
                         n++;
                     }
                 }
             }
         }
-        if ( priority <= 2 && firsti >= 0 && (coin->enableCACHE != 0 || bp == coin->current) )
+        if ( priority <= 2 && firsti >= 0 && bp->issued[firsti] != 1 && (coin->enableCACHE != 0 || bp == coin->current) )
         {
             //printf("[%d] first missing.%d of %d\n",bp->hdrsi,firsti,nonz);
             iguana_bundleblock(coin,&hash2,bp,firsti);
             if ( bits256_nonz(hash2) != 0 )
             {
                 if ( (addr= coin->peers.ranked[rand() % max]) != 0 && addr->usock >= 0 && addr->dead == 0 )
+                {
+                    n++;
                     iguana_sendblockreqPT(coin,addr,bp,firsti,hash2,0);
+                }
             }
         }
     }
+    printf("issue.[%d] %d priority.%d\n",bp->hdrsi,n,priority);
     return(n);
 }
 
