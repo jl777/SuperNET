@@ -340,7 +340,7 @@ int32_t iguana_balancefinished(struct iguana_info *coin)
     return(n);
 }
 
-int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid)
+int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convertflag)
 {
     int32_t hdrsi,retval,n,max,num = 0; struct iguana_bundle *bp;
     max = coin->bundlescount-1;
@@ -350,7 +350,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid)
             return(-1);
         if ( coin->PREFETCHLAG > 0 )
             iguana_ramchain_prefetch(coin,&bp->ramchain,0);
-        if ( (retval= iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,0)) >= 0 )
+        if ( (retval= iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,convertflag)) >= 0 )
         {
             if ( retval > 0 )
             {
@@ -366,15 +366,18 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid)
         printf("helperid.%d utxofinished.%d vs %d\n",helperid,n,max);
         sleep(3);
     }
-    for (hdrsi=helperid; hdrsi<max; hdrsi+=IGUANA_NUMHELPERS)
+    if ( convertflag != 0 )
     {
-        if ( (bp= coin->bundles[hdrsi]) == 0 )
-            return(-1);
-        iguana_convert(coin,bp,0);
+        for (hdrsi=helperid; hdrsi<max; hdrsi+=IGUANA_NUMHELPERS)
+        {
+            if ( (bp= coin->bundles[hdrsi]) == 0 )
+                return(-1);
+            iguana_convert(coin,bp,0);
+        }
     }
     if ( helperid == 0 )
     {
-        while ( (n= iguana_convertfinished(coin)) < max )
+        while ( convertflag == 0 && (n= iguana_convertfinished(coin)) < max )
         {
             printf("helperid.%d convertfinished.%d vs max %d bundlescount.%d\n",helperid,n,max,coin->bundlescount);
             sleep(3);
@@ -424,7 +427,7 @@ void iguana_helper(void *arg)
             if ( (coin= Coins[i]) != 0 )
             {
                 if ( coin->spendvectorsaved == 1 )
-                    iguana_utxogen(coin,helperid);
+                    iguana_utxogen(coin,helperid,1);
             }
         }
         //if ( (type & (1 << 0)) != 0 )

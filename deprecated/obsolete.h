@@ -15686,6 +15686,93 @@ len = 0;
                 myfree(ptr,ptr->allocsize);
             }
         }
+                
+                int32_t iguana_RTutxo(struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_ramchain *RTramchain,int32_t bundlei)
+            {
+                struct iguana_txid *T; int32_t height,spendind,txidind,j,k; bits256 prevhash;
+                struct iguana_bundle *spentbp; struct iguana_unspent *spentU,*u;
+                struct iguana_ramchaindata *RTdata,*rdata;
+                uint32_t spent_unspentind,now; struct iguana_blockRO *B; struct iguana_spend *S,*s;
+                if ( (RTdata= RTramchain->H.data) == 0 || RTdata->numspends < 1 )
+                {
+                    printf("iguana_RTutxo null data or no spends %p\n",RTramchain->H.data);
+                    return(-1);
+                }
+                B = (void *)(long)((long)RTdata + RTdata->Boffset);
+                S = (void *)(long)((long)RTdata + RTdata->Soffset);
+                T = (void *)(long)((long)RTdata + RTdata->Toffset);
+                txidind = B[bundlei].firsttxidind;
+                spendind = B[bundlei].firstvin;
+                height = bp->bundleheight + bundlei;
+                now = (uint32_t)time(NULL);
+                //printf("RTutxo.[%d:%d] txn_count.%d\n",bp->hdrsi,bundlei,B[bundlei].txn_count);
+                for (j=0; j<B[bundlei].txn_count; j++,txidind++)
+                {
+                    if ( txidind != T[txidind].txidind || spendind != T[txidind].firstvin )
+                    {
+                        printf("RTutxogen: txidind %u != %u nextT[txidind].firsttxidind || spendind %u != %u nextT[txidind].firstvin\n",txidind,T[txidind].txidind,spendind,T[txidind].firstvin);
+                        return(-1);
+                    }
+                    for (k=0; k<T[txidind].numvins; k++,spendind++)
+                    {
+                        s = &S[spendind];
+                        if ( s->external != 0 && s->prevout >= 0 )
+                        {
+                            continue;
+                            double startmillis = OS_milliseconds(); static double totalmillis; static int32_t num;
+                            if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,RTramchain,bp->hdrsi,s,2)) == 0 || spent_unspentind == 0 || spent_unspentind >= spentbp->ramchain.H.data->numunspents || spentbp->hdrsi < 0 || spentbp->hdrsi >= bp->hdrsi || spentbp == bp )
+                            {
+                                char str[65];
+                                printf("RTutxo: unexpected spendbp: height.%d bp.[%d] U%d <- S%d.[%d] [ext.%d %s prev.%d]\n",height,spentbp!=0?spentbp->hdrsi:-1,spent_unspentind,spendind,bp->hdrsi,s->external,bits256_str(str,prevhash),s->prevout);
+                                return(-1);
+                            }
+                            totalmillis += (OS_milliseconds() - startmillis);
+                            if ( (++num % 10000) == 0 )
+                                printf("externalspents.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
+                            rdata = spentbp->ramchain.H.data;
+                            if ( 0 && coin->PREFETCHLAG > 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
+                            {
+                                printf("RT prefetch[%d] from.[%d] lag.%d bundlei.%d numspends.%d of %d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch,bundlei,spendind,RTramchain->H.spendind);
+                                iguana_ramchain_prefetch(coin,&spentbp->ramchain,2);
+                                spentbp->lastprefetch = now;
+                            }
+                        }
+                        else if ( s->prevout >= 0 )
+                        {
+                            spentbp = bp;
+                            rdata = RTramchain->H.data;
+                            if ( s->spendtxidind != 0 && s->spendtxidind < RTdata->numtxids )
+                            {
+                                spent_unspentind = T[s->spendtxidind].firstvout + s->prevout;
+                                //printf("txidind.%d 1st.%d prevout.%d\n",txidind,T[txidind].firstvout,s->prevout);
+                            }
+                            else
+                            {
+                                printf("RTutxo txidind overflow %u vs %d\n",s->spendtxidind,RTdata->numtxids);
+                                return(-1);
+                            }
+                        }
+                        else continue; // coinbase always already spent
+                        if ( spentbp != 0 && rdata != 0 && spent_unspentind != 0 && spent_unspentind < rdata->numunspents )
+                        {
+                            double startmillis = OS_milliseconds(); static double totalmillis; static int32_t num;
+                            spentU = (void *)(long)((long)rdata + rdata->Uoffset);
+                            u = &spentU[spent_unspentind];
+                            if ( iguana_volatileupdate(coin,1,spentbp == bp ? RTramchain : &spentbp->ramchain,spentbp->hdrsi,spent_unspentind,u->pkind,u->value,spendind,height) < 0 )
+                                return(-1);
+                            totalmillis += (OS_milliseconds() - startmillis);
+                            if ( (++num % 10000) == 0 )
+                                printf("volatile.[%d] ave %.2f micros, total %.2f seconds\n",num,(totalmillis*1000.)/num,totalmillis/1000.);
+                        }
+                        else
+                        {
+                            printf("RTutxo error spentbp.%p u.%u vs %d\n",spentbp,spent_unspentind,rdata->numunspents);
+                            return(-1);
+                        }
+                    }
+                }
+                return(0);
+            }
 
 #endif
 #endif
