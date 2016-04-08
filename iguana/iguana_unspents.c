@@ -493,7 +493,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                     //printf("%s height.%d firstvout.%d prev.%d ->U%d\n",bits256_str(str,prev_hash),height,TX.firstvout,prev_vout,unspentind);
                     now = (uint32_t)time(NULL);
                     duration = (OS_milliseconds() - startmillis);
-                    if ( ((uint64_t)coin->txidfind_num % 5000000) == 2000000 )
+                    if ( 0 && ((uint64_t)coin->txidfind_num % 5000000) == 2000000 )
                         printf("%p iguana_txidfind.[%.0f] ave %.2f micros, total %.2f seconds | duration %.3f millis\n",spentbp->ramchain.txbits,coin->txidfind_num,(coin->txidfind_totalmillis*1000.)/coin->txidfind_num,coin->txidfind_totalmillis/1000.,duration);
                     coin->txidfind_totalmillis += duration;
                     coin->txidfind_num += 1.;
@@ -868,7 +868,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
             }
             for (k=0; k<T[txidind].numvins && errs==0; k++,spendind++)
             {
-                if ( (spendind % 5000000) == 2000000 )
+                if ( 0 && (spendind % 5000000) == 2000000 )
                     printf("[%-3d:%4d] spendvectors elapsed t.%-3d spendind.%d\n",bp->hdrsi,i,(uint32_t)time(NULL)-starttime,spendind);
                 u = 0;
                 s = &S[spendind];
@@ -1694,19 +1694,11 @@ void iguana_convert(struct iguana_info *coin,struct iguana_bundle *bp,int32_t RT
         }
         total += converted;
         printf("[%4d] millis %7.3f converted.%-7d balance calc.%-4d of %4d | total.%llu of %llu depth.%d\n",bp->hdrsi,OS_milliseconds()-startmillis,converted,m,n,(long long)total,(long long)total_tmpspends,(int32_t)depth);
-        if ( RTflag == 0 && m == n-1 )
-        {
-            if ( iguana_spendvectorsaves(coin) == 0 )
-            {
-                for (i=0; i<m; i++)
-                    iguana_balancesQ(coin,coin->bundles[i]);
-            }
-        }
     }
     depth--;
 }
 
-int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int32_t startheight,int32_t endheight)
+/*int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int32_t startheight,int32_t endheight)
 {
     int32_t retval=-1,i,n,flag = 0;
     if ( bp->balancefinish > 1 )
@@ -1757,7 +1749,8 @@ int32_t iguana_balancecalc(struct iguana_info *coin,struct iguana_bundle *bp,int
         }
     }
     return(flag);
-}
+}*/
+
 void iguana_RTramchainfree(struct iguana_info *coin)
 {
     printf("free RTramchain\n");

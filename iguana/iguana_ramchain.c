@@ -2578,6 +2578,7 @@ int32_t iguana_bundlemergeHT(struct iguana_info *coin,struct OS_memspace *mem,st
     return(retval);
 }
 
+#ifdef later
 void iguana_ramchainmerge(struct iguana_info *coin) // jl777: verify prev/next hash2
 {
     struct iguana_bundle *bp,*nextbp,*A,*B; int64_t total = 0; int32_t n,flag = 0;
@@ -2619,3 +2620,4 @@ void iguana_ramchainmerge(struct iguana_info *coin) // jl777: verify prev/next h
         printf("bundles.%d\n",n);
     }
 }
+#endif

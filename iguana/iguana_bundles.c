@@ -731,7 +731,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
     return(bp->estsize);
 }
 
-int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
+/*int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     struct iguana_bundle *prevbp; int32_t i;
 #ifdef IGUANA_SERIALIZE_SPENDVECTORGEN
@@ -759,7 +759,7 @@ int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
     }
     //else printf("%u notready.%d postfinish.%d startutxo.%u prevbp.%d %u current.%d\n",(uint32_t)time(NULL),bp->hdrsi,i,bp->startutxo,prevbp!=0?prevbp->hdrsi:-1,prevbp!=0?prevbp->emitfinish:0,coin->current!=0?coin->current->hdrsi:-1);
     return(0);
-}
+}*/
 
 int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,struct OS_memspace *mem,struct OS_memspace *memB)
 {
@@ -824,7 +824,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
     bp->nexttime = (uint32_t)time(NULL);//cbrt(bp->hdrsi - starti)/10;
     if ( bp->hdrsi == coin->bundlescount-1 || (bp->numhashes < bp->n && bp->bundleheight < coin->longestchain-coin->chain->bundlesize) )
         iguana_bundlehdr(coin,bp,starti);
-    else if ( bp->emitfinish != 0 )
+    /*else if ( bp->emitfinish != 0 )
     {
         if ( bp->utxofinish > 1 )
         {
@@ -844,8 +844,8 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
                 return(0);
             } //else printf("finish incomplete.%d\n",bp->hdrsi);
         }
-    }
-    else if ( bp->numsaved >= bp->n )//&& (bp->isRT == 0 || coin->RTheight > bp->bundleheight+bp->n+coin->minconfirms) )
+    }*/
+    else if ( bp->emitfinish == 0 && bp->numsaved >= bp->n )
     {
         if ( iguana_bundlefinalize(coin,bp,mem,memB) >= 0 )
             return(0);
@@ -860,9 +860,6 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
         //    bp->nexttime--;
         if ( bp->isRT == 0 && bp == coin->current && counter > 0 )
             printf("ITER.rt%d now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",bp->isRT,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
-        if ( bp->hdrsi == starti && bp->isRT == 0 )
-        {
-        }
     } else bp->nexttime += 3;
     //printf("done hdrs.%d\n",bp->hdrsi);
     iguana_bundleQ(coin,bp,1000);

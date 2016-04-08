@@ -61,7 +61,7 @@ struct iguana_info *Coins[IGUANA_MAXCOINS];
 char Userhome[512],GLOBALTMPDIR[512] = "tmp";
 int32_t USE_JAY,FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel;
 uint32_t prices777_NXTBLOCK,MAX_DEPTH = 100;
-queue_t helperQ,jsonQ,finishedQ,bundlesQ,validateQ,emitQ,balancesQ,TerminateQ,spendvectorsQ,convertQ;
+queue_t helperQ,jsonQ,finishedQ,bundlesQ,validateQ,emitQ,TerminateQ;
 struct supernet_info MYINFO,**MYINFOS;
 static int32_t initflag;
 int32_t HDRnet,netBLOCKS;
@@ -369,7 +369,7 @@ mksquashfs DB/BTC BTC.squash1M -b 1048576
 
 void mainloop(struct supernet_info *myinfo)
 {
-    int32_t i,j,n,iter,flag,isRT,numpeers; struct iguana_info *coin; struct iguana_helper *ptr; struct iguana_bundle *bp;
+    int32_t i,flag,isRT,numpeers; struct iguana_info *coin; struct iguana_bundle *bp;
     sleep(3);
     printf("mainloop\n");
     while ( 1 )
@@ -388,61 +388,13 @@ void mainloop(struct supernet_info *myinfo)
                     {
                         isRT *= coin->isRT;
                         numpeers += coin->peers.numranked;
-                        if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize )
+                        if ( coin->spendvectorsaved == 0 )
                         {
-                            n = bp->hdrsi;
-                            for (j=0; j<n; j++)
+                            if ( iguana_emitfinished(coin) >= coin->bundlescount-1 )
                             {
-                                if ( (bp= coin->bundles[j]) == 0 || bp->emitfinish <= 1 )
-                                    break;
-                            }
-                            if ( j == n )
-                            {
-                                for (j=0; j<n; j++)
-                                {
-                                    if ( (bp= coin->bundles[j]) == 0 || (bp->startutxo == 0 && bp->utxofinish == 0) )
-                                        break;
-                                }
-                                if ( j != n )
-                                {
-                                    for (j=0; j<n; j++)
-                                    {
-                                        if ( (bp= coin->bundles[j]) != 0 )
-                                        {
-                                            //printf("bundleQ.[%d]\n",j);
-                                            bp->balancefinish = bp->startutxo = 0;
-                                            bp->utxofinish = 1;
-                                            iguana_bundleQ(coin,bp,1000);
-                                        }
-                                    }
-                                } //else printf("skip A j.%d vs n.%d\n",j,n);
-                            } //else printf("skip j.%d vs n.%d\n",j,n);
-                        } //else printf("skip hdrsi.%d vs %d\n",coin->current->hdrsi,coin->longestchain/coin->chain->bundlesize);
-                        n = queue_size(&balancesQ);
-                        for (iter=0; iter<n; iter++)
-                        {
-                            if ( queue_size(&bundlesQ) < 2 && (ptr= queue_dequeue(&balancesQ,0)) != 0 )
-                            {
-                                bp = ptr->bp;
-                                if ( ptr->coin != coin || bp == 0 || time(NULL) < bp->nexttime )
-                                {
-                                    if ( 0 && bp != 0 )
-                                        printf("skip.%d lag.%ld\n",bp->hdrsi,bp->nexttime-time(NULL));
-                                    //bp->nexttime = (uint32_t)time(NULL);
-                                    queue_enqueue("balanceQ",&balancesQ,&ptr->DL,0);
-                                    continue;
-                                }
-                                flag++;
-                                if ( coin != 0 )
-                                {
-                                    iguana_balancecalc(coin,bp,bp->bundleheight,bp->bundleheight+bp->n-1);
-                                    if ( coin->active == 0 )
-                                    {
-                                        printf("detected autopurge after account filecreation. restarting.%s\n",coin->symbol);
-                                        coin->active = 1;
-                                    }
-                                }
-                                myfree(ptr,ptr->allocsize);
+                                if ( iguana_utxofinished(coin) < coin->bundlescount-1 || iguana_balancefinished(coin) < coin->bundlescount-1 )
+                                    coin->spendvectorsaved = 1;
+                                else coin->spendvectorsaved = (uint32_t)time(NULL);
                             }
                         }
                         if ( (bp= coin->current) != 0 && coin->stucktime != 0 && coin->isRT == 0 && coin->RTheight == 0 && (time(NULL) - coin->stucktime) > coin->MAXSTUCKTIME )
@@ -1180,7 +1132,6 @@ void iguana_main(void *arg)
     iguana_initQ(&finishedQ,"finishedQ");
     iguana_initQ(&bundlesQ,"bundlesQ");
     iguana_initQ(&validateQ,"validateQ");
-    iguana_initQ(&balancesQ,"balancesQ");
     myinfo->rpcport = IGUANA_RPCPORT;
     strcpy(myinfo->rpcsymbol,"BTCD");
     if ( arg != 0 )

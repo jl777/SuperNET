@@ -15490,6 +15490,202 @@ len = 0;
              }
              }
              }*/
+                //printf("helper.%d\n",helperid);
+            /*if ( ((ptr= queue_dequeue(&emitQ,0)) != 0 || (ptr= queue_dequeue(&helperQ,0)) != 0) )
+             {
+             printf("unexpected emitQ or helperQ\n");
+             exit(-1);
+             if ( ptr->bp != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
+             {
+             idle = 0;
+             coin->helperdepth++;
+             iguana_helpertask(fp,&MEM,MEMB,ptr);
+             coin->helperdepth--;
+             flag++;
+             }
+             myfree(ptr,ptr->allocsize);
+             }*/
+                if ( 0 && (ptr= queue_dequeue(&spendvectorsQ,0)) != 0 )
+                {
+                    //printf("spendvectorsQ size.%d\n",queue_size(&spendvectorsQ));
+                    coin = ptr->coin;
+                    if ( (bp= ptr->bp) != 0 && coin != 0 )
+                    {
+                        if ( coin->polltimeout < polltimeout )
+                            polltimeout = coin->polltimeout;
+                            //printf("call spendvectors.%d\n",bp->hdrsi);
+                            if ( coin->PREFETCHLAG > 0 )
+                            {
+                                iguana_ramchain_prefetch(coin,&bp->ramchain,0);
+                                if ( 0 && bp->hdrsi > 0 )
+                                    iguana_prefetch(coin,bp,bp->hdrsi-1,1);
+                                    }
+                        if ( (retval= iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,0)) >= 0 )
+                        {
+                            flag++;
+                            if ( retval > 0 )
+                            {
+                                printf("GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL)-bp->startutxo);
+                            } // else printf("null retval from iguana_spendvectors.[%d]\n",bp->hdrsi);
+                            bp->utxofinish = (uint32_t)time(NULL);
+                            iguana_balancesQ(coin,bp);
+                        } else printf("UTXO gen.[%d] utxo error\n",bp->hdrsi);
+                            }
+                    else if ( coin->active != 0 )
+                        printf("helper missing param? %p %p\n",coin,bp);
+                        myfree(ptr,ptr->allocsize);
+                        }
+                void iguana_spendvectorsQ(struct iguana_info *coin,struct iguana_bundle *bp)
+            {
+                struct iguana_helper *ptr;
+                bp->queued = (uint32_t)time(NULL);
+                ptr = mycalloc('i',1,sizeof(*ptr));
+                ptr->allocsize = sizeof(*ptr);
+                ptr->coin = coin;
+                ptr->bp = bp, ptr->hdrsi = bp->hdrsi;
+                ptr->type = 's';
+                ptr->starttime = (uint32_t)time(NULL);
+                queue_enqueue("spendvectorsQ",&spendvectorsQ,&ptr->DL,0);
+            }
+                
+                void iguana_convertQ(struct iguana_info *coin,struct iguana_bundle *bp)
+            {
+                struct iguana_helper *ptr;
+                bp->queued = (uint32_t)time(NULL);
+                ptr = mycalloc('i',1,sizeof(*ptr));
+                ptr->allocsize = sizeof(*ptr);
+                ptr->coin = coin;
+                ptr->bp = bp, ptr->hdrsi = bp->hdrsi;
+                ptr->type = 's';
+                ptr->starttime = (uint32_t)time(NULL);
+                queue_enqueue("convertQ",&convertQ,&ptr->DL,0);
+            }
+                
+                void iguana_balancesQ(struct iguana_info *coin,struct iguana_bundle *bp)
+            {
+                struct iguana_helper *ptr;
+                ptr = mycalloc('i',1,sizeof(*ptr));
+                ptr->allocsize = sizeof(*ptr);
+                ptr->coin = coin;
+                ptr->bp = bp, ptr->hdrsi = bp->hdrsi;
+                ptr->type = 'B';
+                ptr->starttime = (uint32_t)time(NULL);
+                ptr->timelimit = 0;
+                if ( bp->balancefinish == 0 )
+                    bp->balancefinish = 1;
+                coin->pendbalances++;
+                //printf("BALANCES Q[%d] %s bundle.%d[%d] balances.%u balancefinish.%u\n",coin->pendbalances,coin->symbol,ptr->hdrsi,bp->n,bp->utxofinish,bp->balancefinish);
+                queue_enqueue("balancesQ",&balancesQ,&ptr->DL,0);
+            }
+                
+            /*int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_helper *ptr)
+             {
+             struct iguana_info *coin; struct iguana_peer *addr; struct iguana_bundle *bp,*nextbp;
+             addr = ptr->addr;
+             if ( (coin= ptr->coin) != 0 )
+             {
+             if ( (bp= ptr->bp) != 0 )
+             {
+             if ( 0 && ptr->type == 'M' )
+             {
+             if ( (nextbp= ptr->nextbp) != 0 )
+             {
+             bp->mergefinish = nextbp->mergefinish = (uint32_t)time(NULL);
+             if ( iguana_bundlemergeHT(coin,mem,memB,bp,nextbp,ptr->starttime) < 0 )
+             bp->mergefinish = nextbp->mergefinish = 0;
+             }
+             }
+             else if ( ptr->type == 'B' )
+             {
+             printf("helper bundleiters\n");
+             iguana_bundleiters(coin,mem,memB,bp,ptr->timelimit);
+             }
+             else if ( ptr->type == 'E' )
+             {
+             coin->emitbusy++;
+             if ( iguana_bundlesaveHT(coin,mem,memB,bp,ptr->starttime) == 0 )
+             {
+             //fprintf(stderr,"emitQ coin.%p bp.[%d]\n",ptr->coin,bp->bundleheight);
+             bp->emitfinish = (uint32_t)time(NULL) + 1;
+             coin->numemitted++;
+             } else bp->emitfinish = 0;
+             coin->emitbusy--;
+             }
+             } else printf("no bundle in helperrequest\n");
+             } else printf("no coin in helperrequest\n");
+             return(0);
+             }*/
+                
+                void iguana_mergeQ(struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_bundle *nextbp)
+            {
+                struct iguana_helper *ptr;
+                ptr = mycalloc('i',1,sizeof(*ptr));
+                ptr->allocsize = sizeof(*ptr);
+                ptr->coin = coin;
+                ptr->bp = bp, ptr->hdrsi = bp->hdrsi;
+                ptr->nextbp = nextbp;
+                ptr->type = 'M';
+                ptr->starttime = (uint32_t)time(NULL);
+                //printf("%s EMIT.%d[%d] emitfinish.%u\n",coin->symbol,ptr->hdrsi,bp->n,bp->emitfinish);
+                queue_enqueue("helperQ",&helperQ,&ptr->DL,0);
+            }
+                if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize )
+                {
+                    n = bp->hdrsi;
+                    for (j=0; j<n; j++)
+                    {
+                        if ( (bp= coin->bundles[j]) == 0 || bp->emitfinish <= 1 )
+                            break;
+                    }
+                    if ( j == n )
+                    {
+                        for (j=0; j<n; j++)
+                        {
+                            if ( (bp= coin->bundles[j]) == 0 || (bp->startutxo == 0 && bp->utxofinish == 0) )
+                                break;
+                        }
+                        if ( j != n )
+                        {
+                            for (j=0; j<n; j++)
+                            {
+                                if ( (bp= coin->bundles[j]) != 0 )
+                                {
+                                    //printf("bundleQ.[%d]\n",j);
+                                    bp->balancefinish = bp->startutxo = 0;
+                                    bp->utxofinish = 1;
+                                    iguana_bundleQ(coin,bp,1000);
+                                }
+                            }
+                        } //else printf("skip A j.%d vs n.%d\n",j,n);
+                    } //else printf("skip j.%d vs n.%d\n",j,n);
+                } //else printf("skip hdrsi.%d vs %d\n",coin->current->hdrsi,coin->longestchain/coin->chain->bundlesize);
+        n = queue_size(&balancesQ);
+        for (iter=0; iter<n; iter++)
+        {
+            if ( queue_size(&bundlesQ) < 2 && (ptr= queue_dequeue(&balancesQ,0)) != 0 )
+            {
+                bp = ptr->bp;
+                if ( ptr->coin != coin || bp == 0 || time(NULL) < bp->nexttime )
+                {
+                    if ( 0 && bp != 0 )
+                        printf("skip.%d lag.%ld\n",bp->hdrsi,bp->nexttime-time(NULL));
+                        //bp->nexttime = (uint32_t)time(NULL);
+                        queue_enqueue("balanceQ",&balancesQ,&ptr->DL,0);
+                        continue;
+                }
+                flag++;
+                if ( coin != 0 )
+                {
+                    iguana_balancecalc(coin,bp,bp->bundleheight,bp->bundleheight+bp->n-1);
+                    if ( coin->active == 0 )
+                    {
+                        printf("detected autopurge after account filecreation. restarting.%s\n",coin->symbol);
+                        coin->active = 1;
+                    }
+                }
+                myfree(ptr,ptr->allocsize);
+            }
+        }
 
 #endif
 #endif

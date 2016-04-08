@@ -261,20 +261,6 @@ void iguana_emitQ(struct iguana_info *coin,struct iguana_bundle *bp)
     queue_enqueue("emitQ",&emitQ,&ptr->DL,0);
 }
 
-void iguana_mergeQ(struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_bundle *nextbp)
-{
-    struct iguana_helper *ptr;
-    ptr = mycalloc('i',1,sizeof(*ptr));
-    ptr->allocsize = sizeof(*ptr);
-    ptr->coin = coin;
-    ptr->bp = bp, ptr->hdrsi = bp->hdrsi;
-    ptr->nextbp = nextbp;
-    ptr->type = 'M';
-    ptr->starttime = (uint32_t)time(NULL);
-    //printf("%s EMIT.%d[%d] emitfinish.%u\n",coin->symbol,ptr->hdrsi,bp->n,bp->emitfinish);
-    queue_enqueue("helperQ",&helperQ,&ptr->DL,0);
-}
-
 void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
 {
     struct iguana_helper *ptr;
@@ -290,32 +276,6 @@ void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t ti
     if ( 0 && bp->hdrsi > 170 )
         printf("%s %p bundle.%d[%d] ht.%d emitfinish.%u\n",coin->symbol,bp,ptr->hdrsi,bp->n,bp->bundleheight,bp->emitfinish);
     queue_enqueue("bundlesQ",&bundlesQ,&ptr->DL,0);
-}
-
-void iguana_spendvectorsQ(struct iguana_info *coin,struct iguana_bundle *bp)
-{
-    struct iguana_helper *ptr;
-    bp->queued = (uint32_t)time(NULL);
-    ptr = mycalloc('i',1,sizeof(*ptr));
-    ptr->allocsize = sizeof(*ptr);
-    ptr->coin = coin;
-    ptr->bp = bp, ptr->hdrsi = bp->hdrsi;
-    ptr->type = 's';
-    ptr->starttime = (uint32_t)time(NULL);
-    queue_enqueue("spendvectorsQ",&spendvectorsQ,&ptr->DL,0);
-}
-
-void iguana_convertQ(struct iguana_info *coin,struct iguana_bundle *bp)
-{
-    struct iguana_helper *ptr;
-    bp->queued = (uint32_t)time(NULL);
-    ptr = mycalloc('i',1,sizeof(*ptr));
-    ptr->allocsize = sizeof(*ptr);
-    ptr->coin = coin;
-    ptr->bp = bp, ptr->hdrsi = bp->hdrsi;
-    ptr->type = 's';
-    ptr->starttime = (uint32_t)time(NULL);
-    queue_enqueue("convertQ",&convertQ,&ptr->DL,0);
 }
 
 void iguana_validateQ(struct iguana_info *coin,struct iguana_bundle *bp)
@@ -336,64 +296,101 @@ void iguana_validateQ(struct iguana_info *coin,struct iguana_bundle *bp)
     }
 }
 
-void iguana_balancesQ(struct iguana_info *coin,struct iguana_bundle *bp)
+int32_t iguana_emitfinished(struct iguana_info *coin)
 {
-    struct iguana_helper *ptr;
-    ptr = mycalloc('i',1,sizeof(*ptr));
-    ptr->allocsize = sizeof(*ptr);
-    ptr->coin = coin;
-    ptr->bp = bp, ptr->hdrsi = bp->hdrsi;
-    ptr->type = 'B';
-    ptr->starttime = (uint32_t)time(NULL);
-    ptr->timelimit = 0;
-    if ( bp->balancefinish == 0 )
-        bp->balancefinish = 1;
-    coin->pendbalances++;
-    //printf("BALANCES Q[%d] %s bundle.%d[%d] balances.%u balancefinish.%u\n",coin->pendbalances,coin->symbol,ptr->hdrsi,bp->n,bp->utxofinish,bp->balancefinish);
-    queue_enqueue("balancesQ",&balancesQ,&ptr->DL,0);
+    struct iguana_bundle *bp; int32_t i,n = 0;
+    for (i=0; i<coin->bundlescount-1; i++)
+    {
+        if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish > 1 )
+            n++;
+    }
+    return(n);
 }
 
-/*int32_t iguana_helpertask(FILE *fp,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_helper *ptr)
+int32_t iguana_utxofinished(struct iguana_info *coin)
 {
-    struct iguana_info *coin; struct iguana_peer *addr; struct iguana_bundle *bp,*nextbp;
-    addr = ptr->addr;
-    if ( (coin= ptr->coin) != 0 )
+    struct iguana_bundle *bp; int32_t i,n = 0;
+    for (i=0; i<coin->bundlescount-1; i++)
     {
-        if ( (bp= ptr->bp) != 0 )
+        if ( (bp= coin->bundles[i]) != 0 && bp->utxofinish > 1 )
+            n++;
+    }
+    return(n);
+}
+
+int32_t iguana_convertfinished(struct iguana_info *coin)
+{
+    struct iguana_bundle *bp; int32_t i,n = 0;
+    for (i=0; i<coin->bundlescount-1; i++)
+    {
+        if ( (bp= coin->bundles[i]) != 0 && bp->converted > 1 )
+            n++;
+    }
+    return(n);
+}
+
+int32_t iguana_balancefinished(struct iguana_info *coin)
+{
+    struct iguana_bundle *bp; int32_t i,n = 0;
+    for (i=0; i<coin->bundlescount-1; i++)
+    {
+        if ( (bp= coin->bundles[i]) != 0 && bp->balancefinish > 1 )
+            n++;
+    }
+    return(n);
+}
+
+int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid)
+{
+    int32_t hdrsi,retval,n,num = 0; struct iguana_bundle *bp;
+    for (hdrsi=helperid; hdrsi<coin->bundlescount-1; hdrsi+=IGUANA_NUMHELPERS)
+    {
+        if ( (bp= coin->bundles[hdrsi]) == 0 )
+            return(-1);
+        if ( coin->PREFETCHLAG > 0 )
+            iguana_ramchain_prefetch(coin,&bp->ramchain,0);
+        if ( (retval= iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,0)) >= 0 )
         {
-            if ( 0 && ptr->type == 'M' )
+            if ( retval > 0 )
             {
-                if ( (nextbp= ptr->nextbp) != 0 )
-                {
-                    bp->mergefinish = nextbp->mergefinish = (uint32_t)time(NULL);
-                    if ( iguana_bundlemergeHT(coin,mem,memB,bp,nextbp,ptr->starttime) < 0 )
-                        bp->mergefinish = nextbp->mergefinish = 0;
-                }
-            }
-            else if ( ptr->type == 'B' )
-            {
-                printf("helper bundleiters\n");
-                iguana_bundleiters(coin,mem,memB,bp,ptr->timelimit);
-            }
-            else if ( ptr->type == 'E' )
-            {
-                coin->emitbusy++;
-                if ( iguana_bundlesaveHT(coin,mem,memB,bp,ptr->starttime) == 0 )
-                {
-                    //fprintf(stderr,"emitQ coin.%p bp.[%d]\n",ptr->coin,bp->bundleheight);
-                    bp->emitfinish = (uint32_t)time(NULL) + 1;
-                    coin->numemitted++;
-                } else bp->emitfinish = 0;
-                coin->emitbusy--;
-            }
-        } else printf("no bundle in helperrequest\n");
-    } else printf("no coin in helperrequest\n");
-    return(0);
-}*/
+                printf("GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - bp->startutxo);
+                num++;
+            } // else printf("null retval from iguana_spendvectors.[%d]\n",bp->hdrsi);
+            bp->utxofinish = (uint32_t)time(NULL);
+            //iguana_balancesQ(coin,bp);
+        } else printf("UTXO gen.[%d] utxo error\n",bp->hdrsi);
+    }
+    while ( (n= iguana_utxofinished(coin)) < coin->bundlescount-1 )
+    {
+        printf("helperid.%d utxofinished.%d vs %d\n",helperid,n,coin->bundlescount-1);
+        sleep(3);
+    }
+    for (hdrsi=helperid; hdrsi<coin->bundlescount-1; hdrsi+=IGUANA_NUMHELPERS)
+    {
+        if ( (bp= coin->bundles[hdrsi]) == 0 )
+            return(-1);
+        iguana_convert(coin,bp,0);
+    }
+    if ( helperid == 0 )
+    {
+        while ( (n= iguana_convertfinished(coin)) < coin->bundlescount-1 )
+        {
+            printf("helperid.%d convertfinished.%d vs %d\n",helperid,n,coin->bundlescount-1);
+            sleep(3);
+        }
+        if ( iguana_spendvectorsaves(coin) == 0 )
+        {
+            for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
+                iguana_balancenormal(coin,bp,0,bp->n-1);
+        } else printf("error saving spendvectors\n");
+        coin->spendvectorsaved = (uint32_t)time(NULL);
+    }
+    return(num);
+}
 
 void iguana_helper(void *arg)
 {
-    cJSON *argjson=0; int32_t iter,n,retval,polltimeout,type,helperid=rand(),flag,allcurrent,idle=0;
+    cJSON *argjson=0; int32_t iter,i,n,polltimeout,type,helperid=rand(),flag,allcurrent,idle=0;
     struct iguana_helper *ptr; struct iguana_info *coin; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp;
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
         helperid = juint(argjson,"helperid");
@@ -411,22 +408,22 @@ void iguana_helper(void *arg)
         flag = 0;
         allcurrent = 2;
         polltimeout = 100;
-        //printf("helper.%d\n",helperid);
-        /*if ( ((ptr= queue_dequeue(&emitQ,0)) != 0 || (ptr= queue_dequeue(&helperQ,0)) != 0) )
+        for (i=0; i<IGUANA_MAXCOINS; i++)
         {
-            printf("unexpected emitQ or helperQ\n");
-            exit(-1);
-            if ( ptr->bp != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
+            if ( (coin= Coins[i]) != 0 )
             {
-                idle = 0;
-                coin->helperdepth++;
-                iguana_helpertask(fp,&MEM,MEMB,ptr);
-                coin->helperdepth--;
-                flag++;
+                if ( coin->spendvectorsaved == 1 )
+                {
+                    iguana_utxogen(coin,helperid);
+                    while ( coin->spendvectorsaved == 1 )
+                    {
+                        printf("helperid.%d waiting for spendvectorsaved.%u\n",helperid,coin->spendvectorsaved);
+                        sleep(3);
+                    }
+                }
             }
-            myfree(ptr,ptr->allocsize);
-         }*/
-        if ( (type & (1 << 0)) != 0 )
+        }
+        //if ( (type & (1 << 0)) != 0 )
         {
             n = queue_size(&bundlesQ);
             for (iter=0; iter<n; iter++)
@@ -460,47 +457,8 @@ void iguana_helper(void *arg)
                 } else break;
             }
         }
-        if ( (type & (1 << 1)) != 0 )
+        /*if ( (type & (1 << 1)) != 0 )
         {
-            if ( (ptr= queue_dequeue(&spendvectorsQ,0)) != 0 )
-            {
-                //printf("spendvectorsQ size.%d\n",queue_size(&spendvectorsQ));
-                coin = ptr->coin;
-                if ( (bp= ptr->bp) != 0 && coin != 0 )
-                {
-                    if ( coin->polltimeout < polltimeout )
-                        polltimeout = coin->polltimeout;
-                    //printf("call spendvectors.%d\n",bp->hdrsi);
-                    if ( coin->PREFETCHLAG > 0 )
-                    {
-                        iguana_ramchain_prefetch(coin,&bp->ramchain,0);
-                        if ( 0 && bp->hdrsi > 0 )
-                            iguana_prefetch(coin,bp,bp->hdrsi-1,1);
-                    }
-                    if ( (retval= iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,0)) >= 0 )
-                    {
-                        flag++;
-                        if ( retval > 0 )
-                        {
-                            printf("GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL)-bp->startutxo);
-                        } // else printf("null retval from iguana_spendvectors.[%d]\n",bp->hdrsi);
-                        bp->utxofinish = (uint32_t)time(NULL);
-                        iguana_balancesQ(coin,bp);
-                    } else printf("UTXO gen.[%d] utxo error\n",bp->hdrsi);
-                }
-                else if ( coin->active != 0 )
-                    printf("helper missing param? %p %p\n",coin,bp);
-                myfree(ptr,ptr->allocsize);
-            }
-            n = queue_size(&convertQ);
-            for (iter=0; iter<n; iter++)
-                if ( (ptr= queue_dequeue(&convertQ,0)) != 0 )
-                {
-                    coin = ptr->coin;
-                    if ( (bp= ptr->bp) != 0 && coin != 0 && coin->active != 0 )
-                        iguana_convert(coin,bp,0);//,&bp->ramchain);
-                    myfree(ptr,ptr->allocsize);
-                }
             n = queue_size(&validateQ);
             for (iter=0; iter<n; iter++)
                 if ( (ptr= queue_dequeue(&validateQ,0)) != 0 )
@@ -512,8 +470,8 @@ void iguana_helper(void *arg)
                     myfree(ptr,ptr->allocsize);
                     flag++;
                 }
-        }
-        if ( queue_size(&spendvectorsQ) != 0 || queue_size(&convertQ) != 0 || queue_size(&bundlesQ) > 1 )
+        }*/
+        if ( queue_size(&bundlesQ) > 1 )
             allcurrent = 0;
         if ( flag != 0 )
             usleep(polltimeout * 100 + 1);

@@ -1517,7 +1517,7 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
         //printf("call iguana_realtime_update i.%d\n",i);
     }
     flag += (i > 0);
-    coin->RTramchain_busy = (coin->RTgenesis == 0 || queue_size(&balancesQ) != 0);
+    coin->RTramchain_busy = (coin->RTgenesis == 0);
     iguana_jsonQ();
     if ( hwmheight != coin->blocks.hwmchain.height )
         flag = 1;
