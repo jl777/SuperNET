@@ -988,14 +988,10 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
             {
                 if ( (block= iguana_blockfind("recvblock",coin,block->RO.prev_block)) == 0 )
                     break;
-                block->hh.next = next;
                 if ( block->mainchain != 0 || _iguana_chainlink(coin,block) != 0 )
                 {
-                    n = 1;
-                    while ( (block= block->hh.next) != 0 && _iguana_chainlink(coin,block) != 0 )
-                        n++;
-                    if ( n > 2 )
-                        printf("found mainchain linked.%d ht.%d\n",n,next->height);
+                    _iguana_chainlink(coin,next);
+                    n++;
                     break;
                 }
                 next = block;
