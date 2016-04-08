@@ -955,7 +955,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
             {
                 if ( bp->tmpspends != ramchain->Xspendinds )
                 {
-                    printf("spendvectors: unexpected tmpspends? [%d] numtmpspends.%d vs emit.%d\n",bp->hdrsi,bp->numtmpspends,emit);
+                    printf("spendvectors: unexpected tmpspends? or RT [%d] numtmpspends.%d vs emit.%d\n",bp->hdrsi,bp->numtmpspends,emit);
                     bp->tmpspends = myrealloc('x',bp->tmpspends,sizeof(*ptr)*bp->numtmpspends,sizeof(*ptr)*(bp->numtmpspends+emit));
                     memcpy(&bp->tmpspends[bp->numtmpspends],ptr,sizeof(*ptr)*emit);
                     bp->numtmpspends += emit;
@@ -965,6 +965,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
             {
                 bp->tmpspends = myrealloc('x',ptr,sizeof(*ptr)*n,sizeof(*ptr)*emit);
                 bp->numtmpspends = emit;
+                printf("ALLOC tmpspends.[%d]\n",bp->hdrsi);
                 ptr = 0;
             }
         } else errs = -iguana_spendvectorsave(coin,bp,ramchain,ptr!=0?ptr:bp->tmpspends,emit,n);
@@ -1629,7 +1630,7 @@ int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *s
     }
     spentbp->converted = 1;
     spent_hdrsi = spentbp->hdrsi;
-    ramchain = (spentbp == coin->current) ? &coin->RTramchain : &spentbp->ramchain;
+    ramchain = &spentbp->ramchain;
     numpkinds = ramchain->H.data->numpkinds;
     iguana_ramchain_prefetch(coin,ramchain,0);
     spentU = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Uoffset);
@@ -1659,14 +1660,14 @@ int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *s
                     }
                 }
             }
-        }
+        } else printf("iguana_spendvectorconvs: [%d] null bp.%p or null tmpspends\n",i,bp);
     }
     spentbp->converted = (uint32_t)time(NULL);
     //printf("spendvectorconvs.[%d] converted.%d\n",refbp->hdrsi,converted);
     return(converted);
 }
 
-void iguana_convert(struct iguana_info *coin,struct iguana_bundle *bp)
+void iguana_convert(struct iguana_info *coin,struct iguana_bundle *bp,int32_t RTflag)
 {
     static int64_t total,depth;
     int32_t i,n,m,converted; int64_t total_tmpspends; double startmillis = OS_milliseconds();
@@ -1688,7 +1689,7 @@ void iguana_convert(struct iguana_info *coin,struct iguana_bundle *bp)
         }
         total += converted;
         printf("[%4d] millis %7.3f converted.%-7d balance calc.%-4d of %4d | total.%llu of %llu depth.%d\n",bp->hdrsi,OS_milliseconds()-startmillis,converted,m,n,(long long)total,(long long)total_tmpspends,(int32_t)depth);
-        if ( m == n-1 )
+        if ( RTflag == 0 && m == n-1 )
         {
             if ( iguana_spendvectorsaves(coin) == 0 )
             {
@@ -1866,13 +1867,13 @@ void iguana_RThdrs(struct iguana_info *coin,struct iguana_bundle *bp,int32_t num
     }
 }
 
-void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_ramchain *dest)
+void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     struct iguana_ramchain R; struct iguana_ramchaindata RDATA;
-    iguana_rdataset(&R,&RDATA,dest);
-    bp->ramchain = *dest;
-    iguana_ramchain_prefetch(coin,dest,0);
-    if ( iguana_spendvectors(coin,bp,dest,coin->RTstarti,coin->RTheight%bp->n,0) < 0 )
+    bp->ramchain = coin->RTramchain;
+    iguana_rdataset(&R,&RDATA,&coin->RTramchain);
+    iguana_ramchain_prefetch(coin,&coin->RTramchain,0);
+    if ( iguana_spendvectors(coin,bp,&coin->RTramchain,coin->RTstarti,coin->RTheight%bp->n,0) < 0 )
     {
         printf("RTutxo error -> RTramchainfree\n");
         iguana_RTramchainfree(coin);
@@ -1882,7 +1883,8 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp,str
     {
         coin->RTstarti = (coin->RTheight % bp->n);
         printf("spendvectors calculated to %d\n",coin->RTheight);
-        iguana_convert(coin,bp);//,dest);
+        bp->converted = 0;
+        iguana_convert(coin,bp,1);
         printf("spendvectors converted to %d\n",coin->RTheight);
     }
 }
@@ -1982,7 +1984,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         {
             printf("RTgenesis verified\n");
             coin->RTgenesis = (uint32_t)time(NULL);
-            iguana_RTspendvectors(coin,bp,&coin->RTramchain);
+            iguana_RTspendvectors(coin,bp);
         } else printf("RTgenesis failed to verify n.%d vs %d\n",n,coin->RTheight);
     }
     if ( dest != 0 && flag != 0 )

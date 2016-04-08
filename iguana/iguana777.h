@@ -849,7 +849,7 @@ struct iguana_block *iguana_bundleblock(struct iguana_info *coin,bits256 *hash2p
 void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,struct iguana_ramchain *R,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block);
 int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block);
 void iguana_convertQ(struct iguana_info *coin,struct iguana_bundle *bp);
-void iguana_convert(struct iguana_info *coin,struct iguana_bundle *bp);//,struct iguana_ramchain *ramchain);
+void iguana_convert(struct iguana_info *coin,struct iguana_bundle *bp,int32_t RTflag);//,struct iguana_ramchain *ramchain);
 int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle *bp,int32_t priority,double mult);
 //int32_t iguana_blocksmissing(struct iguana_info *coin,int32_t *nonzp,uint8_t missings[IGUANA_MAXBUNDLESIZE/8+1],bits256 hashes[],double mult,struct iguana_bundle *bp,int32_t capacity);
 FILE *myfopen(char *fname,char *mode);
