@@ -1305,6 +1305,7 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
     }
     coin->RTheight = coin->balanceswritten * coin->chain->bundlesize;
     iguana_bundlestats(coin,buf,IGUANA_DEFAULTLAG);
+    coin->blocks.hwmchain.height = coin->RTheight - 1;
     if ( (n= iguana_walkchain(coin,0)) > 0 )
         printf("iguana_walkchain n.%d vs hwmheight.%d\n",n,coin->blocks.hwmchain.height);
 
