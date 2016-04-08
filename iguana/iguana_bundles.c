@@ -1101,11 +1101,15 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
     tmp = (difft.millis * 1000000);
     tmp %= 1000000000;
     difft.millis = ((double)tmp / 1000000.);
-    if ( firstgap != coin->current && firstgap != 0 )
+    if ( firstgap != coin->current && firstgap != 0 && coin->PREFETCHLAG < 0 )
     {
         for (i=0; i<firstgap->n; i++)
             if ( (block= firstgap->blocks[i]) != 0 && block->txvalid == 0 )
+            {
+                block->issued = 0;
+                bp->issued[i] = 0;
                 iguana_blockQ("newfirst",coin,firstgap,i,block->RO.hash2,1);
+            }
     }
     if ( (coin->current= firstgap) == 0 )
     {
