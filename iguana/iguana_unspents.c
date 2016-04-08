@@ -150,6 +150,8 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
             if ( spentchain->Uextras != 0 && (A2= spentchain->A) != 0 )
             {
                 utxo = &spentchain->Uextras[spent_unspentind];
+                if ( spent_hdrsi == 181 && spent_unspentind == 5155555 )
+                    printf(" ptrs.[%d] u.%u p.%u %.8f from ht.%d s.%u\n",spent_hdrsi,spent_unspentind,spent_pkind,dstr(spent_value),fromheight,spendind);
                 if ( utxo->spentflag == 0 )
                 {
                     utxo->prevunspentind = A2[spent_pkind].lastunspentind;
@@ -161,7 +163,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
                 }
                 else
                 {
-                    printf("spent_unspentind[%d] in hdrs.[%d] is spent\n",spent_unspentind,spent_hdrsi);
+                    printf("spent_unspentind[%d] in hdrs.[%d] is spent fromht.%d %.8f\n",spent_unspentind,spent_hdrsi,utxo->fromheight,dstr(spent_value));
                 }
             } else printf("null ptrs.[%d] u.%u p.%u %.8f from ht.%d s.%u\n",spent_hdrsi,spent_unspentind,spent_pkind,dstr(spent_value),fromheight,spendind);
         }
