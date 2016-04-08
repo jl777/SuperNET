@@ -1081,7 +1081,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,struct iguana_bundle *bp,int3
     S = (void *)(long)((long)rdata + rdata->Soffset);
     B = (void *)(long)((long)rdata + rdata->Boffset);
     T = (void *)(long)((long)rdata + rdata->Toffset);
-    if ( bp->hdrsi > 0 && ramchain->Xspendinds == 0 )
+    if ( ramchain->Xspendinds == 0 )
     {
         printf("iguana_balancegen.%d: no Xspendinds[%d]\n",bp->hdrsi,ramchain->numXspends);
         return(-1);
@@ -1581,7 +1581,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi,int32_t pu
 int32_t iguana_spendvectorsaves(struct iguana_info *coin)
 {
     int32_t i,j,n,iter; struct iguana_bundle *bp;
-    if ( coin->spendvectorsaved != 0 )
+    if ( coin->spendvectorsaved > 1 )
         return(0);
     coin->spendvectorsaved = 1;
     n = coin->bundlescount - 1;
