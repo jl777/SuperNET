@@ -132,13 +132,9 @@ int32_t iguana_savehdrs(struct iguana_info *coin)
     char fname[512],shastr[65],tmpfname[512],str2[65],str[65],oldfname[512];
     bits256 sha256all; FILE *fp; struct iguana_bundle *bp; int32_t hdrsi,n,retval = 0;
     n = coin->blocks.hwmchain.height + 1;
-    sprintf(oldfname,"confs/%s_oldhdrs.txt",coin->symbol), OS_compatible_path(oldfname);
     sprintf(tmpfname,"%s/%s/hdrs.txt",GLOBALTMPDIR,coin->symbol), OS_compatible_path(tmpfname);
-#ifdef __PNACL__
-    sprintf(fname,"js/%s_hdrs.js",coin->symbol);
-#else
+    sprintf(oldfname,"confs/%s_oldhdrs.txt",coin->symbol), OS_compatible_path(oldfname);
     sprintf(fname,"confs/%s_hdrs.txt",coin->symbol);
-#endif
     OS_compatible_path(fname);
     if ( (fp= fopen(tmpfname,"w")) != 0 )
     {
@@ -440,41 +436,12 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
     iguana_genesis(coin,coin->chain);
     for (iter=coin->peers.numranked>8; iter<2; iter++)
     {
-#ifdef __PNACL__
-        sprintf(fname,"js/%s_%s.js",coin->symbol,(iter == 0) ? "peers" : "hdrs");
-#else
         sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
-#endif
         OS_compatible_path(fname);
         //sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
         //sprintf(fname,"tmp/%s/%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
         OS_compatible_path(fname);
         printf("parsefile.%d %s\n",iter,fname);
-        /*if ( (fp= fopen(fname,"r")) == 0 )
-        {
-            sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
-            OS_compatible_path(fname);
-            fp = fopen(fname,"r");
-        }
-        else if ( 0 && iter == 1 )
-        {
-            sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
-            OS_compatible_path(fname);
-            if ( (fp2= fopen(fname,"r")) != 0 )
-            {
-                fseek(fp,0,SEEK_END), fseek(fp2,0,SEEK_END);
-                if ( ftell(fp2) > ftell(fp) )
-                {
-                    fclose(fp);
-                    fp = fp2;
-                }
-                else
-                {
-                    fclose(fp2);
-                    printf("%s is not used as tmp version is bigger\n",fname);
-                }
-            }
-        }*/
         if ( (fp= fopen(fname,"r")) != 0 )
         {
             iguana_parseline(coin,iter,fp);

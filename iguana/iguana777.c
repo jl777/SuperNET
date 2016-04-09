@@ -523,6 +523,10 @@ void iguana_coinloop(void *arg)
         {
             if ( (coin= coins[i]) != 0 )
             {
+#ifdef __PNACL__
+                if ( strcmp(coin->symbol,"BTC") == 0 )
+                    continue;
+#endif
                 if ( coin->MAXPEERS > IGUANA_MAXPEERS )
                     coin->MAXPEERS = IGUANA_MAXPEERS;
                 if ( coin->MAXPEERS < IGUANA_MINPEERS )
@@ -620,8 +624,8 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->myservices = services;
     coin->initialheight = initialheight;
     coin->mapflags = mapflags;
-    mult = (strcmp("BTC",coin->symbol) != 0) ? 512 : 1;
-    maxval = (strcmp("BTC",coin->symbol) != 0) ? 2048 : 256;
+    mult = (strcmp("BTC",coin->symbol) != 0) ? 3 : 1;
+    maxval = (strcmp("BTC",coin->symbol) != 0) ? IGUANA_MAXPENDBUNDLES : IGUANA_MAXPENDBUNDLES;
     coin->MAXMEM = juint(json,"RAM");
     if ( jobj(json,"prefetchlag") != 0 )
         coin->PREFETCHLAG = jint(json,"prefetchlag");
@@ -633,6 +637,9 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( strcmp("BTC",coin->symbol) == 0 && coin->MAXMEM < 4 )
         maxval = (int32_t)coin->MAXMEM;
     coin->MAXMEM *= (1024L * 1024 * 1024);
+#ifdef __PNACL__
+    maxval = 1;
+#endif
     if ( (coin->startPEND= juint(json,"startpend")) == 0 )
         coin->startPEND = IGUANA_MAXPENDBUNDLES * mult;
     if ( coin->startPEND > maxval )

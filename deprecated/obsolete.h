@@ -15915,6 +15915,31 @@ len = 0;
                     //printf("end prefetch.%d for [%d] elapsed %d\n",width,bp->hdrsi,(uint32_t)time(NULL)-starttime);
                 }
             }
+            /*if ( (fp= fopen(fname,"r")) == 0 )
+             {
+             sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
+             OS_compatible_path(fname);
+             fp = fopen(fname,"r");
+             }
+             else if ( 0 && iter == 1 )
+             {
+             sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
+             OS_compatible_path(fname);
+             if ( (fp2= fopen(fname,"r")) != 0 )
+             {
+             fseek(fp,0,SEEK_END), fseek(fp2,0,SEEK_END);
+             if ( ftell(fp2) > ftell(fp) )
+             {
+             fclose(fp);
+             fp = fp2;
+             }
+             else
+             {
+             fclose(fp2);
+             printf("%s is not used as tmp version is bigger\n",fname);
+             }
+             }
+             }*/
 
 #endif
 #endif

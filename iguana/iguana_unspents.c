@@ -1332,17 +1332,19 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
         printf("spendvectors.[%d] missing, will regen all of them\n",i);
         for (i=0; i<coin->bundlescount-1; i++)
         {
-            //iguana_purgevolatiles(coin,&coin->bundles[i]->ramchain);
-            coin->bundles[i]->startutxo = coin->bundles[i]->utxofinish = 0;
+            if ( coin->bundles[i] != 0 )
+                coin->bundles[i]->startutxo = coin->bundles[i]->utxofinish = 0;
         }
     }
-    if ( coin->balanceswritten > 0 )
+    printf("i.%d bundlescount.%d\n",i,coin->bundlescount);
+    if ( coin->balanceswritten > 1 )
         coin->balanceswritten = iguana_volatilesinit(coin);
-    if ( coin->balanceswritten > 0 )
+    if ( coin->balanceswritten > 1 )
     {
         for (i=0; i<coin->balanceswritten; i++)
             iguana_validateQ(coin,coin->bundles[i]);
     }
+    printf("i.%d balanceswritten.%d\n",i,coin->balanceswritten);
     if ( coin->balanceswritten < coin->bundlescount )
     {
         for (i=coin->balanceswritten; i<coin->bundlescount; i++)

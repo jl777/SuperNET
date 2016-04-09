@@ -77,6 +77,19 @@ char *OS_portable_path(char *str)
     char *OS_nonportable_path(char *str);
     return(OS_nonportable_path(str));
 #else
+#ifdef __PNACL
+    /*int32_t i,n;
+    if ( str[0] == '/' )
+        return(str);
+    else
+    {
+        n = (int32_t)strlen(str);
+        for (i=n; i>0; i--)
+            str[i] = str[i-1];
+        str[0] = '/';
+        str[n+1] = 0;
+    }*/
+#endif
     return(str);
 #endif
 }

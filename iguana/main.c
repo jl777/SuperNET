@@ -1169,13 +1169,6 @@ void iguana_main(void *arg)
     OS_ensure_directory("purgeable/BTC");
     OS_ensure_directory("purgeable/BTCD");
     OS_ensure_directory(GLOBALTMPDIR);
-    btcd = iguana_coinadd("BTCD",0);
-    /*btc = 0;//iguana_coinadd("BTC",0);
-    if ( btc == 0 && btcd == 0 )
-    {
-        printf("error adding BTC.%p or BTCD.%p\n",btc,btcd);
-        exit(-1);
-    }*/
     if ( (tmpstr= SuperNET_JSON(myinfo,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"help\"}"),0,myinfo->rpcport)) != 0 )
     {
         if ( (API_json= cJSON_Parse(tmpstr)) != 0 && (API_json= jobj(API_json,"result")) != 0 )
@@ -1193,11 +1186,18 @@ void iguana_main(void *arg)
     
     if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"prefetchlag\":2,\"VALIDATE\":1,\"active\":1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"newcoin\":\"BTC\",\"startpend\":166,\"services\":1}"),0,myinfo->rpcport)) != 0 )
         free(str);
-#ifdef __PNACL__
+    btcd = iguana_coinadd("BTCD",0);
+    iguana_coinadd("BTC",0);
+#ifdef __APPLE__
     if ( 1 )
     {
+        if ( btcd == 0 )
+        {
+            printf("error adding BTCD.%p\n",btcd);
+            exit(-1);
+        }
         sleep(1);
-        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"VALIDATE\":1,\"prefetchlag\":13,\"startpend\":1,\"endpend\":1,\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":0,\"maxpeers\":64,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":1,\"poll\":10}"),0,myinfo->rpcport)) != 0 )
+        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"VALIDATE\":1,\"prefetchlag\":13,\"startpend\":1,\"endpend\":1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":0,\"maxpeers\":64,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":1,\"poll\":10}"),0,myinfo->rpcport)) != 0 )
         {
             free(str);
             if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":1024,\"maxpeers\":256,\"newcoin\":\"BTCD\",\"active\":1}"),0,myinfo->rpcport)) != 0 )
@@ -1210,8 +1210,6 @@ void iguana_main(void *arg)
                         free(str);
                 }
             }
-            printf("BTC active.%d BTCD active.%d\n",iguana_coinfind("BTC")->active,iguana_coinfind("BTCD")->active);
-            //iguana_coinfind("BTC")->active = iguana_coinfind("BTCD")->active = 0;
         }
         sleep(1);
     }

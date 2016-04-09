@@ -591,8 +591,8 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
             }
         }
     }
-    if ( n > 0 || bp == coin->current )
-        printf("issue.[%d] %d priority.%d\n",bp->hdrsi,n,priority);
+    //if ( n > 0 || bp == coin->current )
+    //    printf("issue.[%d] %d priority.%d\n",bp->hdrsi,n,priority);
     return(n);
 }
 
@@ -647,7 +647,7 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
 
 int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32_t starti)
 {
-    int32_t dist,counter=0;
+    int32_t dist,counter=0; char str[64];
     if ( 0 && bp->isRT == 0 && (bp->hdrsi == coin->bundlescount-1 || bp == coin->current) )
         printf("hdr ITERATE.%d bundle.%d vs %d: h.%d n.%d r.%d s.%d c.%d finished.%d spec.%p[%d]\n",bp->hdrsi,bp->bundleheight,coin->longestchain-coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->numcached,bp->emitfinish,bp->speculative,bp->numspec);
     dist = 30 + (coin->current != 0 ? bp->hdrsi - coin->current->hdrsi : 0);
@@ -655,12 +655,17 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
         dist = 3;
     if ( time(NULL) > bp->hdrtime+dist && (bp == coin->current || bp->hdrsi >= coin->bundlescount-2 || (coin->enableCACHE != 0 && bp->numhashes < bp->n && (bp->speculative == 0 || bp->hdrsi >= coin->longestchain/bp->n))) )
     {
-        char str[64];
         bp->hdrtime = (uint32_t)time(NULL);
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
     }
     if ( coin->enableCACHE != 0 && (bp == coin->current || bp->hdrsi == coin->bundlescount-1) && bits256_nonz(bp->nextbundlehash2) == 0 )
     {
+        if ( bp->numhashes < bp->n && bp->numcached < bp->n )
+        {
+            //printf("issue current hdr.[%d]\n",bp->hdrsi);
+            bp->issued[1] = 0;
+            //queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
+        }
         iguana_bundleissuemissing(coin,bp,3,1.);
         /*if ( bp == coin->current )
         {
@@ -1061,11 +1066,15 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
                 {
                     //printf("firstgap <- [%d] emit.%u bp->n.%d numsaved.%d numcached.%d numhashes.%d\n",bp->hdrsi,bp->emitfinish,bp->n,bp->numsaved,bp->numcached,bp->numhashes);
                     firstgap = bp;
+                    if ( bp->queued == 0 )
+                        iguana_bundleQ(coin,bp,1000);
                 }
                 //else printf("[%d] emit.%u bp->n.%d numsaved.%d numcached.%d numhashes.%d\n",bp->hdrsi,bp->emitfinish,bp->n,bp->numsaved,bp->numcached,bp->numhashes);
 
                 if ( bp->emitfinish == 0 )
                 {
+                    if ( lastpending == 0 && bp->queued == 0 )
+                        iguana_bundleQ(coin,bp,1000);
                     if ( firstgap != 0 && ++pending == coin->MAXBUNDLES )
                     {
                         lastpending = bp;
@@ -1203,11 +1212,6 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
         if ( (rand() % 100) == 0 )
             myallocated(0,0);
         coin->lastdisp = (uint32_t)time(NULL);
-    }
-    if ( (bp= coin->current) != 0 )
-    {
-        if ( bp->queued == 0 )
-            iguana_bundleQ(coin,firstgap,1000);
     }
     iguana_setmaxbundles(coin);
     strcpy(coin->statusstr,str);
