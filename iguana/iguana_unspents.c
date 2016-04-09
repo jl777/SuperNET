@@ -1762,14 +1762,14 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             }
             bp->issued[0] = 0;
             {
-                uint8_t serialized[512]; int32_t len; struct iguana_peer *addr;
+                 struct iguana_peer *addr; //uint8_t serialized[512]; int32_t len;
                 hash2 = bp->hashes[0];
                 char str[65]; printf("RT[0] [%d:%d] %s %p\n",bp->hdrsi,0,bits256_str(str,hash2),block);
                 addr = coin->peers.ranked[rand() % 8];
-                if ( addr != 0 && addr->usock >= 0 && addr->dead == 0 && (len= iguana_getdata(coin,serialized,MSG_BLOCK,&hash2,1)) > 0 )
+                if ( addr != 0 && addr->usock >= 0 && addr->dead == 0 )//&& (len= iguana_getdata(coin,serialized,MSG_BLOCK,&hash2,1)) > 0 )
                 {
                     iguana_sendblockreqPT(coin,addr,bp,0,hash2,0);
-                    iguana_send(coin,addr,serialized,len);
+                    //iguana_send(coin,addr,serialized,len);
                 }
             }
         }
