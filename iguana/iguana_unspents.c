@@ -1789,6 +1789,11 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                 startmillis0 = OS_milliseconds();
                 if ( iguana_ramchainfile(coin,dest,&blockR,bp,bundlei,block) == 0 )
                 {
+                    for (i=0; i<bp->n; i++)
+                        if ( GETBIT(bp->haveblock,i) == 0 )
+                            bp->issued[i] = 0;
+                    if (  (n= iguana_bundleissuemissing(coin,bp,3,1.)) > 0 )
+                        printf("RT issued %d priority requests [%d] to unstick stuckiters.%d\n",n,bp->hdrsi,coin->stuckiters);
                     for (i=bundlei; i<bp->n; i++)
                     {
                         block = iguana_bundleblock(coin,&hash2,bp,i);
