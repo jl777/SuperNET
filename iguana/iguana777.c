@@ -31,10 +31,6 @@ struct iguana_info *iguana_coinfind(const char *symbol)
 struct iguana_info *iguana_coinadd(const char *symbol,cJSON *argjson)
 {
     struct iguana_info *coin; int32_t i = 0;
-#ifdef __PNACL__
-    if ( strcmp("BTCD",symbol) != 0 )
-        return(0);
-#endif
     if ( symbol == 0 )
     {
         for (i=0; i<sizeof(Coins)/sizeof(*Coins); i++)

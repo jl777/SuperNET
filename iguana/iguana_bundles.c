@@ -556,8 +556,8 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
                      if ( (addr= coin->peers.ranked[rand() % max]) != 0 && addr->usock >= 0 && addr->dead == 0 )
                     {
                         struct iguana_blockreq *req = 0;
-                        if ( bp == coin->current )
-                            printf("iguana_bundleissuemissing.[%d:%d]\n",bp->hdrsi,i);
+                        //if ( bp == coin->current )
+                          //  printf("iguana_bundleissuemissing.[%d:%d]\n",bp->hdrsi,i);
                         if ( priority > 2 || bp->numsaved > bp->n-10 )
                             iguana_sendblockreqPT(coin,addr,bp,i,hash2,0);
                         else
@@ -583,8 +583,8 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
             {
                 if ( (addr= coin->peers.ranked[rand() % max]) != 0 && addr->usock >= 0 && addr->dead == 0 )
                 {
-                    if ( bp == coin->current )
-                        printf("iguana_bundleissuemissing.[%d:%d]\n",bp->hdrsi,i);
+                    //if ( bp == coin->current )
+                      //  printf("iguana_bundleissuemissing.[%d:%d]\n",bp->hdrsi,i);
                     n++;
                     iguana_sendblockreqPT(coin,addr,bp,firsti,hash2,0);
                 }
