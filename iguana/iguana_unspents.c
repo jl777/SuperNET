@@ -1753,7 +1753,17 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && ((coin->RTheight <= coin->blocks.hwmchain.height && time(NULL) > bp->lastRT) || time(NULL) > bp->lastRT+10) )
     {
         if ( (block= bp->blocks[0]) != 0 && block->mainchain == 0 )
-            _iguana_chainlink(coin,block);
+        {
+            if ( _iguana_chainlink(coin,block) == 0 )
+            {
+                uint8_t serialized[512]; int32_t len; struct iguana_peer *addr;
+                hash2 = bp->hashes[0];
+                char str[65]; printf("RT error [%d:%d] %s %p\n",bp->hdrsi,0,bits256_str(str,hash2),block);
+                addr = coin->peers.ranked[rand() % 8];
+                if ( addr != 0 && addr->usock >= 0 && addr->dead == 0 && (len= iguana_getdata(coin,serialized,MSG_BLOCK,&hash2,1)) > 0 )
+                    iguana_send(coin,addr,serialized,len);
+            }
+        }
         char str[65]; printf("check longest.%d RTheight.%d hwm.%d %s %p\n",coin->longestchain,coin->RTheight,coin->blocks.hwmchain.height,bits256_str(str,bp->hashes[0]),block);
         if ( bits256_cmp(coin->RThash1,bp->hashes[1]) != 0 )
             coin->RThash1 = bp->hashes[1];
