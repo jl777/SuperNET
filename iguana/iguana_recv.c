@@ -856,7 +856,13 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
         {
             //printf("FOUND speculative.%s BLOCKHASHES[%d] ht.%d\n",bits256_str(str,blockhashes[1]),num,bp->bundleheight);
             if ( bp->speculative == 0 )
+            {
                 bp->speculative = mycalloc('s',bp->n+1,sizeof(*bp->speculative));
+                for (i=0; i<bp->n; i++)
+                    if ( GETBIT(bp->haveblock,i) == 0 )
+                        bp->issued[i] = 0;
+                iguana_bundleissuemissing(coin,bp,3,1.);
+            }
             for (i=1; i<num&&i<=bp->n; i++)
             {
                 bp->speculative[i] = blockhashes[i];

@@ -1908,10 +1908,15 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
                 if ( fpos >= 0 )
                     block->fpos = fpos, block->fpipbits = addr_ipbits;
             }
-        } else printf("ramchain verification error.%d hdrsi.%d bundlei.%d\n",err,bp->hdrsi,bundlei);
+        }
+        else
+        {
+            printf("ramchain verification error.%d hdrsi.%d bundlei.%d\n",err,bp->hdrsi,bundlei);
+            fpos = -1;
+        }
     }
     if ( fpos < 0 )
-        block->fpos = -1, block->fpipbits = block->RO.recvlen = 0;
+        iguana_blockunmark(coin,block,bp,bundlei,1);
     //fprintf(stderr,"finished with hdrsi.%d ht.%d scripts.%u:%u\n",bp->hdrsi,bp->bundleheight,ramchain->H.scriptoffset,ramchain->H.data->scriptspace);
     ramchain->H.ROflag = 0;
     iguana_ramchain_free(coin,ramchain,0);
