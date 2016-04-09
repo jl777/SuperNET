@@ -392,7 +392,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             printf("helperid.%d convertfinished.%d vs max %d bundlescount.%d\n",helperid,n,max,coin->bundlescount);
             sleep(3);
         }
-        if ( iguana_spendvectorsaves(coin) == 0 )
+        if ( convertflag != 0 || iguana_spendvectorsaves(coin) == 0 )
         {
             if ( coin->origbalanceswritten <= 1 )
                 hdrsi = 0;
