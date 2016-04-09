@@ -974,15 +974,15 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     }
     if ( block != 0 )//&& bp != 0 && bp->hdrsi == coin->bundlescount-1 )
     {
-        int32_t i; static int32_t numrecv;
+        int32_t i,numsaved = 0; struct iguana_block *tmpblock; static int32_t numrecv;
         numrecv++;
-        /*if ( bp != 0 )
+        if ( bp != 0 )
         {
             for (i=numsaved=0; i<bp->n; i++)
                 if ( (tmpblock= bp->blocks[i]) != 0 && tmpblock->fpipbits != 0 && tmpblock->fpos >= 0 && ((bp->hdrsi == 0 && i == 0) || bits256_nonz(tmpblock->RO.prev_block) != 0) )
                     numsaved++;
         }
-        fprintf(stderr,"%s [%d:%d] block.%x | s.%d r.%d copy.%d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block!=0?block->fpipbits:0,numsaved,numrecv,req->copyflag);*/
+        fprintf(stderr,"%s [%d:%d] block.%x | s.%d r.%d copy.%d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block!=0?block->fpipbits:0,numsaved,numrecv,req->copyflag);
         if ( _iguana_chainlink(coin,block) == 0 )
         {
             next = block;
