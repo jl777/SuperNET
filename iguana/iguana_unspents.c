@@ -1754,7 +1754,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     {
         if ( (block= bp->blocks[0]) != 0 && block->mainchain == 0 )
             _iguana_chainlink(coin,block);
-        //printf("check longest.%d RTheight.%d hwm.%d\n",coin->longestchain,coin->RTheight,coin->blocks.hwmchain.height);
+        printf("check longest.%d RTheight.%d hwm.%d\n",coin->longestchain,coin->RTheight,coin->blocks.hwmchain.height);
         if ( bits256_cmp(coin->RThash1,bp->hashes[1]) != 0 )
             coin->RThash1 = bp->hashes[1];
         bp->lastRT = (uint32_t)time(NULL);
@@ -1766,7 +1766,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             {
                 if ( (addr= coin->peers.ranked[i]) != 0 && addr->usock >= 0 && addr->dead == 0 )
                 {
-                    printf("%d ",addr->numRThashes);
+                    //printf("%d ",addr->numRThashes);
                 }
             }
             printf("RTheaders %s\n",coin->symbol);
