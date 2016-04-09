@@ -1754,6 +1754,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     {
         if ( (block= bp->blocks[0]) == 0 || block->txvalid == 0 || block->mainchain == 0 )
         {
+            iguana_walkchain(coin,0);
             if ( block != 0 )
             {
                 _iguana_chainlink(coin,block);
