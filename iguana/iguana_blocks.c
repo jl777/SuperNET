@@ -352,11 +352,13 @@ struct iguana_block *iguana_fastlink(struct iguana_info *coin,int32_t hwmheight)
             printf("iguana_fastlink null bundle.[%d]\n",hdrsi);
             break;
         }
-        if ( (block= bp->blocks[bundlei]) == 0 )
+        block = iguana_blockhashset("fastlink",coin,height,bp->hashes[bundlei],1);
+        if ( bp->blocks[bundlei] != 0 && block != bp->blocks[bundlei] )
         {
             printf("iguana_fastlink null block.[%d:%d]\n",hdrsi,bundlei);
             break;
         }
+        bp->blocks[bundlei] = block;
         coin->blocks.maxblocks = (block->height + 1);
         if ( coin->blocks.maxblocks > coin->longestchain )
             coin->longestchain = coin->blocks.maxblocks;
@@ -368,11 +370,11 @@ struct iguana_block *iguana_fastlink(struct iguana_info *coin,int32_t hwmheight)
         block->hh.prev = prev;
         if ( prev != 0 )
             prev->hh.next = block;
+        iguana_bundlehash2add(coin,0,bp,bundlei,block->RO.hash2);
         prev = block;
         prevPoW = block->PoW;
     }
     iguana_walkchain(coin,0);
-    iguana_walkchain(coin,1);
     return(block);
 }
 

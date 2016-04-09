@@ -1308,8 +1308,6 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
     coin->blocks.hwmchain = *iguana_blockfind("init",coin,coin->bundles[coin->balanceswritten-1]->hashes[bp->n-1]);
     if ( (n= iguana_walkchain(coin,0)) > 0 )
         printf("iguana_walkchain n.%d vs hwmheight.%d\n",n,coin->blocks.hwmchain.height);
-    if ( (n= iguana_walkchain(coin,0)) > 0 )
-        printf("iguana_walkchainB n.%d vs hwmheight.%d\n",n,coin->blocks.hwmchain.height);
     //iguana_fastlink(coin,coin->balanceswritten * coin->chain->bundlesize - 1);
     return(coin->balanceswritten);
 }
