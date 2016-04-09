@@ -271,7 +271,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
         if ( spentchain->allocatedA == 0 || spentchain->allocatedU == 0 )
         {
             iguana_volatilesalloc(coin,spentchain);
-            printf("volatilesalloc.[%d] ",spent_hdrsi);
+            fprintf(stderr,"volatilesalloc.[%d] ",spent_hdrsi);
         }
         if ( incremental == 0 )
         {
@@ -1103,7 +1103,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
     }
     //if ( coin->PREFETCHLAG > 0 )
         iguana_ramchain_prefetch(coin,ramchain,0);
-    printf("BALANCEGEN.[%d] ",bp->hdrsi);
+    fprintf(stderr,"BALANCEGEN.[%d] ",bp->hdrsi);
     txidind = spendind = rdata->firsti;
     for (i=0; i<bp->n; i++)
     {
@@ -1749,7 +1749,6 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     double startmillis0; static double totalmillis0; static int32_t num0;
     struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,i,n,flag=0; bits256 hash2; struct iguana_peer *addr;
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
-    return(0);
     //starti = coin->RTheight % coin->chain->bundlesize;
     if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && ((coin->RTheight <= coin->blocks.hwmchain.height && time(NULL) > bp->lastRT) || time(NULL) > bp->lastRT+10) )
     {
