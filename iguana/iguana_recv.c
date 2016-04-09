@@ -695,9 +695,11 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
                 if ( prevbp->hdrsi+1 == coin->bundlescount && prevbundlei == coin->chain->bundlesize-1 )
                 {
                     printf("AUTOCREATE.%d\n",prevbp->bundleheight + coin->chain->bundlesize);
-                    bp = iguana_bundlecreate(coin,bundleip,prevbp->bundleheight + coin->chain->bundlesize,hash2,zero,0);
-                    if ( bp->queued == 0 )
-                        iguana_bundleQ(coin,bp,1000);
+                    if ( (bp= iguana_bundlecreate(coin,bundleip,prevbp->bundleheight + coin->chain->bundlesize,hash2,zero,0)) != 0 )
+                    {
+                        if ( bp->queued == 0 )
+                            iguana_bundleQ(coin,bp,1000);
+                    }
                 }
                 if ( prevbundlei < coin->chain->bundlesize-1 )
                 {
