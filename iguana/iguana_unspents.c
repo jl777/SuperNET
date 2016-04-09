@@ -1758,14 +1758,19 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             {
                 _iguana_chainlink(coin,block);
                 block->txvalid = 0;
+                block->issued = 0;
             }
+            bp->issued[0] = 0;
             {
                 uint8_t serialized[512]; int32_t len; struct iguana_peer *addr;
                 hash2 = bp->hashes[0];
                 char str[65]; printf("RT[0] [%d:%d] %s %p\n",bp->hdrsi,0,bits256_str(str,hash2),block);
                 addr = coin->peers.ranked[rand() % 8];
                 if ( addr != 0 && addr->usock >= 0 && addr->dead == 0 && (len= iguana_getdata(coin,serialized,MSG_BLOCK,&hash2,1)) > 0 )
+                {
+                    iguana_sendblockreqPT(coin,addr,bp,0,hash2,0);
                     iguana_send(coin,addr,serialized,len);
+                }
             }
         }
         char str[65]; printf("check longest.%d RTheight.%d hwm.%d %s %p\n",coin->longestchain,coin->RTheight,coin->blocks.hwmchain.height,bits256_str(str,bp->hashes[0]),block);
