@@ -385,7 +385,7 @@ struct iguana_chain *iguana_chainfind(char *name,cJSON *argjson,int32_t createfl
 {
     struct iguana_chain *chain; uint32_t i;
 #ifdef __PNACL__
-    if ( strcmp("BTCD",name) != 0 )
+    if ( strcmp("bitcoin",name) == 0 )
         return(0);
 #endif
     for (i=0; i<sizeof(Chains)/sizeof(*Chains); i++)
