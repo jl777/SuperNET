@@ -31,6 +31,10 @@ struct iguana_info *iguana_coinfind(const char *symbol)
 struct iguana_info *iguana_coinadd(const char *symbol,cJSON *argjson)
 {
     struct iguana_info *coin; int32_t i = 0;
+#ifdef __PNACL__
+    if ( strcmp("BTCD",symbol) != 0 )
+        return(0);
+#endif
     if ( symbol == 0 )
     {
         for (i=0; i<sizeof(Coins)/sizeof(*Coins); i++)
@@ -40,7 +44,7 @@ struct iguana_info *iguana_coinadd(const char *symbol,cJSON *argjson)
         {
             if ( Coins[i] == 0 )
             {
-                Coins[i] = mycalloc('c',1,sizeof(*Coins[i]));
+                Coins[i] = mycalloc('C',1,sizeof(*Coins[i]));
                 printf("iguana_coin.(new) -> %p\n",Coins[i]);
                 return(Coins[i]);
             } return(0);
@@ -59,7 +63,7 @@ struct iguana_info *iguana_coinadd(const char *symbol,cJSON *argjson)
             if ( strcmp("endmarker",Hardcoded_coins[i][0]) == 0 || strcmp(symbol,Hardcoded_coins[i][0]) == 0 )
             {
                 if ( Coins[i] == 0 )
-                    Coins[i] = mycalloc('c',1,sizeof(*Coins[i]));
+                    Coins[i] = mycalloc('C',1,sizeof(*Coins[i]));
                 coin = Coins[i];
                 if ( coin->chain == 0 )
                 {
@@ -524,6 +528,8 @@ void iguana_coinloop(void *arg)
             if ( (coin= coins[i]) != 0 )
             {
                 if ( coin->MAXPEERS > IGUANA_MAXPEERS )
+                    coin->MAXPEERS = IGUANA_MAXPEERS;
+                if ( coin->MAXPEERS < IGUANA_MINPEERS )
                     coin->MAXPEERS = IGUANA_MAXPEERS;
                 if ( coin->started == 0 && coin->active != 0 )
                 {

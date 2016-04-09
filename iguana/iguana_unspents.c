@@ -1349,11 +1349,11 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
         {
             if ( (bp= coin->bundles[i]) != 0 && bp->queued == 0 )
             {
-                printf("%d ",i);
+                //printf("%d ",i);
                 iguana_bundleQ(coin,bp,1000);
             }
         }
-        printf("iguana_bundlesQ\n");
+        printf("iguana_bundlesQ %d to %d\n",coin->balanceswritten,coin->bundlescount);
     }
     coin->origbalanceswritten = coin->balanceswritten;
     iguana_volatilesinit(coin);
@@ -1754,18 +1754,16 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     {
         if ( (block= bp->blocks[0]) == 0 || block->txvalid == 0 || block->mainchain == 0 )
         {
-            iguana_walkchain(coin,0);
             if ( block != 0 )
             {
-                _iguana_chainlink(coin,block);
-                block->txvalid = 0;
-                block->issued = 0;
+                if ( _iguana_chainlink(coin,block) <= 0 )
+                    iguana_blockunmark(coin,block,bp,0,1);
             }
             bp->issued[0] = 0;
             {
                  struct iguana_peer *addr; //uint8_t serialized[512]; int32_t len;
                 hash2 = bp->hashes[0];
-                char str[65]; printf("RT[0] [%d:%d] %s %p\n",bp->hdrsi,0,bits256_str(str,hash2),block);
+                //char str[65]; printf("RT[0] [%d:%d] %s %p\n",bp->hdrsi,0,bits256_str(str,hash2),block);
                 addr = coin->peers.ranked[rand() % 8];
                 if ( addr != 0 && addr->usock >= 0 && addr->dead == 0 )//&& (len= iguana_getdata(coin,serialized,MSG_BLOCK,&hash2,1)) > 0 )
                 {
@@ -1774,7 +1772,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                 }
             }
         }
-        char str[65]; printf("check longest.%d RTheight.%d hwm.%d %s %p\n",coin->longestchain,coin->RTheight,coin->blocks.hwmchain.height,bits256_str(str,bp->hashes[0]),block);
+        //char str[65]; printf("check longest.%d RTheight.%d hwm.%d %s %p\n",coin->longestchain,coin->RTheight,coin->blocks.hwmchain.height,bits256_str(str,bp->hashes[0]),block);
         if ( bits256_cmp(coin->RThash1,bp->hashes[1]) != 0 )
             coin->RThash1 = bp->hashes[1];
         bp->lastRT = (uint32_t)time(NULL);

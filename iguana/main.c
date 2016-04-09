@@ -1082,7 +1082,7 @@ int maingen(int argc, char** argv)
 
 void iguana_main(void *arg)
 {
-    int32_t usessl = 0, ismainnet = 1;  int32_t i; struct iguana_info *btc,*btcd;
+    int32_t usessl = 0, ismainnet = 1;  int32_t i; struct iguana_info *btcd=0; //*btc=0,
     struct supernet_info *myinfo; char *tmpstr,*helperargs,*coinargs,helperstr[512];
     mycalloc(0,0,0);
     myinfo = SuperNET_MYINFO(0);
@@ -1138,7 +1138,7 @@ void iguana_main(void *arg)
     iguana_initQ(&validateQ,"validateQ");
     myinfo->rpcport = IGUANA_RPCPORT;
     strcpy(myinfo->rpcsymbol,"BTCD");
-    if ( arg != 0 )
+    if ( 0 && arg != 0 )
     {
         cJSON *argjson;
         if ( (argjson= cJSON_Parse(arg)) != 0 )
@@ -1163,20 +1163,19 @@ void iguana_main(void *arg)
     }
     OS_ensure_directory("help");
     OS_ensure_directory("confs");
-    OS_ensure_directory("accounts");
     OS_ensure_directory("DB"), OS_ensure_directory("DB/ECB");
     OS_ensure_directory("tmp");
     OS_ensure_directory("purgeable");
     OS_ensure_directory("purgeable/BTC");
     OS_ensure_directory("purgeable/BTCD");
     OS_ensure_directory(GLOBALTMPDIR);
-    btc = iguana_coinadd("BTC",0);
     btcd = iguana_coinadd("BTCD",0);
-    if ( btc == 0 || btcd == 0 )
+    /*btc = 0;//iguana_coinadd("BTC",0);
+    if ( btc == 0 && btcd == 0 )
     {
         printf("error adding BTC.%p or BTCD.%p\n",btc,btcd);
         exit(-1);
-    }
+    }*/
     if ( (tmpstr= SuperNET_JSON(myinfo,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"help\"}"),0,myinfo->rpcport)) != 0 )
     {
         if ( (API_json= cJSON_Parse(tmpstr)) != 0 && (API_json= jobj(API_json,"result")) != 0 )
@@ -1194,11 +1193,11 @@ void iguana_main(void *arg)
     
     if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"prefetchlag\":2,\"VALIDATE\":1,\"active\":1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"newcoin\":\"BTC\",\"startpend\":166,\"services\":1}"),0,myinfo->rpcport)) != 0 )
         free(str);
-#ifdef __APPLE__
+#ifdef __PNACL__
     if ( 1 )
     {
         sleep(1);
-        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"VALIDATE\":1,\"prefetchlag\":13,\"startpend\":2048,\"endpend\":2048,\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":0,\"maxpeers\":64,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":8,\"poll\":10}"),0,myinfo->rpcport)) != 0 )
+        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"VALIDATE\":1,\"prefetchlag\":13,\"startpend\":1,\"endpend\":1,\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":0,\"maxpeers\":64,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":1,\"poll\":10}"),0,myinfo->rpcport)) != 0 )
         {
             free(str);
             if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":1024,\"maxpeers\":256,\"newcoin\":\"BTCD\",\"active\":1}"),0,myinfo->rpcport)) != 0 )
@@ -1216,6 +1215,7 @@ void iguana_main(void *arg)
         }
         sleep(1);
     }
+    if ( 0 )
     {
         int32_t i,n; int64_t total; char *coinaddr; struct iguana_pkhash *P; struct iguana_info *coin; uint8_t rmd160[20],addrtype,pubkey33[33]; double startmillis;
         coin = iguana_coinfind("BTCD");

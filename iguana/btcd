@@ -1,0 +1,8 @@
+curl --url "http://127.0.0.1:7778" --data "{\"prefetchlag\":-1,\"poll\":1,\"VALIDATE\":1,\"validatedir\":\"/tmp\",\"active\":1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"newcoin\":\"BTCD\",\"startpend\":4,\"endpend\":4,\"services\":1,\"maxpeers\":64,\"tmpdir\":\"/mnt/ramdisk\"}"
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"pausecoin\",\"coin\":\"BTC\"}"
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"coin\":\"BTCD\",\"ipaddr\":\"89.248.160.241\"}"
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"coin\":\"BTCD\",\"ipaddr\":\"89.248.160.244\"}"
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"coin\":\"BTCD\",\"ipaddr\":\"89.248.160.239\"}"
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"coin\":\"BTCD\",\"ipaddr\":\"96.41.29.70\"}"
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"coin\":\"BTCD\",\"ipaddr\":\"68.46.103.181\"}"
+

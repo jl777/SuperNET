@@ -134,7 +134,12 @@ int32_t iguana_savehdrs(struct iguana_info *coin)
     n = coin->blocks.hwmchain.height + 1;
     sprintf(oldfname,"confs/%s_oldhdrs.txt",coin->symbol), OS_compatible_path(oldfname);
     sprintf(tmpfname,"%s/%s/hdrs.txt",GLOBALTMPDIR,coin->symbol), OS_compatible_path(tmpfname);
-    sprintf(fname,"confs/%s_hdrs.txt",coin->symbol), OS_compatible_path(fname);
+#ifdef __PNACL__
+    sprintf(fname,"js/%s_hdrs.js",coin->symbol);
+#else
+    sprintf(fname,"confs/%s_hdrs.txt",coin->symbol);
+#endif
+    OS_compatible_path(fname);
     if ( (fp= fopen(tmpfname,"w")) != 0 )
     {
         fprintf(fp,"%d\n",n);
@@ -188,7 +193,7 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
     lastbundle = zero;
     if ( coin->MAXPEERS > IGUANA_MAXPEERS )
         coin->MAXPEERS = IGUANA_MAXPEERS;
-    if ( iter == 1 )
+    if ( iter == 1 && 0 )
     {
         int32_t i; FILE *fp; char fname[512]; struct iguana_blockRO blockRO;
         sprintf(fname,"blocks.%s",coin->symbol), OS_compatible_path(fname);
@@ -435,7 +440,13 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
     iguana_genesis(coin,coin->chain);
     for (iter=coin->peers.numranked>8; iter<2; iter++)
     {
+#ifdef __PNACL__
+        sprintf(fname,"js/%s_%s.js",coin->symbol,(iter == 0) ? "peers" : "hdrs");
+#else
         sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
+#endif
+        OS_compatible_path(fname);
+        //sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
         //sprintf(fname,"tmp/%s/%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
         OS_compatible_path(fname);
         printf("parsefile.%d %s\n",iter,fname);

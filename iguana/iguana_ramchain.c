@@ -1358,8 +1358,9 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
         if ( iguana_ramchain_size(RAMCHAIN_ARG,ramchain->numblocks,ramchain->H.data->scriptspace) != ramchain->H.data->allocsize || fpos+ramchain->H.data->allocsize > filesize )
         {
             printf("iguana_ramchain_map.(%s) size mismatch %ld vs %ld vs filesize.%ld numblocks.%d expanded.%d fpos.%d sum %ld\n",fname,(long)iguana_ramchain_size(RAMCHAIN_ARG,ramchain->numblocks,ramchain->H.data->scriptspace),(long)ramchain->H.data->allocsize,(long)filesize,ramchain->numblocks,expanded,(int32_t)fpos,(long)(fpos+ramchain->H.data->allocsize));
-            exit(-1);
-            //munmap(ramchain->fileptr,ramchain->filesize);
+            //exit(-1);
+            munmap(ramchain->fileptr,ramchain->filesize);
+            OS_removefile(fname,0);
             return(0);
         }
         else if ( memcmp(hash2.bytes,ramchain->H.data->firsthash2.bytes,sizeof(bits256)) != 0 )
@@ -2155,9 +2156,9 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
                     retval = 0;
                 }
             }
-            int32_t i; for (i=0; i<IGUANA_NUMLHASHES; i++)
-                printf("%08x ",mapchain->H.data->lhashes[i].uints[0]);
-            printf("%x ht.%d bundlehashes.%s\n",(uint32_t)mapchain->H.data->sha256.txid,mapchain->height,coin->symbol);
+            int32_t i; char buf[512]; for (i=0; i<IGUANA_NUMLHASHES; i++)
+                sprintf(buf+strlen(buf),"%08x ",mapchain->H.data->lhashes[i].uints[0]);
+            sprintf("%s %x ht.%d bundlehashes.%s\n",buf,(uint32_t)mapchain->H.data->sha256.txid,mapchain->height,coin->symbol);
             iguana_ramchain_free(coin,mapchain,cmpflag);
         }
         iguana_mempurge(hashmem);
