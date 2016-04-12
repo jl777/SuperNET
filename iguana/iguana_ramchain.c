@@ -1222,6 +1222,25 @@ int32_t iguana_ramchain_free(struct iguana_info *coin,struct iguana_ramchain *ra
     return(0);
 }
 
+int32_t iguana_bundleremove(struct iguana_info *coin,int32_t hdrsi)
+{
+    struct iguana_bundle *bp; char fname[1024],str[65];
+    if ( hdrsi >= 0 && hdrsi < coin->bundlescount && (bp= coin->bundles[hdrsi]) != 0 )
+    {
+        printf("delete bundle.[%d]\n",hdrsi);
+        iguana_ramchain_free(coin,&bp->ramchain,1);
+        if ( iguana_bundlefname(coin,bp,fname) == 0 )
+        {
+            printf("delete.(%s)\n",fname);
+            OS_removefile(fname,0);
+        }
+        sprintf(fname,"DB/%s/spends/%s.%d",coin->symbol,bits256_str(str,bp->hashes[0]),bp->bundleheight);
+        OS_removefile(fname,0);
+        return(0);
+    }
+    return(-1);
+}
+
 int32_t iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct OS_memspace *hashmem,int32_t extraflag)
 {
     RAMCHAIN_DECLARE; int32_t err=0; 

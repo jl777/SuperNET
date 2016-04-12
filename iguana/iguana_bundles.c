@@ -363,6 +363,19 @@ struct iguana_bundle *iguana_bundlecreate(struct iguana_info *coin,int32_t *bund
     return(0);
 }
 
+int32_t iguana_bundlefname(struct iguana_info *coin,struct iguana_bundle *bp,char *fname)
+{
+    int32_t hdrsi; static bits256 zero;
+    iguana_peerfname(coin,&hdrsi,"DB",fname,0,bp->hashes[0],zero,bp->n,1);
+    if ( hdrsi == bp->hdrsi )
+        return(0);
+    else
+    {
+        fname[0] = 0;
+        return(-1);
+    }
+}
+
 struct iguana_txid *iguana_bundletx(struct iguana_info *coin,struct iguana_bundle *bp,int32_t bundlei,struct iguana_txid *tx,int32_t txidind)
 {
     static const bits256 zero;

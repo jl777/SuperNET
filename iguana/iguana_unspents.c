@@ -305,6 +305,8 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
             }
         }
         printf("iguana_volatileupdate: [%d] spent.(u%u %.8f pkind.%d) double spend? at ht.%d [%d] spendind.%d\n",spent_hdrsi,spent_unspentind,dstr(spent_value),spent_pkind,fromheight,fromheight/coin->chain->bundlesize,spendind);
+        iguana_bundleremove(coin,spent_hdrsi);
+        iguana_bundleremove(coin,fromheight/coin->chain->bundlesize);
         exit(-1);
     }
     return(-1);
