@@ -1171,7 +1171,8 @@ int32_t iguana_ramchain_free(struct iguana_info *coin,struct iguana_ramchain *ra
         if ( ramchain->A != ramchain->creditsA )
         {
             //printf("hashmem.%p Free A %p %p, numpkinds.%d %ld\n",ramchain->hashmem,ramchain->A,ramchain->creditsA,ramchain->H.data->numpkinds,sizeof(*ramchain->A) * ramchain->H.data->numpkinds);
-            myfree(ramchain->A,sizeof(*ramchain->A) * ramchain->H.data->numpkinds), ramchain->A = 0;
+            if ( ramchain->allocatedA != 0 )
+                myfree(ramchain->A,sizeof(*ramchain->A) * ramchain->H.data->numpkinds), ramchain->A = 0;
         }
         //if ( ramchain->U2 != ramchain->roU2 )
         //    myfree(ramchain->U2,sizeof(*ramchain->U2) * ramchain->H.data->numunspents), ramchain->U2 = 0;
