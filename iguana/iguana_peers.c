@@ -1035,6 +1035,8 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
     //char str[65]; printf("start dedicatedloop.%s addrind.%d %s\n",addr->ipaddr,addr->addrind,bits256_str(str,addr->iphash));
     addr->maxfilehash2 = IGUANA_MAXFILEITEMS;
     bufsize = IGUANA_MAXPACKETSIZE;
+    if ( addr->blockspace == 0 )
+        addr->blockspace = mycalloc('r',1,bufsize + 8192);
     buf = mycalloc('r',1,bufsize);
     if ( strcmp(coin->symbol,"VPN") == 0 )
     {

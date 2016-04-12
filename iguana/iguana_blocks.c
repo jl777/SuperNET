@@ -217,6 +217,19 @@ void iguana_blockconv(struct iguana_block *dest,struct iguana_msgblock *msg,bits
     dest->RO.hash2 = hash2;
 }
 
+void iguana_blockunconv(struct iguana_msgblock *msg,struct iguana_block *src,int32_t cleartxn_count)
+{
+    memset(msg,0,sizeof(*msg));
+    msg->H.version = src->RO.version;
+    msg->H.prev_block = src->RO.prev_block;
+    msg->H.merkle_root = src->RO.merkle_root;
+    msg->H.timestamp = src->RO.timestamp;
+    msg->H.bits = src->RO.bits;
+    msg->H.nonce = src->RO.nonce;
+    if ( cleartxn_count == 0 )
+        msg->txn_count = src->RO.txn_count;
+}
+
 void iguana_blockcopy(struct iguana_info *coin,struct iguana_block *block,struct iguana_block *origblock)
 {
     block->RO.hash2 = origblock->RO.hash2;
@@ -347,7 +360,11 @@ struct iguana_block *iguana_fastlink(struct iguana_info *coin,int32_t hwmheight)
     {
         hdrsi = (height / coin->chain->bundlesize);
         bundlei = (height % coin->chain->bundlesize);
-        if ( (bp= coin->bundles[bundlei]) == 0 )
+#ifndef __PNACL__
+        if ( (height % 10000) == 0 )
+            fprintf(stderr,".");
+#endif
+        if ( (bp= coin->bundles[hdrsi]) == 0 )
         {
             printf("iguana_fastlink null bundle.[%d]\n",hdrsi);
             break;

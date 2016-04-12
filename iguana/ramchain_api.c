@@ -102,46 +102,6 @@ HASH_AND_INT(bitcoinrpc,getblock,blockhash,remoteonly)
     return(jprint(retjson,1));
 }
 
-int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t maxlen,bits256 *txidp,struct iguana_txid *tx,int32_t height,struct iguana_msgvin *vins,struct iguana_msgvout *vouts)
-{
-    int32_t i,rwflag=1,len = 0; char asmstr[512],txidstr[65];
-    uint32_t numvins,numvouts; struct iguana_msgvin vin; struct iguana_msgvout vout; uint8_t space[8192];
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->version),&tx->version);
-    if ( coin->chain->hastimestamp != 0 )
-        len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->timestamp),&tx->timestamp);
-    numvins = tx->numvins, numvouts = tx->numvouts;
-    len += iguana_rwvarint32(rwflag,&serialized[len],&numvins);
-    for (i=0; i<numvins; i++)
-    {
-        if ( vins == 0 )
-            iguana_vinset(coin,height,&vin,tx,i);
-        else vin = vins[i];
-        len += iguana_rwvin(rwflag,0,&serialized[len],&vin);
-    }
-    if ( len > maxlen )
-        return(0);
-    len += iguana_rwvarint32(rwflag,&serialized[len],&numvouts);
-    for (i=0; i<numvouts; i++)
-    {
-        if ( vouts == 0 )
-            iguana_voutset(coin,space,asmstr,height,&vout,tx,i);
-        else vout = vouts[i];
-        len += iguana_rwvout(rwflag,0,&serialized[len],&vout);
-    }
-    if ( len > maxlen )
-        return(0);
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->locktime),&tx->locktime);
-    *txidp = bits256_doublesha256(txidstr,serialized,len);
-    if ( memcmp(txidp,tx->txid.bytes,sizeof(*txidp)) != 0 )
-    {
-        //for (i=0; i<len; i++)
-        //    printf("%02x",serialized[i]);
-        char str[65],str2[65]; printf("\nrw.%d numvins.%d numvouts.%d error generating txbytes, probably due to running without stored sigs txid %s vs %s\n",rwflag,numvins,numvouts,bits256_str(str,*txidp),bits256_str(str2,tx->txid));
-        return(len);
-    }
-    return(len);
-}
-
 HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
 {
     struct iguana_txid *tx,T; char *txbytes; bits256 checktxid; int32_t len,height; cJSON *retjson;

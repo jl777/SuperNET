@@ -53,7 +53,7 @@ struct iguana_info *iguana_coinadd(const char *symbol,cJSON *argjson)
         {
             if ( i >= sizeof(Hardcoded_coins)/sizeof(*Hardcoded_coins) )
                 break;
-            //printf("Hardcoded_coins[i][0] %s vs.(%s)\n",Hardcoded_coins[i][0],symbol);
+            printf("Hardcoded_coins[i][0] %s vs.(%s)\n",Hardcoded_coins[i][0],symbol);
             //if ( symbol[0] == 0 )
             //    getchar();
             if ( strcmp("endmarker",Hardcoded_coins[i][0]) == 0 || strcmp(symbol,Hardcoded_coins[i][0]) == 0 )
@@ -517,20 +517,21 @@ void iguana_coinloop(void *arg)
         bp->bundleheight = 0;
     while ( 1 )
     {
-        //fprintf(stderr,"iter\n");
         flag = 0;
         for (i=0; i<n; i++)
         {
             if ( (coin= coins[i]) != 0 )
             {
-#ifdef __PNACL__
-                if ( strcmp(coin->symbol,"BTC") == 0 )
-                    continue;
-#endif
                 if ( coin->MAXPEERS > IGUANA_MAXPEERS )
                     coin->MAXPEERS = IGUANA_MAXPEERS;
                 if ( coin->MAXPEERS < IGUANA_MINPEERS )
                     coin->MAXPEERS = IGUANA_MAXPEERS;
+#ifdef __PNACL__
+                if ( strcmp(coin->symbol,"BTC") == 0 )
+                    continue;
+                if ( coin->MAXPEERS > 64 )
+                    coin->MAXPEERS = 64;
+#endif
                 if ( coin->started == 0 && coin->active != 0 )
                 {
                     iguana_rwiAddrind(coin,0,0,0);
@@ -613,6 +614,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     struct iguana_chain *iguana_createchain(cJSON *json);
     struct iguana_info *coin; int32_t j,m,mult,maxval,mapflags; char dirname[512]; cJSON *peers;
     mapflags = IGUANA_MAPRECVDATA | maphash*IGUANA_MAPTXIDITEMS | maphash*IGUANA_MAPPKITEMS | maphash*IGUANA_MAPBLOCKITEMS | maphash*IGUANA_MAPPEERITEMS;
+    printf("setcoin.%s\n",symbol);
     coin = iguana_coinadd(symbol,json);
     coin->launched = launched;
     if ( (coin->MAXPEERS= maxpeers) <= 0 )
@@ -638,7 +640,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         maxval = (int32_t)coin->MAXMEM;
     coin->MAXMEM *= (1024L * 1024 * 1024);
 #ifdef __PNACL__
-    maxval = 1;
+    maxval = 8;
 #endif
     if ( (coin->startPEND= juint(json,"startpend")) == 0 )
         coin->startPEND = IGUANA_MAXPENDBUNDLES * mult;
@@ -699,6 +701,7 @@ int32_t iguana_launchcoin(char *symbol,cJSON *json)
     int64_t maxrecvcache; uint64_t services; struct iguana_info **coins,*coin;
     if ( symbol == 0 )
         return(-1);
+    printf("launchcoin.%s\n",symbol);
     if ( (coin= iguana_coinadd(symbol,json)) == 0 )
         return(-1);
     if ( coin->launched == 0 )

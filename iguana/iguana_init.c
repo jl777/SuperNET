@@ -129,15 +129,17 @@ bits256 iguana_genesis(struct iguana_info *coin,struct iguana_chain *chain)
 
 int32_t iguana_savehdrs(struct iguana_info *coin)
 {
-    char fname[512],shastr[65],tmpfname[512],str2[65],str[65],oldfname[512];
-    bits256 sha256all; FILE *fp; struct iguana_bundle *bp; int32_t hdrsi,n,retval = 0;
+    char fname[512],shastr[65],tmpfname[512],tmpfname2[512],str2[65],str[65],oldfname[512];
+    bits256 sha256all; FILE *fp,*fp2; struct iguana_bundle *bp; int32_t hdrsi,n,retval = 0;
     n = coin->blocks.hwmchain.height + 1;
     sprintf(tmpfname,"%s/%s/hdrs.txt",GLOBALTMPDIR,coin->symbol), OS_compatible_path(tmpfname);
+    sprintf(tmpfname2,"%s/%s/hdrs.h",GLOBALTMPDIR,coin->symbol), OS_compatible_path(tmpfname);
     sprintf(oldfname,"confs/%s_oldhdrs.txt",coin->symbol), OS_compatible_path(oldfname);
-    sprintf(fname,"confs/%s_hdrs.txt",coin->symbol);
-    OS_compatible_path(fname);
+    sprintf(fname,"confs/%s_hdrs.txt",coin->symbol), OS_compatible_path(fname);
     if ( (fp= fopen(tmpfname,"w")) != 0 )
     {
+        if ( (fp2= fopen(tmpfname2,"w")) != 0 )
+            fprintf(fp2,"char *%s_hdrs[][4] = {\n",coin->symbol);
         fprintf(fp,"%d\n",n);
         for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
         {
@@ -155,11 +157,17 @@ int32_t iguana_savehdrs(struct iguana_info *coin)
                     bits256_str(shastr,bp->allhash);
                 }
                 fprintf(fp,"%d %s %s %s\n",bp->bundleheight,bits256_str(str,bp->hashes[0]),shastr,bits256_str(str2,bp->hashes[1]));
+                if ( fp2 != 0 )
+                    fprintf(fp2,"{ \"%d\", \"%s\", \"%s\", \"%s\"},\n",bp->bundleheight,bits256_str(str,bp->hashes[0]),shastr,bits256_str(str2,bp->hashes[1]));
             }
             else
             {
                 if ( bp != 0 && bits256_nonz(bp->hashes[0]) != 0 )
+                {
                     fprintf(fp,"%d %s\n",bp->bundleheight,bits256_str(str,bp->hashes[0]));
+                    if ( fp2 != 0 )
+                        fprintf(fp2,"{ \"%d\", \"%s\", \"%s\", \"%s\"},\n",bp->bundleheight,bits256_str(str,bp->hashes[0]),"","");
+                }
                 break;
             }
         }
@@ -171,6 +179,11 @@ int32_t iguana_savehdrs(struct iguana_info *coin)
             OS_renamefile(fname,oldfname);
             OS_copyfile(tmpfname,fname,1);
         } else fclose(fp);
+        if ( fp2 != 0 )
+        {
+            fprintf(fp2,"};\n");
+            fclose(fp2);
+        }
     }
     else
     {
@@ -212,6 +225,7 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
     }
     m = flag = 0;
     allhash = zero;
+    memset(line,0,sizeof(line));
     while ( fgets(line,sizeof(line),fp) > 0 )
     {
         j = (int32_t)strlen(line) - 1;
@@ -249,7 +263,16 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
             if ( line[k] == ' ' )
             {
                 decode_hex(hash2.bytes,sizeof(hash2),line+k+1);
-                if ( line[k+1 + 65] != 0 )
+                //printf("line.(%s) k.%d (%c)(%c)(%d)\n",line,k,line[k+63],line[k+64],line[k+65]);
+                if ( height >= 0 && bits256_nonz(hash2) != 0 )
+                {
+                    if ( (bp= iguana_bundlecreate(coin,&bundlei,height,hash2,zero,0)) != 0 )
+                    {
+                        //printf("created bundle.%d\n",bp->hdrsi);
+                        lastbundle = hash2;
+                    }
+                }
+                if ( line[k + 65] != 0 && line[k+65] != '\n'  && line[k+65] != '\r' )
                 {
                     if ( height > (coin->blocks.maxbits - 1000) )
                         iguana_recvalloc(coin,height + 100000);
@@ -265,6 +288,11 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                         //char str[65],str2[65]; printf(">>>> bundle.%d got (%s)/(%s) allhash.(%s)\n",height,bits256_str(str,hash1),checkstr,bits256_str(str2,allhash));
                         if ( (bp= iguana_bundlecreate(coin,&bundlei,height,hash2,allhash,0)) != 0 )
                         {
+                            if ( bits256_cmp(allhash,bp->allhash) != 0 )
+                            {
+                                printf("mismatched allhash.[%d]\n",bp->hdrsi);
+                                bp->allhash = allhash;
+                            }
                             bp->bundleheight = height;
                             if ( bits256_nonz(hash1) != 0 )
                             {
@@ -299,6 +327,7 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                 }
             }
         }
+        memset(line,0,sizeof(line));
     }
     if ( iter == 1 )
         iguana_initfinal(coin,lastbundle);
@@ -436,6 +465,33 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
     iguana_genesis(coin,coin->chain);
     for (iter=coin->peers.numranked>8; iter<2; iter++)
     {
+#ifdef __PNACL__
+#include "confs/BTCD_hdrs.h"
+        bits256 hash2,allhash,hash1; int32_t bundlei,i,height; struct iguana_block *block; struct iguana_bundle *bp;
+        for (i=0; i<sizeof(BTCD_hdrs)/sizeof(*BTCD_hdrs); i++)
+        {
+            height = atoi(BTCD_hdrs[i][0]);
+            if ( height > (coin->blocks.maxbits - 1000) )
+                iguana_recvalloc(coin,height + 100000);
+            hash2 = bits256_conv(BTCD_hdrs[i][1]);
+            if ( BTCD_hdrs[i][2][0] != 0 )
+                allhash = bits256_conv(BTCD_hdrs[i][2]);
+            if ( BTCD_hdrs[i][3][0] != 0 )
+                hash1 = bits256_conv(BTCD_hdrs[i][3]);
+            if ( (bp= iguana_bundlecreate(coin,&bundlei,height,hash2,allhash,0)) != 0 )
+            {
+                bp->bundleheight = height;
+                if ( bits256_nonz(hash1) != 0 )
+                {
+                    if ( (block= iguana_blockhashset("inithash1",coin,height+1,hash1,1)) != 0 )
+                    {
+                        iguana_bundlehashadd(coin,bp,1,block);
+                        block->mainchain = 1;
+                    }
+                }
+            }
+        }
+#endif
         sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
         OS_compatible_path(fname);
         //sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");

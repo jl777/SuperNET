@@ -60,7 +60,7 @@ cJSON *instantdex_defaultprocess(struct supernet_info *myinfo,struct exchange_in
     }
     return(newjson);
 }
-//({"agent":"iguana","method":"addcoin","newcoin":"PPC","active":1,"maxpeers":128,"services":0,"poll":1,"RAM":4,"minoutput":100000,"minconfirms":3,"estblocktime":600,"path":"/data/ppcoin","conf":"/data/.ppcoin","txfee_satoshis":100000,"useaddmultisig":1,"hastimestamp":0,"userhome":"/data/SuperNET/iguana","pubval":"37","scriptval":"75","wiftype":"b7","netmagic":"e6e8e9e5","genesishash":"00000ffd590b1485b3caadc19b22e6379c733355108f107a430458cdf3407ab6","genesis":{"hashalgo":"sha256","version":1,"timestamp":1345084287,"nbits":"1d00ffff","nonce":2179302059,"merkleroot":"3c2d8f85fab4d17aac558cc648a1a58acff0de6deb890c29985690052c5993c2"},"p2p":9901,"rpc":9902})
+
 cJSON *instantdex_defaulttimeout(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp)
 {
     uint8_t *serdata = *serdatap; int32_t serdatalen = *serdatalenp;

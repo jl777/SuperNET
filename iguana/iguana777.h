@@ -414,6 +414,7 @@ struct iguana_peer
     struct iguana_fileitem *filehash2; int32_t numfilehash2,maxfilehash2;
     //struct iguana_bundle *bp;
     FILE *voutsfp,*vinsfp;
+    uint8_t *blockspace;//[IGUANA_MAXPACKETSIZE + 8192];
 #ifdef IGUANA_PEERALLOC
     struct OS_memspace *SEROUT[128];
 #endif
@@ -553,6 +554,8 @@ int32_t iguana_send_version(struct iguana_info *coin,struct iguana_peer *addr,ui
 int32_t iguana_gentxarray(struct iguana_info *coin,struct OS_memspace *mem,struct iguana_txblock *txblock,int32_t *lenp,uint8_t *data,int32_t datalen);
 int32_t iguana_gethdrs(struct iguana_info *coin,uint8_t *serialized,char *cmd,char *hashstr);
 int32_t iguana_getdata(struct iguana_info *coin,uint8_t *serialized,int32_t type,bits256 *hashes,int32_t n);
+void iguana_blockunconv(struct iguana_msgblock *msg,struct iguana_block *src,int32_t cleartxn_count);
+int32_t iguana_peerblockrequest(struct iguana_info *coin,struct iguana_peer *addr,bits256 hash2);
 
 // ramchain
 int64_t iguana_verifyaccount(struct iguana_info *coin,struct iguana_account *acct,uint32_t pkind);
@@ -867,6 +870,9 @@ int32_t iguana_utxofinished(struct iguana_info *coin);
 int32_t iguana_balancefinished(struct iguana_info *coin);
 int32_t iguana_alloctxbits(struct iguana_info *coin,struct iguana_ramchain *ramchain);
 void iguana_allocvolatile(struct iguana_info *coin,struct iguana_ramchain *ramchain);
+
+int32_t iguana_peerhdrrequest(struct iguana_info *coin,struct iguana_peer *addr,bits256 hash2);
+int32_t iguana_peerinvdata(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *space,int32_t max);
 
 extern int32_t HDRnet,netBLOCKS;
 

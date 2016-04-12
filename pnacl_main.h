@@ -40,7 +40,7 @@ void *CHROMEAPP_NAME(void *arg)
     while ( initflag == 0 )
         usleep(1000000);
     PNACL_message("%s start.(%s)\n",CHROMEAPP_STR,(char *)arg);
-    CHROMEAPP_MAIN(arg);
+    CHROMEAPP_MAIN(0);//arg);
     return(0);
 }
 
