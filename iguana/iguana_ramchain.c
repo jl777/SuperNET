@@ -1171,7 +1171,7 @@ int32_t iguana_ramchain_free(struct iguana_info *coin,struct iguana_ramchain *ra
         if ( ramchain->A != ramchain->creditsA )
         {
             //printf("hashmem.%p Free A %p %p, numpkinds.%d %ld\n",ramchain->hashmem,ramchain->A,ramchain->creditsA,ramchain->H.data->numpkinds,sizeof(*ramchain->A) * ramchain->H.data->numpkinds);
-            if ( ramchain->allocatedA != 0 )
+            if ( deleteflag != 0 )
                 myfree(ramchain->A,sizeof(*ramchain->A) * ramchain->H.data->numpkinds), ramchain->A = 0;
         }
         //if ( ramchain->U2 != ramchain->roU2 )
@@ -1229,7 +1229,7 @@ int32_t iguana_bundleremove(struct iguana_info *coin,int32_t hdrsi)
     if ( hdrsi >= 0 && hdrsi < coin->bundlescount && (bp= coin->bundles[hdrsi]) != 0 )
     {
         printf("delete bundle.[%d]\n",hdrsi);
-        iguana_ramchain_free(coin,&bp->ramchain,1);
+        iguana_ramchain_free(coin,&bp->ramchain,0);
         if ( iguana_bundlefname(coin,bp,fname) == 0 )
         {
             printf("delete.(%s)\n",fname);

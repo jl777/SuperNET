@@ -1331,7 +1331,7 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
     }
     if ( i < coin->bundlescount-1 )
     {
-        printf("spendvectors.[%d] missing, will regen all of them\n",i);
+        //printf("spendvectors.[%d] missing, will regen all of them\n",i);
         for (i=0; i<coin->bundlescount-1; i++)
         {
             if ( coin->bundles[i] != 0 )
@@ -1592,7 +1592,9 @@ int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *s
             }
         }
         else if ( bp->hdrsi > 0 && bp->hdrsi < coin->bundlescount-1 )
-            printf("iguana_spendvectorconvs: [%d] null bp.%p or null tmpspends\n",i,bp);
+        {
+            //printf("iguana_spendvectorconvs: [%d] null bp.%p or null tmpspends\n",i,bp);
+        }
     }
     spentbp->converted = (uint32_t)time(NULL);
     //printf("spendvectorconvs.[%d] converted.%d\n",refbp->hdrsi,converted);
@@ -1733,11 +1735,13 @@ void iguana_RThdrs(struct iguana_info *coin,struct iguana_bundle *bp,int32_t num
 
 void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    struct iguana_ramchain R; struct iguana_ramchaindata RDATA;
+    int32_t lasti; struct iguana_ramchain R; struct iguana_ramchaindata RDATA;
     bp->ramchain = coin->RTramchain;
     iguana_rdataset(&R,&RDATA,&coin->RTramchain);
     iguana_ramchain_prefetch(coin,&coin->RTramchain,0);
-    if ( iguana_spendvectors(coin,bp,&coin->RTramchain,coin->RTstarti,coin->RTheight%bp->n,0) < 0 )
+    if ( (lasti= (coin->RTheight - ((coin->RTheight/bp->n)*bp->n))) >= bp->n-1 )
+        lasti = bp->n - 1;
+    if ( iguana_spendvectors(coin,bp,&coin->RTramchain,coin->RTstarti,lasti,0) < 0 )
     {
         printf("RTutxo error -> RTramchainfree\n");
         iguana_RTramchainfree(coin);
@@ -1805,9 +1809,6 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             bundlei = (coin->RTheight % coin->chain->bundlesize);
             block = iguana_bundleblock(coin,&hash2,bp,bundlei);
             iguana_bundlehashadd(coin,bp,bundlei,block);
-                //bp->blocks[bundlei] = block;
-            //if ( bits256_nonz(hash2) != 0 )
-            //    iguana_blockhashset("RTset",coin,bp->bundleheight+bundlei,hash2,1);
             printf("RT.%d vs hwm.%d starti.%d bp->n %d block.%p/%p ramchain.%p\n",coin->RTheight,coin->blocks.hwmchain.height,coin->RTstarti,bp->n,block,bp->blocks[bundlei],dest->H.data);
             if ( block != 0 && bits256_nonz(block->RO.prev_block) != 0 )
             {
