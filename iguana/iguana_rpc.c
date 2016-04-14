@@ -231,7 +231,18 @@ static char *getblockcount(RPCARGS)
 
 static char *getblock(RPCARGS)
 {
-    return(sglue1(0,CALLGLUE,"bitcoinrpc","getblock","blockhash",params[0]));
+    cJSON *obj;
+    if ( params[1] == 0 )
+        params[1] = cJSON_CreateNumber(1);
+    else
+    {
+        obj = params[1];
+        if ( is_cJSON_False(params[1]) != 0 )
+            params[1] = cJSON_CreateNumber(0);
+        else params[1] = cJSON_CreateNumber(1);
+        free_json(obj);
+    }
+    return(sglue3(0,CALLGLUE,"bitcoinrpc","getblock","blockhash",params[0],"verbose",params[1],"remoteonly",params[2]));
 }
 
 static char *getblockhash(RPCARGS)

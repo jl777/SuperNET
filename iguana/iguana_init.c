@@ -18,6 +18,8 @@
 void iguana_initQ(queue_t *Q,char *name)
 {
     char *tst,*str = "need to init each Q when single threaded";
+    memset(Q,0,sizeof(*Q));
+    strcpy(Q->name,name);
     queue_enqueue(name,Q,queueitem(str),1);
     if ( (tst= queue_dequeue(Q,1)) != 0 )
         free_queueitem(tst);
@@ -56,8 +58,6 @@ void iguana_initcoin(struct iguana_info *coin,cJSON *argjson)
     sprintf(dirname,"tmp/%s",coin->symbol), OS_portable_path(dirname);
     portable_mutex_init(&coin->peers_mutex);
     portable_mutex_init(&coin->blocks_mutex);
-    //portable_mutex_init(&coin->scripts_mutex[0]);
-    //portable_mutex_init(&coin->scripts_mutex[1]);
     iguana_meminit(&coin->blockMEM,"blockMEM",coin->blockspace,sizeof(coin->blockspace),0);
     iguana_initQs(coin);
     coin->bindsock = -1;
@@ -65,14 +65,13 @@ void iguana_initcoin(struct iguana_info *coin,cJSON *argjson)
     coin->startutc = (uint32_t)time(NULL);
     while ( time(NULL) == coin->startutc )
         usleep(1);
+    coin->startutc++;
+    printf("start.%u\n",coin->startutc);
     coin->startmillis = OS_milliseconds(), coin->starttime = tai_now(coin->startmillis);
     coin->avetime = 1 * 100;
     //coin->R.maxrecvbundles = IGUANA_INITIALBUNDLES;
     for (i=0; i<IGUANA_MAXPEERS; i++)
         coin->peers.active[i].usock = -1;
-    // validate blocks
-    //for (i=0; i<IGUANA_NUMAPPENDS; i++)
-    //    vupdate_sha256(coin->latest.lhashes[i].bytes,&coin->latest.states[i],0,0);
 }
 
 bits256 iguana_genesis(struct iguana_info *coin,struct iguana_chain *chain)
@@ -99,14 +98,14 @@ bits256 iguana_genesis(struct iguana_info *coin,struct iguana_chain *chain)
     bits256_str(str,hash2);
     printf("genesis.(%s) len.%d hash.%s\n",chain->genesis_hex,(int32_t)sizeof(msg.H),str);
     iguana_blockconv(&block,&msg,hash2,0);
-    //coin->latest.dep.numtxids =
     block.RO.txn_count = 1;
     block.RO.numvouts = 1;
     iguana_gotdata(coin,0,0);
     if ( (ptr= iguana_blockhashset("genesis0",coin,0,hash2,1)) != 0 )
     {
-        ptr->mainchain = 1;
         iguana_blockcopy(coin,ptr,&block);
+        ptr->mainchain = 1;
+        ptr->height = 0;
         coin->blocks.RO[0] = block.RO;
         if ( (height= iguana_chainextend(coin,ptr)) == 0 )
         {
@@ -172,7 +171,7 @@ int32_t iguana_savehdrs(struct iguana_info *coin)
             }
         }
         //printf("compare hdrs.txt %ld vs (%s) %ld\n",ftell(fp),fname,(long)OS_filesize(fname));
-        if ( ftell(fp) > OS_filesize(fname) )
+        if ( (long)ftell(fp) > OS_filesize(fname) )
         {
             printf("new hdrs.txt %ld vs (%s) %ld\n",ftell(fp),fname,(long)OS_filesize(fname));
             fclose(fp);

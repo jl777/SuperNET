@@ -16,6 +16,56 @@
 #include "iguana777.h"
 #include "../includes/iguana_apidefs.h"
 
+STRING_ARG(iguana,validate,activecoin)
+{
+    int32_t i,total,validated; struct iguana_bundle *bp; cJSON *retjson;
+    if ( (coin= iguana_coinfind(activecoin)) != 0 )
+    {
+        for (i=total=validated=0; i<coin->bundlescount; i++)
+            if ( (bp= coin->bundles[i]) != 0 )
+            {
+                validated += iguana_bundlevalidate(coin,bp,1);
+                total += bp->n;
+            }
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"result","validation run");
+        jaddstr(retjson,"coin",coin->symbol);
+        jaddnum(retjson,"validated",validated);
+        jaddnum(retjson,"total",total);
+        jaddnum(retjson,"bundles",coin->bundlescount);
+        jaddnum(retjson,"accuracy",(double)validated/total);
+        return(jprint(retjson,1));
+    } else return(clonestr("{\"error\":\"no active coin\"}"));
+}
+
+STRING_ARG(iguana,removecoin,activecoin)
+{
+    struct iguana_bundle *bp; int32_t i; char fname[1024];
+    if ( (coin= iguana_coinfind(activecoin)) != 0 )
+    {
+        coin->active = 0;
+        coin->started = 0;
+        for (i=0; i<IGUANA_MAXPEERS; i++)
+        {
+            sprintf(fname,"DB/%s/vouts/%04d.vouts",coin->symbol,i), OS_removefile(fname,0);
+            sprintf(fname,"purgeable/%s/%04d.vins",coin->symbol,i), OS_removefile(fname,0);
+        }
+        sprintf(fname,"DB/%s/vouts/*",coin->symbol), OS_removefile(fname,0);
+        sprintf(fname,"purgeable/%s/*",coin->symbol), OS_removefile(fname,0);
+        for (i=0; i<coin->bundlescount; i++)
+        {
+            sprintf(fname,"DB/%s/balancecrc.%d",coin->symbol,i), OS_removefile(fname,0);
+            if ( (bp= coin->bundles[i]) != 0 )
+            {
+                iguana_bundlepurgefiles(coin,bp);
+                iguana_bundleremove(coin,bp->hdrsi);
+            }
+        }
+        sprintf(fname,"DB/%s/*",coin->symbol), OS_removefile(fname,0);
+    }
+    return(clonestr("{\"error\":\"no active coin\"}"));
+}
+
 char *iguana_APIrequest(struct iguana_info *coin,bits256 blockhash,bits256 txid,int32_t seconds)
 {
     int32_t i,len; char *retstr = 0; uint8_t serialized[1024]; char str[65];
@@ -49,44 +99,27 @@ INT_ARG(bitcoinrpc,getblockhash,height)
     return(jprint(retjson,1));
 }
 
-HASH_AND_INT(bitcoinrpc,getblock,blockhash,remoteonly)
+HASH_AND_TWOINTS(bitcoinrpc,getblock,blockhash,verbose,remoteonly)
 {
-    char *blockstr; struct iguana_msgblock msg; struct iguana_block *block; cJSON *retjson; bits256 txid;
+    char *blockstr,*datastr; struct iguana_msgblock msg; struct iguana_block *block; cJSON *retjson; bits256 txid; int32_t len;
     retjson = cJSON_CreateObject();
     memset(&msg,0,sizeof(msg));
     if ( remoteonly == 0 && (block= iguana_blockfind("getblockRPC",coin,blockhash)) != 0 )
     {
-        return(jprint(iguana_blockjson(coin,block,1),1));
-/* int32_t len,i; char str[65],hexstr[(sizeof(uint32_t)+sizeof(struct iguana_msgblock))*2+1],*blockstr;
-        uint8_t serialized[sizeof(uint32_t)+sizeof(struct iguana_msgblock)]; bits256 hash2,txid;
-   msg.H.version = block->RO.version;
-        msg.H.merkle_root = block->RO.merkle_root;
-        msg.H.timestamp = block->RO.timestamp;
-        msg.H.bits = block->RO.bits;
-        msg.H.nonce = block->RO.nonce;
-        msg.txn_count = block->RO.txn_count;
-        jaddnum(retjson,"version",msg.H.version);
-        jaddnum(retjson,"timestamp",msg.H.timestamp);
-        jaddstr(retjson,"utc",utc_str(str,msg.H.timestamp));
-        serialized[0] = ((uint8_t *)&msg.H.bits)[3];
-        serialized[1] = ((uint8_t *)&msg.H.bits)[2];
-        serialized[2] = ((uint8_t *)&msg.H.bits)[1];
-        serialized[3] = ((uint8_t *)&msg.H.bits)[0];
-        init_hexbytes_noT(hexstr,serialized,sizeof(uint32_t));
-        jaddstr(retjson,"nBits",hexstr);
-        jaddnum(retjson,"nonce",msg.H.nonce);
-        jaddbits256(retjson,"merkle_root",msg.H.merkle_root);
-        jaddnum(retjson,"txn_count",msg.txn_count);
-        array = cJSON_CreateArray();
-        for (i=0; i<msg.txn_count; i++)
+        if ( verbose != 0 )
+            return(jprint(iguana_blockjson(coin,block,1),1));
+        else
         {
-            
+            if ( (len= iguana_peerblockrequest(coin,coin->blockspace,sizeof(coin->blockspace),0,blockhash,0)) > 0 )
+            {
+                datastr = malloc(len*2 + 1);
+                init_hexbytes_noT(datastr,coin->blockspace,len);
+                jaddstr(retjson,"result",datastr);
+                free(datastr);
+                return(jprint(retjson,1));
+            }
+            jaddstr(retjson,"error","error getting rawblock");
         }
-        jadd(retjson,"txids",array);
-        len = iguana_rwblock(1,&hash2,serialized,&msg);
-        char str[65]; printf("timestamp.%u bits.%u nonce.%u v.%d (%s) len.%d (%ld %ld)\n",block->RO.timestamp,block->RO.bits,block->RO.nonce,block->RO.version,bits256_str(str,hash2),len,sizeof(serialized),sizeof(hexstr));
-        init_hexbytes_noT(hexstr,serialized,len);
-        jaddstr(retjson,"result",hexstr);*/
     }
     else if ( coin->APIblockstr != 0 )
         jaddstr(retjson,"error","already have pending request");
@@ -108,7 +141,7 @@ HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
     if ( (tx= iguana_txidfind(coin,&height,&T,txid,coin->bundlescount-1)) != 0 )
     {
         retjson = cJSON_CreateObject();
-        if ( (len= iguana_ramtxbytes(coin,coin->blockspace,sizeof(coin->blockspace),&checktxid,tx,height,0,0)) > 0 )
+        if ( (len= iguana_ramtxbytes(coin,coin->blockspace,sizeof(coin->blockspace),&checktxid,tx,height,0,0,0)) > 0 )
         {
             txbytes = calloc(1,len*2+1);
             init_hexbytes_noT(txbytes,coin->blockspace,len);

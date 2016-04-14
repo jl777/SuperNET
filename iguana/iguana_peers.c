@@ -736,7 +736,7 @@ void *iguana_iAddriterator(struct iguana_info *coin,struct iguana_iAddr *iA)
                 //printf("call rwIaddrInd\n");
                 if ( iguana_rwiAddrind(coin,1,iA,iA->hh.itemind) > 0 )
                 {
-                    //printf("iA.%p iguana_startconnection.(%s) status.%d pending.%d\n",iA,addr->ipaddr,iA->status,addr->pending);
+                    printf("iA.%p iguana_startconnection.(%s) status.%d pending.%d\n",iA,addr->ipaddr,iA->status,addr->pending);
                     iA->status = IGUANA_PEER_CONNECTING;
                     addr->pending = (uint32_t)time(NULL);
                     iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
@@ -984,23 +984,41 @@ int64_t iguana_peerallocated(struct iguana_info *coin,struct iguana_peer *addr)
 }
 #endif
 
+int32_t iguana_voutsfname(struct iguana_info *coin,char *fname,int32_t slotid)
+{
+    sprintf(fname,"DB/%s/vouts/%04d.vouts",coin->symbol,slotid);
+    return((int32_t)strlen(fname));
+}
+
+int32_t iguana_vinsfname(struct iguana_info *coin,char *fname,int32_t slotid)
+{
+    sprintf(fname,"%s/%s/%04d.vins",coin->VALIDATEDIR,coin->symbol,slotid);
+    return((int32_t)strlen(fname));
+}
+
 int32_t iguana_peerslotinit(struct iguana_info *coin,struct iguana_peer *addr,int32_t slotid,uint64_t ipbits)
 {
     char fname[1024];
     addr->ipbits = ipbits;
     addr->addrind = slotid;
-    sprintf(fname,"DB/%s/vouts/%04d.vouts",coin->symbol,addr->addrind);
+    iguana_voutsfname(coin,fname,addr->addrind);
     if ( (addr->voutsfp= fopen(fname,"rb+")) != 0 )
         fseek(addr->voutsfp,0,SEEK_END);
     else if ( (addr->voutsfp= fopen(fname,"wb+")) == 0 )
+    {
+        printf("cant create.(%s)\n",fname);
         return(-1);
+    }
     if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
     {
-        sprintf(fname,"%s/%s/%04d.vins",coin->VALIDATEDIR,coin->symbol,addr->addrind);
+        iguana_vinsfname(coin,fname,addr->addrind);
         if ( (addr->vinsfp= fopen(fname,"rb+")) != 0 )
             fseek(addr->vinsfp,0,SEEK_END);
         else if ( (addr->vinsfp= fopen(fname,"wb+")) == 0 )
+        {
+            printf("cant create.(%s)\n",fname);
             return(-1);
+        }
     }
     return(0);
 }

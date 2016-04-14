@@ -190,7 +190,7 @@ double dxblend(double *destp,double val,double decay)
 	return(slope);
 }
 
-queue_t TerminateQ; int32_t TerminateQ_queued;
+int32_t TerminateQ_queued;
 /*void iguana_terminator(void *arg)
 {
     struct iguana_thread *t; uint32_t lastdisp = 0; int32_t terminated = 0;
@@ -233,7 +233,7 @@ void iguana_launcher(void *ptr)
     queue_enqueue("TerminateQ",&TerminateQ,&t->DL,0);
 }
 
-void iguana_terminate(struct iguana_info *coin,struct iguana_thread *t)
+void iguana_terminate(struct iguana_thread *t)
 {
     int32_t retval;
     retval = pthread_join(t->handle,NULL);
@@ -260,7 +260,7 @@ struct iguana_thread *iguana_launch(struct iguana_info *coin,char *name,iguana_f
     {
         if ( (rand() % 100000) == 0 && coin != 0 )
             printf("terminated.%d launched.%d terminate.%p\n",coin->Terminated[t->type],coin->Launched[t->type],t);
-        iguana_terminate(coin,t);
+        iguana_terminate(t);
     }
     return(t);
 }

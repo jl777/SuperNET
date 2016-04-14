@@ -520,6 +520,29 @@ int32_t OS_removefile(char *fname,int32_t scrubflag)
     return(0);
 }
 
+void OS_remove_directory(char *dirname)
+{
+    FILE *fp; char buf[1024];
+    sprintf(buf,"%s/.tmpmarker",dirname);
+    if ( (fp= fopen(OS_compatible_path(buf),"rb")) != 0 )
+        OS_removefile(buf,0);
+    else fclose(fp);
+    sprintf(buf,"rmdir %s",dirname);
+    if ( system(buf) != 0 )
+    {
+        printf("error doing (%s)\n",buf);
+        sprintf(buf,"rm %s/*",dirname);
+        if ( system(buf) != 0 )
+            printf("error doing (%s)\n",buf);
+        else
+        {
+            sprintf(buf,"rmdir %s",dirname);
+            if ( system(buf) != 0 )
+                printf("second error doing (%s)\n",buf);
+        }
+    }
+}
+
 void OS_ensure_directory(char *dirname)
 {
     FILE *fp; int32_t retval; char fname[512];
@@ -546,7 +569,7 @@ void OS_ensure_directory(char *dirname)
     } else fclose(fp);//, printf("%s exists\n",fname);
 }
 
-uint64_t OS_filesize(char *fname)
+int64_t OS_filesize(char *fname)
 {
     FILE *fp; uint64_t fsize = 0;
     if ( (fp= fopen(fname,"rb")) != 0 )

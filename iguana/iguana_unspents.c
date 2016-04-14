@@ -237,10 +237,10 @@ int32_t iguana_spentflag(struct iguana_info *coin,int32_t *spentheightp,struct i
     memset(&utxo,0,sizeof(utxo));
     if ( spent_unspentind != 0 && spent_unspentind < numunspents )
     {
-        if ( (hhutxo= iguana_hhutxofind(coin,ubuf,spent_hdrsi,spent_unspentind)) != 0 && hhutxo->u.spentflag != 0 )
-            utxo = hhutxo->u;
-        else if ( ramchain->Uextras != 0 )
+        if ( ramchain->Uextras != 0 )
             utxo = ramchain->Uextras[spent_unspentind];
+        else if ( (hhutxo= iguana_hhutxofind(coin,ubuf,spent_hdrsi,spent_unspentind)) != 0 && hhutxo->u.spentflag != 0 )
+            utxo = hhutxo->u;
         else
         {
             printf("null ramchain->Uextras unspentind.%u vs %u hdrs.%d\n",spent_unspentind,numunspents,spent_hdrsi);
@@ -1098,7 +1098,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
     S = (void *)(long)((long)rdata + rdata->Soffset);
     B = (void *)(long)((long)rdata + rdata->Boffset);
     T = (void *)(long)((long)rdata + rdata->Toffset);
-    if ( ramchain->Xspendinds == 0 )
+    if ( ramchain->Xspendinds == 0 && bp->hdrsi > 0 )
     {
         printf("iguana_balancegen.%d: no Xspendinds[%d]\n",bp->hdrsi,ramchain->numXspends);
         return(-1);
@@ -1310,8 +1310,6 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
     iguana_bundlestats(coin,buf,IGUANA_DEFAULTLAG);
     if ( (bp= coin->bundles[coin->balanceswritten-1]) != 0 && (block= iguana_blockfind("init",coin,bp->hashes[bp->n-1])) != 0 )
         coin->blocks.hwmchain = *block;
-    //if ( (n= iguana_walkchain(coin,0)) > 0 )
-    //    printf("iguana_walkchain n.%d vs hwmheight.%d\n",n,coin->blocks.hwmchain.height);
     return(coin->balanceswritten);
 }
 
@@ -1344,7 +1342,10 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
     if ( coin->balanceswritten > 1 )
     {
         for (i=0; i<coin->balanceswritten; i++)
+        {
+            //printf("%d ",i);
             iguana_validateQ(coin,coin->bundles[i]);
+        }
     }
     printf("i.%d balanceswritten.%d\n",i,coin->balanceswritten);
     if ( coin->balanceswritten < coin->bundlescount )
@@ -1362,13 +1363,11 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
     coin->origbalanceswritten = coin->balanceswritten;
     iguana_volatilesinit(coin);
     iguana_savehdrs(coin);
-    if ( 1 )
-    {
-        iguana_fastlink(coin,coin->balanceswritten * coin->chain->bundlesize - 1);
-        hash2 = iguana_blockhash(coin,coin->balanceswritten * coin->chain->bundlesize);
-        if ( bits256_nonz(hash2) != 0 && (block= iguana_blockfind("initfinal",coin,hash2)) != 0 )
-            _iguana_chainlink(coin,block);
-    }
+    iguana_fastlink(coin,coin->balanceswritten * coin->chain->bundlesize - 1);
+    iguana_walkchain(coin,0);
+    hash2 = iguana_blockhash(coin,coin->balanceswritten * coin->chain->bundlesize);
+    if ( bits256_nonz(hash2) != 0 && (block= iguana_blockfind("initfinal",coin,hash2)) != 0 )
+        _iguana_chainlink(coin,block);
 }
 
 int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
@@ -1754,7 +1753,7 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
         iguana_convert(coin,bp,1);
         printf("spendvectors converted to %d\n",coin->RTheight);
         iguana_balancegen(coin,0,bp,coin->RTstarti,coin->RTheight-1);
-        printf("iguana_balancegen [%d] (%d to %d)\n",bp->hdrsi,coin->RTstarti,coin->RTheight-1);
+        printf("iguana_balancegen [%d] (%d to %d)\n",bp->hdrsi,coin->RTstarti,(coin->RTheight-1)%bp->n);
         coin->RTstarti = (coin->RTheight % bp->n);
     }
 }
@@ -1809,7 +1808,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             bundlei = (coin->RTheight % coin->chain->bundlesize);
             block = iguana_bundleblock(coin,&hash2,bp,bundlei);
             iguana_bundlehashadd(coin,bp,bundlei,block);
-            printf("RT.%d vs hwm.%d starti.%d bp->n %d block.%p/%p ramchain.%p\n",coin->RTheight,coin->blocks.hwmchain.height,coin->RTstarti,bp->n,block,bp->blocks[bundlei],dest->H.data);
+            //printf("RT.%d vs hwm.%d starti.%d bp->n %d block.%p/%p ramchain.%p\n",coin->RTheight,coin->blocks.hwmchain.height,coin->RTstarti,bp->n,block,bp->blocks[bundlei],dest->H.data);
             if ( block != 0 && bits256_nonz(block->RO.prev_block) != 0 )
             {
                 iguana_blocksetcounters(coin,block,dest);
@@ -1866,14 +1865,62 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     return(flag);
 }
 
-int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp)
+int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,int32_t forceflag)
 {
-    if ( bp->validated <= 1 )
+    static int32_t totalerrs,totalvalidated;
+    FILE *fp; char fname[1024]; uint8_t *blockspace; int32_t i,max,len,errs = 0; int64_t total = 0;
+    if ( bp->validated <= 1 || forceflag != 0 )
     {
-        bp->validated = (uint32_t)time(NULL);
-        //printf("VALIDATE.%d %u\n",bp->bundleheight,bp->validated);
+        sprintf(fname,"DB/%s/validated/%d",coin->symbol,bp->bundleheight);
+        if ( (fp= fopen(fname,"rb")) != 0 )
+        {
+            if ( forceflag == 0 )
+            {
+                if ( fread(&bp->validated,1,sizeof(bp->validated),fp) != sizeof(bp->validated) ||fread(&total,1,sizeof(total),fp) != sizeof(total) )
+                {
+                    printf("error reading.(%s)\n",fname);
+                    total = 0;
+                }
+            }
+            fclose(fp);
+            if ( forceflag != 0 )
+                OS_removefile(fname,1);
+        }
+        if ( forceflag != 0 || (total == 0 && bp->validated <= 1) )
+        {
+            max = sizeof(coin->blockspace);
+            blockspace = calloc(1,max);
+            for (i=0; i<bp->n; i++)
+            {
+                if ( (len= iguana_peerblockrequest(coin,blockspace,max,0,bp->hashes[i],1)) < 0 )
+                {
+                    //printf("validate error.[%d:%d]\n",bp->hdrsi,i);
+                    errs++;
+                    //if ( deleteblock != 0 )
+                        iguana_blockunmark(coin,bp->blocks[i],bp,i,1);
+                    totalerrs++;
+                } else total += len, totalvalidated++;
+            }
+            free(blockspace);
+            bp->validated = (uint32_t)time(NULL);
+            printf("VALIDATED.[%d] errs.%d total.%lld %u | total errs.%d validated.%d\n",bp->bundleheight,errs,(long long)total,bp->validated,totalerrs,totalvalidated);
+        }
+        if ( errs == 0 && fp == 0 )
+        {
+            if ( (fp= fopen(fname,"wb")) != 0 )
+            {
+                if ( fwrite(&bp->validated,1,sizeof(bp->validated),fp) != sizeof(bp->validated) || fwrite(&total,1,sizeof(total),fp) != sizeof(total) )
+                    printf("error saving.(%s) total.%lld\n",fname,(long long)total);
+                fclose(fp);
+            }
+        }
     }
-    return(0);
+    if ( errs != 0 )
+    {
+        //printf("would have removed.[%d]\n",bp->hdrsi);
+        iguana_bundleremove(coin,bp->hdrsi);
+    }
+    return(bp->n - errs);
 }
 
 #include "../includes/iguana_apidefs.h"

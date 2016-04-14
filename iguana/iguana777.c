@@ -53,7 +53,7 @@ struct iguana_info *iguana_coinadd(const char *symbol,cJSON *argjson)
         {
             if ( i >= sizeof(Hardcoded_coins)/sizeof(*Hardcoded_coins) )
                 break;
-            printf("Hardcoded_coins[i][0] %s vs.(%s)\n",Hardcoded_coins[i][0],symbol);
+            //printf("Hardcoded_coins[i][0] %s vs.(%s)\n",Hardcoded_coins[i][0],symbol);
             //if ( symbol[0] == 0 )
             //    getchar();
             if ( strcmp("endmarker",Hardcoded_coins[i][0]) == 0 || strcmp(symbol,Hardcoded_coins[i][0]) == 0 )
@@ -74,7 +74,6 @@ struct iguana_info *iguana_coinadd(const char *symbol,cJSON *argjson)
                     coin->chain = iguana_chainfind((char *)symbol,argjson,1);
                     strcpy(coin->symbol,symbol);
                     iguana_initcoin(coin,argjson);
-                    printf("coin.%s initialized\n",symbol);
                 }
                 return(coin);
             }
@@ -264,6 +263,8 @@ void iguana_emitQ(struct iguana_info *coin,struct iguana_bundle *bp)
 void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
 {
     struct iguana_helper *ptr;
+    if ( bp->queued == 0 && bp->emitfinish <= 1 && iguana_bundleready(coin,bp,0) == bp->n )
+        printf("bundle.[%d] is ready\n",bp->hdrsi);
     bp->queued = (uint32_t)time(NULL);
     ptr = mycalloc('i',1,sizeof(*ptr));
     ptr->allocsize = sizeof(*ptr);
@@ -281,7 +282,7 @@ void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t ti
 void iguana_validateQ(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     struct iguana_helper *ptr;
-    if ( bp->validated == 0 )
+    if ( bp->validated <= 1 )
     {
         ptr = mycalloc('i',1,sizeof(*ptr));
         ptr->allocsize = sizeof(*ptr);
@@ -296,13 +297,18 @@ void iguana_validateQ(struct iguana_info *coin,struct iguana_bundle *bp)
     }
 }
 
-int32_t iguana_emitfinished(struct iguana_info *coin)
+int32_t iguana_emitfinished(struct iguana_info *coin,int32_t queueincomplete)
 {
     struct iguana_bundle *bp; int32_t i,n = 0;
     for (i=0; i<coin->bundlescount-1; i++)
     {
-        if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish > 1 )
-            n++;
+        if ( (bp= coin->bundles[i]) != 0 )
+        {
+            if ( bp->emitfinish > 1 )
+                n++;
+            else if ( bp->emitfinish == 0  && bp->queued == 0 )
+                iguana_bundleQ(coin,bp,1000);
+        }
     }
     return(n);
 }
@@ -335,6 +341,17 @@ int32_t iguana_balancefinished(struct iguana_info *coin)
     for (i=0; i<coin->bundlescount-1; i++)
     {
         if ( (bp= coin->bundles[i]) != 0 && bp->balancefinish > 1 )
+            n++;
+    }
+    return(n);
+}
+
+int32_t iguana_validated(struct iguana_info *coin)
+{
+    struct iguana_bundle *bp; int32_t i,n = 0;
+    for (i=0; i<coin->bundlescount-1; i++)
+    {
+        if ( (bp= coin->bundles[i]) != 0 && bp->validated > 1 )
             n++;
     }
     return(n);
@@ -394,15 +411,23 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
         }
         if ( convertflag != 0 || iguana_spendvectorsaves(coin) == 0 )
         {
+            for (hdrsi=0; hdrsi<max; hdrsi++)
+                iguana_validateQ(coin,coin->bundles[hdrsi]);
             if ( coin->origbalanceswritten <= 1 )
                 hdrsi = 0;
             else hdrsi = coin->origbalanceswritten;
+            while ( (n= iguana_validated(coin)) < max )
+            {
+                sleep(3);
+                printf("validated.%d of %d\n",n,max);
+            }
             for (; hdrsi<max; hdrsi++,coin->balanceswritten++)
                 iguana_balancegen(coin,0,coin->bundles[hdrsi],0,coin->chain->bundlesize-1);
             if ( iguana_balanceflush(coin,max) > 0 )
                 printf("balanceswritten.%d flushed bp->hdrsi %d vs %d coin->longestchain/coin->chain->bundlesize\n",coin->balanceswritten,bp->hdrsi,coin->longestchain/coin->chain->bundlesize);
         } else printf("error saving spendvectors\n");
         coin->spendvectorsaved = (uint32_t)time(NULL);
+        printf("UTXOGEN spendvectorsaved <- %u\n",coin->spendvectorsaved);
     }
     while ( coin->spendvectorsaved == 1 )
     {
@@ -416,7 +441,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
 void iguana_helper(void *arg)
 {
     cJSON *argjson=0; int32_t iter,i,n,polltimeout,type,helperid=rand(),flag,allcurrent,idle=0;
-    struct iguana_helper *ptr; struct iguana_info *coin; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp;
+    struct iguana_helper *ptr; struct iguana_info *coin; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp; uint32_t starttime;
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
         helperid = juint(argjson,"helperid");
     if ( IGUANA_NUMHELPERS < 2 )
@@ -475,21 +500,28 @@ void iguana_helper(void *arg)
                 } else break;
             }
         }
-        /*if ( (type & (1 << 1)) != 0 )
+        //if ( (type & (1 << 1)) != 0 )
+        starttime = (uint32_t)time(NULL);
+        while ( time(NULL) < starttime+10 && (ptr= queue_dequeue(&validateQ,0)) != 0 )
         {
-            n = queue_size(&validateQ);
-            for (iter=0; iter<n; iter++)
-                if ( (ptr= queue_dequeue(&validateQ,0)) != 0 )
+            if ( (bp= ptr->bp) != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
+            {
+                //printf("validate.[%d] %d vs %d\n",bp->hdrsi,coin->blocks.hwmchain.height/coin->chain->bundlesize,(coin->longestchain-1)/coin->chain->bundlesize);
+                if ( coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-1)/coin->chain->bundlesize )
+                    flag += iguana_bundlevalidate(coin,bp,0);
+                else
                 {
-                    if ( ptr->bp != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
-                        flag += iguana_bundlevalidate(ptr->coin,ptr->bp);
-                    else if ( coin->active != 0 )
-                        printf("helper validate missing param? %p %p\n",ptr->coin,ptr->bp);
-                    myfree(ptr,ptr->allocsize);
-                    flag++;
+                    usleep(10000);
+                    iguana_validateQ(coin,bp);
+                    continue;
                 }
-        }*/
-        if ( queue_size(&bundlesQ) > 1 )
+            }
+            else if ( coin->active != 0 )
+                printf("helper validate missing param? %p %p\n",ptr->coin,ptr->bp);
+            myfree(ptr,ptr->allocsize);
+            flag++;
+        }
+        if ( queue_size(&bundlesQ) > 1 || queue_size(&validateQ) > 0 )
             allcurrent = 0;
         if ( flag != 0 )
             usleep(polltimeout * 100 + 1);
@@ -513,8 +545,6 @@ void iguana_coinloop(void *arg)
     coin = coins[0];
     iguana_launchpeer(coin,"127.0.0.1");
     memset(zero.bytes,0,sizeof(zero));
-    if ( (bp= iguana_bundlecreate(coin,&bundlei,0,*(bits256 *)coin->chain->genesis_hashdata,zero,1)) != 0 )
-        bp->bundleheight = 0;
     while ( 1 )
     {
         flag = 0;
@@ -540,6 +570,21 @@ void iguana_coinloop(void *arg)
                     coin->chain->minconfirms = coin->minconfirms;
                     coin->started = coin;
                     coin->startutc = (uint32_t)time(NULL);
+                    if ( (bp= iguana_bundlecreate(coin,&bundlei,0,*(bits256 *)coin->chain->genesis_hashdata,zero,1)) != 0 )
+                        bp->bundleheight = 0;
+#ifdef __PNACL__
+                    if ( strcmp(coin->symbol,"BTCD") == 0 )
+                    {
+                        int32_t j;
+                        char *ipaddrs[] = { "5.9.102.210", "89.248.160.236", "89.248.160.237", "89.248.160.238", "89.248.160.239", "89.248.160.240", "89.248.160.241", "89.248.160.242", "89.248.160.243", "89.248.160.244", "89.248.160.245", "78.47.58.62" };
+                        for (j=0; j<sizeof(ipaddrs)/sizeof(*ipaddrs); j++)
+                        {
+                            printf("%s ",ipaddrs[j]);
+                            iguana_launchpeer(coin,ipaddrs[j]);
+                        }
+                        printf("possible peers\n");
+                    }
+#endif
                 }
                 now = (uint32_t)time(NULL);
                 coin->idletime = 0;
@@ -614,7 +659,6 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     struct iguana_chain *iguana_createchain(cJSON *json);
     struct iguana_info *coin; int32_t j,m,mult,maxval,mapflags; char dirname[512]; cJSON *peers;
     mapflags = IGUANA_MAPRECVDATA | maphash*IGUANA_MAPTXIDITEMS | maphash*IGUANA_MAPPKITEMS | maphash*IGUANA_MAPBLOCKITEMS | maphash*IGUANA_MAPPEERITEMS;
-    printf("setcoin.%s\n",symbol);
     coin = iguana_coinadd(symbol,json);
     coin->launched = launched;
     if ( (coin->MAXPEERS= maxpeers) <= 0 )
@@ -626,7 +670,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->myservices = services;
     coin->initialheight = initialheight;
     coin->mapflags = mapflags;
-    mult = (strcmp("BTC",coin->symbol) != 0) ? 32 : 1;
+    mult = (strcmp("BTC",coin->symbol) != 0) ? 4 : 1;
     maxval = (strcmp("BTC",coin->symbol) != 0) ? IGUANA_MAXPENDBUNDLES : IGUANA_MAXPENDBUNDLES;
     coin->MAXMEM = juint(json,"RAM");
     if ( jobj(json,"prefetchlag") != 0 )
@@ -667,6 +711,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     sprintf(dirname,"DB/ro/%s",symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"DB/ro"), OS_ensure_directory(dirname);
     sprintf(dirname,"DB/%s",symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"DB/%s/validated",symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"DB/%s/accounts",symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"DB/%s/spends",symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"DB/%s/vouts",symbol), OS_ensure_directory(dirname);
@@ -677,8 +722,12 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         printf("cant initialize chain.(%s)\n",jstr(json,0));
         return(0);
     } else iguana_chainparms(coin->chain,json);
-    coin->RELAYNODE = juint(json,"RELAY");
-    coin->VALIDATENODE = juint(json,"VALIDATE");
+    if ( jobj(json,"RELAY") != 0 )
+        coin->RELAYNODE = juint(json,"RELAY");
+    else coin->RELAYNODE = 1;
+    if ( jobj(json,"VALIDATE") != 0 )
+        coin->VALIDATENODE = juint(json,"VALIDATE");
+    else coin->VALIDATENODE = 1;
     if ( jobj(json,"validatedir") != 0 )
         safecopy(coin->VALIDATEDIR,jstr(json,"validatedir"),sizeof(coin->VALIDATEDIR));
     else strcpy(coin->VALIDATEDIR,"purgeable");

@@ -165,10 +165,10 @@ int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr
         }
         else
         {
-            int32_t i; char hexaddr[64];
+            char hexaddr[64];
             btc_convaddr(hexaddr,coinaddr);
-            for (i=0; i<len; i++)
-                printf("%02x ",buf[i]);
+            //for (i=0; i<len; i++)
+            //    printf("%02x ",buf[i]);
             char str[65]; printf("\nhex.(%s) checkhash.(%s) len.%d mismatch %02x %02x %02x %02x vs %02x %02x %02x %02x (%s)\n",hexaddr,coinaddr,len,buf[len - 4]&0xff,buf[len - 3]&0xff,buf[len - 2]&0xff,buf[len - 1]&0xff,hash.bytes[31],hash.bytes[30],hash.bytes[29],hash.bytes[28],bits256_str(str,hash));
         }
     }
@@ -1064,6 +1064,14 @@ cJSON *iguana_signtx(struct iguana_info *coin,bits256 *txidp,char **signedtxp,st
     if ( *signedtxp != 0 && i != spend->numinputs )
         free(*signedtxp), *signedtxp = 0;
     return(txobj);
+}
+
+int32_t iguana_validatesigs(struct iguana_info *coin,struct iguana_msgvin *vin)
+{
+    // multiple coins
+    // ro -> vouts collision, purgeable
+    // 
+    return(0);
 }
 
 #ifdef testing

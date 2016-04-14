@@ -27,7 +27,7 @@ STRING_AND_INT(iguana,bundleaddresses,base,height);
 
 HASH_AND_STRING(bitcoinrpc,verifytx,txid,txbytes);
 INT_ARG(bitcoinrpc,getblockhash,height);
-HASH_AND_INT(bitcoinrpc,getblock,blockhash,remoteonly);
+HASH_AND_TWOINTS(bitcoinrpc,getblock,blockhash,verbose,remoteonly);
 HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose);
 HASH_ARG(bitcoinrpc,gettransaction,txid);
 STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx);
@@ -135,6 +135,8 @@ STRING_ARG(iguana,peers,activecoin);
 STRING_AND_INT(iguana,maxpeers,activecoin,max);
 STRING_ARG(iguana,getconnectioncount,activecoin);
 STRING_ARG(iguana,addcoin,newcoin);
+STRING_ARG(iguana,validate,activecoin);
+STRING_ARG(iguana,removecoin,activecoin);
 STRING_ARG(iguana,startcoin,activecoin);
 STRING_ARG(iguana,pausecoin,activecoin);
 STRING_ARG(iguana,stopcoin,activecoin);

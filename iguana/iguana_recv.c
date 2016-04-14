@@ -253,7 +253,7 @@ int8_t iguana_blockstatus(struct iguana_info *coin,struct iguana_block *block)
 void iguana_bundletime(struct iguana_info *coin,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block,int32_t duplicateflag)
 {
     uint32_t starttime; int32_t duration;
-    if ( bp != 0 && bundlei >= 0 && bundlei < bp->n )
+    if ( bp != 0 && bundlei >= 0 && bundlei < bp->n && block != 0 )
     {
         starttime = block->issued;
         if ( starttime == 0 || bp->issued[bundlei] > block->issued )
@@ -380,7 +380,8 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
                     {
                         copyflag = 0;
                         speculative = 1;
-                        iguana_bundletime(coin,bp,j,bp->blocks[j],0);
+                        if ( bp->blocks[j] != 0 )
+                            iguana_bundletime(coin,bp,j,bp->blocks[j],0);
                         break;
                     }
                 }
@@ -808,6 +809,16 @@ void iguana_autoextend(struct iguana_info *coin,struct iguana_bundle *bp)
     if ( bp->hdrsi == coin->bundlescount-1 && bits256_nonz(bp->nextbundlehash2) != 0 )
     {
         init_hexbytes_noT(hashstr,bp->nextbundlehash2.bytes,sizeof(bits256));
+        newbp = 0, bundlei = -2;
+        if ( iguana_bundlefind(coin,&newbp,&bundlei,bp->nextbundlehash2) != 0 )
+        {
+            if ( newbp->bundleheight != bp->bundleheight+bp->n )
+            {
+                printf("found spurious extra hash for [%d:%d]\n",bp->hdrsi,bp->n);
+                memset(&bp->nextbundlehash2,0,sizeof(bp->nextbundlehash2));
+                return;
+            }
+        }
         newbp = iguana_bundlecreate(coin,&bundlei,bp->bundleheight+coin->chain->bundlesize,bp->nextbundlehash2,zero,1);
         if ( newbp != 0 )
         {

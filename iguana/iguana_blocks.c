@@ -15,6 +15,29 @@
 
 #include "iguana777.h"
 
+bits256 iguana_merkle(struct iguana_info *coin,bits256 *tree,int32_t txn_count)
+{
+    int32_t i,n=0,prev; uint8_t serialized[sizeof(bits256) * 2];
+    if ( txn_count == 1 )
+        return(tree[0]);
+    prev = 0;
+    while ( txn_count > 1 )
+    {
+        if ( (txn_count & 1) != 0 )
+            tree[prev + txn_count] = tree[prev + txn_count-1], txn_count++;
+        n += txn_count;
+        for (i=0; i<txn_count; i+=2)
+        {
+            iguana_rwbignum(1,serialized,sizeof(*tree),tree[prev + i].bytes);
+            iguana_rwbignum(1,&serialized[sizeof(*tree)],sizeof(*tree),tree[prev + i + 1].bytes);
+            tree[n + (i >> 1)] = bits256_doublesha256(0,serialized,sizeof(serialized));
+        }
+        prev = n;
+        txn_count >>= 1;
+    }
+    return(tree[n]);
+}
+
 #define iguana_blockfind(str,coin,hash2) iguana_blockhashset(str,coin,-1,hash2,0)
 
 void _iguana_blocklink(struct iguana_info *coin,struct iguana_block *prev,struct iguana_block *block)
@@ -360,10 +383,10 @@ struct iguana_block *iguana_fastlink(struct iguana_info *coin,int32_t hwmheight)
     {
         hdrsi = (height / coin->chain->bundlesize);
         bundlei = (height % coin->chain->bundlesize);
-#ifndef __PNACL__
+/*#ifndef __PNACL__
         if ( (height % 10000) == 0 )
             fprintf(stderr,".");
-#endif
+#endif*/
         if ( (bp= coin->bundles[hdrsi]) == 0 )
         {
             printf("iguana_fastlink null bundle.[%d]\n",hdrsi);
@@ -374,6 +397,11 @@ struct iguana_block *iguana_fastlink(struct iguana_info *coin,int32_t hwmheight)
         {
             printf("iguana_fastlink null block.[%d:%d]\n",hdrsi,bundlei);
             break;
+        }
+        if ( prev != 0 && bits256_nonz(block->RO.prev_block) == 0 )
+        {
+            block->RO.prev_block = prev->RO.hash2;
+            printf("PATCH.[%d:%d] prev is null\n",bp->hdrsi,bundlei);
         }
         bp->blocks[bundlei] = block;
         coin->blocks.maxblocks = (block->height + 1);
@@ -387,11 +415,11 @@ struct iguana_block *iguana_fastlink(struct iguana_info *coin,int32_t hwmheight)
         block->hh.prev = prev;
         if ( prev != 0 )
             prev->hh.next = block;
-        iguana_bundlehash2add(coin,0,bp,bundlei,block->RO.hash2);
+        iguana_hash2set(coin,"fastlink",bp,bundlei,block->RO.hash2);
+        //iguana_bundlehash2add(coin,0,bp,bundlei,block->RO.hash2);
         prev = block;
         prevPoW = block->PoW;
     }
-    iguana_walkchain(coin,0);
     return(block);
 }
 
@@ -500,8 +528,12 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                             {
                                 char str[65],str2[65];
                                 printf("ERROR: need to fix up bundle for height.%d (%p %p) (%s %s)\n",block->height,block,bp->blocks[block->height % coin->chain->bundlesize],bits256_str(str,block->RO.hash2),bits256_str(str2,bp->hashes[block->height % coin->chain->bundlesize]));
+                                iguana_bundlepurgefiles(coin,bp);
+                                iguana_bundleremove(coin,bp->hdrsi);
+                                exit(-1);
                                 //getchar();
                             }
+                            iguana_blockunmark(coin,block,bp,block->height % coin->chain->bundlesize,0);
                             iguana_bundlehash2add(coin,0,bp,block->height % coin->chain->bundlesize,block->RO.hash2);
                         }
                         if ( coin->started != 0 && (block->height % coin->chain->bundlesize) == coin->minconfirms )//&& (block->height > coin->longestchain-coin->chain->bundlesize*2 || ((block->height / coin->chain->bundlesize) % 10) == 9) )

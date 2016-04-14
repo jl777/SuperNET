@@ -399,7 +399,6 @@ struct iguana_chain *iguana_chainfind(char *name,cJSON *argjson,int32_t createfl
         }
 		if ( strcmp(name,chain->symbol) == 0 )
         {
-            printf("found.(%s)\n",name);
             iguana_chaininit(chain,strcmp(chain->symbol,"BTC") == 0,argjson);
             return(chain);
         }

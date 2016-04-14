@@ -561,7 +561,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                 for (i=0; i<n; i++)
                 {
                     len += iguana_rwbignum(0,&serialized[sizeof(struct iguana_msghdr) + len],sizeof(bits256),hash2.bytes);
-                    iguana_peerblockrequest(coin,addr,hash2);
+                    iguana_peerblockrequest(coin,addr->blockspace,sizeof(addr->blockspace),addr,hash2,0);
                     if ( bits256_nonz(hash2) == 0 )
                         break;
                 }
