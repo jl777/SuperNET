@@ -2179,7 +2179,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
                     retval = 0;
                 }
             }
-            printf("%08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %llx ht.%d bundlehashes.%s\n",mapchain->H.data->lhashes[0].uints[0],mapchain->H.data->lhashes[1].uints[0],mapchain->H.data->lhashes[2].uints[0],mapchain->H.data->lhashes[3].uints[0],mapchain->H.data->lhashes[4].uints[0],mapchain->H.data->lhashes[5].uints[0],mapchain->H.data->lhashes[6].uints[0],mapchain->H.data->lhashes[7].uints[0],mapchain->H.data->lhashes[8].uints[0],mapchain->H.data->lhashes[9].uints[0],(long long)mapchain->H.data->sha256.txid,mapchain->height,coin->symbol);
+            //printf("%08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %llx ht.%d bundlehashes.%s\n",mapchain->H.data->lhashes[0].uints[0],mapchain->H.data->lhashes[1].uints[0],mapchain->H.data->lhashes[2].uints[0],mapchain->H.data->lhashes[3].uints[0],mapchain->H.data->lhashes[4].uints[0],mapchain->H.data->lhashes[5].uints[0],mapchain->H.data->lhashes[6].uints[0],mapchain->H.data->lhashes[7].uints[0],mapchain->H.data->lhashes[8].uints[0],mapchain->H.data->lhashes[9].uints[0],(long long)mapchain->H.data->sha256.txid,mapchain->height,coin->symbol);
             iguana_ramchain_free(coin,mapchain,cmpflag);
         }
         iguana_mempurge(hashmem);

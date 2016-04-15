@@ -336,13 +336,37 @@ HASH_AND_STRING(bitcoinrpc,verifytx,txid,txbytes)
     return(jprint(retjson,1));
 }
 
-STRING_AND_INT(iguana,bundleaddresses,base,height)
+STRING_AND_INT(iguana,bundleaddresses,activecoin,height)
 {
     struct iguana_info *ptr;
-    if ( (ptr= iguana_coinfind(base)) != 0 )
+    if ( (ptr= iguana_coinfind(activecoin)) != 0 )
         return(iguana_bundleaddrs(ptr,height / coin->chain->bundlesize));
-    else return(clonestr("{\"error\":\"base is not active\"}"));
+    else return(clonestr("{\"error\":\"activecoin is not active\"}"));
 }
+
+STRING_AND_INT(iguana,bundlehashes,activecoin,height)
+{
+    struct iguana_info *ptr; struct iguana_bundle *bp; int32_t i,hdrsi; cJSON *retjson,*array; struct iguana_ramchaindata *rdata;
+    if ( (ptr= iguana_coinfind(activecoin)) != 0 )
+    {
+        hdrsi = height / coin->chain->bundlesize;
+        if ( hdrsi < coin->bundlescount && hdrsi >= 0 && (bp= coin->bundles[hdrsi]) != 0 )
+        {
+            if ( (rdata= bp->ramchain.H.data) != 0 )
+            {
+                array = cJSON_CreateArray();
+                for (i=0; i<IGUANA_NUMLHASHES; i++)
+                    jaddinum(array,rdata->lhashes[i].txid);
+                retjson = cJSON_CreateObject();
+                jaddstr(retjson,"result","success");
+                jaddbits256(retjson,"sha256",rdata->sha256);
+                jadd(retjson,"bundlehashes",array);
+                return(jprint(retjson,1));
+            } else return(clonestr("{\"error\":\"ramchain not there\"}"));
+        } else return(clonestr("{\"error\":\"height is too big\"}"));
+    } else return(clonestr("{\"error\":\"activecoin is not active\"}"));
+}
+
 #undef IGUANA_ARGS
 #include "../includes/iguana_apiundefs.h"
 

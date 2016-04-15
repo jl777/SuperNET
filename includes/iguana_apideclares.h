@@ -23,7 +23,8 @@ P2SH_SPENDAPI(iguana,spendmsig,activecoin,vintxid,vinvout,destaddress,destamount
 /*TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,BTCoffer,othercoin,otherassetid,maxprice,othervolume);
 STRING_AND_TWO_DOUBLES(InstantDEX,ALToffer,basecoin,minprice,basevolume);
 STRING_AND_TWO_DOUBLES(InstantDEX,NXToffer,assetid,minprice,basevolume);*/
-STRING_AND_INT(iguana,bundleaddresses,base,height);
+STRING_AND_INT(iguana,bundleaddresses,activecoin,height);
+STRING_AND_INT(iguana,bundlehashes,activecoin,height);
 
 HASH_AND_STRING(bitcoinrpc,verifytx,txid,txbytes);
 INT_ARG(bitcoinrpc,getblockhash,height);
