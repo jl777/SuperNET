@@ -1070,15 +1070,28 @@ void iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,uin
             mult = 4;
         else if ( mult > 7 )
             mult = 7;
-        if ( coin->bandwidth < .5*coin->maxbandwidth )
+        if ( coin->bandwidth < .7*coin->maxbandwidth )
         {
             mult--;
-            if ( coin->bandwidth < .25*coin->maxbandwidth )
-                mult /= 2;
+            if ( coin->bandwidth < .6*coin->maxbandwidth )
+            {
+                if ( coin->bandwidth < .5*coin->maxbandwidth )
+                {
+                    mult--;
+                    if ( coin->bandwidth < .4*coin->maxbandwidth )
+                    {
+                        mult--;
+                        if ( coin->bandwidth < .3*coin->maxbandwidth )
+                        {
+                            mult--;
+                            if ( coin->bandwidth < 0.25*coin->maxbandwidth )
+                                priority = 3;
+                        }
+                    }
+                }
+            }
             if ( mult < 1 )
                 mult = 1;
-            if ( coin->bandwidth < 0.1*coin->maxbandwidth )
-                priority = 3;
         }
         if ( (n= iguana_bundleissuemissing(coin,bp,priority,mult)) > 0 )
         {
