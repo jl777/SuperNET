@@ -416,8 +416,8 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
         {
             for (hdrsi=0; hdrsi<max; hdrsi++)
             {
-                iguana_bundlevalidate(coin,coin->bundles[hdrsi],0);
-                //iguana_validateQ(coin,coin->bundles[hdrsi]);
+                //iguana_bundlevalidate(coin,coin->bundles[hdrsi],0);
+                iguana_validateQ(coin,coin->bundles[hdrsi]);
             }
             if ( coin->origbalanceswritten <= 1 )
                 hdrsi = 0;

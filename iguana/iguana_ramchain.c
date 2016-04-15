@@ -104,7 +104,7 @@ int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,
         bp = 0, bundlei = -2;
         if ( bits256_nonz(prevhash2) == 0 || (bp= iguana_bundlefind(coin,&bp,&bundlei,prevhash2)) == 0 || bundlei >= coin->chain->bundlesize-1 )
         {
-            if ( dispflag != 0 )
+            if ( 0 && dispflag != 0 )
                 printf("iguana_peerfname error finding.(%s) spec.%p bp.%p\n",bits256_str(str,hash2),bp!=0?bp->speculative:0,bp);
             return(-2);
         }

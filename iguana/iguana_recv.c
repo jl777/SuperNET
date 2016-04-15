@@ -215,9 +215,7 @@ int32_t iguana_speculativefind(struct iguana_info *coin,struct iguana_bundle *bp
             if ( (tmp= bp->speculativecache[i]) != 0 )
             {
                 if ( memcmp(&recvlen,tmp,sizeof(recvlen)) != 0 || memcmp(&tmp[sizeof(recvlen)],data,recvlen) != 0 )
-                    printf("ERROR ");
-                if ( 0 && bp == coin->current )
-                    printf("[%d:%d] already has recvlen.%d for %s\n",bp->hdrsi,i,recvlen,bits256_str(str,block->RO.hash2));
+                    printf("data ERROR [%d:%d] already has recvlen.%d for %s\n",bp->hdrsi,i,recvlen,bits256_str(str,block->RO.hash2));
                 return(0);
             }
             bp->speculativecache[i] = mycalloc('p',1,recvlen + sizeof(recvlen));

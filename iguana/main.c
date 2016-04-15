@@ -1126,7 +1126,7 @@ void iguana_appletests(struct supernet_info *myinfo)
             exit(-1);
         }
         sleep(1);
-        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"VALIDATE\":1,\"prefetchlag\":13,\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":0,\"maxpeers\":64,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":1,\"poll\":10}"),0,myinfo->rpcport)) != 0 )
+        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"VALIDATE\":1,\"prefetchlag\":13,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":2048,\"endpend\":1,\"services\":0,\"maxpeers\":64,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":4,\"poll\":1}"),0,myinfo->rpcport)) != 0 )
         {
             free(str);
             if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":1024,\"maxpeers\":256,\"newcoin\":\"BTCD\",\"active\":1}"),0,myinfo->rpcport)) != 0 )
@@ -1300,8 +1300,6 @@ int32_t iguana_isbigendian()
 void iguana_main(void *arg)
 {
     int32_t usessl = 0, ismainnet = 1; struct supernet_info *myinfo;
-    if ( arg == 0 )
-        arg = "{\"tmpdir\":\"/mnt/ramdisk\",\"numhelpers\":13}";
     if ( (BIGENDIAN= iguana_isbigendian()) > 0 )
         printf("BIGENDIAN\n");
     else if ( BIGENDIAN == 0 )
