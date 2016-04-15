@@ -1303,7 +1303,7 @@ void iguana_main(void *arg)
     if ( (BIGENDIAN= iguana_isbigendian()) > 0 )
         printf("BIGENDIAN\n");
     else if ( BIGENDIAN == 0 )
-        printf("LITTLE ENDIAN\n");
+        printf("LITTLE ENDIAN arg.%p\n",arg);
     else printf("ENDIAN ERROR\n");
     mycalloc(0,0,0);
     if ( 0 )
