@@ -988,7 +988,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
     {
         max = bp->n;
         counter = iguana_bundleissuemissing(coin,bp,1,3.);
-        if ( counter > 0 )
+        if ( 0 && counter > 0 )
             printf("ITER.rt%d now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",bp->isRT,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
     } else bp->nexttime += 3;
     if ( bp->balancefinish <= 1 )

@@ -504,6 +504,7 @@ int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char
         case IGUANA_SCRIPT_1of3: m = 1, n = 3; break;
         case IGUANA_SCRIPT_2of2: m = 2, n = 2; break;
         case IGUANA_SCRIPT_1of2: m = 1, n = 2; break;
+        case IGUANA_SCRIPT_1of1: m = 1, n = 1; break;
         case IGUANA_SCRIPT_MSIG: m = vp->M, n = vp->N; break;
         case IGUANA_SCRIPT_DATA:
             if ( asmstr != 0 )
@@ -651,6 +652,8 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
             else if ( m == 1 )
                 return(IGUANA_SCRIPT_1of2);
         }
+        else if ( m == 1 && n == 1 )
+            return(IGUANA_SCRIPT_1of1);
         //printf("strange msig M.%d of N.%d\n",m,n);
         return(IGUANA_SCRIPT_MSIG);
     }
