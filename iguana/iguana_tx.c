@@ -86,8 +86,8 @@ int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmst
                 else scriptlen = u->scriptlen;
                 fclose(fp);
             } else err++;
-            if ( err != 0 )
-                printf("error.%d %d bytes from fileid.%d[%d] %s for u%d\n",err,u->scriptlen,u->fileid,u->scriptpos,fname,unspentind);
+            //if ( err != 0 )
+                printf("error.%d %d bytes from fileid.%d[%d] %s for u%d type.%d\n",err,u->scriptlen,u->fileid,u->scriptpos,fname,unspentind,u->type);
         }
         else
         {
@@ -132,6 +132,7 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->timestamp),&tx->timestamp);
     numvins = tx->numvins, numvouts = tx->numvouts;
     len += iguana_rwvarint32(rwflag,&serialized[len],&numvins);
+    memset(&vin,0,sizeof(vin));
     for (i=0; i<numvins; i++)
     {
         if ( vins == 0 )
@@ -162,7 +163,7 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
     {
         for (i=0; i<len; i++)
             printf("%02x",serialized[i]);
-        char str[65],str2[65]; printf("\nrw.%d numvins.%d numvouts.%d error generating txbytes, probably due to running without stored sigs txid %s vs %s\n",rwflag,numvins,numvouts,bits256_str(str,*txidp),bits256_str(str2,tx->txid));
+        char str[65],str2[65]; printf("\nrw.%d numvins.%d numvouts.%d error generating txbytes txid %s vs %s\n",rwflag,numvins,numvouts,bits256_str(str,*txidp),bits256_str(str2,tx->txid));
         return(len);
     }
     return(len);
