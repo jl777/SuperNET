@@ -317,13 +317,16 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
         {
             memset(&V,0,sizeof(V));
             V.spendlen = iguana_scriptgen(coin,&V.M,&V.N,V.coinaddr,V.spendscript,asmstr,u->rmd160,type,(const struct vin_info *)&V,vout);
-            if ( (V.spendlen != scriptlen || memcmp(V.spendscript,script,scriptlen) != 0) && addr != 0 && addr->voutsfp != 0 )
+            if ( V.spendlen != scriptlen || memcmp(V.spendscript,script,scriptlen) != 0 )
             {
-                u->fileid = (uint32_t)addr->addrind;
-                u->scriptpos = (uint32_t)ftell(addr->voutsfp);
-                if ( fwrite(script,1,scriptlen,addr->voutsfp) != scriptlen )
-                    printf("error writing vout scriptlen.%d errno.%d\n",scriptlen,errno);
-                else addr->dirty[0]++;
+                if ( addr != 0 && addr->voutsfp != 0 )
+                {
+                    u->fileid = (uint32_t)addr->addrind;
+                    u->scriptpos = (uint32_t)ftell(addr->voutsfp);
+                    if ( fwrite(script,1,scriptlen,addr->voutsfp) != scriptlen )
+                        printf("error writing vout scriptlen.%d errno.%d\n",scriptlen,errno);
+                    else addr->dirty[0]++;
+                } else printf("addr.%p unspent error fp.%p\n",addr,addr!=0?addr->voutsfp:0);
             }
             else
             {

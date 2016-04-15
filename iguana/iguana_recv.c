@@ -341,7 +341,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
         if ( coin->bandwidth < 0.25*coin->maxbandwidth )
         {
             //printf(">>SLOW.%d<< ",addr->addrind);
-            iguana_blast(coin,addr);
+            //iguana_blast(coin,addr);
         }
     }
     copyflag = 0;//(coin->enableCACHE != 0) && (strcmp(coin->symbol,"BTC") != 0);

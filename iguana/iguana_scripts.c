@@ -471,11 +471,16 @@ int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char
             coinaddr[0] = 0;
             break;
         case IGUANA_SCRIPT_76AC:
+        case IGUANA_SCRIPT_AC:
             if ( (plen= bitcoin_pubkeylen(vp->signers[0].pubkey)) < 0 )
                 return(0);
             init_hexbytes_noT(pubkeystr,(uint8_t *)vp->signers[0].pubkey,plen);
             if ( asmstr != 0 )
-                sprintf(asmstr,"OP_DUP %s OP_CHECKSIG // %s",pubkeystr,coinaddr);
+            {
+                if ( type == IGUANA_SCRIPT_76AC )
+                    strcpy(asmstr,"OP_DUP ");
+                sprintf(asmstr + strlen(asmstr),"%s OP_CHECKSIG // %s",pubkeystr,coinaddr);
+            }
             scriptlen = bitcoin_pubkeyspend(script,0,(uint8_t *)vp->signers[0].pubkey);
             //printf("[%02x] scriptlen.%d (%s)\n",vp->signers[0].pubkey[0],scriptlen,asmstr);
             break;
@@ -589,6 +594,12 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
         memcpy(vp->signers[0].pubkey,&vp->spendscript[1],vp->spendscript[0]);
         calc_rmd160_sha256(vp->rmd160,vp->signers[0].pubkey,vp->spendscript[0]);
         return(IGUANA_SCRIPT_76AC);
+    }
+    else if ( vp->spendscript[0] > 0 && vp->spendscript[0] < 76 && vp->spendscript[vp->spendlen-1] == SCRIPT_OP_CHECKSIG && vp->spendscript[0] == vp->spendlen-1 && bitcoin_pubkeylen(&vp->spendscript[1]) > 0 )
+    {
+        memcpy(vp->signers[0].pubkey,&vp->spendscript[0],vp->spendscript[0]);
+        calc_rmd160_sha256(vp->rmd160,vp->signers[0].pubkey,vp->spendscript[0]);
+        return(IGUANA_SCRIPT_AC);
     }
     else if ( vp->spendscript[0] == SCRIPT_OP_HASH160 && vp->spendscript[1] == 0x14 && vp->spendlen == 23 && vp->spendscript[22] == SCRIPT_OP_EQUAL )
     {
@@ -1226,13 +1237,14 @@ uint8_t *iguana_ramchain_scriptdecode(int32_t *metalenp,int32_t *scriptlenp,uint
 {
     uint32_t plen,len = 0;
     *metalenp = *scriptlenp = 0;
-    if ( type == IGUANA_SCRIPT_76AC && pubkeyoffset != 0 )
+    if ( (type == IGUANA_SCRIPT_76AC || type == IGUANA_SCRIPT_AC) && pubkeyoffset != 0 )
     {
         plen = bitcoin_pubkeylen(&Kspace[pubkeyoffset]);
-        _script[0] = 0x76;
-        memcpy(&_script[1],&Kspace[pubkeyoffset],plen);
-        _script[plen + 1] = 0xac;
-        *scriptlenp = plen + 2;
+        if ( type == IGUANA_SCRIPT_76AC )
+            _script[len++] = 0x76;
+        memcpy(&_script[len],&Kspace[pubkeyoffset],plen);
+        _script[plen + len] = 0xac;
+        *scriptlenp = plen + len;
         //printf("76AC special case\n");
         return(_script);
     }
