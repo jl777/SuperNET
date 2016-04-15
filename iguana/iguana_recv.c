@@ -340,7 +340,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
         }
         if ( coin->bandwidth < 0.25*coin->maxbandwidth )
         {
-            printf(">>SLOW.%d<< ",addr->addrind);
+            //printf(">>SLOW.%d<< ",addr->addrind);
             iguana_blast(coin,addr);
         }
     }
