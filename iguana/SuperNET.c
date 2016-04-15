@@ -678,7 +678,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,ui
     //printf("SuperNET_JSON.(%s) remote.(%s)\n",jprint(json,0),remoteaddr!=0?remoteaddr:"");
     destflag = SuperNET_destination(myinfo,&destipbits,&category,&subhash,&maxdelay,json,remoteaddr);
     //printf("destflag.%d\n",destflag);
-    if ( (hexmsg= jstr(json,"hexmsg")) == 0 && strcmp(method,"bitcoinrpc") != 0 && (message= jstr(json,"message")) == 0 )
+    if ( method != 0 && (hexmsg= jstr(json,"hexmsg")) == 0 && strcmp(method,"bitcoinrpc") != 0 && (message= jstr(json,"message")) == 0 )
     {
         jsonstr = jprint(json,0);
         hexlen = (int32_t)strlen(jsonstr);
