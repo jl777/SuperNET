@@ -40,28 +40,31 @@ STRING_ARG(iguana,validate,activecoin)
 
 STRING_ARG(iguana,removecoin,activecoin)
 {
-    struct iguana_bundle *bp; int32_t i; char fname[1024];
+    struct iguana_bundle *bp; int32_t i; char fname[1024],*prefix = "";
+#ifdef __PNACL__
+    prefix = "/";
+#endif
     if ( (coin= iguana_coinfind(activecoin)) != 0 )
     {
         coin->active = 0;
         coin->started = 0;
         for (i=0; i<IGUANA_MAXPEERS; i++)
         {
-            sprintf(fname,"DB/%s/vouts/%04d.vouts",coin->symbol,i), OS_removefile(fname,0);
-            sprintf(fname,"purgeable/%s/%04d.vins",coin->symbol,i), OS_removefile(fname,0);
+            sprintf(fname,"%sDB/%s/vouts/%04d.vouts",prefix,coin->symbol,i), OS_removefile(fname,0);
+            sprintf(fname,"%spurgeable/%s/%04d.vins",prefix,coin->symbol,i), OS_removefile(fname,0);
         }
-        sprintf(fname,"DB/%s/vouts/*",coin->symbol), OS_removefile(fname,0);
-        sprintf(fname,"purgeable/%s/*",coin->symbol), OS_removefile(fname,0);
+        sprintf(fname,"%sDB/%s/vouts/*",prefix,coin->symbol), OS_removefile(fname,0);
+        sprintf(fname,"%s%s/%s/*",prefix,coin->VALIDATEDIR,coin->symbol), OS_removefile(fname,0);
         for (i=0; i<coin->bundlescount; i++)
         {
-            sprintf(fname,"DB/%s/balancecrc.%d",coin->symbol,i), OS_removefile(fname,0);
+            sprintf(fname,"%sDB/%s/balancecrc.%d",prefix,coin->symbol,i), OS_removefile(fname,0);
             if ( (bp= coin->bundles[i]) != 0 )
             {
                 iguana_bundlepurgefiles(coin,bp);
                 iguana_bundleremove(coin,bp->hdrsi);
             }
         }
-        sprintf(fname,"DB/%s/*",coin->symbol), OS_removefile(fname,0);
+        sprintf(fname,"%sDB/%s/*",prefix,coin->symbol), OS_removefile(fname,0);
     }
     return(clonestr("{\"error\":\"no active coin\"}"));
 }

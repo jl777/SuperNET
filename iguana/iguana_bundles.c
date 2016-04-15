@@ -215,7 +215,9 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
         if ( bits256_nonz(bp->hashes[bundlei]) != 0 && bits256_cmp(bp->hashes[bundlei],block->RO.hash2) != 0 )
         {
             char str[65],str2[65];
-            printf("bp->hashes[%d] mismatch %s != %s%s\n",bundlei,bits256_str(str,bp->hashes[bundlei]),bits256_str(str2,block->RO.hash2),block->mainchain?".main":"");
+            printf("bp.[%d]->hashes[%d] mismatch %s != %s%s\n",bp->hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]),bits256_str(str2,block->RO.hash2),block->mainchain?".main":"");
+            iguana_blockunmark(coin,block,bp,bundlei,1);
+            bp->blocks[bundlei] = 0;
             //if ( block->mainchain != 0 )
               //  bp->hashes[bundlei] = block->RO.hash2;
             
@@ -310,7 +312,7 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
 
 struct iguana_bundle *iguana_bundlecreate(struct iguana_info *coin,int32_t *bundleip,int32_t bundleheight,bits256 bundlehash2,bits256 allhash,int32_t issueflag)
 {
-    char str[65],dirname[1024]; struct iguana_bundle *prevbp,*bp = 0;
+    char str[65]; struct iguana_bundle *prevbp,*bp = 0;
     if ( bits256_nonz(bundlehash2) > 0 )
     {
         bits256_str(str,bundlehash2);
@@ -347,7 +349,7 @@ struct iguana_bundle *iguana_bundlecreate(struct iguana_info *coin,int32_t *bund
             }
             *bundleip = 0;
             bits256_str(str,bundlehash2);
-            sprintf(dirname,"%s/%s/%d",GLOBALTMPDIR,coin->symbol,bp->bundleheight), OS_ensure_directory(dirname);
+            char dirname[1024]; sprintf(dirname,"%s/%s/%d",GLOBALTMPDIR,coin->symbol,bp->bundleheight), OS_ensure_directory(dirname);
             //sprintf(dirname,"DB/%s/%d",coin->symbol,bp->bundleheight), OS_ensure_directory(dirname);
             //printf("ht.%d alloc.[%d] new hdrs.%s\n",bp->bundleheight,coin->bundlescount,bits256_str(str,bp->hashes[0]));
             iguana_bundlehash2add(coin,0,bp,0,bundlehash2);
@@ -413,7 +415,10 @@ struct iguana_txid *iguana_bundletx(struct iguana_info *coin,struct iguana_bundl
 void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     static const bits256 zero;
-    char fname[1024],dirname[1024]; FILE *fp; int32_t hdrsi,m,j; uint32_t ipbits;
+    char fname[1024],dirname[1024],*prefix = ""; FILE *fp; int32_t hdrsi,m,j; uint32_t ipbits;
+#ifdef __PNACL__
+    prefix = "";
+#endif
     if ( bp->purgetime == 0 && time(NULL) > bp->emitfinish+30 )
     {
         //printf("purged hdrsi.[%d] lag.%ld\n",bp->hdrsi,time(NULL) - bp->emitfinish);
@@ -434,8 +439,7 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
                 else printf("error removing.(%s)\n",fname);
             }
         }
-        sprintf(dirname,"%s/%s/%d",GLOBALTMPDIR,coin->symbol,bp->bundleheight);
-        OS_remove_directory(dirname);
+        sprintf(dirname,"%s%s/%s/%d",prefix,GLOBALTMPDIR,coin->symbol,bp->bundleheight), OS_remove_directory(dirname);
         bp->purgetime = (uint32_t)time(NULL);
     }
 }
@@ -646,7 +650,7 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
                         prevhash2 = zero;
                         if ( (ptr= iguana_bundlefile(coin,fname,&filesize,bp,i)) != 0 )
                         {
-                            if ( iguana_mapchaininit(coin,&R,bp,i,block,ptr,filesize) > 0 )
+                            if ( iguana_mapchaininit(fname,coin,&R,bp,i,block,ptr,filesize) > 0 )
                             {
                                 B = (void *)(long)((long)R.H.data + R.H.data->Boffset);
                                 prevhash2 = B[0].prev_block;
@@ -1206,8 +1210,8 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
         if ( lastpending->hdrsi+done > coin->bundlescount-1 )
             lastpending = coin->bundles[coin->bundlescount-1];
         else lastpending = coin->bundles[lastpending->hdrsi+done];
-    }
-    else coin->lastpending = coin->bundles[coin->bundlescount - 1];
+        coin->lastpending = lastpending;
+    } else coin->lastpending = coin->bundles[coin->bundlescount - 1];
     coin->numsaved = numsaved;
     coin->numemit = numemit;
     coin->spaceused = spaceused;

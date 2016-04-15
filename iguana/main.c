@@ -58,13 +58,14 @@ int32_t Showmode,Autofold,PANGEA_MAXTHREADS = 1;
 
 struct category_info *Categories;
 struct iguana_info *Coins[IGUANA_MAXCOINS];
-char Userhome[512],GLOBALTMPDIR[512] = "tmp";
+char Userhome[512];
 int32_t USE_JAY,FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel,BIGENDIAN;
 uint32_t prices777_NXTBLOCK,MAX_DEPTH = 100;
 queue_t helperQ,jsonQ,finishedQ,bundlesQ,validateQ,emitQ,TerminateQ;
 struct supernet_info MYINFO,**MYINFOS;
 static int32_t initflag;
 int32_t HDRnet,netBLOCKS;
+char GLOBALTMPDIR[512] = "tmp";
 cJSON *API_json;
 #ifdef __linux__
 int32_t IGUANA_NUMHELPERS = 8;
@@ -1197,15 +1198,19 @@ void iguana_commandline(struct supernet_info *myinfo,char *arg)
 
 void iguana_ensuredirs()
 {
-    OS_ensure_directory("help");
-    OS_ensure_directory("confs");
-    OS_ensure_directory("DB");
-    OS_ensure_directory("DB/ECB");
-    OS_ensure_directory("tmp");
-    OS_ensure_directory("purgeable");
-    OS_ensure_directory("purgeable/BTC");
-    OS_ensure_directory("purgeable/BTCD");
-    OS_ensure_directory(GLOBALTMPDIR);
+    char dirname[512],*prefix = "";
+#ifdef __PNACL__
+    prefix = "";
+#endif
+    sprintf(dirname,"%shelp",prefix), OS_ensure_directory(dirname);
+    sprintf(dirname,"%sconfs",prefix), OS_ensure_directory(dirname);
+    sprintf(dirname,"%sDB",prefix), OS_ensure_directory(dirname);
+    sprintf(dirname,"%sDB/ECB",prefix), OS_ensure_directory(dirname);
+    sprintf(dirname,"%stmp",prefix), OS_ensure_directory(dirname);
+    sprintf(dirname,"%spurgeable",prefix), OS_ensure_directory(dirname);
+    sprintf(dirname,"%spurgeable/BTC",prefix), OS_ensure_directory(dirname);
+    sprintf(dirname,"%spurgeable/BTCD",prefix), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s%s",prefix,GLOBALTMPDIR), OS_ensure_directory(dirname);
 }
 
 void iguana_Qinit()

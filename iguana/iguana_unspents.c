@@ -1373,8 +1373,11 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
 int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
 {
     int32_t hdrsi,numpkinds,iter,numhdrsi,i,numunspents,err; struct iguana_bundle *bp;
-    char fname[1024],fname2[1024],destfname[1024]; bits256 balancehash,allbundles; FILE *fp,*fp2;
+    char fname[1024],fname2[1024],destfname[1024],*prefix=""; bits256 balancehash,allbundles; FILE *fp,*fp2;
     struct iguana_utxo *Uptr; struct iguana_account *Aptr; struct sha256_vstate vstate,bstate;
+#ifdef __PNACL__
+    prefix = "";
+#endif
     vupdate_sha256(balancehash.bytes,&vstate,0,0);
     /*for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
         if ( (bp= coin->bundles[hdrsi]) == 0 || bp->balancefinish <= 1 || bp->ramchain.H.data == 0 || bp->ramchain.A == 0 || bp->ramchain.Uextras == 0 )
@@ -1393,8 +1396,8 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
             numunspents = numpkinds = 0;
             if ( (bp= coin->bundles[hdrsi]) != 0 && bp->ramchain.H.data != 0 && (numpkinds= bp->ramchain.H.data->numpkinds) > 0 && (numunspents= bp->ramchain.H.data->numunspents) > 0 && (Aptr= bp->ramchain.A) != 0 && (Uptr= bp->ramchain.Uextras) != 0 )
             {
-                sprintf(fname,"%s/%s/%d/debits.N%d",GLOBALTMPDIR,coin->symbol,bp->bundleheight,numhdrsi);
-                sprintf(fname2,"%s/%s/%d/lastspends.N%d",GLOBALTMPDIR,coin->symbol,bp->bundleheight,numhdrsi);
+                sprintf(fname,"%s%s/%s/%d/debits.N%d",prefix,GLOBALTMPDIR,coin->symbol,bp->bundleheight,numhdrsi);
+                sprintf(fname2,"%s%s/%s/%d/lastspends.N%d",prefix,GLOBALTMPDIR,coin->symbol,bp->bundleheight,numhdrsi);
                 if ( iter == 0 )
                 {
                     vupdate_sha256(balancehash.bytes,&vstate,(void *)Aptr,sizeof(*Aptr)*numpkinds);
@@ -1641,7 +1644,7 @@ void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,
     char fname[1024]; long filesize; int32_t err; void *ptr;
     if ( block == bp->blocks[bundlei] && (ptr= iguana_bundlefile(coin,fname,&filesize,bp,bundlei)) != 0 )
     {
-        if ( iguana_mapchaininit(coin,R,bp,bundlei,block,ptr,filesize) == 0 )
+        if ( iguana_mapchaininit(fname,coin,R,bp,bundlei,block,ptr,filesize) == 0 )
         {
             if ( dest != 0 )
                 err = iguana_ramchain_iterate(coin,dest,R,bp,bundlei);
@@ -1659,7 +1662,7 @@ void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,
     return(0);
 }
 
-void iguana_RTramchainalloc(struct iguana_info *coin,struct iguana_bundle *bp)
+void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_bundle *bp)
 {
     uint32_t i,changed = 0; struct iguana_ramchain *dest = &coin->RTramchain; struct iguana_blockRO *B;
     if ( dest->H.data != 0 )
@@ -1688,7 +1691,7 @@ void iguana_RTramchainalloc(struct iguana_info *coin,struct iguana_bundle *bp)
     if ( coin->RTramchain.H.data == 0 )
     {
         printf("ALLOC RTramchain\n");
-        iguana_ramchainopen(coin,dest,&coin->RTmem,&coin->RThashmem,bp->bundleheight,bp->hashes[0]);
+        iguana_ramchainopen(fname,coin,dest,&coin->RTmem,&coin->RThashmem,bp->bundleheight,bp->hashes[0]);
         dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
         dest->externalind = dest->H.stacksize = 0;
         dest->H.scriptoffset = 1;
@@ -1799,7 +1802,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             printf("RTheaders %s\n",coin->symbol);
         }
         bp->lastRT = (uint32_t)time(NULL);
-        iguana_RTramchainalloc(coin,bp);
+        iguana_RTramchainalloc("RTbundle",coin,bp);
         bp->isRT = 1;
         while ( (rdata= coin->RTramchain.H.data) != 0 && coin->RTheight <= coin->blocks.hwmchain.height )
         {

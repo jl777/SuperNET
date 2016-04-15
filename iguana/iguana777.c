@@ -208,11 +208,14 @@ void *iguana_kviAddriterator(struct iguana_info *coin,struct iguanakv *kv,struct
 
 uint32_t iguana_updatemetrics(struct iguana_info *coin)
 {
-    char fname[512],tmpfname[512],oldfname[512],ipaddr[64]; int32_t i,j; struct iguana_peer *addr,*tmpaddr; FILE *fp;
+    char fname[512],tmpfname[512],oldfname[512],ipaddr[64],*prefix = ""; int32_t i,j; struct iguana_peer *addr,*tmpaddr; FILE *fp;
+#ifdef __PNACL__
+    prefix = "";
+#endif
     iguana_peermetrics(coin);
-    sprintf(fname,"confs/%s_peers.txt",coin->symbol), OS_compatible_path(fname);
-    sprintf(oldfname,"confs/%s_oldpeers.txt",coin->symbol), OS_compatible_path(oldfname);
-    sprintf(tmpfname,"%s/%s/peers.txt",GLOBALTMPDIR,coin->symbol), OS_compatible_path(tmpfname);
+    sprintf(fname,"%sconfs/%s_peers.txt",prefix,coin->symbol), OS_compatible_path(fname);
+    sprintf(oldfname,"%sconfs/%s_oldpeers.txt",prefix,coin->symbol), OS_compatible_path(oldfname);
+    sprintf(tmpfname,"%s%s/%s/peers.txt",prefix,GLOBALTMPDIR,coin->symbol), OS_compatible_path(tmpfname);
     if ( (fp= fopen(tmpfname,"w")) != 0 )
     {
         for (i=0; i<coin->peers.numranked; i++)
@@ -576,7 +579,7 @@ void iguana_coinloop(void *arg)
                     if ( strcmp(coin->symbol,"BTCD") == 0 )
                     {
                         int32_t j;
-                        char *ipaddrs[] = { "5.9.102.210", "89.248.160.236", "89.248.160.237", "89.248.160.238", "89.248.160.239", "89.248.160.240", "89.248.160.241", "89.248.160.242", "89.248.160.243", "89.248.160.244", "89.248.160.245", "78.47.58.62" };
+                        char *ipaddrs[] = { "5.9.102.210", "89.248.160.236", "89.248.160.237", "89.248.160.238", "89.248.160.239", "89.248.160.240", "89.248.160.241", "89.248.160.242", "89.248.160.243", "89.248.160.244", "89.248.160.245", "78.47.58.62", "67.212.70.88", "94.102.50.69", "50.179.58.158", "194.135.94.30", "109.236.85.42", "104.236.127.154", "68.45.147.145", "37.59.14.7", "78.47.115.250", "188.40.138.8", "62.75.143.120", "82.241.71.230", "217.23.6.2", "73.28.172.128", "45.55.149.34", "192.0.242.54", "81.181.155.53", "91.66.185.97", "85.25.217.233", "144.76.239.66", "95.80.9.112", "80.162.193.118", "173.65.129.85", "2.26.173.58", "78.14.250.69", "188.226.253.77", "58.107.67.39", "124.191.37.212", "176.226.137.238", "69.145.25.85", "24.168.14.28", "73.201.180.47", "76.188.171.53", "63.247.147.166", "121.108.241.247", "36.74.36.125", "106.186.119.171", "188.166.91.37", "223.134.228.208", "89.248.160.244", "178.33.209.212", "71.53.156.38", "88.198.10.165", "24.117.221.0", "74.14.104.57", "158.69.27.82", "110.174.129.213", "75.130.163.51" };
                         for (j=0; j<sizeof(ipaddrs)/sizeof(*ipaddrs); j++)
                         {
                             printf("%s ",ipaddrs[j]);
@@ -657,7 +660,7 @@ void iguana_coinargs(char *symbol,int64_t *maxrecvcachep,int32_t *minconfirmsp,i
 struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,int64_t maxrecvcache,uint64_t services,int32_t initialheight,int32_t maphash,int32_t minconfirms,int32_t maxrequests,int32_t maxbundles,cJSON *json)
 {
     struct iguana_chain *iguana_createchain(cJSON *json);
-    struct iguana_info *coin; int32_t j,m,mult,maxval,mapflags; char dirname[512]; cJSON *peers;
+    struct iguana_info *coin; int32_t j,m,mult,maxval,mapflags; char dirname[512],*prefix; cJSON *peers;
     mapflags = IGUANA_MAPRECVDATA | maphash*IGUANA_MAPTXIDITEMS | maphash*IGUANA_MAPPKITEMS | maphash*IGUANA_MAPBLOCKITEMS | maphash*IGUANA_MAPPEERITEMS;
     coin = iguana_coinadd(symbol,json);
     coin->launched = launched;
@@ -670,8 +673,8 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->myservices = services;
     coin->initialheight = initialheight;
     coin->mapflags = mapflags;
-    mult = (strcmp("BTC",coin->symbol) != 0) ? 4 : 1;
-    maxval = (strcmp("BTC",coin->symbol) != 0) ? IGUANA_MAXPENDBUNDLES : IGUANA_MAXPENDBUNDLES;
+    mult = (strcmp("BTC",coin->symbol) != 0) ? 16 : 1;
+    maxval = IGUANA_MAXPENDBUNDLES;
     coin->MAXMEM = juint(json,"RAM");
     if ( jobj(json,"prefetchlag") != 0 )
         coin->PREFETCHLAG = jint(json,"prefetchlag");
@@ -680,23 +683,25 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         coin->MAXSTUCKTIME = _IGUANA_MAXSTUCKTIME;
     if ( coin->MAXMEM == 0 )
         coin->MAXMEM = IGUANA_DEFAULTRAM;
-    if ( strcmp("BTC",coin->symbol) == 0 && coin->MAXMEM < 4 )
-        maxval = (int32_t)coin->MAXMEM;
+    //if ( strcmp("BTC",coin->symbol) == 0 && coin->MAXMEM < 4 )
+    //    maxval = (int32_t)coin->MAXMEM;
     coin->MAXMEM *= (1024L * 1024 * 1024);
+    prefix = "";
 #ifdef __PNACL__
-    maxval = 8;
+    //maxval = 16;
+    prefix = "";
 #endif
     if ( (coin->startPEND= juint(json,"startpend")) == 0 )
-        coin->startPEND = IGUANA_MAXPENDBUNDLES * mult;
-    if ( coin->startPEND > maxval * mult )
-        coin->startPEND = maxval * mult;
+        coin->startPEND = IGUANA_MAXPENDBUNDLES*mult;
+    if ( coin->startPEND > maxval*mult )
+        coin->startPEND = maxval*mult;
     else if ( coin->startPEND < 2 )
         coin->startPEND = 2;
     coin->MAXBUNDLES = coin->startPEND;
     if ( (coin->endPEND= juint(json,"endpend")) == 0 )
-        coin->endPEND = IGUANA_MINPENDBUNDLES * mult;
-    if ( coin->endPEND > maxval * mult )
-        coin->endPEND = maxval * mult;
+        coin->endPEND = IGUANA_MINPENDBUNDLES*mult;
+    if ( coin->endPEND > maxval*mult )
+        coin->endPEND = maxval*mult;
     else if ( coin->endPEND < 2 )
         coin->endPEND = 2;
     coin->enableCACHE = (strcmp("BTC",coin->symbol) != 0);
@@ -707,16 +712,17 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->active = juint(json,"active");
     if ( (coin->minconfirms = minconfirms) == 0 )
         coin->minconfirms = (strcmp(symbol,"BTC") == 0) ? 3 : 10;
-    printf("ensure directories\n");
-    sprintf(dirname,"DB/ro/%s",symbol), OS_ensure_directory(dirname);
-    sprintf(dirname,"DB/ro"), OS_ensure_directory(dirname);
-    sprintf(dirname,"DB/%s",symbol), OS_ensure_directory(dirname);
-    sprintf(dirname,"DB/%s/validated",symbol), OS_ensure_directory(dirname);
-    sprintf(dirname,"DB/%s/accounts",symbol), OS_ensure_directory(dirname);
-    sprintf(dirname,"DB/%s/spends",symbol), OS_ensure_directory(dirname);
-    sprintf(dirname,"DB/%s/vouts",symbol), OS_ensure_directory(dirname);
-    sprintf(dirname,"%s/%s",coin->VALIDATEDIR,symbol), OS_ensure_directory(dirname);
-    sprintf(dirname,"%s/%s",GLOBALTMPDIR,symbol), OS_ensure_directory(dirname);
+    printf("ensure directories maxval.%d mult.%d start.%d end.%d\n",maxval,mult,coin->startPEND,coin->endPEND);
+    sprintf(dirname,"%sDB/ro/%s",prefix,symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"%sDB/ro",prefix), OS_ensure_directory(dirname);
+    sprintf(dirname,"%sDB/%s",prefix,symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"%sDB/%s/validated",prefix,symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"%sDB/%s/accounts",prefix,symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"%sDB/%s/spends",prefix,symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"%sDB/%s/vouts",prefix,symbol), OS_ensure_directory(dirname);
+    if ( coin->VALIDATEDIR[0] != 0 )
+        sprintf(dirname,"%s%s/%s",prefix,coin->VALIDATEDIR,symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s%s/%s",prefix,GLOBALTMPDIR,symbol), OS_ensure_directory(dirname);
     if ( coin->chain == 0 && (coin->chain= iguana_createchain(json)) == 0 )
     {
         printf("cant initialize chain.(%s)\n",jstr(json,0));
