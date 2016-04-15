@@ -625,22 +625,40 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
 
 int32_t iguana_blast(struct iguana_info *coin,struct iguana_peer *addr)
 {
-    struct iguana_bundle *bp; bits256 hash2; int32_t i,range,n = 0;
-    if ( (bp= coin->current) != 0 && (range= (coin->bundlescount - bp->hdrsi)) > 0 )
+    struct iguana_bundle *bp,*lastbp; double aveduration; bits256 hash2; uint32_t now; int32_t i,m,ind,range,n = 0;
+    m = 0;
+    if ( (bp= coin->current) != 0 && (lastbp= coin->lastpending) != 0 && (range= (lastbp->hdrsi - bp->hdrsi + 1)) > 0 )
     {
-        if ( (bp= coin->bundles[bp->hdrsi + (addr->addrind % range)]) != 0 )
+        ind = bp->hdrsi + (addr->addrind % range);
+        while ( ind < coin->bundlescount && n < IGUANA_PENDINGREQUESTS )
         {
-            for (i=0; i<bp->n && n<IGUANA_PENDINGREQUESTS; i++)
-                if ( GETBIT(bp->haveblock,i) == 0 )
+            now = (uint32_t)time(NULL);
+            if ( (bp= coin->bundles[ind++]) != 0 )
+            {
+                if ( bp == coin->current )
+                    aveduration = 1;
+                else
                 {
-                    iguana_bundleblock(coin,&hash2,bp,i);
-                    if ( bits256_nonz(hash2) != 0 )
-                    {
-                        n++;
-                        iguana_sendblockreqPT(coin,addr,bp,i,hash2,0);
-                    }
+                    if ( bp->durationscount != 0 )
+                        aveduration = (double)bp->totaldurations / bp->durationscount;
+                    else aveduration = IGUANA_DEFAULTLAG;
                 }
-            printf("blasted.%d -> [%d]\n",n,bp->hdrsi);
+                for (i=0; i<bp->n && n<IGUANA_PENDINGREQUESTS; i++)
+                    if ( GETBIT(bp->haveblock,i) == 0 && now > bp->issued[i]+aveduration )
+                    {
+                        iguana_bundleblock(coin,&hash2,bp,i);
+                        if ( bits256_nonz(hash2) != 0 )
+                        {
+                            n++;
+                            iguana_sendblockreqPT(coin,addr,bp,i,hash2,0);
+                        }
+                    }
+                if ( n > m )
+                {
+                    //printf("%s blasted.%d -> [%d]\n",addr->ipaddr,n-m,bp->hdrsi);
+                    m = n;
+                }
+            }
         }
     }
     return(n);
@@ -649,7 +667,7 @@ int32_t iguana_blast(struct iguana_info *coin,struct iguana_peer *addr)
 int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int32_t requiredflag)
 {
     static bits256 zero;
-    int32_t i,ready,valid,checki,hdrsi; char fname[1024]; struct iguana_block *block; int32_t sum[0x100],counts[0x100]; FILE *fp; struct iguana_blockRO *B; struct iguana_bundle *nextbp; void *ptr; long filesize; struct iguana_ramchain R; bits256 prevhash2;
+    int32_t i,ready,valid; char fname[1024]; struct iguana_block *block; int32_t sum[0x100],counts[0x100]; struct iguana_blockRO *B; struct iguana_bundle *nextbp; void *ptr; long filesize; struct iguana_ramchain R; bits256 prevhash2;
     memset(sum,0,sizeof(sum));
     memset(counts,0,sizeof(counts));
     if ( 0 && bp->queued == 0 )
@@ -708,6 +726,7 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
             else
             {
 #ifndef __PNACL__
+                int32_t checki,hdrsi; FILE *fp;
                 fname[0] = 0;
                 checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,block->RO.hash2,zero,1,0);
                 if ( hdrsi == bp->hdrsi && checki == i && (fp= fopen(fname,"rb")) != 0 )
