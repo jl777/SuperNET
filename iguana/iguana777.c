@@ -583,7 +583,7 @@ void iguana_coinloop(void *arg)
                         for (j=0; j<sizeof(ipaddrs)/sizeof(*ipaddrs); j++)
                         {
                             printf("%s ",ipaddrs[j]);
-                            iguana_launchpeer(coin,ipaddrs[j]);
+                            iguana_possible_peer(coin,ipaddrs[j]);
                         }
                         printf("possible peers\n");
                     }

@@ -944,10 +944,11 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
         if ( (block= iguana_blockfind("recvhashes2",coin,blockhashes[1])) == 0 )
         {
             iguana_blockhashset("recvhashes3",coin,-1,blockhashes[1],1);
-            //if ( (block= iguana_blockfind("recvhashes4",coin,blockhashes[1])) != 0 )
-            //    iguana_blockQ("recvhash6",coin,0,-6,blockhashes[1],1); // should be RT block
+            if ( (block= iguana_blockfind("recvhashes4",coin,blockhashes[1])) != 0 )
+                iguana_blockQ("recvhash6",coin,0,-6,blockhashes[1],1); // should be RT block
         }
-        block->newtx = 1;
+        if ( block != 0 )
+            block->newtx = 1;
         iguana_blockQ("RTblock",coin,0,-7,blockhashes[1],1); // should be RT block
     }
     if ( coin->enableCACHE != 0 )//&& num >= coin->chain->bundlesize )
