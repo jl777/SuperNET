@@ -451,7 +451,7 @@ int32_t bitcoin_cltvscript(uint8_t p2shtype,char *ps2h_coinaddr,uint8_t p2sh_rmd
 int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char *coinaddr,uint8_t *script,char *asmstr,uint8_t rmd160[20],uint8_t type,const struct vin_info *vp,int32_t txi)
 {
     uint8_t addrtype; char rmd160str[41],pubkeystr[256]; int32_t plen,i,m,n,flag = 0,scriptlen = 0;
-    m = n = 1;
+    m = n = 0;
     if ( asmstr != 0 )
         asmstr[0] = 0;
     if ( type == IGUANA_SCRIPT_76A988AC || type == IGUANA_SCRIPT_AC || type == IGUANA_SCRIPT_76AC || type == IGUANA_SCRIPT_P2SH )
@@ -520,7 +520,7 @@ int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char
             break;
         default: break;//printf("unexpected script type.%d\n",type); break;
     }
-    if ( n > 1 )
+    if ( n > 0 )
     {
         scriptlen = bitcoin_MofNspendscript(rmd160,script,0,vp);
         if ( asmstr != 0 )
