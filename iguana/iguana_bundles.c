@@ -650,7 +650,9 @@ int32_t iguana_blast(struct iguana_info *coin,struct iguana_peer *addr)
                         if ( bits256_nonz(hash2) != 0 )
                         {
                             n++;
-                            iguana_sendblockreqPT(coin,addr,bp,i,hash2,0);
+                            bp->issued[i] = 0;
+                            iguana_blockQ("blast",coin,bp,i,hash2,1);
+                            //iguana_sendblockreqPT(coin,addr,bp,i,hash2,0);
                         }
                     }
                 if ( n > m )
