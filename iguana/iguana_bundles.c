@@ -623,6 +623,24 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
     return(n);
 }
 
+int32_t iguana_blast(struct iguana_info *coin,int32_t modval)
+{
+    struct iguana_bundle *bp; int32_t i,range,n = 0;
+    if ( (bp= coin->current) != 0 && (range= (coin->bundlescount - bp->hdrsi)) > 0 )
+    {
+        modval %= range;
+        if ( (bp= coin->bundles[bp->hdrsi + modval]) != 0 )
+        {
+            for (i=0; i<bp->n; i++)
+                if ( GETBIT(bp->haveblock,i) == 0 )
+                    bp->issued[i] = 0;
+            n = iguana_bundleissuemissing(coin,bp,3,1.);
+            printf("blasted.%d -> [%d]\n",n,bp->hdrsi);
+        }
+    }
+    return(n);
+}
+
 int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int32_t requiredflag)
 {
     static bits256 zero;
@@ -684,6 +702,7 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
             }
             else
             {
+#ifndef __PNACL__
                 fname[0] = 0;
                 checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,block->RO.hash2,zero,1,0);
                 if ( hdrsi == bp->hdrsi && checki == i && (fp= fopen(fname,"rb")) != 0 )
@@ -695,7 +714,10 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
                         ready++;
                     }
                     fclose(fp);
-                } else iguana_blockunmark(coin,block,bp,i,0);
+                }
+                else
+#endif
+                    iguana_blockunmark(coin,block,bp,i,0);
             }
         }
         else if ( bp->queued != 0 )
@@ -882,7 +904,7 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
                 /*if ( bp->hdrsi == 0 && iguana_peerblockrequest(coin,coin->blockspace,sizeof(coin->blockspace),0,bp->hashes[0],1) > 0 )
                     printf("GENESIS block validated\n");
                 else printf("GENESIS didnt validate bp.%p\n",bp);*/
-                iguana_bundlevalidate(coin,bp,1);
+                //iguana_bundlevalidate(coin,bp,1);
             }
             else
             {

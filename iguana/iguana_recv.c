@@ -280,7 +280,7 @@ void iguana_bundletime(struct iguana_info *coin,struct iguana_bundle *bp,int32_t
 
 void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,struct iguana_msghdr *H,uint8_t *data,int32_t recvlen)
 {
-    struct iguana_bundlereq *req; struct iguana_txblock *txdata = 0; int32_t valid,speculative=0,i,j,bundlei,copyflag; struct iguana_block *block; struct iguana_bundle *bp; char str[65];
+    struct iguana_bundlereq *req; struct iguana_txblock *txdata = 0; int32_t valid,speculative=0,i,j,bundlei,copyflag; struct iguana_block *block; struct iguana_bundle *bp; uint32_t now; char str[65];
     if ( 0 )
     {
         for (i=0; i<txdata->space[0]; i++)
@@ -316,15 +316,32 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
     origtxdata->block.txvalid = 1;
     if ( addr != 0 && addr != &coin->internaladdr )
     {
-        static uint64_t received[IGUANA_MAXPEERS],count[IGUANA_MAXPEERS];
+        static uint64_t received[IGUANA_MAXPEERS],count[IGUANA_MAXPEERS],lastcount,lastreceived,last;
         received[addr->addrind] += recvlen;
         count[addr->addrind]++;
-        if ( (rand() % 1000) == 0 )
+        now = (uint32_t)time(NULL);
+        if ( ((rand() % 100) == 0 && now > last+10) || now > last+60 )
         {
-            uint64_t sum2 = 0,sum = 0;
+            int64_t sum2 = 0,sum = 0,diffr,diff; double bw = 0.;
             for (i=0; i<sizeof(received)/sizeof(*received); i++)
                 sum += received[i], sum2 += count[i];
-            char str[65],str2[65],str3[65]; printf("%s TOTAL BLOCKS.%llu RECEIVED %s ave %.1f | duplicates.%d %s afteremit.%d %s\n",coin->symbol,(long long)sum2,mbstr(str,sum),(double)sum/(sum2!=0?sum2:1),numDuplicates,mbstr(str2,sizeDuplicates),numAfteremit,mbstr(str3,sizeAfteremit));
+            diffr = (sum - lastreceived), diff = (sum2 - lastcount);
+            //printf("diffr %d diff %d, last %d/%d\n",(int32_t)diffr,(int32_t)diff,(int32_t)lastreceived,(int32_t)lastcount);
+            lastreceived = sum, lastcount = sum2;
+            if ( diff != 0 )
+            {
+                bw = ((double)diffr / (now - last + 1));
+                if ( bw > coin->maxbandwidth )
+                    coin->maxbandwidth = bw;
+            }
+            coin->bandwidth = bw;
+            if ( coin->bandwidth < 0.25*coin->maxbandwidth )
+            {
+                printf(">>SLOW<< ");
+                iguana_blast(coin,addr->addrind);
+            }
+            char str[65],str2[65],str3[65],str4[65]; printf("%s BLOCKS.%llu RECV %s ave %.1f | dup.%d %s after.%d %s %s/sec %.2f%%\n",coin->symbol,(long long)sum2,mbstr(str,sum),(double)sum/(sum2!=0?sum2:1),numDuplicates,mbstr(str2,sizeDuplicates),numAfteremit,mbstr(str3,sizeAfteremit),mbstr(str4,bw),coin->maxbandwidth!=0.?100.*coin->bandwidth/coin->maxbandwidth:0.);
+            last = now;
         }
     }
     copyflag = 0;//(coin->enableCACHE != 0) && (strcmp(coin->symbol,"BTC") != 0);

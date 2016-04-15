@@ -47,7 +47,7 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_TAILPERCENTAGE 1.0
 #define IGUANA_MAXPENDHDRS 1
 #define IGUANA_MAXPENDINGREQUESTS 3
-#define IGUANA_PENDINGREQUESTS 512
+#define IGUANA_PENDINGREQUESTS 64
 #define IGUANA_MINPENDBUNDLES 4
 #define IGUANA_MAXPENDBUNDLES 16
 #define IGUANA_RPCPORT 7778
@@ -495,7 +495,7 @@ struct iguana_info
     struct iguana_ramchain RTramchain; struct OS_memspace RTmem,RThashmem; bits256 RThash1;
     int32_t numremain,numpendings,zcount,recvcount,bcount,pcount,lastbundle,numsaved,pendbalances,numverified;
     uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ,lastbundleitime,lastdisp,RTgenesis,RTstarti,idletime,stucktime,stuckmonitor,maxstuck,lastreqtime,RThdrstime;
-    double backstopmillis; bits256 backstophash2; int64_t spaceused;
+    double bandwidth,maxbandwidth,backstopmillis; bits256 backstophash2; int64_t spaceused;
     int32_t initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,polltimeout,numreqtxids,allhashes; bits256 reqtxids[64];
     void *launched,*started;
     uint64_t bloomsearches,bloomhits,bloomfalse,collisions;
@@ -882,6 +882,7 @@ int32_t iguana_voutsfname(struct iguana_info *coin,char *fname,int32_t slotid);
 int32_t iguana_vinsfname(struct iguana_info *coin,char *fname,int32_t slotid);
 bits256 iguana_merkle(struct iguana_info *coin,bits256 *tree,int32_t txn_count);
 int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int32_t requiredflag);
+int32_t iguana_blast(struct iguana_info *coin,int32_t modval);
 
 extern int32_t HDRnet,netBLOCKS;
 
