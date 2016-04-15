@@ -265,7 +265,7 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
         if ( type < 0 )
         {
             type = iguana_calcrmd160(coin,&V,script,scriptlen,txid,vout,0xffffffff);
-            if ( type == 1 && bitcoin_pubkeylen(script+1) <= 0 )
+            if ( (type == 12 && scriptlen == 0) || (type == 1 && bitcoin_pubkeylen(script+1) <= 0) )
             {
                 int32_t i; for (i=0; i<scriptlen; i++)
                     printf("%02x",script[i]);
@@ -330,6 +330,8 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
             }
             else
             {
+                if ( type == 12 )
+                    printf("unexpected regen?? type.%d scriptlen.%d\n",u->type,scriptlen);
                 u->scriptpos = 0;
                 u->fileid = 0;
             }

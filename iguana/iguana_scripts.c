@@ -302,10 +302,10 @@ const char *get_opname(int32_t *extralenp,enum opcodetype opcode)
 
 int32_t bitcoin_pubkeyspend(uint8_t *script,int32_t n,uint8_t pubkey[66])
 {
-    int32_t scriptlen = bitcoin_pubkeylen(pubkey);
-    script[n++] = scriptlen;
-    memcpy(&script[n],pubkey,scriptlen);
-    n += scriptlen;
+    int32_t plen = bitcoin_pubkeylen(pubkey);
+    script[n++] = plen;
+    memcpy(&script[n],pubkey,plen);
+    n += plen;
     script[n++] = SCRIPT_OP_CHECKSIG;
     return(n);
 }
@@ -481,8 +481,10 @@ int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char
                     strcpy(asmstr,"OP_DUP ");
                 sprintf(asmstr + strlen(asmstr),"%s OP_CHECKSIG // %s",pubkeystr,coinaddr);
             }
-            scriptlen = bitcoin_pubkeyspend(script,0,(uint8_t *)vp->signers[0].pubkey);
-            //printf("[%02x] scriptlen.%d (%s)\n",vp->signers[0].pubkey[0],scriptlen,asmstr);
+            if ( type == IGUANA_SCRIPT_76AC )
+                script[scriptlen++] = 0x76;
+            scriptlen = bitcoin_pubkeyspend(script,scriptlen,(uint8_t *)vp->signers[0].pubkey);
+            //printf("[%02x] type.%d scriptlen.%d\n",vp->signers[0].pubkey[0],type,scriptlen);
             break;
         case IGUANA_SCRIPT_76A988AC:
             if ( asmstr != 0 )
