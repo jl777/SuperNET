@@ -454,7 +454,7 @@ int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char
     m = n = 1;
     if ( asmstr != 0 )
         asmstr[0] = 0;
-    if ( type == IGUANA_SCRIPT_76A988AC || type == IGUANA_SCRIPT_76AC || type == IGUANA_SCRIPT_P2SH )
+    if ( type == IGUANA_SCRIPT_76A988AC || type == IGUANA_SCRIPT_AC || type == IGUANA_SCRIPT_76AC || type == IGUANA_SCRIPT_P2SH )
     {
         if ( type == IGUANA_SCRIPT_P2SH )
             addrtype = coin->chain->p2shtype;
@@ -479,6 +479,7 @@ int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char
             {
                 if ( type == IGUANA_SCRIPT_76AC )
                     strcpy(asmstr,"OP_DUP ");
+                else printf("found type == IGUANA_SCRIPT_AC\n");
                 sprintf(asmstr + strlen(asmstr),"%s OP_CHECKSIG // %s",pubkeystr,coinaddr);
             }
             scriptlen = bitcoin_pubkeyspend(script,0,(uint8_t *)vp->signers[0].pubkey);
@@ -599,6 +600,7 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
     {
         memcpy(vp->signers[0].pubkey,&vp->spendscript[0],vp->spendscript[0]);
         calc_rmd160_sha256(vp->rmd160,vp->signers[0].pubkey,vp->spendscript[0]);
+        printf("found IGUANA_SCRIPT_AC\n");
         return(IGUANA_SCRIPT_AC);
     }
     else if ( vp->spendscript[0] == SCRIPT_OP_HASH160 && vp->spendscript[1] == 0x14 && vp->spendlen == 23 && vp->spendscript[22] == SCRIPT_OP_EQUAL )
@@ -1189,10 +1191,11 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
 
 uint32_t iguana_ramchain_scriptencode(struct iguana_info *coin,uint8_t *Kspace,uint32_t *offsetp,int32_t type,uint8_t *script,int32_t scriptlen,uint32_t *pubkeyoffsetp)
 {
-    uint32_t uoffset,offset = *offsetp,pubkeyoffset = *pubkeyoffsetp; int32_t plen;
-    if ( type == IGUANA_SCRIPT_76AC )
+    uint32_t uoffset,starti,offset = *offsetp,pubkeyoffset = *pubkeyoffsetp; int32_t plen;
+    if ( type == IGUANA_SCRIPT_76AC || type == IGUANA_SCRIPT_AC )
     {
-        plen = bitcoin_pubkeylen(script+1);
+        starti = (type == IGUANA_SCRIPT_76AC);
+        plen = bitcoin_pubkeylen(script + starti);
         /*if ( plen <= 0 )
          {
          char buf[1025];
@@ -1208,12 +1211,12 @@ uint32_t iguana_ramchain_scriptencode(struct iguana_info *coin,uint8_t *Kspace,u
                 if ( offset == 0 )
                     offset = 1;
                 *pubkeyoffsetp = pubkeyoffset = offset;
-                memcpy(&Kspace[pubkeyoffset],script+1,plen);
+                memcpy(&Kspace[pubkeyoffset],script + starti,plen);
                 offset += plen;
                 *offsetp = offset;
                 return(0);
             }
-            if ( memcmp(script+1,&Kspace[pubkeyoffset],plen) != 0 )
+            if ( memcmp(script + starti,&Kspace[pubkeyoffset],plen) != 0 )
             {
                 /*for (i=-1; i<=plen; i++)
                  printf("%02x",script[1+i]);
