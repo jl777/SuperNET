@@ -61,7 +61,7 @@ STRING_ARG(iguana,removecoin,activecoin)
             if ( (bp= coin->bundles[i]) != 0 )
             {
                 iguana_bundlepurgefiles(coin,bp);
-                iguana_bundleremove(coin,bp->hdrsi);
+                iguana_bundleremove(coin,bp->hdrsi,1);
             }
         }
         sprintf(fname,"%sDB/%s/*",prefix,coin->symbol), OS_removefile(fname,0);

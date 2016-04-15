@@ -1236,7 +1236,7 @@ int32_t iguana_ramchain_free(struct iguana_info *coin,struct iguana_ramchain *ra
     return(0);
 }
 
-int32_t iguana_bundleremove(struct iguana_info *coin,int32_t hdrsi)
+int32_t iguana_bundleremove(struct iguana_info *coin,int32_t hdrsi,int32_t tmpfiles)
 {
     struct iguana_bundle *bp; char fname[1024],str[65];
     if ( hdrsi >= 0 && hdrsi < coin->bundlescount && (bp= coin->bundles[hdrsi]) != 0 )

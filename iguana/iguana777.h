@@ -877,7 +877,7 @@ void iguana_allocvolatile(struct iguana_info *coin,struct iguana_ramchain *ramch
 int32_t iguana_peerhdrrequest(struct iguana_info *coin,struct iguana_peer *addr,bits256 hash2);
 int32_t iguana_peerinvdata(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *space,int32_t max);
 int32_t iguana_bundlefname(struct iguana_info *coin,struct iguana_bundle *bp,char *fname);
-int32_t iguana_bundleremove(struct iguana_info *coin,int32_t hdrsi);
+int32_t iguana_bundleremove(struct iguana_info *coin,int32_t hdrsi,int32_t tmpfiles);
 int32_t iguana_voutsfname(struct iguana_info *coin,char *fname,int32_t slotid);
 int32_t iguana_vinsfname(struct iguana_info *coin,char *fname,int32_t slotid);
 bits256 iguana_merkle(struct iguana_info *coin,bits256 *tree,int32_t txn_count);
