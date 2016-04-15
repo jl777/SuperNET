@@ -313,6 +313,8 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
                 fprintf(stderr,"IGUANA_SCRIPT_76AC type.%d scriptlen.%d bp.%p %s\n",type,scriptlen,bp,mbstr(str,totalsize));
         }
         u->scriptlen = scriptlen;
+        u->scriptpos = 0;
+        u->fileid = 0;
         if ( scriptlen > 0 && script != 0 )
         {
             memset(&V,0,sizeof(V));
@@ -322,18 +324,14 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
                 if ( addr != 0 && addr->voutsfp != 0 )
                 {
                     u->fileid = (uint32_t)addr->addrind;
-                    u->scriptpos = (uint32_t)ftell(addr->voutsfp);
+                    if ( (u->scriptpos= (uint32_t)ftell(addr->voutsfp)) == 0 )
+                        fputc(0,addr->voutsfp), u->scriptpos++;
                     if ( fwrite(script,1,scriptlen,addr->voutsfp) != scriptlen )
                         printf("error writing vout scriptlen.%d errno.%d\n",scriptlen,errno);
                     else addr->dirty[0]++;
                 } else printf("addr.%p unspent error fp.%p\n",addr,addr!=0?addr->voutsfp:0);
             }
-            else
-            {
-                u->scriptpos = 0;
-                u->fileid = 0;
-            }
-        } else u->scriptpos = 0;
+        }
         u->txidind = ramchain->H.txidind;
     }
     return(unspentind);
@@ -560,7 +558,8 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,struct iguana_peer
         if ( (s->vinscriptlen= vinscriptlen) > 0 && vinscript != 0 && addr != 0 && addr->vinsfp != 0 && vinscriptlen < IGUANA_MAXSCRIPTSIZE)
         {
             s->fileid = (uint32_t)addr->addrind;
-            s->scriptpos = (uint32_t)ftell(addr->vinsfp);
+            if ( (s->scriptpos= (uint32_t)ftell(addr->vinsfp)) == 0 )
+                fputc(0,addr->vinsfp), s->scriptpos++;
             if ( fwrite(vinscript,1,vinscriptlen,addr->vinsfp) != vinscriptlen )
                 printf("error writing vinscriptlen.%d errno.%d\n",vinscriptlen,errno);
             else addr->dirty[1]++;

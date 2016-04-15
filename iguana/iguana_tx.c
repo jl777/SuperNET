@@ -75,7 +75,7 @@ int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmst
         p = &P[u->pkind];
         vout->value = u->value;
         vout->pk_script = scriptspace;
-        if ( u->scriptlen > 0 )
+        if ( u->scriptpos > 0 && u->scriptlen > 0 )
         {
             iguana_voutsfname(coin,fname,u->fileid);
             if ( (fp= fopen(fname,"rb")) != 0 )
@@ -96,8 +96,6 @@ int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmst
         }
     } else printf("iguana_voutset unexpected path\n");
     vout->pk_scriptlen = scriptlen;
-    if ( scriptlen != u->scriptlen && u->scriptlen != 0 )
-        printf("scriptlen.%d u.(type.%d fpos.%d len.%d)\n",scriptlen,u->type,u->scriptpos,u->scriptlen);
     if ( err != 0 )
         return(-err);
     else return(scriptlen);
