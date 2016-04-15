@@ -625,7 +625,7 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
 
 int32_t iguana_blast(struct iguana_info *coin,struct iguana_peer *addr)
 {
-    struct iguana_bundle *bp,*lastbp; double aveduration; bits256 hash2; uint32_t now; int32_t i,m,ind,range,n = 0;
+    struct iguana_bundle *bp,*lastbp; double aveduration; bits256 hash2; uint32_t now; int32_t i,m,ind,range,n = 0; struct iguana_blockreq *req = 0;
     m = 0;
     if ( (bp= coin->current) != 0 && (lastbp= coin->lastpending) != 0 && (range= (lastbp->hdrsi - bp->hdrsi + 1)) > 0 )
     {
@@ -651,8 +651,12 @@ int32_t iguana_blast(struct iguana_info *coin,struct iguana_peer *addr)
                         {
                             n++;
                             bp->issued[i] = 0;
-                            iguana_blockQ("blast",coin,bp,i,hash2,1);
-                            //iguana_sendblockreqPT(coin,addr,bp,i,hash2,0);
+                            req = mycalloc('y',1,sizeof(*req));
+                            req->hash2 = hash2;
+                            req->bp = bp;
+                            req->height = bp->bundleheight + i;
+                            req->bundlei = i;
+                            queue_enqueue("blast",&coin->priorityQ,&req->DL,0);
                         }
                     }
                 if ( n > m )
