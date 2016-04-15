@@ -93,7 +93,7 @@ int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmst
         {
             memset(&V,0,sizeof(V));
             scriptlen = iguana_scriptgen(coin,&V.M,&V.N,coinaddr,scriptspace,asmstr,p->rmd160,u->type,(const struct vin_info *)&V,i);
-            // printf("scriptlen.%d type.%d\n",scriptlen,u->type);
+            printf("scriptlen.%d type.%d\n",scriptlen,u->type);
         }
     } else printf("iguana_voutset unexpected path\n");
     vout->pk_scriptlen = scriptlen;

@@ -1061,7 +1061,7 @@ void iguana_unstickhdr(struct iguana_info *coin,struct iguana_bundle *bp,int32_t
 
 void iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,uint32_t now)
 {
-    int32_t mult = 7,n=0;
+    int32_t mult = 7,n=0,priority = 1;
     if ( now > bp->missingstime+10 )
     {
         if ( coin->current != 0 )
@@ -1070,7 +1070,17 @@ void iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,uin
             mult = 4;
         else if ( mult > 7 )
             mult = 7;
-        if ( (n= iguana_bundleissuemissing(coin,bp,1,mult)) > 0 )
+        if ( coin->bandwidth < .5*coin->maxbandwidth )
+        {
+            mult--;
+            if ( coin->bandwidth < .25*coin->maxbandwidth )
+                mult /= 2;
+            if ( mult < 1 )
+                mult = 1;
+            if ( coin->bandwidth < 0.1*coin->maxbandwidth )
+                priority = 3;
+        }
+        if ( (n= iguana_bundleissuemissing(coin,bp,priority,mult)) > 0 )
         {
             //printf("bundle.[%d] n.%d issued.%d lag.%d\n",bp->hdrsi,n,bp->numissued,now-bp->missingstime);
             bp->numissued += n;

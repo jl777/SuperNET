@@ -330,8 +330,6 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
             }
             else
             {
-                if ( type == 12 )
-                    printf("unexpected regen?? type.%d scriptlen.%d\n",u->type,scriptlen);
                 u->scriptpos = 0;
                 u->fileid = 0;
             }
