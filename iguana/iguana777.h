@@ -47,7 +47,7 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_TAILPERCENTAGE 1.0
 #define IGUANA_MAXPENDHDRS 1
 #define IGUANA_MAXPENDINGREQUESTS 3
-#define IGUANA_PENDINGREQUESTS 64
+#define IGUANA_PENDINGREQUESTS 32
 #define IGUANA_MINPENDBUNDLES 4
 #define IGUANA_MAXPENDBUNDLES 16
 #define IGUANA_RPCPORT 7778
@@ -882,7 +882,7 @@ int32_t iguana_voutsfname(struct iguana_info *coin,char *fname,int32_t slotid);
 int32_t iguana_vinsfname(struct iguana_info *coin,char *fname,int32_t slotid);
 bits256 iguana_merkle(struct iguana_info *coin,bits256 *tree,int32_t txn_count);
 int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int32_t requiredflag);
-int32_t iguana_blast(struct iguana_info *coin,int32_t modval);
+int32_t iguana_blast(struct iguana_info *coin,struct iguana_peer *addr);
 
 extern int32_t HDRnet,netBLOCKS;
 

@@ -623,18 +623,23 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
     return(n);
 }
 
-int32_t iguana_blast(struct iguana_info *coin,int32_t modval)
+int32_t iguana_blast(struct iguana_info *coin,struct iguana_peer *addr)
 {
-    struct iguana_bundle *bp; int32_t i,range,n = 0;
+    struct iguana_bundle *bp; bits256 hash2; int32_t i,range,n = 0;
     if ( (bp= coin->current) != 0 && (range= (coin->bundlescount - bp->hdrsi)) > 0 )
     {
-        modval %= range;
-        if ( (bp= coin->bundles[bp->hdrsi + modval]) != 0 )
+        if ( (bp= coin->bundles[bp->hdrsi + (addr->addrind % range)]) != 0 )
         {
-            for (i=0; i<bp->n; i++)
+            for (i=0; i<bp->n && n<IGUANA_PENDINGREQUESTS; i++)
                 if ( GETBIT(bp->haveblock,i) == 0 )
-                    bp->issued[i] = 0;
-            n = iguana_bundleissuemissing(coin,bp,3,1.);
+                {
+                    iguana_bundleblock(coin,&hash2,bp,i);
+                    if ( bits256_nonz(hash2) != 0 )
+                    {
+                        n++;
+                        iguana_sendblockreqPT(coin,addr,bp,i,hash2,0);
+                    }
+                }
             printf("blasted.%d -> [%d]\n",n,bp->hdrsi);
         }
     }

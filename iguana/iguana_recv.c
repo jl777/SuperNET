@@ -337,8 +337,8 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             coin->bandwidth = bw;
             if ( coin->bandwidth < 0.25*coin->maxbandwidth )
             {
-                printf(">>SLOW<< ");
-                iguana_blast(coin,addr->addrind);
+                printf(">>SLOW.%d<< ",addr->addrind);
+                iguana_blast(coin,addr);
             }
             char str[65],str2[65],str3[65],str4[65]; printf("%s BLOCKS.%llu RECV %s ave %.1f | dup.%d %s after.%d %s %s/sec %.2f%%\n",coin->symbol,(long long)sum2,mbstr(str,sum),(double)sum/(sum2!=0?sum2:1),numDuplicates,mbstr(str2,sizeDuplicates),numAfteremit,mbstr(str3,sizeAfteremit),mbstr(str4,bw),coin->maxbandwidth!=0.?100.*coin->bandwidth/coin->maxbandwidth:0.);
             last = now;
