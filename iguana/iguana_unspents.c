@@ -1062,7 +1062,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
             {
                 if ( bp->tmpspends != ramchain->Xspendinds )
                 {
-                    printf("spendvectors: unexpected tmpspends? or RT [%d] numtmpspends.%d vs emit.%d\n",bp->hdrsi,bp->numtmpspends,emit);
+                    //printf("spendvectors: unexpected tmpspends? or RT [%d] numtmpspends.%d vs emit.%d\n",bp->hdrsi,bp->numtmpspends,emit);
                     bp->tmpspends = myrealloc('x',bp->tmpspends,sizeof(*ptr)*bp->numtmpspends,sizeof(*ptr)*(bp->numtmpspends+emit));
                     memcpy(&bp->tmpspends[bp->numtmpspends],ptr,sizeof(*ptr)*emit);
                     bp->numtmpspends += emit;
@@ -1751,10 +1751,10 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     }
     else
     {
-        printf("spendvectors calculated to %d\n",coin->RTheight);
+        //printf("spendvectors calculated to %d\n",coin->RTheight);
         bp->converted = 0;
         iguana_convert(coin,bp,1);
-        printf("spendvectors converted to %d\n",coin->RTheight);
+        //printf("spendvectors converted to %d\n",coin->RTheight);
         iguana_balancegen(coin,0,bp,coin->RTstarti,coin->RTheight-1);
         printf("iguana_balancegen [%d] (%d to %d)\n",bp->hdrsi,coin->RTstarti,(coin->RTheight-1)%bp->n);
         coin->RTstarti = (coin->RTheight % bp->n);

@@ -955,7 +955,6 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
 int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_bundle *bp,int32_t timelimit,int32_t lag)
 {
     int32_t range,starti,lasti,retval=0,max,counter = 0; struct iguana_bundle *currentbp,*lastbp;
-    //serialized[512],
     if ( coin->started == 0 || coin->active == 0 )
     {
         printf("%s not ready yet\n",coin->symbol);
