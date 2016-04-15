@@ -1300,6 +1300,8 @@ int32_t iguana_isbigendian()
 void iguana_main(void *arg)
 {
     int32_t usessl = 0, ismainnet = 1; struct supernet_info *myinfo;
+    if ( arg == 0 )
+        arg = "{\"tmpdir\":\"/mnt/ramdisk\",\"numhelpers\":13}";
     if ( (BIGENDIAN= iguana_isbigendian()) > 0 )
         printf("BIGENDIAN\n");
     else if ( BIGENDIAN == 0 )
