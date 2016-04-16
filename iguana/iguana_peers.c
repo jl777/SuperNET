@@ -108,8 +108,7 @@ struct iguana_iAddr *iguana_iAddrhashfind(struct iguana_info *coin,uint64_t ipbi
 uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana_iAddr *iA,uint32_t ind)
 {
     FILE *fp; char fname[512],hexstr[65],ipaddr[64]; uint32_t ipbits; int32_t i,n,m,retval = 0; struct iguana_iAddr tmp,*ptr;
-    sprintf(fname,"DB/%s_peers.dat",coin->symbol);
-    OS_compatible_path(fname);
+    sprintf(fname,"%s/%s_peers.dat",GLOBAL_DBDIR,coin->symbol), OS_compatible_path(fname);
     if ( rwflag < 0 || iA == 0 )
     {
         coin->numiAddrs = 0;
@@ -986,7 +985,7 @@ int64_t iguana_peerallocated(struct iguana_info *coin,struct iguana_peer *addr)
 
 int32_t iguana_voutsfname(struct iguana_info *coin,char *fname,int32_t slotid)
 {
-    sprintf(fname,"DB/%s/vouts/%04d.vouts",coin->symbol,slotid);
+    sprintf(fname,"%s/%s/vouts/%04d.vouts",GLOBAL_DBDIR,coin->symbol,slotid);
     return((int32_t)strlen(fname));
 }
 

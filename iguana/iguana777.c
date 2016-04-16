@@ -721,7 +721,10 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     sprintf(dirname,"%s/%s/spends",GLOBAL_DBDIR,symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/%s/vouts",GLOBAL_DBDIR,symbol), OS_ensure_directory(dirname);
     if ( coin->VALIDATEDIR[0] != 0 )
+    {
+        sprintf(dirname,"%s",coin->VALIDATEDIR), OS_ensure_directory(dirname);
         sprintf(dirname,"%s/%s",coin->VALIDATEDIR,symbol), OS_ensure_directory(dirname);
+    }
     sprintf(dirname,"%s/%s",GLOBAL_TMPDIR,symbol), OS_ensure_directory(dirname);
     if ( coin->chain == 0 && (coin->chain= iguana_createchain(json)) == 0 )
     {
@@ -736,7 +739,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     else coin->VALIDATENODE = 1;
     if ( jobj(json,"validatedir") != 0 )
         safecopy(coin->VALIDATEDIR,jstr(json,"validatedir"),sizeof(coin->VALIDATEDIR));
-    else strcpy(coin->VALIDATEDIR,"purgeable");
+    else strcpy(coin->VALIDATEDIR,GLOBAL_VALIDATEDIR);
     if ( (peers= jarray(&m,json,"peers")) != 0 )
     {
         for (j=0; j<m; j++)

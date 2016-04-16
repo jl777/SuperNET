@@ -90,10 +90,7 @@ void iguana_blocksetcounters(struct iguana_info *coin,struct iguana_block *block
 
 int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,char *fname,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t numblocks,int32_t dispflag)
 {
-    struct iguana_bundle *bp; int32_t bundlei; char str[65],*prefix = "";
-#ifdef __PNACL__
-    prefix = "";
-#endif
+    struct iguana_bundle *bp; int32_t bundlei; char str[65];
     *hdrsip = -1; ipbits = 0;
     fname[0] = 0;
     //if ( ipbits == 0 )
@@ -114,16 +111,16 @@ int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,
     if ( numblocks == 1 )
     {
         if ( bits256_nonz(bp->hashes[bundlei]) != 0 )
-            sprintf(fname,"%s%s/%s/%d/%s_%u.%d",prefix,dirname,coin->symbol,bp->bundleheight,bits256_str(str,bp->hashes[bundlei]),ipbits>1?ipbits:*hdrsip,bundlei);
+            sprintf(fname,"%s/%s/%d/%s_%u.%d",dirname,coin->symbol,bp->bundleheight,bits256_str(str,bp->hashes[bundlei]),ipbits>1?ipbits:*hdrsip,bundlei);
         else
         {
             printf("no hash for [%d:%d]\n",bp->hdrsi,bundlei);
             return(-3);
         }
     }
-    else if ( strncmp("DB",dirname,strlen("DB")) == 0 )
-        sprintf(fname,"%s%s/%s/%s_%d.%u",prefix,dirname,coin->symbol,bits256_str(str,hash2),numblocks,ipbits>1?ipbits:*hdrsip);
-    else sprintf(fname,"%s%s/%s.%u",prefix,dirname,bits256_str(str,hash2),bp->bundleheight);
+    else if ( strncmp(GLOBAL_DBDIR,dirname,strlen(GLOBAL_DBDIR)) == 0 )
+        sprintf(fname,"%s/%s/%s_%d.%u",dirname,coin->symbol,bits256_str(str,hash2),numblocks,ipbits>1?ipbits:*hdrsip);
+    else sprintf(fname,"%s/%s.%u",dirname,bits256_str(str,hash2),bp->bundleheight);
     OS_compatible_path(fname);
     return(bundlei);
 }
@@ -1247,10 +1244,10 @@ int32_t iguana_bundleremove(struct iguana_info *coin,int32_t hdrsi,int32_t tmpfi
         iguana_ramchain_free(coin,&bp->ramchain,0);
         if ( iguana_bundlefname(coin,bp,fname) == 0 )
             OS_removefile(fname,0);
-        sprintf(fname,"DB/%s/spends/%s.%d",coin->symbol,bits256_str(str,bp->hashes[0]),bp->bundleheight), OS_removefile(fname,0);
-        sprintf(fname,"DB/%s/accounts/debits.%d",coin->symbol,bp->bundleheight), OS_removefile(fname,0);
-        sprintf(fname,"DB/%s/accounts/lastspends.%d",coin->symbol,bp->bundleheight), OS_removefile(fname,0);
-        sprintf(fname,"DB/%s/validated/%d",coin->symbol,bp->bundleheight), OS_removefile(fname,0);
+        sprintf(fname,"%s/%s/spends/%s.%d",GLOBAL_DBDIR,coin->symbol,bits256_str(str,bp->hashes[0]),bp->bundleheight), OS_removefile(fname,0);
+        sprintf(fname,"%s/%s/accounts/debits.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight), OS_removefile(fname,0);
+        sprintf(fname,"%s/%s/accounts/lastspends.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight), OS_removefile(fname,0);
+        sprintf(fname,"%s/%s/validated/%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight), OS_removefile(fname,0);
         bp->utxofinish = bp->startutxo = bp->balancefinish = bp->validated = bp->emitfinish = bp->converted = 0;
         return(0);
     }
@@ -1281,8 +1278,7 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
     int32_t iter; bits256 sha256; char str[65],fname[1024]; void *ptr; long filesize;
     for (iter=0; iter<2; iter++)
     {
-        sprintf(fname,"DB/%s%s/spends/%s.%d",iter==0?"ro/":"",coin->symbol,bits256_str(str,bp->hashes[0]),bp->bundleheight);
-        //sprintf(dirname,"DB/%s%s/spends",iter==0?"ro/":"",coin->symbol);
+        sprintf(fname,"%s/%s%s/spends/%s.%d",iter==0?"ro/":"",GLOBAL_DBDIR,coin->symbol,bits256_str(str,bp->hashes[0]),bp->bundleheight);
         //if ( iguana_peerfname(coin,&hdrsi,dirname,fname,0,bp->hashes[0],zero,bp->n) >= 0 )
         {
             if ( (ptr= OS_mapfile(fname,&filesize,0)) != 0 )

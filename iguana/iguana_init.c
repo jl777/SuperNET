@@ -490,8 +490,7 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
             }
         }
 #endif
-        sprintf(fname,"%s/%s_%s.txt",GLOBAL_CONFSDIR,coin->symbol,(iter == 0) ? "peers" : "hdrs");
-        OS_compatible_path(fname);
+        sprintf(fname,"%s/%s_%s.txt",GLOBAL_CONFSDIR,coin->symbol,(iter == 0) ? "peers" : "hdrs"), OS_compatible_path(fname);
         //sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
         //sprintf(fname,"tmp/%s/%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
         OS_compatible_path(fname);

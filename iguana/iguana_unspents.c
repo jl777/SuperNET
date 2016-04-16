@@ -190,7 +190,7 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
     int32_t iter,numhdrsi,err = -1; char fname[1024]; bits256 balancehash,allbundles;
     for (iter=0; iter<2; iter++)
     {
-        sprintf(fname,"DB/%s%s/accounts/debits.%d",iter==0?"ro/":"",coin->symbol,ramchain->H.data->height);
+        sprintf(fname,"%s/%s%s/accounts/debits.%d",GLOBAL_DBDIR,iter==0?"ro/":"",coin->symbol,ramchain->H.data->height);
         if ( (ramchain->debitsfileptr= OS_mapfile(fname,&ramchain->debitsfilesize,0)) != 0 && ramchain->debitsfilesize == sizeof(int32_t) + 2*sizeof(bits256) + sizeof(*ramchain->A) * ramchain->H.data->numpkinds )
         {
             ramchain->from_roA = (iter == 0);
@@ -206,7 +206,7 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
             if ( numhdrsi == coin->balanceswritten && memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) == 0 && memcmp(allbundles.bytes,coin->allbundles.bytes,sizeof(allbundles)) == 0 )
             {
                 ramchain->A = (void *)((long)ramchain->debitsfileptr + sizeof(numhdrsi) + 2*sizeof(bits256));
-                sprintf(fname,"DB/%s%s/accounts/lastspends.%d",iter==0?"ro/":"",coin->symbol,ramchain->H.data->height);
+                sprintf(fname,"%s/%s%s/accounts/lastspends.%d",GLOBAL_DBDIR,iter==0?"ro/":"",coin->symbol,ramchain->H.data->height);
                 if ( (ramchain->lastspendsfileptr= OS_mapfile(fname,&ramchain->lastspendsfilesize,0)) != 0 && ramchain->lastspendsfilesize == sizeof(int32_t) + 2*sizeof(bits256) + sizeof(*ramchain->Uextras) * ramchain->H.data->numunspents )
                 {
                     numhdrsi = *(int32_t *)ramchain->lastspendsfileptr;
@@ -886,7 +886,7 @@ int32_t iguana_spendvectorsave(struct iguana_info *coin,struct iguana_bundle *bp
             printf("iguana_spendvectorconv error [%d] at %d of %d/%d\n",bp->hdrsi,i,emit,n);
             return(-1);
         }
-    sprintf(fname,"DB/%s/spends/%s.%d",coin->symbol,bits256_str(str,bp->hashes[0]),bp->bundleheight);
+    sprintf(fname,"%s/%s/spends/%s.%d",GLOBAL_DBDIR,coin->symbol,bits256_str(str,bp->hashes[0]),bp->bundleheight);
     vcalc_sha256(0,sha256.bytes,(void *)ptr,(int32_t)(sizeof(*ptr) * emit));
     if ( (fp= fopen(fname,"wb")) != 0 )
     {
@@ -1239,7 +1239,7 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
         vupdate_sha256(balancehash.bytes,&vstate,0,0);
         vupdate_sha256(allbundles.bytes,&bstate,0,0);
         filecrc = 0;
-        sprintf(crcfname,"DB/%s/balancecrc.%d",coin->symbol,coin->balanceswritten);
+        sprintf(crcfname,"%s/%s/balancecrc.%d",GLOBAL_DBDIR,coin->symbol,coin->balanceswritten);
         if ( (fp= fopen(crcfname,"rb")) != 0 )
         {
             if ( fread(&filecrc,1,sizeof(filecrc),fp) != sizeof(filecrc) )
@@ -1870,7 +1870,7 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
     FILE *fp; char fname[1024]; uint8_t *blockspace; int32_t i,max,len,errs = 0; int64_t total = 0;
     if ( bp->validated <= 1 || forceflag != 0 )
     {
-        sprintf(fname,"DB/%s/validated/%d",coin->symbol,bp->bundleheight);
+        sprintf(fname,"%s/%s/validated/%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
         if ( (fp= fopen(fname,"rb")) != 0 )
         {
             if ( forceflag == 0 )

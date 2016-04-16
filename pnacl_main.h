@@ -363,7 +363,7 @@ static PP_Bool Instance_DidCreate(PP_Instance instance,uint32_t argc,const char*
     mkdir("/tmp",0755);
     mkdir("/DB",0755);
     mount("","/tmp","html5fs",0,"type=TEMPORARY,expected_size=2000000000");
-    mount("confs","/DB","html5fs",0,"type=PERSISTENT,expected_size=10000000000");
+    mount("","/DB","html5fs",0,"type=PERSISTENT,expected_size=10000000000");
     /*mount("",       // source. Use relative URL
           "/http",  // target
           "httpfs", // filesystemtype
