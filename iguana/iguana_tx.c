@@ -21,23 +21,24 @@
 //struct iguana_msgvin { bits256 prev_hash; uint8_t *script; uint32_t prev_vout,scriptlen,sequence; } __attribute__((packed));
 
 //struct iguana_spend { uint32_t spendtxidind; int16_t prevout; uint16_t tbd:14,external:1,diffsequence:1; } __attribute__((packed));
-int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,char *fname,uint32_t scriptpos,int32_t scriptlen)
+
+int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,long fileptr[2],char *fname,uint32_t scriptpos,int32_t scriptlen)
 {
-    FILE *fp;
-    if ( (fp= fopen(fname,"rb")) != 0 )
+    FILE *fp; int32_t retval = scriptlen;
+    if ( fileptr[0] == 0 )
+        fileptr[0] = (uint64_t)OS_mapfile(fname,&fileptr[1],0);
+    if ( fileptr[0] != 0 && (scriptpos + scriptlen) <= fileptr[1] )
+        memcpy(scriptspace,(void *)(fileptr[0] + scriptpos),scriptlen);
+    else if ( (fp= fopen(fname,"rb")) != 0 )
     {
         fseek(fp,scriptpos,SEEK_SET);
         if ( fread(scriptspace,1,scriptlen,fp) != scriptlen )
-        {
-            fclose(fp);
-            return(-1);
-        }
+            retval = -1;
         fclose(fp);
-        return(scriptlen);
-    }
-    return(-1);
+    } else retval = -1;
+    return(retval);
 }
-
+                   
 int32_t iguana_vinset(struct iguana_info *coin,uint8_t *scriptspace,int32_t height,struct iguana_msgvin *vin,struct iguana_txid *tx,int32_t i)
 {
     struct iguana_spend *s,*S; uint32_t spendind,unspentind; bits256 *X; struct iguana_bundle *bp;
@@ -55,7 +56,7 @@ int32_t iguana_vinset(struct iguana_info *coin,uint8_t *scriptspace,int32_t heig
         if ( s->scriptpos != 0 && s->scriptlen > 0 )
         {
             iguana_vinsfname(coin,fname,s->fileid);
-            if ( (scriptlen= iguana_scriptdata(coin,scriptspace,fname,s->scriptpos,s->scriptlen)) != s->scriptlen )
+            if ( (scriptlen= iguana_scriptdata(coin,scriptspace,coin->peers.vinptrs[s->fileid],fname,s->scriptpos,s->scriptlen)) != s->scriptlen )
                 printf("err.%d getting %d bytes from fileid.%d[%d] %s for s%d\n",err,s->scriptlen,s->scriptpos,s->fileid,fname,spendind);
         }
         vin->scriptlen = s->scriptlen;
@@ -87,7 +88,7 @@ int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmst
         if ( u->scriptpos > 0 && u->scriptlen > 0 )
         {
             iguana_voutsfname(coin,fname,u->fileid);
-            if ( (scriptlen= iguana_scriptdata(coin,scriptspace,fname,u->scriptpos,u->scriptlen)) != u->scriptlen )
+            if ( (scriptlen= iguana_scriptdata(coin,scriptspace,coin->peers.voutptrs[u->fileid],fname,u->scriptpos,u->scriptlen)) != u->scriptlen )
                 printf("error.%d %d bytes from fileid.%d[%d] %s for u%d type.%d\n",err,u->scriptlen,u->fileid,u->scriptpos,fname,unspentind,u->type);
         }
         else

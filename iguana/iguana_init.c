@@ -508,7 +508,7 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
             iguana_parseline(coin,iter,fp);
             fpos = ftell(fp);
             fclose(fp);
-        }
+        } else fpos = -1;
         printf("done parsefile.%d (%s) size.%ld\n",iter,fname,fpos);
     }
 #ifndef IGUANA_DEDICATED_THREADS

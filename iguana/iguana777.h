@@ -428,6 +428,7 @@ struct iguana_peers
     struct iguana_peer active[IGUANA_MAXPEERS+1],*ranked[IGUANA_MAXPEERS+1],*localaddr;
     struct iguana_thread *peersloop,*recvloop; pthread_t *acceptloop;
     double topmetrics[IGUANA_MAXPEERS+1],avemetric;
+    long vinptrs[IGUANA_MAXPEERS+1][2],voutptrs[IGUANA_MAXPEERS+1][2];
     uint32_t numranked,mostreceived,shuttingdown,lastpeer,lastmetrics,numconnected;
     int32_t numfiles;
 };
