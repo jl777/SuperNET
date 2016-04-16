@@ -284,7 +284,7 @@ void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t ti
 
 void iguana_validateQ(struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    struct iguana_helper *ptr;
+    /*struct iguana_helper *ptr;
     //if ( bp->validated <= 1 )
     {
         ptr = mycalloc('i',1,sizeof(*ptr));
@@ -297,7 +297,7 @@ void iguana_validateQ(struct iguana_info *coin,struct iguana_bundle *bp)
         bp->validated = 1;
         //printf("VALIDATE Q %s bundle.%d[%d] utxofinish.%u balancefinish.%u\n",coin->symbol,ptr->hdrsi,bp->n,bp->utxofinish,bp->balancefinish);
         queue_enqueue("validateQ",&validateQ,&ptr->DL,0);
-    }
+    }*/
 }
 
 int32_t iguana_emitfinished(struct iguana_info *coin,int32_t queueincomplete)
@@ -375,6 +375,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             return(-1);
         if ( coin->PREFETCHLAG > 0 )
             iguana_ramchain_prefetch(coin,&bp->ramchain,0);
+        iguana_bundlevalidate(coin,bp,0);
         if ( (retval= iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,convertflag)) >= 0 )
         {
             if ( retval > 0 )
@@ -414,13 +415,6 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
         }
         if ( convertflag != 0 || iguana_spendvectorsaves(coin) == 0 )
         {
-            for (hdrsi=0; hdrsi<max; hdrsi++)
-            {
-                //iguana_bundlevalidate(coin,coin->bundles[hdrsi],0);
-                //printf("%d ",hdrsi);
-                iguana_validateQ(coin,coin->bundles[hdrsi]);
-            }
-            //printf("add to validateQ\n");
             if ( coin->origbalanceswritten <= 1 )
                 hdrsi = 0;
             else hdrsi = coin->origbalanceswritten;
@@ -507,7 +501,7 @@ void iguana_helper(void *arg)
                 myfree(ptr,ptr->allocsize);
             } else break;
         }
-        n = queue_size(&validateQ) / IGUANA_NUMHELPERS + 1;
+        /*n = queue_size(&validateQ) / IGUANA_NUMHELPERS + 1;
         printf("vQ is n.%d\n",n);
         for (iter=0; iter<n; iter++)
         {
@@ -530,7 +524,7 @@ void iguana_helper(void *arg)
                 printf("helper validate missing param? %p %p\n",ptr->coin,ptr->bp);
             myfree(ptr,ptr->allocsize);
             flag++;
-        }
+        }*/
         if ( queue_size(&bundlesQ) > 1 || queue_size(&validateQ) > 0 )
             allcurrent = 0;
         if ( flag != 0 )

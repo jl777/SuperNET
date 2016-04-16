@@ -420,7 +420,7 @@ void mainloop(struct supernet_info *myinfo)
                             {
                                 for (j=0; j<n; j++)
                                     iguana_alloctxbits(coin,&coin->bundles[j]->ramchain);
-                                if ( iguana_utxofinished(coin) < n || iguana_balancefinished(coin) < n )
+                                if ( iguana_validated(coin) < n || iguana_utxofinished(coin) < n || iguana_balancefinished(coin) < n )
                                 {
                                     coin->spendvectorsaved = 1;
                                     printf("start UTXOGEN\n");
