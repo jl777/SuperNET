@@ -460,6 +460,7 @@ void iguana_helper(void *arg)
     printf("HELPER.%d started arg.(%s) type.%d\n",helperid,(char *)(arg!=0?arg:0),type);
     memset(&MEM,0,sizeof(MEM));
     MEMB = mycalloc('b',IGUANA_MAXBUNDLESIZE,sizeof(*MEMB));
+    sleep(2);
     while ( 1 )
     {
         //iguana_jsonQ(); cant do this here
@@ -508,6 +509,8 @@ void iguana_helper(void *arg)
         n = queue_size(&validateQ) / IGUANA_NUMHELPERS + 1;
         for (iter=0; iter<n; iter++)
         {
+            if ( (ptr= queue_dequeue(&validateQ,0)) == 0 )
+                break;
             printf("vQ.%d %d of %d\n",queue_size(&validateQ),iter,n);
             if ( (bp= ptr->bp) != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
             {
