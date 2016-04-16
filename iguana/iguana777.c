@@ -449,7 +449,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
 void iguana_helper(void *arg)
 {
     cJSON *argjson=0; int32_t iter,i,n,polltimeout,type,helperid=rand(),flag,allcurrent,idle=0;
-    struct iguana_helper *ptr; struct iguana_info *coin; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp; uint32_t starttime;
+    struct iguana_helper *ptr; struct iguana_info *coin; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp;
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
         helperid = juint(argjson,"helperid");
     if ( IGUANA_NUMHELPERS < 2 )
@@ -477,8 +477,6 @@ void iguana_helper(void *arg)
         n = queue_size(&bundlesQ);
         for (iter=0; iter<n; iter++)
         {
-            if ( helperid >= n )
-                break;
             if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
             {
                 idle = 0;
@@ -507,18 +505,19 @@ void iguana_helper(void *arg)
                 myfree(ptr,ptr->allocsize);
             } else break;
         }
-        starttime = (uint32_t)time(NULL);
-        while ( time(NULL) < starttime+10 && (ptr= queue_dequeue(&validateQ,0)) != 0 )
+        n = queue_size(&validateQ) / IGUANA_NUMHELPERS + 1;
+        for (iter=0; iter<n; iter++)
         {
-            printf("vQ.%d lag.%d\n",queue_size(&validateQ),(uint32_t)time(NULL)-starttime);
+            printf("vQ.%d %d of %d\n",queue_size(&validateQ),iter,n);
             if ( (bp= ptr->bp) != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
             {
-                printf("validate.[%d] %d vs %d\n",bp->hdrsi,coin->blocks.hwmchain.height/coin->chain->bundlesize,(coin->longestchain-1)/coin->chain->bundlesize);
+                printf("helper.%d validate.[%d] %d vs %d\n",helperid,bp->hdrsi,coin->blocks.hwmchain.height/coin->chain->bundlesize,(coin->longestchain-1)/coin->chain->bundlesize);
                 if ( coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-1)/coin->chain->bundlesize )
                     flag += iguana_bundlevalidate(coin,bp,0);
                 else
                 {
                     usleep(10000);
+                    printf("requeue vQ.[%d]\n",bp->hdrsi);
                     iguana_validateQ(coin,bp);
                 }
             }
@@ -534,7 +533,7 @@ void iguana_helper(void *arg)
         else if ( allcurrent > 0 )
         {
             //printf("bundlesQ allcurrent\n");
-            usleep(polltimeout * 100000);
+            usleep(polltimeout * 10000);
         }
         else usleep(polltimeout * 1000);
     }
