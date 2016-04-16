@@ -1278,7 +1278,7 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
     int32_t iter; bits256 sha256; char str[65],fname[1024]; void *ptr; long filesize;
     for (iter=0; iter<2; iter++)
     {
-        sprintf(fname,"%s/%s%s/spends/%s.%d",iter==0?"ro/":"",GLOBAL_DBDIR,coin->symbol,bits256_str(str,bp->hashes[0]),bp->bundleheight);
+        sprintf(fname,"%s/%s%s/spends/%s.%d",GLOBAL_DBDIR,iter==0?"ro/":"",coin->symbol,bits256_str(str,bp->hashes[0]),bp->bundleheight);
         //if ( iguana_peerfname(coin,&hdrsi,dirname,fname,0,bp->hashes[0],zero,bp->n) >= 0 )
         {
             if ( (ptr= OS_mapfile(fname,&filesize,0)) != 0 )
