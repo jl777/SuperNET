@@ -404,7 +404,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
         {
             for (hdrsi=0; hdrsi<max; hdrsi++)
             {
-                printf("%p[%d] ",coin->bundles[hdrsi]->ramchain.Xspendinds,coin->bundles[hdrsi]->ramchain.numXspends);
+                //printf("%p[%d] ",coin->bundles[hdrsi]->ramchain.Xspendinds,coin->bundles[hdrsi]->ramchain.numXspends);
                 coin->bundles[hdrsi]->converted = (uint32_t)time(NULL);
             }
         }
