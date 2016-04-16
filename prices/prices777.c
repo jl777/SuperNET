@@ -1011,7 +1011,7 @@ int32_t prices777_init(char *jsonstr,int32_t peggyflag)
     {
         exchangeptr = &Exchanges[i];
         if ( (exchangeptr->refcount > 0 || strcmp(exchangeptr->name,"unconf") == 0) )//&& strcmp(exchangeptr->name,"pangea") != 0 && strcmp(exchangeptr->name,"jumblr") != 0 )
-            iguana_launch(iguana_coinadd("BTCD"),"exchangeloop",(void *)prices777_exchangeloop,exchangeptr,IGUANA_EXCHANGETHREAD);
+            iguana_launch(0,"exchangeloop",(void *)prices777_exchangeloop,exchangeptr,IGUANA_EXCHANGETHREAD);
     }
     return(0);
 }

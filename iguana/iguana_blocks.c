@@ -70,30 +70,29 @@ void _iguana_blocklink(struct iguana_info *coin,struct iguana_block *prev,struct
 
 struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin,int32_t height,bits256 hash2,int32_t createflag)
 {
-    static int depth;
     struct iguana_block *block,*prev;
     if ( height > 0 && height > coin->blocks.maxbits )
     {
-        printf("%s: illegal height.%d when max.%d, or nonz depth.%d\n",debugstr,height,coin->blocks.maxbits,depth);
+        printf("%s: illegal height.%d when max.%d, or nonz depth.%d\n",debugstr,height,coin->blocks.maxbits,coin->blockdepth);
         //getchar();
         return(0);
     }
-    while ( depth != 0 )
+    while ( coin->blockdepth != 0 )
     {
         sleep(1);
-        printf("%s >>>>>>>>>> OK only if rare %s blockhashset.%d depth.%d\n",coin->symbol,debugstr,height,depth);
+        printf("%s >>>>>>>>>> OK only if rare %s blockhashset.%d depth.%d\n",coin->symbol,debugstr,height,coin->blockdepth);
         //fprintf(stderr,">>>>>>>>>> OK only if rare %s blockhashset.%d depth.%d\n",debugstr,height,depth);
         //printf("%d\n",1/(1 - depth/depth));
     }
-    depth++;
+    coin->blockdepth++;
     HASH_FIND(hh,coin->blocks.hash,&hash2,sizeof(hash2),block);
     if ( block != 0 )
     {
-        depth--;
-        while ( depth != 0 )
+        coin->blockdepth--;
+        while ( coin->blockdepth != 0 )
         {
             sleep(1);
-            printf(" %s >>>>>>>>>> OK only if rare %s match blockhashset.%d depth.%d\n",coin->symbol,debugstr,height,depth);
+            printf(" %s >>>>>>>>>> OK only if rare %s match blockhashset.%d depth.%d\n",coin->symbol,debugstr,height,coin->blockdepth);
             //fprintf(stderr,">>>>>>>>>> OK only if rare%s match blockhashset.%d depth.%d\n",debugstr,height,depth);
             //printf("%d\n",1/(1 - depth/depth));
         }
@@ -125,11 +124,11 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
         }
         portable_mutex_unlock(&coin->blocks_mutex);
     }
-    depth--;
-    while ( depth != 0 )
+    coin->blockdepth--;
+    while ( coin->blockdepth != 0 )
     {
         sleep(1);
-        printf("%s >>>>>>>>>> OK only if rare %s create blockhashset.%d depth.%d\n",coin->symbol,debugstr,height,depth);
+        printf("%s >>>>>>>>>> OK only if rare %s create blockhashset.%d depth.%d\n",coin->symbol,debugstr,height,coin->blockdepth);
         //fprintf(stderr,">>>>>>>>>> OK only if rare%s create blockhashset.%d depth.%d\n",debugstr,height,depth);
         //printf("%d\n",1/(1 - depth/depth));
     }

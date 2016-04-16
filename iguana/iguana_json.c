@@ -600,10 +600,10 @@ STRING_ARG(iguana,addcoin,newcoin)
         symbol = coin->symbol;
     if ( symbol != 0 )
     {
-        //printf(">> addcoin.%s\n",symbol);
+        printf(">> addcoin.%s\n",symbol);
 #ifdef __PNACL__
-        if ( strcmp(symbol,"BTC") == 0 )
-            return(clonestr("{\"result\":\"BTC for chrome app is not yet\"}"));
+//        if ( strcmp(symbol,"BTC") == 0 )
+//            return(clonestr("{\"result\":\"BTC for chrome app is not yet\"}"));
 #endif
         if ( (retval= iguana_launchcoin(symbol,json)) > 0 )
         {

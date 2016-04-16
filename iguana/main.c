@@ -1126,13 +1126,13 @@ void iguana_appletests(struct supernet_info *myinfo)
     //iguana_chaingenesis(genesisblock,"sha256",1,1317972665,0x1e0ffff0,2084524493,bits256_conv("97ddfbbae6be97fd6cdf3e7ca13232a3afff2353e29badfab7f73011edd4ced9")); // LTC
     if ( 1 )
     {
-        btcd = iguana_coinadd("BTCD",0);
+        /*btcd = iguana_coinadd("BTCD",0);
         if ( btcd == 0 )
         {
             printf("error adding BTCD.%p\n",btcd);
             exit(-1);
         }
-        sleep(1);
+        sleep(1);*/
         if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"VALIDATE\":1,\"prefetchlag\":13,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":2048,\"endpend\":1,\"services\":0,\"maxpeers\":64,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":4,\"poll\":1}"),0,myinfo->rpcport)) != 0 )
         {
             free(str);
