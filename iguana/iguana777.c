@@ -516,7 +516,7 @@ void iguana_helper(void *arg)
         {
             if ( (bp= ptr->bp) != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
             {
-                //printf("validate.[%d] %d vs %d\n",bp->hdrsi,coin->blocks.hwmchain.height/coin->chain->bundlesize,(coin->longestchain-1)/coin->chain->bundlesize);
+                printf("validate.[%d] %d vs %d\n",bp->hdrsi,coin->blocks.hwmchain.height/coin->chain->bundlesize,(coin->longestchain-1)/coin->chain->bundlesize);
                 if ( coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-1)/coin->chain->bundlesize )
                     flag += iguana_bundlevalidate(coin,bp,0);
                 else
