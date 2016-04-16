@@ -360,9 +360,13 @@ int32_t iguana_validated(struct iguana_info *coin)
 int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convertflag)
 {
     int32_t hdrsi,retval,n,max,incr,num = 0; struct iguana_bundle *bp;
-    incr = (coin->PREFETCHLAG > 0) ? 1 : IGUANA_NUMHELPERS;
-    if ( coin->PREFETCHLAG > 0 && helperid != 0 )
-        return(0);
+    incr = IGUANA_NUMHELPERS;
+    if ( 0 && coin->PREFETCHLAG > 0 )
+    {
+        if ( helperid != 0 )
+            return(0);
+        else incr = 1;
+    }
     max = coin->bundlescount;
     if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 )
         max--;

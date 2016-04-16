@@ -1296,11 +1296,11 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
                         myfree(breq,sizeof(*breq));
                     while ( (breq= queue_dequeue(&coin->priorityQ,0)) != 0 )
                         myfree(breq,sizeof(*breq));
-                    /*for (i=0; i<bp->n; i++)
+                    for (i=0; i<bp->n; i++)
                     {
                         if ( (block= bp->blocks[i]) != 0 && block->txvalid == 0 )
                             iguana_blockQ("stuck",coin,bp,i,block->RO.hash2,1);
-                    }*/
+                    }
                 }
                 for (i=0; i<bp->n; i++)
                     if ( GETBIT(bp->haveblock,i) == 0 )
