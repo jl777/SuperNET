@@ -78,7 +78,7 @@ int32_t IGUANA_NUMHELPERS = 1;
 char GLOBAL_TMPDIR[512] = "tmp";
 char GLOBAL_HELPDIR[512] = "help";
 char GLOBAL_DBDIR[512] = "DB";
-char GLOBAL_VALIDATEDIR[512] = "DB/purgeable";
+char GLOBAL_VALIDATEDIR[512] = "purgeable";
 char GLOBAL_CONFSDIR[512] = "confs";
 int32_t IGUANA_NUMHELPERS = 4;
 #endif

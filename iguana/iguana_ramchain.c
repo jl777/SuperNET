@@ -533,7 +533,7 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
 
 uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,struct iguana_peer *addr,RAMCHAIN_FUNC,bits256 prev_hash,int32_t prev_vout,uint8_t *vinscript,int32_t vinscriptlen,uint32_t sequence,struct iguana_bundle *bp)
 {
-    struct iguana_spend256 *s; uint32_t spendind;
+    struct iguana_spend256 *s; uint32_t spendind; int32_t err;
     spendind = ramchain->H.spendind++;
     s = &S[spendind];
     if ( ramchain->H.ROflag != 0 )
@@ -557,8 +557,8 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,struct iguana_peer
             s->fileid = (uint32_t)addr->addrind;
             if ( (s->scriptpos= (uint32_t)ftell(addr->vinsfp)) == 0 )
                 fputc(0,addr->vinsfp), s->scriptpos++;
-            if ( fwrite(vinscript,1,vinscriptlen,addr->vinsfp) != vinscriptlen )
-                printf("error writing vinscriptlen.%d errno.%d\n",vinscriptlen,errno);
+            if ( (err= (int32_t)fwrite(vinscript,1,vinscriptlen,addr->vinsfp)) != vinscriptlen )
+                printf("error.%d writing vinscriptlen.%d errno.%d addrind.%d\n",err,vinscriptlen,errno,addr->addrind);
             else addr->dirty[1]++;
         } else s->scriptpos = 0;
         //else printf("spend256 scriptfpos.%d\n",s->scriptfpos);
