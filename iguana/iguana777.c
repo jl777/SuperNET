@@ -285,7 +285,7 @@ void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t ti
 void iguana_validateQ(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     struct iguana_helper *ptr;
-    if ( bp->validated <= 1 )
+    //if ( bp->validated <= 1 )
     {
         ptr = mycalloc('i',1,sizeof(*ptr));
         ptr->allocsize = sizeof(*ptr);
@@ -417,10 +417,10 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             for (hdrsi=0; hdrsi<max; hdrsi++)
             {
                 //iguana_bundlevalidate(coin,coin->bundles[hdrsi],0);
-                printf("%d ",hdrsi);
+                //printf("%d ",hdrsi);
                 iguana_validateQ(coin,coin->bundles[hdrsi]);
             }
-            printf("add to validateQ\n");
+            //printf("add to validateQ\n");
             if ( coin->origbalanceswritten <= 1 )
                 hdrsi = 0;
             else hdrsi = coin->origbalanceswritten;
