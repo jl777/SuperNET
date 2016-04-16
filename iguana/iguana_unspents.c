@@ -1101,8 +1101,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
     if ( ramchain->Xspendinds == 0 && bp->hdrsi > 0 )
     {
         printf("iguana_balancegen.%d: no Xspendinds[%d]\n",bp->hdrsi,ramchain->numXspends);
-        if ( iguana_Xspendmap(coin,ramchain,bp) < 0 )
-            return(-1);
+        return(-1);
     }
     iguana_ramchain_prefetch(coin,ramchain,0);
     fprintf(stderr,"BALANCEGEN.[%d] ",bp->hdrsi);
