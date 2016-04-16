@@ -468,7 +468,7 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
     memset(&lastbundle,0,sizeof(lastbundle));
     for (iter=coin->peers.numranked>8; iter<2; iter++)
     {
-//#ifdef __PNACL__
+#ifdef __PNACL__
         if ( iter == 0 )
         {
             char **ipaddrs = 0; int32_t j,num;
@@ -492,25 +492,28 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
         else
         {
 #include "confs/BTCD_hdrs.h"
-            bits256 hash2,allhash,hash1; int32_t bundlei,i,height; struct iguana_bundle *bp;
-            for (i=0; i<sizeof(BTCD_hdrs)/sizeof(*BTCD_hdrs); i++)
+            if ( strcmp(coin->symbol,"BTCD") == 0 )
             {
-                height = atoi(BTCD_hdrs[i][0]);
-                if ( height > (coin->blocks.maxbits - 1000) )
-                    iguana_recvalloc(coin,height + 100000);
-                hash2 = bits256_conv(BTCD_hdrs[i][1]);
-                if ( BTCD_hdrs[i][2][0] != 0 )
-                    allhash = bits256_conv(BTCD_hdrs[i][2]);
-                if ( BTCD_hdrs[i][3][0] != 0 )
-                    hash1 = bits256_conv(BTCD_hdrs[i][3]);
-                if ( (bp= iguana_bundlecreate(coin,&bundlei,height,hash2,allhash,0)) != 0 )
-                    lastbundle = iguana_bundleinitmap(coin,bp,height,hash2,hash1);
+                bits256 hash2,allhash,hash1; int32_t bundlei,i,height; struct iguana_bundle *bp;
+                for (i=0; i<sizeof(BTCD_hdrs)/sizeof(*BTCD_hdrs); i++)
+                {
+                    height = atoi(BTCD_hdrs[i][0]);
+                    if ( height > (coin->blocks.maxbits - 1000) )
+                        iguana_recvalloc(coin,height + 100000);
+                    hash2 = bits256_conv(BTCD_hdrs[i][1]);
+                    if ( BTCD_hdrs[i][2][0] != 0 )
+                        allhash = bits256_conv(BTCD_hdrs[i][2]);
+                    if ( BTCD_hdrs[i][3][0] != 0 )
+                        hash1 = bits256_conv(BTCD_hdrs[i][3]);
+                    if ( (bp= iguana_bundlecreate(coin,&bundlei,height,hash2,allhash,0)) != 0 )
+                        lastbundle = iguana_bundleinitmap(coin,bp,height,hash2,hash1);
+                }
+                if ( bits256_nonz(lastbundle) != 0 )
+                    iguana_initfinal(coin,lastbundle);
+                break;
             }
-            if ( bits256_nonz(lastbundle) != 0 )
-                iguana_initfinal(coin,lastbundle);
-            break;
         }
-//#endif
+#endif
         sprintf(fname,"%s/%s_%s.txt",GLOBAL_CONFSDIR,coin->symbol,(iter == 0) ? "peers" : "hdrs"), OS_compatible_path(fname);
         //sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
         //sprintf(fname,"tmp/%s/%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
