@@ -474,46 +474,43 @@ void iguana_helper(void *arg)
                     iguana_utxogen(coin,helperid,coin->PREFETCHLAG < 0);
             }
         }
-        //if ( (type & (1 << 0)) != 0 )
+        n = queue_size(&bundlesQ);
+        for (iter=0; iter<n; iter++)
         {
-            n = queue_size(&bundlesQ);
-            for (iter=0; iter<n; iter++)
+            if ( helperid >= n )
+                break;
+            if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
             {
-                if ( helperid >= n )
-                    break;
-                if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
+                idle = 0;
+                coin = ptr->coin;
+                if ( (bp= ptr->bp) != 0 && coin != 0 )
                 {
-                    idle = 0;
-                    coin = ptr->coin;
-                    if ( (bp= ptr->bp) != 0 && coin != 0 )
+                    if ( coin->polltimeout < polltimeout )
+                        polltimeout = coin->polltimeout;
+                    if ( coin->current != 0 && coin->current->hdrsi != coin->bundlescount-1 )
+                        allcurrent = 0;
+                    //printf("[%d] bundleQ size.%d lag.%ld\n",bp->hdrsi,queue_size(&bundlesQ),time(NULL) - bp->nexttime);
+                    coin->numbundlesQ--;
+                    if ( coin->started != 0 && (bp->nexttime == 0 || time(NULL) > bp->nexttime) && coin->active != 0 )
                     {
-                        if ( coin->polltimeout < polltimeout )
-                            polltimeout = coin->polltimeout;
-                        if ( coin->current != 0 && coin->current->hdrsi != coin->bundlescount-1 )
-                            allcurrent = 0;
-                        //printf("[%d] bundleQ size.%d lag.%ld\n",bp->hdrsi,queue_size(&bundlesQ),time(NULL) - bp->nexttime);
-                        coin->numbundlesQ--;
-                        if ( coin->started != 0 && (bp->nexttime == 0 || time(NULL) > bp->nexttime) && coin->active != 0 )
-                        {
-                            flag += iguana_bundleiters(ptr->coin,&MEM,MEMB,bp,ptr->timelimit,IGUANA_DEFAULTLAG);
-                        }
-                        else
-                        {
-                            //printf("skip.[%d] nexttime.%u lag.%ld coin->active.%d\n",bp->hdrsi,bp->nexttime,time(NULL)-bp->nexttime,coin->active);
-                            allcurrent--;
-                            iguana_bundleQ(coin,bp,1000);
-                        }
+                        flag += iguana_bundleiters(ptr->coin,&MEM,MEMB,bp,ptr->timelimit,IGUANA_DEFAULTLAG);
                     }
-                    else //if ( coin->active != 0 )
-                        printf("helper missing param? %p %p %u\n",ptr->coin,bp,ptr->timelimit);
-                    myfree(ptr,ptr->allocsize);
-                } else break;
-            }
+                    else
+                    {
+                        //printf("skip.[%d] nexttime.%u lag.%ld coin->active.%d\n",bp->hdrsi,bp->nexttime,time(NULL)-bp->nexttime,coin->active);
+                        allcurrent--;
+                        iguana_bundleQ(coin,bp,1000);
+                    }
+                }
+                else //if ( coin->active != 0 )
+                    printf("helper missing param? %p %p %u\n",ptr->coin,bp,ptr->timelimit);
+                myfree(ptr,ptr->allocsize);
+            } else break;
         }
-        //if ( (type & (1 << 1)) != 0 )
         starttime = (uint32_t)time(NULL);
         while ( time(NULL) < starttime+10 && (ptr= queue_dequeue(&validateQ,0)) != 0 )
         {
+            printf("vQ.%d lag.%d\n",queue_size(&validateQ),(uint32_t)time(NULL)-starttime);
             if ( (bp= ptr->bp) != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
             {
                 printf("validate.[%d] %d vs %d\n",bp->hdrsi,coin->blocks.hwmchain.height/coin->chain->bundlesize,(coin->longestchain-1)/coin->chain->bundlesize);
@@ -523,7 +520,6 @@ void iguana_helper(void *arg)
                 {
                     usleep(10000);
                     iguana_validateQ(coin,bp);
-                    continue;
                 }
             }
             else if ( coin->active != 0 )

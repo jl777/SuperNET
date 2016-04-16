@@ -1103,8 +1103,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
         printf("iguana_balancegen.%d: no Xspendinds[%d]\n",bp->hdrsi,ramchain->numXspends);
         return(-1);
     }
-    //if ( coin->PREFETCHLAG > 0 )
-        iguana_ramchain_prefetch(coin,ramchain,0);
+    iguana_ramchain_prefetch(coin,ramchain,0);
     fprintf(stderr,"BALANCEGEN.[%d] ",bp->hdrsi);
     txidind = spendind = rdata->firsti;
     for (i=0; i<bp->n; i++)
