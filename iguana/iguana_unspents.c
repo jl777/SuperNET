@@ -1896,15 +1896,6 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
             {
                 if ( (len= iguana_peerblockrequest(coin,blockspace,max,0,bp->hashes[i],1)) < 0 )
                 {
-                    if ( errs++ == 0 )
-                    {
-                        sleep(3);
-                        if ( (len= iguana_peerblockrequest(coin,blockspace,max,0,bp->hashes[i],1)) > 0 )
-                            printf("validate error.[%d:%d] retry -> %d\n",bp->hdrsi,i,len);
-                    }
-                }
-                if ( len < 0 )
-                {
                     errs++;
                     iguana_blockunmark(coin,bp->blocks[i],bp,i,1);
                     totalerrs++;

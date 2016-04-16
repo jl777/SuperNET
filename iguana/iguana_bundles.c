@@ -389,7 +389,13 @@ int32_t iguana_bundlefname(struct iguana_info *coin,struct iguana_bundle *bp,cha
 struct iguana_txid *iguana_bundletx(struct iguana_info *coin,struct iguana_bundle *bp,int32_t bundlei,struct iguana_txid *tx,int32_t txidind)
 {
     static const bits256 zero;
-    int32_t hdrsi,iter; int64_t Toffset; char fname[1024]; FILE *fp; struct iguana_ramchaindata rdata;
+    int32_t hdrsi,iter; struct iguana_txid *T; int64_t Toffset; char fname[1024]; FILE *fp; struct iguana_ramchaindata rdata,*rptr;
+    if ( (rptr= bp->ramchain.H.data) != 0 )
+    {
+        T = (void *)(long)((long)rptr + (long)rptr->Toffset);
+        *tx = T[txidind];
+        return(tx);
+    }
     for (iter=0; iter<2; iter++)
     {
         iguana_peerfname(coin,&hdrsi,iter==0?"DB/ro":"DB",fname,0,bp->hashes[0],zero,bp->n,1);
@@ -756,8 +762,6 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
             return(-1);
         }
     }
-    //if ( ready == bp->n )
-    //    ready = iguana_bundlevalidate(coin,bp);
     return(ready);
 }
 
