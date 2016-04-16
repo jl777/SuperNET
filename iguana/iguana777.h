@@ -47,7 +47,7 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_TAILPERCENTAGE 1.0
 #define IGUANA_MAXPENDHDRS 1
 #define IGUANA_MAXPENDINGREQUESTS 8
-#define IGUANA_PENDINGREQUESTS 16
+#define IGUANA_PENDINGREQUESTS 512
 #define IGUANA_MINPENDBUNDLES 4
 #define IGUANA_MAXPENDBUNDLES 16
 #define IGUANA_RPCPORT 7778
@@ -755,6 +755,7 @@ cJSON *iguana_peersjson(struct iguana_info *coin,int32_t addronly);
 int32_t btc_priv2wif(char *wifstr,uint8_t privkey[32],uint8_t addrtype);
 int32_t btc_pub2rmd(uint8_t rmd160[20],uint8_t pubkey[33]);
 int32_t iguana_launchcoin(char *symbol,cJSON *json);
+bits256 iguana_bundleinitmap(struct iguana_info *coin,struct iguana_bundle *bp,int32_t height,bits256 hash2,bits256 hash1);
 int32_t iguana_jsonQ();
 int32_t is_bitcoinrpc(struct supernet_info *myinfo,char *method,char *remoteaddr);
 char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr,uint16_t port);
