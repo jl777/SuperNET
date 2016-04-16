@@ -2195,7 +2195,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
     if ( (mapchain= iguana_ramchain_map(coin,fname,bp,bp->n,ramchain,0,0,bp->hashes[0],zero,0,0,extraflag,1)) != 0 )
     {
         iguana_ramchain_link(mapchain,bp->hashes[0],bp->hdrsi,bp->bundleheight,0,bp->n,firsti,1);
-        char str[65]; printf("bp.%d: T.%d U.%d S.%d P%d X.%d MAPPED %s %p\n",bp->hdrsi,mapchain->H.data->numtxids,mapchain->H.data->numunspents,mapchain->H.data->numspends,mapchain->H.data->numpkinds,mapchain->H.data->numexternaltxids,mbstr(str,mapchain->H.data->allocsize),mapchain->H.data);
+        //char str[65]; printf("bp.%d: T.%d U.%d S.%d P%d X.%d MAPPED %s %p\n",bp->hdrsi,mapchain->H.data->numtxids,mapchain->H.data->numunspents,mapchain->H.data->numspends,mapchain->H.data->numpkinds,mapchain->H.data->numexternaltxids,mbstr(str,mapchain->H.data->allocsize),mapchain->H.data);
         //ramcoder_test(mapchain->H.data,mapchain->H.data->allocsize);
         B = (void *)(long)((long)mapchain->H.data + mapchain->H.data->Boffset);
         T = (void *)(long)((long)mapchain->H.data + mapchain->H.data->Toffset);
@@ -2235,7 +2235,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
     }
     else
     {
-        printf("couldnt load bundle.%d\n",bp->bundleheight);
+        //printf("couldnt load bundle.%d\n",bp->bundleheight);
         memset(&bp->ramchain,0,sizeof(bp->ramchain));
     }
     if ( mapchain != 0 )
