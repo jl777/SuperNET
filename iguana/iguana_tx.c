@@ -21,11 +21,27 @@
 //struct iguana_msgvin { bits256 prev_hash; uint8_t *script; uint32_t prev_vout,scriptlen,sequence; } __attribute__((packed));
 
 //struct iguana_spend { uint32_t spendtxidind; int16_t prevout; uint16_t tbd:14,external:1,diffsequence:1; } __attribute__((packed));
+int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,char *fname,uint32_t scriptpos,int32_t scriptlen)
+{
+    FILE *fp;
+    if ( (fp= fopen(fname,"rb")) != 0 )
+    {
+        fseek(fp,scriptpos,SEEK_SET);
+        if ( fread(scriptspace,1,scriptlen,fp) != scriptlen )
+        {
+            fclose(fp);
+            return(-1);
+        }
+        fclose(fp);
+        return(scriptlen);
+    }
+    return(-1);
+}
 
 int32_t iguana_vinset(struct iguana_info *coin,uint8_t *scriptspace,int32_t height,struct iguana_msgvin *vin,struct iguana_txid *tx,int32_t i)
 {
     struct iguana_spend *s,*S; uint32_t spendind,unspentind; bits256 *X; struct iguana_bundle *bp;
-    struct iguana_ramchaindata *rdata; struct iguana_txid *T; char fname[1024]; FILE *fp; int32_t err = 0;
+    struct iguana_ramchaindata *rdata; struct iguana_txid *T; char fname[1024]; int32_t scriptlen,err = 0;
     memset(vin,0,sizeof(*vin));
     if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0 && (rdata= bp->ramchain.H.data) != 0 )
     {
@@ -39,14 +55,7 @@ int32_t iguana_vinset(struct iguana_info *coin,uint8_t *scriptspace,int32_t heig
         if ( s->scriptpos != 0 && s->scriptlen > 0 )
         {
             iguana_vinsfname(coin,fname,s->fileid);
-            if ( (fp= fopen(fname,"rb")) != 0 )
-            {
-                fseek(fp,s->scriptpos,SEEK_SET);
-                if ( fread(scriptspace,1,s->scriptlen,fp) != s->scriptlen )
-                    err++;
-                fclose(fp);
-            } else err++;
-            if ( err != 0 )
+            if ( (scriptlen= iguana_scriptdata(coin,scriptspace,fname,s->scriptpos,s->scriptlen)) != s->scriptlen )
                 printf("err.%d getting %d bytes from fileid.%d[%d] %s for s%d\n",err,s->scriptlen,s->scriptpos,s->fileid,fname,spendind);
         }
         vin->scriptlen = s->scriptlen;
@@ -62,7 +71,7 @@ int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmst
 {
     struct iguana_ramchaindata *rdata; uint32_t unspentind,scriptlen = 0; struct iguana_bundle *bp;
     struct iguana_unspent *u,*U; char coinaddr[65]; struct iguana_pkhash *P,*p; struct vin_info V;
-    char fname[1024]; FILE *fp; int32_t err = 0;
+    char fname[1024]; int32_t err = 0;
     memset(vout,0,sizeof(*vout));
     if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0  && (rdata= bp->ramchain.H.data) != 0 && i < tx->numvouts )
     {
@@ -78,15 +87,7 @@ int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmst
         if ( u->scriptpos > 0 && u->scriptlen > 0 )
         {
             iguana_voutsfname(coin,fname,u->fileid);
-            if ( (fp= fopen(fname,"rb")) != 0 )
-            {
-                fseek(fp,u->scriptpos,SEEK_SET);
-                if ( fread(scriptspace,1,u->scriptlen,fp) != u->scriptlen )
-                    err++;
-                else scriptlen = u->scriptlen;
-                fclose(fp);
-            } else err++;
-            if ( err != 0 )
+            if ( (scriptlen= iguana_scriptdata(coin,scriptspace,fname,u->scriptpos,u->scriptlen)) != u->scriptlen )
                 printf("error.%d %d bytes from fileid.%d[%d] %s for u%d type.%d\n",err,u->scriptlen,u->fileid,u->scriptpos,fname,unspentind,u->type);
         }
         else

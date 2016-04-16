@@ -396,6 +396,7 @@ struct iguana_txid *iguana_bundletx(struct iguana_info *coin,struct iguana_bundl
         *tx = T[txidind];
         return(tx);
     }
+    printf("bundletx without ramchain\n");
     for (iter=0; iter<2; iter++)
     {
         iguana_peerfname(coin,&hdrsi,iter==0?"DB/ro":"DB",fname,0,bp->hashes[0],zero,bp->n,1);
