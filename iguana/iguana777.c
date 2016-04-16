@@ -673,7 +673,8 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->MAXMEM *= (1024L * 1024 * 1024);
 #ifdef __PNACL__
     //maxval = 2 * (strcmp("BTC",coin->symbol) != 0) + 2;
-    //mult = 1;
+    if ( mult > 1 )
+        mult /= 2;
 #endif
     if ( (coin->startPEND= juint(json,"startpend")) == 0 )
         coin->startPEND = IGUANA_MAXPENDBUNDLES*mult;
