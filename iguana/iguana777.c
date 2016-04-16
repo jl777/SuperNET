@@ -661,7 +661,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->myservices = services;
     coin->initialheight = initialheight;
     coin->mapflags = mapflags;
-    mult = (strcmp("BTC",coin->symbol) != 0) ? 16 : 8;
+    mult = (strcmp("BTC",coin->symbol) != 0) ? 64 : 8;
     maxval = IGUANA_MAXPENDBUNDLES;
     coin->MAXMEM = juint(json,"RAM");
     if ( jobj(json,"prefetchlag") != 0 )
