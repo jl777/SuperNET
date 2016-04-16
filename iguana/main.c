@@ -1322,7 +1322,7 @@ void iguana_main(void *arg)
     iguana_helpinit(myinfo);
     iguana_commandline(myinfo,arg);
 #ifdef __APPLE__
-    iguana_appletests(myinfo);
+    //iguana_appletests(myinfo);
 #endif
     iguana_launchdaemons(myinfo);
 }
