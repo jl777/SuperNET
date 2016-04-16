@@ -476,6 +476,7 @@ void iguana_helper(void *arg)
             }
         }
         n = queue_size(&bundlesQ);
+        printf("bQ n.%d\n",n);
         for (iter=0; iter<n; iter++)
         {
             if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
@@ -507,6 +508,7 @@ void iguana_helper(void *arg)
             } else break;
         }
         n = queue_size(&validateQ) / IGUANA_NUMHELPERS + 1;
+        printf("vQ is n.%d\n",n);
         for (iter=0; iter<n; iter++)
         {
             if ( (ptr= queue_dequeue(&validateQ,0)) == 0 )
