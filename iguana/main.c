@@ -61,23 +61,28 @@ struct iguana_info *Coins[IGUANA_MAXCOINS];
 char Userhome[512];
 int32_t USE_JAY,FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel,BIGENDIAN;
 uint32_t prices777_NXTBLOCK,MAX_DEPTH = 100;
-queue_t helperQ,jsonQ,finishedQ,bundlesQ,validateQ,emitQ,TerminateQ;
+queue_t helperQ,jsonQ,finishedQ,bundlesQ,emitQ,TerminateQ;
 struct supernet_info MYINFO,**MYINFOS;
 static int32_t initflag;
 int32_t HDRnet,netBLOCKS;
 cJSON *API_json;
-#ifdef __linux__
-char GLOBALTMPDIR[512] = "tmp";
-int32_t IGUANA_NUMHELPERS = 8;
-#else
+
 #ifdef __PNACL__
-char GLOBALTMPDIR[512] = "/tmp";
+char GLOBAL_VALIDATEDIR[512] = "/DB/purgeable";
+char GLOBAL_HELPDIR[512] = "/DB/help";
+char GLOBAL_DBDIR[512] = "/DB";
+char GLOBAL_CONFSDIR[512] = "/DB/confs";
+char GLOBAL_TMPDIR[512] = "/tmp";
 int32_t IGUANA_NUMHELPERS = 2;
 #else
-char GLOBALTMPDIR[512] = "tmp";
+char GLOBAL_VALIDATEDIR[512] = "purgeable";
+char GLOBAL_HELPDIR[512] = "help";
+char GLOBAL_DBDIR[512] = "DB";
+char GLOBAL_TMPDIR[512] = "tmp";
+char GLOBAL_CONFSDIR[512] = "confs";
 int32_t IGUANA_NUMHELPERS = 4;
 #endif
-#endif
+
 struct iguana_jsonitem { struct queueitem DL; struct supernet_info *myinfo; uint32_t fallback,expired,allocsize; char **retjsonstrp; char remoteaddr[64]; uint16_t port; char jsonstr[]; };
 
 uint16_t SuperNET_API2num(char *agent,char *method)
@@ -1186,8 +1191,8 @@ void iguana_commandline(struct supernet_info *myinfo,char *arg)
             safecopy(Userhome,jstr(argjson,"userhome"),sizeof(Userhome));
             if ( jstr(argjson,"tmpdir") != 0 )
             {
-                safecopy(GLOBALTMPDIR,jstr(argjson,"tmpdir"),sizeof(GLOBALTMPDIR));
-                printf("GLOBAL tmpdir.(%s)\n",GLOBALTMPDIR);
+                safecopy(GLOBAL_TMPDIR,jstr(argjson,"tmpdir"),sizeof(GLOBAL_TMPDIR));
+                printf("GLOBAL tmpdir.(%s)\n",GLOBAL_TMPDIR);
             }
             printf("call argv JSON.(%s)\n",(char *)arg);
             SuperNET_JSON(myinfo,argjson,0,myinfo->rpcport);
@@ -1200,19 +1205,16 @@ void iguana_commandline(struct supernet_info *myinfo,char *arg)
 
 void iguana_ensuredirs()
 {
-    char dirname[512],*prefix = "";
-#ifdef __PNACL__
-    prefix = "";
-#endif
-    sprintf(dirname,"%shelp",prefix), OS_ensure_directory(dirname);
-    sprintf(dirname,"%sconfs",prefix), OS_ensure_directory(dirname);
-    sprintf(dirname,"%sDB",prefix), OS_ensure_directory(dirname);
-    sprintf(dirname,"%sDB/ECB",prefix), OS_ensure_directory(dirname);
-    sprintf(dirname,"%stmp",prefix), OS_ensure_directory(dirname);
-    sprintf(dirname,"%spurgeable",prefix), OS_ensure_directory(dirname);
-    sprintf(dirname,"%spurgeable/BTC",prefix), OS_ensure_directory(dirname);
-    sprintf(dirname,"%spurgeable/BTCD",prefix), OS_ensure_directory(dirname);
-    sprintf(dirname,"%s%s",prefix,GLOBALTMPDIR), OS_ensure_directory(dirname);
+    char dirname[512];
+    sprintf(dirname,"%s",GLOBAL_HELPDIR), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s",GLOBAL_CONFSDIR), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/ECB",GLOBAL_DBDIR), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s",GLOBAL_TMPDIR), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s",GLOBAL_VALIDATEDIR), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/BTC",GLOBAL_VALIDATEDIR), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/BTCD",GLOBAL_VALIDATEDIR), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s",GLOBAL_TMPDIR), OS_ensure_directory(dirname);
 }
 
 void iguana_Qinit()
@@ -1221,7 +1223,6 @@ void iguana_Qinit()
     iguana_initQ(&jsonQ,"jsonQ");
     iguana_initQ(&finishedQ,"finishedQ");
     iguana_initQ(&bundlesQ,"bundlesQ");
-    iguana_initQ(&validateQ,"validateQ");
     iguana_initQ(&emitQ,"emitQ");
     iguana_initQ(&TerminateQ,"TerminateQ");
 }

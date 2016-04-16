@@ -166,7 +166,7 @@ struct iguana_txblock *iguana_peertxdata(struct iguana_info *coin,int32_t *bundl
 {
     int32_t bundlei,datalen,checki,hdrsi,fpos; char str[65],str2[65]; FILE *fp;
     bits256 checkhash2; struct iguana_txblock *txdata = 0; static const bits256 zero;
-    if ( (bundlei= iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,ipbits,hash2,zero,1)) >= 0 )
+    if ( (bundlei= iguana_peerfname(coin,&hdrsi,GLOBAL_TMPDIR,fname,ipbits,hash2,zero,1)) >= 0 )
     //if ( (bundlei= iguana_peerfname(coin,&hdrsi,fname,ipbits,hash2)) >= 0 )
     {
         if ( (fp= fopen(fname,"rb")) != 0 )
@@ -637,7 +637,7 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
         }
         else if ( bp->hdrsi == coin->longestchain/bp->n )
         {
-            checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,block->RO.hash2,zero,1,0);
+            checki = iguana_peerfname(coin,&hdrsi,GLOBAL_TMPDIR,fname,0,block->RO.hash2,zero,1,0);
             if ( (fp= fopen(fname,"rb")) != 0 )
             {
                 fseek(fp,0,SEEK_END);

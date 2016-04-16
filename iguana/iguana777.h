@@ -888,8 +888,9 @@ int32_t iguana_validated(struct iguana_info *coin);
 
 extern int32_t HDRnet,netBLOCKS;
 
-extern queue_t bundlesQ,validateQ,emitQ,TerminateQ;
-extern char GLOBALTMPDIR[];
+extern queue_t bundlesQ,emitQ,TerminateQ;
+extern char GLOBAL_TMPDIR[],GLOBAL_VALIDATEDIR[],GLOBAL_HELPDIR[],GLOBAL_DBDIR[],GLOBAL_CONFSDIR[];
+
 
 #include "../includes/iguana_api.h"
 

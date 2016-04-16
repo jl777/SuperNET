@@ -1372,11 +1372,8 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
 int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
 {
     int32_t hdrsi,numpkinds,iter,numhdrsi,i,numunspents,err; struct iguana_bundle *bp;
-    char fname[1024],fname2[1024],destfname[1024],*prefix=""; bits256 balancehash,allbundles; FILE *fp,*fp2;
+    char fname[1024],fname2[1024],destfname[1024]; bits256 balancehash,allbundles; FILE *fp,*fp2;
     struct iguana_utxo *Uptr; struct iguana_account *Aptr; struct sha256_vstate vstate,bstate;
-#ifdef __PNACL__
-    prefix = "";
-#endif
     vupdate_sha256(balancehash.bytes,&vstate,0,0);
     /*for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
         if ( (bp= coin->bundles[hdrsi]) == 0 || bp->balancefinish <= 1 || bp->ramchain.H.data == 0 || bp->ramchain.A == 0 || bp->ramchain.Uextras == 0 )
@@ -1395,8 +1392,8 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
             numunspents = numpkinds = 0;
             if ( (bp= coin->bundles[hdrsi]) != 0 && bp->ramchain.H.data != 0 && (numpkinds= bp->ramchain.H.data->numpkinds) > 0 && (numunspents= bp->ramchain.H.data->numunspents) > 0 && (Aptr= bp->ramchain.A) != 0 && (Uptr= bp->ramchain.Uextras) != 0 )
             {
-                sprintf(fname,"%s%s/%s/%d/debits.N%d",prefix,GLOBALTMPDIR,coin->symbol,bp->bundleheight,numhdrsi);
-                sprintf(fname2,"%s%s/%s/%d/lastspends.N%d",prefix,GLOBALTMPDIR,coin->symbol,bp->bundleheight,numhdrsi);
+                sprintf(fname,"%s/%s/%d/debits.N%d",GLOBAL_TMPDIR,coin->symbol,bp->bundleheight,numhdrsi);
+                sprintf(fname2,"%s/%s/%d/lastspends.N%d",GLOBAL_TMPDIR,coin->symbol,bp->bundleheight,numhdrsi);
                 if ( iter == 0 )
                 {
                     vupdate_sha256(balancehash.bytes,&vstate,(void *)Aptr,sizeof(*Aptr)*numpkinds);
@@ -1437,13 +1434,13 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
                 }
                 else if ( iter == 2 )
                 {
-                    sprintf(destfname,"DB/%s/accounts/debits.%d",coin->symbol,bp->bundleheight);
+                    sprintf(destfname,"%s/%s/accounts/debits.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
                     if ( OS_copyfile(fname,destfname,1) < 0 )
                     {
                         printf("balances error copying (%s) -> (%s)\n",fname,destfname);
                         return(-1);
                     }
-                    sprintf(destfname,"DB/%s/accounts/lastspends.%d",coin->symbol,bp->bundleheight);
+                    sprintf(destfname,"%s/%s/accounts/lastspends.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
                     if ( OS_copyfile(fname2,destfname,1) < 0 )
                     {
                         printf("balances error copying (%s) -> (%s)\n",fname2,destfname);
@@ -1482,17 +1479,17 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
             coin->peers.active[i].dead = (uint32_t)time(NULL);
 #ifdef __linux__
         char cmd[1024];
-        sprintf(cmd,"mksquashfs DB/%s %s.%d -comp xz",coin->symbol,coin->symbol,coin->balanceswritten);
+        sprintf(cmd,"mksquashfs %s/%s %s.%d -comp xz",GLOBAL_DBDIR,coin->symbol,coin->symbol,coin->balanceswritten);
         if ( system(cmd) != 0 )
             printf("error system(%s)\n",cmd);
         else
         {
-            sprintf(cmd,"sudo umount DB/ro/%s",coin->symbol);
+            sprintf(cmd,"sudo umount %s/ro/%s",GLOBAL_DBDIR,coin->symbol);
             if ( system(cmd) != 0 )
                 printf("error system(%s)\n",cmd);
             else
             {
-                sprintf(cmd,"sudo mount %s.%d DB/ro/%s -t squashfs -o loop",coin->symbol,coin->balanceswritten,coin->symbol);
+                sprintf(cmd,"sudo mount %s.%d %s/ro/%s -t squashfs -o loop",coin->symbol,coin->balanceswritten,GLOBAL_DBDIR,coin->symbol);
                 if ( system(cmd) != 0 )
                     printf("error system(%s)\n",cmd);
             }

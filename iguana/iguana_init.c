@@ -53,12 +53,8 @@ void iguana_initpeer(struct iguana_info *coin,struct iguana_peer *addr,uint64_t 
 
 void iguana_initcoin(struct iguana_info *coin,cJSON *argjson)
 {
-    int32_t i; char dirname[1024],*prefix = "";
-#ifdef __PNACL__
-    prefix = "";
-#endif
-    sprintf(dirname,"%s%s/%s",prefix,GLOBALTMPDIR,coin->symbol), OS_portable_path(dirname);
-    sprintf(dirname,"%stmp/%s",prefix,coin->symbol), OS_portable_path(dirname);
+    int32_t i; char dirname[1024];
+    sprintf(dirname,"%s/%s",GLOBAL_TMPDIR,coin->symbol), OS_portable_path(dirname);
     portable_mutex_init(&coin->peers_mutex);
     portable_mutex_init(&coin->blocks_mutex);
     iguana_meminit(&coin->blockMEM,"blockMEM",coin->blockspace,sizeof(coin->blockspace),0);
@@ -131,16 +127,13 @@ bits256 iguana_genesis(struct iguana_info *coin,struct iguana_chain *chain)
 
 int32_t iguana_savehdrs(struct iguana_info *coin)
 {
-    char fname[512],shastr[65],tmpfname[512],tmpfname2[512],str2[65],str[65],oldfname[512],*prefix="";
+    char fname[512],shastr[65],tmpfname[512],tmpfname2[512],str2[65],str[65],oldfname[512];
     bits256 sha256all; FILE *fp,*fp2; struct iguana_bundle *bp; int32_t hdrsi,n,retval = 0;
     n = coin->blocks.hwmchain.height + 1;
-#ifdef __PNACL__
-    prefix = "";
-#endif
-    sprintf(tmpfname,"%s%s/%s/hdrs.txt",prefix,GLOBALTMPDIR,coin->symbol), OS_compatible_path(tmpfname);
-    sprintf(tmpfname2,"%s%s/%s/hdrs.h",prefix,GLOBALTMPDIR,coin->symbol), OS_compatible_path(tmpfname);
-    sprintf(oldfname,"%sconfs/%s_oldhdrs.txt",prefix,coin->symbol), OS_compatible_path(oldfname);
-    sprintf(fname,"%sconfs/%s_hdrs.txt",prefix,coin->symbol), OS_compatible_path(fname);
+    sprintf(tmpfname,"%s/%s/hdrs.txt",GLOBAL_TMPDIR,coin->symbol), OS_compatible_path(tmpfname);
+    sprintf(tmpfname2,"%s/%s/hdrs.h",GLOBAL_TMPDIR,coin->symbol), OS_compatible_path(tmpfname);
+    sprintf(oldfname,"%s/%s_oldhdrs.txt",GLOBAL_CONFSDIR,coin->symbol), OS_compatible_path(oldfname);
+    sprintf(fname,"%s/%s_hdrs.txt",GLOBAL_CONFSDIR,coin->symbol), OS_compatible_path(fname);
     if ( (fp= fopen(tmpfname,"w")) != 0 )
     {
         if ( (fp2= fopen(tmpfname2,"w")) != 0 )
@@ -497,7 +490,7 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
             }
         }
 #endif
-        sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
+        sprintf(fname,"%s/%s_%s.txt",GLOBAL_CONFSDIR,coin->symbol,(iter == 0) ? "peers" : "hdrs");
         OS_compatible_path(fname);
         //sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
         //sprintf(fname,"tmp/%s/%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");

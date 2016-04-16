@@ -208,14 +208,11 @@ void *iguana_kviAddriterator(struct iguana_info *coin,struct iguanakv *kv,struct
 
 uint32_t iguana_updatemetrics(struct iguana_info *coin)
 {
-    char fname[512],tmpfname[512],oldfname[512],ipaddr[64],*prefix = ""; int32_t i,j; struct iguana_peer *addr,*tmpaddr; FILE *fp;
-#ifdef __PNACL__
-    prefix = "";
-#endif
+    char fname[512],tmpfname[512],oldfname[512],ipaddr[64]; int32_t i,j; struct iguana_peer *addr,*tmpaddr; FILE *fp;
     iguana_peermetrics(coin);
-    sprintf(fname,"%sconfs/%s_peers.txt",prefix,coin->symbol), OS_compatible_path(fname);
-    sprintf(oldfname,"%sconfs/%s_oldpeers.txt",prefix,coin->symbol), OS_compatible_path(oldfname);
-    sprintf(tmpfname,"%s%s/%s/peers.txt",prefix,GLOBALTMPDIR,coin->symbol), OS_compatible_path(tmpfname);
+    sprintf(fname,"%s/%s_peers.txt",GLOBAL_CONFSDIR,coin->symbol), OS_compatible_path(fname);
+    sprintf(oldfname,"%s/%s_oldpeers.txt",GLOBAL_CONFSDIR,coin->symbol), OS_compatible_path(oldfname);
+    sprintf(tmpfname,"%s/%s/peers.txt",GLOBAL_TMPDIR,coin->symbol), OS_compatible_path(tmpfname);
     if ( (fp= fopen(tmpfname,"w")) != 0 )
     {
         for (i=0; i<coin->peers.numranked; i++)
@@ -236,7 +233,7 @@ uint32_t iguana_updatemetrics(struct iguana_info *coin)
         }
         if ( ftell(fp) > OS_filesize(fname) )
         {
-            printf("new peers.txt %ld vs (%s) %ld\n",ftell(fp),fname,(long)OS_filesize(fname));
+            printf("new peers.txt %ld vs (%s) %ld (%s)\n",ftell(fp),fname,(long)OS_filesize(fname),GLOBAL_CONFSDIR);
             fclose(fp);
             OS_renamefile(fname,oldfname);
             OS_copyfile(tmpfname,fname,1);
@@ -524,7 +521,7 @@ void iguana_helper(void *arg)
             myfree(ptr,ptr->allocsize);
             flag++;
         }*/
-        if ( queue_size(&bundlesQ) > 1 || queue_size(&validateQ) > 0 )
+        if ( queue_size(&bundlesQ) > 1 )
             allcurrent = 0;
         if ( flag != 0 )
             usleep(polltimeout * 100 + 1);
@@ -582,11 +579,10 @@ void iguana_coinloop(void *arg)
                         char *ipaddrs[] = { "5.9.102.210", "89.248.160.236", "89.248.160.237", "89.248.160.238", "89.248.160.239", "89.248.160.240", "89.248.160.241", "89.248.160.242", "89.248.160.243", "89.248.160.244", "89.248.160.245", "78.47.58.62", "67.212.70.88", "94.102.50.69", "50.179.58.158", "194.135.94.30", "109.236.85.42", "104.236.127.154", "68.45.147.145", "37.59.14.7", "78.47.115.250", "188.40.138.8", "62.75.143.120", "82.241.71.230", "217.23.6.2", "73.28.172.128", "45.55.149.34", "192.0.242.54", "81.181.155.53", "91.66.185.97", "85.25.217.233", "144.76.239.66", "95.80.9.112", "80.162.193.118", "173.65.129.85", "2.26.173.58", "78.14.250.69", "188.226.253.77", "58.107.67.39", "124.191.37.212", "176.226.137.238", "69.145.25.85", "24.168.14.28", "73.201.180.47", "76.188.171.53", "63.247.147.166", "121.108.241.247", "36.74.36.125", "106.186.119.171", "188.166.91.37", "223.134.228.208", "89.248.160.244", "178.33.209.212", "71.53.156.38", "88.198.10.165", "24.117.221.0", "74.14.104.57", "158.69.27.82", "110.174.129.213", "75.130.163.51" };
                         for (j=0; j<sizeof(ipaddrs)/sizeof(*ipaddrs); j++)
                         {
-                            printf("%s ",ipaddrs[j]);
-                            //if ( j < IGUANA_MINPEERS )
-                            //    iguana_launchpeer(coin,ipaddrs[j]);
-                            //else
-                            iguana_possible_peer(coin,ipaddrs[j]);
+                            //printf("%s ",ipaddrs[j]);
+                            if ( j < IGUANA_MINPEERS )
+                                iguana_launchpeer(coin,ipaddrs[j]);
+                            else iguana_possible_peer(coin,ipaddrs[j]);
                         }
                         printf("possible peers\n");
                     }
@@ -717,16 +713,16 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( (coin->minconfirms = minconfirms) == 0 )
         coin->minconfirms = (strcmp(symbol,"BTC") == 0) ? 3 : 10;
     printf("ensure directories maxval.%d mult.%d start.%d end.%d\n",maxval,mult,coin->startPEND,coin->endPEND);
-    sprintf(dirname,"%sDB/ro/%s",prefix,symbol), OS_ensure_directory(dirname);
-    sprintf(dirname,"%sDB/ro",prefix), OS_ensure_directory(dirname);
-    sprintf(dirname,"%sDB/%s",prefix,symbol), OS_ensure_directory(dirname);
-    sprintf(dirname,"%sDB/%s/validated",prefix,symbol), OS_ensure_directory(dirname);
-    sprintf(dirname,"%sDB/%s/accounts",prefix,symbol), OS_ensure_directory(dirname);
-    sprintf(dirname,"%sDB/%s/spends",prefix,symbol), OS_ensure_directory(dirname);
-    sprintf(dirname,"%sDB/%s/vouts",prefix,symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/ro/%s",GLOBAL_DBDIR,symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/ro",GLOBAL_DBDIR), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/%s",GLOBAL_DBDIR,symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/%s/validated",GLOBAL_DBDIR,symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/%s/accounts",GLOBAL_DBDIR,symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/%s/spends",GLOBAL_DBDIR,symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/%s/vouts",GLOBAL_DBDIR,symbol), OS_ensure_directory(dirname);
     if ( coin->VALIDATEDIR[0] != 0 )
-        sprintf(dirname,"%s%s/%s",prefix,coin->VALIDATEDIR,symbol), OS_ensure_directory(dirname);
-    sprintf(dirname,"%s%s/%s",prefix,GLOBALTMPDIR,symbol), OS_ensure_directory(dirname);
+        sprintf(dirname,"%s/%s",coin->VALIDATEDIR,symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/%s",GLOBAL_TMPDIR,symbol), OS_ensure_directory(dirname);
     if ( coin->chain == 0 && (coin->chain= iguana_createchain(json)) == 0 )
     {
         printf("cant initialize chain.(%s)\n",jstr(json,0));

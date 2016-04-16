@@ -349,7 +349,7 @@ struct iguana_bundle *iguana_bundlecreate(struct iguana_info *coin,int32_t *bund
             }
             *bundleip = 0;
             bits256_str(str,bundlehash2);
-            char dirname[1024]; sprintf(dirname,"%s/%s/%d",GLOBALTMPDIR,coin->symbol,bp->bundleheight), OS_ensure_directory(dirname);
+            char dirname[1024]; sprintf(dirname,"%s/%s/%d",GLOBAL_TMPDIR,coin->symbol,bp->bundleheight), OS_ensure_directory(dirname);
             //sprintf(dirname,"DB/%s/%d",coin->symbol,bp->bundleheight), OS_ensure_directory(dirname);
             //printf("ht.%d alloc.[%d] new hdrs.%s\n",bp->bundleheight,coin->bundlescount,bits256_str(str,bp->hashes[0]));
             iguana_bundlehash2add(coin,0,bp,0,bundlehash2);
@@ -422,10 +422,7 @@ struct iguana_txid *iguana_bundletx(struct iguana_info *coin,struct iguana_bundl
 void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     static const bits256 zero;
-    char fname[1024],dirname[1024],*prefix = ""; FILE *fp; int32_t hdrsi,m,j; uint32_t ipbits;
-#ifdef __PNACL__
-    prefix = "";
-#endif
+    char fname[1024],dirname[1024]; FILE *fp; int32_t hdrsi,m,j; uint32_t ipbits;
     if ( bp->purgetime == 0 && time(NULL) > bp->emitfinish+30 )
     {
         //printf("purged hdrsi.[%d] lag.%ld\n",bp->hdrsi,time(NULL) - bp->emitfinish);
@@ -433,7 +430,7 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
         {
             if ( (ipbits= (uint32_t)coin->peers.active[j].ipbits) != 0 )
             {
-                if ( iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,ipbits,bp->hashes[0],zero,1,1) >= 0 )
+                if ( iguana_peerfname(coin,&hdrsi,GLOBAL_TMPDIR,fname,ipbits,bp->hashes[0],zero,1,1) >= 0 )
                 {
                     if ( (fp= fopen(fname,"rb")) != 0 )
                     {
@@ -446,7 +443,7 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
                 else printf("error removing.(%s)\n",fname);
             }
         }
-        sprintf(dirname,"%s%s/%s/%d",prefix,GLOBALTMPDIR,coin->symbol,bp->bundleheight), OS_remove_directory(dirname);
+        sprintf(dirname,"%s/%s/%d",GLOBAL_TMPDIR,coin->symbol,bp->bundleheight), OS_remove_directory(dirname);
         bp->purgetime = (uint32_t)time(NULL);
     }
 }
@@ -738,10 +735,10 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
             }
             else
             {
-#ifndef __PNACL__
+//#ifndef __PNACL__
                 int32_t checki,hdrsi; FILE *fp;
                 fname[0] = 0;
-                checki = iguana_peerfname(coin,&hdrsi,GLOBALTMPDIR,fname,0,block->RO.hash2,zero,1,0);
+                checki = iguana_peerfname(coin,&hdrsi,GLOBAL_TMPDIR,fname,0,block->RO.hash2,zero,1,0);
                 if ( hdrsi == bp->hdrsi && checki == i && (fp= fopen(fname,"rb")) != 0 )
                 {
                     fseek(fp,0,SEEK_END);
@@ -753,7 +750,7 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
                     fclose(fp);
                 }
                 else
-#endif
+//#endif
                     iguana_blockunmark(coin,block,bp,i,0);
             }
         }
@@ -939,7 +936,7 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
                 /*if ( bp->hdrsi == 0 && iguana_peerblockrequest(coin,coin->blockspace,sizeof(coin->blockspace),0,bp->hashes[0],1) > 0 )
                     printf("GENESIS block validated\n");
                 else printf("GENESIS didnt validate bp.%p\n",bp);*/
-                //iguana_bundlevalidate(coin,bp,1);
+                iguana_bundlevalidate(coin,bp,1);
             }
             else
             {
@@ -1337,7 +1334,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
     //sprintf(str+strlen(str),"%s.%-2d %s time %.2f files.%d Q.%d %d\n",coin->symbol,flag,str,(double)(time(NULL)-coin->starttime)/60.,coin->peers.numfiles,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
     if ( time(NULL) > coin->lastdisp+3 && (strcmp(str,coin->lastdispstr) != 0 || time(NULL) > coin->lastdisp+60) )
     {
-        printf("\n%s bQ.%d vQ.%d %d:%02d:%02d stuck.%d max.%d\n",str,queue_size(&bundlesQ),queue_size(&validateQ),(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,coin->stucktime!=0?(uint32_t)time(NULL) - coin->stucktime:0,coin->maxstuck);
+        printf("\n%s bQ.%d %d:%02d:%02d stuck.%d max.%d\n",str,queue_size(&bundlesQ),(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,coin->stucktime!=0?(uint32_t)time(NULL) - coin->stucktime:0,coin->maxstuck);
         strcpy(coin->lastdispstr,str);
         if ( (rand() % 100) == 0 )
             myallocated(0,0);
