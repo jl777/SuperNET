@@ -365,7 +365,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
     max = coin->bundlescount;
     if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 )
         max--;
-    incr = (coin->PREFETCHLAG > 0) ? 1 : IGUANA_NUMHELPERS;
+    incr = IGUANA_NUMHELPERS;//(coin->PREFETCHLAG > 0) ? 1 : IGUANA_NUMHELPERS;
     for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
     {
         if ( (bp= coin->bundles[hdrsi]) == 0 )
