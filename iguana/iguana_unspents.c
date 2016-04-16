@@ -903,7 +903,7 @@ int32_t iguana_spendvectorsave(struct iguana_info *coin,struct iguana_bundle *bp
                 printf("error mapping Xspendmap.(%s)\n",fname);
             else
             {
-                printf("created.(%s)\n",fname);
+                printf("created.(%s) %p[%d]\n",fname,bp->ramchain.Xspendinds,bp->ramchain.numXspends);
                 retval = 0;
             }
         }
