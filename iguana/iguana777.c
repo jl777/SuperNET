@@ -365,7 +365,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
     max = coin->bundlescount;
     if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 )
         max--;
-    incr = (coin->PREFETCHLAG >= 0) ? 1 : IGUANA_NUMHELPERS;
+    incr = (coin->PREFETCHLAG > 0) ? 1 : IGUANA_NUMHELPERS;
     for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
     {
         if ( (bp= coin->bundles[hdrsi]) == 0 )
@@ -673,7 +673,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->MAXMEM *= (1024L * 1024 * 1024);
 #ifdef __PNACL__
     //maxval = 2 * (strcmp("BTC",coin->symbol) != 0) + 2;
-    mult = 1;
+    //mult = 1;
 #endif
     if ( (coin->startPEND= juint(json,"startpend")) == 0 )
         coin->startPEND = IGUANA_MAXPENDBUNDLES*mult;
