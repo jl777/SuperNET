@@ -1359,8 +1359,8 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
         }
         printf("iguana_bundlesQ %d to %d\n",coin->balanceswritten,coin->bundlescount);
     }
-    coin->origbalanceswritten = coin->balanceswritten;
-    iguana_volatilesinit(coin);
+    if ( (coin->origbalanceswritten= coin->balanceswritten) > 0 )
+        iguana_volatilesinit(coin);
     iguana_savehdrs(coin);
     iguana_fastlink(coin,coin->balanceswritten * coin->chain->bundlesize - 1);
     iguana_walkchain(coin,0);
