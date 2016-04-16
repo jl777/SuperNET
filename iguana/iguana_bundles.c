@@ -1067,6 +1067,9 @@ void iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,uin
     {
         if ( coin->current != 0 )
             mult = bp->hdrsi - coin->current->hdrsi;
+        else if ( strcmp("BTC",coin->symbol) != 0 )
+            mult = 1;
+        else mult = 3;
         if ( mult < 4 )
             mult = 4;
         else if ( mult > 7 )
