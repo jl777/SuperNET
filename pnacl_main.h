@@ -361,7 +361,7 @@ static PP_Bool Instance_DidCreate(PP_Instance instance,uint32_t argc,const char*
     pthread_create(&chromeapp_thread,NULL,&CHROMEAPP_NAME,OS_filestr(&allocsize,CHROMEAPP_CONF));
     nacl_io_init_ppapi(instance,g_get_browser_interface);
     umount("/");
-    mount("", "/memfs", "memfs", 0, "");
+    mount("", "/tmp", "memfs", 0, "");
     mount("",                                       /* source */
           "/",                            /* target */
           "html5fs",                                /* filesystemtype */

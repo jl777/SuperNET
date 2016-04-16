@@ -736,7 +736,7 @@ void *iguana_iAddriterator(struct iguana_info *coin,struct iguana_iAddr *iA)
                 //printf("call rwIaddrInd\n");
                 if ( iguana_rwiAddrind(coin,1,iA,iA->hh.itemind) > 0 )
                 {
-                    printf("iA.%p iguana_startconnection.(%s) status.%d pending.%d\n",iA,addr->ipaddr,iA->status,addr->pending);
+                    //printf("iA.%p iguana_startconnection.(%s) status.%d pending.%d\n",iA,addr->ipaddr,iA->status,addr->pending);
                     iA->status = IGUANA_PEER_CONNECTING;
                     addr->pending = (uint32_t)time(NULL);
                     iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
@@ -780,7 +780,7 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
         return((uint32_t)time(NULL));
     }
 #endif
-    printf("check possible peer.(%s)\n",ipaddr);
+    //printf("check possible peer.(%s)\n",ipaddr);
     for (i=n=0; i<coin->MAXPEERS; i++)
     {
         if ( strcmp(ipaddr,coin->peers.active[i].ipaddr) == 0 )
@@ -792,7 +792,7 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
         else if ( coin->peers.active[i].ipaddr[0] != 0 )
             n++;
     }
-    if ( n >= coin->MAXPEERS-(coin->MAXPEERS>>3)-1 )
+    if ( n >= coin->MAXPEERS-(coin->MAXPEERS>>3)-1 || coin->peers.numranked >= coin->MAXPEERS )
         return((uint32_t)time(NULL));
     if ( strncmp("0.0.0",ipaddr,5) != 0 && strcmp("0.0.255.255",ipaddr) != 0 && strcmp("1.0.0.0",ipaddr) != 0 )
     {
@@ -801,7 +801,7 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
             expand_ipbits(checkaddr,ipbits);
             if ( strcmp(checkaddr,ipaddr) == 0 )
             {
-                printf("valid ipaddr.(%s) MAXPEERS.%d\n",ipaddr,coin->MAXPEERS);
+                //printf("valid ipaddr.(%s) MAXPEERS.%d\n",ipaddr,coin->MAXPEERS);
                 if ( (iA= iguana_iAddrhashfind(coin,ipbits,1)) != 0 )
                 {
                     if ( iA->status != IGUANA_PEER_CONNECTING && iA->status != IGUANA_PEER_READY && iA->status != IGUANA_PEER_ELIGIBLE )

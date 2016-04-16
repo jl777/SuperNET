@@ -65,14 +65,16 @@ queue_t helperQ,jsonQ,finishedQ,bundlesQ,validateQ,emitQ,TerminateQ;
 struct supernet_info MYINFO,**MYINFOS;
 static int32_t initflag;
 int32_t HDRnet,netBLOCKS;
-char GLOBALTMPDIR[512] = "tmp";
 cJSON *API_json;
 #ifdef __linux__
+char GLOBALTMPDIR[512] = "tmp";
 int32_t IGUANA_NUMHELPERS = 8;
 #else
 #ifdef __PNACL__
-int32_t IGUANA_NUMHELPERS = 1;
+char GLOBALTMPDIR[512] = "/tmp";
+int32_t IGUANA_NUMHELPERS = 2;
 #else
+char GLOBALTMPDIR[512] = "tmp";
 int32_t IGUANA_NUMHELPERS = 4;
 #endif
 #endif

@@ -835,7 +835,7 @@ int32_t iguana_bundletweak(struct iguana_info *coin,struct iguana_bundle *bp)
 int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int32_t lag)
 {
     int32_t bundlei,numhashes,numsaved,numrecv,numcached,minrequests; int64_t datasize; struct iguana_block *block;
-    if ( bp->emitfinish > coin->startutc && (bp->ramchain.H.data != 0 || iguana_bundleready(coin,bp,0) == bp->n)  )
+    if ( bp->emitfinish > 0 && (bp->ramchain.H.data != 0 || iguana_bundleready(coin,bp,0) == bp->n)  )
     {
         memset(bp->haveblock,0xff,sizeof(bp->haveblock));
         bp->numhashes = bp->numsaved = bp->numcached = bp->numrecv = bp->n;
@@ -856,7 +856,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
                 {
                     //if ( bp->minrequests == 0 || (block->numrequests > 0 && block->numrequests < bp->minrequests) )
                     //    bp->minrequests = block->numrequests;
-                    if ( block->fpipbits != 0 && block->txvalid != 0 &&  block->fpos >= 0 && (bp->bundleheight+bundlei == 0 || bits256_nonz(block->RO.prev_block) != 0) )
+                    if ( block->fpipbits != 0 && block->txvalid != 0 && block->fpos >= 0 && (bp->bundleheight+bundlei == 0 || bits256_nonz(block->RO.prev_block) != 0) )
                     {
                         SETBIT(bp->haveblock,bundlei);
                         numsaved++;
@@ -977,7 +977,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
     iguana_bundlecalcs(coin,bp,lag);
     if ( bp->hdrsi == coin->bundlescount-1 )
         iguana_autoextend(coin,bp);
-    if ( 0 && bp->hdrsi == 0 )
+    //if ( 0 && bp->hdrsi == 0 )
         printf("ITER utxo.%u now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",bp->utxofinish,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
     bp->nexttime = (uint32_t)time(NULL) + 0*cbrt(bp->hdrsi - starti)/10;
     if ( bp->hdrsi == coin->bundlescount-1 || (bp->numhashes < bp->n && bp->bundleheight < coin->longestchain-coin->chain->bundlesize) )

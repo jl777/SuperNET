@@ -583,9 +583,10 @@ void iguana_coinloop(void *arg)
                         for (j=0; j<sizeof(ipaddrs)/sizeof(*ipaddrs); j++)
                         {
                             printf("%s ",ipaddrs[j]);
-                            if ( j < IGUANA_MINPEERS )
-                                iguana_launchpeer(coin,ipaddrs[j]);
-                            else iguana_possible_peer(coin,ipaddrs[j]);
+                            //if ( j < IGUANA_MINPEERS )
+                            //    iguana_launchpeer(coin,ipaddrs[j]);
+                            //else
+                            iguana_possible_peer(coin,ipaddrs[j]);
                         }
                         printf("possible peers\n");
                     }
@@ -620,7 +621,7 @@ void iguana_coinloop(void *arg)
                     }
                     else
                     {
-                        if ( coin->peers.numranked != 0 && coin->peers.numranked < ((7*coin->MAXPEERS)>>3) && now > coin->lastpossible )
+                        if ( coin->peers.numranked < ((7*coin->MAXPEERS)>>3) && now > coin->lastpossible )
                         {
                             //fprintf(stderr,"possible\n");
                             coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
@@ -690,7 +691,8 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->MAXMEM *= (1024L * 1024 * 1024);
     prefix = "";
 #ifdef __PNACL__
-    //maxval = 16;
+    maxval = 2 * (strcmp("BTC",coin->symbol) != 0) + 2;
+    mult = 1;
     prefix = "";
 #endif
     if ( (coin->startPEND= juint(json,"startpend")) == 0 )
