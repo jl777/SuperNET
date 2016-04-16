@@ -470,7 +470,6 @@ void iguana_helper(void *arg)
             }
         }
         n = queue_size(&bundlesQ);
-        printf("bQ n.%d\n",n);
         for (iter=0; iter<n; iter++)
         {
             if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
