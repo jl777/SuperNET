@@ -362,7 +362,7 @@ cJSON *update_docjson(cJSON *docjson,char *agent,char *method)
     if ( agent != 0 && method != 0 )
     {
         sprintf(stubstr,"{\"agent\":\"%s\",\"method\":\"%s\",\"field0\":\"put in helpful info field0\",\"field1\":\"put in helpful info for field1\",\"help\":\"put helpful info here\",\"teststatus\":[{\"tester\":\"bob\",\"result\":\"put result here\",\"notes\":\"put useful notes here\",\"automated\":\"notyet\",\"sourcefile\":\"%s_%s_test.py\"}]}",agent,method,agent,method);
-        sprintf(fname,"help/%s_%s.json",agent,method);
+        sprintf(fname,"%s/%s_%s.json",GLOBAL_HELPDIR,agent,method);
         if ( (docstr= OS_filestr(&allocsize,fname)) != 0 )
         {
             if ( (item= cJSON_Parse(docstr)) == 0 )
@@ -390,7 +390,7 @@ cJSON *update_docjson(cJSON *docjson,char *agent,char *method)
 char *formfname(char *name,char *suffix)
 {
     static char retbuf[512];
-    sprintf(retbuf,"help/%s.%s",name,suffix);
+    sprintf(retbuf,"%s/%s.%s",GLOBAL_HELPDIR,name,suffix);
     return(retbuf);
 }
 
@@ -472,7 +472,7 @@ char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr)
     pretty_forms(fname,agentstr,"html");
     printf("autocreate %s\n","_API.md");
     pretty_forms("_API.md",0,"md");
-    return(OS_filestr(&filesize,"index7778.html"));
+return(OS_filestr(&filesize,"index7778.html"));
     sprintf(htmlstr,"<!DOCTYPE HTML><html> <head><title>SuperUGLY GUI></title></head> <body> ");
     size = (int32_t)strlen(htmlstr);
     if ( (helpjson= SuperNET_helpjson()) != 0 )

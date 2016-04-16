@@ -1008,10 +1008,10 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
             return(-1);
         }
     }*/
-/*#ifdef __PNACL__
+#ifdef __PNACL__
     static portable_mutex_t mutex;
     portable_mutex_lock(&mutex);
-#endif*/
+#endif
     if ( (fp= fopen(fname,"wb")) == 0 )
         printf("iguana_ramchain_save: couldnt create.(%s) errno.%d\n",fname,errno);
     else coin->peers.numfiles++;
@@ -1029,9 +1029,9 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
         *rdata = tmp;
         fclose(fp);
     }
-//#ifdef __PNACL__
-//    portable_mutex_unlock(&mutex);
-//#endif
+#ifdef __PNACL__
+    portable_mutex_unlock(&mutex);
+#endif
    return(fpos);
 }
 

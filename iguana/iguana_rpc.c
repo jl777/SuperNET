@@ -997,7 +997,7 @@ void iguana_rpcloop(void *args)
     static char *jsonbuf;
     uint16_t port; struct supernet_info *myinfo = args; char filetype[128],content_type[128];
     int32_t recvlen,flag,bindsock,postflag,contentlen,sock,remains,numsent,jsonflag,hdrsize,len;
-    socklen_t clilen; char remoteaddr[64],*buf,*retstr,*space;//,*retbuf; ,n,i,m
+    socklen_t clilen; char helpname[512],remoteaddr[64],*buf,*retstr,*space;//,*retbuf; ,n,i,m
     struct sockaddr_in cli_addr; uint32_t ipbits,i,size = IGUANA_WIDTH*IGUANA_HEIGHT*16 + 512;
     port = myinfo->rpcport;
     if ( jsonbuf == 0 )
@@ -1086,7 +1086,8 @@ void iguana_rpcloop(void *args)
             if ( filetype[0] != 0 )
             {
                 static cJSON *mimejson; char *tmp,*typestr=0; long tmpsize;
-                if ( (tmp= OS_filestr(&tmpsize,"help/mime.json")) != 0 )
+                sprintf(helpname,"%s/mime.json",GLOBAL_HELPDIR);
+                if ( (tmp= OS_filestr(&tmpsize,helpname)) != 0 )
                 {
                     mimejson = cJSON_Parse(tmp);
                     free(tmp);

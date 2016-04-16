@@ -557,8 +557,8 @@ void iguana_coinloop(void *arg)
                 if ( coin->MAXPEERS < IGUANA_MINPEERS )
                     coin->MAXPEERS = IGUANA_MAXPEERS;
 #ifdef __PNACL__
-                if ( strcmp(coin->symbol,"BTC") == 0 )
-                    continue;
+                //if ( strcmp(coin->symbol,"BTC") == 0 )
+                //    continue;
                 if ( coin->MAXPEERS > 64 )
                     coin->MAXPEERS = 64;
 #endif

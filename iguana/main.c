@@ -70,10 +70,10 @@ cJSON *API_json;
 #ifdef __PNACL__
 char GLOBAL_TMPDIR[512] = "/tmp";
 char GLOBAL_DBDIR[512] = "/DB";
-char GLOBAL_HELPDIR[512] = "/DB/help";
-char GLOBAL_VALIDATEDIR[512] = "/DB/purgeable";
-char GLOBAL_CONFSDIR[512] = "/DB/confs";
-int32_t IGUANA_NUMHELPERS = 1;
+char GLOBAL_HELPDIR[512] = "help";
+char GLOBAL_VALIDATEDIR[512] = "purgeable";
+char GLOBAL_CONFSDIR[512] = "confs";
+int32_t IGUANA_NUMHELPERS = 2;
 #else
 char GLOBAL_TMPDIR[512] = "tmp";
 char GLOBAL_HELPDIR[512] = "help";
@@ -1229,14 +1229,15 @@ void iguana_Qinit()
 
 void iguana_helpinit(struct supernet_info *myinfo)
 {
-    char *tmpstr;
+    char *tmpstr = 0;
     if ( (tmpstr= SuperNET_JSON(myinfo,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"help\"}"),0,myinfo->rpcport)) != 0 )
     {
         if ( (API_json= cJSON_Parse(tmpstr)) != 0 && (API_json= jobj(API_json,"result")) != 0 )
             API_json = jobj(API_json,"API");
+        else printf("couldnt parse tmpstr\n");
         free(tmpstr);
     }
-    printf("generated API_json\n");
+    printf("generated API_json tmpstr.%p\n",tmpstr);
 }
 
 void iguana_urlinit(struct supernet_info *myinfo,int32_t ismainnet,int32_t usessl)
