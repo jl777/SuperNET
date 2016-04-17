@@ -653,7 +653,8 @@ void *iguana_ramchain_offset(char *fname,void *dest,uint8_t *lhash,FILE *fp,uint
                 fseek(fp,startfpos,SEEK_SET);
                 if ( (err= fwrite(srcptr,1,len,fp)) == len )
                 {
-                    printf("write.%d of %d worked!\n",i,numretries);
+                    if ( i > 2 )
+                        printf("write.%d of %d worked!\n",i+1,numretries+1);
                     break;
                 }
             }

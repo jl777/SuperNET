@@ -493,7 +493,7 @@ void iguana_helper(void *arg)
             if ( (coin= Coins[i]) != 0 )
             {
                 if ( coin->spendvectorsaved == 1 )
-                    iguana_utxogen(coin,helperid,coin->PREFETCHLAG < 0);
+                    iguana_utxogen(coin,helperid,0);//coin->PREFETCHLAG < 0);
             }
         }
         n = queue_size(&bundlesQ);
