@@ -307,10 +307,11 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
             }
         }
         printf("iguana_volatileupdate.%d: [%d] spent.(u%u %.8f pkind.%d) double spend? at ht.%d [%d] spendind.%d\n",incremental,spent_hdrsi,spent_unspentind,dstr(spent_value),spent_pkind,fromheight,fromheight/coin->chain->bundlesize,spendind);
-        if ( coin->current != 0 && coin->current->hdrsi == fromheight/coin->chain->bundlesize )
+        if ( coin->current != 0 && fromheight >= coin->current->bundleheight )
             coin->RTdatabad = 1;
         else
         {
+            printf("from.%d vs current.%d\n",fromheight,coin->current->bundleheight);
             iguana_bundleremove(coin,spent_hdrsi,0);
             iguana_bundleremove(coin,fromheight/coin->chain->bundlesize,0);
         }
@@ -1780,6 +1781,8 @@ void iguana_RThdrs(struct iguana_info *coin,struct iguana_bundle *bp,int32_t num
 void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     int32_t lasti,hdrsi,orignumemit; struct iguana_ramchain R; struct iguana_ramchaindata RDATA;
+    if ( bp->hdrsi <= 0 )
+        return;
     bp->ramchain = coin->RTramchain;
     iguana_rdataset(&R,&RDATA,&coin->RTramchain);
     if ( (lasti= (coin->RTheight - ((coin->RTheight/bp->n)*bp->n))) >= bp->n-1 )
@@ -1799,7 +1802,7 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
             iguana_convert(coin,IGUANA_NUMHELPERS,coin->bundles[hdrsi],1,orignumemit);
         //printf("spendvectors converted to %d\n",coin->RTheight);
         bp->converted = (uint32_t)time(NULL);
-        iguana_balancegen(coin,0,bp,coin->RTstarti,coin->RTheight-1,orignumemit);
+        iguana_balancegen(coin,0,bp,coin->RTstarti,coin->RTheight > 0 ? coin->RTheight-1 : bp->n-1,orignumemit);
         //printf("iguana_balancegen [%d] (%d to %d)\n",bp->hdrsi,coin->RTstarti,(coin->RTheight-1)%bp->n);
         coin->RTstarti = (coin->RTheight % bp->n);
     }

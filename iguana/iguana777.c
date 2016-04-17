@@ -361,7 +361,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
 {
     int32_t hdrsi,retval,n,max,incr,num = 0; struct iguana_bundle *bp;
     incr = IGUANA_NUMHELPERS;
-    if ( 1 && coin->PREFETCHLAG > 0 )
+    if ( 0 && coin->PREFETCHLAG > 0 )
     {
         incr = 1;
         if ( incr < 1 )
@@ -378,7 +378,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             return(-1);
         if ( coin->PREFETCHLAG > 0 )
             iguana_ramchain_prefetch(coin,&bp->ramchain,0);
-        if ( iguana_bundlevalidate(coin,bp,0) == bp->n )
+        //if ( iguana_bundlevalidate(coin,bp,0) == bp->n )
         {
             if ( (retval= iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,convertflag)) >= 0 )
             {
@@ -391,7 +391,12 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
                 bp->utxofinish = (uint32_t)time(NULL);
             } else printf("UTXO gen.[%d] utxo error\n",bp->hdrsi);
         }
-        else
+    }
+    for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
+    {
+        if ( (bp= coin->bundles[hdrsi]) == 0 )
+            return(-1);
+        if ( iguana_bundlevalidate(coin,bp,0) != bp->n )
         {
             printf("validate.[%d] error. just refresh page or restart iguana\n",bp->hdrsi);
             exit(-1);

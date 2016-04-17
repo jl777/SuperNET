@@ -629,8 +629,7 @@ void *_iguana_ramchain_setptrs(RAMCHAIN_PTRPS,struct iguana_ramchaindata *rdata)
 
 void *iguana_ramchain_offset(char *fname,void *dest,uint8_t *lhash,FILE *fp,uint64_t fpos,void *srcptr,uint64_t *offsetp,uint64_t len,uint64_t srcsize)
 {
-    long err,startfpos;
-    void *destptr = (void *)(long)((long)dest + *offsetp);
+    long err,startfpos; void *destptr = (void *)(long)((long)dest + *offsetp);
     if ( (lhash != 0 || fp != 0) && (*offsetp + len) > srcsize )
     {
         printf("ramchain_offset overflow (%p %p) offset.%ld + len.%ld %ld > %ld srcsize\n",fp,lhash,(long)*offsetp,(long)len,(long)(*offsetp + len),(long)srcsize);
@@ -646,15 +645,27 @@ void *iguana_ramchain_offset(char *fname,void *dest,uint8_t *lhash,FILE *fp,uint
         startfpos = ftell(fp);
         if ( (err= fwrite(srcptr,1,len,fp)) != len )
         {
-            printf("iguana_ramchain_offset.(%s): error.%ld writing len.%ld to fp.%p errno.%d\n",fname,err,(long)len,fp,errno);
-            printf("probably out of disk space. please free up space\n");
-            fprintf(stderr,"iguana_ramchain_sizefunc.(%s): error.%ld writing len.%ld to fp.%p errno.%d\n",fname,err,(long)len,fp,errno);
-            fprintf(stderr,"probably out of disk space. please free up space\n");
-            sleep(1);
-            fseek(fp,startfpos,SEEK_SET);
-            if ( (err= fwrite(srcptr,1,len,fp)) == len )
-                printf("second write worked!\n");
-            else fpos = len = 0;
+#ifdef __PNACL__
+            int32_t i,numretries = 5;
+            for (i=0; i<numretries; i++)
+            {
+                sleep(i + 1);
+                fseek(fp,startfpos,SEEK_SET);
+                if ( (err= fwrite(srcptr,1,len,fp)) == len )
+                {
+                    printf("write.%d of %d worked!\n",i,numretries);
+                    break;
+                }
+            }
+            if ( i == numretries )
+#endif
+            {
+                fpos = len = 0;
+                printf("iguana_ramchain_offset.(%s): error.%ld writing len.%ld to fp.%p errno.%d\n",fname,err,(long)len,fp,errno);
+                printf("probably out of disk space. please free up space\n");
+                fprintf(stderr,"iguana_ramchain_sizefunc.(%s): error.%ld writing len.%ld to fp.%p errno.%d\n",fname,err,(long)len,fp,errno);
+                fprintf(stderr,"probably out of disk space. please free up space\n");
+            }
         }
         //else printf("fp.(%ld <- %d) ",ftell(fp),(int32_t)len);
     }
