@@ -392,6 +392,11 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             } else printf("UTXO gen.[%d] utxo error\n",bp->hdrsi);
         }
     }
+    while ( (n= iguana_utxofinished(coin)) < max )
+    {
+        //printf("helperid.%d utxofinished.%d vs %d\n",helperid,n,max);
+        sleep(3);
+    }
     for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
     {
         if ( (bp= coin->bundles[hdrsi]) == 0 )
@@ -401,11 +406,6 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             printf("validate.[%d] error. just refresh page or restart iguana\n",bp->hdrsi);
             exit(-1);
         }
-    }
-    while ( (n= iguana_utxofinished(coin)) < max )
-    {
-        //printf("helperid.%d utxofinished.%d vs %d\n",helperid,n,max);
-        sleep(3);
     }
     if ( convertflag == 0 )
     {
