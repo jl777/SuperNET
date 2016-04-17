@@ -361,7 +361,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
 {
     int32_t hdrsi,retval,n,max,incr,num = 0; struct iguana_bundle *bp;
     incr = IGUANA_NUMHELPERS;
-    if ( 0 && coin->PREFETCHLAG > 0 )
+    if ( coin->PREFETCHLAG > 0 )
     {
         if ( helperid != 0 )
             return(0);
@@ -396,7 +396,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
     }
     while ( (n= iguana_utxofinished(coin)) < max )
     {
-        printf("helperid.%d utxofinished.%d vs %d\n",helperid,n,max);
+        //printf("helperid.%d utxofinished.%d vs %d\n",helperid,n,max);
         sleep(3);
     }
     if ( convertflag == 0 )
