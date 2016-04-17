@@ -214,8 +214,8 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
         }
         if ( bits256_nonz(bp->hashes[bundlei]) != 0 && bits256_cmp(bp->hashes[bundlei],block->RO.hash2) != 0 )
         {
-            char str[65],str2[65];
-            printf("bp.[%d]->hashes[%d] mismatch %s != %s%s\n",bp->hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]),bits256_str(str2,block->RO.hash2),block->mainchain?".main":"");
+            //char str[65],str2[65];
+            //printf("bp.[%d]->hashes[%d] mismatch %s != %s%s\n",bp->hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]),bits256_str(str2,block->RO.hash2),block->mainchain?".main":"");
             iguana_blockunmark(coin,block,bp,bundlei,1);
             bp->blocks[bundlei] = 0;
             //if ( block->mainchain != 0 )
