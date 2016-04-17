@@ -280,7 +280,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
                 utxo = &spentchain->Uextras[spent_unspentind];
                 if ( utxo->spentflag == 0 )
                 {
-                    if ( fromheight/coin->chain->bundlesize >= coin->current->hdrsi )
+                    if ( 0 && fromheight/coin->chain->bundlesize >= coin->current->hdrsi )
                         printf("iguana_volatileupdate.%d: [%d] spent.(u%u %.8f pkind.%d) fromht.%d [%d] spendind.%d\n",incremental,spent_hdrsi,spent_unspentind,dstr(spent_value),spent_pkind,fromheight,fromheight/coin->chain->bundlesize,spendind);
                     utxo->prevunspentind = A2[spent_pkind].lastunspentind;
                     utxo->spentflag = 1;
@@ -1077,7 +1077,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                 //printf("ALLOC tmpspends.[%d]\n",bp->hdrsi);
                 ptr = 0;
             }
-            if ( bp == coin->current )
+            if ( 0 && bp == coin->current )
                 printf("spendvectors.[%d]: tmpspends.%p[%d] after += emit.%d X.%p\n",bp->hdrsi,bp->tmpspends,bp->numtmpspends,emit,bp->ramchain.Xspendinds);
         } else errs = -iguana_spendvectorsave(coin,bp,ramchain,ptr!=0?ptr:bp->tmpspends,emit,n);
     }
@@ -1120,7 +1120,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
     for (i=starti; i<=endi; i++)
     {
         now = (uint32_t)time(NULL);
-        if ( bp == coin->current )
+        if ( 0 && bp == coin->current )
             printf("hdrs.[%d] B[%d] 1st txidind.%d txn_count.%d firstvin.%d firstvout.%d\n",bp->hdrsi,i,B[i].firsttxidind,B[i].txn_count,B[i].firstvin,B[i].firstvout);
         if ( txidind != B[i].firsttxidind || spendind != B[i].firstvin )
         {
@@ -1135,7 +1135,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
                 printf("balancegen: txidind %u != %u T[txidind].firsttxidind || spendind %u != %u T[txidind].firstvin errs.%d\n",txidind,T[txidind].txidind,spendind,T[txidind].firstvin,errs);
                 return(-1);
             }
-            if ( bp == coin->current )
+            if ( 0 && bp == coin->current )
                 printf("starti.%d txidind.%d txi.%d numvins.%d spendind.%d\n",i,txidind,j,T[txidind].numvins,spendind);
             for (k=0; k<T[txidind].numvins && errs==0; k++,spendind++)
             {
@@ -1156,7 +1156,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
                         spent_hdrsi = spend->hdrsi;
                         h = spend->fromheight;
                     }
-                    if ( bp == coin->current )
+                    if ( 0 && bp == coin->current )
                         printf("external prevout.%d (emit.%d numX.%d) %p u%d p%d errs.%d spent_hdrsi.%d s%u\n",s->prevout,emit,numXspends,Xspendinds,spent_unspentind,spent_pkind,errs,spent_hdrsi,spendind);
                 }
                 else if ( s->prevout >= 0 )
@@ -1170,7 +1170,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
                         u = &spentU[spent_unspentind];
                         if ( (spent_pkind= u->pkind) != 0 && spent_pkind < rdata->numpkinds )
                             spent_value = u->value;
-                        if ( bp == coin->current )
+                        if ( 0 && bp == coin->current )
                             printf("internal spend.%d txidind.%d 1st.%d prevout.%d\n",spendind,txidind,T[txidind].firstvout,s->prevout);
                     }
                     else if ( i > 0 || j > 0 || k > 0 )
@@ -1183,7 +1183,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
                 spentbp = 0;
                 if ( (spentbp= coin->bundles[spent_hdrsi]) != 0 && spent_unspentind > 0 && spent_pkind > 0 )
                 {
-                    if ( bp == coin->current )
+                    if ( 0 && bp == coin->current )
                         printf("[%d] spendind.%u -> [%d] u%d\n",bp->hdrsi,spendind,spent_hdrsi,spent_unspentind);
                     if ( iguana_volatileupdate(coin,0,&spentbp->ramchain,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,h) < 0 )
                         errs++;
