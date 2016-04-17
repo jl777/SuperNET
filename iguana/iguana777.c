@@ -361,9 +361,9 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
 {
     int32_t hdrsi,retval,n,max,incr,num = 0; struct iguana_bundle *bp;
     incr = IGUANA_NUMHELPERS;
-    if ( coin->PREFETCHLAG > 0 )
+    if ( 1 && coin->PREFETCHLAG > 0 )
     {
-        incr /= 2;
+        incr = 1;
         if ( incr < 1 )
             incr = 1;
     }
@@ -382,7 +382,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
         {
             if ( (retval= iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,convertflag)) >= 0 )
             {
-                printf("spendvectors retval.%d\n",retval);
+                //printf("spendvectors retval.%d\n",retval);
                 if ( retval > 0 )
                 {
                     printf("GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - bp->startutxo);

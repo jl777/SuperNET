@@ -207,11 +207,12 @@ int32_t iguana_bundleinitmap(struct iguana_info *coin,struct iguana_bundle *bp,i
         coin->current = coin->bundles[0] = bp;
     if ( (block= iguana_blockfind("parse",coin,hash2)) != 0 )
         block->mainchain = 1, block->height = height;
-    bp->emitfinish = (uint32_t)time(NULL) + 1;
     if ( iguana_bundleload(coin,&bp->ramchain,bp,2) != 0 )
     {
         if ( coin->current != 0 && coin->current->hdrsi+1 == bp->hdrsi )
             coin->current = bp;
+        bp->emitfinish = (uint32_t)time(NULL) + 1;
+        //printf("[%d %u] ",bp->hdrsi,bp->emitfinish);
         return(0);
     }
     else
@@ -222,6 +223,7 @@ int32_t iguana_bundleinitmap(struct iguana_info *coin,struct iguana_bundle *bp,i
         //printf("init reqhdrs.%d\n",bp->bundleheight);
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(str),1);
         memset(&hash2,0,sizeof(hash2));
+        bp->emitfinish = 0;
         return(-1);
     }
 }
@@ -328,7 +330,7 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                                 printf("mismatched allhash.[%d]\n",bp->hdrsi);
                                 bp->allhash = allhash;
                             }
-                            if ( height > lastheight )
+                            if ( height >= lastheight )
                             {
                                 if ( iguana_bundleinitmap(coin,bp,height,hash2,hash1) == 0 )
                                     lastbundle = hash2, lastheight = height;

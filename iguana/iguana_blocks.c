@@ -527,6 +527,8 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                             {
                                 char str[65],str2[65];
                                 printf("ERROR: need to fix up bundle for height.%d (%p %p) (%s %s)\n",block->height,block,bp->blocks[block->height % coin->chain->bundlesize],bits256_str(str,block->RO.hash2),bits256_str(str2,bp->hashes[block->height % coin->chain->bundlesize]));
+                                if ( bp == coin->current && coin->RTheight > 0 )
+                                    coin->RTdatabad = 1;
                                 //iguana_bundleremove(coin,bp->hdrsi,0);
                                 //exit(-1);
                                 //getchar();

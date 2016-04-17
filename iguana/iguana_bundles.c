@@ -751,11 +751,17 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
                 }
                 else
 #endif
+                {
                     iguana_blockunmark(coin,block,bp,i,1);
+                    if ( requiredflag != 0 )
+                        printf("not ready altpath.(%d %d %d %d %d) [%d:%d]\n",block->txvalid == 0,block->fpipbits == 0 ,block->fpos < 0,(bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0),iguana_blockvalidate(coin,&valid,block,1) < 0,bp->hdrsi,i);
+                }
             }
         }
         else
         {
+            if ( requiredflag != 0 )
+                printf("no block at [%d:%d]\n",bp->hdrsi,i);
             iguana_blockunmark(coin,block,bp,i,0);
             if ( bp->queued != 0 )
             {
@@ -945,7 +951,7 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
             }
             else
             {
-                fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d error\n",coin,bp->hdrsi,bp->bundleheight);
+                //fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d error\n",coin,bp->hdrsi,bp->bundleheight);
                 bp->emitfinish = 0;
             }
             coin->emitbusy--;
@@ -994,7 +1000,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
     {
         if ( iguana_bundlefinalize(coin,bp,mem,memB) > 0 )
             return(0);
-        else printf("bundlefinalize not done.[%d]\n",bp->hdrsi);
+        //else printf("bundlefinalize not done.[%d]\n",bp->hdrsi);
         retval = 1;
     }
     else if ( bp->hdrsi == starti || (bp->hdrsi >= starti && bp->hdrsi <= starti+range) )

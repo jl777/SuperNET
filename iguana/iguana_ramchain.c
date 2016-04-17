@@ -629,7 +629,7 @@ void *_iguana_ramchain_setptrs(RAMCHAIN_PTRPS,struct iguana_ramchaindata *rdata)
 
 void *iguana_ramchain_offset(char *fname,void *dest,uint8_t *lhash,FILE *fp,uint64_t fpos,void *srcptr,uint64_t *offsetp,uint64_t len,uint64_t srcsize)
 {
-    long err;
+    long err,startfpos;
     void *destptr = (void *)(long)((long)dest + *offsetp);
     if ( (lhash != 0 || fp != 0) && (*offsetp + len) > srcsize )
     {
@@ -643,15 +643,18 @@ void *iguana_ramchain_offset(char *fname,void *dest,uint8_t *lhash,FILE *fp,uint
     }
     else if ( fp != 0 )
     {
+        startfpos = ftell(fp);
         if ( (err= fwrite(srcptr,1,len,fp)) != len )
         {
             printf("iguana_ramchain_offset.(%s): error.%ld writing len.%ld to fp.%p errno.%d\n",fname,err,(long)len,fp,errno);
             printf("probably out of disk space. please free up space\n");
             fprintf(stderr,"iguana_ramchain_sizefunc.(%s): error.%ld writing len.%ld to fp.%p errno.%d\n",fname,err,(long)len,fp,errno);
             fprintf(stderr,"probably out of disk space. please free up space\n");
-            fseek(fp,0,SEEK_SET);
-            len = 0;
-            fpos = 0;
+            sleep(1);
+            fseek(fp,startfpos,SEEK_SET);
+            if ( (err= fwrite(srcptr,1,len,fp)) == len )
+                printf("second write worked!\n");
+            else fpos = len = 0;
         }
         //else printf("fp.(%ld <- %d) ",ftell(fp),(int32_t)len);
     }
@@ -1018,8 +1021,8 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
         }
     }*/
 #ifdef __PNACL__
-    static portable_mutex_t mutex;
-    portable_mutex_lock(&mutex);
+    //static portable_mutex_t mutex;
+    //portable_mutex_lock(&mutex);
 #endif
     if ( (fp= fopen(fname,"wb")) == 0 )
         printf("iguana_ramchain_save: couldnt create.(%s) errno.%d\n",fname,errno);
@@ -1042,7 +1045,7 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
         fclose(fp);
     }
 #ifdef __PNACL__
-    portable_mutex_unlock(&mutex);
+    //portable_mutex_unlock(&mutex);
 #endif
    return(fpos);
 }
@@ -1252,7 +1255,7 @@ int32_t iguana_bundleremove(struct iguana_info *coin,int32_t hdrsi,int32_t tmpfi
     struct iguana_bundle *bp; int32_t i; char fname[1024],str[65];
     if ( hdrsi >= 0 && hdrsi < coin->bundlescount && (bp= coin->bundles[hdrsi]) != 0 )
     {
-        //printf("delete bundle.[%d]\n",hdrsi);
+        printf("delete bundle.[%d]\n",hdrsi);
         if ( tmpfiles != 0 )
         {
             for (i=0; i<bp->n; i++)
@@ -2002,7 +2005,7 @@ void iguana_blockunmark(struct iguana_info *coin,struct iguana_block *block,stru
         fname[0] = 0;
         if ( block != 0 && (checki= iguana_peerfname(coin,&hdrsi,GLOBAL_TMPDIR,fname,0,block->RO.hash2,zero,1,1)) != i )
         {
-            printf("checki.%d vs %d mismatch? %s\n",checki,i,fname);
+            //printf("checki.%d vs %d mismatch? %s\n",checki,i,fname);
         }
         if ( fname[0] != 0 )
             OS_removefile(fname,0);
@@ -2263,7 +2266,8 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
     {
         //printf("couldnt load bundle.%d\n",bp->bundleheight);
         memset(&bp->ramchain,0,sizeof(bp->ramchain));
-        iguana_bundleremove(coin,bp->hdrsi,0);
+        bp->emitfinish = 0;
+        //iguana_bundleremove(coin,bp->hdrsi,0);
     }
     if ( mapchain != 0 )
         coin->newramchain++;
