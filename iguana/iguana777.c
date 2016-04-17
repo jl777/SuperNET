@@ -699,14 +699,22 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     //    mult /= 2;
 #endif
     if ( (coin->startPEND= juint(json,"startpend")) == 0 )
-        coin->startPEND = IGUANA_MAXPENDBUNDLES*mult;
+    {
+        if ( strcmp("BTCD",coin->symbol) == 0 )
+            coin->startPEND = 500;
+        else coin->startPEND = IGUANA_MAXPENDBUNDLES*mult;
+    }
     if ( coin->startPEND > maxval*mult )
         coin->startPEND = maxval*mult;
     else if ( coin->startPEND < 2 )
         coin->startPEND = 2;
     coin->MAXBUNDLES = coin->startPEND;
     if ( (coin->endPEND= juint(json,"endpend")) == 0 )
-        coin->endPEND = IGUANA_MINPENDBUNDLES*mult;
+    {
+        if ( strcmp("BTCD",coin->symbol) == 0 )
+            coin->endPEND = 500;
+        else coin->endPEND = IGUANA_MINPENDBUNDLES*mult;
+    }
     if ( coin->endPEND > maxval*mult )
         coin->endPEND = maxval*mult;
     else if ( coin->endPEND < 2 )

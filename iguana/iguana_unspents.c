@@ -1666,7 +1666,8 @@ void iguana_RTramchainfree(struct iguana_info *coin)
     coin->RTheight = coin->balanceswritten * coin->chain->bundlesize;
     coin->RTgenesis = 0;
     iguana_ramchain_free(coin,&coin->RTramchain,1);
-    //iguana_mempurge(&coin->RTHASHMEM);
+    iguana_mempurge(&coin->RTmem);
+    iguana_mempurge(&coin->RThashmem);
 }
 
 void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,struct iguana_ramchain *R,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block)
@@ -1901,10 +1902,11 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         {
             printf("RTgenesis failed to verify n.%d vs %d\n",n,coin->RTheight);
             iguana_RTramchainfree(coin);
+            return(-1);
         }
     }
     if ( dest != 0 && flag != 0 )
-        printf("<<<< flag.%d RT.%d:%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",flag,coin->RTheight,n,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize);
+        printf("<<<< flag.%d RT.%d:%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",flag,coin->RTheight,n,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,dest->H.data!=0?(long)dest->H.data->allocsize:-1);
     return(flag);
 }
 

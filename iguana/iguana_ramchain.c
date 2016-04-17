@@ -1249,10 +1249,15 @@ int32_t iguana_ramchain_free(struct iguana_info *coin,struct iguana_ramchain *ra
 
 int32_t iguana_bundleremove(struct iguana_info *coin,int32_t hdrsi,int32_t tmpfiles)
 {
-    struct iguana_bundle *bp; char fname[1024],str[65];
+    struct iguana_bundle *bp; int32_t i; char fname[1024],str[65];
     if ( hdrsi >= 0 && hdrsi < coin->bundlescount && (bp= coin->bundles[hdrsi]) != 0 )
     {
         //printf("delete bundle.[%d]\n",hdrsi);
+        if ( tmpfiles != 0 )
+        {
+            for (i=0; i<bp->n; i++)
+                iguana_blockunmark(coin,bp->blocks[i],bp,i,1);
+        }
         iguana_ramchain_free(coin,&bp->ramchain,0);
         if ( iguana_bundlefname(coin,bp,fname) == 0 )
             OS_removefile(fname,0);
