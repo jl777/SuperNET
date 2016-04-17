@@ -363,7 +363,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
     incr = IGUANA_NUMHELPERS;
     if ( coin->PREFETCHLAG > 0 )
     {
-        incr /= 3;
+        incr /= 2;
         if ( incr < 1 )
             incr = 1;
     }
