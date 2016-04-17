@@ -219,7 +219,13 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
                         err = 0;
                     } else printf("ramchain map error2 balanceswritten %d vs %d hashes %x %x\n",coin->balanceswritten,numhdrsi,coin->balancehash.uints[0],balancehash.uints[0]);
                 } else printf("ramchain map error3 %s\n",fname);
-            } else printf("ramchain map error balanceswritten %d vs %d hashes %x %x\n",coin->balanceswritten,numhdrsi,coin->balancehash.uints[0],balancehash.uints[0]);
+            }
+            else
+            {
+                printf("ramchain map error balanceswritten %d vs %d hashes %x %x\n",coin->balanceswritten,numhdrsi,coin->balancehash.uints[0],balancehash.uints[0]);
+                err++;
+                OS_removefile(fname,0);
+            }
         }
         if ( err == 0 )
             break;
@@ -1304,7 +1310,7 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
                     crc = calc_crc32(crc,(void *)Aptr,(int32_t)(sizeof(*Aptr) * numpkinds));
                     crc = calc_crc32(crc,(void *)Uptr,(int32_t)(sizeof(*Uptr) * numunspents));
                     crc = calc_crc32(crc,(void *)bp->hashes,(int32_t)(sizeof(bp->hashes[0]) * bp->n));
-                } else printf("missing hdrs.[%d] data.%p num.(%u %d) %p %p\n",i,bp->ramchain.H.data,numpkinds,numunspents,Aptr,Uptr);
+                } //else printf("missing hdrs.[%d] data.%p num.(%u %d) %p %p\n",i,bp->ramchain.H.data,numpkinds,numunspents,Aptr,Uptr);
             }
         } else crc = filecrc;
         printf("millis %.0f from_ro.%d written.%d crc.%08x/%08x balancehash.(%s) vs (%s)\n",OS_milliseconds(),from_ro,coin->balanceswritten,crc,filecrc,bits256_str(str,balancehash),bits256_str(str2,coin->balancehash));
@@ -1783,6 +1789,14 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     int32_t lasti,hdrsi,orignumemit; struct iguana_ramchain R; struct iguana_ramchaindata RDATA;
     if ( bp->hdrsi <= 0 )
         return;
+    for (hdrsi=0; hdrsi<bp->hdrsi; hdrsi++)
+    {
+        if ( coin->bundles[hdrsi] != 0 )
+        {
+            iguana_volatilespurge(coin,&coin->bundles[hdrsi]->ramchain);
+            iguana_volatilesalloc(coin,&coin->bundles[hdrsi]->ramchain);
+        }
+    }
     bp->ramchain = coin->RTramchain;
     iguana_rdataset(&R,&RDATA,&coin->RTramchain);
     if ( (lasti= (coin->RTheight - ((coin->RTheight/bp->n)*bp->n))) >= bp->n-1 )
@@ -1813,8 +1827,6 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     double startmillis0; static double totalmillis0; static int32_t num0;
     struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,i,n,flag=0; bits256 hash2; struct iguana_peer *addr;
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
-    if ( coin->RTdatabad != 0 )
-        iguana_RTramchainfree(coin);
     if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && ((coin->RTheight <= coin->blocks.hwmchain.height && time(NULL) > bp->lastRT) || time(NULL) > bp->lastRT+10) )
     {
         if ( (block= bp->blocks[0]) == 0 || block->txvalid == 0 || block->mainchain == 0 )
@@ -1914,14 +1926,18 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         else
         {
             printf("RTgenesis failed to verify n.%d vs %d\n",n,coin->RTheight);
-            iguana_RTramchainfree(coin);
-            return(-1);
+            //iguana_RTramchainfree(coin);
+            //return(-1);
+            coin->RTdatabad = 1;
         }
     }
     if ( dest != 0 && flag != 0 )
         printf("<<<< flag.%d RT.%d:%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",flag,coin->RTheight,n,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,dest->H.data!=0?(long)dest->H.data->allocsize:-1);
     if ( coin->RTdatabad != 0 )
+    {
         iguana_RTramchainfree(coin);
+        iguana_RTramchainalloc("RTbundle",coin,bp);
+    }
     return(flag);
 }
 

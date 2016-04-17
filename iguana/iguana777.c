@@ -360,6 +360,8 @@ int32_t iguana_validated(struct iguana_info *coin)
 int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convertflag)
 {
     int32_t hdrsi,retval,n,max,incr,num = 0; struct iguana_bundle *bp;
+    if ( coin->spendvectorsaved > 1 )
+        return(0);
     incr = IGUANA_NUMHELPERS;
     if ( 0 && coin->PREFETCHLAG > 0 )
     {

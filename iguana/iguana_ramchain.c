@@ -1033,8 +1033,8 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
         }
     }*/
 #ifdef __PNACL__
-    //static portable_mutex_t mutex;
-    //portable_mutex_lock(&mutex);
+    static portable_mutex_t mutex;
+    portable_mutex_lock(&mutex);
 #endif
     if ( (fp= fopen(fname,"wb")) == 0 )
         printf("iguana_ramchain_save: couldnt create.(%s) errno.%d\n",fname,errno);
@@ -1057,7 +1057,7 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
         fclose(fp);
     }
 #ifdef __PNACL__
-    //portable_mutex_unlock(&mutex);
+    portable_mutex_unlock(&mutex);
 #endif
    return(fpos);
 }
