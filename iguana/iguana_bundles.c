@@ -207,7 +207,7 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
     {
         if ( bp->blocks[bundlei] != 0 && bp->blocks[bundlei] != block )
         {
-            printf("bp.[%d]->blocks[%d] mismatch %p != %p\n",bp->hdrsi,bundlei,bp->blocks[bundlei],block);
+            //printf("bp.[%d]->blocks[%d] mismatch %p != %p\n",bp->hdrsi,bundlei,bp->blocks[bundlei],block);
             iguana_blockunmark(coin,block,bp,bundlei,1);
             bp->blocks[bundlei] = 0;
             return(-1);

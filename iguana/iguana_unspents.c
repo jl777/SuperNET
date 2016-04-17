@@ -1064,7 +1064,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
             {
                 if ( bp->tmpspends != ramchain->Xspendinds && emit > 0 )
                 {
-                    printf("spendvectors: RT [%d] numtmpspends.%d vs emit.%d\n",bp->hdrsi,bp->numtmpspends,emit);
+                    printf("spendvectors: RT [%d] numtmpspends.%d vs starti.%d emit.%d\n",bp->hdrsi,bp->numtmpspends,starti,emit);
                     bp->tmpspends = myrealloc('x',bp->tmpspends,sizeof(*ptr)*bp->numtmpspends,sizeof(*ptr)*(bp->numtmpspends+emit));
                     memcpy(&bp->tmpspends[bp->numtmpspends],ptr,sizeof(*ptr)*emit);
                     bp->numtmpspends += emit;
@@ -1085,7 +1085,10 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
         myfree(ptr,sizeof(*ptr) * n);
     printf("UTXO [%4d].%-6d dur.%-2d [milli %8.3f] vectors %-6d err.%d [%5.2f%%] %7d %9s of %d\n",bp->hdrsi,bp->numtmpspends,(uint32_t)time(NULL)-starttime,OS_milliseconds()-startmillis,spendind,errs,100.*(double)emitted/(total+1),emit,mbstr(str,sizeof(*ptr) * emit),n);
     if ( errs != 0 )
+    {
+        printf("EXITING, restart iguana\n");
         exit(-1);
+    }
     return(-errs);
 }
 
@@ -1689,7 +1692,7 @@ void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,
             iguana_blockunmark(coin,block,bp,bundlei,1);
         } else printf("ramchainfile ptr.%p block.%p mapchaininit error\n",ptr,block);
         iguana_ramchain_free(coin,R,1);
-    } else printf("ramchainfile ptr.%p block.%p\n",ptr,block);
+    } //else printf("ramchainfile ptr.%p block.%p\n",ptr,block);
     return(0);
 }
 
@@ -1773,7 +1776,6 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     int32_t lasti,hdrsi,orignumemit; struct iguana_ramchain R; struct iguana_ramchaindata RDATA;
     bp->ramchain = coin->RTramchain;
     iguana_rdataset(&R,&RDATA,&coin->RTramchain);
-    //iguana_ramchain_prefetch(coin,&coin->RTramchain,0);
     if ( (lasti= (coin->RTheight - ((coin->RTheight/bp->n)*bp->n))) >= bp->n-1 )
         lasti = bp->n - 1;
     orignumemit = bp->numtmpspends;
@@ -1865,7 +1867,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                         if ( bits256_nonz(hash2) != 0 && (block == 0 || block->txvalid == 0) )
                         {
                             uint8_t serialized[512]; int32_t len; struct iguana_peer *addr;
-                            char str[65]; printf("RT error [%d:%d] %s %p\n",bp->hdrsi,i,bits256_str(str,hash2),block);
+                            //char str[65]; printf("RT error [%d:%d] %s %p\n",bp->hdrsi,i,bits256_str(str,hash2),block);
                             addr = coin->peers.ranked[rand() % 8];
                             if ( addr != 0 && addr->usock >= 0 && addr->dead == 0 && (len= iguana_getdata(coin,serialized,MSG_BLOCK,&hash2,1)) > 0 )
                                 iguana_send(coin,addr,serialized,len);
