@@ -80,7 +80,11 @@ char GLOBAL_HELPDIR[512] = "help";
 char GLOBAL_DBDIR[512] = "DB";
 char GLOBAL_VALIDATEDIR[512] = "DB/purgeable";
 char GLOBAL_CONFSDIR[512] = "confs";
+#ifdef __linux
+int32_t IGUANA_NUMHELPERS = 8;
+#else
 int32_t IGUANA_NUMHELPERS = 4;
+#endif
 #endif
 
 struct iguana_jsonitem { struct queueitem DL; struct supernet_info *myinfo; uint32_t fallback,expired,allocsize; char **retjsonstrp; char remoteaddr[64]; uint16_t port; char jsonstr[]; };
