@@ -90,7 +90,7 @@ void iguana_blocksetcounters(struct iguana_info *coin,struct iguana_block *block
 
 int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,char *fname,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t numblocks,int32_t dispflag)
 {
-    struct iguana_bundle *bp; int32_t bundlei; char str[65];
+    struct iguana_bundle *bp; int32_t bundlei,subdir; char str[65];
     *hdrsip = -1; ipbits = 0;
     fname[0] = 0;
     //if ( ipbits == 0 )
@@ -119,7 +119,14 @@ int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,
         }
     }
     else if ( strncmp(GLOBAL_DBDIR,dirname,strlen(GLOBAL_DBDIR)) == 0 )
-        sprintf(fname,"%s/%s/%s_%d.%u",dirname,coin->symbol,bits256_str(str,hash2),numblocks,ipbits>1?ipbits:*hdrsip);
+    {
+        subdir = bp->bundleheight / IGUANA_SUBDIRDIVISOR;
+        sprintf(fname,"%s/%s/%d",dirname,coin->symbol,subdir), OS_ensure_directory(fname);
+        sprintf(fname,"%s/%s/%d/%s_%d.%u",dirname,coin->symbol,subdir,bits256_str(str,hash2),numblocks,ipbits>1?ipbits:*hdrsip);
+//#ifndef __PNACL__
+//        sprintf(fname,"%s/%s/%s_%d.%u",dirname,coin->symbol,bits256_str(str,hash2),numblocks,ipbits>1?ipbits:*hdrsip);
+//#endif
+    }
     else sprintf(fname,"%s/%s.%u",dirname,bits256_str(str,hash2),bp->bundleheight);
     OS_compatible_path(fname);
     return(bundlei);
@@ -638,11 +645,13 @@ void *iguana_ramchain_offset(char *fname,void *dest,uint8_t *lhash,FILE *fp,uint
     {
         if ( (err= fwrite(srcptr,1,len,fp)) != len )
         {
-            printf("iguana_ramchain_sizefunc.(%s): error.%ld writing len.%ld to fp.%p errno.%d\n",fname,err,(long)len,fp,errno);
+            printf("iguana_ramchain_offset.(%s): error.%ld writing len.%ld to fp.%p errno.%d\n",fname,err,(long)len,fp,errno);
             printf("probably out of disk space. please free up space\n");
             fprintf(stderr,"iguana_ramchain_sizefunc.(%s): error.%ld writing len.%ld to fp.%p errno.%d\n",fname,err,(long)len,fp,errno);
             fprintf(stderr,"probably out of disk space. please free up space\n");
-            sleep(3);
+            fseek(fp,0,SEEK_SET);
+            len = 0;
+            fpos = 0;
         }
         //else printf("fp.(%ld <- %d) ",ftell(fp),(int32_t)len);
     }
@@ -1024,8 +1033,11 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
         iguana_ramchain_compact(fname,RAMCHAIN_ARG,&tmp,rdata,bp!=0?bp->n:1);
         if ( 0 && ramchain->expanded != 0 )
             printf("compact.%s: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d\n",fname,(int32_t)ramchain->H.data->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)ramchain->H.data->allocsize);
-        fwrite(&tmp,1,sizeof(tmp),fp);
-        iguana_ramchain_saveaction(fname,RAMCHAIN_ARG,fp,rdata,bp!=0?bp->n:1,ramchain->H.scriptoffset);
+        if ( fwrite(&tmp,1,sizeof(tmp),fp) != sizeof(tmp) )
+        {
+            printf("ramchain_save error writing header.%s\n",fname);
+            fpos = -1;
+        } else iguana_ramchain_saveaction(fname,RAMCHAIN_ARG,fp,rdata,bp!=0?bp->n:1,ramchain->H.scriptoffset);
         *rdata = tmp;
         fclose(fp);
     }
@@ -1240,7 +1252,7 @@ int32_t iguana_bundleremove(struct iguana_info *coin,int32_t hdrsi,int32_t tmpfi
     struct iguana_bundle *bp; char fname[1024],str[65];
     if ( hdrsi >= 0 && hdrsi < coin->bundlescount && (bp= coin->bundles[hdrsi]) != 0 )
     {
-        printf("delete bundle.[%d]\n",hdrsi);
+        //printf("delete bundle.[%d]\n",hdrsi);
         iguana_ramchain_free(coin,&bp->ramchain,0);
         if ( iguana_bundlefname(coin,bp,fname) == 0 )
             OS_removefile(fname,0);
@@ -1303,7 +1315,7 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
                     munmap(ptr,filesize);
                     ramchain->Xspendinds = 0;
                 }
-            } //else if ( iter == 1 ) printf("no Xspendfile.(%s)\n",fname);
+            } else if ( iter == 1 ) printf("no Xspendfile.(%s)\n",fname);
         }
     }
     return(ramchain->numXspends);
@@ -1982,7 +1994,8 @@ void iguana_blockunmark(struct iguana_info *coin,struct iguana_block *block,stru
     }
     if ( deletefile != 0 )
     {
-        if ( (checki= iguana_peerfname(coin,&hdrsi,GLOBAL_TMPDIR,fname,0,block->RO.hash2,zero,1,1)) != i )
+        fname[0] = 0;
+        if ( block != 0 && (checki= iguana_peerfname(coin,&hdrsi,GLOBAL_TMPDIR,fname,0,block->RO.hash2,zero,1,1)) != i )
         {
             printf("checki.%d vs %d mismatch? %s\n",checki,i,fname);
         }
@@ -2150,7 +2163,10 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     ramchain->H.data->scriptspace = scriptoffset;
     ramchain->H.stacksize = ramchain->H.data->stackspace = stacksize;
     if ( iguana_ramchain_save(coin,RAMCHAIN_ARG,0,firsthash2,zero,0,bp) < 0 )
-        printf("ERROR saving ramchain hdrsi.%d\n",hdrsi);
+    {
+        printf("ERROR saving ramchain hdrsi.%d, deleting and will regenerate\n",hdrsi);
+        iguana_mempurge(hashmem);
+    }
     else
     {
         //printf("DEST T.%d U.%d S.%d P.%d X.%d -> size.%ld Xoffset.%d\n",ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,(int32_t)ramchain->H.data->Xoffset);
@@ -2182,6 +2198,11 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
             iguana_ramchain_free(coin,mapchain,cmpflag);
         }
         iguana_mempurge(hashmem);
+    }
+    if ( retval < 0 )
+    {
+        printf("remove unmappable bundle.[%d]\n",bp->hdrsi);
+        iguana_bundleremove(coin,bp->hdrsi,0);
     }
     return(retval);
 }
@@ -2237,6 +2258,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
     {
         //printf("couldnt load bundle.%d\n",bp->bundleheight);
         memset(&bp->ramchain,0,sizeof(bp->ramchain));
+        iguana_bundleremove(coin,bp->hdrsi,0);
     }
     if ( mapchain != 0 )
         coin->newramchain++;

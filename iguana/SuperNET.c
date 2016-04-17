@@ -1267,9 +1267,14 @@ STRING_ARG(SuperNET,wif2priv,wif)
     return(jprint(retjson,1));
 }
 
-ZERO_ARGS(SuperNET,myipaddr)
+STRING_ARG(SuperNET,myipaddr,ipaddr)
 {
     cJSON *retjson = cJSON_CreateObject();
+    if ( myinfo->ipaddr[0] == 0 )
+    {
+        if ( is_ipaddr(ipaddr) != 0 )
+            strcpy(myinfo->ipaddr,ipaddr);
+    }
     jaddstr(retjson,"result",myinfo->ipaddr);
     return(jprint(retjson,1));
 }

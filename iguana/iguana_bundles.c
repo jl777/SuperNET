@@ -751,13 +751,17 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
                 }
                 else
 //#endif
-                    iguana_blockunmark(coin,block,bp,i,0);
+                    iguana_blockunmark(coin,block,bp,i,1);
             }
         }
-        else if ( bp->queued != 0 )
+        else
         {
-            printf("error getting block (%d:%d) %p\n",bp->hdrsi,i,block);
-            return(-1);
+            iguana_blockunmark(coin,block,bp,i,0);
+            if ( bp->queued != 0 )
+            {
+                printf("error getting block (%d:%d) %p\n",bp->hdrsi,i,block);
+                return(-1);
+            }
         }
     }
     return(ready);
@@ -880,12 +884,12 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
 }
 
 /*int32_t iguana_bundlefinish(struct iguana_info *coin,struct iguana_bundle *bp)
-{
-    struct iguana_bundle *prevbp; int32_t i;
-#ifdef IGUANA_SERIALIZE_SPENDVECTORGEN
-    if ( ((prevbp= coin->current) != 0 && prevbp->hdrsi < (coin->longestchain / coin->chain->bundlesize)) || coin->numemit < prevbp->hdrsi )
-        return(0);
-#endif
+ {
+ struct iguana_bundle *prevbp; int32_t i;
+ #ifdef IGUANA_SERIALIZE_SPENDVECTORGEN
+ if ( ((prevbp= coin->current) != 0 && prevbp->hdrsi < (coin->longestchain / coin->chain->bundlesize)) || coin->numemit < prevbp->hdrsi )
+ return(0);
+ #endif
     for (i=0; i<bp->hdrsi; i++)
         if ( (prevbp= coin->bundles[i]) == 0 || prevbp->emitfinish <= 1 || (prevbp->utxofinish == 0 && prevbp->tmpspends == 0) )
             break;
@@ -921,9 +925,10 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
             return(0);
         }
         bp->emitfinish = 1;
-        sleep(2); // make sure new incoming packet didnt overwrite
+        sleep(1); // make sure new incoming packet didnt overwrite
         if ( iguana_bundleready(coin,bp,1) == bp->n )
         {
+            sleep(1); // make sure new incoming packet didnt overwrite
             coin->emitbusy++;
             if ( iguana_bundlesaveHT(coin,mem,memB,bp,(uint32_t)time(NULL)) == 0 )
             {
@@ -950,8 +955,14 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
             bp->emitfinish = 0;
             printf("interloper! [%d] save interupted, will retry next iteration\n",bp->hdrsi);
         }
+        return(1);
     }
-    return(1);
+    else
+    {
+        printf("bundlefinalize.[%d] not ready\n",bp->hdrsi);
+        iguana_bundleremove(coin,bp->hdrsi,1);
+    }
+    return(0);
 }
 
 int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_bundle *bp,int32_t timelimit,int32_t lag)
@@ -976,13 +987,14 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
         iguana_autoextend(coin,bp);
     if ( 0 && bp->hdrsi == 0 )
         printf("ITER utxo.%u now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",bp->utxofinish,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
-    bp->nexttime = (uint32_t)time(NULL) + cbrt(bp->hdrsi - starti)/10;
+    bp->nexttime = (uint32_t)time(NULL) + ((bp->hdrsi > starti) ? cbrt(bp->hdrsi - starti)/10 : 0);
     if ( bp->hdrsi == coin->bundlescount-1 || (bp->numhashes < bp->n && bp->bundleheight < coin->longestchain-coin->chain->bundlesize) )
         iguana_bundlehdr(coin,bp,starti);
     else if ( bp->emitfinish == 0 && bp->numsaved >= bp->n )
     {
-        if ( iguana_bundlefinalize(coin,bp,mem,memB) >= 0 )
+        if ( iguana_bundlefinalize(coin,bp,mem,memB) > 0 )
             return(0);
+        else printf("bundlefinalize not done.[%d]\n",bp->hdrsi);
         retval = 1;
     }
     else if ( bp->hdrsi == starti || (bp->hdrsi >= starti && bp->hdrsi <= starti+range) )

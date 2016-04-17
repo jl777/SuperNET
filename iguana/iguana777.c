@@ -376,17 +376,23 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             return(-1);
         if ( coin->PREFETCHLAG > 0 )
             iguana_ramchain_prefetch(coin,&bp->ramchain,0);
-        iguana_bundlevalidate(coin,bp,0);
-        if ( (retval= iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,convertflag)) >= 0 )
+        if ( iguana_bundlevalidate(coin,bp,0) == bp->n )
         {
-            if ( retval > 0 )
+            if ( (retval= iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,convertflag)) >= 0 )
             {
-                printf("GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - bp->startutxo);
-                num++;
-            } // else printf("null retval from iguana_spendvectors.[%d]\n",bp->hdrsi);
-            bp->utxofinish = (uint32_t)time(NULL);
-            //iguana_balancesQ(coin,bp);
-        } else printf("UTXO gen.[%d] utxo error\n",bp->hdrsi);
+                if ( retval > 0 )
+                {
+                    printf("GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - bp->startutxo);
+                    num++;
+                }
+                bp->utxofinish = (uint32_t)time(NULL);
+            } else printf("UTXO gen.[%d] utxo error\n",bp->hdrsi);
+        }
+        else
+        {
+            printf("validate.[%d] error. just refresh page or restart iguana\n",bp->hdrsi);
+            exit(-1);
+        }
     }
     while ( (n= iguana_utxofinished(coin)) < max )
     {
@@ -399,7 +405,13 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
         {
             if ( (bp= coin->bundles[hdrsi]) == 0 )
                 return(-1);
-            iguana_convert(coin,bp,0);
+            if ( bp != coin->current )
+            {
+                iguana_ramchain_prefetch(coin,&bp->ramchain,0);
+                bp->converted = 1;
+                iguana_convert(coin,helperid,bp,0,0);
+                bp->converted = (uint32_t)time(NULL);
+            }
         }
     }
     if ( helperid == 0 )
@@ -428,7 +440,10 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
                 printf("validated.%d of %d\n",n,max);
             }
             for (; hdrsi<max; hdrsi++,coin->balanceswritten++)
-                iguana_balancegen(coin,0,coin->bundles[hdrsi],0,coin->chain->bundlesize-1);
+            {
+                iguana_ramchain_prefetch(coin,&coin->bundles[hdrsi]->ramchain,0);
+                iguana_balancegen(coin,0,coin->bundles[hdrsi],0,coin->chain->bundlesize-1,0);
+            }
             if ( iguana_balanceflush(coin,max) > 0 )
                 printf("balanceswritten.%d flushed bp->hdrsi %d vs %d coin->longestchain/coin->chain->bundlesize\n",coin->balanceswritten,bp->hdrsi,coin->longestchain/coin->chain->bundlesize);
         } else printf("error saving spendvectors\n");
@@ -665,7 +680,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->myservices = services;
     coin->initialheight = initialheight;
     coin->mapflags = mapflags;
-    mult = (strcmp("BTC",coin->symbol) != 0) ? 64 : 8;
+    mult = (strcmp("BTC",coin->symbol) != 0) ? 8 : 8;
     maxval = IGUANA_MAXPENDBUNDLES;
     coin->MAXMEM = juint(json,"RAM");
     if ( jobj(json,"prefetchlag") != 0 )
@@ -679,9 +694,9 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     //    maxval = (int32_t)coin->MAXMEM;
     coin->MAXMEM *= (1024L * 1024 * 1024);
 #ifdef __PNACL__
-    //maxval = 2 * (strcmp("BTC",coin->symbol) != 0) + 2;
-    if ( mult > 1 )
-        mult /= 2;
+    //maxval = 8;// * (strcmp("BTC",coin->symbol) != 0) + 8;
+    //if ( mult > 1 )
+    //    mult /= 2;
 #endif
     if ( (coin->startPEND= juint(json,"startpend")) == 0 )
         coin->startPEND = IGUANA_MAXPENDBUNDLES*mult;

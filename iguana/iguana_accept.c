@@ -164,3 +164,75 @@ int32_t iguana_pendingaccept(struct iguana_info *coin)
     }
     return(0);
 }*/
+
+
+int32_t iguana_peerhdrrequest(struct iguana_info *coin,struct iguana_peer *addr,bits256 hash2)
+{
+    struct iguana_txid *tx,T; int32_t len=0,i,height,retval=-1; struct iguana_block *block; struct iguana_msgblock msgB; uint8_t *serialized; bits256 checkhash2;
+    if ( (tx= iguana_txidfind(coin,&height,&T,hash2,coin->bundlescount-1)) != 0 )
+    {
+        serialized = calloc(coin->chain->bundlesize,sizeof(msgB));
+        for (i=0; i<coin->chain->bundlesize; i++)
+        {
+            if ( (block= iguana_blockptr("peerhdr",coin,height + i)) != 0 )
+            {
+                iguana_blockunconv(&msgB,block,1);
+                len += iguana_rwblock(1,&checkhash2,&serialized[sizeof(struct iguana_msghdr) + len],&msgB);
+                if ( bits256_cmp(checkhash2,block->RO.hash2) != 0 )
+                {
+                    char str[65],str2[65];
+                    printf("iguana_peerhdrrequest blockhash.%d error (%s) vs (%s)\n",height+i,bits256_str(str,checkhash2),bits256_str(str2,block->RO.hash2));
+                    free(serialized);
+                    return(-1);
+                }
+            }
+        }
+        if ( i == coin->chain->bundlesize || (i > 0 && height/coin->chain->bundlesize >= coin->blocks.hwmchain.height/coin->chain->bundlesize) )
+            retval = iguana_queue_send(coin,addr,0,serialized,"headers",len,0,0);
+        free(serialized);
+    }
+    return(retval);
+}
+
+int32_t iguana_peerinvrequest(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *space,int32_t max)
+{
+    int32_t i,type,len = 0; uint64_t x; struct iguana_bundle *bp;
+    x = coin->bundlescount;
+    len += iguana_rwvarint(1,&space[sizeof(struct iguana_msghdr) + len],&x);
+    for (i=0; i<x; i++)
+    {
+        if ( (bp= coin->bundles[i]) != 0 )
+        {
+            type = MSG_BLOCK;
+            len += iguana_rwnum(1,&space[sizeof(struct iguana_msghdr) + len],sizeof(uint32_t),&type);
+            len += iguana_rwbignum(1,&space[sizeof(struct iguana_msghdr) + len],sizeof(bits256),bp->hashes[0].bytes);
+        }
+    }
+    return(len);
+}
+
+int32_t iguana_peeraddrrequest(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *space,int32_t spacesize)
+{
+    int32_t i,iter,n,max,sendlen; uint64_t x; struct iguana_msghdr H; struct iguana_msgaddress A; struct iguana_peer *tmpaddr;
+    sendlen = 0;
+    max = (IGUANA_MINPEERS + IGUANA_MAXPEERS) / 2;
+    if ( max > coin->peers.numranked )
+        max = coin->peers.numranked;
+    x = 0;
+    sendlen = iguana_rwvarint(1,&space[sizeof(H)],&x);
+    for (iter=0; iter<2; iter++)
+    {
+        for (i=n=0; i<max; i++)
+        {
+            memset(&A,0,sizeof(A));
+            if ( (tmpaddr= coin->peers.ranked[i]) != 0 && ((iter == 0 && tmpaddr->supernet != 0) || (iter == 1 && tmpaddr->supernet == 0)) )
+            {
+                sendlen += iguana_rwaddr(1,&space[sizeof(H) + sendlen],&tmpaddr->A,(int32_t)tmpaddr->protover);
+                x++;
+            }
+        }
+    }
+    sendlen = iguana_rwvarint(1,&space[sizeof(H)],&x);
+    printf("addrrequest: sendlen.%d x.%d\n",sendlen,(int32_t)x);
+    return(sendlen);
+}

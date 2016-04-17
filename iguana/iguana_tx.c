@@ -163,8 +163,8 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
     *txidp = bits256_doublesha256(txidstr,serialized,len);
     if ( memcmp(txidp,tx->txid.bytes,sizeof(*txidp)) != 0 )
     {
-        for (i=0; i<len; i++)
-            printf("%02x",serialized[i]);
+        //for (i=0; i<len; i++)
+        //    printf("%02x",serialized[i]);
         char str[65],str2[65]; printf("\nrw.%d numvins.%d numvouts.%d error generating txbytes txid %s vs %s\n",rwflag,numvins,numvouts,bits256_str(str,*txidp),bits256_str(str2,tx->txid));
         return(len);
     }
@@ -239,51 +239,6 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
         }
     } else printf("iguana_peerblockrequest: cant find %s\n",bits256_str(str,hash2));
     return(-1);
-}
-
-int32_t iguana_peerhdrrequest(struct iguana_info *coin,struct iguana_peer *addr,bits256 hash2)
-{
-    struct iguana_txid *tx,T; int32_t len=0,i,height,retval=-1; struct iguana_block *block; struct iguana_msgblock msgB; uint8_t *serialized; bits256 checkhash2;
-    if ( (tx= iguana_txidfind(coin,&height,&T,hash2,coin->bundlescount-1)) != 0 )
-    {
-        serialized = calloc(coin->chain->bundlesize,sizeof(msgB));
-        for (i=0; i<coin->chain->bundlesize; i++)
-        {
-            if ( (block= iguana_blockptr("peerhdr",coin,height + i)) != 0 )
-            {
-                iguana_blockunconv(&msgB,block,1);
-                len += iguana_rwblock(1,&checkhash2,&serialized[sizeof(struct iguana_msghdr) + len],&msgB);
-                if ( bits256_cmp(checkhash2,block->RO.hash2) != 0 )
-                {
-                    char str[65],str2[65];
-                    printf("iguana_peerhdrrequest blockhash.%d error (%s) vs (%s)\n",height+i,bits256_str(str,checkhash2),bits256_str(str2,block->RO.hash2));
-                    free(serialized);
-                    return(-1);
-                }
-            }
-        }
-        if ( i == coin->chain->bundlesize || (i > 0 && height/coin->chain->bundlesize >= coin->blocks.hwmchain.height/coin->chain->bundlesize) )
-            retval = iguana_queue_send(coin,addr,0,serialized,"headers",len,0,0);
-        free(serialized);
-    }
-    return(retval);
-}
-
-int32_t iguana_peerinvdata(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *space,int32_t max)
-{
-    int32_t i,type,len = 0; uint64_t x; struct iguana_bundle *bp;
-    x = coin->bundlescount;
-    len += iguana_rwvarint(1,&space[sizeof(struct iguana_msghdr) + len],&x);
-    for (i=0; i<x; i++)
-    {
-        if ( (bp= coin->bundles[i]) != 0 )
-        {
-            type = MSG_BLOCK;
-            len += iguana_rwnum(1,&space[sizeof(struct iguana_msghdr) + len],sizeof(uint32_t),&type);
-            len += iguana_rwbignum(1,&space[sizeof(struct iguana_msghdr) + len],sizeof(bits256),bp->hashes[0].bytes);
-        }
-    }
-    return(len);
 }
 
 cJSON *iguana_blockjson(struct iguana_info *coin,struct iguana_block *block,int32_t txidsflag)

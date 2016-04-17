@@ -40,7 +40,7 @@ STRING_ARG(iguana,validate,activecoin)
 
 STRING_ARG(iguana,removecoin,activecoin)
 {
-    struct iguana_bundle *bp; int32_t i; char fname[1024];
+    struct iguana_bundle *bp; int32_t i,height; char fname[1024];
     if ( (coin= iguana_coinfind(activecoin)) != 0 )
     {
         coin->active = 0;
@@ -61,7 +61,12 @@ STRING_ARG(iguana,removecoin,activecoin)
                 iguana_bundleremove(coin,bp->hdrsi,1);
             }
         }
-        sprintf(fname,"%s/%s/*",GLOBAL_DBDIR,coin->symbol), OS_removefile(fname,0);
+        for (height=0; height<coin->longestchain; height+=IGUANA_SUBDIRDIVISOR)
+        {
+            sprintf(fname,"%s/%s/%d",GLOBAL_DBDIR,coin->symbol,height/IGUANA_SUBDIRDIVISOR);
+            OS_remove_directory(fname);
+        }
+        sprintf(fname,"%s/%s/*",GLOBAL_DBDIR,coin->symbol), OS_remove_directory(fname);
     }
     return(clonestr("{\"error\":\"no active coin\"}"));
 }
