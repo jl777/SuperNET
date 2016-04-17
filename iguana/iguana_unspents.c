@@ -1076,7 +1076,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
             {
                 if ( bp->tmpspends != ramchain->Xspendinds && emit > 0 )
                 {
-                    printf("spendvectors: RT [%d] numtmpspends.%d vs starti.%d emit.%d\n",bp->hdrsi,bp->numtmpspends,starti,emit);
+                    // printf("spendvectors: RT [%d] numtmpspends.%d vs starti.%d emit.%d\n",bp->hdrsi,bp->numtmpspends,starti,emit);
                     bp->tmpspends = myrealloc('x',bp->tmpspends,sizeof(*ptr)*bp->numtmpspends,sizeof(*ptr)*(bp->numtmpspends+emit));
                     memcpy(&bp->tmpspends[bp->numtmpspends],ptr,sizeof(*ptr)*emit);
                     bp->numtmpspends += emit;
@@ -1095,7 +1095,8 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
     }
     if ( ptr != 0 )
         myfree(ptr,sizeof(*ptr) * n);
-    printf("UTXO [%4d].%-6d dur.%-2d [milli %8.3f] vectors %-6d err.%d [%5.2f%%] %7d %9s of %d\n",bp->hdrsi,bp->numtmpspends,(uint32_t)time(NULL)-starttime,OS_milliseconds()-startmillis,spendind,errs,100.*(double)emitted/(total+1),emit,mbstr(str,sizeof(*ptr) * emit),n);
+    if ( bp != coin->current )
+        printf("UTXO [%4d].%-6d dur.%-2d [milli %8.3f] vectors %-6d err.%d [%5.2f%%] %7d %9s of %d\n",bp->hdrsi,bp->numtmpspends,(uint32_t)time(NULL)-starttime,OS_milliseconds()-startmillis,spendind,errs,100.*(double)emitted/(total+1),emit,mbstr(str,sizeof(*ptr) * emit),n);
     if ( errs != 0 )
     {
         printf("EXITING, restart iguana\n");
@@ -1131,7 +1132,8 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
     txidind = B[starti].firsttxidind;
     spendind = B[starti].firstvin;
     emit = startemit;
-    fprintf(stderr,"BALANCEGEN.[%d] %p[%d] starti.%d s%d <-> endi.%d s%d startemit.%d\n",bp->hdrsi,Xspendinds,numXspends,starti,spendind,endi,B[endi].firstvin+B[endi].numvins,startemit);
+    if ( bp != coin->current )
+        fprintf(stderr,"BALANCEGEN.[%d] %p[%d] starti.%d s%d <-> endi.%d s%d startemit.%d\n",bp->hdrsi,Xspendinds,numXspends,starti,spendind,endi,B[endi].firstvin+B[endi].numvins,startemit);
     for (i=starti; i<=endi; i++)
     {
         now = (uint32_t)time(NULL);
@@ -1681,8 +1683,8 @@ void iguana_RTramchainfree(struct iguana_info *coin)
     coin->RTheight = coin->balanceswritten * coin->chain->bundlesize;
     coin->RTgenesis = 0;
     iguana_ramchain_free(coin,&coin->RTramchain,1);
-    iguana_mempurge(&coin->RTmem);
-    iguana_mempurge(&coin->RThashmem);
+    coin->RTmem.used = 0;
+    coin->RThashmem.used = 0;
     coin->RTdatabad = 0;
 }
 
@@ -1738,6 +1740,7 @@ void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_b
     if ( coin->RTramchain.H.data == 0 )
     {
         printf("ALLOC RTramchain\n");
+        iguana_RTramchainfree(coin);
         iguana_ramchainopen(fname,coin,dest,&coin->RTmem,&coin->RThashmem,bp->bundleheight,bp->hashes[0]);
         dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
         dest->externalind = dest->H.stacksize = 0;
@@ -1827,12 +1830,13 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     double startmillis0; static double totalmillis0; static int32_t num0;
     struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,i,n,flag=0; bits256 hash2; struct iguana_peer *addr;
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
-    if ( coin->RTdatabad != 0 )
+    bp = coin->current;
+    if ( bp != 0 && coin->RTdatabad != 0 )
     {
         iguana_RTramchainfree(coin);
         iguana_RTramchainalloc("RTbundle",coin,bp);
     }
-    if ( (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && ((coin->RTheight <= coin->blocks.hwmchain.height && time(NULL) > bp->lastRT) || time(NULL) > bp->lastRT+10) )
+    if ( bp != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && ((coin->RTheight <= coin->blocks.hwmchain.height && time(NULL) > bp->lastRT) || time(NULL) > bp->lastRT+10) )
     {
         if ( (block= bp->blocks[0]) == 0 || block->txvalid == 0 || block->mainchain == 0 )
         {
@@ -1927,7 +1931,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     n = 0;
     if ( dest != 0 && flag != 0 && coin->RTheight >= coin->longestchain )
     {
-        printf("ramchainiterate.[%d] ave %.2f micros, total %.2f seconds starti.%d num.%d\n",num0,(totalmillis0*1000.)/num0,totalmillis0/1000.,coin->RTstarti,coin->RTheight%bp->n);
+        //printf("ramchainiterate.[%d] ave %.2f micros, total %.2f seconds starti.%d num.%d\n",num0,(totalmillis0*1000.)/num0,totalmillis0/1000.,coin->RTstarti,coin->RTheight%bp->n);
         if ( (n= iguana_walkchain(coin,1)) == coin->RTheight-1 )
         {
             //printf("RTgenesis verified\n");
@@ -1955,7 +1959,8 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
 int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,int32_t forceflag)
 {
     static int32_t totalerrs,totalvalidated;
-    FILE *fp; char fname[1024]; uint8_t *blockspace; int32_t i,max,len,errs = 0; int64_t total = 0;
+    FILE *fp; char fname[1024]; uint8_t *blockspace; uint32_t now = (uint32_t)time(NULL);
+    int32_t i,max,len,errs = 0; int64_t total = 0;
     if ( bp->validated <= 1 || forceflag != 0 )
     {
         sprintf(fname,"%s/%s/validated/%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
@@ -1988,7 +1993,7 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
             }
             free(blockspace);
             bp->validated = (uint32_t)time(NULL);
-            printf("VALIDATED.[%d] errs.%d total.%lld %u | total errs.%d validated.%d\n",bp->bundleheight,errs,(long long)total,bp->validated,totalerrs,totalvalidated);
+            printf("VALIDATED.[%d] ht.%d duration.%d errs.%d total.%lld %u | total errs.%d validated.%d\n",bp->hdrsi,bp->bundleheight,bp->validated - now,errs,(long long)total,bp->validated,totalerrs,totalvalidated);
         }
         if ( errs == 0 && fp == 0 )
         {

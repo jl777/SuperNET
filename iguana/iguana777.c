@@ -399,16 +399,6 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
         //printf("helperid.%d utxofinished.%d vs %d\n",helperid,n,max);
         sleep(3);
     }
-    for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
-    {
-        if ( (bp= coin->bundles[hdrsi]) == 0 )
-            return(-1);
-        if ( iguana_bundlevalidate(coin,bp,0) != bp->n )
-        {
-            printf("validate.[%d] error. just refresh page or restart iguana\n",bp->hdrsi);
-            exit(-1);
-        }
-    }
     if ( convertflag == 0 )
     {
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
@@ -444,15 +434,16 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             if ( coin->origbalanceswritten <= 1 )
                 hdrsi = 0;
             else hdrsi = coin->origbalanceswritten;
-            while ( (n= iguana_validated(coin)) < max )
+            /*while ( (n= iguana_validated(coin)) < max )
             {
                 sleep(3);
                 printf("validated.%d of %d\n",n,max);
-            }
+            }*/
             for (; hdrsi<max; hdrsi++,coin->balanceswritten++)
             {
                 iguana_ramchain_prefetch(coin,&coin->bundles[hdrsi]->ramchain,0);
-                iguana_balancegen(coin,0,coin->bundles[hdrsi],0,coin->chain->bundlesize-1,0);
+                if ( iguana_balancegen(coin,0,coin->bundles[hdrsi],0,coin->chain->bundlesize-1,0) == 0 )
+                    bp->balancefinish = (uint32_t)time(NULL);
             }
             if ( iguana_balanceflush(coin,max) > 0 )
                 printf("balanceswritten.%d flushed bp->hdrsi %d vs %d coin->longestchain/coin->chain->bundlesize\n",coin->balanceswritten,bp->hdrsi,coin->longestchain/coin->chain->bundlesize);
@@ -465,7 +456,16 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
         //printf("helperid.%d waiting for spendvectorsaved.%u\n",helperid,coin->spendvectorsaved);
         sleep(3);
     }
-    printf("helper.%d finished utxogen\n",helperid);
+    for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
+    {
+        if ( (bp= coin->bundles[hdrsi]) == 0 )
+            return(-1);
+        if ( iguana_bundlevalidate(coin,bp,0) != bp->n )
+        {
+            printf("validate.[%d] error. just refresh page or restart iguana\n",bp->hdrsi);
+            exit(-1);
+        }
+    }
     return(num);
 }
 

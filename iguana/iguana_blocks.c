@@ -371,7 +371,7 @@ int32_t iguana_walkchain(struct iguana_info *coin,int32_t skipflag)
             height--;
         }
     }
-    printf("walk skip.%d n.%d hwm.%d %s\n",skipflag,n,coin->blocks.hwmchain.height,bits256_str(str,coin->blocks.hwmchain.RO.hash2));
+    //printf("walk skip.%d n.%d hwm.%d %s\n",skipflag,n,coin->blocks.hwmchain.height,bits256_str(str,coin->blocks.hwmchain.RO.hash2));
     return(n);
 }
 
