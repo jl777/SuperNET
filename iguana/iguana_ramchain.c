@@ -1315,7 +1315,7 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
                     munmap(ptr,filesize);
                     ramchain->Xspendinds = 0;
                 }
-            } else if ( iter == 1 ) printf("no Xspendfile.(%s)\n",fname);
+            } //else if ( iter == 1 ) printf("no Xspendfile.(%s)\n",fname);
         }
     }
     return(ramchain->numXspends);

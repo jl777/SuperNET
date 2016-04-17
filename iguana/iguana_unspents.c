@@ -1342,7 +1342,7 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
     {
         if ( (bp= coin->bundles[i]) == 0 || bp->utxofinish <= 1 )
         {
-            printf("initfinal break: bp.%p or utxofinish.%u\n",bp,bp!=0?bp->utxofinish:-1);
+            printf("initfinal break.[%d]: bp.%p or utxofinish.%u\n",i,bp,bp!=0?bp->utxofinish:-1);
             break;
         }
     }
