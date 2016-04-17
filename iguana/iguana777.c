@@ -720,8 +720,8 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( (coin->minconfirms = minconfirms) == 0 )
         coin->minconfirms = (strcmp(symbol,"BTC") == 0) ? 3 : 10;
     printf("ensure directories maxval.%d mult.%d start.%d end.%d\n",maxval,mult,coin->startPEND,coin->endPEND);
-    sprintf(dirname,"%s/ro/%s",GLOBAL_DBDIR,symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/ro",GLOBAL_DBDIR), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/ro/%s",GLOBAL_DBDIR,symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/%s",GLOBAL_DBDIR,symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/%s/validated",GLOBAL_DBDIR,symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/%s/accounts",GLOBAL_DBDIR,symbol), OS_ensure_directory(dirname);
