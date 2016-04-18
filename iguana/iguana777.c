@@ -363,7 +363,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
     if ( coin->spendvectorsaved > 1 )
         return(0);
     incr = IGUANA_NUMHELPERS;
-    if ( 0 && coin->PREFETCHLAG > 0 )
+    if ( 1 && coin->PREFETCHLAG > 0 )
     {
         incr = 1;
         if ( incr < 1 )
