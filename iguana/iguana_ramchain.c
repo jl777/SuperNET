@@ -2306,7 +2306,7 @@ int64_t iguana_ramchainopen(char *fname,struct iguana_info *coin,struct iguana_r
     //B = 0, Ux = 0, Sx = 0, P = 0, A = 0, X = 0, Kspace = TXbits = PKbits = 0, U = 0, S = 0, T = 0;
     mem->alignflag = sizeof(uint32_t);
     hashmem->alignflag = sizeof(uint32_t);
-    scriptspace = numexternaltxids = numtxids = coin->chain->bundlesize * 2;
+    scriptspace = numexternaltxids = numtxids = coin->chain->bundlesize * 1.5;
     numunspents = numspends = numpkinds = numtxids * 2;
     for (i=0; i<coin->bundlescount; i++)
         if ( (bp= coin->bundles[i]) != 0 && (rdata= bp->ramchain.H.data) != 0 )
