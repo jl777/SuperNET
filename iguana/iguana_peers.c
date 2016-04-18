@@ -33,7 +33,7 @@ struct iguana_iAddr *_iguana_hashset(struct iguana_info *coin,uint32_t ipbits,in
                 ptr = iguana_memalloc(mem,allocsize,1);
             else ptr = mycalloc('t',1,allocsize);
             if ( ptr == 0 )
-                printf("fatal alloc error in hashset\n"), exit(-1);
+                printf("fatal alloc errorA in hashset\n"), exit(-1);
             //printf("ptr.%p allocsize.%d key.%p keylen.%d itemind.%d\n",ptr,allocsize,key,keylen,itemind);
             ptr->hh.itemind = itemind;
             ptr->ipbits = ipbits;
@@ -128,7 +128,7 @@ uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana
                     {
                         ptr = mycalloc('t',1,sizeof(*ptr));
                         if ( ptr == 0 )
-                            printf("fatal alloc error in hashset\n"), exit(-1);
+                            printf("fatal alloc errorB in hashset\n"), exit(-1);
                         ptr->hh.itemind = m;
                         ptr->ipbits = tmp.ipbits;
                         HASH_ADD(hh,coin->iAddrs,ipbits,sizeof(ipbits),ptr);

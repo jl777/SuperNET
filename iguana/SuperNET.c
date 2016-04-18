@@ -678,7 +678,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,ui
     //printf("SuperNET_JSON.(%s) remote.(%s)\n",jprint(json,0),remoteaddr!=0?remoteaddr:"");
     destflag = SuperNET_destination(myinfo,&destipbits,&category,&subhash,&maxdelay,json,remoteaddr);
     //printf("destflag.%d\n",destflag);
-    if ( method != 0 && (hexmsg= jstr(json,"hexmsg")) == 0 && strcmp(method,"bitcoinrpc") != 0 && (message= jstr(json,"message")) == 0 )
+    if ( method != 0 && (hexmsg= jstr(json,"hexmsg")) == 0 && strcmp(agent,"bitcoinrpc") != 0 && (message= jstr(json,"message")) == 0 )
     {
         jsonstr = jprint(json,0);
         hexlen = (int32_t)strlen(jsonstr);
@@ -702,7 +702,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,ui
     }
     if ( (destflag & SUPERNET_ISMINE) != 0 && agent != 0 && method != 0 )
     {
-        if ( newflag == 0 && hexmsg != 0 && SuperNET_hexmsgfind(myinfo,category,subhash,hexmsg,0) < 0 )
+        if ( strcmp(agent,"bitcoinrpc") != 0 && newflag == 0 && hexmsg != 0 && SuperNET_hexmsgfind(myinfo,category,subhash,hexmsg,0) < 0 )
             SuperNET_hexmsgadd(myinfo,category,subhash,hexmsg,tai_now(),remoteaddr);
         if ( (retstr= SuperNET_processJSON(myinfo,json,remoteaddr,port)) != 0 )
         {

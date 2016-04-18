@@ -106,3 +106,25 @@ iguana can be invoked with a command line argument. if it is a name of a file, i
 "exchanges" -> { "name":"<name of exchange>", ... }
     "apikey", "apisecret", "userid", "tradepassword" these are as expected
     "pollgap" -> gap between each access to exchange for getting prices
+    
+    **********
+    user feedback:
+    A Note on Installation from pebwindkraft at bitco.in
+=======================
+Though I had xcode installed, aclocal didn’t work. I installed homebrew, and then:
+# brew install autoconf
+# brew install automake
+# brew install gmp
+
+2.) libsecp256
+it complained, that libsecp256 was not there in includes, so I linked it.
+Loretta:/Users/volker/SuperNET/includes # ln -s ../osx/libsecp256k1 .
+
+3.) I had to change ulimit
+During the syncing, I have many, many messages like this:
+>>
+>> cant create.(tmp/BTC/252000/.tmpmarker) errno.24 Too many open files
+>> cant create.(tmp/BTC/18000/.tmpmarker) errno.24 Too many open files
+>>
+Loretta:/Users/volker/SuperNET # ulimit -n 2048
+

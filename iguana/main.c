@@ -210,7 +210,7 @@ char *SuperNET_jsonstr(struct supernet_info *myinfo,char *jsonstr,char *remotead
     if ( (json= cJSON_Parse(jsonstr)) != 0 )
     {
         method = jstr(json,"method");
-        if ( (agent= jstr(json,"agent")) != 0 && method != 0 )
+        if ( (agent= jstr(json,"agent")) != 0 && method != 0 && jobj(json,"params") == 0 )
             retstr = SuperNET_parser(myinfo,agent,method,json,remoteaddr);
         else if ( method != 0 && is_bitcoinrpc(myinfo,method,remoteaddr) >= 0 )
             retstr = iguana_bitcoinRPC(myinfo,method,json,remoteaddr,port);

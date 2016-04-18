@@ -979,8 +979,9 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
 //#undef IGUANA_ARGS
     
 #include "../includes/iguana_apiundefs.h"
-    
-    return(clonestr("{\"error\":\"illegal bitcoinrpc method or missing coin\"}"));
+    char errstr[512];
+    sprintf(errstr,"{\"error\":\"unsupported call\",\"agent\":\"%s\",\"method\":\"%s\"}",agentstr,method);
+    return(clonestr(errstr));
 }
 
 

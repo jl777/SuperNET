@@ -52,7 +52,7 @@ struct iguana_kvitem *iguana_hashsetPT(struct iguana_ramchain *ramchain,int32_t 
             printf("alloc.%d\n",allocsize);
         }
         if ( ptr == 0 )
-            printf("fatal alloc error in hashset\n"), exit(-1);
+            printf("fatal alloc errorC in hashset\n"), exit(-1);
         if ( 0 && ramchain->expanded && selector == 'T' )
             printf("hashmem.%p selector.%c added.(%s) itemind.%x ptr.%p\n",ramchain->hashmem,selector,str,itemind,ptr);
         if ( selector == 'T' )

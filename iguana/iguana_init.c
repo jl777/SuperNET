@@ -451,7 +451,7 @@ void iguana_coinpurge(struct iguana_info *coin)
 
 struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialheight,int32_t mapflags)
 {
-    FILE *fp; char fname[512],*symbol; int32_t iter; long fpos; bits256 lastbundle;
+    FILE *fp; char fname[512],*symbol; int32_t iter; long fpos; bits256 lastbundle; struct supernet_info *myinfo = SuperNET_MYINFO(0);
     coin->sleeptime = 10000;
     symbol = coin->symbol;
     if ( iguana_peerslotinit(coin,&coin->internaladdr,IGUANA_MAXPEERS,calc_ipbits("127.0.0.1:7777")) < 0 )
@@ -466,7 +466,7 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
         coin->longestchain = 1;
     memset(&coin->blocks.hwmchain,0,sizeof(coin->blocks.hwmchain));
     coin->blocks.hwmchain.height = 0;
-    printf("MYSERVICES.%llx\n",(long long)coin->myservices);
+    printf("%s MYSERVICES.%llx\n",coin->symbol,(long long)coin->myservices);
     if ( (coin->myservices & NODE_NETWORK) != 0 && coin->peers.acceptloop == 0 && coin->peers.localaddr == 0 )
     {
         coin->peers.acceptloop = malloc(sizeof(pthread_t));
@@ -475,6 +475,17 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
             free(coin->peers.acceptloop);
             coin->peers.acceptloop = 0;
             printf("error launching accept thread for port.%u\n",coin->chain->portp2p);
+        }
+    }
+    if ( coin->rpcloop == 0 )
+    {
+        myinfo->rpcport = coin->chain->rpcport;
+        coin->rpcloop = malloc(sizeof(pthread_t));
+        if ( OS_thread_create(coin->rpcloop,NULL,(void *)iguana_rpcloop,(void *)myinfo) != 0 )
+        {
+            free(coin->rpcloop);
+            coin->rpcloop = 0;
+            printf("error launching rpcloop for %s port.%u\n",coin->symbol,coin->chain->rpcport);
         }
     }
     //coin->firstblock = coin->blocks.parsedblocks + 1;
