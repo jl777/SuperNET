@@ -1567,11 +1567,14 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
             //iguana_realtime_update(coin);
         }
     }*/
-    for (i=0; i<coin->chain->bundlesize; i++)
+    if ( coin->spendvectorsaved > 1 )
     {
-        if ( iguana_realtime_update(coin) <= 0 )
-            break;
-        //printf("call iguana_realtime_update i.%d\n",i);
+        for (i=0; i<coin->chain->bundlesize; i++)
+        {
+            if ( iguana_realtime_update(coin) <= 0 )
+                break;
+            //printf("call iguana_realtime_update i.%d\n",i);
+        }
     }
     flag += (i > 0);
     coin->RTramchain_busy = (coin->RTgenesis == 0);
