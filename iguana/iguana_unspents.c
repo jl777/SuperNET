@@ -1228,6 +1228,8 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
         printf("iguana_balancegen: emit %d != %d ramchain->numXspends\n",emit,numXspends);
         errs++;
     }
+    if ( errs == 0 )
+        bp->balancefinish = (uint32_t)time(NULL);
     //printf(">>>>>>>> balances.%d done errs.%d spendind.%d\n",bp->hdrsi,errs,n);
     return(-errs);
 }
@@ -1370,6 +1372,14 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
         {
             if ( (bp= coin->bundles[i]) != 0 )
                 bp->startutxo = bp->utxofinish = 0;
+        }
+    }
+    else
+    {
+        for (i=0; i<coin->bundlescount-1; i++)
+        {
+            if ( (bp= coin->bundles[i]) != 0 )
+                bp->utxofinish = bp->startutxo = bp->balancefinish = bp->validated = bp->emitfinish = bp->converted = (uint32_t)time(NULL);
         }
     }
     printf("i.%d bundlescount.%d\n",i,coin->bundlescount);
