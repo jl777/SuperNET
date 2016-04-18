@@ -1845,7 +1845,19 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     {
         iguana_RTramchainfree(coin);
         iguana_RTramchainalloc("RTbundle",coin,bp);
+        for (i=0; i<bp->hdrsi; i++)
+        {
+            if ( (bp= coin->bundles[i]) != 0 && bp->utxofinish == 0 )
+            {
+                if ( iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,0) < 0 )
+                {
+                    printf("error generating spendvectors.[%d], exiting. just restart iguana\n",i);
+                    exit(-1);
+                }
+            }
+        }
     }
+    bp = coin->current;
     if ( bp != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && ((coin->RTheight <= coin->blocks.hwmchain.height && time(NULL) > bp->lastRT) || time(NULL) > bp->lastRT+10) )
     {
         if ( (block= bp->blocks[0]) == 0 || block->txvalid == 0 || block->mainchain == 0 )
