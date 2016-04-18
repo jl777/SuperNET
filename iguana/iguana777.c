@@ -456,15 +456,15 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             exit(-1);
         }
     }
-    if ( helperid == 0 )
-    {
-        coin->spendvectorsaved = (uint32_t)time(NULL);
-        printf("UTXOGEN spendvectorsaved <- %u\n",coin->spendvectorsaved);
-    }
     while ( coin->spendvectorsaved == 1 )
     {
         //printf("helperid.%d waiting for spendvectorsaved.%u\n",helperid,coin->spendvectorsaved);
         sleep(3);
+    }
+    if ( helperid == 0 )
+    {
+        coin->spendvectorsaved = (uint32_t)time(NULL);
+        printf("UTXOGEN spendvectorsaved <- %u\n",coin->spendvectorsaved);
     }
     return(num);
 }

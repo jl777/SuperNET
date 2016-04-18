@@ -118,7 +118,7 @@ struct iguana_txid *iguana_blocktx(struct iguana_info *coin,struct iguana_txid *
                         return(tx);
                     printf("error getting txidind.%d + i.%d from hdrsi.%d\n",txidind,i,block->hdrsi);
                     return(0);
-                } else printf("iguana_blocktx null txidind [%d:%d] i.%d\n",block->hdrsi,block->bundlei,i);
+                } // else printf("iguana_blocktx null txidind [%d:%d] i.%d\n",block->hdrsi,block->bundlei,i);
             } else printf("iguana_blocktx no bp.[%d]\n",block->hdrsi);
         } else printf("blocktx illegal height.%d\n",block->height);
     } else printf("i.%d vs txn_count.%d\n",i,block->RO.txn_count);
@@ -173,7 +173,7 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
 
 int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int32_t max,struct iguana_peer *addr,bits256 hash2,int32_t validatesigs)
 {
-    struct iguana_txid *tx,T; bits256 checktxid; int32_t i,len,total,bundlei=-2; struct iguana_block *block; struct iguana_msgblock msgB; bits256 *tree,checkhash2,merkle_root; struct iguana_bundle *bp=0; long tmp; char str[65];
+    struct iguana_txid *tx,T; bits256 checktxid; int32_t i,len,total,bundlei=-2; struct iguana_block *block; struct iguana_msgblock msgB; bits256 *tree,checkhash2,merkle_root; struct iguana_bundle *bp=0; long tmp; //char str[65];
     if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) != 0 && bundlei >= 0 && bundlei < bp->n )
     {
         if ( (block= bp->blocks[bundlei]) != 0 )
@@ -200,7 +200,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
                 }
                 else
                 {
-                    printf("null tx error getting txi.%d [%d:%d]\n",i,bp->hdrsi,bundlei);
+                    // printf("null tx error getting txi.%d [%d:%d]\n",i,bp->hdrsi,bundlei);
                     break;
                 }
             }
@@ -237,7 +237,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
                 printf("iguana_peerblockrequest: block.%p ht.%d mainchain.%d [%d:%d]\n",block,block->height,block->mainchain,bp->hdrsi,bundlei);
             else printf("iguana_peerblockrequest: block.%p [%d:%d]\n",block,bp->hdrsi,bundlei);
         }
-    } else printf("iguana_peerblockrequest: cant find %s\n",bits256_str(str,hash2));
+    } // else printf("iguana_peerblockrequest: cant find %s\n",bits256_str(str,hash2));
     return(-1);
 }
 

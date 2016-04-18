@@ -1567,7 +1567,7 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
             //iguana_realtime_update(coin);
         }
     }*/
-    if ( coin->spendvectorsaved > 1 )
+    if ( time(NULL) > coin->spendvectorsaved+10 )
     {
         for (i=0; i<coin->chain->bundlesize; i++)
         {
