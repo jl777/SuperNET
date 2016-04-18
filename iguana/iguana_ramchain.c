@@ -1083,7 +1083,7 @@ int32_t iguana_ramchain_verify(struct iguana_info *coin,struct iguana_ramchain *
         if ( t->firstvout != ramchain->H.unspentind )
         {
             printf("%p txidind.%d firstvout.%d != unspentind.%d\n",t,ramchain->H.txidind,t->firstvout,ramchain->H.unspentind);
-            exit(-1);
+            //exit(-1);
             return(-4);
         }
         if ( t->firstvin != ramchain->H.spendind )
@@ -1113,7 +1113,7 @@ int32_t iguana_ramchain_verify(struct iguana_info *coin,struct iguana_ramchain *
                 else
                 {
                     char str[65]; printf("error -3: %s itemind.%d vs txidind.%d | num.%d\n",bits256_str(str,t->txid),ptr->hh.itemind,ramchain->H.txidind,ramchain->H.data->numtxids);
-                    exit(-1);
+                    //exit(-1);
                     return(-3);
                 }
             }
@@ -1123,7 +1123,7 @@ int32_t iguana_ramchain_verify(struct iguana_info *coin,struct iguana_ramchain *
                 if ( u->txidind != ramchain->H.txidind )
                 {
                     printf("ramchain_verify k.%d %p U.%d u->txidind.%x != txidind.%d\n",k,u,ramchain->H.unspentind,u->txidind,ramchain->H.txidind);
-                    exit(-1);
+                    //exit(-1);
                     return(-6);
                 }
                 if ( (pkind= u->pkind) < 0 || pkind >= rdata->numpkinds )
