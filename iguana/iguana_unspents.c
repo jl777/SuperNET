@@ -1857,7 +1857,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         iguana_RTramchainfree(coin);
         iguana_RTramchainalloc("RTbundle",coin,bp);
     }
-    printf("balanceswritten.%d hdrsi.%d RTheight.%d\n",coin->balanceswritten,bp->hdrsi,coin->RTheight);
+    // printf("balanceswritten.%d hdrsi.%d RTheight.%d\n",coin->balanceswritten,bp->hdrsi,coin->RTheight);
     if ( bp != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && ((coin->RTheight <= coin->blocks.hwmchain.height && time(NULL) > bp->lastRT) || time(NULL) > bp->lastRT+10) )
     {
         if ( (block= bp->blocks[0]) == 0 || block->txvalid == 0 || block->mainchain == 0 )
