@@ -445,13 +445,6 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             if ( iguana_balanceflush(coin,max) > 0 )
                 printf("balanceswritten.%d flushed bp->hdrsi %d vs %d coin->longestchain/coin->chain->bundlesize\n",coin->balanceswritten,bp->hdrsi,coin->longestchain/coin->chain->bundlesize);
         } else printf("error saving spendvectors\n");
-        coin->spendvectorsaved = (uint32_t)time(NULL);
-        printf("UTXOGEN spendvectorsaved <- %u\n",coin->spendvectorsaved);
-    }
-    while ( coin->spendvectorsaved == 1 )
-    {
-        //printf("helperid.%d waiting for spendvectorsaved.%u\n",helperid,coin->spendvectorsaved);
-        sleep(3);
     }
     for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
     {
@@ -462,6 +455,16 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             printf("validate.[%d] error. just refresh page or restart iguana\n",bp->hdrsi);
             exit(-1);
         }
+    }
+    while ( coin->spendvectorsaved == 1 )
+    {
+        //printf("helperid.%d waiting for spendvectorsaved.%u\n",helperid,coin->spendvectorsaved);
+        sleep(3);
+    }
+    if ( helperid == 0 )
+    {
+        coin->spendvectorsaved = (uint32_t)time(NULL);
+        printf("UTXOGEN spendvectorsaved <- %u\n",coin->spendvectorsaved);
     }
     return(num);
 }
