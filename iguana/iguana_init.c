@@ -438,7 +438,7 @@ void iguana_coinpurge(struct iguana_info *coin)
             myfree(req,req->allocsize);
         }
     }
-    iguana_RTramchainfree(coin);
+    iguana_RTramchainfree(coin,coin->current);
     coin->bundlescount = 0;
     for (i=0; i<coin->bundlescount; i++)
         if ( (bp= coin->bundles[i]) != 0 )

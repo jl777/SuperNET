@@ -842,7 +842,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
 void *iguana_bundlefile(struct iguana_info *coin,char *fname,long *filesizep,struct iguana_bundle *bp,int32_t bundlei);
 int32_t iguana_mapchaininit(char *fname,struct iguana_info *coin,struct iguana_ramchain *mapchain,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block,void *ptr,long filesize);
 void iguana_autoextend(struct iguana_info *coin,struct iguana_bundle *bp);
-void iguana_RTramchainfree(struct iguana_info *coin);
+void iguana_RTramchainfree(struct iguana_info *coin,struct iguana_bundle *bp);
 void iguana_coinpurge(struct iguana_info *coin);
 int32_t iguana_setmaxbundles(struct iguana_info *coin);
 void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp);
