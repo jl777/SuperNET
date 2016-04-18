@@ -633,7 +633,7 @@ void *iguana_ramchain_offset(char *fname,void *dest,uint8_t *lhash,FILE *fp,uint
     if ( (lhash != 0 || fp != 0) && (*offsetp + len) > srcsize )
     {
         printf("ramchain_offset overflow (%p %p) offset.%ld + len.%ld %ld > %ld srcsize\n",fp,lhash,(long)*offsetp,(long)len,(long)(*offsetp + len),(long)srcsize);
-        exit(-1);
+        return(0);
     }
     if ( lhash != 0 )
     {
