@@ -1811,7 +1811,7 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     if ( iguana_spendvectors(coin,bp,&coin->RTramchain,coin->RTstarti,lasti,0) < 0 )
     {
         printf("RTutxo error -> RTramchainfree\n");
-        iguana_RTramchainfree(coin,bp);
+        coin->RTdatabad = 1;
         return;
     }
     else
@@ -1822,7 +1822,8 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
             iguana_convert(coin,IGUANA_NUMHELPERS,coin->bundles[hdrsi],1,orignumemit);
         //printf("spendvectors converted to %d\n",coin->RTheight);
         bp->converted = (uint32_t)time(NULL);
-        iguana_balancegen(coin,0,bp,coin->RTstarti,coin->RTheight > 0 ? coin->RTheight-1 : bp->n-1,orignumemit);
+        if ( iguana_balancegen(coin,0,bp,coin->RTstarti,coin->RTheight > 0 ? coin->RTheight-1 : bp->n-1,orignumemit) < 0 )
+            coin->RTdatabad = 1;
         //printf("iguana_balancegen [%d] (%d to %d)\n",bp->hdrsi,coin->RTstarti,(coin->RTheight-1)%bp->n);
         coin->RTstarti = (coin->RTheight % bp->n);
     }
