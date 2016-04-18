@@ -380,19 +380,16 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             return(-1);
         if ( coin->PREFETCHLAG > 0 )
             iguana_ramchain_prefetch(coin,&bp->ramchain,0);
-        //if ( iguana_bundlevalidate(coin,bp,0) == bp->n )
+        if ( bp->utxofinish > 1 || (retval= iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,convertflag)) >= 0 )
         {
-            if ( (retval= iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,convertflag)) >= 0 )
+            //printf("spendvectors retval.%d\n",retval);
+            if ( retval > 0 )
             {
-                //printf("spendvectors retval.%d\n",retval);
-                if ( retval > 0 )
-                {
-                    printf("GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - bp->startutxo);
-                    num++;
-                }
-                bp->utxofinish = (uint32_t)time(NULL);
-            } else printf("UTXO gen.[%d] utxo error\n",bp->hdrsi);
-        }
+                printf("GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - bp->startutxo);
+                num++;
+            }
+            bp->utxofinish = (uint32_t)time(NULL);
+        } else printf("UTXO gen.[%d] utxo error\n",bp->hdrsi);
     }
     while ( (n= iguana_utxofinished(coin)) < max )
     {
