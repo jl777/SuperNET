@@ -406,6 +406,8 @@ int64_t iguana_memallocated(struct OS_memspace *mem)
 void *iguana_memalloc(struct OS_memspace *mem,long size,int32_t clearflag)
 {
     int32_t modval; void *ptr = 0;
+    if ( mem->ptr == 0 )
+        return(0);
     //printf("iguana_memalloc.%s size.%ld used.%llu of %llu, numptrs.%d avail.%d %lld\n",mem->name,size,(long long)mem->used,(long long)mem->totalsize,mem->numptrs,mem->availptrs,(long long)iguana_memallocated(mem));
     //if ( mem->threadsafe != 0 )
     //    portable_mutex_lock(&mem->mutex);
