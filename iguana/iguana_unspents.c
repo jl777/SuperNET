@@ -1965,7 +1965,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     if ( coin->RTdatabad != 0 )
     {
         iguana_RTramchainfree(coin,bp);
-        iguana_RTramchainalloc("RTbundle",coin,bp);
+        //iguana_RTramchainalloc("RTbundle",coin,bp);
     }
     return(flag);
 }
