@@ -645,7 +645,7 @@ void *iguana_ramchain_offset(char *fname,void *dest,uint8_t *lhash,FILE *fp,uint
         startfpos = ftell(fp);
         if ( (err= fwrite(srcptr,1,len,fp)) != len )
         {
-#ifdef __PNACL__
+/*#ifdef __PNACL__
             int32_t i,numretries = 5;
             for (i=0; i<numretries; i++)
             {
@@ -659,7 +659,7 @@ void *iguana_ramchain_offset(char *fname,void *dest,uint8_t *lhash,FILE *fp,uint
                 }
             }
             if ( i == numretries )
-#endif
+#endif*/
             {
                 fpos = len = 0;
                 printf("iguana_ramchain_offset.(%s): error.%ld writing len.%ld to fp.%p errno.%d\n",fname,err,(long)len,fp,errno);
@@ -2196,7 +2196,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     ramchain->H.scriptoffset = scriptoffset;
     ramchain->H.data->scriptspace = scriptoffset;
     ramchain->H.stacksize = ramchain->H.data->stackspace = stacksize;
-    if ( iguana_ramchain_save(coin,RAMCHAIN_ARG,0,firsthash2,zero,0,bp) < 0 )
+    if ( iguana_ramchain_save(coin,RAMCHAIN_ARG,0,firsthash2,zero,0,bp) < 0 && iguana_ramchain_save(coin,RAMCHAIN_ARG,0,firsthash2,zero,0,bp) < 0 )
     {
         printf("ERROR saving ramchain hdrsi.%d, deleting and will regenerate\n",hdrsi);
         iguana_mempurge(hashmem);
