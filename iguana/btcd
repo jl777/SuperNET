@@ -1,2 +1,1 @@
-mkdir /tmp/BTCD
-curl --url "http://127.0.0.1:7778" --data "{\"prefetchlag\":-1,\"poll\":100,\"VALIDATE\":1,\"active\":1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"newcoin\":\"BTCD\",\"startpend\":64,\"endpend\":32,\"services\":0,\"maxpeers\":64}"
+curl --url "http://127.0.0.1:7779" --data "{\"prefetchlag\":-1,\"poll\":1,\"active\":1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"newcoin\":\"BTCD\",\"startpend\":500,\"endpend\":500,\"services\":128,\"maxpeers\":64}"
