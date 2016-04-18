@@ -1573,7 +1573,7 @@ int32_t iguana_spendvectorsaves(struct iguana_info *coin)
                             }
                     }
                 }
-                else if ( iguana_spendvectorsave(coin,bp,&bp->ramchain,bp->tmpspends,bp->numtmpspends,bp->ramchain.H.data->numspends) == 0 )
+                else if ( bp->ramchain.Xspendinds == 0 && iguana_spendvectorsave(coin,bp,&bp->ramchain,bp->tmpspends,bp->numtmpspends,bp->ramchain.H.data->numspends) == 0 )
                 {
                     if ( bp->tmpspends != 0 && bp->numtmpspends > 0 && bp->tmpspends != bp->ramchain.Xspendinds )
                         myfree(bp->tmpspends,sizeof(*bp->tmpspends) * bp->numtmpspends);
