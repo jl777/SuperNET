@@ -1538,7 +1538,7 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
     flag += iguana_processrecvQ(coin,&newhwm);
     //printf("reqhdrs\n");
     flag += iguana_reqhdrs(coin);
-    if ( coin->RTheight != 0 )
+    if ( coin->spendvectorsaved > 1 )
     {
         if ( time(NULL) > coin->laststats+5 )
         {

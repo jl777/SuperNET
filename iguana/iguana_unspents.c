@@ -1846,6 +1846,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         coin->spendvectorsaved = 1;
         return(0);
     }
+    printf("spendvectorsaved.%u\n",coin->spendvectorsaved);
     if ( coin->spendvectorsaved <= 1 )
         return(0);
     for (i=0; i<coin->bundlescount-1; i++)
