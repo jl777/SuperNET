@@ -1563,7 +1563,7 @@ int32_t iguana_spendvectorsaves(struct iguana_info *coin)
             {
                 if ( iter == 0 )
                 {
-                    if ( bp->tmpspends != 0 )//&& bp->converted != 0 )
+                    if ( bp->ramchain.Xspendinds == 0 && bp->tmpspends != 0 )//&& bp->converted != 0 )
                     {
                         for (j=0; j<bp->numtmpspends; j++)
                             if ( bp->tmpspends[j].tmpflag != 0 )
