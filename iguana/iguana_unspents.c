@@ -1693,8 +1693,8 @@ void iguana_RTramchainfree(struct iguana_info *coin)
     coin->RTheight = coin->balanceswritten * coin->chain->bundlesize;
     coin->RTgenesis = 0;
     iguana_ramchain_free(coin,&coin->RTramchain,1);
-    coin->RTmem.used = 0;
-    coin->RThashmem.used = 0;
+    iguana_mempurge(&coin->RTmem);
+    iguana_mempurge(&coin->RThashmem);
     coin->RTdatabad = 0;
 }
 
