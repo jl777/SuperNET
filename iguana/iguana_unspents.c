@@ -1846,7 +1846,6 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         coin->spendvectorsaved = 1;
         return(0);
     }
-    printf("spendvectorsaved.%u\n",coin->spendvectorsaved);
     if ( coin->spendvectorsaved <= 1 )
         return(0);
     for (i=0; i<coin->bundlescount-1; i++)
@@ -1858,6 +1857,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                 printf("error generating spendvectors.[%d], exiting. just restart iguana\n",i);
                 exit(-1);
             } else printf("generated UTXO.[%d]\n",i);
+            coin->spendvectorsaved = 1;
         }
     }
     if ( (bp= coin->current) != 0 && coin->RTdatabad != 0 )
@@ -1865,6 +1865,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         iguana_RTramchainfree(coin);
         iguana_RTramchainalloc("RTbundle",coin,bp);
     }
+    printf("balanceswritten.%d hdrsi.%d RTheight.%d\n",coin->balanceswritten,bp->hdrsi,coin->RTheight);
     if ( bp != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && ((coin->RTheight <= coin->blocks.hwmchain.height && time(NULL) > bp->lastRT) || time(NULL) > bp->lastRT+10) )
     {
         if ( (block= bp->blocks[0]) == 0 || block->txvalid == 0 || block->mainchain == 0 )
