@@ -1374,14 +1374,6 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
                 bp->startutxo = bp->utxofinish = 0;
         }
     }
-    else
-    {
-        for (i=0; i<coin->bundlescount-1; i++)
-        {
-            if ( (bp= coin->bundles[i]) != 0 )
-                bp->utxofinish = bp->startutxo = bp->balancefinish = bp->validated = bp->emitfinish = bp->converted = (uint32_t)time(NULL);
-        }
-    }
     printf("i.%d bundlescount.%d\n",i,coin->bundlescount);
     if ( coin->balanceswritten > 1 )
         coin->balanceswritten = iguana_volatilesinit(coin);
