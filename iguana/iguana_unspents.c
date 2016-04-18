@@ -1958,7 +1958,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         //printf("ramchainiterate.[%d] ave %.2f micros, total %.2f seconds starti.%d num.%d\n",num0,(totalmillis0*1000.)/num0,totalmillis0/1000.,coin->RTstarti,coin->RTheight%bp->n);
         if ( (n= iguana_walkchain(coin,1)) == coin->RTheight-1 )
         {
-            printf("RTgenesis verified\n");
+            //printf("RTgenesis verified\n");
             coin->RTgenesis = (uint32_t)time(NULL);
             iguana_RTspendvectors(coin,bp);
         }

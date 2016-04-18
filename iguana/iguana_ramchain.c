@@ -1292,7 +1292,7 @@ int32_t iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *
     if ( ramchain->expanded != 0 )
     {
         _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
-        if ( extraflag == 0 )
+        if ( extraflag == 0 && ramchain->H.data != 0 )
         {
             if ( (ramchain->hashmem= hashmem) != 0 )
                 iguana_memreset(hashmem);
@@ -1341,7 +1341,7 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
     return(ramchain->numXspends);
 }
 
-struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname,struct iguana_bundle *bp,int32_t numblocks,struct iguana_ramchain *ramchain,struct OS_memspace *hashmem,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t bundlei,long fpos,int32_t allocextras,int32_t expanded)
+struct iguana_ramchain *_iguana_ramchain_map(struct iguana_info *coin,char *fname,struct iguana_bundle *bp,int32_t numblocks,struct iguana_ramchain *ramchain,struct OS_memspace *hashmem,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t bundlei,long fpos,int32_t allocextras,int32_t expanded)
 {
     RAMCHAIN_DECLARE; int32_t valid,iter,i,checki,hdrsi;
     char str[65],str2[65],dirstr[64]; long filesize; void *ptr; struct iguana_block *block;
@@ -1464,6 +1464,20 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
         return(ramchain);
     } else printf("iguana_ramchain_map.(%s) cant map file\n",fname);
     return(0);
+}
+
+struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname,struct iguana_bundle *bp,int32_t numblocks,struct iguana_ramchain *ramchain,struct OS_memspace *hashmem,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t bundlei,long fpos,int32_t allocextras,int32_t expanded)
+{
+    struct iguana_ramchain *retptr;
+#ifdef __PNACL__
+    static portable_mutex_t mutex;
+    portable_mutex_lock(&mutex);
+#endif
+    retptr = _iguana_ramchain_map(coin,fname,bp,numblocks,ramchain,hashmem,ipbits,hash2,prevhash2,bundlei,fpos,allocextras,expanded);
+#ifdef __PNACL__
+    portable_mutex_unlock(&mutex);
+#endif
+    return(retptr);
 }
 
 void iguana_ramchain_link(struct iguana_ramchain *ramchain,bits256 firsthash2,int32_t hdrsi,int32_t height,int32_t bundlei,int32_t numblocks,int32_t firsti,int32_t ROflag)
