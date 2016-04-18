@@ -296,7 +296,7 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remote
         }
         jsonstr = jprint(json,0);
         //printf("RPC? (%s)\n",jsonstr);
-        if ( remoteaddr == 0 || jstr(json,"immediate") != 0 )
+        if ( (remoteaddr == 0 || jstr(json,"immediate") != 0) && port == IGUANA_RPCPORT )
             retjsonstr = SuperNET_jsonstr(myinfo,jsonstr,remoteaddr,port);
         else retjsonstr = iguana_blockingjsonstr(myinfo,jsonstr,tag,timeout,remoteaddr,port);
         if ( retjsonstr != 0 )
