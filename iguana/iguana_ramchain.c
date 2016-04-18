@@ -2350,7 +2350,9 @@ int64_t iguana_ramchainopen(char *fname,struct iguana_info *coin,struct iguana_r
         _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
         iguana_ramchain_extras(coin,ramchain,hashmem,0);
     }
-    return(ramchain->H.data->allocsize);
+    if ( rdata != 0 )
+        return(rdata->allocsize);
+    else return(0);
 }
 
 int32_t iguana_mapchaininit(char *fname,struct iguana_info *coin,struct iguana_ramchain *mapchain,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block,void *ptr,long filesize)

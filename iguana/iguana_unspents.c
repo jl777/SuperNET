@@ -1358,14 +1358,24 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
             printf("initfinal break.[%d]: bp.%p or emit.%u utxofinish.%u\n",i,bp,bp!=0?bp->emitfinish:-1,bp!=0?bp->utxofinish:-1);
             break;
         }
+        if ( i == 0 )
+            bp->utxofinish = bp->startutxo = (uint32_t)time(NULL);
     }
     if ( i < coin->bundlescount-1 )
     {
-        //printf("spendvectors.[%d] max.%d missing, will regen all of them\n",i,coin->bundlescount-1);
+        printf("spendvectors.[%d] max.%d missing, will regen all of them\n",i,coin->bundlescount-1);
         for (i=0; i<coin->bundlescount-1; i++)
         {
             if ( (bp= coin->bundles[i]) != 0 )
                 bp->startutxo = bp->utxofinish = 0;
+        }
+    }
+    else
+    {
+        for (i=0; i<coin->bundlescount-1; i++)
+        {
+            if ( (bp= coin->bundles[i]) != 0 )
+                bp->balancefinish = (uint32_t)time(NULL);
         }
     }
     printf("i.%d bundlescount.%d\n",i,coin->bundlescount);
