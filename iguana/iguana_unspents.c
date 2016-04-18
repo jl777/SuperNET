@@ -1842,9 +1842,9 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
     if ( coin->RTheight > 0 && coin->spendvectorsaved != 1 && coin->bundlescount-1 != coin->balanceswritten )
     {
+        printf("RT mismatch %d != %d\n",coin->bundlescount-1,coin->balanceswritten);
         coin->spendvectorsaved = 1;
         return(0);
-  //printf("RT mismatch %d != %d\n",coin->bundlescount-1,coin->balanceswritten);
     }
     if ( coin->spendvectorsaved <= 1 )
         return(0);
@@ -1859,8 +1859,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             } else printf("generated UTXO.[%d]\n",i);
         }
     }
-    bp = coin->current;
-    if ( bp != 0 && coin->RTdatabad != 0 )
+    if ( (bp= coin->current) != 0 && coin->RTdatabad != 0 )
     {
         iguana_RTramchainfree(coin);
         iguana_RTramchainalloc("RTbundle",coin,bp);
@@ -1883,7 +1882,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                 }
             }
         }
-        //char str[65]; printf("check longest.%d RTheight.%d hwm.%d %s %p\n",coin->longestchain,coin->RTheight,coin->blocks.hwmchain.height,bits256_str(str,bp->hashes[0]),block);
+        char str[65]; printf("check longest.%d RTheight.%d hwm.%d %s %p\n",coin->longestchain,coin->RTheight,coin->blocks.hwmchain.height,bits256_str(str,bp->hashes[0]),block);
         if ( bits256_cmp(coin->RThash1,bp->hashes[1]) != 0 )
             coin->RThash1 = bp->hashes[1];
         bp->lastRT = (uint32_t)time(NULL);
@@ -1960,18 +1959,16 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     n = 0;
     if ( dest != 0 && flag != 0 && coin->RTheight >= coin->longestchain )
     {
-        //printf("ramchainiterate.[%d] ave %.2f micros, total %.2f seconds starti.%d num.%d\n",num0,(totalmillis0*1000.)/num0,totalmillis0/1000.,coin->RTstarti,coin->RTheight%bp->n);
+        printf("ramchainiterate.[%d] ave %.2f micros, total %.2f seconds starti.%d num.%d\n",num0,(totalmillis0*1000.)/num0,totalmillis0/1000.,coin->RTstarti,coin->RTheight%bp->n);
         if ( (n= iguana_walkchain(coin,1)) == coin->RTheight-1 )
         {
-            //printf("RTgenesis verified\n");
+            printf("RTgenesis verified\n");
             coin->RTgenesis = (uint32_t)time(NULL);
             iguana_RTspendvectors(coin,bp);
         }
         else
         {
             printf("RTgenesis failed to verify n.%d vs %d\n",n,coin->RTheight);
-            //iguana_RTramchainfree(coin);
-            //return(-1);
             coin->RTdatabad = 1;
         }
     }
