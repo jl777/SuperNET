@@ -1721,16 +1721,16 @@ void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,
 
 void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    uint32_t i,changed = 0; struct iguana_ramchain *dest = &coin->RTramchain; struct iguana_blockRO *B;
-    if ( dest->H.data != 0 )
+    uint32_t i,changed = 0; struct iguana_ramchaindata *rdata; struct iguana_ramchain *dest = &coin->RTramchain; struct iguana_blockRO *B;
+    if ( (rdata= dest->H.data) != 0 )
     {
         i = 0;
-        if ( coin->RTheight != bp->bundleheight + dest->H.data->numblocks )
+        if ( coin->RTheight != bp->bundleheight + rdata->numblocks )
             changed++;
         else
         {
-            B = (void *)(long)((long)dest->H.data + dest->H.data->Boffset);
-            for (i=0; i<dest->H.data->numblocks; i++)
+            B = (void *)(long)((long)rdata + rdata->Boffset);
+            for (i=0; i<rdata->numblocks; i++)
                 if ( bits256_cmp(B[i].hash2,bp->hashes[i]) != 0 )
                 {
                     char str[65],str2[65]; printf("mismatched hash2 at %d %s vs %s\n",bp->bundleheight+i,bits256_str(str,B[i].hash2),bits256_str(str2,bp->hashes[i]));
@@ -1740,7 +1740,7 @@ void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_b
         }
         if ( changed != 0 )
         {
-            printf("RTramchain changed %d bundlei.%d | coin->RTheight %d != %d bp->bundleheight +  %d coin->RTramchain.H.data->numblocks\n",coin->RTheight,i,coin->RTheight,bp->bundleheight,dest->H.data->numblocks);
+            printf("RTramchain changed %d bundlei.%d | coin->RTheight %d != %d bp->bundleheight +  %d coin->RTramchain.H.data->numblocks\n",coin->RTheight,i,coin->RTheight,bp->bundleheight,rdata->numblocks);
             //coin->RTheight = coin->balanceswritten * coin->chain->bundlesize;
             iguana_RTramchainfree(coin,bp);
         }
