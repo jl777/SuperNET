@@ -431,19 +431,13 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             if ( coin->origbalanceswritten <= 1 )
                 hdrsi = 0;
             else hdrsi = coin->origbalanceswritten;
-            /*while ( (n= iguana_validated(coin)) < max )
-            {
-                sleep(3);
-                printf("validated.%d of %d\n",n,max);
-            }*/
             for (; hdrsi<max; hdrsi++,coin->balanceswritten++)
             {
                 iguana_ramchain_prefetch(coin,&coin->bundles[hdrsi]->ramchain,0);
                 if ( iguana_balancegen(coin,0,coin->bundles[hdrsi],0,coin->chain->bundlesize-1,0) == 0 )
                     bp->balancefinish = (uint32_t)time(NULL);
             }
-            if ( iguana_balanceflush(coin,max) > 0 )
-                printf("balanceswritten.%d flushed bp->hdrsi %d vs %d coin->longestchain/coin->chain->bundlesize\n",coin->balanceswritten,bp->hdrsi,coin->longestchain/coin->chain->bundlesize);
+            coin->balanceflush = max;
         } else printf("error saving spendvectors\n");
     }
     for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
@@ -680,7 +674,6 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     mapflags = IGUANA_MAPRECVDATA | maphash*IGUANA_MAPTXIDITEMS | maphash*IGUANA_MAPPKITEMS | maphash*IGUANA_MAPBLOCKITEMS | maphash*IGUANA_MAPPEERITEMS;
     printf("setcoin.%s\n",symbol);
     coin = iguana_coinadd(symbol,json);
-    coin->launched = launched;
     if ( (coin->MAXPEERS= maxpeers) <= 0 )
         coin->MAXPEERS = (strcmp(symbol,"BTC") == 0) ? 128 : 64;
     if ( (coin->MAXRECVCACHE= maxrecvcache) == 0 )
@@ -754,6 +747,8 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( coin->chain == 0 && (coin->chain= iguana_createchain(json)) == 0 )
     {
         printf("cant initialize chain.(%s)\n",jstr(json,0));
+        strcpy(coin->name,"illegalcoin");
+        coin->symbol[0] = 0;
         return(0);
     } else iguana_chainparms(coin->chain,json);
     if ( jobj(json,"RELAY") != 0 )
@@ -799,12 +794,13 @@ int32_t iguana_launchcoin(char *symbol,cJSON *json)
             coins[0] = (void *)((long)1);
             coins[1] = coin;
             printf("launch coinloop for.%s services.%llx\n",coin->symbol,(long long)services);
-            iguana_launch(coin,"iguana_coinloop",iguana_coinloop,coins,IGUANA_PERMTHREAD);
+            coin->launched = iguana_launch(coin,"iguana_coinloop",iguana_coinloop,coins,IGUANA_PERMTHREAD);
             coin->active = 1;
             return(1);
         }
         else
         {
+            printf("launchcoin: couldnt initialize.(%s)\n",symbol);
             myfree(coins,sizeof(*coins) * 2);
             return(-1);
         }
@@ -825,10 +821,17 @@ void iguana_coins(void *arg)
             if ( (symbol= jstr(json,"coin")) != 0 && strncmp(symbol,"BTC",3) == 0 )
             {
                 coins = mycalloc('A',1+1,sizeof(*coins));
-                coins[1] = iguana_setcoin(symbol,coins,0,0,0,0,0,0,0,0,json);
-                _iguana_calcrmd160(coins[1],&V);
-                coins[0] = (void *)((long)1);
-                iguana_coinloop(coins);
+                if ( (coins[1]= iguana_setcoin(symbol,coins,0,0,0,0,0,0,0,0,json)) != 0 )
+                {
+                    _iguana_calcrmd160(coins[1],&V);
+                    coins[0] = (void *)((long)1);
+                    iguana_coinloop(coins);
+                }
+                else
+                {
+                    printf("iguana_coins: couldnt initialize.(%s)\n",symbol);
+                    return;
+                }
             } else printf("no coins[] array in JSON.(%s) only BTCD and BTC can be quicklaunched\n",jsonstr);
             free_json(json);
             return;
@@ -847,6 +850,11 @@ void iguana_coins(void *arg)
             }
             iguana_coinargs(symbol,&maxrecvcache,&minconfirms,&maxpeers,&initialheight,&services,&maxrequests,&maxbundles,item);
             coins[1 + i] = coin = iguana_setcoin(symbol,coins,maxpeers,maxrecvcache,services,initialheight,maphash,minconfirms,maxrequests,maxbundles,item);
+            if ( coin == 0 )
+            {
+                printf("iguana_coins: couldnt initialize.(%s)\n",symbol);
+                return;
+            }
         }
         coins[0] = (void *)((long)n);
         iguana_coinloop(coins);

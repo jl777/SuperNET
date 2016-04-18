@@ -446,7 +446,8 @@ int32_t iguana_queue_send(struct iguana_info *coin,struct iguana_peer *addr,int3
         exit(-1);
         return(-1);
     }
-    datalen = iguana_sethdr((void *)serialized,coin->chain->netmagic,cmd,&serialized[sizeof(struct iguana_msghdr)],len);
+    if ( (datalen= iguana_sethdr((void *)serialized,coin->chain->netmagic,cmd,&serialized[sizeof(struct iguana_msghdr)],len)) < 0 )
+        return(-1);
     if ( strcmp("getaddr",cmd) == 0 && time(NULL) < addr->lastgotaddr+300 )
         return(0);
     //if ( strcmp("version",cmd) == 0 )
@@ -499,8 +500,7 @@ void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct ig
 {
     struct iguana_msghdr checkH;
     memset(&checkH,0,sizeof(checkH));
-    iguana_sethdr(&checkH,coin->chain->netmagic,H->command,buf,len);
-    if ( memcmp(&checkH,H,sizeof(checkH)) == 0 )
+    if ( iguana_sethdr(&checkH,coin->chain->netmagic,H->command,buf,len) > 0 && memcmp(&checkH,H,sizeof(checkH)) == 0 )
     {
         if ( strcmp(H->command,"block") == 0 || strcmp(H->command,"tx") == 0 )
         {

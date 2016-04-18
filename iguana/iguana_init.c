@@ -363,7 +363,7 @@ void iguana_bundlepurge(struct iguana_info *coin,struct iguana_bundle *bp)
         for (i=0; i<bp->n; i++)
             if ( bp->speculativecache[i] != 0 )
             {
-                myfree(bp->speculativecache[i],*(int32_t *)bp->speculativecache[i]);
+                free(bp->speculativecache[i]);
                 bp->speculativecache[i] = 0;
             }
         myfree(bp->speculative,sizeof(*bp->speculative) * bp->numspec);
@@ -479,7 +479,7 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
     }
     if ( coin->rpcloop == 0 )
     {
-        myinfo->rpcport = coin->chain->rpcport;
+        myinfo->argport = coin->chain->rpcport;
         coin->rpcloop = malloc(sizeof(pthread_t));
         if ( OS_thread_create(coin->rpcloop,NULL,(void *)iguana_rpcloop,(void *)myinfo) != 0 )
         {

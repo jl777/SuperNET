@@ -2021,7 +2021,7 @@ void iguana_blockunmark(struct iguana_info *coin,struct iguana_block *block,stru
         if ( (ptr= bp->speculativecache[i]) != 0 )
         {
             memcpy(&recvlen,ptr,sizeof(recvlen));
-            myfree(ptr,recvlen + sizeof(recvlen));
+            free(ptr);
             bp->speculativecache[i] = 0;
         }
     }

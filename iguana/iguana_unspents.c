@@ -1577,7 +1577,7 @@ int32_t iguana_spendvectorsaves(struct iguana_info *coin)
                             }
                     }
                 }
-                else if ( bp->ramchain.Xspendinds == 0 && iguana_spendvectorsave(coin,bp,&bp->ramchain,bp->tmpspends,bp->numtmpspends,bp->ramchain.H.data->numspends) == 0 )
+                else if ( iguana_spendvectorsave(coin,bp,&bp->ramchain,bp->tmpspends,bp->numtmpspends,bp->ramchain.H.data->numspends) == 0 )
                 {
                     if ( bp->tmpspends != 0 && bp->numtmpspends > 0 && bp->tmpspends != bp->ramchain.Xspendinds )
                         myfree(bp->tmpspends,sizeof(*bp->tmpspends) * bp->numtmpspends);
@@ -1907,11 +1907,11 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             if ( (block= iguana_bundleblock(coin,&hash2,bp,bundlei)) != 0 )
                 iguana_bundlehashadd(coin,bp,bundlei,block);
             //printf("RT.%d vs hwm.%d starti.%d bp->n %d block.%p/%p ramchain.%p\n",coin->RTheight,coin->blocks.hwmchain.height,coin->RTstarti,bp->n,block,bp->blocks[bundlei],dest->H.data);
-            if ( block != 0 && bits256_nonz(block->RO.prev_block) != 0 )
+            if ( coin->RTdatabad == 0 && block != 0 && bits256_nonz(block->RO.prev_block) != 0 )
             {
                 iguana_blocksetcounters(coin,block,dest);
                 startmillis0 = OS_milliseconds();
-                if ( iguana_ramchainfile(coin,dest,&blockR,bp,bundlei,block) == 0 )
+                if ( coin->RTdatabad == 0 && iguana_ramchainfile(coin,dest,&blockR,bp,bundlei,block) == 0 )
                 {
                     for (i=0; i<bp->n; i++)
                         if ( GETBIT(bp->haveblock,i) == 0 )

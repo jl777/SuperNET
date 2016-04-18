@@ -92,15 +92,16 @@ int32_t iguana_sethdr(struct iguana_msghdr *H,const uint8_t netmagic[4],char *co
     memset(H,0,sizeof(*H));
     memcpy(H->netmagic,netmagic,4);
     strncpy(H->command,command,12);
+    if ( datalen < 0 || datalen > IGUANA_MAXPACKETSIZE )
+        return(-1);
     iguana_rwnum(1,H->serdatalen,sizeof(int32_t),&datalen);
-    if ( data != 0 && datalen != 0 )
+    if ( data != 0 )
     {
         hash2 = bits256_doublesha256(0,data,datalen);
         iguana_rwbignum(1,tmp.bytes,sizeof(tmp),hash2.bytes);
         for (i=0; i<4; i++)
             H->hash[i] = tmp.bytes[i];
-    }
-    else H->hash[0] = 0x5d, H->hash[1] = 0xf6, H->hash[2] = 0xe0, H->hash[3] = 0xe2;
+    } else H->hash[0] = 0x5d, H->hash[1] = 0xf6, H->hash[2] = 0xe0, H->hash[3] = 0xe2;
     return(datalen + sizeof(*H));
 }
 

@@ -46,10 +46,9 @@ char *sglue(GLUEARGS,char *agent,char *method)
                     len = (int32_t)strlen(rpcretstr);
                     if ( rpcretstr[0] == '"' && rpcretstr[len-1] == '"' )
                     {
-                        for (i=1,j=0; i<len-1; i++,j++)
+                        for (i=1,j=0; i<len-2; i++,j++)
                             rpcretstr[j] = rpcretstr[i];
-                        rpcretstr[j] = '\n';
-                        //free_json(json);
+                        rpcretstr[j++] = '\n', rpcretstr[j] = 0;
                         free_json(retjson);
                         free(retstr);
                         return(rpcretstr);
@@ -512,6 +511,7 @@ static char *getrawchangeaddress(RPCARGS)
 #define false 0
 struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,remoteflag; } RPCcalls[] =
 {
+    { "getblockhash",           &getblockhash,           false,  true },
     { "walletpassphrase",       &walletpassphrase,       true,   false },
     { "SuperNET",               &SuperNET,               false,  true },
   //{ "SuperNETb",              &SuperNET,               false,  true },
@@ -545,7 +545,6 @@ struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,remotefla
     { "sendmany",               &sendmany,               false,  false },
     { "addmultisigaddress",     &addmultisigaddress,     false,  false },
     { "getblock",               &getblock,               false,  true },
-    { "getblockhash",           &getblockhash,           false,  true },
     { "gettransaction",         &gettransaction,         false,  true },
     { "listtransactions",       &listtransactions,       false,  false },
     { "listaddressgroupings",   &listaddressgroupings,   false,  false },
@@ -630,7 +629,7 @@ char *iguana_bitcoinrpc(struct supernet_info *myinfo,uint16_t port,struct iguana
 
 char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr,uint16_t port)
 {
-    cJSON *params[16],*array; struct iguana_info *coin = 0; char *symbol; int32_t i,c,n; char *retstr = 0;
+    cJSON *params[16],*array; struct iguana_info *coin = 0; char *symbol = "BTCD"; int32_t i,c,n; char *retstr = 0;
     memset(params,0,sizeof(params));
     if ( json != 0 )
     {
@@ -654,7 +653,7 @@ char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,ch
             if ( i == IGUANA_MAXCOINS )
                 coin = 0;
         }
-        //printf("method.(%s) (%s) remote.%s symbol.(%s)\n",method,jprint(json,0),remoteaddr,symbol);
+        //printf("method.(%s) (%s) remote.(%s) symbol.(%s)\n",method,jprint(json,0),remoteaddr,symbol);
         if ( method != 0 && symbol != 0 && (coin != 0 || (coin= iguana_coinfind(symbol)) != 0) )
         {
             if ( (array= jarray(&n,json,"params")) == 0 )
@@ -670,7 +669,7 @@ char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,ch
                     //printf("add params[%d] of %d <- (%s) %p.(%p %p)\n",i,n,jprint(params[i],0),params[i],params[i]->next,params[i]->prev);
                 }
             }
-            retstr = iguana_bitcoinrpc(myinfo,port,coin,method,params,n,json,remoteaddr,array);
+            retstr = iguana_bitcoinrpc(myinfo,IGUANA_RPCPORT,coin,method,params,n,json,remoteaddr,array);
             if ( n > 0 )
                 for (i=0; i<n; i++)
                     if ( params[i] != 0 )
@@ -678,7 +677,7 @@ char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,ch
         }
     }
     if ( retstr == 0 )
-        retstr = clonestr("{\"error\":\"cant parse jsonstr\"}");
+        retstr = clonestr("{\"error\":\"null return from iguana_bitcoinRPC\"}");
     return(retstr);
 }
 
@@ -999,7 +998,8 @@ void iguana_rpcloop(void *args)
     int32_t recvlen,flag,bindsock,postflag,contentlen,sock,remains,numsent,jsonflag,hdrsize,len;
     socklen_t clilen; char helpname[512],remoteaddr[64],*buf,*retstr,*space;//,*retbuf; ,n,i,m
     struct sockaddr_in cli_addr; uint32_t ipbits,i,size = IGUANA_WIDTH*IGUANA_HEIGHT*16 + 512;
-    port = myinfo->rpcport;
+    if ( (port= myinfo->argport) == 0 )
+        port = myinfo->rpcport;
     if ( jsonbuf == 0 )
         jsonbuf = calloc(1,IGUANA_MAXPACKETSIZE);
     while ( (bindsock= iguana_socket(1,"127.0.0.1",port)) < 0 )

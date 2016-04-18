@@ -199,7 +199,7 @@ char *iguana_JSON(char *jsonstr,uint16_t port)
         free_json(json);
     }
     if ( retstr == 0 )
-        retstr = clonestr("{\"error\":\"cant parse jsonstr from pnacl\"}");
+        retstr = clonestr("{\"error\":\"null return from iguana_JSON\"}");
     return(retstr);
 }
 
@@ -228,16 +228,17 @@ int32_t iguana_jsonQ()
     {
         if ( ptr->expired != 0 )
         {
-            *ptr->retjsonstrp = clonestr("{\"error\":\"request timeout\"}");
+            if ( ptr->retjsonstrp != 0 && *ptr->retjsonstrp != 0 )
+                free(*ptr->retjsonstrp); // *ptr->retjsonstrp = clonestr("{\"error\":\"request timeout\"}");
             printf("garbage collection: expired.(%s)\n",ptr->jsonstr);
             myfree(ptr,ptr->allocsize);
         } else queue_enqueue("finishedQ",&finishedQ,&ptr->DL,0);
     }
     if ( (ptr= queue_dequeue(&jsonQ,0)) != 0 )
     {
-        if ( *ptr->retjsonstrp != 0 && (*ptr->retjsonstrp= SuperNET_jsonstr(ptr->myinfo,ptr->jsonstr,ptr->remoteaddr,ptr->port)) == 0 )
+        if ( ptr->retjsonstrp != 0 && (*ptr->retjsonstrp= SuperNET_jsonstr(ptr->myinfo,ptr->jsonstr,ptr->remoteaddr,ptr->port)) == 0 )
             *ptr->retjsonstrp = clonestr("{\"error\":\"null return from iguana_jsonstr\"}");
-        printf("finished.(%s) -> (%s)\n",ptr->jsonstr,*ptr->retjsonstrp!=0?*ptr->retjsonstrp:"null return");
+        //printf("finished.(%s) -> (%s) %.0f\n",ptr->jsonstr,*ptr->retjsonstrp!=0?*ptr->retjsonstrp:"null return",OS_milliseconds());
         queue_enqueue("finishedQ",&finishedQ,&ptr->DL,0);
         return(1);
     }
@@ -248,7 +249,7 @@ char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t
 {
     struct iguana_jsonitem *ptr; char *retjsonstr = 0; int32_t len,allocsize; double expiration;
     expiration = OS_milliseconds() + maxmillis;
-    printf("blocking case.(%s)\n",jsonstr);
+    printf("blocking case.(%s) %.0f maxmillis.%d\n",jsonstr,OS_milliseconds(),maxmillis);
     len = (int32_t)strlen(jsonstr);
     allocsize = sizeof(*ptr) + len + 1;
     ptr = mycalloc('J',1,allocsize);
@@ -296,7 +297,7 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remote
         }
         jsonstr = jprint(json,0);
         //printf("RPC? (%s)\n",jsonstr);
-        if ( (remoteaddr == 0 || jstr(json,"immediate") != 0) && port == IGUANA_RPCPORT )
+        if ( (remoteaddr == 0 || remoteaddr[0] == 0 || jstr(json,"immediate") != 0) && port == IGUANA_RPCPORT )
             retjsonstr = SuperNET_jsonstr(myinfo,jsonstr,remoteaddr,port);
         else retjsonstr = iguana_blockingjsonstr(myinfo,jsonstr,tag,timeout,remoteaddr,port);
         if ( retjsonstr != 0 )
@@ -305,7 +306,8 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remote
             {
                 if ( j64bits(retjson,"tag") != tag )
                 {
-                    jdelete(retjson,"tag");
+                    if ( jobj(retjson,"tag") != 0 )
+                        jdelete(retjson,"tag");
                     jadd64bits(retjson,"tag",tag);
                 }
                 retstr = jprint(retjson,1);
@@ -434,7 +436,7 @@ void mainloop(struct supernet_info *myinfo)
                                 if ( iguana_validated(coin) < n || iguana_utxofinished(coin) < n || iguana_balancefinished(coin) < n )
                                 {
                                     coin->spendvectorsaved = 1;
-                                    printf("start UTXOGEN\n");
+                                    printf("update volatile data\n");
                                 }
                                 else
                                 {

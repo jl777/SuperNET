@@ -707,9 +707,9 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,ui
         if ( (retstr= SuperNET_processJSON(myinfo,json,remoteaddr,port)) != 0 )
         {
             //printf("retstr.(%s)\n",retstr);
-            if ( remoteaddr != 0 && (retjson= cJSON_Parse(retstr)) != 0 )
+            if ( retstr[strlen(retstr)-1] != '\n' && (retjson= cJSON_Parse(retstr)) != 0 )
             {
-                if ( jobj(retjson,"result") != 0 || jobj(retjson,"error") != 0 || jobj(retjson,"method") == 0 )
+                if ( jobj(retjson,"result") == 0 || jobj(retjson,"error") != 0 || jobj(retjson,"method") != 0 )
                 {
                     //printf("it is a result, dont return\n");
                     free(retstr);

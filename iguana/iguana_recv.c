@@ -207,18 +207,30 @@ struct iguana_txblock *iguana_peertxdata(struct iguana_info *coin,int32_t *bundl
 
 int32_t iguana_speculativefind(struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_block *block,uint8_t *data,int32_t recvlen)
 {
-    int32_t i,j,numcached; uint8_t *tmp; char str[65];
-    for (i=1; i<bp->n; i++)
+    int32_t i,j,numcached,cachelen; uint8_t *tmp; char str[65];
+    if ( recvlen < 0 || recvlen > IGUANA_MAXPACKETSIZE )
+    {
+        printf("iguana_speculativefind: illegal recvlen.%d\n",recvlen);
+        return(-1);
+    }
+    for (i=0; i<bp->n; i++)
     {
         if ( bits256_cmp(bp->speculative[i],block->RO.hash2) == 0 )
         {
             if ( (tmp= bp->speculativecache[i]) != 0 )
             {
+                memcmp(&cachelen,tmp,sizeof(cachelen));
+                if ( cachelen < 0 || cachelen > IGUANA_MAXPACKETSIZE )
+                {
+                    printf("illegal cachelen.%d %s [%d:%d] %p\n",cachelen,coin->symbol,bp->hdrsi,i,tmp);
+                    bp->speculativecache[i] = 0;
+                    continue;
+                }
                 if ( memcmp(&recvlen,tmp,sizeof(recvlen)) != 0 || memcmp(&tmp[sizeof(recvlen)],data,recvlen) != 0 )
                     printf("data ERROR [%d:%d] already has recvlen.%d for %s\n",bp->hdrsi,i,recvlen,bits256_str(str,block->RO.hash2));
                 return(0);
             }
-            bp->speculativecache[i] = mycalloc('p',1,recvlen + sizeof(recvlen));
+            bp->speculativecache[i] = calloc(1,recvlen + sizeof(recvlen));
             memcpy(bp->speculativecache[i],&recvlen,sizeof(recvlen));
             memcpy(&bp->speculativecache[i][sizeof(recvlen)],data,recvlen);
             for (j=numcached=0; j<bp->n; j++)
@@ -279,6 +291,11 @@ void iguana_bundletime(struct iguana_info *coin,struct iguana_bundle *bp,int32_t
 void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,struct iguana_msghdr *H,uint8_t *data,int32_t recvlen)
 {
     struct iguana_bundlereq *req; struct iguana_txblock *txdata = 0; int32_t valid,speculative=0,i,j,bundlei,copyflag; struct iguana_block *block; struct iguana_bundle *bp; uint32_t now; char str[65];
+    if ( recvlen < 0 || recvlen > IGUANA_MAXPACKETSIZE )
+    {
+        printf("iguana_getblockM: illegal recvlen.%d\n",recvlen);
+        return;
+    }
     if ( 0 )
     {
         for (i=0; i<txdata->space[0]; i++)
@@ -738,7 +755,7 @@ void iguana_checklongestchain(struct iguana_info *coin,struct iguana_bundle *bp,
     {
         if ( coin->longestchain > bp->bundleheight+num+coin->chain->minconfirms )
         {
-            //printf("strange.%d suspicious longestchain.%d vs [%d:%d] %d bp->n %d\n",coin->longestchain_strange,coin->longestchain,bp->hdrsi,num,bp->bundleheight+num,bp->n);
+            printf("strange.%d suspicious longestchain.%d vs [%d:%d] %d bp->n %d\n",coin->longestchain_strange,coin->longestchain,bp->hdrsi,num,bp->bundleheight+num,bp->n);
             if ( coin->longestchain_strange++ > 10 )
             {
                 coin->badlongestchain = coin->longestchain;
@@ -1534,6 +1551,12 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
     char str[2000];
     hwmheight = coin->blocks.hwmchain.height;
     coin->RTramchain_busy = 1;
+    if ( coin->balanceflush != 0 )
+    {
+        if ( iguana_balanceflush(coin,coin->balanceflush) > 0 )
+         printf("balanceswritten.%d flushed coin->balanceflush %d vs %d coin->longestchain/coin->chain->bundlesize\n",coin->balanceswritten,coin->balanceflush,coin->longestchain/coin->chain->bundlesize);
+        coin->balanceflush = 0;
+    }
     //printf("recvQ\n");
     flag += iguana_processrecvQ(coin,&newhwm);
     //printf("reqhdrs\n");
@@ -1571,7 +1594,7 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
     {
         for (i=0; i<coin->chain->bundlesize; i++)
         {
-            if ( iguana_realtime_update(coin) <= 0 )
+            if ( coin->RTdatabad != 0 || iguana_realtime_update(coin) <= 0 )
                 break;
             //printf("call iguana_realtime_update i.%d\n",i);
         }

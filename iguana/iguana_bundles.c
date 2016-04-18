@@ -1038,24 +1038,26 @@ static int32_t revsortds(double *buf,uint32_t num,int32_t size)
 int32_t iguana_cacheprocess(struct iguana_info *coin,struct iguana_bundle *bp,int32_t bundlei)
 {
     int32_t recvlen; struct iguana_msghdr H; uint8_t *data; struct iguana_block *block;
-    if ( (data= bp->speculativecache[bundlei]) != 0 && bp->speculative != 0 && (block= iguana_blockfind("cacheprocess",coin,bp->speculative[bundlei])) != 0 )
+    if ( (data= bp->speculativecache[bundlei]) != 0 && bp->speculative != 0 && (block= iguana_blockfind("cacheprocess",coin,bp->speculative[bundlei])) != 0 && block->processed == 0 )
     {
-        iguana_bundlehash2add(coin,0,bp,bundlei,bp->speculative[bundlei]);
+        block->processed = 1;
+        bp->speculativecache[bundlei] = 0;
+        iguana_bundlehash2add(coin,0,bp,bundlei,block->RO.hash2);
         recvlen = *(int32_t *)data;
-        memset(&H,0,sizeof(H));
-        iguana_sethdr(&H,coin->chain->netmagic,"block",&data[sizeof(recvlen)],recvlen);
-        if ( coin->internaladdr.RAWMEM.ptr == 0 )
-            iguana_meminit(&coin->internaladdr.RAWMEM,"cache",0,IGUANA_MAXPACKETSIZE + 65536*3,0);
-        if ( coin->TXMEM.ptr == 0 )
-            iguana_meminit(&coin->internaladdr.TXDATA,"txdata",0,IGUANA_MAXPACKETSIZE*1.5,0);
-        if ( coin->internaladdr.HASHMEM.ptr == 0 )
-            iguana_meminit(&coin->internaladdr.HASHMEM,"HASHPTRS",0,256,0);
-        if ( iguana_msgparser(coin,&coin->internaladdr,&coin->internaladdr.RAWMEM,&coin->internaladdr.TXDATA,&coin->internaladdr.HASHMEM,&H,&data[sizeof(recvlen)],recvlen) < 0 )
-            printf("error parsing speculativecache.[%d:%d]\n",bp->hdrsi,bundlei);
-        else block->processed = 1;
         //char str[65]; printf("iguana_cacheprocess [%d:%d] %s fp.%x len.%d:%d\n",bp->hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]),block->fpipbits,block->RO.recvlen,recvlen);
-        //myfree(data,recvlen + sizeof(recvlen));
-        //bp->speculativecache[bundlei] = 0;
+        memset(&H,0,sizeof(H));
+        if ( iguana_sethdr(&H,coin->chain->netmagic,"block",&data[sizeof(recvlen)],recvlen) > 0 )
+        {
+            if ( coin->internaladdr.RAWMEM.ptr == 0 )
+                iguana_meminit(&coin->internaladdr.RAWMEM,"cache",0,IGUANA_MAXPACKETSIZE + 65536*3,0);
+            if ( coin->TXMEM.ptr == 0 )
+                iguana_meminit(&coin->internaladdr.TXDATA,"txdata",0,IGUANA_MAXPACKETSIZE*1.5,0);
+            if ( coin->internaladdr.HASHMEM.ptr == 0 )
+                iguana_meminit(&coin->internaladdr.HASHMEM,"HASHPTRS",0,256,0);
+            if ( iguana_msgparser(coin,&coin->internaladdr,&coin->internaladdr.RAWMEM,&coin->internaladdr.TXDATA,&coin->internaladdr.HASHMEM,&H,&data[sizeof(recvlen)],recvlen) < 0 )
+                printf("error parsing speculativecache.[%d:%d]\n",bp->hdrsi,bundlei);
+        }
+        free(data);
         return(recvlen);
     }
     return(-1);
@@ -1170,8 +1172,6 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
                 {
                     for (j=0; j<bp->n; j++)
                     {
-                        //if ( bp->blocks[j] == 0 && bp->speculative != 0 && bits256_nonz(bp->speculative[j]) != 0 )
-                          //  bp->blocks[j] = iguana_blockhashset("speculative3",coin,bp->bundleheight+j,bp->speculative[j],1);
                         if ( ((block= bp->blocks[j]) == 0 || bp == coin->current) && bp->speculativecache[j] != 0 )
                         {
                             if ( (block != 0 || (block= iguana_blockhashset("bundlestats3",coin,-1,bp->speculative[j],1)) != 0) && block->processed == 0 )

@@ -82,7 +82,7 @@ struct supernet_info
     uint8_t *recvbuf[6];
     struct supernet_address myaddr;
     int32_t LBsock,PUBsock,reqsock,subsock,networktimeout,maxdelay;
-    uint16_t LBport,PUBport,reqport,subport,rpcport,publicRPC;
+    uint16_t LBport,PUBport,reqport,subport,rpcport,publicRPC,argport;
     //struct nn_pollfd pfd[SUPERNET_MAXAGENTS]; //struct relay_info active;
     struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ;
     int32_t numagents,numexchanges;
