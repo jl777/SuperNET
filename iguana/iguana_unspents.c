@@ -1840,7 +1840,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     double startmillis0; static double totalmillis0; static int32_t num0;
     struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,i,n,flag=0; bits256 hash2; struct iguana_peer *addr;
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
-    if ( coin->spendvectorsaved != 1 && coin->bundlescount-1 != coin->balanceswritten )
+    if ( coin->RTheight > 0 && coin->spendvectorsaved != 1 && coin->bundlescount-1 != coin->balanceswritten )
     {
         coin->spendvectorsaved = 1;
         return(0);
