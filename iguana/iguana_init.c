@@ -497,7 +497,7 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
                 for (j=0; j<num; j++)
                 {
                     //printf("%s ",ipaddrs[j]);
-                    if ( 1 && j < IGUANA_MINPEERS )
+                    if ( 0 && j < IGUANA_MINPEERS )
                         iguana_launchpeer(coin,ipaddrs[j]);
                     else iguana_possible_peer(coin,ipaddrs[j]);
                 }

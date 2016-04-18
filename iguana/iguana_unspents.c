@@ -1097,11 +1097,6 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
         myfree(ptr,sizeof(*ptr) * n);
     if ( bp != coin->current )
         printf("UTXO [%4d].%-6d dur.%-2d [milli %8.3f] vectors %-6d err.%d [%5.2f%%] %7d %9s of %d\n",bp->hdrsi,bp->numtmpspends,(uint32_t)time(NULL)-starttime,OS_milliseconds()-startmillis,spendind,errs,100.*(double)emitted/(total+1),emit,mbstr(str,sizeof(*ptr) * emit),n);
-    if ( errs != 0 )
-    {
-        printf("EXITING, restart iguana\n");
-        exit(-1);
-    }
     return(-errs);
 }
 
@@ -1541,7 +1536,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
         exit(-1);
     }
     coin->balanceswritten = iguana_volatilesinit(coin);
-    printf("flush free\n");
+    //printf("flush free\n");
     iguana_RTramchainfree(coin,bp);
     return(coin->balanceswritten);
 }
@@ -1679,7 +1674,7 @@ int32_t iguana_convert(struct iguana_info *coin,int32_t helperid,struct iguana_b
 
 void iguana_RTramchainfree(struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    printf("free RTramchain\n");
+    //printf("free RTramchain\n");
     iguana_utxoupdate(coin,-1,0,0,0,0,-1); // free hashtables
     coin->RTheight = coin->balanceswritten * coin->chain->bundlesize;
     coin->RTgenesis = 0;
@@ -1698,10 +1693,10 @@ void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,
     {
         if ( iguana_mapchaininit(fname,coin,R,bp,bundlei,block,ptr,filesize) == 0 )
         {
-            if ( dest != 0 )
+            if ( dest != 0 && dest->H.data != 0 )
                 err = iguana_ramchain_iterate(coin,dest,R,bp,bundlei);
             else err = 0;
-            if ( err != 0 || bits256_cmp(R->H.data->firsthash2,block->RO.hash2) != 0 )
+            if ( err != 0 || dest->H.data == 0 || bits256_cmp(R->H.data->firsthash2,block->RO.hash2) != 0 )
             {
                 char str[65];
                 printf("ERROR [%d:%d] %s vs ",bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
@@ -1742,7 +1737,7 @@ void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_b
     }
     if ( coin->RTramchain.H.data == 0 )
     {
-        printf("ALLOC RTramchain\n");
+        //printf("ALLOC RTramchain\n");
         iguana_RTramchainfree(coin,bp);
         iguana_ramchainopen(fname,coin,dest,&coin->RTmem,&coin->RThashmem,bp->bundleheight,bp->hashes[0]);
         dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
