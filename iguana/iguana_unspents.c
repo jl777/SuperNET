@@ -1688,7 +1688,7 @@ void iguana_RTramchainfree(struct iguana_info *coin,struct iguana_bundle *bp)
     iguana_utxoupdate(coin,-1,0,0,0,0,-1); // free hashtables
     coin->RTheight = coin->balanceswritten * coin->chain->bundlesize;
     coin->RTgenesis = 0;
-    //iguana_ramchain_free(coin,&coin->RTramchain,1);
+    iguana_ramchain_free(coin,&coin->RTramchain,1);
     //if ( bp != 0 )
     //    bp->ramchain = coin->RTramchain;
     iguana_mempurge(&coin->RTmem);
