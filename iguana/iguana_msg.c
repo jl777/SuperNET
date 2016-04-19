@@ -633,7 +633,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                 len += iguana_rwbignum(0,&serialized[sizeof(struct iguana_msghdr) + len],sizeof(bits256),hash2.bytes);
                 if ( bits256_nonz(hash2) == 0 )
                     break;
-                else if ( nonz == 0 && iguana_peerhdrrequest(coin,addr,hash2) > 0 )
+                else if ( iguana_peerhdrrequest(coin,addr,hash2) > 0 )
                     nonz++;
             }
             printf("GOT HEADERS.(%s) n.%d len.%d\n",H->command,n,len);
