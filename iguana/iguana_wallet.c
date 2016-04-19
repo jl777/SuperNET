@@ -49,10 +49,12 @@ uint8_t *iguana_rmdarray(struct iguana_info *coin,int32_t *numrmdsp,cJSON *array
         {
             if ( (coinaddr= jstr(jitem(array,i),0)) != 0 )
             {
+                printf("(%s) ",coinaddr);
                 bitcoin_addr2rmd160(&addrtypes[j],&rmdarray[20 * j],coinaddr);
                 j++;
             }
         }
+        printf("rmdarray[%d]\n",n);
     }
     return(rmdarray);
 }
