@@ -416,7 +416,7 @@ int32_t iguana_ramchain_txid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 *txi
     return(-2);
 }
 
-uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 prev_hash,int32_t prev_vout,uint32_t sequence,int32_t hdrsi,uint16_t fileid,uint32_t scriptpos,int32_t vinscriptlen)
+uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 prev_hash,int32_t prev_vout,uint32_t sequence,int32_t hdrsi,uint16_t fileid,uint64_t scriptpos,int32_t vinscriptlen)
 {
     struct iguana_spend *s; struct iguana_kvitem *ptr = 0; bits256 txid;
     uint32_t spendind,unspentind,txidind=0,pkind,external=0; uint64_t value = 0;
@@ -1614,7 +1614,7 @@ int32_t iguana_ramchain_cmp(struct iguana_ramchain *A,struct iguana_ramchain *B,
 int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain *dest,struct iguana_ramchain *ramchain,struct iguana_bundle *bp,int16_t bundlei)
 {
     RAMCHAIN_DECLARE; RAMCHAIN_DESTDECLARE;
-    int32_t j,hdrsi,prevout,scriptlen; uint32_t scriptpos,sequenceid,destspendind=0,desttxidind=0; uint16_t fileid;
+    int32_t j,hdrsi,prevout,scriptlen; uint32_t sequenceid,destspendind=0,desttxidind=0; uint16_t fileid; uint64_t scriptpos;
     bits256 prevhash; uint64_t value; uint8_t type; struct iguana_unspent *u;
     struct iguana_txid *tx; struct iguana_ramchaindata *rdata; uint8_t *rmd160;
     //if ( dest != 0 )
@@ -1681,7 +1681,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
                             scriptdata = iguana_ramchain_scriptdecode(&metalen,&scriptlen,Kspace,type,_script,u->scriptoffset,P[u->pkind].pubkeyoffset < ramchain->H.scriptoffset ? P[u->pkind].pubkeyoffset : 0);
                         }*/
                         //fprintf(stderr,"iter add %p[%d] type.%d\n",scriptdata,scriptlen,type);
-                        if ( iguana_ramchain_addunspent(coin,RAMCHAIN_ARG,value,hdrsi,rmd160,j,type,fileid,scriptpos,scriptlen) == 0 )
+                        if ( iguana_ramchain_addunspent(coin,RAMCHAIN_ARG,value,hdrsi,rmd160,j,type,fileid,(uint32_t)scriptpos,scriptlen) == 0 )
                             return(-3);
                     }
                 }
@@ -1714,7 +1714,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
                 if ( dest != 0 )
                 {
                     //fprintf(stderr,"dest add %p[%d] type.%d offset.%d vs %d\n",scriptdata,scriptlen,type,dest->H.scriptoffset,dest->H.data->scriptspace);
-                    if ( iguana_ramchain_addunspent(coin,RAMCHAIN_DESTARG,value,hdrsi,rmd160,j,type,fileid,scriptpos,scriptlen) == 0 )
+                    if ( iguana_ramchain_addunspent(coin,RAMCHAIN_DESTARG,value,hdrsi,rmd160,j,type,fileid,(uint32_t)scriptpos,scriptlen) == 0 )
                         return(-5);
                 } //else printf("addunspent20 done\n");
             } else return(-6);

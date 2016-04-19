@@ -22,7 +22,7 @@
 
 //struct iguana_spend { uint32_t spendtxidind; int16_t prevout; uint16_t tbd:14,external:1,diffsequence:1; } __attribute__((packed));
 
-int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,long fileptr[2],char *fname,uint32_t scriptpos,int32_t scriptlen)
+int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,long fileptr[2],char *fname,uint64_t scriptpos,int32_t scriptlen)
 {
     FILE *fp; int32_t retval = scriptlen;
 #ifndef __PNACL__
@@ -61,7 +61,7 @@ int32_t iguana_vinset(struct iguana_info *coin,uint8_t *scriptspace,int32_t heig
         {
             iguana_vinsfname(coin,fname,s->fileid);
             if ( (scriptlen= iguana_scriptdata(coin,scriptspace,coin->peers.vinptrs[s->fileid],fname,s->scriptpos,s->scriptlen)) != s->scriptlen )
-                printf("err.%d getting %d bytes from fileid.%d[%d] %s for s%d\n",err,s->scriptlen,s->scriptpos,s->fileid,fname,spendind);
+                printf("err.%d getting %d bytes from fileid.%llu[%d] %s for s%d\n",err,s->scriptlen,(long long)s->scriptpos,s->fileid,fname,spendind);
         }
         vin->scriptlen = s->scriptlen;
         vin->vinscript = scriptspace;

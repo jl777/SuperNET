@@ -344,7 +344,7 @@ struct iguana_txid { bits256 txid; uint32_t txidind:29,firstvout:28,firstvin:28,
 
 struct iguana_unspent { uint64_t value; uint32_t txidind,pkind,prevunspentind,scriptpos; uint16_t scriptlen,hdrsi; uint16_t fileid:11,type:5; int16_t vout; } __attribute__((packed));
 
-struct iguana_spend { uint32_t spendtxidind,sequenceid,scriptpos; int16_t prevout; uint16_t fileid,scriptlen:14,external:1; } __attribute__((packed)); // numsigs:4,numpubkeys:4,p2sh:1,sighash:4
+struct iguana_spend { uint64_t scriptpos:48,scriptlen:16; uint32_t spendtxidind,sequenceid; int16_t prevout; uint16_t fileid:15,external:1; } __attribute__((packed)); // numsigs:4,numpubkeys:4,p2sh:1,sighash:4
 
 struct iguana_pkhash { uint8_t rmd160[20]; uint32_t pkind; } __attribute__((packed)); //firstunspentind,pubkeyoffset
 
