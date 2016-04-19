@@ -364,14 +364,10 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
         return(0);
     incr = IGUANA_NUMHELPERS;
     if ( strcmp("BTC",coin->symbol) == 0 && coin->PREFETCHLAG > 0 )
-    {
         incr = 1;
-        if ( incr < 1 )
-            incr = 1;
-    }
+    max = coin->bundlescount;
     if ( helperid < incr )
     {
-        max = coin->bundlescount;
         if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 )
             max--;
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
