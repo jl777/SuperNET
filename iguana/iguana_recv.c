@@ -189,7 +189,7 @@ struct iguana_txblock *iguana_peertxdata(struct iguana_info *coin,int32_t *bundl
                             if ( txdata->datalen != datalen || txdata->block.bundlei != bundlei )
                             {
                                 printf("%s peertxdata txdata->datalen.%d != %d bundlei.%d vs %d\n",bits256_str(str,txdata->block.RO.hash2),txdata->datalen,datalen,txdata->block.bundlei,bundlei);
-                                getchar();
+                                //getchar();
                                 txdata = 0;
                                 iguana_memreset(mem);
                             } //else printf("SUCCESS txdata.%s bundlei.%d fpos.%d T.%d U.%d S.%d P.%d\n",bits256_str(str,txdata->block.hash2),bundlei,fpos,txdata->numtxids,txdata->numunspents,txdata->numspends,txdata->numpkinds);
@@ -1286,7 +1286,7 @@ int32_t iguana_processrecvQ(struct iguana_info *coin,int32_t *newhwmp) // single
             if ( (req= iguana_recvtxids(coin,req,req->hashes,req->n)) != 0 )
                 myfree(req->hashes,(req->n+1) * sizeof(*req->hashes)), req->hashes = 0;
         }
-        else printf("iguana_updatebundles unknown type.%c\n",req->type), getchar();
+        else printf("iguana_updatebundles unknown type.%c\n",req->type);//, getchar();
         //fprintf(stderr,"finished coin->recvQ\n");
         if ( req != 0 )
             myfree(req,req->allocsize), req = 0;

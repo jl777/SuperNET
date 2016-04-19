@@ -446,7 +446,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
         if ( iguana_bundlevalidate(coin,bp,0) != bp->n )
         {
             printf("validate.[%d] error. just refresh page or restart iguana\n",bp->hdrsi);
-            exit(-1);
+            //exit(-1);
         }
     }
     while ( coin->spendvectorsaved == 1 )
@@ -724,7 +724,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     else if ( coin->endPEND < 2 )
         coin->endPEND = 2;
 #ifdef __PNACL__
-    coin->startPEND =  coin->endPEND = 1;
+    //coin->startPEND =  coin->endPEND = 1;
 #endif
     coin->enableCACHE = (strcmp("BTC",coin->symbol) != 0);
     if ( jobj(json,"cache") != 0 )
