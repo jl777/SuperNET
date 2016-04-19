@@ -341,7 +341,7 @@ struct iguana_ledger
 
 // ramchain temp file structures
 struct iguana_unspent20 { uint64_t value; uint32_t scriptpos,txidind:28,type:4; uint16_t scriptlen,fileid; uint8_t rmd160[20]; } __attribute__((packed));
-struct iguana_spend256 { bits256 prevhash2; uint32_t sequenceid,scriptpos; int16_t prevout; uint16_t vinscriptlen,spendind,fileid; } __attribute__((packed));
+struct iguana_spend256 { bits256 prevhash2; uint64_t scriptpos:48,vinscriptlen:16; uint32_t sequenceid; int16_t prevout; uint16_t spendind,fileid; } __attribute__((packed));
 
 // permanent readonly structs
 struct iguana_txid { bits256 txid; uint32_t txidind:29,firstvout:28,firstvin:28,bundlei:11,locktime,version,timestamp,extraoffset; uint16_t numvouts,numvins; } __attribute__((packed));
