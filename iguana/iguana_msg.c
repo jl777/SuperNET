@@ -604,7 +604,8 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
     }
     else if ( (ishost= (strcmp(H->command,"getheaders") == 0)) || strcmp(H->command,"headers") == 0 )
     {
-        struct iguana_msgblock msg; struct iguana_block *blocks; uint32_t n,nonz;
+        struct iguana_msgblock msg; struct iguana_block *blocks; uint32_t n=0,nonz;
+        len = 0;
         if ( ishost == 0 )
         {
             len = iguana_rwvarint32(0,data,&n);

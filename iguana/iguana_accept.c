@@ -185,7 +185,7 @@ int32_t iguana_peerhdrrequest(struct iguana_info *coin,struct iguana_peer *addr,
                     free(serialized);
                     return(-1);
                 }
-            }
+            } else printf("cant find block at ht.%d\n",height+i);
         }
         retval = iguana_queue_send(coin,addr,0,serialized,"headers",len,0,0);
         printf("hdrs request retval.%d len.%d\n",retval,len);
