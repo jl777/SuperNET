@@ -24,20 +24,22 @@
 
 int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,long fileptr[2],char *fname,uint64_t scriptpos,int32_t scriptlen)
 {
-    FILE *fp; int32_t retval = scriptlen;
+    FILE *fp; long err; int32_t retval = scriptlen;
 #ifndef __PNACL__
-    if ( fileptr[0] == 0 )
+    /*if ( fileptr[0] == 0 )
         fileptr[0] = (uint64_t)OS_mapfile(fname,&fileptr[1],0);
     if ( fileptr[0] != 0 && (scriptpos + scriptlen) <= fileptr[1] )
         memcpy(scriptspace,(void *)(fileptr[0] + scriptpos),scriptlen);
-    else
+    else*/
 #endif
         if ( (fp= fopen(fname,"rb")) != 0 )
     {
         fseek(fp,scriptpos,SEEK_SET);
-        if ( fread(scriptspace,1,scriptlen,fp) != scriptlen )
+        if ( (err= fread(scriptspace,1,scriptlen,fp)) != scriptlen )
+        {
             retval = -1;
-        //else printf("%s script[%d] offset.%d\n",fname,scriptlen,scriptpos);
+            printf("%s script[%d] offset.%d err.%ld\n",fname,scriptlen,scriptpos,err);
+        }
         fclose(fp);
     } else retval = -1;
     return(retval);
