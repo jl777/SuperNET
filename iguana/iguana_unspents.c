@@ -131,7 +131,6 @@ int32_t iguana_alloctxbits(struct iguana_info *coin,struct iguana_ramchain *ramc
     return(-1);
 }
 
-
 int32_t iguana_alloccacheT(struct iguana_info *coin,struct iguana_ramchain *ramchain)
 {
     static int64_t total;
@@ -580,7 +579,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                 }
                 if ( (T= ramchain->cacheT) == 0 )
                 {
-                    if ( coin->PREFETCHLAG >= 0 )
+                    if ( 0 && coin->PREFETCHLAG >= 0 )
                         iguana_alloccacheT(coin,ramchain);
                     if ( (T= ramchain->cacheT) == 0 )
                         T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
@@ -626,15 +625,15 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
     return(0);
 }
 
-struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *prevhashp,uint32_t *unspentindp,struct iguana_ramchain *ramchain,int32_t spent_hdrsi,struct iguana_spend *s,int32_t prefetchflag)
+struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *prevhashp,uint32_t *unspentindp,struct iguana_ramchain *ramchain,struct iguana_bundle *bp,struct iguana_spend *s,int32_t prefetchflag)
 {
-    int32_t prev_vout,height,hdrsi; uint32_t sequenceid,unspentind,now; char str[65];
+    int32_t prev_vout,height,hdrsi,spent_hdrsi; uint32_t sequenceid,unspentind,now; char str[65];
     struct iguana_bundle *spentbp=0; struct iguana_txid *T,TX,*tp; bits256 *X; bits256 prev_hash;
     X = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Xoffset);
     T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
     //printf("external X.%p %ld num.%d\n",X,(long)ramchain->H.data->Xoffset,(int32_t)ramchain->H.data->numexternaltxids);
     sequenceid = s->sequenceid;
-    hdrsi = spent_hdrsi;
+    hdrsi = bp->hdrsi;
     *unspentindp = 0;
     memset(prevhashp,0,sizeof(*prevhashp));
     if ( s->prevout < 0 )
@@ -666,18 +665,18 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                         printf("%p iguana_txidfind.[%.0f] ave %.2f micros, total %.2f seconds | duration %.3f millis\n",spentbp->ramchain.txbits,coin->txidfind_num,(coin->txidfind_totalmillis*1000.)/coin->txidfind_num,coin->txidfind_totalmillis/1000.,duration);
                     coin->txidfind_totalmillis += duration;
                     coin->txidfind_num += 1.;
-                    if ( 0 && coin->PREFETCHLAG > 0 )
+                    if ( 1 && coin->PREFETCHLAG > 0 )
                     {
                         if ( spentbp->lastprefetch == 0 )
                         {
                             iguana_ramchain_prefetch(coin,&spentbp->ramchain,prefetchflag);
                             spentbp->lastprefetch = now;
                         }
-                        else if ( 0 && (rand() % IGUANA_NUMHELPERS) == 0 && (duration > 10 || duration > (10 * coin->txidfind_totalmillis)/coin->txidfind_num) && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
+                        else if ( (rand() % IGUANA_NUMHELPERS) == 0 && (duration > 10 || duration > (10 * coin->txidfind_totalmillis)/coin->txidfind_num) && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
                         {
                             printf("slow txidfind %.2f vs %.2f prefetch[%d] from.[%d] lag.%ld last.%u\n",duration,coin->txidfind_totalmillis/coin->txidfind_num,spentbp->hdrsi,ramchain->H.data->height/coin->chain->bundlesize,time(NULL) - spentbp->lastprefetch,spentbp->lastprefetch);
-                            iguana_ramchain_prefetch(coin,&spentbp->ramchain,prefetchflag);
-                            spentbp->lastprefetch = now;
+                            iguana_ramchain_prefetch(coin,&bp->ramchain,2);
+                            bp->lastprefetch = now;
                         }
                     }
                 }
@@ -1025,7 +1024,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                 s = &S[spendind];
                 if ( s->external != 0 && s->prevout >= 0 )
                 {
-                    if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s,2)) != 0 && spentbp->ramchain.H.data != 0 )
+                    if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,ramchain,bp,s,2)) != 0 && spentbp->ramchain.H.data != 0 )
                     {
                         if ( spentbp == bp )
                         {
