@@ -430,7 +430,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
     while ( (n= iguana_utxofinished(coin)) < max )
     {
         //printf("helperid.%d utxofinished.%d vs %d\n",helperid,n,max);
-        sleep(3);
+        sleep(IGUANA_NUMHELPERS+3);
     }
     if ( helperid < incr )
     {
@@ -440,7 +440,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
     while ( (n= iguana_convertfinished(coin)) < max )
     {
         printf("helperid.%d convertfinished.%d vs max %d bundlescount.%d\n",helperid,n,max,coin->bundlescount);
-        sleep(3);
+        sleep(IGUANA_NUMHELPERS+3);
     }
     if ( helperid == 0 )
     {
@@ -473,7 +473,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
     while ( iguana_validated(coin) < max || iguana_utxofinished(coin) < max || iguana_balancefinished(coin) < max )
     {
         printf("helperid.%d waiting for spendvectorsaved.%u v.%d u.%d b.%d vs max.%d\n",helperid,coin->spendvectorsaved,iguana_validated(coin),iguana_utxofinished(coin),iguana_balancefinished(coin),max);
-        sleep(3);
+        sleep(IGUANA_NUMHELPERS+3);
     }
     if ( helperid == 0 )
     {
@@ -483,7 +483,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
     else
     {
         while ( coin->spendvectorsaved <= 1 )
-            sleep(3);
+            sleep(IGUANA_NUMHELPERS+3);
     }
     printf("helper.%d done\n",helperid);
     return(num);

@@ -2009,17 +2009,18 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
 {
     static int32_t totalerrs,totalvalidated;
     FILE *fp; char fname[1024]; uint8_t *blockspace; uint32_t now = (uint32_t)time(NULL);
-    int32_t i,max,len,errs = 0; int64_t total = 0;
+    int32_t i,max,len,errs = 0; struct sha256_vstate vstate; bits256 validatehash; int64_t total = 0;
     //printf("validate.[%d]\n",bp->hdrsi);
     if ( bp->validated <= 1 || forceflag != 0 )
     {
+        vupdate_sha256(validatehash.bytes,&vstate,0,0);
         sprintf(fname,"%s/%s/validated/%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
         //printf("validatefname.(%s)\n",fname);
         if ( (fp= fopen(fname,"rb")) != 0 )
         {
             if ( forceflag == 0 )
             {
-                if ( fread(&bp->validated,1,sizeof(bp->validated),fp) != sizeof(bp->validated) ||fread(&total,1,sizeof(total),fp) != sizeof(total) )
+                if ( fread(&bp->validated,1,sizeof(bp->validated),fp) != sizeof(bp->validated) ||fread(&total,1,sizeof(total),fp) != sizeof(total) || fread(&validatehash,1,sizeof(validatehash),fp) != sizeof(validatehash) )
                 {
                     printf("error reading.(%s)\n",fname);
                     total = bp->validated = 0;
@@ -2027,7 +2028,7 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
             } else OS_removefile(fname,1);
             fclose(fp);
         }
-        if ( forceflag != 0 || (total == 0 && bp->validated <= 1) )
+        if ( forceflag != 0 || bp->validated <= 1 )
         {
             max = sizeof(coin->blockspace);
             blockspace = calloc(1,max);
@@ -2038,21 +2039,27 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
                     errs++;
                     iguana_blockunmark(coin,bp->blocks[i],bp,i,1);
                     totalerrs++;
-                } else total += len, totalvalidated++;
+                }
+                else
+                {
+                    vupdate_sha256(validatehash.bytes,&vstate,bp->hashes[i].bytes,sizeof(bp->hashes[i]));
+                    total += len, totalvalidated++;
+                }
             }
             free(blockspace);
             bp->validated = (uint32_t)time(NULL);
-            printf("VALIDATED.[%d] ht.%d duration.%d errs.%d total.%lld %u | total errs.%d validated.%d\n",bp->hdrsi,bp->bundleheight,bp->validated - now,errs,(long long)total,bp->validated,totalerrs,totalvalidated);
+            printf("VALIDATED.[%d] ht.%d duration.%d errs.%d total.%lld %u | total errs.%d validated.%d %llx\n",bp->hdrsi,bp->bundleheight,bp->validated - now,errs,(long long)total,bp->validated,totalerrs,totalvalidated,(long long)validatehash.txid);
         }
         if ( errs == 0 && fp == 0 )
         {
             if ( (fp= fopen(fname,"wb")) != 0 )
             {
-                if ( fwrite(&bp->validated,1,sizeof(bp->validated),fp) != sizeof(bp->validated) || fwrite(&total,1,sizeof(total),fp) != sizeof(total) )
+                if ( fwrite(&bp->validated,1,sizeof(bp->validated),fp) != sizeof(bp->validated) || fwrite(&total,1,sizeof(total),fp) != sizeof(total) || fwrite(&validatehash,1,sizeof(validatehash),fp) != sizeof(validatehash) )
                     printf("error saving.(%s) total.%lld\n",fname,(long long)total);
                 fclose(fp);
             }
         }
+        bp->validatehash = validatehash;
     } // else printf("skip validate.[%d] validated.%u force.%d\n",bp->hdrsi,bp->validated,forceflag);
     if ( errs != 0 )
     {

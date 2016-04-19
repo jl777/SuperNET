@@ -452,7 +452,7 @@ struct iguana_bundle
     struct iguana_block *blocks[IGUANA_MAXBUNDLESIZE];
     uint8_t *speculativecache[IGUANA_MAXBUNDLESIZE],haveblock[IGUANA_MAXBUNDLESIZE/3+1];
     uint32_t issued[IGUANA_MAXBUNDLESIZE];
-    bits256 prevbundlehash2,hashes[IGUANA_MAXBUNDLESIZE+1],nextbundlehash2,allhash,*speculative;
+    bits256 prevbundlehash2,hashes[IGUANA_MAXBUNDLESIZE+1],nextbundlehash2,allhash,*speculative,validatehash;
     struct iguana_ramchain ramchain; uint8_t red,green,blue;
     struct iguana_spendvector *tmpspends; int32_t numtmpspends;
 };
