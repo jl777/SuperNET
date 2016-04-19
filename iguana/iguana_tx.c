@@ -227,7 +227,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
                             return(iguana_queue_send(coin,addr,0,blockspace,"block",total,0,0));
                         else
                         {
-                            printf("validated.[%d:%d] len.%d\n",bp->hdrsi,bundlei,total);
+                            //printf("validated.[%d:%d] len.%d\n",bp->hdrsi,bundlei,total);
                             return(total);
                         }
                     } else printf("iguana_peerblockrequest: error merkle cmp tx.[%d] for ht.%d\n",i,bp->bundleheight+bundlei);
