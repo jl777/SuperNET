@@ -2481,8 +2481,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     if ( bundlei != endi+1 )
     {
         iguana_bundlemapfree(coin,0,0,ipbits,ptrs,filesizes,num,R,starti,endi);
-        if ( (block= bp->blocks[bundlei]) != 0 )
-            iguana_blockunmark(coin,block,bp,bundlei,1);
+        iguana_blockunmark(coin,bp->blocks[bundlei],bp,bundlei,1);
         printf("error mapping hdrsi.%d bundlei.%d\n",bp->hdrsi,bundlei);
         return(-1);
     }

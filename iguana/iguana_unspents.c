@@ -1748,7 +1748,7 @@ void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,
                 printf("mapped.%s\n",bits256_str(str,R->H.data->firsthash2));
             } else return(ptr);
             iguana_blockunmark(coin,block,bp,bundlei,1);
-        } else printf("ramchainfile ptr.%p block.%p mapchaininit error\n",ptr,block);
+        }
         iguana_ramchain_free(coin,R,1);
     } //else printf("ramchainfile ptr.%p block.%p\n",ptr,block);
     return(0);
