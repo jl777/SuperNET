@@ -187,13 +187,10 @@ int32_t iguana_peerhdrrequest(struct iguana_info *coin,struct iguana_peer *addr,
                 }
             }
         }
-        if ( i == coin->chain->bundlesize || (i > 0 && height/coin->chain->bundlesize >= coin->blocks.hwmchain.height/coin->chain->bundlesize) )
-        {
-            retval = iguana_queue_send(coin,addr,0,serialized,"headers",len,0,0);
-            printf("hdrs request retval.%d len.%d\n",retval,len);
-        }
+        retval = iguana_queue_send(coin,addr,0,serialized,"headers",len,0,0);
+        printf("hdrs request retval.%d len.%d\n",retval,len);
         free(serialized);
-    }
+    } else printf("couldnt find header\n");
     return(retval);
 }
 

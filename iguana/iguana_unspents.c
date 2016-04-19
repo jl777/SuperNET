@@ -957,7 +957,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
         bp->numtmpspends = ramchain->numXspends;
         bp->utxofinish = (uint32_t)time(NULL);
         bp->balancefinish = 0;
-        //printf("iguana_spendvectors.[%d]: already have Xspendinds[%d]\n",bp->hdrsi,ramchain->numXspends);
+        printf("iguana_spendvectors.[%d]: already have Xspendinds[%d]\n",bp->hdrsi,ramchain->numXspends);
         return(0);
     }
     ptr = mycalloc('x',sizeof(*ptr),n);
@@ -1990,12 +1990,10 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
                 if ( fread(&bp->validated,1,sizeof(bp->validated),fp) != sizeof(bp->validated) ||fread(&total,1,sizeof(total),fp) != sizeof(total) )
                 {
                     printf("error reading.(%s)\n",fname);
-                    total = 0;
-                }
-            }
+                    total = bp->validated = 0;
+                } else printf("(%s) total.%d validated.%u\n",fname,(int32_t)total,bp->validated);
+            } else OS_removefile(fname,1);
             fclose(fp);
-            if ( forceflag != 0 )
-                OS_removefile(fname,1);
         }
         if ( forceflag != 0 || (total == 0 && bp->validated <= 1) )
         {
@@ -2023,7 +2021,7 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
                 fclose(fp);
             }
         }
-    }
+    } else printf("skip validate.[%d] validated.%u force.%d\n",bp->hdrsi,bp->validated,forceflag);
     if ( errs != 0 )
     {
         printf("remove.[%d]\n",bp->hdrsi);
