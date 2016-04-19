@@ -357,79 +357,93 @@ int32_t iguana_validated(struct iguana_info *coin)
     return(n);
 }
 
+int32_t iguana_helperA(struct iguana_info *coin,struct iguana_bundle *bp,int32_t convertflag)
+{
+    int32_t retval,num = 0;
+    if ( bp == 0 )
+    {
+        printf("iguana_helperA unexpected null bp\n");
+        return(-1);
+    }
+    //printf("validate incr.%d and gen utxo.[%d] utxofinish.%u Xspends.%p\n",incr,hdrsi,bp->utxofinish,bp->ramchain.Xspendinds);
+    if ( strcmp("BTC",coin->symbol) == 0 || iguana_bundlevalidate(coin,bp,0) == bp->n ) //
+    {
+        retval = 0;
+        if ( bp->utxofinish > 1 || (retval= iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,convertflag)) >= 0 )
+        {
+            if ( retval > 0 )
+            {
+                printf("GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - bp->startutxo);
+                num++;
+            }
+            bp->utxofinish = (uint32_t)time(NULL);
+        } else printf("UTXO gen.[%d] utxo error\n",bp->hdrsi);
+    }
+    else
+    {
+        printf("error validating.[%d], restart iguana\n",bp->hdrsi);
+        exit(-1);
+    }
+    return(num);
+}
+
+int32_t iguana_helperB(struct iguana_info *coin,int32_t helperid,struct iguana_bundle *bp,int32_t convertflag)
+{
+    if ( bp == 0 )
+    {
+        printf("iguana_helperB unexpected null bp\n");
+        return(-1);
+    }
+    if ( bp != coin->current )
+    {
+        //iguana_ramchain_prefetch(coin,&bp->ramchain,3);
+        if ( convertflag == 0 )
+        {
+            bp->converted = 1;
+            iguana_convert(coin,helperid,bp,0,0);
+        }
+        bp->converted = (uint32_t)time(NULL);
+        return(1);
+    }
+    return(0);
+}
+
 int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convertflag)
 {
-    int32_t hdrsi,retval,n,max,incr,num = 0; struct iguana_bundle *bp;
+    int32_t hdrsi,n,max,incr,num = 0; struct iguana_bundle *bp;
     if ( coin->spendvectorsaved > 1 )
+    {
+        printf("skip utxogen as spendvectorsaved.%u\n",coin->spendvectorsaved);
         return(0);
+    }
     incr = IGUANA_NUMHELPERS;
     if ( strcmp("BTC",coin->symbol) == 0 && coin->PREFETCHLAG > 0 )
         incr = 1;
     max = coin->bundlescount;
+    if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 )
+        max--;
     if ( helperid < incr )
     {
-        if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 )
-            max--;
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
-        {
-            if ( (bp= coin->bundles[hdrsi]) == 0 )
-                return(-1);
-            //printf("validate incr.%d and gen utxo.[%d] utxofinish.%u Xspends.%p\n",incr,hdrsi,bp->utxofinish,bp->ramchain.Xspendinds);
-            if ( iguana_bundlevalidate(coin,bp,0) == bp->n ) //strcmp("BTC",coin->symbol) == 0 ||
-            {
-                retval = 0;
-                if ( bp->utxofinish > 1 || (retval= iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,convertflag)) >= 0 )
-                {
-                    if ( retval > 0 )
-                    {
-                        printf("GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - bp->startutxo);
-                        num++;
-                    }
-                    bp->utxofinish = (uint32_t)time(NULL);
-                } else printf("UTXO gen.[%d] utxo error\n",bp->hdrsi);
-            }
-            else
-            {
-                printf("error validating.[%d], restart iguana\n",bp->hdrsi);
-                exit(-1);
-            }
-        }
+            num += iguana_helperA(coin,coin->bundles[hdrsi],convertflag);
     }
     while ( (n= iguana_utxofinished(coin)) < max )
     {
         //printf("helperid.%d utxofinished.%d vs %d\n",helperid,n,max);
         sleep(3);
     }
-    if ( convertflag == 0 )
+    if ( helperid < incr )
     {
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
-        {
-            if ( (bp= coin->bundles[hdrsi]) == 0 )
-                return(-1);
-            if ( bp != coin->current )
-            {
-                //iguana_ramchain_prefetch(coin,&bp->ramchain,3);
-                bp->converted = 1;
-                iguana_convert(coin,helperid,bp,0,0);
-                bp->converted = (uint32_t)time(NULL);
-            }
-        }
+            num += iguana_helperB(coin,helperid,coin->bundles[hdrsi],convertflag);
+    }
+    while ( (n= iguana_convertfinished(coin)) < max )
+    {
+        printf("helperid.%d convertfinished.%d vs max %d bundlescount.%d\n",helperid,n,max,coin->bundlescount);
+        sleep(3);
     }
     if ( helperid == 0 )
     {
-        if ( convertflag != 0 )
-        {
-            for (hdrsi=0; hdrsi<max; hdrsi++)
-            {
-                //printf("%p[%d] ",coin->bundles[hdrsi]->ramchain.Xspendinds,coin->bundles[hdrsi]->ramchain.numXspends);
-                coin->bundles[hdrsi]->converted = (uint32_t)time(NULL);
-            }
-        }
-        while ( (n= iguana_convertfinished(coin)) < max )
-        {
-            printf("helperid.%d convertfinished.%d vs max %d bundlescount.%d\n",helperid,n,max,coin->bundlescount);
-            sleep(3);
-        }
         if ( convertflag != 0 || iguana_spendvectorsaves(coin) == 0 )
         {
             if ( coin->origbalanceswritten <= 1 )
@@ -438,25 +452,27 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             for (; hdrsi<max; hdrsi++,coin->balanceswritten++)
             {
                 //iguana_ramchain_prefetch(coin,&coin->bundles[hdrsi]->ramchain,3);
-                if ( iguana_balancegen(coin,0,coin->bundles[hdrsi],0,coin->chain->bundlesize-1,0) == 0 )
-                    bp->balancefinish = (uint32_t)time(NULL);
+                if ( (bp= coin->bundles[hdris]) != 0 )
+                {
+                    if ( iguana_balancegen(coin,0,bp,0,coin->chain->bundlesize-1,0) == 0 )
+                        bp->balancefinish = (uint32_t)time(NULL);
+                }
             }
-            coin->balanceflush = max+1;
+            coin->balanceflush = coin->balanceswritten;
         } else printf("error saving spendvectors\n");
     }
-    for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
+    if ( helperid < incr )
     {
-        if ( (bp= coin->bundles[hdrsi]) == 0 )
-            return(-1);
-        if ( iguana_bundlevalidate(coin,bp,0) != bp->n )
-        {
-            printf("validate.[%d] error. just refresh page or restart iguana\n",bp->hdrsi);
-            exit(-1);
-        }
+        for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
+            if ( iguana_bundlevalidate(coin,bp,0) != bp->n )
+            {
+                printf("validate.[%d] error. refresh page or restart iguana and it should regenerate\n",bp->hdrsi);
+                exit(-1);
+            }
     }
-    while ( coin->spendvectorsaved == 1 )
+    while ( iguana_validated(coin) < max || iguana_utxofinished(coin) < max || iguana_balancefinished(coin) < max )
     {
-        //printf("helperid.%d waiting for spendvectorsaved.%u\n",helperid,coin->spendvectorsaved);
+        printf("helperid.%d waiting for spendvectorsaved.%u v.%d u.%d b.%d vs max.%d\n",helperid,coin->spendvectorsaved,iguana_validated(coin),iguana_utxofinished(coin),iguana_balancefinished(coin),max);
         sleep(3);
     }
     if ( helperid == 0 )
@@ -464,6 +480,12 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
         coin->spendvectorsaved = (uint32_t)time(NULL);
         printf("UTXOGEN spendvectorsaved <- %u\n",coin->spendvectorsaved);
     }
+    else
+    {
+        while ( coin->spendvectorsaved <= 1 )
+            sleep(3);
+    }
+    printf("helper.%d done\n",helperid);
     return(num);
 }
 

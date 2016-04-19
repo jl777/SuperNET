@@ -436,7 +436,7 @@ void mainloop(struct supernet_info *myinfo)
                                 if ( iguana_validated(coin) < n || iguana_utxofinished(coin) < n || iguana_balancefinished(coin) < n )
                                 {
                                     coin->spendvectorsaved = 1;
-                                    printf("update volatile data\n");
+                                    printf("update volatile data, need.%d vs utxo.%d balances.%d validated.%d\n",n,iguana_utxofinished(coin),iguana_balancefinished(coin),iguana_validated(coin));
                                 }
                                 else
                                 {
