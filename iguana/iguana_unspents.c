@@ -1207,7 +1207,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
                 else if ( Xspendinds != 0 )
                 {
                     errs++;
-                    printf("iguana_balancegen: error spentbp.%p with unspentind.%d [%d] (%d %d %d)\n",spentbp,spent_unspentind,spent_hdrsi,i,j,k);
+                    printf("iguana_balancegen: spendind.%u external.%d error spentbp.%p with unspentind.%d pkind.%u [%d] (%d %d %d)\n",spendind,s->external,spentbp,spent_unspentind,spent_pkind,spent_hdrsi,i,j,k);
                 }
             }
         }
@@ -1608,7 +1608,7 @@ int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *s
     ramchain = &spentbp->ramchain;
     numpkinds = rdata->numpkinds;
     spentU = (void *)(long)((long)rdata + rdata->Uoffset);
-    for (i=starti,converted=0; i<n; i++)
+    for (i=converted=0; i<n; i++)
     {
         if ( (bp= coin->bundles[i]) != 0 && bp->tmpspends != 0 )
         {
@@ -1801,7 +1801,7 @@ void iguana_RThdrs(struct iguana_info *coin,struct iguana_bundle *bp,int32_t num
 
 void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    int32_t lasti,hdrsi,orignumemit; struct iguana_ramchain R; struct iguana_ramchaindata RDATA;
+    int32_t lasti,num,hdrsi,orignumemit; struct iguana_ramchain R; struct iguana_ramchaindata RDATA;
     if ( bp->hdrsi <= 0 )
         return;
     for (hdrsi=0; hdrsi<bp->hdrsi; hdrsi++)
@@ -1825,11 +1825,11 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     }
     else
     {
-        //printf("spendvectors calculated to %d\n",coin->RTheight);
+        printf("spendvectors calculated to %d [%d]\n",coin->RTheight,bp->hdrsi);
         bp->converted = 1;
-        for (hdrsi=0; hdrsi<bp->hdrsi; hdrsi++)
-            iguana_convert(coin,IGUANA_NUMHELPERS,coin->bundles[hdrsi],1,orignumemit);
-        //printf("spendvectors converted to %d\n",coin->RTheight);
+        for (hdrsi=num=0; hdrsi<bp->hdrsi; hdrsi++)
+            num += iguana_convert(coin,IGUANA_NUMHELPERS,coin->bundles[hdrsi],1,orignumemit);
+        printf("spendvectors converted.%d to %d\n",num,coin->RTheight);
         bp->converted = (uint32_t)time(NULL);
         if ( iguana_balancegen(coin,0,bp,coin->RTstarti,coin->RTheight > 0 ? coin->RTheight-1 : bp->n-1,orignumemit) < 0 )
             coin->RTdatabad = 1;
@@ -1946,7 +1946,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                 flag++;
                 coin->blocks.RO[bp->bundleheight+bundlei] = block->RO;
                 coin->RTheight++;
-                //printf(">>>> RT.%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",coin->RTheight,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize);
+                printf(">>>> RT.%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",coin->RTheight,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize);
                 if ( coin->RTramchain.H.data != 0 )
                     coin->RTramchain.H.data->numblocks = bundlei + 1;
                 else break;
