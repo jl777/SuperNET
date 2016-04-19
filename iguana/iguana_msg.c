@@ -604,7 +604,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
     }
     else if ( (ishost= (strcmp(H->command,"getheaders") == 0)) || strcmp(H->command,"headers") == 0 )
     {
-        struct iguana_msgblock msg; struct iguana_block *blocks; uint32_t n;
+        struct iguana_msgblock msg; struct iguana_block *blocks; uint32_t n,nonz;
         if ( ishost == 0 )
         {
             len = iguana_rwvarint32(0,data,&n);
@@ -627,11 +627,13 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
             addr->msgcounts.getheaders++;
             len = iguana_rwnum(0,&serialized[sizeof(struct iguana_msghdr)],sizeof(uint32_t),&tmp);
             len += iguana_rwvarint32(0,&serialized[sizeof(struct iguana_msghdr) + len],(uint32_t *)&n);
-            for (i=0; i<n; i++)
+            for (i=nonz=0; i<n; i++)
             {
                 len += iguana_rwbignum(0,&serialized[sizeof(struct iguana_msghdr) + len],sizeof(bits256),hash2.bytes);
-                if ( bits256_nonz(hash2) == 0 || iguana_peerhdrrequest(coin,addr,hash2) > 0 )
+                if ( bits256_nonz(hash2) == 0 )
                     break;
+                else if ( nonz == 0 && iguana_peerhdrrequest(coin,addr,hash2) > 0 )
+                    nonz++;
             }
         }
         //printf("GOT HEADERS.(%s) n.%d len.%d\n",H->command,n,len);
