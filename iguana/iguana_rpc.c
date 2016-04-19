@@ -1012,7 +1012,7 @@ void iguana_rpcloop(void *args)
     while ( bindsock >= 0 )
     {
         clilen = sizeof(cli_addr);
-        printf("ACCEPT (%s:%d) on sock.%d\n","127.0.0.1",port,bindsock);
+        //printf("ACCEPT (%s:%d) on sock.%d\n","127.0.0.1",port,bindsock);
         sock = accept(bindsock,(struct sockaddr *)&cli_addr,&clilen);
         if ( sock < 0 )
         {
@@ -1028,7 +1028,7 @@ void iguana_rpcloop(void *args)
         retstr = 0;
         while ( remains > 0 )
         {
-            printf("flag.%d remains.%d recvlen.%d\n",flag,remains,recvlen);
+            //printf("flag.%d remains.%d recvlen.%d\n",flag,remains,recvlen);
             if ( (len= (int32_t)recv(sock,buf,remains,0)) < 0 )
             {
                 if ( errno == EAGAIN )
@@ -1055,7 +1055,7 @@ void iguana_rpcloop(void *args)
                                     remains = (hdrsize + contentlen) - len;
                                     buf = &buf[len];
                                     flag = 1;
-                                    printf("got.(%s) %d remains.%d of len.%d contentlen.%d hdrsize.%d remains.%d\n",buf,recvlen,remains,len,contentlen,hdrsize,(hdrsize+contentlen)-len);
+                                    //printf("got.(%s) %d remains.%d of len.%d contentlen.%d hdrsize.%d remains.%d\n",buf,recvlen,remains,len,contentlen,hdrsize,(hdrsize+contentlen)-len);
                                     continue;
                                 }
                             }
