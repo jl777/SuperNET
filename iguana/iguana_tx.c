@@ -25,24 +25,24 @@
 int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,long fileptr[2],char *fname,uint32_t scriptpos,int32_t scriptlen)
 {
     FILE *fp; int32_t retval = scriptlen;
-/*#ifndef __PNACL__
+#ifndef __PNACL__
     if ( fileptr[0] == 0 )
         fileptr[0] = (uint64_t)OS_mapfile(fname,&fileptr[1],0);
     if ( fileptr[0] != 0 && (scriptpos + scriptlen) <= fileptr[1] )
         memcpy(scriptspace,(void *)(fileptr[0] + scriptpos),scriptlen);
     else
-#endif*/
+#endif
         if ( (fp= fopen(fname,"rb")) != 0 )
     {
         fseek(fp,scriptpos,SEEK_SET);
         if ( fread(scriptspace,1,scriptlen,fp) != scriptlen )
             retval = -1;
-        else printf("%s script[%d] offset.%d\n",fname,scriptlen,scriptpos);
+        //else printf("%s script[%d] offset.%d\n",fname,scriptlen,scriptpos);
         fclose(fp);
     } else retval = -1;
     return(retval);
 }
-                   
+
 int32_t iguana_vinset(struct iguana_info *coin,uint8_t *scriptspace,int32_t height,struct iguana_msgvin *vin,struct iguana_txid *tx,int32_t i)
 {
     struct iguana_spend *s,*S; uint32_t spendind,unspentind; bits256 *X; struct iguana_bundle *bp;
