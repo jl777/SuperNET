@@ -579,7 +579,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                 }
                 if ( (T= ramchain->cacheT) == 0 )
                 {
-                    if ( 0 && coin->PREFETCHLAG >= 0 )
+                    if ( coin->PREFETCHLAG >= 0 )
                         iguana_alloccacheT(coin,ramchain);
                     if ( (T= ramchain->cacheT) == 0 )
                         T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
@@ -672,7 +672,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                             iguana_ramchain_prefetch(coin,&spentbp->ramchain,prefetchflag);
                             spentbp->lastprefetch = now;
                         }
-                        else if ( (rand() % IGUANA_NUMHELPERS) == 0 && (duration > 10 || duration > (10 * coin->txidfind_totalmillis)/coin->txidfind_num) )
+                        else if ( 0 && (rand() % IGUANA_NUMHELPERS) == 0 && (duration > 10 || duration > (10 * coin->txidfind_totalmillis)/coin->txidfind_num) )
                         {
                             printf("slow txidfind %.2f vs %.2f prefetch[%d] from.[%d] lag.%ld last.%u\n",duration,coin->txidfind_totalmillis/coin->txidfind_num,spentbp->hdrsi,ramchain->H.data->height/coin->chain->bundlesize,time(NULL) - spentbp->lastprefetch,spentbp->lastprefetch);
                             iguana_ramchain_prefetch(coin,ramchain,1);
