@@ -37,6 +37,7 @@ int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,long fil
         fseek(fp,scriptpos,SEEK_SET);
         if ( fread(scriptspace,1,scriptlen,fp) != scriptlen )
             retval = -1;
+        else printf("%s script[%d] offset.%d\n",fname,scriptlen,scriptpos);
         fclose(fp);
     } else retval = -1;
     return(retval);
@@ -166,8 +167,8 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
     *txidp = bits256_doublesha256(txidstr,serialized,len);
     if ( memcmp(txidp,tx->txid.bytes,sizeof(*txidp)) != 0 )
     {
-        //for (i=0; i<len; i++)
-        //    printf("%02x",serialized[i]);
+        for (i=0; i<len; i++)
+            printf("%02x",serialized[i]);
         char str[65],str2[65]; printf("\nrw.%d numvins.%d numvouts.%d error generating txbytes txid %s vs %s\n",rwflag,numvins,numvouts,bits256_str(str,*txidp),bits256_str(str2,tx->txid));
         return(-1);
     }
