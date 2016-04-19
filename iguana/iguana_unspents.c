@@ -164,24 +164,28 @@ void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramc
 
 void iguana_volatilespurge(struct iguana_info *coin,struct iguana_ramchain *ramchain)
 {
-    if ( ramchain->allocatedA != 0 && ramchain->A != 0 )
-        free(ramchain->A);
-    ramchain->A = 0;
-    if ( ramchain->allocatedU != 0 && ramchain->Uextras != 0 )
-        free(ramchain->Uextras);
-    ramchain->Uextras = 0;
-    ramchain->allocatedA = ramchain->allocatedU = 0;
-    if ( ramchain->debitsfileptr != 0 )
+    struct iguana_bundle *bp;
+    if ( (bp= coin->current) != 0 && ramchain->height < bp->bundleheight )
     {
-        munmap(ramchain->debitsfileptr,ramchain->debitsfilesize);
-        ramchain->debitsfileptr = 0;
-        ramchain->debitsfilesize = 0;
-    }
-    if ( ramchain->lastspendsfileptr != 0 )
-    {
-        munmap(ramchain->lastspendsfileptr,ramchain->lastspendsfilesize);
-        ramchain->lastspendsfileptr = 0;
-        ramchain->lastspendsfilesize = 0;
+        if ( ramchain->allocatedA != 0 && ramchain->A != 0 )
+            free(ramchain->A);
+        ramchain->A = 0;
+        if ( ramchain->allocatedU != 0 && ramchain->Uextras != 0 )
+            free(ramchain->Uextras);
+        ramchain->Uextras = 0;
+        ramchain->allocatedA = ramchain->allocatedU = 0;
+        if ( ramchain->debitsfileptr != 0 )
+        {
+            munmap(ramchain->debitsfileptr,ramchain->debitsfilesize);
+            ramchain->debitsfileptr = 0;
+            ramchain->debitsfilesize = 0;
+        }
+        if ( ramchain->lastspendsfileptr != 0 )
+        {
+            munmap(ramchain->lastspendsfileptr,ramchain->lastspendsfilesize);
+            ramchain->lastspendsfileptr = 0;
+            ramchain->lastspendsfilesize = 0;
+        }
     }
 }
 
