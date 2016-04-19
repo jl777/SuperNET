@@ -369,28 +369,29 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
         if ( incr < 1 )
             incr = 1;
     }
-    if ( helperid >= incr )
-        return(0);
-        max = coin->bundlescount;
-    if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 )
-        max--;
-    for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
+    if ( helperid < incr )
     {
-        if ( (bp= coin->bundles[hdrsi]) == 0 )
-            return(-1);
-        //printf("validate incr.%d and gen utxo.[%d] utxofinish.%u Xspends.%p\n",incr,hdrsi,bp->utxofinish,bp->ramchain.Xspendinds);
-        if ( strcmp("BTC",coin->symbol) == 0 || iguana_bundlevalidate(coin,bp,0) == bp->n )
+        max = coin->bundlescount;
+        if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 )
+            max--;
+        for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
         {
-            retval = 0;
-            if ( bp->utxofinish > 1 || (retval= iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,convertflag)) >= 0 )
+            if ( (bp= coin->bundles[hdrsi]) == 0 )
+                return(-1);
+            //printf("validate incr.%d and gen utxo.[%d] utxofinish.%u Xspends.%p\n",incr,hdrsi,bp->utxofinish,bp->ramchain.Xspendinds);
+            if ( strcmp("BTC",coin->symbol) == 0 || iguana_bundlevalidate(coin,bp,0) == bp->n )
             {
-                if ( retval > 0 )
+                retval = 0;
+                if ( bp->utxofinish > 1 || (retval= iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,convertflag)) >= 0 )
                 {
-                    printf("GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - bp->startutxo);
-                    num++;
-                }
-                bp->utxofinish = (uint32_t)time(NULL);
-            } else printf("UTXO gen.[%d] utxo error\n",bp->hdrsi);
+                    if ( retval > 0 )
+                    {
+                        printf("GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - bp->startutxo);
+                        num++;
+                    }
+                    bp->utxofinish = (uint32_t)time(NULL);
+                } else printf("UTXO gen.[%d] utxo error\n",bp->hdrsi);
+            }
         }
     }
     while ( (n= iguana_utxofinished(coin)) < max )

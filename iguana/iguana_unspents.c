@@ -141,7 +141,7 @@ int32_t iguana_alloccacheT(struct iguana_info *coin,struct iguana_ramchain *ramc
         ramchain->cacheT = calloc(1,tlen);
         memcpy(ramchain->cacheT,T,tlen);
         total += tlen;
-        char str[65]; printf("alloc.[%d] cacheT.%p[%d] total %s\n",ramchain->H.data->height/coin->chain->bundlesize,ramchain->cacheT,tlen,mbstr(str,total));
+        //char str[65]; printf("alloc.[%d] cacheT.%p[%d] total %s\n",ramchain->H.data->height/coin->chain->bundlesize,ramchain->cacheT,tlen,mbstr(str,total));
         return(tlen);
     }
     return(-1);
@@ -2010,10 +2010,11 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
     static int32_t totalerrs,totalvalidated;
     FILE *fp; char fname[1024]; uint8_t *blockspace; uint32_t now = (uint32_t)time(NULL);
     int32_t i,max,len,errs = 0; int64_t total = 0;
-    //printf("validate.[%d]\n",bp->hdrsi);
+    printf("validate.[%d]\n",bp->hdrsi);
     if ( bp->validated <= 1 || forceflag != 0 )
     {
         sprintf(fname,"%s/%s/validated/%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
+        printf("validatefname.(%s)\n",fname);
         if ( (fp= fopen(fname,"rb")) != 0 )
         {
             if ( forceflag == 0 )
@@ -2022,7 +2023,7 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
                 {
                     printf("error reading.(%s)\n",fname);
                     total = bp->validated = 0;
-                } //else printf("(%s) total.%d validated.%u\n",fname,(int32_t)total,bp->validated);
+                } else printf("(%s) total.%d validated.%u\n",fname,(int32_t)total,bp->validated);
             } else OS_removefile(fname,1);
             fclose(fp);
         }
@@ -2032,6 +2033,7 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
             blockspace = calloc(1,max);
             for (i=0; i<bp->n; i++)
             {
+                printf("i.%d: request\n",i);
                 if ( (len= iguana_peerblockrequest(coin,blockspace,max,0,bp->hashes[i],1)) < 0 )
                 {
                     errs++;
