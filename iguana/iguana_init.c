@@ -467,28 +467,31 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
     memset(&coin->blocks.hwmchain,0,sizeof(coin->blocks.hwmchain));
     coin->blocks.hwmchain.height = 0;
     printf("%s MYSERVICES.%llx\n",coin->symbol,(long long)coin->myservices);
-    if ( (coin->myservices & NODE_NETWORK) != 0 && coin->peers.acceptloop == 0 && coin->peers.localaddr == 0 )
+    if ( (coin->myservices & NODE_NETWORK) != 0 )
     {
-        coin->peers.acceptloop = malloc(sizeof(pthread_t));
-        if ( OS_thread_create(coin->peers.acceptloop,NULL,(void *)iguana_acceptloop,(void *)coin) != 0 )
+        if ( coin->peers.acceptloop == 0 && coin->peers.localaddr == 0 )
         {
-            free(coin->peers.acceptloop);
-            coin->peers.acceptloop = 0;
-            printf("error launching accept thread for port.%u\n",coin->chain->portp2p);
+            coin->peers.acceptloop = malloc(sizeof(pthread_t));
+            if ( OS_thread_create(coin->peers.acceptloop,NULL,(void *)iguana_acceptloop,(void *)coin) != 0 )
+            {
+                free(coin->peers.acceptloop);
+                coin->peers.acceptloop = 0;
+                printf("error launching accept thread for port.%u\n",coin->chain->portp2p);
+            }
+        }
+        if ( coin->rpcloop == 0 )
+        {
+            myinfo->argport = coin->chain->rpcport;
+            coin->rpcloop = malloc(sizeof(pthread_t));
+            if ( OS_thread_create(coin->rpcloop,NULL,(void *)iguana_rpcloop,(void *)myinfo) != 0 )
+            {
+                free(coin->rpcloop);
+                coin->rpcloop = 0;
+                printf("error launching rpcloop for %s port.%u\n",coin->symbol,coin->chain->rpcport);
+            }
         }
     }
-    if ( coin->rpcloop == 0 )
-    {
-        myinfo->argport = coin->chain->rpcport;
-        coin->rpcloop = malloc(sizeof(pthread_t));
-        if ( OS_thread_create(coin->rpcloop,NULL,(void *)iguana_rpcloop,(void *)myinfo) != 0 )
-        {
-            free(coin->rpcloop);
-            coin->rpcloop = 0;
-            printf("error launching rpcloop for %s port.%u\n",coin->symbol,coin->chain->rpcport);
-        }
-    }
-    //coin->firstblock = coin->blocks.parsedblocks + 1;
+     //coin->firstblock = coin->blocks.parsedblocks + 1;
     iguana_genesis(coin,coin->chain);
     memset(&lastbundle,0,sizeof(lastbundle));
     for (iter=coin->peers.numranked>8; iter<2; iter++)
