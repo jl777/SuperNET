@@ -690,7 +690,9 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->MAXMEM = juint(json,"RAM");
     if ( jobj(json,"prefetchlag") != 0 )
         coin->PREFETCHLAG = jint(json,"prefetchlag");
-    else coin->PREFETCHLAG = 13;
+    else if ( strcmp("BTC",coin->symbol) == 0 )
+        coin->PREFETCHLAG = 13;
+    else coin->PREFETCHLAG = -1;
     if ( (coin->MAXSTUCKTIME= juint(json,"maxstuck")) == 0 )
         coin->MAXSTUCKTIME = _IGUANA_MAXSTUCKTIME;
     if ( coin->MAXMEM == 0 )
