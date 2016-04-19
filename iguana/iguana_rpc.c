@@ -771,7 +771,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
 {
     cJSON *tokens,*argjson,*json = 0; long filesize;
     char symbol[16],buf[4096],urlmethod[16],*data,url[1024],*retstr,*filestr,*token = 0; int32_t i,j,n,num=0;
-    //printf("rpcparse.(%s)\n",urlstr);
+    printf("rpcparse.(%s)\n",urlstr);
     for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
         urlmethod[i] = urlstr[i];
     urlmethod[i++] = 0;
@@ -1012,7 +1012,7 @@ void iguana_rpcloop(void *args)
     while ( bindsock >= 0 )
     {
         clilen = sizeof(cli_addr);
-        //printf("ACCEPT (%s:%d) on sock.%d\n","127.0.0.1",port,bindsock);
+        printf("ACCEPT (%s:%d) on sock.%d\n","127.0.0.1",port,bindsock);
         sock = accept(bindsock,(struct sockaddr *)&cli_addr,&clilen);
         if ( sock < 0 )
         {
@@ -1021,8 +1021,6 @@ void iguana_rpcloop(void *args)
         }
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
         expand_ipbits(remoteaddr,ipbits);
-        //printf("RPC.%d for %x (%s)\n",sock,ipbits,ipaddr);
-        //printf("%p got.(%s) from %s | usock.%d ready.%u dead.%u\n",addr,H.command,addr->ipaddr,addr->usock,addr->ready,addr->dead);
         memset(jsonbuf,0,IGUANA_MAXPACKETSIZE);
         remains = (int32_t)(IGUANA_MAXPACKETSIZE - 1);
         buf = jsonbuf;
@@ -1030,7 +1028,7 @@ void iguana_rpcloop(void *args)
         retstr = 0;
         while ( remains > 0 )
         {
-            //printf("flag.%d remains.%d recvlen.%d\n",flag,remains,recvlen);
+            printf("flag.%d remains.%d recvlen.%d\n",flag,remains,recvlen);
             if ( (len= (int32_t)recv(sock,buf,remains,0)) < 0 )
             {
                 if ( errno == EAGAIN )
