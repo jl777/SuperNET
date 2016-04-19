@@ -441,7 +441,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
                 if ( iguana_balancegen(coin,0,coin->bundles[hdrsi],0,coin->chain->bundlesize-1,0) == 0 )
                     bp->balancefinish = (uint32_t)time(NULL);
             }
-            coin->balanceflush = max;
+            coin->balanceflush = max+1;
         } else printf("error saving spendvectors\n");
     }
     for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)

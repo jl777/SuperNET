@@ -2010,7 +2010,7 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
     static int32_t totalerrs,totalvalidated;
     FILE *fp; char fname[1024]; uint8_t *blockspace; uint32_t now = (uint32_t)time(NULL);
     int32_t i,max,len,errs = 0; int64_t total = 0;
-    printf("validate.[%d]\n",bp->hdrsi);
+    //printf("validate.[%d]\n",bp->hdrsi);
     if ( bp->validated <= 1 || forceflag != 0 )
     {
         sprintf(fname,"%s/%s/validated/%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
