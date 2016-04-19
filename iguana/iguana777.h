@@ -389,7 +389,7 @@ struct iguana_ramchain
     void *fileptr,*sigsfileptr,*Xspendptr,*debitsfileptr,*lastspendsfileptr;
     char from_ro,from_roX,from_roA,from_roU;
     struct iguana_account *A,*creditsA; struct iguana_spendvector *Xspendinds;
-    struct iguana_utxo *Uextras; uint8_t *txbits;
+    struct iguana_utxo *Uextras; uint8_t *txbits; struct iguana_txid *cacheT;
     //int16_t permutation[IGUANA_MAXBUNDLES];
 //struct iguana_Uextra *U2,*roU2; struct iguana_pkextra *P2,*roP2;
 };

@@ -131,6 +131,23 @@ int32_t iguana_alloctxbits(struct iguana_info *coin,struct iguana_ramchain *ramc
     return(-1);
 }
 
+
+int32_t iguana_alloccacheT(struct iguana_info *coin,struct iguana_ramchain *ramchain)
+{
+    static int64_t total;
+    if ( ramchain->cacheT == 0 )
+    {
+        int32_t tlen; struct iguana_txid *T = (void *)((long)ramchain->H.data + ramchain->H.data->Toffset);
+        tlen = sizeof(*T) * ramchain->H.data->numtxids;
+        ramchain->cacheT = calloc(1,tlen);
+        memcpy(ramchain->cacheT,T,tlen);
+        total += tlen;
+        //char str[65]; printf("alloc.[%d] txbits.%p[%d] total %s\n",ramchain->H.data->height/coin->chain->bundlesize,ramchain->cacheT,tlen,mbstr(str,total));
+        return(tlen);
+    }
+    return(-1);
+}
+
 void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramchain)
 {
     if ( ramchain != 0 && ramchain->H.data != 0 )
@@ -561,7 +578,13 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                         TXbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->TXoffset);
                     }
                 }
-                T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
+                if ( (T= ramchain->cacheT) == 0 )
+                {
+                    if ( coin->PREFETCHLAG >= 0 )
+                        iguana_alloccacheT(coin,ramchain);
+                    if ( (T= ramchain->cacheT) == 0 )
+                        T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
+                }
                 if ( (txidind= iguana_sparseaddtx(TXbits,ramchain->H.data->txsparsebits,ramchain->H.data->numtxsparse,txid,T,0,ramchain)) > 0 )
                 {
                     //printf("found txidind.%d\n",txidind);
@@ -2030,7 +2053,7 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
                 fclose(fp);
             }
         }
-    } else printf("skip validate.[%d] validated.%u force.%d\n",bp->hdrsi,bp->validated,forceflag);
+    } // else printf("skip validate.[%d] validated.%u force.%d\n",bp->hdrsi,bp->validated,forceflag);
     if ( errs != 0 )
     {
         printf("remove.[%d]\n",bp->hdrsi);
