@@ -38,8 +38,8 @@ int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,long fil
         if ( (err= fread(scriptspace,1,scriptlen,fp)) != scriptlen )
         {
             retval = -1;
-            printf("%s script[%d] offset.%d err.%ld\n",fname,scriptlen,scriptpos,err);
-        }
+            printf("%s script[%d] offset.%llu err.%ld\n",fname,scriptlen,(long long)scriptpos,err);
+        } else printf("%s script[%d] offset.%llu read.%ld\n",fname,scriptlen,(long long)scriptpos,err);
         fclose(fp);
     } else retval = -1;
     return(retval);
