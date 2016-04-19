@@ -678,6 +678,7 @@ int32_t iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain
 {
     RAMCHAIN_DECLARE; RAMCHAIN_ZEROES;
     struct iguana_pkhash p; struct iguana_unspent u; struct iguana_txid txid; uint32_t i,numpkinds,numtxids,numunspents,numexternal,tlen,plen,nonz=0; uint8_t *ptr;
+return(0);
     if ( ramchain->H.data != 0 )
     {
         if ( flag == 0 )

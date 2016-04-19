@@ -141,7 +141,7 @@ int32_t iguana_alloccacheT(struct iguana_info *coin,struct iguana_ramchain *ramc
         ramchain->cacheT = calloc(1,tlen);
         memcpy(ramchain->cacheT,T,tlen);
         total += tlen;
-        char str[65]; printf("alloc.[%d] txbits.%p[%d] total %s\n",ramchain->H.data->height/coin->chain->bundlesize,ramchain->cacheT,tlen,mbstr(str,total));
+        char str[65]; printf("alloc.[%d] cacheT.%p[%d] total %s\n",ramchain->H.data->height/coin->chain->bundlesize,ramchain->cacheT,tlen,mbstr(str,total));
         return(tlen);
     }
     return(-1);
