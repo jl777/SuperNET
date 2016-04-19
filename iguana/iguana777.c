@@ -417,7 +417,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
         return(0);
     }
     incr = IGUANA_NUMHELPERS;
-    if ( strcmp("BTC",coin->symbol) == 0 && coin->PREFETCHLAG > 0 )
+    if ( 0 && strcmp("BTC",coin->symbol) == 0 && coin->PREFETCHLAG > 0 )
         incr = 1;
     max = coin->bundlescount;
     if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 )
@@ -452,7 +452,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             for (; hdrsi<max; hdrsi++,coin->balanceswritten++)
             {
                 //iguana_ramchain_prefetch(coin,&coin->bundles[hdrsi]->ramchain,3);
-                if ( (bp= coin->bundles[hdris]) != 0 )
+                if ( (bp= coin->bundles[hdrsi]) != 0 )
                 {
                     if ( iguana_balancegen(coin,0,bp,0,coin->chain->bundlesize-1,0) == 0 )
                         bp->balancefinish = (uint32_t)time(NULL);
