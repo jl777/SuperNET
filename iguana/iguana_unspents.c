@@ -1548,7 +1548,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
             if ( iguana_volatilesmap(coin,&bp->ramchain) != 0 )
                 printf("error mapping bundle.[%d]\n",hdrsi);
         }
-    char str[65]; printf("BALANCES WRITTEN for %d/%d bundles %s\n",coin->balanceswritten,coin->origbalanceswritten,bits256_str(str,coin->balancehash));
+    char str[65]; printf("BALANCES WRITTEN for %d orig.%d bundles %s\n",coin->balanceswritten,coin->origbalanceswritten,bits256_str(str,coin->balancehash));
     if ( 0 && coin->balanceswritten > coin->origbalanceswritten+10 ) // strcmp(coin->symbol,"BTC") == 0 &&
     {
         coin->active = 0;
@@ -2010,9 +2010,9 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
     static int32_t totalerrs,totalvalidated;
     FILE *fp; char fname[1024]; uint8_t *blockspace; uint32_t now = (uint32_t)time(NULL);
     int32_t i,max,len,errs = 0; struct sha256_vstate vstate; bits256 validatehash; int64_t total = 0;
-    //printf("validate.[%d]\n",bp->hdrsi);
     if ( bp->validated <= 1 || forceflag != 0 )
     {
+        printf("validate.[%d]\n",bp->hdrsi);
         vupdate_sha256(validatehash.bytes,&vstate,0,0);
         sprintf(fname,"%s/%s/validated/%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
         //printf("validatefname.(%s)\n",fname);
@@ -2060,7 +2060,7 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
             }
         }
         bp->validatehash = validatehash;
-    } // else printf("skip validate.[%d] validated.%u force.%d\n",bp->hdrsi,bp->validated,forceflag);
+    }  else printf("skip validate.[%d] validated.%u force.%d\n",bp->hdrsi,bp->validated,forceflag);
     if ( errs != 0 )
     {
         printf("remove.[%d]\n",bp->hdrsi);
