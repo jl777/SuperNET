@@ -634,8 +634,8 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                 if ( bits256_nonz(hash2) == 0 )
                     break;
             }
-            printf("GOT HEADERS n.%d len.%d\n",n,len);
         }
+        printf("GOT HEADERS.(%s) n.%d len.%d\n",H->command,n,len);
     }
     else if ( (ishost= (strcmp(H->command,"version") == 0)) || strcmp(H->command,"verack") == 0 )
     {

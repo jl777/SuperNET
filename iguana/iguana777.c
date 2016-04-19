@@ -383,6 +383,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             iguana_ramchain_prefetch(coin,&bp->ramchain,0);
         if ( strcmp("BTC",coin->symbol) == 0 || iguana_bundlevalidate(coin,bp,1) == bp->n )
         {
+            retval = 0;
             if ( bp->utxofinish > 1 || (retval= iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,convertflag)) >= 0 )
             {
                 if ( retval > 0 )
