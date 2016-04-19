@@ -729,7 +729,7 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
             }
             else
             {
-//#ifndef __PNACL__
+#ifndef __PNACL__
                 int32_t checki,hdrsi; FILE *fp;
                 fname[0] = 0;
                 checki = iguana_peerfname(coin,&hdrsi,GLOBAL_TMPDIR,fname,0,block->RO.hash2,zero,1,0);
@@ -744,7 +744,7 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
                     fclose(fp);
                 }
                 else
-//#endif
+#endif
                 {
                     iguana_blockunmark(coin,block,bp,i,1);
                     if ( requiredflag != 0 )
@@ -941,7 +941,7 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
                 /*if ( bp->hdrsi == 0 && iguana_peerblockrequest(coin,coin->blockspace,sizeof(coin->blockspace),0,bp->hashes[0],1) > 0 )
                     printf("GENESIS block validated\n");
                 else printf("GENESIS didnt validate bp.%p\n",bp);*/
-                if ( strcmp("BTC",coin->symbol) != 0 )
+                //if ( strcmp("BTC",coin->symbol) != 0 )
                     iguana_bundlevalidate(coin,bp,1);
             }
             else
