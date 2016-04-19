@@ -227,7 +227,7 @@ int32_t iguana_speculativefind(struct iguana_info *coin,struct iguana_bundle *bp
                     continue;
                 }
                 if ( memcmp(&recvlen,tmp,sizeof(recvlen)) != 0 || memcmp(&tmp[sizeof(recvlen)],data,recvlen) != 0 )
-                    printf("data ERROR [%d:%d] already has recvlen.%d for %s\n",bp->hdrsi,i,recvlen,bits256_str(str,block->RO.hash2));
+                    printf("cachedata ERROR [%d:%d] already has recvlen.%d vs %d for %s\n",bp->hdrsi,i,recvlen,cachelen,bits256_str(str,block->RO.hash2));
                 return(0);
             }
             bp->speculativecache[i] = calloc(1,recvlen + sizeof(recvlen));
@@ -887,7 +887,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
                 iguana_blockQ("recvhash1",coin,0,-1,bp->nextbundlehash2,1);
             }
             //printf("call allhashes\n");
-            if ( bp->hdrsi == coin->bundlescount-1 )
+            if ( 0 && bp->hdrsi == coin->bundlescount-1 )
                 iguana_autoextend(coin,bp);
             if ( iguana_allhashcmp(coin,bp,blockhashes,num) > 0 )
                 return(req);

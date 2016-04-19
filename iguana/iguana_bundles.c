@@ -240,13 +240,7 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
             if ( (block->hdrsi != bp->hdrsi || block->bundlei != bundlei) && (block->hdrsi != 0 || block->bundlei != 0) )
             {
                 char str[65]; printf("blockadd warning: %d[%d] main.%d <- %d[%d] %s\n",block->hdrsi,block->bundlei,block->mainchain,bp->hdrsi,bundlei,bits256_str(str,hash2));
-                if ( block->mainchain != 0 )
-                {
-                    memset(bp->hashes[bundlei].bytes,0,sizeof(bp->hashes[bundlei]));
-                    if ( bp->speculative != 0 )
-                        bp->speculative[bundlei] = bp->hashes[bundlei];
-                    bp->blocks[bundlei] = 0;
-                }
+                iguana_blockunmark(coin,block,bp,bundlei,block->mainchain != 0);
                 err |= 2;
                 return(-1);
                 //exit(-1);
