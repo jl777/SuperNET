@@ -996,7 +996,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
             }
             for (k=0; k<T[txidind].numvins && errs==0; k++,spendind++)
             {
-                if ( bp == coin->current && (spendind % 5000000) == 2000000 )
+                if ( bp == coin->current && (spendind % 1000) == 0 )
                     printf("[%-3d:%4d] spendvectors elapsed t.%-3d spendind.%d\n",bp->hdrsi,i,(uint32_t)time(NULL)-starttime,spendind);
                 u = 0;
                 s = &S[spendind];
@@ -1055,7 +1055,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                             ptr[emit].unspentind = spent_unspentind;
                             ptr[emit].fromheight = bp->bundleheight + i;
                             ptr[emit].tmpflag = 1;
-                            if ( 1 && bp == coin->current )
+                            if ( 0 && bp == coin->current )
                                 printf("fromht.%d spends [%d] TMPVECTOR u%d s%u\n",ptr[emit].fromheight,ptr[emit].hdrsi,ptr[emit].unspentind,spendind);
                             emit++;
                         }
