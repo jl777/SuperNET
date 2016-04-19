@@ -630,7 +630,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                     //printf("%s height.%d firstvout.%d prev.%d ->U%d\n",bits256_str(str,prev_hash),height,TX.firstvout,prev_vout,unspentind);
                     now = (uint32_t)time(NULL);
                     duration = (OS_milliseconds() - startmillis);
-                    if ( bp == coin->current )// && ((uint64_t)coin->txidfind_num % 5000000) == 2000000 )
+                    if ( 0 && ((uint64_t)coin->txidfind_num % 5000000) == 2000000 )
                         printf("%p iguana_txidfind.[%.0f] ave %.2f micros, total %.2f seconds | duration %.3f millis\n",spentbp->ramchain.txbits,coin->txidfind_num,(coin->txidfind_totalmillis*1000.)/coin->txidfind_num,coin->txidfind_totalmillis/1000.,duration);
                     coin->txidfind_totalmillis += duration;
                     coin->txidfind_num += 1.;
