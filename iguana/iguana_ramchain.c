@@ -311,9 +311,9 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
                 if ( addr != 0 && addr->voutsfp != 0 )
                 {
                     u->fileid = (uint32_t)addr->addrind;
-                    scriptpos = ftell(addr->voutsfp);
                     if ( (u->scriptpos= (uint32_t)scriptpos) == 0 )
                         fputc(0,addr->voutsfp), u->scriptpos++;
+                    scriptpos = ftell(addr->voutsfp);
                     if ( u->scriptpos != scriptpos || fwrite(script,1,scriptlen,addr->voutsfp) != scriptlen )
                         printf("error writing vout scriptlen.%d errno.%d or scriptpos.%lld != %u\n",scriptlen,errno,(long long)scriptpos,u->scriptpos);
                     else addr->dirty[0]++;
