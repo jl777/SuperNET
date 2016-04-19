@@ -557,7 +557,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                         iguana_alloctxbits(coin,ramchain);
                     if ( (TXbits= ramchain->txbits) == 0 )
                     {
-                        printf("use memory mapped.[%d]\n",ramchain->H.data->height/coin->chain->bundlesize);
+                        //printf("use memory mapped.[%d]\n",ramchain->H.data->height/coin->chain->bundlesize);
                         TXbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->TXoffset);
                     }
                 }
@@ -567,26 +567,32 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                     //printf("found txidind.%d\n",txidind);
                     if ( bits256_cmp(txid,T[txidind].txid) == 0 )
                     {
-                        int32_t j; struct iguana_block *block;
-                        for (j=0; j<bp->n; j++)
-                            if ( (block= bp->blocks[j]) != 0 && txidind >= block->RO.firsttxidind && txidind < block->RO.firsttxidind+block->RO.txn_count )
-                                break;
-                        if ( j < bp->n )
+                        if ( 0 )
                         {
-                            if ( j != T[txidind].bundlei )
-                                printf("bundlei mismatch j.%d != %d\n",j,T[txidind].bundlei);
-                            else
+                            int32_t j; struct iguana_block *block;
+                            for (j=0; j<bp->n; j++)
+                                if ( (block= bp->blocks[j]) != 0 && txidind >= block->RO.firsttxidind && txidind < block->RO.firsttxidind+block->RO.txn_count )
+                                    break;
+                            if ( j < bp->n )
                             {
-                                *heightp = bp->bundleheight + T[txidind].bundlei;
-                                //printf("found height.%d\n",*heightp);
-                                *tx = T[txidind];
-                                return(tx);
+                                if ( j != T[txidind].bundlei )
+                                    printf("bundlei mismatch j.%d != %d\n",j,T[txidind].bundlei);
+                                else
+                                {
+                                    *heightp = bp->bundleheight + T[txidind].bundlei;
+                                    //printf("found height.%d\n",*heightp);
+                                    *tx = T[txidind];
+                                    return(tx);
+                                }
                             }
                         }
-                        /*for (j=0; j<bp->n; j++)
-                            if ( (block= bp->blocks[j]) != 0 )
-                                printf("(%d %d).%d ",block->RO.firsttxidind,block->RO.txn_count,txidind >= block->RO.firsttxidind && txidind < block->RO.firsttxidind+block->RO.txn_count);
-                        printf(" <- firsttxidind txidind.%d not in block range\n",txidind);*/
+                        else
+                        {
+                            *heightp = bp->bundleheight + T[txidind].bundlei;
+                            //printf("found height.%d\n",*heightp);
+                            *tx = T[txidind];
+                            return(tx);
+                        }
                     }
                     char str[65],str2[65]; printf("iguana_txidfind mismatch.[%d:%d] %d %s vs %s\n",bp->hdrsi,T[txidind].extraoffset,txidind,bits256_str(str,txid),bits256_str(str2,T[txidind].txid));
                     return(0);
