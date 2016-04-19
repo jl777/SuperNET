@@ -260,7 +260,7 @@ uint32_t iguana_ramchain_addpkhash(struct iguana_info *coin,RAMCHAIN_FUNC,uint8_
 
 uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_peer *addr,RAMCHAIN_FUNC,uint64_t value,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vout,int8_t type,struct iguana_bundle *bp,uint8_t rmd160[20])
 {
-    uint32_t unspentind; struct iguana_unspent20 *u; struct vin_info V; char asmstr[IGUANA_MAXSCRIPTSIZE*2+1];
+    uint32_t unspentind; struct iguana_unspent20 *u; long scriptpos; struct vin_info V; char asmstr[IGUANA_MAXSCRIPTSIZE*2+1];
     unspentind = ramchain->H.unspentind++;
     u = &U[unspentind];
     if ( scriptlen > 0 )
@@ -280,23 +280,6 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
     }
     if ( ramchain->H.ROflag != 0 )
     {
-        //fprintf(stderr,"RO %p U[%d] txidind.%d pkind.%d\n",u,unspentind,ramchain->H.txidind,ramchain->pkind);
-        /*if ( 0 && u->scriptpos != 0 && u->scriptlen > 0 )//&& u->scriptlen <= sizeof(u->script) )
-        {
-            scriptptr = &Kspace[u->scriptpos];
-            if ( memcmp(script,scriptptr,u->scriptlen) != 0 )
-            {
-                int32_t i;
-                for (i=0; i<u->scriptlen; i++)
-                    printf("%02x",scriptptr[i]);
-                printf(" u->script\n");
-                for (i=0; i<u->scriptlen; i++)
-                    printf("%02x",script[i]);
-                printf(" script\n");
-                printf("[%d] u%d script compare error.%d vs %d\n",bp->hdrsi,unspentind,scriptlen,u->scriptlen);
-                return(0);
-            } //else printf("SCRIPT.%d MATCHED!\n",u->scriptlen);
-        } // else would need to get from HDD to verify*/
         if ( u->txidind != ramchain->H.txidind || u->value != value || memcmp(u->rmd160,rmd160,sizeof(u->rmd160)) != 0 )
         {
             printf("iguana_ramchain_addunspent20: mismatched values.(%.8f %d) vs (%.8f %d)\n",dstr(u->value),u->txidind,dstr(value),ramchain->H.txidind);
@@ -328,10 +311,11 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
                 if ( addr != 0 && addr->voutsfp != 0 )
                 {
                     u->fileid = (uint32_t)addr->addrind;
-                    if ( (u->scriptpos= (uint32_t)ftell(addr->voutsfp)) == 0 )
+                    scriptpos = ftell(addr->voutsfp);
+                    if ( (u->scriptpos= (uint32_t)scriptpos) == 0 )
                         fputc(0,addr->voutsfp), u->scriptpos++;
-                    if ( fwrite(script,1,scriptlen,addr->voutsfp) != scriptlen )
-                        printf("error writing vout scriptlen.%d errno.%d\n",scriptlen,errno);
+                    if ( u->scriptpos != scriptpos || fwrite(script,1,scriptlen,addr->voutsfp) != scriptlen )
+                        printf("error writing vout scriptlen.%d errno.%d or scriptpos.%ld != %u\n",scriptlen,errno,scriptpos,u->scriptpos);
                     else addr->dirty[0]++;
                 } else printf("addr.%p unspent error fp.%p\n",addr,addr!=0?addr->voutsfp:0);
             }
@@ -562,7 +546,7 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,struct iguana_peer
         if ( (s->vinscriptlen= vinscriptlen) > 0 && vinscript != 0 && addr != 0 && addr->vinsfp != 0 && vinscriptlen < IGUANA_MAXSCRIPTSIZE)
         {
             s->fileid = (uint32_t)addr->addrind;
-            if ( (s->scriptpos= (uint32_t)ftell(addr->vinsfp)) == 0 )
+            if ( (s->scriptpos= ftell(addr->vinsfp)) == 0 )
                 fputc(0,addr->vinsfp), s->scriptpos++;
             if ( (err= (int32_t)fwrite(vinscript,1,vinscriptlen,addr->vinsfp)) != vinscriptlen )
                 printf("error.%d writing vinscriptlen.%d errno.%d addrind.%d\n",err,vinscriptlen,errno,addr->addrind);

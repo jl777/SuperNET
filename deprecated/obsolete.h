@@ -15961,6 +15961,23 @@ len = 0;
              } //else printf("finish incomplete.%d\n",bp->hdrsi);
              }
              }*/
+                //fprintf(stderr,"RO %p U[%d] txidind.%d pkind.%d\n",u,unspentind,ramchain->H.txidind,ramchain->pkind);
+            /*if ( 0 && u->scriptpos != 0 && u->scriptlen > 0 )//&& u->scriptlen <= sizeof(u->script) )
+             {
+             scriptptr = &Kspace[u->scriptpos];
+             if ( memcmp(script,scriptptr,u->scriptlen) != 0 )
+             {
+             int32_t i;
+             for (i=0; i<u->scriptlen; i++)
+             printf("%02x",scriptptr[i]);
+             printf(" u->script\n");
+             for (i=0; i<u->scriptlen; i++)
+             printf("%02x",script[i]);
+             printf(" script\n");
+             printf("[%d] u%d script compare error.%d vs %d\n",bp->hdrsi,unspentind,scriptlen,u->scriptlen);
+             return(0);
+             } //else printf("SCRIPT.%d MATCHED!\n",u->scriptlen);
+             } // else would need to get from HDD to verify*/
 
 #endif
 #endif
