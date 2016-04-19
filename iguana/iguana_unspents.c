@@ -968,6 +968,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
     starttime = (uint32_t)time(NULL);
     txidind = B[starti].firsttxidind;
     spendind = B[starti].firstvin;
+    iguana_ramchain_prefetch(coin,&bp->ramchain,0);
     for (i=starti; i<numblocks; i++)
     {
         if ( txidind != B[i].firsttxidind || spendind != B[i].firstvin )
