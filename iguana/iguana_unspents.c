@@ -639,7 +639,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                     //printf("%s height.%d firstvout.%d prev.%d ->U%d\n",bits256_str(str,prev_hash),height,TX.firstvout,prev_vout,unspentind);
                     now = (uint32_t)time(NULL);
                     duration = (OS_milliseconds() - startmillis);
-                    //if ( 0 && ((uint64_t)coin->txidfind_num % 5000000) == 2000000 )
+                    if ( 0 && ((uint64_t)coin->txidfind_num % 5000000) == 2000000 )
                         printf("%p iguana_txidfind.[%.0f] ave %.2f micros, total %.2f seconds | duration %.3f millis\n",spentbp->ramchain.txbits,coin->txidfind_num,(coin->txidfind_totalmillis*1000.)/coin->txidfind_num,coin->txidfind_totalmillis/1000.,duration);
                     coin->txidfind_totalmillis += duration;
                     coin->txidfind_num += 1.;
@@ -976,7 +976,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
     starttime = (uint32_t)time(NULL);
     txidind = B[starti].firsttxidind;
     spendind = B[starti].firstvin;
-    //iguana_ramchain_prefetch(coin,&bp->ramchain,0);
+    iguana_ramchain_prefetch(coin,&bp->ramchain,0);
     for (i=starti; i<numblocks; i++)
     {
         if ( txidind != B[i].firsttxidind || spendind != B[i].firstvin )
@@ -996,7 +996,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
             }
             for (k=0; k<T[txidind].numvins && errs==0; k++,spendind++)
             {
-                if ( bp == coin->current )//&& (spendind % 5000000) == 2000000 )
+                if ( bp == coin->current && (spendind % 5000000) == 2000000 )
                     printf("[%-3d:%4d] spendvectors elapsed t.%-3d spendind.%d\n",bp->hdrsi,i,(uint32_t)time(NULL)-starttime,spendind);
                 u = 0;
                 s = &S[spendind];
