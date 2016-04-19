@@ -988,7 +988,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
             }
             for (k=0; k<T[txidind].numvins && errs==0; k++,spendind++)
             {
-                if ( 0 && (spendind % 5000000) == 2000000 )
+                if ( bp == coin->current && (spendind % 5000000) == 2000000 )
                     printf("[%-3d:%4d] spendvectors elapsed t.%-3d spendind.%d\n",bp->hdrsi,i,(uint32_t)time(NULL)-starttime,spendind);
                 u = 0;
                 s = &S[spendind];
@@ -1047,7 +1047,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                             ptr[emit].unspentind = spent_unspentind;
                             ptr[emit].fromheight = bp->bundleheight + i;
                             ptr[emit].tmpflag = 1;
-                            if ( 0 && bp == coin->current )
+                            if ( 1 && bp == coin->current )
                                 printf("ht.%d spends [%d] TMPVECTOR u%d\n",ptr[emit].fromheight,ptr[emit].hdrsi,ptr[emit].unspentind);
                             emit++;
                         }
@@ -1649,7 +1649,7 @@ int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *s
             //printf("iguana_spendvectorconvs: [%d] null bp.%p\n",i,bp);
         }
     }
-    //spentbp->converted = (uint32_t)time(NULL);
+    spentbp->converted = (uint32_t)time(NULL);
     //printf("spendvectorconvs.[%d] converted.%d\n",refbp->hdrsi,converted);
     return(converted);
 }
