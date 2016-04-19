@@ -25,11 +25,14 @@
 int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,long fileptr[2],char *fname,uint32_t scriptpos,int32_t scriptlen)
 {
     FILE *fp; int32_t retval = scriptlen;
+#ifndef __PNACL__
     if ( fileptr[0] == 0 )
         fileptr[0] = (uint64_t)OS_mapfile(fname,&fileptr[1],0);
     if ( fileptr[0] != 0 && (scriptpos + scriptlen) <= fileptr[1] )
         memcpy(scriptspace,(void *)(fileptr[0] + scriptpos),scriptlen);
-    else if ( (fp= fopen(fname,"rb")) != 0 )
+    else
+#endif
+        if ( (fp= fopen(fname,"rb")) != 0 )
     {
         fseek(fp,scriptpos,SEEK_SET);
         if ( fread(scriptspace,1,scriptlen,fp) != scriptlen )
@@ -173,7 +176,7 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
 
 int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int32_t max,struct iguana_peer *addr,bits256 hash2,int32_t validatesigs)
 {
-    struct iguana_txid *tx,T; bits256 checktxid; int32_t i,len,total,bundlei=-2; struct iguana_block *block; struct iguana_msgblock msgB; bits256 *tree,checkhash2,merkle_root; struct iguana_bundle *bp=0; long tmp; //char str[65];
+    struct iguana_txid *tx,T; bits256 checktxid; int32_t i,len,total,bundlei=-2; struct iguana_block *block; struct iguana_msgblock msgB; bits256 *tree,checkhash2,merkle_root; struct iguana_bundle *bp=0; long tmp; char str[65];
     if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) != 0 && bundlei >= 0 && bundlei < bp->n )
     {
         if ( (block= bp->blocks[bundlei]) != 0 )
@@ -200,7 +203,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
                 }
                 else
                 {
-                    // printf("null tx error getting txi.%d [%d:%d]\n",i,bp->hdrsi,bundlei);
+                    printf("null tx error getting txi.%d [%d:%d]\n",i,bp->hdrsi,bundlei);
                     break;
                 }
             }
@@ -224,12 +227,12 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
                             return(iguana_queue_send(coin,addr,0,blockspace,"block",total,0,0));
                         else
                         {
-                            //printf("validated.[%d:%d] len.%d\n",bp->hdrsi,bundlei,total);
+                            printf("validated.[%d:%d] len.%d\n",bp->hdrsi,bundlei,total);
                             return(total);
                         }
                     } else printf("iguana_peerblockrequest: error merkle cmp tx.[%d] for ht.%d\n",i,bp->bundleheight+bundlei);
                 } else printf("iguana_peerblockrequest: error merkle verify tx.[%d] for ht.%d\n",i,bp->bundleheight+bundlei);
-            } // else printf("iguana_peerblockrequest: error getting tx.[%d] for ht.%d block.%p main.%d ht.%d\n",i,bp->bundleheight+bundlei,block,block!=0?block->mainchain:-1,block!=0?block->height:-1);
+            } else printf("iguana_peerblockrequest: error getting tx.[%d] for ht.%d block.%p main.%d ht.%d\n",i,bp->bundleheight+bundlei,block,block!=0?block->mainchain:-1,block!=0?block->height:-1);
         }
         else
         {
@@ -237,7 +240,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
                 printf("iguana_peerblockrequest: block.%p ht.%d mainchain.%d [%d:%d]\n",block,block->height,block->mainchain,bp->hdrsi,bundlei);
             else printf("iguana_peerblockrequest: block.%p [%d:%d]\n",block,bp->hdrsi,bundlei);
         }
-    } // else printf("iguana_peerblockrequest: cant find %s\n",bits256_str(str,hash2));
+    } else printf("iguana_peerblockrequest: cant find %s\n",bits256_str(str,hash2));
     return(-1);
 }
 

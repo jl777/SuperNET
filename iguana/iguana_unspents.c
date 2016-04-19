@@ -2014,7 +2014,7 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
     if ( bp->validated <= 1 || forceflag != 0 )
     {
         sprintf(fname,"%s/%s/validated/%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
-        printf("validatefname.(%s)\n",fname);
+        //printf("validatefname.(%s)\n",fname);
         if ( (fp= fopen(fname,"rb")) != 0 )
         {
             if ( forceflag == 0 )
@@ -2023,7 +2023,7 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
                 {
                     printf("error reading.(%s)\n",fname);
                     total = bp->validated = 0;
-                } else printf("(%s) total.%d validated.%u\n",fname,(int32_t)total,bp->validated);
+                } //else printf("(%s) total.%d validated.%u\n",fname,(int32_t)total,bp->validated);
             } else OS_removefile(fname,1);
             fclose(fp);
         }
@@ -2033,7 +2033,6 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
             blockspace = calloc(1,max);
             for (i=0; i<bp->n; i++)
             {
-                printf("i.%d: request\n",i);
                 if ( (len= iguana_peerblockrequest(coin,blockspace,max,0,bp->hashes[i],1)) < 0 )
                 {
                     errs++;

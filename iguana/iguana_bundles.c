@@ -941,7 +941,8 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
                 /*if ( bp->hdrsi == 0 && iguana_peerblockrequest(coin,coin->blockspace,sizeof(coin->blockspace),0,bp->hashes[0],1) > 0 )
                     printf("GENESIS block validated\n");
                 else printf("GENESIS didnt validate bp.%p\n",bp);*/
-                //iguana_bundlevalidate(coin,bp,1);
+                if ( strcmp("BTC",coin->symbol) != 0 )
+                    iguana_bundlevalidate(coin,bp,1);
             }
             else
             {
