@@ -378,7 +378,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
     {
         if ( (bp= coin->bundles[hdrsi]) == 0 )
             return(-1);
-        printf("validate and gen utxo.[%d] Xspends.%p\n",hdrsi,bp->ramchain.Xspendinds);
+        printf("validate incr.%d and gen utxo.[%d] utxofinish.%u Xspends.%p\n",incr,hdrsi,bp->utxofinish,bp->ramchain.Xspendinds);
         if ( strcmp("BTC",coin->symbol) == 0 || iguana_bundlevalidate(coin,bp,0) == bp->n )
         {
             retval = 0;
