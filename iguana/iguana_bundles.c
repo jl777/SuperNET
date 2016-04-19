@@ -942,7 +942,7 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
                     printf("GENESIS block validated\n");
                 else printf("GENESIS didnt validate bp.%p\n",bp);*/
                 //if ( strcmp("BTC",coin->symbol) != 0 )
-                    iguana_bundlevalidate(coin,bp,1);
+                //    iguana_bundlevalidate(coin,bp,1); cant validate here
             }
             else
             {
