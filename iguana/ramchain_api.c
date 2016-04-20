@@ -304,16 +304,13 @@ HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool)
 
 TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array)
 {
-    int32_t numrmds; uint8_t *rmdarray; cJSON *retjson,*arg = cJSON_CreateArray();
+    int32_t numrmds; uint8_t *rmdarray; cJSON *retjson = cJSON_CreateArray();
     if ( minconf == 0 )
         minconf = 1;
     if ( maxconf == 0 )
         maxconf = 9999999;
     rmdarray = iguana_rmdarray(coin,&numrmds,array,0);
-    iguana_unspents(myinfo,coin,arg,minconf,maxconf,rmdarray,numrmds);
-    retjson = cJSON_CreateObject();
-    jadd(retjson,"result",arg);
-    printf("returning.(%s)\n",jprint(arg,0));
+    iguana_unspents(myinfo,coin,retjson,minconf,maxconf,rmdarray,numrmds);
     if ( rmdarray != 0 )
         free(rmdarray);
     return(jprint(retjson,1));
