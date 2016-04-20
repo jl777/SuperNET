@@ -426,7 +426,7 @@ void mainloop(struct supernet_info *myinfo)
                     {
                         isRT *= coin->isRT;
                         numpeers += coin->peers.numranked;
-                        if ( time(NULL) > coin->startutc+10 && coin->spendvectorsaved == 0 && coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-coin->minconfirms)/coin->chain->bundlesize )
+                        if ( time(NULL) > coin->startutc+10 && coin->spendvectorsaved != 1 && coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-coin->minconfirms)/coin->chain->bundlesize )
                         {
                             n = coin->bundlescount-1;
                             if ( iguana_emitfinished(coin,1) >= n )
