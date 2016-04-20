@@ -1375,7 +1375,11 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
         coin->longestchain = coin->RTheight;
     iguana_bundlestats(coin,buf,IGUANA_DEFAULTLAG);
     if ( (bp= coin->bundles[coin->balanceswritten-1]) != 0 && (block= bp->blocks[bp->n-1]) != 0 )
-        coin->blocks.hwmchain = *block;
+    {
+        char str[65];
+        printf("set hwmchain.%d <- %s %p\n",bp->bundleheight+bp->n-1,bits256_str(str,bp->hashes[bp->n-1]),block);
+        //coin->blocks.hwmchain = *block;
+    }
     return(coin->balanceswritten);
 }
 
