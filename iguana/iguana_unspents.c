@@ -1286,7 +1286,7 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
     struct sha256_vstate vstate,bstate; int32_t i,from_ro,numpkinds,numunspents; struct iguana_bundle *bp; struct iguana_block *block;
     uint32_t crc,filecrc; FILE *fp; char crcfname[512],str[65],str2[65],buf[2048];
     from_ro = 1;
-    printf("start volatilesinit\n");
+    //printf("start volatilesinit\n");
     for (i=0; i<coin->balanceswritten; i++)
     {
         if ( (bp= coin->bundles[i]) == 0 )
@@ -1299,7 +1299,7 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
         if ( bp->ramchain.from_ro == 0 || bp->ramchain.from_roX == 0 || bp->ramchain.from_roA == 0 || bp->ramchain.from_roU == 0 )
             from_ro = 0;
     }
-    printf("volatiles i.%d\n",i);
+    //printf("volatiles i.%d\n",i);
     if ( i < coin->balanceswritten )
     {
         printf("TRUNCATE balances written.%d -> %d\n",coin->balanceswritten,i);
@@ -1307,7 +1307,7 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
     }
     else
     {
-        printf("verify crc and sha256 hash for %d of %d\n",i,coin->balanceswritten);
+        //printf("verify crc and sha256 hash for %d of %d\n",i,coin->balanceswritten);
         vupdate_sha256(balancehash.bytes,&vstate,0,0);
         vupdate_sha256(allbundles.bytes,&bstate,0,0);
         filecrc = 0;
@@ -1381,11 +1381,11 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
     iguana_bundlestats(coin,buf,IGUANA_DEFAULTLAG);
     if ( (bp= coin->bundles[coin->balanceswritten-1]) != 0 && (block= bp->blocks[bp->n-1]) != 0 )
     {
-        char str[65];
-        printf("set hwmchain.%d <- %s %p\n",bp->bundleheight+bp->n-1,bits256_str(str,bp->hashes[bp->n-1]),block);
+        //char str[65];
+        //printf("set hwmchain.%d <- %s %p\n",bp->bundleheight+bp->n-1,bits256_str(str,bp->hashes[bp->n-1]),block);
         coin->blocks.hwmchain = *block;
     }
-    printf("end volatilesinit\n");
+    //printf("end volatilesinit\n");
     return(coin->balanceswritten);
 }
 
@@ -1888,7 +1888,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
     if ( coin->current != 0 && (coin->blocks.hwmchain.height % coin->chain->bundlesize) == coin->chain->bundlesize-1 )
     {
-        printf("RT edge case\n");
+        //printf("RT edge case\n");
     }
     if ( coin->RTheight > 0 && coin->spendvectorsaved != 1 && coin->bundlescount-1 != coin->balanceswritten )
     {

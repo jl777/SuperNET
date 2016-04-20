@@ -441,7 +441,7 @@ void mainloop(struct supernet_info *myinfo)
                                 else
                                 {
                                     coin->spendvectorsaved = (uint32_t)time(NULL);
-                                    printf("already done UTXOGEN (%d %d) (%d %d)\n",iguana_utxofinished(coin),n,iguana_balancefinished(coin),n);
+                                    //printf("already done UTXOGEN (%d %d) (%d %d)\n",iguana_utxofinished(coin),n,iguana_balancefinished(coin),n);
                                 }
                             } //else printf("only emit.%d vs %d\n",iguana_emitfinished(coin),n);
                         }

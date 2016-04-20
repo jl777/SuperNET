@@ -439,7 +439,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
     }
     while ( (n= iguana_convertfinished(coin)) < max )
     {
-        printf("helperid.%d convertfinished.%d vs max %d bundlescount.%d\n",helperid,n,max,coin->bundlescount);
+        //printf("helperid.%d convertfinished.%d vs max %d bundlescount.%d\n",helperid,n,max,coin->bundlescount);
         sleep(IGUANA_NUMHELPERS+3);
     }
     if ( helperid == 0 )
@@ -462,7 +462,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             coin->balanceflush = coin->balanceswritten;
         } else printf("error saving spendvectors\n");
     }
-    printf("helper.%d check validates\n",helperid);
+    //printf("helper.%d check validates\n",helperid);
     if ( helperid < incr )
     {
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
@@ -473,7 +473,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             {
                 printf("validate.[%d] error. refresh page or restart iguana and it should regenerate\n",bp->hdrsi);
                 exit(-1);
-            } else printf("helperid.%d validated.[%d]\n",helperid,hdrsi);
+            } //else printf("helperid.%d validated.[%d]\n",helperid,hdrsi);
         }
     }
     /*while ( iguana_validated(coin) < max || iguana_utxofinished(coin) < max || iguana_balancefinished(coin) < max )
