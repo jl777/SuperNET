@@ -38,19 +38,20 @@ int32_t iguana_ismine(struct supernet_info *myinfo,uint8_t pubkey[65],uint8_t rm
 
 uint8_t *iguana_rmdarray(struct iguana_info *coin,int32_t *numrmdsp,cJSON *array,int32_t firsti)
 {
-    int32_t i,n,j=0; char *coinaddr; uint8_t *addrtypes,*rmdarray = 0;
+    int32_t i,n,j=0; char *coinaddr,rmdstr[41]; uint8_t *addrtypes,*rmdarray = 0;
     *numrmdsp = 0;
     if ( array != 0 && (n= cJSON_GetArraySize(array)) > 0 )
     {
         *numrmdsp = n - firsti;
-        rmdarray = calloc(1,(n-firsti) * 21);
+        rmdarray = calloc(1,(n-firsti) * (21 + 33));
         addrtypes = &rmdarray[(n-firsti) * 20];
         for (i=firsti; i<n; i++)
         {
             if ( (coinaddr= jstr(jitem(array,i),0)) != 0 )
             {
-                printf("(%s) ",coinaddr);
                 bitcoin_addr2rmd160(&addrtypes[j],&rmdarray[20 * j],coinaddr);
+                init_hexbytes_noT(rmdstr,&rmdarray[20 * j],20);
+                printf("(%s %s) ",coinaddr,rmdstr);
                 j++;
             }
         }

@@ -849,6 +849,7 @@ int32_t iguana_pkhasharray(struct iguana_info *coin,cJSON *array,int32_t minconf
             }
             else
             {
+                printf("([%d] %.8f) ",i,dstr(netbalance));
                 //P[n].firstunspentind = lastunspentind;
                 total += netbalance;
                 n++;
