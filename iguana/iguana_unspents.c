@@ -1289,7 +1289,9 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
     printf("start volatilesinit\n");
     for (i=0; i<coin->balanceswritten; i++)
     {
-        if ( (bp= coin->bundles[i]) == 0 || bp->emitfinish <= 1 || (i > 0 && bp->utxofinish <= 1) )
+        if ( (bp= coin->bundles[i]) == 0 )
+            break;
+        if ( ( bp->emitfinish <= 1 || (i > 0 && bp->utxofinish <= 1) )
         {
             printf("hdrsi.[%d] emitfinish.%u utxofinish.%u\n",i,bp->emitfinish,bp->utxofinish);
             break;
@@ -1297,6 +1299,7 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
         if ( bp->ramchain.from_ro == 0 || bp->ramchain.from_roX == 0 || bp->ramchain.from_roA == 0 || bp->ramchain.from_roU == 0 )
             from_ro = 0;
     }
+    printf("volatiles i.%d\n",i);
     if ( i < coin->balanceswritten )
     {
         printf("TRUNCATE balances written.%d -> %d\n",coin->balanceswritten,i);
