@@ -1212,6 +1212,11 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
     emit = startemit;
     if ( coin->RTheight == 0 || bp->bundleheight+bp->n < coin->RTheight )
         fprintf(stderr,"BALANCEGEN.[%d] %p[%d] starti.%d s%d <-> endi.%d s%d startemit.%d\n",bp->hdrsi,Xspendinds,numXspends,starti,spendind,endi,B[endi].firstvin+B[endi].numvins,startemit);
+    if ( starti == 0 && endi == bp->n-1 && ramchain->A != 0 && ramchain->Uextras != 0 )
+    {
+        memset(ramchain->A,0,sizeof(*ramchain->A) * ramchain->H.data->numpkinds);
+        memset(ramchain->Uextras,0,sizeof(*ramchain->Uextras) * ramchain->H.data->numunspents);
+    }
     for (i=starti; i<=endi; i++)
     {
         now = (uint32_t)time(NULL);
