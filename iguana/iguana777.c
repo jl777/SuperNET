@@ -470,11 +470,11 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
                 exit(-1);
             }
     }
-    while ( iguana_validated(coin) < max || iguana_utxofinished(coin) < max || iguana_balancefinished(coin) < max )
+    /*while ( iguana_validated(coin) < max || iguana_utxofinished(coin) < max || iguana_balancefinished(coin) < max )
     {
         printf("helperid.%d waiting for spendvectorsaved.%u v.%d u.%d b.%d vs max.%d\n",helperid,coin->spendvectorsaved,iguana_validated(coin),iguana_utxofinished(coin),iguana_balancefinished(coin),max);
         sleep(IGUANA_NUMHELPERS+3);
-    }
+    }*/
     if ( helperid == 0 )
     {
         coin->spendvectorsaved = (uint32_t)time(NULL);
