@@ -1286,6 +1286,7 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
     struct sha256_vstate vstate,bstate; int32_t i,from_ro,numpkinds,numunspents; struct iguana_bundle *bp; struct iguana_block *block;
     uint32_t crc,filecrc; FILE *fp; char crcfname[512],str[65],str2[65],buf[2048];
     from_ro = 1;
+    printf("start volatilesinit\n");
     for (i=0; i<coin->balanceswritten; i++)
     {
         if ( (bp= coin->bundles[i]) == 0 || bp->emitfinish <= 1 || (i > 0 && bp->utxofinish <= 1) )
@@ -1381,6 +1382,7 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
         printf("set hwmchain.%d <- %s %p\n",bp->bundleheight+bp->n-1,bits256_str(str,bp->hashes[bp->n-1]),block);
         coin->blocks.hwmchain = *block;
     }
+    printf("end volatilesinit\n");
     return(coin->balanceswritten);
 }
 
