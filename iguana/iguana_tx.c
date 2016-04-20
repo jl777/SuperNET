@@ -26,8 +26,8 @@ int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,long fil
 {
     FILE *fp; long err; int32_t retval = scriptlen;
 #ifndef __PNACL__
-    static portable_mutex_t mutex;
-    portable_mutex_lock(&mutex);
+    //static portable_mutex_t mutex;
+    //portable_mutex_lock(&mutex);
     if ( fileptr[0] == 0 )
         fileptr[0] = (uint64_t)OS_mapfile(fname,&fileptr[1],0);
     if ( fileptr[0] != 0 )
@@ -37,14 +37,14 @@ int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,long fil
             memcpy(scriptspace,(void *)(fileptr[0] + scriptpos),scriptlen);
             return(retval);
         }
-        else
+        else if ( 0 )
         {
             printf("munmap (%s)\n",fname);
             munmap((void *)fileptr[0],fileptr[1]);
             fileptr[0] = fileptr[1] = 0;
         }
     }
-    portable_mutex_unlock(&mutex);
+    //portable_mutex_unlock(&mutex);
 #endif
     if ( (fp= fopen(fname,"rb")) != 0 )
     {
