@@ -278,7 +278,7 @@ int32_t iguana_spentflag(struct iguana_info *coin,int32_t *spentheightp,struct i
         printf("illegal unspentind.%u vs %u hdrs.%d\n",spent_unspentind,numunspents,spent_hdrsi);
         return(-1);
     }
-    if ( utxo.fromheight == 0 )
+    if ( utxo.spentflag != 0 && utxo.fromheight == 0 )
     {
         printf("illegal unspentind.%u vs %u hdrs.%d zero fromheight?\n",spent_unspentind,numunspents,spent_hdrsi);
         return(-1);
@@ -761,7 +761,7 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                     *balancep = ACCTS[pkind].total;
                     *lastunspentindp = ACCTS[pkind].lastunspentind;
                     *p = P[pkind];
-                    printf("return pkind.%u %.8f\n",pkind,dstr(*balancep));
+                    //printf("return pkind.%u %.8f\n",pkind,dstr(*balancep));
                     return(p);
                 }
                 else if ( pkind != 0 )
@@ -782,10 +782,10 @@ char *iguana_bundleaddrs(struct iguana_info *coin,int32_t hdrsi)
             printf("iguana_bundleaddrs: unexpected access when RTramchain_busy\n");
             return(0);
         }
-        ramchain = (bp->isRT != 0) ? &bp->ramchain : &coin->RTramchain;
+        ramchain = &bp->ramchain;//(bp->isRT != 0) ? &bp->ramchain : &coin->RTramchain;
         if ( ramchain->H.data != 0 )
         {
-            numpkinds = (bp->isRT != 0) ? ramchain->H.data->numpkinds : ramchain->pkind;
+            numpkinds = ramchain->H.data->numpkinds;//(bp->isRT != 0) ? ramchain->H.data->numpkinds : ramchain->pkind;
             retjson = cJSON_CreateArray();
             PKbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->PKoffset);
             P = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Poffset);
@@ -805,7 +805,7 @@ int64_t iguana_pkhashbalance(struct iguana_info *coin,cJSON *array,int64_t *spen
 {
     struct iguana_unspent *U; int32_t spentheight; uint32_t unspentind; int64_t balance = 0; struct iguana_txid *T;
     *spentp = *nump = 0;
-    if ( ramchain == &coin->RTramchain && coin->RTramchain_busy != 0 )
+    if ( 0 && ramchain == &coin->RTramchain && coin->RTramchain_busy != 0 )
     {
         printf("iguana_pkhashbalance: unexpected access when RTramchain_busy\n");
         return(0);
@@ -821,7 +821,7 @@ int64_t iguana_pkhashbalance(struct iguana_info *coin,cJSON *array,int64_t *spen
     while ( unspentind > 0 )
     {
         (*nump)++;
-        printf("%s u.%d %.8f\n",jprint(iguana_unspentjson(coin,hdrsi,unspentind,T,&U[unspentind],rmd160,coinaddr,pubkey33),1),unspentind,dstr(U[unspentind].value));
+        //printf("%s u.%d %.8f\n",jprint(iguana_unspentjson(coin,hdrsi,unspentind,T,&U[unspentind],rmd160,coinaddr,pubkey33),1),unspentind,dstr(U[unspentind].value));
         if ( iguana_spentflag(coin,&spentheight,ramchain,hdrsi,unspentind,height) == 0 )
         {
             balance += U[unspentind].value;
@@ -851,7 +851,7 @@ int32_t iguana_pkhasharray(struct iguana_info *coin,cJSON *array,int32_t minconf
             }
             else
             {
-                printf("([%d] %.8f) ",i,dstr(netbalance));
+                printf("pkhash balance.[%d] from m.%d check %.8f vs %.8f spent %.8f [%.8f]\n",i,m,dstr(netbalance),dstr(balance),dstr(spent),dstr(balance)-dstr(spent));
                 //P[n].firstunspentind = lastunspentind;
                 total += netbalance;
                 n++;
