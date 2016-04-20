@@ -463,6 +463,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
         } else printf("error saving spendvectors\n");
     }
     //printf("helper.%d check validates\n",helperid);
+    incr = IGUANA_NUMHELPERS;
     if ( helperid < incr )
     {
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
