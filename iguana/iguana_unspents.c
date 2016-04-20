@@ -287,6 +287,7 @@ int32_t iguana_spentflag(struct iguana_info *coin,int32_t *spentheightp,struct i
         printf("illegal unspentind.%u vs %u hdrs.%d zero fromheight?\n",spent_unspentind,numunspents,spent_hdrsi);
         return(-1);
     }
+    printf("spentheight.%d vs height.%d spentflag.%d\n",utxo.fromheight,height,utxo.spentflag);
     *spentheightp = utxo.fromheight;
     if ( height == 0 || utxo.fromheight < height )
         return(utxo.spentflag);
@@ -568,7 +569,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
     {
         if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish > 1 )
         {
-            ramchain = (bp->isRT != 0) ? &coin->RTramchain : &bp->ramchain;
+            ramchain = &bp->ramchain;//(bp->isRT != 0) ? &coin->RTramchain : &bp->ramchain;
             if ( ramchain->H.data != 0 )
             {
                 if ( (TXbits= ramchain->txbits) == 0 )
@@ -713,12 +714,12 @@ cJSON *ramchain_unspentjson(struct iguana_unspent *up,uint32_t unspentind)
 {
     cJSON *item = cJSON_CreateObject();
     jaddnum(item,"hdrsi",up->hdrsi);
+    jaddnum(item,"pkind",up->pkind);
     jaddnum(item,"unspentind",unspentind);
+    jaddnum(item,"prevunspentind",up->prevunspentind);
     jadd64bits(item,"satoshis",up->value);
     jaddnum(item,"txidind",up->txidind);
     jaddnum(item,"vout",up->vout);
-    jaddnum(item,"pkind",up->pkind);
-    jaddnum(item,"prevunspentind",up->prevunspentind);
     jaddnum(item,"type",up->type);
     jaddnum(item,"fileid",up->fileid);
     jaddnum(item,"scriptpos",up->scriptpos);
@@ -754,7 +755,7 @@ cJSON *iguana_unspentjson(struct iguana_info *coin,int32_t hdrsi,uint32_t unspen
         jaddstr(item,"account",wacct->account);
         jadd(item,"spendable",jtrue());
     } else jadd(item,"spendable",jfalse());
-    jadd(item,"ramchain",ramchain_unspentjson(up,unspentind));
+    jadd(item,"unspent",ramchain_unspentjson(up,unspentind));
     return(item);
 }
 
@@ -828,21 +829,21 @@ char *iguana_bundleaddrs(struct iguana_info *coin,int32_t hdrsi)
 
 int64_t iguana_pkhashbalance(struct iguana_info *coin,cJSON *array,int64_t *spentp,int32_t *nump,struct iguana_ramchain *ramchain,struct iguana_pkhash *p,uint32_t lastunspentind,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33,int32_t hdrsi,int32_t height)
 {
-    struct iguana_unspent *U; int32_t spentheight; uint32_t unspentind; int64_t balance = 0; struct iguana_txid *T;
+    struct iguana_unspent *U; int32_t spentheight; uint32_t unspentind; int64_t balance = 0; struct iguana_txid *T; struct iguana_ramchaindata *rdata = 0;
     *spentp = *nump = 0;
     if ( 0 && ramchain == &coin->RTramchain && coin->RTramchain_busy != 0 )
     {
         printf("iguana_pkhashbalance: unexpected access when RTramchain_busy\n");
         return(0);
     }
-    if ( ramchain->Uextras == 0 )
+    if ( ramchain->Uextras == 0 || (rdata= ramchain->H.data) == 0 )
     {
-        printf("iguana_pkhashbalance: unexpected null spents\n");
+        printf("iguana_pkhashbalance: unexpected null spents.%p or rdata.%p\n",ramchain->Uextras,rdata);
         return(0);
     }
     unspentind = lastunspentind;
-    U = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Uoffset);
-    T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
+    U = (void *)(long)((long)rdata + rdata->Uoffset);
+    T = (void *)(long)((long)rdata + rdata->Toffset);
     while ( unspentind > 0 )
     {
         (*nump)++;
@@ -877,7 +878,6 @@ int32_t iguana_pkhasharray(struct iguana_info *coin,cJSON *array,int32_t minconf
             else
             {
                 printf("pkhash balance.[%d] from m.%d check %.8f vs %.8f spent %.8f [%.8f]\n",i,m,dstr(netbalance),dstr(balance),dstr(spent),dstr(balance)-dstr(spent));
-                //P[n].firstunspentind = lastunspentind;
                 total += netbalance;
                 n++;
             }
