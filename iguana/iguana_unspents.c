@@ -1383,7 +1383,8 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
     {
         //char str[65];
         //printf("set hwmchain.%d <- %s %p\n",bp->bundleheight+bp->n-1,bits256_str(str,bp->hashes[bp->n-1]),block);
-        coin->blocks.hwmchain = *block;
+        if ( block->height > coin->blocks.hwmchain.height )
+            coin->blocks.hwmchain = *block;
     }
     //printf("end volatilesinit\n");
     return(coin->balanceswritten);
