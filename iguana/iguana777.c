@@ -484,14 +484,14 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
     if ( helperid == 0 )
     {
         coin->spendvectorsaved = (uint32_t)time(NULL);
-        printf("UTXOGEN spendvectorsaved <- %u\n",coin->spendvectorsaved);
+        //printf("UTXOGEN spendvectorsaved <- %u\n",coin->spendvectorsaved);
     }
     else
     {
         while ( coin->spendvectorsaved <= 1 )
             sleep(IGUANA_NUMHELPERS+3);
     }
-    printf("helper.%d helperdone\n",helperid);
+    //printf("helper.%d helperdone\n",helperid);
     return(num);
 }
 
