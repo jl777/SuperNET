@@ -254,7 +254,7 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
     return(err);
 }
 
-int32_t iguana_spentflag(struct iguana_info *coin,int32_t *spentheightp,struct iguana_ramchain *ramchain,int16_t spent_hdrsi,uint32_t spent_unspentind,int32_t height)
+int32_t iguana_spentflag(struct iguana_info *coin,int32_t *spentheightp,struct iguana_ramchain *ramchain,int16_t spent_hdrsi,uint32_t spent_unspentind,int32_t height,uint64_t amount)
 {
     uint32_t numunspents; struct iguana_hhutxo *hhutxo; struct iguana_utxo utxo;
     uint8_t ubuf[sizeof(uint32_t) + sizeof(int16_t)];
@@ -287,7 +287,7 @@ int32_t iguana_spentflag(struct iguana_info *coin,int32_t *spentheightp,struct i
         printf("illegal unspentind.%u vs %u hdrs.%d zero fromheight?\n",spent_unspentind,numunspents,spent_hdrsi);
         return(-1);
     }
-    printf("spentheight.%d vs height.%d spentflag.%d\n",utxo.fromheight,height,utxo.spentflag);
+    printf("[%d] u%u %.8f, spentheight.%d vs height.%d spentflag.%d\n",spent_hdrsi,spent_unspentind,dstr(amount),utxo.fromheight,height,utxo.spentflag);
     *spentheightp = utxo.fromheight;
     if ( height == 0 || utxo.fromheight < height )
         return(utxo.spentflag);
@@ -761,7 +761,7 @@ cJSON *iguana_unspentjson(struct iguana_info *coin,int32_t hdrsi,uint32_t unspen
 
 struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_ramchain **ramchainp,int64_t *balancep,uint32_t *lastunspentindp,struct iguana_pkhash *p,uint8_t rmd160[20],int32_t firsti,int32_t endi)
 {
-    uint8_t *PKbits; struct iguana_pkhash *P; uint32_t pkind,numpkinds,i; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; struct iguana_ramchaindata *rdata; struct iguana_account *ACCTS;
+    uint8_t *PKbits; struct iguana_pkhash *P; uint32_t pkind,numpkinds,i; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; struct iguana_ramchaindata *rdata; struct iguana_account *ACCTS,*A2;
     *balancep = 0;
     *ramchainp = 0;
     *lastunspentindp = 0;
@@ -785,6 +785,8 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                 {
                     *ramchainp = ramchain;
                     *balancep = ACCTS[pkind].total;
+                    if ( (A2= ramchain->A) != 0 )
+                        (*balancep) -= A2[pkind].total;
                     *lastunspentindp = ACCTS[pkind].lastunspentind;
                     *p = P[pkind];
                     //printf("return pkind.%u %.8f\n",pkind,dstr(*balancep));
@@ -847,8 +849,7 @@ int64_t iguana_pkhashbalance(struct iguana_info *coin,cJSON *array,int64_t *spen
     while ( unspentind > 0 )
     {
         (*nump)++;
-        //printf("%s u.%d %.8f\n",jprint(iguana_unspentjson(coin,hdrsi,unspentind,T,&U[unspentind],rmd160,coinaddr,pubkey33),1),unspentind,dstr(U[unspentind].value));
-        if ( iguana_spentflag(coin,&spentheight,ramchain,hdrsi,unspentind,height) == 0 )
+        if ( iguana_spentflag(coin,&spentheight,ramchain,hdrsi,unspentind,height,U[unspentind].value) == 0 )
         {
             balance += U[unspentind].value;
             if ( array != 0 )
@@ -856,6 +857,7 @@ int64_t iguana_pkhashbalance(struct iguana_info *coin,cJSON *array,int64_t *spen
         } else spent += U[unspentind].value;
         if ( p->pkind != U[unspentind].pkind )
             printf("warning: [%d] p->pkind.%u vs U->pkind.%u for u%d\n",hdrsi,p->pkind,U[unspentind].pkind,unspentind);
+        pkind = p->pkind;
         unspentind = U[unspentind].prevunspentind;
     }
     if ( (A2= ramchain->A) != 0 )
