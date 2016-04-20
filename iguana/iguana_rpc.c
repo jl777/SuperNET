@@ -34,7 +34,8 @@ char *sglue(GLUEARGS,char *agent,char *method)
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
-            jdelete(retjson,"tag");
+            if ( jobj(retjson,"tag") != 0 )
+                jdelete(retjson,"tag");
             ///printf("RPCret.(%s) n.%d\n",jprint(retjson,0),cJSON_GetArraySize(retjson));
             result = cJSON_GetObjectItem(retjson,"result");
             error = cJSON_GetObjectItem(retjson,"error");

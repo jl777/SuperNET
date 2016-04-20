@@ -304,15 +304,19 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remote
         {
             if ( (retjsonstr[0] == '{' || retjsonstr[0] == '[') && (retjson= cJSON_Parse(retjsonstr)) != 0 )
             {
-                if ( j64bits(retjson,"tag") != tag )
+                if ( is_cJSON_Array(retjson) == 0 )
                 {
-                    if ( jobj(retjson,"tag") != 0 )
-                        jdelete(retjson,"tag");
-                    jadd64bits(retjson,"tag",tag);
+                    if ( j64bits(retjson,"tag") != tag )
+                    {
+                        if ( jobj(retjson,"tag") != 0 )
+                            jdelete(retjson,"tag");
+                        jadd64bits(retjson,"tag",tag);
+                    }
+                    retstr = jprint(retjson,1);
+                    //printf("retstr.(%s) retjsonstr.%p retjson.%p\n",retstr,retjsonstr,retjson);
                 }
-                retstr = jprint(retjson,1);
-                //printf("retstr.(%s) retjsonstr.%p retjson.%p\n",retstr,retjsonstr,retjson);
-                free(retjsonstr);//,strlen(retjsonstr)+1);
+                else retstr = retjsonstr;
+                free(retjsonstr);
             } else retstr = retjsonstr;
         }
         free(jsonstr);
