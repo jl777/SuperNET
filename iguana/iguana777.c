@@ -464,11 +464,13 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
     if ( helperid < incr )
     {
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
+        {
             if ( iguana_bundlevalidate(coin,bp,0) != bp->n )
             {
                 printf("validate.[%d] error. refresh page or restart iguana and it should regenerate\n",bp->hdrsi);
                 exit(-1);
-            }
+            } else printf("helperid.%d validated.[%d]\n",helperid,hdrsi);
+        }
     }
     /*while ( iguana_validated(coin) < max || iguana_utxofinished(coin) < max || iguana_balancefinished(coin) < max )
     {
@@ -485,7 +487,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
         while ( coin->spendvectorsaved <= 1 )
             sleep(IGUANA_NUMHELPERS+3);
     }
-    printf("helper.%d done\n",helperid);
+    printf("helper.%d helperdone\n",helperid);
     return(num);
 }
 
@@ -725,7 +727,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     //    maxval = (int32_t)coin->MAXMEM;
     coin->MAXMEM *= (1024L * 1024 * 1024);
 #ifdef __PNACL__
-    //maxval = 1;// * (strcmp("BTC",coin->symbol) != 0) + 8;
+    maxval = 1;// * (strcmp("BTC",coin->symbol) != 0) + 8;
     //if ( mult > 1 )
     //    mult /= 2;
 #endif

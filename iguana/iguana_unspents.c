@@ -1164,7 +1164,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
     txidind = B[starti].firsttxidind;
     spendind = B[starti].firstvin;
     emit = startemit;
-    if ( bp != coin->current )
+    if ( coin->RTheight == 0 || bp->bundleheight+bp->n < coin->RTheight )
         fprintf(stderr,"BALANCEGEN.[%d] %p[%d] starti.%d s%d <-> endi.%d s%d startemit.%d\n",bp->hdrsi,Xspendinds,numXspends,starti,spendind,endi,B[endi].firstvin+B[endi].numvins,startemit);
     for (i=starti; i<=endi; i++)
     {
