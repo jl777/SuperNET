@@ -1296,7 +1296,7 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
         if ( bp->ramchain.from_ro == 0 || bp->ramchain.from_roX == 0 || bp->ramchain.from_roA == 0 || bp->ramchain.from_roU == 0 )
             from_ro = 0;
     }
-    if ( i != coin->balanceswritten )
+    if ( i < coin->balanceswritten-1 )
     {
         printf("TRUNCATE balances written.%d -> %d\n",coin->balanceswritten,i);
         iguana_truncatebalances(coin);
@@ -1876,6 +1876,8 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     double startmillis0; static double totalmillis0; static int32_t num0;
     struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,i,n,flag=0; bits256 hash2; struct iguana_peer *addr;
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
+   if ( coin->current != 0 && (coin->blocks.hwmchain.height % coin->chain->bundlesize) == coin->chain->bundlesize-1 )
+       iguana_autoextend(coin,coin->current);
     if ( coin->RTheight > 0 && coin->spendvectorsaved != 1 && coin->bundlescount-1 != coin->balanceswritten )
     {
         printf("RT mismatch %d != %d\n",coin->bundlescount-1,coin->balanceswritten);

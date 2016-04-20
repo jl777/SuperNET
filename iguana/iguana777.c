@@ -729,7 +729,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     //    maxval = (int32_t)coin->MAXMEM;
     coin->MAXMEM *= (1024L * 1024 * 1024);
 #ifdef __PNACL__
-    maxval = 1;// * (strcmp("BTC",coin->symbol) != 0) + 8;
+    //maxval = 1;// * (strcmp("BTC",coin->symbol) != 0) + 8;
     //if ( mult > 1 )
     //    mult /= 2;
 #endif
