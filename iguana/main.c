@@ -313,10 +313,9 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remote
                         jadd64bits(retjson,"tag",tag);
                     }
                     retstr = jprint(retjson,1);
+                    free(retjsonstr);//,strlen(retjsonstr)+1);
                     //printf("retstr.(%s) retjsonstr.%p retjson.%p\n",retstr,retjsonstr,retjson);
-                }
-                else retstr = retjsonstr;
-                free(retjsonstr);
+                } else retstr = retjsonstr;
             } else retstr = retjsonstr;
         }
         free(jsonstr);
