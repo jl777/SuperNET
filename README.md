@@ -107,6 +107,8 @@ iguana can be invoked with a command line argument. if it is a name of a file, i
     "apikey", "apisecret", "userid", "tradepassword" these are as expected
     "pollgap" -> gap between each access to exchange for getting prices
     
+on OSX mksquashfs is not native, you will need to install fuse: https://osxfuse.github.io/ and a squashfs for mac: https://github.com/vasi/squashfuse
+
     **********
     user feedback:
     A Note on Installation from pebwindkraft at bitco.in
