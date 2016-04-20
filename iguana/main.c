@@ -68,12 +68,12 @@ int32_t HDRnet,netBLOCKS;
 cJSON *API_json;
 
 #ifdef __PNACL__
-char GLOBAL_TMPDIR[512] = "/tmp";
+char GLOBAL_TMPDIR[512] = "/DB/tmp";
 char GLOBAL_DBDIR[512] = "/DB";
 char GLOBAL_HELPDIR[512] = "/DB/help";
 char GLOBAL_VALIDATEDIR[512] = "/DB/purgeable";
 char GLOBAL_CONFSDIR[512] = "/DB/confs";
-int32_t IGUANA_NUMHELPERS = 3;
+int32_t IGUANA_NUMHELPERS = 1;
 #else
 char GLOBAL_TMPDIR[512] = "tmp";
 char GLOBAL_HELPDIR[512] = "help";

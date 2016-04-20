@@ -628,26 +628,30 @@ void *iguana_ramchain_offset(char *fname,void *dest,uint8_t *lhash,FILE *fp,uint
     {
         startfpos = ftell(fp);
 #ifdef __PNACL__
-        int32_t i,numretries = 5;
-        for (i=0; i<numretries; i++)
+        if ( 0 )
         {
-            fseek(fp,startfpos,SEEK_SET);
-            err = fwrite(srcptr,1,len,fp);
-            /*err = len;
-            for (j=0; j<len; j++)
-                if ( fputc(((uint8_t *)srcptr)[j],fp) < 0 )
-                {
-                    err = -1;
-                    break;
-                }*/
-            if ( err == len )
+            int32_t i,numretries = 5;
+            for (i=0; i<numretries; i++)
             {
-                fflush(fp);
-                //if ( i > 2 )
-                //printf("write.%d of %d worked!\n",i+1,numretries+1);
-                break;
+                fseek(fp,startfpos,SEEK_SET);
+                err = fwrite(srcptr,1,len,fp);
+                /*err = len;
+                 for (j=0; j<len; j++)
+                 if ( fputc(((uint8_t *)srcptr)[j],fp) < 0 )
+                 {
+                 err = -1;
+                 break;
+                 }*/
+                if ( err == len )
+                {
+                    fflush(fp);
+                    //if ( i > 2 )
+                    //printf("write.%d of %d worked!\n",i+1,numretries+1);
+                    break;
+                }
             }
         }
+        err = fwrite(srcptr,1,len,fp);
 #else
         err = fwrite(srcptr,1,len,fp);
 #endif
@@ -1038,8 +1042,8 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
         }
     }*/
 #ifdef __PNACL__
-    static portable_mutex_t mutex;
-    portable_mutex_lock(&mutex);
+    //static portable_mutex_t mutex;
+    //portable_mutex_lock(&mutex);
 #endif
     if ( (fp= fopen(fname,"wb")) == 0 )
         printf("iguana_ramchain_save: couldnt create.(%s) errno.%d\n",fname,errno);
@@ -1062,7 +1066,7 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
         fclose(fp);
     }
 #ifdef __PNACL__
-    portable_mutex_unlock(&mutex);
+    //portable_mutex_unlock(&mutex);
 #endif
    return(fpos);
 }
@@ -1484,12 +1488,12 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
 {
     struct iguana_ramchain *retptr;
 #ifdef __PNACL__
-    static portable_mutex_t mutex;
-    portable_mutex_lock(&mutex);
+    //static portable_mutex_t mutex;
+    //portable_mutex_lock(&mutex);
 #endif
     retptr = _iguana_ramchain_map(coin,fname,bp,numblocks,ramchain,hashmem,ipbits,hash2,prevhash2,bundlei,fpos,allocextras,expanded);
 #ifdef __PNACL__
-    portable_mutex_unlock(&mutex);
+    //portable_mutex_unlock(&mutex);
 #endif
     return(retptr);
 }

@@ -259,18 +259,22 @@ int32_t iguana_spentflag(struct iguana_info *coin,int32_t *spentheightp,struct i
     uint32_t numunspents; struct iguana_hhutxo *hhutxo; struct iguana_utxo utxo;
     uint8_t ubuf[sizeof(uint32_t) + sizeof(int16_t)];
     *spentheightp = 0;
-    numunspents = (ramchain == &coin->RTramchain) ? ramchain->H.unspentind : ramchain->H.data->numunspents;
+    numunspents = ramchain->H.data->numunspents;//(ramchain == &coin->RTramchain) ? ramchain->H.unspentind : ramchain->H.data->numunspents;
     memset(&utxo,0,sizeof(utxo));
     if ( spent_unspentind != 0 && spent_unspentind < numunspents )
     {
         if ( ramchain->Uextras != 0 )
             utxo = ramchain->Uextras[spent_unspentind];
-        else if ( (hhutxo= iguana_hhutxofind(coin,ubuf,spent_hdrsi,spent_unspentind)) != 0 && hhutxo->u.spentflag != 0 )
-            utxo = hhutxo->u;
         else
         {
-            printf("null ramchain->Uextras unspentind.%u vs %u hdrs.%d\n",spent_unspentind,numunspents,spent_hdrsi);
-            return(-1);
+            printf("[%d] unexpected null Uextras\n",ramchain->H.data->height/coin->chain->bundlesize);
+            if ( (hhutxo= iguana_hhutxofind(coin,ubuf,spent_hdrsi,spent_unspentind)) != 0 && hhutxo->u.spentflag != 0 )
+                utxo = hhutxo->u;
+            else
+            {
+                printf("null ramchain->Uextras unspentind.%u vs %u hdrs.%d\n",spent_unspentind,numunspents,spent_hdrsi);
+                return(-1);
+            }
         }
     }
     else
@@ -306,7 +310,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
                 utxo = &spentchain->Uextras[spent_unspentind];
                 if ( utxo->spentflag == 0 )
                 {
-                    if ( 0 && fromheight/coin->chain->bundlesize >= coin->current->hdrsi )
+                    if ( 1 && fromheight/coin->chain->bundlesize >= coin->current->hdrsi )
                         printf("iguana_volatileupdate.%d: [%d] spent.(u%u %.8f pkind.%d) fromht.%d [%d] spendind.%d\n",incremental,spent_hdrsi,spent_unspentind,dstr(spent_value),spent_pkind,fromheight,fromheight/coin->chain->bundlesize,spendind);
                     utxo->prevunspentind = A2[spent_pkind].lastunspentind;
                     utxo->spentflag = 1;
