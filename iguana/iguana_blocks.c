@@ -401,6 +401,7 @@ struct iguana_block *iguana_fastlink(struct iguana_info *coin,int32_t hwmheight)
         {
             block->RO.prev_block = prev->RO.hash2;
             printf("PATCH.[%d:%d] prev is null\n",bp->hdrsi,bundlei);
+            break;
         }
         bp->blocks[bundlei] = block;
         coin->blocks.maxblocks = (block->height + 1);
