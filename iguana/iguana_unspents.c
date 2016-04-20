@@ -312,7 +312,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
                 if ( utxo->spentflag == 0 )
                 {
                     //if ( 0 && fromheight/coin->chain->bundlesize >= coin->current->hdrsi )
-                    if ( spent_pkind == 1534811 || spent_pkind == 147416 )
+                    if ( (spent_hdrsi == 200 && spent_pkind == 1534811) || (spent_hdrsi == 202 && spent_pkind == 147416) )
                         printf("iguana_volatileupdate.%d: [%d] spent.(u%u %.8f pkind.%d) fromht.%d [%d] spendind.%d\n",incremental,spent_hdrsi,spent_unspentind,dstr(spent_value),spent_pkind,fromheight,fromheight/coin->chain->bundlesize,spendind);
                     utxo->prevunspentind = A2[spent_pkind].lastunspentind;
                     utxo->spentflag = 1;
@@ -338,7 +338,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
                 return(0);
             }
         }
-        printf("iguana_volatileupdate.%d: [%d] spent.(u%u %.8f pkind.%d) double spend? at ht.%d [%d] spendind.%d\n",incremental,spent_hdrsi,spent_unspentind,dstr(spent_value),spent_pkind,fromheight,fromheight/coin->chain->bundlesize,spendind);
+        printf("iguana_volatileupdate.%d: [%d] spent.(u%u %.8f pkind.%d) double spend? at ht.%d [%d] spendind.%d (%p %p)\n",incremental,spent_hdrsi,spent_unspentind,dstr(spent_value),spent_pkind,fromheight,fromheight/coin->chain->bundlesize,spendind,spentchain->Uextras,spentchain->A);
         if ( coin->current != 0 && fromheight >= coin->current->bundleheight )
             coin->RTdatabad = 1;
         else
