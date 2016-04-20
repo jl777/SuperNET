@@ -889,7 +889,7 @@ long iguana_ramchain_setsize(char *fname,struct iguana_ramchain *ramchain,struct
     rdata->scriptspace = ramchain->H.scriptoffset;
     rdata->stackspace = ramchain->H.stacksize;
     rdata->allocsize = iguana_ramchain_size(fname,RAMCHAIN_ARG,numblocks,rdata->scriptspace);
-    //if ( 0 && rdata->scriptspace != 0 )
+    if ( 0 && rdata->scriptspace != 0 )
         printf("iguana_ramchain_setsize: Koffset.%d scriptspace.%d stackspace.%d (scriptoffset.%d stacksize.%d) allocsize.%d\n",(int32_t)rdata->Koffset,(int32_t)rdata->scriptspace,(int32_t)rdata->stackspace,(int32_t)ramchain->H.scriptoffset,(int32_t)ramchain->H.stacksize,(int32_t)rdata->allocsize);
     ramchain->datasize = rdata->allocsize;
     return((long)rdata->allocsize);

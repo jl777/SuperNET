@@ -420,7 +420,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
     if ( strcmp("BTC",coin->symbol) == 0 && coin->PREFETCHLAG > 0 )
         incr = 1;
     max = coin->bundlescount;
-    //if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 )
+    if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 )
         max--;
     if ( helperid < incr )
     {
