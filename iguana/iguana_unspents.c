@@ -311,7 +311,8 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
                 utxo = &spentchain->Uextras[spent_unspentind];
                 if ( utxo->spentflag == 0 )
                 {
-                    if ( 0 && fromheight/coin->chain->bundlesize >= coin->current->hdrsi )
+                    //if ( 0 && fromheight/coin->chain->bundlesize >= coin->current->hdrsi )
+                    if ( spent_pkind == 1534811 || spent_pkind == 147416 )
                         printf("iguana_volatileupdate.%d: [%d] spent.(u%u %.8f pkind.%d) fromht.%d [%d] spendind.%d\n",incremental,spent_hdrsi,spent_unspentind,dstr(spent_value),spent_pkind,fromheight,fromheight/coin->chain->bundlesize,spendind);
                     utxo->prevunspentind = A2[spent_pkind].lastunspentind;
                     utxo->spentflag = 1;
@@ -347,7 +348,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
             iguana_bundleremove(coin,fromheight/coin->chain->bundlesize,0);
         }
         exit(-1);
-    }
+    } else printf("volatileupdate error null rdata [%d]\n",spentchain->H.data->height/coin->current->bundleheight);
     return(-1);
 }
 
@@ -1267,7 +1268,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
                         if ( 0 && bp == coin->current )
                             printf("internal spend.%d txidind.%d 1st.%d prevout.%d\n",spendind,txidind,T[txidind].firstvout,s->prevout);
                     }
-                    else if ( i > 0 || j > 0 || k > 0 )
+                    else //if ( i > 0 || j > 0 || k > 0 )
                     {
                         printf("iguana_balancegen [%d] txidind overflow %u vs %u (%d %d %d)\n",bp->hdrsi,s->spendtxidind,rdata->numtxids,i,j,k);
                         errs++;
@@ -1282,7 +1283,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
                     if ( iguana_volatileupdate(coin,0,&spentbp->ramchain,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,h) < 0 )
                         errs++;
                 }
-                else if ( Xspendinds != 0 )
+                else //if ( Xspendinds != 0 )
                 {
                     errs++;
                     printf("iguana_balancegen: spendind.%u external.%d error spentbp.%p with unspentind.%d pkind.%u [%d] (%d %d %d)\n",spendind,s->external,spentbp,spent_unspentind,spent_pkind,spent_hdrsi,i,j,k);
