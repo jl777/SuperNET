@@ -13,6 +13,7 @@
  *                                                                            *
  ******************************************************************************/
 
+TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array);
 
 HASH_AND_STRING(bitcoinrpc,verifytx,txid,txbytes);
 INT_ARG(bitcoinrpc,getblockhash,height);
@@ -32,7 +33,6 @@ ZERO_ARGS(bitcoinrpc,getrawchangeaddress);
 
 TWO_INTS(bitcoinrpc,listaccounts,minconf,includewatchonly);
 THREE_INTS(bitcoinrpc,listreceivedbyaddress,minconf,includeempty,flag);
-TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array);
 
 ZERO_ARGS(bitcoinrpc,walletlock);
 ZERO_ARGS(bitcoinrpc,checkwallet);

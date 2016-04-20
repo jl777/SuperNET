@@ -834,7 +834,7 @@ int64_t iguana_pkhashbalance(struct iguana_info *coin,cJSON *array,int64_t *spen
 int32_t iguana_pkhasharray(struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,int64_t *totalp,struct iguana_pkhash *P,int32_t max,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33)
 {
     int32_t i,n,m; int64_t spent,balance,netbalance,total; uint32_t lastunspentind; struct iguana_ramchain *ramchain;
-    if ( coin->RTramchain_busy != 0 )
+    if ( 0 && coin->RTramchain_busy != 0 )
     {
         printf("iguana_pkhasharray: unexpected access when RTramchain_busy\n");
         return(-1);
@@ -864,7 +864,7 @@ int32_t iguana_pkhasharray(struct iguana_info *coin,cJSON *array,int32_t minconf
 void iguana_unspents(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,uint8_t *rmdarray,int32_t numrmds)
 {
     int64_t total,sum=0; struct iguana_pkhash *P; uint8_t *addrtypes,*pubkeys; int32_t i,flag = 0; char coinaddr[64];
-    if ( coin->RTramchain_busy != 0 )
+    if ( 0 && coin->RTramchain_busy != 0 )
     {
         printf("iguana_pkhasharray: unexpected access when RTramchain_busy\n");
         return;

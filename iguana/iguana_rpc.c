@@ -511,6 +511,7 @@ static char *getrawchangeaddress(RPCARGS)
 #define false 0
 struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,remoteflag; } RPCcalls[] =
 {
+    { "listunspent",            &listunspent,            false,  false },
     { "getblockhash",           &getblockhash,           false,  true },
     { "walletpassphrase",       &walletpassphrase,       true,   false },
     { "SuperNET",               &SuperNET,               false,  true },
@@ -557,7 +558,6 @@ struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,remotefla
     { "dumpwallet",             &dumpwallet,             true,   false },
     { "importwallet",           &importwallet,           false,  false },
     { "importprivkey",          &importprivkey,          false,  false },
-    { "listunspent",            &listunspent,            false,  false },
     { "getrawtransaction",      &getrawtransaction,      false,  false },
     { "createrawtransaction",   &createrawtransaction,   false,  false },
     { "decoderawtransaction",   &decoderawtransaction,   false,  true },
