@@ -449,7 +449,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             if ( coin->origbalanceswritten <= 1 )
                 hdrsi = 0;
             else hdrsi = coin->origbalanceswritten;
-            for (; hdrsi<max; hdrsi++,coin->balanceswritten++)
+            for (; hdrsi<max; hdrsi++)
             {
                 //iguana_ramchain_prefetch(coin,&coin->bundles[hdrsi]->ramchain,3);
                 if ( (bp= coin->bundles[hdrsi]) != 0 )
@@ -458,7 +458,8 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
                         bp->balancefinish = (uint32_t)time(NULL);
                 }
             }
-            coin->balanceflush = max+1;
+            coin->balanceswritten = hdrsi;
+            coin->balanceflush = coin->balanceswritten;
         } else printf("error saving spendvectors\n");
     }
     if ( helperid < incr )
