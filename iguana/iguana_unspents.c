@@ -831,7 +831,7 @@ char *iguana_bundleaddrs(struct iguana_info *coin,int32_t hdrsi)
 
 int64_t iguana_pkhashbalance(struct iguana_info *coin,cJSON *array,int64_t *spentp,int32_t *nump,struct iguana_ramchain *ramchain,struct iguana_pkhash *p,uint32_t lastunspentind,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33,int32_t hdrsi,int32_t height)
 {
-    struct iguana_unspent *U; int32_t spentheight; uint32_t pkind=0,unspentind; int64_t spent = 0, balance = 0; struct iguana_txid *T; struct iguana_account *A2; struct iguana_ramchaindata *rdata = 0;
+    struct iguana_unspent *U; struct iguana_utxo *U2; struct iguana_spend *S; int32_t spentheight; uint32_t pkind=0,unspentind; int64_t spent = 0, balance = 0; struct iguana_txid *T; struct iguana_account *A2; struct iguana_ramchaindata *rdata = 0;
     *spentp = *nump = 0;
     if ( 0 && ramchain == &coin->RTramchain && coin->RTramchain_busy != 0 )
     {
@@ -860,8 +860,15 @@ int64_t iguana_pkhashbalance(struct iguana_info *coin,cJSON *array,int64_t *spen
         pkind = p->pkind;
         unspentind = U[unspentind].prevunspentind;
     }
-    if ( (A2= ramchain->A) != 0 )
+    if ( (A2= ramchain->A) != 0 && (U2= ramchain->Uextras) != 0 )
     {
+        S = (void *)(long)((long)rdata + rdata->Soffset);
+        unspentind = A2[pkind].lastunspentind;
+        while ( unspentind > 0 )
+        {
+            printf("u%u spentflag.%d prev.%u fromheight.%d\n",unspentind,U2[unspentind].spentflag,U2[unspentind].prevunspentind,U2[unspentind].fromheight);
+            unspentind = U2[unspentind].prevunspentind;
+        }
         printf("[%d] spent %.8f (%.8f) vs A2[%u] %.8f\n",hdrsi,dstr(spent),dstr(*spentp),pkind,dstr(A2[pkind].total));
     }
     (*spentp) += spent;
