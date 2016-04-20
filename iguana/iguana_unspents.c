@@ -310,7 +310,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
                 utxo = &spentchain->Uextras[spent_unspentind];
                 if ( utxo->spentflag == 0 )
                 {
-                    if ( 1 && fromheight/coin->chain->bundlesize >= coin->current->hdrsi )
+                    if ( 0 && fromheight/coin->chain->bundlesize >= coin->current->hdrsi )
                         printf("iguana_volatileupdate.%d: [%d] spent.(u%u %.8f pkind.%d) fromht.%d [%d] spendind.%d\n",incremental,spent_hdrsi,spent_unspentind,dstr(spent_value),spent_pkind,fromheight,fromheight/coin->chain->bundlesize,spendind);
                     utxo->prevunspentind = A2[spent_pkind].lastunspentind;
                     utxo->spentflag = 1;
@@ -709,6 +709,23 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
     return(0);
 }
 
+cJSON *ramchain_unspentjson(struct iguana_unspent *up,uint32_t unspentind)
+{
+    cJSON *item = cJSON_CreateObject();
+    jaddnum(item,"hdrsi",up->hdrsi);
+    jaddnum(item,"unspentind",unspentind);
+    jadd64bits(item,"satoshis",up->value);
+    jaddnum(item,"txidind",up->txidind);
+    jaddnum(item,"vout",up->vout);
+    jaddnum(item,"pkind",up->pkind);
+    jaddnum(item,"prevunspentind",up->prevunspentind);
+    jaddnum(item,"type",up->type);
+    jaddnum(item,"fileid",up->fileid);
+    jaddnum(item,"scriptpos",up->scriptpos);
+    jaddnum(item,"scriptlen",up->scriptlen);
+    return(item);
+}
+
 cJSON *iguana_unspentjson(struct iguana_info *coin,int32_t hdrsi,uint32_t unspentind,struct iguana_txid *T,struct iguana_unspent *up,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33)
 {
     /*{
@@ -727,13 +744,17 @@ cJSON *iguana_unspentjson(struct iguana_info *coin,int32_t hdrsi,uint32_t unspen
     jaddbits256(item,"txid",T[up->txidind].txid);
     jaddnum(item,"vout",up->vout);
     jaddstr(item,"address",coinaddr);
-    if ( (wacct= iguana_waddressfind(coin,&ind,coinaddr)) != 0 )
-        jaddstr(item,"account",wacct->account);
     if ( iguana_scriptget(coin,scriptstr,asmstr,sizeof(scriptstr),hdrsi,unspentind,T[up->txidind].txid,up->vout,rmd160,up->type,pubkey33) != 0 )
         jaddstr(item,"scriptPubKey",scriptstr);
     jaddnum(item,"amount",dstr(up->value));
     if ( iguana_txidfind(coin,&height,&TX,T[up->txidind].txid,coin->bundlescount-1) != 0 )
         jaddnum(item,"confirmations",coin->longestchain - height);
+    if ( (wacct= iguana_waddressfind(coin,&ind,coinaddr)) != 0 )
+    {
+        jaddstr(item,"account",wacct->account);
+        jadd(item,"spendable",jtrue());
+    } else jadd(item,"spendable",jfalse());
+    jadd(item,"ramchain",ramchain_unspentjson(up,unspentind));
     return(item);
 }
 
