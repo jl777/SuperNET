@@ -501,7 +501,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
 
 void iguana_helper(void *arg)
 {
-    cJSON *argjson=0; int32_t iter,i,n,polltimeout,type,helperid=rand(),flag,allcurrent,idle=0;
+    cJSON *argjson=0; int32_t iter,i,n,j,polltimeout,type,helperid=rand(),flag,allcurrent,idle=0;
     struct iguana_helper *ptr; struct iguana_info *coin; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp;
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
         helperid = juint(argjson,"helperid");
@@ -525,7 +525,13 @@ void iguana_helper(void *arg)
             if ( (coin= Coins[i]) != 0 )
             {
                 if ( coin->spendvectorsaved == 1 )
-                    iguana_utxogen(coin,helperid,0);//coin->PREFETCHLAG < 0);
+                    iguana_utxogen(coin,helperid,0);
+                else if ( coin->spendvectorsaved > 1 )
+                {
+                    for (j=helperid; j<coin->bundlescount-1; j+=IGUANA_NUMHELPERS)
+                        if ( (bp= coin->bundles[j]) != 0 )
+                            iguana_bundlevalidate(coin,bp,0);
+                }
             }
         }
         n = queue_size(&bundlesQ);
