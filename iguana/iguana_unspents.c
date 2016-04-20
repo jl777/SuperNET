@@ -748,7 +748,7 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                 printf("iguana_pkhashfind: unexpected access when RTramchain_busy\n");
                 return(0);
             }
-            ramchain = (bp->isRT != 0) ? &bp->ramchain : &coin->RTramchain;
+            ramchain = &bp->ramchain;//(bp->isRT != 0) ? &bp->ramchain : &coin->RTramchain;
             if ( (rdata= ramchain->H.data) != 0 )
             {
                 numpkinds = (bp->isRT != 0) ? rdata->numpkinds : ramchain->pkind;
@@ -763,7 +763,7 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                     *p = P[pkind];
                     printf("return pkind.%u %.8f\n",pkind,dstr(*balancep));
                     return(p);
-                } else printf("[%d] not found pkind.%d vs num.%d\n",i,pkind,rdata->numpkinds);
+                } else printf("[%d] not found pkind.%d vs num.%d RT.%d rdata.%p\n",i,pkind,rdata->numpkinds,bp->isRT,rdata);
             } else printf("%s.[%d] error null rdata isRT.%d\n",coin->symbol,i,bp->isRT);
         }
     }
