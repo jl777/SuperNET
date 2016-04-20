@@ -695,7 +695,7 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
                         prevhash2 = zero;
                         if ( (ptr= iguana_bundlefile(coin,fname,&filesize,bp,i)) != 0 )
                         {
-                            if ( iguana_mapchaininit(fname,coin,&R,bp,i,block,ptr,filesize) > 0 )
+                            if ( iguana_mapchaininit(fname,coin,&R,bp,i,block,ptr,filesize) >= 0 )
                             {
                                 B = (void *)(long)((long)R.H.data + R.H.data->Boffset);
                                 prevhash2 = B[0].prev_block;

@@ -1748,7 +1748,7 @@ void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,
     char fname[1024]; long filesize; int32_t err; void *ptr=0;
     if ( block == bp->blocks[bundlei] && (ptr= iguana_bundlefile(coin,fname,&filesize,bp,bundlei)) != 0 )
     {
-        if ( iguana_mapchaininit(fname,coin,R,bp,bundlei,block,ptr,filesize) == 0 )
+        if ( iguana_mapchaininit(fname,coin,R,bp,bundlei,block,ptr,filesize) >= 0 )
         {
             if ( dest != 0 && dest->H.data != 0 )
                 err = iguana_ramchain_iterate(coin,dest,R,bp,bundlei);
@@ -1759,8 +1759,8 @@ void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,
                 printf("ERROR [%d:%d] %s vs ",bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
                 printf("mapped.%s\n",bits256_str(str,R->H.data->firsthash2));
             } else return(ptr);
-            iguana_blockunmark(coin,block,bp,bundlei,1);
         }
+        iguana_blockunmark(coin,block,bp,bundlei,1);
         iguana_ramchain_free(coin,R,1);
     } //else printf("ramchainfile ptr.%p block.%p\n",ptr,block);
     return(0);
