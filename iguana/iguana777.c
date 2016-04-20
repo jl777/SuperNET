@@ -458,8 +458,11 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
                         bp->balancefinish = (uint32_t)time(NULL);
                 }
             }
-            coin->balanceswritten = max;
-            coin->balanceflush = coin->balanceswritten;
+            if ( max != coin->origbalanceswritten )
+            {
+                coin->balanceswritten = max;
+                coin->balanceflush = coin->balanceswritten;
+            }
         } else printf("error saving spendvectors\n");
     }
     //printf("helper.%d check validates\n",helperid);
