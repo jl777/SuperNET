@@ -689,6 +689,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
             else
             {
                 printf("cant find prev_hash.(%s) for bp.[%d]\n",bits256_str(str,prev_hash),spent_hdrsi);
+                iguana_bundleremove(coin,spent_hdrsi,1);
                 exit(-1);
                 return(0);
             }
@@ -699,6 +700,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
     else if ( unspentind == 0 || unspentind >= spentbp->ramchain.H.data->numunspents )
         printf("illegal unspentind.%d vs max.%d spentbp.%p[%d]\n",unspentind,spentbp->ramchain.H.data->numunspents,spentbp,hdrsi);
     else return(spentbp);
+    iguana_bundleremove(coin,spent_hdrsi,1);
     exit(-1);
     return(0);
 }
