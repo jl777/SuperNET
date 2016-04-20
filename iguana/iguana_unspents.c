@@ -763,7 +763,7 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                     *p = P[pkind];
                     printf("return pkind.%u %.8f\n",pkind,dstr(*balancep));
                     return(p);
-                } else printf("not found pkind.%d vs num.%d\n",pkind,rdata->numpkinds);
+                } else printf("[%d] not found pkind.%d vs num.%d\n",i,pkind,rdata->numpkinds);
             } else printf("%s.[%d] error null rdata isRT.%d\n",coin->symbol,i,bp->isRT);
         }
     }

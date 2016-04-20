@@ -600,7 +600,7 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
                 }
             }
         }
-        if ( priority <= 2 && firsti >= 0 && bp->issued[firsti] != 1 && (coin->enableCACHE != 0 || bp == coin->current) )
+        if ( priority <= 2 && firsti >= 0 && bp->issued[firsti] != 1 && (strcmp("BTC",coin->symbol) != 0 || bp == coin->current) )
         {
             //printf("[%d] first missing.%d of %d\n",bp->hdrsi,firsti,nonz);
             iguana_bundleblock(coin,&hash2,bp,firsti);
@@ -775,12 +775,12 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
     dist = 30 + (coin->current != 0 ? bp->hdrsi - coin->current->hdrsi : 0);
     if ( bp == coin->current )
         dist = 3;
-    if ( time(NULL) > bp->hdrtime+dist && (bp == coin->current || bp->hdrsi >= coin->bundlescount-2 || (coin->enableCACHE != 0 && bp->numhashes < bp->n && (bp->speculative == 0 || bp->hdrsi >= coin->longestchain/bp->n))) )
+    if ( time(NULL) > bp->hdrtime+dist && (bp == coin->current || bp->hdrsi >= coin->bundlescount-2 || (strcmp("BTC",coin->symbol) != 0 && bp->numhashes < bp->n && (bp->speculative == 0 || bp->hdrsi >= coin->longestchain/bp->n))) )
     {
         bp->hdrtime = (uint32_t)time(NULL);
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
     }
-    if ( coin->enableCACHE != 0 && (bp == coin->current || bp->hdrsi == coin->bundlescount-1) && bits256_nonz(bp->nextbundlehash2) == 0 )
+    if ( strcmp("BTC",coin->symbol) != 0 && (bp == coin->current || bp->hdrsi == coin->bundlescount-1) && bits256_nonz(bp->nextbundlehash2) == 0 )
     {
         if ( bp->numhashes < bp->n && bp->numcached < bp->n )
         {
