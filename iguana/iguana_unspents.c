@@ -1894,7 +1894,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     if ( coin->RTheight > 0 && coin->spendvectorsaved != 1 && coin->bundlescount-1 != coin->balanceswritten )
     {
         printf("RT mismatch %d != %d\n",coin->bundlescount-1,coin->balanceswritten);
-        coin->spendvectorsaved = 1;
+        coin->spendvectorsaved = 0;
         return(0);
     }
     if ( coin->spendvectorsaved <= 1 )
