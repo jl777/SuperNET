@@ -1543,7 +1543,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
                 if ( bp->ramchain.allocatedA == 0 || bp->ramchain.allocatedU == 0 )
                     break;
             }
-            else
+            else if ( hdrsi > 0 )
             {
                 printf("balanceflush iter.%d error loading [%d] Aptr.%p Uptr.%p numpkinds.%u numunspents.%u\n",iter,hdrsi,Aptr,Uptr,numpkinds,numunspents);
                 return(-1);
@@ -1605,7 +1605,7 @@ int32_t iguana_spendvectorsaves(struct iguana_info *coin)
         return(0);
     coin->spendvectorsaved = 1;
     n = coin->bundlescount - 1;
-    printf("SAVE SPEND VECTORS %d of %d\n",n,coin->bundlescount);
+    //printf("SAVE SPEND VECTORS %d of %d\n",n,coin->bundlescount);
     for (iter=0; iter<2; iter++)
     {
         for (i=0; i<n; i++)
