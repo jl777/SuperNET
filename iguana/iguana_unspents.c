@@ -1296,13 +1296,14 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
         if ( bp->ramchain.from_ro == 0 || bp->ramchain.from_roX == 0 || bp->ramchain.from_roA == 0 || bp->ramchain.from_roU == 0 )
             from_ro = 0;
     }
-    if ( i < coin->balanceswritten-1 )
+    if ( i < coin->balanceswritten )
     {
         printf("TRUNCATE balances written.%d -> %d\n",coin->balanceswritten,i);
         iguana_truncatebalances(coin);
     }
     else
     {
+        printf("verify crc and sha256 hash for %d of %d\n",i,coin->balanceswritten);
         vupdate_sha256(balancehash.bytes,&vstate,0,0);
         vupdate_sha256(allbundles.bytes,&bstate,0,0);
         filecrc = 0;
@@ -1373,7 +1374,9 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
     }
     if ( (coin->RTheight= coin->balanceswritten * coin->chain->bundlesize) > coin->longestchain )
         coin->longestchain = coin->RTheight;
+    printf("longest.%d RTheight.%d\n",coin->longestchain,coin->RTheight);
     iguana_bundlestats(coin,buf,IGUANA_DEFAULTLAG);
+    printf("after stats\n");
     if ( (bp= coin->bundles[coin->balanceswritten-1]) != 0 && (block= bp->blocks[bp->n-1]) != 0 )
     {
         char str[65];
