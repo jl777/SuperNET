@@ -462,6 +462,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             coin->balanceflush = coin->balanceswritten;
         } else printf("error saving spendvectors\n");
     }
+    printf("check validates\n");
     if ( helperid < incr )
     {
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
