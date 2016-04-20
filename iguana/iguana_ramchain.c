@@ -2457,7 +2457,12 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         //printf("mapchain.[%d:%d] %p[%ld]\n",bp->hdrsi,bundlei,ptrs[bundlei],filesizes[bundlei]);
         sprintf(fname,"save.%d",bp->hdrsi);
         if ( iguana_mapchaininit(fname,coin,mapchain,bp,bundlei,block,ptrs[bundlei],filesizes[bundlei]) < 0 )
-            break;
+        {
+            iguana_bundlemapfree(coin,0,0,ipbits,ptrs,filesizes,num,R,starti,endi);
+            iguana_blockunmark(coin,bp->blocks[bundlei],bp,bundlei,1);
+            printf("error mapping hdrsi.%d bundlei.%d\n",bp->hdrsi,bundlei);
+            return(-1);
+        }
         //printf("done mapchain.[%d:%d]\n",bp->hdrsi,bundlei);
         numtxids += (mapchain->H.data->numtxids - 1);
         numunspents += (mapchain->H.data->numunspents - 1);

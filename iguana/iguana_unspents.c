@@ -2076,7 +2076,7 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
             }
         }
         bp->validatehash = validatehash;
-    }  else printf("skip validate.[%d] validated.%u force.%d\n",bp->hdrsi,bp->validated,forceflag);
+    } // else printf("skip validate.[%d] validated.%u force.%d\n",bp->hdrsi,bp->validated,forceflag);
     if ( errs != 0 )
     {
         printf("remove.[%d]\n",bp->hdrsi);
