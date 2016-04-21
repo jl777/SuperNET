@@ -210,7 +210,9 @@ void iguana_volatilespurge(struct iguana_info *coin,struct iguana_ramchain *ramc
 
 int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ramchain)
 {
-    int32_t iter,numhdrsi,err = -1; char fname[1024]; bits256 balancehash,allbundles;
+    int32_t iter,numhdrsi,err = -1; char fname[1024]; bits256 balancehash,allbundles; struct iguana_ramchaindata *rdata;
+    if ( (rdata= ramchain->H.data) == 0 )
+        return(-1);
     for (iter=0; iter<2; iter++)
     {
         sprintf(fname,"%s/%s%s/accounts/debits.%d",GLOBAL_DBDIR,iter==0?"ro/":"",coin->symbol,ramchain->H.data->height);
