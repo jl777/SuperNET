@@ -147,30 +147,33 @@ int32_t iguana_alloccacheT(struct iguana_info *coin,struct iguana_ramchain *ramc
     return(-1);
 }
 
-void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramchain)
+void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramchain,int32_t copyflag)
 {
-    if ( ramchain != 0 && ramchain->H.data != 0 )
+    struct iguana_ramchaindata *rdata;
+    if ( ramchain != 0 && (rdata= ramchain->H.data) != 0 )
     {
         if ( ramchain->allocatedA == 0 )
         {
-            ramchain->A = calloc(sizeof(*ramchain->A),ramchain->H.data->numpkinds + 16);
-            ramchain->allocatedA = sizeof(*ramchain->A) * ramchain->H.data->numpkinds;
+            ramchain->A = calloc(sizeof(*ramchain->A),rdata->numpkinds + 16);
+            ramchain->allocatedA = sizeof(*ramchain->A) * rdata->numpkinds;
         }
         if ( ramchain->allocatedU == 0 )
         {
-            ramchain->Uextras = calloc(sizeof(*ramchain->Uextras),ramchain->H.data->numunspents + 16);
-            ramchain->allocatedU = sizeof(*ramchain->Uextras) * ramchain->H.data->numunspents;
+            ramchain->Uextras = calloc(sizeof(*ramchain->Uextras),rdata->numunspents + 16);
+            ramchain->allocatedU = sizeof(*ramchain->Uextras) * rdata->numunspents;
         }
         if ( ramchain->debitsfileptr != 0 )
         {
-            memcpy(ramchain->A,(void *)((long)ramchain->debitsfileptr + sizeof(int32_t) + sizeof(bits256)),sizeof(*ramchain->A) * ramchain->H.data->numpkinds);
+            if ( copyflag != 0 )
+                memcpy(ramchain->A,(void *)((long)ramchain->debitsfileptr + sizeof(int32_t) + sizeof(bits256)),sizeof(*ramchain->A) * rdata->numpkinds);
             munmap(ramchain->debitsfileptr,ramchain->debitsfilesize);
             ramchain->debitsfileptr = 0;
             ramchain->debitsfilesize = 0;
         }
         if ( ramchain->lastspendsfileptr != 0 )
         {
-            memcpy(ramchain->Uextras,(void *)((long)ramchain->lastspendsfileptr + sizeof(int32_t) + sizeof(bits256)),sizeof(*ramchain->Uextras) * ramchain->H.data->numunspents);
+            if ( copyflag != 0 )
+                memcpy(ramchain->Uextras,(void *)((long)ramchain->lastspendsfileptr + sizeof(int32_t) + sizeof(bits256)),sizeof(*ramchain->Uextras) * rdata->numunspents);
             munmap(ramchain->lastspendsfileptr,ramchain->lastspendsfilesize);
             ramchain->lastspendsfileptr = 0;
             ramchain->lastspendsfilesize = 0;
@@ -301,7 +304,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
     {
         if ( spentchain->allocatedA == 0 || spentchain->allocatedU == 0 )
         {
-            iguana_volatilesalloc(coin,spentchain);
+            iguana_volatilesalloc(coin,spentchain,1);
             fprintf(stderr,"volatilesalloc.[%d] ",spent_hdrsi);
         }
         if ( incremental == 0 )
@@ -1215,7 +1218,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
     if ( starti == 0 && endi == bp->n-1 && ramchain->A != 0 && ramchain->Uextras != 0 )
     {
         iguana_volatilespurge(coin,ramchain);
-        iguana_volatilesalloc(coin,ramchain);
+        iguana_volatilesalloc(coin,ramchain,0);
     }
     for (i=starti; i<=endi; i++)
     {
@@ -1822,7 +1825,7 @@ void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,
 
 void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    uint32_t i,changed = 0; struct iguana_ramchaindata *rdata; struct iguana_ramchain *dest = &coin->RTramchain; struct iguana_blockRO *B;
+    uint32_t i,hdrsi,changed = 0; struct iguana_ramchaindata *rdata; struct iguana_ramchain *dest = &coin->RTramchain; struct iguana_blockRO *B; struct iguana_bundle *tmpbp;
     if ( (rdata= dest->H.data) != 0 )
     {
         i = 0;
@@ -1854,6 +1857,15 @@ void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_b
         dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
         dest->externalind = dest->H.stacksize = 0;
         dest->H.scriptoffset = 1;
+        for (hdrsi=0; hdrsi<=bp->hdrsi; hdrsi++)
+        {
+            if ( (tmpbp= coin->bundles[hdrsi]) != 0 )
+            {
+                iguana_volatilespurge(coin,&tmpbp->ramchain);
+                iguana_volatilesmap(coin,&tmpbp->ramchain);
+                iguana_volatilesalloc(coin,&tmpbp->ramchain,hdrsi < bp->hdrsi);
+            }
+        }
     }
 }
 
@@ -1901,14 +1913,6 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     int32_t lasti,num,hdrsi,orignumemit; struct iguana_ramchain R; struct iguana_ramchaindata RDATA;
     if ( bp->hdrsi <= 0 )
         return;
-    for (hdrsi=0; hdrsi<bp->hdrsi; hdrsi++)
-    {
-        if ( coin->bundles[hdrsi] != 0 )
-        {
-            iguana_volatilespurge(coin,&coin->bundles[hdrsi]->ramchain);
-            iguana_volatilesalloc(coin,&coin->bundles[hdrsi]->ramchain);
-        }
-    }
     bp->ramchain = coin->RTramchain;
     iguana_rdataset(&R,&RDATA,&coin->RTramchain);
     if ( (lasti= (coin->RTheight - ((coin->RTheight/bp->n)*bp->n))) >= bp->n-1 )
