@@ -170,7 +170,7 @@ void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramc
                 if ( ramchain->debitsfilesize != sizeof(int32_t) + 2*sizeof(bits256) + sizeof(*A2)*rdata->numpkinds )
                     printf("A2 size mismatch %ld != %ld\n",ramchain->debitsfilesize,sizeof(int32_t) + 2*sizeof(bits256) + sizeof(*A2)*rdata->numpkinds);
                 for (i=0; i<rdata->numpkinds; i++)
-                    ramchain->A[i] = A2[i];
+                    ramchain->A2[i] = A2[i];
             }
             munmap(ramchain->debitsfileptr,ramchain->debitsfilesize);
             ramchain->debitsfileptr = 0;
@@ -242,7 +242,7 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
             }
             if ( numhdrsi == coin->balanceswritten && memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) == 0 && memcmp(allbundles.bytes,coin->allbundles.bytes,sizeof(allbundles)) == 0 )
             {
-                ramchain->A = (void *)((long)ramchain->debitsfileptr + sizeof(numhdrsi) + 2*sizeof(bits256));
+                ramchain->A2 = (void *)((long)ramchain->debitsfileptr + sizeof(numhdrsi) + 2*sizeof(bits256));
                 sprintf(fname,"%s/%s%s/accounts/lastspends.%d",GLOBAL_DBDIR,iter==0?"ro/":"",coin->symbol,ramchain->H.data->height);
                 if ( (ramchain->lastspendsfileptr= OS_mapfile(fname,&ramchain->lastspendsfilesize,0)) != 0 && ramchain->lastspendsfilesize == sizeof(int32_t) + 2*sizeof(bits256) + sizeof(*ramchain->Uextras) * ramchain->H.data->numunspents )
                 {
@@ -317,7 +317,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
     {
         if ( incremental == 0 )
         {
-            if ( spentchain->Uextras != 0 && (A2= spentchain->A) != 0 )
+            if ( spentchain->Uextras != 0 && (A2= spentchain->A2) != 0 )
             {
                 utxo = &spentchain->Uextras[spent_unspentind];
                 if ( utxo->spentflag == 0 )
@@ -348,7 +348,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
                 return(0);
             }
         }
-        printf("iguana_volatileupdate.%d: [%d] spent.(u%u %.8f pkind.%d) double spend? at ht.%d [%d] spendind.%d (%p %p)\n",incremental,spent_hdrsi,spent_unspentind,dstr(spent_value),spent_pkind,fromheight,fromheight/coin->chain->bundlesize,spendind,spentchain->Uextras,spentchain->A);
+        printf("iguana_volatileupdate.%d: [%d] spent.(u%u %.8f pkind.%d) double spend? at ht.%d [%d] spendind.%d (%p %p)\n",incremental,spent_hdrsi,spent_unspentind,dstr(spent_value),spent_pkind,fromheight,fromheight/coin->chain->bundlesize,spendind,spentchain->Uextras,spentchain->A2);
         if ( coin->current != 0 && fromheight >= coin->current->bundleheight )
             coin->RTdatabad = 1;
         else
@@ -883,7 +883,7 @@ int64_t iguana_pkhashbalance(struct iguana_info *coin,cJSON *array,int64_t *spen
         pkind = p->pkind;
         unspentind = U[unspentind].prevunspentind;
     }
-    if ( (A2= ramchain->A) != 0 && (U2= ramchain->Uextras) != 0 )
+    if ( (A2= ramchain->A2) != 0 && (U2= ramchain->Uextras) != 0 )
     {
         S = (void *)(long)((long)rdata + rdata->Soffset);
         unspentind = A2[pkind].lastunspentind;
