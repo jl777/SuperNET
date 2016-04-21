@@ -30,7 +30,7 @@ struct iguana_hhutxo *iguana_hhutxofind(struct iguana_info *coin,uint64_t uval)
 struct iguana_hhaccount *iguana_hhaccountfind(struct iguana_info *coin,uint64_t pval)
 {
     struct iguana_hhaccount *hhacct;
-    HASH_FIND(hh,coin->utxotable,&pval,sizeof(pval),hhacct);
+    HASH_FIND(hh,coin->accountstable,&pval,sizeof(pval),hhacct);
     return(hhacct);
 }
 
@@ -87,7 +87,6 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
     memset(hhutxo,0,sizeof(*hhutxo));
     hhutxo->uval = uval;
     HASH_ADD_KEYPTR(hh,coin->utxotable,&hhutxo->uval,sizeof(hhutxo->uval),hhutxo);
-    //HASH_ADD(hh,coin->utxotable,uval,sizeof(uval),hhutxo);
     if ( (hhacct= iguana_hhaccountfind(coin,pval)) == 0 )
     {
         if ( numHHACCT+1 >= maxHHACCT )
@@ -99,7 +98,6 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
         memset(hhacct,0,sizeof(*hhacct));
         hhacct->pval = pval;
         HASH_ADD_KEYPTR(hh,coin->accountstable,&hhacct->pval,sizeof(hhacct->pval),hhacct);
-        //HASH_ADD(hh,coin->accountstable,pval,sizeof(pval),hhacct);
     }
     //printf("create hhutxo.%p hhacct.%p from.%d\n",hhutxo,hhacct,fromheight);
     hhutxo->u.spentflag = 1;
