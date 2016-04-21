@@ -151,7 +151,7 @@ void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramc
     int32_t i; struct iguana_utxo *U2; struct iguana_account *A2; struct iguana_ramchaindata *rdata = 0;
     if ( ramchain != 0 && (rdata= ramchain->H.data) != 0 )
     {
-        printf("volatilesalloc.[%d]\n",ramchain->height/coin->chain->bundlesize);
+        //printf("volatilesalloc.[%d]\n",ramchain->height/coin->chain->bundlesize);
         if ( ramchain->allocatedA2 == 0 )
         {
             ramchain->A2 = calloc(sizeof(*ramchain->A2),rdata->numpkinds + 16);
@@ -198,7 +198,7 @@ void iguana_volatilespurge(struct iguana_info *coin,struct iguana_ramchain *ramc
     struct iguana_bundle *bp;
     if ( (bp= coin->current) != 0 && ramchain->height < bp->bundleheight )
     {
-        printf("volatilespurge.[%d]\n",ramchain->height/coin->chain->bundlesize);
+        //printf("volatilespurge.[%d]\n",ramchain->height/coin->chain->bundlesize);
         if ( ramchain->allocatedA2 != 0 && ramchain->A2 != 0 )
             free(ramchain->A2);
         ramchain->A2 = 0;
@@ -224,7 +224,7 @@ void iguana_volatilespurge(struct iguana_info *coin,struct iguana_ramchain *ramc
 int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ramchain)
 {
     int32_t iter,numhdrsi,err = -1; char fname[1024]; bits256 balancehash,allbundles; struct iguana_ramchaindata *rdata;
-    printf("volatilesmap.[%d]\n",ramchain->height/coin->chain->bundlesize);
+    //printf("volatilesmap.[%d]\n",ramchain->height/coin->chain->bundlesize);
     if ( (rdata= ramchain->H.data) == 0 )
     {
         printf("volatilesmap.[%d] no rdata\n",ramchain->height/coin->chain->bundlesize);
