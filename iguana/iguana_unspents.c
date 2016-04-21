@@ -789,14 +789,16 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                 numpkinds = rdata->numpkinds;
                 PKbits = (void *)(long)((long)rdata + rdata->PKoffset);
                 P = (void *)(long)((long)rdata + rdata->Poffset);
-                ACCTS = (void *)(long)((long)rdata + rdata->Aoffset);
+                if ( bp == coin->current )
+                    ACCTS = ramchain->A;
+                else ACCTS = (void *)(long)((long)rdata + rdata->Aoffset);
                 if ( (pkind= iguana_sparseaddpk(PKbits,rdata->pksparsebits,rdata->numpksparse,rmd160,P,0,ramchain)) > 0 && pkind < numpkinds )
                 {
                     *ramchainp = ramchain;
                     *depositsp = ACCTS[pkind].total;
                     *lastunspentindp = ACCTS[pkind].lastunspentind;
                     *p = P[pkind];
-                    printf("[%d] return pkind.%u %.8f last.%u ACCTS.%p\n",i,pkind,dstr(*depositsp),*lastunspentindp,ACCTS);
+                    printf("[%d] return pkind.%u %.8f last.%u ACCTS.%p %p\n",i,pkind,dstr(*depositsp),*lastunspentindp,ACCTS,ramchain->A);
                     return(p);
                 }
                 else if ( pkind != 0 )
