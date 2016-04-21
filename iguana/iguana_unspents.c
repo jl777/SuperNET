@@ -65,11 +65,13 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
         {
             free(HHUTXO);
             maxHHUTXO = numHHUTXO = 0;
+            HHUTXO = 0;
         }
         if ( HHACCT != 0 )
         {
             free(HHACCT);
             maxHHACCT = numHHACCT = 0;
+            HHACCT = 0;
         }
         return(0);
     }
