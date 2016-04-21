@@ -838,9 +838,16 @@ char *iguana_bundleaddrs(struct iguana_info *coin,int32_t hdrsi)
     } return(clonestr("{\"error\":\"no bundle\"}"));
 }
 
+int32_t iguana_uheight(struct iguana_info *coin,int32_t bundleheight,struct iguana_txid *T,int32_t numtxids,struct iguana_unspent *up)
+{
+    if ( up->txidind > 0 && up->txidind < numtxids )
+        return(bundleheight + T[up->txidind].bundlei);
+    else return(bundleheight);
+}
+
 int64_t iguana_pkhashbalance(struct iguana_info *coin,cJSON *array,int64_t *spentp,int32_t *nump,struct iguana_ramchain *ramchain,struct iguana_pkhash *p,uint32_t lastunspentind,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33,int32_t hdrsi,int32_t height)
 {
-    struct iguana_unspent *U; struct iguana_utxo *U2; struct iguana_spend *S; int32_t spentheight; uint32_t pkind=0,unspentind; int64_t spent = 0,checkval,deposits = 0; struct iguana_txid *T; struct iguana_account *A2; struct iguana_ramchaindata *rdata = 0; int64_t RTspend = 0;
+    struct iguana_unspent *U; struct iguana_utxo *U2; struct iguana_spend *S; int32_t uheight,spentheight; uint32_t pkind=0,unspentind; int64_t spent = 0,checkval,deposits = 0; struct iguana_txid *T; struct iguana_account *A2; struct iguana_ramchaindata *rdata = 0; int64_t RTspend = 0;
     *spentp = *nump = 0;
     if ( 0 && ramchain == &coin->RTramchain && coin->RTramchain_busy != 0 )
     {
@@ -859,14 +866,18 @@ int64_t iguana_pkhashbalance(struct iguana_info *coin,cJSON *array,int64_t *spen
     while ( unspentind > 0 )
     {
         (*nump)++;
-        deposits += U[unspentind].value;
-        if ( iguana_spentflag(coin,&RTspend,&spentheight,ramchain,hdrsi,unspentind,height,U[unspentind].value) == 0 )
+        uheight = iguana_uheight(coin,rdata->height,T,rdata->numtxids,&U[unspentind]);
+        if ( uheight < height )
         {
-            if ( array != 0 )
-                jaddi(array,iguana_unspentjson(coin,hdrsi,unspentind,T,&U[unspentind],rmd160,coinaddr,pubkey33));
-        } else spent += U[unspentind].value;
-        if ( p->pkind != U[unspentind].pkind )
-            printf("warning: [%d] p->pkind.%u vs U->pkind.%u for u%d\n",hdrsi,p->pkind,U[unspentind].pkind,unspentind);
+            deposits += U[unspentind].value;
+            if ( iguana_spentflag(coin,&RTspend,&spentheight,ramchain,hdrsi,unspentind,height,U[unspentind].value) == 0 )
+            {
+                if ( array != 0 )
+                    jaddi(array,iguana_unspentjson(coin,hdrsi,unspentind,T,&U[unspentind],rmd160,coinaddr,pubkey33));
+            } else spent += U[unspentind].value;
+            if ( p->pkind != U[unspentind].pkind )
+                printf("warning: [%d] p->pkind.%u vs U->pkind.%u for u%d\n",hdrsi,p->pkind,U[unspentind].pkind,unspentind);
+        }
         pkind = p->pkind;
         unspentind = U[unspentind].prevunspentind;
     }
@@ -877,12 +888,16 @@ int64_t iguana_pkhashbalance(struct iguana_info *coin,cJSON *array,int64_t *spen
         checkval = 0;
         while ( unspentind > 0 )
         {
-            checkval += U[unspentind].value;
-            printf("u%u %.8f spentflag.%d prev.%u fromheight.%d\n",unspentind,dstr(U[unspentind].value),U2[unspentind].spentflag,U2[unspentind].prevunspentind,U2[unspentind].fromheight);
+            uheight = iguana_uheight(coin,rdata->height,T,rdata->numtxids,&U[unspentind]);
+            if ( uheight < height )
+            {
+                checkval += U[unspentind].value;
+                printf("u%u %.8f spentflag.%d prev.%u fromheight.%d\n",unspentind,dstr(U[unspentind].value),U2[unspentind].spentflag,U2[unspentind].prevunspentind,U2[unspentind].fromheight);
+            }
             unspentind = U2[unspentind].prevunspentind;
         }
         if ( fabs(spent - checkval - RTspend) > SMALLVAL )
-            printf("spend checkerr: [%d] deposits %.8f spent %.8f check %.8f (%.8f) vs A2[%u] %.8f\n",hdrsi,dstr(deposits),dstr(spent),dstr(checkval)+dstr(RTspend),dstr(*spentp),pkind,dstr(A2[pkind].total));
+            printf("spend %s: [%d] deposits %.8f spent %.8f check %.8f (%.8f) vs A2[%u] %.8f\n",height==0?"checkerr":"",hdrsi,dstr(deposits),dstr(spent),dstr(checkval)+dstr(RTspend),dstr(*spentp),pkind,dstr(A2[pkind].total));
     }
     (*spentp) = spent;
     //printf("spent %.8f, RTspent %.8f deposits %.8f\n",dstr(spent),dstr(RTspend),dstr(deposits));
