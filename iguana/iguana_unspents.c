@@ -709,8 +709,12 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
             else
             {
                 printf("cant find prev_hash.(%s) for bp.[%d]\n",bits256_str(str,prev_hash),spent_hdrsi);
-                iguana_bundleremove(coin,spent_hdrsi,1);
-                exit(-1);
+                if ( spent_hdrsi < coin->current->hdrsi )
+                {
+                    iguana_bundleremove(coin,spent_hdrsi,1);
+                    exit(-1);
+                }
+                coin->RTdatabad = 1;
                 return(0);
             }
         } else printf("external spent unexpected nonz unspentind [%d]\n",spent_hdrsi);
