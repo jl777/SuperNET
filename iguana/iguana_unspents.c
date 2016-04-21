@@ -863,9 +863,9 @@ int64_t iguana_pkhashbalance(struct iguana_info *coin,cJSON *array,int64_t *spen
     while ( unspentind > 0 )
     {
         (*nump)++;
+        deposits += U[unspentind].value;
         if ( iguana_spentflag(coin,&RTspend,&spentheight,ramchain,hdrsi,unspentind,height,U[unspentind].value) == 0 )
         {
-            deposits += U[unspentind].value;
             if ( array != 0 )
                 jaddi(array,iguana_unspentjson(coin,hdrsi,unspentind,T,&U[unspentind],rmd160,coinaddr,pubkey33));
         } else spent += U[unspentind].value;
