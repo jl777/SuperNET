@@ -1500,7 +1500,7 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
         for (i=0; i<coin->bundlescount-1; i++)
         {
             if ( (bp= coin->bundles[i]) != 0 )
-                bp->converted = bp->balancefinish = (uint32_t)time(NULL);
+                bp->converted = (uint32_t)time(NULL);
         }
     }
     printf("i.%d bundlescount.%d\n",i,coin->bundlescount);
