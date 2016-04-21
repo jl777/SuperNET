@@ -49,6 +49,7 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
     uint8_t buf[sizeof(spent_hdrsi) + sizeof(uint32_t)];
     if ( spent_hdrsi < 0 )
     {
+        printf(">>>>>>>>>>> RESET UTXO HASH <<<<<<<<<\n");
         if ( coin->utxotable != 0 )
         {
             HASH_ITER(hh,coin->utxotable,hhutxo,tmputxo)
@@ -79,8 +80,8 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
         }
         return(0);
     }
-    /*if ( spent_pkind == 1534811 )
-        printf("utxoupdate spenthdrsi.%d pkind.%d %.8f from [%d:%d] spendind.%u\n",spent_hdrsi,spent_pkind,dstr(spent_value),fromheight/coin->chain->bundlesize,fromheight%coin->chain->bundlesize,spendind);*/
+    if ( spent_pkind == 1534811 )
+        printf("utxoupdate spenthdrsi.[%d] u%u pkind.%d %.8f from [%d:%d] spendind.%u\n",spent_hdrsi,spent_unspentind,spent_pkind,dstr(spent_value),fromheight/coin->chain->bundlesize,fromheight%coin->chain->bundlesize,spendind);
     if ( (hhutxo= iguana_hhutxofind(coin,ubuf,spent_hdrsi,spent_unspentind)) != 0 && hhutxo->u.spentflag != 0 )
     {
         printf("hhutxo.%p spentflag.%d\n",hhutxo,hhutxo->u.spentflag);
@@ -286,7 +287,7 @@ int32_t iguana_spentflag(struct iguana_info *coin,int32_t *spentheightp,struct i
             utxo = ramchain->Uextras[spent_unspentind];
         if ( ramchain->Uextras == 0 || utxo.spentflag == 0 )
         {
-            printf("check hhutxo [%d] u%u\n",spent_hdrsi,spent_unspentind);
+            printf("check hhutxo [%d] u%u %p\n",spent_hdrsi,spent_unspentind,iguana_hhutxofind(coin,ubuf,202,3909240));
             if ( (hhutxo= iguana_hhutxofind(coin,ubuf,spent_hdrsi,spent_unspentind)) != 0 )
             {
                 utxo = hhutxo->u;
