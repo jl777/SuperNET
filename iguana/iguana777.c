@@ -462,8 +462,8 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             }
             if ( max != coin->origbalanceswritten )
             {
-                coin->balanceflush = coin->balanceswritten;
-                while ( coin->balanceswritten != max )
+                coin->balanceflush = max;
+                while ( coin->balanceflush != 0 )
                     sleep(3);
             } else printf("skip flush when max.%d and orig.%d\n",max,coin->origbalanceswritten);
         }
