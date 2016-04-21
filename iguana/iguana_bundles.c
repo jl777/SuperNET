@@ -343,7 +343,10 @@ struct iguana_bundle *iguana_bundlecreate(struct iguana_info *coin,int32_t *bund
             }
             *bundleip = 0;
             bits256_str(str,bundlehash2);
-            char dirname[1024]; sprintf(dirname,"%s/%s/%d",GLOBAL_TMPDIR,coin->symbol,bp->bundleheight), OS_ensure_directory(dirname);
+            char dirname[1024]; int32_t subdir;
+            subdir = bp->bundleheight / IGUANA_SUBDIRDIVISOR;
+            sprintf(dirname,"%s/%s/%d",GLOBAL_TMPDIR,coin->symbol,subdir), OS_ensure_directory(dirname);
+            sprintf(dirname,"%s/%s/%d/%d",GLOBAL_TMPDIR,coin->symbol,subdir,bp->bundleheight), OS_ensure_directory(dirname);
             //sprintf(dirname,"DB/%s/%d",coin->symbol,bp->bundleheight), OS_ensure_directory(dirname);
             //printf("%s ht.%d alloc.[%d] new hdrs.%s\n",coin->symbol,bp->bundleheight,coin->bundlescount,bits256_str(str,bp->hashes[0]));
             iguana_bundlehash2add(coin,0,bp,0,bundlehash2);

@@ -244,7 +244,10 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
                     if ( bits256_cmp(merkle_root,block->RO.merkle_root) == 0 )
                     {
                         if ( addr != 0 )
+                        {
+                            printf("Send block.%d to %s\n",total,addr->ipaddr);
                             return(iguana_queue_send(coin,addr,0,blockspace,"block",total,0,0));
+                        }
                         else
                         {
                             //printf("validated.[%d:%d] len.%d\n",bp->hdrsi,bundlei,total);

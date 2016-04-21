@@ -2602,7 +2602,8 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
             sprintf(dirname,"%s/%s/%d",GLOBAL_TMPDIR,coin->symbol,bp->bundleheight), OS_portable_rmdir(dirname,1);
         }
         sleep(1);
-        iguana_bundleload(coin,&newchain,bp,0);
+        if ( iguana_bundleload(coin,&newchain,bp,0) == 0 )
+            retval = -1;
         newchain.A = 0;
     }
     if ( coin->active != 0 )
