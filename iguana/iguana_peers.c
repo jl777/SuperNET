@@ -463,7 +463,7 @@ int32_t iguana_queue_send(struct iguana_info *coin,struct iguana_peer *addr,int3
         packet->embargo.millis += delay;
     }
     memcpy(packet->serialized,serialized,datalen);
-    printf("%p queue send.(%s) %d to (%s)\n",packet,serialized+4,datalen,addr->ipaddr);
+    //printf("%p queue send.(%s) %d to (%s)\n",packet,serialized+4,datalen,addr->ipaddr);
     queue_enqueue("sendQ",&addr->sendQ,&packet->DL,0);
     return(datalen);
 }
