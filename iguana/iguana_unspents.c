@@ -912,10 +912,10 @@ int32_t iguana_pkhasharray(struct iguana_info *coin,cJSON *array,int32_t minconf
         printf("iguana_pkhasharray: unexpected access when RTramchain_busy\n");
         return(-1);
     }
-    if ( lastheight/coin->chain->bundlesize < max )
-        max = lastheight/coin->chain->bundlesize;
     for (total=i=n=0; i<max && i<coin->bundlescount; i++)
     {
+        if ( i > lastheight/coin->chain->bundlesize )
+            break;
         if ( iguana_pkhashfind(coin,&ramchain,&deposits,&lastunspentind,&P[n],rmd160,i,i) != 0 )
         {
             if ( (netbalance= iguana_pkhashbalance(coin,array,&spent,&m,ramchain,&P[n],lastunspentind,rmd160,coinaddr,pubkey33,i,lastheight)) != deposits-spent )
