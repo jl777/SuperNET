@@ -265,6 +265,7 @@ int32_t iguana_send_ping(struct iguana_info *coin,struct iguana_peer *addr)
         addr->pingtime = (uint32_t)time(NULL);
     }
     printf("pingnonce.%llx from (%s)\n",(long long)nonce,addr->ipaddr);
+    iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
     len = iguana_rwnum(1,&serialized[sizeof(struct iguana_msghdr)],sizeof(uint64_t),&nonce);
     if ( addr->supernet != 0 )
         iguana_send_supernet(coin,addr,SUPERNET_GETPEERSTR,0);
@@ -540,7 +541,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
         strcpy(addr->lastcommand,H->command);
     }
     retval = 0;
-    printf("iguana_msgparser from (%s) parse.(%s) len.%d\n",addr->ipaddr,H->command,recvlen);
+    //printf("iguana_msgparser from (%s) parse.(%s) len.%d\n",addr->ipaddr,H->command,recvlen);
     if ( strncmp(H->command,"SuperNET",strlen("SuperNET")) == 0 )
     {
         addr->supernet = 1;

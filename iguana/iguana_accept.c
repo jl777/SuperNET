@@ -213,7 +213,7 @@ int32_t iguana_peerinvrequest(struct iguana_info *coin,struct iguana_peer *addr,
 
 int32_t iguana_peeraddrrequest(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *space,int32_t spacesize)
 {
-    int32_t i,iter,n,max,sendlen; uint64_t x; struct iguana_msghdr H; struct iguana_msgaddress A; struct iguana_peer *tmpaddr;
+    int32_t i,iter,n,max,sendlen; uint64_t x; struct iguana_msghdr H; struct iguana_peer *tmpaddr;
     sendlen = 0;
     max = (IGUANA_MINPEERS + IGUANA_MAXPEERS) / 2;
     if ( max > coin->peers.numranked )
@@ -224,8 +224,7 @@ int32_t iguana_peeraddrrequest(struct iguana_info *coin,struct iguana_peer *addr
     {
         for (i=n=0; i<max; i++)
         {
-            memset(&A,0,sizeof(A));
-            if ( (tmpaddr= coin->peers.ranked[i]) != 0 && ((iter == 0 && tmpaddr->supernet != 0) || (iter == 1 && tmpaddr->supernet == 0)) )
+            if ( (tmpaddr= coin->peers.ranked[i]) != 0 && ((iter == 0 && tmpaddr->supernet != 0) || (iter == 1 && tmpaddr->supernet == 0)) && tmpaddr->ipaddr[0] != 0 )
             {
                 sendlen += iguana_rwaddr(1,&space[sizeof(H) + sendlen],&tmpaddr->A,(int32_t)tmpaddr->protover);
                 x++;
