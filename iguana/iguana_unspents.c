@@ -152,6 +152,7 @@ void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramc
     int32_t i; struct iguana_utxo *U2; struct iguana_account *A2; struct iguana_ramchaindata *rdata = 0;
     if ( ramchain != 0 && (rdata= ramchain->H.data) != 0 )
     {
+        printf("volatilesalloc.[%d]\n",rdata->height/coin->chain->bundlesize);
         if ( ramchain->allocatedA == 0 )
         {
             ramchain->A = calloc(sizeof(*ramchain->A),rdata->numpkinds + 16);
@@ -167,10 +168,8 @@ void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramc
             if ( copyflag != 0 )
             {
                 A2 = (void *)((long)ramchain->debitsfileptr + sizeof(int32_t) + 2*sizeof(bits256));
-                printf("copy A2[%d]\n",rdata->numpkinds);
                 for (i=0; i<rdata->numpkinds; i++)
                     ramchain->A[i] = A2[i];
-                printf("done A2\n");
             }
             munmap(ramchain->debitsfileptr,ramchain->debitsfilesize);
             ramchain->debitsfileptr = 0;
@@ -181,10 +180,8 @@ void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramc
             if ( copyflag != 0 )
             {
                 U2 = (void *)((long)ramchain->lastspendsfileptr + sizeof(int32_t) + 2*sizeof(bits256));
-                printf("copy U2[%d]\n",rdata->numunspents);
                 for (i=0; i<rdata->numunspents; i++)
                     ramchain->Uextras[i] = U2[i];
-                printf("done U2\n");
             }
             munmap(ramchain->lastspendsfileptr,ramchain->lastspendsfilesize);
             ramchain->lastspendsfileptr = 0;
@@ -1858,7 +1855,6 @@ void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_b
                 iguana_volatilesmap(coin,&tmpbp->ramchain);
             }
         iguana_volatilespurge(coin,&bp->ramchain);
-        iguana_volatilesalloc(coin,&bp->ramchain,0);
     }
 }
 
