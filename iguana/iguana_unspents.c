@@ -278,7 +278,7 @@ int32_t iguana_spentflag(struct iguana_info *coin,int32_t *spentheightp,struct i
     uint32_t numunspents; struct iguana_hhutxo *hhutxo; struct iguana_utxo utxo;
     uint8_t ubuf[sizeof(uint32_t) + sizeof(int16_t)];
     *spentheightp = 0;
-    numunspents = ramchain->H.data->numunspents;//(ramchain == &coin->RTramchain) ? ramchain->H.unspentind : ramchain->H.data->numunspents;
+    numunspents = ramchain->H.data->numunspents;
     memset(&utxo,0,sizeof(utxo));
     if ( spent_unspentind != 0 && spent_unspentind < numunspents )
     {
@@ -286,8 +286,12 @@ int32_t iguana_spentflag(struct iguana_info *coin,int32_t *spentheightp,struct i
             utxo = ramchain->Uextras[spent_unspentind];
         if ( ramchain->Uextras == 0 || utxo.spentflag == 0 )
         {
+            printf("check hhutxo [%d] u%u\n",spent_hdrsi,spent_unspentind);
             if ( (hhutxo= iguana_hhutxofind(coin,ubuf,spent_hdrsi,spent_unspentind)) != 0 )
+            {
                 utxo = hhutxo->u;
+                printf("found it\n");
+            }
         }
     }
     else
