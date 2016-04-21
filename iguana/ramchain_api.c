@@ -187,14 +187,16 @@ HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
 
 STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx)
 {
-    cJSON *txobj; bits256 txid;
+    cJSON *txobj = 0; bits256 txid;
     if ( rawtx != 0 && rawtx[0] != 0 )
     {
         if ( (strlen(rawtx) & 1) != 0 )
             return(clonestr("{\"error\":\"rawtx hex has odd length\"}"));
         txobj = bitcoin_hex2json(coin,&txid,0,rawtx);
         char str[65]; printf("got txid.(%s)\n",bits256_str(str,txid));
-    } else txobj = cJSON_CreateObject();
+    }
+    if ( txobj == 0 )
+        txobj = cJSON_CreateObject();
     return(jprint(txobj,1));
 }
 

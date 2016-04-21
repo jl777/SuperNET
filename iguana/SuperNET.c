@@ -649,7 +649,7 @@ int32_t SuperNET_destination(struct supernet_info *myinfo,uint32_t *destipbitsp,
 char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,uint16_t port)
 {
     char hexbuf[8192]; bits256 category,subhash;
-    int32_t hexlen,destflag,maxdelay,flag=0,newflag=0; uint32_t destipbits,timestamp; cJSON *retjson;
+    int32_t hexlen,destflag,maxdelay,flag=0,newflag=0; uint32_t destipbits,timestamp; //cJSON *retjson;
     char *forwardstr=0,*retstr=0,*agent=0,*method=0,*message,*hexmsg=0,*jsonstr=0; uint64_t tag;
     //printf("SuperNET_JSON.(%s)\n",jprint(json,0));
     if ( remoteaddr != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 )
