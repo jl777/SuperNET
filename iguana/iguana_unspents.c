@@ -798,7 +798,7 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                     *depositsp = ACCTS[pkind].total;
                     *lastunspentindp = ACCTS[pkind].lastunspentind;
                     *p = P[pkind];
-                    printf("[%d] return pkind.%u %.8f last.%u ACCTS.%p %p\n",i,pkind,dstr(*depositsp),*lastunspentindp,ACCTS,ramchain->A);
+                    //printf("[%d] return pkind.%u %.8f last.%u ACCTS.%p %p\n",i,pkind,dstr(*depositsp),*lastunspentindp,ACCTS,ramchain->A);
                     return(p);
                 }
                 else if ( pkind != 0 )
@@ -924,7 +924,7 @@ int32_t iguana_pkhasharray(struct iguana_info *coin,cJSON *array,int32_t minconf
             }
             else
             {
-                printf("pkhash balance.[%d] from m.%d check %.8f vs %.8f spent %.8f [%.8f]\n",i,m,dstr(netbalance),dstr(deposits),dstr(spent),dstr(deposits)-dstr(spent));
+                //printf("pkhash balance.[%d] from m.%d check %.8f vs %.8f spent %.8f [%.8f]\n",i,m,dstr(netbalance),dstr(deposits),dstr(spent),dstr(deposits)-dstr(spent));
                 total += netbalance;
                 n++;
             }
