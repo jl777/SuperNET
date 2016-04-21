@@ -454,7 +454,6 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
                     iguana_volatilesalloc(coin,&bp->ramchain,i < hdrsi);
             for (; hdrsi<max; hdrsi++)
             {
-                //iguana_ramchain_prefetch(coin,&coin->bundles[hdrsi]->ramchain,3);
                 if ( (bp= coin->bundles[hdrsi]) != 0 )
                 {
                     if ( iguana_balancegen(coin,0,bp,0,coin->chain->bundlesize-1,0) == 0 )
@@ -463,9 +462,10 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             }
             if ( max != coin->origbalanceswritten )
             {
-                coin->balanceswritten = max;
                 coin->balanceflush = coin->balanceswritten;
-            }
+                while ( coin->balanceswritten != max )
+                    sleep(3);
+            } else printf("skip flush when max.%d and orig.%d\n",max,coin->origbalanceswritten);
         }
         for (i=0; i<max; i++)
             if ( (bp= coin->bundles[i]) != 0 )

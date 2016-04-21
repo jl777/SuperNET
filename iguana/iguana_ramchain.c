@@ -1465,6 +1465,7 @@ struct iguana_ramchain *_iguana_ramchain_map(struct iguana_info *coin,char *fnam
         {
             if ( allocextras > 0 )
             {
+                ramchain->height = ramchain->H.data->height;
                 if ( iguana_ramchain_extras(coin,ramchain,ramchain->hashmem,allocextras) == 0 && bp != 0 )
                 {
                     bp->balancefinish = (uint32_t)time(NULL);
@@ -1500,6 +1501,7 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
     static portable_mutex_t mutex;
     portable_mutex_lock(&mutex);
 #endif
+    ramchain->height = bp->bundleheight;
     retptr = _iguana_ramchain_map(coin,fname,bp,numblocks,ramchain,hashmem,ipbits,hash2,prevhash2,bundlei,fpos,allocextras,expanded);
 #ifdef __PNACL__
     portable_mutex_unlock(&mutex);
@@ -2328,6 +2330,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
     {
         //printf("couldnt load bundle.%d\n",bp->bundleheight);
         memset(&bp->ramchain,0,sizeof(bp->ramchain));
+        bp->ramchain.height = bp->bundleheight;
         bp->emitfinish = 0;
         //iguana_bundleremove(coin,bp->hdrsi,0);
     }
