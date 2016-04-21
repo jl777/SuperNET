@@ -1416,7 +1416,7 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
             {
                 numpkinds = numunspents = 0;
                 Aptr = 0, Uptr = 0;
-                if ( (bp= coin->bundles[i]) != 0 && bp->ramchain.H.data != 0 && (numpkinds= bp->ramchain.H.data->numpkinds) > 0 && (numunspents= bp->ramchain.H.data->numunspents) > 0 && (Aptr= bp->ramchain.A) != 0 && (Uptr= bp->ramchain.Uextras) != 0 )
+                if ( (bp= coin->bundles[i]) != 0 && bp->ramchain.H.data != 0 && (numpkinds= bp->ramchain.H.data->numpkinds) > 0 && (numunspents= bp->ramchain.H.data->numunspents) > 0 && (Aptr= bp->ramchain.A2) != 0 && (Uptr= bp->ramchain.Uextras) != 0 )
                 {
                     if ( filecrc == 0 )
                     {
@@ -1558,7 +1558,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
             Aptr = 0;
             Uptr = 0;
             numunspents = numpkinds = 0;
-            if ( (bp= coin->bundles[hdrsi]) != 0 && bp->ramchain.H.data != 0 && (numpkinds= bp->ramchain.H.data->numpkinds) > 0 && (numunspents= bp->ramchain.H.data->numunspents) > 0 && (Aptr= bp->ramchain.A) != 0 && (Uptr= bp->ramchain.Uextras) != 0 )
+            if ( (bp= coin->bundles[hdrsi]) != 0 && bp->ramchain.H.data != 0 && (numpkinds= bp->ramchain.H.data->numpkinds) > 0 && (numunspents= bp->ramchain.H.data->numunspents) > 0 && (Aptr= bp->ramchain.A2) != 0 && (Uptr= bp->ramchain.Uextras) != 0 )
             {
                 sprintf(fname,"%s/%s/%d/debits.N%d",GLOBAL_TMPDIR,coin->symbol,bp->bundleheight,numhdrsi);
                 sprintf(fname2,"%s/%s/%d/lastspends.N%d",GLOBAL_TMPDIR,coin->symbol,bp->bundleheight,numhdrsi);
@@ -1864,7 +1864,7 @@ void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_b
     }
     if ( coin->RTramchain.H.data == 0 )
     {
-        //printf("ALLOC RTramchain\n");
+        printf("ALLOC RTramchain\n");
         iguana_ramchainopen(fname,coin,dest,&coin->RTmem,&coin->RThashmem,bp->bundleheight,bp->hashes[0]);
         dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
         dest->externalind = dest->H.stacksize = 0;
