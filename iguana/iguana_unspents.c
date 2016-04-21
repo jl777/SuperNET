@@ -23,9 +23,9 @@
 struct iguana_hhutxo *iguana_hhutxofind(struct iguana_info *coin,uint8_t *ubuf,uint16_t spent_hdrsi,uint32_t spent_unspentind)
 {
     struct iguana_hhutxo *hhutxo; uint8_t buf[sizeof(spent_unspentind) + sizeof(spent_hdrsi)];
-    memcpy(buf,ubuf,sizeof(buf));
-    memcpy(&buf[sizeof(spent_unspentind)],(void *)&spent_hdrsi,sizeof(spent_hdrsi));
     memcpy(buf,(void *)&spent_unspentind,sizeof(spent_unspentind));
+    memcpy(&buf[sizeof(spent_unspentind)],(void *)&spent_hdrsi,sizeof(spent_hdrsi));
+    memcpy(ubuf,buf,sizeof(buf));
     HASH_FIND(hh,coin->utxotable,buf,sizeof(buf),hhutxo);
     return(hhutxo);
 }
@@ -33,9 +33,9 @@ struct iguana_hhutxo *iguana_hhutxofind(struct iguana_info *coin,uint8_t *ubuf,u
 struct iguana_hhaccount *iguana_hhaccountfind(struct iguana_info *coin,uint8_t *pkbuf,uint16_t spent_hdrsi,uint32_t spent_pkind)
 {
     struct iguana_hhaccount *hhacct; uint8_t buf[sizeof(spent_pkind) + sizeof(spent_hdrsi)];
-    memcpy(buf,pkbuf,sizeof(buf));
-    memcpy(&buf[sizeof(spent_pkind)],(void *)&spent_hdrsi,sizeof(spent_hdrsi));
     memcpy(buf,(void *)&spent_pkind,sizeof(spent_pkind));
+    memcpy(&buf[sizeof(spent_pkind)],(void *)&spent_hdrsi,sizeof(spent_hdrsi));
+    memcpy(pkbuf,buf,sizeof(buf));
     HASH_FIND(hh,coin->utxotable,buf,sizeof(buf),hhacct);
     return(hhacct);
 }
@@ -80,8 +80,6 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
         }
         return(0);
     }
-    if ( spent_pkind == 1534811 )
-        printf("utxoupdate spenthdrsi.[%d] u%u pkind.%d %.8f from [%d:%d] spendind.%u\n",spent_hdrsi,spent_unspentind,spent_pkind,dstr(spent_value),fromheight/coin->chain->bundlesize,fromheight%coin->chain->bundlesize,spendind);
     if ( (hhutxo= iguana_hhutxofind(coin,ubuf,spent_hdrsi,spent_unspentind)) != 0 && hhutxo->u.spentflag != 0 )
     {
         printf("hhutxo.%p spentflag.%d\n",hhutxo,hhutxo->u.spentflag);
@@ -114,6 +112,10 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
     hhutxo->u.prevunspentind = hhacct->a.lastunspentind;
     hhacct->a.lastunspentind = spent_unspentind;
     hhacct->a.total += spent_value;
+    if ( spent_pkind == 1534811 )
+    {
+        printf("utxoupdate spenthdrsi.[%d] u%u pkind.%d %.8f from [%d:%d] spendind.%u %p\n",spent_hdrsi,spent_unspentind,spent_pkind,dstr(spent_value),fromheight/coin->chain->bundlesize,fromheight%coin->chain->bundlesize,spendind,iguana_hhutxofind(coin,ubuf,202,3909240));
+    }
     return(0);
 }
 
