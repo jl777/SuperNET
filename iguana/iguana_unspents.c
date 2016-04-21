@@ -232,7 +232,7 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
     }
     for (iter=0; iter<2; iter++)
     {
-        sprintf(fname,"%s/%s%s/accounts/debits.%d",GLOBAL_DBDIR,iter==0?"ro/":"",coin->symbol,ramchain->H.data->height);
+        sprintf(fname,"%s/%s%s/accounts/debits.%d",GLOBAL_DBDIR,iter==0?"ro/":"",coin->symbol,ramchain->height);
         if ( (ramchain->debitsfileptr= OS_mapfile(fname,&ramchain->debitsfilesize,0)) != 0 && ramchain->debitsfilesize == sizeof(int32_t) + 2*sizeof(bits256) + sizeof(*ramchain->A) * ramchain->H.data->numpkinds )
         {
             ramchain->from_roA = (iter == 0);
@@ -248,7 +248,7 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
             if ( numhdrsi == coin->balanceswritten && memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) == 0 && memcmp(allbundles.bytes,coin->allbundles.bytes,sizeof(allbundles)) == 0 )
             {
                 ramchain->A2 = (void *)((long)ramchain->debitsfileptr + sizeof(numhdrsi) + 2*sizeof(bits256));
-                sprintf(fname,"%s/%s%s/accounts/lastspends.%d",GLOBAL_DBDIR,iter==0?"ro/":"",coin->symbol,ramchain->H.data->height);
+                sprintf(fname,"%s/%s%s/accounts/lastspends.%d",GLOBAL_DBDIR,iter==0?"ro/":"",coin->symbol,ramchain->height);
                 if ( (ramchain->lastspendsfileptr= OS_mapfile(fname,&ramchain->lastspendsfilesize,0)) != 0 && ramchain->lastspendsfilesize == sizeof(int32_t) + 2*sizeof(bits256) + sizeof(*ramchain->Uextras) * ramchain->H.data->numunspents )
                 {
                     numhdrsi = *(int32_t *)ramchain->lastspendsfileptr;
@@ -270,9 +270,10 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
             }
         }
         if ( err == 0 )
-            break;
-        iguana_volatilespurge(coin,ramchain);
+            return(0);
     }
+    printf("couldnt map [%d]\n",ramchain->height/coin->chain->bundlesize);
+    iguana_volatilespurge(coin,ramchain);
     return(err);
 }
 
@@ -363,7 +364,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
             iguana_bundleremove(coin,fromheight/coin->chain->bundlesize,0);
         }
         exit(-1);
-    } else printf("volatileupdate error null rdata [%d]\n",spentchain->H.data->height/coin->current->bundleheight);
+    } else printf("volatileupdate error null rdata [%d]\n",spentchain->height/coin->current->bundleheight);
     return(-1);
 }
 
@@ -695,7 +696,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                         }
                         else if ( 0 && (rand() % IGUANA_NUMHELPERS) == 0 && (duration > 10 || duration > (10 * coin->txidfind_totalmillis)/coin->txidfind_num) )
                         {
-                            printf("slow txidfind %.2f vs %.2f prefetch[%d] from.[%d] lag.%ld last.%u\n",duration,coin->txidfind_totalmillis/coin->txidfind_num,spentbp->hdrsi,ramchain->H.data->height/coin->chain->bundlesize,time(NULL) - spentbp->lastprefetch,spentbp->lastprefetch);
+                            printf("slow txidfind %.2f vs %.2f prefetch[%d] from.[%d] lag.%ld last.%u\n",duration,coin->txidfind_totalmillis/coin->txidfind_num,spentbp->hdrsi,ramchain->height/coin->chain->bundlesize,time(NULL) - spentbp->lastprefetch,spentbp->lastprefetch);
                             iguana_ramchain_prefetch(coin,ramchain,1);
                             //spentbp->lastprefetch = now;
                         }
