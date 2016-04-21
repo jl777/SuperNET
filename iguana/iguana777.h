@@ -891,6 +891,7 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
 int32_t iguana_blast(struct iguana_info *coin,struct iguana_peer *addr);
 int32_t iguana_validated(struct iguana_info *coin);
 void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramchain,int32_t copyflag);
+int32_t iguana_send_ping(struct iguana_info *coin,struct iguana_peer *addr);
 
 extern int32_t HDRnet,netBLOCKS;
 
