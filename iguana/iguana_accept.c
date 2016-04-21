@@ -232,7 +232,7 @@ int32_t iguana_peeraddrrequest(struct iguana_info *coin,struct iguana_peer *addr
             }
         }
     }
-    sendlen = iguana_rwvarint(1,&space[sizeof(H)],&x);
+    iguana_rwvarint(1,&space[sizeof(H)],&x);
     printf("addrrequest: sendlen.%d x.%d\n",sendlen,(int32_t)x);
     return(sendlen);
 }
