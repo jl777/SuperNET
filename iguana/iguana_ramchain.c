@@ -431,7 +431,7 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
     }
     else
     {
-        if ( vout >= 0 )
+        if ( prev_vout >= 0 )
         {
             if ( ptr != 0 )
             {
