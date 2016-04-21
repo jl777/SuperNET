@@ -187,12 +187,11 @@ HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
 
 STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx)
 {
-    uint8_t *data; int32_t datalen; cJSON *retjson = cJSON_CreateObject(); // struct iguana_msgtx msgtx;  char *str;
-    datalen = (int32_t)strlen(rawtx) >> 1;
-    data = malloc(datalen);
-    decode_hex(data,datalen,rawtx);
-    free(data);
-    return(jprint(retjson,1));
+    cJSON *txobj; bits256 txid;
+    if ( rawtx != 0 && rawtx[0] != 0 )
+        txobj = bitcoin_hex2json(coin,&txid,0,rawtx);
+    else txobj = cJSON_CreateObject();
+    return(jprint(txobj,1));
 }
 
 HASH_ARG(bitcoinrpc,gettransaction,txid)

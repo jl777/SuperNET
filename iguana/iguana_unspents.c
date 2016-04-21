@@ -149,7 +149,7 @@ int32_t iguana_alloccacheT(struct iguana_info *coin,struct iguana_ramchain *ramc
 
 void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramchain,int32_t copyflag)
 {
-    struct iguana_ramchaindata *rdata;
+    struct iguana_ramchaindata *rdata = 0;
     if ( ramchain != 0 && (rdata= ramchain->H.data) != 0 )
     {
         if ( ramchain->allocatedA == 0 )
@@ -178,7 +178,7 @@ void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramc
             ramchain->lastspendsfileptr = 0;
             ramchain->lastspendsfilesize = 0;
         }
-    } else printf("illegal ramchain.%p\n",ramchain);
+    } else printf("illegal ramchain.%p rdata.%p\n",ramchain,rdata);
 }
 
 void iguana_volatilespurge(struct iguana_info *coin,struct iguana_ramchain *ramchain)
