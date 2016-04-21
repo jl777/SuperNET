@@ -193,6 +193,7 @@ STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx)
         if ( (strlen(rawtx) & 1) != 0 )
             return(clonestr("{\"error\":\"rawtx hex has odd length\"}"));
         txobj = bitcoin_hex2json(coin,&txid,0,rawtx);
+        char str[65]; printf("got txid.(%s)\n",bits256_str(str,txid));
     } else txobj = cJSON_CreateObject();
     return(jprint(txobj,1));
 }
