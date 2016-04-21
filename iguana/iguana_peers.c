@@ -463,7 +463,7 @@ int32_t iguana_queue_send(struct iguana_info *coin,struct iguana_peer *addr,int3
         packet->embargo.millis += delay;
     }
     memcpy(packet->serialized,serialized,datalen);
-    //printf("%p queue send.(%s) %d to (%s)\n",packet,serialized+4,datalen,addr->ipaddr);
+    printf("%p queue send.(%s) %d to (%s)\n",packet,serialized+4,datalen,addr->ipaddr);
     queue_enqueue("sendQ",&addr->sendQ,&packet->DL,0);
     return(datalen);
 }
@@ -757,12 +757,12 @@ void *iguana_iAddriterator(struct iguana_info *coin,struct iguana_iAddr *iA)
 uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
 {
     char checkaddr[64]; uint64_t ipbits; uint32_t now = (uint32_t)time(NULL); int32_t i,n; struct iguana_iAddr *iA;
-    if ( ipaddr != 0 )
+    if ( ipaddr != 0 && ipaddr[0] != 0 )
     {
         for (i=n=0; i<coin->MAXPEERS; i++)
             if ( strcmp(ipaddr,coin->peers.active[i].ipaddr) == 0 )
             {
-                printf("%s possible peer.%s already there\n",coin->symbol,ipaddr);
+                printf("%s possible peer.(%s) %x already there\n",coin->symbol,ipaddr,(uint32_t)coin->peers.active[i].ipbits);
                 return(0);
             }
         queue_enqueue("possibleQ",&coin->possibleQ,queueitem(ipaddr),1);
