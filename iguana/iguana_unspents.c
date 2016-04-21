@@ -312,7 +312,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
                 if ( utxo->spentflag == 0 )
                 {
                     //if ( 0 && fromheight/coin->chain->bundlesize >= coin->current->hdrsi )
-                    if ( (spent_hdrsi == 200 && spent_pkind == 1534811) || (spent_hdrsi == 202 && spent_pkind == 147416) )
+                    if ( fromheight/coin->chain->bundlesize == 202 && (spendind == 3163977 || spendind == 4033628) )
                         printf("iguana_volatileupdate.%d: [%d] spent.(u%u %.8f pkind.%d) fromht.%d [%d] spendind.%d\n",incremental,spent_hdrsi,spent_unspentind,dstr(spent_value),spent_pkind,fromheight,fromheight/coin->chain->bundlesize,spendind);
                     utxo->prevunspentind = A2[spent_pkind].lastunspentind;
                     utxo->spentflag = 1;
@@ -1273,7 +1273,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
                         //found spend d9151... txidind.1083097 [202] s3163977
                         //found spend d9151... txidind.1083097 [202] s4033628
                         if ( spent_hdrsi == 202 && (spendind == 3163977 || spendind == 4033628) )
-                            printf("internal spend.%d txidind.%d 1st.%d U.(prevout.%d u%u pkind.%u %.8f)\n",spendind,txidind,T[txidind].firstvout,s->prevout,spent_unspentind,u->pkind,dstr(u->value));
+                            printf("internal spend.%d spendtxidind.%d 1st.%d U.(prevout.%d u%u pkind.%u %.8f)\n",spendind,txidind,T[s->spendtxidind].firstvout,s->prevout,spent_unspentind,u->pkind,dstr(u->value));
                     }
                     else //if ( i > 0 || j > 0 || k > 0 )
                     {
