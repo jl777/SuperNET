@@ -889,7 +889,7 @@ int64_t iguana_pkhashbalance(struct iguana_info *coin,cJSON *array,int64_t *spen
     return(deposits - spent);
 }
 
-int32_t iguana_pkhasharray(struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,int64_t *totalp,struct iguana_pkhash *P,int32_t max,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33)
+int32_t iguana_pkhasharray(struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,int64_t *totalp,struct iguana_pkhash *P,int32_t max,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33,int32_t lastheight)
 {
     int32_t i,n,m; int64_t spent,deposits,netbalance,total; uint32_t lastunspentind; struct iguana_ramchain *ramchain;
     if ( 0 && coin->RTramchain_busy != 0 )
@@ -897,11 +897,13 @@ int32_t iguana_pkhasharray(struct iguana_info *coin,cJSON *array,int32_t minconf
         printf("iguana_pkhasharray: unexpected access when RTramchain_busy\n");
         return(-1);
     }
+    if ( lastheight/coin->chain->bundlesize < max )
+        max = lastheight/coin->chain->bundlesize;
     for (total=i=n=0; i<max && i<coin->bundlescount; i++)
     {
         if ( iguana_pkhashfind(coin,&ramchain,&deposits,&lastunspentind,&P[n],rmd160,i,i) != 0 )
         {
-            if ( (netbalance= iguana_pkhashbalance(coin,array,&spent,&m,ramchain,&P[n],lastunspentind,rmd160,coinaddr,pubkey33,i,0)) != deposits-spent )
+            if ( (netbalance= iguana_pkhashbalance(coin,array,&spent,&m,ramchain,&P[n],lastunspentind,rmd160,coinaddr,pubkey33,i,lastheight)) != deposits-spent )
             {
                 printf("pkhash balance mismatch from m.%d check %.8f vs %.8f spent %.8f [%.8f]\n",m,dstr(netbalance),dstr(deposits),dstr(spent),dstr(deposits)-dstr(spent));
             }
@@ -934,7 +936,7 @@ void iguana_unspents(struct supernet_info *myinfo,struct iguana_info *coin,cJSON
     for (i=0; i<numrmds; i++)
     {
         bitcoin_address(coinaddr,addrtypes[i],&rmdarray[i * 20],20);
-        iguana_pkhasharray(coin,array,minconf,maxconf,&total,P,coin->bundlescount,&rmdarray[i * 20],coinaddr,&pubkeys[33*i]);
+        iguana_pkhasharray(coin,array,minconf,maxconf,&total,P,coin->bundlescount,&rmdarray[i * 20],coinaddr,&pubkeys[33*i],0);
         printf("i.%d of %d: %s %.8f\n",i,numrmds,coinaddr,dstr(total));
         sum += total;
     }
@@ -2141,6 +2143,8 @@ TWOSTRINGS_AND_INT(iguana,balance,activecoin,address,height)
 {
     int32_t minconf=1,maxconf=SATOSHIDEN; int64_t total; uint8_t rmd160[20],pubkey33[33],addrtype;
     struct iguana_pkhash *P; cJSON *array,*retjson = cJSON_CreateObject();
+    if ( activecoin != 0 && activecoin[0] != 0 )
+        coin = iguana_coinfind(activecoin);
     if ( coin != 0 )
     {
         jaddstr(retjson,"address",address);
@@ -2154,15 +2158,15 @@ TWOSTRINGS_AND_INT(iguana,balance,activecoin,address,height)
             jaddstr(retjson,"error","cant convert address");
             return(jprint(retjson,1));
         }
-        if ( height != 0 )
-            jaddnum(retjson,"height",height);
         memset(pubkey33,0,sizeof(pubkey33));
         P = calloc(coin->bundlescount,sizeof(*P));
         array = cJSON_CreateArray();
-        iguana_pkhasharray(coin,array,minconf,maxconf,&total,P,coin->bundlescount,rmd160,address,pubkey33);
+        iguana_pkhasharray(coin,array,minconf,maxconf,&total,P,coin->bundlescount,rmd160,address,pubkey33,height);
         free(P);
         jadd(retjson,"unspents",array);
         jaddnum(retjson,"balance",dstr(total));
+        if ( height != 0 )
+            jaddnum(retjson,"height",height);
     }
     return(jprint(retjson,1));
 }

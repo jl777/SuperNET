@@ -16172,6 +16172,29 @@ len = 0;
              jaddnum(retitem,"result",coin->blocks.hwmchain.height);
              return(jprint(retitem,1));
              }*/
+                if ( 0 )
+                {
+                    int32_t i,n; int64_t total; char *coinaddr; struct iguana_pkhash *P; struct iguana_info *coin; uint8_t rmd160[20],addrtype,pubkey33[33]; double startmillis;
+                    coin = iguana_coinfind("BTCD");
+                    if ( 1 && coin != 0 )
+                    {
+                        getchar();
+                        for (i=0; i<coin->bundlescount; i++)
+                            if ( coin->bundles[i] == 0 )
+                                break;
+                        coinaddr = "RUZ9AKxy6J2okcBd1PZm4YH6atmPwqV4bo";
+                        bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
+                        P = calloc(coin->bundlescount,sizeof(*P));
+                        memset(pubkey33,0,sizeof(pubkey33));
+                        n = iguana_pkhasharray(coin,0,0,0,&total,P,coin->bundlescount,rmd160,coinaddr,pubkey33);
+                        printf("%s has total outputs %.8f from %d bundles\n",coinaddr,dstr(total),n);
+                        startmillis = OS_milliseconds();
+                        for (i=0; i<1000; i++)
+                            n = iguana_pkhasharray(coin,0,0,0,&total,P,coin->bundlescount,rmd160,coinaddr,pubkey33);
+                            printf("%s has total outputs %.8f from %d bundles %.3f millis\n",coinaddr,dstr(total),n,OS_milliseconds()-startmillis);
+                            getchar();
+                            }
+                }
 
 #endif
 #endif
