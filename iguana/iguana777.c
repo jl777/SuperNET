@@ -446,7 +446,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
     {
         if ( convertflag != 0 || iguana_spendvectorsaves(coin) == 0 )
         {
-            if ( coin->origbalanceswritten <= 1 )
+            if ( 1 || coin->origbalanceswritten <= 1 )
                 hdrsi = 0;
             else hdrsi = coin->origbalanceswritten;
             for (i=0; i<max; i++)
