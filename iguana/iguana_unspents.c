@@ -149,7 +149,7 @@ int32_t iguana_alloccacheT(struct iguana_info *coin,struct iguana_ramchain *ramc
 
 void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramchain,int32_t copyflag)
 {
-    struct iguana_ramchaindata *rdata = 0;
+    int32_t i; struct iguana_utxo *U2; struct iguana_account *A2; struct iguana_ramchaindata *rdata = 0;
     if ( ramchain != 0 && (rdata= ramchain->H.data) != 0 )
     {
         if ( ramchain->allocatedA == 0 )
@@ -165,7 +165,13 @@ void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramc
         if ( ramchain->debitsfileptr != 0 )
         {
             if ( copyflag != 0 )
-                memcpy(ramchain->A,(void *)((long)ramchain->debitsfileptr + sizeof(int32_t) + 2*sizeof(bits256)),sizeof(*ramchain->A) * rdata->numpkinds);
+            {
+                A2 = (void *)((long)ramchain->debitsfileptr + sizeof(int32_t) + 2*sizeof(bits256));
+                printf("copy A2[%d]\n",rdata->numpkinds);
+                for (i=0; i<rdata->numpkinds; i++)
+                    ramchain->A[i] = A2[i];
+                printf("done A2\n");
+            }
             munmap(ramchain->debitsfileptr,ramchain->debitsfilesize);
             ramchain->debitsfileptr = 0;
             ramchain->debitsfilesize = 0;
@@ -173,7 +179,13 @@ void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramc
         if ( ramchain->lastspendsfileptr != 0 )
         {
             if ( copyflag != 0 )
-                memcpy(ramchain->Uextras,(void *)((long)ramchain->lastspendsfileptr + sizeof(int32_t) + 2*sizeof(bits256)),sizeof(*ramchain->Uextras) * rdata->numunspents);
+            {
+                U2 = (void *)((long)ramchain->lastspendsfileptr + sizeof(int32_t) + 2*sizeof(bits256));
+                printf("copy U2[%d]\n",rdata->numunspents);
+                for (i=0; i<rdata->numunspents; i++)
+                    ramchain->Uextras[i] = U2[i];
+                printf("done U2\n");
+            }
             munmap(ramchain->lastspendsfileptr,ramchain->lastspendsfilesize);
             ramchain->lastspendsfileptr = 0;
             ramchain->lastspendsfilesize = 0;
