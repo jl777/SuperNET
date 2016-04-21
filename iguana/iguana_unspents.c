@@ -105,10 +105,10 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
     hhutxo->u.prevunspentind = hhacct->a.lastunspentind;
     hhacct->a.lastunspentind = spent_unspentind;
     hhacct->a.total += spent_value;
-    if ( iguana_hhutxofind(coin,uval) == 0 || iguana_hhaccountfind(coin,pval) == 0 )
-    {
-        printf("null hh find.(%ld %ld) %p %p\n",(long)uval,(long)pval,iguana_hhutxofind(coin,uval),iguana_hhaccountfind(coin,pval));
-    }
+    /*if ( iguana_hhutxofind(coin,uval) == 0 || iguana_hhaccountfind(coin,pval) == 0 )
+     {
+     printf("null hh find.(%ld %ld) %p %p\n",(long)uval,(long)pval,iguana_hhutxofind(coin,uval),iguana_hhaccountfind(coin,pval));
+    }*/
     return(0);
 }
 
@@ -325,8 +325,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
                 utxo = &spentchain->Uextras[spent_unspentind];
                 if ( utxo->spentflag == 0 )
                 {
-                    //if ( 0 && fromheight/coin->chain->bundlesize >= coin->current->hdrsi )
-                    if ( fromheight/coin->chain->bundlesize == 202 && (spendind == 3163977 || spendind == 4033628) )
+                    if ( 0 && fromheight/coin->chain->bundlesize >= coin->current->hdrsi )
                         printf("iguana_volatileupdate.%d: [%d] spent.(u%u %.8f pkind.%d) fromht.%d [%d] spendind.%d\n",incremental,spent_hdrsi,spent_unspentind,dstr(spent_value),spent_pkind,fromheight,fromheight/coin->chain->bundlesize,spendind);
                     utxo->prevunspentind = A2[spent_pkind].lastunspentind;
                     utxo->spentflag = 1;
@@ -802,7 +801,7 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                     *depositsp = ACCTS[pkind].total;
                     *lastunspentindp = ACCTS[pkind].lastunspentind;
                     *p = P[pkind];
-                    printf("[%d] return pkind.%u %.8f\n",i,pkind,dstr(*depositsp));
+                    //printf("[%d] return pkind.%u %.8f\n",i,pkind,dstr(*depositsp));
                     return(p);
                 }
                 else if ( pkind != 0 )
@@ -889,7 +888,7 @@ int64_t iguana_pkhashbalance(struct iguana_info *coin,cJSON *array,int64_t *spen
             printf("spend checkerr: [%d] deposits %.8f spent %.8f check %.8f (%.8f) vs A2[%u] %.8f\n",hdrsi,dstr(deposits),dstr(spent),dstr(checkval)+dstr(RTspend),dstr(*spentp),pkind,dstr(A2[pkind].total));
     }
     (*spentp) = spent;
-    printf("spent %.8f, RTspent %.8f deposits %.8f\n",dstr(spent),dstr(RTspend),dstr(deposits));
+    //printf("spent %.8f, RTspent %.8f deposits %.8f\n",dstr(spent),dstr(RTspend),dstr(deposits));
     return(deposits - spent);
 }
 
@@ -939,7 +938,7 @@ void iguana_unspents(struct supernet_info *myinfo,struct iguana_info *coin,cJSON
     {
         bitcoin_address(coinaddr,addrtypes[i],&rmdarray[i * 20],20);
         iguana_pkhasharray(coin,array,minconf,maxconf,&total,P,coin->bundlescount,&rmdarray[i * 20],coinaddr,&pubkeys[33*i]);
-        printf("%s %.8f\n",coinaddr,dstr(total));
+        printf("i.%d of %d: %s %.8f\n",i,numrmds,coinaddr,dstr(total));
         sum += total;
     }
     printf("sum %.8f\n",dstr(sum));
