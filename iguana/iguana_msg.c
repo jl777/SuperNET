@@ -569,16 +569,18 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
             }
             else
             {
-                int32_t flag = 0;
+                int32_t reqvers,flag = 0;
                 addr->msgcounts.getblocks++;
-                len = iguana_rwnum(0,&data[sizeof(struct iguana_msghdr)],sizeof(uint32_t),&tmp);
+                len = iguana_rwnum(0,&data[sizeof(struct iguana_msghdr)],sizeof(uint32_t),&reqvers);
                 len += iguana_rwvarint32(0,&data[sizeof(struct iguana_msghdr) + len],(uint32_t *)&n);
                 for (i=0; i<10; i++)
                     printf("%02x ",data[i]);
-                printf("version.%d num blocks.%d recvlen.%d\n",tmp,n,recvlen);
+                printf("version.%d num blocks.%d recvlen.%d\n",reqvers,n,recvlen);
                 for (i=0; i<n; i++)
                 {
                     len += iguana_rwbignum(0,&data[sizeof(struct iguana_msghdr) + len],sizeof(bits256),hash2.bytes);
+                    if ( bits256_nonz(hash2) == 0 )
+                        break;
                     if ( flag == 0 && iguana_peerblockrequest(coin,addr->blockspace,sizeof(addr->blockspace),addr,hash2,0) > 0 )
                         flag = 1;
                 }
