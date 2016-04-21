@@ -165,7 +165,7 @@ void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramc
         if ( ramchain->debitsfileptr != 0 )
         {
             if ( copyflag != 0 )
-                memcpy(ramchain->A,(void *)((long)ramchain->debitsfileptr + sizeof(int32_t) + sizeof(bits256)),sizeof(*ramchain->A) * rdata->numpkinds);
+                memcpy(ramchain->A,(void *)((long)ramchain->debitsfileptr + sizeof(int32_t) + 2*sizeof(bits256)),sizeof(*ramchain->A) * rdata->numpkinds);
             munmap(ramchain->debitsfileptr,ramchain->debitsfilesize);
             ramchain->debitsfileptr = 0;
             ramchain->debitsfilesize = 0;
@@ -173,7 +173,7 @@ void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramc
         if ( ramchain->lastspendsfileptr != 0 )
         {
             if ( copyflag != 0 )
-                memcpy(ramchain->Uextras,(void *)((long)ramchain->lastspendsfileptr + sizeof(int32_t) + sizeof(bits256)),sizeof(*ramchain->Uextras) * rdata->numunspents);
+                memcpy(ramchain->Uextras,(void *)((long)ramchain->lastspendsfileptr + sizeof(int32_t) + 2*sizeof(bits256)),sizeof(*ramchain->Uextras) * rdata->numunspents);
             munmap(ramchain->lastspendsfileptr,ramchain->lastspendsfilesize);
             ramchain->lastspendsfileptr = 0;
             ramchain->lastspendsfilesize = 0;
