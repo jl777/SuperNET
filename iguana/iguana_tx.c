@@ -220,7 +220,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
                 }
                 else
                 {
-                    printf("null tx error getting txi.%d [%d:%d]\n",i,bp->hdrsi,bundlei);
+                    //printf("null tx error getting txi.%d [%d:%d]\n",i,bp->hdrsi,bundlei);
                     break;
                 }
             }

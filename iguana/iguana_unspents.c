@@ -2180,6 +2180,8 @@ TWOSTRINGS_AND_INT(iguana,balance,activecoin,address,height)
         memset(pubkey33,0,sizeof(pubkey33));
         P = calloc(coin->bundlescount,sizeof(*P));
         array = cJSON_CreateArray();
+        if ( height == 0 )
+            height = (1 << 30);
         iguana_pkhasharray(coin,array,minconf,maxconf,&total,P,coin->bundlescount,rmd160,address,pubkey33,height);
         free(P);
         jadd(retjson,"unspents",array);
