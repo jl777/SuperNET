@@ -269,12 +269,13 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
     return(err);
 }
 
-int32_t iguana_spentflag(struct iguana_info *coin,int32_t *spentheightp,struct iguana_ramchain *ramchain,int16_t spent_hdrsi,uint32_t spent_unspentind,int32_t height,uint64_t amount)
+int32_t iguana_spentflag(struct iguana_info *coin,int64_t *RTspendp,int32_t *spentheightp,struct iguana_ramchain *ramchain,int16_t spent_hdrsi,uint32_t spent_unspentind,int32_t height,uint64_t amount)
 {
     uint32_t numunspents; struct iguana_hhutxo *hhutxo; struct iguana_utxo utxo; uint64_t val;
     *spentheightp = 0;
     numunspents = ramchain->H.data->numunspents;
     memset(&utxo,0,sizeof(utxo));
+    *RTspendp = 0;
     val = ((uint64_t)spent_hdrsi << 32) | spent_unspentind;
     if ( spent_unspentind != 0 && spent_unspentind < numunspents )
     {
@@ -284,7 +285,11 @@ int32_t iguana_spentflag(struct iguana_info *coin,int32_t *spentheightp,struct i
         {
             //printf("check hhutxo [%d] u%u %p\n",spent_hdrsi,spent_unspentind,iguana_hhutxofind(coin,((uint64_t)202<<32)|3909240));
             if ( (hhutxo= iguana_hhutxofind(coin,val)) != 0 )
+            {
                 utxo = hhutxo->u;
+                if ( utxo.spentflag != 0 )
+                    *RTspendp = amount;
+            }
         }
     }
     else
@@ -840,7 +845,7 @@ char *iguana_bundleaddrs(struct iguana_info *coin,int32_t hdrsi)
 
 int64_t iguana_pkhashbalance(struct iguana_info *coin,cJSON *array,int64_t *spentp,int32_t *nump,struct iguana_ramchain *ramchain,struct iguana_pkhash *p,uint32_t lastunspentind,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33,int32_t hdrsi,int32_t height)
 {
-    struct iguana_unspent *U; struct iguana_utxo *U2; struct iguana_spend *S; int32_t spentheight; uint32_t pkind=0,unspentind; int64_t spent = 0,checkval,deposits = 0; struct iguana_txid *T; struct iguana_account *A2; struct iguana_ramchaindata *rdata = 0;
+    struct iguana_unspent *U; struct iguana_utxo *U2; struct iguana_spend *S; int32_t spentheight; uint32_t pkind=0,unspentind; int64_t spent = 0,checkval,deposits = 0; struct iguana_txid *T; struct iguana_account *A2; struct iguana_ramchaindata *rdata = 0; int64_t RTspend = 0;
     *spentp = *nump = 0;
     if ( 0 && ramchain == &coin->RTramchain && coin->RTramchain_busy != 0 )
     {
@@ -858,7 +863,7 @@ int64_t iguana_pkhashbalance(struct iguana_info *coin,cJSON *array,int64_t *spen
     while ( unspentind > 0 )
     {
         (*nump)++;
-        if ( iguana_spentflag(coin,&spentheight,ramchain,hdrsi,unspentind,height,U[unspentind].value) == 0 )
+        if ( iguana_spentflag(coin,&RTspend,&spentheight,ramchain,hdrsi,unspentind,height,U[unspentind].value) == 0 )
         {
             deposits += U[unspentind].value;
             if ( array != 0 )
@@ -880,7 +885,8 @@ int64_t iguana_pkhashbalance(struct iguana_info *coin,cJSON *array,int64_t *spen
             printf("u%u %.8f spentflag.%d prev.%u fromheight.%d\n",unspentind,dstr(U[unspentind].value),U2[unspentind].spentflag,U2[unspentind].prevunspentind,U2[unspentind].fromheight);
             unspentind = U2[unspentind].prevunspentind;
         }
-        printf("[%d] spent %.8f check %.8f (%.8f) vs A2[%u] %.8f\n",hdrsi,dstr(spent),dstr(checkval),dstr(*spentp),pkind,dstr(A2[pkind].total));
+        if ( fabs(spent - checkval - RTspend) > SMALLVAL )
+            printf("spend checkerr: [%d] deposits %.8f spent %.8f check %.8f (%.8f) vs A2[%u] %.8f\n",hdrsi,dstr(deposits),dstr(spent),dstr(checkval)+dstr(RTspend),dstr(*spentp),pkind,dstr(A2[pkind].total));
     }
     (*spentp) = spent;
     return(deposits - spent);
