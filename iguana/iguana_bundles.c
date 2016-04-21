@@ -945,7 +945,7 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
                 coin->spendvectorsaved = 0;
                 for (i=bp->hdrsi; i<coin->bundlescount; i++)
                     if ( (tmpbp= coin->bundles[i]) != 0 )
-                        tmpbp->startutxo = tmpbp->utxofinish = tmpbp->converted = tmpbp->balancefinish = tmpbp->validated = 0;
+                        tmpbp->converted = tmpbp->balancefinish = tmpbp->validated = 0;
 #ifdef __PNACL__
                 iguana_bundlevalidate(coin,bp,1);
 #endif
