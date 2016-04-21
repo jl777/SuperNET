@@ -429,26 +429,32 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
         }
         //txidind |= (1 << 31);
     }
-    else if ( ptr != 0 )
+    else
     {
-        txidind = ptr->hh.itemind;
-        if ( prev_vout >= 0 && (txidind & (1<<31)) == 0 )
+        if ( vout >= 0 )
         {
-            if ( txidind > 0 && txidind < ramchain->H.data->numtxids )
+            if ( ptr != 0 )
             {
-                if ( (unspentind= T[txidind].firstvout + prev_vout) > 0 && unspentind < ramchain->H.data->numunspents )
+                txidind = ptr->hh.itemind;
+                if ( prev_vout >= 0 && (txidind & (1<<31)) == 0 )
                 {
-                    value = Ux[unspentind].value;
-                    if ( (pkind= Ux[unspentind].pkind) == 0 || pkind >= ramchain->H.data->numpkinds )
+                    if ( txidind > 0 && txidind < ramchain->H.data->numtxids )
                     {
-                        printf("spendind.%d -> unspendind.%d %.8f -> pkind.0x%x\n",spendind,unspentind,dstr(value),pkind);
-                        return(0);
-                    }
-                } else printf("addspend illegal unspentind.%d vs %d\n",unspentind,ramchain->H.data->numunspents);
-            } else printf("addspend illegal txidind.%d vs %d\n",txidind,ramchain->H.data->numtxids), exit(-1);
+                        if ( (unspentind= T[txidind].firstvout + prev_vout) > 0 && unspentind < ramchain->H.data->numunspents )
+                        {
+                            value = Ux[unspentind].value;
+                            if ( (pkind= Ux[unspentind].pkind) == 0 || pkind >= ramchain->H.data->numpkinds )
+                            {
+                                printf("spendind.%d -> unspendind.%d %.8f -> pkind.0x%x\n",spendind,unspentind,dstr(value),pkind);
+                                return(0);
+                            }
+                        } else printf("addspend illegal unspentind.%d vs %d\n",unspentind,ramchain->H.data->numunspents);
+                    } else printf("addspend illegal txidind.%d vs %d\n",txidind,ramchain->H.data->numtxids), exit(-1);
+                }
+            }
+            else printf("unexpected addpsend case: null ptr.%p [%d] s%u\n",ptr,hdrsi,spendind);
         }
     }
-    else printf("unexpected addpsend case: null ptr s%u\n",spendind);
     if ( ramchain->H.ROflag != 0 )
     {
         iguana_ramchain_txid(coin,RAMCHAIN_ARG,&txid,s);
