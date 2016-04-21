@@ -915,7 +915,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
 
 int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,struct OS_memspace *mem,struct OS_memspace *memB)
 {
-    int32_t i;
+    int32_t i; struct iguana_bundle *tmpbp;
     if ( iguana_bundleready(coin,bp,0) == bp->n )
     {
         printf(">>>>>>>>>>>>>> EMIT.[%3d] %s | 1st.%-3d h.%-3d c.%-3d s.[%3d] maxB.%d NET.(h%d b%d) %ld:%02ld\n",bp->hdrsi,coin->symbol,coin->current!=0?coin->current->hdrsi:-1,coin->current!=0?coin->current->numhashes:-1,coin->current!=0?coin->current->numcached:-1,coin->current!=0?coin->current->numsaved:-1,coin->MAXBUNDLES,HDRnet,netBLOCKS,(time(NULL)-coin->startutc)/60,(time(NULL)-coin->startutc)%60);
@@ -942,6 +942,10 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
                     printf("GENESIS block validated\n");
                 else printf("GENESIS didnt validate bp.%p\n",bp);*/
                 //if ( strcmp("BTC",coin->symbol) != 0 )
+                coin->spendvectorsaved = 0;
+                for (i=bp->hdrsi; i<coin->bundlescount; i++)
+                    if ( (tmpbp= coin->bundles[i]) != 0 )
+                        tmpbp->startutxo = tmpbp->utxofinish = tmpbp->converted = tmpbp->balancefinish = tmpbp->validated = 0;
 #ifdef __PNACL__
                 iguana_bundlevalidate(coin,bp,1);
 #endif
