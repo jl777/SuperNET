@@ -410,7 +410,7 @@ int32_t iguana_helperB(struct iguana_info *coin,int32_t helperid,struct iguana_b
 
 int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convertflag)
 {
-    int32_t hdrsi,n,max,incr,num = 0; struct iguana_bundle *bp;
+    int32_t hdrsi,n,i,max,incr,num = 0; struct iguana_bundle *bp;
     if ( coin->spendvectorsaved > 1 )
     {
         printf("skip utxogen as spendvectorsaved.%u\n",coin->spendvectorsaved);
@@ -449,6 +449,9 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             if ( coin->origbalanceswritten <= 1 )
                 hdrsi = 0;
             else hdrsi = coin->origbalanceswritten;
+            for (i=0; i<max; i++)
+                if ( (bp= coin->bundles[i]) != 0 )
+                    iguana_volatilesalloc(coin,&bp->ramchain,i < hdrsi);
             for (; hdrsi<max; hdrsi++)
             {
                 //iguana_ramchain_prefetch(coin,&coin->bundles[hdrsi]->ramchain,3);
@@ -463,6 +466,12 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
                 coin->balanceswritten = max;
                 coin->balanceflush = coin->balanceswritten;
             }
+            for (i=0; i<max; i++)
+                if ( (bp= coin->bundles[i]) != 0 )
+                {
+                    iguana_volatilespurge(coin,&bp->ramchain);
+                    iguana_volatilesmap(coin,&bp->ramchain);
+                }
         } else printf("error saving spendvectors\n");
     }
     //printf("helper.%d check validates\n",helperid);
