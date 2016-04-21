@@ -233,7 +233,7 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
     for (iter=0; iter<2; iter++)
     {
         sprintf(fname,"%s/%s%s/accounts/debits.%d",GLOBAL_DBDIR,iter==0?"ro/":"",coin->symbol,ramchain->height);
-        if ( (ramchain->debitsfileptr= OS_mapfile(fname,&ramchain->debitsfilesize,0)) != 0 && ramchain->debitsfilesize == sizeof(int32_t) + 2*sizeof(bits256) + sizeof(*ramchain->A) * ramchain->H.data->numpkinds )
+        if ( (ramchain->debitsfileptr= OS_mapfile(fname,&ramchain->debitsfilesize,0)) != 0 && ramchain->debitsfilesize == sizeof(int32_t) + 2*sizeof(bits256) + sizeof(*ramchain->A2) * ramchain->H.data->numpkinds )
         {
             ramchain->from_roA = (iter == 0);
             numhdrsi = *(int32_t *)ramchain->debitsfileptr;
@@ -264,7 +264,7 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
             }
             else
             {
-                //printf("ramchain.[%d] map error balanceswritten %d vs %d hashes %x %x\n",ramchain->H.data->height,coin->balanceswritten,numhdrsi,coin->balancehash.uints[0],balancehash.uints[0]);
+                printf("ramchain.[%d] map error balanceswritten %d vs %d hashes %x %x\n",ramchain->H.data->height,coin->balanceswritten,numhdrsi,coin->balancehash.uints[0],balancehash.uints[0]);
                 err++;
                 OS_removefile(fname,0);
             }
@@ -1586,7 +1586,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
                                 if ( fwrite(Uptr,sizeof(*Uptr),numunspents,fp2) == numunspents )
                                 {
                                     err = 0;
-                                    //printf("[%d] of %d saved (%s) and (%s)\n",hdrsi,numhdrsi,fname,fname2);
+                                    printf("[%d] of %d saved (%s) and (%s)\n",hdrsi,numhdrsi,fname,fname2);
                                 }
                             }
                         }
@@ -1620,12 +1620,15 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
                         printf("balances error copying (%s) -> (%s)\n",fname2,destfname);
                         return(-1);
                     }
-                    //printf("%s -> %s\n",fname,destfname);
+                    printf("%s -> %s\n",fname,destfname);
                     OS_removefile(fname,0);
                     OS_removefile(fname2,0);
                 }
                 if ( bp->ramchain.allocatedA2 == 0 || bp->ramchain.allocatedU2 == 0 )
+                {
+                    printf("skip saving.[%d] files as not allocated\n",bp->hdrsi);
                     break;
+                }
             }
             else if ( hdrsi > 0 )
             {
