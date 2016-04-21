@@ -429,38 +429,31 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
         }
         txidind |= (1 << 31);
     }
-    else
+    else if ( ptr != 0 )
+        txidind = ptr->hh.itemind;
+    else if ( prev_vout >= 0 )
+        printf("unexpected addspend case: null ptr prev.%d [%d] s%u\n",prev_vout,hdrsi,spendind);
+    if ( prev_vout >= 0 && (external= ((txidind >> 31) & 1)) == 0 )
     {
-        if ( prev_vout >= 0 )
+        if ( txidind > 0 && txidind < ramchain->H.data->numtxids )
         {
-            if ( ptr != 0 )
+            if ( (unspentind= T[txidind].firstvout + prev_vout) > 0 && unspentind < ramchain->H.data->numunspents )
             {
-                txidind = ptr->hh.itemind;
-                if ( prev_vout >= 0 && (txidind & (1<<31)) == 0 )
+                value = Ux[unspentind].value;
+                if ( (pkind= Ux[unspentind].pkind) == 0 || pkind >= ramchain->H.data->numpkinds )
                 {
-                    if ( txidind > 0 && txidind < ramchain->H.data->numtxids )
-                    {
-                        if ( (unspentind= T[txidind].firstvout + prev_vout) > 0 && unspentind < ramchain->H.data->numunspents )
-                        {
-                            value = Ux[unspentind].value;
-                            if ( (pkind= Ux[unspentind].pkind) == 0 || pkind >= ramchain->H.data->numpkinds )
-                            {
-                                printf("spendind.%d -> unspendind.%d %.8f -> pkind.0x%x\n",spendind,unspentind,dstr(value),pkind);
-                                return(0);
-                            }
-                        } else printf("addspend illegal unspentind.%d vs %d\n",unspentind,ramchain->H.data->numunspents);
-                    } else printf("addspend illegal txidind.%d vs %d\n",txidind,ramchain->H.data->numtxids), exit(-1);
+                    printf("spendind.%d -> unspendind.%d %.8f -> pkind.0x%x\n",spendind,unspentind,dstr(value),pkind);
+                    return(0);
                 }
-            }
-            else printf("unexpected addpsend case: null ptr.%p [%d] s%u\n",ptr,hdrsi,spendind);
-        }
+            } else printf("addspend illegal unspentind.%d vs %d\n",unspentind,ramchain->H.data->numunspents);
+        } else printf("addspend illegal txidind.%d vs %d\n",txidind,ramchain->H.data->numtxids), exit(-1);
     }
     if ( ramchain->H.ROflag != 0 )
     {
         iguana_ramchain_txid(coin,RAMCHAIN_ARG,&txid,s);
         if ( s->sequenceid != sequence || memcmp(txid.bytes,prev_hash.bytes,sizeof(bits256)) != 0 || s->prevout != prev_vout )
         {
-            char str[65],str2[65]; printf("ramchain_addspend RO value mismatch diffseq.%x v %x vouts.(%d %d) %s vs %s\n",s->sequenceid,sequence,s->prevout,prev_vout,bits256_str(str,txid),bits256_str(str2,prev_hash));
+            char str[65],str2[65]; printf("ramchain_addspend RO value mismatch diffseq.%x v %x (%d) vs (%d) %s vs %s\n",s->sequenceid,sequence,s->prevout,prev_vout,bits256_str(str,txid),bits256_str(str2,prev_hash));
             return(0);
         }
         /*if ( (checklen= iguana_vinscriptdecode(coin,ramchain,&metalen,_script,&Kspace[ramchain->H.data->scriptspace],Kspace,s)) != vinscriptlen || (vinscript != 0 && memcmp(_script,vinscript,vinscriptlen) != 0) )
@@ -485,7 +478,7 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
         //    printf("%02x",vinscript[i]);
         //printf(" SAVE vinscript len.%d\n",vinscriptlen);
         if ( bits256_cmp(prev_hash,bits256_conv("d9151f0471a3982778c8acc623becc24bc35483bdecb07611d036209da541cde")) == 0 )
-            printf("found spend d9151... txidind.%u\n",txidind);
+            printf("found spend d9151... txidind.%u [%d] s%u\n",txidind,hdrsi,spendind);
         s->sequenceid = sequence;
         s->external = external, s->spendtxidind = txidind,
         s->prevout = prev_vout;
