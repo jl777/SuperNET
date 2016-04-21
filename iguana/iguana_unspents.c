@@ -168,10 +168,10 @@ void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramc
             if ( copyflag != 0 )
             {
                 A2 = (void *)((long)ramchain->debitsfileptr + sizeof(int32_t) + 2*sizeof(bits256));
-                for (i=0; i<rdata->numpkinds; i++)
-                    ramchain->A[i] = A2[i];
                 if ( ramchain->debitsfilesize != sizeof(int32_t) + 2*sizeof(bits256) + sizeof(*U2)*rdata->numpkinds )
                     printf("A2 size mismatch %ld != %ld\n",ramchain->debitsfilesize,sizeof(int32_t) + 2*sizeof(bits256) + sizeof(*U2)*rdata->numpkinds);
+                for (i=0; i<rdata->numpkinds; i++)
+                    ramchain->A[i] = A2[i];
             }
             munmap(ramchain->debitsfileptr,ramchain->debitsfilesize);
             ramchain->debitsfileptr = 0;
@@ -182,10 +182,10 @@ void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramc
             if ( copyflag != 0 )
             {
                 U2 = (void *)((long)ramchain->lastspendsfileptr + sizeof(int32_t) + 2*sizeof(bits256));
-                for (i=0; i<rdata->numunspents; i++)
-                    ramchain->Uextras[i] = U2[i];
                 if ( ramchain->lastspendsfilesize != sizeof(int32_t) + 2*sizeof(bits256) + sizeof(*U2)*rdata->numunspents )
                     printf("U2 size mismatch %ld != %ld\n",ramchain->lastspendsfilesize,sizeof(int32_t) + 2*sizeof(bits256) + sizeof(*U2)*rdata->numunspents);
+                for (i=0; i<rdata->numunspents; i++)
+                    ramchain->Uextras[i] = U2[i];
             }
             munmap(ramchain->lastspendsfileptr,ramchain->lastspendsfilesize);
             ramchain->lastspendsfileptr = 0;
