@@ -151,7 +151,7 @@ void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramc
     int32_t i; struct iguana_utxo *U2; struct iguana_account *A2; struct iguana_ramchaindata *rdata = 0;
     if ( ramchain != 0 && (rdata= ramchain->H.data) != 0 )
     {
-        printf("volatilesalloc.[%d]\n",rdata->height/coin->chain->bundlesize);
+        printf("volatilesalloc.[%d]\n",ramchain->height/coin->chain->bundlesize);
         if ( ramchain->allocatedA2 == 0 )
         {
             ramchain->A2 = calloc(sizeof(*ramchain->A2),rdata->numpkinds + 16);
@@ -224,9 +224,12 @@ void iguana_volatilespurge(struct iguana_info *coin,struct iguana_ramchain *ramc
 int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ramchain)
 {
     int32_t iter,numhdrsi,err = -1; char fname[1024]; bits256 balancehash,allbundles; struct iguana_ramchaindata *rdata;
+    printf("volatilesmap.[%d]\n",ramchain->height/coin->chain->bundlesize);
     if ( (rdata= ramchain->H.data) == 0 )
+    {
+        printf("volatilesmap.[%d] no rdata\n",ramchain->height/coin->chain->bundlesize);
         return(-1);
-    printf("volatilesmap.[%d]\n",rdata->height/coin->chain->bundlesize);
+    }
     for (iter=0; iter<2; iter++)
     {
         sprintf(fname,"%s/%s%s/accounts/debits.%d",GLOBAL_DBDIR,iter==0?"ro/":"",coin->symbol,ramchain->H.data->height);
@@ -870,7 +873,7 @@ int64_t iguana_pkhashbalance(struct iguana_info *coin,cJSON *array,int64_t *spen
     while ( unspentind > 0 )
     {
         (*nump)++;
-        uheight = iguana_uheight(coin,rdata->height,T,rdata->numtxids,&U[unspentind]);
+        uheight = iguana_uheight(coin,ramchain->height,T,rdata->numtxids,&U[unspentind]);
         if ( uheight < height )
         {
             deposits += U[unspentind].value;
@@ -892,7 +895,7 @@ int64_t iguana_pkhashbalance(struct iguana_info *coin,cJSON *array,int64_t *spen
         checkval = 0;
         while ( unspentind > 0 )
         {
-            uheight = iguana_uheight(coin,rdata->height,T,rdata->numtxids,&U[unspentind]);
+            uheight = iguana_uheight(coin,ramchain->height,T,rdata->numtxids,&U[unspentind]);
             if ( uheight < height )
             {
                 checkval += U[unspentind].value;
