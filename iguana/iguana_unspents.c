@@ -801,7 +801,7 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                     *depositsp = ACCTS[pkind].total;
                     *lastunspentindp = ACCTS[pkind].lastunspentind;
                     *p = P[pkind];
-                    //printf("[%d] return pkind.%u %.8f\n",i,pkind,dstr(*depositsp));
+                    printf("[%d] return pkind.%u %.8f last.%u\n",i,pkind,dstr(*depositsp),*lastunspentindp);
                     return(p);
                 }
                 else if ( pkind != 0 )
