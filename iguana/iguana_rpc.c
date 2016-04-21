@@ -1001,6 +1001,7 @@ void iguana_rpcloop(void *args)
     struct sockaddr_in cli_addr; uint32_t ipbits,i,size = IGUANA_WIDTH*IGUANA_HEIGHT*16 + 512;
     if ( (port= myinfo->argport) == 0 )
         port = myinfo->rpcport;
+    else myinfo->argport = 0;
     if ( jsonbuf == 0 )
         jsonbuf = calloc(1,IGUANA_MAXPACKETSIZE);
     while ( (bindsock= iguana_socket(1,"127.0.0.1",port)) < 0 )

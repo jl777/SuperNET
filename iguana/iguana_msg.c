@@ -570,11 +570,11 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
             else
             {
                 addr->msgcounts.getblocks++;
-                len = iguana_rwnum(0,&serialized[sizeof(struct iguana_msghdr)],sizeof(uint32_t),&tmp);
-                len += iguana_rwvarint32(0,&serialized[sizeof(struct iguana_msghdr) + len],(uint32_t *)&n);
+                len = iguana_rwnum(0,&data[sizeof(struct iguana_msghdr)],sizeof(uint32_t),&tmp);
+                len += iguana_rwvarint32(0,&data[sizeof(struct iguana_msghdr) + len],(uint32_t *)&n);
                 for (i=0; i<n; i++)
                 {
-                    len += iguana_rwbignum(0,&serialized[sizeof(struct iguana_msghdr) + len],sizeof(bits256),hash2.bytes);
+                    len += iguana_rwbignum(0,&data[sizeof(struct iguana_msghdr) + len],sizeof(bits256),hash2.bytes);
                     iguana_peerblockrequest(coin,addr->blockspace,sizeof(addr->blockspace),addr,hash2,0);
                     if ( bits256_nonz(hash2) == 0 )
                         break;
@@ -626,11 +626,11 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
         else
         {
             addr->msgcounts.getheaders++;
-            len = iguana_rwnum(0,&serialized[sizeof(struct iguana_msghdr)],sizeof(uint32_t),&tmp);
-            len += iguana_rwvarint32(0,&serialized[sizeof(struct iguana_msghdr) + len],(uint32_t *)&n);
+            len = iguana_rwnum(0,&data[sizeof(struct iguana_msghdr)],sizeof(uint32_t),&tmp);
+            len += iguana_rwvarint32(0,&data[sizeof(struct iguana_msghdr) + len],(uint32_t *)&n);
             for (i=nonz=0; i<n; i++)
             {
-                len += iguana_rwbignum(0,&serialized[sizeof(struct iguana_msghdr) + len],sizeof(bits256),hash2.bytes);
+                len += iguana_rwbignum(0,&data[sizeof(struct iguana_msghdr) + len],sizeof(bits256),hash2.bytes);
                 if ( bits256_nonz(hash2) == 0 )
                     break;
                 else if ( iguana_peerhdrrequest(coin,addr,hash2) > 0 )
@@ -705,6 +705,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
             }
             else
             {
+                len = 0;
                 if ( (sendlen= iguana_peeraddrrequest(coin,addr,addr->blockspace,sizeof(addr->blockspace))) > 0 )
                     retval = iguana_queue_send(coin,addr,0,addr->blockspace,"addr",sendlen,0,0);
                 addr->msgcounts.getaddr++;

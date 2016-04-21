@@ -16195,6 +16195,28 @@ len = 0;
                             getchar();
                             }
                 }
+                int32_t i,numretries = 5;
+                for (i=0; i<numretries; i++)
+                {
+                    err = fwrite(srcptr,1,len,fp);
+                    /*err = len;
+                     for (j=0; j<len; j++)
+                     if ( fputc(((uint8_t *)srcptr)[j],fp) < 0 )
+                     {
+                     err = -1;
+                     break;
+                     }*/
+                    if ( err == len )
+                    {
+                        fflush(fp);
+                        //if ( i > 2 )
+                        //printf("write.%d of %d worked!\n",i+1,numretries+1);
+                        break;
+                    }
+                    fseek(fp,startfpos,SEEK_SET);
+                }
+    }
+#else
 
 #endif
 #endif

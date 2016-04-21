@@ -108,26 +108,27 @@ int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,
         else bundlei++;
     }
     hash2 = bp->hashes[0], *hdrsip = bp->hdrsi;
+    subdir = bp->bundleheight / IGUANA_SUBDIRDIVISOR;
     if ( numblocks == 1 )
     {
+        sprintf(fname,"%s/%s/%d",dirname,coin->symbol,subdir), OS_ensure_directory(fname);
+        sprintf(fname,"%s/%s/%d/%d",dirname,coin->symbol,subdir,bp->bundleheight), OS_ensure_directory(fname);
         if ( bits256_nonz(bp->hashes[bundlei]) != 0 )
-            sprintf(fname,"%s/%s/%d/%s_%u.%d",dirname,coin->symbol,bp->bundleheight,bits256_str(str,bp->hashes[bundlei]),ipbits>1?ipbits:*hdrsip,bundlei);
+            sprintf(fname,"%s/%s/%d/%d/%s_%u.%d",dirname,coin->symbol,subdir,bp->bundleheight,bits256_str(str,bp->hashes[bundlei]),ipbits>1?ipbits:*hdrsip,bundlei);
         else
         {
             printf("no hash for [%d:%d]\n",bp->hdrsi,bundlei);
             return(-3);
         }
     }
-    else if ( strncmp(GLOBAL_DBDIR,dirname,strlen(GLOBAL_DBDIR)) == 0 )
+    else //if ( strncmp(GLOBAL_DBDIR,dirname,strlen(GLOBAL_DBDIR)) == 0 )
     {
-        subdir = bp->bundleheight / IGUANA_SUBDIRDIVISOR;
         sprintf(fname,"%s/%s/%d",dirname,coin->symbol,subdir), OS_ensure_directory(fname);
         sprintf(fname,"%s/%s/%d/%s_%d.%u",dirname,coin->symbol,subdir,bits256_str(str,hash2),numblocks,ipbits>1?ipbits:*hdrsip);
 //#ifndef __PNACL__
 //        sprintf(fname,"%s/%s/%s_%d.%u",dirname,coin->symbol,bits256_str(str,hash2),numblocks,ipbits>1?ipbits:*hdrsip);
 //#endif
-    }
-    else sprintf(fname,"%s/%s.%u",dirname,bits256_str(str,hash2),bp->bundleheight);
+    } //else sprintf(fname,"%s/%s.%u",dirname,bits256_str(str,hash2),bp->bundleheight);
     OS_compatible_path(fname);
     return(bundlei);
 }
@@ -314,6 +315,10 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
             {
                 if ( addr != 0 && addr->voutsfp != 0 )
                 {
+#ifdef __PNACL__
+                    static portable_mutex_t mutex;
+                    portable_mutex_lock(&mutex);
+#endif
                     u->fileid = (uint32_t)addr->addrind;
                     scriptpos = ftell(addr->voutsfp);
                     if ( (u->scriptpos= (uint32_t)scriptpos) == 0 )
@@ -321,6 +326,9 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
                     if ( u->scriptpos != scriptpos || fwrite(script,1,scriptlen,addr->voutsfp) != scriptlen )
                         printf("error writing vout scriptlen.%d errno.%d or scriptpos.%lld != %u\n",scriptlen,errno,(long long)scriptpos,u->scriptpos);
                     else addr->dirty[0]++;
+#ifdef __PNACL__
+                    portable_mutex_unlock(&mutex);
+#endif
                 } else printf("addr.%p unspent error fp.%p\n",addr,addr!=0?addr->voutsfp:0);
             }
         }
@@ -555,12 +563,19 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,struct iguana_peer
         s->spendind = spendind;
         if ( (s->vinscriptlen= vinscriptlen) > 0 && vinscript != 0 && addr != 0 && addr->vinsfp != 0 && vinscriptlen < IGUANA_MAXSCRIPTSIZE)
         {
+#ifdef __PNACL__
+            static portable_mutex_t mutex;
+            portable_mutex_lock(&mutex);
+#endif
             s->fileid = (uint32_t)addr->addrind;
             if ( (s->scriptpos= ftell(addr->vinsfp)) == 0 )
                 fputc(0,addr->vinsfp), s->scriptpos++;
             if ( (err= (int32_t)fwrite(vinscript,1,vinscriptlen,addr->vinsfp)) != vinscriptlen )
                 printf("error.%d writing vinscriptlen.%d errno.%d addrind.%d\n",err,vinscriptlen,errno,addr->addrind);
             else addr->dirty[1]++;
+#ifdef __PNACL__
+            portable_mutex_unlock(&mutex);
+#endif
         } else s->scriptpos = 0;
         //else printf("spend256 scriptfpos.%d\n",s->scriptfpos);
         //char str[65]; printf("W.%p s.%d vout.%d/%d [%d] %s fpos.%u slen.%d\n",s,spendind,s->prevout,prev_vout,bp->hdrsi,bits256_str(str,prev_hash),s->scriptfpos,s->vinscriptlen);
@@ -636,33 +651,14 @@ void *iguana_ramchain_offset(char *fname,void *dest,uint8_t *lhash,FILE *fp,uint
     }
     else if ( fp != 0 && len > 0 )
     {
-        startfpos = ftell(fp);
 #ifdef __PNACL__
-        if ( 1 )
-        {
-            int32_t i,numretries = 5;
-            for (i=0; i<numretries; i++)
-            {
-                err = fwrite(srcptr,1,len,fp);
-                /*err = len;
-                 for (j=0; j<len; j++)
-                 if ( fputc(((uint8_t *)srcptr)[j],fp) < 0 )
-                 {
-                 err = -1;
-                 break;
-                 }*/
-                if ( err == len )
-                {
-                    fflush(fp);
-                    //if ( i > 2 )
-                    //printf("write.%d of %d worked!\n",i+1,numretries+1);
-                    break;
-                }
-                fseek(fp,startfpos,SEEK_SET);
-            }
-        }
-#else
+        static portable_mutex_t mutex;
+        portable_mutex_lock(&mutex);
+#endif
+        startfpos = ftell(fp);
         err = fwrite(srcptr,1,len,fp);
+#ifdef __PNACL__
+        portable_mutex_unlock(&mutex);
 #endif
         if ( err != len )
         {
