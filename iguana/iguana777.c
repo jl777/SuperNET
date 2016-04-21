@@ -444,7 +444,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
     }
     if ( helperid == 0 )
     {
-        if ( convertflag != 0 || iguana_spendvectorsaves(coin) == 0 )
+        if ( iguana_balancefinished(coin) < max && iguana_spendvectorsaves(coin) == 0 )
         {
             if ( 1 || coin->origbalanceswritten <= 1 )
                 hdrsi = 0;
@@ -466,13 +466,13 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
                 coin->balanceswritten = max;
                 coin->balanceflush = coin->balanceswritten;
             }
-            for (i=0; i<max; i++)
-                if ( (bp= coin->bundles[i]) != 0 )
-                {
-                    iguana_volatilespurge(coin,&bp->ramchain);
-                    iguana_volatilesmap(coin,&bp->ramchain);
-                }
         } else printf("error saving spendvectors\n");
+        for (i=0; i<max; i++)
+            if ( (bp= coin->bundles[i]) != 0 )
+            {
+                iguana_volatilespurge(coin,&bp->ramchain);
+                iguana_volatilesmap(coin,&bp->ramchain);
+            }
     }
     //printf("helper.%d check validates\n",helperid);
     incr = IGUANA_NUMHELPERS;
