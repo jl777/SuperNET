@@ -466,7 +466,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
                 coin->balanceswritten = max;
                 coin->balanceflush = coin->balanceswritten;
             }
-        } else printf("error saving spendvectors\n");
+        }
         for (i=0; i<max; i++)
             if ( (bp= coin->bundles[i]) != 0 )
             {
