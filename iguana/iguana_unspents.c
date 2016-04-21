@@ -112,6 +112,10 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
     hhutxo->u.prevunspentind = hhacct->a.lastunspentind;
     hhacct->a.lastunspentind = spent_unspentind;
     hhacct->a.total += spent_value;
+    if ( iguana_hhutxofind(coin,ubuf,spent_hdrsi,spent_unspentind) == 0 || iguana_hhaccountfind(coin,pkbuf,spent_hdrsi,spent_pkind) == 0 )
+    {
+        printf("null hh find.(%d %u) %p %p\n",spent_hdrsi,spent_unspentind,iguana_hhutxofind(coin,ubuf,spent_hdrsi,spent_unspentind),iguana_hhaccountfind(coin,pkbuf,spent_hdrsi,spent_pkind));
+    }
     if ( spent_pkind == 1534811 )
     {
         printf("utxoupdate spenthdrsi.[%d] u%u pkind.%d %.8f from [%d:%d] spendind.%u %p\n",spent_hdrsi,spent_unspentind,spent_pkind,dstr(spent_value),fromheight/coin->chain->bundlesize,fromheight%coin->chain->bundlesize,spendind,iguana_hhutxofind(coin,ubuf,202,3909240));
