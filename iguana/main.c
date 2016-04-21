@@ -401,7 +401,7 @@ mksquashfs DB/BTC BTC.lzo1m -comp lzo -b 1048576
 mksquashfs DB/BTC BTC.squash
 mksquashfs DB/BTC BTC.squash1M -b 1048576
  
- mksquashfs DB/BTC BTC.xz -comp xz
+rm BTC.xz; mksquashfs DB/BTC BTC.xz -comp xz -b 1048576 -comp xz -Xdict-size 1024K
  sudo mount BTC.xz DB/ro/BTC -t squashfs -o loop
  https://github.com/vasi/squashfuse
 */
