@@ -48,7 +48,7 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
             HASH_ITER(hh,coin->utxotable,hhutxo,tmputxo)
             {
                 HASH_DEL(coin->utxotable,hhutxo);
-                //free(hhutxo);
+                free(hhutxo);
             }
             coin->utxotable = 0;
         }
@@ -57,7 +57,7 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
             HASH_ITER(hh,coin->accountstable,hhacct,tmpacct)
             {
                 HASH_DEL(coin->accountstable,hhacct);
-                //free(hhacct);
+                free(hhacct);
             }
             coin->accountstable = 0;
         }
@@ -80,24 +80,22 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
         printf("hhutxo.%p spentflag.%d\n",hhutxo,hhutxo->u.spentflag);
         return(-1);
     }
-    if ( numHHUTXO+1 >= maxHHUTXO )
+    if ( 0 && numHHUTXO+1 >= maxHHUTXO )
     {
         maxHHUTXO += 1;
         HHUTXO = realloc(HHUTXO,sizeof(*HHUTXO) * maxHHUTXO);
     }
-    hhutxo = &HHUTXO[numHHUTXO++];
-    memset(hhutxo,0,sizeof(*hhutxo));
+    hhutxo = calloc(1,sizeof(*hhutxo));//&HHUTXO[numHHUTXO++], memset(hhutxo,0,sizeof(*hhutxo));
     hhutxo->uval = uval;
     HASH_ADD_KEYPTR(hh,coin->utxotable,&hhutxo->uval,sizeof(hhutxo->uval),hhutxo);
     if ( (hhacct= iguana_hhaccountfind(coin,pval)) == 0 )
     {
-        if ( numHHACCT+1 >= maxHHACCT )
+        if ( 0 && numHHACCT+1 >= maxHHACCT )
         {
             maxHHACCT += 1;
             HHACCT = realloc(HHACCT,sizeof(*HHACCT) * maxHHACCT);
         }
-        hhacct = &HHACCT[numHHACCT++];//calloc(1,sizeof(*hhacct));
-        memset(hhacct,0,sizeof(*hhacct));
+        hhacct = calloc(1,sizeof(*hhacct)); // &HHACCT[numHHACCT++], memset(hhacct,0,sizeof(*hhacct));
         hhacct->pval = pval;
         HASH_ADD_KEYPTR(hh,coin->accountstable,&hhacct->pval,sizeof(hhacct->pval),hhacct);
     }
