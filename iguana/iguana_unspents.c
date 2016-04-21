@@ -272,13 +272,8 @@ int32_t iguana_spentflag(struct iguana_info *coin,int32_t *spentheightp,struct i
             utxo = ramchain->Uextras[spent_unspentind];
         if ( ramchain->Uextras == 0 || utxo.spentflag == 0 )
         {
-            if ( (hhutxo= iguana_hhutxofind(coin,ubuf,spent_hdrsi,spent_unspentind)) != 0 && hhutxo->u.spentflag != 0 )
+            if ( (hhutxo= iguana_hhutxofind(coin,ubuf,spent_hdrsi,spent_unspentind)) != 0 )
                 utxo = hhutxo->u;
-            else
-            {
-                printf("null ramchain->Uextras unspentind.%u vs %u hdrs.%d\n",spent_unspentind,numunspents,spent_hdrsi);
-                return(-1);
-            }
         }
     }
     else
@@ -1781,8 +1776,8 @@ void iguana_RTramchainfree(struct iguana_info *coin,struct iguana_bundle *bp)
     coin->RTheight = coin->balanceswritten * coin->chain->bundlesize;
     coin->RTgenesis = 0;
     iguana_ramchain_free(coin,&coin->RTramchain,1);
-    //if ( bp != 0 )
-    //    bp->ramchain = coin->RTramchain;
+    if ( bp != 0 )
+        bp->ramchain = coin->RTramchain;
     iguana_mempurge(&coin->RTmem);
     iguana_mempurge(&coin->RThashmem);
     coin->RTdatabad = 0;
@@ -1813,7 +1808,7 @@ void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,
 
 void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    uint32_t i,changed = 0; struct iguana_ramchaindata *rdata; struct iguana_ramchain *dest = &coin->RTramchain; struct iguana_blockRO *B;
+    uint32_t i,changed = 0; struct iguana_ramchaindata *rdata; struct iguana_ramchain *dest = &coin->RTramchain; struct iguana_blockRO *B; struct iguana_bundle *tmpbp;
     if ( (rdata= dest->H.data) != 0 )
     {
         i = 0;
@@ -1840,20 +1835,18 @@ void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_b
     if ( coin->RTramchain.H.data == 0 )
     {
         //printf("ALLOC RTramchain\n");
-        //iguana_RTramchainfree(coin,bp);
         iguana_ramchainopen(fname,coin,dest,&coin->RTmem,&coin->RThashmem,bp->bundleheight,bp->hashes[0]);
         dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
         dest->externalind = dest->H.stacksize = 0;
         dest->H.scriptoffset = 1;
-        /*for (hdrsi=0; hdrsi<=bp->hdrsi; hdrsi++)
-        {
-            if ( (tmpbp= coin->bundles[hdrsi]) != 0 )
+        for (i=0; i<bp->hdrsi; i++)
+            if ( (tmpbp= coin->bundles[i]) != 0 )
             {
                 iguana_volatilespurge(coin,&tmpbp->ramchain);
                 iguana_volatilesmap(coin,&tmpbp->ramchain);
-                iguana_volatilesalloc(coin,&tmpbp->ramchain,hdrsi < bp->hdrsi);
             }
-        }*/
+        iguana_volatilespurge(coin,&bp->ramchain);
+        iguana_volatilesalloc(coin,&bp->ramchain,0);
     }
 }
 
@@ -1940,6 +1933,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     {
         printf("RT mismatch %d != %d\n",coin->bundlescount-1,coin->balanceswritten);
         coin->spendvectorsaved = 0;
+        iguana_RTramchainfree(coin,coin->current);
         return(0);
     }
     if ( coin->spendvectorsaved <= 1 )
