@@ -82,7 +82,7 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
     }
     if ( numHHUTXO+1 >= maxHHUTXO )
     {
-        maxHHUTXO += 1000000;
+        maxHHUTXO += 1;
         HHUTXO = realloc(HHUTXO,sizeof(*HHUTXO) * maxHHUTXO);
     }
     hhutxo = &HHUTXO[numHHUTXO++];
@@ -93,7 +93,7 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
     {
         if ( numHHACCT+1 >= maxHHACCT )
         {
-            maxHHACCT += 1000000;
+            maxHHACCT += 1;
             HHACCT = realloc(HHACCT,sizeof(*HHACCT) * maxHHACCT);
         }
         hhacct = &HHACCT[numHHACCT++];//calloc(1,sizeof(*hhacct));
@@ -1319,7 +1319,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
                 {
                     if ( 0 && bp == coin->current )
                         printf("[%d] spendind.%u -> [%d] u%d\n",bp->hdrsi,spendind,spent_hdrsi,spent_unspentind);
-                    if ( iguana_volatileupdate(coin,incremental,&spentbp->ramchain,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,h) < 0 )
+                    if ( iguana_volatileupdate(coin,incremental,spentbp == coin->current ? &coin->RTramchain : &spentbp->ramchain,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,h) < 0 )
                         errs++;
                 }
                 else //if ( Xspendinds != 0 )
