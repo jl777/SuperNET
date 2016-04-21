@@ -150,15 +150,15 @@ void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramc
     if ( ramchain != 0 && (rdata= ramchain->H.data) != 0 )
     {
         //printf("volatilesalloc.[%d]\n",rdata->height/coin->chain->bundlesize);
-        if ( ramchain->allocatedA == 0 )
+        if ( ramchain->allocatedA2 == 0 )
         {
-            ramchain->A = calloc(sizeof(*ramchain->A),rdata->numpkinds + 16);
-            ramchain->allocatedA = sizeof(*ramchain->A) * rdata->numpkinds;
+            ramchain->A2 = calloc(sizeof(*ramchain->A2),rdata->numpkinds + 16);
+            ramchain->allocatedA2 = sizeof(*ramchain->A2) * rdata->numpkinds;
         }
-        if ( ramchain->allocatedU == 0 )
+        if ( ramchain->allocatedU2 == 0 )
         {
             ramchain->Uextras = calloc(sizeof(*ramchain->Uextras),rdata->numunspents + 16);
-            ramchain->allocatedU = sizeof(*ramchain->Uextras) * rdata->numunspents;
+            ramchain->allocatedU2 = sizeof(*ramchain->Uextras) * rdata->numunspents;
         }
         if ( ramchain->debitsfileptr != 0 )
         {
@@ -196,13 +196,13 @@ void iguana_volatilespurge(struct iguana_info *coin,struct iguana_ramchain *ramc
     struct iguana_bundle *bp;
     if ( (bp= coin->current) != 0 && ramchain->height < bp->bundleheight )
     {
-        if ( ramchain->allocatedA != 0 && ramchain->A != 0 )
-            free(ramchain->A);
-        ramchain->A = 0;
-        if ( ramchain->allocatedU != 0 && ramchain->Uextras != 0 )
+        if ( ramchain->allocatedA2 != 0 && ramchain->A2 != 0 )
+            free(ramchain->A2);
+        ramchain->A2 = 0;
+        if ( ramchain->allocatedU2 != 0 && ramchain->Uextras != 0 )
             free(ramchain->Uextras);
         ramchain->Uextras = 0;
-        ramchain->allocatedA = ramchain->allocatedU = 0;
+        ramchain->allocatedA2 = ramchain->allocatedU2 = 0;
         if ( ramchain->debitsfileptr != 0 )
         {
             munmap(ramchain->debitsfileptr,ramchain->debitsfilesize);
@@ -313,11 +313,6 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
     struct iguana_account *A2; struct iguana_ramchaindata *rdata; struct iguana_utxo *utxo;
     if ( (rdata= spentchain->H.data) != 0 )
     {
-        /*if ( spentchain->allocatedA == 0 || spentchain->allocatedU == 0 )
-        {
-            iguana_volatilesalloc(coin,spentchain,1);
-            fprintf(stderr,"volatilesalloc.[%d] ",spent_hdrsi);
-        }*/
         if ( incremental == 0 )
         {
             if ( spentchain->Uextras != 0 && (A2= spentchain->A) != 0 )
@@ -1602,7 +1597,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
                     OS_removefile(fname,0);
                     OS_removefile(fname2,0);
                 }
-                if ( bp->ramchain.allocatedA == 0 || bp->ramchain.allocatedU == 0 )
+                if ( bp->ramchain.allocatedA2 == 0 || bp->ramchain.allocatedU2 == 0 )
                     break;
             }
             else if ( hdrsi > 0 )

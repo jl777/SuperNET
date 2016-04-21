@@ -385,14 +385,14 @@ struct iguana_ramchain_hdr
 
 struct iguana_ramchain
 {
-    struct iguana_ramchain_hdr H; bits256 lasthash2; uint64_t datasize,allocatedA,allocatedU;
+    struct iguana_ramchain_hdr H; bits256 lasthash2; uint64_t datasize,allocatedA2,allocatedU2;
     uint32_t numblocks:31,expanded:1,pkind,externalind,height,numXspends;
     long sparseadds,sparsesearches,sparseadditers,sparsesearchiters,sparsehits,sparsemax;
     struct iguana_kvitem *txids,*pkhashes;
     struct OS_memspace *hashmem; long filesize,sigsfilesize,debitsfilesize,lastspendsfilesize;
     void *fileptr,*sigsfileptr,*Xspendptr,*debitsfileptr,*lastspendsfileptr;
     char from_ro,from_roX,from_roA,from_roU;
-    struct iguana_account *A,*creditsA; struct iguana_spendvector *Xspendinds;
+    struct iguana_account *A,*A2,*creditsA; struct iguana_spendvector *Xspendinds;
     struct iguana_utxo *Uextras; uint8_t *txbits; struct iguana_txid *cacheT;
     //int16_t permutation[IGUANA_MAXBUNDLES];
 //struct iguana_Uextra *U2,*roU2; struct iguana_pkextra *P2,*roP2;

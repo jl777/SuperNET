@@ -450,7 +450,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
                 hdrsi = 0;
             else hdrsi = coin->origbalanceswritten;
             for (i=0; i<max; i++)
-                if ( (bp= coin->bundles[i]) != 0 )
+                if ( (bp= coin->bundles[i]) != 0 && bp != coin->current )
                     iguana_volatilesalloc(coin,&bp->ramchain,i < hdrsi);
             for (; hdrsi<max; hdrsi++)
             {
