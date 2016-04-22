@@ -2153,7 +2153,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     {
         //printf("RT edge case\n");
     }
-    if ( coin->RTheight > 0 && coin->spendvectorsaved != 1 && coin->bundlescount-1 != coin->balanceswritten )
+    if ( 0 && coin->RTheight > 0 && coin->spendvectorsaved != 1 && coin->bundlescount-1 != coin->balanceswritten )
     {
         printf("RT mismatch %d != %d\n",coin->bundlescount-1,coin->balanceswritten);
         coin->spendvectorsaved = 0;
