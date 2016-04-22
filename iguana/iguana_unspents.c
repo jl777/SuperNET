@@ -747,7 +747,7 @@ int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 tx
                 val = 0;
             if ( (i= hashtable[val]) == 0 )
                 return(-1);
-            else if ( memcmp(&txid,&sorted[i],sizeof(bits256)-sizeof(uint32_t)-sizeof(uint16_t)) == 0 )
+            else if ( memcmp(&txid,&sorted[i],sizeof(uint64_t)) == 0 )
             {
                 *heightp = sorted[i].uints[7];
                 return(sorted[i].ushorts[13]);
@@ -792,7 +792,25 @@ static int _bits256_cmp(const void *a,const void *b)
     return(bits256_cmp(*(bits256 *)a,*(bits256 *)b));
 }
 
-int64_t iguana_fastfindinit(struct iguana_info *coin)
+int32_t iguana_fastfindinit(struct iguana_info *coin)
+{
+    int32_t i,j; char fname[1024];
+    for (i=0; i<0x100; i++)
+    {
+        sprintf(fname,"DB/%s/fastfind/%02x",coin->symbol,i), OS_compatible_path(fname);
+        if ( (coin->fast[i]= OS_mapfile(fname,&coin->fastsizes[i],0)) == 0 )
+        {
+            for (j=0; j<i; j++)
+                munmap(coin->fast[i],coin->fastsizes[i]);
+            return(-1);
+        }
+    }
+    coin->fastfind = (uint32_t)time(NULL);
+    printf("initialized fastfind.%s\n",coin->symbol);
+    return(0);
+}
+
+int64_t iguana_fastfindcreate(struct iguana_info *coin)
 {
     int32_t i,j,val,iter,errs,num,ind,tablesize,*hashtable; bits256 *sortbuf,hash2; long allocsize; struct iguana_bundle *bp; char fname[512]; uint8_t buf[14]; int64_t total = 0;
     if ( coin->current != 0 && coin->bundlescount == coin->current->hdrsi+1 )
@@ -878,6 +896,8 @@ int64_t iguana_fastfindinit(struct iguana_info *coin)
                 } else printf("couldnt load sortbuf (%s)\n",fname);
             }
             printf("initialized with errs.%d\n",errs);
+            if ( errs == 0 )
+                coin->fastfind = (uint32_t)time(NULL);
         }
     }
     return(total);
@@ -899,17 +919,18 @@ struct iguana_bundle *iguana_fastexternalspent(struct iguana_info *coin,bits256 
         {
             if ( ind < rdata->numexternaltxids )
             {
+                char str[65];
                 X = (void *)(long)((long)rdata + rdata->Xoffset);
                 *prevhashp = prev_hash = X[ind];
                 if ( (firstvout= iguana_txidfastfind(coin,&height,prev_hash,spent_hdrsi-1)) >= 0 )
                 {
                     if ( (++counter % 100) == 0 )
-                        printf("searches.%ld\n",counter);
+                        printf("searches.%ld found.(%s)\n",counter,bits256_str(str,prev_hash));
                     *unspentindp = firstvout + prev_vout;
                     hdrsi = height / coin->chain->bundlesize;
                     if ( hdrsi >= 0 && hdrsi < coin->bundlescount )
                         return(coin->bundles[hdrsi]);
-                }
+                } else printf("couldnt find (%s)\n",bits256_str(str,prev_hash));
             } else return(0);
         }
         else if ( ind < rdata->numtxids )
@@ -1748,6 +1769,7 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
     hash2 = iguana_blockhash(coin,coin->balanceswritten * coin->chain->bundlesize);
     if ( bits256_nonz(hash2) != 0 && (block= iguana_blockfind("initfinal",coin,hash2)) != 0 )
         _iguana_chainlink(coin,block);
+    iguana_fastfindinit(coin);
 }
 
 int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
@@ -2377,8 +2399,7 @@ STRING_ARG(iguana,initfastfind,activecoin)
 {
     if ( (coin= iguana_coinfind(activecoin)) != 0 )
     {
-        iguana_fastfindinit(coin);
-        coin->fastfind = coin->tmpfastfind;
+        iguana_fastfindcreate(coin);
         return(clonestr("{\"result\":\"fast find initialized\"}"));
     } else return(clonestr("{\"error\":\"no coin to initialize\"}"));
 }

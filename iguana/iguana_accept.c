@@ -280,9 +280,6 @@ int32_t iguana_peergetrequest(struct iguana_info *coin,struct iguana_peer *addr,
     else addr->msgcounts.getheaders++;
     len = iguana_rwnum(0,&data[0],sizeof(uint32_t),&reqvers);
     len += iguana_rwvarint32(0,&data[len],(uint32_t *)&n);
-    //for (i=0; i<10; i++)
-    //    printf("%02x ",data[i]);
-    //printf("version.%d num blocks.%d recvlen.%d\n",reqvers,n,recvlen);
     for (i=0; i<n&&len<recvlen-sizeof(bits256)*2; i++)
     {
         len += iguana_rwbignum(0,&data[len],sizeof(bits256),hash2.bytes);
@@ -297,6 +294,9 @@ int32_t iguana_peergetrequest(struct iguana_info *coin,struct iguana_peer *addr,
         }
     }
     len += iguana_rwbignum(0,&data[len],sizeof(bits256),hash2.bytes);
+    for (i=0; i<69; i++)
+        printf("%02x ",data[i]);
+    printf("version.%d num blocks.%d recvlen.%d len.%d\n",reqvers,n,recvlen,len);
     return(len);
 }
 
