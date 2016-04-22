@@ -122,7 +122,7 @@ int32_t iguana_alloctxbits(struct iguana_info *coin,struct iguana_ramchain *ramc
         ramchain->txbits = calloc(1,tlen);
         memcpy(ramchain->txbits,TXbits,tlen);
         total += tlen;
-        //char str[65]; printf("alloc.[%d] txbits.%p[%d] total %s\n",ramchain->H.data->height/coin->chain->bundlesize,ramchain->txbits,tlen,mbstr(str,total));
+        char str[65]; printf("alloc.[%d] txbits.%p[%d] total %s\n",ramchain->H.data->height/coin->chain->bundlesize,ramchain->txbits,tlen,mbstr(str,total));
         return(tlen);
     }
     return(-1);
@@ -133,12 +133,16 @@ int32_t iguana_alloccacheT(struct iguana_info *coin,struct iguana_ramchain *ramc
     static int64_t total;
     if ( ramchain->cacheT == 0 )
     {
-        int32_t tlen; struct iguana_txid *T = (void *)((long)ramchain->H.data + ramchain->H.data->Toffset);
+        int32_t i,tlen; struct iguana_txid *T = (void *)((long)ramchain->H.data + ramchain->H.data->Toffset);
         tlen = sizeof(*T) * ramchain->H.data->numtxids;
-        ramchain->cacheT = calloc(1,tlen);
-        memcpy(ramchain->cacheT,T,tlen);
+        if ( (ramchain->cacheT= calloc(1,tlen)) != 0 )
+        {
+            //memcpy(ramchain->cacheT,T,tlen);
+            for (i=0; i<ramchain->H.data->numtxids; i++)
+                ramchain->cacheT[i] = T[i];
+        } else ramchain->cacheT = T;
         total += tlen;
-        //char str[65]; printf("alloc.[%d] cacheT.%p[%d] total %s\n",ramchain->H.data->height/coin->chain->bundlesize,ramchain->cacheT,tlen,mbstr(str,total));
+        char str[65]; printf("alloc.[%d] cacheT.%p[%d] total %s\n",ramchain->H.data->height/coin->chain->bundlesize,ramchain->cacheT,tlen,mbstr(str,total));
         return(tlen);
     }
     return(-1);
@@ -589,7 +593,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
             {
                 if ( (TXbits= ramchain->txbits) == 0 )
                 {
-                    if ( coin->PREFETCHLAG >= 0 )
+                    //if ( coin->PREFETCHLAG >= 0 )
                         iguana_alloctxbits(coin,ramchain);
                     if ( (TXbits= ramchain->txbits) == 0 )
                     {
@@ -681,7 +685,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                     //printf("%s height.%d firstvout.%d prev.%d ->U%d\n",bits256_str(str,prev_hash),height,TX.firstvout,prev_vout,unspentind);
                     now = (uint32_t)time(NULL);
                     duration = (OS_milliseconds() - startmillis);
-                    if ( 0 && ((uint64_t)coin->txidfind_num % 5000000) == 2000000 )
+                    //if ( ((uint64_t)coin->txidfind_num % 10000) == 1 )
                         printf("%p iguana_txidfind.[%.0f] ave %.2f micros, total %.2f seconds | duration %.3f millis\n",spentbp->ramchain.txbits,coin->txidfind_num,(coin->txidfind_totalmillis*1000.)/coin->txidfind_num,coin->txidfind_totalmillis/1000.,duration);
                     coin->txidfind_totalmillis += duration;
                     coin->txidfind_num += 1.;
@@ -808,7 +812,7 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                     *depositsp = ACCTS[pkind].total;
                     *lastunspentindp = ACCTS[pkind].lastunspentind;
                     *p = P[pkind];
-                    //printf("[%d] return pkind.%u %.8f last.%u ACCTS.%p %p\n",i,pkind,dstr(*depositsp),*lastunspentindp,ACCTS,ramchain->A);
+printf("[%d] return pkind.%u %.8f last.%u ACCTS.%p %p\n",i,pkind,dstr(*depositsp),*lastunspentindp,ACCTS,ramchain->A);
                     return(p);
                 }
                 else if ( pkind != 0 )
@@ -2196,6 +2200,7 @@ TWOSTRINGS_AND_INT(iguana,balance,activecoin,address,height)
         memset(pubkey33,0,sizeof(pubkey33));
         P = calloc(coin->bundlescount,sizeof(*P));
         array = cJSON_CreateArray();
+        printf("Start %s balance.(%s) height.%d\n",coin->symbol,address,height);
         if ( height == 0 )
             height = (1 << 30);
         iguana_pkhasharray(coin,array,minconf,maxconf,&total,P,coin->bundlescount,rmd160,address,pubkey33,height);

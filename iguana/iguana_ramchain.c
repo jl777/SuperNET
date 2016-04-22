@@ -1802,7 +1802,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
     int32_t verifyflag = 0;
     RAMCHAIN_DECLARE; uint32_t addr_ipbits; struct iguana_ramchain R,*mapchain,*ramchain = &addr->ramchain;
     struct iguana_msgtx *tx; char fname[1024]; uint8_t rmd160[20]; // long fsize; void *ptr;
-    int32_t i,j,fpos,pubkeysize,msize,sigsize,firsti=1,err,flag,bundlei = -2; bits256 merkle_root;
+    int32_t i,j,fpos,pubkeysize,msize,sigsize,subdir,firsti=1,err,flag,bundlei = -2; bits256 merkle_root;
     struct iguana_bundle *bp = 0; struct iguana_block *block; uint32_t scriptspace,stackspace;
     totalrecv += recvlen;
 #ifdef __PNACL__
@@ -1887,7 +1887,9 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
     block->fpos = fpos = -1;
     iguana_ramchain_link(ramchain,block->RO.hash2,bp->hdrsi,bp->bundleheight+bundlei,bundlei,1,firsti,0);
     _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
-    char dirname[1024]; sprintf(dirname,"%s/%s/%d",GLOBAL_TMPDIR,coin->symbol,bp->bundleheight), OS_ensure_directory(dirname);
+    subdir = bp->bundleheight / IGUANA_SUBDIRDIVISOR;
+    char dirname[1024]; sprintf(dirname,"%s/%s/%d",GLOBAL_TMPDIR,coin->symbol,subdir), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/%s/%d/%d",GLOBAL_TMPDIR,coin->symbol,subdir,bp->bundleheight), OS_ensure_directory(dirname);
     //printf("Kspace.%p bp.[%d:%d] <- scriptspace.%d expanded.%d\n",Kspace,bp->hdrsi,bundlei,scriptspace,ramchain->expanded);
     if ( T == 0 || U == 0 || S == 0 || B == 0 )
     {
@@ -2362,8 +2364,10 @@ int64_t iguana_ramchainopen(char *fname,struct iguana_info *coin,struct iguana_r
             if ( rdata->scriptspace > scriptspace )
                 scriptspace = rdata->scriptspace;
         }
+#ifndef __APPLE__
     numtxids *= 2.5; numexternaltxids *= 2.5, scriptspace *= 2.5;
     numunspents *= 2.5, numspends *= 2.5, numpkinds *= 2.5;
+#endif
     if ( mem->ptr == 0 )
     {
         while ( (allocsize= _iguana_rdata_action(fname,0,0,0,0,1,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,0,0,0,0,0,RAMCHAIN_ARG,numblocks)) > 2*1024LL*1024L*1024L )

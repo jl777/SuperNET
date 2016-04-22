@@ -434,8 +434,9 @@ void mainloop(struct supernet_info *myinfo)
                             n = coin->bundlescount-1;
                             if ( iguana_emitfinished(coin,1) >= n )
                             {
-                                for (j=0; j<n; j++)
-                                    iguana_alloctxbits(coin,&coin->bundles[j]->ramchain);
+                                //if ( coin->PREFETCHLAG >= 0 )
+                                    for (j=0; j<n; j++)
+                                        iguana_alloctxbits(coin,&coin->bundles[j]->ramchain);
                                 if ( iguana_validated(coin) < n || iguana_utxofinished(coin) < n || iguana_balancefinished(coin) < n )
                                 {
                                     coin->spendvectorsaved = 1;
@@ -1142,7 +1143,7 @@ void iguana_appletests(struct supernet_info *myinfo)
             exit(-1);
         }
         sleep(1);*/
-        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"prefetchlag\":13,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":500,\"endpend\":500,\"services\":128,\"maxpeers\":64,\"newcoin\":\"BTC\",\"active\":1,\"numhelpers\":4,\"poll\":1}"),0,myinfo->rpcport)) != 0 )
+        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"prefetchlag\":-1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":500,\"endpend\":500,\"services\":128,\"maxpeers\":64,\"newcoin\":\"BTC\",\"active\":1,\"numhelpers\":4,\"poll\":1}"),0,myinfo->rpcport)) != 0 )
         {
             free(str);
             if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":1024,\"maxpeers\":256,\"newcoin\":\"BTCD\",\"active\":1}"),0,myinfo->rpcport)) != 0 )
