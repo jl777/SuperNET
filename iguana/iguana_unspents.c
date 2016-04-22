@@ -650,7 +650,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
 
 struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *prevhashp,uint32_t *unspentindp,struct iguana_ramchain *ramchain,int32_t spent_hdrsi,struct iguana_spend *s,int32_t prefetchflag)
 {
-    int32_t prev_vout,height,hdrsi; uint32_t sequenceid,unspentind,now; char str[65];
+    int32_t prev_vout,height,hdrsi; uint32_t sequenceid,unspentind; char str[65];
     struct iguana_bundle *spentbp=0; struct iguana_txid *T,TX,*tp; bits256 *X; bits256 prev_hash;
     X = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Xoffset);
     T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
@@ -693,7 +693,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                         if ( spentbp->lastprefetch == 0 )
                         {
                             iguana_ramchain_prefetch(coin,&spentbp->ramchain,prefetchflag);
-                            spentbp->lastprefetch = now;
+                            spentbp->lastprefetch = (uint32_t)time(NULL);
                         }
                         /*else if ( 0 && (rand() % IGUANA_NUMHELPERS) == 0 && (duration > 10 || duration > (10 * coin->txidfind_totalmillis)/coin->txidfind_num) )
                         {
@@ -822,19 +822,24 @@ static int _bits256_cmp(const void *a,const void *b)
 
 int32_t iguana_fastfindinit(struct iguana_info *coin)
 {
-    int32_t i,j; char fname[1024];
-    for (i=0; i<0x100; i++)
+    int32_t i,j,iter; char fname[1024];
+    for (iter=0; iter<2; iter++)
     {
-        sprintf(fname,"DB/%s/fastfind/%02x.all",coin->symbol,i), OS_compatible_path(fname);
-        if ( (coin->fast[i]= OS_mapfile(fname,&coin->fastsizes[i],0)) == 0 )
+        for (i=0; i<0x100; i++)
         {
-            for (j=0; j<i; j++)
-                munmap(coin->fast[i],coin->fastsizes[i]);
-            return(-1);
+            sprintf(fname,"DB/%s%s/fastfind/%02x.all",iter==0?"ro/":"",coin->symbol,i), OS_compatible_path(fname);
+            if ( (coin->fast[i]= OS_mapfile(fname,&coin->fastsizes[i],0)) == 0 )
+            {
+                for (j=0; j<i; j++)
+                    munmap(coin->fast[i],coin->fastsizes[i]);
+                break;
+            }
         }
+        if ( i == 0x100 )
+            break;
     }
     coin->fastfind = (uint32_t)time(NULL);
-    printf("initialized fastfind.%s\n",coin->symbol);
+    printf("initialized fastfind.%s iter.%d\n",coin->symbol,iter);
     return(0);
 }
 
@@ -954,7 +959,7 @@ struct iguana_bundle *iguana_fastexternalspent(struct iguana_info *coin,bits256 
                 {
                     duration = (OS_milliseconds() - startmillis);
                     if ( ((uint64_t)coin->txidfind_num % 1000) == 1 )
-                        printf("[%d] iguana_txidfind.[%.0f] ave %.2f micros, total %.2f seconds | duration %.3f millis\n",spent_hdrsi,coin->txidfind_num,(coin->txidfind_totalmillis*1000.)/coin->txidfind_num,coin->txidfind_totalmillis/1000.,duration);
+                        printf("[%d] iguana_fasttxidfind.[%.0f] ave %.2f micros, total %.2f seconds | duration %.3f millis\n",spent_hdrsi,coin->txidfind_num,(coin->txidfind_totalmillis*1000.)/coin->txidfind_num,coin->txidfind_totalmillis/1000.,duration);
                     coin->txidfind_totalmillis += duration;
                     coin->txidfind_num += 1.;
 
