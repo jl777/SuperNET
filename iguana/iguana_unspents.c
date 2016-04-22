@@ -674,7 +674,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
         *unspentindp = unspentind;
         if ( unspentind == 0 )
         {
-            double duration,startmillis = OS_milliseconds();
+            //double duration,startmillis = OS_milliseconds();
             if ( (tp= iguana_txidfind(coin,&height,&TX,prev_hash,spent_hdrsi-1)) != 0 )
             {
                 *unspentindp = unspentind = TX.firstvout + ((prev_vout > 0) ? prev_vout : 0);
@@ -682,12 +682,12 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                 if ( hdrsi >= 0 && hdrsi < coin->bundlescount && (spentbp= coin->bundles[hdrsi]) != 0 )
                 {
                     //printf("%s height.%d firstvout.%d prev.%d ->U%d\n",bits256_str(str,prev_hash),height,TX.firstvout,prev_vout,unspentind);
-                    now = (uint32_t)time(NULL);
+                    /*now = (uint32_t)time(NULL);
                     duration = (OS_milliseconds() - startmillis);
                     if ( 0 && ((uint64_t)coin->txidfind_num % 1000000) == 1 )
                         printf("%p iguana_txidfind.[%.0f] ave %.2f micros, total %.2f seconds | duration %.3f millis\n",spentbp->ramchain.txbits,coin->txidfind_num,(coin->txidfind_totalmillis*1000.)/coin->txidfind_num,coin->txidfind_totalmillis/1000.,duration);
                     coin->txidfind_totalmillis += duration;
-                    coin->txidfind_num += 1.;
+                    coin->txidfind_num += 1.;*/
                     if ( 1 && coin->PREFETCHLAG > 0 )
                     {
                         if ( spentbp->lastprefetch == 0 )
@@ -695,12 +695,12 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                             iguana_ramchain_prefetch(coin,&spentbp->ramchain,prefetchflag);
                             spentbp->lastprefetch = now;
                         }
-                        else if ( 0 && (rand() % IGUANA_NUMHELPERS) == 0 && (duration > 10 || duration > (10 * coin->txidfind_totalmillis)/coin->txidfind_num) )
+                        /*else if ( 0 && (rand() % IGUANA_NUMHELPERS) == 0 && (duration > 10 || duration > (10 * coin->txidfind_totalmillis)/coin->txidfind_num) )
                         {
                             printf("slow txidfind %.2f vs %.2f prefetch[%d] from.[%d] lag.%ld last.%u\n",duration,coin->txidfind_totalmillis/coin->txidfind_num,spentbp->hdrsi,ramchain->height/coin->chain->bundlesize,time(NULL) - spentbp->lastprefetch,spentbp->lastprefetch);
                             iguana_ramchain_prefetch(coin,ramchain,1);
                             //spentbp->lastprefetch = now;
-                        }
+                        }*/
                     }
                 }
                 else
@@ -749,7 +749,7 @@ int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 tx
                 return(-1);
             else
             {
-                if ( i >= num )
+                if ( i > num )
                 {
                     printf("illegal val.%d vs num.%d tablesize.%d fastfind.%02x\n",i,num,tablesize,txid.bytes[31]);
                     return(-1);
@@ -933,7 +933,7 @@ int64_t iguana_fastfindcreate(struct iguana_info *coin)
 
 struct iguana_bundle *iguana_fastexternalspent(struct iguana_info *coin,bits256 *prevhashp,uint32_t *unspentindp,struct iguana_ramchain *ramchain,int32_t spent_hdrsi,struct iguana_spend *s)
 {
-    int32_t prev_vout,height,hdrsi,firstvout; uint32_t ind; static long counter;
+    int32_t prev_vout,height,hdrsi,firstvout; uint32_t ind;
     struct iguana_txid *T; bits256 *X; bits256 prev_hash; struct iguana_ramchaindata *rdata;
     if ( (rdata= ramchain->H.data) == 0 )
         return(0);
@@ -947,13 +947,17 @@ struct iguana_bundle *iguana_fastexternalspent(struct iguana_info *coin,bits256 
         {
             if ( ind < rdata->numexternaltxids )
             {
-                char str[65];
+                char str[65]; double duration,startmillis = OS_milliseconds();
                 X = (void *)(long)((long)rdata + rdata->Xoffset);
                 *prevhashp = prev_hash = X[ind];
                 if ( (firstvout= iguana_txidfastfind(coin,&height,prev_hash,spent_hdrsi-1)) >= 0 )
                 {
-                    if ( (++counter % 100) == 0 )
-                        printf("searches.%ld found.(%s)\n",counter,bits256_str(str,prev_hash));
+                    duration = (OS_milliseconds() - startmillis);
+                    if ( ((uint64_t)coin->txidfind_num % 1000) == 1 )
+                        printf("[%d] iguana_txidfind.[%.0f] ave %.2f micros, total %.2f seconds | duration %.3f millis\n",spent_hdrsi,coin->txidfind_num,(coin->txidfind_totalmillis*1000.)/coin->txidfind_num,coin->txidfind_totalmillis/1000.,duration);
+                    coin->txidfind_totalmillis += duration;
+                    coin->txidfind_num += 1.;
+
                     *unspentindp = firstvout + prev_vout;
                     hdrsi = height / coin->chain->bundlesize;
                     if ( hdrsi >= 0 && hdrsi < coin->bundlescount )
