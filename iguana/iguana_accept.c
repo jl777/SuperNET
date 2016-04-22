@@ -165,13 +165,91 @@ int32_t iguana_pendingaccept(struct iguana_info *coin)
     return(0);
 }*/
 
-
-int32_t iguana_peerhdrrequest(struct iguana_info *coin,struct iguana_peer *addr,bits256 hash2)
+void iguana_msgrequestQ(struct iguana_info *coin,struct iguana_peer *addr,int32_t type,bits256 hash2)
 {
-    struct iguana_txid *tx,T; int32_t len=0,i,height,retval=-1; struct iguana_block *block; struct iguana_msgblock msgB; uint8_t *serialized; bits256 checkhash2;
+    struct iguana_peermsgrequest *msg;
+    msg = calloc(1,sizeof(*msg));
+    msg->addr = addr;
+    msg->hash2 = hash2;
+    msg->type = type;
+    queue_enqueue("msgrequest",&coin->msgrequestQ,&msg->DL,0);
+}
+
+int32_t iguana_process_msgrequestQ(struct iguana_info *coin)
+{
+    struct iguana_peermsgrequest *msg; int32_t height,len,flag = 0; bits256 checktxid; struct iguana_txid *tx,T;
+    if ( (msg= queue_dequeue(&coin->msgrequestQ,0)) != 0 )
+    {
+        flag = 1;
+        if ( msg->addr != 0 )
+        {
+            char str[65]; printf("send type.%d %s -> (%s)\n",msg->type,bits256_str(str,msg->hash2),msg->addr->ipaddr);
+            if ( msg->type == MSG_BLOCK )
+            {
+                if ( coin->RELAYNODE != 0 || coin->VALIDATENODE )
+                {
+                    if ( (len= iguana_peerblockrequest(coin,&coin->blockspace[sizeof(struct iguana_msghdr)],sizeof(coin->blockspace),0,msg->hash2,0)) > 0 )
+                    {
+                        iguana_queue_send(coin,msg->addr,0,coin->blockspace,"block",len,0,0);
+                    }
+                }
+            }
+            else if ( msg->type == MSG_TX )
+            {
+                if ( coin->RELAYNODE != 0 || coin->VALIDATENODE )
+                {
+                    if ( (tx= iguana_txidfind(coin,&height,&T,msg->hash2,coin->bundlescount-1)) != 0 )
+                    {
+                        if ( (len= iguana_ramtxbytes(coin,&coin->blockspace[sizeof(struct iguana_msghdr)],sizeof(coin->blockspace),&checktxid,tx,height,0,0,0)) > 0 )
+                        {
+                            char str[65],str2[65];
+                            if ( bits256_cmp(msg->hash2,checktxid) == 0 )
+                                iguana_queue_send(coin,msg->addr,0,coin->blockspace,"block",len,0,0);
+                            else printf("checktxid mismatch (%s) != (%s)\n",bits256_str(str,msg->hash2),bits256_str(str2,checktxid));
+                        }
+                    }
+                }
+            }
+            else if ( msg->type == MSG_FILTERED_BLOCK )
+            {
+                
+            }
+            else if ( msg->type == MSG_BUNDLE_HEADERS )
+            {
+                
+            }
+            else if ( msg->type == MSG_BUNDLE )
+            {
+                
+            }
+        }
+        free(msg);
+    }
+    return(flag);
+}
+
+int32_t iguana_peerdatarequest(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *space,int32_t max)
+{
+    int32_t i,type,len = 0; uint64_t x; bits256 hash2;
+    x = coin->bundlescount;
+    len += iguana_rwvarint(0,space,&x);
+    if ( x < IGUANA_MAXINV )
+    {
+        for (i=0; i<x; i++)
+        {
+            len += iguana_rwnum(1,&space[len],sizeof(uint32_t),&type);
+            len += iguana_rwbignum(1,&space[len],sizeof(bits256),hash2.bytes);
+            iguana_msgrequestQ(coin,addr,type,hash2);
+        }
+    }
+    return(len);
+}
+
+int32_t iguana_peerhdrrequest(struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_peer *addr,bits256 hash2)
+{
+    struct iguana_txid *tx,T; int32_t len=0,i,height,retval=-1; struct iguana_block *block; struct iguana_msgblock msgB; bits256 checkhash2;
     if ( (tx= iguana_txidfind(coin,&height,&T,hash2,coin->bundlescount-1)) != 0 )
     {
-        serialized = calloc(coin->chain->bundlesize,sizeof(msgB));
         for (i=0; i<coin->chain->bundlesize; i++)
         {
             if ( (block= iguana_blockptr("peerhdr",coin,height + i)) != 0 )
@@ -182,32 +260,41 @@ int32_t iguana_peerhdrrequest(struct iguana_info *coin,struct iguana_peer *addr,
                 {
                     char str[65],str2[65];
                     printf("iguana_peerhdrrequest blockhash.%d error (%s) vs (%s)\n",height+i,bits256_str(str,checkhash2),bits256_str(str2,block->RO.hash2));
-                    free(serialized);
                     return(-1);
                 }
             } else printf("cant find block at ht.%d\n",height+i);
         }
         retval = iguana_queue_send(coin,addr,0,serialized,"headers",len,0,0);
         printf("hdrs request retval.%d len.%d\n",retval,len);
-        free(serialized);
     } //else printf("couldnt find header\n");
     return(retval);
 }
 
-int32_t iguana_peerinvrequest(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *space,int32_t max)
+int32_t iguana_peergetrequest(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *data,int32_t recvlen,int32_t getblock)
 {
-    int32_t i,type,len = 0; uint64_t x; struct iguana_bundle *bp;
-    x = coin->bundlescount;
-    len += iguana_rwvarint(1,&space[sizeof(struct iguana_msghdr) + len],&x);
-    for (i=0; i<x; i++)
+    int32_t i,reqvers,len,n,flag = 0; bits256 hash2;
+    if ( getblock != 0 )
+        addr->msgcounts.getblocks++;
+    else addr->msgcounts.getheaders++;
+    len = iguana_rwnum(0,&data[0],sizeof(uint32_t),&reqvers);
+    len += iguana_rwvarint32(0,&data[len],(uint32_t *)&n);
+    //for (i=0; i<10; i++)
+    //    printf("%02x ",data[i]);
+    //printf("version.%d num blocks.%d recvlen.%d\n",reqvers,n,recvlen);
+    for (i=0; i<n&&len<recvlen-sizeof(bits256)*2; i++)
     {
-        if ( (bp= coin->bundles[i]) != 0 )
+        len += iguana_rwbignum(0,&data[len],sizeof(bits256),hash2.bytes);
+        if ( bits256_nonz(hash2) == 0 )
+            break;
+        if ( flag == 0 )
         {
-            type = MSG_BLOCK;
-            len += iguana_rwnum(1,&space[sizeof(struct iguana_msghdr) + len],sizeof(uint32_t),&type);
-            len += iguana_rwbignum(1,&space[sizeof(struct iguana_msghdr) + len],sizeof(bits256),bp->hashes[0].bytes);
+            if ( getblock != 0 && iguana_peerblockrequest(coin,addr->blockspace,sizeof(addr->blockspace),addr,hash2,0) > 0 )
+                flag = 1;
+            else if ( getblock == 0 && iguana_peerhdrrequest(coin,addr->blockspace,sizeof(addr->blockspace),addr,hash2) > 0 )
+                flag = 1;
         }
     }
+    len += iguana_rwbignum(0,&data[len],sizeof(bits256),hash2.bytes);
     return(len);
 }
 

@@ -33,6 +33,7 @@ void iguana_initQs(struct iguana_info *coin)
     iguana_initQ(&coin->blocksQ,"blocksQ");
     iguana_initQ(&coin->priorityQ,"priorityQ");
     iguana_initQ(&coin->possibleQ,"possibleQ");
+    iguana_initQ(&coin->msgrequestQ,"msgrequestQ");
     iguana_initQ(&coin->cacheQ,"cacheQ");
     iguana_initQ(&coin->recvQ,"recvQ");
     for (i=0; i<IGUANA_MAXPEERS; i++)

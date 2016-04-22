@@ -144,6 +144,8 @@ extern int32_t IGUANA_NUMHELPERS;
 #define MSG_TX 1
 #define MSG_BLOCK 2
 #define MSG_FILTERED_BLOCK 3
+#define MSG_BUNDLE_HEADERS 255
+#define MSG_BUNDLE 254
 
 #define IGUANA_MAXLOCATORS 64
 #define IGUANA_MAXINV 50000
@@ -193,6 +195,8 @@ struct iguana_thread
 };
 
 struct iguana_blockreq { struct queueitem DL; bits256 hash2,*blockhashes; struct iguana_bundle *bp; int32_t n,height,bundlei; };
+
+struct iguana_peermsgrequest { struct queueitem DL; struct iguana_peer *addr; bits256 hash2; int32_t type; };
 
 struct iguana_chain
 {
@@ -494,7 +498,7 @@ struct iguana_info
     struct iguana_bitmap screen;
     //struct pollfd fds[IGUANA_MAXPEERS]; struct iguana_peer bindaddr; int32_t numsocks;
     struct OS_memspace TXMEM,MEM,MEMB[IGUANA_MAXBUNDLESIZE];
-    queue_t acceptQ,hdrsQ,blocksQ,priorityQ,possibleQ,cacheQ,recvQ;
+    queue_t acceptQ,hdrsQ,blocksQ,priorityQ,possibleQ,cacheQ,recvQ,msgrequestQ;
     double parsemillis,avetime; uint32_t Launched[8],Terminated[8];
     portable_mutex_t peers_mutex,blocks_mutex;
     //portable_mutex_t scripts_mutex[2]; FILE *scriptsfp[2]; void *scriptsptr[2]; long scriptsfilesize[2];
@@ -881,9 +885,10 @@ int32_t iguana_alloctxbits(struct iguana_info *coin,struct iguana_ramchain *ramc
 void iguana_allocvolatile(struct iguana_info *coin,struct iguana_ramchain *ramchain);
 int32_t iguana_rwaddr(int32_t rwflag,uint8_t *serialized,struct iguana_msgaddress *addr,int32_t protover);
 
-int32_t iguana_peerhdrrequest(struct iguana_info *coin,struct iguana_peer *addr,bits256 hash2);
+int32_t iguana_peerhdrrequest(struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_peer *addr,bits256 hash2);
 int32_t iguana_peeraddrrequest(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *space,int32_t max);
-int32_t iguana_peerinvrequest(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *space,int32_t max);
+int32_t iguana_peerdatarequest(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *space,int32_t max);
+int32_t iguana_peergetrequest(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *data,int32_t recvlen,int32_t getblock);
 int32_t iguana_bundlefname(struct iguana_info *coin,struct iguana_bundle *bp,char *fname);
 int32_t iguana_bundleremove(struct iguana_info *coin,int32_t hdrsi,int32_t tmpfiles);
 int32_t iguana_voutsfname(struct iguana_info *coin,int32_t roflag,char *fname,int32_t slotid);
@@ -894,6 +899,7 @@ int32_t iguana_blast(struct iguana_info *coin,struct iguana_peer *addr);
 int32_t iguana_validated(struct iguana_info *coin);
 void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramchain,int32_t copyflag);
 int32_t iguana_send_ping(struct iguana_info *coin,struct iguana_peer *addr);
+int32_t iguana_process_msgrequestQ(struct iguana_info *coin);
 
 extern int32_t HDRnet,netBLOCKS;
 

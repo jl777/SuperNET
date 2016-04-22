@@ -1551,8 +1551,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
 
 int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
 {
-    int32_t i,newhwm = 0,hwmheight,flag = 0; //struct iguana_bundle *bp; struct iguana_block *block;
-    char str[2000];
+    int32_t i,newhwm = 0,hwmheight,flag = 0; char str[2000];
     hwmheight = coin->blocks.hwmchain.height;
     coin->RTramchain_busy = 1;
     if ( coin->balanceflush != 0 )
@@ -1578,32 +1577,19 @@ int32_t iguana_processrecv(struct iguana_info *coin) // single threaded
     }
     else
     {
-        //printf("reqblocks\n");
         flag += iguana_reqblocks(coin);
-        //printf("bundlestats\n");
         iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
     }
-    //printf("call _iguana_chainlink\n");
-    /*for (i=coin->blocks.hwmchain.height%coin->chain->bundlesize; i<coin->chain->bundlesize; i++)
-    {
-        if ( (bp= coin->current) != 0 && (block= bp->blocks[i]) != 0 )
-        {
-            //printf("i.%d %s main.%d txvalid.%d\n",i,bits256_str(str,block->RO.hash2),block->mainchain,block->txvalid);
-            if ( _iguana_chainlink(coin,block) == 0 )
-                iguana_blockQ("mainchain",coin,bp,-i,block->RO.hash2,1);
-            //iguana_realtime_update(coin);
-        }
-    }*/
     if ( time(NULL) > coin->spendvectorsaved )
     {
         for (i=0; i<coin->chain->bundlesize; i++)
         {
             if ( coin->RTdatabad != 0 || iguana_realtime_update(coin) <= 0 )
                 break;
-            //printf("call iguana_realtime_update i.%d\n",i);
         }
     }
-    coin->RTramchain_busy = (coin->RTgenesis == 0);
+    coin->RTramchain_busy = 0;//(coin->RTgenesis == 0);
+    flag += iguana_process_msgrequestQ(coin);
     iguana_jsonQ();
     if ( hwmheight != coin->blocks.hwmchain.height )
         flag = 1;

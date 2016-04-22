@@ -16217,6 +16217,17 @@ len = 0;
                 }
     }
 #else
+    //printf("call _iguana_chainlink\n");
+    /*for (i=coin->blocks.hwmchain.height%coin->chain->bundlesize; i<coin->chain->bundlesize; i++)
+     {
+     if ( (bp= coin->current) != 0 && (block= bp->blocks[i]) != 0 )
+     {
+     //printf("i.%d %s main.%d txvalid.%d\n",i,bits256_str(str,block->RO.hash2),block->mainchain,block->txvalid);
+     if ( _iguana_chainlink(coin,block) == 0 )
+     iguana_blockQ("mainchain",coin,bp,-i,block->RO.hash2,1);
+     //iguana_realtime_update(coin);
+     }
+     }*/
 
 #endif
 #endif
