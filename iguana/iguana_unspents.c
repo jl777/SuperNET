@@ -848,6 +848,7 @@ int64_t iguana_fastfindinit(struct iguana_info *coin)
                         hash2.uints[1] = tablesize;
                         for (j=0; j<=num; j++)
                         {
+                            char str[65]; printf("%d %s\n",j,bits256_str(str,hash2));
                             memcpy(buf,&hash2,sizeof(uint64_t) + sizeof(uint16_t));
                             memcpy(&buf[sizeof(uint64_t) + sizeof(uint16_t)],&hash2.ushorts[13],sizeof(hash2.ushorts[13]));
                             memcpy(&buf[sizeof(uint64_t) + sizeof(uint16_t) + sizeof(hash2.ushorts[13])],&hash2.uints[7],sizeof(hash2.uints[7]));
