@@ -274,7 +274,7 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
         if ( err == 0 )
             return(0);
     }
-    printf("couldnt map [%d]\n",ramchain->height/coin->chain->bundlesize);
+    //printf("couldnt map [%d]\n",ramchain->height/coin->chain->bundlesize);
     iguana_volatilespurge(coin,ramchain);
     return(err);
 }
@@ -734,24 +734,141 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
 
 int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 txid,int32_t lasthdrsi)
 {
-    /*struct iguana_fasttxid *tp;
-    HASH_FIND(hh,ramchain->fastfind,&txid,sizeof(txid),tp);
-    if ( tp != 0 )
+    bits256 *sorted; int32_t i,j,val,num,tablesize,*hashtable;
+    if ( (sorted= coin->fast[txid.bytes[31]]) != 0 )
     {
-        *heightp = tp->height;
-        return(tp->firstvout);
-    }*/
+        num = sorted[0].uints[0];
+        tablesize = sorted[0].uints[1];
+        hashtable = (int32_t *)&sorted[1 + num + tablesize];
+        val = txid.uints[0];
+        for (j=0; j<tablesize; j++)
+        {
+            if ( val >= tablesize )
+                val = 0;
+            if ( (i= hashtable[val]) == 0 )
+                return(-1);
+            else if ( memcmp(&txid,&sorted[i],sizeof(bits256)-sizeof(int32_t)-sizeof(int16_t)) == 0 )
+            {
+                *heightp = sorted[i].uints[7];
+                return(sorted[i].ushorts[13]);
+            }
+        }
+    }
     return(-1);
 }
 
- /*   HASH_ADD_KEYPTR(hh,ramchain->txids,key,keylen,ptr);
+int32_t iguana_fastfindadd(struct iguana_info *coin,bits256 txid,int32_t height,uint16_t firstvout)
+{
+    FILE *fp;
+    if ( (fp= coin->fastfps[txid.bytes[31]]) != 0 )
+    {
+        txid.uints[7] = height;
+        txid.ushorts[13] = firstvout;
+        if ( fwrite(&txid,1,sizeof(txid),fp) == sizeof(txid) )
+            return(1);
+    }
+    return(0);
+}
 
-    if ( (tp= iguana_txidfind(coin,heightp,&TX,txid,lasthdrsi)) != 0 )
-        return(tp->firstvout);
-    return(-1);
-}*/
+int64_t iguana_fastfindinitbundle(struct iguana_info *coin,struct iguana_bundle *bp,int32_t iter)
+{
+    int32_t i; struct iguana_txid *T; struct iguana_ramchaindata *rdata; int64_t n = 0;
+    if ( (rdata= bp->ramchain.H.data) != 0 )
+    {
+        T = (void *)(long)((long)rdata + rdata->Toffset);
+        n = rdata->numtxids;
+        if ( iter == 1 )
+        {
+            for (i=0; i<n; i++)
+                iguana_fastfindadd(coin,T[i].txid,bp->bundleheight + T[i].bundlei,T[i].firstvout);
+            fprintf(stderr,"[%d:%u] ",bp->hdrsi,(int32_t)n);
+        }
+    }
+    return(n);
+}
 
-struct iguana_bundle *iguana_fastexternalspent(struct iguana_info *coin,bits256 *prevhashp,uint32_t *unspentindp,struct iguana_ramchain *ramchain,int32_t spent_hdrsi,struct iguana_spend *s,int32_t prefetchflag)
+static int _bits256_cmp(const void *a,const void *b)
+{
+    return(bits256_cmp(*(bits256 *)a,*(bits256 *)b));
+}
+
+int64_t iguana_fastfindinit(struct iguana_info *coin)
+{
+    int32_t i,j,val,iter,errs,num,ind,tablesize,*hashtable; bits256 *sortbuf,hash2; long allocsize; struct iguana_bundle *bp; char fname[512]; int64_t total = 0;
+    if ( coin->current != 0 && coin->bundlescount == coin->current->hdrsi+1 )
+    {
+        sprintf(fname,"DB/%s/fastfind",coin->symbol), OS_ensure_directory(fname);
+        for (i=0; i<0x100; i++)
+        {
+            sprintf(fname,"DB/%s/fastfind/%d",coin->symbol,i), OS_compatible_path(fname);
+            if ( (coin->fastfps[i]= fopen(fname,"wb")) == 0 )
+                break;
+        }
+        if ( i == 0x100 )
+        {
+            for (iter=0; iter<2; iter++)
+            {
+                for (i=0; i<coin->bundlescount; i++)
+                    if ( (bp= coin->bundles[i]) != 0 )
+                        total += iguana_fastfindinitbundle(coin,bp,iter);
+                printf("iguana_fastfindinit iter.%d total.%lld\n",iter,(long long)total);
+            }
+            for (i=errs=0; i<0x100; i++)
+            {
+                sprintf(fname,"DB/%s/fastfind/%d",coin->symbol,i), OS_ensure_directory(fname);
+                fclose(coin->fastfps[i]);
+                if ( (sortbuf= OS_filestr(&allocsize,fname)) != 0 )
+                {
+                    qsort(sortbuf,allocsize/sizeof(bits256),sizeof(bits256),_bits256_cmp);
+                    if ( (coin->fastfps[i]= fopen(fname,"wb")) != 0 )
+                    {
+                        num = (int32_t)allocsize/sizeof(bits256);
+                        tablesize = (num << 1);
+                        hashtable = calloc(sizeof(*hashtable),tablesize);
+                        for (ind=1; ind<=num; ind++)
+                        {
+                            hash2 = sortbuf[ind-1];
+                            val = hash2.uints[0];
+                            for (j=0; j<tablesize; j++)
+                            {
+                                if ( val >= tablesize )
+                                    val = 0;
+                                if ( hashtable[val] == 0 )
+                                {
+                                    hashtable[val] = ind;
+                                    break;
+                                }
+                            }
+                        }
+                        memset(&hash2,0,sizeof(hash2));
+                        hash2.uints[0] = num;
+                        hash2.uints[1] = tablesize;
+                        if ( fwrite(&hash2,1,sizeof(hash2),coin->fastfps[i]) == sizeof(hash2) && fwrite(sortbuf,sizeof(bits256),num,coin->fastfps[i]) == num && fwrite(hashtable,sizeof(*hashtable),tablesize,coin->fastfps[i]) == tablesize )
+                        {
+                            fclose(coin->fastfps[i]);
+                            coin->fastfps[i] = 0;
+                            if ( (coin->fast[i]= OS_mapfile(fname,&coin->fastsizes[i],0)) != 0 )
+                                errs++;
+                        }
+                        else
+                        {
+                            printf("error saving (%s)\n",fname);
+                            OS_removefile(fname,0);
+                            fclose(coin->fastfps[i]);
+                            coin->fastfps[i] = 0;
+                        }
+                        free(hashtable);
+                    }
+                    free(sortbuf);
+                }
+            }
+            printf("initialized with errs.%d\n",errs);
+        }
+    }
+    return(total);
+}
+
+struct iguana_bundle *iguana_fastexternalspent(struct iguana_info *coin,bits256 *prevhashp,uint32_t *unspentindp,struct iguana_ramchain *ramchain,int32_t spent_hdrsi,struct iguana_spend *s)
 {
     int32_t prev_vout,height,hdrsi,firstvout; uint32_t ind; static long counter;
     struct iguana_txid *T; bits256 *X; bits256 prev_hash; struct iguana_ramchaindata *rdata;
@@ -1175,7 +1292,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                 if ( s->external != 0 && s->prevout >= 0 )
                 {
                     if ( coin->fastfind != 0 )
-                        spentbp = iguana_fastexternalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s,2);
+                        spentbp = iguana_fastexternalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s);
                     else spentbp = iguana_externalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s,2);
                     if ( spentbp != 0 && spentbp->ramchain.H.data != 0 )
                     {
@@ -2239,6 +2356,16 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
 
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
+
+STRING_ARG(iguana,initfastfind,activecoin)
+{
+    if ( (coin= iguana_coinfind(activecoin)) != 0 )
+    {
+        iguana_fastfindinit(coin);
+        coin->fastfind = coin->tmpfastfind;
+        return(clonestr("{\"result\":\"fast find initialized\"}"));
+    } else return(clonestr("{\"error\":\"no coin to initialize\"}"));
+}
 
 TWOSTRINGS_AND_INT(iguana,balance,activecoin,address,height)
 {

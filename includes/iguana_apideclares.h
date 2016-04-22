@@ -87,6 +87,7 @@ SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comme
 S_A_I_S(bitcoinrpc,sendmany,fromaccount,array,minconf,comment);
 S_D_SS(bitcoinrpc,sendtoaddress,address,amount,comment,comment2);
 
+STRING_ARG(iguana,initfastfind,activecoin);
 STRING_ARG(iguana,peers,activecoin);
 STRING_AND_INT(iguana,maxpeers,activecoin,max);
 STRING_ARG(iguana,getconnectioncount,activecoin);

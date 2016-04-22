@@ -516,6 +516,7 @@ int32_t revsort64s(uint64_t *buf,uint32_t num,int32_t size)
 	qsort(buf,num,size,_decreasing_uint64);
 	return(0);
 }
+
 /*int32_t iguana_sortbignum(void *buf,int32_t size,uint32_t num,int32_t structsize,int32_t dir)
 {
     int32_t retval = 0;
@@ -538,8 +539,7 @@ int32_t revsort64s(uint64_t *buf,uint32_t num,int32_t size)
     if ( retval < 0 )
         printf("iguana_sortbignum only does bits256 and rmd160 for now\n");
 	return(retval);
-}
-*/
+}*/
 
 void touppercase(char *str)
 {
