@@ -761,10 +761,10 @@ int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 tx
                     {
                         memcpy(&firstvout,&item[sizeof(uint64_t)],sizeof(firstvout));
                         memcpy(heightp,&item[sizeof(uint64_t) + sizeof(firstvout)],sizeof(*heightp));
-                        printf("i.%d val.%d height.%d firstvout.%d j.%d\n",i,val,*heightp,firstvout,j);
+                        //printf("i.%d val.%d height.%d firstvout.%d j.%d\n",i,val,*heightp,firstvout,j);
                         return(firstvout);
                     }
-                    else
+                    else if ( 0 )
                     {
                         int32_t k;
                         for (k=-16; k<0; k++)
