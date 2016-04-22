@@ -794,7 +794,7 @@ static int _bits256_cmp(const void *a,const void *b)
 
 int64_t iguana_fastfindinit(struct iguana_info *coin)
 {
-    int32_t i,j,val,iter,errs,num,ind,tablesize,*hashtable; bits256 *sortbuf,hash2; long allocsize; struct iguana_bundle *bp; char fname[512]; uint8_t buf[16]; int64_t total = 0;
+    int32_t i,j,val,iter,errs,num,ind,tablesize,*hashtable; bits256 *sortbuf,hash2; long allocsize; struct iguana_bundle *bp; char fname[512]; uint8_t buf[14]; int64_t total = 0;
     if ( coin->current != 0 && coin->bundlescount == coin->current->hdrsi+1 )
     {
         sprintf(fname,"DB/%s/fastfind",coin->symbol), OS_ensure_directory(fname);
@@ -849,9 +849,9 @@ int64_t iguana_fastfindinit(struct iguana_info *coin)
                         for (j=0; j<=num; j++)
                         {
                             //char str[65]; printf("%d %s\n",j,bits256_str(str,hash2));
-                            memcpy(buf,&hash2,sizeof(uint64_t) + sizeof(uint16_t));
-                            memcpy(&buf[sizeof(uint64_t) + sizeof(uint16_t)],&hash2.ushorts[13],sizeof(hash2.ushorts[13]));
-                            memcpy(&buf[sizeof(uint64_t) + sizeof(uint16_t) + sizeof(hash2.ushorts[13])],&hash2.uints[7],sizeof(hash2.uints[7]));
+                            memcpy(buf,&hash2.txid,sizeof(hash2.txid));
+                            memcpy(&buf[sizeof(hash2.txid)],&hash2.ushorts[13],sizeof(hash2.ushorts[13]));
+                            memcpy(&buf[sizeof(hash2.txid) + sizeof(hash2.ushorts[13])],&hash2.uints[7],sizeof(hash2.uints[7]));
                             fwrite(buf,1,sizeof(buf),coin->fastfps[i]);
                             if ( j < num )
                                 hash2 = sortbuf[j];
