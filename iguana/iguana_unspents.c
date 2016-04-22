@@ -740,7 +740,7 @@ int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 tx
         num = sorted[0].uints[0];
         tablesize = sorted[0].uints[1];
         hashtable = (int32_t *)&sorted[1 + num + tablesize];
-        val = txid.uints[0];
+        val = (txid.uints[0] % tablesize);
         for (j=0; j<tablesize; j++)
         {
             if ( val >= tablesize )
@@ -800,7 +800,7 @@ int64_t iguana_fastfindinit(struct iguana_info *coin)
         sprintf(fname,"DB/%s/fastfind",coin->symbol), OS_ensure_directory(fname);
         for (i=0; i<0x100; i++)
         {
-            sprintf(fname,"DB/%s/fastfind/%d",coin->symbol,i), OS_compatible_path(fname);
+            sprintf(fname,"DB/%s/fastfind/%02x",coin->symbol,i), OS_compatible_path(fname);
             if ( (coin->fastfps[i]= fopen(fname,"wb")) == 0 )
                 break;
         }
@@ -816,7 +816,7 @@ int64_t iguana_fastfindinit(struct iguana_info *coin)
             for (i=errs=0; i<0x100; i++)
             {
                 fclose(coin->fastfps[i]);
-                sprintf(fname,"DB/%s/fastfind/%d",coin->symbol,i), OS_compatible_path(fname);
+                sprintf(fname,"DB/%s/fastfind/%02x",coin->symbol,i), OS_compatible_path(fname);
                 if ( (sortbuf= OS_filestr(&allocsize,fname)) != 0 )
                 {
                     qsort(sortbuf,allocsize/sizeof(bits256),sizeof(bits256),_bits256_cmp);
@@ -828,7 +828,7 @@ int64_t iguana_fastfindinit(struct iguana_info *coin)
                         for (ind=1; ind<=num; ind++)
                         {
                             hash2 = sortbuf[ind-1];
-                            val = hash2.uints[0];
+                            val = (hash2.uints[0] % tablesize);
                             for (j=0; j<tablesize; j++)
                             {
                                 if ( val >= tablesize )
