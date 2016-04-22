@@ -228,17 +228,19 @@ int32_t iguana_process_msgrequestQ(struct iguana_info *coin)
     return(flag);
 }
 
-int32_t iguana_peerdatarequest(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *space,int32_t max)
+int32_t iguana_peerdatarequest(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *data,int32_t recvlen)
 {
     int32_t i,type,len = 0; uint64_t x; bits256 hash2;
-    x = coin->bundlescount;
-    len += iguana_rwvarint(0,space,&x);
+    len += iguana_rwvarint(0,data,&x);
+    for (i=0; i<10; i++)
+        printf("%02x ",data[i]);
+    printf("x.%d recvlen.%d\n",(int32_t)x,recvlen);
     if ( x < IGUANA_MAXINV )
     {
         for (i=0; i<x; i++)
         {
-            len += iguana_rwnum(1,&space[len],sizeof(uint32_t),&type);
-            len += iguana_rwbignum(1,&space[len],sizeof(bits256),hash2.bytes);
+            len += iguana_rwnum(0,&data[len],sizeof(uint32_t),&type);
+            len += iguana_rwbignum(0,&data[len],sizeof(bits256),hash2.bytes);
             iguana_msgrequestQ(coin,addr,type,hash2);
         }
     }

@@ -1629,7 +1629,8 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
                 Aptr = 0, Uptr = 0;
                 if ( (bp= coin->bundles[i]) != 0 && bp->ramchain.H.data != 0 && (numpkinds= bp->ramchain.H.data->numpkinds) > 0 && (numunspents= bp->ramchain.H.data->numunspents) > 0 && (Aptr= bp->ramchain.A2) != 0 && (Uptr= bp->ramchain.Uextras) != 0 )
                 {
-                    fprintf(stderr,".");
+                    if ( (bp->bundleheight % 10000) == 0 )
+                        fprintf(stderr,".");
                     if ( filecrc == 0 )
                     {
                         vupdate_sha256(balancehash.bytes,&vstate,(void *)Aptr,sizeof(*Aptr) * numpkinds);

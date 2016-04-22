@@ -577,7 +577,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
             if ( ishost != 0 )
             {
                 addr->msgcounts.getdata++;
-                iguana_peerdatarequest(coin,addr,data,recvlen);
+                len = iguana_peerdatarequest(coin,addr,data,recvlen);
             }
             else
             {
