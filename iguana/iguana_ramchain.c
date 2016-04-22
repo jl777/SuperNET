@@ -350,7 +350,7 @@ uint32_t iguana_ramchain_addunspent(struct iguana_info *coin,RAMCHAIN_FUNC,uint6
         printf("addunspent error getting pkind\n");
         return(0);
     }
-    if ( pkind == 412844 )
+    if ( 0 )
         printf("ROflag.%d pkind.%d unspentind.%d script[%d] uoffset.%d %d:%d type.%d A.%p\n",ramchain->H.ROflag,pkind,unspentind,scriptlen,u->scriptpos,ramchain->H.scriptoffset,ramchain->H.data->scriptspace,type,A);
     if ( ramchain->H.ROflag != 0 )
     {

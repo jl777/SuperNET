@@ -227,6 +227,7 @@ int32_t iguana_peeraddrrequest(struct iguana_info *coin,struct iguana_peer *addr
             if ( (tmpaddr= coin->peers.ranked[i]) != 0 && ((iter == 0 && tmpaddr->supernet != 0) || (iter == 1 && tmpaddr->supernet == 0)) && tmpaddr->ipaddr[0] != 0 )
             {
                 sendlen += iguana_rwaddr(1,&space[sizeof(H) + sendlen],&tmpaddr->A,(int32_t)tmpaddr->protover);
+                printf("(%s) ",addr->ipaddr);
                 x++;
             }
         }
