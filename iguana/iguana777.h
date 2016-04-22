@@ -478,7 +478,7 @@ struct scriptinfo { UT_hash_handle hh; uint32_t fpos; uint16_t scriptlen; uint8_
 struct iguana_info
 {
     char name[64],symbol[8],statusstr[512],scriptsfname[2][512];
-    struct iguana_peers peers; struct iguana_peer internaladdr;
+    struct iguana_peers peers; struct iguana_peer internaladdr; void *fastfind;
     uint64_t instance_nonce,myservices,totalsize,totalrecv,totalpackets,sleeptime;
     int64_t mining,totalfees,TMPallocated,MAXRECVCACHE,MAXMEM,PREFETCHLAG,estsize,activebundles;
     int32_t MAXPEERS,MAXPENDINGREQUESTS,MAXBUNDLES,MAXSTUCKTIME,active,closestbundle,numemitted,lastsweep,numemit,startutc,newramchain,numcached,cachefreed,helperdepth,startPEND,endPEND,enableCACHE,RELAYNODE,VALIDATENODE,origbalanceswritten,balanceswritten,RTheight,RTdatabad;

@@ -291,7 +291,7 @@ void iguana_gotpong(struct iguana_info *coin,struct iguana_peer *addr,uint64_t n
     }
     if ( nonce != addr->pingnonce )
     {
-        printf("pong received invalid pingnonce (%s) %llx vs %llx\n",addr->ipaddr,(long long)addr->pingnonce,(long long)nonce);
+        // printf("pong received invalid pingnonce (%s) %llx vs %llx\n",addr->ipaddr,(long long)addr->pingnonce,(long long)nonce);
     } else printf("(%s) pong verified with pingnonce.%llx\n",addr->ipaddr,(long long)addr->pingnonce);
     addr->pingnonce = 0;
     addr->sendmillis = 0;
