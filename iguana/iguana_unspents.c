@@ -1752,8 +1752,8 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
             numunspents = numpkinds = 0;
             if ( (bp= coin->bundles[hdrsi]) != 0 && bp->ramchain.H.data != 0 && (numpkinds= bp->ramchain.H.data->numpkinds) > 0 && (numunspents= bp->ramchain.H.data->numunspents) > 0 && (Aptr= bp->ramchain.A2) != 0 && (Uptr= bp->ramchain.Uextras) != 0 )
             {
-                sprintf(fname,"%s/%s/debits.N%d",GLOBAL_TMPDIR,coin->symbol,numhdrsi);
-                sprintf(fname2,"%s/%s/lastspends.N%d",GLOBAL_TMPDIR,coin->symbol,numhdrsi);
+                sprintf(fname,"%s/%s/debits.%d_N%d",GLOBAL_TMPDIR,coin->symbol,bp->hdrsi,numhdrsi);
+                sprintf(fname2,"%s/%s/lastspends.%d_N%d",GLOBAL_TMPDIR,coin->symbol,bp->hdrsi,numhdrsi);
                 if ( iter == 0 )
                 {
                     vupdate_sha256(balancehash.bytes,&vstate,(void *)Aptr,sizeof(*Aptr)*numpkinds);
