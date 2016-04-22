@@ -734,23 +734,44 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
 
 int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 txid,int32_t lasthdrsi)
 {
-    bits256 *sorted; int32_t i,j,val,num,tablesize,*hashtable;
+    uint8_t *sorted,*item; int32_t i,j,val,num,tablesize,*hashtable; uint16_t firstvout;
     if ( (sorted= coin->fast[txid.bytes[31]]) != 0 )
     {
-        num = sorted[0].uints[0];
-        tablesize = sorted[0].uints[1];
-        hashtable = (int32_t *)&sorted[1 + num + tablesize];
+        memcpy(&num,sorted,sizeof(num));
+        memcpy(&tablesize,&sorted[sizeof(num)],sizeof(tablesize));
+        hashtable = (int32_t *)((long)sorted + (1 + num)*14);
         val = (txid.uints[4] % tablesize);
-        for (j=0; j<tablesize; j++)
+        for (j=0; j<tablesize; j++,val++)
         {
             if ( val >= tablesize )
                 val = 0;
             if ( (i= hashtable[val]) == 0 )
                 return(-1);
-            else if ( memcmp(&txid,&sorted[i],sizeof(uint64_t)) == 0 )
+            else
             {
-                *heightp = sorted[i].uints[7];
-                return(sorted[i].ushorts[13]);
+                if ( i >= num )
+                {
+                    printf("illegal val.%d vs num.%d tablesize.%d fastfind.%02x\n",i,num,tablesize,txid.bytes[31]);
+                    return(-1);
+                }
+                else
+                {
+                    item = (void *)((long)sorted + i*14);
+                    if ( memcmp(&txid.txid,item,sizeof(uint64_t)) == 0 )
+                    {
+                        memcpy(&firstvout,&item[sizeof(uint64_t)],sizeof(firstvout));
+                        memcpy(heightp,&item[sizeof(uint64_t) + sizeof(firstvout)],sizeof(*heightp));
+                        printf("i.%d val.%d height.%d firstvout.%d j.%d\n",i,val,*heightp,firstvout,j);
+                        return(firstvout);
+                    }
+                    else
+                    {
+                        int32_t k;
+                        for (k=-10; k<24; k++)
+                            printf("%02x ",item[k]);
+                        printf("txid.%llu vs item.%llu ht.%d 1st.%d\n",(long long)txid.txid,*(long long *)item,*(int16_t *)&item[sizeof(uint64_t)],*(int32_t *)&item[sizeof(uint64_t)+sizeof(uint64_t)]);
+                    }
+                }
             }
         }
     }
@@ -797,7 +818,7 @@ int32_t iguana_fastfindinit(struct iguana_info *coin)
     int32_t i,j; char fname[1024];
     for (i=0; i<0x100; i++)
     {
-        sprintf(fname,"DB/%s/fastfind/%02x",coin->symbol,i), OS_compatible_path(fname);
+        sprintf(fname,"DB/%s/fastfind/%02x.all",coin->symbol,i), OS_compatible_path(fname);
         if ( (coin->fast[i]= OS_mapfile(fname,&coin->fastsizes[i],0)) == 0 )
         {
             for (j=0; j<i; j++)
@@ -850,7 +871,7 @@ int64_t iguana_fastfindcreate(struct iguana_info *coin)
                         {
                             hash2 = sortbuf[ind-1];
                             val = (hash2.uints[4] % tablesize);
-                            for (j=0; j<tablesize; j++)
+                            for (j=0; j<tablesize; j++,val++)
                             {
                                 if ( val >= tablesize )
                                     val = 0;

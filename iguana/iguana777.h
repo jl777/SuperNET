@@ -484,7 +484,7 @@ struct iguana_info
 {
     char name[64],symbol[8],statusstr[512],scriptsfname[2][512];
     struct iguana_peers peers; struct iguana_peer internaladdr;
-    uint32_t fastfind; FILE *fastfps[0x100]; bits256 *fast[0x100]; long fastsizes[0x100];
+    uint32_t fastfind; FILE *fastfps[0x100]; uint8_t *fast[0x100]; long fastsizes[0x100];
     uint64_t instance_nonce,myservices,totalsize,totalrecv,totalpackets,sleeptime;
     int64_t mining,totalfees,TMPallocated,MAXRECVCACHE,MAXMEM,PREFETCHLAG,estsize,activebundles;
     int32_t MAXPEERS,MAXPENDINGREQUESTS,MAXBUNDLES,MAXSTUCKTIME,active,closestbundle,numemitted,lastsweep,numemit,startutc,newramchain,numcached,cachefreed,helperdepth,startPEND,endPEND,enableCACHE,RELAYNODE,VALIDATENODE,origbalanceswritten,balanceswritten,RTheight,RTdatabad;
