@@ -808,7 +808,7 @@ int64_t iguana_fastfindinit(struct iguana_info *coin)
         {
             for (iter=0; iter<2; iter++)
             {
-                for (i=0; i<coin->bundlescount; i++)
+                for (i=0; i<coin->bundlescount-1; i++)
                     if ( (bp= coin->bundles[i]) != 0 )
                         total += iguana_fastfindinitbundle(coin,bp,iter);
                 printf("iguana_fastfindinit iter.%d total.%lld\n",iter,(long long)total);
@@ -849,8 +849,8 @@ int64_t iguana_fastfindinit(struct iguana_info *coin)
                             coin->fastfps[i] = 0;
                             if ( (coin->fast[i]= OS_mapfile(fname,&coin->fastsizes[i],0)) != 0 )
                             {
-                                printf("fastfind.[%02x] num.%d tablesize.%d\n",i,num,tablesize);
                             } else errs++;
+                            printf("%s fastfind.[%02x] num.%d tablesize.%d errs.%d %p[%ld]\n",fname,i,num,tablesize,errs,coin->fast[i],coin->fastsizes[i]);
                         }
                         else
                         {
