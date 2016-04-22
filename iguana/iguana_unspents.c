@@ -2305,7 +2305,7 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
     static int32_t totalerrs,totalvalidated;
     FILE *fp; char fname[1024]; uint8_t *blockspace; uint32_t now = (uint32_t)time(NULL);
     int32_t i,max,len,errs = 0; struct sha256_vstate vstate; bits256 validatehash; int64_t total = 0;
-    if ( bp->ramchain.from_ro != 0 )
+    if ( bp->ramchain.from_ro != 0 || bp == coin->current )
     {
         bp->validated = (uint32_t)time(NULL);
         return(bp->n);

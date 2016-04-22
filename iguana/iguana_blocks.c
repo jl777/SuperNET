@@ -77,7 +77,7 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
         //getchar();
         return(0);
     }
-    while ( coin->blockdepth != 0 )
+    while ( coin->blockdepth > 0 )
     {
         sleep(1);
         printf("%s >>>>>>>>>> OK only if rare %s blockhashset.%d depth.%d\n",coin->symbol,debugstr,height,coin->blockdepth);
@@ -88,8 +88,9 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
     HASH_FIND(hh,coin->blocks.hash,&hash2,sizeof(hash2),block);
     if ( block != 0 )
     {
-        coin->blockdepth--;
-        while ( coin->blockdepth != 0 )
+        if ( coin->blockdepth > 0 )
+            coin->blockdepth--;
+        while ( coin->blockdepth > 0 )
         {
             sleep(1);
             printf(" %s >>>>>>>>>> OK only if rare %s match blockhashset.%d depth.%d\n",coin->symbol,debugstr,height,coin->blockdepth);
@@ -124,8 +125,9 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
         }
         portable_mutex_unlock(&coin->blocks_mutex);
     }
-    coin->blockdepth--;
-    while ( coin->blockdepth != 0 )
+    if ( coin->blockdepth > 0 )
+        coin->blockdepth--;
+    while ( coin->blockdepth > 0 )
     {
         sleep(1);
         printf("%s >>>>>>>>>> OK only if rare %s create blockhashset.%d depth.%d\n",coin->symbol,debugstr,height,coin->blockdepth);
