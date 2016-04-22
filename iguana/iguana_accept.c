@@ -280,7 +280,7 @@ int32_t iguana_peergetrequest(struct iguana_info *coin,struct iguana_peer *addr,
     else addr->msgcounts.getheaders++;
     len = iguana_rwnum(0,&data[0],sizeof(uint32_t),&reqvers);
     len += iguana_rwvarint32(0,&data[len],(uint32_t *)&n);
-    for (i=0; i<n&&len<recvlen-sizeof(bits256)*2; i++)
+    for (i=0; i<n&&len<=recvlen-sizeof(bits256)*2; i++)
     {
         len += iguana_rwbignum(0,&data[len],sizeof(bits256),hash2.bytes);
         if ( bits256_nonz(hash2) == 0 )
@@ -316,7 +316,7 @@ int32_t iguana_peeraddrrequest(struct iguana_info *coin,struct iguana_peer *addr
             if ( (tmpaddr= coin->peers.ranked[i]) != 0 && ((iter == 0 && tmpaddr->supernet != 0) || (iter == 1 && tmpaddr->supernet == 0)) && tmpaddr->ipaddr[0] != 0 )
             {
                 sendlen += iguana_rwaddr(1,&space[sizeof(H) + sendlen],&tmpaddr->A,(int32_t)tmpaddr->protover);
-                printf("(%s) ",addr->ipaddr);
+                printf("(%s) ",tmpaddr->ipaddr);
                 x++;
             }
         }
