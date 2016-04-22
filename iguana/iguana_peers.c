@@ -983,15 +983,15 @@ int64_t iguana_peerallocated(struct iguana_info *coin,struct iguana_peer *addr)
 }
 #endif
 
-int32_t iguana_voutsfname(struct iguana_info *coin,char *fname,int32_t slotid)
+int32_t iguana_voutsfname(struct iguana_info *coin,int32_t roflag,char *fname,int32_t slotid)
 {
-    sprintf(fname,"%s/%s/vouts/%04d.vouts",GLOBAL_DBDIR,coin->symbol,slotid);
+    sprintf(fname,"%s/%s%s/vouts/%04d.vouts",GLOBAL_DBDIR,roflag!=0?"ro/":"",coin->symbol,slotid);
     return((int32_t)strlen(fname));
 }
 
-int32_t iguana_vinsfname(struct iguana_info *coin,char *fname,int32_t slotid)
+int32_t iguana_vinsfname(struct iguana_info *coin,int32_t roflag,char *fname,int32_t slotid)
 {
-    sprintf(fname,"%s/%s/%04d.vins",coin->VALIDATEDIR,coin->symbol,slotid);
+    sprintf(fname,"%s/%s%s/%04d.vins",coin->VALIDATEDIR,roflag!=0?"ro/":"",coin->symbol,slotid);
     return((int32_t)strlen(fname));
 }
 
@@ -1000,7 +1000,7 @@ int32_t iguana_peerslotinit(struct iguana_info *coin,struct iguana_peer *addr,in
     char fname[1024];
     addr->ipbits = ipbits;
     addr->addrind = slotid;
-    iguana_voutsfname(coin,fname,addr->addrind);
+    iguana_voutsfname(coin,0,fname,addr->addrind);
     if ( (addr->voutsfp= fopen(fname,"rb+")) != 0 )
         fseek(addr->voutsfp,0,SEEK_END);
     else if ( (addr->voutsfp= fopen(fname,"wb+")) == 0 )
@@ -1010,7 +1010,7 @@ int32_t iguana_peerslotinit(struct iguana_info *coin,struct iguana_peer *addr,in
     }
     if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
     {
-        iguana_vinsfname(coin,fname,addr->addrind);
+        iguana_vinsfname(coin,0,fname,addr->addrind);
         if ( (addr->vinsfp= fopen(fname,"rb+")) != 0 )
             fseek(addr->vinsfp,0,SEEK_END);
         else if ( (addr->vinsfp= fopen(fname,"wb+")) == 0 )

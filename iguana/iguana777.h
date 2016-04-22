@@ -884,8 +884,8 @@ int32_t iguana_peeraddrrequest(struct iguana_info *coin,struct iguana_peer *addr
 int32_t iguana_peerinvrequest(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *space,int32_t max);
 int32_t iguana_bundlefname(struct iguana_info *coin,struct iguana_bundle *bp,char *fname);
 int32_t iguana_bundleremove(struct iguana_info *coin,int32_t hdrsi,int32_t tmpfiles);
-int32_t iguana_voutsfname(struct iguana_info *coin,char *fname,int32_t slotid);
-int32_t iguana_vinsfname(struct iguana_info *coin,char *fname,int32_t slotid);
+int32_t iguana_voutsfname(struct iguana_info *coin,int32_t roflag,char *fname,int32_t slotid);
+int32_t iguana_vinsfname(struct iguana_info *coin,int32_t roflag,char *fname,int32_t slotid);
 bits256 iguana_merkle(struct iguana_info *coin,bits256 *tree,int32_t txn_count);
 int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int32_t requiredflag);
 int32_t iguana_blast(struct iguana_info *coin,struct iguana_peer *addr);

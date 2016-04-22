@@ -1339,11 +1339,11 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
             ramchain->Xspendinds = (void *)((long)ptr + sizeof(sha256));
             if ( bp->Xvalid == 0 )
                 vcalc_sha256(0,sha256.bytes,(void *)ramchain->Xspendinds,(int32_t)(filesize - sizeof(sha256)));
+            ramchain->from_roX = (iter == 0);
             if ( bp->Xvalid != 0 || memcmp(sha256.bytes,ptr,sizeof(sha256)) == 0 )
             {
                 ramchain->Xspendptr = ptr;
                 ramchain->numXspends = (int32_t)((filesize - sizeof(sha256)) / sizeof(*ramchain->Xspendinds));
-                ramchain->from_roX = (iter == 0);
                 bp->startutxo = bp->utxofinish = (uint32_t)time(NULL);
                 if ( bp->Xvalid == 0 )
                 {

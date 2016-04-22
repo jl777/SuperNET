@@ -78,7 +78,7 @@ int32_t iguana_vinset(struct iguana_info *coin,uint8_t *scriptspace,int32_t heig
         vin->prev_vout = s->prevout;
         if ( s->scriptpos != 0 && s->scriptlen > 0 )
         {
-            iguana_vinsfname(coin,fname,s->fileid);
+            iguana_vinsfname(coin,bp->ramchain.from_ro,fname,s->fileid);
             if ( (scriptlen= iguana_scriptdata(coin,scriptspace,coin->peers.vinptrs[s->fileid],fname,s->scriptpos,s->scriptlen)) != s->scriptlen )
                 printf("err.%d getting %d bytes from fileid.%llu[%d] %s for s%d\n",err,s->scriptlen,(long long)s->scriptpos,s->fileid,fname,spendind);
         }
@@ -110,7 +110,7 @@ int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmst
         vout->pk_script = scriptspace;
         if ( u->scriptpos > 0 && u->scriptlen > 0 )
         {
-            iguana_voutsfname(coin,fname,u->fileid);
+            iguana_voutsfname(coin,bp->ramchain.from_ro,fname,u->fileid);
             if ( (scriptlen= iguana_scriptdata(coin,scriptspace,coin->peers.voutptrs[u->fileid],fname,u->scriptpos,u->scriptlen)) != u->scriptlen )
                 printf("error.%d %d bytes from fileid.%d[%d] %s for u%d type.%d\n",err,u->scriptlen,u->fileid,u->scriptpos,fname,unspentind,u->type);
         }

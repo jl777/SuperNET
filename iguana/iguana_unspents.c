@@ -1384,8 +1384,12 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
             printf("hdrsi.[%d] emitfinish.%u utxofinish.%u\n",i,bp->emitfinish,bp->utxofinish);
             break;
         }
-        if ( bp->ramchain.from_ro == 0 || bp->ramchain.from_roX == 0 || bp->ramchain.from_roA == 0 || bp->ramchain.from_roU == 0 )
+        iguana_volatilesmap(coin,&bp->ramchain);
+        if ( from_ro != 0 && (bp->ramchain.from_ro == 0 || (bp->hdrsi > 0 && bp->ramchain.from_roX == 0) || bp->ramchain.from_roA == 0 || bp->ramchain.from_roU == 0) )
+        {
+            printf("from_ro.[%d] %d %d %d %d\n",bp->hdrsi,bp->ramchain.from_ro,bp->ramchain.from_roX,bp->ramchain.from_roA,bp->ramchain.from_roU);
             from_ro = 0;
+        }
     }
     if ( i < coin->balanceswritten )
     {
@@ -1415,7 +1419,7 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
         }
         if ( filecrc != 0 )
             printf("have filecrc.%08x for %s milli.%.0f from_ro.%d\n",filecrc,bits256_str(str,balancehash),OS_milliseconds(),from_ro);
-        if ( from_ro == 0 )
+        if ( from_ro == 0 || filecrc == 0 )
         {
             if ( filecrc == 0 )
             {
@@ -1428,9 +1432,9 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
                 Aptr = 0, Uptr = 0;
                 if ( (bp= coin->bundles[i]) != 0 && bp->ramchain.H.data != 0 && (numpkinds= bp->ramchain.H.data->numpkinds) > 0 && (numunspents= bp->ramchain.H.data->numunspents) > 0 && (Aptr= bp->ramchain.A2) != 0 && (Uptr= bp->ramchain.Uextras) != 0 )
                 {
+                    fprintf(stderr,".");
                     if ( filecrc == 0 )
                     {
-                        fprintf(stderr,".");
                         vupdate_sha256(balancehash.bytes,&vstate,(void *)Aptr,sizeof(*Aptr) * numpkinds);
                         vupdate_sha256(balancehash.bytes,&vstate,(void *)Uptr,sizeof(*Uptr) * numunspents);
                         vupdate_sha256(allbundles.bytes,&bstate,(void *)bp->hashes,sizeof(bp->hashes[0]) * bp->n);
@@ -2103,6 +2107,11 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
     static int32_t totalerrs,totalvalidated;
     FILE *fp; char fname[1024]; uint8_t *blockspace; uint32_t now = (uint32_t)time(NULL);
     int32_t i,max,len,errs = 0; struct sha256_vstate vstate; bits256 validatehash; int64_t total = 0;
+    if ( bp->ramchain.from_ro != 0 )
+    {
+        bp->validated = (uint32_t)time(NULL);
+        return(bp->n);
+    }
     if ( bp->validated <= 1 || forceflag != 0 )
     {
         //printf("validate.[%d]\n",bp->hdrsi);
