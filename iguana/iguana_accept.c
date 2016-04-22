@@ -232,9 +232,9 @@ int32_t iguana_peerdatarequest(struct iguana_info *coin,struct iguana_peer *addr
 {
     int32_t i,type,len = 0; uint64_t x; bits256 hash2;
     len += iguana_rwvarint(0,data,&x);
-    for (i=0; i<10; i++)
-        printf("%02x ",data[i]);
-    printf("x.%d recvlen.%d\n",(int32_t)x,recvlen);
+    //for (i=0; i<10; i++)
+    //    printf("%02x ",data[i]);
+    //printf("x.%d recvlen.%d\n",(int32_t)x,recvlen);
     if ( x < IGUANA_MAXINV )
     {
         for (i=0; i<x; i++)
@@ -294,9 +294,9 @@ int32_t iguana_peergetrequest(struct iguana_info *coin,struct iguana_peer *addr,
         }
     }
     len += iguana_rwbignum(0,&data[len],sizeof(bits256),hash2.bytes);
-    for (i=0; i<69; i++)
-        printf("%02x ",data[i]);
-    printf("version.%d num blocks.%d recvlen.%d len.%d\n",reqvers,n,recvlen,len);
+    //for (i=0; i<69; i++)
+    //    printf("%02x ",data[i]);
+    //printf("version.%d num blocks.%d recvlen.%d len.%d\n",reqvers,n,recvlen,len);
     return(len);
 }
 
