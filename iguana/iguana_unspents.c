@@ -821,11 +821,11 @@ int64_t iguana_fastfindinit(struct iguana_info *coin)
                 printf("%s\n",fname);
                 if ( (sortbuf= OS_filestr(&allocsize,fname)) != 0 )
                 {
-                    qsort(sortbuf,allocsize/sizeof(bits256),sizeof(bits256),_bits256_cmp);
+                    num = (int32_t)allocsize/sizeof(bits256);
+                    qsort(sortbuf,num,sizeof(bits256),_bits256_cmp);
                     strcat(fname,".all");
                     if ( (coin->fastfps[i]= fopen(fname,"wb")) != 0 )
                     {
-                        num = (int32_t)allocsize/sizeof(bits256);
                         tablesize = (num << 1);
                         hashtable = calloc(sizeof(*hashtable),tablesize);
                         for (ind=1; ind<=num; ind++)
@@ -853,7 +853,8 @@ int64_t iguana_fastfindinit(struct iguana_info *coin)
                             memcpy(&buf[sizeof(uint64_t) + sizeof(uint16_t)],&hash2.ushorts[13],sizeof(hash2.ushorts[13]));
                             memcpy(&buf[sizeof(uint64_t) + sizeof(uint16_t) + sizeof(hash2.ushorts[13])],&hash2.uints[7],sizeof(hash2.uints[7]));
                             fwrite(buf,1,sizeof(buf),coin->fastfps[i]);
-                            hash2 = sortbuf[j-1];
+                            if ( j < num )
+                                hash2 = sortbuf[j];
                         }
                         if ( fwrite(hashtable,sizeof(*hashtable),tablesize,coin->fastfps[i]) == tablesize )
                         {
