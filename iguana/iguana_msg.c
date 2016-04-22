@@ -217,7 +217,7 @@ void iguana_gotverack(struct iguana_info *coin,struct iguana_peer *addr)
     uint8_t serialized[sizeof(struct iguana_msghdr)];
     if ( addr != 0 )
     {
-        printf("gotverack from %s\n",addr->ipaddr);
+        //printf("gotverack from %s\n",addr->ipaddr);
         addr->A.nTime = (uint32_t)time(NULL);
         iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
         if ( addr->supernet != 0 )
@@ -237,7 +237,7 @@ void iguana_gotaddr(struct iguana_info *coin,struct iguana_peer *addr,struct igu
     if ( port != 0 )
         sprintf(ipport,"%s:%d",ipaddr,port);
     iguana_possible_peer(coin,ipport);
-    printf("gotaddr.(%s:%d) from (%s)\n",ipaddr,port,addr->ipaddr);
+    //printf("gotaddr.(%s:%d) from (%s)\n",ipaddr,port,addr->ipaddr);
 }
 
 void iguana_gotping(struct iguana_info *coin,struct iguana_peer *addr,uint64_t nonce,uint8_t *data)

@@ -1334,31 +1334,33 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
     for (iter=0; iter<2; iter++)
     {
         sprintf(fname,"%s/%s%s/spends/%s.%d",GLOBAL_DBDIR,iter==0?"ro/":"",coin->symbol,bits256_str(str,bp->hashes[0]),bp->bundleheight);
-        //if ( iguana_peerfname(coin,&hdrsi,dirname,fname,0,bp->hashes[0],zero,bp->n) >= 0 )
+        if ( (ptr= OS_mapfile(fname,&filesize,0)) != 0 )
         {
-            if ( (ptr= OS_mapfile(fname,&filesize,0)) != 0 )
-            {
-                ramchain->Xspendinds = (void *)((long)ptr + sizeof(sha256));
+            ramchain->Xspendinds = (void *)((long)ptr + sizeof(sha256));
+            if ( bp->Xvalid == 0 )
                 vcalc_sha256(0,sha256.bytes,(void *)ramchain->Xspendinds,(int32_t)(filesize - sizeof(sha256)));
-                if ( memcmp(sha256.bytes,ptr,sizeof(sha256)) == 0 )
+            if ( bp->Xvalid != 0 || memcmp(sha256.bytes,ptr,sizeof(sha256)) == 0 )
+            {
+                ramchain->Xspendptr = ptr;
+                ramchain->numXspends = (int32_t)((filesize - sizeof(sha256)) / sizeof(*ramchain->Xspendinds));
+                ramchain->from_roX = (iter == 0);
+                bp->startutxo = bp->utxofinish = (uint32_t)time(NULL);
+                if ( bp->Xvalid == 0 )
                 {
-                    ramchain->Xspendptr = ptr;
-                    ramchain->numXspends = (int32_t)((filesize - sizeof(sha256)) / sizeof(*ramchain->Xspendinds));
-                    ramchain->from_roX = (iter == 0);
-                    bp->startutxo = bp->utxofinish = (uint32_t)time(NULL);
-                    return(ramchain->numXspends);
-                    //int32_t i; for (i=0; i<ramchain->numXspends; i++)
-                    //    printf("(%d u%d) ",ramchain->Xspendinds[i].hdrsi,ramchain->Xspendinds[i].ind);
-                    //printf("filesize %ld Xspendptr.%p %p num.%d\n",ftell(fp),ramchain->Xspendptr,ramchain->Xspendinds,ramchain->numXspends);
-                    //printf("mapped utxo vector[%d] from (%s)\n",ramchain->numXspends,fname);
+                    printf("[%d] filesize %ld Xspendptr.%p %p num.%d\n",bp->hdrsi,filesize,ramchain->Xspendptr,ramchain->Xspendinds,ramchain->numXspends);
+                    bp->Xvalid = 1;
                 }
-                else
-                {
-                    char str[65]; printf("hash cmp error.%d vs (%s)\n",memcmp(sha256.bytes,ptr,sizeof(sha256)),bits256_str(str,sha256));
-                    munmap(ptr,filesize);
-                    ramchain->Xspendinds = 0;
-                }
-            } //else if ( iter == 1 ) printf("no Xspendfile.(%s)\n",fname);
+                return(ramchain->numXspends);
+                //int32_t i; for (i=0; i<ramchain->numXspends; i++)
+                //    printf("(%d u%d) ",ramchain->Xspendinds[i].hdrsi,ramchain->Xspendinds[i].ind);
+                //printf("mapped utxo vector[%d] from (%s)\n",ramchain->numXspends,fname);
+            }
+            else
+            {
+                char str[65]; printf("hash cmp error.%d vs (%s)\n",memcmp(sha256.bytes,ptr,sizeof(sha256)),bits256_str(str,sha256));
+                munmap(ptr,filesize);
+                ramchain->Xspendinds = 0;
+            }
         }
     }
     return(ramchain->numXspends);
@@ -1484,6 +1486,7 @@ struct iguana_ramchain *_iguana_ramchain_map(struct iguana_info *coin,char *fnam
             }
         }
         //printf("iguana_ramchain_map.(%s) size %ld vs %ld vs filesize.%ld numblocks.%d expanded.%d fpos.%d sum %ld\n",fname,(long)iguana_ramchain_size(RAMCHAIN_ARG,ramchain->numblocks,ramchain->H.data->scriptspace),(long)ramchain->H.data->allocsize,(long)filesize,ramchain->numblocks,expanded,(int32_t)fpos,(long)(fpos+ramchain->H.data->allocsize));
+        bp->Xvalid = 1;
         iguana_Xspendmap(coin,ramchain,bp);
         return(ramchain);
     } else printf("iguana_ramchain_map.(%s) cant map file\n",fname);

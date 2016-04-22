@@ -1034,6 +1034,7 @@ int32_t iguana_spendvectorsave(struct iguana_info *coin,struct iguana_bundle *bp
             retval = 0;
             fsize = ftell(fp);
             fclose(fp), fp = 0;
+            bp->Xvalid = 0;
             if ( iguana_Xspendmap(coin,ramchain,bp) < 0 )
                 printf("error mapping Xspendmap.(%s)\n",fname);
             else
@@ -1361,6 +1362,7 @@ void iguana_truncatebalances(struct iguana_info *coin)
         if ( (bp= coin->bundles[i]) != 0 )
         {
             bp->balancefinish = 0;
+            bp->Xvalid = 0;
             iguana_volatilespurge(coin,&bp->ramchain);
         }
     }
@@ -1428,6 +1430,7 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
                 {
                     if ( filecrc == 0 )
                     {
+                        fprintf(stderr,".");
                         vupdate_sha256(balancehash.bytes,&vstate,(void *)Aptr,sizeof(*Aptr) * numpkinds);
                         vupdate_sha256(balancehash.bytes,&vstate,(void *)Uptr,sizeof(*Uptr) * numunspents);
                         vupdate_sha256(allbundles.bytes,&bstate,(void *)bp->hashes,sizeof(bp->hashes[0]) * bp->n);
