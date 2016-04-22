@@ -815,8 +815,8 @@ int64_t iguana_fastfindinit(struct iguana_info *coin)
             }
             for (i=errs=0; i<0x100; i++)
             {
-                sprintf(fname,"DB/%s/fastfind/%d",coin->symbol,i), OS_ensure_directory(fname);
                 fclose(coin->fastfps[i]);
+                sprintf(fname,"DB/%s/fastfind/%d",coin->symbol,i), OS_compatible_path(fname);
                 if ( (sortbuf= OS_filestr(&allocsize,fname)) != 0 )
                 {
                     qsort(sortbuf,allocsize/sizeof(bits256),sizeof(bits256),_bits256_cmp);
