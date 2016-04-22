@@ -848,7 +848,9 @@ int64_t iguana_fastfindinit(struct iguana_info *coin)
                             fclose(coin->fastfps[i]);
                             coin->fastfps[i] = 0;
                             if ( (coin->fast[i]= OS_mapfile(fname,&coin->fastsizes[i],0)) != 0 )
-                                errs++;
+                            {
+                                printf("fastfind.[%02x] num.%d tablesize.%d\n",i,num,tablesize);
+                            } else errs++;
                         }
                         else
                         {
