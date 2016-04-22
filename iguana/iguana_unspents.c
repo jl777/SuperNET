@@ -747,7 +747,7 @@ int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 tx
                 val = 0;
             if ( (i= hashtable[val]) == 0 )
                 return(-1);
-            else if ( memcmp(&txid,&sorted[i],sizeof(bits256)-sizeof(int32_t)-sizeof(int16_t)) == 0 )
+            else if ( memcmp(&txid,&sorted[i],sizeof(bits256)-sizeof(uint32_t)-sizeof(uint16_t)) == 0 )
             {
                 *heightp = sorted[i].uints[7];
                 return(sorted[i].ushorts[13]);
@@ -1752,8 +1752,8 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
             numunspents = numpkinds = 0;
             if ( (bp= coin->bundles[hdrsi]) != 0 && bp->ramchain.H.data != 0 && (numpkinds= bp->ramchain.H.data->numpkinds) > 0 && (numunspents= bp->ramchain.H.data->numunspents) > 0 && (Aptr= bp->ramchain.A2) != 0 && (Uptr= bp->ramchain.Uextras) != 0 )
             {
-                sprintf(fname,"%s/%s/%d/debits.N%d",GLOBAL_TMPDIR,coin->symbol,bp->bundleheight,numhdrsi);
-                sprintf(fname2,"%s/%s/%d/lastspends.N%d",GLOBAL_TMPDIR,coin->symbol,bp->bundleheight,numhdrsi);
+                sprintf(fname,"%s/%s/debits.N%d",GLOBAL_TMPDIR,coin->symbol,bp->bundleheight,numhdrsi);
+                sprintf(fname2,"%s/%s/lastspends.N%d",GLOBAL_TMPDIR,coin->symbol,bp->bundleheight,numhdrsi);
                 if ( iter == 0 )
                 {
                     vupdate_sha256(balancehash.bytes,&vstate,(void *)Aptr,sizeof(*Aptr)*numpkinds);
