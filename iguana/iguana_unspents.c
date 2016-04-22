@@ -820,7 +820,7 @@ static int _bits256_cmp(const void *a,const void *b)
     return(bits256_cmp(*(bits256 *)a,*(bits256 *)b));
 }
 
-int32_t iguana_fastfindinit(struct iguana_info *coin)
+uint32_t iguana_fastfindinit(struct iguana_info *coin)
 {
     int32_t i,j,iter; char fname[1024];
     for (iter=0; iter<2; iter++)
@@ -836,10 +836,12 @@ int32_t iguana_fastfindinit(struct iguana_info *coin)
             }
         }
         if ( i == 0x100 )
-            break;
+        {
+            coin->fastfind = (uint32_t)time(NULL);
+            printf("initialized fastfind.%s iter.%d\n",coin->symbol,iter);
+            return(coin->fastfind);
+        }
     }
-    coin->fastfind = (uint32_t)time(NULL);
-    printf("initialized fastfind.%s iter.%d\n",coin->symbol,iter);
     return(0);
 }
 
@@ -958,7 +960,7 @@ struct iguana_bundle *iguana_fastexternalspent(struct iguana_info *coin,bits256 
                 if ( (firstvout= iguana_txidfastfind(coin,&height,prev_hash,spent_hdrsi-1)) >= 0 )
                 {
                     duration = (OS_milliseconds() - startmillis);
-                    if ( ((uint64_t)coin->txidfind_num % 1000) == 1 )
+                    if ( ((uint64_t)coin->txidfind_num % 100000) == 1 )
                         printf("[%d] iguana_fasttxidfind.[%.0f] ave %.2f micros, total %.2f seconds | duration %.3f millis\n",spent_hdrsi,coin->txidfind_num,(coin->txidfind_totalmillis*1000.)/coin->txidfind_num,coin->txidfind_totalmillis/1000.,duration);
                     coin->txidfind_totalmillis += duration;
                     coin->txidfind_num += 1.;
@@ -1361,12 +1363,14 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                 if ( bp == coin->current && (spendind % 100000) == 0 )
                     printf("[%-3d:%4d] spendvectors elapsed t.%-3d spendind.%d\n",bp->hdrsi,i,(uint32_t)time(NULL)-starttime,spendind);
                 u = 0;
+                spentbp = 0;
                 s = &S[spendind];
                 if ( s->external != 0 && s->prevout >= 0 )
                 {
                     if ( coin->fastfind != 0 )
                         spentbp = iguana_fastexternalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s);
-                    else spentbp = iguana_externalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s,2);
+                    else if ( spentbp == 0 )
+                        spentbp = iguana_externalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s,2);
                     if ( spentbp != 0 && spentbp->ramchain.H.data != 0 )
                     {
                         if ( spentbp == bp )
@@ -1806,7 +1810,8 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
     hash2 = iguana_blockhash(coin,coin->balanceswritten * coin->chain->bundlesize);
     if ( bits256_nonz(hash2) != 0 && (block= iguana_blockfind("initfinal",coin,hash2)) != 0 )
         _iguana_chainlink(coin,block);
-    iguana_fastfindinit(coin);
+    if ( iguana_fastfindinit(coin) == 0 && coin->PREFETCHLAG >= 0 )
+        iguana_fastfindcreate(coin);
 }
 
 int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)

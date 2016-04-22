@@ -900,7 +900,7 @@ int32_t iguana_validated(struct iguana_info *coin);
 void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramchain,int32_t copyflag);
 int32_t iguana_send_ping(struct iguana_info *coin,struct iguana_peer *addr);
 int32_t iguana_process_msgrequestQ(struct iguana_info *coin);
-int32_t iguana_fastfindinit(struct iguana_info *coin);
+uint32_t iguana_fastfindinit(struct iguana_info *coin);
 
 extern int32_t HDRnet,netBLOCKS;
 
