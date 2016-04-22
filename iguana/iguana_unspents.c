@@ -808,6 +808,7 @@ int64_t iguana_fastfindinit(struct iguana_info *coin)
         {
             for (iter=0; iter<2; iter++)
             {
+                total = 0;
                 for (i=0; i<coin->bundlescount-1; i++)
                     if ( (bp= coin->bundles[i]) != 0 )
                         total += iguana_fastfindinitbundle(coin,bp,iter);
@@ -860,9 +861,9 @@ int64_t iguana_fastfindinit(struct iguana_info *coin)
                             coin->fastfps[i] = 0;
                         }
                         free(hashtable);
-                    }
+                    } else printf("couldnt overwrite (%s)\n",fname);
                     free(sortbuf);
-                }
+                } else printf("couldnt load sortbuf (%s)\n",fname);
             }
             printf("initialized with errs.%d\n",errs);
         }
