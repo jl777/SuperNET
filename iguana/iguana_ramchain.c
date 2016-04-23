@@ -336,12 +336,12 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
             }
         }
         u->txidind = ramchain->H.txidind;
-        /*int32_t i; for (i=0; i<20; i++)
+        int32_t i; for (i=0; i<20; i++)
             printf("%02x",rmd160[i]);
         printf(" rmd160 ");
         for (i=0; i<20; i++)
             printf("%02x",u->rmd160[i]);
-        printf(" u->rmd160\n");*/
+        char str[65]; printf(" u->rmd160 type.%d scriptlen.%d:%d (%s).v%d ht.%d\n",u->type,scriptlen,u->scriptlen,bits256_str(str,txid),vout,bp->bundleheight);
     }
     return(unspentind);
 }
@@ -354,8 +354,8 @@ uint32_t iguana_ramchain_addunspent(struct iguana_info *coin,RAMCHAIN_FUNC,uint6
             break;
     if ( i == 20 )
     {
-        printf("iguana_ramchain_addunspent: null rmd160 error\n");
-        return(0);
+        printf("iguana_ramchain_addunspent: null rmd160 warning\n");
+        //return(0);
     }
     unspentind = ramchain->H.unspentind++;
     u = &Ux[unspentind];
