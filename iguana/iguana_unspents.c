@@ -202,7 +202,7 @@ void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramc
 
 void iguana_volatilespurge(struct iguana_info *coin,struct iguana_ramchain *ramchain)
 {
-    if ( ramchain != 0 && (coin->current == 0 || coin->current->bundleheight != ramchain->height) )
+    if ( ramchain != 0 )
     {
         printf("volatilespurge.[%d]\n",ramchain->height/coin->chain->bundlesize);
         if ( ramchain->allocatedA2 != 0 && ramchain->A2 != 0 && ramchain->A2 != ramchain->debitsfileptr )
@@ -1988,13 +1988,16 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
     coin->allbundles = allbundles;
     coin->balancehash = balancehash;
     coin->balanceswritten = numhdrsi;
-    for (hdrsi=0; hdrsi<numhdrsi; hdrsi++)
-        if ( (bp= coin->bundles[hdrsi]) == 0 )
-        {
-            iguana_volatilespurge(coin,&bp->ramchain);
-            if ( iguana_volatilesmap(coin,&bp->ramchain) != 0 )
-                printf("error mapping bundle.[%d]\n",hdrsi);
-        }
+    if ( 0 )
+    {
+        for (hdrsi=0; hdrsi<numhdrsi; hdrsi++)
+            if ( (bp= coin->bundles[hdrsi]) == 0 )
+            {
+                iguana_volatilespurge(coin,&bp->ramchain);
+                if ( iguana_volatilesmap(coin,&bp->ramchain) != 0 )
+                    printf("error mapping bundle.[%d]\n",hdrsi);
+            }
+    }
     char str[65]; printf("BALANCES WRITTEN for %d orig.%d bundles %s\n",coin->balanceswritten,coin->origbalanceswritten,bits256_str(str,coin->balancehash));
     if ( 0 && coin->balanceswritten > coin->origbalanceswritten+10 ) // strcmp(coin->symbol,"BTC") == 0 &&
     {
@@ -2226,7 +2229,7 @@ void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_b
         dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
         dest->externalind = dest->H.stacksize = 0;
         dest->H.scriptoffset = 1;
-        if ( 0 )
+        if ( 1 )
         {
             for (i=0; i<bp->hdrsi; i++)
                 if ( (tmpbp= coin->bundles[i]) != 0 )
