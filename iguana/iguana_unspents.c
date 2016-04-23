@@ -1441,7 +1441,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                 {
 #ifdef __APPLE__
                     if ( bp == coin->current && (spendind % 100) == 0 )
-                        printf("[%-3d:%4d] spendvectors elapsed t.%-3d spendind.%d\n",bp->hdrsi,i,(uint32_t)time(NULL)-starttime,spendind);
+                        printf("iter.%02x [%-3d:%4d] spendvectors elapsed t.%-3d spendind.%d\n",iter,bp->hdrsi,i,(uint32_t)time(NULL)-starttime,spendind);
 #endif
                     u = 0;
                     spentbp = 0;
@@ -2293,7 +2293,7 @@ void iguana_RThdrs(struct iguana_info *coin,struct iguana_bundle *bp,int32_t num
 
 void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    int32_t lasti,num,hdrsi,orignumemit; struct iguana_ramchain R; struct iguana_ramchaindata RDATA;
+    int32_t iterate,lasti,num,hdrsi,orignumemit; struct iguana_ramchain R; struct iguana_ramchaindata RDATA;
     if ( bp->hdrsi <= 0 )
         return;
     bp->ramchain = coin->RTramchain;
@@ -2301,7 +2301,12 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     if ( (lasti= (coin->RTheight - ((coin->RTheight/bp->n)*bp->n))) >= bp->n-1 )
         lasti = bp->n - 1;
     orignumemit = bp->numtmpspends;
-    if ( iguana_spendvectors(coin,bp,&coin->RTramchain,coin->RTstarti,lasti,0,0xff) < 0 )
+#ifdef __APPLE__
+    iterate = 0xff;
+#else
+    iterate = 0;
+#endif
+    if ( iguana_spendvectors(coin,bp,&coin->RTramchain,coin->RTstarti,lasti,0,iterate) < 0 )
     {
         printf("RTutxo error -> RTramchainfree\n");
         coin->RTdatabad = 1;
