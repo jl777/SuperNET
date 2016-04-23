@@ -45,19 +45,24 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
         {
             HASH_ITER(hh,coin->utxotable,hhutxo,tmputxo)
             {
-                HASH_DEL(coin->utxotable,hhutxo);
-                free(hhutxo);
+                //HASH_DEL(coin->utxotable,hhutxo);
+                hhutxo->u.spentflag = 0;
+                hhutxo->u.fromheight = 0;
+                hhutxo->u.prevunspentind = 0;
+                //free(hhutxo);
             }
-            coin->utxotable = 0;
+            //coin->utxotable = 0;
         }
         if ( coin->accountstable != 0 )
         {
             HASH_ITER(hh,coin->accountstable,hhacct,tmpacct)
             {
-                HASH_DEL(coin->accountstable,hhacct);
-                free(hhacct);
+                //HASH_DEL(coin->accountstable,hhacct);
+                hhacct->a.lastunspentind = 0;
+                hhacct->a.total = 0;
+                //free(hhacct);
             }
-            coin->accountstable = 0;
+            //coin->accountstable = 0;
         }
         /*if ( HHUTXO != 0 )
         {
@@ -201,29 +206,21 @@ void iguana_volatilespurge(struct iguana_info *coin,struct iguana_ramchain *ramc
     {
         printf("volatilespurge.[%d]\n",ramchain->height/coin->chain->bundlesize);
         if ( ramchain->allocatedA2 != 0 && ramchain->A2 != 0 && ramchain->A2 != ramchain->debitsfileptr )
-        {
-            if ( ramchain->height > 0 )
-                free(ramchain->A2);
-        }
+            free(ramchain->A2);
         if ( ramchain->allocatedU2 != 0 && ramchain->Uextras != 0 && ramchain->Uextras != ramchain->lastspendsfileptr )
-        {
-            if ( ramchain->height > 0 )
-                free(ramchain->Uextras);
-        }
+            free(ramchain->Uextras);
         ramchain->A2 = 0;
         ramchain->Uextras = 0;
         ramchain->allocatedA2 = ramchain->allocatedU2 = 0;
         if ( ramchain->debitsfileptr != 0 )
         {
-            if ( ramchain->height > 0 )
-                munmap(ramchain->debitsfileptr,ramchain->debitsfilesize);
+            munmap(ramchain->debitsfileptr,ramchain->debitsfilesize);
             ramchain->debitsfileptr = 0;
             ramchain->debitsfilesize = 0;
         }
         if ( ramchain->lastspendsfileptr != 0 )
         {
-            if ( ramchain->height > 0 )
-                munmap(ramchain->lastspendsfileptr,ramchain->lastspendsfilesize);
+            munmap(ramchain->lastspendsfileptr,ramchain->lastspendsfilesize);
             ramchain->lastspendsfileptr = 0;
             ramchain->lastspendsfilesize = 0;
         }
