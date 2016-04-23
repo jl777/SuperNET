@@ -867,7 +867,7 @@ uint32_t iguana_fastfindinit(struct iguana_info *coin)
     {
         for (i=0; i<0x100; i++)
         {
-            sprintf(fname,"DB/%s%s/fastfind/%02x.all",iter==0?"ro/":"",coin->symbol,i), OS_compatible_path(fname);
+            sprintf(fname,"DB/%s%s/fastfind/%02x.all",iter!=0?"ro/":"",coin->symbol,i), OS_compatible_path(fname);
             if ( (coin->fast[i]= OS_mapfile(fname,&coin->fastsizes[i],0)) == 0 )
                 break;
             else
