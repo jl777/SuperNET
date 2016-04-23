@@ -467,12 +467,15 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
                     sleep(3);
             } else printf("skip flush when max.%d and orig.%d\n",max,coin->origbalanceswritten);
         }
-        for (i=0; i<max; i++)
-            if ( (bp= coin->bundles[i]) != 0 )
-            {
-                iguana_volatilespurge(coin,&bp->ramchain);
-                iguana_volatilesmap(coin,&bp->ramchain);
-            }
+        if ( 0 )
+        {
+            for (i=0; i<max; i++)
+                if ( (bp= coin->bundles[i]) != 0 )
+                {
+                    iguana_volatilespurge(coin,&bp->ramchain);
+                    iguana_volatilesmap(coin,&bp->ramchain);
+                }
+        }
     }
     //printf("helper.%d check validates\n",helperid);
     incr = IGUANA_NUMHELPERS;
