@@ -984,7 +984,7 @@ void calc_unhexstr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 
 void calc_base64_encodestr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 {
-    nn_base64_encode(msg,len,hexstr,64);
+    nn_base64_encode(msg,len,hexstr,len);
 }
 
 void calc_base64_decodestr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)

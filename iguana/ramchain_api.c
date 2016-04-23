@@ -221,14 +221,35 @@ ZERO_ARGS(bitcoinrpc,getblockcount)
 
 ZERO_ARGS(bitcoinrpc,makekeypair)
 {
-    cJSON *retjson = cJSON_CreateObject();
+    bits256 privkey; char str[67]; cJSON *retjson = cJSON_CreateObject();
+    privkey = rand256(1);
+    jaddstr(retjson,"result","success");
+    jaddstr(retjson,"privkey",bits256_str(str,privkey));
+    jadd(retjson,"rosetta",SuperNET_rosettajson(privkey,1));
     return(jprint(retjson,1));
 }
 
-STRING_ARG(bitcoinrpc,validatepubkey,pubkey)
+STRING_ARG(bitcoinrpc,validatepubkey,pubkeystr)
 {
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
+    uint8_t rmd160[20],pubkey[65],addrtype = 0; int32_t plen; char coinaddr[128],*str; cJSON *retjson;
+    plen = (int32_t)strlen(pubkeystr) >> 1;
+    if ( plen <= 65 && coin != 0 && coin->chain != 0 )
+    {
+        addrtype = coin->chain->pubtype;
+        decode_hex(pubkey,plen,pubkeystr);
+        if ( (str= bitcoin_address(coinaddr,addrtype,pubkey,plen)) != 0 )
+        {
+            if ( iguana_addressvalidate(coin,&addrtype,rmd160,coinaddr) < 0 )
+                return(clonestr("{\"error\":\"invalid coin address\"}"));
+            retjson = cJSON_CreateObject();
+            jaddstr(retjson,"result","success");
+            jaddstr(retjson,"pubkey",pubkeystr);
+            jaddstr(retjson,"address",coinaddr);
+            jaddstr(retjson,"coin",coin->symbol);
+            return(jprint(retjson,1));
+        }
+    }
+    return(clonestr("{\"error\":\"invalid pubkey\"}"));
 }
 
 HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag)
@@ -237,21 +258,124 @@ HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag)
     return(jprint(retjson,1));
 }
 
-STRING_ARG(bitcoinrpc,decodescript,script)
+cJSON *iguana_scriptobj(struct iguana_info *coin,uint8_t rmd160[20],char *coinaddr,char *asmstr,uint8_t *script,int32_t scriptlen)
 {
-    cJSON *retjson = cJSON_CreateObject();
+    struct vin_info V; int32_t i,plen,asmtype; char pubkeystr[130],rmdstr[41]; cJSON *addrobj,*scriptobj=0;
+    if ( (asmtype= iguana_calcrmd160(coin,asmstr,&V,script,scriptlen,rand256(1),1,0xffffffff)) >= 0 )
+    {
+        if ( asmstr != 0 && asmstr[0] != 0 )
+            jaddstr(scriptobj,"asm",asmstr);
+        jaddnum(scriptobj,"iguanatype",asmtype);
+        jaddnum(scriptobj,"scriptlen",scriptlen);
+        jaddnum(scriptobj,"reqSigs",V.M);
+        if ( (plen= bitcoin_pubkeylen(V.signers[0].pubkey)) > 0 )
+        {
+            init_hexbytes_noT(pubkeystr,V.signers[0].pubkey,plen);
+            jaddstr(scriptobj,"pubkey",pubkeystr);
+            init_hexbytes_noT(rmdstr,V.signers[0].rmd160,20);
+            jaddstr(scriptobj,"rmd160",rmdstr);
+        }
+        addrobj = cJSON_CreateArray();
+        for (i=0; i<V.N; i++)
+            jaddistr(addrobj,V.signers[i].coinaddr);
+        jadd(scriptobj,"addresses",addrobj);
+        if ( V.p2shlen != 0 )
+            jaddstr(scriptobj,"p2sh",V.coinaddr);
+        strcpy(coinaddr,V.coinaddr);
+        memcpy(rmd160,V.rmd160,20);
+    }
+    return(scriptobj);
+}
+
+STRING_ARG(bitcoinrpc,decodescript,scriptstr)
+{
+    int32_t scriptlen; uint8_t script[IGUANA_MAXSCRIPTSIZE],rmd160[20]; char coinaddr[128],asmstr[IGUANA_MAXSCRIPTSIZE*2+1]; cJSON *scriptobj,*retjson = cJSON_CreateObject();
+    if ( coin != 0 && (scriptlen= (int32_t)strlen(scriptstr)>>1) < sizeof(script) )
+    {
+        decode_hex(script,scriptlen,scriptstr);
+        if ( (scriptobj= iguana_scriptobj(coin,rmd160,coinaddr,asmstr,script,scriptlen)) != 0 )
+            jadd(retjson,"result",scriptobj);
+    }
     return(jprint(retjson,1));
 }
 
-STRING_ARG(bitcoinrpc,vanitygen,vanity)
+HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool)
 {
-    cJSON *retjson = cJSON_CreateObject();
+    uint8_t script[IGUANA_MAXSCRIPTSIZE],rmd160[20],pubkey33[33]; char coinaddr[128],asmstr[IGUANA_MAXSCRIPTSIZE*2+1]; struct iguana_bundle *bp; int32_t scriptlen,unspentind,height,spentheight; int64_t RTspend; struct iguana_ramchaindata *rdata; struct iguana_pkhash *P; struct iguana_txid *T; struct iguana_unspent *U; struct iguana_ramchain *ramchain; cJSON *scriptobj,*retjson = cJSON_CreateObject();
+    if ( coin != 0 )
+    {
+        if ( (unspentind= iguana_unspentindfind(coin,&height,txid,vout,coin->bundlescount-1)) != 0 )
+        {
+            if ( height >= 0 && height < coin->longestchain && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0 )
+            {
+                ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
+                if ( (rdata= ramchain->H.data) != 0 )
+                {
+                    U = (void *)(long)((long)rdata + rdata->Uoffset);
+                    P = (void *)(long)((long)rdata + rdata->Poffset);
+                    T = (void *)(long)((long)rdata + rdata->Toffset);
+                    RTspend = 0;
+                    if ( iguana_spentflag(coin,&RTspend,&spentheight,ramchain,bp->hdrsi,unspentind,height,U[unspentind].value) == 0 )
+                    {
+                        jaddbits256(retjson,"bestblock",coin->blocks.hwmchain.RO.hash2);
+                        jaddnum(retjson,"bestheight",coin->blocks.hwmchain.height);
+                        jaddnum(retjson,"height",height);
+                        jaddnum(retjson,"confirmations",coin->blocks.hwmchain.height - height);
+                        jaddnum(retjson,"value",dstr(U[unspentind].value));
+                        memset(rmd160,0,sizeof(rmd160));
+                        memset(pubkey33,0,sizeof(pubkey33));
+                        memset(coinaddr,0,sizeof(coinaddr));
+                        if ( (scriptlen= iguana_voutscript(coin,bp,script,0,&U[unspentind],&P[U[unspentind].pkind],vout)) > 0 )
+                        {
+                            if ( (scriptobj= iguana_scriptobj(coin,rmd160,coinaddr,asmstr,script,scriptlen)) != 0 )
+                                jadd(retjson,"scriptPubKey",scriptobj);
+                        }
+                        jadd(retjson,"iguana",iguana_unspentjson(coin,bp->hdrsi,unspentind,T,&U[unspentind],rmd160,coinaddr,pubkey33));
+                        if ( (height % coin->chain->bundlesize) == 0 && vout == 0 )
+                            jadd(retjson,"coinbase",jtrue());
+                        else jadd(retjson,"coinbase",jfalse());
+                    }
+                    else
+                    {
+                        jaddstr(retjson,"error","already spent");
+                        jaddnum(retjson,"spentheight",spentheight);
+                        jaddnum(retjson,"unspentind",unspentind);
+                    }
+                }
+            }
+        }
+    }
     return(jprint(retjson,1));
 }
 
-TWO_STRINGS(bitcoinrpc,signmessage,address,message)
+TWO_STRINGS(bitcoinrpc,signmessage,address,messagestr)
 {
-    cJSON *retjson = cJSON_CreateObject();
+    bits256 privkey; int32_t n,len,siglen; char sigstr[256],sig64str[256]; uint8_t sig[128],*message=0; cJSON *retjson = cJSON_CreateObject();
+    if ( coin != 0 )
+    {
+        privkey = iguana_str2priv(coin,address);
+        if ( bits256_nonz(privkey) != 0 )
+        {
+            n = (int32_t)strlen(messagestr) >> 1;
+            if ( messagestr[0] == '0' && messagestr[1] == 'x' && is_hexstr(messagestr+2,n-2) > 0 )
+            {
+                message = malloc(n-2);
+                decode_hex(message,n-2,messagestr+2);
+                n -= 2;
+            } else message = (uint8_t *)messagestr, n <<= 1;
+            if ( (siglen= bitcoin_sign(sig,sizeof(sig),message,n,privkey)) > 0 )
+            {
+                sigstr[0] = sig64str[0] = 0;
+                //init_hexbytes_noT(sigstr,sig,siglen);
+                len = nn_base64_encode(sig,siglen,sig64str,sizeof(sig64str));
+                sig64str[len++] = '=';
+                sig64str[len++] = 0;
+                jaddstr(retjson,"result",sig64str);
+            }
+            if ( message != (void *)messagestr )
+                free(message);
+        } else jaddstr(retjson,"error","invalid address (can be wif, wallet address or privkey hex)");
+    }
     return(jprint(retjson,1));
 }
 
@@ -299,12 +423,6 @@ ZERO_ARGS(bitcoinrpc,listlockunspent)
     return(jprint(retjson,1));
 }
 
-HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
 TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array)
 {
     int32_t numrmds; uint8_t *rmdarray; cJSON *retjson = cJSON_CreateArray();
@@ -324,7 +442,6 @@ STRING_AND_INT(bitcoinrpc,getreceivedbyaddress,address,minconf)
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
-
 
 // single address/account funcs
 ZERO_ARGS(bitcoinrpc,getrawchangeaddress)

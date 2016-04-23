@@ -670,14 +670,19 @@ int32_t btc_wif2priv(uint8_t *addrtypep,uint8_t privkey[32],char *wifstr)
     cstring *cstr; int32_t len = -1;
     if ( (cstr= base58_decode_check(addrtypep,(const char *)wifstr)) != 0 )
     {
-        init_hexbytes_noT((void *)privkey,(void *)cstr->str,cstr->len);
         if ( cstr->str[cstr->len-1] == 0x01 )
             cstr->len--;
-        memcpy(privkey,cstr->str,cstr->len);
-        len = (int32_t)cstr->len;
-        char tmp[138];
-        btc_priv2wif(tmp,privkey,*addrtypep);
-        //printf("addrtype.%02x wifstr.(%llx) privlen.%d\n",*addrtypep,*(long long *)privkey,len);
+        if ( cstr->len == sizeof(bits256) )
+        {
+            memcpy(privkey,cstr->str,cstr->len);
+            len = (int32_t)cstr->len;
+            if ( 1 )
+            {
+                char tmp[138];
+                btc_priv2wif(tmp,privkey,*addrtypep);
+                printf("addrtype.%02x wifstr.(%llx) privlen.%d\n",*addrtypep,*(long long *)privkey,len);
+            }
+        }
         cstr_free(cstr,true);
     }
     return(len);
@@ -905,18 +910,6 @@ int32_t iguana_sig(uint8_t *sig,int32_t maxsize,uint8_t *data,int32_t datalen,bi
     }
     return(0);
 }*/
-
-char *makekeypair(struct iguana_info *coin)
-{
-    struct iguana_waddress addr; char str[67]; cJSON *retjson = cJSON_CreateObject();
-    if ( iguana_waddresscalc(coin->chain->pubtype,coin->chain->wiftype,&addr,rand256(1)) == 0 )
-    {
-        init_hexbytes_noT(str,addr.pubkey,33);
-        jaddstr(retjson,"result",str);
-        jaddstr(retjson,"privkey",bits256_str(str,addr.privkey));
-    } else jaddstr(retjson,"error","cant create address");
-    return(jprint(retjson,1));
-}
 
 cJSON *iguana_pubkeyjson(struct iguana_info *coin,char *pubkeystr)
 {

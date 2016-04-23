@@ -216,7 +216,7 @@ static char *addmultisigaddress(RPCARGS)
 // blockchain
 static char *getinfo(RPCARGS)
 {
-    return(sglue(0,CALLGLUE,"bitcoinrpc","status"));
+    return(sglue(0,CALLGLUE,"bitcoinrpc","getinfo"));
 }
 
 static char *getbestblockhash(RPCARGS)
@@ -512,6 +512,8 @@ static char *getrawchangeaddress(RPCARGS)
 #define false 0
 struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,remoteflag; } RPCcalls[] =
 {
+    { "validatepubkey",         &validatepubkey,         true,   true },
+    { "makekeypair",            &makekeypair,            false,  false },
     { "listunspent",            &listunspent,            false,  false },
     { "getblockhash",           &getblockhash,           false,  true },
     { "walletpassphrase",       &walletpassphrase,       true,   false },
@@ -540,7 +542,6 @@ struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,remotefla
     { "walletlock",             &walletlock,             true,   false },
     { "encryptwallet",          &encryptwallet,          false,  false },
     { "validateaddress",        &validateaddress,        true,   true },
-    { "validatepubkey",         &validatepubkey,         true,   true },
     { "getbalance",             &getbalance,             false,  false },
     { "move",                   &movecmd,                false,  false },
     { "sendfrom",               &sendfrom,               false,  false },
@@ -567,7 +568,6 @@ struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,remotefla
     { "sendrawtransaction",     &sendrawtransaction,     false,  true },
     { "checkwallet",            &checkwallet,            false,  false },
     { "repairwallet",           &repairwallet,           false,  false },
-    { "makekeypair",            &makekeypair,            false,  false },
     { "sendalert",              &sendalert,              false,  false },
     //
     { "createmultisig",         &createmultisig,         false,  false },
@@ -654,6 +654,8 @@ char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,ch
             if ( i == IGUANA_MAXCOINS )
                 coin = 0;
         }
+        if ( coin == 0 && symbol != 0 && symbol[0] != 0 )
+            coin = iguana_coinfind(symbol);
         //printf("method.(%s) (%s) remote.(%s) symbol.(%s)\n",method,jprint(json,0),remoteaddr,symbol);
         if ( method != 0 && symbol != 0 && (coin != 0 || (coin= iguana_coinfind(symbol)) != 0) )
         {

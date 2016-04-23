@@ -203,6 +203,7 @@ struct supernet_info *SuperNET_accountfind(cJSON *argjson);
 int32_t SuperNET_MYINFOS(struct supernet_info **myinfos,int32_t max);
 FILE *myfopen(char *fname,char *mode);
 int32_t myfclose(FILE *fp);
+cJSON *SuperNET_rosettajson(bits256 privkey,int32_t showprivs);
 
 #endif
 

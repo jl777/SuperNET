@@ -264,6 +264,21 @@ char *jsuccess()
     return(jprint(retjson,1));
 }
 
+bits256 iguana_str2priv(struct iguana_info *coin,char *str)
+{
+    bits256 privkey; int32_t ind,n; uint8_t addrtype; struct iguana_waccount *wacct;
+    n = (int32_t)strlen(str) >> 1;
+    memset(&privkey,0,sizeof(privkey));
+    if ( n == sizeof(bits256) && is_hexstr(str,sizeof(bits256)) > 0 )
+        decode_hex(privkey.bytes,sizeof(privkey),str);
+    else if ( btc_wif2priv(&addrtype,privkey.bytes,str) != sizeof(bits256) )
+    {
+        if ( (wacct= iguana_waddressfind(coin,&ind,str)) != 0 )
+            privkey = wacct->waddrs[ind].privkey;
+    }
+    return(privkey);
+}
+
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
@@ -322,7 +337,18 @@ ZERO_ARGS(bitcoinrpc,getinfo)
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     retjson = cJSON_CreateObject();
-    jaddstr(retjson,"result",coin->statusstr);
+    if ( coin != 0 )
+    {
+        jaddstr(retjson,"result","success");
+        jaddnum(retjson,"protocolversion",PROTOCOL_VERSION);
+        jaddnum(retjson,"blocks",coin->blocks.hwmchain.height);
+        jaddnum(retjson,"longestchain",coin->longestchain);
+        jaddnum(retjson,"port",coin->chain->portp2p);
+        jaddnum(retjson,"connections",coin->peers.numranked);
+        jaddnum(retjson,"difficulty",coin->blocks.hwmchain.PoW);
+        jaddstr(retjson,"status",coin->statusstr);
+        jaddstr(retjson,"coin",coin->symbol);
+    }
     return(jprint(retjson,1));
 }
 
@@ -488,6 +514,7 @@ SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comme
         return(clonestr("{\"error\":\"no remote\"}"));
     return(jsuccess());
 }
+
 DOUBLE_ARG(bitcoinrpc,settxfee,amount)
 {
     cJSON *retjson = cJSON_CreateObject();
@@ -505,7 +532,6 @@ S_A_I_S(bitcoinrpc,sendmany,fromaccount,array,minconf,comment)
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
-
 
 // entire wallet funcs
 TWO_INTS(bitcoinrpc,listaccounts,minconf,includewatchonly)

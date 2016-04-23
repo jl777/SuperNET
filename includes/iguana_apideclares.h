@@ -13,79 +13,74 @@
  *                                                                            *
  ******************************************************************************/
 
-TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array);
 
-HASH_AND_STRING(bitcoinrpc,verifytx,txid,txbytes);
-INT_ARG(bitcoinrpc,getblockhash,height);
-HASH_AND_TWOINTS(bitcoinrpc,getblock,blockhash,verbose,remoteonly);
-HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose);
-HASH_ARG(bitcoinrpc,gettransaction,txid);
-STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx);
 
 ZERO_ARGS(bitcoinrpc,getinfo);
-ZERO_ARGS(bitcoinrpc,getbestblockhash);
 ZERO_ARGS(bitcoinrpc,getblockcount);
-ZERO_ARGS(bitcoinrpc,listaddressgroupings);
-ZERO_ARGS(bitcoinrpc,makekeypair);
-ZERO_ARGS(bitcoinrpc,gettxoutsetinfo);
-ZERO_ARGS(bitcoinrpc,listlockunspent);
-ZERO_ARGS(bitcoinrpc,getrawchangeaddress);
+ZERO_ARGS(bitcoinrpc,getbestblockhash);
+INT_ARG(bitcoinrpc,getblockhash,height);
+HASH_AND_TWOINTS(bitcoinrpc,getblock,blockhash,verbose,remoteonly);
 
-TWO_INTS(bitcoinrpc,listaccounts,minconf,includewatchonly);
-THREE_INTS(bitcoinrpc,listreceivedbyaddress,minconf,includeempty,flag);
+HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose);
+HASH_ARG(bitcoinrpc,gettransaction,txid);
+
+STRING_ARG(bitcoinrpc,decodescript,script);
+STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx);
+TWO_ARRAYS(bitcoinrpc,createrawtransaction,vins,vouts); //
+STRING_AND_TWOARRAYS(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys); //
+STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees); //
+
+HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool); //
+TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array);
+HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag); //
+
+SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment); //
+SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment2); //
+S_A_I_S(bitcoinrpc,sendmany,fromaccount,array,minconf,comment); //
+S_D_SS(bitcoinrpc,sendtoaddress,address,amount,comment,comment2); //
+
+ZERO_ARGS(bitcoinrpc,makekeypair);
+STRING_ARG(bitcoinrpc,validatepubkey,pubkey);
+STRING_ARG(bitcoinrpc,validateaddress,address);
 
 ZERO_ARGS(bitcoinrpc,walletlock);
+TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout);
+THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile);
+FOUR_STRINGS(bitcoinrpc,walletpassphrasechange,oldpassword,newpassword,oldpermanentfile,permanentfile);
+
+// accounts
+STRING_ARG(bitcoinrpc,getnewaddress,account); //
+TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan); //
+STRING_ARG(bitcoinrpc,dumpprivkey,address); //
+INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,array,account); //
+
+STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatchonly);
+THREE_INTS(bitcoinrpc,listreceivedbyaddress,minconf,includeempty,flag);
+THREE_INTS(bitcoinrpc,listreceivedbyaccount,confirmations,includeempty,watchonly);
+TWO_INTS(bitcoinrpc,listaccounts,minconf,includewatchonly);
+ZERO_ARGS(bitcoinrpc,listaddressgroupings);
+STRING_AND_INT(bitcoinrpc,getreceivedbyaddress,address,minconf);
+STRING_AND_INT(bitcoinrpc,getreceivedbyaccount,account,includeempty);
+THREE_INTS(bitcoinrpc,getbalance,confirmations,includeempty,watchonly);
+STRING_ARG(bitcoinrpc,getaddressesbyaccount,account);
+STRING_ARG(bitcoinrpc,getaccount,address);
+STRING_ARG(bitcoinrpc,getaccountaddress,account);
+TWO_STRINGS(bitcoinrpc,setaccount,address,account);
+
+// maybe later
+TWO_STRINGS(bitcoinrpc,signmessage,address,message); //
+THREE_STRINGS(bitcoinrpc,verifymessage,address,sig,message); //
+
+ZERO_ARGS(bitcoinrpc,gettxoutsetinfo);
+INT_AND_ARRAY(bitcoinrpc,lockunspent,flag,array);
+ZERO_ARGS(bitcoinrpc,listlockunspent);
+ZERO_ARGS(bitcoinrpc,getrawchangeaddress);
 ZERO_ARGS(bitcoinrpc,checkwallet);
 ZERO_ARGS(bitcoinrpc,repairwallet);
 STRING_ARG(bitcoinrpc,dumpwallet,filename);
 STRING_ARG(bitcoinrpc,backupwallet,filename);
-THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile);
-FOUR_STRINGS(bitcoinrpc,walletpassphrasechange,oldpassword,newpassword,oldpermanentfile,permanentfile);
 STRING_ARG(bitcoinrpc,importwallet,filename);
-TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout);
-
-STRING_ARG(bitcoinrpc,validateaddress,address);
-STRING_ARG(bitcoinrpc,validatepubkey,pubkey);
-STRING_ARG(bitcoinrpc,getnewaddress,account);
-STRING_ARG(bitcoinrpc,vanitygen,vanity);
-
-STRING_ARG(bitcoinrpc,getaddressesbyaccount,account);
-STRING_ARG(bitcoinrpc,getaccount,address);
-STRING_ARG(bitcoinrpc,getaccountaddress,account);
-STRING_ARG(bitcoinrpc,dumpprivkey,address);
-STRING_ARG(bitcoinrpc,decodescript,script);
-
-TWO_STRINGS(bitcoinrpc,setaccount,address,account);
-
-TWO_STRINGS(bitcoinrpc,signmessage,address,message);
-
-THREE_STRINGS(bitcoinrpc,verifymessage,address,sig,message);
-THREE_INTS(bitcoinrpc,listreceivedbyaccount,confirmations,includeempty,watchonly);
-THREE_INTS(bitcoinrpc,getbalance,confirmations,includeempty,watchonly);
-
-TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan);
-STRING_AND_INT(bitcoinrpc,getreceivedbyaccount,account,includeempty);
-STRING_AND_INT(bitcoinrpc,getreceivedbyaddress,address,minconf);
-STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees);
-
-HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag);
-
-STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatchonly);
-
-HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool);
-
 DOUBLE_ARG(bitcoinrpc,settxfee,amount);
-
-INT_AND_ARRAY(bitcoinrpc,lockunspent,flag,array);
-INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,array,account);
-
-TWO_ARRAYS(bitcoinrpc,createrawtransaction,vins,vouts);
-STRING_AND_TWOARRAYS(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys);
-
-SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment);
-SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment2);
-S_A_I_S(bitcoinrpc,sendmany,fromaccount,array,minconf,comment);
-S_D_SS(bitcoinrpc,sendtoaddress,address,amount,comment,comment2);
 
 STRING_ARG(iguana,initfastfind,activecoin);
 STRING_ARG(iguana,peers,activecoin);

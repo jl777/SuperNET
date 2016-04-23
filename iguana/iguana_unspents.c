@@ -861,6 +861,8 @@ static int _bignum_cmp(const void *a,const void *b)
 uint32_t iguana_fastfindinit(struct iguana_info *coin)
 {
     int32_t i,j,iter,num,tablesize,*hashtable; uint8_t *sorted; char fname[1024];
+    if ( strcmp("BTC",coin->symbol) != 0 )
+        return(0);
     for (iter=0; iter<2; iter++)
     {
         for (i=0; i<0x100; i++)
@@ -1098,7 +1100,7 @@ cJSON *iguana_unspentjson(struct iguana_info *coin,int32_t hdrsi,uint32_t unspen
     jaddnum(item,"amount",dstr(up->value));
     if ( (checkind= iguana_unspentindfind(coin,&height,T[up->txidind].txid,up->vout,coin->bundlescount-1)) != 0 )
     {
-        jaddnum(item,"confirmations",coin->longestchain - height);
+        jaddnum(item,"confirmations",coin->blocks.hwmchain.height - height);
         jaddnum(item,"checkind",checkind);
     }
     if ( (wacct= iguana_waddressfind(coin,&ind,coinaddr)) != 0 )

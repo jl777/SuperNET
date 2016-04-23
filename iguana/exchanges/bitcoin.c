@@ -407,7 +407,7 @@ int32_t iguana_parsevinobj(struct iguana_info *coin,uint8_t *serialized,int32_t 
 cJSON *iguana_voutjson(struct iguana_info *coin,struct iguana_msgvout *vout,int32_t txi,bits256 txid)
 {
     // 035f1321ed17d387e4433b2fa229c53616057964af065f98bfcae2233c5108055e OP_CHECKSIG
-    char scriptstr[8192+1],asmstr[16384]; int32_t i,m,n,scriptlen,asmtype; struct vin_info *vp;
+    char scriptstr[IGUANA_MAXSCRIPTSIZE+1],asmstr[2*IGUANA_MAXSCRIPTSIZE+1]; int32_t i,m,n,scriptlen,asmtype; struct vin_info *vp;
     uint8_t space[8192]; cJSON *addrs,*skey,*json = cJSON_CreateObject();
     vp = calloc(1,sizeof(*vp));
     jaddnum(json,"value",dstr(vout->value));
@@ -416,7 +416,7 @@ cJSON *iguana_voutjson(struct iguana_info *coin,struct iguana_msgvout *vout,int3
     if ( vout->pk_script != 0 && vout->pk_scriptlen*2+1 < sizeof(scriptstr) )
     {
         memset(vp,0,sizeof(*vp));
-        if ( (asmtype= iguana_calcrmd160(coin,vp,vout->pk_script,vout->pk_scriptlen,txid,txi,0xffffffff)) >= 0 )
+        if ( (asmtype= iguana_calcrmd160(coin,asmstr,vp,vout->pk_script,vout->pk_scriptlen,txid,txi,0xffffffff)) >= 0 )
         {
             skey = cJSON_CreateObject();
             scriptlen = iguana_scriptgen(coin,&m,&n,vp->coinaddr,space,asmstr,vp->rmd160,asmtype,vp,txi);

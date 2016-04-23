@@ -682,9 +682,9 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
     return(type);
 }
 
-int32_t iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp,uint8_t *pk_script,int32_t pk_scriptlen,bits256 debugtxid,int32_t vout,uint32_t sequence)
+int32_t iguana_calcrmd160(struct iguana_info *coin,char *asmstr,struct vin_info *vp,uint8_t *pk_script,int32_t pk_scriptlen,bits256 debugtxid,int32_t vout,uint32_t sequence)
 {
-    int32_t scriptlen; uint8_t script[IGUANA_MAXSCRIPTSIZE]; char asmstr[IGUANA_MAXSCRIPTSIZE*3];
+    int32_t scriptlen; uint8_t script[IGUANA_MAXSCRIPTSIZE];
     memset(vp,0,sizeof(*vp));
     vp->vin.prev_hash = debugtxid, vp->vin.prev_vout = vout;
     vp->spendlen = pk_scriptlen;
@@ -693,6 +693,12 @@ int32_t iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp,uint8_t *
     if ( (vp->type= _iguana_calcrmd160(coin,vp)) >= 0 )
     {
         scriptlen = iguana_scriptgen(coin,&vp->M,&vp->N,vp->coinaddr,script,asmstr,vp->rmd160,vp->type,(const struct vin_info *)vp,vout);
+        if ( vp->M == 0 && vp->N == 0 )
+        {
+            vp->M = vp->N = 1;
+            strcpy(vp->signers[0].coinaddr,vp->coinaddr);
+            memcpy(vp->signers[0].rmd160,vp->rmd160,20);
+        }
         if ( scriptlen != pk_scriptlen || (scriptlen != 0 && memcmp(script,pk_script,scriptlen) != 0) )
         {
             if ( vp->type != IGUANA_SCRIPT_OPRETURN && vp->type != IGUANA_SCRIPT_DATA && vp->type != IGUANA_SCRIPT_STRANGE )
@@ -1114,7 +1120,7 @@ int32_t iguana_scriptspaceraw(struct iguana_info *coin,int32_t *scriptspacep,int
         for (j=0; j<tx->tx_out; j++)
         {
             memset(&V,0,sizeof(V));
-            type = iguana_calcrmd160(coin,&V,tx->vouts[j].pk_script,tx->vouts[j].pk_scriptlen,tx->txid,j,0xffffffff);
+            type = iguana_calcrmd160(coin,asmstr,&V,tx->vouts[j].pk_script,tx->vouts[j].pk_scriptlen,tx->txid,j,0xffffffff);
             if ( type != 0 ) // IGUANA_SCRIPT_NULL
             {
                 memcpy(rmd160,V.rmd160,sizeof(rmd160));
