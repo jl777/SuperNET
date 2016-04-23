@@ -198,7 +198,7 @@ void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramc
 void iguana_volatilespurge(struct iguana_info *coin,struct iguana_ramchain *ramchain)
 {
     struct iguana_bundle *bp;
-    if ( ramchain != 0 && ((bp= coin->current) == 0 || bp->bundleheight > ramchain->height) )
+    if ( ramchain != 0 && ramchain->height > 0 && ((bp= coin->current) == 0 || bp->bundleheight > ramchain->height) )
     {
         printf("volatilespurge.[%d]\n",ramchain->height/coin->chain->bundlesize);
         if ( ramchain->allocatedA2 != 0 && ramchain->A2 != 0 )
