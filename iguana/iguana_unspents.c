@@ -2334,7 +2334,11 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
         for (hdrsi=num=0; hdrsi<bp->hdrsi; hdrsi++)
         {
 #ifdef __APPLE__
-            //iguana_ramchain_prefetch(coin,&coin->bundles[hdrsi]->ramchain,2);
+            if ( coin->bundles[hdrsi]->lastprefetch == 0 )
+            {
+                iguana_ramchain_prefetch(coin,&coin->bundles[hdrsi]->ramchain,2);
+                coin->bundles[hdrsi]->lastprefetch = (uint32_t)time(NULL);
+            }
 #endif
             num += iguana_convert(coin,IGUANA_NUMHELPERS,coin->bundles[hdrsi],1,orignumemit);
         }
@@ -2483,6 +2487,10 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     if ( coin->RTdatabad != 0 )
     {
         iguana_RTramchainfree(coin,bp);
+        memset(bp->hashes,0,sizeof(bp->hashes));
+        memset(bp->blocks,0,sizeof(bp->blocks));
+        if ( bp->speculative != 0 )
+            memset(bp->speculative,0,sizeof(*bp->speculative)*bp->n);
         //iguana_RTramchainalloc("RTbundle",coin,bp);
     }
     return(flag);
