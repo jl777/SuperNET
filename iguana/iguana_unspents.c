@@ -762,6 +762,11 @@ int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 tx
                         memcpy(&firstvout,&item[sizeof(uint64_t)],sizeof(firstvout));
                         memcpy(heightp,&item[sizeof(uint64_t) + sizeof(firstvout)],sizeof(*heightp));
                         //printf("i.%d val.%d height.%d firstvout.%d j.%d\n",i,val,*heightp,firstvout,j);
+                        if ( *heightp >= (lasthdrsi+1)*coin->chain->bundlesize )
+                        {
+                            printf("txidfastfind: unexpected height.%d with lasthdrsi.%d\n",*heightp,lasthdrsi);
+                            return(-1);
+                        }
                         return(firstvout);
                     }
                     else if ( 0 )
@@ -781,6 +786,21 @@ int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 tx
                 }
             }
         }
+    }
+    return(-1);
+}
+
+int32_t iguana_unspentindfind(struct iguana_info *coin,int32_t *heightp,bits256 txid,int32_t vout,int32_t lasthdrsi)
+{
+    struct iguana_txid *tp,TX; int32_t firstvout;
+    if ( coin->fastfind != 0 && (firstvout= iguana_txidfastfind(coin,heightp,txid,lasthdrsi)) >= 0 )
+    {
+        return(firstvout + vout);
+    }
+    else
+    {
+        if ( (tp= iguana_txidfind(coin,heightp,&TX,txid,lasthdrsi)) != 0 )
+            return(tp->firstvout + vout);
     }
     return(-1);
 }
@@ -901,7 +921,7 @@ int64_t iguana_fastfindcreate(struct iguana_info *coin)
             {
                 fclose(coin->fastfps[i]);
                 sprintf(fname,"DB/%s/fastfind/%02x",coin->symbol,i), OS_compatible_path(fname);
-                printf("%s\n",fname);
+                //printf("%s\n",fname);
                 if ( (sortbuf= OS_filestr(&allocsize,fname)) != 0 )
                 {
                     num = (int32_t)allocsize/sizeof(bits256);
@@ -1045,7 +1065,7 @@ cJSON *iguana_unspentjson(struct iguana_info *coin,int32_t hdrsi,uint32_t unspen
      "spendable" : true
      },*/
     //struct iguana_unspent { uint64_t value; uint32_t txidind,pkind,prevunspentind; uint16_t hdrsi:12,type:4,vout; } __attribute__((packed));
-    struct iguana_waccount *wacct; struct iguana_txid TX; int32_t height,ind; char scriptstr[8192],asmstr[sizeof(scriptstr)+1024]; cJSON *item;
+    struct iguana_waccount *wacct; int32_t height,ind; char scriptstr[8192],asmstr[sizeof(scriptstr)+1024]; cJSON *item; uint32_t checkind;
     item = cJSON_CreateObject();
     jaddbits256(item,"txid",T[up->txidind].txid);
     jaddnum(item,"vout",up->vout);
@@ -1053,8 +1073,11 @@ cJSON *iguana_unspentjson(struct iguana_info *coin,int32_t hdrsi,uint32_t unspen
     if ( iguana_scriptget(coin,scriptstr,asmstr,sizeof(scriptstr),hdrsi,unspentind,T[up->txidind].txid,up->vout,rmd160,up->type,pubkey33) != 0 )
         jaddstr(item,"scriptPubKey",scriptstr);
     jaddnum(item,"amount",dstr(up->value));
-    if ( iguana_txidfind(coin,&height,&TX,T[up->txidind].txid,coin->bundlescount-1) != 0 )
+    if ( (checkind= iguana_unspentindfind(coin,&height,T[up->txidind].txid,up->vout,coin->bundlescount-1)) != 0 )
+    {
         jaddnum(item,"confirmations",coin->longestchain - height);
+        jaddnum(item,"checkind",checkind);
+    }
     if ( (wacct= iguana_waddressfind(coin,&ind,coinaddr)) != 0 )
     {
         jaddstr(item,"account",wacct->account);

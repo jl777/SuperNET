@@ -249,8 +249,8 @@ int32_t iguana_peerdatarequest(struct iguana_info *coin,struct iguana_peer *addr
 
 int32_t iguana_peerhdrrequest(struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_peer *addr,bits256 hash2)
 {
-    struct iguana_txid *tx,T; int32_t len=0,i,height,retval=-1; struct iguana_block *block; struct iguana_msgblock msgB; bits256 checkhash2;
-    if ( (tx= iguana_txidfind(coin,&height,&T,hash2,coin->bundlescount-1)) != 0 )
+    int32_t len=0,i,height,firstvout,retval=-1; struct iguana_block *block; struct iguana_msgblock msgB; bits256 checkhash2;
+    if ( (firstvout= iguana_unspentindfind(coin,&height,hash2,0,coin->bundlescount-1)) != 0 )
     {
         for (i=0; i<coin->chain->bundlesize; i++)
         {

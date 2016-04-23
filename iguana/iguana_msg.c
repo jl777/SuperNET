@@ -264,7 +264,7 @@ int32_t iguana_send_ping(struct iguana_info *coin,struct iguana_peer *addr)
         addr->pingnonce = ((nonce & 0xffffffff) << 32) | ((uint32_t)addr->ipbits & 0xffffffff);
         addr->pingtime = (uint32_t)time(NULL);
     }
-    printf("pingnonce.%llx from (%s)\n",(long long)nonce,addr->ipaddr);
+    //printf("pingnonce.%llx from (%s)\n",(long long)nonce,addr->ipaddr);
     iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
     len = iguana_rwnum(1,&serialized[sizeof(struct iguana_msghdr)],sizeof(uint64_t),&nonce);
     if ( addr->supernet != 0 )

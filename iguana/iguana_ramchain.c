@@ -2318,14 +2318,6 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
         //printf("mapped bundle.%d\n",bp->bundleheight);
         bp->emitfinish = (uint32_t)time(NULL) + 1;
         iguana_bundlecalcs(coin,bp,60);
-
-        /*for (i=1; i<mapchain->H.data->numtxids; i++)
-        {break;
-            if ( iguana_txidfind(coin,&height,&tx,T[i].txid) == 0 )
-                printf("error couldnt find T[%d] %s\n",i,bits256_str(str,T[i].txid));
-            else if ( memcmp(&tx,&T[i],sizeof(T[i])) != 0 )
-                printf("compare error T[%d] %s\n",i,bits256_str(str,T[i].txid));
-        }*/
     }
     else
     {

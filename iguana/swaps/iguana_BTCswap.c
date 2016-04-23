@@ -593,11 +593,11 @@ double iguana_numconfs(struct iguana_info *coin,bits256 txid,int32_t height)
 
 char *BTC_txconfirmed(struct supernet_info *myinfo,struct iguana_info *coin,struct bitcoin_swapinfo *swap,cJSON *newjson,bits256 txid,double *numconfirmsp,char *virtualevent,double requiredconfs)
 {
-    struct iguana_txid *tx,T; int32_t height; char *retstr; double confs;
+    int32_t height,firstvout; char *retstr; double confs;
     *numconfirmsp = -1.;
     if ( coin != 0 && *numconfirmsp < 0 )
     {
-        if ( (tx= iguana_txidfind(coin,&height,&T,txid,coin->bundlescount-1)) != 0 && (confs= iguana_numconfs(coin,txid,height)) >= requiredconfs )
+        if ( (firstvout= iguana_unspentindfind(coin,&height,txid,0,coin->bundlescount-1)) != 0 && (confs= iguana_numconfs(coin,txid,height)) >= requiredconfs )
         {
             *numconfirmsp = confs;
             if ( (retstr= instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,virtualevent,myinfo->myaddr.persistent,0,0,0)) != 0 )

@@ -1141,7 +1141,7 @@ ffffffff\
 cJSON *bitcoin_txtest(struct iguana_info *coin,char *rawtxstr,bits256 txid)
 {
     struct iguana_msgtx msgtx; char str[65],str2[65]; bits256 checktxid,blockhash,signedtxid;
-    cJSON *retjson,*txjson; uint8_t *serialized,*serialized2; struct iguana_txid T,*tp;
+    cJSON *retjson,*txjson; uint8_t *serialized,*serialized2; uint32_t firstvout; 
     struct vin_info *V; char vpnstr[64],*txbytes,*signedtx; int32_t n,txstart,height,n2,maxsize,len;
 rawtxstr = refstr;
     len = (int32_t)strlen(rawtxstr);
@@ -1174,7 +1174,7 @@ rawtxstr = refstr;
         if ( bitcoin_verifytx(coin,&signedtxid,&signedtx,rawtxstr,V) != 0 )
             printf("bitcoin_verifytx error\n");
         jadd(retjson,"result",txjson);
-        if ( (tp= iguana_txidfind(coin,&height,&T,txid,coin->bundlescount-1)) != 0 )
+        if ( (firstvout= iguana_unspentindfind(coin,&height,txid,0,coin->bundlescount-1)) != 0 )
         {
             if ( height >= 0 )
             {
