@@ -818,8 +818,8 @@ int32_t iguana_fastfindadd(struct iguana_info *coin,bits256 txid,int32_t height,
     FILE *fp;
     if ( bits256_nonz(txid) != 0 && (fp= coin->fastfps[txid.bytes[31]]) != 0 )
     {
-        txid.uints[7] = height;
         txid.uints[6] = firstvout;
+        txid.uints[7] = height;
         if ( fwrite(&txid,1,sizeof(txid),fp) == sizeof(txid) )
             return(1);
     }
@@ -956,7 +956,7 @@ int64_t iguana_fastfindcreate(struct iguana_info *coin)
                         for (ind=1; ind<=num; ind++)
                         {
                             hash2 = sortbuf[ind-1];
-                            val = (hash2.uints[4] % tablesize);
+                            val = (hash2.uints[2] % tablesize);
                             for (j=0; j<tablesize; j++,val++)
                             {
                                 if ( val >= tablesize )
@@ -977,6 +977,7 @@ int64_t iguana_fastfindcreate(struct iguana_info *coin)
                             memcpy(&buf[sizeof(hash2.txid)],&hash2.uints[6],sizeof(hash2.uints[6]));
                             memcpy(&buf[sizeof(hash2.txid) + sizeof(hash2.uints[6])],&hash2.uints[7],sizeof(hash2.uints[7]));
                             fwrite(buf,1,sizeof(buf),coin->fastfps[i]);
+                            //fwrite(hash2,1,sizeof(hash2),coin->fastfps[i]);
                             if ( j < num )
                             {
                                 hash2 = sortbuf[j];
@@ -1390,7 +1391,8 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
     int32_t iter,spendind,n=0,txidind,errs=0,emit=0,i,j,k; double startmillis; bits256 prevhash;
     uint32_t spent_unspentind,spent_pkind,now,starttime; struct iguana_ramchaindata *rdata;
     struct iguana_bundle *spentbp; struct iguana_blockRO *B; struct iguana_spendvector *ptr;
-    struct iguana_unspent *u,*spentU;  struct iguana_txid *T; char str[65]; struct iguana_spend *S,*s;
+    struct iguana_unspent *u,*spentU;  struct iguana_txid *T; char str[65];
+    struct iguana_spend *S,*s; void *fastfind = 0;
     //printf("iguana_spendvectors.[%d] gen.%d ramchain data.%p txbits.%p\n",bp->hdrsi,bp->bundleheight,ramchain->H.data,ramchain->txbits);
     if ( (rdata= ramchain->H.data) == 0 || (n= rdata->numspends) < 1 )
     {
@@ -1418,6 +1420,12 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
     iguana_ramchain_prefetch(coin,&bp->ramchain,3);
     for (iter=0; iter<=iterate; iter++)
     {
+        if ( iterate != 0 )
+        {
+            fastfind = coin->fast[iter];
+            coin->fast[iter] = calloc(1,coin->fastsizes[iter]);
+            memcpy(coin->fast[iter],fastfind,coin->fastsizes[iter]);
+        }
         txidind = B[starti].firsttxidind;
         spendind = B[starti].firstvin;
         for (i=starti; i<numblocks; i++)
@@ -1449,7 +1457,9 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                     if ( s->external != 0 && s->prevout >= 0 )
                     {
                         if ( coin->fastfind != 0 )
+                        {
                             spentbp = iguana_fastexternalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s);
+                        }
                         else if ( spentbp == 0 )
                         {
                             if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s,2)) != 0 )
@@ -1529,6 +1539,11 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                     }
                 }
             }
+        }
+        if ( iterate != 0 )
+        {
+            free(coin->fast[iter]);
+            coin->fast[iter] = fastfind;
         }
         if ( txidind != ramchain->H.data->numtxids && txidind != ramchain->H.txidind )
         {
