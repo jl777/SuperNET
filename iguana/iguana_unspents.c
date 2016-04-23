@@ -36,7 +36,7 @@ struct iguana_hhaccount *iguana_hhaccountfind(struct iguana_info *coin,uint64_t 
 
 int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t spent_unspentind,uint32_t spent_pkind,uint64_t spent_value,uint32_t spendind,uint32_t fromheight)
 {
-    static struct iguana_hhutxo *HHUTXO; static struct iguana_hhaccount *HHACCT; static uint32_t numHHUTXO,maxHHUTXO,numHHACCT,maxHHACCT;
+    //static struct iguana_hhutxo *HHUTXO; static struct iguana_hhaccount *HHACCT; static uint32_t numHHUTXO,maxHHUTXO,numHHACCT,maxHHACCT;
     struct iguana_hhutxo *hhutxo,*tmputxo; struct iguana_hhaccount *hhacct,*tmpacct; uint64_t uval,pval;
     uval = ((uint64_t)spent_hdrsi << 32) | spent_unspentind;
     pval = ((uint64_t)spent_hdrsi << 32) | spent_pkind;
@@ -61,7 +61,7 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
             }
             coin->accountstable = 0;
         }
-        if ( HHUTXO != 0 )
+        /*if ( HHUTXO != 0 )
         {
             free(HHUTXO);
             maxHHUTXO = numHHUTXO = 0;
@@ -72,7 +72,7 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
             free(HHACCT);
             maxHHACCT = numHHACCT = 0;
             HHACCT = 0;
-        }
+        }*/
         return(0);
     }
     if ( (hhutxo= iguana_hhutxofind(coin,uval)) != 0 && hhutxo->u.spentflag != 0 )
@@ -80,21 +80,21 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
         printf("hhutxo.%p spentflag.%d\n",hhutxo,hhutxo->u.spentflag);
         return(-1);
     }
-    if ( 0 && numHHUTXO+1 >= maxHHUTXO )
+    /*if ( 0 && numHHUTXO+1 >= maxHHUTXO )
     {
         maxHHUTXO += 1;
         HHUTXO = realloc(HHUTXO,sizeof(*HHUTXO) * maxHHUTXO);
-    }
+    }*/
     hhutxo = calloc(1,sizeof(*hhutxo));//&HHUTXO[numHHUTXO++], memset(hhutxo,0,sizeof(*hhutxo));
     hhutxo->uval = uval;
     HASH_ADD_KEYPTR(hh,coin->utxotable,&hhutxo->uval,sizeof(hhutxo->uval),hhutxo);
     if ( (hhacct= iguana_hhaccountfind(coin,pval)) == 0 )
     {
-        if ( 0 && numHHACCT+1 >= maxHHACCT )
+        /*if ( 0 && numHHACCT+1 >= maxHHACCT )
         {
             maxHHACCT += 1;
             HHACCT = realloc(HHACCT,sizeof(*HHACCT) * maxHHACCT);
-        }
+        }*/
         hhacct = calloc(1,sizeof(*hhacct)); // &HHACCT[numHHACCT++], memset(hhacct,0,sizeof(*hhacct));
         hhacct->pval = pval;
         HASH_ADD_KEYPTR(hh,coin->accountstable,&hhacct->pval,sizeof(hhacct->pval),hhacct);
@@ -197,15 +197,14 @@ void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramc
 
 void iguana_volatilespurge(struct iguana_info *coin,struct iguana_ramchain *ramchain)
 {
-    struct iguana_bundle *bp;
-    if ( ramchain != 0 && ramchain->height > 0 && ((bp= coin->current) == 0 || bp->bundleheight > ramchain->height) )
+    if ( ramchain != 0 )
     {
         printf("volatilespurge.[%d]\n",ramchain->height/coin->chain->bundlesize);
-        if ( ramchain->allocatedA2 != 0 && ramchain->A2 != 0 )
+        if ( ramchain->allocatedA2 != 0 && ramchain->A2 != 0 && ramchain->A2 != ramchain->debitsfileptr )
             free(ramchain->A2);
-        ramchain->A2 = 0;
-        if ( ramchain->allocatedU2 != 0 && ramchain->Uextras != 0 )
+        if ( ramchain->allocatedU2 != 0 && ramchain->Uextras != 0 && ramchain->Uextras != ramchain->lastspendsfileptr )
             free(ramchain->Uextras);
+        ramchain->A2 = 0;
         ramchain->Uextras = 0;
         ramchain->allocatedA2 = ramchain->allocatedU2 = 0;
         if ( ramchain->debitsfileptr != 0 )
@@ -226,7 +225,7 @@ void iguana_volatilespurge(struct iguana_info *coin,struct iguana_ramchain *ramc
 int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ramchain)
 {
     int32_t iter,numhdrsi,err = -1; char fname[1024]; bits256 balancehash,allbundles; struct iguana_ramchaindata *rdata;
-    //printf("volatilesmap.[%d]\n",ramchain->height/coin->chain->bundlesize);
+    printf("volatilesmap.[%d]\n",ramchain->height/coin->chain->bundlesize);
     if ( (rdata= ramchain->H.data) == 0 )
     {
         printf("volatilesmap.[%d] no rdata\n",ramchain->height/coin->chain->bundlesize);
@@ -1006,16 +1005,16 @@ struct iguana_bundle *iguana_fastexternalspent(struct iguana_info *coin,bits256 
         {
             if ( ind < rdata->numexternaltxids )
             {
-                char str[65]; double duration,startmillis = OS_milliseconds();
+                char str[65]; //double duration,startmillis = OS_milliseconds();
                 X = (void *)(long)((long)rdata + rdata->Xoffset);
                 *prevhashp = prev_hash = X[ind];
                 if ( (firstvout= iguana_txidfastfind(coin,&height,prev_hash,spent_hdrsi-1)) >= 0 )
                 {
-                    duration = (OS_milliseconds() - startmillis);
+                    /*duration = (OS_milliseconds() - startmillis);
                     if ( ((uint64_t)coin->txidfind_num % 100000) == 1 )
                         printf("[%d] iguana_fasttxidfind.[%.0f] ave %.2f micros, total %.2f seconds | duration %.3f millis\n",spent_hdrsi,coin->txidfind_num,(coin->txidfind_totalmillis*1000.)/coin->txidfind_num,coin->txidfind_totalmillis/1000.,duration);
                     coin->txidfind_totalmillis += duration;
-                    coin->txidfind_num += 1.;
+                    coin->txidfind_num += 1.;*/
 
                     *unspentindp = firstvout + prev_vout;
                     hdrsi = height / coin->chain->bundlesize;
@@ -1415,7 +1414,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
             }
             for (k=0; k<T[txidind].numvins && errs==0; k++,spendind++)
             {
-                if ( bp == coin->current && (spendind % 100000) == 0 )
+                if ( bp == coin->current && (spendind % 1000) == 0 )
                     printf("[%-3d:%4d] spendvectors elapsed t.%-3d spendind.%d\n",bp->hdrsi,i,(uint32_t)time(NULL)-starttime,spendind);
                 u = 0;
                 spentbp = 0;
