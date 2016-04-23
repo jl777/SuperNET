@@ -206,19 +206,24 @@ void iguana_volatilespurge(struct iguana_info *coin,struct iguana_ramchain *ramc
                 free(ramchain->A2);
         }
         if ( ramchain->allocatedU2 != 0 && ramchain->Uextras != 0 && ramchain->Uextras != ramchain->lastspendsfileptr )
-            free(ramchain->Uextras);
+        {
+            if ( ramchain->height > 0 )
+                free(ramchain->Uextras);
+        }
         ramchain->A2 = 0;
         ramchain->Uextras = 0;
         ramchain->allocatedA2 = ramchain->allocatedU2 = 0;
         if ( ramchain->debitsfileptr != 0 )
         {
-            munmap(ramchain->debitsfileptr,ramchain->debitsfilesize);
+            if ( ramchain->height > 0 )
+                munmap(ramchain->debitsfileptr,ramchain->debitsfilesize);
             ramchain->debitsfileptr = 0;
             ramchain->debitsfilesize = 0;
         }
         if ( ramchain->lastspendsfileptr != 0 )
         {
-            munmap(ramchain->lastspendsfileptr,ramchain->lastspendsfilesize);
+            if ( ramchain->height > 0 )
+                munmap(ramchain->lastspendsfileptr,ramchain->lastspendsfilesize);
             ramchain->lastspendsfileptr = 0;
             ramchain->lastspendsfilesize = 0;
         }
@@ -868,6 +873,7 @@ uint32_t iguana_fastfindinit(struct iguana_info *coin)
                 break;
             else
             {
+                fprintf(stderr,".");
                 sorted = coin->fast[i];
                 coin->fast[i] = calloc(1,coin->fastsizes[i]);
                 memcpy(coin->fast[i],sorted,coin->fastsizes[i]);
@@ -1428,7 +1434,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
             }
             for (k=0; k<T[txidind].numvins && errs==0; k++,spendind++)
             {
-                if ( bp == coin->current )//&& (spendind % 100) == 0 )
+                if ( bp == coin->current && (spendind % 1000) == 0 )
                     printf("[%-3d:%4d] spendvectors elapsed t.%-3d spendind.%d\n",bp->hdrsi,i,(uint32_t)time(NULL)-starttime,spendind);
                 u = 0;
                 spentbp = 0;
@@ -1512,7 +1518,6 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                         break;
                     }
                 }
-                printf("s.%d\n",spendind);
             }
         }
     }
