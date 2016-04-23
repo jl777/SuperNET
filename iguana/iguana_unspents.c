@@ -746,7 +746,7 @@ int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 tx
     {
         memcpy(&num,sorted,sizeof(num));
         memcpy(&tablesize,&sorted[sizeof(num)],sizeof(tablesize));
-        //if ( (hashtable= coin->fasttables[txid.bytes[31]]) == 0 )
+        if ( (hashtable= coin->fasttables[txid.bytes[31]]) == 0 )
         {
             hashtable = (int32_t *)((long)sorted + (1 + num)*16);
             //printf("backup hashtable\n");
@@ -875,9 +875,12 @@ uint32_t iguana_fastfindinit(struct iguana_info *coin)
             {
                 fprintf(stderr,".");
                 sorted = coin->fast[i];
-                coin->fast[i] = calloc(1,coin->fastsizes[i]);
-                memcpy(coin->fast[i],sorted,coin->fastsizes[i]);
-                munmap(sorted,coin->fastsizes[i]);
+                if ( 0 )
+                {
+                    coin->fast[i] = calloc(1,coin->fastsizes[i]);
+                    memcpy(coin->fast[i],sorted,coin->fastsizes[i]);
+                    munmap(sorted,coin->fastsizes[i]);
+                }
                 sorted = coin->fast[i];
                 memcpy(&num,sorted,sizeof(num));
                 memcpy(&tablesize,&sorted[sizeof(num)],sizeof(tablesize));
@@ -2226,13 +2229,16 @@ void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_b
         dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
         dest->externalind = dest->H.stacksize = 0;
         dest->H.scriptoffset = 1;
-        for (i=0; i<bp->hdrsi; i++)
-            if ( (tmpbp= coin->bundles[i]) != 0 )
-            {
-                iguana_volatilespurge(coin,&tmpbp->ramchain);
-                iguana_volatilesmap(coin,&tmpbp->ramchain);
-            }
-        sleep(1);
+        if ( 0 )
+        {
+            for (i=0; i<bp->hdrsi; i++)
+                if ( (tmpbp= coin->bundles[i]) != 0 )
+                {
+                    iguana_volatilespurge(coin,&tmpbp->ramchain);
+                    iguana_volatilesmap(coin,&tmpbp->ramchain);
+                }
+            sleep(1);
+        }
     }
 }
 
