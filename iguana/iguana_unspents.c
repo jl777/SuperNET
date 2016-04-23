@@ -938,7 +938,7 @@ int64_t iguana_fastfindcreate(struct iguana_info *coin)
                             if ( j < num )
                             {
                                 hash2 = sortbuf[j];
-                                char str[65]; printf("%d %s\n",j,bits256_str(str,hash2));
+                                //char str[65]; printf("%d %s\n",j,bits256_str(str,hash2));
                             }
                         }
                         if ( fwrite(hashtable,sizeof(*hashtable),tablesize,coin->fastfps[i]) == tablesize )
