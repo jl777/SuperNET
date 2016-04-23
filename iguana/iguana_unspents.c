@@ -1439,8 +1439,10 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                 }
                 for (k=0; k<T[txidind].numvins && errs==0; k++,spendind++)
                 {
+#ifdef __APPLE__
                     if ( bp == coin->current && (spendind % 100) == 0 )
                         printf("[%-3d:%4d] spendvectors elapsed t.%-3d spendind.%d\n",bp->hdrsi,i,(uint32_t)time(NULL)-starttime,spendind);
+#endif
                     u = 0;
                     spentbp = 0;
                     s = &S[spendind];
