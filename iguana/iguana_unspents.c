@@ -38,8 +38,6 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
 {
     //static struct iguana_hhutxo *HHUTXO; static struct iguana_hhaccount *HHACCT; static uint32_t numHHUTXO,maxHHUTXO,numHHACCT,maxHHACCT;
     struct iguana_hhutxo *hhutxo,*tmputxo; struct iguana_hhaccount *hhacct,*tmpacct; uint64_t uval,pval;
-    uval = ((uint64_t)spent_hdrsi << 32) | spent_unspentind;
-    pval = ((uint64_t)spent_hdrsi << 32) | spent_pkind;
     if ( spent_hdrsi < 0 )
     {
         printf(">>>>>>>>>>> RESET UTXO HASH <<<<<<<<<\n");
@@ -75,6 +73,8 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
         }*/
         return(0);
     }
+    uval = ((uint64_t)spent_hdrsi << 32) | spent_unspentind;
+    pval = ((uint64_t)spent_hdrsi << 32) | spent_pkind;
     if ( (hhutxo= iguana_hhutxofind(coin,uval)) != 0 && hhutxo->u.spentflag != 0 )
     {
         printf("hhutxo.%p spentflag.%d\n",hhutxo,hhutxo->u.spentflag);
@@ -201,7 +201,10 @@ void iguana_volatilespurge(struct iguana_info *coin,struct iguana_ramchain *ramc
     {
         printf("volatilespurge.[%d]\n",ramchain->height/coin->chain->bundlesize);
         if ( ramchain->allocatedA2 != 0 && ramchain->A2 != 0 && ramchain->A2 != ramchain->debitsfileptr )
-            free(ramchain->A2);
+        {
+            if ( ramchain->height > 0 )
+                free(ramchain->A2);
+        }
         if ( ramchain->allocatedU2 != 0 && ramchain->Uextras != 0 && ramchain->Uextras != ramchain->lastspendsfileptr )
             free(ramchain->Uextras);
         ramchain->A2 = 0;
@@ -738,8 +741,11 @@ int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 tx
     {
         memcpy(&num,sorted,sizeof(num));
         memcpy(&tablesize,&sorted[sizeof(num)],sizeof(tablesize));
-        if ( (hashtable= coin->fasttables[txid.bytes[31]]) == 0 )
+        //if ( (hashtable= coin->fasttables[txid.bytes[31]]) == 0 )
+        {
             hashtable = (int32_t *)((long)sorted + (1 + num)*16);
+            //printf("backup hashtable\n");
+        }
         val = (txid.uints[4] % tablesize);
         for (j=0; j<tablesize; j++,val++)
         {
@@ -862,6 +868,10 @@ uint32_t iguana_fastfindinit(struct iguana_info *coin)
                 break;
             else
             {
+                sorted = coin->fast[i];
+                coin->fast[i] = calloc(1,coin->fastsizes[i]);
+                memcpy(coin->fast[i],sorted,coin->fastsizes[i]);
+                munmap(sorted,coin->fastsizes[i]);
                 sorted = coin->fast[i];
                 memcpy(&num,sorted,sizeof(num));
                 memcpy(&tablesize,&sorted[sizeof(num)],sizeof(tablesize));
@@ -1009,16 +1019,16 @@ struct iguana_bundle *iguana_fastexternalspent(struct iguana_info *coin,bits256 
         {
             if ( ind < rdata->numexternaltxids )
             {
-                char str[65]; double duration,startmillis = OS_milliseconds();
+                char str[65]; //double duration,startmillis = OS_milliseconds();
                 X = (void *)(long)((long)rdata + rdata->Xoffset);
                 *prevhashp = prev_hash = X[ind];
                 if ( (firstvout= iguana_txidfastfind(coin,&height,prev_hash,spent_hdrsi-1)) >= 0 )
                 {
-                    duration = (OS_milliseconds() - startmillis);
+                    /*duration = (OS_milliseconds() - startmillis);
                     if ( ((uint64_t)coin->txidfind_num % 100) == 1 )
                         printf("[%d] iguana_fasttxidfind.[%.0f] ave %.2f micros, total %.2f seconds | duration %.3f millis\n",spent_hdrsi,coin->txidfind_num,(coin->txidfind_totalmillis*1000.)/coin->txidfind_num,coin->txidfind_totalmillis/1000.,duration);
                     coin->txidfind_totalmillis += duration;
-                    coin->txidfind_num += 1.;
+                    coin->txidfind_num += 1.;*/
 
                     *unspentindp = firstvout + prev_vout;
                     hdrsi = height / coin->chain->bundlesize;
@@ -1418,7 +1428,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
             }
             for (k=0; k<T[txidind].numvins && errs==0; k++,spendind++)
             {
-                if ( bp == coin->current && (spendind % 1000) == 0 )
+                if ( bp == coin->current )//&& (spendind % 100) == 0 )
                     printf("[%-3d:%4d] spendvectors elapsed t.%-3d spendind.%d\n",bp->hdrsi,i,(uint32_t)time(NULL)-starttime,spendind);
                 u = 0;
                 spentbp = 0;
@@ -1428,7 +1438,13 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                     if ( coin->fastfind != 0 )
                         spentbp = iguana_fastexternalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s);
                     else if ( spentbp == 0 )
-                        spentbp = iguana_externalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s,2);
+                    {
+                        if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s,2)) != 0 )
+                        {
+                            if ( coin->fastfind != 0 )
+                                printf("found prevhash using slow, not fast\n");
+                        }
+                    }
                     if ( bits256_nonz(prevhash) == 0 )
                         continue;
                     if ( spentbp != 0 && spentbp->ramchain.H.data != 0 )
@@ -1496,6 +1512,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                         break;
                     }
                 }
+                printf("s.%d\n",spendind);
             }
         }
     }
