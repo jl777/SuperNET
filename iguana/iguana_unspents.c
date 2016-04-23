@@ -884,8 +884,11 @@ uint32_t iguana_fastfindinit(struct iguana_info *coin)
                 if ( (num+1)*16 + tablesize*sizeof(*hashtable) == coin->fastsizes[i] )
                 {
                     hashtable = (int32_t *)((long)sorted + (1 + num)*16);
-                    coin->fasttables[i] = calloc(tablesize,sizeof(*hashtable));
-                    memcpy(coin->fasttables[i],hashtable,tablesize * sizeof(*hashtable));
+                    if ( 0 )
+                    {
+                        coin->fasttables[i] = calloc(tablesize,sizeof(*hashtable));
+                        memcpy(coin->fasttables[i],hashtable,tablesize * sizeof(*hashtable));
+                    }
                 }
                 else
                 {
@@ -1434,7 +1437,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
             }
             for (k=0; k<T[txidind].numvins && errs==0; k++,spendind++)
             {
-                if ( bp == coin->current && (spendind % 1000) == 0 )
+                if ( bp == coin->current && (spendind % 100) == 0 )
                     printf("[%-3d:%4d] spendvectors elapsed t.%-3d spendind.%d\n",bp->hdrsi,i,(uint32_t)time(NULL)-starttime,spendind);
                 u = 0;
                 spentbp = 0;

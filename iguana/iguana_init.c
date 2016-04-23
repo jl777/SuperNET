@@ -480,16 +480,16 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
                 printf("error launching accept thread for port.%u\n",coin->chain->portp2p);
             }
         }
-        if ( coin->rpcloop == 0 )
+    }
+    if ( (coin->myservices & 0x80) == 0x80 && coin->rpcloop == 0 )
+    {
+        myinfo->argport = coin->chain->rpcport;
+        coin->rpcloop = malloc(sizeof(pthread_t));
+        if ( OS_thread_create(coin->rpcloop,NULL,(void *)iguana_rpcloop,(void *)myinfo) != 0 )
         {
-            myinfo->argport = coin->chain->rpcport;
-            coin->rpcloop = malloc(sizeof(pthread_t));
-            if ( OS_thread_create(coin->rpcloop,NULL,(void *)iguana_rpcloop,(void *)myinfo) != 0 )
-            {
-                free(coin->rpcloop);
-                coin->rpcloop = 0;
-                printf("error launching rpcloop for %s port.%u\n",coin->symbol,coin->chain->rpcport);
-            }
+            free(coin->rpcloop);
+            coin->rpcloop = 0;
+            printf("error launching rpcloop for %s port.%u\n",coin->symbol,coin->chain->rpcport);
         }
     }
      //coin->firstblock = coin->blocks.parsedblocks + 1;
