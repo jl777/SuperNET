@@ -815,9 +815,19 @@ int64_t iguana_fastfindinitbundle(struct iguana_info *coin,struct iguana_bundle 
     return(n);
 }
 
-static int _bits256_cmp(const void *a,const void *b)
+static int _bignum_cmp(const void *a,const void *b)
 {
-    return(bits256_cmp(*(bits256 *)a,*(bits256 *)b));
+    uint8_t *biga,*bigb; int32_t i,diff;
+    biga = (uint8_t *)a;
+    bigb = (uint8_t *)b;
+    for (i=0; i<32; i++)
+    {
+        if ( (diff= (biga[i] - bigb[i])) > 0 )
+            return(1);
+        else if ( diff < 0 )
+            return(-1);
+    }
+    return(0);
 }
 
 uint32_t iguana_fastfindinit(struct iguana_info *coin)
@@ -895,7 +905,7 @@ int64_t iguana_fastfindcreate(struct iguana_info *coin)
                 if ( (sortbuf= OS_filestr(&allocsize,fname)) != 0 )
                 {
                     num = (int32_t)allocsize/sizeof(bits256);
-                    qsort(sortbuf,num,sizeof(bits256),_bits256_cmp);
+                    qsort(sortbuf,num,sizeof(bits256),_bignum_cmp);
                     strcat(fname,".all");
                     if ( (coin->fastfps[i]= fopen(fname,"wb")) != 0 )
                     {
