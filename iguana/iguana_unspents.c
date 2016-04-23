@@ -2333,7 +2333,9 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
         bp->converted = 1;
         for (hdrsi=num=0; hdrsi<bp->hdrsi; hdrsi++)
         {
+#ifdef __APPLE__
             iguana_ramchain_prefetch(coin,&coin->bundles[hdrsi]->ramchain,2);
+#endif
             num += iguana_convert(coin,IGUANA_NUMHELPERS,coin->bundles[hdrsi],1,orignumemit);
         }
         printf("spendvectors converted.%d to %d\n",num,coin->RTheight);
