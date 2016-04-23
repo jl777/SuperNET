@@ -158,7 +158,7 @@ void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramc
     int32_t i; struct iguana_utxo *U2; struct iguana_account *A2; struct iguana_ramchaindata *rdata = 0;
     if ( ramchain != 0 && (rdata= ramchain->H.data) != 0 && (coin->current == 0 || coin->current->bundleheight > ramchain->height) )
     {
-        printf("volatilesalloc.[%d]\n",ramchain->height/coin->chain->bundlesize);
+        printf("volatilesalloc.[%d] %p %p\n",ramchain->height/coin->chain->bundlesize,ramchain->debitsfileptr,ramchain->lastspendsfileptr);
         if ( ramchain->allocatedA2 == 0 )
         {
             ramchain->A2 = calloc(sizeof(*ramchain->A2),rdata->numpkinds + 16);
@@ -204,7 +204,7 @@ void iguana_volatilespurge(struct iguana_info *coin,struct iguana_ramchain *ramc
 {
     if ( ramchain != 0 )
     {
-        printf("volatilespurge.[%d]\n",ramchain->height/coin->chain->bundlesize);
+        printf("volatilespurge.[%d] %p %p\n",ramchain->height/coin->chain->bundlesize,ramchain->debitsfileptr,ramchain->lastspendsfileptr);
         if ( ramchain->allocatedA2 != 0 && ramchain->A2 != 0 && ramchain->A2 != ramchain->debitsfileptr )
             free(ramchain->A2);
         if ( ramchain->allocatedU2 != 0 && ramchain->Uextras != 0 && ramchain->Uextras != ramchain->lastspendsfileptr )
@@ -230,7 +230,6 @@ void iguana_volatilespurge(struct iguana_info *coin,struct iguana_ramchain *ramc
 int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ramchain)
 {
     int32_t iter,numhdrsi,err = -1; char fname[1024]; bits256 balancehash,allbundles; struct iguana_ramchaindata *rdata;
-    printf("volatilesmap.[%d]\n",ramchain->height/coin->chain->bundlesize);
     if ( (rdata= ramchain->H.data) == 0 )
     {
         printf("volatilesmap.[%d] no rdata\n",ramchain->height/coin->chain->bundlesize);
@@ -264,6 +263,7 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
                     {
                         ramchain->Uextras = (void *)((long)ramchain->lastspendsfileptr + sizeof(numhdrsi) + 2*sizeof(bits256));
                         ramchain->from_roU = (iter == 0);
+                        printf("volatilesmap.[%d] %p %p\n",ramchain->height/coin->chain->bundlesize,ramchain->debitsfileptr,ramchain->lastspendsfileptr);
                         err = 0;
                     } else printf("ramchain map error2 balanceswritten %d vs %d hashes %x %x\n",coin->balanceswritten,numhdrsi,coin->balancehash.uints[0],balancehash.uints[0]);
                 } else printf("ramchain map error3 %s\n",fname);
