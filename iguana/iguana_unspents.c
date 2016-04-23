@@ -1384,10 +1384,10 @@ int32_t iguana_spendvectorsave(struct iguana_info *coin,struct iguana_bundle *bp
     return(retval);
 }
 
-int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_ramchain *ramchain,int32_t starti,int32_t numblocks,int32_t convertflag)
+int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_ramchain *ramchain,int32_t starti,int32_t numblocks,int32_t convertflag,int32_t iterate)
 {
     static uint64_t total,emitted;
-    int32_t spendind,n=0,txidind,errs=0,emit=0,i,j,k; double startmillis; bits256 prevhash;
+    int32_t iter,spendind,n=0,txidind,errs=0,emit=0,i,j,k; double startmillis; bits256 prevhash;
     uint32_t spent_unspentind,spent_pkind,now,starttime; struct iguana_ramchaindata *rdata;
     struct iguana_bundle *spentbp; struct iguana_blockRO *B; struct iguana_spendvector *ptr;
     struct iguana_unspent *u,*spentU;  struct iguana_txid *T; char str[65]; struct iguana_spend *S,*s;
@@ -1415,124 +1415,129 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
     if ( 0 && strcmp(coin->symbol,"BTC") == 0 )
         printf("start UTXOGEN.%d max.%d ptr.%p millis.%.3f\n",bp->bundleheight,n,ptr,startmillis);
     starttime = (uint32_t)time(NULL);
-    txidind = B[starti].firsttxidind;
-    spendind = B[starti].firstvin;
     iguana_ramchain_prefetch(coin,&bp->ramchain,3);
-    for (i=starti; i<numblocks; i++)
+    for (iter=0; iter<=iterate; iter++)
     {
-        if ( txidind != B[i].firsttxidind || spendind != B[i].firstvin )
+        txidind = B[starti].firsttxidind;
+        spendind = B[starti].firstvin;
+        for (i=starti; i<numblocks; i++)
         {
-            printf("spendvectors: txidind %u != %u B[%d].firsttxidind || spendind %u != %u B[%d].firstvin\n",txidind,B[i].firsttxidind,i,spendind,B[i].firstvin,i);
-            myfree(ptr,sizeof(*ptr) * n);
-            return(-1);
-        }
-        for (j=0; j<B[i].txn_count && errs==0; j++,txidind++)
-        {
-            now = (uint32_t)time(NULL);
-            if ( txidind != T[txidind].txidind || spendind != T[txidind].firstvin )
+            if ( txidind != B[i].firsttxidind || spendind != B[i].firstvin )
             {
-                printf("spendvectors: txidind %u != %u nextT[txidind].firsttxidind || spendind %u != %u nextT[txidind].firstvin\n",txidind,T[txidind].txidind,spendind,T[txidind].firstvin);
+                printf("spendvectors: txidind %u != %u B[%d].firsttxidind || spendind %u != %u B[%d].firstvin\n",txidind,B[i].firsttxidind,i,spendind,B[i].firstvin,i);
                 myfree(ptr,sizeof(*ptr) * n);
                 return(-1);
             }
-            for (k=0; k<T[txidind].numvins && errs==0; k++,spendind++)
+            for (j=0; j<B[i].txn_count && errs==0; j++,txidind++)
             {
-                if ( bp == coin->current && (spendind % 100) == 0 )
-                    printf("[%-3d:%4d] spendvectors elapsed t.%-3d spendind.%d\n",bp->hdrsi,i,(uint32_t)time(NULL)-starttime,spendind);
-                u = 0;
-                spentbp = 0;
-                s = &S[spendind];
-                if ( s->external != 0 && s->prevout >= 0 )
+                now = (uint32_t)time(NULL);
+                if ( txidind != T[txidind].txidind || spendind != T[txidind].firstvin )
                 {
-                    if ( coin->fastfind != 0 )
-                        spentbp = iguana_fastexternalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s);
-                    else if ( spentbp == 0 )
+                    printf("spendvectors: txidind %u != %u nextT[txidind].firsttxidind || spendind %u != %u nextT[txidind].firstvin\n",txidind,T[txidind].txidind,spendind,T[txidind].firstvin);
+                    myfree(ptr,sizeof(*ptr) * n);
+                    return(-1);
+                }
+                for (k=0; k<T[txidind].numvins && errs==0; k++,spendind++)
+                {
+                    if ( bp == coin->current && (spendind % 100) == 0 )
+                        printf("[%-3d:%4d] spendvectors elapsed t.%-3d spendind.%d\n",bp->hdrsi,i,(uint32_t)time(NULL)-starttime,spendind);
+                    u = 0;
+                    spentbp = 0;
+                    s = &S[spendind];
+                    if ( s->external != 0 && s->prevout >= 0 )
                     {
-                        if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s,2)) != 0 )
+                        if ( coin->fastfind != 0 )
+                            spentbp = iguana_fastexternalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s);
+                        else if ( spentbp == 0 )
                         {
-                            if ( coin->fastfind != 0 )
-                                printf("found prevhash using slow, not fast\n");
-                        }
-                    }
-                    if ( bits256_nonz(prevhash) == 0 )
-                        continue;
-                    if ( spentbp != 0 && spentbp->ramchain.H.data != 0 )
-                    {
-                        if ( spentbp == bp )
-                        {
-                            char str[65];
-                            printf("unexpected spendbp: height.%d bp.[%d] U%d <- S%d.[%d] [ext.%d %s prev.%d]\n",bp->bundleheight+i,spentbp->hdrsi,spent_unspentind,spendind,bp->hdrsi,s->external,bits256_str(str,prevhash),s->prevout);
-                            errs++;
-                            break;
-                        }
-                        if ( convertflag != 0 )
-                        {
-                            if ( coin->PREFETCHLAG > 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
+                            if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s,2)) != 0 )
                             {
-                                printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
-                                iguana_ramchain_prefetch(coin,&spentbp->ramchain,2);
-                                spentbp->lastprefetch = now;
+                                if ( coin->fastfind != 0 )
+                                    printf("found prevhash using slow, not fast\n");
                             }
-                            spentU = (void *)(long)((long)spentbp->ramchain.H.data + spentbp->ramchain.H.data->Uoffset);
-                            u = &spentU[spent_unspentind];
-                            if ( (spent_pkind= u->pkind) != 0 && spent_pkind < spentbp->ramchain.H.data->numpkinds )
+                        }
+                        if ( iterate != 0 && prevhash.bytes[31] != iter )
+                            continue;
+                        if ( bits256_nonz(prevhash) == 0 )
+                            continue;
+                        if ( spentbp != 0 && spentbp->ramchain.H.data != 0 )
+                        {
+                            if ( spentbp == bp )
                             {
-                                memset(&ptr[emit],0,sizeof(ptr[emit]));
-                                if ( (ptr[emit].unspentind= spent_unspentind) != 0 && spentbp->hdrsi < bp->hdrsi )
+                                char str[65];
+                                printf("unexpected spendbp: height.%d bp.[%d] U%d <- S%d.[%d] [ext.%d %s prev.%d]\n",bp->bundleheight+i,spentbp->hdrsi,spent_unspentind,spendind,bp->hdrsi,s->external,bits256_str(str,prevhash),s->prevout);
+                                errs++;
+                                break;
+                            }
+                            if ( convertflag != 0 )
+                            {
+                                if ( coin->PREFETCHLAG > 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
                                 {
-                                    ptr[emit].fromheight = bp->bundleheight + i;
-                                    ptr[emit].hdrsi = spentbp->hdrsi;
-                                    ptr[emit].pkind = spent_pkind;
-                                    ptr[emit].value = u->value;
-                                    //printf("ht.%d [%d] SPENDVECTOR u%d %.8f p%u\n",ptr[emit].fromheight,ptr[emit].hdrsi,ptr[emit].unspentind,dstr(ptr[emit].value),ptr[emit].pkind);
-                                    //printf("(%d u%d).%d ",spentbp->hdrsi,unspentind,emit);
-                                    emit++;
+                                    printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
+                                    iguana_ramchain_prefetch(coin,&spentbp->ramchain,2);
+                                    spentbp->lastprefetch = now;
+                                }
+                                spentU = (void *)(long)((long)spentbp->ramchain.H.data + spentbp->ramchain.H.data->Uoffset);
+                                u = &spentU[spent_unspentind];
+                                if ( (spent_pkind= u->pkind) != 0 && spent_pkind < spentbp->ramchain.H.data->numpkinds )
+                                {
+                                    memset(&ptr[emit],0,sizeof(ptr[emit]));
+                                    if ( (ptr[emit].unspentind= spent_unspentind) != 0 && spentbp->hdrsi < bp->hdrsi )
+                                    {
+                                        ptr[emit].fromheight = bp->bundleheight + i;
+                                        ptr[emit].hdrsi = spentbp->hdrsi;
+                                        ptr[emit].pkind = spent_pkind;
+                                        ptr[emit].value = u->value;
+                                        //printf("ht.%d [%d] SPENDVECTOR u%d %.8f p%u\n",ptr[emit].fromheight,ptr[emit].hdrsi,ptr[emit].unspentind,dstr(ptr[emit].value),ptr[emit].pkind);
+                                        //printf("(%d u%d).%d ",spentbp->hdrsi,unspentind,emit);
+                                        emit++;
+                                    }
+                                    else
+                                    {
+                                        printf("spendvectors: null unspentind for spendind.%d hdrsi.%d [%d]\n",spendind,spentbp->hdrsi,bp->hdrsi);
+                                        errs++;
+                                        break;
+                                    }
                                 }
                                 else
                                 {
-                                    printf("spendvectors: null unspentind for spendind.%d hdrsi.%d [%d]\n",spendind,spentbp->hdrsi,bp->hdrsi);
                                     errs++;
+                                    printf("spendvectors: unresolved spendind.%d hdrsi.%d\n",spendind,bp->hdrsi);
                                     break;
                                 }
                             }
                             else
                             {
-                                errs++;
-                                printf("spendvectors: unresolved spendind.%d hdrsi.%d\n",spendind,bp->hdrsi);
-                                break;
+                                memset(&ptr[emit],0,sizeof(ptr[emit]));
+                                ptr[emit].hdrsi = spentbp->hdrsi;
+                                ptr[emit].unspentind = spent_unspentind;
+                                ptr[emit].fromheight = bp->bundleheight + i;
+                                ptr[emit].tmpflag = 1;
+                                if ( 0 && bp == coin->current )
+                                    printf("fromht.%d spends [%d] TMPVECTOR u%d s%u\n",ptr[emit].fromheight,ptr[emit].hdrsi,ptr[emit].unspentind,spendind);
+                                emit++;
                             }
                         }
                         else
                         {
-                            memset(&ptr[emit],0,sizeof(ptr[emit]));
-                            ptr[emit].hdrsi = spentbp->hdrsi;
-                            ptr[emit].unspentind = spent_unspentind;
-                            ptr[emit].fromheight = bp->bundleheight + i;
-                            ptr[emit].tmpflag = 1;
-                            if ( 0 && bp == coin->current )
-                                printf("fromht.%d spends [%d] TMPVECTOR u%d s%u\n",ptr[emit].fromheight,ptr[emit].hdrsi,ptr[emit].unspentind,spendind);
-                            emit++;
+                            errs++;
+                            printf("spendvectors: error resolving external spendind.%d hdrsi.%d\n",spendind,bp->hdrsi);
+                            break;
                         }
-                    }
-                    else
-                    {
-                        errs++;
-                        printf("spendvectors: error resolving external spendind.%d hdrsi.%d\n",spendind,bp->hdrsi);
-                        break;
                     }
                 }
             }
         }
-    }
-    if ( txidind != ramchain->H.data->numtxids && txidind != ramchain->H.txidind )
-    {
-        printf("spendvectors: numtxid.%d != bp numtxids %d/%d\n",txidind,ramchain->H.txidind,ramchain->H.data->numtxids);
-        errs++;
-    }
-    if ( spendind != ramchain->H.data->numspends && spendind != ramchain->H.spendind )
-    {
-        printf("spendvectors: spendind.%d != bp numspends %d/%d\n",spendind,ramchain->H.spendind,ramchain->H.data->numspends);
-        errs++;
+        if ( txidind != ramchain->H.data->numtxids && txidind != ramchain->H.txidind )
+        {
+            printf("spendvectors: numtxid.%d != bp numtxids %d/%d\n",txidind,ramchain->H.txidind,ramchain->H.data->numtxids);
+            errs++;
+        }
+        if ( spendind != ramchain->H.data->numspends && spendind != ramchain->H.spendind )
+        {
+            printf("spendvectors: spendind.%d != bp numspends %d/%d\n",spendind,ramchain->H.spendind,ramchain->H.data->numspends);
+            errs++;
+        }
     }
     if ( errs == 0 && emit >= 0 )
     {
@@ -2294,7 +2299,7 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     if ( (lasti= (coin->RTheight - ((coin->RTheight/bp->n)*bp->n))) >= bp->n-1 )
         lasti = bp->n - 1;
     orignumemit = bp->numtmpspends;
-    if ( iguana_spendvectors(coin,bp,&coin->RTramchain,coin->RTstarti,lasti,0) < 0 )
+    if ( iguana_spendvectors(coin,bp,&coin->RTramchain,coin->RTstarti,lasti,0,0xff) < 0 )
     {
         printf("RTutxo error -> RTramchainfree\n");
         coin->RTdatabad = 1;
@@ -2337,7 +2342,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     {
         if ( (bp= coin->bundles[i]) != 0 && (i > 0 && bp->utxofinish == 0) )
         {
-            if ( iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,0) < 0 )
+            if ( iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,0,0) < 0 )
             {
                 printf("error generating spendvectors.[%d], exiting. just restart iguana\n",i);
                 exit(-1);

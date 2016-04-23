@@ -369,7 +369,7 @@ int32_t iguana_helperA(struct iguana_info *coin,struct iguana_bundle *bp,int32_t
     if ( strcmp("BTC",coin->symbol) == 0 || iguana_bundlevalidate(coin,bp,0) == bp->n ) //
     {
         retval = 0;
-        if ( bp->utxofinish > 1 || (retval= iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,convertflag)) >= 0 )
+        if ( bp->utxofinish > 1 || (retval= iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,convertflag,0)) >= 0 )
         {
             if ( retval > 0 )
             {
