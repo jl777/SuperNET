@@ -197,7 +197,7 @@ void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramc
 
 void iguana_volatilespurge(struct iguana_info *coin,struct iguana_ramchain *ramchain)
 {
-    if ( ramchain != 0 )
+    if ( ramchain != 0 && (coin->current == 0 || coin->current->bundleheight != ramchain->height) )
     {
         printf("volatilespurge.[%d]\n",ramchain->height/coin->chain->bundlesize);
         if ( ramchain->allocatedA2 != 0 && ramchain->A2 != 0 && ramchain->A2 != ramchain->debitsfileptr )
@@ -738,7 +738,8 @@ int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 tx
     {
         memcpy(&num,sorted,sizeof(num));
         memcpy(&tablesize,&sorted[sizeof(num)],sizeof(tablesize));
-        hashtable = (int32_t *)((long)sorted + (1 + num)*16);
+        if ( (hashtable= coin->fasttables[txid.bytes[31]]) == 0 )
+            hashtable = (int32_t *)((long)sorted + (1 + num)*16);
         val = (txid.uints[4] % tablesize);
         for (j=0; j<tablesize; j++,val++)
         {
@@ -867,6 +868,8 @@ uint32_t iguana_fastfindinit(struct iguana_info *coin)
                 if ( (num+1)*16 + tablesize*sizeof(*hashtable) == coin->fastsizes[i] )
                 {
                     hashtable = (int32_t *)((long)sorted + (1 + num)*16);
+                    coin->fasttables[i] = calloc(tablesize,sizeof(*hashtable));
+                    memcpy(coin->fasttables[i],hashtable,tablesize * sizeof(*hashtable));
                 }
                 else
                 {
@@ -886,6 +889,7 @@ uint32_t iguana_fastfindinit(struct iguana_info *coin)
             for (j=0; j<i; j++)
             {
                 munmap(coin->fast[i],coin->fastsizes[i]);
+                free(coin->fasttables[i]);
                 coin->fast[i] = 0;
                 coin->fastsizes[i] = 0;
             }
@@ -1005,16 +1009,16 @@ struct iguana_bundle *iguana_fastexternalspent(struct iguana_info *coin,bits256 
         {
             if ( ind < rdata->numexternaltxids )
             {
-                char str[65]; //double duration,startmillis = OS_milliseconds();
+                char str[65]; double duration,startmillis = OS_milliseconds();
                 X = (void *)(long)((long)rdata + rdata->Xoffset);
                 *prevhashp = prev_hash = X[ind];
                 if ( (firstvout= iguana_txidfastfind(coin,&height,prev_hash,spent_hdrsi-1)) >= 0 )
                 {
-                    /*duration = (OS_milliseconds() - startmillis);
-                    if ( ((uint64_t)coin->txidfind_num % 100000) == 1 )
+                    duration = (OS_milliseconds() - startmillis);
+                    if ( ((uint64_t)coin->txidfind_num % 100) == 1 )
                         printf("[%d] iguana_fasttxidfind.[%.0f] ave %.2f micros, total %.2f seconds | duration %.3f millis\n",spent_hdrsi,coin->txidfind_num,(coin->txidfind_totalmillis*1000.)/coin->txidfind_num,coin->txidfind_totalmillis/1000.,duration);
                     coin->txidfind_totalmillis += duration;
-                    coin->txidfind_num += 1.;*/
+                    coin->txidfind_num += 1.;
 
                     *unspentindp = firstvout + prev_vout;
                     hdrsi = height / coin->chain->bundlesize;
