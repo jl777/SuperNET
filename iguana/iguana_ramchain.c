@@ -2357,8 +2357,8 @@ int64_t iguana_ramchainopen(char *fname,struct iguana_info *coin,struct iguana_r
                 scriptspace = rdata->scriptspace;
         }
 #ifndef __APPLE__
-    numtxids *= 2.5; numexternaltxids *= 2.5, scriptspace *= 2.5;
-    numunspents *= 2.5, numspends *= 2.5, numpkinds *= 2.5;
+    numtxids *= 1.25; numexternaltxids *= 1.25, scriptspace *= 1.25;
+    numunspents *= 1.25, numspends *= 1.25, numpkinds *= 1.25;
 #endif
     if ( mem->ptr == 0 )
     {
