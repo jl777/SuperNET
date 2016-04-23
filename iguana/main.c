@@ -434,7 +434,7 @@ void mainloop(struct supernet_info *myinfo)
                             n = coin->bundlescount-1;
                             if ( iguana_emitfinished(coin,1) >= n )
                             {
-                                if ( coin->PREFETCHLAG >= 0 )
+                                if ( coin->PREFETCHLAG >= 0 && coin->fastfind == 0 )
                                 {
                                     for (j=0; j<n; j++)
                                         iguana_alloctxbits(coin,&coin->bundles[j]->ramchain);

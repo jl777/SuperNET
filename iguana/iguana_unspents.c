@@ -592,7 +592,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
             {
                 if ( (TXbits= ramchain->txbits) == 0 )
                 {
-                    if ( coin->PREFETCHLAG >= 0 )
+                    if ( coin->PREFETCHLAG >= 0 && coin->fastfind == 0 )
                         iguana_alloctxbits(coin,ramchain);
                     if ( (TXbits= ramchain->txbits) == 0 )
                     {
@@ -602,7 +602,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                 }
                 if ( (T= ramchain->cacheT) == 0 )
                 {
-                    if ( coin->PREFETCHLAG >= 0 )
+                    if ( coin->PREFETCHLAG >= 0 && coin->fastfind == 0 )
                         iguana_alloccacheT(coin,ramchain);
                     if ( (T= ramchain->cacheT) == 0 )
                         T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
@@ -761,7 +761,7 @@ int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 tx
                     {
                         memcpy(&firstvout,&item[sizeof(uint64_t)],sizeof(firstvout));
                         memcpy(heightp,&item[sizeof(uint64_t) + sizeof(firstvout)],sizeof(*heightp));
-                        //printf("i.%d val.%d height.%d firstvout.%d j.%d\n",i,val,*heightp,firstvout,j);
+                        printf("i.%d val.%d height.%d firstvout.%d j.%d\n",i,val,*heightp,firstvout,j);
                         return(firstvout);
                     }
                     else if ( 0 )
@@ -822,17 +822,28 @@ static int _bits256_cmp(const void *a,const void *b)
 
 uint32_t iguana_fastfindinit(struct iguana_info *coin)
 {
-    int32_t i,j,iter; char fname[1024];
-    for (iter=0; iter<2; iter++)
+    int32_t i,j,iter,num,tablesize,*hashtable; uint8_t *sorted; char fname[1024];
+    for (iter=1; iter<2; iter++)
     {
         for (i=0; i<0x100; i++)
         {
             sprintf(fname,"DB/%s%s/fastfind/%02x.all",iter==0?"ro/":"",coin->symbol,i), OS_compatible_path(fname);
             if ( (coin->fast[i]= OS_mapfile(fname,&coin->fastsizes[i],0)) == 0 )
-            {
-                for (j=0; j<i; j++)
-                    munmap(coin->fast[i],coin->fastsizes[i]);
                 break;
+            else
+            {
+                sorted = coin->fast[i];
+                memcpy(&num,sorted,sizeof(num));
+                memcpy(&tablesize,&sorted[sizeof(num)],sizeof(tablesize));
+                if ( (num+1)*16 + tablesize*sizeof(*hashtable) == coin->fastsizes[i] )
+                {
+                    hashtable = (int32_t *)((long)sorted + (1 + num)*16);
+                }
+                else
+                {
+                    printf("size error num.%d tablesize.%d -> %lu vs %ld\n",num,tablesize,(num+1)*16 + tablesize*sizeof(*hashtable),coin->fastsizes[i]);
+                    break;
+                }
             }
         }
         if ( i == 0x100 )
@@ -840,6 +851,15 @@ uint32_t iguana_fastfindinit(struct iguana_info *coin)
             coin->fastfind = (uint32_t)time(NULL);
             printf("initialized fastfind.%s iter.%d\n",coin->symbol,iter);
             return(coin->fastfind);
+        }
+        else
+        {
+            for (j=0; j<i; j++)
+            {
+                munmap(coin->fast[i],coin->fastsizes[i]);
+                coin->fast[i] = 0;
+                coin->fastsizes[i] = 0;
+            }
         }
     }
     return(0);
