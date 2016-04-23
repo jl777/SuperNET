@@ -761,7 +761,7 @@ int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 tx
                     {
                         memcpy(&firstvout,&item[sizeof(uint64_t)],sizeof(firstvout));
                         memcpy(heightp,&item[sizeof(uint64_t) + sizeof(firstvout)],sizeof(*heightp));
-                        printf("i.%d val.%d height.%d firstvout.%d j.%d\n",i,val,*heightp,firstvout,j);
+                        //printf("i.%d val.%d height.%d firstvout.%d j.%d\n",i,val,*heightp,firstvout,j);
                         return(firstvout);
                     }
                     else if ( 0 )
@@ -823,7 +823,7 @@ static int _bits256_cmp(const void *a,const void *b)
 uint32_t iguana_fastfindinit(struct iguana_info *coin)
 {
     int32_t i,j,iter,num,tablesize,*hashtable; uint8_t *sorted; char fname[1024];
-    for (iter=1; iter<2; iter++)
+    for (iter=0; iter<2; iter++)
     {
         for (i=0; i<0x100; i++)
         {
@@ -921,13 +921,15 @@ int64_t iguana_fastfindcreate(struct iguana_info *coin)
                         hash2.uints[1] = tablesize;
                         for (j=0; j<=num; j++)
                         {
-                            //char str[65]; printf("%d %s\n",j,bits256_str(str,hash2));
                             memcpy(buf,&hash2.txid,sizeof(hash2.txid));
                             memcpy(&buf[sizeof(hash2.txid)],&hash2.uints[6],sizeof(hash2.uints[6]));
                             memcpy(&buf[sizeof(hash2.txid) + sizeof(hash2.uints[6])],&hash2.uints[7],sizeof(hash2.uints[7]));
                             fwrite(buf,1,sizeof(buf),coin->fastfps[i]);
                             if ( j < num )
+                            {
                                 hash2 = sortbuf[j];
+                                char str[65]; printf("%d %s\n",j,bits256_str(str,hash2));
+                            }
                         }
                         if ( fwrite(hashtable,sizeof(*hashtable),tablesize,coin->fastfps[i]) == tablesize )
                         {
