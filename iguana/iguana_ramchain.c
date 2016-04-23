@@ -691,7 +691,7 @@ int32_t iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain
 {
     RAMCHAIN_DECLARE; RAMCHAIN_ZEROES;
     struct iguana_pkhash p; struct iguana_unspent u; struct iguana_txid txid; uint32_t i,numpkinds,numtxids,numunspents,numexternal,tlen,plen,nonz=0; uint8_t *ptr;
-return(0);
+//return(0);
     if ( ramchain->H.data != 0 )
     {
         if ( flag == 0 )
@@ -729,17 +729,20 @@ return(0);
         else if ( (flag & 2) != 0 )
         {
             U = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Uoffset);
-            P = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Poffset);
-            PKbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->PKoffset);
-            numpkinds = ramchain->H.data->numpkinds;
             numunspents = ramchain->H.data->numunspents;
-            plen = (ramchain->H.data->numpksparse * ramchain->H.data->pksparsebits) >> 3;
             for (i=0; i<numunspents; i++)
             {
                 memcpy(&u,&U[i],sizeof(u));
                 if ( u.value != 0 )
                     nonz++;
             }
+        }
+        else if ( (flag & 4) != 0 )
+        {
+            P = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Poffset);
+            PKbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->PKoffset);
+            numpkinds = ramchain->H.data->numpkinds;
+            plen = (ramchain->H.data->numpksparse * ramchain->H.data->pksparsebits) >> 3;
             for (i=0; i<numpkinds; i++)
             {
                 memcpy(&p,&P[i],sizeof(p));
