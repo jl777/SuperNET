@@ -788,7 +788,7 @@ int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 tx
 int32_t iguana_fastfindadd(struct iguana_info *coin,bits256 txid,int32_t height,uint32_t firstvout)
 {
     FILE *fp;
-    if ( (fp= coin->fastfps[txid.bytes[31]]) != 0 )
+    if ( bits256_nonz(txid) != 0 && (fp= coin->fastfps[txid.bytes[31]]) != 0 )
     {
         txid.uints[7] = height;
         txid.uints[6] = firstvout;
@@ -1403,6 +1403,8 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                         spentbp = iguana_fastexternalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s);
                     else if ( spentbp == 0 )
                         spentbp = iguana_externalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s,2);
+                    if ( bits256_nonz(prevhash) == 0 )
+                        continue;
                     if ( spentbp != 0 && spentbp->ramchain.H.data != 0 )
                     {
                         if ( spentbp == bp )
