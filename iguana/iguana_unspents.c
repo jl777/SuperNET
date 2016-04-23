@@ -1448,7 +1448,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                 for (k=0; k<T[txidind].numvins && errs==0; k++,spendind++)
                 {
 #ifdef __APPLE__
-                    if ( bp == coin->current && (spendind % 100) == 0 )
+                    if ( bp == coin->current && (spendind % 10000) == 0 )
                         printf("iter.%02x [%-3d:%4d] spendvectors elapsed t.%-3d spendind.%d\n",iter,bp->hdrsi,i,(uint32_t)time(NULL)-starttime,spendind);
 #endif
                     u = 0;
@@ -2110,7 +2110,6 @@ int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *s
             printf("iguana_spendvectorconvs: [%d] null rdata.%p\n",spentbp->hdrsi,rdata);
         return(-1);
     }
-    iguana_ramchain_prefetch(coin,&spentbp->ramchain,2);
     spent_hdrsi = spentbp->hdrsi;
     ramchain = &spentbp->ramchain;
     numpkinds = rdata->numpkinds;
@@ -2333,7 +2332,10 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
         printf("spendvectors calculated to %d [%d]\n",coin->RTheight,bp->hdrsi);
         bp->converted = 1;
         for (hdrsi=num=0; hdrsi<bp->hdrsi; hdrsi++)
+        {
+            iguana_ramchain_prefetch(coin,&coin->bundles[hdrsi]->ramchain,2);
             num += iguana_convert(coin,IGUANA_NUMHELPERS,coin->bundles[hdrsi],1,orignumemit);
+        }
         printf("spendvectors converted.%d to %d\n",num,coin->RTheight);
         bp->converted = (uint32_t)time(NULL);
         if ( iguana_balancegen(coin,1,bp,coin->RTstarti,coin->RTheight > 0 ? coin->RTheight-1 : bp->n-1,orignumemit) < 0 )
