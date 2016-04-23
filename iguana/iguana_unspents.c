@@ -151,9 +151,9 @@ int32_t iguana_alloccacheT(struct iguana_info *coin,struct iguana_ramchain *ramc
 void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramchain,int32_t copyflag)
 {
     int32_t i; struct iguana_utxo *U2; struct iguana_account *A2; struct iguana_ramchaindata *rdata = 0;
-    if ( ramchain != 0 && (rdata= ramchain->H.data) != 0 )
+    if ( ramchain != 0 && (rdata= ramchain->H.data) != 0 && (coin->current == 0 || coin->current->bundleheight > ramchain->height) )
     {
-        //printf("volatilesalloc.[%d]\n",ramchain->height/coin->chain->bundlesize);
+        printf("volatilesalloc.[%d]\n",ramchain->height/coin->chain->bundlesize);
         if ( ramchain->allocatedA2 == 0 )
         {
             ramchain->A2 = calloc(sizeof(*ramchain->A2),rdata->numpkinds + 16);
@@ -198,9 +198,9 @@ void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramc
 void iguana_volatilespurge(struct iguana_info *coin,struct iguana_ramchain *ramchain)
 {
     struct iguana_bundle *bp;
-    if ( (bp= coin->current) != 0 && ramchain->height < bp->bundleheight )
+    if ( ramchain != 0 && ((bp= coin->current) == 0 || bp->bundleheight > ramchain->height) )
     {
-        //printf("volatilespurge.[%d]\n",ramchain->height/coin->chain->bundlesize);
+        printf("volatilespurge.[%d]\n",ramchain->height/coin->chain->bundlesize);
         if ( ramchain->allocatedA2 != 0 && ramchain->A2 != 0 )
             free(ramchain->A2);
         ramchain->A2 = 0;
