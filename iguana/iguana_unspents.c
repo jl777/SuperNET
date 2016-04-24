@@ -2578,7 +2578,7 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
     if ( errs != 0 )
     {
         printf("remove.[%d]\n",bp->hdrsi);
-        iguana_bundleremove(coin,bp->hdrsi,1);
+        iguana_bundleremove(coin,bp->hdrsi,0);
     }
     return(bp->n - errs);
 }
