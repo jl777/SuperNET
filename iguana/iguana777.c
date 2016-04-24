@@ -420,8 +420,8 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
     if ( 1 || coin->PREFETCHLAG > 0 ) // data issues on slow systems
         incr = 1;
     max = coin->bundlescount;
-    //if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 )
-    //    max--;
+    if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 )
+        max--;
     if ( helperid < incr )
     {
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
