@@ -388,7 +388,7 @@ THREE_STRINGS(bitcoinrpc,verifymessage,address,sig,message)
 // tx
 ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
 {
-    bits256 txid; int32_t vout,scriptlen=0,p2shlen=0,i,n; uint32_t sequenceid; uint8_t script[IGUANA_MAXSCRIPTSIZE],redeemscript[IGUANA_MAXSCRIPTSIZE]; char *str; cJSON *txobj,*item,*retjson = cJSON_CreateObject();
+    bits256 txid; int32_t vout,offset,scriptlen=0,p2shlen=0,i,n; uint32_t sequenceid; uint8_t addrtype,rmd160[20],script[IGUANA_MAXSCRIPTSIZE],redeemscript[IGUANA_MAXSCRIPTSIZE]; uint64_t satoshis; char *hexstr,*str,*field,*txstr; cJSON *txobj,*item,*obj,*retjson = cJSON_CreateObject();
     if ( coin != 0 && (txobj= bitcoin_createtx(coin,locktime)) != 0 )
     {
         if ( (n= cJSON_GetArraySize(vins)) > 0 )
@@ -408,20 +408,83 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
                     decode_hex(redeemscript,p2shlen,str);
                 }
                 vout = jint(item,"vout");
-                sequenceid = juint(item,"sequenceid");
+                if ( jobj(item,"sequenceid") != 0 )
+                    sequenceid = juint(item,"sequenceid");
+                else sequenceid = 0xffffffff;
                 txid = jbits256(item,"txid");
                 bitcoin_addinput(coin,txobj,txid,vout,sequenceid,script,scriptlen,redeemscript,p2shlen);
             }
         }
         if ( (n= cJSON_GetArraySize(vouts)) > 0 )
         {
-            for (i=0; i<n; i++)
+            item = vouts->child;
+            while ( item != 0 )
             {
-                item = jitem(vouts,i);
+                if ( (field= jfieldname(item)) != 0 )
+                {
+                    if ( strcmp(field,"data") == 0 )
+                    {
+                        if ( (hexstr= jstr(item,"data")) != 0 )
+                        {
+                            scriptlen = (int32_t)strlen(hexstr) >> 1;
+                            offset = 0;
+                            if ( is_hexstr(hexstr,scriptlen) > 0 )
+                            {
+                                decode_hex(script+4,scriptlen,hexstr);
+                                script[3] = SCRIPT_OPRETURN;
+                                scriptlen++;
+                                /* 1-75	0x01-0x4b	(special)	data	The next opcode bytes is data to be pushed onto the stack
+                                OP_PUSHDATA1	76	0x4c	(special)	data	The next byte contains the number of bytes to be pushed onto the stack.
+                                OP_PUSHDATA2	77	0x4d*/
+                                if ( scriptlen < 76 )
+                                {
+                                    script[2] = scriptlen;
+                                    offset = 2;
+                                    scriptlen++;
+                                }
+                                else if ( scriptlen <= 0xff )
+                                {
+                                    script[2] = scriptlen;
+                                    script[1] = 0x4c;
+                                    offset = 1;
+                                    scriptlen += 2;
+                                }
+                                else if ( scriptlen <= 0xffff )
+                                {
+                                    script[2] = ((scriptlen >> 8) & 0xff);
+                                    script[1] = (scriptlen & 0xff);
+                                    script[0] = 0x4d;
+                                    offset = 0;
+                                    scriptlen += 3;
+                                }
+                                else continue;
+                                if ( (obj= jobj(item,"amount")) != 0 )
+                                    satoshis = get_API_float(obj) * SATOSHIDEN;
+                                else satoshis = 0;
+                                bitcoin_addoutput(coin,txobj,script+offset,scriptlen,satoshis);
+                            }
+                        }
+                        break;
+                    }
+                    else
+                    {
+                        if ( bitcoin_addr2rmd160(&addrtype,rmd160,field) == sizeof(rmd160) )
+                        {
+                            scriptlen = bitcoin_standardspend(script,0,rmd160);
+                            satoshis = get_API_float(item) * SATOSHIDEN;
+                            bitcoin_addoutput(coin,txobj,script,scriptlen,satoshis);
+                        }
+                    }
+                }
+                item = item->next;
             }
         }
+        if ( (txstr= bitcoin_json2hex(coin,&txid,txobj)) != 0 )
+        {
+            jaddstr(retjson,"result",txstr);
+            free(txstr);
+        }
     }
-    printf("vins.(%s) vouts.(%s) locktime.%u\n",jprint(vins,0),jprint(vouts,0),locktime);
     return(jprint(retjson,1));
 }
 

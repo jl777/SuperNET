@@ -957,6 +957,7 @@ double get_API_float(cJSON *obj)
     }
     return(val);
 }
+
 double jdouble(cJSON *json,char *field)
 {
     if ( json != 0 )

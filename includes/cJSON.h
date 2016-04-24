@@ -226,6 +226,7 @@ extern "C"
 #define jtrue cJSON_CreateTrue
 #define jfalse cJSON_CreateFalse
 
+#define jfieldname get_cJSON_fieldname
 
 #ifdef __cplusplus
 }
