@@ -23,15 +23,14 @@ HASH_AND_TWOINTS(bitcoinrpc,getblock,blockhash,verbose,remoteonly);
 
 HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose);
 HASH_ARG(bitcoinrpc,gettransaction,txid);
+HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool);
+TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array);
 
 STRING_ARG(bitcoinrpc,decodescript,script);
 STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx);
 ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime);
 STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighash); //
 STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees); //
-
-HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool);
-TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array);
 
 SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment); //
 SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment2); //
