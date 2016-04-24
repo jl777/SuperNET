@@ -367,32 +367,30 @@ int32_t iguana_rwtx(int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized,s
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->timestamp),&msg->timestamp);
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_in);
     //printf("version.%d ",msg->version);
-    if ( msg->tx_in > 0 && msg->tx_in*100 < maxsize )
+    if ( rwflag == 0 )
+        msg->vins = iguana_memalloc(mem,msg->tx_in * sizeof(*msg->vins),1);
+    for (i=0; i<msg->tx_in; i++)
     {
-        if ( rwflag == 0 )
-            msg->vins = iguana_memalloc(mem,msg->tx_in * sizeof(*msg->vins),1);
-        for (i=0; i<msg->tx_in; i++)
-            len += iguana_rwvin(rwflag,mem,&serialized[len],&msg->vins[i]);
+        len += iguana_rwvin(rwflag,mem,&serialized[len],&msg->vins[i]);
+        if ( len > maxsize )
+        {
+            printf("invalid tx_in.%d len.%d vs maxsize.%d\n",msg->tx_in,len,maxsize);
+            return(-1);
+        }
+    }
         //printf("numvins.%d\n",msg->tx_in);
-    }
-    else
-    {
-        printf("invalid tx_in.%d\n",msg->tx_in);
-        return(-1);
-    }
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_out);
-    if ( msg->tx_out > 0 && msg->tx_out*32 < maxsize )
+    //printf("numvouts.%d ",msg->tx_out);
+    if ( rwflag == 0 )
+        msg->vouts = iguana_memalloc(mem,msg->tx_out * sizeof(*msg->vouts),1);
+    for (i=0; i<msg->tx_out; i++)
     {
-        //printf("numvouts.%d ",msg->tx_out);
-        if ( rwflag == 0 )
-            msg->vouts = iguana_memalloc(mem,msg->tx_out * sizeof(*msg->vouts),1);
-        for (i=0; i<msg->tx_out; i++)
-            len += iguana_rwvout(rwflag,mem,&serialized[len],&msg->vouts[i]);
-    }
-    else
-    {
-        printf("invalid tx_out.%d\n",msg->tx_out);
-        return(-1);
+        len += iguana_rwvout(rwflag,mem,&serialized[len],&msg->vouts[i]);
+        if ( len > maxsize )
+        {
+            printf("invalid tx_out.%d len.%d vs maxsize.%d\n",msg->tx_out,len,maxsize);
+            return(-1);
+        }
     }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->lock_time),&msg->lock_time);
     if ( isvpncoin != 0 )
