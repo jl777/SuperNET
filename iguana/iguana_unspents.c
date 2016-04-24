@@ -2356,7 +2356,7 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
 int32_t iguana_realtime_update(struct iguana_info *coin)
 {
     double startmillis0; static double totalmillis0; static int32_t num0;
-    struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,i,n,flag=0; bits256 hash2; struct iguana_peer *addr;
+    struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,i,n,flag=0; bits256 hash2,*ptr; struct iguana_peer *addr;
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
     if ( coin->current != 0 && (coin->blocks.hwmchain.height % coin->chain->bundlesize) == coin->chain->bundlesize-1 )
     {
@@ -2492,7 +2492,12 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         memset(bp->hashes,0,sizeof(bp->hashes));
         memset(bp->blocks,0,sizeof(bp->blocks));
         if ( bp->speculative != 0 )
-            memset(bp->speculative,0,sizeof(*bp->speculative)*bp->n);
+        {
+            ptr = bp->speculative;
+            bp->speculative = 0;
+            memset(ptr,0,sizeof(*bp->speculative)*bp->n);
+            myfree(ptr,(bp->n+1)*sizeof(*bp->speculative));
+        }
         //iguana_RTramchainalloc("RTbundle",coin,bp);
     }
     return(flag);

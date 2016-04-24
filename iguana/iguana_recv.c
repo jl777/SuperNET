@@ -809,7 +809,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
                     match++;
                 else
                 {
-                    if ( i != n-1 )
+                    if ( bp != coin->current && i != n-1 )
                         fprintf(stderr,"recvhdr: ht.%d[%d] vs i.%d\n",bp->bundleheight,bundlei,i);
                 }
             }
