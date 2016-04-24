@@ -151,7 +151,7 @@ HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
             txbytes = calloc(1,len*2+1);
             init_hexbytes_noT(txbytes,coin->blockspace,len);
             jaddstr(retjson,"result",txbytes);
-            //printf("txbytes.(%s)\n",txbytes);
+            printf("txbytes.(%s) len.%d (%s)\n",txbytes,len,jprint(retjson,0));
             free(txbytes);
             return(jprint(retjson,1));
         }
@@ -193,7 +193,7 @@ STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx)
         if ( (strlen(rawtx) & 1) != 0 )
             return(clonestr("{\"error\":\"rawtx hex has odd length\"}"));
         txobj = bitcoin_hex2json(coin,&txid,0,rawtx);
-        char str[65]; printf("got txid.(%s)\n",bits256_str(str,txid));
+        //char str[65]; printf("got txid.(%s)\n",bits256_str(str,txid));
     }
     if ( txobj == 0 )
         txobj = cJSON_CreateObject();

@@ -266,12 +266,6 @@ uint32_t iguana_ramchain_addpkhash(struct iguana_info *coin,RAMCHAIN_FUNC,uint8_
 uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_peer *addr,RAMCHAIN_FUNC,uint64_t value,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vout,int8_t type,struct iguana_bundle *bp,uint8_t rmd160[20])
 {
     uint32_t unspentind; struct iguana_unspent20 *u; long scriptpos; struct vin_info V; char asmstr[IGUANA_MAXSCRIPTSIZE*2+1];
-    {
-        if ( bits256_cmp(txid,bits256_conv("9d30c5f3ed9924f5a4eba8e274540f007d94d08ad41e34fda96c4803d3c6239a")) == 0 )
-        {
-            ;
-        }
-    }
     unspentind = ramchain->H.unspentind++;
     u = &U[unspentind];
     if ( scriptlen > 0 )
@@ -361,7 +355,7 @@ uint32_t iguana_ramchain_addunspent(struct iguana_info *coin,RAMCHAIN_FUNC,uint6
     for (i=0; i<20; i++)
         if ( rmd160[i] != 0 )
             break;
-    if ( i == 20 && (txi != 0 || vout > 0) )
+    if ( i == 20 && vout > 0 )
     {
         printf("iguana_ramchain_addunspent: null rmd160 warning txi.%d vout.%d\n",txi,vout);
         //return(0);

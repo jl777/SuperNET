@@ -47,7 +47,7 @@ char *sglue(GLUEARGS,char *agent,char *method)
                     len = (int32_t)strlen(rpcretstr);
                     if ( rpcretstr[0] == '"' && rpcretstr[len-1] == '"' )
                     {
-                        for (i=1,j=0; i<len-2; i++,j++)
+                        for (i=1,j=0; i<len-1; i++,j++)
                             rpcretstr[j] = rpcretstr[i];
                         rpcretstr[j++] = '\n', rpcretstr[j] = 0;
                         free_json(retjson);
@@ -774,7 +774,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
 {
     cJSON *tokens,*argjson,*json = 0; long filesize;
     char symbol[16],buf[4096],urlmethod[16],*data,url[1024],*retstr,*filestr,*token = 0; int32_t i,j,n,num=0;
-    printf("rpcparse.(%s)\n",urlstr);
+    //printf("rpcparse.(%s)\n",urlstr);
     for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
         urlmethod[i] = urlstr[i];
     urlmethod[i++] = 0;

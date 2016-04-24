@@ -108,22 +108,22 @@ int32_t iguana_voutscript(struct iguana_info *coin,struct iguana_bundle *bp,uint
     return(scriptlen);
 }
 
-int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmstr,int32_t height,struct iguana_msgvout *vout,struct iguana_txid *tx,int32_t txi)
+int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmstr,int32_t height,struct iguana_msgvout *vout,struct iguana_txid *tx,int32_t i)
 {
     struct iguana_ramchaindata *rdata; uint32_t unspentind,scriptlen = 0; struct iguana_bundle *bp;
     struct iguana_unspent *u,*U; struct iguana_pkhash *P; int32_t err = 0;
     memset(vout,0,sizeof(*vout));
-    if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0  && (rdata= bp->ramchain.H.data) != 0 && txi < tx->numvouts )
+    if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0  && (rdata= bp->ramchain.H.data) != 0 && i < tx->numvouts )
     {
         U = (void *)(long)((long)rdata + rdata->Uoffset);
         P = (void *)(long)((long)rdata + rdata->Poffset);
-        unspentind = (tx->firstvout + txi);
+        unspentind = (tx->firstvout + i);
         u = &U[unspentind];
-        if ( u->txidind != tx->txidind || u->vout != txi || u->hdrsi != height / coin->chain->bundlesize )
-            printf("iguana_voutset: txidind mismatch %d vs %d || %d vs %d || (%d vs %d)\n",u->txidind,u->txidind,u->vout,txi,u->hdrsi,height / coin->chain->bundlesize);
+        if ( u->txidind != tx->txidind || u->vout != i || u->hdrsi != height / coin->chain->bundlesize )
+            printf("iguana_voutset: txidind mismatch %d vs %d || %d vs %d || (%d vs %d)\n",u->txidind,u->txidind,u->vout,i,u->hdrsi,height / coin->chain->bundlesize);
         vout->value = u->value;
         vout->pk_script = scriptspace;
-        scriptlen = iguana_voutscript(coin,bp,scriptspace,asmstr,u,&P[u->pkind],txi);
+        scriptlen = iguana_voutscript(coin,bp,scriptspace,asmstr,u,&P[u->pkind],i);
     } else printf("iguana_voutset unexpected path\n");
     vout->pk_scriptlen = scriptlen;
     if ( err != 0 )

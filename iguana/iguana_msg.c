@@ -340,6 +340,7 @@ int32_t iguana_rwvin(int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized,
     return(len);
 }
 
+int32_t debugtest;
 int32_t iguana_rwvout(int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized,struct iguana_msgvout *msg)
 {
     int32_t len = 0;
@@ -348,10 +349,13 @@ int32_t iguana_rwvout(int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized
     if ( rwflag == 0 )
         msg->pk_script = iguana_memalloc(mem,msg->pk_scriptlen,1);
     len += iguana_rwmem(rwflag,&serialized[len],msg->pk_scriptlen,msg->pk_script);
-    //printf("(%.8f scriptlen.%d) ",dstr(msg->value),msg->pk_scriptlen);
-    //int i; for (i=0; i<msg->pk_scriptlen; i++)
-    //    printf("%02x",msg->pk_script[i]);
-    //printf("\n");
+    if ( debugtest != 0 )
+    {
+        printf("(%.8f scriptlen.%d) ",dstr(msg->value),msg->pk_scriptlen);
+        int i; for (i=0; i<msg->pk_scriptlen; i++)
+            printf("%02x",msg->pk_script[i]);
+        printf("\n");
+    }
     return(len);
 }
 
@@ -363,7 +367,7 @@ int32_t iguana_rwtx(int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized,s
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->timestamp),&msg->timestamp);
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_in);
     //printf("version.%d ",msg->version);
-    if ( msg->tx_in > 0 && msg->tx_out*100 < maxsize )
+    if ( msg->tx_in > 0 && msg->tx_in*100 < maxsize )
     {
         if ( rwflag == 0 )
             msg->vins = iguana_memalloc(mem,msg->tx_in * sizeof(*msg->vins),1);
@@ -441,6 +445,18 @@ int32_t iguana_gentxarray(struct iguana_info *coin,struct OS_memspace *mem,struc
     {
         if ( (n= iguana_rwtx(0,mem,&data[len],&tx[i],recvlen - len,&tx[i].txid,coin->chain->hastimestamp,strcmp(coin->symbol,"VPN")==0)) < 0 )
             break;
+        if ( 1 && bits256_cmp(tx[i].txid,bits256_conv("091c99b7b7f9b83ad2385c45b342ed5dd57035d15ff812262a3ceb3f1b291a5a")) == 0 )
+        {
+            int32_t j; for (j=0; len+j<recvlen&&j<256; j++)
+                printf("%02x",data[len+j]);
+            printf(" serialized tx.%d\n",j);
+            /*debugtest = 1;
+             if ( (n= iguana_rwtx(0,mem,&data[len],&tx[i],recvlen - len,&tx[i].txid,coin->chain->hastimestamp,strcmp(coin->symbol,"VPN")==0)) < 0 )
+             {
+                
+            }
+            debugtest = 0;*/
+        }
         numvouts += tx[i].tx_out;
         numvins += tx[i].tx_in;
         len += n;

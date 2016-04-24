@@ -455,6 +455,8 @@ cJSON *iguana_voutjson(struct iguana_info *coin,struct iguana_msgvout *vout,int3
 void iguana_addscript(struct iguana_info *coin,cJSON *dest,uint8_t *script,int32_t scriptlen,char *fieldname)
 {
     char *scriptstr,scriptbuf[8192+256]; int32_t len; cJSON *scriptobj;
+    if ( scriptlen < 0 )
+        return;
     if ( scriptlen > sizeof(scriptbuf) )
         len = (scriptlen << 1) + 256, scriptstr = malloc(len);
     else scriptstr = scriptbuf, len = sizeof(scriptbuf);
@@ -499,6 +501,11 @@ int32_t iguana_vinparse(struct iguana_info *coin,int32_t rwflag,uint8_t *seriali
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->prev_hash),msg->prev_hash.bytes);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->prev_vout),&msg->prev_vout);
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->scriptlen);
+    if ( msg->scriptlen > IGUANA_MAXSCRIPTSIZE )
+    {
+        printf("iguana_vinparse illegal scriptlen.%d\n",msg->scriptlen);
+        return(-1);
+    }
     if ( rwflag == 0 )
     {
         msg->vinscript = &serialized[len];
@@ -528,6 +535,11 @@ int32_t iguana_voutparse(int32_t rwflag,uint8_t *serialized,struct iguana_msgvou
     int32_t len = 0;
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->value),&msg->value);
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->pk_scriptlen);
+    if ( msg->pk_scriptlen > IGUANA_MAXSCRIPTSIZE )
+    {
+        printf("iguana_voutparse illegal scriptlen.%d\n",msg->pk_scriptlen);
+        return(-1);
+    }
     if ( rwflag == 0 )
         msg->pk_script = &serialized[len];
     else memcpy(&serialized[len],msg->pk_script,msg->pk_scriptlen);
@@ -547,21 +559,25 @@ int32_t iguana_voutparse(int32_t rwflag,uint8_t *serialized,struct iguana_msgvou
 
 int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,bits256 *txidp,char *vpnstr)
 {
-    int32_t i,len = 0; uint8_t *txstart = serialized; char txidstr[65]; cJSON *array=0;
+    int32_t i,n,len = 0; uint8_t *txstart = serialized; char txidstr[65]; cJSON *array=0;
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
     if ( json != 0 )
     {
         jaddnum(json,"version",msg->version);
         array = cJSON_CreateArray();
     }
+    //printf("version.%d\n",msg->version);
     if ( coin->chain->hastimestamp != 0 )
     {
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->timestamp),&msg->timestamp);
-        //char str[65]; printf("timestamp.%08x %u %s\n",msg->timestamp,msg->timestamp,utc_str(str,msg->timestamp));
+        //char str[65]; printf("version.%d timestamp.%08x %u %s\n",msg->version,msg->timestamp,msg->timestamp,utc_str(str,msg->timestamp));
         if ( json != 0 )
             jaddnum(json,"timestamp",msg->timestamp);
     }
+    //for (i=len; i<len+16; i++)
+    //    printf("%02x",serialized[i]);
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_in);
+    //printf(" tx_in.%08x\n",msg->tx_in);
     if ( rwflag == 0 )
     {
         if ( len + sizeof(struct iguana_msgvin)*msg->tx_in > maxsize )
@@ -573,12 +589,14 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
         msg->vins = (struct iguana_msgvin *)&serialized[maxsize];
         memset(msg->vins,0,sizeof(struct iguana_msgvin) * msg->tx_in);
     }
-    //printf("tx_in.%08x\n",msg->tx_in);
     if ( msg->tx_in > 0 && msg->tx_in*sizeof(struct iguana_msgvin) < maxsize )
     {
         for (i=0; i<msg->tx_in; i++)
         {
-            len += iguana_vinparse(coin,rwflag,&serialized[len],&msg->vins[i]);
+            if ( (n= iguana_vinparse(coin,rwflag,&serialized[len],&msg->vins[i])) < 0 )
+                return(-1);
+            //printf("vin.%d n.%d len.%d\n",i,n,len);
+            len += n;
             if ( array != 0 )
                 jaddi(array,iguana_vinjson(coin,&msg->vins[i]));
         }
@@ -594,7 +612,10 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
         jaddnum(json,"numvins",msg->tx_in);
         array = cJSON_CreateArray();
     }
+    //for (i=len; i<len+16; i++)
+    //    printf("%02x",serialized[i]);
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_out);
+    //printf(" txout.%d\n",msg->tx_out);
     if ( rwflag == 0 )
     {
         if ( len + sizeof(struct iguana_msgvout)*msg->tx_out > maxsize )
@@ -610,7 +631,9 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
     {
         for (i=0; i<msg->tx_out; i++)
         {
-            len += iguana_voutparse(rwflag,&serialized[len],&msg->vouts[i]);
+            if ( (n= iguana_voutparse(rwflag,&serialized[len],&msg->vouts[i])) < 0 )
+                return(-1);
+            len += n;
             if ( array != 0 )
                 jaddi(array,iguana_voutjson(coin,&msg->vouts[i],i,*txidp));
         }
@@ -700,7 +723,12 @@ bits256 iguana_parsetxobj(struct iguana_info *coin,int32_t *txstartp,uint8_t *se
     msg->lock_time = juint(txobj,"locktime");
     msg->txid = jbits256(txobj,"txid");
     *txstartp = len;
-    msg->allocsize = iguana_rwmsgtx(coin,1,0,&serialized[len],maxsize-len,msg,&txid,vpnstr);
+    if ( (msg->allocsize= iguana_rwmsgtx(coin,1,0,&serialized[len],maxsize-len,msg,&txid,vpnstr)) < 0 )
+    {
+        memset(txid.bytes,0,sizeof(txid));
+        printf("error parsing txobj\n");
+        msg->allocsize = 0;
+    }
     //char str[65]; printf("json -> %s\n",bits256_str(str,txid));
     return(txid);
 }
@@ -869,12 +897,12 @@ cJSON *bitcoin_hex2json(struct iguana_info *coin,bits256 *txidp,struct iguana_ms
         msgtx = &M;
         memset(msgtx,0,sizeof(M));
     }
-    len = (int32_t)strlen(txbytes);
+    len = (int32_t)strlen(txbytes) >> 1;
     serialized = malloc(len + 32768);
     decode_hex(serialized,len,txbytes);
     vpnstr[0] = 0;
     memset(txidp,0,sizeof(*txidp));
-    printf("bitcoin_hex2json len.%d\n",len);
+    printf("B bitcoin_hex2json len.%d\n",len);
     if ( (n= iguana_rwmsgtx(coin,0,txobj,serialized,len + 32768,msgtx,txidp,vpnstr)) <= 0 )
     {
         printf("error from rwmsgtx\n");
