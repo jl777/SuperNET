@@ -1400,7 +1400,7 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
     //printf("iguana_spendvectors.[%d] gen.%d ramchain data.%p txbits.%p\n",bp->hdrsi,bp->bundleheight,ramchain->H.data,ramchain->txbits);
     if ( (rdata= ramchain->H.data) == 0 || (n= rdata->numspends) < 1 )
     {
-        printf("iguana_spendvectors: no rdata.%p %d\n",rdata,n);
+        printf("iguana_spendvectors.[%d]: no rdata.%p %d\n",bp->hdrsi,rdata,n);
         return(0);
     }
     B = (void *)(long)((long)rdata + rdata->Boffset);
