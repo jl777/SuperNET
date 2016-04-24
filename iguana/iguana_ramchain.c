@@ -1675,11 +1675,11 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
         tx = &T[ramchain->H.txidind];
         if ( iguana_ramchain_addtxid(coin,RAMCHAIN_ARG,tx->txid,tx->numvouts,tx->numvins,tx->locktime,tx->version,tx->timestamp,bundlei) == 0 )
             return(-1);
-        printf("txidind.%u firstvout.%u firstvin.%u bundlei.%d n.%d\n",tx->txidind,tx->firstvout,tx->firstvin,bundlei,bp->n);
+        //printf("txidind.%u firstvout.%u firstvin.%u bundlei.%d n.%d\n",tx->txidind,tx->firstvout,tx->firstvin,bundlei,bp->n);
         if ( dest != 0 )
         {
             //char str[65];
-            //if ( 0 && ramchain->expanded == 0 )
+            if ( 0 && ramchain->expanded == 0 )
                 printf("ITER [%d] TXID.%d -> dest.%p desttxid.%d dest->hashmem.%p numtxids.%d\n",ramchain->H.data->height,ramchain->H.txidind,dest,dest!=0?dest->H.txidind:0,dest!=0?dest->hashmem:0,rdata->numtxids);
             if ( iguana_ramchain_addtxid(coin,RAMCHAIN_DESTARG,tx->txid,tx->numvouts,tx->numvins,tx->locktime,tx->version,tx->timestamp,bundlei) == 0 )
                 return(-2);
@@ -1740,9 +1740,12 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
                     } //else printf("no script\n");*/
                     if ( iguana_ramchain_addunspent20(coin,0,RAMCHAIN_ARG,value,0,scriptlen,tx->txid,j,type,bp,rmd160) == 0 )
                         return(-4);
-                    int32_t i; for (i=0; i<20; i++)
-                        printf("%02x",rmd160[i]);
-                    char str[65]; printf(" raw rmd160 txid.(%s) txidind.%u j.%d\n",bits256_str(str,tx->txid),ramchain->H.txidind,j);
+                    if ( 0 )
+                    {
+                        int32_t i; for (i=0; i<20; i++)
+                            printf("%02x",rmd160[i]);
+                        char str[65]; printf(" raw rmd160 txid.(%s) txidind.%u j.%d\n",bits256_str(str,tx->txid),ramchain->H.txidind,j);
+                    }
                 }
                 if ( dest != 0 )
                 {
