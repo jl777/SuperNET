@@ -445,7 +445,7 @@ int32_t iguana_gentxarray(struct iguana_info *coin,struct OS_memspace *mem,struc
     {
         if ( (n= iguana_rwtx(0,mem,&data[len],&tx[i],recvlen - len,&tx[i].txid,coin->chain->hastimestamp,strcmp(coin->symbol,"VPN")==0)) < 0 )
             break;
-        if ( 1 && bits256_cmp(tx[i].txid,bits256_conv("091c99b7b7f9b83ad2385c45b342ed5dd57035d15ff812262a3ceb3f1b291a5a")) == 0 )
+        if ( 0 && bits256_cmp(tx[i].txid,bits256_conv("091c99b7b7f9b83ad2385c45b342ed5dd57035d15ff812262a3ceb3f1b291a5a")) == 0 )
         {
             int32_t j; for (j=0; len+j<recvlen&&j<256; j++)
                 printf("%02x",data[len+j]);

@@ -30,7 +30,7 @@ TWO_ARRAYS(bitcoinrpc,createrawtransaction,vins,vouts); //
 STRING_AND_TWOARRAYS(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys); //
 STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees); //
 
-HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool); //
+HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool);
 TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array);
 HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag); //
 

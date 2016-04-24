@@ -355,11 +355,11 @@ uint32_t iguana_ramchain_addunspent(struct iguana_info *coin,RAMCHAIN_FUNC,uint6
     for (i=0; i<20; i++)
         if ( rmd160[i] != 0 )
             break;
-    if ( i == 20 && vout > 0 )
+    /*if ( i == 20 && vout > 0 )
     {
         printf("iguana_ramchain_addunspent: null rmd160 warning txi.%d vout.%d\n",txi,vout);
         //return(0);
-    }
+    }*/
     unspentind = ramchain->H.unspentind++;
     u = &Ux[unspentind];
     if ( (ptr= iguana_hashfind(ramchain,'P',rmd160)) == 0 )
