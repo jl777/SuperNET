@@ -2500,9 +2500,9 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     if ( coin->RTdatabad != 0 )
     {
         iguana_RTramchainfree(coin,bp);
-        memset(bp->hashes,0,sizeof(bp->hashes));
+        //memset(bp->hashes,0,sizeof(bp->hashes));
         memset(bp->blocks,0,sizeof(bp->blocks));
-        if ( bp->speculative != 0 )
+        if ( 0 && bp->speculative != 0 )
         {
             ptr = bp->speculative;
             bp->speculative = 0;
