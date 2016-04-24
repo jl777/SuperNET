@@ -47,6 +47,7 @@
 #define IGUANA_CFUNC_SSDIS(agent,name,str,str2,amount,val,str3) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,double amount,int32_t val,char *str3)
 #define IGUANA_CFUNC_SSDISS(agent,name,str,str2,amount,val,str3,str4) char *agent ## _ ## name(IGUANA_ARGS,char *str,char *str2,double amount,int32_t val,char *str3,char *str4)
 #define IGUANA_CFUNC_SAIS(agent,name,str,array,val,str2) char *agent ## _ ## name(IGUANA_ARGS,char *str,cJSON *array,int32_t val,char *str2)
+#define IGUANA_CFUNC_SAOS(agent,name,str,array,object,str2) char *agent ## _ ## name(IGUANA_ARGS,char *str,cJSON *array,cJSON *object,char *str2)
 #define IGUANA_CFUNC_SDSS(agent,name,str,amount,str2,str3) char *agent ## _ ## name(IGUANA_ARGS,char *str,double amount,char *str2,char *str3)
 
 // API functions
@@ -69,6 +70,7 @@
 #define STRING_AND_TWOARRAYS IGUANA_CFUNC_SAA
 #define TWO_ARRAYS IGUANA_CFUNC_AA
 #define ARRAY_OBJ_INT IGUANA_CFUNC_AOI
+#define STRING_ARRAY_OBJ_STRING IGUANA_CFUNC_SAOS
 #define INT_AND_ARRAY IGUANA_CFUNC_IA
 #define INT_ARRAY_STRING IGUANA_CFUNC_IAS
 #define SS_D_I_S IGUANA_CFUNC_SSDIS

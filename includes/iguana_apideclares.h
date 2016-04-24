@@ -26,13 +26,12 @@ HASH_ARG(bitcoinrpc,gettransaction,txid);
 
 STRING_ARG(bitcoinrpc,decodescript,script);
 STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx);
-ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime); //
-STRING_AND_TWOARRAYS(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys); //
+ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime);
+STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighash); //
 STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees); //
 
 HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool);
 TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array);
-HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag); //
 
 SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment); //
 SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment2); //
@@ -71,6 +70,7 @@ TWO_STRINGS(bitcoinrpc,setaccount,address,account);
 TWO_STRINGS(bitcoinrpc,signmessage,address,message); //
 THREE_STRINGS(bitcoinrpc,verifymessage,address,sig,message); //
 
+HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag); //
 ZERO_ARGS(bitcoinrpc,gettxoutsetinfo);
 INT_AND_ARRAY(bitcoinrpc,lockunspent,flag,array);
 ZERO_ARGS(bitcoinrpc,listlockunspent);

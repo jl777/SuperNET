@@ -267,14 +267,17 @@ char *jsuccess()
 bits256 iguana_str2priv(struct iguana_info *coin,char *str)
 {
     bits256 privkey; int32_t ind,n; uint8_t addrtype; struct iguana_waccount *wacct;
-    n = (int32_t)strlen(str) >> 1;
     memset(&privkey,0,sizeof(privkey));
-    if ( n == sizeof(bits256) && is_hexstr(str,sizeof(bits256)) > 0 )
-        decode_hex(privkey.bytes,sizeof(privkey),str);
-    else if ( btc_wif2priv(&addrtype,privkey.bytes,str) != sizeof(bits256) )
+    if ( str != 0 )
     {
-        if ( (wacct= iguana_waddressfind(coin,&ind,str)) != 0 )
-            privkey = wacct->waddrs[ind].privkey;
+        n = (int32_t)strlen(str) >> 1;
+        if ( n == sizeof(bits256) && is_hexstr(str,sizeof(bits256)) > 0 )
+            decode_hex(privkey.bytes,sizeof(privkey),str);
+        else if ( btc_wif2priv(&addrtype,privkey.bytes,str) != sizeof(bits256) )
+        {
+            if ( (wacct= iguana_waddressfind(coin,&ind,str)) != 0 )
+                privkey = wacct->waddrs[ind].privkey;
+        }
     }
     return(privkey);
 }

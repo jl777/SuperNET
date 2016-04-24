@@ -134,6 +134,7 @@ cJSON *SuperNET_helpjson()
 #define IGUANA_HELP_SSDIS(agent,name,str,str2,amount,val,str3) array = helpjson(IGUANA_ARGS,#agent,#name,helparray5(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#str2,"string"),helpitem(#amount,"float"),helpitem(#val,"int"),helpitem(#str3,"string")))
 #define IGUANA_HELP_SSDISS(agent,name,str,str2,amount,val,str3,str4) array = helpjson(IGUANA_ARGS,#agent,#name,helparray6(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#str2,"string"),helpitem(#amount,"float"),helpitem(#val,"int"),helpitem(#str3,"string"),helpitem(#str4,"string")))
 #define IGUANA_HELP_SAIS(agent,name,str,obj,val,str2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray4(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#obj,"array"),helpitem(#val,"int"),helpitem(#str2,"string")))
+#define IGUANA_HELP_SAOS(agent,name,str,obj,obj2,str2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray4(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#obj,"array"),helpitem(#obj2,"object"),helpitem(#str2,"string")))
 #define IGUANA_HELP_SDSS(agent,name,str,amount,str2,str3) array = helpjson(IGUANA_ARGS,#agent,#name,helparray4(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#amount,"float"),helpitem(#str2,"string"),helpitem(#str3,"string")))
     
 #define IGUANA_HELP_SHI_SDSD_II_SSSSSS(agent,name,str,hash,val,str2,amount,str3,amount2,val2,val3,str4,str5,str6,str7,str8,str9) array = helpjson(IGUANA_ARGS,#agent,#name,helparray15(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#hash,"hash"),helpitem(#val,"int"),helpitem(#str2,"string"),helpitem(#amount,"float"),helpitem(#str3,"string"),helpitem(#amount2,"float"),helpitem(#val2,"int"),helpitem(#val3,"int"),helpitem(#str4,"string"),helpitem(#str5,"string"),helpitem(#str6,"string"),helpitem(#str7,"string"),helpitem(#str8,"string"),helpitem(#str9,"string")))
@@ -182,6 +183,7 @@ cJSON *SuperNET_helpjson()
 #define STRING_AND_TWO_DOUBLES IGUANA_HELP_SDD
 #define P2SH_SPENDAPI IGUANA_HELP_SHI_SDSD_II_SSSSSS
 #define ARRAY_OBJ_INT IGUANA_HELP_AOI
+#define STRING_ARRAY_OBJ_STRING IGUANA_HELP_SAOS
 
 #include "../includes/iguana_apideclares.h"
     
@@ -935,6 +937,7 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
 #define IGUANA_DISPATCH_SSDIS(agent,name,str,str2,amount,val,str3) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2),jdouble(json,#amount),juint(json,#val),jstr(json,#str3)))
 #define IGUANA_DISPATCH_SSDISS(agent,name,str,str2,amount,val,str3,str4) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2),jdouble(json,#amount),juint(json,#val),jstr(json,#str3),jstr(json,#str4)))
 #define IGUANA_DISPATCH_SAIS(agent,name,str,array,val,str2) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jobj(json,#array),juint(json,#val),jstr(json,#str2)))
+#define IGUANA_DISPATCH_SAOS(agent,name,str,array,object,str2) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jobj(json,#array),jobj(json,#object),jstr(json,#str2)))
 #define IGUANA_DISPATCH_SDSS(agent,name,str,amount,str2,str3) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jdouble(json,#amount),jstr(json,#str2),jstr(json,#str3)))
     
 #define IGUANA_DISPATCH_SHI_SDSD_II_SSSSSS(agent,name,str,hash,val,str2,amount,str3,amount2,val2,val3,str4,str5,str6,str7,str8,str9) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jbits256(json,#hash),jint(json,#val),jstr(json,#str2),jdouble(json,#amount),jstr(json,#str3),jdouble(json,#amount2),juint(json,#val2),juint(json,#val3),jstr(json,#str4),jstr(json,#str5),jstr(json,#str6),jstr(json,#str7),jstr(json,#str8),jstr(json,#str9)))
@@ -983,6 +986,7 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
 #define STRING_AND_TWO_DOUBLES IGUANA_DISPATCH_SDD
 #define P2SH_SPENDAPI IGUANA_DISPATCH_SHI_SDSD_II_SSSSSS
 #define ARRAY_OBJ_INT IGUANA_DISPATCH_AOI
+#define STRING_ARRAY_OBJ_STRING IGUANA_DISPATCH_SAOS
 
 #include "../includes/iguana_apideclares.h"
 //#undef IGUANA_ARGS

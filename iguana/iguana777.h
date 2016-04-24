@@ -528,6 +528,19 @@ struct vin_info
     char coinaddr[65];
     uint8_t rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE],p2shscript[IGUANA_MAXSCRIPTSIZE];
 };
+struct bitcoin_unspent
+{
+    bits256 txid,privkeys[16]; uint64_t value; int32_t vout,spendlen,p2shlen; uint32_t sequence;
+    uint8_t addrtype,rmd160[20],pubkey[65],spendscript[IGUANA_MAXSCRIPTSIZE],p2shscript[IGUANA_MAXSCRIPTSIZE];
+};
+
+struct bitcoin_spend
+{
+    char changeaddr[64]; uint8_t change160[20];
+    int32_t numinputs;
+    int64_t txfee,input_satoshis,satoshis,change;
+    struct bitcoin_unspent inputs[];
+};
 
 // peers
 int32_t iguana_verifypeer(struct iguana_info *coin,void *key,void *value,int32_t itemind,int32_t itemsize);

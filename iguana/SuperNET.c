@@ -889,7 +889,7 @@ void SuperNET_parsepeers(struct supernet_info *myinfo,cJSON *array,int32_t n,int
 
 cJSON *SuperNET_rosettajson(bits256 privkey,int32_t showprivs)
 {
-    uint8_t rmd160[20],pub[33],flag = 0; uint64_t nxt64bits; bits256 pubkey;
+    uint8_t rmd160[20],pub[33]; uint64_t nxt64bits; bits256 pubkey;
     char str2[41],wifbuf[64],addr[64],str[128]; cJSON *retjson;
     pubkey = acct777_pubkey(privkey);
     nxt64bits = acct777_nxt64bits(pubkey);
@@ -903,25 +903,25 @@ cJSON *SuperNET_rosettajson(bits256 privkey,int32_t showprivs)
     jaddstr(retjson,"btcpubkey",str);
     calc_OP_HASH160(str2,rmd160,str);
     jaddstr(retjson,"rmd160",str2);
-    if ( btc_coinaddr(addr,0,str) == 0 )
+    if ( bitcoin_address(addr,0,pub,33) != 0 )
     {
         jaddstr(retjson,"BTC",addr);
-        if ( flag != 0 )
+        if ( showprivs != 0 )
         {
-            btc_priv2wif(wifbuf,privkey.bytes,0x80);
+            btc_priv2wif(wifbuf,privkey.bytes,128);
             jaddstr(retjson,"BTCwif",wifbuf);
         }
     }
-    if ( btc_coinaddr(addr,60,str) == 0 )
+    if ( bitcoin_address(addr,60,pub,33) != 0 )
     {
         jaddstr(retjson,"BTCD",addr);
-        if ( flag != 0 )
+        if ( showprivs != 0 )
         {
-            btc_priv2wif(wifbuf,privkey.bytes,0xbc);
+            btc_priv2wif(wifbuf,privkey.bytes,188);
             jaddstr(retjson,"BTCDwif",wifbuf);
         }
     }
-    if ( flag != 0 )
+    if ( showprivs != 0 )
         jaddbits256(retjson,"privkey",privkey);
     return(retjson);
 }

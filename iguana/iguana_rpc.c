@@ -495,7 +495,7 @@ static char *decodescript(RPCARGS)
 
 static char *signrawtransaction(RPCARGS)
 {
-    return(sglue3(0,CALLGLUE,"bitcoinrpc","signrawtransaction","rawtx",params[0],"vins",params[1],"privkeys",params[2]));
+    return(sglue4(0,CALLGLUE,"bitcoinrpc","signrawtransaction","rawtx",params[0],"vins",params[1],"privkeys",params[2],"sighash",params[3]));
 }
 
 static char *sendrawtransaction(RPCARGS)

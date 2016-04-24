@@ -397,7 +397,7 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
             {
                 item = jitem(vins,i);
                 p2shlen = scriptlen = 0;
-                if ( (str= jstr(item,"scriptPubKey")) != 0 )
+                if ( (str= jstr(item,"scriptPubKey")) != 0 || (str= jstr(item,"scriptPubkey")) != 0 )
                 {
                     scriptlen = (int32_t)strlen(str) >> 1;
                     decode_hex(script,scriptlen,str);
@@ -488,9 +488,59 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
     return(jprint(retjson,1));
 }
 
-STRING_AND_TWOARRAYS(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys)
+/*struct bitcoin_unspent
 {
-    cJSON *retjson = cJSON_CreateObject();
+    bits256 txid,privkeys[16]; uint64_t value; int32_t vout,spendlen,p2shlen; uint32_t sequence;
+    uint8_t addrtype,rmd160[20],pubkey[65],spendscript[IGUANA_MAXSCRIPTSIZE],p2shscript[IGUANA_MAXSCRIPTSIZE];
+};
+
+struct bitcoin_spend
+{
+    char changeaddr[64]; uint8_t change160[20];
+    int32_t numinputs;
+    int64_t txfee,input_satoshis,satoshis,change;
+    struct bitcoin_unspent inputs[];
+};*/
+
+STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighash)
+{
+    bits256 txid; char *privkeystr,*signedtx = 0; bits256 privkey; int32_t i,n,numinputs = 1; struct bitcoin_spend *spend; cJSON *txobj=0,*item,*retjson = cJSON_CreateObject();
+    //printf("rawtx.(%s) vins.(%s) privkeys.(%s) sighash.(%s)\n",rawtx,jprint(vins,0),jprint(privkeys,0),sighash);
+    if ( sighash == 0 || sighash[0] == 0 )
+        sighash = "ALL";
+    if ( strcmp(sighash,"ALL") != 0 )
+        jaddstr(retjson,"error","only sighash all supported for now");
+    else
+    {
+        // need to mix and match privkeys with inputs[i]
+        signedtx = clonestr(rawtx);
+        if ( (numinputs= cJSON_GetArraySize(vins)) > 0 && (n= cJSON_GetArraySize(privkeys)) > 0 )
+        {
+            spend = calloc(1,sizeof(*spend) + (sizeof(*spend->inputs) * numinputs));
+            spend->numinputs = numinputs;
+            for (i=0; i<n; i++)
+            {
+                item = jitem(privkeys,i);
+                privkeystr = jstr(item,0);
+                privkey = iguana_str2priv(coin,privkeystr);
+                if ( bits256_nonz(privkey) != 0 )
+                {
+                    spend->inputs[0].privkeys[i] = privkey;
+                    //if ( i < numinputs )
+                    //    spend->inputs[i].privkeys[0] = privkey;
+                    char str2[65]; printf("privkey.%s <- %s\n",bits256_str(str2,privkey),privkeystr);
+                }
+            }
+            txobj = iguana_signtx(coin,&txid,&signedtx,spend,txobj);
+            free(spend);
+            free_json(txobj);
+            if ( signedtx != 0 )
+            {
+                jaddstr(retjson,"result",signedtx);
+                free(signedtx);
+            }
+        }
+    }
     return(jprint(retjson,1));
 }
 

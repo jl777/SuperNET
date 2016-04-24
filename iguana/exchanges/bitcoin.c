@@ -960,10 +960,10 @@ cJSON *bitcoin_addinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32
     }
     jaddbits256(item,"txid",txid);
     jaddnum(item,"vout",vout);
-    jaddnum(item,"sequenceid",sequenceid);
+    jaddnum(item,"sequence",sequenceid);
     jaddi(vins,item);
     jadd(txobj,"vin",vins);
-    //printf("addvin -> (%s)\n",jprint(txobj,0));
+    printf("addvin -> (%s)\n",jprint(txobj,0));
     return(txobj);
 }
 
@@ -1066,7 +1066,8 @@ cJSON *iguana_signtx(struct iguana_info *coin,bits256 *txidp,char **signedtxp,st
     {
         if ( *signedtxp != 0 )
         {
-            free_json(txobj);
+            if ( txobj != 0 )
+                free_json(txobj);
             txobj = bitcoin_hex2json(coin,&txid,0,*signedtxp);
             free(*signedtxp);
         }
@@ -1075,7 +1076,7 @@ cJSON *iguana_signtx(struct iguana_info *coin,bits256 *txidp,char **signedtxp,st
             memset(&V,0,sizeof(V));
             for (j=0; j<sizeof(spend->inputs[i].privkeys)/sizeof(*spend->inputs[i].privkeys); j++)
             {
-                if ( bits256_nonz(spend->inputs[i].privkeys[j]) > 0 )
+                if ( bits256_nonz(spend->inputs[i].privkeys[j]) != 0 )
                     V.signers[j].privkey = spend->inputs[i].privkeys[j];
             }
             if ( spend->inputs[i].spendlen > 0 )

@@ -63,20 +63,6 @@
 
 struct bp_key { EC_KEY *k; };
 
-struct bitcoin_unspent
-{
-    bits256 txid,privkeys[16]; uint64_t value; int32_t vout,spendlen,p2shlen; uint32_t sequence;
-    uint8_t addrtype,rmd160[20],pubkey[65],spendscript[IGUANA_MAXSCRIPTSIZE],p2shscript[IGUANA_MAXSCRIPTSIZE];
-};
-
-struct bitcoin_spend
-{
-    char changeaddr[64]; uint8_t change160[20];
-    int32_t numinputs;
-    int64_t txfee,input_satoshis,satoshis,change;
-    struct bitcoin_unspent inputs[];
-};
-
 int32_t bitcoin_validaddress(struct iguana_info *coin,char *coinaddr);
 int32_t bitcoin_cltvscript(uint8_t p2shtype,char *ps2h_coinaddr,uint8_t p2sh_rmd160[20],uint8_t *script,int32_t n,char *senderaddr,char *otheraddr,uint8_t secret160[20],uint32_t locktime);
 int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr);
