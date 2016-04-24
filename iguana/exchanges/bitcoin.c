@@ -589,22 +589,19 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
         msg->vins = (struct iguana_msgvin *)&serialized[maxsize];
         memset(msg->vins,0,sizeof(struct iguana_msgvin) * msg->tx_in);
     }
-    if ( msg->tx_in > 0 && msg->tx_in*sizeof(struct iguana_msgvin) < maxsize )
+    for (i=0; i<msg->tx_in; i++)
     {
-        for (i=0; i<msg->tx_in; i++)
+        if ( (n= iguana_vinparse(coin,rwflag,&serialized[len],&msg->vins[i])) < 0 )
+            return(-1);
+        //printf("vin.%d n.%d len.%d\n",i,n,len);
+        len += n;
+        if ( len > maxsize )
         {
-            if ( (n= iguana_vinparse(coin,rwflag,&serialized[len],&msg->vins[i])) < 0 )
-                return(-1);
-            //printf("vin.%d n.%d len.%d\n",i,n,len);
-            len += n;
-            if ( array != 0 )
-                jaddi(array,iguana_vinjson(coin,&msg->vins[i]));
+            printf("invalid tx_in.%d len.%d vs maxsize.%d\n",msg->tx_in,len,maxsize);
+            return(-1);
         }
-    }
-    else
-    {
-        printf("invalid tx_in.%d\n",msg->tx_in);
-        return(-1);
+        if ( array != 0 )
+            jaddi(array,iguana_vinjson(coin,&msg->vins[i]));
     }
     if ( array != 0 )
     {
@@ -627,21 +624,18 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
         msg->vouts = (struct iguana_msgvout *)&serialized[maxsize];
         memset(msg->vouts,0,sizeof(struct iguana_msgvout) * msg->tx_out);
     }
-    if ( msg->tx_out > 0 && msg->tx_out*sizeof(struct iguana_msgvout) < maxsize )
+    for (i=0; i<msg->tx_out; i++)
     {
-        for (i=0; i<msg->tx_out; i++)
+        if ( (n= iguana_voutparse(rwflag,&serialized[len],&msg->vouts[i])) < 0 )
+            return(-1);
+        len += n;
+        if ( len > maxsize )
         {
-            if ( (n= iguana_voutparse(rwflag,&serialized[len],&msg->vouts[i])) < 0 )
-                return(-1);
-            len += n;
-            if ( array != 0 )
-                jaddi(array,iguana_voutjson(coin,&msg->vouts[i],i,*txidp));
+            printf("invalid tx_out.%d len.%d vs maxsize.%d\n",msg->tx_out,len,maxsize);
+            return(-1);
         }
-    }
-    else
-    {
-        printf("invalid tx_out.%d\n",msg->tx_out);
-        return(-1);
+        if ( array != 0 )
+            jaddi(array,iguana_voutjson(coin,&msg->vouts[i],i,*txidp));
     }
     if ( array != 0 )
     {
