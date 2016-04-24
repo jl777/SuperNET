@@ -2546,6 +2546,7 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
         {
             max = sizeof(coin->blockspace);
             blockspace = calloc(1,max);
+            iguana_volatilesmap(coin,&bp->ramchain);
             for (i=0; i<bp->n; i++)
             {
                 if ( (len= iguana_peerblockrequest(coin,blockspace,max,0,bp->hashes[i],1)) < 0 )
