@@ -119,6 +119,7 @@ cJSON *SuperNET_helpjson()
     
 #define IGUANA_HELP_64A(agent,name,j64,obj) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#j64,"u64bits"),helpitem(#obj,"array")))
 #define IGUANA_HELP_AA(agent,name,obj,obj2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#obj,"array"),helpitem(#obj2,"array")))
+#define IGUANA_HELP_AOI(agent,name,obj,obj2,val) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#obj,"array"),helpitem(#obj2,"object"),helpitem(#val,"int")))
 #define IGUANA_HELP_D(agent,name,amount) array = helpjson(IGUANA_ARGS,#agent,#name,helparray(cJSON_CreateArray(),helpitem(#amount,"float")))
     
 #define IGUANA_HELP_H(agent,name,hash) array = helpjson(IGUANA_ARGS,#agent,#name,helparray(cJSON_CreateArray(),helpitem(#hash,"hash")))
@@ -180,7 +181,8 @@ cJSON *SuperNET_helpjson()
 #define TWO_STRINGS_AND_TWO_DOUBLES IGUANA_HELP_SSDD
 #define STRING_AND_TWO_DOUBLES IGUANA_HELP_SDD
 #define P2SH_SPENDAPI IGUANA_HELP_SHI_SDSD_II_SSSSSS
-    
+#define ARRAY_OBJ_INT IGUANA_HELP_AOI
+
 #include "../includes/iguana_apideclares.h"
     
 #include "../includes/iguana_apiundefs.h"
@@ -222,6 +224,10 @@ int32_t agentform(FILE *fp,char *form,int32_t max,char *agent,cJSON *methoditem)
                     width = 24;
                 else if ( strcmp(typestr,"u64bits") == 0 )
                     width = 24;
+                else if ( strcmp(typestr,"array") == 0 )
+                    width = 64;
+                else if ( strcmp(typestr,"object") == 0 )
+                    width = 64;
                 else width = 0;
             }
             //sprintf(buf,"<input type=\"text\" name=\"%s\"/>",fieldname);
@@ -902,6 +908,7 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
 #define IGUANA_DISPATCH_SDD(agent,name,str,val,val2) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jdouble(json,#val),jdouble(json,#val2)))
 #define IGUANA_DISPATCH_SA(agent,name,str,array) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jobj(json,#array)))
 #define IGUANA_DISPATCH_SAA(agent,name,str,array,array2) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jobj(json,#array),jobj(json,#array2)))
+#define IGUANA_DISPATCH_AOI(agent,name,array,object,val) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jobj(json,#array),jobj(json,#object),juint(json,#val)))
 #define IGUANA_DISPATCH_SIII(agent,name,str,val,val2,val3) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),juint(json,#val),juint(json,#val2),juint(json,#val3)))
 
 #define IGUANA_DISPATCH_I(agent,name,val) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,juint(json,#val)))
@@ -975,6 +982,7 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
 #define TWO_STRINGS_AND_TWO_DOUBLES IGUANA_DISPATCH_SSDD
 #define STRING_AND_TWO_DOUBLES IGUANA_DISPATCH_SDD
 #define P2SH_SPENDAPI IGUANA_DISPATCH_SHI_SDSD_II_SSSSSS
+#define ARRAY_OBJ_INT IGUANA_DISPATCH_AOI
 
 #include "../includes/iguana_apideclares.h"
 //#undef IGUANA_ARGS

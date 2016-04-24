@@ -7,6 +7,7 @@
 #define IGUANA_CFUNC_SA(agent,name,str,array) char *agent ## _ ## name(IGUANA_ARGS,char *str,cJSON *array)
 #define IGUANA_CFUNC_SD(agent,name,str,val) char *agent ## _ ## name(IGUANA_ARGS,char *str,double val)
 #define IGUANA_CFUNC_AA(agent,name,array,array2) char *agent ## _ ## name(IGUANA_ARGS,cJSON *array,cJSON *array2)
+#define IGUANA_CFUNC_AOI(agent,name,array,object,val) char *agent ## _ ## name(IGUANA_ARGS,cJSON *array,cJSON *object,int32_t val)
 #define IGUANA_CFUNC_SAA(agent,name,str,array,array2) char *agent ## _ ## name(IGUANA_ARGS,char *str,cJSON *array,cJSON *array2)
 
 #define IGUANA_CFUNC_64A(agent,name,j64,array) char *agent ## _ ## name(IGUANA_ARGS,uint64_t j64,cJSON *array)
@@ -67,6 +68,7 @@
 #define STRING_AND_ARRAY IGUANA_CFUNC_SA
 #define STRING_AND_TWOARRAYS IGUANA_CFUNC_SAA
 #define TWO_ARRAYS IGUANA_CFUNC_AA
+#define ARRAY_OBJ_INT IGUANA_CFUNC_AOI
 #define INT_AND_ARRAY IGUANA_CFUNC_IA
 #define INT_ARRAY_STRING IGUANA_CFUNC_IAS
 #define SS_D_I_S IGUANA_CFUNC_SSDIS

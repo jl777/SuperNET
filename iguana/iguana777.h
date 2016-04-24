@@ -803,10 +803,10 @@ int32_t bitcoin_checklocktimeverify(uint8_t *script,int32_t n,uint32_t locktime)
 struct bitcoin_spend *iguana_spendset(struct supernet_info *myinfo,struct iguana_info *coin,int64_t satoshis,int64_t insurance,char *account);
 cJSON *bitcoin_hex2json(struct iguana_info *coin,bits256 *txidp,struct iguana_msgtx *msgtx,char *txbytes);
 cJSON *iguana_signtx(struct iguana_info *coin,bits256 *txidp,char **signedtxp,struct bitcoin_spend *spend,cJSON *txobj);
-cJSON *bitcoin_createtx(struct iguana_info *coin,int32_t locktime);
+cJSON *bitcoin_createtx(struct iguana_info *coin,uint32_t locktime);
 cJSON *bitcoin_addoutput(struct iguana_info *coin,cJSON *txobj,uint8_t *paymentscript,int32_t len,uint64_t satoshis);
 int32_t bitcoin_changescript(struct iguana_info *coin,uint8_t *changescript,int32_t n,uint64_t *changep,char *changeaddr,uint64_t inputsatoshis,uint64_t satoshis,uint64_t txfee);
-cJSON *bitcoin_addinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32_t vout,uint32_t sequence,uint8_t *script,int32_t scriptlen);
+cJSON *bitcoin_addinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32_t vout,uint32_t sequence,uint8_t *script,int32_t scriptlen,uint8_t *redeemscript,int32_t p2shlen);
 int32_t bitcoin_verifytx(struct iguana_info *coin,bits256 *signedtxidp,char **signedtx,char *rawtxstr,struct vin_info *V);
 char *bitcoin_json2hex(struct iguana_info *coin,bits256 *txidp,cJSON *txjson);
 int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr);

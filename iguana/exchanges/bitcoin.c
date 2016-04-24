@@ -877,8 +877,8 @@ int32_t bitcoin_verifytx(struct iguana_info *coin,bits256 *signedtxidp,char **si
 char *bitcoin_json2hex(struct iguana_info *coin,bits256 *txidp,cJSON *txjson)
 {
     int32_t txstart; uint8_t *serialized; struct iguana_msgtx msgtx; char *txbytes = 0;
-    serialized = malloc(IGUANA_MAXPACKETSIZE);
-    *txidp = iguana_parsetxobj(coin,&txstart,serialized,IGUANA_MAXPACKETSIZE,&msgtx,txjson);
+    serialized = malloc(IGUANA_MAXPACKETSIZE*1.5);
+    *txidp = iguana_parsetxobj(coin,&txstart,serialized,IGUANA_MAXPACKETSIZE*1.5,&msgtx,txjson);
     if ( msgtx.allocsize > 0 )
     {
         txbytes = malloc(msgtx.allocsize*2 + 1);
@@ -913,7 +913,7 @@ cJSON *bitcoin_hex2json(struct iguana_info *coin,bits256 *txidp,struct iguana_ms
     return(txobj);
 }
 
-cJSON *bitcoin_createtx(struct iguana_info *coin,int32_t locktime)
+cJSON *bitcoin_createtx(struct iguana_info *coin,uint32_t locktime)
 {
     cJSON *json = cJSON_CreateObject();
     if ( locktime == 0 )
@@ -951,16 +951,22 @@ cJSON *bitcoin_addoutput(struct iguana_info *coin,cJSON *txobj,uint8_t *payments
     return(txobj);
 }
 
-cJSON *bitcoin_addinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32_t vout,uint32_t sequence,uint8_t *script,int32_t scriptlen)
+cJSON *bitcoin_addinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32_t vout,uint32_t sequenceid,uint8_t *script,int32_t scriptlen,uint8_t *redeemscript,int32_t p2shlen)
 {
-    cJSON *item,*vins;
+    cJSON *item,*vins; char p2shscriptstr[IGUANA_MAXSCRIPTSIZE*2+1];
     vins = jduplicate(jobj(txobj,"vin"));
     jdelete(txobj,"vin");
     item = cJSON_CreateObject();
-    iguana_addscript(coin,item,script,scriptlen,"scriptPubKey");
+    if ( script != 0 && scriptlen > 0 )
+        iguana_addscript(coin,item,script,scriptlen,"scriptPubKey");
+    if ( redeemscript != 0 && p2shlen > 0 )
+    {
+        init_hexbytes_noT(p2shscriptstr,redeemscript,p2shlen);
+        jaddstr(item,"redeemScript",p2shscriptstr);
+    }
     jaddbits256(item,"txid",txid);
     jaddnum(item,"vout",vout);
-    jaddnum(item,"sequence",sequence);
+    jaddnum(item,"sequenceid",sequenceid);
     jaddi(vins,item);
     jadd(txobj,"vin",vins);
     //printf("addvin -> (%s)\n",jprint(txobj,0));
@@ -1055,7 +1061,7 @@ void iguana_addinputs(struct iguana_info *coin,struct bitcoin_spend *spend,cJSON
     for (i=0; i<spend->numinputs; i++)
     {
         spend->inputs[i].sequence = sequence;
-        bitcoin_addinput(coin,txobj,spend->inputs[i].txid,spend->inputs[i].vout,spend->inputs[i].sequence,spend->inputs[i].spendscript,spend->inputs[i].spendlen);
+        bitcoin_addinput(coin,txobj,spend->inputs[i].txid,spend->inputs[i].vout,spend->inputs[i].sequence,spend->inputs[i].spendscript,spend->inputs[i].spendlen,spend->inputs[i].p2shscript,spend->inputs[i].p2shlen);
     }
 }
 
@@ -1567,7 +1573,7 @@ int32_t bitcoin_txaddspend(struct iguana_info *coin,cJSON *txobj,char *destaddre
 
 P2SH_SPENDAPI(iguana,spendmsig,activecoin,vintxid,vinvout,destaddress,destamount,destaddress2,destamount2,M,N,pubA,wifA,pubB,wifB,pubC,wifC)
 {
-    struct vin_info V; uint8_t p2sh_rmd160[20],serialized[2096];
+    struct vin_info V; uint8_t p2sh_rmd160[20],serialized[2096],spendscript[32]; int32_t spendlen;
     char msigaddr[64],*retstr; cJSON *retjson,*txobj; struct iguana_info *active;
     bits256 signedtxid; char *signedtx;
     struct iguana_msgtx msgtx;
@@ -1589,7 +1595,8 @@ P2SH_SPENDAPI(iguana,spendmsig,activecoin,vintxid,vinvout,destaddress,destamount
         return(retstr);
     V.M = M, V.N = N, V.type = IGUANA_SCRIPT_P2SH;
     V.p2shlen = bitcoin_MofNspendscript(p2sh_rmd160,V.p2shscript,0,&V);
-    bitcoin_addinput(active,txobj,vintxid,vinvout,0xffffffff,V.p2shscript,V.p2shlen);
+    spendlen = bitcoin_p2shspend(spendscript,0,p2sh_rmd160);
+    bitcoin_addinput(active,txobj,vintxid,vinvout,0xffffffff,spendscript,spendlen,V.p2shscript,V.p2shlen);
     bitcoin_address(msigaddr,active->chain->p2shtype,V.p2shscript,V.p2shlen);
     retjson = cJSON_CreateObject();
     if ( bitcoin_verifyvins(active,&signedtxid,&signedtx,&msgtx,serialized,sizeof(serialized),&V,0) == 0 )

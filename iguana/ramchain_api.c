@@ -386,9 +386,42 @@ THREE_STRINGS(bitcoinrpc,verifymessage,address,sig,message)
 }
 
 // tx
-TWO_ARRAYS(bitcoinrpc,createrawtransaction,vins,vouts)
+ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
 {
-    cJSON *retjson = cJSON_CreateObject();
+    bits256 txid; int32_t vout,scriptlen=0,p2shlen=0,i,n; uint32_t sequenceid; uint8_t script[IGUANA_MAXSCRIPTSIZE],redeemscript[IGUANA_MAXSCRIPTSIZE]; char *str; cJSON *txobj,*item,*retjson = cJSON_CreateObject();
+    if ( coin != 0 && (txobj= bitcoin_createtx(coin,locktime)) != 0 )
+    {
+        if ( (n= cJSON_GetArraySize(vins)) > 0 )
+        {
+            for (i=0; i<n; i++)
+            {
+                item = jitem(vins,i);
+                p2shlen = scriptlen = 0;
+                if ( (str= jstr(item,"scriptPubKey")) != 0 )
+                {
+                    scriptlen = (int32_t)strlen(str) >> 1;
+                    decode_hex(script,scriptlen,str);
+                }
+                if ( (str= jstr(item,"redeemScript")) != 0 )
+                {
+                    p2shlen = (int32_t)strlen(str) >> 1;
+                    decode_hex(redeemscript,p2shlen,str);
+                }
+                vout = jint(item,"vout");
+                sequenceid = juint(item,"sequenceid");
+                txid = jbits256(item,"txid");
+                bitcoin_addinput(coin,txobj,txid,vout,sequenceid,script,scriptlen,redeemscript,p2shlen);
+            }
+        }
+        if ( (n= cJSON_GetArraySize(vouts)) > 0 )
+        {
+            for (i=0; i<n; i++)
+            {
+                item = jitem(vouts,i);
+            }
+        }
+    }
+    printf("vins.(%s) vouts.(%s) locktime.%u\n",jprint(vins,0),jprint(vouts,0),locktime);
     return(jprint(retjson,1));
 }
 

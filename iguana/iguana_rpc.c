@@ -480,7 +480,7 @@ static char *getrawtransaction(RPCARGS)
 
 static char *createrawtransaction(RPCARGS)
 {
-    return(sglue2(0,CALLGLUE,"bitcoinrpc","createrawtransaction","vins",params[0],"vouts",params[1]));
+    return(sglue3(0,CALLGLUE,"bitcoinrpc","createrawtransaction","vins",params[0],"vouts",params[1],"locktime",params[2]));
 }
 
 static char *decoderawtransaction(RPCARGS)
