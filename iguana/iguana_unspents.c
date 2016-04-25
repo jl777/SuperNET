@@ -2360,7 +2360,7 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     }
     else
     {
-        printf("spendvectors calculated to %d [%d]\n",coin->RTheight,bp->hdrsi);
+        printf("RTspendvectors calculated to %d [%d]\n",coin->RTheight,bp->hdrsi);
         bp->converted = 1;
         for (hdrsi=num=0; hdrsi<bp->hdrsi; hdrsi++)
         {
@@ -2373,7 +2373,7 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
 #endif
             num += iguana_convert(coin,IGUANA_NUMHELPERS,coin->bundles[hdrsi],1,orignumemit);
         }
-        printf("spendvectors converted.%d to %d\n",num,coin->RTheight);
+        printf("RTspendvectors converted.%d to %d\n",num,coin->RTheight);
         bp->converted = (uint32_t)time(NULL);
         if ( iguana_balancegen(coin,1,bp,coin->RTstarti,coin->RTheight > 0 ? coin->RTheight-1 : bp->n-1,orignumemit) < 0 )
             coin->RTdatabad = 1;
