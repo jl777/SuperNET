@@ -16,10 +16,6 @@
 #ifndef H_BITCOIN_H
 #define H_BITCOIN_H
 
-#include "../../includes/openssl/ec.h"
-#include "../../includes/openssl/ecdsa.h"
-#include "../../includes/openssl/obj_mac.h"
-
 #define SIGHASH_ALL 1
 #define SIGHASH_NONE 2
 #define SIGHASH_SINGLE 3
@@ -61,8 +57,6 @@
 
 #define IGUANA_MAXSCRIPTSIZE 10001
 
-struct bp_key { EC_KEY *k; };
-
 int32_t bitcoin_validaddress(struct iguana_info *coin,char *coinaddr);
 int32_t bitcoin_cltvscript(uint8_t p2shtype,char *ps2h_coinaddr,uint8_t p2sh_rmd160[20],uint8_t *script,int32_t n,char *senderaddr,char *otheraddr,uint8_t secret160[20],uint32_t locktime);
 int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr);
@@ -80,6 +74,10 @@ int32_t iguana_expandscript(struct iguana_info *coin,char *asmstr,int32_t maxlen
 int32_t bitcoin_scriptsig(struct iguana_info *coin,uint8_t *script,int32_t n,const struct vin_info *vp,struct iguana_msgtx *msgtx);
 char *iguana_scriptget(struct iguana_info *coin,char *scriptstr,char *asmstr,int32_t max,int32_t hdrsi,uint32_t unspentind,bits256 txid,int32_t vout,uint8_t *rmd160,int32_t type,uint8_t *pubkey33);
 
+int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr);
+char *bitcoin_base58encode(char *coinaddr,uint8_t *data_,int32_t datalen);
+int32_t bitcoin_sign(uint8_t *sig,int32_t maxlen,uint8_t *data,int32_t datalen,bits256 privkey);
+int32_t bitcoin_verify(uint8_t *sig,int32_t siglen,uint8_t *data,int32_t datalen,uint8_t *pubkey,int32_t len);
 
 
 #endif

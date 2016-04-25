@@ -733,7 +733,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port);
 void iguana_mergeQ(struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_bundle *nextbp);
 
 #define bits256_nonz(a) (((a).ulongs[0] | (a).ulongs[1] | (a).ulongs[2] | (a).ulongs[3]) != 0)
-int32_t btc_addr2univ(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr);
+//int32_t btc_addr2univ(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr);
 
 struct iguana_agent
 {
@@ -777,8 +777,8 @@ struct iguana_waddress *iguana_waddresscalc(uint8_t pubval,uint8_t wiftype,struc
 struct iguana_waccount *iguana_waddressfind(struct iguana_info *coin,int32_t *indp,char *coinaddr);
 char *iguana_coinjson(struct iguana_info *coin,char *method,cJSON *json);
 cJSON *iguana_peersjson(struct iguana_info *coin,int32_t addronly);
-int32_t btc_priv2wif(char *wifstr,uint8_t privkey[32],uint8_t addrtype);
-int32_t btc_pub2rmd(uint8_t rmd160[20],uint8_t pubkey[33]);
+//int32_t btc_priv2wif(char *wifstr,uint8_t privkey[32],uint8_t addrtype);
+//int32_t btc_pub2rmd(uint8_t rmd160[20],uint8_t pubkey[33]);
 int32_t iguana_launchcoin(char *symbol,cJSON *json);
 int32_t iguana_bundleinitmap(struct iguana_info *coin,struct iguana_bundle *bp,int32_t height,bits256 hash2,bits256 hash1);
 int32_t iguana_jsonQ();

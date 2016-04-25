@@ -2040,7 +2040,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
     if ( 1 )
     {
         for (hdrsi=0; hdrsi<numhdrsi; hdrsi++)
-            if ( (bp= coin->bundles[hdrsi]) == 0 )
+            if ( (bp= coin->bundles[hdrsi]) != 0 )
             {
                 iguana_volatilespurge(coin,&bp->ramchain);
                 if ( iguana_volatilesmap(coin,&bp->ramchain) != 0 )
