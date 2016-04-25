@@ -811,19 +811,6 @@ int32_t btc_pub65toaddr(char *coinaddr,uint8_t addrtype,char pubkey[131],uint8_t
     return(retval);
 }
 
-struct iguana_waddress *iguana_waddresscalc(uint8_t pubtype,uint8_t wiftype,struct iguana_waddress *addr,bits256 privkey)
-{
-    memset(addr,0,sizeof(*addr));
-    addr->privkey = privkey;
-    if ( btc_priv2pub(addr->pubkey,addr->privkey.bytes) == 0 && btc_priv2wif(addr->wifstr,addr->privkey.bytes,wiftype) == 0 && btc_pub2rmd(addr->rmd160,addr->pubkey) == 0 && bitcoin_address(addr->coinaddr,pubtype,addr->rmd160,10) != 0 )
-    {
-        addr->wiftype = wiftype;
-        addr->type = pubtype;
-        return(addr);
-    }
-    return(0);
-}
-
 int32_t iguana_ver(uint8_t *sig,int32_t siglen,uint8_t *data,int32_t datalen,bits256 pub)
 {
     struct bp_key key; uint8_t pubkey[33];

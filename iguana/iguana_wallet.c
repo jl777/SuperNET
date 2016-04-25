@@ -143,6 +143,22 @@ struct iguana_waccount *iguana_waddressfind(struct iguana_info *coin,int32_t *in
     return(0);
 }
 
+char *getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
+{
+    struct iguana_waccount *subset; struct iguana_waddress *waddr,*tmp; cJSON *retjson,*array;
+    retjson = cJSON_CreateObject();
+    array = cJSON_CreateArray();
+    if ( (subset= iguana_waccountfind(coin,account)) != 0 )
+    {
+        HASH_ITER(hh,subset->waddrs,waddr,tmp)
+        {
+            jaddistr(array,waddr->coinaddr);
+        }
+    } else jaddstr(retjson,"result","cant find account");
+    jadd(retjson,"addresses",array);
+    return(jprint(retjson,1));
+}
+
 int32_t iguana_addressvalidate(struct iguana_info *coin,uint8_t *addrtypep,uint8_t rmd160[20],char *address)
 {
     char checkaddr[64];
@@ -223,22 +239,6 @@ char *getaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *coi
         return(clonestr("{\"result\":\"no account for address\"}"));
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result",wacct->account);
-    return(jprint(retjson,1));
-}
-
-char *getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
-{
-    struct iguana_waccount *subset; struct iguana_waddress *waddr,*tmp; cJSON *retjson,*array;
-    retjson = cJSON_CreateObject();
-    array = cJSON_CreateArray();
-    if ( (subset= iguana_waccountfind(coin,account)) != 0 )
-    {
-        HASH_ITER(hh,subset->waddrs,waddr,tmp)
-        {
-            jaddistr(array,waddr->coinaddr);
-        }
-    } else jaddstr(retjson,"result","cant find account");
-    jadd(retjson,"addresses",array);
     return(jprint(retjson,1));
 }
 

@@ -265,24 +265,36 @@ bits256 bitcoin_pubkey33(uint8_t *data,bits256 privkey)
     return(pubkey);
 }
 
-/*int32_t bitcoin_priv2wif(char *wifstr,uint8_t privkey[32],uint8_t addrtype)
+int32_t bitcoin_priv2wif(char *wifstr,bits256 privkey,uint8_t addrtype)
 {
-    uint8_t tmp[128]; char hexstr[67]; cstring *btc_addr;
-    memcpy(tmp,privkey,32);
-    tmp[32] = 1;
-    init_hexbytes_noT(hexstr,tmp,32);
-    if ( (btc_addr= base58_encode_check(addrtype,true,tmp,33)) != 0 )
-    {
-        strcpy(wifstr,btc_addr->str);
-        cstr_free(btc_addr,true);
-    }
-    printf("-> (%s) -> wif.(%s) addrtype.%02x\n",hexstr,wifstr,addrtype);
+    uint8_t data[128]; bits256 hash; int32_t i;
+    memcpy(data,privkey.bytes,sizeof(privkey));
+    data[32] = 1;
+    data[0] = addrtype;
+    hash = bits256_doublesha256(0,data,33);
+    for (i=0; i<4; i++)
+        data[33+i] = hash.bytes[31-i];
+    if ( bitcoin_base58encode(wifstr,data,33+4) == 0 )
+        return(-1);
+    char str[65]; printf("(%s) -> wif.(%s) addrtype.%02x\n",bits256_str(str,privkey),wifstr,addrtype);
     return(0);
 }
 
-int32_t bitcoin_wif2priv(uint8_t *addrtypep,uint8_t privkey[32],char *wifstr)
+/*int32_t bitcoin_wif2priv(uint8_t *addrtypep,uint8_t privkey[32],char *wifstr)
 {
-    cstring *cstr; int32_t len = -1;
+    int32_t len = -1; bits256 hash; uint8_t buf[64];
+    if ( (len= bitcoin_base58decode(buf,wifstr)) >= 4 )
+    {
+        // validate with trailing hash, then remove hash
+        hash = bits256_doublesha256(0,buf,len - 4);
+        *addrtypep = *buf;
+        memcpy(rmd160,buf+1,20);
+        if ( (buf[len - 4]&0xff) == hash.bytes[31] && (buf[len - 3]&0xff) == hash.bytes[30] &&(buf[len - 2]&0xff) == hash.bytes[29] &&(buf[len - 1]&0xff) == hash.bytes[28] )
+        {
+            //printf("coinaddr.(%s) valid checksum\n",coinaddr);
+            return(20);
+        }
+    }
     if ( (cstr= base58_decode_check(addrtypep,(const char *)wifstr)) != 0 )
     {
         init_hexbytes_noT((void *)privkey,(void *)cstr->str,cstr->len);
@@ -291,12 +303,28 @@ int32_t bitcoin_wif2priv(uint8_t *addrtypep,uint8_t privkey[32],char *wifstr)
         memcpy(privkey,cstr->str,cstr->len);
         len = (int32_t)cstr->len;
         char tmp[138];
-        btc_priv2wif(tmp,privkey,*addrtypep);
+        bitcoin_priv2wif(tmp,privkey,*addrtypep);
         printf("addrtype.%02x wifstr.(%llx) len.%d\n",*addrtypep,*(long long *)privkey,len);
         cstr_free(cstr,true);
     }
     return(len);
 }*/
+
+struct iguana_waddress *iguana_waddresscalc(uint8_t pubtype,uint8_t wiftype,struct iguana_waddress *addr,bits256 privkey)
+{
+    memset(addr,0,sizeof(*addr));
+    addr->privkey = privkey;
+    bitcoin_pubkey33(addr->pubkey,addr->privkey);
+    calc_rmd160_sha256(addr->rmd160,addr->pubkey,33);
+    bitcoin_address(addr->coinaddr,pubtype,addr->rmd160,sizeof(addr->rmd160));
+    if ( bitcoin_priv2wif(addr->wifstr,addr->privkey,wiftype) == 0 )
+    {
+        addr->wiftype = wiftype;
+        addr->type = pubtype;
+        return(addr);
+    }
+    return(0);
+}
 
 int32_t bitcoin_sign(uint8_t *sig,int32_t maxlen,uint8_t *data,int32_t datalen,bits256 privkey)
 {

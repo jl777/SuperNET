@@ -603,7 +603,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
             {
                 if ( (TXbits= ramchain->txbits) == 0 )
                 {
-                    if ( coin->PREFETCHLAG >= 0 && coin->fastfind == 0 )
+                    if ( coin->fastfind == 0 )
                         iguana_alloctxbits(coin,ramchain);
                     if ( (TXbits= ramchain->txbits) == 0 )
                     {
@@ -613,7 +613,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                 }
                 if ( (T= ramchain->cacheT) == 0 )
                 {
-                    if ( coin->PREFETCHLAG >= 0 && coin->fastfind == 0 )
+                    if ( coin->fastfind == 0 )
                         iguana_alloccacheT(coin,ramchain);
                     if ( (T= ramchain->cacheT) == 0 )
                         T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
@@ -868,8 +868,10 @@ static int _bignum_cmp(const void *a,const void *b)
 uint32_t iguana_fastfindinit(struct iguana_info *coin)
 {
     int32_t i,j,iter,num,tablesize,*hashtable; uint8_t *sorted; char fname[1024];
-    if ( strcmp("BTC",coin->symbol) != 0 )
-        return(0);
+    //if ( strcmp("BTC",coin->symbol) != 0 )
+    //    return(0);
+    if ( coin->fastfind != 0 )
+        return(coin->fastfind);
     for (iter=0; iter<2; iter++)
     {
         for (i=0; i<0x100; i++)
@@ -1868,6 +1870,8 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
             coin->blocks.hwmchain = *block;
     }
     //printf("end volatilesinit\n");
+    if ( iguana_fastfindinit(coin) == 0 )//&& coin->PREFETCHLAG >= 0 )
+        iguana_fastfindcreate(coin);
     return(coin->balanceswritten);
 }
 
@@ -1939,8 +1943,6 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
     hash2 = iguana_blockhash(coin,coin->balanceswritten * coin->chain->bundlesize);
     if ( bits256_nonz(hash2) != 0 && (block= iguana_blockfind("initfinal",coin,hash2)) != 0 )
         _iguana_chainlink(coin,block);
-    if ( iguana_fastfindinit(coin) == 0 && coin->PREFETCHLAG >= 0 )
-        iguana_fastfindcreate(coin);
 }
 
 int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
