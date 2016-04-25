@@ -150,7 +150,7 @@ int32_t iguana_peermetrics(struct iguana_info *coin)
         if ( addr->recvblocks > coin->peers.mostreceived )
             coin->peers.mostreceived = addr->recvblocks;
         //printf("[%.0f %.0f] ",addr->recvblocks,addr->recvtotal);
-        sortbuf[n*2 + 0] = iguana_metric(addr,now,1.);
+        sortbuf[n*2 + 0] = iguana_metric(addr,now,.995);
         sortbuf[n*2 + 1] = i;
         n++;
     }
@@ -178,7 +178,7 @@ int32_t iguana_peermetrics(struct iguana_info *coin)
         if ( i > 0 )
         {
             coin->peers.avemetric = (sum / i);
-            if ( 0 && i >= 64 && slowest != 0 )
+            if ( i >= 7*(coin->MAXPEERS/8) && slowest != 0 )
             {
                 printf("prune slowest peer.(%s) numranked.%d MAXPEERS.%d\n",slowest->ipaddr,n,coin->MAXPEERS);
                 slowest->dead = 1;
