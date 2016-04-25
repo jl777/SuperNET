@@ -331,6 +331,8 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
     {
         if ( incremental == 0 )
         {
+            if ( spentchain->Uextras == 0 || spentchain->A2 == 0 )
+                iguana_volatilesmap(coin,spentchain);
             if ( spentchain->Uextras != 0 && (A2= spentchain->A2) != 0 )
             {
                 utxo = &spentchain->Uextras[spent_unspentind];
