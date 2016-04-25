@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "uint32.h"
 #include "fmt.h"
 #include "buffer.h"

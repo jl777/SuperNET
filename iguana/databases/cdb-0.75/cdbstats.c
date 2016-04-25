@@ -1,9 +1,11 @@
+#include <unistd.h>
 #include "uint32.h"
 #include "fmt.h"
 #include "buffer.h"
 #include "strerr.h"
 #include "seek.h"
 #include "cdb.h"
+#include "str.h"
 
 #define FATAL "cdbstats: fatal: "
 

@@ -5,6 +5,8 @@
 #include "error.h"
 #include "alloc.h"
 #include "cdb.h"
+#include "str.h"
+#include "open.h"
 #include "cdb_make.h"
 
 int cdb_make_start(struct cdb_make *c,int fd)
@@ -150,4 +152,65 @@ int cdb_make_finish(struct cdb_make *c)
   if (buffer_flush(&c->b) == -1) return -1;
   if (seek_begin(c->fd) == -1) return -1;
   return buffer_putflush(&c->b,c->final,sizeof c->final);
+}
+
+#include "../../../includes/cJSON.h"
+int32_t cdb_jsonmake(struct cdb_make c,cJSON *array,char *dest,char *tmpname)
+{
+    uint32_t klen,dlen,i,n,h; char *field,*value; int32_t fd; cJSON *item;
+    if ( (fd= open_trunc(tmpname)) == -1 )
+        return(-1);
+    if ( cdb_make_start(&c,fd) == -1 )
+    {
+        close(fd);
+        return(-2);
+    }
+    if ( (n= cJSON_GetArraySize(array)) > 0 )
+    {
+        for (i=0; i<n; i++)
+        {
+            item = jitem(array,i);
+            if ( (field= jfieldname(item)) != 0 && (klen= str_len(field)) > 0)
+            {
+                value = jprint(item,0);
+                if ( (dlen= str_len(value)) > 0 )
+                {
+                    if ( klen > 429496720 || dlen > 429496720 || cdb_make_addbegin(&c,klen,dlen) == -1 )
+                    {
+                        close(fd);
+                        free(value);
+                        return(-3);
+                    }
+                    h = CDB_HASHSTART;
+                    for (i=0; i<klen; i++)
+                    {
+                        if ( buffer_PUTC(&c.b,field[i]) == -1)
+                        {
+                            close(fd);
+                            free(value);
+                            return(-3);
+                        }
+                        h = cdb_hashadd(h,field[i]);
+                    }
+                    for (i=0; i<dlen; i++)
+                    {
+                        if ( buffer_PUTC(&c.b,value[i]) == -1 )
+                            break;
+                    }
+                    if ( i != dlen || cdb_make_addend(&c,klen,dlen,h) == -1 )
+                    {
+                        close(fd);
+                        free(value);
+                        return(-4);
+                    }
+                }
+                free(value);
+            }
+        }
+    }
+    if ( cdb_make_finish(&c) == -1 || fsync(fd) == -1 || close(fd) == -1 )
+        return(-5);
+    if ( rename(tmpname,dest) == -1 )
+        return(-6);
+    return(0);
 }

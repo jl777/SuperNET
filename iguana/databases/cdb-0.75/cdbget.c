@@ -1,3 +1,4 @@
+#include <unistd.h>
 
 #include "exit.h"
 #include "scan.h"

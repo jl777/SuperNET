@@ -29,7 +29,8 @@ char **argv;
   puts(name);
   puts("[] = \"\\\n");
 
-  while (ch = *value++) {
+  while ( (ch= *value++) != 0 )
+  {
     puts("\\");
     octal[3] = 0;
     octal[2] = '0' + (ch & 7); ch >>= 3;

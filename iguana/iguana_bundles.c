@@ -419,7 +419,7 @@ struct iguana_txid *iguana_bundletx(struct iguana_info *coin,struct iguana_bundl
 void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     static const bits256 zero;
-    char fname[1024],dirname[1024]; FILE *fp; int32_t hdrsi,m,j; uint32_t ipbits;
+    char fname[1024]; FILE *fp; int32_t hdrsi,m,j; uint32_t ipbits;
     if ( bp->purgetime == 0 && time(NULL) > bp->emitfinish+30 )
     {
         //printf("purged hdrsi.[%d] lag.%ld\n",bp->hdrsi,time(NULL) - bp->emitfinish);
@@ -440,7 +440,7 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
                 else printf("error removing.(%s)\n",fname);
             }
         }
-        sprintf(dirname,"%s/%s/%d",GLOBAL_TMPDIR,coin->symbol,bp->bundleheight), OS_remove_directory(dirname);
+        //sprintf(dirname,"%s/%s/%d",GLOBAL_TMPDIR,coin->symbol,bp->bundleheight), OS_remove_directory(dirname);
         bp->purgetime = (uint32_t)time(NULL);
     }
 }

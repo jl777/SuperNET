@@ -1,3 +1,5 @@
+#include <unistd.h>
+#include <stdio.h>
 #include "error.h"
 #include "open.h"
 #include "strerr.h"
@@ -36,7 +38,7 @@ inline void get(char *ch)
 
 static struct cdb_make c;
 
-main(int argc,char **argv)
+int main(int argc,char **argv)
 {
   unsigned int klen;
   unsigned int dlen;
