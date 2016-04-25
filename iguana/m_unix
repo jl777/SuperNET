@@ -1,5 +1,4 @@
 #./configure --enable-endomorphism --enable-module-ecdh --enable-module-schnorr --enable-module-rangeproof --enable-experimental
-source iguana.sources
 
 rm ../agents/iguana
 git pull
