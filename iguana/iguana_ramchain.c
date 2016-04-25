@@ -1305,7 +1305,7 @@ int32_t iguana_ramchain_free(struct iguana_info *coin,struct iguana_ramchain *ra
         ramchain->numXspends = 0;
         ramchain->Xspendinds = 0;
     }
-    iguana_volatilespurge(coin,ramchain);
+    //iguana_volatilespurge(coin,ramchain);
     if ( deleteflag != 0 )
         memset(ramchain,0,sizeof(*ramchain));
     return(0);

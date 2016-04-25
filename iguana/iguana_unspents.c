@@ -2206,7 +2206,7 @@ void iguana_RTramchainfree(struct iguana_info *coin,struct iguana_bundle *bp)
     for (hdrsi=coin->bundlescount-1; hdrsi>0; hdrsi--)
         if ( (bp= coin->bundles[hdrsi]) == 0 )
         {
-            iguana_volatilespurge(coin,&bp->ramchain);
+            //iguana_volatilespurge(coin,&bp->ramchain);
             if ( iguana_volatilesmap(coin,&bp->ramchain) != 0 )
                 printf("error mapping bundle.[%d]\n",hdrsi);
         }
@@ -2274,7 +2274,7 @@ void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_b
             for (i=0; i<bp->hdrsi; i++)
                 if ( (tmpbp= coin->bundles[i]) != 0 )
                 {
-                    iguana_volatilespurge(coin,&tmpbp->ramchain);
+                    //iguana_volatilespurge(coin,&tmpbp->ramchain);
                     iguana_volatilesmap(coin,&tmpbp->ramchain);
                 }
             sleep(1);
