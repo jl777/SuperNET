@@ -255,7 +255,7 @@ int32_t _SuperNET_encryptjson(char *destfname,char *passphrase,int32_t passsize,
 
 void SuperNET_setkeys(struct supernet_info *myinfo,void *pass,int32_t passlen,int32_t dosha256)
 {
-    char pubkeystr[128]; uint8_t pubkey33[33]; bits256 hash;
+    uint8_t pubkey33[33]; bits256 hash;
     if ( dosha256 != 0 )
     {
         memcpy(myinfo->secret,pass,passlen+1);
@@ -269,10 +269,11 @@ void SuperNET_setkeys(struct supernet_info *myinfo,void *pass,int32_t passlen,in
         myinfo->myaddr.nxt64bits = hash.txid;
     }
     RS_encode(myinfo->myaddr.NXTADDR,myinfo->myaddr.nxt64bits);
-    btc_priv2pub(pubkey33,myinfo->persistent_priv.bytes);
-    init_hexbytes_noT(pubkeystr,pubkey33,33);
-    btc_coinaddr(myinfo->myaddr.BTC,0,pubkeystr);
-    btc_coinaddr(myinfo->myaddr.BTCD,60,pubkeystr);
+    bitcoin_pubkey33(pubkey33,myinfo->persistent_priv);
+    //btc_priv2pub(pubkey33,myinfo->persistent_priv.bytes);
+    //init_hexbytes_noT(pubkeystr,pubkey33,33);
+    bitcoin_address(myinfo->myaddr.BTC,0,pubkey33,33);
+    bitcoin_address(myinfo->myaddr.BTCD,60,pubkey33,33);
 }
 
 void SuperNET_parsemyinfo(struct supernet_info *myinfo,cJSON *msgjson)

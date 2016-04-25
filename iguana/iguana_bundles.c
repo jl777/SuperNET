@@ -419,13 +419,13 @@ struct iguana_txid *iguana_bundletx(struct iguana_info *coin,struct iguana_bundl
 void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     static const bits256 zero;
-    char fname[1024]; FILE *fp; int32_t hdrsi,m,j; uint32_t ipbits;
+    char fname[1024]; FILE *fp; int32_t hdrsi,m = 0; uint32_t ipbits = 0;
     if ( bp->purgetime == 0 && time(NULL) > bp->emitfinish+30 )
     {
         //printf("purged hdrsi.[%d] lag.%ld\n",bp->hdrsi,time(NULL) - bp->emitfinish);
-        for (j=m=0; j<sizeof(coin->peers.active)/sizeof(*coin->peers.active); j++)
+        //for (j=m=0; j<sizeof(coin->peers.active)/sizeof(*coin->peers.active); j++)
         {
-            if ( (ipbits= (uint32_t)coin->peers.active[j].ipbits) != 0 )
+            //if ( (ipbits= (uint32_t)coin->peers.active[j].ipbits) != 0 )
             {
                 if ( iguana_peerfname(coin,&hdrsi,GLOBAL_TMPDIR,fname,ipbits,bp->hashes[0],zero,1,1) >= 0 )
                 {

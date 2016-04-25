@@ -146,80 +146,6 @@ out:
 	return(be_sz);
 }
 
-int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr)
-{
-    bits256 hash; uint8_t *buf,_buf[25]; int32_t len;
-    memset(rmd160,0,20);
-    *addrtypep = 0;
-    buf = _buf;
-    if ( (len= bitcoin_base58decode(buf,coinaddr)) >= 4 )
-    {
-        // validate with trailing hash, then remove hash
-        hash = bits256_doublesha256(0,buf,len - 4);
-        *addrtypep = *buf;
-        memcpy(rmd160,buf+1,20);
-        if ( (buf[len - 4]&0xff) == hash.bytes[31] && (buf[len - 3]&0xff) == hash.bytes[30] &&(buf[len - 2]&0xff) == hash.bytes[29] &&(buf[len - 1]&0xff) == hash.bytes[28] )
-        {
-            //printf("coinaddr.(%s) valid checksum\n",coinaddr);
-            return(20);
-        }
-        else
-        {
-            char hexaddr[64];
-            btc_convaddr(hexaddr,coinaddr);
-            //for (i=0; i<len; i++)
-            //    printf("%02x ",buf[i]);
-            char str[65]; printf("\nhex.(%s) checkhash.(%s) len.%d mismatch %02x %02x %02x %02x vs %02x %02x %02x %02x (%s)\n",hexaddr,coinaddr,len,buf[len - 4]&0xff,buf[len - 3]&0xff,buf[len - 2]&0xff,buf[len - 1]&0xff,hash.bytes[31],hash.bytes[30],hash.bytes[29],hash.bytes[28],bits256_str(str,hash));
-        }
-    }
-	return(0);
-}
-
-void calc_rmd160_sha256(uint8_t rmd160[20],uint8_t *data,int32_t datalen)
-{
-    bits256 hash;
-    vcalc_sha256(0,hash.bytes,data,datalen);
-    calc_rmd160(0,rmd160,hash.bytes,sizeof(hash));
-}
-
-char *bitcoin_address(char *coinaddr,uint8_t addrtype,uint8_t *pubkey,int32_t len)
-{
-    int32_t i; uint8_t data[25]; bits256 hash;// char checkaddr[65];
-    if ( len != 20 )
-        calc_rmd160_sha256(data+1,pubkey,len);
-    else memcpy(data+1,pubkey,20);
-    //btc_convrmd160(checkaddr,addrtype,data+1);
-    //for (i=0; i<20; i++)
-    //    printf("%02x",data[i+1]);
-    //printf(" RMD160 len.%d\n",len);
-    data[0] = addrtype;
-    hash = bits256_doublesha256(0,data,21);
-    for (i=0; i<4; i++)
-        data[21+i] = hash.bytes[31-i];
-    if ( (coinaddr= bitcoin_base58encode(coinaddr,data,25)) != 0 )
-    {
-        //uint8_t checktype,rmd160[20];
-        //bitcoin_addr2rmd160(&checktype,rmd160,coinaddr);
-        //if ( strcmp(checkaddr,coinaddr) != 0 )
-        //    printf("checkaddr.(%s) vs coinaddr.(%s) %02x vs [%02x] memcmp.%d\n",checkaddr,coinaddr,addrtype,checktype,memcmp(rmd160,data+1,20));
-    }
-    return(coinaddr);
-}
-
-int32_t bitcoin_validaddress(struct iguana_info *coin,char *coinaddr)
-{
-    uint8_t rmd160[20],addrtype; char checkaddr[128];
-    if ( coin == 0 || coinaddr == 0 || coinaddr[0] == 0 )
-        return(-1);
-    else if ( bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr) < 0 )
-        return(-1);
-    else if ( addrtype != coin->chain->pubtype && addrtype != coin->chain->p2shtype )
-        return(-1);
-    else if ( bitcoin_address(checkaddr,addrtype,rmd160,sizeof(rmd160)) != checkaddr || strcmp(checkaddr,coinaddr) != 0 )
-        return(-1);
-    return(0);
-}
-
 EC_KEY *bitcoin_privkeyset(uint8_t *oddevenp,bits256 *pubkeyp,bits256 privkey)
 {
     BIGNUM *bn; BN_CTX *ctx = NULL; uint8_t *ptr,tmp[33]; EC_POINT *pub_key = NULL; const EC_GROUP *group;
@@ -263,67 +189,6 @@ bits256 bitcoin_pubkey33(uint8_t *data,bits256 privkey)
         EC_KEY_free(KEY);
     }
     return(pubkey);
-}
-
-int32_t bitcoin_priv2wif(char *wifstr,bits256 privkey,uint8_t addrtype)
-{
-    uint8_t data[128]; bits256 hash; int32_t i;
-    memcpy(data,privkey.bytes,sizeof(privkey));
-    data[32] = 1;
-    data[0] = addrtype;
-    hash = bits256_doublesha256(0,data,33);
-    for (i=0; i<4; i++)
-        data[33+i] = hash.bytes[31-i];
-    if ( bitcoin_base58encode(wifstr,data,33+4) == 0 )
-        return(-1);
-    char str[65]; printf("(%s) -> wif.(%s) addrtype.%02x\n",bits256_str(str,privkey),wifstr,addrtype);
-    return(0);
-}
-
-/*int32_t bitcoin_wif2priv(uint8_t *addrtypep,uint8_t privkey[32],char *wifstr)
-{
-    int32_t len = -1; bits256 hash; uint8_t buf[64];
-    if ( (len= bitcoin_base58decode(buf,wifstr)) >= 4 )
-    {
-        // validate with trailing hash, then remove hash
-        hash = bits256_doublesha256(0,buf,len - 4);
-        *addrtypep = *buf;
-        memcpy(rmd160,buf+1,20);
-        if ( (buf[len - 4]&0xff) == hash.bytes[31] && (buf[len - 3]&0xff) == hash.bytes[30] &&(buf[len - 2]&0xff) == hash.bytes[29] &&(buf[len - 1]&0xff) == hash.bytes[28] )
-        {
-            //printf("coinaddr.(%s) valid checksum\n",coinaddr);
-            return(20);
-        }
-    }
-    if ( (cstr= base58_decode_check(addrtypep,(const char *)wifstr)) != 0 )
-    {
-        init_hexbytes_noT((void *)privkey,(void *)cstr->str,cstr->len);
-        if ( cstr->str[cstr->len-1] == 0x01 )
-            cstr->len--;
-        memcpy(privkey,cstr->str,cstr->len);
-        len = (int32_t)cstr->len;
-        char tmp[138];
-        bitcoin_priv2wif(tmp,privkey,*addrtypep);
-        printf("addrtype.%02x wifstr.(%llx) len.%d\n",*addrtypep,*(long long *)privkey,len);
-        cstr_free(cstr,true);
-    }
-    return(len);
-}*/
-
-struct iguana_waddress *iguana_waddresscalc(uint8_t pubtype,uint8_t wiftype,struct iguana_waddress *addr,bits256 privkey)
-{
-    memset(addr,0,sizeof(*addr));
-    addr->privkey = privkey;
-    bitcoin_pubkey33(addr->pubkey,addr->privkey);
-    calc_rmd160_sha256(addr->rmd160,addr->pubkey,33);
-    bitcoin_address(addr->coinaddr,pubtype,addr->rmd160,sizeof(addr->rmd160));
-    if ( bitcoin_priv2wif(addr->wifstr,addr->privkey,wiftype) == 0 )
-    {
-        addr->wiftype = wiftype;
-        addr->type = pubtype;
-        return(addr);
-    }
-    return(0);
 }
 
 int32_t bitcoin_sign(uint8_t *sig,int32_t maxlen,uint8_t *data,int32_t datalen,bits256 privkey)
@@ -378,6 +243,113 @@ int32_t bitcoin_verify(uint8_t *sig,int32_t siglen,uint8_t *data,int32_t datalen
         ECDSA_SIG_free(esig);
     }
     return(retval);
+}
+
+int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr)
+{
+    bits256 hash; uint8_t *buf,_buf[25]; int32_t len;
+    memset(rmd160,0,20);
+    *addrtypep = 0;
+    buf = _buf;
+    if ( (len= bitcoin_base58decode(buf,coinaddr)) >= 4 )
+    {
+        // validate with trailing hash, then remove hash
+        hash = bits256_doublesha256(0,buf,len - 4);
+        *addrtypep = *buf;
+        memcpy(rmd160,buf+1,20);
+        if ( (buf[len - 4]&0xff) == hash.bytes[31] && (buf[len - 3]&0xff) == hash.bytes[30] &&(buf[len - 2]&0xff) == hash.bytes[29] &&(buf[len - 1]&0xff) == hash.bytes[28] )
+        {
+            //printf("coinaddr.(%s) valid checksum\n",coinaddr);
+            return(20);
+        }
+        else
+        {
+            //char hexaddr[64];
+            //btc_convaddr(hexaddr,coinaddr);
+            //for (i=0; i<len; i++)
+            //    printf("%02x ",buf[i]);
+            char str[65]; printf("\nhex checkhash.(%s) len.%d mismatch %02x %02x %02x %02x vs %02x %02x %02x %02x (%s)\n",coinaddr,len,buf[len - 4]&0xff,buf[len - 3]&0xff,buf[len - 2]&0xff,buf[len - 1]&0xff,hash.bytes[31],hash.bytes[30],hash.bytes[29],hash.bytes[28],bits256_str(str,hash));
+        }
+    }
+	return(0);
+}
+
+void calc_rmd160_sha256(uint8_t rmd160[20],uint8_t *data,int32_t datalen)
+{
+    bits256 hash;
+    vcalc_sha256(0,hash.bytes,data,datalen);
+    calc_rmd160(0,rmd160,hash.bytes,sizeof(hash));
+}
+
+char *bitcoin_address(char *coinaddr,uint8_t addrtype,uint8_t *pubkey,int32_t len)
+{
+    int32_t i; uint8_t data[25]; bits256 hash;// char checkaddr[65];
+    if ( len != 20 )
+        calc_rmd160_sha256(data+1,pubkey,len);
+    else memcpy(data+1,pubkey,20);
+    //btc_convrmd160(checkaddr,addrtype,data+1);
+    //for (i=0; i<20; i++)
+    //    printf("%02x",data[i+1]);
+    //printf(" RMD160 len.%d\n",len);
+    data[0] = addrtype;
+    hash = bits256_doublesha256(0,data,21);
+    for (i=0; i<4; i++)
+        data[21+i] = hash.bytes[31-i];
+    if ( (coinaddr= bitcoin_base58encode(coinaddr,data,25)) != 0 )
+    {
+        //uint8_t checktype,rmd160[20];
+        //bitcoin_addr2rmd160(&checktype,rmd160,coinaddr);
+        //if ( strcmp(checkaddr,coinaddr) != 0 )
+        //    printf("checkaddr.(%s) vs coinaddr.(%s) %02x vs [%02x] memcmp.%d\n",checkaddr,coinaddr,addrtype,checktype,memcmp(rmd160,data+1,20));
+    }
+    return(coinaddr);
+}
+
+int32_t bitcoin_validaddress(struct iguana_info *coin,char *coinaddr)
+{
+    uint8_t rmd160[20],addrtype; char checkaddr[128];
+    if ( coin == 0 || coinaddr == 0 || coinaddr[0] == 0 )
+        return(-1);
+    else if ( bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr) < 0 )
+        return(-1);
+    else if ( addrtype != coin->chain->pubtype && addrtype != coin->chain->p2shtype )
+        return(-1);
+    else if ( bitcoin_address(checkaddr,addrtype,rmd160,sizeof(rmd160)) != checkaddr || strcmp(checkaddr,coinaddr) != 0 )
+        return(-1);
+    return(0);
+}
+
+int32_t bitcoin_priv2wif(char *wifstr,bits256 privkey,uint8_t addrtype)
+{
+    uint8_t data[128]; bits256 hash; int32_t i;
+    memcpy(data,privkey.bytes,sizeof(privkey));
+    data[32] = 1;
+    data[0] = addrtype;
+    hash = bits256_doublesha256(0,data,33);
+    for (i=0; i<4; i++)
+        data[33+i] = hash.bytes[31-i];
+    if ( bitcoin_base58encode(wifstr,data,33+4) == 0 )
+        return(-1);
+    char str[65]; printf("(%s) -> wif.(%s) addrtype.%02x\n",bits256_str(str,privkey),wifstr,addrtype);
+    return((int32_t)strlen(wifstr));
+}
+
+int32_t bitcoin_wif2priv(uint8_t *addrtypep,bits256 *privkeyp,char *wifstr)
+{
+    int32_t len = -1; bits256 hash; uint8_t buf[64];
+    if ( (len= bitcoin_base58decode(buf,wifstr)) >= 4 )
+    {
+        // validate with trailing hash, then remove hash
+        hash = bits256_doublesha256(0,buf,len - 4);
+        *addrtypep = *buf;
+        memcpy(privkeyp,buf+1,32);
+        if ( (buf[len - 4]&0xff) == hash.bytes[31] && (buf[len - 3]&0xff) == hash.bytes[30] &&(buf[len - 2]&0xff) == hash.bytes[29] &&(buf[len - 1]&0xff) == hash.bytes[28] )
+        {
+            //printf("coinaddr.(%s) valid checksum\n",coinaddr);
+            return(32);
+        }
+    }
+    return(-1);
 }
 
 int32_t iguana_parsevoutobj(struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_msgvout *vout,cJSON *voutobj)
@@ -1286,7 +1258,7 @@ uint64_t bitcoin_parseunspent(struct iguana_info *coin,struct bitcoin_unspent *u
         wifstr = bitcoind_RPC(0,coin->symbol,coin->chain->serverport,coin->chain->userpass,"dumpprivkey",args);
         if ( wifstr != 0 )
         {
-            btc_wif2priv(&addrtype,unspent->privkeys[0].bytes,wifstr);
+            bitcoin_wif2priv(&addrtype,&unspent->privkeys[0],wifstr);
             //printf("wifstr.(%s) -> %s\n",wifstr,bits256_str(str,unspent->privkeys[0]));
             free(wifstr);
         } else fprintf(stderr,"error (%s) cant find privkey\n",coinaddr);
@@ -1576,7 +1548,7 @@ char *_setVsigner(struct iguana_info *coin,struct vin_info *V,int32_t ind,char *
 {
     uint8_t addrtype;
     decode_hex(V->signers[ind].pubkey,(int32_t)strlen(pubstr)/2,pubstr);
-    btc_wif2priv(&addrtype,V->signers[ind].privkey.bytes,wifstr);
+    bitcoin_wif2priv(&addrtype,&V->signers[ind].privkey,wifstr);
     if ( addrtype != coin->chain->pubtype )
         return(clonestr("{\"error\":\"invalid wifA\"}"));
     else return(0);

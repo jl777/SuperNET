@@ -898,7 +898,7 @@ cJSON *SuperNET_rosettajson(bits256 privkey,int32_t showprivs)
     RS_encode(str,nxt64bits);
     jaddstr(retjson,"RS",str);
     jadd64bits(retjson,"NXT",nxt64bits);
-    btc_priv2pub(pub,privkey.bytes);
+    bitcoin_pubkey33(pub,privkey);
     init_hexbytes_noT(str,pub,33);
     jaddstr(retjson,"btcpubkey",str);
     calc_OP_HASH160(str2,rmd160,str);
@@ -908,7 +908,7 @@ cJSON *SuperNET_rosettajson(bits256 privkey,int32_t showprivs)
         jaddstr(retjson,"BTC",addr);
         if ( showprivs != 0 )
         {
-            btc_priv2wif(wifbuf,privkey.bytes,128);
+            bitcoin_priv2wif(wifbuf,privkey,128);
             jaddstr(retjson,"BTCwif",wifbuf);
         }
     }
@@ -917,7 +917,7 @@ cJSON *SuperNET_rosettajson(bits256 privkey,int32_t showprivs)
         jaddstr(retjson,"BTCD",addr);
         if ( showprivs != 0 )
         {
-            btc_priv2wif(wifbuf,privkey.bytes,188);
+            bitcoin_priv2wif(wifbuf,privkey,188);
             jaddstr(retjson,"BTCDwif",wifbuf);
         }
     }
@@ -1257,7 +1257,7 @@ THREE_STRINGS(SuperNET,survey,category,subcategory,message)
 STRING_ARG(SuperNET,wif2priv,wif)
 {
     bits256 privkey; char str[65]; uint8_t privkeytype; cJSON *retjson = cJSON_CreateObject();
-    if ( btc_wif2priv(&privkeytype,privkey.bytes,wif) == sizeof(privkey) )
+    if ( bitcoin_wif2priv(&privkeytype,&privkey,wif) == sizeof(privkey) )
     {
         jaddstr(retjson,"result","success");
         jaddstr(retjson,"privkey",bits256_str(str,privkey));

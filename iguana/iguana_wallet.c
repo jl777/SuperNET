@@ -15,6 +15,22 @@
 
 #include "iguana777.h"
 
+struct iguana_waddress *iguana_waddresscalc(uint8_t pubtype,uint8_t wiftype,struct iguana_waddress *addr,bits256 privkey)
+{
+    memset(addr,0,sizeof(*addr));
+    addr->privkey = privkey;
+    bitcoin_pubkey33(addr->pubkey,addr->privkey);
+    calc_rmd160_sha256(addr->rmd160,addr->pubkey,33);
+    bitcoin_address(addr->coinaddr,pubtype,addr->rmd160,sizeof(addr->rmd160));
+    if ( bitcoin_priv2wif(addr->wifstr,addr->privkey,wiftype) > 0 )
+    {
+        addr->wiftype = wiftype;
+        addr->type = pubtype;
+        return(addr);
+    }
+    return(0);
+}
+
 void iguana_walletlock(struct supernet_info *myinfo)
 {
     memset(&myinfo->persistent_priv,0,sizeof(myinfo->persistent_priv));
@@ -273,7 +289,7 @@ bits256 iguana_str2priv(struct iguana_info *coin,char *str)
         n = (int32_t)strlen(str) >> 1;
         if ( n == sizeof(bits256) && is_hexstr(str,sizeof(bits256)) > 0 )
             decode_hex(privkey.bytes,sizeof(privkey),str);
-        else if ( btc_wif2priv(&addrtype,privkey.bytes,str) != sizeof(bits256) )
+        else if ( bitcoin_wif2priv(&addrtype,&privkey,str) != sizeof(bits256) )
         {
             if ( (wacct= iguana_waddressfind(coin,&ind,str)) != 0 )
                 privkey = wacct->waddrs[ind].privkey;

@@ -513,8 +513,8 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
         //for (i=0; i<vinscriptlen; i++)
         //    printf("%02x",vinscript[i]);
         //printf(" SAVE vinscript len.%d\n",vinscriptlen);
-        if ( bits256_cmp(prev_hash,bits256_conv("d9151f0471a3982778c8acc623becc24bc35483bdecb07611d036209da541cde")) == 0 )
-            printf("found spend d9151... txidind.%u (first.%u + vout.%d) u%u [%d] s%u\n",txidind,T[txidind].firstvout,prev_vout,unspentind,hdrsi,spendind);
+        //if ( bits256_cmp(prev_hash,bits256_conv("d9151f0471a3982778c8acc623becc24bc35483bdecb07611d036209da541cde")) == 0 )
+          //  printf("found spend d9151... txidind.%u (first.%u + vout.%d) u%u [%d] s%u\n",txidind,T[txidind].firstvout,prev_vout,unspentind,hdrsi,spendind);
         s->sequenceid = sequence;
         s->external = external, s->spendtxidind = txidind,
         s->prevout = prev_vout;
