@@ -467,7 +467,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
                     sleep(3);
             } else printf("skip flush when max.%d and orig.%d\n",max,coin->origbalanceswritten);
         }
-        if ( 1 )
+        if ( 0 )
         {
             for (i=0; i<max; i++)
                 if ( (bp= coin->bundles[i]) != 0 )
@@ -478,7 +478,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
         }
     }
     //printf("helper.%d check validates\n",helperid);
-    incr = IGUANA_NUMHELPERS;
+    //incr = IGUANA_NUMHELPERS;
     if ( helperid < incr )
     {
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
