@@ -32,6 +32,8 @@
 #include "cdb-0.75/seek_set.c"
 #include "cdb-0.75/open_read.c"
 #include "cdb-0.75/open_trunc.c"
+#include "cdb-0.75/error.c"
+#include "cdb-0.75/error_str.c"
 
 int32_t cdb_jsonmake(cJSON *array,char *dest,char *tmpname)
 {
