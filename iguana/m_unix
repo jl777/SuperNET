@@ -1,7 +1,6 @@
 #./configure --enable-endomorphism --enable-module-ecdh --enable-module-schnorr --enable-module-rangeproof --enable-experimental
-
 rm ../agents/iguana
 git pull
-gcc -g -Wno-deprecated -c -O2 $SOURCES 
+gcc -g -Wno-deprecated -c -O2 *.c 
 gcc -g -Wno-deprecated -c main.c iguana777.c iguana_bundles.c
 gcc -g -o ../agents/iguana *.o ../agents/libcrypto777.a  -lcurl -lssl -lcrypto -lpthread -lm ../includes/libsecp256k1.a -lgmp
