@@ -25,6 +25,13 @@
 #include "cdb-0.75/cdb.c"
 #include "cdb-0.75/cdb_hash.c"
 #include "cdb-0.75/cdb_make.c"
+#include "cdb-0.75/uint32_pack.c"
+#include "cdb-0.75/uint32_unpack.c"
+#include "cdb-0.75/str_len.c"
+#include "cdb-0.75/seek_cur.c"
+#include "cdb-0.75/seek_set.c"
+#include "cdb-0.75/open_read.c"
+#include "cdb-0.75/open_trunc.c"
 
 int32_t cdb_jsonmake(cJSON *array,char *dest,char *tmpname)
 {
