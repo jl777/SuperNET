@@ -396,7 +396,7 @@ int32_t iguana_helperB(struct iguana_info *coin,int32_t helperid,struct iguana_b
     }
     if ( bp != coin->current )
     {
-        iguana_ramchain_prefetch(coin,&bp->ramchain,3);
+        iguana_ramchain_prefetch(coin,&bp->ramchain,7);
         if ( convertflag == 0 )
         {
             bp->converted = 1;
