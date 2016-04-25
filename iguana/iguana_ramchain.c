@@ -2622,7 +2622,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     {
         char dirname[1024];
         //printf("delete %d files hdrs.%d retval.%d\n",num,bp->hdrsi,retval);
-        if ( bp_n == bp->n && bp->n == coin->chain->bundlesize && bp->hdrsi < coin->bundlescount-3 )
+        if ( 0 && bp_n == bp->n && bp->n == coin->chain->bundlesize && bp->hdrsi < coin->bundlescount-3 )
         {
             for (j=starti; j<=endi; j++)
             {
@@ -2632,7 +2632,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
             }
             sprintf(dirname,"%s/%s/%d",GLOBAL_TMPDIR,coin->symbol,bp->bundleheight), OS_portable_rmdir(dirname,1);
         }
-        sleep(1);
+        //sleep(1);
         if ( iguana_bundleload(coin,&newchain,bp,0) == 0 )
             retval = -1;
         newchain.A = 0;
