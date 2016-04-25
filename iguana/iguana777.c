@@ -396,7 +396,7 @@ int32_t iguana_helperB(struct iguana_info *coin,int32_t helperid,struct iguana_b
     }
     if ( bp != coin->current )
     {
-        //iguana_ramchain_prefetch(coin,&bp->ramchain,3);
+        iguana_ramchain_prefetch(coin,&bp->ramchain,3);
         if ( convertflag == 0 )
         {
             bp->converted = 1;
@@ -456,6 +456,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
             {
                 if ( (bp= coin->bundles[hdrsi]) != 0 )
                 {
+                    //iguana_ramchain_prefetch(coin,&bp->ramchain,3);
                     if ( iguana_balancegen(coin,0,bp,0,coin->chain->bundlesize-1,0) == 0 )
                         bp->balancefinish = (uint32_t)time(NULL);
                 }
