@@ -1166,7 +1166,7 @@ void iguana_appletests(struct supernet_info *myinfo)
 
 void iguana_commandline(struct supernet_info *myinfo,char *arg)
 {
-    cJSON *argjson; char *coinargs,*argstr; long filesize = 0;
+    cJSON *argjson,*array; char *coinargs,*argstr,*str; int32_t i,n; long filesize = 0;
     if ( arg == 0 )
         arg = "iguana.conf";
     if ( arg != 0 )
@@ -1194,6 +1194,12 @@ void iguana_commandline(struct supernet_info *myinfo,char *arg)
             free_json(argjson);
             if ( (coinargs= SuperNET_keysinit(myinfo,arg)) != 0 )
                 iguana_launch(0,"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
+            if ( (array= jarray(&n,argjson,"commands")) != 0 )
+            {
+                for (i=0; i<n; i++)
+                    if ( (str= SuperNET_JSON(myinfo,jitem(array,i),0,myinfo->rpcport)) != 0 )
+                        free(str);
+            }
         } else printf("error parsing.(%s)\n",(char *)arg);
         if ( argstr != arg )
             free(argstr);
