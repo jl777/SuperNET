@@ -1788,6 +1788,7 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
     }
     else
     {
+        coin->balanceswritten = i;
         //printf("verify crc and sha256 hash for %d of %d\n",i,coin->balanceswritten);
         vupdate_sha256(balancehash.bytes,&vstate,0,0);
         vupdate_sha256(allbundles.bytes,&bstate,0,0);
