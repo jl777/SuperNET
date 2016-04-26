@@ -1191,7 +1191,6 @@ void iguana_commandline(struct supernet_info *myinfo,char *arg)
             }
             printf("call argv JSON.(%s)\n",(char *)arg);
             SuperNET_JSON(myinfo,argjson,0,myinfo->rpcport);
-            free_json(argjson);
             if ( (coinargs= SuperNET_keysinit(myinfo,arg)) != 0 )
                 iguana_launch(0,"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
             if ( (array= jarray(&n,argjson,"commands")) != 0 )
@@ -1200,6 +1199,7 @@ void iguana_commandline(struct supernet_info *myinfo,char *arg)
                     if ( (str= SuperNET_JSON(myinfo,jitem(array,i),0,myinfo->rpcport)) != 0 )
                         free(str);
             }
+            free_json(argjson);
         } else printf("error parsing.(%s)\n",(char *)arg);
         if ( argstr != arg )
             free(argstr);
