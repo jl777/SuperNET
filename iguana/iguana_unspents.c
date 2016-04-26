@@ -232,7 +232,8 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
     int32_t iter,numhdrsi,err = -1; char fname[1024]; bits256 balancehash,allbundles; struct iguana_ramchaindata *rdata;
     if ( (rdata= ramchain->H.data) == 0 )
     {
-        printf("volatilesmap.[%d] no rdata\n",ramchain->height/coin->chain->bundlesize);
+        if ( ramchain->height > 0 )
+            printf("volatilesmap.[%d] no rdata\n",ramchain->height/coin->chain->bundlesize);
         return(-1);
     }
     if ( ramchain->debitsfileptr != 0 && ramchain->lastspendsfileptr != 0 )
@@ -954,10 +955,10 @@ int64_t iguana_fastfindcreate(struct iguana_info *coin)
             {
                 fclose(coin->fastfps[i]);
                 sprintf(fname,"DB/%s/fastfind/%02x",coin->symbol,i), OS_compatible_path(fname);
-                OS_removefile(fname,0);
                 //printf("%s\n",fname);
                 if ( (sortbuf= OS_filestr(&allocsize,fname)) != 0 )
                 {
+                    OS_removefile(fname,0);
                     num = (int32_t)allocsize/sizeof(bits256);
                     qsort(sortbuf,num,sizeof(bits256),_bignum_cmp);
                     strcat(fname,".all");
@@ -2047,7 +2048,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
     if ( 1 )
     {
         for (hdrsi=0; hdrsi<numhdrsi; hdrsi++)
-            if ( (bp= coin->bundles[hdrsi]) != 0 )
+            if ( (bp= coin->bundles[hdrsi]) == 0 && bp != coin->current )
             {
                 iguana_volatilespurge(coin,&bp->ramchain);
                 if ( iguana_volatilesmap(coin,&bp->ramchain) != 0 )
@@ -2229,7 +2230,7 @@ void iguana_RTramchainfree(struct iguana_info *coin,struct iguana_bundle *bp)
     iguana_mempurge(&coin->RThashmem);
     coin->RTdatabad = 0;
     for (hdrsi=coin->bundlescount-1; hdrsi>0; hdrsi--)
-        if ( (bp= coin->bundles[hdrsi]) == 0 )
+        if ( (bp= coin->bundles[hdrsi]) == 0 && bp != coin->current )
         {
             iguana_volatilespurge(coin,&bp->ramchain);
             if ( iguana_volatilesmap(coin,&bp->ramchain) != 0 )
