@@ -2036,7 +2036,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
     }
     coin->allbundles = allbundles;
     coin->balancehash = balancehash;
-    coin->balanceswritten = numhdrsi;
+    coin->balanceswritten = numhdrsi+1;
     if ( 1 )
     {
         for (hdrsi=0; hdrsi<numhdrsi; hdrsi++)
