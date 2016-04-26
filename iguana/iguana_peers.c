@@ -991,7 +991,9 @@ int32_t iguana_voutsfname(struct iguana_info *coin,int32_t roflag,char *fname,in
 
 int32_t iguana_vinsfname(struct iguana_info *coin,int32_t roflag,char *fname,int32_t slotid)
 {
-    sprintf(fname,"%s/%s%s/%04d.vins",coin->VALIDATEDIR,roflag!=0?"ro/":"",coin->symbol,slotid);
+    if ( roflag != 0 )
+        sprintf(fname,"%s/ro/%s/purgeable/%04d.vins",coin->VALIDATEDIR,coin->symbol,slotid);
+    else sprintf(fname,"%s/%s/%04d.vins",coin->VALIDATEDIR,coin->symbol,slotid);
     return((int32_t)strlen(fname));
 }
 
