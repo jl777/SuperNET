@@ -1166,10 +1166,13 @@ void iguana_appletests(struct supernet_info *myinfo)
 
 void iguana_commandline(struct supernet_info *myinfo,char *arg)
 {
-    cJSON *argjson; char *coinargs;
+    cJSON *argjson; char *coinargs,*argstr; long filesize = 0;
     if ( arg != 0 )
     {
-        if ( (argjson= cJSON_Parse(arg)) != 0 )
+        if ( arg[0] == '"' && arg[1] == '{' )
+            argstr = arg;
+        else argstr = OS_filestr(&filesize,arg);
+        if ( (argjson= cJSON_Parse(argstr)) != 0 )
         {
             IGUANA_NUMHELPERS = juint(argjson,"numhelpers");
             if ( (myinfo->rpcport= juint(argjson,"port")) == 0 )
@@ -1190,6 +1193,8 @@ void iguana_commandline(struct supernet_info *myinfo,char *arg)
             if ( (coinargs= SuperNET_keysinit(myinfo,arg)) != 0 )
                 iguana_launch(0,"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
         } else printf("error parsing.(%s)\n",(char *)arg);
+        if ( argstr != arg )
+            free(argstr);
     }
 }
 
