@@ -954,6 +954,7 @@ int64_t iguana_fastfindcreate(struct iguana_info *coin)
             {
                 fclose(coin->fastfps[i]);
                 sprintf(fname,"DB/%s/fastfind/%02x",coin->symbol,i), OS_compatible_path(fname);
+                OS_removefile(fname,0);
                 //printf("%s\n",fname);
                 if ( (sortbuf= OS_filestr(&allocsize,fname)) != 0 )
                 {

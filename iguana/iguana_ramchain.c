@@ -2620,21 +2620,21 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
     iguana_bundlemapfree(coin,mem,&HASHMEM,ipbits,ptrs,filesizes,num,R,starti,endi);
     if ( retval == 0 )//|| bp->generrs > 3 )
     {
-        char dirname[1024];
+        //char dirname[1024];
         //printf("delete %d files hdrs.%d retval.%d\n",num,bp->hdrsi,retval);
-        if ( 0 && bp_n == bp->n && bp->n == coin->chain->bundlesize && bp->hdrsi < coin->bundlescount-3 )
+        if ( iguana_bundleload(coin,&newchain,bp,0) == 0 )
+            retval = -1;
+        else if ( bp_n == bp->n && bp->n == coin->chain->bundlesize && bp->hdrsi < coin->bundlescount-3 )
         {
             for (j=starti; j<=endi; j++)
             {
-                if ( iguana_peerfname(coin,&hdrsi,GLOBAL_TMPDIR,fname,1,bp->hashes[j],zero,1,1) >= 0 ) // ipbits[j]
+                if ( iguana_peerfname(coin,&hdrsi,GLOBAL_TMPDIR,fname,0,bp->hashes[j],zero,1,1) >= 0 )
                     coin->peers.numfiles -= OS_removefile(fname,0);
                 else printf("error removing.(%s)\n",fname);
             }
-            sprintf(dirname,"%s/%s/%d",GLOBAL_TMPDIR,coin->symbol,bp->bundleheight), OS_portable_rmdir(dirname,1);
+            //sprintf(dirname,"%s/%s/%d",GLOBAL_TMPDIR,coin->symbol,bp->bundleheight), OS_portable_rmdir(dirname,1);
         }
         //sleep(1);
-        if ( iguana_bundleload(coin,&newchain,bp,0) == 0 )
-            retval = -1;
         newchain.A = 0;
     }
     if ( coin->active != 0 )
