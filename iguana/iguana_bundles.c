@@ -419,7 +419,7 @@ struct iguana_txid *iguana_bundletx(struct iguana_info *coin,struct iguana_bundl
 void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     static const bits256 zero;
-    char fname[1024]; FILE *fp; int32_t subdir,hdrsi,j,m = 0; uint32_t ipbits = 0;
+    char fname[1024]; FILE *fp; int32_t subdir,hdrsi,j,i,m = 0; uint32_t ipbits = 0;
     if ( bp->purgetime == 0 && time(NULL) > bp->emitfinish+30 )
     {
         for (j=m=0; j<bp->n; j++)
@@ -440,8 +440,16 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
         sprintf(fname,"%s/%s/%d/%d",GLOBAL_TMPDIR,coin->symbol,subdir,bp->bundleheight), OS_remove_directory(fname);
         printf("purged hdrsi.[%d] subdir.%d lag.%ld\n",bp->hdrsi,subdir,time(NULL) - bp->emitfinish);
         bp->purgetime = (uint32_t)time(NULL);
-        if ( subdir > 2 )
-            sprintf(fname,"%s/%s/%d",GLOBAL_TMPDIR,coin->symbol,subdir-2), OS_remove_directory(fname);
+        for (i=subdir*IGUANA_SUBDIRDIVISOR; i<(subdir+1)*IGUANA_SUBDIRDIVISOR; i++)
+        {
+            if ( (bp= coin->bundles[i]) != 0 && time(NULL) < bp->emitfinish+10 )
+            {
+                printf("subdir.%d [%d] emit not confirmed\n",subdir,i);
+                return;
+            }
+        }
+        printf("remove subdir.%d\n",subdir);
+        sprintf(fname,"%s/%s/%d",GLOBAL_TMPDIR,coin->symbol,subdir), OS_remove_directory(fname);
     }
 }
 
