@@ -420,7 +420,7 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     static const bits256 zero;
     char fname[1024]; FILE *fp; int32_t subdir,hdrsi,j,i,m = 0; uint32_t ipbits = 0;
-    if ( bp->purgetime == 0 && time(NULL) > bp->emitfinish+30 )
+    if ( bp->purgetime == 0 && time(NULL) > bp->emitfinish+3600 )
     {
         for (j=m=0; j<bp->n; j++)
         {
