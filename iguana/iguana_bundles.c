@@ -441,7 +441,7 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
         }
         subdir = bp->bundleheight / IGUANA_SUBDIRDIVISOR;
         sprintf(fname,"%s/%s/%d/%d",GLOBAL_TMPDIR,coin->symbol,subdir,bp->bundleheight), OS_remove_directory(fname);
-        printf("purged hdrsi.[%d] subdir.%d lag.%ld\n",bp->hdrsi,subdir,time(NULL) - bp->emitfinish);
+        //printf("purged hdrsi.[%d] subdir.%d lag.%ld\n",bp->hdrsi,subdir,time(NULL) - bp->emitfinish);
         bp->purgetime = (uint32_t)time(NULL);
         if ( 0 )
         {

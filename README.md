@@ -130,3 +130,11 @@ During the syncing, I have many, many messages like this:
 >>
 Loretta:/Users/volker/SuperNET # ulimit -n 2048
 
+
+##### tests
+in the SuperNET/iguana/tests directory, there is a jsoncmp.c file, which can be built into the jsoncmp executable via ./make_jsoncmp
+once jsoncmp is built, then ./test shows how to use it
+./jsoncmp <filename> {\"fields\":[{\"fieldA\":\"requiredvalueA\"},{\"fieldB\":\"requiredvalueB\"},...]}
+
+the idea is to issue a curl command into a /tmp/file and then use jsoncmp to verify the exact value of one or more fields. it will print to stdout JSON with "error" or "result" and to stderr if there is an error
+

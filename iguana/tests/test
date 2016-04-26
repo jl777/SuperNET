@@ -1,0 +1,2 @@
+echo "{\"field\":\"requiredvalue\"}" > /tmp/foo
+./jsoncmp /tmp/foo {\"fields\":[{\"field\":\"requiredvalue\"}]}
