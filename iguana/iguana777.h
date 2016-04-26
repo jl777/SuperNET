@@ -52,7 +52,7 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 #define IGUANA_MINPENDBUNDLES 4
 #define IGUANA_MAXPENDBUNDLES 64
 #ifdef __APPLE__
-#define IGUANA_RPCPORT 7779
+#define IGUANA_RPCPORT 7778
 #else
 #define IGUANA_RPCPORT 7778
 #endif
