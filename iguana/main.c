@@ -1171,7 +1171,7 @@ void iguana_commandline(struct supernet_info *myinfo,char *arg)
         arg = "iguana.conf";
     if ( arg != 0 )
     {
-        if ( arg[1] == '{' || arg[1] == '[' )
+        if ( arg[0] == '{' || arg[0] == '[' )
             argstr = arg;
         else argstr = OS_filestr(&filesize,arg);
         if ( (argjson= cJSON_Parse(argstr)) != 0 )
