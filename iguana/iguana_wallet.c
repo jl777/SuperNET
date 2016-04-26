@@ -184,7 +184,7 @@ void iguana_walletlock(struct supernet_info *myinfo)
     memset(&myinfo->persistent_priv,0,sizeof(myinfo->persistent_priv));
     memset(myinfo->secret,0,sizeof(myinfo->secret));
     memset(myinfo->permanentfile,0,sizeof(myinfo->permanentfile));
-    printf("wallet locked\n");
+    //printf("wallet locked\n");
 }
 
 uint8_t *iguana_rmdarray(struct iguana_info *coin,int32_t *numrmdsp,cJSON *array,int32_t firsti)

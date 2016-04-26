@@ -532,7 +532,7 @@ void OS_remove_directory(char *dirname)
     sprintf(buf,"rmdir %s",dirname);
     if ( system(buf) != 0 )
     {
-        printf("error doing (%s)\n",buf);
+        //printf("error doing (%s)\n",buf);
         sprintf(buf,"rm %s/*",dirname);
         if ( system(buf) != 0 )
             printf("error doing (%s)\n",buf);
