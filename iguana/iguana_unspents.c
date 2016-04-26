@@ -2391,7 +2391,10 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
     if ( coin->current != 0 && (coin->blocks.hwmchain.height % coin->chain->bundlesize) == coin->chain->bundlesize-1 )
     {
-        //printf("RT edge case\n");
+        block = coin->current->blocks[coin->current->n - 1];
+        if ( _iguana_chainlink(coin,block) <= 0 )
+            printf("RT edge case couldnt link\n");
+        else printf("RT edge case\n");
     }
     if ( coin->spendvectorsaved <= 1 )
         return(0);
