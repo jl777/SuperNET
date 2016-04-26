@@ -2027,7 +2027,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
                     break;
                 }
             }
-            else if ( hdrsi > 0 )
+            else if ( hdrsi > 0 && (coin->current == 0 || hdrsi != coin->current->hdrsi) )
             {
                 printf("balanceflush iter.%d error loading [%d] Aptr.%p Uptr.%p numpkinds.%u numunspents.%u\n",iter,hdrsi,Aptr,Uptr,numpkinds,numunspents);
                 return(-1);
@@ -2393,7 +2393,9 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     {
         block = coin->current->blocks[coin->current->n - 1];
         if ( _iguana_chainlink(coin,block) <= 0 )
-            printf("RT edge case couldnt link\n");
+        {
+            //printf("RT edge case couldnt link\n");
+        }
         else printf("RT edge case\n");
     }
     if ( coin->spendvectorsaved <= 1 )
@@ -2420,7 +2422,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         iguana_RTramchainfree(coin,coin->current);
         return(0);
     }
-    if ( coin->RTdatabad == 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && ((coin->RTheight <= coin->blocks.hwmchain.height && time(NULL) > bp->lastRT) || time(NULL) > bp->lastRT+10) )
+    if ( coin->RTdatabad == 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi >= coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && ((coin->RTheight <= coin->blocks.hwmchain.height && time(NULL) > bp->lastRT) || time(NULL) > bp->lastRT+10) )
     {
         if ( (block= bp->blocks[0]) == 0 || block->txvalid == 0 || block->mainchain == 0 )
         {

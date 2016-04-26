@@ -1381,7 +1381,11 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
     if ( bits256_nonz(myinfo->persistent_priv) != 0 && (str= SuperNET_logout(IGUANA_CALLARGS)) != 0 )
         free(str);
     if ( handle != 0 )
+    {
         safecopy(myinfo->handle,handle,sizeof(myinfo->handle));
+        safecopy(myinfo->secret,password,sizeof(myinfo->secret));
+        safecopy(myinfo->permanentfile,permanentfile,sizeof(myinfo->permanentfile));
+    }
     if ( (passphrase == 0 || passphrase[0] == 0) && (decryptstr= SuperNET_decryptjson(IGUANA_CALLARGS,password,permanentfile)) != 0 )
     {
         if ( (argjson= cJSON_Parse(decryptstr)) != 0 )
