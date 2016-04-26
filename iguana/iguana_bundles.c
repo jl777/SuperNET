@@ -440,16 +440,19 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
         sprintf(fname,"%s/%s/%d/%d",GLOBAL_TMPDIR,coin->symbol,subdir,bp->bundleheight), OS_remove_directory(fname);
         printf("purged hdrsi.[%d] subdir.%d lag.%ld\n",bp->hdrsi,subdir,time(NULL) - bp->emitfinish);
         bp->purgetime = (uint32_t)time(NULL);
-        for (i=subdir*IGUANA_SUBDIRDIVISOR; i<(subdir+1)*IGUANA_SUBDIRDIVISOR; i++)
+        if ( 0 )
         {
-            if ( (bp= coin->bundles[i]) != 0 && time(NULL) < bp->emitfinish+10 )
+            for (i=subdir*IGUANA_SUBDIRDIVISOR; i<(subdir+1)*IGUANA_SUBDIRDIVISOR; i++)
             {
-                printf("subdir.%d [%d] emit not confirmed\n",subdir,i);
-                return;
+                if ( (bp= coin->bundles[i]) != 0 && time(NULL) < bp->emitfinish+10 )
+                {
+                    printf("subdir.%d [%d] emit not confirmed\n",subdir,i);
+                    return;
+                }
             }
+            printf("remove subdir.%d\n",subdir);
+            sprintf(fname,"%s/%s/%d",GLOBAL_TMPDIR,coin->symbol,subdir), OS_remove_directory(fname);
         }
-        printf("remove subdir.%d\n",subdir);
-        sprintf(fname,"%s/%s/%d",GLOBAL_TMPDIR,coin->symbol,subdir), OS_remove_directory(fname);
     }
 }
 
