@@ -14,7 +14,6 @@
  ******************************************************************************/
 
 
-
 ZERO_ARGS(bitcoinrpc,getinfo);
 ZERO_ARGS(bitcoinrpc,getblockcount);
 ZERO_ARGS(bitcoinrpc,getbestblockhash);
@@ -29,13 +28,6 @@ TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array);
 STRING_ARG(bitcoinrpc,decodescript,script);
 STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx);
 ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime);
-STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighash); //
-STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees); //
-
-SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment); //
-SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment2); //
-S_A_I_S(bitcoinrpc,sendmany,fromaccount,array,minconf,comment); //
-S_D_SS(bitcoinrpc,sendtoaddress,address,amount,comment,comment2); //
 
 ZERO_ARGS(bitcoinrpc,makekeypair);
 STRING_ARG(bitcoinrpc,validatepubkey,pubkey);
@@ -45,12 +37,12 @@ ZERO_ARGS(bitcoinrpc,walletlock);
 TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout);
 THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile);
 FOUR_STRINGS(bitcoinrpc,walletpassphrasechange,oldpassword,newpassword,oldpermanentfile,permanentfile);
-
-// accounts
-STRING_ARG(bitcoinrpc,getnewaddress,account); //
-TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan); //
-STRING_ARG(bitcoinrpc,dumpprivkey,address); //
-INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,array,account); //
+STRING_ARG(bitcoinrpc,dumpwallet,filename);
+STRING_ARG(bitcoinrpc,backupwallet,filename);
+STRING_ARG(bitcoinrpc,importwallet,filename);
+STRING_ARG(bitcoinrpc,getnewaddress,account);
+TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan);
+STRING_ARG(bitcoinrpc,dumpprivkey,address);
 
 STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatchonly);
 THREE_INTS(bitcoinrpc,listreceivedbyaddress,minconf,includeempty,flag);
@@ -65,21 +57,29 @@ STRING_ARG(bitcoinrpc,getaccount,address);
 STRING_ARG(bitcoinrpc,getaccountaddress,account);
 TWO_STRINGS(bitcoinrpc,setaccount,address,account);
 
-// maybe later
+INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,array,ignore); //
+INT_ARRAY_STRING(bitcoinrpc,addmultisig,M,array,account); //
+STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighash); //
+STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees); //
+
+SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment); //
+SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment2); //
+S_A_I_S(bitcoinrpc,sendmany,fromaccount,array,minconf,comment); //
+S_D_SS(bitcoinrpc,sendtoaddress,address,amount,comment,comment2); //
+DOUBLE_ARG(bitcoinrpc,settxfee,amount);
+
+HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag); //
 TWO_STRINGS(bitcoinrpc,signmessage,address,message); //
 THREE_STRINGS(bitcoinrpc,verifymessage,address,sig,message); //
 
-HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag); //
+// maybe later
+
 ZERO_ARGS(bitcoinrpc,gettxoutsetinfo);
 INT_AND_ARRAY(bitcoinrpc,lockunspent,flag,array);
 ZERO_ARGS(bitcoinrpc,listlockunspent);
 ZERO_ARGS(bitcoinrpc,getrawchangeaddress);
 ZERO_ARGS(bitcoinrpc,checkwallet);
 ZERO_ARGS(bitcoinrpc,repairwallet);
-STRING_ARG(bitcoinrpc,dumpwallet,filename);
-STRING_ARG(bitcoinrpc,backupwallet,filename);
-STRING_ARG(bitcoinrpc,importwallet,filename);
-DOUBLE_ARG(bitcoinrpc,settxfee,amount);
 
 STRING_ARG(iguana,initfastfind,activecoin);
 STRING_ARG(iguana,peers,activecoin);
@@ -162,7 +162,6 @@ TWO_ARRAYS(SuperNET,mypeers,supernet,rawpeers);
 ZERO_ARGS(SuperNET,stop);
 HASH_AND_STRING(SuperNET,saveconf,wallethash,confjsonstr);
 HASH_ARRAY_STRING(SuperNET,layer,mypriv,otherpubs,str);
-
 
 STRING_ARG(SuperNET,bitcoinrpc,setcoin);
 STRING_ARG(SuperNET,myipaddr,ipaddr);

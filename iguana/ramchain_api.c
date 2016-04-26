@@ -252,12 +252,6 @@ STRING_ARG(bitcoinrpc,validatepubkey,pubkeystr)
     return(clonestr("{\"error\":\"invalid pubkey\"}"));
 }
 
-HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
 cJSON *iguana_scriptobj(struct iguana_info *coin,uint8_t rmd160[20],char *coinaddr,char *asmstr,uint8_t *script,int32_t scriptlen)
 {
     struct vin_info V; int32_t i,plen,asmtype; char pubkeystr[130],rmdstr[41]; cJSON *addrobj,*scriptobj=0;
@@ -545,31 +539,6 @@ STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighas
     return(jprint(retjson,1));
 }
 
-STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-// unspents
-ZERO_ARGS(bitcoinrpc,gettxoutsetinfo)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-INT_AND_ARRAY(bitcoinrpc,lockunspent,flag,array)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-ZERO_ARGS(bitcoinrpc,listlockunspent)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
 TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array)
 {
     int32_t numrmds; uint8_t *rmdarray; cJSON *retjson = cJSON_CreateArray();
@@ -581,19 +550,6 @@ TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array)
     iguana_unspents(myinfo,coin,retjson,minconf,maxconf,rmdarray,numrmds,0);
     if ( rmdarray != 0 )
         free(rmdarray);
-    return(jprint(retjson,1));
-}
-
-STRING_AND_INT(bitcoinrpc,getreceivedbyaddress,address,minconf)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-// single address/account funcs
-ZERO_ARGS(bitcoinrpc,getrawchangeaddress)
-{
-    cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
@@ -626,6 +582,38 @@ STRING_AND_INT(iguana,bundlehashes,activecoin,height)
             } else return(clonestr("{\"error\":\"ramchain not there\"}"));
         } else return(clonestr("{\"error\":\"height is too big\"}"));
     } else return(clonestr("{\"error\":\"activecoin is not active\"}"));
+}
+
+// low priority RPC
+ZERO_ARGS(bitcoinrpc,gettxoutsetinfo)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+
+INT_AND_ARRAY(bitcoinrpc,lockunspent,flag,array)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+
+ZERO_ARGS(bitcoinrpc,listlockunspent)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
+}
+
+ZERO_ARGS(bitcoinrpc,listaddressgroupings)
+{
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    return(clonestr("{\"result\":\"success\"}"));
+}
+
+ZERO_ARGS(bitcoinrpc,getrawchangeaddress)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
 }
 
 #undef IGUANA_ARGS
