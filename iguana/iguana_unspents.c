@@ -2393,13 +2393,6 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     {
         //printf("RT edge case\n");
     }
-    if ( 0 && coin->RTheight > 0 && coin->spendvectorsaved != 1 && coin->bundlescount-1 != coin->balanceswritten )
-    {
-        printf("RT mismatch %d != %d\n",coin->bundlescount-1,coin->balanceswritten);
-        coin->spendvectorsaved = 0;
-        iguana_RTramchainfree(coin,coin->current);
-        return(0);
-    }
     if ( coin->spendvectorsaved <= 1 )
         return(0);
     for (i=0; i<coin->bundlescount-1; i++)
@@ -2414,7 +2407,17 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             coin->spendvectorsaved = 1;
         }
     }
-    if ( coin->RTdatabad == 0 && (bp= coin->current) != 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && ((coin->RTheight <= coin->blocks.hwmchain.height && time(NULL) > bp->lastRT) || time(NULL) > bp->lastRT+10) )
+    bp = coin->current;
+    if ( bp == 0 || iguana_validated(coin) < bp->hdrsi )
+        return(0);
+    if ( 1 && coin->RTheight > 0 && coin->spendvectorsaved != 1 && coin->bundlescount-1 != coin->balanceswritten )
+    {
+        printf("RT mismatch %d != %d\n",coin->bundlescount-1,coin->balanceswritten);
+        coin->spendvectorsaved = 0;
+        iguana_RTramchainfree(coin,coin->current);
+        return(0);
+    }
+    if ( coin->RTdatabad == 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi == coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && ((coin->RTheight <= coin->blocks.hwmchain.height && time(NULL) > bp->lastRT) || time(NULL) > bp->lastRT+10) )
     {
         if ( (block= bp->blocks[0]) == 0 || block->txvalid == 0 || block->mainchain == 0 )
         {
