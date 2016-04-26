@@ -1167,6 +1167,8 @@ void iguana_appletests(struct supernet_info *myinfo)
 void iguana_commandline(struct supernet_info *myinfo,char *arg)
 {
     cJSON *argjson; char *coinargs,*argstr; long filesize = 0;
+    if ( arg == 0 )
+        arg = "iguana.conf";
     if ( arg != 0 )
     {
         if ( arg[0] == '"' && arg[1] == '{' )
