@@ -9,6 +9,7 @@ int32_t main(int32_t argc,char **argv)
     if ( argc > 2 && (argjson= cJSON_Parse(argv[2])) != 0 )
     {
         fname = argv[1];
+printf("fname.%s\n",argv[1]);
 	if ( (filestr= OS_filestr(&filesize,fname)) != 0 )
         {
             if ( (filejson= cJSON_Parse(filestr)) != 0 )
@@ -37,6 +38,6 @@ int32_t main(int32_t argc,char **argv)
             }
             free(filestr);
         }
-    }
+    } else printf("argc.%d fname.(%s) error\n",argc,argv[1]);
 }
 

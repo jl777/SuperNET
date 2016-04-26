@@ -2547,7 +2547,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             memset(ptr,0,sizeof(*bp->speculative)*bp->n);
             myfree(ptr,(bp->n+1)*sizeof(*bp->speculative));
         }
-        //iguana_RTramchainalloc("RTbundle",coin,bp);
+        iguana_RTramchainalloc("RTbundle",coin,bp);
     }
     return(flag);
 }

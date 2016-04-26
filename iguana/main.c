@@ -1171,7 +1171,7 @@ void iguana_commandline(struct supernet_info *myinfo,char *arg)
         arg = "iguana.conf";
     if ( arg != 0 )
     {
-        if ( arg[0] == '"' && arg[1] == '{' )
+        if ( arg[1] == '{' || arg[1] == '[' )
             argstr = arg;
         else argstr = OS_filestr(&filesize,arg);
         if ( (argjson= cJSON_Parse(argstr)) != 0 )
@@ -1200,7 +1200,7 @@ void iguana_commandline(struct supernet_info *myinfo,char *arg)
                         free(str);
             }
             free_json(argjson);
-        } else printf("error parsing.(%s)\n",(char *)arg);
+        } else printf("error parsing.(%s)\n",(char *)argstr);
         if ( argstr != arg )
             free(argstr);
     }
