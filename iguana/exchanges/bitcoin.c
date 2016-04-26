@@ -59,13 +59,6 @@ int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr
 	return(0);
 }
 
-void calc_rmd160_sha256(uint8_t rmd160[20],uint8_t *data,int32_t datalen)
-{
-    bits256 hash;
-    vcalc_sha256(0,hash.bytes,data,datalen);
-    calc_rmd160(0,rmd160,hash.bytes,sizeof(hash));
-}
-
 char *bitcoin_address(char *coinaddr,uint8_t addrtype,uint8_t *pubkey,int32_t len)
 {
     int32_t i; uint8_t data[25]; bits256 hash;// char checkaddr[65];

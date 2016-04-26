@@ -190,7 +190,7 @@ double dxblend(double *destp,double val,double decay)
 	return(slope);
 }
 
-int32_t TerminateQ_queued;
+int32_t TerminateQ_queued; queue_t TerminateQ;
 /*void iguana_terminator(void *arg)
 {
     struct iguana_thread *t; uint32_t lastdisp = 0; int32_t terminated = 0;
@@ -1061,4 +1061,11 @@ void calc_curve25519_str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
     else priv = *(bits256 *)msg;
     x = curve25519(priv,curve25519_basepoint9());
     init_hexbytes_noT(hexstr,x.bytes,sizeof(x));
+}
+
+void calc_rmd160_sha256(uint8_t rmd160[20],uint8_t *data,int32_t datalen)
+{
+    bits256 hash;
+    vcalc_sha256(0,hash.bytes,data,datalen);
+    calc_rmd160(0,rmd160,hash.bytes,sizeof(hash));
 }

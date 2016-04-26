@@ -61,7 +61,7 @@ struct iguana_info *Coins[IGUANA_MAXCOINS];
 char Userhome[512];
 int32_t USE_JAY,FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel,BIGENDIAN;
 uint32_t prices777_NXTBLOCK,MAX_DEPTH = 100;
-queue_t helperQ,jsonQ,finishedQ,bundlesQ,emitQ,TerminateQ;
+queue_t helperQ,jsonQ,finishedQ,bundlesQ,emitQ;
 struct supernet_info MYINFO,**MYINFOS;
 static int32_t initflag;
 int32_t HDRnet,netBLOCKS;

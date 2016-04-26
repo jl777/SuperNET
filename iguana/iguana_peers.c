@@ -18,6 +18,24 @@
 #define _iguana_hashfind(coin,ipbits) _iguana_hashset(coin,ipbits,-1)
 struct iguana_iAddr *iguana_iAddrhashfind(struct iguana_info *coin,uint64_t ipbits,int32_t createflag);
 
+int32_t iguana_validatehdr(char *symbol,struct iguana_msghdr *H)
+{
+    int32_t i = 0,len = -1;
+    if ( strcmp(symbol,"VPN") != 0 )
+    {
+        for (i=0; Iguana_validcommands[i]!=0&&Iguana_validcommands[i][0]!=0; i++)
+            if ( strcmp(H->command,Iguana_validcommands[i]) == 0 )
+                break;
+    }
+    if ( Iguana_validcommands[i][0] != 0 )
+    {
+        iguana_rwnum(0,H->serdatalen,sizeof(H->serdatalen),(uint32_t *)&len);
+        if ( len > IGUANA_MAXPACKETSIZE )
+            return(-1);
+    }
+    return(len);
+}
+
 struct iguana_iAddr *_iguana_hashset(struct iguana_info *coin,uint32_t ipbits,int32_t itemind)
 {
     struct iguana_iAddr *ptr = 0; int32_t allocsize; char str[65]; struct OS_memspace *mem = 0;
