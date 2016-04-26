@@ -1781,7 +1781,7 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
             from_ro = 0;
         }
     }
-    if ( i < coin->balanceswritten )
+    if ( i < coin->balanceswritten-1 )
     {
         printf("TRUNCATE balances written.%d -> %d\n",coin->balanceswritten,i);
         iguana_truncatebalances(coin);
