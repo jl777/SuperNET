@@ -171,7 +171,7 @@ STRING_ARG(SuperNET,setmyipaddr,ipaddr);
 FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase);
 ZERO_ARGS(SuperNET,logout);
 ZERO_ARGS(SuperNET,activehandle);
-THREE_STRINGS(SuperNET,encryptjson,password,permanentfile,anything);
+THREE_STRINGS(SuperNET,encryptjson,password,permanentfile,payload);
 TWO_STRINGS(SuperNET,decryptjson,password,permanentfile);
 
 TWO_STRINGS(SuperNET,html,agentform,htmlfile);

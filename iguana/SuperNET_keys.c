@@ -23,7 +23,6 @@
 #include "../includes/cJSON.h"
 
 
-
 bits256 SuperNET_wallet2shared(bits256 wallethash,bits256 wallet2priv)
 {
     bits256 wallet2shared,seed,wallet2pub;
@@ -370,7 +369,7 @@ char *SuperNET_keysinit(struct supernet_info *myinfo,char *argjsonstr)
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
-THREE_STRINGS(SuperNET,encryptjson,password,permanentfile,anything)
+THREE_STRINGS(SuperNET,encryptjson,password,permanentfile,payload)
 {
     char destfname[4096],pass[8192],fname2[1023]; cJSON *argjson,*retjson = cJSON_CreateObject();
     safecopy(pass,password,sizeof(pass));
@@ -405,8 +404,8 @@ TWO_STRINGS(SuperNET,decryptjson,password,permanentfile)
     //printf("decrypt.(%s %s)\n",pass,fname2);
     if ( (retjson= SuperNET_decryptedjson(pass,sizeof(pass),wallethash,fname2,sizeof(fname2),wallet2priv)) != 0 )
     {
-        obj = jduplicate(jobj(retjson,"anything"));
-        jdelete(retjson,"anything");
+        obj = jduplicate(jobj(retjson,"payload"));
+        jdelete(retjson,"payload");
         jadd(retjson,"result",obj);
         return(jprint(retjson,1));
     }
