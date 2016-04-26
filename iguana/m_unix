@@ -1,5 +1,5 @@
 #./configure --enable-endomorphism --enable-module-ecdh --enable-module-schnorr --enable-module-rangeproof --enable-experimental
-rm ../agents/iguana
+rm ../agents/iguana *.o
 git pull
 gcc -g -Wno-deprecated -c -O2 *.c databases/iguana_DB.c
 gcc -g -Wno-deprecated -c main.c iguana777.c iguana_bundles.c
