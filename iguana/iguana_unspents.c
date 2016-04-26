@@ -2036,7 +2036,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
     }
     coin->allbundles = allbundles;
     coin->balancehash = balancehash;
-    coin->balanceswritten = numhdrsi+1;
+    coin->balanceswritten = numhdrsi;
     if ( 1 )
     {
         for (hdrsi=0; hdrsi<numhdrsi; hdrsi++)
@@ -2415,9 +2415,9 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     bp = coin->current;
     if ( bp == 0 || iguana_validated(coin) < bp->hdrsi )
         return(0);
-    if ( 1 && coin->RTheight > 0 && coin->spendvectorsaved != 1 && coin->bundlescount-1 != coin->balanceswritten )
+    if ( 1 && coin->RTheight > 0 && coin->spendvectorsaved != 1 && coin->bundlescount != coin->balanceswritten )
     {
-        printf("RT mismatch %d != %d\n",coin->bundlescount-1,coin->balanceswritten);
+        printf("RT mismatch %d != %d\n",coin->bundlescount,coin->balanceswritten);
         coin->spendvectorsaved = 0;
         iguana_RTramchainfree(coin,coin->current);
         return(0);
