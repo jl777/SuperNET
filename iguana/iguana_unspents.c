@@ -1099,7 +1099,7 @@ cJSON *iguana_unspentjson(struct iguana_info *coin,int32_t hdrsi,uint32_t unspen
      "spendable" : true
      },*/
     //struct iguana_unspent { uint64_t value; uint32_t txidind,pkind,prevunspentind; uint16_t hdrsi:12,type:4,vout; } __attribute__((packed));
-    struct iguana_waccount *wacct; int32_t height,ind; char scriptstr[8192],asmstr[sizeof(scriptstr)+1024]; cJSON *item; uint32_t checkind;
+    struct iguana_waccount *wacct; struct iguana_waddress *waddr; int32_t height; char scriptstr[8192],asmstr[sizeof(scriptstr)+1024]; cJSON *item; uint32_t checkind;
     item = cJSON_CreateObject();
     jaddbits256(item,"txid",T[up->txidind].txid);
     jaddnum(item,"vout",up->vout);
@@ -1112,7 +1112,7 @@ cJSON *iguana_unspentjson(struct iguana_info *coin,int32_t hdrsi,uint32_t unspen
         jaddnum(item,"confirmations",coin->blocks.hwmchain.height - height);
         jaddnum(item,"checkind",checkind);
     }
-    if ( (wacct= iguana_waddressfind(coin,&ind,coinaddr)) != 0 )
+    if ( (waddr= iguana_waddresssearch(coin,&wacct,coinaddr)) != 0 )
     {
         jaddstr(item,"account",wacct->account);
         jadd(item,"spendable",jtrue());
