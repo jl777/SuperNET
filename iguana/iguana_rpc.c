@@ -407,23 +407,6 @@ static char *verifymessage(RPCARGS)
 static char *listunspent(RPCARGS)
 {
     return(sglue3(0,CALLGLUE,"bitcoinrpc","listunspent","minconf",params[0],"maxconf",params[1],"array",params[2]));
-    /*int32_t numrmds,minconf=0,maxconf=0,m = 0; uint8_t *rmdarray; cJSON *retjson;
-    retjson = cJSON_CreateArray();
-    if ( (minconf= juint(params[0],0)) > 0 )
-    {
-        m++;
-        if ( (maxconf= juint(params[1],0)) > 0 )
-            m++;
-    }
-    if ( minconf == 0 )
-        minconf = 1;
-    if ( maxconf == 0 )
-        maxconf = 9999999;
-    rmdarray = iguana_rmdarray(coin,&numrmds,array,m);
-    iguana_unspents(myinfo,coin,retjson,minconf,maxconf,rmdarray,numrmds);
-    if ( rmdarray != 0 )
-        free(rmdarray);
-    return(jprint(retjson,1));*/
 }
 
 static char *lockunspent(RPCARGS)

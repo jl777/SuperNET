@@ -578,7 +578,7 @@ TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array)
     if ( maxconf == 0 )
         maxconf = 9999999;
     rmdarray = iguana_rmdarray(coin,&numrmds,array,0);
-    iguana_unspents(myinfo,coin,retjson,minconf,maxconf,rmdarray,numrmds);
+    iguana_unspents(myinfo,coin,retjson,minconf,maxconf,rmdarray,numrmds,0);
     if ( rmdarray != 0 )
         free(rmdarray);
     return(jprint(retjson,1));

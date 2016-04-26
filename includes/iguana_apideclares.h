@@ -59,7 +59,7 @@ TWO_INTS(bitcoinrpc,listaccounts,minconf,includewatchonly);
 ZERO_ARGS(bitcoinrpc,listaddressgroupings);
 STRING_AND_INT(bitcoinrpc,getreceivedbyaddress,address,minconf);
 STRING_AND_INT(bitcoinrpc,getreceivedbyaccount,account,includeempty);
-THREE_INTS(bitcoinrpc,getbalance,confirmations,includeempty,watchonly);
+STRING_AND_THREEINTS(bitcoinrpc,getbalance,account,confirmations,includeempty,lastheight);
 STRING_ARG(bitcoinrpc,getaddressesbyaccount,account);
 STRING_ARG(bitcoinrpc,getaccount,address);
 STRING_ARG(bitcoinrpc,getaccountaddress,account);

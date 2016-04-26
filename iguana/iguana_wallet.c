@@ -139,7 +139,7 @@ uint8_t *iguana_walletrmds(struct supernet_info *myinfo,struct iguana_info *coin
     return(rmdarray);
 }
 
-char *getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
+cJSON *getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
 {
     struct iguana_waccount *subset; struct iguana_waddress *waddr,*tmp; cJSON *retjson,*array;
     retjson = cJSON_CreateObject();
@@ -151,8 +151,7 @@ char *getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_info *coi
             jaddistr(array,waddr->coinaddr);
         }
     } else jaddstr(retjson,"result","cant find account");
-    jadd(retjson,"addresses",array);
-    return(jprint(retjson,1));
+    return(array);
 }
 
 struct iguana_waddress *iguana_waccountadd(struct iguana_info *coin,struct iguana_waccount **wacctp,char *walletaccount,char *coinaddr)
@@ -760,53 +759,100 @@ STRING_ARG(bitcoinrpc,importwallet,filename)
 }
 
 // multiple address
-THREE_INTS(bitcoinrpc,getbalance,confirmations,includeempty,watchonly)
+STRING_AND_THREEINTS(bitcoinrpc,getbalance,account,minconf,includeempty,lastheight)
 {
-    cJSON *retjson;
+    int64_t balance; int32_t numrmds=0; uint8_t *rmdarray=0; cJSON *retjson;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
+    if ( minconf == 0 )
+        minconf = 1;
+    if ( strcmp(account,"*") != 0 )
+        rmdarray = iguana_rmdarray(coin,&numrmds,getaddressesbyaccount(myinfo,coin,account),0);
+    balance = iguana_unspents(myinfo,coin,0,minconf,(1 << 30),rmdarray,numrmds,lastheight);
+    if ( rmdarray != 0 )
+        free(rmdarray);
     retjson = cJSON_CreateObject();
+    jaddnum(retjson,"result",dstr(balance));
     return(jprint(retjson,1));
 }
 
 STRING_ARG(bitcoinrpc,getaddressesbyaccount,account)
 {
-    cJSON *retjson; struct iguana_waccount *wacct;
+    cJSON *retjson;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
+    retjson = cJSON_CreateObject();
+    jadd(retjson,"result",getaddressesbyaccount(myinfo,coin,account));
+    return(jprint(retjson,1));
+}
+
+int64_t iguana_waccountbalance(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_waccount *wacct,int32_t minconf,int32_t lastheight)
+{
+    int64_t balance; int32_t numrmds=0; uint8_t *rmdarray=0;
+    if ( minconf == 0 )
+        minconf = 1;
+    rmdarray = iguana_rmdarray(coin,&numrmds,getaddressesbyaccount(myinfo,coin,wacct->account),0);
+    balance = iguana_unspents(myinfo,coin,0,minconf,(1 << 30),rmdarray,numrmds,lastheight);
+    if ( rmdarray != 0 )
+        free(rmdarray);
+    return(balance);
+}
+
+STRING_AND_INT(bitcoinrpc,getreceivedbyaccount,account,minconf)
+{
+    cJSON *retjson; struct iguana_waccount *wacct; int64_t balance;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    retjson = cJSON_CreateObject();
     if ( (wacct= iguana_waccountfind(coin,account)) != 0 )
     {
-        
+        balance = iguana_waccountbalance(myinfo,coin,wacct,minconf,0);
+        jaddnum(retjson,"result",dstr(balance));
+    }
+    return(jprint(retjson,1));
+}
+
+THREE_INTS(bitcoinrpc,listreceivedbyaccount,minconf,includeempty,watchonly)
+{
+    cJSON *retjson,*item,*array; struct iguana_waccount *wacct,*tmp; int64_t balance;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    array = cJSON_CreateArray();
+    HASH_ITER(hh,coin->wallet,wacct,tmp)
+    {
+        balance = iguana_waccountbalance(myinfo,coin,wacct,minconf,0);
+        item = cJSON_CreateObject();
+        jaddstr(item,"account",wacct->account);
+        jaddnum(item,"amount",dstr(balance));
+        jaddnum(item,"confirmations",minconf);
+        jaddi(array,item);
     }
     retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-STRING_AND_INT(bitcoinrpc,getreceivedbyaccount,account,includeempty)
-{
-    cJSON *retjson;
-    if ( remoteaddr != 0 )
-        return(clonestr("{\"error\":\"no remote\"}"));
-    retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-THREE_INTS(bitcoinrpc,listreceivedbyaccount,confirmations,includeempty,watchonly)
-{
-    cJSON *retjson;
-    if ( remoteaddr != 0 )
-        return(clonestr("{\"error\":\"no remote\"}"));
-    retjson = cJSON_CreateObject();
+    jadd(retjson,"result",array);
     return(jprint(retjson,1));
 }
 
 THREE_INTS(bitcoinrpc,listreceivedbyaddress,minconf,includeempty,flag)
 {
-    cJSON *retjson;
+    cJSON *retjson,*item,*array,*txids,*vouts; struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr,*tmp2;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
+    array = cJSON_CreateArray();
+    HASH_ITER(hh,coin->wallet,wacct,tmp)
+    {
+        HASH_ITER(hh,wacct->waddr,waddr,tmp2)
+        {
+            item = cJSON_CreateObject();
+            jaddstr(item,"address",waddr->coinaddr);
+            txids = cJSON_CreateArray();
+            vouts = cJSON_CreateArray();
+            jaddnum(item,"amount",dstr(iguana_addressreceived(myinfo,coin,json,remoteaddr,txids,vouts,waddr->coinaddr,minconf)));
+            jaddi(array,item);
+        }
+    }
     retjson = cJSON_CreateObject();
-    return(jsuccess());
+    jadd(retjson,"result",array);
+    return(jprint(retjson,1));
 }
 
 STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatchonly)
@@ -816,6 +862,31 @@ STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatch
         return(clonestr("{\"error\":\"no remote\"}"));
     retjson = cJSON_CreateObject();
     return(jsuccess());
+}
+
+TWO_INTS(bitcoinrpc,listaccounts,minconf,includewatchonly)
+{
+    cJSON *retjson,*array; int64_t balance; struct iguana_waccount *wacct,*tmp;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    array = cJSON_CreateObject();
+    HASH_ITER(hh,coin->wallet,wacct,tmp)
+    {
+        balance = iguana_waccountbalance(myinfo,coin,wacct,minconf,0);
+        jaddnum(array,wacct->account,dstr(balance));
+    }
+    retjson = cJSON_CreateObject();
+    jadd(retjson,"result",array);
+    return(jprint(retjson,1));
+}
+
+ZERO_ARGS(bitcoinrpc,listaddressgroupings)
+{
+    cJSON *retjson;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
 }
 
 S_D_SS(bitcoinrpc,sendtoaddress,address,amount,comment,comment2)
@@ -863,24 +934,6 @@ S_A_I_S(bitcoinrpc,sendmany,fromaccount,array,minconf,comment)
     return(jprint(retjson,1));
 }
 
-// entire wallet funcs
-TWO_INTS(bitcoinrpc,listaccounts,minconf,includewatchonly)
-{
-    cJSON *retjson;
-    if ( remoteaddr != 0 )
-        return(clonestr("{\"error\":\"no remote\"}"));
-    retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-ZERO_ARGS(bitcoinrpc,listaddressgroupings)
-{
-    cJSON *retjson;
-    if ( remoteaddr != 0 )
-        return(clonestr("{\"error\":\"no remote\"}"));
-    retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
 
 #include "../includes/iguana_apiundefs.h"
 
