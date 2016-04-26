@@ -813,7 +813,7 @@ int32_t iguana_unspentindfind(struct iguana_info *coin,int32_t *heightp,bits256 
     {
         return(firstvout + vout);
     }
-    else
+    //else
     {
         if ( (tp= iguana_txidfind(coin,heightp,&TX,txid,lasthdrsi)) != 0 )
             return(tp->firstvout + vout);
