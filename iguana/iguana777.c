@@ -416,6 +416,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
         printf("skip utxogen as spendvectorsaved.%u\n",coin->spendvectorsaved);
         return(0);
     }
+    printf("helperid.%d start utxogen\n",helperid);
     incr = 1;//IGUANA_NUMHELPERS;
     //if ( 1 || coin->PREFETCHLAG > 0 ) // data issues on slow systems
     //    incr = 1;

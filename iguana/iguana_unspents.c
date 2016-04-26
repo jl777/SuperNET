@@ -598,7 +598,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
     {
         if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish > 1 )
         {
-            ramchain = &bp->ramchain;//(bp->isRT != 0) ? &coin->RTramchain : &bp->ramchain;
+            ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
             if ( ramchain->H.data != 0 )
             {
                 if ( (TXbits= ramchain->txbits) == 0 )
@@ -1027,7 +1027,7 @@ int64_t iguana_fastfindcreate(struct iguana_info *coin)
 
 struct iguana_bundle *iguana_fastexternalspent(struct iguana_info *coin,bits256 *prevhashp,uint32_t *unspentindp,struct iguana_ramchain *ramchain,int32_t spent_hdrsi,struct iguana_spend *s)
 {
-    int32_t prev_vout,height,hdrsi,firstvout; uint32_t ind;
+    int32_t prev_vout,height,hdrsi,unspentind; uint32_t ind;
     struct iguana_txid *T; bits256 *X; bits256 prev_hash; struct iguana_ramchaindata *rdata;
     if ( (rdata= ramchain->H.data) == 0 )
         return(0);
@@ -1044,19 +1044,23 @@ struct iguana_bundle *iguana_fastexternalspent(struct iguana_info *coin,bits256 
                 char str[65]; //double duration,startmillis = OS_milliseconds();
                 X = (void *)(long)((long)rdata + rdata->Xoffset);
                 *prevhashp = prev_hash = X[ind];
-                if ( (firstvout= iguana_txidfastfind(coin,&height,prev_hash,spent_hdrsi-1)) >= 0 )
+                if ( (unspentind= iguana_unspentindfind(coin,&height,prev_hash,prev_vout,spent_hdrsi-1)) != 0 )
+                //if ( (firstvout= iguana_txidfastfind(coin,&height,prev_hash,spent_hdrsi-1)) >= 0 )
                 {
                     /*duration = (OS_milliseconds() - startmillis);
                     if ( ((uint64_t)coin->txidfind_num % 100) == 1 )
                         printf("[%d] iguana_fasttxidfind.[%.0f] ave %.2f micros, total %.2f seconds | duration %.3f millis\n",spent_hdrsi,coin->txidfind_num,(coin->txidfind_totalmillis*1000.)/coin->txidfind_num,coin->txidfind_totalmillis/1000.,duration);
                     coin->txidfind_totalmillis += duration;
                     coin->txidfind_num += 1.;*/
-
-                    *unspentindp = firstvout + prev_vout;
+                    *unspentindp = unspentind;//firstvout + prev_vout;
                     hdrsi = height / coin->chain->bundlesize;
                     if ( hdrsi >= 0 && hdrsi < coin->bundlescount )
                         return(coin->bundles[hdrsi]);
-                } else printf("couldnt find (%s)\n",bits256_str(str,prev_hash));
+                }
+                else
+                {
+                    printf("couldnt fastfind (%s)\n",bits256_str(str,prev_hash));
+                }
             } else return(0);
         }
         else if ( ind < rdata->numtxids )
