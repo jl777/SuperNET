@@ -812,6 +812,66 @@ STRING_AND_INT(bitcoinrpc,getreceivedbyaccount,account,minconf)
     return(jprint(retjson,1));
 }
 
+STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatchonly)
+{
+    cJSON *retjson,*retarray,*txids,*item,*array; int32_t i,j,total,m,n = 0; struct iguana_waccount *wacct; char *coinaddr;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    retjson = cJSON_CreateObject();
+    retarray = cJSON_CreateArray();
+    if ( (wacct= iguana_waccountfind(coin,account)) != 0 )
+    {
+        if ( (array= getaddressesbyaccount(myinfo,coin,account)) != 0 )
+        {
+            if ( (n= cJSON_GetArraySize(array)) > 0 )
+            {
+                total = 0;
+                for (i=0; i<n; i++)
+                {
+                    if ( (coinaddr= jstr(jitem(array,i),0)) != 0 )
+                    {
+                        txids = cJSON_CreateArray();
+                        iguana_addressreceived(myinfo,coin,json,remoteaddr,txids,0,coinaddr,1);
+                        if ( (m= cJSON_GetArraySize(txids)) > 0 )
+                        {
+                            for (j=0; j<m; j++,total++)
+                            {
+                                if ( skip < -count )
+                                    break;
+                                else
+                                {
+                                    skip--;
+                                    if ( skip <= 0 )
+                                    {
+                                        /*{
+                                          "category": "receive",
+                                         "amount": 0.50000000,
+                                         "label": "",
+                                         "vout": 1,
+                                         "confirmations": 24466,
+                                         "blockhash": "00000000000000000517ce625737579f91162c46ad9eaccad0f52ca13715b156",
+                                         "blockindex": 78,
+                                         "blocktime": 1448045745,
+                                         "txid": "a40ab455941314a154e2606ff34d52a1001c7059d2c364bb16d6a8edef0abf09",
+                                         }*/
+                                        item = cJSON_CreateObject();
+                                        jaddstr(item,"account",wacct->account);
+                                        jaddstr(item,"address",coinaddr);
+                                        jaddi(retarray,item);
+                                    }
+                                }
+                            }
+                        }
+                        free_json(txids);
+                    }
+                }
+            }
+        }
+    }
+    jadd(retjson,"result",retarray);
+    return(jprint(retjson,1));
+}
+
 THREE_INTS(bitcoinrpc,listreceivedbyaccount,minconf,includeempty,watchonly)
 {
     cJSON *retjson,*item,*array; struct iguana_waccount *wacct,*tmp; int64_t balance;
@@ -847,21 +907,14 @@ THREE_INTS(bitcoinrpc,listreceivedbyaddress,minconf,includeempty,flag)
             txids = cJSON_CreateArray();
             vouts = cJSON_CreateArray();
             jaddnum(item,"amount",dstr(iguana_addressreceived(myinfo,coin,json,remoteaddr,txids,vouts,waddr->coinaddr,minconf)));
+            jadd(item,"txids",txids);
+            jadd(item,"vouts",vouts);
             jaddi(array,item);
         }
     }
     retjson = cJSON_CreateObject();
     jadd(retjson,"result",array);
     return(jprint(retjson,1));
-}
-
-STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatchonly)
-{
-    cJSON *retjson;
-    if ( remoteaddr != 0 )
-        return(clonestr("{\"error\":\"no remote\"}"));
-    retjson = cJSON_CreateObject();
-    return(jsuccess());
 }
 
 TWO_INTS(bitcoinrpc,listaccounts,minconf,includewatchonly)
@@ -882,11 +935,9 @@ TWO_INTS(bitcoinrpc,listaccounts,minconf,includewatchonly)
 
 ZERO_ARGS(bitcoinrpc,listaddressgroupings)
 {
-    cJSON *retjson;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
+    return(clonestr("{\"result\":\"success\"}"));
 }
 
 S_D_SS(bitcoinrpc,sendtoaddress,address,amount,comment,comment2)

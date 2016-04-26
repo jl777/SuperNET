@@ -597,14 +597,6 @@ ZERO_ARGS(bitcoinrpc,getrawchangeaddress)
     return(jprint(retjson,1));
 }
 
-HASH_AND_STRING(bitcoinrpc,verifytx,txid,txbytes)
-{
-    cJSON *retjson;
-    retjson = bitcoin_txtest(coin,txbytes,txid);
-    //printf("verifytx.(%s) %p\n",jprint(retjson,0),retjson);
-    return(jprint(retjson,1));
-}
-
 STRING_AND_INT(iguana,bundleaddresses,activecoin,height)
 {
     struct iguana_info *ptr;
