@@ -1209,7 +1209,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
                     numemit++;
                     //printf("finished.[%d]\n",bp->hdrsi);
                     if ( firstgap != 0 && bp->hdrsi > firstgap->hdrsi-3 && firstgap->validated > 1 )
-                        iguana_bundlepurgefiles(coin,bp);
+                        iguana_bundlepurgefiles(coin,firstgap);
                 }
             }
             else
