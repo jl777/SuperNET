@@ -189,6 +189,8 @@ void iguana_walletlock(struct supernet_info *myinfo)
     memset(&myinfo->persistent_priv,0,sizeof(myinfo->persistent_priv));
     memset(myinfo->secret,0,sizeof(myinfo->secret));
     memset(myinfo->permanentfile,0,sizeof(myinfo->permanentfile));
+    if ( myinfo->decryptstr != 0 )
+        free(myinfo->decryptstr), myinfo->decryptstr = 0;
     myinfo->expiration = 0;
     //printf("wallet locked\n");
 }
@@ -335,8 +337,8 @@ int32_t iguana_loginsave(struct supernet_info *myinfo,struct iguana_info *coin,c
         if ( (passphrase= jstr(loginjson,"passphrase")) != 0 )
         {
             _SuperNET_encryptjson(destfname,passphrase,0,myinfo->permanentfile,0,loginjson);
+            //printf("loginsave.(%s) <= (%s)\n",destfname,newstr);
             //iguana_walletlock(myinfo);
-            printf("loginsave.(%s) <= (%s)\n",destfname,newstr);
         }
         free_json(loginjson);
         return(0);
@@ -348,7 +350,9 @@ int32_t iguana_payloadupdate(struct supernet_info *myinfo,struct iguana_info *co
     cJSON *retjson,*accountobj,*payload,*obj; char *newstr; int32_t retval = -1;
     if ( (retjson= cJSON_Parse(retstr)) != 0 )
     {
-        payload = cJSON_DetachItemFromObject(retjson,"payload");
+        if ( account == 0 || account[0] == 0 )
+            account = "default";
+        payload = cJSON_DetachItemFromObject(retjson,"wallet");
         if ( payload == 0 )
             payload = cJSON_CreateObject();
         if ( (accountobj= jobj(payload,account)) != 0 && (obj= jobj(accountobj,waddr->coinaddr)) != 0 )
@@ -357,10 +361,15 @@ int32_t iguana_payloadupdate(struct supernet_info *myinfo,struct iguana_info *co
             free_json(payload);
             return(0);
         }
-        jaddbits256(payload,waddr->coinaddr,waddr->privkey);
-        jadd(retjson,"payload",payload);
+        if ( accountobj == 0 )
+        {
+            accountobj = cJSON_CreateObject();
+            jaddbits256(accountobj,waddr->coinaddr,waddr->privkey);
+            jadd(payload,account,accountobj);
+        } else jaddbits256(accountobj,waddr->coinaddr,waddr->privkey);
+        jadd(retjson,"wallet",payload);
         newstr = jprint(retjson,1);
-        printf("newstr.(%s)\n",newstr);
+        //printf("newstr.(%s)\n",newstr);
         retval = iguana_loginsave(myinfo,coin,newstr);
         free(newstr);
     } else printf("iguana_payloadupdate: error parsing.(%s)\n",retstr);
@@ -676,11 +685,30 @@ ZERO_ARGS(bitcoinrpc,repairwallet)
 
 STRING_ARG(bitcoinrpc,dumpwallet,filename)
 {
+    char *retstr,*walletstr; cJSON *retjson,*walletobj,*strobj;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( myinfo->expiration != 0 )
-        return(SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,0));
-    else return(clonestr("{\"error\":\"wallet is locked, cant backup\"}"));
+    {
+        if ( (retstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,0)) != 0 )
+        {
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
+            {
+                if ( (walletstr= myinfo->decryptstr) != 0 )
+                {
+                    myinfo->decryptstr = 0;
+                    if ( (strobj= cJSON_Parse(walletstr)) != 0 )
+                    {
+                        if ( (walletobj= jobj(strobj,"wallet")) != 0 )
+                            jadd(retjson,"wallet",jduplicate(walletobj));
+                        free_json(strobj);
+                    }
+                }
+                return(jprint(retjson,1));
+            } else printf("cant parse retstr.(%s)\n",retstr);
+        } else return(clonestr("{\"error\":\"couldnt decrypt wallet\"}"));
+    }
+    return(clonestr("{\"error\":\"wallet is locked, cant backup\"}"));
 }
 
 // RZXuGgmzABFpXRmGJet8AbJoqVGEs27WgdvkSSXUMg7en8jjBW2m 2016-03-26T18:40:06Z reserve=1 # addr=GRVaqhY6XVWGeEabEEx5gE7mAQ7EYQi5JV
@@ -713,7 +741,7 @@ STRING_ARG(bitcoinrpc,backupwallet,filename)
             loginstr = myinfo->decryptstr, myinfo->decryptstr = 0;
             if ( (retjson= cJSON_Parse(loginstr)) != 0 )
             {
-                if ( (payloadstr= jstr(retjson,"payload")) != 0 )
+                if ( (payloadstr= jstr(retjson,"wallet")) != 0 )
                     retstr = iguana_payloadsave(filename,payloadstr);
                 free_json(retjson);
             }

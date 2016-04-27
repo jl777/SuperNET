@@ -1381,23 +1381,25 @@ struct supernet_info *SuperNET_accountfind(cJSON *json)
 
 FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
 {
-    char *str,*decryptstr = 0; cJSON *argjson; uint32_t expire = myinfo->expiration;
+    char savehandle[1024],savepassword[1024],savepermanentfile[1024],*str,*decryptstr = 0; cJSON *argjson; uint32_t expire = myinfo->expiration;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
+    safecopy(savehandle,myinfo->handle,sizeof(myinfo->handle));
+    safecopy(savepassword,myinfo->secret,sizeof(myinfo->secret));
+    safecopy(savepermanentfile,myinfo->permanentfile,sizeof(myinfo->permanentfile));
     if ( bits256_nonz(myinfo->persistent_priv) != 0 && (str= SuperNET_logout(IGUANA_CALLARGS)) != 0 )
         free(str);
     myinfo->expiration = expire;
-    if ( handle != 0 )
-    {
+    if ( handle != 0 && handle[0] != 0 )
         safecopy(myinfo->handle,handle,sizeof(myinfo->handle));
-        safecopy(myinfo->secret,password,sizeof(myinfo->secret));
-        safecopy(myinfo->permanentfile,permanentfile,sizeof(myinfo->permanentfile));
-    }
+    else safecopy(myinfo->handle,savehandle,sizeof(myinfo->handle));
+    safecopy(myinfo->secret,savepassword,sizeof(myinfo->secret));
+    safecopy(myinfo->permanentfile,savepermanentfile,sizeof(myinfo->permanentfile));
     if ( (passphrase == 0 || passphrase[0] == 0) && (decryptstr= SuperNET_decryptjson(IGUANA_CALLARGS,password,permanentfile)) != 0 )
     {
         if ( (argjson= cJSON_Parse(decryptstr)) != 0 )
         {
-            printf("decrypted.(%s) exp.%u\n",decryptstr,myinfo->expiration);
+            //printf("decrypted.(%s) exp.%u\n",decryptstr,myinfo->expiration);
             if ( myinfo->decryptstr != 0 )
                 free(myinfo->decryptstr);
             myinfo->decryptstr = decryptstr;
@@ -1405,6 +1407,7 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
             {
                 SuperNET_setkeys(myinfo,passphrase,(int32_t)strlen(passphrase),1);
                 free_json(argjson);
+                myinfo->expiration = (uint32_t)(time(NULL) + 3600*24);
                 return(SuperNET_activehandle(IGUANA_CALLARGS));
             }
             else
@@ -1422,7 +1425,7 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
     if ( passphrase != 0 && passphrase[0] != 0 )
     {
         SuperNET_setkeys(myinfo,passphrase,(int32_t)strlen(passphrase),1);
-        if ( (str= SuperNET_encryptjson(IGUANA_CALLARGS,password,permanentfile,passphrase)) != 0 )
+        if ( (str= SuperNET_encryptjson(IGUANA_CALLARGS,myinfo->secret,myinfo->permanentfile,passphrase)) != 0 )
             free(str);
         return(SuperNET_activehandle(IGUANA_CALLARGS));
     }

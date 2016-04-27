@@ -135,7 +135,7 @@ int32_t SuperNET_savejsonfile(char *fname,bits256 privkey,bits256 destpubkey,cJS
         //sprintf(fname,"confs/iguana.%llu",(long long)wallet2shared.txid);
         if ( (ciphered= SuperNET_cipher(0,0,json,0,privkey,destpubkey,confstr)) != 0 )
         {
-            printf("ciphered.save (%s) <- (%s)\n",fname,confstr);
+            //printf("ciphered.save (%s) <- (%s)\n",fname,confstr);
             if ( (fp= fopen(fname,"wb")) != 0 )
             {
                 fwrite(ciphered,1,strlen(ciphered)+1,fp);
@@ -176,9 +176,9 @@ int32_t SuperNET_userkeys(char *passphrase,int32_t passsize,char *fname2fa,int32
     return(-1);
 }
 
-cJSON *SuperNET_decryptedjson(char *passphrase,int32_t passsize,bits256 wallethash,char *fname2fa,int32_t fnamesize,bits256 wallet2priv)
+cJSON *SuperNET_decryptedjson(char *destfname,char *passphrase,int32_t passsize,bits256 wallethash,char *fname2fa,int32_t fnamesize,bits256 wallet2priv)
 {
-    long allocsize; cJSON *filejson,*msgjson=0,*json=0; char *confstr=0,*deciphered,fname[512],str[65];
+    long allocsize; cJSON *filejson,*msgjson=0,*json=0; char *confstr=0,*deciphered,str[65];
     bits256 wallet2shared,wallet2pub; int32_t first,second;
     msgjson = 0;
     first = (bits256_nonz(wallethash) != 0 && bits256_cmp(wallethash,GENESIS_PRIVKEY) != 0);
@@ -200,17 +200,17 @@ cJSON *SuperNET_decryptedjson(char *passphrase,int32_t passsize,bits256 walletha
             wallethash = GENESIS_PRIVKEY;
         wallet2shared = SuperNET_wallet2shared(wallethash,wallet2priv);
         wallet2pub = curve25519(wallet2shared,curve25519_basepoint9());
-        sprintf(fname,"confs/%s",bits256_str(str,wallet2pub));
-        //printf("fname.(%s) wallet2shared.%s\n",fname,bits256_str(str,wallet2pub));
-        if ( (confstr= OS_filestr(&allocsize,fname)) != 0 )
+        sprintf(destfname,"confs/%s",bits256_str(str,wallet2pub));
+        //printf("fname.(%s) wallet2pub.%s < [%s, %s]\n",destfname,bits256_str(str,wallet2pub),passphrase,fname2fa);
+        if ( (confstr= OS_filestr(&allocsize,destfname)) != 0 )
         {
             if ( (filejson= cJSON_Parse(confstr)) != 0 )
             {
-                printf("confstr.(%s)\n",confstr);
+                //printf("confstr.(%s)\n",confstr);
                 if ( (deciphered= SuperNET_decipher(0,0,0,0,wallet2shared,curve25519(wallethash,curve25519_basepoint9()),jstr(filejson,"result"))) != 0 )
                 {
                     if ( (json= cJSON_Parse(deciphered)) == 0 )
-                        printf("cant decipher (%s) [%s]\n",fname,confstr);
+                        printf("cant decipher (%s) [%s]\n",destfname,confstr);
                     else
                     {
                         if ( (msgjson= cJSON_Parse(jstr(json,"message"))) == 0 )
@@ -220,16 +220,16 @@ cJSON *SuperNET_decryptedjson(char *passphrase,int32_t passsize,bits256 walletha
                 }
                 free_json(filejson);
             }
-        } else printf("couldnt load (%s)\n",fname);
+        } else printf("couldnt load (%s)\n",destfname);
     }
     else
     {
-        sprintf(fname,"confs/iguana.conf");
-        if ( (confstr= OS_filestr(&allocsize,fname)) != 0 )
+        sprintf(destfname,"confs/iguana.conf");
+        if ( (confstr= OS_filestr(&allocsize,destfname)) != 0 )
         {
             if ( (json= cJSON_Parse(confstr)) != 0 )
                 msgjson = json;
-        } else printf("couldnt open (%s)\n",fname);
+        } else printf("couldnt open (%s)\n",destfname);
     }
     if ( msgjson != 0 )
         msgjson = jduplicate(msgjson);
@@ -251,7 +251,7 @@ int32_t _SuperNET_encryptjson(char *destfname,char *passphrase,int32_t passsize,
     wallet2shared = SuperNET_wallet2shared(wallethash,wallet2priv);
     wallet2pub = curve25519(wallet2shared,curve25519_basepoint9());
     sprintf(destfname,"confs/%s",bits256_str(str,wallet2pub));
-    printf("SAVE ARGJSON.(%s)\n",jprint(argjson,0));
+    //printf("SAVE ARGJSON.(%s) [%s, %s] -> destfname.(%s)\n",jprint(argjson,0),passphrase,fname2fa,destfname);
     //printf("shared.%llx -> pub.%s\n",(long long)wallet2shared.txid,bits256_str(str,wallet2pub));
     SuperNET_savejsonfile(destfname,wallethash,wallet2pub,argjson);
     return(0);
@@ -320,7 +320,7 @@ char *SuperNET_keysinit(struct supernet_info *myinfo,char *argjsonstr)
     wallethash = wallet2priv = GENESIS_PRIVKEY;
     coinargs = SuperNET_parsemainargs(myinfo,&wallethash,&wallet2priv,argjsonstr);
     //printf("wallethash.%s 2.(%s)\n",bits256_str(str,wallethash),bits256_str(str2,wallet2priv));
-    if ( (msgjson= SuperNET_decryptedjson(passphrase,sizeof(passphrase),wallethash,fname2fa,sizeof(fname2fa),wallet2priv)) != 0 )
+    if ( (msgjson= SuperNET_decryptedjson(destfname,passphrase,sizeof(passphrase),wallethash,fname2fa,sizeof(fname2fa),wallet2priv)) != 0 )
     {
         SuperNET_parsemyinfo(myinfo,msgjson);
         free_json(msgjson);
@@ -398,7 +398,7 @@ THREE_STRINGS(SuperNET,encryptjson,password,permanentfile,payload)
 
 TWO_STRINGS(SuperNET,decryptjson,password,permanentfile)
 {
-    char pass[8192],fname2[1023]; cJSON *retjson,*obj; bits256 wallethash,wallet2priv;
+    char pass[8192],fname2[1023],destfname[1024]; cJSON *retjson; bits256 wallethash,wallet2priv;
     safecopy(pass,password,sizeof(pass));
     safecopy(fname2,permanentfile,sizeof(fname2));
     wallethash = wallet2priv = GENESIS_PRIVKEY;
@@ -406,15 +406,12 @@ TWO_STRINGS(SuperNET,decryptjson,password,permanentfile)
         wallethash = bits256_conv(pass);
     if ( strlen(fname2) == sizeof(wallet2priv)*2 && is_hexstr(fname2,(int32_t)sizeof(bits256)*2) > 0 )
         wallet2priv = bits256_conv(fname2);
-    printf("decrypt.(%s %s)\n",pass,fname2);
-    if ( (retjson= SuperNET_decryptedjson(pass,sizeof(pass),wallethash,fname2,sizeof(fname2),wallet2priv)) != 0 )
+    if ( (retjson= SuperNET_decryptedjson(destfname,pass,sizeof(pass),wallethash,fname2,sizeof(fname2),wallet2priv)) != 0 )
     {
-        if ( 0 )
-        {
-            obj = jduplicate(jobj(retjson,"payload"));
-            jdelete(retjson,"payload");
-            jadd(retjson,"result",obj);
-        }
+        //printf("decrypt pass.(%s) fname2.(%s) -> destfname.(%s)\n",pass,fname2,destfname);
+        //obj = jduplicate(jobj(retjson,"payload"));
+        //jdelete(retjson,"payload");
+        //jadd(retjson,"result",obj);
         return(jprint(retjson,1));
     }
     else return(clonestr("{\"error\":\"couldnt decrypt json file\"}"));

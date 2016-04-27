@@ -359,7 +359,7 @@ static char *importwallet(RPCARGS)
 
 static char *walletpassphrase(RPCARGS)
 {
-    return(sglue3(0,CALLGLUE,"bitcoinrpc","walletpassphrase","passphrase",params[0],"permanentfile",params[2],"timeout",params[1]));
+    return(sglue3(0,CALLGLUE,"bitcoinrpc","walletpassphrase","password",params[0],"permanentfile",params[2],"timeout",params[1]));
 }
 
 static char *walletpassphrasechange(RPCARGS)
