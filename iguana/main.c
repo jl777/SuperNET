@@ -415,7 +415,7 @@ void mainloop(struct supernet_info *myinfo)
     while ( 1 )
     {
         //printf("main iteration\n");
-        if ( myinfo->expiration != 0 && time(NULL) > myinfo->expiration && myinfo->secret[0] != 0 )
+        if ( myinfo->expiration != 0 && time(NULL) > myinfo->expiration )
             iguana_walletlock(myinfo);
         flag = 0;
         isRT = 1;

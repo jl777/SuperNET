@@ -16245,6 +16245,21 @@ len = 0;
              if ( rmdarray != 0 )
              free(rmdarray);
              return(jprint(retjson,1));*/
+                char *iguana_payloadsave(char *filename,cJSON *wallet)
+            {
+                FILE *fp;
+                if ( (fp= fopen(filename,"wb")) != 0 )
+                {
+                    if ( fwrite(payloadstr,1,strlen(payloadstr),fp) != strlen(payloadstr) )
+                    {
+                        fclose(fp);
+                        return(clonestr("{\"error\":\"couldnt save wallet backup\"}"));
+                    }
+                    fclose(fp);
+                    return(0);
+                } else return(clonestr("{\"error\":\"couldnt save wallet backup\"}"));
+            }
+                
 
 #endif
 #endif

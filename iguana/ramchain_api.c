@@ -325,7 +325,7 @@ HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool)
                             if ( (scriptobj= iguana_scriptobj(coin,rmd160,coinaddr,asmstr,script,scriptlen)) != 0 )
                                 jadd(retjson,"scriptPubKey",scriptobj);
                         }
-                        jadd(retjson,"iguana",iguana_unspentjson(coin,bp->hdrsi,unspentind,T,&U[unspentind],rmd160,coinaddr,pubkey33));
+                        jadd(retjson,"iguana",iguana_unspentjson(myinfo,coin,bp->hdrsi,unspentind,T,&U[unspentind],rmd160,coinaddr,pubkey33));
                         if ( (height % coin->chain->bundlesize) == 0 && vout == 0 )
                             jadd(retjson,"coinbase",jtrue());
                         else jadd(retjson,"coinbase",jfalse());
@@ -348,7 +348,7 @@ TWO_STRINGS(bitcoinrpc,signmessage,address,messagestr)
     bits256 privkey; int32_t n,len,siglen; char sigstr[256],sig64str[256]; uint8_t sig[128],*message=0; cJSON *retjson = cJSON_CreateObject();
     if ( coin != 0 )
     {
-        privkey = iguana_str2priv(coin,address);
+        privkey = iguana_str2priv(myinfo,coin,address);
         if ( bits256_nonz(privkey) != 0 )
         {
             n = (int32_t)strlen(messagestr) >> 1;
@@ -517,7 +517,7 @@ STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighas
             {
                 item = jitem(privkeys,i);
                 privkeystr = jstr(item,0);
-                privkey = iguana_str2priv(coin,privkeystr);
+                privkey = iguana_str2priv(myinfo,coin,privkeystr);
                 if ( bits256_nonz(privkey) != 0 )
                 {
                     spend->inputs[0].privkeys[i] = privkey;
