@@ -67,7 +67,7 @@ char *bitcoin_base58encode(char *coinaddr,uint8_t *data_,int32_t datalen)
         for (i=0; i<datalen; i++)
             swapbuf[datalen - i - 1] = data[i];
         swapbuf[datalen] = 0;
-        bn_mpi2bn(&bn,swapbuf,datalen);
+        bn_mpi2bn(&bn,swapbuf,datalen+1);
         while ( BN_cmp(&bn,&bn0) > 0 )
         {
             if ( BN_div(&dv,&rem,&bn,&bn58,ctx) == 0 )

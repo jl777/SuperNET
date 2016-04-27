@@ -97,19 +97,47 @@ int32_t bitcoin_validaddress(struct iguana_info *coin,char *coinaddr)
     return(0);
 }
 
-int32_t bitcoin_priv2wif(char *wifstr,bits256 privkey,uint8_t addrtype)
+/*int32_t btc_priv2wif(char *wifstr,uint8_t privkey[32],uint8_t addrtype)
 {
-    uint8_t data[128]; bits256 hash; int32_t i;
-    memcpy(data,privkey.bytes,sizeof(privkey));
-    data[32] = 1;
-    data[0] = addrtype;
-    hash = bits256_doublesha256(0,data,33);
+    uint8_t tmp[128]; char hexstr[67]; cstring *btc_addr;
+    memcpy(tmp,privkey,32);
+    tmp[32] = 1;
+    init_hexbytes_noT(hexstr,tmp,32);
+    if ( (btc_addr= base58_encode_check(addrtype,true,tmp,33)) != 0 )
+    {
+        strcpy(wifstr,btc_addr->str);
+        cstr_free(btc_addr,true);
+    }
+    //printf("-> (%s) -> wif.(%s) addrtype.%02x\n",hexstr,wifstr,addrtype);
+    return(0);
+}
+ 
+cstring *base58_encode_check(uint8_t addrtype,bool have_addrtype,const void *data,size_t data_len)
+{
+    uint8_t i,buf[64]; bits256 hash; cstring *s_enc;//,*s = cstr_new_sz(data_len + 1 + 4);
+    buf[0] = addrtype;
+    memcpy(buf+1,data,data_len);
+    hash = bits256_doublesha256(0,buf,(int32_t)data_len+1);
+    //bu_Hash4(md32,buf,(int32_t)data_len+1);
     for (i=0; i<4; i++)
-        data[33+i] = hash.bytes[31-i];
-    if ( bitcoin_base58encode(wifstr,data,33+4) == 0 )
-        return(-1);
-    char str[65]; printf("(%s) -> wif.(%s) addrtype.%02x\n",bits256_str(str,privkey),wifstr,addrtype);
-    return((int32_t)strlen(wifstr));
+    {
+        buf[data_len+i+1] = hash.bytes[31-i];
+        //printf("(%02x %02x) ",hash.bytes[31-i],md32[i]);
+    }
+    //printf("hash4 cmp\n");
+    s_enc = base58_encode(buf,data_len+5);
+	return s_enc;
+}
+*/
+
+int32_t base58encode_checkbuf(uint8_t addrtype,uint8_t *data,int32_t data_len)
+{
+    uint8_t i; bits256 hash;
+    data[0] = addrtype;
+    hash = bits256_doublesha256(0,data,(int32_t)data_len+1);
+    for (i=0; i<4; i++)
+        data[data_len+i+1] = hash.bytes[31-i];
+    return(data_len + 5);
 }
 
 int32_t bitcoin_wif2priv(uint8_t *addrtypep,bits256 *privkeyp,char *wifstr)
@@ -128,6 +156,27 @@ int32_t bitcoin_wif2priv(uint8_t *addrtypep,bits256 *privkeyp,char *wifstr)
         }
     }
     return(-1);
+}
+
+int32_t bitcoin_priv2wif(char *wifstr,bits256 privkey,uint8_t addrtype)
+{
+    uint8_t data[128]; int32_t len;
+    memcpy(data+1,privkey.bytes,sizeof(privkey));
+    data[33] = 1;
+    len = base58encode_checkbuf(addrtype,data,33);
+
+    if ( bitcoin_base58encode(wifstr,data,len) == 0 )
+        return(-1);
+    if ( 1 )
+    {
+        uint8_t checktype; bits256 checkpriv; char str[65],str2[65];
+        if ( bitcoin_wif2priv(&checktype,&checkpriv,wifstr) == sizeof(bits256) )
+        {
+            if ( checktype != addrtype || bits256_cmp(checkpriv,privkey) != 0 )
+                printf("(%s) -> wif.(%s) addrtype.%02x -> %02x (%s)\n",bits256_str(str,privkey),wifstr,addrtype,checktype,bits256_str(str2,checkpriv));
+        }
+    }
+    return((int32_t)strlen(wifstr));
 }
 
 int32_t iguana_parsevoutobj(struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_msgvout *vout,cJSON *voutobj)

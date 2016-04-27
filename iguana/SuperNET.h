@@ -87,7 +87,7 @@ struct supernet_info
     struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ;
     int32_t numagents,numexchanges;
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES];
-    char handle[1024];
+    char handle[1024],*decryptstr;
 };
 
 /*struct supernet_endpoint

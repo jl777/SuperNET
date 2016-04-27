@@ -835,6 +835,7 @@ TWO_STRINGS(hmac,whirlpool,message,passphrase) { return(hmac_dispatch(hmac_whirl
 
 STRING_ARG(SuperNET,bitcoinrpc,setcoin)
 {
+    char buf[1024];
     if ( setcoin != 0 && setcoin[0] != 0 )
     {
         strcpy(myinfo->rpcsymbol,setcoin);
@@ -842,7 +843,11 @@ STRING_ARG(SuperNET,bitcoinrpc,setcoin)
         printf("bitcoinrpc.%s\n",myinfo->rpcsymbol);
         if ( iguana_launchcoin(myinfo->rpcsymbol,json) < 0 )
             return(clonestr("{\"error\":\"error creating coin\"}"));
-        else return(clonestr("{\"result\":\"set bitcoin RPC coin\"}"));
+        else
+        {
+            sprintf(buf,"{\"result\":\"success\",\"setcoin\":\"%s\"}",setcoin);
+            return(clonestr(buf));
+        }
     } else return(clonestr("{\"error\":\"bitcoinrpc needs setcoin value\"}"));
 }
 

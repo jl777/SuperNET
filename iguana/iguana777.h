@@ -474,7 +474,7 @@ struct iguana_bundlereq
 
 struct iguana_bitmap { int32_t width,height,amplitude; char name[52]; uint8_t data[IGUANA_WIDTH*IGUANA_HEIGHT*3]; };
 
-struct iguana_waddress { UT_hash_handle hh; uint8_t rmd160[20],type,pubkey[33],wiftype; uint32_t symbolbits; bits256 privkey; char coinaddr[36],wifstr[54]; };
+struct iguana_waddress { UT_hash_handle hh; uint8_t rmd160[20],type,pubkey[33],wiftype; bits256 privkey; char symbol[8],coinaddr[36],wifstr[54]; };
 struct iguana_waccount { UT_hash_handle hh; char account[128]; struct iguana_waddress *waddr,*current; };
 struct iguana_wallet { UT_hash_handle hh; struct iguana_waccount *wacct; };
 

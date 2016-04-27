@@ -2406,7 +2406,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         {
             //printf("RT edge case couldnt link\n");
         }
-        else printf("RT edge case\n");
+        else printf("RT edge case.%d\n",block->height);
     }
     if ( coin->spendvectorsaved <= 1 )
         return(0);

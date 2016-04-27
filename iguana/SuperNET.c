@@ -1314,6 +1314,7 @@ ZERO_ARGS(SuperNET,logout)
     memset(myinfo->handle,0,sizeof(myinfo->handle));
     memset(myinfo->myaddr.NXTADDR,0,sizeof(myinfo->myaddr.NXTADDR));
     myinfo->myaddr.nxt64bits = 0;
+    myinfo->expiration = 0;
     return(clonestr("{\"result\":\"logged out\"}"));
 }
 
@@ -1326,6 +1327,11 @@ ZERO_ARGS(SuperNET,activehandle)
     jaddstr(retjson,"result","success");
     jaddstr(retjson,"handle",myinfo->handle);
     jaddbits256(retjson,"persistent",myinfo->myaddr.persistent);
+    if ( myinfo->expiration != 0 )
+    {
+        jaddstr(retjson,"status","unlocked");
+        jaddnum(retjson,"duration",myinfo->expiration - time(NULL));
+    } else jaddstr(retjson,"status","locked");
     SuperNET_MYINFOadd(myinfo);
     return(jprint(retjson,1));
 }
@@ -1375,11 +1381,12 @@ struct supernet_info *SuperNET_accountfind(cJSON *json)
 
 FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
 {
-    char *str,*decryptstr = 0; cJSON *argjson;
+    char *str,*decryptstr = 0; cJSON *argjson; uint32_t expire = myinfo->expiration;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( bits256_nonz(myinfo->persistent_priv) != 0 && (str= SuperNET_logout(IGUANA_CALLARGS)) != 0 )
         free(str);
+    myinfo->expiration = expire;
     if ( handle != 0 )
     {
         safecopy(myinfo->handle,handle,sizeof(myinfo->handle));
@@ -1390,8 +1397,10 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
     {
         if ( (argjson= cJSON_Parse(decryptstr)) != 0 )
         {
-            printf("decrypted.(%s)\n",decryptstr);
-            free(decryptstr);
+            printf("decrypted.(%s) exp.%u\n",decryptstr,myinfo->expiration);
+            if ( myinfo->decryptstr != 0 )
+                free(myinfo->decryptstr);
+            myinfo->decryptstr = decryptstr;
             if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
             {
                 SuperNET_setkeys(myinfo,passphrase,(int32_t)strlen(passphrase),1);
