@@ -1,1 +1,1 @@
-curl --url "http://127.0.0.1:7778" --data "{\"method\":\"setaccount\",\"params\":[\"RL47yWGZpFjGoLhtuUjshrEh8nWQY7ztdR\", \"newaccount\"]}"
+curl --url "http://127.0.0.1:7778" --data "{\"method\":\"setaccount\",\"params\":[\"RSM6HUAiQabjEzoXrtptdyMUrUsbYicTDE\", \"newaccount\"]}"

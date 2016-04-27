@@ -55,6 +55,28 @@ void iguana_walletdelete(struct supernet_info *myinfo,int32_t deleteflag)
     }
 }
 
+cJSON *iguana_walletjson(struct supernet_info *myinfo)
+{
+    struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr,*tmp2; cJSON *wallet,*account;
+    HASH_ITER(hh,myinfo->wallet,wacct,tmp)
+    {
+        account = cJSON_CreateObject();
+        HASH_ITER(hh,wacct->waddr,waddr,tmp2)
+        {
+            if ( bits256_nonz(waddr->privkey) == 0 )
+            {
+                free_json(account);
+                printf("found a null privkey in wallet, abort saving\n");
+                return(0);
+            }
+            jaddbits256(account,waddr->coinaddr,waddr->privkey);
+        }
+        wallet = cJSON_CreateObject();
+        jadd(wallet,wacct->account,account);
+    }
+    return(wallet);
+}
+
 struct iguana_waddress *iguana_waddressfind(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_waccount *wacct,char *coinaddr)
 {
     struct iguana_waddress *waddr; int32_t len = (int32_t)strlen(coinaddr)+1;
@@ -73,6 +95,7 @@ struct iguana_waddress *iguana_waddresscreate(struct supernet_info *myinfo,struc
         strcpy(waddr->coinaddr,coinaddr);
         strcpy(waddr->symbol,coin->symbol);
         HASH_ADD_KEYPTR(hh,wacct->waddr,waddr->coinaddr,len,waddr);
+        myinfo->dirty = (uint32_t)time(NULL);
         printf("create (%s).%d -> (%s)\n",coinaddr,len,wacct->account);
     } //else printf("have (%s) in (%s)\n",coinaddr,wacct->account);
     if ( (ptr= iguana_waddressfind(myinfo,coin,wacct,coinaddr)) != waddr )
@@ -90,6 +113,7 @@ struct iguana_waddress *iguana_waddressadd(struct supernet_info *myinfo,struct i
         memcpy(waddr,addwaddr,sizeof(*waddr));
         addwaddr = waddr;
         HASH_ADD_KEYPTR(hh,wacct->waddr,waddr->coinaddr,len,waddr);
+        myinfo->dirty = (uint32_t)time(NULL);
         printf("add (%s).%d -> (%s)\n",waddr->coinaddr,len,wacct->account);
     } //else printf("have (%s) in (%s)\n",waddr->coinaddr,wacct->account);
     if ( (ptr= iguana_waddressfind(myinfo,coin,wacct,waddr->coinaddr)) != waddr )
@@ -103,6 +127,7 @@ struct iguana_waddress *iguana_waddressadd(struct supernet_info *myinfo,struct i
         strcpy(waddr->wifstr,addwaddr->wifstr);
         waddr->wiftype = addwaddr->wiftype;
         waddr->type = addwaddr->type;
+        myinfo->dirty = (uint32_t)time(NULL);
     }
     if ( waddr != 0 && waddr->symbol[0] == 0 )
         strcpy(waddr->symbol,coin->symbol);
@@ -114,7 +139,10 @@ struct iguana_waddress *iguana_waddressdelete(struct supernet_info *myinfo,struc
     struct iguana_waddress *waddr = 0; int32_t len = (int32_t)strlen(coinaddr)+1;
     HASH_FIND(hh,wacct->waddr,coinaddr,len,waddr);
     if ( waddr != 0 )
+    {
         HASH_DELETE(hh,wacct->waddr,waddr);
+        myinfo->dirty = (uint32_t)time(NULL);
+    }
     return(waddr);
 }
 
@@ -150,22 +178,43 @@ struct iguana_waccount *iguana_waccountcreate(struct supernet_info *myinfo,struc
         strcpy(wacct->account,account);
         HASH_ADD_KEYPTR(hh,myinfo->wallet,wacct->account,len,wacct);
         //printf("waccountcreate.(%s) -> wacct.%p\n",account,wacct);
+        myinfo->dirty = (uint32_t)time(NULL);
         if ( (ptr= iguana_waccountfind(myinfo,coin,account)) != wacct )
             printf("iguana_waccountcreate verify error %p vs %p\n",ptr,wacct);
     }
     return(wacct);
 }
 
+struct iguana_waddress *iguana_waddresscalc(uint8_t pubtype,uint8_t wiftype,struct iguana_waddress *addr,bits256 privkey)
+{
+    addr->privkey = privkey;
+    bitcoin_pubkey33(addr->pubkey,addr->privkey);
+    calc_rmd160_sha256(addr->rmd160,addr->pubkey,33);
+    bitcoin_address(addr->coinaddr,pubtype,addr->rmd160,sizeof(addr->rmd160));
+    if ( bitcoin_priv2wif(addr->wifstr,addr->privkey,wiftype) > 0 )
+    {
+        addr->wiftype = wiftype;
+        addr->type = pubtype;
+        return(addr);
+    }
+    return(0);
+}
+
 struct iguana_waddress *iguana_waccountswitch(struct supernet_info *myinfo,struct iguana_info *coin,char *account,char *coinaddr)
 {
-    struct iguana_waccount *wacct = 0; struct iguana_waddress *waddr = 0;
+    struct iguana_waccount *wacct = 0; struct iguana_waddress addr,*waddr = 0; int32_t flag = 0;
     if ( (waddr= iguana_waddresssearch(myinfo,coin,&wacct,coinaddr)) != 0 )
     {
+        addr = *waddr;
+        flag = 1;
         iguana_waddressdelete(myinfo,coin,wacct,coinaddr);
-        //HASH_DELETE(hh,wacct,waddr);
     }
     if ( (wacct= iguana_waccountcreate(myinfo,coin,account)) != 0 )
+    {
         waddr = iguana_waddresscreate(myinfo,coin,wacct,coinaddr);
+        if ( flag != 0 )
+            iguana_waddresscalc(coin->chain->pubtype,coin->chain->wiftype,waddr,addr.privkey);
+    }
     return(waddr);
 }
 
@@ -222,21 +271,6 @@ struct iguana_waddress *iguana_waccountadd(struct supernet_info *myinfo,struct i
     if ( wacct != 0 )
         waddr = iguana_waddresscreate(myinfo,coin,wacct,coinaddr);
     return(waddr);
-}
-
-struct iguana_waddress *iguana_waddresscalc(uint8_t pubtype,uint8_t wiftype,struct iguana_waddress *addr,bits256 privkey)
-{
-    addr->privkey = privkey;
-    bitcoin_pubkey33(addr->pubkey,addr->privkey);
-    calc_rmd160_sha256(addr->rmd160,addr->pubkey,33);
-    bitcoin_address(addr->coinaddr,pubtype,addr->rmd160,sizeof(addr->rmd160));
-    if ( bitcoin_priv2wif(addr->wifstr,addr->privkey,wiftype) > 0 )
-    {
-        addr->wiftype = wiftype;
-        addr->type = pubtype;
-        return(addr);
-    }
-    return(0);
 }
 
 void iguana_walletlock(struct supernet_info *myinfo)
@@ -411,22 +445,25 @@ int32_t iguana_payloadupdate(struct supernet_info *myinfo,struct iguana_info *co
         payload = cJSON_DetachItemFromObject(retjson,"wallet");
         if ( payload == 0 )
             payload = cJSON_CreateObject();
-        if ( (accountobj= jobj(payload,account)) != 0 && (obj= jobj(accountobj,waddr->coinaddr)) != 0 )
+        if ( waddr != 0 )
         {
-            free_json(retjson);
-            free_json(payload);
-            return(0);
+            if ( (accountobj= jobj(payload,account)) != 0 && (obj= jobj(accountobj,waddr->coinaddr)) != 0 )
+            {
+                free_json(retjson);
+                free_json(payload);
+                return(0);
+            }
+            if ( accountobj == 0 )
+            {
+                accountobj = cJSON_CreateObject();
+                jaddbits256(accountobj,waddr->coinaddr,waddr->privkey);
+                jadd(payload,account,accountobj);
+            } else jaddbits256(accountobj,waddr->coinaddr,waddr->privkey);
         }
-        if ( accountobj == 0 )
-        {
-            accountobj = cJSON_CreateObject();
-            jaddbits256(accountobj,waddr->coinaddr,waddr->privkey);
-            jadd(payload,account,accountobj);
-        } else jaddbits256(accountobj,waddr->coinaddr,waddr->privkey);
         jadd(retjson,"wallet",payload);
         newstr = jprint(retjson,1);
-        //printf("newstr.(%s)\n",newstr);
         retval = iguana_loginsave(myinfo,coin,newstr);
+        //printf("newstr.(%s) retval.%d\n",newstr,retval);
         free(newstr);
     } else printf("iguana_payloadupdate: error parsing.(%s)\n",retstr);
     return(retval);
@@ -662,6 +699,7 @@ void iguana_walletinitcheck(struct supernet_info *myinfo,struct iguana_info *coi
         free_json(payload);
         myinfo->decryptstr = 0;
         scrubfree(myinfo->decryptstr);
+        myinfo->dirty = 0;
     }
 }
 
@@ -783,8 +821,8 @@ TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan)
     {
         if ( (waddr= iguana_waddresssearch(myinfo,coin,&wacct,addr.coinaddr)) != 0 )
         {
-            if ( account != 0 && account[0] != 0 )
-                waddr = iguana_waccountswitch(myinfo,coin,account,addr.coinaddr);
+            waddr = iguana_waccountswitch(myinfo,coin,account,addr.coinaddr);
+            return(clonestr("{\"result\":\"privkey already in wallet\"}"));
         }
         if ( myinfo->expiration == 0 )
             return(clonestr("{\"error\":\"need to unlock wallet\"}"));

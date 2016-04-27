@@ -23,7 +23,7 @@
 
 char *sglue(GLUEARGS,char *agent,char *method)
 {
-    char *retstr,*rpcretstr; cJSON *retjson,*result,*error; int32_t i,j,len;
+    char *retstr,*rpcretstr,*walletstr; cJSON *retjson,*tmpjson,*result,*error,*wallet; int32_t i,j,len;
     if ( json == 0 )
         json = cJSON_CreateObject();
     //printf("sglue.(%s)\n",jprint(json,0));
@@ -34,6 +34,30 @@ char *sglue(GLUEARGS,char *agent,char *method)
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
+            if ( myinfo->dirty != 0 && myinfo->secret[0] != 0 )
+            {
+                if ( (wallet= iguana_walletjson(myinfo)) != 0 )
+                {
+                    //printf("WALLETSTR.(%s)\n",jprint(wallet,0));
+                    if ( (walletstr= SuperNET_login(myinfo,coin,json,remoteaddr,myinfo->handle,myinfo->secret,myinfo->permanentfile,0)) != 0 )
+                    {
+                        free(walletstr);
+                        walletstr = myinfo->decryptstr, myinfo->decryptstr = 0;
+                        if ( walletstr != 0 && (tmpjson= cJSON_Parse(walletstr)) != 0 )
+                        {
+                            jdelete(tmpjson,"wallet");
+                            jadd(tmpjson,"wallet",wallet);
+                            if ( iguana_payloadupdate(myinfo,coin,jprint(tmpjson,1),0,0) == 0 )
+                            {
+                                printf("wallet updated\n");
+                                myinfo->dirty = 0;
+                            } else printf("iguana_payloadupdate error\n");
+                        } else printf("error parsing decryptstr\n");
+                        if ( walletstr != 0 )
+                            free(walletstr);
+                    } else printf("ERROR: dirty wallet is unsaved, iguana_payloadupdate error\n");
+                } else printf("ERROR: dirty wallet is unsaved, unlock wallet\n");
+            }
             if ( jobj(retjson,"tag") != 0 )
                 jdelete(retjson,"tag");
             ///printf("RPCret.(%s) n.%d\n",jprint(retjson,0),cJSON_GetArraySize(retjson));

@@ -925,6 +925,8 @@ cJSON *iguana_unspentjson(struct supernet_info *myinfo,struct iguana_info *coin,
 int32_t bitcoin_standardspend(uint8_t *script,int32_t n,uint8_t rmd160[20]);
 struct iguana_waddress *iguana_waddresssearch(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_waccount **wacctp,char *coinaddr);
 int64_t iguana_addressreceived(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr,cJSON *txids,cJSON *vouts,char *coinaddr,int32_t minconf);
+cJSON *iguana_walletjson(struct supernet_info *myinfo);
+int32_t iguana_payloadupdate(struct supernet_info *myinfo,struct iguana_info *coin,char *retstr,struct iguana_waddress *waddr,char *account);
 
 extern int32_t HDRnet,netBLOCKS;
 
