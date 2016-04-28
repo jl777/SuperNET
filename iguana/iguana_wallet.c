@@ -517,35 +517,32 @@ char *getnewaddress(struct supernet_info *myinfo,struct iguana_waddress **waddrp
 
 STRING_ARG(bitcoinrpc,validateaddress,address)
 {
-    cJSON *retjson; int32_t i; uint8_t addrtype,rmd160[20],pubkey[65]; struct iguana_info *other; char checkaddr[64],str[256];
+    cJSON *retjson; int32_t i; uint8_t addrtype,rmd160[20],pubkey[65]; struct iguana_info *other; char str[256];
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( iguana_addressvalidate(coin,&addrtype,rmd160,address) < 0 )
         return(clonestr("{\"error\":\"invalid coin address\"}"));
-    if ( strcmp(address,checkaddr) == 0 )
+    retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result","success");
+    jaddnum(retjson,"addrtype",addrtype);
+    init_hexbytes_noT(str,rmd160,sizeof(rmd160));
+    jaddstr(retjson,"rmd160",str);
+    if ( iguana_ismine(myinfo,coin,addrtype,pubkey,rmd160) > 0 )
     {
-        retjson = cJSON_CreateObject();
-        jaddstr(retjson,"result","success");
-        jaddnum(retjson,"addrtype",addrtype);
-        init_hexbytes_noT(str,rmd160,sizeof(rmd160));
-        jaddstr(retjson,"rmd160",str);
-        if ( iguana_ismine(myinfo,coin,addrtype,pubkey,rmd160) > 0 )
+        init_hexbytes_noT(str,pubkey,bitcoin_pubkeylen(pubkey));
+        jaddstr(retjson,"pubkey",str);
+        cJSON_AddTrueToObject(retjson,"ismine");
+    }
+    else cJSON_AddFalseToObject(retjson,"ismine");
+    for (i=0; i<IGUANA_MAXCOINS; i++)
+    {
+        if ( (other= Coins[i]) != 0 && strcmp(other->symbol,coin->symbol) != 0 )
         {
-            init_hexbytes_noT(str,pubkey,bitcoin_pubkeylen(pubkey));
-            jaddstr(retjson,"pubkey",str);
-            cJSON_AddTrueToObject(retjson,"ismine");
+            iguana_addressconv(coin,str,other,addrtype == coin->chain->p2shtype,rmd160);
+            jaddstr(retjson,other->symbol,str);
         }
-        else cJSON_AddFalseToObject(retjson,"ismine");
-        for (i=0; i<IGUANA_MAXCOINS; i++)
-        {
-            if ( (other= Coins[i]) != 0 && strcmp(other->symbol,coin->symbol) != 0 )
-            {
-                iguana_addressconv(coin,str,other,addrtype == coin->chain->p2shtype,rmd160);
-                jaddstr(retjson,other->symbol,str);
-            }
-        }
-        return(jprint(retjson,1));
-    } else return(clonestr("{\"error\":\"couldnt regenerate address\"}"));
+    }
+    return(jprint(retjson,1));
 }
 
 ZERO_ARGS(bitcoinrpc,getinfo)

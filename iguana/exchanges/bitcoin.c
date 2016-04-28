@@ -59,12 +59,12 @@ int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr
 	return(0);
 }
 
-char *bitcoin_address(char *coinaddr,uint8_t addrtype,uint8_t *pubkey,int32_t len)
+char *bitcoin_address(char *coinaddr,uint8_t addrtype,uint8_t *pubkey_or_rmd160,int32_t len)
 {
     int32_t i; uint8_t data[25]; bits256 hash;// char checkaddr[65];
     if ( len != 20 )
-        calc_rmd160_sha256(data+1,pubkey,len);
-    else memcpy(data+1,pubkey,20);
+        calc_rmd160_sha256(data+1,pubkey_or_rmd160,len);
+    else memcpy(data+1,pubkey_or_rmd160,20);
     //btc_convrmd160(checkaddr,addrtype,data+1);
     //for (i=0; i<20; i++)
     //    printf("%02x",data[i+1]);
