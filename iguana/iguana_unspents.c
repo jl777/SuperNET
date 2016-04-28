@@ -1112,7 +1112,7 @@ cJSON *iguana_unspentjson(struct supernet_info *myinfo,struct iguana_info *coin,
     jaddnum(item,"amount",dstr(up->value));
     if ( (checkind= iguana_unspentindfind(coin,&height,T[up->txidind].txid,up->vout,coin->bundlescount-1)) != 0 )
     {
-        jaddnum(item,"confirmations",coin->blocks.hwmchain.height - height);
+        jaddnum(item,"confirmations",coin->blocks.hwmchain.height - height + 1);
         jaddnum(item,"checkind",checkind);
     }
     if ( (waddr= iguana_waddresssearch(myinfo,coin,&wacct,coinaddr)) != 0 )

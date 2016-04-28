@@ -315,7 +315,7 @@ HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool)
                         jaddbits256(retjson,"bestblock",coin->blocks.hwmchain.RO.hash2);
                         jaddnum(retjson,"bestheight",coin->blocks.hwmchain.height);
                         jaddnum(retjson,"height",height);
-                        jaddnum(retjson,"confirmations",coin->blocks.hwmchain.height - height);
+                        jaddnum(retjson,"confirmations",coin->blocks.hwmchain.height - height + 1);
                         jaddnum(retjson,"value",dstr(U[unspentind].value));
                         memset(rmd160,0,sizeof(rmd160));
                         memset(pubkey33,0,sizeof(pubkey33));
