@@ -236,6 +236,14 @@ void iguana_gotaddr(struct iguana_info *coin,struct iguana_peer *addr,struct igu
     expand_ipbits(ipaddr,ipbits);
     if ( port != 0 )
         sprintf(ipport,"%s:%d",ipaddr,port);
+    if ( 0 )
+    {
+        int32_t i;
+        printf("{{");
+        for (i=0; i<16; i++)
+            printf("0x%02x%s",A->ip[i],i<15?",":"");
+        printf("}, 14631},\n");
+    }
     iguana_possible_peer(coin,ipport);
     //printf("gotaddr.(%s:%d) from (%s)\n",ipaddr,port,addr->ipaddr);
 }

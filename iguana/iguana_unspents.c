@@ -597,14 +597,14 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
         return(0);
     for (i=lasthdrsi; i>=0; i--)
     {
-        if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish > 1 )
+        if ( (bp= coin->bundles[i]) != 0 && (bp == coin->current || bp->emitfinish > 1) )
         {
             ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
             if ( ramchain->H.data != 0 )
             {
                 if ( (TXbits= ramchain->txbits) == 0 )
                 {
-                    if ( coin->fastfind == 0 )
+                    if ( coin->fastfind == 0 && bp != coin->current )
                         iguana_alloctxbits(coin,ramchain);
                     if ( (TXbits= ramchain->txbits) == 0 )
                     {
@@ -813,11 +813,8 @@ int32_t iguana_unspentindfind(struct iguana_info *coin,int32_t *heightp,bits256 
     {
         return(firstvout + vout);
     }
-    //else
-    {
-        if ( (tp= iguana_txidfind(coin,heightp,&TX,txid,lasthdrsi)) != 0 )
-            return(tp->firstvout + vout);
-    }
+    if ( (tp= iguana_txidfind(coin,heightp,&TX,txid,lasthdrsi)) != 0 )
+        return(tp->firstvout + vout);
     return(-1);
 }
 
@@ -2557,7 +2554,7 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
     static int32_t totalerrs,totalvalidated;
     FILE *fp; char fname[1024]; uint8_t *blockspace; uint32_t now = (uint32_t)time(NULL);
     int32_t i,max,len,errs = 0; struct sha256_vstate vstate; bits256 validatehash; int64_t total = 0;
-    if ( bp->ramchain.from_ro != 0 || bp == coin->current )
+    if ( (coin->VALIDATENODE == 0 && coin->RELAYNODE == 0) || bp->ramchain.from_ro != 0 || bp == coin->current )
     {
         bp->validated = (uint32_t)time(NULL);
         return(bp->n);
