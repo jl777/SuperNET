@@ -126,9 +126,12 @@ bits256 SuperNET_linehash(char *_line)
     return(hash);
 }
 
-int32_t SuperNET_savejsonfile(char *fname,bits256 privkey,bits256 destpubkey,cJSON *json)
+int32_t SuperNET_savejsonfile(char *finalfname,bits256 privkey,bits256 destpubkey,cJSON *json)
 {
-    char *confstr,*ciphered; FILE *fp;
+    char *confstr,*ciphered; char destfname[1024]; FILE *fp; int32_t retval = -1;
+    strcpy(destfname,finalfname);
+    if ( (fp= fopen(finalfname,"rb")) != 0 )
+        strcat(destfname,".tmp");
     confstr = jprint(json,0);
     if ( bits256_nonz(privkey) != 0 && bits256_cmp(privkey,GENESIS_PUBKEY) != 0 )
     {
@@ -136,26 +139,35 @@ int32_t SuperNET_savejsonfile(char *fname,bits256 privkey,bits256 destpubkey,cJS
         if ( (ciphered= SuperNET_cipher(0,0,json,0,privkey,destpubkey,confstr)) != 0 )
         {
             //printf("ciphered.save (%s) <- (%s)\n",fname,confstr);
-            if ( (fp= fopen(fname,"wb")) != 0 )
+            if ( (fp= fopen(destfname,"wb")) != 0 )
             {
-                fwrite(ciphered,1,strlen(ciphered)+1,fp);
+                if ( fwrite(ciphered,1,strlen(ciphered)+1,fp) == strlen(ciphered)+1 )
+                    retval = 0;
                 fclose(fp);
             }
             free(ciphered);
-        } else printf("error ciphering.(%s) (%s)\n",fname,confstr);
+        } else printf("error ciphering.(%s) (%s)\n",destfname,confstr);
     }
     else
     {
         //sprintf(fname,"confs/iguana.conf");
-        printf("save (%s) <- (%s)\n",fname,confstr);
-        if ( (fp= fopen(fname,"wb")) != 0 )
+        printf("save (%s) <- (%s)\n",destfname,confstr);
+        if ( (fp= fopen(destfname,"wb")) != 0 )
         {
-            fwrite(confstr,1,strlen(confstr)+1,fp);
+            if ( fwrite(confstr,1,strlen(confstr)+1,fp) == strlen(confstr)+1 )
+                retval = 0;
             fclose(fp);
         }
     }
     free(confstr);
-    return(0);
+    if ( retval == 0 && strcmp(destfname,finalfname) != 0 )
+    {
+        char oldfname[1024];
+        strcpy(oldfname,finalfname), strcat(oldfname,".old");
+        OS_renamefile(finalfname,oldfname);
+        OS_renamefile(destfname,finalfname);
+    }
+    return(retval);
 }
 
 int32_t SuperNET_userkeys(char *passphrase,int32_t passsize,char *fname2fa,int32_t fnamesize)
