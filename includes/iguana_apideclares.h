@@ -57,8 +57,9 @@ STRING_ARG(bitcoinrpc,getaccount,address);
 STRING_ARG(bitcoinrpc,getaccountaddress,account);
 TWO_STRINGS(bitcoinrpc,setaccount,address,account);
 
-INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,array,ignore); //
-INT_ARRAY_STRING(bitcoinrpc,addmultisig,M,array,account); //
+INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,pubkeys,ignore);
+INT_ARRAY_STRING(bitcoinrpc,addmultisigaddress,M,pubkeys,account);
+
 STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighash); //
 STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees); //
 

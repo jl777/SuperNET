@@ -839,7 +839,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     return(coin);
 }
 
-int32_t iguana_launchcoin(char *symbol,cJSON *json)
+int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json)
 {
     int32_t maxpeers,maphash,initialheight,minconfirms,maxrequests,maxbundles;
     int64_t maxrecvcache; uint64_t services; struct iguana_info **coins,*coin;
@@ -848,6 +848,8 @@ int32_t iguana_launchcoin(char *symbol,cJSON *json)
     printf("launchcoin.%s\n",symbol);
     if ( (coin= iguana_coinadd(symbol,json)) == 0 )
         return(-1);
+    if ( myinfo->rpcsymbol[0] == 0 || iguana_coinfind(myinfo->rpcsymbol) == 0 )
+        strcpy(myinfo->rpcsymbol,symbol);
     if ( coin->launched == 0 )
     {
         if ( juint(json,"GBavail") < 8 )

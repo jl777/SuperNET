@@ -234,7 +234,7 @@ static char *createmultisig(RPCARGS)
 
 static char *addmultisigaddress(RPCARGS)
 {
-    return(sglue3(0,CALLGLUE,"bitcoinrpc","createmultisig","M",params[0],"pubkeys",params[1],"account",params[2]));
+    return(sglue3(0,CALLGLUE,"bitcoinrpc","addmultisigaddress","M",params[0],"pubkeys",params[1],"account",params[2]));
 }
 
 // blockchain
@@ -553,6 +553,7 @@ struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,remotefla
     { "move",                   &movecmd,                false,  false },
     { "sendfrom",               &sendfrom,               false,  false },
     { "sendmany",               &sendmany,               false,  false },
+    { "addmultisig",            &addmultisigaddress,     false,  false },
     { "addmultisigaddress",     &addmultisigaddress,     false,  false },
     { "getblock",               &getblock,               false,  true },
     { "gettransaction",         &gettransaction,         false,  true },

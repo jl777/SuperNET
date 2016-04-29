@@ -178,7 +178,7 @@ bits256 bitcoin_pubkey33(uint8_t *data,bits256 privkey)
         data[0] = oddeven;
         memcpy(data+1,pubkey.bytes,sizeof(pubkey));
         EC_KEY_free(KEY);
-    }
+    } else memset(pubkey.bytes,0,sizeof(pubkey));
     return(pubkey);
 }
 

@@ -474,7 +474,7 @@ struct iguana_bundlereq
 
 struct iguana_bitmap { int32_t width,height,amplitude; char name[52]; uint8_t data[IGUANA_WIDTH*IGUANA_HEIGHT*3]; };
 
-struct iguana_waddress { UT_hash_handle hh; uint8_t rmd160[20],type,pubkey[33],wiftype; bits256 privkey; char symbol[8],coinaddr[36],wifstr[54]; };
+struct iguana_waddress { UT_hash_handle hh; uint16_t scriptlen; uint8_t rmd160[20],type,pubkey[33],wiftype; bits256 privkey; char symbol[8],coinaddr[36],wifstr[54]; uint8_t redeemScript[]; };
 struct iguana_waccount { UT_hash_handle hh; char account[128]; struct iguana_waddress *waddr,*current; };
 struct iguana_wallet { UT_hash_handle hh; struct iguana_waccount *wacct; };
 
@@ -511,7 +511,7 @@ struct iguana_info
     double bandwidth,maxbandwidth,backstopmillis; bits256 backstophash2; int64_t spaceused;
     int32_t initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,polltimeout,numreqtxids,allhashes,balanceflush; bits256 reqtxids[64];
     void *launched,*started,*rpcloop;
-    uint64_t bloomsearches,bloomhits,bloomfalse,collisions;
+    uint64_t bloomsearches,bloomhits,bloomfalse,collisions,txfee_perkb;
     uint8_t blockspace[IGUANA_MAXPACKETSIZE + 8192]; struct OS_memspace blockMEM;
     struct iguana_blocks blocks; bits256 APIblockhash,APItxid; char *APIblockstr;
     struct iguana_hhutxo *utxotable; struct iguana_hhaccount *accountstable; char lastdispstr[2048];
@@ -771,14 +771,14 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
 
 struct iguana_waccount *iguana_waccountfind(struct supernet_info *myinfo,struct iguana_info *coin,char *account);
 struct iguana_waddress *iguana_waccountadd(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_waccount **wacctp,char *walletaccount,char *coinaddr);
-struct iguana_waddress *iguana_waccountswitch(struct supernet_info *myinfo,struct iguana_info *coin,char *account,char *coinaddr);
+struct iguana_waddress *iguana_waccountswitch(struct supernet_info *myinfo,struct iguana_info *coin,char *account,char *coinaddr,char *redeemScript);
 struct iguana_waddress *iguana_waddresscalc(uint8_t pubval,uint8_t wiftype,struct iguana_waddress *addr,bits256 privkey);
 struct iguana_waddress *iguana_waddressfind(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_waccount *wacct,char *coinaddr);
 char *iguana_coinjson(struct iguana_info *coin,char *method,cJSON *json);
 cJSON *iguana_peersjson(struct iguana_info *coin,int32_t addronly);
 //int32_t btc_priv2wif(char *wifstr,uint8_t privkey[32],uint8_t addrtype);
 //int32_t btc_pub2rmd(uint8_t rmd160[20],uint8_t pubkey[33]);
-int32_t iguana_launchcoin(char *symbol,cJSON *json);
+int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json);
 int32_t iguana_bundleinitmap(struct iguana_info *coin,struct iguana_bundle *bp,int32_t height,bits256 hash2,bits256 hash1);
 int32_t iguana_jsonQ();
 int32_t is_bitcoinrpc(struct supernet_info *myinfo,char *method,char *remoteaddr);
@@ -927,6 +927,7 @@ struct iguana_waddress *iguana_waddresssearch(struct supernet_info *myinfo,struc
 int64_t iguana_addressreceived(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr,cJSON *txids,cJSON *vouts,char *coinaddr,int32_t minconf);
 cJSON *iguana_walletjson(struct supernet_info *myinfo);
 int32_t iguana_payloadupdate(struct supernet_info *myinfo,struct iguana_info *coin,char *retstr,struct iguana_waddress *waddr,char *account);
+int32_t bitcoin_MofNspendscript(uint8_t p2sh_rmd160[20],uint8_t *script,int32_t n,const struct vin_info *vp);
 
 extern int32_t HDRnet,netBLOCKS;
 

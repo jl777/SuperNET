@@ -2216,24 +2216,27 @@ int32_t iguana_convert(struct iguana_info *coin,int32_t helperid,struct iguana_b
 void iguana_RTramchainfree(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     int32_t hdrsi;
-    printf("free RTramchain\n");
-    iguana_utxoupdate(coin,-1,0,0,0,0,-1); // free hashtables
-    coin->RTheight = coin->balanceswritten * coin->chain->bundlesize;
-    coin->RTgenesis = 0;
-    iguana_ramchain_free(coin,&coin->RTramchain,1);
-    if ( bp != 0 )
-        bp->ramchain = coin->RTramchain;
-    iguana_mempurge(&coin->RTmem);
-    iguana_mempurge(&coin->RThashmem);
-    coin->RTdatabad = 0;
-    for (hdrsi=coin->bundlescount-1; hdrsi>0; hdrsi--)
-        if ( (bp= coin->bundles[hdrsi]) == 0 && bp != coin->current )
-        {
-            iguana_volatilespurge(coin,&bp->ramchain);
-            if ( iguana_volatilesmap(coin,&bp->ramchain) != 0 )
-                printf("error mapping bundle.[%d]\n",hdrsi);
-        }
-    printf("done RTramchain\n");
+    if ( coin->utxotable != 0 )
+    {
+        printf("free RTramchain\n");
+        iguana_utxoupdate(coin,-1,0,0,0,0,-1); // free hashtables
+        coin->RTheight = coin->balanceswritten * coin->chain->bundlesize;
+        coin->RTgenesis = 0;
+        iguana_ramchain_free(coin,&coin->RTramchain,1);
+        if ( bp != 0 )
+            bp->ramchain = coin->RTramchain;
+        iguana_mempurge(&coin->RTmem);
+        iguana_mempurge(&coin->RThashmem);
+        coin->RTdatabad = 0;
+        for (hdrsi=coin->bundlescount-1; hdrsi>0; hdrsi--)
+            if ( (bp= coin->bundles[hdrsi]) == 0 && bp != coin->current )
+            {
+                iguana_volatilespurge(coin,&bp->ramchain);
+                if ( iguana_volatilesmap(coin,&bp->ramchain) != 0 )
+                    printf("error mapping bundle.[%d]\n",hdrsi);
+            }
+        printf("done RTramchain\n");
+    }
 }
 
 void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,struct iguana_ramchain *R,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block)

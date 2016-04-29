@@ -389,13 +389,25 @@ void expand_ipbits(char *ipaddr,uint64_t ipbits)
 
 uint64_t calc_ipbits(char *ip_port)
 {
-    uint64_t ipbits = 0; char ipaddr[64];
+    uint64_t ipbits = 0; char ipaddr[64],ipaddr2[64]; int32_t i;
     if ( ip_port != 0 )
     {
         ipbits = _calc_ipbits(ip_port);
         expand_ipbits(ipaddr,ipbits);
         if ( ipbits != 0 && strcmp(ipaddr,ip_port) != 0 )
-            printf("calc_ipbits error: (%s) -> %llx -> (%s)\n",ip_port,(long long)ipbits,ipaddr);//, getchar();
+        {
+            for (i=0; i<63; i++)
+                if ( (ipaddr[i]= ip_port[i]) == ':' || ipaddr[i] == 0 )
+                break;
+            ipaddr[i] = 0;
+            ipbits = _calc_ipbits(ipaddr);
+            expand_ipbits(ipaddr2,ipbits);
+            if ( ipbits != 0 && strcmp(ipaddr,ipaddr2) != 0 )
+            {
+                printf("calc_ipbits error: (%s) -> %llx -> (%s)\n",ip_port,(long long)ipbits,ipaddr);//, getchar();
+                ipbits = 0;
+            }
+        }
     }
     return(ipbits);
 }

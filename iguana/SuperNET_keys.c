@@ -151,7 +151,7 @@ int32_t SuperNET_savejsonfile(char *finalfname,bits256 privkey,bits256 destpubke
     else
     {
         //sprintf(fname,"confs/iguana.conf");
-        printf("save (%s) <- (%s)\n",destfname,confstr);
+        //printf("save (%s) <- (%s)\n",destfname,confstr);
         if ( (fp= fopen(destfname,"wb")) != 0 )
         {
             if ( fwrite(confstr,1,strlen(confstr)+1,fp) == strlen(confstr)+1 )

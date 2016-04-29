@@ -613,7 +613,7 @@ STRING_ARG(iguana,addcoin,newcoin)
 //        if ( strcmp(symbol,"BTC") == 0 )
 //            return(clonestr("{\"result\":\"BTC for chrome app is not yet\"}"));
 #endif
-        if ( (retval= iguana_launchcoin(symbol,json)) > 0 )
+        if ( (retval= iguana_launchcoin(myinfo,symbol,json)) > 0 )
         {
             if ( myinfo->rpcsymbol[0] == 0 )
                 safecopy(myinfo->rpcsymbol,symbol,sizeof(myinfo->rpcsymbol));
@@ -841,7 +841,7 @@ STRING_ARG(SuperNET,bitcoinrpc,setcoin)
         strcpy(myinfo->rpcsymbol,setcoin);
         touppercase(myinfo->rpcsymbol);
         printf("bitcoinrpc.%s\n",myinfo->rpcsymbol);
-        if ( iguana_launchcoin(myinfo->rpcsymbol,json) < 0 )
+        if ( iguana_launchcoin(myinfo,myinfo->rpcsymbol,json) < 0 )
             return(clonestr("{\"error\":\"error creating coin\"}"));
         else
         {
