@@ -58,6 +58,7 @@ void iguana_walletdelete(struct supernet_info *myinfo,int32_t deleteflag)
 cJSON *iguana_walletjson(struct supernet_info *myinfo)
 {
     struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr,*tmp2; cJSON *wallet,*account; char scriptstr[4096];
+    wallet = cJSON_CreateObject();
     HASH_ITER(hh,myinfo->wallet,wacct,tmp)
     {
         account = cJSON_CreateObject();
@@ -66,6 +67,7 @@ cJSON *iguana_walletjson(struct supernet_info *myinfo)
             if ( bits256_nonz(waddr->privkey) == 0 && waddr->scriptlen == 0 )
             {
                 free_json(account);
+                free_json(wallet);
                 printf("found a null privkey in wallet, abort saving\n");
                 return(0);
             }
@@ -75,7 +77,6 @@ cJSON *iguana_walletjson(struct supernet_info *myinfo)
                 jaddstr(account,waddr->coinaddr,scriptstr);
             } else jaddbits256(account,waddr->coinaddr,waddr->privkey);
         }
-        wallet = cJSON_CreateObject();
         jadd(wallet,wacct->account,account);
     }
     return(wallet);
@@ -448,22 +449,37 @@ bits256 iguana_str2priv(struct supernet_info *myinfo,struct iguana_info *coin,ch
     return(privkey);
 }
 
-int32_t iguana_pubkeyget(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *pubkey33,char *pkstr)
+int32_t iguana_pubkeyget(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *pubkey33,char *str)
 {
-    bits256 privkey,pubkey;
-    decode_hex(pubkey33,(int32_t)strlen(pkstr) >> 1,pkstr);
-    if ( bitcoin_pubkeylen(pubkey33) <= 0 )
+    bits256 privkey,pubkey; uint8_t pubkeydata[128]; int32_t len,plen= -1; struct iguana_waccount *wacct; struct iguana_waddress *waddr;
+    len = (int32_t)strlen(str);
+    if ( is_hexstr(str,len) == 0 )
     {
-        privkey = iguana_str2priv(myinfo,coin,pkstr);
+        if ( (waddr= iguana_waddresssearch(myinfo,coin,&wacct,str)) != 0 )
+        {
+            if ( (plen= bitcoin_pubkeylen(waddr->pubkey)) > 0 )
+                memcpy(pubkeydata,waddr->pubkey,plen);
+        }
+    }
+    else
+    {
+        decode_hex(pubkeydata,len,str);
+        plen = bitcoin_pubkeylen(pubkeydata);
+    }
+    if ( plen <= 0 )
+    {
+        privkey = iguana_str2priv(myinfo,coin,str);
         if ( bits256_nonz(privkey) == 0 )
             return(-1);
         else
         {
-            pubkey = bitcoin_pubkey33(pubkey33,privkey);
+            pubkey = bitcoin_pubkey33(pubkeydata,privkey);
             if ( bits256_nonz(pubkey) == 0 )
                 return(-1);
         }
     }
+    if ( (plen= bitcoin_pubkeylen(pubkeydata)) > 0 )
+        memcpy(pubkey33,pubkeydata,plen);
     return(0);
 }
 
@@ -919,16 +935,48 @@ TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan)
 
 STRING_ARG(bitcoinrpc,dumpprivkey,address)
 {
-    cJSON *retjson; struct iguana_waddress *waddr; struct iguana_waccount *wacct;
+    cJSON *retjson,*privkeys,*addresses,*pubkeys; struct iguana_waddress *waddr; struct iguana_waccount *wacct; char redeemstr[4096],pubkeystr[256],*wifstr; int32_t i,plen,type; struct vin_info V; bits256 debugtxid;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( myinfo->expiration == 0 )
         return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     myinfo->expiration++;
-    if ( (waddr= iguana_waddresssearch(myinfo,coin,&wacct,address)) != 0 && waddr->wifstr[0] != 0 )
+    if ( (waddr= iguana_waddresssearch(myinfo,coin,&wacct,address)) != 0 && (waddr->wifstr[0] != 0 || waddr->scriptlen > 0) )
     {
         retjson = cJSON_CreateObject();
-        jaddstr(retjson,"result",waddr->wifstr);
+        if ( waddr->wifstr[0] != 0 )
+            jaddstr(retjson,"result",waddr->wifstr);
+        else
+        {
+            init_hexbytes_noT(redeemstr,waddr->redeemScript,waddr->scriptlen);
+            jaddstr(retjson,"redeemScript",redeemstr);
+            memset(debugtxid.bytes,0,sizeof(debugtxid));
+            if ( (type= iguana_calcrmd160(coin,0,&V,waddr->redeemScript,waddr->scriptlen, debugtxid,-1,0xffffffff)) >= 0 )
+            {
+                privkeys = cJSON_CreateArray();
+                pubkeys = cJSON_CreateArray();
+                addresses = cJSON_CreateArray();
+                for (i=0; i<V.N; i++)
+                {
+                    if ( V.signers[i].coinaddr[0] != 0 && (waddr= iguana_waddresssearch(myinfo,coin,&wacct,V.signers[i].coinaddr)) != 0 && waddr->wifstr[0] != 0 )
+                        jaddistr(privkeys,waddr->wifstr);
+                    else jaddistr(privkeys,"");
+                    wifstr = "";
+                    if ( (plen= bitcoin_pubkeylen(V.signers[i].pubkey)) > 0 )
+                    {
+                        init_hexbytes_noT(pubkeystr,V.signers[i].pubkey,plen);
+                        jaddistr(pubkeys,pubkeystr);
+                    } else jaddistr(pubkeys,"");
+                    jaddistr(addresses,V.signers[i].coinaddr);
+                }
+                jaddstr(retjson,"result",V.coinaddr);
+                jaddnum(retjson,"M",V.M);
+                jaddnum(retjson,"N",V.N);
+                jadd(retjson,"pubkeys",pubkeys);
+                jadd(retjson,"privkeys",privkeys);
+                jadd(retjson,"addresses",addresses);
+            }
+        }
         return(jprint(retjson,1));
     } else return(clonestr("{\"error\":\"no privkey for address\"}"));
 }
@@ -978,6 +1026,8 @@ STRING_ARG(bitcoinrpc,dumpwallet,filename)
                     {
                         if ( (walletobj= jobj(strobj,"wallet")) != 0 )
                             jadd(retjson,"wallet",jduplicate(walletobj));
+                        if ( 0 && (walletobj= iguana_walletjson(myinfo)) != 0 )
+                            jadd(retjson,"memory",walletobj);
                         free_json(strobj);
                     }
                     scrubfree(walletstr);
@@ -1271,7 +1321,7 @@ STRING_AND_INT(bitcoinrpc,getreceivedbyaddress,address,minconf)
 
 INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,pubkeys,ignore)
 {
-    cJSON *retjson,*pkjson; uint8_t script[2048],p2sh_rmd160[20]; char msigaddr[64],*pkstr,scriptstr[sizeof(script)*2+1]; struct vin_info V; int32_t i,len,n = cJSON_GetArraySize(pubkeys);
+    cJSON *retjson,*pkjson,*addresses; uint8_t script[2048],p2sh_rmd160[20]; char pubkeystr[256],msigaddr[64],*pkstr,scriptstr[sizeof(script)*2+1]; struct vin_info V; int32_t i,plen,len,n = cJSON_GetArraySize(pubkeys);
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( n < 0 || n > 16 || M < 0 || M > n )
@@ -1279,15 +1329,19 @@ INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,pubkeys,ignore)
     memset(&V,0,sizeof(V));
     V.M = M, V.N = n;
     pkjson = cJSON_CreateArray();
+    addresses = cJSON_CreateArray();
     for (i=0; i<n; i++)
     {
         if ( (pkstr= jstr(jitem(pubkeys,i),0)) != 0 )
         {
             if ( iguana_pubkeyget(myinfo,coin,V.signers[i].pubkey,pkstr) < 0 )
                 break;
-            if ( bitcoin_pubkeylen(V.signers[i].pubkey) <= 0 )
+            if ( (plen= bitcoin_pubkeylen(V.signers[i].pubkey)) <= 0 )
                 break;
-            jaddistr(pkjson,pkstr);
+            bitcoin_address(V.signers[i].coinaddr,coin->chain->pubtype,V.signers[i].pubkey,plen);
+            jaddistr(addresses,V.signers[i].coinaddr);
+            init_hexbytes_noT(pubkeystr,V.signers[i].pubkey,plen);
+            jaddistr(pkjson,pubkeystr);
         } else break;
     }
     retjson = cJSON_CreateObject();
@@ -1302,6 +1356,7 @@ INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,pubkeys,ignore)
         jaddnum(retjson,"M",M);
         jaddnum(retjson,"N",n);
         jadd(retjson,"pubkeys",pkjson);
+        jadd(retjson,"addresses",addresses);
     }
     else
     {
@@ -1321,6 +1376,7 @@ INT_ARRAY_STRING(bitcoinrpc,addmultisigaddress,M,pubkeys,account) //
     myinfo->expiration++;
     if ( (retstr= bitcoinrpc_createmultisig(IGUANA_CALLARGS,M,pubkeys,account)) != 0 )
     {
+        //printf("CREATEMULTISIG.(%s)\n",retstr);
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
             if ( (msigaddr= jstr(retjson,"address")) != 0 )

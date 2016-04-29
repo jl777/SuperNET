@@ -1,2 +1,2 @@
-curl --url "http://127.0.0.1:7778"  --data "{\"method\":\"addmultisig\",\"params\":[2, [\"002629c77b81a4d338a339488aaff796a93aeec8c734b22dee865d0ff58ff64c\", \"d0296ed1364639c696c374730320480301f3194c86231f62f0409cd76467f87c\", \"d045925b3e6f648bca6ed0c65149ee445137f0ab14e88cf60013d88419bcdd60\"], \"msigs\"]}"
+curl --url "http://127.0.0.1:7778"  --data "{\"method\":\"addmultisig\",\"params\":[2, [\"1CHzgAakwGCvGX2BG1duWygDuVE6s7tzZ6\", \"d0296ed1364639c696c374730320480301f3194c86231f62f0409cd76467f87c\", \"d045925b3e6f648bca6ed0c65149ee445137f0ab14e88cf60013d88419bcdd60\"], \"msigs\"]}"
 
