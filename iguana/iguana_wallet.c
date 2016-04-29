@@ -1226,7 +1226,7 @@ STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatch
                     {
                         vouts = cJSON_CreateArray();
                         txids = cJSON_CreateArray();
-                        iguana_addressreceived(myinfo,coin,json,remoteaddr,txids,vouts,coinaddr,1);
+                        iguana_addressreceived(myinfo,coin,0,remoteaddr,txids,vouts,coinaddr,1);
                         if ( (m= cJSON_GetArraySize(txids)) > 0 )
                         {
                             for (j=0; j<m; j++,total++)
@@ -1305,7 +1305,7 @@ THREE_INTS(bitcoinrpc,listreceivedbyaddress,minconf,includeempty,flag)
             jaddstr(item,"address",waddr->coinaddr);
             txids = cJSON_CreateArray();
             vouts = cJSON_CreateArray();
-            jaddnum(item,"amount",dstr(iguana_addressreceived(myinfo,coin,json,remoteaddr,txids,vouts,waddr->coinaddr,minconf)));
+            jaddnum(item,"amount",dstr(iguana_addressreceived(myinfo,coin,0,remoteaddr,txids,vouts,waddr->coinaddr,minconf)));
             jadd(item,"txids",txids);
             jadd(item,"vouts",vouts);
             jaddi(array,item);
@@ -1313,6 +1313,22 @@ THREE_INTS(bitcoinrpc,listreceivedbyaddress,minconf,includeempty,flag)
     }
     retjson = cJSON_CreateObject();
     jadd(retjson,"result",array);
+    return(jprint(retjson,1));
+}
+
+STRING_AND_INT(bitcoinrpc,getreceivedbyaddress,address,minconf)
+{
+    char *balancestr; cJSON *balancejson,*retjson = cJSON_CreateObject();
+    if ( (balancestr= iguana_balance(IGUANA_CALLARGS,coin->symbol,address,-1,minconf)) != 0 )
+    {
+        if ( (balancejson= cJSON_Parse(balancestr)) != 0 )
+        {
+            jaddnum(retjson,"result",dstr(jdouble(balancejson,"balance")));
+            free_json(balancejson);
+        }
+    }
+    if ( jobj(retjson,"result") == 0 )
+        jaddstr(retjson,"error","couldnt get received by address");
     return(jprint(retjson,1));
 }
 
@@ -1333,12 +1349,6 @@ TWO_INTS(bitcoinrpc,listaccounts,minconf,includewatchonly)
 }
 
 HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
-}
-
-STRING_AND_INT(bitcoinrpc,getreceivedbyaddress,address,minconf)
 {
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));

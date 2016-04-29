@@ -2634,14 +2634,17 @@ STRING_ARG(iguana,initfastfind,activecoin)
     } else return(clonestr("{\"error\":\"no coin to initialize\"}"));
 }
 
-TWOSTRINGS_AND_INT(iguana,balance,activecoin,address,lastheight)
+TWO_STRINGS_AND_TWO_DOUBLES(iguana,balance,activecoin,address,lastheightd,minconfd)
 {
-    int32_t minconf=1,maxconf=SATOSHIDEN; int64_t total; uint8_t rmd160[20],pubkey33[33],addrtype;
+    int32_t lastheight,minconf,maxconf=SATOSHIDEN; int64_t total; uint8_t rmd160[20],pubkey33[33],addrtype;
     struct iguana_pkhash *P; cJSON *array,*retjson = cJSON_CreateObject();
     if ( activecoin != 0 && activecoin[0] != 0 )
         coin = iguana_coinfind(activecoin);
     if ( coin != 0 )
     {
+        if ( (minconf= minconfd) <= 0 )
+            minconf = 1;
+        lastheight = lastheightd;
         jaddstr(retjson,"address",address);
         if ( bitcoin_validaddress(coin,address) < 0 )
         {
@@ -2672,7 +2675,7 @@ TWOSTRINGS_AND_INT(iguana,balance,activecoin,address,lastheight)
 int64_t iguana_addressreceived(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr,cJSON *txids,cJSON *vouts,char *coinaddr,int32_t minconf)
 {
     int64_t balance = 0; cJSON *unspentsjson,*balancejson,*item; int32_t i,n; char *balancestr;
-    if ( (balancestr= iguana_balance(IGUANA_CALLARGS,coin->symbol,coinaddr,-1)) != 0 )
+    if ( (balancestr= iguana_balance(IGUANA_CALLARGS,coin->symbol,coinaddr,-1,minconf)) != 0 )
     {
         if ( (balancejson= cJSON_Parse(balancestr)) != 0 )
         {
