@@ -92,6 +92,16 @@ void disp_tx(struct supernet_info *myinfo,struct iguana_info *coin,char *str,cha
     printf("disp_tx (%s) -> %s.(%s)\n",txbytes,str,jprint(txobj,1));
 }
 
+void iguana_addinputs(struct iguana_info *coin,struct bitcoin_spend *spend,cJSON *txobj,uint32_t sequence)
+{
+    int32_t i;
+    for (i=0; i<spend->numinputs; i++)
+    {
+        spend->inputs[i].sequence = sequence;
+        bitcoin_addinput(coin,txobj,spend->inputs[i].txid,spend->inputs[i].vout,spend->inputs[i].sequence,spend->inputs[i].spendscript,spend->inputs[i].spendlen,spend->inputs[i].p2shscript,spend->inputs[i].p2shlen);
+    }
+}
+
 struct bitcoin_statetx *instantdex_feetx(struct supernet_info *myinfo,struct instantdex_accept *A)
 {
     int32_t n,len; char *feetx = 0; struct iguana_info *coin; bits256 txid; cJSON *txobj; struct bitcoin_spend *spend; int64_t insurance; uint8_t paymentscript[128]; struct bitcoin_statetx *ptr = 0;

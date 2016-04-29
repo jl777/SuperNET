@@ -1407,7 +1407,7 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
             {
                 SuperNET_setkeys(myinfo,passphrase,(int32_t)strlen(passphrase),1);
                 free_json(argjson);
-                myinfo->expiration = (uint32_t)(time(NULL) + 3600*24);
+                myinfo->expiration = (uint32_t)(time(NULL) + 3600);
                 return(SuperNET_activehandle(IGUANA_CALLARGS));
             }
             else

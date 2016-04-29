@@ -330,7 +330,7 @@ static char *getaccountaddress(RPCARGS)
     return(sglue1(0,CALLGLUE,"bitcoinrpc","getaccountaddress","account",params[0]));
 }
 
-static char *setaccount(RPCARGS)
+static char *setaccountrpc(RPCARGS)
 {
     return(sglue2(0,CALLGLUE,"bitcoinrpc","setaccount","address",params[0],"account",params[1]));
 }
@@ -536,7 +536,7 @@ struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,remotefla
     { "getnewaddress",          &getnewaddress,          true,   false },
     { "getnewpubkey",           &makekeypair,            true,   false },
     { "getaccountaddress",      &getaccountaddress,      true,   false },
-    { "setaccount",             &setaccount,             true,   false },
+    { "setaccount",             &setaccountrpc,             true,   false },
     { "getaccount",             &getaccount,             false,  false },
     { "getaddressesbyaccount",  &getaddressesbyaccount,  true,   false },
     { "sendtoaddress",          &sendtoaddress,          false,  false },

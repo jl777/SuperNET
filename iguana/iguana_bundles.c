@@ -416,6 +416,35 @@ struct iguana_txid *iguana_bundletx(struct iguana_info *coin,struct iguana_bundl
     return(0);
 }
 
+char *iguana_bundleaddrs(struct iguana_info *coin,int32_t hdrsi)
+{
+    uint8_t *PKbits; struct iguana_pkhash *P; uint32_t pkind,numpkinds; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; cJSON *retjson; char rmdstr[41];
+    if ( (bp= coin->bundles[hdrsi]) != 0 )
+    {
+        if ( 0 && coin->RTramchain_busy != 0 )
+        {
+            printf("iguana_bundleaddrs: unexpected access when RTramchain_busy\n");
+            return(0);
+        }
+        ramchain = &bp->ramchain;//(bp->isRT != 0) ? &bp->ramchain : &coin->RTramchain;
+        if ( ramchain->H.data != 0 )
+        {
+            numpkinds = ramchain->H.data->numpkinds;//(bp->isRT != 0) ? ramchain->H.data->numpkinds : ramchain->pkind;
+            retjson = cJSON_CreateArray();
+            PKbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->PKoffset);
+            P = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Poffset);
+            for (pkind=0; pkind<numpkinds; pkind++,P++)
+            {
+                init_hexbytes_noT(rmdstr,P->rmd160,20);
+                jaddistr(retjson,rmdstr);
+            }
+            return(jprint(retjson,1));
+        }
+        //iguana_bundleQ(coin,bp,bp->n);
+        return(clonestr("{\"error\":\"no bundle data\"}"));
+    } return(clonestr("{\"error\":\"no bundle\"}"));
+}
+
 void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     static const bits256 zero;

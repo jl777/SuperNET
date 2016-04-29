@@ -16260,6 +16260,190 @@ len = 0;
                 } else return(clonestr("{\"error\":\"couldnt save wallet backup\"}"));
             }
                 
+            /*struct iguana_waddress *iguana_waccountadd(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_waccount **wacctp,char *walletaccount,char *coinaddr,char *redeemScript)
+             {
+             struct iguana_waccount *wacct; struct iguana_waddress *waddr = 0;
+             if ( (wacct= iguana_waccountfind(myinfo,coin,walletaccount)) == 0 )
+             wacct = iguana_waccountcreate(myinfo,coin,walletaccount);
+             if ( wacct != 0 )
+             waddr = iguana_waddresscreate(myinfo,coin,wacct,coinaddr,redeemScript);
+             return(waddr);
+             }*/
+#ifdef testing
+                char *bitcoin_cltvtx(struct iguana_info *coin,char *changeaddr,char *senderaddr,char *senders_otheraddr,char *otheraddr,uint32_t locktime,uint64_t satoshis,bits256 txid,int32_t vout,uint64_t inputsatoshis,bits256 privkey)
+            {
+                uint64_t change; char *rawtxstr,*signedtx; struct vin_info V; bits256 cltxid,signedtxid;
+                int32_t cltvlen,len; uint32_t timestamp; char ps2h_coinaddr[65]; cJSON *txobj;
+                uint8_t p2sh_rmd160[20],cltvscript[1024],paymentscript[64],rmd160[20],secret160[20],addrtype;
+                timestamp = (uint32_t)time(NULL);
+                bitcoin_addr2rmd160(&addrtype,secret160,senders_otheraddr);
+                cltvlen = bitcoin_cltvscript(coin->chain->p2shtype,ps2h_coinaddr,p2sh_rmd160,cltvscript,0,senderaddr,otheraddr,secret160,locktime);
+                txobj = bitcoin_createtx(coin,locktime);
+                len = bitcoin_p2shspend(paymentscript,0,p2sh_rmd160);
+                bitcoin_addoutput(coin,txobj,paymentscript,len,satoshis);
+                bitcoin_addinput(coin,txobj,txid,vout,locktime);
+                if ( inputsatoshis > (satoshis + 10000) )
+                {
+                    change = inputsatoshis - (satoshis + 10000);
+                    if ( changeaddr != 0 && changeaddr[0] != 0 )
+                    {
+                        bitcoin_addr2rmd160(&addrtype,rmd160,changeaddr);
+                        if ( addrtype == coin->chain->pubtype )
+                            len = bitcoin_standardspend(paymentscript,0,rmd160);
+                        else if ( addrtype == coin->chain->p2shtype )
+                            len = bitcoin_standardspend(paymentscript,0,rmd160);
+                        else
+                        {
+                            printf("error with mismatched addrtype.%02x vs (%02x %02x)\n",addrtype,coin->chain->pubtype,coin->chain->p2shtype);
+                            return(0);
+                        }
+                        bitcoin_addoutput(coin,txobj,paymentscript,len,change);
+                    }
+                    else
+                    {
+                        printf("error no change address when there is change\n");
+                        return(0);
+                    }
+                }
+                rawtxstr = bitcoin_json2hex(coin,&cltxid,txobj);
+                char str[65]; printf("CLTV.%s (%s)\n",bits256_str(str,cltxid),rawtxstr);
+                memset(&V,0,sizeof(V));
+                V.signers[0].privkey = privkey;
+                bitcoin_verifytx(coin,&signedtxid,&signedtx,rawtxstr,&V);
+                free(rawtxstr);
+                if ( signedtx != 0 )
+                    printf("signed CLTV.%s (%s)\n",bits256_str(str,signedtxid),signedtx);
+                else printf("error generating signedtx\n");
+                free_json(txobj);
+                return(signedtx);
+            }
+#endif
+                
+                char *refstr = "01000000\
+                01\
+                eccf7e3034189b851985d871f91384b8ee357cd47c3024736e5676eb2debb3f2\
+                01000000\
+                8c\
+                4930460221009e0339f72c793a89e664a8a932df073962a3f84eda0bd9e02084a6a9567f75aa022100bd9cbaca2e5ec195751efdfac164b76250b1e21302e51ca86dd7ebd7020cdc0601410450863ad64a87ae8a2fe83c1af1a8403cb53f53e486d8511dad8a04887e5b23522cd470243453a299fa9e77237716103abc11a1df38855ed6f2ee187e9c582ba6\
+                ffffffff\
+                01\
+                605af40500000000\
+                19\
+                76a914097072524438d003d23a2f23edb65aae1bb3e46988ac\
+                00000000";
+                
+                cJSON *bitcoin_txtest(struct iguana_info *coin,char *rawtxstr,bits256 txid)
+            {
+                struct iguana_msgtx msgtx; char str[65],str2[65]; bits256 checktxid,blockhash,signedtxid;
+                cJSON *retjson,*txjson; uint8_t *serialized,*serialized2; uint32_t firstvout;
+                struct vin_info *V; char vpnstr[64],*txbytes,*signedtx; int32_t n,txstart,height,n2,maxsize,len;
+                rawtxstr = refstr;
+                len = (int32_t)strlen(rawtxstr);
+                maxsize = len + 32768;
+                serialized = calloc(1,maxsize);
+                serialized2 = calloc(1,maxsize);
+                len >>= 1;
+                V = 0;
+                vpnstr[0] = 0;
+                memset(&msgtx,0,sizeof(msgtx));
+                if ( len < maxsize )
+                {
+                    decode_hex(serialized,len,rawtxstr);
+                    txjson = cJSON_CreateObject();
+                    retjson = cJSON_CreateObject();
+                    if ( (n= iguana_rwmsgtx(coin,0,txjson,serialized,maxsize,&msgtx,&txid,vpnstr)) < 0 )
+                    {
+                        printf("bitcoin_txtest len.%d: n.%d from (%s)\n",len,n,rawtxstr);
+                        free(serialized), free(serialized2);
+                        return(cJSON_Parse("{\"error\":\"cant parse txbytes\"}"));
+                    }
+                    V = calloc(msgtx.tx_in,sizeof(*V));
+                    {
+                        //char *pstr; int32_t plen;
+                        decode_hex(V[0].signers[0].privkey.bytes,sizeof(V[0].signers[0].privkey),"18E14A7B6A307F426A94F8114701E7C8E774E7F9A47E2C2035DB29A206321725");
+                        //pstr = "0450863ad64a87ae8a2fe83c1af1a8403cb53f53e486d8511dad8a04887e5b23522cd470243453a299fa9e77237716103abc11a1df38855ed6f2ee187e9c582ba6";
+                        //plen = (int32_t)strlen(pstr);
+                        //decode_hex(V[0].signers[0].pubkey,plen,pstr);
+                    }
+                    if ( bitcoin_verifytx(coin,&signedtxid,&signedtx,rawtxstr,V) != 0 )
+                        printf("bitcoin_verifytx error\n");
+                    jadd(retjson,"result",txjson);
+                    if ( (firstvout= iguana_unspentindfind(coin,&height,txid,0,coin->bundlescount-1)) != 0 )
+                    {
+                        if ( height >= 0 )
+                        {
+                            blockhash = iguana_blockhash(coin,height);
+                            jaddnum(retjson,"height",height);
+                            jaddnum(retjson,"confirmations",coin->longestchain - height);
+                            jaddbits256(retjson,"blockhash",blockhash);
+                        }
+                    }
+                    //printf("retjson.(%s) %p\n",jprint(retjson,0),retjson);
+                    memset(checktxid.bytes,0,sizeof(checktxid));
+                    if ( (n2= iguana_rwmsgtx(coin,1,0,serialized2,maxsize,&msgtx,&checktxid,vpnstr)) < 0 || n != n2 )
+                    {
+                        printf("bitcoin_txtest: n.%d vs n2.%d\n",n,n2);
+                        free(serialized), free(serialized2), free(V);
+                        return(retjson);
+                    }
+                    if ( bits256_cmp(checktxid,txid) != 0 )
+                    {
+                        printf("bitcoin_txtest: txid.%s vs check.%s\n",bits256_str(str,txid),bits256_str(str2,checktxid));
+                    }
+                    checktxid = iguana_parsetxobj(coin,&txstart,serialized,maxsize,&msgtx,jobj(retjson,"result"));
+                    if ( bits256_cmp(checktxid,txid) != 0 )
+                    {
+                        printf("bitcoin_txtest: txid.%s vs check2.%s\n",bits256_str(str,txid),bits256_str(str2,checktxid));
+                    }
+                    if ( msgtx.allocsize != 0 )
+                    {
+                        txbytes = malloc(msgtx.allocsize*2 + 1);
+                        init_hexbytes_noT(txbytes,&serialized[txstart],msgtx.allocsize);
+                        if ( strcmp(txbytes,rawtxstr) != 0 )
+                            printf("bitcoin_txtest: reconstruction error: %s != %s\n",rawtxstr,txbytes);
+                        else printf("reconstruction PASSED\n");
+                        free(txbytes);
+                    } else printf("bitcoin_txtest: zero msgtx allocsize\n");
+                    free(serialized), free(serialized2), free(V);
+                    return(retjson);
+                }
+                free(serialized), free(serialized2);
+                return(cJSON_Parse("{\"error\":\"testing bitcoin txbytes\"}"));
+            }
+
+                
+            /*int32_t btc_priv2wif(char *wifstr,uint8_t privkey[32],uint8_t addrtype)
+             {
+             uint8_t tmp[128]; char hexstr[67]; cstring *btc_addr;
+             memcpy(tmp,privkey,32);
+             tmp[32] = 1;
+             init_hexbytes_noT(hexstr,tmp,32);
+             if ( (btc_addr= base58_encode_check(addrtype,true,tmp,33)) != 0 )
+             {
+             strcpy(wifstr,btc_addr->str);
+             cstr_free(btc_addr,true);
+             }
+             //printf("-> (%s) -> wif.(%s) addrtype.%02x\n",hexstr,wifstr,addrtype);
+             return(0);
+             }
+             
+             cstring *base58_encode_check(uint8_t addrtype,bool have_addrtype,const void *data,size_t data_len)
+             {
+             uint8_t i,buf[64]; bits256 hash; cstring *s_enc;//,*s = cstr_new_sz(data_len + 1 + 4);
+             buf[0] = addrtype;
+             memcpy(buf+1,data,data_len);
+             hash = bits256_doublesha256(0,buf,(int32_t)data_len+1);
+             //bu_Hash4(md32,buf,(int32_t)data_len+1);
+             for (i=0; i<4; i++)
+             {
+             buf[data_len+i+1] = hash.bytes[31-i];
+             //printf("(%02x %02x) ",hash.bytes[31-i],md32[i]);
+             }
+             //printf("hash4 cmp\n");
+             s_enc = base58_encode(buf,data_len+5);
+             return s_enc;
+             }
+             */
 
 #endif
 #endif

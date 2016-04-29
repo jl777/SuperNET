@@ -59,28 +59,28 @@ TWO_STRINGS(bitcoinrpc,setaccount,address,account);
 
 INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,pubkeys,ignore);
 INT_ARRAY_STRING(bitcoinrpc,addmultisigaddress,M,pubkeys,account);
-
-STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighash); //
-STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees); //
-
-SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment); //
-SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment2); //
-S_A_I_S(bitcoinrpc,sendmany,fromaccount,array,minconf,comment); //
-S_D_SS(bitcoinrpc,sendtoaddress,address,amount,comment,comment2); //
 DOUBLE_ARG(bitcoinrpc,settxfee,amount);
 
-HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag); //
+STRING_ARG(bitcoinrpc,submitblock,rawbytes);
+STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees); //
+
+STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighash); //
 TWO_STRINGS(bitcoinrpc,signmessage,address,message); //
 THREE_STRINGS(bitcoinrpc,verifymessage,address,sig,message); //
 
-// maybe later
+SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment2); //
+S_A_I_S(bitcoinrpc,sendmany,fromaccount,payments,minconf,comment); //
+S_D_SS(bitcoinrpc,sendtoaddress,address,amount,comment,comment2); //
 
+// maybe later
+HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag);
 ZERO_ARGS(bitcoinrpc,gettxoutsetinfo);
 INT_AND_ARRAY(bitcoinrpc,lockunspent,flag,array);
 ZERO_ARGS(bitcoinrpc,listlockunspent);
 ZERO_ARGS(bitcoinrpc,getrawchangeaddress);
 ZERO_ARGS(bitcoinrpc,checkwallet);
 ZERO_ARGS(bitcoinrpc,repairwallet);
+SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment);
 
 STRING_ARG(iguana,initfastfind,activecoin);
 STRING_ARG(iguana,peers,activecoin);

@@ -1,0 +1,2 @@
+curl --url "http://127.0.0.1:7778"  --data "{\"method\":\"sendtoaddress\",\"params\":[\"17outUgtsnLkguDuXm14tcQ7dMbdD8KZGK\", 0.001]}"
+
