@@ -94,11 +94,17 @@ void disp_tx(struct supernet_info *myinfo,struct iguana_info *coin,char *str,cha
 
 void iguana_addinputs(struct iguana_info *coin,struct bitcoin_spend *spend,cJSON *txobj,uint32_t sequence)
 {
-    int32_t i;
+    int32_t i,j,plen; uint8_t *pubkeyptrs[16];
     for (i=0; i<spend->numinputs; i++)
     {
         spend->inputs[i].sequence = sequence;
-        bitcoin_addinput(coin,txobj,spend->inputs[i].txid,spend->inputs[i].vout,spend->inputs[i].sequence,spend->inputs[i].spendscript,spend->inputs[i].spendlen,spend->inputs[i].p2shscript,spend->inputs[i].p2shlen);
+        for (j=0; j<16; j++)
+        {
+            if ( (plen= bitcoin_pubkeylen(spend->inputs[i].pubkeys[j])) < 0 )
+                break;
+            pubkeyptrs[j] = spend->inputs[i].pubkeys[j];
+        }
+        bitcoin_addinput(coin,txobj,spend->inputs[i].txid,spend->inputs[i].vout,spend->inputs[i].sequence,spend->inputs[i].spendscript,spend->inputs[i].spendlen,spend->inputs[i].p2shscript,spend->inputs[i].p2shlen,j>0?pubkeyptrs:0,j);
     }
 }
 

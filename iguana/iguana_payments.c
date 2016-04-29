@@ -500,7 +500,7 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
                     sequenceid = juint(item,"sequenceid");
                 else sequenceid = 0xffffffff;
                 txid = jbits256(item,"txid");
-                bitcoin_addinput(coin,txobj,txid,vout,sequenceid,spendscript,spendlen,redeemscript,p2shlen);
+                bitcoin_addinput(coin,txobj,txid,vout,sequenceid,spendscript,spendlen,redeemscript,p2shlen,0,0);
             }
         }
         if ( (n= cJSON_GetArraySize(vouts)) > 0 )

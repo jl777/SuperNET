@@ -78,7 +78,7 @@ struct iguana_waddress *iguana_waddressadd(struct supernet_info *myinfo,struct i
         {
             HASH_ADD_KEYPTR(hh,wacct->waddr,waddr->coinaddr,len,waddr);
             myinfo->dirty = (uint32_t)time(NULL);
-            printf("add (%s).%d scriptlen.%d -> (%s)\n",waddr->coinaddr,len,waddr->scriptlen,wacct->account);
+            printf("add (%s).%d scriptlen.%d -> (%s) wif.(%s)\n",waddr->coinaddr,len,waddr->scriptlen,wacct->account,waddr->wifstr);
         } else printf("error iguana_waddressalloc null waddr\n");
     } //else printf("have (%s) in (%s)\n",waddr->coinaddr,wacct->account);
     if ( (ptr= iguana_waddressfind(myinfo,coin,wacct,waddr->coinaddr)) != waddr )
@@ -98,14 +98,23 @@ struct iguana_waddress *iguana_waddressadd(struct supernet_info *myinfo,struct i
             }
         }
         if ( bits256_nonz(waddr->privkey) == 0 )
+        {
             waddr->privkey = addwaddr->privkey;
+            if ( bitcoin_priv2wif(waddr->wifstr,waddr->privkey,coin->chain->wiftype) > 0 )
+            {
+                waddr->wiftype = coin->chain->wiftype;
+                waddr->addrtype = coin->chain->pubtype;
+            }
+        }
+        else if ( addwaddr->wifstr[0] != 0 )
+        {
+            waddr->addrtype = addwaddr->addrtype;
+            waddr->wiftype = addwaddr->wiftype;
+            strcpy(waddr->wifstr,addwaddr->wifstr);
+        }
         memcpy(waddr->pubkey,addwaddr->pubkey,sizeof(waddr->pubkey));
         memcpy(waddr->rmd160,addwaddr->rmd160,sizeof(waddr->rmd160));
         strcpy(waddr->coinaddr,addwaddr->coinaddr);
-        if ( waddr->wifstr[0] == 0 )
-            strcpy(waddr->wifstr,addwaddr->wifstr);
-        waddr->addrtype = addwaddr->addrtype;
-        waddr->wiftype = addwaddr->wiftype;
         myinfo->dirty = (uint32_t)time(NULL);
     }
     if ( waddr != 0 && waddr->symbol[0] == 0 )
@@ -132,6 +141,14 @@ struct iguana_waddress *iguana_waddresssearch(struct supernet_info *myinfo,struc
     {
         if ( (waddr= iguana_waddressfind(myinfo,coin,wacct,coinaddr)) != 0 )
         {
+            if ( waddr != 0 && bits256_nonz(waddr->privkey) != 0 )
+            {
+                if ( bitcoin_priv2wif(waddr->wifstr,waddr->privkey,coin->chain->wiftype) > 0 )
+                {
+                    waddr->wiftype = coin->chain->wiftype;
+                    waddr->addrtype = coin->chain->pubtype;
+                }
+            }
             (*wacctp) = wacct;
             return(waddr);
         }
