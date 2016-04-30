@@ -202,7 +202,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     double startmillis0; static double totalmillis0; static int32_t num0;
     struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t bundlei,i,n,flag=0; bits256 hash2,*ptr; struct iguana_peer *addr;
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
-    if ( coin->current != 0 && (coin->blocks.hwmchain.height % coin->chain->bundlesize) == coin->chain->bundlesize-1 )
+    if ( coin->current != 0 && (coin->blocks.hwmchain.height % coin->chain->bundlesize) == coin->chain->bundlesize-1 && coin->blocks.hwmchain.height/coin->chain->bundlesize == coin->longestchain/coin->chain->bundlesize )
     {
         block = coin->current->blocks[coin->current->n - 1];
         if ( _iguana_chainlink(coin,block) <= 0 )
