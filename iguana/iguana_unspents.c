@@ -33,8 +33,10 @@ int32_t iguana_unspentindfind(struct iguana_info *coin,char *coinaddr,uint8_t *s
         unspentind = (tp->firstvout + vout);
     if ( coinaddr != 0 && unspentind > 0 && (hdrsi= *heightp/coin->chain->bundlesize) >= 0 && hdrsi < coin->bundlescount && (bp= coin->bundles[hdrsi]) != 0 && (rdata= bp->ramchain.H.data) != 0 && unspentind < rdata->numunspents )
     {
-        U = (void *)(long)((long)rdata + rdata->Uoffset);
-        P = (void *)(long)((long)rdata + rdata->Poffset);
+        U = RAMCHAIN_PTR(rdata,Uoffset);
+        P = RAMCHAIN_PTR(rdata,Poffset);
+        //U = (void *)(long)((long)rdata + rdata->Uoffset);
+        //P = (void *)(long)((long)rdata + rdata->Poffset);
         pkind = U[unspentind].pkind;
         if ( pkind > 0 && pkind < rdata->numpkinds )
         {
@@ -123,11 +125,13 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
             if ( (rdata= ramchain->H.data) != 0 )
             {
                 numpkinds = rdata->numpkinds;
-                PKbits = (void *)(long)((long)rdata + rdata->PKoffset);
-                P = (void *)(long)((long)rdata + rdata->Poffset);
+                PKbits = RAMCHAIN_PTR(rdata,PKoffset);
+                P = RAMCHAIN_PTR(rdata,Poffset);
+                //PKbits = (void *)(long)((long)rdata + rdata->PKoffset);
+                //P = (void *)(long)((long)rdata + rdata->Poffset);
                 if ( bp == coin->current )
                     ACCTS = ramchain->A;
-                else ACCTS = (void *)(long)((long)rdata + rdata->Aoffset);
+                else ACCTS = RAMCHAIN_PTR(rdata,Aoffset); //ACCTS = (void *)(long)((long)rdata + rdata->Aoffset);
                 if ( (pkind= iguana_sparseaddpk(PKbits,rdata->pksparsebits,rdata->numpksparse,rmd160,P,0,ramchain)) > 0 && pkind < numpkinds )
                 {
                     *ramchainp = ramchain;
@@ -168,8 +172,10 @@ int64_t iguana_pkhashbalance(struct supernet_info *myinfo,struct iguana_info *co
         return(0);
     }
     unspentind = lastunspentind;
-    U = (void *)(long)((long)rdata + rdata->Uoffset);
-    T = (void *)(long)((long)rdata + rdata->Toffset);
+    U = RAMCHAIN_PTR(rdata,Uoffset);
+    T = RAMCHAIN_PTR(rdata,Toffset);
+    //U = (void *)(long)((long)rdata + rdata->Uoffset);
+    //T = (void *)(long)((long)rdata + rdata->Toffset);
     RTspend = 0;
     if ( lastheight == 0 )
         lastheight = IGUANA_MAXHEIGHT;
@@ -195,7 +201,8 @@ int64_t iguana_pkhashbalance(struct supernet_info *myinfo,struct iguana_info *co
     }
     if ( lastheight > 0 && (A2= ramchain->A2) != 0 && (U2= ramchain->Uextras) != 0 )
     {
-        S = (void *)(long)((long)rdata + rdata->Soffset);
+        S = RAMCHAIN_PTR(rdata,Soffset);
+        //S = (void *)(long)((long)rdata + rdata->Soffset);
         unspentind = A2[pkind].lastunspentind;
         checkval = 0;
         while ( unspentind > 0 )

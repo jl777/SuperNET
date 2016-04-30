@@ -20,7 +20,9 @@ int32_t iguana_alloctxbits(struct iguana_info *coin,struct iguana_ramchain *ramc
     static int64_t total;
     if ( ramchain->txbits == 0 )
     {
-        int32_t tlen; uint8_t *TXbits = (uint8_t *)((long)ramchain->H.data + ramchain->H.data->TXoffset);
+        int32_t tlen; uint8_t *TXbits;
+        TXbits = RAMCHAIN_PTR(ramchain->H.data,TXoffset);
+        //TXbits = (uint8_t *)((long)ramchain->H.data + ramchain->H.data->TXoffset);
         tlen = (int32_t)hconv_bitlen(ramchain->H.data->numtxsparse * ramchain->H.data->txsparsebits);
         ramchain->txbits = calloc(1,tlen);
         memcpy(ramchain->txbits,TXbits,tlen);
@@ -278,7 +280,8 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                     if ( (TXbits= ramchain->txbits) == 0 )
                     {
                         //printf("use memory mapped.[%d]\n",ramchain->H.data->height/coin->chain->bundlesize);
-                        TXbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->TXoffset);
+                        TXbits = RAMCHAIN_PTR(ramchain->H.data,TXoffset);
+                        //TXbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->TXoffset);
                     }
                 }
                 if ( (T= ramchain->cacheT) == 0 )
@@ -286,7 +289,8 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                     //if ( coin->fastfind == 0 )
                     //    iguana_alloccacheT(coin,ramchain);
                     //if ( (T= ramchain->cacheT) == 0 )
-                    T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
+                    T = RAMCHAIN_PTR(ramchain->H.data,Toffset);
+                    //T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
                 }
                 if ( (txidind= iguana_sparseaddtx(TXbits,ramchain->H.data->txsparsebits,ramchain->H.data->numtxsparse,txid,T,0,ramchain)) > 0 )
                 {
@@ -409,7 +413,8 @@ int64_t iguana_fastfindinitbundle(struct iguana_info *coin,struct iguana_bundle 
     int32_t i; struct iguana_txid *T; struct iguana_ramchaindata *rdata; int64_t n = 0;
     if ( (rdata= bp->ramchain.H.data) != 0 )
     {
-        T = (void *)(long)((long)rdata + rdata->Toffset);
+        T = RAMCHAIN_PTR(rdata,Toffset);
+        //T = (void *)(long)((long)rdata + rdata->Toffset);
         n = rdata->numtxids;
         if ( iter == 1 )
         {

@@ -347,9 +347,12 @@ HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool)
                 ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
                 if ( (rdata= ramchain->H.data) != 0 )
                 {
-                    U = (void *)(long)((long)rdata + rdata->Uoffset);
-                    P = (void *)(long)((long)rdata + rdata->Poffset);
-                    T = (void *)(long)((long)rdata + rdata->Toffset);
+                    U = RAMCHAIN_PTR(rdata,Uoffset);
+                    P = RAMCHAIN_PTR(rdata,Poffset);
+                    T = RAMCHAIN_PTR(rdata,Toffset);
+                    //U = (void *)(long)((long)rdata + rdata->Uoffset);
+                    //P = (void *)(long)((long)rdata + rdata->Poffset);
+                    //T = (void *)(long)((long)rdata + rdata->Toffset);
                     RTspend = 0;
                     if ( iguana_spentflag(coin,&RTspend,&spentheight,ramchain,bp->hdrsi,unspentind,height,minconf,coin->longestchain,U[unspentind].value) == 0 )
                     {
@@ -528,7 +531,7 @@ cJSON *iguana_createvins(struct supernet_info *myinfo,struct iguana_info *coin,c
                     jaddistr(pubkeys,pubkeystr);
                 }
             }
-            if ( spendscript != 0 && spendlen > 0 )
+            if ( spendlen > 0 )
             {
                 init_hexbytes_noT(scriptstr,spendscript,spendlen);
                 jaddstr(newvin,"scriptPub",scriptstr);

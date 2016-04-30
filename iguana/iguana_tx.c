@@ -26,20 +26,23 @@ int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,long fil
 {
     FILE *fp; long err; int32_t retval = scriptlen;
 #ifndef __PNACL__
-    if ( fileptr[0] == 0 )
-        fileptr[0] = (uint64_t)OS_mapfile(fname,&fileptr[1],0);
-    if ( fileptr[0] != 0 )
+    if ( scriptpos < 0xffffffff )
     {
-        if ( (scriptpos + scriptlen) <= fileptr[1] )
+        if ( fileptr[0] == 0 )
+            fileptr[0] = (long)OS_mapfile(fname,&fileptr[1],0);
+        if ( fileptr[0] != 0 )
         {
-            memcpy(scriptspace,(void *)(fileptr[0] + scriptpos),scriptlen);
-            return(retval);
-        }
-        else if ( 0 )
-        {
-            printf("munmap (%s)\n",fname);
-            munmap((void *)fileptr[0],fileptr[1]);
-            fileptr[0] = fileptr[1] = 0;
+            if ( (scriptpos + scriptlen) <= fileptr[1] )
+            {
+                memcpy(scriptspace,(void *)(fileptr[0] + (uint32_t)scriptpos),scriptlen);
+                return(retval);
+            }
+            else if ( 0 )
+            {
+                printf("munmap (%s)\n",fname);
+                munmap((void *)fileptr[0],fileptr[1]);
+                fileptr[0] = fileptr[1] = 0;
+            }
         }
     }
 #else
@@ -69,9 +72,12 @@ int32_t iguana_vinset(struct iguana_info *coin,uint8_t *scriptspace,int32_t heig
     memset(vin,0,sizeof(*vin));
     if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0 && (rdata= bp->ramchain.H.data) != 0 )
     {
-        S = (void *)(long)((long)rdata + rdata->Soffset);
-        X = (void *)(long)((long)rdata + rdata->Xoffset);
-        T = (void *)(long)((long)rdata + rdata->Toffset);
+        S = RAMCHAIN_PTR(rdata,Soffset);
+        X = RAMCHAIN_PTR(rdata,Xoffset);
+        T = RAMCHAIN_PTR(rdata,Toffset);
+        //S = (void *)(long)((long)rdata + rdata->Soffset);
+        //X = (void *)(long)((long)rdata + rdata->Xoffset);
+        //T = (void *)(long)((long)rdata + rdata->Toffset);
         spendind = (tx->firstvin + i);
         s = &S[spendind];
         vin->sequence = s->sequenceid;
@@ -115,8 +121,10 @@ int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmst
     memset(vout,0,sizeof(*vout));
     if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0  && (rdata= bp->ramchain.H.data) != 0 && i < tx->numvouts )
     {
-        U = (void *)(long)((long)rdata + rdata->Uoffset);
-        P = (void *)(long)((long)rdata + rdata->Poffset);
+        U = RAMCHAIN_PTR(rdata,Uoffset);
+        P = RAMCHAIN_PTR(rdata,Poffset);
+        //U = (void *)(long)((long)rdata + rdata->Uoffset);
+        //P = (void *)(long)((long)rdata + rdata->Poffset);
         unspentind = (tx->firstvout + i);
         u = &U[unspentind];
         if ( u->txidind != tx->txidind || u->vout != i || u->hdrsi != height / coin->chain->bundlesize )

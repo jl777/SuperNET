@@ -376,6 +376,7 @@ struct iguana_txblock
     struct iguana_block block;
 };
 
+#define RAMCHAIN_PTR(rdata,offset) ((void *)(long)((long)(rdata) + (long)(rdata)->offset))
 struct iguana_ramchaindata
 {
     bits256 sha256;

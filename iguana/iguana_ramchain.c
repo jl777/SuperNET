@@ -626,18 +626,26 @@ void *_iguana_ramchain_setptrs(RAMCHAIN_PTRPS,struct iguana_ramchaindata *rdata)
         return(0);
     }
     //printf("rdata.%p\n",rdata);
-    *B = (void *)(long)((long)rdata + (long)rdata->Boffset);
-    *T = (void *)(long)((long)rdata + (long)rdata->Toffset);
-    *Kspace = (void *)(long)((long)rdata + (long)rdata->Koffset);
+    *B = RAMCHAIN_PTR(rdata,Boffset);
+    *T = RAMCHAIN_PTR(rdata,Toffset);
+    //*B = (void *)(long)((long)rdata + (long)rdata->Boffset);
+    //*T = (void *)(long)((long)rdata + (long)rdata->Toffset);
+    *Kspace = RAMCHAIN_PTR(rdata,Koffset);
+    //*Kspace = (void *)(long)((long)rdata + (long)rdata->Koffset);
     if ( ramchain->expanded != 0 )
     {
-        *Ux = (void *)(long)((long)rdata + (long)rdata->Uoffset);
-        *Sx = (void *)(long)((long)rdata + (long)rdata->Soffset);
-        *P = (void *)(long)((long)rdata + (long)rdata->Poffset);
-        *X = (void *)(long)((long)rdata + (long)rdata->Xoffset);
+        *Ux = RAMCHAIN_PTR(rdata,Uoffset);
+        *Sx = RAMCHAIN_PTR(rdata,Soffset);
+        *P = RAMCHAIN_PTR(rdata,Poffset);
+        *X = RAMCHAIN_PTR(rdata,Xoffset);
+        //*Ux = (void *)(long)((long)rdata + (long)rdata->Uoffset);
+        //*Sx = (void *)(long)((long)rdata + (long)rdata->Soffset);
+        //*P = (void *)(long)((long)rdata + (long)rdata->Poffset);
+        //*X = (void *)(long)((long)rdata + (long)rdata->Xoffset);
         //ramchain->roU2 = (void *)(long)((long)rdata + (long)rdata->U2offset);
         //ramchain->roP2 = (void *)(long)((long)rdata + (long)rdata->P2offset);
-        ramchain->creditsA = (void *)(long)(long)((long)rdata + (long)rdata->Aoffset);
+        ramchain->creditsA = RAMCHAIN_PTR(rdata,Aoffset);
+        //ramchain->creditsA = (void *)(long)(long)((long)rdata + (long)rdata->Aoffset);
         //if ( (*U2= ramchain->U2) == 0 )
         //    *U2 = ramchain->U2 = ramchain->roU2;
         //if ( (*P2= ramchain->P2) == 0 )
@@ -645,14 +653,18 @@ void *_iguana_ramchain_setptrs(RAMCHAIN_PTRPS,struct iguana_ramchaindata *rdata)
         if ( (*A= ramchain->A) == 0 )
             *A = ramchain->A = ramchain->creditsA;
         //printf("T.%p Ux.%p Sx.%p P.%p\n",*T,*Ux,*Sx,*P);
-        *TXbits = (void *)(long)((long)rdata + (long)rdata->TXoffset);
-        *PKbits = (void *)(long)((long)rdata + (long)rdata->PKoffset);
+        *TXbits = RAMCHAIN_PTR(rdata,TXoffset);
+        *PKbits = RAMCHAIN_PTR(rdata,PKoffset);
+        //*TXbits = (void *)(long)((long)rdata + (long)rdata->TXoffset);
+        //*PKbits = (void *)(long)((long)rdata + (long)rdata->PKoffset);
         *U = 0, *S = 0;
     }
     else
     {
-        *U = (void *)(long)((long)rdata + (long)rdata->Uoffset);
-        *S = (void *)(long)((long)rdata + (long)rdata->Soffset);
+        *U = RAMCHAIN_PTR(rdata,Uoffset);
+        *S = RAMCHAIN_PTR(rdata,Soffset);
+        //*U = (void *)(long)((long)rdata + (long)rdata->Uoffset);
+        //*S = (void *)(long)((long)rdata + (long)rdata->Soffset);
         *Ux = 0, *Sx = 0, *P = 0, *X = 0, *A = 0, *TXbits = 0, *PKbits = 0; //*U2 = 0, *P2 = 0,
     }
     return(rdata);
@@ -726,9 +738,12 @@ int32_t iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain
         else if ( (flag & 1) != 0 )
         {
             //printf("nonz.%d of %d\n",nonz,(int32_t)ramchain->filesize);
-            X = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Xoffset);
-            T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
-            TXbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->TXoffset);
+            X = RAMCHAIN_PTR(ramchain->H.data,Xoffset);
+            T = RAMCHAIN_PTR(ramchain->H.data,Toffset);
+            TXbits = RAMCHAIN_PTR(ramchain->H.data,TXoffset);
+            //X = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Xoffset);
+            //T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
+            //TXbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->TXoffset);
             numtxids = ramchain->H.data->numtxids;
             numexternal = ramchain->H.data->numexternaltxids;
             tlen = (ramchain->H.data->numtxsparse * ramchain->H.data->txsparsebits) >> 3;
@@ -750,7 +765,8 @@ int32_t iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain
         }
         else if ( (flag & 2) != 0 )
         {
-            U = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Uoffset);
+            U = RAMCHAIN_PTR(ramchain->H.data,Uoffset);
+            //U = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Uoffset);
             numunspents = ramchain->H.data->numunspents;
             for (i=0; i<numunspents; i++)
             {
@@ -761,8 +777,10 @@ int32_t iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain
         }
         else if ( (flag & 4) != 0 )
         {
-            P = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Poffset);
-            PKbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->PKoffset);
+            P = RAMCHAIN_PTR(ramchain->H.data,Poffset);
+            PKbits = RAMCHAIN_PTR(ramchain->H.data,PKoffset);
+            //P = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Poffset);
+            //PKbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->PKoffset);
             numpkinds = ramchain->H.data->numpkinds;
             plen = (ramchain->H.data->numpksparse * ramchain->H.data->pksparsebits) >> 3;
             for (i=0; i<numpkinds; i++)
@@ -2323,8 +2341,10 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
         iguana_ramchain_link(mapchain,bp->hashes[0],bp->hdrsi,bp->bundleheight,0,bp->n,firsti,1);
         //char str[65]; printf("bp.%d: T.%d U.%d S.%d P%d X.%d MAPPED %s %p\n",bp->hdrsi,mapchain->H.data->numtxids,mapchain->H.data->numunspents,mapchain->H.data->numspends,mapchain->H.data->numpkinds,mapchain->H.data->numexternaltxids,mbstr(str,mapchain->H.data->allocsize),mapchain->H.data);
         //ramcoder_test(mapchain->H.data,mapchain->H.data->allocsize);
-        B = (void *)(long)((long)mapchain->H.data + mapchain->H.data->Boffset);
-        T = (void *)(long)((long)mapchain->H.data + mapchain->H.data->Toffset);
+        B = RAMCHAIN_PTR(ramchain->H.data,Boffset);
+        T = RAMCHAIN_PTR(ramchain->H.data,Toffset);
+        //B = (void *)(long)((long)mapchain->H.data + mapchain->H.data->Boffset);
+        //T = (void *)(long)((long)mapchain->H.data + mapchain->H.data->Toffset);
         for (i=0; i<bp->n; i++)
         {
             if ( (block= bp->blocks[i]) != 0 || (block= iguana_blockhashset("bundleload",coin,bp->bundleheight+i,bp->hashes[i],1)) != 0 )

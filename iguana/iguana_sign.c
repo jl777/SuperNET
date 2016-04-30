@@ -188,7 +188,7 @@ cJSON *iguana_vinjson(struct iguana_info *coin,struct iguana_msgvin *vin)
             iguana_addscript(coin,json,vin->spendscript,vin->spendlen,"scriptPubKey");
         if ( vin->p2shlen > 0 )
             iguana_addscript(coin,json,vin->redeemscript,vin->p2shlen,"redeemScript");
-        if ( vin->pubkeys != 0 && vin->numpubkeys > 0 )
+        if ( vin->numpubkeys > 0 )
             jadd(json,"pubkeys",iguana_pubkeysjson(vin->pubkeys,vin->numpubkeys));
     }
     return(json);
@@ -821,7 +821,7 @@ cJSON *iguana_signtx(struct supernet_info *myinfo,struct iguana_info *coin,bits2
                 memcpy(vp->spendscript,spend->inputs[i].spendscript,spend->inputs[i].spendlen);
                 vp->spendlen = spend->inputs[i].spendlen;
             }*/
-            if ( spend->inputs[i].p2shscript != 0 && spend->inputs[i].p2shlen > 0 )
+            if ( spend->inputs[i].p2shlen > 0 )
             {
                 memcpy(vp->p2shscript,spend->inputs[i].p2shscript,spend->inputs[i].p2shlen);
                 vp->p2shlen = spend->inputs[i].p2shlen;

@@ -74,7 +74,8 @@ void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_b
             changed++;
         else
         {
-            B = (void *)(long)((long)rdata + rdata->Boffset);
+            B = RAMCHAIN_PTR(rdata,Boffset);
+            //B = (void *)(long)((long)rdata + rdata->Boffset);
             for (i=0; i<rdata->numblocks; i++)
                 if ( bits256_cmp(B[i].hash2,bp->hashes[i]) != 0 )
                 {
@@ -277,7 +278,8 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             if ( coin->RTdatabad != 0 )
                 break;
             dest = &coin->RTramchain;
-            B = (void *)(long)((long)rdata + rdata->Boffset);
+            B = RAMCHAIN_PTR(rdata,Boffset);
+            //B = (void *)(long)((long)rdata + rdata->Boffset);
             bundlei = (coin->RTheight % coin->chain->bundlesize);
             if ( (block= iguana_bundleblock(coin,&hash2,bp,bundlei)) != 0 )
                 iguana_bundlehashadd(coin,bp,bundlei,block);

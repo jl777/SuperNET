@@ -389,7 +389,8 @@ struct iguana_txid *iguana_bundletx(struct iguana_info *coin,struct iguana_bundl
     int32_t hdrsi,iter; struct iguana_txid *T; int64_t Toffset; char fname[1024]; FILE *fp; struct iguana_ramchaindata rdata,*rptr;
     if ( (rptr= bp->ramchain.H.data) != 0 )
     {
-        T = (void *)(long)((long)rptr + (long)rptr->Toffset);
+        //T = (void *)(long)((long)rptr + (long)rptr->Toffset);
+        T = RAMCHAIN_PTR(rptr,Toffset);
         *tx = T[txidind];
         return(tx);
     }
@@ -431,8 +432,10 @@ char *iguana_bundleaddrs(struct iguana_info *coin,int32_t hdrsi)
         {
             numpkinds = ramchain->H.data->numpkinds;//(bp->isRT != 0) ? ramchain->H.data->numpkinds : ramchain->pkind;
             retjson = cJSON_CreateArray();
-            PKbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->PKoffset);
-            P = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Poffset);
+            PKbits = RAMCHAIN_PTR(ramchain->H.data,PKoffset);
+            P = RAMCHAIN_PTR(ramchain->H.data,Poffset);
+            //PKbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->PKoffset);
+            //P = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Poffset);
             for (pkind=0; pkind<numpkinds; pkind++,P++)
             {
                 init_hexbytes_noT(rmdstr,P->rmd160,20);
@@ -743,7 +746,8 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
                         {
                             if ( iguana_mapchaininit(fname,coin,&R,bp,i,block,ptr,filesize) >= 0 )
                             {
-                                B = (void *)(long)((long)R.H.data + R.H.data->Boffset);
+                                B = RAMCHAIN_PTR(R.H.data,Boffset);
+                                //B = (void *)(long)((long)R.H.data + R.H.data->Boffset);
                                 prevhash2 = B[0].prev_block;
                             }
                             munmap(ptr,filesize);

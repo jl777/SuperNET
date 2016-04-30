@@ -39,7 +39,8 @@ uint32_t iguana_spendvectorconv(struct iguana_info *coin,struct iguana_spendvect
     {
         if ( ptr->hdrsi >= 0 && ptr->hdrsi < coin->bundlescount && (spentbp= coin->bundles[ptr->hdrsi]) != 0 )
         {
-            spentU = (void *)(long)((long)spentbp->ramchain.H.data + spentbp->ramchain.H.data->Uoffset);
+            spentU = RAMCHAIN_PTR(spentbp->ramchain.H.data,Uoffset);
+            //spentU = (void *)(long)((long)spentbp->ramchain.H.data + spentbp->ramchain.H.data->Uoffset);
             if ( (spent_pkind= _iguana_spendvectorconv(ptr,&spentU[ptr->unspentind],spentbp->ramchain.H.data->numpkinds,ptr->hdrsi,ptr->unspentind)) != 0 )
                 converted++;
             else printf("illegal [%d].u%u pkind.%u vs %u\n",ptr->hdrsi,ptr->unspentind,spent_pkind,spentbp->ramchain.H.data->numpkinds);
@@ -101,8 +102,10 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
 {
     int32_t prev_vout,height,hdrsi; uint32_t sequenceid,unspentind; char str[65];
     struct iguana_bundle *spentbp=0; struct iguana_txid *T,TX,*tp; bits256 *X; bits256 prev_hash;
-    X = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Xoffset);
-    T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
+    X = RAMCHAIN_PTR(ramchain->H.data,Xoffset);
+    T = RAMCHAIN_PTR(ramchain->H.data,Toffset);
+    //X = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Xoffset);
+    //T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
     //printf("external X.%p %ld num.%d\n",X,(long)ramchain->H.data->Xoffset,(int32_t)ramchain->H.data->numexternaltxids);
     sequenceid = s->sequenceid;
     hdrsi = spent_hdrsi;
@@ -198,7 +201,8 @@ struct iguana_bundle *iguana_fastexternalspent(struct iguana_info *coin,bits256 
             if ( ind < rdata->numexternaltxids )
             {
                 char str[65]; //double duration,startmillis = OS_milliseconds();
-                X = (void *)(long)((long)rdata + rdata->Xoffset);
+                X = RAMCHAIN_PTR(rdata,Xoffset);
+                //X = (void *)(long)((long)rdata + rdata->Xoffset);
                 *prevhashp = prev_hash = X[ind];
                 if ( (unspentind= iguana_unspentindfind(coin,0,0,0,0,&height,prev_hash,prev_vout,spent_hdrsi-1)) != 0 )
                     //if ( (firstvout= iguana_txidfastfind(coin,&height,prev_hash,spent_hdrsi-1)) >= 0 )
@@ -221,7 +225,8 @@ struct iguana_bundle *iguana_fastexternalspent(struct iguana_info *coin,bits256 
         }
         else if ( ind < rdata->numtxids )
         {
-            T = (void *)(long)((long)rdata + rdata->Toffset);
+            T = RAMCHAIN_PTR(rdata,Toffset);
+            //T = (void *)(long)((long)rdata + rdata->Toffset);
             *prevhashp = T[ind].txid;
             *unspentindp = T[ind].firstvout + s->prevout;
             return(coin->bundles[hdrsi]);
@@ -334,7 +339,8 @@ int32_t iguana_spendvectors(struct iguana_info *coin,struct iguana_bundle *bp,st
                                     iguana_ramchain_prefetch(coin,&spentbp->ramchain,2);
                                     spentbp->lastprefetch = now;
                                 }
-                                spentU = (void *)(long)((long)spentbp->ramchain.H.data + spentbp->ramchain.H.data->Uoffset);
+                                spentU = RAMCHAIN_PTR(spentbp->ramchain.H.data,Uoffset);
+                                //spentU = (void *)(long)((long)spentbp->ramchain.H.data + spentbp->ramchain.H.data->Uoffset);
                                 u = &spentU[spent_unspentind];
                                 if ( (spent_pkind= u->pkind) != 0 && spent_pkind < spentbp->ramchain.H.data->numpkinds )
                                 {
@@ -512,7 +518,8 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
                     if ( s->spendtxidind != 0 && s->spendtxidind < rdata->numtxids )
                     {
                         spent_unspentind = T[s->spendtxidind].firstvout + s->prevout;
-                        spentU = (void *)(long)((long)rdata + rdata->Uoffset);
+                        spentU = RAMCHAIN_PTR(rdata,Uoffset);
+                        //spentU = (void *)(long)((long)rdata + rdata->Uoffset);
                         u = &spentU[spent_unspentind];
                         if ( (spent_pkind= u->pkind) != 0 && spent_pkind < rdata->numpkinds )
                             spent_value = u->value;
@@ -959,7 +966,8 @@ int32_t iguana_spendvectorconvs(struct iguana_info *coin,struct iguana_bundle *s
     spent_hdrsi = spentbp->hdrsi;
     ramchain = &spentbp->ramchain;
     numpkinds = rdata->numpkinds;
-    spentU = (void *)(long)((long)rdata + rdata->Uoffset);
+    spentU = RAMCHAIN_PTR(rdata,Uoffset);
+    //spentU = (void *)(long)((long)rdata + rdata->Uoffset);
     for (i=converted=0; i<n; i++)
     {
         if ( (bp= coin->bundles[i]) != 0 && bp->tmpspends != 0 )
