@@ -149,7 +149,11 @@ int32_t iguana_spentflag(struct iguana_info *coin,int64_t *RTspendp,int32_t *spe
     if ( (confs= coin->blocks.hwmchain.height - utxo.fromheight) >= minconf && confs < maxconf && (height == 0 || utxo.fromheight < height) )
     {
         (*RTspendp) += RTspend;
-        return(utxo.spentflag);
+        if ( utxo.spentflag != 0 )
+            return(1);
+        else if ( utxo.lockedflag != 0 )
+            return(-1);
+        else return(0);
     }
     return(0);
 }

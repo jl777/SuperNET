@@ -407,7 +407,7 @@ int32_t bitcoin_changescript(struct iguana_info *coin,uint8_t *changescript,int3
 
 int32_t bitcoin_scriptsig(struct iguana_info *coin,uint8_t *script,int32_t n,const struct vin_info *vp,struct iguana_msgtx *msgtx)
 {
-    int32_t i,siglen;
+    int32_t i,siglen,plen;
     if ( vp->N > 1 )
         script[n++] = SCRIPT_OP_NOP;
     for (i=0; i<vp->N; i++)
@@ -417,6 +417,11 @@ int32_t bitcoin_scriptsig(struct iguana_info *coin,uint8_t *script,int32_t n,con
             script[n++] = siglen;
             memcpy(&script[n],vp->signers[i].sig,siglen), n += siglen;
         }
+    }
+    if ( (plen= bitcoin_pubkeylen(vp->signers[0].pubkey)) > 0 && vp->type == IGUANA_SCRIPT_76A988AC )
+    {
+        script[n++] = plen;
+        memcpy(&script[n],vp->signers[0].pubkey,plen), n += plen;
     }
     if ( vp->type == IGUANA_SCRIPT_P2SH )
     {
@@ -448,17 +453,22 @@ int32_t bitcoin_cltvscript(uint8_t p2shtype,char *ps2h_coinaddr,uint8_t p2sh_rmd
     return(n);
 }
 
+uint8_t iguana_addrtype(struct iguana_info *coin,uint8_t script_type)
+{
+    if ( script_type == IGUANA_SCRIPT_76A988AC || script_type == IGUANA_SCRIPT_AC || script_type == IGUANA_SCRIPT_76AC )
+        return(coin->chain->pubtype);
+    else return(coin->chain->p2shtype);
+}
+
 int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char *coinaddr,uint8_t *script,char *asmstr,uint8_t rmd160[20],uint8_t type,const struct vin_info *vp,int32_t txi)
 {
     uint8_t addrtype; char rmd160str[41],pubkeystr[256]; int32_t plen,i,m,n,flag = 0,scriptlen = 0;
     m = n = 0;
     if ( asmstr != 0 )
         asmstr[0] = 0;
+    addrtype = iguana_addrtype(coin,type);
     if ( type == IGUANA_SCRIPT_76A988AC || type == IGUANA_SCRIPT_AC || type == IGUANA_SCRIPT_76AC || type == IGUANA_SCRIPT_P2SH )
     {
-        if ( type == IGUANA_SCRIPT_P2SH )
-            addrtype = coin->chain->p2shtype;
-        else addrtype = coin->chain->pubtype;
         init_hexbytes_noT(rmd160str,rmd160,20);
         bitcoin_address(coinaddr,addrtype,rmd160,20);
     }
@@ -499,6 +509,7 @@ int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char
         case IGUANA_SCRIPT_OPRETURN:
             if ( asmstr != 0 )
                 strcpy(asmstr,"OP_RETURN ");
+            bitcoin_address(coinaddr,addrtype,(uint8_t *)&vp->spendscript[0],vp->spendlen);
             flag++;
             break;
         case IGUANA_SCRIPT_3of3: m = 3, n = 3; break;
@@ -511,11 +522,13 @@ int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char
         case IGUANA_SCRIPT_DATA:
             if ( asmstr != 0 )
                 strcpy(asmstr,"DATA ONLY");
+            bitcoin_address(coinaddr,addrtype,(uint8_t *)&vp->spendscript[0],vp->spendlen);
             flag++;
             break;
         case IGUANA_SCRIPT_STRANGE:
             if ( asmstr != 0 )
                 strcpy(asmstr,"STRANGE SCRIPT ");
+            bitcoin_address(coinaddr,addrtype,(uint8_t *)&vp->spendscript[0],vp->spendlen);
             flag++;
             break;
         default: break;//printf("unexpected script type.%d\n",type); break;

@@ -1381,25 +1381,31 @@ struct supernet_info *SuperNET_accountfind(cJSON *json)
 
 FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
 {
-    char savehandle[1024],savepassword[1024],savepermanentfile[1024],*str,*decryptstr = 0; cJSON *argjson; uint32_t expire = myinfo->expiration;
+    char *argstr,*str,*decryptstr = 0; cJSON *argjson; //uint32_t expire = myinfo->expiration; //savehandle[1024],savepassword[1024],savepermanentfile[1024]
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    safecopy(savehandle,myinfo->handle,sizeof(myinfo->handle));
-    safecopy(savepassword,myinfo->secret,sizeof(myinfo->secret));
-    safecopy(savepermanentfile,myinfo->permanentfile,sizeof(myinfo->permanentfile));
-    if ( bits256_nonz(myinfo->persistent_priv) != 0 && (str= SuperNET_logout(IGUANA_CALLARGS)) != 0 )
-        free(str);
-    myinfo->expiration = expire;
+    //safecopy(savehandle,myinfo->handle,sizeof(myinfo->handle));
+    //safecopy(savepassword,myinfo->secret,sizeof(myinfo->secret));
+    //safecopy(savepermanentfile,myinfo->permanentfile,sizeof(myinfo->permanentfile));
+    //if ( bits256_nonz(myinfo->persistent_priv) != 0 && (str= SuperNET_logout(IGUANA_CALLARGS)) != 0 )
+    //    free(str);
+    //myinfo->expiration = expire;
     if ( handle != 0 && handle[0] != 0 )
         safecopy(myinfo->handle,handle,sizeof(myinfo->handle));
-    else safecopy(myinfo->handle,savehandle,sizeof(myinfo->handle));
-    safecopy(myinfo->secret,savepassword,sizeof(myinfo->secret));
-    safecopy(myinfo->permanentfile,savepermanentfile,sizeof(myinfo->permanentfile));
-    if ( (passphrase == 0 || passphrase[0] == 0) && (decryptstr= SuperNET_decryptjson(IGUANA_CALLARGS,password,permanentfile)) != 0 )
+    else memset(myinfo->handle,0,sizeof(myinfo->handle));
+    if ( password != 0 && password[0] != 0 )
+        safecopy(myinfo->secret,password,sizeof(myinfo->secret));
+    else if ( passphrase != 0 && passphrase[0] != 0 )
+        safecopy(myinfo->secret,passphrase,sizeof(myinfo->secret));
+    //else memset(myinfo->secret,0,sizeof(myinfo->secret));
+    if ( permanentfile != 0 )
+        safecopy(myinfo->permanentfile,permanentfile,sizeof(myinfo->permanentfile));
+    //else memset(myinfo->permanentfile,0,sizeof(myinfo->permanentfile));
+    if ( (decryptstr= SuperNET_decryptjson(IGUANA_CALLARGS,myinfo->secret,myinfo->permanentfile)) != 0 )
     {
         if ( (argjson= cJSON_Parse(decryptstr)) != 0 )
         {
-            //printf("decrypted.(%s) exp.%u\n",decryptstr,myinfo->expiration);
+            printf("decrypted.(%s) exp.%u pass.(%s)\n",decryptstr,myinfo->expiration,password);
             if ( myinfo->decryptstr != 0 )
                 free(myinfo->decryptstr);
             myinfo->decryptstr = decryptstr;
@@ -1425,8 +1431,16 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
     if ( passphrase != 0 && passphrase[0] != 0 )
     {
         SuperNET_setkeys(myinfo,passphrase,(int32_t)strlen(passphrase),1);
-        if ( (str= SuperNET_encryptjson(IGUANA_CALLARGS,myinfo->secret,myinfo->permanentfile,passphrase)) != 0 )
+        if ( myinfo->decryptstr != 0 && (argjson= cJSON_Parse(myinfo->decryptstr)) != 0 )
+        {
+            if ( jobj(argjson,"passphrase") != 0 )
+                jdelete(argjson,"passphrase");
+        } else argjson = cJSON_CreateObject();
+        jaddstr(argjson,"passphrase",passphrase);
+        argstr = jprint(argjson,1);
+        if ( (str= SuperNET_encryptjson(IGUANA_CALLARGS,myinfo->secret,myinfo->permanentfile,argstr)) != 0 )
             free(str);
+        free(argstr);
         return(SuperNET_activehandle(IGUANA_CALLARGS));
     }
     else return(clonestr("{\"error\":\"need passphrase\"}"));

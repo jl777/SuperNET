@@ -50,9 +50,36 @@ struct iguana_waddress *iguana_waddressalloc(uint8_t addrtype,char *symbol,char 
     return(waddr);
 }
 
+struct iguana_waccount *iguana_waccountfind(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
+{
+    struct iguana_waccount *wacct;
+    HASH_FIND(hh,myinfo->wallet,account,strlen(account)+1,wacct);
+    //printf("waccountfind.(%s) -> wacct.%p\n",account,wacct);
+    return(wacct);
+}
+
+struct iguana_waccount *iguana_waccountcreate(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
+{
+    struct iguana_waccount *wacct,*ptr; int32_t len = (int32_t)strlen(account)+1;
+    HASH_FIND(hh,myinfo->wallet,account,len,wacct);
+    if ( wacct == 0 )
+    {
+        wacct = mycalloc('w',1,sizeof(*wacct));
+        strcpy(wacct->account,account);
+        HASH_ADD_KEYPTR(hh,myinfo->wallet,wacct->account,len,wacct);
+        //printf("waccountcreate.(%s) -> wacct.%p\n",account,wacct);
+        myinfo->dirty = (uint32_t)time(NULL);
+        if ( (ptr= iguana_waccountfind(myinfo,coin,account)) != wacct )
+            printf("iguana_waccountcreate verify error %p vs %p\n",ptr,wacct);
+    }
+    return(wacct);
+}
+
 struct iguana_waddress *iguana_waddresscreate(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_waccount *wacct,char *coinaddr,char *redeemScript)
 {
     struct iguana_waddress *waddr,*ptr; int32_t len = (int32_t)strlen(coinaddr)+1;
+    if ( wacct == 0 )
+        wacct = iguana_waccountcreate(myinfo,coin,"");
     HASH_FIND(hh,wacct->waddr,coinaddr,len,waddr);
     if ( waddr == 0 )
     {
@@ -154,31 +181,6 @@ struct iguana_waddress *iguana_waddresssearch(struct supernet_info *myinfo,struc
         }
     }
     return(0);
-}
-
-struct iguana_waccount *iguana_waccountfind(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
-{
-    struct iguana_waccount *wacct;
-    HASH_FIND(hh,myinfo->wallet,account,strlen(account)+1,wacct);
-    //printf("waccountfind.(%s) -> wacct.%p\n",account,wacct);
-    return(wacct);
-}
-
-struct iguana_waccount *iguana_waccountcreate(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
-{
-    struct iguana_waccount *wacct,*ptr; int32_t len = (int32_t)strlen(account)+1;
-    HASH_FIND(hh,myinfo->wallet,account,len,wacct);
-    if ( wacct == 0 )
-    {
-        wacct = mycalloc('w',1,sizeof(*wacct));
-        strcpy(wacct->account,account);
-        HASH_ADD_KEYPTR(hh,myinfo->wallet,wacct->account,len,wacct);
-        //printf("waccountcreate.(%s) -> wacct.%p\n",account,wacct);
-        myinfo->dirty = (uint32_t)time(NULL);
-        if ( (ptr= iguana_waccountfind(myinfo,coin,account)) != wacct )
-            printf("iguana_waccountcreate verify error %p vs %p\n",ptr,wacct);
-    }
-    return(wacct);
 }
 
 struct iguana_waddress *iguana_waddresscalc(uint8_t pubtype,uint8_t wiftype,struct iguana_waddress *addr,bits256 privkey)

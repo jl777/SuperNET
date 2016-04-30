@@ -125,7 +125,7 @@ struct bitcoin_statetx *instantdex_feetx(struct supernet_info *myinfo,struct ins
                 len = bitcoin_standardspend(paymentscript,0,spend->change160);
                 bitcoin_addoutput(coin,txobj,paymentscript,len,spend->change);
             }
-            txobj = iguana_signtx(coin,&txid,&feetx,spend,txobj);
+            txobj = iguana_signtx(myinfo,coin,&txid,&feetx,spend,txobj,0);
             if ( feetx != 0  )
             {
                 ptr = calloc(1,sizeof(*ptr) + strlen(feetx) + 1);
@@ -211,7 +211,7 @@ struct bitcoin_statetx *instantdex_bobtx(struct supernet_info *myinfo,struct igu
         n = instantdex_bobscript(script,0,&secretstart,locktime,pub1,secret,pub2);
         bitcoin_addoutput(coin,txobj,script,n,amount + depositflag*insurance*100);
         iguana_addinputs(coin,spend,txobj,0xffffffff);
-        txobj = iguana_signtx(coin,&txid,&signedtx,spend,txobj);
+        txobj = iguana_signtx(myinfo,coin,&txid,&signedtx,spend,txobj,0);
         if ( signedtx != 0  )
         {
             ptr = calloc(1,sizeof(*ptr) + strlen(signedtx) + 1);
@@ -311,7 +311,7 @@ struct bitcoin_statetx *instantdex_alicetx(struct supernet_info *myinfo,struct i
         n = instantdex_alicescript(script,0,msigaddr,altcoin->chain->p2shtype,pubAm,pubBn);
         bitcoin_addoutput(altcoin,txobj,script,n,amount);
         iguana_addinputs(altcoin,spend,txobj,0xffffffff);
-        txobj = iguana_signtx(altcoin,&txid,&signedtx,spend,txobj);
+        txobj = iguana_signtx(myinfo,altcoin,&txid,&signedtx,spend,txobj,0);
         if ( signedtx != 0 )
         {
             printf("alice payment.%s\n",signedtx);
@@ -613,7 +613,7 @@ char *BTC_txconfirmed(struct supernet_info *myinfo,struct iguana_info *coin,stru
     *numconfirmsp = -1.;
     if ( coin != 0 && *numconfirmsp < 0 )
     {
-        if ( (firstvout= iguana_unspentindfind(coin,&height,txid,0,coin->bundlescount-1)) != 0 && (confs= iguana_numconfs(coin,txid,height)) >= requiredconfs )
+        if ( (firstvout= iguana_unspentindfind(coin,0,0,0,0,&height,txid,0,coin->bundlescount-1)) != 0 && (confs= iguana_numconfs(coin,txid,height)) >= requiredconfs )
         {
             *numconfirmsp = confs;
             if ( (retstr= instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,virtualevent,myinfo->myaddr.persistent,0,0,0)) != 0 )

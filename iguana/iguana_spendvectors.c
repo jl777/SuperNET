@@ -200,7 +200,7 @@ struct iguana_bundle *iguana_fastexternalspent(struct iguana_info *coin,bits256 
                 char str[65]; //double duration,startmillis = OS_milliseconds();
                 X = (void *)(long)((long)rdata + rdata->Xoffset);
                 *prevhashp = prev_hash = X[ind];
-                if ( (unspentind= iguana_unspentindfind(coin,&height,prev_hash,prev_vout,spent_hdrsi-1)) != 0 )
+                if ( (unspentind= iguana_unspentindfind(coin,0,0,0,0,&height,prev_hash,prev_vout,spent_hdrsi-1)) != 0 )
                     //if ( (firstvout= iguana_txidfastfind(coin,&height,prev_hash,spent_hdrsi-1)) >= 0 )
                 {
                     /*duration = (OS_milliseconds() - startmillis);

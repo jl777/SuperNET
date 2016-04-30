@@ -391,18 +391,6 @@ int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 tx
     return(-1);
 }
 
-int32_t iguana_unspentindfind(struct iguana_info *coin,int32_t *heightp,bits256 txid,int32_t vout,int32_t lasthdrsi)
-{
-    struct iguana_txid *tp,TX; int32_t firstvout;
-    if ( coin->fastfind != 0 && (firstvout= iguana_txidfastfind(coin,heightp,txid,lasthdrsi)) >= 0 )
-    {
-        return(firstvout + vout);
-    }
-    if ( (tp= iguana_txidfind(coin,heightp,&TX,txid,lasthdrsi)) != 0 )
-        return(tp->firstvout + vout);
-    return(-1);
-}
-
 int32_t iguana_fastfindadd(struct iguana_info *coin,bits256 txid,int32_t height,uint32_t firstvout)
 {
     FILE *fp;

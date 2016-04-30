@@ -250,7 +250,7 @@ int32_t iguana_peerdatarequest(struct iguana_info *coin,struct iguana_peer *addr
 int32_t iguana_peerhdrrequest(struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_peer *addr,bits256 hash2)
 {
     int32_t len=0,i,height,hdrsi,bundlei,bundlesize,firstvout,retval=-1; struct iguana_block *block; struct iguana_msgblock msgB; bits256 checkhash2; struct iguana_bundle *bp;
-    if ( (firstvout= iguana_unspentindfind(coin,&height,hash2,0,coin->bundlescount-1)) != 0 )
+    if ( (firstvout= iguana_unspentindfind(coin,0,0,0,0,&height,hash2,0,coin->bundlescount-1)) != 0 )
     {
         bundlesize = coin->chain->bundlesize;
         hdrsi = (height / bundlesize);

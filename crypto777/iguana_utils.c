@@ -392,10 +392,10 @@ char *clonestr(char *str)
 int32_t safecopy(char *dest,char *src,long len)
 {
     int32_t i = -1;
-    if ( dest != 0 )
-        memset(dest,0,len);
-    if ( src != 0 && dest != 0 )
+    if ( src != 0 && dest != 0 && src != dest )
     {
+        if ( dest != 0 )
+            memset(dest,0,len);
         for (i=0; i<len&&src[i]!=0; i++)
             dest[i] = src[i];
         if ( i == len )

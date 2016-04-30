@@ -386,6 +386,26 @@ char *SuperNET_keysinit(struct supernet_info *myinfo,char *argjsonstr)
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
+TWO_STRINGS(SuperNET,decryptjson,password,permanentfile)
+{
+    char pass[8192],fname2[1023],destfname[1024]; cJSON *retjson; bits256 wallethash,wallet2priv;
+    safecopy(pass,password,sizeof(pass));
+    safecopy(fname2,permanentfile,sizeof(fname2));
+    wallethash = wallet2priv = GENESIS_PRIVKEY;
+    if ( strlen(pass) == sizeof(wallethash)*2 && is_hexstr(pass,(int32_t)sizeof(bits256)*2) > 0 )
+        wallethash = bits256_conv(pass);
+    if ( strlen(fname2) == sizeof(wallet2priv)*2 && is_hexstr(fname2,(int32_t)sizeof(bits256)*2) > 0 )
+        wallet2priv = bits256_conv(fname2);
+    if ( (retjson= SuperNET_decryptedjson(destfname,pass,sizeof(pass),wallethash,fname2,sizeof(fname2),wallet2priv)) != 0 )
+    {
+        printf("decrypt pass.(%s) fname2.(%s) -> destfname.(%s)\n",pass,fname2,destfname);
+        //obj = jduplicate(jobj(retjson,"payload"));
+        //jdelete(retjson,"payload");
+        //jadd(retjson,"result",obj);
+        return(jprint(retjson,1));
+    } else return(clonestr("{\"error\":\"couldnt decrypt json file\"}"));
+}
+
 THREE_STRINGS(SuperNET,encryptjson,password,permanentfile,payload)
 {
     char destfname[4096],pass[8192],fname2[1023]; cJSON *argjson,*retjson = cJSON_CreateObject();
@@ -406,27 +426,6 @@ THREE_STRINGS(SuperNET,encryptjson,password,permanentfile,payload)
     } else jaddstr(retjson,"error","couldnt encrypt json file");
     free_json(argjson);
     return(jprint(retjson,1));
-}
-
-TWO_STRINGS(SuperNET,decryptjson,password,permanentfile)
-{
-    char pass[8192],fname2[1023],destfname[1024]; cJSON *retjson; bits256 wallethash,wallet2priv;
-    safecopy(pass,password,sizeof(pass));
-    safecopy(fname2,permanentfile,sizeof(fname2));
-    wallethash = wallet2priv = GENESIS_PRIVKEY;
-    if ( strlen(pass) == sizeof(wallethash)*2 && is_hexstr(pass,(int32_t)sizeof(bits256)*2) > 0 )
-        wallethash = bits256_conv(pass);
-    if ( strlen(fname2) == sizeof(wallet2priv)*2 && is_hexstr(fname2,(int32_t)sizeof(bits256)*2) > 0 )
-        wallet2priv = bits256_conv(fname2);
-    if ( (retjson= SuperNET_decryptedjson(destfname,pass,sizeof(pass),wallethash,fname2,sizeof(fname2),wallet2priv)) != 0 )
-    {
-        //printf("decrypt pass.(%s) fname2.(%s) -> destfname.(%s)\n",pass,fname2,destfname);
-        //obj = jduplicate(jobj(retjson,"payload"));
-        //jdelete(retjson,"payload");
-        //jadd(retjson,"result",obj);
-        return(jprint(retjson,1));
-    }
-    else return(clonestr("{\"error\":\"couldnt decrypt json file\"}"));
 }
 #include "../includes/iguana_apiundefs.h"
 

@@ -20,6 +20,38 @@
 #include "iguana777.h"
 #include "exchanges/bitcoin.h"
 
+int32_t iguana_unspentindfind(struct iguana_info *coin,char *coinaddr,uint8_t *spendscript,int32_t *spendlenp,uint64_t *valuep,int32_t *heightp,bits256 txid,int32_t vout,int32_t lasthdrsi)
+{
+    struct iguana_txid *tp,TX; struct iguana_pkhash *P; struct iguana_unspent *U; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int64_t RTspend; int32_t pkind,hdrsi,firstvout,spentheight,unspentind = -1;
+    if ( valuep != 0 )
+        *valuep = 0;
+    if ( coinaddr != 0 )
+        coinaddr[0] = 0;
+    if ( coin->fastfind != 0 && (firstvout= iguana_txidfastfind(coin,heightp,txid,lasthdrsi)) >= 0 )
+        unspentind = (firstvout + vout);
+    else if ( (tp= iguana_txidfind(coin,heightp,&TX,txid,lasthdrsi)) != 0 )
+        unspentind = (tp->firstvout + vout);
+    if ( coinaddr != 0 && unspentind > 0 && (hdrsi= *heightp/coin->chain->bundlesize) >= 0 && hdrsi < coin->bundlescount && (bp= coin->bundles[hdrsi]) != 0 && (rdata= bp->ramchain.H.data) != 0 && unspentind < rdata->numunspents )
+    {
+        U = (void *)(long)((long)rdata + rdata->Uoffset);
+        P = (void *)(long)((long)rdata + rdata->Poffset);
+        pkind = U[unspentind].pkind;
+        if ( pkind > 0 && pkind < rdata->numpkinds )
+        {
+            RTspend = 0;
+            if ( iguana_spentflag(coin,&RTspend,&spentheight,bp == coin->current ? &coin->RTramchain : &bp->ramchain,bp->hdrsi,unspentind,0,1,coin->longestchain,U[unspentind].value) == 0 )
+            {
+                if ( valuep != 0 )
+                    *valuep = U[unspentind].value;
+                bitcoin_address(coinaddr,iguana_addrtype(coin,U[unspentind].type),P[pkind].rmd160,sizeof(P[pkind].rmd160));
+                if ( spendscript != 0 && spendlenp != 0 )
+                    *spendlenp = iguana_voutscript(coin,bp,spendscript,0,&U[unspentind],&P[pkind],1);
+            }
+        }
+    }
+    return(unspentind);
+}
+
 cJSON *ramchain_unspentjson(struct iguana_unspent *up,uint32_t unspentind)
 {
     cJSON *item = cJSON_CreateObject();
@@ -58,7 +90,7 @@ cJSON *iguana_unspentjson(struct supernet_info *myinfo,struct iguana_info *coin,
     if ( iguana_scriptget(coin,scriptstr,asmstr,sizeof(scriptstr),hdrsi,unspentind,T[up->txidind].txid,up->vout,rmd160,up->type,pubkey33) != 0 )
         jaddstr(item,"scriptPubKey",scriptstr);
     jaddnum(item,"amount",dstr(up->value));
-    if ( (checkind= iguana_unspentindfind(coin,&height,T[up->txidind].txid,up->vout,coin->bundlescount-1)) != 0 )
+    if ( (checkind= iguana_unspentindfind(coin,0,0,0,0,&height,T[up->txidind].txid,up->vout,coin->bundlescount-1)) != 0 )
     {
         jaddnum(item,"confirmations",coin->blocks.hwmchain.height - height + 1);
         jaddnum(item,"checkind",checkind);
@@ -342,5 +374,4 @@ int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *co
     }
     return(num);
 }
-
 
