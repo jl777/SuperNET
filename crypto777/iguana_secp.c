@@ -182,18 +182,6 @@ bits256 bitcoin_pubkey33(uint8_t *data,bits256 privkey)
     return(pubkey);
 }
 
-int32_t bitcoin_sign(uint8_t *sig,int32_t maxlen,uint8_t *data,int32_t datalen,bits256 privkey)
-{
-    uint32_t siglen; EC_KEY *KEY; uint8_t oddeven; bits256 pubkey; int32_t retval = -1;
-    if ( (KEY= bitcoin_privkeyset(&oddeven,&pubkey,privkey)) != 0 )
-    {
-        if ( ECDSA_sign(0,data,datalen,sig,&siglen,KEY) > 0 && siglen <= maxlen )
-            retval = siglen;
-        EC_KEY_free(KEY);
-    }
-    return(retval);
-}
-
 int32_t bitcoin_verify(uint8_t *sig,int32_t siglen,uint8_t *data,int32_t datalen,uint8_t *pubkey,int32_t len)
 {
     ECDSA_SIG *esig; int32_t retval = -1; uint8_t tmp[33],*ptr,*sigptr = sig; EC_KEY *KEY = 0;
@@ -235,4 +223,44 @@ int32_t bitcoin_verify(uint8_t *sig,int32_t siglen,uint8_t *data,int32_t datalen
     return(retval);
 }
 
-
+int32_t bitcoin_sign(uint8_t *sig,int32_t maxlen,uint8_t *data,int32_t datalen,bits256 privkey)
+{
+    EC_KEY *KEY; uint8_t oddeven; bits256 pubkey; uint8_t *ptr; int32_t siglen,retval = -1;
+    ECDSA_SIG *SIG; BN_CTX *ctx; const EC_GROUP *group; BIGNUM *order,*halforder;
+    if ( (KEY= bitcoin_privkeyset(&oddeven,&pubkey,privkey)) != 0 )
+    {
+        if ( (SIG= ECDSA_do_sign(data,datalen,KEY)) != 0 )
+        {
+            ctx = BN_CTX_new();
+            BN_CTX_start(ctx);
+            group = EC_KEY_get0_group(KEY);
+            order = BN_CTX_get(ctx);
+            halforder = BN_CTX_get(ctx);
+            EC_GROUP_get_order(group,order,ctx);
+            BN_rshift1(halforder,order);
+            if ( BN_cmp(SIG->s,halforder) > 0 )
+            {
+                // enforce low S values, by negating the value (modulo the order) if above order/2.
+                BN_sub(SIG->s,order,SIG->s);
+            }
+            ptr = 0;
+            siglen = i2d_ECDSA_SIG(SIG,&ptr);
+            if ( ptr != 0 )
+            {
+                if ( siglen > 0 )
+                {
+                    memcpy(sig,ptr,siglen);
+                    retval = siglen;
+                }
+                free(ptr);
+            }
+            BN_CTX_end(ctx);
+            BN_CTX_free(ctx);
+            ECDSA_SIG_free(SIG);
+        }
+        //if ( ECDSA_sign(0,data,datalen,sig,&siglen,KEY) > 0 && siglen <= maxlen )
+        //    retval = siglen;
+        EC_KEY_free(KEY);
+    }
+    return(retval);
+}
