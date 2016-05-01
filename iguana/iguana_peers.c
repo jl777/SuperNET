@@ -523,7 +523,7 @@ void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct ig
         if ( strcmp(H->command,"block") == 0 || strcmp(H->command,"tx") == 0 )
         {
             if ( addr->RAWMEM.ptr == 0 )
-                iguana_meminit(&addr->RAWMEM,addr->ipaddr,0,IGUANA_MAXPACKETSIZE * 1.25,0);
+                iguana_meminit(&addr->RAWMEM,addr->ipaddr,0,IGUANA_MAXPACKETSIZE * 1.5,0);
             if ( addr->TXDATA.ptr == 0 )
                 iguana_meminit(&addr->TXDATA,"txdata",0,IGUANA_MAXPACKETSIZE*1.5,0);
             if ( addr->HASHMEM.ptr == 0 )
