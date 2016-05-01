@@ -380,3 +380,10 @@ char *oldbitcoin_base58encode(char *coinaddr,uint8_t *data_,int32_t datalen)
 
 #endif
 
+void curl_global_init(int flags) {}
+void curl_easy_init() {}
+void *curl_slist_append(int flags,char *val) { return(0); }
+void curl_easy_setopt(void *foo,void *foo2,void *foo3) {}
+void *curl_easy_perform(void *val) { return(0); }
+void curl_slist_free_all(void *val) { }
+void curl_easy_cleanup(void *val) { }
