@@ -736,7 +736,6 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     struct iguana_chain *iguana_createchain(cJSON *json);
     struct iguana_info *coin; int32_t j,m,mult,maxval,mapflags; char dirname[512]; cJSON *peers;
     mapflags = IGUANA_MAPRECVDATA | maphash*IGUANA_MAPTXIDITEMS | maphash*IGUANA_MAPPKITEMS | maphash*IGUANA_MAPBLOCKITEMS | maphash*IGUANA_MAPPEERITEMS;
-    printf("setcoin.%s\n",symbol);
     coin = iguana_coinadd(symbol,json);
     if ( (coin->MAXPEERS= maxpeers) <= 0 )
         coin->MAXPEERS = (strcmp(symbol,"BTC") == 0) ? 128 : 64;
