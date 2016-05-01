@@ -4355,6 +4355,8 @@ void mpz_mul (mpz_t r, const mpz_t u, const mpz_t v)
     mpz_clear (t);
 }
 
+#include <stdint.h>
+
 static const char base58_chars[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 char *bitcoin_base58encode(char *coinaddr,uint8_t *data,int32_t datalen)
