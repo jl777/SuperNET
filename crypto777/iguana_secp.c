@@ -22,7 +22,7 @@
 #include "../../secp256k1-zkp/include/secp256k1.h"
 
 static const char base58_chars[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-
+sss
 void bn_mpi2bn(BIGNUM *vo,uint8_t *data,int32_t datalen)
 {
 	uint8_t vch2[64 + 4]; uint32_t i,vch2_len = (int32_t)datalen + 4;
