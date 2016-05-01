@@ -824,6 +824,7 @@ cJSON *bitcoin_addoutput(struct iguana_info *coin,cJSON *txobj,uint8_t *payments
 int32_t bitcoin_changescript(struct iguana_info *coin,uint8_t *changescript,int32_t n,uint64_t *changep,char *changeaddr,uint64_t inputsatoshis,uint64_t satoshis,uint64_t txfee);
 cJSON *bitcoin_addinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32_t vout,uint32_t sequenceid,uint8_t *spendscript,int32_t spendlen,uint8_t *redeemscript,int32_t p2shlen,uint8_t *pubkeys[],int32_t numpubkeys);
 int32_t bitcoin_verifytx(struct iguana_info *coin,bits256 *signedtxidp,char **signedtx,char *rawtxstr,struct vin_info *V,int32_t numinputs);
+int32_t bitcoin_verify(void *ctx,uint8_t *sig,int32_t siglen,bits256 txhash2,uint8_t *pubkey,int32_t plen);
 char *bitcoin_json2hex(struct iguana_info *coin,bits256 *txidp,cJSON *txjson);
 int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr);
 char *issue_startForging(struct supernet_info *myinfo,char *secret);
@@ -944,6 +945,7 @@ int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 tx
 uint8_t iguana_addrtype(struct iguana_info *coin,uint8_t script_type);
 struct iguana_waddress *iguana_waddressadd(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_waccount *wacct,struct iguana_waddress *addwaddr,char *redeemScript);
 cJSON *iguana_createvins(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *txobj,cJSON *vins);
+bits256 bitcoin_pubkey33(void *ctx,uint8_t *data,bits256 privkey);
 
 extern int32_t HDRnet,netBLOCKS;
 

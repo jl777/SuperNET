@@ -17,7 +17,7 @@
 #include <string.h>
 #include "../includes/curve25519.h"
 #include "../includes/openssl/ec.h"
-#include "../includes/openssl/ecdsa.h"
+//#include "../includes/openssl/ecdsa.h"
 #include "../includes/openssl/obj_mac.h"
 #include "../../secp256k1-zkp/include/secp256k1.h"
 
@@ -52,53 +52,9 @@ int32_t bn_bn2mpi(uint8_t *data,const BIGNUM *v)
 	return(sz);
 }
 
-char *bitcoin_base58encode(char *coinaddr,uint8_t *data_,int32_t datalen)
-{
-	BIGNUM bn58,bn0,bn,dv,rem; BN_CTX *ctx; uint32_t i,n,flag=0; uint8_t swapbuf[512],rs[512];
-    const uint8_t *data = (void *)data_;
-    rs[0] = 0;
-    n = 0;
-    if ( datalen < (sizeof(swapbuf) >> 1) )
-    {
-        ctx = BN_CTX_new();
-        BN_init(&bn58), BN_init(&bn0), BN_init(&bn), BN_init(&dv), BN_init(&rem);
-        BN_set_word(&bn58,58);
-        BN_set_word(&bn0,0);
-        for (i=0; i<datalen; i++)
-            swapbuf[datalen - i - 1] = data[i];
-        swapbuf[datalen] = 0;
-        bn_mpi2bn(&bn,swapbuf,datalen+1);
-        while ( BN_cmp(&bn,&bn0) > 0 )
-        {
-            if ( BN_div(&dv,&rem,&bn,&bn58,ctx) == 0 )
-            {
-                flag = -1;
-                break;
-            }
-            BN_copy(&bn,&dv);
-            rs[n++] = base58_chars[BN_get_word(&rem)];
-        }
-        if ( flag == 0 )
-        {
-            for (i=0; i<datalen; i++)
-            {
-                if ( data[i] == 0 )
-                    rs[n++] = base58_chars[0];
-                else break;
-            }
-            for (i=0; i<n; i++)
-                coinaddr[n - i - 1] = rs[i];
-            coinaddr[n] = 0;
-        }
-        BN_clear_free(&bn58), BN_clear_free(&bn0), BN_clear_free(&bn), BN_clear_free(&dv), BN_clear_free(&rem);
-        BN_CTX_free(ctx);
-        return(coinaddr);
-    }
-    return(0);
-}
-
 int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
 {
+    int32_t bitcoin_base58decode_mpz(uint8_t *data,char *coinaddr);
  	uint32_t zeroes,be_sz=0,i,len; const char *p,*p1; BIGNUM bn58,bn,bnChar; uint8_t revdata[64]; BN_CTX *ctx;
 	ctx = BN_CTX_new();
 	BN_init(&bn58), BN_init(&bn), BN_init(&bnChar);
@@ -134,6 +90,22 @@ int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
 out:
 	BN_clear_free(&bn58), BN_clear_free(&bn), BN_clear_free(&bnChar);
 	BN_CTX_free(ctx);
+    {
+        int32_t checkval; uint8_t data2[256];
+        if ( (checkval= bitcoin_base58decode_mpz(data2,coinaddr)) != be_sz )
+            printf("base58 decode error checkval.%d != be_sz.%d\n",checkval,be_sz);
+        else if ( memcmp(data2,data,be_sz) != 0 )
+        {
+            for (i=0; i<be_sz; i++)
+                printf("%02x",data[i]);
+            printf(" data[%d]\n",be_sz);
+            for (i=0; i<be_sz; i++)
+                printf("%02x",data2[i]);
+            printf(" data\n");
+            printf("base58 decode data error\n");
+        }
+        else printf("base58 decode match\n");
+    }
 	return(be_sz);
 }
 
@@ -145,9 +117,15 @@ bits256 bitcoin_pubkey33(secp256k1_context *ctx,uint8_t *data,bits256 privkey)
         ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY), flag++;
     if ( ctx != 0 )
     {
+        if ( secp256k1_ec_seckey_verify(ctx,privkey.bytes) == 0 )
+        {
+            printf("bitcoin_sign illegal privkey\n");
+            return(pubkey);
+        }
         if ( secp256k1_ec_pubkey_create(ctx,&secppub,privkey.bytes) > 0 )
         {
-            secp256k1_ec_pubkey_serialize(ctx,data,&plen,&secppub,1);
+            plen = 33;
+            secp256k1_ec_pubkey_serialize(ctx,data,&plen,&secppub,SECP256K1_EC_COMPRESSED);
             if ( plen == 33 )
                 memcpy(pubkey.bytes,data+1,sizeof(pubkey));
         }
@@ -166,6 +144,11 @@ int32_t bitcoin_sign(void *ctx,uint8_t *sig,int32_t maxlen,bits256 txhash2,bits2
         ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY), flag++;
     if ( ctx != 0 )
     {
+        if ( secp256k1_ec_seckey_verify(ctx,privkey.bytes) == 0 )
+        {
+            printf("bitcoin_sign illegal privkey\n");
+            return(-1);
+        }
         if ( secp256k1_context_randomize(ctx,seed.bytes) > 0 )
         {
             if ( secp256k1_ecdsa_sign(ctx,&SIG,txhash2.bytes,privkey.bytes,secp256k1_nonce_function_rfc6979,extra_entropy.bytes) > 0 )
@@ -179,6 +162,27 @@ int32_t bitcoin_sign(void *ctx,uint8_t *sig,int32_t maxlen,bits256 txhash2,bits2
     }
     return(retval);
 }
+
+int32_t bitcoin_verify(void *ctx,uint8_t *sig,int32_t siglen,bits256 txhash2,uint8_t *pubkey,int32_t plen)
+{
+    int32_t flag=0,retval = -1; secp256k1_pubkey PUB; secp256k1_ecdsa_signature SIG;
+    if ( ctx == 0 )
+        ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY), flag++;
+    if ( ctx != 0 )
+    {
+        if ( secp256k1_ec_pubkey_parse(ctx,&PUB,pubkey,plen) > 0 )
+        {
+            secp256k1_ecdsa_signature_parse_der(ctx,&SIG,sig,siglen);
+            if ( secp256k1_ecdsa_verify(ctx,&SIG,txhash2.bytes,&PUB) > 0 )
+                retval = 0;
+        }
+        if ( flag != 0 )
+            secp256k1_context_destroy(ctx);
+    }
+    return(retval);
+}
+
+#ifdef oldway
 
 struct bp_key { EC_KEY *k; };
 
@@ -297,7 +301,7 @@ int32_t oldbitcoin_sign(uint8_t *sig,int32_t maxlen,uint8_t *data,int32_t datale
     return(retval);
 }
 
-bits256 oldbitcoin_pubkey33(uint8_t *data,bits256 privkey)
+bits256 oldbitcoin_pubkey33(void *_ctx,uint8_t *data,bits256 privkey)
 {
     uint8_t oddeven,data2[65]; size_t plen; bits256 pubkey; secp256k1_pubkey secppub; secp256k1_context *ctx;
     EC_KEY *KEY;
@@ -320,4 +324,59 @@ bits256 oldbitcoin_pubkey33(uint8_t *data,bits256 privkey)
     } else memset(pubkey.bytes,0,sizeof(pubkey));
     return(pubkey);
 }
+
+char *oldbitcoin_base58encode(char *coinaddr,uint8_t *data_,int32_t datalen)
+{
+	BIGNUM bn58,bn0,bn,dv,rem; BN_CTX *ctx; uint32_t i,n,flag=0; uint8_t swapbuf[512],rs[512];
+    const uint8_t *data = (void *)data_;
+    rs[0] = 0;
+    n = 0;
+    if ( datalen < (sizeof(swapbuf) >> 1) )
+    {
+        ctx = BN_CTX_new();
+        BN_init(&bn58), BN_init(&bn0), BN_init(&bn), BN_init(&dv), BN_init(&rem);
+        BN_set_word(&bn58,58);
+        BN_set_word(&bn0,0);
+        for (i=0; i<datalen; i++)
+            swapbuf[datalen - i - 1] = data[i];
+        swapbuf[datalen] = 0;
+        bn_mpi2bn(&bn,swapbuf,datalen+1);
+        while ( BN_cmp(&bn,&bn0) > 0 )
+        {
+            if ( BN_div(&dv,&rem,&bn,&bn58,ctx) == 0 )
+            {
+                flag = -1;
+                break;
+            }
+            BN_copy(&bn,&dv);
+            rs[n++] = base58_chars[BN_get_word(&rem)];
+        }
+        if ( flag == 0 )
+        {
+            for (i=0; i<datalen; i++)
+            {
+                if ( data[i] == 0 )
+                    rs[n++] = base58_chars[0];
+                else break;
+            }
+            for (i=0; i<n; i++)
+                coinaddr[n - i - 1] = rs[i];
+            coinaddr[n] = 0;
+        }
+        BN_clear_free(&bn58), BN_clear_free(&bn0), BN_clear_free(&bn), BN_clear_free(&dv), BN_clear_free(&rem);
+        BN_CTX_free(ctx);
+        {
+            char *bitcoin_base58encode_mpz(char *coinaddr,uint8_t *data,int32_t datalen);
+            char checkaddr[64];
+            bitcoin_base58encode_mpz(checkaddr,data_,datalen);
+            if ( strcmp(checkaddr,coinaddr) != 0 )
+                printf("mpz base58 error (%s) vs (%s)\n",checkaddr,coinaddr);
+            else printf("mpz matches\n");
+        }
+        return(coinaddr);
+    }
+    return(0);
+}
+
+#endif
 

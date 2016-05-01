@@ -432,7 +432,7 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
         {
             if ( (other= iguana_coinfind(base)) != 0 )
             {
-                bitcoin_pubkey33(pubkey,myinfo->persistent_priv);
+                bitcoin_pubkey33(0,pubkey,myinfo->persistent_priv);
                 bitcoin_address(coinaddr,other->chain->pubtype,pubkey,sizeof(pubkey));
                 jaddstr(argjson,base,coinaddr);
             }

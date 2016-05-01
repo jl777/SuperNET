@@ -676,7 +676,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
                     if ( bits256_nonz(vp->signers[j].privkey) > 0 )
                     {
                         pubkey = vp->signers[j].pubkey;
-                        bitcoin_pubkey33(pubkey,vp->signers[j].privkey);
+                        bitcoin_pubkey33(coin->ctx,pubkey,vp->signers[j].privkey);
                         plen = bitcoin_pubkeylen(pubkey);
                     }
                     if ( plen < 0 )
@@ -707,7 +707,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
 // s2 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141 - s1;
                         printf(" SIGNEDTX.[%02x] plen.%d siglen.%d\n",sig[siglen-1],plen,siglen);
                     }
-                    if ( oldbitcoin_verify(sig,siglen,sigtxid.bytes,sizeof(sigtxid),vp->signers[j].pubkey,bitcoin_pubkeylen(vp->signers[j].pubkey)) < 0 )
+                    if ( bitcoin_verify(coin->ctx,sig,vp->signers[j].siglen-1,sigtxid,vp->signers[j].pubkey,bitcoin_pubkeylen(vp->signers[j].pubkey)) < 0 )
                     {
                         init_hexbytes_noT(bigstr,serialized,n2);
                         printf("(%s) doesnt verify hash2.%s\n",bigstr,bits256_str(str,sigtxid));
@@ -798,7 +798,7 @@ cJSON *iguana_signtx(struct supernet_info *myinfo,struct iguana_info *coin,bits2
                 if ( bits256_nonz(spend->inputs[i].privkeys[j]) != 0 )
                 {
                     vp->signers[j].privkey = spend->inputs[i].privkeys[j];
-                    bitcoin_pubkey33(vp->signers[j].pubkey,vp->signers[j].privkey);
+                    bitcoin_pubkey33(coin->ctx,vp->signers[j].pubkey,vp->signers[j].privkey);
                 }
                 else
                 {
@@ -968,7 +968,7 @@ STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighas
                 spend->inputs[i].privkeys[0] = privkey;
                 if ( bits256_nonz(privkey) != 0 )
                 {
-                    bitcoin_pubkey33(pubkey33,privkey);
+                    bitcoin_pubkey33(myinfo->ctx,pubkey33,privkey);
                     memcpy(spend->inputs[i].pubkeys[0],pubkey33,33);
                     bitcoin_address(coinaddr,coin->chain->pubtype,pubkey33,33);
                     if ( myinfo->expiration != 0 && ((waddr= iguana_waddresssearch(myinfo,coin,&wacct,coinaddr)) == 0 || bits256_nonz(waddr->privkey) == 0) )

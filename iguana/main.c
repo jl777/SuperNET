@@ -23,6 +23,7 @@
 #include "../pnacl_main.h"
 #include "iguana777.h"
 #include "SuperNET.h"
+#include "../../secp256k1-zkp/include/secp256k1.h"
 
 #undef fopen
 #undef fclose
@@ -138,6 +139,8 @@ void SuperNET_hex2str(char *str,uint8_t *hex,int32_t len)
 
 struct supernet_info *SuperNET_MYINFO(char *passphrase)
 {
+    if ( MYINFO.ctx == 0 )
+        MYINFO.ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
     if ( passphrase == 0 || passphrase[0] == 0 )
         return(&MYINFO);
     else

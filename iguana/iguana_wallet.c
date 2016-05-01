@@ -186,7 +186,7 @@ struct iguana_waddress *iguana_waddresssearch(struct supernet_info *myinfo,struc
 struct iguana_waddress *iguana_waddresscalc(uint8_t pubtype,uint8_t wiftype,struct iguana_waddress *addr,bits256 privkey)
 {
     addr->privkey = privkey;
-    bitcoin_pubkey33(addr->pubkey,addr->privkey);
+    bitcoin_pubkey33(0,addr->pubkey,addr->privkey);
     calc_rmd160_sha256(addr->rmd160,addr->pubkey,33);
     bitcoin_address(addr->coinaddr,pubtype,addr->rmd160,sizeof(addr->rmd160));
     if ( bitcoin_priv2wif(addr->wifstr,addr->privkey,wiftype) > 0 )

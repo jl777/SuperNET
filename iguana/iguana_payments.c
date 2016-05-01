@@ -84,7 +84,7 @@ int32_t iguana_pubkeyget(struct supernet_info *myinfo,struct iguana_info *coin,u
             return(-1);
         else
         {
-            pubkey = bitcoin_pubkey33(pubkeydata,privkey);
+            pubkey = bitcoin_pubkey33(myinfo->ctx,pubkeydata,privkey);
             if ( bits256_nonz(pubkey) == 0 )
                 return(-1);
         }

@@ -898,7 +898,7 @@ cJSON *SuperNET_rosettajson(bits256 privkey,int32_t showprivs)
     RS_encode(str,nxt64bits);
     jaddstr(retjson,"RS",str);
     jadd64bits(retjson,"NXT",nxt64bits);
-    bitcoin_pubkey33(pub,privkey);
+    bitcoin_pubkey33(0,pub,privkey);
     init_hexbytes_noT(str,pub,33);
     jaddstr(retjson,"btcpubkey",str);
     calc_OP_HASH160(str2,rmd160,str);
@@ -948,7 +948,7 @@ HASH_AND_INT(SuperNET,priv2pub,privkey,addrtype)
     retjson = cJSON_CreateObject();
     crypto_box_priv2pub(pub.bytes,privkey.bytes);
     jaddbits256(retjson,"curve25519",pub);
-    pub = bitcoin_pubkey33(pubkey,privkey);
+    pub = bitcoin_pubkey33(myinfo->ctx,pubkey,privkey);
     jaddbits256(retjson,"secp256k1",pub);
     bitcoin_address(coinaddr,addrtype,pubkey,33);
     jaddstr(retjson,"result",coinaddr);

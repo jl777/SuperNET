@@ -403,7 +403,7 @@ bits256 instantdex_derivekeypair(bits256 *newprivp,uint8_t pubkey[33],bits256 pr
     bits256 sharedsecret;
     sharedsecret = curve25519_shared(privkey,orderhash);
     vcalc_sha256cat(newprivp->bytes,orderhash.bytes,sizeof(orderhash),sharedsecret.bytes,sizeof(sharedsecret));
-    return(bitcoin_pubkey33(pubkey,*newprivp));
+    return(bitcoin_pubkey33(0,pubkey,*newprivp));
 }
 
 int32_t instantdex_pubkeyargs(struct bitcoin_swapinfo *swap,cJSON *newjson,int32_t numpubs,bits256 privkey,bits256 hash,int32_t firstbyte)
@@ -506,7 +506,7 @@ void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapi
                 }
                 continue;
             }
-            pubi = bitcoin_pubkey33(otherpubkey,otherpriv);
+            pubi = bitcoin_pubkey33(myinfo->ctx,otherpubkey,otherpriv);
             vcalc_sha256(0,hashpriv.bytes,otherpriv.bytes,sizeof(otherpriv));
             if ( otherpubkey[0] != (instantdex_isbob(swap) ^ 1) + 0x02 )
             {
@@ -1102,7 +1102,7 @@ cJSON *instantdex_bailinspend(struct iguana_info *coin,bits256 privkey,uint64_t 
 {
     int32_t n; cJSON *txobj;
     int32_t scriptv0len; uint8_t p2shscript[256],rmd160[20],scriptv0[128],pubkey[35];
-    bitcoin_pubkey33(pubkey,privkey);
+    bitcoin_pubkey33(coin->ctx,pubkey,privkey);
     n = bitcoin_pubkeyspend(p2shscript,0,pubkey);
     calc_rmd160_sha256(rmd160,p2shscript,n);
     scriptv0len = bitcoin_p2shspend(scriptv0,0,rmd160);
