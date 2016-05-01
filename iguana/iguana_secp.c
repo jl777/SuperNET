@@ -137,9 +137,9 @@ out:
 	return(be_sz);
 }
 
-bits256 bitcoin_pubkey33(secp256k1_context_t *ctx,uint8_t *data,bits256 privkey)
+bits256 bitcoin_pubkey33(secp256k1_context *ctx,uint8_t *data,bits256 privkey)
 {
-    int32_t plen,flag=0; bits256 pubkey; secp256k1_pubkey_t secppub;
+    int32_t flag=0; size_t plen; bits256 pubkey; secp256k1_pubkey secppub;
     memset(pubkey.bytes,0,sizeof(pubkey));
     if ( ctx == 0 )
         ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY), flag++;
@@ -159,7 +159,7 @@ bits256 bitcoin_pubkey33(secp256k1_context_t *ctx,uint8_t *data,bits256 privkey)
 
 int32_t bitcoin_sign(void *ctx,uint8_t *sig,int32_t maxlen,bits256 txhash2,bits256 privkey)
 {
-    secp256k1_ecdsa_signature_t SIG; bits256 extra_entropy,seed; int32_t flag = 0,retval = -1,siglen = 72;
+    secp256k1_ecdsa_signature SIG; bits256 extra_entropy,seed; int32_t flag = 0,retval = -1; size_t siglen = 72;
     seed = rand256(0);
     extra_entropy = rand256(0);
     if ( ctx == 0 )
@@ -168,10 +168,10 @@ int32_t bitcoin_sign(void *ctx,uint8_t *sig,int32_t maxlen,bits256 txhash2,bits2
     {
         if ( secp256k1_context_randomize(ctx,seed.bytes) > 0 )
         {
-            if ( secp256k1_ecdsa_sign(ctx,txhash2.bytes,&SIG,privkey.bytes,secp256k1_nonce_function_rfc6979,extra_entropy.bytes) > 0 )
+            if ( secp256k1_ecdsa_sign(ctx,&SIG,txhash2.bytes,privkey.bytes,secp256k1_nonce_function_rfc6979,extra_entropy.bytes) > 0 )
             {
                 if ( secp256k1_ecdsa_signature_serialize_der(ctx,sig,&siglen,&SIG) > 0 )
-                    retval = siglen;
+                    retval = (int32_t)siglen;
             }
         }
         if ( flag != 0 )
@@ -299,7 +299,7 @@ int32_t oldbitcoin_sign(uint8_t *sig,int32_t maxlen,uint8_t *data,int32_t datale
 
 bits256 oldbitcoin_pubkey33(uint8_t *data,bits256 privkey)
 {
-    uint8_t oddeven,data2[65]; int32_t plen; bits256 pubkey; secp256k1_pubkey_t secppub; secp256k1_context_t *ctx;
+    uint8_t oddeven,data2[65]; size_t plen; bits256 pubkey; secp256k1_pubkey secppub; secp256k1_context *ctx;
     EC_KEY *KEY;
     if ( (KEY= oldbitcoin_privkeyset(&oddeven,&pubkey,privkey)) != 0 )
     {
@@ -312,7 +312,7 @@ bits256 oldbitcoin_pubkey33(uint8_t *data,bits256 privkey)
             {
                 secp256k1_ec_pubkey_serialize(ctx,data2,&plen,&secppub,1);
                 if ( memcmp(data2,data,plen) != 0 )
-                    printf("pubkey compare error plen.%d\n",plen);
+                    printf("pubkey compare error plen.%d\n",(int32_t)plen);
                 else printf("pubkey verified\n");
             } //else printf("error secp256k1_ec_pubkey_create\n");
             secp256k1_context_destroy(ctx);
