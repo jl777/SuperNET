@@ -1,2 +1,3 @@
+rm *.o
 gcc -c  -O2 *.c jpeg/*.c jpeg/unix/*.c -I/usr/lib/x86_64-linux-gnu/curl 
 rm -f ../agents/libcrypto777.a; ar rcu ../agents/libcrypto777.a *.o 
