@@ -23,92 +23,6 @@
 
 static const char base58_chars[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
-void bn_mpi2bn(BIGNUM *vo,uint8_t *data,int32_t datalen)
-{
-	uint8_t vch2[64 + 4]; uint32_t i,vch2_len = (int32_t)datalen + 4;
-    if ( datalen < sizeof(vch2) )
-    {
-        vch2[0] = (datalen >> 24) & 0xff;
-        vch2[1] = (datalen >> 16) & 0xff;
-        vch2[2] = (datalen >> 8) & 0xff;
-        vch2[3] = (datalen >> 0) & 0xff;
-        for (i=0; i<datalen; i++)
-            vch2[4 + datalen - i - 1] = data[i];
-        BN_mpi2bn(vch2,vch2_len,vo);
-    }
-}
-
-int32_t bn_bn2mpi(uint8_t *data,const BIGNUM *v)
-{
-	uint8_t s_be[64]; int32_t i,sz = BN_bn2mpi(v,NULL);
-	if ( sz >= 4 && sz < sizeof(s_be) ) // get MPI format size
-    {
-        BN_bn2mpi(v,s_be);
-        // copy-swap MPI to little endian, sans 32-bit size prefix
-        sz -= 4;
-        for (i=0; i<sz; i++)
-            data[sz - i - 1] = s_be[i + 4];
-    }
-	return(sz);
-}
-
-int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
-{
-    int32_t bitcoin_base58decode_mpz(uint8_t *data,char *coinaddr);
- 	uint32_t zeroes,be_sz=0,i,len; const char *p,*p1; BIGNUM bn58,bn,bnChar; uint8_t revdata[64]; BN_CTX *ctx;
-	ctx = BN_CTX_new();
-	BN_init(&bn58), BN_init(&bn), BN_init(&bnChar);
-    BN_set_word(&bn58,58), BN_set_word(&bn,0);
-	while ( isspace((uint32_t)(*coinaddr & 0xff)) )
-		coinaddr++;
-	for (p=coinaddr; *p; p++)
-    {
-		p1 = strchr(base58_chars,*p);
-		if ( p1 == 0 )
-        {
-			while (isspace((uint32_t)*p))
-				p++;
-			if ( *p != '\0' )
-				goto out;
-			break;
-		}
-		BN_set_word(&bnChar,(int32_t)(p1 - base58_chars));
-		if ( BN_mul(&bn,&bn,&bn58,ctx) == 0 || BN_add(&bn,&bn,&bnChar) == 0 )
-			goto out;
-	}
-    len = bn_bn2mpi(revdata,&bn);
-	if ( len >= 2 && revdata[len - 1] == 0 && revdata[len - 2] >= 0x80 )
-		len--;
-    zeroes = 0;
-	for (p=coinaddr; *p==base58_chars[0]; p++)
-		zeroes++;
-    be_sz = (uint32_t)len + (uint32_t)zeroes;
-	memset(data,0,be_sz);
-    for (i=0; i<len; i++)
-        data[i+zeroes] = revdata[len - 1 - i];
-    //printf("len.%d be_sz.%d zeroes.%d data[0] %02x\n",len,be_sz,zeroes,data[0]);
-out:
-	BN_clear_free(&bn58), BN_clear_free(&bn), BN_clear_free(&bnChar);
-	BN_CTX_free(ctx);
-    {
-        int32_t checkval; uint8_t data2[256];
-        if ( (checkval= bitcoin_base58decode_mpz(data2,coinaddr)) != be_sz )
-            printf("base58 decode error checkval.%d != be_sz.%d\n",checkval,be_sz);
-        else if ( memcmp(data2,data,be_sz) != 0 )
-        {
-            for (i=0; i<be_sz; i++)
-                printf("%02x",data[i]);
-            printf(" data[%d]\n",be_sz);
-            for (i=0; i<be_sz; i++)
-                printf("%02x",data2[i]);
-            printf(" data\n");
-            printf("base58 decode data error\n");
-        }
-        else printf("base58 decode match\n");
-    }
-	return(be_sz);
-}
-
 bits256 bitcoin_pubkey33(secp256k1_context *ctx,uint8_t *data,bits256 privkey)
 {
     int32_t flag=0; size_t plen; bits256 pubkey; secp256k1_pubkey secppub;
@@ -323,6 +237,92 @@ bits256 oldbitcoin_pubkey33(void *_ctx,uint8_t *data,bits256 privkey)
         }
     } else memset(pubkey.bytes,0,sizeof(pubkey));
     return(pubkey);
+}
+
+void bn_mpi2bn(BIGNUM *vo,uint8_t *data,int32_t datalen)
+{
+	uint8_t vch2[64 + 4]; uint32_t i,vch2_len = (int32_t)datalen + 4;
+    if ( datalen < sizeof(vch2) )
+    {
+        vch2[0] = (datalen >> 24) & 0xff;
+        vch2[1] = (datalen >> 16) & 0xff;
+        vch2[2] = (datalen >> 8) & 0xff;
+        vch2[3] = (datalen >> 0) & 0xff;
+        for (i=0; i<datalen; i++)
+            vch2[4 + datalen - i - 1] = data[i];
+        BN_mpi2bn(vch2,vch2_len,vo);
+    }
+}
+
+int32_t bn_bn2mpi(uint8_t *data,const BIGNUM *v)
+{
+	uint8_t s_be[64]; int32_t i,sz = BN_bn2mpi(v,NULL);
+	if ( sz >= 4 && sz < sizeof(s_be) ) // get MPI format size
+    {
+        BN_bn2mpi(v,s_be);
+        // copy-swap MPI to little endian, sans 32-bit size prefix
+        sz -= 4;
+        for (i=0; i<sz; i++)
+            data[sz - i - 1] = s_be[i + 4];
+    }
+	return(sz);
+}
+
+int32_t oldbitcoin_base58decode(uint8_t *data,char *coinaddr)
+{
+    int32_t bitcoin_base58decode_mpz(uint8_t *data,char *coinaddr);
+ 	uint32_t zeroes,be_sz=0,i,len; const char *p,*p1; BIGNUM bn58,bn,bnChar; uint8_t revdata[64]; BN_CTX *ctx;
+	ctx = BN_CTX_new();
+	BN_init(&bn58), BN_init(&bn), BN_init(&bnChar);
+    BN_set_word(&bn58,58), BN_set_word(&bn,0);
+	while ( isspace((uint32_t)(*coinaddr & 0xff)) )
+		coinaddr++;
+	for (p=coinaddr; *p; p++)
+    {
+		p1 = strchr(base58_chars,*p);
+		if ( p1 == 0 )
+        {
+			while (isspace((uint32_t)*p))
+				p++;
+			if ( *p != '\0' )
+				goto out;
+			break;
+		}
+		BN_set_word(&bnChar,(int32_t)(p1 - base58_chars));
+		if ( BN_mul(&bn,&bn,&bn58,ctx) == 0 || BN_add(&bn,&bn,&bnChar) == 0 )
+			goto out;
+	}
+    len = bn_bn2mpi(revdata,&bn);
+	if ( len >= 2 && revdata[len - 1] == 0 && revdata[len - 2] >= 0x80 )
+		len--;
+    zeroes = 0;
+	for (p=coinaddr; *p==base58_chars[0]; p++)
+		zeroes++;
+    be_sz = (uint32_t)len + (uint32_t)zeroes;
+	memset(data,0,be_sz);
+    for (i=0; i<len; i++)
+        data[i+zeroes] = revdata[len - 1 - i];
+    //printf("len.%d be_sz.%d zeroes.%d data[0] %02x\n",len,be_sz,zeroes,data[0]);
+out:
+	BN_clear_free(&bn58), BN_clear_free(&bn), BN_clear_free(&bnChar);
+	BN_CTX_free(ctx);
+    {
+        int32_t checkval; uint8_t data2[256];
+        if ( (checkval= bitcoin_base58decode_mpz(data2,coinaddr)) != be_sz )
+            printf("base58 decode error checkval.%d != be_sz.%d\n",checkval,be_sz);
+        else if ( memcmp(data2,data,be_sz) != 0 )
+        {
+            for (i=0; i<be_sz; i++)
+                printf("%02x",data[i]);
+            printf(" data[%d]\n",be_sz);
+            for (i=0; i<be_sz; i++)
+                printf("%02x",data2[i]);
+            printf(" data\n");
+            printf("base58 decode data error\n");
+        }
+        else printf("base58 decode match\n");
+    }
+	return(be_sz);
 }
 
 char *oldbitcoin_base58encode(char *coinaddr,uint8_t *data_,int32_t datalen)
