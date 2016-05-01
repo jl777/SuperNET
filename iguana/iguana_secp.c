@@ -387,3 +387,7 @@ void curl_easy_setopt(void *foo,void *foo2,void *foo3) {}
 void *curl_easy_perform(void *val) { return(0); }
 void curl_slist_free_all(void *val) { }
 void curl_easy_cleanup(void *val) { }
+void curl_easy_reset() {}
+void curl_easy_getinfo() {}
+void curl_easy_strerror() {}
+
