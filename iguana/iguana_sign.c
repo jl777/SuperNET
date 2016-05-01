@@ -696,7 +696,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
                         sigtxid.bytes[31-i] = revsigtxid.bytes[i];
                     if ( 1 && bits256_nonz(vp->signers[j].privkey) != 0 )
                     {
-                        siglen = bitcoin_sign(vp->signers[j].sig,sizeof(vp->signers[j].sig),sigtxid.bytes,sizeof(sigtxid),vp->signers[j].privkey);
+                        siglen = bitcoin_sign(coin->ctx,vp->signers[j].sig,sigtxid,vp->signers[j].privkey);
                         sig = vp->signers[j].sig;
                         sig[siglen++] = hashtype;
                         vp->signers[j].siglen = siglen;
@@ -707,7 +707,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
 // s2 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141 - s1;
                         printf(" SIGNEDTX.[%02x] plen.%d siglen.%d\n",sig[siglen-1],plen,siglen);
                     }
-                    if ( bitcoin_verify(sig,siglen,sigtxid.bytes,sizeof(sigtxid),vp->signers[j].pubkey,bitcoin_pubkeylen(vp->signers[j].pubkey)) < 0 )
+                    if ( oldbitcoin_verify(sig,siglen,sigtxid.bytes,sizeof(sigtxid),vp->signers[j].pubkey,bitcoin_pubkeylen(vp->signers[j].pubkey)) < 0 )
                     {
                         init_hexbytes_noT(bigstr,serialized,n2);
                         printf("(%s) doesnt verify hash2.%s\n",bigstr,bits256_str(str,sigtxid));

@@ -16,14 +16,12 @@
 #include <ctype.h>
 #include <string.h>
 #include "../includes/curve25519.h"
-#include "../includes/curve25519.h"
 #include "../includes/openssl/ec.h"
 #include "../includes/openssl/ecdsa.h"
 #include "../includes/openssl/obj_mac.h"
 #include "../../secp256k1-zkp/include/secp256k1.h"
 
 static const char base58_chars[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-struct bp_key { EC_KEY *k; };
 
 void bn_mpi2bn(BIGNUM *vo,uint8_t *data,int32_t datalen)
 {
@@ -139,7 +137,52 @@ out:
 	return(be_sz);
 }
 
-EC_KEY *bitcoin_privkeyset(uint8_t *oddevenp,bits256 *pubkeyp,bits256 privkey)
+bits256 bitcoin_pubkey33(secp256k1_context_t *ctx,uint8_t *data,bits256 privkey)
+{
+    int32_t plen,flag=0; bits256 pubkey; secp256k1_pubkey_t secppub;
+    memset(pubkey.bytes,0,sizeof(pubkey));
+    if ( ctx == 0 )
+        ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY), flag++;
+    if ( ctx != 0 )
+    {
+        if ( secp256k1_ec_pubkey_create(ctx,&secppub,privkey.bytes) > 0 )
+        {
+            secp256k1_ec_pubkey_serialize(ctx,data,&plen,&secppub,1);
+            if ( plen == 33 )
+                memcpy(pubkey.bytes,data+1,sizeof(pubkey));
+        }
+        if ( flag != 0 )
+            secp256k1_context_destroy(ctx);
+    }
+    return(pubkey);
+}
+
+int32_t bitcoin_sign(void *ctx,uint8_t *sig,int32_t maxlen,bits256 txhash2,bits256 privkey)
+{
+    secp256k1_ecdsa_signature_t SIG; bits256 extra_entropy,seed; int32_t flag = 0,retval = -1,siglen = 72;
+    seed = rand256(0);
+    extra_entropy = rand256(0);
+    if ( ctx == 0 )
+        ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY), flag++;
+    if ( ctx != 0 )
+    {
+        if ( secp256k1_context_randomize(ctx,seed.bytes) > 0 )
+        {
+            if ( secp256k1_ecdsa_sign(ctx,txhash2.bytes,&SIG,privkey.bytes,secp256k1_nonce_function_rfc6979,extra_entropy.bytes) > 0 )
+            {
+                if ( secp256k1_ecdsa_signature_serialize_der(ctx,sig,&siglen,&SIG) > 0 )
+                    retval = siglen;
+            }
+        }
+        if ( flag != 0 )
+            secp256k1_context_destroy(ctx);
+    }
+    return(retval);
+}
+
+struct bp_key { EC_KEY *k; };
+
+EC_KEY *oldbitcoin_privkeyset(uint8_t *oddevenp,bits256 *pubkeyp,bits256 privkey)
 {
     BIGNUM *bn; BN_CTX *ctx = NULL; uint8_t *ptr,tmp[33]; EC_POINT *pub_key = NULL; const EC_GROUP *group;
     EC_KEY *KEY = EC_KEY_new_by_curve_name(NID_secp256k1);
@@ -171,31 +214,7 @@ EC_KEY *bitcoin_privkeyset(uint8_t *oddevenp,bits256 *pubkeyp,bits256 privkey)
     return(KEY);
 }
 
-bits256 bitcoin_pubkey33(uint8_t *data,bits256 privkey)
-{
-    uint8_t oddeven,data2[65]; int32_t plen; bits256 pubkey; secp256k1_pubkey_t secppub; secp256k1_context_t *ctx;
-    EC_KEY *KEY;
-    if ( (KEY= bitcoin_privkeyset(&oddeven,&pubkey,privkey)) != 0 )
-    {
-        data[0] = oddeven;
-        memcpy(data+1,pubkey.bytes,sizeof(pubkey));
-        EC_KEY_free(KEY);
-        if ( (ctx= secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY)) != 0 )
-        {
-            if ( secp256k1_ec_pubkey_create(ctx,&secppub,privkey.bytes) > 0 )
-            {
-                secp256k1_ec_pubkey_serialize(ctx,data2,&plen,&secppub,1);
-                if ( memcmp(data2,data,plen) != 0 )
-                    printf("pubkey compare error plen.%d\n",plen);
-                else printf("pubkey verified\n");
-            } //else printf("error secp256k1_ec_pubkey_create\n");
-            secp256k1_context_destroy(ctx);
-        }
-    } else memset(pubkey.bytes,0,sizeof(pubkey));
-    return(pubkey);
-}
-
-int32_t bitcoin_verify(uint8_t *sig,int32_t siglen,uint8_t *data,int32_t datalen,uint8_t *pubkey,int32_t len)
+int32_t oldbitcoin_verify(uint8_t *sig,int32_t siglen,uint8_t *data,int32_t datalen,uint8_t *pubkey,int32_t len)
 {
     ECDSA_SIG *esig; int32_t retval = -1; uint8_t tmp[33],*ptr,*sigptr = sig; EC_KEY *KEY = 0;
     if ( len < 0 )
@@ -236,55 +255,11 @@ int32_t bitcoin_verify(uint8_t *sig,int32_t siglen,uint8_t *data,int32_t datalen
     return(retval);
 }
 
-/*secp256k1_context_t *secp256k1_ctx(secp256k1_context_t *ctx,uint32_t flags)
-{
-    //ctx->illegal_callback = default_illegal_callback;
-    //ctx->error_callback = default_error_callback;
-    secp256k1_ecmult_context_init(&ctx->ecmult_ctx);
-    secp256k1_ecmult_gen_context_init(&ctx->ecmult_gen_ctx);
-#ifdef ENABLE_MODULE_RANGEPROOF
-    secp256k1_pedersen_context_init(&ctx->pedersen_ctx);
-    secp256k1_rangeproof_context_init(&ctx->rangeproof_ctx);
-#endif
-    if ( (flags & SECP256K1_CONTEXT_SIGN) != 0 )
-        secp256k1_ecmult_gen_context_build(&ctx->ecmult_gen_ctx,&ctx->error_callback);
-    if ( (flags & SECP256K1_CONTEXT_VERIFY) != 0 )
-        secp256k1_ecmult_context_build(&ctx->ecmult_ctx,&ctx->error_callback);
-    return(ctx);
-}*/
-
-int32_t bitcoin_sign(uint8_t *sig,int32_t maxlen,uint8_t *data,int32_t datalen,bits256 privkey)
-{
-    secp256k1_context_t *ctx; secp256k1_ecdsa_signature_t SIG; bits256 extra_entropy,seed; int32_t retval = -1,siglen = 72;
-    if ( datalen == sizeof(bits256) )
-    {
-        {
-            uint8_t pubkey[65];
-            bitcoin_pubkey33(pubkey,privkey);
-        }
-        seed = rand256(0);
-        extra_entropy = rand256(0);
-        if ( (ctx= secp256k1_context_create(SECP256K1_CONTEXT_SIGN)) != 0 )
-        {
-            if ( secp256k1_context_randomize(ctx,seed.bytes) > 0 )
-            {
-                if ( secp256k1_ecdsa_sign(ctx,data,&SIG,privkey.bytes,secp256k1_nonce_function_rfc6979,extra_entropy.bytes) > 0 )
-                {
-                    if ( secp256k1_ecdsa_signature_serialize_der(ctx,sig,&siglen,&SIG) > 0 )
-                        retval = siglen;
-                }
-            }
-            secp256k1_context_destroy(ctx);
-        }
-    }
-    return(retval);
-}
-
 int32_t oldbitcoin_sign(uint8_t *sig,int32_t maxlen,uint8_t *data,int32_t datalen,bits256 privkey)
 {
     EC_KEY *KEY; uint8_t oddeven; bits256 pubkey; uint8_t *ptr; int32_t siglen,retval = -1;
     ECDSA_SIG *SIG; BN_CTX *ctx; const EC_GROUP *group; BIGNUM *order,*halforder;
-    if ( (KEY= bitcoin_privkeyset(&oddeven,&pubkey,privkey)) != 0 )
+    if ( (KEY= oldbitcoin_privkeyset(&oddeven,&pubkey,privkey)) != 0 )
     {
         if ( (SIG= ECDSA_do_sign(data,datalen,KEY)) != 0 )
         {
@@ -321,3 +296,28 @@ int32_t oldbitcoin_sign(uint8_t *sig,int32_t maxlen,uint8_t *data,int32_t datale
     }
     return(retval);
 }
+
+bits256 oldbitcoin_pubkey33(uint8_t *data,bits256 privkey)
+{
+    uint8_t oddeven,data2[65]; int32_t plen; bits256 pubkey; secp256k1_pubkey_t secppub; secp256k1_context_t *ctx;
+    EC_KEY *KEY;
+    if ( (KEY= oldbitcoin_privkeyset(&oddeven,&pubkey,privkey)) != 0 )
+    {
+        data[0] = oddeven;
+        memcpy(data+1,pubkey.bytes,sizeof(pubkey));
+        EC_KEY_free(KEY);
+        if ( (ctx= secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY)) != 0 )
+        {
+            if ( secp256k1_ec_pubkey_create(ctx,&secppub,privkey.bytes) > 0 )
+            {
+                secp256k1_ec_pubkey_serialize(ctx,data2,&plen,&secppub,1);
+                if ( memcmp(data2,data,plen) != 0 )
+                    printf("pubkey compare error plen.%d\n",plen);
+                else printf("pubkey verified\n");
+            } //else printf("error secp256k1_ec_pubkey_create\n");
+            secp256k1_context_destroy(ctx);
+        }
+    } else memset(pubkey.bytes,0,sizeof(pubkey));
+    return(pubkey);
+}
+

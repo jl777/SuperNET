@@ -76,8 +76,8 @@ char *iguana_scriptget(struct iguana_info *coin,char *scriptstr,char *asmstr,int
 
 int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr);
 char *bitcoin_base58encode(char *coinaddr,uint8_t *data_,int32_t datalen);
-int32_t bitcoin_sign(uint8_t *sig,int32_t maxlen,uint8_t *data,int32_t datalen,bits256 privkey);
-int32_t bitcoin_verify(uint8_t *sig,int32_t siglen,uint8_t *data,int32_t datalen,uint8_t *pubkey,int32_t len);
+int32_t bitcoin_sign(void *ctx,uint8_t *sig,bits256 txhash2,bits256 privkey);
+int32_t oldbitcoin_verify(uint8_t *sig,int32_t siglen,uint8_t *data,int32_t datalen,uint8_t *pubkey,int32_t len);
 
 
 #endif

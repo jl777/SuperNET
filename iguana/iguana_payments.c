@@ -389,7 +389,7 @@ HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool)
 
 TWO_STRINGS(bitcoinrpc,signmessage,address,messagestr)
 {
-    bits256 privkey; int32_t n,len,siglen; char sigstr[256],sig64str[256]; uint8_t sig[128],*message=0; cJSON *retjson = cJSON_CreateObject();
+    bits256 privkey,hash2; int32_t n,len,siglen; char sigstr[256],sig64str[256]; uint8_t sig[128],*message=0; cJSON *retjson = cJSON_CreateObject();
     if ( coin != 0 )
     {
         privkey = iguana_str2priv(myinfo,coin,address);
@@ -400,9 +400,10 @@ TWO_STRINGS(bitcoinrpc,signmessage,address,messagestr)
             {
                 message = malloc(n-2);
                 decode_hex(message,n-2,messagestr+2);
-                n -= 2;
+                n--;
             } else message = (uint8_t *)messagestr, n <<= 1;
-            if ( (siglen= bitcoin_sign(sig,sizeof(sig),message,n,privkey)) > 0 )
+            hash2 = bits256_doublesha256(0,message,n);
+            if ( (siglen= bitcoin_sign(coin->ctx,sig,hash2,privkey)) > 0 )
             {
                 sigstr[0] = sig64str[0] = 0;
                 //init_hexbytes_noT(sigstr,sig,siglen);

@@ -15,6 +15,8 @@
 
 
 #include "iguana777.h"
+#include "../../secp256k1-zkp/include/secp256k1.h"
+
 const char *Hardcoded_coins[][3] = { { "BTC", "bitcoin", "0" }, { "BTCD", "BitcoinDark", "129" },  { "VPN", "VPNcoin", "129" }, { "LTC", "litecoin", "129" } , { "endmarker", "", "" } };
 
 struct iguana_info *iguana_coinfind(const char *symbol)
@@ -72,6 +74,7 @@ struct iguana_info *iguana_coinadd(const char *symbol,cJSON *argjson)
                         else strcpy(coin->name,symbol);
                     }
                     coin->chain = iguana_chainfind((char *)symbol,argjson,1);
+                    coin->ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
                     strcpy(coin->symbol,symbol);
                     iguana_initcoin(coin,argjson);
                 }
