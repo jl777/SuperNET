@@ -1405,22 +1405,25 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
     {
         if ( (argjson= cJSON_Parse(decryptstr)) != 0 )
         {
-            printf("decrypted.(%s) exp.%u pass.(%s)\n",decryptstr,myinfo->expiration,password);
-            if ( myinfo->decryptstr != 0 )
-                free(myinfo->decryptstr);
-            myinfo->decryptstr = decryptstr;
-            if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
+            if ( jobj(argjson,"error") == 0 )
             {
-                SuperNET_setkeys(myinfo,passphrase,(int32_t)strlen(passphrase),1);
-                free_json(argjson);
-                myinfo->expiration = (uint32_t)(time(NULL) + 3600);
-                return(SuperNET_activehandle(IGUANA_CALLARGS));
-            }
-            else
-            {
-                free_json(argjson);
-                return(clonestr("{\"error\":\"cant find passphrase in decrypted json\"}"));
-            }
+                printf("decrypted.(%s) exp.%u pass.(%s)\n",decryptstr,myinfo->expiration,password);
+                if ( myinfo->decryptstr != 0 )
+                    free(myinfo->decryptstr);
+                myinfo->decryptstr = decryptstr;
+                if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
+                {
+                    SuperNET_setkeys(myinfo,passphrase,(int32_t)strlen(passphrase),1);
+                    free_json(argjson);
+                    myinfo->expiration = (uint32_t)(time(NULL) + 3600);
+                    return(SuperNET_activehandle(IGUANA_CALLARGS));
+                }
+                else
+                {
+                    free_json(argjson);
+                    return(clonestr("{\"error\":\"cant find passphrase in decrypted json\"}"));
+                }
+            } else free_json(argjson);
         }
         else
         {
@@ -1435,6 +1438,8 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
         {
             if ( jobj(argjson,"passphrase") != 0 )
                 jdelete(argjson,"passphrase");
+            if ( jobj(argjson,"error") != 0 )
+                jdelete(argjson,"error");
         } else argjson = cJSON_CreateObject();
         jaddstr(argjson,"passphrase",passphrase);
         argstr = jprint(argjson,1);

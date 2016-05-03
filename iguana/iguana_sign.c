@@ -710,7 +710,7 @@ int32_t iguana_msgtx_Vset(struct iguana_info *coin,uint8_t *serialized,int32_t m
             }
         }
         msgtx->vins[vini].scriptlen = scriptlen;
-        if ( vp->p2shscript != 0 && (p2shlen= vp->p2shlen) > 0 )
+        if ( (p2shlen= vp->p2shlen) > 0 )
         {
             msgtx->vins[vini].redeemscript = &script[scriptlen];
             if ( p2shlen < 76 )
