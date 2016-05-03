@@ -216,7 +216,7 @@ STRING_ARG(bitcoinrpc,validatepubkey,pubkeystr)
 {
     uint8_t rmd160[20],pubkey[65],addrtype = 0; int32_t plen; char coinaddr[128],*str; cJSON *retjson;
     plen = (int32_t)strlen(pubkeystr) >> 1;
-    if ( plen <= 65 && coin != 0 && coin->chain != 0 )
+    if ( plen >= 33 && plen <= 65 && coin != 0 && coin->chain != 0 )
     {
         addrtype = coin->chain->pubtype;
         decode_hex(pubkey,plen,pubkeystr);

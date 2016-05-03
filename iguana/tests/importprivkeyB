@@ -1,1 +1,1 @@
-curl --url "http://127.0.0.1:7778" --data "{\"method\":\"importprivkey\",\"params\":[\"5221034f83629ac7909cf7a7e06a6e3a18b5f5b8530ff8df53fb98a72c1ce3f123ed302102e053cc9d98d9e157917ed74bcabeaf72006b1ecf019d148dd3eac06271b6bcf02102869ca05bf6b476bb8cb433e08846a67037b921062f49cd0f9f66087454e88abb53ae\"]}"
+curl --url "http://127.0.0.1:7778" --data "{\"method\":\"importprivkey\",\"params\":[\"b81e824a58cefff953eb53e9743059d001be0f5cfeb7599fbdd6bd18dba6616c\"]}"

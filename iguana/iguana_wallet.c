@@ -123,8 +123,11 @@ struct iguana_waddress *iguana_waddressadd(struct supernet_info *myinfo,struct i
                 waddr->scriptlen = addwaddr->scriptlen;
                 decode_hex(waddr->redeemScript,waddr->scriptlen,redeemScript);
             }
+            waddr->addrtype = coin->chain->p2shtype;
+            memset(&waddr->privkey,0,sizeof(waddr->privkey));
+            memset(waddr->pubkey,0,sizeof(waddr->pubkey));
         }
-        if ( bits256_nonz(waddr->privkey) == 0 )
+        if ( addwaddr->scriptlen == 0 && bits256_nonz(waddr->privkey) == 0 )
         {
             waddr->privkey = addwaddr->privkey;
             if ( bitcoin_priv2wif(waddr->wifstr,waddr->privkey,coin->chain->wiftype) > 0 )
@@ -138,8 +141,8 @@ struct iguana_waddress *iguana_waddressadd(struct supernet_info *myinfo,struct i
             waddr->addrtype = addwaddr->addrtype;
             waddr->wiftype = addwaddr->wiftype;
             strcpy(waddr->wifstr,addwaddr->wifstr);
+            memcpy(waddr->pubkey,addwaddr->pubkey,sizeof(waddr->pubkey));
         }
-        memcpy(waddr->pubkey,addwaddr->pubkey,sizeof(waddr->pubkey));
         memcpy(waddr->rmd160,addwaddr->rmd160,sizeof(waddr->rmd160));
         strcpy(waddr->coinaddr,addwaddr->coinaddr);
         myinfo->dirty = (uint32_t)time(NULL);
@@ -189,12 +192,15 @@ struct iguana_waddress *iguana_waddresscalc(uint8_t pubtype,uint8_t wiftype,stru
     bitcoin_pubkey33(0,addr->pubkey,addr->privkey);
     calc_rmd160_sha256(addr->rmd160,addr->pubkey,33);
     bitcoin_address(addr->coinaddr,pubtype,addr->rmd160,sizeof(addr->rmd160));
-    if ( bitcoin_priv2wif(addr->wifstr,addr->privkey,wiftype) > 0 )
+    if ( bits256_nonz(privkey) != 0 )
     {
-        addr->wiftype = wiftype;
-        addr->addrtype = pubtype;
-        return(addr);
-    }
+        if ( bitcoin_priv2wif(addr->wifstr,addr->privkey,wiftype) > 0 )
+        {
+            addr->wiftype = wiftype;
+            addr->addrtype = pubtype;
+            return(addr);
+        }
+    } else printf("waddress_calc null privkey\n");
     return(0);
 }
 
@@ -203,11 +209,14 @@ struct iguana_waddress *iguana_waccountswitch(struct supernet_info *myinfo,struc
     struct iguana_waccount *wacct = 0; struct iguana_waddress addr,*waddr = 0; int32_t flag = 0;
     if ( (waddr= iguana_waddresssearch(myinfo,coin,&wacct,coinaddr)) != 0 )
     {
-        addr = *waddr;
-        flag = 1;
-        iguana_waddressdelete(myinfo,coin,wacct,coinaddr);
+        if ( strcmp(wacct->account,account) != 0 )
+        {
+            addr = *waddr;
+            flag = 1;
+            iguana_waddressdelete(myinfo,coin,wacct,coinaddr);
+        }
     }
-    if ( (wacct= iguana_waccountcreate(myinfo,coin,account)) != 0 )
+    if ( waddr == 0 && (wacct= iguana_waccountcreate(myinfo,coin,account)) != 0 )
     {
         waddr = iguana_waddresscreate(myinfo,coin,wacct,coinaddr,redeemScript);
         if ( flag != 0 && redeemScript == 0 )
@@ -567,7 +576,7 @@ int32_t iguana_walletemit(struct supernet_info *myinfo,char *fname,struct iguana
                             {
                                 wiftype = coin->chain->wiftype;
                                 privkey = bits256_conv(privkeystr);
-                                if ( bitcoin_priv2wif(wifstr,privkey,wiftype) > 0 )
+                                if ( bits256_nonz(privkey) != 0 && bitcoin_priv2wif(wifstr,privkey,wiftype) > 0 )
                                 {
                                     fprintf(fp,"%s %s %32s=%d # addr=%s\n",wifstr,utc_str(str,(uint32_t)time(NULL)),account,i+1,coinaddr);
                                 }
@@ -591,26 +600,30 @@ int32_t iguana_walletemit(struct supernet_info *myinfo,char *fname,struct iguana
     return(0);
 }
 
-void iguana_walletdelete(struct supernet_info *myinfo,int32_t deleteflag)
+void iguana_walletiterate(struct supernet_info *myinfo,int32_t flag)
 {
     struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr,*tmp2; int32_t i;
     HASH_ITER(hh,myinfo->wallet,wacct,tmp)
     {
         HASH_ITER(hh,wacct->waddr,waddr,tmp2)
         {
-            memset(&waddr->privkey,0,sizeof(waddr->privkey));
-            memset(waddr->wifstr,0,sizeof(waddr->wifstr));
-            for (i=0; i<sizeof(waddr->privkey); i++)
-                waddr->privkey.bytes[i] = rand();
-            for (i=0; i<sizeof(waddr->wifstr); i++)
-                waddr->wifstr[i] = rand();
-            if ( deleteflag != 0 )
+            if ( flag < 0 )
             {
-                HASH_DELETE(hh,wacct->waddr,waddr);
-                free(waddr);
+                memset(&waddr->privkey,0,sizeof(waddr->privkey));
+                memset(waddr->wifstr,0,sizeof(waddr->wifstr));
+                for (i=0; i<sizeof(waddr->privkey); i++)
+                    waddr->privkey.bytes[i] = rand();
+                for (i=0; i<sizeof(waddr->wifstr); i++)
+                    waddr->wifstr[i] = rand();
+                if ( flag < -1 )
+                {
+                    HASH_DELETE(hh,wacct->waddr,waddr);
+                    free(waddr);
+                }
             }
+            //else iguana_waddrvalidate(myinfo,coin,wacct,waddr,flag);
         }
-        if ( deleteflag != 0 )
+        if ( flag < -1 )
         {
             HASH_DELETE(hh,myinfo->wallet,wacct);
             free(wacct);
@@ -626,7 +639,7 @@ void iguana_walletlock(struct supernet_info *myinfo)
     if ( myinfo->decryptstr != 0 )
         scrubfree(myinfo->decryptstr), myinfo->decryptstr = 0;
     myinfo->expiration = 0;
-    iguana_walletdelete(myinfo,0);
+    iguana_walletiterate(myinfo,-2);
 }
 
 int64_t iguana_waccountbalance(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_waccount *wacct,int32_t minconf,int32_t lastheight)
@@ -936,20 +949,37 @@ TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan)
 
 STRING_ARG(bitcoinrpc,dumpprivkey,address)
 {
-    cJSON *retjson; struct iguana_waddress *waddr; struct iguana_waccount *wacct;
+    cJSON *retjson; int32_t len,p2shflag=0; struct iguana_waddress *waddr; struct iguana_waccount *wacct; uint8_t addrtype,type,redeemScript[IGUANA_MAXSCRIPTSIZE],rmd160[20]; char *coinaddr; struct vin_info V; bits256 debugtxid;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( myinfo->expiration == 0 )
         return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     myinfo->expiration++;
-    if ( (waddr= iguana_waddresssearch(myinfo,coin,&wacct,address)) != 0 && (waddr->wifstr[0] != 0 || waddr->scriptlen > 0) )
+    len = (int32_t)strlen(address);
+    coinaddr = address;
+    if ( is_hexstr(address,len) > 0 )
     {
-        retjson = cJSON_CreateObject();
-        if ( waddr->wifstr[0] != 0 )
-            jaddstr(retjson,"result",waddr->wifstr);
-        else iguana_p2shjson(myinfo,coin,retjson,waddr);
-        return(jprint(retjson,1));
-    } else return(clonestr("{\"error\":\"no privkey for address\"}"));
+        len >>= 1;
+        decode_hex(redeemScript,len,address);
+        if ( (type= iguana_calcrmd160(coin,0,&V,redeemScript,len,debugtxid,-1,0xffffffff)) == IGUANA_SCRIPT_P2SH || type == IGUANA_SCRIPT_1of1 || V.N > 1 )
+        {
+            p2shflag = 1;
+            coinaddr = V.coinaddr;
+        }
+    }
+    if ( strlen(coinaddr) > sizeof(V.coinaddr) || iguana_addressvalidate(coin,&addrtype,rmd160,coinaddr) < 0 )
+        return(clonestr(p2shflag == 0 ? "{\"error\":\"invalid address\"}" : "{\"error\":\"invalid P2SH address\"}"));
+    if ( (waddr= iguana_waddresssearch(myinfo,coin,&wacct,coinaddr)) != 0 )
+    {
+        if ( (waddr->wifstr[0] != 0 || waddr->scriptlen > 0) )
+        {
+            retjson = cJSON_CreateObject();
+            if ( waddr->scriptlen == 0 && waddr->wifstr[0] != 0 )
+                jaddstr(retjson,"result",waddr->wifstr);
+            else iguana_p2shjson(myinfo,coin,retjson,waddr);
+            return(jprint(retjson,1));
+        } else return(clonestr("{\"error\":\"no privkey for address\"}"));
+    } else return(clonestr("{\"error\":\"couldnt find address in wallet\"}"));
 }
 
 STRING_ARG(bitcoinrpc,dumpwallet,filename)

@@ -1407,7 +1407,7 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
         {
             if ( jobj(argjson,"error") == 0 )
             {
-                printf("decrypted.(%s) exp.%u pass.(%s)\n",decryptstr,myinfo->expiration,password);
+                //printf("decrypted.(%s) exp.%u pass.(%s)\n",decryptstr,myinfo->expiration,password);
                 if ( myinfo->decryptstr != 0 )
                     free(myinfo->decryptstr);
                 myinfo->decryptstr = decryptstr;
