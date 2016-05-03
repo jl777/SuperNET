@@ -1273,7 +1273,7 @@ STRING_ARG(SuperNET,priv2wif,priv)
     {
         wiftype = coin != 0 ? coin->chain->wiftype : 0x80;
         decode_hex(privkey.bytes,sizeof(privkey),priv);
-        if ( bitcoin_priv2wif(wifstr,privkey,wiftype) == sizeof(privkey) )
+        if ( bitcoin_priv2wif(wifstr,privkey,wiftype) > 0 )
         {
             jaddstr(retjson,"result","success");
             jaddstr(retjson,"privkey",priv);
