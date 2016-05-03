@@ -238,7 +238,7 @@ STRING_ARG(bitcoinrpc,validatepubkey,pubkeystr)
 STRING_ARG(bitcoinrpc,decodescript,scriptstr)
 {
     int32_t scriptlen; uint8_t script[IGUANA_MAXSCRIPTSIZE],rmd160[20]; char coinaddr[128],asmstr[IGUANA_MAXSCRIPTSIZE*2+1]; cJSON *scriptobj,*retjson = cJSON_CreateObject();
-    if ( coin != 0 && (scriptlen= (int32_t)strlen(scriptstr)>>1) < sizeof(script) )
+    if ( scriptstr != 0 && coin != 0 && (scriptlen= (int32_t)strlen(scriptstr)>>1) < sizeof(script) )
     {
         decode_hex(script,scriptlen,scriptstr);
         if ( (scriptobj= iguana_scriptobj(coin,rmd160,coinaddr,asmstr,script,scriptlen)) != 0 )

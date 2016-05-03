@@ -827,8 +827,12 @@ STRING_ARG(bitcoinrpc,validateaddress,address)
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
     jaddnum(retjson,"addrtype",addrtype);
-    init_hexbytes_noT(str,rmd160,sizeof(rmd160));
-    jaddstr(retjson,"rmd160",str);
+    init_hexbytes_noT(str+6,rmd160,sizeof(rmd160));
+    jaddstr(retjson,"rmd160",str+6);
+    memcpy(str,"76a914",6);
+    strcat(str,"88ac");
+    jaddstr(retjson,"scriptPubKey",str);
+    jadd(retjson,"isscript",(addrtype == coin->chain->p2shtype) ? jtrue() : jfalse());
     if ( iguana_ismine(myinfo,coin,addrtype,pubkey,rmd160) > 0 )
     {
         init_hexbytes_noT(str,pubkey,bitcoin_pubkeylen(pubkey));
