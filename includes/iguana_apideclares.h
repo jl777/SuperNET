@@ -61,12 +61,14 @@ INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,pubkeys,ignore);
 INT_ARRAY_STRING(bitcoinrpc,addmultisigaddress,M,pubkeys,account);
 DOUBLE_ARG(bitcoinrpc,settxfee,amount);
 
-STRING_ARG(bitcoinrpc,submitblock,rawbytes);
+ZERO_ARGS(bitcoinrpc,checkwallet);
+ZERO_ARGS(bitcoinrpc,repairwallet);
 
 STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighash);
 TWO_STRINGS(bitcoinrpc,signmessage,address,message); //
 THREE_STRINGS(bitcoinrpc,verifymessage,address,sig,message); //
 STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees); //
+STRING_ARG(bitcoinrpc,submitblock,rawbytes); //
 
 SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment2); //
 S_A_I_S(bitcoinrpc,sendmany,fromaccount,payments,minconf,comment); //
@@ -78,8 +80,6 @@ ZERO_ARGS(bitcoinrpc,gettxoutsetinfo);
 INT_AND_ARRAY(bitcoinrpc,lockunspent,flag,array);
 ZERO_ARGS(bitcoinrpc,listlockunspent);
 ZERO_ARGS(bitcoinrpc,getrawchangeaddress);
-ZERO_ARGS(bitcoinrpc,checkwallet);
-ZERO_ARGS(bitcoinrpc,repairwallet);
 SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment);
 
 STRING_ARG(iguana,initfastfind,activecoin);
@@ -181,6 +181,7 @@ THREE_STRINGS(SuperNET,rosetta,passphrase,pin,showprivkey);
 ZERO_ARGS(SuperNET,keypair);
 HASH_AND_INT(SuperNET,priv2pub,privkey,addrtype);
 STRING_ARG(SuperNET,wif2priv,wif);
+STRING_ARG(SuperNET,priv2wif,priv);
 STRING_ARG(SuperNET,addr2rmd160,address);
 
 TWOHASHES_AND_STRING(SuperNET,cipher,privkey,destpubkey,message);

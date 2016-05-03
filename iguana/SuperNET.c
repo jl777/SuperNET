@@ -1266,6 +1266,23 @@ STRING_ARG(SuperNET,wif2priv,wif)
     return(jprint(retjson,1));
 }
 
+STRING_ARG(SuperNET,priv2wif,priv)
+{
+    bits256 privkey; char wifstr[65]; cJSON *retjson = cJSON_CreateObject();
+    if ( strlen(priv) == sizeof(bits256)*2 && is_hexstr(priv,(int32_t)sizeof(bits256)*2) == sizeof(bits256)*2 )
+    {
+        decode_hex(privkey.bytes,sizeof(privkey),priv);
+        if ( bitcoin_priv2wif(wifstr,privkey,coin->chain->wiftype) == sizeof(privkey) )
+        {
+            jaddstr(retjson,"result","success");
+            jaddstr(retjson,"privkey",priv);
+            jaddnum(retjson,"type",coin->chain->wiftype);
+            jaddstr(retjson,"wif",wifstr);
+        } else jaddstr(retjson,"error","couldnt convert privkey");
+    } else jaddstr(retjson,"error","non 32 byte hex privkey");
+    return(jprint(retjson,1));
+}
+
 STRING_ARG(SuperNET,myipaddr,ipaddr)
 {
     cJSON *retjson = cJSON_CreateObject();

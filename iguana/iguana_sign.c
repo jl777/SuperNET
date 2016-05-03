@@ -985,8 +985,10 @@ void iguana_ensure_privkey(struct supernet_info *myinfo,struct iguana_info *coin
             waddr->privkey = privkey;
             if ( bitcoin_priv2wif(waddr->wifstr,waddr->privkey,coin->chain->wiftype) > 0 )
             {
-                waddr->wiftype = coin->chain->wiftype;
-                waddr->addrtype = coin->chain->pubtype;
+                if ( waddr->wiftype != coin->chain->wiftype )
+                    printf("ensurepriv warning: mismatched wiftype %02x != %02x\n",waddr->wiftype,coin->chain->wiftype);
+                if ( waddr->addrtype != coin->chain->pubtype )
+                    printf("ensurepriv warning: mismatched wiftype %02x != %02x\n",waddr->addrtype,coin->chain->pubtype);
             }
         }
     }

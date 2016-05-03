@@ -261,32 +261,6 @@ SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment)
     return(jprint(retjson,1));
 }
 
-ZERO_ARGS(bitcoinrpc,checkwallet)
-{
-    cJSON *retjson;
-    if ( remoteaddr != 0 )
-        return(clonestr("{\"error\":\"no remote\"}"));
-    if ( myinfo->expiration == 0 )
-        return(clonestr("{\"error\":\"need to unlock wallet\"}"));
-    myinfo->expiration++;
-    retjson = cJSON_CreateObject();
-    jaddstr(retjson,"result","success");
-    return(jprint(retjson,1));
-}
-
-ZERO_ARGS(bitcoinrpc,repairwallet)
-{
-    cJSON *retjson;
-    if ( remoteaddr != 0 )
-        return(clonestr("{\"error\":\"no remote\"}"));
-    if ( myinfo->expiration == 0 )
-        return(clonestr("{\"error\":\"need to unlock wallet\"}"));
-    myinfo->expiration++;
-    retjson = cJSON_CreateObject();
-    jaddstr(retjson,"result","success");
-    return(jprint(retjson,1));
-}
-
 #undef IGUANA_ARGS
 #include "../includes/iguana_apiundefs.h"
 
