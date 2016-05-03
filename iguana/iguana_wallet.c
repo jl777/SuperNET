@@ -778,6 +778,7 @@ int64_t iguana_addressreceived(struct supernet_info *myinfo,struct iguana_info *
     int64_t balance = 0; cJSON *unspentsjson,*balancejson,*item; int32_t i,n; char *balancestr;
     if ( (balancestr= iguana_balance(IGUANA_CALLARGS,coin->symbol,coinaddr,-1,minconf)) != 0 )
     {
+        printf("balancestr.(%s) (%s)\n",balancestr,coinaddr);
         if ( (balancejson= cJSON_Parse(balancestr)) != 0 )
         {
             balance = jdouble(balancejson,"balance") * SATOSHIDEN;
@@ -798,6 +799,7 @@ int64_t iguana_addressreceived(struct supernet_info *myinfo,struct iguana_info *
     }
     return(balance);
 }
+
 
 char *getnewaddress(struct supernet_info *myinfo,struct iguana_waddress **waddrp,struct iguana_info *coin,char *account,char *retstr)
 {
