@@ -25,7 +25,7 @@ HASH_ARG(bitcoinrpc,gettransaction,txid);
 HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool);
 TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array);
 
-STRING_ARG(bitcoinrpc,decodescript,script);
+STRING_ARG(bitcoinrpc,decodescript,scriptstr);
 STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx);
 ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime);
 
