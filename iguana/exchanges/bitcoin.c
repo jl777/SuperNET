@@ -102,13 +102,13 @@ int32_t base58encode_checkbuf(uint8_t addrtype,uint8_t *data,int32_t data_len)
 {
     uint8_t i; bits256 hash;
     data[0] = addrtype;
-    for (i=0; i<data_len+1; i++)
-        printf("%02x",data[i]);
-    printf(" extpriv -> ");
+    //for (i=0; i<data_len+1; i++)
+    //    printf("%02x",data[i]);
+    //printf(" extpriv -> ");
     hash = bits256_doublesha256(0,data,(int32_t)data_len+1);
-    for (i=0; i<32; i++)
-        printf("%02x",hash.bytes[i]);
-    printf(" checkhash\n");
+    //for (i=0; i<32; i++)
+    //    printf("%02x",hash.bytes[i]);
+    //printf(" checkhash\n");
     for (i=0; i<4; i++)
         data[data_len+i+1] = hash.bytes[31-i];
     return(data_len + 5);
