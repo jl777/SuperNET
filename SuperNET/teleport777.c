@@ -96,7 +96,7 @@ uint64_t parse_unspent_json(struct telepod *pod,struct coin777 *coin,cJSON *json
     copy_cJSON(&tmp,cJSON_GetObjectItem(json,"txid")), safecopy(pod->txid,tmp.buf,sizeof(pod->txid));
     copy_cJSON(&tmp,cJSON_GetObjectItem(json,"address")), safecopy(pod->podaddr,tmp.buf,sizeof(pod->podaddr));;
     copy_cJSON(&tmp,cJSON_GetObjectItem(json,"scriptPubKey")), safecopy(pod->script,tmp.buf,sizeof(pod->script));;
-    amount = (uint64_t)(SATOSHIDEN * get_API_float(cJSON_GetObjectItem(json,"amount")));
+    amount = (uint64_t)(SATOSHIDEN * jdouble(json,"amount"));
     pod->vout = juint(json,"vout");
     pod->numconfirms = juint(json,"confirmations");
     if ( pod->txid[0] != 0 && pod->podaddr[0] != 0 && pod->script[0] != 0 && amount != 0 && pod->vout >= 0 )

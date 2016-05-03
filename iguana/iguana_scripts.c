@@ -808,7 +808,6 @@ int32_t iguana_vinscriptparse(struct iguana_info *coin,struct vin_info *vp,uint3
 {
     int32_t hashtype;
     *sigsizep = *pubkeysizep = *p2shsizep = *suffixp = 0;
-    memset(vp,0,sizeof(*vp));
     if ( bitcoin_scriptget(coin,&hashtype,sigsizep,pubkeysizep,suffixp,vp,vinscript,scriptlen,0) < 0 )
     {
         printf("iguana_vinscriptparse: error parsing vinscript?\n");
@@ -1042,6 +1041,7 @@ int32_t iguana_metascript(struct iguana_info *coin,RAMCHAIN_FUNC,struct iguana_s
         memset(&V,0,sizeof(V));
         if ( rawflag == 0 )
         {
+            memset(&V,0,sizeof(V));
             s->sighash = iguana_vinscriptparse(coin,&V,&sigsize,&pubkeysize,&p2shsize,&suffixlen,vinscript,vinscriptlen);
             //for (i=0; i<33; i++)
             //    printf("%02x",V.signers[0].pubkey[i]);
@@ -1149,6 +1149,7 @@ int32_t iguana_scriptspaceraw(struct iguana_info *coin,int32_t *scriptspacep,int
         }
         for (j=0; j<tx->tx_in; j++)
         {
+            memset(&V,0,sizeof(V));
             iguana_vinscriptparse(coin,&V,&sigsize,&pubkeysize,&p2shsize,&suffixlen,tx->vins[j].vinscript,tx->vins[j].scriptlen);
             pubkeyspace += pubkeysize;
             p2shspace += p2shsize;
@@ -1197,6 +1198,7 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
                     altspace += scriptlen;
                     if ( scriptdata != 0 )
                     {
+                        memset(&V,0,sizeof(V));
                         iguana_vinscriptparse(coin,&V,&sigsize,&pubkeysize,&p2shsize,&suffixlen,scriptdata,scriptlen);
                         p2shspace += p2shsize;
                         sigspace += sigsize;

@@ -257,7 +257,7 @@ struct iguana_msgblock
     uint32_t txn_count;
 } __attribute__((packed));
 
-struct iguana_msgvin { bits256 prev_hash; uint8_t *vinscript,*spendscript,*redeemscript,*pubkeys[16]; uint32_t prev_vout,scriptlen,spendlen,p2shlen,numpubkeys,sequence; } __attribute__((packed));
+struct iguana_msgvin { bits256 prev_hash; uint8_t *vinscript,*spendscript,*redeemscript; uint32_t prev_vout,sequence; uint16_t scriptlen,p2shlen,suffixlen,spendlen; } __attribute__((packed));
 
 struct iguana_msgvout { uint64_t value; uint32_t pk_scriptlen; uint8_t *pk_script; } __attribute__((packed));
 
@@ -523,10 +523,9 @@ struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],r
 
 struct vin_info
 {
-    struct iguana_msgvin vin;
-    int32_t M,N,validmask,spendlen,type,p2shlen,numpubkeys,numsigs; uint32_t sequence;
-    struct vin_signer signers[16];
-    char coinaddr[65];
+    struct iguana_msgvin vin; uint64_t amount;
+    int32_t M,N,validmask,spendlen,type,p2shlen,suffixlen,numpubkeys,numsigs,height,hashtype;
+    uint32_t sequence,unspentind; struct vin_signer signers[16]; char coinaddr[65];
     uint8_t rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE],p2shscript[IGUANA_MAXSCRIPTSIZE];
 };
 
@@ -825,7 +824,7 @@ int32_t bitcoin_changescript(struct iguana_info *coin,uint8_t *changescript,int3
 cJSON *bitcoin_addinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32_t vout,uint32_t sequenceid,uint8_t *spendscript,int32_t spendlen,uint8_t *redeemscript,int32_t p2shlen,uint8_t *pubkeys[],int32_t numpubkeys);
 int32_t bitcoin_verifytx(struct iguana_info *coin,bits256 *signedtxidp,char **signedtx,char *rawtxstr,struct vin_info *V,int32_t numinputs);
 int32_t bitcoin_verify(void *ctx,uint8_t *sig,int32_t siglen,bits256 txhash2,uint8_t *pubkey,int32_t plen);
-char *bitcoin_json2hex(struct iguana_info *coin,bits256 *txidp,cJSON *txjson);
+char *bitcoin_json2hex(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,cJSON *txjson,struct vin_info *V);
 int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr);
 char *issue_startForging(struct supernet_info *myinfo,char *secret);
 struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct iguana_info *coin,char **retstrp,double *balancep,int32_t *numunspentsp,double minconfirms,char *account);
@@ -934,7 +933,7 @@ int32_t bitcoin_MofNspendscript(uint8_t p2sh_rmd160[20],uint8_t *script,int32_t 
 cJSON *iguana_p2shjson(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *retjson,struct iguana_waddress *waddr);
 char *setaccount(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_waddress **waddrp,char *account,char *coinaddr,char *redeemScript);
 char *iguana_APIrequest(struct iguana_info *coin,bits256 blockhash,bits256 txid,int32_t seconds);
-int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **signedtx,struct iguana_msgtx *msgtx,uint8_t *serialized,int32_t maxsize,struct vin_info *V,int32_t numinputs,int32_t sighashsingle);
+int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **signedtx,struct iguana_msgtx *msgtx,uint8_t *serialized,int32_t maxsize,struct vin_info *V,int32_t sighash);
 int64_t iguana_fastfindcreate(struct iguana_info *coin);
 int32_t bitcoin_validaddress(struct iguana_info *coin,char *coinaddr);
 int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struct iguana_ramchain *spentchain,int16_t spent_hdrsi,uint32_t spent_unspentind,uint32_t spent_pkind,uint64_t spent_value,uint32_t spendind,uint32_t fromheight);

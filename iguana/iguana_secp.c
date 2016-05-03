@@ -15,13 +15,9 @@
 
 #include <ctype.h>
 #include <string.h>
+#include <stdio.h>
 #include "../includes/curve25519.h"
-#include "../includes/openssl/ec.h"
-//#include "../includes/openssl/ecdsa.h"
-#include "../includes/openssl/obj_mac.h"
 #include "../../secp256k1-zkp/include/secp256k1.h"
-
-static const char base58_chars[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 bits256 bitcoin_pubkey33(secp256k1_context *ctx,uint8_t *data,bits256 privkey)
 {
@@ -97,6 +93,11 @@ int32_t bitcoin_verify(void *ctx,uint8_t *sig,int32_t siglen,bits256 txhash2,uin
 }
 
 #ifdef oldway
+#include "../includes/openssl/ec.h"
+#include "../includes/openssl/ecdsa.h"
+#include "../includes/openssl/obj_mac.h"
+
+static const char base58_chars[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 struct bp_key { EC_KEY *k; };
 

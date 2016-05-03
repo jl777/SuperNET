@@ -606,7 +606,7 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
                                 }
                                 else continue;
                                 if ( (obj= jobj(item,"amount")) != 0 )
-                                    satoshis = get_API_float(obj) * SATOSHIDEN;
+                                    satoshis = jdouble(obj,0) * SATOSHIDEN;
                                 else satoshis = 0;
                                 bitcoin_addoutput(coin,txobj,spendscript+offset,spendlen,satoshis);
                             }
@@ -618,7 +618,7 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
                         if ( bitcoin_addr2rmd160(&addrtype,rmd160,field) == sizeof(rmd160) )
                         {
                             spendlen = bitcoin_standardspend(spendscript,0,rmd160);
-                            satoshis = get_API_float(item) * SATOSHIDEN;
+                            satoshis = jdouble(item,0) * SATOSHIDEN;
                             bitcoin_addoutput(coin,txobj,spendscript,spendlen,satoshis);
                         }
                     }
@@ -626,7 +626,7 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
                 item = item->next;
             }
         }
-        if ( (txstr= bitcoin_json2hex(coin,&txid,txobj)) != 0 )
+        if ( (txstr= bitcoin_json2hex(myinfo,coin,&txid,txobj,0)) != 0 )
         {
             jaddstr(retjson,"result",txstr);
             free(txstr);

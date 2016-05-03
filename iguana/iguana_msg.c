@@ -333,12 +333,17 @@ int32_t iguana_getdata(struct iguana_info *coin,uint8_t *serialized,int32_t type
 
 int32_t iguana_rwvin(int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized,struct iguana_msgvin *msg)
 {
-    int32_t len = 0;
+    int32_t len = 0; uint32_t tmp;
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->prev_hash),msg->prev_hash.bytes);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->prev_vout),&msg->prev_vout);
-    len += iguana_rwvarint32(rwflag,&serialized[len],&msg->scriptlen);
+    if ( rwflag == 1 )
+        tmp = msg->scriptlen;
+    len += iguana_rwvarint32(rwflag,&serialized[len],&tmp);
     if ( rwflag == 0 )
+    {
+        msg->scriptlen = tmp;
         msg->vinscript = iguana_memalloc(mem,msg->scriptlen,1);
+    }
     len += iguana_rwmem(rwflag,&serialized[len],msg->scriptlen,msg->vinscript);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->sequence),&msg->sequence);
     //char str[65]; printf("MSGvin.(%s/v%d) script[%d]\n",bits256_str(str,msg->prev_hash),msg->prev_vout,msg->scriptlen);

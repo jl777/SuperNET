@@ -62,11 +62,11 @@ INT_ARRAY_STRING(bitcoinrpc,addmultisigaddress,M,pubkeys,account);
 DOUBLE_ARG(bitcoinrpc,settxfee,amount);
 
 STRING_ARG(bitcoinrpc,submitblock,rawbytes);
-STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees); //
 
-STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighash); //
+STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighash);
 TWO_STRINGS(bitcoinrpc,signmessage,address,message); //
 THREE_STRINGS(bitcoinrpc,verifymessage,address,sig,message); //
+STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees); //
 
 SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment2); //
 S_A_I_S(bitcoinrpc,sendmany,fromaccount,payments,minconf,comment); //

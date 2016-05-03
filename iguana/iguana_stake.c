@@ -1,4 +1,6 @@
 #ifdef reference
+// modify time.1462237906 modifier.baed58b98a00e41d
+
 static const int64_t COIN_YEAR_REWARD = 5 * CENT; // 5% per year
 int nCoinbaseMaturity = 100;
 static const int STAKE_TIMESTAMP_MASK = 15;
