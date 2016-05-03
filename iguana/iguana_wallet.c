@@ -297,8 +297,6 @@ cJSON *iguana_waddressjson(cJSON *item,struct iguana_waddress *waddr)
     if ( item == 0 )
         item = cJSON_CreateObject();
     jaddstr(item,"address",waddr->coinaddr);
-    init_hexbytes_noT(str,waddr->pubkey,33);
-    jaddstr(item,"pubkey",str);
     //jaddstr(item,"privkey",bits256_str(str,waddr->privkey));
     //jaddstr(item,"wif",waddr->wifstr);
     init_hexbytes_noT(str,waddr->rmd160,20);
@@ -308,6 +306,11 @@ cJSON *iguana_waddressjson(cJSON *item,struct iguana_waddress *waddr)
     {
         init_hexbytes_noT(redeemScript,waddr->redeemScript,waddr->scriptlen);
         jaddstr(item,"redeemScript",redeemScript);
+    }
+    else
+    {
+        init_hexbytes_noT(str,waddr->pubkey,33);
+        jaddstr(item,"pubkey",str);
     }
     return(item);
 }
