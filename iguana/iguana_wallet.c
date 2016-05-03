@@ -33,7 +33,7 @@ struct iguana_waddress *iguana_waddressfind(struct supernet_info *myinfo,struct 
 {
     struct iguana_waddress *waddr; int32_t len = (int32_t)strlen(coinaddr)+1;
     HASH_FIND(hh,wacct->waddr,coinaddr,len,waddr);
-    if ( strcmp(coin->symbol,waddr->symbol) != 0 )
+    if ( waddr != 0 && coin != 0 && strcmp(coin->symbol,waddr->symbol) != 0 )
         return(0);
     //printf("%s (%s).%d in (%s)\n",waddr==0?"couldnt find":"found",coinaddr,len,wacct->account);
     return(waddr);

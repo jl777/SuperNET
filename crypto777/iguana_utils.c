@@ -294,7 +294,7 @@ int32_t is_hexstr(char *str,int32_t n)
     for (i=0; str[i]!=0&&(i<n||n==0); i++)
         if ( _unhex(str[i]) < 0 )
             return(0);
-    return(1);
+    return(n);
 }
 
 int32_t unhex(char c)

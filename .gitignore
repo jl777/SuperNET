@@ -22,3 +22,5 @@ iguana/pnacl/Release/iguana_unstripped.bc---linked.pre_opt.pexe
 *.stamp
 
 *.d
+
+iguana/tests/.priv2wif.swp

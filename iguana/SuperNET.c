@@ -1268,15 +1268,16 @@ STRING_ARG(SuperNET,wif2priv,wif)
 
 STRING_ARG(SuperNET,priv2wif,priv)
 {
-    bits256 privkey; char wifstr[65]; cJSON *retjson = cJSON_CreateObject();
+    bits256 privkey; char wifstr[65]; uint8_t wiftype; cJSON *retjson = cJSON_CreateObject();
     if ( strlen(priv) == sizeof(bits256)*2 && is_hexstr(priv,(int32_t)sizeof(bits256)*2) == sizeof(bits256)*2 )
     {
+        wiftype = coin != 0 ? coin->chain->wiftype : 0x80;
         decode_hex(privkey.bytes,sizeof(privkey),priv);
-        if ( bitcoin_priv2wif(wifstr,privkey,coin->chain->wiftype) == sizeof(privkey) )
+        if ( bitcoin_priv2wif(wifstr,privkey,wiftype) == sizeof(privkey) )
         {
             jaddstr(retjson,"result","success");
             jaddstr(retjson,"privkey",priv);
-            jaddnum(retjson,"type",coin->chain->wiftype);
+            jaddnum(retjson,"type",wiftype);
             jaddstr(retjson,"wif",wifstr);
         } else jaddstr(retjson,"error","couldnt convert privkey");
     } else jaddstr(retjson,"error","non 32 byte hex privkey");

@@ -1,1 +1,1 @@
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"priv2wif\",\"params\":[\"59c56c68e3e4910385523d67fe174509da7ddb6f7f35189e0d691d3b5e98ea0a\"]}"
+curl --url "http://127.0.0.1:7778" --data "{\"coin\":\"BTC\",\"agent\":\"SuperNET\",\"method\":\"priv2wif\",\"priv\":\"59c56c68e3e4910385523d67fe174509da7ddb6f7f35189e0d691d3b5e98ea0a\"}"
