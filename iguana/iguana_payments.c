@@ -132,7 +132,7 @@ cJSON *iguana_p2shjson(struct supernet_info *myinfo,struct iguana_info *coin,cJS
 cJSON *iguana_scriptobj(struct iguana_info *coin,uint8_t rmd160[20],char *coinaddr,char *asmstr,uint8_t *script,int32_t scriptlen)
 {
     struct vin_info V; int32_t i,plen,asmtype; char pubkeystr[130],rmdstr[41]; cJSON *addrobj,*scriptobj=cJSON_CreateObject();
-    if ( (asmtype= iguana_calcrmd160(coin,asmstr,&V,script,scriptlen,rand256(1),1,0xffffffff)) >= 0 )
+    if ( (asmtype= iguana_calcrmd160(coin,asmstr,&V,script,scriptlen,rand256(0),1,0xffffffff)) >= 0 )
     {
         if ( asmstr != 0 && asmstr[0] != 0 )
             jaddstr(scriptobj,"asm",asmstr);

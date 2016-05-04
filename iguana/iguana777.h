@@ -945,6 +945,7 @@ uint8_t iguana_addrtype(struct iguana_info *coin,uint8_t script_type);
 struct iguana_waddress *iguana_waddressadd(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_waccount *wacct,struct iguana_waddress *addwaddr,char *redeemScript);
 cJSON *iguana_createvins(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *txobj,cJSON *vins);
 bits256 bitcoin_pubkey33(void *ctx,uint8_t *data,bits256 privkey);
+bits256 bitcoin_randkey(void *ctx);
 
 extern int32_t HDRnet,netBLOCKS;
 

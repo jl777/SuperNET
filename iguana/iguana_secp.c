@@ -16,8 +16,33 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "../includes/curve25519.h"
 #include "../../secp256k1-zkp/include/secp256k1.h"
+
+bits256 bitcoin_randkey(secp256k1_context *ctx)
+{
+    int32_t i,flag = 0; bits256 privkey;
+    if ( ctx == 0 )
+        ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY), flag++;
+    if ( ctx != 0 )
+    {
+        for (i=0; i<100; i++)
+        {
+            privkey = rand256(0);
+            if ( secp256k1_ec_seckey_verify(ctx,privkey.bytes) > 0 )
+            {
+                if ( flag != 0 )
+                    secp256k1_context_destroy(ctx);
+                return(privkey);
+            }
+        }
+        if ( flag != 0 )
+            secp256k1_context_destroy(ctx);
+    }
+    fprintf(stderr,"couldnt generate valid bitcoin privkey. something is REALLY wrong. exiting\n");
+    exit(-1);
+}
 
 bits256 bitcoin_pubkey33(secp256k1_context *ctx,uint8_t *data,bits256 privkey)
 {

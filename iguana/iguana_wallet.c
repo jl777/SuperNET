@@ -813,7 +813,7 @@ char *getnewaddress(struct supernet_info *myinfo,struct iguana_waddress **waddrp
     if ( retstr != 0 )
     {
         memset(&addr,0,sizeof(addr));
-        if ( iguana_waddresscalc(myinfo,coin->chain->pubtype,coin->chain->wiftype,&addr,rand256(1)) != 0 )
+        if ( iguana_waddresscalc(myinfo,coin->chain->pubtype,coin->chain->wiftype,&addr,bitcoin_randkey(myinfo->ctx)) != 0 )
             retjson = iguana_walletadd(myinfo,waddrp,coin,retstr,account,&addr,1,0);
         else return(clonestr("{\"error\":\"couldnt calculate waddr\"}"));
     } else return(clonestr("{\"error\":\"no wallet data\"}"));
