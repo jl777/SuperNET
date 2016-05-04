@@ -114,6 +114,7 @@ struct iguana_waddress *iguana_waddressadd(struct supernet_info *myinfo,struct i
         printf("iguana_waddressadd verify error %p vs %p\n",ptr,waddr);
     if ( waddr != 0 && waddr != addwaddr )
     {
+        waddr->wiftype = coin->chain->wiftype;
         if ( redeemScript != 0 && (addwaddr->scriptlen= (int32_t)strlen(redeemScript) >> 1) != 0 )
         {
             if ( waddr->scriptlen != addwaddr->scriptlen )
@@ -129,20 +130,14 @@ struct iguana_waddress *iguana_waddressadd(struct supernet_info *myinfo,struct i
             memset(&waddr->privkey,0,sizeof(waddr->privkey));
             memset(waddr->pubkey,0,sizeof(waddr->pubkey));
         }
-        if ( addwaddr->scriptlen == 0 && bits256_nonz(waddr->privkey) == 0 )
+        else
         {
-            waddr->privkey = addwaddr->privkey;
-            if ( bitcoin_priv2wif(waddr->wifstr,waddr->privkey,coin->chain->wiftype) > 0 )
-            {
-                waddr->wiftype = coin->chain->wiftype;
-                waddr->addrtype = coin->chain->pubtype;
-            }
-        }
-        else if ( addwaddr->wifstr[0] != 0 )
-        {
-            waddr->addrtype = addwaddr->addrtype;
+            waddr->addrtype = coin->chain->pubtype;
             waddr->wiftype = addwaddr->wiftype;
-            strcpy(waddr->wifstr,addwaddr->wifstr);
+            if ( bits256_nonz(waddr->privkey) == 0 )
+                waddr->privkey = addwaddr->privkey;
+            if ( addwaddr->wifstr[0] != 0 )
+                strcpy(waddr->wifstr,addwaddr->wifstr);
             memcpy(waddr->pubkey,addwaddr->pubkey,sizeof(waddr->pubkey));
         }
         memcpy(waddr->rmd160,addwaddr->rmd160,sizeof(waddr->rmd160));
