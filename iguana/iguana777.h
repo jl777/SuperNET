@@ -202,7 +202,7 @@ struct iguana_peermsgrequest { struct queueitem DL; struct iguana_peer *addr; bi
 struct iguana_chain
 {
 	//const int32_t chain_id;
-    char name[32],symbol[8];
+    char name[32],symbol[8],messagemagic[64];
     uint8_t pubtype,p2shtype,wiftype,netmagic[4];
     char *genesis_hash,*genesis_hex; // hex string
     uint16_t portp2p,rpcport;
@@ -919,7 +919,7 @@ int32_t iguana_process_msgrequestQ(struct iguana_info *coin);
 uint32_t iguana_fastfindinit(struct iguana_info *coin);
 int32_t iguana_unspentindfind(struct iguana_info *coin,char *coinaddr,uint8_t *spendscript,int32_t *scriptlenp,uint64_t *valuep,int32_t *heightp,bits256 txid,int32_t vout,int32_t lasthdrsi);
 int32_t iguana_addressvalidate(struct iguana_info *coin,uint8_t *addrtypep,uint8_t rmd160[20],char *address);
-int32_t bitcoin_sign(void *ctx,uint8_t *sig,bits256 txhash2,bits256 privkey);
+int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256 privkey,int32_t recoverable);
 bits256 iguana_str2priv(struct supernet_info *myinfo,struct iguana_info *coin,char *str);
 int32_t iguana_spentflag(struct iguana_info *coin,int64_t *RTspendp,int32_t *spentheightp,struct iguana_ramchain *ramchain,int16_t spent_hdrsi,uint32_t spent_unspentind,int32_t height,int32_t minconf,int32_t maxconf,uint64_t amount);
 int32_t iguana_voutscript(struct iguana_info *coin,struct iguana_bundle *bp,uint8_t *scriptspace,char *asmstr,struct iguana_unspent *u,struct iguana_pkhash *p,int32_t txi);
@@ -946,6 +946,7 @@ struct iguana_waddress *iguana_waddressadd(struct supernet_info *myinfo,struct i
 cJSON *iguana_createvins(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *txobj,cJSON *vins);
 bits256 bitcoin_pubkey33(void *ctx,uint8_t *data,bits256 privkey);
 bits256 bitcoin_randkey(void *ctx);
+int32_t bitcoin_recoververify(void *ctx,char *symbol,uint8_t *sig64,bits256 messagehash2,uint8_t *pubkey);
 
 extern int32_t HDRnet,netBLOCKS;
 

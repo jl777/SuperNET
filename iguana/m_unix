@@ -1,4 +1,4 @@
-#./configure --enable-endomorphism --enable-module-ecdh --enable-module-schnorr --enable-module-rangeproof --enable-experimental
+#./configure --enable-endomorphism --enable-module-ecdh --enable-module-schnorr --enable-module-rangeproof --enable-experimental --enable-module_recovery
 rm ../agents/iguana *.o
 git pull
 gcc -g -Wno-deprecated -c -O2 -I../../secp256k1-zkp *.c databases/iguana_DB.c

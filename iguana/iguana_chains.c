@@ -29,7 +29,7 @@ static struct iguana_chain Chains[] =
 	//[CHAIN_TESTNET3] =
     {
 		//CHAIN_TESTNET3,
-        "testnet3", "tBTC",
+        "testnet3", "tBTC", "Bitcoin Signed Message:\n", // strMessageMagic
 		PUBKEY_ADDRESS_TEST, SCRIPT_ADDRESS_TEST, PRIVKEY_ADDRESS_TEST,
 		"\x0b\x11\x09\x07",
         "000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943",
@@ -39,7 +39,7 @@ static struct iguana_chain Chains[] =
     //[CHAIN_BITCOIN] =
     {
 		//CHAIN_BITCOIN,
-        "bitcoin", "BTC",
+        "bitcoin", "BTC", "Bitcoin Signed Message:\n", // strMessageMagic
 		0, 5, 0x80,
 		"\xf9\xbe\xb4\xd9",
         "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
@@ -51,7 +51,7 @@ static struct iguana_chain Chains[] =
 	//[CHAIN_BTCD] =
     {
 		//CHAIN_BTCD,
-        "btcd", "BTCD",
+        "btcd", "BTCD", "BitcoinDark Signed Message:\n", // strMessageMagic
 		PUBKEY_ADDRESS_BTCD, SCRIPT_ADDRESS_BTCD, PRIVKEY_ADDRESS_BTCD,
 		"\xe4\xc2\xd8\xe6",
         "0000044966f40703b516c5af180582d53f783bfd319bb045e2dc3e05ea695d46",
@@ -62,7 +62,7 @@ static struct iguana_chain Chains[] =
     },
 	//[CHAIN_VPN] =
     {
-        "vpncoin", "VPN",
+        "vpncoin", "VPN", "VPNcoin Signed Message:\n", // strMessageMagic
 		71, 5, 199, // PUBKEY_ADDRESS + SCRIPT_ADDRESS addrman.h, use wif2priv API on any valid wif
 		"\xfb\xc0\xb6\xdb", // pchMessageStart main.cpp
         //"aaea16b9b820180153d9cd069dbfd54764f07cb49c71987163132a72d568cb14",
@@ -72,7 +72,7 @@ static struct iguana_chain Chains[] =
     },
 	//[CHAIN_LTC] =
     {
-        "litecoin", "LTC",
+        "litecoin", "LTC", "Litecoin Signed Message:\n",
 		0, 5, 176, // PUBKEY_ADDRESS + SCRIPT_ADDRESS addrman.h, use wif2priv API on any valid wif
 		"\xfb\xc0\xb6\xdb", // pchMessageStart main.cpp
         //"12a765e31ffd4059bada1e25190f6e98c99d9714d334efa41a195a7e7e04bfe2",

@@ -1,2 +1,2 @@
-curl --url "http://127.0.0.1:7778" --data "{\"method\":\"verifymessage\",\"params\":[\"1KHJ4zELwwwND4dytYp7tFyBvELMH1r7a7\", \"MEQCIFLlZ2QVOEq+DzxfmVHy3pXVkCt3SZeNV1byiDVPL42fAiBHL1GN7J7uDW2WULZHruNtOqwfHKJMtL+LndDq08/ybA=\", \"testmessage\"]}"
+curl --url "http://127.0.0.1:7778" --data "{\"method\":\"verifymessage\",\"params\":[\"1H5iJUaopB8Zpu1sBTKAPXC2MqVM1DQgRz\", \"IDbLEkZFwjfPfXyEXVKr0x0e3GjiyY3W67/wATCUanqXcD96JlzzDEHfcPjr7YpEEWItqEkR6HC+kvBSFHVp6Jc=\", \"testmessage\"]}"
 

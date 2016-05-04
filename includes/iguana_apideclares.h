@@ -65,20 +65,20 @@ ZERO_ARGS(bitcoinrpc,checkwallet);
 ZERO_ARGS(bitcoinrpc,repairwallet);
 
 STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighash);
-TWO_STRINGS(bitcoinrpc,signmessage,address,message); //
-THREE_STRINGS(bitcoinrpc,verifymessage,address,sig,message); //
+TWO_STRINGS(bitcoinrpc,signmessage,address,message);
+THREE_STRINGS(bitcoinrpc,verifymessage,address,sig,message);
 STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees); //
 STRING_ARG(bitcoinrpc,submitblock,rawbytes); //
 
 SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment2); //
 S_A_I_S(bitcoinrpc,sendmany,fromaccount,payments,minconf,comment); //
 S_D_SS(bitcoinrpc,sendtoaddress,address,amount,comment,comment2); //
+INT_AND_ARRAY(bitcoinrpc,lockunspent,flag,array); //
+ZERO_ARGS(bitcoinrpc,listlockunspent); //
 
 // maybe later
 HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag);
 ZERO_ARGS(bitcoinrpc,gettxoutsetinfo);
-INT_AND_ARRAY(bitcoinrpc,lockunspent,flag,array);
-ZERO_ARGS(bitcoinrpc,listlockunspent);
 ZERO_ARGS(bitcoinrpc,getrawchangeaddress);
 SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment);
 

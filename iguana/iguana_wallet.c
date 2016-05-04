@@ -618,14 +618,13 @@ uint8_t iguana_waddrvalidate(struct supernet_info *myinfo,struct iguana_info *co
 
 cJSON *iguana_walletiterate(struct supernet_info *myinfo,struct iguana_info *coin,int32_t flag,cJSON *array,int32_t *goodp,int32_t *badp,int32_t *errors)
 {
-    struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr,*tmp2; uint8_t errorflags; int32_t i,good=0,bad=0,_errors[8]; cJSON *item;
+    struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr=0,*tmp2; uint8_t errorflags; int32_t i,good=0,bad=0,_errors[8]; cJSON *item;
     if ( errors == 0 )
         errors = _errors;
     HASH_ITER(hh,myinfo->wallet,wacct,tmp)
     {
         HASH_ITER(hh,wacct->waddr,waddr,tmp2)
         {
-            wacct->current = waddr;
             if ( flag < 0 )
             {
                 memset(&waddr->privkey,0,sizeof(waddr->privkey));
@@ -642,6 +641,7 @@ cJSON *iguana_walletiterate(struct supernet_info *myinfo,struct iguana_info *coi
             }
             else
             {
+                wacct->current = waddr;
                 if ( (errorflags= iguana_waddrvalidate(myinfo,coin,wacct,waddr,flag,errors)) != 0 )
                 {
                     bad++;

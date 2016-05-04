@@ -179,6 +179,8 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
 STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees)
 {
     cJSON *retjson = cJSON_CreateObject(); char txidstr[65]; bits256 txid; uint8_t *serialized; struct iguana_peer *addr; int32_t i,len = (int32_t)strlen(rawtx) >> 1;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
     if ( coin->peers.numranked >= 8 )
     {
         serialized = calloc(1,sizeof(struct iguana_msghdr) + len);
@@ -197,6 +199,8 @@ STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees)
 
 STRING_ARG(bitcoinrpc,submitblock,rawbytes)
 {
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
     cJSON *retjson = cJSON_CreateObject();
     // send to all peers
     return(jprint(retjson,1));
@@ -204,6 +208,8 @@ STRING_ARG(bitcoinrpc,submitblock,rawbytes)
 
 ZERO_ARGS(bitcoinrpc,makekeypair)
 {
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
     bits256 privkey; char str[67]; cJSON *retjson = cJSON_CreateObject();
     privkey = rand256(1);
     jaddstr(retjson,"result","success");
@@ -215,6 +221,8 @@ ZERO_ARGS(bitcoinrpc,makekeypair)
 STRING_ARG(bitcoinrpc,validatepubkey,pubkeystr)
 {
     uint8_t rmd160[20],pubkey[65],addrtype = 0; int32_t plen; char coinaddr[128],*str; cJSON *retjson;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
     plen = (int32_t)strlen(pubkeystr) >> 1;
     if ( plen >= 33 && plen <= 65 && coin != 0 && coin->chain != 0 )
     {
@@ -238,6 +246,8 @@ STRING_ARG(bitcoinrpc,validatepubkey,pubkeystr)
 STRING_ARG(bitcoinrpc,decodescript,scriptstr)
 {
     int32_t scriptlen; uint8_t script[IGUANA_MAXSCRIPTSIZE],rmd160[20]; char coinaddr[128],asmstr[IGUANA_MAXSCRIPTSIZE*2+1]; cJSON *scriptobj,*retjson = cJSON_CreateObject();
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
     if ( scriptstr != 0 && coin != 0 && (scriptlen= (int32_t)strlen(scriptstr)>>1) < sizeof(script) )
     {
         decode_hex(script,scriptlen,scriptstr);
@@ -337,6 +347,8 @@ INT_ARRAY_STRING(bitcoinrpc,addmultisigaddress,M,pubkeys,account) //
 HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool)
 {
     uint8_t script[IGUANA_MAXSCRIPTSIZE],rmd160[20],pubkey33[33]; char coinaddr[128],asmstr[IGUANA_MAXSCRIPTSIZE*2+1]; struct iguana_bundle *bp; int32_t minconf,scriptlen,unspentind,height,spentheight; int64_t RTspend; struct iguana_ramchaindata *rdata; struct iguana_pkhash *P; struct iguana_txid *T; struct iguana_unspent *U; struct iguana_ramchain *ramchain; cJSON *scriptobj,*retjson = cJSON_CreateObject();
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
     if ( coin != 0 )
     {
         minconf = (mempool != 0) ? 0 : 1;
@@ -387,33 +399,55 @@ HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool)
     return(jprint(retjson,1));
 }
 
-TWO_STRINGS(bitcoinrpc,signmessage,address,messagestr)
+bits256 iguana_messagehash2(char *message,char *messagemagic)
 {
-    bits256 privkey,hash2; int32_t n,len,siglen; char sigstr[256],sig64str[256]; uint8_t sig[128],*message=0; cJSON *retjson = cJSON_CreateObject();
+    int32_t n,len; uint8_t *messagebuf; bits256 hash2;
+    n = (int32_t)strlen(message) >> 1;
+    len = (int32_t)strlen(messagemagic);
+    if ( message[0] == '0' && message[1] == 'x' && is_hexstr(message+2,n-2) > 0 )
+    {
+        messagebuf = malloc(n-2 + len);
+        memcpy(messagebuf,messagemagic,len);
+        decode_hex(messagebuf+len,n-2,message+2);
+        n--;
+    }
+    else
+    {
+        n <<= 1;
+        messagebuf = malloc(n + len + 1);
+        memcpy(messagebuf,messagemagic,len);
+        strcpy((void *)&messagebuf[len],message);
+        //printf("MESSAGE.(%s)\n",(void *)messagebuf);
+    }
+    n += len;
+    hash2 = bits256_doublesha256(0,messagebuf,n);
+    //for (i=0; i<sizeof(hash2); i++)
+    //    revhash2.bytes[i] = hash2.bytes[sizeof(hash2) - 1 - i];
+    if ( messagebuf != (void *)message )
+        free(messagebuf);
+    return(hash2);
+}
+
+TWO_STRINGS(bitcoinrpc,signmessage,address,message)
+{
+    bits256 privkey,hash2; int32_t len,siglen; char sigstr[256],sig65str[256]; uint8_t sig[128]; cJSON *retjson = cJSON_CreateObject();
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    if ( myinfo->expiration == 0 )
+        return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     if ( coin != 0 )
     {
         privkey = iguana_str2priv(myinfo,coin,address);
         if ( bits256_nonz(privkey) != 0 )
         {
-            n = (int32_t)strlen(messagestr) >> 1;
-            if ( messagestr[0] == '0' && messagestr[1] == 'x' && is_hexstr(messagestr+2,n-2) > 0 )
+            hash2 = iguana_messagehash2(message,coin->chain->messagemagic);
+            if ( (siglen= bitcoin_sign(coin->ctx,coin->symbol,sig,hash2,privkey,1)) > 0 )
             {
-                message = malloc(n-2);
-                decode_hex(message,n-2,messagestr+2);
-                n--;
-            } else message = (uint8_t *)messagestr, n <<= 1;
-            hash2 = bits256_doublesha256(0,message,n);
-            if ( (siglen= bitcoin_sign(coin->ctx,sig,hash2,privkey)) > 0 )
-            {
-                sigstr[0] = sig64str[0] = 0;
-                //init_hexbytes_noT(sigstr,sig,siglen);
-                len = nn_base64_encode(sig,siglen,sig64str,sizeof(sig64str));
-                sig64str[len++] = '=';
-                sig64str[len++] = 0;
-                jaddstr(retjson,"result",sig64str);
+                sigstr[0] = sig65str[0] = 0;
+                len = nn_base64_encode(sig,siglen,sig65str,sizeof(sig65str));
+                sig65str[len] = 0;
+                jaddstr(retjson,"result",sig65str);
             }
-            if ( message != (void *)messagestr )
-                free(message);
         } else jaddstr(retjson,"error","invalid address (can be wif, wallet address or privkey hex)");
     }
     return(jprint(retjson,1));
@@ -421,13 +455,40 @@ TWO_STRINGS(bitcoinrpc,signmessage,address,messagestr)
 
 THREE_STRINGS(bitcoinrpc,verifymessage,address,sig,message)
 {
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
+    int32_t len,plen; uint8_t sigbuf[256],pubkey[65]; char str[4096]; bits256 hash2; cJSON *retjson = cJSON_CreateObject();
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    if ( strlen(sig) < sizeof(sigbuf)*8/6 )
+    {
+        len = (int32_t)strlen(sig);
+        len = nn_base64_decode(sig,len,sigbuf,sizeof(sigbuf));
+        //int32_t i; for (i=0; i<len; i++)
+        //    printf("%02x",sigbuf[i]);
+        //printf(" siglen.%d [%d] address.(%s) sig.(%s) message.(%s)\n",len,sigbuf[0],address,sig,message);
+        hash2 = iguana_messagehash2(message,coin->chain->messagemagic);
+        if ( bitcoin_recoververify(myinfo->ctx,coin->symbol,sigbuf,hash2,pubkey) == 0 )
+            jadd(retjson,"result",jtrue());
+        else jadd(retjson,"result",jfalse());
+        jaddstr(retjson,"coin",coin->symbol);
+        jaddstr(retjson,"address",address);
+        jaddstr(retjson,"message",message);
+        if ( (plen= bitcoin_pubkeylen(pubkey)) > 0 )
+        {
+            init_hexbytes_noT(str,pubkey,plen);
+            jaddstr(retjson,"pubkey",str);
+        }
+        init_hexbytes_noT(str,sigbuf,len);
+        jaddstr(retjson,"sighex",str);
+        jaddbits256(retjson,"messagehash",hash2);
+        return(jprint(retjson,1));
+    } else return(clonestr("{\"error\":\"sig is too long\"}"));
 }
 
 HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
 {
     struct iguana_txid *tx,T; char *txbytes; bits256 checktxid; int32_t len,height; cJSON *retjson,*txobj;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
     if ( (tx= iguana_txidfind(coin,&height,&T,txid,coin->bundlescount-1)) != 0 )
     {
         retjson = cJSON_CreateObject();
@@ -480,6 +541,8 @@ HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
 STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx)
 {
     cJSON *txobj = 0; bits256 txid;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
     if ( rawtx != 0 && rawtx[0] != 0 )
     {
         if ( (strlen(rawtx) & 1) != 0 )
@@ -494,6 +557,8 @@ STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx)
 
 HASH_ARG(bitcoinrpc,gettransaction,txid)
 {
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
     return(bitcoinrpc_getrawtransaction(IGUANA_CALLARGS,txid,1));
 }
 
@@ -559,6 +624,8 @@ cJSON *iguana_createvins(struct supernet_info *myinfo,struct iguana_info *coin,c
 ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
 {
     bits256 txid; int32_t offset,spendlen=0,n; uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; uint64_t satoshis; char *hexstr,*field,*txstr; cJSON *txobj,*item,*obj,*retjson = cJSON_CreateObject();
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
     if ( coin != 0 && (txobj= bitcoin_createtx(coin,locktime)) != 0 )
     {
         iguana_createvins(myinfo,coin,txobj,vins);
@@ -639,6 +706,8 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
 TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array)
 {
     int32_t numrmds; uint8_t *rmdarray; cJSON *retjson = cJSON_CreateArray();
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
     if ( minconf == 0 )
         minconf = 1;
     if ( maxconf == 0 )
@@ -652,12 +721,16 @@ TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array)
 
 INT_AND_ARRAY(bitcoinrpc,lockunspent,flag,array)
 {
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
 
 ZERO_ARGS(bitcoinrpc,listlockunspent)
 {
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
     cJSON *retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }

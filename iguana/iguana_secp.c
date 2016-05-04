@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include "../includes/curve25519.h"
 #include "../../secp256k1-zkp/include/secp256k1.h"
+#include "../../secp256k1-zkp/include/secp256k1_recovery.h"
 
 bits256 bitcoin_randkey(secp256k1_context *ctx)
 {
@@ -70,9 +71,10 @@ bits256 bitcoin_pubkey33(secp256k1_context *ctx,uint8_t *data,bits256 privkey)
     return(pubkey);
 }
 
-int32_t bitcoin_sign(void *ctx,uint8_t *sig,int32_t maxlen,bits256 txhash2,bits256 privkey)
+int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,int32_t maxlen,bits256 txhash2,bits256 privkey,int32_t recoverflag)
 {
-    secp256k1_ecdsa_signature SIG; bits256 extra_entropy,seed; int32_t flag = 0,retval = -1; size_t siglen = 72;
+    int32_t fCompressed = 1;
+    secp256k1_ecdsa_signature SIG; secp256k1_ecdsa_recoverable_signature rSIG; bits256 extra_entropy,seed; int32_t flag = 0,recid,retval = -1; size_t siglen = 72; secp256k1_pubkey SECPUB,CHECKPUB;
     seed = rand256(0);
     extra_entropy = rand256(0);
     if ( ctx == 0 )
@@ -86,12 +88,59 @@ int32_t bitcoin_sign(void *ctx,uint8_t *sig,int32_t maxlen,bits256 txhash2,bits2
         }
         if ( secp256k1_context_randomize(ctx,seed.bytes) > 0 )
         {
-            if ( secp256k1_ecdsa_sign(ctx,&SIG,txhash2.bytes,privkey.bytes,secp256k1_nonce_function_rfc6979,extra_entropy.bytes) > 0 )
+            if ( recoverflag != 0 )
             {
-                if ( secp256k1_ecdsa_signature_serialize_der(ctx,sig,&siglen,&SIG) > 0 )
-                    retval = (int32_t)siglen;
+                if ( secp256k1_ecdsa_sign_recoverable(ctx,&rSIG,txhash2.bytes,privkey.bytes,secp256k1_nonce_function_rfc6979,extra_entropy.bytes) > 0 )
+                {
+                    recid = -1;
+                    secp256k1_ecdsa_recoverable_signature_serialize_compact(ctx,sig+1,&recid,&rSIG);
+                    if ( secp256k1_ecdsa_recover(ctx,&SECPUB,&rSIG,txhash2.bytes) > 0 )
+                    {
+                        if ( secp256k1_ec_pubkey_create(ctx,&CHECKPUB,privkey.bytes) > 0 )
+                        {
+                            if ( memcmp(&SECPUB,&CHECKPUB,sizeof(SECPUB)) == 0 )
+                            {
+                                sig[0] = 27 + recid + (fCompressed != 0 ? 4 : 0);
+                                retval = 64 + 1;
+                            }
+                            else printf("secpub mismatch\n");
+                        } else printf("pubkey create error\n");
+                    } else printf("recover error\n");
+                } else printf("secp256k1_ecdsa_sign_recoverable error\n");
+            }
+            else
+            {
+                if ( secp256k1_ecdsa_sign(ctx,&SIG,txhash2.bytes,privkey.bytes,secp256k1_nonce_function_rfc6979,extra_entropy.bytes) > 0 )
+                {
+                    if ( secp256k1_ecdsa_signature_serialize_der(ctx,sig,&siglen,&SIG) > 0 )
+                        retval = (int32_t)siglen;
+                }
             }
         }
+        if ( flag != 0 )
+            secp256k1_context_destroy(ctx);
+    }
+    return(retval);
+}
+
+int32_t bitcoin_recoververify(void *ctx,char *symbol,uint8_t *sig65,bits256 messagehash2,uint8_t *pubkey)
+{
+    size_t plen; int32_t retval = -1,flag = 0; secp256k1_pubkey PUB; secp256k1_ecdsa_signature SIG; secp256k1_ecdsa_recoverable_signature rSIG;
+    pubkey[0] = 0;
+    if ( ctx == 0 )
+        ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY), flag++;
+    if ( ctx != 0 )
+    {
+        plen = (sig65[0] <= 31) ? 65 : 33;
+        secp256k1_ecdsa_recoverable_signature_parse_compact(ctx,&rSIG,sig65 + 1,0);
+        secp256k1_ecdsa_recoverable_signature_convert(ctx,&SIG,&rSIG);
+        if ( secp256k1_ecdsa_recover(ctx,&PUB,&rSIG,messagehash2.bytes) > 0 )
+        {
+            secp256k1_ec_pubkey_serialize(ctx,pubkey,&plen,&PUB,plen == 65 ? SECP256K1_EC_UNCOMPRESSED : SECP256K1_EC_COMPRESSED);
+            if ( secp256k1_ecdsa_verify(ctx,&SIG,messagehash2.bytes,&PUB) > 0 )
+                retval = 0;
+            else printf("secp256k1_ecdsa_verify error\n");
+        } else printf("secp256k1_ecdsa_recover error\n");
         if ( flag != 0 )
             secp256k1_context_destroy(ctx);
     }
