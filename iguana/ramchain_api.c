@@ -53,7 +53,7 @@ TWO_STRINGS_AND_TWO_DOUBLES(iguana,balance,activecoin,address,lastheightd,mincon
         printf("Start %s balance.(%s) height.%d\n",coin->symbol,address,lastheight);
         if ( lastheight == 0 )
             lastheight = IGUANA_MAXHEIGHT;
-        iguana_pkhasharray(myinfo,coin,array,minconf,maxconf,&total,P,coin->bundlescount,rmd160,address,pubkey33,lastheight,0,0);
+        iguana_pkhasharray(myinfo,coin,array,minconf,maxconf,&total,P,coin->bundlescount,rmd160,address,pubkey33,lastheight,0,0,0);
         free(P);
         jadd(retjson,"unspents",array);
         jaddnum(retjson,"balance",dstr(total));

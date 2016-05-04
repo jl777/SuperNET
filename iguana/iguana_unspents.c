@@ -138,7 +138,8 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                     *depositsp = ACCTS[pkind].total;
                     *lastunspentindp = ACCTS[pkind].lastunspentind;
                     printf("[%d] return pkind.%u of %u P.%p %.8f last.%u ACCTS.%p %p\n",i,pkind,numpkinds,P,dstr(*depositsp),*lastunspentindp,ACCTS,ramchain->A);
-                    *p = P[pkind];
+                    if ( P != 0 )
+                        *p = P[pkind];
                     return(p);
                 }
                 else if ( pkind != 0 )
@@ -223,12 +224,9 @@ int64_t iguana_pkhashbalance(struct supernet_info *myinfo,struct iguana_info *co
     return(deposits - spent);
 }
 
-int32_t iguana_pkhasharray(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,int64_t *totalp,struct iguana_pkhash *P,int32_t max,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33,int32_t lastheight,uint64_t *unspents,int32_t *numunspentsp)
+int32_t iguana_pkhasharray(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,int64_t *totalp,struct iguana_pkhash *P,int32_t max,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33,int32_t lastheight,uint64_t *unspents,int32_t *numunspentsp,int32_t maxunspents)
 {
-    int32_t i,n,m,maxunspents,numunspents = 0; int64_t spent,deposits,netbalance,total; uint32_t lastunspentind; struct iguana_pkhash *p,_p; struct iguana_ramchain *ramchain; struct iguana_bundle *bp;
-    if ( numunspentsp != 0 )
-        maxunspents = *numunspentsp, *numunspentsp = 0;
-    else maxunspents = 0;
+    int32_t i,n,m,numunspents = *numunspentsp; int64_t spent,deposits,netbalance,total; uint32_t lastunspentind; struct iguana_pkhash *p,_p; struct iguana_ramchain *ramchain; struct iguana_bundle *bp;
     if ( 0 && coin->RTramchain_busy != 0 )
     {
         printf("iguana_pkhasharray: unexpected access when RTramchain_busy\n");
@@ -248,7 +246,7 @@ int32_t iguana_pkhasharray(struct supernet_info *myinfo,struct iguana_info *coin
             continue;
         if ( (coin->blocks.hwmchain.height - bp->bundleheight) < minconf )
             break;
-        if ( iguana_pkhashfind(coin,&ramchain,&deposits,&lastunspentind,&P[n],rmd160,i,i) != 0 )
+        if ( iguana_pkhashfind(coin,&ramchain,&deposits,&lastunspentind,P != 0 ? &P[n] : &_p,rmd160,i,i) != 0 )
         {
             m = maxunspents;
             p = (P == 0) ? &_p : &P[n];
@@ -264,24 +262,26 @@ int32_t iguana_pkhasharray(struct supernet_info *myinfo,struct iguana_info *coin
             }
             maxunspents -= m;
             numunspents += m;
+            printf("%d: balance %.8f, lastunspent.%u m.%d num.%d max.%d\n",i,dstr(total),lastunspentind,m,numunspents,maxunspents);
         }
-        //printf("%d: balance %.8f, lastunspent.%u\n",i,dstr(balance),lastunspentind);
     }
-    //printf("n.%d max.%d\n",n,max);
     if ( numunspentsp != 0 )
         *numunspentsp = numunspents;
+    printf("numunspents.%d [%d] max.%d\n",numunspents,*numunspentsp,maxunspents);
     *totalp += total;
     return(n);
 }
 
 int64_t iguana_unspents(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,uint8_t *rmdarray,int32_t numrmds,int32_t lastheight,uint64_t *unspents,int32_t *numunspentsp)
 {
-    int64_t total=0,sum=0; struct iguana_pkhash *P; uint8_t *addrtypes,*pubkeys; int32_t i,flag = 0; char coinaddr[64];
+    int64_t total=0,sum=0; struct iguana_pkhash *P; uint8_t *addrtypes,*pubkeys; int32_t i,numunspents,maxunspents,flag = 0; char coinaddr[64];
     if ( 0 && coin->RTramchain_busy != 0 )
     {
         printf("iguana_pkhasharray: unexpected access when RTramchain_busy\n");
         return(sum);
     }
+    numunspents = 0;
+    maxunspents = *numunspentsp;
     if ( rmdarray == 0 )
         rmdarray = iguana_walletrmds(myinfo,coin,&numrmds), flag++;
     if ( numrmds > 0 && rmdarray != 0 )
@@ -291,13 +291,17 @@ int64_t iguana_unspents(struct supernet_info *myinfo,struct iguana_info *coin,cJ
         for (i=0; i<numrmds; i++)
         {
             bitcoin_address(coinaddr,addrtypes[i],&rmdarray[i * 20],20);
-            iguana_pkhasharray(myinfo,coin,array,minconf,maxconf,&total,P,coin->bundlescount,&rmdarray[i * 20],coinaddr,&pubkeys[33*i],lastheight,unspents,numunspentsp);
-            printf("i.%d of %d: %s %.8f\n",i,numrmds,coinaddr,dstr(total));
+            *numunspentsp = 0;
+            iguana_pkhasharray(myinfo,coin,array,minconf,maxconf,&total,P,coin->bundlescount,&rmdarray[i * 20],coinaddr,&pubkeys[33*i],lastheight,&unspents[numunspents],numunspentsp,maxunspents);
+            printf("iguana_unspents: i.%d of %d: %s %.8f numunspents.%d\n",i,numrmds,coinaddr,dstr(total),*numunspentsp);
+            maxunspents -= *numunspentsp;
+            numunspents += *numunspentsp;
             sum += total;
         }
         printf("sum %.8f\n",dstr(sum));
         free(P);
     }
+    *numunspentsp = numunspents;
     if ( flag != 0 && rmdarray != 0 )
         free(rmdarray);
     return(sum);
@@ -329,7 +333,7 @@ uint8_t *iguana_rmdarray(struct iguana_info *coin,int32_t *numrmdsp,cJSON *array
 
 int64_t iguana_unspentset(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    int64_t sum = 0,total; struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr,*tmp2; int32_t numunspents;
+    int64_t sum = 0,total; struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr,*tmp2; int32_t n,numunspents = 0;
     HASH_ITER(hh,myinfo->wallet,wacct,tmp)
     {
         HASH_ITER(hh,wacct->waddr,waddr,tmp2)
@@ -337,19 +341,20 @@ int64_t iguana_unspentset(struct supernet_info *myinfo,struct iguana_info *coin)
             if ( waddr->addrtype != coin->chain->pubtype || (bits256_nonz(waddr->privkey) == 0 && waddr->scriptlen == 0) )
                 continue;
             total = 0;
-            numunspents = (int32_t)(sizeof(coin->blockspace)/sizeof(*waddr->unspents));
-            iguana_pkhasharray(myinfo,coin,0,coin->minconfirms,coin->longestchain,&total,0,coin->bundlescount,waddr->rmd160,waddr->coinaddr,waddr->pubkey,coin->blocks.hwmchain.height - coin->minconfirms,(uint64_t *)coin->blockspace,&numunspents);
-            if ( numunspents > 0 )
+            n = 0;
+            iguana_pkhasharray(myinfo,coin,0,coin->minconfirms,coin->longestchain,&total,0,coin->bundlescount,waddr->rmd160,waddr->coinaddr,waddr->pubkey,coin->blocks.hwmchain.height - coin->minconfirms,(uint64_t *)coin->blockspace,&n,(int32_t)(sizeof(coin->blockspace)/sizeof(*waddr->unspents)));
+            if ( n > 0 )
             {
-                if ( waddr->unspents == 0 || waddr->maxunspents < numunspents )
+                if ( waddr->unspents == 0 || waddr->maxunspents < n )
                 {
-                    waddr->unspents = realloc(waddr->unspents,sizeof(*waddr->unspents) * numunspents);
-                    waddr->maxunspents = numunspents;
+                    waddr->unspents = realloc(waddr->unspents,sizeof(*waddr->unspents) * n);
+                    waddr->maxunspents = n;
                 }
-                memcpy(waddr->unspents,coin->blockspace,sizeof(*waddr->unspents) * numunspents);
-                waddr->numunspents = numunspents;
+                memcpy(waddr->unspents,coin->blockspace,sizeof(*waddr->unspents) * n);
+                waddr->numunspents = n;
                 waddr->balance = total;
                 sum += total;
+                numunspents += n;
             }
         }
     }

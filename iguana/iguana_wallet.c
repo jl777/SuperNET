@@ -636,7 +636,10 @@ cJSON *iguana_walletiterate(struct supernet_info *myinfo,struct iguana_info *coi
                 if ( flag < -1 )
                 {
                     HASH_DELETE(hh,wacct->waddr,waddr);
-                    free(waddr);
+                    if ( waddr->unspents != 0 )
+                        free(waddr->unspents);
+                    printf("%p free %s\n",waddr,waddr->coinaddr);
+                    myfree(waddr,sizeof(*waddr) + waddr->scriptlen);
                 }
             }
             else
@@ -656,7 +659,7 @@ cJSON *iguana_walletiterate(struct supernet_info *myinfo,struct iguana_info *coi
         if ( flag < -1 )
         {
             HASH_DELETE(hh,myinfo->wallet,wacct);
-            free(wacct);
+            myfree(wacct,sizeof(*wacct));
         }
     }
     if ( goodp != 0 )

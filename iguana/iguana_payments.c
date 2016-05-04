@@ -158,17 +158,35 @@ cJSON *iguana_scriptobj(struct iguana_info *coin,uint8_t rmd160[20],char *coinad
     return(scriptobj);
 }
 
-char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,double amount,char *comment,char *comment2,int32_t minconf,char *account)
+char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,uint64_t satoshis,char *comment,char *comment2,int32_t minconf,char *account)
 {
-    uint8_t addrtype,rmd160[20]; int32_t numwaddrs; struct iguana_waddress **waddrs;
+    uint8_t addrtype,rmd160[20],*rmdarray; int32_t i,numwaddrs,numrmds,numunspents=0; struct iguana_waddress **waddrs,*waddr; uint64_t *unspents;
     //sendtoaddress	<bitcoinaddress> <amount> [comment] [comment-to]	<amount> is a real and is rounded to 8 decimal places. Returns the transaction ID <txid> if successful.	Y
-    if ( coinaddr != 0 && coinaddr[0] != 0 && amount > 0. )
+    if ( coinaddr != 0 && coinaddr[0] != 0 && satoshis != 0 )
     {
         if ( iguana_addressvalidate(coin,&addrtype,rmd160,coinaddr) < 0 )
             return(clonestr("{\"error\":\"invalid coin address\"}"));
-        numwaddrs = iguana_unspentslists(myinfo,coin,(struct iguana_waddress **)coin->blockspace,(int32_t)(sizeof(coin->blockspace)/sizeof(*waddrs)),amount,minconf,0);
-        
-        printf("need to generate send %.8f to %s [%s] [%s] using numaddrs.%d\n",dstr(amount),coinaddr,comment!=0?comment:"",comment2!=0?comment2:"",numwaddrs);
+        waddrs = (struct iguana_waddress **)coin->blockspace;
+        numwaddrs = iguana_unspentslists(myinfo,coin,waddrs,(int32_t)(sizeof(coin->blockspace)/sizeof(*waddrs)),satoshis,minconf,0);
+        if ( numwaddrs > 0 )
+        {
+            unspents = (uint64_t *)((long)coin->blockspace + sizeof(*waddrs)*numwaddrs);
+            for (i=0; i<numwaddrs; i++)
+            {
+                if ( (waddr= waddrs[i]) != 0 )
+                    printf("(%s %.8f) ",waddr->coinaddr,dstr(waddr->balance));
+            }
+            if ( (rmdarray= iguana_rmdarray(coin,&numrmds,0,0)) != 0 )
+            {
+                numunspents = (int32_t)((sizeof(coin->blockspace) - sizeof(*waddrs)*numwaddrs) / sizeof(uint64_t));
+                iguana_unspents(myinfo,coin,0,minconf,coin->longestchain,rmdarray,numrmds,0,unspents,&numunspents);
+                if ( rmdarray != 0 )
+                    free(rmdarray);
+                for (i=0; i<numunspents; i++)
+                    printf("([%d].u%u) ",(uint32_t)(unspents[i]>>32),(uint32_t)unspents[i]);
+            }
+        }
+        printf("need to generate send %.8f to %s [%s] [%s] using numaddrs.%d numunspents.%d\n",dstr(satoshis),coinaddr,comment!=0?comment:"",comment2!=0?comment2:"",numwaddrs,numunspents);
     }
     return(clonestr("{\"error\":\"need address and amount\"}"));
 }
@@ -757,7 +775,7 @@ S_D_SS(bitcoinrpc,sendtoaddress,address,amount,comment,comment2)
         return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     myinfo->expiration++;
     iguana_unspentset(myinfo,coin);
-    return(sendtoaddress(myinfo,coin,address,amount,comment,comment2,coin->minconfirms,0));
+    return(sendtoaddress(myinfo,coin,address,amount * SATOSHIDEN,comment,comment2,coin->minconfirms,0));
 }
 
 SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment2)
@@ -768,7 +786,7 @@ SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comme
         return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     myinfo->expiration++;
     iguana_unspentset(myinfo,coin);
-    return(sendtoaddress(myinfo,coin,toaddress,amount,comment,comment2,minconf,fromaccount));
+    return(sendtoaddress(myinfo,coin,toaddress,amount * SATOSHIDEN,comment,comment2,minconf,fromaccount));
 }
 
 S_A_I_S(bitcoinrpc,sendmany,fromaccount,payments,minconf,comment)
@@ -789,7 +807,7 @@ S_A_I_S(bitcoinrpc,sendmany,fromaccount,payments,minconf,comment)
             amount = jdouble(item,0);
             val = amount * SATOSHIDEN;
             printf("(%s %.8f) ",coinaddr,dstr(val));
-            if ( (str= sendtoaddress(myinfo,coin,coinaddr,amount,comment,"",minconf,fromaccount)) != 0 )
+            if ( (str= sendtoaddress(myinfo,coin,coinaddr,val,comment,"",minconf,fromaccount)) != 0 )
             {
                 free(str);
             }
