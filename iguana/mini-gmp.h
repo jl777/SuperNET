@@ -41,6 +41,7 @@ see https://www.gnu.org/licenses/.  */
 /* For size_t */
 #include <stddef.h>
 #include <limits.h>
+#include <stdint.h>
 
 #if defined (__cplusplus)
 extern "C" {
