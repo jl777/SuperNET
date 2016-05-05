@@ -912,7 +912,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,uint8_t script[IGUANA_MAXSCRI
             {
                 script[k++] = op->opcode;
                 if ( stacks->logarray )
-                    jaddistr(stacks->logarray,op->hh.key);
+                    jaddistr(stacks->logarray,(char *)op->hh.key);
                 if ( (op->flags & IGUANA_ALWAYSILLEGAL) != 0 )
                 {
                     printf("disabled opcode.%s at offset.%ld\n",str,(long)str-(long)asmstr);
@@ -1004,7 +1004,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,uint8_t script[IGUANA_MAXSCRI
                 }
                 else if ( (op->flags & IGUANA_EXECUTIONILLEGAL) != 0 )
                 {
-                    printf("opcode not allowed to run.%s at %ld\n",op->hh.key,(long)str-(long)asmstr);
+                    printf("opcode not allowed to run.%s at %ld\n",(char *)op->hh.key,(long)str-(long)asmstr);
                     errs++;
                     break;
                 }
