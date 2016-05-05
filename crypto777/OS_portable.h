@@ -37,7 +37,8 @@
 //#define EADDRINUSE WSAEADDRINUSE
 
 #else
-#include <sys/poll.h>
+//#include <sys/poll.h>
+#include <poll.h>
 #include <netdb.h>
 #include <pthread.h>
 //#include <netinet/in.h>
