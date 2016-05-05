@@ -586,7 +586,7 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,uint64_t destipbits,bits256 
                     addr = &Coins[i]->peers.active[j];
                     if ( addr->usock >= 0 && addr->supernet != 0 && (broadcastflag != 0 || category_peer(myinfo,addr,categoryhash,subhash) >= 0) )
                     {
-                        char str[65]; printf("BROADCAST[%d] crc.%x %s SEND.(%ld) to %s\n",j,calc_crc32(0,jsonstr,(int32_t)strlen(jsonstr)),bits256_str(str,categoryhash),strlen(jsonstr),addr->ipaddr);
+                        char str[65]; printf("BROADCAST[%d] crc.%x %s SEND.(%d) to %s\n",j,calc_crc32(0,jsonstr,(int32_t)strlen(jsonstr)),bits256_str(str,categoryhash),(int32_t)strlen(jsonstr),addr->ipaddr);
                         iguana_send_supernet(Coins[i],addr,jsonstr,maxdelay==0?0:(rand()%maxdelay));
                     }
                 }

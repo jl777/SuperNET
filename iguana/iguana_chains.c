@@ -144,7 +144,7 @@ bits256 iguana_chaingenesis(bits256 genesishash,char *genesisblock,char *hashalg
     if ( bits256_cmp(genesishash,hash2) != 0 )
         printf("WARNING: genesishash.(%s) mismatch vs calc.(%s)\n",bits256_str(str,genesishash),bits256_str(str2,genesishash));
     init_hexbytes_noT(genesisblock,serialized,len);
-    printf("v.%d t.%u %s nBits.%08x nonce.%u merkle.(%s) genesis.(%s) hash2.(%s) blockhash.(%s) size.%ld\n",version,timestamp,utc_str(str3,timestamp),nBits,nonce,bits256_str(str2,merkle_root),genesisblock,bits256_str(str,hash2),blockhashstr,strlen(genesisblock)/2);
+    printf("v.%d t.%u %s nBits.%08x nonce.%u merkle.(%s) genesis.(%s) hash2.(%s) blockhash.(%s) size.%d\n",version,timestamp,utc_str(str3,timestamp),nBits,nonce,bits256_str(str2,merkle_root),genesisblock,bits256_str(str,hash2),blockhashstr,(int32_t)strlen(genesisblock)/2);
     return(hash2);
 }
 

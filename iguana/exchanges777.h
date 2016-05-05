@@ -17,8 +17,11 @@
 #define EXCHANGES777_H
 #include "iguana777.h"
 
+#ifdef ENABLE_CURL
 #include <curl/curl.h>
 #include <curl/easy.h>
+#endif
+
 #define INSTANTDEX_DECKSIZE 2000
 #define INSTANTDEX_HOPS 2
 #define INSTANTDEX_DURATION 60

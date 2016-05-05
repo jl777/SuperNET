@@ -353,7 +353,7 @@ char *crypto777_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char *
         flag++;
         iguana_rwbignum(0,msg->prevhash.bytes,sizeof(bits256),prevhash.bytes);
         iguana_rwbignum(0,msg->btchash.bytes,sizeof(bits256),btchash.bytes);
-        printf("crypto777_hexmsg <<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(msg->sig),(long)serdata-(long)msg,datalen,msg->sig.timestamp,msg->sig.allocsize,(char *)msg->serialized,serdata[datalen-1]);
+        printf("crypto777_hexmsg <<<<<<<<<<<<< sigsize.%d VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",(int32_t)sizeof(msg->sig),(long)serdata-(long)msg,datalen,msg->sig.timestamp,msg->sig.allocsize,(char *)msg->serialized,serdata[datalen-1]);
         newlen = (int32_t)(msg->sig.allocsize - ((long)msg->serialized - (long)msg));
         serdata = msg->serialized;
         if ( (argjson= cJSON_Parse((char *)serdata)) != 0 )
