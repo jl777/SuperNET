@@ -52,6 +52,7 @@ see https://www.gnu.org/licenses/.  */
 
 
 /* Macros */
+#define GMP_LIMB_BITS (sizeof(mp_limb_t) * CHAR_BIT)
 
 #define GMP_LIMB_MAX (~ (mp_limb_t) 0)
 #define GMP_LIMB_HIGHBIT ((mp_limb_t) 1 << (GMP_LIMB_BITS - 1))

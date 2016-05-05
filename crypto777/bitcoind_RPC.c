@@ -14,6 +14,8 @@
  ******************************************************************************/
 
 #include "OS_portable.h"
+
+#ifdef USE_CURL
 #ifdef _WIN32
 #include <curl.h>
 #include <easy.h>
@@ -347,3 +349,15 @@ void curlhandle_free(void *curlhandle)
 {
     curl_easy_cleanup(curlhandle);
 }
+
+#else
+char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params)
+{
+    return(clonestr("{\"error\":\"curl is disabled\"}"));
+}
+
+void *curl_post(void **cHandlep,char *url,char *userpass,char *postfields,char *hdr0,char *hdr1,char *hdr2,char *hdr3)
+{
+    return(clonestr("{\"error\":\"curl is disabled\"}"));
+}
+#endif
