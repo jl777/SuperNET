@@ -6,7 +6,7 @@ cd ..
 git clone https://github.com/ElementsProject/secp256k1-zkp.git
 cd secp256k1-zkp
 ./autogen.sh
-./configure --enable-experimental --enable-module-ecdh --enable-module-schnorr --enable-module-rangeproof
+./configure --enable-endomorphism --enable-module-ecdh --enable-module-schnorr --enable-module-rangeproof --enable-experimental --enable-module_recovery
 make
 cp .libs/libsecp256k1.a ../SuperNET/includes/
 cd ../SuperNET

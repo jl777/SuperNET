@@ -358,6 +358,7 @@ int64_t iguana_unspentset(struct supernet_info *myinfo,struct iguana_info *coin)
             }
         }
     }
+    printf("available %.8f\n",dstr(sum));
     return(sum);
 }
 

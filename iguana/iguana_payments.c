@@ -160,7 +160,7 @@ cJSON *iguana_scriptobj(struct iguana_info *coin,uint8_t rmd160[20],char *coinad
 
 char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,uint64_t satoshis,char *comment,char *comment2,int32_t minconf,char *account)
 {
-    uint8_t addrtype,rmd160[20],*rmdarray; int32_t i,numwaddrs,numrmds,numunspents=0; struct iguana_waddress **waddrs,*waddr; uint64_t *unspents;
+    uint8_t addrtype,rmd160[20]; int32_t i,j,numwaddrs,numunspents=0; struct iguana_waddress **waddrs,*waddr; uint64_t *unspents;
     //sendtoaddress	<bitcoinaddress> <amount> [comment] [comment-to]	<amount> is a real and is rounded to 8 decimal places. Returns the transaction ID <txid> if successful.	Y
     if ( coinaddr != 0 && coinaddr[0] != 0 && satoshis != 0 )
     {
@@ -173,17 +173,12 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
             unspents = (uint64_t *)((long)coin->blockspace + sizeof(*waddrs)*numwaddrs);
             for (i=0; i<numwaddrs; i++)
             {
-                if ( (waddr= waddrs[i]) != 0 )
-                    printf("(%s %.8f) ",waddr->coinaddr,dstr(waddr->balance));
-            }
-            if ( (rmdarray= iguana_rmdarray(coin,&numrmds,0,0)) != 0 )
-            {
-                numunspents = (int32_t)((sizeof(coin->blockspace) - sizeof(*waddrs)*numwaddrs) / sizeof(uint64_t));
-                iguana_unspents(myinfo,coin,0,minconf,coin->longestchain,rmdarray,numrmds,0,unspents,&numunspents);
-                if ( rmdarray != 0 )
-                    free(rmdarray);
-                for (i=0; i<numunspents; i++)
-                    printf("([%d].u%u) ",(uint32_t)(unspents[i]>>32),(uint32_t)unspents[i]);
+                if ( (waddr= waddrs[i]) != 0 && waddr->numunspents > 0 )
+                {
+                    for (j=0; j<waddr->numunspents; j++)
+                        printf("([%d].u%u) ",(uint32_t)(unspents[i]>>32),(uint32_t)unspents[i]);
+                    printf("(%s %.8f)\n",waddr->coinaddr,dstr(waddr->balance));
+                }
             }
         }
         printf("need to generate send %.8f to %s [%s] [%s] using numaddrs.%d numunspents.%d\n",dstr(satoshis),coinaddr,comment!=0?comment:"",comment2!=0?comment2:"",numwaddrs,numunspents);
@@ -631,7 +626,7 @@ cJSON *iguana_createvins(struct supernet_info *myinfo,struct iguana_info *coin,c
                 sequenceid = juint(item,"sequence");
             else sequenceid = 0xffffffff;
             jaddnum(newvin,"sequence",sequenceid);
-            bitcoin_addinput(coin,txobj,txid,vout,sequenceid,spendscript,spendlen,redeemscript,p2shlen,0,0);
+            bitcoin_txinput(coin,txobj,txid,vout,sequenceid,spendscript,spendlen,redeemscript,p2shlen,0,0);
             jadd(newvin,"pubkeys",pubkeys);
             jaddi(newvins,newvin);
         }
@@ -644,7 +639,7 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
     bits256 txid; int32_t offset,spendlen=0,n; uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; uint64_t satoshis; char *hexstr,*field,*txstr; cJSON *txobj,*item,*obj,*retjson = cJSON_CreateObject();
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    if ( coin != 0 && (txobj= bitcoin_createtx(coin,locktime)) != 0 )
+    if ( coin != 0 && (txobj= bitcoin_txcreate(coin,locktime)) != 0 )
     {
         iguana_createvins(myinfo,coin,txobj,vins);
         if ( (n= cJSON_GetArraySize(vouts)) > 0 )
@@ -694,7 +689,7 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
                                 if ( (obj= jobj(item,"amount")) != 0 )
                                     satoshis = jdouble(obj,0) * SATOSHIDEN;
                                 else satoshis = 0;
-                                bitcoin_addoutput(coin,txobj,spendscript+offset,spendlen,satoshis);
+                                bitcoin_txoutput(coin,txobj,spendscript+offset,spendlen,satoshis);
                             }
                         }
                         break;
@@ -705,7 +700,7 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
                         {
                             spendlen = bitcoin_standardspend(spendscript,0,rmd160);
                             satoshis = jdouble(item,0) * SATOSHIDEN;
-                            bitcoin_addoutput(coin,txobj,spendscript,spendlen,satoshis);
+                            bitcoin_txoutput(coin,txobj,spendscript,spendlen,satoshis);
                         }
                     }
                 }

@@ -100,62 +100,6 @@ int32_t iguana_voutparse(int32_t rwflag,uint8_t *serialized,struct iguana_msgvou
     return(len);
 }
 
-cJSON *iguana_scriptpubkeys(struct iguana_info *coin,uint8_t *script,int32_t scriptlen,bits256 txid,int16_t vout,uint32_t sequenceid)
-{
-    int32_t type,i,n,plen; struct vin_info V; cJSON *pubkeys; char pubkeystr[256];
-    pubkeys = cJSON_CreateArray();
-    if ( (type= iguana_calcrmd160(coin,0,&V,script,scriptlen,txid,vout,sequenceid)) >= 0 )
-    {
-        if ( (n= V.N) == 0 )
-            n = 1;
-        for (i=0; i<n; i++)
-        {
-            if ( (plen= bitcoin_pubkeylen(V.signers[i].pubkey)) > 0 )
-                init_hexbytes_noT(pubkeystr,V.signers[i].pubkey,plen);
-            else pubkeystr[0] = 0;
-            jaddistr(pubkeys,pubkeystr);
-        }
-    }
-    return(pubkeys);
-}
-
-void iguana_addscript(struct iguana_info *coin,cJSON *dest,uint8_t *script,int32_t scriptlen,char *fieldname)
-{
-    char *scriptstr,scriptbuf[8192+256]; int32_t len; cJSON *scriptobj;
-    if ( scriptlen < 0 )
-        return;
-    if ( scriptlen > sizeof(scriptbuf) )
-        len = (scriptlen << 1) + 256, scriptstr = malloc(len);
-    else scriptstr = scriptbuf, len = sizeof(scriptbuf);
-    init_hexbytes_noT(scriptstr,script,scriptlen);
-    if ( strcmp(fieldname,"coinbase") == 0 )
-        jaddstr(dest,"coinbase",scriptstr);
-    else
-    {
-        scriptobj = cJSON_CreateObject();
-        jaddstr(scriptobj,"hex",scriptstr);
-        iguana_expandscript(coin,scriptstr,len,script,scriptlen);
-        if ( scriptstr[0] != 0 )
-            jaddstr(scriptobj,"asm",scriptstr);
-        if ( scriptstr != scriptbuf )
-            free(scriptstr);
-        jadd(dest,fieldname,scriptobj);
-    }
-}
-
-cJSON *iguana_pubkeysjson(uint8_t *pubkeyptrs[],int32_t numpubkeys)
-{
-    int32_t i,plen; char pubkeystr[256]; cJSON *pubkeysjson = cJSON_CreateArray();
-    for (i=0; i<numpubkeys; i++)
-    {
-        if ( pubkeyptrs != 0 && (plen= bitcoin_pubkeylen(pubkeyptrs[i])) > 0 )
-            init_hexbytes_noT(pubkeystr,pubkeyptrs[i],plen);
-        else pubkeystr[0] = 0;
-        jaddistr(pubkeysjson,pubkeystr);
-    }
-    return(pubkeysjson);
-}
-
 cJSON *iguana_vinjson(struct iguana_info *coin,struct iguana_msgvin *vin)
 {
     char str[65]; int32_t vout; cJSON *json = cJSON_CreateObject();
@@ -457,7 +401,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
     *txidp = bits256_doublesha256(txidstr,txstart,len);
     if ( json != 0 )
     {
-        jaddnum(json,"locktime",msg->lock_time);
+        jadd64bits(json,"locktime",msg->lock_time);
         jaddnum(json,"size",len);
         jaddbits256(json,"txid",*txidp);
         //printf("TX.(%s) %p\n",jprint(json,0),json);
@@ -507,7 +451,7 @@ bits256 iguana_parsetxobj(struct supernet_info *myinfo,struct iguana_info *coin,
                 len += iguana_parsevoutobj(coin,&serialized[len],maxsize,&msg->vouts[i],jitem(array,i));
         }
     }
-    msg->lock_time = juint(txobj,"locktime");
+    msg->lock_time = (int32_t)j64bits(txobj,"locktime");
     msg->txid = jbits256(txobj,"txid");
     *txstartp = len;
     if ( (msg->allocsize= iguana_rwmsgtx(coin,1,0,&serialized[len],maxsize-len,msg,&txid,vpnstr)) < 0 )
@@ -533,74 +477,6 @@ char *iguana_rawtxbytes(struct iguana_info *coin,cJSON *json,struct iguana_msgtx
     }
     free(serialized);
     return(txbytes);
-}
-
-cJSON *bitcoin_createtx(struct iguana_info *coin,uint32_t locktime)
-{
-    cJSON *json = cJSON_CreateObject();
-    if ( locktime == 0 )
-    {
-        jaddnum(json,"version",1);
-        jaddnum(json,"locktime",0);
-    }
-    else
-    {
-        jaddnum(json,"version",4);
-        jaddnum(json,"locktime",locktime);
-    }
-    if ( coin->chain->hastimestamp != 0 )
-        jaddnum(json,"timestamp",time(NULL));
-    jadd(json,"vin",cJSON_CreateArray());
-    jadd(json,"vout",cJSON_CreateArray());
-    return(json);
-}
-
-cJSON *bitcoin_addoutput(struct iguana_info *coin,cJSON *txobj,uint8_t *paymentscript,int32_t len,uint64_t satoshis)
-{
-    char *hexstr; cJSON *item,*skey,*vouts = jduplicate(jobj(txobj,"vout"));
-    jdelete(txobj,"vout");
-    item = cJSON_CreateObject();
-    jadd64bits(item,"satoshis",satoshis);
-    skey = cJSON_CreateObject();
-    hexstr = malloc(len*2 + 1);
-    init_hexbytes_noT(hexstr,paymentscript,len);
-    jaddstr(skey,"hex",hexstr);
-    //printf("addoutput.(%s %s)\n",hexstr,jprint(skey,0));
-    free(hexstr);
-    jadd(item,"scriptPubkey",skey);
-    jaddi(vouts,item);
-    jadd(txobj,"vout",vouts);
-    return(txobj);
-}
-
-cJSON *bitcoin_addinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32_t vout,uint32_t sequenceid,uint8_t *spendscript,int32_t spendlen,uint8_t *redeemscript,int32_t p2shlen,uint8_t *pubkeys[],int32_t numpubkeys)
-{
-    cJSON *item,*vins; char p2shscriptstr[IGUANA_MAXSCRIPTSIZE*2+1]; uint8_t *script,len;
-    vins = jduplicate(jobj(txobj,"vin"));
-    jdelete(txobj,"vin");
-    item = cJSON_CreateObject();
-    if ( spendscript != 0 && spendscript > 0 )
-    {
-        iguana_addscript(coin,item,spendscript,spendlen,"scriptPubKey");
-        script = spendscript, len = spendlen;
-    }
-    else if ( redeemscript != 0 && p2shlen > 0 )
-    {
-        init_hexbytes_noT(p2shscriptstr,redeemscript,p2shlen);
-        jaddstr(item,"redeemScript",p2shscriptstr);
-        script = redeemscript, len = p2shlen;
-    } else script = 0;
-    if ( script != 0 && numpubkeys == 0 )
-        jadd(item,"pubkeys",iguana_scriptpubkeys(coin,script,len,txid,vout,sequenceid));
-    else if ( pubkeys != 0 && numpubkeys > 0 )
-        jadd(item,"pubkeys",iguana_pubkeysjson(pubkeys,numpubkeys));
-    jaddbits256(item,"txid",txid);
-    jaddnum(item,"vout",vout);
-    jaddnum(item,"sequence",sequenceid);
-    jaddi(vins,item);
-    jadd(txobj,"vin",vins);
-    //printf("addvin -> (%s)\n",jprint(txobj,0));
-    return(txobj);
 }
 
 char *bitcoin_json2hex(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,cJSON *txjson,struct vin_info *V)
@@ -743,7 +619,7 @@ int32_t iguana_msgtx_Vset(struct iguana_info *coin,uint8_t *serialized,int32_t m
 
 int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **signedtx,struct iguana_msgtx *msgtx,uint8_t *serialized,int32_t maxlen,struct vin_info *V,int32_t sighash)
 {
-    bits256 sigtxid; uint8_t *sig; struct vin_info *vp; char vpnstr[64]; int32_t complete=1,plen,i,j,vini=0,flag=0,siglen,numvouts,numsigs;
+    bits256 sigtxid; uint8_t *sig; struct vin_info *vp; char vpnstr[64]; int32_t complete=0,plen,i,j,vini=0,flag=0,siglen,numvouts,numsigs;
     numvouts = msgtx->tx_out;
     vpnstr[0] = 0;
     *signedtx = 0;
@@ -754,6 +630,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
         if ( bits256_nonz(sigtxid) != 0 )
         {
             vp = &V[vini];
+            vp->sigtxid = sigtxid;
             for (j=numsigs=0; j<vp->N; j++)
             {
                 sig = vp->signers[j].sig;
@@ -787,8 +664,8 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
                     numsigs++;
                 }
             }
-            if ( numsigs < vp->M )
-                complete = 0;
+            if ( numsigs >= vp->M )
+                complete = 1;
         }
     }
     iguana_msgtx_Vset(coin,serialized,maxlen,msgtx,V);
@@ -1020,9 +897,169 @@ int32_t bitcoin_txaddspend(struct iguana_info *coin,cJSON *txobj,char *destaddre
     {
         bitcoin_addr2rmd160(&addrtype,rmd160,destaddress);
         scriptlen = bitcoin_standardspend(outputscript,0,rmd160);
-        bitcoin_addoutput(coin,txobj,outputscript,scriptlen,satoshis);
+        bitcoin_txoutput(coin,txobj,outputscript,scriptlen,satoshis);
         return(0);
     } else return(-1);
+}
+
+cJSON *bitcoin_txscript(struct iguana_info *coin,char *asmstr,char **vardata,int32_t numvars)
+{
+    int32_t i; cJSON *scriptjson,*array;
+    scriptjson = cJSON_CreateObject();
+    jaddstr(scriptjson,"asm",asmstr);
+    jaddnum(scriptjson,"numvars",numvars);
+    if ( numvars > 0 )
+    {
+        array = cJSON_CreateArray();
+        for (i=0; i<numvars; i++)
+            jaddistr(array,vardata[i]);
+        jadd(scriptjson,"args",array);
+    }
+    return(scriptjson);
+}
+
+cJSON *iguana_scriptpubkeys(struct iguana_info *coin,uint8_t *script,int32_t scriptlen,bits256 txid,int16_t vout,uint32_t sequenceid)
+{
+    int32_t type,i,n,plen; struct vin_info V; cJSON *pubkeys; char pubkeystr[256];
+    pubkeys = cJSON_CreateArray();
+    if ( (type= iguana_calcrmd160(coin,0,&V,script,scriptlen,txid,vout,sequenceid)) >= 0 )
+    {
+        if ( (n= V.N) == 0 )
+            n = 1;
+        for (i=0; i<n; i++)
+        {
+            if ( (plen= bitcoin_pubkeylen(V.signers[i].pubkey)) > 0 )
+                init_hexbytes_noT(pubkeystr,V.signers[i].pubkey,plen);
+            else pubkeystr[0] = 0;
+            jaddistr(pubkeys,pubkeystr);
+        }
+    }
+    return(pubkeys);
+}
+
+void iguana_addscript(struct iguana_info *coin,cJSON *dest,uint8_t *script,int32_t scriptlen,char *fieldname)
+{
+    char *scriptstr,scriptbuf[8192+256]; int32_t len; cJSON *scriptobj;
+    if ( scriptlen < 0 )
+        return;
+    if ( scriptlen > sizeof(scriptbuf) )
+        len = (scriptlen << 1) + 256, scriptstr = malloc(len);
+    else scriptstr = scriptbuf, len = sizeof(scriptbuf);
+    init_hexbytes_noT(scriptstr,script,scriptlen);
+    if ( strcmp(fieldname,"coinbase") == 0 )
+        jaddstr(dest,"coinbase",scriptstr);
+    else
+    {
+        scriptobj = cJSON_CreateObject();
+        jaddstr(scriptobj,"hex",scriptstr);
+        iguana_expandscript(coin,scriptstr,len,script,scriptlen);
+        if ( scriptstr[0] != 0 )
+            jaddstr(scriptobj,"asm",scriptstr);
+        if ( scriptstr != scriptbuf )
+            free(scriptstr);
+        jadd(dest,fieldname,scriptobj);
+    }
+}
+
+cJSON *iguana_pubkeysjson(uint8_t *pubkeyptrs[],int32_t numpubkeys)
+{
+    int32_t i,plen; char pubkeystr[256]; cJSON *pubkeysjson = cJSON_CreateArray();
+    for (i=0; i<numpubkeys; i++)
+    {
+        if ( pubkeyptrs != 0 && (plen= bitcoin_pubkeylen(pubkeyptrs[i])) > 0 )
+            init_hexbytes_noT(pubkeystr,pubkeyptrs[i],plen);
+        else pubkeystr[0] = 0;
+        jaddistr(pubkeysjson,pubkeystr);
+    }
+    return(pubkeysjson);
+}
+
+cJSON *bitcoin_txinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32_t vout,uint32_t sequenceid,uint8_t *spendscript,int32_t spendlen,uint8_t *redeemscript,int32_t p2shlen,uint8_t *pubkeys[],int32_t numpubkeys)
+{
+    cJSON *item,*vins; char p2shscriptstr[IGUANA_MAXSCRIPTSIZE*2+1]; uint8_t *script,len;
+    vins = jduplicate(jobj(txobj,"vin"));
+    jdelete(txobj,"vin");
+    item = cJSON_CreateObject();
+    if ( spendscript != 0 && spendscript > 0 )
+    {
+        iguana_addscript(coin,item,spendscript,spendlen,"scriptPubKey");
+        script = spendscript, len = spendlen;
+    }
+    else if ( redeemscript != 0 && p2shlen > 0 )
+    {
+        init_hexbytes_noT(p2shscriptstr,redeemscript,p2shlen);
+        jaddstr(item,"redeemScript",p2shscriptstr);
+        script = redeemscript, len = p2shlen;
+    } else script = 0;
+    if ( script != 0 && numpubkeys == 0 )
+        jadd(item,"pubkeys",iguana_scriptpubkeys(coin,script,len,txid,vout,sequenceid));
+    else if ( pubkeys != 0 && numpubkeys > 0 )
+        jadd(item,"pubkeys",iguana_pubkeysjson(pubkeys,numpubkeys));
+    jaddbits256(item,"txid",txid);
+    jaddnum(item,"vout",vout);
+    jaddnum(item,"sequence",sequenceid);
+    jaddi(vins,item);
+    jadd(txobj,"vin",vins);
+    //printf("addvin -> (%s)\n",jprint(txobj,0));
+    return(txobj);
+}
+
+cJSON *bitcoin_txcreate(struct iguana_info *coin,int64_t locktime)
+{
+    cJSON *json = cJSON_CreateObject();
+    if ( locktime == 0 )
+    {
+        jaddnum(json,"version",1);
+        jadd64bits(json,"locktime",0);
+    }
+    else
+    {
+        jaddnum(json,"version",4);
+        jadd64bits(json,"locktime",locktime);
+    }
+    if ( coin->chain->hastimestamp != 0 )
+        jaddnum(json,"timestamp",time(NULL));
+    jadd(json,"vin",cJSON_CreateArray());
+    jadd(json,"vout",cJSON_CreateArray());
+    return(json);
+}
+
+cJSON *bitcoin_txoutput(struct iguana_info *coin,cJSON *txobj,uint8_t *paymentscript,int32_t len,uint64_t satoshis)
+{
+    char *hexstr; cJSON *item,*skey,*vouts = jduplicate(jobj(txobj,"vout"));
+    jdelete(txobj,"vout");
+    item = cJSON_CreateObject();
+    jadd64bits(item,"satoshis",satoshis);
+    skey = cJSON_CreateObject();
+    hexstr = malloc(len*2 + 1);
+    init_hexbytes_noT(hexstr,paymentscript,len);
+    jaddstr(skey,"hex",hexstr);
+    //printf("addoutput.(%s %s)\n",hexstr,jprint(skey,0));
+    free(hexstr);
+    jadd(item,"scriptPubkey",skey);
+    jaddi(vouts,item);
+    jadd(txobj,"vout",vouts);
+    return(txobj);
+}
+
+int32_t iguana_interpreter(struct iguana_info *coin,int64_t nLockTime,struct vin_info *V,int32_t numvins)
+{
+    uint8_t script[IGUANA_MAXSCRIPTSIZE]; int32_t vini,scriptlen,errs = 0; cJSON *spendscript;
+    for (vini=0; vini<numvins; vini++)
+    {
+        spendscript = iguana_spendasm(coin,V[vini].spendscript,V[vini].spendlen);
+        if ( (scriptlen= bitcoin_assembler(coin,script,spendscript,1,nLockTime,&V[vini])) <= 0 )
+        {
+            errs++;
+        }
+        else if ( scriptlen != V[vini].spendlen || memcmp(script,V[vini].spendscript,scriptlen) != 0 )
+        {
+            errs++;
+        }
+    }
+    if ( errs != 0 )
+        return(-errs);
+    else return(0);
 }
 
 #include "../includes/iguana_apidefs.h"
@@ -1044,7 +1081,7 @@ P2SH_SPENDAPI(iguana,spendmsig,activecoin,vintxid,vinvout,destaddress,destamount
     if ( M > N || N > 3 )
         return(clonestr("{\"error\":\"illegal M or N\"}"));
     memset(&V,0,sizeof(V));
-    txobj = bitcoin_createtx(active,0);
+    txobj = bitcoin_txcreate(active,0);
     if ( destaddress[0] != 0 && destamount > 0. )
         bitcoin_txaddspend(active,txobj,destaddress,destamount * SATOSHIDEN);
     if ( destaddress2[0] != 0 && destamount2 > 0. )
@@ -1073,7 +1110,7 @@ P2SH_SPENDAPI(iguana,spendmsig,activecoin,vintxid,vinvout,destaddress,destamount
         decode_hex(pubkeys[2],(int32_t)strlen(pubC)>>1,pubC);
         pubkeyptrs[2] = pubkeys[2];
     }
-    bitcoin_addinput(active,txobj,vintxid,vinvout,0xffffffff,spendscript,spendlen,V.p2shscript,V.p2shlen,pubkeyptrs,N);
+    bitcoin_txinput(active,txobj,vintxid,vinvout,0xffffffff,spendscript,spendlen,V.p2shscript,V.p2shlen,pubkeyptrs,N);
     bitcoin_address(msigaddr,active->chain->p2shtype,V.p2shscript,V.p2shlen);
     retjson = cJSON_CreateObject();
     if ( bitcoin_verifyvins(active,&signedtxid,&signedtx,&msgtx,serialized,sizeof(serialized),&V,SIGHASH_ALL) == 0 )
@@ -1087,30 +1124,19 @@ P2SH_SPENDAPI(iguana,spendmsig,activecoin,vintxid,vinvout,destaddress,destamount
     return(jprint(retjson,1));
 }
 
-STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighash)
+int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_msgtx *msgtx,char **signedtxp,bits256 *signedtxidp,struct vin_info *V,int32_t numinputs,char *rawtx,cJSON *vins,cJSON *privkeys)
 {
-    char *privkeystr,*signedtx = 0; struct vin_info *V; bits256 txid,signedtxid,privkey; int32_t len,i,n,complete,maxsize,numinputs = 1; uint8_t *serialized=0,*serialized2=0,*serialized3=0; struct iguana_msgtx msgtx; cJSON *txobj,*item,*retjson; int uselessbitcoin_error = 0;
-    retjson = cJSON_CreateObject();
-    if ( remoteaddr != 0 )
-        return(clonestr("{\"error\":\"no remote\"}"));
-    if ( myinfo->expiration == 0 )
-        return(clonestr("{\"error\":\"need to unlock wallet\"}"));
-    //printf("rawtx.(%s) vins.(%s) privkeys.(%s) sighash.(%s)\n",rawtx,jprint(vins,0),jprint(privkeys,0),sighash);
-    if ( sighash == 0 || sighash[0] == 0 )
-        sighash = "ALL";
-    if ( strcmp(sighash,"ALL") != 0 )
-        jaddstr(retjson,"error","only sighash all (ALL) supported for now");
-    maxsize = 65536;
+    uint8_t *serialized,*serialized2,*serialized3; int32_t i,len,n,maxsize,complete = 0; char *checkstr,*privkeystr,*signedtx = 0; bits256 privkey,txid; cJSON *item; cJSON *txobj;
+    maxsize = 1000000;
     if ( rawtx != 0 && rawtx[0] != 0 && (len= (int32_t)strlen(rawtx)>>1) < maxsize )
     {
         serialized = malloc(maxsize);
         serialized2 = malloc(maxsize);
         serialized3 = malloc(maxsize);
-        memset(&msgtx,0,sizeof(msgtx));
+        memset(msgtx,0,sizeof(*msgtx));
         decode_hex(serialized,len,rawtx);
-        if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,rawtx)) != 0 )
+        if ( (txobj= bitcoin_hex2json(coin,&txid,msgtx,rawtx)) != 0 )
         {
-            char *checkstr;
             //printf("txobj.(%s)\n",jprint(txobj,0));
             if ( (checkstr= bitcoin_json2hex(myinfo,coin,&txid,txobj,0)) != 0 )
             {
@@ -1119,11 +1145,8 @@ STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighas
                     printf("RAW.(%s) ->\nNEW.(%s)\n",rawtx,checkstr);
                     free_json(txobj);
                     free(checkstr);
-                    free(serialized);
-                    free(serialized2);
-                    free(serialized3);
-                    jaddstr(retjson,"error",uselessbitcoin_error != 0 ? "-22" : "hex2json -> json2hex error");
-                    return(jprint(retjson,1));
+                    free(serialized), free(serialized2), free(serialized3);
+                    return(-2);
                 }
                 free(checkstr);
             }
@@ -1131,9 +1154,8 @@ STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighas
         }
         if ( (numinputs= cJSON_GetArraySize(vins)) > 0 )
         {
-            V = calloc(numinputs,sizeof(*V));
-            memset(&msgtx,0,sizeof(msgtx));
-            if ( iguana_rwmsgtx(coin,0,0,serialized,maxsize,&msgtx,&txid,"") > 0 && numinputs == msgtx.tx_in )
+            memset(msgtx,0,sizeof(*msgtx));
+            if ( iguana_rwmsgtx(coin,0,0,serialized,maxsize,msgtx,&txid,"") > 0 && numinputs == msgtx->tx_in )
             {
                 if ( (n= cJSON_GetArraySize(privkeys)) > 0 )
                 {
@@ -1146,30 +1168,49 @@ STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighas
                             iguana_ensure_privkey(myinfo,coin,privkey);
                     }
                 }
-                signedtx = 0;
-                iguana_vininfo_create(myinfo,coin,serialized2,maxsize,&msgtx,vins,numinputs,V);
-                complete = bitcoin_verifyvins(coin,&signedtxid,&signedtx,&msgtx,serialized3,maxsize,V,SIGHASH_ALL);
-                free(V);
-                if ( signedtx != 0 )
+                iguana_vininfo_create(myinfo,coin,serialized2,maxsize,msgtx,vins,numinputs,V);
+                if ( (complete= bitcoin_verifyvins(coin,signedtxidp,&signedtx,msgtx,serialized3,maxsize,V,SIGHASH_ALL)) > 0 )
                 {
-                    jaddstr(retjson,"result",signedtx);
-                    jadd(retjson,"complete",complete!=0?jtrue():jfalse());
-                    free(signedtx);
-                } else jaddstr(retjson,"error",uselessbitcoin_error != 0 ? "-22" : "no transaction from verifyvins");
+                    iguana_interpreter(coin,j64bits(txobj,"locktime"),V,numinputs);
+                }
             }
-            else
+        }
+    } else return(-1);
+    *signedtxp = signedtx;
+    return(complete);
+}
+
+STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighash)
+{
+    char *signedtx = 0; struct vin_info *V; bits256 signedtxid; int32_t complete,numinputs = 1; struct iguana_msgtx msgtx; cJSON *retjson; int uselessbitcoin_error = 0;
+    retjson = cJSON_CreateObject();
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    if ( myinfo->expiration == 0 )
+        return(clonestr("{\"error\":\"need to unlock wallet\"}"));
+    //printf("rawtx.(%s) vins.(%s) privkeys.(%s) sighash.(%s)\n",rawtx,jprint(vins,0),jprint(privkeys,0),sighash);
+    if ( sighash == 0 || sighash[0] == 0 )
+        sighash = "ALL";
+    if ( strcmp(sighash,"ALL") != 0 )
+        jaddstr(retjson,"error","only sighash all (ALL) supported for now");
+    if ( (numinputs= cJSON_GetArraySize(vins)) > 0 )
+    {
+        V = calloc(numinputs,sizeof(*V));
+        memset(&msgtx,0,sizeof(msgtx));
+        if ( (complete= iguana_signrawtransaction(myinfo,coin,&msgtx,&signedtx,&signedtxid,V,numinputs,rawtx,vins,privkeys)) >= 0 )
+        {
+            if ( signedtx != 0 )
             {
-                /*char *testscript = "76a914010966776006953d5567439e5e39f86a0d273bee88ac";
-                 uint8_t script[256]; bits256 sigtxid; int32_t scriptlen = (int32_t)strlen(testscript) >> 1;
-                 decode_hex(script,scriptlen,testscript);
-                 sigtxid = bitcoin_sigtxid(coin,serialized,sizeof(serialized),&msgtx,0,msgtx.vins[0].spendscript,msgtx.vins[0].spendlen,SIGHASH_ALL,"");
-                 char str[65]; printf("sigtxid.(%s)\n",bits256_str(str,sigtxid));*/
-                jaddstr(retjson,"error",uselessbitcoin_error != 0 ? "-22" : "couldnt load serialized tx or mismatched numinputs");
-            }
-        } else jaddstr(retjson,"error","no inputs");
-        free(serialized);
-        free(serialized2);
-        free(serialized3);
+                jaddstr(retjson,"result",signedtx);
+                jadd(retjson,"complete",complete!=0?jtrue():jfalse());
+                free(signedtx);
+            } else jaddstr(retjson,"error",uselessbitcoin_error != 0 ? "-22" : "no transaction from verifyvins");
+        }
+        else if ( complete == -2 )
+            jaddstr(retjson,"error",uselessbitcoin_error != 0 ? "-22" : "hex2json -> json2hex error");
+        else if ( complete == -1 )
+            jaddstr(retjson,"error",uselessbitcoin_error != 0 ? "-22" : "couldnt load serialized tx or mismatched numinputs");
+        free(V);
     } else jaddstr(retjson,"error",uselessbitcoin_error != 0 ? "-22" : "no rawtx or rawtx too big");
     return(jprint(retjson,1));
 }

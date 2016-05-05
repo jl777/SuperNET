@@ -194,6 +194,13 @@ see https://www.gnu.org/licenses/.  */
     (x) = (y);								\
     (y) = __mp_size_t_swap__tmp;					\
   } while (0)
+#define MP_SIZE_sT_SWAP(x, y)						\
+do {									\
+uint32_t __mp_size_t_swap__tmp = (x);				\
+(x) = (y);								\
+(y) = __mp_size_t_swap__tmp;					\
+} while (0)
+
 #define MP_BITCNT_T_SWAP(x,y)			\
   do {						\
     mp_bitcnt_t __mp_bitcnt_t_swap__tmp = (x);	\
@@ -4135,8 +4142,8 @@ void mpz_set_si (mpz_t r, signed long int x)
 
 void mpz_swap (mpz_t u, mpz_t v)
 {
-    MP_SIZE_T_SWAP (u->_mp_size, v->_mp_size);
-    MP_SIZE_T_SWAP (u->_mp_alloc, v->_mp_alloc);
+    MP_SIZE_sT_SWAP (u->_mp_size, v->_mp_size);
+    MP_SIZE_sT_SWAP (u->_mp_alloc, v->_mp_alloc);
     MP_PTR_SWAP (u->_mp_d, v->_mp_d);
 }
 

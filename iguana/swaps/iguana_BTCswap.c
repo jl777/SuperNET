@@ -104,7 +104,7 @@ void iguana_addinputs(struct iguana_info *coin,struct bitcoin_spend *spend,cJSON
                 break;
             pubkeyptrs[j] = spend->inputs[i].pubkeys[j];
         }
-        bitcoin_addinput(coin,txobj,spend->inputs[i].txid,spend->inputs[i].vout,spend->inputs[i].sequence,spend->inputs[i].spendscript,spend->inputs[i].spendlen,spend->inputs[i].p2shscript,spend->inputs[i].p2shlen,j>0?pubkeyptrs:0,j);
+        bitcoin_txinput(coin,txobj,spend->inputs[i].txid,spend->inputs[i].vout,spend->inputs[i].sequence,spend->inputs[i].spendscript,spend->inputs[i].spendlen,spend->inputs[i].p2shscript,spend->inputs[i].p2shlen,j>0?pubkeyptrs:0,j);
     }
 }
 
@@ -116,14 +116,14 @@ struct bitcoin_statetx *instantdex_feetx(struct supernet_info *myinfo,struct ins
         insurance = IGUANA_BTCDMULT * instantdex_insurance(coin,instantdex_BTCsatoshis(A->offer.price64,A->offer.basevolume64));
         if ( (spend= iguana_spendset(myinfo,coin,insurance,coin->chain->txfee,0)) != 0 )
         {
-            txobj = bitcoin_createtx(coin,0);
+            txobj = bitcoin_txcreate(coin,0);
             n = instantdex_outputinsurance(paymentscript,0,insurance,A->orderid);
-            bitcoin_addoutput(coin,txobj,paymentscript,n,insurance);
+            bitcoin_txoutput(coin,txobj,paymentscript,n,insurance);
             iguana_addinputs(coin,spend,txobj,0xffffffff);
             if ( spend->change > coin->chain->txfee )
             {
                 len = bitcoin_standardspend(paymentscript,0,spend->change160);
-                bitcoin_addoutput(coin,txobj,paymentscript,len,spend->change);
+                bitcoin_txoutput(coin,txobj,paymentscript,len,spend->change);
             }
             txobj = iguana_signtx(myinfo,coin,&txid,&feetx,spend,txobj,0);
             if ( feetx != 0  )
@@ -203,13 +203,13 @@ struct bitcoin_statetx *instantdex_bobtx(struct supernet_info *myinfo,struct igu
     if ( coin == 0 )
         return(0);
     locktime = (uint32_t)(reftime + INSTANTDEX_LOCKTIME * (1 + depositflag));
-    txobj = bitcoin_createtx(coin,locktime);
+    txobj = bitcoin_txcreate(coin,locktime);
     insurance = instantdex_insurance(coin,amount);
     if ( (spend= iguana_spendset(myinfo,coin,amount + insurance,coin->chain->txfee,0)) != 0 )
     {
         calc_rmd160_sha256(secret,priv.bytes,sizeof(priv));
         n = instantdex_bobscript(script,0,&secretstart,locktime,pub1,secret,pub2);
-        bitcoin_addoutput(coin,txobj,script,n,amount + depositflag*insurance*100);
+        bitcoin_txoutput(coin,txobj,script,n,amount + depositflag*insurance*100);
         iguana_addinputs(coin,spend,txobj,0xffffffff);
         txobj = iguana_signtx(myinfo,coin,&txid,&signedtx,spend,txobj,0);
         if ( signedtx != 0  )
@@ -307,9 +307,9 @@ struct bitcoin_statetx *instantdex_alicetx(struct supernet_info *myinfo,struct i
     cJSON *txobj; int32_t n; char *signedtx = 0; uint8_t script[1024]; struct bitcoin_spend *spend; struct bitcoin_statetx *ptr = 0; bits256 txid;
     if ( altcoin != 0 && (spend= iguana_spendset(myinfo,altcoin,amount,altcoin->chain->txfee,0)) != 0 )
     {
-        txobj = bitcoin_createtx(altcoin,0);
+        txobj = bitcoin_txcreate(altcoin,0);
         n = instantdex_alicescript(script,0,msigaddr,altcoin->chain->p2shtype,pubAm,pubBn);
-        bitcoin_addoutput(altcoin,txobj,script,n,amount);
+        bitcoin_txoutput(altcoin,txobj,script,n,amount);
         iguana_addinputs(altcoin,spend,txobj,0xffffffff);
         txobj = iguana_signtx(myinfo,altcoin,&txid,&signedtx,spend,txobj,0);
         if ( signedtx != 0 )
@@ -1072,17 +1072,17 @@ char *instantdex_bailintx(struct iguana_info *coin,bits256 *txidp,struct bitcoin
     uint8_t p2shscript[256],scriptv0[128],scriptv1[128],changescript[128],pubkey[35];
     p2shlen = bitcoin_2of2spendscript(&scriptv0len,scriptv0,p2shscript,A0,B0);
     txobj = bitcoin_createtx(coin,0);
-    bitcoin_addoutput(coin,txobj,scriptv0,scriptv0len,spend->satoshis);
+    bitcoin_txoutput(coin,txobj,scriptv0,scriptv0len,spend->satoshis);
     if ( isbob != 0 )
     {
         scriptv1len = bitcoin_revealsecret160(scriptv1,0,x);
         scriptv1len = bitcoin_pubkeyspend(scriptv1,scriptv1len,pubkey);
     } else scriptv1len = bitcoin_p2shspend(scriptv1,0,x);
-    bitcoin_addoutput(coin,txobj,scriptv1,scriptv1len,spend->txfee);
+    bitcoin_txoutput(coin,txobj,scriptv1,scriptv1len,spend->txfee);
     if ( (scriptv2len= bitcoin_changescript(coin,changescript,0,&change,spend->changeaddr,spend->input_satoshis,spend->satoshis,spend->txfee)) > 0 )
-        bitcoin_addoutput(coin,txobj,changescript,scriptv2len,change);
+        bitcoin_txoutput(coin,txobj,changescript,scriptv2len,change);
     for (i=0; i<spend->numinputs; i++)
-        bitcoin_addinput(coin,txobj,spend->inputs[i].txid,spend->inputs[i].vout,0xffffffff);
+        bitcoin_txinput(coin,txobj,spend->inputs[i].txid,spend->inputs[i].vout,0xffffffff);
     rawtxstr = bitcoin_json2hex(coin,&txid,txobj,0);
     char str[65]; printf("%s_bailin.%s (%s)\n",isbob!=0?"bob":"alice",bits256_str(str,txid),rawtxstr);
     V = calloc(spend->numinputs,sizeof(*V));
@@ -1107,7 +1107,7 @@ cJSON *instantdex_bailinspend(struct iguana_info *coin,bits256 privkey,uint64_t 
     calc_rmd160_sha256(rmd160,p2shscript,n);
     scriptv0len = bitcoin_p2shspend(scriptv0,0,rmd160);
     txobj = bitcoin_createtx(coin,0);
-    bitcoin_addoutput(coin,txobj,scriptv0,scriptv0len,amount);
+    bitcoin_txoutput(coin,txobj,scriptv0,scriptv0len,amount);
     return(txobj);
 }
 
@@ -1144,8 +1144,8 @@ char *instantdex_payouttx(struct iguana_info *coin,char *sigstr,int32_t *siglenp
 {
     struct vin_info V; cJSON *txobj;
     txobj = instantdex_bailinspend(coin,sharedprivs[1],amount);
-    bitcoin_addinput(coin,txobj,bailintxid,0,0xffffffff);
-    bitcoin_addinput(coin,txobj,bailintxid,1,0xffffffff);
+    bitcoin_txinput(coin,txobj,bailintxid,0,0xffffffff);
+    bitcoin_txinput(coin,txobj,bailintxid,1,0xffffffff);
     memset(&V,0,sizeof(V));
     if ( othersigstr != 0 )
     {
@@ -1171,7 +1171,7 @@ char *instantdex_refundtx(struct iguana_info *coin,bits256 *txidp,bits256 bailin
 {
     char sigstr[256]; int32_t siglen; struct vin_info V; cJSON *txobj;
     txobj = instantdex_bailinspend(coin,priv2,amount - txfee);
-    bitcoin_addinput(coin,txobj,bailintxid,0,0xffffffff);
+    bitcoin_txinput(coin,txobj,bailintxid,0,0xffffffff);
     return(instantdex_bailinsign(coin,bailinpriv,sigstr,&siglen,txidp,&V,txobj,isbob));
 }
 
