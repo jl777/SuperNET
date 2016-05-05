@@ -1223,14 +1223,17 @@ ZERO_ARGS(bitcoinrpc,repairwallet)
 // multiple address
 STRING_AND_THREEINTS(bitcoinrpc,getbalance,account,minconf,includeempty,lastheight)
 {
-    int64_t balance; int32_t numrmds=0; uint8_t *rmdarray=0; cJSON *retjson;
+    int64_t balance; int32_t numunspents,numrmds=0; uint8_t *rmdarray=0; cJSON *retjson;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
+    if ( account == 0 )
+        account = "";
     if ( minconf == 0 )
         minconf = 1;
     if ( strcmp(account,"*") != 0 )
         rmdarray = iguana_rmdarray(coin,&numrmds,getaddressesbyaccount(myinfo,coin,account),0);
-    balance = iguana_unspents(myinfo,coin,0,minconf,(1 << 30),rmdarray,numrmds,lastheight,0,0);
+    numunspents = 0;
+    balance = iguana_unspents(myinfo,coin,0,minconf,(1 << 30),rmdarray,numrmds,lastheight,0,&numunspents);
     if ( rmdarray != 0 )
         free(rmdarray);
     retjson = cJSON_CreateObject();
