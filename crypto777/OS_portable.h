@@ -38,6 +38,7 @@
 
 #else
 //#include <sys/poll.h>
+#include <time.h>
 #include <poll.h>
 #include <netdb.h>
 #include <pthread.h>
