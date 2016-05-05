@@ -2,7 +2,7 @@
 
 > #TL;DR#
 > 
-> ```sudo apt-get update; sudo apt-get install build-essential curl libcurl4-gnutls-dev autotools-dev libtool autoconf libgmp3-dev libssl-dev libgmp3-dev; git clone https://github.com/jl777/SuperNET; cd SuperNET; ./m_onetime m_unix; cd iguana; ./m_unix; agents/iguana```
+> ```sudo apt-get update; sudo apt-get git install build-essential; git clone https://github.com/jl777/SuperNET; cd SuperNET; ./m_onetime m_unix;```
 > 
 > The above one line gets SuperNET installed, built and launched for unix. 
 > 
@@ -10,6 +10,8 @@
 > *Continue below at "Running".*
 
 **iguana is easy to build. Start by cloning (or downloading) this repository.**
+*** all external dependencies have been removed, except for -lpthread and -lm
+
 
 #DEPENDENCIES#
 ##for native (unix, osx)##
