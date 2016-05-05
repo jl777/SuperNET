@@ -216,7 +216,7 @@ int64_t iguana_pkhashbalance(struct supernet_info *myinfo,struct iguana_info *co
             }
             unspentind = U2[unspentind].prevunspentind;
         }
-        if ( fabs(spent - checkval - RTspend) > SMALLVAL )
+        if ( llabs(spent - checkval - RTspend) > SMALLVAL )
             printf("spend %s: [%d] deposits %.8f spent %.8f check %.8f (%.8f) vs A2[%u] %.8f\n",lastheight==IGUANA_MAXHEIGHT?"checkerr":"",hdrsi,dstr(deposits),dstr(spent),dstr(checkval)+dstr(RTspend),dstr(*spentp),pkind,dstr(A2[pkind].total));
     }
     (*spentp) = spent;

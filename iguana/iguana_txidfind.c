@@ -479,7 +479,7 @@ uint32_t iguana_fastfindinit(struct iguana_info *coin)
                 }
                 else
                 {
-                    printf("size error num.%d tablesize.%d -> %lu vs %ld\n",num,tablesize,(num+1)*16 + tablesize*sizeof(*hashtable),coin->fastsizes[i]);
+                    printf("size error num.%d tablesize.%d -> %u vs %ld\n",num,tablesize,(int32_t)((num+1)*16 + tablesize*sizeof(*hashtable)),coin->fastsizes[i]);
                     break;
                 }
             }

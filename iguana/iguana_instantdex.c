@@ -943,7 +943,7 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
             printf("%02x ",((uint8_t *)&otherap->offer)[i]);
         printf("gotoffer.%llu\n",(long long)otherap->orderid);
     }
-    printf(">>>>>>>>> GOTOFFER T.%d got (%s/%s) %.8f vol %.8f %llu offerside.%d offerdir.%d decksize.%ld/datalen.%d\n",bits256_cmp(traderpub,myinfo->myaddr.persistent),myap->offer.base,myap->offer.rel,dstr(myap->offer.price64),dstr(myap->offer.basevolume64),(long long)myap->orderid,myap->offer.myside,myap->offer.acceptdir,sizeof(swap->deck),serdatalen);
+    printf(">>>>>>>>> GOTOFFER T.%d got (%s/%s) %.8f vol %.8f %llu offerside.%d offerdir.%d decksize.%d/datalen.%d\n",bits256_cmp(traderpub,myinfo->myaddr.persistent),myap->offer.base,myap->offer.rel,dstr(myap->offer.price64),dstr(myap->offer.basevolume64),(long long)myap->orderid,myap->offer.myside,myap->offer.acceptdir,(int32_t)sizeof(swap->deck),serdatalen);
     if ( exchange == 0 )
         return(clonestr("{\"error\":\"instantdex_BTCswap null exchange ptr\"}"));
     if ( (altcoin= iguana_coinfind(myap->offer.base)) == 0 || coinbtc == 0 )
@@ -1063,7 +1063,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,struct category_info *cat,v
     else if ( (signerbits= acct777_validate(&msg->sig,acct777_msgprivkey(serdata,datalen),msg->sig.pubkey)) != 0 )//|| 1 )
     {
         flag++;
-        printf("InstantDEX_hexmsg <<<<<<<<<<<<< sigsize.%ld VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",sizeof(msg->sig),(long)serdata-(long)msg,datalen,msg->sig.timestamp,msg->sig.allocsize,(char *)msg->serialized,serdata[datalen-1]);
+        printf("InstantDEX_hexmsg <<<<<<<<<<<<< sigsize.%d VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",(int32_t)sizeof(msg->sig),(long)serdata-(long)msg,datalen,msg->sig.timestamp,msg->sig.allocsize,(char *)msg->serialized,serdata[datalen-1]);
         newlen = (int32_t)(msg->sig.allocsize - ((long)msg->serialized - (long)msg));
         serdata = msg->serialized;
         //printf("newlen.%d diff.%ld alloc.%d datalen.%d\n",newlen,((long)msg->serialized - (long)msg),msg->sig.allocsize,datalen);

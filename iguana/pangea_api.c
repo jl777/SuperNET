@@ -111,7 +111,7 @@ int32_t pangea_rwdata(int32_t rwflag,uint8_t *serialized,int32_t datalen,uint8_t
     {
         for (i=0; i<datalen; i++)
             printf("%02x",endianedp[i]);
-        printf(" pangea_sendcmd: unexpected datalen.%d mod.%ld\n",datalen,(datalen % sizeof(bits256)));
+        printf(" pangea_sendcmd: unexpected datalen.%d mod.%d\n",datalen,(int32_t)(datalen % sizeof(bits256)));
         return(-1);
     }
     return(datalen);
@@ -534,7 +534,7 @@ char *pangea_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void 
     {
         for (i=0; i<datalen; i++)
             printf("%02x",serialized[i]);
-        printf("<<<<<<<<<<<<< sigsize.%ld SIG ERROR [%ld] len.%d (%s + %s)\n",sizeof(pm->sig),(long)serialized-(long)pm,datalen,bits256_str(str,acct777_msgprivkey(serialized,datalen)),bits256_str(str2,pm->sig.pubkey));
+        printf("<<<<<<<<<<<<< sigsize.%d SIG ERROR [%d] len.%d (%s + %s)\n",(int32_t)sizeof(pm->sig),(int32_t)((long)serialized-(long)pm),datalen,bits256_str(str,acct777_msgprivkey(serialized,datalen)),bits256_str(str2,pm->sig.pubkey));
     }
     return(retstr);
 }

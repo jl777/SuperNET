@@ -71,7 +71,7 @@ int32_t iguana_spendvectorsave(struct iguana_info *coin,struct iguana_bundle *bp
     if ( (fp= fopen(fname,"wb")) != 0 )
     {
         if ( fwrite(sha256.bytes,1,sizeof(sha256),fp) != sizeof(sha256) )
-            printf("error writing hash for %ld -> (%s)\n",sizeof(*ptr) * emit,fname);
+            printf("error writing hash for %d -> (%s)\n",(int32_t)(sizeof(*ptr) * emit),fname);
         else if ( fwrite(ptr,sizeof(*ptr),emit,fp) != emit )
             printf("error writing %d of %d -> (%s)\n",emit,n,fname);
         else

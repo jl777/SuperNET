@@ -196,7 +196,7 @@ uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana
                         //printf("r %p status.%d ipbits.%x ind.%d saved iA->ind.%d retval.%d\n",iA,iA->status,(uint32_t)iA->ipbits,ind,iA->hh.itemind,retval);
                     }
                 }
-            } else printf("iAddr: error seeking.[%d] %ld vs %ld\n",ind,ftell(fp),ind * sizeof(*iA));
+            } else printf("iAddr: error seeking.[%d] %ld vs %d\n",ind,ftell(fp),(int32_t)(ind * sizeof(*iA)));
             fclose(fp);
         }
     }
@@ -236,7 +236,7 @@ uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana
                         //printf("%s status.%d lastkilled.%u ipbits.%x ind.%d saved iA->ind.%d retval.%d numiAddrs.%d\n",ipaddr,iA->status,iA->lastkilled,(uint32_t)ipbits,ind,iA->hh.itemind,retval,coin->numiAddrs);
                     }
                 }
-            } else printf("iAddr: error seeking.[%d] %ld vs %ld\n",ind,ftell(fp),ind * sizeof(*iA));
+            } else printf("iAddr: error seeking.[%d] %ld vs %d\n",ind,ftell(fp),(int32_t)(ind * sizeof(*iA)));
             fclose(fp);
         }
         else

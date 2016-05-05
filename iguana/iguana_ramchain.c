@@ -166,7 +166,7 @@ uint32_t iguana_ramchain_addtxid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 
 {
     uint32_t txidind; struct iguana_txid *t; struct iguana_kvitem *ptr;
     if ( sizeof(*t) != 64 )
-        printf("sizeof iguana_txid.%ld != 64?\n",sizeof(*t));
+        printf("sizeof iguana_txid.%d != 64?\n",(int32_t)sizeof(*t));
     txidind = ramchain->H.txidind;
     t = &T[txidind];
     if ( ramchain->H.ROflag != 0 )
@@ -971,7 +971,7 @@ int64_t iguana_ramchain_saveaction(char *fname,RAMCHAIN_FUNC,FILE *fp,struct igu
     {
         int32_t i; for (i=0; i<scriptspace&&i<25; i++)
             printf("%02x",Kspace[i]);
-        printf(" SAVEACTION: K.%d:%ld rdata.%ld DEST T.%d U.%d S.%d P.%d X.%d -> size.%ld %ld vs %ld %u\n",(int32_t)rdata->Koffset,(long)Kspace-(long)rdata,sizeof(*rdata),rdata->numtxids,rdata->numunspents,rdata->numspends,rdata->numpkinds,rdata->numexternaltxids,(long)rdata->allocsize,(long)iguana_ramchain_size(fname,RAMCHAIN_ARG,numblocks,scriptspace),after-before+sizeof(*rdata),scriptspace);
+        printf(" SAVEACTION: K.%d:%ld rdata.%d DEST T.%d U.%d S.%d P.%d X.%d -> size.%ld %ld vs %ld %u\n",(int32_t)rdata->Koffset,(long)Kspace-(long)rdata,(int32_t)sizeof(*rdata),rdata->numtxids,rdata->numunspents,rdata->numspends,rdata->numpkinds,rdata->numexternaltxids,(long)rdata->allocsize,(long)iguana_ramchain_size(fname,RAMCHAIN_ARG,numblocks,scriptspace),after-before+sizeof(*rdata),scriptspace);
     }
     //printf("before.%ld after.%ld allocsize.%ld [%ld] %ld expanded.%d\n",before,after,(long)srcdata->allocsize,(long)ramchain->H.data->allocsize,(long)iguana_ramchain_size(ramchain),ramchain->expanded);
     return(after - before);
@@ -1363,7 +1363,7 @@ int32_t iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *
         {
             if ( (ramchain->hashmem= hashmem) != 0 )
                 iguana_memreset(hashmem);
-            else printf("alloc ramchain->A %ld\n",sizeof(struct iguana_account) * ramchain->H.data->numpkinds);
+            else printf("alloc ramchain->A %d\n",(int32_t)(sizeof(struct iguana_account) * ramchain->H.data->numpkinds));
             ramchain->A = (hashmem != 0 && hashmem->ptr != 0) ? iguana_memalloc(hashmem,sizeof(struct iguana_account) * ramchain->H.data->numpkinds,1) : mycalloc('p',ramchain->H.data->numpkinds,sizeof(struct iguana_account));
             ramchain->Uextras = (hashmem != 0 && hashmem->ptr != 0) ? iguana_memalloc(hashmem,sizeof(*ramchain->Uextras) * ramchain->H.data->numunspents,1) : mycalloc('p',ramchain->H.data->numunspents,sizeof(*ramchain->Uextras));
         } else err = iguana_volatilesmap(coin,ramchain);
@@ -1884,7 +1884,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
             origtxdata->block.issued = 0;
             return(-1);
         } //else printf("matched merkle.%d\n",txn_count);
-    } else printf("not enough memory for merkle verify %ld vs %lu\n",sizeof(bits256)*(txn_count+1),(long)addr->TXDATA.totalsize);
+    } else printf("not enough memory for merkle verify %d vs %lu\n",(int32_t)(sizeof(bits256)*(txn_count+1)),(long)addr->TXDATA.totalsize);
     bp = 0, bundlei = -2;
     if ( iguana_bundlefind(coin,&bp,&bundlei,origtxdata->block.RO.hash2) == 0 )
     {

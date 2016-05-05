@@ -808,7 +808,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
         {
             printf("call htmlstr\n");
             if ( (filestr= SuperNET_htmlstr("index7778.html",retbuf,bufsize,0)) != 0 )
-                printf("created index7778.html size %ld\n",strlen(filestr));
+                printf("created index7778.html size %d\n",(int32_t)strlen(filestr));
             else printf("got null filestr\n");
         }
         if ( filestr != 0 )
