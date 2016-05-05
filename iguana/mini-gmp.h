@@ -288,6 +288,9 @@ size_t mpz_out_str (FILE *, int, const mpz_t);
 
 void mpz_import (mpz_t, size_t, int, size_t, int, size_t, const void *);
 void *mpz_export (void *, size_t *, int, size_t, int, size_t, const mpz_t);
+#define GMP_LIMB_BITS (sizeof(mp_limb_t) * CHAR_BIT)
+#define GMP_NAIL_BITS 0
+#define GMP_NUMB_BITS     (GMP_LIMB_BITS - GMP_NAIL_BITS)
 
 #if defined (__cplusplus)
 }
