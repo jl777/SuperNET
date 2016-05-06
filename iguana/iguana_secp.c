@@ -71,7 +71,7 @@ bits256 bitcoin_pubkey33(secp256k1_context *ctx,uint8_t *data,bits256 privkey)
     return(pubkey);
 }
 
-int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,int32_t maxlen,bits256 txhash2,bits256 privkey,int32_t recoverflag)
+int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256 privkey,int32_t recoverflag)
 {
     int32_t fCompressed = 1;
     secp256k1_ecdsa_signature SIG; secp256k1_ecdsa_recoverable_signature rSIG; bits256 extra_entropy,seed; int32_t flag = 0,recid,retval = -1; size_t siglen = 72; secp256k1_pubkey SECPUB,CHECKPUB;

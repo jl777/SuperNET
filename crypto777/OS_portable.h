@@ -149,7 +149,7 @@ struct taidate { int32_t year,month,day; };
 struct taitime { struct taidate date; int32_t hour,minute,second; uint32_t offset; double millis; };
 int32_t leapsecs_sub(struct tai *);
 
-struct tai tai_now();
+struct tai tai_now(void);
 uint32_t tai2utc(struct tai t);
 struct taidate taidate_frommjd(int32_t day,int32_t *pwday,int32_t *pyday);
 struct taitime tai2time(struct tai t,int32_t *pwday,int32_t *pyday);
