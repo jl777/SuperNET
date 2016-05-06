@@ -396,8 +396,8 @@ static inline int32_t is_delim(int32_t c)
     else return(0);
 }
 
-union iguana_stacknum { int32_t val; int64_t val64; uint8_t rmd160[20]; bits256 hash2; uint8_t *data; };
-struct iguana_stackdata { uint16_t size; union iguana_stacknum U; };
+union iguana_stacknum { int32_t val; int64_t val64; uint8_t rmd160[20]; bits256 hash2; uint8_t pubkey[33]; uint8_t sig[74]; };
+struct iguana_stackdata { uint8_t *data; uint16_t size; union iguana_stacknum U; };
 
 struct iguana_interpreter
 {
@@ -406,7 +406,7 @@ struct iguana_interpreter
     cJSON *logarray;
     struct iguana_stackdata stack[];
 };
-static struct bitcoin_opcode { UT_hash_handle hh; uint8_t opcode,flags,stackitems; int8_t extralen; } *optable; static char *OPCODES[0x100]; static int32_t OPCODELENS[0x100];
+static struct bitcoin_opcode { UT_hash_handle hh; uint8_t opcode,flags,stackitems; int8_t extralen; } *OPTABLE; static char *OPCODES[0x100]; static int32_t OPCODELENS[0x100];
 
 static struct iguana_stackdata iguana_pop(struct iguana_interpreter *stacks)
 {
@@ -435,10 +435,10 @@ static struct iguana_stackdata iguana_clone(struct iguana_stackdata Snum)
 {
     struct iguana_stackdata clone;
     clone = Snum;
-    if ( Snum.U.data != 0 )
+    if ( Snum.data != 0 )
     {
-        clone.U.data = malloc(Snum.size);
-        memcpy(clone.U.data,Snum.U.data,Snum.size);
+        clone.data = malloc(Snum.size);
+        memcpy(clone.data,Snum.data,Snum.size);
     }
     return(clone);
 }
@@ -454,7 +454,11 @@ static int32_t iguana_isnonz(struct iguana_stackdata Snum)
         buf = Snum.U.rmd160;
     else if ( Snum.size == sizeof(bits256) )
         buf = Snum.U.hash2.bytes;
-    else buf = Snum.U.data;
+    else if ( Snum.size == 33 )
+        buf = Snum.U.pubkey;
+    else if ( Snum.size < 74 )
+        buf = Snum.U.sig;
+    else buf = Snum.data;
     for (i=0; i<Snum.size; i++)
         if ( buf[i] != 0 )
             return(1);
@@ -473,6 +477,7 @@ static int32_t iguana_pushdata(struct iguana_interpreter *stacks,int64_t num64,u
     struct iguana_stackdata Snum; cJSON *item = 0; char str[256]; int32_t num = (int32_t)num64;
     if ( stacks->maxstackdepth > 0 )
     {
+        printf("PUSHDATA.[%d]\n",numlen);
         if ( stacks->stackdepth < stacks->maxstackdepth )
         {
             if ( stacks->logarray != 0 )
@@ -511,10 +516,22 @@ static int32_t iguana_pushdata(struct iguana_interpreter *stacks,int64_t num64,u
                     if ( item != 0 )
                         jaddbits256(item,"push",Snum.U.hash2);
                 }
+                else if ( numlen == 33 )
+                {
+                    memcpy(Snum.U.pubkey,numbuf,numlen);
+                    if ( item != 0 )
+                        jaddnum(item,"push",numlen);
+                }
+                else if ( numlen < 74 )
+                {
+                    memcpy(Snum.U.sig,numbuf,numlen);
+                    if ( item != 0 )
+                        jaddnum(item,"push",numlen);
+                }
                 else
                 {
-                    Snum.U.data = malloc(Snum.size);
-                    memcpy(Snum.U.data,numbuf,numlen);
+                    Snum.data = malloc(numlen);
+                    memcpy(Snum.data,numbuf,numlen);
                     if ( item != 0 )
                         jaddnum(item,"push",numlen);
                 }
@@ -522,8 +539,7 @@ static int32_t iguana_pushdata(struct iguana_interpreter *stacks,int64_t num64,u
             }
             else if ( num64 <= 0xffffffff ) // what about negative numbers?
                 Snum.U.val = num, Snum.size = sizeof(num);
-            else
-                Snum.U.val64 = num64, Snum.size = sizeof(num64);
+            else Snum.U.val64 = num64, Snum.size = sizeof(num64);
             if ( item != 0 )
             {
                 jaddnum(item,"depth",stacks->stackdepth);
@@ -546,7 +562,11 @@ int32_t iguana_databuf(uint8_t *databuf,struct iguana_stackdata Snum)
         memcpy(databuf,&Snum.U.rmd160,20);
     else if ( Snum.size == 32 )
         memcpy(databuf,&Snum.U.hash2.bytes,32);
-    else memcpy(databuf,&Snum.U.data,Snum.size);
+    else if ( Snum.size == 33 )
+        memcpy(databuf,&Snum.U.pubkey,33);
+    else if ( Snum.size < 74 )
+        memcpy(databuf,&Snum.U.sig,Snum.size);
+    else memcpy(databuf,&Snum.data,Snum.size);
     return(Snum.size);
 }
 
@@ -562,7 +582,11 @@ static int32_t iguana_cmp(struct iguana_stackdata *a,struct iguana_stackdata *b)
             return(memcmp(a->U.rmd160,b->U.rmd160,sizeof(a->U.rmd160)) == 0);
         else if ( a->size == 32 )
             return(memcmp(a->U.hash2.bytes,b->U.hash2.bytes,sizeof(a->U.hash2)) == 0);
-        else return(memcmp(a->U.data,b->U.data,sizeof(a->size)) == 0);
+        else if ( a->size == 33 )
+            return(memcmp(a->U.pubkey,b->U.pubkey,33) == 0);
+        else if ( a->size < 74 )
+            return(memcmp(a->U.sig,b->U.sig,a->size) == 0);
+        else return(memcmp(a->data,b->data,sizeof(a->size)) == 0);
     }
     return(-1);
 }
@@ -572,12 +596,13 @@ static int32_t iguana_dataparse(struct iguana_interpreter *stacks,uint8_t *scrip
     int32_t n,c,len; char tmp[4];
     *lenp = 0;
     c = str[0];
-    if ( (n= is_hexstr(str,0)) > 0 )
+    n = is_hexstr(str,0);
+    if ( n > 0 )
     {
         if ( (n & 1) != 0 )
             len = (n+1) >> 1;
         else len = n >> 1;
-        if ( len < 76 )
+        if ( len > 0 && len < 76 )
         {
             if ( len == 1 )
             {
@@ -752,58 +777,94 @@ int32_t iguana_checksequenceverify(struct iguana_info *coin,int64_t nLockTime,ui
     return(0);
 }
 
+void iguana_optableinit(struct iguana_info *coin)
+{
+    int32_t i,extralen; uint8_t stackitems,flags; char *opname; struct bitcoin_opcode *op;
+    if ( OPTABLE == 0 )
+    {
+        for (i=0; i<0x100; i++)
+            OPCODES[i] = "OP_UNKNOWN";
+        for (i=0; i<0x100; i++)
+        {
+            extralen = stackitems = flags = 0;
+            opname = (char *)get_opname(&stackitems,&flags,&extralen,i);
+            if ( strcmp("OP_UNKNOWN",opname) != 0 )
+            {
+                op = calloc(1,sizeof(*op));
+                HASH_ADD_KEYPTR(hh,OPTABLE,opname,strlen(opname),op);
+                //printf("{%-16s %02x} ",opname,i);
+                op->opcode = i;
+                op->flags = flags;
+                op->stackitems = stackitems;
+                op->extralen = extralen;
+                OPCODES[i] = (char *)op->hh.key;
+                OPCODELENS[i] = (int32_t)strlen(OPCODES[i]);
+            }
+        }
+        //printf("bitcoin opcodes\n");
+    }
+}
+
 int32_t iguana_expandscript(struct iguana_info *coin,char *asmstr,int32_t maxlen,uint8_t *script,int32_t scriptlen)
 {
-    int32_t len,i = 0; uint8_t opcode; uint32_t val,extraflag;
+    int32_t len,n,j,i = 0; uint8_t opcode; uint32_t val,extraflag;
+    iguana_optableinit(coin);
     asmstr[0] = len = 0;
     while ( i < scriptlen )
     {
         val = extraflag = 0;
         opcode = script[i++];
-        if ( opcode == OP_1NEGATE )
+        if ( opcode > 0 && opcode < 76 )
         {
-            asmstr[len++] = '-';
-            asmstr[len++] = '1';
+            for (j=0; j<opcode; j++)
+                sprintf(&asmstr[len],"%02x",script[i++]), len += 2;
         }
-        else if ( opcode == OP_0 )
+        else if ( opcode >= IGUANA_OP_1 && opcode <= IGUANA_OP_16 )
+        {
+            sprintf(&asmstr[len],"%d",opcode - IGUANA_OP_1 + 1);
+            len += strlen(&asmstr[len]);
+        }
+        else if ( opcode == IGUANA_OP_0 )
         {
             strcpy(&asmstr[len],"OP_FALSE");
             len += 8;
         }
-        else if ( opcode >= OP_1 && opcode <= OP_16 )
+        else if ( opcode == IGUANA_OP_1NEGATE )
         {
-            sprintf(&asmstr[len],"%d",opcode - OP_1 + 1);
-            len += strlen(&asmstr[len]);
+            asmstr[len++] = '-';
+            asmstr[len++] = '1';
         }
         else
         {
+            //printf("dest.%p <- %p %02x\n",&asmstr[len],OPCODES[opcode],opcode);
             strcpy(&asmstr[len],OPCODES[opcode]);
             len += OPCODELENS[opcode];
         }
         if ( i < scriptlen )
             asmstr[len++] = ' ';
-        if ( opcode == OP_PUSHDATA1 )
+        if ( opcode == IGUANA_OP_PUSHDATA1 )
         {
-            sprintf(&asmstr[len],"%02x",script[i++]);
-            len += 2;
+            n = script[i++];
+            for (j=0; j<n; j++)
+                sprintf(&asmstr[len],"%02x",script[i++]), len += 2;
             extraflag = 1;
         }
-        else if ( opcode == OP_PUSHDATA2 )
+        else if ( opcode == IGUANA_OP_PUSHDATA2 )
         {
-            val = script[i++];
-            val = (val << 8) | script[i++];
-            sprintf(&asmstr[len],"%04x",val);
-            len += 4;
+            n = script[i++];
+            n = (n << 8) | script[i++];
+            for (j=0; j<n; j++)
+                sprintf(&asmstr[len],"%02x",script[i++]), len += 2;
             extraflag = 1;
         }
-        else if ( opcode == OP_PUSHDATA4 )
+        else if ( opcode == IGUANA_OP_PUSHDATA4 )
         {
-            val = script[i++];
-            val = (val << 8) | script[i++];
-            val = (val << 8) | script[i++];
-            val = (val << 8) | script[i++];
-            sprintf(&asmstr[len],"%08x",val);
-            len += 8;
+            n = script[i++];
+            n = (n << 8) | script[i++];
+            n = (n << 8) | script[i++];
+            n = (n << 8) | script[i++];
+            for (j=0; j<n; j++)
+                sprintf(&asmstr[len],"%02x",script[i++]), len += 2;
             extraflag = 1;
         }
         if ( extraflag != 0 && i < scriptlen )
@@ -817,6 +878,9 @@ cJSON *iguana_spendasm(struct iguana_info *coin,uint8_t *spendscript,int32_t spe
 {
     char asmstr[IGUANA_MAXSCRIPTSIZE*2+1]; cJSON *spendasm = cJSON_CreateObject();
     iguana_expandscript(coin,asmstr,sizeof(asmstr),spendscript,spendlen);
+    int32_t i; for (i=0; i<spendlen; i++)
+        printf("%02x",spendscript[i]);
+    printf(" -> (%s)\n",asmstr);
     jaddstr(spendasm,"interpreter",asmstr);
     return(spendasm);
 }
@@ -825,31 +889,9 @@ int32_t bitcoin_assembler(struct iguana_info *coin,uint8_t script[IGUANA_MAXSCRI
 {
     struct bitcoin_opcode *op; cJSON *array = 0; struct iguana_interpreter STACKS,*stacks = &STACKS;
     struct iguana_stackdata args[MAX_PUBKEYS_PER_MULTISIG];
-    uint8_t databuf[MAX_SCRIPT_ELEMENT_SIZE],flags,stackitems; char *asmstr,*str,*hexstr,*opname;
-    int32_t c,numops,numvars,numused,numargs,i,j,k,n,len,val,datalen,extralen,errs=0;
-    if ( optable == 0 )
-    {
-        for (i=0; i<0x100; i++)
-            OPCODES[i] = "OP_UNKNOWN";
-        for (i=0; i<0x100; i++)
-        {
-            extralen = stackitems = flags = 0;
-            opname = (char *)get_opname(&stackitems,&flags,&extralen,i);
-            if ( strcmp("OP_UNKNOWN",opname) != 0 )
-            {
-                op = calloc(1,sizeof(*op));
-                HASH_ADD_KEYPTR(hh,optable,opname,strlen(opname),op);
-                //printf("{%-16s %02x} ",opname,i);
-                op->opcode = i;
-                op->flags = flags;
-                op->stackitems = stackitems;
-                op->extralen = extralen;
-                OPCODES[i] = (char *)op->hh.key;
-                OPCODELENS[i] = (int32_t)strlen(OPCODES[i]);
-            }
-        }
-        //printf("bitcoin opcodes\n");
-    }
+    uint8_t databuf[MAX_SCRIPT_ELEMENT_SIZE]; char *asmstr,*str,*hexstr;
+    int32_t c,numops,plen,numvars,numused,numargs=0,i,j,k,n,len,val,datalen,errs=0;
+    iguana_optableinit(coin);
     if ( (asmstr= jstr(interpreter,"interpreter")) == 0 )
         return(-1);
     if ( (numvars= juint(interpreter,"numvars")) > 0 )
@@ -882,7 +924,11 @@ int32_t bitcoin_assembler(struct iguana_info *coin,uint8_t script[IGUANA_MAXSCRI
         for (i=0; i<V->N; i++)
         {
             if ( V->signers[i].siglen != 0 )
-                iguana_pushdata(stacks,0,V->signers[i].pubkey,bitcoin_pubkeylen(V->signers[i].pubkey));
+            {
+                plen = bitcoin_pubkeylen(V->signers[i].pubkey);
+                if ( V->spendscript[0] != plen || V->spendscript[V->spendlen - 1] != IGUANA_OP_CHECKSIG || bitcoin_pubkeylen(&V->spendscript[1]) <= 0 )
+                    iguana_pushdata(stacks,0,V->signers[i].pubkey,plen);
+            }
         }
         if ( V->extras != 0 )
         {
@@ -905,8 +951,12 @@ int32_t bitcoin_assembler(struct iguana_info *coin,uint8_t script[IGUANA_MAXSCRI
     script[k] = 0;
     while ( (c= *str++) != 0 )
     {
-        while ( is_delim(c) != 0 )
+        if ( is_delim(c) != 0 )
+        {
+            //if ( c == 0 )
+            //    break;
             continue;
+        }
         if ( c == '/' && *str == '/' ) // support //
             break;
         else if ( c == '-' && *str == '1' && is_delim(str[1]) != 0 )
@@ -922,7 +972,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,uint8_t script[IGUANA_MAXSCRI
             {
                 if ( (n= iguana_dataparse(stacks,script,k,str,&len)) > 0 )
                 {
-                    k = n;
+                    k += n;
                     continue;
                 }
             }
@@ -935,7 +985,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,uint8_t script[IGUANA_MAXSCRI
             str--;
             if ( (n= iguana_dataparse(stacks,script,k,str,&len)) > 0 )
             {
-                k = n;
+                k += n;
                 str += len;
                 continue;
             }
@@ -954,15 +1004,18 @@ int32_t bitcoin_assembler(struct iguana_info *coin,uint8_t script[IGUANA_MAXSCRI
             errs++;
             break;
         }
-        HASH_FIND(hh,optable,str,j,op);
+        HASH_FIND(hh,OPTABLE,str,j,op);
         str += j;
         if ( op != 0 )
         {
             if ( numargs > 0 )
             {
                 for (i=0; i<numargs; i++)
-                    if ( args[i].U.data != 0 )
-                        free(args[i].U.data);
+                    if ( args[i].data != 0 )
+                    {
+                        printf("filter free\n");
+                        free(args[i].data);
+                    }
             }
             memset(args,0,sizeof(args));
             numargs = 0;
@@ -1099,7 +1152,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,uint8_t script[IGUANA_MAXSCRI
                             iguana_pushdata(stacks,0,hash.bytes,sizeof(hash));
                             break;
                         case IGUANA_OP_CHECKSIG: case IGUANA_OP_CHECKSIGVERIFY:
-                            iguana_pushdata(stacks,iguana_checksig(coin,args[0],args[1],V->sigtxid),0,0);
+                            iguana_pushdata(stacks,iguana_checksig(coin,args[1],args[0],V->sigtxid),0,0);
                             break;
                         case IGUANA_OP_CHECKMULTISIG: case IGUANA_OP_CHECKMULTISIGVERIFY:
                             iguana_pushdata(stacks,iguana_checkmultisig(coin,stacks,V->M,V->N,V->sigtxid),0,0);
@@ -1184,8 +1237,8 @@ int32_t bitcoin_assembler(struct iguana_info *coin,uint8_t script[IGUANA_MAXSCRI
                             case IGUANA_OP_DUP:   iguana_stack(stacks,args,1,"0","0"); break;
                             case IGUANA_OP_2DUP:  iguana_stack(stacks,args,2,"01","01"); break;
                             case IGUANA_OP_NIP:
-                                if ( args[0].U.data != 0 )
-                                    free(args[0].U.data);
+                                if ( args[0].data != 0 )
+                                    free(args[0].data);
                                 iguana_stack(stacks,args,2,"1","");
                                 break;
                             case IGUANA_OP_OVER:  iguana_stack(stacks,args,2,"01","0"); break;
@@ -1297,8 +1350,11 @@ int32_t bitcoin_assembler(struct iguana_info *coin,uint8_t script[IGUANA_MAXSCRI
         if ( numargs > 0 )
         {
             for (i=0; i<numargs; i++)
-                if ( args[i].U.data != 0 )
-                    free(args[i].U.data);
+                if ( args[i].data != 0 )
+                {
+                    printf("filter free\n");
+                    //free(args[i].U.data);
+                }
         }
         free(stacks);
     }

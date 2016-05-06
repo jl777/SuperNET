@@ -940,12 +940,12 @@ cJSON *iguana_scriptpubkeys(struct iguana_info *coin,uint8_t *script,int32_t scr
 
 void iguana_addscript(struct iguana_info *coin,cJSON *dest,uint8_t *script,int32_t scriptlen,char *fieldname)
 {
-    char *scriptstr,scriptbuf[8192+256]; int32_t len; cJSON *scriptobj;
+    char *scriptstr,scriptbuf[8192+256]; int32_t maxlen; cJSON *scriptobj;
     if ( scriptlen < 0 )
         return;
     if ( scriptlen > sizeof(scriptbuf) )
-        len = (scriptlen << 1) + 256, scriptstr = malloc(len);
-    else scriptstr = scriptbuf, len = sizeof(scriptbuf);
+        maxlen = (scriptlen << 1) + 2048, scriptstr = malloc(maxlen);
+    else scriptstr = scriptbuf, maxlen = sizeof(scriptbuf);
     init_hexbytes_noT(scriptstr,script,scriptlen);
     if ( strcmp(fieldname,"coinbase") == 0 )
         jaddstr(dest,"coinbase",scriptstr);
@@ -953,7 +953,7 @@ void iguana_addscript(struct iguana_info *coin,cJSON *dest,uint8_t *script,int32
     {
         scriptobj = cJSON_CreateObject();
         jaddstr(scriptobj,"hex",scriptstr);
-        iguana_expandscript(coin,scriptstr,len,script,scriptlen);
+        iguana_expandscript(coin,scriptstr,maxlen,script,scriptlen);
         if ( scriptstr[0] != 0 )
             jaddstr(scriptobj,"asm",scriptstr);
         if ( scriptstr != scriptbuf )
@@ -1127,7 +1127,7 @@ P2SH_SPENDAPI(iguana,spendmsig,activecoin,vintxid,vinvout,destaddress,destamount
 
 int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_msgtx *msgtx,char **signedtxp,bits256 *signedtxidp,struct vin_info *V,int32_t numinputs,char *rawtx,cJSON *vins,cJSON *privkeys)
 {
-    uint8_t *serialized,*serialized2,*serialized3; int32_t i,len,n,maxsize,complete = 0; char *checkstr,*privkeystr,*signedtx = 0; bits256 privkey,txid; cJSON *item; cJSON *txobj;
+    uint8_t *serialized,*serialized2,*serialized3; int32_t i,len,n,maxsize,complete = 0; char *checkstr,*privkeystr,*signedtx = 0; bits256 privkey,txid; cJSON *item; cJSON *txobj = 0;
     maxsize = 1000000;
     if ( rawtx != 0 && rawtx[0] != 0 && (len= (int32_t)strlen(rawtx)>>1) < maxsize )
     {
@@ -1151,7 +1151,6 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                 }
                 free(checkstr);
             }
-            free_json(txobj);
         }
         if ( (numinputs= cJSON_GetArraySize(vins)) > 0 )
         {
@@ -1177,6 +1176,8 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
             }
         }
     } else return(-1);
+    if ( txobj != 0 )
+        free_json(txobj);
     *signedtxp = signedtx;
     return(complete);
 }

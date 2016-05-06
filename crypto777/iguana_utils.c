@@ -291,9 +291,17 @@ int32_t is_hexstr(char *str,int32_t n)
     int32_t i;
     if ( str == 0 || str[0] == 0 )
         return(0);
-    for (i=0; str[i]!=0&&(i<n||n==0); i++)
+    for (i=0; str[i]!=0; i++)
+    {
+        if ( n > 0 && i >= n )
+            break;
         if ( _unhex(str[i]) < 0 )
+        {
+            if ( n == 0 )
+                return(i);
             return(0);
+        }
+    }
     return(n);
 }
 
