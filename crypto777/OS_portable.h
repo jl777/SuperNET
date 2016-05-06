@@ -66,8 +66,8 @@
 
 //#define fopen myfopen
 //#define fclose myfclose
-FILE *myfopen(char *fname,char *mode);
-int32_t myfclose(FILE *fp);
+//FILE *myfopen(char *fname,char *mode);
+//int32_t myfclose(FILE *fp);
 
 struct huffstream { uint8_t *ptr,*buf; uint32_t bitoffset,maski,endpos; uint32_t allocsize:31,allocated:1; };
 typedef struct huffstream HUFF;

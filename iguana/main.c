@@ -26,7 +26,7 @@
 #include "secp256k1/include/secp256k1.h"
 //#include "../../secp256k1-zkp/include/secp256k1.h"
 
-#undef fopen
+/*#undef fopen
 #undef fclose
 int32_t Fopen_count,Fclose_count;
 
@@ -47,7 +47,7 @@ int32_t myfclose(FILE *fp)
 {
     Fclose_count++;
     return(fclose(fp));
-}
+}*/
 
 // ALL globals must be here!
 char *Iguana_validcommands[] =

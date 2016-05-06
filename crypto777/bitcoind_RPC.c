@@ -15,6 +15,7 @@
 
 #include "OS_portable.h"
 
+#define USE_CURL
 #ifdef USE_CURL
 #ifdef _WIN32
 #include <curl.h>

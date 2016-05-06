@@ -12,6 +12,9 @@
 #cd ../SuperNET
 #fi
 
+#./configure --disable-shared --without-ssl --with-cyassl --without-zlib --without-ldap --disable-ldap
+#./configure --enable-opensslextra  --disable-shared --enable-static  --enable-fastmath
+
 git pull
 cd crypto777
 ./$1
