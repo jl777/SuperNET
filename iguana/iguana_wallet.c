@@ -761,11 +761,11 @@ void iguana_walletlock(struct supernet_info *myinfo,struct iguana_info *coin)
 
 int64_t iguana_waccountbalance(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_waccount *wacct,int32_t minconf,int32_t lastheight)
 {
-    int64_t balance; int32_t numrmds=0; uint8_t *rmdarray=0;
+    int64_t balance; int32_t numrmds=0,numunspents = 0; uint8_t *rmdarray=0;
     if ( minconf == 0 )
         minconf = 1;
     rmdarray = iguana_rmdarray(coin,&numrmds,getaddressesbyaccount(myinfo,coin,wacct->account),0);
-    balance = iguana_unspents(myinfo,coin,0,minconf,(1 << 30),rmdarray,numrmds,lastheight,0,0);
+    balance = iguana_unspents(myinfo,coin,0,minconf,(1 << 30),rmdarray,numrmds,lastheight,0,&numunspents);
     if ( rmdarray != 0 )
         free(rmdarray);
     return(balance);

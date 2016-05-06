@@ -718,7 +718,7 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
 
 TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array)
 {
-    int32_t numrmds; uint8_t *rmdarray; cJSON *retjson = cJSON_CreateArray();
+    int32_t numrmds,numunspents=0; uint8_t *rmdarray; cJSON *retjson = cJSON_CreateArray();
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( minconf == 0 )
@@ -726,7 +726,7 @@ TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array)
     if ( maxconf == 0 )
         maxconf = 9999999;
     rmdarray = iguana_rmdarray(coin,&numrmds,array,0);
-    iguana_unspents(myinfo,coin,retjson,minconf,maxconf,rmdarray,numrmds,0,0,0);
+    iguana_unspents(myinfo,coin,retjson,minconf,maxconf,rmdarray,numrmds,0,0,&numunspents);
     if ( rmdarray != 0 )
         free(rmdarray);
     return(jprint(retjson,1));

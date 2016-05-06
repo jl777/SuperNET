@@ -801,6 +801,7 @@ int32_t iguana_vininfo_create(struct supernet_info *myinfo,struct iguana_info *c
     msgtx->tx_in = numinputs;
     maxsize -= (sizeof(struct iguana_msgvin) * msgtx->tx_in);
     msgtx->vins = (struct iguana_msgvin *)&serialized[maxsize];
+    memset(msgtx->vins,0,sizeof(struct iguana_msgvin) * msgtx->tx_in);
     if ( msgtx->tx_in > 0 && msgtx->tx_in*sizeof(struct iguana_msgvin) < maxsize )
     {
         for (i=0; i<msgtx->tx_in; i++)

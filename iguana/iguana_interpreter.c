@@ -406,7 +406,7 @@ struct iguana_interpreter
     cJSON *logarray;
     struct iguana_stackdata stack[];
 };
-static struct bitcoin_opcode { UT_hash_handle hh; uint8_t opcode,flags,stackitems; int8_t extralen; } *optable;
+static struct bitcoin_opcode { UT_hash_handle hh; uint8_t opcode,flags,stackitems; int8_t extralen; } *optable; static char *OPCODES[0x100]; static int32_t OPCODELENS[0x100];
 
 static struct iguana_stackdata iguana_pop(struct iguana_interpreter *stacks)
 {
@@ -754,9 +754,63 @@ int32_t iguana_checksequenceverify(struct iguana_info *coin,int64_t nLockTime,ui
 
 int32_t iguana_expandscript(struct iguana_info *coin,char *asmstr,int32_t maxlen,uint8_t *script,int32_t scriptlen)
 {
-    asmstr[0] = 0;
-    
-    return(0);
+    int32_t len,i = 0; uint8_t opcode; uint32_t val,extraflag;
+    asmstr[0] = len = 0;
+    while ( i < scriptlen )
+    {
+        val = extraflag = 0;
+        opcode = script[i++];
+        if ( opcode == OP_1NEGATE )
+        {
+            asmstr[len++] = '-';
+            asmstr[len++] = '1';
+        }
+        else if ( opcode == OP_0 )
+        {
+            strcpy(&asmstr[len],"OP_FALSE");
+            len += 8;
+        }
+        else if ( opcode >= OP_1 && opcode <= OP_16 )
+        {
+            sprintf(&asmstr[len],"%d",opcode - OP_1 + 1);
+            len += strlen(&asmstr[len]);
+        }
+        else
+        {
+            strcpy(&asmstr[len],OPCODES[opcode]);
+            len += OPCODELENS[opcode];
+        }
+        if ( i < scriptlen )
+            asmstr[len++] = ' ';
+        if ( opcode == OP_PUSHDATA1 )
+        {
+            sprintf(&asmstr[len],"%02x",script[i++]);
+            len += 2;
+            extraflag = 1;
+        }
+        else if ( opcode == OP_PUSHDATA2 )
+        {
+            val = script[i++];
+            val = (val << 8) | script[i++];
+            sprintf(&asmstr[len],"%04x",val);
+            len += 4;
+            extraflag = 1;
+        }
+        else if ( opcode == OP_PUSHDATA4 )
+        {
+            val = script[i++];
+            val = (val << 8) | script[i++];
+            val = (val << 8) | script[i++];
+            val = (val << 8) | script[i++];
+            sprintf(&asmstr[len],"%08x",val);
+            len += 8;
+            extraflag = 1;
+        }
+        if ( extraflag != 0 && i < scriptlen )
+            asmstr[len++] = ' ';
+    }
+    asmstr[len] = 0;
+    return(len);
 }
 
 cJSON *iguana_spendasm(struct iguana_info *coin,uint8_t *spendscript,int32_t spendlen)
@@ -776,6 +830,8 @@ int32_t bitcoin_assembler(struct iguana_info *coin,uint8_t script[IGUANA_MAXSCRI
     if ( optable == 0 )
     {
         for (i=0; i<0x100; i++)
+            OPCODES[i] = "OP_UNKNOWN";
+        for (i=0; i<0x100; i++)
         {
             extralen = stackitems = flags = 0;
             opname = (char *)get_opname(&stackitems,&flags,&extralen,i);
@@ -788,6 +844,8 @@ int32_t bitcoin_assembler(struct iguana_info *coin,uint8_t script[IGUANA_MAXSCRI
                 op->flags = flags;
                 op->stackitems = stackitems;
                 op->extralen = extralen;
+                OPCODES[i] = (char *)op->hh.key;
+                OPCODELENS[i] = (int32_t)strlen(OPCODES[i]);
             }
         }
         //printf("bitcoin opcodes\n");
@@ -1231,7 +1289,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,uint8_t script[IGUANA_MAXSCRI
         }
         else if ( iguana_isnonz(stacks->stack[--stacks->stackdepth]) != 0 )
         {
-            printf("Evaluate true, depth.%d\n",stacks->stackdepth);
+            printf("Evaluate true, depth.%d errs.%d\n",stacks->stackdepth,errs);
             jadd(interpreter,"result",jtrue());
         }
         if ( stacks->logarray != 0 )
