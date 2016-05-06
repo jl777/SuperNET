@@ -18,8 +18,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../includes/curve25519.h"
-#include "../../secp256k1-zkp/include/secp256k1.h"
-#include "../../secp256k1-zkp/include/secp256k1_recovery.h"
+#include "secp256k1/include/secp256k1.h"
+#include "secp256k1/include/secp256k1_recovery.h"
+
+//#include "../../secp256k1-zkp/include/secp256k1.h"
+//#include "../../secp256k1-zkp/include/secp256k1_recovery.h"
 
 bits256 bitcoin_randkey(secp256k1_context *ctx)
 {

@@ -23,7 +23,8 @@
 #include "../pnacl_main.h"
 #include "iguana777.h"
 #include "SuperNET.h"
-#include "../../secp256k1-zkp/include/secp256k1.h"
+#include "secp256k1/include/secp256k1.h"
+//#include "../../secp256k1-zkp/include/secp256k1.h"
 
 #undef fopen
 #undef fclose

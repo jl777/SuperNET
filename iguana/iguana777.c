@@ -15,7 +15,7 @@
 
 
 #include "iguana777.h"
-#include "../../secp256k1-zkp/include/secp256k1.h"
+#include "secp256k1/include/secp256k1.h"
 
 const char *Hardcoded_coins[][3] = { { "BTC", "bitcoin", "0" }, { "BTCD", "BitcoinDark", "129" },  { "VPN", "VPNcoin", "129" }, { "LTC", "litecoin", "129" } , { "endmarker", "", "" } };
 

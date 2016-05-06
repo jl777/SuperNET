@@ -48,8 +48,8 @@ char *instantdex_PAXswap(struct supernet_info *myinfo,struct exchange_info *exch
     return(retstr);
 }
 
-#ifdef __APPLE__
-#include "../../includes/secp256k1.h"
+/*#ifdef __APPLE__
+#include "../secp256k1/include/secp256k1.h"
 //#include "../../crypto777/secp256k1/modules/rangeproof/pedersen_impl.h"
 //#include "../../crypto777/secp256k1/modules/rangeproof/borromean_impl.h"
 //#include "../../crypto777/secp256k1/modules/rangeproof/rangeproof_impl.h"
@@ -76,7 +76,6 @@ static void secp256k1_scalar_get_b32(unsigned char *bin, const secp256k1_scalar_
 #define SECP256K1_N_1 ((uint64_t)0xBAAEDCE6AF48A03BULL)
 #define SECP256K1_N_2 ((uint64_t)0xFFFFFFFFFFFFFFFEULL)
 #define SECP256K1_N_3 ((uint64_t)0xFFFFFFFFFFFFFFFFULL)
-/* Limbs of 2^256 minus the secp256k1 order. */
 #define SECP256K1_N_C_0 (~SECP256K1_N_0 + 1)
 #define SECP256K1_N_C_1 (~SECP256K1_N_1)
 #define SECP256K1_N_C_2 (1)
@@ -84,7 +83,7 @@ static void secp256k1_scalar_get_b32(unsigned char *bin, const secp256k1_scalar_
 static int secp256k1_scalar_check_overflow(const secp256k1_scalar_t *a) {
     int yes = 0;
     int no = 0;
-    no |= (a->d[3] < SECP256K1_N_3); /* No need for a > check. */
+    no |= (a->d[3] < SECP256K1_N_3); //No need for a > check.
     no |= (a->d[2] < SECP256K1_N_2);
     yes |= (a->d[2] > SECP256K1_N_2) & ~no;
     no |= (a->d[1] < SECP256K1_N_1);
@@ -231,11 +230,11 @@ void test_pedersen(void) {
     CHECK(secp256k1_pedersen_verify_tally(ctx, &cptr[1], 1, &cptr[0], 1, -INT64_MAX));
     printf("g\n");
 }
-#endif
+#endif*/
 
 void ztest()
 {
-#ifdef __APPLE__
+#ifdef notnow
     return;
     printf("ztests\n");
     //test_pedersen();
