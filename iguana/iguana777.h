@@ -302,7 +302,7 @@ struct iguana_block
     double PoW; // NOT consensus safe, for estimation purposes only
     int32_t height,fpos; uint32_t fpipbits,issued,lag:20,peerid:12;
     uint16_t hdrsi:15,mainchain:1,bundlei:11,valid:1,queued:1,txvalid:1,newtx:1,processed:1;
-    UT_hash_handle hh; struct iguana_bundlereq *req;
+    UT_hash_handle hh; struct iguana_bundlereq *req; //void *serdata;
 } __attribute__((packed));
 
 

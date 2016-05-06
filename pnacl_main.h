@@ -16,7 +16,7 @@
 #include <pthread.h>
 #endif
 
-static int initflag;
+int MAIN_initflag;
 #ifndef __PNACL
 #define PNACL_message printf
 #else
@@ -37,7 +37,7 @@ void *CHROMEAPP_NAME(void *arg)
 #else
         arg = 0;
 #endif
-    while ( initflag == 0 )
+    while ( MAIN_initflag == 0 )
         usleep(1000000);
     PNACL_message("%s start.(%s)\n",CHROMEAPP_STR,(char *)arg);
     CHROMEAPP_MAIN(arg);
@@ -370,7 +370,7 @@ static PP_Bool Instance_DidCreate(PP_Instance instance,uint32_t argc,const char*
           0,        // mountflags
           "");      // data*/
     PNACL_message("finished DidCreate %s\n",CHROMEAPP_STR);
-    initflag = 1;
+    MAIN_initflag = 1;
     return PP_TRUE;
 }
 
@@ -652,13 +652,14 @@ PSMainFunc_t PSUserMainGet()
 }
 
 #else
+
 int main(int argc, const char * argv[])
 {
     char *jsonstr;
     if ( argc < 2 )
         jsonstr = 0;
     else jsonstr = (char *)argv[1];
-    initflag = 1;
+    MAIN_initflag = 1;
     OS_init();
     printf("%s main\n",CHROMEAPP_STR);
     CHROMEAPP_NAME(jsonstr);

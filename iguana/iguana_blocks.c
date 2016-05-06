@@ -425,6 +425,20 @@ struct iguana_block *iguana_fastlink(struct iguana_info *coin,int32_t hwmheight)
     return(block);
 }
 
+int32_t process_iguanablock(void *pblock,void *chainparams);
+
+void *CHAINPARMS;
+void iguana_setchain(void *chainparms)
+{
+    extern int32_t MAIN_initflag;
+    MAIN_initflag = 1;
+    OS_init();
+    CHAINPARMS = chainparms;
+    printf("iguana_setchain chainparms.%p\n",chainparms);
+    iguana_launch(0,"iguana_main",iguana_main,0,0);
+    printf("RETURN iguana_setchain chainparms.%p\n",chainparms);
+}
+
 struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_block *newblock)
 {
     int32_t valid,bundlei,height=-1; struct iguana_block *hwmchain,*block = 0,*prev=0,*next;
@@ -548,6 +562,11 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                     }
                 }
                 block->mainchain = 1;
+                /*if ( block->serdata != 0 )
+                {
+                    printf(" call process_iguanablock2.%p ht.%d nbits.%08x\n",block->serdata,block->height,*(uint32_t *)&block->serdata[72]);
+                    process_iguanablock(block->serdata,CHAINPARMS);
+                }*/
                 return(block);
             }
         }

@@ -399,6 +399,11 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             }
             block->RO = origtxdata->block.RO;
             block->txvalid = 1;
+            /*if ( block->serdata == 0 )
+            {
+                block->serdata = malloc(recvlen);
+                memcpy(block->serdata,data,recvlen);
+            }*/
             //printf("update prev for [%d:%d]\n",bp->hdrsi,bundlei);
         }
     }
