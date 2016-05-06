@@ -1150,7 +1150,7 @@ void iguana_appletests(struct supernet_info *myinfo)
             exit(-1);
         }
         sleep(1);*/
-        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"RELAY\":1,\"VALIDATE\":1,\"prefetchlag\":-1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":500,\"endpend\":500,\"services\":129,\"maxpeers\":64,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":4,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
+        if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"RELAY\":1,\"VALIDATE\":1,\"prefetchlag\":-1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":4,\"endpend\":4,\"services\":129,\"maxpeers\":64,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":4,\"poll\":1}"),0,myinfo->rpcport)) != 0 )
         {
             free(str);
             if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":1024,\"maxpeers\":256,\"newcoin\":\"BTCD\",\"active\":1}"),0,myinfo->rpcport)) != 0 )

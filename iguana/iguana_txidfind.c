@@ -38,7 +38,9 @@ int32_t iguana_alloccacheT(struct iguana_info *coin,struct iguana_ramchain *ramc
     static int64_t total;
     if ( ramchain->cacheT == 0 )
     {
-        int32_t i,tlen; struct iguana_txid *T = (void *)((long)ramchain->H.data + ramchain->H.data->Toffset);
+        int32_t i,tlen; struct iguana_txid *T;
+        T = RAMCHAIN_PTR(ramchain->H.data,Toffset);
+        //T = (void *)((long)ramchain->H.data + ramchain->H.data->Toffset);
         tlen = sizeof(*T) * ramchain->H.data->numtxids;
         if ( (ramchain->cacheT= calloc(1,tlen)) != 0 )
         {
