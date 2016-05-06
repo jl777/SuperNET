@@ -704,13 +704,19 @@ void iguana_stack(struct iguana_interpreter *stacks,struct iguana_stackdata *arg
     }
 }
 
-int32_t iguana_checksig(struct iguana_info *coin,struct iguana_stackdata pubkeyarg,struct iguana_stackdata sigarg,bits256 txhash2)
+int32_t iguana_checksig(struct iguana_info *coin,struct iguana_stackdata pubkeyarg,struct iguana_stackdata sigarg,bits256 sigtxid)
 {
     uint8_t pubkey[MAX_SCRIPT_ELEMENT_SIZE],sig[MAX_SCRIPT_ELEMENT_SIZE]; int32_t plen,siglen;
     plen = iguana_databuf(pubkey,pubkeyarg);
     siglen = iguana_databuf(sig,sigarg);
+    /*int32_t i; for (i=0; i<siglen; i++)
+        printf("%02x",sig[i]);
+    printf(" sig, ");
+    for (i=0; i<plen; i++)
+        printf("%02x",pubkey[i]);
+    char str[65]; printf(" checksig sigtxid.%s\n",bits256_str(str,sigtxid));*/
     if ( bitcoin_pubkeylen(pubkey) == plen && plen > 0 && siglen > 0 && siglen < 74 )
-        return(bitcoin_verify(coin->ctx,sig,siglen,txhash2,pubkey,plen) == 0);
+        return(bitcoin_verify(coin->ctx,sig,siglen-1,sigtxid,pubkey,plen) == 0);
     return(0);
 }
 
@@ -878,9 +884,9 @@ cJSON *iguana_spendasm(struct iguana_info *coin,uint8_t *spendscript,int32_t spe
 {
     char asmstr[IGUANA_MAXSCRIPTSIZE*2+1]; cJSON *spendasm = cJSON_CreateObject();
     iguana_expandscript(coin,asmstr,sizeof(asmstr),spendscript,spendlen);
-    int32_t i; for (i=0; i<spendlen; i++)
-        printf("%02x",spendscript[i]);
-    printf(" -> (%s)\n",asmstr);
+    //int32_t i; for (i=0; i<spendlen; i++)
+    //    printf("%02x",spendscript[i]);
+    //printf(" -> (%s)\n",asmstr);
     jaddstr(spendasm,"interpreter",asmstr);
     return(spendasm);
 }
