@@ -16,10 +16,6 @@
 #ifndef H_BITCOIN_H
 #define H_BITCOIN_H
 
-#include "../../includes/openssl/ec.h"
-#include "../../includes/openssl/ecdsa.h"
-#include "../../includes/openssl/obj_mac.h"
-
 #define SIGHASH_ALL 1
 #define SIGHASH_NONE 2
 #define SIGHASH_SINGLE 3
@@ -34,33 +30,55 @@
 #define SCRIPT_OP_RETURN 0x6a
 #define SCRIPT_OP_DUP 0x76
 #define SCRIPT_OP_ENDIF 0x68
-#define OP_DROP 0x75
+#define SCRIPT_OP_DROP 0x75
 #define SCRIPT_OP_EQUALVERIFY 0x88
 #define SCRIPT_OP_HASH160 0xa9
 #define SCRIPT_OP_EQUAL 0x87
 #define SCRIPT_OP_CHECKSIG 0xac
 #define SCRIPT_OP_CHECKMULTISIG 0xae
-#define OP_CHECKSEQUENCEVERIFY	0xb2
-#define OP_CHECKLOCKTIMEVERIFY 0xb1
+#define SCRIPT_OP_CHECKSEQUENCEVERIFY	0xb2
+#define SCRIPT_OP_CHECKLOCKTIMEVERIFY 0xb1
 
-struct bp_key { EC_KEY *k; };
+#define IGUANA_SCRIPT_NULL 0
+#define IGUANA_SCRIPT_76AC 1
+#define IGUANA_SCRIPT_76A988AC 2
+#define IGUANA_SCRIPT_P2SH 3
+#define IGUANA_SCRIPT_OPRETURN 4
+#define IGUANA_SCRIPT_3of3 5
+#define IGUANA_SCRIPT_2of3 6
+#define IGUANA_SCRIPT_1of3 7
+#define IGUANA_SCRIPT_2of2 8
+#define IGUANA_SCRIPT_1of2 9
+#define IGUANA_SCRIPT_MSIG 10
+#define IGUANA_SCRIPT_DATA 11
+#define IGUANA_SCRIPT_AC 12
+#define IGUANA_SCRIPT_1of1 13
+#define IGUANA_SCRIPT_STRANGE 15
+
+#define IGUANA_MAXSCRIPTSIZE 10001
 
 int32_t bitcoin_validaddress(struct iguana_info *coin,char *coinaddr);
 int32_t bitcoin_cltvscript(uint8_t p2shtype,char *ps2h_coinaddr,uint8_t p2sh_rmd160[20],uint8_t *script,int32_t n,char *senderaddr,char *otheraddr,uint8_t secret160[20],uint32_t locktime);
 int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr);
 char *bitcoin_cltvtx(struct iguana_info *coin,char *changeaddr,char *senderaddr,char *senders_otheraddr,char *otheraddr,uint32_t locktime,uint64_t satoshis,bits256 txid,int32_t vout,uint64_t inputsatoshis,bits256 privkey);
 int32_t bitcoin_MofNspendscript(uint8_t p2sh_rmd160[20],uint8_t *script,int32_t n,const struct vin_info *vp);
-cJSON *bitcoin_createtx(struct iguana_info *coin,int32_t locktime);
-cJSON *bitcoin_addoutput(struct iguana_info *coin,cJSON *txobj,uint8_t *paymentscript,int32_t len,uint64_t satoshis);
-int32_t bitcoin_changescript(struct iguana_info *coin,uint8_t *changescript,int32_t n,uint64_t *changep,char *changeaddr,uint64_t inputsatoshis,uint64_t satoshis,uint64_t txfee);
-cJSON *bitcoin_addinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32_t vout,uint32_t sequence);
-int32_t bitcoin_verifytx(struct iguana_info *coin,bits256 *signedtxidp,char **signedtx,char *rawtxstr,struct vin_info *V);
-char *bitcoin_json2hex(struct iguana_info *coin,bits256 *txidp,cJSON *txjson);
 
 int32_t bitcoin_pubkeyspend(uint8_t *script,int32_t n,uint8_t pubkey[66]);
 int32_t bitcoin_p2shspend(uint8_t *script,int32_t n,uint8_t rmd160[20]);
 int32_t bitcoin_revealsecret160(uint8_t *script,int32_t n,uint8_t secret160[20]);
 int32_t bitcoin_standardspend(uint8_t *script,int32_t n,uint8_t rmd160[20]);
+
+int32_t bitcoin_pubkeylen(const uint8_t *pubkey);
+int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *sigsizep,uint32_t *pubkeysizep,uint32_t *suffixp,struct vin_info *vp,uint8_t *scriptsig,int32_t len,int32_t spendtype);
+int32_t iguana_expandscript(struct iguana_info *coin,char *asmstr,int32_t maxlen,uint8_t *script,int32_t scriptlen);
+int32_t bitcoin_scriptsig(struct iguana_info *coin,uint8_t *script,int32_t n,const struct vin_info *vp,struct iguana_msgtx *msgtx);
+char *iguana_scriptget(struct iguana_info *coin,char *scriptstr,char *asmstr,int32_t max,int32_t hdrsi,uint32_t unspentind,bits256 txid,int32_t vout,uint8_t *rmd160,int32_t type,uint8_t *pubkey33);
+
+int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr);
+char *bitcoin_base58encode(char *coinaddr,uint8_t *data_,int32_t datalen);
+int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256 privkey,int32_t recoverflag);
+int32_t oldbitcoin_verify(uint8_t *sig,int32_t siglen,uint8_t *data,int32_t datalen,uint8_t *pubkey,int32_t len);
+
 
 #endif
 

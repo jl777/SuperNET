@@ -369,7 +369,7 @@ var startCoin = function (id) {
 var addExistingCoin = function (id) {
     
     var isactive=0;
-    var maxpeers=16;
+    var maxpeers=SPNAPI.settings.maxpeers;
     var services=128;
      var index = coinManagement.GetCoinIndex(id);
      console.log('# coin add called '+index);

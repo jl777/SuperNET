@@ -66,8 +66,8 @@ do {                                                                            
 #elif defined(__WATCOMC__)
 #include <stdint.h>
 #else
-typedef unsigned int uint32_t;
-typedef unsigned char uint8_t;
+//typedef unsigned int uint32_t;
+//typedef unsigned char uint8_t;
 #endif
 #else
 #include <stdint.h>

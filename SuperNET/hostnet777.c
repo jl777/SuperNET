@@ -146,7 +146,7 @@ extern int32_t Debuglevel;
 #include "../includes/curve25519.h"
 
 
-static bits256 zeropoint;
+static const bits256 zeropoint;
 
 int64_t hostnet777_convmT(struct hostnet777_mtime *mT,int64_t othermillitime)
 {

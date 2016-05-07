@@ -1,0 +1,2 @@
+curl --url "http://127.0.0.1:7778"  --data "{\"coin\":\"BTCD\",\"method\":\"gettxout\",\"params\":[\"091c99b7b7f9b83ad2385c45b342ed5dd57035d15ff812262a3ceb3f1b291a5a\", 1]}"
+

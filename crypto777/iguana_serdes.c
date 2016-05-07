@@ -52,24 +52,6 @@ int32_t iguana_rwnum(int32_t rwflag,uint8_t *serialized,int32_t len,void *endian
     return(len);
 }
 
-int32_t iguana_validatehdr(char *symbol,struct iguana_msghdr *H)
-{
-    int32_t i = 0,len = -1;
-    if ( strcmp(symbol,"VPN") != 0 )
-    {
-        for (i=0; Iguana_validcommands[i]!=0&&Iguana_validcommands[i][0]!=0; i++)
-            if ( strcmp(H->command,Iguana_validcommands[i]) == 0 )
-                break;
-    }
-    if ( Iguana_validcommands[i][0] != 0 )
-    {
-        iguana_rwnum(0,H->serdatalen,sizeof(H->serdatalen),(uint32_t *)&len);
-        if ( len > IGUANA_MAXPACKETSIZE )
-            return(-1);
-    }
-    return(len);
-}
-
 int32_t iguana_rwbignum(int32_t rwflag,uint8_t *serialized,int32_t len,uint8_t *endianedp)
 {
     int32_t i;
@@ -92,15 +74,16 @@ int32_t iguana_sethdr(struct iguana_msghdr *H,const uint8_t netmagic[4],char *co
     memset(H,0,sizeof(*H));
     memcpy(H->netmagic,netmagic,4);
     strncpy(H->command,command,12);
+    if ( datalen < 0 || datalen > IGUANA_MAXPACKETSIZE )
+        return(-1);
     iguana_rwnum(1,H->serdatalen,sizeof(int32_t),&datalen);
-    if ( data != 0 && datalen != 0 )
+    if ( data != 0 )
     {
         hash2 = bits256_doublesha256(0,data,datalen);
         iguana_rwbignum(1,tmp.bytes,sizeof(tmp),hash2.bytes);
         for (i=0; i<4; i++)
             H->hash[i] = tmp.bytes[i];
-    }
-    else H->hash[0] = 0x5d, H->hash[1] = 0xf6, H->hash[2] = 0xe0, H->hash[3] = 0xe2;
+    } else H->hash[0] = 0x5d, H->hash[1] = 0xf6, H->hash[2] = 0xe0, H->hash[3] = 0xe2;
     return(datalen + sizeof(*H));
 }
 
@@ -170,19 +153,19 @@ int32_t iguana_rwvarint(int32_t rwflag,uint8_t *serialized,uint64_t *varint64p)
         n = *varint64p;
         if ( n < 0xfd )
             *serialized++ = (uint8_t)n;
-        else if ( n == 0xfd )
+        else if ( n <= 0xffff )
         {
             *serialized++ = 0xfd;
             iguana_varint16(rwflag,serialized,(uint16_t *)varint64p);
             vlen += 2;
         }
-        else if ( n == 0xfe )
+        else if ( n <= 0xffffffff )
         {
             *serialized++ = 0xfe;
             iguana_varint32(rwflag,serialized,(uint16_t *)varint64p);
             vlen += 4;
         }
-        else if ( n == 0xff )
+        else
         {
             *serialized++ = 0xff;
             iguana_varint64(rwflag,serialized,(uint32_t *)varint64p);

@@ -5,8 +5,8 @@
 
 #define _USE_W32_SOCKETS 1
 #include <windows.h>
-#include "pthread.h"
-
+#include <pthread.h>
+/*
 #define ENOTCONN        WSAENOTCONN
 #define EWOULDBLOCK     WSAEWOULDBLOCK
 #define ENOBUFS         WSAENOBUFS
@@ -18,6 +18,7 @@
 #define EISCONN         WSAEISCONN
 #define ECONNREFUSED    WSAECONNREFUSED
 #define EHOSTUNREACH    WSAEHOSTUNREACH
+*/
 
 /* winsock doesn't feature poll(), so there is a version implemented
  * in terms of select() in mingw.c. The following definitions
@@ -43,25 +44,25 @@ struct pollfd {
  * outside of this file "shouldn't" have to worry about winsock specific error
  * handling.
  */
-#define socket(x, y, z)		win32_socket(x, y, z)
-#define connect(x, y, z)	win32_connect(x, y, z)
-#define accept(x, y, z)		win32_accept(x, y, z)
-#define shutdown(x, y)		win32_shutdown(x, y)
-#define read(x, y, z)			win32_read_socket(x, y, z)
-#define write(x, y, z)			win32_write_socket(x, y, z)
+//#define socket(x, y, z)		win32_socket(x, y, z)
+//#define connect(x, y, z)	win32_connect(x, y, z)
+//#define accept(x, y, z)		win32_accept(x, y, z)
+//#define shutdown(x, y)		win32_shutdown(x, y)
+//#define read(x, y, z)			win32_read_socket(x, y, z)
+//#define write(x, y, z)			win32_write_socket(x, y, z)
 
 /* Winsock uses int instead of the usual socklen_t */
 typedef int socklen_t;
 
 int     win32_poll(struct pollfd *, unsigned int, int);
-SOCKET  win32_socket(int, int, int);
-int     win32_connect(SOCKET, struct sockaddr*, socklen_t);
-SOCKET  win32_accept(SOCKET, struct sockaddr*, socklen_t *);
-int     win32_shutdown(SOCKET, int);
-int 	win32_close_socket(SOCKET fd);
+//SOCKET  win32_socket(int, int, int);
+//int     win32_connect(SOCKET, struct sockaddr*, socklen_t);
+//SOCKET  win32_accept(SOCKET, struct sockaddr*, socklen_t *);
+//int     win32_shutdown(SOCKET, int);
+//int 	win32_close_socket(SOCKET fd);
 
-#define strtok_r(x, y, z)      win32_strtok_r(x, y, z)
-#define strsep(x,y) win32_strsep(x,y)
+//#define strtok_r(x, y, z)      win32_strtok_r(x, y, z)
+//#define strsep(x,y) win32_strsep(x,y)
 
 char *win32_strtok_r(char *s, const char *delim, char **lasts);
 char *win32_strsep(char **stringp, const char *delim);

@@ -58,8 +58,8 @@ cJSON *exchanges777_quotejson(struct exchange_quote *quote,int32_t allflag,doubl
             jaddstr(json,"time",utc_str(str,quote->timestamp));
         if ( quote->orderid > 0 )
             jadd64bits(json,"orderid",quote->orderid);
-        if ( quote->offerNXT > 0 )
-            jadd64bits(json,"offerNXT",quote->offerNXT);
+        //if ( quote->offerNXT != 0 )
+            jadd64bits(json,"offerer",quote->offerNXT);
         return(json);
     } else return(cJSON_CreateNumber(quote->price));
 }
@@ -245,6 +245,7 @@ void exchanges777_json_quotes(struct exchange_info *exchange,double commission,c
                 volume = jdouble(item,"volume");
                 timestamp = juint(item,"timestamp");
                 orderid = j64bits(item,"orderid");
+                offerNXT = j64bits(item,"offerer");
             }
             if ( price == 0. || volume == 0. )
                 continue;
@@ -533,11 +534,13 @@ char *exchanges777_process(struct exchange_info *exchange,int32_t *retvalp,struc
                 orderid = (*exchange->issue.trade)(req->dotrade,&retstr,exchange,base,rel,polarity * req->dir,price,volume,req->argjson);
                 if ( retstr == 0 )
                 {
-                    retjson = cJSON_CreateObject();
+                    req->orderid = orderid;
+                    retstr = (*exchange->issue.orderstatus)(exchange,req->orderid,req->argjson);
+                    /*retjson = cJSON_CreateObject();
                     if ( orderid != 0 )
                         jadd64bits(retjson,"result",orderid);
                     else jaddstr(retjson,"error","no return value from trade call");
-                    retstr = jprint(retjson,1);
+                    retstr = jprint(retjson,1);*/
                 }
             }
             break;
@@ -632,9 +635,10 @@ void exchanges777_loop(void *ptr)
                 {
                     if ( retstr != 0 )
                         free(retstr);
-                    if ( retval == EXCHANGE777_ISPENDING )
-                        queue_enqueue("Xpending",&exchange->pendingQ[0],&req->DL,0), flag++;
-                    else if ( retval == EXCHANGE777_REQUEUE )
+                    //if ( retval == EXCHANGE777_ISPENDING )
+                    //    queue_enqueue("Xpending",&exchange->pendingQ,&req->DL,0), flag++;
+                    //else
+                        if ( retval == EXCHANGE777_REQUEUE )
                         queue_enqueue("requeue",&exchange->requestQ,&req->DL,0);
                     else
                     {
@@ -654,6 +658,11 @@ void exchanges777_loop(void *ptr)
             tradebot_timeslice(exchange,bot);
         if ( time(NULL) > exchange->lastpoll+exchange->pollgap )
         {
+            if ( strcmp(exchange->name,"bitcoin") == 0 )
+            {
+                instantdex_update(SuperNET_MYINFO(0));
+                //printf("InstantDEX call update\n");
+            }
             if ( (req= queue_dequeue(&exchange->pricesQ,0)) != 0 )
             {
                 //printf("check %s pricesQ (%s %s)\n",exchange->name,req->base,req->rel);
@@ -881,8 +890,8 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
     iguana_initQ(&exchange->requestQ,"request");
     iguana_initQ(&exchange->acceptableQ,"acceptable");
     iguana_initQ(&exchange->tradebotsQ,"tradebots");
-    iguana_initQ(&exchange->pendingQ[0],"pending0");
-    iguana_initQ(&exchange->pendingQ[1],"pending1");
+    iguana_initQ(&exchange->historyQ,"history");
+    iguana_initQ(&exchange->statemachineQ,"statemachineQ");
     exchange->exchangeid = exchangeid;
     safecopy(exchange->name,exchangestr,sizeof(exchange->name));
     exchange->exchangebits = stringbits(exchange->name);
@@ -898,16 +907,16 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
         safecopy(exchange->tradepassword,tradepassword,sizeof(exchange->tradepassword));
     if ( (exchange->commission= jdouble(argjson,"commission")) > 0. )
         exchange->commission *= .01;
-    printf("ADDEXCHANGE.(%s) [%s, %s, %s] commission %.3f%%\n",exchangestr,exchange->apikey,exchange->userid,exchange->apisecret,exchange->commission * 100.);
+    printf("ADDEXCHANGE.(%s) [%s, %s, %s] commission %.3f%% -> exchangeid.%d\n",exchangestr,exchange->apikey,exchange->userid,exchange->apisecret,exchange->commission * 100.,exchangeid);
     Exchanges[exchangeid] = exchange;
-    iguana_launch(iguana_coinadd("BTCD"),"exchangeloop",(void *)exchanges777_loop,exchange,IGUANA_EXCHANGETHREAD);
+    iguana_launch(0,"exchangeloop",(void *)exchanges777_loop,exchange,IGUANA_EXCHANGETHREAD);
     return(exchange);
 }
 
 struct exchange_info *exchanges777_info(char *exchangestr,int32_t sleepflag,cJSON *json,char *remoteaddr)
 {
     struct exchange_info *exchange;
-    if ( remoteaddr != 0 )
+    if ( remoteaddr != 0 || exchangestr == 0 )
         return(0);
     if ( (exchange= exchanges777_find(exchangestr)) == 0 )
     {
@@ -941,14 +950,20 @@ void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sle
     {
         argjson = cJSON_CreateObject();
         for (i=0; i<sizeof(Exchange_funcs)/sizeof(*Exchange_funcs); i++)
-            if ( (exchange= exchanges777_find(Exchange_funcs[i]->name)) == 0 && (exchange= exchanges777_info(Exchange_funcs[i]->name,sleepflag,argjson,0)) != 0 )
-                myinfo->tradingexchanges[myinfo->numexchanges++] = exchange;
+            if ( (exchange= exchanges777_find(Exchange_funcs[i]->name)) == 0 )
+            {
+                if ( strcmp(Exchange_funcs[i]->name,"PAX") == 0 || strcmp(Exchange_funcs[i]->name,"truefx") == 0 || strcmp(Exchange_funcs[i]->name,"fxcm") == 0 || strcmp(Exchange_funcs[i]->name,"instaforx") == 0 )
+                    continue;
+                if ( (exchange= exchanges777_info(Exchange_funcs[i]->name,sleepflag,argjson,0)) != 0 )
+                    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange;
+            }
         free_json(argjson);
     }
     instantdexhash = calc_categoryhashes(0,"InstantDEX",0);
     printf("InstantDEX:\n");
     category_subscribe(myinfo,instantdexhash,GENESIS_PUBKEY);
-    category_processfunc(instantdexhash,InstantDEX_hexmsg);
+    category_processfunc(instantdexhash,GENESIS_PUBKEY,InstantDEX_hexmsg);
+    category_processfunc(instantdexhash,myinfo->myaddr.persistent,InstantDEX_hexmsg);
 }
 
 #include "../includes/iguana_apidefs.h"
@@ -956,116 +971,144 @@ void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sle
 THREE_STRINGS_AND_THREE_INTS(InstantDEX,orderbook,exchange,base,rel,depth,allfields,ignore)
 {
     struct exchange_info *ptr;
-    if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
-       return(exchanges777_Qprices(ptr,base,rel,juint(json,"maxseconds"),allfields,depth,json,0,ptr->commission));
-    else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+    if ( remoteaddr == 0 )
+    {
+        if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+            return(exchanges777_Qprices(ptr,base,rel,juint(json,"maxseconds"),allfields,depth,json,0,ptr->commission));
+        else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+    } else return(clonestr("{\"error\":\"no remote for this API\"}"));
 }
 
 THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,buy,exchange,base,rel,price,volume,dotrade)
 {
     struct exchange_info *ptr;
-    if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
-        return(exchanges777_Qtrade(ptr,base,rel,juint(json,"maxseconds"),dotrade,1,price,volume,json));
-    else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+    if ( remoteaddr == 0 )
+    {
+        if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+            return(exchanges777_Qtrade(ptr,base,rel,juint(json,"maxseconds"),dotrade,1,price,volume,json));
+        else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+    } else return(clonestr("{\"error\":\"no remote for this API\"}"));
 }
 
 THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,sell,exchange,base,rel,price,volume,dotrade)
 {
     struct exchange_info *ptr;
-    if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
-        return(exchanges777_Qtrade(ptr,base,rel,juint(json,"maxseconds"),dotrade,-1,price,volume,json));
-    else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+    if ( remoteaddr == 0 )
+    {
+        if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+            return(exchanges777_Qtrade(ptr,base,rel,juint(json,"maxseconds"),dotrade,-1,price,volume,json));
+        else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+    } else return(clonestr("{\"error\":\"no remote for this API\"}"));
 }
 
 THREE_STRINGS_AND_DOUBLE(InstantDEX,withdraw,exchange,base,destaddr,amount)
 {
     struct exchange_info *ptr;
-    if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
-        return(exchanges777_Qrequest(ptr,'W',base,0,juint(json,"maxseconds"),0,destaddr,amount,json));
-    else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
-}
-
-THREE_STRINGS(InstantDEX,supports,exchange,base,rel)
-{
-    struct exchange_info *ptr;
-    if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
-        return(exchanges777_Qrequest(ptr,'S',base,rel,juint(json,"maxseconds"),0,0,0,json));
-    else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+    if ( remoteaddr == 0 )
+    {
+        if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+            return(exchanges777_Qrequest(ptr,'W',base,0,juint(json,"maxseconds"),0,destaddr,amount,json));
+        else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+    } else return(clonestr("{\"error\":\"no remote for this API\"}"));
 }
 
 TWO_STRINGS(InstantDEX,balance,exchange,base)
 {
     struct exchange_info *ptr;
-    if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
-        return(exchanges777_Qrequest(ptr,'B',base,0,juint(json,"maxseconds"),0,0,0,json));
-    else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+    if ( remoteaddr == 0 )
+    {
+        if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+            return(exchanges777_Qrequest(ptr,'B',base,0,juint(json,"maxseconds"),0,0,0,json));
+        else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+    } else return(clonestr("{\"error\":\"no remote for this API\"}"));
 }
 
 TWO_STRINGS(InstantDEX,orderstatus,exchange,orderid)
 {
     struct exchange_info *ptr;
-    if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
-        return(exchanges777_Qrequest(ptr,'P',0,0,juint(json,"maxseconds"),calc_nxt64bits(orderid),0,0,json));
-    else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+    if ( remoteaddr == 0 )
+    {
+        if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+            return(exchanges777_Qrequest(ptr,'P',0,0,juint(json,"maxseconds"),calc_nxt64bits(orderid),0,0,json));
+        else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+    } else return(clonestr("{\"error\":\"no remote for this API\"}"));
 }
 
 TWO_STRINGS(InstantDEX,cancelorder,exchange,orderid)
 {
     struct exchange_info *ptr;
-    if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
-        return(exchanges777_Qrequest(ptr,'C',0,0,juint(json,"maxseconds"),calc_nxt64bits(orderid),0,0,json));
-    else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+    if ( remoteaddr == 0 )
+    {
+        if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+            return(exchanges777_Qrequest(ptr,'C',0,0,juint(json,"maxseconds"),calc_nxt64bits(orderid),0,0,json));
+        else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+    } else return(clonestr("{\"error\":\"no remote for this API\"}"));
 }
 
 STRING_ARG(InstantDEX,openorders,exchange)
 {
     struct exchange_info *ptr;
-    if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
-        return(exchanges777_Qrequest(ptr,'O',0,0,juint(json,"maxseconds"),0,0,0,json));
-    else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+    if ( remoteaddr == 0 )
+    {
+        if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+            return(exchanges777_Qrequest(ptr,'O',0,0,juint(json,"maxseconds"),0,0,0,json));
+        else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+    } else return(clonestr("{\"error\":\"no remote for this API\"}"));
 }
 
 STRING_ARG(InstantDEX,tradehistory,exchange)
 {
     struct exchange_info *ptr;
-    if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
-        return(exchanges777_Qrequest(ptr,'H',0,0,juint(json,"maxseconds"),0,0,0,json));
-    else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+    if ( remoteaddr == 0 )
+    {
+        if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+            return(exchanges777_Qrequest(ptr,'H',0,0,juint(json,"maxseconds"),0,0,0,json));
+        else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+    } else return(clonestr("{\"error\":\"no remote for this API\"}"));
 }
 
 THREE_STRINGS(InstantDEX,apikeypair,exchange,apikey,apisecret)
 {
     struct exchange_info *ptr;
-    if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+    if ( remoteaddr == 0 )
     {
-        if ( apikey != 0 && apikey[0] != 0 && apisecret != 0 && apisecret[0] != 0 )
+        if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
         {
-            safecopy(ptr->apikey,apikey,sizeof(ptr->apikey));
-            safecopy(ptr->apisecret,apisecret,sizeof(ptr->apisecret));
-            return(clonestr("{\"result\":\"set apikey and apisecret\"}"));
-        } else return(clonestr("{\"error\":\"need both userid and password\"}"));
-    } else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+            if ( apikey != 0 && apikey[0] != 0 && apisecret != 0 && apisecret[0] != 0 )
+            {
+                safecopy(ptr->apikey,apikey,sizeof(ptr->apikey));
+                safecopy(ptr->apisecret,apisecret,sizeof(ptr->apisecret));
+                return(clonestr("{\"result\":\"set apikey and apisecret\"}"));
+            } else return(clonestr("{\"error\":\"need both userid and password\"}"));
+        } else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+    } else return(clonestr("{\"error\":\"no remote for this API\"}"));
 }
 
 THREE_STRINGS(InstantDEX,setuserid,exchange,userid,tradepassword)
 {
     struct exchange_info *ptr;
-    if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+    if ( remoteaddr == 0 )
     {
-        safecopy(ptr->userid,userid,sizeof(ptr->userid));
-        safecopy(ptr->tradepassword,tradepassword,sizeof(ptr->tradepassword));
-        return(clonestr("{\"result\":\"set userid and/or tradepassword\"}"));
-    } else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+        if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+        {
+            safecopy(ptr->userid,userid,sizeof(ptr->userid));
+            safecopy(ptr->tradepassword,tradepassword,sizeof(ptr->tradepassword));
+            return(clonestr("{\"result\":\"set userid and/or tradepassword\"}"));
+        } else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+    } else return(clonestr("{\"error\":\"no remote for this API\"}"));
 }
 
 STRING_AND_INT(InstantDEX,pollgap,exchange,pollgap)
 {
     struct exchange_info *ptr;
-    if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+    if ( remoteaddr == 0 )
     {
-        ptr->pollgap = pollgap;
-        return(clonestr("{\"result\":\"set pollgap\"}"));
-    } else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+        if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+        {
+            ptr->pollgap = pollgap;
+            return(clonestr("{\"result\":\"set pollgap\"}"));
+        } else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+    } else return(clonestr("{\"error\":\"no remote for this API\"}"));
 }
 
 ZERO_ARGS(InstantDEX,allexchanges)
@@ -1076,6 +1119,14 @@ ZERO_ARGS(InstantDEX,allexchanges)
         jaddistr(array,Exchange_funcs[i]->name);
     jadd(retjson,"result",array);
     return(jprint(retjson,1));
+}
+
+THREE_STRINGS(InstantDEX,supports,exchange,base,rel)
+{
+    struct exchange_info *ptr;
+    if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+        return(exchanges777_Qrequest(ptr,'S',base,rel,juint(json,"maxseconds"),0,0,0,json));
+    else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
 }
 
 STRING_ARG(InstantDEX,allpairs,exchange)

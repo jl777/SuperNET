@@ -71,6 +71,15 @@ cJSON *helparray3(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2) { jaddi(arra
 cJSON *helparray4(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3) { jaddi(array,obj0); return(helparray3(array,obj1,obj2,obj3)); }
 cJSON *helparray5(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4) { jaddi(array,obj0); return(helparray4(array,obj1,obj2,obj3,obj4)); }
 cJSON *helparray6(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4,cJSON *obj5) { jaddi(array,obj0); return(helparray5(array,obj1,obj2,obj3,obj4,obj5)); }
+cJSON *helparray7(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4,cJSON *obj5,cJSON *obj6) { jaddi(array,obj0); return(helparray6(array,obj1,obj2,obj3,obj4,obj5,obj6)); }
+cJSON *helparray8(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4,cJSON *obj5,cJSON *obj6,cJSON *obj7) { jaddi(array,obj0); return(helparray7(array,obj1,obj2,obj3,obj4,obj5,obj6,obj7)); }
+cJSON *helparray9(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4,cJSON *obj5,cJSON *obj6,cJSON *obj7,cJSON *obj9) { jaddi(array,obj0); return(helparray8(array,obj1,obj2,obj3,obj4,obj5,obj6,obj7,obj9)); }
+cJSON *helparray10(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4,cJSON *obj5,cJSON *obj6,cJSON *obj7,cJSON *obj9,cJSON *obj10) { jaddi(array,obj0); return(helparray9(array,obj1,obj2,obj3,obj4,obj5,obj6,obj7,obj9,obj10)); }
+cJSON *helparray11(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4,cJSON *obj5,cJSON *obj6,cJSON *obj7,cJSON *obj9,cJSON *obj10,cJSON *obj11) { jaddi(array,obj0); return(helparray10(array,obj1,obj2,obj3,obj4,obj5,obj6,obj7,obj9,obj10,obj11)); }
+cJSON *helparray12(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4,cJSON *obj5,cJSON *obj6,cJSON *obj7,cJSON *obj9,cJSON *obj10,cJSON *obj11,cJSON *obj12) { jaddi(array,obj0); return(helparray11(array,obj1,obj2,obj3,obj4,obj5,obj6,obj7,obj9,obj10,obj11,obj12)); }
+cJSON *helparray13(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4,cJSON *obj5,cJSON *obj6,cJSON *obj7,cJSON *obj9,cJSON *obj10,cJSON *obj11,cJSON *obj12,cJSON *obj13) { jaddi(array,obj0); return(helparray12(array,obj1,obj2,obj3,obj4,obj5,obj6,obj7,obj9,obj10,obj11,obj12,obj13)); }
+cJSON *helparray14(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4,cJSON *obj5,cJSON *obj6,cJSON *obj7,cJSON *obj9,cJSON *obj10,cJSON *obj11,cJSON *obj12,cJSON *obj13,cJSON *obj14) { jaddi(array,obj0); return(helparray13(array,obj1,obj2,obj3,obj4,obj5,obj6,obj7,obj9,obj10,obj11,obj12,obj13,obj14)); }
+cJSON *helparray15(cJSON *array,cJSON *obj0,cJSON *obj1,cJSON *obj2,cJSON *obj3,cJSON *obj4,cJSON *obj5,cJSON *obj6,cJSON *obj7,cJSON *obj9,cJSON *obj10,cJSON *obj11,cJSON *obj12,cJSON *obj13,cJSON *obj14,cJSON *obj15) { jaddi(array,obj0); return(helparray14(array,obj1,obj2,obj3,obj4,obj5,obj6,obj7,obj9,obj10,obj11,obj12,obj13,obj14,obj15)); }
 
 cJSON *SuperNET_helpjson()
 {
@@ -110,6 +119,7 @@ cJSON *SuperNET_helpjson()
     
 #define IGUANA_HELP_64A(agent,name,j64,obj) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#j64,"u64bits"),helpitem(#obj,"array")))
 #define IGUANA_HELP_AA(agent,name,obj,obj2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#obj,"array"),helpitem(#obj2,"array")))
+#define IGUANA_HELP_AOI(agent,name,obj,obj2,val) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#obj,"array"),helpitem(#obj2,"object"),helpitem(#val,"int")))
 #define IGUANA_HELP_D(agent,name,amount) array = helpjson(IGUANA_ARGS,#agent,#name,helparray(cJSON_CreateArray(),helpitem(#amount,"float")))
     
 #define IGUANA_HELP_H(agent,name,hash) array = helpjson(IGUANA_ARGS,#agent,#name,helparray(cJSON_CreateArray(),helpitem(#hash,"hash")))
@@ -124,8 +134,11 @@ cJSON *SuperNET_helpjson()
 #define IGUANA_HELP_SSDIS(agent,name,str,str2,amount,val,str3) array = helpjson(IGUANA_ARGS,#agent,#name,helparray5(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#str2,"string"),helpitem(#amount,"float"),helpitem(#val,"int"),helpitem(#str3,"string")))
 #define IGUANA_HELP_SSDISS(agent,name,str,str2,amount,val,str3,str4) array = helpjson(IGUANA_ARGS,#agent,#name,helparray6(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#str2,"string"),helpitem(#amount,"float"),helpitem(#val,"int"),helpitem(#str3,"string"),helpitem(#str4,"string")))
 #define IGUANA_HELP_SAIS(agent,name,str,obj,val,str2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray4(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#obj,"array"),helpitem(#val,"int"),helpitem(#str2,"string")))
+#define IGUANA_HELP_SAOS(agent,name,str,obj,obj2,str2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray4(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#obj,"array"),helpitem(#obj2,"object"),helpitem(#str2,"string")))
 #define IGUANA_HELP_SDSS(agent,name,str,amount,str2,str3) array = helpjson(IGUANA_ARGS,#agent,#name,helparray4(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#amount,"float"),helpitem(#str2,"string"),helpitem(#str3,"string")))
     
+#define IGUANA_HELP_SHI_SDSD_II_SSSSSS(agent,name,str,hash,val,str2,amount,str3,amount2,val2,val3,str4,str5,str6,str7,str8,str9) array = helpjson(IGUANA_ARGS,#agent,#name,helparray15(cJSON_CreateArray(),helpitem(#str,"string"),helpitem(#hash,"hash"),helpitem(#val,"int"),helpitem(#str2,"string"),helpitem(#amount,"float"),helpitem(#str3,"string"),helpitem(#amount2,"float"),helpitem(#val2,"int"),helpitem(#val3,"int"),helpitem(#str4,"string"),helpitem(#str5,"string"),helpitem(#str6,"string"),helpitem(#str7,"string"),helpitem(#str8,"string"),helpitem(#str9,"string")))
+
     // API functions
 #define ZERO_ARGS IGUANA_HELP0
 #define INT_ARG IGUANA_HELP_I
@@ -168,6 +181,9 @@ cJSON *SuperNET_helpjson()
 #define STRING_AND_DOUBLE IGUANA_HELP_SD
 #define TWO_STRINGS_AND_TWO_DOUBLES IGUANA_HELP_SSDD
 #define STRING_AND_TWO_DOUBLES IGUANA_HELP_SDD
+#define P2SH_SPENDAPI IGUANA_HELP_SHI_SDSD_II_SSSSSS
+#define ARRAY_OBJ_INT IGUANA_HELP_AOI
+#define STRING_ARRAY_OBJ_STRING IGUANA_HELP_SAOS
 
 #include "../includes/iguana_apideclares.h"
     
@@ -210,6 +226,10 @@ int32_t agentform(FILE *fp,char *form,int32_t max,char *agent,cJSON *methoditem)
                     width = 24;
                 else if ( strcmp(typestr,"u64bits") == 0 )
                     width = 24;
+                else if ( strcmp(typestr,"array") == 0 )
+                    width = 64;
+                else if ( strcmp(typestr,"object") == 0 )
+                    width = 64;
                 else width = 0;
             }
             //sprintf(buf,"<input type=\"text\" name=\"%s\"/>",fieldname);
@@ -350,7 +370,7 @@ cJSON *update_docjson(cJSON *docjson,char *agent,char *method)
     if ( agent != 0 && method != 0 )
     {
         sprintf(stubstr,"{\"agent\":\"%s\",\"method\":\"%s\",\"field0\":\"put in helpful info field0\",\"field1\":\"put in helpful info for field1\",\"help\":\"put helpful info here\",\"teststatus\":[{\"tester\":\"bob\",\"result\":\"put result here\",\"notes\":\"put useful notes here\",\"automated\":\"notyet\",\"sourcefile\":\"%s_%s_test.py\"}]}",agent,method,agent,method);
-        sprintf(fname,"help/%s_%s.json",agent,method);
+        sprintf(fname,"%s/%s_%s.json",GLOBAL_HELPDIR,agent,method);
         if ( (docstr= OS_filestr(&allocsize,fname)) != 0 )
         {
             if ( (item= cJSON_Parse(docstr)) == 0 )
@@ -378,7 +398,7 @@ cJSON *update_docjson(cJSON *docjson,char *agent,char *method)
 char *formfname(char *name,char *suffix)
 {
     static char retbuf[512];
-    sprintf(retbuf,"help/%s.%s",name,suffix);
+    sprintf(retbuf,"%s/%s.%s",GLOBAL_HELPDIR,name,suffix);
     return(retbuf);
 }
 
@@ -460,7 +480,7 @@ char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr)
     pretty_forms(fname,agentstr,"html");
     printf("autocreate %s\n","_API.md");
     pretty_forms("_API.md",0,"md");
-    return(OS_filestr(&filesize,"index7778.html"));
+return(OS_filestr(&filesize,"index7778.html"));
     sprintf(htmlstr,"<!DOCTYPE HTML><html> <head><title>SuperUGLY GUI></title></head> <body> ");
     size = (int32_t)strlen(htmlstr);
     if ( (helpjson= SuperNET_helpjson()) != 0 )
@@ -588,7 +608,12 @@ STRING_ARG(iguana,addcoin,newcoin)
         symbol = coin->symbol;
     if ( symbol != 0 )
     {
-        if ( (retval= iguana_launchcoin(symbol,json)) > 0 )
+        printf(">> addcoin.%s\n",symbol);
+#ifdef __PNACL__
+//        if ( strcmp(symbol,"BTC") == 0 )
+//            return(clonestr("{\"result\":\"BTC for chrome app is not yet\"}"));
+#endif
+        if ( (retval= iguana_launchcoin(myinfo,symbol,json)) > 0 )
         {
             if ( myinfo->rpcsymbol[0] == 0 )
                 safecopy(myinfo->rpcsymbol,symbol,sizeof(myinfo->rpcsymbol));
@@ -607,6 +632,16 @@ STRING_ARG(iguana,startcoin,activecoin)
         coin->active = 1;
         return(clonestr("{\"result\":\"coin started\"}"));
     } else return(clonestr("{\"error\":\"startcoin needs coin\"}"));
+}
+
+STRING_ARG(iguana,stopcoin,activecoin)
+{
+    if ( coin != 0 )
+    {
+        coin->active = 0;
+        iguana_coinpurge(coin);
+        return(clonestr("{\"result\":\"coin stopped\"}"));
+    } else return(clonestr("{\"error\":\"stopcoin needs coin\"}"));
 }
 
 STRING_ARG(iguana,pausecoin,activecoin)
@@ -725,7 +760,7 @@ STRING_AND_INT(iguana,maxpeers,activecoin,max)
 char *hmac_dispatch(char *(*hmacfunc)(char *dest,char *key,int32_t key_size,char *message),char *name,char *message,char *password)
 {
     char hexstr[1025]; cJSON *json;
-    if ( message != 0 && password != 0 )
+    if ( message != 0 && password != 0 && message[0] != 0 && password[0] != 0 )
     {
         memset(hexstr,0,sizeof(hexstr));
         (*hmacfunc)(hexstr,password,password==0?0:(int32_t)strlen(password),message);
@@ -740,7 +775,7 @@ char *hmac_dispatch(char *(*hmacfunc)(char *dest,char *key,int32_t key_size,char
 char *hash_dispatch(void (*hashfunc)(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len),char *name,char *message)
 {
     char hexstr[16384]; uint8_t databuf[8192]; cJSON *json;
-    if ( message != 0 )
+    if ( message != 0 && message[0] != 0 )
     {
         memset(hexstr,0,sizeof(hexstr));
         (*hashfunc)(hexstr,databuf,(uint8_t *)message,(int32_t)strlen(message));
@@ -800,12 +835,19 @@ TWO_STRINGS(hmac,whirlpool,message,passphrase) { return(hmac_dispatch(hmac_whirl
 
 STRING_ARG(SuperNET,bitcoinrpc,setcoin)
 {
+    char buf[1024];
     if ( setcoin != 0 && setcoin[0] != 0 )
     {
         strcpy(myinfo->rpcsymbol,setcoin);
         touppercase(myinfo->rpcsymbol);
-        iguana_launchcoin(myinfo->rpcsymbol,json);
-        return(clonestr("{\"result\":\"set bitcoin RPC coin\"}"));
+        printf("bitcoinrpc.%s\n",myinfo->rpcsymbol);
+        if ( iguana_launchcoin(myinfo,myinfo->rpcsymbol,json) < 0 )
+            return(clonestr("{\"error\":\"error creating coin\"}"));
+        else
+        {
+            sprintf(buf,"{\"result\":\"success\",\"setcoin\":\"%s\"}",setcoin);
+            return(clonestr(buf));
+        }
     } else return(clonestr("{\"error\":\"bitcoinrpc needs setcoin value\"}"));
 }
 
@@ -849,8 +891,8 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
         coinstr = myinfo->rpcsymbol;
     if ( coinstr != 0 && coinstr[0] != 0 )
         coin = iguana_coinfind(coinstr);
-    if ( strcmp(agentstr,"ramchain") == 0 && coin == 0 )
-        return(clonestr("{\"error\":\"ramchain needs coin\"}"));
+    if ( strcmp(agentstr,"bitcoinrpc") == 0 && coin == 0 )
+        return(clonestr("{\"error\":\"bitcoinrpc needs coin\"}"));
 #define IGUANA_ARGS myinfo,coin,json,remoteaddr
 #define IGUANA_DISPATCH0(agent,name) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS))
 #define IGUANA_DISPATCH_S(agent,name,str) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str)))
@@ -873,6 +915,7 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
 #define IGUANA_DISPATCH_SDD(agent,name,str,val,val2) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jdouble(json,#val),jdouble(json,#val2)))
 #define IGUANA_DISPATCH_SA(agent,name,str,array) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jobj(json,#array)))
 #define IGUANA_DISPATCH_SAA(agent,name,str,array,array2) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jobj(json,#array),jobj(json,#array2)))
+#define IGUANA_DISPATCH_AOI(agent,name,array,object,val) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jobj(json,#array),jobj(json,#object),juint(json,#val)))
 #define IGUANA_DISPATCH_SIII(agent,name,str,val,val2,val3) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),juint(json,#val),juint(json,#val2),juint(json,#val3)))
 
 #define IGUANA_DISPATCH_I(agent,name,val) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,juint(json,#val)))
@@ -899,8 +942,11 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
 #define IGUANA_DISPATCH_SSDIS(agent,name,str,str2,amount,val,str3) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2),jdouble(json,#amount),juint(json,#val),jstr(json,#str3)))
 #define IGUANA_DISPATCH_SSDISS(agent,name,str,str2,amount,val,str3,str4) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2),jdouble(json,#amount),juint(json,#val),jstr(json,#str3),jstr(json,#str4)))
 #define IGUANA_DISPATCH_SAIS(agent,name,str,array,val,str2) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jobj(json,#array),juint(json,#val),jstr(json,#str2)))
+#define IGUANA_DISPATCH_SAOS(agent,name,str,array,object,str2) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jobj(json,#array),jobj(json,#object),jstr(json,#str2)))
 #define IGUANA_DISPATCH_SDSS(agent,name,str,amount,str2,str3) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jdouble(json,#amount),jstr(json,#str2),jstr(json,#str3)))
     
+#define IGUANA_DISPATCH_SHI_SDSD_II_SSSSSS(agent,name,str,hash,val,str2,amount,str3,amount2,val2,val3,str4,str5,str6,str7,str8,str9) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jbits256(json,#hash),jint(json,#val),jstr(json,#str2),jdouble(json,#amount),jstr(json,#str3),jdouble(json,#amount2),juint(json,#val2),juint(json,#val3),jstr(json,#str4),jstr(json,#str5),jstr(json,#str6),jstr(json,#str7),jstr(json,#str8),jstr(json,#str9)))
+
     // API functions
 #define ZERO_ARGS IGUANA_DISPATCH0
 #define INT_ARG IGUANA_DISPATCH_I
@@ -943,13 +989,17 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
 #define STRING_AND_DOUBLE IGUANA_DISPATCH_SD
 #define TWO_STRINGS_AND_TWO_DOUBLES IGUANA_DISPATCH_SSDD
 #define STRING_AND_TWO_DOUBLES IGUANA_DISPATCH_SDD
+#define P2SH_SPENDAPI IGUANA_DISPATCH_SHI_SDSD_II_SSSSSS
+#define ARRAY_OBJ_INT IGUANA_DISPATCH_AOI
+#define STRING_ARRAY_OBJ_STRING IGUANA_DISPATCH_SAOS
 
 #include "../includes/iguana_apideclares.h"
 //#undef IGUANA_ARGS
     
 #include "../includes/iguana_apiundefs.h"
-    
-    return(clonestr("{\"error\":\"illegal ramchain method or missing coin\"}"));
+    char errstr[512];
+    sprintf(errstr,"{\"error\":\"unsupported call\",\"agent\":\"%s\",\"method\":\"%s\"}",agentstr,method);
+    return(clonestr(errstr));
 }
 
 

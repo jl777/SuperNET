@@ -15,6 +15,13 @@
 
 #include "iguana777.h"
 #include "../includes/tweetnacl.h"
+#include "../crypto777/OS_portable.h"
+#include "../includes/libgfshare.h"
+#include "../includes/utlist.h"
+#include "../includes/uthash.h"
+#include "../includes/curve25519.h"
+#include "../includes/cJSON.h"
+
 
 cJSON *SuperNET_argjson(cJSON *json)
 {
@@ -564,9 +571,9 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,uint64_t destipbits,bits256 
         jaddbits256(json,"subhash",subhash);
     if ( SuperNET_hexmsgfind(myinfo,categoryhash,subhash,hexmsg,1) >= 0 )
     {
-        //char str[65]; printf("duplicate hex.(%s) for %s\n",hexmsg,bits256_str(str,categoryhash));
+        char str[65]; printf("duplicate hex.(%s) for %s\n",hexmsg,bits256_str(str,categoryhash));
         return(clonestr("{\"error\":\"duplicate packet rejected\"}"));
-    }
+    } else SuperNET_hexmsgadd(myinfo,categoryhash,subhash,hexmsg,tai_now(),0);
     jsonstr = jprint(json,1);
     if ( broadcastflag != 0 || destipbits == 0 )
     {
@@ -579,7 +586,7 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,uint64_t destipbits,bits256 
                     addr = &Coins[i]->peers.active[j];
                     if ( addr->usock >= 0 && addr->supernet != 0 && (broadcastflag != 0 || category_peer(myinfo,addr,categoryhash,subhash) >= 0) )
                     {
-                        char str[65]; printf("BROADCAST[%d] %s SEND.(%ld) to %s\n",j,bits256_str(str,categoryhash),strlen(jsonstr),addr->ipaddr);
+                        char str[65]; printf("BROADCAST[%d] crc.%x %s SEND.(%d) to %s\n",j,calc_crc32(0,jsonstr,(int32_t)strlen(jsonstr)),bits256_str(str,categoryhash),(int32_t)strlen(jsonstr),addr->ipaddr);
                         iguana_send_supernet(Coins[i],addr,jsonstr,maxdelay==0?0:(rand()%maxdelay));
                     }
                 }
@@ -639,15 +646,16 @@ int32_t SuperNET_destination(struct supernet_info *myinfo,uint32_t *destipbitsp,
     return(destflag);
 }
 
-char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
+char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,uint16_t port)
 {
     char hexbuf[8192]; bits256 category,subhash;
-    int32_t hexlen,destflag,maxdelay,flag=0; uint32_t destipbits,timestamp; cJSON *retjson;
+    int32_t hexlen,destflag,maxdelay,flag=0,newflag=0; uint32_t destipbits,timestamp; //cJSON *retjson;
     char *forwardstr=0,*retstr=0,*agent=0,*method=0,*message,*hexmsg=0,*jsonstr=0; uint64_t tag;
     //printf("SuperNET_JSON.(%s)\n",jprint(json,0));
     if ( remoteaddr != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 )
         remoteaddr = 0;
-    agent = jstr(json,"agent");
+    if ( (agent = jstr(json,"agent")) == 0 )
+        agent = "bitcoinrpc";
     method = jstr(json,"method");
     if ( agent != 0 && strcmp(agent,"pangea") == 0 && jobj(json,"categoryhash") == 0 )
     {
@@ -670,7 +678,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
     //printf("SuperNET_JSON.(%s) remote.(%s)\n",jprint(json,0),remoteaddr!=0?remoteaddr:"");
     destflag = SuperNET_destination(myinfo,&destipbits,&category,&subhash,&maxdelay,json,remoteaddr);
     //printf("destflag.%d\n",destflag);
-    if ( (hexmsg= jstr(json,"hexmsg")) == 0 && (message= jstr(json,"message")) == 0 )
+    if ( method != 0 && (hexmsg= jstr(json,"hexmsg")) == 0 && strcmp(agent,"bitcoinrpc") != 0 && (message= jstr(json,"message")) == 0 )
     {
         jsonstr = jprint(json,0);
         hexlen = (int32_t)strlen(jsonstr);
@@ -683,9 +691,10 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
     {
         if ( hexmsg != 0 )
         {
-            //printf("check.(%s)\n",hexmsg);
             if ( SuperNET_hexmsgfind(myinfo,category,subhash,hexmsg,0) < 0 )
             {
+                //printf("add.(%s)\n",hexmsg);
+                newflag = 1;
                 SuperNET_hexmsgadd(myinfo,category,subhash,hexmsg,tai_now(),remoteaddr);
                 forwardstr = SuperNET_forward(myinfo,hexmsg,destipbits,category,subhash,maxdelay,juint(json,"broadcast"),juint(json,"plaintext")!=0);
             }
@@ -693,21 +702,20 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr)
     }
     if ( (destflag & SUPERNET_ISMINE) != 0 && agent != 0 && method != 0 )
     {
-        if ( hexmsg != 0 && SuperNET_hexmsgfind(myinfo,category,subhash,hexmsg,0) < 0 )
+        if ( strcmp(agent,"bitcoinrpc") != 0 && newflag == 0 && hexmsg != 0 && SuperNET_hexmsgfind(myinfo,category,subhash,hexmsg,0) < 0 )
             SuperNET_hexmsgadd(myinfo,category,subhash,hexmsg,tai_now(),remoteaddr);
-        if ( (retstr= SuperNET_processJSON(myinfo,json,remoteaddr)) != 0 )
+        if ( (retstr= SuperNET_processJSON(myinfo,json,remoteaddr,port)) != 0 )
         {
             //printf("retstr.(%s)\n",retstr);
-            if ( remoteaddr != 0 && (retjson= cJSON_Parse(retstr)) != 0 )
+            /*if ( retstr[strlen(retstr)-1] != '\n' && (retjson= cJSON_Parse(retstr)) != 0 && is_cJSON_Array(retjson) == 0 )
             {
-                if ( jobj(retjson,"result") != 0 || jobj(retjson,"error") != 0 || jobj(retjson,"method") == 0 )
+                if ( jobj(retjson,"result") == 0 || jobj(retjson,"error") != 0 || jobj(retjson,"method") != 0 )
                 {
-                    //printf("it is a result, dont return\n");
                     free(retstr);
                     retstr = 0;
                 }
                 free_json(retjson);
-            }
+            }*/
         } else printf("null retstr from SuperNET_JSON\n");
     }
     if ( flag != 0 && hexmsg != 0 && hexmsg != hexbuf )
@@ -779,13 +787,14 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
         if ( method != 0 && strcmp(method,"stop") == 0 )
         {
             addr->dead = (uint32_t)time(NULL);
+            addr->rank = 0;
             free_json(json);
             if ( ptr != 0 )
                 free(ptr);
             //return(clonestr("{\"result\":\"peer marked as dead\"}"));
             return(0);
         }
-        retstr = SuperNET_JSON(myinfo,json,ipaddr);
+        retstr = SuperNET_JSON(myinfo,json,ipaddr,addr->A.port);
         //printf("p2pret.(%s)\n",retstr);
         *delaymillisp = SuperNET_delaymillis(myinfo,maxdelay);
         senderpub = jbits256(json,"mypub");
@@ -880,7 +889,7 @@ void SuperNET_parsepeers(struct supernet_info *myinfo,cJSON *array,int32_t n,int
 
 cJSON *SuperNET_rosettajson(bits256 privkey,int32_t showprivs)
 {
-    uint8_t rmd160[20],pub[33],flag = 0; uint64_t nxt64bits; bits256 pubkey;
+    uint8_t rmd160[20],pub[33]; uint64_t nxt64bits; bits256 pubkey;
     char str2[41],wifbuf[64],addr[64],str[128]; cJSON *retjson;
     pubkey = acct777_pubkey(privkey);
     nxt64bits = acct777_nxt64bits(pubkey);
@@ -889,35 +898,47 @@ cJSON *SuperNET_rosettajson(bits256 privkey,int32_t showprivs)
     RS_encode(str,nxt64bits);
     jaddstr(retjson,"RS",str);
     jadd64bits(retjson,"NXT",nxt64bits);
-    btc_priv2pub(pub,privkey.bytes);
+    bitcoin_pubkey33(0,pub,privkey);
     init_hexbytes_noT(str,pub,33);
     jaddstr(retjson,"btcpubkey",str);
     calc_OP_HASH160(str2,rmd160,str);
     jaddstr(retjson,"rmd160",str2);
-    if ( btc_coinaddr(addr,0,str) == 0 )
+    if ( bitcoin_address(addr,0,pub,33) != 0 )
     {
         jaddstr(retjson,"BTC",addr);
-        if ( flag != 0 )
+        if ( showprivs != 0 )
         {
-            btc_priv2wif(wifbuf,privkey.bytes,0x80);
+            bitcoin_priv2wif(wifbuf,privkey,128);
             jaddstr(retjson,"BTCwif",wifbuf);
         }
     }
-    if ( btc_coinaddr(addr,60,str) == 0 )
+    if ( bitcoin_address(addr,60,pub,33) != 0 )
     {
         jaddstr(retjson,"BTCD",addr);
-        if ( flag != 0 )
+        if ( showprivs != 0 )
         {
-            btc_priv2wif(wifbuf,privkey.bytes,0xbc);
+            bitcoin_priv2wif(wifbuf,privkey,188);
             jaddstr(retjson,"BTCDwif",wifbuf);
         }
     }
-    if ( flag != 0 )
+    if ( showprivs != 0 )
         jaddbits256(retjson,"privkey",privkey);
     return(retjson);
 }
 
 #include "../includes/iguana_apidefs.h"
+
+STRING_ARG(SuperNET,addr2rmd160,address)
+{
+    uint8_t addrtype,rmd160[20]; char rmdstr[41]; cJSON *retjson;
+    bitcoin_addr2rmd160(&addrtype,rmd160,address);
+    init_hexbytes_noT(rmdstr,rmd160,sizeof(rmd160));
+    retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result",rmdstr);
+    jaddnum(retjson,"addrtype",addrtype);
+    jaddstr(retjson,"address",address);
+    return(jprint(retjson,1));
+}
 
 HASH_AND_INT(SuperNET,priv2pub,privkey,addrtype)
 {
@@ -927,7 +948,7 @@ HASH_AND_INT(SuperNET,priv2pub,privkey,addrtype)
     retjson = cJSON_CreateObject();
     crypto_box_priv2pub(pub.bytes,privkey.bytes);
     jaddbits256(retjson,"curve25519",pub);
-    pub = bitcoin_pubkey33(pubkey,privkey);
+    pub = bitcoin_pubkey33(myinfo->ctx,pubkey,privkey);
     jaddbits256(retjson,"secp256k1",pub);
     bitcoin_address(coinaddr,addrtype,pubkey,33);
     jaddstr(retjson,"result",coinaddr);
@@ -1190,11 +1211,11 @@ TWO_STRINGS(SuperNET,subscribe,category,subcategory)
 
 TWO_STRINGS(SuperNET,gethexmsg,category,subcategory)
 {
-    bits256 categoryhash,subhash; struct category_msg *m; char *hexstr; cJSON *retjson;
+    bits256 categoryhash,subhash; struct category_msg *m; char *hexstr; cJSON *retjson; struct category_info *cat;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     categoryhash = calc_categoryhashes(&subhash,category,subcategory);
-    if ( (m= category_gethexmsg(myinfo,categoryhash,subhash)) != 0 )
+    if ( (m= category_gethexmsg(myinfo,&cat,categoryhash,subhash)) != 0 )
     {
         hexstr = calloc(1,m->len*2+1);
         init_hexbytes_noT(hexstr,m->msg,m->len);
@@ -1221,7 +1242,7 @@ THREE_STRINGS(SuperNET,announce,category,subcategory,message)
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     categoryhash = calc_categoryhashes(&subhash,category,subcategory);
-    return(SuperNET_categorymulticast(myinfo,0,categoryhash,subhash,message,juint(json,"maxdelay"),juint(json,"broadcast"),juint(json,"plaintext")));
+    return(SuperNET_categorymulticast(myinfo,0,categoryhash,subhash,message,juint(json,"maxdelay"),juint(json,"broadcast"),juint(json,"plaintext"),json,remoteaddr));
 }
 
 THREE_STRINGS(SuperNET,survey,category,subcategory,message)
@@ -1230,13 +1251,13 @@ THREE_STRINGS(SuperNET,survey,category,subcategory,message)
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     categoryhash = calc_categoryhashes(&subhash,category,subcategory);
-    return(SuperNET_categorymulticast(myinfo,1,categoryhash,subhash,message,juint(json,"maxdelay"),juint(json,"broadcast"),juint(json,"plaintext")));
+    return(SuperNET_categorymulticast(myinfo,1,categoryhash,subhash,message,juint(json,"maxdelay"),juint(json,"broadcast"),juint(json,"plaintext"),json,remoteaddr));
 }
 
 STRING_ARG(SuperNET,wif2priv,wif)
 {
     bits256 privkey; char str[65]; uint8_t privkeytype; cJSON *retjson = cJSON_CreateObject();
-    if ( btc_wif2priv(&privkeytype,privkey.bytes,wif) == sizeof(privkey) )
+    if ( bitcoin_wif2priv(&privkeytype,&privkey,wif) == sizeof(privkey) )
     {
         jaddstr(retjson,"result","success");
         jaddstr(retjson,"privkey",bits256_str(str,privkey));
@@ -1245,9 +1266,32 @@ STRING_ARG(SuperNET,wif2priv,wif)
     return(jprint(retjson,1));
 }
 
-ZERO_ARGS(SuperNET,myipaddr)
+STRING_ARG(SuperNET,priv2wif,priv)
+{
+    bits256 privkey; char wifstr[65]; uint8_t wiftype; cJSON *retjson = cJSON_CreateObject();
+    if ( strlen(priv) == sizeof(bits256)*2 && is_hexstr(priv,(int32_t)sizeof(bits256)*2) == sizeof(bits256)*2 )
+    {
+        wiftype = coin != 0 ? coin->chain->wiftype : 0x80;
+        decode_hex(privkey.bytes,sizeof(privkey),priv);
+        if ( bitcoin_priv2wif(wifstr,privkey,wiftype) > 0 )
+        {
+            jaddstr(retjson,"result","success");
+            jaddstr(retjson,"privkey",priv);
+            jaddnum(retjson,"type",wiftype);
+            jaddstr(retjson,"wif",wifstr);
+        } else jaddstr(retjson,"error","couldnt convert privkey");
+    } else jaddstr(retjson,"error","non 32 byte hex privkey");
+    return(jprint(retjson,1));
+}
+
+STRING_ARG(SuperNET,myipaddr,ipaddr)
 {
     cJSON *retjson = cJSON_CreateObject();
+    if ( myinfo->ipaddr[0] == 0 )
+    {
+        if ( is_ipaddr(ipaddr) != 0 )
+            strcpy(myinfo->ipaddr,ipaddr);
+    }
     jaddstr(retjson,"result",myinfo->ipaddr);
     return(jprint(retjson,1));
 }
@@ -1288,6 +1332,7 @@ ZERO_ARGS(SuperNET,logout)
     memset(myinfo->handle,0,sizeof(myinfo->handle));
     memset(myinfo->myaddr.NXTADDR,0,sizeof(myinfo->myaddr.NXTADDR));
     myinfo->myaddr.nxt64bits = 0;
+    myinfo->expiration = 0;
     return(clonestr("{\"result\":\"logged out\"}"));
 }
 
@@ -1299,35 +1344,104 @@ ZERO_ARGS(SuperNET,activehandle)
     retjson = SuperNET_rosettajson(myinfo->persistent_priv,0);
     jaddstr(retjson,"result","success");
     jaddstr(retjson,"handle",myinfo->handle);
+    jaddbits256(retjson,"persistent",myinfo->myaddr.persistent);
+    if ( myinfo->expiration != 0 )
+    {
+        jaddstr(retjson,"status","unlocked");
+        jaddnum(retjson,"duration",myinfo->expiration - time(NULL));
+    } else jaddstr(retjson,"status","locked");
+    SuperNET_MYINFOadd(myinfo);
     return(jprint(retjson,1));
+}
+
+struct supernet_info *SuperNET_accountfind(cJSON *json)
+{
+    int32_t num; char *decryptstr; struct supernet_info M,*myinfo; struct iguana_info *coin = 0;
+    char *password,*permanentfile,*passphrase,*remoteaddr,*perspriv;
+    myinfo = 0;
+    if ( (password= jstr(json,"password")) == 0 )
+        password = "";
+    if ( (permanentfile= jstr(json,"permanentfile")) == 0 )
+        permanentfile = "";
+    if ( (passphrase= jstr(json,"passphrase")) == 0 )
+        passphrase = "";
+    remoteaddr = jstr(json,"remoteaddr");
+    if ( (passphrase == 0 || passphrase[0] == 0) && (decryptstr= SuperNET_decryptjson(IGUANA_CALLARGS,password,permanentfile)) != 0 )
+    {
+        if ( (json= cJSON_Parse(decryptstr)) != 0 )
+        {
+            memset(&M,0,sizeof(M));
+            if ( (perspriv= jstr(json,"persistent_priv")) != 0 && strlen(perspriv) == sizeof(bits256)*2 )
+            {
+                M.persistent_priv = bits256_conv(perspriv);
+                SuperNET_setkeys(&M,0,0,0);
+                if ( (myinfo = SuperNET_MYINFOfind(&num,M.myaddr.persistent)) != 0 )
+                {
+                    printf("found account.(%s) %s %llu\n",myinfo!=0?myinfo->handle:"",M.myaddr.NXTADDR,(long long)M.myaddr.nxt64bits);
+                    return(myinfo);
+                }
+            }
+            else if ( (passphrase= jstr(json,"result")) != 0 || (passphrase= jstr(json,"passphrase")) != 0 )
+            {
+                SuperNET_setkeys(&M,passphrase,(int32_t)strlen(passphrase),1);
+                if ( (myinfo= SuperNET_MYINFOfind(&num,M.myaddr.persistent)) != 0 )
+                {
+                    printf("found account.(%s) %s %llu\n",myinfo!=0?myinfo->handle:"",M.myaddr.NXTADDR,(long long)M.myaddr.nxt64bits);
+                    return(myinfo);
+                }
+            } else printf("no passphrase in (%s)\n",jprint(json,0));
+            free_json(json);
+        } else printf("cant parse.(%s)\n",decryptstr);
+        free(decryptstr);
+    }
+    return(SuperNET_MYINFO(0));
 }
 
 FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
 {
-    char *str,*decryptstr = 0; cJSON *argjson;
+    char *argstr,*str,*decryptstr = 0; cJSON *argjson; //uint32_t expire = myinfo->expiration; //savehandle[1024],savepassword[1024],savepermanentfile[1024]
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    if ( bits256_nonz(myinfo->persistent_priv) != 0 && (str= SuperNET_logout(IGUANA_CALLARGS)) != 0 )
-        free(str);
-    if ( handle != 0 )
+    //safecopy(savehandle,myinfo->handle,sizeof(myinfo->handle));
+    //safecopy(savepassword,myinfo->secret,sizeof(myinfo->secret));
+    //safecopy(savepermanentfile,myinfo->permanentfile,sizeof(myinfo->permanentfile));
+    //if ( bits256_nonz(myinfo->persistent_priv) != 0 && (str= SuperNET_logout(IGUANA_CALLARGS)) != 0 )
+    //    free(str);
+    //myinfo->expiration = expire;
+    if ( handle != 0 && handle[0] != 0 )
         safecopy(myinfo->handle,handle,sizeof(myinfo->handle));
-    if ( (passphrase == 0 || passphrase[0] == 0) && (decryptstr= SuperNET_decryptjson(IGUANA_CALLARGS,password,permanentfile)) != 0 )
+    else memset(myinfo->handle,0,sizeof(myinfo->handle));
+    if ( password != 0 && password[0] != 0 )
+        safecopy(myinfo->secret,password,sizeof(myinfo->secret));
+    else if ( passphrase != 0 && passphrase[0] != 0 )
+        safecopy(myinfo->secret,passphrase,sizeof(myinfo->secret));
+    //else memset(myinfo->secret,0,sizeof(myinfo->secret));
+    if ( permanentfile != 0 )
+        safecopy(myinfo->permanentfile,permanentfile,sizeof(myinfo->permanentfile));
+    //else memset(myinfo->permanentfile,0,sizeof(myinfo->permanentfile));
+    if ( (decryptstr= SuperNET_decryptjson(IGUANA_CALLARGS,myinfo->secret,myinfo->permanentfile)) != 0 )
     {
         if ( (argjson= cJSON_Parse(decryptstr)) != 0 )
         {
-            printf("decrypted.(%s)\n",decryptstr);
-            free(decryptstr);
-            if ( (passphrase= jstr(argjson,"result")) != 0 )
+            if ( jobj(argjson,"error") == 0 )
             {
-                SuperNET_setkeys(myinfo,passphrase,(int32_t)strlen(passphrase),1);
-                free_json(argjson);
-                return(SuperNET_activehandle(IGUANA_CALLARGS));
-            }
-            else
-            {
-                free_json(argjson);
-                return(clonestr("{\"error\":\"cant find passphrase in decrypted json\"}"));
-            }
+                //printf("decrypted.(%s) exp.%u pass.(%s)\n",decryptstr,myinfo->expiration,password);
+                if ( myinfo->decryptstr != 0 )
+                    free(myinfo->decryptstr);
+                myinfo->decryptstr = decryptstr;
+                if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
+                {
+                    SuperNET_setkeys(myinfo,passphrase,(int32_t)strlen(passphrase),1);
+                    free_json(argjson);
+                    myinfo->expiration = (uint32_t)(time(NULL) + 3600);
+                    return(SuperNET_activehandle(IGUANA_CALLARGS));
+                }
+                else
+                {
+                    free_json(argjson);
+                    return(clonestr("{\"error\":\"cant find passphrase in decrypted json\"}"));
+                }
+            } else free_json(argjson);
         }
         else
         {
@@ -1338,8 +1452,18 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
     if ( passphrase != 0 && passphrase[0] != 0 )
     {
         SuperNET_setkeys(myinfo,passphrase,(int32_t)strlen(passphrase),1);
-        if ( (str= SuperNET_encryptjson(IGUANA_CALLARGS,password,permanentfile,passphrase)) != 0 )
+        if ( myinfo->decryptstr != 0 && (argjson= cJSON_Parse(myinfo->decryptstr)) != 0 )
+        {
+            if ( jobj(argjson,"passphrase") != 0 )
+                jdelete(argjson,"passphrase");
+            if ( jobj(argjson,"error") != 0 )
+                jdelete(argjson,"error");
+        } else argjson = cJSON_CreateObject();
+        jaddstr(argjson,"passphrase",passphrase);
+        argstr = jprint(argjson,1);
+        if ( (str= SuperNET_encryptjson(IGUANA_CALLARGS,myinfo->secret,myinfo->permanentfile,argstr)) != 0 )
             free(str);
+        free(argstr);
         return(SuperNET_activehandle(IGUANA_CALLARGS));
     }
     else return(clonestr("{\"error\":\"need passphrase\"}"));

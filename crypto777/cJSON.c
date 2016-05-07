@@ -26,9 +26,10 @@
 #include <math.h>
 
 #include "../includes/cJSON.h"
-//#define DEFINES_ONLY
-//#include "../common/system777.c"
-//#undef DEFINES_ONLY
+
+#ifndef DBL_EPSILON
+#define DBL_EPSILON 2.2204460492503131E-16
+#endif
 
 static const char *ep;
 
@@ -129,8 +130,8 @@ static char *print_number(cJSON *item)
 {
 	char *str;
 	double d = item->valuedouble;
-	if ( fabs(((double)item->valueint) - d) <= DBL_EPSILON && d >= (1. - DBL_EPSILON) && d < (1LL << 62) )//d <= INT_MAX && d >= INT_MIN )
-	{
+        if ( fabs(((double)item->valueint) - d) <= DBL_EPSILON && d >= (1. - DBL_EPSILON) && d < (1LL << 62) )//d <= INT_MAX && d >= INT_MIN )
+        {
 		str = (char *)cJSON_malloc(24);	/* 2^64+1 can be represented in 21 chars + sign. */
 		if ( str != 0 )
             sprintf(str,"%lld",(long long)item->valueint);
@@ -467,10 +468,20 @@ static char *print_object(cJSON *item,int32_t depth,int32_t fmt)
 {
 	char **entries=0,**names=0;
 	char *out=0,*ptr,*ret,*str;int32_t len=7,i=0,j;
-	cJSON *child=item->child;
+	cJSON *child=item->child,*firstchild;
 	int32_t numentries=0,fail=0;
-	/* Count the number of entries. */
-	while (child) numentries++,child=child->next;
+	// Count the number of entries
+    firstchild = child;
+	while ( child )
+    {
+        numentries++;
+        child = child->next;
+        if ( child == firstchild )
+        {
+            printf("cJSON infinite loop detected\n");
+            break;
+        }
+    }
 	/* Explicitly handle empty object case */
 	if (!numentries)
 	{
@@ -491,12 +502,14 @@ static char *print_object(cJSON *item,int32_t depth,int32_t fmt)
     
 	/* Collect all the results into our arrays: */
 	child=item->child;depth++;if (fmt) len+=depth;
-	while (child)
+	while ( child )
 	{
 		names[i]=str=print_string_ptr(child->string);
 		entries[i++]=ret=print_value(child,depth,fmt);
 		if (str && ret) len+=strlen(ret)+strlen(str)+2+(fmt?2+depth:0); else fail=1;
 		child=child->next;
+        if ( child == firstchild )
+            break;
 	}
 	
 	/* Try to allocate the output string */
@@ -944,6 +957,7 @@ double get_API_float(cJSON *obj)
     }
     return(val);
 }
+
 double jdouble(cJSON *json,char *field)
 {
     if ( json != 0 )

@@ -16,7 +16,7 @@
 #include <pthread.h>
 #endif
 
-static int initflag;
+int MAIN_initflag;
 #ifndef __PNACL
 #define PNACL_message printf
 #else
@@ -37,7 +37,7 @@ void *CHROMEAPP_NAME(void *arg)
 #else
         arg = 0;
 #endif
-    while ( initflag == 0 )
+    while ( MAIN_initflag == 0 )
         usleep(1000000);
     PNACL_message("%s start.(%s)\n",CHROMEAPP_STR,(char *)arg);
     CHROMEAPP_MAIN(arg);
@@ -348,32 +348,29 @@ void *HandleMessageThread(void *user_data)
 static PP_Bool Instance_DidCreate(PP_Instance instance,uint32_t argc,const char* argn[],const char* argv[])
 {
     int nacl_io_init_ppapi(PP_Instance instance, PPB_GetInterface get_interface);
-    static pthread_t g_handle_message_thread;
-    static pthread_t chromeapp_thread;
+    static pthread_t g_handle_message_thread,chromeapp_thread;
     long allocsize;
     g_instance = instance;
     // By default, nacl_io mounts / to pass through to the original NaCl
-    // filesystem (which doesn't do much). Let's remount it to a memfs
-    // filesystem.
+    // filesystem (which doesn't do much). Let's remount it to a memfs filesystem.
     OS_init();
     InitializeMessageQueue();
     pthread_create(&g_handle_message_thread, NULL, &HandleMessageThread, NULL);
     pthread_create(&chromeapp_thread,NULL,&CHROMEAPP_NAME,OS_filestr(&allocsize,CHROMEAPP_CONF));
     nacl_io_init_ppapi(instance,g_get_browser_interface);
     umount("/");
-    mount("", "/memfs", "memfs", 0, "");
-    mount("",                                       /* source */
-          "/",                            /* target */
-          "html5fs",                                /* filesystemtype */
-          0,                                        /* mountflags */
-          "type=PERSISTENT,expected_size=10000000000"); /* data */
-    mount("",       /* source. Use relative URL */
-          "/http",  /* target */
-          "httpfs", /* filesystemtype */
-          0,        /* mountflags */
-          "");      /* data */
+    mount("", "/", "memfs", 0, "");
+    mkdir("/tmp",0755);
+    mkdir("/DB",0755);
+    mount("","/tmp","html5fs",0,"type=TEMPORARY,expected_size=2000000000");
+    mount("","/DB","html5fs",0,"type=PERSISTENT,expected_size=10000000000");
+    /*mount("",       // source. Use relative URL
+          "/http",  // target
+          "httpfs", // filesystemtype
+          0,        // mountflags
+          "");      // data*/
     PNACL_message("finished DidCreate %s\n",CHROMEAPP_STR);
-    initflag = 1;
+    MAIN_initflag = 1;
     return PP_TRUE;
 }
 
@@ -625,14 +622,14 @@ static int GetParamString(struct PP_Var params,
 
 int CHROMEAPP_HANDLER(struct PP_Var params,struct PP_Var *output,const char **out_error)
 {
-    char *CHROMEAPP_JSON(char *);
+    char *CHROMEAPP_JSON(char *,uint16_t port);
     char *retstr;
     PNACL_message("inside Handle_%s\n",CHROMEAPP_STR);
     CHECK_PARAM_COUNT(CHROMEAPP_STR, 1);
     PARAM_STRING(0,jsonstr);
     if ( jsonstr == 0 )
         retstr = clonestr("{\"error\":\"illegal null jsonstr received\"}");
-    else if ( (retstr= CHROMEAPP_JSON(jsonstr)) == 0 )
+    else if ( (retstr= CHROMEAPP_JSON(jsonstr,7778)) == 0 )
         retstr = clonestr("{\"error\":\"null return\"}");
     CREATE_RESPONSE(CHROMEAPP_STR);
     RESPONSE_STRING(retstr);
@@ -655,13 +652,14 @@ PSMainFunc_t PSUserMainGet()
 }
 
 #else
+
 int main(int argc, const char * argv[])
 {
     char *jsonstr;
     if ( argc < 2 )
         jsonstr = 0;
     else jsonstr = (char *)argv[1];
-    initflag = 1;
+    MAIN_initflag = 1;
     OS_init();
     printf("%s main\n",CHROMEAPP_STR);
     CHROMEAPP_NAME(jsonstr);

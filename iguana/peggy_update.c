@@ -360,7 +360,7 @@ int32_t ecb_matrix(double matrix[32][32],char *date)
     FILE *fp=0; int32_t n=0,datenum,year=0,seconds,month=0,day=0,loaded = 0; char fname[64],_date[64];
     if ( date == 0 )
         date = _date, memset(_date,0,sizeof(_date));
-    sprintf(fname,"DB/ECB/%s",date), OS_compatible_path(fname);
+    sprintf(fname,"%s/ECB/%s",GLOBAL_DBDIR,date), OS_compatible_path(fname);
     if ( date[0] != 0 && (fp= fopen(fname,"rb")) != 0 )
     {
         if ( fread(matrix,1,sizeof(matrix[0][0])*32*32,fp) == sizeof(matrix[0][0])*32*32 )
@@ -374,7 +374,7 @@ int32_t ecb_matrix(double matrix[32][32],char *date)
         year = datenum / 10000, month = (datenum / 100) % 100, day = (datenum % 100);
         if ( (n= PAX_ecbprices(date,&matrix[0][0],year,month,day)) > 0 )
         {
-            sprintf(fname,"DB/ECB/%s",date), OS_compatible_path(fname);
+            sprintf(fname,"%s/ECB/%s",GLOBAL_DBDIR,date), OS_compatible_path(fname);
             if ( (fp= fopen(fname,"wb")) != 0 )
             {
                 if ( fwrite(matrix,1,sizeof(matrix[0][0])*32*32,fp) == sizeof(matrix[0][0])*32*32 )

@@ -22,46 +22,121 @@
 
 //struct iguana_spend { uint32_t spendtxidind; int16_t prevout; uint16_t tbd:14,external:1,diffsequence:1; } __attribute__((packed));
 
-void iguana_vinset(struct iguana_info *coin,int32_t height,struct iguana_msgvin *vin,struct iguana_txid *tx,int32_t i)
+int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,long fileptr[2],char *fname,uint64_t scriptpos,int32_t scriptlen)
 {
-    struct iguana_spend *s,*S; uint32_t spendind; struct iguana_bundle *bp;
-    struct iguana_ramchaindata *rdata; struct iguana_txid *T; bits256 *X;
+    FILE *fp; long err; int32_t retval = scriptlen;
+#ifndef __PNACL__
+    if ( scriptpos < 0xffffffff )
+    {
+        if ( fileptr[0] == 0 )
+            fileptr[0] = (long)OS_mapfile(fname,&fileptr[1],0);
+        if ( fileptr[0] != 0 )
+        {
+            if ( (scriptpos + scriptlen) <= fileptr[1] )
+            {
+                memcpy(scriptspace,(void *)(fileptr[0] + (uint32_t)scriptpos),scriptlen);
+                return(retval);
+            }
+            else if ( 0 )
+            {
+                printf("munmap (%s)\n",fname);
+                munmap((void *)fileptr[0],fileptr[1]);
+                fileptr[0] = fileptr[1] = 0;
+            }
+        }
+    }
+#else
+    static portable_mutex_t mutex;
+    portable_mutex_lock(&mutex);
+#endif
+    if ( (fp= fopen(fname,"rb")) != 0 )
+    {
+        fseek(fp,scriptpos,SEEK_SET);
+        if ( (err= fread(scriptspace,1,scriptlen,fp)) != scriptlen )
+        {
+            retval = -1;
+            printf("%s script[%d] offset.%llu err.%ld\n",fname,scriptlen,(long long)scriptpos,err);
+        } //else printf("%s script[%d] offset.%llu read.%ld\n",fname,scriptlen,(long long)scriptpos,err);
+        fclose(fp);
+    } else retval = -1;
+#ifdef __PNACL__
+    portable_mutex_unlock(&mutex);
+#endif
+    return(retval);
+}
+
+int32_t iguana_vinset(struct iguana_info *coin,uint8_t *scriptspace,int32_t height,struct iguana_msgvin *vin,struct iguana_txid *tx,int32_t i)
+{
+    struct iguana_spend *s,*S; uint32_t spendind,unspentind; bits256 *X; struct iguana_bundle *bp;
+    struct iguana_ramchaindata *rdata; struct iguana_txid *T; char fname[1024]; int32_t scriptlen,err = 0;
     memset(vin,0,sizeof(*vin));
     if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0 && (rdata= bp->ramchain.H.data) != 0 )
     {
-        S = (void *)(long)((long)rdata + rdata->Soffset);
-        X = (void *)(long)((long)rdata + rdata->Xoffset);
-        T = (void *)(long)((long)rdata + rdata->Toffset);
+        S = RAMCHAIN_PTR(rdata,Soffset);
+        X = RAMCHAIN_PTR(rdata,Xoffset);
+        T = RAMCHAIN_PTR(rdata,Toffset);
+        //S = (void *)(long)((long)rdata + rdata->Soffset);
+        //X = (void *)(long)((long)rdata + rdata->Xoffset);
+        //T = (void *)(long)((long)rdata + rdata->Toffset);
         spendind = (tx->firstvin + i);
         s = &S[spendind];
-        if ( s->diffsequence == 0 )
-            vin->sequence = 0xffffffff;
+        vin->sequence = s->sequenceid;
         vin->prev_vout = s->prevout;
-        iguana_ramchain_spendtxid(coin,&vin->prev_hash,T,rdata->numtxids,X,rdata->numexternaltxids,s);
+        if ( s->scriptpos != 0 && s->scriptlen > 0 )
+        {
+            iguana_vinsfname(coin,bp->ramchain.from_ro,fname,s->fileid);
+            if ( (scriptlen= iguana_scriptdata(coin,scriptspace,coin->peers.vinptrs[s->fileid],fname,s->scriptpos,s->scriptlen)) != s->scriptlen )
+                printf("err.%d getting %d bytes from fileid.%llu[%d] %s for s%d\n",err,s->scriptlen,(long long)s->scriptpos,s->fileid,fname,spendind);
+        }
+        vin->scriptlen = s->scriptlen;
+        vin->vinscript = scriptspace;
+        iguana_ramchain_spendtxid(coin,&unspentind,&vin->prev_hash,T,rdata->numtxids,X,rdata->numexternaltxids,s);
     }
+    if ( err != 0 )
+        return(-err);
+    else return(vin->scriptlen);
+}
+
+int32_t iguana_voutscript(struct iguana_info *coin,struct iguana_bundle *bp,uint8_t *scriptspace,char *asmstr,struct iguana_unspent *u,struct iguana_pkhash *p,int32_t txi)
+{
+    struct vin_info V; char fname[1024],coinaddr[65]; int32_t scriptlen = -1;
+    if ( u->scriptpos > 0 && u->scriptlen > 0 )
+    {
+        iguana_voutsfname(coin,bp->ramchain.from_ro,fname,u->fileid);
+        if ( (scriptlen= iguana_scriptdata(coin,scriptspace,coin->peers.voutptrs[u->fileid],fname,u->scriptpos,u->scriptlen)) != u->scriptlen )
+            printf("%d bytes from fileid.%d[%d] %s for type.%d\n",u->scriptlen,u->fileid,u->scriptpos,fname,u->type);
+    }
+    else
+    {
+        memset(&V,0,sizeof(V));
+        scriptlen = iguana_scriptgen(coin,&V.M,&V.N,coinaddr,scriptspace,asmstr,p->rmd160,u->type,(const struct vin_info *)&V,txi);
+    }
+    return(scriptlen);
 }
 
 int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmstr,int32_t height,struct iguana_msgvout *vout,struct iguana_txid *tx,int32_t i)
 {
     struct iguana_ramchaindata *rdata; uint32_t unspentind,scriptlen = 0; struct iguana_bundle *bp;
-    struct iguana_unspent *u,*U; char coinaddr[65]; struct iguana_pkhash *P,*p; struct vin_info V;
+    struct iguana_unspent *u,*U; struct iguana_pkhash *P; int32_t err = 0;
     memset(vout,0,sizeof(*vout));
     if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0  && (rdata= bp->ramchain.H.data) != 0 && i < tx->numvouts )
     {
-        U = (void *)(long)((long)rdata + rdata->Uoffset);
-        P = (void *)(long)((long)rdata + rdata->Poffset);
+        U = RAMCHAIN_PTR(rdata,Uoffset);
+        P = RAMCHAIN_PTR(rdata,Poffset);
+        //U = (void *)(long)((long)rdata + rdata->Uoffset);
+        //P = (void *)(long)((long)rdata + rdata->Poffset);
         unspentind = (tx->firstvout + i);
         u = &U[unspentind];
         if ( u->txidind != tx->txidind || u->vout != i || u->hdrsi != height / coin->chain->bundlesize )
             printf("iguana_voutset: txidind mismatch %d vs %d || %d vs %d || (%d vs %d)\n",u->txidind,u->txidind,u->vout,i,u->hdrsi,height / coin->chain->bundlesize);
-        p = &P[u->pkind];
         vout->value = u->value;
         vout->pk_script = scriptspace;
-        memset(&V,0,sizeof(V));
-        scriptlen = iguana_scriptgen(coin,&V.M,&V.N,coinaddr,scriptspace,asmstr,p->rmd160,u->type,(const struct vin_info *)&V,i);
-    }
+        scriptlen = iguana_voutscript(coin,bp,scriptspace,asmstr,u,&P[u->pkind],i);
+    } else printf("iguana_voutset unexpected path\n");
     vout->pk_scriptlen = scriptlen;
-    return(scriptlen);
+    if ( err != 0 )
+        return(-err);
+    else return(scriptlen);
 }
 
 struct iguana_txid *iguana_blocktx(struct iguana_info *coin,struct iguana_txid *tx,struct iguana_block *block,int32_t i)
@@ -69,33 +144,158 @@ struct iguana_txid *iguana_blocktx(struct iguana_info *coin,struct iguana_txid *
     struct iguana_bundle *bp; uint32_t txidind;
     if ( i >= 0 && i < block->RO.txn_count )
     {
-        if ( block->height >= 0 ) //
+        if ( block->height >= 0 )
         {
             if ( (bp= coin->bundles[block->hdrsi]) != 0 )
             {
-                if ( (txidind= block->RO.firsttxidind) > 0 )//bp->firsttxidinds[block->bundlei]) > 0 )
+                if ( (txidind= block->RO.firsttxidind) > 0 )
                 {
                     if ( iguana_bundletx(coin,bp,block->bundlei,tx,txidind+i) == tx )
                         return(tx);
                     printf("error getting txidind.%d + i.%d from hdrsi.%d\n",txidind,i,block->hdrsi);
                     return(0);
-                } else printf("iguana_blocktx null txidind\n");
-            } else printf("iguana_blocktx no bp\n");
-        }
+                } // else printf("iguana_blocktx null txidind [%d:%d] i.%d\n",block->hdrsi,block->bundlei,i);
+            } else printf("iguana_blocktx no bp.[%d]\n",block->hdrsi);
+        } else printf("blocktx illegal height.%d\n",block->height);
     } else printf("i.%d vs txn_count.%d\n",i,block->RO.txn_count);
     return(0);
 }
 
+int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t maxlen,bits256 *txidp,struct iguana_txid *tx,int32_t height,struct iguana_msgvin *vins,struct iguana_msgvout *vouts,int32_t validatesigs)
+{
+    int32_t i,rwflag=1,len = 0; char asmstr[512],txidstr[65];
+    uint32_t numvins,numvouts; struct iguana_msgvin vin; struct iguana_msgvout vout; uint8_t space[IGUANA_MAXSCRIPTSIZE];
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->version),&tx->version);
+    if ( coin->chain->hastimestamp != 0 )
+        len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->timestamp),&tx->timestamp);
+    numvins = tx->numvins, numvouts = tx->numvouts;
+    len += iguana_rwvarint32(rwflag,&serialized[len],&numvins);
+    memset(&vin,0,sizeof(vin));
+    for (i=0; i<numvins; i++)
+    {
+        if ( vins == 0 )
+            iguana_vinset(coin,space,height,&vin,tx,i);
+        else vin = vins[i];
+        if ( validatesigs != 0 && iguana_validatesigs(coin,&vin) < 0 )
+        {
+            printf("error validating vin.%d ht.%d\n",i,height);
+            return(0);
+        }
+        len += iguana_rwvin(rwflag,0,&serialized[len],&vin);
+    }
+    if ( len > maxlen )
+        return(0);
+    len += iguana_rwvarint32(rwflag,&serialized[len],&numvouts);
+    for (i=0; i<numvouts; i++)
+    {
+        if ( vouts == 0 )
+            iguana_voutset(coin,space,asmstr,height,&vout,tx,i);
+        else vout = vouts[i];
+        len += iguana_rwvout(rwflag,0,&serialized[len],&vout);
+    }
+    if ( len > maxlen )
+        return(0);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->locktime),&tx->locktime);
+    *txidp = bits256_doublesha256(txidstr,serialized,len);
+    if ( memcmp(txidp,tx->txid.bytes,sizeof(*txidp)) != 0 )
+    {
+        //for (i=0; i<len; i++)
+        //    printf("%02x",serialized[i]);
+        //char str[65],str2[65]; printf("\nrw.%d numvins.%d numvouts.%d error generating txbytes txid %s vs %s\n",rwflag,numvins,numvouts,bits256_str(str,*txidp),bits256_str(str2,tx->txid));
+        return(-1);
+    }
+    return(len);
+}
+
+int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int32_t max,struct iguana_peer *addr,bits256 hash2,int32_t validatesigs)
+{
+    struct iguana_txid *tx,T; bits256 checktxid; int32_t i,len,total,bundlei=-2; struct iguana_block *block; struct iguana_msgblock msgB; bits256 *tree,checkhash2,merkle_root; struct iguana_bundle *bp=0; long tmp; char str[65];
+    if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) != 0 && bundlei >= 0 && bundlei < bp->n )
+    {
+        if ( (block= bp->blocks[bundlei]) != 0 )
+        {
+            iguana_blockunconv(&msgB,block,1);
+            total = iguana_rwblock(1,&checkhash2,&blockspace[sizeof(struct iguana_msghdr) + 0],&msgB);
+            if ( bits256_cmp(checkhash2,block->RO.hash2) != 0 )
+            {
+                printf("iguana_peerblockrequest: blockhash mismatch ht.%d\n",bp->bundleheight+bundlei);
+                return(-1);
+            }
+            for (i=0; i<block->RO.txn_count; i++)
+            {
+                if ( (tx= iguana_blocktx(coin,&T,block,i)) != 0 )
+                {
+                    if ( (len= iguana_ramtxbytes(coin,&blockspace[sizeof(struct iguana_msghdr) + total],max - total,&checktxid,tx,block->height,0,0,validatesigs)) > 0 && bits256_cmp(checktxid,T.txid) == 0 )
+                        total += len;
+                    else
+                    {
+                        char str[65],str2[65];
+                        printf("error getting txi.%d [%d:%d] cmp.%s %s\n",i,bp->hdrsi,bundlei,bits256_str(str,checktxid),bits256_str(str2,T.txid));
+                        break;
+                    }
+                }
+                else
+                {
+                    //printf("null tx error getting txi.%d [%d:%d]\n",i,bp->hdrsi,bundlei);
+                    break;
+                }
+            }
+            if ( i == block->RO.txn_count )
+            {
+                tmp = (long)&blockspace[sizeof(struct iguana_msghdr) + total + sizeof(bits256)];
+                tmp &= ~(sizeof(bits256) - 1);
+                tree = (void *)tmp;
+                for (i=0; i<block->RO.txn_count; i++)
+                {
+                    if ( (tx= iguana_blocktx(coin,&T,block,i)) != 0 )
+                        tree[i] = T.txid;
+                    else break;
+                }
+                if ( i == block->RO.txn_count )
+                {
+                    merkle_root = iguana_merkle(coin,tree,block->RO.txn_count);
+                    if ( bits256_cmp(merkle_root,block->RO.merkle_root) == 0 )
+                    {
+                        if ( addr != 0 )
+                        {
+                            printf("Send block.%d to %s\n",total,addr->ipaddr);
+                            return(iguana_queue_send(coin,addr,0,blockspace,"block",total,0,0));
+                        }
+                        else
+                        {
+                            //printf("validated.[%d:%d] len.%d\n",bp->hdrsi,bundlei,total);
+                            return(total);
+                        }
+                    } else printf("iguana_peerblockrequest: error merkle cmp tx.[%d] for ht.%d\n",i,bp->bundleheight+bundlei);
+                } else printf("iguana_peerblockrequest: error merkle verify tx.[%d] for ht.%d\n",i,bp->bundleheight+bundlei);
+            } //else printf("iguana_peerblockrequest: error getting tx.[%d] for ht.%d block.%p main.%d ht.%d\n",i,bp->bundleheight+bundlei,block,block!=0?block->mainchain:-1,block!=0?block->height:-1);
+        }
+        else
+        {
+            if ( block != 0 )
+                printf("iguana_peerblockrequest: block.%p ht.%d mainchain.%d [%d:%d]\n",block,block->height,block->mainchain,bp->hdrsi,bundlei);
+            else printf("iguana_peerblockrequest: block.%p [%d:%d]\n",block,bp->hdrsi,bundlei);
+        }
+    } else printf("iguana_peerblockrequest: cant find %s\n",bits256_str(str,hash2));
+    return(-1);
+}
+
 cJSON *iguana_blockjson(struct iguana_info *coin,struct iguana_block *block,int32_t txidsflag)
 {
-    char str[65],hexstr[1024]; int32_t i,len; struct iguana_txid *tx,T; struct iguana_msgblock msg;
-    bits256 hash2; uint8_t serialized[1024]; cJSON *array,*json = cJSON_CreateObject();
+    char str[65],hexstr[1024]; int32_t i,len,size; struct iguana_txid *tx,T; struct iguana_msgblock msg;
+    bits256 hash2,nexthash2; uint8_t serialized[1024]; cJSON *array,*json = cJSON_CreateObject();
     jaddstr(json,"result","success");
     jaddstr(json,"blockhash",bits256_str(str,block->RO.hash2));
     jaddnum(json,"height",block->height);
     //jaddnum(json,"ipbits",block->fpipbits);
-    jaddstr(json,"merkle_root",bits256_str(str,block->RO.merkle_root));
-    jaddstr(json,"prev_block",bits256_str(str,block->RO.prev_block));
+    jaddstr(json,"merkleroot",bits256_str(str,block->RO.merkle_root));
+    jaddstr(json,"previousblockhash",bits256_str(str,block->RO.prev_block));
+    if ( block->height > 0 )
+    {
+        nexthash2 = iguana_blockhash(coin,block->height+1);
+        if ( bits256_nonz(nexthash2) != 0 )
+            jaddstr(json,"nextblockhash",bits256_str(str,nexthash2));
+    }
     jaddnum(json,"timestamp",block->RO.timestamp);
     jaddstr(json,"utc",utc_str(str,block->RO.timestamp));
     jaddnum(json,"nonce",block->RO.nonce);
@@ -110,7 +310,7 @@ cJSON *iguana_blockjson(struct iguana_info *coin,struct iguana_block *block,int3
     jaddnum(json,"valid",block->valid);
     jaddnum(json,"txn_count",block->RO.txn_count);
     
-    jaddnum(json,"nBits",block->RO.bits);
+    jaddnum(json,"bits",block->RO.bits);
     serialized[0] = ((uint8_t *)&block->RO.bits)[3];
     serialized[1] = ((uint8_t *)&block->RO.bits)[2];
     serialized[2] = ((uint8_t *)&block->RO.bits)[1];
@@ -135,205 +335,12 @@ cJSON *iguana_blockjson(struct iguana_info *coin,struct iguana_block *block,int3
             if ( (tx= iguana_blocktx(coin,&T,block,i)) != 0 )
                 jaddistr(array,bits256_str(str,tx->txid));
         }
-        jadd(json,"txids",array);
+        jadd(json,"tx",array);
         //printf("add txids[%d]\n",block->txn_count);
     }
+    if ( (size= iguana_peerblockrequest(coin,coin->blockspace,sizeof(coin->blockspace),0,block->RO.hash2,0)) < 0 )
+        jaddstr(json,"error","couldnt generate raw bytes for block");
+    else jaddnum(json,"size",size);
     return(json);
 }
-
-
-/*
- //char *hashstr,*txidstr,*coinaddr,*txbytes,rmd160str[41],str[65]; int32_t len,height,i,n,valid = 0;
- //cJSON *addrs,*retjson,*retitem; uint8_t rmd160[20],addrtype; bits256 hash2,checktxid;
- //memset(&hash2,0,sizeof(hash2)); struct iguana_txid *tx,T; struct iguana_block *block = 0;
- 
- if ( (coinaddr= jstr(json,"address")) != 0 )
- {
- if ( btc_addr2univ(&addrtype,rmd160,coinaddr) == 0 )
- {
- if ( addrtype == coin->chain->pubval || addrtype == coin->chain->p2shval )
- valid = 1;
- else return(clonestr("{\"error\":\"invalid addrtype\"}"));
- } else return(clonestr("{\"error\":\"cant convert address to rmd160\"}"));
- }
- if ( strcmp(method,"block") == 0 )
- {
- height = -1;
- if ( ((hashstr= jstr(json,"blockhash")) != 0 || (hashstr= jstr(json,"hash")) != 0) && strlen(hashstr) == sizeof(bits256)*2 )
- decode_hex(hash2.bytes,sizeof(hash2),hashstr);
- else
- {
- height = juint(json,"height");
- hash2 = iguana_blockhash(coin,height);
- }
- retitem = cJSON_CreateObject();
- if ( (block= iguana_blockfind(coin,hash2)) != 0 )
- {
- if ( (height >= 0 && block->height == height) || memcmp(hash2.bytes,block->RO.hash2.bytes,sizeof(hash2)) == 0 )
- {
- char str[65],str2[65]; printf("hash2.(%s) -> %s\n",bits256_str(str,hash2),bits256_str(str2,block->RO.hash2));
- return(jprint(iguana_blockjson(coin,block,juint(json,"txids")),1));
- }
- }
- else return(clonestr("{\"error\":\"cant find block\"}"));
- }
- else if ( strcmp(method,"tx") == 0 )
- {
- if ( ((txidstr= jstr(json,"txid")) != 0 || (txidstr= jstr(json,"hash")) != 0) && strlen(txidstr) == sizeof(bits256)*2 )
- {
- retitem = cJSON_CreateObject();
- decode_hex(hash2.bytes,sizeof(hash2),txidstr);
- if ( (tx= iguana_txidfind(coin,&height,&T,hash2)) != 0 )
- {
- jadd(retitem,"tx",iguana_txjson(coin,tx,height));
- return(jprint(retitem,1));
- }
- return(clonestr("{\"error\":\"cant find txid\"}"));
- }
- else return(clonestr("{\"error\":\"invalid txid\"}"));
- }
- else if ( strcmp(method,"rawtx") == 0 )
- {
- if ( ((txidstr= jstr(json,"txid")) != 0 || (txidstr= jstr(json,"hash")) != 0) && strlen(txidstr) == sizeof(bits256)*2 )
- {
- decode_hex(hash2.bytes,sizeof(hash2),txidstr);
- if ( (tx= iguana_txidfind(coin,&height,&T,hash2)) != 0 )
- {
- if ( (len= iguana_txbytes(coin,coin->blockspace,sizeof(coin->blockspace),&checktxid,tx,height,0,0)) > 0 )
- {
- txbytes = mycalloc('x',1,len*2+1);
- init_hexbytes_noT(txbytes,coin->blockspace,len*2+1);
- retitem = cJSON_CreateObject();
- jaddstr(retitem,"txid",bits256_str(str,hash2));
- jaddnum(retitem,"height",height);
- jaddstr(retitem,"rawtx",txbytes);
- myfree(txbytes,len*2+1);
- return(jprint(retitem,1));
- } else return(clonestr("{\"error\":\"couldnt generate txbytes\"}"));
- }
- return(clonestr("{\"error\":\"cant find txid\"}"));
- }
- else return(clonestr("{\"error\":\"invalid txid\"}"));
- }
- else if ( strcmp(method,"txs") == 0 )
- {
- if ( ((hashstr= jstr(json,"block")) != 0 || (hashstr= jstr(json,"blockhash")) != 0) && strlen(hashstr) == sizeof(bits256)*2 )
- {
- decode_hex(hash2.bytes,sizeof(hash2),hashstr);
- if ( (block= iguana_blockfind(coin,hash2)) == 0 )
- return(clonestr("{\"error\":\"cant find blockhash\"}"));
- }
- else if ( jobj(json,"height") != 0 )
- {
- height = juint(json,"height");
- hash2 = iguana_blockhash(coin,height);
- if ( (block= iguana_blockfind(coin,hash2)) == 0 )
- return(clonestr("{\"error\":\"cant find block at height\"}"));
- }
- else if ( valid == 0 )
- return(clonestr("{\"error\":\"txs needs blockhash or height or address\"}"));
- retitem = cJSON_CreateArray();
- if ( block != 0 )
- {
- for (i=0; i<block->RO.txn_count; i++)
- {
- if ( (tx= iguana_blocktx(coin,&T,block,i)) != 0 )
- jaddi(retitem,iguana_txjson(coin,tx,-1));
- }
- }
- else
- {
- init_hexbytes_noT(rmd160str,rmd160,20);
- jaddnum(retitem,"addrtype",addrtype);
- jaddstr(retitem,"rmd160",rmd160str);
- jaddstr(retitem,"txlist","get list of all tx for this address");
- }
- return(jprint(retitem,1));
- }
- 
- else
- {
- n = 0;
- if ( valid == 0 )
- {
- if ( (addrs= jarray(&n,json,"addrs")) == 0 )
- return(clonestr("{\"error\":\"need address or addrs\"}"));
- }
- for (i=0; i<=n; i++)
- {
- retitem = cJSON_CreateObject();
- if ( i > 0 )
- retjson = cJSON_CreateArray();
- if ( i > 0 )
- {
- if ( (coinaddr= jstr(jitem(addrs,i-1),0)) == 0 )
- return(clonestr("{\"error\":\"missing address in addrs\"}"));
- if ( btc_addr2univ(&addrtype,rmd160,coinaddr) < 0 )
- {
- free_json(retjson);
- return(clonestr("{\"error\":\"illegal address in addrs\"}"));
- }
- if ( addrtype != coin->chain->pubval && addrtype != coin->chain->p2shval )
- return(clonestr("{\"error\":\"invalid addrtype in addrs\"}"));
- }
- if ( strcmp(method,"utxo") == 0 )
- {
- jaddstr(retitem,"utxo","utxo entry");
- }
- else if ( strcmp(method,"unconfirmed") == 0 )
- {
- jaddstr(retitem,"unconfirmed","unconfirmed entry");
- }
- else if ( strcmp(method,"balance") == 0 )
- {
- jaddstr(retitem,"balance","balance entry");
- }
- else if ( strcmp(method,"totalreceived") == 0 )
- {
- jaddstr(retitem,"totalreceived","totalreceived entry");
- }
- else if ( strcmp(method,"totalsent") == 0 )
- {
- jaddstr(retitem,"totalsent","totalsent entry");
- }
- else if ( strcmp(method,"validateaddress") == 0 )
- {
- jaddstr(retitem,"validate",coinaddr);
- }
- if ( n == 0 )
- return(jprint(retitem,1));
- else jaddi(retjson,retitem);
- }
- return(jprint(retjson,1));
- }
-*/
-
-/*
- char *iguana_listsinceblock(struct supernet_info *myinfo,struct iguana_info *coin,bits256 blockhash,int32_t target)
- {
- cJSON *retitem = cJSON_CreateObject();
- return(jprint(retitem,1));
- }
- 
- char *iguana_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
- {
- cJSON *retitem = cJSON_CreateObject();
- jaddstr(retitem,"result",coin->statusstr);
- return(jprint(retitem,1));
- }
- 
- char *iguana_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *coin)
- {
- cJSON *retitem = cJSON_CreateObject();
- char str[65]; jaddstr(retitem,"result",bits256_str(str,coin->blocks.hwmchain.RO.hash2));
- return(jprint(retitem,1));
- }
- 
- char *iguana_getblockcount(struct supernet_info *myinfo,struct iguana_info *coin)
- {
- cJSON *retitem = cJSON_CreateObject();
- jaddnum(retitem,"result",coin->blocks.hwmchain.height);
- return(jprint(retitem,1));
- }*/
-
 

@@ -1,4 +1,24 @@
+#!/bin/bash
+
+#if  [ ! -f includes/libsecp256k1.a ]; then
+#echo Cloning and Building secp256k1 library...
+#cd ..
+#git clone https://github.com/ElementsProject/secp256k1-zkp.git
+#cd secp256k1-zkp
+#./autogen.sh
+#./configure --enable-endomorphism --enable-module-ecdh --enable-module-schnorr --enable-module-rangeproof --enable-experimental --enable-module_recovery
+#make
+#cp .libs/libsecp256k1.a ../SuperNET/includes/
+#cd ../SuperNET
+#fi
+
+#./configure --disable-shared --without-ssl --with-cyassl --without-zlib --without-ldap --disable-ldap
+#./configure --enable-opensslextra  --disable-shared --enable-static  --enable-fastmath
+
 git pull
 cd crypto777
 ./$1
 cd ..
+cd iguana
+./m_unix
+../agents/iguana

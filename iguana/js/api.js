@@ -11,7 +11,7 @@ function tagGen(len)
 var SPNAPI = (function(SPNAPI, $, undefined) {
 
     SPNAPI.methods = {};
-    SPNAPI.pages = ["Settings","Tradebot","Instandex", "Pangea", "Peers","Debug", "Coins", "Blockexplorer"];
+    SPNAPI.pages = ["Settings","Bitmap","Tradebot","Instandex", "Pangea", "Peers","Debug", "Coins", "Blockexplorer"];
     SPNAPI.pageContent = {};
     SPNAPI.page = "Blockexplorer";
     /*
@@ -34,19 +34,19 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
             SPNAPI.loadSite(page);
             console.log(page);
             if(page==="Peers"){
-                peer_resonse=[];
-                getPeerList();
+                
+                
             }else if(page==="Settings"){
                 check_files();
                 //SPNAPI.check_coin_conf_files_present();
             }else if(page==="Coins"){
                 addInitCoins();
             }else if(page==="Instandex"){
-                if(!saved_exchanges){
-                ListAllExchanges();}
+                $('#Instandex_form_table').html("");
+                $('#Instandex_output_table').html("");
             }else if(page==="Tradebot"){
-                if(!saved_exchanges){
-                ListAllExchanges();}
+                $('#trade_output').html("");
+                $('#tradebot_input').html('');
             }
             else if(page==="Blockexplorer"){
                 filesystem_show_file_name();
@@ -152,7 +152,7 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
     };
     
     SPNAPI.useGETRequest=function(request){
-        if(request.method && (request.method==='apikeypair' || request.method==='setuserid')){
+        if(request.method && (request.method==='apikeypair' || request.method==='setuserid' ||  request.method==='encryptjson' || request.method==='decryptjson')){
             return false;
         }else{
             return true;
@@ -191,11 +191,11 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
             }
             if(request[i] instanceof Array ){
                 for(var x in request[i]){
-                    url=url+i+"/"+request[i][x]+"/";
+                    url=url+encodeURI(i)+"/"+encodeURI(request[i][x])+"/";
                 }
                 continue;
             }
-            url=url+i+"/"+request[i]+"/";
+            url=url+encodeURI(i)+"/"+encodeURI(request[i])+"/";
         }
         console.log("Url generated from request:"+url);
         return url;

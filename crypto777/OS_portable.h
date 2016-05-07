@@ -27,20 +27,26 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/time.h>
+#include <time.h>
 
 #ifdef __MINGW
 #define sleep(x) Sleep(1000*(x))
 #include "../win/mingw.h"
 #include "../win/mman.h"
 
+//#define EADDRINUSE WSAEADDRINUSE
+
 #else
+//#include <sys/poll.h>
+#include <time.h>
 #include <poll.h>
 #include <netdb.h>
 #include <pthread.h>
-#include <netinet/in.h>
+//#include <netinet/in.h>
+//#include "in.h"
 #include <sys/mman.h>
 #include <sys/socket.h>
+//#include <winsock2.h>
 #define closesocket close
 #endif
 #ifndef MIN
@@ -57,6 +63,11 @@
 #ifndef MAP_FILE
 #define MAP_FILE        0
 #endif
+
+//#define fopen myfopen
+//#define fclose myfclose
+//FILE *myfopen(char *fname,char *mode);
+//int32_t myfclose(FILE *fp);
 
 struct huffstream { uint8_t *ptr,*buf; uint32_t bitoffset,maski,endpos; uint32_t allocsize:31,allocated:1; };
 typedef struct huffstream HUFF;
@@ -138,7 +149,7 @@ struct taidate { int32_t year,month,day; };
 struct taitime { struct taidate date; int32_t hour,minute,second; uint32_t offset; double millis; };
 int32_t leapsecs_sub(struct tai *);
 
-struct tai tai_now();
+struct tai tai_now(void);
 uint32_t tai2utc(struct tai t);
 struct taidate taidate_frommjd(int32_t day,int32_t *pwday,int32_t *pyday);
 struct taitime tai2time(struct tai t,int32_t *pwday,int32_t *pyday);
@@ -174,6 +185,7 @@ double OS_portable_milliseconds();
 void OS_portable_randombytes(unsigned char *x,long xlen);
 int32_t OS_portable_truncate(char *fname,long filesize);
 char *OS_portable_path(char *str);
+void OS_remove_directory(char *dirname);
 int32_t OS_portable_renamefile(char *fname,char *newfname);
 int32_t OS_portable_removefile(char *fname);
 void *OS_portable_mapfile(char *fname,long *filesizep,int32_t enablewrite);
@@ -197,7 +209,7 @@ char *OS_compatible_path(char *str);
 int32_t OS_renamefile(char *fname,char *newfname);
 int32_t OS_removefile(char *fname,int32_t scrubflag);
 void OS_ensure_directory(char *dirname);
-uint64_t OS_filesize(char *fname);
+int64_t OS_filesize(char *fname);
 int32_t OS_compare_files(char *fname,char *fname2);
 int64_t OS_copyfile(char *src,char *dest,int32_t cmpflag);
 int32_t OS_releasemap(void *ptr,uint64_t filesize);
@@ -355,6 +367,8 @@ bits256 bits256_lshift(bits256 x);
 bits256 bits256_from_compact(uint32_t c);
 bits256 bits256_conv(char *hexstr);
 int32_t btc_priv2pub(uint8_t pubkey[33],uint8_t privkey[32]);
+void calc_shares(unsigned char *shares,unsigned char *secret,int32_t size,int32_t width,int32_t M,int32_t N,unsigned char *sharenrs);
+int32_t OS_portable_rmdir(char *dirname,int32_t diralso);
 
 extern char *Iguana_validcommands[];
 extern bits256 GENESIS_PUBKEY,GENESIS_PRIVKEY;

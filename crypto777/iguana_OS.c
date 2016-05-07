@@ -81,8 +81,8 @@ long myallocated(uint8_t type,long change)
         Total_allocated += change;
         if ( Total_allocated > HWM_allocated )
         {
-            printf("HWM allocated %ld %s\n",(long)Total_allocated,mbstr(str,Total_allocated));
             HWM_allocated = Total_allocated * 1.5;
+            printf("HWM allocated %ld %s\n",(long)Total_allocated,mbstr(str,Total_allocated));
         }
     }
     return(total);
@@ -149,6 +149,8 @@ void _myfree(uint8_t type,int32_t origallocsize,void *origptr,int32_t allocsize)
     else
     {
         printf("myfree size error %d vs %d at %p\n",allocsize,origallocsize,origptr);
+        static int32_t y,z;
+        printf("div by zero! %d\n",y/z);
         getchar();
     }
     //portable_mutex_unlock(&MEMmutex);
@@ -234,6 +236,7 @@ void queue_enqueue(char *name,queue_t *queue,struct queueitem *origitem,int32_t 
         printf("FATAL type error: queueing empty value\n");//, getchar();
         return;
     }
+    //fprintf(stderr,"enqueue.(%s) %p offset.%d\n",queue->name,origitem,offsetflag);
     lock_queue(queue);
     item = (struct queueitem *)((long)origitem - offsetflag*sizeof(struct queueitem));
     DL_APPEND(queue->list,item);
@@ -248,8 +251,8 @@ void *queue_dequeue(queue_t *queue,int32_t offsetflag)
     if ( queue->list != 0 )
     {
         item = queue->list;
-        DL_DELETE(queue->list,item);
         //printf("queue_dequeue name.(%s) dequeue.%p list.%p\n",queue->name,item,queue->list);
+        DL_DELETE(queue->list,item);
     }
 	portable_mutex_unlock(&queue->mutex);
     if ( item != 0 && offsetflag != 0 )
@@ -403,6 +406,8 @@ int64_t iguana_memallocated(struct OS_memspace *mem)
 void *iguana_memalloc(struct OS_memspace *mem,long size,int32_t clearflag)
 {
     int32_t modval; void *ptr = 0;
+    if ( mem->ptr == 0 )
+        return(0);
     //printf("iguana_memalloc.%s size.%ld used.%llu of %llu, numptrs.%d avail.%d %lld\n",mem->name,size,(long long)mem->used,(long long)mem->totalsize,mem->numptrs,mem->availptrs,(long long)iguana_memallocated(mem));
     //if ( mem->threadsafe != 0 )
     //    portable_mutex_lock(&mem->mutex);
@@ -434,7 +439,12 @@ void *iguana_memalloc(struct OS_memspace *mem,long size,int32_t clearflag)
         }
 #endif
         //printf(">>>>>>>>> USED.%s alloc %ld used %ld alloc.%ld -> %s %p\n",mem->name,size,(long)mem->used,(long)mem->totalsize,mem->name,ptr);
-    } else printf("error memalloc mem.%p %s alloc %ld used %ld totalsize.%ld -> %s %p\n",mem,mem->name,size,(long)mem->used,(long)mem->totalsize,mem->name,ptr), getchar();//exit(-1);
+    }
+    else
+    {
+        printf("error memalloc mem.%p (%s) alloc %ld used %ld totalsize.%ld -> %s %p\n",mem,mem->name,size,(long)mem->used,(long)mem->totalsize,mem->name,ptr);
+        ptr = calloc(1,size);
+    }
     //if ( mem->threadsafe != 0 )
     //    portable_mutex_unlock(&mem->mutex);
     return(ptr);
@@ -512,10 +522,33 @@ int32_t OS_removefile(char *fname,int32_t scrubflag)
     return(0);
 }
 
+void OS_remove_directory(char *dirname)
+{
+    FILE *fp; char buf[1024];
+    sprintf(buf,"%s/.tmpmarker",dirname);
+    if ( (fp= fopen(OS_compatible_path(buf),"rb")) != 0 )
+        OS_removefile(buf,0);
+    else fclose(fp);
+    sprintf(buf,"rmdir %s",dirname);
+    if ( system(buf) != 0 )
+    {
+        //printf("error doing (%s)\n",buf);
+        sprintf(buf,"rm %s/*",dirname);
+        if ( system(buf) != 0 )
+            printf("error doing (%s)\n",buf);
+        else
+        {
+            sprintf(buf,"rmdir %s",dirname);
+            if ( system(buf) != 0 )
+                printf("second error doing (%s)\n",buf);
+        }
+    }
+}
+
 void OS_ensure_directory(char *dirname)
 {
     FILE *fp; int32_t retval; char fname[512];
-    if ( OS_removefile(dirname,0) < 0 )
+    if ( 0 && OS_removefile(dirname,0) < 0 )
     {
         sprintf(fname,"tmp/%d",rand());
         OS_renamefile(dirname,fname);
@@ -530,15 +563,15 @@ void OS_ensure_directory(char *dirname)
                            ,511
 #endif
                            );
-            printf("mkdir.(%s) retval.%d errno.%d %s\n",dirname,retval,errno,strerror(errno));
-        } else fclose(fp), printf("dirname.(%s) exists\n",dirname);
+            //printf("mkdir.(%s) retval.%d errno.%d %s\n",dirname,retval,errno,strerror(errno));
+        } else fclose(fp);//, printf("dirname.(%s) exists\n",dirname);
         if ( (fp= fopen(fname,"wb")) != 0 )
-            fclose(fp), printf("created.(%s)\n",fname);
+            fclose(fp);//, printf("created.(%s)\n",fname);
         else printf("cant create.(%s) errno.%d %s\n",fname,errno,strerror(errno));
-    } else fclose(fp), printf("%s exists\n",fname);
+    } else fclose(fp);//, printf("%s exists\n",fname);
 }
 
-uint64_t OS_filesize(char *fname)
+int64_t OS_filesize(char *fname)
 {
     FILE *fp; uint64_t fsize = 0;
     if ( (fp= fopen(fname,"rb")) != 0 )

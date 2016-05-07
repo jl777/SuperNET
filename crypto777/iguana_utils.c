@@ -133,9 +133,9 @@ int32_t bitweight(uint64_t x)
     return(wt);
 }
 
-void calc_OP_HASH160(char hexstr[41],uint8_t hash160[20],char *pubkey)
+void calc_OP_HASH160(char hexstr[41],uint8_t rmd160[20],char *pubkey)
 {
-    uint8_t sha256[32],buf[4096]; int32_t len;
+    uint8_t buf[4096]; int32_t len;
     len = (int32_t)strlen(pubkey)/2;
     if ( len > sizeof(buf) )
     {
@@ -143,17 +143,16 @@ void calc_OP_HASH160(char hexstr[41],uint8_t hash160[20],char *pubkey)
         return;
     }
     decode_hex(buf,len,pubkey);
-    vcalc_sha256(0,sha256,buf,len);
-    calc_rmd160(0,hash160,sha256,sizeof(sha256));
+    calc_rmd160_sha256(rmd160,buf,len);
     if ( 0 )
     {
         int i;
         for (i=0; i<20; i++)
-            printf("%02x",hash160[i]);
+            printf("%02x",rmd160[i]);
         printf("<- (%s)\n",pubkey);
     }
     if ( hexstr != 0 )
-        init_hexbytes_noT(hexstr,hash160,20);
+        init_hexbytes_noT(hexstr,rmd160,20);
 }
 
 double _dxblend(double *destp,double val,double decay)
@@ -191,8 +190,8 @@ double dxblend(double *destp,double val,double decay)
 	return(slope);
 }
 
-/*queue_t TerminateQ; int32_t TerminateQ_queued;
-void iguana_terminator(void *arg)
+int32_t TerminateQ_queued; queue_t TerminateQ;
+/*void iguana_terminator(void *arg)
 {
     struct iguana_thread *t; uint32_t lastdisp = 0; int32_t terminated = 0;
     printf("iguana_terminator\n");
@@ -229,11 +228,12 @@ void iguana_launcher(void *ptr)
     struct iguana_thread *t = ptr; struct iguana_info *coin;
     coin = t->coin;
     t->funcp(t->arg);
-    coin->Terminated[t->type % (sizeof(coin->Terminated)/sizeof(*coin->Terminated))]++;
-    queue_enqueue("TerminateQ",&coin->TerminateQ,&t->DL,0);
+    if ( coin != 0 )
+        coin->Terminated[t->type % (sizeof(coin->Terminated)/sizeof(*coin->Terminated))]++;
+    queue_enqueue("TerminateQ",&TerminateQ,&t->DL,0);
 }
 
-void iguana_terminate(struct iguana_info *coin,struct iguana_thread *t)
+void iguana_terminate(struct iguana_thread *t)
 {
     int32_t retval;
     retval = pthread_join(t->handle,NULL);
@@ -251,15 +251,16 @@ struct iguana_thread *iguana_launch(struct iguana_info *coin,char *name,iguana_f
     t->funcp = funcp;
     t->arg = arg;
     t->type = (type % (sizeof(coin->Terminated)/sizeof(*coin->Terminated)));
-    coin->Launched[t->type]++;
+    if ( coin != 0 )
+        coin->Launched[t->type]++;
     retval = OS_thread_create(&t->handle,NULL,(void *)iguana_launcher,(void *)t);
     if ( retval != 0 )
         printf("error launching %s\n",t->name);
-    while ( (t= queue_dequeue(&coin->TerminateQ,0)) != 0 )
+    while ( (t= queue_dequeue(&TerminateQ,0)) != 0 )
     {
-        if ( (rand() % 100000) == 0 )
+        if ( (rand() % 100000) == 0 && coin != 0 )
             printf("terminated.%d launched.%d terminate.%p\n",coin->Terminated[t->type],coin->Launched[t->type],t);
-        iguana_terminate(coin,t);
+        iguana_terminate(t);
     }
     return(t);
 }
@@ -290,10 +291,18 @@ int32_t is_hexstr(char *str,int32_t n)
     int32_t i;
     if ( str == 0 || str[0] == 0 )
         return(0);
-    for (i=0; str[i]!=0&&(i<n||n==0); i++)
+    for (i=0; str[i]!=0; i++)
+    {
+        if ( n > 0 && i >= n )
+            break;
         if ( _unhex(str[i]) < 0 )
+        {
+            if ( n == 0 )
+                return(i);
             return(0);
-    return(1);
+        }
+    }
+    return(n);
 }
 
 int32_t unhex(char c)
@@ -324,9 +333,6 @@ int32_t decode_hex(unsigned char *bytes,int32_t n,char *hex)
             bytes[0] = unhex(hex[0]);
             printf("decode_hex n.%d hex[0] (%c) -> %d hex.(%s) [n*2+1: %d] [n*2: %d %c] len.%ld\n",n,hex[0],bytes[0],hex,hex[n*2+1],hex[n*2],hex[n*2],(long)strlen(hex));
         }
-#ifdef __APPLE__
-        getchar();
-#endif
         bytes++;
         hex++;
         adjust = 1;
@@ -343,7 +349,7 @@ int32_t decode_hex(unsigned char *bytes,int32_t n,char *hex)
 int32_t init_hexbytes_noT(char *hexbytes,unsigned char *message,long len)
 {
     int32_t i;
-    if ( len == 0 )
+    if ( len <= 0 )
     {
         hexbytes[0] = 0;
         return(1);
@@ -394,10 +400,10 @@ char *clonestr(char *str)
 int32_t safecopy(char *dest,char *src,long len)
 {
     int32_t i = -1;
-    if ( dest != 0 )
-        memset(dest,0,len);
-    if ( src != 0 && dest != 0 )
+    if ( src != 0 && dest != 0 && src != dest )
     {
+        if ( dest != 0 )
+            memset(dest,0,len);
         for (i=0; i<len&&src[i]!=0; i++)
             dest[i] = src[i];
         if ( i == len )
@@ -518,6 +524,7 @@ int32_t revsort64s(uint64_t *buf,uint32_t num,int32_t size)
 	qsort(buf,num,size,_decreasing_uint64);
 	return(0);
 }
+
 /*int32_t iguana_sortbignum(void *buf,int32_t size,uint32_t num,int32_t structsize,int32_t dir)
 {
     int32_t retval = 0;
@@ -540,8 +547,7 @@ int32_t revsort64s(uint64_t *buf,uint32_t num,int32_t size)
     if ( retval < 0 )
         printf("iguana_sortbignum only does bits256 and rmd160 for now\n");
 	return(retval);
-}
-*/
+}*/
 
 void touppercase(char *str)
 {
@@ -986,7 +992,7 @@ void calc_unhexstr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 
 void calc_base64_encodestr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 {
-    nn_base64_encode(msg,len,hexstr,64);
+    nn_base64_encode(msg,len,hexstr,len);
 }
 
 void calc_base64_decodestr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
@@ -1002,7 +1008,12 @@ void sha256_sha256(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 void rmd160ofsha256(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 {
     uint8_t sha256[32];
-    vcalc_sha256(0,sha256,(void *)msg,len);
+    if ( is_hexstr((char *)msg,len) > 0 )
+    {
+        decode_hex((uint8_t *)hexstr,len/2,(char *)msg);
+        vcalc_sha256(0,sha256,(void *)hexstr,len/2);
+        calc_rmd160(hexstr,buf,sha256,sizeof(sha256));
+    } else vcalc_sha256(0,sha256,(void *)msg,len);
     calc_rmd160(hexstr,buf,sha256,sizeof(sha256));
 }
 
@@ -1058,4 +1069,11 @@ void calc_curve25519_str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
     else priv = *(bits256 *)msg;
     x = curve25519(priv,curve25519_basepoint9());
     init_hexbytes_noT(hexstr,x.bytes,sizeof(x));
+}
+
+void calc_rmd160_sha256(uint8_t rmd160[20],uint8_t *data,int32_t datalen)
+{
+    bits256 hash;
+    vcalc_sha256(0,hash.bytes,data,datalen);
+    calc_rmd160(0,rmd160,hash.bytes,sizeof(hash));
 }

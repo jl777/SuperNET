@@ -223,13 +223,10 @@ extern "C"
     char *stringifyM(char *str);
 #define replace_backslashquotes unstringify
     char *unstringify(char *str);
-    
-/*#include "mutex.h"
-    
-#define portable_mutex_t struct nn_mutex
-#define portable_mutex_init nn_mutex_init
-#define portable_mutex_lock nn_mutex_lock
-#define portable_mutex_unlock nn_mutex_unlock*/
+#define jtrue cJSON_CreateTrue
+#define jfalse cJSON_CreateFalse
+
+#define jfieldname get_cJSON_fieldname
 
 #ifdef __cplusplus
 }

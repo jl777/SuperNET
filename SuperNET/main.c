@@ -216,7 +216,7 @@ bits256 SuperNET_OPRETURN(struct supernet_info *myinfo,char *symbol,double fee,u
 
 bits256 SuperNET_agentannounce(struct supernet_info *myinfo,struct supernet_agent *agent,cJSON *network)
 {
-    static bits256 zero;
+    static const bits256 zero;
     uint8_t buf[80 + sizeof(struct iguana_msghdr)],*data;
     bits256 pubkey,sig; int32_t i,len=0; uint8_t netmagic[4]; char *sigstr,*announce,*pubkeystr;
     memset(buf,0,sizeof(buf));

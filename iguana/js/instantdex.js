@@ -5,15 +5,77 @@
  */
 var exchanges="";
 var saved_exchanges=false;
+var exchange_array=[];
 
+
+var returnExchangeOptions=function(){
+    
+    var output="";
+    console.log("Exchange Options changed");
+    for(var i in exchange_array){
+                 output=output+'<option value="'+exchange_array[i]+'">'+exchange_array[i]+'</option>';
+                 
+                }
+                //SPNAPI.settings.exchanges=output;
+                exchanges=output;
+    
+};
+
+var changePrefferedEx=function(id){
+   
+    $('#'+id+" option").each(function(){
+        
+    var temp = $(this); // cache this jQuery object to avoid overhead
+    if (temp.val() === SPNAPI.settings.prefferedExchange) { // if this option's value is equal to our value
+        temp.prop('selected', true); // select this option
+        return false; // break the loop, no need to look further
+    }
+});
+    
+};
 var show_resposnse=function(response){
     
  $('#Instandex_output_table').html(""); 
          response=JSON.parse(response);
          for(var i in response){
+             
              if(i==='tag') continue;
+             if(isJsonArray(response[i]) ){
+                 //return_json_table({"orderid":"16800917935208460084","offerer":"0","type":"bid","base":"BTCD","rel":"BTCD","timestamp":1454949273,"price":0.00250000,"volume":11,"nonce":2684223522,"pendingvolume":0,"expiresin":3496})
+                 $('#Instandex_output_table').append("<tr><td>"+i+"</td><td>"+return_json_table(response[i])+"</td></tr>");     
+                 continue;
+        }
              $('#Instandex_output_table').append("<tr><td align='center'>"+i+"</td><td align='center'>"+response[i]+"</td></tr>"); 
          }   
+};
+
+
+function isJsonArray(what) {
+    return Object.prototype.toString.call(what) === '[object Array]';
+}
+
+var return_json_table=function(string){
+    
+    var op="";
+                 //op=op+"<table><tr><td align='center'>"+i+"</td><td align='center'>";//+response[i]+"</td></tr>");
+                 op=op+"<table class='table table-hover table-bordered'><tr>";
+                 
+                 //for(var x in string){
+                     for (var i in string[0]){
+                     op=op+"<th>"+i+"</th>";
+                     console.log("field name: "+i);
+                 }   
+                 op=op+"</tr>";
+                 //}
+                 for(var x in string){
+                     op=op+"<tr>";
+                     for (var i in string[x]){
+                     op=op+"<td>"+string[x][i].toString()+"</td>";
+                 }  
+                 op=op+"</tr>";
+                 }
+                 op=op+"</table>";
+                 return op;
 };
 
 var setUeseridandAPIkeyPair=function(){
@@ -57,21 +119,14 @@ var InstantDEX_setuserid=function(){
 
 
 var ListAllExchanges=function(){
-    if(!saved_exchanges){
+    if(exchanges===""){
     var request='{"agent":"InstantDEX","method":"allexchanges"}';
     SPNAPI.makeRequest(request, function(request,response){
         response=JSON.parse(response);
             if(response.result &&  response.result instanceof Array ){
-                for(var i in response.result){
-                    //$('#Instandex_exchange').append('<option value="'+response.result[i]+'">'+response.result[i]+'</option>');
-                     exchanges=exchanges+'<option value="'+response.result[i]+'">'+response.result[i]+'</option>';
-                    
+                exchange_array=response.result;
+                returnExchangeOptions();
                 }
-                
-                 saved_exchanges=true;   
-                
-                
-            }
             
     }
         );}
@@ -274,46 +329,82 @@ var InstantDEX_pollgap=function(){
     });
 };
 
+var TradeIntegrationTest=function(){
+    IntegrationSettings.volume=$('#Instandex_volume').val();
+    IntegrationSettings.percentChange=$('#Instandex_changePer').val();
+    IntegrationSettings.exchange=$('#Instandex_exchange').val();
+    IntegrationSettings.base=$('#Instandex_base').val();
+    IntegrationSettings.rel=$('#Instandex_rel').val();
+    IntegrationSettings.phase=0;
+    IntegrationSettings.ranFirstTyme=true;
+      start_integrationTest();
+};
+
+
 var set_setuserid_table=function (){
 var html='<tr><td align="center" > UserID:</td><td align="center" ><input type="text" id="Instandex_userid"/></td></tr><tr><td align="center" > Password:</td><td align="center" ><input type="text" id="Instandex_tradepassword"/></td></tr><tr><td align="center" >  Exchange:</td><td align="center" ><select name="Instandex_exchange" id="Instandex_exchange"></select></td></tr><tr><td colspan="2" align="center">  <button class="btn btn-primary instantdex_set_userid" >Set Userid</button></td></tr>';
     $('#Instandex_form_table').html(html);
     if(exchanges!==""){
-    $('#Instandex_exchange').html(exchanges);}
+    $('#Instandex_exchange').html(exchanges);
+        if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Instandex_exchange");}
+}
 };
 
 var set_apikeypass_table=function (){
 var html='<tr><td align="center" > Apikey:</td><td align="center" ><input size="40" type="text" id="Instandex_apikey"/></td></tr><tr><td align="center" > Passphrase:</td><td align="center" ><input size="40" type="text" id="Instandex_apipassphrase"/></td></tr><tr><td align="center" >  Exchange:</td><td align="center" ><select name="Instandex_exchange" id="Instandex_exchange"></select></td></tr><tr><td colspan="2" align="center">  <button class="btn btn-primary instantdex_set_keypair" >Set keypair</button></td></tr>';
     $('#Instandex_form_table').html(html);
     if(exchanges!==""){
-    $('#Instandex_exchange').html(exchanges);}
+    $('#Instandex_exchange').html(exchanges);
+        if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Instandex_exchange");}
+}
 };
 
 var set_orderbook_table=function (){
 var html='<tr><td align="center" >  Base:</td><td align="center" ><input type="text" id="Instandex_base"/></td></tr><tr><td align="center" >Rel:</td><td align="center" ><input type="text" id="Instandex_rel"/></td></tr><tr><td align="center" >Depth:</td><td align="center" ><input type="text" id="Instandex_orderbook_depth"/></td></tr><tr><td align="center" >  Exchange:</td><td align="center" ><select name="Instandex_exchange" id="Instandex_exchange"></select></td></tr><tr><td colspan="2" align="center"> <button class="btn btn-primary instantdex_orderbook" >orderbook</button></td></tr>';
     $('#Instandex_form_table').html(html);
     if(exchanges!==""){
-    $('#Instandex_exchange').html(exchanges);}
+    $('#Instandex_exchange').html(exchanges);
+        if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Instandex_exchange");}
+}
 };
 
 var set_sell_table=function (){
 var html='<tr><td align="center" >  Base:</td><td align="center" ><input type="text" id="Instandex_base"/></td></tr><tr><td align="center" >Rel:</td><td align="center" ><input type="text" id="Instandex_rel"/></td></tr><tr><td align="center" >Price:</td><td align="center" ><input type="text" id="Instandex_price"/></td></tr><tr><td align="center" >Volume:</td><td align="center" ><input type="text" id="Instandex_volume"/></td></tr><tr><td align="center" >  Exchange:</td><td align="center" ><select name="Instandex_exchange" id="Instandex_exchange"></select></td></tr><tr><td colspan="2" align="center"> <button class="btn btn-primary instantdex_sell" >Sell</button></td></tr>';
     $('#Instandex_form_table').html(html);
     if(exchanges!==""){
-    $('#Instandex_exchange').html(exchanges);}
+    $('#Instandex_exchange').html(exchanges);
+        if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Instandex_exchange");}
+}
 };
 
 var set_buy_table=function (){
 var html='<tr><td align="center" >  Base:</td><td align="center" ><input type="text" id="Instandex_base"/></td></tr><tr><td align="center" >Rel:</td><td align="center" ><input type="text" id="Instandex_rel"/></td></tr><tr><td align="center" >Price:</td><td align="center" ><input type="text" id="Instandex_price"/></td></tr><tr><td align="center" >Volume:</td><td align="center" ><input type="text" id="Instandex_volume"/></td></tr><tr><td align="center" >  Exchange:</td><td align="center" ><select name="Instandex_exchange" id="Instandex_exchange"></select></td></tr><tr><td colspan="2" align="center"> <button class="btn btn-primary instantdex_buy" >Buy</button></td></tr>';
     $('#Instandex_form_table').html(html);
     if(exchanges!==""){
-    $('#Instandex_exchange').html(exchanges);}
+    $('#Instandex_exchange').html(exchanges);
+        if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Instandex_exchange");}
+}
 };
 
 var set_balance_table=function (){
 var html='<tr><td align="center" >  Base:</td><td align="center" ><input type="text" id="Instandex_base"/></td></tr><tr><td align="center" >  Exchange:</td><td align="center" ><select name="Instandex_exchange" id="Instandex_exchange"></select></td></tr><tr><td colspan="2" align="center" > <button class="btn btn-primary instantdex_balance" >Check balance</button></td></tr>';
     $('#Instandex_form_table').html(html);
     if(exchanges!==""){
-    $('#Instandex_exchange').html(exchanges);}
+    $('#Instandex_exchange').html(exchanges);
+        if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Instandex_exchange");}
+}
 };
 
 
@@ -321,7 +412,11 @@ var set_support_table=function (){
 var html='<tr><td align="center" >  Base:</td><td align="center" ><input type="text" id="Instandex_base"/></td></tr><tr><td align="center" >Rel:</td><td align="center" ><input type="text" id="Instandex_rel"/></td></tr><tr><td align="center" >  Exchange:</td><td align="center" ><select name="Instandex_exchange" id="Instandex_exchange"></select></td></tr><tr><td colspan="2" align="center"> <button class="btn btn-primary instantdex_support" >Check Support</button></td></tr>';
     $('#Instandex_form_table').html(html);
     if(exchanges!==""){
-    $('#Instandex_exchange').html(exchanges);}
+    $('#Instandex_exchange').html(exchanges);
+        if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Instandex_exchange");}
+}
 };
 
 
@@ -329,14 +424,23 @@ var set_withdraw_table=function (){
 var html='<tr><td align="center" >  Base:</td><td align="center" ><input type="text" id="Instandex_base"/></td></tr><tr><td align="center" >Destination address:</td><td align="center" ><input type="text" id="Instandex_destaddr"/></td></tr><tr><td align="center" >Amount:</td><td align="center" ><input type="text" id="Instandex_amount"/></td></tr><tr><td align="center" >  Exchange:</td><td align="center" ><select name="Instandex_exchange" id="Instandex_exchange"></select></td></tr><tr><td colspan="2" align="center"> <button class="btn btn-primary instantdex_withdraw" >Withdraw</button></td></tr>';
     $('#Instandex_form_table').html(html);
     if(exchanges!==""){
-    $('#Instandex_exchange').html(exchanges);}
+    $('#Instandex_exchange').html(exchanges);
+
+        if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Instandex_exchange");}
+    }
 };
 
 var set_order_status_table=function (){
 var html='<tr><td align="center" >  Order ID:</td><td align="center" ><input type="text" id="Instandex_orderid"/></td></tr><tr><td align="center" >  Exchange:</td><td align="center" ><select name="Instandex_exchange" id="Instandex_exchange"></select></td></tr><tr><td colspan="2" align="center"> <button class="btn btn-primary instantdex_order_status" >Check order status</button></td></tr>';
     $('#Instandex_form_table').html(html);
     if(exchanges!==""){
-    $('#Instandex_exchange').html(exchanges);}
+    $('#Instandex_exchange').html(exchanges);
+        if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Instandex_exchange");}
+}
 };
 
 
@@ -344,7 +448,11 @@ var set_open_order_table=function (){
 var html='<tr><td align="center" >  Exchange:</td><td align="center" ><select name="Instandex_exchange" id="Instandex_exchange"></select></td></tr><tr><td colspan="2" align="center"> <button class="btn btn-primary instantdex_open_orders" >Open orders</button></td></tr>';
     $('#Instandex_form_table').html(html);
     if(exchanges!==""){
-    $('#Instandex_exchange').html(exchanges);}
+    $('#Instandex_exchange').html(exchanges);
+        if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Instandex_exchange");}
+}
 };
 
 
@@ -352,29 +460,54 @@ var set_trade_history_table=function (){
 var html='<tr><td align="center" >  Exchange:</td><td align="center" ><select name="Instandex_exchange" id="Instandex_exchange"></select></td></tr><tr><td colspan="2" align="center"> <button class="btn btn-primary instantdex_trade_history" >See Trade History</button></td></tr>';
     $('#Instandex_form_table').html(html);
     if(exchanges!==""){
-    $('#Instandex_exchange').html(exchanges);}
+    $('#Instandex_exchange').html(exchanges);
+
+        if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Instandex_exchange");}
+    }
 };
 
 var set_order_cancel_table=function (){
 var html='<tr><td align="center" >  Order ID:</td><td align="center" ><input type="text" id="Instandex_orderid"/></td></tr><tr><td align="center" >  Exchange:</td><td align="center" ><select name="Instandex_exchange" id="Instandex_exchange"></select></td></tr><tr><td colspan="2" align="center"> <button class="btn btn-primary instantdex_order_cancel" >Cancel order</button></td></tr>';
     $('#Instandex_form_table').html(html);
     if(exchanges!==""){
-    $('#Instandex_exchange').html(exchanges);}
+    $('#Instandex_exchange').html(exchanges);
+        if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Instandex_exchange");}
+}
 };
 
 var set_pollgap_table=function (){
 var html='<tr><td align="center" >  Pollgap:</td><td align="center" ><input type="text" id="Instandex_pollgap"/></td></tr><tr><td align="center" >  Exchange:</td><td align="center" ><select name="Instandex_exchange" id="Instandex_exchange"></select></td></tr><tr><td colspan="2" align="center"> <button class="btn btn-primary instantdex_pollgap" >Pollgap</button></td></tr>';
     $('#Instandex_form_table').html(html);
     if(exchanges!==""){
-    $('#Instandex_exchange').html(exchanges);}
+    $('#Instandex_exchange').html(exchanges);
+
+        if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Instandex_exchange");}
+    }
+
 };
 
 var set_allpair_table=function (){
 var html='<tr><td align="center" >  Exchange:</td><td align="center" ><select name="Instandex_exchange" id="Instandex_exchange"></select></td></tr><tr><td colspan="2" align="center"> <button class="btn btn-primary instantdex_allpairs" >Get allpairs</button></td></tr>';
     $('#Instandex_form_table').html(html);
     if(exchanges!==""){
+//console.log(exchanges);
     $('#Instandex_exchange').html(exchanges);
-}
+        if(SPNAPI.settings.prefferedExchange!==""){
+            
+    changePrefferedEx("Instandex_exchange");}
+    }
+};
+
+var set_tradeint_table=function (){
+var html='<tr><td align="center" >  Volume:</td><td align="center" ><input type="text" id="Instandex_volume"/></td></tr><tr><td align="center" >Change percent:</td><td align="center" ><input type="text" id="Instandex_changePer"/></td></tr><tr><td align="center" >  Base:</td><td align="center" ><select name="Instandex_base" id="Instandex_base"><option value="NXT">NXT</option></select></td></tr><tr><td align="center" >  Rel:</td><td align="center" ><select name="Instandex_rel" id="Instandex_rel"><option value="BTC">BTC</option></select></td></tr><tr><td align="center" >  Exchange:</td><td align="center" ><select name="Instandex_exchange" id="Instandex_exchange"><option value="poloniex">poloniex</option></select></td></tr><tr><tr><td colspan="2" align="center"> <button class="btn btn-primary TradeIntegrationTest" >Start Bot</button></td></tr>';
+    $('#Instandex_form_table').html(html);
+    
 };
 
 var instantdex_set_method_table=function (method){
@@ -416,6 +549,10 @@ var instantdex_set_method_table=function (method){
     }
     else if(method==="allpairs"){
         set_allpair_table();
+    }
+    
+    else if(method==="tradeint"){
+        set_tradeint_table();
     }
     
     else{

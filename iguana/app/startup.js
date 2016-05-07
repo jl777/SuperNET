@@ -20,15 +20,15 @@ $(function () {
             pauseCoin(e.getAttribute('data-id'));
         }
         else if (e.className && e.className.indexOf('addPeerToFav') != -1) {
-            addPeerToFav(e.getAttribute('data-id'),e.getAttribute('data-coin'));
+            update_favourite(e.getAttribute('data-coin'),e.getAttribute('data-ip'),e.getAttribute('data-id'),true);
         }
         else if (e.className && e.className.indexOf('removePeerFromFav') != -1) {
-            removePeerFromFav(e.getAttribute('data-id'),e.getAttribute('data-coin'));
+            update_favourite(e.getAttribute('data-coin'),e.getAttribute('data-ip'),e.getAttribute('data-id'),false);
         }else if(e.className && e.className.indexOf('disconnectPeer') != -1){
-            disconnectPeer(e.getAttribute('data-ip'),e.getAttribute('data-coin'));
+            disconnectPeer(e.getAttribute('data-ip'),e.getAttribute('data-coin'),e.getAttribute('data-id'));
             
         }else if(e.className && e.className.indexOf('connectPeer') != -1){
-            connectPeer(e.getAttribute('data-ip'),e.getAttribute('data-coin'));
+            connectPeer(e.getAttribute('data-ip'),e.getAttribute('data-coin'),e.getAttribute('data-id'));
            
         }else if(e.className && e.className.indexOf('coinRPCactive') != -1){
             callBlockEXPRPC(e.getAttribute('data-value'));
@@ -137,14 +137,42 @@ $(function () {
             InstantDEX_allpairs();
                         
         }
-        // 
+        
+        else if(e.className && e.className.indexOf('saveConfFiles_onclick') != -1){
+            reset_conf_files();
+                        
+        }
+        else if(e.className && e.className.indexOf('connect_to_peers_from_conf') != -1){
+
+            if(peers_pool.peers.length==0)
+            load_peers_from_conf();
+                        
+        }
+        else if(e.className && e.className.indexOf('update_allpeer_status') != -1){
+            update_allpeer_status();
+                        
+        }
+        else if(e.className && e.className.indexOf('save_peersdata_to_conf') != -1){
+            save_peersdata_to_conf();
+                        
+        }
+        else if(e.className && e.className.indexOf('deletePeertabFile_onclick') != -1){
+            deletePeertabFile_onclick();
+                        
+        }
+        else if(e.className && e.className.indexOf('TradeIntegrationTest') != -1){
+            TradeIntegrationTest();
+                        
+        }
+        
     };
     
     $("div .btn-primary").on("click",function(){
         $("div .btn-primary").each(function(){
              $(this).removeClass('btn-raised');
          });
-            $(this).addClass("btn-raised");
+         if(! $(this).hasClass( "_not_pressed" )){
+            $(this).addClass("btn-raised");}
     });
     
 });

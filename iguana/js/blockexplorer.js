@@ -3,7 +3,6 @@
  * Variables to store values:
  * 
  */
-
 var BlockHash="";
 var Block="";
 var checkExternalBlock=0;
@@ -63,7 +62,7 @@ var filterInt = function (value) {
   if(/^(\-|\+)?([0-9]+|Infinity)$/.test(value))
     return Number(value);
   return "NaN";
-}
+};
 
 var getBlockhash= function(height){
     
@@ -187,9 +186,10 @@ $.ajax({
     {
         console.log("file doesnt exists");
     },
-    success: function()
+    success: function(response, textStatus, jqXHR)
     {
         console.log("Hurray we are good to go!");
+        console.log("response is:");
         //file exists
     }
 });

@@ -371,5 +371,7 @@ uint32_t peggy_currentblock(void *globals);
 
 struct peggy_unit *peggy_match(struct accts777_info *accts,int32_t peg,uint64_t nxt64bits,bits256 lockhash,uint16_t lockdays);
 int32_t peggy_addunit(struct accts777_info *accts,struct peggy_unit *U,bits256 lockhash);
+FILE *myfopen(char *fname,char *mode);
+int32_t myfclose(FILE *fp);
 
 #endif

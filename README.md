@@ -1,10 +1,8 @@
 #SuperNET Client "iguana"
 
-[![Join the chat at https://gitter.im/jl777/SuperNET](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/jl777/SuperNET?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
 > #TL;DR#
 > 
-> ```sudo apt-get update; sudo apt-get install libcurl4-gnutls-dev libssl-dev; git clone https://github.com/jl777/SuperNET; cd SuperNET; ./m_onetime m_unix; ./m_unix; agents/iguana```
+> ```sudo apt-get update; sudo apt-get git install build-essential; git clone https://github.com/jl777/SuperNET; cd SuperNET; ./m_onetime m_unix;```
 > 
 > The above one line gets SuperNET installed, built and launched for unix. 
 > 
@@ -12,6 +10,8 @@
 > *Continue below at "Running".*
 
 **iguana is easy to build. Start by cloning (or downloading) this repository.**
+*** all external dependencies have been removed, except for -lpthread and -lm
+
 
 #DEPENDENCIES#
 ##for native (unix, osx)##
@@ -108,3 +108,35 @@ iguana can be invoked with a command line argument. if it is a name of a file, i
 "exchanges" -> { "name":"<name of exchange>", ... }
     "apikey", "apisecret", "userid", "tradepassword" these are as expected
     "pollgap" -> gap between each access to exchange for getting prices
+    
+on OSX mksquashfs is not native, you will need to install fuse: https://osxfuse.github.io/ and a squashfs for mac: https://github.com/vasi/squashfuse
+
+    **********
+    user feedback:
+    A Note on Installation from pebwindkraft at bitco.in
+=======================
+Though I had xcode installed, aclocal didn’t work. I installed homebrew, and then:
+# brew install autoconf
+# brew install automake
+# brew install gmp
+
+2.) libsecp256
+it complained, that libsecp256 was not there in includes, so I linked it.
+Loretta:/Users/volker/SuperNET/includes # ln -s ../osx/libsecp256k1 .
+
+3.) I had to change ulimit
+During the syncing, I have many, many messages like this:
+>>
+>> cant create.(tmp/BTC/252000/.tmpmarker) errno.24 Too many open files
+>> cant create.(tmp/BTC/18000/.tmpmarker) errno.24 Too many open files
+>>
+Loretta:/Users/volker/SuperNET # ulimit -n 2048
+
+
+##### tests
+in the SuperNET/iguana/tests directory, there is a jsoncmp.c file, which can be built into the jsoncmp executable via ./make_jsoncmp
+once jsoncmp is built, then ./test shows how to use it
+./jsoncmp <filename> {\"fields\":[{\"fieldA\":\"requiredvalueA\"},{\"fieldB\":\"requiredvalueB\"},...]}
+
+the idea is to issue a curl command into a /tmp/file and then use jsoncmp to verify the exact value of one or more fields. it will print to stdout JSON with "error" or "result" and to stderr if there is an error
+

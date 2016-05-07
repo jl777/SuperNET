@@ -296,18 +296,14 @@ int64_t peggy_txind_bets(uint8_t *txbuf,int32_t len,struct accts777_info *accts,
 
 int32_t peggy_univ2addr(char *coinaddr,struct peggy_univaddr *ua)
 {
-    return(btc_convrmd160(coinaddr,ua->addrtype,ua->rmd160));
+    return(bitcoin_address(coinaddr,ua->addrtype,ua->rmd160,20) != 0);
 }
 
 int32_t peggy_addr2univ(struct peggy_univaddr *ua,char *coinaddr,char *coin)
 {
-    char hexstr[512]; uint8_t hex[21];
-    if ( btc_convaddr(hexstr,coinaddr) == 0 )
+    memset(ua,0,sizeof(*ua));
+    if ( bitcoin_addr2rmd160(&ua->addrtype,ua->rmd160,coinaddr) > 0 )
     {
-        decode_hex(hex,21,hexstr);
-        memset(ua,0,sizeof(*ua));
-        ua->addrtype = hex[0];
-        memcpy(ua->rmd160,hex+1,20);
         strncpy(ua->coin,coin,sizeof(ua->coin)-1);
         return(0);
     }

@@ -11,7 +11,8 @@ NACL_SDK_ROOT ?= $(abspath $(CURDIR))
 
 TARGET = iguana
 
-EXTRA= -D__PNACL -DNN_DISABLE_GETADDRINFO_A=1 -DNN_USE_LITERAL_IFADDR=1 -DNN_HAVE_STDINT=1 -DNN_HAVE_MSG_CONTROL=0 -DNN_HAVE_SEMAPHORE=1 -DNN_HAVE_POLL=1 -DNN_HAVE_SOCKETPAIR=1 -DNN_USE_POLL=1
+#EXTRA= -D__PNACL -D__PNACL__ -DNN_DISABLE_GETADDRINFO_A=1 -DNN_USE_LITERAL_IFADDR=1 -DNN_HAVE_STDINT=1 -DNN_HAVE_MSG_CONTROL=0 -DNN_HAVE_SEMAPHORE=1 -DNN_HAVE_POLL=1 -DNN_HAVE_SOCKETPAIR=1 -DNN_USE_POLL=1
+EXTRA= -D__PNACL -D__PNACL__ -DHAVE_CONFIG_H
 
 #include $(NACL_SDK_ROOT)/tools/common.mk
 include tools/common.mk
@@ -24,7 +25,8 @@ DEPS = nacl_io
 #LIBS = curl  ssl crypto z glibc-compat nacl_spawn ppapi nacl_io ppapi_cpp  ppapi_simple #  cli_main
 #LIBS = crypto777  curl ssl crypto z pthread ppapi nacl_io
 #DEPS = nacl_io
-LIBS = crypto777 curl  ssl crypto z glibc-compat nacl_spawn ppapi nacl_io ppapi_simple  #  cli_main ppapi_cpp ppapi_simple
+#LIBS = crypto777 curl  ssl crypto z glibc-compat nacl_spawn ppapi nacl_io ppapi_simple  #  cli_main ppapi_cpp ppapi_simple
+LIBS = crypto777  z glibc-compat nacl_spawn ppapi nacl_io ppapi_simple 
 
 CFLAGS = -Wall -O2 -fno-strict-aliasing $(EXTRA)
 LFLAGS = libs

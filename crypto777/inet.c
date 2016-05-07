@@ -19,12 +19,8 @@
 #ifndef crypto777_inet_h
 #define crypto777_inet_h
 #include "OS_portable.h"
-#include <netinet/in.h>
 
 #ifdef _WIN32
-#include <windows.h>
-#include <io.h>
-#include <winsock2.h>
 #define in6_addr sockaddr
 #define in_addr_t struct sockaddr_storage
 #define EAFNOSUPPORT WSAEAFNOSUPPORT
@@ -37,7 +33,12 @@ struct sockaddr_in6 {
     u_long  sin6_scope_id;
 };
 #endif
-
+#ifdef _WIN32
+#ifdef AF_INET6
+#undef AF_INET6
+#endif
+#define AF_INET6	23
+#endif
 static int inet_ntop4(unsigned char *src, char *dst, size_t size);
 static int inet_ntop6(unsigned char *src, char *dst, size_t size);
 static int inet_pton4(char *src, unsigned char *dst);
@@ -225,13 +226,13 @@ static int inet_pton4(char *src, unsigned char *dst) {
             saw_digit = 0;
         } else
         {
-            printf("inet_pton4 4 error.(%s)\n",savestr); getchar();
+            printf("inet_pton4 4 error.(%s)\n",savestr); //getchar();
             return EINVAL;
         }
     }
     if (octets < 4)
     {
-        printf("inet_pton4 5 error.(%s)\n",savestr); getchar();
+        printf("inet_pton4 5 error.(%s)\n",savestr); //getchar();
         return EINVAL;
     }
     memcpy(dst, tmp, sizeof(struct in_addr));
@@ -388,13 +389,25 @@ void expand_ipbits(char *ipaddr,uint64_t ipbits)
 
 uint64_t calc_ipbits(char *ip_port)
 {
-    uint64_t ipbits = 0; char ipaddr[64];
+    uint64_t ipbits = 0; char ipaddr[64],ipaddr2[64]; int32_t i;
     if ( ip_port != 0 )
     {
         ipbits = _calc_ipbits(ip_port);
         expand_ipbits(ipaddr,ipbits);
         if ( ipbits != 0 && strcmp(ipaddr,ip_port) != 0 )
-            printf("calc_ipbits error: (%s) -> %llx -> (%s)\n",ip_port,(long long)ipbits,ipaddr);//, getchar();
+        {
+            for (i=0; i<63; i++)
+                if ( (ipaddr[i]= ip_port[i]) == ':' || ipaddr[i] == 0 )
+                break;
+            ipaddr[i] = 0;
+            ipbits = _calc_ipbits(ipaddr);
+            expand_ipbits(ipaddr2,ipbits);
+            if ( ipbits != 0 && strcmp(ipaddr,ipaddr2) != 0 )
+            {
+                printf("calc_ipbits error: (%s) -> %llx -> (%s)\n",ip_port,(long long)ipbits,ipaddr);//, getchar();
+                ipbits = 0;
+            }
+        }
     }
     return(ipbits);
 }

@@ -25,7 +25,8 @@ function errorHandler(e,callback,name) {
       break;
     case FileError.NOT_FOUND_ERR:
       msg = 'NOT_FOUND_ERR';
-      callback(name);
+      if(callback){
+      callback(name);}
       break;
     case FileError.SECURITY_ERR:
       msg = 'SECURITY_ERR';
@@ -74,7 +75,7 @@ var check_files=function(){
             for(var j=0;j<files.length;j++){
                 var name="confs/"+coins[i]+files[j];
                 console.log("checking file "+name);
-                files[name]=null;
+                
              check_if_file_present(name);   
             }
         }       
@@ -82,6 +83,7 @@ var check_files=function(){
 };
 
 var check_if_file_present=function(filename,callback){
+    var contents="";
  fileSystem.root.getFile(filename, {}, function(fileEntry) {
                  //console.log("entered file fu");
     // Get a File object representing the file,
@@ -93,7 +95,7 @@ var check_if_file_present=function(filename,callback){
          //var txtArea = document.createElement('textarea');
          //console.log("Configuration file text: "+this.result.toString());
          console.log("File already present in HTML5 system:"+fileEntry.fullPath);
-         //SPNAPI.conf_files[filename]=this.result.toString();
+           //SPNAPI.conf_files[filename]=this.result.toString();
          };
 
        reader.readAsText(file);
@@ -131,7 +133,7 @@ var save_contents=function(contents,name){
     fileEntry.createWriter(function(fileWriter) {
 
       fileWriter.onwriteend = function(e) {
-        console.log('Write completed.');
+        console.log(name+' saved!');
       };
 
       fileWriter.onerror = function(e) {
@@ -146,6 +148,30 @@ var save_contents=function(contents,name){
     }, errorHandler);
 
   }, errorHandler);
+};
+
+var delete_file=function(name){
+ fileSystem.root.getFile(name, {create: false}, function(fileEntry) {
+
+    fileEntry.remove(function() {
+      console.log(name+' removed.');
+    }, errorHandler);
+
+  }, errorHandler);   
+};
+
+var reset_conf_files=function(){
+    
+    var coins= coinManagement.getCoinSymbols();
+               var files=["_hdrs.txt","_peers.txt"];
+        for(var i=0;i<coins.length;i++){
+         
+            for(var j=0;j<files.length;j++){
+                var name="confs/"+coins[i]+files[j];
+                delete_file(name);
+             access_and_save_conf_file(name);   
+            }
+        }  
 };
 
 // Called by the common.js module.
@@ -289,10 +315,13 @@ var check_if_pexe_7778_working=function(string){
 if(string.indexOf("iguana_rpcloop")>-1 && string.indexOf("bind sock")>-1 ){
     
     APPLICATION.port7778="successfully binded";
+    
+    setTimeout(initialization_commands,3000);
     if_changed=1;
 }else if(string.indexOf("finished DidCreate iguana")>-1){
      APPLICATION.pexe="Loaded";
      if_changed=1;
+    setTimeout(initialization_commands,3000);
 }else if(string.indexOf("ERROR BINDING PORT.7778")>-1){
      //APPLICATION.state="Loading..";
      APPLICATION.port7778="Retrying";
@@ -323,4 +352,11 @@ var change_app_status=function(){
     html=html+"<tr><td>Pexe state:</td><td>"+APPLICATION.pexe+"</td></tr>";
     html=html+"<tr><td>Port 7778 state:</td><td>"+APPLICATION.port7778+"</td></tr>";
     $("#appstatus").html(html);
+};
+
+var initialization_commands=function(){
+    addInitCoins();
+    load_peers_to_pool();
+    ListAllExchanges();
+    
 };

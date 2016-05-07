@@ -14,12 +14,22 @@
  ******************************************************************************/
 
 #include "OS_portable.h"
-#include "../includes/cJSON.h"
 
+//#define USE_CURL
+#ifdef USE_CURL
+#ifdef _WIN32
+#include <curl.h>
+#include <easy.h>
+#else
 #include <curl/curl.h>
 #include <curl/easy.h>
+#endif
 
 // return data from the server
+#define CURL_GLOBAL_ALL (CURL_GLOBAL_SSL|CURL_GLOBAL_WIN32)
+#define CURL_GLOBAL_SSL (1<<0)
+#define CURL_GLOBAL_WIN32 (1<<1)
+
 struct return_string {
     char *ptr;
     size_t len;
@@ -49,7 +59,7 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
     long i,j,len;
     char *retstr = 0;
     cJSON *json,*result,*error;
-    printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC.%s.[%s]\n",debugstr,command,rpcstr);
+    //printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC.%s.[%s]\n",debugstr,command,rpcstr);
     if ( command == 0 || rpcstr == 0 || rpcstr[0] == 0 )
     {
         printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC.%s.[%s]\n",debugstr,command,rpcstr);
@@ -189,7 +199,7 @@ try_again:
             free(s.ptr);
             return(0);
         }
-        else if ( numretries >= 1 )
+        else if ( numretries >= 2 )
         {
             printf("Maximum number of retries exceeded!\n");
             free(s.ptr);
@@ -340,3 +350,15 @@ void curlhandle_free(void *curlhandle)
 {
     curl_easy_cleanup(curlhandle);
 }
+
+#else
+char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params)
+{
+    return(clonestr("{\"error\":\"curl is disabled\"}"));
+}
+
+void *curl_post(void **cHandlep,char *url,char *userpass,char *postfields,char *hdr0,char *hdr1,char *hdr2,char *hdr3)
+{
+    return(clonestr("{\"error\":\"curl is disabled\"}"));
+}
+#endif
