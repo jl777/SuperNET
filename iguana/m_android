@@ -1,1 +1,8 @@
-$CC2 -o ../agents/iguana -O2 *.c ../agents/libcrypto777.a ../android/lib/libcurl.a -lssl -lcrypto -lm -lc -lz
+rm ../agents/iguana *.o
+git pull
+cd secp256k1; ./m_unix; cd ..
+$CC2 -g -Wno-deprecated -c -O2 *.c databases/iguana_DB.c
+$CC2 -g -Wno-deprecated -c  main.c iguana777.c iguana_bundles.c
+#$CC2 -g -o ../agents/iguana *.o ../agents/libcrypto777.a  -lcurl -lssl -lcrypto -lpthread -lm #../includes/libsecp256k1.a -lgmp
+$CC2 -g -o ../agents/iguana *.o ../agents/libcrypto777.a -lpthread -lm
+
