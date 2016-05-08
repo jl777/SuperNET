@@ -168,8 +168,6 @@ SECP256K1_INLINE static int secp256k1_rangeproof_genrand(secp256k1_scalar *sec, 
             {
                 for (b = 0; b < 32; b++)
                 {
-                    if ( message[(i * 4 + j) * 32 + b] != 0 )
-                    printf("(%02x-> %02x)",message[(i * 4 + j) * 32 + b],tmp[b]);
                     tmp[b] ^= message[(i * 4 + j) * 32 + b];
                     message[(i * 4 + j) * 32 + b] = tmp[b];
                 }
@@ -194,14 +192,13 @@ SECP256K1_INLINE static int secp256k1_range_proveparams(uint64_t *v,int *rings,i
     *scale = 1;
     *mantissa = 0;
     *npub = 0;
-    if ( *min_value == UINT64_MAX ) // If the minimum value is the maximal representable value, then we cannot code a range.
+    if ( *min_value == UINT64_MAX )
         *exp = -1;
     if ( *exp >= 0 )
     {
         int max_bits; uint64_t v2;
         if ((*min_value && value > INT64_MAX) || (value && *min_value >= INT64_MAX))
         {
-            // If either value or min_value is >= 2^63-1 then the other must by zero to avoid overflowing the proven range.
             return 0;
         }
         max_bits = *min_value ? secp256k1_clz64_var(*min_value) : 64;
@@ -216,8 +213,7 @@ SECP256K1_INLINE static int secp256k1_range_proveparams(uint64_t *v,int *rings,i
              */
             *exp = 0;
         }
-        *v = value - *min_value; // Mask off the least significant digits, as requested.
-        // If the user has asked for more bits of proof then there is room for in the exponent, reduce the exponent.
+        *v = value - *min_value;
         v2 = *min_bits ? (UINT64_MAX>>(64-*min_bits)) : 0;
         for (i = 0; i < *exp && (v2 <= UINT64_MAX / 10); i++)
         {
@@ -231,11 +227,10 @@ SECP256K1_INLINE static int secp256k1_range_proveparams(uint64_t *v,int *rings,i
             v2 *= 10;
             *scale *= 10;
         }
-        *min_value = value - v2; // If the masked number isn't precise, compute the public offset
-        *mantissa = *v ? 64 - secp256k1_clz64_var(*v) : 1; // How many bits do we need to represent our value?
-        if (*min_bits > *mantissa) // If the user asked for more precision, give it to them.
+        *min_value = value - v2;
+        *mantissa = *v ? 64 - secp256k1_clz64_var(*v) : 1;
+        if (*min_bits > *mantissa)
             *mantissa = *min_bits;
-        // Digits in radix-4, except for the last digit if our mantissa length is odd.
         *rings = (*mantissa + 1) >> 1;
         for (i = 0; i < *rings; i++)
         {
@@ -244,11 +239,10 @@ SECP256K1_INLINE static int secp256k1_range_proveparams(uint64_t *v,int *rings,i
             secidx[i] = (*v >> (i*2)) & 3;
         }
         VERIFY_CHECK(*mantissa>0);
-        VERIFY_CHECK((*v & ~(UINT64_MAX>>(64-*mantissa))) == 0); // Did this get all the bits?
+        VERIFY_CHECK((*v & ~(UINT64_MAX>>(64-*mantissa))) == 0);
     }
     else
     {
-        // A proof for an exact value.
         *exp = 0;
         *min_value = value;
         *v = 0;
@@ -261,7 +255,6 @@ SECP256K1_INLINE static int secp256k1_range_proveparams(uint64_t *v,int *rings,i
     return 1;
 }
 
-// strawman interface, writes proof in proof, a buffer of plen, proves with respect to min_value the range for commit which has the provided blinding factor and value.
 SECP256K1_INLINE static int secp256k1_rangeproof_sign_impl(const secp256k1_ecmult_context *ecmult_ctx,
  const secp256k1_ecmult_gen_context *ecmult_gen_ctx,const secp256k1_pedersen_context *pedersen_ctx,
  const secp256k1_rangeproof_context *rangeproof_ctx,unsigned char *proof,int *plen,uint64_t min_value,
@@ -303,15 +296,13 @@ SECP256K1_INLINE static int secp256k1_rangeproof_sign_impl(const secp256k1_ecmul
             proof[len + i] = (min_value >> ((7-i) * 8)) & 255;
         len += 8;
     }
-    // Do we have enough room for the proof?
     if (*plen - len < 32 * (npub + rings - 1) + 32 + ((rings+6) >> 3))
         return 0;
     secp256k1_sha256_initialize(&sha256_m);
     secp256k1_sha256_write(&sha256_m, commit, 33);
     secp256k1_sha256_write(&sha256_m, proof, len);
     memset(prep, 0, 4096);
-    // Note, the data corresponding to the blinding factors must be zero.
-    if (rsizes[rings - 1] > 1) // Value encoding sidechannel
+    if (rsizes[rings - 1] > 1)
     {
         idx = rsizes[rings - 1] - 1;
         idx -= secidx[rings - 1] == idx;
@@ -320,10 +311,8 @@ SECP256K1_INLINE static int secp256k1_rangeproof_sign_impl(const secp256k1_ecmul
         {
             prep[8 + i + idx] = prep[16 + i + idx] = prep[24 + i + idx] = (v >> (56 - i * 8)) & 255;
             prep[i + idx] = 0;
-            //printf("%02x ",(uint8_t)(v >> (56 - i * 8)) & 255);
         }
         prep[idx] = 128;
-        //printf("idx.%d v.%llx\n",idx,(long long)v);
     }
     /*for (i=0; i<4096; i++)
     {
@@ -336,7 +325,6 @@ SECP256K1_INLINE static int secp256k1_rangeproof_sign_impl(const secp256k1_ecmul
     memset(prep, 0, 4096);
     for (i = 0; i < rings; i++)
     {
-        // Sign will overwrite the non-forged signature, move that random value into the nonce.
         k[i] = s[i * 4 + secidx[i]];
         secp256k1_scalar_clear(&s[i * 4 + secidx[i]]);
     }
@@ -351,7 +339,6 @@ SECP256K1_INLINE static int secp256k1_rangeproof_sign_impl(const secp256k1_ecmul
     if (overflow || secp256k1_scalar_is_zero(&sec[rings - 1]))
         return 0;
     signs = &proof[len];
-    // We need one sign bit for each blinded value we send.
     for (i = 0; i < (rings + 6) >> 3; i++)
     {
         signs[i] = 0;
@@ -360,14 +347,12 @@ SECP256K1_INLINE static int secp256k1_rangeproof_sign_impl(const secp256k1_ecmul
     npub = 0;
     for (i = 0; i < rings; i++)
     {
-        // OPT: Use the precomputed gen2 basis?
         secp256k1_pedersen_ecmult(ecmult_gen_ctx, pedersen_ctx, &pubs[npub], &sec[i], ((uint64_t)secidx[i] * scale) << (i*2));
         if (secp256k1_gej_is_infinity(&pubs[npub]))
             return 0;
         if (i < rings - 1)
         {
             secp256k1_ge c; size_t size = 33;
-            // OPT: split loop and batch invert.
             secp256k1_ge_set_gej_var(&c, &pubs[npub]);
             if(!secp256k1_eckey_pubkey_serialize(&c, tmp, &size, 1))
                 return 0;
@@ -416,10 +401,7 @@ SECP256K1_INLINE static void secp256k1_rangeproof_ch32xor(unsigned char *x, cons
 {
     int i;
     for (i = 0; i < 32; i++)
-    {
-        //printf("(%02x %02x) ",x[i],y[i]);
         x[i] ^= y[i];
-    }
 }
 
 SECP256K1_INLINE static int secp256k1_rangeproof_rewind_inner(secp256k1_scalar *blind,uint64_t *v,
@@ -431,13 +413,11 @@ SECP256K1_INLINE static int secp256k1_rangeproof_rewind_inner(secp256k1_scalar *
     VERIFY_CHECK(npub <= 128);
     VERIFY_CHECK(npub >= 1);
     memset(prep,0,4096);
-    // Reconstruct the provers random values.
     secp256k1_rangeproof_genrand(sec, s_orig, prep, rsizes, rings, nonce, commit, proof, len);
     *v = UINT64_MAX;
     secp256k1_scalar_clear(blind);
     if ( rings == 1 && rsizes[0] == 1 )
     {
-        // With only a single proof, we can only recover the blinding factor.
         secp256k1_rangeproof_recover_x(blind,&s_orig[0],&ev[0],&s[0]);
         if (v)
             *v = 0;
@@ -449,7 +429,6 @@ SECP256K1_INLINE static int secp256k1_rangeproof_rewind_inner(secp256k1_scalar *
     for (j = 0; j < 2; j++)
     {
         int idx;
-        // Look for a value encoding in the last ring.
         idx = npub + rsizes[rings - 1] - 1 - j;
         secp256k1_scalar_get_b32(tmp, &s[idx]);
         secp256k1_rangeproof_ch32xor(tmp, &prep[idx * 32]);
@@ -464,7 +443,7 @@ SECP256K1_INLINE static int secp256k1_rangeproof_rewind_inner(secp256k1_scalar *
             break;
         }
     }
-    if ( j > 1 ) // Couldn't extract a value.
+    if ( j > 1 )
     {
         if (mlen)
             *mlen = 0;
@@ -474,14 +453,12 @@ SECP256K1_INLINE static int secp256k1_rangeproof_rewind_inner(secp256k1_scalar *
     skip2 = ((value >> ((rings - 1) << 1)) & 3);
     if (skip1 == skip2)
     {
-        // Value is in wrong position.
         if (mlen)
             *mlen = 0;
         return 0;
     }
     skip1 += (rings - 1) << 2;
     skip2 += (rings - 1) << 2;
-    // Like in the rsize[] == 1 case, Having figured out which s is the one which was not forged, we can recover the blinding factor.
     secp256k1_rangeproof_recover_x(&stmp, &s_orig[skip2], &ev[skip2], &s[skip2]);
     secp256k1_scalar_negate(&sec[rings - 1], &sec[rings - 1]);
     secp256k1_scalar_add(blind, &stmp, &sec[rings - 1]);
@@ -489,7 +466,6 @@ SECP256K1_INLINE static int secp256k1_rangeproof_rewind_inner(secp256k1_scalar *
     {
         if (mlen)
             *mlen = 0;
-        // FIXME: cleanup in early out/failure cases.
         return 1;
     }
     offset = 0;
@@ -564,7 +540,6 @@ SECP256K1_INLINE static int secp256k1_rangeproof_getheader_impl(int *offset, int
     {
         if(plen - *offset < 8)
             return 0;
-        // FIXME: Compact minvalue encoding?
         for (i = 0; i < 8; i++)
             *min_value = (*min_value << 8) | proof[*offset + i];
         *offset += 8;
@@ -575,11 +550,10 @@ SECP256K1_INLINE static int secp256k1_rangeproof_getheader_impl(int *offset, int
     return 1;
 }
 
-// Verifies range proof (len plen) for 33-byte commit, the min/max values proven are put in the min/max arguments; returns 0 on failure 1 on success
 SECP256K1_INLINE static int secp256k1_rangeproof_verify_impl(const secp256k1_ecmult_context *ecmult_ctx,const secp256k1_ecmult_gen_context *ecmult_gen_ctx,const secp256k1_pedersen_context *pedersen_ctx, const secp256k1_rangeproof_context *rangeproof_ctx,unsigned char *blindout,uint64_t *value_out, unsigned char *message_out,int *outlen,const unsigned char *nonce,uint64_t *min_value,uint64_t *max_value,const unsigned char *commit,const unsigned char *proof,int plen)
 {
     secp256k1_gej accj,pubs[128]; secp256k1_ge c; secp256k1_sha256_t sha256_m;
-    secp256k1_scalar s[128],evalues[128]; // Challenges, only used during proof rewind.
+    secp256k1_scalar s[128],evalues[128];
     int rsizes[32],ret,i,exp,mantissa,offset,rings,overflow,npub,offset_post_header;
     size_t size; uint64_t scale; unsigned char signs[31],m[33]; const unsigned char *e0;
     offset = 0;
@@ -613,7 +587,6 @@ SECP256K1_INLINE static int secp256k1_rangeproof_verify_impl(const secp256k1_ecm
     offset += (rings + 6) >> 3;
     if ( (rings - 1) & 7 )
     {
-        // Number of coded blinded points is not a multiple of 8, force extra sign bits to 0 to reject mutation.
         if ( (proof[offset - 1] >> ((rings - 1) & 7)) != 0 )
             return 0;
     }
@@ -650,19 +623,17 @@ SECP256K1_INLINE static int secp256k1_rangeproof_verify_impl(const secp256k1_ecm
             return 0;
         offset += 32;
     }
-    if (offset != plen) // Extra data found, reject
+    if (offset != plen)
         return 0;
     secp256k1_sha256_finalize(&sha256_m, m);
     ret = secp256k1_borromean_verify(ecmult_ctx, nonce ? evalues : NULL, e0, s, pubs, rsizes, rings, m, 32);
-    if (ret && nonce) // Given the nonce, try rewinding the witness to recover its initial state
+    if (ret && nonce)
     {
         secp256k1_scalar blind; unsigned char commitrec[33]; uint64_t vv;
         if (!ecmult_gen_ctx)
             return 0;
         if (!secp256k1_rangeproof_rewind_inner(&blind, &vv, message_out, outlen, evalues, s, rsizes, rings, nonce, commit, proof, offset_post_header))
             return 0;
-        // Unwind apparently successful, see if the commitment can be reconstructed.
-        // FIXME: should check vv is in the mantissa's range.
         vv = (vv * scale) + *min_value;
         secp256k1_pedersen_ecmult(ecmult_gen_ctx, pedersen_ctx, &accj, &blind, vv);
         if (secp256k1_gej_is_infinity(&accj))

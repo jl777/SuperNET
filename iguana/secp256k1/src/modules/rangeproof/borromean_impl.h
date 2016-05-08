@@ -74,12 +74,11 @@ int secp256k1_borromean_verify(const secp256k1_ecmult_context *ecmult_ctx,secp25
         {
             if (overflow || secp256k1_scalar_is_zero(&s[count]) || secp256k1_scalar_is_zero(&ens) || secp256k1_gej_is_infinity(&pubs[count]))
                 return 0;
-            if (evalues) // If requested, save the challenges for proof rewind
+            if (evalues)
                 evalues[count] = ens;
             secp256k1_ecmult(ecmult_ctx, &rgej, &pubs[count], &ens, &s[count]);
             if (secp256k1_gej_is_infinity(&rgej))
                 return 0;
-            // OPT: loop can be hoisted and split to use batch inversion across all the rings; this would make it much faster.
             secp256k1_ge_set_gej_var(&rge, &rgej);
             secp256k1_eckey_pubkey_serialize(&rge, tmp, &size, 1);
             if (j != rsizes[i] - 1)
