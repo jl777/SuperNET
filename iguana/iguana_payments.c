@@ -160,7 +160,7 @@ cJSON *iguana_scriptobj(struct iguana_info *coin,uint8_t rmd160[20],char *coinad
 
 char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,uint64_t satoshis,char *comment,char *comment2,int32_t minconf,char *account)
 {
-    uint8_t addrtype,rmd160[20]; int32_t i,j,numwaddrs,numunspents=0; struct iguana_waddress **waddrs,*waddr; uint64_t *unspents;
+    uint8_t addrtype,rmd160[20]; int32_t i,j,numwaddrs,numunspents=0; struct iguana_waddress **waddrs,*waddr; uint64_t *unspents; //struct iguana_msgtx msgtx; char *rawtx=0,*signedtx = 0; bits256 signedtxid; cJSON *vins=0,*privkeys=0;
     //sendtoaddress	<bitcoinaddress> <amount> [comment] [comment-to]	<amount> is a real and is rounded to 8 decimal places. Returns the transaction ID <txid> if successful.	Y
     if ( coinaddr != 0 && coinaddr[0] != 0 && satoshis != 0 )
     {
@@ -182,6 +182,10 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
             }
         }
         printf("need to generate send %.8f to %s [%s] [%s] using numaddrs.%d numunspents.%d\n",dstr(satoshis),coinaddr,comment!=0?comment:"",comment2!=0?comment2:"",numwaddrs,numunspents);
+        /*if ( iguana_signrawtransaction(myinfo,coin,&msgtx,&signedtx,&signedtxid,struct vin_info *V,int32_t numinputs,rawtx,vins,privkeys) > 0 )
+        {
+            
+        }*/
     }
     return(clonestr("{\"error\":\"need address and amount\"}"));
 }

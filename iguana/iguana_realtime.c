@@ -190,8 +190,8 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
         bp->converted = (uint32_t)time(NULL);
         if ( iguana_balancegen(coin,1,bp,coin->RTstarti,coin->RTheight > 0 ? coin->RTheight-1 : bp->n-1,orignumemit) < 0 )
             coin->RTdatabad = 1;
-        else if ( coin->RTgenesis == 0 )
-            printf(">>>>>> IGUANA %s READY FOR REALTIME RPC <<<<<<\n",coin->symbol);
+        else if ( coin->RTgenesis == 0 && coin->firstRTgenesis == 0 )
+            coin->firstRTgenesis++, printf(">>>>>> IGUANA %s READY FOR REALTIME RPC <<<<<<\n",coin->symbol);
         //printf("iguana_balancegen [%d] (%d to %d)\n",bp->hdrsi,coin->RTstarti,(coin->RTheight-1)%bp->n);
         coin->RTstarti = (coin->RTheight % bp->n);
     }

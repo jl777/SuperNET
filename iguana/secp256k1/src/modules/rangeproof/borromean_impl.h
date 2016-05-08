@@ -74,7 +74,7 @@ int secp256k1_borromean_verify(const secp256k1_ecmult_context *ecmult_ctx,secp25
         {
             if (overflow || secp256k1_scalar_is_zero(&s[count]) || secp256k1_scalar_is_zero(&ens) || secp256k1_gej_is_infinity(&pubs[count]))
                 return 0;
-            if (evalues) // If requested, save the challenges for proof rewind.*/
+            if (evalues) // If requested, save the challenges for proof rewind
                 evalues[count] = ens;
             secp256k1_ecmult(ecmult_ctx, &rgej, &pubs[count], &ens, &s[count]);
             if (secp256k1_gej_is_infinity(&rgej))
