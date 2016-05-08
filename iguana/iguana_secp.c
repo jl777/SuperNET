@@ -23,6 +23,9 @@
 #include "secp256k1/include/secp256k1_schnorr.h"
 #include "secp256k1/include/secp256k1_rangeproof.h"
 #include "secp256k1/include/secp256k1_recovery.h"
+
+SECP256K1_API extern const secp256k1_nonce_function secp256k1_nonce_function_rfc6979;
+
 #define bits256_nonz(a) (((a).ulongs[0] | (a).ulongs[1] | (a).ulongs[2] | (a).ulongs[3]) != 0)
 
 #define SECP_ENSURE_CTX int32_t flag = 0; if ( ctx == 0 ) { ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY); secp256k1_pedersen_context_initialize(ctx); secp256k1_rangeproof_context_initialize(ctx); flag++; } else flag = 0; if ( ctx != 0 )
@@ -224,7 +227,7 @@ bits256 bitcoin_schnorr_noncepair(void *ctx,uint8_t *pubnonce,bits256 txhash2,bi
     pubnonce[0] = 0;
     SECP_ENSURE_CTX
     {
-        if ( secp256k1_schnorr_generate_nonce_pair(ctx,&PUB,privnonce.bytes,txhash2.bytes,privkey.bytes,NULL,NULL) > 0 )
+        if ( secp256k1_schnorr_generate_nonce_pair(ctx,&PUB,privnonce.bytes,txhash2.bytes,privkey.bytes,0,rand256(0).bytes) > 0 )
         {
             plen = 33;
             secp256k1_ec_pubkey_serialize(ctx,pubnonce,&plen,&PUB,SECP256K1_EC_COMPRESSED);
