@@ -179,10 +179,11 @@ bits256 bitcoin_sharedsecret(void *ctx,bits256 privkey,uint8_t *pubkey,int32_t p
 
 int32_t bitcoin_schnorr_sign(void *ctx,uint8_t *sig64,bits256 txhash2,bits256 privkey)
 {
-    int32_t retval = -1;
+    int32_t retval = -1; bits256 seed;
     SECP_ENSURE_CTX
     {
-        if ( secp256k1_schnorr_sign(ctx,sig64,txhash2.bytes,privkey.bytes,secp256k1_nonce_function_rfc6979,rand256(0).bytes) > 0 )
+        seed = rand256(0);
+        if ( secp256k1_schnorr_sign(ctx,sig64,txhash2.bytes,privkey.bytes,secp256k1_nonce_function_rfc6979,seed.bytes) > 0 )
             retval = 0;
         ENDSECP_ENSURE_CTX
     }
@@ -222,12 +223,13 @@ int32_t bitcoin_schnorr_recover(void *ctx,uint8_t *pubkey,uint8_t *sig64,bits256
 
 bits256 bitcoin_schnorr_noncepair(void *ctx,uint8_t *pubnonce,bits256 txhash2,bits256 privkey) //exchange
 {
-    int32_t retval = -1; size_t plen; secp256k1_pubkey PUB; bits256 privnonce;
+    int32_t retval = -1; size_t plen; secp256k1_pubkey PUB; bits256 privnonce,seed;
     memset(privnonce.bytes,0,sizeof(privnonce));
     pubnonce[0] = 0;
     SECP_ENSURE_CTX
     {
-        if ( secp256k1_schnorr_generate_nonce_pair(ctx,&PUB,privnonce.bytes,txhash2.bytes,privkey.bytes,0,rand256(0).bytes) > 0 )
+        seed = rand256(0);
+        if ( secp256k1_schnorr_generate_nonce_pair(ctx,&PUB,privnonce.bytes,txhash2.bytes,privkey.bytes,secp256k1_nonce_function_rfc6979,seed.bytes) > 0 )
         {
             plen = 33;
             secp256k1_ec_pubkey_serialize(ctx,pubnonce,&plen,&PUB,SECP256K1_EC_COMPRESSED);
