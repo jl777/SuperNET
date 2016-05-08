@@ -224,7 +224,7 @@ bits256 bitcoin_schnorr_noncepair(void *ctx,uint8_t *pubnonce,bits256 txhash2,bi
     pubnonce[0] = 0;
     SECP_ENSURE_CTX
     {
-        if ( secp256k1_schnorr_generate_nonce_pair(ctx,&PUB,privnonce.bytes,txhash2.bytes,privkey.bytes,0,rand256(0).bytes) > 0 )
+        if ( secp256k1_schnorr_generate_nonce_pair(ctx,&PUB,privnonce.bytes,txhash2.bytes,privkey.bytes,NULL,NULL) > 0 )
         {
             plen = 33;
             secp256k1_ec_pubkey_serialize(ctx,pubnonce,&plen,&PUB,SECP256K1_EC_COMPRESSED);
