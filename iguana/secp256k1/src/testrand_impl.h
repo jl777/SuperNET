@@ -37,7 +37,7 @@ static uint32_t secp256k1_rand_bits(int bits) {
         secp256k1_test_rng_integer |= (((uint64_t)secp256k1_rand32()) << secp256k1_test_rng_integer_bits_left);
         secp256k1_test_rng_integer_bits_left += 32;
     }
-    ret = secp256k1_test_rng_integer;
+    ret = (uint32_t)secp256k1_test_rng_integer;
     secp256k1_test_rng_integer >>= bits;
     secp256k1_test_rng_integer_bits_left -= bits;
     ret &= ((~((uint32_t)0)) >> (32 - bits));

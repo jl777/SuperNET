@@ -25,16 +25,16 @@
 /* #undef ENABLE_OPENSSL_TESTS */
 
 /* Define this symbol if __builtin_clzll is available */
-#define HAVE_BUILTIN_CLZLL 1
+#define HAVE_BUILTIN_CLZLL 0 //1
 
 /* Define this symbol if __builtin_expect is available */
-#define HAVE_BUILTIN_EXPECT 1
+#define HAVE_BUILTIN_EXPECT 0 //1
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
-#define HAVE_DLFCN_H 1
+#define HAVE_DLFCN_H 0 //1
 
 /* Define to 1 if you have the <inttypes.h> header file. */
-#define HAVE_INTTYPES_H 1
+#define HAVE_INTTYPES_H 0 //1
 
 /* Define this symbol if libcrypto is installed */
 /* #undef HAVE_LIBCRYPTO */
@@ -43,28 +43,28 @@
 /* #undef HAVE_LIBGMP */
 
 /* Define to 1 if you have the <memory.h> header file. */
-#define HAVE_MEMORY_H 1
+#define HAVE_MEMORY_H 0 //1
 
 /* Define to 1 if you have the <stdint.h> header file. */
-#define HAVE_STDINT_H 1
+#define HAVE_STDINT_H 0 //1
 
 /* Define to 1 if you have the <stdlib.h> header file. */
-#define HAVE_STDLIB_H 1
+#define HAVE_STDLIB_H 0 //1
 
 /* Define to 1 if you have the <strings.h> header file. */
-#define HAVE_STRINGS_H 1
+#define HAVE_STRINGS_H 0 //1
 
 /* Define to 1 if you have the <string.h> header file. */
-#define HAVE_STRING_H 1
+#define HAVE_STRING_H 0 //1
 
 /* Define to 1 if you have the <sys/stat.h> header file. */
-#define HAVE_SYS_STAT_H 1
+#define HAVE_SYS_STAT_H 0 //1
 
 /* Define to 1 if you have the <sys/types.h> header file. */
-#define HAVE_SYS_TYPES_H 1
+#define HAVE_SYS_TYPES_H 0 //1
 
 /* Define to 1 if you have the <unistd.h> header file. */
-#define HAVE_UNISTD_H 1
+#define HAVE_UNISTD_H 0 //1
 
 /* Define to 1 if the system has the type `__int128'. */
 /* #undef HAVE___INT128 */

@@ -7,7 +7,9 @@
 #ifndef SECP256K1_MODULE_SCHNORR_TESTS
 #define SECP256K1_MODULE_SCHNORR_TESTS
 
-#include "include/secp256k1_schnorr.h"
+#include "../../../include/secp256k1_schnorr.h"
+#include "../../../include/secp256k1.h"
+
 
 void test_schnorr_end_to_end(void) {
     unsigned char privkey[32];

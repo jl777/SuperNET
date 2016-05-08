@@ -170,27 +170,21 @@ typedef int (*secp256k1_nonce_function)(
  *  Returns: a newly created context object.
  *  In:      flags: which parts of the context to initialize.
  */
-SECP256K1_API secp256k1_context* secp256k1_context_create(
-    unsigned int flags
-) SECP256K1_WARN_UNUSED_RESULT;
+SECP256K1_API secp256k1_context* secp256k1_context_create(unsigned int flags) SECP256K1_WARN_UNUSED_RESULT;
 
 /** Copies a secp256k1 context object.
  *
  *  Returns: a newly created context object.
  *  Args:    ctx: an existing context to copy (cannot be NULL)
  */
-SECP256K1_API secp256k1_context* secp256k1_context_clone(
-    const secp256k1_context* ctx
-) SECP256K1_ARG_NONNULL(1) SECP256K1_WARN_UNUSED_RESULT;
+SECP256K1_API secp256k1_context* secp256k1_context_clone(const secp256k1_context* ctx) SECP256K1_ARG_NONNULL(1) SECP256K1_WARN_UNUSED_RESULT;
 
 /** Destroy a secp256k1 context object.
  *
  *  The context pointer may not be used afterwards.
  *  Args:   ctx: an existing context to destroy (cannot be NULL)
  */
-SECP256K1_API void secp256k1_context_destroy(
-    secp256k1_context* ctx
-);
+SECP256K1_API void secp256k1_context_destroy(secp256k1_context *ctx);
 
 /** Set a callback function to be called when an illegal argument is passed to
  *  an API call. It will only trigger for violations that are mentioned
@@ -212,11 +206,7 @@ SECP256K1_API void secp256k1_context_destroy(
  *              (NULL restores a default handler that calls abort).
  *        data: the opaque pointer to pass to fun above.
  */
-SECP256K1_API void secp256k1_context_set_illegal_callback(
-    secp256k1_context* ctx,
-    void (*fun)(const char* message, void* data),
-    const void* data
-) SECP256K1_ARG_NONNULL(1);
+SECP256K1_API void secp256k1_context_set_illegal_callback(secp256k1_context* ctx,void (*fun)(const char* message, void* data),const void* data) SECP256K1_ARG_NONNULL(1);
 
 /** Set a callback function to be called when an internal consistency check
  *  fails. The default is crashing.
@@ -234,11 +224,7 @@ SECP256K1_API void secp256k1_context_set_illegal_callback(
  *              handler that calls abort).
  *        data: the opaque pointer to pass to fun above.
  */
-SECP256K1_API void secp256k1_context_set_error_callback(
-    secp256k1_context* ctx,
-    void (*fun)(const char* message, void* data),
-    const void* data
-) SECP256K1_ARG_NONNULL(1);
+SECP256K1_API void secp256k1_context_set_error_callback(secp256k1_context *ctx,void (*fun)(const char *message,void *data),const void *data) SECP256K1_ARG_NONNULL(1);
 
 /** Parse a variable-length public key into the pubkey object.
  *
@@ -254,12 +240,7 @@ SECP256K1_API void secp256k1_context_set_error_callback(
  *  0x03), uncompressed (65 bytes, header byte 0x04), or hybrid (65 bytes, header
  *  byte 0x06 or 0x07) format public keys.
  */
-SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_pubkey_parse(
-    const secp256k1_context* ctx,
-    secp256k1_pubkey* pubkey,
-    const unsigned char *input,
-    size_t inputlen
-) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3);
+SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_pubkey_parse(const secp256k1_context *ctx,secp256k1_pubkey *pubkey,const unsigned char *input,size_t inputlen) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3);
 
 /** Serialize a pubkey object into a serialized byte sequence.
  *
@@ -276,13 +257,7 @@ SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_pubkey_parse(
  *          flags:      SECP256K1_EC_COMPRESSED if serialization should be in
  *                      compressed format, otherwise SECP256K1_EC_UNCOMPRESSED.
  */
-SECP256K1_API int secp256k1_ec_pubkey_serialize(
-    const secp256k1_context* ctx,
-    unsigned char *output,
-    size_t *outputlen,
-    const secp256k1_pubkey* pubkey,
-    unsigned int flags
-) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3) SECP256K1_ARG_NONNULL(4);
+SECP256K1_API int secp256k1_ec_pubkey_serialize(const secp256k1_context *ctx,unsigned char *output,size_t *outputlen,const secp256k1_pubkey *pubkey,unsigned int flags) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3) SECP256K1_ARG_NONNULL(4);
 
 /** Parse an ECDSA signature in compact (64 bytes) format.
  *
@@ -299,11 +274,7 @@ SECP256K1_API int secp256k1_ec_pubkey_serialize(
  *  S are zero, the resulting sig value is guaranteed to fail validation for any
  *  message and public key.
  */
-SECP256K1_API int secp256k1_ecdsa_signature_parse_compact(
-    const secp256k1_context* ctx,
-    secp256k1_ecdsa_signature* sig,
-    const unsigned char *input64
-) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3);
+SECP256K1_API int secp256k1_ecdsa_signature_parse_compact(const secp256k1_context *ctx,secp256k1_ecdsa_signature *sig,const unsigned char *input64) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3);
 
 /** Parse a DER ECDSA signature.
  *
@@ -320,12 +291,7 @@ SECP256K1_API int secp256k1_ecdsa_signature_parse_compact(
  *  encoded numbers are out of range, signature validation with it is
  *  guaranteed to fail for every message and public key.
  */
-SECP256K1_API int secp256k1_ecdsa_signature_parse_der(
-    const secp256k1_context* ctx,
-    secp256k1_ecdsa_signature* sig,
-    const unsigned char *input,
-    size_t inputlen
-) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3);
+SECP256K1_API int secp256k1_ecdsa_signature_parse_der(const secp256k1_context *ctx,secp256k1_ecdsa_signature *sig,const unsigned char *input,size_t inputlen) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3);
 
 /** Serialize an ECDSA signature in DER format.
  *
@@ -338,12 +304,7 @@ SECP256K1_API int secp256k1_ecdsa_signature_parse_der(
  *                     if 0 was returned).
  *  In:     sig:       a pointer to an initialized signature object
  */
-SECP256K1_API int secp256k1_ecdsa_signature_serialize_der(
-    const secp256k1_context* ctx,
-    unsigned char *output,
-    size_t *outputlen,
-    const secp256k1_ecdsa_signature* sig
-) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3) SECP256K1_ARG_NONNULL(4);
+SECP256K1_API int secp256k1_ecdsa_signature_serialize_der(const secp256k1_context *ctx,unsigned char *output,size_t *outputlen,const secp256k1_ecdsa_signature *sig) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3) SECP256K1_ARG_NONNULL(4);
 
 /** Serialize an ECDSA signature in compact (64 byte) format.
  *
@@ -354,11 +315,7 @@ SECP256K1_API int secp256k1_ecdsa_signature_serialize_der(
  *
  *  See secp256k1_ecdsa_signature_parse_compact for details about the encoding.
  */
-SECP256K1_API int secp256k1_ecdsa_signature_serialize_compact(
-    const secp256k1_context* ctx,
-    unsigned char *output64,
-    const secp256k1_ecdsa_signature* sig
-) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3);
+SECP256K1_API int secp256k1_ecdsa_signature_serialize_compact(const secp256k1_context *ctx,unsigned char *output64,const secp256k1_ecdsa_signature *sig) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3);
 
 /** Verify an ECDSA signature.
  *
@@ -378,12 +335,7 @@ SECP256K1_API int secp256k1_ecdsa_signature_serialize_compact(
  *
  * For details, see the comments for that function.
  */
-SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ecdsa_verify(
-    const secp256k1_context* ctx,
-    const secp256k1_ecdsa_signature *sig,
-    const unsigned char *msg32,
-    const secp256k1_pubkey *pubkey
-) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3) SECP256K1_ARG_NONNULL(4);
+SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ecdsa_verify(const secp256k1_context *ctx,const secp256k1_ecdsa_signature *sig,const unsigned char *msg32,const secp256k1_pubkey *pubkey) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3) SECP256K1_ARG_NONNULL(4);
 
 /** Convert a signature to a normalized lower-S form.
  *
@@ -427,11 +379,7 @@ SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ecdsa_verify(
  *  signatures come from a system that cannot enforce this property,
  *  secp256k1_ecdsa_signature_normalize must be called before verification.
  */
-SECP256K1_API int secp256k1_ecdsa_signature_normalize(
-    const secp256k1_context* ctx,
-    secp256k1_ecdsa_signature *sigout,
-    const secp256k1_ecdsa_signature *sigin
-) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(3);
+SECP256K1_API int secp256k1_ecdsa_signature_normalize(const secp256k1_context *ctx,secp256k1_ecdsa_signature *sigout,const secp256k1_ecdsa_signature *sigin) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(3);
 
 /** An implementation of RFC6979 (using HMAC-SHA256) as nonce generation function.
  * If a data pointer is passed, it is assumed to be a pointer to 32 bytes of
@@ -456,14 +404,7 @@ SECP256K1_API extern const secp256k1_nonce_function secp256k1_nonce_function_def
  * The created signature is always in lower-S form. See
  * secp256k1_ecdsa_signature_normalize for more details.
  */
-SECP256K1_API int secp256k1_ecdsa_sign(
-    const secp256k1_context* ctx,
-    secp256k1_ecdsa_signature *sig,
-    const unsigned char *msg32,
-    const unsigned char *seckey,
-    secp256k1_nonce_function noncefp,
-    const void *ndata
-) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3) SECP256K1_ARG_NONNULL(4);
+SECP256K1_API int secp256k1_ecdsa_sign(const secp256k1_context *ctx,secp256k1_ecdsa_signature *sig,const unsigned char *msg32,const unsigned char *seckey,secp256k1_nonce_function noncefp,const void *ndata) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3) SECP256K1_ARG_NONNULL(4);
 
 /** Verify an ECDSA secret key.
  *
@@ -472,10 +413,7 @@ SECP256K1_API int secp256k1_ecdsa_sign(
  *  Args:    ctx: pointer to a context object (cannot be NULL)
  *  In:      seckey: pointer to a 32-byte secret key (cannot be NULL)
  */
-SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_seckey_verify(
-    const secp256k1_context* ctx,
-    const unsigned char *seckey
-) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2);
+SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_seckey_verify(const secp256k1_context *ctx,const unsigned char *seckey) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2);
 
 /** Compute the public key for a secret key.
  *
@@ -485,11 +423,7 @@ SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_seckey_verify(
  *  Out:    pubkey:     pointer to the created public key (cannot be NULL)
  *  In:     seckey:     pointer to a 32-byte private key (cannot be NULL)
  */
-SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_pubkey_create(
-    const secp256k1_context* ctx,
-    secp256k1_pubkey *pubkey,
-    const unsigned char *seckey
-) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3);
+SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_pubkey_create(const secp256k1_context *ctx,secp256k1_pubkey *pubkey,const unsigned char *seckey) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3);
 
 /** Tweak a private key by adding tweak to it.
  * Returns: 0 if the tweak was out of range (chance of around 1 in 2^128 for
@@ -500,11 +434,7 @@ SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_pubkey_create(
  * In/Out:  seckey: pointer to a 32-byte private key.
  * In:      tweak:  pointer to a 32-byte tweak.
  */
-SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_privkey_tweak_add(
-    const secp256k1_context* ctx,
-    unsigned char *seckey,
-    const unsigned char *tweak
-) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3);
+SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_privkey_tweak_add(const secp256k1_context *ctx,unsigned char *seckey,const unsigned char *tweak) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3);
 
 /** Tweak a public key by adding tweak times the generator to it.
  * Returns: 0 if the tweak was out of range (chance of around 1 in 2^128 for
@@ -516,11 +446,7 @@ SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_privkey_tweak_add(
  * In/Out:  pubkey: pointer to a public key object.
  * In:      tweak:  pointer to a 32-byte tweak.
  */
-SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_pubkey_tweak_add(
-    const secp256k1_context* ctx,
-    secp256k1_pubkey *pubkey,
-    const unsigned char *tweak
-) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3);
+SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_pubkey_tweak_add(const secp256k1_context *ctx,secp256k1_pubkey *pubkey,const unsigned char *tweak) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3);
 
 /** Tweak a private key by multiplying it by a tweak.
  * Returns: 0 if the tweak was out of range (chance of around 1 in 2^128 for
@@ -529,11 +455,7 @@ SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_pubkey_tweak_add(
  * In/Out: seckey: pointer to a 32-byte private key.
  * In:     tweak:  pointer to a 32-byte tweak.
  */
-SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_privkey_tweak_mul(
-    const secp256k1_context* ctx,
-    unsigned char *seckey,
-    const unsigned char *tweak
-) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3);
+SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_privkey_tweak_mul(const secp256k1_context *ctx,unsigned char *seckey,const unsigned char *tweak) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3);
 
 /** Tweak a public key by multiplying it by a tweak value.
  * Returns: 0 if the tweak was out of range (chance of around 1 in 2^128 for
@@ -543,11 +465,7 @@ SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_privkey_tweak_mul(
  * In/Out:  pubkey: pointer to a public key obkect.
  * In:      tweak:  pointer to a 32-byte tweak.
  */
-SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_pubkey_tweak_mul(
-    const secp256k1_context* ctx,
-    secp256k1_pubkey *pubkey,
-    const unsigned char *tweak
-) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3);
+SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_pubkey_tweak_mul(const secp256k1_context *ctx,secp256k1_pubkey *pubkey,const unsigned char *tweak) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3);
 
 /** Updates the context randomization.
  *  Returns: 1: randomization successfully updated
@@ -555,10 +473,7 @@ SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_pubkey_tweak_mul(
  *  Args:    ctx:       pointer to a context object (cannot be NULL)
  *  In:      seed32:    pointer to a 32-byte random seed (NULL resets to initial state)
  */
-SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_context_randomize(
-    secp256k1_context* ctx,
-    const unsigned char *seed32
-) SECP256K1_ARG_NONNULL(1);
+SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_context_randomize(secp256k1_context *ctx,const unsigned char *seed32) SECP256K1_ARG_NONNULL(1);
 
 /** Add a number of public keys together.
  *  Returns: 1: the sum of the public keys is valid.
@@ -569,12 +484,7 @@ SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_context_randomize(
  *  In:     ins:        pointer to array of pointers to public keys (cannot be NULL)
  *          n:          the number of public keys to add together (must be at least 1)
  */
-SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_pubkey_combine(
-    const secp256k1_context* ctx,
-    secp256k1_pubkey *out,
-    const secp256k1_pubkey * const * ins,
-    size_t n
-) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3);
+SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_ec_pubkey_combine(const secp256k1_context *ctx,secp256k1_pubkey *out,const secp256k1_pubkey * const *ins,size_t n) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3);
 
 # ifdef __cplusplus
 }
