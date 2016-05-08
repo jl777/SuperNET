@@ -258,7 +258,7 @@ SECP256K1_INLINE static int secp256k1_range_proveparams(uint64_t *v,int *rings,i
 SECP256K1_INLINE static int secp256k1_rangeproof_sign_impl(const secp256k1_ecmult_context *ecmult_ctx,
  const secp256k1_ecmult_gen_context *ecmult_gen_ctx,const secp256k1_pedersen_context *pedersen_ctx,
  const secp256k1_rangeproof_context *rangeproof_ctx,unsigned char *proof,int *plen,uint64_t min_value,
- const unsigned char *commit,const unsigned char *blind,const unsigned char *nonce,int exp,int min_bits,uint64_t value,unsigned char message[4096])
+ const unsigned char *commit,const unsigned char *blind,const unsigned char *nonce,int exp,int min_bits,uint64_t value)
 {
     secp256k1_gej pubs[128];     /* Candidate digits for our proof, most inferred. */
     secp256k1_scalar s[128];     /* Signatures in our proof, most forged. */
@@ -266,7 +266,6 @@ SECP256K1_INLINE static int secp256k1_rangeproof_sign_impl(const secp256k1_ecmul
     secp256k1_scalar k[32];      /* Nonces for our non-forged signatures. */
     secp256k1_scalar stmp;
     secp256k1_sha256_t sha256_m;
-    ;
     unsigned char tmp[33],prep[4096];
     unsigned char *signs;          /* Location of sign flags in the proof. */
     uint64_t v;

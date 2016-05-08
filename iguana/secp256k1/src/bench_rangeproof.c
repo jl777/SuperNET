@@ -45,7 +45,7 @@ static void bench_rangeproof_setup(void* arg)
         if ( i < sizeof(data->prooflen) )
             data->message[i] = i;
     }
-    CHECK(secp256k1_rangeproof_sign(data->ctx, data->proof, &data->prooflen,0, data->commit, data->blind, data->nonce, PUBLICDIGITS, data->min_bits, data->v,data->message));
+    CHECK(secp256k1_rangeproof_sign(data->ctx, data->proof, &data->prooflen,0, data->commit, data->blind, data->nonce, PUBLICDIGITS, data->min_bits, data->v));
     //for (i=0; i<data->prooflen; i++)
     //    printf("%02x",data->proof[i]);
     CHECK(secp256k1_rangeproof_verify(data->ctx, &minv, &maxv, data->commit, data->proof, data->prooflen));

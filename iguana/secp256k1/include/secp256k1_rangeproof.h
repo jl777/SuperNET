@@ -155,7 +155,7 @@ SECP256K1_WARN_UNUSED_RESULT int secp256k1_rangeproof_sign(
   const unsigned char *nonce,
   int exp,
   int min_bits,
-  uint64_t value,unsigned char message[4096]
+  uint64_t value
 ) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3) SECP256K1_ARG_NONNULL(5) SECP256K1_ARG_NONNULL(6) SECP256K1_ARG_NONNULL(7);
 
 /** Extract some basic information from a range-proof.

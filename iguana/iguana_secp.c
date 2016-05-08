@@ -347,10 +347,10 @@ uint64_t bitcoin_rangeverify(void *ctx,int32_t *exponentp,int32_t *mantissap,uin
 
 int32_t bitcoin_rangeproof(void *ctx,uint8_t *proof,uint8_t *commit,bits256 blind,bits256 nonce,uint64_t value,uint64_t min_value,int32_t exponent,int32_t min_bits)
 {
-    int32_t prooflen=0  ,retval = -1; uint8_t message[4096];
+    int32_t prooflen=0  ,retval = -1;
     SECP_ENSURE_CTX
     {
-        if ( secp256k1_rangeproof_sign(ctx,proof,&prooflen,min_value,commit,blind.bytes,nonce.bytes,exponent,min_bits,value,message) > 0 )
+        if ( secp256k1_rangeproof_sign(ctx,proof,&prooflen,min_value,commit,blind.bytes,nonce.bytes,exponent,min_bits,value) > 0 )
             retval = prooflen;
         ENDSECP_ENSURE_CTX
     }
