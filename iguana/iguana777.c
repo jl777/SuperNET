@@ -628,8 +628,9 @@ void iguana_helper(void *arg)
 void iguana_coinloop(void *arg)
 {
     struct iguana_info *coin,**coins = arg;
-    struct iguana_bundle *bp; int32_t flag,i,n,bundlei; bits256 zero; char str[2065];
-    uint32_t now;
+    struct iguana_bundle *bp; struct supernet_info *myinfo; int32_t flag,i,n,bundlei;
+    bits256 zero; char str[2065]; uint32_t now;
+    myinfo = SuperNET_MYINFO(0);
     n = (int32_t)(long)coins[0];
     coins++;
     printf("begin coinloop[%d]\n",n);
@@ -709,7 +710,7 @@ void iguana_coinloop(void *arg)
                     }
                     if ( coin->longestchain+10000 > coin->blocks.maxbits )
                         iguana_recvalloc(coin,coin->longestchain + 100000);
-                    flag += iguana_processrecv(coin);
+                    flag += iguana_processrecv(myinfo,coin);
                 }
                 coin->idletime = (uint32_t)time(NULL);
             }

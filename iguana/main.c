@@ -53,7 +53,7 @@ int32_t myfclose(FILE *fp)
 // ALL globals must be here!
 char *Iguana_validcommands[] =
 {
-    "SuperNET", "SuperNETb",
+    "SuperNET", "SuperNETb", "inv2", "InstantDEX", "pangea", "quote", "ConnectTo",
     "version", "verack", "getaddr", "addr", "inv", "getdata", "notfound", "getblocks", "getheaders", "headers", "tx", "block", "mempool", "ping", "pong",
     "reject", "filterload", "filteradd", "filterclear", "merkleblock", "alert", ""
 };
@@ -1153,7 +1153,7 @@ void iguana_appletests(struct supernet_info *myinfo)
         //int32_t iguana_schnorr_test(void *ctx);
         //iguana_schnorr_test(myinfo->ctx); getchar();
 
-        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"RELAY\":1,\"VALIDATE\":1,\"prefetchlag\":-1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":4,\"endpend\":4,\"services\":129,\"maxpeers\":64,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":4,\"poll\":1}"),0,myinfo->rpcport)) != 0 )
+        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"RELAY\":1,\"VALIDATE\":1,\"prefetchlag\":-1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":4,\"endpend\":4,\"services\":129,\"maxpeers\":64,\"newcoin\":\"BTC\",\"active\":1,\"numhelpers\":4,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
         {
             free(str);
             if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"agent\":\"iguana\",\"method\":\"addcoin\",\"services\":1024,\"maxpeers\":256,\"newcoin\":\"BTCD\",\"active\":1}"),0,myinfo->rpcport)) != 0 )

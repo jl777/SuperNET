@@ -155,7 +155,7 @@ int32_t instantdex_feetxverify(struct supernet_info *myinfo,struct iguana_info *
         if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,swap->otherfee->txbytes)) != 0 )
         {
             insurance = swap->insurance;//instantdex_insurance(coin,swap->BTCsatoshis);
-            if ( strcmp(coin->symbol,"BTCD") == 0 )
+            if ( strcmp(coin->symbol,"BTC") != 0 )
                 insurance *= IGUANA_BTCDMULT;
             n = instantdex_outputinsurance(script,0,insurance,swap->matched64);
             if ( n == msgtx.vouts[0].pk_scriptlen )

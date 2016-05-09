@@ -679,7 +679,7 @@ void iguana_startconnection(void *arg)
             coin->peers.ranked[0] = addr;
 #ifdef IGUANA_DEDICATED_THREADS
         //iguana_launch("recv",iguana_dedicatedrecv,addr,IGUANA_RECVTHREAD);
-        iguana_dedicatedloop(coin,addr);
+        iguana_dedicatedloop(SuperNET_MYINFO(0),coin,addr);
 #endif
     }
 }
@@ -1042,7 +1042,7 @@ int32_t iguana_peerslotinit(struct iguana_info *coin,struct iguana_peer *addr,in
     return(0);
 }
 
-void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
+void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr)
 {
     static uint32_t lastping;
     struct pollfd fds; struct iguana_bundlereq *req; uint8_t *buf; uint32_t ipbits;
@@ -1052,6 +1052,7 @@ void iguana_dedicatedloop(struct iguana_info *coin,struct iguana_peer *addr)
         printf("error creating peer's files\n");
         return;
     }
+    instantdex_peerhas_clear(myinfo,coin,addr);
 #ifdef IGUANA_PEERALLOC
     int32_t i;  int64_t remaining; struct OS_memspace *mem[sizeof(addr->SEROUT)/sizeof(*addr->SEROUT)];
     for (i=0; i<sizeof(addr->SEROUT)/sizeof(*addr->SEROUT); i++)
@@ -1224,7 +1225,7 @@ void iguana_dedicatedglue(void *arg)
         printf("iguana_dedicatedglue nullptrs addr.%p coin.%p\n",addr,coin);
         return;
     }
-    iguana_dedicatedloop(coin,addr);
+    iguana_dedicatedloop(SuperNET_MYINFO(0),coin,addr);
 }
 
 void iguana_peersloop(void *ptr)

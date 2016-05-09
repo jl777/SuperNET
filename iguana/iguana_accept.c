@@ -14,6 +14,7 @@
  ******************************************************************************/
 
 #include "iguana777.h"
+#include "exchanges777.h"
 
 struct iguana_accept { struct queueitem DL; char ipaddr[64]; uint32_t ipbits; int32_t sock; uint16_t port; };
 
@@ -175,9 +176,9 @@ void iguana_msgrequestQ(struct iguana_info *coin,struct iguana_peer *addr,int32_
     queue_enqueue("msgrequest",&coin->msgrequestQ,&msg->DL,0);
 }
 
-int32_t iguana_process_msgrequestQ(struct iguana_info *coin)
+int32_t iguana_process_msgrequestQ(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    struct iguana_peermsgrequest *msg; int32_t height,len,flag = 0; bits256 checktxid; struct iguana_txid *tx,T;
+    struct iguana_peermsgrequest *msg; struct instantdex_accept *ap; int32_t height,len,flag = 0; bits256 checktxid; struct iguana_txid *tx,T;
     if ( (msg= queue_dequeue(&coin->msgrequestQ,0)) != 0 )
     {
         flag = 1;
@@ -221,6 +222,20 @@ int32_t iguana_process_msgrequestQ(struct iguana_info *coin)
             else if ( msg->type == MSG_BUNDLE )
             {
                 
+            }
+            else if ( msg->type == MSG_QUOTE )
+            {
+                if ( (ap= instantdex_quotefind(myinfo,coin,msg->addr,msg->hash2)) == 0 )
+                {
+                    if ( GETBIT(ap->peerhas,msg->addr->addrind) == 0 )
+                    {
+                        if ( (len= instantdex_quoterequest(myinfo,coin,&coin->blockspace[sizeof(struct iguana_msghdr)],sizeof(coin->blockspace),msg->addr,msg->hash2)) > 0 )
+                        {
+                            iguana_queue_send(coin,msg->addr,0,coin->blockspace,"quote",len,0,0);
+                            SETBIT(ap->peerhas,msg->addr->addrind);
+                        }
+                    }
+                }
             }
         }
         free(msg);

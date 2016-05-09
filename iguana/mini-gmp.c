@@ -4420,7 +4420,7 @@ int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
 	}
     zeroes = 0;
 	for (p=coinaddr; *p==base58_chars[0]; p++)
-		zeroes++;
+		data[zeroes++] = 0;
     mpz_export(data+zeroes,&count,1,sizeof(data[0]),-1,0,bn);
 	if ( count >= 2 && data[count - 1] == 0 && data[count - 2] >= 0x80 )
 		count--;
@@ -4428,7 +4428,7 @@ int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
 	//memset(data,0,be_sz);
     //for (i=0; i<count; i++)
     //    data[i+zeroes] = revdata[count - 1 - i];
-    //printf("len.%d be_sz.%d zeroes.%d data[0] %02x\n",len,be_sz,zeroes,data[0]);
+    //printf("len.%d be_sz.%d zeroes.%d data[0] %02x %02x\n",be_sz+zeroes,be_sz,zeroes,data[0],data[1]);
     mpz_clear(bn), mpz_clear(bn58);
 	return(be_sz);
 }

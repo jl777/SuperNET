@@ -204,11 +204,18 @@ char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag
 
 void category_init(struct supernet_info *myinfo)
 {
-    bits256 pangeahash;
+    bits256 pangeahash,instantdexhash;
     category_subscribe(myinfo,GENESIS_PUBKEY,GENESIS_PUBKEY);
     pangeahash = calc_categoryhashes(0,"pangea",0);
+    myinfo->pangea_category = pangeahash;
     category_subscribe(myinfo,pangeahash,GENESIS_PUBKEY);
     category_processfunc(pangeahash,GENESIS_PUBKEY,pangea_hexmsg);
     category_chain_functions(myinfo,pangeahash,GENESIS_PUBKEY,sizeof(bits256),sizeof(bits256),0,0,0,0,0,0);
-    exchanges777_init(myinfo,0,0);
+    instantdexhash = calc_categoryhashes(0,"InstantDEX",0);
+    myinfo->instantdex_category = instantdexhash;
+    category_subscribe(myinfo,instantdexhash,GENESIS_PUBKEY);
+    category_processfunc(instantdexhash,GENESIS_PUBKEY,InstantDEX_hexmsg);
+    category_processfunc(instantdexhash,myinfo->myaddr.persistent,InstantDEX_hexmsg);
+    
+    //exchanges777_init(myinfo,0,0);
 }

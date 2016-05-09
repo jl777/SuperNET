@@ -320,15 +320,14 @@ bits256 instantdex_rwoffer(int32_t rwflag,int32_t *lenp,uint8_t *serialized,stru
 
 char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extraser,int32_t extralen)
 {
-    char *reqstr,*hexstr,*retstr; struct instantdex_msghdr *msg; bits256 instantdexhash,orderhash;
+    char *reqstr,*hexstr,*retstr; struct instantdex_msghdr *msg; bits256 orderhash;
     int32_t i,olen,slen,datalen; uint8_t serialized[sizeof(*offer) + 2]; uint64_t nxt64bits;
-    instantdexhash = calc_categoryhashes(0,"InstantDEX",0);
-    category_subscribe(myinfo,instantdexhash,GENESIS_PUBKEY);
+    category_subscribe(myinfo,myinfo->instantdex_category,GENESIS_PUBKEY);
     jaddstr(argjson,"cmd",cmdstr);
     jaddstr(argjson,"agent","SuperNET");
     jaddstr(argjson,"method","DHT");
     jaddstr(argjson,"handle",myinfo->handle);
-    jaddbits256(argjson,"categoryhash",instantdexhash);
+    jaddbits256(argjson,"categoryhash",myinfo->instantdex_category);
     jaddbits256(argjson,"traderpub",myinfo->myaddr.persistent);
     orderhash = instantdex_rwoffer(1,&olen,serialized,offer);
     if ( 1 )
@@ -362,7 +361,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
         printf(">>>>>>>>>>>> instantdex send.(%s) datalen.%d allocsize.%d crc.%x\n",cmdstr,datalen,msg->sig.allocsize,calc_crc32(0,(void *)((long)msg + 8),datalen-8));
         hexstr = malloc(msg->sig.allocsize*2 + 1);
         init_hexbytes_noT(hexstr,(uint8_t *)msg,msg->sig.allocsize);
-        retstr = SuperNET_categorymulticast(myinfo,0,instantdexhash,desthash,hexstr,0,hops,1,argjson,0);
+        retstr = SuperNET_categorymulticast(myinfo,0,myinfo->instantdex_category,desthash,hexstr,0,hops,1,argjson,0);
         free_json(argjson), free(hexstr), free(msg);
         return(retstr);
     }
@@ -674,6 +673,8 @@ struct bitcoin_swapinfo *instantdex_statemachinefind(struct supernet_info *myinf
 struct instantdex_accept *instantdex_offerfind(struct supernet_info *myinfo,struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel,int32_t requeue)
 {
     struct instantdex_accept PAD,*ap,*retap = 0; uint32_t now; cJSON *item,*offerobj; char *type;
+    if ( exchange == 0 )
+        return(0);
     now = (uint32_t)time(NULL);
     memset(&PAD,0,sizeof(PAD));
     queue_enqueue("acceptableQ",&exchange->acceptableQ,&PAD.DL,0);
@@ -693,9 +694,9 @@ struct instantdex_accept *instantdex_offerfind(struct supernet_info *myinfo,stru
                 //printf("item.(%s)\n",jprint(item,0));
                 if ( (offerobj= jobj(item,"offer")) != 0 && (type= jstr(offerobj,"type")) != 0 )
                 {
-                    if ( strcmp(type,"bid") == 0 && bids != 0 )
+                    if ( bids != 0 && strcmp(type,"bid") == 0 )
                         jaddi(bids,jduplicate(offerobj));
-                    else if ( strcmp(type,"ask") == 0 && asks != 0 )
+                    else if ( asks != 0 && strcmp(type,"ask") == 0 )
                         jaddi(asks,jduplicate(offerobj));
                 }
                 free_json(item);
@@ -708,6 +709,122 @@ struct instantdex_accept *instantdex_offerfind(struct supernet_info *myinfo,stru
         } else free(ap);
     }
     return(retap);
+}
+
+int32_t instantdex_peerhas_clear(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr)
+{
+    struct instantdex_accept PAD,*ap; struct exchange_info *exchange; int32_t ind,num = 0;
+    if ( addr != 0 && (exchange= exchanges777_find("bitcoin")) != 0 )
+    {
+        //printf("clear all bits for addrind.%d\n",addr->addrind);
+        ind = addr->addrind;
+        memset(&PAD,0,sizeof(PAD));
+        queue_enqueue("acceptableQ",&exchange->acceptableQ,&PAD.DL,0);
+        while ( (ap= queue_dequeue(&exchange->acceptableQ,0)) != 0 && ap != &PAD )
+        {
+            CLEARBIT(ap->peerhas,ind);
+            queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
+        }
+    }
+    return(num);
+}
+
+uint64_t instantdex_basebits(char *base)
+{
+    if ( is_decimalstr(base) != 0 )
+        return(calc_nxt64bits(base));
+    else return(stringbits(base));
+}
+
+int32_t instantdex_unbasebits(char *base,uint64_t basebits)
+{
+    char tmp[9];
+    unstringbits(tmp,basebits);
+    if ( iguana_coinfind(tmp) == 0 )
+    {
+        sprintf(base,"%lld",(long long)basebits);
+        return(1);
+    }
+    else
+    {
+        strcmp(base,tmp);
+        return(0);
+    }
+}
+
+uint64_t instantdex_decodehash(char *base,char *rel,int64_t *pricep,bits256 encodedhash)
+{
+    instantdex_unbasebits(base,encodedhash.ulongs[1]);
+    instantdex_unbasebits(rel,encodedhash.ulongs[2]);
+    *pricep = encodedhash.ulongs[3];
+    return(encodedhash.ulongs[0]);
+}
+
+bits256 instantdex_encodehash(char *base,char *rel,int64_t price,uint64_t orderid)
+{
+    bits256 encodedhash;
+    encodedhash.ulongs[0] = orderid;
+    encodedhash.ulongs[1] = instantdex_basebits(base);
+    encodedhash.ulongs[2] = instantdex_basebits(rel);
+    encodedhash.ulongs[3] = price;
+    return(encodedhash);
+}
+
+struct instantdex_accept *instantdex_quotefind(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,bits256 encodedhash)
+{
+    char base[9],rel[9]; int64_t pricetoshis; uint64_t orderid;
+    orderid = instantdex_decodehash(base,rel,&pricetoshis,encodedhash);
+    return(instantdex_offerfind(myinfo,exchanges777_find("bitcoin"),0,0,orderid,base,rel,1));
+}
+
+int32_t instantdex_quoterequest(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *serialized,int32_t maxlen,struct iguana_peer *addr,bits256 encodedhash)
+{
+    struct instantdex_accept *ap; int32_t olen; bits256 orderhash;
+    if ( (ap= instantdex_quotefind(myinfo,coin,addr,encodedhash)) != 0 )
+    {
+        orderhash = instantdex_rwoffer(1,&olen,serialized,&ap->offer);
+        if ( orderhash.ulongs[0] == ap->orderid )
+            return(olen);
+        else return(-1);
+    }
+    return(0);
+}
+
+int32_t instantdex_quote(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,uint8_t *serialized,int32_t recvlen)
+{
+    bits256 orderhash,encodedhash; int32_t checklen; struct instantdex_accept A,*ap;
+    memset(&A,0,sizeof(A));
+    orderhash = instantdex_rwoffer(0,&checklen,serialized,&A.offer);
+    if ( checklen == recvlen )
+    {
+        encodedhash = instantdex_encodehash(A.offer.base,A.offer.rel,A.offer.price64,A.orderid);
+        if ( (ap= instantdex_quotefind(myinfo,coin,addr,encodedhash)) == 0 )
+        {
+            init_hexbytes_noT(addr->TXDATA.ptr,serialized,recvlen);
+            SuperNET_hexmsgadd(myinfo,myinfo->instantdex_category,GENESIS_PUBKEY,addr->TXDATA.ptr,tai_now(),addr->ipaddr);
+        }
+        else
+        {
+            SETBIT(ap->peerhas,addr->addrind);
+            printf("instantdex_quote: got %llx which was already there\n",(long long)encodedhash.txid);
+        }
+    } else printf("instantdex_quote: checklen.%d != recvlen.%d\n",checklen,recvlen);
+    return(checklen);
+}
+
+void instantdex_propagate(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *ap)
+{
+    bits256 orderhash; uint8_t serialized[8192]; int32_t i,len; struct iguana_peer *addr; struct iguana_info *coin;
+    orderhash = instantdex_rwoffer(1,&len,&serialized[sizeof(struct iguana_msghdr)],&ap->offer);
+    if ( (coin= iguana_coinfind("BTCD")) != 0 && coin->peers.numranked > 0 )
+    {
+        for (i=0; i<coin->peers.numranked; i++)
+            if ( (addr= coin->peers.ranked[i]) != 0 && addr->supernet != 0 && addr->usock >= 0 && GETBIT(ap->peerhas,addr->addrind) == 0 )
+            {
+                SETBIT(ap->peerhas,addr->addrind);
+                iguana_queue_send(coin,addr,0,serialized,"quote",len,0,0);
+            }
+    }
 }
 
 struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *A,double minperc)
@@ -1134,6 +1251,7 @@ char *instantdex_createaccept(struct supernet_info *myinfo,struct instantdex_acc
             printf("myside.(%s) != base.%s or rel.%s\n",mysidestr,base,rel);
         }
         instantdex_acceptset(ap,base,rel,duration,myside,acceptdir,price,basevolume,offerer,0,minperc);
+        instantdex_propagate(myinfo,exchange,ap);
         if ( queueflag != 0 )
         {
             printf("acceptableQ <- %llu\n",(long long)ap->orderid);
@@ -1147,10 +1265,9 @@ char *instantdex_createaccept(struct supernet_info *myinfo,struct instantdex_acc
 
 void instantdex_update(struct supernet_info *myinfo)
 {
-    struct instantdex_msghdr *pm; struct category_msg *m; bits256 instantdexhash; char *str,remote[64]; queue_t *Q; struct queueitem *item; struct category_info *cat;
-    instantdexhash = calc_categoryhashes(0,"InstantDEX",0);
-    //char str2[65]; printf("instantdexhash.(%s)\n",bits256_str(str2,instantdexhash));
-    if ( (Q= category_Q(&cat,instantdexhash,myinfo->myaddr.persistent)) != 0 && queue_size(Q) > 0 && (item= Q->list) != 0 )
+    struct instantdex_msghdr *pm; struct category_msg *m; char *str,remote[64]; queue_t *Q; struct queueitem *item; struct category_info *cat;
+    //char str2[65]; printf("myinfo->instantdex_category.(%s)\n",bits256_str(str2,myinfo->instantdex_category));
+    if ( (Q= category_Q(&cat,myinfo->instantdex_category,myinfo->myaddr.persistent)) != 0 && queue_size(Q) > 0 && (item= Q->list) != 0 )
     {
         m = (void *)item;
         m = queue_dequeue(Q,0);

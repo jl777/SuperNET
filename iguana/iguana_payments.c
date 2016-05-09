@@ -300,22 +300,24 @@ char *iguana_signunspents(struct supernet_info *myinfo,struct iguana_info *coin,
             if ( (txobj= bitcoin_txcreate(coin,locktime)) != 0 )
             {
                 iguana_createvins(myinfo,coin,txobj,vins);
-                if ( iguana_addressvalidate(coin,&addrtype,rmd160,coinaddr) < 0 )
+                if ( iguana_addressvalidate(coin,&addrtype,coinaddr) < 0 )
                 {
                     free_json(vins), free_json(privkeys), free_json(txobj);
                     printf("illegal destination address.(%s)\n",coinaddr);
                     return(0);
                 }
+                bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
                 spendlen = bitcoin_standardspend(spendscript,0,rmd160);
                 bitcoin_txoutput(coin,txobj,spendscript,spendlen,satoshis);
                 if ( change > 0 )
                 {
-                    if ( iguana_addressvalidate(coin,&addrtype,rmd160,changeaddr) < 0 )
+                    if ( iguana_addressvalidate(coin,&addrtype,changeaddr) < 0 )
                     {
                         free_json(vins), free_json(privkeys), free_json(txobj);
                         printf("illegal destination address.(%s)\n",changeaddr);
                         return(0);
                     }
+                    bitcoin_addr2rmd160(&addrtype,rmd160,changeaddr);
                     spendlen = bitcoin_standardspend(spendscript,0,rmd160);
                     bitcoin_txoutput(coin,txobj,spendscript,spendlen,change);
                 }
@@ -350,11 +352,11 @@ char *iguana_signunspents(struct supernet_info *myinfo,struct iguana_info *coin,
 
 char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,uint64_t satoshis,uint64_t txfee,char *comment,char *comment2,int32_t minconf,char *account)
 {
-    uint8_t addrtype,rmd160[20]; int32_t i,j,num,completed,numwaddrs; struct iguana_waddress **waddrs,*waddr; uint64_t *unspents,value,avail=0; char *signedtx = 0; cJSON *retjson;
+    uint8_t addrtype; int32_t i,j,num,completed,numwaddrs; struct iguana_waddress **waddrs,*waddr; uint64_t *unspents,value,avail=0; char *signedtx = 0; cJSON *retjson;
     //sendtoaddress	<bitcoinaddress> <amount> [comment] [comment-to]	<amount> is a real and is rounded to 8 decimal places. Returns the transaction ID <txid> if successful.	Y
     if ( coinaddr != 0 && coinaddr[0] != 0 && satoshis != 0 )
     {
-        if ( iguana_addressvalidate(coin,&addrtype,rmd160,coinaddr) < 0 )
+        if ( iguana_addressvalidate(coin,&addrtype,coinaddr) < 0 )
             return(clonestr("{\"error\":\"invalid coin address\"}"));
         waddrs = (struct iguana_waddress **)coin->blockspace;
         numwaddrs = iguana_unspentslists(myinfo,coin,waddrs,(int32_t)(sizeof(coin->blockspace)/sizeof(*waddrs)),(uint64_t)1 << 62,minconf,account);
@@ -441,7 +443,7 @@ ZERO_ARGS(bitcoinrpc,makekeypair)
 
 STRING_ARG(bitcoinrpc,validatepubkey,pubkeystr)
 {
-    uint8_t rmd160[20],pubkey[65],addrtype = 0; int32_t plen; char coinaddr[128],*str; cJSON *retjson;
+    uint8_t pubkey[65],addrtype = 0; int32_t plen; char coinaddr[128],*str; cJSON *retjson;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     plen = (int32_t)strlen(pubkeystr) >> 1;
@@ -451,7 +453,7 @@ STRING_ARG(bitcoinrpc,validatepubkey,pubkeystr)
         decode_hex(pubkey,plen,pubkeystr);
         if ( (str= bitcoin_address(coinaddr,addrtype,pubkey,plen)) != 0 )
         {
-            if ( iguana_addressvalidate(coin,&addrtype,rmd160,coinaddr) < 0 )
+            if ( iguana_addressvalidate(coin,&addrtype,coinaddr) < 0 )
                 return(clonestr("{\"error\":\"invalid coin address\"}"));
             retjson = cJSON_CreateObject();
             jaddstr(retjson,"result","success");

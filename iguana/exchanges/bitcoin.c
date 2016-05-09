@@ -45,7 +45,7 @@ int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr
         memcpy(rmd160,buf+1,20);
         if ( (buf[len - 4]&0xff) == hash.bytes[31] && (buf[len - 3]&0xff) == hash.bytes[30] &&(buf[len - 2]&0xff) == hash.bytes[29] &&(buf[len - 1]&0xff) == hash.bytes[28] )
         {
-            //printf("coinaddr.(%s) valid checksum\n",coinaddr);
+            printf("coinaddr.(%s) valid checksum addrtype.%02x\n",coinaddr,*addrtypep);
             return(20);
         }
         else
@@ -67,9 +67,6 @@ char *bitcoin_address(char *coinaddr,uint8_t addrtype,uint8_t *pubkey_or_rmd160,
         calc_rmd160_sha256(data+1,pubkey_or_rmd160,len);
     else memcpy(data+1,pubkey_or_rmd160,20);
     //btc_convrmd160(checkaddr,addrtype,data+1);
-    //for (i=0; i<20; i++)
-    //    printf("%02x",data[i+1]);
-    //printf(" RMD160 len.%d\n",len);
     data[0] = addrtype;
     hash = bits256_doublesha256(0,data,21);
     for (i=0; i<4; i++)
@@ -455,7 +452,7 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
             jaddnum(json,"volume",volume);
             jaddstr(json,"BTC",myinfo->myaddr.BTC);
             jaddnum(json,"minperc",jdouble(argjson,"minperc"));
-            //printf("trade dir.%d (%s/%s) %.6f vol %.8f\n",dir,base,"BTC",price,volume);
+            printf("trade dir.%d (%s/%s) %.6f vol %.8f\n",dir,base,"BTC",price,volume);
             if ( (str= instantdex_createaccept(myinfo,&ap,exchange,base,"BTC",price,volume,-dir,dir > 0 ? "BTC" : base,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits,0,jdouble(argjson,"minperc"))) != 0 && ap != 0 )
                 retstr = instantdex_checkoffer(myinfo,&txid,exchange,ap,json), free(str);
             else printf("null return queueaccept\n");

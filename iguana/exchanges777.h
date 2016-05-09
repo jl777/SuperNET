@@ -115,7 +115,7 @@ struct instantdex_offer
 
 struct instantdex_accept
 {
-    struct queueitem DL;
+    struct queueitem DL; uint8_t peerhas[IGUANA_MAXPEERS/8];
     uint64_t pendingvolume64,orderid;
     uint32_t dead; int32_t didstate;
     struct instantdex_offer offer;

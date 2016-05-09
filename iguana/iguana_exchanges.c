@@ -933,7 +933,7 @@ struct exchange_info *exchanges777_info(char *exchangestr,int32_t sleepflag,cJSO
 
 void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sleepflag)
 {
-    int32_t i,n; cJSON *argjson,*item; bits256 instantdexhash; struct exchange_info *exchange;
+    int32_t i,n; cJSON *argjson,*item; struct exchange_info *exchange;
     if ( (exchange= exchanges777_find("bitcoin")) == 0 && (exchange= exchange_create("bitcoin",0)) != 0 )
         myinfo->tradingexchanges[myinfo->numexchanges++] = exchange;
     if ( 0 && exchanges != 0 )
@@ -959,11 +959,6 @@ void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sle
             }
         free_json(argjson);
     }
-    instantdexhash = calc_categoryhashes(0,"InstantDEX",0);
-    printf("InstantDEX:\n");
-    category_subscribe(myinfo,instantdexhash,GENESIS_PUBKEY);
-    category_processfunc(instantdexhash,GENESIS_PUBKEY,InstantDEX_hexmsg);
-    category_processfunc(instantdexhash,myinfo->myaddr.persistent,InstantDEX_hexmsg);
 }
 
 #include "../includes/iguana_apidefs.h"
@@ -973,9 +968,12 @@ THREE_STRINGS_AND_THREE_INTS(InstantDEX,orderbook,exchange,base,rel,depth,allfie
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
-        if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
-            return(exchanges777_Qprices(ptr,base,rel,juint(json,"maxseconds"),allfields,depth,json,0,ptr->commission));
-        else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+        if ( exchange != 0 && exchange[0] != 0 )
+        {
+            if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+                return(exchanges777_Qprices(ptr,base,rel,juint(json,"maxseconds"),allfields,depth,json,0,ptr->commission));
+            else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+        } else return(clonestr("{\"error\":\"no exchange specified\"}"));
     } else return(clonestr("{\"error\":\"no remote for this API\"}"));
 }
 
