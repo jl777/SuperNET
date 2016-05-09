@@ -158,34 +158,238 @@ cJSON *iguana_scriptobj(struct iguana_info *coin,uint8_t rmd160[20],char *coinad
     return(scriptobj);
 }
 
-char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,uint64_t satoshis,char *comment,char *comment2,int32_t minconf,char *account)
+int32_t iguana_bestunspent(struct iguana_info *coin,int32_t *aboveip,int64_t *abovep,int32_t *belowip,int64_t *belowp,uint64_t *unspents,int32_t numunspents,uint64_t value)
 {
-    uint8_t addrtype,rmd160[20]; int32_t i,j,numwaddrs,numunspents=0; struct iguana_waddress **waddrs,*waddr; uint64_t *unspents; //struct iguana_msgtx msgtx; char *rawtx=0,*signedtx = 0; bits256 signedtxid; cJSON *vins=0,*privkeys=0;
+    int32_t i,abovei,belowi; int64_t above,below,gap,atx_value;
+    abovei = belowi = -1;
+    for (above=below=i=0; i<numunspents; i++)
+    {
+        if ( (atx_value= unspents[(i << 1) + 1]) <= 0 )
+            continue;
+        //printf("(%.8f vs %.8f)\n",dstr(atx_value),dstr(value));
+        if ( atx_value == value )
+        {
+            *aboveip = *belowip = i;
+            *abovep = *belowp = 0;
+            return(i);
+        }
+        else if ( atx_value > value )
+        {
+            gap = (atx_value - value);
+            if ( above == 0 || gap < above )
+            {
+                above = gap;
+                abovei = i;
+            }
+        }
+        gap = (value - atx_value);
+        if ( below == 0 || gap < below )
+        {
+            below = gap;
+            belowi = i;
+        }
+    }
+    *aboveip = abovei;
+    *abovep = above;
+    *belowip = belowi;
+    *belowp = below;
+    return(abovei >= 0 ? abovei : belowi);
+}
+
+cJSON *iguana_inputsjson(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *totalp,uint64_t amount,uint64_t *unspents,int32_t num)
+{
+    cJSON *item,*vins; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE]; struct iguana_txid *T; struct iguana_unspent *U,*u; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; char coinaddr[64],hexstr[IGUANA_MAXSCRIPTSIZE*2+1]; int32_t height,abovei,belowi,i,spendlen,ind,hdrsi; uint32_t txidind,unspentind; int64_t value,above,below,total = 0; int64_t remains = amount;
+    *totalp = 0;
+    vins = cJSON_CreateArray();
+    for (i=0; i<num; i++)
+    {
+        below = above = 0;
+        if ( iguana_bestunspent(coin,&abovei,&above,&belowi,&below,unspents,num,remains) < 0 )
+        {
+            printf("error finding unspent i.%d of %d, %.8f vs %.8f\n",i,num,dstr(remains),dstr(amount));
+            free_json(vins);
+            return(0);
+        }
+        if ( belowi < 0 || (num == 0 && abovei >= 0) )
+            ind = abovei;
+        else ind = belowi;
+        hdrsi = (int16_t)(unspents[(ind << 1)] >> 32);
+        unspentind = (uint32_t)unspents[(ind << 1)];
+        value = unspents[(ind << 1) + 1];
+        unspents[(ind << 1) + 1] = -1;
+        if ( (bp= coin->bundles[hdrsi]) == 0 )
+        {
+            printf("no bundle.[%d]\n",hdrsi);
+            free_json(vins);
+            return(0);
+        }
+        ramchain = &bp->ramchain;
+        U = RAMCHAIN_PTR(ramchain->H.data,Uoffset);
+        T = RAMCHAIN_PTR(ramchain->H.data,Toffset);
+        if ( unspentind > 0 && unspentind < ramchain->H.data->numunspents )
+        {
+            u = &U[unspentind];
+            if ( (txidind= u->txidind) > 0 && txidind < ramchain->H.data->numtxids )
+            {
+                if ( iguana_unspentindfind(coin,coinaddr,spendscript,&spendlen,&amount,&height,T[txidind].txid,u->vout,coin->bundlescount-1) == unspentind && spendlen > 0 )
+                {
+                    init_hexbytes_noT(hexstr,spendscript,spendlen);
+                    item = cJSON_CreateObject();
+                    jaddbits256(item,"txid",T[txidind].txid);
+                    jaddnum(item,"vout",u->vout);
+                    jaddstr(item,"scriptPubKey",hexstr);
+                    jaddi(vins,item);
+                    total += value;
+                    remains -= value;
+                    printf("value %.8f -> remains %.8f\n",dstr(value),dstr(remains));
+                    if ( remains <= 0 )
+                        break;
+                }
+                else
+                {
+                    char str[65];printf("couldnt get script for %s.%d\n",bits256_str(str,T[txidind].txid),u->vout);
+                    free_json(vins);
+                    return(0);
+                }
+            }
+            else
+            {
+                printf("illegal txidind.%d [%d]\n",txidind,hdrsi);
+                free_json(vins);
+                return(0);
+            }
+        }
+        else
+        {
+            printf("illegal unspentind.u%d [%d]\n",unspentind,hdrsi);
+            free_json(vins);
+            return(0);
+        }
+    }
+    *totalp = total;
+    return(vins);
+}
+
+char *iguana_signunspents(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *completedp,char *coinaddr,uint64_t satoshis,char *changeaddr,uint64_t txfee,uint64_t *unspents,int32_t num)
+{
+    uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; uint32_t locktime = 0; int32_t spendlen,numinputs,i,RTspentflag; struct iguana_msgtx msgtx; char *rawtx=0,*signedtx = 0; bits256 txid,signedtxid; cJSON *txobj,*vins=0,*privkeys=0; struct vin_info *V; int64_t value,total,change; char changeaddress[64]; struct iguana_waddress *waddr;
+    *completedp = 0;
+    if ( (vins= iguana_inputsjson(myinfo,coin,&total,satoshis + txfee,unspents,num)) != 0 )
+    {
+        if ( total < (satoshis + txfee) )
+        {
+            free_json(vins);
+            printf("insufficient total %.8f vs (%.8f + %.8f)\n",dstr(total),dstr(satoshis),dstr(txfee));
+            return(0);
+        }
+        if ( (change= (total - (satoshis + txfee))) > 0 )
+        {
+            if ( changeaddr == 0 || changeaddr[0] == 0 )
+            {
+                if ( (waddr= iguana_getaccountaddress(myinfo,coin,0,0,changeaddress,"change")) == 0 )
+                {
+                    free_json(vins);
+                    return(0);
+                }
+                strcpy(changeaddress,waddr->coinaddr);
+                changeaddr = changeaddress;
+            }
+        }
+        if ( (privkeys= iguana_privkeysjson(myinfo,coin,vins)) != 0 )
+        {
+            if ( (txobj= bitcoin_txcreate(coin,locktime)) != 0 )
+            {
+                iguana_createvins(myinfo,coin,txobj,vins);
+                if ( iguana_addressvalidate(coin,&addrtype,rmd160,coinaddr) < 0 )
+                {
+                    free_json(vins), free_json(privkeys), free_json(txobj);
+                    printf("illegal destination address.(%s)\n",coinaddr);
+                    return(0);
+                }
+                spendlen = bitcoin_standardspend(spendscript,0,rmd160);
+                bitcoin_txoutput(coin,txobj,spendscript,spendlen,satoshis);
+                if ( change > 0 )
+                {
+                    if ( iguana_addressvalidate(coin,&addrtype,rmd160,changeaddr) < 0 )
+                    {
+                        free_json(vins), free_json(privkeys), free_json(txobj);
+                        printf("illegal destination address.(%s)\n",changeaddr);
+                        return(0);
+                    }
+                    spendlen = bitcoin_standardspend(spendscript,0,rmd160);
+                    bitcoin_txoutput(coin,txobj,spendscript,spendlen,change);
+                }
+                if ( (rawtx= bitcoin_json2hex(myinfo,coin,&txid,txobj,0)) != 0 )
+                {
+                    if ( (numinputs= cJSON_GetArraySize(vins)) > 0 && (V= calloc(numinputs,sizeof(*V))) != 0 )
+                    {
+                        memset(&msgtx,0,sizeof(msgtx));
+                        if ( iguana_signrawtransaction(myinfo,coin,&msgtx,&signedtx,&signedtxid,V,numinputs,rawtx,vins,privkeys) > 0 )
+                        {
+                            for (i=0; i<num; i++)
+                            {
+                                value = unspents[(i << 1) + 1];
+                                if ( value == -1 )
+                                    iguana_utxofind(coin,(int32_t)(unspents[i << 1] >> 32),(uint32_t)unspents[i << 1],&RTspentflag,1);
+                            }
+                            *completedp = 1;
+                        }
+                        else printf("signrawtransaction incomplete\n");
+                        free(V);
+                    }
+                    free(rawtx);
+                }
+                free_json(txobj);
+            }
+            free_json(privkeys);
+        }
+        free_json(vins);
+    }
+    return(signedtx);
+}
+
+char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,uint64_t satoshis,uint64_t txfee,char *comment,char *comment2,int32_t minconf,char *account)
+{
+    uint8_t addrtype,rmd160[20]; int32_t i,j,num,completed,numwaddrs; struct iguana_waddress **waddrs,*waddr; uint64_t *unspents,value,avail=0; char *signedtx = 0; cJSON *retjson;
     //sendtoaddress	<bitcoinaddress> <amount> [comment] [comment-to]	<amount> is a real and is rounded to 8 decimal places. Returns the transaction ID <txid> if successful.	Y
     if ( coinaddr != 0 && coinaddr[0] != 0 && satoshis != 0 )
     {
         if ( iguana_addressvalidate(coin,&addrtype,rmd160,coinaddr) < 0 )
             return(clonestr("{\"error\":\"invalid coin address\"}"));
         waddrs = (struct iguana_waddress **)coin->blockspace;
-        numwaddrs = iguana_unspentslists(myinfo,coin,waddrs,(int32_t)(sizeof(coin->blockspace)/sizeof(*waddrs)),satoshis,minconf,0);
+        numwaddrs = iguana_unspentslists(myinfo,coin,waddrs,(int32_t)(sizeof(coin->blockspace)/sizeof(*waddrs)),(uint64_t)1 << 62,minconf,account);
         if ( numwaddrs > 0 )
         {
             unspents = (uint64_t *)((long)coin->blockspace + sizeof(*waddrs)*numwaddrs);
-            for (i=0; i<numwaddrs; i++)
+            for (i=num=0; i<numwaddrs; i++)
             {
                 if ( (waddr= waddrs[i]) != 0 && waddr->numunspents > 0 )
                 {
                     for (j=0; j<waddr->numunspents; j++)
-                        printf("([%d].u%u) ",(uint32_t)(unspents[i]>>32),(uint32_t)unspents[i]);
+                    {
+                        if ( (value= iguana_unspentavail(coin,waddr->unspents[j],minconf,coin->longestchain)) != 0 )
+                        {
+                            unspents[num << 1] = waddr->unspents[j];
+                            unspents[(num << 1) + 1] = value;
+                            num++;
+                            avail += value;
+                            printf("([%d].u%u) ",(uint32_t)(waddr->unspents[j]>>32),(uint32_t)waddr->unspents[j]);
+                        }
+                    }
                     printf("(%s %.8f)\n",waddr->coinaddr,dstr(waddr->balance));
                 }
             }
-        }
-        printf("need to generate send %.8f to %s [%s] [%s] using numaddrs.%d numunspents.%d\n",dstr(satoshis),coinaddr,comment!=0?comment:"",comment2!=0?comment2:"",numwaddrs,numunspents);
-        /*if ( iguana_signrawtransaction(myinfo,coin,&msgtx,&signedtx,&signedtxid,struct vin_info *V,int32_t numinputs,rawtx,vins,privkeys) > 0 )
-        {
-            
-        }*/
+            if ( avail < satoshis+txfee )
+                return(clonestr("{\"error\":\"not enough funds\"}"));
+            else if ( (signedtx= iguana_signunspents(myinfo,coin,&completed,coinaddr,satoshis,coin->changeaddr,txfee,unspents,num)) != 0 )
+            {
+                retjson = cJSON_CreateObject();
+                jaddstr(retjson,"result",signedtx);
+                jadd(retjson,"complete",completed != 0 ? jtrue() : jfalse());
+                free(signedtx);
+                return(jprint(retjson,1));
+            } else return(clonestr("{\"error\":\"couldnt create signedtx\"}"));
+        } else return(clonestr("{\"error\":\"no funded wallet addresses\"}"));
     }
     return(clonestr("{\"error\":\"need address and amount\"}"));
 }
@@ -373,7 +577,7 @@ HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool)
         {
             if ( height >= 0 && height < coin->longestchain && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0 )
             {
-                ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
+                ramchain = &bp->ramchain;
                 if ( (rdata= ramchain->H.data) != 0 )
                 {
                     U = RAMCHAIN_PTR(rdata,Uoffset);
@@ -774,7 +978,7 @@ S_D_SS(bitcoinrpc,sendtoaddress,address,amount,comment,comment2)
         return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     myinfo->expiration++;
     iguana_unspentset(myinfo,coin);
-    return(sendtoaddress(myinfo,coin,address,amount * SATOSHIDEN,comment,comment2,coin->minconfirms,0));
+    return(sendtoaddress(myinfo,coin,address,amount * SATOSHIDEN,coin->txfee,comment,comment2,coin->minconfirms,0));
 }
 
 SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment2)
@@ -785,7 +989,7 @@ SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comme
         return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     myinfo->expiration++;
     iguana_unspentset(myinfo,coin);
-    return(sendtoaddress(myinfo,coin,toaddress,amount * SATOSHIDEN,comment,comment2,minconf,fromaccount));
+    return(sendtoaddress(myinfo,coin,toaddress,amount * SATOSHIDEN,coin->txfee,comment,comment2,minconf,fromaccount));
 }
 
 S_A_I_S(bitcoinrpc,sendmany,fromaccount,payments,minconf,comment)
@@ -806,7 +1010,7 @@ S_A_I_S(bitcoinrpc,sendmany,fromaccount,payments,minconf,comment)
             amount = jdouble(item,0);
             val = amount * SATOSHIDEN;
             printf("(%s %.8f) ",coinaddr,dstr(val));
-            if ( (str= sendtoaddress(myinfo,coin,coinaddr,val,comment,"",minconf,fromaccount)) != 0 )
+            if ( (str= sendtoaddress(myinfo,coin,coinaddr,val,coin->txfee,comment,"",minconf,fromaccount)) != 0 )
             {
                 free(str);
             }

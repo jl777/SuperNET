@@ -242,13 +242,25 @@ int32_t bitweight(uint64_t x);
 #define GETBIT(bits,bitoffset) (((uint8_t *)bits)[(bitoffset) >> 3] & (1 << ((bitoffset) & 7)))
 #define CLEARBIT(bits,bitoffset) (((uint8_t *)bits)[(bitoffset) >> 3] &= ~(1 << ((bitoffset) & 7)))
 
+double OS_milliseconds();
 
 int32_t SaM_test()
 {
     int32_t i,j,wt,iter,totalset,totalclr,setcount[48*8],clrcount[48*8],histo[16]; bits256 seed;
     struct SaM_info state;
-    uint8_t buf[4096*2],bits[2][10][48];
-    double startmilli = time(NULL) * 1000;
+    uint8_t buf[4096*2],bits[2][10][48]; char trits[243];
+    double startmilli = OS_milliseconds();
+    for (i=0; i<sizeof(trits); i++)
+        trits[i] = (rand() % 3) - 1;
+    SaM_Initialize(&state);
+    for (i=0; i<100000; i++)
+    {
+        _SaM_Absorb(&state,(void *)trits,sizeof(trits));
+    }
+    SaM_emit(&state);
+    printf("per SaM %.3f\n",(OS_milliseconds() - startmilli) / i);
+    getchar();
+    
     for (i=0; i<1000; i++)
     {
         _SaM_test("A",InputA,0,OutputA);
@@ -378,7 +390,6 @@ uint64_t SaM_threshold(int32_t leverage)
 
 uint32_t SaM_nonce(void *data,int32_t datalen,int32_t leverage,int32_t maxmillis,uint32_t nonce)
 {
-    double OS_milliseconds();
     uint64_t hit,threshold; bits384 sig; double endmilli;
     if ( leverage != 0 )
     {

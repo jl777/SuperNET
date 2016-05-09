@@ -752,6 +752,10 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->mapflags = mapflags;
     mult = (strcmp("BTC",coin->symbol) != 0) ? 8 : 8;
     maxval = IGUANA_MAXPENDBUNDLES;
+    if ( (coin->txfee= jdouble(json,"txfee") * SATOSHIDEN) == 0 )
+        coin->txfee = 10000;
+    if ( (coin->txfee_perkb= j64bits(json,"txfee_perkb")) < coin->txfee/8 )
+        coin->txfee_perkb = coin->txfee / 8;
     coin->MAXMEM = juint(json,"RAM");
     if ( jobj(json,"prefetchlag") != 0 )
         coin->PREFETCHLAG = jint(json,"prefetchlag");

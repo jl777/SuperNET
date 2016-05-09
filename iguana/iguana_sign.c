@@ -643,10 +643,10 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
                     sig[siglen++] = sighash;
                     vp->signers[j].siglen = siglen;
                     /*for (i=0; i<siglen; i++)
-                        printf("%02x",sig[i]);
-                    printf(" sig, ");
-                    for (i=0; i<plen; i++)
-                        printf("%02x",vp->signers[j].pubkey[i]);*/
+                     printf("%02x",sig[i]);
+                     printf(" sig, ");
+                     for (i=0; i<plen; i++)
+                     printf("%02x",vp->signers[j].pubkey[i]);*/
                     // s2 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141 - s1;
                     char str[65]; printf(" SIGNEDTX.[%02x] siglen.%d sigtxid.%s\n",sig[siglen-1],siglen,bits256_str(str,sigtxid));
                 }
@@ -844,14 +844,14 @@ int32_t iguana_vininfo_create(struct supernet_info *myinfo,struct iguana_info *c
         }
     }
     /*for (i=0; i<msgtx->tx_out; i++)
-    {
-        if ( msgtx->vouts[i].pk_script != 0 )
-        {
-            for (j=0; j<msgtx->vouts[i].pk_scriptlen; j++)
-                printf("%02x",msgtx->vouts[i].pk_script[j]);
-            printf(" pk_script[%d]\n",i);
-        }
-    }*/
+     {
+     if ( msgtx->vouts[i].pk_script != 0 )
+     {
+     for (j=0; j<msgtx->vouts[i].pk_scriptlen; j++)
+     printf("%02x",msgtx->vouts[i].pk_script[j]);
+     printf(" pk_script[%d]\n",i);
+     }
+     }*/
     return(len);
 }
 
@@ -1178,6 +1178,7 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                 }
             }
         }
+        free(serialized), free(serialized2), free(serialized3);
     } else return(-1);
     if ( txobj != 0 )
         free_json(txobj);

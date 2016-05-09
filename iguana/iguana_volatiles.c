@@ -31,7 +31,6 @@ struct iguana_hhaccount *iguana_hhaccountfind(struct iguana_info *coin,uint64_t 
 
 int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t spent_unspentind,uint32_t spent_pkind,uint64_t spent_value,uint32_t spendind,uint32_t fromheight)
 {
-    //static struct iguana_hhutxo *HHUTXO; static struct iguana_hhaccount *HHACCT; static uint32_t numHHUTXO,maxHHUTXO,numHHACCT,maxHHACCT;
     struct iguana_hhutxo *hhutxo,*tmputxo; struct iguana_hhaccount *hhacct,*tmpacct; uint64_t uval,pval;
     if ( spent_hdrsi < 0 )
     {
@@ -40,37 +39,20 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
         {
             HASH_ITER(hh,coin->utxotable,hhutxo,tmputxo)
             {
-                //HASH_DEL(coin->utxotable,hhutxo);
+                hhutxo->u.lockedflag = 0;
                 hhutxo->u.spentflag = 0;
                 hhutxo->u.fromheight = 0;
                 hhutxo->u.prevunspentind = 0;
-                //free(hhutxo);
             }
-            //coin->utxotable = 0;
         }
         if ( coin->accountstable != 0 )
         {
             HASH_ITER(hh,coin->accountstable,hhacct,tmpacct)
             {
-                //HASH_DEL(coin->accountstable,hhacct);
                 hhacct->a.lastunspentind = 0;
                 hhacct->a.total = 0;
-                //free(hhacct);
             }
-            //coin->accountstable = 0;
         }
-        /*if ( HHUTXO != 0 )
-         {
-         free(HHUTXO);
-         maxHHUTXO = numHHUTXO = 0;
-         HHUTXO = 0;
-         }
-         if ( HHACCT != 0 )
-         {
-         free(HHACCT);
-         maxHHACCT = numHHACCT = 0;
-         HHACCT = 0;
-         }*/
         return(0);
     }
     uval = ((uint64_t)spent_hdrsi << 32) | spent_unspentind;
@@ -80,65 +62,84 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
         printf("hhutxo.%p spentflag.%d\n",hhutxo,hhutxo->u.spentflag);
         return(-1);
     }
-    /*if ( 0 && numHHUTXO+1 >= maxHHUTXO )
-     {
-     maxHHUTXO += 1;
-     HHUTXO = realloc(HHUTXO,sizeof(*HHUTXO) * maxHHUTXO);
-     }*/
-    hhutxo = calloc(1,sizeof(*hhutxo));//&HHUTXO[numHHUTXO++], memset(hhutxo,0,sizeof(*hhutxo));
+    hhutxo = calloc(1,sizeof(*hhutxo));
     hhutxo->uval = uval;
     HASH_ADD_KEYPTR(hh,coin->utxotable,&hhutxo->uval,sizeof(hhutxo->uval),hhutxo);
     if ( (hhacct= iguana_hhaccountfind(coin,pval)) == 0 )
     {
-        /*if ( 0 && numHHACCT+1 >= maxHHACCT )
-         {
-         maxHHACCT += 1;
-         HHACCT = realloc(HHACCT,sizeof(*HHACCT) * maxHHACCT);
-         }*/
-        hhacct = calloc(1,sizeof(*hhacct)); // &HHACCT[numHHACCT++], memset(hhacct,0,sizeof(*hhacct));
+        hhacct = calloc(1,sizeof(*hhacct));
         hhacct->pval = pval;
         HASH_ADD_KEYPTR(hh,coin->accountstable,&hhacct->pval,sizeof(hhacct->pval),hhacct);
     }
     //printf("create hhutxo.%p hhacct.%p from.%d\n",hhutxo,hhacct,fromheight);
     hhutxo->u.spentflag = 1;
+    hhutxo->u.lockedflag = 0;
     hhutxo->u.fromheight = fromheight;
     hhutxo->u.prevunspentind = hhacct->a.lastunspentind;
     hhacct->a.lastunspentind = spent_unspentind;
     hhacct->a.total += spent_value;
-    /*if ( iguana_hhutxofind(coin,uval) == 0 || iguana_hhaccountfind(coin,pval) == 0 )
-     {
-     printf("null hh find.(%ld %ld) %p %p\n",(long)uval,(long)pval,iguana_hhutxofind(coin,uval),iguana_hhaccountfind(coin,pval));
-     }*/
     return(0);
 }
 
-int32_t iguana_spentflag(struct iguana_info *coin,int64_t *RTspendp,int32_t *spentheightp,struct iguana_ramchain *ramchain,int16_t spent_hdrsi,uint32_t spent_unspentind,int32_t height,int32_t minconf,int32_t maxconf,uint64_t amount)
+struct iguana_utxo iguana_utxofind(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t spent_unspentind,int32_t *RTspendflagp,int32_t lockflag)
 {
-    uint32_t numunspents; struct iguana_hhutxo *hhutxo; struct iguana_utxo utxo; uint64_t confs,val,RTspend = 0;
-    *spentheightp = 0;
-    numunspents = ramchain->H.data->numunspents;
+    uint64_t val,uval; struct iguana_hhutxo *hhutxo; struct iguana_utxo utxo; struct iguana_ramchain *ramchain; struct iguana_bundle *bp;
+    *RTspendflagp = 0;
     memset(&utxo,0,sizeof(utxo));
+    if ( (bp= coin->bundles[spent_hdrsi]) == 0 )
+        return(utxo);
+    ramchain = &bp->ramchain;
     val = ((uint64_t)spent_hdrsi << 32) | spent_unspentind;
-    if ( spent_unspentind != 0 && spent_unspentind < numunspents )
+    if ( spent_unspentind > 0 && spent_unspentind < ramchain->H.data->numunspents )
     {
         if ( ramchain->Uextras != 0 )
+        {
             utxo = ramchain->Uextras[spent_unspentind];
+            if ( lockflag != 0 )
+            {
+                if ( (hhutxo= iguana_hhutxofind(coin,val)) == 0 )
+                {
+                    uval = ((uint64_t)spent_hdrsi << 32) | spent_unspentind;
+                    if ( (hhutxo= iguana_hhutxofind(coin,uval)) != 0 && hhutxo->u.spentflag != 0 )
+                    {
+                        printf("iguana_hhutxofind warning: hhutxo.%p spentflag.%d\n",hhutxo,hhutxo->u.spentflag);
+                        memset(&utxo,0,sizeof(utxo));
+                        return(utxo);
+                    }
+                    hhutxo = calloc(1,sizeof(*hhutxo));
+                    hhutxo->uval = uval;
+                    HASH_ADD_KEYPTR(hh,coin->utxotable,&hhutxo->uval,sizeof(hhutxo->uval),hhutxo);
+                }
+            }
+        }
         if ( ramchain->Uextras == 0 || utxo.spentflag == 0 )
         {
             //printf("check hhutxo [%d] u%u %p\n",spent_hdrsi,spent_unspentind,iguana_hhutxofind(coin,((uint64_t)202<<32)|3909240));
             if ( (hhutxo= iguana_hhutxofind(coin,val)) != 0 )
             {
+                if ( lockflag != 0 )
+                {
+                    if ( hhutxo->u.lockedflag == 0 )
+                        hhutxo->u.lockedflag = 1;
+                    else printf("iguana_hhutxofind warning: locking already locked [%d].%u\n",spent_hdrsi,spent_unspentind);
+                }
                 utxo = hhutxo->u;
-                if ( utxo.spentflag != 0 )
-                    RTspend = amount;
+                if ( utxo.spentflag != 0 || utxo.lockedflag != 0 )
+                    *RTspendflagp = 1;
             }
         }
-    }
-    else
-    {
-        printf("illegal unspentind.%u vs %u hdrs.%d\n",spent_unspentind,numunspents,spent_hdrsi);
-        return(-1);
-    }
+    } else printf("illegal unspentind.%u vs %u hdrs.%d\n",spent_unspentind,ramchain->H.data->numunspents,spent_hdrsi);
+    return(utxo);
+}
+
+int32_t iguana_spentflag(struct iguana_info *coin,int64_t *RTspendp,int32_t *spentheightp,struct iguana_ramchain *ramchain,int16_t spent_hdrsi,uint32_t spent_unspentind,int32_t height,int32_t minconf,int32_t maxconf,uint64_t amount)
+{
+    uint32_t numunspents; int32_t RTspentflag; struct iguana_utxo utxo; uint64_t confs,RTspend = 0;
+    *spentheightp = 0;
+    numunspents = ramchain->H.data->numunspents;
+    utxo = iguana_utxofind(coin,spent_hdrsi,spent_unspentind,&RTspentflag,0);
+    if ( RTspentflag != 0 )
+        *RTspendp = (amount == 0) ? coin->txfee : amount;
     if ( utxo.spentflag != 0 && utxo.fromheight == 0 )
     {
         printf("illegal unspentind.%u vs %u hdrs.%d zero fromheight?\n",spent_unspentind,numunspents,spent_hdrsi);

@@ -771,6 +771,35 @@ int64_t iguana_waccountbalance(struct supernet_info *myinfo,struct iguana_info *
     return(balance);
 }
 
+cJSON *iguana_privkeysjson(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins)
+{
+    int32_t i,j,n,numinputs; struct iguana_waddress *waddr; struct iguana_waccount *wacct; char *addresses,*address,coinaddr[64]; cJSON *privkeys = cJSON_CreateArray();
+    if ( (numinputs= cJSON_GetArraySize(vins)) > 0 )
+    {
+        addresses = calloc(numinputs,64);
+        for (i=n=0; i<numinputs; i++)
+        {
+            if ( (address= iguana_inputaddress(coin,coinaddr,jitem(vins,i))) != 0 )
+            {
+                for (j=0; j<n; j++)
+                {
+                    if ( strcmp(&addresses[64 * j],address) == 0 )
+                        break;
+                }
+                if ( j == n )
+                    strcpy(&addresses[64 * n++],address);
+            }
+        }
+        for (i=0; i<n; i++)
+        {
+            if ( (waddr= iguana_waddresssearch(myinfo,coin,&wacct,&addresses[i * 64])) != 0 )
+                jaddistr(privkeys,waddr->wifstr);
+        }
+        free(addresses);
+    }
+    return(privkeys);
+}
+
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
@@ -863,6 +892,7 @@ ZERO_ARGS(bitcoinrpc,getinfo)
         jaddstr(retjson,"result","success");
         jaddnum(retjson,"protocolversion",PROTOCOL_VERSION);
         jaddnum(retjson,"kbfee",dstr(coin->txfee_perkb));
+        jaddnum(retjson,"txfee",dstr(coin->txfee));
         jaddnum(retjson,"blocks",coin->blocks.hwmchain.height);
         jaddnum(retjson,"longestchain",coin->longestchain);
         jaddnum(retjson,"port",coin->chain->portp2p);
@@ -911,9 +941,38 @@ STRING_ARG(bitcoinrpc,getnewaddress,account)
     else return(clonestr("{\"error\":\"no wallet payload\"}"));
 }
 
+struct iguana_waddress *iguana_getaccountaddress(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr,char *coinaddr,char *account)
+{
+    char *newstr,*retstr; struct iguana_waccount *wacct; struct iguana_waddress *waddr=0;
+    coinaddr[0] = 0;
+    if ( (wacct= iguana_waccountfind(myinfo,coin,account)) == 0 )
+        wacct = iguana_waccountcreate(myinfo,coin,account);
+    if ( wacct != 0 )
+    {
+        if ( (waddr= wacct->current) == 0 )
+        {
+            if ( (retstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,0)) != 0 )
+            {
+                free(retstr);
+                retstr = myinfo->decryptstr, myinfo->decryptstr = 0;
+                newstr = getnewaddress(myinfo,&waddr,coin,account,retstr);
+                if ( retstr != 0 )
+                    scrubfree(retstr);
+                retstr = newstr;
+            } else return(0);
+        }
+    }
+    if ( waddr != 0 )
+    {
+        strcpy(coinaddr,waddr->coinaddr);
+        return(waddr);
+    }
+    return(0);
+}
+
 STRING_ARG(bitcoinrpc,getaccountaddress,account)
 {
-    char *retstr,*newstr; struct iguana_waccount *wacct; struct iguana_waddress *waddr=0; cJSON *retjson;
+    char coinaddr[64]; struct iguana_waddress *waddr=0; cJSON *retjson;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( myinfo->expiration == 0 )
@@ -921,30 +980,12 @@ STRING_ARG(bitcoinrpc,getaccountaddress,account)
     myinfo->expiration++;
     if ( account != 0 && account[0] != 0 )
     {
-        if ( (wacct= iguana_waccountfind(myinfo,coin,account)) == 0 )
-            wacct = iguana_waccountcreate(myinfo,coin,account);
-        if ( wacct != 0 )
-        {
-            if ( (waddr= wacct->current) == 0 )
-            {
-                if ( (retstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,0)) != 0 )
-                {
-                    free(retstr);
-                    retstr = myinfo->decryptstr, myinfo->decryptstr = 0;
-                    printf("loginstr.(%s)\n",retstr);
-                    newstr = getnewaddress(myinfo,&waddr,coin,account,retstr);
-                    if ( retstr != 0 )
-                        scrubfree(retstr);
-                    retstr = newstr;
-                } else return(clonestr("{\"error\":\"no wallet payload\"}"));
-            }
-            if ( waddr != 0 )
-                retjson = iguana_waddressjson(0,waddr);
-            else return(clonestr("{\"error\":\"couldnt create address\"}"));
-            jaddstr(retjson,"account",account);
-            jaddstr(retjson,"result","success");
-            return(jprint(retjson,1));
-        } else return(clonestr("{\"error\":\"cant find account\"}"));
+        if ( (waddr= iguana_getaccountaddress(myinfo,coin,json,remoteaddr,coinaddr,account)) != 0 )
+            retjson = iguana_waddressjson(0,waddr);
+        else return(clonestr("{\"error\":\"couldnt create address\"}"));
+        jaddstr(retjson,"account",account);
+        jaddstr(retjson,"result","success");
+        return(jprint(retjson,1));
     }
     return(clonestr("{\"error\":\"no account specified\"}"));
 }
