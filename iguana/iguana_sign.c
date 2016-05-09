@@ -1172,9 +1172,13 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                     }
                 }
                 iguana_vininfo_create(myinfo,coin,serialized2,maxsize,msgtx,vins,numinputs,V);
-                if ( (complete= bitcoin_verifyvins(coin,signedtxidp,&signedtx,msgtx,serialized3,maxsize,V,SIGHASH_ALL)) > 0 )
+                if ( (complete= bitcoin_verifyvins(coin,signedtxidp,&signedtx,msgtx,serialized3,maxsize,V,SIGHASH_ALL)) > 0 && signedtx != 0 )
                 {
-                    iguana_interpreter(coin,j64bits(txobj,"locktime"),V,numinputs);
+                    if ( iguana_interpreter(coin,j64bits(txobj,"locktime"),V,numinputs) < 0 )
+                    {
+                        printf("iguana_interpreter error.(%s)\n",signedtx);
+                        complete = 0;
+                    }
                 }
             }
         }

@@ -402,6 +402,26 @@ int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *co
     return(num);
 }
 
+int32_t iguana_uvaltxid(struct supernet_info *myinfo,bits256 *txidp,struct iguana_info *coin,int16_t hdrsi,uint32_t unspentind)
+{
+    struct iguana_bundle *bp; struct iguana_unspent *U,*u; struct iguana_txid *T; struct iguana_ramchain *ramchain;
+    if ( (bp= coin->bundles[hdrsi]) == 0 )
+        return(-1);
+    ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
+    U = RAMCHAIN_PTR(ramchain->H.data,Uoffset);
+    T = RAMCHAIN_PTR(ramchain->H.data,Toffset);
+    if ( unspentind > 0 && unspentind < ramchain->H.data->numunspents )
+    {
+        u = &U[unspentind];
+        if ( u->txidind > 0 && u->txidind < ramchain->H.data->numtxids )
+        {
+            *txidp = T[u->txidind].txid;
+            return(unspentind - T[u->txidind].firstvout);
+        }
+    }
+    return(-1);
+}
+
 int64_t iguana_unspentavail(struct iguana_info *coin,uint64_t hdrsi_unspentind,int32_t minconf,int32_t maxconf)
 {
     struct iguana_ramchain *ramchain; struct iguana_bundle *bp; int64_t RTspend; int32_t hdrsi,spentheight,spentflag; struct iguana_unspent *U,*u; uint32_t unspentind;

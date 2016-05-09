@@ -228,12 +228,14 @@ HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag)
      "timereceived" : 1418924714
      },*/
     cJSON *retjson = cJSON_CreateObject();
+    jaddstr(retjson,"error","low priority RPC not implemented");
     return(jprint(retjson,1));
 }
 
 ZERO_ARGS(bitcoinrpc,gettxoutsetinfo)
 {
     cJSON *retjson = cJSON_CreateObject();
+    jaddstr(retjson,"error","low priority RPC not implemented");
     return(jprint(retjson,1));
 }
 
@@ -241,13 +243,7 @@ ZERO_ARGS(bitcoinrpc,listaddressgroupings)
 {
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    return(clonestr("{\"result\":\"success\"}"));
-}
-
-ZERO_ARGS(bitcoinrpc,getrawchangeaddress)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    return(jprint(retjson,1));
+    return(clonestr("{\"error\":\"low priority RPC not implemented\"}"));
 }
 
 SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment)

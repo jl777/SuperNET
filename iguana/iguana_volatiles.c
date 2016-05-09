@@ -122,7 +122,7 @@ struct iguana_utxo iguana_utxofind(struct iguana_info *coin,int16_t spent_hdrsi,
                     if ( hhutxo->u.lockedflag == 0 )
                         hhutxo->u.lockedflag = 1;
                     else printf("iguana_hhutxofind warning: locking already locked [%d].%u\n",spent_hdrsi,spent_unspentind);
-                }
+                } else hhutxo->u.lockedflag = 0;
                 utxo = hhutxo->u;
                 if ( utxo.spentflag != 0 || utxo.lockedflag != 0 )
                     *RTspendflagp = 1;

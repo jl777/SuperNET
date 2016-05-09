@@ -960,6 +960,7 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
 cJSON *iguana_privkeysjson(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins);
 char *iguana_inputaddress(struct iguana_info *coin,char *coinaddr,cJSON *vinobj);
 struct iguana_waddress *iguana_getaccountaddress(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr,char *coinaddr,char *account);
+int32_t iguana_uvaltxid(struct supernet_info *myinfo,bits256 *txidp,struct iguana_info *coin,int16_t hdrsi,uint32_t unspentind);
 
 extern int32_t HDRnet,netBLOCKS;
 

@@ -940,19 +940,64 @@ TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array)
     return(jprint(retjson,1));
 }
 
-INT_AND_ARRAY(bitcoinrpc,lockunspent,flag,array)
+ZERO_ARGS(bitcoinrpc,getrawchangeaddress)
 {
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     cJSON *retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result",coin->changeaddr);
+    return(jprint(retjson,1));
+}
+
+INT_AND_ARRAY(bitcoinrpc,lockunspent,flag,array)
+{
+    int32_t RTspendflag,vout,hdrsi,i,n,height; cJSON *item,*retjson; bits256 txid; uint32_t unspentind;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    retjson = cJSON_CreateObject();
+    if ( array != 0 && (n= cJSON_GetArraySize(array)) > 0 )
+    {
+        for (i=0; i<n; i++)
+        {
+            item = jitem(array,i);
+            if ( jobj(item,"txid") != 0 && jobj(item,"vout") != 0 )
+            {
+                txid = jbits256(item,"txid");
+                vout = jint(item,"vout");
+                if ( (unspentind= iguana_unspentindfind(coin,0,0,0,0,&height,txid,vout,coin->bundlescount-1)) != 0 )
+                {
+                    hdrsi = height / coin->chain->bundlesize;
+                    iguana_utxofind(coin,hdrsi,unspentind,&RTspendflag,!flag);
+                }
+            }
+        }
+    }
     return(jprint(retjson,1));
 }
 
 ZERO_ARGS(bitcoinrpc,listlockunspent)
 {
+    cJSON *array,*item,*retjson; bits256 txid; struct iguana_hhutxo *hhutxo,*tmputxo; int32_t hdrsi,vout; uint32_t unspentind;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    cJSON *retjson = cJSON_CreateObject();
+    array = cJSON_CreateArray();
+    retjson = cJSON_CreateObject();
+    if ( coin->utxotable != 0 )
+    {
+        HASH_ITER(hh,coin->utxotable,hhutxo,tmputxo)
+        {
+            item = cJSON_CreateObject();
+            hdrsi = (int32_t)(hhutxo->uval >> 32);
+            unspentind = (uint32_t)hhutxo->uval;
+            if ( (vout= iguana_uvaltxid(myinfo,&txid,coin,hdrsi,unspentind)) >= 0 )
+            {
+                jaddbits256(item,"txid",txid);
+                jaddnum(item,"vout",vout);
+                jaddi(array,item);
+            }
+        }
+    }
+    jadd(retjson,"result",array);
     return(jprint(retjson,1));
 }
 
