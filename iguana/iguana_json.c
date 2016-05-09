@@ -636,10 +636,12 @@ STRING_ARG(iguana,startcoin,activecoin)
 
 STRING_ARG(iguana,stopcoin,activecoin)
 {
+    if ( activecoin[0] != 0 )
+        coin = iguana_coinfind(activecoin);
     if ( coin != 0 )
     {
         coin->active = 0;
-        iguana_coinpurge(coin);
+        //iguana_coinpurge(coin);
         return(clonestr("{\"result\":\"coin stopped\"}"));
     } else return(clonestr("{\"error\":\"stopcoin needs coin\"}"));
 }

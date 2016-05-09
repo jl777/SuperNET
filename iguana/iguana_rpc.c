@@ -654,7 +654,12 @@ char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,ch
                     sprintf(symbol,"%c%c%c%c",c,'T',c+1,c+2);
                 }
             }
-            else safecopy(symbol,jstr(json,"coin"),sizeof(symbol));
+            else
+            {
+                safecopy(symbol,jstr(json,"coin"),sizeof(symbol));
+                for (i=0; symbol[i]!=0; i++)
+                    symbol[i] = toupper(symbol[i]);
+            }
             if ( myinfo->rpcsymbol[0] == 0 )
                 strcpy(myinfo->rpcsymbol,symbol);
         }
