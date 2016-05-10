@@ -287,7 +287,7 @@ char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t
 
 char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,uint16_t port)
 {
-    cJSON *retjson; uint64_t tag; uint32_t timeout; char *jsonstr,*method,*retjsonstr,*retstr = 0;
+    cJSON *retjson; uint64_t tag; uint32_t timeout; char *jsonstr,*hexmsg,*method,*retjsonstr,*retstr = 0;
     //char str[65]; printf("processJSON %p %s\n",&myinfo->privkey,bits256_str(str,myinfo->privkey));
     if ( json != 0 )
     {
@@ -298,10 +298,10 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remote
         }
         if ( (timeout= juint(json,"timeout")) == 0 )
             timeout = IGUANA_JSONTIMEOUT;
-        if ( (method= jstr(json,"method")) != 0 && strcmp(method,"DHT") == 0 && remoteaddr != 0 )
+        if ( (method= jstr(json,"method")) != 0 && strcmp(method,"DHT") == 0 && remoteaddr != 0 && (hexmsg= jstr(json,"hexmsg")) != 0 )
         {
             printf("hexmsgprocess\n");
-            SuperNET_hexmsgprocess(myinfo,0,json,jstr(json,"hexmsg"),remoteaddr);
+            SuperNET_hexmsgprocess(myinfo,0,json,hexmsg,remoteaddr);
             return(clonestr("{\"result\":\"processed remote DHT\"}"));
         }
         jsonstr = jprint(json,0);

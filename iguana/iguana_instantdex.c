@@ -832,6 +832,11 @@ struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,str
 {
     struct instantdex_accept PAD,*ap,*retap = 0; double aveprice;//,retvals[4];
     uint64_t minvol,bestprice64 = 0; uint32_t now; int32_t offerdir;
+    if ( exchange == 0 )
+    {
+        printf("instantdex_acceptable null exchange\n");
+        return(0);
+    }
     aveprice = 0;//instantdex_avehbla(myinfo,retvals,A->offer.base,A->offer.rel,dstr(A->offer.basevolume64));
     now = (uint32_t)time(NULL);
     memset(&PAD,0,sizeof(PAD));
@@ -1021,6 +1026,11 @@ struct bitcoin_swapinfo *bitcoin_swapinit(struct supernet_info *myinfo,struct ex
 char *instantdex_checkoffer(struct supernet_info *myinfo,uint64_t *txidp,struct exchange_info *exchange,struct instantdex_accept *myap,cJSON *argjson)
 {
     char *retstr = 0; struct instantdex_accept *otherap; struct bitcoin_swapinfo *swap; cJSON *newjson; int32_t isbob = 0;
+    if ( exchange == 0 )
+    {
+        printf("instantdex_checkoff null exchange\n");
+        return(0);
+    }
     *txidp = myap->orderid;
     if ( (otherap= instantdex_acceptable(myinfo,exchange,myap,myap->offer.minperc)) == 0 )
     {
@@ -1116,7 +1126,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
             A.offer.minperc = 100;
         if ( strcmp(cmdstr,"BTCoffer") == 0 ) // incoming
         {
-            printf("BTCoffer state\n");
+            printf("BTCoffer state exchange.%p\n",exchange);
             if ( (ap= instantdex_acceptable(myinfo,exchange,&A,A.offer.minperc)) != 0 )
             {
                 if ( (retstr= instantdex_gotoffer(myinfo,exchange,ap,&A,msg,argjson,remoteaddr,signerbits,serdata,serdatalen)) != 0 ) // adds to statemachine if no error
