@@ -801,6 +801,7 @@ int32_t instantdex_quote(struct supernet_info *myinfo,struct iguana_info *coin,s
         if ( (ap= instantdex_quotefind(myinfo,coin,addr,encodedhash)) == 0 )
         {
             init_hexbytes_noT(hexstr,serialized,recvlen);
+            printf("quote send\n");
             SuperNET_hexmsgadd(myinfo,myinfo->instantdex_category,GENESIS_PUBKEY,hexstr,tai_now(),addr->ipaddr);
         }
         else

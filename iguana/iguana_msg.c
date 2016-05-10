@@ -600,12 +600,14 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
         else if ( strcmp(H->command,"InstantDEX") == 0 )
         {
             init_hexbytes_noT(addr->TXDATA.ptr,data,recvlen);
+            printf("peer InstantDEX message\n");
             SuperNET_hexmsgadd(myinfo,myinfo->instantdex_category,GENESIS_PUBKEY,addr->TXDATA.ptr,tai_now(),addr->ipaddr);
             return(0);
         }
         else if ( strcmp(H->command,"pangea") == 0 )
         {
             init_hexbytes_noT(addr->TXDATA.ptr,data,recvlen);
+            printf("pangea InstantDEX message\n");
             SuperNET_hexmsgadd(myinfo,myinfo->pangea_category,GENESIS_PUBKEY,addr->TXDATA.ptr,tai_now(),addr->ipaddr);
             return(0);
         }

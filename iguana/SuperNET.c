@@ -573,7 +573,12 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,uint64_t destipbits,bits256 
     {
         char str[65]; printf("duplicate hex.(%s) for %s\n",hexmsg,bits256_str(str,categoryhash));
         return(clonestr("{\"error\":\"duplicate packet rejected\"}"));
-    } else SuperNET_hexmsgadd(myinfo,categoryhash,subhash,hexmsg,tai_now(),0);
+    }
+    else
+    {
+        printf("DHT send\n");
+        SuperNET_hexmsgadd(myinfo,categoryhash,subhash,hexmsg,tai_now(),0);
+    }
     jsonstr = jprint(json,1);
     if ( broadcastflag != 0 || destipbits == 0 )
     {
@@ -586,8 +591,11 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,uint64_t destipbits,bits256 
                     addr = &Coins[i]->peers.active[j];
                     if ( addr->usock >= 0 && addr->supernet != 0 && (broadcastflag != 0 || category_peer(myinfo,addr,categoryhash,subhash) >= 0) )
                     {
-                        char str[65]; printf("BROADCAST[%d] crc.%x %s SEND.(%d) to %s\n",j,calc_crc32(0,jsonstr,(int32_t)strlen(jsonstr)),bits256_str(str,categoryhash),(int32_t)strlen(jsonstr),addr->ipaddr);
-                        iguana_send_supernet(Coins[i],addr,jsonstr,maxdelay==0?0:(rand()%maxdelay));
+                        if ( strcmp("0.0.0.0",addr->ipaddr) != 0 && strcmp("127.0.0.1",addr->ipaddr) != 0 )
+                        {
+                            char str[65]; printf("BROADCAST[%d] crc.%x %s SEND.(%d) to %s\n",j,calc_crc32(0,jsonstr,(int32_t)strlen(jsonstr)),bits256_str(str,categoryhash),(int32_t)strlen(jsonstr),addr->ipaddr);
+                            iguana_send_supernet(Coins[i],addr,jsonstr,maxdelay==0?0:(rand()%maxdelay));
+                        }
                     }
                 }
             }
@@ -693,7 +701,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,ui
         {
             if ( SuperNET_hexmsgfind(myinfo,category,subhash,hexmsg,0) < 0 )
             {
-                //printf("add.(%s)\n",hexmsg);
+                printf("FORWARD.(%s)\n",hexmsg);
                 newflag = 1;
                 SuperNET_hexmsgadd(myinfo,category,subhash,hexmsg,tai_now(),remoteaddr);
                 forwardstr = SuperNET_forward(myinfo,hexmsg,destipbits,category,subhash,maxdelay,juint(json,"broadcast"),juint(json,"plaintext")!=0);
@@ -703,7 +711,10 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,ui
     if ( (destflag & SUPERNET_ISMINE) != 0 && agent != 0 && method != 0 )
     {
         if ( strcmp(agent,"bitcoinrpc") != 0 && newflag == 0 && hexmsg != 0 && SuperNET_hexmsgfind(myinfo,category,subhash,hexmsg,0) < 0 )
+        {
+            printf("SuperNET_JSON hexmsgadd\n");
             SuperNET_hexmsgadd(myinfo,category,subhash,hexmsg,tai_now(),remoteaddr);
+        }
         if ( (retstr= SuperNET_processJSON(myinfo,json,remoteaddr,port)) != 0 )
         {
             //printf("retstr.(%s)\n",retstr);
