@@ -1417,8 +1417,8 @@ THREE_INTS(bitcoinrpc,listreceivedbyaddress,minconf,includeempty,flag)
     cJSON *retjson,*item,*array,*txids,*vouts; struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr,*tmp2;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    if ( myinfo->expiration == 0 )
-        return(clonestr("{\"error\":\"need to unlock wallet\"}"));
+    //if ( myinfo->expiration == 0 )
+    //    return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     array = cJSON_CreateArray();
     HASH_ITER(hh,myinfo->wallet,wacct,tmp)
     {
@@ -1444,13 +1444,13 @@ STRING_AND_INT(bitcoinrpc,getreceivedbyaddress,address,minconf)
     char *balancestr; cJSON *balancejson,*retjson = cJSON_CreateObject();
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    if ( myinfo->expiration == 0 )
-        return(clonestr("{\"error\":\"need to unlock wallet\"}"));
+    //if ( myinfo->expiration == 0 )
+    //    return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     if ( (balancestr= iguana_balance(IGUANA_CALLARGS,coin->symbol,address,-1,minconf)) != 0 )
     {
         if ( (balancejson= cJSON_Parse(balancestr)) != 0 )
         {
-            jaddnum(retjson,"result",dstr(jdouble(balancejson,"balance")));
+            jaddnum(retjson,"result",jdouble(balancejson,"balance"));
             free_json(balancejson);
         }
     }

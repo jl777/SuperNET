@@ -150,7 +150,7 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                     *ramchainp = ramchain;
                     *depositsp = ACCTS[pkind].total;
                     *lastunspentindp = ACCTS[pkind].lastunspentind;
-                    //printf("[%d] return pkind.%u of %u P.%p %.8f last.%u ACCTS.%p %p\n",i,pkind,numpkinds,P,dstr(*depositsp),*lastunspentindp,ACCTS,ramchain->A);
+                    printf("[%d] return pkind.%u of %u P.%p %.8f last.%u ACCTS.%p %p\n",i,pkind,numpkinds,P,dstr(*depositsp),*lastunspentindp,ACCTS,ramchain->A);
                     if ( P != 0 )
                         *p = P[pkind];
                     return(p);
@@ -196,7 +196,7 @@ int64_t iguana_pkhashbalance(struct supernet_info *myinfo,struct iguana_info *co
     while ( unspentind > 0 )
     {
         uheight = iguana_uheight(coin,ramchain->height,T,rdata->numtxids,&U[unspentind]);
-        if ( uheight < lastheight )
+        if ( lastheight <= 0 || uheight < lastheight )
         {
             deposits += U[unspentind].value;
             if ( lastheight < 0 || iguana_spentflag(coin,&RTspend,&spentheight,ramchain,hdrsi,unspentind,lastheight,minconf,maxconf,U[unspentind].value) == 0 )
@@ -270,7 +270,7 @@ int32_t iguana_pkhasharray(struct supernet_info *myinfo,struct iguana_info *coin
             }
             else
             {
-                //printf("pkhash balance.[%d] from m.%d check %.8f vs %.8f spent %.8f [%.8f]\n",i,m,dstr(netbalance),dstr(deposits),dstr(spent),dstr(deposits)-dstr(spent));
+                printf("pkhash balance.[%d] from m.%d check %.8f vs %.8f spent %.8f [%.8f]\n",i,m,dstr(netbalance),dstr(deposits),dstr(spent),dstr(deposits)-dstr(spent));
                 total += netbalance;
                 n++;
             }
