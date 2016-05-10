@@ -464,6 +464,9 @@ int32_t iguana_queue_send(struct iguana_info *coin,struct iguana_peer *addr,int3
         exit(-1);
         return(-1);
     }
+    else if ( forceflag != 0 )
+        return(iguana_send(coin,addr,serialized,len));
+
     if ( (datalen= iguana_sethdr((void *)serialized,coin->chain->netmagic,cmd,&serialized[sizeof(struct iguana_msghdr)],len)) < 0 )
         return(-1);
     if ( strcmp("getaddr",cmd) == 0 && time(NULL) < addr->lastgotaddr+300 )
