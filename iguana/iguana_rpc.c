@@ -495,6 +495,11 @@ static char *decoderawtransaction(RPCARGS)
     return(sglue1(0,CALLGLUE,"bitcoinrpc","decoderawtransaction","rawtx",params[0]));
 }
 
+static char *validaterawtransaction(RPCARGS)
+{
+    return(sglue1(0,CALLGLUE,"bitcoinrpc","validaterawtransaction","rawtx",params[0]));
+}
+
 static char *decodescript(RPCARGS)
 {
     return(sglue1(0,CALLGLUE,"bitcoinrpc","decodescript","scriptstr",params[0]));
@@ -570,6 +575,7 @@ struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,remotefla
     { "importprivkey",          &importprivkey,          false,  false },
     { "getrawtransaction",      &getrawtransaction,      false,  false },
     { "createrawtransaction",   &createrawtransaction,   false,  false },
+    { "validaterawtransaction", &validaterawtransaction,   false,  true },
     { "decoderawtransaction",   &decoderawtransaction,   false,  true },
     { "decodescript",           &decodescript,           false,  true },
     { "signrawtransaction",     &signrawtransaction,     false,  false },

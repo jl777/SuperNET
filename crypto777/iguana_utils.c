@@ -321,7 +321,7 @@ int32_t decode_hex(unsigned char *bytes,int32_t n,char *hex)
 {
     int32_t adjust,i = 0;
     //printf("decode.(%s)\n",hex);
-    if ( is_hexstr(hex,64) == 0 )
+    if ( is_hexstr(hex,n) == 0 )
     {
         memset(bytes,0,n);
         return(n);

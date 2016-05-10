@@ -27,6 +27,7 @@ TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array);
 
 STRING_ARG(bitcoinrpc,decodescript,scriptstr);
 STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx);
+STRING_ARG(bitcoinrpc,validaterawtransaction,rawtx);
 ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime);
 
 ZERO_ARGS(bitcoinrpc,makekeypair);
