@@ -251,15 +251,13 @@ void iguana_gotaddr(struct iguana_info *coin,struct iguana_peer *addr,struct igu
 
 void iguana_gotping(struct iguana_info *coin,struct iguana_peer *addr,uint64_t nonce,uint8_t *data)
 {
-    int32_t len; char myipaddr[64]; uint8_t serialized[sizeof(struct iguana_msghdr) + sizeof(nonce)];
+    int32_t len; uint8_t serialized[sizeof(struct iguana_msghdr) + sizeof(nonce)];
     len = iguana_rwnum(1,&serialized[sizeof(struct iguana_msghdr)],sizeof(uint64_t),&nonce);
     if ( memcmp(data,&serialized[sizeof(struct iguana_msghdr)],sizeof(nonce)) != 0 )
         printf("ping ser error %llx != %llx\n",(long long)nonce,*(long long *)data);
     iguana_queue_send(coin,addr,0,serialized,"pong",len,0,0);
     if ( addr->supernet != 0 )
     {
-        expand_ipbits(myipaddr,(uint32_t)nonce);
-        printf("send getpeers to %s, myipaddr.(%s)\n",addr->ipaddr,myipaddr);
         iguana_send_supernet(coin,addr,SUPERNET_GETPEERSTR,0);
     }
 }
