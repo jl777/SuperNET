@@ -653,7 +653,7 @@ void iguana_startconnection(void *arg)
     if ( addr->usock < 0 || coin->peers.shuttingdown != 0 )
     {
         strcpy(ipaddr,addr->ipaddr);
-        //printf("refused PEER KILLED. slot.%d for %s:%d usock.%d\n",addr->addrind,ipaddr,coin->chain->portp2p,addr->usock);
+        printf("refused PEER KILLED. slot.%d for %s:%d usock.%d\n",addr->addrind,ipaddr,coin->chain->portp2p,addr->usock);
         iguana_iAkill(coin,addr,1);
     }
     else
@@ -1085,7 +1085,7 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
     else
     {
         iguana_send_version(coin,addr,coin->myservices);
-        //printf("send version myservices.%llu to (%s)\n",(long long)coin->myservices,addr->ipaddr);
+        printf("send version myservices.%llu to (%s)\n",(long long)coin->myservices,addr->ipaddr);
     }
     //sleep(1+(rand()%5));
     //iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);

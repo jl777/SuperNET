@@ -664,8 +664,11 @@ TWO_STRINGS(iguana,addnode,activecoin,ipaddr)
     if ( coin != 0 && ipaddr != 0 && is_ipaddr(ipaddr) != 0 )
     {
         //iguana_possible_peer(coin,ipaddr);
-        if ( (addr= iguana_peerslot(coin,(uint32_t)calc_ipbits(ipaddr),0)) != 0 )
+        if ( (addr= iguana_peerslot(coin,(uint32_t)calc_ipbits(ipaddr),1)) != 0 )
         {
+            addr->supernet = 1;
+            if ( addr->usock >= 0 )
+                return(clonestr("{\"result\":\"peer was already connected\"}"));
             if ( addr->pending == 0 )
             {
                 addr->pending = (uint32_t)time(NULL);
