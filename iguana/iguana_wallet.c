@@ -254,18 +254,31 @@ uint8_t *iguana_walletrmds(struct supernet_info *myinfo,struct iguana_info *coin
     return(rmdarray);
 }
 
-cJSON *getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
+cJSON *iguana_getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
 {
-    struct iguana_waccount *subset; struct iguana_waddress *waddr,*tmp; cJSON *retjson,*array;
+    struct iguana_waccount *subset,*tmp; struct iguana_waddress *waddr,*tmp2; cJSON *retjson,*array;
     retjson = cJSON_CreateObject();
     array = cJSON_CreateArray();
-    if ( (subset= iguana_waccountfind(myinfo,coin,account)) != 0 )
+    if ( strcmp("*",account) != 0 )
     {
-        HASH_ITER(hh,subset->waddr,waddr,tmp)
+        if ( (subset= iguana_waccountfind(myinfo,coin,account)) != 0 )
         {
-            jaddistr(array,waddr->coinaddr);
+            HASH_ITER(hh,subset->waddr,waddr,tmp2)
+            {
+                jaddistr(array,waddr->coinaddr);
+            }
+        } else jaddstr(retjson,"result","cant find account");
+    }
+    else
+    {
+        HASH_ITER(hh,myinfo->wallet,subset,tmp)
+        {
+            HASH_ITER(hh,subset->waddr,waddr,tmp2)
+            {
+                jaddistr(array,waddr->coinaddr);
+            }
         }
-    } else jaddstr(retjson,"result","cant find account");
+    }
     return(array);
 }
 
@@ -773,7 +786,7 @@ int64_t iguana_waccountbalance(struct supernet_info *myinfo,struct iguana_info *
     int64_t balance; int32_t numrmds=0,numunspents = 0; uint8_t *rmdarray=0;
     if ( minconf == 0 )
         minconf = 1;
-    rmdarray = iguana_rmdarray(coin,&numrmds,getaddressesbyaccount(myinfo,coin,wacct->account),0);
+    rmdarray = iguana_rmdarray(myinfo,coin,&numrmds,iguana_getaddressesbyaccount(myinfo,coin,wacct->account),0);
     balance = iguana_unspents(myinfo,coin,0,minconf,(1 << 30),rmdarray,numrmds,lastheight,0,&numunspents);
     if ( rmdarray != 0 )
         free(rmdarray);
@@ -1285,7 +1298,7 @@ STRING_AND_THREEINTS(bitcoinrpc,getbalance,account,minconf,includeempty,lastheig
     if ( minconf == 0 )
         minconf = 1;
     if ( strcmp(account,"*") != 0 )
-        rmdarray = iguana_rmdarray(coin,&numrmds,getaddressesbyaccount(myinfo,coin,account),0);
+        rmdarray = iguana_rmdarray(myinfo,coin,&numrmds,iguana_getaddressesbyaccount(myinfo,coin,account),0);
     numunspents = 0;
     balance = iguana_unspents(myinfo,coin,0,minconf,(1 << 30),rmdarray,numrmds,lastheight,0,&numunspents);
     if ( rmdarray != 0 )
@@ -1303,7 +1316,7 @@ STRING_ARG(bitcoinrpc,getaddressesbyaccount,account)
     if ( myinfo->expiration == 0 )
         return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     retjson = cJSON_CreateObject();
-    jadd(retjson,"result",getaddressesbyaccount(myinfo,coin,account));
+    jadd(retjson,"result",iguana_getaddressesbyaccount(myinfo,coin,account));
     return(jprint(retjson,1));
 }
 
@@ -1334,7 +1347,7 @@ STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatch
     retarray = cJSON_CreateArray();
     if ( (wacct= iguana_waccountfind(myinfo,coin,account)) != 0 )
     {
-        if ( (array= getaddressesbyaccount(myinfo,coin,account)) != 0 )
+        if ( (array= iguana_getaddressesbyaccount(myinfo,coin,account)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
             {

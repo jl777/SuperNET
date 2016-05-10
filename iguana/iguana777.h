@@ -839,7 +839,7 @@ struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct i
 void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson);
 int32_t iguana_pkhasharray(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,int64_t *totalp,struct iguana_pkhash *P,int32_t max,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33,int32_t lastheight,uint64_t *unspents,int32_t *numunspentsp,int32_t maxunspents);
 long iguana_spentsfile(struct iguana_info *coin,int32_t n);
-uint8_t *iguana_rmdarray(struct iguana_info *coin,int32_t *numrmdsp,cJSON *array,int32_t firsti);
+uint8_t *iguana_rmdarray(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *numrmdsp,cJSON *array,int32_t firsti);
 int64_t iguana_unspents(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,uint8_t *rmdarray,int32_t numrmds,int32_t lastheight,uint64_t *unspents,int32_t *numunspentsp);
 uint8_t *iguana_walletrmds(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *numrmdsp);
 char *iguana_bundleaddrs(struct iguana_info *coin,int32_t hdrsi);
@@ -969,6 +969,7 @@ int32_t instantdex_quoterequest(struct supernet_info *myinfo,struct iguana_info 
 int32_t instantdex_peerhas_clear(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr);
 int32_t instantdex_quote(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,uint8_t *serialized,int32_t recvlen);
 void instantdex_update(struct supernet_info *myinfo);
+cJSON *iguana_getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account);
 
 extern int32_t HDRnet,netBLOCKS;
 

@@ -250,7 +250,7 @@ int32_t iguana_pkhasharray(struct supernet_info *myinfo,struct iguana_info *coin
         lastheight = IGUANA_MAXHEIGHT;
     if ( max > coin->bundlescount )
         max = coin->bundlescount;
-    for (total=n=0,i=max-1; i>=0; i--)
+    for (total=n=i=0; i<max; i++)
     {
         if ( (bp= coin->bundles[i]) == 0 )
             continue;
@@ -321,10 +321,12 @@ int64_t iguana_unspents(struct supernet_info *myinfo,struct iguana_info *coin,cJ
     return(sum);
 }
 
-uint8_t *iguana_rmdarray(struct iguana_info *coin,int32_t *numrmdsp,cJSON *array,int32_t firsti)
+uint8_t *iguana_rmdarray(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *numrmdsp,cJSON *array,int32_t firsti)
 {
-    int32_t i,n,j=0; char *coinaddr,rmdstr[41]; uint8_t *addrtypes,*rmdarray = 0;
+    int32_t i,n,flag=0,j=0; char *coinaddr,rmdstr[41]; uint8_t *addrtypes,*rmdarray = 0;
     *numrmdsp = 0;
+    if ( array == 0 )
+        array = iguana_getaddressesbyaccount(myinfo,coin,"*");
     if ( array != 0 && (n= cJSON_GetArraySize(array)) > 0 )
     {
         *numrmdsp = n - firsti;
@@ -342,6 +344,8 @@ uint8_t *iguana_rmdarray(struct iguana_info *coin,int32_t *numrmdsp,cJSON *array
         }
         printf("rmdarray[%d]\n",n);
     }
+    if ( flag != 0 )
+        free_json(array);
     return(rmdarray);
 }
 
