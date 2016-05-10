@@ -1182,7 +1182,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,struct category_info *cat,v
     acct777_rwsig(0,(void *)&msg->sig,(void *)tmp);
     memcpy(&msg->sig,tmp,sizeof(msg->sig));
    // printf("b signed datalen.%d allocsize.%d crc.%x\n",datalen,msg->sig.allocsize,calc_crc32(0,serdata,datalen));
-    if ( remoteaddr != 0 && remoteaddr[0] == 0 && strcmp("127.0.0.1",remoteaddr) == 0 && ((uint8_t *)msg)[len-1] == 0 && (argjson= cJSON_Parse((char *)msg)) != 0 )
+    if ( (remoteaddr == 0 || remoteaddr[0] == 0 || strcmp("127.0.0.1",remoteaddr) == 0) && ((uint8_t *)msg)[len-1] == 0 && (argjson= cJSON_Parse((char *)msg)) != 0 )
     {
         printf("string instantdex_hexmsg RESULT.(%s)\n",jprint(argjson,0));
         free_json(argjson);
@@ -1288,7 +1288,7 @@ void instantdex_update(struct supernet_info *myinfo)
         {
             char hexstr[3000];
             init_hexbytes_noT(hexstr,(uint8_t *)pm,m->len);
-            printf("instantdex_update.(%s) len.%d\n",hexstr,m->len);
+            printf("instantdex_update.(%s) len.%d remote.(%s) %p\n",hexstr,m->len,remote,remote);
         }
         if ( (str= InstantDEX_hexmsg(myinfo,cat,pm,m->len,remote)) != 0 )
             free(str);
