@@ -824,7 +824,7 @@ void instantdex_propagate(struct supernet_info *myinfo,struct exchange_info *exc
             {
                 SETBIT(ap->peerhas,addr->addrind);
                 printf("send quote.(%s) <- [%d]\n",addr->ipaddr,len);
-                iguana_queue_send(coin,addr,0,serialized,"quote",len,0,1);
+                iguana_queue_send(coin,addr,0,serialized,"quote",len,0,0);
             }
     }
 }
