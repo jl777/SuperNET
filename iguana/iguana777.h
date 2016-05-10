@@ -128,7 +128,7 @@ extern int32_t IGUANA_NUMHELPERS;
 #define NODE_GETUTXO (1 << 1)
 #define NODE_BLOOM (1 << 2)
 
-#define PROTOCOL_VERSION 70001
+#define PROTOCOL_VERSION 70002
 #define INIT_PROTO_VERSION 209 // initial proto version, to be increased after version/verack negotiation
 #define GETHEADERS_VERSION 31800 // In this version, 'getheaders' was introduced.
 #define MIN_PEER_PROTO_VERSION GETHEADERS_VERSION // disconnect from peers older than this proto version
@@ -141,6 +141,7 @@ extern int32_t IGUANA_NUMHELPERS;
 #define BIP0031_VERSION 60000 // BIP 0031, pong message, is enabled for all versions AFTER this one
 #define MEMPOOL_GD_VERSION 60002 // "mempool" command, enhanced "getdata" behavior starts with this version
 #define NO_BLOOM_VERSION 70011 // "filter*" disabled without NODE_BLOOM after and including this version
+#define PROTOCOL_HEADERS_VERSION 70012
 
 #define MSG_TX 1
 #define MSG_BLOCK 2
@@ -418,7 +419,7 @@ struct iguana_peer
     char ipaddr[64],lastcommand[16],coinstr[16],symbol[16];
     uint64_t pingnonce,totalsent,totalrecv,ipbits; double pingtime,sendmillis,pingsum,getdatamillis;
     uint32_t lastcontact,sendtime,ready,startsend,startrecv,pending,lastgotaddr,lastblockrecv,pendtime,lastflush,lastpoll,myipbits,persistent_peer,protover;
-    int32_t supernet,dead,addrind,usock,lastheight,relayflag,numpackets,numpings,ipv6,height,rank,pendhdrs,pendblocks,recvhdrs,lastlefti,validpub,othervalid,dirty[2],laggard;
+    int32_t supernet,dead,addrind,usock,lastheight,relayflag,numpackets,numpings,ipv6,height,rank,pendhdrs,pendblocks,recvhdrs,lastlefti,validpub,othervalid,dirty[2],laggard,headerserror;
     double recvblocks,recvtotal;
     int64_t allocated,freed;
     bits256 RThashes[IGUANA_MAXBUNDLESIZE]; int32_t numRThashes;

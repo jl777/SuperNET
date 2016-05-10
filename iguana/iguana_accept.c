@@ -264,7 +264,7 @@ int32_t iguana_peerdatarequest(struct iguana_info *coin,struct iguana_peer *addr
 
 int32_t iguana_peerhdrrequest(struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_peer *addr,bits256 hash2)
 {
-    int32_t len=0,i,height,hdrsi,bundlei,bundlesize,firstvout,retval=-1; struct iguana_block *block; struct iguana_msgblock msgB; bits256 checkhash2; struct iguana_bundle *bp;
+    int32_t len=0,i,flag=0,height,hdrsi,bundlei,bundlesize,firstvout,retval=-1; struct iguana_block *block; struct iguana_msgblock msgB; bits256 checkhash2; struct iguana_bundle *bp;
     if ( (firstvout= iguana_unspentindfind(coin,0,0,0,0,&height,hash2,0,coin->bundlescount-1)) != 0 )
     {
         bundlesize = coin->chain->bundlesize;
@@ -278,6 +278,7 @@ int32_t iguana_peerhdrrequest(struct iguana_info *coin,uint8_t *serialized,int32
                 {
                     iguana_blockunconv(&msgB,block,1);
                     len += iguana_rwblock(1,&checkhash2,&serialized[sizeof(struct iguana_msghdr) + len],&msgB);
+                    flag++;
                     if ( bits256_cmp(checkhash2,block->RO.hash2) != 0 )
                     {
                         char str[65],str2[65];
@@ -287,8 +288,9 @@ int32_t iguana_peerhdrrequest(struct iguana_info *coin,uint8_t *serialized,int32
                 } else printf("cant find block at ht.%d\n",height+i);
             }
         }
-        retval = iguana_queue_send(coin,addr,0,serialized,"headers",len,0,0);
-        printf("hdrs request retval.%d len.%d\n",retval,len);
+        if ( flag != 0 )
+            retval = iguana_queue_send(coin,addr,0,serialized,"headers",len,0,0);
+        //printf("hdrs request retval.%d len.%d\n",retval,len);
     } //else printf("couldnt find header\n");
     return(retval);
 }

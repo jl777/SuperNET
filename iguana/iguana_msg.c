@@ -159,6 +159,7 @@ void iguana_gotversion(struct iguana_info *coin,struct iguana_peer *addr,struct 
     if ( (vers->nServices & NODE_NETWORK) != 0 )//&& vers->nonce != coin->instance_nonce )
     {
         addr->protover = (vers->nVersion < PROTOCOL_VERSION) ? vers->nVersion : PROTOCOL_VERSION;
+        //printf("(%s) proto.%d -> %d\n",addr->ipaddr,vers->nVersion,addr->protover);
         addr->relayflag = vers->relayflag;
         addr->height = vers->nStartingHeight;
         addr->relayflag = 1;
@@ -669,7 +670,9 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                     if ( len == recvlen && addr != 0 )
                         addr->msgcounts.headers++;
                 } else printf("got unexpected n.%d for headers\n",n);
-            } else len = iguana_peergetrequest(coin,addr,data,recvlen,0);
+            }
+            else if ( addr->headerserror == 0 )
+                len = iguana_peergetrequest(coin,addr,data,recvlen,0);
         }
     }
     else if ( (ishost= (strcmp(H->command,"version") == 0)) || strcmp(H->command,"verack") == 0 )
@@ -783,12 +786,19 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
     }
     else if ( strcmp(H->command,"reject") == 0 )
     {
-        for (i=0; i<recvlen; i++)
-            printf("%02x ",data[i]);
-        printf("reject.(%s) recvlen.%d\n",data+1,recvlen);
+        if ( addr != 0 )
+        {
+            if ( strncmp((char *)data+1,"headers",7) == 0 )
+                addr->headerserror++;
+            else
+            {
+                for (i=0; i<recvlen; i++)
+                    printf("%02x ",data[i]);
+                printf("reject.(%s) recvlen.%d %s proto.%d\n",data+1,recvlen,addr->ipaddr,addr->protover);
+                addr->msgcounts.reject++;
+            }
+        }
         len = recvlen;
-        if ( len == recvlen && addr != 0 )
-            addr->msgcounts.reject++;
     }
     else if ( strcmp(H->command,"alert") == 0 )
     {
