@@ -822,7 +822,8 @@ void instantdex_propagate(struct supernet_info *myinfo,struct exchange_info *exc
             if ( (addr= coin->peers.ranked[i]) != 0 && addr->supernet != 0 && addr->usock >= 0 && GETBIT(ap->peerhas,addr->addrind) == 0 )
             {
                 SETBIT(ap->peerhas,addr->addrind);
-                iguana_queue_send(coin,addr,0,serialized,"quote",len,0,0);
+                printf("send quote.(%s) <- [%d]\n",addr->ipaddr,len);
+                iguana_queue_send(coin,addr,0,serialized,"quote",len,0,1);
             }
     }
 }
