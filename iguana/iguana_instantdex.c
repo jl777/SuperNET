@@ -819,7 +819,7 @@ void instantdex_propagate(struct supernet_info *myinfo,struct exchange_info *exc
     if ( (coin= iguana_coinfind("BTCD")) != 0 && coin->peers.numranked > 0 )
     {
         for (i=0; i<coin->peers.numranked; i++)
-            if ( (addr= coin->peers.ranked[i]) != 0 && addr->supernet != 0 && addr->usock >= 0 && GETBIT(ap->peerhas,addr->addrind) == 0 && strcmp("0.0.0.0",addr->ipaddr) != 0 )
+            if ( (addr= coin->peers.ranked[i]) != 0 && addr->supernet != 0 && addr->usock >= 0 && GETBIT(ap->peerhas,addr->addrind) == 0 && strcmp("0.0.0.0",addr->ipaddr) != 0 && strcmp("127.0.0.1",addr->ipaddr) != 0 )
             {
                 SETBIT(ap->peerhas,addr->addrind);
                 printf("send quote.(%s) <- [%d]\n",addr->ipaddr,len);
@@ -1270,23 +1270,19 @@ void instantdex_update(struct supernet_info *myinfo)
     //char str2[65]; printf("myinfo->instantdex_category.(%s)\n",bits256_str(str2,myinfo->instantdex_category));
     if ( (Q= category_Q(&cat,myinfo->instantdex_category,myinfo->myaddr.persistent)) != 0 && queue_size(Q) > 0 && (item= Q->list) != 0 )
     {
-        m = (void *)item;
         m = queue_dequeue(Q,0);
         pm = (struct instantdex_msghdr *)m->msg;
-        //printf("loop cmd.(%s)\n",pm->cmd);
-        //if ( m->remoteipbits == 0 && (m= queue_dequeue(Q,0)) )
+        if ( m->remoteipbits != 0 )
+            expand_ipbits(remote,m->remoteipbits);
+        else remote[0] = 0;
         {
-            //if ( (void *)m == (void *)item )
-            {
-                pm = (struct instantdex_msghdr *)m->msg;
-                if ( m->remoteipbits != 0 )
-                    expand_ipbits(remote,m->remoteipbits);
-                else remote[0] = 0;
-                if ( (str= InstantDEX_hexmsg(myinfo,cat,pm,m->len,remote)) != 0 )
-                    free(str);
-            } //else printf("instantdex_update: unexpected m.%p changed item.%p\n",m,item);
-            free(m);
+            char hexstr[3000];
+            init_hexbytes_noT(hexstr,(uint8_t *)pm,m->len);
+            printf("instantdex_update.(%s) len.%d\n",hexstr,m->len);
         }
+        if ( (str= InstantDEX_hexmsg(myinfo,cat,pm,m->len,remote)) != 0 )
+            free(str);
+        free(m);
     }
 }
 
