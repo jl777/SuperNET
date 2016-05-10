@@ -218,7 +218,9 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
             total = iguana_rwblock(1,&checkhash2,&blockspace[sizeof(struct iguana_msghdr) + 0],&msgB);
             if ( bits256_cmp(checkhash2,block->RO.hash2) != 0 )
             {
-                printf("iguana_peerblockrequest: blockhash mismatch ht.%d\n",bp->bundleheight+bundlei);
+                static int counter;
+                if ( counter++ < 100 )
+                    printf("iguana_peerblockrequest: blockhash mismatch ht.%d\n",bp->bundleheight+bundlei);
                 return(-1);
             }
             for (i=0; i<block->RO.txn_count; i++)
@@ -229,8 +231,10 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
                         total += len;
                     else
                     {
+                        static int counter;
                         char str[65],str2[65];
-                        printf("error getting txi.%d [%d:%d] cmp.%s %s\n",i,bp->hdrsi,bundlei,bits256_str(str,checktxid),bits256_str(str2,T.txid));
+                        if ( counter++ < 100 )
+                            printf("error getting txi.%d [%d:%d] cmp.%s %s\n",i,bp->hdrsi,bundlei,bits256_str(str,checktxid),bits256_str(str2,T.txid));
                         break;
                     }
                 }
