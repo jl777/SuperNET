@@ -792,7 +792,7 @@ int32_t instantdex_quoterequest(struct supernet_info *myinfo,struct iguana_info 
 
 int32_t instantdex_quote(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,uint8_t *serialized,int32_t recvlen)
 {
-    bits256 orderhash,encodedhash; int32_t checklen; struct instantdex_accept A,*ap;
+    bits256 orderhash,encodedhash; int32_t checklen; struct instantdex_accept A,*ap; char hexstr[8192];
     memset(&A,0,sizeof(A));
     orderhash = instantdex_rwoffer(0,&checklen,serialized,&A.offer);
     if ( checklen == recvlen )
@@ -800,8 +800,8 @@ int32_t instantdex_quote(struct supernet_info *myinfo,struct iguana_info *coin,s
         encodedhash = instantdex_encodehash(A.offer.base,A.offer.rel,A.offer.price64,A.orderid);
         if ( (ap= instantdex_quotefind(myinfo,coin,addr,encodedhash)) == 0 )
         {
-            init_hexbytes_noT(addr->TXDATA.ptr,serialized,recvlen);
-            SuperNET_hexmsgadd(myinfo,myinfo->instantdex_category,GENESIS_PUBKEY,addr->TXDATA.ptr,tai_now(),addr->ipaddr);
+            init_hexbytes_noT(hexstr,serialized,recvlen);
+            SuperNET_hexmsgadd(myinfo,myinfo->instantdex_category,GENESIS_PUBKEY,hexstr,tai_now(),addr->ipaddr);
         }
         else
         {
@@ -819,7 +819,7 @@ void instantdex_propagate(struct supernet_info *myinfo,struct exchange_info *exc
     if ( (coin= iguana_coinfind("BTCD")) != 0 && coin->peers.numranked > 0 )
     {
         for (i=0; i<coin->peers.numranked; i++)
-            if ( (addr= coin->peers.ranked[i]) != 0 && addr->supernet != 0 && addr->usock >= 0 && GETBIT(ap->peerhas,addr->addrind) == 0 )
+            if ( (addr= coin->peers.ranked[i]) != 0 && addr->supernet != 0 && addr->usock >= 0 && GETBIT(ap->peerhas,addr->addrind) == 0 && strcmp("0.0.0.0",addr->ipaddr) != 0 )
             {
                 SETBIT(ap->peerhas,addr->addrind);
                 printf("send quote.(%s) <- [%d]\n",addr->ipaddr,len);
