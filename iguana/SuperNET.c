@@ -712,7 +712,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,ui
     {
         if ( strcmp(agent,"bitcoinrpc") != 0 && newflag == 0 && hexmsg != 0 && SuperNET_hexmsgfind(myinfo,category,subhash,hexmsg,0) < 0 )
         {
-            printf("SuperNET_JSON hexmsgadd\n");
+            //printf("SuperNET_JSON hexmsgadd\n");
             SuperNET_hexmsgadd(myinfo,category,subhash,hexmsg,tai_now(),remoteaddr);
         }
         if ( (retstr= SuperNET_processJSON(myinfo,json,remoteaddr,port)) != 0 )
