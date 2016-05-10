@@ -320,8 +320,7 @@ bits256 instantdex_rwoffer(int32_t rwflag,int32_t *lenp,uint8_t *serialized,stru
 
 char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extraser,int32_t extralen)
 {
-    char *reqstr,*hexstr,*retstr; struct instantdex_msghdr *msg; bits256 orderhash;
-    int32_t i,olen,slen,datalen; uint8_t serialized[sizeof(*offer) + 2]; uint64_t nxt64bits;
+    char *reqstr,*retstr; struct instantdex_msghdr *msg; bits256 orderhash; struct iguana_info *coin; struct iguana_peer *addr; int32_t i,j,r,olen,slen,datalen,max; uint8_t serialized[sizeof(*offer) + sizeof(struct iguana_msghdr) + 4096]; uint64_t nxt64bits;
     category_subscribe(myinfo,myinfo->instantdex_category,GENESIS_PUBKEY);
     jaddstr(argjson,"cmd",cmdstr);
     jaddstr(argjson,"agent","SuperNET");
@@ -359,11 +358,26 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     if ( instantdex_msgcreate(myinfo,msg,datalen) != 0 )
     {
         printf(">>>>>>>>>>>> instantdex send.(%s) datalen.%d allocsize.%d crc.%x\n",cmdstr,datalen,msg->sig.allocsize,calc_crc32(0,(void *)((long)msg + 8),datalen-8));
-        hexstr = malloc(msg->sig.allocsize*2 + 1);
-        init_hexbytes_noT(hexstr,(uint8_t *)msg,msg->sig.allocsize);
-        retstr = SuperNET_categorymulticast(myinfo,0,myinfo->instantdex_category,desthash,hexstr,0,hops,1,argjson,0);
-        free_json(argjson), free(hexstr), free(msg);
-        return(retstr);
+        //hexstr = malloc(msg->sig.allocsize*2 + 1);
+        //init_hexbytes_noT(hexstr,(uint8_t *)msg,msg->sig.allocsize);
+        //retstr = SuperNET_categorymulticast(myinfo,0,myinfo->instantdex_category,desthash,hexstr,0,hops,1,argjson,0);
+        memcpy(&serialized[sizeof(struct iguana_msghdr)],(uint8_t *)msg,msg->sig.allocsize);
+        if ( (coin= iguana_coinfind("BTCD")) != 0 && (max= coin->peers.numranked) > 0 )
+        {
+            r = (rand() % max);
+            for (i=0; i<max; i++)
+            {
+                j = (i + r) % max;
+                if ( (addr= coin->peers.ranked[j]) != 0 && addr->supernet != 0 && addr->usock >= 0 )
+                {
+                    iguana_queue_send(coin,addr,0,serialized,"InstantDEX",msg->sig.allocsize,0,0);
+                    if ( --hops <= 0 )
+                        break;
+                }
+            }
+        }
+        free(msg); //free(hexstr),
+        return(jprint(argjson,1));
     }
     else
     {

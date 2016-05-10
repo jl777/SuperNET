@@ -237,7 +237,7 @@ int32_t iguana_jsonQ()
     {
         if ( ptr->expired != 0 )
         {
-            if ( ptr->retjsonstrp != 0 && *ptr->retjsonstrp != 0 )
+            if ( ptr->retjsonstrp != 0 && *ptr->retjsonstrp != 0 && *ptr->retjsonstrp[0] != 0 )
                 free(*ptr->retjsonstrp); // *ptr->retjsonstrp = clonestr("{\"error\":\"request timeout\"}");
             printf("garbage collection: expired.(%s)\n",ptr->jsonstr);
             myfree(ptr,ptr->allocsize);
