@@ -375,7 +375,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
                     iguana_queue_send(coin,addr,0,serialized,"InstantDEX",msg->sig.allocsize,0,0);
                     if ( --hops <= 0 )
                         break;
-                } else printf("skip.%d addr.%p (%s) max.%d hops.%d\n",j,addr,addr!=0?addr->ipaddr:"",max,hops);
+                } //else printf("skip.%d addr.%p (%s) max.%d hops.%d\n",j,addr,addr!=0?addr->ipaddr:"",max,hops);
             }
         } else printf("cant find coin.%p or no ranked.%d\n",coin,max);
         free(msg); //free(hexstr),
@@ -1061,7 +1061,8 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,uint64_t *txidp,struct 
     {
         isbob = myap->offer.myside;
         swap = bitcoin_swapinit(myinfo,exchange,myap,otherap,1,argjson,isbob != 0 ? "BOB_sentoffer" : "ALICE_sentoffer");
-        printf("STATEMACHINEQ.(%llu / %llu)\n",(long long)swap->mine.orderid,(long long)swap->other.orderid);
+        if ( swap != 0 )
+            printf("STATEMACHINEQ.(%llu / %llu)\n",(long long)swap->mine.orderid,(long long)swap->other.orderid);
         //queue_enqueue("acceptableQ",&exchange->acceptableQ,&swap->DL,0);
         queue_enqueue("statemachineQ",&exchange->statemachineQ,&swap->DL,0);
         if ( (newjson= instantdex_parseargjson(myinfo,exchange,swap,argjson,1)) == 0 )
