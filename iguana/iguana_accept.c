@@ -228,14 +228,8 @@ int32_t iguana_process_msgrequestQ(struct supernet_info *myinfo,struct iguana_in
             {
                 if ( (ap= instantdex_quotefind(myinfo,coin,msg->addr,msg->hash2)) == 0 )
                 {
-                    if ( GETBIT(ap->peerhas,msg->addr->addrind) == 0 )
-                    {
-                        if ( (len= instantdex_quoterequest(myinfo,coin,&coin->blockspace[sizeof(struct iguana_msghdr)],sizeof(coin->blockspace),msg->addr,msg->hash2)) > 0 )
-                        {
-                            iguana_queue_send(coin,msg->addr,0,coin->blockspace,"quote",len,0,0);
-                            SETBIT(ap->peerhas,msg->addr->addrind);
-                        }
-                    }
+                    if ( (len= instantdex_quoterequest(myinfo,coin,&coin->blockspace[sizeof(struct iguana_msghdr)],sizeof(coin->blockspace),msg->addr,msg->hash2)) > 0 )
+                        iguana_queue_send(coin,msg->addr,0,coin->blockspace,"quote",len,0,0);
                 }
             }
         }
@@ -260,6 +254,27 @@ int32_t iguana_peerdatarequest(struct iguana_info *coin,struct iguana_peer *addr
             iguana_msgrequestQ(coin,addr,type,hash2);
         }
     }
+    return(len);
+}
+
+int32_t iguana_inv2packet(uint8_t *serialized,int32_t maxsize,int32_t type,bits256 *hashes,int32_t n)
+{
+    int32_t i,len = sizeof(struct iguana_msghdr); uint64_t x = n;
+    memset(serialized,0,len);
+    len += iguana_rwvarint(1,&serialized[len],&x);
+    //for (i=0; i<10; i++)
+    //    printf("%02x ",data[i]);
+    //printf("x.%d recvlen.%d\n",(int32_t)x,recvlen);
+    if ( x < IGUANA_MAXINV )
+    {
+        for (i=0; i<x; i++)
+        {
+            len += iguana_rwnum(1,&serialized[len],sizeof(uint32_t),&type);
+            len += iguana_rwbignum(1,&serialized[len],sizeof(bits256),hashes[i].bytes);
+        }
+    }
+    if ( len > maxsize )
+        return(-1);
     return(len);
 }
 

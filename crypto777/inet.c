@@ -404,7 +404,8 @@ uint64_t calc_ipbits(char *ip_port)
             expand_ipbits(ipaddr2,ipbits);
             if ( ipbits != 0 && strcmp(ipaddr,ipaddr2) != 0 )
             {
-                printf("calc_ipbits error: (%s) -> %llx -> (%s)\n",ip_port,(long long)ipbits,ipaddr);//, getchar();
+                if ( ipaddr[0] != 0 )
+                    printf("calc_ipbits error: (%s) -> %llx -> (%s)\n",ip_port,(long long)ipbits,ipaddr);//, getchar();
                 ipbits = 0;
             }
         }

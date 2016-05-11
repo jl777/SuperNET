@@ -108,7 +108,7 @@ struct exchange_request
 struct instantdex_offer
 {
     char base[24],rel[24];
-    uint64_t price64,basevolume64,offer64;
+    int64_t price64,basevolume64; uint64_t offer64;
     uint32_t expiration,nonce;
     char myside,acceptdir,minperc,pad;
 };

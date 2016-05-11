@@ -968,8 +968,6 @@ THREE_STRINGS_AND_THREE_INTS(InstantDEX,orderbook,exchange,base,rel,depth,allfie
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
-        if ( myinfo->expiration == 0 )
-            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( exchange != 0 && exchange[0] != 0 )
         {
             if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )

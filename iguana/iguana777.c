@@ -15,6 +15,7 @@
 
 
 #include "iguana777.h"
+#include "exchanges777.h"
 #include "secp256k1/include/secp256k1.h"
 #include "secp256k1/include/secp256k1_schnorr.h"
 #include "secp256k1/include/secp256k1_rangeproof.h"
@@ -141,10 +142,11 @@ double iguana_metric(struct iguana_peer *addr,uint32_t now,double decay)
     return(metric);
 }
 
-int32_t iguana_peermetrics(struct iguana_info *coin)
+int32_t iguana_peermetrics(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    int32_t i,ind,n; double *sortbuf,sum; uint32_t now; struct iguana_peer *addr,*slowest = 0;
+    struct exchange_info *exchange; int32_t i,ind,n; double *sortbuf,sum; uint32_t now; struct iguana_peer *addr,*slowest = 0;
     //printf("peermetrics\n");
+    exchange = exchanges777_find("bitcoin");
     sortbuf = mycalloc('s',coin->MAXPEERS,sizeof(double)*2);
     coin->peers.mostreceived = 0;
     now = (uint32_t)time(NULL);
@@ -159,6 +161,8 @@ int32_t iguana_peermetrics(struct iguana_info *coin)
         //printf("[%.0f %.0f] ",addr->recvblocks,addr->recvtotal);
         sortbuf[n*2 + 0] = iguana_metric(addr,now,.995);
         sortbuf[n*2 + 1] = i;
+        if ( exchange != 0 && addr->supernet != 0 )
+            instantdex_inv2data(myinfo,coin,addr,exchange);
         n++;
     }
     if ( n > 0 )
@@ -213,10 +217,10 @@ void *iguana_kviAddriterator(struct iguana_info *coin,struct iguanakv *kv,struct
     return(0);
 }
 
-uint32_t iguana_updatemetrics(struct iguana_info *coin)
+uint32_t iguana_updatemetrics(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     char fname[512],tmpfname[512],oldfname[512],ipaddr[64]; int32_t i,j; struct iguana_peer *addr,*tmpaddr; FILE *fp;
-    iguana_peermetrics(coin);
+    iguana_peermetrics(myinfo,coin);
     sprintf(fname,"%s/%s_peers.txt",GLOBAL_CONFSDIR,coin->symbol), OS_compatible_path(fname);
     sprintf(oldfname,"%s/%s_oldpeers.txt",GLOBAL_CONFSDIR,coin->symbol), OS_compatible_path(oldfname);
     sprintf(tmpfname,"%s/%s/peers.txt",GLOBAL_TMPDIR,coin->symbol), OS_compatible_path(tmpfname);
@@ -711,7 +715,7 @@ void iguana_coinloop(void *arg)
                     if ( now > coin->peers.lastmetrics+10 )
                     {
                         //fprintf(stderr,"metrics\n");
-                        coin->peers.lastmetrics = iguana_updatemetrics(coin); // ranks peers
+                        coin->peers.lastmetrics = iguana_updatemetrics(myinfo,coin); // ranks peers
                     }
                     if ( coin->longestchain+10000 > coin->blocks.maxbits )
                         iguana_recvalloc(coin,coin->longestchain + 100000);

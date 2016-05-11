@@ -548,7 +548,7 @@ struct bitcoin_spend
 
 // peers
 int32_t iguana_verifypeer(struct iguana_info *coin,void *key,void *value,int32_t itemind,int32_t itemsize);
-int32_t iguana_peermetrics(struct iguana_info *coin);
+int32_t iguana_peermetrics(struct supernet_info *myinfo,struct iguana_info *coin);
 void iguana_peersloop(void *arg);
 int32_t iguana_queue_send(struct iguana_info *coin,struct iguana_peer *addr,int32_t delay,uint8_t *serialized,char *cmd,int32_t len,int32_t getdatablock,int32_t forceflag);
 uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana_iAddr *iA,uint32_t ind);
@@ -562,7 +562,7 @@ void iguana_shutdownpeers(struct iguana_info *coin,int32_t forceflag);
 void iguana_acceptloop(void *args);
 void iguana_recvloop(void *args);
 int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *serialized,int32_t len);
-uint32_t iguana_updatemetrics(struct iguana_info *coin);
+uint32_t iguana_updatemetrics(struct supernet_info *myinfo,struct iguana_info *coin);
 void *iguana_peeralloc(struct iguana_info *coin,struct iguana_peer *addr,int32_t datalen);
 int64_t iguana_peerfree(struct iguana_info *coin,struct iguana_peer *addr,void *ptr,int32_t datalen);
 int64_t iguana_peerallocated(struct iguana_info *coin,struct iguana_peer *addr);
@@ -975,6 +975,8 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
 int64_t iguana_availunspents(struct supernet_info *myinfo,uint64_t **unspentsp,int32_t *nump,struct iguana_info *coin,int32_t minconf,char *account,void *ptr,int32_t maxsize);
 char *iguana_signunspents(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *signedtxidp,int32_t *completedp,cJSON *txobj,uint64_t satoshis,char *changeaddr,uint64_t txfee,uint64_t *unspents,int32_t num);
 bits256 iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx);
+int32_t iguana_inv2packet(uint8_t *serialized,int32_t maxsize,int32_t type,bits256 *hashes,int32_t n);
+int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct exchange_info *exchange);
 
 extern int32_t HDRnet,netBLOCKS;
 

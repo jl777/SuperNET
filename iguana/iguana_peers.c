@@ -819,6 +819,8 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
         return((uint32_t)time(NULL));
     if ( strncmp("0.0.0",ipaddr,5) != 0 && strcmp("0.0.255.255",ipaddr) != 0 && strcmp("1.0.0.0",ipaddr) != 0 )
     {
+        if ( ipaddr[strlen(ipaddr)-1] == ':' )
+            ipaddr[strlen(ipaddr)-1] = 0;
         if ( (ipbits= calc_ipbits(ipaddr)) != 0 )
         {
             expand_ipbits(checkaddr,ipbits);

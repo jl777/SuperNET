@@ -793,6 +793,32 @@ bits256 instantdex_encodehash(char *base,char *rel,int64_t price,uint64_t orderi
     return(encodedhash);
 }
 
+int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct exchange_info *exchange)
+{
+    struct instantdex_accept PAD,*ap; uint32_t now,n=0,len; bits256 hashes[100]; uint8_t serialized[100*36 + 1024];
+    if ( exchange == 0 )
+        return(0);
+    now = (uint32_t)time(NULL);
+    memset(&PAD,0,sizeof(PAD));
+    queue_enqueue("acceptableQ",&exchange->acceptableQ,&PAD.DL,0);
+    while ( (ap= queue_dequeue(&exchange->acceptableQ,0)) != 0 && ap != &PAD )
+    {
+        if ( now < ap->offer.expiration && ap->dead == 0 )
+        {
+            if ( n < sizeof(hashes)/sizeof(*hashes) && GETBIT(ap->peerhas,addr->addrind) == 0 )
+                hashes[n++] = instantdex_encodehash(ap->offer.base,ap->offer.rel,ap->offer.price64*instantdex_bidaskdir(&ap->offer),ap->orderid);
+            queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
+        } else free(ap);
+    }
+    if ( n > 0 )
+    {
+        len = iguana_inv2packet(serialized,sizeof(serialized),MSG_QUOTE,hashes,n);
+        printf("Send inv2[%d] -> (%s)\n",n,addr->ipaddr);
+        return(iguana_queue_send(coin,addr,0,serialized,"inv2",len,0,0));
+    }
+    return(-1);
+}
+
 struct instantdex_accept *instantdex_quotefind(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,bits256 encodedhash)
 {
     char base[9],rel[9]; int64_t pricetoshis; uint64_t orderid;
@@ -820,7 +846,7 @@ int32_t instantdex_quote(struct supernet_info *myinfo,struct iguana_info *coin,s
     orderhash = instantdex_rwoffer(0,&checklen,serialized,&A.offer);
     if ( checklen == recvlen )
     {
-        encodedhash = instantdex_encodehash(A.offer.base,A.offer.rel,A.offer.price64,A.orderid);
+        encodedhash = instantdex_encodehash(A.offer.base,A.offer.rel,A.offer.price64 * instantdex_bidaskdir(&A.offer),A.orderid);
         if ( (ap= instantdex_quotefind(myinfo,coin,addr,encodedhash)) == 0 )
         {
             init_hexbytes_noT(hexstr,serialized,recvlen);
