@@ -18,7 +18,7 @@
 int32_t iguana_alloctxbits(struct iguana_info *coin,struct iguana_ramchain *ramchain)
 {
     static int64_t total;
-    if ( ramchain->txbits == 0 )
+    if ( 0 && ramchain->txbits == 0 )
     {
         int32_t tlen; uint8_t *TXbits;
         TXbits = RAMCHAIN_PTR(ramchain->H.data,TXoffset);
