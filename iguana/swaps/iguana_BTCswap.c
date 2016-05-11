@@ -616,7 +616,7 @@ char *BTC_txconfirmed(struct supernet_info *myinfo,struct iguana_info *coin,stru
         if ( (firstvout= iguana_unspentindfind(coin,0,0,0,0,&height,txid,0,coin->bundlescount-1)) != 0 && (confs= iguana_numconfs(coin,txid,height)) >= requiredconfs )
         {
             *numconfirmsp = confs;
-            if ( (retstr= instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,virtualevent,myinfo->myaddr.persistent,0,0,0)) != 0 )
+            if ( (retstr= instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,virtualevent,myinfo->myaddr.persistent,0,0,0,0)) != 0 )
                 return(retstr);
         }
     }
@@ -1010,8 +1010,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                 free_json(origjson);
                 if ( strcmp("poll",state->events[i].sendcmd) == 0 )
                 {
-                    printf("poll event\n");
-                    return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,state->events[i].sendcmd,myinfo->myaddr.persistent,0,serdata,serdatalen));
+                    return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,state->events[i].sendcmd,myinfo->myaddr.persistent,0,serdata,serdatalen,0));
                 }
                 else
                 {
@@ -1027,7 +1026,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                     if ( state->events[i].nextstateind > 1 )
                     {
                         swap->state = &states[state->events[i].nextstateind];
-                        return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,state->events[i].sendcmd,swap->othertrader,INSTANTDEX_HOPS,serdata,serdatalen));
+                        return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,state->events[i].sendcmd,swap->othertrader,INSTANTDEX_HOPS,serdata,serdatalen,0));
                     } else return(clonestr("{\"error\":\"instantdex_statemachine: illegal state\"}"));
                 } else return(clonestr("{\"result\":\"instantdex_statemachine: processed\"}"));
             }
