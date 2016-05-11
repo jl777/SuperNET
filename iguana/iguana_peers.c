@@ -1085,7 +1085,7 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
     else
     {
         iguana_send_version(coin,addr,coin->myservices);
-        printf("send version myservices.%llu to (%s)\n",(long long)coin->myservices,addr->ipaddr);
+        //printf("send version myservices.%llu to (%s)\n",(long long)coin->myservices,addr->ipaddr);
     }
     //sleep(1+(rand()%5));
     //iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
