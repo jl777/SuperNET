@@ -466,7 +466,8 @@ int32_t iguana_queue_send(struct iguana_info *coin,struct iguana_peer *addr,int3
     }
     else if ( forceflag != 0 )
     {
-        return(iguana_send(coin,addr,serialized,len));
+        printf("forceflag not supported\n");
+        //return(iguana_send(coin,addr,serialized,len));
     }
 
     if ( (datalen= iguana_sethdr((void *)serialized,coin->chain->netmagic,cmd,&serialized[sizeof(struct iguana_msghdr)],len)) < 0 )
@@ -500,7 +501,7 @@ int32_t iguana_recv(char *ipaddr,int32_t usock,uint8_t *recvbuf,int32_t len)
         {
             if ( errno == EAGAIN )
             {
-                //printf("%s recv errno.%d %s\n",ipaddr,errno,strerror(errno));
+                //printf("%s recv errno.%d %s len.%d remains.%d\n",ipaddr,errno,strerror(errno),len,remains);
                 //printf("EAGAIN for len %d, remains.%d\n",len,remains);
                 sleep(1);
             } else return(-errno);
@@ -1287,7 +1288,7 @@ void iguana_peersloop(void *ptr)
         }
         if ( flag == 0 )
         {
-            if ( time(NULL) > lastping+1 )
+            if ( time(NULL) > lastping+1 && addr->supernet != 0 )
                 iguana_send_supernet(coin,addr,SUPERNET_GETPEERSTR,0);
             usleep(1000);
         }

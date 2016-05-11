@@ -235,7 +235,7 @@ uint32_t iguana_updatemetrics(struct iguana_info *coin)
                 {
                     expand_ipbits(ipaddr,(uint32_t)addr->ipbits);
                     fprintf(fp,"%s\n",ipaddr);
-                    if ( addr->msgcounts.verack == 0 )
+                    if ( 0 && addr->msgcounts.verack == 0 )
                     {
                         printf("iguana_sendblockreq (%s) addrind.%d hasn't verack'ed yet\n",addr->ipaddr,addr->addrind);
                         iguana_send_version(coin,addr,coin->myservices);
