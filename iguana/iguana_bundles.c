@@ -774,7 +774,7 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
             {
                 if ( requiredflag != 0 )
                     printf(">>>>>>> block contents error at ht.%d [%d:%d]\n",bp->bundleheight+i,bp->hdrsi,i);
-                //char str[65];  patch.(%s) and reissue %s checki.%d vs %d\n",block->fpipbits,bp->bundleheight+i,bits256_str(str,block->RO.prev_block),fname,checki,i);
+                char str[65];  printf("patch.%d and reissue %s  %d\n",bp->bundleheight+i,bits256_str(str,block->RO.prev_block),i);
                 iguana_blockunmark(coin,block,bp,i,1);
             }
             else
@@ -793,7 +793,7 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
                     }
                     fclose(fp);
                 }
-                else
+                else if ( 0 )
 //#endif
                 {
                     iguana_blockunmark(coin,block,bp,i,1);
