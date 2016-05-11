@@ -705,12 +705,12 @@ int32_t iguana_checksig(struct iguana_info *coin,struct iguana_stackdata pubkeya
     uint8_t pubkey[MAX_SCRIPT_ELEMENT_SIZE],sig[MAX_SCRIPT_ELEMENT_SIZE]; int32_t plen,siglen;
     plen = iguana_databuf(pubkey,pubkeyarg);
     siglen = iguana_databuf(sig,sigarg);
-    int32_t i; for (i=0; i<siglen; i++)
+    /*int32_t i; for (i=0; i<siglen; i++)
         printf("%02x",sig[i]);
     printf(" sig, ");
     for (i=0; i<plen; i++)
         printf("%02x",pubkey[i]);
-    char str[65]; printf(" checksig sigtxid.%s\n",bits256_str(str,sigtxid));
+    char str[65]; printf(" checksig sigtxid.%s\n",bits256_str(str,sigtxid));*/
     if ( bitcoin_pubkeylen(pubkey) == plen && plen > 0 && siglen > 0 && siglen < 74 )
         return(bitcoin_verify(coin->ctx,sig,siglen-1,sigtxid,pubkey,plen) == 0);
     return(0);

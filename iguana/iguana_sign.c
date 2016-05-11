@@ -166,7 +166,7 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
                 {
                     memcpy(V->signers[0].pubkey,waddr->pubkey,bitcoin_pubkeylen(waddr->pubkey));
                 }
-                printf("V %.8f (%s) spendscript.[%d]\n",dstr(V->amount),V->coinaddr,V->spendlen);
+                //printf("V %.8f (%s) spendscript.[%d]\n",dstr(V->amount),V->coinaddr,V->spendlen);
             }
         }
         if ( (pubkeysjson= jarray(&n,vinobj,"pubkeys")) != 0 )
@@ -680,7 +680,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
     return(complete);
 }
 
-int32_t bitcoin_verifytx(struct iguana_info *coin,bits256 *signedtxidp,char **signedtx,char *rawtxstr,struct vin_info *V,int32_t numinputs)
+/*int32_t bitcoin_verifytx(struct iguana_info *coin,bits256 *signedtxidp,char **signedtx,char *rawtxstr,struct vin_info *V,int32_t numinputs)
 {
     int32_t len,maxsize,retval = -1; uint8_t *serialized,*serialized2;
     struct iguana_msgtx msgtx; bits256 txid; char vpnstr[64];
@@ -758,11 +758,11 @@ cJSON *iguana_signtx(struct supernet_info *myinfo,struct iguana_info *coin,bits2
                         memcpy(vp->signers[j].pubkey,spend->inputs[i].pubkeys[j],plen);
                 }
             }
-            /*if ( spend->inputs[i].spendlen > 0 )
-             {
-             memcpy(vp->spendscript,spend->inputs[i].spendscript,spend->inputs[i].spendlen);
-             vp->spendlen = spend->inputs[i].spendlen;
-             }*/
+            //if ( spend->inputs[i].spendlen > 0 )
+            // {
+            // memcpy(vp->spendscript,spend->inputs[i].spendscript,spend->inputs[i].spendlen);
+            // vp->spendlen = spend->inputs[i].spendlen;
+            // }
             if ( spend->inputs[i].p2shlen > 0 )
             {
                 memcpy(vp->p2shscript,spend->inputs[i].p2shscript,spend->inputs[i].p2shlen);
@@ -797,7 +797,7 @@ cJSON *iguana_signtx(struct supernet_info *myinfo,struct iguana_info *coin,bits2
         free(*signedtxp), *signedtxp = 0;
     free(V);
     return(txobj);
-}
+}*/
 
 int32_t iguana_vininfo_create(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msgtx,cJSON *vins,int32_t numinputs,struct vin_info *V)
 {
@@ -820,7 +820,7 @@ int32_t iguana_vininfo_create(struct supernet_info *myinfo,struct iguana_info *c
                     msgtx->vins[i].spendlen = vp->spendlen;
                     vp->hashtype = iguana_vinscriptparse(coin,V,&sigsize,&pubkeysize,&p2shsize,&suffixlen,vp->spendscript,vp->spendlen);
                     vp->suffixlen = suffixlen;
-                    printf("V %.8f (%s) spendscript.[%d]\n",dstr(vp->amount),vp->coinaddr,vp->spendlen);
+                    //printf("V %.8f (%s) spendscript.[%d]\n",dstr(vp->amount),vp->coinaddr,vp->spendlen);
                 }
             }
             else

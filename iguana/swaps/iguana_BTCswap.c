@@ -110,38 +110,24 @@ void iguana_addinputs(struct iguana_info *coin,struct bitcoin_spend *spend,cJSON
 
 struct bitcoin_statetx *instantdex_feetx(struct supernet_info *myinfo,struct instantdex_accept *A)
 {
-    int32_t n,len; char *feetx = 0; struct iguana_info *coin; bits256 txid; cJSON *txobj; struct bitcoin_spend *spend; int64_t insurance; uint8_t paymentscript[128]; struct bitcoin_statetx *ptr = 0;
+    int32_t n,num,completed; char *feetx = 0; struct iguana_info *coin; bits256 txid,signedtxid; cJSON *txobj;int64_t insurance,avail; uint8_t paymentscript[128]; struct bitcoin_statetx *ptr = 0; uint64_t *unspents;
     if ( (coin= iguana_coinfind("BTCD")) != 0 )
     {
         insurance = IGUANA_BTCDMULT * instantdex_insurance(coin,instantdex_BTCsatoshis(A->offer.price64,A->offer.basevolume64));
-        if ( (spend= iguana_spendset(myinfo,coin,insurance,coin->chain->txfee,0)) != 0 )
+        txobj = bitcoin_txcreate(coin,0);
+        n = instantdex_outputinsurance(paymentscript,0,insurance,A->orderid);
+        bitcoin_txoutput(coin,txobj,paymentscript,n,insurance);
+        avail = iguana_availunspents(myinfo,&unspents,&num,coin,coin->chain->minconfirms,"*",coin->blockspace,sizeof(coin->blockspace));
+        if ( (feetx= iguana_signunspents(myinfo,coin,&signedtxid,&completed,txobj,insurance,coin->changeaddr,coin->txfee,unspents,num)) != 0 )
         {
-            txobj = bitcoin_txcreate(coin,0);
-            n = instantdex_outputinsurance(paymentscript,0,insurance,A->orderid);
-            bitcoin_txoutput(coin,txobj,paymentscript,n,insurance);
-            iguana_addinputs(coin,spend,txobj,0xffffffff);
-            if ( spend->change > coin->chain->txfee )
-            {
-                len = bitcoin_standardspend(paymentscript,0,spend->change160);
-                bitcoin_txoutput(coin,txobj,paymentscript,len,spend->change);
-            }
-            txobj = iguana_signtx(myinfo,coin,&txid,&feetx,spend,txobj,0);
-            if ( feetx != 0  )
-            {
-                ptr = calloc(1,sizeof(*ptr) + strlen(feetx) + 1);
-                strcpy(ptr->txbytes,feetx);
-                ptr->txid = txid;
-                //printf("%s feetx.%s\n",A->offer.myside != 0 ? "BOB" : "ALICE",feetx);
-                //disp_tx(myinfo,coin,"feetx",feetx);
-                free(feetx);
-            }
-            else printf("error signing %s feetx numinputs.%d\n",A->offer.myside != 0 ? "BOB" : "ALICE",spend->numinputs);
-            free(spend);
+            ptr = calloc(1,sizeof(*ptr) + strlen(feetx) + 1);
+            strcpy(ptr->txbytes,feetx);
+            ptr->txid = txid;
+            //printf("%s feetx.%s\n",A->offer.myside != 0 ? "BOB" : "ALICE",feetx);
+            //disp_tx(myinfo,coin,"feetx",feetx);
+            free(feetx);
         }
-        else
-        {
-            printf("no unspents to spend\n");
-        }
+        else printf("error creating %s feetx\n",A->offer.myside != 0 ? "BOB" : "ALICE");
     }
     return(ptr);
 }
@@ -199,30 +185,25 @@ int32_t instantdex_feetxverify(struct supernet_info *myinfo,struct iguana_info *
 struct bitcoin_statetx *instantdex_bobtx(struct supernet_info *myinfo,struct iguana_info *coin,bits256 pub1,bits256 pub2,bits256 priv,uint32_t reftime,int64_t amount,int32_t depositflag)
 {
     cJSON *txobj; int32_t n,secretstart; char *signedtx = 0; struct bitcoin_statetx *ptr = 0;
-    uint8_t script[1024],secret[20]; bits256 txid; struct bitcoin_spend *spend; uint32_t locktime; int64_t insurance;
+    uint8_t script[1024],secret[20]; bits256 txid,signedtxid; uint32_t locktime; int64_t avail,insurance; int32_t completed,num; uint64_t *unspents;
     if ( coin == 0 )
         return(0);
     locktime = (uint32_t)(reftime + INSTANTDEX_LOCKTIME * (1 + depositflag));
     txobj = bitcoin_txcreate(coin,locktime);
     insurance = instantdex_insurance(coin,amount);
-    if ( (spend= iguana_spendset(myinfo,coin,amount + insurance,coin->chain->txfee,0)) != 0 )
+    calc_rmd160_sha256(secret,priv.bytes,sizeof(priv));
+    n = instantdex_bobscript(script,0,&secretstart,locktime,pub1,secret,pub2);
+    bitcoin_txoutput(coin,txobj,script,n,amount + depositflag*insurance*100);
+    avail = iguana_availunspents(myinfo,&unspents,&num,coin,coin->chain->minconfirms,"*",coin->blockspace,sizeof(coin->blockspace));
+    if ( (signedtx= iguana_signunspents(myinfo,coin,&signedtxid,&completed,txobj,amount + insurance,coin->changeaddr,coin->txfee,unspents,num)) != 0 )
     {
-        calc_rmd160_sha256(secret,priv.bytes,sizeof(priv));
-        n = instantdex_bobscript(script,0,&secretstart,locktime,pub1,secret,pub2);
-        bitcoin_txoutput(coin,txobj,script,n,amount + depositflag*insurance*100);
-        iguana_addinputs(coin,spend,txobj,0xffffffff);
-        txobj = iguana_signtx(myinfo,coin,&txid,&signedtx,spend,txobj,0);
-        if ( signedtx != 0  )
-        {
-            ptr = calloc(1,sizeof(*ptr) + strlen(signedtx) + 1);
-            strcpy(ptr->txbytes,signedtx);
-            ptr->txid = txid;
-            //printf("bob deposit.%s\n",signedtx);
-            //disp_tx(myinfo,coin,depositflag != 0 ? "deposit" : "payment",signedtx);
-            free(signedtx);
-        } else printf("error signing bobdeposit numinputs.%d\n",spend->numinputs);
-        free(spend);
-    }
+        ptr = calloc(1,sizeof(*ptr) + strlen(signedtx) + 1);
+        strcpy(ptr->txbytes,signedtx);
+        ptr->txid = txid;
+        //printf("bob deposit.%s\n",signedtx);
+        //disp_tx(myinfo,coin,depositflag != 0 ? "deposit" : "payment",signedtx);
+        free(signedtx);
+    } else printf("error signing bobdeposit\n");
     free_json(txobj);
     return(ptr);
 }
@@ -304,15 +285,14 @@ int32_t instantdex_altpaymentverify(struct supernet_info *myinfo,struct iguana_i
 
 struct bitcoin_statetx *instantdex_alicetx(struct supernet_info *myinfo,struct iguana_info *altcoin,char *msigaddr,bits256 pubAm,bits256 pubBn,int64_t amount)
 {
-    cJSON *txobj; int32_t n; char *signedtx = 0; uint8_t script[1024]; struct bitcoin_spend *spend; struct bitcoin_statetx *ptr = 0; bits256 txid;
-    if ( altcoin != 0 && (spend= iguana_spendset(myinfo,altcoin,amount,altcoin->chain->txfee,0)) != 0 )
+    cJSON *txobj; int32_t n,completed,num; char *signedtx = 0; uint8_t script[1024]; struct bitcoin_statetx *ptr = 0; bits256 txid,signedtxid; uint64_t *unspents; int64_t avail;
+    if ( altcoin != 0 )
     {
         txobj = bitcoin_txcreate(altcoin,0);
         n = instantdex_alicescript(script,0,msigaddr,altcoin->chain->p2shtype,pubAm,pubBn);
         bitcoin_txoutput(altcoin,txobj,script,n,amount);
-        iguana_addinputs(altcoin,spend,txobj,0xffffffff);
-        txobj = iguana_signtx(myinfo,altcoin,&txid,&signedtx,spend,txobj,0);
-        if ( signedtx != 0 )
+        avail = iguana_availunspents(myinfo,&unspents,&num,altcoin,altcoin->chain->minconfirms,"*",altcoin->blockspace,sizeof(altcoin->blockspace));
+        if ( (signedtx= iguana_signunspents(myinfo,altcoin,&signedtxid,&completed,txobj,amount,altcoin->changeaddr,altcoin->txfee,unspents,num)) != 0 )
         {
             printf("alice payment.%s\n",signedtx);
             //disp_tx(myinfo,altcoin,"altpayment",signedtx);
@@ -320,9 +300,7 @@ struct bitcoin_statetx *instantdex_alicetx(struct supernet_info *myinfo,struct i
             ptr->txid = txid;
             strcpy(ptr->txbytes,signedtx);
             free(signedtx);
-        }
-        else printf("error signing alicetx numinputs.%d\n",spend->numinputs);
-        free(spend);
+        } else printf("error signing alicetx\n");
         free_json(txobj);
     }
     return(ptr);

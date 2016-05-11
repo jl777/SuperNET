@@ -147,7 +147,7 @@ int32_t iguana_spentflag(struct iguana_info *coin,int64_t *RTspendp,int32_t *spe
     }
     //printf("[%d] u%u %.8f, spentheight.%d vs height.%d spentflag.%d\n",spent_hdrsi,spent_unspentind,dstr(amount),utxo.fromheight,height,utxo.spentflag);
     *spentheightp = utxo.fromheight;
-    if ( (confs= coin->blocks.hwmchain.height - utxo.fromheight) >= minconf && confs < maxconf && (height == 0 || utxo.fromheight < height) )
+    if ( (confs= coin->blocks.hwmchain.height - utxo.fromheight) >= minconf && confs < maxconf && (height <= 0 || utxo.fromheight < height) )
     {
         (*RTspendp) += RTspend;
         if ( utxo.spentflag != 0 )
