@@ -1,1 +1,1 @@
-curl --url "http://127.0.0.1:7778" --data "{\"prefetchlag\":-1,\"poll\":1,\"active\":1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"newcoin\":\"BTCD\",\"startpend\":10,\"endpend\":10,\"services\":129,\"maxpeers\":256}"
+curl --url "http://127.0.0.1:7778" --data "{\"prefetchlag\":-1,\"poll\":1,\"active\":1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"newcoin\":\"BTCD\",\"startpend\":4,\"endpend\":4,\"services\":129,\"maxpeers\":256}"

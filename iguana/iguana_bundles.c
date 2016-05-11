@@ -772,9 +772,11 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
             //printf("(%x:%x) ",(uint32_t)block->RO.hash2.ulongs[3],(uint32_t)bp->hashes[i].ulongs[3]);
             if ( block->txvalid == 0 || block->fpipbits == 0 || block->fpos < 0 || (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) || iguana_blockvalidate(coin,&valid,block,1) < 0 )
             {
+                char str[65];
                 if ( requiredflag != 0 )
                     printf(">>>>>>> block contents error at ht.%d [%d:%d]\n",bp->bundleheight+i,bp->hdrsi,i);
-                char str[65];  printf("patch.%d and reissue %s  %d\n",bp->bundleheight+i,bits256_str(str,block->RO.prev_block),i);
+                if ( bits256_nonz(block->RO.hash2) != 0 )
+                    printf("patch.%d and reissue prev.%s  %d\n",bp->bundleheight+i,bits256_str(str,block->RO.prev_block),i);
                 iguana_blockunmark(coin,block,bp,i,1);
             }
             else
