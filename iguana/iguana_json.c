@@ -682,6 +682,8 @@ TWO_STRINGS(iguana,addnode,activecoin,ipaddr)
                             i--;
                         else coin->peers.numranked = n+1;
                         coin->peers.ranked[i] = addr;
+                        addr->recvblocks = coin->peers.ranked[0]->recvblocks + 100;
+                        addr->recvtotal = coin->peers.ranked[0]->recvtotal*1.1 + 100;
                         printf("set (%s) -> slot.%d numranked.%d\n",ipaddr,i,coin->peers.numranked);
                     } else printf("(%s) is already peer.%d\n",ipaddr,i);
                 }

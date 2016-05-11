@@ -87,7 +87,7 @@ void iguana_acceptloop(void *args)
         if ( poll(&pfd,1,100) <= 0 )
             continue;
         clilen = sizeof(cli_addr);
-        printf("ACCEPT (%s:%d) on sock.%d\n","127.0.0.1",coin->chain->portp2p,coin->bindsock);
+        //printf("ACCEPT (%s:%d) on sock.%d\n","127.0.0.1",coin->chain->portp2p,coin->bindsock);
         sock = accept(coin->bindsock,(struct sockaddr *)&cli_addr,&clilen);
         if ( sock < 0 )
         {
