@@ -657,7 +657,7 @@ STRING_ARG(iguana,pausecoin,activecoin)
 
 TWO_STRINGS(iguana,addnode,activecoin,ipaddr)
 {
-    struct iguana_peer *addr;
+    struct iguana_peer *addr; int32_t i,n;
     if ( coin == 0 )
         coin = iguana_coinfind(activecoin);
     printf("coin.%p.[%s] addnode.%s -> %s\n",coin,coin!=0?coin->symbol:"",activecoin,ipaddr);
@@ -668,7 +668,24 @@ TWO_STRINGS(iguana,addnode,activecoin,ipaddr)
         {
             addr->supernet = 1;
             if ( addr->usock >= 0 )
+            {
+                if ( (n= coin->peers.numranked) != 0 )
+                {
+                    for (i=0; i<n; i++)
+                    {
+                        if ( addr == coin->peers.ranked[i] )
+                            break;
+                    }
+                    if ( i == n )
+                    {
+                        if ( i == IGUANA_MAXPEERS )
+                            i--;
+                        else coin->peers.numranked = n+1;
+                        coin->peers.ranked[i] = addr;
+                    }
+                }
                 return(clonestr("{\"result\":\"peer was already connected\"}"));
+            }
             if ( addr->pending == 0 )
             {
                 addr->pending = (uint32_t)time(NULL);

@@ -374,7 +374,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
                     iguana_queue_send(coin,addr,0,serialized,"InstantDEX",msg->sig.allocsize,0,1);
                     if ( --hops <= 0 )
                         break;
-                } else printf("skip.%d addr.%p (%s)\n",j,addr,addr!=0?addr->ipaddr:"");
+                } else printf("skip.%d addr.%p (%s) max.%d hops.%d\n",j,addr,addr!=0?addr->ipaddr:"",max,hops);
             }
         } else printf("cant find coin.%p or no ranked.%d\n",coin,max);
         free(msg); //free(hexstr),
