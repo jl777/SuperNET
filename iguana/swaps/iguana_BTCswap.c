@@ -670,13 +670,8 @@ cJSON *BOB_waitfeefunc(struct supernet_info *myinfo,struct exchange_info *exchan
             // broadcast deposit
             jaddstr(newjson,"deposit",swap->deposit->txbytes);
             jaddbits256(newjson,"deposittxid",swap->deposit->txid);
-        }
-        else
-        {
-            free_json(newjson);
-            newjson = 0;
-        }
-        return(newjson);
+            return(newjson);
+        } else return(0);
     }
     return(0);
 }
@@ -707,13 +702,8 @@ cJSON *BOB_waitaltconfirmfunc(struct supernet_info *myinfo,struct exchange_info 
             // broadcast payment
             jaddstr(newjson,"payment",swap->payment->txbytes);
             jaddbits256(newjson,"paymenttxid",swap->payment->txid);
-        }
-        else
-        {
-            free_json(newjson);
-            newjson = 0;
-        }
-        return(newjson);
+            return(newjson);
+        } else return(0);
     }
     return(0);
 }
@@ -731,7 +721,6 @@ cJSON *BTC_waitprivsfunc(struct supernet_info *myinfo,struct exchange_info *exch
     else
     {
         printf("error generating feetx\n");
-        free_json(newjson);
         newjson = 0;
     }
     return(newjson);
@@ -749,7 +738,6 @@ cJSON *ALICE_waitfeefunc(struct supernet_info *myinfo,struct exchange_info *exch
         jaddstr(newjson,"feefound",retstr);
         return(newjson);
     }
-    free_json(newjson);
     return(0);
 }
 
@@ -771,11 +759,7 @@ cJSON *ALICE_waitdepositfunc(struct supernet_info *myinfo,struct exchange_info *
             jaddstr(newjson,"altpayment",swap->altpayment->txbytes);
             jaddbits256(newjson,"altpaymenttxid",swap->altpayment->txid);
         }
-        else
-        {
-            free_json(newjson);
-            newjson = 0;
-        }
+        else newjson = 0;
     }
     return(newjson);
 }
@@ -795,7 +779,6 @@ cJSON *ALICE_waitconfirmsfunc(struct supernet_info *myinfo,struct exchange_info 
         printf("search for Bob's reclaim in blockchain\n");
         return(newjson);
     }
-    free_json(newjson);
     return(0);
 }
 
@@ -814,7 +797,6 @@ cJSON *ALICE_checkbobreclaimfunc(struct supernet_info *myinfo,struct exchange_in
         printf("search for Bob's reclaim in blockchain\n");
         return(newjson);
     }
-    free_json(newjson);
     return(0);
 }
 
