@@ -1405,10 +1405,14 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
     //sprintf(str+strlen(str),"%s.%-2d %s time %.2f files.%d Q.%d %d\n",coin->symbol,flag,str,(double)(time(NULL)-coin->starttime)/60.,coin->peers.numfiles,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ));
     if ( time(NULL) > coin->lastdisp+7 && (strcmp(str,coin->lastdispstr) != 0 || time(NULL) > coin->lastdisp+60) )
     {
-        printf("%s bQ.%d %d:%02d:%02d stuck.%d max.%d\n",str,queue_size(&bundlesQ),(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,coin->stucktime!=0?(uint32_t)time(NULL) - coin->stucktime:0,coin->maxstuck);
+        static FILE *logfp;
+        if ( logfp == 0 )
+            logfp = fopen("debug.log","wb");
+        if ( logfp != 0 )
+            fprintf(logfp,"%s bQ.%d %d:%02d:%02d stuck.%d max.%d\n",str,queue_size(&bundlesQ),(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,coin->stucktime!=0?(uint32_t)time(NULL) - coin->stucktime:0,coin->maxstuck);
         strcpy(coin->lastdispstr,str);
-        if ( (rand() % 100) == 0 )
-            myallocated(0,0);
+        //if ( (rand() % 100) == 0 )
+        //    myallocated(0,0);
         coin->lastdisp = (uint32_t)time(NULL);
     }
     iguana_setmaxbundles(coin);
