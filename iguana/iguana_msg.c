@@ -618,7 +618,10 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                 iguana_memreset(rawmem), iguana_memreset(txmem);
                 memset(&txdata,0,sizeof(txdata));
                 if ( (n= iguana_gentxarray(coin,rawmem,&txdata,&len,data,recvlen)) == recvlen )
+                {
+                    len = n;
                     iguana_gotblockM(coin,addr,&txdata,rawmem->ptr,H,data,recvlen);
+                }
                 else printf("parse error block txn_count.%d, n.%d len.%d vs recvlen.%d from.(%s)\n",txdata.block.RO.txn_count,n,len,recvlen,addr->ipaddr);
             } else len = iguana_peergetrequest(coin,addr,data,recvlen,1);
         }
