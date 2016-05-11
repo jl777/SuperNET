@@ -67,6 +67,8 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
        // if ( (rand() % 10 ) != 0 )
             return(0);
     }
+    if ( addr->usock < 0 )
+        return(0);
     checkbp = 0, j = -2;
     if ( (checkbp= iguana_bundlefind(coin,&checkbp,&j,hash2)) != 0 && j >= 0 && j < checkbp->n )
     {
