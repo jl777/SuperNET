@@ -270,13 +270,13 @@ int32_t iguana_pkhasharray(struct supernet_info *myinfo,struct iguana_info *coin
             }
             else
             {
-                printf("pkhash balance.[%d] from m.%d check %.8f vs %.8f spent %.8f [%.8f]\n",i,m,dstr(netbalance),dstr(deposits),dstr(spent),dstr(deposits)-dstr(spent));
+                //printf("pkhash balance.[%d] from m.%d check %.8f vs %.8f spent %.8f [%.8f]\n",i,m,dstr(netbalance),dstr(deposits),dstr(spent),dstr(deposits)-dstr(spent));
                 total += netbalance;
                 n++;
             }
             maxunspents -= m;
             numunspents += m;
-            printf("%d: balance %.8f, lastunspent.%u m.%d num.%d max.%d\n",i,dstr(total),lastunspentind,m,numunspents,maxunspents);
+            //printf("%d: balance %.8f, lastunspent.%u m.%d num.%d max.%d\n",i,dstr(total),lastunspentind,m,numunspents,maxunspents);
         }
     }
     if ( numunspentsp != 0 )
@@ -307,12 +307,12 @@ int64_t iguana_unspents(struct supernet_info *myinfo,struct iguana_info *coin,cJ
             bitcoin_address(coinaddr,addrtypes[i],&rmdarray[i * 20],20);
             *numunspentsp = 0;
             iguana_pkhasharray(myinfo,coin,array,minconf,maxconf,&total,P,coin->bundlescount,&rmdarray[i * 20],coinaddr,&pubkeys[33*i],lastheight,&unspents[numunspents],numunspentsp,maxunspents);
-            printf("iguana_unspents: i.%d of %d: %s %.8f numunspents.%d\n",i,numrmds,coinaddr,dstr(total),*numunspentsp);
+            //printf("iguana_unspents: i.%d of %d: %s %.8f numunspents.%d\n",i,numrmds,coinaddr,dstr(total),*numunspentsp);
             maxunspents -= *numunspentsp;
             numunspents += *numunspentsp;
             sum += total;
         }
-        printf("sum %.8f\n",dstr(sum));
+        //printf("sum %.8f\n",dstr(sum));
         free(P);
     }
     *numunspentsp = numunspents;

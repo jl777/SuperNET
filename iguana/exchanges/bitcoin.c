@@ -202,7 +202,7 @@ struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct i
     sprintf(params,"%.0f, 99999999",minconfirms);
     if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",params)) != 0 )
     {
-        //printf("sss unspents.(%s)\n",retstr);
+        printf("sss unspents.(%s)\n",retstr);
         if ( (utxo= cJSON_Parse(retstr)) != 0 )
         {
             n = 0;
@@ -212,7 +212,7 @@ struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct i
                 for (i=0; i<*numunspentsp; i++)
                 {
                     value = bitcoin_parseunspent(coin,&unspents[n],minconfirms,account,jitem(utxo,i));
-                    //printf("i.%d n.%d value %.8f\n",i,n,dstr(value));
+                    printf("i.%d n.%d value %.8f\n",i,n,dstr(value));
                     if ( value != 0 )
                     {
                         total += value;
@@ -220,7 +220,7 @@ struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct i
                     }
                 }
             }
-            //printf("numunspents.%d -> %d total %.8f\n",*numunspentsp,n,dstr(total));
+            printf("numunspents.%d -> %d total %.8f\n",*numunspentsp,n,dstr(total));
             *numunspentsp = n;
             free_json(utxo);
         } else printf("error parsing.(%s)\n",retstr);

@@ -1143,14 +1143,14 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
         }
         A.offer = *offer;
         A.orderid = orderhash.txid;
-        printf("got.(%s) for %llu offer64.%llu\n",cmdstr,(long long)A.orderid,(long long)A.offer.offer64);
+        printf("got.(%s) for %llu offer64.%llu serdatalen.%d\n",cmdstr,(long long)A.orderid,(long long)A.offer.offer64,serdatalen);
         if ( (A.offer.minperc= jdouble(argjson,"p")) < INSTANTDEX_MINPERC )
             A.offer.minperc = INSTANTDEX_MINPERC;
         else if ( A.offer.minperc > 100 )
             A.offer.minperc = 100;
         if ( strcmp(cmdstr,"BTCoffer") == 0 ) // incoming
         {
-            printf("BTCoffer state exchange.%p\n",exchange);
+            printf("BTCoffer state exchange.%p serdatalen.%d\n",exchange,serdatalen);
             if ( (ap= instantdex_acceptable(myinfo,exchange,&A,A.offer.minperc)) != 0 )
             {
                 if ( (retstr= instantdex_gotoffer(myinfo,exchange,ap,&A,msg,argjson,remoteaddr,signerbits,serdata,serdatalen)) != 0 ) // adds to statemachine if no error
@@ -1231,7 +1231,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,struct category_info *cat,v
             newlen -= olen;
             //newlen -= ((long)msg->serialized - (long)msg);
             serdata = &serdata[olen];
-            //printf("received orderhash.%llu olen.%d slen.%d newlen.%d\n",(long long)orderhash.txid,olen,slen,newlen);
+            printf("received orderhash.%llu olen.%d slen.%d newlen.%d\n",(long long)orderhash.txid,olen,slen,newlen);
         } else olen = 0;
         if ( newlen <= 0 )
             serdata = 0, newlen = 0;
