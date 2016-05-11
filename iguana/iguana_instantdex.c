@@ -361,6 +361,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
         //hexstr = malloc(msg->sig.allocsize*2 + 1);
         //init_hexbytes_noT(hexstr,(uint8_t *)msg,msg->sig.allocsize);
         //retstr = SuperNET_categorymulticast(myinfo,0,myinfo->instantdex_category,desthash,hexstr,0,hops,1,argjson,0);
+        memset(serialized,0,sizeof(struct iguana_msghdr));
         memcpy(&serialized[sizeof(struct iguana_msghdr)],(uint8_t *)msg,msg->sig.allocsize);
         if ( (coin= iguana_coinfind("BTCD")) != 0 && (max= coin->peers.numranked) > 0 )
         {

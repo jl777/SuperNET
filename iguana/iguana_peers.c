@@ -458,6 +458,8 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
 int32_t iguana_queue_send(struct iguana_info *coin,struct iguana_peer *addr,int32_t delay,uint8_t *serialized,char *cmd,int32_t len,int32_t getdatablock,int32_t forceflag)
 {
     struct iguana_packet *packet; int32_t datalen;
+    if ( (datalen= iguana_sethdr((void *)serialized,coin->chain->netmagic,cmd,&serialized[sizeof(struct iguana_msghdr)],len)) < 0 )
+        return(-1);
     if ( addr == 0 )
     {
         printf("iguana_queue_send null addr\n");
@@ -465,10 +467,10 @@ int32_t iguana_queue_send(struct iguana_info *coin,struct iguana_peer *addr,int3
         return(-1);
     }
     else if ( forceflag != 0 )
+    {
         return(iguana_send(coin,addr,serialized,len));
+    }
 
-    if ( (datalen= iguana_sethdr((void *)serialized,coin->chain->netmagic,cmd,&serialized[sizeof(struct iguana_msghdr)],len)) < 0 )
-        return(-1);
     if ( strcmp("getaddr",cmd) == 0 && time(NULL) < addr->lastgotaddr+300 )
         return(0);
     //if ( strcmp("version",cmd) == 0 )
@@ -587,7 +589,9 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
                 myfree(buf,len);
             return;
         }
-        printf("invalid header received from (%s)\n",addr->ipaddr);
+        int32_t i; for (i=0; i<sizeof(H); i++)
+            printf("%02x",((uint8_t *)&H)[i]);
+        printf(" invalid header received from (%s)\n",addr->ipaddr);
         addr->dead = 1;
     }
    // printf("%s recv error on hdr errno.%d (%s) -> zombify\n",addr->ipaddr,-recvlen,strerror(-recvlen));
