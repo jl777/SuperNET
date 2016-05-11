@@ -296,13 +296,11 @@ int32_t is_hexstr(char *str,int32_t n)
         if ( n > 0 && i >= n )
             break;
         if ( _unhex(str[i]) < 0 )
-        {
-            if ( n == 0 )
-                return(i);
-            return(0);
-        }
+            break;
     }
-    return(n);
+    if ( n == 0 )
+        return(i);
+    return(i == n);
 }
 
 int32_t unhex(char c)

@@ -16444,6 +16444,83 @@ len = 0;
              return s_enc;
              }
              */
+            /*if ( fieldstr != 0 && valuestr != 0 )
+             {
+             flag = 0;
+             if ( (len= is_hexstr(fieldstr,0)) > 0 )
+             {
+             if ( strlen(fieldstr) == 20*2 )
+             decode_hex(rmd160,sizeof(rmd160),fieldstr);
+             else
+             {
+             len >>= 1;
+             decode_hex(script,len,valuestr);
+             calc_rmd160_sha256(rmd160,script,len);
+             bitcoin_address(p2shaddr,coin->chain->p2shtype,rmd160,20);
+             fprintf(fp,"%s %s %32s=%d # addr=%s # p2sh\n",valuestr,utc_str(str,(uint32_t)time(NULL)),account,i+1,p2shaddr);
+             flag = 1;
+             }
+             } else bitcoin_addr2rmd160(&addrtype,rmd160,fieldstr);
+             if ( flag == 0 )
+             {
+             privkey = bits256_conv(valuestr);
+             bitcoin_priv2wif(wifstr,privkey,coin->chain->wiftype);
+             bitcoin_address(coinaddr,coin->chain->pubtype,rmd160,20);
+             fprintf(fp,"%s %s %32s=%d # addr=%s\n",wifstr,utc_str(str,(uint32_t)time(NULL)),account,i+1,coinaddr);
+             }
+             
+             wiftype = 188;
+             for (j=0; j<IGUANA_MAXCOINS; j++)
+             {
+             if ( (coin= Coins[j]) != 0 && coin->chain != 0 )
+             {
+             if ( addrtype == coin->chain->pubtype )
+             {
+             wiftype = coin->chain->wiftype;
+             privkey = bits256_conv(privkeystr);
+             if ( bits256_nonz(privkey) != 0 && bitcoin_priv2wif(wifstr,privkey,wiftype) > 0 )
+             {
+             fprintf(fp,"%s %s %32s=%d # addr=%s\n",wifstr,utc_str(str,(uint32_t)time(NULL)),account,i+1,coinaddr);
+             }
+             break;
+             }
+             else if ( addrtype == coin->chain->p2shtype )
+             {
+             fprintf(fp,"%s %s %32s=%d # addr=%s # p2sh\n",privkeystr,utc_str(str,(uint32_t)time(NULL)),account,i+1,p2shaddr);
+             break;
+             }
+             }
+             }
+             }*/
+            /*coinaddr = child->string;
+             privkeystr = child->valuestring;
+             if ( coinaddr != 0 && privkeystr != 0 )
+             {
+             if ( (wacct= iguana_waccountcreate(myinfo,coin,account)) != 0 )
+             {
+             if ( iguana_waddresssearch(myinfo,coin,&tmp,coinaddr) == 0 )
+             {
+             memset(&waddr,0,sizeof(waddr));
+             strcpy(waddr.coinaddr,coinaddr);
+             waddr.addrtype = coin->chain->p2shtype;
+             if ( bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr) == sizeof(rmd160) && addrtype == coin->chain->p2shtype )
+             iguana_waddressadd(myinfo,coin,wacct,&waddr,privkeystr);
+             else
+             {
+             waddr.addrtype = coin->chain->pubtype;
+             privkey = bits256_conv(privkeystr);
+             if ( iguana_waddresscalc(myinfo,coin->chain->pubtype,coin->chain->wiftype,&waddr,privkey) != 0 )
+             iguana_waddressadd(myinfo,coin,wacct,&waddr,0);
+             }
+             } else printf("dup.(%s) ",coinaddr);
+             len = (int32_t)strlen(privkeystr);
+             for (j=0; j<len; j++)
+             privkeystr[j] = 0;
+             for (j=0; j<len; j++)
+             privkeystr[j] = 0x20 + (rand() % 64);
+             privkey = rand256(0);
+             }
+             }*/
 
 #endif
 #endif
