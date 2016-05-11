@@ -371,7 +371,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
                 j = (i + r) % max;
                 if ( (addr= coin->peers.ranked[j]) != 0 && addr->supernet != 0 && addr->usock >= 0 )
                 {
-                    printf("send to (%s)\n",addr->ipaddr);
+                    printf("send.%d to (%s)\n",(int32_t)msg->sig.allocsize,addr->ipaddr);
                     iguana_queue_send(coin,addr,0,serialized,"InstantDEX",msg->sig.allocsize,0,0);
                     if ( --hops <= 0 )
                         break;
