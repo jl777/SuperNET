@@ -89,7 +89,7 @@ struct iguana_waddress *iguana_waddresscreate(struct supernet_info *myinfo,struc
         {
             HASH_ADD_KEYPTR(hh,wacct->waddr,waddr->coinaddr,len,waddr);
             myinfo->dirty = (uint32_t)time(NULL);
-            printf("create (%s).%d scriptlen.%d -> (%s)\n",coinaddr,len,waddr->scriptlen,wacct->account);
+            //printf("create (%s).%d scriptlen.%d -> (%s)\n",coinaddr,len,waddr->scriptlen,wacct->account);
         } else printf("error iguana_waddressalloc null waddr\n");
     } //else printf("have (%s) in (%s)\n",coinaddr,wacct->account);
     if ( (ptr= iguana_waddressfind(myinfo,coin,wacct,coinaddr)) != waddr )
@@ -107,7 +107,7 @@ struct iguana_waddress *iguana_waddressadd(struct supernet_info *myinfo,struct i
         {
             HASH_ADD_KEYPTR(hh,wacct->waddr,waddr->coinaddr,len,waddr);
             myinfo->dirty = (uint32_t)time(NULL);
-            printf("add (%s).%d scriptlen.%d -> (%s) wif.(%s)\n",waddr->coinaddr,len,waddr->scriptlen,wacct->account,waddr->wifstr);
+            //printf("add (%s).%d scriptlen.%d -> (%s) wif.(%s)\n",waddr->coinaddr,len,waddr->scriptlen,wacct->account,waddr->wifstr);
         } else printf("error iguana_waddressalloc null waddr\n");
     } //else printf("have (%s) in (%s)\n",waddr->coinaddr,wacct->account);
     if ( (ptr= iguana_waddressfind(myinfo,coin,wacct,waddr->coinaddr)) != waddr )
@@ -185,21 +185,21 @@ struct iguana_waddress *iguana_waddresssearch(struct supernet_info *myinfo,struc
     return(0);
 }
 
-struct iguana_waddress *iguana_waddresscalc(struct supernet_info *myinfo,uint8_t pubtype,uint8_t wiftype,struct iguana_waddress *addr,bits256 privkey)
+struct iguana_waddress *iguana_waddresscalc(struct supernet_info *myinfo,uint8_t pubtype,uint8_t wiftype,struct iguana_waddress *waddr,bits256 privkey)
 {
-    addr->privkey = privkey;
-    bitcoin_pubkey33(myinfo->ctx,addr->pubkey,addr->privkey);
-    calc_rmd160_sha256(addr->rmd160,addr->pubkey,33);
-    bitcoin_address(addr->coinaddr,pubtype,addr->rmd160,sizeof(addr->rmd160));
+    waddr->privkey = privkey;
+    bitcoin_address(waddr->coinaddr,pubtype,waddr->rmd160,sizeof(waddr->rmd160));
     if ( bits256_nonz(privkey) != 0 )
     {
-        if ( bitcoin_priv2wif(addr->wifstr,addr->privkey,wiftype) > 0 )
+        bitcoin_pubkey33(myinfo->ctx,waddr->pubkey,waddr->privkey);
+        calc_rmd160_sha256(waddr->rmd160,waddr->pubkey,33);
+        if ( bitcoin_priv2wif(waddr->wifstr,waddr->privkey,wiftype) > 0 )
         {
-            addr->wiftype = wiftype;
-            addr->addrtype = pubtype;
-            return(addr);
+            waddr->wiftype = wiftype;
+            waddr->addrtype = pubtype;
+            return(waddr);
         }
-    } else printf("waddress_calc null privkey\n");
+    } else printf("waddress_calc.(%s) null privkey\n",waddr->coinaddr);
     return(0);
 }
 
@@ -757,7 +757,7 @@ void iguana_walletinitcheck(struct supernet_info *myinfo,struct iguana_info *coi
                         }
                         child = child->next;
                     }
-                    printf("account.(%s)\n",account);
+                    //printf("account.(%s)\n",account);
                 }
                 item = item->next;
             }

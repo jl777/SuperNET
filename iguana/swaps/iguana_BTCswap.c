@@ -398,22 +398,22 @@ cJSON *ALICE_claimbtcfunc(struct supernet_info *myinfo,struct exchange_info *exc
     return(newjson);
 }
 
-bits256 instantdex_derivekeypair(bits256 *newprivp,uint8_t pubkey[33],bits256 privkey,bits256 orderhash)
+bits256 instantdex_derivekeypair(struct supernet_info *myinfo,bits256 *newprivp,uint8_t pubkey[33],bits256 privkey,bits256 orderhash)
 {
     bits256 sharedsecret;
     sharedsecret = curve25519_shared(privkey,orderhash);
     vcalc_sha256cat(newprivp->bytes,orderhash.bytes,sizeof(orderhash),sharedsecret.bytes,sizeof(sharedsecret));
-    return(bitcoin_pubkey33(0,pubkey,*newprivp));
+    return(bitcoin_pubkey33(myinfo->ctx,pubkey,*newprivp));
 }
 
-int32_t instantdex_pubkeyargs(struct bitcoin_swapinfo *swap,cJSON *newjson,int32_t numpubs,bits256 privkey,bits256 hash,int32_t firstbyte)
+int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct bitcoin_swapinfo *swap,cJSON *newjson,int32_t numpubs,bits256 privkey,bits256 hash,int32_t firstbyte)
 {
     char buf[3]; int32_t i,n,m,len=0; bits256 pubi; uint64_t txid; uint8_t secret160[20],pubkey[33];
     sprintf(buf,"%c0",'A' - 0x02 + firstbyte);
     printf(">>>>>> start generating %s\n",buf);
     for (i=n=m=0; i<numpubs*100 && n<numpubs; i++)
     {
-        pubi = instantdex_derivekeypair(&swap->privkeys[n],pubkey,privkey,hash);
+        pubi = instantdex_derivekeypair(myinfo,&swap->privkeys[n],pubkey,privkey,hash);
         privkey = swap->privkeys[n];
         printf("i.%d n.%d numpubs.%d %02x vs %02x\n",i,n,numpubs,pubkey[0],firstbyte);
         if ( pubkey[0] != firstbyte )
@@ -593,7 +593,7 @@ cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info
         if ( juint(argjson,"verified") != 0 )
             swap->otherverifiedcut = 1;
         jaddnum(newjson,"verified",swap->otherverifiedcut);
-        if ( instantdex_pubkeyargs(swap,newjson,2 + deckflag*INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myorderhash,0x02+instantdex_isbob(swap)) == 2 + deckflag*INSTANTDEX_DECKSIZE )
+        if ( instantdex_pubkeyargs(myinfo,swap,newjson,2 + deckflag*INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myorderhash,0x02+instantdex_isbob(swap)) == 2 + deckflag*INSTANTDEX_DECKSIZE )
             instantdex_getpubs(swap,argjson,newjson);
         else printf("ERROR: couldnt generate pubkeys deckflag.%d\n",deckflag);
     }

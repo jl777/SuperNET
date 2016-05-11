@@ -22,7 +22,7 @@
 #include <curl/easy.h>
 #endif
 
-#define INSTANTDEX_DECKSIZE 2000
+#define INSTANTDEX_DECKSIZE 77
 #define INSTANTDEX_HOPS 2
 #define INSTANTDEX_DURATION 60
 

@@ -294,7 +294,7 @@ void iguana_gotpong(struct iguana_info *coin,struct iguana_peer *addr,uint64_t n
     {
         addr->pingtime = (OS_milliseconds() - addr->sendmillis) + 1;
         addr->pingsum += addr->pingtime, addr->numpings++;
-        printf("%s pingtime %.0f numpings.%d [%.3f] ",addr->ipaddr,addr->pingtime,addr->numpings,addr->pingsum/addr->numpings);
+        //printf("%s pingtime %.0f numpings.%d [%.3f] ",addr->ipaddr,addr->pingtime,addr->numpings,addr->pingsum/addr->numpings);
     }
     if ( nonce != addr->pingnonce )
     {

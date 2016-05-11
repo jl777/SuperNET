@@ -968,6 +968,8 @@ THREE_STRINGS_AND_THREE_INTS(InstantDEX,orderbook,exchange,base,rel,depth,allfie
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( exchange != 0 && exchange[0] != 0 )
         {
             if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
@@ -982,6 +984,8 @@ THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,buy,exchange,base,rel,price,volume,do
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qtrade(ptr,base,rel,juint(json,"maxseconds"),dotrade,1,price,volume,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -993,6 +997,8 @@ THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,sell,exchange,base,rel,price,volume,d
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qtrade(ptr,base,rel,juint(json,"maxseconds"),dotrade,-1,price,volume,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -1004,6 +1010,8 @@ THREE_STRINGS_AND_DOUBLE(InstantDEX,withdraw,exchange,base,destaddr,amount)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qrequest(ptr,'W',base,0,juint(json,"maxseconds"),0,destaddr,amount,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -1015,6 +1023,8 @@ TWO_STRINGS(InstantDEX,balance,exchange,base)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qrequest(ptr,'B',base,0,juint(json,"maxseconds"),0,0,0,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -1026,6 +1036,8 @@ TWO_STRINGS(InstantDEX,orderstatus,exchange,orderid)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qrequest(ptr,'P',0,0,juint(json,"maxseconds"),calc_nxt64bits(orderid),0,0,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -1037,6 +1049,8 @@ TWO_STRINGS(InstantDEX,cancelorder,exchange,orderid)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qrequest(ptr,'C',0,0,juint(json,"maxseconds"),calc_nxt64bits(orderid),0,0,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -1048,6 +1062,8 @@ STRING_ARG(InstantDEX,openorders,exchange)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qrequest(ptr,'O',0,0,juint(json,"maxseconds"),0,0,0,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -1059,6 +1075,8 @@ STRING_ARG(InstantDEX,tradehistory,exchange)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qrequest(ptr,'H',0,0,juint(json,"maxseconds"),0,0,0,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -1070,6 +1088,8 @@ THREE_STRINGS(InstantDEX,apikeypair,exchange,apikey,apisecret)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
         {
             if ( apikey != 0 && apikey[0] != 0 && apisecret != 0 && apisecret[0] != 0 )
@@ -1087,6 +1107,8 @@ THREE_STRINGS(InstantDEX,setuserid,exchange,userid,tradepassword)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
         {
             safecopy(ptr->userid,userid,sizeof(ptr->userid));
@@ -1101,6 +1123,8 @@ STRING_AND_INT(InstantDEX,pollgap,exchange,pollgap)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
         {
             ptr->pollgap = pollgap;

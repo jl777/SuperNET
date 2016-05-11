@@ -320,7 +320,7 @@ bits256 instantdex_rwoffer(int32_t rwflag,int32_t *lenp,uint8_t *serialized,stru
 
 char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extraser,int32_t extralen)
 {
-    char *reqstr; struct instantdex_msghdr *msg; bits256 orderhash; struct iguana_info *coin; struct iguana_peer *addr; int32_t i,j,r,olen,slen,datalen,max=-1; uint8_t serialized[sizeof(*offer) + sizeof(struct iguana_msghdr) + 4096]; uint64_t nxt64bits;
+    char *reqstr; struct instantdex_msghdr *msg; bits256 orderhash; struct iguana_info *coin; struct iguana_peer *addr; int32_t i,j,r,olen,slen,datalen,max=-1; uint8_t serialized[sizeof(*offer) + sizeof(struct iguana_msghdr) + 4096 + INSTANTDEX_DECKSIZE*33]; uint64_t nxt64bits;
     category_subscribe(myinfo,myinfo->instantdex_category,GENESIS_PUBKEY);
     jaddstr(argjson,"cmd",cmdstr);
     jaddstr(argjson,"agent","SuperNET");
@@ -817,7 +817,6 @@ int32_t instantdex_quote(struct supernet_info *myinfo,struct iguana_info *coin,s
         if ( (ap= instantdex_quotefind(myinfo,coin,addr,encodedhash)) == 0 )
         {
             init_hexbytes_noT(hexstr,serialized,recvlen);
-            printf("quote send\n");
             SuperNET_hexmsgadd(myinfo,myinfo->instantdex_category,GENESIS_PUBKEY,hexstr,tai_now(),addr->ipaddr);
         }
         else

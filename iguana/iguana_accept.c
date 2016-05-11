@@ -339,13 +339,13 @@ int32_t iguana_peeraddrrequest(struct iguana_info *coin,struct iguana_peer *addr
             if ( (tmpaddr= coin->peers.ranked[i]) != 0 && ((iter == 0 && tmpaddr->supernet != 0) || (iter == 1 && tmpaddr->supernet == 0)) && tmpaddr->ipaddr[0] != 0 )
             {
                 sendlen += iguana_rwaddr(1,&space[sizeof(H) + sendlen],&tmpaddr->A,(int32_t)tmpaddr->protover);
-                printf("(%s) ",tmpaddr->ipaddr);
+                //printf("(%s) ",tmpaddr->ipaddr);
                 x++;
             }
         }
     }
     iguana_rwvarint(1,&space[sizeof(H)],&x);
-    printf("addrrequest: sendlen.%d x.%d\n",sendlen,(int32_t)x);
+    //printf("addrrequest: sendlen.%d x.%d\n",sendlen,(int32_t)x);
     if ( x == 0 )
         return(-1);
     return(sendlen);
