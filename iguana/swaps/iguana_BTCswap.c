@@ -671,7 +671,11 @@ cJSON *BOB_waitfeefunc(struct supernet_info *myinfo,struct exchange_info *exchan
             jaddstr(newjson,"deposit",swap->deposit->txbytes);
             jaddbits256(newjson,"deposittxid",swap->deposit->txid);
         }
-        else jaddstr(newjson,"error","couldnt create paymenttx");
+        else
+        {
+            free_json(newjson);
+            newjson = 0;
+        }
         return(newjson);
     }
     return(0);
@@ -704,7 +708,11 @@ cJSON *BOB_waitaltconfirmfunc(struct supernet_info *myinfo,struct exchange_info 
             jaddstr(newjson,"payment",swap->payment->txbytes);
             jaddbits256(newjson,"paymenttxid",swap->payment->txid);
         }
-        else jaddstr(newjson,"error","couldnt create paymenttx");
+        else
+        {
+            free_json(newjson);
+            newjson = 0;
+        }
         return(newjson);
     }
     return(0);
@@ -719,7 +727,13 @@ cJSON *BTC_waitprivsfunc(struct supernet_info *myinfo,struct exchange_info *exch
     {
         jaddstr(newjson,"feetx",swap->myfee->txbytes);
         jaddbits256(newjson,"feetxid",swap->myfee->txid);
-    } else printf("error generating feetx\n");
+    }
+    else
+    {
+        printf("error generating feetx\n");
+        free_json(newjson);
+        newjson = 0;
+    }
     return(newjson);
 }
 
@@ -734,7 +748,9 @@ cJSON *ALICE_waitfeefunc(struct supernet_info *myinfo,struct exchange_info *exch
         retstr = swap->otherfee->txbytes;
         jaddstr(newjson,"feefound",retstr);
         return(newjson);
-    } else return(0);
+    }
+    free_json(newjson);
+    return(0);
 }
 
 cJSON *ALICE_waitdepositfunc(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp)
@@ -754,7 +770,12 @@ cJSON *ALICE_waitdepositfunc(struct supernet_info *myinfo,struct exchange_info *
             // broadcast altpayment
             jaddstr(newjson,"altpayment",swap->altpayment->txbytes);
             jaddbits256(newjson,"altpaymenttxid",swap->altpayment->txid);
-        } else return(cJSON_Parse("{\"error\":\"couldnt create altpayment\"}"));
+        }
+        else
+        {
+            free_json(newjson);
+            newjson = 0;
+        }
     }
     return(newjson);
 }
@@ -773,7 +794,9 @@ cJSON *ALICE_waitconfirmsfunc(struct supernet_info *myinfo,struct exchange_info 
         // if bobreclaimed is there, then reclaim altpayment
         printf("search for Bob's reclaim in blockchain\n");
         return(newjson);
-    } else return(0);
+    }
+    free_json(newjson);
+    return(0);
 }
 
 cJSON *ALICE_checkbobreclaimfunc(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp)
@@ -790,7 +813,9 @@ cJSON *ALICE_checkbobreclaimfunc(struct supernet_info *myinfo,struct exchange_in
         // if bobreclaimed is there, then reclaim altpayment
         printf("search for Bob's reclaim in blockchain\n");
         return(newjson);
-    } else return(0);
+    }
+    free_json(newjson);
+    return(0);
 }
 
 cJSON *BTC_cleanupfunc(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp)
@@ -1010,7 +1035,8 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                 free_json(origjson);
                 if ( strcmp("poll",state->events[i].sendcmd) == 0 )
                 {
-                    return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,state->events[i].sendcmd,myinfo->myaddr.persistent,0,serdata,serdatalen,0));
+                    printf("POLL for pending tx expected.(%s)\n",swap->expectedcmdstr);
+                    //return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,state->events[i].sendcmd,myinfo->myaddr.persistent,0,serdata,serdatalen,0));
                 }
                 else
                 {

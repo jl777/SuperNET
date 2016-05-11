@@ -1138,7 +1138,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
         memset(&A,0,sizeof(A));
         if ( j64bits(argjson,"id") != orderhash.txid )
         {
-            printf("orderhash %llu mismatch id.%llu\n",(long long)orderhash.txid,(long long)j64bits(argjson,"id"));
+            printf("orderhash %llu (%s)\n",(long long)orderhash.txid,jprint(argjson,0));
             return(clonestr("{\"error\":\"orderhash mismatch\"}"));
         }
         A.offer = *offer;
