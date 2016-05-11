@@ -178,7 +178,7 @@ void iguana_msgrequestQ(struct iguana_info *coin,struct iguana_peer *addr,int32_
 
 int32_t iguana_process_msgrequestQ(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    struct iguana_peermsgrequest *msg; struct instantdex_accept *ap; int32_t height,len,flag = 0; bits256 checktxid; struct iguana_txid *tx,T;
+    struct iguana_peermsgrequest *msg; struct instantdex_accept *ap; int32_t height,len,flag = 0; bits256 checktxid; struct iguana_txid *tx,T; struct iguana_peer *addr;
     if ( (msg= queue_dequeue(&coin->msgrequestQ,0)) != 0 )
     {
         flag = 1;
@@ -187,11 +187,12 @@ int32_t iguana_process_msgrequestQ(struct supernet_info *myinfo,struct iguana_in
             char str[65]; printf("send type.%d %s -> (%s)\n",msg->type,bits256_str(str,msg->hash2),msg->addr->ipaddr);
             if ( msg->type == MSG_BLOCK )
             {
-                if ( coin->RELAYNODE != 0 || coin->VALIDATENODE )
+                if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
                 {
-                    if ( (len= iguana_peerblockrequest(coin,&coin->blockspace[sizeof(struct iguana_msghdr)],sizeof(coin->blockspace),0,msg->hash2,0)) > 0 )
+                    if ( (addr= msg->addr) != 0 && (len= iguana_peerblockrequest(coin,&coin->blockspace[sizeof(struct iguana_msghdr)],(int32_t)(sizeof(coin->blockspace) - sizeof(struct iguana_msghdr)),0,msg->hash2,0)) > 0 )
                     {
-                        iguana_queue_send(coin,msg->addr,0,coin->blockspace,"block",len,0,0);
+                        printf("block len.%d -> (%s)\n",len,addr->ipaddr);
+                        iguana_queue_send(coin,addr,0,coin->blockspace,"block",len,0,0);
                     }
                 }
             }
