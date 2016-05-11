@@ -466,7 +466,7 @@ int32_t iguana_queue_send(struct iguana_info *coin,struct iguana_peer *addr,int3
     }
     else if ( forceflag != 0 )
     {
-        printf("forceflag not supported\n");
+        //printf("forceflag not supported\n");
         //return(iguana_send(coin,addr,serialized,len));
     }
 
