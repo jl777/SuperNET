@@ -826,12 +826,22 @@ struct instantdex_accept *instantdex_quotefind(struct supernet_info *myinfo,stru
     return(instantdex_offerfind(myinfo,exchanges777_find("bitcoin"),0,0,orderid,base,rel,1));
 }
 
-void instantdex_recvquote(struct iguana_info *coin,struct iguana_peer *addr,bits256 encodedhash)
+struct iguana_bundlereq *instantdex_recvquotes(struct iguana_info *coin,struct iguana_bundlereq *req,bits256 *quotes,int32_t n)
 {
-    if ( instantdex_quotefind(0,coin,addr,encodedhash) == 0 )
+    int32_t i,len,m = 0; uint8_t serialized[10000];
+    for (i=0; i<n; i++)
     {
-        
+        if ( instantdex_quotefind(0,coin,req->addr,quotes[i]) != 0 )
+            continue;
+        quotes[m++] = quotes[i];
     }
+    if ( m > 0 )
+    {
+        len = iguana_getdata(coin,serialized,MSG_QUOTE,quotes,m);
+        printf("send getdata for %d of %d quotes\n",m,n);
+        iguana_send(coin,0,serialized,len);
+    }
+    return(req);
 }
 
 int32_t instantdex_quoterequest(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *serialized,int32_t maxlen,struct iguana_peer *addr,bits256 encodedhash)

@@ -1110,14 +1110,6 @@ struct iguana_bundlereq *iguana_recvtxids(struct iguana_info *coin,struct iguana
     return(req);
 }
 
-struct iguana_bundlereq *iguana_recvquotes(struct iguana_info *coin,struct iguana_bundlereq *req,bits256 *quotes,int32_t n)
-{
-    int32_t i;
-    for (i=0; i<n; i++)
-        instantdex_recvquote(coin,req->addr,quotes[i]);
-    return(req);
-}
-
 struct iguana_bundlereq *iguana_recvunconfirmed(struct iguana_info *coin,struct iguana_bundlereq *req,uint8_t *data,int32_t datalen)
 {
     int32_t i;
@@ -1316,7 +1308,7 @@ int32_t iguana_processrecvQ(struct iguana_info *coin,int32_t *newhwmp) // single
         }
         else if ( req->type == 'Q' ) // quotes from inv
         {
-            if ( (req= iguana_recvquotes(coin,req,req->hashes,req->n)) != 0 )
+            if ( (req= instantdex_recvquotes(coin,req,req->hashes,req->n)) != 0 )
                 myfree(req->hashes,(req->n+1) * sizeof(*req->hashes)), req->hashes = 0;
         }
         else printf("iguana_updatebundles unknown type.%c\n",req->type);//, getchar();

@@ -626,7 +626,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
             } else len = iguana_peergetrequest(coin,addr,data,recvlen,1);
         }
     }
-    else if ( (ishost= (strncmp(H->command,"inv",3) == 0)) || strcmp(H->command,"getdata") == 0 )
+    else if ( (ishost= (strncmp(H->command,"inv",3) == 0)) || strncmp(H->command,"getdata",7) == 0 )
     {
         if ( addr != 0 )
         {
