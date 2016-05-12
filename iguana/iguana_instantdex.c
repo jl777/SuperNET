@@ -806,7 +806,7 @@ int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coi
     {
         if ( now < ap->offer.expiration && ap->dead == 0 )
         {
-            if ( n < sizeof(hashes)/sizeof(*hashes) && GETBIT(ap->peerhas,addr->addrind) == 0 )
+            if ( n < sizeof(hashes)/sizeof(*hashes) )//&& GETBIT(ap->peerhas,addr->addrind) == 0 )
                 hashes[n++] = instantdex_encodehash(ap->offer.base,ap->offer.rel,ap->offer.price64*instantdex_bidaskdir(&ap->offer),ap->orderid);
             queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
         } else free(ap);
