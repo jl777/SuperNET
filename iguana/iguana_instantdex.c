@@ -849,7 +849,7 @@ struct iguana_bundlereq *instantdex_recvquotes(struct iguana_info *coin,struct i
     int32_t i,len,m = 0; uint8_t serialized[10000];
     if ( req->addr == 0 )
         return(0);
-    printf("received quotehashes.%d from (%s)\n",n,req->addr->ipaddr);
+    //printf("received quotehashes.%d from (%s)\n",n,req->addr->ipaddr);
     for (i=1; i<n; i++)
     {
         if ( instantdex_quotefind(0,coin,req->addr,quotes[i]) != 0 )
@@ -874,7 +874,8 @@ int32_t instantdex_quoterequest(struct supernet_info *myinfo,struct iguana_info 
         if ( orderhash.ulongs[0] == ap->orderid )
         {
             checkhash = instantdex_rwoffer(0,&checklen,serialized,&checkoffer);
-            printf("%llu vs %llu, %d vs %d\n",(long long)checkhash.txid,(long long)orderhash.txid,checklen,olen);
+            if ( bits256_cmp(checkhash,orderhash) != 0 )
+                printf("%llu vs %llu, %d vs %d\n",(long long)checkhash.txid,(long long)orderhash.txid,checklen,olen);
             return(olen);
         }
         else return(-1);
@@ -884,7 +885,7 @@ int32_t instantdex_quoterequest(struct supernet_info *myinfo,struct iguana_info 
 
 int32_t instantdex_quotep2p(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,uint8_t *serialized,int32_t recvlen)
 {
-    bits256 orderhash,encodedhash; int32_t checklen; struct instantdex_accept A,*ap; char hexstr[8192];
+    bits256 orderhash,encodedhash; int32_t checklen; struct instantdex_accept A,*ap; struct exchange_info *exchange = exchanges777_find("bitcoin"); //char hexstr[8192];
     memset(&A,0,sizeof(A));
     orderhash = instantdex_rwoffer(0,&checklen,serialized,&A.offer), A.orderid = orderhash.txid;
     if ( checklen == recvlen )
@@ -893,12 +894,15 @@ int32_t instantdex_quotep2p(struct supernet_info *myinfo,struct iguana_info *coi
         if ( (ap= instantdex_quotefind(myinfo,coin,addr,encodedhash)) == 0 )
         {
             printf("add quote here!\n");
+            if ( exchange != 0 )
+            {
+                ap = calloc(1,sizeof(*ap));
+                *ap = A;
+                queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
+            }
         }
-        else
-        {
-            SETBIT(ap->peerhas,addr->addrind);
-            printf("instantdex_quote: got %llu which was already there\n",(long long)encodedhash.txid);
-        }
+        else printf("instantdex_quote: got %llu which was already there\n",(long long)encodedhash.txid);
+        SETBIT(ap->peerhas,addr->addrind);
     } else printf("instantdex_quote: checklen.%d != recvlen.%d\n",checklen,recvlen);
     return(checklen);
 }
