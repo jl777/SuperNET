@@ -161,7 +161,7 @@ int32_t iguana_peermetrics(struct supernet_info *myinfo,struct iguana_info *coin
         //printf("[%.0f %.0f] ",addr->recvblocks,addr->recvtotal);
         sortbuf[n*2 + 0] = iguana_metric(addr,now,.995);
         sortbuf[n*2 + 1] = i;
-        if ( exchange != 0 && addr->supernet != 0 )
+        if ( exchange != 0 && addr->supernet != 0 && strcmp(coin->symbol,"BTCD") == 0 )
             instantdex_inv2data(myinfo,coin,addr,exchange);
         n++;
     }
