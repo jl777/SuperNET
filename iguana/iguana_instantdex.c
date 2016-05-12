@@ -833,7 +833,7 @@ struct iguana_bundlereq *instantdex_recvquotes(struct iguana_info *coin,struct i
     int32_t i,len,m = 0; uint8_t serialized[10000];
     if ( req->addr == 0 )
         return(0);
-    printf("received quotes.%d from (%s)\n",n,req->addr->ipaddr);
+    printf("received quotehashes.%d from (%s)\n",n,req->addr->ipaddr);
     for (i=1; i<n; i++)
     {
         if ( instantdex_quotefind(0,coin,req->addr,quotes[i]) != 0 )

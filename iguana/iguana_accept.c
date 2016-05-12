@@ -226,11 +226,8 @@ int32_t iguana_process_msgrequestQ(struct supernet_info *myinfo,struct iguana_in
             }
             else if ( msg->type == MSG_QUOTE )
             {
-                if ( (ap= instantdex_quotefind(myinfo,coin,msg->addr,msg->hash2)) == 0 )
-                {
-                    if ( (len= instantdex_quoterequest(myinfo,coin,&coin->blockspace[sizeof(struct iguana_msghdr)],sizeof(coin->blockspace),msg->addr,msg->hash2)) > 0 )
-                        iguana_queue_send(coin,msg->addr,0,coin->blockspace,"quote",len,0,0);
-                }
+                if ( (len= instantdex_quoterequest(myinfo,coin,&coin->blockspace[sizeof(struct iguana_msghdr)],sizeof(coin->blockspace),msg->addr,msg->hash2)) > 0 )
+                    iguana_queue_send(coin,msg->addr,0,coin->blockspace,"quote",len,0,0);
             }
         }
         free(msg);
