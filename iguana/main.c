@@ -90,7 +90,7 @@ int32_t IGUANA_NUMHELPERS = 4;
 #endif
 #endif
 
-struct iguana_jsonitem { struct queueitem DL; struct supernet_info *myinfo; uint32_t fallback,expired,allocsize; char **retjsonstrp; char remoteaddr[64]; uint16_t port; char jsonstr[]; };
+struct iguana_jsonitem { struct queueitem DL; struct supernet_info *myinfo; uint32_t fallback,expired,allocsize; char *retjsonstr; char remoteaddr[64]; uint16_t port; char jsonstr[]; };
 
 uint16_t SuperNET_API2num(char *agent,char *method)
 {
@@ -232,21 +232,24 @@ char *SuperNET_jsonstr(struct supernet_info *myinfo,char *jsonstr,char *remotead
 
 int32_t iguana_jsonQ()
 {
-    struct iguana_jsonitem *ptr;
+    struct iguana_jsonitem *ptr; char *str;
     if ( (ptr= queue_dequeue(&finishedQ,0)) != 0 )
     {
         if ( ptr->expired != 0 )
         {
-            if ( ptr->retjsonstrp != 0 && *ptr->retjsonstrp != 0 && *ptr->retjsonstrp[0] != 0 )
-                free(*ptr->retjsonstrp); // *ptr->retjsonstrp = clonestr("{\"error\":\"request timeout\"}");
+            if ( (str= ptr->retjsonstr) != 0 )
+            {
+                ptr->retjsonstr = 0;
+                free(str);
+            }
             printf("garbage collection: expired.(%s)\n",ptr->jsonstr);
             myfree(ptr,ptr->allocsize);
         } else queue_enqueue("finishedQ",&finishedQ,&ptr->DL,0);
     }
     if ( (ptr= queue_dequeue(&jsonQ,0)) != 0 )
     {
-        if ( ptr->retjsonstrp != 0 && (*ptr->retjsonstrp= SuperNET_jsonstr(ptr->myinfo,ptr->jsonstr,ptr->remoteaddr,ptr->port)) == 0 )
-            *ptr->retjsonstrp = clonestr("{\"error\":\"null return from iguana_jsonstr\"}");
+        if ( (ptr->retjsonstr= SuperNET_jsonstr(ptr->myinfo,ptr->jsonstr,ptr->remoteaddr,ptr->port)) == 0 )
+            ptr->retjsonstr = clonestr("{\"error\":\"null return from iguana_jsonstr\"}");
         //printf("finished.(%s) -> (%s) %.0f\n",ptr->jsonstr,*ptr->retjsonstrp!=0?*ptr->retjsonstrp:"null return",OS_milliseconds());
         queue_enqueue("finishedQ",&finishedQ,&ptr->DL,0);
         return(1);
@@ -256,7 +259,7 @@ int32_t iguana_jsonQ()
 
 char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t tag,int32_t maxmillis,char *remoteaddr,uint16_t port)
 {
-    struct iguana_jsonitem *ptr; char *retjsonstr = 0; int32_t len,allocsize; double expiration;
+    struct iguana_jsonitem *ptr; int32_t len,allocsize; double expiration;
     expiration = OS_milliseconds() + maxmillis;
     //printf("blocking case.(%s) %.0f maxmillis.%d\n",jsonstr,OS_milliseconds(),maxmillis);
     len = (int32_t)strlen(jsonstr);
@@ -265,18 +268,18 @@ char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t
     ptr->allocsize = allocsize;
     ptr->myinfo = myinfo;
     ptr->port = port;
-    ptr->retjsonstrp = &retjsonstr;
+    ptr->retjsonstr = 0;
     safecopy(ptr->remoteaddr,remoteaddr,sizeof(ptr->remoteaddr));
     memcpy(ptr->jsonstr,jsonstr,len+1);
     queue_enqueue("jsonQ",&jsonQ,&ptr->DL,0);
     while ( OS_milliseconds() < expiration )
     {
         usleep(100);
-        if ( retjsonstr != 0 )
+        if ( ptr->retjsonstr != 0 )
         {
             //printf("got blocking retjsonstr.(%s) delete allocsize.%d:%d\n",retjsonstr,allocsize,ptr->allocsize);
             queue_delete(&finishedQ,&ptr->DL,ptr->allocsize,1);
-            return(retjsonstr);
+            return(ptr->retjsonstr);
         }
         usleep(1000);
     }
