@@ -753,13 +753,6 @@ int32_t instantdex_peerhas_clear(struct supernet_info *myinfo,struct iguana_info
     return(num);
 }
 
-uint64_t instantdex_basebits(char *base)
-{
-    if ( is_decimalstr(base) != 0 )
-        return(calc_nxt64bits(base));
-    else return(stringbits(base));
-}
-
 int32_t instantdex_unbasebits(char *base,uint64_t basebits)
 {
     char tmp[9];
@@ -776,21 +769,42 @@ int32_t instantdex_unbasebits(char *base,uint64_t basebits)
     }
 }
 
-uint64_t instantdex_decodehash(char *base,char *rel,int64_t *pricep,bits256 encodedhash)
+uint64_t instantdex_basebits(char *base)
 {
-    instantdex_unbasebits(base,encodedhash.ulongs[1]);
-    instantdex_unbasebits(rel,encodedhash.ulongs[2]);
-    *pricep = encodedhash.ulongs[3];
+    if ( is_decimalstr(base) != 0 )
+        return(calc_nxt64bits(base));
+    else return(stringbits(base));
+}
+
+uint64_t instantdex_decodehash(char *base,char *rel,int64_t *pricep,uint64_t *offererp,bits256 encodedhash)
+{
+    int32_t i; uint64_t offerid;
+    for (i=0; i<4; i++)
+    {
+        base[i] = encodedhash.bytes[8 + i];
+        rel[i] = encodedhash.bytes[12 + i];
+    }
+    iguana_rwnum(0,(void *)&encodedhash.ulongs[2],sizeof(uint64_t),pricep);
+    iguana_rwnum(0,(void *)&encodedhash.ulongs[3],sizeof(uint64_t),offererp);
+    iguana_rwnum(0,(void *)&encodedhash.ulongs[0],sizeof(uint64_t),&offerid);
     return(encodedhash.ulongs[0]);
 }
 
-bits256 instantdex_encodehash(char *base,char *rel,int64_t price,uint64_t orderid)
+bits256 instantdex_encodehash(char *base,char *rel,int64_t price,uint64_t orderid,uint64_t offerer)
 {
-    bits256 encodedhash;
-    encodedhash.ulongs[0] = orderid;
-    encodedhash.ulongs[1] = instantdex_basebits(base);
-    encodedhash.ulongs[2] = instantdex_basebits(rel);
-    encodedhash.ulongs[3] = price;
+    bits256 encodedhash; int32_t i; char _base[4],_rel[4];
+    iguana_rwnum(1,(void *)&encodedhash.ulongs[0],sizeof(uint64_t),&orderid);
+    memset(_base,0,sizeof(_base));
+    memset(_rel,0,sizeof(_rel));
+    strncpy(_base,base,4);
+    strncpy(_rel,rel,4);
+    for (i=0; i<4; i++)
+    {
+        encodedhash.bytes[8 + i] = _base[i];
+        encodedhash.bytes[12 + i] = _rel[i];
+    }
+    iguana_rwnum(1,(void *)&encodedhash.ulongs[2],sizeof(uint64_t),&price);
+    iguana_rwnum(1,(void *)&encodedhash.ulongs[3],sizeof(uint64_t),&offerer);
     return(encodedhash);
 }
 
@@ -808,7 +822,7 @@ int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coi
         if ( now < ap->offer.expiration && ap->dead == 0 )
         {
             if ( n < sizeof(hashes)/sizeof(*hashes) )//&& GETBIT(ap->peerhas,addr->addrind) == 0 )
-                hashes[n++] = instantdex_encodehash(ap->offer.base,ap->offer.rel,ap->offer.price64*instantdex_bidaskdir(&ap->offer),ap->orderid);
+                hashes[n++] = instantdex_encodehash(ap->offer.base,ap->offer.rel,ap->offer.price64*instantdex_bidaskdir(&ap->offer),ap->orderid,ap->offer.offer64);
             queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
         } else free(ap);
     }
@@ -823,9 +837,9 @@ int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coi
 
 struct instantdex_accept *instantdex_quotefind(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,bits256 encodedhash)
 {
-    char base[9],rel[9]; int64_t pricetoshis; uint64_t orderid;
-    orderid = instantdex_decodehash(base,rel,&pricetoshis,encodedhash);
-    printf("search for orderid.%lld (%s/%s) %.8f\n",(long long)orderid,base,rel,dstr(pricetoshis));
+    char base[9],rel[9]; int64_t pricetoshis; uint64_t orderid,offer64;
+    orderid = instantdex_decodehash(base,rel,&pricetoshis,&offer64,encodedhash);
+    printf("search for orderid.%llu (%s/%s) %.8f from %llu\n",(long long)orderid,base,rel,dstr(pricetoshis),(long long)offer64);
     return(instantdex_offerfind(myinfo,exchanges777_find("bitcoin"),0,0,orderid,base,rel,1));
 }
 
@@ -870,7 +884,7 @@ int32_t instantdex_quote(struct supernet_info *myinfo,struct iguana_info *coin,s
     orderhash = instantdex_rwoffer(0,&checklen,serialized,&A.offer);
     if ( checklen == recvlen )
     {
-        encodedhash = instantdex_encodehash(A.offer.base,A.offer.rel,A.offer.price64 * instantdex_bidaskdir(&A.offer),A.orderid);
+        encodedhash = instantdex_encodehash(A.offer.base,A.offer.rel,A.offer.price64 * instantdex_bidaskdir(&A.offer),A.orderid,A.offer.offer64);
         if ( (ap= instantdex_quotefind(myinfo,coin,addr,encodedhash)) == 0 )
         {
             init_hexbytes_noT(hexstr,serialized,recvlen);
