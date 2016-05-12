@@ -214,7 +214,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
     {
         if ( (block= bp->blocks[bundlei]) != 0 )
         {
-            iguana_blockunconv(&msgB,block,1);
+            iguana_blockunconv(&msgB,block,0);
             total = iguana_rwblock(1,&checkhash2,&blockspace[sizeof(struct iguana_msghdr) + 0],&msgB);
             if ( bits256_cmp(checkhash2,block->RO.hash2) != 0 )
             {
