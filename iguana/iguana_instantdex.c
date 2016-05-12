@@ -898,11 +898,15 @@ int32_t instantdex_quotep2p(struct supernet_info *myinfo,struct iguana_info *coi
             {
                 ap = calloc(1,sizeof(*ap));
                 *ap = A;
+                SETBIT(ap->peerhas,addr->addrind);
                 queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
             }
         }
-        else printf("instantdex_quote: got %llu which was already there\n",(long long)encodedhash.txid);
-        SETBIT(ap->peerhas,addr->addrind);
+        else
+        {
+            printf("instantdex_quote: got %llu which was already there (%p %p)\n",(long long)encodedhash.txid,ap,addr);
+            SETBIT(ap->peerhas,addr->addrind);
+        }
     } else printf("instantdex_quote: checklen.%d != recvlen.%d\n",checklen,recvlen);
     return(checklen);
 }
