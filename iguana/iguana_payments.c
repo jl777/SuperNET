@@ -945,8 +945,9 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
         iguana_createvins(myinfo,coin,txobj,vins);
         if ( (n= cJSON_GetArraySize(vouts)) > 0 )
         {
-            if ( (item= vouts->child) != 0 && n == 1 )
-                item = item->child;
+            if ( vouts->child != 0 && n == 1 )
+                item = vouts->child;
+            else item = vouts;
             while ( item != 0 )
             {
                 if ( (field= jfieldname(item)) != 0 )
