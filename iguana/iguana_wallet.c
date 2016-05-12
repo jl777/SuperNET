@@ -1207,6 +1207,8 @@ STRING_ARG(bitcoinrpc,dumpwallet,filename)
     char *retstr,*walletstr; cJSON *retjson,*walletobj,*strobj;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
+    if ( myinfo->expiration == 0 )
+        return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     if ( myinfo->expiration != 0 )
     {
         myinfo->expiration++;
@@ -1239,6 +1241,8 @@ STRING_ARG(bitcoinrpc,backupwallet,filename)
     char *loginstr,*retstr = 0; cJSON *retjson,*payload;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
+    if ( myinfo->expiration == 0 )
+        return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     if ( myinfo->expiration != 0 )
     {
         myinfo->expiration++;
@@ -1265,6 +1269,8 @@ STRING_ARG(bitcoinrpc,importwallet,filename)
     cJSON *retjson = 0,*importjson,*loginjson = 0; long filesize; char *importstr,*loginstr;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
+    if ( myinfo->expiration == 0 )
+        return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     if ( myinfo->expiration != 0 )
     {
         myinfo->expiration++;

@@ -885,7 +885,8 @@ int32_t instantdex_quoterequest(struct supernet_info *myinfo,struct iguana_info 
 
 int32_t instantdex_quotep2p(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,uint8_t *serialized,int32_t recvlen)
 {
-    bits256 orderhash,encodedhash; int32_t checklen; struct instantdex_accept A,*ap; struct exchange_info *exchange = exchanges777_find("bitcoin"); //char hexstr[8192];
+    bits256 orderhash,encodedhash; int32_t checklen; struct instantdex_accept A,*ap; struct exchange_info *exchange; char *retstr; cJSON *argjson; uint64_t txid;
+    exchange = exchanges777_find("bitcoin");
     memset(&A,0,sizeof(A));
     orderhash = instantdex_rwoffer(0,&checklen,serialized,&A.offer), A.orderid = orderhash.txid;
     if ( checklen == recvlen )
@@ -899,7 +900,10 @@ int32_t instantdex_quotep2p(struct supernet_info *myinfo,struct iguana_info *coi
                 ap = calloc(1,sizeof(*ap));
                 *ap = A;
                 SETBIT(ap->peerhas,addr->addrind);
-                queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
+                argjson = cJSON_Parse("{}");
+                if ( (retstr= instantdex_checkoffer(myinfo,&txid,exchange,ap,argjson)) != 0 )
+                    free(retstr);
+                free_json(argjson);
             }
         }
         else
