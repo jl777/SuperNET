@@ -178,7 +178,7 @@ void iguana_msgrequestQ(struct iguana_info *coin,struct iguana_peer *addr,int32_
 
 int32_t iguana_process_msgrequestQ(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    struct iguana_peermsgrequest *msg; struct instantdex_accept *ap; int32_t height,len,flag = 0; bits256 checktxid; struct iguana_txid *tx,T; struct iguana_peer *addr;
+    struct iguana_peermsgrequest *msg; int32_t height,len,flag = 0; bits256 checktxid; struct iguana_txid *tx,T; struct iguana_peer *addr;
     if ( (msg= queue_dequeue(&coin->msgrequestQ,0)) != 0 )
     {
         flag = 1;

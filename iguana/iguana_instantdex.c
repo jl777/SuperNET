@@ -825,6 +825,7 @@ struct instantdex_accept *instantdex_quotefind(struct supernet_info *myinfo,stru
 {
     char base[9],rel[9]; int64_t pricetoshis; uint64_t orderid;
     orderid = instantdex_decodehash(base,rel,&pricetoshis,encodedhash);
+    printf("search for orderid.%lld (%s/%s) %.8f\n",(long long)orderid,base,rel,dstr(pricetoshis));
     return(instantdex_offerfind(myinfo,exchanges777_find("bitcoin"),0,0,orderid,base,rel,1));
 }
 
@@ -893,8 +894,8 @@ void instantdex_propagate(struct supernet_info *myinfo,struct exchange_info *exc
         for (i=0; i<coin->peers.numranked; i++)
             if ( (addr= coin->peers.ranked[i]) != 0 && addr->supernet != 0 && addr->usock >= 0 && GETBIT(ap->peerhas,addr->addrind) == 0 && strcmp("0.0.0.0",addr->ipaddr) != 0 && strcmp("127.0.0.1",addr->ipaddr) != 0 )
             {
-                SETBIT(ap->peerhas,addr->addrind);
-                printf("send quote.(%s) <- [%d]\n",addr->ipaddr,len);
+                //SETBIT(ap->peerhas,addr->addrind);
+                char str[65]; printf("send quote.(%s) <- [%d] %s\n",addr->ipaddr,len,bits256_str(str,orderhash));
                 iguana_queue_send(coin,addr,0,serialized,"quote",len,0,0);
             }
     }
