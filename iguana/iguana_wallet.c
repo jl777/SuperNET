@@ -1458,21 +1458,23 @@ THREE_INTS(bitcoinrpc,listreceivedbyaccount,minconf,includeempty,watchonly)
 
 THREE_INTS(bitcoinrpc,listreceivedbyaddress,minconf,includeempty,flag)
 {
-    cJSON *retjson,*item,*array,*txids,*vouts; struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr,*tmp2;
+    cJSON *retjson,*item,*array,*txids,*vouts; struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr,*tmp2; uint8_t addrtype; char coinaddr[64];
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    //if ( myinfo->expiration == 0 )
-    //    return(clonestr("{\"error\":\"need to unlock wallet\"}"));
+    if ( myinfo->expiration == 0 )
+        return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     array = cJSON_CreateArray();
     HASH_ITER(hh,myinfo->wallet,wacct,tmp)
     {
         HASH_ITER(hh,wacct->waddr,waddr,tmp2)
         {
             item = cJSON_CreateObject();
-            jaddstr(item,"address",waddr->coinaddr);
+            addrtype = (waddr->scriptlen > 0) ? coin->chain->p2shtype : coin->chain->pubtype;
+            bitcoin_address(coinaddr,addrtype,waddr->rmd160,20);
+            jaddstr(item,"address",coinaddr);
             txids = cJSON_CreateArray();
             vouts = cJSON_CreateArray();
-            jaddnum(item,"amount",dstr(iguana_addressreceived(myinfo,coin,0,remoteaddr,txids,vouts,waddr->coinaddr,minconf)));
+            jaddnum(item,"amount",dstr(iguana_addressreceived(myinfo,coin,0,remoteaddr,txids,vouts,coinaddr,minconf)));
             jadd(item,"txids",txids);
             jadd(item,"vouts",vouts);
             jaddi(array,item);
