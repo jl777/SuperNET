@@ -822,7 +822,7 @@ int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coi
     {
         if ( now < ap->offer.expiration && ap->dead == 0 )
         {
-            if ( n < sizeof(hashes)/sizeof(*hashes) )//&& GETBIT(ap->peerhas,addr->addrind) == 0 )
+            if ( n < sizeof(hashes)/sizeof(*hashes) && GETBIT(ap->peerhas,addr->addrind) == 0 )
                 hashes[n++] = instantdex_encodehash(ap->offer.base,ap->offer.rel,ap->offer.price64*instantdex_bidaskdir(&ap->offer),ap->orderid,ap->offer.offer64);
             queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
         } else free(ap);
@@ -882,7 +882,7 @@ int32_t instantdex_quoterequest(struct supernet_info *myinfo,struct iguana_info 
     return(0);
 }
 
-int32_t instantdex_quote(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,uint8_t *serialized,int32_t recvlen)
+int32_t instantdex_quotep2p(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,uint8_t *serialized,int32_t recvlen)
 {
     bits256 orderhash,encodedhash; int32_t checklen; struct instantdex_accept A,*ap; char hexstr[8192];
     memset(&A,0,sizeof(A));
@@ -892,13 +892,12 @@ int32_t instantdex_quote(struct supernet_info *myinfo,struct iguana_info *coin,s
         encodedhash = instantdex_encodehash(A.offer.base,A.offer.rel,A.offer.price64 * instantdex_bidaskdir(&A.offer),A.orderid,A.offer.offer64);
         if ( (ap= instantdex_quotefind(myinfo,coin,addr,encodedhash)) == 0 )
         {
-            init_hexbytes_noT(hexstr,serialized,recvlen);
-            SuperNET_hexmsgadd(myinfo,myinfo->instantdex_category,GENESIS_PUBKEY,hexstr,tai_now(),addr->ipaddr);
+            printf("add quote here!\n");
         }
         else
         {
             SETBIT(ap->peerhas,addr->addrind);
-            printf("instantdex_quote: got %llx which was already there\n",(long long)encodedhash.txid);
+            printf("instantdex_quote: got %llu which was already there\n",(long long)encodedhash.txid);
         }
     } else printf("instantdex_quote: checklen.%d != recvlen.%d\n",checklen,recvlen);
     return(checklen);

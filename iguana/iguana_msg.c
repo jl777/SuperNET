@@ -602,7 +602,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
         else if ( strcmp(H->command,"quote") == 0 )
         {
             printf("got full quote from %s\n",addr->ipaddr);
-            instantdex_quote(myinfo,coin,addr,data,recvlen);
+            instantdex_quotep2p(myinfo,coin,addr,data,recvlen);
             return(0);
         }
     }
