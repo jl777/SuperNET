@@ -779,6 +779,7 @@ uint64_t instantdex_basebits(char *base)
 uint64_t instantdex_decodehash(char *base,char *rel,int64_t *pricep,uint64_t *offererp,bits256 encodedhash)
 {
     int32_t i; uint64_t offerid;
+    base[4] = rel[4] = 0;
     for (i=0; i<4; i++)
     {
         base[i] = encodedhash.bytes[8 + i];
@@ -909,7 +910,7 @@ void instantdex_propagate(struct supernet_info *myinfo,struct exchange_info *exc
             if ( (addr= coin->peers.ranked[i]) != 0 && addr->supernet != 0 && addr->usock >= 0 && GETBIT(ap->peerhas,addr->addrind) == 0 && strcmp("0.0.0.0",addr->ipaddr) != 0 && strcmp("127.0.0.1",addr->ipaddr) != 0 )
             {
                 //SETBIT(ap->peerhas,addr->addrind);
-                char str[65]; printf("send quote.(%s) <- [%d] %s\n",addr->ipaddr,len,bits256_str(str,orderhash));
+                char str[65]; printf("send quote.(%s) <- [%d] %s %llu\n",addr->ipaddr,len,bits256_str(str,orderhash),(long long)orderhash.txid);
                 iguana_queue_send(coin,addr,0,serialized,"quote",len,0,0);
             }
     }
