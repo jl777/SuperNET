@@ -796,7 +796,7 @@ bits256 instantdex_encodehash(char *base,char *rel,int64_t price,uint64_t orderi
 int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct exchange_info *exchange)
 {
     struct instantdex_accept PAD,*ap; uint32_t now,n=0,len; bits256 hashes[100]; uint8_t serialized[100*36 + 1024];
-    printf("instantdex_inv2data exchange.%p\n");
+    printf("instantdex_inv2data exchange.%p (%s)\n",exchange,addr->ipaddr);
     if ( exchange == 0 )
         return(0);
     now = (uint32_t)time(NULL);
@@ -830,6 +830,7 @@ struct instantdex_accept *instantdex_quotefind(struct supernet_info *myinfo,stru
 struct iguana_bundlereq *instantdex_recvquotes(struct iguana_info *coin,struct iguana_bundlereq *req,bits256 *quotes,int32_t n)
 {
     int32_t i,len,m = 0; uint8_t serialized[10000];
+    printf("received quotes.%d\n",n);
     for (i=0; i<n; i++)
     {
         if ( instantdex_quotefind(0,coin,req->addr,quotes[i]) != 0 )

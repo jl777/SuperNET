@@ -142,11 +142,35 @@ double iguana_metric(struct iguana_peer *addr,uint32_t now,double decay)
     return(metric);
 }
 
+int32_t iguana_inv2poll(struct supernet_info *myinfo,struct iguana_info *coin)
+{
+    struct exchange_info *exchange; int32_t i,n=0; struct iguana_peer *addr;
+    //printf("peermetrics\n");
+    if ( (exchange= exchanges777_find("bitcoin")) != 0 && strcmp(coin->symbol,"BTCD") == 0 )
+    {
+        if ( time(NULL) > coin->lastinv2+10 )
+        {
+            coin->lastinv2 = (uint32_t)time(NULL);
+            for (i=n=0; i<coin->MAXPEERS; i++)
+            {
+                addr = &coin->peers.active[i];
+                if ( addr->usock < 0 || addr->dead != 0 || addr->ready == 0 || addr->ipbits == 0 )
+                    continue;
+                if ( addr->supernet != 0 )
+                {
+                    instantdex_inv2data(myinfo,coin,addr,exchange);
+                    n++;
+                }
+            }
+        }
+    }
+    return(n);
+}
+
 int32_t iguana_peermetrics(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    struct exchange_info *exchange; int32_t i,ind,n; double *sortbuf,sum; uint32_t now; struct iguana_peer *addr,*slowest = 0;
+    int32_t i,ind,n; double *sortbuf,sum; uint32_t now; struct iguana_peer *addr,*slowest = 0;
     //printf("peermetrics\n");
-    exchange = exchanges777_find("bitcoin");
     sortbuf = mycalloc('s',coin->MAXPEERS,sizeof(double)*2);
     coin->peers.mostreceived = 0;
     now = (uint32_t)time(NULL);
@@ -161,8 +185,6 @@ int32_t iguana_peermetrics(struct supernet_info *myinfo,struct iguana_info *coin
         //printf("[%.0f %.0f] ",addr->recvblocks,addr->recvtotal);
         sortbuf[n*2 + 0] = iguana_metric(addr,now,.995);
         sortbuf[n*2 + 1] = i;
-        if ( exchange != 0 && addr->supernet != 0 && strcmp(coin->symbol,"BTCD") == 0 )
-            instantdex_inv2data(myinfo,coin,addr,exchange);
         n++;
     }
     if ( n > 0 )
@@ -722,6 +744,7 @@ void iguana_coinloop(void *arg)
                     flag += iguana_processrecv(myinfo,coin);
                 }
                 coin->idletime = (uint32_t)time(NULL);
+                iguana_inv2poll(myinfo,coin);
             }
         }
         if ( flag == 0 && coin->isRT == 0 )
