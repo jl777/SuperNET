@@ -368,7 +368,7 @@ static char *dumpprivkey(RPCARGS)
 
 static char *importprivkey(RPCARGS)
 {
-    return(sglue1(0,CALLGLUE,"bitcoinrpc","importprivkey","wif",params[0]));
+    return(sglue3(0,CALLGLUE,"bitcoinrpc","importprivkey","wif",params[0],"account",params[1],"rescan",params[2]));
 }
 
 static char *dumpwallet(RPCARGS)
