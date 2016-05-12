@@ -867,12 +867,16 @@ struct iguana_bundlereq *instantdex_recvquotes(struct iguana_info *coin,struct i
 
 int32_t instantdex_quoterequest(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *serialized,int32_t maxlen,struct iguana_peer *addr,bits256 encodedhash)
 {
-    struct instantdex_accept *ap; int32_t olen; bits256 orderhash;
+    struct instantdex_accept *ap; int32_t olen,checklen; struct instantdex_offer checkoffer; bits256 orderhash,checkhash;
     if ( (ap= instantdex_quotefind(myinfo,coin,addr,encodedhash)) != 0 )
     {
         orderhash = instantdex_rwoffer(1,&olen,serialized,&ap->offer);
         if ( orderhash.ulongs[0] == ap->orderid )
+        {
+            checkhash = instantdex_rwoffer(0,&checklen,serialized,&checkoffer);
+            printf("%llu vs %llu, %d vs %d\n",(long long)checkhash.txid,(long long)orderhash.txid,checklen,olen);
             return(olen);
+        }
         else return(-1);
     }
     return(0);
@@ -882,7 +886,7 @@ int32_t instantdex_quote(struct supernet_info *myinfo,struct iguana_info *coin,s
 {
     bits256 orderhash,encodedhash; int32_t checklen; struct instantdex_accept A,*ap; char hexstr[8192];
     memset(&A,0,sizeof(A));
-    orderhash = instantdex_rwoffer(0,&checklen,serialized,&A.offer);
+    orderhash = instantdex_rwoffer(0,&checklen,serialized,&A.offer), A.orderid = orderhash.txid;
     if ( checklen == recvlen )
     {
         encodedhash = instantdex_encodehash(A.offer.base,A.offer.rel,A.offer.price64 * instantdex_bidaskdir(&A.offer),A.orderid,A.offer.offer64);
