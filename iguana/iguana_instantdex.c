@@ -830,7 +830,9 @@ struct instantdex_accept *instantdex_quotefind(struct supernet_info *myinfo,stru
 struct iguana_bundlereq *instantdex_recvquotes(struct iguana_info *coin,struct iguana_bundlereq *req,bits256 *quotes,int32_t n)
 {
     int32_t i,len,m = 0; uint8_t serialized[10000];
-    printf("received quotes.%d\n",n);
+    if ( req->addr == 0 )
+        return(0);
+    printf("received quotes.%d from (%s)\n",n,req->addr->ipaddr);
     for (i=0; i<n; i++)
     {
         if ( instantdex_quotefind(0,coin,req->addr,quotes[i]) != 0 )
@@ -840,8 +842,8 @@ struct iguana_bundlereq *instantdex_recvquotes(struct iguana_info *coin,struct i
     if ( m > 0 )
     {
         len = iguana_getdata(coin,serialized,MSG_QUOTE,quotes,m);
-        printf("send getdata for %d of %d quotes\n",m,n);
-        iguana_send(coin,0,serialized,len);
+        printf("send getdata for %d of %d quotes to %s\n",m,n,req->addr->ipaddr);
+        iguana_send(coin,req->addr,serialized,len);
     }
     return(req);
 }
