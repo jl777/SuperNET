@@ -318,9 +318,9 @@ bits256 instantdex_rwoffer(int32_t rwflag,int32_t *lenp,uint8_t *serialized,stru
     return(orderhash);
 }
 
-char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extraser,int32_t extralen,int32_t p2pflag)
+char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extraser,int32_t extralen,struct iguana_peer *addr)
 {
-    char *reqstr,*hexstr,*retstr; struct instantdex_msghdr *msg; bits256 orderhash; struct iguana_info *coin; struct iguana_peer *addr; int32_t i,j,r,olen,slen,datalen,max=-1; uint8_t serialized[sizeof(*offer) + sizeof(struct iguana_msghdr) + 4096 + INSTANTDEX_DECKSIZE*33]; uint64_t nxt64bits;
+    char *reqstr,*hexstr,*retstr; struct instantdex_msghdr *msg; bits256 orderhash; struct iguana_info *coin; int32_t i,olen,slen,datalen,max=-1; uint8_t serialized[sizeof(*offer) + sizeof(struct iguana_msghdr) + 4096 + INSTANTDEX_DECKSIZE*33]; uint64_t nxt64bits;
     category_subscribe(myinfo,myinfo->instantdex_category,GENESIS_PUBKEY);
     jaddstr(argjson,"cmd",cmdstr);
     jaddstr(argjson,"agent","SuperNET");
@@ -358,13 +358,14 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     if ( instantdex_msgcreate(myinfo,msg,datalen) != 0 )
     {
         printf(">>>>>>>>>>>> instantdex send.(%s) datalen.%d allocsize.%d crc.%x\n",cmdstr,datalen,msg->sig.allocsize,calc_crc32(0,(void *)((long)msg + 8),datalen-8));
-        if ( p2pflag != 0 )
+        if ( addr != 0 )
         {
             memset(serialized,0,sizeof(struct iguana_msghdr));
             memcpy(&serialized[sizeof(struct iguana_msghdr)],(uint8_t *)msg,msg->sig.allocsize);
-            if ( (coin= iguana_coinfind("BTCD")) != 0 && (max= coin->peers.numranked) > 0 )
+            if ( (coin= iguana_coinfind("BTCD")) != 0 )//&& (max= coin->peers.numranked) > 0 )
             {
-                r = (rand() % max);
+                iguana_queue_send(coin,addr,0,serialized,"InstantDEX",msg->sig.allocsize,0,0);
+                /*r = (rand() % max);
                 for (i=0; i<max; i++)
                 {
                     j = (i + r) % max;
@@ -375,7 +376,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
                         if ( --hops <= 0 )
                             break;
                     } //else printf("skip.%d addr.%p (%s) max.%d hops.%d\n",j,addr,addr!=0?addr->ipaddr:"",max,hops);
-                }
+                }*/
             } else printf("cant find coin.%p or no ranked.%d\n",coin,max);
         }
         else
@@ -833,7 +834,7 @@ struct iguana_bundlereq *instantdex_recvquotes(struct iguana_info *coin,struct i
     if ( req->addr == 0 )
         return(0);
     printf("received quotes.%d from (%s)\n",n,req->addr->ipaddr);
-    for (i=0; i<n; i++)
+    for (i=1; i<n; i++)
     {
         if ( instantdex_quotefind(0,coin,req->addr,quotes[i]) != 0 )
             continue;
@@ -1122,7 +1123,7 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,uint64_t *txidp,struct 
             queue_enqueue("statemachineQ",&exchange->statemachineQ,&swap->DL,0);
             if ( (newjson= instantdex_parseargjson(myinfo,exchange,swap,argjson,1)) == 0 )
                 return(clonestr("{\"error\":\"instantdex_checkoffer null newjson\"}"));
-            return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,"BTCoffer",GENESIS_PUBKEY,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck),1));
+            return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,"BTCoffer",GENESIS_PUBKEY,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck),0));
         } else printf("error creating statemachine\n");
     }
     return(retstr);

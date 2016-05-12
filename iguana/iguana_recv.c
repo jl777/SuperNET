@@ -499,7 +499,7 @@ void iguana_gottxidsM(struct iguana_info *coin,struct iguana_peer *addr,bits256 
 void iguana_gotquotesM(struct iguana_info *coin,struct iguana_peer *addr,bits256 *quotes,int32_t n)
 {
     struct iguana_bundlereq *req;
-    printf("got %d quotes from %s\n",n,addr->ipaddr);
+    //printf("got %d quotes from %s\n",n,addr->ipaddr);
     req = iguana_bundlereq(coin,addr,'Q',0);
     req->hashes = quotes, req->n = n;
     queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
