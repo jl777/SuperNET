@@ -64,3 +64,21 @@
 {
 
 }
+
+#chartdiv, .chart {
+  width: 95%;
+  height: 500px;
+  position: relative;
+}
+
+.chart .zoom {
+  position: absolute;
+  top: 25px;
+  right: 25px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  padding: 5px 12px;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  z-index: 20;
+}
