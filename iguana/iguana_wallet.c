@@ -1158,6 +1158,7 @@ TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan)
                 waddr = &addr;
             iguana_waddresscalc(myinfo,coin->chain->pubtype,coin->chain->wiftype,waddr,privkey);
             retjson = iguana_walletadd(myinfo,0,coin,retstr,account,waddr,0,0);
+            iguana_waccountswitch(myinfo,coin,account,waddr->coinaddr,0);
             if ( retstr != 0 )
                 scrubfree(retstr);
             return(jprint(retjson,1));
