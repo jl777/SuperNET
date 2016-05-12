@@ -402,7 +402,7 @@ int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct bitcoin_swapin
             if ( jobj(newjson,buf) == 0 )
                 jaddbits256(newjson,buf,pubi);
         }
-        else
+        else if ( swap->numpubs < INSTANTDEX_DECKSIZE )
         {
             calc_rmd160_sha256(secret160,swap->privkeys[n].bytes,sizeof(swap->privkeys[n]));
             memcpy(&txid,secret160,sizeof(txid));
@@ -415,10 +415,12 @@ int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct bitcoin_swapin
             len += iguana_rwnum(1,(uint8_t *)&swap->deck[m][0],sizeof(txid),&txid);
             len += iguana_rwnum(1,(uint8_t *)&swap->deck[m][1],sizeof(pubi.txid),&pubi.txid);
             m++;
+            if ( m > swap->numpubs )
+                swap->numpubs = m;
         }
         n++;
     }
-    printf("n.%d m.%d len.%d\n",n,m,len);
+    printf("n.%d m.%d len.%d numpubs.%d\n",n,m,len,swap->numpubs);
     return(n);
 }
 

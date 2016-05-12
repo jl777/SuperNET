@@ -156,7 +156,7 @@ struct iguana_txid *iguana_blocktx(struct iguana_info *coin,struct iguana_txid *
                     return(0);
                 } // else printf("iguana_blocktx null txidind [%d:%d] i.%d\n",block->hdrsi,block->bundlei,i);
             } else printf("iguana_blocktx no bp.[%d]\n",block->hdrsi);
-        } else printf("blocktx illegal height.%d\n",block->height);
+        } //else printf("blocktx illegal height.%d\n",block->height);
     } else printf("i.%d vs txn_count.%d\n",i,block->RO.txn_count);
     return(0);
 }

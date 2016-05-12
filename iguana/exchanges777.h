@@ -138,7 +138,7 @@ struct bitcoin_swapinfo
     bits256 myorderhash,otherorderhash,mypubkey,othertrader;
     uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
     uint64_t altsatoshis,BTCsatoshis,insurance,altpremium,matched64;
-    int32_t isinitiator,choosei,otherchoosei,cutverified,otherverifiedcut;
+    int32_t isinitiator,choosei,otherchoosei,cutverified,otherverifiedcut,numpubs;
     struct bitcoin_statetx *deposit,*payment,*altpayment,*myfee,*otherfee;
     char expectedcmdstr[16],status[16],waitfortx[16];
     struct instantdex_stateinfo *state; uint32_t expiration,dead,reftime;
