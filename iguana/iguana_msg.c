@@ -638,6 +638,8 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
             else
             {
                 intvectors = 'I', addr->msgcounts.inv++;
+                if ( strcmp(H->command,"inv2") == 0 )
+                    printf("GOT INV2.%d\n",recvlen);
                 len = iguana_intvectors(coin,addr,1,data,recvlen); // indirectly issues getdata
             }
         }
