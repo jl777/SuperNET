@@ -693,7 +693,7 @@ struct bitcoin_swapinfo *instantdex_statemachinefind(struct supernet_info *myinf
     return(retswap);
 }
 
-struct instantdex_accept *instantdex_offerfind(struct supernet_info *myinfo,struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel,int32_t requeue)
+struct instantdex_accept *instantdex_offerfind(struct supernet_info *ignore,struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel,int32_t requeue)
 {
     struct instantdex_accept PAD,*ap,*retap = 0; uint32_t now; cJSON *item,*offerobj; char *type;
     if ( exchange == 0 )
@@ -824,6 +824,14 @@ struct instantdex_accept *instantdex_quotefind(struct supernet_info *myinfo,stru
     char base[9],rel[9]; int64_t pricetoshis; uint64_t orderid;
     orderid = instantdex_decodehash(base,rel,&pricetoshis,encodedhash);
     return(instantdex_offerfind(myinfo,exchanges777_find("bitcoin"),0,0,orderid,base,rel,1));
+}
+
+void instantdex_recvquote(struct iguana_info *coin,struct iguana_peer *addr,bits256 encodedhash)
+{
+    if ( instantdex_quotefind(0,coin,addr,encodedhash) == 0 )
+    {
+        
+    }
 }
 
 int32_t instantdex_quoterequest(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *serialized,int32_t maxlen,struct iguana_peer *addr,bits256 encodedhash)

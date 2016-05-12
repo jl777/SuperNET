@@ -150,9 +150,11 @@ cJSON *iguana_scriptobj(struct iguana_info *coin,uint8_t rmd160[20],char *coinad
         for (i=0; i<V.N; i++)
             jaddistr(addrobj,V.signers[i].coinaddr);
         jadd(scriptobj,"addresses",addrobj);
-        if ( V.p2shlen != 0 )
-            jaddstr(scriptobj,"p2sh",V.coinaddr);
-        strcpy(coinaddr,V.coinaddr);
+        if ( scriptlen != 0 )
+        {
+            bitcoin_address(coinaddr,coin->chain->p2shtype,script,scriptlen);
+            jaddstr(scriptobj,"p2sh",coinaddr);
+        }
         memcpy(rmd160,V.rmd160,20);
     }
     return(scriptobj);

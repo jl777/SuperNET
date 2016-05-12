@@ -977,6 +977,7 @@ char *iguana_signunspents(struct supernet_info *myinfo,struct iguana_info *coin,
 bits256 iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx);
 int32_t iguana_inv2packet(uint8_t *serialized,int32_t maxsize,int32_t type,bits256 *hashes,int32_t n);
 int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct exchange_info *exchange);
+void instantdex_recvquote(struct iguana_info *coin,struct iguana_peer *addr,bits256 encodedhash);
 
 extern int32_t HDRnet,netBLOCKS;
 
