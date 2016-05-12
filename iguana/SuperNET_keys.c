@@ -398,7 +398,7 @@ TWO_STRINGS(SuperNET,decryptjson,password,permanentfile)
         wallet2priv = bits256_conv(fname2);
     if ( (retjson= SuperNET_decryptedjson(destfname,pass,sizeof(pass),wallethash,fname2,sizeof(fname2),wallet2priv)) != 0 )
     {
-        printf("decrypt pass.(%s) fname2.(%s) -> destfname.(%s)\n",pass,fname2,destfname);
+        //printf("decrypt pass.(%s) fname2.(%s) -> destfname.(%s)\n",pass,fname2,destfname);
         //obj = jduplicate(jobj(retjson,"payload"));
         //jdelete(retjson,"payload");
         //jadd(retjson,"result",obj);

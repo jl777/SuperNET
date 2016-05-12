@@ -153,7 +153,7 @@ int32_t iguana_peermetrics(struct supernet_info *myinfo,struct iguana_info *coin
     for (i=n=0; i<coin->MAXPEERS; i++)
     {
         addr = &coin->peers.active[i];
-        if ( addr->usock < 0 || addr->dead != 0 || addr->ready == 0 )
+        if ( addr->usock < 0 || addr->dead != 0 || addr->ready == 0 || addr->ipbits == 0 )
             continue;
         addr->pendblocks = 0;
         if ( addr->recvblocks > coin->peers.mostreceived )

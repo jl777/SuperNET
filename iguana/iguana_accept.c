@@ -275,7 +275,7 @@ int32_t iguana_inv2packet(uint8_t *serialized,int32_t maxsize,int32_t type,bits2
     }
     if ( len > maxsize )
         return(-1);
-    return(len);
+    return(len - sizeof(struct iguana_msghdr));
 }
 
 int32_t iguana_peerhdrrequest(struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_peer *addr,bits256 hash2)

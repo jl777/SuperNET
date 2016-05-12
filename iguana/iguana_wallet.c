@@ -227,7 +227,7 @@ struct iguana_waddress *iguana_waccountswitch(struct supernet_info *myinfo,struc
             iguana_waddressdelete(myinfo,coin,wacct,coinaddr);
         }
     }
-    if ( waddr == 0 && (wacct= iguana_waccountcreate(myinfo,coin,account)) != 0 )
+    if ( (wacct= iguana_waccountcreate(myinfo,coin,account)) != 0 )
     {
         waddr = iguana_waddresscreate(myinfo,coin,wacct,coinaddr,redeemScript);
         if ( flag != 0 && redeemScript == 0 )
