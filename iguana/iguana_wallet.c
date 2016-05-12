@@ -869,7 +869,7 @@ int64_t iguana_addressreceived(struct supernet_info *myinfo,struct iguana_info *
             {
                 for (i=0; i<n; i++)
                 {
-                    item = jitem(balancejson,i);
+                    item = jitem(unspentsjson,i);
                     if ( txids != 0 )
                         jaddibits256(txids,jbits256(item,"txid"));
                     if ( vouts != 0 )
