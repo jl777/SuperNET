@@ -817,7 +817,7 @@ bits256 instantdex_encodehash(char *base,char *rel,int64_t price,uint64_t orderi
 int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct exchange_info *exchange)
 {
     struct instantdex_accept PAD,*ap; uint32_t now,n=0,len; bits256 hashes[100]; uint8_t serialized[100*36 + 1024];
-    printf("instantdex_inv2data exchange.%p (%s)\n",exchange,addr->ipaddr);
+    //printf("instantdex_inv2data exchange.%p (%s)\n",exchange,addr->ipaddr);
     if ( exchange == 0 )
         return(0);
     now = (uint32_t)time(NULL);
