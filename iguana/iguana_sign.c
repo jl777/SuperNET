@@ -16,6 +16,7 @@
 #include "iguana777.h"
 #include "exchanges/bitcoin.h"
 
+// make sure coinbase outputs are matured
 
 int32_t iguana_vinparse(struct iguana_info *coin,int32_t rwflag,uint8_t *serialized,struct iguana_msgvin *msg)
 {

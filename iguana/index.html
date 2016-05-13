@@ -52,6 +52,8 @@ var chart = AmCharts.makeChart("chartdiv",
 
 var startButton = document.getElementById('start');
 var endButton = document.getElementById('stop');
+var buyButton = document.getElementById('buy');
+var sellButton = document.getElementById('sell');
 /*
 var BTCbutton = document.getElementById('BTC');
 var CNYbutton = document.getElementById('CNY');
@@ -75,8 +77,6 @@ var NZDbutton = document.getElementById('NZD');
  CNYbutton.addEventListener('click', CNYrel);
  BTCbutton.addEventListener('click', BTCrel);
 */
- 
- 
 
 var BTCDbutton = document.getElementById('BTCD');
 var VPNbutton = document.getElementById('VPN');
@@ -92,7 +92,8 @@ var NXTprivacybutton = document.getElementById('NXTprivacy');
 
 startButton.addEventListener('click', startDemo);
 endButton.addEventListener('click', endDemo);
-
+buyButton.addEventListener('click', buyaction);
+sellButton.addEventListener('click', sellaction);
 
 BTCDbutton.addEventListener('click', BTCDbase);
 VPNbutton.addEventListener('click', VPNbase);
@@ -144,6 +145,14 @@ function endDemo() {
    startButton.disabled = "";
    endButton.disabled = "disabled";
    clearInterval(interval);
+}
+
+function buyaction() {
+    alert("need to do market buy");
+}
+
+function sellaction() {
+    alert("need to do market sell");
 }
 
 function getDataFromServer()
@@ -718,6 +727,8 @@ data-path="{tc}/{config}">
                             <button id="Tradebots">Tradebots</button>
                             <button id="Pangea">Pangea</button>
                             <button id="NXTprivacy">NXTprivacy</button>
+                            <button id="buy">BUY</button>
+                            <button id="sell">SELL</button>
                             <div id="chartdiv"></div>
                         </div>
                         

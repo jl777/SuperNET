@@ -13,12 +13,6 @@
 *** all external dependencies have been removed, except for -lpthread and -lm
 
 
-#DEPENDENCIES#
-##for native (unix, osx)##
-Just make sure you have the dev versions of openssl and curl installed:
-
-```sudo apt-get install libcurl4-gnutls-dev libssl-dev```
-
 ##For native (win32, win64)##
 TOOL_DIR := /usr/local/gcc-4.8.0-qt-4.8.4-for-mingw32/win32-gcc/bin
 MINGW := i586-mingw32
@@ -26,7 +20,7 @@ The above two definitions need to be changed to match the mingw install on your 
 
 ##For chrome app##
 You need to make sure the nacl sdk is properly installed and you are able to build the examples.
-Now you will need to get the external libs, which can be built from scratch using naclports or there use the reference builds of libssl.a, libcrypto.a, libcurl.a and libz.a in the SuperNET/crypto777/pnacl_libs. You can just copy those over into $(NACL_SDK_ROOT)/<pepper_dir>/lib/pnacl.
+Now you will need to get the external libs, which can be built from scratch using naclports or there use the reference builds of libcurl.a and libz.a in the SuperNET/crypto777/pnacl_libs. You can just copy those over into $(NACL_SDK_ROOT)/<pepper_dir>/lib/pnacl.
 
 
 #ONETIME#
@@ -130,7 +124,7 @@ During the syncing, I have many, many messages like this:
 >> cant create.(tmp/BTC/252000/.tmpmarker) errno.24 Too many open files
 >> cant create.(tmp/BTC/18000/.tmpmarker) errno.24 Too many open files
 >>
-Loretta:/Users/volker/SuperNET # ulimit -n 2048
+Loretta:/Users/volker/SuperNET # ulimit -n 100000
 
 
 ##### tests

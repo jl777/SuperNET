@@ -1509,6 +1509,7 @@ cJSON *instantdex_reportjson(cJSON *item,char *name)
     jadd(newjson,name,jduplicate(jobj(item,"price")));
     jadd(newjson,"volume",jduplicate(jobj(item,"volume")));
     jadd(newjson,"orderid",jduplicate(jobj(item,"orderid")));
+    jadd(newjson,"account",jduplicate(jobj(item,"offerer")));
     jaddnum(newjson,"date",dateval);
     jaddnum(newjson,"s",dateval % 60);
     jaddnum(newjson,"m",(dateval / 60) % 60);

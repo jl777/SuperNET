@@ -775,7 +775,7 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
                 char str[65];
                 if ( requiredflag != 0 )
                     printf(">>>>>>> block contents error at ht.%d [%d:%d]\n",bp->bundleheight+i,bp->hdrsi,i);
-                if ( bits256_nonz(block->RO.hash2) != 0 )
+                if ( 0 && bits256_nonz(block->RO.hash2) != 0 )
                     printf("patch.%d and reissue prev.%s  %d\n",bp->bundleheight+i,bits256_str(str,block->RO.prev_block),i);
                 iguana_blockunmark(coin,block,bp,i,1);
             }

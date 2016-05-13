@@ -831,7 +831,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     else if ( coin->endPEND < 2 )
         coin->endPEND = 2;
 #ifdef __PNACL__
-    //coin->startPEND =  coin->endPEND = 1;
+    coin->startPEND =  coin->endPEND = 1;
 #endif
     coin->enableCACHE = 0;//(strcmp("BTC",coin->symbol) != 0);
     if ( jobj(json,"cache") != 0 )
