@@ -145,7 +145,7 @@ double iguana_metric(struct iguana_peer *addr,uint32_t now,double decay)
 int32_t iguana_inv2poll(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     struct exchange_info *exchange; int32_t i,n=0; struct iguana_peer *addr;
-    printf("iguana_inv2poll\n");
+    //printf("iguana_inv2poll\n");
     if ( (exchange= exchanges777_find("bitcoin")) != 0 && strcmp(coin->symbol,"BTCD") == 0 )
     {
         if ( time(NULL) > coin->lastinv2+10 )
@@ -154,6 +154,7 @@ int32_t iguana_inv2poll(struct supernet_info *myinfo,struct iguana_info *coin)
             for (i=n=0; i<coin->MAXPEERS; i++)
             {
                 addr = &coin->peers.active[i];
+                printf("iguana_inv2poll (%s) usock.%d dead.%u ready.%u ipbits.%u supernet.%d\n",addr->ipaddr,addr->usock,addr->dead,addr->ready,(uint32_t)addr->ipbits,addr->supernet);
                 if ( addr->usock < 0 || addr->dead != 0 || addr->ready == 0 || addr->ipbits == 0 )
                     continue;
                 if ( addr->supernet != 0 )
