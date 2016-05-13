@@ -122,7 +122,7 @@ struct bitcoin_statetx *instantdex_feetx(struct supernet_info *myinfo,struct ins
         {
             ptr = calloc(1,sizeof(*ptr) + strlen(feetx) + 1);
             strcpy(ptr->txbytes,feetx);
-            ptr->txid = txid;
+            ptr->txid = signedtxid;
             //printf("%s feetx.%s\n",A->offer.myside != 0 ? "BOB" : "ALICE",feetx);
             //disp_tx(myinfo,coin,"feetx",feetx);
             free(feetx);
@@ -199,7 +199,7 @@ struct bitcoin_statetx *instantdex_bobtx(struct supernet_info *myinfo,struct igu
     {
         ptr = calloc(1,sizeof(*ptr) + strlen(signedtx) + 1);
         strcpy(ptr->txbytes,signedtx);
-        ptr->txid = txid;
+        ptr->txid = signedtxid;
         //printf("bob deposit.%s\n",signedtx);
         //disp_tx(myinfo,coin,depositflag != 0 ? "deposit" : "payment",signedtx);
         free(signedtx);
@@ -297,7 +297,7 @@ struct bitcoin_statetx *instantdex_alicetx(struct supernet_info *myinfo,struct i
             printf("alice payment.%s\n",signedtx);
             //disp_tx(myinfo,altcoin,"altpayment",signedtx);
             ptr = calloc(1,sizeof(*ptr) + strlen(signedtx) + 1);
-            ptr->txid = txid;
+            ptr->txid = signedtxid;
             strcpy(ptr->txbytes,signedtx);
             free(signedtx);
         } else printf("error signing alicetx\n");
