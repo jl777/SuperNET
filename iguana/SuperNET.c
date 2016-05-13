@@ -657,19 +657,37 @@ int32_t SuperNET_destination(struct supernet_info *myinfo,uint32_t *destipbitsp,
 char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,uint16_t port)
 {
     char hexbuf[8192]; bits256 category,subhash;
-    int32_t hexlen,destflag,maxdelay,flag=0,newflag=0; uint32_t destipbits,timestamp; //cJSON *retjson;
-    char *forwardstr=0,*retstr=0,*agent=0,*method=0,*message,*hexmsg=0,*jsonstr=0; uint64_t tag;
+    int32_t autologin = 0,hexlen,destflag,maxdelay,flag=0,newflag=0; uint32_t destipbits,timestamp; //cJSON *retjson;
+    char *str,*forwardstr=0,*retstr=0,*agent=0,*method=0,*message,*hexmsg=0,*jsonstr=0; uint64_t tag;
     //printf("SuperNET_JSON.(%s)\n",jprint(json,0));
     if ( remoteaddr != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 )
         remoteaddr = 0;
     if ( (agent = jstr(json,"agent")) == 0 )
         agent = "bitcoinrpc";
     method = jstr(json,"method");
-    if ( agent != 0 && strcmp(agent,"pangea") == 0 && jobj(json,"categoryhash") == 0 )
+    if ( agent != 0 )
     {
-        jaddbits256(json,"categoryhash",calc_categoryhashes(0,"pangea",0));
-        if ( jobj(json,"subhash") == 0 )
-            jaddbits256(json,"subhash",GENESIS_PUBKEY);
+        if ( strcmp(agent,"pangea") == 0 && jobj(json,"categoryhash") == 0 )
+        {
+            jaddbits256(json,"categoryhash",calc_categoryhashes(0,"pangea",0));
+            if ( jobj(json,"subhash") == 0 )
+                jaddbits256(json,"subhash",GENESIS_PUBKEY);
+        }
+        else if ( strcmp(agent,"InstantDEX") == 0 )
+        {
+            if ( jobj(json,"passphrase") != 0 )
+            {
+                if ( (str= SuperNET_login(myinfo,0,json,remoteaddr,jstr(json,"handle"),0,0,jstr(json,"passphrase"))) != 0 )
+                    free(str);
+                autologin = 1;
+            }
+            else if ( jobj(json,"password") != 0 )
+            {
+            if ( (str= SuperNET_login(myinfo,0,json,remoteaddr,jstr(json,"handle"),jstr(json,"password"),jstr(json,"permanentfile"),0)) != 0 )
+                free(str);
+                autologin = 1;
+            }
+        }
     }
     if ( remoteaddr == 0 )
     {
@@ -715,19 +733,8 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,ui
             //printf("SuperNET_JSON hexmsgadd\n");
             SuperNET_hexmsgadd(myinfo,category,subhash,hexmsg,tai_now(),remoteaddr);
         }
-        if ( (retstr= SuperNET_processJSON(myinfo,json,remoteaddr,port)) != 0 )
-        {
-            //printf("retstr.(%s)\n",retstr);
-            /*if ( retstr[strlen(retstr)-1] != '\n' && (retjson= cJSON_Parse(retstr)) != 0 && is_cJSON_Array(retjson) == 0 )
-            {
-                if ( jobj(retjson,"result") == 0 || jobj(retjson,"error") != 0 || jobj(retjson,"method") != 0 )
-                {
-                    free(retstr);
-                    retstr = 0;
-                }
-                free_json(retjson);
-            }*/
-        } else printf("null retstr from SuperNET_JSON\n");
+        if ( (retstr= SuperNET_processJSON(myinfo,json,remoteaddr,port)) == 0 )
+            printf("null retstr from SuperNET_JSON\n");
     }
     if ( flag != 0 && hexmsg != 0 && hexmsg != hexbuf )
         free(hexmsg);
@@ -737,6 +744,8 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,ui
         free(forwardstr);
     if ( jsonstr != 0 )
         free(jsonstr);
+    if ( autologin != 0 )
+        SuperNET_logout(myinfo,0,json,remoteaddr);
     return(retstr);
 }
 

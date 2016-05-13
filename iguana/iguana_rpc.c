@@ -842,10 +842,6 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
         *jsonflagp = 1;
         i += strlen("/api");
     } else *jsonflagp = 0;
-    if ( strncmp(&url[i],"/data",strlen("/data")) == 0 )
-    {
-        return(clonestr("[{\"date\":\"2016-08-19T21:30:43.878Z\",\"value\":30},{\"date\":\"2016-08-19T21:30:43.878Z\",\"value\":44},{\"date\":\"2016-08-19T21:30:43.878Z\",\"value\":49},{\"date\":\"2016-08-19T21:30:43.878Z\",\"value\":28},{\"date\":\"2016-08-19T21:30:43.878Z\",\"value\":52}]"));
-    }
     if ( strncmp(&url[i],"/bitmap",strlen("/bitmap")) == 0 )
     {
         i += strlen("/bitmap");
