@@ -223,7 +223,7 @@ int32_t iguana_speculativefind(struct iguana_info *coin,struct iguana_bundle *bp
         {
             if ( (tmp= bp->speculativecache[i]) != 0 )
             {
-                memcmp(&cachelen,tmp,sizeof(cachelen));
+                memcpy(&cachelen,tmp,sizeof(cachelen));
                 if ( cachelen < 0 || cachelen > IGUANA_MAXPACKETSIZE )
                 {
                     printf("illegal cachelen.%d %s [%d:%d] %p\n",cachelen,coin->symbol,bp->hdrsi,i,tmp);
