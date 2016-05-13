@@ -1171,7 +1171,6 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
         }
         if ( addr->persistent_peer != 0 )
         {
-            uint16_t port;
             if ( addr->usock < 0 || addr->dead != 0 )
             {
                 if ( addr->usock >= 0 )
@@ -1181,9 +1180,9 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
                 {
                     printf("persistent peer.(%s) disconnected... reconnect\n",addr->ipaddr);
                     sleep(addr->persistent_peer);
-                    if ( (port= (uint16_t)(addr->ipbits >> 32)) == 0 )
-                        port = coin->chain->portp2p;
-                    addr->usock = iguana_socket(0,addr->ipaddr,port);
+                    if ( (addr->A.port= (uint16_t)(addr->ipbits >> 32)) == 0 )
+                        addr->A.port = coin->chain->portp2p;
+                    addr->usock = iguana_socket(0,addr->ipaddr,addr->A.port);
                 }
             }
         }

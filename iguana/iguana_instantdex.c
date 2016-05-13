@@ -828,7 +828,10 @@ int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coi
         if ( now < ap->offer.expiration && ap->dead == 0 )
         {
             if ( n < sizeof(hashes)/sizeof(*hashes) )//&& GETBIT(ap->peerhas,addr->addrind) == 0 )
+            {
                 hashes[n++] = instantdex_encodehash(ap->offer.base,ap->offer.rel,ap->offer.price64*instantdex_bidaskdir(&ap->offer),ap->orderid,ap->offer.offer64);
+                printf("%llu ",(long long)ap->orderid);
+            }
             queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
         } else free(ap);
     }
@@ -845,7 +848,7 @@ struct instantdex_accept *instantdex_quotefind(struct supernet_info *myinfo,stru
 {
     char base[9],rel[9]; int64_t pricetoshis; uint64_t orderid,offer64;
     orderid = instantdex_decodehash(base,rel,&pricetoshis,&offer64,encodedhash);
-    printf("search for orderid.%llu (%s/%s) %.8f from %llu\n",(long long)orderid,base,rel,dstr(pricetoshis),(long long)offer64);
+    //printf("search for orderid.%llu (%s/%s) %.8f from %llu\n",(long long)orderid,base,rel,dstr(pricetoshis),(long long)offer64);
     return(instantdex_offerfind(myinfo,exchanges777_find("bitcoin"),0,0,orderid,base,rel,1,0));
 }
 
@@ -899,7 +902,7 @@ int32_t instantdex_quotep2p(struct supernet_info *myinfo,struct iguana_info *coi
         encodedhash = instantdex_encodehash(A.offer.base,A.offer.rel,A.offer.price64 * instantdex_bidaskdir(&A.offer),A.orderid,A.offer.offer64);
         if ( (ap= instantdex_quotefind(myinfo,coin,addr,encodedhash)) == 0 )
         {
-            printf("add quote here!\n");
+            //printf("add quote here!\n");
             if ( exchange != 0 )
             {
                 ap = calloc(1,sizeof(*ap));

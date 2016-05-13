@@ -264,6 +264,25 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
                         if ( addr != 0 )
                         {
                             printf("Send block.%d to %s\n",total,addr->ipaddr);
+                            {
+                                struct iguana_txblock txdata; int32_t checklen; static struct OS_memspace RAWMEM;
+                                if ( RAWMEM.ptr == 0 )
+                                    iguana_meminit(&RAWMEM,addr->ipaddr,0,IGUANA_MAXPACKETSIZE * 2,0);
+                                else iguana_memreset(&RAWMEM);
+                                memset(&txdata,0,sizeof(txdata));
+                                /*int32_t i; for (i=0; i<total; i++)
+                                {
+                                    if ( i == 81 )
+                                        printf(" ");
+                                    printf("%02x",addr->blockspace[i + sizeof(struct iguana_msghdr)]);
+                                }
+                                printf(" blocksize.%d\n",total);
+                                for (i=0; i<16; i++)
+                                    printf("%02x",blockspace[i + sizeof(struct iguana_msghdr)+81]);
+                                printf(" txhdr\n");*/
+                                if ( (checklen= iguana_gentxarray(coin,&RAWMEM,&txdata,&checklen,&blockspace[sizeof(struct iguana_msghdr)],total)) != total )
+                                    printf("Error reconstructing txarray checklen.%d total.%d\n",checklen,total);
+                            }
                             return(iguana_queue_send(coin,addr,0,blockspace,"block",total,0,0));
                         }
                         else

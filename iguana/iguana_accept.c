@@ -331,9 +331,9 @@ int32_t iguana_peergetrequest(struct iguana_info *coin,struct iguana_peer *addr,
             break;
         if ( flag == 0 )
         {
-            if ( getblock != 0 && iguana_peerblockrequest(coin,addr->blockspace,sizeof(addr->blockspace),addr,hash2,0) > 0 )
+            if ( getblock != 0 && iguana_peerblockrequest(coin,addr->blockspace,IGUANA_MAXPACKETSIZE,addr,hash2,0) > 0 )
                 flag = 1;
-            else if ( getblock == 0 && iguana_peerhdrrequest(coin,addr->blockspace,sizeof(addr->blockspace),addr,hash2) > 0 )
+            else if ( getblock == 0 && iguana_peerhdrrequest(coin,addr->blockspace,IGUANA_MAXPACKETSIZE,addr,hash2) > 0 )
                 flag = 1;
         }
     }
@@ -346,27 +346,32 @@ int32_t iguana_peergetrequest(struct iguana_info *coin,struct iguana_peer *addr,
 
 int32_t iguana_peeraddrrequest(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *space,int32_t spacesize)
 {
-    int32_t i,iter,n,max,sendlen; uint64_t x; struct iguana_msghdr H; struct iguana_peer *tmpaddr;
+    int32_t i,iter,n,max,sendlen; uint64_t x; struct iguana_peer *tmpaddr;
     sendlen = 0;
     max = (IGUANA_MINPEERS + IGUANA_MAXPEERS) / 2;
     if ( max > coin->peers.numranked )
         max = coin->peers.numranked;
     x = 0;
-    sendlen = iguana_rwvarint(1,&space[sizeof(H)],&x);
+    sendlen = iguana_rwvarint(1,&space[sendlen],&x);
     for (iter=0; iter<2; iter++)
     {
         for (i=n=0; i<max; i++)
         {
             if ( (tmpaddr= coin->peers.ranked[i]) != 0 && ((iter == 0 && tmpaddr->supernet != 0) || (iter == 1 && tmpaddr->supernet == 0)) && tmpaddr->ipaddr[0] != 0 )
             {
-                sendlen += iguana_rwaddr(1,&space[sizeof(H) + sendlen],&tmpaddr->A,(int32_t)tmpaddr->protover);
-                //printf("(%s) ",tmpaddr->ipaddr);
+                //printf("(%s).%d ",tmpaddr->ipaddr,sendlen);
+                iguana_rwnum(1,&tmpaddr->A.ip[12],sizeof(uint32_t),&tmpaddr->ipbits);
+                sendlen += iguana_rwaddr(1,&space[sendlen],&tmpaddr->A,(int32_t)tmpaddr->protover);
                 x++;
+                if ( x == 0xf8 )
+                    break;
             }
         }
     }
-    iguana_rwvarint(1,&space[sizeof(H)],&x);
-    //printf("addrrequest: sendlen.%d x.%d\n",sendlen,(int32_t)x);
+    iguana_rwvarint(1,space,&x);
+    //for (i=0; i<sendlen; i++)
+    //    printf("%02x",space[i]);
+    //printf(" %p addrrequest: sendlen.%d x.%d\n",space,sendlen,(int32_t)x);
     if ( x == 0 )
         return(-1);
     return(sendlen);

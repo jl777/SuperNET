@@ -156,7 +156,7 @@ int32_t iguana_inv2poll(struct supernet_info *myinfo,struct iguana_info *coin)
                 addr = &coin->peers.active[i];
                 if ( addr->supernet != 0 )
                 {
-                    printf("iguana_inv2poll (%s) usock.%d dead.%u ready.%u ipbits.%u supernet.%d\n",addr->ipaddr,addr->usock,addr->dead,addr->ready,(uint32_t)addr->ipbits,addr->supernet);
+                    //printf("iguana_inv2poll (%s) usock.%d dead.%u ready.%u ipbits.%u supernet.%d\n",addr->ipaddr,addr->usock,addr->dead,addr->ready,(uint32_t)addr->ipbits,addr->supernet);
                     if ( addr->usock >= 0 && addr->dead == 0 && addr->ready != 0 && addr->ipbits != 0 )
                     {
                         instantdex_inv2data(myinfo,coin,addr,exchange);
