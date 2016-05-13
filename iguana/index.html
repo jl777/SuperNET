@@ -25,66 +25,136 @@
 
 <script>
 AmCharts.ready(function () { createStockChart(); });
-                   
+var interval,BASE= "BTCD",REL = "BTC";
+
 function createStockChart() {
 var chartData = [];
-var chart = AmCharts.makeChart("chartdiv", {
-                               "type": "serial",
-                               "theme": "light",
-                               "dataDateFormat": "YYYY-MM-DD",
-                               "valueAxes": [{ "id": "v1", "position": "left"}],
-                               "graphs": [{
-                                          "id": "g1",
-                                          "bullet": "round",
-                                          "valueField": "value",
-                                          "balloonText": "[[category]]: [[value]]"
-                                          }],
-                               "categoryField": "date",
-                               "categoryAxis": {
-                               "parseDates": true,
-                               "equalSpacing": true,
-                               "dashLength": 1,
-                               "minorGridEnabled": true
-                               },
-                               "dataProvider": chartData
-                               });
+var chart = AmCharts.makeChart("chartdiv",
+{
+   "type": "serial",
+   "theme": "dark",
+    "valueAxes": [
+                  { "title":"BTC", "id": "vert", "axisAlpha": 0, "dashLength": 1, "position": "left"},
+                  { "id": "horiz", "axisAlpha": 0, "dashLength": 1, "position": "bottom",        "labelFunction": function (value) {
+                  var date = new Date(value);
+                  return AmCharts.formatDate(date, "MMM DD HH:NN:SS");
+                  }}
+                  ],
+   "graphs": [
+              { "id": "g1", "lineColor": "#00FFFF", "bullet": "round", "valueField": "bid", "balloonText": "[[category]] [[h]]:[[m]]:[[s]] bid:[[bid]] ask:[[ask]]" },
+              { "id": "g2", "lineColor": "#FF8800", "bullet": "round", "valueField": "ask", "balloonText": "[[category]] [[h]]:[[m]]:[[s]] bid:[[bid]] ask:[[ask]]" }],
+   "categoryField": "date",
+   "categoryAxis": { "parseDates": true, "equalSpacing": true, "dashLength": 1, "minorGridEnabled": true },
+   "chartScrollbar": {},
+   "chartCursor": {},
+   "dataProvider": chartData
+});
 var startButton = document.getElementById('start');
 var endButton = document.getElementById('stop');
+/*
+var BTCbutton = document.getElementById('BTC');
+var CNYbutton = document.getElementById('CNY');
+var USDbutton = document.getElementById('USD');
+var EURbutton = document.getElementById('EUR');
+var JPYbutton = document.getElementById('JPY');
+var GBPbutton = document.getElementById('GBP');
+var AUDbutton = document.getElementById('AUD');
+var CADbutton = document.getElementById('CAD');
+var CHFbutton = document.getElementById('CHF');
+var NZDbutton = document.getElementById('NZD');
+ 
+ USDbutton.addEventListener('click', USDrel);
+ EURbutton.addEventListener('click', EURrel);
+ JPYbutton.addEventListener('click', JPYrel);
+ GBPbutton.addEventListener('click', GBPrel);
+ AUDbutton.addEventListener('click', AUDrel);
+ CADbutton.addEventListener('click', CADrel);
+ CHFbutton.addEventListener('click', CHFrel);
+ NZDbutton.addEventListener('click', NZDrel);
+ CNYbutton.addEventListener('click', CNYrel);
+ BTCbutton.addEventListener('click', BTCrel);
+*/
+ 
+ 
+
+var BTCDbutton = document.getElementById('BTCD');
+var VPNbutton = document.getElementById('VPN');
+var VRCbutton = document.getElementById('VRC');
+var SYSbutton = document.getElementById('SYS');
+var SuperNETbutton = document.getElementById('SuperNET');
+var crypto777button = document.getElementById('crypto777');
+var pangeabutton = document.getElementById('Pangea');
+var InstantDEXbutton = document.getElementById('InstantDEX');
+var Tradebotsbutton = document.getElementById('Tradebots');
+var NXTprivacybutton = document.getElementById('NXTprivacy');
+
+
 startButton.addEventListener('click', startDemo);
 endButton.addEventListener('click', endDemo);
-var interval;
+
+
+BTCDbutton.addEventListener('click', BTCDbase);
+VPNbutton.addEventListener('click', VPNbase);
+SYSbutton.addEventListener('click', SYSbase);
+SuperNETbutton.addEventListener('click', SuperNETbase);
+crypto777button.addEventListener('click', crypto777base);
+pangeabutton.addEventListener('click', Pangeabase);
+InstantDEXbutton.addEventListener('click', InstantDEXbase);
+Tradebotsbutton.addEventListener('click', Tradebotsbase);
+NXTprivacybutton.addEventListener('click', NXTprivacybase);
+
+
+function BTCDbase() { BASE = "BTCD"; }
+function VPNbase() { BASE = "VPN"; }
+function SYSbase() { BASE = "SYS"; }
+function SuperNETbase() { BASE = "SuperNET"; }
+function crypto777base() { BASE = "crypto777"; }
+function Pangeabase() { BASE = "Pangea"; }
+function InstantDEXbase() { BASE = "InstantDEX"; }
+function Tradebotsbase() { BASE = "Tradebots"; }
+function NXTprivacybase() { BASE = "NXTprivacy"; }
+
+function USDrel() { REL = "USD"; }
+function EURrel() { REL = "EUR"; }
+function JPYrel() { REL = "JPY"; }
+function GBPrel() { REL = "GBP"; }
+function AUDrel() { REL = "AUD"; }
+function CADrel() { REL = "CAD"; }
+function CHFrel() { REL = "CHF"; }
+function NZDrel() { REL = "NZD"; }
+function CNYrel() { REL = "CNY"; }
+function BTCrel() { REL = "CNY"; }
 
 function startDemo() {
    startButton.disabled = "disabled";
    endButton.disabled = "";
-   interval = setInterval(getDataFromServer, 2000);
-   alert("start");
+   interval = setInterval(getDataFromServer, 1000);
 }
 
 function endDemo() {
    startButton.disabled = "";
    endButton.disabled = "disabled";
    clearInterval(interval);
-   alert("stop");
 }
 
 function getDataFromServer()
 {
-    var i,newDate,newValue,newData = [];
-    var newDataSize = Math.round(Math.random() + 3) + 1;
-    if (chartData.length)
-        newDate = new Date(chartData[chartData.length - 1].date);
-    else newDate = new Date();
-    for (i = 0; i < newDataSize; ++i)
-    {
-        newValue = Math.round(Math.random() * (40 + i)) + 10 + i;
-        newDate.setDate(newDate.getDate() + 1);
-        newData.push({ date: newDate, value: newValue });
-    }
-    chartData.push.apply(chartData, newData);
-    if (chartData.length > 500)
-        chartData.splice(0, chartData.length - 500);
-    chart.validateData(); //call to redraw the chart with new data
+    var i,newData = [];
+    var request='{"agent":"InstantDEX","method":"events","base":"'+BASE+'","rel":"'+REL+'"}';
+    SPNAPI.makeRequest(request,
+        function(request,response)
+        {
+            newData = JSON.parse(response);
+            if ( newData.length > 0 )
+            {
+                chartData.push.apply(chartData, newData);
+                if (chartData.length > 50)
+                    chartData.splice(0, chartData.length - 50);
+                chart.validateData(); //call to redraw the chart with new data
+            }
+        });
+
+    // newData = JSON.parse("[{\"h\":14,\"m\":44,\"s\":32,\"date\":1407877200000,\"bid\":30,\"ask\":35},{\"date\":1407877200000,\"bid\":40,\"ask\":44},{\"date\":1407877200000,\"bid\":49,\"ask\":45},{\"date\":1407877200000,\"ask\":28},{\"date\":1407877200000,\"ask\":52}]");
 }
 
 }
@@ -623,7 +693,24 @@ data-path="{tc}/{config}">
                 <div class="panel panel-default">
                     <!-- Default panel contents -->
                     <div class="panel-heading">
-                        <h3>Instandex tab</h3>
+                        <h3>InstantDEX</h3>
+                        
+                        <div class="chart">
+                            <button id="start">Start</button>
+                            <button id="stop" disabled="disabled">Stop   </button>
+                            <button id="BTCD">   BTCD</button>
+                            <button id="VPN">VPN</button>
+                            <button id="SYS">SYS</button>
+                            <button id="VRC">VRC</button>
+                            <button id="SuperNET">SuperNET</button>
+                            <button id="crypto777">crypto777</button>
+                            <button id="InstantDEX">InstantDEX</button>
+                            <button id="Tradebots">Tradebots</button>
+                            <button id="Pangea">Pangea</button>
+                            <button id="NXTprivacy">NXTprivacy</button>
+                            <div id="chartdiv"></div>
+                        </div>
+                        
                     </div><div class="pre-scrollable">
                     <div class="panel-body center">
                         <button class="btn xyz_button_click btn-primary instantdex_set_method_table" data-method="orderbook" >orderbook</button>
@@ -658,11 +745,6 @@ data-path="{tc}/{config}">
                         </table>
                     </div></div>
                     
-                    <div class="chart">
-                        <button id="start">Start</button>
-                        <button id="stop" disabled="disabled">Stop</button>
-                    <div id="chartdiv"></div>
-                    </div>
                 </div>
                 <style type="text/css">
                     #Blockexplorer_page .center {

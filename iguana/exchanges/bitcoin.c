@@ -339,7 +339,7 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
     cJSON *retjson,*bids,*asks; double hbla;
     bids = cJSON_CreateArray();
     asks = cJSON_CreateArray();
-    instantdex_offerfind(SuperNET_MYINFO(0),exchange,bids,asks,0,base,rel,1);
+    instantdex_offerfind(SuperNET_MYINFO(0),exchange,bids,asks,0,base,rel,1,0);
     //printf("bids.(%s) asks.(%s)\n",jprint(bids,0),jprint(asks,0));
     retjson = cJSON_CreateObject();
     cJSON_AddItemToObject(retjson,"bids",bids);
@@ -470,7 +470,7 @@ char *ORDERSTATUS(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson
     struct supernet_info *myinfo = SuperNET_accountfind(argjson);
     if ( (swap= instantdex_statemachinefind(myinfo,exchange,orderid,1)) != 0 )
         jadd(retjson,"result",instantdex_statemachinejson(swap));
-    else if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,orderid,"*","*",1)) != 0 )
+    else if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,orderid,"*","*",1,0)) != 0 )
         jadd(retjson,"result",instantdex_acceptjson(ap));
     else if ( (swap= instantdex_historyfind(myinfo,exchange,orderid)) != 0 )
         jadd(retjson,"result",instantdex_historyjson(swap));
@@ -483,7 +483,7 @@ char *CANCELORDER(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson
     struct instantdex_accept *ap = 0; cJSON *retjson; struct bitcoin_swapinfo *swap=0;
     struct supernet_info *myinfo = SuperNET_accountfind(argjson);
     retjson = cJSON_CreateObject();
-    if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,orderid,"*","*",1)) != 0 )
+    if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,orderid,"*","*",1,0)) != 0 )
     {
         ap->dead = (uint32_t)time(NULL);
         jadd(retjson,"orderid",instantdex_acceptjson(ap));
@@ -502,7 +502,7 @@ char *OPENORDERS(struct exchange_info *exchange,cJSON *argjson)
     cJSON *retjson,*bids,*asks; struct supernet_info *myinfo = SuperNET_accountfind(argjson);
     bids = cJSON_CreateArray();
     asks = cJSON_CreateArray();
-    instantdex_offerfind(myinfo,exchange,bids,asks,0,"*","*",1);
+    instantdex_offerfind(myinfo,exchange,bids,asks,0,"*","*",1,0);
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
     jadd(retjson,"bids",bids);

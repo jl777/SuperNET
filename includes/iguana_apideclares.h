@@ -118,6 +118,7 @@ TWO_STRINGS(InstantDEX,cancelorder,exchange,orderid);
 STRING_ARG(InstantDEX,openorders,exchange);
 STRING_ARG(InstantDEX,tradehistory,exchange);
 STRING_AND_INT(InstantDEX,pollgap,exchange,pollgap);
+TWO_STRINGS(InstantDEX,events,base,rel);
 ZERO_ARGS(InstantDEX,allexchanges);
 STRING_ARG(InstantDEX,allpairs,exchange);
 

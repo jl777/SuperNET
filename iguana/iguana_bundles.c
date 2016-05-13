@@ -1410,8 +1410,8 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
         static FILE *logfp;
         if ( logfp == 0 )
             logfp = fopen("debug.log","wb");
-        if ( logfp != 0 )
-            fprintf(logfp,"%s bQ.%d %d:%02d:%02d stuck.%d max.%d\n",str,queue_size(&bundlesQ),(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,coin->stucktime!=0?(uint32_t)time(NULL) - coin->stucktime:0,coin->maxstuck);
+        //if ( logfp != 0 )
+            printf("%s bQ.%d %d:%02d:%02d stuck.%d max.%d\n",str,queue_size(&bundlesQ),(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,coin->stucktime!=0?(uint32_t)time(NULL) - coin->stucktime:0,coin->maxstuck);
         strcpy(coin->lastdispstr,str);
         //if ( (rand() % 100) == 0 )
         //    myallocated(0,0);

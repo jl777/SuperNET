@@ -117,7 +117,7 @@ struct instantdex_accept
 {
     struct queueitem DL; uint8_t peerhas[IGUANA_MAXPEERS/8];
     uint64_t pendingvolume64,orderid;
-    uint32_t dead; int32_t didstate;
+    uint32_t dead; int32_t didstate:31,reported:1;
     struct instantdex_offer offer;
 };
 
@@ -157,7 +157,7 @@ struct instantdex_stateinfo
 
 #define instantdex_isbob(swap) (swap)->mine.offer.myside
 
-struct instantdex_accept *instantdex_offerfind(struct supernet_info *myinfo,struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel,int32_t requeue);
+struct instantdex_accept *instantdex_offerfind(struct supernet_info *myinfo,struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel,int32_t requeue,int32_t report);
 cJSON *instantdex_acceptjson(struct instantdex_accept *ap);
 cJSON *instantdex_historyjson(struct bitcoin_swapinfo *swap);
 struct bitcoin_swapinfo *instantdex_historyfind(struct supernet_info *myinfo,struct exchange_info *exchange,uint64_t orderid);

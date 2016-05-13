@@ -694,7 +694,7 @@ struct bitcoin_swapinfo *instantdex_statemachinefind(struct supernet_info *myinf
     return(retswap);
 }
 
-struct instantdex_accept *instantdex_offerfind(struct supernet_info *ignore,struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel,int32_t requeue)
+struct instantdex_accept *instantdex_offerfind(struct supernet_info *ignore,struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel,int32_t requeue,int32_t report)
 {
     struct instantdex_accept PAD,*ap,*retap = 0; uint32_t now; cJSON *item,*offerobj; char *type;
     if ( exchange == 0 )
@@ -707,28 +707,30 @@ struct instantdex_accept *instantdex_offerfind(struct supernet_info *ignore,stru
         if ( now < ap->offer.expiration && ap->dead == 0 )
         {
             //printf("%d %d find cmps %d %d %d %d %d %d me.%llu vs %llu o.%llu | vs %llu\n",instantdex_bidaskdir(&ap->offer),ap->offer.expiration-now,strcmp(base,"*") == 0,strcmp(base,ap->offer.base) == 0,strcmp(rel,"*") == 0,strcmp(rel,ap->offer.rel) == 0,orderid == 0,orderid == ap->orderid,(long long)myinfo->myaddr.nxt64bits,(long long)ap->offer.offer64,(long long)ap->orderid,(long long)orderid);
-            if ( (strcmp(base,"*") == 0 || strcmp(base,ap->offer.base) == 0) && (strcmp(rel,"*") == 0 || strcmp(rel,ap->offer.rel) == 0) && (orderid == 0 || orderid == ap->orderid) )
+            if ( (report == 0 || ap->reported == 0) && (strcmp(base,"*") == 0 || strcmp(base,ap->offer.base) == 0) && (strcmp(rel,"*") == 0 || strcmp(rel,ap->offer.rel) == 0) && (orderid == 0 || orderid == ap->orderid) )
             {
+                if ( report != 0 )
+                    ap->reported = 1;
                 if ( requeue == 0 && retap != 0 )
                     queue_enqueue("acceptableQ",&exchange->acceptableQ,&retap->DL,0);
                 retap = ap;
-            }
-            if ( (item= instantdex_acceptjson(ap)) != 0 )
-            {
-                //printf("item.(%s)\n",jprint(item,0));
-                if ( (offerobj= jobj(item,"offer")) != 0 && (type= jstr(offerobj,"type")) != 0 )
+                if ( (item= instantdex_acceptjson(ap)) != 0 )
                 {
-                    if ( bids != 0 && strcmp(type,"bid") == 0 )
-                        jaddi(bids,jduplicate(offerobj));
-                    else if ( asks != 0 && strcmp(type,"ask") == 0 )
-                        jaddi(asks,jduplicate(offerobj));
+                    //printf("item.(%s)\n",jprint(item,0));
+                    if ( (offerobj= jobj(item,"offer")) != 0 && (type= jstr(offerobj,"type")) != 0 )
+                    {
+                        if ( bids != 0 && strcmp(type,"bid") == 0 )
+                            jaddi(bids,jduplicate(offerobj));
+                        else if ( asks != 0 && strcmp(type,"ask") == 0 )
+                            jaddi(asks,jduplicate(offerobj));
+                    }
+                    free_json(item);
+                } else printf("error generating acceptjson.%llu\n",(long long)ap->orderid);
+                if ( ap != retap || requeue != 0 )
+                {
+                    //printf("requeue.%p\n",ap);
+                    queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
                 }
-                free_json(item);
-            } else printf("error generating acceptjson.%llu\n",(long long)ap->orderid);
-            if ( ap != retap || requeue != 0 )
-            {
-                //printf("requeue.%p\n",ap);
-                queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
             }
         } else free(ap);
     }
@@ -841,7 +843,7 @@ struct instantdex_accept *instantdex_quotefind(struct supernet_info *myinfo,stru
     char base[9],rel[9]; int64_t pricetoshis; uint64_t orderid,offer64;
     orderid = instantdex_decodehash(base,rel,&pricetoshis,&offer64,encodedhash);
     printf("search for orderid.%llu (%s/%s) %.8f from %llu\n",(long long)orderid,base,rel,dstr(pricetoshis),(long long)offer64);
-    return(instantdex_offerfind(myinfo,exchanges777_find("bitcoin"),0,0,orderid,base,rel,1));
+    return(instantdex_offerfind(myinfo,exchanges777_find("bitcoin"),0,0,orderid,base,rel,1,0));
 }
 
 struct iguana_bundlereq *instantdex_recvquotes(struct iguana_info *coin,struct iguana_bundlereq *req,bits256 *quotes,int32_t n)
@@ -1245,7 +1247,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
             else
             {
                 printf("no matching trade for %s %llu -> InstantDEX_minaccept isbob.%d\n",cmdstr,(long long)A.orderid,A.offer.myside);
-                if ( instantdex_offerfind(myinfo,exchange,0,0,A.orderid,"*","*",1) == 0 )
+                if ( instantdex_offerfind(myinfo,exchange,0,0,A.orderid,"*","*",1,0) == 0 )
                 {
                     ap = calloc(1,sizeof(*ap));
                     *ap = A;
@@ -1491,6 +1493,53 @@ THREE_STRINGS_AND_DOUBLE(tradebot,aveprice,comment,base,rel,basevolume)
     jaddnum(retjson,"aveask",retvals[2]);
     jaddnum(retjson,"askvol",retvals[3]);
     return(jprint(retjson,1));
+}
+
+cJSON *instantdex_reportjson(cJSON *item,char *name)
+{
+    cJSON *newjson = cJSON_CreateObject(); uint64_t dateval;
+    dateval = juint(item,"timestamp"), dateval *= 1000;
+    newjson = cJSON_CreateObject();
+    jadd(newjson,name,jduplicate(jobj(item,"price")));
+    jadd(newjson,"volume",jduplicate(jobj(item,"volume")));
+    jadd(newjson,"orderid",jduplicate(jobj(item,"orderid")));
+    jaddnum(newjson,"date",dateval);
+    jaddnum(newjson,"s",dateval % 60);
+    jaddnum(newjson,"h",(dateval / 60) % 60);
+    return(newjson);
+}
+
+TWO_STRINGS(InstantDEX,events,base,rel)
+{
+    cJSON *bids,*asks,*array,*item; int32_t i,n; struct exchange_info *exchange;
+    array = cJSON_CreateArray();
+    if ( (exchange= exchanges777_find("bitcoin")) != 0 )
+    {
+        bids = cJSON_CreateArray();
+        asks = cJSON_CreateArray();
+        instantdex_offerfind(myinfo,exchange,bids,asks,0,base,rel,1,1);
+        if ( (n= cJSON_GetArraySize(bids)) > 0 )
+        {
+            for (i=0; i<n; i++)
+            {
+                item = jobj(jitem(bids,i),"offer");
+                jaddi(array,instantdex_reportjson(item,"bid"));
+            }
+        }
+        if ( (n= cJSON_GetArraySize(asks)) > 0 )
+        {
+            for (i=0; i<n; i++)
+            {
+                item = jobj(jitem(asks,i),"offer");
+                jaddi(array,instantdex_reportjson(item,"ask"));
+            }
+        }
+        free_json(bids);
+        free_json(asks);
+    }
+    return(jprint(array,1));
+
+    //return(clonestr("[{\"h\":14,\"m\":44,\"s\":32,\"date\":1407877200000,\"bid\":30,\"ask\":35},{\"date\":1407877200000,\"bid\":40,\"ask\":44},{\"date\":1407877200000,\"bid\":49,\"ask\":45},{\"date\":1407877200000,\"ask\":28},{\"date\":1407877200000,\"ask\":52}]"));
 }
 
 #include "../includes/iguana_apiundefs.h"

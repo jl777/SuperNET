@@ -8,7 +8,7 @@ var prevXY={"X":0,"Y":0};
 var prevID=0;
 
 $(document).ready(function() {
- loadImages();
+// loadImages(); caused internal error with local storage
     
     
     $('.imagAPI').click(function(e){
