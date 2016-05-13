@@ -195,7 +195,7 @@ int32_t iguana_process_msgrequestQ(struct supernet_info *myinfo,struct iguana_in
                 {
                     if ( (addr= msg->addr) != 0 && (len= iguana_peerblockrequest(coin,&coin->blockspace[sizeof(struct iguana_msghdr)],(int32_t)(sizeof(coin->blockspace) - sizeof(struct iguana_msghdr)),0,msg->hash2,0)) > 0 )
                     {
-                        printf("block len.%d -> (%s)\n",len,addr->ipaddr);
+                        printf("msg Sendlen.%d block %s to %s\n",len,bits256_str(str,msg->hash2),addr->ipaddr);
                         iguana_queue_send(coin,addr,0,coin->blockspace,"block",len,0,0);
                     }
                 }
