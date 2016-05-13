@@ -709,8 +709,11 @@ struct instantdex_accept *instantdex_offerfind(struct supernet_info *ignore,stru
             //printf("%d %d find cmps %d %d %d %d %d %d me.%llu vs %llu o.%llu | vs %llu\n",instantdex_bidaskdir(&ap->offer),ap->offer.expiration-now,strcmp(base,"*") == 0,strcmp(base,ap->offer.base) == 0,strcmp(rel,"*") == 0,strcmp(rel,ap->offer.rel) == 0,orderid == 0,orderid == ap->orderid,(long long)myinfo->myaddr.nxt64bits,(long long)ap->offer.offer64,(long long)ap->orderid,(long long)orderid);
             if ( (report == 0 || ap->reported == 0) && (strcmp(base,"*") == 0 || strcmp(base,ap->offer.base) == 0) && (strcmp(rel,"*") == 0 || strcmp(rel,ap->offer.rel) == 0) && (orderid == 0 || orderid == ap->orderid) )
             {
-                if ( report != 0 )
+                if ( report != 0 && ap->reported == 0 )
+                {
                     ap->reported = 1;
+                    printf("MARK as reported %llu\n",(long long)ap->orderid);
+                }
                 if ( requeue == 0 && retap != 0 )
                     queue_enqueue("acceptableQ",&exchange->acceptableQ,&retap->DL,0);
                 retap = ap;
@@ -1505,7 +1508,8 @@ cJSON *instantdex_reportjson(cJSON *item,char *name)
     jadd(newjson,"orderid",jduplicate(jobj(item,"orderid")));
     jaddnum(newjson,"date",dateval);
     jaddnum(newjson,"s",dateval % 60);
-    jaddnum(newjson,"h",(dateval / 60) % 60);
+    jaddnum(newjson,"m",(dateval / 60) % 60);
+    jaddnum(newjson,"h",(dateval / 3600) % 24);
     return(newjson);
 }
 
@@ -1522,7 +1526,7 @@ TWO_STRINGS(InstantDEX,events,base,rel)
         {
             for (i=0; i<n; i++)
             {
-                item = jobj(jitem(bids,i),"offer");
+                item = jitem(bids,i);
                 jaddi(array,instantdex_reportjson(item,"bid"));
             }
         }
@@ -1530,7 +1534,7 @@ TWO_STRINGS(InstantDEX,events,base,rel)
         {
             for (i=0; i<n; i++)
             {
-                item = jobj(jitem(asks,i),"offer");
+                item = jitem(asks,i);
                 jaddi(array,instantdex_reportjson(item,"ask"));
             }
         }

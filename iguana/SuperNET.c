@@ -1469,6 +1469,7 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
         if ( (str= SuperNET_encryptjson(IGUANA_CALLARGS,password,myinfo->permanentfile,argstr)) != 0 )
             free(str);
         free(argstr);
+        myinfo->expiration = (uint32_t)(time(NULL) + 3600);
         return(SuperNET_activehandle(IGUANA_CALLARGS));
     } else return(clonestr("{\"error\":\"need passphrase\"}"));
     printf("logged into (%s) %s %s\n",myinfo->myaddr.NXTADDR,myinfo->myaddr.BTC,myinfo->myaddr.BTCD);

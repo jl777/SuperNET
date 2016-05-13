@@ -41,14 +41,15 @@ var chart = AmCharts.makeChart("chartdiv",
                   }}
                   ],
    "graphs": [
-              { "id": "g1", "lineColor": "#00FFFF", "bullet": "round", "valueField": "bid", "balloonText": "[[category]] [[h]]:[[m]]:[[s]] bid:[[bid]] ask:[[ask]]" },
-              { "id": "g2", "lineColor": "#FF8800", "bullet": "round", "valueField": "ask", "balloonText": "[[category]] [[h]]:[[m]]:[[s]] bid:[[bid]] ask:[[ask]]" }],
+              { "id": "g1", "lineColor": "#00FFFF", "bullet": "round", "valueField": "bid", "balloonText": "[[category]] [[h]]:[[m]]:[[s]] account:[[offerer]] id:[[orderid]] volume:[[volume]] bid:[[bid]]" },
+              { "id": "g2", "lineColor": "#FF8800", "bullet": "round", "valueField": "ask", "balloonText": "[[category]] [[h]]:[[m]]:[[s]] account:[[offerer]] id:[[orderid]] volume:[[volume]] ask:[[ask]]" }],
    "categoryField": "date",
    "categoryAxis": { "parseDates": true, "equalSpacing": true, "dashLength": 1, "minorGridEnabled": true },
    "chartScrollbar": {},
    "chartCursor": {},
    "dataProvider": chartData
 });
+
 var startButton = document.getElementById('start');
 var endButton = document.getElementById('stop');
 /*
@@ -103,16 +104,24 @@ InstantDEXbutton.addEventListener('click', InstantDEXbase);
 Tradebotsbutton.addEventListener('click', Tradebotsbase);
 NXTprivacybutton.addEventListener('click', NXTprivacybase);
 
-
-function BTCDbase() { BASE = "BTCD"; }
-function VPNbase() { BASE = "VPN"; }
-function SYSbase() { BASE = "SYS"; }
-function SuperNETbase() { BASE = "SuperNET"; }
-function crypto777base() { BASE = "crypto777"; }
-function Pangeabase() { BASE = "Pangea"; }
-function InstantDEXbase() { BASE = "InstantDEX"; }
-function Tradebotsbase() { BASE = "Tradebots"; }
-function NXTprivacybase() { BASE = "NXTprivacy"; }
+function changebase(newbase)
+{
+    BASE = newbase;
+    if ( chartData.length > 0 )
+    {
+        chartData.splice(0,chartData.length);
+        chart.validateData();
+    }
+}
+function BTCDbase() { changebase("BTCD"); }
+function VPNbase() { changebase("VPN"); }
+function SYSbase() { changebase("SYS"); }
+function SuperNETbase() { changebase("SuperNET"); }
+function crypto777base() { changebase("crypto777"); }
+function Pangeabase() { changebase("Pangea"); }
+function InstantDEXbase() { changebase("InstantDEX"); }
+function Tradebotsbase() { changebase("Tradebots"); }
+function NXTprivacybase() { changebase("NXTprivacy"); }
 
 function USDrel() { REL = "USD"; }
 function EURrel() { REL = "EUR"; }
@@ -147,6 +156,7 @@ function getDataFromServer()
             newData = JSON.parse(response);
             if ( newData.length > 0 )
             {
+                       alert(response);
                 chartData.push.apply(chartData, newData);
                 if (chartData.length > 50)
                     chartData.splice(0, chartData.length - 50);
