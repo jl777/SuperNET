@@ -105,6 +105,7 @@ void iguana_acceptloop(void *args)
                 coin->peers.active[i].usock = sock;
                 coin->peers.active[i].ready = (uint32_t)time(NULL);
                 flag = 1;
+                instantdex_peerhas_clear(coin,&coin->peers.active[i]);
                 //iguana_iAkill(coin,&coin->peers.active[i],0);
                 //sleep(1);
                 break;

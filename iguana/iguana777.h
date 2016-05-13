@@ -966,7 +966,7 @@ struct iguana_waddress *iguana_getaccountaddress(struct supernet_info *myinfo,st
 int32_t iguana_uvaltxid(struct supernet_info *myinfo,bits256 *txidp,struct iguana_info *coin,int16_t hdrsi,uint32_t unspentind);
 struct instantdex_accept *instantdex_quotefind(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,bits256 encodedhash);
 int32_t instantdex_quoterequest(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *serialized,int32_t maxlen,struct iguana_peer *addr,bits256 encodedhash);
-int32_t instantdex_peerhas_clear(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr);
+int32_t instantdex_peerhas_clear(struct iguana_info *coin,struct iguana_peer *addr);
 int32_t instantdex_quotep2p(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,uint8_t *serialized,int32_t recvlen);
 void instantdex_update(struct supernet_info *myinfo);
 cJSON *iguana_getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account);

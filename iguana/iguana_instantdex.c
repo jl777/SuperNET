@@ -740,7 +740,7 @@ struct instantdex_accept *instantdex_offerfind(struct supernet_info *ignore,stru
     return(retap);
 }
 
-int32_t instantdex_peerhas_clear(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr)
+int32_t instantdex_peerhas_clear(struct iguana_info *coin,struct iguana_peer *addr)
 {
     struct instantdex_accept PAD,*ap; struct exchange_info *exchange; int32_t ind,num = 0;
     if ( addr != 0 && (exchange= exchanges777_find("bitcoin")) != 0 )

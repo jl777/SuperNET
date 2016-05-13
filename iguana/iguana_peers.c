@@ -1060,7 +1060,7 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
         printf("error creating peer's files\n");
         return;
     }
-    instantdex_peerhas_clear(myinfo,coin,addr);
+    instantdex_peerhas_clear(coin,addr);
 #ifdef IGUANA_PEERALLOC
     int32_t i;  int64_t remaining; struct OS_memspace *mem[sizeof(addr->SEROUT)/sizeof(*addr->SEROUT)];
     for (i=0; i<sizeof(addr->SEROUT)/sizeof(*addr->SEROUT); i++)
