@@ -102,6 +102,7 @@ void iguana_acceptloop(void *args)
             {
                 printf("found existing peer.(%s) in slot[%d]\n",ipaddr,i);
                 close(coin->peers.active[i].usock);
+                coin->peers.active[i].dead = 0;
                 coin->peers.active[i].usock = sock;
                 coin->peers.active[i].ready = (uint32_t)time(NULL);
                 flag = 1;
