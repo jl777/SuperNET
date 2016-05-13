@@ -111,16 +111,17 @@ THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,sell,exchange,base,rel,price,volume,d
 THREE_STRINGS_AND_DOUBLE(InstantDEX,withdraw,exchange,base,destaddr,amount);
 THREE_STRINGS(InstantDEX,apikeypair,exchange,apikey,apisecret);
 THREE_STRINGS(InstantDEX,setuserid,exchange,userid,tradepassword);
-THREE_STRINGS(InstantDEX,supports,exchange,base,rel);
 TWO_STRINGS(InstantDEX,balance,exchange,base);
 TWO_STRINGS(InstantDEX,orderstatus,exchange,orderid);
 TWO_STRINGS(InstantDEX,cancelorder,exchange,orderid);
 STRING_ARG(InstantDEX,openorders,exchange);
 STRING_ARG(InstantDEX,tradehistory,exchange);
+
 STRING_AND_INT(InstantDEX,pollgap,exchange,pollgap);
 TWO_STRINGS(InstantDEX,events,base,rel);
 ZERO_ARGS(InstantDEX,allexchanges);
 STRING_ARG(InstantDEX,allpairs,exchange);
+THREE_STRINGS(InstantDEX,supports,exchange,base,rel);
 
 THREE_STRINGS(atomic,approve,myorderid,otherid,txname);
 THREE_STRINGS(atomic,claim,myorderid,otherid,txname);
