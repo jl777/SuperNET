@@ -263,7 +263,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
                     {
                         if ( addr != 0 )
                         {
-                            printf("Send block.%d to %s\n",total,addr->ipaddr);
+                            printf("Sendlen.%d block.%d %s to %s\n",total,block->height,bits256_str(str,block->RO.hash2),addr->ipaddr);
                             {
                                 struct iguana_txblock txdata; int32_t checklen; static struct OS_memspace RAWMEM;
                                 if ( RAWMEM.ptr == 0 )
