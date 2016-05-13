@@ -1,4 +1,4 @@
 rm ../agents/iguana *.o
 git pull
-emcc -s TOTAL_MEMORY=3268435456 -s PTHREAD_POOL_SIZE=40 -s USE_PTHREADS=1 -o iguana.html -O3 -I. -Isecp256k1./src  -Isecp256k1/include -Isecp256k1/src -Wno-unused-parameter -Wextra -Wnested-externs -Wstrict-prototypes -Wno-unused-function -Wno-long-long -Wno-overlength-strings -fvisibility=hidden -DHAVE_CONFIG_H *.c ../crypto777/*.c ../crypto777/jpeg/*.c ../crypto777/jpeg/unix/*.c secp256k1/src/secp256k1.c -lpthread -lm
+emcc -s TOTAL_MEMORY=3268435456 -s PTHREAD_POOL_SIZE=40 -s USE_PTHREADS=1 -o iguana.html -O3 -I. -Isecp256k1./src  -Isecp256k1/include -Isecp256k1/src -Wextra -Wno-unused-parameter -Wnested-externs -Wstrict-prototypes -Wno-unused-function -Wno-long-long -Wno-overlength-strings -fvisibility=hidden -DHAVE_CONFIG_H *.c ../crypto777/*.c ../crypto777/jpeg/*.c ../crypto777/jpeg/unix/*.c secp256k1/src/secp256k1.c -lpthread -lm
 cp iguana.html iguana.js pthread-main.js iguana.html.mem /var/www/html
