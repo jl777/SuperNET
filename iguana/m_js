@@ -1,7 +1,5 @@
 rm ../agents/iguana *.o
 git pull
 cd secp256k1; ./m_js; cd ..
-emcc -s USE_PTHREADS=1 -s ALLOW_MEMORY_GROWTH=1 -Wno-deprecated -c -O2 *.c databases/iguana_DB.c
-#emcc -s USE_PTHREADS=1 -Wno-deprecated -c  main.c iguana777.c iguana_bundles.c
-emcc -s USE_PTHREADS=1 -s ALLOW_MEMORY_GROWTH=1 -o iguana.html -O2 *.o ../agents/libcrypto777.a -lm
+emcc -s USE_PTHREADS=1 -o iguana.html *.c databases/iguana_DB.c ../agents/libcrypto777.a -lm
 cp iguana.html iguana.js pthread-main.js iguana.html.mem /var/www/html

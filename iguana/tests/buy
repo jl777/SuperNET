@@ -1,1 +1,1 @@
-curl --url "http://127.0.0.1:7778" --data "{\"dotrade\":1,\"agent\":\"InstantDEX\",\"exchange\":\"bitcoin\",\"method\":\"buy\",\"base\":\"BTCD\",\"rel\":\"BTC\",\"price\":0.0027,\"volume\":1.0}"
+curl --url "http://127.0.0.1:7778" --data "{\"password\":\"test\",\"dotrade\":1,\"agent\":\"InstantDEX\",\"exchange\":\"bitcoin\",\"method\":\"buy\",\"base\":\"BTCD\",\"rel\":\"BTC\",\"price\":0.0029,\"volume\":1.0}"

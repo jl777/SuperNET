@@ -393,7 +393,7 @@ int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct bitcoin_swapin
     {
         pubi = instantdex_derivekeypair(myinfo,&swap->privkeys[n],pubkey,privkey,hash);
         privkey = swap->privkeys[n];
-        //printf("i.%d n.%d numpubs.%d %02x vs %02x\n",i,n,numpubs,pubkey[0],firstbyte);
+        printf("i.%d n.%d numpubs.%d %02x vs %02x\n",i,n,numpubs,pubkey[0],firstbyte);
         if ( pubkey[0] != firstbyte )
             continue;
         if ( n < 2 && numpubs > 2 )
@@ -406,12 +406,6 @@ int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct bitcoin_swapin
         {
             calc_rmd160_sha256(secret160,swap->privkeys[n].bytes,sizeof(swap->privkeys[n]));
             memcpy(&txid,secret160,sizeof(txid));
-            /*txid = (m+1) | ((m+1)<<16);
-            txid <<= 32;
-            txid = (m+1) | ((m+1)<<16);
-            pubi.txid = (m+1) | ((m+1)<<16);
-            pubi.txid <<= 32;
-            pubi.txid = (m+1) | ((m+1)<<16);*/
             len += iguana_rwnum(1,(uint8_t *)&swap->deck[m][0],sizeof(txid),&txid);
             len += iguana_rwnum(1,(uint8_t *)&swap->deck[m][1],sizeof(pubi.txid),&pubi.txid);
             m++;

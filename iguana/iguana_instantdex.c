@@ -279,9 +279,9 @@ bits256 instantdex_rwoffer(int32_t rwflag,int32_t *lenp,uint8_t *serialized,stru
     {
         vcalc_sha256(0,orderhash.bytes,(void *)offer,sizeof(*offer));
         /*int32_t i;
-        for (i=0; i<sizeof(*offer); i++)
-            printf("%02x ",((uint8_t *)offer)[i]);
-        printf("rwoffer offer\n");*/
+         for (i=0; i<sizeof(*offer); i++)
+         printf("%02x ",((uint8_t *)offer)[i]);
+         printf("rwoffer offer\n");*/
     }
     else
     {
@@ -300,20 +300,20 @@ bits256 instantdex_rwoffer(int32_t rwflag,int32_t *lenp,uint8_t *serialized,stru
     {
         vcalc_sha256(0,orderhash.bytes,(void *)offer,sizeof(*offer));
         /*int32_t i;
-        for (i=0; i<len; i++)
-            printf("%02x ",serialized[i]);
-        printf("read rwoffer serialized\n");
-        for (i=0; i<sizeof(*offer); i++)
-            printf("%02x ",((uint8_t *)offer)[i]);
-        printf("rwoffer offer\n");*/
+         for (i=0; i<len; i++)
+         printf("%02x ",serialized[i]);
+         printf("read rwoffer serialized\n");
+         for (i=0; i<sizeof(*offer); i++)
+         printf("%02x ",((uint8_t *)offer)[i]);
+         printf("rwoffer offer\n");*/
     }
     /*else
-    {
-        int32_t i;
-        for (i=0; i<len; i++)
-            printf("%02x ",serialized[i]);
-        printf("wrote rwoffer serialized\n");
-    }*/
+     {
+     int32_t i;
+     for (i=0; i<len; i++)
+     printf("%02x ",serialized[i]);
+     printf("wrote rwoffer serialized\n");
+     }*/
     *lenp = len;
     return(orderhash);
 }
@@ -366,17 +366,17 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
             {
                 iguana_queue_send(coin,addr,0,serialized,"InstantDEX",msg->sig.allocsize,0,0);
                 /*r = (rand() % max);
-                for (i=0; i<max; i++)
-                {
-                    j = (i + r) % max;
-                    if ( (addr= coin->peers.ranked[j]) != 0 && addr->supernet != 0 && addr->usock >= 0 )
-                    {
-                        printf("send.%d to (%s)\n",(int32_t)msg->sig.allocsize,addr->ipaddr);
-                        iguana_queue_send(coin,addr,0,serialized,"InstantDEX",msg->sig.allocsize,0,0);
-                        if ( --hops <= 0 )
-                            break;
-                    } //else printf("skip.%d addr.%p (%s) max.%d hops.%d\n",j,addr,addr!=0?addr->ipaddr:"",max,hops);
-                }*/
+                 for (i=0; i<max; i++)
+                 {
+                 j = (i + r) % max;
+                 if ( (addr= coin->peers.ranked[j]) != 0 && addr->supernet != 0 && addr->usock >= 0 )
+                 {
+                 printf("send.%d to (%s)\n",(int32_t)msg->sig.allocsize,addr->ipaddr);
+                 iguana_queue_send(coin,addr,0,serialized,"InstantDEX",msg->sig.allocsize,0,0);
+                 if ( --hops <= 0 )
+                 break;
+                 } //else printf("skip.%d addr.%p (%s) max.%d hops.%d\n",j,addr,addr!=0?addr->ipaddr:"",max,hops);
+                 }*/
             } else printf("cant find coin.%p or no ranked.%d\n",coin,max);
         }
         else
@@ -584,7 +584,7 @@ cJSON *instantdex_statemachinejson(struct bitcoin_swapinfo *swap)
         jaddbits256(retjson,"pubAm",swap->pubAm);
         jaddbits256(retjson,"privBn",swap->privBn);
         jaddbits256(retjson,"pubBn",swap->pubBn);
-
+        
         jaddbits256(retjson,"myorderhash",swap->myorderhash);
         jaddnum(retjson,"choosei",swap->choosei);
         jaddnum(retjson,"cutverified",swap->cutverified);
@@ -1296,7 +1296,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,struct category_info *cat,v
     //printf("a signed datalen.%d allocsize.%d crc.%x\n",datalen,msg->sig.allocsize,calc_crc32(0,serdata,datalen));
     acct777_rwsig(0,(void *)&msg->sig,(void *)tmp);
     memcpy(&msg->sig,tmp,sizeof(msg->sig));
-   // printf("b signed datalen.%d allocsize.%d crc.%x\n",datalen,msg->sig.allocsize,calc_crc32(0,serdata,datalen));
+    // printf("b signed datalen.%d allocsize.%d crc.%x\n",datalen,msg->sig.allocsize,calc_crc32(0,serdata,datalen));
     if ( (remoteaddr == 0 || remoteaddr[0] == 0 || strcmp("127.0.0.1",remoteaddr) == 0) && ((uint8_t *)msg)[len-1] == 0 && (argjson= cJSON_Parse((char *)msg)) != 0 )
     {
         printf("string instantdex_hexmsg RESULT.(%s)\n",jprint(argjson,0));
@@ -1421,7 +1421,7 @@ TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,maxaccept,base,rel,maxprice,basevolume)
     {
         retstr = instantdex_createaccept(myinfo,&ap,exchange,base,rel,maxprice,basevolume,-1,rel,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits,1,juint(json,"minperc"));
         return(instantdex_checkoffer(myinfo,&txid,exchange,ap,json));
-
+        
     } else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
 }
 
@@ -1546,7 +1546,7 @@ TWO_STRINGS(InstantDEX,events,base,rel)
         free_json(asks);
     }
     return(jprint(array,1));
-
+    
     //return(clonestr("[{\"h\":14,\"m\":44,\"s\":32,\"date\":1407877200000,\"bid\":30,\"ask\":35},{\"date\":1407877200000,\"bid\":40,\"ask\":44},{\"date\":1407877200000,\"bid\":49,\"ask\":45},{\"date\":1407877200000,\"ask\":28},{\"date\":1407877200000,\"ask\":52}]"));
 }
 
