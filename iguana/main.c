@@ -1331,6 +1331,7 @@ void iguana_main(void *arg)
     strcpy(myinfo->rpcsymbol,"BTCD");
     iguana_urlinit(myinfo,ismainnet,usessl);
     category_init(myinfo);
+    exchange_create("bitcoin",0);
     iguana_helpinit(myinfo);
     iguana_commandline(myinfo,arg);
 #ifdef __APPLE__
