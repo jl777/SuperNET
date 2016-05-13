@@ -110,7 +110,7 @@ void iguana_addinputs(struct iguana_info *coin,struct bitcoin_spend *spend,cJSON
 
 struct bitcoin_statetx *instantdex_feetx(struct supernet_info *myinfo,struct instantdex_accept *A)
 {
-    int32_t n,num,completed; char *feetx = 0; struct iguana_info *coin; bits256 txid,signedtxid; cJSON *txobj;int64_t insurance,avail; uint8_t paymentscript[128]; struct bitcoin_statetx *ptr = 0; uint64_t *unspents;
+    int32_t n,num,completed; char *feetx = 0; struct iguana_info *coin; bits256 signedtxid; cJSON *txobj;int64_t insurance,avail; uint8_t paymentscript[128]; struct bitcoin_statetx *ptr = 0; uint64_t *unspents;
     if ( (coin= iguana_coinfind("BTCD")) != 0 )
     {
         insurance = IGUANA_BTCDMULT * instantdex_insurance(coin,instantdex_BTCsatoshis(A->offer.price64,A->offer.basevolume64));
@@ -185,7 +185,7 @@ int32_t instantdex_feetxverify(struct supernet_info *myinfo,struct iguana_info *
 struct bitcoin_statetx *instantdex_bobtx(struct supernet_info *myinfo,struct iguana_info *coin,bits256 pub1,bits256 pub2,bits256 priv,uint32_t reftime,int64_t amount,int32_t depositflag)
 {
     cJSON *txobj; int32_t n,secretstart; char *signedtx = 0; struct bitcoin_statetx *ptr = 0;
-    uint8_t script[1024],secret[20]; bits256 txid,signedtxid; uint32_t locktime; int64_t avail,insurance; int32_t completed,num; uint64_t *unspents;
+    uint8_t script[1024],secret[20]; bits256 signedtxid; uint32_t locktime; int64_t avail,insurance; int32_t completed,num; uint64_t *unspents;
     if ( coin == 0 )
         return(0);
     locktime = (uint32_t)(reftime + INSTANTDEX_LOCKTIME * (1 + depositflag));
@@ -285,7 +285,7 @@ int32_t instantdex_altpaymentverify(struct supernet_info *myinfo,struct iguana_i
 
 struct bitcoin_statetx *instantdex_alicetx(struct supernet_info *myinfo,struct iguana_info *altcoin,char *msigaddr,bits256 pubAm,bits256 pubBn,int64_t amount)
 {
-    cJSON *txobj; int32_t n,completed,num; char *signedtx = 0; uint8_t script[1024]; struct bitcoin_statetx *ptr = 0; bits256 txid,signedtxid; uint64_t *unspents; int64_t avail;
+    cJSON *txobj; int32_t n,completed,num; char *signedtx = 0; uint8_t script[1024]; struct bitcoin_statetx *ptr = 0; bits256 signedtxid; uint64_t *unspents; int64_t avail;
     if ( altcoin != 0 )
     {
         txobj = bitcoin_txcreate(altcoin,0);
