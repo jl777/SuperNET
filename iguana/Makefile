@@ -26,7 +26,7 @@ DEPS = nacl_io
 #LIBS = crypto777  curl ssl crypto z pthread ppapi nacl_io
 #DEPS = nacl_io
 #LIBS = crypto777 curl  ssl crypto z glibc-compat nacl_spawn ppapi nacl_io ppapi_simple  #  cli_main ppapi_cpp ppapi_simple
-LIBS = crypto777  z glibc-compat nacl_spawn ppapi nacl_io #ppapi_simple 
+LIBS = crypto777 glibc-compat nacl_spawn ppapi nacl_io #ppapi_simple 
 
 CFLAGS = -Wall -O2 -fno-strict-aliasing $(EXTRA)
 LFLAGS = libs
