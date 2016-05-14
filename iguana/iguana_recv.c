@@ -496,15 +496,6 @@ void iguana_gottxidsM(struct iguana_info *coin,struct iguana_peer *addr,bits256 
     queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
 }
 
-void iguana_gotquotesM(struct iguana_info *coin,struct iguana_peer *addr,bits256 *quotes,int32_t n)
-{
-    struct iguana_bundlereq *req;
-    //printf("got %d quotes from %s\n",n,addr->ipaddr);
-    req = iguana_bundlereq(coin,addr,'Q',0);
-    req->hashes = quotes, req->n = n;
-    queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
-}
-
 void iguana_gotheadersM(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_block *blocks,int32_t n)
 {
     struct iguana_bundlereq *req; int32_t i,num;
@@ -1306,11 +1297,11 @@ int32_t iguana_processrecvQ(struct iguana_info *coin,int32_t *newhwmp) // single
             if ( (req= iguana_recvtxids(coin,req,req->hashes,req->n)) != 0 )
                 myfree(req->hashes,(req->n+1) * sizeof(*req->hashes)), req->hashes = 0;
         }
-        else if ( req->type == 'Q' ) // quotes from inv
+        /*else if ( req->type == 'Q' ) // quotes from inv
         {
             if ( (req= instantdex_recvquotes(coin,req,req->hashes,req->n)) != 0 )
                 myfree(req->hashes,(req->n+1) * sizeof(*req->hashes)), req->hashes = 0;
-        }
+        }*/
         else printf("iguana_updatebundles unknown type.%c\n",req->type);//, getchar();
         //fprintf(stderr,"finished coin->recvQ\n");
         if ( req != 0 )

@@ -849,6 +849,15 @@ struct exchange_info *exchanges777_find(char *exchangestr)
     return(0);
 }
 
+void iguana_gotquotesM(struct iguana_info *coin,struct iguana_peer *addr,bits256 *quotes,int32_t n)
+{
+    struct iguana_bundlereq *req; struct exchange_info *exchange = exchanges777_find("bitcoin");
+    //printf("got %d quotes from %s\n",n,addr->ipaddr);
+    req = iguana_bundlereq(coin,addr,'Q',0);
+    req->hashes = quotes, req->n = n;
+    queue_enqueue("recvQ",&exchange->recvQ,&req->DL,0);
+}
+
 struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
 {
     static int didinit;
@@ -885,11 +894,13 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
         return(0);
     }
     exchange = calloc(1,sizeof(*exchange));
+    portable_mutex_init(&exchange->mutex);
     exchange->issue = *Exchange_funcs[i];
     iguana_initQ(&exchange->pricesQ,"prices");
     iguana_initQ(&exchange->requestQ,"request");
     iguana_initQ(&exchange->acceptableQ,"acceptable");
     iguana_initQ(&exchange->tradebotsQ,"tradebots");
+    iguana_initQ(&exchange->recvQ,"recvQ");
     iguana_initQ(&exchange->historyQ,"history");
     iguana_initQ(&exchange->statemachineQ,"statemachineQ");
     exchange->exchangeid = exchangeid;

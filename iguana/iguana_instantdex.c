@@ -652,6 +652,7 @@ struct bitcoin_swapinfo *instantdex_historyfind(struct supernet_info *myinfo,str
 {
     struct bitcoin_swapinfo PAD,*swap,*retswap = 0; uint32_t now;
     now = (uint32_t)time(NULL);
+    portable_mutex_lock(&exchange->mutex);
     memset(&PAD,0,sizeof(PAD));
     queue_enqueue("historyQ",&exchange->historyQ,&PAD.DL,0);
     while ( (swap= queue_dequeue(&exchange->historyQ,0)) != 0 && swap != &PAD )
@@ -660,6 +661,7 @@ struct bitcoin_swapinfo *instantdex_historyfind(struct supernet_info *myinfo,str
             retswap = swap;
         queue_enqueue("historyQ",&exchange->historyQ,&swap->DL,0);
     }
+    portable_mutex_unlock(&exchange->mutex);
     return(retswap);
 }
 
@@ -667,6 +669,7 @@ struct bitcoin_swapinfo *instantdex_statemachinefind(struct supernet_info *myinf
 {
     struct bitcoin_swapinfo PAD,*swap,*retswap = 0; uint32_t now;
     now = (uint32_t)time(NULL);
+    portable_mutex_lock(&exchange->mutex);
     memset(&PAD,0,sizeof(PAD));
     queue_enqueue("statemachineQ",&exchange->statemachineQ,&PAD.DL,0);
     while ( (swap= queue_dequeue(&exchange->statemachineQ,0)) != 0 && swap != &PAD )
@@ -691,6 +694,7 @@ struct bitcoin_swapinfo *instantdex_statemachinefind(struct supernet_info *myinf
             queue_enqueue("statemachineQ",&exchange->statemachineQ,&swap->DL,0);
     }
     //printf("found statemachine.%p\n",retswap);
+    portable_mutex_unlock(&exchange->mutex);
     return(retswap);
 }
 
@@ -699,6 +703,8 @@ struct instantdex_accept *instantdex_offerfind(struct supernet_info *ignore,stru
     struct instantdex_accept PAD,*ap,*retap = 0; uint32_t now; cJSON *item,*offerobj; char *type;
     if ( exchange == 0 )
         return(0);
+    printf("offerfind.%d\n",queue_size(&exchange->acceptableQ));
+    portable_mutex_lock(&exchange->mutex);
     now = (uint32_t)time(NULL);
     memset(&PAD,0,sizeof(PAD));
     queue_enqueue("acceptableQ",&exchange->acceptableQ,&PAD.DL,0);
@@ -737,6 +743,8 @@ struct instantdex_accept *instantdex_offerfind(struct supernet_info *ignore,stru
             }
         } else free(ap);
     }
+    portable_mutex_unlock(&exchange->mutex);
+    printf("done offerfind\n");
     return(retap);
 }
 
@@ -745,7 +753,8 @@ int32_t instantdex_peerhas_clear(struct iguana_info *coin,struct iguana_peer *ad
     struct instantdex_accept PAD,*ap; struct exchange_info *exchange; int32_t ind,num = 0;
     if ( addr != 0 && (exchange= exchanges777_find("bitcoin")) != 0 )
     {
-        //printf("clear all bits for addrind.%d\n",addr->addrind);
+        printf("clear all bits for addrind.%d\n",addr->addrind);
+        portable_mutex_lock(&exchange->mutex);
         ind = addr->addrind;
         memset(&PAD,0,sizeof(PAD));
         queue_enqueue("acceptableQ",&exchange->acceptableQ,&PAD.DL,0);
@@ -754,6 +763,8 @@ int32_t instantdex_peerhas_clear(struct iguana_info *coin,struct iguana_peer *ad
             CLEARBIT(ap->peerhas,ind);
             queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
         }
+        portable_mutex_unlock(&exchange->mutex);
+        printf("done clear all bits for addrind.%d\n",addr->addrind);
     }
     return(num);
 }
@@ -816,10 +827,12 @@ bits256 instantdex_encodehash(char *base,char *rel,int64_t price,uint64_t orderi
 
 int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct exchange_info *exchange)
 {
-    struct instantdex_accept PAD,*ap; uint32_t now,n=0,len; bits256 hashes[100]; uint8_t serialized[100*36 + 1024];
+    struct instantdex_accept PAD,*ap; uint32_t now,n=0,len; bits256 encodedhash,hashes[100]; uint8_t serialized[100*36 + 1024];
     //printf("instantdex_inv2data exchange.%p (%s)\n",exchange,addr->ipaddr);
     if ( exchange == 0 )
         return(0);
+    printf("instantdex_inv2data\n");
+    portable_mutex_lock(&exchange->mutex);
     now = (uint32_t)time(NULL);
     memset(&PAD,0,sizeof(PAD));
     queue_enqueue("acceptableQ",&exchange->acceptableQ,&PAD.DL,0);
@@ -827,14 +840,17 @@ int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coi
     {
         if ( now < ap->offer.expiration && ap->dead == 0 )
         {
+            encodedhash = instantdex_encodehash(ap->offer.base,ap->offer.rel,ap->offer.price64*instantdex_bidaskdir(&ap->offer),ap->orderid,ap->offer.account);
             if ( n < sizeof(hashes)/sizeof(*hashes) )//&& GETBIT(ap->peerhas,addr->addrind) == 0 )
             {
-                hashes[n++] = instantdex_encodehash(ap->offer.base,ap->offer.rel,ap->offer.price64*instantdex_bidaskdir(&ap->offer),ap->orderid,ap->offer.account);
+                hashes[n++] = encodedhash;
                 printf("%llu ",(long long)ap->orderid);
             }
             queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
         } else free(ap);
     }
+    portable_mutex_unlock(&exchange->mutex);
+    printf("done instantdex_inv2data\n");
     if ( n > 0 )
     {
         len = iguana_inv2packet(serialized,sizeof(serialized),MSG_QUOTE,hashes,n);
@@ -902,7 +918,7 @@ int32_t instantdex_quotep2p(struct supernet_info *myinfo,struct iguana_info *coi
         encodedhash = instantdex_encodehash(A.offer.base,A.offer.rel,A.offer.price64 * instantdex_bidaskdir(&A.offer),A.orderid,A.offer.account);
         if ( (ap= instantdex_quotefind(myinfo,coin,addr,encodedhash)) == 0 )
         {
-            //printf("add quote here!\n");
+            printf("add quote here!\n");
             if ( exchange != 0 )
             {
                 ap = calloc(1,sizeof(*ap));
@@ -948,6 +964,8 @@ struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,str
         printf("instantdex_acceptable null exchange\n");
         return(0);
     }
+    printf("instantdex_acceptable\n");
+    portable_mutex_lock(&exchange->mutex);
     aveprice = 0;//instantdex_avehbla(myinfo,retvals,A->offer.base,A->offer.rel,dstr(A->offer.basevolume64));
     now = (uint32_t)time(NULL);
     memset(&PAD,0,sizeof(PAD));
@@ -992,6 +1010,8 @@ struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,str
             queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
         else free(ap);
     }
+    portable_mutex_unlock(&exchange->mutex);
+    printf("done instantdex_acceptable\n");
     return(retap);
 }
 
@@ -1209,6 +1229,7 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
     }
     else //if ( (retstr= instantdex_addfeetx(myinfo,newjson,ap,swap,"BOB_gotoffer","ALICE_gotoffer")) == 0 )
     {
+        printf("add to both queues\n");
         queue_enqueue("acceptableQ",&exchange->acceptableQ,&swap->DL,0);
         queue_enqueue("statemachineQ",&exchange->statemachineQ,&swap->DL,0);
         if ( (retstr= instantdex_choosei(swap,newjson,argjson,serdata,serdatalen)) != 0 )
@@ -1382,15 +1403,18 @@ char *instantdex_createaccept(struct supernet_info *myinfo,struct instantdex_acc
             printf("myside.(%s) != base.%s or rel.%s\n",mysidestr,base,rel);
         }
         instantdex_acceptset(ap,base,rel,duration,myside,acceptdir,price,basevolume,account,0,minperc);
-        instantdex_propagate(myinfo,exchange,ap);
-        if ( queueflag != 0 )
+        if ( instantdex_offerfind(myinfo,exchange,0,0,ap->orderid,ap->offer.base,ap->offer.rel,1,0) == 0 )
         {
-            printf("acceptableQ <- %llu\n",(long long)ap->orderid);
-            queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
-        }
-        retstr = jprint(instantdex_acceptjson(ap),1);
-        //printf("acceptableQ %llu (%s)\n",(long long)ap->orderid,retstr);
-        return(retstr);
+            instantdex_propagate(myinfo,exchange,ap);
+            if ( queueflag != 0 )
+            {
+                printf("acceptableQ <- %llu\n",(long long)ap->orderid);
+                queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
+            }
+            retstr = jprint(instantdex_acceptjson(ap),1);
+            //printf("acceptableQ %llu (%s)\n",(long long)ap->orderid,retstr);
+            return(retstr);
+        } else return(0);
     } else return(clonestr("{\"error\":\"invalid exchange\"}"));
 }
 

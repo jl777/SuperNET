@@ -64,10 +64,10 @@ struct exchange_info
 {
     struct exchange_funcs issue;
     char name[16],apikey[MAX_JSON_FIELD],apisecret[MAX_JSON_FIELD],tradepassword[MAX_JSON_FIELD],userid[MAX_JSON_FIELD];
-    uint32_t exchangeid,pollgap,lastpoll;
+    uint32_t exchangeid,pollgap,lastpoll; portable_mutex_t mutex;
     uint64_t lastnonce,exchangebits; double commission;
     void *privatedata;
-    CURL *cHandle; queue_t requestQ,pricesQ,statemachineQ,tradebotsQ,acceptableQ,historyQ;
+    CURL *cHandle; queue_t requestQ,pricesQ,statemachineQ,tradebotsQ,acceptableQ,historyQ,recvQ;
 };
 
 struct instantdex_msghdr

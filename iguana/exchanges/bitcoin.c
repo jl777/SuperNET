@@ -336,10 +336,18 @@ static char *BASERELS[][2] = { {"btcd","btc"}, {"nxt","btc"}, {"asset","btc"} };
 
 double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert)
 {
-    cJSON *retjson,*bids,*asks; double hbla;
+    struct iguana_bundlereq *req; cJSON *retjson,*bids,*asks; double hbla; struct iguana_info *coin; struct supernet_info *myinfo;
+    myinfo = SuperNET_MYINFO(0);
+    coin = iguana_coinfind("BTCD");
+    while ( (req= queue_dequeue(&exchange->recvQ,0)) != 0 )
+    {
+        if ( instantdex_recvquotes(coin,req,req->hashes,req->n) != 0 )
+            myfree(req->hashes,(req->n+1) * sizeof(*req->hashes)), req->hashes = 0;
+    }
+    iguana_inv2poll(myinfo,coin);
     bids = cJSON_CreateArray();
     asks = cJSON_CreateArray();
-    instantdex_offerfind(SuperNET_MYINFO(0),exchange,bids,asks,0,base,rel,1,0);
+    instantdex_offerfind(myinfo,exchange,bids,asks,0,base,rel,1,0);
     //printf("bids.(%s) asks.(%s)\n",jprint(bids,0),jprint(asks,0));
     retjson = cJSON_CreateObject();
     cJSON_AddItemToObject(retjson,"bids",bids);
@@ -453,7 +461,7 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
             jaddstr(json,"BTC",myinfo->myaddr.BTC);
             jaddnum(json,"minperc",jdouble(argjson,"minperc"));
             printf("trade dir.%d (%s/%s) %.6f vol %.8f\n",dir,base,"BTC",price,volume);
-            if ( (str= instantdex_createaccept(myinfo,&ap,exchange,base,"BTC",price,volume,-dir,dir > 0 ? "BTC" : base,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits,0,jdouble(argjson,"minperc"))) != 0 && ap != 0 )
+            if ( (str= instantdex_createaccept(myinfo,&ap,exchange,base,"BTC",price,volume,-dir,dir > 0 ? "BTC" : base,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits,1,jdouble(argjson,"minperc"))) != 0 && ap != 0 )
                 retstr = instantdex_checkoffer(myinfo,&txid,exchange,ap,json), free(str);
             else printf("null return queueaccept\n");
             if ( retstrp != 0 )

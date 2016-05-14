@@ -746,7 +746,6 @@ void iguana_coinloop(void *arg)
                     flag += iguana_processrecv(myinfo,coin);
                 }
                 coin->idletime = (uint32_t)time(NULL);
-                iguana_inv2poll(myinfo,coin);
             }
         }
         if ( flag == 0 && coin->isRT == 0 )

@@ -979,6 +979,8 @@ int32_t iguana_inv2packet(uint8_t *serialized,int32_t maxsize,int32_t type,bits2
 int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct exchange_info *exchange);
 struct iguana_bundlereq *instantdex_recvquotes(struct iguana_info *coin,struct iguana_bundlereq *req,bits256 *encodedhash,int32_t n);
 struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson);
+int32_t iguana_inv2poll(struct supernet_info *myinfo,struct iguana_info *coin);
+struct iguana_bundlereq *iguana_bundlereq(struct iguana_info *coin,struct iguana_peer *addr,int32_t type,int32_t datalen);
 
 extern int32_t HDRnet,netBLOCKS;
 
