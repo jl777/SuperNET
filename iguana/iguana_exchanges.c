@@ -59,7 +59,7 @@ cJSON *exchanges777_quotejson(struct exchange_quote *quote,int32_t allflag,doubl
         if ( quote->orderid > 0 )
             jadd64bits(json,"orderid",quote->orderid);
         //if ( quote->offerNXT != 0 )
-            jadd64bits(json,"offerer",quote->offerNXT);
+            jadd64bits(json,"account",quote->offerNXT);
         return(json);
     } else return(cJSON_CreateNumber(quote->price));
 }
@@ -245,7 +245,7 @@ void exchanges777_json_quotes(struct exchange_info *exchange,double commission,c
                 volume = jdouble(item,"volume");
                 timestamp = juint(item,"timestamp");
                 orderid = j64bits(item,"orderid");
-                offerNXT = j64bits(item,"offerer");
+                offerNXT = j64bits(item,"account");
             }
             if ( price == 0. || volume == 0. )
                 continue;

@@ -41,7 +41,7 @@ var show_resposnse=function(response){
              
              if(i==='tag') continue;
              if(isJsonArray(response[i]) ){
-                 //return_json_table({"orderid":"16800917935208460084","offerer":"0","type":"bid","base":"BTCD","rel":"BTCD","timestamp":1454949273,"price":0.00250000,"volume":11,"nonce":2684223522,"pendingvolume":0,"expiresin":3496})
+                 //return_json_table({"orderid":"16800917935208460084","account":"0","type":"bid","base":"BTCD","rel":"BTCD","timestamp":1454949273,"price":0.00250000,"volume":11,"nonce":2684223522,"pendingvolume":0,"expiresin":3496})
                  $('#Instandex_output_table').append("<tr><td>"+i+"</td><td>"+return_json_table(response[i])+"</td></tr>");     
                  continue;
         }
