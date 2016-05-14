@@ -1014,7 +1014,7 @@ struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,str
         else free(ap);
     }
     portable_mutex_unlock(&exchange->mutex);
-    printf("after acceptable Qsize.%d retap.%p\n",queue_size(&exchange->acceptableQ),retap);
+    //printf("after acceptable Qsize.%d retap.%p\n",queue_size(&exchange->acceptableQ),retap);
     return(retap);
 }
 
@@ -1172,10 +1172,8 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,uint64_t *txidp,struct 
         {
             printf("instantdex_checkoffer add.%llu from.%llu to acceptableQ\n",(long long)myap->orderid,(long long)myap->offer.account);
             queue_enqueue("acceptableQ",&exchange->acceptableQ,&myap->DL,0);
-            printf("Qsize.%d\n",queue_size(&exchange->acceptableQ));
             if ( instantdex_offerfind(myinfo,exchange,0,0,myap->orderid,myap->offer.base,myap->offer.rel,1,0) == 0 )
                 printf("cant find just added to acceptableQ\n");
-            printf("Qsize.%d\n",queue_size(&exchange->acceptableQ));
         }
         return(jprint(instantdex_offerjson(&myap->offer,myap->orderid),1));
     }

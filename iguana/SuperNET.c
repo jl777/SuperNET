@@ -719,7 +719,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,ui
         {
             if ( SuperNET_hexmsgfind(myinfo,category,subhash,hexmsg,0) < 0 )
             {
-                printf("FORWARD.(%s)\n",hexmsg);
+                //printf("FORWARD.(%s)\n",hexmsg);
                 newflag = 1;
                 SuperNET_hexmsgadd(myinfo,category,subhash,hexmsg,tai_now(),remoteaddr);
                 forwardstr = SuperNET_forward(myinfo,hexmsg,destipbits,category,subhash,maxdelay,juint(json,"broadcast"),juint(json,"plaintext")!=0);
