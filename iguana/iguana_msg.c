@@ -88,7 +88,7 @@ int32_t iguana_rwblock(int32_t rwflag,bits256 *hash2p,uint8_t *serialized,struct
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->H.bits),&msg->H.bits);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->H.nonce),&msg->H.nonce);
     *hash2p = bits256_doublesha256(blockhash,serialized,len);
-   // char str[65]; printf("len.%d: block version.%d timestamp.%u bits.%x nonce.%u prev.(%s) %llx blockhash.(%s) %llx\n",len,msg->H.version,msg->H.timestamp,msg->H.bits,msg->H.nonce,bits256_str(str,msg->H.prev_block),(long long)msg->H.merkle_root.txid,blockhash,(long long)hash2p->txid);
+    char str[65]; printf("len.%d: block version.%d timestamp.%u bits.%x nonce.%u prev.(%s) %llx blockhash.(%s) %llx\n",len,msg->H.version,msg->H.timestamp,msg->H.bits,msg->H.nonce,bits256_str(str,msg->H.prev_block),(long long)msg->H.merkle_root.txid,blockhash,(long long)hash2p->txid);
     if ( rwflag != 0 )
         x = msg->txn_count;
     len += iguana_rwvarint(rwflag,&serialized[len],&x);
@@ -568,6 +568,21 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
     if ( addr != 0 )
     {
         //iguana_peerblockrequest(coin,addr->blockspace,IGUANA_MAXPACKETSIZE,addr,iguana_blockhash(coin,100),0);
+        if ( 0 )
+        {
+            static struct OS_memspace RAWMEM;
+            int32_t testlen,checklen; uint8_t buf[8192]; char *blockstr = "00000000000000000000000000000000000000000000000001000000872d7348d74c6e90df64a8379318a38fa958391505d024193a26bd0a54ceff6721bddbddc22206e0dd1c197626fef5ea8233d2237b35038a51c96085fe49131112793657f84d071e00000000020100000012793657010000000000000000000000000000000000000000000000000000000000000000ffffffff0403aac310ffffffff0100000000000000000000000000010000001279365701cdee0b4323002d5eb82abe5f65b4877e9adcb267ea97931ed62777c8620deb790100000048473044022015f7ae8dde32c75da17e6882b9208c94ac7b99138fad6bd5a323f1447ad4ebc1022049451c969d43010924d6b57519f5d521ee95edc86aaf7edeb73ee2e68bd0370201ffffffff030000000000000000008062cd3303000000232102c42ef63a03bb10dedb7c498f584847ccd1edbad06be80235a4f81e78440e6821acb1bdd13303000000232102c42ef63a03bb10dedb7c498f58";
+            if ( RAWMEM.ptr == 0 )
+                iguana_meminit(&RAWMEM,addr->ipaddr,0,IGUANA_MAXPACKETSIZE * 2,0);
+            else iguana_memreset(&RAWMEM);
+            testlen = (int32_t)strlen(blockstr) >> 1;
+            decode_hex(buf,testlen,blockstr);
+            struct iguana_txblock txdata;
+            memset(&txdata,0,sizeof(txdata));
+            if ( (n= iguana_gentxarray(coin,&RAWMEM,&txdata,&checklen,buf,testlen)) == testlen )
+                printf("matched\n");
+            else printf("error\n");
+        }
         addr->lastcontact = (uint32_t)time(NULL);
         strcpy(addr->lastcommand,H->command);
         //printf("iguana_msgparser from (%s) parse.(%s) len.%d\n",addr->ipaddr,H->command,recvlen);
