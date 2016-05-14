@@ -1124,6 +1124,7 @@ TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan)
     if ( account == 0 || account[0] == 0 )
         account = "default";
     len = (int32_t)strlen(wif);
+    memset(debugtxid.bytes,0,sizeof(debugtxid));
     if ( is_hexstr(wif,len) > 0 )
     {
         len >>= 1;
@@ -1177,6 +1178,7 @@ STRING_ARG(bitcoinrpc,dumpprivkey,address)
     myinfo->expiration++;
     len = (int32_t)strlen(address);
     coinaddr = address;
+    memset(debugtxid.bytes,0,sizeof(debugtxid));
     if ( is_hexstr(address,len) > 0 )
     {
         len >>= 1;
