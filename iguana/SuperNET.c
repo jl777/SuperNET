@@ -1397,7 +1397,7 @@ struct supernet_info *SuperNET_accountfind(cJSON *json)
                 SuperNET_setkeys(&M,0,0,0);
                 if ( (myinfo = SuperNET_MYINFOfind(&num,M.myaddr.persistent)) != 0 )
                 {
-                    printf("found account.(%s) %s %llu\n",myinfo!=0?myinfo->handle:"",M.myaddr.NXTADDR,(long long)M.myaddr.nxt64bits);
+                    //printf("found account.(%s) %s %llu\n",myinfo!=0?myinfo->handle:"",M.myaddr.NXTADDR,(long long)M.myaddr.nxt64bits);
                     return(myinfo);
                 }
             }
@@ -1406,7 +1406,7 @@ struct supernet_info *SuperNET_accountfind(cJSON *json)
                 SuperNET_setkeys(&M,passphrase,(int32_t)strlen(passphrase),1);
                 if ( (myinfo= SuperNET_MYINFOfind(&num,M.myaddr.persistent)) != 0 )
                 {
-                    printf("found account.(%s) %s %llu\n",myinfo!=0?myinfo->handle:"",M.myaddr.NXTADDR,(long long)M.myaddr.nxt64bits);
+                    //printf("found account.(%s) %s %llu\n",myinfo!=0?myinfo->handle:"",M.myaddr.NXTADDR,(long long)M.myaddr.nxt64bits);
                     return(myinfo);
                 }
             } else printf("no passphrase in (%s)\n",jprint(json,0));

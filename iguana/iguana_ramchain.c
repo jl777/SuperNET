@@ -319,8 +319,8 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
                 if ( addr != 0 && addr->voutsfp != 0 )
                 {
 #ifdef __PNACL__
-                    static portable_mutex_t mutex;
-                    portable_mutex_lock(&mutex);
+                    //static portable_mutex_t mutex;
+                    //portable_mutex_lock(&mutex);
 #endif
                     u->fileid = (uint32_t)addr->addrind;
                     scriptpos = ftell(addr->voutsfp);
@@ -330,7 +330,7 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
                         printf("error writing vout scriptlen.%d errno.%d or scriptpos.%lld != %u\n",scriptlen,errno,(long long)scriptpos,u->scriptpos);
                     else addr->dirty[0]++;
 #ifdef __PNACL__
-                    portable_mutex_unlock(&mutex);
+                    //portable_mutex_unlock(&mutex);
 #endif
                 } else printf("addr.%p unspent error fp.%p\n",addr,addr!=0?addr->voutsfp:0);
             }
@@ -586,8 +586,8 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,struct iguana_peer
         if ( (s->vinscriptlen= vinscriptlen) > 0 && vinscript != 0 && addr != 0 && addr->vinsfp != 0 && vinscriptlen < IGUANA_MAXSCRIPTSIZE)
         {
 #ifdef __PNACL__
-            static portable_mutex_t mutex;
-            portable_mutex_lock(&mutex);
+            //static portable_mutex_t mutex;
+            //portable_mutex_lock(&mutex);
 #endif
             s->fileid = (uint32_t)addr->addrind;
             if ( (s->scriptpos= ftell(addr->vinsfp)) == 0 )
@@ -596,7 +596,7 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,struct iguana_peer
                 printf("error.%d writing vinscriptlen.%d errno.%d addrind.%d\n",err,vinscriptlen,errno,addr->addrind);
             else addr->dirty[1]++;
 #ifdef __PNACL__
-            portable_mutex_unlock(&mutex);
+            //portable_mutex_unlock(&mutex);
 #endif
         } else s->scriptpos = 0;
         //else printf("spend256 scriptfpos.%d\n",s->scriptfpos);
@@ -686,13 +686,13 @@ void *iguana_ramchain_offset(char *fname,void *dest,uint8_t *lhash,FILE *fp,uint
     else if ( fp != 0 && len > 0 )
     {
 #ifdef __PNACL__
-        static portable_mutex_t mutex;
-        portable_mutex_lock(&mutex);
+        //static portable_mutex_t mutex;
+        //portable_mutex_lock(&mutex);
 #endif
         startfpos = ftell(fp);
         err = fwrite(srcptr,1,len,fp);
 #ifdef __PNACL__
-        portable_mutex_unlock(&mutex);
+        //portable_mutex_unlock(&mutex);
 #endif
         if ( err != len )
         {
@@ -702,19 +702,6 @@ void *iguana_ramchain_offset(char *fname,void *dest,uint8_t *lhash,FILE *fp,uint
             fprintf(stderr,"probably out of disk space. please free up space\n");
             fpos = len = 0;
         }
-#ifdef __PNACL__
-        if ( 0 && len > 0 )
-        {
-            int32_t i,c;
-            fseek(fp,startfpos,SEEK_SET);
-            for (i=0; i<len; i++)
-                if ( (c= fgetc(fp)) != ((uint8_t *)srcptr)[i] )
-                {
-                    printf("verification error %02x != %02x, i.%d of %d\n",c&0xff,((uint8_t *)srcptr)[i],i,len);
-                    return(destptr);
-                }
-        }
-#endif
         //else printf("fp.(%ld <- %d) ",ftell(fp),(int32_t)len);
     }
     (*offsetp) += len;
@@ -1066,32 +1053,9 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
         return(-1);
     }
     OS_compatible_path(fname);
-    /*if ( (fp= fopen(fname,"rb+")) == 0 )
-    {
-        if ( (fp= fopen(fname,"wb")) != 0 )
-            coin->peers.numfiles++;
-        else
-        {
-            printf("iguana_ramchain_save: couldnt create.(%s)\n",fname);
-            return(-1);
-        }
-    }
-    else if ( ipbits != 0 )
-    {
-        //fseek(fp,0,SEEK_END);
-    }
-    else
-    {
-        fclose(fp);
-        if ( (fp= fopen(fname,"wb")) == 0 )
-        {
-            printf("iguana_ramchain_save b: couldnt create.(%s)\n",fname);
-            return(-1);
-        }
-    }*/
 #ifdef __PNACL__
-    static portable_mutex_t mutex;
-    portable_mutex_lock(&mutex);
+    //static portable_mutex_t mutex;
+    //portable_mutex_lock(&mutex);
 #endif
     if ( (fp= fopen(fname,"wb")) == 0 )
         printf("iguana_ramchain_save: couldnt create.(%s) errno.%d\n",fname,errno);
@@ -1114,7 +1078,7 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
         fclose(fp);
     }
 #ifdef __PNACL__
-    portable_mutex_unlock(&mutex);
+    //portable_mutex_unlock(&mutex);
 #endif
    return(fpos);
 }
@@ -1540,13 +1504,13 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
 {
     struct iguana_ramchain *retptr;
 #ifdef __PNACL__
-    static portable_mutex_t mutex;
-    portable_mutex_lock(&mutex);
+    //static portable_mutex_t mutex;
+    //portable_mutex_lock(&mutex);
 #endif
     ramchain->height = bp->bundleheight;
     retptr = _iguana_ramchain_map(coin,fname,bp,numblocks,ramchain,hashmem,ipbits,hash2,prevhash2,bundlei,fpos,allocextras,expanded);
 #ifdef __PNACL__
-    portable_mutex_unlock(&mutex);
+    //portable_mutex_unlock(&mutex);
 #endif
     return(retptr);
 }

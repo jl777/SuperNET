@@ -300,7 +300,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
                 printf("iguana_peerblockrequest: block.%p ht.%d mainchain.%d [%d:%d]\n",block,block->height,block->mainchain,bp->hdrsi,bundlei);
             else printf("iguana_peerblockrequest: block.%p [%d:%d]\n",block,bp->hdrsi,bundlei);
         }
-    } else printf("iguana_peerblockrequest: cant find %s\n",bits256_str(str,hash2));
+    } //else printf("iguana_peerblockrequest: cant find %s\n",bits256_str(str,hash2));
     return(-1);
 }
 

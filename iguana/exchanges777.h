@@ -34,7 +34,7 @@
 #define INSTANTDEX_BTCD "RThtXup6Zo7LZAi8kRWgjAyi1s4u6U9Cpf"
 #define INSTANTDEX_MINPERC 50.
 
-#define INSTANTDEX_OFFERDURATION 300
+#define INSTANTDEX_OFFERDURATION 1800
 #define INSTANTDEX_LOCKTIME 3600
 
 #define EXCHANGES777_MINPOLLGAP 1
@@ -108,7 +108,7 @@ struct exchange_request
 struct instantdex_offer
 {
     char base[24],rel[24];
-    int64_t price64,basevolume64; uint64_t offer64;
+    int64_t price64,basevolume64; uint64_t account;
     uint32_t expiration,nonce;
     char myside,acceptdir,minperc,pad;
 };

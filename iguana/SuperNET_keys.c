@@ -207,7 +207,7 @@ cJSON *SuperNET_decryptedjson(char *destfname,char *passphrase,int32_t passsize,
         wallethash = SuperNET_linehash(passphrase);
         SuperNET_linehash(fname2fa); // maps special chars
         wallet2priv = SuperNET_wallet2priv(fname2fa,wallethash);
-        char str[65],str2[65]; printf("(%s + %s) -> wallethash.%s 2.(%s)\n",passphrase,fname2fa,bits256_str(str,wallethash),bits256_str(str2,wallet2priv));
+        //char str[65],str2[65]; printf("(%s + %s) -> wallethash.%s 2.(%s)\n",passphrase,fname2fa,bits256_str(str,wallethash),bits256_str(str2,wallet2priv));
    }
     first = (bits256_nonz(wallethash) != 0 && bits256_cmp(wallethash,GENESIS_PRIVKEY) != 0);
     second = (bits256_nonz(wallet2priv) != 0 && bits256_cmp(wallet2priv,GENESIS_PRIVKEY) != 0);
@@ -218,7 +218,7 @@ cJSON *SuperNET_decryptedjson(char *destfname,char *passphrase,int32_t passsize,
         wallet2shared = SuperNET_wallet2shared(wallethash,wallet2priv);
         wallet2pub = curve25519(wallet2shared,curve25519_basepoint9());
         sprintf(destfname,"confs/%s",bits256_str(str,wallet2pub));
-        printf("fname.(%s) wallet2pub.%s < [%s, %s]\n",destfname,bits256_str(str,wallet2pub),passphrase,fname2fa);
+        //printf("fname.(%s) wallet2pub.%s < [%s, %s]\n",destfname,bits256_str(str,wallet2pub),passphrase,fname2fa);
         if ( (confstr= OS_filestr(&allocsize,destfname)) != 0 )
         {
             if ( (filejson= cJSON_Parse(confstr)) != 0 )
