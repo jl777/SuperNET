@@ -706,7 +706,7 @@ struct instantdex_accept *instantdex_offerfind(struct supernet_info *ignore,stru
     portable_mutex_lock(&exchange->mutex);
     now = (uint32_t)time(NULL);
     memset(&PAD,0,sizeof(PAD));
-    printf("before loop.%d\n",queue_size(&exchange->acceptableQ));
+    //printf("before loop.%d\n",queue_size(&exchange->acceptableQ));
     queue_enqueue("acceptableQ",&exchange->acceptableQ,&PAD.DL,0);
     while ( (ap= queue_dequeue(&exchange->acceptableQ,0)) != 0 && ap != &PAD )
     {
@@ -744,7 +744,7 @@ struct instantdex_accept *instantdex_offerfind(struct supernet_info *ignore,stru
         } else free(ap);
     }
     portable_mutex_unlock(&exchange->mutex);
-    printf("offerfind -> retap.%p Qsize.%d\n",retap,queue_size(&exchange->acceptableQ));
+    //printf("offerfind -> retap.%p Qsize.%d\n",retap,queue_size(&exchange->acceptableQ));
     return(retap);
 }
 
@@ -913,17 +913,17 @@ int32_t instantdex_quotep2p(struct supernet_info *myinfo,struct iguana_info *coi
     if ( checklen == recvlen )
     {
         encodedhash = instantdex_encodehash(A.offer.base,A.offer.rel,A.offer.price64 * instantdex_bidaskdir(&A.offer),A.orderid,A.offer.account);
-        printf("before quotefind.%d\n",queue_size(&exchange->acceptableQ));
+        //printf("before quotefind.%d\n",queue_size(&exchange->acceptableQ));
         if ( (ap= instantdex_quotefind(myinfo,coin,addr,encodedhash)) == 0 )
         {
-            printf("add quote here! Qsize.%d\n",queue_size(&exchange->acceptableQ));
+            //printf("add quote here! Qsize.%d\n",queue_size(&exchange->acceptableQ));
             if ( exchange != 0 )
             {
                 ap = calloc(1,sizeof(*ap));
                 *ap = A;
                 SETBIT(ap->peerhas,addr->addrind);
                 argjson = cJSON_Parse("{}");
-                printf("before checkoffer Qsize.%d\n",queue_size(&exchange->acceptableQ));
+                //printf("before checkoffer Qsize.%d\n",queue_size(&exchange->acceptableQ));
                 if ( (retstr= instantdex_checkoffer(myinfo,&txid,exchange,ap,argjson)) != 0 )
                     free(retstr);
                 free_json(argjson);
@@ -973,10 +973,14 @@ struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,str
     queue_enqueue("acceptableQ",&exchange->acceptableQ,&PAD.DL,0);
     while ( (ap= queue_dequeue(&exchange->acceptableQ,0)) != 0 && ap != &PAD )
     {
-        printf("ap.%p account.%llu dir.%d\n",ap,(long long)ap->offer.account,offerdir);
+        //printf("ap.%p account.%llu dir.%d\n",ap,(long long)ap->offer.account,offerdir);
         if ( now > ap->offer.expiration || ap->dead != 0 || A->offer.account == ap->offer.account )
         {
             //printf("now.%u skip expired %u/dead.%u or my order orderid.%llu from %llu\n",now,ap->offer.expiration,ap->dead,(long long)ap->orderid,(long long)ap->offer.account);
+        }
+        else if ( A->offer.account != myinfo->myaddr.nxt64bits && ap->offer.account != myinfo->myaddr.nxt64bits )
+        {
+            
         }
         else if ( strcmp(ap->offer.base,A->offer.base) != 0 || strcmp(ap->offer.rel,A->offer.rel) != 0 )
         {
