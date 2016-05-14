@@ -27,7 +27,7 @@ struct tradebot_trade
 
 struct tradebot_info
 {
-    struct queueitem DL;
+    struct tradebot_info *next,*prev;
     struct supernet_info *myinfo;
     char name[128],exchangestr[32],base[32],rel[32];
     int32_t dir,numtrades,estimatedtrades;
@@ -88,10 +88,9 @@ cJSON *tradebot_json(struct supernet_info *myinfo,struct exchange_info *exchange
 
 struct tradebot_info *tradebot_find(struct supernet_info *myinfo,struct exchange_info *exchange,char *botname,cJSON *array,char *base,char *rel)
 {
-    struct tradebot_info PAD,*bot,*retbot = 0;
-    memset(&PAD,0,sizeof(PAD));
-    queue_enqueue("tradebotsQ",&exchange->tradebotsQ,&PAD.DL,0);
-    while ( (bot= queue_dequeue(&exchange->tradebotsQ,0)) != 0 && bot != &PAD )
+    struct tradebot_info *tmp,*bot,*retbot = 0;
+    portable_mutex_lock(&exchange->mutexT);
+    DL_FOREACH_SAFE(exchange->tradebots,bot,tmp)
     {
         if ( botname != 0 && strcmp(botname,bot->name) == 0 )
             retbot = bot;
@@ -99,9 +98,16 @@ struct tradebot_info *tradebot_find(struct supernet_info *myinfo,struct exchange
             jaddi(array,tradebot_json(myinfo,exchange,bot));
         if ( base != 0 && rel != 0 && strcmp(base,bot->base) == 0 && strcmp(rel,bot->rel) == 0 )
             retbot = bot;
-        queue_enqueue("tradebotsQ",&exchange->tradebotsQ,&bot->DL,0);
     }
+    portable_mutex_unlock(&exchange->mutexT);
     return(retbot);
+}
+
+void tradebot_add(struct exchange_info *exchange,struct tradebot_info *bot)
+{
+    portable_mutex_lock(&exchange->mutexT);
+    DL_APPEND(exchange->tradebots,bot);
+    portable_mutex_unlock(&exchange->mutexT);
 }
 
 struct tradebot_info *tradebot_create(struct supernet_info *myinfo,struct exchange_info *exchange,char *base,char *rel,int32_t dir,double price,double volume,int32_t duration)
@@ -120,7 +126,7 @@ struct tradebot_info *tradebot_create(struct supernet_info *myinfo,struct exchan
         bot->expiration = bot->started + duration;
         bot->estimatedtrades = (duration / TRADEBOTS_GAPTIME) + 1;
         sprintf(bot->name,"%s_%s_%s.%d",exchange->name,base,rel,bot->started);
-        queue_enqueue("tradebotsQ",&exchange->tradebotsQ,&bot->DL,0);
+        tradebot_add(exchange,bot);
     }
     return(bot);
 }
@@ -156,8 +162,23 @@ void tradebot_timeslice(struct exchange_info *exchange,void *_bot)
                 }
             }
         }
-        queue_enqueue("tradebotsQ",&exchange->tradebotsQ,&bot->DL,0);
-    } else free(bot);
+    }
+    else
+    {
+        DL_DELETE(exchange->tradebots,bot);
+        free(bot);
+    }
+}
+
+void tradebot_timeslices(struct exchange_info *exchange)
+{
+    struct tradebot_info *bot,*tmp;
+    portable_mutex_lock(&exchange->mutexT);
+    DL_FOREACH_SAFE(exchange->tradebots,bot,tmp)
+    {
+        tradebot_timeslice(exchange,bot);
+    }
+    portable_mutex_unlock(&exchange->mutexT);
 }
 
 char *tradebot_launch(struct supernet_info *myinfo,char *exchangestr,char *base,char *rel,int32_t dir,double price,double volume,int32_t duration,char *remoteaddr,cJSON *json)

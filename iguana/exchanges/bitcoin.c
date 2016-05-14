@@ -336,18 +336,11 @@ static char *BASERELS[][2] = { {"btcd","btc"}, {"nxt","btc"}, {"asset","btc"} };
 
 double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert)
 {
-    struct iguana_bundlereq *req; cJSON *retjson,*bids,*asks; double hbla; struct iguana_info *coin; struct supernet_info *myinfo;
+    cJSON *retjson,*bids,*asks; double hbla; struct supernet_info *myinfo;
     myinfo = SuperNET_MYINFO(0);
-    coin = iguana_coinfind("BTCD");
-    while ( (req= queue_dequeue(&exchange->recvQ,0)) != 0 )
-    {
-        if ( instantdex_recvquotes(coin,req,req->hashes,req->n) != 0 )
-            myfree(req->hashes,(req->n+1) * sizeof(*req->hashes)), req->hashes = 0;
-    }
-    iguana_inv2poll(myinfo,coin);
     bids = cJSON_CreateArray();
     asks = cJSON_CreateArray();
-    instantdex_offerfind(myinfo,exchange,bids,asks,0,base,rel,1,0);
+    instantdex_offerfind(myinfo,exchange,bids,asks,0,base,rel,0);
     //printf("bids.(%s) asks.(%s)\n",jprint(bids,0),jprint(asks,0));
     retjson = cJSON_CreateObject();
     cJSON_AddItemToObject(retjson,"bids",bids);
@@ -476,9 +469,9 @@ char *ORDERSTATUS(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson
     struct instantdex_accept *ap; struct bitcoin_swapinfo *swap; cJSON *retjson;
     retjson = cJSON_CreateObject();
     struct supernet_info *myinfo = SuperNET_accountfind(argjson);
-    if ( (swap= instantdex_statemachinefind(myinfo,exchange,orderid,1)) != 0 )
+    if ( (swap= instantdex_statemachinefind(myinfo,exchange,orderid)) != 0 )
         jadd(retjson,"result",instantdex_statemachinejson(swap));
-    else if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,orderid,"*","*",1,0)) != 0 )
+    else if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,orderid,"*","*",0)) != 0 )
         jadd(retjson,"result",instantdex_acceptjson(ap));
     else if ( (swap= instantdex_historyfind(myinfo,exchange,orderid)) != 0 )
         jadd(retjson,"result",instantdex_historyjson(swap));
@@ -491,13 +484,13 @@ char *CANCELORDER(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson
     struct instantdex_accept *ap = 0; cJSON *retjson; struct bitcoin_swapinfo *swap=0;
     struct supernet_info *myinfo = SuperNET_accountfind(argjson);
     retjson = cJSON_CreateObject();
-    if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,orderid,"*","*",1,0)) != 0 )
+    if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,orderid,"*","*",0)) != 0 )
     {
         ap->dead = (uint32_t)time(NULL);
         jadd(retjson,"orderid",instantdex_acceptjson(ap));
         jaddstr(retjson,"result","killed orderid, but might have pending");
     }
-    else if ( (swap= instantdex_statemachinefind(myinfo,exchange,orderid,1)) != 0 )
+    else if ( (swap= instantdex_statemachinefind(myinfo,exchange,orderid)) != 0 )
     {
         jadd(retjson,"orderid",instantdex_statemachinejson(swap));
         jaddstr(retjson,"result","killed statemachine orderid, but might have pending");
@@ -510,7 +503,7 @@ char *OPENORDERS(struct exchange_info *exchange,cJSON *argjson)
     cJSON *retjson,*bids,*asks; struct supernet_info *myinfo = SuperNET_accountfind(argjson);
     bids = cJSON_CreateArray();
     asks = cJSON_CreateArray();
-    instantdex_offerfind(myinfo,exchange,bids,asks,0,"*","*",1,0);
+    instantdex_offerfind(myinfo,exchange,bids,asks,0,"*","*",0);
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
     jadd(retjson,"bids",bids);
@@ -520,14 +513,13 @@ char *OPENORDERS(struct exchange_info *exchange,cJSON *argjson)
 
 char *TRADEHISTORY(struct exchange_info *exchange,cJSON *argjson)
 {
-    struct bitcoin_swapinfo PAD,*swap; cJSON *retjson = cJSON_CreateArray();
-    memset(&PAD,0,sizeof(PAD));
-    queue_enqueue("historyQ",&exchange->historyQ,&PAD.DL,0);
-    while ( (swap= queue_dequeue(&exchange->historyQ,0)) != 0 && swap != &PAD )
+    struct bitcoin_swapinfo *swap,*tmp; cJSON *retjson = cJSON_CreateArray();
+    portable_mutex_lock(&exchange->mutexH);
+    DL_FOREACH_SAFE(exchange->history,swap,tmp)
     {
         jaddi(retjson,instantdex_historyjson(swap));
-        queue_enqueue("historyQ",&exchange->historyQ,&swap->DL,0);
     }
+    portable_mutex_unlock(&exchange->mutexH);
     return(jprint(retjson,1));
 }
 

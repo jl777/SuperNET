@@ -64,10 +64,13 @@ struct exchange_info
 {
     struct exchange_funcs issue;
     char name[16],apikey[MAX_JSON_FIELD],apisecret[MAX_JSON_FIELD],tradepassword[MAX_JSON_FIELD],userid[MAX_JSON_FIELD];
-    uint32_t exchangeid,pollgap,lastpoll; portable_mutex_t mutex;
+    uint32_t exchangeid,pollgap,lastpoll; portable_mutex_t mutex,mutexH,mutexS,mutexP,mutexR,mutexT;
     uint64_t lastnonce,exchangebits; double commission;
     void *privatedata;
-    CURL *cHandle; queue_t requestQ,pricesQ,statemachineQ,tradebotsQ,acceptableQ,historyQ,recvQ;
+    struct tradebot_info *tradebots;
+    struct bitcoin_swapinfo *statemachines,*history;
+    struct instantdex_accept *offers;
+    CURL *cHandle; queue_t recvQ,pricesQ,requestQ;
 };
 
 struct instantdex_msghdr
@@ -115,7 +118,8 @@ struct instantdex_offer
 
 struct instantdex_accept
 {
-    struct queueitem DL; uint8_t peerhas[IGUANA_MAXPEERS/8];
+    struct instantdex_accept *next,*prev;
+    uint8_t peerhas[IGUANA_MAXPEERS/8];
     uint64_t pendingvolume64,orderid;
     uint32_t dead; int32_t didstate:31,reported:1;
     struct instantdex_offer offer;
@@ -130,9 +134,19 @@ struct bitcoin_statetx
     char txbytes[];
 };
 
+struct instantdex_stateinfo
+{
+    char name[24]; int16_t ind,initialstate;
+    cJSON *(*process)(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp);
+    cJSON *(*timeout)(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp);
+    int16_t timeoutind,errorind;
+    struct instantdex_event *events; int32_t numevents;
+};
+
 struct bitcoin_swapinfo
 {
-    struct queueitem DL;
+    //struct queueitem DL;
+    struct bitcoin_swapinfo *next,*prev;
     struct instantdex_accept mine,other;
     bits256 privkeys[INSTANTDEX_DECKSIZE+2],mypubs[2],otherpubs[2],privAm,pubAm,privBn,pubBn;
     bits256 myorderhash,otherorderhash,mypubkey,othertrader;
@@ -146,18 +160,9 @@ struct bitcoin_swapinfo
 
 struct instantdex_event { char cmdstr[24],sendcmd[16]; int16_t nextstateind; };
 
-struct instantdex_stateinfo
-{
-    char name[24]; int16_t ind,initialstate;
-    cJSON *(*process)(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp);
-    cJSON *(*timeout)(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp);
-    int16_t timeoutind,errorind;
-    struct instantdex_event *events; int32_t numevents;
-};
-
 #define instantdex_isbob(swap) (swap)->mine.offer.myside
 
-struct instantdex_accept *instantdex_offerfind(struct supernet_info *myinfo,struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel,int32_t requeue,int32_t report);
+struct instantdex_accept *instantdex_offerfind(struct supernet_info *myinfo,struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel,int32_t report);
 cJSON *instantdex_acceptjson(struct instantdex_accept *ap);
 cJSON *instantdex_historyjson(struct bitcoin_swapinfo *swap);
 struct bitcoin_swapinfo *instantdex_historyfind(struct supernet_info *myinfo,struct exchange_info *exchange,uint64_t orderid);
@@ -181,7 +186,9 @@ double instaforex_price(struct exchange_info *exchange,char *base,char *rel,stru
 char *instantdex_createaccept(struct supernet_info *myinfo,struct instantdex_accept **aptrp,struct exchange_info *exchange,char *base,char *rel,double price,double basevolume,int32_t acceptdir,char *mysidestr,int32_t duration,uint64_t offerer,int32_t queueflag,uint8_t minperc);
 char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extra,int32_t extralen,struct iguana_peer *addr);
 char *instantdex_sendoffer(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *ap,cJSON *argjson); // Bob sending to network (Alice)
-struct bitcoin_swapinfo *instantdex_statemachinefind(struct supernet_info *myinfo,struct exchange_info *exchange,uint64_t orderid,int32_t requeueflag);
+struct bitcoin_swapinfo *instantdex_statemachinefind(struct supernet_info *myinfo,struct exchange_info *exchange,uint64_t orderid);
 char *instantdex_checkoffer(struct supernet_info *myinfo,uint64_t *txidp,struct exchange_info *exchange,struct instantdex_accept *ap,cJSON *json);
+void tradebot_timeslices(struct exchange_info *exchange);
+struct instantdex_stateinfo *BTC_initFSM(int32_t *n);
 
 #endif

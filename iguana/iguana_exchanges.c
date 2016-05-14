@@ -583,10 +583,29 @@ char *exchanges777_process(struct exchange_info *exchange,int32_t *retvalp,struc
     return(retstr);
 }
 
+void iguana_statemachineupdate(struct supernet_info *myinfo,struct exchange_info *exchange)
+{
+    struct iguana_info *coin; struct bitcoin_swapinfo *swap,*tmp; struct iguana_bundlereq *req;
+    coin = iguana_coinfind("BTCD");
+    portable_mutex_lock(&exchange->mutex);
+    DL_FOREACH_SAFE(exchange->statemachines,swap,tmp)
+    {
+        printf("FSM.(%llu / %llu) (%s/%s) state.(%s)\n",(long long)swap->mine.orderid,(long long)swap->other.orderid,swap->mine.offer.base,swap->mine.offer.rel,swap->state->name);
+    }
+    portable_mutex_unlock(&exchange->mutex);
+    while ( (req= queue_dequeue(&exchange->recvQ,0)) != 0 )
+    {
+        if ( instantdex_recvquotes(coin,req,req->hashes,req->n) != 0 )
+            myfree(req->hashes,(req->n+1) * sizeof(*req->hashes)), req->hashes = 0;
+    }
+    iguana_inv2poll(myinfo,coin);
+}
+
 void exchanges777_loop(void *ptr)
 {
-    struct peggy_info *PEGS; struct exchange_info *exchange = ptr;
-    int32_t flag,retval,i,peggyflag = 0; struct exchange_request *req; char *retstr; void *bot;
+    struct peggy_info *PEGS; struct supernet_info *myinfo; struct exchange_info *exchange = ptr;
+    int32_t flag,retval,i,peggyflag = 0; struct exchange_request *req; char *retstr;
+    myinfo = SuperNET_MYINFO(0);
     if ( strcmp(exchange->name,"PAX") == 0 )
     {
         PEGS = calloc(1,sizeof(*PEGS));
@@ -596,7 +615,7 @@ void exchanges777_loop(void *ptr)
         _crypto_update(PEGS,PEGS->cryptovols,&PEGS->data,1,peggyflag);
         PEGS->lastupdate = (uint32_t)time(NULL);
     }
-    printf("exchanges loop.(%s) %p\n",exchange->name,&exchange->requestQ);
+    printf("exchanges loop.(%s)\n",exchange->name);
     while ( 1 )
     {
         if ( peggyflag != 0 )
@@ -654,15 +673,14 @@ void exchanges777_loop(void *ptr)
                 free(req);
             }
         }
-        if ( (bot= queue_dequeue(&exchange->tradebotsQ,0)) != 0 )
-            tradebot_timeslice(exchange,bot);
+        tradebot_timeslices(exchange);
         if ( time(NULL) > exchange->lastpoll+exchange->pollgap )
         {
-            /*if ( strcmp(exchange->name,"bitcoin") == 0 )
+            if ( strcmp(exchange->name,"bitcoin") == 0 )
             {
-                instantdex_update(SuperNET_MYINFO(0));
+                iguana_statemachineupdate(myinfo,exchange);
                 //printf("InstantDEX call update\n");
-            }*/
+            }
             if ( (req= queue_dequeue(&exchange->pricesQ,0)) != 0 )
             {
                 //printf("check %s pricesQ (%s %s)\n",exchange->name,req->base,req->rel);
@@ -895,14 +913,15 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
     }
     exchange = calloc(1,sizeof(*exchange));
     portable_mutex_init(&exchange->mutex);
+    portable_mutex_init(&exchange->mutexS);
+    portable_mutex_init(&exchange->mutexH);
+    portable_mutex_init(&exchange->mutexP);
+    portable_mutex_init(&exchange->mutexR);
+    portable_mutex_init(&exchange->mutexT);
     exchange->issue = *Exchange_funcs[i];
-    iguana_initQ(&exchange->pricesQ,"prices");
-    iguana_initQ(&exchange->requestQ,"request");
-    iguana_initQ(&exchange->acceptableQ,"acceptable");
-    iguana_initQ(&exchange->tradebotsQ,"tradebots");
     iguana_initQ(&exchange->recvQ,"recvQ");
-    iguana_initQ(&exchange->historyQ,"history");
-    iguana_initQ(&exchange->statemachineQ,"statemachineQ");
+    iguana_initQ(&exchange->pricesQ,"pricesQ");
+    iguana_initQ(&exchange->requestQ,"requestQ");
     exchange->exchangeid = exchangeid;
     safecopy(exchange->name,exchangestr,sizeof(exchange->name));
     exchange->exchangebits = stringbits(exchange->name);
@@ -920,6 +939,7 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
         exchange->commission *= .01;
     printf("ADDEXCHANGE.(%s) [%s, %s, %s] commission %.3f%% -> exchangeid.%d\n",exchangestr,exchange->apikey,exchange->userid,exchange->apisecret,exchange->commission * 100.,exchangeid);
     Exchanges[exchangeid] = exchange;
+    instantdex_FSMinit();
     iguana_launch(0,"exchangeloop",(void *)exchanges777_loop,exchange,IGUANA_EXCHANGETHREAD);
     return(exchange);
 }

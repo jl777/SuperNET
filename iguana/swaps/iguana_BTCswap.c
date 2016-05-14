@@ -971,7 +971,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
     uint32_t i; struct iguana_info *altcoin=0,*coinbtc=0; struct instantdex_stateinfo *state=0; cJSON *origjson = newjson;
     if ( swap == 0 || (state= swap->state) == 0 || (coinbtc= iguana_coinfind("BTC")) == 0 || (altcoin= iguana_coinfind(swap->mine.offer.base)) == 0 )
     {
-        printf("state.%s btc.%p altcoin.%p\n",state->name,coinbtc,altcoin);
+        printf("state.%s btc.%p altcoin.%p (%s)\n",state->name,coinbtc,altcoin,swap->mine.offer.base);
         return(clonestr("{\"error\":\"instantdex_BTCswap missing coin info\"}"));
     }
     printf("%llu/%llu cmd.(%s) state.(%s)\n",(long long)swap->mine.orderid,(long long)swap->other.orderid,cmdstr,swap->state->name);

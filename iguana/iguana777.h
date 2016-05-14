@@ -981,6 +981,7 @@ struct iguana_bundlereq *instantdex_recvquotes(struct iguana_info *coin,struct i
 struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson);
 int32_t iguana_inv2poll(struct supernet_info *myinfo,struct iguana_info *coin);
 struct iguana_bundlereq *iguana_bundlereq(struct iguana_info *coin,struct iguana_peer *addr,int32_t type,int32_t datalen);
+void instantdex_FSMinit();
 
 extern int32_t HDRnet,netBLOCKS;
 

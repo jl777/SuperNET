@@ -1159,7 +1159,7 @@ void iguana_appletests(struct supernet_info *myinfo)
         if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"RELAY\":1,\"VALIDATE\":1,\"prefetchlag\":-1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":4,\"endpend\":4,\"services\":129,\"maxpeers\":64,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":4,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
         {
             free(str);
-            if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"RELAY\":1,\"VALIDATE\":1,\"prefetchlag\":-1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":4,\"endpend\":4,\"services\":129,\"maxpeers\":64,\"newcoin\":\"BTC\",\"active\":0,\"numhelpers\":4,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
+            if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"RELAY\":1,\"VALIDATE\":1,\"prefetchlag\":-1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":4,\"endpend\":4,\"services\":129,\"maxpeers\":64,\"newcoin\":\"BTC\",\"active\":0,\"numhelpers\":4,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
             {
                 free(str);
                 if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"login\",\"handle\":\"alice\",\"password\":\"alice\",\"passphrase\":\"alice\"}"),0,myinfo->rpcport)) != 0 )
@@ -1315,7 +1315,7 @@ int32_t iguana_isbigendian()
 
 void iguana_main(void *arg)
 {
-    int32_t usessl = 0, ismainnet = 1; struct supernet_info *myinfo;
+    int32_t usessl = 0, ismainnet = 1; struct supernet_info *myinfo; cJSON *argjson = 0;
     if ( (BIGENDIAN= iguana_isbigendian()) > 0 )
         printf("BIGENDIAN\n");
     else if ( BIGENDIAN == 0 )
@@ -1332,6 +1332,9 @@ void iguana_main(void *arg)
     iguana_urlinit(myinfo,ismainnet,usessl);
     category_init(myinfo);
     exchange_create("bitcoin",0);
+    argjson = arg != 0 ? cJSON_Parse(arg) : cJSON_Parse("{}");
+    iguana_coinadd("BTC",argjson);
+    free_json(argjson);
     iguana_helpinit(myinfo);
     iguana_commandline(myinfo,arg);
 #ifdef __APPLE__
