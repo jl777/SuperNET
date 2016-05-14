@@ -838,7 +838,7 @@ int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coi
     if ( n > 0 )
     {
         len = iguana_inv2packet(serialized,sizeof(serialized),MSG_QUOTE,hashes,n);
-        printf("Send inv2[%d] -> (%s)\n",n,addr->ipaddr);
+        //printf("Send inv2[%d] -> (%s)\n",n,addr->ipaddr);
         return(iguana_queue_send(coin,addr,0,serialized,"inv2",len,0,0));
     }
     return(-1);
@@ -1143,12 +1143,17 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,uint64_t *txidp,struct 
         return(0);
     }
     *txidp = myap->orderid;
+    if ( instantdex_offerfind(myinfo,exchange,0,0,myap->orderid,myap->offer.base,myap->offer.rel,1,0) != 0 )
+    {
+        printf("orderid.%llu already there\n",(long long)myap->orderid);
+        return(0);
+    }
     if ( (otherap= instantdex_acceptable(myinfo,exchange,myap,myap->offer.minperc)) == 0 )
     {
         printf("instantdex_checkoffer add.%llu from.%llu to acceptableQ\n",(long long)myap->orderid,(long long)myap->offer.account);
-        //if ( (retstr= instantdex_sendcmd(myinfo,&myap->offer,argjson,"BTCoffer",GENESIS_PUBKEY,INSTANTDEX_HOPS,0,0,1)) != 0 )
-        //    free(retstr);
         queue_enqueue("acceptableQ",&exchange->acceptableQ,&myap->DL,0);
+        if ( instantdex_offerfind(myinfo,exchange,0,0,myap->orderid,myap->offer.base,myap->offer.rel,1,0) == 0 )
+            printf("cant find just added to acceptableQ\n");
         return(jprint(instantdex_offerjson(&myap->offer,myap->orderid),1));
     }
     else
