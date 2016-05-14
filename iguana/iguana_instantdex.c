@@ -859,7 +859,7 @@ struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,str
     DL_FOREACH_SAFE(exchange->offers,ap,tmp)
     {
         //printf("ap.%p account.%llu dir.%d\n",ap,(long long)ap->offer.account,offerdir);
-        if ( now > ap->offer.expiration || ap->dead != 0 )//|| A->offer.account == ap->offer.account )
+        if ( now > ap->offer.expiration || ap->dead != 0 || A->offer.account == ap->offer.account )
         {
             //printf("now.%u skip expired %u/dead.%u or my order orderid.%llu from %llu\n",now,ap->offer.expiration,ap->dead,(long long)ap->orderid,(long long)ap->offer.account);
         }
@@ -1194,6 +1194,7 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,uint64_t *txidp,struct 
     {
         isbob = myap->offer.myside;
         swap = bitcoin_swapinit(myinfo,exchange,myap,otherap,1,argjson,isbob != 0 ? "BOB_sentoffer" : "ALICE_sentoffer");
+        printf("ISBOB.%d vs %d\n",isbob,instantdex_isbob(swap));
         if ( swap != 0 )
         {
             printf("STATEMACHINEQ.(%llu / %llu)\n",(long long)swap->mine.orderid,(long long)swap->other.orderid);
@@ -1236,6 +1237,7 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
     isbob = myap->offer.myside;
     if ( (swap= bitcoin_swapinit(myinfo,exchange,myap,otherap,0,argjson,isbob != 0 ? "BOB_gotoffer" : "ALICE_gotoffer")) == 0 )
         return(clonestr("{\"error\":\"couldnt allocate statemachine\"}"));
+    printf("ISBOB.%d vs %d\n",isbob,instantdex_isbob(swap));
     if ( (newjson= instantdex_parseargjson(myinfo,exchange,swap,argjson,1)) == 0 )
     {
         printf("error parsing argjson\n");
