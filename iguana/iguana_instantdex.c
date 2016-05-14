@@ -1230,8 +1230,8 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
     }
     else //if ( (retstr= instantdex_addfeetx(myinfo,newjson,ap,swap,"BOB_gotoffer","ALICE_gotoffer")) == 0 )
     {
-        printf("add to both queues\n");
-        queue_enqueue("acceptableQ",&exchange->acceptableQ,&swap->DL,0);
+        printf("create statemachine\n");
+        //queue_enqueue("acceptableQ",&exchange->acceptableQ,&swap->DL,0);
         queue_enqueue("statemachineQ",&exchange->statemachineQ,&swap->DL,0);
         if ( (retstr= instantdex_choosei(swap,newjson,argjson,serdata,serdatalen)) != 0 )
             return(retstr);
@@ -1266,7 +1266,18 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
             A.offer.minperc = INSTANTDEX_MINPERC;
         else if ( A.offer.minperc > 100 )
             A.offer.minperc = 100;
-        if ( strcmp(cmdstr,"BTCoffer") == 0 ) // incoming
+        if ( (swap= instantdex_statemachinefind(myinfo,exchange,A.orderid,1)) != 0 )
+        {
+            printf("found existing state machine %llu\n",(long long)A.orderid);
+            newjson = instantdex_parseargjson(myinfo,exchange,swap,argjson,0);
+            if ( serdatalen == sizeof(swap->otherdeck) && swap->choosei < 0 && (retstr= instantdex_choosei(swap,newjson,argjson,serdata,serdatalen)) != 0 )
+            {
+                printf("error choosei\n");
+                return(retstr);
+            }
+            return(instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,cmdstr,argjson,newjson,serdata,serdatalen));
+        }
+        else if ( strcmp(cmdstr,"BTCoffer") == 0 ) // incoming
         {
             printf("BTCoffer state exchange.%p serdatalen.%d\n",exchange,serdatalen);
             if ( (ap= instantdex_acceptable(myinfo,exchange,&A,A.offer.minperc)) != 0 )
@@ -1289,17 +1300,6 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
                     return(clonestr("{\"result\":\"added new order to orderbook\"}"));
                 } else return(clonestr("{\"result\":\"order was already in orderbook\"}"));
             }
-        }
-        else if ( (swap= instantdex_statemachinefind(myinfo,exchange,A.orderid,1)) != 0 )
-        {
-            printf("found existing state machine %llu\n",(long long)A.orderid);
-            newjson = instantdex_parseargjson(myinfo,exchange,swap,argjson,0);
-            if ( serdatalen == sizeof(swap->otherdeck) && swap->choosei < 0 && (retstr= instantdex_choosei(swap,newjson,argjson,serdata,serdatalen)) != 0 )
-            {
-                printf("error choosei\n");
-                return(retstr);
-            }
-            return(instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,cmdstr,argjson,newjson,serdata,serdatalen));
         }
         else
         {
