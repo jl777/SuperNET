@@ -275,7 +275,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
                                 {
                                     if ( i == 81 )
                                         printf(" ");
-                                    printf("%02x",addr->blockspace[i + sizeof(struct iguana_msghdr)]);
+                                    printf("%02x",blockspace[i + sizeof(struct iguana_msghdr)]);
                                 }
                                 printf(" blocksize.%d\n",total);
                                 for (i=0; i<16; i++)
