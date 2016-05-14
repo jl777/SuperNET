@@ -625,8 +625,8 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                 }
                 else
                 {
-                    for (i=0; i<recvlen; i++)
-                        printf("%02x",data[i]);
+                    //for (i=0; i<recvlen; i++)
+                    //    printf("%02x",data[i]);
                     printf(" parse error block txn_count.%d, n.%d len.%d vs recvlen.%d from.(%s)\n",txdata.block.RO.txn_count,n,len,recvlen,addr->ipaddr);
                 }
             }

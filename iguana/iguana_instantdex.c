@@ -703,10 +703,10 @@ struct instantdex_accept *instantdex_offerfind(struct supernet_info *ignore,stru
     struct instantdex_accept PAD,*ap,*retap = 0; uint32_t now; cJSON *item,*offerobj; char *type;
     if ( exchange == 0 )
         return(0);
-    printf("offerfind.%d\n",queue_size(&exchange->acceptableQ));
     portable_mutex_lock(&exchange->mutex);
     now = (uint32_t)time(NULL);
     memset(&PAD,0,sizeof(PAD));
+    printf("before loop.%d\n",queue_size(&exchange->acceptableQ));
     queue_enqueue("acceptableQ",&exchange->acceptableQ,&PAD.DL,0);
     while ( (ap= queue_dequeue(&exchange->acceptableQ,0)) != 0 && ap != &PAD )
     {
@@ -720,7 +720,7 @@ struct instantdex_accept *instantdex_offerfind(struct supernet_info *ignore,stru
                     ap->reported = 1;
                     printf("MARK as reported %llu\n",(long long)ap->orderid);
                 }
-                if ( requeue == 0 && retap != 0 )
+                if ( retap != 0 )
                     queue_enqueue("acceptableQ",&exchange->acceptableQ,&retap->DL,0);
                 retap = ap;
                 if ( (item= instantdex_acceptjson(ap)) != 0 )
@@ -735,16 +735,16 @@ struct instantdex_accept *instantdex_offerfind(struct supernet_info *ignore,stru
                     }
                     free_json(item);
                 } else printf("error generating acceptjson.%llu\n",(long long)ap->orderid);
-                if ( ap != retap || requeue != 0 )
-                {
-                    //printf("requeue.%p\n",ap);
-                    queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
-                }
+            }
+            if ( ap != retap || requeue != 0 )
+            {
+                //printf("requeue.%p\n",ap);
+                queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
             }
         } else free(ap);
     }
     portable_mutex_unlock(&exchange->mutex);
-    printf("done offerfind\n");
+    printf("offerfind -> retap.%p Qsize.%d\n",retap,queue_size(&exchange->acceptableQ));
     return(retap);
 }
 
@@ -753,7 +753,7 @@ int32_t instantdex_peerhas_clear(struct iguana_info *coin,struct iguana_peer *ad
     struct instantdex_accept PAD,*ap; struct exchange_info *exchange; int32_t ind,num = 0;
     if ( addr != 0 && (exchange= exchanges777_find("bitcoin")) != 0 )
     {
-        printf("clear all bits for addrind.%d\n",addr->addrind);
+        //printf("clear all bits for addrind.%d\n",addr->addrind);
         portable_mutex_lock(&exchange->mutex);
         ind = addr->addrind;
         memset(&PAD,0,sizeof(PAD));
@@ -764,7 +764,6 @@ int32_t instantdex_peerhas_clear(struct iguana_info *coin,struct iguana_peer *ad
             queue_enqueue("acceptableQ",&exchange->acceptableQ,&ap->DL,0);
         }
         portable_mutex_unlock(&exchange->mutex);
-        printf("done clear all bits for addrind.%d\n",addr->addrind);
     }
     return(num);
 }
@@ -831,7 +830,6 @@ int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coi
     //printf("instantdex_inv2data exchange.%p (%s)\n",exchange,addr->ipaddr);
     if ( exchange == 0 )
         return(0);
-    printf("instantdex_inv2data\n");
     portable_mutex_lock(&exchange->mutex);
     now = (uint32_t)time(NULL);
     memset(&PAD,0,sizeof(PAD));
@@ -850,7 +848,6 @@ int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coi
         } else free(ap);
     }
     portable_mutex_unlock(&exchange->mutex);
-    printf("done instantdex_inv2data\n");
     if ( n > 0 )
     {
         len = iguana_inv2packet(serialized,sizeof(serialized),MSG_QUOTE,hashes,n);
@@ -916,15 +913,17 @@ int32_t instantdex_quotep2p(struct supernet_info *myinfo,struct iguana_info *coi
     if ( checklen == recvlen )
     {
         encodedhash = instantdex_encodehash(A.offer.base,A.offer.rel,A.offer.price64 * instantdex_bidaskdir(&A.offer),A.orderid,A.offer.account);
+        printf("before quotefind.%d\n",queue_size(&exchange->acceptableQ));
         if ( (ap= instantdex_quotefind(myinfo,coin,addr,encodedhash)) == 0 )
         {
-            printf("add quote here!\n");
+            printf("add quote here! Qsize.%d\n",queue_size(&exchange->acceptableQ));
             if ( exchange != 0 )
             {
                 ap = calloc(1,sizeof(*ap));
                 *ap = A;
                 SETBIT(ap->peerhas,addr->addrind);
                 argjson = cJSON_Parse("{}");
+                printf("before checkoffer Qsize.%d\n",queue_size(&exchange->acceptableQ));
                 if ( (retstr= instantdex_checkoffer(myinfo,&txid,exchange,ap,argjson)) != 0 )
                     free(retstr);
                 free_json(argjson);
@@ -964,17 +963,17 @@ struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,str
         printf("instantdex_acceptable null exchange\n");
         return(0);
     }
-    printf("instantdex_acceptable\n");
     portable_mutex_lock(&exchange->mutex);
     aveprice = 0;//instantdex_avehbla(myinfo,retvals,A->offer.base,A->offer.rel,dstr(A->offer.basevolume64));
     now = (uint32_t)time(NULL);
-    memset(&PAD,0,sizeof(PAD));
-    queue_enqueue("acceptableQ",&exchange->acceptableQ,&PAD.DL,0);
     offerdir = instantdex_bidaskdir(&A->offer);
     minvol = (A->offer.basevolume64 * minperc * .01);
     printf("instantdex_acceptable.%d offerdir.%d (%s/%s) minperc %.3f minvol %.8f vs %.8f\n",queue_size(&exchange->acceptableQ),offerdir,A->offer.base,A->offer.rel,minperc,dstr(minvol),dstr(A->offer.basevolume64));
+    memset(&PAD,0,sizeof(PAD));
+    queue_enqueue("acceptableQ",&exchange->acceptableQ,&PAD.DL,0);
     while ( (ap= queue_dequeue(&exchange->acceptableQ,0)) != 0 && ap != &PAD )
     {
+        printf("ap.%p account.%llu dir.%d\n",ap,(long long)ap->offer.account,offerdir);
         if ( now > ap->offer.expiration || ap->dead != 0 || A->offer.account == ap->offer.account )
         {
             //printf("now.%u skip expired %u/dead.%u or my order orderid.%llu from %llu\n",now,ap->offer.expiration,ap->dead,(long long)ap->orderid,(long long)ap->offer.account);
@@ -1011,7 +1010,7 @@ struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,str
         else free(ap);
     }
     portable_mutex_unlock(&exchange->mutex);
-    printf("done instantdex_acceptable\n");
+    printf("after acceptable Qsize.%d retap.%p\n",queue_size(&exchange->acceptableQ),retap);
     return(retap);
 }
 
@@ -1163,17 +1162,17 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,uint64_t *txidp,struct 
         return(0);
     }
     *txidp = myap->orderid;
-    if ( instantdex_offerfind(myinfo,exchange,0,0,myap->orderid,myap->offer.base,myap->offer.rel,1,0) != 0 )
-    {
-        printf("orderid.%llu already there\n",(long long)myap->orderid);
-        return(0);
-    }
     if ( (otherap= instantdex_acceptable(myinfo,exchange,myap,myap->offer.minperc)) == 0 )
     {
-        printf("instantdex_checkoffer add.%llu from.%llu to acceptableQ\n",(long long)myap->orderid,(long long)myap->offer.account);
-        queue_enqueue("acceptableQ",&exchange->acceptableQ,&myap->DL,0);
         if ( instantdex_offerfind(myinfo,exchange,0,0,myap->orderid,myap->offer.base,myap->offer.rel,1,0) == 0 )
-            printf("cant find just added to acceptableQ\n");
+        {
+            printf("instantdex_checkoffer add.%llu from.%llu to acceptableQ\n",(long long)myap->orderid,(long long)myap->offer.account);
+            queue_enqueue("acceptableQ",&exchange->acceptableQ,&myap->DL,0);
+            printf("Qsize.%d\n",queue_size(&exchange->acceptableQ));
+            if ( instantdex_offerfind(myinfo,exchange,0,0,myap->orderid,myap->offer.base,myap->offer.rel,1,0) == 0 )
+                printf("cant find just added to acceptableQ\n");
+            printf("Qsize.%d\n",queue_size(&exchange->acceptableQ));
+        }
         return(jprint(instantdex_offerjson(&myap->offer,myap->orderid),1));
     }
     else
