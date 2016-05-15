@@ -59,7 +59,7 @@ cJSON *exchanges777_quotejson(struct exchange_quote *quote,int32_t allflag,doubl
         if ( quote->orderid != 0 )
             jadd64bits(json,"orderid",quote->orderid);
         //if ( quote->offerNXT != 0 )
-            jadd64bits(json,"account",quote->offerNXT);
+        jadd64bits(json,"account",quote->offerNXT);
         return(json);
     } else return(cJSON_CreateNumber(quote->price));
 }
@@ -227,7 +227,7 @@ void exchanges777_json_quotes(struct exchange_info *exchange,double commission,c
             //if ( strcmp(prices->exchange,"bter") == 0 && dir < 0 )
             //    slot = ((bidask==0?n:m) - 1) - i;
             //else
-                slot = i;
+            slot = i;
             timestamp = 0;
             item = jitem(bidask==0?bids:asks,slot);
             if ( pricefield != 0 && volfield != 0 )
@@ -537,10 +537,10 @@ char *exchanges777_process(struct exchange_info *exchange,int32_t *retvalp,struc
                     req->orderid = orderid;
                     retstr = (*exchange->issue.orderstatus)(exchange,req->orderid,req->argjson);
                     /*retjson = cJSON_CreateObject();
-                    if ( orderid != 0 )
-                        jadd64bits(retjson,"result",orderid);
-                    else jaddstr(retjson,"error","no return value from trade call");
-                    retstr = jprint(retjson,1);*/
+                     if ( orderid != 0 )
+                     jadd64bits(retjson,"result",orderid);
+                     else jaddstr(retjson,"error","no return value from trade call");
+                     retstr = jprint(retjson,1);*/
                 }
             }
             break;
@@ -657,7 +657,7 @@ void exchanges777_loop(void *ptr)
                     //if ( retval == EXCHANGE777_ISPENDING )
                     //    queue_enqueue("Xpending",&exchange->pendingQ,&req->DL,0), flag++;
                     //else
-                        if ( retval == EXCHANGE777_REQUEUE )
+                    if ( retval == EXCHANGE777_REQUEUE )
                         queue_enqueue("requeue",&exchange->requestQ,&req->DL,0);
                     else
                     {
@@ -769,7 +769,7 @@ char *exchanges777_submit(struct exchange_info *exchange,struct exchange_request
 
 char *exchanges777_Qtrade(struct exchange_info *exchange,char *base,char *rel,int32_t maxseconds,int32_t dotrade,int32_t dir,double price,double volume,cJSON *argjson)
 {
-    struct exchange_request *req; int32_t polarity; 
+    struct exchange_request *req; int32_t polarity;
     if ( exchange->issue.supports == 0 )
         return(clonestr("{\"error\":\"no supports function\"}"));
     if ( base[0] == 0 || rel[0] == 0 || (polarity= (*exchange->issue.supports)(exchange,base,rel,argjson)) <= 0 || price < SMALLVAL || volume < SMALLVAL )

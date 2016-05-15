@@ -333,8 +333,11 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         if ( (n= iguana_walkchain(coin,1)) == coin->RTheight-1 )
         {
             //printf("RTgenesis verified\n");
-            iguana_RTspendvectors(coin,bp);
-            coin->RTgenesis = (uint32_t)time(NULL);
+            if ( (coin->RTheight % coin->chain->bundlesize) > 1 )
+            {
+                iguana_RTspendvectors(coin,bp);
+                coin->RTgenesis = (uint32_t)time(NULL);
+            }
         } else coin->RTdatabad = 1;
     }
     if ( dest != 0 && flag != 0 )
