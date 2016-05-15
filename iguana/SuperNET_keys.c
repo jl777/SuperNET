@@ -291,8 +291,6 @@ void SuperNET_setkeys(struct supernet_info *myinfo,void *pass,int32_t passlen,in
     }
     RS_encode(myinfo->myaddr.NXTADDR,myinfo->myaddr.nxt64bits);
     bitcoin_pubkey33(myinfo->ctx,pubkey33,myinfo->persistent_priv);
-    //btc_priv2pub(pubkey33,myinfo->persistent_priv.bytes);
-    //init_hexbytes_noT(pubkeystr,pubkey33,33);
     bitcoin_address(myinfo->myaddr.BTC,0,pubkey33,33);
     bitcoin_address(myinfo->myaddr.BTCD,60,pubkey33,33);
 }

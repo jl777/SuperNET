@@ -401,7 +401,7 @@ int32_t iguana_loginsave(struct supernet_info *myinfo,struct iguana_info *coin,c
         if ( (passphrase= jstr(loginjson,"passphrase")) != 0 )
         {
             _SuperNET_encryptjson(destfname,passphrase,0,myinfo->permanentfile,0,loginjson);
-            printf("loginsave.(%s) <= (%s)\n",destfname,newstr);
+            //printf("loginsave.(%s) <= (%s)\n",destfname,newstr);
             //iguana_walletlock(myinfo);
         }
         free_json(loginjson);

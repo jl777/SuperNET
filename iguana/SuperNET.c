@@ -1482,11 +1482,6 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
             calc_rmd160_sha256(rmd160,pubkey33,33);
             init_hexbytes_noT(rmd160str,rmd160,20);
             jaddstr(item,rmd160str,bits256_str(str,myinfo->persistent_priv));
-            item = cJSON_CreateObject();
-            bitcoin_pubkey33(myinfo->ctx,pubkey33,myinfo->privkey);
-            calc_rmd160_sha256(rmd160,pubkey33,33);
-            init_hexbytes_noT(rmd160str,rmd160,20);
-            jaddstr(item,rmd160str,bits256_str(str,myinfo->privkey));
             walletitem = cJSON_CreateObject();
             jadd(walletitem,"default",item);
             argjson = cJSON_CreateObject();
