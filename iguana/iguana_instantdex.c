@@ -1175,37 +1175,49 @@ struct bitcoin_swapinfo *bitcoin_swapinit(struct supernet_info *myinfo,struct ex
     return(swap);
 }
 
-char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_t *txidp,struct exchange_info *exchange,struct instantdex_accept *myap,cJSON *argjson)
+char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_t *txidp,struct exchange_info *exchange,struct instantdex_accept *ap,cJSON *argjson)
 {
-    struct instantdex_accept *otherap; struct bitcoin_swapinfo *swap; cJSON *newjson; int32_t isbob = 0;
+    struct instantdex_accept *otherap,*tmp; struct bitcoin_swapinfo *swap; cJSON *newjson; int32_t isbob = 0;
     *addedp = 0;
     if ( exchange == 0 )
     {
         printf("instantdex_checkoffer null exchange\n");
         return(0);
     }
-    if ( instantdex_statemachinefind(myinfo,exchange,myap->orderid) != 0 || instantdex_historyfind(myinfo,exchange,myap->orderid) != 0 )
+    if ( instantdex_statemachinefind(myinfo,exchange,ap->orderid) != 0 || instantdex_historyfind(myinfo,exchange,ap->orderid) != 0 )
     {
         printf("instantdex_checkoffer already have statemachine or history\n");
         return(0);
     }
-    *txidp = myap->orderid;
-    if ( (otherap= instantdex_acceptable(myinfo,exchange,myap,myap->offer.minperc)) == 0 )
+    *txidp = ap->orderid;
+    if ( (otherap= instantdex_acceptable(myinfo,exchange,ap,ap->offer.minperc)) == 0 )
     {
-        if ( instantdex_offerfind(myinfo,exchange,0,0,myap->orderid,myap->offer.base,myap->offer.rel,0) == 0 )
+        if ( instantdex_offerfind(myinfo,exchange,0,0,ap->orderid,ap->offer.base,ap->offer.rel,0) == 0 )
         {
-            printf("instantdex_checkoffer add.%llu from.%llu to acceptableQ\n",(long long)myap->orderid,(long long)myap->offer.account);
-            instantdex_offeradd(exchange,myap);
+            printf("instantdex_checkoffer add.%llu from.%llu to acceptableQ\n",(long long)ap->orderid,(long long)ap->offer.account);
+            instantdex_offeradd(exchange,ap);
             *addedp = 1;
-            if ( instantdex_offerfind(myinfo,exchange,0,0,myap->orderid,myap->offer.base,myap->offer.rel,0) == 0 )
+            if ( instantdex_offerfind(myinfo,exchange,0,0,ap->orderid,ap->offer.base,ap->offer.rel,0) == 0 )
                 printf("cant find just added to acceptableQ\n");
         }
-        return(jprint(instantdex_offerjson(&myap->offer,myap->orderid),1));
+        return(jprint(instantdex_offerjson(&ap->offer,ap->orderid),1));
     }
     else
     {
-        isbob = myap->offer.myside;
-        swap = bitcoin_swapinit(myinfo,exchange,myap,otherap,1,argjson,isbob != 0 ? "BOB_sentoffer" : "ALICE_sentoffer");
+        if ( otherap->offer.account == myinfo->myaddr.nxt64bits )
+        {
+            tmp = otherap;
+            otherap = ap;
+            ap = tmp;
+            printf("SWAP otherap\n");
+        }
+        else if ( ap->offer.account != myinfo->myaddr.nxt64bits )
+        {
+            printf("checkoffer unexpected account missing\n");
+            return(0);
+        }
+        isbob = ap->offer.myside;
+        swap = bitcoin_swapinit(myinfo,exchange,ap,otherap,1,argjson,isbob != 0 ? "BOB_sentoffer" : "ALICE_sentoffer");
         printf("ISBOB.%d vs %d\n",isbob,instantdex_isbob(swap));
         if ( swap != 0 )
         {
