@@ -414,10 +414,13 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
                 jaddbits256(retjson,"result",signedtxid);
                 jaddstr(retjson,"signedtx",signedtx);
                 jadd(retjson,"complete",completed != 0 ? jtrue() : jfalse());
-                senttxid = iguana_sendrawtransaction(myinfo,coin,signedtx);
-                if ( bits256_cmp(senttxid,signedtxid) == 0 )
-                    jaddstr(retjson,"sendrawtransaction","success");
-                else jaddbits256(retjson,"senderror",senttxid);
+                if ( 0 )
+                {
+                    senttxid = iguana_sendrawtransaction(myinfo,coin,signedtx);
+                    if ( bits256_cmp(senttxid,signedtxid) == 0 )
+                        jaddstr(retjson,"sendrawtransaction","success");
+                    else jaddbits256(retjson,"senderror",senttxid);
+                }
                 free(signedtx);
                 return(jprint(retjson,1));
             } else return(clonestr("{\"error\":\"couldnt create signedtx\"}"));

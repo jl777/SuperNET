@@ -26,13 +26,23 @@
 #define INSTANTDEX_HOPS 2
 #define INSTANTDEX_DURATION 60
 
-#define INSTANTDEX_INSURANCERATE (1. / 777.)
+#define INSTANTDEX_ORDERSTATE_IDLE 0
+#define INSTANTDEX_ORDERSTATE_PENDING 1
+#define INSTANTDEX_ORDERSTATE_BOBSENTDEPOSIT 2
+#define INSTANTDEX_ORDERSTATE_ALICESENTALT 3
+#define INSTANTDEX_ORDERSTATE_BOBSENTBTC 4
+#define INSTANTDEX_ORDERSTATE_ALICECLAIMED 5
+#define INSTANTDEX_ORDERSTATE_BOBCLAIMED 6
+#define INSTANTDEX_ORDERSTATE_CANCELLED 7
+#define INSTANTDEX_ORDERSTATE_ORDERIDMASK (~(uint64_t)7)
+
+#define INSTANTDEX_INSURANCEDIV ((7 * INSTANTDEX_DECKSIZE) >> 3)
 #define INSTANTDEX_PUBEY "03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06"
 #define INSTANTDEX_RMD160 "ca1e04745e8ca0c60d8c5881531d51bec470743f"
 #define TIERNOLAN_RMD160 "daedddd8dbe7a2439841ced40ba9c3d375f98146"
 #define INSTANTDEX_BTC "1KRhTPvoxyJmVALwHFXZdeeWFbcJSbkFPu"
 #define INSTANTDEX_BTCD "RThtXup6Zo7LZAi8kRWgjAyi1s4u6U9Cpf"
-#define INSTANTDEX_MINPERC 50.
+#define INSTANTDEX_MINPERC 50
 
 #define INSTANTDEX_OFFERDURATION 300
 #define INSTANTDEX_LOCKTIME 3600
@@ -119,9 +129,9 @@ struct instantdex_offer
 struct instantdex_accept
 {
     struct instantdex_accept *next,*prev;
-    uint8_t peerhas[IGUANA_MAXPEERS/8];
+    uint8_t state,reported,peerhas[IGUANA_MAXPEERS/8];
     uint64_t pendingvolume64,orderid;
-    uint32_t dead; int32_t didstate:31,reported:1;
+    uint32_t dead; 
     struct instantdex_offer offer;
 };
 
@@ -151,8 +161,8 @@ struct bitcoin_swapinfo
     bits256 privkeys[INSTANTDEX_DECKSIZE+2],mypubs[2],otherpubs[2],privAm,pubAm,privBn,pubBn;
     bits256 myorderhash,otherorderhash,mypubkey,othertrader;
     uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
-    uint64_t altsatoshis,BTCsatoshis,insurance,altpremium,matched64;
-    int32_t isinitiator,choosei,otherchoosei,cutverified,otherverifiedcut,numpubs;
+    uint64_t altsatoshis,BTCsatoshis,insurance,altinsurance;
+    int32_t choosei,otherchoosei,cutverified,otherverifiedcut,numpubs;
     struct bitcoin_statetx *deposit,*payment,*altpayment,*myfee,*otherfee;
     char expectedcmdstr[16],status[16],waitfortx[16];
     struct instantdex_stateinfo *state; uint32_t expiration,dead,reftime;

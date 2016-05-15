@@ -56,7 +56,7 @@ cJSON *exchanges777_quotejson(struct exchange_quote *quote,int32_t allflag,doubl
         jaddnum(json,"cumulative",totalvol);
         if ( quote->timestamp != 0 )
             jaddstr(json,"time",utc_str(str,quote->timestamp));
-        if ( quote->orderid > 0 )
+        if ( quote->orderid != 0 )
             jadd64bits(json,"orderid",quote->orderid);
         //if ( quote->offerNXT != 0 )
             jadd64bits(json,"account",quote->offerNXT);
