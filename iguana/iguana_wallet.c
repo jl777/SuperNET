@@ -788,6 +788,12 @@ void iguana_walletinitcheck(struct supernet_info *myinfo,struct iguana_info *coi
                         }
                         child = child->next;
                     }
+                    if ( strcmp(account,"default") == 0 )
+                    {
+                        privkey = myinfo->privkey;
+                        if ( iguana_waddresscalc(myinfo,coin->chain->pubtype,coin->chain->wiftype,&waddr,privkey) != 0 )
+                            iguana_waddressadd(myinfo,coin,wacct,&waddr,0);
+                    }
                     //printf("account.(%s)\n",account);
                 }
                 item = item->next;
