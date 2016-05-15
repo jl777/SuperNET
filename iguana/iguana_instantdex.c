@@ -713,22 +713,6 @@ cJSON *instantdex_historyjson(struct bitcoin_swapinfo *swap)
     return(instantdex_statemachinejson(swap));
 }
 
-struct bitcoin_swapinfo *instantdex_historyfind(struct supernet_info *myinfo,struct exchange_info *exchange,uint64_t orderid)
-{
-    struct bitcoin_swapinfo *swap,*tmp,*retswap = 0;
-    portable_mutex_lock(&exchange->mutexH);
-    DL_FOREACH_SAFE(exchange->history,swap,tmp)
-    {
-        if ( orderid == swap->mine.orderid )
-        {
-            retswap = swap;
-            break;
-        }
-    }
-    portable_mutex_unlock(&exchange->mutexH);
-    return(retswap);
-}
-
 void instantdex_historyadd(struct exchange_info *exchange,struct bitcoin_swapinfo *swap)
 {
     portable_mutex_lock(&exchange->mutexH);
@@ -748,6 +732,22 @@ void instantdex_offeradd(struct exchange_info *exchange,struct instantdex_accept
     portable_mutex_lock(&exchange->mutex);
     DL_APPEND(exchange->offers,ap);
     portable_mutex_unlock(&exchange->mutex);
+}
+
+struct bitcoin_swapinfo *instantdex_historyfind(struct supernet_info *myinfo,struct exchange_info *exchange,uint64_t orderid)
+{
+    struct bitcoin_swapinfo *swap,*tmp,*retswap = 0;
+    portable_mutex_lock(&exchange->mutexH);
+    DL_FOREACH_SAFE(exchange->history,swap,tmp)
+    {
+        if ( orderid == swap->mine.orderid )
+        {
+            retswap = swap;
+            break;
+        }
+    }
+    portable_mutex_unlock(&exchange->mutexH);
+    return(retswap);
 }
 
 struct bitcoin_swapinfo *instantdex_statemachinefind(struct supernet_info *myinfo,struct exchange_info *exchange,uint64_t orderid)
@@ -982,7 +982,7 @@ int32_t instantdex_quoterequest(struct supernet_info *myinfo,struct iguana_info 
 
 int32_t instantdex_quotep2p(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,uint8_t *serialized,int32_t recvlen)
 {
-    bits256 orderhash,encodedhash; int32_t checklen; struct instantdex_accept A,*ap; struct exchange_info *exchange; char *retstr; cJSON *argjson; uint64_t txid;
+    bits256 orderhash,encodedhash; int32_t added,checklen; struct instantdex_accept A,*ap; struct exchange_info *exchange; char *retstr; cJSON *argjson; uint64_t txid;
     exchange = exchanges777_find("bitcoin");
     memset(&A,0,sizeof(A));
     orderhash = instantdex_rwoffer(0,&checklen,serialized,&A.offer), A.orderid = orderhash.txid;
@@ -995,14 +995,19 @@ int32_t instantdex_quotep2p(struct supernet_info *myinfo,struct iguana_info *coi
             //printf("add quote here! Qsize.%d\n",queue_size(&exchange->acceptableQ));
             if ( exchange != 0 )
             {
-                ap = calloc(1,sizeof(*ap));
-                *ap = A;
-                SETBIT(ap->peerhas,addr->addrind);
-                argjson = cJSON_Parse("{}");
-                //printf("before checkoffer Qsize.%d\n",queue_size(&exchange->acceptableQ));
-                if ( (retstr= instantdex_checkoffer(myinfo,&txid,exchange,ap,argjson)) != 0 )
-                    free(retstr);
-                free_json(argjson);
+                if ( instantdex_statemachinefind(myinfo,exchange,A.orderid) == 0 && instantdex_historyfind(myinfo,exchange,A.orderid) == 0 )
+                {
+                    ap = calloc(1,sizeof(*ap));
+                    *ap = A;
+                    SETBIT(ap->peerhas,addr->addrind);
+                    argjson = cJSON_Parse("{}");
+                    //printf("before checkoffer Qsize.%d\n",queue_size(&exchange->acceptableQ));
+                    if ( (retstr= instantdex_checkoffer(myinfo,&added,&txid,exchange,ap,argjson)) != 0 )
+                        free(retstr);
+                    if ( added == 0 )
+                        free(ap);
+                    free_json(argjson);
+                }
             }
         }
         else
@@ -1170,12 +1175,18 @@ struct bitcoin_swapinfo *bitcoin_swapinit(struct supernet_info *myinfo,struct ex
     return(swap);
 }
 
-char *instantdex_checkoffer(struct supernet_info *myinfo,uint64_t *txidp,struct exchange_info *exchange,struct instantdex_accept *myap,cJSON *argjson)
+char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_t *txidp,struct exchange_info *exchange,struct instantdex_accept *myap,cJSON *argjson)
 {
-    char *retstr = 0; struct instantdex_accept *otherap; struct bitcoin_swapinfo *swap; cJSON *newjson; int32_t isbob = 0;
+    struct instantdex_accept *otherap; struct bitcoin_swapinfo *swap; cJSON *newjson; int32_t isbob = 0;
+    *addedp = 0;
     if ( exchange == 0 )
     {
-        printf("instantdex_checkoff null exchange\n");
+        printf("instantdex_checkoffer null exchange\n");
+        return(0);
+    }
+    if ( instantdex_statemachinefind(myinfo,exchange,myap->orderid) != 0 || instantdex_historyfind(myinfo,exchange,myap->orderid) != 0 )
+    {
+        printf("instantdex_checkoffer already have statemachine or history\n");
         return(0);
     }
     *txidp = myap->orderid;
@@ -1185,6 +1196,7 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,uint64_t *txidp,struct 
         {
             printf("instantdex_checkoffer add.%llu from.%llu to acceptableQ\n",(long long)myap->orderid,(long long)myap->offer.account);
             instantdex_offeradd(exchange,myap);
+            *addedp = 1;
             if ( instantdex_offerfind(myinfo,exchange,0,0,myap->orderid,myap->offer.base,myap->offer.rel,0) == 0 )
                 printf("cant find just added to acceptableQ\n");
         }
@@ -1200,12 +1212,13 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,uint64_t *txidp,struct 
             printf("STATEMACHINEQ.(%llu / %llu)\n",(long long)swap->mine.orderid,(long long)swap->other.orderid);
             //queue_enqueue("acceptableQ",&exchange->acceptableQ,&swap->DL,0);
             instantdex_statemachineadd(exchange,swap);
+            *addedp = 1;
             if ( (newjson= instantdex_parseargjson(myinfo,exchange,swap,argjson,1)) == 0 )
                 return(clonestr("{\"error\":\"instantdex_checkoffer null newjson\"}"));
             return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,"BTCoffer",GENESIS_PUBKEY,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck),0));
         } else printf("error creating statemachine\n");
     }
-    return(retstr);
+    return(0);
 }
 
 char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *myap,struct instantdex_accept *otherap,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *serdata,int32_t serdatalen) // receiving side
@@ -1398,7 +1411,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,struct category_info *cat,v
     return(retstr);
 }
 
-char *instantdex_createaccept(struct supernet_info *myinfo,struct instantdex_accept **aptrp,struct exchange_info *exchange,char *base,char *rel,double price,double basevolume,int32_t acceptdir,char *mysidestr,int32_t duration,uint64_t account,int32_t queueflag,uint8_t minperc)
+char *instantdex_createaccept(struct supernet_info *myinfo,struct instantdex_accept **aptrp,struct exchange_info *exchange,char *base,char *rel,double price,double basevolume,int32_t acceptdir,char *mysidestr,int32_t duration,uint64_t account,uint8_t minperc)
 {
     struct instantdex_accept *ap; int32_t myside; char *retstr;
     *aptrp = 0;
@@ -1418,11 +1431,12 @@ char *instantdex_createaccept(struct supernet_info *myinfo,struct instantdex_acc
         if ( instantdex_offerfind(myinfo,exchange,0,0,ap->orderid,ap->offer.base,ap->offer.rel,0) == 0 )
         {
             instantdex_propagate(myinfo,exchange,ap);
-            if ( queueflag != 0 )
+            /*if ( queueflag != 0 )
             {
                 printf("acceptableQ <- %llu\n",(long long)ap->orderid);
                 instantdex_offeradd(exchange,ap);
-            }
+                *addedp = 1;
+            }*/
             retstr = jprint(instantdex_acceptjson(ap),1);
             //printf("acceptableQ %llu (%s)\n",(long long)ap->orderid,retstr);
             return(retstr);
@@ -1456,24 +1470,32 @@ void instantdex_update(struct supernet_info *myinfo)
 
 TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,maxaccept,base,rel,maxprice,basevolume)
 {
-    struct instantdex_accept *ap; char *retstr; struct exchange_info *exchange; uint64_t txid;
+    struct instantdex_accept *ap; int32_t added; char *retstr; struct exchange_info *exchange; uint64_t txid;
     myinfo = SuperNET_accountfind(json);
     if ( remoteaddr == 0 && (exchange= exchanges777_find("bitcoin")) != 0 )
     {
-        retstr = instantdex_createaccept(myinfo,&ap,exchange,base,rel,maxprice,basevolume,-1,rel,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits,1,juint(json,"minperc"));
-        return(instantdex_checkoffer(myinfo,&txid,exchange,ap,json));
+        if ( (retstr= instantdex_createaccept(myinfo,&ap,exchange,base,rel,maxprice,basevolume,-1,rel,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits,juint(json,"minperc"))) != 0 )
+            free(retstr);
+        retstr = instantdex_checkoffer(myinfo,&added,&txid,exchange,ap,json);
+        if ( added == 0 )
+            free(ap);
+        return(retstr);
         
     } else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
 }
 
 TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,minaccept,base,rel,minprice,basevolume)
 {
-    struct instantdex_accept *ap; char *retstr; struct exchange_info *exchange; uint64_t txid;
+    struct instantdex_accept *ap; int32_t added; char *retstr; struct exchange_info *exchange; uint64_t txid;
     myinfo = SuperNET_accountfind(json);
     if ( remoteaddr == 0 && (exchange= exchanges777_find("bitcoin")) != 0 )
     {
-        retstr = instantdex_createaccept(myinfo,&ap,exchanges777_find("bitcoin"),base,rel,minprice,basevolume,1,base,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits,1,juint(json,"minperc"));
-        return(instantdex_checkoffer(myinfo,&txid,exchange,ap,json));
+        if ( (retstr= instantdex_createaccept(myinfo,&ap,exchanges777_find("bitcoin"),base,rel,minprice,basevolume,1,base,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits,juint(json,"minperc"))) != 0 )
+            free(retstr);
+        retstr = instantdex_checkoffer(myinfo,&added,&txid,exchange,ap,json);
+        if ( added == 0 )
+            free(ap);
+        return(retstr);
     } else return(clonestr("{\"error\":\"InstantDEX API request only local usage!\"}"));
 }
 

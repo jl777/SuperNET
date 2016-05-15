@@ -410,8 +410,7 @@ int32_t is_valid_BTCother(char *other)
 
 uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *base,char *rel,int32_t dir,double price,double volume,cJSON *argjson)
 {
-    char *str,*retstr,coinaddr[64]; uint64_t txid = 0; cJSON *json=0;
-    struct instantdex_accept *ap;
+    char *str,*retstr,coinaddr[64]; int32_t added; uint64_t txid = 0; cJSON *json=0; struct instantdex_accept *ap;
     struct supernet_info *myinfo; uint8_t pubkey[33]; struct iguana_info *other;
     myinfo = SuperNET_accountfind(argjson);
     //printf("TRADE with myinfo.%p\n",myinfo);
@@ -454,9 +453,13 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
             jaddstr(json,"BTC",myinfo->myaddr.BTC);
             jaddnum(json,"minperc",jdouble(argjson,"minperc"));
             printf("trade dir.%d (%s/%s) %.6f vol %.8f\n",dir,base,"BTC",price,volume);
-            if ( (str= instantdex_createaccept(myinfo,&ap,exchange,base,"BTC",price,volume,-dir,dir > 0 ? "BTC" : base,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits,1,jdouble(argjson,"minperc"))) != 0 && ap != 0 )
-                retstr = instantdex_checkoffer(myinfo,&txid,exchange,ap,json), free(str);
-            else printf("null return queueaccept\n");
+            if ( (str= instantdex_createaccept(myinfo,&ap,exchange,base,"BTC",price,volume,-dir,dir > 0 ? "BTC" : base,INSTANTDEX_OFFERDURATION,myinfo->myaddr.nxt64bits,jdouble(argjson,"minperc"))) != 0 && ap != 0 )
+            {
+                retstr = instantdex_checkoffer(myinfo,&added,&txid,exchange,ap,json);
+                free(str);
+                if ( added == 0 )
+                    free(ap);
+            } else printf("null return queueaccept\n");
             if ( retstrp != 0 )
                 *retstrp = retstr;
         }
