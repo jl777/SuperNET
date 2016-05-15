@@ -357,7 +357,7 @@ char *SuperNET_keysinit(struct supernet_info *myinfo,char *argjsonstr)
         jadd64bits(json,"rand",r);
         //printf("call SuperNET_encryptjson\n");
         _SuperNET_encryptjson(destfname,passphrase,sizeof(passphrase),fname2fa,sizeof(fname2fa),json);
-        printf("save.(%s)\n",jprint(json,0));
+        //printf("save.(%s)\n",jprint(json,0));
         free_json(json);
     }
     if ( myinfo->ipaddr[0] == 0 )

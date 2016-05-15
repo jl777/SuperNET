@@ -326,7 +326,7 @@ int32_t SuperNET_json2bits(uint8_t *serialized,int32_t maxsize,cJSON *json,bits2
         } else return(-1);
     }
     crc = calc_crc32(0,&serialized[sizeof(crc)],len - sizeof(crc));
-   // char str[65]; printf("crc.%u ip.(%s %s) tag.%llx checkc.%x apinum.%d >>>>>>>>>>>>>>>> mypub.%s\n",crc,destip,myipaddr,(long long)tag,checkc,apinum,bits256_str(str,mypubkey));
+    // char str[65]; printf("crc.%u ip.(%s %s) tag.%llx checkc.%x apinum.%d >>>>>>>>>>>>>>>> mypub.%s\n",crc,destip,myipaddr,(long long)tag,checkc,apinum,bits256_str(str,mypubkey));
     iguana_rwnum(1,serialized,sizeof(crc),&crc);
     //int32_t i; for (i=0; i<len; i++)
     //    printf("%02x ",serialized[i]);
@@ -411,7 +411,7 @@ char *SuperNET_hexconv(char *hexmsg)
     cJSON *json; char *myip,*yourip,*retstr = hexmsg; uint32_t myipbits=0,destipbits=0;
     uint8_t *bits; int32_t n,len = (int32_t)strlen(hexmsg);
     //if ( hexmsg == 0 || is_hexstr(hexmsg,len) == 0 )
-        return(hexmsg);
+    return(hexmsg);
     len >>= 1;
     if ( (bits= calloc(1,len)) != 0 )
     {
@@ -683,8 +683,8 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,ui
             }
             else if ( jobj(json,"password") != 0 )
             {
-            if ( (str= SuperNET_login(myinfo,0,json,remoteaddr,jstr(json,"handle"),jstr(json,"password"),jstr(json,"permanentfile"),0)) != 0 )
-                free(str);
+                if ( (str= SuperNET_login(myinfo,0,json,remoteaddr,jstr(json,"handle"),jstr(json,"password"),jstr(json,"permanentfile"),0)) != 0 )
+                    free(str);
                 autologin = 1;
             }
         }
@@ -962,14 +962,15 @@ STRING_ARG(SuperNET,addr2rmd160,address)
 
 HASH_AND_INT(SuperNET,priv2pub,privkey,addrtype)
 {
-    cJSON *retjson; bits256 pub; uint8_t pubkey[33]; char coinaddr[64];
+    cJSON *retjson; bits256 pub; uint8_t pubkey[33]; char coinaddr[64],pubkeystr[67];
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     retjson = cJSON_CreateObject();
     crypto_box_priv2pub(pub.bytes,privkey.bytes);
     jaddbits256(retjson,"curve25519",pub);
     pub = bitcoin_pubkey33(myinfo->ctx,pubkey,privkey);
-    jaddbits256(retjson,"secp256k1",pub);
+    init_hexbytes_noT(pubkeystr,pubkey,33);
+    jaddstr(retjson,"secp256k1",pubkeystr);
     bitcoin_address(coinaddr,addrtype,pubkey,33);
     jaddstr(retjson,"result",coinaddr);
     return(jprint(retjson,1));
@@ -1289,7 +1290,7 @@ STRING_ARG(SuperNET,wif2priv,wif)
 STRING_ARG(SuperNET,priv2wif,priv)
 {
     bits256 privkey; char wifstr[65]; uint8_t wiftype; cJSON *retjson = cJSON_CreateObject();
-    if ( strlen(priv) == sizeof(bits256)*2 && is_hexstr(priv,(int32_t)sizeof(bits256)*2) == sizeof(bits256)*2 )
+    if ( is_hexstr(priv,0) == sizeof(bits256)*2 )
     {
         wiftype = coin != 0 ? coin->chain->wiftype : 0x80;
         decode_hex(privkey.bytes,sizeof(privkey),priv);
@@ -1428,9 +1429,9 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
     if ( password == 0 || password[0] == 0 )
         password = passphrase;
     /*if ( password != 0 && password[0] != 0 )
-        safecopy(myinfo->secret,password,sizeof(myinfo->secret));
-    else if ( passphrase != 0 && passphrase[0] != 0 )
-        safecopy(myinfo->secret,passphrase,sizeof(myinfo->secret));*/
+     safecopy(myinfo->secret,password,sizeof(myinfo->secret));
+     else if ( passphrase != 0 && passphrase[0] != 0 )
+     safecopy(myinfo->secret,passphrase,sizeof(myinfo->secret));*/
     if ( permanentfile != 0 )
         safecopy(myinfo->permanentfile,permanentfile,sizeof(myinfo->permanentfile));
     if ( (decryptstr= SuperNET_decryptjson(IGUANA_CALLARGS,password,myinfo->permanentfile)) != 0 )
@@ -1476,14 +1477,19 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
         else
         {
             char rmd160str[41],str[65]; uint8_t rmd160[20],pubkey33[33];
+            item = cJSON_CreateObject();
+            bitcoin_pubkey33(myinfo->ctx,pubkey33,myinfo->persistent_priv);
+            calc_rmd160_sha256(rmd160,pubkey33,33);
+            init_hexbytes_noT(rmd160str,rmd160,20);
+            jaddstr(item,rmd160str,bits256_str(str,myinfo->persistent_priv));
+            item = cJSON_CreateObject();
             bitcoin_pubkey33(myinfo->ctx,pubkey33,myinfo->privkey);
             calc_rmd160_sha256(rmd160,pubkey33,33);
             init_hexbytes_noT(rmd160str,rmd160,20);
-            argjson = cJSON_CreateObject();
-            item = cJSON_CreateObject();
-            walletitem = cJSON_CreateObject();
             jaddstr(item,rmd160str,bits256_str(str,myinfo->privkey));
+            walletitem = cJSON_CreateObject();
             jadd(walletitem,"default",item);
+            argjson = cJSON_CreateObject();
             jadd(argjson,"wallet",walletitem);
             myinfo->dirty = (uint32_t)time(NULL);
         }
