@@ -1419,7 +1419,7 @@ struct supernet_info *SuperNET_accountfind(cJSON *json)
 
 FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
 {
-    char *argstr,*str,*decryptstr = 0; cJSON *argjson;
+    char *str,*decryptstr = 0; cJSON *argjson,*item,*walletitem;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( handle != 0 && handle[0] != 0 )
@@ -1472,12 +1472,24 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
                 jdelete(argjson,"passphrase");
             if ( jobj(argjson,"error") != 0 )
                 jdelete(argjson,"error");
-        } else argjson = cJSON_CreateObject();
+        }
+        else
+        {
+            char rmd160str[41],str[65]; uint8_t rmd160[20],pubkey33[33];
+            bitcoin_pubkey33(myinfo->ctx,pubkey33,myinfo->privkey);
+            calc_rmd160_sha256(rmd160,pubkey33,33);
+            init_hexbytes_noT(rmd160str,rmd160,20);
+            argjson = cJSON_CreateObject();
+            item = cJSON_CreateObject();
+            walletitem = cJSON_CreateObject();
+            jaddstr(item,rmd160str,bits256_str(str,myinfo->privkey));
+            jadd(walletitem,"default",item);
+            jadd(argjson,"wallet",walletitem);
+            myinfo->dirty = (uint32_t)time(NULL);
+        }
         jaddstr(argjson,"passphrase",passphrase);
-        argstr = jprint(argjson,1);
-        if ( (str= SuperNET_encryptjson(IGUANA_CALLARGS,password,myinfo->permanentfile,argstr)) != 0 )
+        if ( (str= SuperNET_encryptjson(myinfo,coin,argjson,remoteaddr,password,myinfo->permanentfile,"")) != 0 )
             free(str);
-        free(argstr);
         myinfo->expiration = (uint32_t)(time(NULL) + 3600);
         return(SuperNET_activehandle(IGUANA_CALLARGS));
     } else return(clonestr("{\"error\":\"need passphrase\"}"));

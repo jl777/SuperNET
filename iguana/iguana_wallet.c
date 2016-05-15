@@ -401,7 +401,7 @@ int32_t iguana_loginsave(struct supernet_info *myinfo,struct iguana_info *coin,c
         if ( (passphrase= jstr(loginjson,"passphrase")) != 0 )
         {
             _SuperNET_encryptjson(destfname,passphrase,0,myinfo->permanentfile,0,loginjson);
-            //printf("loginsave.(%s) <= (%s)\n",destfname,newstr);
+            printf("loginsave.(%s) <= (%s)\n",destfname,newstr);
             //iguana_walletlock(myinfo);
         }
         free_json(loginjson);
@@ -788,12 +788,6 @@ void iguana_walletinitcheck(struct supernet_info *myinfo,struct iguana_info *coi
                         }
                         child = child->next;
                     }
-                    if ( strcmp(account,"default") == 0 )
-                    {
-                        privkey = myinfo->privkey;
-                        if ( iguana_waddresscalc(myinfo,coin->chain->pubtype,coin->chain->wiftype,&waddr,privkey) != 0 )
-                            iguana_waddressadd(myinfo,coin,wacct,&waddr,0);
-                    }
                     //printf("account.(%s)\n",account);
                 }
                 item = item->next;
@@ -888,7 +882,6 @@ int64_t iguana_addressreceived(struct supernet_info *myinfo,struct iguana_info *
     }
     return(balance);
 }
-
 
 char *getnewaddress(struct supernet_info *myinfo,struct iguana_waddress **waddrp,struct iguana_info *coin,char *account,char *retstr)
 {
