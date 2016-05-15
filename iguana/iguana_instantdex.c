@@ -914,7 +914,7 @@ int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coi
             if ( n < sizeof(hashes)/sizeof(*hashes) )//&& GETBIT(ap->peerhas,addr->addrind) == 0 )
             {
                 hashes[n++] = encodedhash;
-                printf("%llu ",(long long)ap->orderid);
+                printf("(%d %llu) ",n,(long long)ap->orderid);
             }
         }
         else
@@ -926,6 +926,7 @@ int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coi
     portable_mutex_unlock(&exchange->mutex);
     if ( n > 0 )
     {
+        printf(" nhashes\n");
         len = iguana_inv2packet(serialized,sizeof(serialized),MSG_QUOTE,hashes,n);
         //printf("Send inv2[%d] -> (%s)\n",n,addr->ipaddr);
         return(iguana_queue_send(coin,addr,0,serialized,"inv2",len,0,0));
@@ -943,13 +944,13 @@ struct instantdex_accept *instantdex_quotefind(struct supernet_info *myinfo,stru
 
 struct iguana_bundlereq *instantdex_recvquotes(struct iguana_info *coin,struct iguana_bundlereq *req,bits256 *quotes,int32_t n)
 {
-    int32_t i,len,m = 0; uint8_t serialized[10000];
+    int32_t i,len,m = 0; uint8_t serialized[10000]; struct exchange_info *exchange = exchanges777_find("bitcoin");
     if ( req->addr == 0 )
         return(0);
     //printf("received quotehashes.%d from (%s)\n",n,req->addr->ipaddr);
     for (i=1; i<n; i++)
     {
-        if ( instantdex_quotefind(0,coin,req->addr,quotes[i]) != 0 )
+        if ( instantdex_quotefind(0,coin,req->addr,quotes[i]) != 0 || instantdex_statemachinefind(0,exchange,quotes[i].ulongs[0]) != 0 || instantdex_historyfind(0,exchange,quotes[i].ulongs[0]) != 0 )
             continue;
         quotes[m++] = quotes[i];
     }
