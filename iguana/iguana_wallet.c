@@ -1335,7 +1335,7 @@ STRING_AND_THREEINTS(bitcoinrpc,getbalance,account,minconf,includeempty,lastheig
     if ( myinfo->expiration == 0 )
         return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     if ( account == 0 )
-        account = "";
+        account = "*";
     if ( minconf == 0 )
         minconf = 1;
     if ( strcmp(account,"*") != 0 )
