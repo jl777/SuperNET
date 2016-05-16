@@ -483,7 +483,7 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
         checkc = SuperNET_checkc(nextprivkey,nextdestpub,&nextpubkey.txid,sizeof(nextpubkey.txid));
         if ( (datalen= SuperNET_json2bits(&serialized[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE,json,nextpubkey,checkc,(uint32_t)calc_ipbits(myinfo->ipaddr),(uint32_t)calc_ipbits(addr->ipaddr),addr->othervalid)) > 0 )
         {
-            if ( 0 && jstr(json,"method") != 0 && strcmp("getpeers",jstr(json,"method")) != 0 )
+            if ( 1 && jstr(json,"method") != 0 && strcmp("getpeers",jstr(json,"method")) != 0 )
                 printf("SUPERSEND -> (%s) (%s) delaymillis.%d datalen.%d\n",jprint(SuperNET_bits2json(&serialized[sizeof(struct iguana_msghdr)],datalen),1),addr->ipaddr,delaymillis,datalen);
             if ( 0 && memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(destpub)) == 0 )
                 qlen = iguana_queue_send(coin,addr,delaymillis,serialized,"SuperNET",datalen,0,0);
