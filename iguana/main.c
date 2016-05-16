@@ -146,6 +146,8 @@ struct supernet_info *SuperNET_MYINFO(char *passphrase)
         MYINFO.ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
         secp256k1_pedersen_context_initialize(MYINFO.ctx);
         secp256k1_rangeproof_context_initialize(MYINFO.ctx);
+        OS_randombytes(MYINFO.privkey.bytes,sizeof(MYINFO.privkey));
+        MYINFO.myaddr.pubkey = curve25519(MYINFO.privkey,curve25519_basepoint9());
     }
     if ( passphrase == 0 || passphrase[0] == 0 )
         return(&MYINFO);

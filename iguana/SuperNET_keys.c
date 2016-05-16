@@ -293,7 +293,6 @@ void SuperNET_setkeys(struct supernet_info *myinfo,void *pass,int32_t passlen,in
     bitcoin_pubkey33(myinfo->ctx,pubkey33,myinfo->persistent_priv);
     bitcoin_address(myinfo->myaddr.BTC,0,pubkey33,33);
     bitcoin_address(myinfo->myaddr.BTCD,60,pubkey33,33);
-    myinfo->myaddr.pubkey = curve25519(myinfo->privkey,curve25519_basepoint9());
 }
 
 void SuperNET_parsemyinfo(struct supernet_info *myinfo,cJSON *msgjson)
