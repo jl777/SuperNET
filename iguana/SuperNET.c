@@ -443,7 +443,7 @@ void iguana_setkeys(struct supernet_info *myinfo,struct iguana_peer *addr,bits25
         *destpubp = GENESIS_PUBKEY;
     if ( addr->othervalid < 3 )
         *myprivp = GENESIS_PRIVKEY, *mypubp = GENESIS_PUBKEY;
-    char str[65]; printf("(priv.%llx pub.%llx) -> destpub.%s\n",(long long)myprivp->txid,(long long)mypubp->txid,bits256_str(str,*destpubp));
+    //char str[65]; printf("(priv.%llx pub.%llx) -> destpub.%s\n",(long long)myprivp->txid,(long long)mypubp->txid,bits256_str(str,*destpubp));
 }
 
 bits256 iguana_actualpubkey(int32_t *offsetp,uint8_t *cipher,int32_t cipherlen,bits256 destpubkey)
@@ -791,7 +791,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
             decode_hex((uint8_t *)&othercheckc,sizeof(othercheckc),checkstr);
             checkc = SuperNET_checkc(myinfo->privkey,senderpub,&senderpub.txid,sizeof(senderpub.txid));
             if ( checkc == othercheckc )
-                addr->validpub++;
+                addr->validpub += 1*0;
             else if ( addr->validpub > 0 )
                 addr->validpub >>= 1;
             else addr->validpub--;
