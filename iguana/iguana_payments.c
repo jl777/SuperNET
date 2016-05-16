@@ -449,8 +449,13 @@ char *iguana_rawtxissue(struct supernet_info *myinfo,struct iguana_info *coin,cJ
         for (i=0; i<n; i++)
         {
             if ( (addr= coin->peers.ranked[i]) != 0 && addr->supernet != 0 && addr->usock >= 0 )
+            {
+                jdelete(reqjson,"destip");
+                jaddstr(reqjson,"destip",addr->ipaddr);
                 iguana_send_supernet(coin,addr,jprint(reqjson,0),delay);
+            }
         }
+        free_json(reqjson);
         while ( OS_milliseconds() < expiration )
         {
             if ( (ptr= queue_dequeue(&myinfo->rawtxQ,0)) != 0 )

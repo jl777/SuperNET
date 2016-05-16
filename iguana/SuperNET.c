@@ -248,7 +248,7 @@ uint16_t SuperNET_checkc(bits256 privkey,bits256 otherpub,void *num,int32_t len)
     memcpy(buf,seed2.bytes,sizeof(seed));
     iguana_rwnum(1,&buf[sizeof(seed)],len,num);
     vcalc_sha256(0,check.bytes,buf,(int32_t)sizeof(seed2)+len);
-    printf("SuperNET_checkc otherpub.%llx + privkey.%llx -> %x\n",(long long)otherpub.txid,(long long)privkey.txid,check.ushorts[0]);
+    //printf("SuperNET_checkc otherpub.%llx + privkey.%llx -> %x\n",(long long)otherpub.txid,(long long)privkey.txid,check.ushorts[0]);
     return(check.ushorts[0]);
 }
 
@@ -798,7 +798,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
             //printf("validpub.%d: %x vs %x priv.%llx senderpub.%llx\n",addr->validpub,checkc,othercheckc,(long long)myinfo->privkey.txid,(long long)senderpub.txid);
         }
         maxdelay = juint(json,"maxdelay");
-        //if ( 1 && jstr(json,"method") != 0 && strcmp(jstr(json,"method"),"getpeers") != 0 )
+        if ( 1 && jstr(json,"method") != 0 && strcmp(jstr(json,"method"),"getpeers") != 0 )
             printf("GOT >>>>>>>> SUPERNET P2P.(%s) from.%s %s valid.%d:%d\n",jprint(json,0),coin->symbol,addr->ipaddr,addr->validpub,addr->othervalid);
         if ( (myipaddr= jstr(json,"yourip")) != 0 )
             SuperNET_checkipaddr(SuperNET_MYINFO(0),coin,addr,myipaddr,ipaddr);
@@ -815,7 +815,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
             return(0);
         }
         retstr = SuperNET_JSON(myinfo,json,ipaddr,addr->A.port);
-        printf("(%s) -> p2pret.(%s)\n",jprint(json,0),retstr);
+        //printf("(%s) -> p2pret.(%s)\n",jprint(json,0),retstr);
         *delaymillisp = SuperNET_delaymillis(myinfo,maxdelay);
         senderpub = jbits256(json,"mypub");
         addr->othervalid = (int32_t)jdouble(json,"ov");
