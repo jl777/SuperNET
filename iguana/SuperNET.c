@@ -440,7 +440,7 @@ void iguana_setkeys(struct supernet_info *myinfo,struct iguana_peer *addr,bits25
     *nextprivp = myinfo->privkey;
     *nextpubp = myinfo->myaddr.pubkey;
     *nextdestpubp = addr->pubkey;
-    if ( 1 || addr->validpub < 3 || addr->othervalid < 3 )
+    if ( 0 || addr->validpub < 3 || addr->othervalid < 3 )
         *myprivp = GENESIS_PRIVKEY, *destpubp = *mypubp = GENESIS_PUBKEY;
     else *myprivp = *nextprivp, *mypubp = *nextpubp, *destpubp = *nextdestpubp;
     //char str[65]; printf("(priv.%llx pub.%llx) -> destpub.%s\n",(long long)myprivp->txid,(long long)mypubp->txid,bits256_str(str,*destpubp));
