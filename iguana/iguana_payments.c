@@ -552,6 +552,7 @@ char *iguana_createrawtx(struct supernet_info *myinfo,struct iguana_info *coin,c
 STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
 {
     cJSON *vins=0,*retjson; char *rawtx=0,*symbol=0; int64_t txfee,satoshis; uint32_t locktime,minconf;
+    printf("RAWTX changeaddr.%s\n",changeaddr==0?"":changeaddr);
     retjson = cJSON_CreateObject();
     if ( spendscriptstr != 0 && spendscriptstr[0] != 0 && (symbol= jstr(vals,"coin")) != 0 && (coin= iguana_coinfind(symbol)) != 0 )
     {
@@ -578,6 +579,7 @@ STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
 INT_ARRAY_STRING(iguana,rawtx_result,rawtxtag,vins,rawtx)
 {
     struct rawtx_queue *ptr = calloc(1,sizeof(*ptr) + strlen(rawtx) + 1);
+    printf("rawtx_result\n");
     strcpy(ptr->rawtx,rawtx);
     ptr->vins = jduplicate(vins);
     ptr->rawtxtag = rawtxtag;
