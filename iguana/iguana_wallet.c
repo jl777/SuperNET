@@ -271,7 +271,9 @@ cJSON *iguana_getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_i
     struct iguana_waccount *subset,*tmp; struct iguana_waddress *waddr,*tmp2; cJSON *retjson,*array;
     retjson = cJSON_CreateObject();
     array = cJSON_CreateArray();
-    if ( account == 0 || strcmp("*",account) != 0 )
+    if ( account == 0 )
+        account = "*";
+    if ( strcmp("*",account) != 0 )
     {
         if ( (subset= iguana_waccountfind(myinfo,coin,account)) != 0 )
         {
