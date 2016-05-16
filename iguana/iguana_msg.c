@@ -589,7 +589,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                 iguana_send_supernet(coin,addr,retstr,delay);
                 free(retstr);
             }
-            //printf("GOT.(%s) [%s] len.%d from %s -> (%s)\n",H->command,data,recvlen,addr->ipaddr,retstr==0?"null":retstr);
+            printf("GOT.(%s) [%s] len.%d from %s -> (%s)\n",H->command,data,recvlen,addr->ipaddr,retstr==0?"null":retstr);
             return(0);
         }
         else if ( strcmp(H->command,"InstantDEX") == 0 )

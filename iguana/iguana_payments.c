@@ -434,6 +434,7 @@ char *iguana_rawtxissue(struct supernet_info *myinfo,struct iguana_info *coin,cJ
         jaddstr(reqjson,"changeaddr",changeaddr);
         jaddstr(reqjson,"spendscriptstr",spendscriptstr);
         jadd(reqjson,"addresses",addresses);
+        jaddnum(reqjson,"plaintext",1);
         OS_randombytes((uint8_t *)&rawtxtag,sizeof(rawtxtag));
         jaddnum(reqjson,"rawtxtag",rawtxtag);
         valsobj = cJSON_CreateObject();
@@ -457,6 +458,7 @@ char *iguana_rawtxissue(struct supernet_info *myinfo,struct iguana_info *coin,cJ
                 if ( rawtxtag == ptr->rawtxtag )
                 {
                     rawtx = clonestr(ptr->rawtx);
+                    printf("got RAWTX.(%s)\n",rawtx);
                     *vinsp = ptr->vins;
                     break;
                 }
@@ -524,17 +526,24 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
 
 char *iguana_createrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,uint32_t locktime,uint64_t satoshis,char *spendscriptstr,char *changeaddr,int64_t txfee,int32_t minconf,cJSON *addresses)
 {
-    cJSON *txobj; char *rawtx=0; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE]; int32_t spendlen;
+    cJSON *retjson; char *signedtx,*rawtx=0; bits256 signedtxid; int32_t completed;
     *vinsp = 0;
-    if ( (txobj= bitcoin_txcreate(coin,locktime)) != 0 )
+    if ( (rawtx= iguana_rawtxissue(myinfo,coin,vinsp,locktime,satoshis,changeaddr,txfee,addresses,minconf,spendscriptstr)) != 0 )
     {
-        spendlen = (int32_t)strlen(spendscriptstr) >> 1;
-        decode_hex(spendscript,spendlen,spendscriptstr);
-        bitcoin_txoutput(coin,txobj,spendscript,spendlen,satoshis);
-        rawtx = iguana_calcrawtx(myinfo,coin,vinsp,txobj,satoshis,changeaddr,txfee,addresses,minconf);
-        free_json(txobj);
+        if ( (signedtx= iguana_signrawtx(myinfo,coin,&signedtxid,&completed,*vinsp,rawtx)) != 0 )
+        {
+            iguana_unspentslock(myinfo,coin,*vinsp);
+            retjson = cJSON_CreateObject();
+            jaddbits256(retjson,"result",signedtxid);
+            jaddstr(retjson,"signedtx",signedtx);
+            jadd(retjson,"complete",completed != 0 ? jtrue() : jfalse());
+            free(rawtx);
+            free(signedtx);
+            return(jprint(retjson,1));
+        }
+        return(rawtx);
     }
-    return(rawtx);
+    return(0);
 }
 
 #include "../includes/iguana_apidefs.h"
