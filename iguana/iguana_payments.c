@@ -435,6 +435,7 @@ char *iguana_rawtxissue(struct supernet_info *myinfo,struct iguana_info *coin,cJ
         jaddstr(reqjson,"spendscriptstr",spendscriptstr);
         jadd(reqjson,"addresses",addresses);
         jaddnum(reqjson,"plaintext",1);
+        jaddnum(reqjson,"request",1);
         OS_randombytes((uint8_t *)&rawtxtag,sizeof(rawtxtag));
         jaddnum(reqjson,"rawtxtag",rawtxtag);
         valsobj = cJSON_CreateObject();
@@ -450,9 +451,6 @@ char *iguana_rawtxissue(struct supernet_info *myinfo,struct iguana_info *coin,cJ
         {
             if ( (addr= coin->peers.ranked[i]) != 0 && addr->supernet != 0 && addr->usock >= 0 )
             {
-                if ( jobj(reqjson,"destip") != 0 )
-                    jdelete(reqjson,"destip");
-                jaddstr(reqjson,"destip",addr->ipaddr);
                 iguana_send_supernet(coin,addr,jprint(reqjson,0),delay);
             }
         }

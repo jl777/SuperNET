@@ -649,7 +649,7 @@ int32_t SuperNET_destination(struct supernet_info *myinfo,uint32_t *destipbitsp,
         if ( juint(json,"broadcast") > 0 )
             destflag |= SUPERNET_FORWARD;
     }
-    if ( remoteaddr == 0 || remoteaddr[0] == 0 || strcmp(remoteaddr,"127.0.0.1") == 0 )
+    if ( jobj(json,"request") != 0 || remoteaddr == 0 || remoteaddr[0] == 0 || strcmp(remoteaddr,"127.0.0.1") == 0 )
         destflag |= SUPERNET_ISMINE;
     return(destflag);
 }
