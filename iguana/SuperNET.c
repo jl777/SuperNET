@@ -795,7 +795,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
             else if ( addr->validpub > 0 )
                 addr->validpub >>= 1;
             else addr->validpub--;
-            printf("validpub.%d: %x vs %x shared.%llx\n",addr->validpub,checkc,othercheckc,(long long)addr->sharedseed.txid);
+            printf("validpub.%d: %x vs %x shared.%llx priv.%llx senderpub.%llx\n",addr->validpub,checkc,othercheckc,(long long)addr->sharedseed.txid,(long long)myinfo->privkey.txid,(long long)senderpub.txid);
         }
         maxdelay = juint(json,"maxdelay");
         //if ( 1 && jstr(json,"method") != 0 && strcmp(jstr(json,"method"),"getpeers") != 0 )
