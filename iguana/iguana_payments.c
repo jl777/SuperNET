@@ -489,17 +489,11 @@ char *iguana_createrawtx(struct supernet_info *myinfo,struct iguana_info *coin,c
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
-STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses_str,vals_str,spendscriptstr)
+STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
 {
-    cJSON *vins=0,*retjson,*vals,*addresses; char *rawtx=0,*symbol=0; int64_t txfee,satoshis; uint32_t locktime,minconf;
+    cJSON *vins=0,*retjson; char *rawtx=0,*symbol=0; int64_t txfee,satoshis; uint32_t locktime,minconf;
     retjson = cJSON_CreateObject();
-    vals = cJSON_Parse(jstr(vals_str,0));
-    addresses = cJSON_Parse(jstr(addresses_str,0));
-    if ( vals != 0 )
-        printf("vals.(%s) (%s)\n",jprint(vals,0),jstr(vals_str,0));
-    if ( addresses != 0 )
-        printf("addresses.(%s) (%s)\n",jprint(addresses,0),jstr(addresses_str,0));
-    if ( (symbol= jstr(vals,"coin")) != 0 && (coin= iguana_coinfind(symbol)) != 0 )
+    if ( spendscriptstr != 0 && spendscriptstr[0] != 0 && (symbol= jstr(vals,"coin")) != 0 && (coin= iguana_coinfind(symbol)) != 0 )
     {
         minconf = juint(vals,"minconf");
         locktime = juint(vals,"locktime");
