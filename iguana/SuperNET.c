@@ -778,7 +778,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
                     return(0);
                 } else { char str[65]; printf("GENESIS recv %s\n",bits256_str(str,senderpub)); }
             } else printf("GENESIS recv GENESIS\n");
-        } else printf("decrypted mypriv.%llx senderpub.%llx\n",(long long)privkey.txid,(long long)senderpub.txid);
+        } //else printf("decrypted mypriv.%llx senderpub.%llx\n",(long long)privkey.txid,(long long)senderpub.txid);
         //for (i=0; i<msglen; i++)
         //    printf("%02x ",msgbits[i]);
         //printf("DECRYPTED %d\n",msglen);
@@ -795,7 +795,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
             else if ( addr->validpub > 0 )
                 addr->validpub >>= 1;
             else addr->validpub--;
-            printf("validpub.%d: %x vs %x priv.%llx senderpub.%llx\n",addr->validpub,checkc,othercheckc,(long long)myinfo->privkey.txid,(long long)senderpub.txid);
+            //printf("validpub.%d: %x vs %x priv.%llx senderpub.%llx\n",addr->validpub,checkc,othercheckc,(long long)myinfo->privkey.txid,(long long)senderpub.txid);
         }
         maxdelay = juint(json,"maxdelay");
         //if ( 1 && jstr(json,"method") != 0 && strcmp(jstr(json,"method"),"getpeers") != 0 )

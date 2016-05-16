@@ -410,7 +410,7 @@ char *iguana_rawtxissue(struct supernet_info *myinfo,struct iguana_info *coin,cJ
 {
     struct rawtx_queue *ptr; struct iguana_peer *addr; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE]; int32_t i,n,spendlen,delay = 0; cJSON *reqjson,*valsobj,*txobj = 0; uint32_t rawtxtag; char *rawtx = 0; double expiration;
     *vinsp = 0;
-    if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
+    if ( 0 && (coin->VALIDATENODE != 0 || coin->RELAYNODE != 0) )
     {
         if ( (txobj= bitcoin_txcreate(coin,locktime)) != 0 )
         {
