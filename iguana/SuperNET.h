@@ -73,6 +73,8 @@ struct supernet_address
     char NXTADDR[32],BTC[64],BTCD[64];
 };
 
+struct rawtx_queue { struct queueitem DL; cJSON *vins; uint32_t rawtxtag; char rawtx[]; };
+
 struct supernet_info
 {
     char ipaddr[64],transport[8]; int32_t APISLEEP; int32_t iamrelay; uint32_t expiration,dirty;
@@ -85,7 +87,7 @@ struct supernet_info
     int32_t LBsock,PUBsock,reqsock,subsock,networktimeout,maxdelay;
     uint16_t LBport,PUBport,reqport,subport,rpcport,publicRPC,argport;
     //struct nn_pollfd pfd[SUPERNET_MAXAGENTS]; //struct relay_info active;
-    struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ;
+    struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ,rawtxQ;
     int32_t numagents,numexchanges;
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES];
     struct iguana_waccount *wallet; void *ctx;

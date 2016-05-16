@@ -578,6 +578,14 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
             len = recvlen;
             if ( (retstr= SuperNET_p2p(coin,addr,&delay,addr->ipaddr,data,recvlen,H->command[strlen("SuperNET")]=='b')) != 0 )
             {
+                cJSON *rawtxjson;
+                if ( (rawtxjson= cJSON_Parse(retstr)) != 0 )
+                {
+                    if ( jstr(rawtxjson,"method") != 0 && strcmp(jstr(rawtxjson,"method"),"rawtx_return") == 0 )
+                    {
+                        ;
+                    }
+                }
                 iguana_send_supernet(coin,addr,retstr,delay);
                 free(retstr);
             }

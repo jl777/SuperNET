@@ -258,7 +258,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         if ( bits256_cmp(coin->RThash1,bp->hashes[1]) != 0 )
             coin->RThash1 = bp->hashes[1];
         bp->lastRT = (uint32_t)time(NULL);
-        if ( coin->RTheight <= coin->longestchain-offset && coin->peers.numranked > 0 && time(NULL) > coin->RThdrstime+10 )
+        if ( coin->RTheight <= coin->longestchain-offset && coin->peers.numranked > 0 && time(NULL) > coin->RThdrstime+60 )
         {
             iguana_RThdrs(coin,bp,coin->peers.numranked);
             coin->RThdrstime = bp->lastRT;

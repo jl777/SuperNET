@@ -361,7 +361,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
         {
             if ( total < (satoshis + txfee) )
             {
-                free_json(txobj), free_json(vins);
+                free_json(vins);
                 free(unspents);
                 printf("insufficient total %.8f vs (%.8f + %.8f)\n",dstr(total),dstr(satoshis),dstr(txfee));
                 return(0);
@@ -369,7 +369,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
             if ( (change= (total - (satoshis + txfee))) > 0 && (changeaddr == 0 || changeaddr[0] == 0) )
             {
                 printf("no changeaddr for %.8f\n",dstr(change));
-                free_json(txobj), free_json(vins);
+                free_json(vins);
                 free(unspents);
                 return(0);
             }
@@ -378,7 +378,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
             {
                 if ( iguana_addressvalidate(coin,&addrtype,changeaddr) < 0 )
                 {
-                    free_json(txobj), free_json(vins);
+                    free_json(vins);
                     free(unspents);
                     printf("illegal destination address.(%s)\n",changeaddr);
                     return(0);
@@ -389,7 +389,6 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
             }
             rawtx = bitcoin_json2hex(myinfo,coin,&txid,txobj,0);
         }
-        free_json(txobj);
     }
     free(unspents);
     *vinsp = vins;
@@ -407,9 +406,75 @@ void iguana_unspentslock(struct supernet_info *myinfo,struct iguana_info *coin,c
     }
 }
 
+char *iguana_rawtxissue(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,uint32_t locktime,uint64_t satoshis,char *changeaddr,uint64_t txfee,cJSON *addresses,int32_t minconf,char *spendscriptstr)
+{
+    struct rawtx_queue *ptr; struct iguana_peer *addr; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE]; int32_t i,n,spendlen,delay = 0; cJSON *reqjson,*valsobj,*txobj = 0; uint32_t rawtxtag; char *rawtx = 0; double expiration;
+    *vinsp = 0;
+    if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
+    {
+        if ( (txobj= bitcoin_txcreate(coin,locktime)) != 0 )
+        {
+            spendlen = (int32_t)strlen(spendscriptstr) >> 1;
+            decode_hex(spendscript,spendlen,spendscriptstr);
+            bitcoin_txoutput(coin,txobj,spendscript,spendlen,satoshis);
+            if ( (rawtx= iguana_calcrawtx(myinfo,coin,vinsp,txobj,satoshis,changeaddr,txfee,addresses,minconf)) != 0 && *vinsp != 0 )
+            {
+                free_json(txobj);
+                return(rawtx);
+            }
+        }
+    }
+    if ( txobj != 0 )
+        free_json(txobj);
+    if ( (n= coin->peers.numranked) > 0 )
+    {
+        reqjson = cJSON_CreateObject();
+        jaddstr(reqjson,"agent","iguana");
+        jaddstr(reqjson,"method","rawtx");
+        jaddstr(reqjson,"changeaddr",changeaddr);
+        jaddstr(reqjson,"spendscriptstr",spendscriptstr);
+        jadd(reqjson,"addresses",addresses);
+        OS_randombytes((uint8_t *)&rawtxtag,sizeof(rawtxtag));
+        jaddnum(reqjson,"rawtxtag",rawtxtag);
+        valsobj = cJSON_CreateObject();
+        jaddstr(valsobj,"coin",coin->symbol);
+        jadd64bits(valsobj,"amount",satoshis);
+        jadd64bits(valsobj,"txfee",txfee);
+        jaddnum(valsobj,"minconf",minconf);
+        jaddnum(valsobj,"locktime",locktime);
+        jadd(reqjson,"vals",valsobj);
+        //{\"agent\":\"iguana\",\"method\":\"rawtx\",\"changeaddr\":\"RRyBxbrAPRUBCUpiJgJZYrkxqrh8x5ta9Z\",\"addresses\":[\"RRyBxbrAPRUBCUpiJgJZYrkxqrh8x5ta9Z\"],\"vals\":{\"coin\":\"BTCD\",\"amount\":\"10000000\"},\"spendscriptstr\":\"76a914b7128d2ee837cf03e30a2c0e3e0181f7b9669bb688ac\"}
+        expiration = OS_milliseconds() + 10000;
+        for (i=0; i<n; i++)
+        {
+            if ( (addr= coin->peers.ranked[i]) != 0 && addr->supernet != 0 && addr->usock >= 0 )
+                iguana_send_supernet(coin,addr,jprint(reqjson,0),delay);
+        }
+        while ( OS_milliseconds() < expiration )
+        {
+            if ( (ptr= queue_dequeue(&myinfo->rawtxQ,0)) != 0 )
+            {
+                if ( rawtxtag == ptr->rawtxtag )
+                {
+                    rawtx = clonestr(ptr->rawtx);
+                    *vinsp = ptr->vins;
+                    break;
+                }
+                else
+                {
+                    free_json(ptr->vins);
+                    free(ptr);
+                }
+            }
+        }
+        return(rawtx);
+    }
+    return(0);
+}
+
 char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,uint64_t satoshis,uint64_t txfee,char *comment,char *comment2,int32_t minconf,char *account)
 {
-    uint8_t addrtype,spendscript[1024],rmd160[20]; int32_t completed; char *rawtx=0,*signedtx = 0; bits256 signedtxid,senttxid; cJSON *retjson,*vins,*addresses,*txobj; uint32_t spendlen,locktime = 0; struct iguana_waddress *waddr;
+    uint8_t addrtype,spendscript[1024],rmd160[20]; int32_t completed; char spendscriptstr[4096],*rawtx=0,*signedtx = 0; bits256 signedtxid,senttxid; cJSON *retjson,*vins,*addresses; uint32_t spendlen,locktime = 0; struct iguana_waddress *waddr;
     //sendtoaddress	<bitcoinaddress> <amount> [comment] [comment-to]	<amount> is a real and is rounded to 8 decimal places. Returns the transaction ID <txid> if successful.	Y
     addresses = iguana_getaddressesbyaccount(myinfo,coin,account);
     if ( coin->changeaddr[0] == 0 )
@@ -422,51 +487,37 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
     {
         if ( iguana_addressvalidate(coin,&addrtype,coinaddr) < 0 )
             return(clonestr("{\"error\":\"invalid coin address\"}"));
-        //avail = iguana_availunspents(myinfo,&unspents,&num,coin,minconf,account,coin->blockspace,sizeof(coin->blockspace));
-        //if ( avail < satoshis+txfee || unspents == 0 || num <= 0 )
-        //    return(clonestr("{\"error\":\"not enough funds\"}"));
-        //else
-        if ( (txobj= bitcoin_txcreate(coin,locktime)) != 0 )
+        bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
+        spendlen = bitcoin_standardspend(spendscript,0,rmd160);
+        init_hexbytes_noT(spendscriptstr,spendscript,spendlen);
+        if ( (rawtx= iguana_rawtxissue(myinfo,coin,&vins,locktime,satoshis,coin->changeaddr,txfee,addresses,minconf,spendscriptstr)) != 0 )
         {
-            bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
-            spendlen = bitcoin_standardspend(spendscript,0,rmd160);
-            bitcoin_txoutput(coin,txobj,spendscript,spendlen,satoshis);
-            if ( (rawtx= iguana_calcrawtx(myinfo,coin,&vins,txobj,satoshis,coin->changeaddr,txfee,addresses,minconf)) != 0 && vins != 0 )
+            if ( (signedtx= iguana_signrawtx(myinfo,coin,&signedtxid,&completed,vins,rawtx)) != 0 )
             {
-                if ( (signedtx= iguana_signrawtx(myinfo,coin,&signedtxid,&completed,vins,rawtx)) != 0 )
+                iguana_unspentslock(myinfo,coin,vins);
+                retjson = cJSON_CreateObject();
+                jaddbits256(retjson,"result",signedtxid);
+                jaddstr(retjson,"signedtx",signedtx);
+                jadd(retjson,"complete",completed != 0 ? jtrue() : jfalse());
+                if ( 0 )
                 {
-                    iguana_unspentslock(myinfo,coin,vins);
-                    retjson = cJSON_CreateObject();
-                    jaddbits256(retjson,"result",signedtxid);
-                    jaddstr(retjson,"signedtx",signedtx);
-                    jadd(retjson,"complete",completed != 0 ? jtrue() : jfalse());
-                    if ( 0 )
-                    {
-                        senttxid = iguana_sendrawtransaction(myinfo,coin,signedtx);
-                        if ( bits256_cmp(senttxid,signedtxid) == 0 )
-                            jaddstr(retjson,"sendrawtransaction","success");
-                        else jaddbits256(retjson,"senderror",senttxid);
-                    }
-                    free_json(vins);
-                    free(rawtx);
-                    free(signedtx);
-                    free_json(txobj);
-                    return(jprint(retjson,1));
+                    senttxid = iguana_sendrawtransaction(myinfo,coin,signedtx);
+                    if ( bits256_cmp(senttxid,signedtxid) == 0 )
+                        jaddstr(retjson,"sendrawtransaction","success");
+                    else jaddbits256(retjson,"senderror",senttxid);
                 }
-                else
-                {
-                    free_json(vins);
-                    free(rawtx);
-                    free_json(txobj);
-                    return(clonestr("{\"error\":\"couldnt sign rawtx\"}"));
-                }
+                free_json(vins);
+                free(rawtx);
+                free(signedtx);
+                return(jprint(retjson,1));
             }
             else
             {
-                free_json(txobj);
-                return(clonestr("{\"error\":\"couldnt create rawtx\"}"));
+                free_json(vins);
+                free(rawtx);
+                return(clonestr("{\"error\":\"couldnt sign rawtx\"}"));
             }
-        } else return(clonestr("{\"error\":\"couldnt create txobj\"}"));
+        } else return(clonestr("{\"error\":\"couldnt create rawtx\"}"));
     }
     return(clonestr("{\"error\":\"need address and amount\"}"));
 }
@@ -502,16 +553,27 @@ STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
             txfee = coin->txfee;
         if ( (rawtx= iguana_createrawtx(myinfo,coin,&vins,locktime,satoshis,spendscriptstr,changeaddr,txfee,minconf,addresses)) != 0 )
         {
+            jaddnum(retjson,"rawtxtag",(uint32_t)juint(json,"rawtxtag"));
             jaddstr(retjson,"rawtx",rawtx);
             jaddstr(retjson,"agent","iguana");
             jaddstr(retjson,"method","rawtx_result");
             jadd(retjson,"vins",vins);
             free(rawtx);
         } else jaddstr(retjson,"error","couldnt create rawtx");
-        if ( vins != 0 )
-            free_json(vins);
     }
     return(jprint(retjson,1));
+}
+
+//{"rawtx":"0100000011533957010252b9534fe0186625e3075606f9b547e223830af04b3fb9dab2aaadc7cad5300100000000ffffffff0280969800000000001976a914b7128d2ee837cf03e30a2c0e3e0181f7b9669bb688ac700c023b000000001976a914b7128d2ee837cf03e30a2c0e3e0181f7b9669bb688ac00000000","agent":"iguana","method":"rawtx_result","vins":[{"txid":"30d5cac7adaab2dab93f4bf00a8323e247b5f9065607e3256618e04f53b95202","vout":1,"scriptPubKey":"76a914b7128d2ee837cf03e30a2c0e3e0181f7b9669bb688ac"}],"tag":"17812456603326673661"}
+
+INT_ARRAY_STRING(iguana,rawtx_result,rawtxtag,vins,rawtx)
+{
+    struct rawtx_queue *ptr = calloc(1,sizeof(*ptr) + strlen(rawtx) + 1);
+    strcpy(ptr->rawtx,rawtx);
+    ptr->vins = jduplicate(vins);
+    ptr->rawtxtag = rawtxtag;
+    queue_enqueue("rawtxQ",&myinfo->rawtxQ,&ptr->DL,0);
+    return(0);
 }
 
 STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees)
