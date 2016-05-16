@@ -148,6 +148,7 @@ struct supernet_info *SuperNET_MYINFO(char *passphrase)
         secp256k1_rangeproof_context_initialize(MYINFO.ctx);
         OS_randombytes(MYINFO.privkey.bytes,sizeof(MYINFO.privkey));
         MYINFO.myaddr.pubkey = curve25519(MYINFO.privkey,curve25519_basepoint9());
+        printf("SuperNET_MYINFO: generate session keypair\n");
     }
     if ( passphrase == 0 || passphrase[0] == 0 )
         return(&MYINFO);

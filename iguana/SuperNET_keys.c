@@ -311,7 +311,7 @@ void SuperNET_parsemyinfo(struct supernet_info *myinfo,cJSON *msgjson)
             if ( bits256_nonz(myinfo->persistent_priv) == 0 )
             {
                 printf("null persistent_priv? generate new one\n");
-                OS_randombytes(myinfo->persistent_priv.bytes,sizeof(myinfo->privkey));
+                OS_randombytes(myinfo->persistent_priv.bytes,sizeof(myinfo->persistent_priv));
             }
             myinfo->myaddr.persistent = jbits256(msgjson,"persistent_pub");
             checkhash = curve25519(myinfo->persistent_priv,curve25519_basepoint9());
@@ -380,8 +380,8 @@ char *SuperNET_keysinit(struct supernet_info *myinfo,char *argjsonstr)
         strcpy(myinfo->ipaddr,"127.0.0.1");
         myinfo->myaddr.selfipbits = (uint32_t)calc_ipbits(myinfo->ipaddr);
     }
-    OS_randombytes(myinfo->privkey.bytes,sizeof(myinfo->privkey));
-    myinfo->myaddr.pubkey = curve25519(myinfo->privkey,curve25519_basepoint9());
+    //OS_randombytes(myinfo->privkey.bytes,sizeof(myinfo->privkey));
+    //myinfo->myaddr.pubkey = curve25519(myinfo->privkey,curve25519_basepoint9());
     printf("(%s) %s %llu session(%s %s) persistent.%llx %llx\n",myinfo->ipaddr,myinfo->myaddr.NXTADDR,(long long)myinfo->myaddr.nxt64bits,bits256_str(str,myinfo->privkey),bits256_str(str2,myinfo->myaddr.pubkey),(long long)myinfo->persistent_priv.txid,(long long)myinfo->myaddr.persistent.txid);
     return(coinargs);
 }
