@@ -16521,6 +16521,26 @@ len = 0;
              privkey = rand256(0);
              }
              }*/
+                
+                HASH_ITER(hh,myinfo->wallet,wacct,tmp)
+            {
+                if ( account != 0 && strcmp(account,"*") != 0 && strcmp(account,wacct->account) != 0 )
+                    continue;
+                HASH_ITER(hh,wacct->waddr,waddr,tmp2)
+                {
+                    if ( waddr->addrtype != coin->chain->pubtype || (bits256_nonz(waddr->privkey) == 0 && waddr->scriptlen == 0) )
+                        continue;
+                    if ( waddr->balance > 0 )
+                    {
+                        remains -= waddr->balance;
+                        waddrs[num++] = waddr;
+                        if ( num >= maxwaddrs || remains <= 0 )
+                            break;
+                    }
+                }
+                if ( num >= maxwaddrs || remains <= 0 )
+                    break;
+            }
 
 #endif
 #endif

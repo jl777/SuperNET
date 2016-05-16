@@ -129,7 +129,7 @@ struct instantdex_offer
 struct instantdex_accept
 {
     struct instantdex_accept *next,*prev;
-    uint8_t state,reported,peerhas[IGUANA_MAXPEERS/8];
+    uint8_t state,reported,minconfirms,peerhas[IGUANA_MAXPEERS/8];
     uint64_t pendingvolume64,orderid;
     uint32_t dead; 
     struct instantdex_offer offer;

@@ -826,13 +826,13 @@ int64_t iguana_waccountbalance(struct supernet_info *myinfo,struct iguana_info *
 
 cJSON *iguana_privkeysjson(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins)
 {
-    int32_t i,j,n,numinputs; struct iguana_waddress *waddr; struct iguana_waccount *wacct; char *addresses,*address,coinaddr[64]; cJSON *privkeys = cJSON_CreateArray();
+    int32_t i,j,n,numinputs; uint32_t spent_unspentind; int16_t spent_hdrsi; struct iguana_waddress *waddr; struct iguana_waccount *wacct; char *addresses,*address,coinaddr[64]; cJSON *privkeys = cJSON_CreateArray();
     if ( (numinputs= cJSON_GetArraySize(vins)) > 0 )
     {
         addresses = calloc(numinputs,64);
         for (i=n=0; i<numinputs; i++)
         {
-            if ( (address= iguana_inputaddress(coin,coinaddr,jitem(vins,i))) != 0 )
+            if ( (address= iguana_inputaddress(coin,coinaddr,&spent_hdrsi,&spent_unspentind,jitem(vins,i))) != 0 )
             {
                 for (j=0; j<n; j++)
                 {
