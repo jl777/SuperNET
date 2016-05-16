@@ -485,7 +485,7 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
         {
             if ( 1 && jstr(json,"method") != 0 && strcmp("getpeers",jstr(json,"method")) != 0 )
                 printf("SUPERSEND -> (%s) (%s) delaymillis.%d datalen.%d checkc.%x\n",jprint(SuperNET_bits2json(&serialized[sizeof(struct iguana_msghdr)],datalen),1),addr->ipaddr,delaymillis,datalen,checkc);
-            if ( 1 && memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(destpub)) == 0 )
+            if ( 0 && memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(destpub)) == 0 )
                 qlen = iguana_queue_send(coin,addr,delaymillis,serialized,"SuperNET",datalen,0,0);
             else
             {
@@ -774,7 +774,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
                     int32_t i; for (i=0; i<datalen; i++)
                         printf("%02x ",data[i]);
                     printf("error decrypting %d from %s\n",datalen,addr->ipaddr);
-                    //addr->validpub = 0;
+                    addr->validpub >>= 1;
                     return(0);
                 } else { char str[65]; printf("GENESIS recv %s\n",bits256_str(str,senderpub)); }
             } else printf("GENESIS recv GENESIS\n");
