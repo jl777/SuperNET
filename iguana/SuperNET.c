@@ -479,7 +479,7 @@ int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,c
         }
         serialized = malloc(sizeof(struct iguana_msghdr) + IGUANA_MAXPACKETSIZE);
         checkc = SuperNET_checkc(nextprivkey,nextdestpub,&nextpubkey.txid,sizeof(nextpubkey.txid));
-        if ( (datalen= SuperNET_json2bits(&serialized[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE,json,nextpubkey,checkc,(uint32_t)calc_ipbits(myinfo->ipaddr),(uint32_t)calc_ipbits(addr->ipaddr),addr->othervalid)) > 0 )
+        if ( (datalen= SuperNET_json2bits(&serialized[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE,json,nextpubkey,checkc,(uint32_t)calc_ipbits(myinfo->ipaddr),(uint32_t)calc_ipbits(addr->ipaddr),addr->validpub)) > 0 )
         {
             if ( 1 && jstr(json,"method") != 0 && strcmp("getpeers",jstr(json,"method")) != 0 )
                 printf("SUPERSEND -> (%s) (%s) delaymillis.%d datalen.%d checkc.%x\n",jprint(SuperNET_bits2json(&serialized[sizeof(struct iguana_msghdr)],datalen),1),addr->ipaddr,delaymillis,datalen,checkc);
@@ -772,7 +772,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
                     int32_t i; for (i=0; i<datalen; i++)
                         printf("%02x ",data[i]);
                     printf("error decrypting %d from %s\n",datalen,addr->ipaddr);
-                    addr->validpub = 0;
+                    //addr->validpub = 0;
                     return(0);
                 } else { char str[65]; printf("GENESIS recv %s\n",bits256_str(str,senderpub)); }
             } else printf("GENESIS recv GENESIS\n");
@@ -793,7 +793,7 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
             else if ( addr->validpub > 0 )
                 addr->validpub >>= 1;
             else addr->validpub--;
-            printf("validpub.%d: %x vs %x shared.%llx priv.%llx senderpub.%llx\n",addr->validpub,checkc,othercheckc,(long long)addr->sharedseed.txid,(long long)myinfo->privkey.txid,(long long)senderpub.txid);
+            printf("validpub.%d: %x vs %x priv.%llx senderpub.%llx\n",addr->validpub,checkc,othercheckc,(long long)myinfo->privkey.txid,(long long)senderpub.txid);
         }
         maxdelay = juint(json,"maxdelay");
         //if ( 1 && jstr(json,"method") != 0 && strcmp(jstr(json,"method"),"getpeers") != 0 )
