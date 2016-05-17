@@ -409,12 +409,14 @@ char *iguana_rawtxissue(struct supernet_info *myinfo,uint32_t rawtxtag,char *sym
         jaddnum(valsobj,"minconf",minconf);
         jaddnum(valsobj,"locktime",locktime);
         jadd(hexjson,"vals",valsobj);
+        jaddstr(hexjson,"agent","iguana");
+        jaddstr(hexjson,"method","rawtx");
         str = jprint(hexjson,1);
         init_hexbytes_noT((char *)buf,(uint8_t *)str,(int32_t)strlen(str));
         free(str);
         reqjson = cJSON_CreateObject();
-        jaddstr(reqjson,"agent","iguana");
-        jaddstr(reqjson,"method","rawtx");
+        jaddstr(reqjson,"agent","SuperNET");
+        jaddstr(reqjson,"method","DHT");
         jaddnum(reqjson,"plaintext",1);
         jaddnum(reqjson,"request",1);
         jaddnum(reqjson,"timeout",5000);
