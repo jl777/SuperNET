@@ -68,10 +68,11 @@ int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,long fil
 int32_t iguana_vinset(struct iguana_info *coin,uint8_t *scriptspace,int32_t height,struct iguana_msgvin *vin,struct iguana_txid *tx,int32_t i)
 {
     struct iguana_spend *s,*S; uint32_t spendind,unspentind; bits256 *X; struct iguana_bundle *bp;
-    struct iguana_ramchaindata *rdata; struct iguana_txid *T; char fname[1024]; int32_t scriptlen,err = 0;
+    struct iguana_ramchaindata *rdata=0; struct iguana_txid *T; char fname[1024]; int32_t scriptlen,err = 0; struct iguana_ramchain *ramchain;
     memset(vin,0,sizeof(*vin));
-    if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0 && (rdata= bp->ramchain.H.data) != 0 )
+    if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0 )
     {
+        ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
         S = RAMCHAIN_PTR(rdata,Soffset);
         X = RAMCHAIN_PTR(rdata,Xoffset);
         T = RAMCHAIN_PTR(rdata,Toffset);
@@ -91,7 +92,7 @@ int32_t iguana_vinset(struct iguana_info *coin,uint8_t *scriptspace,int32_t heig
         vin->scriptlen = s->scriptlen;
         vin->vinscript = scriptspace;
         iguana_ramchain_spendtxid(coin,&unspentind,&vin->prev_hash,T,rdata->numtxids,X,rdata->numexternaltxids,s);
-    }
+    } else printf("error getting rdata.%p height.%d\n",rdata,height);
     if ( err != 0 )
         return(-err);
     else return(vin->scriptlen);
