@@ -386,7 +386,7 @@ char *iguana_rawtxissue(struct supernet_info *myinfo,uint32_t rawtxtag,char *sym
             if ( (rawtx= iguana_calcrawtx(myinfo,coin,vinsp,txobj,satoshis,changeaddr,txfee,addresses,minconf)) != 0 && *vinsp != 0 )
             {
                 free_json(txobj);
-                printf("return rawtx.(%s)\n",rawtx);
+                printf("return rawtx.(%s) vins.%p\n",rawtx,*vinsp);
                 return(rawtx);
             }
         }
@@ -511,7 +511,7 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
     return(clonestr("{\"error\":\"need address and amount\"}"));
 }
 
-char *iguana_createrawtx(struct supernet_info *myinfo,uint32_t rawtxtag,char *symbol,cJSON **vinsp,uint32_t locktime,uint64_t satoshis,char *spendscriptstr,char *changeaddr,int64_t txfee,int32_t minconf,cJSON *addresses,char *remoteaddr)
+char *iguana_createrawtx(struct supernet_info *myinfo,uint32_t rawtxtag,char *symbol,cJSON **vinsp,uint32_t locktime,uint64_t satoshis,char *spendscriptstr,char *changeaddr,int64_t txfee,int32_t minconf,cJSON *addresses)
 {
     char *rawtx=0; 
     *vinsp = 0;
@@ -538,7 +538,7 @@ char *iguana_createrawtx(struct supernet_info *myinfo,uint32_t rawtxtag,char *sy
 
 STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
 {
-    cJSON *vins=0,*retjson,*hexjson,*valsobj; char buf[IGUANA_MAXSCRIPTSIZE],*str,*rawtx=0,*symbol=0; int64_t txfee,satoshis; uint32_t i,locktime,minconf,rawtxtag; struct iguana_peer *addr;
+    cJSON *vins=0,*retjson,*hexjson,*valsobj; char buf[2*IGUANA_MAXSCRIPTSIZE+8192],*str,*rawtx=0,*symbol=0; int64_t txfee,satoshis; uint32_t i,locktime,minconf,rawtxtag; struct iguana_peer *addr;
     printf("RAWTX changeaddr.%s (%s)\n",changeaddr==0?"":changeaddr,jprint(json,0));
     retjson = cJSON_CreateObject();
     if ( spendscriptstr != 0 && spendscriptstr[0] != 0 && (symbol= jstr(vals,"coin")) != 0 )
@@ -549,29 +549,32 @@ STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
         txfee = j64bits(vals,"txfee");
         if ( (rawtxtag= juint(vals,"rawtxtag")) == 0 )
             OS_randombytes((uint8_t *)&rawtxtag,sizeof(rawtxtag));
-        if ( (rawtx= iguana_createrawtx(myinfo,rawtxtag,symbol,&vins,locktime,satoshis,spendscriptstr,changeaddr,txfee,minconf,addresses,remoteaddr)) != 0 )
+        if ( (rawtx= iguana_createrawtx(myinfo,rawtxtag,symbol,&vins,locktime,satoshis,spendscriptstr,changeaddr,txfee,minconf,addresses)) != 0 )
         {
+            printf("got rawtx.(%s) remote.%p symbol.%s\n",rawtx,remoteaddr,symbol);
             if ( remoteaddr != 0 && remoteaddr[0] != 0 && (coin= iguana_coinfind(symbol)) != 0 )
             {
                 hexjson = cJSON_CreateObject();
                 jaddstr(hexjson,"rawtx",rawtx);
                 jaddstr(hexjson,"agent","iguana");
                 jaddstr(hexjson,"method","rawtx_result");
-                jaddnum(hexjson,"request",1);
                 jaddnum(hexjson,"rawtxtag",rawtxtag);
-                jadd(hexjson,"vins",vins);
+                if ( vins != 0 )
+                    jadd(hexjson,"vins",vins);
                 valsobj = cJSON_CreateObject();
-                jaddstr(valsobj,"coin",symbol);
+                if ( symbol != 0 )
+                    jaddstr(valsobj,"coin",symbol);
                 jadd(hexjson,"vals",hexjson);
                 str = jprint(hexjson,1);
+                printf("return.(%s)\n",str);
                 init_hexbytes_noT(buf,(uint8_t *)str,(int32_t)strlen(str));
                 free(str);
                 retjson = cJSON_CreateObject();
                 jaddstr(retjson,"agent","SuperNET");
                 jaddstr(retjson,"method","DHT");
+                jaddnum(retjson,"request",1);
                 jaddnum(retjson,"plaintext",1);
                 jaddbits256(retjson,"categoryhash",myinfo->bitcoin_category);
-                jaddnum(retjson,"request",1);
                 jaddnum(retjson,"timeout",5000);
                 jaddstr(retjson,"hexmsg",buf);
                 for (i=0; i<IGUANA_MAXPEERS; i++)

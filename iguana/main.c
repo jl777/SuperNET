@@ -1159,7 +1159,7 @@ void iguana_appletests(struct supernet_info *myinfo)
         //int32_t iguana_schnorr_test(void *ctx);
         //iguana_schnorr_test(myinfo->ctx); getchar();
 
-        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"RELAY\":0,\"VALIDATE\":0,\"prefetchlag\":-1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":4,\"endpend\":4,\"services\":129,\"maxpeers\":64,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":4,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
+        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"RELAY\":0,\"VALIDATE\":0,\"prefetchlag\":-1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":4,\"endpend\":4,\"services\":129,\"maxpeers\":64,\"newcoin\":\"BTCD\",\"active\":0,\"numhelpers\":4,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
         {
             free(str);
             if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"RELAY\":0,\"VALIDATE\":0,\"prefetchlag\":-1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":4,\"endpend\":4,\"services\":129,\"maxpeers\":64,\"newcoin\":\"BTC\",\"active\":0,\"numhelpers\":4,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
