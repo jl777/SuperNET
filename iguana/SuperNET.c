@@ -261,11 +261,11 @@ int32_t SuperNET_json2bits(uint8_t *serialized,int32_t maxsize,cJSON *json,bits2
         othervalid = -100;
     else othervalid = _othervalid;
     tmp = juint(json,"broadcast");
-    if ( juint(json,"request") != 0 )
-        tmp |= 0x10;
     if ( tmp > SUPERNET_MAXHOPS )
         broadcastflag = SUPERNET_MAXHOPS;
     else broadcastflag = tmp;
+    if ( juint(json,"request") != 0 )
+        broadcastflag |= 0x10;
     categoryhash = jbits256(json,"categoryhash");
     subhash = jbits256(json,"subhash");
     timestamp = juint(json,"timestamp");
