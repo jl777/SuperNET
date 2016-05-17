@@ -188,7 +188,10 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
         len += iguana_rwvin(rwflag,0,&serialized[len],&vin);
     }
     if ( len > maxlen )
+    {
+        printf("len.%d > maxlen.%d\n",len,maxlen);
         return(0);
+    }
     len += iguana_rwvarint32(rwflag,&serialized[len],&numvouts);
     for (i=0; i<numvouts; i++)
     {
@@ -198,14 +201,17 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
         len += iguana_rwvout(rwflag,0,&serialized[len],&vout);
     }
     if ( len > maxlen )
+    {
+        printf("len.%d > maxlen.%d\n",len,maxlen);
         return(0);
+    }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->locktime),&tx->locktime);
     *txidp = bits256_doublesha256(txidstr,serialized,len);
     if ( memcmp(txidp,tx->txid.bytes,sizeof(*txidp)) != 0 )
     {
-        //for (i=0; i<len; i++)
-        //    printf("%02x",serialized[i]);
-        //char str[65],str2[65]; printf("\nrw.%d numvins.%d numvouts.%d error generating txbytes txid %s vs %s\n",rwflag,numvins,numvouts,bits256_str(str,*txidp),bits256_str(str2,tx->txid));
+        for (i=0; i<len; i++)
+            printf("%02x",serialized[i]);
+        char str[65],str2[65]; printf("\nrw.%d numvins.%d numvouts.%d error generating txbytes txid %s vs %s\n",rwflag,numvins,numvouts,bits256_str(str,*txidp),bits256_str(str2,tx->txid));
         return(-1);
     }
     return(len);
