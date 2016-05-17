@@ -564,7 +564,7 @@ STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
                 valsobj = cJSON_CreateObject();
                 if ( symbol != 0 )
                     jaddstr(valsobj,"coin",symbol);
-                jadd(hexjson,"vals",hexjson);
+                jadd(hexjson,"vals",valsobj);
                 str = jprint(hexjson,1);
                 printf("return.(%s)\n",str);
                 init_hexbytes_noT(buf,(uint8_t *)str,(int32_t)strlen(str));
