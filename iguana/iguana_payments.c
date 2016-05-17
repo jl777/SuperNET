@@ -495,7 +495,7 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
                 jaddbits256(retjson,"result",signedtxid);
                 jaddstr(retjson,"signedtx",signedtx);
                 jadd(retjson,"complete",completed != 0 ? jtrue() : jfalse());
-                if ( 0 )
+                if ( 1 )
                 {
                     senttxid = iguana_sendrawtransaction(myinfo,coin,signedtx);
                     if ( bits256_cmp(senttxid,signedtxid) == 0 )

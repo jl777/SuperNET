@@ -225,7 +225,7 @@ char *bitcoin_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void
             }
         }
     }
-    printf("bitcoin_hexmsg.(%s) from %s (%s/%s)\n",ptr,remoteaddr,agent,method);
+    printf("bitcoin_hexmsg.(%s) from %s (%s/%s)\n",(char *)ptr,remoteaddr,agent,method);
     return(retstr);
 }
 

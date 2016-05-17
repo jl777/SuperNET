@@ -505,7 +505,7 @@ int32_t iguana_send_supernet(struct iguana_peer *addr,char *jsonstr,int32_t dela
                         printf(" cant decrypt cipherlen.%d otherpriv.%llx pub.%llx\n",cipherlen,(long long)testpriv.txid,(long long)pubkey.txid);
                         printf("encrypted mypriv.%llx destpub.%llx\n",(long long)privkey.txid,(long long)destpub.txid);
                     } // else printf("decrypted\n");
-                    printf("send to (%s)\n",addr->ipaddr);
+                    //printf("send to (%s)\n",addr->ipaddr);
                     qlen = iguana_queue_send(addr,delaymillis,&cipher[-sizeof(struct iguana_msghdr)],"SuperNETb",cipherlen,0,0);
                     if ( ptr != 0 )
                         free(ptr);

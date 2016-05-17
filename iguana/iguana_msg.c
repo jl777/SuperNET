@@ -223,7 +223,7 @@ void iguana_gotverack(struct iguana_info *coin,struct iguana_peer *addr)
         iguana_queue_send(addr,0,serialized,"getaddr",0,0,0);
         if ( addr->supernet != 0 )
         {
-            printf("send getpeers to %s\n",addr->ipaddr);
+            //printf("send getpeers to %s\n",addr->ipaddr);
             iguana_send_supernet(addr,SUPERNET_GETPEERSTR,0);
         }
     }
