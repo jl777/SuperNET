@@ -374,7 +374,7 @@ void iguana_unspentslock(struct supernet_info *myinfo,struct iguana_info *coin,c
 
 char *iguana_rawtxissue(struct supernet_info *myinfo,uint32_t rawtxtag,char *symbol,cJSON **vinsp,uint32_t locktime,uint64_t satoshis,char *changeaddr,uint64_t txfee,cJSON *addresses,int32_t minconf,char *spendscriptstr)
 {
-    struct rawtx_queue *ptr; struct iguana_peer *addr; uint8_t buf[IGUANA_MAXSCRIPTSIZE]; int32_t i,j,n,spendlen,delay = 0; cJSON *hexjson,*reqjson,*valsobj,*txobj = 0; char *hexstr,*rawtx = 0; double expiration; struct iguana_info *coin;
+    struct rawtx_queue *ptr; struct iguana_peer *addr; uint8_t buf[IGUANA_MAXSCRIPTSIZE]; int32_t i,j,n,spendlen,delay = 0; cJSON *hexjson,*reqjson,*valsobj,*txobj = 0; char *str,*rawtx = 0; double expiration; struct iguana_info *coin;
     *vinsp = 0;
     if ( (coin= iguana_coinfind(symbol)) != 0 && (coin->VALIDATENODE != 0 || coin->RELAYNODE != 0) )
     {
@@ -409,15 +409,16 @@ char *iguana_rawtxissue(struct supernet_info *myinfo,uint32_t rawtxtag,char *sym
         jaddnum(valsobj,"minconf",minconf);
         jaddnum(valsobj,"locktime",locktime);
         jadd(hexjson,"vals",valsobj);
-        hexstr = jprint(hexjson,1);
+        str = jprint(hexjson,1);
+        init_hexbytes_noT((char *)buf,(uint8_t *)str,(int32_t)strlen(str));
+        free(str);
         reqjson = cJSON_CreateObject();
         jaddstr(reqjson,"agent","iguana");
         jaddstr(reqjson,"method","rawtx");
         jaddnum(reqjson,"plaintext",1);
         jaddnum(reqjson,"request",1);
         jaddnum(reqjson,"timeout",5000);
-        jaddstr(reqjson,"hexmsg",hexstr);
-        free(hexstr);
+        jaddstr(reqjson,"hexmsg",(char *)buf);
     //{\"agent\":\"iguana\",\"method\":\"rawtx\",\"changeaddr\":\"RRyBxbrAPRUBCUpiJgJZYrkxqrh8x5ta9Z\",\"addresses\":[\"RRyBxbrAPRUBCUpiJgJZYrkxqrh8x5ta9Z\"],\"vals\":{\"coin\":\"BTCD\",\"amount\":\"10000000\"},\"spendscriptstr\":\"76a914b7128d2ee837cf03e30a2c0e3e0181f7b9669bb688ac\"}
         expiration = OS_milliseconds() + 3333;
         for (i=0; i<IGUANA_MAXCOINS; i++)

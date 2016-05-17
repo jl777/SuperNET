@@ -261,6 +261,8 @@ int32_t SuperNET_json2bits(uint8_t *serialized,int32_t maxsize,cJSON *json,bits2
         othervalid = -100;
     else othervalid = _othervalid;
     tmp = juint(json,"broadcast");
+    if ( juint(json,"request") != 0 )
+        tmp |= 0x10;
     if ( tmp > SUPERNET_MAXHOPS )
         broadcastflag = SUPERNET_MAXHOPS;
     else broadcastflag = tmp;
@@ -335,7 +337,7 @@ int32_t SuperNET_json2bits(uint8_t *serialized,int32_t maxsize,cJSON *json,bits2
 cJSON *SuperNET_bits2json(uint8_t *serialized,int32_t datalen)
 {
     char destip[64],method[64],checkstr[5],agent[64],myipaddr[64],str[65],*hexmsg; //uint64_t tag;
-    uint16_t apinum,checkc; int8_t othervalid; uint32_t destipbits,myipbits,timestamp;
+    uint16_t apinum,checkc; int8_t othervalid,requestflag; uint32_t destipbits,myipbits,timestamp;
     bits256 categoryhash,subhash,senderpub; cJSON *json = cJSON_CreateObject();
     int32_t len = 0; uint32_t crc; uint8_t broadcastflag,plaintext;
     len += iguana_rwnum(0,&serialized[len],sizeof(uint32_t),&crc);
@@ -357,7 +359,8 @@ cJSON *SuperNET_bits2json(uint8_t *serialized,int32_t datalen)
     }
     //char str2[65]; printf("set cat.(%s) sub.(%s)\n",bits256_str(str,categoryhash),bits256_str(str2,subhash));
     plaintext = (broadcastflag & 0x80) != 0;
-    broadcastflag &= 0x3f;
+    requestflag = (broadcastflag & 0x10) != 0;
+    broadcastflag &= 0x1f;
     if ( broadcastflag > SUPERNET_MAXHOPS )
         broadcastflag = SUPERNET_MAXHOPS;
     //printf("<<<<<<<<<<<<<<<< crc.%u ipbits.(%x %x) tag.%llx checkc.%x apinum.%d valid.%d other.%d broadcast.%d plaintext.%d\n",crc,destipbits,myipbits,(long long)tag,checkc,apinum,addr->validpub,othervalid,broadcastflag,plaintext);
@@ -385,6 +388,8 @@ cJSON *SuperNET_bits2json(uint8_t *serialized,int32_t datalen)
         init_hexbytes_noT(checkstr,(void *)&checkc,sizeof(checkc));
         jaddstr(json,"check",checkstr);
         jaddnum(json,"ov",othervalid);
+        if ( requestflag != 0 )
+            jaddnum(json,"request",requestflag);
         if ( plaintext != 0 )
             jaddnum(json,"plaintext",plaintext!=0);
         if ( broadcastflag != 0 )
@@ -649,7 +654,7 @@ int32_t SuperNET_destination(struct supernet_info *myinfo,uint32_t *destipbitsp,
         if ( juint(json,"broadcast") > 0 )
             destflag |= SUPERNET_FORWARD;
     }
-    if ( jobj(json,"request") != 0 || remoteaddr == 0 || remoteaddr[0] == 0 || strcmp(remoteaddr,"127.0.0.1") == 0 )
+    if ( juint(json,"request") != 0 || remoteaddr == 0 || remoteaddr[0] == 0 || strcmp(remoteaddr,"127.0.0.1") == 0 )
         destflag |= SUPERNET_ISMINE;
     return(destflag);
 }
