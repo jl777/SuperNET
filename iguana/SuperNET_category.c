@@ -202,9 +202,22 @@ char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag
     return(retstr);
 }
 
+char *bitcoin_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void *ptr,int32_t len,char *remoteaddr)
+{
+    char buf[IGUANA_MAXSCRIPTSIZE],*method="",*agent="",*retstr = 0; cJSON *json;
+    decode_hex((uint8_t *)buf,len,ptr);
+    if ( (json= cJSON_Parse(buf)) != 0 )
+    {
+        agent = jstr(json,"agent");
+        method = jstr(json,"method");
+    }
+    printf("bitcoin_hexmsg.(%s) from %s (%s/%s)\n",buf,remoteaddr,agent,method);
+    return(retstr);
+}
+
 void category_init(struct supernet_info *myinfo)
 {
-    bits256 pangeahash,instantdexhash;
+    bits256 pangeahash,instantdexhash,bitcoinhash;
     category_subscribe(myinfo,GENESIS_PUBKEY,GENESIS_PUBKEY);
     pangeahash = calc_categoryhashes(0,"pangea",0);
     myinfo->pangea_category = pangeahash;
@@ -217,5 +230,9 @@ void category_init(struct supernet_info *myinfo)
     category_processfunc(instantdexhash,GENESIS_PUBKEY,InstantDEX_hexmsg);
     category_processfunc(instantdexhash,myinfo->myaddr.persistent,InstantDEX_hexmsg);
     
-    //exchanges777_init(myinfo,0,0);
+    bitcoinhash = calc_categoryhashes(0,"InstantDEX",0);
+    myinfo->bitcoin_category = bitcoinhash;
+    category_subscribe(myinfo,bitcoinhash,GENESIS_PUBKEY);
+    category_processfunc(bitcoinhash,GENESIS_PUBKEY,bitcoin_hexmsg);
+    category_processfunc(bitcoinhash,myinfo->myaddr.persistent,bitcoin_hexmsg);
 }

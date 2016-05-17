@@ -418,6 +418,7 @@ char *iguana_rawtxissue(struct supernet_info *myinfo,uint32_t rawtxtag,char *sym
         jaddstr(reqjson,"agent","SuperNET");
         jaddstr(reqjson,"method","DHT");
         jaddnum(reqjson,"plaintext",1);
+        jaddbits256(reqjson,"category",myinfo->bitcoin_category);
         jaddnum(reqjson,"request",1);
         jaddnum(reqjson,"timeout",5000);
         jaddstr(reqjson,"hexmsg",(char *)buf);
