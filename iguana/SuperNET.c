@@ -396,10 +396,10 @@ cJSON *SuperNET_bits2json(uint8_t *serialized,int32_t datalen)
             jaddnum(json,"broadcast",broadcastflag%SUPERNET_MAXHOPS);
         if ( len < datalen )
         {
-            printf("len %d vs %d datalen\n",len,datalen);
+            //printf("len %d vs %d datalen\n",len,datalen);
             hexmsg = malloc(((datalen - len)<<1) + 1);
             init_hexbytes_noT(hexmsg,&serialized[len],datalen - len);
-            printf("hex.(%s)\n",hexmsg);
+            //printf("hex.(%s)\n",hexmsg);
             jaddstr(json,"hexmsg",hexmsg);
             free(hexmsg);
         }
