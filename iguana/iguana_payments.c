@@ -538,7 +538,7 @@ char *iguana_createrawtx(struct supernet_info *myinfo,uint32_t rawtxtag,char *sy
 
 STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
 {
-    cJSON *vins=0,*retjson,*hexjson; char buf[IGUANA_MAXSCRIPTSIZE],*str,*rawtx=0,*symbol=0; int64_t txfee,satoshis; uint32_t i,locktime,minconf,rawtxtag; struct iguana_peer *addr;
+    cJSON *vins=0,*retjson,*hexjson,*valsobj; char buf[IGUANA_MAXSCRIPTSIZE],*str,*rawtx=0,*symbol=0; int64_t txfee,satoshis; uint32_t i,locktime,minconf,rawtxtag; struct iguana_peer *addr;
     printf("RAWTX changeaddr.%s (%s)\n",changeaddr==0?"":changeaddr,jprint(json,0));
     retjson = cJSON_CreateObject();
     if ( spendscriptstr != 0 && spendscriptstr[0] != 0 && (symbol= jstr(vals,"coin")) != 0 )
@@ -560,6 +560,9 @@ STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
                 jaddnum(hexjson,"request",1);
                 jaddnum(hexjson,"rawtxtag",rawtxtag);
                 jadd(hexjson,"vins",vins);
+                valsobj = cJSON_CreateObject();
+                jaddstr(valsobj,"coin",symbol);
+                jadd(hexjson,"vals",hexjson);
                 str = jprint(hexjson,1);
                 init_hexbytes_noT(buf,(uint8_t *)str,(int32_t)strlen(str));
                 free(str);
