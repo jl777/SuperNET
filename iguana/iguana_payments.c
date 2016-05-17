@@ -548,7 +548,7 @@ STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
         locktime = juint(vals,"locktime");
         satoshis = j64bits(vals,"amount");
         txfee = j64bits(vals,"txfee");
-        if ( (rawtxtag= juint(vals,"rawtxtag")) != 0 )
+        if ( (rawtxtag= juint(vals,"rawtxtag")) == 0 )
             OS_randombytes((uint8_t *)&rawtxtag,sizeof(rawtxtag));
         if ( (rawtx= iguana_createrawtx(myinfo,rawtxtag,symbol,&vins,locktime,satoshis,spendscriptstr,changeaddr,txfee,minconf,addresses)) != 0 )
         {

@@ -204,14 +204,23 @@ char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag
 
 char *bitcoin_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void *ptr,int32_t len,char *remoteaddr)
 {
-    char buf[IGUANA_MAXSCRIPTSIZE],*method="",*agent="",*retstr = 0; cJSON *json;
-    decode_hex((uint8_t *)buf,len,ptr);
-    if ( (json= cJSON_Parse(buf)) != 0 )
+    char *method="",*agent="",*retstr = 0; cJSON *json,*valsobj; struct iguana_info *coin;
+    if ( (json= cJSON_Parse(ptr)) != 0 )
     {
         agent = jstr(json,"agent");
         method = jstr(json,"method");
+        if ( (valsobj= jobj(json,"vals")) != 0 )
+        {
+            if ( jstr(valsobj,"coin") != 0 && (coin= iguana_coinfind(jstr(valsobj,"coin"))) != 0 )
+            {
+                if ( (coin->RELAYNODE != 0 || coin->VALIDATENODE != 0) && strcmp(agent,"iguana") == 0 && strcmp(method,"rawtx") == 0 )
+                {
+                    return(iguana_rawtx(myinfo,coin,json,remoteaddr,jstr(json,"changeaddr"),jobj(json,"addresses"),valsobj,jstr(json,"spendscriptstr")));
+                }
+            }
+        }
     }
-    printf("bitcoin_hexmsg.(%s) from %s (%s/%s)\n",buf,remoteaddr,agent,method);
+    printf("bitcoin_hexmsg.(%s) from %s (%s/%s)\n",ptr,remoteaddr,agent,method);
     return(retstr);
 }
 

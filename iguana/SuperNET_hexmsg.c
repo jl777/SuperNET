@@ -85,6 +85,7 @@ void SuperNET_hexmsgprocess(struct supernet_info *myinfo,cJSON *retjson,cJSON *j
             if ( len > sizeof(_buf) )
                 buf = malloc(len);
             decode_hex(buf,len,hexmsg);
+            //printf("hex.(%s) -> (%s)\n",hexmsg,buf);
             categoryhash = jbits256(json,"categoryhash");
             subhash = jbits256(json,"categoryhash");
             if ( bits256_nonz(subhash) == 0 )
