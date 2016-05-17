@@ -291,40 +291,6 @@ char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,bit
     return(signedtx);
 }
 
-/*int64_t iguana_availunspents(struct supernet_info *myinfo,uint64_t **unspentsp,int32_t *nump,struct iguana_info *coin,int32_t minconf,char *account,void *ptr,int32_t maxsize)
-{
-    int32_t i,j,num,numwaddrs; struct iguana_waddress **waddrs,*waddr; uint64_t *unspents,value,avail=0;
-    *unspentsp = unspents = 0;
-    *nump = num = 0;
-    waddrs = (struct iguana_waddress **)ptr;
-    numwaddrs = iguana_unspentslists(myinfo,coin,waddrs,(int32_t)(maxsize/sizeof(*waddrs)),(uint64_t)1 << 62,minconf);
-    if ( numwaddrs > 0 )
-    {
-        unspents = (uint64_t *)((long)ptr + sizeof(*waddrs)*numwaddrs);
-        for (i=num=0; i<numwaddrs; i++)
-        {
-            if ( (waddr= waddrs[i]) != 0 && waddr->numunspents > 0 )
-            {
-                for (j=0; j<waddr->numunspents; j++)
-                {
-                    if ( (value= iguana_unspentavail(coin,waddr->unspents[j],minconf,coin->longestchain)) != 0 )
-                    {
-                        unspents[num << 1] = waddr->unspents[j];
-                        unspents[(num << 1) + 1] = value;
-                        num++;
-                        avail += value;
-                        printf("([%d].u%u) ",(uint32_t)(waddr->unspents[j]>>32),(uint32_t)waddr->unspents[j]);
-                    }
-                }
-                printf("(%s %.8f)\n",waddr->coinaddr,dstr(waddr->balance));
-            }
-        }
-    }
-    *unspentsp = unspents;
-    *nump = num;
-    return(avail);
-}*/
-
 bits256 iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx)
 {
     bits256 txid; uint8_t *serialized; int32_t i,len; struct iguana_peer *addr;
@@ -412,6 +378,7 @@ char *iguana_rawtxissue(struct supernet_info *myinfo,char *symbol,cJSON **vinsp,
     *vinsp = 0;
     if ( (coin= iguana_coinfind(symbol)) != 0 && (coin->VALIDATENODE != 0 || coin->RELAYNODE != 0) )
     {
+        printf("bitcoin_txcreate\n");
         if ( (txobj= bitcoin_txcreate(coin,locktime)) != 0 )
         {
             spendlen = (int32_t)strlen(spendscriptstr) >> 1;
@@ -420,10 +387,12 @@ char *iguana_rawtxissue(struct supernet_info *myinfo,char *symbol,cJSON **vinsp,
             if ( (rawtx= iguana_calcrawtx(myinfo,coin,vinsp,txobj,satoshis,changeaddr,txfee,addresses,minconf)) != 0 && *vinsp != 0 )
             {
                 free_json(txobj);
+                printf("return rawtx.(%s)\n",rawtx);
                 return(rawtx);
             }
         }
     }
+    printf("fall through case\n");
     if ( txobj != 0 )
         free_json(txobj);
     if ( 1 )

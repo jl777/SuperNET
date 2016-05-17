@@ -16692,6 +16692,39 @@ len = 0;
              free(V);
              return(txobj);
              }*/
+            /*int64_t iguana_availunspents(struct supernet_info *myinfo,uint64_t **unspentsp,int32_t *nump,struct iguana_info *coin,int32_t minconf,char *account,void *ptr,int32_t maxsize)
+             {
+             int32_t i,j,num,numwaddrs; struct iguana_waddress **waddrs,*waddr; uint64_t *unspents,value,avail=0;
+             *unspentsp = unspents = 0;
+             *nump = num = 0;
+             waddrs = (struct iguana_waddress **)ptr;
+             numwaddrs = iguana_unspentslists(myinfo,coin,waddrs,(int32_t)(maxsize/sizeof(*waddrs)),(uint64_t)1 << 62,minconf);
+             if ( numwaddrs > 0 )
+             {
+             unspents = (uint64_t *)((long)ptr + sizeof(*waddrs)*numwaddrs);
+             for (i=num=0; i<numwaddrs; i++)
+             {
+             if ( (waddr= waddrs[i]) != 0 && waddr->numunspents > 0 )
+             {
+             for (j=0; j<waddr->numunspents; j++)
+             {
+             if ( (value= iguana_unspentavail(coin,waddr->unspents[j],minconf,coin->longestchain)) != 0 )
+             {
+             unspents[num << 1] = waddr->unspents[j];
+             unspents[(num << 1) + 1] = value;
+             num++;
+             avail += value;
+             printf("([%d].u%u) ",(uint32_t)(waddr->unspents[j]>>32),(uint32_t)waddr->unspents[j]);
+             }
+             }
+             printf("(%s %.8f)\n",waddr->coinaddr,dstr(waddr->balance));
+             }
+             }
+             }
+             *unspentsp = unspents;
+             *nump = num;
+             return(avail);
+             }*/
 
 #endif
 #endif
