@@ -414,7 +414,7 @@ struct iguana_peer
 {
     struct queueitem DL;
     queue_t sendQ;
-    bits256 iphash,pubkey,persistent; uint32_t lastpersist;
+    bits256 iphash,pubkey,persistent; uint32_t lastpersist; uint8_t netmagic[4];
     struct iguana_msgaddress A;
     char ipaddr[64],lastcommand[16],coinstr[16],symbol[16];
     uint64_t pingnonce,totalsent,totalrecv,ipbits; double pingtime,sendmillis,pingsum,getdatamillis;
@@ -550,7 +550,7 @@ struct bitcoin_spend
 int32_t iguana_verifypeer(struct iguana_info *coin,void *key,void *value,int32_t itemind,int32_t itemsize);
 int32_t iguana_peermetrics(struct supernet_info *myinfo,struct iguana_info *coin);
 void iguana_peersloop(void *arg);
-int32_t iguana_queue_send(struct iguana_info *coin,struct iguana_peer *addr,int32_t delay,uint8_t *serialized,char *cmd,int32_t len,int32_t getdatablock,int32_t forceflag);
+int32_t iguana_queue_send(struct iguana_peer *addr,int32_t delay,uint8_t *serialized,char *cmd,int32_t len,int32_t getdatablock,int32_t forceflag);
 uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana_iAddr *iA,uint32_t ind);
 void iguana_connections(void *arg);
 uint32_t iguana_possible_peer(struct iguana_info *coin,char *ip_port);

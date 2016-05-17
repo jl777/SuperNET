@@ -455,7 +455,7 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
     return(len);
 }
 
-int32_t iguana_queue_send(struct iguana_info *coin,struct iguana_peer *addr,int32_t delay,uint8_t *serialized,char *cmd,int32_t len,int32_t getdatablock,int32_t forceflag)
+int32_t iguana_queue_send(struct iguana_peer *addr,int32_t delay,uint8_t *serialized,char *cmd,int32_t len,int32_t getdatablock,int32_t forceflag)
 {
     struct iguana_packet *packet; int32_t datalen;
     if ( addr == 0 )
@@ -470,7 +470,7 @@ int32_t iguana_queue_send(struct iguana_info *coin,struct iguana_peer *addr,int3
         //return(iguana_send(coin,addr,serialized,len));
     }
 
-    if ( (datalen= iguana_sethdr((void *)serialized,coin->chain->netmagic,cmd,&serialized[sizeof(struct iguana_msghdr)],len)) < 0 )
+    if ( (datalen= iguana_sethdr((void *)serialized,addr->netmagic,cmd,&serialized[sizeof(struct iguana_msghdr)],len)) < 0 )
         return(-1);
     if ( strcmp("getaddr",cmd) == 0 && time(NULL) < addr->lastgotaddr+300 )
         return(0);
@@ -1026,6 +1026,7 @@ int32_t iguana_vinsfname(struct iguana_info *coin,int32_t roflag,char *fname,int
 int32_t iguana_peerslotinit(struct iguana_info *coin,struct iguana_peer *addr,int32_t slotid,uint64_t ipbits)
 {
     char fname[1024];
+    memcpy(addr->netmagic,coin->chain->netmagic,4);
     addr->ipbits = ipbits;
     addr->addrind = slotid;
     iguana_voutsfname(coin,0,fname,addr->addrind);

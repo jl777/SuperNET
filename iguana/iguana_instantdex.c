@@ -429,7 +429,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
             memcpy(&serialized[sizeof(struct iguana_msghdr)],(uint8_t *)msg,msg->sig.allocsize);
             if ( (coin= iguana_coinfind("BTCD")) != 0 )//&& (max= coin->peers.numranked) > 0 )
             {
-                iguana_queue_send(coin,addr,0,serialized,"InstantDEX",msg->sig.allocsize,0,0);
+                iguana_queue_send(addr,0,serialized,"InstantDEX",msg->sig.allocsize,0,0);
                 /*r = (rand() % max);
                  for (i=0; i<max; i++)
                  {
@@ -925,7 +925,7 @@ int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coi
         printf(" nhashes\n");
         len = iguana_inv2packet(serialized,sizeof(serialized),MSG_QUOTE,hashes,n);
         //printf("Send inv2[%d] -> (%s)\n",n,addr->ipaddr);
-        return(iguana_queue_send(coin,addr,0,serialized,"inv2",len,0,0));
+        return(iguana_queue_send(addr,0,serialized,"inv2",len,0,0));
     }
     return(-1);
 }
@@ -1038,7 +1038,7 @@ void instantdex_propagate(struct supernet_info *myinfo,struct exchange_info *exc
             if ( (addr= coin->peers.ranked[i]) != 0 && addr->supernet != 0 && addr->usock >= 0 && GETBIT(ap->peerhas,addr->addrind) == 0 && strcmp("0.0.0.0",addr->ipaddr) != 0 && strcmp("127.0.0.1",addr->ipaddr) != 0 )
             {
                 char str[65]; printf("send quote.(%s) <- [%d] %s %llx\n",addr->ipaddr,len,bits256_str(str,orderhash),(long long)orderhash.txid);
-                iguana_queue_send(coin,addr,0,serialized,"quote",len,0,0);
+                iguana_queue_send(addr,0,serialized,"quote",len,0,0);
             }
     }
 }
