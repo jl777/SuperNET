@@ -682,8 +682,6 @@ void iguana_coinloop(void *arg)
                 if ( coin->MAXPEERS < IGUANA_MINPEERS )
                     coin->MAXPEERS = IGUANA_MAXPEERS;
 #ifdef __PNACL__
-                if ( strcmp(coin->symbol,"BTC") == 0 )
-                    continue;
                 if ( coin->MAXPEERS > 64 )
                     coin->MAXPEERS = 64;
 #endif
@@ -743,7 +741,8 @@ void iguana_coinloop(void *arg)
                     }
                     if ( coin->longestchain+10000 > coin->blocks.maxbits )
                         iguana_recvalloc(coin,coin->longestchain + 100000);
-                    flag += iguana_processrecv(myinfo,coin);
+                    if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
+                        flag += iguana_processrecv(myinfo,coin);
                 }
                 coin->idletime = (uint32_t)time(NULL);
             }
