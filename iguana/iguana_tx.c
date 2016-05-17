@@ -118,7 +118,7 @@ int32_t iguana_voutscript(struct iguana_info *coin,struct iguana_bundle *bp,uint
 int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmstr,int32_t height,struct iguana_msgvout *vout,struct iguana_txid *tx,int32_t i)
 {
     struct iguana_ramchaindata *rdata=0; uint32_t unspentind,scriptlen = 0; struct iguana_bundle *bp;
-    struct iguana_unspent *u,*U; struct iguana_pkhash *P; struct iguana_ramchain *ramchain; int32_t err = 0;
+    struct iguana_unspent *u,*U; struct iguana_pkhash *P; struct iguana_ramchain *ramchain=0; int32_t err = 0;
     memset(vout,0,sizeof(*vout));
     if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0  )
     {
@@ -137,7 +137,7 @@ int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmst
             vout->pk_script = scriptspace;
             scriptlen = iguana_voutscript(coin,bp,scriptspace,asmstr,u,&P[u->pkind],i);
         } else printf("iguana_voutset unexpected path rdata.%p i.%d %d\n",rdata,i,tx->numvouts);
-    }
+    } else printf("vout error getting rdata.%p height.%d\n",rdata,height);
     vout->pk_scriptlen = scriptlen;
     if ( err != 0 )
         return(-err);
