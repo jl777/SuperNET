@@ -204,7 +204,7 @@ char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag
 
 char *bitcoin_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void *ptr,int32_t len,char *remoteaddr)
 {
-    char *method="",*agent="",*retstr = 0; cJSON *json,*valsobj; struct iguana_info *coin;
+    char *method="",*agent="",*retstr = 0; int32_t i,j; cJSON *json,*valsobj; struct iguana_info *coin; struct iguana_peer *addr;
     if ( (json= cJSON_Parse(ptr)) != 0 )
     {
         //printf("bitcoinprocess.(%s)\n",jprint(json,0));
@@ -214,13 +214,38 @@ char *bitcoin_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void
         {
             if ( jstr(valsobj,"coin") != 0 && (coin= iguana_coinfind(jstr(valsobj,"coin"))) != 0 )
             {
-                if ( strcmp(method,"rawtx") == 0 && (coin->RELAYNODE != 0 || coin->VALIDATENODE != 0) )
+                if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
                 {
-                    return(iguana_rawtx(myinfo,coin,json,remoteaddr,jstr(json,"changeaddr"),jobj(json,"addresses"),valsobj,jstr(json,"spendscriptstr")));
+                    if ( strcmp(method,"rawtx") == 0 )
+                    {
+                        retstr = iguana_rawtx(myinfo,coin,json,remoteaddr,jstr(json,"changeaddr"),jobj(json,"addresses"),valsobj,jstr(json,"spendscriptstr"));
+                    }
+                    for (j=0; j<IGUANA_MAXCOINS; j++)
+                    {
+                        if ( (coin= Coins[j]) == 0 )
+                            continue;
+                        for (i=0; i<IGUANA_MAXPEERS; i++)
+                        {
+                            if ( (addr= &coin->peers.active[i]) != 0 && addr->usock >= 0 )
+                            {
+                                if ( addr->supernet != 0 && strcmp(addr->ipaddr,remoteaddr) == 0 )
+                                {
+                                    printf("send back rawtx_result addr->supernet.%u to (%s)\n",addr->supernet,addr->ipaddr);
+                                    iguana_send_supernet(addr,retstr,0);
+                                    return(retstr);
+                                }
+                            }
+                            if ( 0 && addr->ipbits != 0 )
+                                printf("i.%d (%s) vs (%s) %s\n",i,addr->ipaddr,remoteaddr,coin->symbol);
+                        }
+                    }
                 }
-                else if ( strcmp(method,"rawtx_result") == 0 )
+                else
                 {
-                    return(iguana_rawtx_result(myinfo,coin,json,remoteaddr,juint(json,"rawtxtag"),jobj(json,"vins"),jstr(json,"rawtx")));
+                    if ( strcmp(method,"rawtx_result") == 0 )
+                    {
+                        return(iguana_rawtx_result(myinfo,coin,json,remoteaddr,juint(json,"rawtxtag"),jobj(json,"vins"),jstr(json,"rawtx")));
+                    }
                 }
             }
         }
