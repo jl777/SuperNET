@@ -266,6 +266,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
     uint8_t *TXbits; struct iguana_txid *T; uint32_t txidind; int32_t i;
     struct iguana_bundle *bp; struct iguana_ramchain *ramchain; //struct iguana_block *block;
     *heightp = -1;
+    memset(tx,0,sizeof(*tx));
     if ( lasthdrsi < 0 )
         return(0);
     for (i=lasthdrsi; i>=0; i--)
@@ -323,6 +324,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                             *heightp = bp->bundleheight + T[txidind].bundlei;
                             //printf("found height.%d\n",*heightp);
                             *tx = T[txidind];
+                            //printf("[%d] txidind.%d 1st.(%d %d)\n",bp->hdrsi,txidind,tx->firstvout,tx->firstvin);
                             return(tx);
                         }
                     }

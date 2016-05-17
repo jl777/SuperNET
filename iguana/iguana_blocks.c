@@ -144,22 +144,12 @@ bits256 *iguana_blockhashptr(struct iguana_info *coin,int32_t height)
     {
         hdrsi = (height / bundlesize);
         bundlei = height - (hdrsi * bundlesize);
-        if ( hdrsi >= 0 && hdrsi < bundlesize && bundlei >= 0 && bundlei < bundlesize && (bp= coin->bundles[hdrsi]) != 0 )
+        if ( hdrsi >= 0 && hdrsi < coin->bundlescount && bundlei >= 0 && bundlei < bundlesize )
         {
-            return(&bp->hashes[bundlei]);
+            if ( (bp= coin->bundles[hdrsi]) != 0 )
+                return(&bp->hashes[bundlei]);
+            else return(0);
         }
-        /*for (i=0; i<coin->bundlescount; i++)
-        {
-            if ( (bp= coin->bundles[i]) != 0 )
-            {
-                if ( height >= bp->bundleheight && height < bp->bundleheight+bp->n )
-                {
-                    hashptr = &bp->hashes[height - bp->bundleheight];
-                    //printf("i.%d hashptr.%p height.%d vs (%d %d)\n",i,hashptr,height,bp->bundleheight,bp->bundleheight+bp->n);
-                    return(hashptr);
-                }
-            }
-        }*/
     }
     return(0);
 }

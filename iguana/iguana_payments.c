@@ -919,7 +919,7 @@ HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
                     return(jprint(txobj,1));
             }
             jaddstr(retjson,"result",txbytes);
-            printf("txbytes.(%s) len.%d (%s)\n",txbytes,len,jprint(retjson,0));
+            char str[65]; printf("txbytes.(%s) len.%d (%s) %s\n",txbytes,len,jprint(retjson,0),bits256_str(str,checktxid));
             free(txbytes);
             return(jprint(retjson,1));
         }
