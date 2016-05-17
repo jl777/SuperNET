@@ -583,8 +583,8 @@ STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
                         continue;
                     for (i=0; i<IGUANA_MAXPEERS; i++)
                     {
-                        if ( addr->ipbits != 0 )
-                            printf("i.%d (%s) vs (%s)\n",i,addr->ipaddr,remoteaddr);
+                        //if ( addr->ipbits != 0 )
+                        //    printf("i.%d (%s) vs (%s)\n",i,addr->ipaddr,remoteaddr);
                         if ( (addr= &coin->peers.active[i]) != 0 && addr->usock >= 0 )
                         {
                             if ( addr->supernet != 0 && (port == 0 || port == addr->A.port) && strcmp(addr->ipaddr,remoteaddr) == 0 )
