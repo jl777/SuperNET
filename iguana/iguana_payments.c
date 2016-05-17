@@ -374,7 +374,7 @@ void iguana_unspentslock(struct supernet_info *myinfo,struct iguana_info *coin,c
 
 char *iguana_rawtxissue(struct supernet_info *myinfo,uint32_t rawtxtag,char *symbol,cJSON **vinsp,uint32_t locktime,uint64_t satoshis,char *changeaddr,uint64_t txfee,cJSON *addresses,int32_t minconf,char *spendscriptstr)
 {
-    struct rawtx_queue *ptr; struct iguana_peer *addr; uint8_t buf[IGUANA_MAXSCRIPTSIZE]; int32_t i,j,n,spendlen,delay = 0; cJSON *hexjson,*reqjson,*valsobj,*txobj = 0; char *str,*rawtx = 0; double expiration; struct iguana_info *coin;
+    struct rawtx_queue *ptr; struct iguana_peer *addr; uint8_t buf[IGUANA_MAXSCRIPTSIZE]; int32_t i,j,spendlen,delay = 0; cJSON *hexjson,*reqjson,*valsobj,*txobj = 0; char *str,*rawtx = 0; double expiration; struct iguana_info *coin;
     *vinsp = 0;
     if ( (coin= iguana_coinfind(symbol)) != 0 && (coin->VALIDATENODE != 0 || coin->RELAYNODE != 0) )
     {
@@ -426,13 +426,13 @@ char *iguana_rawtxissue(struct supernet_info *myinfo,uint32_t rawtxtag,char *sym
         expiration = OS_milliseconds() + 3333;
         for (i=0; i<IGUANA_MAXCOINS; i++)
         {
-            if ( (coin= Coins[i]) != 0 && (n= coin->peers.numranked) > 0 )
+            if ( (coin= Coins[i]) != 0 )
             {
                 for (j=0; j<IGUANA_MAXPEERS; j++)
                 {
                     if ( (addr= &coin->peers.active[j]) != 0 && addr->supernet != 0 && addr->usock >= 0 )
                     {
-                        iguana_send_supernet(coin,addr,jprint(reqjson,0),delay);
+                        iguana_send_supernet(addr,jprint(reqjson,0),delay);
                     }
                 }
             }
@@ -539,7 +539,7 @@ char *iguana_createrawtx(struct supernet_info *myinfo,uint32_t rawtxtag,char *sy
 
 STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
 {
-    cJSON *vins=0,*retjson; char *rawtx=0,*symbol=0; int64_t txfee,satoshis; uint32_t locktime,minconf,rawtxtag;
+    cJSON *vins=0,*retjson,*hexjson; char buf[IGUANA_MAXSCRIPTSIZE],*str,*rawtx=0,*symbol=0; int64_t txfee,satoshis; uint32_t i,locktime,minconf,rawtxtag; struct iguana_peer *addr;
     printf("RAWTX changeaddr.%s (%s)\n",changeaddr==0?"":changeaddr,jprint(json,0));
     retjson = cJSON_CreateObject();
     if ( spendscriptstr != 0 && spendscriptstr[0] != 0 && (symbol= jstr(vals,"coin")) != 0 )
@@ -552,12 +552,37 @@ STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
             OS_randombytes((uint8_t *)&rawtxtag,sizeof(rawtxtag));
         if ( (rawtx= iguana_createrawtx(myinfo,rawtxtag,symbol,&vins,locktime,satoshis,spendscriptstr,changeaddr,txfee,minconf,addresses)) != 0 )
         {
-            jaddstr(retjson,"rawtx",rawtx);
-            jaddstr(retjson,"agent","iguana");
-            jaddstr(retjson,"method","rawtx_result");
-            jaddnum(retjson,"request",1);
-            jaddnum(retjson,"rawtxtag",rawtxtag);
-            jadd(retjson,"vins",vins);
+            if ( remoteaddr != 0 && remoteaddr[0] != 0 && (coin= iguana_coinfind(symbol)) != 0 )
+            {
+                hexjson = cJSON_CreateObject();
+                jaddstr(hexjson,"rawtx",rawtx);
+                jaddstr(hexjson,"agent","iguana");
+                jaddstr(hexjson,"method","rawtx_result");
+                jaddnum(hexjson,"request",1);
+                jaddnum(hexjson,"rawtxtag",rawtxtag);
+                jadd(hexjson,"vins",vins);
+                str = jprint(hexjson,1);
+                init_hexbytes_noT(buf,(uint8_t *)str,(int32_t)strlen(str));
+                free(str);
+                retjson = cJSON_CreateObject();
+                jaddstr(retjson,"agent","SuperNET");
+                jaddstr(retjson,"method","DHT");
+                jaddnum(retjson,"plaintext",1);
+                jaddbits256(retjson,"categoryhash",myinfo->bitcoin_category);
+                jaddnum(retjson,"request",1);
+                jaddnum(retjson,"timeout",5000);
+                jaddstr(retjson,"hexmsg",buf);
+                for (i=0; i<IGUANA_MAXPEERS; i++)
+                {
+                    if ( (addr= &coin->peers.active[i]) != 0 && addr->supernet != 0 && addr->usock >= 0 && strcmp(addr->ipaddr,remoteaddr) == 0 )
+                    {
+                        printf("send back rawtx_result\n");
+                        iguana_send_supernet(addr,jprint(retjson,0),0);
+                        break;
+                    }
+                }
+
+            }
             free(rawtx);
         } else jaddstr(retjson,"error","couldnt create rawtx");
     }

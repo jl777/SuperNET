@@ -224,7 +224,7 @@ void iguana_gotverack(struct iguana_info *coin,struct iguana_peer *addr)
         if ( addr->supernet != 0 )
         {
             printf("send getpeers to %s\n",addr->ipaddr);
-            iguana_send_supernet(coin,addr,SUPERNET_GETPEERSTR,0);
+            iguana_send_supernet(addr,SUPERNET_GETPEERSTR,0);
         }
     }
 }
@@ -258,7 +258,7 @@ void iguana_gotping(struct iguana_info *coin,struct iguana_peer *addr,uint64_t n
     iguana_queue_send(addr,0,serialized,"pong",len,0,0);
     if ( addr->supernet != 0 )
     {
-        iguana_send_supernet(coin,addr,SUPERNET_GETPEERSTR,0);
+        iguana_send_supernet(addr,SUPERNET_GETPEERSTR,0);
     }
 }
 
@@ -275,7 +275,7 @@ int32_t iguana_send_ping(struct iguana_info *coin,struct iguana_peer *addr)
     iguana_queue_send(addr,0,serialized,"getaddr",0,0,0);
     len = iguana_rwnum(1,&serialized[sizeof(struct iguana_msghdr)],sizeof(uint64_t),&nonce);
     if ( addr->supernet != 0 )
-        iguana_send_supernet(coin,addr,SUPERNET_GETPEERSTR,0);
+        iguana_send_supernet(addr,SUPERNET_GETPEERSTR,0);
     return(iguana_queue_send(addr,0,serialized,"ping",len,0,0));
 }
 
@@ -586,7 +586,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                         ;
                     }
                 }
-                iguana_send_supernet(coin,addr,retstr,delay);
+                iguana_send_supernet(addr,retstr,delay);
                 free(retstr);
             }
             //printf("GOT.(%s) [%s] len.%d from %s -> (%s)\n",H->command,data,recvlen,addr->ipaddr,retstr==0?"null":retstr);

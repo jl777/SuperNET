@@ -1167,7 +1167,7 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
             run = 0;
         else if ( 0 && addr->supernet != 0 && time(NULL) > lastping+SUPERNET_PINGGAP )
         {
-            iguana_send_supernet(coin,addr,SUPERNET_GETPEERSTR,0);
+            iguana_send_supernet(addr,SUPERNET_GETPEERSTR,0);
             lastping = (uint32_t)time(NULL);
         }
         if ( addr->persistent_peer != 0 )

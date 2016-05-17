@@ -469,7 +469,7 @@ bits256 iguana_actualpubkey(int32_t *offsetp,uint8_t *cipher,int32_t cipherlen,b
     return(destpubkey);
 }
 
-int32_t iguana_send_supernet(struct iguana_info *coin,struct iguana_peer *addr,char *jsonstr,int32_t delaymillis)
+int32_t iguana_send_supernet(struct iguana_peer *addr,char *jsonstr,int32_t delaymillis)
 {
     int32_t datalen,cipherlen,qlen = -1; uint8_t *serialized,space2[32768],*cipher; cJSON *json;
     struct supernet_info *myinfo; uint16_t checkc;
@@ -600,7 +600,7 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,uint64_t destipbits,bits256 
                         if ( strcmp("0.0.0.0",addr->ipaddr) != 0 && strcmp("127.0.0.1",addr->ipaddr) != 0 )
                         {
                             char str[65]; printf("BROADCAST[%d] crc.%x %s SEND.(%d) to %s\n",j,calc_crc32(0,jsonstr,(int32_t)strlen(jsonstr)),bits256_str(str,categoryhash),(int32_t)strlen(jsonstr),addr->ipaddr);
-                            iguana_send_supernet(Coins[i],addr,jsonstr,maxdelay==0?0:(rand()%maxdelay));
+                            iguana_send_supernet(addr,jsonstr,maxdelay==0?0:(rand()%maxdelay));
                         }
                     }
                 }
@@ -613,7 +613,7 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,uint64_t destipbits,bits256 
     if ( SuperNET_hexmsgfind(myinfo,categoryhash,subhash,hexmsg,1) >= 0 )
     {
         printf("SEND.(%s) to %s\n",jsonstr,addr->ipaddr);
-        iguana_send_supernet(coin,addr,jsonstr,maxdelay==0?0:(rand()%maxdelay));
+        iguana_send_supernet(addr,jsonstr,maxdelay==0?0:(rand()%maxdelay));
         return(clonestr("{\"result\":\"packet sent directly\"}"));
     }
     return(clonestr("{\"result\":\"no appropriate peers to send to\"}"));

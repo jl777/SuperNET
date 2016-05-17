@@ -357,7 +357,7 @@ void iguana_exit()
                     {
                         case 0:
                             if ( Coins[i]->peers.active[j].usock >= 0 && Coins[i]->peers.active[j].supernet != 0 )
-                                iguana_send_supernet(Coins[i],&Coins[i]->peers.active[j],stopstr,0);
+                                iguana_send_supernet(&Coins[i]->peers.active[j],stopstr,0);
                             break;
                         case 1: Coins[i]->peers.active[j].dead = (uint32_t)time(NULL); break;
                         case 2:
