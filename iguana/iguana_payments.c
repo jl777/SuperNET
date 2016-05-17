@@ -562,11 +562,9 @@ STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
                 if ( vins != 0 )
                     jadd(hexjson,"vins",vins);
                 valsobj = cJSON_CreateObject();
-                if ( symbol != 0 )
-                    jaddstr(valsobj,"coin",symbol);
+                jaddstr(valsobj,"coin",symbol);
                 jadd(hexjson,"vals",valsobj);
                 str = jprint(hexjson,1);
-                //printf("return.(%s)\n",str);
                 init_hexbytes_noT(buf,(uint8_t *)str,(int32_t)strlen(str));
                 free(str);
                 retjson = cJSON_CreateObject();
@@ -579,9 +577,10 @@ STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
                 jaddstr(retjson,"hexmsg",buf);
                 for (i=0; i<IGUANA_MAXPEERS; i++)
                 {
+                    if ( addr->ipbits != 0 )
+                        printf("i.%d (%s) vs (%s)\n",i,addr->ipaddr,remoteaddr);
                     if ( (addr= &coin->peers.active[i]) != 0 && addr->usock >= 0 )
                     {
-                        printf("i.%d (%s) vs (%s)\n",i,addr->ipaddr,remoteaddr);
                         if ( addr->supernet != 0 && strcmp(addr->ipaddr,remoteaddr) == 0 )
                         {
                             printf("send back rawtx_result addr->supernet.%u\n",addr->supernet);
