@@ -240,7 +240,9 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
                         char str[65],str2[65];
                         if ( counter++ < 100 )
                         {
-                            printf("error getting txi.%d [%d:%d] cmp.%s %s\n",i,bp->hdrsi,bundlei,bits256_str(str,checktxid),bits256_str(str2,T.txid));
+                            for (i=0; i<len; i++)
+                                printf("%02x",blockspace[sizeof(struct iguana_msghdr)+i]);
+                            printf(" error getting txi.%d [%d:%d] cmp.%s %s\n",i,bp->hdrsi,bundlei,bits256_str(str,checktxid),bits256_str(str2,T.txid));
                         }
                         break;
                     }

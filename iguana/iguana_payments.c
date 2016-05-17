@@ -449,7 +449,7 @@ char *iguana_rawtxissue(struct supernet_info *myinfo,uint32_t rawtxtag,char *sym
                 if ( rawtxtag == ptr->rawtxtag )
                 {
                     rawtx = clonestr(ptr->rawtx);
-                    printf("got RAWTX.(%s)\n",rawtx);
+                    //printf("got RAWTX.(%s)\n",rawtx);
                     *vinsp = ptr->vins;
                     free(ptr);
                     return(rawtx);
