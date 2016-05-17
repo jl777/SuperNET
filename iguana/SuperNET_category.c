@@ -210,20 +210,17 @@ char *bitcoin_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void
         printf("bitcoinprocess.(%s)\n",jprint(json,0));
         agent = jstr(json,"agent");
         method = jstr(json,"method");
-        if ( (valsobj= jobj(json,"vals")) != 0 )
+        if ( (valsobj= jobj(json,"vals")) != 0 && strcmp(agent,"iguana") == 0 )
         {
             if ( jstr(valsobj,"coin") != 0 && (coin= iguana_coinfind(jstr(valsobj,"coin"))) != 0 )
             {
-                if ( (coin->RELAYNODE != 0 || coin->VALIDATENODE != 0) && strcmp(agent,"iguana") == 0 )
+                if ( strcmp(method,"rawtx") == 0 && (coin->RELAYNODE != 0 || coin->VALIDATENODE != 0) )
                 {
-                    if ( strcmp(method,"rawtx") == 0 )
-                    {
-                        return(iguana_rawtx(myinfo,coin,json,remoteaddr,jstr(json,"changeaddr"),jobj(json,"addresses"),valsobj,jstr(json,"spendscriptstr")));
-                    }
-                    else if ( strcmp(method,"rawtx_result") == 0 )
-                    {
-                        return(iguana_rawtx_result(myinfo,coin,json,remoteaddr,juint(json,"rawtxtag"),jobj(json,"vins"),jstr(json,"rawtx")));
-                    }
+                    return(iguana_rawtx(myinfo,coin,json,remoteaddr,jstr(json,"changeaddr"),jobj(json,"addresses"),valsobj,jstr(json,"spendscriptstr")));
+                }
+                else if ( strcmp(method,"rawtx_result") == 0 )
+                {
+                    return(iguana_rawtx_result(myinfo,coin,json,remoteaddr,juint(json,"rawtxtag"),jobj(json,"vins"),jstr(json,"rawtx")));
                 }
             }
         }
