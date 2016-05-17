@@ -243,7 +243,7 @@ cJSON *iguana_inputsjson(struct supernet_info *myinfo,struct iguana_info *coin,i
                     jaddi(vins,item);
                     total += value;
                     remains -= value;
-                    printf("%s value %.8f -> remains %.8f\n",coinaddr,dstr(value),dstr(remains));
+                    //printf("%s value %.8f -> remains %.8f\n",coinaddr,dstr(value),dstr(remains));
                     if ( remains <= 0 )
                         break;
                 }
@@ -590,7 +590,7 @@ STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
                         {
                             if ( addr->supernet != 0 && strcmp(addr->ipaddr,remoteaddr) == 0 )
                             {
-                                printf("send back rawtx_result addr->supernet.%u\n",addr->supernet);
+                                printf("send back rawtx_result addr->supernet.%u to (%s)\n",addr->supernet,addr->ipaddr);
                                 iguana_send_supernet(addr,jprint(retjson,0),0);
                                 free(rawtx);
                                 return(jprint(retjson,1));

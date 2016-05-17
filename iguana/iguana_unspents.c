@@ -280,7 +280,7 @@ int32_t iguana_pkhasharray(struct supernet_info *myinfo,struct iguana_info *coin
             }
             else
             {
-                printf("%s pkhash balance.[%d] from m.%d check %.8f vs %.8f spent %.8f [%.8f]\n",coinaddr,i,m,dstr(netbalance),dstr(deposits),dstr(spent),dstr(deposits)-dstr(spent));
+                //printf("%s pkhash balance.[%d] from m.%d check %.8f vs %.8f spent %.8f [%.8f]\n",coinaddr,i,m,dstr(netbalance),dstr(deposits),dstr(spent),dstr(deposits)-dstr(spent));
                 total += netbalance;
                 n++;
             }
