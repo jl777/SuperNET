@@ -73,25 +73,28 @@ int32_t iguana_vinset(struct iguana_info *coin,uint8_t *scriptspace,int32_t heig
     if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0 )
     {
         ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
-        S = RAMCHAIN_PTR(rdata,Soffset);
-        X = RAMCHAIN_PTR(rdata,Xoffset);
-        T = RAMCHAIN_PTR(rdata,Toffset);
-        //S = (void *)(long)((long)rdata + rdata->Soffset);
-        //X = (void *)(long)((long)rdata + rdata->Xoffset);
-        //T = (void *)(long)((long)rdata + rdata->Toffset);
-        spendind = (tx->firstvin + i);
-        s = &S[spendind];
-        vin->sequence = s->sequenceid;
-        vin->prev_vout = s->prevout;
-        if ( s->scriptpos != 0 && s->scriptlen > 0 )
+        if ( (rdata= ramchain->H.data) != 0 && i < rdata->numspends )
         {
-            iguana_vinsfname(coin,bp->ramchain.from_ro,fname,s->fileid);
-            if ( (scriptlen= iguana_scriptdata(coin,scriptspace,coin->peers.vinptrs[s->fileid],fname,s->scriptpos,s->scriptlen)) != s->scriptlen )
-                printf("err.%d getting %d bytes from fileid.%llu[%d] %s for s%d\n",err,s->scriptlen,(long long)s->scriptpos,s->fileid,fname,spendind);
-        }
-        vin->scriptlen = s->scriptlen;
-        vin->vinscript = scriptspace;
-        iguana_ramchain_spendtxid(coin,&unspentind,&vin->prev_hash,T,rdata->numtxids,X,rdata->numexternaltxids,s);
+            S = RAMCHAIN_PTR(rdata,Soffset);
+            X = RAMCHAIN_PTR(rdata,Xoffset);
+            T = RAMCHAIN_PTR(rdata,Toffset);
+            //S = (void *)(long)((long)rdata + rdata->Soffset);
+            //X = (void *)(long)((long)rdata + rdata->Xoffset);
+            //T = (void *)(long)((long)rdata + rdata->Toffset);
+            spendind = (tx->firstvin + i);
+            s = &S[spendind];
+            vin->sequence = s->sequenceid;
+            vin->prev_vout = s->prevout;
+            if ( s->scriptpos != 0 && s->scriptlen > 0 )
+            {
+                iguana_vinsfname(coin,bp->ramchain.from_ro,fname,s->fileid);
+                if ( (scriptlen= iguana_scriptdata(coin,scriptspace,coin->peers.vinptrs[s->fileid],fname,s->scriptpos,s->scriptlen)) != s->scriptlen )
+                    printf("err.%d getting %d bytes from fileid.%llu[%d] %s for s%d\n",err,s->scriptlen,(long long)s->scriptpos,s->fileid,fname,spendind);
+            }
+            vin->scriptlen = s->scriptlen;
+            vin->vinscript = scriptspace;
+            iguana_ramchain_spendtxid(coin,&unspentind,&vin->prev_hash,T,rdata->numtxids,X,rdata->numexternaltxids,s);
+        } else printf("null rdata.%p error height.%d i.%d\n",rdata,height,i);
     } else printf("error getting rdata.%p height.%d\n",rdata,height);
     if ( err != 0 )
         return(-err);
