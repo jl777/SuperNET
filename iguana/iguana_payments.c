@@ -425,9 +425,9 @@ char *iguana_rawtxissue(struct supernet_info *myinfo,uint32_t rawtxtag,char *sym
         {
             if ( (coin= Coins[i]) != 0 && (n= coin->peers.numranked) > 0 )
             {
-                for (j=0; j<n; j++)
+                for (j=0; j<IGUANA_MAXPEERS; j++)
                 {
-                    if ( (addr= coin->peers.ranked[j]) != 0 && addr->supernet != 0 && addr->usock >= 0 )
+                    if ( (addr= &coin->peers.active[j]) != 0 && addr->supernet != 0 && addr->usock >= 0 )
                     {
                         iguana_send_supernet(coin,addr,jprint(reqjson,0),delay);
                     }
