@@ -378,7 +378,6 @@ char *iguana_rawtxissue(struct supernet_info *myinfo,uint32_t rawtxtag,char *sym
     *vinsp = 0;
     if ( (coin= iguana_coinfind(symbol)) != 0 && (coin->VALIDATENODE != 0 || coin->RELAYNODE != 0) )
     {
-        printf("bitcoin_txcreate\n");
         if ( (txobj= bitcoin_txcreate(coin,locktime)) != 0 )
         {
             spendlen = (int32_t)strlen(spendscriptstr) >> 1;
@@ -512,13 +511,13 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
     return(clonestr("{\"error\":\"need address and amount\"}"));
 }
 
-char *iguana_createrawtx(struct supernet_info *myinfo,uint32_t rawtxtag,char *symbol,cJSON **vinsp,uint32_t locktime,uint64_t satoshis,char *spendscriptstr,char *changeaddr,int64_t txfee,int32_t minconf,cJSON *addresses)
+char *iguana_createrawtx(struct supernet_info *myinfo,uint32_t rawtxtag,char *symbol,cJSON **vinsp,uint32_t locktime,uint64_t satoshis,char *spendscriptstr,char *changeaddr,int64_t txfee,int32_t minconf,cJSON *addresses,char *remoteaddr)
 {
-    cJSON *retjson; struct iguana_info *coin; char *signedtx,*rawtx=0; bits256 signedtxid; int32_t completed;
+    char *rawtx=0; 
     *vinsp = 0;
     if ( (rawtx= iguana_rawtxissue(myinfo,rawtxtag,symbol,vinsp,locktime,satoshis,changeaddr,txfee,addresses,minconf,spendscriptstr)) != 0 )
     {
-        if ( *vinsp != 0 && (coin= iguana_coinfind(symbol)) != 0 && (signedtx= iguana_signrawtx(myinfo,coin,&signedtxid,&completed,*vinsp,rawtx)) != 0 )
+        /*if ( *vinsp != 0 && (coin= iguana_coinfind(symbol)) != 0 && (signedtx= iguana_signrawtx(myinfo,coin,&signedtxid,&completed,*vinsp,rawtx)) != 0 )
         {
             iguana_unspentslock(myinfo,coin,*vinsp);
             retjson = cJSON_CreateObject();
@@ -528,7 +527,7 @@ char *iguana_createrawtx(struct supernet_info *myinfo,uint32_t rawtxtag,char *sy
             free(rawtx);
             free(signedtx);
             return(jprint(retjson,1));
-        }
+        }*/
         return(rawtx);
     }
     return(0);
@@ -550,7 +549,7 @@ STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
         txfee = j64bits(vals,"txfee");
         if ( (rawtxtag= juint(vals,"rawtxtag")) == 0 )
             OS_randombytes((uint8_t *)&rawtxtag,sizeof(rawtxtag));
-        if ( (rawtx= iguana_createrawtx(myinfo,rawtxtag,symbol,&vins,locktime,satoshis,spendscriptstr,changeaddr,txfee,minconf,addresses)) != 0 )
+        if ( (rawtx= iguana_createrawtx(myinfo,rawtxtag,symbol,&vins,locktime,satoshis,spendscriptstr,changeaddr,txfee,minconf,addresses,remoteaddr)) != 0 )
         {
             if ( remoteaddr != 0 && remoteaddr[0] != 0 && (coin= iguana_coinfind(symbol)) != 0 )
             {
