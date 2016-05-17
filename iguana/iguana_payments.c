@@ -386,12 +386,17 @@ char *iguana_rawtxissue(struct supernet_info *myinfo,uint32_t rawtxtag,char *sym
             if ( (rawtx= iguana_calcrawtx(myinfo,coin,vinsp,txobj,satoshis,changeaddr,txfee,addresses,minconf)) != 0 && *vinsp != 0 )
             {
                 free_json(txobj);
-                printf("return rawtx.(%s) vins.%p\n",rawtx,*vinsp);
+                //printf("return rawtx.(%s) vins.%p\n",rawtx,*vinsp);
                 return(rawtx);
             }
         }
     }
-    printf("fall through case\n");
+    while ( (ptr= queue_dequeue(&myinfo->rawtxQ,0)) != 0 )
+    {
+        free_json(ptr->vins);
+        free(ptr);
+    }
+    //printf("fall through case\n");
     if ( txobj != 0 )
         free_json(txobj);
     if ( addresses != 0 )
@@ -591,11 +596,11 @@ STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
                                 return(jprint(retjson,1));
                             }
                         }
-                        if ( addr->ipbits != 0 )
+                        if ( 0 && addr->ipbits != 0 )
                             printf("i.%d (%s) vs (%s) %s\n",i,addr->ipaddr,remoteaddr,coin->symbol);
                     }
                 }
-            }
+            } else jaddstr(retjson,"result",rawtx);
             free(rawtx);
         } else jaddstr(retjson,"error","couldnt create rawtx");
     }
@@ -607,7 +612,7 @@ STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
 INT_ARRAY_STRING(iguana,rawtx_result,rawtxtag,vins,rawtx)
 {
     struct rawtx_queue *ptr = calloc(1,sizeof(*ptr) + strlen(rawtx) + 1);
-    printf("rawtx_result\n");
+    //printf("rawtx_result\n");
     strcpy(ptr->rawtx,rawtx);
     ptr->vins = jduplicate(vins);
     ptr->rawtxtag = rawtxtag;

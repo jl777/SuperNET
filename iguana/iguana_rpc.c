@@ -783,7 +783,7 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
             {
                 data = &urlstr[totallen - datalen];
                 data[-1] = 0;
-                printf("post.(%s) (%c)\n",data,data[0]);
+                //printf("post.(%s) (%c)\n",data,data[0]);
                 jaddstr(json,"POST",data);
             }
         } else break;

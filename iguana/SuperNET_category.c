@@ -207,7 +207,7 @@ char *bitcoin_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void
     char *method="",*agent="",*retstr = 0; cJSON *json,*valsobj; struct iguana_info *coin;
     if ( (json= cJSON_Parse(ptr)) != 0 )
     {
-        printf("bitcoinprocess.(%s)\n",jprint(json,0));
+        //printf("bitcoinprocess.(%s)\n",jprint(json,0));
         agent = jstr(json,"agent");
         method = jstr(json,"method");
         if ( (valsobj= jobj(json,"vals")) != 0 && strcmp(agent,"iguana") == 0 )
