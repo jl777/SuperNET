@@ -539,7 +539,7 @@ char *iguana_createrawtx(struct supernet_info *myinfo,uint32_t rawtxtag,char *sy
 STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
 {
     cJSON *vins=0,*retjson,*hexjson,*valsobj; char buf[2*IGUANA_MAXSCRIPTSIZE+8192],*str,*rawtx=0,*symbol=0; int64_t txfee,satoshis; uint32_t i,locktime,minconf,rawtxtag; struct iguana_peer *addr;
-    printf("RAWTX changeaddr.%s (%s)\n",changeaddr==0?"":changeaddr,jprint(json,0));
+    printf("RAWTX changeaddr.%s (%s) remote.(%s)\n",changeaddr==0?"":changeaddr,jprint(json,0),remoteaddr);
     retjson = cJSON_CreateObject();
     if ( spendscriptstr != 0 && spendscriptstr[0] != 0 && (symbol= jstr(vals,"coin")) != 0 )
     {
