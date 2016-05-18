@@ -567,18 +567,38 @@ char *iguana_createrawtx(struct supernet_info *myinfo,uint32_t rawtxtag,char *sy
 
 INT_ARRAY_STRING(iguana,balances,lastheight,addresses,activecoin)
 {
-    uint8_t *rmdarray; uint64_t total = 0; cJSON *array,*retjson,*hexjson; int32_t numrmds=0,minconf=0,maxconf=0,numunspents = 0; char *retstr;
+    uint64_t amount,total = 0; cJSON *item,*result,*array,*retjson,*hexjson; int32_t i,n,minconf=0; char *retstr,*balancestr,*coinaddr;
     retjson = cJSON_CreateObject();
     if ( activecoin != 0 && activecoin[0] != 0 && (coin= iguana_coinfind(activecoin)) != 0 )
     {
         if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
         {
             array = cJSON_CreateArray();
-            rmdarray = iguana_rmdarray(myinfo,coin,&numrmds,array,0);
-            total = iguana_unspents(myinfo,coin,retjson,minconf,maxconf,rmdarray,numrmds,lastheight,0,&numunspents);
-            if ( rmdarray != 0 )
-                free(rmdarray);
+            if ( (n= cJSON_GetArraySize(addresses)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    coinaddr = jstri(addresses,i);
+                    if ( (balancestr= iguana_balance(IGUANA_CALLARGS,activecoin,coinaddr,lastheight,minconf)) != 0 )
+                    {
+                        if ( (result= cJSON_Parse(balancestr)) != 0 )
+                        {
+                            if ( jobj(result,"balance") != 0 )
+                            {
+                                item = cJSON_CreateObject();
+                                amount = SATOSHIDEN * jdouble(result,"balance");
+                                total += amount;
+                                jaddnum(item,coinaddr,dstr(amount));
+                                jaddi(array,item);
+                            }
+                            free_json(result);
+                        }
+                        free(balancestr);
+                    }
+                }
+            }
             jadd(retjson,"balances",array);
+            jaddnum(retjson,"total",dstr(total));
             if ( lastheight != 0 )
                 jaddnum(retjson,"lastheight",lastheight);
             if ( remoteaddr != 0 && remoteaddr[0] != 0 && strcmp(remoteaddr,"127.0.0.1") != 0 )

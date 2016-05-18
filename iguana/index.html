@@ -24,6 +24,28 @@
     <script src="js/amcharts/plugins/dataloader/dataloader.min.js" type="text/javascript"></script>
 
 <script>
+
+var httpresult;
+function http_handler()
+{
+    if ( this.status == 200 && this.responseText != null )
+    {
+        alert(this.responseText);
+        httpresult = this.responseText;
+    }
+}
+
+function httpGet(url)
+{
+    var client;
+    if ( window.XMLHttpRequest )
+        client = new XMLHttpRequest();
+    else client = new ActiveXObject(\"Microsoft.XMLHTTP\");
+    client.onload = http_handler;
+    client.open(\"GET\",url);
+    client.send();
+}
+
 AmCharts.ready(function () { createStockChart(); });
 var interval,BASE= "BTCD",REL = "BTC";
 
@@ -713,7 +735,6 @@ data-path="{tc}/{config}">
                     <!-- Default panel contents -->
                     <div class="panel-heading">
                         <h3>InstantDEX</h3>
-                        
                         <div class="chart">
                             <button id="start">Start</button>
                             <button id="stop" disabled="disabled">Stop   </button>
