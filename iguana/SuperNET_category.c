@@ -224,6 +224,9 @@ char *bitcoin_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void
                     {
                         retstr = iguana_balances(myinfo,coin,json,remoteaddr,juint(json,"lastheight"),jobj(json,"addresses"),jstr(json,"activecoin"));
                     }
+                    if ( retstr == 0 )
+                        return(0);
+                    printf("RELAY will return.(%s)\n",retstr);
                     for (j=0; j<IGUANA_MAXCOINS; j++)
                     {
                         if ( (coin= Coins[j]) == 0 )
@@ -236,10 +239,11 @@ char *bitcoin_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void
                                 {
                                     printf("send back rawtx_result addr->supernet.%u to (%s)\n",addr->supernet,addr->ipaddr);
                                     iguana_send_supernet(addr,retstr,0);
+                                    free_json(json);
                                     return(retstr);
                                 }
                             }
-                            if ( 0 && addr->ipbits != 0 )
+                            if ( 1 && addr->ipbits != 0 )
                                 printf("i.%d (%s) vs (%s) %s\n",i,addr->ipaddr,remoteaddr,coin->symbol);
                         }
                     }
@@ -255,6 +259,7 @@ char *bitcoin_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void
         }
     }
     printf("bitcoin_hexmsg.(%s) from %s (%s/%s)\n",(char *)ptr,remoteaddr,agent,method);
+    free_json(json);
     return(retstr);
 }
 
