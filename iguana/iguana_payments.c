@@ -572,6 +572,7 @@ INT_ARRAY_STRING(iguana,balances,lastheight,addresses,activecoin)
     {
         if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
         {
+            printf("have coin\n");
             array = cJSON_CreateArray();
             if ( (n= cJSON_GetArraySize(addresses)) > 0 )
             {
@@ -602,6 +603,7 @@ INT_ARRAY_STRING(iguana,balances,lastheight,addresses,activecoin)
                 jaddnum(retjson,"lastheight",lastheight);
             if ( remoteaddr != 0 && remoteaddr[0] != 0 && strcmp(remoteaddr,"127.0.0.1") != 0 )
             {
+                printf("remote req.(%s)\n",jprint(retjson,0));
                 hexjson = cJSON_CreateObject();
                 jaddstr(hexjson,"rawtx",jprint(retjson,1));
                 jaddstr(hexjson,"agent","iguana");
@@ -613,7 +615,7 @@ INT_ARRAY_STRING(iguana,balances,lastheight,addresses,activecoin)
         }
         else if ( remoteaddr == 0 || remoteaddr[0] == 0 || strcmp(remoteaddr,"127.0.0.1") == 0 )
         {
-            if ( (retstr= iguana_request_andwait(&myinfo->rawtxQ,0,jprint(json,1),lastheight)) == 0 )
+            if ( (retstr= iguana_request_andwait(&myinfo->rawtxQ,0,jprint(json,0),lastheight)) == 0 )
                 return(clonestr("{\"error\":\"timeout waiting for remote request\"}"));
             else return(retstr);
         } else return(clonestr("{\"error\":\"invalid remoterequest when not relaynode\"}"));
