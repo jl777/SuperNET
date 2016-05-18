@@ -118,6 +118,7 @@ struct bitcoin_statetx *instantdex_signtx(struct supernet_info *myinfo,struct ig
     }
     bitcoin_pubkey33(myinfo->ctx,pubkey33,myinfo->persistent_priv);
     bitcoin_address(coinaddr,coin->chain->pubtype,pubkey33,33);
+    printf("%s persistent.(%s) (%s)\n",coin->symbol,myinfo->myaddr.BTC,coinaddr);
     jaddistr(addresses,coinaddr);
     if ( (rawtx= iguana_calcrawtx(myinfo,coin,&vins,txobj,satoshis,coin->changeaddr,txfee,addresses,minconf)) != 0 && vins != 0 )
     {

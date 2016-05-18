@@ -90,7 +90,7 @@ int32_t iguana_voutparse(int32_t rwflag,uint8_t *serialized,struct iguana_msgvou
     if ( rwflag == 0 )
         msg->pk_script = &serialized[len];
     else memcpy(&serialized[len],msg->pk_script,msg->pk_scriptlen);
-    if ( 1 )
+    if ( 0 )
     {
         int32_t i;
         for (i=0; i<msg->pk_scriptlen; i++)

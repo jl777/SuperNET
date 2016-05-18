@@ -242,7 +242,7 @@ char *bitcoin_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void
                             {
                                 if ( addr->supernet != 0 && strcmp(addr->ipaddr,remoteaddr) == 0 )
                                 {
-                                    printf("send back rawtx_result addr->supernet.%u to (%s)\n",addr->supernet,addr->ipaddr);
+                                    //printf("send back rawtx_result addr->supernet.%u to (%s)\n",addr->supernet,addr->ipaddr);
                                     iguana_send_supernet(addr,retstr,0);
                                     free_json(json);
                                     return(retstr);
@@ -263,7 +263,7 @@ char *bitcoin_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void
             }
         }
     }
-    printf("bitcoin_hexmsg.(%s) from %s (%s/%s)\n",(char *)ptr,remoteaddr,agent,method);
+    printf("bitcoin_hexmsg.(%d) from %s (%s/%s)\n",len,remoteaddr,agent,method);
     free_json(json);
     return(retstr);
 }
@@ -283,7 +283,7 @@ void category_init(struct supernet_info *myinfo)
     category_processfunc(instantdexhash,GENESIS_PUBKEY,InstantDEX_hexmsg);
     category_processfunc(instantdexhash,myinfo->myaddr.persistent,InstantDEX_hexmsg);
     
-    bitcoinhash = calc_categoryhashes(0,"InstantDEX",0);
+    bitcoinhash = calc_categoryhashes(0,"bitcoin",0);
     myinfo->bitcoin_category = bitcoinhash;
     category_subscribe(myinfo,bitcoinhash,GENESIS_PUBKEY);
     category_processfunc(bitcoinhash,GENESIS_PUBKEY,bitcoin_hexmsg);
