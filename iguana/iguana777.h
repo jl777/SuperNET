@@ -985,6 +985,7 @@ void instantdex_FSMinit();
 void iguana_unspentslock(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins);
 char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t satoshis,char *changeaddr,int64_t txfee,cJSON *addresses,int32_t minconf);
 char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *signedtxidp,int32_t *completedp,cJSON *vins,char *rawtx);
+char *iguana_pollrawtx(queue_t *Q,cJSON **vinsp,uint32_t rawtxtag,double expiration);
 
 extern int32_t HDRnet,netBLOCKS;
 

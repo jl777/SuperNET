@@ -1271,7 +1271,9 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
     }
     else //if ( (retstr= instantdex_addfeetx(myinfo,newjson,ap,swap,"BOB_gotoffer","ALICE_gotoffer")) == 0 )
     {
-        printf("create statemachine\n");
+        printf("create statemachine isbob.%d\n",isbob);
+        if ( isbob != 0 && (coinbtc= iguana_coinfind("BTC")) != 0 )
+            swap->myfee = instantdex_feetx(myinfo,&swap->mine,swap,coinbtc);
         //queue_enqueue("acceptableQ",&exchange->acceptableQ,&swap->DL,0);
         instantdex_statemachineadd(exchange,swap);
         if ( (retstr= instantdex_choosei(swap,newjson,argjson,serdata,serdatalen)) != 0 )

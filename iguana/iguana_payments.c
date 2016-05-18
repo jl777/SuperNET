@@ -393,9 +393,36 @@ cJSON *iguana_requestjson(struct supernet_info *myinfo,cJSON *hexjson)
     return(retjson);
 }
 
+char *iguana_pollrawtx(queue_t *Q,cJSON **vinsp,uint32_t rawtxtag,double expiration)
+{
+    struct rawtx_queue *ptr; char *rawtx;
+    while ( OS_milliseconds() < expiration )
+    {
+        if ( (ptr= queue_dequeue(Q,0)) != 0 )
+        {
+            if ( rawtxtag == ptr->rawtxtag )
+            {
+                rawtx = clonestr(ptr->rawtx);
+                //printf("got RAWTX.(%s)\n",rawtx);
+                if ( vinsp != 0 )
+                    *vinsp = ptr->vins;
+                else free_json(ptr->vins);
+                free(ptr);
+                return(rawtx);
+            }
+            else
+            {
+                free_json(ptr->vins);
+                free(ptr);
+            }
+        }
+    }
+    return(0);
+}
+
 char *iguana_request_andwait(struct supernet_info *myinfo,queue_t *Q,cJSON **vinsp,cJSON *reqjson,uint32_t rawtxtag,int32_t timeout)
 {
-    struct rawtx_queue *ptr; int32_t i,j,n; struct iguana_peer *addr; double expiration; struct iguana_info *coin; char *rawtx,*reqstr; cJSON *tmpjson;
+    struct rawtx_queue *ptr; int32_t i,j,n; struct iguana_peer *addr; double expiration; struct iguana_info *coin; char *reqstr; cJSON *tmpjson;
     if ( vinsp != 0 )
         *vinsp = 0;
     tmpjson = iguana_requestjson(myinfo,reqjson);
@@ -421,28 +448,7 @@ char *iguana_request_andwait(struct supernet_info *myinfo,queue_t *Q,cJSON **vin
             }
         }
     }
-    while ( OS_milliseconds() < expiration )
-    {
-        if ( (ptr= queue_dequeue(Q,0)) != 0 )
-        {
-            if ( rawtxtag == ptr->rawtxtag )
-            {
-                rawtx = clonestr(ptr->rawtx);
-                //printf("got RAWTX.(%s)\n",rawtx);
-                if ( vinsp != 0 )
-                    *vinsp = ptr->vins;
-                else free_json(ptr->vins);
-                free(ptr);
-                return(rawtx);
-            }
-            else
-            {
-                free_json(ptr->vins);
-                free(ptr);
-            }
-        }
-    }
-    return(0);
+    return(iguana_pollrawtx(Q,vinsp,rawtxtag,expiration));
 }
 
 char *iguana_rawtxissue(struct supernet_info *myinfo,uint32_t rawtxtag,char *symbol,cJSON **vinsp,uint32_t locktime,uint64_t satoshis,char *changeaddr,uint64_t txfee,cJSON *addresses,int32_t minconf,char *spendscriptstr,int32_t timeout)
@@ -652,7 +658,12 @@ STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
                 jaddstr(valsobj,"coin",symbol);
                 jadd(hexjson,"vals",valsobj);
                 retjson = iguana_requestjson(myinfo,hexjson);
-            } else jaddstr(retjson,"result",rawtx);
+            }
+            else
+            {
+                jaddstr(retjson,"result",rawtx);
+                jadd(retjson,"vins",vins);
+            }
             free(rawtx);
         } else jaddstr(retjson,"error","couldnt create rawtx");
     }
