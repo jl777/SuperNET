@@ -210,9 +210,10 @@ char *bitcoin_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void
         //printf("bitcoinprocess.(%s)\n",jprint(json,0));
         agent = jstr(json,"agent");
         method = jstr(json,"method");
+        valsobj = jobj(json,"vals");
         if ( strcmp(agent,"iguana") == 0 )
         {
-            if ( jstr(valsobj,"coin") != 0 )
+            if ( valsobj != 0 && jobj(valsobj,"coin") != 0 )
                 coin = iguana_coinfind(jstr(valsobj,"coin"));
             else if ( jstr(json,"activecoin") != 0 )
                 coin = iguana_coinfind(jstr(json,"activecoin"));
@@ -220,7 +221,7 @@ char *bitcoin_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void
             {
                 if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
                 {
-                    if ( (valsobj= jobj(json,"vals")) != 0 && strcmp(method,"rawtx") == 0 )
+                    if ( valsobj != 0 && strcmp(method,"rawtx") == 0 )
                     {
                         retstr = iguana_rawtx(myinfo,coin,json,remoteaddr,jstr(json,"changeaddr"),jobj(json,"addresses"),valsobj,jstr(json,"spendscriptstr"));
                     }
