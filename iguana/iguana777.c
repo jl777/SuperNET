@@ -743,6 +743,7 @@ void iguana_coinloop(void *arg)
                         iguana_recvalloc(coin,coin->longestchain + 100000);
                     if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
                         flag += iguana_processrecv(myinfo,coin);
+                    iguana_jsonQ();
                 }
                 coin->idletime = (uint32_t)time(NULL);
             }
