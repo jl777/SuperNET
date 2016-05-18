@@ -204,7 +204,7 @@ char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag
 
 char *bitcoin_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void *ptr,int32_t len,char *remoteaddr)
 {
-    char *method="",*agent="",*retstr = 0; int32_t i,j; cJSON *json,*valsobj; struct iguana_info *coin; struct iguana_peer *addr;
+    char *method="",*agent="",*retstr = 0; int32_t i,j; cJSON *json,*valsobj; struct iguana_info *coin=0; struct iguana_peer *addr;
     if ( (json= cJSON_Parse(ptr)) != 0 )
     {
         //printf("bitcoinprocess.(%s)\n",jprint(json,0));
@@ -212,7 +212,11 @@ char *bitcoin_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void
         method = jstr(json,"method");
         if ( (valsobj= jobj(json,"vals")) != 0 && strcmp(agent,"iguana") == 0 )
         {
-            if ( jstr(valsobj,"coin") != 0 && (coin= iguana_coinfind(jstr(valsobj,"coin"))) != 0 )
+            if ( jstr(valsobj,"coin") != 0 )
+                coin = iguana_coinfind(jstr(valsobj,"coin"));
+            else if ( jstr(json,"activecoin") != 0 )
+                coin = iguana_coinfind(jstr(json,"activecoin"));
+            if ( coin != 0 )
             {
                 if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
                 {
@@ -243,7 +247,7 @@ char *bitcoin_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void
                                     return(retstr);
                                 }
                             }
-                            if ( 1 && addr->ipbits != 0 )
+                            if ( 0 && addr->ipbits != 0 )
                                 printf("i.%d (%s) vs (%s) %s\n",i,addr->ipaddr,remoteaddr,coin->symbol);
                         }
                     }
