@@ -398,6 +398,7 @@ char *iguana_request_andwait(queue_t *Q,cJSON **vinsp,char *reqstr,uint32_t rawt
     struct rawtx_queue *ptr; int32_t i,j,n; struct iguana_peer *addr; double expiration; struct iguana_info *coin; char *rawtx;
     if ( vinsp != 0 )
         *vinsp = 0;
+    printf("request.(%s)\n",reqstr);
     while ( (ptr= queue_dequeue(Q,0)) != 0 )
     {
         free_json(ptr->vins);
@@ -566,13 +567,12 @@ char *iguana_createrawtx(struct supernet_info *myinfo,uint32_t rawtxtag,char *sy
 
 INT_ARRAY_STRING(iguana,balances,lastheight,addresses,activecoin)
 {
-    uint64_t amount,total = 0; cJSON *item,*result,*array,*retjson,*hexjson; int32_t i,n,minconf=0; char *retstr,*balancestr,*coinaddr;
+    uint64_t amount,total = 0; cJSON *item,*result,*reqjson,*array,*retjson,*hexjson; int32_t i,n,minconf=0; char *retstr,*balancestr,*coinaddr;
     retjson = cJSON_CreateObject();
     if ( activecoin != 0 && activecoin[0] != 0 && (coin= iguana_coinfind(activecoin)) != 0 )
     {
         if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
         {
-            printf("have coin\n");
             array = cJSON_CreateArray();
             if ( (n= cJSON_GetArraySize(addresses)) > 0 )
             {
@@ -613,9 +613,10 @@ INT_ARRAY_STRING(iguana,balances,lastheight,addresses,activecoin)
             } else jaddstr(retjson,"result","success");
             return(jprint(retjson,1));
         }
-        else if ( remoteaddr == 0 || remoteaddr[0] == 0 || strcmp(remoteaddr,"127.0.0.1") == 0 )
+        else if ( remoteaddr == 0 && remoteaddr[0] != 0 && strcmp(remoteaddr,"127.0.0.1") != 0 )
         {
-            if ( (retstr= iguana_request_andwait(&myinfo->rawtxQ,0,jprint(json,0),lastheight)) == 0 )
+            reqjson = iguana_requestjson(myinfo,json);
+            if ( (retstr= iguana_request_andwait(&myinfo->rawtxQ,0,jprint(reqjson,1),lastheight)) == 0 )
                 return(clonestr("{\"error\":\"timeout waiting for remote request\"}"));
             else return(retstr);
         } else return(clonestr("{\"error\":\"invalid remoterequest when not relaynode\"}"));
