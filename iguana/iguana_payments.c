@@ -393,12 +393,13 @@ cJSON *iguana_requestjson(struct supernet_info *myinfo,cJSON *hexjson)
     return(retjson);
 }
 
-char *iguana_request_andwait(queue_t *Q,cJSON **vinsp,char *reqstr,uint32_t rawtxtag)
+char *iguana_request_andwait(struct supernet_info *myinfo,queue_t *Q,cJSON **vinsp,cJSON *reqjson,uint32_t rawtxtag)
 {
-    struct rawtx_queue *ptr; int32_t i,j,n; struct iguana_peer *addr; double expiration; struct iguana_info *coin; char *rawtx;
+    struct rawtx_queue *ptr; int32_t i,j,n; struct iguana_peer *addr; double expiration; struct iguana_info *coin; char *rawtx,*reqstr; cJSON *tmpjson;
     if ( vinsp != 0 )
         *vinsp = 0;
-    printf("request.(%s)\n",reqstr);
+    tmpjson = iguana_requestjson(myinfo,reqjson);
+    reqstr = jprint(tmpjson,1);
     while ( (ptr= queue_dequeue(Q,0)) != 0 )
     {
         free_json(ptr->vins);
@@ -446,7 +447,7 @@ char *iguana_request_andwait(queue_t *Q,cJSON **vinsp,char *reqstr,uint32_t rawt
 
 char *iguana_rawtxissue(struct supernet_info *myinfo,uint32_t rawtxtag,char *symbol,cJSON **vinsp,uint32_t locktime,uint64_t satoshis,char *changeaddr,uint64_t txfee,cJSON *addresses,int32_t minconf,char *spendscriptstr)
 {
-    uint8_t buf[IGUANA_MAXSCRIPTSIZE]; int32_t spendlen; cJSON *hexjson,*reqjson,*valsobj,*txobj = 0; char *retstr,*rawtx = 0; struct iguana_info *coin;
+    uint8_t buf[IGUANA_MAXSCRIPTSIZE]; int32_t spendlen; cJSON *hexjson,*valsobj,*txobj = 0; char *retstr,*rawtx = 0; struct iguana_info *coin;
     *vinsp = 0;
     if ( (coin= iguana_coinfind(symbol)) != 0 && (coin->VALIDATENODE != 0 || coin->RELAYNODE != 0) )
     {
@@ -481,9 +482,8 @@ char *iguana_rawtxissue(struct supernet_info *myinfo,uint32_t rawtxtag,char *sym
         jadd(hexjson,"vals",valsobj);
         jaddstr(hexjson,"agent","iguana");
         jaddstr(hexjson,"method","rawtx");
-        reqjson = iguana_requestjson(myinfo,hexjson);
     //{\"agent\":\"iguana\",\"method\":\"rawtx\",\"changeaddr\":\"RRyBxbrAPRUBCUpiJgJZYrkxqrh8x5ta9Z\",\"addresses\":[\"RRyBxbrAPRUBCUpiJgJZYrkxqrh8x5ta9Z\"],\"vals\":{\"coin\":\"BTCD\",\"amount\":\"10000000\"},\"spendscriptstr\":\"76a914b7128d2ee837cf03e30a2c0e3e0181f7b9669bb688ac\"}
-        if ( (retstr= iguana_request_andwait(&myinfo->rawtxQ,vinsp,jprint(reqjson,1),rawtxtag)) == 0 )
+        if ( (retstr= iguana_request_andwait(myinfo,&myinfo->rawtxQ,vinsp,hexjson,rawtxtag)) == 0 )
             return(clonestr("{\"error\":\"timeout waiting for remote request\"}"));
         else return(retstr);
     }
@@ -567,7 +567,7 @@ char *iguana_createrawtx(struct supernet_info *myinfo,uint32_t rawtxtag,char *sy
 
 INT_ARRAY_STRING(iguana,balances,lastheight,addresses,activecoin)
 {
-    uint64_t amount,total = 0; cJSON *item,*result,*reqjson,*array,*retjson,*hexjson; int32_t i,n,minconf=0; char *retstr,*balancestr,*coinaddr;
+    uint64_t amount,total = 0; cJSON *item,*result,*array,*retjson,*hexjson; int32_t i,n,minconf=0; char *retstr,*balancestr,*coinaddr;
     retjson = cJSON_CreateObject();
     if ( activecoin != 0 && activecoin[0] != 0 && (coin= iguana_coinfind(activecoin)) != 0 )
     {
@@ -613,10 +613,9 @@ INT_ARRAY_STRING(iguana,balances,lastheight,addresses,activecoin)
             } else jaddstr(retjson,"result","success");
             return(jprint(retjson,1));
         }
-        else if ( remoteaddr == 0 && remoteaddr[0] != 0 && strcmp(remoteaddr,"127.0.0.1") != 0 )
+        else if ( remoteaddr == 0 || remoteaddr[0] == 0 || strcmp(remoteaddr,"127.0.0.1") == 0 )
         {
-            reqjson = iguana_requestjson(myinfo,json);
-            if ( (retstr= iguana_request_andwait(&myinfo->rawtxQ,0,jprint(reqjson,1),lastheight)) == 0 )
+            if ( (retstr= iguana_request_andwait(myinfo,&myinfo->rawtxQ,0,json,lastheight)) == 0 )
                 return(clonestr("{\"error\":\"timeout waiting for remote request\"}"));
             else return(retstr);
         } else return(clonestr("{\"error\":\"invalid remoterequest when not relaynode\"}"));
