@@ -83,6 +83,7 @@ ZERO_ARGS(bitcoinrpc,gettxoutsetinfo);
 ZERO_ARGS(bitcoinrpc,getrawchangeaddress);
 SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment);
 
+INT_ARRAY_STRING(iguana,balances,lastheight,addresses,activecoin);
 STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr);
 INT_ARRAY_STRING(iguana,rawtx_result,rawtxtag,vins,rawtx);
 

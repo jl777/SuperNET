@@ -220,6 +220,10 @@ char *bitcoin_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void
                     {
                         retstr = iguana_rawtx(myinfo,coin,json,remoteaddr,jstr(json,"changeaddr"),jobj(json,"addresses"),valsobj,jstr(json,"spendscriptstr"));
                     }
+                    else if ( strcmp(method,"balances") == 0 )
+                    {
+                        retstr = iguana_balances(myinfo,coin,json,remoteaddr,juint(json,"lastheight"),jobj(json,"addresses"),jstr(json,"activecoin"));
+                    }
                     for (j=0; j<IGUANA_MAXCOINS; j++)
                     {
                         if ( (coin= Coins[j]) == 0 )
