@@ -428,7 +428,7 @@ char *iguana_request_andwait(struct supernet_info *myinfo,queue_t *Q,cJSON **vin
             if ( rawtxtag == ptr->rawtxtag )
             {
                 rawtx = clonestr(ptr->rawtx);
-                printf("got RAWTX.(%s)\n",rawtx);
+                //printf("got RAWTX.(%s)\n",rawtx);
                 if ( vinsp != 0 )
                     *vinsp = ptr->vins;
                 else free_json(ptr->vins);
@@ -459,7 +459,7 @@ char *iguana_rawtxissue(struct supernet_info *myinfo,uint32_t rawtxtag,char *sym
             if ( (rawtx= iguana_calcrawtx(myinfo,coin,vinsp,txobj,satoshis,changeaddr,txfee,addresses,minconf)) != 0 && *vinsp != 0 )
             {
                 free_json(txobj);
-                printf("return rawtx.(%s) vins.%p\n",rawtx,*vinsp);
+                //printf("return rawtx.(%s) vins.%p\n",rawtx,*vinsp);
                 return(rawtx);
             }
         }
@@ -608,6 +608,7 @@ INT_ARRAY_STRING(iguana,balances,lastheight,addresses,activecoin)
                 jaddstr(hexjson,"rawtx",jprint(retjson,1));
                 jaddstr(hexjson,"agent","iguana");
                 jaddstr(hexjson,"method","rawtx_result");
+                jaddstr(hexjson,"activecoin",activecoin);
                 jaddnum(hexjson,"rawtxtag",lastheight);
                 retjson = iguana_requestjson(myinfo,hexjson);
             } else jaddstr(retjson,"result","success");
@@ -637,7 +638,7 @@ STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
             OS_randombytes((uint8_t *)&rawtxtag,sizeof(rawtxtag));
         if ( (rawtx= iguana_createrawtx(myinfo,rawtxtag,symbol,&vins,locktime,satoshis,spendscriptstr,changeaddr,txfee,minconf,addresses)) != 0 )
         {
-            printf("return rawtx.(%s) remote.%p symbol.%s\n",rawtx,remoteaddr,symbol);
+            //printf("return rawtx.(%s) remote.%p symbol.%s\n",rawtx,remoteaddr,symbol);
             if ( remoteaddr != 0 && remoteaddr[0] != 0 && (coin= iguana_coinfind(symbol)) != 0 )
             {
                 hexjson = cJSON_CreateObject();
