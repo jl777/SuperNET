@@ -462,7 +462,6 @@ char *iguana_rawtxissue(struct supernet_info *myinfo,uint32_t rawtxtag,char *sym
             }
         }
     }
-    printf("fall through case\n");
     if ( txobj != 0 )
         free_json(txobj);
     if ( addresses != 0 )
@@ -636,7 +635,7 @@ STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr)
             OS_randombytes((uint8_t *)&rawtxtag,sizeof(rawtxtag));
         if ( (rawtx= iguana_createrawtx(myinfo,rawtxtag,symbol,&vins,locktime,satoshis,spendscriptstr,changeaddr,txfee,minconf,addresses)) != 0 )
         {
-            //printf("got rawtx.(%s) remote.%p symbol.%s\n",rawtx,remoteaddr,symbol);
+            printf("return rawtx.(%s) remote.%p symbol.%s\n",rawtx,remoteaddr,symbol);
             if ( remoteaddr != 0 && remoteaddr[0] != 0 && (coin= iguana_coinfind(symbol)) != 0 )
             {
                 hexjson = cJSON_CreateObject();
