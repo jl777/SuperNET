@@ -953,7 +953,7 @@ struct iguana_bundlereq *instantdex_recvquotes(struct iguana_info *coin,struct i
             state = (quotes[i].txid & (~INSTANTDEX_ORDERSTATE_ORDERIDMASK));
             if ( state > ap->state )
                 ap->state = state;
-            if ( ap->state != 0 )
+            if ( ap->state == 0 )
                 continue;
         }
         if ( instantdex_statemachinefind(0,exchange,quotes[i].ulongs[0]) != 0 || instantdex_historyfind(0,exchange,quotes[i].ulongs[0]) != 0 )
