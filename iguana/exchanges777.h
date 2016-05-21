@@ -153,9 +153,12 @@ struct instantdex_stateinfo
     struct instantdex_event *events; int32_t numevents;
 };
 
+struct bitcoin_eventitem { struct queueitem DL; cJSON *argjson,*newjson; int32_t serdatalen; char cmd[16]; uint8_t serdata[]; };
+
 struct bitcoin_swapinfo
 {
     //struct queueitem DL;
+    queue_t eventsQ;
     struct bitcoin_swapinfo *next,*prev;
     struct instantdex_accept mine,other;
     bits256 privkeys[INSTANTDEX_DECKSIZE+2],mypubs[2],otherpubs[2],privAm,pubAm,privBn,pubBn;
@@ -201,5 +204,6 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_
 void tradebot_timeslices(struct exchange_info *exchange);
 struct instantdex_stateinfo *BTC_initFSM(int32_t *n);
 struct bitcoin_statetx *instantdex_feetx(struct supernet_info *myinfo,struct instantdex_accept *A,struct bitcoin_swapinfo *swap,struct iguana_info *coin);
+void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap);
 
 #endif

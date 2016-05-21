@@ -1031,7 +1031,7 @@ int32_t iguana_convert(struct iguana_info *coin,int32_t helperid,struct iguana_b
         total[helperid % max] += converted;
         for (i=sum=0; i<max; i++)
             sum += total[i];
-        if ( converted != 0 && bp != coin->current )
+        if ( 0 && converted != 0 && bp != coin->current )
             printf("[%4d] millis %7.3f converted.%-7d balance calc.%-4d of %4d | total.%llu of %llu depth.%d\n",bp->hdrsi,OS_milliseconds()-startmillis,converted,m,n,(long long)sum,(long long)total_tmpspends,(int32_t)depth);
     }
     depth--;

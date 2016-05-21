@@ -118,7 +118,7 @@ struct bitcoin_statetx *instantdex_signtx(struct supernet_info *myinfo,struct ig
         bitcoin_address(coin->changeaddr,coin->chain->pubtype,waddr->rmd160,20);
     bitcoin_pubkey33(myinfo->ctx,pubkey33,myinfo->persistent_priv);
     bitcoin_address(coinaddr,coin->chain->pubtype,pubkey33,33);
-    printf("%s persistent.(%s) (%s) change.(%s) scriptstr.(%s)\n",coin->symbol,myinfo->myaddr.BTC,coinaddr,coin->changeaddr,scriptstr);
+    //printf("%s persistent.(%s) (%s) change.(%s) scriptstr.(%s)\n",coin->symbol,myinfo->myaddr.BTC,coinaddr,coin->changeaddr,scriptstr);
     if ( (waddr= iguana_waddresssearch(myinfo,coin,&wacct,coinaddr)) != 0 )
     {
         bitcoin_priv2wif(wifstr,waddr->privkey,coin->chain->wiftype);
@@ -1043,6 +1043,21 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
         }
     }
     return(clonestr("{\"error\":\"instantdex_statemachine: unexpected state\"}"));
+}
+
+void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap)
+{
+    char *str; struct bitcoin_eventitem *ptr;
+    if ( instantdex_isbob(swap) != 0 && swap->myfee == 0 )
+        swap->myfee = instantdex_feetx(myinfo,&swap->mine,swap,iguana_coinfind("BTC"));
+    while ( (ptr= queue_dequeue(&swap->eventsQ,0)) != 0 )
+    {
+        if ( (str= instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,ptr->cmd,ptr->argjson,ptr->newjson,ptr->serdata,ptr->serdatalen)) != 0 )
+            free(str);
+        if ( ptr->argjson != 0 )
+            free_json(ptr->argjson);
+        free(ptr);
+    }
 }
 
 #ifdef oldway

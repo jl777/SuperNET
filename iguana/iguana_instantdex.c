@@ -1224,10 +1224,10 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_
             //queue_enqueue("acceptableQ",&exchange->acceptableQ,&swap->DL,0);
             //if ( isbob != 0 && (coin= iguana_coinfind("BTC")) != 0 )
             //    swap->myfee = instantdex_feetx(myinfo,&swap->mine,swap,coin);
-            instantdex_statemachineadd(exchange,swap);
             *addedp = 1;
             if ( (newjson= instantdex_parseargjson(myinfo,exchange,swap,argjson,1)) == 0 )
                 return(clonestr("{\"error\":\"instantdex_checkoffer null newjson\"}"));
+            instantdex_statemachineadd(exchange,swap);
             return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,"BTCoffer",GENESIS_PUBKEY,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck),0));
         } else printf("error creating statemachine\n");
     }
@@ -1272,8 +1272,6 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
     else //if ( (retstr= instantdex_addfeetx(myinfo,newjson,ap,swap,"BOB_gotoffer","ALICE_gotoffer")) == 0 )
     {
         printf("create statemachine isbob.%d\n",isbob);
-        if ( isbob != 0 && (coinbtc= iguana_coinfind("BTC")) != 0 )
-            swap->myfee = instantdex_feetx(myinfo,&swap->mine,swap,coinbtc);
         //queue_enqueue("acceptableQ",&exchange->acceptableQ,&swap->DL,0);
         instantdex_statemachineadd(exchange,swap);
         if ( (retstr= instantdex_choosei(swap,newjson,argjson,serdata,serdatalen)) != 0 )
@@ -1288,7 +1286,7 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
 
 char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,struct instantdex_offer *offer,bits256 orderhash,uint8_t *serdata,int32_t serdatalen)
 {
-    char cmdstr[16],*retstr; struct exchange_info *exchange; struct instantdex_accept A,*ap = 0; bits256 traderpub; cJSON *newjson; struct bitcoin_swapinfo *swap;
+    char cmdstr[16],*retstr; struct exchange_info *exchange; struct instantdex_accept A,*ap = 0; bits256 traderpub; cJSON *newjson; struct bitcoin_swapinfo *swap; struct bitcoin_eventitem *ptr;
     exchange = exchanges777_find("bitcoin");
     memset(cmdstr,0,sizeof(cmdstr)), memcpy(cmdstr,msg->cmd,sizeof(msg->cmd));
     if ( argjson != 0 )
@@ -1314,9 +1312,18 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
             if ( serdatalen == sizeof(swap->otherdeck) && swap->choosei < 0 && (retstr= instantdex_choosei(swap,newjson,argjson,serdata,serdatalen)) != 0 )
             {
                 printf("error choosei\n");
+                if ( newjson != 0 )
+                    free_json(newjson);
                 return(retstr);
             }
-            return(instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,cmdstr,argjson,newjson,serdata,serdatalen));
+            ptr = calloc(1,sizeof(*ptr) + serdatalen);
+            strcpy(ptr->cmd,cmdstr);
+            ptr->newjson = newjson;
+            ptr->argjson = jduplicate(argjson);
+            memcpy(ptr->serdata,serdata,serdatalen);
+            queue_enqueue("eventQ",&swap->eventsQ,&ptr->DL,0);
+            return(clonestr("{\"result\":\"updated statemachine\"}"));
+            //return(instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,cmdstr,argjson,newjson,serdata,serdatalen));
         }
         else if ( strcmp(cmdstr,"BTCoffer") == 0 ) // incoming
         {
