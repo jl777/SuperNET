@@ -793,7 +793,7 @@ struct instantdex_accept *instantdex_offerfind(struct supernet_info *ignore,stru
                     printf("MARK as reported %llx\n",(long long)ap->orderid);
                 }
                 retap = ap;
-                if ( (item= instantdex_acceptjson(ap)) != 0 )
+                if ( (bids != 0 || asks != 0) && (item= instantdex_acceptjson(ap)) != 0 )
                 {
                     //printf("item.(%s)\n",jprint(item,0));
                     if ( (offerobj= jobj(item,"offer")) != 0 && (type= jstr(offerobj,"type")) != 0 )
@@ -804,7 +804,7 @@ struct instantdex_accept *instantdex_offerfind(struct supernet_info *ignore,stru
                             jaddi(asks,jduplicate(offerobj));
                     }
                     free_json(item);
-                } else printf("error generating acceptjson.%llx\n",(long long)ap->orderid);
+                }
             }
         }
         else
@@ -906,7 +906,7 @@ int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coi
             if ( instantdex_statemachinefind(0,exchange,ap->orderid) == 0 && instantdex_historyfind(0,exchange,ap->orderid) == 0 )
             {
                 encodedhash = instantdex_encodehash(ap->offer.base,ap->offer.rel,ap->offer.price64*instantdex_bidaskdir(&ap->offer),(ap->orderid&INSTANTDEX_ORDERSTATE_ORDERIDMASK) | ap->state,ap->offer.account);
-                if ( n < sizeof(hashes)/sizeof(*hashes) )//&& GETBIT(ap->peerhas,addr->addrind) == 0 )
+                if ( n < sizeof(hashes)/sizeof(*hashes) && GETBIT(ap->peerhas,addr->addrind) == 0 )
                 {
                     hashes[n++] = encodedhash;
                     printf("(%d %llx) ",n,(long long)(ap->orderid&INSTANTDEX_ORDERSTATE_ORDERIDMASK) | ap->state);
@@ -1197,7 +1197,7 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_
             instantdex_offeradd(exchange,ap);
             *addedp = 1;
             if ( instantdex_offerfind(myinfo,exchange,0,0,ap->orderid,ap->offer.base,ap->offer.rel,0) == 0 )
-                printf("cant find just added to acceptableQ\n");
+                printf("cant find %llu just added to acceptableQ\n",(long long)ap->orderid);
         }
         return(jprint(instantdex_offerjson(&ap->offer,ap->orderid),1));
     }
