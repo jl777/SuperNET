@@ -85,8 +85,8 @@ bits256 iguana_genesis(struct iguana_info *coin,struct iguana_chain *chain)
         return(hash2);
     }
     decode_hex(buf,(int32_t)strlen(chain->genesis_hex)/2,(char *)chain->genesis_hex);
-    hash2 = bits256_doublesha256(0,buf,sizeof(struct iguana_msgblockhdr));
-    iguana_rwblock(0,&hash2,buf,&msg);
+    hash2 = iguana_calcblockhash(coin->chain->hashalgo,buf,sizeof(struct iguana_msgblockhdr));
+    iguana_rwblock(coin->chain->hashalgo,0,&hash2,buf,&msg);
     if  ( memcmp(hash2.bytes,chain->genesis_hashdata,sizeof(hash2)) != 0 )
     {
         bits256_str(str,hash2);

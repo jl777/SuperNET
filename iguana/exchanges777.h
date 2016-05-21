@@ -200,5 +200,6 @@ struct bitcoin_swapinfo *instantdex_statemachinefind(struct supernet_info *myinf
 char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_t *txidp,struct exchange_info *exchange,struct instantdex_accept *ap,cJSON *json);
 void tradebot_timeslices(struct exchange_info *exchange);
 struct instantdex_stateinfo *BTC_initFSM(int32_t *n);
+struct bitcoin_statetx *instantdex_feetx(struct supernet_info *myinfo,struct instantdex_accept *A,struct bitcoin_swapinfo *swap,struct iguana_info *coin);
 
 #endif

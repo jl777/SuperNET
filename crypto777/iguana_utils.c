@@ -112,6 +112,18 @@ bits256 bits256_lshift(bits256 x)
     return(x);
 }
 
+bits256 bits256_rshift(bits256 x)
+{
+    int32_t i; uint64_t carry,prevcarry = 0;
+    for (i=3; i>=0; i--)
+    {
+        carry = (1 & x.ulongs[i]) << 63;
+        x.ulongs[i] = prevcarry | (x.ulongs[i] >> 1);
+        prevcarry = carry;
+    }
+    return(x);
+}
+
 bits256 bits256_from_compact(uint32_t c)
 {
 	uint32_t nbytes,nbits,i; bits256 x;
@@ -122,6 +134,21 @@ bits256 bits256_from_compact(uint32_t c)
     for (i=0; i<nbits; i++) // horrible inefficient
         x = bits256_lshift(x);
     return(x);
+}
+
+uint32_t bits256_to_compact(bits256 x)
+{
+    int32_t i; uint32_t nbits;
+    for (i=31; i>2; i--)
+        if ( x.bytes[i] != 0 )
+            break;
+    if ( (x.bytes[i] & 0x80) != 0 )
+        i++;
+    nbits = x.bytes[i] << 16;
+    nbits |= x.bytes[i-1] << 8;
+    nbits |= x.bytes[i-2];
+    nbits |= ((i+1) << 24);
+    return(nbits);
 }
 
 int32_t bitweight(uint64_t x)

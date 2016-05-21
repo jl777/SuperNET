@@ -89,6 +89,8 @@ struct iguana_utxo iguana_utxofind(struct iguana_info *coin,int16_t spent_hdrsi,
     if ( (bp= coin->bundles[spent_hdrsi]) == 0 )
         return(utxo);
     ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
+    if ( ramchain->H.data == 0 )
+        return(utxo);
     val = ((uint64_t)spent_hdrsi << 32) | spent_unspentind;
     if ( spent_unspentind > 0 && spent_unspentind < ramchain->H.data->numunspents )
     {

@@ -182,10 +182,10 @@ struct iguana_waddress *iguana_waddresssearch(struct supernet_info *myinfo,struc
             {
                 if ( bitcoin_priv2wif(waddr->wifstr,waddr->privkey,coin->chain->wiftype) > 0 )
                 {
-                    if ( waddr->wiftype != coin->chain->wiftype )
+                    if ( 0 && waddr->wiftype != coin->chain->wiftype )
                         printf("waddresssearch warning: mismatched wiftype %02x != %02x\n",waddr->wiftype,coin->chain->wiftype);
-                    if ( waddr->addrtype != coin->chain->pubtype )
-                        printf("waddresssearch warning: mismatched wiftype %02x != %02x\n",waddr->addrtype,coin->chain->pubtype);
+                    if ( 0 && waddr->addrtype != coin->chain->pubtype )
+                        printf("waddresssearch warning: mismatched addrtype %02x != %02x\n",waddr->addrtype,coin->chain->pubtype);
                 }
             }
             (*wacctp) = wacct;

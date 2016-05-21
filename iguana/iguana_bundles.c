@@ -463,7 +463,7 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
             {
                 if ( (fp= fopen(fname,"rb")) != 0 )
                 {
-                    printf("purge.(%s)\n",fname);
+                    //printf("purge.(%s)\n",fname);
                     fclose(fp);
                     if ( OS_removefile(fname,0) > 0 )
                         coin->peers.numfiles--, m++;

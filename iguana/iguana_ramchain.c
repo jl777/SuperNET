@@ -2298,7 +2298,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
 {
     static const bits256 zero;
     struct iguana_blockRO *B; struct iguana_txid *T; int32_t i,firsti = 1; char fname[512];
-    struct iguana_block *block; struct iguana_ramchain *mapchain;
+    struct iguana_block *block,*prev,*prev2; struct iguana_ramchain *mapchain;
     memset(ramchain,0,sizeof(*ramchain));
     if ( (mapchain= iguana_ramchain_map(coin,fname,bp,bp->n,ramchain,0,0,bp->hashes[0],zero,0,0,extraflag,1)) != 0 )
     {
@@ -2307,12 +2307,16 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
         //ramcoder_test(mapchain->H.data,mapchain->H.data->allocsize);
         B = RAMCHAIN_PTR(ramchain->H.data,Boffset);
         T = RAMCHAIN_PTR(ramchain->H.data,Toffset);
-        //B = (void *)(long)((long)mapchain->H.data + mapchain->H.data->Boffset);
-        //T = (void *)(long)((long)mapchain->H.data + mapchain->H.data->Toffset);
+        prev = prev2 = 0;
         for (i=0; i<bp->n; i++)
         {
             if ( (block= bp->blocks[i]) != 0 || (block= iguana_blockhashset("bundleload",coin,bp->bundleheight+i,bp->hashes[i],1)) != 0 )
             {
+                if ( bits256_to_compact(bits256_from_compact(block->RO.bits)) != block->RO.bits )
+                {
+                    char str[65];
+                    printf("nbits calc error %x -> %s -> %x\n",block->RO.bits,bits256_str(str,bits256_from_compact(block->RO.bits)),bits256_to_compact(bits256_from_compact(block->RO.bits)));
+                }
                 block->queued = 1;
                 block->txvalid = 1;
                 block->height = bp->bundleheight + i;
@@ -2322,13 +2326,21 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
                 block->RO = B[i];
                 //printf("%x ",(int32_t)B[i].hash2.ulongs[3]);
                 iguana_hash2set(coin,"bundleload",bp,i,block->RO.hash2);
+                bp->blocks[i] = block;
                 //if ( bits256_nonz(bp->hashes[i]) == 0 )
                 //    bp->hashes[i] = B[i].hash2;
+                if ( (prev= block->hh.prev) != 0 )
+                    prev2 = prev->hh.prev;
+                if ( strcmp(coin->symbol,"BTCD") == 0 && bp->bundleheight > 20000 && prev != 0 && iguana_targetbits(coin,block,prev,prev2,1) != block->RO.bits )
+                {
+                    printf("nbits target error %x != %x ht.%d\n",iguana_targetbits(coin,block,prev,prev2,1),block->RO.bits,block->height);
+                } //else printf(">>>>>>>>>> matched nbits %x ht.%d\n",block->RO.bits,block->height);
                 if ( bp->bundleheight+i == coin->blocks.hwmchain.height+1 )
                 {
                     //printf("try extend.%d\n",bp->bundleheight+i);
                     //_iguana_chainlink(coin,block); wrong context
                 }
+                prev2 = prev, prev = block;
             }
         }
         //printf("mapped bundle.%d\n",bp->bundleheight);

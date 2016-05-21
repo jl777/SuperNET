@@ -590,6 +590,8 @@ void iguana_statemachineupdate(struct supernet_info *myinfo,struct exchange_info
     portable_mutex_lock(&exchange->mutex);
     DL_FOREACH_SAFE(exchange->statemachines,swap,tmp)
     {
+        if ( swap->myfee == 0 )
+            swap->myfee = instantdex_feetx(myinfo,&swap->mine,swap,iguana_coinfind("BTC"));
         //printf("FSM.(%llu / %llu) (%s/%s) state.(%s)\n",(long long)swap->mine.orderid,(long long)swap->other.orderid,swap->mine.offer.base,swap->mine.offer.rel,swap->state->name);
     }
     portable_mutex_unlock(&exchange->mutex);

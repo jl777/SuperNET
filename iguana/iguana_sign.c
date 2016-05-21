@@ -743,7 +743,7 @@ void iguana_ensure_privkey(struct supernet_info *myinfo,struct iguana_info *coin
     uint8_t pubkey33[33]; struct iguana_waccount *wacct; struct iguana_waddress *waddr,addr; char coinaddr[128];
     bitcoin_pubkey33(myinfo->ctx,pubkey33,privkey);
     bitcoin_address(coinaddr,coin->chain->pubtype,pubkey33,33);
-    //printf("privkey for (%s)\n",coinaddr);
+    printf("privkey for (%s)\n",coinaddr);
     if ( myinfo->expiration != 0 && ((waddr= iguana_waddresssearch(myinfo,coin,&wacct,coinaddr)) == 0 || bits256_nonz(waddr->privkey) == 0) )
     {
         if ( waddr == 0 )
@@ -758,10 +758,10 @@ void iguana_ensure_privkey(struct supernet_info *myinfo,struct iguana_info *coin
             waddr->privkey = privkey;
             if ( bitcoin_priv2wif(waddr->wifstr,waddr->privkey,coin->chain->wiftype) > 0 )
             {
-                if ( waddr->wiftype != coin->chain->wiftype )
+                if ( 0 && waddr->wiftype != coin->chain->wiftype )
                     printf("ensurepriv warning: mismatched wiftype %02x != %02x\n",waddr->wiftype,coin->chain->wiftype);
-                if ( waddr->addrtype != coin->chain->pubtype )
-                    printf("ensurepriv warning: mismatched wiftype %02x != %02x\n",waddr->addrtype,coin->chain->pubtype);
+                if ( 0 && waddr->addrtype != coin->chain->pubtype )
+                    printf("ensurepriv warning: mismatched addrtype %02x != %02x\n",waddr->addrtype,coin->chain->pubtype);
             }
         }
     }
@@ -1066,6 +1066,7 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                         item = jitem(privkeys,i);
                         privkeystr = jstr(item,0);
                         privkey = iguana_str2priv(myinfo,coin,privkeystr);
+                        V->signers[i].privkey = privkey;
                         if ( bits256_nonz(privkey) != 0 )
                             iguana_ensure_privkey(myinfo,coin,privkey);
                     }

@@ -1176,7 +1176,7 @@ struct bitcoin_swapinfo *bitcoin_swapinit(struct supernet_info *myinfo,struct ex
 
 char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_t *txidp,struct exchange_info *exchange,struct instantdex_accept *ap,cJSON *argjson)
 {
-    struct instantdex_accept *otherap,*tmp; struct iguana_info *coin; struct bitcoin_swapinfo *swap; cJSON *newjson; int32_t isbob = 0;
+    struct instantdex_accept *otherap,*tmp; struct bitcoin_swapinfo *swap; cJSON *newjson; int32_t isbob = 0;
     *addedp = 0;
     if ( exchange == 0 )
     {
@@ -1222,8 +1222,8 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_
         {
             printf("STATEMACHINEQ.(%llx / %llx)\n",(long long)swap->mine.orderid,(long long)swap->other.orderid);
             //queue_enqueue("acceptableQ",&exchange->acceptableQ,&swap->DL,0);
-            if ( isbob != 0 && (coin= iguana_coinfind("BTC")) != 0 )
-                swap->myfee = instantdex_feetx(myinfo,&swap->mine,swap,coin);
+            //if ( isbob != 0 && (coin= iguana_coinfind("BTC")) != 0 )
+            //    swap->myfee = instantdex_feetx(myinfo,&swap->mine,swap,coin);
             instantdex_statemachineadd(exchange,swap);
             *addedp = 1;
             if ( (newjson= instantdex_parseargjson(myinfo,exchange,swap,argjson,1)) == 0 )

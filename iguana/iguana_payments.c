@@ -274,13 +274,14 @@ cJSON *iguana_inputsjson(struct supernet_info *myinfo,struct iguana_info *coin,i
     return(vins);
 }
 
-char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *signedtxidp,int32_t *completedp,cJSON *vins,char *rawtx)
+char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *signedtxidp,int32_t *completedp,cJSON *vins,char *rawtx,cJSON *privkeys)
 {
-    cJSON *privkeys; struct vin_info *V; char *signedtx = 0; struct iguana_msgtx msgtx; int32_t numinputs;
+    struct vin_info *V; char *signedtx = 0; struct iguana_msgtx msgtx; int32_t numinputs;
     *completedp = 0;
-    if ( (numinputs= cJSON_GetArraySize(vins)) > 0 && (privkeys= iguana_privkeysjson(myinfo,coin,vins)) != 0 )
+    if ( (numinputs= cJSON_GetArraySize(vins)) > 0 && (privkeys != 0 || (privkeys= iguana_privkeysjson(myinfo,coin,vins)) != 0) )
     {
         memset(&msgtx,0,sizeof(msgtx));
+        //printf("SIGN.(%s) priv.(%s)\n",jprint(vins,0),jprint(privkeys,0));
         if ( (V= calloc(numinputs,sizeof(*V))) != 0 )
         {
             if ( iguana_signrawtransaction(myinfo,coin,&msgtx,&signedtx,signedtxidp,V,numinputs,rawtx,vins,privkeys) > 0 )
@@ -516,7 +517,7 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
         init_hexbytes_noT(spendscriptstr,spendscript,spendlen);
         if ( (rawtx= iguana_rawtxissue(myinfo,rand(),coin->symbol,&vins,locktime,satoshis,coin->changeaddr,txfee,addresses,minconf,spendscriptstr,15000)) != 0 )
         {
-            if ( (signedtx= iguana_signrawtx(myinfo,coin,&signedtxid,&completed,vins,rawtx)) != 0 )
+            if ( (signedtx= iguana_signrawtx(myinfo,coin,&signedtxid,&completed,vins,rawtx,0)) != 0 )
             {
                 iguana_unspentslock(myinfo,coin,vins);
                 retjson = cJSON_CreateObject();

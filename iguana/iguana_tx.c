@@ -230,7 +230,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
         {
             iguana_blockunconv(&msgB,block,0);
             msgB.txn_count = block->RO.txn_count;
-            total = iguana_rwblock(1,&checkhash2,&blockspace[sizeof(struct iguana_msghdr) + 0],&msgB);
+            total = iguana_rwblock(coin->chain->hashalgo,1,&checkhash2,&blockspace[sizeof(struct iguana_msghdr) + 0],&msgB);
             if ( bits256_cmp(checkhash2,block->RO.hash2) != 0 )
             {
                 static int counter;
@@ -368,7 +368,7 @@ cJSON *iguana_blockjson(struct iguana_info *coin,struct iguana_block *block,int3
     msg.H.bits = block->RO.bits;
     msg.H.nonce = block->RO.nonce;
     msg.txn_count = 0;//block->RO.txn_count;
-    len = iguana_rwblock(1,&hash2,serialized,&msg);
+    len = iguana_rwblock(coin->chain->hashalgo,1,&hash2,serialized,&msg);
     init_hexbytes_noT(hexstr,serialized,len);
     jaddstr(json,"blockheader",hexstr);
     if ( txidsflag != 0 )

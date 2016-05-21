@@ -40,6 +40,18 @@ bits256 iguana_merkle(struct iguana_info *coin,bits256 *tree,int32_t txn_count)
 
 #define iguana_blockfind(str,coin,hash2) iguana_blockhashset(str,coin,-1,hash2,0)
 
+struct iguana_block *iguana_prevblock(struct iguana_info *coin,struct iguana_block *block,int32_t PoSflag)
+{
+    int32_t hdrsi,bundlei,height; struct iguana_bundle *bp;
+    if ( (height= block->height - 1) < 0 )
+        return(0);
+    hdrsi = (height / coin->chain->bundlesize);
+    bundlei = (height % coin->chain->bundlesize);
+    if ( hdrsi < coin->bundlescount && (bp= coin->bundles[hdrsi]) != 0 )
+        return(bp->blocks[bundlei]);
+    else return(0);
+}
+
 void _iguana_blocklink(struct iguana_info *coin,struct iguana_block *prev,struct iguana_block *block)
 {
     char str[65],str2[65]; struct iguana_block *next;
@@ -174,7 +186,7 @@ int32_t iguana_blockvalidate(struct iguana_info *coin,int32_t *validp,struct igu
 {
     bits256 hash2; uint8_t serialized[sizeof(struct iguana_msgblock) + 4096];
     *validp = 0;
-    iguana_serialize_block(&hash2,serialized,block);
+    iguana_serialize_block(coin->chain,&hash2,serialized,block);
     *validp = (memcmp(hash2.bytes,block->RO.hash2.bytes,sizeof(hash2)) == 0);
     block->valid = *validp;
     char str[65]; char str2[65];
@@ -285,12 +297,12 @@ double PoW_from_compact(uint32_t nBits,uint8_t unitval) // NOT consensus safe, b
         printf("illegal nBits.%x\n",nBits);
         return(0.);
     }
-    if ( (n= ((8* (unitval-3)) - nbits)) != 0 ) // 0x1d00ffff is genesis nBits so we map that to 1.
+    if ( (n= ((8 * (unitval-3)) - nbits)) != 0 ) // 0x1d00ffff is genesis nBits so we map that to 1.
     {
         //printf("nbits.%d -> n.%d\n",nbits,n);
         if ( n < 64 )
             PoW /= (1LL << n);
-        else // very rare case efficiency not issue
+        else // rare case efficiency not issue
         {
             for (i=0; i<n; i++)
                 PoW /= 2.;

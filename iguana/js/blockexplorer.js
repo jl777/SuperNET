@@ -36,64 +36,7 @@ document.getElementById('BlockExpCoin').innerHTML = html;
  * to start RPC for particular coin
  */
 
-var callBlockEXPRPC=function(coin){
-    
-    var request="{\"agent\":\"SuperNET\",\"method\":\"bitcoinrpc\",\"setcoin\":\""+coin+"\"}";
-    
-    SPNAPI.makeRequest(request, function(request,response){
-        response=JSON.parse(response);
-        if(response.result && response.result==='set bitcoin RPC coin'){
-            
-        blockExp_input_table();
-        }
-    });
-};
-
-/*
- * 
- * @param {type} height
- * @returns {undefined}
- * Function gets the blockhash when called and is stored in global variable
- * (initially height is set to zero)
- * 
- */
-
-var filterInt = function (value) {
-  if(/^(\-|\+)?([0-9]+|Infinity)$/.test(value))
-    return Number(value);
-  return "NaN";
-};
-
-var getBlockhash= function(height){
-    
-    var height=($('#BlockExp_height').val());
-    /*
-    if (height === "NaN" || height ==='Infinity') {
-     height=0;
-    }*/
-    var request="{\"agent\":\"ramchain\",\"method\":\"getblockhash\",\"height\":\""+height+"\"}";
-    
-    SPNAPI.makeRequest(request, function(request,response){
-            response=JSON.parse(response);
-            if(response.result){
-                BlockHash=response.result;
-                //Blockhashoutput
-                document.getElementById('block_output_table').innerHTML='<tr><td >'+'Blockhash is:</td><td  width="300px"> '+BlockHash+'</td></tr>';
-                $('#BlockExp_blockhash').val(BlockHash);
-        
-                }
-        });
-    
-};
-
-/*
- * 
- * @param {type} hash
- * @returns {undefined}
- * Function gets Block for a paritculat blockhash
- * and store inside global varianle
- * 
- */
+var callBlockEXPRds
 var getBlock= function(hash){
     var inputhash=$('#BlockExp_blockhash').val();
     if(inputhash!==hash){

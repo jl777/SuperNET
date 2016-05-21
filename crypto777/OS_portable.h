@@ -364,11 +364,14 @@ char *bits256_lstr(char hexstr[65],bits256 x);
 bits256 bits256_add(bits256 a,bits256 b);
 int32_t bits256_cmp(bits256 a,bits256 b);
 bits256 bits256_lshift(bits256 x);
+bits256 bits256_rshift(bits256 x);
 bits256 bits256_from_compact(uint32_t c);
+uint32_t bits256_to_compact(bits256 x);
 bits256 bits256_conv(char *hexstr);
 int32_t btc_priv2pub(uint8_t pubkey[33],uint8_t privkey[32]);
 void calc_shares(unsigned char *shares,unsigned char *secret,int32_t size,int32_t width,int32_t M,int32_t N,unsigned char *sharenrs);
 int32_t OS_portable_rmdir(char *dirname,int32_t diralso);
+void calc_hmac_sha256(uint8_t *mac,int32_t maclen,uint8_t *key,int32_t key_size,uint8_t *message,int32_t len);
 
 extern char *Iguana_validcommands[];
 extern bits256 GENESIS_PUBKEY,GENESIS_PRIVKEY;
