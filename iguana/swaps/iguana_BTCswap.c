@@ -1008,7 +1008,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
         swap->state = &states[state->timeoutind];
         if ( (newjson= (*state->timeout)(myinfo,exchange,swap,argjson,newjson,&serdata,&serdatalen)) == 0 )
             return(clonestr("{\"error\":\"instantdex_BTCswap null return from timeoutfunc\"}"));
-        return(jprint(newjson,1));
+        else return(jprint(newjson,1));
     }
     for (i=0; i<state->numevents; i++)
     {
@@ -1052,6 +1052,7 @@ void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_i
         swap->myfee = instantdex_feetx(myinfo,&swap->mine,swap,iguana_coinfind("BTC"));
     while ( (ptr= queue_dequeue(&swap->eventsQ,0)) != 0 )
     {
+        printf("deQ arg.%p new.%p\n",ptr->argjson,ptr->newjson);
         if ( (str= instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,ptr->cmd,ptr->argjson,ptr->newjson,ptr->serdata,ptr->serdatalen)) != 0 )
             free(str);
         if ( ptr->argjson != 0 )

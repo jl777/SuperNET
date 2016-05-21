@@ -922,7 +922,7 @@ int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coi
     portable_mutex_unlock(&exchange->mutex);
     if ( n > 0 )
     {
-        printf(" nhashes\n");
+        printf(" nhashes for (%s)\n",addr->ipaddr);
         len = iguana_inv2packet(serialized,sizeof(serialized),MSG_QUOTE,hashes,n);
         //printf("Send inv2[%d] -> (%s)\n",n,addr->ipaddr);
         return(iguana_queue_send(addr,0,serialized,"inv2",len,0,0));
@@ -949,6 +949,7 @@ struct iguana_bundlereq *instantdex_recvquotes(struct iguana_info *coin,struct i
     {
         if ( (ap= instantdex_quotefind(0,coin,req->addr,quotes[i])) != 0 )
         {
+            SETBIT(ap->peerhas,req->addr->addrind);
             state = (quotes[i].txid & (~INSTANTDEX_ORDERSTATE_ORDERIDMASK));
             if ( state > ap->state )
                 ap->state = state;
@@ -1320,7 +1321,11 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
             strcpy(ptr->cmd,cmdstr);
             ptr->newjson = newjson;
             ptr->argjson = jduplicate(argjson);
-            memcpy(ptr->serdata,serdata,serdatalen);
+            if ( serdatalen != 0 )
+            {
+                memcpy(ptr->serdata,serdata,serdatalen);
+                ptr->serdatalen = serdatalen;
+            }
             queue_enqueue("eventQ",&swap->eventsQ,&ptr->DL,0);
             return(clonestr("{\"result\":\"updated statemachine\"}"));
             //return(instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,cmdstr,argjson,newjson,serdata,serdatalen));
