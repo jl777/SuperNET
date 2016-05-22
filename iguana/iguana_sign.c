@@ -650,7 +650,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
                      for (i=0; i<plen; i++)
                      printf("%02x",vp->signers[j].pubkey[i]);*/
                     // s2 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141 - s1;
-                    char str[65]; printf(" SIGNEDTX.[%02x] siglen.%d sigtxid.%s\n",sig[siglen-1],siglen,bits256_str(str,sigtxid));
+                    //char str[65]; printf(" SIGNEDTX.[%02x] siglen.%d sigtxid.%s\n",sig[siglen-1],siglen,bits256_str(str,sigtxid));
                 }
                 if ( sig == 0 || siglen == 0 )
                 {
@@ -743,7 +743,7 @@ void iguana_ensure_privkey(struct supernet_info *myinfo,struct iguana_info *coin
     uint8_t pubkey33[33]; struct iguana_waccount *wacct; struct iguana_waddress *waddr,addr; char coinaddr[128];
     bitcoin_pubkey33(myinfo->ctx,pubkey33,privkey);
     bitcoin_address(coinaddr,coin->chain->pubtype,pubkey33,33);
-    printf("privkey for (%s)\n",coinaddr);
+    //printf("privkey for (%s)\n",coinaddr);
     if ( myinfo->expiration != 0 && ((waddr= iguana_waddresssearch(myinfo,coin,&wacct,coinaddr)) == 0 || bits256_nonz(waddr->privkey) == 0) )
     {
         if ( waddr == 0 )

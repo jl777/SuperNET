@@ -187,7 +187,7 @@ struct bitcoin_statetx *instantdex_feetx(struct supernet_info *myinfo,struct ins
     r = swap->mine.orderid ^ swap->other.orderid;
     n = instantdex_outputinsurance(paymentscript,swap->insurance,r,r * (strcmp("BTC",coin->symbol) == 0));
     init_hexbytes_noT(scriptstr,paymentscript,n);
-    printf("feetx %.8f (%s)\n",dstr(swap->insurance),scriptstr);
+    printf("instantdex_feetx %.8f (%s)\n",dstr(swap->insurance),scriptstr);
     ptr = instantdex_signtx(myinfo,coin,0,scriptstr,swap->insurance,coin->txfee,swap->mine.minconfirms,A->offer.myside);
     return(ptr);
 }

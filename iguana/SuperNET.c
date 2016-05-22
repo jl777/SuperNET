@@ -599,7 +599,7 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,uint64_t destipbits,bits256 
                     {
                         if ( strcmp("0.0.0.0",addr->ipaddr) != 0 && strcmp("127.0.0.1",addr->ipaddr) != 0 )
                         {
-                            char str[65]; printf("BROADCAST[%d] crc.%x %s SEND.(%d) to %s\n",j,calc_crc32(0,jsonstr,(int32_t)strlen(jsonstr)),bits256_str(str,categoryhash),(int32_t)strlen(jsonstr),addr->ipaddr);
+                            //char str[65]; printf("BROADCAST[%d] crc.%x %s SEND.(%d) to %s\n",j,calc_crc32(0,jsonstr,(int32_t)strlen(jsonstr)),bits256_str(str,categoryhash),(int32_t)strlen(jsonstr),addr->ipaddr);
                             iguana_send_supernet(addr,jsonstr,maxdelay==0?0:(rand()%maxdelay));
                         }
                     }

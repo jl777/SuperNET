@@ -1308,7 +1308,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
             A.offer.minperc = 100;
         if ( (swap= instantdex_statemachinefind(myinfo,exchange,A.orderid)) != 0 )
         {
-            printf("found existing state machine %llx\n",(long long)A.orderid);
+            //printf("found existing state machine %llx\n",(long long)A.orderid);
             newjson = instantdex_parseargjson(myinfo,exchange,swap,argjson,0);
             if ( serdatalen == sizeof(swap->otherdeck) && swap->choosei < 0 && (retstr= instantdex_choosei(swap,newjson,argjson,serdata,serdatalen)) != 0 )
             {
@@ -1384,6 +1384,11 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,struct category_info *cat,v
     else if ( (signerbits= acct777_validate(&msg->sig,acct777_msgprivkey(serdata,datalen),msg->sig.pubkey)) != 0 )//|| 1 )
     {
         flag++;
+        if ( signerbits == myinfo->myaddr.nxt64bits )
+        {
+            printf("filter out self-messages\n");
+            return(0);
+        }
         //printf("InstantDEX_hexmsg <<<<<<<<<<<<< sigsize.%d VALIDATED [%ld] len.%d t%u allocsize.%d (%s) [%d]\n",(int32_t)sizeof(msg->sig),(long)serdata-(long)msg,datalen,msg->sig.timestamp,msg->sig.allocsize,(char *)msg->serialized,serdata[datalen-1]);
         newlen = (int32_t)(msg->sig.allocsize - ((long)msg->serialized - (long)msg));
         serdata = msg->serialized;
@@ -1400,7 +1405,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,struct category_info *cat,v
             newlen -= olen;
             //newlen -= ((long)msg->serialized - (long)msg);
             serdata = &serdata[olen];
-            printf("received orderhash.%llx olen.%d slen.%d newlen.%d\n",(long long)orderhash.txid,olen,slen,newlen);
+            //printf("received orderhash.%llx olen.%d slen.%d newlen.%d\n",(long long)orderhash.txid,olen,slen,newlen);
         } else olen = 0;
         if ( newlen <= 0 )
             serdata = 0, newlen = 0;
