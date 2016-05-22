@@ -799,7 +799,7 @@ cJSON *ALICE_checkbobreclaimfunc(struct supernet_info *myinfo,struct exchange_in
     *serdatap = 0, *serdatalenp = 0;
     if ( swap->BTCsatoshis < SATOSHIDEN/10 )
         btcconfirms = 0;
-    else btcconfirms = 1. + sqrt((double)swap->BTCsatoshis / SATOSHIDEN);
+    else btcconfirms = sqrt((double)swap->BTCsatoshis / SATOSHIDEN);
     if ( swap->payment != 0 && (retstr= BTC_txconfirmed(myinfo,coinbtc,swap,newjson,swap->payment->txid,&swap->payment->numconfirms,"payfound",btcconfirms)) != 0 )
     {
         jaddstr(newjson,"payfound",retstr);
@@ -876,7 +876,8 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     // events instantdex_addevent(s,*n,<Current State>,<event>,<message to send>,<Next State>)
     *n = 2;
     s = instantdex_statecreate(s,n,"BTC_cleanup",BTC_cleanupfunc,0,0,0,-1); // from states without any commits
-    memset(s,0,sizeof(*s) * 2);
+    instantdex_addevent(s,*n,"BTC_cleanup","poll","poll","BTC_cleanup");
+    //memset(s,0,sizeof(*s) * 2);
     // terminal [BLOCKING] states for the corresponding transaction
     // if all goes well both alice and bob get to claim the other's payments
     s = instantdex_statecreate(s,n,"ALICE_claimedbtc",ALICE_claimbtcfunc,0,0,0,0);
@@ -1034,7 +1035,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
     if ( swap->expiration != 0 && time(NULL) > swap->expiration )
     {
         swap->state = &states[state->timeoutind];
-        if ( (newjson= (*state->timeout)(myinfo,exchange,swap,argjson,newjson,&serdata,&serdatalen)) == 0 )
+        if ( state->timeout == 0 || (newjson= (*state->timeout)(myinfo,exchange,swap,argjson,newjson,&serdata,&serdatalen)) == 0 )
             return(clonestr("{\"error\":\"instantdex_BTCswap null return from timeoutfunc\"}"));
         else return(jprint(newjson,0));
     }
@@ -1042,7 +1043,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
     {
         if ( strcmp(cmdstr,state->events[i].cmdstr) == 0 )
         {
-            if ( (newjson= (*state->process)(myinfo,exchange,swap,argjson,newjson,&serdata,&serdatalen)) == 0 )
+            if ( state->process != 0 && (newjson= (*state->process)(myinfo,exchange,swap,argjson,newjson,&serdata,&serdatalen)) == 0 )
             {
                 if ( strcmp("poll",state->events[i].sendcmd) == 0 )
                 {
