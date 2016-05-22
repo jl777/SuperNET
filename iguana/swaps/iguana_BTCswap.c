@@ -414,7 +414,8 @@ int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct bitcoin_swapin
 {
     char buf[3]; int32_t i,n,m,len=0; bits256 pubi; uint64_t txid; uint8_t secret160[20],pubkey[33];
     sprintf(buf,"%c0",'A' - 0x02 + firstbyte);
-    printf(">>>>>> start generating %s\n",buf);
+    if ( numpubs > 2 )
+        printf(">>>>>> start generating %s\n",buf);
     for (i=n=m=0; i<numpubs*100 && n<numpubs; i++)
     {
         pubi = instantdex_derivekeypair(myinfo,&swap->privkeys[n],pubkey,privkey,hash);
@@ -440,7 +441,8 @@ int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct bitcoin_swapin
         }
         n++;
     }
-    printf("n.%d m.%d len.%d numpubs.%d\n",n,m,len,swap->numpubs);
+    if ( n > 2 || m > 2 )
+        printf("n.%d m.%d len.%d numpubs.%d\n",n,m,len,swap->numpubs);
     return(n);
 }
 
@@ -1053,7 +1055,7 @@ void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_i
         swap->myfee = instantdex_feetx(myinfo,&swap->mine,swap,iguana_coinfind("BTC"));
     while ( (ptr= queue_dequeue(&swap->eventsQ,0)) != 0 )
     {
-        printf("deQ arg.%p new.%p\n",ptr->argjson,ptr->newjson);
+        //printf("deQ arg.%p new.%p\n",ptr->argjson,ptr->newjson);
         if ( (str= instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,ptr->cmd,ptr->argjson,ptr->newjson,ptr->serdata,ptr->serdatalen)) != 0 )
             free(str);
         if ( ptr->argjson != 0 )

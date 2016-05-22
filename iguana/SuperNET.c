@@ -582,7 +582,7 @@ char *SuperNET_DHTsend(struct supernet_info *myinfo,uint64_t destipbits,bits256 
     }
     else
     {
-        printf("DHT send\n");
+        //printf("DHT send\n");
         SuperNET_hexmsgadd(myinfo,categoryhash,subhash,hexmsg,tai_now(),0);
     }
     jsonstr = jprint(json,1);
