@@ -420,6 +420,7 @@ char *iguana_pollrawtx(queue_t *Q,cJSON **vinsp,uint32_t rawtxtag,double expirat
                 if ( ptr->vins != 0 )
                     free_json(ptr->vins);
                 free(ptr);
+                usleep(100000);
             }
         }
     }

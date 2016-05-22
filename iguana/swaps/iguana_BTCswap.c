@@ -441,13 +441,13 @@ int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct bitcoin_swapin
         }
         n++;
     }
+    if ( swap->myfee != 0 )
+    {
+        jaddbits256(newjson,"feetxid",swap->myfee->txid);
+        jaddstr(newjson,"feetx",swap->myfee->txbytes);
+    }
     if ( n > 2 || m > 2 )
     {
-        if ( swap->myfee != 0 )
-        {
-            jaddbits256(newjson,"feetxid",swap->myfee->txid);
-            jaddstr(newjson,"feetx",swap->myfee->txbytes);
-        }
         printf("n.%d m.%d len.%d numpubs.%d\n",n,m,len,swap->numpubs);
     }
     return(n);
