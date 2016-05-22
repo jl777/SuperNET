@@ -876,7 +876,6 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     // events instantdex_addevent(s,*n,<Current State>,<event>,<message to send>,<Next State>)
     *n = 2;
     s = instantdex_statecreate(s,n,"BTC_cleanup",BTC_cleanupfunc,0,0,0,-1); // from states without any commits
-    instantdex_addevent(s,*n,"BTC_cleanup","poll","poll","BTC_cleanup");
     //memset(s,0,sizeof(*s) * 2);
     // terminal [BLOCKING] states for the corresponding transaction
     // if all goes well both alice and bob get to claim the other's payments
