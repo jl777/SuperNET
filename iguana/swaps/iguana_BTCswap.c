@@ -468,6 +468,7 @@ int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct bitcoin_swapin
         }
     }
     jaddnum(newjson,"have",swap->havestate);
+    printf("got have.%x, myhave.%x\n",swap->otherhavestate,swap->havestate);
     if ( n > 2 || m > 2 )
     {
         printf("n.%d m.%d len.%d numpubs.%d\n",n,m,len,swap->numpubs);
@@ -634,6 +635,7 @@ cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info
             swap->otherverifiedcut = 1;
         if ( juint(argjson,"have") != 0 )
             swap->otherhavestate |= juint(argjson,"have");
+        printf("got other.%x myhave.%x\n",swap->otherhavestate,swap->havestate);
         jaddnum(newjson,"verified",swap->otherverifiedcut);
         if ( instantdex_pubkeyargs(myinfo,swap,newjson,2 + deckflag*INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myorderhash,0x02+instantdex_isbob(swap)) == 2 + deckflag*INSTANTDEX_DECKSIZE )
             instantdex_getpubs(swap,argjson,newjson);
