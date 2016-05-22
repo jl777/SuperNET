@@ -710,28 +710,6 @@ cJSON *instantdex_historyjson(struct bitcoin_swapinfo *swap)
     return(instantdex_statemachinejson(swap));
 }
 
-void instantdex_historyadd(struct exchange_info *exchange,struct bitcoin_swapinfo *swap)
-{
-    portable_mutex_lock(&exchange->mutexH);
-    DL_APPEND(exchange->history,swap);
-    portable_mutex_unlock(&exchange->mutexH);
-}
-
-void instantdex_statemachineadd(struct exchange_info *exchange,struct bitcoin_swapinfo *swap)
-{
-    portable_mutex_lock(&exchange->mutexS);
-    printf("add FSM.(%llx/%llx)\n",(long long)swap->mine.orderid,(long long)swap->other.orderid);
-    DL_APPEND(exchange->statemachines,swap);
-    portable_mutex_unlock(&exchange->mutexS);
-}
-
-void instantdex_offeradd(struct exchange_info *exchange,struct instantdex_accept *ap)
-{
-    portable_mutex_lock(&exchange->mutex);
-    DL_APPEND(exchange->offers,ap);
-    portable_mutex_unlock(&exchange->mutex);
-}
-
 struct bitcoin_swapinfo *instantdex_historyfind(struct supernet_info *myinfo,struct exchange_info *exchange,uint64_t orderid)
 {
     struct bitcoin_swapinfo *swap,*tmp,*retswap = 0;
@@ -741,11 +719,18 @@ struct bitcoin_swapinfo *instantdex_historyfind(struct supernet_info *myinfo,str
         if ( instantdex_orderidcmp(swap->mine.orderid,orderid,0) == 0 )
         {
             retswap = swap;
-            break;
+            //break;
         }
     }
     portable_mutex_unlock(&exchange->mutexH);
     return(retswap);
+}
+
+void instantdex_historyadd(struct exchange_info *exchange,struct bitcoin_swapinfo *swap)
+{
+    portable_mutex_lock(&exchange->mutexH);
+    DL_APPEND(exchange->history,swap);
+    portable_mutex_unlock(&exchange->mutexH);
 }
 
 struct bitcoin_swapinfo *instantdex_statemachinefind(struct supernet_info *myinfo,struct exchange_info *exchange,uint64_t orderid)
@@ -755,13 +740,13 @@ struct bitcoin_swapinfo *instantdex_statemachinefind(struct supernet_info *myinf
     portable_mutex_lock(&exchange->mutexS);
     DL_FOREACH_SAFE(exchange->statemachines,swap,tmp)
     {
+        //printf("%p search for orderid.%llx in (%llx/%llx) %u %u\n",exchange->statemachines,(long long)orderid,(long long)swap->mine.orderid,(long long)swap->other.orderid,swap->mine.dead,swap->other.dead);
         if ( now < swap->expiration && swap->mine.dead == 0 && swap->other.dead == 0 )
         {
-            printf("search for orderid.%llx in (%llx/%llx)\n",(long long)orderid,(long long)swap->mine.orderid,(long long)swap->other.orderid);
             if ( instantdex_orderidcmp(swap->mine.orderid,orderid,0) == 0 || instantdex_orderidcmp(swap->other.orderid,orderid,0) == 0 )
             {
                 retswap = swap;
-                break;
+                //break;
             }
         }
         else
@@ -770,7 +755,6 @@ struct bitcoin_swapinfo *instantdex_statemachinefind(struct supernet_info *myinf
             printf("expired pending, need to take action, send timeout event\n");
             DL_DELETE(exchange->statemachines,swap);
             instantdex_historyadd(exchange,swap);
-            continue;
         }
     }
     //printf("found statemachine.%p\n",retswap);
@@ -821,6 +805,24 @@ struct instantdex_accept *instantdex_offerfind(struct supernet_info *ignore,stru
     portable_mutex_unlock(&exchange->mutex);
     //printf("offerfind -> retap.%p Qsize.%d\n",retap,queue_size(&exchange->acceptableQ));
     return(retap);
+}
+
+void instantdex_statemachineadd(struct exchange_info *exchange,struct bitcoin_swapinfo *swap)
+{
+    portable_mutex_lock(&exchange->mutexS);
+    DL_APPEND(exchange->statemachines,swap);
+    portable_mutex_unlock(&exchange->mutexS);
+    if ( instantdex_statemachinefind(0,exchange,swap->mine.orderid) == 0 && instantdex_statemachinefind(0,exchange,swap->other.orderid) == 0 )
+    {
+        printf("cant find just added FSM.(%llx/%llx)\n",(long long)swap->mine.orderid,(long long)swap->other.orderid);
+    } else printf("added FSM.(%llx/%llx)\n",(long long)swap->mine.orderid,(long long)swap->other.orderid);
+}
+
+void instantdex_offeradd(struct exchange_info *exchange,struct instantdex_accept *ap)
+{
+    portable_mutex_lock(&exchange->mutex);
+    DL_APPEND(exchange->offers,ap);
+    portable_mutex_unlock(&exchange->mutex);
 }
 
 int32_t instantdex_peerhas_clear(struct iguana_info *coin,struct iguana_peer *addr)
@@ -902,8 +904,8 @@ int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coi
     //printf("instantdex_inv2data exchange.%p (%s)\n",exchange,addr->ipaddr);
     if ( exchange == 0 )
         return(0);
-    portable_mutex_lock(&exchange->mutex);
     now = (uint32_t)time(NULL);
+    portable_mutex_lock(&exchange->mutex);
     DL_FOREACH_SAFE(exchange->offers,ap,tmp)
     {
         if ( now < ap->offer.expiration && ap->dead == 0 )
@@ -1177,6 +1179,7 @@ struct bitcoin_swapinfo *bitcoin_swapinit(struct supernet_info *myinfo,struct ex
         printf("isbob error.(%d %d) %d\n",myap->offer.myside,otherap->offer.myside,instantdex_isbob(swap));
         return(0);
     }
+    instantdex_statemachineadd(exchange,swap);
     return(swap);
 }
 
@@ -1227,11 +1230,7 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_
         if ( swap != 0 )
         {
             printf("STATEMACHINEQ.(%llx / %llx)\n",(long long)swap->mine.orderid,(long long)swap->other.orderid);
-            //queue_enqueue("acceptableQ",&exchange->acceptableQ,&swap->DL,0);
-            //if ( isbob != 0 && (coin= iguana_coinfind("BTC")) != 0 )
-            //    swap->myfee = instantdex_feetx(myinfo,&swap->mine,swap,coin);
             *addedp = 1;
-            instantdex_statemachineadd(exchange,swap);
             if ( (newjson= instantdex_parseargjson(myinfo,exchange,swap,argjson,1)) == 0 )
                 return(clonestr("{\"error\":\"instantdex_checkoffer null newjson\"}"));
             retstr = instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,"BTCoffer",GENESIS_PUBKEY,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck),0);
@@ -1280,7 +1279,6 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
     {
         printf("create statemachine isbob.%d\n",isbob);
         //queue_enqueue("acceptableQ",&exchange->acceptableQ,&swap->DL,0);
-        instantdex_statemachineadd(exchange,swap);
         if ( (retstr= instantdex_choosei(swap,newjson,argjson,serdata,serdatalen)) != 0 )
         {
             free_json(newjson);
@@ -1312,7 +1310,7 @@ struct bitcoin_eventitem *instantdex_event(char *cmdstr,cJSON *argjson,cJSON *ne
 
 char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,struct instantdex_offer *offer,bits256 orderhash,uint8_t *serdata,int32_t serdatalen)
 {
-    char cmdstr[16],*retstr; struct exchange_info *exchange; struct instantdex_accept A,*ap = 0; bits256 traderpub; cJSON *newjson; struct bitcoin_swapinfo *swap; struct bitcoin_eventitem *ptr;
+    char cmdstr[16],*retstr; struct exchange_info *exchange=0; struct instantdex_accept A,*ap = 0; bits256 traderpub; cJSON *newjson; struct bitcoin_swapinfo *swap; struct bitcoin_eventitem *ptr;
     exchange = exchanges777_find("bitcoin");
     memset(cmdstr,0,sizeof(cmdstr)), memcpy(cmdstr,msg->cmd,sizeof(msg->cmd));
     if ( argjson != 0 )

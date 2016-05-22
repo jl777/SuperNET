@@ -157,10 +157,8 @@ struct bitcoin_eventitem { struct queueitem DL; cJSON *argjson,*newjson; int32_t
 
 struct bitcoin_swapinfo
 {
-    //struct queueitem DL;
-    queue_t eventsQ; struct bitcoin_eventitem *pollevent;
     struct bitcoin_swapinfo *next,*prev;
-    struct instantdex_accept mine,other;
+    queue_t eventsQ; struct bitcoin_eventitem *pollevent;
     bits256 privkeys[INSTANTDEX_DECKSIZE+2],mypubs[2],otherpubs[2],privAm,pubAm,privBn,pubBn;
     bits256 myorderhash,otherorderhash,mypubkey,othertrader;
     uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
@@ -169,6 +167,7 @@ struct bitcoin_swapinfo
     struct bitcoin_statetx *deposit,*payment,*altpayment,*myfee,*otherfee;
     char expectedcmdstr[16],status[16],waitfortx[16];
     struct instantdex_stateinfo *state; uint32_t expiration,dead,reftime;
+    struct instantdex_accept mine,other;
 };
 
 struct instantdex_event { char cmdstr[24],sendcmd[16]; int16_t nextstateind; };

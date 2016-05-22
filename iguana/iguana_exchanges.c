@@ -587,14 +587,14 @@ void iguana_statemachineupdate(struct supernet_info *myinfo,struct exchange_info
 {
     struct iguana_info *coin; struct bitcoin_swapinfo *swap,*tmp; struct iguana_bundlereq *req;
     coin = iguana_coinfind("BTCD");
-    portable_mutex_lock(&exchange->mutex);
+    portable_mutex_lock(&exchange->mutexS);
     DL_FOREACH_SAFE(exchange->statemachines,swap,tmp)
     {
-        if ( swap->dead != 0 || swap->mine.dead == 0 || swap->other.dead == 0 )
+        if ( swap->dead != 0 || swap->mine.dead != 0 || swap->other.dead != 0 )
             DL_DELETE(exchange->statemachines,swap);
         else instantdex_statemachine_iter(myinfo,exchange,swap);
     }
-    portable_mutex_unlock(&exchange->mutex);
+    portable_mutex_unlock(&exchange->mutexS);
     while ( (req= queue_dequeue(&exchange->recvQ,0)) != 0 )
     {
         if ( instantdex_recvquotes(coin,req,req->hashes,req->n) != 0 )
