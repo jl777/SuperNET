@@ -1181,21 +1181,6 @@ struct bitcoin_swapinfo *bitcoin_swapinit(struct supernet_info *myinfo,struct ex
     return(swap);
 }
 
-struct bitcoin_eventitem *instantdex_event(char *cmdstr,cJSON *argjson,cJSON *newjson,uint8_t *serdata,int32_t serdatalen)
-{
-    struct bitcoin_eventitem *ptr;
-    ptr = calloc(1,sizeof(*ptr) + serdatalen);
-    strcpy(ptr->cmd,cmdstr);
-    ptr->newjson = jduplicate(newjson);
-    ptr->argjson = jduplicate(argjson);
-    if ( serdatalen != 0 )
-    {
-        memcpy(ptr->serdata,serdata,serdatalen);
-        ptr->serdatalen = serdatalen;
-    }
-    return(ptr);
-}
-
 char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_t *txidp,struct exchange_info *exchange,struct instantdex_accept *ap,cJSON *argjson)
 {
     struct instantdex_accept *otherap,*tmp; struct bitcoin_swapinfo *swap; cJSON *newjson; int32_t isbob = 0; char *retstr = 0;

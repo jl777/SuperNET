@@ -15,34 +15,34 @@
 
 #include "../exchanges/bitcoin.h"
 /* https://bitcointalk.org/index.php?topic=1340621.msg13828271#msg13828271
-   https://bitcointalk.org/index.php?topic=1364951
-Tier Nolan's approach is followed with the following changes:
-  a) instead of cutting 1000 keypairs, only INSTANTDEX_DECKSIZE are a
-  b) instead of sending the entire 256 bits, it is truncated to 64 bits. With odds of collision being so low, it is dwarfed by the ~0.1% insurance factor.
-  c) D is set to 100x the insurance rate of 1/777 12.87% + BTC amount
-  d) insurance is added to Bob's payment, which is after the deposit and bailin
-  e) BEFORE Bob broadcasts deposit, Alice broadcasts BTC denominated fee in cltv so if trade isnt done fee is reclaimed
-*/
+ https://bitcointalk.org/index.php?topic=1364951
+ Tier Nolan's approach is followed with the following changes:
+ a) instead of cutting 1000 keypairs, only INSTANTDEX_DECKSIZE are a
+ b) instead of sending the entire 256 bits, it is truncated to 64 bits. With odds of collision being so low, it is dwarfed by the ~0.1% insurance factor.
+ c) D is set to 100x the insurance rate of 1/777 12.87% + BTC amount
+ d) insurance is added to Bob's payment, which is after the deposit and bailin
+ e) BEFORE Bob broadcasts deposit, Alice broadcasts BTC denominated fee in cltv so if trade isnt done fee is reclaimed
+ */
 
 /*
-both fees are standard payments: OP_DUP OP_HASH160 FEE_RMD160 OP_EQUALVERIFY OP_CHECKSIG
-
-Alice altpayment: OP_2 <alice_pubM> <bob_pubN> OP_2 OP_CHECKMULTISIG
-
+ both fees are standard payments: OP_DUP OP_HASH160 FEE_RMD160 OP_EQUALVERIFY OP_CHECKSIG
+ 
+ Alice altpayment: OP_2 <alice_pubM> <bob_pubN> OP_2 OP_CHECKMULTISIG
+ 
  Bob deposit: if ( (swap->deposit= instantdex_bobtx(myinfo,coinbtc,&swap->deposittxid,swap->otherpubs[0],swap->mypubs[0],swap->privkeys[swap->choosei],reftime,swap->satoshis[1],1)) != 0 )
-OP_IF
-    <now + INSTANTDEX_LOCKTIME*2> OP_CLTV OP_DROP <alice_pubA0> OP_CHECKSIG
-OP_ELSE
-    OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY <bob_pubB0> OP_CHECKSIG
-OP_ENDIF
+ OP_IF
+ <now + INSTANTDEX_LOCKTIME*2> OP_CLTV OP_DROP <alice_pubA0> OP_CHECKSIG
+ OP_ELSE
+ OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY <bob_pubB0> OP_CHECKSIG
+ OP_ENDIF
  
  Bob paytx: if ( (swap->payment= instantdex_bobtx(myinfo,coinbtc,&swap->deposittxid,swap->mypubs[1],swap->otherpubs[0],swap->privkeys[swap->otherschoosei],reftime,swap->satoshis[1],0)) != 0 )
-OP_IF
-    <now + INSTANTDEX_LOCKTIME> OP_CLTV OP_DROP <bob_pubB1> OP_CHECKSIG
-OP_ELSE
-    OP_HASH160 <hash(alice_privM)> OP_EQUALVERIFY <alice_pubA0> OP_CHECKSIG
-OP_ENDIF
-*/
+ OP_IF
+ <now + INSTANTDEX_LOCKTIME> OP_CLTV OP_DROP <bob_pubB1> OP_CHECKSIG
+ OP_ELSE
+ OP_HASH160 <hash(alice_privM)> OP_EQUALVERIFY <alice_pubA0> OP_CHECKSIG
+ OP_ENDIF
+ */
 
 int32_t instantdex_bobscript(uint8_t *script,int32_t n,int32_t *secretstartp,uint32_t locktime,bits256 cltvpub,uint8_t secret160[20],bits256 destpub)
 {
@@ -50,13 +50,13 @@ int32_t instantdex_bobscript(uint8_t *script,int32_t n,int32_t *secretstartp,uin
     memcpy(pubkeyA+1,cltvpub.bytes,sizeof(cltvpub)), pubkeyA[0] = 0x02;
     memcpy(pubkeyB+1,destpub.bytes,sizeof(destpub)), pubkeyB[0] = 0x03;
     script[n++] = SCRIPT_OP_IF;
-        n = bitcoin_checklocktimeverify(script,n,locktime);
-        n = bitcoin_pubkeyspend(script,n,pubkeyA);
+    n = bitcoin_checklocktimeverify(script,n,locktime);
+    n = bitcoin_pubkeyspend(script,n,pubkeyA);
     script[n++] = SCRIPT_OP_ELSE;
     if ( secretstartp != 0 )
         *secretstartp = n + 2;
-        n = bitcoin_revealsecret160(script,n,secret160);
-        n = bitcoin_pubkeyspend(script,n,pubkeyB);
+    n = bitcoin_revealsecret160(script,n,secret160);
+    n = bitcoin_pubkeyspend(script,n,pubkeyB);
     script[n++] = SCRIPT_OP_ENDIF;
     return(n);
 }
@@ -670,6 +670,7 @@ cJSON *BOB_waitfeefunc(struct supernet_info *myinfo,struct exchange_info *exchan
     coinbtc = iguana_coinfind("BTC");
     *serdatap = 0, *serdatalenp = 0;
     strcpy(swap->waitfortx,"fee");
+    printf("BOB wait other.%p\n",swap->otherfee);
     if ( coinbtc != 0 && swap->otherfee != 0 )//swap->deposit == 0 && (retstr= BTC_txconfirmed(myinfo,coinbtc,swap,newjson,swap->otherfee->txid,&swap->otherfee->numconfirms,"feefound",0)) != 0 )
     {
         retstr = swap->otherfee->txbytes;
@@ -745,6 +746,7 @@ cJSON *ALICE_waitfeefunc(struct supernet_info *myinfo,struct exchange_info *exch
     coinbtc = iguana_coinfind("BTC");
     *serdatap = 0, *serdatalenp = 0;
     strcpy(swap->waitfortx,"fee");
+    printf("ALICE wait other.%p\n",swap->otherfee);
     if ( coinbtc != 0 && swap->otherfee != 0 )//&& (retstr= BTC_txconfirmed(myinfo,coinbtc,swap,newjson,swap->otherfee->txid,&swap->otherfee->numconfirms,"feefound",0)) != 0 )
     {
         retstr = swap->otherfee->txbytes;
@@ -893,7 +895,7 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     s = instantdex_statecreate(s,n,"BOB_depclaimed",BOB_reclaimfunc,0,0,0,0); // deposit back
     instantdex_addevent(s,*n,"BOB_depclaimed","brefound","poll","BTC_cleanup");
     instantdex_addevent(s,*n,"BOB_depclaimed","poll","poll","BOB_depclaimed");
-
+    
     s = instantdex_statecreate(s,n,"BOB_claimedalt",BOB_claimaltfunc,0,0,0,0);
     instantdex_addevent(s,*n,"BOB_claimedalt","bclfound","poll","BOB_depclaimed");
     instantdex_addevent(s,*n,"BOB_claimedalt","poll","poll","BOB_claimedalt");
@@ -906,12 +908,12 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     s = instantdex_statecreate(s,n,"BOB_reclaimed",BOB_reclaimfunc,0,0,0,0); // deposit back
     instantdex_addevent(s,*n,"BOB_reclaimed","brefound","poll","BOB_feereclaimed");
     instantdex_addevent(s,*n,"BOB_reclaimed","poll","poll","BOB_reclaimed");
-
+    
     // if things go wrong, alice reclaims her altpayment or claims the deposit and then fee
-     s = instantdex_statecreate(s,n,"ALICE_feereclaimed",ALICE_feereclaimfunc,0,0,0,0);
+    s = instantdex_statecreate(s,n,"ALICE_feereclaimed",ALICE_feereclaimfunc,0,0,0,0);
     instantdex_addevent(s,*n,"ALICE_feereclaimed","afrfound","poll","BTC_cleanup");
     instantdex_addevent(s,*n,"ALICE_feereclaimed","poll","poll","ALICE_feereclaimed");
-  
+    
     s = instantdex_statecreate(s,n,"ALICE_reclaimed",ALICE_reclaimfunc,0,0,0,0); // altpayment
     instantdex_addevent(s,*n,"ALICE_reclaimed","arefound","poll","ALICE_feereclaimed");
     instantdex_addevent(s,*n,"ALICE_reclaimed","poll","poll","ALICE_reclaimed");
@@ -934,7 +936,7 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     s = instantdex_statecreate(s,n,"ALICE_sentalt",ALICE_waitBTCpaytxfunc,0,"ALICE_reclaimed",0,0);
     s = instantdex_statecreate(s,n,"ALICE_waitconfirms",ALICE_waitconfirmsfunc,0,"ALICE_reclaimed",0,0);
     s = instantdex_statecreate(s,n,"ALICE_checkbobreclaim",ALICE_checkbobreclaimfunc,0,"ALICE_reclaimed",0,0);
-
+    
     if ( 0 ) // following are implicit states and events handled externally to setup datastructures
     {
         instantdex_addevent(s,*n,"BOB_idle","usrorder","BTCoffer","BOB_sentoffer"); // send deck
@@ -944,7 +946,7 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     instantdex_addevent(s,*n,"BOB_idle","BTCoffer","BTCdeckC","BOB_gotoffer"); // send deck + Chose
     s = instantdex_statecreate(s,n,"ALICE_idle",BTC_idlerecvfunc,0,"BTC_cleanup",0,1);
     instantdex_addevent(s,*n,"ALICE_idle","BTCoffer","BTCdeckC","ALICE_gotoffer");
-
+    
     // after offer is sent, wait for other side to choose and sent their deck, then send privs
     s = instantdex_statecreate(s,n,"BOB_sentoffer",BTC_waitdeckCfunc,0,"BTC_cleanup",0,1);
     s = instantdex_statecreate(s,n,"ALICE_sentoffer",BTC_waitdeckCfunc,0,"BTC_cleanup",0,1);
@@ -962,18 +964,18 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     instantdex_addevent(s,*n,"BOB_sentprivs","BTCprivs","poll","BOB_waitfee");
     instantdex_addevent(s,*n,"BOB_sentprivs","BTCdeckC","BTCprivs","BOB_sentprivs");
     instantdex_addevent(s,*n,"BOB_sentprivs","poll","BTCdeckC","BOB_sentprivs");
-
+    
     s = instantdex_statecreate(s,n,"ALICE_sentprivs",BTC_waitprivsfunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"ALICE_sentprivs","BTCprivs","poll","Alice_waitfee");
     instantdex_addevent(s,*n,"ALICE_sentprivs","BTCdeckC","BTCprivs","Alice_waitfee");
     instantdex_addevent(s,*n,"ALICE_sentprivs","poll","BTCdeckC","ALICE_sentprivs");
-
+    
     // [BLOCKING: fee] Bob waits for fee and sends deposit when it appears
     s = instantdex_statecreate(s,n,"BOB_waitfee",BOB_waitfeefunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"BOB_waitfee","feefound","BTCdeptx","BOB_sentdeposit");
     instantdex_addevent(s,*n,"BOB_waitfee","BTCdeckC","BTCprivs","BOB_waitfee");
     instantdex_addevent(s,*n,"BOB_waitfee","BTCprivs","poll","BOB_waitfee");
-
+    
     // [BLOCKING: fee and deposit] Alice waits for fee and then waits for deposit to confirm and sends altpayment
     s = instantdex_statecreate(s,n,"Alice_waitfee",ALICE_waitfeefunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"Alice_waitfee","feefound","poll","ALICE_waitdeposit");
@@ -983,11 +985,11 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     s = instantdex_statecreate(s,n,"ALICE_waitdeposit",ALICE_waitdepositfunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"ALICE_waitdeposit","depfound","BTCalttx","ALICE_sentalt");
     instantdex_addevent(s,*n,"ALICE_waitdeposit","poll","poll","ALICE_waitdeposit");
-
+    
     // [BLOCKING: BTCalttx and altfound] now Bob's turn to make sure altpayment is confirmed and send real payment
     s = instantdex_statecreate(s,n,"BOB_sentdeposit",BOB_waitBTCalttxfunc,0,"BOB_reclaimed",0,0);
     instantdex_addevent(s,*n,"BOB_sentdeposit","BTCalttx","poll","BOB_altconfirm");
- 
+    
     s = instantdex_statecreate(s,n,"BOB_altconfirm",BOB_waitaltconfirmfunc,0,"BOB_reclaimed",0,0);
     instantdex_addevent(s,*n,"BOB_altconfirm","altfound","BTCpaytx","BOB_sentpayment");
     instantdex_addevent(s,*n,"BOB_altconfirm","poll","poll","BOB_altconfirm");
@@ -1015,6 +1017,21 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
         printf("elapsed %.3f ave %.6f\n",OS_milliseconds() - startmillis,(OS_milliseconds() - startmillis)/1000);
     }
     return(s);
+}
+
+struct bitcoin_eventitem *instantdex_event(char *cmdstr,cJSON *argjson,cJSON *newjson,uint8_t *serdata,int32_t serdatalen)
+{
+    struct bitcoin_eventitem *ptr;
+    ptr = calloc(1,sizeof(*ptr) + serdatalen);
+    strcpy(ptr->cmd,cmdstr);
+    ptr->newjson = jduplicate(newjson);
+    ptr->argjson = jduplicate(argjson);
+    if ( serdatalen != 0 )
+    {
+        memcpy(ptr->serdata,serdata,serdatalen);
+        ptr->serdatalen = serdatalen;
+    }
+    return(ptr);
 }
 
 void instantdex_eventfree(struct bitcoin_eventitem *ptr)
