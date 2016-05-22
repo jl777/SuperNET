@@ -144,7 +144,8 @@ double iguana_metric(struct iguana_peer *addr,uint32_t now,double decay)
 
 int32_t iguana_inv2poll(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    struct exchange_info *exchange; int32_t i,n=0; struct iguana_peer *addr;
+    struct exchange_info *exchange; int32_t i,n=0; struct iguana_peer *addr; char myipaddr[64];
+    expand_ipbits(myipaddr,myinfo->myaddr.myipbits);
     //printf("iguana_inv2poll exchange.%p %s maxpeers.%d\n",exchanges777_find("bitcoin"),coin->symbol,coin->MAXPEERS);
     if ( coin != 0 && (exchange= exchanges777_find("bitcoin")) != 0 && strcmp(coin->symbol,"BTCD") == 0 )
     {
@@ -157,7 +158,7 @@ int32_t iguana_inv2poll(struct supernet_info *myinfo,struct iguana_info *coin)
                 if ( addr->supernet != 0 )
                 {
                     //printf("iguana_inv2poll (%s) usock.%d dead.%u ready.%u ipbits.%u supernet.%d\n",addr->ipaddr,addr->usock,addr->dead,addr->ready,(uint32_t)addr->ipbits,addr->supernet);
-                    if ( addr->usock >= 0 && addr->dead == 0 && addr->ready != 0 && addr->ipbits != 0 )
+                    if ( addr->usock >= 0 && addr->dead == 0 && addr->ready != 0 && addr->ipbits != 0 && strcmp(addr->ipaddr,myipaddr) != 0 )
                     {
                         instantdex_inv2data(myinfo,coin,addr,exchange);
                         n++;

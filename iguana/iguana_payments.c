@@ -407,13 +407,15 @@ char *iguana_pollrawtx(queue_t *Q,cJSON **vinsp,uint32_t rawtxtag,double expirat
                 //printf("got RAWTX.(%s)\n",rawtx);
                 if ( vinsp != 0 )
                     *vinsp = ptr->vins;
-                else free_json(ptr->vins);
+                else if ( ptr->vins != 0 )
+                    free_json(ptr->vins);
                 free(ptr);
                 return(rawtx);
             }
             else
             {
-                free_json(ptr->vins);
+                if ( ptr->vins != 0 )
+                    free_json(ptr->vins);
                 free(ptr);
             }
         }
@@ -430,7 +432,8 @@ char *iguana_request_andwait(struct supernet_info *myinfo,queue_t *Q,cJSON **vin
     reqstr = jprint(tmpjson,1);
     while ( (ptr= queue_dequeue(Q,0)) != 0 )
     {
-        free_json(ptr->vins);
+        if ( ptr->vins != 0 )
+            free_json(ptr->vins);
         free(ptr);
     }
     expiration = OS_milliseconds() + ((timeout == 0) ? 15000 : timeout);
@@ -463,11 +466,14 @@ char *iguana_rawtxissue(struct supernet_info *myinfo,uint32_t rawtxtag,char *sym
             spendlen = (int32_t)strlen(spendscriptstr) >> 1;
             decode_hex(buf,spendlen,spendscriptstr);
             bitcoin_txoutput(coin,txobj,buf,spendlen,satoshis);
-            if ( (rawtx= iguana_calcrawtx(myinfo,coin,vinsp,txobj,satoshis,changeaddr,txfee,addresses,minconf)) != 0 && *vinsp != 0 )
+            if ( (rawtx= iguana_calcrawtx(myinfo,coin,vinsp,txobj,satoshis,changeaddr,txfee,addresses,minconf)) != 0 )
             {
-                free_json(txobj);
-                //printf("return rawtx.(%s) vins.%p\n",rawtx,*vinsp);
-                return(rawtx);
+                if ( *vinsp != 0 )
+                {
+                    free_json(txobj);
+                    //printf("return rawtx.(%s) vins.%p\n",rawtx,*vinsp);
+                    return(rawtx);
+                } else free(rawtx);
             }
         }
     }
