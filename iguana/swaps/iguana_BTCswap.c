@@ -441,11 +441,33 @@ int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct bitcoin_swapin
         }
         n++;
     }
-    if ( swap->myfee != 0 )
+    if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEOTHERFEE) == 0 )
     {
         jaddbits256(newjson,"feetxid",swap->myfee->txid);
         jaddstr(newjson,"feetx",swap->myfee->txbytes);
     }
+    if ( instantdex_isbob(swap) != 0 )
+    {
+        if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEALTPAYMENT) == 0 )
+        {
+            jaddbits256(newjson,"altpaymenttxid",swap->altpayment->txid);
+            jaddstr(newjson,"altpayment",swap->altpayment->txbytes);
+        }
+    }
+    else
+    {
+        if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEDEPOSIT) == 0 )
+        {
+            jaddbits256(newjson,"deposittxid",swap->deposit->txid);
+            jaddstr(newjson,"deposit",swap->deposit->txbytes);
+        }
+        else if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEPAYMENT) == 0 )
+        {
+            jaddbits256(newjson,"paymenttxid",swap->payment->txid);
+            jaddstr(newjson,"payment",swap->payment->txbytes);
+        }
+    }
+    jaddnum(newjson,"have",swap->havestate);
     if ( n > 2 || m > 2 )
     {
         printf("n.%d m.%d len.%d numpubs.%d\n",n,m,len,swap->numpubs);
@@ -539,9 +561,9 @@ void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapi
     }
 }
 
-void instantdex_swaptxupdate(struct bitcoin_statetx **ptrp,cJSON *argjson,char *txname,char *txidfield)
+int32_t instantdex_swaptxupdate(struct bitcoin_statetx **ptrp,cJSON *argjson,char *txname,char *txidfield)
 {
-    char *str;
+    char *str; int32_t retval = 0;
     if ( (str= jstr(argjson,txname)) != 0 )
     {
         if ( *ptrp != 0 )
@@ -552,7 +574,16 @@ void instantdex_swaptxupdate(struct bitcoin_statetx **ptrp,cJSON *argjson,char *
         *ptrp = calloc(1,sizeof(**ptrp) + strlen(str) + 1);
         strcpy((*ptrp)->txbytes,str);
         (*ptrp)->txid = jbits256(argjson,txidfield);
+        if ( strcmp("feetx",txname) == 0 )
+            retval = INSTANTDEX_ORDERSTATE_HAVEOTHERFEE;
+        else if ( strcmp("deposit",txname) == 0 )
+            retval = INSTANTDEX_ORDERSTATE_HAVEDEPOSIT;
+        else if ( strcmp("payment",txname) == 0 )
+            retval = INSTANTDEX_ORDERSTATE_HAVEPAYMENT;
+        else if ( strcmp("altpayment",txname) == 0 )
+            retval = INSTANTDEX_ORDERSTATE_HAVEALTPAYMENT;
     }
+    return(retval);
 }
 
 void instantdex_swapbits256update(bits256 *txidp,cJSON *argjson,char *fieldname)
@@ -581,7 +612,7 @@ cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info
             instantdex_swapbits256update(&swap->otherpubs[1],argjson,"pubA1");
             instantdex_swapbits256update(&swap->pubAm,argjson,"pubAm");
             instantdex_swapbits256update(&swap->privAm,argjson,"privAm");
-            instantdex_swaptxupdate(&swap->altpayment,argjson,"altpayment","altpaymenttxid");
+            swap->havestate |= instantdex_swaptxupdate(&swap->altpayment,argjson,"altpayment","altpaymenttxid");
         }
         else
         {
@@ -589,10 +620,10 @@ cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info
             instantdex_swapbits256update(&swap->otherpubs[1],argjson,"pubB1");
             instantdex_swapbits256update(&swap->pubBn,argjson,"pubBn");
             instantdex_swapbits256update(&swap->privBn,argjson,"privBn");
-            instantdex_swaptxupdate(&swap->deposit,argjson,"deposit","deposittxid");
-            instantdex_swaptxupdate(&swap->payment,argjson,"payment","paymenttxid");
+            swap->havestate |= instantdex_swaptxupdate(&swap->deposit,argjson,"deposit","deposittxid");
+            swap->havestate |= instantdex_swaptxupdate(&swap->payment,argjson,"payment","paymenttxid");
         }
-        instantdex_swaptxupdate(&swap->otherfee,argjson,"feetx","feetxid");
+        swap->havestate |= instantdex_swaptxupdate(&swap->otherfee,argjson,"feetx","feetxid");
         if ( swap->otherchoosei < 0 && jobj(argjson,"mychoosei") != 0 )
         {
             //printf("otherschoosei.%d\n",swap->otherschoosei);
@@ -601,6 +632,8 @@ cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info
         }
         if ( juint(argjson,"verified") != 0 )
             swap->otherverifiedcut = 1;
+        if ( juint(argjson,"have") != 0 )
+            swap->otherhavestate |= juint(argjson,"have");
         jaddnum(newjson,"verified",swap->otherverifiedcut);
         if ( instantdex_pubkeyargs(myinfo,swap,newjson,2 + deckflag*INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myorderhash,0x02+instantdex_isbob(swap)) == 2 + deckflag*INSTANTDEX_DECKSIZE )
             instantdex_getpubs(swap,argjson,newjson);
