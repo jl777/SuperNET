@@ -187,7 +187,7 @@ struct bitcoin_statetx *instantdex_feetx(struct supernet_info *myinfo,struct ins
     r = swap->mine.orderid;
     n = instantdex_outputinsurance(paymentscript,swap->insurance,r,r * (strcmp("BTC",coin->symbol) == 0));
     init_hexbytes_noT(scriptstr,paymentscript,n);
-    printf("instantdex_feetx %.8f (%s)\n",dstr(swap->insurance),scriptstr);
+    printf("instantdex_feetx %s %.8f (%s)\n",coin->symbol,dstr(swap->insurance),scriptstr);
     ptr = instantdex_signtx(myinfo,coin,0,scriptstr,swap->insurance,coin->txfee,0,A->offer.myside);
     return(ptr);
 }
@@ -725,7 +725,7 @@ cJSON *BTC_waitprivsfunc(struct supernet_info *myinfo,struct exchange_info *exch
         else
         {
             printf("error generating feetx\n");
-            free_json(newjson);
+            //free_json(newjson);
             newjson = 0;
         }
     }
@@ -767,7 +767,7 @@ cJSON *ALICE_waitdepositfunc(struct supernet_info *myinfo,struct exchange_info *
         }
         else
         {
-            free_json(newjson);
+            //free_json(newjson);
             newjson = 0;
         }
     }
@@ -817,6 +817,10 @@ cJSON *BTC_cleanupfunc(struct supernet_info *myinfo,struct exchange_info *exchan
     swap->dead = (uint32_t)time(NULL);
     swap->mine.dead = (uint32_t)time(NULL);
     swap->other.dead = (uint32_t)time(NULL);
+    portable_mutex_lock(&exchange->mutexS);
+    DL_DELETE(exchange->statemachines,swap);
+    portable_mutex_unlock(&exchange->mutexS);
+    instantdex_historyadd(exchange,swap);
     return(newjson);
 }
 
@@ -1080,10 +1084,8 @@ void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_i
     if ( swap->dead != 0 || swap->mine.dead != 0 || swap->other.dead != 0 )
         return;
     coinbtc = iguana_coinfind("BTC");
-    if ( instantdex_isbob(swap) != 0 && swap->myfee == 0 )
+    if ( swap->myfee == 0 )
         swap->myfee = instantdex_feetx(myinfo,&swap->mine,swap,coinbtc);
-    else if ( instantdex_isbob(swap) == 0 && swap->otherfee == 0 )
-        swap->otherfee = instantdex_feetx(myinfo,&swap->mine,swap,coinbtc);
     printf("state(%s) %llx/%llx\n",swap->state->name,(long long)swap->mine.orderid,(long long)swap->other.orderid);
     while ( (ptr= queue_dequeue(&swap->eventsQ,0)) != 0 )
     {
@@ -1093,7 +1095,7 @@ void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_i
         instantdex_eventfree(ptr);
         flag++;
     }
-    if ( flag == 0 && swap->pollevent != 0 )
+    if ( flag == 0 && swap->dead == 0 && swap->pollevent != 0 )
     {
         //printf("send poll event\n");
         newjson = jduplicate(swap->pollevent->newjson);

@@ -204,5 +204,6 @@ void tradebot_timeslices(struct exchange_info *exchange);
 struct instantdex_stateinfo *BTC_initFSM(int32_t *n);
 struct bitcoin_statetx *instantdex_feetx(struct supernet_info *myinfo,struct instantdex_accept *A,struct bitcoin_swapinfo *swap,struct iguana_info *coin);
 void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap);
+void instantdex_historyadd(struct exchange_info *exchange,struct bitcoin_swapinfo *swap);
 
 #endif
