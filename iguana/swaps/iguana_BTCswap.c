@@ -441,11 +441,8 @@ int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct bitcoin_swapin
         }
         n++;
     }
-    printf("got otherhave.%x, myhave.%x\n",swap->otherhavestate,swap->havestate);
     if ( n > 2 || m > 2 )
-    {
         printf("n.%d m.%d len.%d numpubs.%d\n",n,m,len,swap->numpubs);
-    }
     return(n);
 }
 
@@ -1117,6 +1114,34 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                 {
                     if ( state->events[i].nextstateind > 1 )
                     {
+                        if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEOTHERFEE) == 0 && swap->myfee != 0 )
+                        {
+                            jaddbits256(newjson,"feetxid",swap->myfee->txid);
+                            jaddstr(newjson,"feetx",swap->myfee->txbytes);
+                            printf("add feetx to newjson\n");
+                        }
+                        if ( instantdex_isbob(swap) != 0 )
+                        {
+                            if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEALTPAYMENT) == 0 && swap->altpayment != 0 )
+                            {
+                                jaddbits256(newjson,"altpaymenttxid",swap->altpayment->txid);
+                                jaddstr(newjson,"altpayment",swap->altpayment->txbytes);
+                            }
+                        }
+                        else
+                        {
+                            if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEDEPOSIT) == 0 && swap->deposit != 0 )
+                            {
+                                jaddbits256(newjson,"deposittxid",swap->deposit->txid);
+                                jaddstr(newjson,"deposit",swap->deposit->txbytes);
+                            }
+                            else if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEPAYMENT) == 0 && swap->payment != 0 )
+                            {
+                                jaddbits256(newjson,"paymenttxid",swap->payment->txid);
+                                jaddstr(newjson,"payment",swap->payment->txbytes);
+                            }
+                        }
+                        jaddnum(newjson,"have",swap->havestate);
                         swap->state = &states[state->events[i].nextstateind];
                         return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,state->events[i].sendcmd,swap->othertrader,INSTANTDEX_HOPS,serdata,serdatalen,0));
                     } else return(clonestr("{\"error\":\"instantdex_statemachine: illegal state\"}"));
@@ -1148,34 +1173,6 @@ void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_i
     {
         //printf("send poll event\n");
         newjson = jduplicate(swap->pollevent->newjson);
-        if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEOTHERFEE) == 0 && swap->myfee != 0 )
-        {
-            jaddbits256(newjson,"feetxid",swap->myfee->txid);
-            jaddstr(newjson,"feetx",swap->myfee->txbytes);
-            printf("add feetx to newjson\n");
-        }
-        if ( instantdex_isbob(swap) != 0 )
-        {
-            if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEALTPAYMENT) == 0 && swap->altpayment != 0 )
-            {
-                jaddbits256(newjson,"altpaymenttxid",swap->altpayment->txid);
-                jaddstr(newjson,"altpayment",swap->altpayment->txbytes);
-            }
-        }
-        else
-        {
-            if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEDEPOSIT) == 0 && swap->deposit != 0 )
-            {
-                jaddbits256(newjson,"deposittxid",swap->deposit->txid);
-                jaddstr(newjson,"deposit",swap->deposit->txbytes);
-            }
-            else if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEPAYMENT) == 0 && swap->payment != 0 )
-            {
-                jaddbits256(newjson,"paymenttxid",swap->payment->txid);
-                jaddstr(newjson,"payment",swap->payment->txbytes);
-            }
-        }
-        jaddnum(newjson,"have",swap->havestate);
         if ( (str= instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,"poll",swap->pollevent->argjson,newjson,swap->pollevent->serdata,swap->pollevent->serdatalen)) != 0 )
             free(str);
         free_json(newjson);

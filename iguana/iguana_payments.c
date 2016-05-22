@@ -402,6 +402,7 @@ char *iguana_pollrawtx(queue_t *Q,cJSON **vinsp,uint32_t rawtxtag,double expirat
     struct rawtx_queue *ptr; char *rawtx;
     while ( OS_milliseconds() < expiration )
     {
+        usleep(100000);
         if ( (ptr= queue_dequeue(Q,0)) != 0 )
         {
             if ( rawtxtag == ptr->rawtxtag )
@@ -420,7 +421,6 @@ char *iguana_pollrawtx(queue_t *Q,cJSON **vinsp,uint32_t rawtxtag,double expirat
                 if ( ptr->vins != 0 )
                     free_json(ptr->vins);
                 free(ptr);
-                usleep(100000);
             }
         }
     }
