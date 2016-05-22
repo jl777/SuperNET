@@ -944,6 +944,7 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     // to reach sentprivs, all paths must have sent/recv deck and Chose and verified cut and choose
     s = instantdex_statecreate(s,n,"BOB_sentprivs",BTC_waitprivsfunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"BOB_sentprivs","BTCprivs","poll","BOB_waitfee");
+    instantdex_addevent(s,*n,"BOB_sentprivs","BTCdeckC","BTCprivs","BOB_waitfee");
     instantdex_addevent(s,*n,"BOB_sentprivs","poll","poll","BOB_sentprivs");
 
     s = instantdex_statecreate(s,n,"ALICE_sentprivs",BTC_waitprivsfunc,0,"BTC_cleanup",0,0);
@@ -958,6 +959,7 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     // [BLOCKING: fee and deposit] Alice waits for fee and then waits for deposit to confirm and sends altpayment
     s = instantdex_statecreate(s,n,"Alice_waitfee",ALICE_waitfeefunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"Alice_waitfee","feefound","poll","ALICE_waitdeposit");
+    instantdex_addevent(s,*n,"Alice_waitfee","BTCdeckC","BTCprivs","Alice_waitfee");
     instantdex_addevent(s,*n,"Alice_waitfee","poll","poll","Alice_waitfee");
     
     s = instantdex_statecreate(s,n,"ALICE_waitdeposit",ALICE_waitdepositfunc,0,"BTC_cleanup",0,0);
