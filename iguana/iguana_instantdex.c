@@ -720,6 +720,7 @@ void instantdex_historyadd(struct exchange_info *exchange,struct bitcoin_swapinf
 void instantdex_statemachineadd(struct exchange_info *exchange,struct bitcoin_swapinfo *swap)
 {
     portable_mutex_lock(&exchange->mutexS);
+    printf("add FSM.(%llx/%llx)\n",(long long)swap->mine.orderid,(long long)swap->other.orderid);
     DL_APPEND(exchange->statemachines,swap);
     portable_mutex_unlock(&exchange->mutexS);
 }
@@ -1332,7 +1333,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
             A.offer.minperc = 100;
         if ( (swap= instantdex_statemachinefind(myinfo,exchange,A.orderid)) != 0 )
         {
-            //printf("found existing state machine %llx\n",(long long)A.orderid);
+            printf("found existing state machine %llx\n",(long long)A.orderid);
             newjson = instantdex_parseargjson(myinfo,exchange,swap,argjson,0);
             if ( serdatalen == sizeof(swap->otherdeck) && swap->choosei < 0 && (retstr= instantdex_choosei(swap,newjson,argjson,serdata,serdatalen)) != 0 )
             {
