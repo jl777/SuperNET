@@ -441,13 +441,13 @@ int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct bitcoin_swapin
         }
         n++;
     }
-    if ( swap->myfee != 0 )
-    {
-        jaddbits256(newjson,"feetxid",swap->myfee->txid);
-        jaddstr(newjson,"feetx",swap->myfee->txbytes);
-    }
     if ( n > 2 || m > 2 )
     {
+        if ( swap->myfee != 0 )
+        {
+            jaddbits256(newjson,"feetxid",swap->myfee->txid);
+            jaddstr(newjson,"feetx",swap->myfee->txbytes);
+        }
         printf("n.%d m.%d len.%d numpubs.%d\n",n,m,len,swap->numpubs);
     }
     return(n);
@@ -670,20 +670,19 @@ cJSON *BOB_waitfeefunc(struct supernet_info *myinfo,struct exchange_info *exchan
     coinbtc = iguana_coinfind("BTC");
     *serdatap = 0, *serdatalenp = 0;
     strcpy(swap->waitfortx,"fee");
-    printf("BOB wait other.%p\n",swap->otherfee);
     if ( coinbtc != 0 && swap->otherfee != 0 )//swap->deposit == 0 && (retstr= BTC_txconfirmed(myinfo,coinbtc,swap,newjson,swap->otherfee->txid,&swap->otherfee->numconfirms,"feefound",0)) != 0 )
     {
         retstr = swap->otherfee->txbytes;
-        jaddstr(newjson,"feefound",retstr);
+        jaddstr(newjson,"virtevent","feefound");
         if ( swap->deposit != 0 || (swap->deposit= instantdex_bobtx(myinfo,swap,coinbtc,swap->otherpubs[0],swap->mypubs[0],swap->privkeys[swap->choosei],swap->reftime,swap->BTCsatoshis,1)) != 0 )
         {
             // broadcast deposit
             jaddstr(newjson,"deposit",swap->deposit->txbytes);
             jaddbits256(newjson,"deposittxid",swap->deposit->txid);
-            return(newjson);
-        } else return(0);
+            printf("created bob deposit\n");
+        } else printf("bobtx deposit couldnt be created\n");
     }
-    return(0);
+    return(newjson);
 }
 
 cJSON *BOB_waitprivMfunc(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp)
@@ -712,10 +711,9 @@ cJSON *BOB_waitaltconfirmfunc(struct supernet_info *myinfo,struct exchange_info 
             // broadcast payment
             jaddstr(newjson,"payment",swap->payment->txbytes);
             jaddbits256(newjson,"paymenttxid",swap->payment->txid);
-            return(newjson);
-        } else return(0);
+        }
     }
-    return(0);
+    return(newjson);
 }
 
 cJSON *BTC_waitprivsfunc(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp)
@@ -734,7 +732,7 @@ cJSON *BTC_waitprivsfunc(struct supernet_info *myinfo,struct exchange_info *exch
         {
             printf("error generating feetx\n");
             //free_json(newjson);
-            newjson = 0;
+            //newjson = 0;
         }
     }
     return(newjson);
@@ -751,9 +749,8 @@ cJSON *ALICE_waitfeefunc(struct supernet_info *myinfo,struct exchange_info *exch
     {
         retstr = swap->otherfee->txbytes;
         jaddstr(newjson,"virtevent","feefound");
-        return(newjson);
     }
-    return(0);
+    return(newjson);
 }
 
 cJSON *ALICE_waitdepositfunc(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp)
@@ -763,6 +760,7 @@ cJSON *ALICE_waitdepositfunc(struct supernet_info *myinfo,struct exchange_info *
     altcoin = iguana_coinfind(swap->mine.offer.rel);
     strcpy(swap->waitfortx,"dep");
     *serdatap = 0, *serdatalenp = 0;
+    printf("ALICE wait deposit\n");
     if ( swap->deposit != 0 && (retstr= BTC_txconfirmed(myinfo,coinbtc,swap,newjson,swap->deposit->txid,&swap->deposit->numconfirms,"depfound",0.5)) != 0 )
     {
         jaddstr(newjson,"depfound",retstr);
@@ -777,7 +775,7 @@ cJSON *ALICE_waitdepositfunc(struct supernet_info *myinfo,struct exchange_info *
         else
         {
             //free_json(newjson);
-            newjson = 0;
+            //newjson = 0;
         }
     }
     return(newjson);
@@ -796,9 +794,8 @@ cJSON *ALICE_waitconfirmsfunc(struct supernet_info *myinfo,struct exchange_info 
         jaddstr(newjson,"payfound",retstr);
         // if bobreclaimed is there, then reclaim altpayment
         printf("search for Bob's reclaim in blockchain\n");
-        return(newjson);
     }
-    return(0);
+    return(newjson);
 }
 
 cJSON *ALICE_checkbobreclaimfunc(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp)
@@ -814,9 +811,8 @@ cJSON *ALICE_checkbobreclaimfunc(struct supernet_info *myinfo,struct exchange_in
         jaddstr(newjson,"payfound",retstr);
         // if bobreclaimed is there, then reclaim altpayment
         printf("search for Bob's reclaim in blockchain\n");
-        return(newjson);
     }
-    return(0);
+    return(newjson);
 }
 
 cJSON *BTC_cleanupfunc(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp)

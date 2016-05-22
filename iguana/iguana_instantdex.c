@@ -1344,11 +1344,14 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
             //printf("BTCoffer state exchange.%p serdatalen.%d\n",exchange,serdatalen);
             if ( (ap= instantdex_acceptable(myinfo,exchange,&A,A.offer.minperc)) != 0 )
             {
-                if ( (retstr= instantdex_gotoffer(myinfo,exchange,ap,&A,msg,argjson,remoteaddr,signerbits,serdata,serdatalen)) != 0 ) // adds to statemachine if no error
+                if ( instantdex_statemachinefind(myinfo,exchange,ap->orderid) == 0 && instantdex_historyfind(myinfo,exchange,ap->orderid) == 0 && instantdex_statemachinefind(myinfo,exchange,A.orderid) == 0 && instantdex_historyfind(myinfo,exchange,A.orderid) == 0 )
                 {
-                    printf("from GOTOFFER.(%s)\n",retstr);
-                    return(retstr);
-                } else return(clonestr("{\"error\":\"gotoffer error\"}"));
+                    if ( (retstr= instantdex_gotoffer(myinfo,exchange,ap,&A,msg,argjson,remoteaddr,signerbits,serdata,serdatalen)) != 0 ) // adds to statemachine if no error
+                    {
+                        printf("from GOTOFFER.(%s)\n",retstr);
+                        return(retstr);
+                    } else return(clonestr("{\"error\":\"gotoffer error\"}"));
+                } else return(clonestr("{\"error\":\"reject preexisting orderid\"}"));
             }
             else
             {
