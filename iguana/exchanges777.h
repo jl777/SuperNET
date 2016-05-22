@@ -158,7 +158,7 @@ struct bitcoin_eventitem { struct queueitem DL; cJSON *argjson,*newjson; int32_t
 struct bitcoin_swapinfo
 {
     //struct queueitem DL;
-    queue_t eventsQ;
+    queue_t eventsQ; struct bitcoin_eventitem *pollevent;
     struct bitcoin_swapinfo *next,*prev;
     struct instantdex_accept mine,other;
     bits256 privkeys[INSTANTDEX_DECKSIZE+2],mypubs[2],otherpubs[2],privAm,pubAm,privBn,pubBn;

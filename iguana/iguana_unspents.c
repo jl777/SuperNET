@@ -63,11 +63,16 @@ char *iguana_inputaddress(struct iguana_info *coin,char *coinaddr,int16_t *spent
     {
         txid = jbits256(vinobj,"txid");
         vout = jint(vinobj,"vout");
-        if ( (checkind= iguana_unspentindfind(coin,coinaddr,0,0,0,&height,txid,vout,coin->bundlescount-1)) != 0 )
+        if ( (checkind= iguana_unspentindfind(coin,coinaddr,0,0,0,&height,txid,vout,coin->bundlescount-1)) > 0 )
         {
             *spent_hdrsip = (height / coin->chain->bundlesize);
             *unspentindp = checkind;
             return(coinaddr);
+        }
+        else
+        {
+            char str[65];
+            printf("error finding (%s/%d)\n",bits256_str(str,txid),vout);
         }
     }
     return(0);

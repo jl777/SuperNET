@@ -999,6 +999,18 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     return(s);
 }
 
+void instantdex_eventfree(struct bitcoin_eventitem *ptr)
+{
+    if ( ptr != 0 )
+    {
+        if ( ptr->argjson != 0 )
+            free_json(ptr->argjson);
+        if ( ptr->newjson != 0 )
+            free_json(ptr->newjson);
+        free(ptr);
+    }
+}
+
 char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numstates,struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,char *cmdstr,cJSON *argjson,cJSON *newjson,uint8_t *serdata,int32_t serdatalen)
 {
     uint32_t i; struct iguana_info *altcoin=0,*coinbtc=0; struct instantdex_stateinfo *state=0; cJSON *origjson = newjson;
@@ -1041,6 +1053,9 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                     if ( state->events[i].nextstateind > 1 )
                     {
                         swap->state = &states[state->events[i].nextstateind];
+                        if ( swap->pollevent != 0 )
+                            instantdex_eventfree(swap->pollevent);
+                        swap->pollevent = instantdex_event("poll",newjson,argjson,serdata,serdatalen);
                         return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,state->events[i].sendcmd,swap->othertrader,INSTANTDEX_HOPS,serdata,serdatalen,0));
                     } else return(clonestr("{\"error\":\"instantdex_statemachine: illegal state\"}"));
                 } else return(clonestr("{\"result\":\"instantdex_statemachine: processed\"}"));
@@ -1052,20 +1067,29 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
 
 void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap)
 {
-    char *str; struct bitcoin_eventitem *ptr; struct iguana_info *coinbtc;
+    char *str; struct bitcoin_eventitem *ptr; struct iguana_info *coinbtc; int32_t flag = 0;
     coinbtc = iguana_coinfind("BTC");
     if ( instantdex_isbob(swap) != 0 && swap->myfee == 0 )
         swap->myfee = instantdex_feetx(myinfo,&swap->mine,swap,coinbtc);
     else if ( instantdex_isbob(swap) == 0 && swap->otherfee == 0 )
         swap->otherfee = instantdex_feetx(myinfo,&swap->mine,swap,coinbtc);
+    printf("state(%s) %llx/%llx\n",swap->state->name,(long long)swap->mine.orderid,(long long)swap->other.orderid);
     while ( (ptr= queue_dequeue(&swap->eventsQ,0)) != 0 )
     {
-        //printf("deQ arg.%p new.%p\n",ptr->argjson,ptr->newjson);
+        printf("dequeued (%s)\n",ptr->cmd);
         if ( (str= instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,ptr->cmd,ptr->argjson,ptr->newjson,ptr->serdata,ptr->serdatalen)) != 0 )
             free(str);
+        instantdex_eventfree(ptr);
         if ( ptr->argjson != 0 )
             free_json(ptr->argjson);
         free(ptr);
+        flag++;
+    }
+    if ( flag == 0 && swap->pollevent != 0 )
+    {
+        printf("send poll event\n");
+        if ( (str= instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,"poll",swap->pollevent->argjson,jduplicate(swap->pollevent->newjson),swap->pollevent->serdata,swap->pollevent->serdatalen)) != 0 )
+            free(str);
     }
 }
 

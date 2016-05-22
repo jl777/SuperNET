@@ -1285,6 +1285,21 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
     return(retstr);
 }
 
+struct bitcoin_eventitem *instantdex_event(char *cmdstr,cJSON *newjson,cJSON *argjson,uint8_t *serdata,int32_t serdatalen)
+{
+    struct bitcoin_eventitem *ptr;
+    ptr = calloc(1,sizeof(*ptr) + serdatalen);
+    strcpy(ptr->cmd,cmdstr);
+    ptr->newjson = jduplicate(newjson);
+    ptr->argjson = jduplicate(argjson);
+    if ( serdatalen != 0 )
+    {
+        memcpy(ptr->serdata,serdata,serdatalen);
+        ptr->serdatalen = serdatalen;
+    }
+    return(ptr);
+}
+
 char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,struct instantdex_offer *offer,bits256 orderhash,uint8_t *serdata,int32_t serdatalen)
 {
     char cmdstr[16],*retstr; struct exchange_info *exchange; struct instantdex_accept A,*ap = 0; bits256 traderpub; cJSON *newjson; struct bitcoin_swapinfo *swap; struct bitcoin_eventitem *ptr;
@@ -1317,16 +1332,9 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
                     free_json(newjson);
                 return(retstr);
             }
-            ptr = calloc(1,sizeof(*ptr) + serdatalen);
-            strcpy(ptr->cmd,cmdstr);
-            ptr->newjson = newjson;
-            ptr->argjson = jduplicate(argjson);
-            if ( serdatalen != 0 )
-            {
-                memcpy(ptr->serdata,serdata,serdatalen);
-                ptr->serdatalen = serdatalen;
-            }
-            queue_enqueue("eventQ",&swap->eventsQ,&ptr->DL,0);
+            if ( (ptr= instantdex_event(cmdstr,newjson,argjson,serdata,serdatalen)) != 0 )
+                queue_enqueue("eventQ",&swap->eventsQ,&ptr->DL,0);
+            free_json(newjson);
             return(clonestr("{\"result\":\"updated statemachine\"}"));
             //return(instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,cmdstr,argjson,newjson,serdata,serdatalen));
         }

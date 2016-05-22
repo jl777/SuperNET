@@ -367,11 +367,14 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
 void iguana_unspentslock(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins)
 {
     uint32_t spent_unspentind; char coinaddr[64]; int16_t spent_hdrsi; int32_t i,RTspentflag,num;
-    num = cJSON_GetArraySize(vins);
-    for (i=0; i<num; i++)
+    if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
     {
-        if ( iguana_inputaddress(coin,coinaddr,&spent_hdrsi,&spent_unspentind,jitem(vins,i)) != 0 )
-            iguana_utxofind(coin,spent_hdrsi,spent_unspentind,&RTspentflag,1);
+        num = cJSON_GetArraySize(vins);
+        for (i=0; i<num; i++)
+        {
+            if ( iguana_inputaddress(coin,coinaddr,&spent_hdrsi,&spent_unspentind,jitem(vins,i)) != 0 )
+                iguana_utxofind(coin,spent_hdrsi,spent_unspentind,&RTspentflag,1);
+        }
     }
 }
 

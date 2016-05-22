@@ -992,6 +992,8 @@ char *iguana_pollrawtx(queue_t *Q,cJSON **vinsp,uint32_t rawtxtag,double expirat
 bits256 scrypt_blockhash(const void *input);
 bits256 iguana_calcblockhash(int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serialized,int32_t len),uint8_t *serialized,int32_t len);
 uint32_t iguana_targetbits(struct iguana_info *coin,struct iguana_block *hwmchain,struct iguana_block *prev,struct iguana_block *prev2,int32_t PoSflag);
+struct bitcoin_eventitem *instantdex_event(char *cmdstr,cJSON *newjson,cJSON *argjson,uint8_t *serdata,int32_t serdatalen);
+void instantdex_eventfree(struct bitcoin_eventitem *ptr);
 
 extern int32_t HDRnet,netBLOCKS;
 

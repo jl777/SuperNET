@@ -357,7 +357,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
             return(-1);
         }
         extralen -= (sizeof(struct iguana_msgvout) * msg->tx_out);
-        msg->vouts = (struct iguana_msgvout *)&serialized[extralen];
+        msg->vouts = (struct iguana_msgvout *)&extraspace[extralen];
         memset(msg->vouts,0,sizeof(struct iguana_msgvout) * msg->tx_out);
     }
     for (i=0; i<msg->tx_out; i++)
