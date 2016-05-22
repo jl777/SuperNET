@@ -1095,7 +1095,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                 if ( jstr(newjson,"virtevent") != 0 )
                 {
                     printf("VIRTEVENT.(%s)\n",jstr(newjson,"virtevent"));
-                    if ( (ptr= instantdex_event("virtevent",argjson,newjson,0,0)) != 0 )
+                    if ( (ptr= instantdex_event(jstr(newjson,"virtevent"),argjson,newjson,0,0)) != 0 )
                         queue_enqueue("eventQ",&swap->eventsQ,&ptr->DL,0);
                 }
                 if ( state->events[i].sendcmd[0] != 0 )
