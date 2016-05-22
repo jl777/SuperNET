@@ -1231,9 +1231,9 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_
             //if ( isbob != 0 && (coin= iguana_coinfind("BTC")) != 0 )
             //    swap->myfee = instantdex_feetx(myinfo,&swap->mine,swap,coin);
             *addedp = 1;
+            instantdex_statemachineadd(exchange,swap);
             if ( (newjson= instantdex_parseargjson(myinfo,exchange,swap,argjson,1)) == 0 )
                 return(clonestr("{\"error\":\"instantdex_checkoffer null newjson\"}"));
-            instantdex_statemachineadd(exchange,swap);
             retstr = instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,"BTCoffer",GENESIS_PUBKEY,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck),0);
             free_json(newjson);
         } else printf("error creating statemachine\n");
