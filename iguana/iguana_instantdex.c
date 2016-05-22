@@ -455,11 +455,11 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
             }
         }
         free(msg);
-        return(jprint(argjson,1));
+        return(jprint(argjson,0));
     }
     else
     {
-        free_json(argjson), free(msg);
+        free(msg);
         printf("cant msgcreate datalen.%d\n",datalen);
         return(clonestr("{\"error\":\"couldnt create instantdex message\"}"));
     }
@@ -1177,7 +1177,7 @@ struct bitcoin_swapinfo *bitcoin_swapinit(struct supernet_info *myinfo,struct ex
 
 char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_t *txidp,struct exchange_info *exchange,struct instantdex_accept *ap,cJSON *argjson)
 {
-    struct instantdex_accept *otherap,*tmp; struct bitcoin_swapinfo *swap; cJSON *newjson; int32_t isbob = 0;
+    struct instantdex_accept *otherap,*tmp; struct bitcoin_swapinfo *swap; cJSON *newjson; int32_t isbob = 0; char *retstr = 0;
     *addedp = 0;
     if ( exchange == 0 )
     {
@@ -1229,10 +1229,11 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_
             if ( (newjson= instantdex_parseargjson(myinfo,exchange,swap,argjson,1)) == 0 )
                 return(clonestr("{\"error\":\"instantdex_checkoffer null newjson\"}"));
             instantdex_statemachineadd(exchange,swap);
-            return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,"BTCoffer",GENESIS_PUBKEY,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck),0));
+            retstr = instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,"BTCoffer",GENESIS_PUBKEY,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck),0);
+            free_json(newjson);
         } else printf("error creating statemachine\n");
     }
-    return(0);
+    return(retstr);
 }
 
 char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *myap,struct instantdex_accept *otherap,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,uint8_t *serdata,int32_t serdatalen) // receiving side
@@ -1276,10 +1277,14 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
         //queue_enqueue("acceptableQ",&exchange->acceptableQ,&swap->DL,0);
         instantdex_statemachineadd(exchange,swap);
         if ( (retstr= instantdex_choosei(swap,newjson,argjson,serdata,serdatalen)) != 0 )
+        {
+            free_json(newjson);
             return(retstr);
+        }
         else
         {
-            return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,"BTCdeckC",traderpub,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck),0));
+            retstr = instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,"BTCdeckC",traderpub,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck),0);
+            free_json(newjson);
         }
     }
     return(retstr);
@@ -1336,7 +1341,6 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
                 queue_enqueue("eventQ",&swap->eventsQ,&ptr->DL,0);
             free_json(newjson);
             return(clonestr("{\"result\":\"updated statemachine\"}"));
-            //return(instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,cmdstr,argjson,newjson,serdata,serdatalen));
         }
         else if ( strcmp(cmdstr,"BTCoffer") == 0 ) // incoming
         {
@@ -1567,7 +1571,11 @@ THREE_STRINGS(atomic,approve,myorderid,otherid,txname)
         newjson = cJSON_CreateObject();
         if ( (retstr= instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,virtualevent,myinfo->myaddr.persistent,0,0,0,0)) != 0 )
             return(retstr);
-        else return(clonestr("{\"result\":\"statemachine sent found event\"}"));
+        else
+        {
+            free_json(newjson);
+            return(clonestr("{\"result\":\"statemachine sent found event\"}"));
+        }
     }
 }
 

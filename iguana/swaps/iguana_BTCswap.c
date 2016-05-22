@@ -611,7 +611,7 @@ double iguana_numconfs(struct iguana_info *coin,bits256 txid,int32_t height)
 
 char *BTC_txconfirmed(struct supernet_info *myinfo,struct iguana_info *coin,struct bitcoin_swapinfo *swap,cJSON *newjson,bits256 txid,double *numconfirmsp,char *virtualevent,double requiredconfs)
 {
-    int32_t height,firstvout; char *retstr; double confs;
+    int32_t height,firstvout; char *retstr = 0; double confs;
     *numconfirmsp = -1.;
     if ( coin != 0 && *numconfirmsp < 0 )
     {
@@ -1025,7 +1025,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
         swap->state = &states[state->timeoutind];
         if ( (newjson= (*state->timeout)(myinfo,exchange,swap,argjson,newjson,&serdata,&serdatalen)) == 0 )
             return(clonestr("{\"error\":\"instantdex_BTCswap null return from timeoutfunc\"}"));
-        else return(jprint(newjson,1));
+        else return(jprint(newjson,0));
     }
     for (i=0; i<state->numevents; i++)
     {
@@ -1077,7 +1077,7 @@ void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_i
     while ( (ptr= queue_dequeue(&swap->eventsQ,0)) != 0 )
     {
         printf("dequeued (%s)\n",ptr->cmd);
-        if ( (str= instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,ptr->cmd,ptr->argjson,jduplicate(ptr->newjson),ptr->serdata,ptr->serdatalen)) != 0 )
+        if ( (str= instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,ptr->cmd,ptr->argjson,ptr->newjson,ptr->serdata,ptr->serdatalen)) != 0 )
             free(str);
         instantdex_eventfree(ptr);
         flag++;
@@ -1085,7 +1085,7 @@ void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_i
     if ( flag == 0 && swap->pollevent != 0 )
     {
         printf("send poll event\n");
-        if ( (str= instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,"poll",swap->pollevent->argjson,jduplicate(swap->pollevent->newjson),swap->pollevent->serdata,swap->pollevent->serdatalen)) != 0 )
+        if ( (str= instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,"poll",swap->pollevent->argjson,swap->pollevent->newjson,swap->pollevent->serdata,swap->pollevent->serdatalen)) != 0 )
             free(str);
     }
 }
