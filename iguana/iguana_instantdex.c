@@ -753,6 +753,7 @@ struct bitcoin_swapinfo *instantdex_statemachinefind(struct supernet_info *myinf
     {
         if ( now < swap->expiration && swap->mine.dead == 0 && swap->other.dead == 0 )
         {
+            printf("search for orderid.%llx in (%llx/%llx)\n",(long long)orderid,(long long)swap->mine.orderid,(long long)swap->other.orderid);
             if ( instantdex_orderidcmp(swap->mine.orderid,orderid,0) == 0 || instantdex_orderidcmp(swap->other.orderid,orderid,0) == 0 )
             {
                 retswap = swap;
