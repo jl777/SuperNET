@@ -1024,7 +1024,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
         printf("state.%s btc.%p altcoin.%p (%s)\n",state->name,coinbtc,altcoin,swap->mine.offer.base);
         return(clonestr("{\"error\":\"instantdex_BTCswap missing coin info\"}"));
     }
-    printf("%llu/%llu cmd.(%s) state.(%s)\n",(long long)swap->mine.orderid,(long long)swap->other.orderid,cmdstr,swap->state->name);
+    printf("%llu/%llu cmd.(%s) state.(%s) newlen.%d\n",(long long)swap->mine.orderid,(long long)swap->other.orderid,cmdstr,swap->state->name,(int32_t)strlen(jprint(newjson,0)));
     if ( swap->expiration != 0 && time(NULL) > swap->expiration )
     {
         swap->state = &states[state->timeoutind];
@@ -1083,7 +1083,7 @@ void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_i
     printf("state(%s) %llx/%llx\n",swap->state->name,(long long)swap->mine.orderid,(long long)swap->other.orderid);
     while ( (ptr= queue_dequeue(&swap->eventsQ,0)) != 0 )
     {
-        printf("dequeued (%s)\n",ptr->cmd);
+        //printf("dequeued (%s)\n",ptr->cmd);
         if ( (str= instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,ptr->cmd,ptr->argjson,ptr->newjson,ptr->serdata,ptr->serdatalen)) != 0 )
             free(str);
         instantdex_eventfree(ptr);
@@ -1091,7 +1091,7 @@ void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_i
     }
     if ( flag == 0 && swap->pollevent != 0 )
     {
-        printf("send poll event\n");
+        //printf("send poll event\n");
         if ( (str= instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,"poll",swap->pollevent->argjson,swap->pollevent->newjson,swap->pollevent->serdata,swap->pollevent->serdatalen)) != 0 )
             free(str);
     }
