@@ -1181,6 +1181,21 @@ struct bitcoin_swapinfo *bitcoin_swapinit(struct supernet_info *myinfo,struct ex
     return(swap);
 }
 
+struct bitcoin_eventitem *instantdex_event(char *cmdstr,cJSON *argjson,cJSON *newjson,uint8_t *serdata,int32_t serdatalen)
+{
+    struct bitcoin_eventitem *ptr;
+    ptr = calloc(1,sizeof(*ptr) + serdatalen);
+    strcpy(ptr->cmd,cmdstr);
+    ptr->newjson = jduplicate(newjson);
+    ptr->argjson = jduplicate(argjson);
+    if ( serdatalen != 0 )
+    {
+        memcpy(ptr->serdata,serdata,serdatalen);
+        ptr->serdatalen = serdatalen;
+    }
+    return(ptr);
+}
+
 char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_t *txidp,struct exchange_info *exchange,struct instantdex_accept *ap,cJSON *argjson)
 {
     struct instantdex_accept *otherap,*tmp; struct bitcoin_swapinfo *swap; cJSON *newjson; int32_t isbob = 0; char *retstr = 0;
@@ -1236,6 +1251,9 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_
             *addedp = 1;
             if ( (newjson= instantdex_parseargjson(myinfo,exchange,swap,argjson,1)) == 0 )
                 return(clonestr("{\"error\":\"instantdex_checkoffer null newjson\"}"));
+            if ( swap->pollevent != 0 )
+                instantdex_eventfree(swap->pollevent);
+            swap->pollevent = instantdex_event("poll",argjson,newjson,(void *)swap->deck,sizeof(swap->deck));
             retstr = instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,"BTCoffer",GENESIS_PUBKEY,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck),0);
             free_json(newjson);
         } else printf("error creating statemachine\n");
@@ -1289,26 +1307,14 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
         }
         else
         {
+            if ( swap->pollevent != 0 )
+                instantdex_eventfree(swap->pollevent);
+            swap->pollevent = instantdex_event("poll",argjson,newjson,(void *)swap->deck,sizeof(swap->deck));
             retstr = instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,"BTCdeckC",traderpub,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck),0);
             free_json(newjson);
         }
     }
     return(retstr);
-}
-
-struct bitcoin_eventitem *instantdex_event(char *cmdstr,cJSON *argjson,cJSON *newjson,uint8_t *serdata,int32_t serdatalen)
-{
-    struct bitcoin_eventitem *ptr;
-    ptr = calloc(1,sizeof(*ptr) + serdatalen);
-    strcpy(ptr->cmd,cmdstr);
-    ptr->newjson = jduplicate(newjson);
-    ptr->argjson = jduplicate(argjson);
-    if ( serdatalen != 0 )
-    {
-        memcpy(ptr->serdata,serdata,serdatalen);
-        ptr->serdatalen = serdatalen;
-    }
-    return(ptr);
 }
 
 char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *msg,cJSON *argjson,char *remoteaddr,uint64_t signerbits,struct instantdex_offer *offer,bits256 orderhash,uint8_t *serdata,int32_t serdatalen)
