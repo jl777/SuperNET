@@ -1108,7 +1108,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                             jaddstr(newjson,"feetx",swap->myfee->txbytes);
                             printf("add feetx to newjson\n");
                         }
-                        if ( instantdex_isbob(swap) != 0 )
+                        if ( instantdex_isbob(swap) == 0 )
                         {
                             if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEALTPAYMENT) == 0 && swap->altpayment != 0 )
                             {
