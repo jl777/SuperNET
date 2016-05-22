@@ -100,18 +100,6 @@ int32_t bits256_cmp(bits256 a,bits256 b)
     return(0);
 }
 
-bits256 bits256_lshift(bits256 x)
-{
-    int32_t i,carry,prevcarry = 0; uint64_t mask = (1LL << 63);
-    for (i=0; i<4; i++)
-    {
-        carry = ((mask & x.ulongs[i]) != 0);
-        x.ulongs[i] = (x.ulongs[i] << 1) | prevcarry;
-        prevcarry = carry;
-    }
-    return(x);
-}
-
 bits256 bits256_rshift(bits256 x)
 {
     int32_t i; uint64_t carry,prevcarry = 0;
@@ -124,14 +112,27 @@ bits256 bits256_rshift(bits256 x)
     return(x);
 }
 
+bits256 bits256_lshift(bits256 x)
+{
+    int32_t i,carry,prevcarry = 0; uint64_t mask = (1LL << 63);
+    for (i=0; i<4; i++)
+    {
+        carry = ((mask & x.ulongs[i]) != 0);
+        x.ulongs[i] = (x.ulongs[i] << 1) | prevcarry;
+        prevcarry = carry;
+    }
+    return(x);
+}
+
 bits256 bits256_from_compact(uint32_t c)
 {
+    
 	uint32_t nbytes,nbits,i; bits256 x;
     memset(x.bytes,0,sizeof(x));
     nbytes = (c >> 24) & 0xFF;
     nbits = (8 * (nbytes - 3));
     x.ulongs[0] = c & 0xFFFFFF;
-    for (i=0; i<nbits; i++) // horrible inefficient
+    for (i=0; i<nbits; i++)
         x = bits256_lshift(x);
     return(x);
 }

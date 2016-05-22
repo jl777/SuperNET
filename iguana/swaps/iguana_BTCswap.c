@@ -159,7 +159,7 @@ struct bitcoin_statetx *instantdex_signtx(struct supernet_info *myinfo,struct ig
             if ( (signedtx= iguana_signrawtx(myinfo,coin,&signedtxid,&completed,vins,rawtx,privkey)) != 0 )
             {
                 iguana_unspentslock(myinfo,coin,vins);
-                tx = calloc(1,sizeof(*tx) + strlen(rawtx) + 1);
+                tx = calloc(1,sizeof(*tx) + strlen(signedtx) + 1);
                 strcpy(tx->txbytes,signedtx);
                 tx->txid = signedtxid;
                 printf("%s feetx.%s\n",myside != 0 ? "BOB" : "ALICE",signedtx);
@@ -171,6 +171,7 @@ struct bitcoin_statetx *instantdex_signtx(struct supernet_info *myinfo,struct ig
         if ( flag == 2 )
         {
             free_json(vins);
+            printf("Free rawtx\n");
             free(rawtx);
         }
         free(retstr);
