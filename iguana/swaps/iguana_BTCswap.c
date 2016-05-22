@@ -1049,8 +1049,8 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
 void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap)
 {
     char *str; struct bitcoin_eventitem *ptr;
-    //if ( instantdex_isbob(swap) != 0 && swap->myfee == 0 )
-    //    swap->myfee = instantdex_feetx(myinfo,&swap->mine,swap,iguana_coinfind("BTC"));
+    if ( instantdex_isbob(swap) != 0 && swap->myfee == 0 )
+        swap->myfee = instantdex_feetx(myinfo,&swap->mine,swap,iguana_coinfind("BTC"));
     while ( (ptr= queue_dequeue(&swap->eventsQ,0)) != 0 )
     {
         printf("deQ arg.%p new.%p\n",ptr->argjson,ptr->newjson);
