@@ -70,12 +70,13 @@ uint64_t instantdex_basebits(char *base)
 
 int32_t instantdex_orderidcmp(uint64_t orderidA,uint64_t orderidB,int32_t strictflag)
 {
-    printf("orderidA %llx vs orderidB %llx -> ",(long long)orderidA,(long long)orderidB);
-    orderidA ^= orderidB;
     if ( strictflag == 0 )
+    {
         orderidA &= INSTANTDEX_ORDERSTATE_ORDERIDMASK;
-    printf("%llx, strict.%d\n",(long long)orderidA,strictflag);
-    return(orderidA != 0);
+        orderidB &= INSTANTDEX_ORDERSTATE_ORDERIDMASK;
+    }
+    printf("orderidA %llx vs orderidB %llx -> %llx\n",(long long)orderidA,(long long)orderidB,(long long)(orderidA ^ orderidB));
+    return((orderidA ^ orderidB) != 0);
 }
 
 uint64_t instantdex_decodehash(char *base,char *rel,int64_t *pricep,uint64_t *accountp,bits256 encodedhash)
