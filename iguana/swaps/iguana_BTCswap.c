@@ -441,14 +441,14 @@ int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct bitcoin_swapin
         }
         n++;
     }
-    if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEOTHERFEE) == 0 )
+    if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEOTHERFEE) == 0 && swap->myfee != 0 )
     {
         jaddbits256(newjson,"feetxid",swap->myfee->txid);
         jaddstr(newjson,"feetx",swap->myfee->txbytes);
     }
     if ( instantdex_isbob(swap) != 0 )
     {
-        if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEALTPAYMENT) == 0 )
+        if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEALTPAYMENT) == 0 && swap->altpayment != 0 )
         {
             jaddbits256(newjson,"altpaymenttxid",swap->altpayment->txid);
             jaddstr(newjson,"altpayment",swap->altpayment->txbytes);
@@ -456,12 +456,12 @@ int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct bitcoin_swapin
     }
     else
     {
-        if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEDEPOSIT) == 0 )
+        if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEDEPOSIT) == 0 && swap->deposit != 0 )
         {
             jaddbits256(newjson,"deposittxid",swap->deposit->txid);
             jaddstr(newjson,"deposit",swap->deposit->txbytes);
         }
-        else if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEPAYMENT) == 0 )
+        else if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEPAYMENT) == 0 && swap->payment != 0 )
         {
             jaddbits256(newjson,"paymenttxid",swap->payment->txid);
             jaddstr(newjson,"payment",swap->payment->txbytes);
