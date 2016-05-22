@@ -1092,7 +1092,7 @@ void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_i
     if ( flag == 0 && swap->pollevent != 0 )
     {
         //printf("send poll event\n");
-        newjson = jduplicate(ptr->newjson);
+        newjson = jduplicate(swap->pollevent->newjson);
         if ( (str= instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,"poll",swap->pollevent->argjson,newjson,swap->pollevent->serdata,swap->pollevent->serdatalen)) != 0 )
             free(str);
         free_json(newjson);
