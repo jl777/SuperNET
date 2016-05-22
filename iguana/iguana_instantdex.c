@@ -847,34 +847,34 @@ struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,str
     now = (uint32_t)time(NULL);
     offerdir = instantdex_bidaskdir(&A->offer);
     minvol = ((A->offer.basevolume64 * minperc) / 100);
-    printf("instantdex_acceptable offerdir.%d (%s/%s) minperc %.3f minvol %.8f vs %.8f\n",offerdir,A->offer.base,A->offer.rel,minperc,dstr(minvol),dstr(A->offer.basevolume64));
+    //printf("instantdex_acceptable offerdir.%d (%s/%s) minperc %.3f minvol %.8f vs %.8f\n",offerdir,A->offer.base,A->offer.rel,minperc,dstr(minvol),dstr(A->offer.basevolume64));
     portable_mutex_lock(&exchange->mutex);
     DL_FOREACH_SAFE(exchange->offers,ap,tmp)
     {
         //printf("ap.%p account.%llu dir.%d\n",ap,(long long)ap->offer.account,offerdir);
         if ( now > ap->offer.expiration || ap->dead != 0 || A->offer.account == ap->offer.account )
         {
-            //printf("now.%u skip expired %u/dead.%u or my order orderid.%llx from %llu\n",now,ap->offer.expiration,ap->dead,(long long)ap->orderid,(long long)ap->offer.account);
+            printf("now.%u skip expired %u/dead.%u or my order orderid.%llx from %llu\n",now,ap->offer.expiration,ap->dead,(long long)ap->orderid,(long long)ap->offer.account);
         }
         else if ( A->offer.account != myinfo->myaddr.nxt64bits && ap->offer.account != myinfo->myaddr.nxt64bits )
         {
-            
+            printf("skip offer as neither side matches account\n");
         }
         else if ( strcmp(ap->offer.base,A->offer.base) != 0 || strcmp(ap->offer.rel,A->offer.rel) != 0 )
         {
-            //printf("skip mismatched.(%s/%s) orderid.%llx from %llu\n",ap->offer.base,ap->offer.rel,(long long)ap->orderid,(long long)ap->offer.account);
+            printf("skip mismatched.(%s/%s) orderid.%llx from %llu\n",ap->offer.base,ap->offer.rel,(long long)ap->orderid,(long long)ap->offer.account);
         }
         else if ( offerdir*instantdex_bidaskdir(&ap->offer) > 0 )
         {
-            //printf("skip same direction %d orderid.%llx from %llu\n",instantdex_bidaskdir(&ap->offer),(long long)ap->orderid,(long long)ap->offer.account);
+            printf("skip same direction %d orderid.%llx from %llu\n",instantdex_bidaskdir(&ap->offer),(long long)ap->orderid,(long long)ap->offer.account);
         }
         else if ( minvol > ap->offer.basevolume64 - ap->pendingvolume64 )
         {
-            //printf("skip too small order %.8f vs %.8f orderid.%llx from %llu\n",dstr(minvol),dstr(ap->offer.basevolume64)-dstr(ap->pendingvolume64),(long long)ap->orderid,(long long)ap->offer.account);
+            printf("skip too small order %.8f vs %.8f orderid.%llx from %llu\n",dstr(minvol),dstr(ap->offer.basevolume64)-dstr(ap->pendingvolume64),(long long)ap->orderid,(long long)ap->offer.account);
         }
         else if ( (offerdir > 0 && ap->offer.price64 > A->offer.price64) || (offerdir < 0 && ap->offer.price64 < A->offer.price64) )
         {
-            //printf("skip out of band dir.%d offer %.8f vs %.8f orderid.%llx from %llu\n",offerdir,dstr(ap->offer.price64),dstr(A->offer.price64),(long long)ap->orderid,(long long)ap->offer.account);
+            printf("skip out of band dir.%d offer %.8f vs %.8f orderid.%llx from %llu\n",offerdir,dstr(ap->offer.price64),dstr(A->offer.price64),(long long)ap->orderid,(long long)ap->offer.account);
         }
         else
         {
@@ -1209,7 +1209,7 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_
             tmp = otherap;
             otherap = ap;
             ap = tmp;
-            printf("SWAP otherap\n");
+            //printf("SWAP otherap\n");
         }
         else if ( ap->offer.account != myinfo->myaddr.nxt64bits )
         {
@@ -1218,7 +1218,7 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_
         }
         isbob = ap->offer.myside;
         swap = bitcoin_swapinit(myinfo,exchange,ap,otherap,1,argjson,isbob != 0 ? "BOB_sentoffer" : "ALICE_sentoffer");
-        printf("ISBOB.%d vs %d\n",isbob,instantdex_isbob(swap));
+        //printf("ISBOB.%d vs %d\n",isbob,instantdex_isbob(swap));
         if ( swap != 0 )
         {
             printf("STATEMACHINEQ.(%llx / %llx)\n",(long long)swap->mine.orderid,(long long)swap->other.orderid);
@@ -1265,7 +1265,7 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
     isbob = myap->offer.myside;
     if ( (swap= bitcoin_swapinit(myinfo,exchange,myap,otherap,0,argjson,isbob != 0 ? "BOB_gotoffer" : "ALICE_gotoffer")) == 0 )
         return(clonestr("{\"error\":\"couldnt allocate statemachine\"}"));
-    printf("ISBOB.%d vs %d\n",isbob,instantdex_isbob(swap));
+    //printf("ISBOB.%d vs %d\n",isbob,instantdex_isbob(swap));
     if ( (newjson= instantdex_parseargjson(myinfo,exchange,swap,argjson,1)) == 0 )
     {
         printf("error parsing argjson\n");
@@ -1344,7 +1344,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
         }
         else if ( strcmp(cmdstr,"BTCoffer") == 0 ) // incoming
         {
-            printf("BTCoffer state exchange.%p serdatalen.%d\n",exchange,serdatalen);
+            //printf("BTCoffer state exchange.%p serdatalen.%d\n",exchange,serdatalen);
             if ( (ap= instantdex_acceptable(myinfo,exchange,&A,A.offer.minperc)) != 0 )
             {
                 if ( (retstr= instantdex_gotoffer(myinfo,exchange,ap,&A,msg,argjson,remoteaddr,signerbits,serdata,serdatalen)) != 0 ) // adds to statemachine if no error
