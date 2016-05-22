@@ -1075,6 +1075,8 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
 void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap)
 {
     char *str; struct bitcoin_eventitem *ptr; cJSON *newjson; struct iguana_info *coinbtc; int32_t flag = 0;
+    if ( swap->dead != 0 || swap->mine.dead == 0 || swap->other.dead == 0 )
+        return;
     coinbtc = iguana_coinfind("BTC");
     if ( instantdex_isbob(swap) != 0 && swap->myfee == 0 )
         swap->myfee = instantdex_feetx(myinfo,&swap->mine,swap,coinbtc);
