@@ -442,7 +442,14 @@ int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct bitcoin_swapin
         n++;
     }
     if ( n > 2 || m > 2 )
+    {
+        if ( swap->myfee != 0 )
+        {
+            jaddbits256(newjson,"feetxid",swap->myfee->txid);
+            jaddstr(newjson,"feetx",swap->myfee->txbytes);
+        }
         printf("n.%d m.%d len.%d numpubs.%d\n",n,m,len,swap->numpubs);
+    }
     return(n);
 }
 
@@ -539,9 +546,9 @@ void instantdex_swaptxupdate(struct bitcoin_statetx **ptrp,cJSON *argjson,char *
     {
         if ( *ptrp != 0 )
         {
-            //printf("got replacement %s? (%s)\n",txname,str);
+            printf("got replacement %s? (%s)\n",txname,str);
             free(*ptrp);
-        }
+        } else printf("got (%s) %s\n",txname,str);
         *ptrp = calloc(1,sizeof(**ptrp) + strlen(str) + 1);
         strcpy((*ptrp)->txbytes,str);
         (*ptrp)->txid = jbits256(argjson,txidfield);
@@ -813,7 +820,6 @@ cJSON *ALICE_checkbobreclaimfunc(struct supernet_info *myinfo,struct exchange_in
 cJSON *BTC_cleanupfunc(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp)
 {
     *serdatap = 0, *serdatalenp = 0;
-    jaddstr(newjson,"error","need to cleanup");
     swap->dead = (uint32_t)time(NULL);
     swap->mine.dead = (uint32_t)time(NULL);
     swap->other.dead = (uint32_t)time(NULL);
@@ -821,6 +827,7 @@ cJSON *BTC_cleanupfunc(struct supernet_info *myinfo,struct exchange_info *exchan
     DL_DELETE(exchange->statemachines,swap);
     portable_mutex_unlock(&exchange->mutexS);
     instantdex_historyadd(exchange,swap);
+    printf("delete from statemachines, add to history\n");
     return(newjson);
 }
 
@@ -874,9 +881,9 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     // states instantdex_statecreate(s,n,<Name of State>,handlerfunc,errorhandler,<Timeout State>,<Error State>
     // a given state has a couple of handlers and custom events, with timeouts and errors invoking a bypass
     // events instantdex_addevent(s,*n,<Current State>,<event>,<message to send>,<Next State>)
-    *n = 2;
+    *n = 2; // start with state 2
     s = instantdex_statecreate(s,n,"BTC_cleanup",BTC_cleanupfunc,0,0,0,-1); // from states without any commits
-    memset(s,0,sizeof(*s) * 2);
+    memset(s,0,sizeof(*s) * 2); // make sure state 0 and 1 are cleared
     // terminal [BLOCKING] states for the corresponding transaction
     // if all goes well both alice and bob get to claim the other's payments
     s = instantdex_statecreate(s,n,"ALICE_claimedbtc",ALICE_claimbtcfunc,0,0,0,0);
@@ -1030,10 +1037,11 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
         printf("state.%s btc.%p altcoin.%p (%s)\n",state->name,coinbtc,altcoin,swap->mine.offer.base);
         return(clonestr("{\"error\":\"instantdex_BTCswap missing coin info\"}"));
     }
-    printf("%llu/%llu cmd.(%s) state.(%s) newlen.%d\n",(long long)swap->mine.orderid,(long long)swap->other.orderid,cmdstr,swap->state->name,(int32_t)strlen(jprint(newjson,0)));
-    if ( swap->expiration != 0 && time(NULL) > swap->expiration )
+    printf("%llu/%llu cmd.(%s) state.(%s) newlen.%d isbob.%d wait.%s\n",(long long)swap->mine.orderid,(long long)swap->other.orderid,cmdstr,swap->state->name,(int32_t)strlen(jprint(newjson,0)),instantdex_isbob(swap),swap->waitfortx);
+    if ( swap->state->name[0] == 0 || (swap->expiration != 0 && time(NULL) > swap->expiration) )
     {
         swap->state = &states[state->timeoutind];
+        swap->dead = (uint32_t)time(NULL);
         if ( state->timeout == 0 || (newjson= (*state->timeout)(myinfo,exchange,swap,argjson,newjson,&serdata,&serdatalen)) == 0 )
             return(clonestr("{\"error\":\"instantdex_BTCswap null return from timeoutfunc\"}"));
         else return(jprint(newjson,0));
@@ -1086,7 +1094,7 @@ void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_i
     coinbtc = iguana_coinfind("BTC");
     if ( swap->myfee == 0 )
         swap->myfee = instantdex_feetx(myinfo,&swap->mine,swap,coinbtc);
-    printf("state(%s) %llx/%llx\n",swap->state->name,(long long)swap->mine.orderid,(long long)swap->other.orderid);
+    //printf("state(%s) %llx/%llx\n",swap->state->name,(long long)swap->mine.orderid,(long long)swap->other.orderid);
     while ( (ptr= queue_dequeue(&swap->eventsQ,0)) != 0 )
     {
         //printf("dequeued (%s)\n",ptr->cmd);

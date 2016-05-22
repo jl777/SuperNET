@@ -1210,6 +1210,11 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_
     }
     else
     {
+        if ( instantdex_statemachinefind(myinfo,exchange,otherap->orderid) != 0 || instantdex_historyfind(myinfo,exchange,otherap->orderid) != 0 )
+        {
+            printf("instantdex_checkoffer no acceptable, but already have statemachine or history\n");
+            return(0);
+        }
         if ( otherap->offer.account == myinfo->myaddr.nxt64bits )
         {
             tmp = otherap;
