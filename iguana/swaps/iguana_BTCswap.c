@@ -1074,7 +1074,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
 
 void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap)
 {
-    char *str; struct bitcoin_eventitem *ptr; struct iguana_info *coinbtc; int32_t flag = 0;
+    char *str; struct bitcoin_eventitem *ptr; cJSON *newjson; struct iguana_info *coinbtc; int32_t flag = 0;
     coinbtc = iguana_coinfind("BTC");
     if ( instantdex_isbob(swap) != 0 && swap->myfee == 0 )
         swap->myfee = instantdex_feetx(myinfo,&swap->mine,swap,coinbtc);
@@ -1092,8 +1092,10 @@ void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_i
     if ( flag == 0 && swap->pollevent != 0 )
     {
         //printf("send poll event\n");
-        if ( (str= instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,"poll",swap->pollevent->argjson,swap->pollevent->newjson,swap->pollevent->serdata,swap->pollevent->serdatalen)) != 0 )
+        newjson = jduplicate(ptr->newjson);
+        if ( (str= instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,"poll",swap->pollevent->argjson,newjson,swap->pollevent->serdata,swap->pollevent->serdatalen)) != 0 )
             free(str);
+        free_json(newjson);
     }
 }
 
