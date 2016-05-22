@@ -74,7 +74,7 @@ struct exchange_info
 {
     struct exchange_funcs issue;
     char name[16],apikey[MAX_JSON_FIELD],apisecret[MAX_JSON_FIELD],tradepassword[MAX_JSON_FIELD],userid[MAX_JSON_FIELD];
-    uint32_t exchangeid,pollgap,lastpoll; portable_mutex_t mutex,mutexH,mutexS,mutexP,mutexR,mutexT;
+    uint32_t exchangeid,pollgap,lastpoll; portable_mutex_t mutex,mutexP,mutexR,mutexT;
     uint64_t lastnonce,exchangebits; double commission;
     void *privatedata;
     struct tradebot_info *tradebots;

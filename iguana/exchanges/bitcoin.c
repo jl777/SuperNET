@@ -517,12 +517,12 @@ char *OPENORDERS(struct exchange_info *exchange,cJSON *argjson)
 char *TRADEHISTORY(struct exchange_info *exchange,cJSON *argjson)
 {
     struct bitcoin_swapinfo *swap,*tmp; cJSON *retjson = cJSON_CreateArray();
-    portable_mutex_lock(&exchange->mutexH);
+    portable_mutex_lock(&exchange->mutex);
     DL_FOREACH_SAFE(exchange->history,swap,tmp)
     {
         jaddi(retjson,instantdex_historyjson(swap));
     }
-    portable_mutex_unlock(&exchange->mutexH);
+    portable_mutex_unlock(&exchange->mutex);
     return(jprint(retjson,1));
 }
 

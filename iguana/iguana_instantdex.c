@@ -75,7 +75,7 @@ int32_t instantdex_orderidcmp(uint64_t orderidA,uint64_t orderidB,int32_t strict
         orderidA &= INSTANTDEX_ORDERSTATE_ORDERIDMASK;
         orderidB &= INSTANTDEX_ORDERSTATE_ORDERIDMASK;
     }
-    printf("orderidA %llx vs orderidB %llx -> %llx\n",(long long)orderidA,(long long)orderidB,(long long)(orderidA ^ orderidB));
+    //printf("orderidA %llx vs orderidB %llx -> %llx\n",(long long)orderidA,(long long)orderidB,(long long)(orderidA ^ orderidB));
     return((orderidA ^ orderidB) != 0);
 }
 
@@ -713,7 +713,7 @@ cJSON *instantdex_historyjson(struct bitcoin_swapinfo *swap)
 struct bitcoin_swapinfo *instantdex_historyfind(struct supernet_info *myinfo,struct exchange_info *exchange,uint64_t orderid)
 {
     struct bitcoin_swapinfo *swap,*tmp,*retswap = 0;
-    portable_mutex_lock(&exchange->mutexH);
+    portable_mutex_lock(&exchange->mutex);
     DL_FOREACH_SAFE(exchange->history,swap,tmp)
     {
         if ( instantdex_orderidcmp(swap->mine.orderid,orderid,0) == 0 )
@@ -722,22 +722,22 @@ struct bitcoin_swapinfo *instantdex_historyfind(struct supernet_info *myinfo,str
             //break;
         }
     }
-    portable_mutex_unlock(&exchange->mutexH);
+    portable_mutex_unlock(&exchange->mutex);
     return(retswap);
 }
 
 void instantdex_historyadd(struct exchange_info *exchange,struct bitcoin_swapinfo *swap)
 {
-    portable_mutex_lock(&exchange->mutexH);
+    portable_mutex_lock(&exchange->mutex);
     DL_APPEND(exchange->history,swap);
-    portable_mutex_unlock(&exchange->mutexH);
+    portable_mutex_unlock(&exchange->mutex);
 }
 
 struct bitcoin_swapinfo *instantdex_statemachinefind(struct supernet_info *myinfo,struct exchange_info *exchange,uint64_t orderid)
 {
     struct bitcoin_swapinfo *tmp,*swap,*retswap = 0; uint32_t now;
     now = (uint32_t)time(NULL);
-    portable_mutex_lock(&exchange->mutexS);
+    portable_mutex_lock(&exchange->mutex);
     DL_FOREACH_SAFE(exchange->statemachines,swap,tmp)
     {
         //printf("%p search for orderid.%llx in (%llx/%llx) %u %u\n",exchange->statemachines,(long long)orderid,(long long)swap->mine.orderid,(long long)swap->other.orderid,swap->mine.dead,swap->other.dead);
@@ -758,7 +758,7 @@ struct bitcoin_swapinfo *instantdex_statemachinefind(struct supernet_info *myinf
         }
     }
     //printf("found statemachine.%p\n",retswap);
-    portable_mutex_unlock(&exchange->mutexS);
+    portable_mutex_unlock(&exchange->mutex);
     return(retswap);
 }
 
@@ -809,9 +809,9 @@ struct instantdex_accept *instantdex_offerfind(struct supernet_info *ignore,stru
 
 void instantdex_statemachineadd(struct exchange_info *exchange,struct bitcoin_swapinfo *swap)
 {
-    portable_mutex_lock(&exchange->mutexS);
+    portable_mutex_lock(&exchange->mutex);
     DL_APPEND(exchange->statemachines,swap);
-    portable_mutex_unlock(&exchange->mutexS);
+    portable_mutex_unlock(&exchange->mutex);
     if ( instantdex_statemachinefind(0,exchange,swap->mine.orderid) == 0 && instantdex_statemachinefind(0,exchange,swap->other.orderid) == 0 )
     {
         printf("cant find just added FSM.(%llx/%llx)\n",(long long)swap->mine.orderid,(long long)swap->other.orderid);
