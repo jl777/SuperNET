@@ -1285,7 +1285,7 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
     return(retstr);
 }
 
-struct bitcoin_eventitem *instantdex_event(char *cmdstr,cJSON *newjson,cJSON *argjson,uint8_t *serdata,int32_t serdatalen)
+struct bitcoin_eventitem *instantdex_event(char *cmdstr,cJSON *argjson,cJSON *newjson,uint8_t *serdata,int32_t serdatalen)
 {
     struct bitcoin_eventitem *ptr;
     ptr = calloc(1,sizeof(*ptr) + serdatalen);
@@ -1332,7 +1332,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
                     free_json(newjson);
                 return(retstr);
             }
-            if ( (ptr= instantdex_event(cmdstr,newjson,argjson,serdata,serdatalen)) != 0 )
+            if ( (ptr= instantdex_event(cmdstr,argjson,newjson,serdata,serdatalen)) != 0 )
                 queue_enqueue("eventQ",&swap->eventsQ,&ptr->DL,0);
             free_json(newjson);
             return(clonestr("{\"result\":\"updated statemachine\"}"));
