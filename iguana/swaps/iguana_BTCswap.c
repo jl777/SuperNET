@@ -548,7 +548,7 @@ void instantdex_swaptxupdate(struct bitcoin_statetx **ptrp,cJSON *argjson,char *
         {
             printf("got replacement %s? (%s)\n",txname,str);
             free(*ptrp);
-        } else printf("got (%s) %s\n",txname,str);
+        } else printf("instantdex_swaptxupdate got (%s) %s\n",txname,str);
         *ptrp = calloc(1,sizeof(**ptrp) + strlen(str) + 1);
         strcpy((*ptrp)->txbytes,str);
         (*ptrp)->txid = jbits256(argjson,txidfield);
@@ -593,6 +593,7 @@ cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info
             instantdex_swaptxupdate(&swap->payment,argjson,"payment","paymenttxid");
         }
         instantdex_swaptxupdate(&swap->otherfee,argjson,"feetx","feetxid");
+        printf("otherfee.%p\n",swap->otherfee);
         if ( swap->otherchoosei < 0 && jobj(argjson,"mychoosei") != 0 )
         {
             //printf("otherschoosei.%d\n",swap->otherschoosei);
@@ -951,38 +952,52 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     s = instantdex_statecreate(s,n,"BOB_sentoffer",BTC_waitdeckCfunc,0,"BTC_cleanup",0,1);
     s = instantdex_statecreate(s,n,"ALICE_sentoffer",BTC_waitdeckCfunc,0,"BTC_cleanup",0,1);
     instantdex_addevent(s,*n,"BOB_sentoffer","BTCdeckC","BTCprivC","BOB_sentprivs"); // send privs + Chose
-    instantdex_addevent(s,*n,"ALICE_sentoffer","BTCdeckC","BTCprivC","ALICE_sentprivs");
+    instantdex_addevent(s,*n,"BOB_sentoffer","BTCprivC","BTCprivC","BOB_sentoffer"); // send privs + Chose
+    instantdex_addevent(s,*n,"BOB_sentoffer","poll","BTCprivC","BOB_sentoffer");
     
+    instantdex_addevent(s,*n,"ALICE_sentoffer","BTCdeckC","BTCprivC","ALICE_sentprivs");
+    instantdex_addevent(s,*n,"ALICE_sentoffer","BTCprivC","BTCprivC","ALICE_sentoffer");
+    instantdex_addevent(s,*n,"ALICE_sentoffer","poll","BTCprivC","ALICE_sentoffer");
+
     // gotoffer states have received deck and sent BTCdeckC already (along with deck)
     s = instantdex_statecreate(s,n,"BOB_gotoffer",BTC_waitprivCfunc,0,"BTC_cleanup",0,1);
     s = instantdex_statecreate(s,n,"ALICE_gotoffer",BTC_waitprivCfunc,0,"BTC_cleanup",0,1);
-    instantdex_addevent(s,*n,"BOB_gotoffer","BTCprivC","BTCprivs","BOB_sentprivs"); // send privs
-    instantdex_addevent(s,*n,"ALICE_gotoffer","BTCprivC","BTCprivs","ALICE_sentprivs");
+    instantdex_addevent(s,*n,"BOB_gotoffer","BTCdeckC","BTCprivC","BOB_sentprivs"); // send privs
+    instantdex_addevent(s,*n,"BOB_gotoffer","BTCprivC","BTCprivC","BOB_gotoffer"); // send privs
+    instantdex_addevent(s,*n,"BOB_gotoffer","BTCprivs","BTCprivC","BOB_gotoffer");
+    instantdex_addevent(s,*n,"BOB_gotoffer","poll","BTCprivs","BOB_gotoffer");
+    
+    instantdex_addevent(s,*n,"ALICE_gotoffer","BTCdeckC","BTCprivC","ALICE_sentprivs");
+    instantdex_addevent(s,*n,"ALICE_gotoffer","BTCprivC","BTCprivC","ALICE_gotoffer");
+    instantdex_addevent(s,*n,"ALICE_gotoffer","BTCprivs","BTCprivC","ALICE_gotoffer");
+    instantdex_addevent(s,*n,"ALICE_gotoffer","poll","BTCprivs","ALICE_gotoffer");
     
     // to reach sentprivs, all paths must have sent/recv deck and Chose and verified cut and choose
     s = instantdex_statecreate(s,n,"BOB_sentprivs",BTC_waitprivsfunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"BOB_sentprivs","BTCprivs","poll","BOB_waitfee");
     instantdex_addevent(s,*n,"BOB_sentprivs","BTCdeckC","BTCprivs","BOB_sentprivs");
-    instantdex_addevent(s,*n,"BOB_sentprivs","poll","BTCdeckC","BOB_sentprivs");
+    instantdex_addevent(s,*n,"BOB_sentprivs","BTCprivC","BTCprivs","BOB_sentprivs");
+    instantdex_addevent(s,*n,"BOB_sentprivs","poll","BTCprivs","BOB_sentprivs");
     
     s = instantdex_statecreate(s,n,"ALICE_sentprivs",BTC_waitprivsfunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"ALICE_sentprivs","BTCprivs","poll","Alice_waitfee");
-    instantdex_addevent(s,*n,"ALICE_sentprivs","BTCdeckC","BTCprivs","Alice_waitfee");
-    instantdex_addevent(s,*n,"ALICE_sentprivs","poll","BTCdeckC","ALICE_sentprivs");
+    instantdex_addevent(s,*n,"ALICE_sentprivs","BTCdeckC","BTCprivs","ALICE_sentprivs");
+    instantdex_addevent(s,*n,"ALICE_sentprivs","BTCprivC","BTCprivs","ALICE_sentprivs");
+    instantdex_addevent(s,*n,"ALICE_sentprivs","poll","BTCprivs","ALICE_sentprivs");
     
     // [BLOCKING: fee] Bob waits for fee and sends deposit when it appears
     s = instantdex_statecreate(s,n,"BOB_waitfee",BOB_waitfeefunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"BOB_waitfee","feefound","BTCdeptx","BOB_sentdeposit");
     instantdex_addevent(s,*n,"BOB_waitfee","BTCdeckC","BTCprivs","BOB_waitfee");
     instantdex_addevent(s,*n,"BOB_waitfee","BTCprivs","poll","BOB_waitfee");
-    instantdex_addevent(s,*n,"BOB_waitfee","poll","poll","BOB_waitfee");
+    instantdex_addevent(s,*n,"BOB_waitfee","poll","BTCprivs","BOB_waitfee");
     
     // [BLOCKING: fee and deposit] Alice waits for fee and then waits for deposit to confirm and sends altpayment
     s = instantdex_statecreate(s,n,"Alice_waitfee",ALICE_waitfeefunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"Alice_waitfee","feefound","poll","ALICE_waitdeposit");
     instantdex_addevent(s,*n,"Alice_waitfee","BTCdeckC","BTCprivs","Alice_waitfee");
     instantdex_addevent(s,*n,"Alice_waitfee","BTCprivs","poll","Alice_waitfee");
-    instantdex_addevent(s,*n,"Alice_waitfee","poll","poll","Alice_waitfee");
+    instantdex_addevent(s,*n,"Alice_waitfee","poll","BTCprivs","Alice_waitfee");
     
     s = instantdex_statecreate(s,n,"ALICE_waitdeposit",ALICE_waitdepositfunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"ALICE_waitdeposit","depfound","BTCalttx","ALICE_sentalt");
@@ -1075,7 +1090,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
             {
                 if ( strcmp("poll",state->events[i].sendcmd) == 0 )
                 {
-                    printf("POLL for pending tx expected.(%s)\n",swap->expectedcmdstr);
+                    printf("POLL for pending tx expected.(%s) (%s)\n",swap->expectedcmdstr,swap->waitfortx);
                     //return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,state->events[i].sendcmd,myinfo->myaddr.persistent,0,serdata,serdatalen,0));
                 }
                 else
