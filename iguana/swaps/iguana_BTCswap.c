@@ -593,7 +593,6 @@ cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info
             instantdex_swaptxupdate(&swap->payment,argjson,"payment","paymenttxid");
         }
         instantdex_swaptxupdate(&swap->otherfee,argjson,"feetx","feetxid");
-        printf("otherfee.%p\n",swap->otherfee);
         if ( swap->otherchoosei < 0 && jobj(argjson,"mychoosei") != 0 )
         {
             //printf("otherschoosei.%d\n",swap->otherschoosei);
@@ -747,11 +746,11 @@ cJSON *ALICE_waitfeefunc(struct supernet_info *myinfo,struct exchange_info *exch
     coinbtc = iguana_coinfind("BTC");
     *serdatap = 0, *serdatalenp = 0;
     strcpy(swap->waitfortx,"fee");
-    printf("ALICE wait other.%p\n",swap->otherfee);
+    //printf("ALICE wait other.%p\n",swap->otherfee);
     if ( coinbtc != 0 && swap->otherfee != 0 )//&& (retstr= BTC_txconfirmed(myinfo,coinbtc,swap,newjson,swap->otherfee->txid,&swap->otherfee->numconfirms,"feefound",0)) != 0 )
     {
         retstr = swap->otherfee->txbytes;
-        jaddstr(newjson,"feefound",retstr);
+        jaddstr(newjson,"virtevent","feefound");
         return(newjson);
     }
     return(0);
@@ -952,37 +951,37 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     s = instantdex_statecreate(s,n,"BOB_sentoffer",BTC_waitdeckCfunc,0,"BTC_cleanup",0,1);
     s = instantdex_statecreate(s,n,"ALICE_sentoffer",BTC_waitdeckCfunc,0,"BTC_cleanup",0,1);
     instantdex_addevent(s,*n,"BOB_sentoffer","BTCdeckC","BTCprivC","BOB_sentprivs"); // send privs + Chose
-    instantdex_addevent(s,*n,"BOB_sentoffer","BTCprivC","BTCprivC","BOB_sentoffer"); // send privs + Chose
-    instantdex_addevent(s,*n,"BOB_sentoffer","poll","BTCprivC","BOB_sentoffer");
+    instantdex_addevent(s,*n,"BOB_sentoffer","BTCprivC","BTCprivs","BOB_sentprivs");
+    instantdex_addevent(s,*n,"BOB_sentoffer","poll","BTCprivC","BOB_sentprivs");
     
     instantdex_addevent(s,*n,"ALICE_sentoffer","BTCdeckC","BTCprivC","ALICE_sentprivs");
-    instantdex_addevent(s,*n,"ALICE_sentoffer","BTCprivC","BTCprivC","ALICE_sentoffer");
-    instantdex_addevent(s,*n,"ALICE_sentoffer","poll","BTCprivC","ALICE_sentoffer");
+    instantdex_addevent(s,*n,"ALICE_sentoffer","BTCprivC","BTCprivs","ALICE_sentprivs");
+    instantdex_addevent(s,*n,"ALICE_sentoffer","poll","BTCprivC","ALICE_sentprivs");
 
     // gotoffer states have received deck and sent BTCdeckC already (along with deck)
     s = instantdex_statecreate(s,n,"BOB_gotoffer",BTC_waitprivCfunc,0,"BTC_cleanup",0,1);
     s = instantdex_statecreate(s,n,"ALICE_gotoffer",BTC_waitprivCfunc,0,"BTC_cleanup",0,1);
     instantdex_addevent(s,*n,"BOB_gotoffer","BTCdeckC","BTCprivC","BOB_sentprivs"); // send privs
-    instantdex_addevent(s,*n,"BOB_gotoffer","BTCprivC","BTCprivC","BOB_gotoffer"); // send privs
-    instantdex_addevent(s,*n,"BOB_gotoffer","BTCprivs","BTCprivC","BOB_gotoffer");
-    instantdex_addevent(s,*n,"BOB_gotoffer","poll","BTCprivs","BOB_gotoffer");
+    instantdex_addevent(s,*n,"BOB_gotoffer","BTCprivC","BTCprivs","BOB_sentprivs"); // send privs
+    instantdex_addevent(s,*n,"BOB_gotoffer","BTCprivs","BTCprivC","BOB_sentprivs");
+    instantdex_addevent(s,*n,"BOB_gotoffer","poll","BTCprivC","BOB_gotoffer");
     
     instantdex_addevent(s,*n,"ALICE_gotoffer","BTCdeckC","BTCprivC","ALICE_sentprivs");
-    instantdex_addevent(s,*n,"ALICE_gotoffer","BTCprivC","BTCprivC","ALICE_gotoffer");
-    instantdex_addevent(s,*n,"ALICE_gotoffer","BTCprivs","BTCprivC","ALICE_gotoffer");
-    instantdex_addevent(s,*n,"ALICE_gotoffer","poll","BTCprivs","ALICE_gotoffer");
+    instantdex_addevent(s,*n,"ALICE_gotoffer","BTCprivC","BTCprivs","ALICE_sentprivs");
+    instantdex_addevent(s,*n,"ALICE_gotoffer","BTCprivs","BTCprivC","ALICE_sentprivs");
+    instantdex_addevent(s,*n,"ALICE_gotoffer","poll","BTCprivC","ALICE_gotoffer");
     
     // to reach sentprivs, all paths must have sent/recv deck and Chose and verified cut and choose
     s = instantdex_statecreate(s,n,"BOB_sentprivs",BTC_waitprivsfunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"BOB_sentprivs","BTCprivs","poll","BOB_waitfee");
-    instantdex_addevent(s,*n,"BOB_sentprivs","BTCdeckC","BTCprivs","BOB_sentprivs");
-    instantdex_addevent(s,*n,"BOB_sentprivs","BTCprivC","BTCprivs","BOB_sentprivs");
+    instantdex_addevent(s,*n,"BOB_sentprivs","BTCdeckC","BTCprivs","BOB_waitfee");
+    instantdex_addevent(s,*n,"BOB_sentprivs","BTCprivC","BTCprivs","BOB_waitfee");
     instantdex_addevent(s,*n,"BOB_sentprivs","poll","BTCprivs","BOB_sentprivs");
     
     s = instantdex_statecreate(s,n,"ALICE_sentprivs",BTC_waitprivsfunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"ALICE_sentprivs","BTCprivs","poll","Alice_waitfee");
-    instantdex_addevent(s,*n,"ALICE_sentprivs","BTCdeckC","BTCprivs","ALICE_sentprivs");
-    instantdex_addevent(s,*n,"ALICE_sentprivs","BTCprivC","BTCprivs","ALICE_sentprivs");
+    instantdex_addevent(s,*n,"ALICE_sentprivs","BTCdeckC","BTCprivs","Alice_waitfee");
+    instantdex_addevent(s,*n,"ALICE_sentprivs","BTCprivC","BTCprivs","Alice_waitfee");
     instantdex_addevent(s,*n,"ALICE_sentprivs","poll","BTCprivs","ALICE_sentprivs");
     
     // [BLOCKING: fee] Bob waits for fee and sends deposit when it appears
@@ -1108,6 +1107,8 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                         instantdex_eventfree(swap->pollevent);
                     swap->pollevent = instantdex_event("poll",argjson,newjson,serdata,serdatalen);
                 }
+                else if ( jstr(newjson,"virtevent") != 0 )
+                    instantdex_event(jstr(newjson,"virtevent"),argjson,newjson,0,0);
                 if ( state->events[i].sendcmd[0] != 0 )
                 {
                     if ( state->events[i].nextstateind > 1 )
