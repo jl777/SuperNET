@@ -725,6 +725,7 @@ cJSON *BTC_waitprivsfunc(struct supernet_info *myinfo,struct exchange_info *exch
         else
         {
             printf("error generating feetx\n");
+            free_json(newjson);
             newjson = 0;
         }
     }
@@ -764,7 +765,11 @@ cJSON *ALICE_waitdepositfunc(struct supernet_info *myinfo,struct exchange_info *
             jaddstr(newjson,"altpayment",swap->altpayment->txbytes);
             jaddbits256(newjson,"altpaymenttxid",swap->altpayment->txid);
         }
-        else newjson = 0;
+        else
+        {
+            free_json(newjson);
+            newjson = 0;
+        }
     }
     return(newjson);
 }
@@ -1013,7 +1018,7 @@ void instantdex_eventfree(struct bitcoin_eventitem *ptr)
 
 char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numstates,struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,char *cmdstr,cJSON *argjson,cJSON *newjson,uint8_t *serdata,int32_t serdatalen)
 {
-    uint32_t i; struct iguana_info *altcoin=0,*coinbtc=0; struct instantdex_stateinfo *state=0; cJSON *origjson = newjson;
+    uint32_t i; struct iguana_info *altcoin=0,*coinbtc=0; struct instantdex_stateinfo *state=0; char *retstr;
     if ( swap == 0 || (state= swap->state) == 0 || (coinbtc= iguana_coinfind("BTC")) == 0 || (altcoin= iguana_coinfind(swap->mine.offer.base)) == 0 )
     {
         printf("state.%s btc.%p altcoin.%p (%s)\n",state->name,coinbtc,altcoin,swap->mine.offer.base);
@@ -1033,7 +1038,6 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
         {
             if ( (newjson= (*state->process)(myinfo,exchange,swap,argjson,newjson,&serdata,&serdatalen)) == 0 )
             {
-                free_json(origjson);
                 if ( strcmp("poll",state->events[i].sendcmd) == 0 )
                 {
                     printf("POLL for pending tx expected.(%s)\n",swap->expectedcmdstr);
@@ -1056,7 +1060,9 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                         if ( swap->pollevent != 0 )
                             instantdex_eventfree(swap->pollevent);
                         swap->pollevent = instantdex_event("poll",argjson,newjson,serdata,serdatalen);
-                        return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,state->events[i].sendcmd,swap->othertrader,INSTANTDEX_HOPS,serdata,serdatalen,0));
+                        retstr = instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,state->events[i].sendcmd,swap->othertrader,INSTANTDEX_HOPS,serdata,serdatalen,0);
+                        free_json(newjson);
+                        return(retstr);
                     } else return(clonestr("{\"error\":\"instantdex_statemachine: illegal state\"}"));
                 } else return(clonestr("{\"result\":\"instantdex_statemachine: processed\"}"));
             }
