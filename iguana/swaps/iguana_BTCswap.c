@@ -1077,12 +1077,9 @@ void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_i
     while ( (ptr= queue_dequeue(&swap->eventsQ,0)) != 0 )
     {
         printf("dequeued (%s)\n",ptr->cmd);
-        if ( (str= instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,ptr->cmd,ptr->argjson,ptr->newjson,ptr->serdata,ptr->serdatalen)) != 0 )
+        if ( (str= instantdex_statemachine(BTC_states,BTC_numstates,myinfo,exchange,swap,ptr->cmd,ptr->argjson,jduplicate(ptr->newjson),ptr->serdata,ptr->serdatalen)) != 0 )
             free(str);
         instantdex_eventfree(ptr);
-        if ( ptr->argjson != 0 )
-            free_json(ptr->argjson);
-        free(ptr);
         flag++;
     }
     if ( flag == 0 && swap->pollevent != 0 )
