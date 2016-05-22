@@ -92,7 +92,8 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
     while ( coin->blockdepth > 0 )
     {
         sleep(1);
-        printf("%s >>>>>>>>>> OK only if rare %s blockhashset.%d depth.%d\n",coin->symbol,debugstr,height,coin->blockdepth);
+        if ( coin->blockdepth > 0 )
+            printf("A %s >>>>>>>>>> OK only if rare %s blockhashset.%d depth.%d\n",coin->symbol,debugstr,height,coin->blockdepth);
         //fprintf(stderr,">>>>>>>>>> OK only if rare %s blockhashset.%d depth.%d\n",debugstr,height,depth);
         //printf("%d\n",1/(1 - depth/depth));
     }
@@ -105,7 +106,8 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
         while ( coin->blockdepth > 0 )
         {
             sleep(1);
-            printf(" %s >>>>>>>>>> OK only if rare %s match blockhashset.%d depth.%d\n",coin->symbol,debugstr,height,coin->blockdepth);
+            if ( coin->blockdepth > 0 )
+                printf("B %s >>>>>>>>>> OK only if rare %s match blockhashset.%d depth.%d\n",coin->symbol,debugstr,height,coin->blockdepth);
             //fprintf(stderr,">>>>>>>>>> OK only if rare%s match blockhashset.%d depth.%d\n",debugstr,height,depth);
             //printf("%d\n",1/(1 - depth/depth));
         }
@@ -142,7 +144,8 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
     while ( coin->blockdepth > 0 )
     {
         sleep(1);
-        printf("%s >>>>>>>>>> OK only if rare %s create blockhashset.%d depth.%d\n",coin->symbol,debugstr,height,coin->blockdepth);
+        if ( coin->blockdepth > 0 )
+            printf("C %s >>>>>>>>>> OK only if rare %s create blockhashset.%d depth.%d\n",coin->symbol,debugstr,height,coin->blockdepth);
         //fprintf(stderr,">>>>>>>>>> OK only if rare%s create blockhashset.%d depth.%d\n",debugstr,height,depth);
         //printf("%d\n",1/(1 - depth/depth));
     }

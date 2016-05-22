@@ -130,7 +130,11 @@ struct iguana_utxo iguana_utxofind(struct iguana_info *coin,int16_t spent_hdrsi,
                     *RTspendflagp = 1;
             }
         }
-    } else printf("illegal unspentind.%u vs %u hdrs.%d\n",spent_unspentind,ramchain->H.data->numunspents,spent_hdrsi);
+    }
+    else
+    {
+        printf("illegal unspentind.%u vs %u hdrs.%d\n",spent_unspentind,ramchain->H.data->numunspents,spent_hdrsi);
+    }
     return(utxo);
 }
 

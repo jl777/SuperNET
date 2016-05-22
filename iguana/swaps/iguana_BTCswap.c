@@ -77,9 +77,9 @@ int32_t instantdex_outputinsurance(uint8_t *script,int64_t insurance,uint64_t r,
 {
     uint8_t rmd160[20]; int32_t n = 0;
     decode_hex(rmd160,sizeof(rmd160),(dest % 10) == 9 ? TIERNOLAN_RMD160 : INSTANTDEX_RMD160);
-    script[n++] = sizeof(r);
-    n += iguana_rwnum(1,&script[n],sizeof(r),&r);
-    script[n++] = SCRIPT_OP_DROP;
+    //script[n++] = sizeof(r);
+    //n += iguana_rwnum(1,&script[n],sizeof(r),&r);
+    //script[n++] = SCRIPT_OP_DROP;
     n = bitcoin_standardspend(script,n,rmd160);
     return(n);
 }
@@ -184,11 +184,11 @@ struct bitcoin_statetx *instantdex_signtx(struct supernet_info *myinfo,struct ig
 struct bitcoin_statetx *instantdex_feetx(struct supernet_info *myinfo,struct instantdex_accept *A,struct bitcoin_swapinfo *swap,struct iguana_info *coin)
 {
     int32_t n; uint8_t paymentscript[128]; char scriptstr[512]; struct bitcoin_statetx *ptr = 0; uint64_t r;
-    r = swap->mine.orderid ^ swap->other.orderid;
+    r = swap->mine.orderid;
     n = instantdex_outputinsurance(paymentscript,swap->insurance,r,r * (strcmp("BTC",coin->symbol) == 0));
     init_hexbytes_noT(scriptstr,paymentscript,n);
     printf("instantdex_feetx %.8f (%s)\n",dstr(swap->insurance),scriptstr);
-    ptr = instantdex_signtx(myinfo,coin,0,scriptstr,swap->insurance,coin->txfee,swap->mine.minconfirms,A->offer.myside);
+    ptr = instantdex_signtx(myinfo,coin,0,scriptstr,swap->insurance,coin->txfee,0,A->offer.myside);
     return(ptr);
 }
 
@@ -667,7 +667,7 @@ cJSON *BOB_waitfeefunc(struct supernet_info *myinfo,struct exchange_info *exchan
     {
         retstr = swap->otherfee->txbytes;
         jaddstr(newjson,"feefound",retstr);
-        if ( (swap->deposit= instantdex_bobtx(myinfo,swap,coinbtc,swap->otherpubs[0],swap->mypubs[0],swap->privkeys[swap->choosei],swap->reftime,swap->BTCsatoshis,1)) != 0 )
+        if ( swap->deposit != 0 || (swap->deposit= instantdex_bobtx(myinfo,swap,coinbtc,swap->otherpubs[0],swap->mypubs[0],swap->privkeys[swap->choosei],swap->reftime,swap->BTCsatoshis,1)) != 0 )
         {
             // broadcast deposit
             jaddstr(newjson,"deposit",swap->deposit->txbytes);
@@ -945,7 +945,7 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     s = instantdex_statecreate(s,n,"BOB_sentprivs",BTC_waitprivsfunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"BOB_sentprivs","BTCprivs","poll","BOB_waitfee");
     instantdex_addevent(s,*n,"BOB_sentprivs","BTCdeckC","BTCprivs","BOB_waitfee");
-    instantdex_addevent(s,*n,"BOB_sentprivs","poll","poll","BOB_sentprivs");
+    instantdex_addevent(s,*n,"BOB_sentprivs","poll","BTCdeckC","BOB_sentprivs");
 
     s = instantdex_statecreate(s,n,"ALICE_sentprivs",BTC_waitprivsfunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"ALICE_sentprivs","BTCprivs","poll","Alice_waitfee");
@@ -960,7 +960,7 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     s = instantdex_statecreate(s,n,"Alice_waitfee",ALICE_waitfeefunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"Alice_waitfee","feefound","poll","ALICE_waitdeposit");
     instantdex_addevent(s,*n,"Alice_waitfee","BTCdeckC","BTCprivs","Alice_waitfee");
-    instantdex_addevent(s,*n,"Alice_waitfee","poll","poll","Alice_waitfee");
+    instantdex_addevent(s,*n,"Alice_waitfee","poll","BTCdeckC","Alice_waitfee");
     
     s = instantdex_statecreate(s,n,"ALICE_waitdeposit",ALICE_waitdepositfunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"ALICE_waitdeposit","depfound","BTCalttx","ALICE_sentalt");
@@ -1052,9 +1052,12 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
 
 void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap)
 {
-    char *str; struct bitcoin_eventitem *ptr;
+    char *str; struct bitcoin_eventitem *ptr; struct iguana_info *coinbtc;
+    coinbtc = iguana_coinfind("BTC");
     if ( instantdex_isbob(swap) != 0 && swap->myfee == 0 )
-        swap->myfee = instantdex_feetx(myinfo,&swap->mine,swap,iguana_coinfind("BTC"));
+        swap->myfee = instantdex_feetx(myinfo,&swap->mine,swap,coinbtc);
+    else if ( instantdex_isbob(swap) == 0 && swap->otherfee == 0 )
+        swap->otherfee = instantdex_feetx(myinfo,&swap->mine,swap,coinbtc);
     while ( (ptr= queue_dequeue(&swap->eventsQ,0)) != 0 )
     {
         //printf("deQ arg.%p new.%p\n",ptr->argjson,ptr->newjson);

@@ -231,7 +231,7 @@ char *bitcoin_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void
                     }
                     if ( retstr == 0 )
                         return(0);
-                    printf("RELAY will return.(%s)\n",retstr);
+                    //printf("RELAY will return.(%s)\n",retstr);
                     for (j=0; j<IGUANA_MAXCOINS; j++)
                     {
                         if ( (coin= Coins[j]) == 0 )

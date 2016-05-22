@@ -420,22 +420,24 @@ int32_t iguana_rwtx(int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized,s
 char *iguana_txscan(struct iguana_info *coin,cJSON *json,uint8_t *data,int32_t recvlen,bits256 txid)
 {
     struct iguana_msgtx tx; bits256 hash2; struct iguana_block block; struct iguana_msgblock msg;
-    int32_t i,n,len; char *txbytes,vpnstr[64];
+    int32_t i,n,len,extralen = 65356; char *txbytes,vpnstr[64]; uint8_t *extraspace;
     memset(&msg,0,sizeof(msg));
     vpnstr[0] = 0;
+    extraspace = calloc(1,extralen);
     len = iguana_rwblock(coin->chain->hashalgo,0,&hash2,data,&msg);
     iguana_blockconv(&block,&msg,hash2,-1);
     for (i=0; i<msg.txn_count; i++)
     {
-        if ( (n= iguana_rwmsgtx(coin,0,0,&data[len],recvlen - len,&tx,&tx.txid,vpnstr)) < 0 )
+        if ( (n= iguana_rwmsgtx(coin,0,0,&data[len],recvlen - len,&tx,&tx.txid,vpnstr,extraspace,extralen)) < 0 )
             break;
         //char str[65]; printf("%d of %d: %s\n",i,msg.txn_count,bits256_str(str,tx.txid));
         if ( bits256_cmp(txid,tx.txid) == 0 )
         {
-            if ( (n= iguana_rwmsgtx(coin,0,json,&data[len],recvlen - len,&tx,&tx.txid,vpnstr)) > 0 )
+            if ( (n= iguana_rwmsgtx(coin,0,json,&data[len],recvlen - len,&tx,&tx.txid,vpnstr,extraspace,extralen)) > 0 )
             {
                 txbytes = malloc(n*2+1);
                 init_hexbytes_noT(txbytes,&data[len],n);
+                free(extraspace);
                 return(txbytes);
             }
         }

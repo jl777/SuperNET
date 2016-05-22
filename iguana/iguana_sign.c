@@ -293,7 +293,7 @@ cJSON *iguana_voutjson(struct iguana_info *coin,struct iguana_msgvout *vout,int3
     return(json);
 }
 
-int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,bits256 *txidp,char *vpnstr)
+int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,bits256 *txidp,char *vpnstr,uint8_t *extraspace,int32_t extralen)
 {
     int32_t i,n,len = 0; uint8_t *txstart = serialized; char txidstr[65]; cJSON *array=0;
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
@@ -314,15 +314,15 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
     //    printf("%02x",serialized[i]);
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_in);
     //printf(" tx_in.%08x\n",msg->tx_in);
-    if ( rwflag == 0 )
+    if ( rwflag == 0 && msg->vins == 0 )
     {
-        if ( len + sizeof(struct iguana_msgvin)*msg->tx_in > maxsize )
+        if ( sizeof(struct iguana_msgvin)*msg->tx_in > extralen )
         {
-            printf("len.%d + tx_in.%d > maxsize.%d\n",len,msg->tx_in,maxsize);
+            printf("len.%d + tx_in.%d > maxsize.%d\n",len,msg->tx_in,extralen);
             return(-1);
         }
-        maxsize -= (sizeof(struct iguana_msgvin) * msg->tx_in);
-        msg->vins = (struct iguana_msgvin *)&serialized[maxsize];
+        extralen -= (sizeof(struct iguana_msgvin) * msg->tx_in);
+        msg->vins = (struct iguana_msgvin *)&extraspace[extralen];
         memset(msg->vins,0,sizeof(struct iguana_msgvin) * msg->tx_in);
     }
     for (i=0; i<msg->tx_in; i++)
@@ -349,15 +349,15 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
     //    printf("%02x",serialized[i]);
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_out);
     //printf(" txout.%d\n",msg->tx_out);
-    if ( rwflag == 0 )
+    if ( rwflag == 0 && msg->vouts == 0 )
     {
-        if ( len + sizeof(struct iguana_msgvout)*msg->tx_out > maxsize )
+        if ( len + sizeof(struct iguana_msgvout)*msg->tx_out > extralen )
         {
-            printf("len.%d + tx_in.%d > maxsize.%d\n",len,msg->tx_in,maxsize);
+            printf("len.%d + tx_in.%d > maxsize.%d\n",len,msg->tx_in,extralen);
             return(-1);
         }
-        maxsize -= (sizeof(struct iguana_msgvout) * msg->tx_out);
-        msg->vouts = (struct iguana_msgvout *)&serialized[maxsize];
+        extralen -= (sizeof(struct iguana_msgvout) * msg->tx_out);
+        msg->vouts = (struct iguana_msgvout *)&serialized[extralen];
         memset(msg->vouts,0,sizeof(struct iguana_msgvout) * msg->tx_out);
     }
     for (i=0; i<msg->tx_out; i++)
@@ -456,7 +456,7 @@ bits256 iguana_parsetxobj(struct supernet_info *myinfo,struct iguana_info *coin,
     msg->lock_time = (int32_t)j64bits(txobj,"locktime");
     msg->txid = jbits256(txobj,"txid");
     *txstartp = len;
-    if ( (msg->allocsize= iguana_rwmsgtx(coin,1,0,&serialized[len],maxsize-len,msg,&txid,vpnstr)) < 0 )
+    if ( (msg->allocsize= iguana_rwmsgtx(coin,1,0,&serialized[len],maxsize-len,msg,&txid,vpnstr,0,0)) < 0 )
     {
         memset(txid.bytes,0,sizeof(txid));
         printf("error parsing txobj\n");
@@ -472,7 +472,7 @@ char *iguana_rawtxbytes(struct iguana_info *coin,cJSON *json,struct iguana_msgtx
     serialized = malloc(IGUANA_MAXPACKETSIZE);
     vpnstr[0] = 0;
     //char str[65]; printf("%d of %d: %s\n",i,msg.txn_count,bits256_str(str,tx.txid));
-    if ( (n= iguana_rwmsgtx(coin,1,json,serialized,IGUANA_MAXPACKETSIZE,msgtx,&msgtx->txid,vpnstr)) > 0 )
+    if ( (n= iguana_rwmsgtx(coin,1,json,serialized,IGUANA_MAXPACKETSIZE,msgtx,&msgtx->txid,vpnstr,0,0)) > 0 )
     {
         txbytes = malloc(n*2+1);
         init_hexbytes_noT(txbytes,serialized,n);
@@ -502,7 +502,7 @@ char *bitcoin_json2hex(struct supernet_info *myinfo,struct iguana_info *coin,bit
 
 cJSON *bitcoin_hex2json(struct iguana_info *coin,bits256 *txidp,struct iguana_msgtx *msgtx,char *txbytes)
 {
-    int32_t n,len; char vpnstr[64]; struct iguana_msgtx M; uint8_t *serialized; cJSON *txobj;
+    int32_t n,len; char vpnstr[64]; struct iguana_msgtx M; uint8_t *serialized,*extraspace; cJSON *txobj;
     txobj = cJSON_CreateObject();
     if ( msgtx == 0 )
     {
@@ -510,16 +510,19 @@ cJSON *bitcoin_hex2json(struct iguana_info *coin,bits256 *txidp,struct iguana_ms
         memset(msgtx,0,sizeof(M));
     }
     len = (int32_t)strlen(txbytes) >> 1;
-    serialized = malloc(len + 32768);
+    serialized = malloc(len);
+    extraspace = calloc(1,65536);
     decode_hex(serialized,len,txbytes);
     vpnstr[0] = 0;
     memset(txidp,0,sizeof(*txidp));
-    if ( (n= iguana_rwmsgtx(coin,0,txobj,serialized,len + 32768,msgtx,txidp,vpnstr)) <= 0 )
+    if ( (n= iguana_rwmsgtx(coin,0,txobj,serialized,len,msgtx,txidp,vpnstr,extraspace,65536)) <= 0 )
     {
-        printf("error from rwmsgtx\n");
         free_json(txobj);
-        txobj = 0;
+        txobj = cJSON_CreateObject();
+        jaddstr(txobj,"error","couldnt decode transaction");
+        jaddstr(txobj,"coin",coin->symbol);
     }
+    free(extraspace);
     free(serialized);
     return(txobj);
 }
@@ -549,7 +552,7 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin,uint8_t *serialized,int32_t max
         dest.vins[i].p2shlen = 0;
         dest.vins[i].redeemscript = 0;
     }
-    len = iguana_rwmsgtx(coin,1,0,serialized,maxlen,&dest,&txid,vpnstr);
+    len = iguana_rwmsgtx(coin,1,0,serialized,maxlen,&dest,&txid,vpnstr,0,0);
     if ( len > 0 )
     {
         len += iguana_rwnum(1,&serialized[len],sizeof(hashtype),&hashtype);
@@ -664,7 +667,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
                 }
                 else
                 {
-                    printf("SIG.%d.%d VERIFIED \n",vini,j);//%s (%s)\n",vini,*signedtx,jprint(txobj,1));
+                    //printf("SIG.%d.%d VERIFIED \n",vini,j);//%s (%s)\n",vini,*signedtx,jprint(txobj,1));
                     flag++;
                     numsigs++;
                 }
@@ -1029,7 +1032,7 @@ P2SH_SPENDAPI(iguana,spendmsig,activecoin,vintxid,vinvout,destaddress,destamount
 
 int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_msgtx *msgtx,char **signedtxp,bits256 *signedtxidp,struct vin_info *V,int32_t numinputs,char *rawtx,cJSON *vins,cJSON *privkeys)
 {
-    uint8_t *serialized,*serialized2,*serialized3; int32_t i,len,n,maxsize,complete = 0; char *checkstr,*privkeystr,*signedtx = 0; bits256 privkey,txid; cJSON *item; cJSON *txobj = 0;
+    uint8_t *serialized,*serialized2,*serialized3,*extraspace; int32_t i,len,n,maxsize,complete = 0; char *checkstr,*privkeystr,*signedtx = 0; bits256 privkey,txid; cJSON *item; cJSON *txobj = 0;
     maxsize = 1000000;
     if ( rawtx != 0 && rawtx[0] != 0 && (len= (int32_t)strlen(rawtx)>>1) < maxsize )
     {
@@ -1057,7 +1060,8 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
         if ( (numinputs= cJSON_GetArraySize(vins)) > 0 )
         {
             memset(msgtx,0,sizeof(*msgtx));
-            if ( iguana_rwmsgtx(coin,0,0,serialized,maxsize,msgtx,&txid,"") > 0 && numinputs == msgtx->tx_in )
+            extraspace = calloc(1,65536);
+            if ( iguana_rwmsgtx(coin,0,0,serialized,maxsize,msgtx,&txid,"",extraspace,65536) > 0 && numinputs == msgtx->tx_in )
             {
                 if ( (n= cJSON_GetArraySize(privkeys)) > 0 )
                 {
@@ -1081,6 +1085,7 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                     }
                 }
             }
+            free(extraspace);
         }
         free(serialized), free(serialized2), free(serialized3);
     } else return(-1);
