@@ -989,7 +989,7 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     
     // [BLOCKING: fee and deposit] Alice waits for fee and then waits for deposit to confirm and sends altpayment
     s = instantdex_statecreate(s,n,"Alice_waitfee",ALICE_waitfeefunc,0,"BTC_cleanup",0,0);
-    instantdex_addevent(s,*n,"Alice_waitfee","feefound","poll","ALICE_waitdeposit");
+    instantdex_addevent(s,*n,"Alice_waitfee","feefound",0,"ALICE_waitdeposit");
     instantdex_addevent(s,*n,"Alice_waitfee","BTCdeckC","BTCprivs","Alice_waitfee");
     instantdex_addevent(s,*n,"Alice_waitfee","BTCprivs","poll","Alice_waitfee");
     instantdex_addevent(s,*n,"Alice_waitfee","poll","BTCprivs","Alice_waitfee");
@@ -1116,6 +1116,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                                 break;
                         if ( i == state->numevents )
                             return(clonestr("{\"error\":\"instantdex_statemachine: unexpected virtevent\"}"));
+                        else printf("found event.%s\n",state->events[i].cmdstr);
                     }
                 }
                 if ( state->events[i].sendcmd[0] != 0 )
