@@ -108,7 +108,7 @@ void iguana_addinputs(struct iguana_info *coin,struct bitcoin_spend *spend,cJSON
     }
 }
 
-struct bitcoin_statetx *instantdex_signtx(struct supernet_info *myinfo,struct iguana_info *coin,uint32_t locktime,char *scriptstr,int64_t satoshis,int64_t txfee,int32_t minconf,int32_t myside)
+struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo,struct iguana_info *coin,uint32_t locktime,char *scriptstr,int64_t satoshis,int64_t txfee,int32_t minconf,int32_t myside)
 {
     struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct bitcoin_statetx *tx=0; uint8_t pubkey33[33]; char coinaddr[64],wifstr[64]; char *rawtx,*signedtx,*retstr; bits256 signedtxid; uint32_t rawtxtag; int32_t flag,completed; cJSON *valsobj,*vins,*retjson=0,*privkey,*argjson,*addresses;
     if ( (waddr= iguana_getaccountaddress(myinfo,coin,0,0,coin->changeaddr,"change")) == 0 )
@@ -163,7 +163,7 @@ struct bitcoin_statetx *instantdex_signtx(struct supernet_info *myinfo,struct ig
                 tx = calloc(1,sizeof(*tx) + strlen(signedtx) + 1);
                 strcpy(tx->txbytes,signedtx);
                 tx->txid = signedtxid;
-                printf("%s feetx.%s\n",myside != 0 ? "BOB" : "ALICE",signedtx);
+                printf("%s %s.%s\n",myside != 0 ? "BOB" : "ALICE",str,signedtx);
                 free(signedtx);
             }
         }
@@ -189,7 +189,7 @@ struct bitcoin_statetx *instantdex_feetx(struct supernet_info *myinfo,struct ins
     n = instantdex_outputinsurance(coinaddr,coin->chain->pubtype,paymentscript,swap->insurance,r,r * (strcmp("BTC",coin->symbol) == 0));
     init_hexbytes_noT(scriptstr,paymentscript,n);
     printf("instantdex_feetx %s %.8f (%s)\n",coin->symbol,dstr(swap->insurance),scriptstr);
-    if ( (ptr= instantdex_signtx(myinfo,coin,0,scriptstr,swap->insurance,coin->txfee,0,A->offer.myside)) != 0 )
+    if ( (ptr= instantdex_signtx("feetx",myinfo,coin,0,scriptstr,swap->insurance,coin->txfee,0,A->offer.myside)) != 0 )
         strcpy(ptr->destaddr,coinaddr);
     return(ptr);
 }
@@ -248,7 +248,7 @@ struct bitcoin_statetx *instantdex_bobtx(struct supernet_info *myinfo,struct bit
     n = instantdex_bobscript(script,0,&secretstart,locktime,pub1,secret,pub2);
     satoshis = amount + depositflag*swap->insurance*100;
     init_hexbytes_noT(scriptstr,script,n);
-    if ( (ptr= instantdex_signtx(myinfo,coin,locktime,scriptstr,satoshis,coin->txfee,swap->mine.minconfirms,swap->mine.offer.myside)) != 0 )
+    if ( (ptr= instantdex_signtx(depositflag != 0 ? "deposit" : "payment",myinfo,coin,locktime,scriptstr,satoshis,coin->txfee,swap->mine.minconfirms,swap->mine.offer.myside)) != 0 )
     {
         bitcoin_address(ptr->destaddr,coin->chain->p2shtype,script,n);
         printf("BOBTX.%d (%s) -> %s\n",depositflag,ptr->txbytes,ptr->destaddr);
@@ -343,7 +343,7 @@ struct bitcoin_statetx *instantdex_alicetx(struct supernet_info *myinfo,struct i
         }
         n = instantdex_alicescript(script,0,msigaddr,altcoin->chain->p2shtype,pubAm,pubBn);
         init_hexbytes_noT(scriptstr,script,n);
-        if ( (ptr= instantdex_signtx(myinfo,altcoin,0,scriptstr,amount,altcoin->txfee,swap->mine.minconfirms,swap->mine.offer.myside)) != 0 )
+        if ( (ptr= instantdex_signtx("altpayment",myinfo,altcoin,0,scriptstr,amount,altcoin->txfee,swap->mine.minconfirms,swap->mine.offer.myside)) != 0 )
         {
             strcpy(ptr->destaddr,msigaddr);
             printf("ALICETX (%s) -> %s\n",ptr->txbytes,ptr->destaddr);
@@ -639,7 +639,7 @@ cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info
             swap->otherverifiedcut = 1;
         if ( juint(argjson,"have") != 0 )
             swap->otherhavestate |= juint(argjson,"have");
-        //printf("got other.%x myhave.%x\n",swap->otherhavestate,swap->havestate);
+        printf("got other.%x myhave.%x\n",swap->otherhavestate,swap->havestate);
         jaddnum(newjson,"verified",swap->otherverifiedcut);
         if ( instantdex_pubkeyargs(myinfo,swap,newjson,2 + deckflag*INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myorderhash,0x02+instantdex_isbob(swap)) != 2 + deckflag*INSTANTDEX_DECKSIZE )
             printf("ERROR: couldnt generate pubkeys deckflag.%d\n",deckflag);
@@ -1085,7 +1085,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
         printf("state.%s btc.%p altcoin.%p (%s)\n",state->name,coinbtc,altcoin,swap->mine.offer.base);
         return(clonestr("{\"error\":\"instantdex_BTCswap missing coin info\"}"));
     }
-    printf("%llu/%llu cmd.(%s) state.(%s) newlen.%d isbob.%d wait.%s have.%x\n",(long long)swap->mine.orderid,(long long)swap->other.orderid,cmdstr,swap->state->name,(int32_t)strlen(jprint(newjson,0)),instantdex_isbob(swap),swap->waitfortx,juint(argjson,"have"));
+    printf("%llu/%llu cmd.(%s) state.(%s) newlen.%d isbob.%d wait.%s have.%x myhave.%x myfee.%p\n",(long long)swap->mine.orderid,(long long)swap->other.orderid,cmdstr,swap->state->name,(int32_t)strlen(jprint(newjson,0)),instantdex_isbob(swap),swap->waitfortx,juint(argjson,"have"),swap->havestate,swap->myfee);
     if ( jobj(argjson,"have") != 0 )
         swap->otherhavestate |= juint(argjson,"have");
     if ( swap->state->name[0] == 0 || (swap->expiration != 0 && time(NULL) > swap->expiration) )
@@ -1150,7 +1150,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                     //printf("i.%d send.%s, next state.%s.[%d] %p\n",i,state->events[i].sendcmd,states[state->events[i].nextstateind].name,state->events[i].nextstateind,&states[state->events[i].nextstateind]);
                     if ( state->events[i].nextstateind > 1 )
                     {
-                        if ( swap->myfee != 0 && jobj(newjson,"feetx") == 0 ) //(swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEOTHERFEE) == 0 && 
+                        if ( swap->myfee != 0 && jobj(newjson,"feetx") == 0 ) //(swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEOTHERFEE) == 0 &&
                         {
                             jaddbits256(newjson,"feetxid",swap->myfee->txid);
                             jaddstr(newjson,"feetx",swap->myfee->txbytes);
