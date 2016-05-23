@@ -996,6 +996,7 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     
     s = instantdex_statecreate(s,n,"ALICE_waitdeposit",ALICE_waitdepositfunc,0,"BTC_cleanup",0,0);
     instantdex_addevent(s,*n,"ALICE_waitdeposit","depfound","BTCalttx","ALICE_sentalt");
+    instantdex_addevent(s,*n,"ALICE_waitdeposit","feefound","poll","ALICE_waitdeposit");
     instantdex_addevent(s,*n,"ALICE_waitdeposit","poll","poll","ALICE_waitdeposit");
     
     // [BLOCKING: BTCalttx and altfound] now Bob's turn to make sure altpayment is confirmed and send real payment
@@ -1124,13 +1125,13 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                         }
                         else
                         {
-                            printf("found.%d event.%s -> %s next.%d\n",i,state->events[i].cmdstr,states[state->events[i].nextstateind].name,state->events[i].nextstateind);
+                            //printf("found.%d event.%s -> %s next.%d\n",i,state->events[i].cmdstr,states[state->events[i].nextstateind].name,state->events[i].nextstateind);
                         }
                     }
                 }
                 if ( state->events[i].sendcmd[0] != 0 )
                 {
-                    printf("i.%d send.%s, next state.%s.[%d] %p\n",i,state->events[i].sendcmd,states[state->events[i].nextstateind].name,state->events[i].nextstateind,&states[state->events[i].nextstateind]);
+                    //printf("i.%d send.%s, next state.%s.[%d] %p\n",i,state->events[i].sendcmd,states[state->events[i].nextstateind].name,state->events[i].nextstateind,&states[state->events[i].nextstateind]);
                     if ( state->events[i].nextstateind > 1 )
                     {
                         if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEOTHERFEE) == 0 && swap->myfee != 0 && jobj(newjson,"feetx") == 0 )
@@ -1171,7 +1172,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                             }
                         }
                         jaddnum(newjson,"have",swap->havestate);
-                        printf("i.%d (%s) %s %s.%d -> %s.%d send.(%s) %p\n",i,jprint(newjson,0),cmdstr,swap->state->name,state->ind,states[state->events[i].nextstateind].name,state->events[i].nextstateind,state->events[i].sendcmd,&states[state->events[i].nextstateind]);
+                        //printf("i.%d (%s) %s %s.%d -> %s.%d send.(%s) %p\n",i,jprint(newjson,0),cmdstr,swap->state->name,state->ind,states[state->events[i].nextstateind].name,state->events[i].nextstateind,state->events[i].sendcmd,&states[state->events[i].nextstateind]);
                         swap->state = &states[state->events[i].nextstateind];
                         return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,state->events[i].sendcmd,swap->othertrader,INSTANTDEX_HOPS,serdata,serdatalen,0));
                     } else return(clonestr("{\"error\":\"instantdex_statemachine: illegal state\"}"));
