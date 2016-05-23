@@ -433,21 +433,8 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
             memset(serialized,0,sizeof(struct iguana_msghdr));
             memcpy(&serialized[sizeof(struct iguana_msghdr)],(uint8_t *)msg,msg->sig.allocsize);
             if ( (coin= iguana_coinfind("BTCD")) != 0 )//&& (max= coin->peers.numranked) > 0 )
-            {
                 iguana_queue_send(addr,0,serialized,"InstantDEX",msg->sig.allocsize,0,0);
-                /*r = (rand() % max);
-                 for (i=0; i<max; i++)
-                 {
-                 j = (i + r) % max;
-                 if ( (addr= coin->peers.ranked[j]) != 0 && addr->supernet != 0 && addr->usock >= 0 )
-                 {
-                 printf("send.%d to (%s)\n",(int32_t)msg->sig.allocsize,addr->ipaddr);
-                 iguana_queue_send(coin,addr,0,serialized,"InstantDEX",msg->sig.allocsize,0,0);
-                 if ( --hops <= 0 )
-                 break;
-                 } //else printf("skip.%d addr.%p (%s) max.%d hops.%d\n",j,addr,addr!=0?addr->ipaddr:"",max,hops);
-                 }*/
-            } else printf("cant find coin.%p or no ranked.%d\n",coin,max);
+            else printf("cant find coin.%p or no ranked.%d\n",coin,max);
         }
         else
         {
@@ -1318,7 +1305,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
         }
         A.offer = *offer;
         A.orderid = orderhash.txid;
-        printf("got.(%s) for %llx account.%llu serdatalen.%d\n",cmdstr,(long long)A.orderid,(long long)A.offer.account,serdatalen);
+        printf("got.(%s) have.%x for %llx account.%llu serdatalen.%d\n",cmdstr,juint(argjson,"have"),(long long)A.orderid,(long long)A.offer.account,serdatalen);
         if ( (A.offer.minperc= jdouble(argjson,"p")) < INSTANTDEX_MINPERC )
             A.offer.minperc = INSTANTDEX_MINPERC;
         else if ( A.offer.minperc > 100 )
