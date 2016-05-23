@@ -214,6 +214,7 @@ struct instantdex_event *instantdex_addevent(struct instantdex_stateinfo *states
             if ( sendcmd != 0 )
                 strcpy(state->events[state->numevents].sendcmd,sendcmd);
             state->events[state->numevents].nextstateind = nextstate->ind;
+            printf("[%d] (%s).%d %s -> %s, send.%s %d\n",state->ind,state->name,state->numevents,cmdstr,states[nextstate->ind].name,sendcmd==0?"":sendcmd,nextstate->ind);
             state->numevents++;
         }
         return(state->events);

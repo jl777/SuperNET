@@ -1109,7 +1109,14 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                 {
                     printf("VIRTEVENT.(%s)\n",jstr(newjson,"virtevent"));
                     if ( (ptr= instantdex_event(jstr(newjson,"virtevent"),argjson,newjson,0,0)) != 0 )
+                    {
                         queue_enqueue("eventQ",&swap->eventsQ,&ptr->DL,0);
+                        for (i=0; i<state->numevents; i++)
+                            if ( strcmp(ptr->cmd,state->events[i].cmdstr) == 0 )
+                                break;
+                        if ( i == state->numevents )
+                            return(clonestr("{\"error\":\"instantdex_statemachine: unexpected virtevent\"}"));
+                    }
                 }
                 if ( state->events[i].sendcmd[0] != 0 )
                 {
