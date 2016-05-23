@@ -855,9 +855,12 @@ int32_t iguana_expandscript(struct iguana_info *coin,char *asmstr,int32_t maxlen
         {
             n = script[i++];
             n = (n << 8) | script[i++];
-            for (j=0; j<n; j++)
-                sprintf(&asmstr[len],"%02x",script[i++]), len += 2;
-            extraflag = 1;
+            if ( n+len < maxlen )
+            {
+                for (j=0; j<n; j++)
+                    sprintf(&asmstr[len],"%02x",script[i++]), len += 2;
+                extraflag = 1;
+            } else return(-1);
         }
         else if ( opcode == IGUANA_OP_PUSHDATA4 )
         {

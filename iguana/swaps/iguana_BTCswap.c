@@ -238,6 +238,11 @@ struct bitcoin_statetx *instantdex_bobtx(struct supernet_info *myinfo,struct bit
     int32_t n,secretstart; struct bitcoin_statetx *ptr = 0; uint8_t script[1024],secret[20]; uint32_t locktime; int64_t satoshis; char scriptstr[512];
     if ( coin == 0 )
         return(0);
+    if ( bits256_nonz(pub1) == 0 || bits256_nonz(pub2) == 0 )
+    {
+        printf("instantdex_bobtx null pub1.%llx or pub2.%llx\n",(long long)pub1.txid,(long long)pub2.txid);
+        return(0);
+    }
     locktime = (uint32_t)(reftime + INSTANTDEX_LOCKTIME * (1 + depositflag));
     calc_rmd160_sha256(secret,priv.bytes,sizeof(priv));
     n = instantdex_bobscript(script,0,&secretstart,locktime,pub1,secret,pub2);
@@ -331,6 +336,11 @@ struct bitcoin_statetx *instantdex_alicetx(struct supernet_info *myinfo,struct i
     int32_t n; uint8_t script[1024]; char scriptstr[2048]; struct bitcoin_statetx *ptr = 0;
     if ( altcoin != 0 )
     {
+        if ( bits256_nonz(pubAm) == 0 || bits256_nonz(pubBn) == 0 )
+        {
+            printf("instantdex_bobtx null pubAm.%llx or pubBn.%llx\n",(long long)pubAm.txid,(long long)pubBn.txid);
+            return(0);
+        }
         n = instantdex_alicescript(script,0,msigaddr,altcoin->chain->p2shtype,pubAm,pubBn);
         init_hexbytes_noT(scriptstr,script,n);
         if ( (ptr= instantdex_signtx(myinfo,altcoin,0,scriptstr,amount,altcoin->txfee,swap->mine.minconfirms,swap->mine.offer.myside)) != 0 )
@@ -589,16 +599,16 @@ cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info
     {
         if ( instantdex_isbob(swap) != 0 )
         {
-            instantdex_swapbits256update(&swap->otherpubs[0],argjson,"pubA0");
-            instantdex_swapbits256update(&swap->otherpubs[1],argjson,"pubA1");
+            instantdex_swapbits256update(&swap->otherpubs[0],argjson,"A0");
+            instantdex_swapbits256update(&swap->otherpubs[1],argjson,"A1");
             instantdex_swapbits256update(&swap->pubAm,argjson,"pubAm");
             instantdex_swapbits256update(&swap->privAm,argjson,"privAm");
             swap->havestate |= instantdex_swaptxupdate(&swap->altpayment,argjson,"altpayment","altpaymenttxid");
         }
         else
         {
-            instantdex_swapbits256update(&swap->otherpubs[0],argjson,"pubB0");
-            instantdex_swapbits256update(&swap->otherpubs[1],argjson,"pubB1");
+            instantdex_swapbits256update(&swap->otherpubs[0],argjson,"B0");
+            instantdex_swapbits256update(&swap->otherpubs[1],argjson,"B1");
             instantdex_swapbits256update(&swap->pubBn,argjson,"pubBn");
             instantdex_swapbits256update(&swap->privBn,argjson,"privBn");
             swap->havestate |= instantdex_swaptxupdate(&swap->deposit,argjson,"deposit","deposittxid");
@@ -1121,9 +1131,13 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                                 jaddstr(newjson,"altpayment",swap->altpayment->txbytes);
                                 printf("add altpayment.(%s) have.%x\n",swap->altpayment->txbytes,swap->havestate);
                             }
+                            jaddbits256(newjson,"A0",swap->mypubs[0]);
+                            jaddbits256(newjson,"A1",swap->mypubs[1]);
                         }
                         else
                         {
+                            jaddbits256(newjson,"B0",swap->mypubs[0]);
+                            jaddbits256(newjson,"B1",swap->mypubs[1]);
                             if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEDEPOSIT) == 0 && swap->deposit != 0 )
                             {
                                 jaddbits256(newjson,"deposittxid",swap->deposit->txid);

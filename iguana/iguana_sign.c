@@ -836,11 +836,9 @@ cJSON *iguana_scriptpubkeys(struct iguana_info *coin,uint8_t *script,int32_t scr
 void iguana_addscript(struct iguana_info *coin,cJSON *dest,uint8_t *script,int32_t scriptlen,char *fieldname)
 {
     char *scriptstr,scriptbuf[8192+256]; int32_t maxlen; cJSON *scriptobj;
-    if ( scriptlen < 0 )
+    if ( scriptlen < 0 || scriptlen > IGUANA_MAXSCRIPTSIZE || scriptlen > sizeof(scriptbuf) )
         return;
-    if ( scriptlen > sizeof(scriptbuf) )
-        maxlen = (scriptlen << 1) + 2048, scriptstr = malloc(maxlen);
-    else scriptstr = scriptbuf, maxlen = sizeof(scriptbuf);
+    scriptstr = scriptbuf, maxlen = sizeof(scriptbuf);
     init_hexbytes_noT(scriptstr,script,scriptlen);
     if ( strcmp(fieldname,"coinbase") == 0 )
         jaddstr(dest,"coinbase",scriptstr);
