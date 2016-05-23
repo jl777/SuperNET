@@ -898,7 +898,7 @@ int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coi
             if ( instantdex_statemachinefind(0,exchange,ap->orderid) == 0 && instantdex_historyfind(0,exchange,ap->orderid) == 0 )
             {
                 encodedhash = instantdex_encodehash(ap->offer.base,ap->offer.rel,ap->offer.price64*instantdex_bidaskdir(&ap->offer),(ap->orderid&INSTANTDEX_ORDERSTATE_ORDERIDMASK) | ap->state,ap->offer.account);
-                if ( n < sizeof(hashes)/sizeof(*hashes) && GETBIT(ap->peerhas,addr->addrind) == 0 )
+                if ( n < sizeof(hashes)/sizeof(*hashes) )//&& GETBIT(ap->peerhas,addr->addrind) == 0 )
                 {
                     hashes[n++] = encodedhash;
                     printf("(%d %llx) ",n,(long long)(ap->orderid&INSTANTDEX_ORDERSTATE_ORDERIDMASK) | ap->state);

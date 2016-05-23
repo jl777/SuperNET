@@ -295,7 +295,7 @@ cJSON *iguana_voutjson(struct iguana_info *coin,struct iguana_msgvout *vout,int3
 
 int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,bits256 *txidp,char *vpnstr,uint8_t *extraspace,int32_t extralen)
 {
-    int32_t i,n,len = 0; uint8_t *txstart = serialized; char txidstr[65]; cJSON *array=0;
+    int32_t i,n,len = 0,extraused=0; uint8_t *txstart = serialized; char txidstr[65]; cJSON *array=0;
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
     if ( json != 0 )
     {
@@ -314,15 +314,18 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
     //    printf("%02x",serialized[i]);
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_in);
     //printf(" tx_in.%08x\n",msg->tx_in);
-    if ( rwflag == 0 && msg->vins == 0 )
+    if ( rwflag == 0 )
     {
-        if ( sizeof(struct iguana_msgvin)*msg->tx_in > extralen )
+        if ( msg->vins == 0 )
         {
-            printf("len.%d + tx_in.%d > maxsize.%d\n",len,msg->tx_in,extralen);
-            return(-1);
-        }
-        extralen -= (sizeof(struct iguana_msgvin) * msg->tx_in);
-        msg->vins = (struct iguana_msgvin *)&extraspace[extralen];
+            if ( sizeof(struct iguana_msgvin)*msg->tx_in > extralen )
+            {
+                printf("len.%d + tx_in.%d > extralen.%d\n",len,msg->tx_in,extralen);
+                return(-1);
+            }
+            msg->vins = (struct iguana_msgvin *)extraspace;
+            extraused += (sizeof(struct iguana_msgvin) * msg->tx_in);
+        } else printf("unexpected non-null msg->vins.%p\n",msg->vins);
         memset(msg->vins,0,sizeof(struct iguana_msgvin) * msg->tx_in);
     }
     for (i=0; i<msg->tx_in; i++)
@@ -349,15 +352,20 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
     //    printf("%02x",serialized[i]);
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_out);
     //printf(" txout.%d\n",msg->tx_out);
-    if ( rwflag == 0 && msg->vouts == 0 )
+    if ( rwflag == 0 )
     {
-        if ( len + sizeof(struct iguana_msgvout)*msg->tx_out > extralen )
+        if ( msg->vouts == 0 )
         {
-            printf("len.%d + tx_in.%d > maxsize.%d\n",len,msg->tx_in,extralen);
-            return(-1);
-        }
-        extralen -= (sizeof(struct iguana_msgvout) * msg->tx_out);
-        msg->vouts = (struct iguana_msgvout *)&extraspace[extralen];
+            if ( (extraused & 0xf) != 0 )
+                extraused += 0xf - (extraused & 0xf);
+            if ( extraused + sizeof(struct iguana_msgvout)*msg->tx_out > extralen )
+            {
+                printf("len.%d + tx_in.%d > extralen.%d\n",len,msg->tx_in,extralen);
+                return(-1);
+            }
+            msg->vouts = (struct iguana_msgvout *)&extraspace[extraused];
+            extraused += (sizeof(struct iguana_msgvout) * msg->tx_out);
+        } else printf("unexpected non-null msg->vouts %p\n",msg->vouts);
         memset(msg->vouts,0,sizeof(struct iguana_msgvout) * msg->tx_out);
     }
     for (i=0; i<msg->tx_out; i++)
@@ -505,10 +513,8 @@ cJSON *bitcoin_hex2json(struct iguana_info *coin,bits256 *txidp,struct iguana_ms
     int32_t n,len; char vpnstr[64]; struct iguana_msgtx M; uint8_t *serialized,*extraspace; cJSON *txobj;
     txobj = cJSON_CreateObject();
     if ( msgtx == 0 )
-    {
         msgtx = &M;
-        memset(msgtx,0,sizeof(M));
-    }
+    memset(msgtx,0,sizeof(M));
     len = (int32_t)strlen(txbytes) >> 1;
     serialized = malloc(len);
     extraspace = calloc(1,65536);

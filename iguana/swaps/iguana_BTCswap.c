@@ -740,21 +740,21 @@ cJSON *ALICE_waitfeefunc(struct supernet_info *myinfo,struct exchange_info *exch
 
 cJSON *ALICE_waitdepositfunc(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp)
 {
-    char *retstr; struct iguana_info *coinbtc,*altcoin;
+    char *retstr,msigaddr[64]; struct iguana_info *coinbtc,*altcoin;
     coinbtc = iguana_coinfind("BTC");
-    altcoin = iguana_coinfind(swap->mine.offer.rel);
+    altcoin = iguana_coinfind(swap->mine.offer.base);
     strcpy(swap->waitfortx,"dep");
     *serdatap = 0, *serdatalenp = 0;
     if ( swap->deposit != 0 && (retstr= BTC_txconfirmed(myinfo,coinbtc,swap,newjson,swap->deposit->txid,&swap->deposit->numconfirms,"depfound",0.5)) != 0 )
     {
         free(retstr);
-        if ( instantdex_paymentverify(myinfo,iguana_coinfind("BTC"),swap,argjson,1) < 0 )
+        if ( instantdex_paymentverify(myinfo,coinbtc,swap,argjson,1) < 0 )
         {
             printf("deposit didnt verify\n");
             return(cJSON_Parse("{\"error\":\"deposit didnt verify\"}"));
         }
         printf("deposit verified\n");
-        if ( swap->altpayment == 0 && (swap->altpayment= instantdex_alicetx(myinfo,altcoin,swap->altpayment->destaddr,swap->pubAm,swap->pubBn,swap->altsatoshis,swap)) == 0 )
+        if ( swap->altpayment == 0 && (swap->altpayment= instantdex_alicetx(myinfo,altcoin,msigaddr,swap->pubAm,swap->pubBn,swap->altsatoshis,swap)) == 0 )
             printf("error creating altpayment\n");
         else jaddstr(newjson,"virtevent","depfound");
     }
