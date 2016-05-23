@@ -557,7 +557,7 @@ int32_t instantdex_swaptxupdate(struct bitcoin_statetx **ptrp,cJSON *argjson,cha
     {
         if ( *ptrp != 0 )
         {
-            printf("got replacement %s? (%s)\n",txname,str);
+            printf("got replacement %s?\n",txname);
             free(*ptrp);
         } else printf("instantdex_swaptxupdate got (%s) %s\n",txname,str);
         *ptrp = calloc(1,sizeof(**ptrp) + strlen(str) + 1);
@@ -581,7 +581,7 @@ void instantdex_swapbits256update(bits256 *txidp,cJSON *argjson,char *fieldname)
     txid = jbits256(argjson,fieldname);
     if ( bits256_nonz(txid) > 0 )
     {
-        if ( bits256_nonz(*txidp) > 0 )
+        if ( 0 && bits256_nonz(*txidp) > 0 )
             printf("swapbits256: %s sent again\n",bits256_str(str,*txidp));
         *txidp = txid;
     }
@@ -989,7 +989,7 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     
     // [BLOCKING: fee and deposit] Alice waits for fee and then waits for deposit to confirm and sends altpayment
     s = instantdex_statecreate(s,n,"Alice_waitfee",ALICE_waitfeefunc,0,"BTC_cleanup",0,0);
-    instantdex_addevent(s,*n,"Alice_waitfee","feefound",0,"ALICE_waitdeposit");
+    instantdex_addevent(s,*n,"Alice_waitfee","feefound","BTCprivs","ALICE_waitdeposit");
     instantdex_addevent(s,*n,"Alice_waitfee","BTCdeckC","BTCprivs","Alice_waitfee");
     instantdex_addevent(s,*n,"Alice_waitfee","BTCprivs","poll","Alice_waitfee");
     instantdex_addevent(s,*n,"Alice_waitfee","poll","BTCprivs","Alice_waitfee");
@@ -1062,7 +1062,7 @@ void instantdex_eventfree(struct bitcoin_eventitem *ptr)
 
 char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numstates,struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,char *cmdstr,cJSON *argjson,cJSON *newjson,uint8_t *serdata,int32_t serdatalen)
 {
-    uint32_t i; struct bitcoin_eventitem *ptr; struct iguana_info *altcoin=0,*coinbtc=0; struct instantdex_stateinfo *state=0;
+    uint32_t i; struct iguana_info *altcoin=0,*coinbtc=0; struct instantdex_stateinfo *state=0;
     if ( swap == 0 || (state= swap->state) == 0 || (coinbtc= iguana_coinfind("BTC")) == 0 || (altcoin= iguana_coinfind(swap->mine.offer.base)) == 0 )
     {
         printf("state.%s btc.%p altcoin.%p (%s)\n",state->name,coinbtc,altcoin,swap->mine.offer.base);
@@ -1105,22 +1105,29 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                         instantdex_eventfree(swap->pollevent);
                     swap->pollevent = instantdex_event("poll",argjson,newjson,serdata,serdatalen);
                 }
-                if ( jstr(newjson,"virtevent") != 0 )
+                else if ( jstr(newjson,"virtevent") != 0 )
                 {
                     printf("VIRTEVENT.(%s)\n",jstr(newjson,"virtevent"));
-                    if ( (ptr= instantdex_event(jstr(newjson,"virtevent"),argjson,newjson,0,0)) != 0 )
+                    //if ( (ptr= instantdex_event(jstr(newjson,"virtevent"),argjson,newjson,0,0)) != 0 )
                     {
-                        queue_enqueue("eventQ",&swap->eventsQ,&ptr->DL,0);
+                        //queue_enqueue("eventQ",&swap->eventsQ,&ptr->DL,0);
                         for (i=0; i<state->numevents; i++)
-                            if ( strcmp(ptr->cmd,state->events[i].cmdstr) == 0 )
+                            if ( strcmp(jstr(newjson,"virtevent"),state->events[i].cmdstr) == 0 )
                                 break;
                         if ( i == state->numevents )
+                        {
+                            printf("error cant find.(%s)\n",jstr(newjson,"virtevent"));
                             return(clonestr("{\"error\":\"instantdex_statemachine: unexpected virtevent\"}"));
-                        else printf("found event.%s\n",state->events[i].cmdstr);
+                        }
+                        else
+                        {
+                            printf("found.%d event.%s -> %s\n",i,state->events[i].cmdstr,states[state->events[i].nextstateind].name);
+                        }
                     }
                 }
                 if ( state->events[i].sendcmd[0] != 0 )
                 {
+                    printf("send.%s, next state.%s.[%d]\n",state->events[i].sendcmd,states[state->events[i].nextstateind].name,state->events[i].nextstateind);
                     if ( state->events[i].nextstateind > 1 )
                     {
                         if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEOTHERFEE) == 0 && swap->myfee != 0 && jobj(newjson,"feetx") == 0 )
