@@ -443,13 +443,12 @@ int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct bitcoin_swapin
         //printf("i.%d n.%d numpubs.%d %02x vs %02x\n",i,n,numpubs,pubkey[0],firstbyte);
         if ( pubkey[0] != firstbyte )
             continue;
-        if ( n < 2 && numpubs > 2 )
+        if ( n < 2 )
         {
-            sprintf(buf+1,"%d",n);
-            if ( jobj(newjson,buf) == 0 )
-                jaddbits256(newjson,buf,pubi);
+            if ( bits256_nonz(swap->mypubs[n]) == 0 )
+                memcpy(swap->mypubs[n].bytes,pubkey+1,sizeof(bits256));
         }
-        else if ( swap->numpubs < INSTANTDEX_DECKSIZE )
+        if ( swap->numpubs < INSTANTDEX_DECKSIZE )
         {
             calc_rmd160_sha256(secret160,swap->privkeys[n].bytes,sizeof(swap->privkeys[n]));
             memcpy(&txid,secret160,sizeof(txid));
@@ -1079,7 +1078,7 @@ void instantdex_eventfree(struct bitcoin_eventitem *ptr)
 
 char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numstates,struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,char *cmdstr,cJSON *argjson,cJSON *newjson,uint8_t *serdata,int32_t serdatalen)
 {
-    uint32_t i,j; struct iguana_info *altcoin=0,*coinbtc=0; struct instantdex_stateinfo *state=0;
+    uint32_t i; struct iguana_info *altcoin=0,*coinbtc=0; struct instantdex_stateinfo *state=0;
     if ( swap == 0 || (state= swap->state) == 0 || (coinbtc= iguana_coinfind("BTC")) == 0 || (altcoin= iguana_coinfind(swap->mine.offer.base)) == 0 )
     {
         printf("state.%s btc.%p altcoin.%p (%s)\n",state->name,coinbtc,altcoin,swap->mine.offer.base);
@@ -1164,9 +1163,6 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                             jaddbits256(newjson,"pubBn",swap->pubBn);
                         if ( bits256_nonz(swap->privBn) != 0 )
                             jaddbits256(newjson,"privn",swap->privBn);
-                        for (j=0; j<2; j++)
-                            if ( bits256_nonz(swap->mypubs[j]) == 0 )
-                                swap->mypubs[j] = rand256(0);
                         if ( instantdex_isbob(swap) == 0 )
                         {
                             if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEALTPAYMENT) == 0 && swap->altpayment != 0 && jobj(newjson,"altpayment") == 0 )

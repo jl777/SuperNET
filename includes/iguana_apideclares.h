@@ -190,6 +190,7 @@ HASH_AND_INT(SuperNET,priv2pub,privkey,addrtype);
 STRING_ARG(SuperNET,wif2priv,wif);
 STRING_ARG(SuperNET,priv2wif,priv);
 STRING_ARG(SuperNET,addr2rmd160,address);
+STRING_ARG(SuperNET,rmd160conv,rmd160);
 
 TWOHASHES_AND_STRING(SuperNET,cipher,privkey,destpubkey,message);
 TWOHASHES_AND_STRING(SuperNET,decipher,privkey,srcpubkey,cipherstr);

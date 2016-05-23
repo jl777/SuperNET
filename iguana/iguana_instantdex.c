@@ -1140,7 +1140,7 @@ int32_t instantdex_acceptextract(struct instantdex_accept *ap,cJSON *argjson)
 
 struct bitcoin_swapinfo *bitcoin_swapinit(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *myap,struct instantdex_accept *otherap,int32_t aminitiator,cJSON *argjson,char *statename)
 {
-    struct bitcoin_swapinfo *swap = 0; struct iguana_info *coinbtc,*altcoin;
+    struct bitcoin_swapinfo *swap = 0; struct iguana_info *coinbtc,*altcoin; int32_t i;
     swap = calloc(1,sizeof(struct bitcoin_swapinfo));
     swap->state = instantdex_statefind(BTC_states,BTC_numstates,statename);
     swap->mine = *myap, swap->other = *otherap;
@@ -1149,6 +1149,8 @@ struct bitcoin_swapinfo *bitcoin_swapinit(struct supernet_info *myinfo,struct ex
     strcpy(swap->status,"pending");
     vcalc_sha256(0,swap->myorderhash.bytes,(void *)&swap->mine.offer,sizeof(swap->mine.offer));
     vcalc_sha256(0,swap->otherorderhash.bytes,(void *)&swap->other.offer,sizeof(swap->other.offer));
+    for (i=0; i<4; i++)
+        swap->bothorderhash.ulongs[i] = (swap->myorderhash.ulongs[i] ^ swap->otherorderhash.ulongs[i]);
     swap->mypubkey = myinfo->myaddr.persistent;
     swap->othertrader = jbits256(argjson,"traderpub");
     swap->altsatoshis = myap->offer.basevolume64;

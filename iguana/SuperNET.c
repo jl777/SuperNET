@@ -966,6 +966,21 @@ STRING_ARG(SuperNET,addr2rmd160,address)
     return(jprint(retjson,1));
 }
 
+STRING_ARG(SuperNET,rmd160conv,rmd160)
+{
+    uint8_t rmdbuf[20]; char coinaddr[64],p2shaddr[64]; cJSON *retjson = cJSON_CreateObject();
+    if ( rmd160 != 0 && strlen(rmd160) == 40 )
+    {
+        decode_hex(rmdbuf,20,rmd160);
+        bitcoin_address(coinaddr,coin->chain->pubtype,rmdbuf,20);
+        bitcoin_address(p2shaddr,coin->chain->p2shtype,rmdbuf,20);
+        jaddstr(retjson,"result","success");
+        jaddstr(retjson,"address",coinaddr);
+        jaddstr(retjson,"p2sh",p2shaddr);
+    }
+    return(jprint(retjson,1));
+}
+
 HASH_AND_INT(SuperNET,priv2pub,privkey,addrtype)
 {
     cJSON *retjson; bits256 pub; uint8_t pubkey[33]; char coinaddr[64],pubkeystr[67];
