@@ -1168,7 +1168,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                             }
                         }
                         jaddnum(newjson,"have",swap->havestate);
-                        printf("%s %s.%d -> %s.%d\n",cmdstr,swap->state->name,state->ind,states[state->events[i].nextstateind].name,state->events[i].nextstateind);
+                        printf("(%s) %s %s.%d -> %s.%d\n",jprint(newjson,0),cmdstr,swap->state->name,state->ind,states[state->events[i].nextstateind].name,state->events[i].nextstateind);
                         swap->state = &states[state->events[i].nextstateind];
                         return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,state->events[i].sendcmd,swap->othertrader,INSTANTDEX_HOPS,serdata,serdatalen,0));
                     } else return(clonestr("{\"error\":\"instantdex_statemachine: illegal state\"}"));
