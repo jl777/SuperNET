@@ -489,27 +489,9 @@ char *instantdex_choosei(struct bitcoin_swapinfo *swap,cJSON *newjson,cJSON *arg
     }
 }
 
-void instantdex_getpubs(struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson)
-{
-    if ( instantdex_isbob(swap) != 0 )
-    {
-        if ( bits256_nonz(swap->mypubs[0]) == 0 )
-            swap->otherpubs[0] = jbits256(newjson,"B0");
-        if ( bits256_nonz(swap->mypubs[1]) == 0 )
-            swap->otherpubs[1] = jbits256(newjson,"B1");
-    }
-    else
-    {
-        if ( bits256_nonz(swap->mypubs[0]) == 0 )
-            swap->otherpubs[0] = jbits256(newjson,"A0");
-        if ( bits256_nonz(swap->mypubs[1]) == 0 )
-            swap->otherpubs[1] = jbits256(newjson,"A1");
-    }
-}
-
 void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapinfo *swap,uint8_t *serdata,int32_t serdatalen)
 {
-    int32_t i,wrongfirstbyte,errs,len = 0; bits256 hashpriv,otherpriv,pubi; uint8_t otherpubkey[33];
+    int32_t i,wrongfirstbyte,errs,len = 0; bits256 hashpriv,otherpriv,pubi; uint8_t otherpubkey[33],pubkey[33];
     if ( swap->cutverified == 0 && swap->choosei >= 0 && serdatalen == sizeof(swap->privkeys) )
     {
         printf("got instantdex_privkeyextract serdatalen.%d choosei.%d cutverified.%d\n",serdatalen,swap->choosei,swap->cutverified);
@@ -528,16 +510,16 @@ void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapi
                 {
                     if ( otherpubkey[0] == 3 )
                     {
-                        swap->privAm = otherpriv;
-                        memcpy(swap->pubAm.bytes,otherpubkey+1,32);
+                        swap->privBn = swap->privkeys[i];
+                        swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privBn);
                     } else printf("wrong first byte.%02x\n",otherpubkey[0]);
                 }
                 else
                 {
                     if ( otherpubkey[0] == 2 )
                     {
-                        swap->privBn = otherpriv;
-                        memcpy(swap->pubBn.bytes,otherpubkey+1,32);
+                        swap->privAm = swap->privkeys[i];
+                        swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privAm);
                     } else printf("wrong first byte.%02x\n",otherpubkey[0]);
                 }
                 continue;
@@ -642,7 +624,6 @@ cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info
         jaddnum(newjson,"verified",swap->otherverifiedcut);
         if ( instantdex_pubkeyargs(myinfo,swap,newjson,2 + deckflag*INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myorderhash,0x02+instantdex_isbob(swap)) != 2 + deckflag*INSTANTDEX_DECKSIZE )
             printf("ERROR: couldnt generate pubkeys deckflag.%d\n",deckflag);
-        instantdex_getpubs(swap,argjson,newjson);
     }
     return(newjson);
 }
