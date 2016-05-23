@@ -2,7 +2,7 @@
 
 > #TL;DR#
 > 
-> ```sudo apt-get update; sudo apt-get git install build-essential; git clone https://github.com/jl777/SuperNET; cd SuperNET; ./m_onetime m_unix;```
+> ```sudo apt-get update; sudo apt-get install git build-essential; git clone https://github.com/jl777/SuperNET; cd SuperNET; ./m_onetime m_unix;```
 > 
 > The above one line gets SuperNET installed, built and launched for unix. 
 > 
