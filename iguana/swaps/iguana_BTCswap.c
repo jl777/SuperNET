@@ -1150,12 +1150,20 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                     //printf("i.%d send.%s, next state.%s.[%d] %p\n",i,state->events[i].sendcmd,states[state->events[i].nextstateind].name,state->events[i].nextstateind,&states[state->events[i].nextstateind]);
                     if ( state->events[i].nextstateind > 1 )
                     {
-                        if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEOTHERFEE) == 0 && swap->myfee != 0 && jobj(newjson,"feetx") == 0 )
+                        if ( jobj(newjson,"feetx") == 0 ) //(swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEOTHERFEE) == 0 && swap->myfee != 0 &&
                         {
                             jaddbits256(newjson,"feetxid",swap->myfee->txid);
                             jaddstr(newjson,"feetx",swap->myfee->txbytes);
                             printf("add feetx to newjson have.%x\n",swap->havestate);
                         }
+                        if ( bits256_nonz(swap->pubAm) != 0 )
+                            jaddbits256(newjson,"pubAm",swap->pubAm);
+                        if ( bits256_nonz(swap->privAm) != 0 )
+                            jaddbits256(newjson,"privAm",swap->privAm);
+                        if ( bits256_nonz(swap->pubBn) != 0 )
+                            jaddbits256(newjson,"pubBn",swap->pubBn);
+                        if ( bits256_nonz(swap->privBn) != 0 )
+                            jaddbits256(newjson,"privn",swap->privBn);
                         for (j=0; j<2; j++)
                             if ( bits256_nonz(swap->mypubs[j]) == 0 )
                                 swap->mypubs[j] = rand256(0);
@@ -1169,17 +1177,9 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                             }
                             jaddbits256(newjson,"A0",swap->mypubs[0]);
                             jaddbits256(newjson,"A1",swap->mypubs[1]);
-                            if ( bits256_nonz(swap->pubAm) != 0 )
-                                jaddbits256(newjson,"pubAm",swap->pubAm);
-                            if ( bits256_nonz(swap->privAm) != 0 )
-                                jaddbits256(newjson,"privAm",swap->privAm);
                         }
                         else
                         {
-                            if ( bits256_nonz(swap->pubBn) != 0 )
-                                jaddbits256(newjson,"pubBn",swap->pubBn);
-                            if ( bits256_nonz(swap->privBn) != 0 )
-                                jaddbits256(newjson,"privn",swap->privBn);
                             jaddbits256(newjson,"B0",swap->mypubs[0]);
                             jaddbits256(newjson,"B1",swap->mypubs[1]);
                             if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEDEPOSIT) == 0 && swap->deposit != 0 && jobj(newjson,"deposit") == 0 )
