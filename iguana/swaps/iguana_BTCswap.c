@@ -1169,9 +1169,17 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                             }
                             jaddbits256(newjson,"A0",swap->mypubs[0]);
                             jaddbits256(newjson,"A1",swap->mypubs[1]);
+                            if ( bits256_nonz(swap->pubAm) != 0 )
+                                jaddbits256(newjson,"pubAm",swap->pubAm);
+                            if ( bits256_nonz(swap->privAm) != 0 )
+                                jaddbits256(newjson,"privAm",swap->privAm);
                         }
                         else
                         {
+                            if ( bits256_nonz(swap->pubBn) != 0 )
+                                jaddbits256(newjson,"pubBn",swap->pubBn);
+                            if ( bits256_nonz(swap->privBn) != 0 )
+                                jaddbits256(newjson,"privn",swap->privBn);
                             jaddbits256(newjson,"B0",swap->mypubs[0]);
                             jaddbits256(newjson,"B1",swap->mypubs[1]);
                             if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEDEPOSIT) == 0 && swap->deposit != 0 && jobj(newjson,"deposit") == 0 )
