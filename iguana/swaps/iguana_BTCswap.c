@@ -517,16 +517,32 @@ void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapi
         for (i=wrongfirstbyte=errs=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
         {
             len += iguana_rwbignum(0,&serdata[len],sizeof(bits256),otherpriv.bytes);
+            pubi = bitcoin_pubkey33(myinfo->ctx,otherpubkey,otherpriv);
             if ( i == swap->choosei )
             {
                 if ( bits256_nonz(otherpriv) != 0 )
                 {
-                    printf("got privkey in slot.%d my choosi??\n",i);
+                    printf("got privkey in slot.%d my choosei??\n",i);
                     errs++;
+                }
+                if ( instantdex_isbob(swap) != 0 )
+                {
+                    if ( otherpubkey[0] == 3 )
+                    {
+                        swap->privAm = otherpriv;
+                        memcpy(swap->pubAm.bytes,otherpubkey+1,32);
+                    } else printf("wrong first byte.%02x\n",otherpubkey[0]);
+                }
+                else
+                {
+                    if ( otherpubkey[0] == 2 )
+                    {
+                        swap->privBn = otherpriv;
+                        memcpy(swap->pubBn.bytes,otherpubkey+1,32);
+                    } else printf("wrong first byte.%02x\n",otherpubkey[0]);
                 }
                 continue;
             }
-            pubi = bitcoin_pubkey33(myinfo->ctx,otherpubkey,otherpriv);
             vcalc_sha256(0,hashpriv.bytes,otherpriv.bytes,sizeof(otherpriv));
             if ( otherpubkey[0] != (instantdex_isbob(swap) ^ 1) + 0x02 )
             {
