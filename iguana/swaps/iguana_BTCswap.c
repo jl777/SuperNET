@@ -1105,7 +1105,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                         instantdex_eventfree(swap->pollevent);
                     swap->pollevent = instantdex_event("poll",argjson,newjson,serdata,serdatalen);
                 }
-                else if ( jstr(newjson,"virtevent") != 0 )
+                if ( jstr(newjson,"virtevent") != 0 )
                 {
                     printf("VIRTEVENT.(%s)\n",jstr(newjson,"virtevent"));
                     //if ( (ptr= instantdex_event(jstr(newjson,"virtevent"),argjson,newjson,0,0)) != 0 )
@@ -1113,7 +1113,10 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                         //queue_enqueue("eventQ",&swap->eventsQ,&ptr->DL,0);
                         for (i=0; i<state->numevents; i++)
                             if ( strcmp(jstr(newjson,"virtevent"),state->events[i].cmdstr) == 0 )
+                            {
+                                cmdstr = state->events[i].cmdstr;
                                 break;
+                            }
                         if ( i == state->numevents )
                         {
                             printf("error cant find.(%s)\n",jstr(newjson,"virtevent"));
@@ -1121,13 +1124,13 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                         }
                         else
                         {
-                            printf("found.%d event.%s -> %s\n",i,state->events[i].cmdstr,states[state->events[i].nextstateind].name);
+                            printf("found.%d event.%s -> %s next.%d\n",i,state->events[i].cmdstr,states[state->events[i].nextstateind].name,state->events[i].nextstateind);
                         }
                     }
                 }
                 if ( state->events[i].sendcmd[0] != 0 )
                 {
-                    printf("send.%s, next state.%s.[%d]\n",state->events[i].sendcmd,states[state->events[i].nextstateind].name,state->events[i].nextstateind);
+                    printf("send.%s, next state.%s.[%d] %p\n",state->events[i].sendcmd,states[state->events[i].nextstateind].name,state->events[i].nextstateind,&states[state->events[i].nextstateind]);
                     if ( state->events[i].nextstateind > 1 )
                     {
                         if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEOTHERFEE) == 0 && swap->myfee != 0 && jobj(newjson,"feetx") == 0 )
@@ -1168,7 +1171,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                             }
                         }
                         jaddnum(newjson,"have",swap->havestate);
-                        printf("(%s) %s %s.%d -> %s.%d\n",jprint(newjson,0),cmdstr,swap->state->name,state->ind,states[state->events[i].nextstateind].name,state->events[i].nextstateind);
+                        printf("i.%d (%s) %s %s.%d -> %s.%d send.(%s) %p\n",i,jprint(newjson,0),cmdstr,swap->state->name,state->ind,states[state->events[i].nextstateind].name,state->events[i].nextstateind,state->events[i].sendcmd,&states[state->events[i].nextstateind]);
                         swap->state = &states[state->events[i].nextstateind];
                         return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,state->events[i].sendcmd,swap->othertrader,INSTANTDEX_HOPS,serdata,serdatalen,0));
                     } else return(clonestr("{\"error\":\"instantdex_statemachine: illegal state\"}"));
