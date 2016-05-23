@@ -218,14 +218,14 @@ int64_t iguana_pkhashbalance(struct supernet_info *myinfo,struct iguana_info *co
                     unspents[*nump << 1] = ((uint64_t)hdrsi << 32) | unspentind;
                     unspents[(*nump << 1) + 1] = U[unspentind].value;
                 }
-                printf("%.8f ",dstr(U[unspentind].value));
+                //printf("%.8f ",dstr(U[unspentind].value));
                 (*nump)++;
                 if ( array != 0 )
                     jaddi(array,iguana_unspentjson(myinfo,coin,hdrsi,unspentind,T,&U[unspentind],rmd160,coinaddr,pubkey33));
             }
             else
             {
-                printf("-%.8f ",dstr(U[unspentind].value));
+                //printf("-%.8f ",dstr(U[unspentind].value));
                 spent += U[unspentind].value;
             }
             if ( p->pkind != U[unspentind].pkind )
@@ -246,7 +246,7 @@ int64_t iguana_pkhashbalance(struct supernet_info *myinfo,struct iguana_info *co
             if ( uheight < lastheight )
             {
                 checkval += U[unspentind].value;
-                printf("u%u %.8f spentflag.%d prev.%u fromheight.%d\n",unspentind,dstr(U[unspentind].value),U2[unspentind].spentflag,U2[unspentind].prevunspentind,U2[unspentind].fromheight);
+                //printf("u%u %.8f spentflag.%d prev.%u fromheight.%d\n",unspentind,dstr(U[unspentind].value),U2[unspentind].spentflag,U2[unspentind].prevunspentind,U2[unspentind].fromheight);
             }
             unspentind = U2[unspentind].prevunspentind;
         }
@@ -291,7 +291,7 @@ int32_t iguana_pkhasharray(struct supernet_info *myinfo,struct iguana_info *coin
             }
             else
             {
-                printf("%s pkhash balance.[%d] from m.%d check %.8f vs %.8f spent %.8f [%.8f]\n",coinaddr,i,m,dstr(netbalance),dstr(deposits),dstr(spent),dstr(deposits)-dstr(spent));
+                //printf("%s pkhash balance.[%d] from m.%d check %.8f vs %.8f spent %.8f [%.8f]\n",coinaddr,i,m,dstr(netbalance),dstr(deposits),dstr(spent),dstr(deposits)-dstr(spent));
                 total += netbalance;
                 n++;
             }
