@@ -1377,8 +1377,8 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
 
 char *InstantDEX_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void *ptr,int32_t len,char *remoteaddr)
 {
-    struct instantdex_msghdr *msg = ptr; int32_t i,olen,slen,num,datalen,newlen,flag = 0;
-    uint8_t *serdata; struct supernet_info *myinfos[64]; struct instantdex_offer rawoffer;
+    struct instantdex_msghdr *msg = ptr; int32_t olen,slen,datalen,newlen,flag = 0;
+    uint8_t *serdata; struct instantdex_offer rawoffer; // struct supernet_info *myinfos[64];
     uint64_t signerbits; uint8_t tmp[sizeof(msg->sig)]; char *retstr = 0;
     bits256 orderhash,traderpub; cJSON *retjson,*item,*argjson = 0;
     datalen = len  - (int32_t)sizeof(msg->sig);
@@ -1425,26 +1425,27 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,struct category_info *cat,v
         {
             //printf("CALL instantdex_parse.(%s)\n",argjson!=0?jprint(argjson,0):"");
             retjson = cJSON_CreateArray();
-            if ( (num= SuperNET_MYINFOS(myinfos,sizeof(myinfos)/sizeof(*myinfos))) == 0 )
+            /*if ( (num= SuperNET_MYINFOS(myinfos,sizeof(myinfos)/sizeof(*myinfos))) == 0 )
             {
                 myinfos[0] = myinfo;
                 num = 1;
             }
-            for (i=0; i<num; i++)
+            for (i=0; i<num; i++)*/
             {
-                myinfo = myinfos[i];
+                //myinfo = myinfos[i];
                 //char str[65]; printf("i.%d of %d: %s\n",i,num,bits256_str(str,myinfo->myaddr.persistent));
                 traderpub = jbits256(argjson,"traderpub");
-                if ( bits256_cmp(traderpub,myinfo->myaddr.persistent) == 0 )
-                    continue;
-                if ( (retstr= instantdex_parse(myinfo,msg,argjson,remoteaddr,signerbits,&rawoffer,orderhash,serdata,newlen)) != 0 )
+                if ( bits256_cmp(traderpub,myinfo->myaddr.persistent) != 0 )
                 {
-                    item = cJSON_CreateObject();
-                    jaddstr(item,"result",retstr);
-                    if ( myinfo->handle[0] != 0 )
-                        jaddstr(item,"handle",myinfo->handle);
-                    jaddbits256(item,"traderpub",myinfo->myaddr.persistent);
-                    jaddi(retjson,item);
+                    if ( (retstr= instantdex_parse(myinfo,msg,argjson,remoteaddr,signerbits,&rawoffer,orderhash,serdata,newlen)) != 0 )
+                    {
+                        item = cJSON_CreateObject();
+                        jaddstr(item,"result",retstr);
+                        if ( myinfo->handle[0] != 0 )
+                            jaddstr(item,"handle",myinfo->handle);
+                        jaddbits256(item,"traderpub",myinfo->myaddr.persistent);
+                        jaddi(retjson,item);
+                    }
                 }
             }
             retstr = jprint(retjson,1);

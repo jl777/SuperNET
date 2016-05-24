@@ -1093,6 +1093,8 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
     printf("%llu/%llu cmd.(%s) state.(%s) newlen.%d isbob.%d wait.%s have.%x myhave.%x myfee.%p\n",(long long)swap->mine.orderid,(long long)swap->other.orderid,cmdstr,swap->state->name,(int32_t)strlen(jprint(newjson,0)),instantdex_isbob(swap),swap->waitfortx,juint(argjson,"have"),swap->havestate,swap->myfee);
     if ( jobj(argjson,"have") != 0 )
         swap->otherhavestate |= juint(argjson,"have");
+    if ( jobj(argjson,"mychoosei") != 0 )
+        swap->otherchoosei |= juint(argjson,"mychoosei");
     if ( swap->state->name[0] == 0 || (swap->expiration != 0 && time(NULL) > swap->expiration) )
     {
         swap->state = &states[state->timeoutind];
@@ -1157,14 +1159,12 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                             jaddstr(newjson,"feetx",swap->myfee->txbytes);
                             printf("add feetx to newjson have.%x\n",swap->havestate);
                         }
+                        if ( swap->choosei >= 0 )
+                            jaddnum(newjson,"mychoosei",swap->choosei);
                         if ( bits256_nonz(swap->pubAm) != 0 )
                             jaddbits256(newjson,"pubAm",swap->pubAm);
-                        //if ( bits256_nonz(swap->privAm) != 0 )
-                        //    jaddbits256(newjson,"privAm",swap->privAm);
                         if ( bits256_nonz(swap->pubBn) != 0 )
                             jaddbits256(newjson,"pubBn",swap->pubBn);
-                        //if ( bits256_nonz(swap->privBn) != 0 )
-                        //    jaddbits256(newjson,"privn",swap->privBn);
                         if ( instantdex_isbob(swap) == 0 )
                         {
                             if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEALTPAYMENT) == 0 && swap->altpayment != 0 && jobj(newjson,"altpayment") == 0 )
