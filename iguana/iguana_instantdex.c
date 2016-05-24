@@ -415,6 +415,10 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     nxt64bits = acct777_nxt64bits(myinfo->myaddr.persistent);
     reqstr = jprint(argjson,0);
     slen = (int32_t)(strlen(reqstr) + 1);
+
+    extraser = (void *)swap->deck;
+    extralen = (int32_t)sizeof(swap->deck);
+  
     datalen = (int32_t)slen + extralen + olen;
     msg = calloc(1,datalen + sizeof(*msg) + sizeof(swap->deck));
     for (i=0; i<sizeof(msg->cmd); i++)
@@ -423,8 +427,6 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     memcpy(msg->serialized,reqstr,slen);
     memcpy(&msg->serialized[slen],serialized,olen);
     //printf("extralen.%d datalen.%d slen.%d olen.%d\n",extralen,datalen,slen,olen);
-    extraser = (void *)swap->deck;
-    extralen = (int32_t)sizeof(swap->deck);
     if ( extralen > 0 )
     {
         //if ( swap->otherchoosei < 0 )
