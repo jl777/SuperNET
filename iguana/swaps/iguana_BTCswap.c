@@ -589,7 +589,12 @@ void instantdex_swapbits256update(bits256 *txidp,cJSON *argjson,char *fieldname)
 
 void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *swap,cJSON *newjson)
 {
-    uint8_t pubkey[33];
+    uint8_t pubkey[33]; int32_t deckflag;
+    if ( swap->otherchoosei < 0 )
+        deckflag = 1;
+    else deckflag = 0;
+    if ( instantdex_pubkeyargs(myinfo,swap,newjson,2 + deckflag*INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myorderhash,0x02+instantdex_isbob(swap)) != 2 + deckflag*INSTANTDEX_DECKSIZE )
+        printf("ERROR: couldnt generate pubkeys deckflag.%d\n",deckflag);
     jaddnum(newjson,"have",swap->havestate);
     if ( swap->choosei >= 0 )
         jaddnum(newjson,"mychoosei",swap->choosei);
@@ -707,8 +712,6 @@ cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info
         if ( juint(argjson,"have") != 0 )
             swap->otherhavestate |= juint(argjson,"have");
         printf("got other.%x myhave.%x choosei.(%d %d)\n",swap->otherhavestate,swap->havestate,swap->choosei,swap->otherchoosei);
-        if ( instantdex_pubkeyargs(myinfo,swap,newjson,2 + deckflag*INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myorderhash,0x02+instantdex_isbob(swap)) != 2 + deckflag*INSTANTDEX_DECKSIZE )
-            printf("ERROR: couldnt generate pubkeys deckflag.%d\n",deckflag);
     }
     return(newjson);
 }
@@ -1113,6 +1116,7 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     
     // to goto BTC_waitfee, both must have sent/recv deck and Chosen and verified cut and choose
     instantdex_addevent(s,*n,"BTC_gotdeck","havedeck","sentprivs","BTC_waitfee"); // other gotdeck
+    instantdex_addevent(s,*n,"BTC_gotdeck","gotdeck","poll","BTC_gotdeck");
     instantdex_addevent(s,*n,"BTC_gotdeck","poll","poll","BTC_gotdeck");
     
     // [BLOCKING: feefound] Bob waits for fee and sends deposit when it appears, alice skips past
