@@ -616,15 +616,11 @@ void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *sw
         jaddbits256(newjson,"A1",swap->mypubs[1]);
         if ( bits256_nonz(swap->pubAm) == 0 && swap->otherchoosei >= 0 && bits256_nonz(swap->privkeys[swap->otherchoosei]) != 0 )
             swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[swap->otherchoosei]);
-        if ( bits256_nonz(swap->pubAm) != 0 )
-           jaddbits256(newjson,"pubAm",swap->pubAm);
     }
     else
     {
         if ( bits256_nonz(swap->pubBn) == 0 && swap->otherchoosei >= 0 && bits256_nonz(swap->privkeys[swap->otherchoosei]) != 0 )
             swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[swap->otherchoosei]);
-        if ( bits256_nonz(swap->pubBn) != 0 )
-            jaddbits256(newjson,"pubBn",swap->pubBn);
         jaddbits256(newjson,"B0",swap->mypubs[0]);
         jaddbits256(newjson,"B1",swap->mypubs[1]);
         if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEDEPOSIT) == 0 && swap->deposit != 0 && jobj(newjson,"deposit") == 0 )
@@ -640,6 +636,10 @@ void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *sw
             printf("add payment.(%s) have.%x\n",swap->payment->txbytes,swap->havestate);
         }
     }
+    if ( bits256_nonz(swap->pubAm) != 0 )
+        jaddbits256(newjson,"pubAm",swap->pubAm);
+    if ( bits256_nonz(swap->pubBn) != 0 )
+        jaddbits256(newjson,"pubBn",swap->pubBn);
 }
 
 cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,int32_t deckflag)
@@ -1229,7 +1229,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
             }
             else
             {
-                if ( strcmp(cmdstr,"poll") != 0 )
+                if ( 0 && strcmp(cmdstr,"poll") != 0 )
                 {
                     if ( swap->pollevent != 0 )
                         instantdex_eventfree(swap->pollevent);
