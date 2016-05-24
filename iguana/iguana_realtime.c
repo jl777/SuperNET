@@ -334,7 +334,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     if ( coin->RTdatabad == 0 && dest != 0 && flag != 0 && coin->RTheight >= coin->longestchain-offset )
     {
         //printf("ramchainiterate.[%d] ave %.2f micros, total %.2f seconds starti.%d num.%d\n",num0,(totalmillis0*1000.)/num0,totalmillis0/1000.,coin->RTstarti,coin->RTheight%bp->n);
-        if ( (n= iguana_walkchain(coin,1)) == coin->RTheight-1-offset )
+        if ( (n= iguana_walkchain(coin,1)) == coin->RTheight-1+offset )
         {
             //printf("RTgenesis verified\n");
             if ( (coin->RTheight % coin->chain->bundlesize) > 1 )
@@ -345,7 +345,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         }
         else
         {
-            printf("walkchain error n.%d != %d\n",n,coin->RTheight-1-offset);
+            printf("walkchain error n.%d != %d\n",n,coin->RTheight-1+offset);
             coin->RTdatabad = 1;
         }
     }
