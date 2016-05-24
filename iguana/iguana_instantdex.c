@@ -616,7 +616,7 @@ cJSON *instantdex_acceptjson(struct instantdex_accept *ap)
     return(item);
 }
 
-void instantdex_statetxjson(cJSON *array,char *name,struct bitcoin_statetx *tx)
+void instantdex_statetxjson(struct iguana_info *coin,cJSON *array,char *name,struct bitcoin_statetx *tx)
 {
     cJSON *item;
     if ( tx != 0 )
@@ -627,7 +627,7 @@ void instantdex_statetxjson(cJSON *array,char *name,struct bitcoin_statetx *tx)
         jaddnum(item,"amount",dstr(tx->amount));
         jaddnum(item,"change",dstr(tx->change));
         jaddnum(item,"txfee",dstr(tx->inputsum) - dstr(tx->amount) - dstr(tx->change));
-        jaddnum(item,"confirms",dstr(tx->numconfirms));
+        jaddnum(item,"confirms",iguana_txidstatus(coin,tx->txid));
         jaddstr(item,"destaddr",tx->destaddr);
         jaddstr(item,"txbytes",tx->txbytes);
         jadd(array,name,item);
@@ -694,11 +694,11 @@ cJSON *instantdex_statemachinejson(struct bitcoin_swapinfo *swap)
         if ( swap->state != 0 )
             jaddstr(retjson,"state",swap->state->name);
         txs = cJSON_CreateObject();
-        instantdex_statetxjson(txs,"deposit",swap->deposit);
-        instantdex_statetxjson(txs,"payment",swap->payment);
-        instantdex_statetxjson(txs,"altpayment",swap->altpayment);
-        instantdex_statetxjson(txs,"myfee",swap->myfee);
-        instantdex_statetxjson(txs,"otherfee",swap->otherfee);
+        instantdex_statetxjson(swap->coinbtc,txs,"deposit",swap->deposit);
+        instantdex_statetxjson(swap->coinbtc,txs,"payment",swap->payment);
+        instantdex_statetxjson(swap->altcoin,txs,"altpayment",swap->altpayment);
+        instantdex_statetxjson(swap->coinbtc,txs,"myfee",swap->myfee);
+        instantdex_statetxjson(swap->coinbtc,txs,"otherfee",swap->otherfee);
         jadd(retjson,"txs",txs);
         jaddstr(retjson,"status",swap->status);
     }
@@ -1152,8 +1152,16 @@ int32_t instantdex_acceptextract(struct instantdex_accept *ap,cJSON *argjson)
 
 struct bitcoin_swapinfo *bitcoin_swapinit(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *myap,struct instantdex_accept *otherap,int32_t aminitiator,cJSON *argjson,char *statename)
 {
-    struct bitcoin_swapinfo *swap = 0; struct iguana_info *coinbtc,*altcoin; int32_t i,deckflag = 1;
+    struct bitcoin_swapinfo *swap = 0; int32_t i,deckflag = 1;
     swap = calloc(1,sizeof(struct bitcoin_swapinfo));
+    swap->coinbtc = iguana_coinfind("BTC");
+    swap->altcoin = iguana_coinfind(myap->offer.base);
+    if ( swap->coinbtc == 0 || swap->altcoin == 0 )
+    {
+        printf("missing BTC.%p or missing altcoin.%p\n",swap->coinbtc,swap->altcoin);
+        free(swap);
+        return(0);
+    }
     portable_mutex_init(&swap->mutex);
     swap->state = instantdex_statefind(BTC_states,BTC_numstates,statename);
     swap->mine = *myap, swap->other = *otherap;
@@ -1168,13 +1176,10 @@ struct bitcoin_swapinfo *bitcoin_swapinit(struct supernet_info *myinfo,struct ex
     swap->othertrader = jbits256(argjson,"traderpub");
     swap->altsatoshis = myap->offer.basevolume64;
     swap->BTCsatoshis = instantdex_BTCsatoshis(myap->offer.price64,myap->offer.basevolume64);
-    if ( (coinbtc= iguana_coinfind("BTC")) == 0 || (altcoin= iguana_coinfind(swap->mine.offer.base)) == 0 )
-    {
-        printf("cant find BTC or %s\n",swap->mine.offer.base);
-        return(0);
-    }
-    swap->insurance = (swap->BTCsatoshis / INSTANTDEX_INSURANCEDIV + coinbtc->chain->txfee);
-    swap->altinsurance = (swap->altsatoshis / INSTANTDEX_INSURANCEDIV + altcoin->chain->txfee);
+    swap->btcconfirms = 1 + sqrt(dstr(swap->BTCsatoshis) * .1);
+    swap->altconfirms = swap->btcconfirms * 3;
+    swap->insurance = (swap->BTCsatoshis / INSTANTDEX_INSURANCEDIV + swap->coinbtc->chain->txfee);
+    swap->altinsurance = (swap->altsatoshis / INSTANTDEX_INSURANCEDIV + swap->altcoin->chain->txfee);
     if ( myap->offer.myside != instantdex_isbob(swap) || otherap->offer.myside == instantdex_isbob(swap) )
     {
         printf("isbob error.(%d %d) %d\n",myap->offer.myside,otherap->offer.myside,instantdex_isbob(swap));

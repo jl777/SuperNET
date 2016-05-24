@@ -994,6 +994,8 @@ bits256 iguana_calcblockhash(int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *se
 uint32_t iguana_targetbits(struct iguana_info *coin,struct iguana_block *hwmchain,struct iguana_block *prev,struct iguana_block *prev2,int32_t PoSflag);
 struct bitcoin_eventitem *instantdex_event(char *cmdstr,cJSON *argjson,cJSON *newjson,uint8_t *serdata,int32_t serdatalen);
 void instantdex_eventfree(struct bitcoin_eventitem *ptr);
+void iguana_txidmonitor(struct iguana_info *coin,bits256 txid);
+double iguana_txidstatus(struct iguana_info *coin,bits256 txid);
 
 extern int32_t HDRnet,netBLOCKS;
 

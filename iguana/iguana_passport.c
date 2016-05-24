@@ -30,6 +30,7 @@ While it is not expected that there will be more than 256 such blockchains, by u
  'e' -> ethereum (ETH)
  'n' -> NXT
  'o' -> open assets
+ 's' -> BURST
  'w' -> WAVES
  'x' -> counterparty (XCP)
  '?' -> please contact jl777 to have a new code for asset supporting blockchain added.

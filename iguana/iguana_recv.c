@@ -1097,7 +1097,9 @@ struct iguana_bundlereq *iguana_recvtxids(struct iguana_info *coin,struct iguana
 {
     char str[65];
     if ( n > 0 )
+    {
         printf("got txids[%d] %s\n",n,bits256_str(str,txids[0]));
+    }
     return(req);
 }
 

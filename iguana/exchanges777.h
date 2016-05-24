@@ -143,7 +143,6 @@ struct bitcoin_statetx
 {
     bits256 txid;
     uint64_t amount,change,inputsum;
-    double numconfirms;
     char destaddr[64];
     char txbytes[];
 };
@@ -170,8 +169,8 @@ struct bitcoin_swapinfo
     int32_t choosei,otherchoosei,cutverified,otherverifiedcut,numpubs,havestate,otherhavestate;
     struct bitcoin_statetx *deposit,*payment,*altpayment,*myfee,*otherfee;
     char expectedcmdstr[16],status[16],waitfortx[16];
-    struct instantdex_stateinfo *state; uint32_t expiration,dead,reftime;
-    struct instantdex_accept mine,other;
+    struct instantdex_stateinfo *state; uint32_t expiration,dead,reftime,btcconfirms,altconfirms;
+    struct instantdex_accept mine,other; struct iguana_info *coinbtc,*altcoin;
 };
 
 struct instantdex_event { char cmdstr[24],sendcmd[16]; int16_t nextstateind; };
