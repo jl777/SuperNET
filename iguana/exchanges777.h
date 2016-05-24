@@ -161,7 +161,7 @@ struct bitcoin_swapinfo
     uint64_t altsatoshis,BTCsatoshis,insurance,altinsurance;
     int32_t choosei,otherchoosei,cutverified,otherverifiedcut,numpubs,havestate,otherhavestate;
     struct bitcoin_statetx *deposit,*payment,*altpayment,*myfee,*otherfee;
-    char expectedcmdstr[16],status[16],waitfortx[16];
+    char status[16],waitfortx[16];
     struct instantdex_stateinfo *state; struct instantdex_accept mine,other;
     struct iguana_info *coinbtc,*altcoin; uint8_t secretAm[20],secretBn[20];
     uint32_t expiration,dead,reftime,btcconfirms,altconfirms,locktime;

@@ -173,7 +173,7 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     }
     else
     {
-        printf("RTspendvectors calculated to %d [%d]\n",coin->RTheight,bp->hdrsi);
+        //printf("RTspendvectors calculated to %d [%d]\n",coin->RTheight,bp->hdrsi);
         bp->converted = 1;
         for (hdrsi=num=0; hdrsi<bp->hdrsi; hdrsi++)
         {
@@ -186,14 +186,14 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
 #endif
             num += iguana_convert(coin,IGUANA_NUMHELPERS,coin->bundles[hdrsi],1,orignumemit);
         }
-        printf("RTspendvectors converted.%d to %d\n",num,coin->RTheight);
+        //printf("RTspendvectors converted.%d to %d\n",num,coin->RTheight);
         bp->converted = (uint32_t)time(NULL);
         if ( iguana_balancegen(coin,1,bp,coin->RTstarti,coin->RTheight > 0 ? coin->RTheight-1 : bp->n-1,orignumemit) < 0 )
         {
             printf("balancegen error\n");
             coin->RTdatabad = 1;
         }
-        else if ( coin->RTgenesis == 0 )//&& coin->firstRTgenesis == 0 )
+        else if ( coin->RTgenesis == 0 && coin->firstRTgenesis == 0 )
             coin->firstRTgenesis++, printf(">>>>>> IGUANA %s READY FOR REALTIME RPC <<<<<<\n",coin->symbol);
         //printf("iguana_balancegen [%d] (%d to %d)\n",bp->hdrsi,coin->RTstarti,(coin->RTheight-1)%bp->n);
         coin->RTstarti = (coin->RTheight % bp->n);

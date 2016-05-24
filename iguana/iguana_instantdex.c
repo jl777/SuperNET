@@ -1176,7 +1176,7 @@ struct bitcoin_swapinfo *bitcoin_swapinit(struct supernet_info *myinfo,struct ex
     swap->othertrader = jbits256(argjson,"traderpub");
     swap->altsatoshis = myap->offer.basevolume64;
     swap->BTCsatoshis = instantdex_BTCsatoshis(myap->offer.price64,myap->offer.basevolume64);
-    swap->btcconfirms = 1 + sqrt(dstr(swap->BTCsatoshis) * .1);
+    swap->btcconfirms = 0 * (1 + sqrt(dstr(swap->BTCsatoshis) * .1));
     swap->altconfirms = swap->btcconfirms * 3;
     swap->insurance = (swap->BTCsatoshis / INSTANTDEX_INSURANCEDIV);
     swap->altinsurance = (swap->altsatoshis / INSTANTDEX_INSURANCEDIV);
@@ -1353,7 +1353,10 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
                 printf("OTHER SIDE sent packet\n");
             }
             if ( swap->cutverified == 0 && swap->choosei >= 0 && serdatalen == sizeof(swap->privkeys) )
+            {
+                printf("cutverfied.%d choosei.%d privkeyextract\n",swap->cutverified,swap->choosei);
                 instantdex_privkeyextract(myinfo,swap,serdata,serdatalen);
+            }
             printf("found existing state machine %llx choosei.%d other.%d\n",(long long)A.orderid,swap->choosei,swap->otherchoosei);
             newjson = instantdex_parseargjson(myinfo,exchange,swap,argjson,0);
             if ( serdatalen == sizeof(swap->otherdeck) && swap->choosei < 0 && (retstr= instantdex_choosei(swap,newjson,argjson,serdata,serdatalen)) != 0 )

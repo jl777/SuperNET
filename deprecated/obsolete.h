@@ -17022,5 +17022,6 @@ len = 0;
              instantdex_addevent(s,*n,"BOB_idle","BTCoffer","poll","BTC_waitdeck"); // send deck + Chose
              instantdex_addevent(s,*n,"ALICE_idle","BTCoffer","poll","BTC_waitdeck");*/
 
+
 #endif
 #endif
