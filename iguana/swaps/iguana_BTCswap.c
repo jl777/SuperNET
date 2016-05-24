@@ -1326,7 +1326,10 @@ char *instantdex_BTCswap(struct supernet_info *myinfo,struct exchange_info *exch
     if ( strcmp(cmdstr,"offer") == 0 ) // sender is Bob, receiver is network (Alice)
     {
         if ( A->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) )
+        {
+            printf("too close to expiration: %u >= %lu\n",A->offer.expiration,(time(NULL) + INSTANTDEX_DURATION));
             return(clonestr("{\"error\":\"instantdex_BTCswap offer too close to expiration\"}"));
+        }
         if ( (ap= instantdex_acceptable(exchange,A,myinfo->myaddr.nxt64bits)) != 0 )
         {
             isbob = 0;

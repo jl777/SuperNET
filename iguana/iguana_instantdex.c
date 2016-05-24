@@ -1283,7 +1283,10 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
     if ( strcmp(myap->offer.rel,"BTC") != 0 )
         return(clonestr("{\"error\":\"instantdex_BTCswap offer non BTC rel\"}"));
     if ( myap->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) || otherap->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) )
+    {
+        printf("too close to expiration: %u >= %lu\n",otherap->offer.expiration,(time(NULL) + INSTANTDEX_DURATION));
         return(clonestr("{\"error\":\"instantdex_BTCswap offer too close to expiration\"}"));
+    }
     isbob = myap->offer.myside;
     swap = bitcoin_swapinit(myinfo,exchange,myap,otherap,0,argjson,"BTC_waitdeck");
     if ( swap == 0 )
@@ -1346,7 +1349,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
         {
             if ( signerbits == swap->othertrader.txid )
             {
-                swap->expiration += INSTANTDEX_DURATION;
+                swap->expiration += INSTANTDEX_OFFERDURATION;
                 printf("OTHER SIDE sent packet\n");
             }
             if ( swap->cutverified == 0 && swap->choosei >= 0 && serdatalen == sizeof(swap->privkeys) )
