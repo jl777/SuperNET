@@ -1334,7 +1334,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
                 if ( newjson != 0 )
                     free_json(newjson);
                 return(retstr);
-            }
+            } else printf("serdatalen.%d != size.%ld choosei.%d\n",serdatalen,sizeof(swap->otherdeck),swap->choosei);
             if ( (ptr= instantdex_event(cmdstr,argjson,newjson,serdata,serdatalen)) != 0 )
                 queue_enqueue("eventQ",&swap->eventsQ,&ptr->DL,0);
             free_json(newjson);
