@@ -819,8 +819,12 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
         return((uint32_t)time(NULL));
     if ( strncmp("0.0.0",ipaddr,5) != 0 && strcmp("0.0.255.255",ipaddr) != 0 && strcmp("1.0.0.0",ipaddr) != 0 )
     {
-        if ( ipaddr[strlen(ipaddr)-1] == ':' )
-            ipaddr[strlen(ipaddr)-1] = 0;
+        for (i=0; ipaddr[i]!=0; i++)
+            if ( ipaddr[i] == ':' )
+            {
+                ipaddr[i] = 0;
+                break;
+            }
         if ( (ipbits= calc_ipbits(ipaddr)) != 0 )
         {
             expand_ipbits(checkaddr,ipbits);
@@ -840,7 +844,8 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
                         } else printf("ignore.(%s) lastconnect.%u lastkilled.%u numconnects.%d\n",ipaddr,iA->lastconnect,iA->lastkilled,iA->numconnects);
                     } //else printf("skip.(%s) ind.%d status.%d\n",ipaddr,iA->hh.itemind,iA->status);
                 } else printf("cant find (%s) which should have been created\n",ipaddr);
-            } else printf("reject ipaddr.(%s) vs checkaddr.(%s)\n",ipaddr,checkaddr);
+            }
+            else printf("reject ipaddr.(%s) vs checkaddr.(%s)\n",ipaddr,checkaddr);
         }
     }
     free_queueitem(ipaddr);

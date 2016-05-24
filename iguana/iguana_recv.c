@@ -1095,10 +1095,11 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
 
 struct iguana_bundlereq *iguana_recvtxids(struct iguana_info *coin,struct iguana_bundlereq *req,bits256 *txids,int32_t n)
 {
-    char str[65];
+    int32_t i;
     if ( n > 0 )
     {
-        printf("got txids[%d] %s\n",n,bits256_str(str,txids[0]));
+        for (i=0; i<n; i++)
+            iguana_txidreport(coin,txids[i],req->addr);
     }
     return(req);
 }

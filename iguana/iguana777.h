@@ -485,6 +485,8 @@ struct iguana_wallet { UT_hash_handle hh; struct iguana_waccount *wacct; };
 struct scriptinfo { UT_hash_handle hh; uint32_t fpos; uint16_t scriptlen; uint8_t script[]; };
 struct hhbits256 { UT_hash_handle hh; bits256 txid; int32_t height; uint16_t firstvout; };
 
+struct iguana_monitorinfo { bits256 txid; int32_t numreported; uint8_t peerbits[IGUANA_MAXPEERS >> 3]; };
+
 struct iguana_info
 {
     char name[64],symbol[8],statusstr[512],scriptsfname[2][512];
@@ -521,6 +523,7 @@ struct iguana_info
     struct iguana_blocks blocks; bits256 APIblockhash,APItxid; char *APIblockstr;
     struct iguana_hhutxo *utxotable; struct iguana_hhaccount *accountstable; char lastdispstr[2048];
     double txidfind_totalmillis,txidfind_num,spendtxid_totalmillis,spendtxid_num;
+    struct iguana_monitorinfo monitoring[256];
 };
 
 struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };
@@ -994,7 +997,8 @@ bits256 iguana_calcblockhash(int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *se
 uint32_t iguana_targetbits(struct iguana_info *coin,struct iguana_block *hwmchain,struct iguana_block *prev,struct iguana_block *prev2,int32_t PoSflag);
 struct bitcoin_eventitem *instantdex_event(char *cmdstr,cJSON *argjson,cJSON *newjson,uint8_t *serdata,int32_t serdatalen);
 void instantdex_eventfree(struct bitcoin_eventitem *ptr);
-void iguana_txidmonitor(struct iguana_info *coin,bits256 txid);
+struct iguana_monitorinfo *iguana_txidmonitor(struct iguana_info *coin,bits256 txid);
+struct iguana_monitorinfo *iguana_txidreport(struct iguana_info *coin,bits256 txid,struct iguana_peer *addr);
 double iguana_txidstatus(struct iguana_info *coin,bits256 txid);
 
 extern int32_t HDRnet,netBLOCKS;

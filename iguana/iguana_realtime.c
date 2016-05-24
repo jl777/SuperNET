@@ -193,7 +193,7 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
             printf("balancegen error\n");
             coin->RTdatabad = 1;
         }
-        else if ( coin->RTgenesis == 0 && coin->firstRTgenesis == 0 )
+        else if ( coin->RTgenesis == 0 )//&& coin->firstRTgenesis == 0 )
             coin->firstRTgenesis++, printf(">>>>>> IGUANA %s READY FOR REALTIME RPC <<<<<<\n",coin->symbol);
         //printf("iguana_balancegen [%d] (%d to %d)\n",bp->hdrsi,coin->RTstarti,(coin->RTheight-1)%bp->n);
         coin->RTstarti = (coin->RTheight % bp->n);

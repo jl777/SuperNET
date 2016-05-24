@@ -605,12 +605,66 @@ int64_t iguana_fastfindcreate(struct iguana_info *coin)
     return(total);
 }
 
-void iguana_txidmonitor(struct iguana_info *coin,bits256 txid)
+struct iguana_monitorinfo *iguana_monitorfind(struct iguana_info *coin,bits256 txid)
 {
-    
+    int32_t i;
+    for (i=0; i<sizeof(coin->monitoring)/sizeof(*coin->monitoring); i++)
+        if ( bits256_cmp(coin->monitoring[i].txid,txid) == 0 )
+            return(&coin->monitoring[i]);
+    return(0);
+}
+
+struct iguana_monitorinfo *iguana_txidreport(struct iguana_info *coin,bits256 txid,struct iguana_peer *addr)
+{
+    struct iguana_monitorinfo *ptr; char str[65];
+    if ( (ptr= iguana_monitorfind(coin,txid)) != 0 )
+    {
+        if ( GETBIT(ptr->peerbits,addr->addrind) == 0 )
+        {
+            char str[65]; printf("%s reports %s\n",addr->ipaddr,bits256_str(str,txid));
+            SETBIT(ptr->peerbits,addr->addrind);
+            ptr->numreported++;
+        }
+    } else printf("txid.%s not being monitored\n",bits256_str(str,txid));
+    return(0);
+}
+
+struct iguana_monitorinfo *iguana_txidmonitor(struct iguana_info *coin,bits256 txid)
+{
+    int32_t i; struct iguana_monitorinfo *ptr;
+    if ( (ptr= iguana_monitorfind(coin,txid)) == 0 )
+    {
+        for (i=0; i<sizeof(coin->monitoring)/sizeof(*coin->monitoring); i++)
+            if ( bits256_nonz(coin->monitoring[i].txid) == 0 )
+            {
+                memset(&coin->monitoring[i],0,sizeof(coin->monitoring[i]));
+                coin->monitoring[i].txid = txid;
+                return(ptr);
+            }
+    }
+    printf("no monitoring slots left\n");
+    return(0);
 }
 
 double iguana_txidstatus(struct iguana_info *coin,bits256 txid)
 {
+    int32_t height,firstvout,numranked; struct iguana_monitorinfo *ptr; char str[65];
+    if ( coin != 0 && (numranked= coin->peers.numranked) > 0 )
+    {
+        if ( (firstvout= iguana_unspentindfind(coin,0,0,0,0,&height,txid,0,coin->bundlescount-1)) != 0 )
+        {
+            if ( (ptr= iguana_monitorfind(coin,txid)) != 0 )
+                memset(ptr,0,sizeof(*ptr));
+            return((double)coin->longestchain - height);
+        }
+        if ( (ptr= iguana_monitorfind(coin,txid)) != 0 )
+            return((double)ptr->numreported / numranked);
+        else
+        {
+            printf("iguana_txidstatus: unexpected missing %s %s\n",coin->symbol,bits256_str(str,txid));
+            iguana_txidmonitor(coin,txid);
+        }
+    }
     return(0.);
 }
+
