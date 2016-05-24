@@ -24,20 +24,13 @@
 
 #define INSTANTDEX_DECKSIZE 777
 #define INSTANTDEX_HOPS 2
-#define INSTANTDEX_DURATION 30
+#define INSTANTDEX_DURATION 60
 
 #define INSTANTDEX_ORDERSTATE_IDLE 0
 #define INSTANTDEX_ORDERSTATE_HAVEOTHERFEE 1
 #define INSTANTDEX_ORDERSTATE_HAVEDEPOSIT 2
 #define INSTANTDEX_ORDERSTATE_HAVEPAYMENT 4
 #define INSTANTDEX_ORDERSTATE_HAVEALTPAYMENT 8
-/*#define INSTANTDEX_ORDERSTATE_PENDING 1
-#define INSTANTDEX_ORDERSTATE_BOBSENTDEPOSIT 2
-#define INSTANTDEX_ORDERSTATE_ALICESENTALT 3
-#define INSTANTDEX_ORDERSTATE_BOBSENTBTC 4
-#define INSTANTDEX_ORDERSTATE_ALICECLAIMED 5
-#define INSTANTDEX_ORDERSTATE_BOBCLAIMED 6
-#define INSTANTDEX_ORDERSTATE_CANCELLED 7*/
 #define INSTANTDEX_ORDERSTATE_ORDERIDMASK (~(uint64_t)15)
 
 #define INSTANTDEX_INSURANCEDIV ((7 * INSTANTDEX_DECKSIZE) >> 3)
@@ -48,7 +41,7 @@
 #define INSTANTDEX_BTCD "RThtXup6Zo7LZAi8kRWgjAyi1s4u6U9Cpf"
 #define INSTANTDEX_MINPERC 50
 
-#define INSTANTDEX_OFFERDURATION 300
+#define INSTANTDEX_OFFERDURATION 30
 #define INSTANTDEX_LOCKTIME 3600
 
 #define EXCHANGES777_MINPOLLGAP 1
@@ -162,15 +155,16 @@ struct bitcoin_swapinfo
 {
     struct bitcoin_swapinfo *next,*prev; portable_mutex_t mutex;
     queue_t eventsQ; struct bitcoin_eventitem *pollevent;
-    bits256 privkeys[INSTANTDEX_DECKSIZE+2],mypubs[2],otherpubs[2],privAm,pubAm,privBn,pubBn;
+    bits256 privkeys[INSTANTDEX_DECKSIZE+2],mypubs[2],otherpubs[2],pubA0,pubB0,pubB1,privAm,pubAm,privBn,pubBn;
     bits256 myorderhash,otherorderhash,mypubkey,othertrader,bothorderhash;
     uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
     uint64_t altsatoshis,BTCsatoshis,insurance,altinsurance;
     int32_t choosei,otherchoosei,cutverified,otherverifiedcut,numpubs,havestate,otherhavestate;
     struct bitcoin_statetx *deposit,*payment,*altpayment,*myfee,*otherfee;
     char expectedcmdstr[16],status[16],waitfortx[16];
-    struct instantdex_stateinfo *state; uint32_t expiration,dead,reftime,btcconfirms,altconfirms;
-    struct instantdex_accept mine,other; struct iguana_info *coinbtc,*altcoin;
+    struct instantdex_stateinfo *state; struct instantdex_accept mine,other;
+    struct iguana_info *coinbtc,*altcoin; uint8_t secretAm[20],secretBn[20];
+    uint32_t expiration,dead,reftime,btcconfirms,altconfirms,locktime;
 };
 
 struct instantdex_event { char cmdstr[24],sendcmd[16]; int16_t nextstateind; };

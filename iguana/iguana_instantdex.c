@@ -657,7 +657,6 @@ cJSON *instantdex_statemachinejson(struct bitcoin_swapinfo *swap)
         jaddbits256(retjson,"pubAm",swap->pubAm);
         jaddbits256(retjson,"privBn",swap->privBn);
         jaddbits256(retjson,"pubBn",swap->pubBn);
-        
         jaddbits256(retjson,"myorderhash",swap->myorderhash);
         jaddnum(retjson,"choosei",swap->choosei);
         jaddnum(retjson,"cutverified",swap->cutverified);
@@ -1166,6 +1165,7 @@ struct bitcoin_swapinfo *bitcoin_swapinit(struct supernet_info *myinfo,struct ex
     swap->state = instantdex_statefind(BTC_states,BTC_numstates,statename);
     swap->mine = *myap, swap->other = *otherap;
     swap->expiration = (otherap->offer.expiration < myap->offer.expiration) ? otherap->offer.expiration : myap->offer.expiration;
+    swap->locktime = swap->expiration + INSTANTDEX_LOCKTIME;
     swap->choosei = swap->otherchoosei = -1;
     strcpy(swap->status,"pending");
     vcalc_sha256(0,swap->myorderhash.bytes,(void *)&swap->mine.offer,sizeof(swap->mine.offer));

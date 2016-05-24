@@ -25,32 +25,59 @@
  */
 
 /*
- both fees are standard payments: OP_DUP OP_HASH160 FEE_RMD160 OP_EQUALVERIFY OP_CHECKSIG
- 
- Alice altpayment: OP_2 <alice_pubM> <bob_pubN> OP_2 OP_CHECKMULTISIG
- 
- Bob deposit: if ( (swap->deposit= instantdex_bobtx(myinfo,coinbtc,&swap->deposittxid,swap->otherpubs[0],swap->mypubs[0],swap->privkeys[swap->choosei],reftime,swap->satoshis[1],1)) != 0 )
- OP_IF
- <now + INSTANTDEX_LOCKTIME*2> OP_CLTV OP_DROP <alice_pubA0> OP_CHECKSIG
- OP_ELSE
- OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY <bob_pubB0> OP_CHECKSIG
- OP_ENDIF
- 
- Bob paytx: if ( (swap->payment= instantdex_bobtx(myinfo,coinbtc,&swap->deposittxid,swap->mypubs[1],swap->otherpubs[0],swap->privkeys[swap->otherschoosei],reftime,swap->satoshis[1],0)) != 0 )
- OP_IF
- <now + INSTANTDEX_LOCKTIME> OP_CLTV OP_DROP <bob_pubB1> OP_CHECKSIG
- OP_ELSE
- OP_HASH160 <hash(alice_privM)> OP_EQUALVERIFY <alice_pubA0> OP_CHECKSIG
- OP_ENDIF
- */
+both fees are standard payments: OP_DUP OP_HASH160 FEE_RMD160 OP_EQUALVERIFY OP_CHECKSIG
 
-int32_t instantdex_bobscript(uint8_t *script,int32_t n,int32_t *secretstartp,uint32_t locktime,bits256 cltvpub,uint8_t secret160[20],bits256 destpub)
+Alice altpayment: OP_2 <alice_pubM> <bob_pubN> OP_2 OP_CHECKMULTISIG
+
+Bob deposit:
+OP_IF
+<now + INSTANTDEX_LOCKTIME*2> OP_CLTV OP_DROP <alice_pubA0> OP_CHECKSIG
+OP_ELSE
+OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY <bob_pubB0> OP_CHECKSIG
+OP_ENDIF
+
+Bob paytx:
+OP_IF
+<now + INSTANTDEX_LOCKTIME> OP_CLTV OP_DROP <bob_pubB1> OP_CHECKSIG
+OP_ELSE
+OP_HASH160 <hash(alice_privM)> OP_EQUALVERIFY <alice_pubA0> OP_CHECKSIG
+OP_ENDIF
+
+Naming convention are pubAi are alice's pubkeys (seems only pubA0 and not pubA1)
+pubBi are Bob's pubkeys
+
+privN is Bob's privkey from the cut and choose deck as selected by Alice
+privM is Alice's counterpart
+pubN and pubM are the corresponding pubkeys for these chosen privkeys
+
+Alice timeout event is triggered if INSTANTDEX_LOCKTIME elapses from the start of a FSM instance. Bob timeout event is triggered after INSTANTDEX_LOCKTIME*2
+*/
+
+int32_t instantdex_bobscript(uint8_t *script,int32_t n,uint32_t *locktimep,int32_t *secretstartp,struct bitcoin_swapinfo *swap,int32_t depositflag)
 {
-    uint8_t pubkeyA[33],pubkeyB[33];
-    memcpy(pubkeyA+1,cltvpub.bytes,sizeof(cltvpub)), pubkeyA[0] = 0x02;
-    memcpy(pubkeyB+1,destpub.bytes,sizeof(destpub)), pubkeyB[0] = 0x03;
+    uint8_t pubkeyA[33],pubkeyB[33],*secret160; bits256 cltvpub,destpub;
+    *locktimep = swap->locktime;
+    if ( depositflag != 0 )
+    {
+        *locktimep += INSTANTDEX_LOCKTIME;
+        cltvpub = swap->pubA0;
+        destpub = swap->pubB0;
+        secret160 = swap->secretBn;
+        pubkeyA[0] = 0x02;
+        pubkeyB[0] = 0x03;
+    }
+    else
+    {
+        cltvpub = swap->pubB1;
+        destpub = swap->pubA0;
+        secret160 = swap->secretAm;
+        pubkeyA[0] = 0x03;
+        pubkeyB[0] = 0x02;
+    }
+    memcpy(pubkeyA+1,cltvpub.bytes,sizeof(cltvpub));
+    memcpy(pubkeyB+1,destpub.bytes,sizeof(destpub));
     script[n++] = SCRIPT_OP_IF;
-    n = bitcoin_checklocktimeverify(script,n,locktime);
+    n = bitcoin_checklocktimeverify(script,n,*locktimep);
     n = bitcoin_pubkeyspend(script,n,pubkeyA);
     script[n++] = SCRIPT_OP_ELSE;
     if ( secretstartp != 0 )
@@ -232,7 +259,7 @@ int32_t instantdex_feetxverify(struct supernet_info *myinfo,struct iguana_info *
 
 struct bitcoin_statetx *instantdex_bobtx(struct supernet_info *myinfo,struct bitcoin_swapinfo *swap,struct iguana_info *coin,bits256 pub1,bits256 pub2,bits256 priv,uint32_t reftime,int64_t amount,int32_t depositflag)
 {
-    int32_t n,secretstart; struct bitcoin_statetx *ptr = 0; uint8_t script[1024],secret[20]; uint32_t locktime; int64_t satoshis; char scriptstr[512];
+    int32_t n,secretstart; struct bitcoin_statetx *ptr = 0; uint8_t script[1024]; uint32_t locktime; int64_t satoshis; char scriptstr[512];
     if ( coin == 0 )
         return(0);
     if ( bits256_nonz(pub1) == 0 || bits256_nonz(pub2) == 0 )
@@ -240,10 +267,9 @@ struct bitcoin_statetx *instantdex_bobtx(struct supernet_info *myinfo,struct bit
         printf("instantdex_bobtx null pub1.%llx or pub2.%llx\n",(long long)pub1.txid,(long long)pub2.txid);
         return(0);
     }
-    locktime = (uint32_t)(reftime + INSTANTDEX_LOCKTIME * (1 + depositflag));
-    calc_rmd160_sha256(secret,priv.bytes,sizeof(priv));
-    n = instantdex_bobscript(script,0,&secretstart,locktime,pub1,secret,pub2);
     satoshis = amount + depositflag*swap->insurance*100;
+    n = instantdex_bobscript(script,0,&locktime,&secretstart,swap,depositflag);
+    printf("locktime.%u amount %.8f satoshis %.8f\n",locktime,dstr(amount),dstr(satoshis));
     init_hexbytes_noT(scriptstr,script,n);
     if ( (ptr= instantdex_signtx(depositflag != 0 ? "deposit" : "payment",myinfo,coin,locktime,scriptstr,satoshis,coin->txfee,swap->mine.minconfirms,swap->mine.offer.myside)) != 0 )
     {
@@ -256,20 +282,16 @@ struct bitcoin_statetx *instantdex_bobtx(struct supernet_info *myinfo,struct bit
 int32_t instantdex_paymentverify(struct supernet_info *myinfo,struct iguana_info *coin,struct bitcoin_swapinfo *swap,cJSON *argjson,int32_t depositflag)
 {
     cJSON *txobj; bits256 txid; uint32_t n,locktime; int32_t i,secretstart,retval = -1; uint64_t x;
-    struct iguana_msgtx msgtx; uint8_t script[512],rmd160[20]; int64_t amount;
-    if ( coin != 0 && jstr(argjson,depositflag != 0 ? "deposit" : "payment") != 0 )
+    struct iguana_msgtx msgtx; uint8_t script[512]; int64_t amount;
+    if ( coin != 0 && swap->deposit != 0 )
     {
         amount = swap->BTCsatoshis + depositflag*swap->insurance*100;
-        if ( swap->deposit != 0 && (txobj= bitcoin_hex2json(coin,&txid,&msgtx,swap->deposit->txbytes)) != 0 )
+        if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,swap->deposit->txbytes)) != 0 )
         {
-            locktime = swap->expiration;
-            if ( depositflag == 0 )
-                memset(rmd160,0,sizeof(rmd160));
-            else calc_rmd160_sha256(rmd160,swap->privkeys[0].bytes,sizeof(rmd160));
-            n = instantdex_bobscript(script,0,&secretstart,locktime,swap->mypubs[0],rmd160,swap->otherpubs[0]);
+            n = instantdex_bobscript(script,0,&locktime,&secretstart,swap,depositflag);
+            printf("locktime.%u amount %.8f satoshis %.8f\n",locktime,dstr(amount),dstr(amount));
             if ( msgtx.lock_time == locktime && msgtx.vouts[0].value == amount && n == msgtx.vouts[0].pk_scriptlen )
             {
-                memcpy(&script[secretstart],&msgtx.vouts[0].pk_script[secretstart],20);
                 if ( memcmp(script,msgtx.vouts[0].pk_script,n) == 0 )
                 {
                     iguana_rwnum(0,&script[secretstart],sizeof(x),&x);
@@ -467,7 +489,6 @@ void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapi
                 {
                     if ( otherpubkey[0] == 3 )
                     {
-                        //swap->privBn = swap->privkeys[i];
                         swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[i]);
                     } else printf("wrong first byte.%02x\n",otherpubkey[0]);
                 }
@@ -475,7 +496,6 @@ void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapi
                 {
                     if ( otherpubkey[0] == 2 )
                     {
-                        //swap->privAm = swap->privkeys[i];
                         swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[i]);
                     } else printf("wrong first byte.%02x\n",otherpubkey[0]);
                 }
@@ -547,7 +567,7 @@ void instantdex_swapbits256update(bits256 *txidp,cJSON *argjson,char *fieldname)
 
 void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *swap,cJSON *newjson)
 {
-    uint8_t pubkey[33]; int32_t deckflag;
+    uint8_t pubkey[33],*secret160; int32_t deckflag; char secretstr[41],*field;
     deckflag = (newjson != 0 && swap->otherchoosei < 0) ? 1 : 0;
     if ( instantdex_pubkeyargs(myinfo,swap,2 + deckflag*INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myorderhash,0x02+instantdex_isbob(swap)) != 2 + deckflag*INSTANTDEX_DECKSIZE )
         printf("ERROR: couldnt generate pubkeys deckflag.%d\n",deckflag);
@@ -555,7 +575,22 @@ void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *sw
     if ( swap->choosei >= 0 )
         jaddnum(newjson,"mychoosei",swap->choosei);
     if ( swap->otherchoosei >= 0 )
+    {
         jaddnum(newjson,"otherchoosei",swap->otherchoosei);
+        if ( instantdex_isbob(swap) != 0 )
+        {
+            secret160 = swap->secretBn;
+            field = "secretBn";
+        }
+        else
+        {
+            secret160 = swap->secretAm;
+            field = "secretAm";
+        }
+        calc_rmd160_sha256(secret160,swap->privkeys[swap->otherchoosei].bytes,sizeof(swap->privkeys[swap->otherchoosei]));
+        init_hexbytes_noT(secretstr,secret160,20);
+        jaddstr(newjson,field,secretstr);
+    }
     if ( swap->myfee != 0 && jobj(newjson,"feetx") == 0 && (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEOTHERFEE) == 0 )
     {
         jaddbits256(newjson,"feetxid",swap->myfee->txid);
@@ -572,6 +607,8 @@ void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *sw
         }
         jaddbits256(newjson,"A0",swap->mypubs[0]);
         jaddbits256(newjson,"A1",swap->mypubs[1]);
+        swap->pubA0 = swap->mypubs[0];
+        //swap->pubA1 = swap->mypubs[1];
         if ( bits256_nonz(swap->pubAm) == 0 && swap->otherchoosei >= 0 && bits256_nonz(swap->privkeys[swap->otherchoosei]) != 0 )
             swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[swap->otherchoosei]);
     }
@@ -581,6 +618,8 @@ void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *sw
             swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[swap->otherchoosei]);
         jaddbits256(newjson,"B0",swap->mypubs[0]);
         jaddbits256(newjson,"B1",swap->mypubs[1]);
+        swap->pubB0 = swap->mypubs[0];
+        swap->pubB1 = swap->mypubs[1];
         if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEDEPOSIT) == 0 && swap->deposit != 0 && jobj(newjson,"deposit") == 0 )
         {
             jaddbits256(newjson,"deposittxid",swap->deposit->txid);
@@ -612,16 +651,28 @@ cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info
     {
         if ( instantdex_isbob(swap) != 0 )
         {
+            if ( jobj(argjson,"secretAm") != 0 )
+                decode_hex(swap->secretAm,20,jstr(argjson,"secretAm"));
             instantdex_swapbits256update(&swap->otherpubs[0],argjson,"A0");
             instantdex_swapbits256update(&swap->otherpubs[1],argjson,"A1");
+            if ( bits256_nonz(swap->otherpubs[0]) != 0 )
+                swap->pubA0 = swap->otherpubs[0];
+            //if ( bits256_nonz(swap->otherpubs[1]) != 0 )
+            //    swap->pubA1 = swap->otherpubs[1];
             instantdex_swapbits256update(&swap->pubAm,argjson,"pubAm");
             instantdex_swapbits256update(&swap->privAm,argjson,"privAm");
             swap->havestate |= instantdex_swaptxupdate(swap->altcoin,&swap->altpayment,argjson,"altpayment","altpaymenttxid");
         }
         else
         {
+            if ( jobj(argjson,"secretBn") != 0 )
+                decode_hex(swap->secretAm,20,jstr(argjson,"secretBn"));
             instantdex_swapbits256update(&swap->otherpubs[0],argjson,"B0");
             instantdex_swapbits256update(&swap->otherpubs[1],argjson,"B1");
+            if ( bits256_nonz(swap->otherpubs[0]) != 0 )
+                swap->pubB0 = swap->otherpubs[0];
+            if ( bits256_nonz(swap->otherpubs[1]) != 0 )
+                swap->pubB1 = swap->otherpubs[1];
             instantdex_swapbits256update(&swap->pubBn,argjson,"pubBn");
             instantdex_swapbits256update(&swap->privBn,argjson,"privBn");
             swap->havestate |= instantdex_swaptxupdate(swap->coinbtc,&swap->deposit,argjson,"deposit","deposittxid");
