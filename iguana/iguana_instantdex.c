@@ -1142,10 +1142,11 @@ struct bitcoin_swapinfo *bitcoin_swapinit(struct supernet_info *myinfo,struct ex
 {
     struct bitcoin_swapinfo *swap = 0; struct iguana_info *coinbtc,*altcoin; int32_t i;
     swap = calloc(1,sizeof(struct bitcoin_swapinfo));
+    portable_mutex_init(&swap->mutex);
     swap->state = instantdex_statefind(BTC_states,BTC_numstates,statename);
     swap->mine = *myap, swap->other = *otherap;
     swap->expiration = (otherap->offer.expiration < myap->offer.expiration) ? otherap->offer.expiration : myap->offer.expiration;
-     swap->choosei = swap->otherchoosei = -1;
+    swap->choosei = swap->otherchoosei = -1;
     strcpy(swap->status,"pending");
     vcalc_sha256(0,swap->myorderhash.bytes,(void *)&swap->mine.offer,sizeof(swap->mine.offer));
     vcalc_sha256(0,swap->otherorderhash.bytes,(void *)&swap->other.offer,sizeof(swap->other.offer));
@@ -1219,6 +1220,7 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_
         }
         isbob = ap->offer.myside;
         swap = bitcoin_swapinit(myinfo,exchange,ap,otherap,1,argjson,isbob != 0 ? "BOB_sentoffer" : "ALICE_sentoffer");
+        portable_mutex_lock(&swap->mutex);
         //printf("ISBOB.%d vs %d\n",isbob,instantdex_isbob(swap));
         if ( swap != 0 )
         {
@@ -1232,6 +1234,7 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_
             retstr = instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,"BTCoffer",GENESIS_PUBKEY,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck),0);
             free_json(newjson);
         } else printf("error creating statemachine\n");
+        portable_mutex_unlock(&swap->mutex);
     }
     return(retstr);
 }
@@ -1263,18 +1266,20 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
     if ( myap->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) || otherap->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) )
         return(clonestr("{\"error\":\"instantdex_BTCswap offer too close to expiration\"}"));
     isbob = myap->offer.myside;
-    if ( (swap= bitcoin_swapinit(myinfo,exchange,myap,otherap,0,argjson,isbob != 0 ? "BOB_gotoffer" : "ALICE_gotoffer")) == 0 )
+    swap = bitcoin_swapinit(myinfo,exchange,myap,otherap,0,argjson,isbob != 0 ? "BOB_gotoffer" : "ALICE_gotoffer");
+    if ( swap == 0 )
+    {
         return(clonestr("{\"error\":\"couldnt allocate statemachine\"}"));
+    }
     //printf("ISBOB.%d vs %d\n",isbob,instantdex_isbob(swap));
     if ( (newjson= instantdex_parseargjson(myinfo,exchange,swap,argjson,1)) == 0 )
     {
         printf("error parsing argjson\n");
         return(clonestr("{\"error\":\"instantdex_BTCswap offer null newjson\"}"));
     }
-    else //if ( (retstr= instantdex_addfeetx(myinfo,newjson,ap,swap,"BOB_gotoffer","ALICE_gotoffer")) == 0 )
+    else
     {
         printf("create statemachine isbob.%d\n",isbob);
-        //queue_enqueue("acceptableQ",&exchange->acceptableQ,&swap->DL,0);
         if ( (retstr= instantdex_choosei(swap,newjson,argjson,serdata,serdatalen)) != 0 )
         {
             free_json(newjson);
@@ -1315,7 +1320,9 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
             A.offer.minperc = 100;
         if ( (swap= instantdex_statemachinefind(myinfo,exchange,A.orderid)) != 0 )
         {
-            printf("found existing state machine %llx\n",(long long)A.orderid);
+            if ( swap->cutverified == 0 && swap->choosei >= 0 && serdatalen == sizeof(swap->privkeys) )
+                instantdex_privkeyextract(myinfo,swap,serdata,serdatalen);
+            printf("found existing state machine %llx choosei.%d other.%d\n",(long long)A.orderid,swap->choosei,swap->otherchoosei);
             newjson = instantdex_parseargjson(myinfo,exchange,swap,argjson,0);
             if ( serdatalen == sizeof(swap->otherdeck) && swap->choosei < 0 && (retstr= instantdex_choosei(swap,newjson,argjson,serdata,serdatalen)) != 0 )
             {
@@ -1336,7 +1343,10 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
             {
                 if ( instantdex_statemachinefind(myinfo,exchange,ap->orderid) == 0 && instantdex_historyfind(myinfo,exchange,ap->orderid) == 0 && instantdex_statemachinefind(myinfo,exchange,A.orderid) == 0 && instantdex_historyfind(myinfo,exchange,A.orderid) == 0 )
                 {
-                    if ( (retstr= instantdex_gotoffer(myinfo,exchange,ap,&A,msg,argjson,remoteaddr,signerbits,serdata,serdatalen)) != 0 ) // adds to statemachine if no error
+                    portable_mutex_lock(&swap->mutex);
+                    retstr = instantdex_gotoffer(myinfo,exchange,ap,&A,msg,argjson,remoteaddr,signerbits,serdata,serdatalen);
+                    portable_mutex_unlock(&swap->mutex);
+                    if ( retstr != 0 ) // adds to statemachine if no error
                     {
                         printf("from GOTOFFER.(%s)\n",retstr);
                         return(retstr);

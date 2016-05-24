@@ -484,7 +484,7 @@ char *instantdex_choosei(struct bitcoin_swapinfo *swap,cJSON *newjson,cJSON *arg
     }
     else
     {
-        printf("invalid datalen.%d vs %d\n",datalen,(int32_t)sizeof(swap->deck));
+        printf("choosei.%d or null serdata.%p or invalid datalen.%d vs %d\n",swap->choosei,serdata,datalen,(int32_t)sizeof(swap->deck));
         return(clonestr("{\"error\":\"instantdex_BTCswap offer no cut\"}"));
     }
 }
@@ -554,8 +554,11 @@ int32_t instantdex_swaptxupdate(struct bitcoin_statetx **ptrp,cJSON *argjson,cha
     {
         if ( *ptrp != 0 )
         {
-            printf("got replacement %s?\n",txname);
-            free(*ptrp);
+            if ( strcmp((*ptrp)->txbytes,str) != 0 )
+            {
+                printf("got replacement %s?\n",txname);
+                free(*ptrp);
+            } else return(0);
         } else printf("instantdex_swaptxupdate got (%s) %s\n",txname,str);
         *ptrp = calloc(1,sizeof(**ptrp) + strlen(str) + 1);
         strcpy((*ptrp)->txbytes,str);
@@ -612,9 +615,31 @@ cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info
         swap->havestate |= instantdex_swaptxupdate(&swap->otherfee,argjson,"feetx","feetxid");
         if ( swap->otherchoosei < 0 && jobj(argjson,"mychoosei") != 0 )
         {
-            //printf("otherschoosei.%d\n",swap->otherschoosei);
+            printf("otherschoosei.%d\n",swap->otherchoosei);
             if ( (swap->otherchoosei= juint(argjson,"mychoosei")) >= sizeof(swap->otherdeck)/sizeof(*swap->otherdeck) )
                 swap->otherchoosei = -1;
+        }
+        if ( swap->otherchoosei >= 0 )
+        {
+            char str[65],str2[65];
+            if ( instantdex_isbob(swap) != 0 )
+            {
+                if ( bits256_nonz(swap->pubAm) == 0 )
+                    swap->pubAm = jbits256(argjson,"pubAm");
+                else if ( bits256_cmp(swap->pubAm,jbits256(argjson,"pubAm")) != 0 )
+                {
+                    printf("mismatched pubAm %s vs %s\n",bits256_str(str,swap->pubAm),bits256_str(str2,jbits256(argjson,"pubAm")));
+                }
+            }
+            else
+            {
+                if ( bits256_nonz(swap->pubBn) == 0 )
+                    swap->pubBn = jbits256(argjson,"pubBn");
+                else if ( bits256_cmp(swap->pubBn,jbits256(argjson,"pubBn")) != 0 )
+                {
+                    printf("mismatched pubBn %s vs %s\n",bits256_str(str,swap->pubBn),bits256_str(str2,jbits256(argjson,"pubBn")));
+                }
+            }
         }
         if ( juint(argjson,"verified") != 0 )
             swap->otherverifiedcut = 1;
@@ -661,7 +686,7 @@ cJSON *BTC_waitdeckCfunc(struct supernet_info *myinfo,struct exchange_info *exch
 cJSON *BTC_waitprivCfunc(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp)
 {
     strcmp(swap->expectedcmdstr,"BTCprivC");
-    //printf("call privkey extract from serdatalen.%d\n",*serdatalenp);
+    printf("call privkey extract from serdatalen.%d\n",*serdatalenp);
     instantdex_privkeyextract(myinfo,swap,*serdatap,*serdatalenp);
     *serdatap = 0, *serdatalenp = 0;
     return(newjson);
@@ -719,7 +744,7 @@ cJSON *BOB_waitaltconfirmfunc(struct supernet_info *myinfo,struct exchange_info 
     *serdatap = 0, *serdatalenp = 0;
     strcpy(swap->waitfortx,"alt");
     //reftime = (uint32_t)(ap->offer.expiration - INSTANTDEX_LOCKTIME*2);
-    if ( altcoin != 0 && swap->altpayment != 0 && (retstr= BTC_txconfirmed(myinfo,altcoin,swap,newjson,swap->altpayment->txid,&swap->altpayment->numconfirms,"altfound",altcoin->chain->minconfirms)) != 0 )
+    if ( altcoin != 0 && swap->altpayment != 0 && swap->otherchoosei >= 0 && (retstr= BTC_txconfirmed(myinfo,altcoin,swap,newjson,swap->altpayment->txid,&swap->altpayment->numconfirms,"altfound",altcoin->chain->minconfirms)) != 0 )
     {
         if ( swap->payment != 0 || (swap->payment= instantdex_bobtx(myinfo,swap,altcoin,swap->mypubs[1],swap->otherpubs[0],swap->privkeys[swap->otherchoosei],swap->reftime,swap->BTCsatoshis,0)) != 0 )
         {
@@ -1105,24 +1130,20 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                 if ( jstr(newjson,"virtevent") != 0 )
                 {
                     printf("VIRTEVENT.(%s)\n",jstr(newjson,"virtevent"));
-                    //if ( (ptr= instantdex_event(jstr(newjson,"virtevent"),argjson,newjson,0,0)) != 0 )
+                    for (i=0; i<state->numevents; i++)
+                        if ( strcmp(jstr(newjson,"virtevent"),state->events[i].cmdstr) == 0 )
+                        {
+                            cmdstr = state->events[i].cmdstr;
+                            break;
+                        }
+                    if ( i == state->numevents )
                     {
-                        //queue_enqueue("eventQ",&swap->eventsQ,&ptr->DL,0);
-                        for (i=0; i<state->numevents; i++)
-                            if ( strcmp(jstr(newjson,"virtevent"),state->events[i].cmdstr) == 0 )
-                            {
-                                cmdstr = state->events[i].cmdstr;
-                                break;
-                            }
-                        if ( i == state->numevents )
-                        {
-                            printf("error cant find.(%s)\n",jstr(newjson,"virtevent"));
-                            return(clonestr("{\"error\":\"instantdex_statemachine: unexpected virtevent\"}"));
-                        }
-                        else
-                        {
-                            //printf("found.%d event.%s -> %s next.%d\n",i,state->events[i].cmdstr,states[state->events[i].nextstateind].name,state->events[i].nextstateind);
-                        }
+                        printf("error cant find.(%s)\n",jstr(newjson,"virtevent"));
+                        return(clonestr("{\"error\":\"instantdex_statemachine: unexpected virtevent\"}"));
+                    }
+                    else
+                    {
+                        //printf("found.%d event.%s -> %s next.%d\n",i,state->events[i].cmdstr,states[state->events[i].nextstateind].name,state->events[i].nextstateind);
                     }
                 }
                 if ( state->events[i].sendcmd[0] != 0 )
@@ -1138,12 +1159,12 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                         }
                         if ( bits256_nonz(swap->pubAm) != 0 )
                             jaddbits256(newjson,"pubAm",swap->pubAm);
-                        if ( bits256_nonz(swap->privAm) != 0 )
-                            jaddbits256(newjson,"privAm",swap->privAm);
+                        //if ( bits256_nonz(swap->privAm) != 0 )
+                        //    jaddbits256(newjson,"privAm",swap->privAm);
                         if ( bits256_nonz(swap->pubBn) != 0 )
                             jaddbits256(newjson,"pubBn",swap->pubBn);
-                        if ( bits256_nonz(swap->privBn) != 0 )
-                            jaddbits256(newjson,"privn",swap->privBn);
+                        //if ( bits256_nonz(swap->privBn) != 0 )
+                        //    jaddbits256(newjson,"privn",swap->privBn);
                         if ( instantdex_isbob(swap) == 0 )
                         {
                             if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEALTPAYMENT) == 0 && swap->altpayment != 0 && jobj(newjson,"altpayment") == 0 )
@@ -1173,7 +1194,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                             }
                         }
                         jaddnum(newjson,"have",swap->havestate);
-                        //printf("i.%d (%s) %s %s.%d -> %s.%d send.(%s) %p\n",i,jprint(newjson,0),cmdstr,swap->state->name,state->ind,states[state->events[i].nextstateind].name,state->events[i].nextstateind,state->events[i].sendcmd,&states[state->events[i].nextstateind]);
+                        printf("i.%d (%s) %s %s.%d -> %s.%d send.(%s) %p\n",i,jprint(newjson,0),cmdstr,swap->state->name,state->ind,states[state->events[i].nextstateind].name,state->events[i].nextstateind,state->events[i].sendcmd,&states[state->events[i].nextstateind]);
                         swap->state = &states[state->events[i].nextstateind];
                         return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,state->events[i].sendcmd,swap->othertrader,INSTANTDEX_HOPS,serdata,serdatalen,0));
                     } else return(clonestr("{\"error\":\"instantdex_statemachine: illegal state\"}"));
