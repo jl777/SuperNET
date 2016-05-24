@@ -34,7 +34,7 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
     struct iguana_hhutxo *hhutxo,*tmputxo; struct iguana_hhaccount *hhacct,*tmpacct; uint64_t uval,pval;
     if ( spent_hdrsi < 0 )
     {
-        printf(">>>>>>>>>>> RESET UTXO HASH <<<<<<<<<\n");
+        printf(">>>>>>>>>> RESET UTXO HASH <<<<<<<<<\n");
         if ( coin->utxotable != 0 )
         {
             HASH_ITER(hh,coin->utxotable,hhutxo,tmputxo)
