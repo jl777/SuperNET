@@ -604,3 +604,13 @@ int64_t iguana_fastfindcreate(struct iguana_info *coin)
     }
     return(total);
 }
+
+void iguana_txidmonitor(struct iguana_info *coin,bits256 txid)
+{
+    
+}
+
+double iguana_txidstatus(struct iguana_info *coin,bits256 txid)
+{
+    return(0.);
+}
