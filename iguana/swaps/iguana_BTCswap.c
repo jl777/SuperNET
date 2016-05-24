@@ -290,7 +290,7 @@ int32_t instantdex_feetxverify(struct supernet_info *myinfo,struct iguana_info *
     return(retval);
 }
 
-struct bitcoin_statetx *instantdex_bobtx(struct supernet_info *myinfo,struct bitcoin_swapinfo *swap,struct iguana_info *coin,uint32_t reftime,int64_t amount,int32_t depositflag)
+struct bitcoin_statetx *instantdex_bobtx(struct supernet_info *myinfo,struct bitcoin_swapinfo *swap,struct iguana_info *coin,int64_t amount,int32_t depositflag)
 {
     int32_t n,secretstart; struct bitcoin_statetx *ptr = 0; uint8_t script[1024]; uint32_t locktime; int64_t satoshis; char scriptstr[512];
     if ( coin == 0 )
@@ -299,7 +299,7 @@ struct bitcoin_statetx *instantdex_bobtx(struct supernet_info *myinfo,struct bit
     n = instantdex_bobscript(script,0,&locktime,&secretstart,swap,depositflag);
     if ( n < 0 )
     {
-        printf("instantdex_bobtx couldnt generate bobscript\n");
+        printf("instantdex_bobtx couldnt generate bobscript deposit.%d\n",depositflag);
         return(0);
     }
     printf("locktime.%u amount %.8f satoshis %.8f\n",locktime,dstr(amount),dstr(satoshis));
@@ -703,7 +703,7 @@ cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info
         else
         {
             if ( jobj(argjson,"secretBn") != 0 )
-                decode_hex(swap->secretAm,20,jstr(argjson,"secretBn"));
+                decode_hex(swap->secretBn,20,jstr(argjson,"secretBn"));
             instantdex_swapbits256update(&swap->otherpubs[0],argjson,"B0");
             instantdex_swapbits256update(&swap->otherpubs[1],argjson,"B1");
             if ( bits256_nonz(swap->otherpubs[0]) != 0 )
@@ -789,7 +789,7 @@ cJSON *BTC_waitfeefunc(struct supernet_info *myinfo,struct exchange_info *exchan
         jaddstr(newjson,"virtevent","feefound");
         if ( instantdex_isbob(swap) != 0 )
         {
-            if ( swap->deposit == 0 && (swap->deposit= instantdex_bobtx(myinfo,swap,coinbtc,swap->reftime,swap->BTCsatoshis,1)) == 0 )
+            if ( swap->deposit == 0 && (swap->deposit= instantdex_bobtx(myinfo,swap,coinbtc,swap->BTCsatoshis,1)) == 0 )
                 printf("bobtx deposit couldnt be created\n");
         }
     }
@@ -828,7 +828,7 @@ cJSON *BTC_waitaltpaymentfunc(struct supernet_info *myinfo,struct exchange_info 
         {
             if ( instantdex_altpaymentverify(myinfo,swap->altcoin,swap,argjson) == 0 )
             {
-                if ( swap->payment == 0 && (swap->payment= instantdex_bobtx(myinfo,swap,swap->coinbtc,swap->reftime,swap->BTCsatoshis,0)) == 0 )
+                if ( swap->payment == 0 && (swap->payment= instantdex_bobtx(myinfo,swap,swap->coinbtc,swap->BTCsatoshis,0)) == 0 )
                     printf("couldnt create Bob's payment\n");
                 jaddstr(newjson,"virtevent","altfound");
             } else printf("alt payment didnt verify\n");
