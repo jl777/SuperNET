@@ -4425,6 +4425,7 @@ bits256 mpz_to_bits256(mpz_t bn)
 bits256 mpz_muldivcmp(bits256 oldval,int32_t mulval,int32_t divval,bits256 targetval)
 {
     mpz_t bn,target; bits256 newval;
+    printf("mulval.%d divval.%d]\n",mulval,divval);
     mpz_init(bn), mpz_init(target);
     mpz_from_bits256(bn,oldval);
     mpz_mul_ui(bn,bn,mulval);
