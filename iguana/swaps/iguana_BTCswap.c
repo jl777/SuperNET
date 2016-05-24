@@ -589,8 +589,8 @@ void instantdex_swapbits256update(bits256 *txidp,cJSON *argjson,char *fieldname)
 
 void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *swap,cJSON *newjson)
 {
-    uint8_t pubkey[33]; int32_t deckflag = 1;
-    //deckflag = (newjson != 0 && swap->otherchoosei < 0) ? 1 : 0;
+    uint8_t pubkey[33]; int32_t deckflag;
+    deckflag = (newjson != 0 && swap->otherchoosei < 0) ? 1 : 0;
     if ( instantdex_pubkeyargs(myinfo,swap,2 + deckflag*INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myorderhash,0x02+instantdex_isbob(swap)) != 2 + deckflag*INSTANTDEX_DECKSIZE )
         printf("ERROR: couldnt generate pubkeys deckflag.%d\n",deckflag);
     jaddnum(newjson,"have",swap->havestate);
