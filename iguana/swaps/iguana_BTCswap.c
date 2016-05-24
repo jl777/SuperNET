@@ -587,6 +587,51 @@ void instantdex_swapbits256update(bits256 *txidp,cJSON *argjson,char *fieldname)
     }
 }
 
+void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *swap,cJSON *newjson)
+{
+    jaddnum(newjson,"have",swap->havestate);
+    if ( swap->choosei >= 0 )
+        jaddnum(newjson,"mychoosei",swap->choosei);
+    if ( bits256_nonz(swap->pubAm) != 0 )
+        jaddbits256(newjson,"pubAm",swap->pubAm);
+    if ( bits256_nonz(swap->pubBn) != 0 )
+        jaddbits256(newjson,"pubBn",swap->pubBn);
+    if ( swap->myfee != 0 && jobj(newjson,"feetx") == 0 && (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEOTHERFEE) == 0 )
+    {
+        jaddbits256(newjson,"feetxid",swap->myfee->txid);
+        jaddstr(newjson,"feetx",swap->myfee->txbytes);
+        printf("add feetx to newjson have.%x\n",swap->havestate);
+    }
+    if ( instantdex_isbob(swap) == 0 )
+    {
+        if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEALTPAYMENT) == 0 && swap->altpayment != 0 && jobj(newjson,"altpayment") == 0 )
+        {
+            jaddbits256(newjson,"altpaymenttxid",swap->altpayment->txid);
+            jaddstr(newjson,"altpayment",swap->altpayment->txbytes);
+            printf("add altpayment.(%s) have.%x\n",swap->altpayment->txbytes,swap->havestate);
+        }
+        jaddbits256(newjson,"A0",swap->mypubs[0]);
+        jaddbits256(newjson,"A1",swap->mypubs[1]);
+    }
+    else
+    {
+        jaddbits256(newjson,"B0",swap->mypubs[0]);
+        jaddbits256(newjson,"B1",swap->mypubs[1]);
+        if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEDEPOSIT) == 0 && swap->deposit != 0 && jobj(newjson,"deposit") == 0 )
+        {
+            jaddbits256(newjson,"deposittxid",swap->deposit->txid);
+            jaddstr(newjson,"deposit",swap->deposit->txbytes);
+            printf("add deposit.(%s) have.%x\n",swap->deposit->txbytes,swap->havestate);
+        }
+        else if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEPAYMENT) == 0 && swap->payment != 0 && jobj(newjson,"payment") == 0 )
+        {
+            jaddbits256(newjson,"paymenttxid",swap->payment->txid);
+            jaddstr(newjson,"payment",swap->payment->txbytes);
+            printf("add payment.(%s) have.%x\n",swap->payment->txbytes,swap->havestate);
+        }
+    }
+}
+
 cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,int32_t deckflag)
 {
     cJSON *newjson;
@@ -641,12 +686,20 @@ cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info
                 }
             }
         }
+        if ( jobj(argjson,"mychoosei") != 0 )
+        {
+            if ( swap->otherchoosei < 0 )
+                swap->otherchoosei = jnum(argjson,"mychoosei");
+            else if ( swap->otherchoosei != jnum(argjson,"mychoosei") )
+            {
+                printf("otherchoosei mismatch %d vs %d\n",swap->otherchoosei,jnum(argjson,"mychoosei"));
+            }
+        }
         if ( juint(argjson,"verified") != 0 )
             swap->otherverifiedcut = 1;
         if ( juint(argjson,"have") != 0 )
             swap->otherhavestate |= juint(argjson,"have");
-        printf("got other.%x myhave.%x\n",swap->otherhavestate,swap->havestate);
-        jaddnum(newjson,"verified",swap->otherverifiedcut);
+        printf("got other.%x myhave.%x choosei.(%d %d)\n",swap->otherhavestate,swap->havestate,swap->choosei,swap->otherchoosei);
         if ( instantdex_pubkeyargs(myinfo,swap,newjson,2 + deckflag*INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myorderhash,0x02+instantdex_isbob(swap)) != 2 + deckflag*INSTANTDEX_DECKSIZE )
             printf("ERROR: couldnt generate pubkeys deckflag.%d\n",deckflag);
     }
@@ -1153,47 +1206,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                     //printf("i.%d send.%s, next state.%s.[%d] %p\n",i,state->events[i].sendcmd,states[state->events[i].nextstateind].name,state->events[i].nextstateind,&states[state->events[i].nextstateind]);
                     if ( state->events[i].nextstateind > 1 )
                     {
-                        if ( swap->myfee != 0 && jobj(newjson,"feetx") == 0 ) //(swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEOTHERFEE) == 0 &&
-                        {
-                            jaddbits256(newjson,"feetxid",swap->myfee->txid);
-                            jaddstr(newjson,"feetx",swap->myfee->txbytes);
-                            printf("add feetx to newjson have.%x\n",swap->havestate);
-                        }
-                        if ( swap->choosei >= 0 )
-                            jaddnum(newjson,"mychoosei",swap->choosei);
-                        if ( bits256_nonz(swap->pubAm) != 0 )
-                            jaddbits256(newjson,"pubAm",swap->pubAm);
-                        if ( bits256_nonz(swap->pubBn) != 0 )
-                            jaddbits256(newjson,"pubBn",swap->pubBn);
-                        if ( instantdex_isbob(swap) == 0 )
-                        {
-                            if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEALTPAYMENT) == 0 && swap->altpayment != 0 && jobj(newjson,"altpayment") == 0 )
-                            {
-                                jaddbits256(newjson,"altpaymenttxid",swap->altpayment->txid);
-                                jaddstr(newjson,"altpayment",swap->altpayment->txbytes);
-                                printf("add altpayment.(%s) have.%x\n",swap->altpayment->txbytes,swap->havestate);
-                            }
-                            jaddbits256(newjson,"A0",swap->mypubs[0]);
-                            jaddbits256(newjson,"A1",swap->mypubs[1]);
-                        }
-                        else
-                        {
-                            jaddbits256(newjson,"B0",swap->mypubs[0]);
-                            jaddbits256(newjson,"B1",swap->mypubs[1]);
-                            if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEDEPOSIT) == 0 && swap->deposit != 0 && jobj(newjson,"deposit") == 0 )
-                            {
-                                jaddbits256(newjson,"deposittxid",swap->deposit->txid);
-                                jaddstr(newjson,"deposit",swap->deposit->txbytes);
-                                printf("add deposit.(%s) have.%x\n",swap->deposit->txbytes,swap->havestate);
-                            }
-                            else if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEPAYMENT) == 0 && swap->payment != 0 && jobj(newjson,"payment") == 0 )
-                            {
-                                jaddbits256(newjson,"paymenttxid",swap->payment->txid);
-                                jaddstr(newjson,"payment",swap->payment->txbytes);
-                                printf("add payment.(%s) have.%x\n",swap->payment->txbytes,swap->havestate);
-                            }
-                        }
-                        jaddnum(newjson,"have",swap->havestate);
+                        instantdex_newjson(myinfo,swap,newjson);
                         printf("i.%d (%s) %s %s.%d -> %s.%d send.(%s) %p\n",i,jprint(newjson,0),cmdstr,swap->state->name,state->ind,states[state->events[i].nextstateind].name,state->events[i].nextstateind,state->events[i].sendcmd,&states[state->events[i].nextstateind]);
                         swap->state = &states[state->events[i].nextstateind];
                         return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,state->events[i].sendcmd,swap->othertrader,INSTANTDEX_HOPS,serdata,serdatalen,0));

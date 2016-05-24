@@ -1423,7 +1423,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,struct category_info *cat,v
             serdata = 0, newlen = 0;
         if ( serdata != 0 || argjson != 0 )
         {
-            //printf("CALL instantdex_parse.(%s)\n",argjson!=0?jprint(argjson,0):"");
+            printf("CALL instantdex_parse.(%s)\n",argjson!=0?jprint(argjson,0):"");
             retjson = cJSON_CreateArray();
             /*if ( (num= SuperNET_MYINFOS(myinfos,sizeof(myinfos)/sizeof(*myinfos))) == 0 )
             {
