@@ -387,7 +387,7 @@ bits256 instantdex_rwoffer(int32_t rwflag,int32_t *lenp,uint8_t *serialized,stru
     return(orderhash);
 }
 
-char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extraser,int32_t extralen,struct iguana_peer *addr)
+char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extraser,int32_t extralen,struct iguana_peer *addr,struct bitcoin_swapinfo *swap)
 {
     char *reqstr,*hexstr,*retstr; struct instantdex_msghdr *msg; bits256 orderhash; struct iguana_info *coin; int32_t i,olen,slen,datalen,max=-1; uint8_t serialized[sizeof(*offer) + sizeof(struct iguana_msghdr) + 4096 + INSTANTDEX_DECKSIZE*33]; uint64_t nxt64bits;
     //if ( strcmp(cmdstr,"poll") == 0 )
@@ -416,15 +416,24 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     reqstr = jprint(argjson,0);
     slen = (int32_t)(strlen(reqstr) + 1);
     datalen = (int32_t)slen + extralen + olen;
-    msg = calloc(1,datalen + sizeof(*msg));
+    msg = calloc(1,datalen + sizeof(*msg) + sizeof(swap->deck));
     for (i=0; i<sizeof(msg->cmd); i++)
         if ( (msg->cmd[i]= cmdstr[i]) == 0 )
             break;
     memcpy(msg->serialized,reqstr,slen);
     memcpy(&msg->serialized[slen],serialized,olen);
     //printf("extralen.%d datalen.%d slen.%d olen.%d\n",extralen,datalen,slen,olen);
+    extraser = (void *)swap->deck;
+    extralen = (int32_t)sizeof(swap->deck);
     if ( extralen > 0 )
+    {
+        //if ( swap->otherchoosei < 0 )
+        {
+            //serdata = (void *)swap->deck;
+            //serdatalen = (int32_t)sizeof(swap->deck);
+        }
         memcpy(&msg->serialized[slen + olen],extraser,extralen);
+    }
     free(reqstr);
     if ( instantdex_msgcreate(myinfo,msg,datalen) != 0 )
     {
@@ -1233,7 +1242,7 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_
             if ( swap->pollevent != 0 )
                 instantdex_eventfree(swap->pollevent);
             swap->pollevent = instantdex_event("poll",argjson,newjson,(void *)swap->deck,sizeof(swap->deck));
-            retstr = instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,"BTCoffer",GENESIS_PUBKEY,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck),0);
+            retstr = instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,"BTCoffer",GENESIS_PUBKEY,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck),0,swap);
             free_json(newjson);
         } else printf("error creating statemachine\n");
         portable_mutex_unlock(&swap->mutex);
@@ -1295,7 +1304,7 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
             if ( swap->pollevent != 0 )
                 instantdex_eventfree(swap->pollevent);
             swap->pollevent = instantdex_event("poll",argjson,newjson,(void *)swap->deck,sizeof(swap->deck));
-            retstr = instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,"BTCdeckC",traderpub,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck),0);
+            retstr = instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,"BTCdeckC",traderpub,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck),0,swap);
             free_json(newjson);
         }
     }
@@ -1574,7 +1583,7 @@ THREE_STRINGS(atomic,approve,myorderid,otherid,txname)
         strcpy(virtualevent,txname);
         strcat(virtualevent,"found");
         newjson = cJSON_CreateObject();
-        if ( (retstr= instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,virtualevent,myinfo->myaddr.persistent,0,0,0,0)) != 0 )
+        if ( (retstr= instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,virtualevent,myinfo->myaddr.persistent,0,0,0,0,swap)) != 0 )
             return(retstr);
         else
         {

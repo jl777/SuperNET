@@ -200,7 +200,7 @@ double fxcm_price(struct exchange_info *exchange,char *base,char *rel,struct exc
 double instaforex_price(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert);
 
 char *instantdex_createaccept(struct supernet_info *myinfo,struct instantdex_accept **aptrp,struct exchange_info *exchange,char *base,char *rel,double price,double basevolume,int32_t acceptdir,char *mysidestr,int32_t duration,uint64_t offerer,uint8_t minperc);
-char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extra,int32_t extralen,struct iguana_peer *addr);
+char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extra,int32_t extralen,struct iguana_peer *addr,struct bitcoin_swapinfo *swap);
 char *instantdex_sendoffer(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *ap,cJSON *argjson); // Bob sending to network (Alice)
 struct bitcoin_swapinfo *instantdex_statemachinefind(struct supernet_info *myinfo,struct exchange_info *exchange,uint64_t orderid);
 char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_t *txidp,struct exchange_info *exchange,struct instantdex_accept *ap,cJSON *json);

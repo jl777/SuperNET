@@ -561,10 +561,18 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
 
 void iguana_helper(void *arg)
 {
+    static int32_t maxhelperid;
     cJSON *argjson=0; int32_t iter,i,n,j,polltimeout,type,helperid=rand(),flag,allcurrent,idle=0;
     struct iguana_helper *ptr; struct iguana_info *coin; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp;
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
         helperid = juint(argjson,"helperid");
+    if ( helperid > maxhelperid )
+        maxhelperid = helperid;
+    if ( helperid < maxhelperid )
+    {
+        printf("SKIP duplicate helper.%d\n",helperid);
+        return;
+    }
     if ( IGUANA_NUMHELPERS < 2 )
         type = 3;
     else type = (1 << (helperid % 2));
