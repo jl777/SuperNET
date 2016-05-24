@@ -864,7 +864,7 @@ cJSON *BTC_checkdeckfunc(struct supernet_info *myinfo,struct exchange_info *exch
     if ( coin != 0 )
     {
         if ( swap->choosei >= 0 )
-            jaddstr(newjson,"virtevent","havedeck");
+            jaddstr(newjson,"virtevent","gotdeck");
     }
     return(newjson);
 }
@@ -1113,8 +1113,8 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     instantdex_addevent(s,*n,"BTC_waitdeck","poll","poll","BTC_waitdeck");
     
     // to goto BTC_waitfee, both must have sent/recv deck and Chosen and verified cut and choose
-    instantdex_addevent(s,*n,"BTC_gotdeck","havedeck","sentprivs","BTC_waitfee"); // other gotdeck
-    instantdex_addevent(s,*n,"BTC_gotdeck","gotdeck","poll","BTC_gotdeck");
+    instantdex_addevent(s,*n,"BTC_gotdeck","gotdeck","sentprivs","BTC_waitfee"); // other gotdeck
+    instantdex_addevent(s,*n,"BTC_gotdeck","havedeck","poll","BTC_gotdeck");
     instantdex_addevent(s,*n,"BTC_gotdeck","poll","poll","BTC_gotdeck");
     
     // [BLOCKING: feefound] Bob waits for fee and sends deposit when it appears, alice skips past
