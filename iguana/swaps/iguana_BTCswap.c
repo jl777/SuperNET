@@ -281,6 +281,7 @@ int32_t instantdex_feetxverify(struct supernet_info *myinfo,struct iguana_info *
                     for (i=0; i<n; i++)
                         printf("%02x",msgtx.vouts[0].pk_script[i]);
                     printf(" feetx mismatched\n");
+                    printf("FEETX.(%s)\n",jprint(txobj,0));
                 }
             } else printf("pk_scriptlen %d mismatch %d\n",msgtx.vouts[0].pk_scriptlen,n);
             free_json(txobj);
