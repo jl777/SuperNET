@@ -864,7 +864,7 @@ cJSON *BTC_checkdeckfunc(struct supernet_info *myinfo,struct exchange_info *exch
     if ( coin != 0 )
     {
         if ( swap->choosei >= 0 )
-            jaddstr(newjson,"virtevent","gotdeck");
+            jaddstr(newjson,"virtevent","havedeck");
     }
     return(newjson);
 }

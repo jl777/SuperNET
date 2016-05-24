@@ -439,7 +439,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     free(reqstr);
     if ( instantdex_msgcreate(myinfo,msg,datalen) != 0 )
     {
-        printf(">>>>>>>>>>>> instantdex send.(%s) datalen.%d allocsize.%d crc.%x\n",cmdstr,datalen,msg->sig.allocsize,calc_crc32(0,(void *)((long)msg + 8),datalen-8));
+        //printf(">>>>>>>>>>>> instantdex send.(%s) datalen.%d allocsize.%d crc.%x\n",cmdstr,datalen,msg->sig.allocsize,calc_crc32(0,(void *)((long)msg + 8),datalen-8));
         if ( addr != 0 )
         {
             memset(serialized,0,sizeof(struct iguana_msghdr));
@@ -1347,7 +1347,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
                 if ( newjson != 0 )
                     free_json(newjson);
                 return(retstr);
-            } else printf("serdatalen.%d != size.%ld choosei.%d\n",serdatalen,sizeof(swap->otherdeck),swap->choosei);
+            }
             if ( (ptr= instantdex_event(cmdstr,argjson,newjson,serdata,serdatalen)) != 0 )
                 queue_enqueue("eventQ",&swap->eventsQ,&ptr->DL,0);
             free_json(newjson);
@@ -1438,7 +1438,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,struct category_info *cat,v
             serdata = 0, newlen = 0;
         if ( serdata != 0 || argjson != 0 )
         {
-            printf("CALL instantdex_parse.(%s)\n",argjson!=0?jprint(argjson,0):"");
+            //printf("CALL instantdex_parse.(%s)\n",argjson!=0?jprint(argjson,0):"");
             retjson = cJSON_CreateArray();
             /*if ( (num= SuperNET_MYINFOS(myinfos,sizeof(myinfos)/sizeof(*myinfos))) == 0 )
             {
