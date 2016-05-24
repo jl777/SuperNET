@@ -213,10 +213,10 @@ struct bitcoin_statetx *instantdex_feetx(struct supernet_info *myinfo,struct ins
 {
     int32_t n; uint8_t paymentscript[128]; char scriptstr[512],coinaddr[64]; struct bitcoin_statetx *ptr = 0; uint64_t r;
     r = swap->mine.orderid;
-    n = instantdex_outputinsurance(coinaddr,coin->chain->pubtype,paymentscript,swap->insurance,r,r * (strcmp("BTC",coin->symbol) == 0));
+    n = instantdex_outputinsurance(coinaddr,coin->chain->pubtype,paymentscript,swap->insurance + swap->coinbtc->chain->txfee,r,r * (strcmp("BTC",coin->symbol) == 0));
     init_hexbytes_noT(scriptstr,paymentscript,n);
-    printf("instantdex_feetx %s %.8f (%s)\n",coin->symbol,dstr(swap->insurance),scriptstr);
-    if ( (ptr= instantdex_signtx("feetx",myinfo,coin,0,scriptstr,swap->insurance,coin->txfee,0,A->offer.myside)) != 0 )
+    printf("instantdex_feetx %s %.8f (%s)\n",coin->symbol,dstr(swap->insurance + swap->coinbtc->chain->txfee),scriptstr);
+    if ( (ptr= instantdex_signtx("feetx",myinfo,coin,0,scriptstr,swap->insurance + swap->coinbtc->chain->txfee,coin->txfee,0,A->offer.myside)) != 0 )
         strcpy(ptr->destaddr,coinaddr);
     return(ptr);
 }
@@ -231,8 +231,8 @@ int32_t instantdex_feetxverify(struct supernet_info *myinfo,struct iguana_info *
         {
             r = swap->other.orderid;
             if ( strcmp(coin->symbol,"BTC") == 0 )
-                insurance = swap->insurance;
-            else insurance = swap->altinsurance;
+                insurance = swap->insurance + swap->coinbtc->chain->txfee;
+            else insurance = swap->altinsurance + swap->altcoin->chain->txfee;
             n = instantdex_outputinsurance(coinaddr,coin->chain->pubtype,script,insurance,r,r * (strcmp("BTC",coin->symbol) == 0));
             if ( n == msgtx.vouts[0].pk_scriptlen )
             {
@@ -267,7 +267,7 @@ struct bitcoin_statetx *instantdex_bobtx(struct supernet_info *myinfo,struct bit
         printf("instantdex_bobtx null pub1.%llx or pub2.%llx\n",(long long)pub1.txid,(long long)pub2.txid);
         return(0);
     }
-    satoshis = amount + depositflag*swap->insurance*100;
+    satoshis = amount + depositflag*swap->insurance*100 + swap->coinbtc->chain->txfee;
     n = instantdex_bobscript(script,0,&locktime,&secretstart,swap,depositflag);
     printf("locktime.%u amount %.8f satoshis %.8f\n",locktime,dstr(amount),dstr(satoshis));
     init_hexbytes_noT(scriptstr,script,n);
@@ -285,10 +285,11 @@ int32_t instantdex_paymentverify(struct supernet_info *myinfo,struct iguana_info
     struct iguana_msgtx msgtx; uint8_t script[512]; int64_t amount;
     if ( coin != 0 && swap->deposit != 0 )
     {
-        amount = swap->BTCsatoshis + depositflag*swap->insurance*100;
+        amount = swap->BTCsatoshis + depositflag*swap->insurance*100 + swap->coinbtc->chain->txfee;
         if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,swap->deposit->txbytes)) != 0 )
         {
             n = instantdex_bobscript(script,0,&locktime,&secretstart,swap,depositflag);
+            memcpy(&script[secretstart],&msgtx.vouts[0].pk_script[secretstart],20);
             printf("locktime.%u amount %.8f satoshis %.8f\n",locktime,dstr(amount),dstr(amount));
             if ( msgtx.lock_time == locktime && msgtx.vouts[0].value == amount && n == msgtx.vouts[0].pk_scriptlen )
             {

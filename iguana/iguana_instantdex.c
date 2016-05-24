@@ -1178,8 +1178,8 @@ struct bitcoin_swapinfo *bitcoin_swapinit(struct supernet_info *myinfo,struct ex
     swap->BTCsatoshis = instantdex_BTCsatoshis(myap->offer.price64,myap->offer.basevolume64);
     swap->btcconfirms = 1 + sqrt(dstr(swap->BTCsatoshis) * .1);
     swap->altconfirms = swap->btcconfirms * 3;
-    swap->insurance = (swap->BTCsatoshis / INSTANTDEX_INSURANCEDIV + swap->coinbtc->chain->txfee);
-    swap->altinsurance = (swap->altsatoshis / INSTANTDEX_INSURANCEDIV + swap->altcoin->chain->txfee);
+    swap->insurance = (swap->BTCsatoshis / INSTANTDEX_INSURANCEDIV);
+    swap->altinsurance = (swap->altsatoshis / INSTANTDEX_INSURANCEDIV);
     if ( myap->offer.myside != instantdex_isbob(swap) || otherap->offer.myside == instantdex_isbob(swap) )
     {
         printf("isbob error.(%d %d) %d\n",myap->offer.myside,otherap->offer.myside,instantdex_isbob(swap));
