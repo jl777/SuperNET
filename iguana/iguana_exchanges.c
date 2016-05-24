@@ -585,7 +585,7 @@ char *exchanges777_process(struct exchange_info *exchange,int32_t *retvalp,struc
 
 void iguana_statemachineupdate(struct supernet_info *myinfo,struct exchange_info *exchange)
 {
-    int32_t timemod,modwidth = 1; struct iguana_info *coin; struct bitcoin_swapinfo *swap,*tmp; struct iguana_bundlereq *req;
+    int32_t timemod,modwidth = 7; struct iguana_info *coin; struct bitcoin_swapinfo *swap,*tmp; struct iguana_bundlereq *req;
     timemod = time(NULL) % modwidth;
     coin = iguana_coinfind("BTCD");
     portable_mutex_lock(&exchange->mutexS);
