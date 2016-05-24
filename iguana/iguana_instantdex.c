@@ -1331,7 +1331,8 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
         }
         A.offer = *offer;
         A.orderid = orderhash.txid;
-        printf("got.(%s) have.%x for %llx account.%llu serdatalen.%d\n",cmdstr,juint(argjson,"have"),(long long)A.orderid,(long long)A.offer.account,serdatalen);
+        if ( strcmp("poll",cmdstr) != 0 )
+            printf("got.(%s) have.%x for %llx account.%llu serdatalen.%d\n",cmdstr,juint(argjson,"have"),(long long)A.orderid,(long long)A.offer.account,serdatalen);
         if ( (A.offer.minperc= jdouble(argjson,"p")) < INSTANTDEX_MINPERC )
             A.offer.minperc = INSTANTDEX_MINPERC;
         else if ( A.offer.minperc > 100 )
@@ -1384,7 +1385,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
         }
         else
         {
-            printf("cant find existing order.%llx that matches\n",(long long)A.orderid);
+            //printf("cant find existing order.%llx that matches\n",(long long)A.orderid);
             return(clonestr("{\"error\":\"cant find matching order\"}"));
         }
     }
