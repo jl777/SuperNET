@@ -430,7 +430,7 @@ bits256 instantdex_derivekeypair(struct supernet_info *myinfo,bits256 *newprivp,
     return(bitcoin_pubkey33(myinfo->ctx,pubkey,*newprivp));
 }
 
-int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct bitcoin_swapinfo *swap,cJSON *newjson,int32_t numpubs,bits256 privkey,bits256 hash,int32_t firstbyte)
+int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct bitcoin_swapinfo *swap,int32_t numpubs,bits256 privkey,bits256 hash,int32_t firstbyte)
 {
     char buf[3]; int32_t i,n,m,len=0; bits256 pubi; uint64_t txid; uint8_t secret160[20],pubkey[33];
     sprintf(buf,"%c0",'A' - 0x02 + firstbyte);
@@ -589,11 +589,8 @@ void instantdex_swapbits256update(bits256 *txidp,cJSON *argjson,char *fieldname)
 
 void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *swap,cJSON *newjson)
 {
-    uint8_t pubkey[33]; int32_t deckflag;
-    if ( swap->otherchoosei < 0 )
-        deckflag = 1;
-    else deckflag = 0;
-    if ( instantdex_pubkeyargs(myinfo,swap,newjson,2 + deckflag*INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myorderhash,0x02+instantdex_isbob(swap)) != 2 + deckflag*INSTANTDEX_DECKSIZE )
+    uint8_t pubkey[33]; int32_t deckflag = 0;
+    if ( instantdex_pubkeyargs(myinfo,swap,2 + deckflag*INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myorderhash,0x02+instantdex_isbob(swap)) != 2 + deckflag*INSTANTDEX_DECKSIZE )
         printf("ERROR: couldnt generate pubkeys deckflag.%d\n",deckflag);
     jaddnum(newjson,"have",swap->havestate);
     if ( swap->choosei >= 0 )
@@ -616,14 +613,14 @@ void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *sw
         }
         jaddbits256(newjson,"A0",swap->mypubs[0]);
         jaddbits256(newjson,"A1",swap->mypubs[1]);
-        if ( bits256_nonz(swap->pubAm) == 0 && swap->otherchoosei >= 0 )
+        if ( bits256_nonz(swap->pubAm) == 0 && swap->otherchoosei >= 0 && bits256_nonz(swap->privkeys[swap->otherchoosei]) != 0 )
             swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[swap->otherchoosei]);
         if ( bits256_nonz(swap->pubAm) != 0 )
            jaddbits256(newjson,"pubAm",swap->pubAm);
     }
     else
     {
-        if ( bits256_nonz(swap->pubBn) == 0 && swap->otherchoosei >= 0 )
+        if ( bits256_nonz(swap->pubBn) == 0 && swap->otherchoosei >= 0 && bits256_nonz(swap->privkeys[swap->otherchoosei]) != 0 )
             swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[swap->otherchoosei]);
         if ( bits256_nonz(swap->pubBn) != 0 )
             jaddbits256(newjson,"pubBn",swap->pubBn);

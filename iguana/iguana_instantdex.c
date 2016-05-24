@@ -1140,7 +1140,7 @@ int32_t instantdex_acceptextract(struct instantdex_accept *ap,cJSON *argjson)
 
 struct bitcoin_swapinfo *bitcoin_swapinit(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *myap,struct instantdex_accept *otherap,int32_t aminitiator,cJSON *argjson,char *statename)
 {
-    struct bitcoin_swapinfo *swap = 0; struct iguana_info *coinbtc,*altcoin; int32_t i;
+    struct bitcoin_swapinfo *swap = 0; struct iguana_info *coinbtc,*altcoin; int32_t i,deckflag = 1;
     swap = calloc(1,sizeof(struct bitcoin_swapinfo));
     portable_mutex_init(&swap->mutex);
     swap->state = instantdex_statefind(BTC_states,BTC_numstates,statename);
@@ -1168,6 +1168,8 @@ struct bitcoin_swapinfo *bitcoin_swapinit(struct supernet_info *myinfo,struct ex
         printf("isbob error.(%d %d) %d\n",myap->offer.myside,otherap->offer.myside,instantdex_isbob(swap));
         return(0);
     }
+    if ( instantdex_pubkeyargs(myinfo,swap,2 + deckflag*INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myorderhash,0x02+instantdex_isbob(swap)) != 2 + deckflag*INSTANTDEX_DECKSIZE )
+        printf("couldnt generate privkeys\n");
     instantdex_statemachineadd(exchange,swap);
     return(swap);
 }
