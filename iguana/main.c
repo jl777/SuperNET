@@ -306,7 +306,7 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remote
             timeout = IGUANA_JSONTIMEOUT;
         if ( (method= jstr(json,"method")) != 0 && strcmp(method,"DHT") == 0 && remoteaddr != 0 && (hexmsg= jstr(json,"hexmsg")) != 0 )
         {
-            printf("hexmsgprocess myinfo.%p\n",myinfo);
+            //printf("hexmsgprocess myinfo.%p\n",myinfo);
             SuperNET_hexmsgprocess(myinfo,0,json,hexmsg,remoteaddr);
             return(clonestr("{\"result\":\"processed remote DHT\"}"));
         }

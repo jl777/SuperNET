@@ -589,13 +589,12 @@ void instantdex_swapbits256update(bits256 *txidp,cJSON *argjson,char *fieldname)
 
 void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *swap,cJSON *newjson)
 {
+    uint8_t pubkey[33];
     jaddnum(newjson,"have",swap->havestate);
     if ( swap->choosei >= 0 )
         jaddnum(newjson,"mychoosei",swap->choosei);
-    if ( bits256_nonz(swap->pubAm) != 0 )
-        jaddbits256(newjson,"pubAm",swap->pubAm);
-    if ( bits256_nonz(swap->pubBn) != 0 )
-        jaddbits256(newjson,"pubBn",swap->pubBn);
+    if ( swap->otherchoosei >= 0 )
+        jaddnum(newjson,"otherchoosei",swap->otherchoosei);
     if ( swap->myfee != 0 && jobj(newjson,"feetx") == 0 && (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEOTHERFEE) == 0 )
     {
         jaddbits256(newjson,"feetxid",swap->myfee->txid);
@@ -612,9 +611,17 @@ void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *sw
         }
         jaddbits256(newjson,"A0",swap->mypubs[0]);
         jaddbits256(newjson,"A1",swap->mypubs[1]);
+        if ( bits256_nonz(swap->pubAm) == 0 && swap->otherchoosei >= 0 )
+            swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[swap->otherchoosei]);
+        if ( bits256_nonz(swap->pubAm) != 0 )
+           jaddbits256(newjson,"pubAm",swap->pubAm);
     }
     else
     {
+        if ( bits256_nonz(swap->pubBn) == 0 && swap->otherchoosei >= 0 )
+            swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[swap->otherchoosei]);
+        if ( bits256_nonz(swap->pubBn) != 0 )
+            jaddbits256(newjson,"pubBn",swap->pubBn);
         jaddbits256(newjson,"B0",swap->mypubs[0]);
         jaddbits256(newjson,"B1",swap->mypubs[1]);
         if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEDEPOSIT) == 0 && swap->deposit != 0 && jobj(newjson,"deposit") == 0 )
