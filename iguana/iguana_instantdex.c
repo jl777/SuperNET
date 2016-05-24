@@ -1219,7 +1219,7 @@ char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_
             return(0);
         }
         isbob = ap->offer.myside;
-        swap = bitcoin_swapinit(myinfo,exchange,ap,otherap,1,argjson,isbob != 0 ? "BOB_sentoffer" : "ALICE_sentoffer");
+        swap = bitcoin_swapinit(myinfo,exchange,ap,otherap,1,argjson,"BTC_waitdeck");
         portable_mutex_lock(&swap->mutex);
         //printf("ISBOB.%d vs %d\n",isbob,instantdex_isbob(swap));
         if ( swap != 0 )
@@ -1266,7 +1266,7 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
     if ( myap->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) || otherap->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) )
         return(clonestr("{\"error\":\"instantdex_BTCswap offer too close to expiration\"}"));
     isbob = myap->offer.myside;
-    swap = bitcoin_swapinit(myinfo,exchange,myap,otherap,0,argjson,isbob != 0 ? "BOB_gotoffer" : "ALICE_gotoffer");
+    swap = bitcoin_swapinit(myinfo,exchange,myap,otherap,0,argjson,"BTC_waitdeck");
     if ( swap == 0 )
     {
         return(clonestr("{\"error\":\"couldnt allocate statemachine\"}"));
