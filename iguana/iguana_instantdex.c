@@ -899,7 +899,7 @@ int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coi
             if ( instantdex_statemachinefind(0,exchange,ap->orderid) == 0 && instantdex_historyfind(0,exchange,ap->orderid) == 0 )
             {
                 encodedhash = instantdex_encodehash(ap->offer.base,ap->offer.rel,ap->offer.price64*instantdex_bidaskdir(&ap->offer),(ap->orderid&INSTANTDEX_ORDERSTATE_ORDERIDMASK) | ap->state,ap->offer.account);
-                if ( n < sizeof(hashes)/sizeof(*hashes) )//&& GETBIT(ap->peerhas,addr->addrind) == 0 )
+                if ( n < sizeof(hashes)/sizeof(*hashes) && GETBIT(ap->peerhas,addr->addrind) == 0 )
                 {
                     hashes[n++] = encodedhash;
                     printf("(%d %llx) ",n,(long long)(ap->orderid&INSTANTDEX_ORDERSTATE_ORDERIDMASK) | ap->state);
@@ -1271,10 +1271,12 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
     {
         return(clonestr("{\"error\":\"couldnt allocate statemachine\"}"));
     }
+    portable_mutex_lock(&swap->mutex);
     //printf("ISBOB.%d vs %d\n",isbob,instantdex_isbob(swap));
     if ( (newjson= instantdex_parseargjson(myinfo,exchange,swap,argjson,1)) == 0 )
     {
         printf("error parsing argjson\n");
+        portable_mutex_unlock(&swap->mutex);
         return(clonestr("{\"error\":\"instantdex_BTCswap offer null newjson\"}"));
     }
     else
@@ -1283,6 +1285,7 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
         if ( (retstr= instantdex_choosei(swap,newjson,argjson,serdata,serdatalen)) != 0 )
         {
             free_json(newjson);
+            portable_mutex_unlock(&swap->mutex);
             return(retstr);
         }
         else
@@ -1294,6 +1297,7 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
             free_json(newjson);
         }
     }
+    portable_mutex_unlock(&swap->mutex);
     return(retstr);
 }
 
@@ -1343,9 +1347,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
             {
                 if ( instantdex_statemachinefind(myinfo,exchange,ap->orderid) == 0 && instantdex_historyfind(myinfo,exchange,ap->orderid) == 0 && instantdex_statemachinefind(myinfo,exchange,A.orderid) == 0 && instantdex_historyfind(myinfo,exchange,A.orderid) == 0 )
                 {
-                    portable_mutex_lock(&swap->mutex);
                     retstr = instantdex_gotoffer(myinfo,exchange,ap,&A,msg,argjson,remoteaddr,signerbits,serdata,serdatalen);
-                    portable_mutex_unlock(&swap->mutex);
                     if ( retstr != 0 ) // adds to statemachine if no error
                     {
                         printf("from GOTOFFER.(%s)\n",retstr);
