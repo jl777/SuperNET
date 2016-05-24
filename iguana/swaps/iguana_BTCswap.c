@@ -510,16 +510,16 @@ void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapi
                 {
                     if ( otherpubkey[0] == 3 )
                     {
-                        swap->privBn = swap->privkeys[i];
-                        swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privBn);
+                        //swap->privBn = swap->privkeys[i];
+                        swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[i]);
                     } else printf("wrong first byte.%02x\n",otherpubkey[0]);
                 }
                 else
                 {
                     if ( otherpubkey[0] == 2 )
                     {
-                        swap->privAm = swap->privkeys[i];
-                        swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privAm);
+                        //swap->privAm = swap->privkeys[i];
+                        swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[i]);
                     } else printf("wrong first byte.%02x\n",otherpubkey[0]);
                 }
                 continue;
@@ -638,6 +638,8 @@ void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *sw
     }
     if ( bits256_nonz(swap->pubAm) != 0 )
         jaddbits256(newjson,"pubAm",swap->pubAm);
+    if ( bits256_nonz(swap->privAm) != 0 )
+        jaddbits256(newjson,"privAm",swap->privAm);
     if ( bits256_nonz(swap->pubBn) != 0 )
         jaddbits256(newjson,"pubBn",swap->pubBn);
 }
@@ -950,17 +952,31 @@ cJSON *BTC_waitpaymentfunc(struct supernet_info *myinfo,struct exchange_info *ex
 
 cJSON *BTC_makeclaimfunc(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp)
 {
-    struct iguana_info *coinbtc,*altcoin;
+    struct iguana_info *coinbtc,*altcoin; int32_t got_payment=1,bob_reclaimed=0;
     coinbtc = iguana_coinfind("BTC");
     altcoin = iguana_coinfind(swap->mine.offer.base);
     strcpy(swap->waitfortx,"dep");
     *serdatap = 0, *serdatalenp = 0;
     if ( instantdex_isbob(swap) == 0 )
     {
+        // [BLOCKING: payfound] now Alice's turn to make sure payment is confrmed and send in claim or see bob's reclaim and reclaim
+        if ( got_payment != 0 )
+        {
+            swap->privAm = swap->privkeys[swap->otherchoosei];
+            // sign if/else payment
+        }
+        else if ( bob_reclaimed != 0 )
+        {
+            
+        }
     }
     else
     {
-        
+        // [BLOCKING: privM] Bob waits for privM either from Alice or alt blockchain
+        if ( bits256_nonz(swap->privAm) != 0 )
+        {
+            // a multisig tx for altcoin
+        }
     }
     return(newjson);
 }

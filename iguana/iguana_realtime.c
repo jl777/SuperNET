@@ -189,7 +189,10 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
         printf("RTspendvectors converted.%d to %d\n",num,coin->RTheight);
         bp->converted = (uint32_t)time(NULL);
         if ( iguana_balancegen(coin,1,bp,coin->RTstarti,coin->RTheight > 0 ? coin->RTheight-1 : bp->n-1,orignumemit) < 0 )
+        {
+            printf("balancegen error\n");
             coin->RTdatabad = 1;
+        }
         else if ( coin->RTgenesis == 0 && coin->firstRTgenesis == 0 )
             coin->firstRTgenesis++, printf(">>>>>> IGUANA %s READY FOR REALTIME RPC <<<<<<\n",coin->symbol);
         //printf("iguana_balancegen [%d] (%d to %d)\n",bp->hdrsi,coin->RTstarti,(coin->RTheight-1)%bp->n);
@@ -339,13 +342,19 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                 iguana_RTspendvectors(coin,bp);
                 coin->RTgenesis = (uint32_t)time(NULL);
             }
-        } else coin->RTdatabad = 1;
+        }
+        else
+        {
+            printf("walkchain error n.%d != %d\n",n,coin->RTheight-1);
+            coin->RTdatabad = 1;
+        }
     }
     if ( dest != 0 && flag != 0 )
         printf("<<<< flag.%d RT.%d:%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",flag,coin->RTheight,n,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,dest->H.data!=0?(long)dest->H.data->allocsize:-1);
     if ( coin->RTdatabad != 0 )
     {
         iguana_RTramchainfree(coin,bp);
+        coin->RTdatabad = 0;
         //memset(bp->hashes,0,sizeof(bp->hashes));
         memset(bp->blocks,0,sizeof(bp->blocks));
         if ( 0 && bp->speculative != 0 )
