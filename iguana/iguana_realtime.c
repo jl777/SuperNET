@@ -345,7 +345,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         }
         else
         {
-            printf("walkchain error n.%d != %d\n",n,coin->RTheight-1);
+            printf("walkchain error n.%d != %d\n",n,coin->RTheight-1-offset);
             coin->RTdatabad = 1;
         }
     }

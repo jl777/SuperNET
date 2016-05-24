@@ -211,7 +211,7 @@ int32_t instantdex_feetxverify(struct supernet_info *myinfo,struct iguana_info *
             {
                 if ( memcmp(script,msgtx.vouts[0].pk_script,n) == 0 )
                 {
-                    //printf("feetx script verified.(%s)\n",swap->otherfeetx);
+                    printf("feetx script verified.(%s)\n",swap->otherfee->txbytes);
                     retval = 0;
                 }
                 else
@@ -226,9 +226,7 @@ int32_t instantdex_feetxverify(struct supernet_info *myinfo,struct iguana_info *
             } else printf("pk_scriptlen %d mismatch %d\n",msgtx.vouts[0].pk_scriptlen,n);
             free_json(txobj);
         } else printf("error converting (%s) txobj\n",swap->otherfee->txbytes);
-    } else if ( swap->otherfee != 0 )
-        retval = 0;
-    else printf("no feetx to verify\n");
+    } else printf("no feetx to verify\n");
     return(retval);
 }
 
@@ -258,13 +256,10 @@ struct bitcoin_statetx *instantdex_bobtx(struct supernet_info *myinfo,struct bit
 int32_t instantdex_paymentverify(struct supernet_info *myinfo,struct iguana_info *coin,struct bitcoin_swapinfo *swap,cJSON *argjson,int32_t depositflag)
 {
     cJSON *txobj; bits256 txid; uint32_t n,locktime; int32_t i,secretstart,retval = -1; uint64_t x;
-    struct iguana_msgtx msgtx; uint8_t script[512],rmd160[20]; int64_t relsatoshis,amount,insurance = 0;
+    struct iguana_msgtx msgtx; uint8_t script[512],rmd160[20]; int64_t amount;
     if ( coin != 0 && jstr(argjson,depositflag != 0 ? "deposit" : "payment") != 0 )
     {
-        relsatoshis = swap->altsatoshis;
-        if ( depositflag != 0 )
-            insurance = (100 * relsatoshis) / INSTANTDEX_INSURANCEDIV + coin->chain->txfee;
-        amount = relsatoshis + insurance;
+        amount = swap->BTCsatoshis + depositflag*swap->insurance*100;
         if ( swap->deposit != 0 && (txobj= bitcoin_hex2json(coin,&txid,&msgtx,swap->deposit->txbytes)) != 0 )
         {
             locktime = swap->expiration;
@@ -296,7 +291,7 @@ int32_t instantdex_paymentverify(struct supernet_info *myinfo,struct iguana_info
             free_json(txobj);
         }
     }
-    return(retval * 0);
+    return(retval);
 }
 
 int32_t instantdex_altpaymentverify(struct supernet_info *myinfo,struct iguana_info *coin,struct bitcoin_swapinfo *swap,cJSON *argjson)
@@ -327,7 +322,7 @@ int32_t instantdex_altpaymentverify(struct supernet_info *myinfo,struct iguana_i
             free_json(txobj);
         }
     }
-    return(retval * 0);
+    return(retval);
 }
 
 struct bitcoin_statetx *instantdex_alicetx(struct supernet_info *myinfo,struct iguana_info *altcoin,char *msigaddr,bits256 pubAm,bits256 pubBn,int64_t amount,struct bitcoin_swapinfo *swap)
@@ -393,7 +388,11 @@ int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct bitcoin_swapin
     char buf[3]; int32_t i,n,m,len=0; bits256 pubi; uint64_t txid; uint8_t secret160[20],pubkey[33];
     sprintf(buf,"%c0",'A' - 0x02 + firstbyte);
     if ( numpubs > 2 )
+    {
+        if ( swap->numpubs+2 >= numpubs )
+            return(numpubs);
         printf(">>>>>> start generating %s\n",buf);
+    }
     for (i=n=m=0; i<numpubs*100 && n<numpubs; i++)
     {
         pubi = instantdex_derivekeypair(myinfo,&swap->privkeys[n],pubkey,privkey,hash);

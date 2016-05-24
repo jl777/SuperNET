@@ -1344,6 +1344,11 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
             A.offer.minperc = 100;
         if ( (swap= instantdex_statemachinefind(myinfo,exchange,A.orderid)) != 0 )
         {
+            if ( signerbits == swap->othertrader.txid )
+            {
+                swap->expiration += INSTANTDEX_DURATION;
+                printf("OTHER SIDE sent packet\n");
+            }
             if ( swap->cutverified == 0 && swap->choosei >= 0 && serdatalen == sizeof(swap->privkeys) )
                 instantdex_privkeyextract(myinfo,swap,serdata,serdatalen);
             printf("found existing state machine %llx choosei.%d other.%d\n",(long long)A.orderid,swap->choosei,swap->otherchoosei);
