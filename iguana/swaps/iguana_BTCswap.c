@@ -657,6 +657,7 @@ void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *sw
         {
             swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[swap->otherchoosei]);
             swap->privAm = swap->privkeys[swap->otherchoosei];
+            calc_rmd160_sha256(swap->secretAm,swap->privAm.bytes,sizeof(swap->privAm));
             memset(&swap->privkeys[swap->otherchoosei],0,sizeof(swap->privkeys[swap->otherchoosei]));
         }
     }
@@ -666,6 +667,7 @@ void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *sw
         {
             swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[swap->otherchoosei]);
             swap->privBn = swap->privkeys[swap->otherchoosei];
+            calc_rmd160_sha256(swap->secretBn,swap->privBn.bytes,sizeof(swap->privBn));
             memset(&swap->privkeys[swap->otherchoosei],0,sizeof(swap->privkeys[swap->otherchoosei]));
         }
         jaddbits256(newjson,"B0",swap->mypubs[0]);
@@ -947,12 +949,14 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     instantdex_addevent(s,*n,"BTC_idle","BTCoffer","poll","BTC_waitdeck"); // send deck + Chose
     instantdex_addevent(s,*n,"BTC_waitdeck","gotdeck","havedeck","BTC_gotdeck"); // virt event
     instantdex_addevent(s,*n,"BTC_waitdeck","havedeck","poll","BTC_waitdeck"); // other side gotdeck
-    instantdex_addevent(s,*n,"BTC_waitdeck","poll","poll","BTC_waitdeck");
+    instantdex_addevent(s,*n,"BTC_waitdeck","sentprivs","poll","BTC_waitdeck");
+    instantdex_addevent(s,*n,"BTC_waitdeck","poll","sentprivs","BTC_waitdeck");
     
     // to goto BTC_waitfee, both must have sent/recv deck and Chosen and verified cut and choose
     instantdex_addevent(s,*n,"BTC_gotdeck","gotdeck","sentprivs","BTC_waitfee"); // other gotdeck
     instantdex_addevent(s,*n,"BTC_gotdeck","havedeck","poll","BTC_gotdeck");
-    instantdex_addevent(s,*n,"BTC_gotdeck","poll","poll","BTC_gotdeck");
+    instantdex_addevent(s,*n,"BTC_gotdeck","sentprivs","poll","BTC_gotdeck");
+    instantdex_addevent(s,*n,"BTC_gotdeck","poll","sentprivs","BTC_gotdeck");
     
     // [BLOCKING: feefound] Bob waits for fee and sends deposit when it appears, alice skips past
     instantdex_addevent(s,*n,"BTC_waitfee","gendep","poll","BTC_gendeposit"); // bob's virt

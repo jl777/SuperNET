@@ -257,6 +257,7 @@ char *bitcoin_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void
                 {
                     if ( strcmp(method,"rawtx_result") == 0 )
                     {
+                        printf("got rawtx.(%s)\n",jstr(json,"rawtx"));
                         return(iguana_rawtx_result(myinfo,coin,json,remoteaddr,juint(json,"rawtxtag"),jobj(json,"vins"),jstr(json,"rawtx")));
                     }
                 }
