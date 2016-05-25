@@ -264,7 +264,8 @@ char *bitcoin_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void
             }
         }
     }
-    printf("unhandled bitcoin_hexmsg.(%d) from %s (%s/%s)\n",len,remoteaddr,agent,method);
+    if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
+        printf("unhandled bitcoin_hexmsg.(%d) from %s (%s/%s)\n",len,remoteaddr,agent,method);
     free_json(json);
     return(retstr);
 }
