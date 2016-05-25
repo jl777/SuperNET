@@ -1341,7 +1341,7 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
             if ( swap->pollevent != 0 )
                 instantdex_eventfree(swap->pollevent);
             swap->pollevent = instantdex_event("poll",argjson,newjson,(void *)swap->deck,sizeof(swap->deck));
-            retstr = instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,"BTCdeckC",traderpub,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck),0,swap);
+            retstr = instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,"BTCoffer",traderpub,INSTANTDEX_HOPS,swap->deck,sizeof(swap->deck),0,swap);
             free_json(newjson);
         }
     }

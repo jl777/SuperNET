@@ -1045,7 +1045,7 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
         printf("state.%s (%s)\n",state->name,swap->mine.offer.base);
         return(clonestr("{\"error\":\"instantdex_BTCswap missing coin info\"}"));
     }
-    printf("%llu/%llu cmd.(%s) state.(%s) newlen.%d isbob.%d have.%x myhave.%x myfee.%p\n",(long long)swap->mine.orderid,(long long)swap->other.orderid,cmdstr,swap->state->name,(int32_t)strlen(jprint(newjson,0)),instantdex_isbob(swap),juint(argjson,"have"),swap->havestate,swap->myfee);
+    printf("%llu/%llu cmd.(%s) state.(%s) newlen.%d isbob.%d have.%x myhave.%x otherfee.%p\n",(long long)swap->mine.orderid,(long long)swap->other.orderid,cmdstr,swap->state->name,(int32_t)strlen(jprint(newjson,0)),instantdex_isbob(swap),juint(argjson,"have"),swap->havestate,swap->otherfee);
     if ( jobj(argjson,"have") != 0 )
         swap->otherhavestate |= juint(argjson,"have");
     if ( jobj(argjson,"mychoosei") != 0 )
