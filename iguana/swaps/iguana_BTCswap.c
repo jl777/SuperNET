@@ -878,6 +878,7 @@ cJSON *BTC_waitdepositfunc(struct supernet_info *myinfo,struct exchange_info *ex
 cJSON *BTC_waitaltpaymentfunc(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp)
 {
     *serdatap = 0, *serdatalenp = 0;
+    printf("check for altpayment\n");
     if ( swap->altpayment != 0 && iguana_txidstatus(swap->altcoin,swap->altpayment->txid) >= swap->altconfirms )
     {
         if ( instantdex_isbob(swap) != 0 )
@@ -886,10 +887,11 @@ cJSON *BTC_waitaltpaymentfunc(struct supernet_info *myinfo,struct exchange_info 
             {
                 if ( swap->payment == 0 && (swap->payment= instantdex_bobtx(myinfo,swap,swap->coinbtc,swap->BTCsatoshis,0)) == 0 )
                     printf("couldnt create Bob's payment\n");
+                else printf("ALTFOUND\n");
                 jaddstr(newjson,"virtevent","altfound");
             } else printf("alt payment didnt verify\n");
-        } else jaddstr(newjson,"virtevent","altfound");
-    }
+        } //else jaddstr(newjson,"virtevent","altfound");
+    } else printf("altpayment not ready.%p or status %f\n",swap->altpayment,iguana_txidstatus(swap->altcoin,swap->altpayment->txid));
     return(newjson);
 }
 
@@ -902,7 +904,7 @@ cJSON *BTC_waitpaymentfunc(struct supernet_info *myinfo,struct exchange_info *ex
         {
             if ( instantdex_paymentverify(myinfo,iguana_coinfind(swap->mine.offer.base),swap,argjson,0) == 0 )
                 jaddstr(newjson,"virtevent","payfound");
-        } else jaddstr(newjson,"virtevent","payfound");
+        } //else jaddstr(newjson,"virtevent","payfound");
     }
     return(newjson);
 }
