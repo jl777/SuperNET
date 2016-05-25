@@ -666,12 +666,19 @@ void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *sw
     }
     if ( instantdex_isbob(swap) == 0 )
     {
-        if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEALTPAYMENT) == 0 && swap->altpayment != 0 && jobj(newjson,"altpayment") == 0 )
+        if ( swap->altpayment != 0 )
         {
-            jaddbits256(newjson,"altpaymenttxid",swap->altpayment->txid);
-            jaddstr(newjson,"altpayment",swap->altpayment->txbytes);
-            jaddstr(newjson,"altmsigaddr",swap->altpayment->destaddr);
-            printf("add altpayment.(%s) have.%x\n",swap->altpayment->txbytes,swap->havestate);
+            if ( swap->altpayment->destaddr[0] != 0 )
+            {
+                jaddstr(newjson,"altmsigaddr",swap->altpayment->destaddr);
+                printf("add altmsig.%s\n",swap->altpayment->destaddr);
+            }
+            if ( (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEALTPAYMENT) == 0 && jobj(newjson,"altpayment") == 0 )
+            {
+                jaddbits256(newjson,"altpaymenttxid",swap->altpayment->txid);
+                jaddstr(newjson,"altpayment",swap->altpayment->txbytes);
+                printf("add altpayment.(%s) have.%x\n",swap->altpayment->txbytes,swap->havestate);
+            }
         }
         jaddbits256(newjson,"A0",swap->mypubs[0]);
         jaddbits256(newjson,"A1",swap->mypubs[1]);
@@ -869,7 +876,11 @@ cJSON *BTC_waitdepositfunc(struct supernet_info *myinfo,struct exchange_info *ex
             printf("deposit verified\n");
             if ( swap->altpayment == 0 && (swap->altpayment= instantdex_alicetx(myinfo,swap->altcoin,msigaddr,swap->pubAm,swap->pubBn,swap->altsatoshis,swap)) == 0 )
                 printf("error creating altpayment\n");
-            else jaddstr(newjson,"virtevent","depfound");
+            else
+            {
+                jaddstr(newjson,"virtevent","depfound");
+                strcpy(swap->altpayment->destaddr,msigaddr);
+            }
         }
     }
     return(newjson);
