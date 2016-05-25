@@ -330,7 +330,7 @@ int32_t instantdex_paymentverify(struct supernet_info *myinfo,struct iguana_info
                 if ( memcmp(script,msgtx.vouts[0].pk_script,n) == 0 )
                 {
                     iguana_rwnum(0,&script[secretstart],sizeof(x),&x);
-                    printf("deposit script verified x.%llx vs otherdeck %llx\n",(long long)x,(long long)swap->otherdeck[swap->choosei][0]);
+                    printf("deposit script verified\n");
                     if ( x == swap->otherdeck[swap->choosei][0] )
                         retval = 0;
                     else printf("deposit script verified but secret mismatch x.%llx vs otherdeck %llx\n",(long long)x,(long long)swap->otherdeck[swap->choosei][0]);
@@ -413,7 +413,7 @@ cJSON *BTC_makeclaimfunc(struct supernet_info *myinfo,struct exchange_info *exch
         // [BLOCKING: payfound] now Alice's turn to make sure payment is confrmed and send in claim or see bob's reclaim and reclaim
         if ( got_payment != 0 )
         {
-            swap->privAm = swap->privkeys[swap->otherchoosei];
+            //swap->privAm = swap->privkeys[swap->otherchoosei+2];
             // sign if/else payment
         }
         else if ( bob_reclaimed != 0 )
@@ -505,16 +505,14 @@ char *instantdex_choosei(struct bitcoin_swapinfo *swap,cJSON *newjson,cJSON *arg
 
 void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapinfo *swap,uint8_t *serdata,int32_t serdatalen)
 {
-    int32_t i,j,wrongfirstbyte,errs,len = 0; bits256 otherpriv,pubi; uint8_t secret160[20],otherpubkey[33],pubkey[33]; char str[65]; uint64_t txid;
-    if ( swap->cutverified == 0 && swap->choosei >= 0 && serdatalen == sizeof(swap->privkeys) )
+    int32_t i,j,wrongfirstbyte,errs,len = 0; bits256 otherpriv,pubi; uint8_t secret160[20],otherpubkey[33],pubkey[33]; uint64_t txid;
+    if ( swap->cutverified == 0 && swap->choosei >= 0 && serdatalen == sizeof(swap->privkeys)-2*sizeof(bits256) )
     {
-        for (i=wrongfirstbyte=errs=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
+        for (i=2,wrongfirstbyte=errs=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
         {
             for (j=0; j<32; j++)
                 otherpriv.bytes[j] = serdata[len++];
-            if ( i == 0 )
-                printf("got instantdex_privkeyextract serdatalen.%d choosei.%d cutverified.%d priv0 %s\n",serdatalen,swap->choosei,swap->cutverified,bits256_str(str,otherpriv));
-            if ( i == swap->choosei )
+            if ( i == swap->choosei+2 )
             {
                 if ( bits256_nonz(otherpriv) != 0 )
                 {
@@ -525,6 +523,7 @@ void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapi
                 {
                     if ( otherpubkey[0] == 0x02 )
                     {
+                        swap->privBn = swap->privkeys[i];
                         swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privBn);
                     } else printf("wrong first byte.%02x\n",otherpubkey[0]);
                 }
@@ -532,6 +531,7 @@ void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapi
                 {
                     if ( otherpubkey[0] == 0x03 )
                     {
+                        swap->privAm = swap->privkeys[i];
                         swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privAm);
                     } else printf("wrong first byte.%02x\n",otherpubkey[0]);
                 }
@@ -625,7 +625,7 @@ void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *sw
             secret160 = swap->secretAm;
             field = "secretAm";
         }
-        calc_rmd160_sha256(secret160,swap->privkeys[swap->otherchoosei].bytes,sizeof(swap->privkeys[swap->otherchoosei]));
+        calc_rmd160_sha256(secret160,swap->privkeys[swap->otherchoosei+2].bytes,sizeof(swap->privkeys[swap->otherchoosei+2]));
         init_hexbytes_noT(secretstr,secret160,20);
         jaddstr(newjson,field,secretstr);
     }
@@ -648,20 +648,20 @@ void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *sw
         jaddbits256(newjson,"A1",swap->mypubs[1]);
         swap->pubA0 = swap->mypubs[0];
         //swap->pubA1 = swap->mypubs[1];
-        if ( bits256_nonz(swap->pubAm) == 0 && swap->otherchoosei >= 0 && bits256_nonz(swap->privkeys[swap->otherchoosei]) != 0 )
+        if ( bits256_nonz(swap->pubAm) == 0 && swap->otherchoosei >= 0 && bits256_nonz(swap->privkeys[swap->otherchoosei+2]) != 0 )
         {
-            swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[swap->otherchoosei]);
-            swap->privAm = swap->privkeys[swap->otherchoosei];
-            memset(&swap->privkeys[swap->otherchoosei],0,sizeof(swap->privkeys[swap->otherchoosei]));
+            swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[swap->otherchoosei+2]);
+            swap->privAm = swap->privkeys[swap->otherchoosei+2];
+            memset(&swap->privkeys[swap->otherchoosei+2],0,sizeof(swap->privkeys[swap->otherchoosei+2]));
         }
     }
     else
     {
-        if ( bits256_nonz(swap->pubBn) == 0 && swap->otherchoosei >= 0 && bits256_nonz(swap->privkeys[swap->otherchoosei]) != 0 )
+        if ( bits256_nonz(swap->pubBn) == 0 && swap->otherchoosei >= 0 && bits256_nonz(swap->privkeys[swap->otherchoosei+2]) != 0 )
         {
-            swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[swap->otherchoosei]);
-            swap->privBn = swap->privkeys[swap->otherchoosei];
-            memset(&swap->privkeys[swap->otherchoosei],0,sizeof(swap->privkeys[swap->otherchoosei]));
+            swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[swap->otherchoosei+2]);
+            swap->privBn = swap->privkeys[swap->otherchoosei+2];
+            memset(&swap->privkeys[swap->otherchoosei+2],0,sizeof(swap->privkeys[swap->otherchoosei+2]));
         }
         jaddbits256(newjson,"B0",swap->mypubs[0]);
         jaddbits256(newjson,"B1",swap->mypubs[1]);
@@ -729,7 +729,7 @@ cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info
         if ( swap->otherchoosei < 0 && jobj(argjson,"mychoosei") != 0 )
         {
             printf("otherschoosei.%d\n",swap->otherchoosei);
-            if ( (swap->otherchoosei= juint(argjson,"mychoosei")) >= sizeof(swap->otherdeck)/sizeof(*swap->otherdeck) )
+            if ( (swap->otherchoosei= juint(argjson,"mychoosei")) >= sizeof(swap->otherdeck)/sizeof(*swap->otherdeck)-2 )
                 swap->otherchoosei = -1;
         }
         if ( swap->otherchoosei >= 0 )

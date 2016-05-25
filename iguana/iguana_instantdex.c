@@ -421,10 +421,10 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
         extralen = (int32_t)sizeof(swap->deck);
         serflag = 1;
     }
-    else if ( bits256_nonz(swap->privkeys[swap->otherchoosei]) == 0 && swap->cutverified == 0 )
+    else if ( bits256_nonz(swap->privkeys[swap->otherchoosei+2]) == 0 && swap->cutverified == 0 )
     {
-        extraser = swap->privkeys[0].bytes;
-        extralen = (int32_t)sizeof(swap->privkeys);
+        extraser = swap->privkeys[2].bytes;
+        extralen = (int32_t)sizeof(swap->privkeys) - sizeof(bits256)*2;
         serflag = 2;
     } else serflag = 0;
     datalen = (int32_t)slen + extralen + olen;
@@ -452,7 +452,6 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
         }
         else if ( serflag == 2 )
         {
-            printf("send privkeys0 %s\n",bits256_str(str,swap->privkeys[0]));
             while ( len < extralen )
             {
                 memcpy(&tmphash,&((uint8_t *)extraser)[len],sizeof(tmphash));
