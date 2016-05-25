@@ -824,7 +824,7 @@ cJSON *BTC_checkdeckfunc(struct supernet_info *myinfo,struct exchange_info *exch
     *serdatap = 0, *serdatalenp = 0; struct iguana_info *coin = iguana_coinfind("BTC");
     if ( coin != 0 )
     {
-        if ( swap->choosei >= 0 && swap->otherchoosei >= 0 )
+        if ( swap->choosei >= 0 )//&& swap->otherchoosei >= 0 )
             jaddstr(newjson,"virtevent","gotdeck");
     }
     return(newjson);
