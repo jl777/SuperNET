@@ -33,6 +33,7 @@
 #define sleep(x) Sleep(1000*(x))
 #include "../win/mingw.h"
 #include "../win/mman.h"
+#include "../win/pthread.h"
 
 //#define EADDRINUSE WSAEADDRINUSE
 
