@@ -821,12 +821,10 @@ cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info
 
 cJSON *BTC_checkdeckfunc(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp)
 {
-    *serdatap = 0, *serdatalenp = 0; struct iguana_info *coin = iguana_coinfind("BTC");
-    if ( coin != 0 )
-    {
-        if ( swap->choosei >= 0 )//&& swap->otherchoosei >= 0 )
-            jaddstr(newjson,"virtevent","gotdeck");
-    }
+    *serdatap = 0, *serdatalenp = 0;
+    if ( swap->choosei >= 0 )//&& swap->otherchoosei >= 0 )
+        jaddstr(newjson,"virtevent","gotdeck");
+    else printf("no choosei yet\n");
     return(newjson);
 }
 
@@ -922,7 +920,7 @@ cJSON *BTC_waitpaymentfunc(struct supernet_info *myinfo,struct exchange_info *ex
     {
         if ( instantdex_isbob(swap) == 0 )
         {
-            if ( instantdex_paymentverify(myinfo,iguana_coinfind(swap->mine.offer.base),swap,argjson,0) == 0 )
+            if ( instantdex_paymentverify(myinfo,swap->altcoin,swap,argjson,0) == 0 )
                 jaddstr(newjson,"virtevent","payfound");
         } //else jaddstr(newjson,"virtevent","payfound");
     }
@@ -995,7 +993,7 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
     instantdex_addevent(s,*n,"BTC_idle","BTCoffer","poll","BTC_waitdeck"); // send deck + Chose
     instantdex_addevent(s,*n,"BTC_waitdeck","gotdeck","havedeck","BTC_gotdeck"); // virt event
     instantdex_addevent(s,*n,"BTC_waitdeck","havedeck","poll","BTC_waitdeck"); // other side gotdeck
-    instantdex_addevent(s,*n,"BTC_waitdeck","sentpriv","poll","BTC_waitdeck");
+    instantdex_addevent(s,*n,"BTC_waitdeck","sentpriv","sentpriv","BTC_waitdeck");
     instantdex_addevent(s,*n,"BTC_waitdeck","poll","sentpriv","BTC_waitdeck");
     
     // to goto BTC_waitfee, both must have sent/recv deck and Chosen and verified cut and choose
