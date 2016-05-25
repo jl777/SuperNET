@@ -457,6 +457,8 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
             {
                 memcpy(&tmphash,&((uint8_t *)extraser)[len],sizeof(x));
                 iguana_rwbignum(1,&((uint8_t *)extraser)[len],sizeof(bits256),tmphash.bytes);
+                if ( len == 0 )
+                    printf("ser privkeys0 %s\n",bits256_str(str,*(bits256 *)extraser));
                 len += sizeof(bits256);
             }
         }

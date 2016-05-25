@@ -510,6 +510,8 @@ void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapi
     {
         for (i=wrongfirstbyte=errs=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
         {
+            if ( i == 0 )
+                printf("raw recv.%s\n",*(bits256 *)serdata);
             len += iguana_rwbignum(0,&serdata[len],sizeof(bits256),otherpriv.bytes);
             if ( i == 0 )
                 printf("got instantdex_privkeyextract serdatalen.%d choosei.%d cutverified.%d priv0 %s\n",serdatalen,swap->choosei,swap->cutverified,bits256_str(str,otherpriv));
