@@ -354,7 +354,7 @@ int32_t instantdex_paymentverify(struct supernet_info *myinfo,struct iguana_info
 int32_t instantdex_altpaymentverify(struct supernet_info *myinfo,struct iguana_info *coin,struct bitcoin_swapinfo *swap,cJSON *argjson)
 {
     cJSON *txobj; bits256 txid; uint32_t n; int32_t i,retval = -1;
-    struct iguana_msgtx msgtx; uint8_t script[512]; char *altmsigaddr,msigaddr[64];
+    struct iguana_msgtx msgtx; uint8_t script[512]; char *altmsigaddr=0,msigaddr[64];
     if ( swap->altpayment != 0 && (altmsigaddr= jstr(argjson,"altmsigaddr")) != 0 )
     {
         if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,swap->altpayment->txbytes)) != 0 )
@@ -379,7 +379,7 @@ int32_t instantdex_altpaymentverify(struct supernet_info *myinfo,struct iguana_i
             } else printf("msig mismatch.(%s %s) or n.%d != %d\n",msigaddr,altmsigaddr,n,msgtx.vouts[0].pk_scriptlen);
             free_json(txobj);
         } else printf("bitcoin_hex2json error\n");
-    } else printf("no altpayment.%p or no altmsig.%s\n",swap->altpayment,altmsigaddr);
+    } else printf("no altpayment.%p or no altmsig.%s\n",swap->altpayment,altmsigaddr!=0?altmsigaddr:"");
     return(retval);
 }
 
