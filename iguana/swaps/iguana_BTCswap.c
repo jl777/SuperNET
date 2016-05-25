@@ -413,7 +413,7 @@ cJSON *BTC_makeclaimfunc(struct supernet_info *myinfo,struct exchange_info *exch
         // [BLOCKING: payfound] now Alice's turn to make sure payment is confrmed and send in claim or see bob's reclaim and reclaim
         if ( got_payment != 0 )
         {
-            //swap->privAm = swap->privkeys[swap->otherchoosei+2];
+            //swap->privAm = swap->privkeys[swap->otherchoosei];
             // sign if/else payment
         }
         else if ( bob_reclaimed != 0 )
@@ -452,19 +452,22 @@ int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct bitcoin_swapin
     }
     for (i=n=m=0; i<numpubs*100 && n<numpubs; i++)
     {
-        pubi = instantdex_derivekeypair(myinfo,&swap->privkeys[n],pubkey,privkey,hash);
-        privkey = swap->privkeys[n];
+        pubi = instantdex_derivekeypair(myinfo,&privkey,pubkey,privkey,hash);
         //printf("i.%d n.%d numpubs.%d %02x vs %02x\n",i,n,numpubs,pubkey[0],firstbyte);
         if ( pubkey[0] != firstbyte )
             continue;
         if ( n < 2 )
         {
             if ( bits256_nonz(swap->mypubs[n]) == 0 )
+            {
+                swap->myprivs[n] = privkey;
                 memcpy(swap->mypubs[n].bytes,pubkey+1,sizeof(bits256));
+            }
         }
         if ( swap->numpubs < INSTANTDEX_DECKSIZE )
         {
-            calc_rmd160_sha256(secret160,swap->privkeys[n].bytes,sizeof(swap->privkeys[n]));
+            swap->privkeys[m] = privkey;
+            calc_rmd160_sha256(secret160,privkey.bytes,sizeof(privkey));
             memcpy(&txid,secret160,sizeof(txid));
             len += iguana_rwnum(1,(uint8_t *)&swap->deck[m][0],sizeof(txid),&txid);
             len += iguana_rwnum(1,(uint8_t *)&swap->deck[m][1],sizeof(pubi.txid),&pubi.txid);
@@ -506,13 +509,13 @@ char *instantdex_choosei(struct bitcoin_swapinfo *swap,cJSON *newjson,cJSON *arg
 void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapinfo *swap,uint8_t *serdata,int32_t serdatalen)
 {
     int32_t i,j,wrongfirstbyte,errs,len = 0; bits256 otherpriv,pubi; uint8_t secret160[20],otherpubkey[33],pubkey[33]; uint64_t txid;
-    if ( swap->cutverified == 0 && swap->choosei >= 0 && serdatalen == sizeof(swap->privkeys)-2*sizeof(bits256) )
+    if ( swap->cutverified == 0 && swap->choosei >= 0 && serdatalen == sizeof(swap->privkeys) )
     {
-        for (i=2,wrongfirstbyte=errs=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
+        for (i=wrongfirstbyte=errs=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
         {
             for (j=0; j<32; j++)
                 otherpriv.bytes[j] = serdata[len++];
-            if ( i == swap->choosei+2 )
+            if ( i == swap->choosei )
             {
                 if ( bits256_nonz(otherpriv) != 0 )
                 {
@@ -625,7 +628,7 @@ void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *sw
             secret160 = swap->secretAm;
             field = "secretAm";
         }
-        calc_rmd160_sha256(secret160,swap->privkeys[swap->otherchoosei+2].bytes,sizeof(swap->privkeys[swap->otherchoosei+2]));
+        calc_rmd160_sha256(secret160,swap->privkeys[swap->otherchoosei].bytes,sizeof(swap->privkeys[swap->otherchoosei]));
         init_hexbytes_noT(secretstr,secret160,20);
         jaddstr(newjson,field,secretstr);
     }
@@ -648,20 +651,20 @@ void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *sw
         jaddbits256(newjson,"A1",swap->mypubs[1]);
         swap->pubA0 = swap->mypubs[0];
         //swap->pubA1 = swap->mypubs[1];
-        if ( bits256_nonz(swap->pubAm) == 0 && swap->otherchoosei >= 0 && bits256_nonz(swap->privkeys[swap->otherchoosei+2]) != 0 )
+        if ( bits256_nonz(swap->pubAm) == 0 && swap->otherchoosei >= 0 && bits256_nonz(swap->privkeys[swap->otherchoosei]) != 0 )
         {
-            swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[swap->otherchoosei+2]);
-            swap->privAm = swap->privkeys[swap->otherchoosei+2];
-            memset(&swap->privkeys[swap->otherchoosei+2],0,sizeof(swap->privkeys[swap->otherchoosei+2]));
+            swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[swap->otherchoosei]);
+            swap->privAm = swap->privkeys[swap->otherchoosei];
+            memset(&swap->privkeys[swap->otherchoosei],0,sizeof(swap->privkeys[swap->otherchoosei]));
         }
     }
     else
     {
-        if ( bits256_nonz(swap->pubBn) == 0 && swap->otherchoosei >= 0 && bits256_nonz(swap->privkeys[swap->otherchoosei+2]) != 0 )
+        if ( bits256_nonz(swap->pubBn) == 0 && swap->otherchoosei >= 0 && bits256_nonz(swap->privkeys[swap->otherchoosei]) != 0 )
         {
-            swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[swap->otherchoosei+2]);
-            swap->privBn = swap->privkeys[swap->otherchoosei+2];
-            memset(&swap->privkeys[swap->otherchoosei+2],0,sizeof(swap->privkeys[swap->otherchoosei+2]));
+            swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[swap->otherchoosei]);
+            swap->privBn = swap->privkeys[swap->otherchoosei];
+            memset(&swap->privkeys[swap->otherchoosei],0,sizeof(swap->privkeys[swap->otherchoosei]));
         }
         jaddbits256(newjson,"B0",swap->mypubs[0]);
         jaddbits256(newjson,"B1",swap->mypubs[1]);
@@ -729,7 +732,7 @@ cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info
         if ( swap->otherchoosei < 0 && jobj(argjson,"mychoosei") != 0 )
         {
             printf("otherschoosei.%d\n",swap->otherchoosei);
-            if ( (swap->otherchoosei= juint(argjson,"mychoosei")) >= sizeof(swap->otherdeck)/sizeof(*swap->otherdeck)-2 )
+            if ( (swap->otherchoosei= juint(argjson,"mychoosei")) >= sizeof(swap->otherdeck)/sizeof(*swap->otherdeck) )
                 swap->otherchoosei = -1;
         }
         if ( swap->otherchoosei >= 0 )

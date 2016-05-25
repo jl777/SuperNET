@@ -421,10 +421,10 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
         extralen = (int32_t)sizeof(swap->deck);
         serflag = 1;
     }
-    else if ( bits256_nonz(swap->privkeys[swap->otherchoosei+2]) == 0 && swap->cutverified == 0 )
+    else if ( bits256_nonz(swap->privkeys[swap->otherchoosei]) == 0 && swap->cutverified == 0 )
     {
-        extraser = swap->privkeys[2].bytes;
-        extralen = (int32_t)sizeof(swap->privkeys) - sizeof(bits256)*2;
+        extraser = swap->privkeys[0].bytes;
+        extralen = (int32_t)sizeof(swap->privkeys);
         serflag = 2;
     } else serflag = 0;
     datalen = (int32_t)slen + extralen + olen;

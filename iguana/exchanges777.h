@@ -155,7 +155,7 @@ struct bitcoin_swapinfo
 {
     struct bitcoin_swapinfo *next,*prev; portable_mutex_t mutex;
     queue_t eventsQ; struct bitcoin_eventitem *pollevent;
-    bits256 privkeys[INSTANTDEX_DECKSIZE+2],mypubs[2],otherpubs[2],pubA0,pubB0,pubB1,privAm,pubAm,privBn,pubBn;
+    bits256 privkeys[INSTANTDEX_DECKSIZE],myprivs[2],mypubs[2],otherpubs[2],pubA0,pubB0,pubB1,privAm,pubAm,privBn,pubBn;
     bits256 myorderhash,otherorderhash,mypubkey,othertrader,bothorderhash;
     uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
     uint64_t altsatoshis,BTCsatoshis,insurance,altinsurance;
