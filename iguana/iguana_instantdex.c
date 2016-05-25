@@ -437,12 +437,11 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     //printf("extralen.%d datalen.%d slen.%d olen.%d\n",extralen,datalen,slen,olen);
     if ( extralen > 0 )
     {
-        char str[65];
         memcpy(&msg->serialized[slen + olen],extraser,extralen);
         len = 0;
         if ( serflag == 1 )
         {
-            printf("send deck (%llx %llx)\n",(long long)swap->deck[0][0],(long long)swap->deck[0][1]);
+            //printf("send deck (%llx %llx)\n",(long long)swap->deck[0][0],(long long)swap->deck[0][1]);
             while ( len < extralen )
             {
                 memcpy(&x,&((uint8_t *)extraser)[len],sizeof(x));
@@ -458,8 +457,8 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
                 for (j=0; j<32; j++)
                     ((uint8_t *)extraser)[len++] = tmphash.bytes[j];
                 //iguana_rwbignum(1,&((uint8_t *)extraser)[len],sizeof(bits256),tmphash.bytes);
-                if ( len == 0 )
-                    printf("ser privkeys0 %s\n",bits256_str(str,*(bits256 *)extraser));
+                //if ( len == 0 )
+                //    printf("ser privkeys0 %s\n",bits256_str(str,*(bits256 *)extraser));
                 len += sizeof(bits256);
             }
         }

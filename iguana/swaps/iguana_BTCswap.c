@@ -527,6 +527,7 @@ void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapi
                     if ( otherpubkey[0] == 0x02 )
                     {
                         swap->privBn = swap->privkeys[i];
+                        calc_rmd160_sha256(swap->secretBn,swap->privBn.bytes,sizeof(swap->privBn));
                         swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privBn);
                     } else printf("wrong first byte.%02x\n",otherpubkey[0]);
                 }
@@ -535,6 +536,7 @@ void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapi
                     if ( otherpubkey[0] == 0x03 )
                     {
                         swap->privAm = swap->privkeys[i];
+                        calc_rmd160_sha256(swap->secretAm,swap->privAm.bytes,sizeof(swap->privAm));
                         swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privAm);
                     } else printf("wrong first byte.%02x\n",otherpubkey[0]);
                 }
@@ -608,7 +610,7 @@ void instantdex_swapbits256update(bits256 *txidp,cJSON *argjson,char *fieldname)
 
 void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *swap,cJSON *newjson)
 {
-    uint8_t pubkey[33],*secret160; int32_t deckflag; char secretstr[41],*field; bits256 priv;
+    uint8_t pubkey[33],*secret160; int32_t deckflag; char secretstr[41],*field;
     deckflag = (newjson != 0 && swap->otherchoosei < 0) ? 1 : 0;
     if ( instantdex_pubkeyargs(myinfo,swap,2 + deckflag*INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myorderhash,0x02+instantdex_isbob(swap)) != 2 + deckflag*INSTANTDEX_DECKSIZE )
         printf("ERROR: couldnt generate pubkeys deckflag.%d\n",deckflag);
@@ -622,26 +624,21 @@ void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *sw
         {
             secret160 = swap->secretBn;
             field = "secretBn";
-            priv = swap->privBn;
         }
         else
         {
             secret160 = swap->secretAm;
             field = "secretAm";
-            priv = swap->privAm;
         }
-        if ( bits256_nonz(priv) != 0 )
-        {
-            calc_rmd160_sha256(secret160,priv.bytes,sizeof(priv));
-            init_hexbytes_noT(secretstr,secret160,20);
-            jaddstr(newjson,field,secretstr);
-        }
+        init_hexbytes_noT(secretstr,secret160,20);
+        jaddstr(newjson,field,secretstr);
+        printf("send secretstr.(%s)\n",secretstr);
     }
-    if ( swap->myfee != 0 && jobj(newjson,"feetx") == 0 && (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEOTHERFEE) == 0 )
+    if ( jobj(newjson,"feetx") == 0 && swap->myfee != 0 ) // &&  (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEOTHERFEE) == 0 )
     {
         jaddbits256(newjson,"feetxid",swap->myfee->txid);
         jaddstr(newjson,"feetx",swap->myfee->txbytes);
-        printf("add feetx to newjson have.%x\n",swap->havestate);
+        //printf("add feetx to newjson have.%x\n",swap->havestate);
     }
     if ( instantdex_isbob(swap) == 0 )
     {
