@@ -62,7 +62,7 @@ int32_t Showmode,Autofold,PANGEA_MAXTHREADS = 1;
 struct category_info *Categories;
 struct iguana_info *Coins[IGUANA_MAXCOINS];
 char Userhome[512];
-int32_t USE_JAY,FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel,BIGENDIAN;
+int32_t USE_JAY,FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel,IGUANA_BIGENDIAN;
 uint32_t prices777_NXTBLOCK,MAX_DEPTH = 100;
 queue_t helperQ,jsonQ,finishedQ,bundlesQ,emitQ;
 struct supernet_info MYINFO,**MYINFOS;
@@ -1324,9 +1324,9 @@ int32_t iguana_isbigendian()
 void iguana_main(void *arg)
 {
     int32_t usessl = 0, ismainnet = 1; struct supernet_info *myinfo; cJSON *argjson = 0;
-    if ( (BIGENDIAN= iguana_isbigendian()) > 0 )
+    if ( (IGUANA_BIGENDIAN= iguana_isbigendian()) > 0 )
         printf("BIGENDIAN\n");
-    else if ( BIGENDIAN == 0 )
+    else if ( IGUANA_BIGENDIAN == 0 )
         printf("LITTLE ENDIAN arg.%p\n",arg);
     else printf("ENDIAN ERROR\n");
     mycalloc(0,0,0);
