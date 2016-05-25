@@ -209,7 +209,7 @@ struct iguana_txblock *iguana_peertxdata(struct iguana_info *coin,int32_t *bundl
 
 int32_t iguana_speculativefind(struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_block *block,uint8_t *data,int32_t recvlen)
 {
-    int32_t i,j,numcached,cachelen; uint8_t *tmp; char str[65];
+    int32_t i,j,numcached,cachelen=0; uint8_t *tmp; char str[65];
     if ( coin->enableCACHE == 0 )
         return(-1);
     if ( recvlen < 0 || recvlen > IGUANA_MAXPACKETSIZE )

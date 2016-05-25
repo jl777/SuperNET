@@ -127,6 +127,7 @@ blockhashfunc iguana_hashalgo(char *hashalgostr)
 bits256 iguana_calcblockhash(int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serialized,int32_t len),uint8_t *serialized,int32_t len)
 {
     bits256 tmp,hash2; int32_t i;
+    memset(&hash2,0,sizeof(hash2));
     if ( (*hashalgo)(tmp.bytes,serialized,len) != sizeof(bits256) )
         memset(tmp.bytes,0,sizeof(hash2));
     else if ( hashalgo == blockhash_sha256 )
