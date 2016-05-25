@@ -1308,7 +1308,7 @@ char *instantdex_gotoffer(struct supernet_info *myinfo,struct exchange_info *exc
         return(clonestr("{\"error\":\"instantdex_BTCswap cant find btc or other coin info\"}"));
     if ( strcmp(myap->offer.rel,"BTC") != 0 )
         return(clonestr("{\"error\":\"instantdex_BTCswap offer non BTC rel\"}"));
-    if ( myap->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) || otherap->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) )
+    if ( 0 ) //myap->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) || otherap->offer.expiration < (time(NULL) + INSTANTDEX_DURATION) )
     {
         printf("too close to expiration: %u >= %lu\n",otherap->offer.expiration,(time(NULL) + INSTANTDEX_DURATION));
         return(clonestr("{\"error\":\"instantdex_BTCswap offer too close to expiration\"}"));
