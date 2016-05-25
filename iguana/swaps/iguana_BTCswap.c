@@ -608,7 +608,7 @@ void instantdex_swapbits256update(bits256 *txidp,cJSON *argjson,char *fieldname)
 
 void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *swap,cJSON *newjson)
 {
-    uint8_t pubkey[33],*secret160; int32_t deckflag; char secretstr[41],*field;
+    uint8_t pubkey[33],*secret160; int32_t deckflag; char secretstr[41],*field; bits256 priv;
     deckflag = (newjson != 0 && swap->otherchoosei < 0) ? 1 : 0;
     if ( instantdex_pubkeyargs(myinfo,swap,2 + deckflag*INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myorderhash,0x02+instantdex_isbob(swap)) != 2 + deckflag*INSTANTDEX_DECKSIZE )
         printf("ERROR: couldnt generate pubkeys deckflag.%d\n",deckflag);
@@ -622,15 +622,20 @@ void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *sw
         {
             secret160 = swap->secretBn;
             field = "secretBn";
+            priv = swap->privBn;
         }
         else
         {
             secret160 = swap->secretAm;
             field = "secretAm";
+            priv = swap->privAm;
         }
-        calc_rmd160_sha256(secret160,swap->privkeys[swap->otherchoosei].bytes,sizeof(swap->privkeys[swap->otherchoosei]));
-        init_hexbytes_noT(secretstr,secret160,20);
-        jaddstr(newjson,field,secretstr);
+        if ( bits256_nonz(priv) != 0 )
+        {
+            calc_rmd160_sha256(secret160,priv.bytes,sizeof(priv));
+            init_hexbytes_noT(secretstr,secret160,20);
+            jaddstr(newjson,field,secretstr);
+        }
     }
     if ( swap->myfee != 0 && jobj(newjson,"feetx") == 0 && (swap->otherhavestate & INSTANTDEX_ORDERSTATE_HAVEOTHERFEE) == 0 )
     {
@@ -819,8 +824,8 @@ cJSON *BTC_gendepositfunc(struct supernet_info *myinfo,struct exchange_info *exc
                 if ( swap->deposit == 0 && (swap->deposit= instantdex_bobtx(myinfo,swap,swap->coinbtc,swap->BTCsatoshis,1)) == 0 )
                     printf("bobtx deposit couldnt be created\n");
                 else jaddstr(newjson,"virtevent","depmade");
-            }
-        }
+            } else printf("null pubA0.%llx or pubB0.%llx\n",(long long)swap->pubA0.txid,(long long)swap->pubB0.txid);
+        } else printf("null secretBn\n");
     }
     return(newjson);
 }
