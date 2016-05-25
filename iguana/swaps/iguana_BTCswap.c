@@ -355,9 +355,9 @@ int32_t instantdex_altpaymentverify(struct supernet_info *myinfo,struct iguana_i
 {
     cJSON *txobj; bits256 txid; uint32_t n; int32_t i,retval = -1;
     struct iguana_msgtx msgtx; uint8_t script[512]; char *altmsigaddr,msigaddr[64];
-    if ( jstr(argjson,"altpayment") != 0 && (altmsigaddr= jstr(argjson,"altmsigaddr")) != 0 )
+    if ( swap->altpayment != 0 && (altmsigaddr= jstr(argjson,"altmsigaddr")) != 0 )
     {
-        if ( swap->altpayment != 0 && (txobj= bitcoin_hex2json(coin,&txid,&msgtx,swap->altpayment->txbytes)) != 0 )
+        if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,swap->altpayment->txbytes)) != 0 )
         {
             n = instantdex_alicescript(script,0,msigaddr,coin->chain->p2shtype,swap->pubAm,swap->pubBn);
             if ( strcmp(msigaddr,altmsigaddr) == 0 && n == msgtx.vouts[0].pk_scriptlen )
@@ -371,15 +371,15 @@ int32_t instantdex_altpaymentverify(struct supernet_info *myinfo,struct iguana_i
                 {
                     for (i=0; i<n; i++)
                         printf("%02x ",script[i]);
-                    printf("altscript\n");
+                    printf(" altscript\n");
                     for (i=0; i<n; i++)
                         printf("%02x ",msgtx.vouts[0].pk_script[i]);
-                    printf("altpayment\n");
+                    printf(" altpayment\n");
                 }
-            }
+            } else printf("msig mismatch.(%s %s) or n.%d != %d\n",msigaddr,altmsigaddr,n,msgtx.vouts[0].pk_scriptlen);
             free_json(txobj);
-        }
-    }
+        } else printf("bitcoin_hex2json error\n");
+    } else printf("no altpayment.%p or no altmsig.%s\n",swap->altpayment,altmsigaddr);
     return(retval);
 }
 
