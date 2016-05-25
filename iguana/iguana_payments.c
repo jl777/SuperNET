@@ -525,7 +525,7 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
         bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
         spendlen = bitcoin_standardspend(spendscript,0,rmd160);
         init_hexbytes_noT(spendscriptstr,spendscript,spendlen);
-        if ( (rawtx= iguana_rawtxissue(myinfo,rand(),coin->symbol,&vins,locktime,satoshis,coin->changeaddr,txfee,addresses,minconf,spendscriptstr,15000)) != 0 )
+        if ( (rawtx= iguana_rawtxissue(myinfo,rand(),coin->symbol,&vins,locktime,satoshis,coin->changeaddr,txfee,addresses,minconf,spendscriptstr,60000)) != 0 )
         {
             if ( (signedtx= iguana_signrawtx(myinfo,coin,&signedtxid,&completed,vins,rawtx,0)) != 0 )
             {
