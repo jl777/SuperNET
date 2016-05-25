@@ -79,7 +79,7 @@ int32_t instantdex_bobscript(uint8_t *script,int32_t n,uint32_t *locktimep,int32
     for (i=0; i<20; i++)
         if ( secret160[i] != 0 )
             break;
-    if ( i < 20 )
+    if ( i == 20 )
         return(-1);
     memcpy(pubkeyA+1,cltvpub.bytes,sizeof(cltvpub));
     memcpy(pubkeyB+1,destpub.bytes,sizeof(destpub));
@@ -526,18 +526,26 @@ void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapi
                 {
                     if ( otherpubkey[0] == 0x02 )
                     {
-                        swap->privBn = swap->privkeys[i];
-                        calc_rmd160_sha256(swap->secretBn,swap->privBn.bytes,sizeof(swap->privBn));
-                        swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privBn);
+                        if ( bits256_nonz(swap->privkeys[i]) != 0 )
+                        {
+                            swap->privBn = swap->privkeys[i];
+                            calc_rmd160_sha256(swap->secretBn,swap->privBn.bytes,sizeof(swap->privBn));
+                            printf("set secretBn\n");
+                            swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privBn);
+                        }
                     } else printf("wrong first byte.%02x\n",otherpubkey[0]);
                 }
                 else
                 {
                     if ( otherpubkey[0] == 0x03 )
                     {
-                        swap->privAm = swap->privkeys[i];
-                        calc_rmd160_sha256(swap->secretAm,swap->privAm.bytes,sizeof(swap->privAm));
-                        swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privAm);
+                        if ( bits256_nonz(swap->privkeys[i]) != 0 )
+                        {
+                            swap->privAm = swap->privkeys[i];
+                            calc_rmd160_sha256(swap->secretAm,swap->privAm.bytes,sizeof(swap->privAm));
+                            printf("set secretAm\n");
+                            swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privAm);
+                        }
                     } else printf("wrong first byte.%02x\n",otherpubkey[0]);
                 }
                 continue;
@@ -824,7 +832,7 @@ cJSON *BTC_gendepositfunc(struct supernet_info *myinfo,struct exchange_info *exc
                     printf("bobtx deposit couldnt be created\n");
                 else jaddstr(newjson,"virtevent","depmade");
             } else printf("null pubA0.%llx or pubB0.%llx\n",(long long)swap->pubA0.txid,(long long)swap->pubB0.txid);
-        } else printf("null secretBn\n");
+        } else printf("null secretBn.%p\n",swap->secretBn);
     }
     return(newjson);
 }
