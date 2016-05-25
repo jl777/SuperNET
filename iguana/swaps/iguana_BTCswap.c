@@ -505,16 +505,13 @@ char *instantdex_choosei(struct bitcoin_swapinfo *swap,cJSON *newjson,cJSON *arg
 
 void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapinfo *swap,uint8_t *serdata,int32_t serdatalen)
 {
-    int32_t i,j,wrongfirstbyte,errs,len = 0; bits256 hashpriv,otherpriv,pubi; uint8_t otherpubkey[33],pubkey[33]; char str[65];
+    int32_t i,j,wrongfirstbyte,errs,len = 0; bits256 otherpriv,pubi; uint8_t secret160[20],otherpubkey[33],pubkey[33]; char str[65]; uint64_t txid;
     if ( swap->cutverified == 0 && swap->choosei >= 0 && serdatalen == sizeof(swap->privkeys) )
     {
         for (i=wrongfirstbyte=errs=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
         {
-            if ( i == 0 )
-                printf("raw recv.%s\n",bits256_str(str,*(bits256 *)serdata));
             for (j=0; j<32; j++)
                 otherpriv.bytes[j] = serdata[len++];
-            //len += iguana_rwbignum(0,&serdata[len],sizeof(bits256),otherpriv.bytes);
             if ( i == 0 )
                 printf("got instantdex_privkeyextract serdatalen.%d choosei.%d cutverified.%d priv0 %s\n",serdatalen,swap->choosei,swap->cutverified,bits256_str(str,otherpriv));
             if ( i == swap->choosei )
@@ -541,20 +538,21 @@ void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapi
                 continue;
             }
             pubi = bitcoin_pubkey33(myinfo->ctx,otherpubkey,otherpriv);
-            vcalc_sha256(0,hashpriv.bytes,otherpriv.bytes,sizeof(otherpriv));
+            calc_rmd160_sha256(secret160,otherpriv.bytes,sizeof(otherpriv));
+            memcpy(&txid,secret160,sizeof(txid));
             if ( otherpubkey[0] != (instantdex_isbob(swap) ^ 1) + 0x02 )
             {
                 wrongfirstbyte++;
                 printf("wrongfirstbyte[%d] %02x\n",i,otherpubkey[0]);
             }
-            else if ( swap->otherdeck[i][0] != hashpriv.txid )
-            {
-                printf("otherdeck[%d] priv mismatch %llx != %llx\n",i,(long long)swap->otherdeck[i][0],(long long)hashpriv.txid);
-                errs++;
-            }
             else if ( swap->otherdeck[i][1] != pubi.txid )
             {
-                printf("otherdeck[%d] priv mismatch %llx != %llx\n",i,(long long)swap->otherdeck[i][1],(long long)pubi.txid);
+                printf("otherdeck[%d] priv ->pub mismatch %llx != %llx\n",i,(long long)swap->otherdeck[i][1],(long long)pubi.txid);
+                errs++;
+            }
+            else if ( swap->otherdeck[i][0] != txid )
+            {
+                printf("otherdeck[%d] priv mismatch %llx != %llx\n",i,(long long)swap->otherdeck[i][0],(long long)txid);
                 errs++;
             }
         }
