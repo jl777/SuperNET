@@ -421,7 +421,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
         extralen = (int32_t)sizeof(swap->deck);
         serflag = 1;
     }
-    else if ( bits256_nonz(swap->privkeys[swap->otherchoosei]) == 0 && swap->cutverified == 0 )
+    else if ( swap->otherverifiedcut == 0 )
     {
         extraser = swap->privkeys[0].bytes;
         extralen = (int32_t)sizeof(swap->privkeys);
@@ -1377,10 +1377,10 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
             if ( signerbits == swap->othertrader.txid )
             {
                 swap->expiration += INSTANTDEX_OFFERDURATION;
-                printf("OTHER SIDEf sent packet\n");
+                printf("OTHER SIDE sent packet\n");
             }
             instantdex_privkeyextract(myinfo,swap,serdata,serdatalen);
-            printf("found existing state machine %llx choosei.%d other.%d\n",(long long)A.orderid,swap->choosei,swap->otherchoosei);
+            //printf("found existing state machine %llx choosei.%d other.%d\n",(long long)A.orderid,swap->choosei,swap->otherchoosei);
             newjson = instantdex_parseargjson(myinfo,exchange,swap,argjson,0);
             if ( serdatalen == sizeof(swap->otherdeck) && swap->choosei < 0 && (retstr= instantdex_choosei(swap,newjson,argjson,serdata,serdatalen)) != 0 )
             {
