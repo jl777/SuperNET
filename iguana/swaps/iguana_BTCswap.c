@@ -985,51 +985,52 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n)
 
     instantdex_addevent(s,*n,"BTC_idle","BTCoffer","poll","BTC_waitdeck"); // send deck + Chose
     instantdex_addevent(s,*n,"BTC_waitdeck","gotdeck","havedeck","BTC_gotdeck"); // virt event
-    instantdex_addevent(s,*n,"BTC_waitdeck","havedeck","poll","BTC_waitdeck"); // other side gotdeck
-    instantdex_addevent(s,*n,"BTC_waitdeck","sentprivs","poll","BTC_waitdeck");
-    instantdex_addevent(s,*n,"BTC_waitdeck","poll","sentprivs","BTC_waitdeck");
+    //instantdex_addevent(s,*n,"BTC_waitdeck","havedeck","poll","BTC_waitdeck"); // other side gotdeck
+    //instantdex_addevent(s,*n,"BTC_waitdeck","sentpriv","poll","BTC_waitdeck");
+    instantdex_addevent(s,*n,"BTC_waitdeck","poll","sentpriv","BTC_waitdeck");
     
     // to goto BTC_waitfee, both must have sent/recv deck and Chosen and verified cut and choose
-    instantdex_addevent(s,*n,"BTC_gotdeck","gotdeck","sentprivs","BTC_waitfee"); // other gotdeck
-    instantdex_addevent(s,*n,"BTC_gotdeck","havedeck","poll","BTC_gotdeck");
-    instantdex_addevent(s,*n,"BTC_gotdeck","sentprivs","poll","BTC_gotdeck");
-    instantdex_addevent(s,*n,"BTC_gotdeck","poll","sentprivs","BTC_gotdeck");
+    instantdex_addevent(s,*n,"BTC_gotdeck","gotdeck","sentpriv","BTC_waitfee"); // other gotdeck
+    //instantdex_addevent(s,*n,"BTC_gotdeck","havedeck","poll","BTC_gotdeck");
+    //instantdex_addevent(s,*n,"BTC_gotdeck","sentpriv","poll","BTC_gotdeck");
+    instantdex_addevent(s,*n,"BTC_gotdeck","poll","sentpriv","BTC_gotdeck");
     
     // [BLOCKING: feefound] Bob waits for fee and sends deposit when it appears, alice skips past
     instantdex_addevent(s,*n,"BTC_waitfee","gendep","poll","BTC_gendeposit"); // bob's virt
     instantdex_addevent(s,*n,"BTC_waitfee","waitdep","poll","BTC_waitdeposit"); // alice's virt
-    instantdex_addevent(s,*n,"BTC_waitfee","sentprivs","poll","BTC_waitfee");
-    instantdex_addevent(s,*n,"BTC_waitfee","poll","sentprivs","BTC_waitfee");
+    //instantdex_addevent(s,*n,"BTC_waitfee","sentpriv","poll","BTC_waitfee");
+    instantdex_addevent(s,*n,"BTC_waitfee","poll","sentpriv","BTC_waitfee");
 
     instantdex_addevent(s,*n,"BTC_gendeposit","depmade","poll","BTC_waitaltpayment");
-    instantdex_addevent(s,*n,"BTC_gendeposit","sentprivs","poll","BTC_gendeposit");
-    instantdex_addevent(s,*n,"BTC_gendeposit","poll","sentprivs","BTC_gendeposit");
+    //instantdex_addevent(s,*n,"BTC_gendeposit","sentpriv","poll","BTC_gendeposit");
+    instantdex_addevent(s,*n,"BTC_gendeposit","poll","sentpriv","BTC_gendeposit");
 
     // [BLOCKING: depfound] Alice waits for deposit to confirm and sends altpayment, bob skips
     instantdex_addevent(s,*n,"BTC_waitdeposit","depfound","gotdep","BTC_waitpayment"); // alice virt
-    instantdex_addevent(s,*n,"BTC_waitdeposit","gotdep","poll","BTC_waitdeposit");
-    instantdex_addevent(s,*n,"BTC_waitdeposit","sentprivs","poll","BTC_waitdeposit");
-    instantdex_addevent(s,*n,"BTC_waitdeposit","poll","sentprivs","BTC_waitdeposit");
+    //instantdex_addevent(s,*n,"BTC_waitdeposit","gotdep","poll","BTC_waitdeposit");
+    //instantdex_addevent(s,*n,"BTC_waitdeposit","sentpriv","poll","BTC_waitdeposit");
+    instantdex_addevent(s,*n,"BTC_waitdeposit","poll","sentpriv","BTC_waitdeposit");
 
     // [BLOCKING: altfound] now Bob's turn to make sure altpayment is confirmed and send payment
     instantdex_addevent(s,*n,"BTC_waitaltpayment","altfound","gotalt","BTC_waitpayment"); // virt
-    instantdex_addevent(s,*n,"BTC_waitaltpayment","gotalt","poll","BTC_waitaltpayment");
-    instantdex_addevent(s,*n,"BTC_waitaltpayment","sentprivs","poll","BTC_waitaltpayment");
-    instantdex_addevent(s,*n,"BTC_waitaltpayment","poll","sentprivs","BTC_waitaltpayment");
+    instantdex_addevent(s,*n,"BTC_waitaltpayment","gotdep","sentpriv","BTC_waitaltpayment");
+    //instantdex_addevent(s,*n,"BTC_waitaltpayment","gotalt","poll","BTC_waitaltpayment");
+    //instantdex_addevent(s,*n,"BTC_waitaltpayment","sentpriv","poll","BTC_waitaltpayment");
+    instantdex_addevent(s,*n,"BTC_waitaltpayment","poll","sentpriv","BTC_waitaltpayment");
     
     // [BLOCKING: payfound] now Alice's turn to make sure payment is confrmed and send in claim or see bob's reclaim and reclaim
     instantdex_addevent(s,*n,"BTC_waitpayment","payfound","gotpaytx","BTC_makeclaim"); // virt
     instantdex_addevent(s,*n,"BTC_waitpayment","gotpaytx","poll","BTC_waitpayment");
-    instantdex_addevent(s,*n,"BTC_waitpayment","sentprivs","poll","BTC_waitpayment");
-    instantdex_addevent(s,*n,"BTC_waitpayment","poll","sentprivs","BTC_waitpayment");
+    //instantdex_addevent(s,*n,"BTC_waitpayment","sentpriv","poll","BTC_waitpayment");
+    instantdex_addevent(s,*n,"BTC_waitpayment","poll","sentpriv","BTC_waitpayment");
     
     // [BLOCKING: privM] Bob waits for privM either from Alice or alt blockchain
     instantdex_addevent(s,*n,"BTC_makeclaim","claimed","didclaim","BTC_done");
     instantdex_addevent(s,*n,"BTC_makeclaim","didclaim","poll","BTC_cashmsig");
-    instantdex_addevent(s,*n,"BTC_makeclaim","poll","sentprivs","BTC_makeclaim");
+    instantdex_addevent(s,*n,"BTC_makeclaim","poll","sentpriv","BTC_makeclaim");
 
     instantdex_addevent(s,*n,"BTC_cashmsig","gotprivM","didmsig","BTC_done");
-    instantdex_addevent(s,*n,"BTC_cashmsig","poll","sentprivs","BTC_cashmsig");
+    instantdex_addevent(s,*n,"BTC_cashmsig","poll","sentpriv","BTC_cashmsig");
 
     /*s = instantdex_statecreate(s,n,"ALICE_checkbobreclaim",ALICE_checkbobreclaimfunc,0,"ALICE_reclaimed",0,0);
     instantdex_addevent(s,*n,"ALICE_checkbobreclaim","brefound","poll","ALICE_reclaimed");
