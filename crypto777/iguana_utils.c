@@ -264,9 +264,11 @@ void iguana_launcher(void *ptr)
 void iguana_terminate(struct iguana_thread *t)
 {
     int32_t retval;
+#ifndef _WIN32
     retval = pthread_join(t->handle,NULL);
     if ( retval != 0 )
         printf("error.%d terminating t.%p thread.%s\n",retval,t,t->name);
+#endif
     myfree(t,sizeof(*t));
 }
 
