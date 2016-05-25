@@ -19,7 +19,11 @@
 
 #include "OS_portable.h"
 #include <sys/stat.h>
+
+#ifndef _WIN32
 #include <sys/select.h>
+#endif
+
 #ifndef MAP_FILE
 #define MAP_FILE        0
 #endif

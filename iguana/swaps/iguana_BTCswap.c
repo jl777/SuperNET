@@ -171,14 +171,17 @@ struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo
 {
     struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct bitcoin_statetx *tx=0; uint8_t pubkey33[33]; char coinaddr[64],wifstr[64]; char *rawtx,*signedtx,*retstr; bits256 signedtxid; uint32_t rawtxtag; int32_t flag,completed; cJSON *valsobj,*vins,*retjson=0,*privkey,*argjson,*addresses;
     if ( (waddr= iguana_getaccountaddress(myinfo,coin,0,0,coin->changeaddr,"change")) == 0 )
+    {
+        printf("no change addr error\n");
         return(0);
+    }
     privkey = cJSON_CreateArray();
     addresses = cJSON_CreateArray();
     if ( coin->changeaddr[0] == 0 )
         bitcoin_address(coin->changeaddr,coin->chain->pubtype,waddr->rmd160,20);
     bitcoin_pubkey33(myinfo->ctx,pubkey33,myinfo->persistent_priv);
     bitcoin_address(coinaddr,coin->chain->pubtype,pubkey33,33);
-    //printf("%s persistent.(%s) (%s) change.(%s) scriptstr.(%s)\n",coin->symbol,myinfo->myaddr.BTC,coinaddr,coin->changeaddr,scriptstr);
+    printf("%s persistent.(%s) (%s) change.(%s) scriptstr.(%s)\n",coin->symbol,myinfo->myaddr.BTC,coinaddr,coin->changeaddr,scriptstr);
     if ( (waddr= iguana_waddresssearch(myinfo,coin,&wacct,coinaddr)) != 0 )
     {
         bitcoin_priv2wif(wifstr,waddr->privkey,coin->chain->wiftype);
@@ -197,7 +200,7 @@ struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo
     jaddnum(argjson,"timeout",15000);
     if ( (retstr= iguana_rawtx(myinfo,coin,argjson,0,coin->changeaddr,addresses,valsobj,scriptstr)) != 0 )
     {
-        //printf("feetx got.(%s)\n",retstr);
+        printf("feetx got.(%s)\n",retstr);
         flag = 0;
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
@@ -224,7 +227,7 @@ struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo
                 tx->txid = signedtxid;
                 printf("%s %s.%s\n",myside != 0 ? "BOB" : "ALICE",str,signedtx);
                 free(signedtx);
-            }
+            } else printf("error signrawtx\n");
         }
         if ( retjson != 0 )
             free_json(retjson);
@@ -311,7 +314,7 @@ struct bitcoin_statetx *instantdex_bobtx(struct supernet_info *myinfo,struct bit
     {
         bitcoin_address(ptr->destaddr,coin->chain->p2shtype,script,n);
         printf("BOBTX.%d (%s) -> %s\n",depositflag,ptr->txbytes,ptr->destaddr);
-    }
+    } else printf("sign error for bottx\n");
     return(ptr);
 }
 
