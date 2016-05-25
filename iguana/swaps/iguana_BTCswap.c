@@ -840,7 +840,7 @@ cJSON *BTC_gendepositfunc(struct supernet_info *myinfo,struct exchange_info *exc
         for (i=0; i<20; i++)
             if ( swap->secretBn[i] != 0 )
                 break;
-        if ( i == 20 )
+        if ( i != 20 )
         {
             if ( bits256_nonz(swap->pubA0) != 0 && bits256_nonz(swap->pubB0) != 0 )
             {
@@ -848,7 +848,7 @@ cJSON *BTC_gendepositfunc(struct supernet_info *myinfo,struct exchange_info *exc
                     printf("bobtx deposit couldnt be created\n");
                 else jaddstr(newjson,"virtevent","depmade");
             } else printf("null pubA0.%llx or pubB0.%llx\n",(long long)swap->pubA0.txid,(long long)swap->pubB0.txid);
-        } else printf("null secretBn.%p\n",swap->secretBn);
+        }
     }
     return(newjson);
 }
