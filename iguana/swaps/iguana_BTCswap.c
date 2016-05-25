@@ -493,7 +493,7 @@ char *instantdex_choosei(struct bitcoin_swapinfo *swap,cJSON *newjson,cJSON *arg
             swap->choosei = -swap->choosei;
         swap->choosei %= max;
         jaddnum(newjson,"mychoosei",swap->choosei);
-        printf("%llu/%llu %s send mychoosei.%d of max.%d deck.(%llx %llx)\n",(long long)swap->mine.orderid,(long long)swap->other.orderid,instantdex_isbob(swap)!=0?"BOB":"alice",swap->choosei,max,(long long)swap->deck[0][0],(long long)swap->deck[0][1]);
+        printf("%llu/%llu %s send mychoosei.%d of max.%d deck.(%llx %llx)\n",(long long)swap->mine.orderid,(long long)swap->other.orderid,instantdex_isbob(swap)!=0?"BOB":"alice",swap->choosei,max,(long long)swap->otherdeck[0][0],(long long)swap->otherdeck[0][1]);
         return(0);
     }
     else
