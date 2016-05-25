@@ -618,7 +618,7 @@ void instantdex_swapbits256update(bits256 *txidp,cJSON *argjson,char *fieldname)
 
 void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *swap,cJSON *newjson)
 {
-    uint8_t pubkey[33],*secret160; int32_t deckflag; char secretstr[41],*field;
+    uint8_t pubkey[33],*secret160; int32_t i,deckflag; char secretstr[41],*field;
     deckflag = (newjson != 0 && swap->otherchoosei < 0) ? 1 : 0;
     if ( instantdex_pubkeyargs(myinfo,swap,2 + deckflag*INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myorderhash,0x02+instantdex_isbob(swap)) != 2 + deckflag*INSTANTDEX_DECKSIZE )
         printf("ERROR: couldnt generate pubkeys deckflag.%d\n",deckflag);
@@ -630,11 +630,27 @@ void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *sw
         jaddnum(newjson,"otherchoosei",swap->otherchoosei);
         if ( instantdex_isbob(swap) != 0 )
         {
+            for (i=0; i<20; i++)
+                if ( swap->secretBn[i] != 0 )
+                    break;
+            if ( i == 20 )
+            {
+                calc_rmd160_sha256(swap->secretBn,swap->privBn.bytes,sizeof(swap->privBn));
+                swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privBn);
+            }
             secret160 = swap->secretBn;
             field = "secretBn";
         }
         else
         {
+            for (i=0; i<20; i++)
+                if ( swap->secretAm[i] != 0 )
+                    break;
+            if ( i == 20 )
+            {
+                calc_rmd160_sha256(swap->secretAm,swap->privAm.bytes,sizeof(swap->privAm));
+                swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privAm);
+            }
             secret160 = swap->secretAm;
             field = "secretAm";
         }
