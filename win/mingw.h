@@ -5,7 +5,7 @@
 
 #define _USE_W32_SOCKETS 1
 #include <windows.h>
-#include <pthread.h>
+#include "pthread.h"
 
 #define ENOTCONN        WSAENOTCONN
 #define EWOULDBLOCK     WSAEWOULDBLOCK
