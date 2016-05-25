@@ -505,14 +505,16 @@ char *instantdex_choosei(struct bitcoin_swapinfo *swap,cJSON *newjson,cJSON *arg
 
 void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapinfo *swap,uint8_t *serdata,int32_t serdatalen)
 {
-    int32_t i,wrongfirstbyte,errs,len = 0; bits256 hashpriv,otherpriv,pubi; uint8_t otherpubkey[33],pubkey[33]; char str[65];
+    int32_t i,j,wrongfirstbyte,errs,len = 0; bits256 hashpriv,otherpriv,pubi; uint8_t otherpubkey[33],pubkey[33]; char str[65];
     if ( swap->cutverified == 0 && swap->choosei >= 0 && serdatalen == sizeof(swap->privkeys) )
     {
         for (i=wrongfirstbyte=errs=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
         {
             if ( i == 0 )
                 printf("raw recv.%s\n",bits256_str(str,*(bits256 *)serdata));
-            len += iguana_rwbignum(0,&serdata[len],sizeof(bits256),otherpriv.bytes);
+            for (j=0; j<32; j++)
+                otherpriv.bytes[j] = serdata[len++];
+            //len += iguana_rwbignum(0,&serdata[len],sizeof(bits256),otherpriv.bytes);
             if ( i == 0 )
                 printf("got instantdex_privkeyextract serdatalen.%d choosei.%d cutverified.%d priv0 %s\n",serdatalen,swap->choosei,swap->cutverified,bits256_str(str,otherpriv));
             if ( i == swap->choosei )

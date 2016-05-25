@@ -389,7 +389,7 @@ bits256 instantdex_rwoffer(int32_t rwflag,int32_t *lenp,uint8_t *serialized,stru
 
 char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extraser,int32_t extralen,struct iguana_peer *addr,struct bitcoin_swapinfo *swap)
 {
-    char *reqstr,*hexstr,*retstr; struct instantdex_msghdr *msg; bits256 orderhash,tmphash; struct iguana_info *coin; int32_t i,len,serflag,olen,slen,datalen,max=-1; uint8_t serialized[sizeof(*offer) + sizeof(struct iguana_msghdr) + 4096 + INSTANTDEX_DECKSIZE*33]; uint64_t x,nxt64bits;
+    char *reqstr,*hexstr,*retstr; struct instantdex_msghdr *msg; bits256 orderhash,tmphash; struct iguana_info *coin; int32_t i,j,len,serflag,olen,slen,datalen,max=-1; uint8_t serialized[sizeof(*offer) + sizeof(struct iguana_msghdr) + 4096 + INSTANTDEX_DECKSIZE*33]; uint64_t x,nxt64bits;
     //if ( strcmp(cmdstr,"poll") == 0 )
     //    return(clonestr("{\"result\":\"skip sending poll\"}"));
     category_subscribe(myinfo,myinfo->instantdex_category,GENESIS_PUBKEY);
@@ -455,8 +455,10 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
             printf("send privkeys0 %s\n",bits256_str(str,swap->privkeys[0]));
             while ( len < extralen )
             {
-                memcpy(&tmphash,&((uint8_t *)extraser)[len],sizeof(x));
-                iguana_rwbignum(1,&((uint8_t *)extraser)[len],sizeof(bits256),tmphash.bytes);
+                memcpy(&tmphash,&((uint8_t *)extraser)[len],sizeof(tmphash));
+                for (j=0; j<32; j++)
+                    ((uint8_t *)extraser)[len++] = tmphash.bytes[j];
+                //iguana_rwbignum(1,&((uint8_t *)extraser)[len],sizeof(bits256),tmphash.bytes);
                 if ( len == 0 )
                     printf("ser privkeys0 %s\n",bits256_str(str,*(bits256 *)extraser));
                 len += sizeof(bits256);
