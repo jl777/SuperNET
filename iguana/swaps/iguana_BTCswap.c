@@ -524,14 +524,14 @@ void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapi
                 {
                     if ( otherpubkey[0] == 3 )
                     {
-                        swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[i]);
+                        swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privBn);
                     } else printf("wrong first byte.%02x\n",otherpubkey[0]);
                 }
                 else
                 {
                     if ( otherpubkey[0] == 2 )
                     {
-                        swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[i]);
+                        swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privAm);
                     } else printf("wrong first byte.%02x\n",otherpubkey[0]);
                 }
                 continue;
@@ -554,7 +554,7 @@ void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapi
             }
         }
         if ( errs == 0 && wrongfirstbyte == 0 )
-            swap->cutverified = 1;
+            swap->cutverified = 1, printf("CUT VERIFIED\n");
         else printf("failed verification: wrong firstbyte.%d errs.%d\n",wrongfirstbyte,errs);
     }
 }
@@ -646,12 +646,20 @@ void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *sw
         swap->pubA0 = swap->mypubs[0];
         //swap->pubA1 = swap->mypubs[1];
         if ( bits256_nonz(swap->pubAm) == 0 && swap->otherchoosei >= 0 && bits256_nonz(swap->privkeys[swap->otherchoosei]) != 0 )
+        {
             swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[swap->otherchoosei]);
+            swap->privAm = swap->privkeys[swap->otherchoosei];
+            memset(&swap->privkeys[swap->otherchoosei],0,sizeof(swap->privkeys[swap->otherchoosei]));
+        }
     }
     else
     {
         if ( bits256_nonz(swap->pubBn) == 0 && swap->otherchoosei >= 0 && bits256_nonz(swap->privkeys[swap->otherchoosei]) != 0 )
+        {
             swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privkeys[swap->otherchoosei]);
+            swap->privBn = swap->privkeys[swap->otherchoosei];
+            memset(&swap->privkeys[swap->otherchoosei],0,sizeof(swap->privkeys[swap->otherchoosei]));
+        }
         jaddbits256(newjson,"B0",swap->mypubs[0]);
         jaddbits256(newjson,"B1",swap->mypubs[1]);
         swap->pubB0 = swap->mypubs[0];
@@ -1086,6 +1094,11 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                         instantdex_newjson(myinfo,swap,newjson);
                         //printf("i.%d (%s) %s %s.%d -> %s.%d send.(%s) %p\n",i,jprint(newjson,0),cmdstr,swap->state->name,state->ind,states[state->events[i].nextstateind].name,state->events[i].nextstateind,state->events[i].sendcmd,&states[state->events[i].nextstateind]);
                         swap->state = &states[state->events[i].nextstateind];
+                        if ( swap->otherchoosei >= 0 && bits256_nonz(swap->privkeys[swap->otherchoosei]) == 0 && swap->cutverified == 0 )
+                        {
+                            serdata = swap->privkeys[0].bytes;
+                            serdatalen = (int32_t)sizeof(swap->privkeys);
+                        }
                         return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,state->events[i].sendcmd,swap->othertrader,INSTANTDEX_HOPS,serdata,serdatalen,0,swap));
                     } else return(clonestr("{\"error\":\"instantdex_statemachine: illegal state\"}"));
                 } else return(clonestr("{\"result\":\"instantdex_statemachine: processed\"}"));

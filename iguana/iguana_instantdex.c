@@ -1350,13 +1350,9 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
             if ( signerbits == swap->othertrader.txid )
             {
                 swap->expiration += INSTANTDEX_OFFERDURATION;
-                printf("OTHER SIDE sent packet\n");
+                printf("OTHER SIDEf sent packet\n");
             }
-            if ( swap->cutverified == 0 && swap->choosei >= 0 && serdatalen == sizeof(swap->privkeys) )
-            {
-                printf("cutverfied.%d choosei.%d privkeyextract\n",swap->cutverified,swap->choosei);
-                instantdex_privkeyextract(myinfo,swap,serdata,serdatalen);
-            }
+            instantdex_privkeyextract(myinfo,swap,serdata,serdatalen);
             printf("found existing state machine %llx choosei.%d other.%d\n",(long long)A.orderid,swap->choosei,swap->otherchoosei);
             newjson = instantdex_parseargjson(myinfo,exchange,swap,argjson,0);
             if ( serdatalen == sizeof(swap->otherdeck) && swap->choosei < 0 && (retstr= instantdex_choosei(swap,newjson,argjson,serdata,serdatalen)) != 0 )
