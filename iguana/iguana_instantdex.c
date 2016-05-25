@@ -437,10 +437,12 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     //printf("extralen.%d datalen.%d slen.%d olen.%d\n",extralen,datalen,slen,olen);
     if ( extralen > 0 )
     {
+        char str[65];
         memcpy(&msg->serialized[slen + olen],extraser,extralen);
         len = 0;
         if ( serflag == 1 )
         {
+            printf("send deck (%llx %llx)\n",(long long)swap->deck[0][0],(long long)swap->deck[0][1]);
             while ( len < extralen )
             {
                 memcpy(&x,&((uint8_t *)extraser)[len],sizeof(x));
@@ -450,6 +452,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
         }
         else if ( serflag == 2 )
         {
+            printf("send privkeys0 %s\n",bits256_str(str,swap->privkeys[0]));
             while ( len < extralen )
             {
                 memcpy(&tmphash,&((uint8_t *)extraser)[len],sizeof(x));
