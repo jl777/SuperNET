@@ -994,7 +994,7 @@ THREE_STRINGS(bitcoinrpc,verifymessage,address,sig,message)
 
 HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
 {
-    struct iguana_txid *tx,T; char *txbytes; bits256 checktxid; int32_t len,height; cJSON *retjson,*txobj;
+    struct iguana_txid *tx,T; char *txbytes; bits256 checktxid; int32_t len,height,extralen=65536; cJSON *retjson,*txobj; uint8_t *extraspace;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( (tx= iguana_txidfind(coin,&height,&T,txid,coin->bundlescount-1)) != 0 )
@@ -1006,7 +1006,9 @@ HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
             init_hexbytes_noT(txbytes,coin->blockspace,len);
             if ( verbose != 0 )
             {
-                txobj = bitcoin_hex2json(coin,&checktxid,0,txbytes);
+                extraspace = calloc(1,extralen);
+                txobj = bitcoin_hex2json(coin,&checktxid,0,txbytes,extraspace,extralen);
+                free(extraspace);
                 free(txbytes);
                 if ( txobj != 0 )
                     return(jprint(txobj,1));
@@ -1048,7 +1050,7 @@ HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
 
 STRING_ARG(bitcoinrpc,validaterawtransaction,rawtx)
 {
-    bits256 txid,signedtxid; struct iguana_msgtx msgtx; struct iguana_msgvin vin; cJSON *log,*vins,*txobj,*retjson; char *checkstr,*signedtx; int32_t i,len,maxsize,numinputs,complete; struct vin_info *V; uint8_t *serialized,*serialized2; uint32_t sigsize,pubkeysize,p2shsize,suffixlen;
+    bits256 txid,signedtxid; struct iguana_msgtx msgtx; struct iguana_msgvin vin; cJSON *log,*vins,*txobj,*retjson; char *checkstr,*signedtx; int32_t i,len,maxsize,numinputs,complete,extralen=65536; struct vin_info *V; uint8_t *serialized,*serialized2,*extraspace; uint32_t sigsize,pubkeysize,p2shsize,suffixlen;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     retjson = cJSON_CreateObject();
@@ -1057,7 +1059,8 @@ STRING_ARG(bitcoinrpc,validaterawtransaction,rawtx)
         if ( (strlen(rawtx) & 1) != 0 )
             return(clonestr("{\"error\":\"rawtx hex has odd length\"}"));
         memset(&msgtx,0,sizeof(msgtx));
-        if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,rawtx)) != 0 )
+        extraspace = calloc(1,extralen);
+        if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,rawtx,extraspace,extralen)) != 0 )
         {
             //printf("txobj.(%s)\n",jprint(txobj,0));
             if ( (checkstr= bitcoin_json2hex(myinfo,coin,&txid,txobj,0)) != 0 )
@@ -1072,9 +1075,10 @@ STRING_ARG(bitcoinrpc,validaterawtransaction,rawtx)
                             break;
                     jaddnum(retjson,"mismatch position",i);
                     jadd(retjson,"origtx",txobj);
-                    if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,checkstr)) != 0 )
+                    if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,checkstr,extraspace,extralen)) != 0 )
                         jadd(retjson,"checktx",txobj);
                     free(checkstr);
+                    free(extraspace);
                     return(jprint(retjson,1));
                 }
                 free(checkstr);
@@ -1111,6 +1115,7 @@ STRING_ARG(bitcoinrpc,validaterawtransaction,rawtx)
                 }
                 jaddnum(retjson,"complete",complete);
                 free(serialized), free(serialized2);
+                free(extraspace);
             }
         }
         //char str[65]; printf("got txid.(%s)\n",bits256_str(str,txid));
@@ -1120,14 +1125,16 @@ STRING_ARG(bitcoinrpc,validaterawtransaction,rawtx)
 
 STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx)
 {
-    cJSON *txobj = 0; bits256 txid;
+    cJSON *txobj = 0; bits256 txid; uint8_t *extraspace; int32_t extralen = 65536;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( rawtx != 0 && rawtx[0] != 0 )
     {
         if ( (strlen(rawtx) & 1) != 0 )
             return(clonestr("{\"error\":\"rawtx hex has odd length\"}"));
-        txobj = bitcoin_hex2json(coin,&txid,0,rawtx);
+        extraspace = calloc(1,extralen);
+        txobj = bitcoin_hex2json(coin,&txid,0,rawtx,extraspace,extralen);
+        free(extraspace);
         //char str[65]; printf("got txid.(%s)\n",bits256_str(str,txid));
     }
     if ( txobj == 0 )
