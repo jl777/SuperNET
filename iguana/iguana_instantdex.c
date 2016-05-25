@@ -389,7 +389,7 @@ bits256 instantdex_rwoffer(int32_t rwflag,int32_t *lenp,uint8_t *serialized,stru
 
 char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extraser,int32_t extralen,struct iguana_peer *addr,struct bitcoin_swapinfo *swap)
 {
-    char *reqstr,*hexstr,*retstr; struct instantdex_msghdr *msg; bits256 orderhash; struct iguana_info *coin; int32_t i,olen,slen,datalen,max=-1; uint8_t serialized[sizeof(*offer) + sizeof(struct iguana_msghdr) + 4096 + INSTANTDEX_DECKSIZE*33]; uint64_t nxt64bits;
+    char *reqstr,*hexstr,*retstr; struct instantdex_msghdr *msg; bits256 orderhash,tmphash; struct iguana_info *coin; int32_t i,len,serflag,olen,slen,datalen,max=-1; uint8_t serialized[sizeof(*offer) + sizeof(struct iguana_msghdr) + 4096 + INSTANTDEX_DECKSIZE*33]; uint64_t x,nxt64bits;
     //if ( strcmp(cmdstr,"poll") == 0 )
     //    return(clonestr("{\"result\":\"skip sending poll\"}"));
     category_subscribe(myinfo,myinfo->instantdex_category,GENESIS_PUBKEY);
@@ -419,9 +419,16 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     {
         extraser = (void *)swap->deck;
         extralen = (int32_t)sizeof(swap->deck);
+        serflag = 1;
     }
+    else if ( bits256_nonz(swap->privkeys[swap->otherchoosei]) == 0 && swap->cutverified == 0 )
+    {
+        extraser = swap->privkeys[0].bytes;
+        extralen = (int32_t)sizeof(swap->privkeys);
+        serflag = 2;
+    } else serflag = 0;
     datalen = (int32_t)slen + extralen + olen;
-    msg = calloc(1,datalen + sizeof(*msg) + sizeof(swap->deck));
+    msg = calloc(1,datalen + sizeof(*msg));
     for (i=0; i<sizeof(msg->cmd); i++)
         if ( (msg->cmd[i]= cmdstr[i]) == 0 )
             break;
@@ -430,12 +437,26 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     //printf("extralen.%d datalen.%d slen.%d olen.%d\n",extralen,datalen,slen,olen);
     if ( extralen > 0 )
     {
-        //if ( swap->otherchoosei < 0 )
-        {
-            //serdata = (void *)swap->deck;
-            //serdatalen = (int32_t)sizeof(swap->deck);
-        }
         memcpy(&msg->serialized[slen + olen],extraser,extralen);
+        len = 0;
+        if ( serflag == 1 )
+        {
+            while ( len < extralen )
+            {
+                memcpy(&x,&((uint8_t *)extraser)[len],sizeof(x));
+                iguana_rwnum(1,&((uint8_t *)extraser)[len],sizeof(x),&x);
+                len += sizeof(x);
+            }
+        }
+        else if ( serflag == 2 )
+        {
+            while ( len < extralen )
+            {
+                memcpy(&tmphash,&((uint8_t *)extraser)[len],sizeof(x));
+                iguana_rwbignum(1,&((uint8_t *)extraser)[len],sizeof(bits256),tmphash.bytes);
+                len += sizeof(bits256);
+            }
+        }
     }
     free(reqstr);
     if ( instantdex_msgcreate(myinfo,msg,datalen) != 0 )

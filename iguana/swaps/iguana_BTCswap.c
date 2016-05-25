@@ -512,7 +512,6 @@ void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapi
         for (i=wrongfirstbyte=errs=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
         {
             len += iguana_rwbignum(0,&serdata[len],sizeof(bits256),otherpriv.bytes);
-            pubi = bitcoin_pubkey33(myinfo->ctx,otherpubkey,otherpriv);
             if ( i == swap->choosei )
             {
                 if ( bits256_nonz(otherpriv) != 0 )
@@ -522,20 +521,21 @@ void instantdex_privkeyextract(struct supernet_info *myinfo,struct bitcoin_swapi
                 }
                 if ( instantdex_isbob(swap) != 0 )
                 {
-                    if ( otherpubkey[0] == 3 )
+                    if ( otherpubkey[0] == 0x02 )
                     {
                         swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privBn);
                     } else printf("wrong first byte.%02x\n",otherpubkey[0]);
                 }
                 else
                 {
-                    if ( otherpubkey[0] == 2 )
+                    if ( otherpubkey[0] == 0x03 )
                     {
                         swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privAm);
                     } else printf("wrong first byte.%02x\n",otherpubkey[0]);
                 }
                 continue;
             }
+            pubi = bitcoin_pubkey33(myinfo->ctx,otherpubkey,otherpriv);
             vcalc_sha256(0,hashpriv.bytes,otherpriv.bytes,sizeof(otherpriv));
             if ( otherpubkey[0] != (instantdex_isbob(swap) ^ 1) + 0x02 )
             {
@@ -1094,11 +1094,6 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
                         instantdex_newjson(myinfo,swap,newjson);
                         //printf("i.%d (%s) %s %s.%d -> %s.%d send.(%s) %p\n",i,jprint(newjson,0),cmdstr,swap->state->name,state->ind,states[state->events[i].nextstateind].name,state->events[i].nextstateind,state->events[i].sendcmd,&states[state->events[i].nextstateind]);
                         swap->state = &states[state->events[i].nextstateind];
-                        if ( swap->otherchoosei >= 0 && bits256_nonz(swap->privkeys[swap->otherchoosei]) == 0 && swap->cutverified == 0 )
-                        {
-                            serdata = swap->privkeys[0].bytes;
-                            serdatalen = (int32_t)sizeof(swap->privkeys);
-                        }
                         return(instantdex_sendcmd(myinfo,&swap->mine.offer,newjson,state->events[i].sendcmd,swap->othertrader,INSTANTDEX_HOPS,serdata,serdatalen,0,swap));
                     } else return(clonestr("{\"error\":\"instantdex_statemachine: illegal state\"}"));
                 } else return(clonestr("{\"result\":\"instantdex_statemachine: processed\"}"));
