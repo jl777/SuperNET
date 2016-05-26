@@ -197,7 +197,7 @@ struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo
     jaddnum(valsobj,"rawtxtag",rawtxtag);
     jaddnum(valsobj,"locktime",locktime);
     argjson = cJSON_CreateObject();
-    jaddnum(argjson,"timeout",15000);
+    jaddnum(argjson,"timeout",100);
     if ( (retstr= iguana_rawtx(myinfo,coin,argjson,0,coin->changeaddr,addresses,valsobj,scriptstr)) != 0 )
     {
         printf("feetx got.(%s)\n",retstr);
@@ -210,7 +210,7 @@ struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo
         if ( flag == 0 )
         {
             vins = 0;
-            if ( (rawtx= iguana_pollrawtx(&myinfo->rawtxQ,&vins,rawtxtag,OS_milliseconds() + 10000)) != 0 )
+            if ( (rawtx= iguana_pollrawtx(&myinfo->rawtxQ,&vins,rawtxtag,OS_milliseconds() + 60000)) != 0 )
             {
                 if ( vins != 0 )
                     flag = 2;
@@ -227,7 +227,7 @@ struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo
                 tx->txid = signedtxid;
                 printf("%s %s.%s\n",myside != 0 ? "BOB" : "ALICE",str,signedtx);
                 free(signedtx);
-            } else printf("error signrawtx\n");
+            } else printf("error signrawtx\n"); //do a very short timeout so it finishes via local poll
         }
         if ( retjson != 0 )
             free_json(retjson);
