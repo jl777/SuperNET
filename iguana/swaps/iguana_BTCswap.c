@@ -197,10 +197,10 @@ struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo
     jaddnum(valsobj,"rawtxtag",rawtxtag);
     jaddnum(valsobj,"locktime",locktime);
     argjson = cJSON_CreateObject();
-    jaddnum(argjson,"timeout",100);
+    jaddnum(argjson,"timeout",60000);
     if ( (retstr= iguana_rawtx(myinfo,coin,argjson,0,coin->changeaddr,addresses,valsobj,scriptstr)) != 0 )
     {
-        printf("feetx got.(%s)\n",retstr);
+        printf("%s got.(%s)\n",str,retstr);
         flag = 0;
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
