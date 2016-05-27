@@ -226,8 +226,8 @@ xxx
 
 STRING_ARRAY_OBJ_STRING(basilisk,rawtx,changeaddr,addresses,vals,spendscriptstr)
 {
-    cJSON *argjson=0,*retjson,*hexjson,*valsobj; char *rawtx=0,*symbol=0; int64_t txfee,satoshis; uint32_t locktime,minconf,basilisktag; int32_t timeout;
-    //printf("RAWTX changeaddr.%s (%s) remote.(%s)\n",changeaddr==0?"":changeaddr,jprint(json,0),remoteaddr);
+    cJSON *argjson=0,*retjson,*hexjson; char *rawtx=0,*symbol=0; int64_t txfee,satoshis; uint32_t locktime,minconf,basilisktag; int32_t timeout;
+    printf("RAWTX changeaddr.%s (%s) remote.(%s)\n",changeaddr==0?"":changeaddr,jprint(json,0),remoteaddr);
     retjson = cJSON_CreateObject();
     if ( spendscriptstr != 0 && spendscriptstr[0] != 0 && (symbol= jstr(vals,"coin")) != 0 )
     {
@@ -242,18 +242,16 @@ STRING_ARRAY_OBJ_STRING(basilisk,rawtx,changeaddr,addresses,vals,spendscriptstr)
             OS_randombytes((uint8_t *)&basilisktag,sizeof(basilisktag));
         if ( (rawtx= basilisk_issuerawtx(myinfo,remoteaddr,basilisktag,symbol,&argjson,locktime,satoshis,spendscriptstr,changeaddr,txfee,minconf,addresses,timeout)) != 0 )
         {
-            //printf("return rawtx.(%s) remote.%p symbol.%s\n",rawtx,remoteaddr,symbol);
+            printf("return rawtx.(%s) remote.%p symbol.%s\n",rawtx,remoteaddr,symbol);
             if ( remoteaddr != 0 && remoteaddr[0] != 0 && (coin= iguana_coinfind(symbol)) != 0 )
             {
                 hexjson = cJSON_CreateObject();
                 jaddstr(hexjson,"rawtx",rawtx);
                 jaddstr(hexjson,"agent","basilisk");
                 jaddstr(hexjson,"method","result");
+                jaddstr(hexjson,"hexmsg",rawtx);
                 if ( argjson != 0 )
                     jadd(hexjson,"args",argjson);
-                valsobj = cJSON_CreateObject();
-                jaddstr(valsobj,"coin",symbol);
-                jadd(hexjson,"vals",valsobj);
                 retjson = basilisk_json(myinfo,hexjson,basilisktag,timeout);
                 free_json(hexjson);
             }
@@ -269,13 +267,13 @@ STRING_ARRAY_OBJ_STRING(basilisk,rawtx,changeaddr,addresses,vals,spendscriptstr)
     return(jprint(retjson,1));
 }
 
-INT_ARRAY_STRING(basilisk,result,basilisktag,argjson,hexmsg)
+INT_ARRAY_STRING(basilisk,result,basilisktag,args,hexmsg)
 {
     struct basilisk_item *ptr = calloc(1,sizeof(*ptr) + strlen(hexmsg) + 1);
     ptr->results[0] = clonestr(hexmsg);
     ptr->basilisktag = basilisktag;
-    if ( argjson != 0 )
-        ptr->resultargs[0] = jduplicate(argjson);
+    if ( args != 0 )
+        ptr->resultargs[0] = jduplicate(args);
     ptr->numresults = 1;
     queue_enqueue("resultsQ",&myinfo->basilisks.resultsQ,&ptr->DL,0);
     return(clonestr("{\"result\":\"queued basilisk return\"}"));
