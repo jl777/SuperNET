@@ -427,6 +427,7 @@ int64_t basilisk_bitcointxcost(struct supernet_info *myinfo,struct iguana_info *
         decode_hex(script,spendlen,spendscriptstr);
         if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,rawtx,extraspace,sizeof(extraspace))) != 0 )
         {
+            //printf("GOTTX.(%s)\n",jprint(txobj,0));
             if ( juint(txobj,"locktime") != locktime )
             {
                 printf("locktime mismatch %u != %u\n",juint(txobj,"locktime"),locktime);
@@ -456,6 +457,7 @@ int64_t basilisk_bitcointxcost(struct supernet_info *myinfo,struct iguana_info *
                                 free_json(txobj);
                                 return(-1);
                             }
+                            printf("Valid spend %.8f to %s\n",dstr(V.amount),V.coinaddr);
                         }
                         else
                         {
@@ -463,7 +465,7 @@ int64_t basilisk_bitcointxcost(struct supernet_info *myinfo,struct iguana_info *
                             free_json(txobj);
                             return(-1);
                         }
-                    }
+                    } else printf("cant find spend info.(%s)\n",jprint(vin,0));
                 }
                 if ( (vouts= jarray(&n,txobj,"vout")) != 0 && n == msgtx.tx_out )
                 {

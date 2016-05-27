@@ -575,7 +575,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
         strcpy(addr->lastcommand,H->command);
         if ( strncmp(H->command,"SuperNET",strlen("SuperNET")) == 0 )
         {
-            printf("iguana_msgparser from (%s) parse.(%s) len.%d\n",addr->ipaddr,H->command,recvlen);
+            //printf("iguana_msgparser from (%s) parse.(%s) len.%d\n",addr->ipaddr,H->command,recvlen);
             addr->supernet = 1;
             addr->msgcounts.verack++;
             len = recvlen;
@@ -592,7 +592,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                 iguana_send_supernet(addr,retstr,delay);
                 free(retstr);
             }
-            printf("GOT.(%s) len.%d from %s -> ret.(%s)\n",H->command,recvlen,addr->ipaddr,retstr==0?"null":retstr);
+            //printf("GOT.(%s) len.%d from %s -> ret.(%s)\n",H->command,recvlen,addr->ipaddr,retstr==0?"null":retstr);
             return(0);
         }
         else if ( strcmp(H->command,"InstantDEX") == 0 )

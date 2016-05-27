@@ -382,8 +382,10 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
         if ( array != 0 )
         {
             if ( sigser != 0 )
+            {
+                printf("vini.%d spendscript.%p spendlen.%d\n",i,msg->vins[i].spendscript,msg->vins[i].spendlen);
                 sigtxid = bitcoin_sigtxid(coin,sigser,maxsize,msg,i,msg->vins[i].spendscript,msg->vins[i].spendlen,SIGHASH_ALL,vpnstr);
-            else memset(sigtxid.bytes,0,sizeof(sigtxid));
+            } else memset(sigtxid.bytes,0,sizeof(sigtxid));
             jaddi(array,iguana_vinjson(coin,&msg->vins[i],sigtxid));
         }
     }
