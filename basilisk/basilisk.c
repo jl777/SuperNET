@@ -328,7 +328,7 @@ char *basilisk_hexmsg(struct supernet_info *myinfo,struct category_info *cat,voi
                             {
                                 if ( addr->supernet != 0 && strcmp(addr->ipaddr,remoteaddr) == 0 )
                                 {
-                                    printf("send back basilisk_result addr->supernet.%u to (%s).%d\n",addr->supernet,addr->ipaddr,addr->A.port);
+                                    printf("send back.%d basilisk_result addr->supernet.%u to (%s).%d\n",(int32_t)strlen(retstr),addr->supernet,addr->ipaddr,addr->A.port);
                                     iguana_send_supernet(addr,retstr,0);
                                     free_json(json);
                                     return(retstr);
