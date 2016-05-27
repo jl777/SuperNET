@@ -329,7 +329,7 @@ cJSON *iguana_blockjson(struct iguana_info *coin,struct iguana_block *block,int3
     char str[65],hexstr[1024]; int32_t i,len,size; struct iguana_txid *tx,T; struct iguana_msgblock msg;
     bits256 hash2,nexthash2; uint8_t serialized[1024]; cJSON *array,*json = cJSON_CreateObject();
     jaddstr(json,"result","success");
-    jaddstr(json,"blockhash",bits256_str(str,block->RO.hash2));
+    jaddstr(json,"hash",bits256_str(str,block->RO.hash2));
     jaddnum(json,"height",block->height);
     //jaddnum(json,"ipbits",block->fpipbits);
     jaddstr(json,"merkleroot",bits256_str(str,block->RO.merkle_root));

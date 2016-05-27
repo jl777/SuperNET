@@ -15,6 +15,10 @@
 
 #include "OS_portable.h"
 
+#ifdef __APPLE__
+#define LIQUIDITY_PROVIDER
+#endif
+
 #ifdef LIQUIDITY_PROVIDER
 #ifdef _WIN32
 #include <curl.h>

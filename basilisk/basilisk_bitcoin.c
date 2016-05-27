@@ -79,14 +79,23 @@ char *bitcoin_balance(struct iguana_info *coin,char *coinaddr,int32_t lastheight
 
 char *basilisk_bitcoinblockhashstr(char *coinstr,char *serverport,char *userpass,int32_t height)
 {
-    char numstr[128],*blockhashstr=0; 
+    char numstr[128],*blockhashstr=0; bits256 hash2; struct iguana_info *coin;
     sprintf(numstr,"%d",height);
     blockhashstr = bitcoind_passthru(coinstr,serverport,userpass,"getblockhash",numstr);
-    if ( blockhashstr == 0 || blockhashstr[0] == 0 )
+    hash2 = bits256_conv(blockhashstr);
+    if ( blockhashstr == 0 || blockhashstr[0] == 0 || bits256_nonz(hash2) == 0 )
     {
-        printf("couldnt get blockhash for %u\n",height);
+        printf("couldnt get blockhash for %u, probably curl is disabled\n",height);
         if ( blockhashstr != 0 )
             free(blockhashstr);
+        if ( height == 0 )
+        {
+            if ( (coin= iguana_coinfind(coinstr)) != 0 )
+            {
+                bits256_str(numstr,*(bits256 *)coin->chain->genesis_hashdata);
+                return(clonestr(numstr));
+            }
+        }
         return(0);
     }
     return(blockhashstr);
@@ -94,28 +103,28 @@ char *basilisk_bitcoinblockhashstr(char *coinstr,char *serverport,char *userpass
 
 int32_t basilisk_blockhashes(struct iguana_info *coin,int32_t height,int32_t n)
 {
-    char *blockhashstr; struct iguana_block *block,*checkblock; struct iguana_bundle *bp; int32_t bundlei,checki,h,i,num = 0; bits256 zero,hash2;
+    char *blockhashstr; struct iguana_block *block,*checkblock; struct iguana_bundle *bp=0; int32_t bundlei,checki,h,i,num = 0; bits256 zero,hash2;
     h = height;
     for (i=0; i<n; i++,h++)
     {
         hash2 = iguana_blockhash(coin,h);
-        if ( (block= iguana_blockfind("basilisk",coin,hash2)) != 0 && block->height == h && block->mainchain != 0 )
+        if ( 0 && (block= iguana_blockfind("basilisk",coin,hash2)) != 0 && block->height == h && block->mainchain != 0 )
             continue;
-        if ( (blockhashstr= basilisk_bitcoinblockhashstr(coin->symbol,coin->chain->serverport,coin->chain->userpass,h)) != 0 )
+        if ( (blockhashstr= basilisk_bitcoinblockhashstr(coin->symbol,coin->chain->serverport,coin->chain->userpass,h)) != 0 && bits256_nonz(hash2) != 0 )
         {
             hash2 = bits256_conv(blockhashstr);
             memset(zero.bytes,0,sizeof(zero));
-            if ( (bundlei= (h % coin->chain->bundlesize)) == 0 )
-                bp = iguana_bundlecreate(coin,&checki,0,hash2,zero,1);
             block = iguana_blockhashset("remote",coin,h,hash2,1);
+            if ( (bundlei= (h % coin->chain->bundlesize)) == 0 )
+                bp = iguana_bundlecreate(coin,&checki,h,hash2,zero,1);
             iguana_bundlehash2add(coin,&checkblock,bp,bundlei,hash2);
-            if ( block != checkblock || checki != bundlei )
-                printf("block mismatch %p %p at ht.%d\n",block,checkblock,h);
+            if ( block != checkblock )
+                printf("bp.%p block mismatch %p %p at ht.%d bundlei.%d\n",bp,block,checkblock,h,bundlei);
             else
             {
                 block->mainchain = 1;
+                char str[65]; printf("%s ht.%d\n",bits256_str(str,hash2),h);
                 num++;
-                printf("ht.%d\n",h);
             }
             free(blockhashstr);
         }
@@ -179,7 +188,7 @@ cJSON *bitcoin_blockjson(int32_t *heightp,char *coinstr,char *serverport,char *u
 
 int32_t basilisk_bitcoinscan(struct iguana_info *coin,uint8_t origblockspace[IGUANA_MAXPACKETSIZE],struct OS_memspace *rawmem)
 {
-    struct iguana_txblock txdata; int32_t len,starti,h,num=0,loadheight,hexlen,datalen,n,i,numtxids,flag=0,j,height=-1; cJSON *curljson,*blockjson,*txids; char *bitstr,*curlstr,params[128],str[65]; struct iguana_msghdr H; struct iguana_msgblock *msg; uint8_t *blockspace,revbits[4],bitsbuf[4];
+    struct iguana_txblock txdata; struct iguana_block B; int32_t len,starti,h,num=0,loadheight,hexlen,datalen,n,i,numtxids,flag=0,j,height=-1; cJSON *curljson,*blockjson,*txids; char *bitstr,*curlstr,params[128],str[65]; struct iguana_msghdr H; struct iguana_msgblock *msg; uint8_t *blockspace,revbits[4],bitsbuf[4]; bits256 hash2,checkhash2;
     strcpy(params,"[]");
     if ( (curlstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getinfo",params)) != 0 )
     {
@@ -191,29 +200,45 @@ int32_t basilisk_bitcoinscan(struct iguana_info *coin,uint8_t origblockspace[IGU
         free(curlstr);
     }
     loadheight = coin->blocks.hwmchain.height;
-    if ( loadheight == 0 )
-        loadheight = 1;
-    basilisk_blockhashes(coin,loadheight,100000);
+    basilisk_blockhashes(coin,loadheight,coin->chain->bundlesize);
     for (j=0; j<coin->chain->bundlesize; j++)
     {
+        if ( loadheight == 0 )
+        {
+            loadheight++;
+            continue;
+        }
+        basilisk_blockhashes(coin,loadheight,1);
         flag = 0;
         if ( (blockjson= bitcoin_blockjson(&h,coin->symbol,coin->chain->serverport,coin->chain->userpass,0,loadheight)) != 0 )
         {
             blockspace = origblockspace;
-            msg = (void *)blockspace;
-            memset(msg,0,sizeof(*msg));
-            msg->H.version = juint(blockjson,"version");
-            msg->H.prev_block = jbits256(blockjson,"previousblockhash");
-            msg->H.merkle_root = jbits256(blockjson,"merkleroot");
-            msg->H.timestamp = juint(blockjson,"timestamp");
+            memset(&B,0,sizeof(B));
+            B.RO.version = juint(blockjson,"version");
+            B.RO.prev_block = jbits256(blockjson,"previousblockhash");
+            B.RO.merkle_root = jbits256(blockjson,"merkleroot");
+            B.RO.timestamp = juint(blockjson,"time");
             if ( (bitstr= jstr(blockjson,"bits")) != 0 )
             {
-                decode_hex(revbits,sizeof(revbits),bitstr);
+                decode_hex(revbits,sizeof(uint32_t),bitstr);
                 for (i=0; i<4; i++)
                     bitsbuf[i] = revbits[3 - i];
-                memcpy(&msg->H.bits,bitsbuf,sizeof(msg->H.bits));
+                memcpy(&B.RO.bits,bitsbuf,sizeof(B.RO.bits));
             }
-            msg->H.nonce = juint(blockjson,"nonce");
+            B.RO.nonce = juint(blockjson,"nonce");
+            //char str[65],str2[65];
+            //printf("v.%d t.%u bits.%08x nonce.%x %s %s\n",B.RO.version,B.RO.timestamp,B.RO.bits,B.RO.nonce,bits256_str(str,B.RO.prev_block),bits256_str(str2,B.RO.merkle_root));
+            iguana_serialize_block(coin->chain,&checkhash2,blockspace,&B);
+            //for (i=0; i<80; i++)
+            //    printf("%02x",blockspace[i]);
+            //printf(" B.%s\n",bits256_str(str,checkhash2));
+            msg = (void *)blockspace;
+            //printf("(%s)\n",jprint(blockjson,0));
+            checkhash2 = iguana_calcblockhash(coin->chain->hashalgo,blockspace,sizeof(*msg)-4);
+            if ( jstr(blockjson,"hash") != 0 )
+                hash2 = bits256_conv(jstr(blockjson,"hash"));
+            else memset(hash2.bytes,0,sizeof(hash2));
+            //printf("%s vs %s %ld\n",bits256_str(str,hash2),bits256_str(str2,checkhash2),sizeof(*msg)-4);
             datalen = 80;
             if ( (txids= jarray(&numtxids,blockjson,"tx")) != 0 )
             {
@@ -255,7 +280,7 @@ int32_t basilisk_bitcoinscan(struct iguana_info *coin,uint8_t origblockspace[IGU
                     iguana_gotblockM(coin,0,&txdata,rawmem->ptr,&H,blockspace,datalen);
                     flag = 1;
                     //if ( (rand() % 1000) == 0 )
-                        printf("%s height.%-7d datalen.%-6d | HWM.%d\n",coin->symbol,h,datalen,coin->blocks.hwmchain.height);
+                        printf("%s h.%-7d len.%-6d | HWM.%d\n",coin->symbol,h,datalen,coin->blocks.hwmchain.height);
                 }
                 else
                 {
