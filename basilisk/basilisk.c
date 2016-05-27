@@ -71,7 +71,7 @@ int32_t basilisk_submit(struct supernet_info *myinfo,cJSON *reqjson,int32_t time
     int32_t i,j,k,l,r2,r,n; struct iguana_peer *addr; struct iguana_info *coin; char *reqstr; cJSON *tmpjson;
     tmpjson = basilisk_json(myinfo,reqjson,ptr->basilisktag,timeout);
     reqstr = jprint(tmpjson,1);
-    printf("basilisk_submit.(%s)\n",reqstr);
+    //printf("basilisk_submit.(%s)\n",reqstr);
     if ( fanout <= 0 )
         fanout = BASILISK_MINFANOUT;
     else if ( fanout > BASILISK_MAXFANOUT )
@@ -227,7 +227,7 @@ xxx
 STRING_ARRAY_OBJ_STRING(basilisk,rawtx,changeaddr,addresses,vals,spendscriptstr)
 {
     cJSON *argjson=0,*retjson,*hexjson; char *rawtx=0,*symbol=0; int64_t txfee,satoshis; uint32_t locktime,minconf,basilisktag; int32_t timeout;
-    printf("RAWTX changeaddr.%s (%s) remote.(%s)\n",changeaddr==0?"":changeaddr,jprint(json,0),remoteaddr);
+    //printf("RAWTX changeaddr.%s (%s) remote.(%s)\n",changeaddr==0?"":changeaddr,jprint(json,0),remoteaddr);
     retjson = cJSON_CreateObject();
     if ( spendscriptstr != 0 && spendscriptstr[0] != 0 && (symbol= jstr(vals,"coin")) != 0 )
     {
@@ -267,16 +267,21 @@ STRING_ARRAY_OBJ_STRING(basilisk,rawtx,changeaddr,addresses,vals,spendscriptstr)
     return(jprint(retjson,1));
 }
 
-INT_ARRAY_STRING(basilisk,result,basilisktag,args,hexmsg)
+ARRAY_OBJ_INT(basilisk,result,args,vals,basilisktag)
 {
-    struct basilisk_item *ptr = calloc(1,sizeof(*ptr) + strlen(hexmsg) + 1);
-    ptr->results[0] = clonestr(hexmsg);
-    ptr->basilisktag = basilisktag;
-    if ( args != 0 )
-        ptr->resultargs[0] = jduplicate(args);
-    ptr->numresults = 1;
-    queue_enqueue("resultsQ",&myinfo->basilisks.resultsQ,&ptr->DL,0);
-    return(clonestr("{\"result\":\"queued basilisk return\"}"));
+    struct basilisk_item *ptr; char *hexmsg;
+    if ( vals != 0 && (hexmsg= jstr(vals,"hexmsg")) != 0 )
+    {
+        ptr = calloc(1,sizeof(*ptr) + strlen(hexmsg) + 1);
+        ptr->results[0] = clonestr(hexmsg);
+        ptr->basilisktag = basilisktag;
+        if ( args != 0 )
+            ptr->resultargs[0] = jduplicate(args);
+        ptr->numresults = 1;
+        queue_enqueue("resultsQ",&myinfo->basilisks.resultsQ,&ptr->DL,0);
+        return(clonestr("{\"result\":\"queued basilisk return\"}"));
+    }
+    return(clonestr("{\"error\":\"no hexmsg to return\"}"));
 }
 
 #include "../includes/iguana_apiundefs.h"
@@ -308,7 +313,8 @@ char *basilisk_hexmsg(struct supernet_info *myinfo,struct category_info *cat,voi
                         int32_t minconf = juint(valsobj,"minconf");
                         int32_t timeout = juint(valsobj,"timeout");
                         uint32_t locktime = juint(valsobj,"locktime");
-                        retstr = basilisk_issuerawtx(myinfo,remoteaddr,0,coin->symbol,&vins,locktime,amount,jstr(json,"spendscriptstr"),jstr(json,"changeaddr"),txfee,minconf,jobj(json,"addresses"),timeout);
+                        uint32_t basilisktag = juint(valsobj,"basilisktag");
+                        retstr = basilisk_issuerawtx(myinfo,remoteaddr,basilisktag,coin->symbol,&vins,locktime,amount,jstr(json,"spendscriptstr"),jstr(json,"changeaddr"),txfee,minconf,jobj(json,"addresses"),timeout);
                     }
                     else if ( strcmp(method,"balances") == 0 )
                     {
@@ -316,7 +322,7 @@ char *basilisk_hexmsg(struct supernet_info *myinfo,struct category_info *cat,voi
                     }
                     if ( retstr == 0 )
                         return(0);
-                    printf("basilisk will return.(%s)\n",retstr);
+                    //printf("basilisk will return.(%s)\n",retstr);
                     for (j=0; j<IGUANA_MAXCOINS; j++)
                     {
                         if ( (coin= Coins[j]) == 0 )
@@ -342,15 +348,16 @@ char *basilisk_hexmsg(struct supernet_info *myinfo,struct category_info *cat,voi
                 {
                     if ( strcmp(method,"result") == 0 )
                     {
-                        printf("got rawtx.(%s)\n",jstr(json,"hexmsg"));
-                        return(basilisk_result(myinfo,coin,json,remoteaddr,juint(json,"basilisktag"),jobj(json,"args"),jstr(json,"hexmsg")));
+                        printf("got rawtx.(%s)\n",jstr(valsobj,"rawtx"));
+                        if ( jstr(valsobj,"coin") != 0 )
+                            coin = iguana_coinfind(jstr(valsobj,"coin"));
+                        return(basilisk_result(myinfo,coin,json,remoteaddr,jobj(json,"args"),jobj(valsobj,"hexmsg"),juint(json,"basilisktag")));
                     }
                 }
             }
         }
     }
-    if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
-        printf("unhandled bitcoin_hexmsg.(%d) from %s (%s/%s)\n",len,remoteaddr,agent,method);
+    printf("unhandled bitcoin_hexmsg.(%d) from %s (%s/%s)\n",len,remoteaddr,agent,method);
     free_json(json);
     return(retstr);
 }

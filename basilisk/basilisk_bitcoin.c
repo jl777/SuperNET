@@ -511,6 +511,8 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
 {
     uint8_t buf[IGUANA_MAXSCRIPTSIZE]; int32_t i,spendlen,besti=-1; cJSON *hexjson,*retjson,*valsobj,*txobj = 0; char *retstr=0,*rawtx = 0; int64_t cost,bestcost=-1; struct basilisk_item *ptr;
     *vinsp = 0;
+    if ( basilisktag == 0 )
+        basilisktag = rand();
     if ( coin != 0 && basilisk_bitcoinavail(coin) != 0 )
     {
         if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
@@ -531,13 +533,16 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
             {
                 free_json(txobj);
                 hexjson = cJSON_CreateObject();
-                jaddstr(hexjson,"rawtx",rawtx);
+                valsobj = cJSON_CreateObject();
                 jaddstr(hexjson,"agent","basilisk");
                 jaddstr(hexjson,"method","result");
-                jaddstr(hexjson,"hexmsg",rawtx);
+                jaddstr(valsobj,"rawtx",rawtx);
+                jaddstr(valsobj,"coin",coin->symbol);
+                jadd(hexjson,"vals",valsobj);
                 jadd(hexjson,"args",*vinsp);
                 retjson = basilisk_json(myinfo,hexjson,basilisktag,timeoutmillis);
                 free(rawtx);
+                free_json(hexjson);
                 return(jprint(retjson,1));
             } else free(rawtx);
         }
