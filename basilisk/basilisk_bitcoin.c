@@ -92,6 +92,21 @@ char *bitcoin_blockhashstr(char *coinstr,char *serverport,char *userpass,int32_t
     return(blockhashstr);
 }
 
+bits256 basilisk_blockhash(struct iguana_info *coin,int32_t height)
+{
+    char *blockhashstr; bits256 hash2;
+    memset(hash2.bytes,0,sizeof(hash2));
+    if ( coin->MAXPEERS == 1 )
+    {
+        if ( (blockhashstr= bitcoin_blockhashstr(coin->symbol,coin->chain->serverport,coin->chain->userpass,height)) != 0 )
+        {
+            hash2 = bits256_conv(blockhashstr);
+            free(blockhashstr);
+        }
+    }
+    return(hash2);
+}
+
 cJSON *bitcoin_blockjson(int32_t *heightp,char *coinstr,char *serverport,char *userpass,char *blockhashstr,int32_t height)
 {
     cJSON *json = 0; int32_t flag = 0; char buf[1024],*blocktxt = 0;
