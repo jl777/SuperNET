@@ -127,15 +127,16 @@ void iguana_acceptloop(void *args)
             strcpy(ptr->ipaddr,ipaddr);
             ptr->ipbits = ipbits;
             ptr->sock = sock;
-            ptr->port = coin->chain->portp2p;
+            ptr->port = cli_addr.sin_port;
             printf("queue PENDING ACCEPTS\n");
             queue_enqueue("acceptQ",&coin->acceptQ,&ptr->DL,0);
         }
         else
         {
-            printf("LAUNCH DEDICATED THREAD for %s\n",ipaddr);
+            printf("LAUNCH DEDICATED THREAD for %s:%u\n",ipaddr,cli_addr.sin_port);
             addr->usock = sock;
             addr->dead = 0;
+            addr->A.port = cli_addr.sin_port;
             strcpy(addr->symbol,coin->symbol);
             iguana_launch(coin,"accept",iguana_dedicatedglue,addr,IGUANA_CONNTHREAD);
             //iguana_dedicatedloop(coin,addr);
