@@ -190,8 +190,6 @@ int32_t iguana_blockvalidate(struct iguana_info *coin,int32_t *validp,struct igu
     bits256 hash2; uint8_t serialized[sizeof(struct iguana_msgblock) + 4096];
     *validp = 0;
     iguana_serialize_block(coin->chain,&hash2,serialized,block);
-    if ( coin->MAXPEERS == 1 )
-        hash2 = basilisk_blockhash(coin,block->RO.prev_block);
     *validp = (memcmp(hash2.bytes,block->RO.hash2.bytes,sizeof(hash2)) == 0);
     block->valid = *validp;
     char str[65]; char str2[65];

@@ -77,9 +77,9 @@ char *bitcoin_balance(struct iguana_info *coin,char *coinaddr,int32_t lastheight
 }
 #else
 
-char *bitcoin_blockhashstr(char *coinstr,char *serverport,char *userpass,int32_t height)
+char *basilisk_bitcoinblockhashstr(char *coinstr,char *serverport,char *userpass,int32_t height)
 {
-    char numstr[128],*blockhashstr=0;
+    char numstr[128],*blockhashstr=0; 
     sprintf(numstr,"%d",height);
     blockhashstr = bitcoind_passthru(coinstr,serverport,userpass,"getblockhash",numstr);
     if ( blockhashstr == 0 || blockhashstr[0] == 0 )
@@ -90,6 +90,32 @@ char *bitcoin_blockhashstr(char *coinstr,char *serverport,char *userpass,int32_t
         return(0);
     }
     return(blockhashstr);
+}
+
+int32_t basilisk_blockhashes(struct iguana_info *coin,int32_t height,int32_t n)
+{
+    char *blockhashstr; struct iguana_block *block,*checkblock; struct iguana_bundle *bp; int32_t bundlei,checki,h,i,num = 0; bits256 zero,hash2;
+    h = height;
+    for (i=0; i<n; i++,h++)
+    {
+        hash2 = iguana_blockhash(coin,h);
+        if ( (block= iguana_blockfind("basilisk",coin,hash2)) != 0 && block->height == h && block->mainchain != 0 )
+            continue;
+        if ( (blockhashstr= basilisk_bitcoinblockhashstr(coin->symbol,coin->chain->serverport,coin->chain->userpass,h)) != 0 )
+        {
+            hash2 = bits256_conv(blockhashstr);
+            memset(zero.bytes,0,sizeof(zero));
+            if ( (bundlei= (h % coin->chain->bundlesize)) == 0 )
+                bp = iguana_bundlecreate(coin,&checki,0,hash2,zero,1);
+            block = iguana_blockhashset("remote",coin,h,hash2,1);
+            iguana_bundlehash2add(coin,&checkblock,bp,bundlei,hash2);
+            if ( block != checkblock || checki != bundlei )
+                printf("block mismatch %p %p at ht.%d\n",block,checkblock,h);
+            else block->mainchain = 1, num++;
+            free(blockhashstr);
+        }
+    }
+    return(num);
 }
 
 int32_t basilisk_blockheight(struct iguana_info *coin,bits256 hash2)
@@ -108,7 +134,7 @@ int32_t basilisk_blockheight(struct iguana_info *coin,bits256 hash2)
     return(height);
 }
 
-bits256 basilisk_blockhash(struct iguana_info *coin,bits256 prevhash2)
+/*bits256 basilisk_blockhash(struct iguana_info *coin,bits256 prevhash2)
 {
     char *blockhashstr; bits256 hash2; int32_t height;
     memset(hash2.bytes,0,sizeof(hash2));
@@ -123,13 +149,13 @@ bits256 basilisk_blockhash(struct iguana_info *coin,bits256 prevhash2)
         }
     }
     return(hash2);
-}
+}*/
 
 cJSON *bitcoin_blockjson(int32_t *heightp,char *coinstr,char *serverport,char *userpass,char *blockhashstr,int32_t height)
 {
     cJSON *json = 0; int32_t flag = 0; char buf[1024],*blocktxt = 0;
     if ( blockhashstr == 0 )
-        blockhashstr = bitcoin_blockhashstr(coinstr,serverport,userpass,height), flag = 1;
+        blockhashstr = basilisk_bitcoinblockhashstr(coinstr,serverport,userpass,height), flag = 1;
     if ( blockhashstr != 0 )
     {
         sprintf(buf,"\"%s\"",blockhashstr);
@@ -148,7 +174,7 @@ cJSON *bitcoin_blockjson(int32_t *heightp,char *coinstr,char *serverport,char *u
 
 int32_t basilisk_bitcoinscan(struct iguana_info *coin,uint8_t origblockspace[IGUANA_MAXPACKETSIZE],struct OS_memspace *rawmem)
 {
-    struct iguana_txblock txdata; int32_t len,starti,h,num=0,loadheight,hexlen,datalen,n,i,numtxids,flag=0,height=-1; cJSON *curljson,*blockjson,*txids; char *bitstr,*curlstr,params[128],str[65]; struct iguana_msghdr H; struct iguana_msgblock *msg; uint8_t *blockspace,revbits[4],bitsbuf[4];
+    struct iguana_txblock txdata; int32_t len,starti,h,num=0,loadheight,hexlen,datalen,n,i,numtxids,flag=0,j,height=-1; cJSON *curljson,*blockjson,*txids; char *bitstr,*curlstr,params[128],str[65]; struct iguana_msghdr H; struct iguana_msgblock *msg; uint8_t *blockspace,revbits[4],bitsbuf[4];
     strcpy(params,"[]");
     if ( (curlstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getinfo",params)) != 0 )
     {
@@ -162,7 +188,8 @@ int32_t basilisk_bitcoinscan(struct iguana_info *coin,uint8_t origblockspace[IGU
     loadheight = coin->blocks.hwmchain.height;
     if ( loadheight == 0 )
         loadheight = 1;
-    while ( loadheight <= height )//&& coin->blocks.pending < 10 )
+    basilisk_blockhashes(coin,loadheight,coin->chain->bundlesize);
+    for (j=0; j<coin->chain->bundlesize; j++)
     {
         flag = 0;
         if ( (blockjson= bitcoin_blockjson(&h,coin->symbol,coin->chain->serverport,coin->chain->userpass,0,loadheight)) != 0 )
@@ -232,9 +259,9 @@ int32_t basilisk_bitcoinscan(struct iguana_info *coin,uint8_t origblockspace[IGU
             }
             free_json(blockjson);
         }
+        loadheight++;
         if ( flag == 0 )
             break;
-        loadheight++;
     }
     if ( coin->blocks.pending > 0 )
         coin->blocks.pending--;
