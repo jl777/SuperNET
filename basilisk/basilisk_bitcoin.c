@@ -111,7 +111,12 @@ int32_t basilisk_blockhashes(struct iguana_info *coin,int32_t height,int32_t n)
             iguana_bundlehash2add(coin,&checkblock,bp,bundlei,hash2);
             if ( block != checkblock || checki != bundlei )
                 printf("block mismatch %p %p at ht.%d\n",block,checkblock,h);
-            else block->mainchain = 1, num++;
+            else
+            {
+                block->mainchain = 1;
+                num++;
+                printf("ht.%d\n",h);
+            }
             free(blockhashstr);
         }
     }
@@ -188,7 +193,7 @@ int32_t basilisk_bitcoinscan(struct iguana_info *coin,uint8_t origblockspace[IGU
     loadheight = coin->blocks.hwmchain.height;
     if ( loadheight == 0 )
         loadheight = 1;
-    basilisk_blockhashes(coin,loadheight,coin->chain->bundlesize);
+    basilisk_blockhashes(coin,loadheight,100000);
     for (j=0; j<coin->chain->bundlesize; j++)
     {
         flag = 0;
