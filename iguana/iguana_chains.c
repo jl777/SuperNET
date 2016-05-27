@@ -124,7 +124,7 @@ blockhashfunc iguana_hashalgo(char *hashalgostr)
     return(0);
 }
 
-bits256 iguana_calcblockhash(int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serialized,int32_t len),uint8_t *serialized,int32_t len)
+bits256 iguana_calcblockhash(char *symbol,int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serialized,int32_t len),uint8_t *serialized,int32_t len)
 {
     bits256 tmp,hash2; int32_t i;
     memset(&hash2,0,sizeof(hash2));
@@ -135,10 +135,23 @@ bits256 iguana_calcblockhash(int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *se
         for (i=0; i<32; i++)
             hash2.bytes[i] = tmp.bytes[31 - i];
     } else return(tmp);
+    if ( hashalgo == blockhash_scrypt )
+    {
+        char str[65]; bits256 checkhash2; struct iguana_msgblock msg; struct iguana_block *block; struct iguana_info *coin;
+        if ( (coin= iguana_coinfind(symbol)) != 0 )
+        {
+            iguana_rwblock(symbol,hashalgo,0,&checkhash2,serialized,&msg);
+            if ( (block= iguana_blockfind("hashalgo",coin,msg.H.prev_block)) != 0 )
+            {
+                hash2 = iguana_blockhash(coin,block->height+1);
+                printf("sethash2.(%s)\n",bits256_str(str,hash2));
+            }
+        }
+    }
     return(hash2);
 }
 
-bits256 iguana_chaingenesis(int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serialized,int32_t len),bits256 genesishash,char *genesisblock,char *hashalgostr,int32_t version,uint32_t timestamp,uint32_t nBits,uint32_t nonce,bits256 merkle_root)
+bits256 iguana_chaingenesis(char *symbol,int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serialized,int32_t len),bits256 genesishash,char *genesisblock,char *hashalgostr,int32_t version,uint32_t timestamp,uint32_t nBits,uint32_t nonce,bits256 merkle_root)
 {
     struct iguana_msgblock msg; int32_t len; bits256 hash2; char blockhashstr[256],str3[65]; uint8_t serialized[1024];
     memset(&msg,0,sizeof(msg));
@@ -150,7 +163,7 @@ bits256 iguana_chaingenesis(int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *ser
     if ( hashalgostr != 0 && strcmp(hashalgostr,"sha256") != 0 )
         hashalgo = iguana_hashalgo(hashalgostr);
     else hashalgo = blockhash_sha256;
-    len = iguana_rwblock(hashalgo,1,&hash2,serialized,&msg);
+    len = iguana_rwblock(symbol,hashalgo,1,&hash2,serialized,&msg);
     blockhashstr[0] = 0;
     init_hexbytes_noT(blockhashstr,hash2.bytes,sizeof(hash2));
     char str[65],str2[65];
@@ -329,7 +342,7 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
                 ((uint8_t *)&nBits)[3] = tmp[0];
             }
             else nBits = 0x1e00ffff;
-            hash = iguana_chaingenesis(chain->hashalgo,hash,genesisblock,jstr(genesis,"hashalgo"),juint(genesis,"version"),juint(genesis,"timestamp"),nBits,juint(genesis,"nonce"),jbits256(genesis,"merkle_root"));
+            hash = iguana_chaingenesis(chain->symbol,chain->hashalgo,hash,genesisblock,jstr(genesis,"hashalgo"),juint(genesis,"version"),juint(genesis,"timestamp"),nBits,juint(genesis,"nonce"),jbits256(genesis,"merkle_root"));
             //chain->genesis_hash = clonestr(bits256_str(str,hash));
             chain->genesis_hex = clonestr(genesisblock);
         }

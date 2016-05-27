@@ -234,7 +234,7 @@ int32_t basilisk_bitcoinscan(struct iguana_info *coin,uint8_t origblockspace[IGU
             //printf(" B.%s\n",bits256_str(str,checkhash2));
             msg = (void *)blockspace;
             //printf("(%s)\n",jprint(blockjson,0));
-            checkhash2 = iguana_calcblockhash(coin->chain->hashalgo,blockspace,sizeof(*msg)-4);
+            checkhash2 = iguana_calcblockhash(coin->symbol,coin->chain->hashalgo,blockspace,sizeof(*msg)-4);
             if ( jstr(blockjson,"hash") != 0 )
                 hash2 = bits256_conv(jstr(blockjson,"hash"));
             else memset(hash2.bytes,0,sizeof(hash2));
