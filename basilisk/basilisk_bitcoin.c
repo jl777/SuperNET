@@ -114,8 +114,10 @@ bits256 basilisk_blockhash(struct iguana_info *coin,bits256 prevhash2)
     memset(hash2.bytes,0,sizeof(hash2));
     if ( (height= basilisk_blockheight(coin,prevhash2)) >= 0 )
     {
+        printf("blockhash.%d\n",height);
         if ( (blockhashstr= bitcoin_blockhashstr(coin->symbol,coin->chain->serverport,coin->chain->userpass,height+1)) != 0 )
         {
+            printf("got (%s)\n",blockhashstr);
             hash2 = bits256_conv(blockhashstr);
             free(blockhashstr);
         }
