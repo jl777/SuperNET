@@ -480,7 +480,7 @@ int32_t iguana_send_supernet(struct iguana_peer *addr,char *jsonstr,int32_t dela
         iguana_setkeys(myinfo,addr,&privkey,&pubkey,&destpub,&nextprivkey,&nextpubkey,&nextdestpub);
         if ( juint(json,"plaintext") == 0 && juint(json,"broadcast") == 0 && memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(pubkey)) == 0 )
         {
-            //printf("reject broadcasting non-plaintext! (%s)\n",jsonstr); //getchar();
+            printf("reject broadcasting non-plaintext! (%s)\n",jsonstr); //getchar();
             free_json(json);
             return(-1);
         }
@@ -491,7 +491,10 @@ int32_t iguana_send_supernet(struct iguana_peer *addr,char *jsonstr,int32_t dela
             if ( 0 && jstr(json,"method") != 0 && strcmp("getpeers",jstr(json,"method")) != 0 )
                 printf("SUPERSEND -> (%s) (%s) delaymillis.%d datalen.%d checkc.%x\n",jprint(SuperNET_bits2json(&serialized[sizeof(struct iguana_msghdr)],datalen),1),addr->ipaddr,delaymillis,datalen,checkc);
             if ( 1 && memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(destpub)) == 0 )
+            {
                 qlen = iguana_queue_send(addr,delaymillis,serialized,"SuperNET",datalen,0,0);
+                printf("send broadcast\n");
+            }
             else
             {
                 if ( (cipher= SuperNET_ciphercalc(&ptr,&cipherlen,&privkey,&destpub,&serialized[sizeof(struct iguana_msghdr)],datalen,space2,sizeof(space2))) != 0 )
@@ -511,7 +514,7 @@ int32_t iguana_send_supernet(struct iguana_peer *addr,char *jsonstr,int32_t dela
                         free(ptr);
                 }
             }
-        }
+        } else printf("error json2bits\n");
         free(serialized);
     } else printf("cant parse.(%s)\n",jsonstr);
     return(qlen);
