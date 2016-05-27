@@ -509,7 +509,7 @@ int64_t basilisk_bitcointxcost(struct supernet_info *myinfo,struct iguana_info *
 
 char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,cJSON **vinsp,uint32_t locktime,uint64_t satoshis,char *changeaddr,uint64_t txfee,cJSON *addresses,int32_t minconf,char *spendscriptstr,int32_t timeoutmillis)
 {
-    uint8_t buf[IGUANA_MAXSCRIPTSIZE]; int32_t i,spendlen,besti=-1; cJSON *hexjson,*valsobj,*txobj = 0; char *retstr=0,*rawtx = 0; int64_t cost,bestcost=-1; struct basilisk_item *ptr;
+    uint8_t buf[IGUANA_MAXSCRIPTSIZE]; int32_t i,spendlen,besti=-1; cJSON *hexjson,*retjson,*valsobj,*txobj = 0; char *retstr=0,*rawtx = 0; int64_t cost,bestcost=-1; struct basilisk_item *ptr;
     *vinsp = 0;
     if ( coin != 0 && basilisk_bitcoinavail(coin) != 0 )
     {
@@ -530,8 +530,15 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
             if ( *vinsp != 0 )
             {
                 free_json(txobj);
-                //printf("return locally generated rawtx.(%s) vins.%p\n",rawtx,*vinsp);
-                return(rawtx);
+                hexjson = cJSON_CreateObject();
+                jaddstr(hexjson,"rawtx",rawtx);
+                jaddstr(hexjson,"agent","basilisk");
+                jaddstr(hexjson,"method","result");
+                jaddstr(hexjson,"hexmsg",rawtx);
+                jadd(hexjson,"args",*vinsp);
+                retjson = basilisk_json(myinfo,hexjson,basilisktag,timeoutmillis);
+                free(rawtx);
+                return(jprint(retjson,1));
             } else free(rawtx);
         }
     }

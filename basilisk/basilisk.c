@@ -40,12 +40,6 @@ char *basilisk_finish(struct basilisk_item *ptr,cJSON **argjsonp,int32_t besti)
     return(retstr);
 }
 
-#include "basilisk_bitcoin.c"
-#include "basilisk_nxt.c"
-#include "basilisk_ether.c"
-#include "basilisk_waves.c"
-#include "basilisk_lisk.c"
-
 cJSON *basilisk_json(struct supernet_info *myinfo,cJSON *hexjson,uint32_t basilisktag,int32_t timeout)
 {
     char *str,*buf; cJSON *retjson;
@@ -65,6 +59,12 @@ cJSON *basilisk_json(struct supernet_info *myinfo,cJSON *hexjson,uint32_t basili
     jaddnum(retjson,"timeout",timeout);
     return(retjson);
 }
+
+#include "basilisk_bitcoin.c"
+#include "basilisk_nxt.c"
+#include "basilisk_ether.c"
+#include "basilisk_waves.c"
+#include "basilisk_lisk.c"
 
 int32_t basilisk_submit(struct supernet_info *myinfo,cJSON *reqjson,int32_t timeout,int32_t fanout,struct basilisk_item *ptr)
 {
