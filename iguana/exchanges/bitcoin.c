@@ -499,7 +499,7 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
 {
     char *str,*retstr,coinaddr[64]; int32_t added; uint64_t txid = 0; cJSON *json=0; struct instantdex_accept *ap;
     struct supernet_info *myinfo; uint8_t pubkey[33]; struct iguana_info *other;
-    myinfo = SuperNET_accountfind(argjson);
+    myinfo = SuperNET_MYINFO(0);//SuperNET_accountfind(argjson);
     //printf("TRADE with myinfo.%p\n",myinfo);
     if ( retstrp != 0 )
         *retstrp = 0;
@@ -558,7 +558,8 @@ char *ORDERSTATUS(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson
 {
     struct instantdex_accept *ap; struct bitcoin_swapinfo *swap; cJSON *retjson;
     retjson = cJSON_CreateObject();
-    struct supernet_info *myinfo = SuperNET_accountfind(argjson);
+    struct supernet_info *myinfo;// = SuperNET_accountfind(argjson);
+    myinfo = SuperNET_MYINFO(0);//SuperNET_accountfind(argjson);
     if ( (swap= instantdex_statemachinefind(myinfo,exchange,orderid)) != 0 )
         jadd(retjson,"result",instantdex_statemachinejson(swap));
     else if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,orderid,"*","*",0)) != 0 )
@@ -572,7 +573,8 @@ char *ORDERSTATUS(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson
 char *CANCELORDER(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson)
 {
     struct instantdex_accept *ap = 0; cJSON *retjson; struct bitcoin_swapinfo *swap=0;
-    struct supernet_info *myinfo = SuperNET_accountfind(argjson);
+    struct supernet_info *myinfo;// = SuperNET_accountfind(argjson);
+    myinfo = SuperNET_MYINFO(0);//SuperNET_accountfind(argjson);
     retjson = cJSON_CreateObject();
     if ( (ap= instantdex_offerfind(myinfo,exchange,0,0,orderid,"*","*",0)) != 0 )
     {
@@ -590,7 +592,8 @@ char *CANCELORDER(struct exchange_info *exchange,uint64_t orderid,cJSON *argjson
 
 char *OPENORDERS(struct exchange_info *exchange,cJSON *argjson)
 {
-    cJSON *retjson,*bids,*asks; struct supernet_info *myinfo = SuperNET_accountfind(argjson);
+    cJSON *retjson,*bids,*asks; struct supernet_info *myinfo;// = SuperNET_accountfind(argjson);
+    myinfo = SuperNET_MYINFO(0);//SuperNET_accountfind(argjson);
     bids = cJSON_CreateArray();
     asks = cJSON_CreateArray();
     instantdex_offerfind(myinfo,exchange,bids,asks,0,"*","*",0);
