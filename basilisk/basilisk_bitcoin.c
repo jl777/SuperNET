@@ -536,7 +536,7 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
                 valsobj = cJSON_CreateObject();
                 jaddstr(hexjson,"agent","basilisk");
                 jaddstr(hexjson,"method","result");
-                jaddstr(valsobj,"rawtx",rawtx);
+                jaddstr(valsobj,"hexmsg",rawtx);
                 jaddstr(valsobj,"coin",coin->symbol);
                 jadd(hexjson,"vals",valsobj);
                 jadd(hexjson,"args",*vinsp);
