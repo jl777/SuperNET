@@ -493,7 +493,7 @@ int32_t iguana_send_supernet(struct iguana_peer *addr,char *jsonstr,int32_t dela
             if ( 1 && memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(destpub)) == 0 )
             {
                 qlen = iguana_queue_send(addr,delaymillis,serialized,"SuperNET",datalen,0,0);
-                printf("send broadcast\n");
+                //printf("send broadcast\n");
             }
             else
             {
