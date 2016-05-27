@@ -231,7 +231,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
             iguana_blockunconv(&msgB,block,0);
             msgB.txn_count = block->RO.txn_count;
             total = iguana_rwblock(coin->chain->hashalgo,1,&checkhash2,&blockspace[sizeof(struct iguana_msghdr) + 0],&msgB);
-            if ( bits256_cmp(checkhash2,block->RO.hash2) != 0 )
+            if ( coin->MAXPEERS > 1 && bits256_cmp(checkhash2,block->RO.hash2) != 0 )
             {
                 static int counter;
                 if ( counter++ < 100 )

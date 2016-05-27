@@ -87,7 +87,7 @@ bits256 iguana_genesis(struct iguana_info *coin,struct iguana_chain *chain)
     decode_hex(buf,(int32_t)strlen(chain->genesis_hex)/2,(char *)chain->genesis_hex);
     hash2 = iguana_calcblockhash(coin->chain->hashalgo,buf,sizeof(struct iguana_msgblockhdr));
     iguana_rwblock(coin->chain->hashalgo,0,&hash2,buf,&msg);
-    if  ( memcmp(hash2.bytes,chain->genesis_hashdata,sizeof(hash2)) != 0 )
+    if  ( coin->MAXPEERS > 1 && memcmp(hash2.bytes,chain->genesis_hashdata,sizeof(hash2)) != 0 )
     {
         bits256_str(str,hash2);
         printf("genesis mismatch? calculated %s vs %s\n",str,bits256_str(str2,*(bits256 *)chain->genesis_hashdata));
