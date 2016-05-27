@@ -1151,23 +1151,22 @@ void iguana_appletests(struct supernet_info *myinfo)
     if ( 0 )
     {
     char genesisblock[1024];
-    iguana_chaingenesis("VPN",0,bits256_conv("00000ac7d764e7119da60d3c832b1d4458da9bc9ef9d5dd0d91a15f690a46d99"),genesisblock,"scrypt",1,1409839200,0x1e0fffff,64881664,bits256_conv("698a93a1cacd495a7a4fb3864ad8d06ed4421dedbc57f9aaad733ea53b1b5828")); // VPN
+    //iguana_chaingenesis("VPN",0,bits256_conv("00000ac7d764e7119da60d3c832b1d4458da9bc9ef9d5dd0d91a15f690a46d99"),genesisblock,"scrypt",1,1409839200,0x1e0fffff,64881664,bits256_conv("698a93a1cacd495a7a4fb3864ad8d06ed4421dedbc57f9aaad733ea53b1b5828")); // VPN
     
     iguana_chaingenesis("LTC",0,bits256_conv("12a765e31ffd4059bada1e25190f6e98c99d9714d334efa41a195a7e7e04bfe2"),genesisblock,"scrypt",1,1317972665,0x1e0ffff0,2084524493,bits256_conv("97ddfbbae6be97fd6cdf3e7ca13232a3afff2353e29badfab7f73011edd4ced9")); // LTC
+        char *Str = "01000000f615f7ce3b4fc6b8f61e8f89aedb1d0852507650533a9e3b10b9bbcc30639f279fcaa86746e1ef52d3edb3c4ad8259920d509bd073605c9bf1d59983752a6b06b817bb4ea78e011d012d59d4";
+        uint8_t buf[1000]; bits256 shash; char str[65];
+        decode_hex(buf,(int32_t)strlen(Str)>>1,Str);
+        calc_scrypthash(shash.uints,buf);
+        printf("shash -> %s\n",bits256_str(str,shash));
     getchar();
     }
     if ( 1 )
     {
-        //void ztest(); ztest();
-        //int proofmain(void);
-        //proofmain(); getchar();
-        //int32_t iguana_schnorr_test(void *ctx);
-        //iguana_schnorr_test(myinfo->ctx); getchar();
-
-        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"RELAY\":0,\"VALIDATE\":0,\"prefetchlag\":-1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":4,\"endpend\":4,\"services\":128,\"maxpeers\":1,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":4,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
+        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"RELAY\":0,\"VALIDATE\":0,\"prefetchlag\":-1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":4,\"endpend\":4,\"services\":128,\"maxpeers\":128,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":4,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
         {
             free(str);
-            if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"RELAY\":0,\"VALIDATE\":0,\"prefetchlag\":-1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":4,\"endpend\":4,\"services\":129,\"maxpeers\":64,\"newcoin\":\"BTC\",\"active\":0,\"numhelpers\":4,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
+            if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"RELAY\":0,\"VALIDATE\":0,\"prefetchlag\":-1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":4,\"endpend\":4,\"services\":129,\"maxpeers\":64,\"newcoin\":\"BTC\",\"active\":0,\"numhelpers\":4,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
             {
                 free(str);
                 if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"login\",\"handle\":\"alice\",\"password\":\"alice\",\"passphrase\":\"alice\"}"),0,myinfo->rpcport)) != 0 )

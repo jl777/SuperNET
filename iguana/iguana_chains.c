@@ -106,11 +106,13 @@ int32_t blockhash_sha256(uint8_t *blockhashp,uint8_t *serialized,int32_t len)
 int32_t blockhash_scrypt(uint8_t *blockhashp,uint8_t *serialized,int32_t len)
 {
     if ( len == 80 )
-        *(bits256 *)blockhashp = scrypt_blockhash(serialized);
-    else memset(blockhashp,0,sizeof(*blockhashp));
-    //int32_t i; for (i=0; i<32; i++)
-    //    printf("%02x",blockhashp[i]);
-    //printf(" scrypt\n");
+    {
+        calc_scrypthash((uint32_t *)blockhashp,serialized);
+        //*(bits256 *)blockhashp = scrypt_blockhash(serialized);
+        //int32_t i; for (i=0; i<32; i++)
+        //    printf("%02x",blockhashp[i]);
+        //printf(" scrypt\n");
+    } else memset(blockhashp,0,sizeof(*blockhashp));
     return(sizeof(bits256));
 }
 
@@ -135,7 +137,7 @@ bits256 iguana_calcblockhash(char *symbol,int32_t (*hashalgo)(uint8_t *blockhash
         for (i=0; i<32; i++)
             hash2.bytes[i] = tmp.bytes[31 - i];
     } else return(tmp);
-    if ( hashalgo == blockhash_scrypt )
+    /*if ( hashalgo == blockhash_scrypt )
     {
         char str[65]; bits256 checkhash2; struct iguana_msgblock msg; struct iguana_block *block; struct iguana_info *coin;
         if ( (coin= iguana_coinfind(symbol)) != 0 )
@@ -147,7 +149,7 @@ bits256 iguana_calcblockhash(char *symbol,int32_t (*hashalgo)(uint8_t *blockhash
                 printf("sethash2.(%s)\n",bits256_str(str,hash2));
             }
         }
-    }
+    }*/
     return(hash2);
 }
 
@@ -313,6 +315,8 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
         else strcpy(chain->userhome,Userhome);
         if ( (port= extract_userpass(chain->serverport,chain->userpass,chain->symbol,chain->userhome,path,conf)) != 0 )
             chain->rpcport = port;
+        if ( chain->serverport[0] == 0 )
+            sprintf(chain->serverport,"127.0.0.1:%u",chain->rpcport);
         printf("COIN.%s serverport.(%s) userpass.(%s) port.%u\n",chain->symbol,chain->serverport,chain->userpass,chain->rpcport);
         if ( (hexstr= jstr(argjson,"pubval")) != 0 && strlen(hexstr) == 2 )
             decode_hex((uint8_t *)&chain->pubtype,1,hexstr);

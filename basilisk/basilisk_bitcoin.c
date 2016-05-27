@@ -81,7 +81,8 @@ char *basilisk_bitcoinblockhashstr(char *coinstr,char *serverport,char *userpass
 {
     char numstr[128],*blockhashstr=0; bits256 hash2; struct iguana_info *coin;
     sprintf(numstr,"%d",height);
-    blockhashstr = bitcoind_passthru(coinstr,serverport,userpass,"getblockhash",numstr);
+    if ( (blockhashstr= bitcoind_passthru(coinstr,serverport,userpass,"getblockhash",numstr)) == 0 )
+        return(0);
     hash2 = bits256_conv(blockhashstr);
     if ( blockhashstr == 0 || blockhashstr[0] == 0 || bits256_nonz(hash2) == 0 )
     {

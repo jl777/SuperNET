@@ -1016,6 +1016,7 @@ char *bitcoind_passthru(char *coinstr,char *serverport,char *userpass,char *meth
 char *bitcoin_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,int64_t satoshis,char *paymentscriptstr,char *changeaddr,int64_t txfee,cJSON *addresses,int32_t minconf,uint32_t locktime);
 char *bitcoin_blockhashstr(char *coinstr,char *serverport,char *userpass,int32_t height);
 bits256 basilisk_blockhash(struct iguana_info *coin,bits256 prevhash2);
+void calc_scrypthash(uint32_t *hash,void *data);
 
 extern int32_t HDRnet,netBLOCKS;
 
