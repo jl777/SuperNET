@@ -108,9 +108,9 @@ int32_t blockhash_scrypt(uint8_t *blockhashp,uint8_t *serialized,int32_t len)
     if ( len == 80 )
         *(bits256 *)blockhashp = scrypt_blockhash(serialized);
     else memset(blockhashp,0,sizeof(*blockhashp));
-    int32_t i; for (i=0; i<32; i++)
-        printf("%02x",blockhashp[i]);
-    printf(" scrypt\n");
+    //int32_t i; for (i=0; i<32; i++)
+    //    printf("%02x",blockhashp[i]);
+    //printf(" scrypt\n");
     return(sizeof(bits256));
 }
 
