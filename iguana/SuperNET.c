@@ -444,9 +444,9 @@ void iguana_setkeys(struct supernet_info *myinfo,struct iguana_peer *addr,bits25
     *nextpubp = myinfo->myaddr.pubkey;
     *nextdestpubp = addr->pubkey;
     *myprivp = *nextprivp, *mypubp = *nextpubp, *destpubp = *nextdestpubp;
-    if ( addr->validpub < 3 )
+    //if ( addr->validpub < 3 )
         *destpubp = GENESIS_PUBKEY;
-    if ( addr->othervalid < 3 )
+    //if ( addr->othervalid < 3 )
         *myprivp = GENESIS_PRIVKEY, *mypubp = GENESIS_PUBKEY;
     //char str[65]; printf("(priv.%llx pub.%llx) -> destpub.%s\n",(long long)myprivp->txid,(long long)mypubp->txid,bits256_str(str,*destpubp));
 }
@@ -490,7 +490,7 @@ int32_t iguana_send_supernet(struct iguana_peer *addr,char *jsonstr,int32_t dela
         {
             if ( 0 && jstr(json,"method") != 0 && strcmp("getpeers",jstr(json,"method")) != 0 )
                 printf("SUPERSEND -> (%s) (%s) delaymillis.%d datalen.%d checkc.%x\n",jprint(SuperNET_bits2json(&serialized[sizeof(struct iguana_msghdr)],datalen),1),addr->ipaddr,delaymillis,datalen,checkc);
-            if ( 0 && memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(destpub)) == 0 )
+            if ( 1 && memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(destpub)) == 0 )
                 qlen = iguana_queue_send(addr,delaymillis,serialized,"SuperNET",datalen,0,0);
             else
             {
