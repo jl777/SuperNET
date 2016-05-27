@@ -365,7 +365,7 @@ void basilisks_loop(void *arg)
     while ( 1 )
     {
         for (i=0; i<IGUANA_MAXCOINS; i++)
-            if ( (coin= Coins[i]) != 0 && coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 && coin->active != 0 && coin->chain->userpass[0] != 0 )
+            if ( (coin= Coins[i]) != 0 && coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 && coin->active != 0 && coin->chain->userpass[0] != 0 && coin->MAXPEERS == 1 )
                 basilisk_bitcoinscan(coin,blockspace,&RAWMEM);
         if ( (ptr= queue_dequeue(&myinfo->basilisks.submitQ,0)) != 0 )
         {
