@@ -299,8 +299,10 @@ int32_t iguana_peerhdrrequest(struct iguana_info *coin,uint8_t *serialized,int32
                 {
                     iguana_blockunconv(&msgB,block,1);
                     len += iguana_rwblock(coin->chain->hashalgo,1,&checkhash2,&serialized[sizeof(struct iguana_msghdr) + len],&msgB);
+                    if ( coin->MAXPEERS == 1 )
+                        checkhash2 = basilisk_blockhash(coin,bp->bundleheight + i);
                     flag++;
-                    if ( coin->MAXPEERS == 1 && bits256_cmp(checkhash2,block->RO.hash2) != 0 )
+                    if ( bits256_cmp(checkhash2,block->RO.hash2) != 0 )
                     {
                         char str[65],str2[65];
                         printf("iguana_peerhdrrequest blockhash.%d error (%s) vs (%s)\n",height+i,bits256_str(str,checkhash2),bits256_str(str2,block->RO.hash2));

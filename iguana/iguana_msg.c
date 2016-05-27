@@ -106,7 +106,7 @@ int32_t iguana_rwblock(int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serializ
 
 int32_t iguana_serialize_block(struct iguana_chain *chain,bits256 *hash2p,uint8_t serialized[sizeof(struct iguana_msgblock)],struct iguana_block *block)
 {
-    struct iguana_msgblock msg;
+    struct iguana_msgblock msg; int32_t len;
     memset(&msg,0,sizeof(msg));
     msg.H.version = block->RO.version;
     msg.H.prev_block = block->RO.prev_block;
@@ -115,7 +115,8 @@ int32_t iguana_serialize_block(struct iguana_chain *chain,bits256 *hash2p,uint8_
     msg.H.bits = block->RO.bits;
     msg.H.nonce = block->RO.nonce;
     msg.txn_count = block->RO.txn_count;
-    return(iguana_rwblock(chain->hashalgo,1,hash2p,serialized,&msg));
+    len = iguana_rwblock(chain->hashalgo,1,hash2p,serialized,&msg);
+    return(len);
 }
 
 int32_t iguana_rwblockhash(int32_t rwflag,uint8_t *serialized,uint32_t *nVersionp,uint32_t *varintp,bits256 *hashes,bits256 *stophash)

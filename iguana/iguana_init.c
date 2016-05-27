@@ -95,7 +95,7 @@ bits256 iguana_genesis(struct iguana_info *coin,struct iguana_chain *chain)
                              
         //memset(hash2.bytes,0,sizeof(hash2));
         //return(hash2);
-    }
+    } else memcpy(hash2.bytes,chain->genesis_hashdata,sizeof(hash2));
     bits256_str(str,hash2);
     printf("genesis.(%s) len.%d hash.%s\n",chain->genesis_hex,(int32_t)sizeof(msg.H),str);
     iguana_blockconv(&block,&msg,hash2,0);

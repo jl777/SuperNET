@@ -191,8 +191,6 @@ int32_t iguana_blockvalidate(struct iguana_info *coin,int32_t *validp,struct igu
     *validp = 0;
     iguana_serialize_block(coin->chain,&hash2,serialized,block);
     *validp = (memcmp(hash2.bytes,block->RO.hash2.bytes,sizeof(hash2)) == 0);
-    if ( coin->MAXPEERS == 1 )
-        *validp = 1;
     block->valid = *validp;
     char str[65]; char str2[65];
     if ( *validp == 0 )
