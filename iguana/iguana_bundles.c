@@ -898,7 +898,6 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
     datasize = numhashes = numsaved = numrecv = numcached = minrequests = 0;
     for (bundlei=0; bundlei<bp->n; bundlei++)
     {
-        bp->hashes[bundlei] = basilisk_blockhash(coin,bp->bundleheight + bundlei);
         if ( bits256_nonz(bp->hashes[bundlei]) != 0 )
         {
             numhashes++;

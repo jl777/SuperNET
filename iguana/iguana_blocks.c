@@ -190,6 +190,8 @@ int32_t iguana_blockvalidate(struct iguana_info *coin,int32_t *validp,struct igu
     bits256 hash2; uint8_t serialized[sizeof(struct iguana_msgblock) + 4096];
     *validp = 0;
     iguana_serialize_block(coin->chain,&hash2,serialized,block);
+    if ( coin->MAXPEERS == 1 )
+        hash2 = basilisk_blockhash(coin,block->RO.prev_block);
     *validp = (memcmp(hash2.bytes,block->RO.hash2.bytes,sizeof(hash2)) == 0);
     block->valid = *validp;
     char str[65]; char str2[65];
@@ -492,9 +494,6 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
         //char str[65]; printf("extend? %s.h%d: %.15f vs %.15f ht.%d vs %d\n",bits256_str(str,block->RO.hash2),height,block->PoW,coin->blocks.hwmchain.PoW,height,coin->blocks.hwmchain.height);
         if ( iguana_blockvalidate(coin,&valid,newblock,0) < 0 || valid == 0 )
             return(0);
-        block->RO.hash2 = basilisk_blockhash(coin,height);
-        if ( hash2p != 0 )
-            *hash2p = block->RO.hash2;
         block->height = height;
         block->valid = 1;
         if ( block->PoW >= hwmchain->PoW )

@@ -92,13 +92,29 @@ char *bitcoin_blockhashstr(char *coinstr,char *serverport,char *userpass,int32_t
     return(blockhashstr);
 }
 
-bits256 basilisk_blockhash(struct iguana_info *coin,int32_t height)
+int32_t basilisk_blockheight(struct iguana_info *coin,bits256 hash2)
 {
-    char *blockhashstr; bits256 hash2;
-    memset(hash2.bytes,0,sizeof(hash2));
-    if ( coin->MAXPEERS == 1 )
+    char buf[128],str[65],*blocktxt; cJSON *blockjson; int32_t height=-1;
+    sprintf(buf,"\"%s\"",bits256_str(str,hash2));
+    if ( (blocktxt= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getblock",buf)) != 0 )
     {
-        if ( (blockhashstr= bitcoin_blockhashstr(coin->symbol,coin->chain->serverport,coin->chain->userpass,height)) != 0 )
+        if ( (blockjson= cJSON_Parse(blocktxt)) != 0 )
+        {
+            height = jint(blockjson,"height");
+            free_json(blockjson);
+        }
+        free(blocktxt);
+    }
+    return(height);
+}
+
+bits256 basilisk_blockhash(struct iguana_info *coin,bits256 prevhash2)
+{
+    char *blockhashstr; bits256 hash2; int32_t height;
+    memset(hash2.bytes,0,sizeof(hash2));
+    if ( (height= basilisk_blockheight(coin,prevhash2)) >= 0 )
+    {
+        if ( (blockhashstr= bitcoin_blockhashstr(coin->symbol,coin->chain->serverport,coin->chain->userpass,height+1)) != 0 )
         {
             hash2 = bits256_conv(blockhashstr);
             free(blockhashstr);
