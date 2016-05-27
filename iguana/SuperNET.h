@@ -73,21 +73,23 @@ struct supernet_address
     char NXTADDR[32],BTC[64],BTCD[64];
 };
 
-struct rawtx_queue { struct queueitem DL; cJSON *vins; uint32_t rawtxtag; char rawtx[]; };
+struct supernet_info;
+#include "../basilisk/basilisk.h"
 
 struct supernet_info
 {
     char ipaddr[64],transport[8]; int32_t APISLEEP; int32_t iamrelay; uint32_t expiration,dirty;
     int32_t Debuglevel,readyflag,dead,POLLTIMEOUT; char rpcsymbol[16],LBpoint[64],PUBpoint[64];
     //int32_t pullsock,subclient,lbclient,lbserver,servicesock,pubglobal,pubrelays,numservers;
-    bits256 privkey,persistent_priv,BTCmarkerhash,instantdex_category,pangea_category,bitcoin_category;
+    bits256 privkey,persistent_priv,BTCmarkerhash,instantdex_category,pangea_category,basilisk_category;
     char secret[2048],NXTAPIURL[512],permanentfile[1024];
     uint8_t *recvbuf[6];
     struct supernet_address myaddr;
     int32_t LBsock,PUBsock,reqsock,subsock,networktimeout,maxdelay;
     uint16_t LBport,PUBport,reqport,subport,rpcport,publicRPC,argport;
     //struct nn_pollfd pfd[SUPERNET_MAXAGENTS]; //struct relay_info active;
-    struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ,rawtxQ;
+    struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ;
+    struct basilisk_info basilisks;
     int32_t numagents,numexchanges;
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES];
     struct iguana_waccount *wallet; void *ctx;
@@ -194,6 +196,7 @@ int32_t SuperNET_MYINFOS(struct supernet_info **myinfos,int32_t max);
 FILE *myfopen(char *fname,char *mode);
 int32_t myfclose(FILE *fp);
 cJSON *SuperNET_rosettajson(bits256 privkey,int32_t showprivs);
+char *basilisk_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void *ptr,int32_t len,char *remoteaddr);
 
 #endif
 

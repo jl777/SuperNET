@@ -1042,7 +1042,7 @@ int32_t iguana_peerslotinit(struct iguana_info *coin,struct iguana_peer *addr,in
         printf("cant create.(%s)\n",fname);
         return(-1);
     }
-    if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
+    if ( coin->MAXPEERS == 1 || coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
     {
         iguana_vinsfname(coin,0,fname,addr->addrind);
         if ( (addr->vinsfp= fopen(fname,"rb+")) != 0 )

@@ -15,8 +15,7 @@
 
 #include "OS_portable.h"
 
-//#define USE_CURL
-#ifdef USE_CURL
+#ifdef LIQUIDITY_PROVIDER
 #ifdef _WIN32
 #include <curl.h>
 #include <easy.h>
@@ -199,7 +198,7 @@ try_again:
             free(s.ptr);
             return(0);
         }
-        else if ( numretries >= 2 )
+        else if ( numretries >= 5 )
         {
             printf("Maximum number of retries exceeded!\n");
             free(s.ptr);

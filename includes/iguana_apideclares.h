@@ -14,6 +14,10 @@
  ******************************************************************************/
 
 
+INT_ARRAY_STRING(basilisk,balances,lastheight,addresses,activecoin);
+STRING_ARRAY_OBJ_STRING(basilisk,rawtx,changeaddr,addresses,vals,spendscriptstr);
+INT_ARRAY_STRING(basilisk,result,basilisktag,argjson,hexmsg);
+
 ZERO_ARGS(bitcoinrpc,getinfo);
 ZERO_ARGS(bitcoinrpc,getblockcount);
 ZERO_ARGS(bitcoinrpc,getbestblockhash);
@@ -82,10 +86,6 @@ HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag);
 ZERO_ARGS(bitcoinrpc,gettxoutsetinfo);
 ZERO_ARGS(bitcoinrpc,getrawchangeaddress);
 SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment);
-
-INT_ARRAY_STRING(iguana,balances,lastheight,addresses,activecoin);
-STRING_ARRAY_OBJ_STRING(iguana,rawtx,changeaddr,addresses,vals,spendscriptstr);
-INT_ARRAY_STRING(iguana,rawtx_result,rawtxtag,vins,rawtx);
 
 STRING_ARG(iguana,initfastfind,activecoin);
 STRING_ARG(iguana,peers,activecoin);

@@ -158,22 +158,23 @@ int32_t iguana_validatesigs(struct iguana_info *coin,struct iguana_msgvin *vin)
     return(0);
 }
 
+#ifdef bitcoincancalulatebalances
 uint64_t bitcoin_parseunspent(struct iguana_info *coin,struct bitcoin_unspent *unspent,double minconfirms,char *account,cJSON *item)
 {
-    uint8_t addrtype; char *hexstr,*wifstr,coinaddr[64],args[128];
+    char *hexstr,coinaddr[64];
     memset(unspent,0,sizeof(*unspent));
     if ( jstr(item,"address") != 0 )
     {
         safecopy(coinaddr,jstr(item,"address"),sizeof(coinaddr));
         bitcoin_addr2rmd160(&unspent->addrtype,unspent->rmd160,coinaddr);
-        sprintf(args,"[\"%s\"]",coinaddr);
+        /*sprintf(args,"[\"%s\"]",coinaddr);
         wifstr = bitcoind_RPC(0,coin->symbol,coin->chain->serverport,coin->chain->userpass,"dumpprivkey",args);
         if ( wifstr != 0 )
         {
             bitcoin_wif2priv(&addrtype,&unspent->privkeys[0],wifstr);
             //printf("wifstr.(%s) -> %s\n",wifstr,bits256_str(str,unspent->privkeys[0]));
             free(wifstr);
-        } else fprintf(stderr,"error (%s) cant find privkey\n",coinaddr);
+        } else fprintf(stderr,"error (%s) cant find privkey\n",coinaddr);*/
     }
     if ( (account == 0 || jstr(item,"account") == 0 || strcmp(account,jstr(item,"account")) == 0) && (minconfirms <= 0 || juint(item,"confirmations") >= minconfirms-SMALLVAL) )
     {
@@ -191,15 +192,15 @@ uint64_t bitcoin_parseunspent(struct iguana_info *coin,struct bitcoin_unspent *u
     return(unspent->value);
 }
 
-struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct iguana_info *coin,char **retstrp,double *balancep,int32_t *numunspentsp,double minconfirms,char *account)
+struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct iguana_info *coin,char **retstrp,double *balancep,int32_t *numunspentsp,double minconfirms,char *address)
 {
     char params[128],*retstr; uint64_t value,total = 0; struct bitcoin_unspent *unspents=0; cJSON *utxo; int32_t i,n;
-    if ( account != 0 && account[0] == 0 )
-        account = 0;
     *numunspentsp = 0;
     if ( retstrp != 0 )
         *retstrp = 0;
-    sprintf(params,"%.0f, 99999999",minconfirms);
+    if ( address == 0 )
+        sprintf(params,"%.0f, 99999999",minconfirms);
+    else sprintf(params,"%.0f, 99999999, [\"%s\"]",minconfirms,address);
     if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",params)) != 0 )
     {
         printf("sss unspents.(%s)\n",retstr);
@@ -211,7 +212,7 @@ struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct i
                 unspents = calloc(*numunspentsp,sizeof(*unspents));
                 for (i=0; i<*numunspentsp; i++)
                 {
-                    value = bitcoin_parseunspent(coin,&unspents[n],minconfirms,account,jitem(utxo,i));
+                    value = bitcoin_parseunspent(coin,&unspents[n],minconfirms,0,jitem(utxo,i));
                     printf("i.%d n.%d value %.8f\n",i,n,dstr(value));
                     if ( value != 0 )
                     {
@@ -267,13 +268,37 @@ struct bitcoin_unspent *iguana_bestfit(struct iguana_info *coin,struct bitcoin_u
     return(vin);
 }
 
-struct bitcoin_spend *iguana_spendset(struct supernet_info *myinfo,struct iguana_info *coin,int64_t amount,int64_t txfee,char *account)
+struct bitcoin_spend *iguana_spendset(struct supernet_info *myinfo,struct iguana_info *coin,int64_t amount,int64_t txfee,cJSON *addresses,int32_t minconf)
 {
-    int32_t i,mode,numunspents,maxinputs = 1024; struct bitcoin_unspent *ptr,*up;
-    struct bitcoin_unspent *ups; struct bitcoin_spend *spend; double balance; int64_t remains,smallest = 0;
-    if ( (ups= iguana_unspentsget(myinfo,coin,0,&balance,&numunspents,coin->chain->minconfirms,account)) == 0 )
+    int32_t i,n,mode,maxinputs,numunspents,totalunspents = 0; struct bitcoin_unspent *ptr,*up,*ups=0,*u;
+    struct bitcoin_spend *spend; double balance; int64_t remains;
+    if ( (n= cJSON_GetArraySize(addresses)) > 0 )
+    {
+        for (i=0; i<n; i++)
+        {
+            if ( (u= iguana_unspentsget(myinfo,coin,0,&balance,&numunspents,minconf,jstri(addresses,i))) != 0 )
+            {
+                if ( ups == 0 )
+                {
+                    ups = u;
+                    totalunspents = numunspents;
+                }
+                else
+                {
+                    ups = realloc(ups,sizeof(*ups) * (numunspents + totalunspents));
+                    memcpy(&ups[totalunspents],u,sizeof(*ups) * totalunspents);
+                    totalunspents += numunspents;
+                    free(u);
+                }
+            }
+        }
+    }
+    else if ( (ups= iguana_unspentsget(myinfo,coin,0,&balance,&totalunspents,minconf,0)) == 0 )
         return(0);
-    spend = calloc(1,sizeof(*spend) + sizeof(*spend->inputs) * maxinputs);
+    if ( totalunspents == 0 )
+        return(0);
+    maxinputs = totalunspents;
+    spend = calloc(1,sizeof(*spend) + sizeof(*spend->inputs) * totalunspents);
     spend->txfee = txfee;
     remains = txfee + amount;
     spend->satoshis = remains;
@@ -281,38 +306,100 @@ struct bitcoin_spend *iguana_spendset(struct supernet_info *myinfo,struct iguana
     for (i=0; i<maxinputs; i++,ptr++)
     {
         for (mode=1; mode>=0; mode--)
-            if ( (up= iguana_bestfit(coin,ups,numunspents,remains,mode)) != 0 )
+            if ( (up= iguana_bestfit(coin,ups,totalunspents,remains,mode)) != 0 )
                 break;
         if ( up != 0 )
         {
-            if ( smallest == 0 || up->value < smallest )
-            {
-                smallest = up->value;
-                memcpy(spend->change160,up->rmd160,sizeof(spend->change160));
-            }
             spend->input_satoshis += up->value;
             spend->inputs[spend->numinputs++] = *up;
+            // todo: update a vins array
             if ( spend->input_satoshis >= spend->satoshis )
             {
-                // numinputs 1 -> (1.00074485 - spend 0.41030880) = net 0.59043605 vs amount 0.40030880 change 0.40030880 -> txfee 0.01000000 vs chainfee 0.01000000
                 spend->change = (spend->input_satoshis - spend->satoshis) - txfee;
                 printf("numinputs %d -> (%.8f - spend %.8f) = change %.8f -> txfee %.8f vs chainfee %.8f\n",spend->numinputs,dstr(spend->input_satoshis),dstr(spend->satoshis),dstr(spend->change),dstr(spend->input_satoshis - spend->change - spend->satoshis),dstr(txfee));
                 break;
             }
+            memset(up,0,sizeof(*up));
             remains -= up->value;
         } else break;
     }
     if ( spend->input_satoshis >= spend->satoshis )
     {
         spend = realloc(spend,sizeof(*spend) + sizeof(*spend->inputs) * spend->numinputs);
+        free(ups);
         return(spend);
     }
     else
     {
         free(spend);
+        free(ups);
         return(0);
     }
 }
+
+cJSON *bitcoin_vout(uint64_t satoshis,char *paymentscriptstr)
+{
+    cJSON *item,*skey;
+    item = cJSON_CreateObject();
+    jadd64bits(item,"satoshis",satoshis);
+    skey = cJSON_CreateObject();
+    jaddstr(skey,"hex",paymentscriptstr);
+    //printf("addoutput.(%s %s)\n",hexstr,jprint(skey,0));
+    jadd(item,"scriptPubkey",skey);
+    return(item);
+}
+
+char *bitcoin_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,int64_t satoshis,char *paymentscriptstr,char *changeaddr,int64_t txfee,cJSON *addresses,int32_t minconf,uint32_t locktime)
+{
+    uint8_t addrtype,rmd160[20],script[512]; int32_t i,scriptlen; char *params,*rawtx=0; cJSON *item,*array,*vins=0,*vouts=0; struct bitcoin_spend *spend; char scriptstr[512],*voutstr;
+    *vinsp = 0;
+    if ( (spend= iguana_spendset(myinfo,coin,satoshis,txfee*2,addresses,minconf)) == 0 )
+        return(0);
+    if ( spend->input_satoshis >= satoshis+txfee*2 )
+    {
+        vins = cJSON_CreateArray();
+        for (i=0; i<spend->numinputs; i++)
+        {
+            item = cJSON_CreateObject();
+            jaddbits256(item,"txid",spend->inputs[i].txid);
+            jaddnum(item,"vout",spend->inputs[i].vout);
+            jaddi(vins,item);
+        }
+        vouts = cJSON_CreateArray();
+        jaddi(vouts,bitcoin_vout(satoshis,paymentscriptstr));
+        if ( spend->change > 0 )
+        {
+            if ( iguana_addressvalidate(coin,&addrtype,changeaddr) < 0 )
+            {
+                free(spend);
+                printf("illegal destination address.(%s)\n",changeaddr);
+                return(0);
+            }
+            bitcoin_addr2rmd160(&addrtype,rmd160,changeaddr);
+            scriptlen = bitcoin_standardspend(script,0,rmd160);
+            init_hexbytes_noT(scriptstr,script,scriptlen);
+            jaddi(vouts,bitcoin_vout(satoshis,scriptstr));
+        }
+        bitcoin_addr2rmd160(&addrtype,rmd160,myinfo->myaddr.BTC);
+        scriptlen = bitcoin_standardspend(script,0,rmd160);
+        jaddi(vouts,bitcoin_vout(satoshis,scriptstr));
+        voutstr = jprint(vouts,1);
+        voutstr[0] = '{', voutstr[strlen(voutstr)-1] = '}';
+        array = cJSON_CreateArray();
+        jaddi(array,jduplicate(vins));
+        jaddi(array,cJSON_Parse(voutstr)), free(voutstr);
+        params = jprint(array,1);
+        rawtx = bitcoind_passthru(coin->name,coin->chain->serverport,coin->chain->userpass,"createrawtransaction",params);
+        free(params);
+    }
+    *vinsp = vins;
+    free(spend);
+    // add sigtxid to vins
+    if ( locktime != 0 )
+        printf("need to patch locktime\n");
+    return(rawtx);
+}
+#endif
 
 #define EXCHANGE_NAME "bitcoin"
 #define UPDATE bitcoin ## _price
@@ -364,19 +451,19 @@ char *PARSEBALANCE(struct exchange_info *exchange,double *balancep,char *coinstr
 
 cJSON *BALANCES(struct exchange_info *exchange,cJSON *argjson)
 {
-    double balance; char *retstr; int32_t i,numunspents,minconfirms; struct iguana_info *coin;
-    struct supernet_info *myinfo; struct bitcoin_unspent *unspents; cJSON *item,*retjson,*utxo;
+    double balance; int32_t i,minconfirms; struct iguana_info *coin; // char *retstr,numunspents;
+    struct supernet_info *myinfo; cJSON *retjson;// item,*utxo; //struct bitcoin_unspent *unspents;
     retjson = cJSON_CreateArray();
     myinfo = SuperNET_accountfind(argjson);
     for (i=0; i<IGUANA_MAXCOINS; i++)
     {
-        if ( (coin= Coins[i]) != 0 && coin->chain->serverport[0] != 0 )
+        if ( (coin= Coins[i]) != 0 )//&& coin->chain->serverport[0] != 0 )
         {
             balance = 0.;
             minconfirms = juint(argjson,"minconfirms");
             if ( minconfirms < coin->minconfirms )
                 minconfirms = coin->minconfirms;
-            if ( (unspents= iguana_unspentsget(myinfo,coin,&retstr,&balance,&numunspents,minconfirms,0)) != 0 )
+            /*if ( (unspents= iguana_unspentsget(myinfo,coin,&retstr,&balance,&numunspents,minconfirms,0)) != 0 )
             {
                 item = cJSON_CreateObject();
                 jaddnum(retjson,"balance",balance);
@@ -391,7 +478,7 @@ cJSON *BALANCES(struct exchange_info *exchange,cJSON *argjson)
                 }
                 free(unspents);
                 jadd(retjson,coin->symbol,item);
-            }
+            }*/
         }
     }
     return(retjson);

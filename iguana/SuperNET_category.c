@@ -202,77 +202,9 @@ char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag
     return(retstr);
 }
 
-char *bitcoin_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void *ptr,int32_t len,char *remoteaddr)
-{
-    char *method="",*agent="",*retstr = 0; int32_t i,j; cJSON *json,*valsobj; struct iguana_info *coin=0; struct iguana_peer *addr;
-    if ( (json= cJSON_Parse(ptr)) != 0 )
-    {
-        printf("bitcoinprocess.(%s)\n",jprint(json,0));
-        agent = jstr(json,"agent");
-        method = jstr(json,"method");
-        valsobj = jobj(json,"vals");
-        if ( strcmp(agent,"iguana") == 0 )
-        {
-            if ( valsobj != 0 && jobj(valsobj,"coin") != 0 )
-                coin = iguana_coinfind(jstr(valsobj,"coin"));
-            else if ( jstr(json,"activecoin") != 0 )
-                coin = iguana_coinfind(jstr(json,"activecoin"));
-            if ( coin != 0 )
-            {
-                if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
-                {
-                    if ( valsobj != 0 && strcmp(method,"rawtx") == 0 )
-                    {
-                        retstr = iguana_rawtx(myinfo,coin,json,remoteaddr,jstr(json,"changeaddr"),jobj(json,"addresses"),valsobj,jstr(json,"spendscriptstr"));
-                    }
-                    else if ( strcmp(method,"balances") == 0 )
-                    {
-                        retstr = iguana_balances(myinfo,coin,json,remoteaddr,juint(json,"lastheight"),jobj(json,"addresses"),jstr(json,"activecoin"));
-                    }
-                    if ( retstr == 0 )
-                        return(0);
-                    printf("RELAY will return.(%s)\n",retstr);
-                    for (j=0; j<IGUANA_MAXCOINS; j++)
-                    {
-                        if ( (coin= Coins[j]) == 0 )
-                            continue;
-                        for (i=0; i<IGUANA_MAXPEERS; i++)
-                        {
-                            if ( (addr= &coin->peers.active[i]) != 0 && addr->usock >= 0 )
-                            {
-                                if ( addr->supernet != 0 && strcmp(addr->ipaddr,remoteaddr) == 0 )
-                                {
-                                    printf("send back rawtx_result addr->supernet.%u to (%s)\n",addr->supernet,addr->ipaddr);
-                                    iguana_send_supernet(addr,retstr,0);
-                                    free_json(json);
-                                    return(retstr);
-                                }
-                            }
-                            if ( 0 && addr->ipbits != 0 )
-                                printf("i.%d (%s) vs (%s) %s\n",i,addr->ipaddr,remoteaddr,coin->symbol);
-                        }
-                    }
-                }
-                else
-                {
-                    if ( strcmp(method,"rawtx_result") == 0 )
-                    {
-                        printf("got rawtx.(%s)\n",jstr(json,"rawtx"));
-                        return(iguana_rawtx_result(myinfo,coin,json,remoteaddr,juint(json,"rawtxtag"),jobj(json,"vins"),jstr(json,"rawtx")));
-                    }
-                }
-            }
-        }
-    }
-    if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
-        printf("unhandled bitcoin_hexmsg.(%d) from %s (%s/%s)\n",len,remoteaddr,agent,method);
-    free_json(json);
-    return(retstr);
-}
-
 void category_init(struct supernet_info *myinfo)
 {
-    bits256 pangeahash,instantdexhash,bitcoinhash;
+    bits256 pangeahash,instantdexhash;
     category_subscribe(myinfo,GENESIS_PUBKEY,GENESIS_PUBKEY);
     pangeahash = calc_categoryhashes(0,"pangea",0);
     myinfo->pangea_category = pangeahash;
@@ -285,9 +217,5 @@ void category_init(struct supernet_info *myinfo)
     category_processfunc(instantdexhash,GENESIS_PUBKEY,InstantDEX_hexmsg);
     category_processfunc(instantdexhash,myinfo->myaddr.persistent,InstantDEX_hexmsg);
     
-    bitcoinhash = calc_categoryhashes(0,"bitcoin",0);
-    myinfo->bitcoin_category = bitcoinhash;
-    category_subscribe(myinfo,bitcoinhash,GENESIS_PUBKEY);
-    category_processfunc(bitcoinhash,GENESIS_PUBKEY,bitcoin_hexmsg);
-    category_processfunc(bitcoinhash,myinfo->myaddr.persistent,bitcoin_hexmsg);
+    basilisks_init(myinfo);
 }

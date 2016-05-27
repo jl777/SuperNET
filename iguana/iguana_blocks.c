@@ -572,6 +572,8 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                     }
                 }
                 block->mainchain = 1;
+                if ( coin->blocks.pending > 0 )
+                    coin->blocks.pending--;
                 /*if ( block->serdata != 0 )
                 {
                     printf(" call process_iguanablock2.%p ht.%d nbits.%08x\n",block->serdata,block->height,*(uint32_t *)&block->serdata[72]);

@@ -17,6 +17,7 @@
 #define iguana777_net_h
 #include "../crypto777/OS_portable.h"
 #include "SuperNET.h"
+#include "../basilisk/basilisk.h"
 
 #define SPARSECOUNT(x) ((x) << 1)
 
@@ -95,6 +96,13 @@ struct iguana_txdatabits { uint64_t addrind:IGUANA_LOG2MAXPEERS,filecount:10,fpo
 #endif
 
 #define IGUANA_SUBDIRDIVISOR 28000
+
+#define IGUANA_PROTOCOL_BITCOIN 'b'
+#define IGUANA_PROTOCOL_NXT 'n'
+#define IGUANA_PROTOCOL_ETHER 'e'
+#define IGUANA_PROTOCOL_LISK 'l'
+#define IGUANA_PROTOCOL_WAVES 'w'
+#define IGUANA_PROTOCOL_IOTA 'i'
 
 #ifdef __PNACL
 void PNACL_message(const char* format, ...);
@@ -337,7 +345,7 @@ struct iguana_blocks
     char coin[8];
 	struct iguanakv *db;
     struct iguana_block *hash; struct iguana_blockRO *RO; int32_t maxbits;
-    int32_t maxblocks,initblocks,hashblocks,issuedblocks,recvblocks,emitblocks,parsedblocks,dirty;
+    int32_t maxblocks,initblocks,hashblocks,pending,issuedblocks,recvblocks,emitblocks,parsedblocks,dirty;
 	struct iguana_block hwmchain;
 };
 
@@ -489,8 +497,12 @@ struct iguana_monitorinfo { bits256 txid; int32_t numreported; uint8_t peerbits[
 
 struct iguana_info
 {
-    char name[64],symbol[8],statusstr[512],scriptsfname[2][512];
+    char name[64],symbol[8],protocol,statusstr[512],scriptsfname[2][512];
     struct iguana_peers peers; struct iguana_peer internaladdr;
+    char *(*basilisk_rawtx)(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,cJSON **vinsp,uint32_t locktime,uint64_t satoshis,char *changeaddr,uint64_t txfee,cJSON *addresses,int32_t minconf,char *spendscriptstr,int32_t timeoutmillis);
+    int64_t (*basilisk_balances)(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,cJSON **arrayp,int32_t lastheight,int32_t minconf,cJSON *addresses,int32_t timeoutmillis);
+    int64_t (*basilisk_value)(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,bits256 txid,int32_t vout,char *coinaddr,int32_t timeoutmillis);
+
     uint32_t fastfind; FILE *fastfps[0x100]; uint8_t *fast[0x100]; int32_t *fasttables[0x100]; long fastsizes[0x100];
     uint64_t instance_nonce,myservices,totalsize,totalrecv,totalpackets,sleeptime;
     int64_t mining,totalfees,TMPallocated,MAXRECVCACHE,MAXMEM,PREFETCHLAG,estsize,activebundles;
@@ -825,7 +837,7 @@ cJSON *iguana_blockjson(struct iguana_info *coin,struct iguana_block *block,int3
 //int32_t iguana_ver(uint8_t *sig,int32_t siglen,uint8_t *data,int32_t datalen,uint8_t *pubkey);
 void calc_rmd160_sha256(uint8_t rmd160[20],uint8_t *data,int32_t datalen);
 int32_t bitcoin_checklocktimeverify(uint8_t *script,int32_t n,uint32_t locktime);
-struct bitcoin_spend *iguana_spendset(struct supernet_info *myinfo,struct iguana_info *coin,int64_t satoshis,int64_t insurance,char *account);
+struct bitcoin_spend *iguana_spendset(struct supernet_info *myinfo,struct iguana_info *coin,int64_t amount,int64_t txfee,cJSON *addresses,int32_t minconf);
 cJSON *bitcoin_hex2json(struct iguana_info *coin,bits256 *txidp,struct iguana_msgtx *msgtx,char *txbytes,uint8_t *extrapace,int32_t extralen);
 cJSON *iguana_signtx(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,char **signedtxp,struct bitcoin_spend *spend,cJSON *txobj,cJSON *vins);
 void iguana_addscript(struct iguana_info *coin,cJSON *dest,uint8_t *script,int32_t scriptlen,char *fieldname);
@@ -841,7 +853,7 @@ int32_t bitcoin_verify(void *ctx,uint8_t *sig,int32_t siglen,bits256 txhash2,uin
 char *bitcoin_json2hex(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,cJSON *txjson,struct vin_info *V);
 int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr);
 char *issue_startForging(struct supernet_info *myinfo,char *secret);
-struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct iguana_info *coin,char **retstrp,double *balancep,int32_t *numunspentsp,double minconfirms,char *account);
+struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct iguana_info *coin,char **retstrp,double *balancep,int32_t *numunspentsp,double minconfirms,char *address);
 void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson);
 int32_t iguana_pkhasharray(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,int64_t *totalp,struct iguana_pkhash *P,int32_t max,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33,int32_t lastheight,int64_t *unspents,int32_t *numunspentsp,int32_t maxunspents);
 long iguana_spentsfile(struct iguana_info *coin,int32_t n);
@@ -991,7 +1003,6 @@ void instantdex_FSMinit();
 void iguana_unspentslock(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins);
 char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t satoshis,char *changeaddr,int64_t txfee,cJSON *addresses,int32_t minconf);
 char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *signedtxidp,int32_t *completedp,cJSON *vins,char *rawtx,cJSON *privkey);
-char *iguana_pollrawtx(queue_t *Q,cJSON **vinsp,uint32_t rawtxtag,double expiration);
 bits256 scrypt_blockhash(const void *input);
 bits256 iguana_calcblockhash(int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serialized,int32_t len),uint8_t *serialized,int32_t len);
 uint32_t iguana_targetbits(struct iguana_info *coin,struct iguana_block *hwmchain,struct iguana_block *prev,struct iguana_block *prev2,int32_t PoSflag);
@@ -1000,6 +1011,9 @@ void instantdex_eventfree(struct bitcoin_eventitem *ptr);
 struct iguana_monitorinfo *iguana_txidmonitor(struct iguana_info *coin,bits256 txid);
 struct iguana_monitorinfo *iguana_txidreport(struct iguana_info *coin,bits256 txid,struct iguana_peer *addr);
 double iguana_txidstatus(struct iguana_info *coin,bits256 txid);
+void basilisk_functions(struct iguana_info *coin);
+char *bitcoind_passthru(char *coinstr,char *serverport,char *userpass,char *method,char *params);
+char *bitcoin_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,int64_t satoshis,char *paymentscriptstr,char *changeaddr,int64_t txfee,cJSON *addresses,int32_t minconf,uint32_t locktime);
 
 extern int32_t HDRnet,netBLOCKS;
 

@@ -691,7 +691,7 @@ void iguana_coinloop(void *arg)
             {
                 if ( coin->MAXPEERS > IGUANA_MAXPEERS )
                     coin->MAXPEERS = IGUANA_MAXPEERS;
-                if ( coin->MAXPEERS < IGUANA_MINPEERS )
+                if ( coin->MAXPEERS > 1 && coin->MAXPEERS < IGUANA_MINPEERS )
                     coin->MAXPEERS = IGUANA_MAXPEERS;
 #ifdef __PNACL__
                 if ( coin->MAXPEERS > 64 )
@@ -729,7 +729,7 @@ void iguana_coinloop(void *arg)
                     }
                     if ( coin->bindsock >= 0 )
                     {
-                        if ( coin->peers.numranked < (7*coin->MAXPEERS/8) && now > coin->lastpossible )
+                        if ( coin->MAXPEERS > 1 && coin->peers.numranked < (7*coin->MAXPEERS/8) && now > coin->lastpossible )
                         {
                             //fprintf(stderr,"possible\n");
                             if ( coin->peers.numranked > 0 && (now % 60) == 0 )
@@ -739,21 +739,21 @@ void iguana_coinloop(void *arg)
                     }
                     else
                     {
-                        if ( coin->peers.numranked < ((7*coin->MAXPEERS)>>3) && now > coin->lastpossible )
+                        if ( coin->MAXPEERS > 1 && coin->peers.numranked < ((7*coin->MAXPEERS)>>3) && now > coin->lastpossible )
                         {
                             if ( coin->peers.numranked > 0 && (now % 60) == 0 )
                                 iguana_send_ping(coin,coin->peers.ranked[rand() % coin->peers.numranked]);
                             coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
                         }
                     }
-                    if ( now > coin->peers.lastmetrics+10 )
+                    if ( coin->MAXPEERS > 1 && now > coin->peers.lastmetrics+10 )
                     {
                         //fprintf(stderr,"metrics\n");
                         coin->peers.lastmetrics = iguana_updatemetrics(myinfo,coin); // ranks peers
                     }
                     if ( coin->longestchain+10000 > coin->blocks.maxbits )
                         iguana_recvalloc(coin,coin->longestchain + 100000);
-                    if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
+                    if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 || coin->MAXPEERS == 1 )
                         flag += iguana_processrecv(myinfo,coin);
                     iguana_jsonQ();
                 }
@@ -796,6 +796,8 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->myservices = services;
     coin->initialheight = initialheight;
     coin->mapflags = mapflags;
+    coin->protocol = IGUANA_PROTOCOL_BITCOIN;
+    basilisk_functions(coin);
     mult = (strcmp("BTC",coin->symbol) != 0) ? 8 : 8;
     maxval = IGUANA_MAXPENDBUNDLES;
     if ( (coin->txfee= jdouble(json,"txfee") * SATOSHIDEN) == 0 )

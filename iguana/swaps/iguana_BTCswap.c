@@ -14,6 +14,7 @@
  ******************************************************************************/
 
 #include "../exchanges/bitcoin.h"
+#include "../../basilisk/basilisk.h"
 /* https://bitcointalk.org/index.php?topic=1340621.msg13828271#msg13828271
  https://bitcointalk.org/index.php?topic=1364951
  Tier Nolan's approach is followed with the following changes:
@@ -169,7 +170,7 @@ void iguana_addinputs(struct iguana_info *coin,struct bitcoin_spend *spend,cJSON
 
 struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo,struct iguana_info *coin,uint32_t locktime,char *scriptstr,int64_t satoshis,int64_t txfee,int32_t minconf,int32_t myside)
 {
-    struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct bitcoin_statetx *tx=0; uint8_t pubkey33[33]; char coinaddr[64],wifstr[64]; char *rawtx,*signedtx,*retstr; bits256 signedtxid; uint32_t rawtxtag; int32_t flag,completed; cJSON *valsobj,*vins,*retjson=0,*privkey,*argjson,*addresses;
+    struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct bitcoin_statetx *tx=0; uint8_t pubkey33[33]; char coinaddr[64],wifstr[64]; char *rawtx,*signedtx,*retstr; bits256 signedtxid; uint32_t basilisktag; int32_t flag,completed; cJSON *valsobj,*vins,*retjson=0,*privkey,*argjson,*addresses;
     if ( (waddr= iguana_getaccountaddress(myinfo,coin,0,0,coin->changeaddr,"change")) == 0 )
     {
         printf("no change addr error\n");
@@ -193,12 +194,12 @@ struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo
     jadd64bits(valsobj,"amount",satoshis);
     jadd64bits(valsobj,"txfee",txfee);
     jaddnum(valsobj,"minconf",minconf);
-    rawtxtag = (uint32_t)rand();
-    jaddnum(valsobj,"rawtxtag",rawtxtag);
+    basilisktag = (uint32_t)rand();
+    jaddnum(valsobj,"basilisktag",basilisktag);
     jaddnum(valsobj,"locktime",locktime);
     argjson = cJSON_CreateObject();
-    jaddnum(argjson,"timeout",60000);
-    if ( (retstr= iguana_rawtx(myinfo,coin,argjson,0,coin->changeaddr,addresses,valsobj,scriptstr)) != 0 )
+    jaddnum(argjson,"timeout",30000);
+    if ( (retstr= basilisk_rawtx(myinfo,coin,argjson,0,coin->changeaddr,addresses,valsobj,scriptstr)) != 0 )
     {
         printf("%s got.(%s)\n",str,retstr);
         flag = 0;
@@ -206,15 +207,6 @@ struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo
         {
             if ( (rawtx= jstr(retjson,"result")) != 0 && (vins= jobj(retjson,"vins")) != 0 )
                 flag = 1;
-        }
-        if ( flag == 0 )
-        {
-            vins = 0;
-            if ( (rawtx= iguana_pollrawtx(&myinfo->rawtxQ,&vins,rawtxtag,OS_milliseconds() + 60000)) != 0 )
-            {
-                if ( vins != 0 )
-                    flag = 2;
-            }
         }
         if ( flag != 0 && vins != 0 )
         {
