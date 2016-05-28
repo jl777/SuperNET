@@ -273,7 +273,7 @@ ARRAY_OBJ_INT(basilisk,result,args,vals,basilisktag)
 
 char *basilisk_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void *ptr,int32_t len,char *remoteaddr)
 {
-    char *method="",*agent="",*retstr = 0; int32_t i,j,timeoutmillis; cJSON *array,*json,*valsobj; struct iguana_info *coin=0; struct iguana_peer *addr; uint32_t basilisktag;
+    char *method="",*agent="",*retstr = 0,*tmpstr,*hexmsg; int32_t i,j,n,timeoutmillis; cJSON *array,*json,*valsobj; struct iguana_info *coin=0; struct iguana_peer *addr; uint32_t basilisktag;
     array = 0;
     if ( (json= cJSON_Parse(ptr)) != 0 )
     {
@@ -283,6 +283,20 @@ char *basilisk_hexmsg(struct supernet_info *myinfo,struct category_info *cat,voi
 
         agent = jstr(json,"agent");
         method = jstr(json,"method");
+        if ( agent != 0 && method != 0 && strcmp(agent,"SuperNET") == 0 && strcmp(method,"DHT") == 0 && (hexmsg= jstr(json,"hexmsg")) != 0 )
+        {
+            free_json(json);
+            n = (int32_t)(strlen(hexmsg) >> 1);
+            tmpstr = calloc(1,n + 1);
+            decode_hex((void *)tmpstr,n,hexmsg);
+            if ( (json= cJSON_Parse(tmpstr)) == 0 )
+            {
+                printf("couldnt parse decoded hexmsg\n");
+                return(0);
+            }
+            agent = jstr(json,"agent");
+            method = jstr(json,"method");
+        }
         basilisktag = juint(json,"basilisktag");
         if ( strcmp(agent,"basilisk") == 0 && (valsobj= jobj(json,"vals")) != 0 )
         {
