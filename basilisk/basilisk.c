@@ -293,12 +293,14 @@ char *basilisk_hexmsg(struct supernet_info *myinfo,struct category_info *cat,voi
     if ( (json= cJSON_Parse(ptr)) != 0 )
     {
         printf("basilisk.(%s)\n",jprint(json,0));
+        //basilisk.({"basilisktag":2955372280,"agent":"basilisk","method":"rawtx","vals":{"changeaddr":"1FNhoaBYzf7safMBjoCsJYgxtah3K95sep","addresses":["1Hgzt5xsnbfc8UTWqWKSTLRm5bEYHYBoCE"],"timeout":5000,"amount":"20000","spendscript":"76a914b7128d2ee837cf03e30a2c0e3e0181f7b9669bb688ac"},"basilisktag":2955372280})
         agent = jstr(json,"agent");
         method = jstr(json,"method");
-        timeoutmillis = jint(json,"timeout");
         basilisktag = juint(json,"basilisktag");
         if ( strcmp(agent,"basilisk") == 0 && (valsobj= jobj(json,"vals")) != 0 )
         {
+            if ( jobj(json,"timeout") != 0 )
+                timeoutmillis = jint(json,"timeout");
             if ( valsobj != 0 && jobj(valsobj,"coin") != 0 )
                 coin = iguana_coinfind(jstr(valsobj,"coin"));
             else if ( jstr(json,"activecoin") != 0 )

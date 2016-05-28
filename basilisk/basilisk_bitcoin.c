@@ -419,11 +419,10 @@ char *basilisk_bitcoinvalue(struct supernet_info *myinfo,struct iguana_info *coi
             }
         }
         hexjson = cJSON_CreateObject();
-        jaddnum(hexjson,"basilisktag",basilisktag);
         jaddstr(hexjson,"agent","basilisk");
         jaddstr(hexjson,"method","value");
         if ( vals != 0 )
-            jadd(hexjson,"vals",vals);
+            jadd(hexjson,"vals",jduplicate(vals));
         printf("issue.(%s)\n",jprint(hexjson,0));
         if ( (ptr= basilisk_issue(myinfo,hexjson,timeoutmillis,0,1,basilisktag)) != 0 )
         {
@@ -594,11 +593,11 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
     if ( addresses != 0 )
     {
         hexjson = cJSON_CreateObject();
-        jaddnum(hexjson,"basilisktag",basilisktag);
         jaddstr(hexjson,"agent","basilisk");
         jaddstr(hexjson,"method","rawtx");
+        jaddstr(hexjson,"activecoin",coin->symbol);
         if ( valsobj != 0 )
-            jadd(hexjson,"vals",valsobj);
+            jadd(hexjson,"vals",jduplicate(valsobj));
         if ( (ptr= basilisk_issue(myinfo,hexjson,timeoutmillis,0,1,basilisktag)) != 0 )
         {
             for (i=0; i<ptr->numresults; i++)

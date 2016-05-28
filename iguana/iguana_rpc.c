@@ -1029,7 +1029,7 @@ void iguana_rpcloop(void *args)
     else myinfo->argport = 0;
     if ( jsonbuf == 0 )
         jsonbuf = calloc(1,IGUANA_MAXPACKETSIZE);
-    if ( (bindsock= iguana_socket(1,"127.0.0.1",port)) < 0 )
+    while ( (bindsock= iguana_socket(1,"127.0.0.1",port)) < 0 )
     {
         //if ( coin->MAXPEERS == 1 )
         //    break;
