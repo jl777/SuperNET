@@ -531,7 +531,7 @@ void basilisks_loop(void *arg)
                         if ( (metricfunc= pending->metricfunc) != 0 )
                         {
                             pending->metrics[i] = (*metricfunc)(myinfo,pending,pending->results[i]);
-                            printf("poll metrics\n");
+                            //printf("poll metrics\n");
                         }
                         flag++;
                     }

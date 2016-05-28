@@ -415,6 +415,8 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
                 return(Lptr);
             }
         } //else return(bitcoin_value(coin,txid,vout,coinaddr));
+        Lptr->retstr = clonestr("{\"error\":\"couldnt create rawtx locally\"}");
+        return(Lptr);
     }
     printf("Scan basilisks values\n");
     if ( (v= myinfo->basilisks.values) != 0 )
