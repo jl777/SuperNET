@@ -495,14 +495,16 @@ struct hhbits256 { UT_hash_handle hh; bits256 txid; int32_t height; uint16_t fir
 
 struct iguana_monitorinfo { bits256 txid; int32_t numreported; uint8_t peerbits[IGUANA_MAXPEERS >> 3]; };
 
-typedef char *(*basilisk_func)(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *vals);
+typedef void *(*basilisk_func)(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *vals);
+typedef double (*basilisk_metricfunc)(struct supernet_info *myinfo,struct basilisk_item *ptr,char *result);
 
 struct iguana_info
 {
     char name[64],symbol[8],protocol,statusstr[512],scriptsfname[2][512];
     struct iguana_peers peers; struct iguana_peer internaladdr;
     basilisk_func basilisk_rawtx,basilisk_balances,basilisk_value;
-
+    basilisk_metricfunc basilisk_rawtxmetric,basilisk_balancesmetric,basilisk_valuemetric;
+    
     uint32_t fastfind; FILE *fastfps[0x100]; uint8_t *fast[0x100]; int32_t *fasttables[0x100]; long fastsizes[0x100];
     uint64_t instance_nonce,myservices,totalsize,totalrecv,totalpackets,sleeptime;
     int64_t mining,totalfees,TMPallocated,MAXRECVCACHE,MAXMEM,PREFETCHLAG,estsize,activebundles;

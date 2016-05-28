@@ -14,8 +14,8 @@
  ******************************************************************************/
 
 
-INT_ARRAY_STRING(basilisk,balances,basilisktag,vals,activecoin);//lastheight,addresses,activecoin);
-INT_ARRAY_STRING(basilisk,rawtx,basilisktag,vals,activecoin);//changeaddr,addresses,vals,spendscriptstr);
+INT_ARRAY_STRING(basilisk,balances,basilisktag,vals,activecoin);
+INT_ARRAY_STRING(basilisk,rawtx,basilisktag,vals,activecoin);
 INT_ARRAY_STRING(basilisk,value,basilisktag,vals,activecoin);
 INT_AND_ARRAY(basilisk,result,basilisktag,vals);
 
