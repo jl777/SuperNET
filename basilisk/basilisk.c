@@ -15,7 +15,7 @@
 
 #include "../iguana/iguana777.h"
 
-char *basilisk_finish(struct basilisk_item *ptr,cJSON **argjsonp,int32_t besti)
+char *basilisk_finish(struct basilisk_item *ptr,int32_t besti)
 {
     int32_t i; char *retstr = 0;
     for (i=0; i<ptr->numresults; i++)
@@ -24,17 +24,9 @@ char *basilisk_finish(struct basilisk_item *ptr,cJSON **argjsonp,int32_t besti)
         {
             if ( ptr->results[i] != 0 )
                 free(ptr->results[i]);
-            if ( ptr->resultargs[i] != 0 )
-                free_json(ptr->resultargs[i]);
         }
-        else
-        {
-            retstr = ptr->results[i];
-            if ( argjsonp != 0 )
-                *argjsonp = jduplicate(ptr->resultargs[i]);
-        }
+        else retstr = ptr->results[i];
         ptr->results[i] = 0;
-        ptr->resultargs[i] = 0;
     }
     ptr->finished = (uint32_t)time(NULL);
     return(retstr);
@@ -60,26 +52,20 @@ cJSON *basilisk_json(struct supernet_info *myinfo,cJSON *hexjson,uint32_t basili
     return(retjson);
 }
 
-cJSON *basilisk_resultsjson(struct supernet_info *myinfo,char *symbol,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,char *retstr,cJSON *args)
+cJSON *basilisk_resultsjson(struct supernet_info *myinfo,char *symbol,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,char *retstr)
 {
-    cJSON *hexjson,*retjson;
-    if ( remoteaddr != 0 && remoteaddr[0] != 0 )
+    cJSON *hexjson=0,*retjson=0;
+    if ( (hexjson= cJSON_Parse(retstr)) != 0 )
     {
-        hexjson = cJSON_CreateObject();
-        jaddstr(hexjson,"agent","basilisk");
-        jaddstr(hexjson,"method","result");
-        jaddstr(hexjson,"hexmsg",retstr);
-        if ( args != 0 )
-            jadd(hexjson,"args",jduplicate(args));
-        retjson = basilisk_json(myinfo,hexjson,basilisktag,timeoutmillis);
-        free_json(hexjson);
-    }
-    else // local request
-    {
-        retjson = cJSON_CreateObject();
-        jaddstr(retjson,"result",retstr);
-        if ( args != 0 )
-            jadd(retjson,"args",jduplicate(args));
+        if ( remoteaddr != 0 && remoteaddr[0] != 0 )
+        {
+            jaddstr(hexjson,"agent","basilisk");
+            jaddstr(hexjson,"method","result");
+            retjson = basilisk_json(myinfo,hexjson,basilisktag,timeoutmillis);
+            free_json(hexjson);
+        }
+        else // local request
+            retjson = hexjson;
     }
     return(retjson);
 }
@@ -178,16 +164,16 @@ void basilisk_functions(struct iguana_info *coin)
 
 char *basilisk_issuecmd(basilisk_func func,struct supernet_info *myinfo,char *remoteaddr,uint32_t basilisktag,char *symbol,int32_t timeoutmillis,cJSON *vals)
 {
-    struct iguana_info *coin; char *retstr=0; cJSON *retjson,*args = 0;
+    struct iguana_info *coin; char *retstr=0; cJSON *retjson;
     if ( basilisktag == 0 )
         OS_randombytes((uint8_t *)&basilisktag,sizeof(basilisktag));
     if ( (coin= iguana_coinfind(symbol)) != 0 )
     {
         if ( func != 0 )
         {
-            if ( (retstr= (*func)(myinfo,coin,remoteaddr,basilisktag,timeoutmillis,&args,vals)) != 0 )
+            if ( (retstr= (*func)(myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
             {
-                retjson = basilisk_resultsjson(myinfo,symbol,remoteaddr,basilisktag,timeoutmillis,retstr,args);
+                retjson = basilisk_resultsjson(myinfo,symbol,remoteaddr,basilisktag,timeoutmillis,retstr);
                 free(retstr);
                 retstr = jprint(retjson,1);
             }
@@ -270,11 +256,9 @@ ARRAY_OBJ_INT(basilisk,result,args,vals,basilisktag)
     struct basilisk_item *ptr; char *hexmsg=0;
     if ( vals != 0 && (hexmsg= jstr(vals,"hexmsg")) != 0 )
     {
-        ptr = calloc(1,sizeof(*ptr) + strlen(hexmsg) + 1);
+        ptr = calloc(1,sizeof(*ptr));
         ptr->results[0] = clonestr(hexmsg);
         ptr->basilisktag = basilisktag;
-        if ( args != 0 )
-            ptr->resultargs[0] = jduplicate(args);
         ptr->numresults = 1;
         //printf("Q results hexmsg.(%s) args.(%s)\n",hexmsg,jprint(args,0));
         queue_enqueue("resultsQ",&myinfo->basilisks.resultsQ,&ptr->DL,0);
@@ -350,7 +334,7 @@ char *basilisk_hexmsg(struct supernet_info *myinfo,struct category_info *cat,voi
                     if ( strcmp(method,"result") == 0 )
                     {
                         //printf("got rawtx.(%s)\n",jstr(valsobj,"hexmsg"));
-                        return(basilisk_result(myinfo,coin,json,remoteaddr,jobj(json,"args"),valsobj,basilisktag));
+                        return(basilisk_result(myinfo,coin,json,remoteaddr,jobj(json,"vals"),valsobj,basilisktag));
                     }
                 }
             }
@@ -387,7 +371,6 @@ void basilisks_loop(void *arg)
                 if ( (n= pending->numresults) < sizeof(pending->results)/sizeof(*pending->results) )
                 {
                     pending->results[n] = ptr->results[0];
-                    pending->resultargs[n] = ptr->resultargs[0];
                     pending->numresults++;
                 }
             }

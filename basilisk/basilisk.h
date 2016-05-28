@@ -28,7 +28,7 @@ struct basilisk_item
 {
     struct queueitem DL; UT_hash_handle hh;
     uint32_t submit,finished,basilisktag,numresults,numexact;
-    char *results[BASILISK_MAXFANOUT]; cJSON *resultargs[BASILISK_MAXFANOUT];
+    char *results[BASILISK_MAXFANOUT]; 
 };
 
 struct basilisk_info

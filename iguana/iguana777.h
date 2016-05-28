@@ -495,7 +495,7 @@ struct hhbits256 { UT_hash_handle hh; bits256 txid; int32_t height; uint16_t fir
 
 struct iguana_monitorinfo { bits256 txid; int32_t numreported; uint8_t peerbits[IGUANA_MAXPEERS >> 3]; };
 
-typedef char *(*basilisk_func)(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON **argsp,cJSON *vals);
+typedef char *(*basilisk_func)(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *vals);
 
 struct iguana_info
 {

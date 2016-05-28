@@ -34,7 +34,7 @@ char *basilisk_wavesrawtx(struct supernet_info *myinfo,struct iguana_info *coin,
         jaddstr(hexjson,"agent","basilisk");
         jaddstr(hexjson,"method","rawtx");
         if ( (ptr= basilisk_issue(myinfo,hexjson,timeoutmillis,0,1,basilisktag)) != 0 )
-            retstr = basilisk_finish(ptr,vinsp,0);
+            retstr = basilisk_finish(ptr,0);
         free_json(hexjson);
     }
     return(retstr);
