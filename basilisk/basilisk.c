@@ -169,7 +169,7 @@ void basilisk_functions(struct iguana_info *coin)
 
 char *basilisk_issuecmd(basilisk_func func,struct supernet_info *myinfo,char *remoteaddr,uint32_t basilisktag,char *symbol,int32_t timeoutmillis,cJSON *vals)
 {
-    struct iguana_info *coin; char *retstr=0; cJSON *retjson;
+    struct iguana_info *coin; char *retstr=0;
     if ( basilisktag == 0 )
         OS_randombytes((uint8_t *)&basilisktag,sizeof(basilisktag));
     if ( (coin= iguana_coinfind(symbol)) != 0 )

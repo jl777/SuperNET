@@ -594,6 +594,7 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
                 jadd(resultobj,"vals",valsobj);
                 jaddstr(resultobj,"agent","basilisk");
                 jaddstr(resultobj,"method","result");
+                jaddnum(resultobj,"plaintext",1);
                 //retstr = jprint(basilisk_resultsjson(myinfo,coin->symbol,remoteaddr,basilisktag,timeoutmillis,jprint(resultobj,1)),1);
                 return(jprint(resultobj,1));
             } else free(rawtx);
