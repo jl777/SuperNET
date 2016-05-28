@@ -424,7 +424,7 @@ char *basilisk_hexmsg(struct supernet_info *myinfo,struct category_info *cat,voi
             agent = jstr(remotejson,"agent");
             method = jstr(remotejson,"method");
         }
-        basilisk.({"agent":"basilisk","basilisktag":462531728,"method":"rawtx","activecoin":"BTC","vals":{"changeaddr":"1FNhoaBYzf7safMBjoCsJYgxtah3K95sep","addresses":["1Hgzt5xsnbfc8UTWqWKSTLRm5bEYHYBoCE"],"timeout":5000,"amount":"20000","spendscript":"76a914b7128d2ee837cf03e30a2c0e3e0181f7b9669bb688ac"},"basilisktag":462531728})
+        //basilisk.({"agent":"basilisk","basilisktag":462531728,"method":"rawtx","activecoin":"BTC","vals":{"changeaddr":"1FNhoaBYzf7safMBjoCsJYgxtah3K95sep","addresses":["1Hgzt5xsnbfc8UTWqWKSTLRm5bEYHYBoCE"],"timeout":5000,"amount":"20000","spendscript":"76a914b7128d2ee837cf03e30a2c0e3e0181f7b9669bb688ac"},"basilisktag":462531728})
         basilisktag = juint(remotejson,"basilisktag");
         if ( strcmp(agent,"basilisk") == 0 && (valsobj= jobj(remotejson,"vals")) != 0 )
         {
