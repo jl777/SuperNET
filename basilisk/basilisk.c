@@ -62,7 +62,8 @@ cJSON *basilisk_resultsjson(struct supernet_info *myinfo,char *symbol,char *remo
             hexjson = cJSON_CreateObject();
             jaddstr(hexjson,"agent","basilisk");
             jaddstr(hexjson,"method","result");
-            jadd(hexjson,"vals",retstr);
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                jadd(hexjson,"vals",retjson);
             retjson = basilisk_json(myinfo,hexjson,basilisktag,timeoutmillis);
             free_json(hexjson);
             printf("resultsjson.(%s)\n",jprint(retjson,0));
