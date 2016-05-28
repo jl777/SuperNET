@@ -312,6 +312,7 @@ int32_t basilisk_bitcoinavail(struct iguana_info *coin)
 
 char *basilisk_bitcoinbalances(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON **argsp,cJSON *vals)
 {
+    *argsp = 0;
    /* cJSON *array=0,*result,*item,*retjson,*hexjson; int32_t i,n,besti=-1; char *coinaddr,*balancestr=0,*retstr=0; int64_t total=0,amount,most=0; struct basilisk_item *ptr;
     array = cJSON_CreateArray();
     if ( coin != 0 && basilisk_bitcoinavail(coin) != 0 )
@@ -554,10 +555,12 @@ int64_t basilisk_bitcointxcost(struct supernet_info *myinfo,struct iguana_info *
 char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON **vinsp,cJSON *valsobj)
 {
     uint8_t buf[IGUANA_MAXSCRIPTSIZE]; int32_t i,minconf,spendlen,besti=-1; cJSON *hexjson,*addresses,*txobj = 0; uint32_t locktime; char *spendscriptstr,*changeaddr,*retstr=0,*rawtx = 0; int64_t amount,txfee,cost,bestcost=-1; struct basilisk_item *ptr;
+    *vinsp = 0;
     changeaddr = jstr(valsobj,"changeaddr");
     spendscriptstr = jstr(valsobj,"spendscript");
     amount = j64bits(valsobj,"amount");
-    txfee = j64bits(valsobj,"txfee");
+    if ( (txfee= j64bits(valsobj,"txfee")) == 0 )
+        txfee = coin->chain->txfee;
     minconf = juint(valsobj,"minconf");
     locktime = juint(valsobj,"locktime");
     addresses = jobj(valsobj,"addresses");
@@ -569,14 +572,14 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
     {
         if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
         {
-            if ( txfee == 0 )
-                txfee = coin->chain->txfee;
             if ( (txobj= bitcoin_txcreate(coin,locktime)) != 0 )
             {
                 spendlen = (int32_t)strlen(spendscriptstr) >> 1;
                 decode_hex(buf,spendlen,spendscriptstr);
                 bitcoin_txoutput(coin,txobj,buf,spendlen,amount);
+                printf("call calcrawtx\n");
                 rawtx = iguana_calcrawtx(myinfo,coin,vinsp,txobj,amount,changeaddr,txfee,addresses,minconf);
+                printf("back calcrawtx\n");
             } else printf("error creating txobj\n");
         } //else rawtx = bitcoin_calcrawtx(myinfo,coin,vinsp,satoshis,spendscriptstr,changeaddr,txfee,addresses,minconf,locktime);
         if ( rawtx != 0 )
