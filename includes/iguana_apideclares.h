@@ -17,7 +17,7 @@
 INT_ARRAY_STRING(basilisk,balances,basilisktag,vals,activecoin);//lastheight,addresses,activecoin);
 INT_ARRAY_STRING(basilisk,rawtx,basilisktag,vals,activecoin);//changeaddr,addresses,vals,spendscriptstr);
 INT_ARRAY_STRING(basilisk,value,basilisktag,vals,activecoin);
-ARRAY_OBJ_INT(basilisk,result,args,vals,basilisktag);
+INT_AND_ARRAY(basilisk,result,basilisktag,vals);
 
 ZERO_ARGS(bitcoinrpc,getinfo);
 ZERO_ARGS(bitcoinrpc,getblockcount);

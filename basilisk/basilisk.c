@@ -55,18 +55,20 @@ cJSON *basilisk_json(struct supernet_info *myinfo,cJSON *hexjson,uint32_t basili
 cJSON *basilisk_resultsjson(struct supernet_info *myinfo,char *symbol,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,char *retstr)
 {
     cJSON *hexjson=0,*retjson=0;
-    if ( (hexjson= cJSON_Parse(retstr)) != 0 )
+    if ( retstr != 0 )
     {
         if ( remoteaddr != 0 && remoteaddr[0] != 0 )
         {
+            hexjson = cJSON_CreateObject();
             jaddstr(hexjson,"agent","basilisk");
             jaddstr(hexjson,"method","result");
+            jadd(hexjson,"vals",retstr);
             retjson = basilisk_json(myinfo,hexjson,basilisktag,timeoutmillis);
             free_json(hexjson);
             printf("resultsjson.(%s)\n",jprint(retjson,0));
         }
         else // local request
-            retjson = hexjson;
+            retjson = cJSON_Parse(retstr);
     }
     return(retjson);
 }
@@ -253,13 +255,13 @@ INT_ARRAY_STRING(basilisk,value,basilisktag,vals,activecoin)
     return(clonestr("{\"error\":\"missing activecoin\"}"));
 }
 
-ARRAY_OBJ_INT(basilisk,result,args,vals,basilisktag)
+INT_AND_ARRAY(basilisk,result,basilisktag,vals)
 {
     struct basilisk_item *ptr; char *hexmsg=0;
     if ( vals != 0 && (hexmsg= jstr(vals,"hexmsg")) != 0 )
     {
         ptr = calloc(1,sizeof(*ptr));
-        ptr->results[0] = clonestr(hexmsg);
+        ptr->results[0] = jprint(vals,0);
         ptr->basilisktag = basilisktag;
         ptr->numresults = 1;
         //printf("Q results hexmsg.(%s) args.(%s)\n",hexmsg,jprint(args,0));
@@ -286,15 +288,17 @@ char *basilisk_hexmsg(struct supernet_info *myinfo,struct category_info *cat,voi
         method = jstr(json,"method");
         if ( agent != 0 && method != 0 && strcmp(agent,"SuperNET") == 0 && strcmp(method,"DHT") == 0 && (hexmsg= jstr(json,"hexmsg")) != 0 )
         {
-            free_json(json);
             n = (int32_t)(strlen(hexmsg) >> 1);
             tmpstr = calloc(1,n + 1);
             decode_hex((void *)tmpstr,n,hexmsg);
+            free_json(json);
             if ( (json= cJSON_Parse(tmpstr)) == 0 )
             {
-                printf("couldnt parse decoded hexmsg\n");
+                printf("couldnt parse decoded hexmsg.(%s)\n",tmpstr);
+                free(tmpstr);
                 return(0);
             }
+            free(tmpstr);
             agent = jstr(json,"agent");
             method = jstr(json,"method");
         }
@@ -352,7 +356,7 @@ char *basilisk_hexmsg(struct supernet_info *myinfo,struct category_info *cat,voi
                     if ( strcmp(method,"result") == 0 )
                     {
                         //printf("got rawtx.(%s)\n",jstr(valsobj,"hexmsg"));
-                        return(basilisk_result(myinfo,coin,json,remoteaddr,jobj(json,"vals"),valsobj,basilisktag));
+                        return(basilisk_result(myinfo,coin,json,remoteaddr,basilisktag,valsobj));
                     }
                 }
             }

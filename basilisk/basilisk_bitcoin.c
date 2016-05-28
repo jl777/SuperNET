@@ -606,7 +606,6 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
         jaddstr(hexjson,"method","rawtx");
         jaddstr(hexjson,"activecoin",coin->symbol);
         jadd(hexjson,"vals",jduplicate(valsobj));
-        printf("issue\n");
         if ( (ptr= basilisk_issue(myinfo,hexjson,timeoutmillis,0,1,basilisktag)) != 0 )
         {
             for (i=0; i<ptr->numresults; i++)
