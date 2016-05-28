@@ -31,7 +31,7 @@ char *basilisk_finish(struct basilisk_item *ptr,cJSON **argjsonp,int32_t besti)
         {
             retstr = ptr->results[i];
             if ( argjsonp != 0 )
-                *argjsonp = ptr->resultargs[i];
+                *argjsonp = jduplicate(ptr->resultargs[i]);
         }
         ptr->results[i] = 0;
         ptr->resultargs[i] = 0;
@@ -70,7 +70,7 @@ cJSON *basilisk_resultsjson(struct supernet_info *myinfo,char *symbol,char *remo
         jaddstr(hexjson,"method","result");
         jaddstr(hexjson,"hexmsg",retstr);
         if ( args != 0 )
-            jadd(hexjson,"args",args);
+            jadd(hexjson,"args",jduplicate(args));
         retjson = basilisk_json(myinfo,hexjson,basilisktag,timeoutmillis);
         free_json(hexjson);
     }
@@ -79,7 +79,7 @@ cJSON *basilisk_resultsjson(struct supernet_info *myinfo,char *symbol,char *remo
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result",retstr);
         if ( args != 0 )
-            jadd(retjson,"args",args);
+            jadd(retjson,"args",jduplicate(args));
     }
     return(retjson);
 }

@@ -592,7 +592,9 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
         }
     }
     if ( txobj != 0 )
-        free_json(txobj);
+        free_json(txobj), txobj = 0;
+    if ( *vinsp != 0 )
+        free_json(*vinsp), *vinsp = 0;
     if ( addresses != 0 )
     {
         hexjson = cJSON_CreateObject();
