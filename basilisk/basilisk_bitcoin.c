@@ -579,9 +579,7 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
                 spendlen = (int32_t)strlen(spendscriptstr) >> 1;
                 decode_hex(buf,spendlen,spendscriptstr);
                 bitcoin_txoutput(coin,txobj,buf,spendlen,amount);
-                printf("call calcrawtx\n");
                 rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,amount,changeaddr,txfee,addresses,minconf);
-                printf("back calcrawtx\n");
             } else printf("error creating txobj\n");
         } //else rawtx = bitcoin_calcrawtx(myinfo,coin,vinsp,satoshis,spendscriptstr,changeaddr,txfee,addresses,minconf,locktime);
         if ( rawtx != 0 )
@@ -607,6 +605,7 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
         jaddstr(hexjson,"agent","basilisk");
         jaddstr(hexjson,"method","rawtx");
         jaddstr(hexjson,"activecoin",coin->symbol);
+        jadd(hexjson,"vals",jduplicate(valsobj));
         if ( (ptr= basilisk_issue(myinfo,hexjson,timeoutmillis,0,1,basilisktag)) != 0 )
         {
             for (i=0; i<ptr->numresults; i++)

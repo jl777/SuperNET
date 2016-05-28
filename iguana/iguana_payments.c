@@ -321,13 +321,11 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
     *vinsp = 0;
     max = 10000;
     unspents = calloc(max,sizeof(*unspents));
-    printf("unspentslist\n");
     if ( (num= iguana_unspentslists(myinfo,coin,&avail,unspents,max,satoshis,minconf,addresses)) <= 0 )
     {
         free(unspents);
         return(0);
     }
-    printf("got num.%d\n",num);
     if ( txobj != 0 && avail >= satoshis+txfee )
     {
         if ( (vins= iguana_inputsjson(myinfo,coin,&total,satoshis + txfee,unspents,num)) != 0 )

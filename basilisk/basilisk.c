@@ -63,6 +63,7 @@ cJSON *basilisk_resultsjson(struct supernet_info *myinfo,char *symbol,char *remo
             jaddstr(hexjson,"method","result");
             retjson = basilisk_json(myinfo,hexjson,basilisktag,timeoutmillis);
             free_json(hexjson);
+            printf("resultsjson.(%s)\n",jprint(retjson,0));
         }
         else // local request
             retjson = hexjson;
@@ -278,6 +279,8 @@ char *basilisk_hexmsg(struct supernet_info *myinfo,struct category_info *cat,voi
     {
         printf("basilisk.(%s)\n",jprint(json,0));
         //basilisk.({"basilisktag":2955372280,"agent":"basilisk","method":"rawtx","vals":{"changeaddr":"1FNhoaBYzf7safMBjoCsJYgxtah3K95sep","addresses":["1Hgzt5xsnbfc8UTWqWKSTLRm5bEYHYBoCE"],"timeout":5000,"amount":"20000","spendscript":"76a914b7128d2ee837cf03e30a2c0e3e0181f7b9669bb688ac"},"basilisktag":2955372280})
+       // basilisk.({"agent":"basilisk","method":"rawtx","activecoin":"BTC","basilisktag":1398466607})
+
         agent = jstr(json,"agent");
         method = jstr(json,"method");
         basilisktag = juint(json,"basilisktag");
