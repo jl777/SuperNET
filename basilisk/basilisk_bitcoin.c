@@ -632,6 +632,7 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
                 decode_hex(buf,spendlen,spendscriptstr);
                 bitcoin_txoutput(coin,txobj,buf,spendlen,amount);
                 rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,amount,changeaddr,txfee,addresses,minconf);
+                printf("generated.(%s) vins.(%s)\n",rawtx,vins!=0?jprint(vins,0):"");
             }
             else
             {
@@ -651,12 +652,14 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
                 Lptr->retstr = jprint(valsobj,1);
                 return(Lptr);
             } else free(rawtx);
-        } // fall through to remote
+        }
+        if ( txobj != 0 )
+            free_json(txobj);
+        if ( vins != 0 )
+            free_json(vins);
+        Lptr->retstr = clonestr("{\"error\":\"couldnt create rawtx\"}");
+        return(Lptr);
     }
-    if ( txobj != 0 )
-        free_json(txobj), txobj = 0;
-    if ( vins != 0 )
-        free_json(vins), vins = 0;
     return(basilisk_issueremote(myinfo,"rawtx",coin->symbol,valsobj,0,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag));
 }
 

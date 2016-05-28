@@ -231,6 +231,7 @@ char *basilisk_block(struct supernet_info *myinfo,struct iguana_info *coin,char 
     {
         if ( (retstr= Lptr->retstr) == 0 )
             retstr = clonestr("{\"result\":\"null return from local basilisk_issuecmd\"}");
+        printf("block got local.(%s)\n",retstr);
     }
     else
     {
@@ -254,30 +255,33 @@ char *basilisk_block(struct supernet_info *myinfo,struct iguana_info *coin,char 
             if ( ptr->uniqueflag == 0 && ptr->numexact <= (ptr->numresults >> 1) )
                 besti = -1, errstr = "{\"error\":\"basilisk non-consensus results\"}";
             else besti = basilisk_besti(ptr), errstr = "{\"error\":\"basilisk no valid results\"}";
-            if ( (retstr= basilisk_finish(ptr,besti,errstr)) != 0 && remoteaddr != 0 && remoteaddr[0] != 0 && strcmp(remoteaddr,"127.0.0.1") != 0 )
+            retstr = basilisk_finish(ptr,besti,errstr);
+            break;
+        }
+        if ( retstr == 0 )
+            retstr = basilisk_finish(ptr,-1,"{\"error\":\"basilisk timeout\"}");
+    }
+    if ( retstr != 0 && remoteaddr != 0 && remoteaddr[0] != 0 && strcmp(remoteaddr,"127.0.0.1") != 0 )
+    {
+        for (j=0; j<IGUANA_MAXCOINS; j++)
+        {
+            if ( (coin= Coins[j]) == 0 )
+                continue;
+            for (i=0; i<IGUANA_MAXPEERS; i++)
             {
-                for (j=0; j<IGUANA_MAXCOINS; j++)
+                if ( (addr= &coin->peers.active[i]) != 0 && addr->usock >= 0 )
                 {
-                    if ( (coin= Coins[j]) == 0 )
-                        continue;
-                    for (i=0; i<IGUANA_MAXPEERS; i++)
+                    if ( addr->supernet != 0 && strcmp(addr->ipaddr,remoteaddr) == 0 )
                     {
-                        if ( (addr= &coin->peers.active[i]) != 0 && addr->usock >= 0 )
-                        {
-                            if ( addr->supernet != 0 && strcmp(addr->ipaddr,remoteaddr) == 0 )
-                            {
-                                printf("send back.%d basilisk_result addr->supernet.%u to (%s).%d\n",(int32_t)strlen(retstr),addr->supernet,addr->ipaddr,addr->A.port);
-                                iguana_send_supernet(addr,retstr,0);
-                                return(retstr);
-                            }
-                        }
-                        if ( 0 && addr->ipbits != 0 )
-                            printf("i.%d (%s) vs (%s) %s\n",i,addr->ipaddr,remoteaddr,coin->symbol);
+                        printf("send back.%d basilisk_result addr->supernet.%u to (%s).%d\n",(int32_t)strlen(retstr),addr->supernet,addr->ipaddr,addr->A.port);
+                        iguana_send_supernet(addr,retstr,0);
+                        return(retstr);
                     }
                 }
+                if ( 0 && addr->ipbits != 0 )
+                    printf("i.%d (%s) vs (%s) %s\n",i,addr->ipaddr,remoteaddr,coin->symbol);
             }
         }
-        retstr = basilisk_finish(ptr,-1,"{\"error\":\"basilisk timeout\"}");
     }
     return(retstr);
 }
