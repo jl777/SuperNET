@@ -17,20 +17,21 @@
 
 char *basilisk_finish(struct basilisk_item *ptr,int32_t besti,char *errstr)
 {
-    int32_t i; char *retstr = 0;
-    for (i=0; i<ptr->numresults; i++)
+    char *retstr = 0; struct basilisk_item *parent;
+    if ( besti >= 0 && besti < ptr->numresults )
     {
-        if ( besti >= 0 && i != besti )
-        {
-            if ( ptr->results[i] != 0 )
-                free(ptr->results[i]);
-        } else retstr = ptr->results[i];
-        ptr->results[i] = 0;
+        retstr = ptr->results[besti];
+        ptr->results[besti] = 0;
     }
     if ( retstr == 0 )
         retstr = clonestr(errstr);
     ptr->retstr = retstr;
     ptr->finished = (uint32_t)time(NULL);
+    if ( (parent= ptr->parent) != 0 )
+    {
+        ptr->parent = 0;
+        parent->childrendone++;
+    }
     return(retstr);
 }
 
@@ -102,7 +103,7 @@ int32_t basilisk_submit(struct supernet_info *myinfo,cJSON *reqjson,int32_t time
     int32_t i,j,k,l,r2,r,n; struct iguana_peer *addr; struct iguana_info *coin; char *reqstr; cJSON *tmpjson;
     tmpjson = basilisk_json(myinfo,reqjson,ptr->basilisktag,timeout);
     reqstr = jprint(tmpjson,1);
-    printf("basilisk_submit.(%s)\n",reqstr);
+    //printf("basilisk_submit.(%s)\n",reqstr);
     if ( fanout <= 0 )
         fanout = BASILISK_MINFANOUT;
     else if ( fanout > BASILISK_MAXFANOUT )
@@ -250,13 +251,15 @@ char *basilisk_block(struct supernet_info *myinfo,struct iguana_info *coin,char 
             }
             if ( numvalid < ptr->numrequired )
             {
-                usleep(10000);
+                usleep(1000000);
+                printf("%u: numvalid.%d < required.%d\n",ptr->basilisktag,numvalid,ptr->numrequired);
                 continue;
             }
             if ( ptr->uniqueflag == 0 && ptr->numexact <= (ptr->numresults >> 1) )
                 besti = -1, errstr = "{\"error\":\"basilisk non-consensus results\"}";
             else besti = basilisk_besti(ptr), errstr = "{\"error\":\"basilisk no valid results\"}";
             retstr = basilisk_finish(ptr,besti,errstr);
+            printf("besti.%d numexact.%d numresults.%d -> (%s)\n",besti,ptr->numexact,ptr->numresults,retstr);
             break;
         }
         if ( retstr == 0 )
@@ -267,6 +270,7 @@ char *basilisk_block(struct supernet_info *myinfo,struct iguana_info *coin,char 
         hexobj = cJSON_CreateObject();
         jaddstr(hexobj,"agent","basilisk");
         jaddstr(hexobj,"method","result");
+        jaddnum(hexobj,"basilisktag",ptr->basilisktag);
         if ( (valsobj= cJSON_Parse(retstr)) != 0 )
         {
             if ( jobj(valsobj,"coin") == 0 )
@@ -287,7 +291,7 @@ char *basilisk_block(struct supernet_info *myinfo,struct iguana_info *coin,char 
                 {
                     if ( addr->supernet != 0 && strcmp(addr->ipaddr,remoteaddr) == 0 )
                     {
-                        printf("send back.%d basilisk_result addr->supernet.%u to (%s).%d\n",(int32_t)strlen(retstr),addr->supernet,addr->ipaddr,addr->A.port);
+                        printf("send back.%s basilisk_result addr->supernet.%u to (%s).%d\n",retstr,addr->supernet,addr->ipaddr,addr->A.port);
                         iguana_send_supernet(addr,retstr,0);
                         return(retstr);
                     }
@@ -410,7 +414,7 @@ INT_AND_ARRAY(basilisk,result,basilisktag,vals)
         ptr = calloc(1,sizeof(*ptr));
         ptr->retstr = jprint(vals,0);
         ptr->basilisktag = basilisktag;
-        printf("Q.%u results vals.(%s)\n",basilisktag,ptr->retstr);
+        //printf("Q.%u results vals.(%s)\n",basilisktag,ptr->retstr);
         queue_enqueue("resultsQ",&myinfo->basilisks.resultsQ,&ptr->DL,0);
         return(clonestr("{\"result\":\"queued basilisk return\"}"));
     } else printf("null vals.(%s) or no hexmsg.%p\n",jprint(vals,0),vals);
@@ -424,7 +428,7 @@ char *basilisk_hexmsg(struct supernet_info *myinfo,struct category_info *cat,voi
     array = 0;
     if ( (remotejson= cJSON_Parse(ptr)) != 0 )
     {
-        printf("basilisk.(%s)\n",jprint(remotejson,0));
+        //printf("basilisk.(%s)\n",jprint(remotejson,0));
         agent = jstr(remotejson,"agent");
         method = jstr(remotejson,"method");
         if ( agent != 0 && method != 0 && strcmp(agent,"SuperNET") == 0 && strcmp(method,"DHT") == 0 && (hexmsg= jstr(remotejson,"hexmsg")) != 0 )
@@ -444,7 +448,6 @@ char *basilisk_hexmsg(struct supernet_info *myinfo,struct category_info *cat,voi
             agent = jstr(remotejson,"agent");
             method = jstr(remotejson,"method");
         }
-        //basilisk.({"agent":"basilisk","basilisktag":462531728,"method":"rawtx","activecoin":"BTC","vals":{"changeaddr":"1FNhoaBYzf7safMBjoCsJYgxtah3K95sep","addresses":["1Hgzt5xsnbfc8UTWqWKSTLRm5bEYHYBoCE"],"timeout":5000,"amount":"20000","spendscript":"76a914b7128d2ee837cf03e30a2c0e3e0181f7b9669bb688ac"},"basilisktag":462531728})
         basilisktag = juint(remotejson,"basilisktag");
         if ( strcmp(agent,"basilisk") == 0 && (valsobj= jobj(remotejson,"vals")) != 0 )
         {
@@ -452,7 +455,7 @@ char *basilisk_hexmsg(struct supernet_info *myinfo,struct category_info *cat,voi
                 coin = iguana_coinfind(jstr(valsobj,"coin"));
             else if ( jstr(remotejson,"activecoin") != 0 )
                 coin = iguana_coinfind(jstr(remotejson,"activecoin"));
-            printf("coin.%p agent.%s method.%s vals.%p\n",coin,agent,method,valsobj);
+            //printf("coin.%p agent.%s method.%s vals.%p\n",coin,agent,method,valsobj);
             if ( coin != 0 )
             {
                 if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
@@ -477,13 +480,13 @@ char *basilisk_hexmsg(struct supernet_info *myinfo,struct category_info *cat,voi
         }
         free_json(remotejson);
     }
-    printf("unhandled bitcoin_hexmsg.(%d) from %s (%s/%s)\n",len,remoteaddr,agent,method);
+    printf("unhandled bitcoin_hexmsg.(%d) from %s (%s)\n",len,remoteaddr,(char *)ptr);
     return(retstr);
 }
 
 void basilisks_loop(void *arg)
 {
-    basilisk_metricfunc metricfunc; struct basilisk_item *ptr,*tmp,*pending; int32_t i,flag,n; struct supernet_info *myinfo = arg;
+    basilisk_metricfunc metricfunc; struct basilisk_item *ptr,*tmp,*pending,*parent; int32_t i,flag,n; struct supernet_info *myinfo = arg;
     //uint8_t *blockspace; struct OS_memspace RAWMEM;
     //memset(&RAWMEM,0,sizeof(RAWMEM));
     //blockspace = calloc(1,IGUANA_MAXPACKETSIZE);
@@ -507,8 +510,9 @@ void basilisks_loop(void *arg)
                 if ( (n= pending->numresults) < sizeof(pending->results)/sizeof(*pending->results) )
                 {
                     pending->results[n] = ptr->retstr;
+                    printf("%p Add results[%d] <- (%s)\n",&pending->results[n],n,ptr->retstr);
                     pending->numresults++;
-                    if ( (metricfunc= ptr->metricfunc) == 0 )
+                    if ( (metricfunc= pending->metricfunc) == 0 )
                         pending->metrics[n] = n + 1;
                     else pending->metrics[n] = (*metricfunc)(myinfo,pending,pending->results[n]);
                 }
@@ -521,33 +525,50 @@ void basilisks_loop(void *arg)
             flag = 0;
             HASH_ITER(hh,myinfo->basilisks.issued,pending,tmp)
             {
-                if ( pending->finished != 0 && pending->parent == 0 )
+                for (i=0; i<pending->numresults; i++)
+                    if ( pending->metrics[i] == 0. )
+                    {
+                        if ( (metricfunc= pending->metricfunc) != 0 )
+                        {
+                            pending->metrics[i] = (*metricfunc)(myinfo,pending,pending->results[i]);
+                            printf("poll metrics\n");
+                        }
+                        flag++;
+                    }
+                if ( OS_milliseconds() > pending->expiration )
                 {
-                    HASH_DELETE(hh,myinfo->basilisks.issued,pending);
-                    if ( pending->vals != 0 )
-                        free_json(pending->vals);
-                    if ( pending->dependents != 0 )
-                        free(pending->dependents);
-                    free(pending);
-                    flag++;
-                }
-                else if ( OS_milliseconds() > pending->expiration )
-                {
-                    pending->finished = (uint32_t)time(NULL);
-                    pending->retstr = clonestr("{\"error\":\"basilisk timeout\"}");
+                    if ( pending->finished == 0 )
+                    {
+                        if ( (parent= pending->parent) != 0 )
+                        {
+                            pending->parent = 0;
+                            parent->childrendone++;
+                        }
+                        pending->finished = (uint32_t)time(NULL);
+                    }
+                    if ( pending->retstr == 0 )
+                        pending->retstr = clonestr("{\"error\":\"basilisk timeout\"}");
+                    printf("timeout call metrics.%u\n",pending->basilisktag);
                     for (i=0; i<pending->numresults; i++)
                         if ( (metricfunc= pending->metricfunc) != 0 )
                             pending->metrics[i] = (*metricfunc)(myinfo,pending,pending->results[i]);
                 }
-                else
+                if ( pending->finished != 0 )
                 {
-                    for (i=0; i<pending->numresults; i++)
-                        if ( pending->metrics[i] == 0. )
-                        {
-                            if ( (metricfunc= pending->metricfunc) != 0 )
-                                pending->metrics[i] = (*metricfunc)(myinfo,pending,pending->results[i]);
-                            flag++;
-                        }
+                    if ( pending->dependents == 0 || pending->childrendone >= pending->numchildren )
+                    {
+                        HASH_DELETE(hh,myinfo->basilisks.issued,pending);
+                        if ( pending->dependents != 0 )
+                            free(pending->dependents);
+                        printf("free ptr.%u\n",pending->basilisktag);
+                        for (i=0; i<pending->numresults; i++)
+                            if ( pending->results[i] != 0 )
+                                free(pending->results[i]);
+                        if ( pending->vals != 0 )
+                            free_json(pending->vals);
+                        free(pending);
+                        flag++;
+                    }
                 }
             }
             if ( flag == 0 )

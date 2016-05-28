@@ -27,7 +27,7 @@ struct basilisk_value { bits256 txid; int64_t value; int32_t height; int16_t vou
 struct basilisk_item
 {
     struct queueitem DL; UT_hash_handle hh; struct basilisk_item *parent; void *dependents;
-    uint32_t submit,finished,basilisktag,numresults,numexact,uniqueflag,numrequired;
+    uint32_t submit,finished,basilisktag,numresults,numexact,uniqueflag,numrequired,childrendone,numchildren;
     char symbol[32]; double expiration; cJSON *vals; int32_t metricdir; void *metricfunc;
     char *retstr,*results[BASILISK_MAXFANOUT]; double metrics[BASILISK_MAXFANOUT];
 };

@@ -403,12 +403,14 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
     txid = jbits256(valsobj,"txid");
     vout = jint(valsobj,"vout");
     coinaddr = jstr(valsobj,"address");
+    printf("bitcoinvalue\n");
     if ( coin != 0 && basilisk_bitcoinavail(coin) != 0 && coinaddr != 0 && coinaddr[0] != 0 )
     {
         if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
         {
             if ( iguana_unspentindfind(coin,coinaddr,0,0,&value,&height,txid,vout,coin->bundlescount) > 0 )
             {
+                printf("bitcoinvalue found iguana\n");
                 Lptr->retstr = basilisk_valuestr(coin,coinaddr,value,height,txid,vout);
                 return(Lptr);
             }
@@ -421,11 +423,13 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
         {
             if ( v->vout == vout && bits256_cmp(txid,v->txid) == 0 && strcmp(v->coinaddr,coinaddr) == 0 )
             {
+                printf("bitcoinvalue local\n");
                 Lptr->retstr = basilisk_valuestr(coin,coinaddr,value,height,txid,vout);
                 return(Lptr);
             }
         }
     }
+    printf("bitcoinvalue issue remote\n");
     return(basilisk_issueremote(myinfo,"value",coin->symbol,valsobj,0,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag));
 }
 
@@ -437,7 +441,14 @@ double basilisk_bitcoin_rawtxmetric_dependents(struct supernet_info *myinfo,stru
         if ( (child= dependents->ptrs[i]) != 0 )
         {
             if ( ptr->finished != 0 )
-                child->finished = (uint32_t)time(NULL);
+            {
+                printf("parent finished\n");
+                if ( child->finished == 0 )
+                {
+                    ptr->childrendone++;
+                    child->finished = (uint32_t)time(NULL);
+                }
+            }
             else if ( child->finished == 0 )
                 notfinished++;
         }
@@ -445,11 +456,8 @@ double basilisk_bitcoin_rawtxmetric_dependents(struct supernet_info *myinfo,stru
     if ( notfinished != 0 )
     {
         if ( ptr->finished != 0 )
-        {
-            if ( ptr->metricdir < 0 )
-                return(1.);
-            else return(-1.);
-        } else return(0.);
+            return(-1.);
+        else return(0.);
     }
     else if ( ptr->vals != 0 )
     {
@@ -470,7 +478,7 @@ double basilisk_bitcoin_rawtxmetric_dependents(struct supernet_info *myinfo,stru
                         if ( j == numaddrs )
                         {
                             printf("spend of invalid input address.(%s)\n",coinaddr);
-                            metric = 3. + i;
+                            metric = -(3. + i);
                         }
                         printf("Valid spend %.8f to %s\n",dstr(value),coinaddr);
                     }
@@ -483,10 +491,10 @@ double basilisk_bitcoin_rawtxmetric_dependents(struct supernet_info *myinfo,stru
         if ( (inputsum - dependents->outputsum) != txfee )
         {
             printf("inputsum %.8f - outputsum %.8f = %.8f != txfee %.8f\n",dstr(inputsum),dstr(dependents->outputsum),dstr(inputsum)-dstr(dependents->outputsum),dstr(txfee));
-            return(1001.); // error
+            return(-1001.); // error
         }
         return(dstr(dependents->cost));
-    } else return(666.); // no vals??
+    } else return(-666.); // no vals??
 }
 
 double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk_item *ptr,char *resultstr)
@@ -504,11 +512,12 @@ double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk
             }
             return(metric);
         }
-        if ( (resultsobj= cJSON_Parse(resultstr)) == 0 || (vins= jobj(resultsobj,"vins")) != 0 || (rawtx= jstr(resultsobj,"rawtx")) != 0 )
+        if ( (resultsobj= cJSON_Parse(resultstr)) == 0 || (vins= jobj(resultsobj,"vins")) == 0 || (rawtx= jstr(resultsobj,"rawtx")) == 0 )
         {
             if ( resultsobj != 0 )
                 free_json(resultsobj);
-            return(1.); // error
+            printf("resultstr error.(%s)\n",resultstr);
+            return(-1.); // error
         }
         spendscriptstr = jstr(ptr->vals,"spendscript");
         changeaddr = jstr(ptr->vals,"changeaddr");
@@ -523,7 +532,7 @@ double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk
             if ( juint(txobj,"locktime") != locktime )
             {
                 printf("locktime mismatch %u != %u\n",juint(txobj,"locktime"),locktime);
-                return(2.); // error
+                return(-2.); // error
             }
             else if ( jobj(txobj,"error") == 0 && cJSON_GetArraySize(vins) == msgtx.tx_in )
             {
@@ -532,6 +541,7 @@ double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk
                 dependents->coinaddrs = (void *)&dependents->results[msgtx.tx_in];
                 dependents->numptrs = msgtx.tx_in;
                 ptr->dependents = dependents;
+                ptr->numchildren = dependents->numptrs;
                 for (i=0; i<msgtx.tx_in; i++)
                 {
                     vin = jitem(vins,i);
@@ -577,7 +587,7 @@ double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk
                                 if ( m == 1 && strcmp(jstri(addrs,0),changeaddr) == 0 )
                                 {
                                     dependents->change = msgtx.vouts[i].value;
-                                    printf("verify it is normal spend for %s\n",changeaddr);
+                                    printf("verify it is normal spend for %s %.8f\n",changeaddr,dstr(msgtx.vouts[i].value));
                                     continue;
                                 }
                             }
@@ -592,12 +602,12 @@ double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk
     if ( dependents->spentsatoshis != amount )
     {
         printf("spentsatoshis %.8f != expected %.8f, change %.8f\n",dstr(dependents->spentsatoshis),dstr(amount),dstr(dependents->change));
-        return(1000.); // error
+        return(-1000.); // error
     }
     if ( (dependents->outputsum= outputsum) <= 0 )
     {
         printf("illegal outputsum %.8f\n",dstr(outputsum));
-        return(1001.); // error
+        return(-1001.); // error
     }
     dependents->cost = cost;
     return(0.);

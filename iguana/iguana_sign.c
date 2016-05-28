@@ -341,7 +341,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
         array = cJSON_CreateArray();
         if ( rwflag == 0 )
             sigser = calloc(1,maxsize);
-        printf("json.%p array.%p sigser.%p\n",json,array,sigser);
+        //printf("json.%p array.%p sigser.%p\n",json,array,sigser);
     }
     //printf("version.%d\n",msg->version);
     if ( coin->chain->hastimestamp != 0 )
@@ -561,7 +561,7 @@ char *bitcoin_json2hex(struct supernet_info *myinfo,struct iguana_info *coin,bit
 cJSON *bitcoin_hex2json(struct iguana_info *coin,bits256 *txidp,struct iguana_msgtx *msgtx,char *txbytes,uint8_t *extraspace,int32_t extralen)
 {
     int32_t n,len; char vpnstr[64]; struct iguana_msgtx M; uint8_t *serialized; cJSON *txobj;
-    if ( coin == 0 )
+    if ( coin == 0 || txbytes == 0 )
         return(0);
     txobj = cJSON_CreateObject();
     if ( msgtx == 0 )
