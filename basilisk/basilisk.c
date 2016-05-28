@@ -313,6 +313,7 @@ struct basilisk_item *basilisk_issuecmd(struct basilisk_item *Lptr,basilisk_func
                 if ( (ptr->metricfunc= metricfunc) != 0 )
                     ptr->vals = jduplicate(vals);
                 strcpy(ptr->symbol,symbol);
+                ptr->basilisktag = basilisktag;
                 ptr->expiration = OS_milliseconds() + timeoutmillis;
                 return(ptr);
             }
@@ -395,6 +396,7 @@ INT_ARRAY_STRING(basilisk,rawtx,basilisktag,vals,activecoin)
             if ( (ptr->numrequired= juint(vals,"numrequired")) == 0 )
                 ptr->numrequired = 1;
             ptr->uniqueflag = 1;
+            ptr->metricdir = -1;
             return(basilisk_block(myinfo,coin,remoteaddr,&Lptr,ptr));
         } else return(clonestr("{\"error\":\"error issuing basilisk rawtx\"}"));
     } else return(retstr);
@@ -408,7 +410,7 @@ INT_AND_ARRAY(basilisk,result,basilisktag,vals)
         ptr = calloc(1,sizeof(*ptr));
         ptr->retstr = jprint(vals,0);
         ptr->basilisktag = basilisktag;
-        printf("Q results vals.(%s)\n",ptr->retstr);
+        printf("Q.%u results vals.(%s)\n",basilisktag,ptr->retstr);
         queue_enqueue("resultsQ",&myinfo->basilisks.resultsQ,&ptr->DL,0);
         return(clonestr("{\"result\":\"queued basilisk return\"}"));
     } else printf("null vals.(%s) or no hexmsg.%p\n",jprint(vals,0),vals);
