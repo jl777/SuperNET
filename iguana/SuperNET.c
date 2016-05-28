@@ -480,9 +480,9 @@ int32_t iguana_send_supernet(struct iguana_peer *addr,char *jsonstr,int32_t dela
         iguana_setkeys(myinfo,addr,&privkey,&pubkey,&destpub,&nextprivkey,&nextpubkey,&nextdestpub);
         if ( juint(json,"plaintext") == 0 && juint(json,"broadcast") == 0 && memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(pubkey)) == 0 )
         {
-            printf("reject broadcasting non-plaintext! (%s) (%d %d %d)\n",jsonstr,juint(json,"plaintext"),juint(json,"broadcast"),memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(pubkey))); //getchar();
-            free_json(json);
-            return(-1);
+            printf("warning broadcasting non-plaintext! (%s) (%d %d %d)\n",jsonstr,juint(json,"plaintext"),juint(json,"broadcast"),memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(pubkey))); //getchar();
+            //free_json(json);
+            //return(-1);
         }
         serialized = malloc(sizeof(struct iguana_msghdr) + IGUANA_MAXPACKETSIZE);
         checkc = SuperNET_checkc(nextprivkey,nextdestpub,&nextpubkey.txid,sizeof(nextpubkey.txid));

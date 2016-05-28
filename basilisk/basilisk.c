@@ -56,7 +56,7 @@ cJSON *basilisk_json(struct supernet_info *myinfo,cJSON *hexjson,uint32_t basili
     return(retjson);
 }
 
-char *basilisk_results(uint32_t basilisktag,cJSON *valsobj)
+/*char *basilisk_results(uint32_t basilisktag,cJSON *valsobj)
 {
     cJSON *resultobj = cJSON_CreateObject();
     jadd(resultobj,"vals",valsobj);
@@ -69,7 +69,7 @@ char *basilisk_results(uint32_t basilisktag,cJSON *valsobj)
     return(jprint(resultobj,1));
 }
 
-/*cJSON *basilisk_resultsjson(struct supernet_info *myinfo,char *symbol,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,char *retstr)
+cJSON *basilisk_resultsjson(struct supernet_info *myinfo,char *symbol,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,char *retstr)
 {
     cJSON *hexjson=0,*retjson=0;
     if ( retstr != 0 )
@@ -153,6 +153,7 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,char *me
     {
         if ( timeoutmillis > 0 )
         {
+            printf("unexpected blocking\n");
             expiration = OS_milliseconds() + ((timeoutmillis == 0) ? BASILISK_TIMEOUT : timeoutmillis);
             while ( OS_milliseconds() < expiration && ptr->finished == 0 && ptr->numresults < ptr->numrequired )
                 usleep(timeoutmillis/100 + 1);
@@ -226,7 +227,7 @@ int32_t basilisk_besti(struct basilisk_item *ptr)
 
 char *basilisk_block(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,struct basilisk_item *Lptr,struct basilisk_item *ptr)
 {
-    int32_t besti,i,j,numvalid; char *retstr = 0,*errstr; struct iguana_peer *addr;
+    int32_t besti,i,j,numvalid; char *retstr = 0,*errstr; struct iguana_peer *addr; cJSON *hexobj,*retjson,*valsobj;
     if ( ptr == Lptr )
     {
         if ( (retstr= Lptr->retstr) == 0 )
@@ -263,6 +264,19 @@ char *basilisk_block(struct supernet_info *myinfo,struct iguana_info *coin,char 
     }
     if ( retstr != 0 && remoteaddr != 0 && remoteaddr[0] != 0 && strcmp(remoteaddr,"127.0.0.1") != 0 )
     {
+        hexobj = cJSON_CreateObject();
+        jaddstr(hexobj,"agent","basilisk");
+        jaddstr(hexobj,"method","result");
+        if ( (valsobj= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( jobj(valsobj,"coin") == 0 )
+                jaddstr(valsobj,"coin",ptr->symbol);
+            jadd(hexobj,"vals",valsobj);
+        }
+        retjson = basilisk_json(myinfo,hexobj,ptr->basilisktag,0);
+        free_json(hexobj);
+        free(retstr);
+        retstr = jprint(retjson,1);
         for (j=0; j<IGUANA_MAXCOINS; j++)
         {
             if ( (coin= Coins[j]) == 0 )
