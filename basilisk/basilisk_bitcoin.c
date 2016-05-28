@@ -403,10 +403,9 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
     txid = jbits256(valsobj,"txid");
     vout = jint(valsobj,"vout");
     coinaddr = jstr(valsobj,"address");
-    printf("bitcoinvalue\n");
-    if ( coin != 0 && basilisk_bitcoinavail(coin) != 0 && coinaddr != 0 && coinaddr[0] != 0 )
+    if ( coin != 0 && basilisk_bitcoinavail(coin) != 0 )
     {
-        if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
+        if ( (coin->VALIDATENODE != 0 || coin->RELAYNODE != 0) && coinaddr != 0 && coinaddr[0] != 0 )
         {
             if ( iguana_unspentindfind(coin,coinaddr,0,0,&value,&height,txid,vout,coin->bundlescount) > 0 )
             {
@@ -415,7 +414,7 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
                 return(Lptr);
             }
         } //else return(bitcoin_value(coin,txid,vout,coinaddr));
-        Lptr->retstr = clonestr("{\"error\":\"couldnt create rawtx locally\"}");
+        Lptr->retstr = clonestr("{\"error\":\"basilisk value missing address\"}");
         return(Lptr);
     }
     printf("Scan basilisks values\n");
@@ -426,7 +425,7 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
             if ( v->vout == vout && bits256_cmp(txid,v->txid) == 0 && strcmp(v->coinaddr,coinaddr) == 0 )
             {
                 printf("bitcoinvalue local\n");
-                Lptr->retstr = basilisk_valuestr(coin,coinaddr,value,height,txid,vout);
+                Lptr->retstr = basilisk_valuestr(coin,coinaddr,v->value,v->height,txid,vout);
                 return(Lptr);
             }
         }
@@ -560,6 +559,7 @@ double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk
                         {
                             jaddbits256(argvals,"txid",jbits256(vin,"txid"));
                             jaddnum(argvals,"vout",jint(vin,"vout"));
+                            jaddstr(argvals,"address",coinaddr);
                             if ( (dependents->ptrs[i]= basilisk_bitcoinvalue(&Lsubptr,myinfo,coin,0,rand(),(ptr->expiration - OS_milliseconds()) * .777,argvals)) != 0 )
                             {
                                 if ( dependents->ptrs[i] == &Lsubptr )
