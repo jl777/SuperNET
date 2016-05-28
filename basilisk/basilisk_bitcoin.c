@@ -588,10 +588,14 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
             {
                 free_json(txobj);
                 resultobj = cJSON_CreateObject();
-                jaddstr(resultobj,"rawtx",rawtx), free(rawtx);
-                jadd(resultobj,"vins",vins);
-                retstr = jprint(basilisk_resultsjson(myinfo,coin->symbol,remoteaddr,basilisktag,timeoutmillis,jprint(resultobj,1)),1);
-                return(retstr);
+                valsobj = cJSON_CreateObject();
+                jaddstr(valsobj,"rawtx",rawtx), free(rawtx);
+                jadd(valsobj,"vins",vins);
+                jadd(resultobj,"vals",valsobj);
+                jaddstr(resultobj,"agent","basilisk");
+                jaddstr(resultobj,"method","result");
+                //retstr = jprint(basilisk_resultsjson(myinfo,coin->symbol,remoteaddr,basilisktag,timeoutmillis,jprint(resultobj,1)),1);
+                return(jprint(resultobj,1));
             } else free(rawtx);
         }
     }
