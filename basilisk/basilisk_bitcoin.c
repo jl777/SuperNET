@@ -310,9 +310,9 @@ int32_t basilisk_bitcoinavail(struct iguana_info *coin)
     else return(0);
 }
 
-int64_t basilisk_bitcoinbalances(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,cJSON **arrayp,int32_t lastheight,int32_t minconf,cJSON *addresses,int32_t timeoutmillis)
+char *basilisk_bitcoinbalances(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON **argsp,cJSON *vals)
 {
-    cJSON *array=0,*result,*item,*retjson,*hexjson; int32_t i,n,besti=-1; char *coinaddr,*balancestr=0,*retstr=0; int64_t total=0,amount,most=0; struct basilisk_item *ptr;
+   /* cJSON *array=0,*result,*item,*retjson,*hexjson; int32_t i,n,besti=-1; char *coinaddr,*balancestr=0,*retstr=0; int64_t total=0,amount,most=0; struct basilisk_item *ptr;
     array = cJSON_CreateArray();
     if ( coin != 0 && basilisk_bitcoinavail(coin) != 0 )
     {
@@ -375,65 +375,91 @@ int64_t basilisk_bitcoinbalances(struct supernet_info *myinfo,struct iguana_info
         free_json(hexjson);
     }
     *arrayp = array;
-    return(most);
+    return(most);*/
+    return(0);
 }
 
-int64_t basilisk_bitcoinvalue(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,bits256 txid,int32_t vout,char *coinaddr,int32_t timeoutmillis)
+char *basilisk_valuestr(struct iguana_info *coin,char *coinaddr,uint64_t value,int32_t height,bits256 txid,int16_t vout)
 {
-    int32_t i,height; struct basilisk_value *v; cJSON *hexjson; uint64_t value = 0; struct basilisk_item *ptr;
-    if ( coin != 0 && basilisk_bitcoinavail(coin) != 0 )
+    cJSON *retjson = cJSON_CreateObject();
+    jaddnum(retjson,"result",dstr(value));
+    jadd64bits(retjson,"value",value);
+    jaddnum(retjson,"height",height);
+    jaddbits256(retjson,"txid",txid);
+    jaddnum(retjson,"vout",vout);
+    return(jprint(retjson,1));
+}
+
+char *basilisk_bitcoinvalue(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON **argsp,cJSON *vals)
+{
+    int32_t i,height,vout; char *coinaddr,*retstr=0; struct basilisk_value *v; cJSON *hexjson; uint64_t value = 0; struct basilisk_item *ptr; bits256 txid;
+    *argsp = 0;
+    txid = jbits256(vals,"txid");
+    vout = jint(vals,"vout");
+    coinaddr = jstr(vals,"address");
+    if ( coin != 0 && basilisk_bitcoinavail(coin) != 0 && coinaddr != 0 && coinaddr[0] != 0 )
     {
         if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
         {
+            printf("local check\n");
             if ( iguana_unspentindfind(coin,coinaddr,0,0,&value,&height,txid,vout,coin->bundlescount) > 0 )
-                return(value);
+                return(basilisk_valuestr(coin,coinaddr,value,height,txid,vout));
         } //else return(bitcoin_value(coin,txid,vout,coinaddr));
+        printf("have local, but lite node\n");
     }
     else
     {
+        printf("Scan basilisks values\n");
         if ( (v= myinfo->basilisks.values) != 0 )
         {
             for (i=0; i<myinfo->basilisks.numvalues; i++,v++)
             {
                 if ( v->vout == vout && bits256_cmp(txid,v->txid) == 0 && strcmp(v->coinaddr,coinaddr) == 0 )
-                    return(v->value);
+                    return(basilisk_valuestr(coin,v->coinaddr,v->value,v->height,txid,vout));
             }
         }
         hexjson = cJSON_CreateObject();
         jaddnum(hexjson,"basilisktag",basilisktag);
-        jaddstr(hexjson,"address",coinaddr);
-        jaddbits256(hexjson,"txid",txid);
-        jaddnum(hexjson,"vout",vout);
         jaddstr(hexjson,"agent","basilisk");
         jaddstr(hexjson,"method","value");
+        if ( vals != 0 )
+            jadd(hexjson,"vals",vals);
+        printf("issue.(%s)\n",jprint(hexjson,0));
         if ( (ptr= basilisk_issue(myinfo,hexjson,timeoutmillis,0,1,basilisktag)) != 0 )
         {
             v = &myinfo->basilisks.values[myinfo->basilisks.numvalues++];
-            strcpy(v->coinaddr,coinaddr);
-            v->value = value;
-            v->txid = txid;
+            if ( ptr->resultargs[0] != 0 )
+            {
+                safecopy(v->coinaddr,jstr(ptr->resultargs[0],"address"),sizeof(v->coinaddr));
+                v->value = j64bits(ptr->resultargs[0],"value");
+                v->txid = jbits256(ptr->resultargs[0],"txid");
+                v->vout = jint(ptr->resultargs[0],"vout");
+                v->height = jint(ptr->resultargs[0],"height");
+            }
+            basilisk_finish(ptr,argsp,-1);
+            retstr = basilisk_valuestr(coin,v->coinaddr,v->value,v->height,txid,vout);
         }
         free_json(hexjson);
     }
-    return(value);
+    return(retstr);
 }
 
 int64_t basilisk_bitcointxcost(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t locktime,int64_t satoshis,int64_t txfee,cJSON *addresses,char *spendscriptstr,char *changeaddr,char *rawtx,cJSON *vins)
 {
-    cJSON *txobj,*vouts,*vin,*sobj,*addrs; int64_t change=0,outputsum=0,inputsum=0,spentsatoshis=0,cost = -1; int32_t i,j,m,numaddrs,spendlen,n; struct iguana_msgtx msgtx; uint8_t extraspace[8192],script[IGUANA_MAXSCRIPTSIZE],asmtype; struct vin_info V; char *scriptstr,str[65]; bits256 txid;
+    cJSON *txobj,*vouts,*vin,*sobj,*addrs,*vretjson,*argvals,*args; int64_t value,change=0,outputsum=0,inputsum=0,spentsatoshis=0,cost = -1; int32_t i,j,m,numaddrs,vout,spendlen,n; struct iguana_msgtx msgtx; uint8_t extraspace[8192],script[IGUANA_MAXSCRIPTSIZE],asmtype; struct vin_info V; char *scriptstr,str[65],*vret; bits256 txid;
     if ( coin != 0 )
     {
         spendlen = (int32_t)strlen(spendscriptstr) >> 1;
         decode_hex(script,spendlen,spendscriptstr);
         if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,rawtx,extraspace,sizeof(extraspace))) != 0 )
         {
-            //printf("GOTTX.(%s)\n",jprint(txobj,0));
+            printf("GOT VINS.(%s)\n",jprint(vins,0));
             if ( juint(txobj,"locktime") != locktime )
             {
                 printf("locktime mismatch %u != %u\n",juint(txobj,"locktime"),locktime);
                 return(-1);
             }
-            else if ( jobj(txobj,"error") == 0 && (vins= jarray(&n,txobj,"vin")) != 0 && cJSON_GetArraySize(vins) == msgtx.tx_in )
+            else if ( jobj(txobj,"error") == 0 && vins != 0 && cJSON_GetArraySize(vins) == msgtx.tx_in )
             {
                 numaddrs = cJSON_GetArraySize(addresses);
                 for (i=0; i<msgtx.tx_in; i++)
@@ -445,19 +471,33 @@ int64_t basilisk_bitcointxcost(struct supernet_info *myinfo,struct iguana_info *
                         V.spendlen = (int32_t)strlen(scriptstr) >> 1;
                         decode_hex(V.spendscript,V.spendlen,scriptstr);
                         asmtype = _iguana_calcrmd160(coin,&V);
-                        if ( basilisk_bitcoinvalue(myinfo,coin,remoteaddr,0,msgtx.vins[i].prev_hash,msgtx.vins[i].prev_vout,V.coinaddr,10000) == V.amount )
+                        //if ( asmtype == IGUANA_SCRIPT_76A988AC || asmtype == IGUANA_SCRIPT_AC || asmtype == IGUANA_SCRIPT_76AC || asmtype == IGUANA_SCRIPT_P2SH )
+                             bitcoin_address(V.coinaddr,coin->chain->pubtype,V.rmd160,20);
+                        argvals = cJSON_CreateObject();
+                        txid = jbits256(argvals,"txid");
+                        vout = jint(argvals,"vout");
+                        args = 0;
+                        if ( (vret= basilisk_bitcoinvalue(myinfo,coin,remoteaddr,0,10000,&args,argvals)) != 0 )
                         {
-                            inputsum += V.amount;
-                            for (j=0; j<numaddrs; j++)
-                                if ( strcmp(jstri(addresses,j),V.coinaddr) == 0 )
-                                    break;
-                            if ( j == numaddrs )
+                            if ( (vretjson= cJSON_Parse(vret)) != 0 )
                             {
-                                printf("spend of invalid input address.(%s)\n",V.coinaddr);
-                                free_json(txobj);
-                                return(-1);
+                                if ( (value= j64bits(vretjson,"value")) != 0 )
+                                {
+                                    inputsum += value;
+                                    for (j=0; j<numaddrs; j++)
+                                        if ( strcmp(jstri(addresses,j),V.coinaddr) == 0 )
+                                            break;
+                                    if ( j == numaddrs )
+                                    {
+                                        printf("spend of invalid input address.(%s) (%s).%d\n",V.coinaddr,scriptstr,asmtype);
+                                        free_json(txobj);
+                                        return(-1);
+                                    }
+                                    printf("Valid spend %.8f to %s\n",dstr(value),V.coinaddr);
+                                }
+                                free_json(vretjson);
                             }
-                            printf("Valid spend %.8f to %s\n",dstr(V.amount),V.coinaddr);
+                            free(vret);
                         }
                         else
                         {
@@ -465,6 +505,9 @@ int64_t basilisk_bitcointxcost(struct supernet_info *myinfo,struct iguana_info *
                             free_json(txobj);
                             return(-1);
                         }
+                        free_json(argvals);
+                        if ( args != 0 )
+                            free_json(args);
                     } else printf("cant find spend info.(%s)\n",jprint(vin,0));
                 }
                 if ( (vouts= jarray(&n,txobj,"vout")) != 0 && n == msgtx.tx_out )
@@ -509,12 +552,20 @@ int64_t basilisk_bitcointxcost(struct supernet_info *myinfo,struct iguana_info *
     return(cost);
 }
 
-char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,cJSON **vinsp,uint32_t locktime,uint64_t satoshis,char *changeaddr,uint64_t txfee,cJSON *addresses,int32_t minconf,char *spendscriptstr,int32_t timeoutmillis)
+char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON **vinsp,cJSON *valsobj)
 {
-    uint8_t buf[IGUANA_MAXSCRIPTSIZE]; int32_t i,spendlen,besti=-1; cJSON *hexjson,*retjson,*valsobj,*txobj = 0; char *retstr=0,*rawtx = 0; int64_t cost,bestcost=-1; struct basilisk_item *ptr;
-    *vinsp = 0;
-    if ( basilisktag == 0 )
-        basilisktag = rand();
+    uint8_t buf[IGUANA_MAXSCRIPTSIZE]; int32_t i,minconf,spendlen,besti=-1; cJSON *hexjson,*addresses,*txobj = 0; uint32_t locktime; char *spendscriptstr,*changeaddr,*retstr=0,*rawtx = 0; int64_t amount,txfee,cost,bestcost=-1; struct basilisk_item *ptr;
+    changeaddr = jstr(valsobj,"changeaddr");
+    spendscriptstr = jstr(valsobj,"spendscript");
+    amount = j64bits(valsobj,"amount");
+    txfee = j64bits(valsobj,"txfee");
+    minconf = juint(valsobj,"minconf");
+    locktime = juint(valsobj,"locktime");
+    addresses = jobj(valsobj,"addresses");
+    if ( (txfee= j64bits(valsobj,"txfee")) == 0 )
+        txfee = 10000;
+    if ( changeaddr == 0 || changeaddr[0] == 0 || spendscriptstr == 0 || spendscriptstr[0] == 0 || amount == 0 || addresses == 0 )
+        return(clonestr("{\"error\":\"invalid changeaddr or spendscript or addresses\"}"));
     if ( coin != 0 && basilisk_bitcoinavail(coin) != 0 )
     {
         if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
@@ -525,8 +576,8 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
             {
                 spendlen = (int32_t)strlen(spendscriptstr) >> 1;
                 decode_hex(buf,spendlen,spendscriptstr);
-                bitcoin_txoutput(coin,txobj,buf,spendlen,satoshis);
-                rawtx = iguana_calcrawtx(myinfo,coin,vinsp,txobj,satoshis,changeaddr,txfee,addresses,minconf);
+                bitcoin_txoutput(coin,txobj,buf,spendlen,amount);
+                rawtx = iguana_calcrawtx(myinfo,coin,vinsp,txobj,amount,changeaddr,txfee,addresses,minconf);
             } else printf("error creating txobj\n");
         } //else rawtx = bitcoin_calcrawtx(myinfo,coin,vinsp,satoshis,spendscriptstr,changeaddr,txfee,addresses,minconf,locktime);
         if ( rawtx != 0 )
@@ -534,18 +585,7 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
             if ( *vinsp != 0 )
             {
                 free_json(txobj);
-                hexjson = cJSON_CreateObject();
-                valsobj = cJSON_CreateObject();
-                jaddstr(hexjson,"agent","basilisk");
-                jaddstr(hexjson,"method","result");
-                jaddstr(valsobj,"hexmsg",rawtx);
-                jaddstr(valsobj,"coin",coin->symbol);
-                jadd(hexjson,"vals",valsobj);
-                jadd(hexjson,"args",*vinsp);
-                retjson = basilisk_json(myinfo,hexjson,basilisktag,timeoutmillis);
-                free(rawtx);
-                free_json(hexjson);
-                return(jprint(retjson,1));
+                return(jprint(basilisk_resultsjson(myinfo,coin->symbol,remoteaddr,basilisktag,timeoutmillis,rawtx,*vinsp),1));
             } else free(rawtx);
         }
     }
@@ -553,20 +593,12 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
         free_json(txobj);
     if ( addresses != 0 )
     {
-        valsobj = cJSON_CreateObject();
-        jaddnum(valsobj,"basilisktag",basilisktag);
-        jaddstr(valsobj,"coin",coin->symbol);
-        jadd64bits(valsobj,"amount",satoshis);
-        jadd64bits(valsobj,"txfee",txfee);
-        jaddnum(valsobj,"minconf",minconf);
-        jaddnum(valsobj,"locktime",locktime);
         hexjson = cJSON_CreateObject();
-        jaddstr(hexjson,"changeaddr",changeaddr);
-        jaddstr(hexjson,"spendscriptstr",spendscriptstr);
-        jadd(hexjson,"addresses",jduplicate(addresses));
-        jadd(hexjson,"vals",valsobj);
+        jaddnum(hexjson,"basilisktag",basilisktag);
         jaddstr(hexjson,"agent","basilisk");
         jaddstr(hexjson,"method","rawtx");
+        if ( valsobj != 0 )
+            jadd(hexjson,"vals",valsobj);
         if ( (ptr= basilisk_issue(myinfo,hexjson,timeoutmillis,0,1,basilisktag)) != 0 )
         {
             for (i=0; i<ptr->numresults; i++)
@@ -575,7 +607,7 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
                     continue;
                 if ( retstr != 0 && strcmp(ptr->results[i],retstr) == 0 )
                     ptr->numexact++;
-                if ( (cost= basilisk_bitcointxcost(myinfo,coin,remoteaddr,locktime,satoshis,txfee,addresses,spendscriptstr,changeaddr,ptr->results[i],ptr->resultargs[i])) >= 0 && (bestcost == 0 || cost < bestcost) )
+                if ( (cost= basilisk_bitcointxcost(myinfo,coin,remoteaddr,locktime,amount,txfee,addresses,spendscriptstr,changeaddr,ptr->results[i],ptr->resultargs[i])) >= 0 && (bestcost == 0 || cost < bestcost) )
                 {
                     if ( retstr != 0 )
                         ptr->numexact = 0;

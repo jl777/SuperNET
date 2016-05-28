@@ -14,9 +14,9 @@
  ******************************************************************************/
 
 
-INT_ARRAY_STRING(basilisk,balances,lastheight,addresses,activecoin);
-STRING_ARRAY_OBJ_STRING(basilisk,rawtx,changeaddr,addresses,vals,spendscriptstr);
-//INT_ARRAY_STRING(basilisk,result,basilisktag,args,hexmsg);
+INT_ARRAY_STRING(basilisk,balances,basilisktag,vals,activecoin);//lastheight,addresses,activecoin);
+INT_ARRAY_STRING(basilisk,rawtx,basilisktag,vals,activecoin);//changeaddr,addresses,vals,spendscriptstr);
+INT_ARRAY_STRING(basilisk,value,basilisktag,vals,activecoin);
 ARRAY_OBJ_INT(basilisk,result,args,vals,basilisktag);
 
 ZERO_ARGS(bitcoinrpc,getinfo);

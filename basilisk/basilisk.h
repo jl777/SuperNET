@@ -22,7 +22,7 @@
 #define BASILISK_MINFANOUT 8
 #define BASILISK_MAXFANOUT 64
 
-struct basilisk_value { bits256 txid; int64_t value; int16_t vout; char coinaddr[64]; };
+struct basilisk_value { bits256 txid; int64_t value; int32_t height; int16_t vout; char coinaddr[64]; };
 
 struct basilisk_item
 {

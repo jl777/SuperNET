@@ -17021,6 +17021,42 @@ len = 0;
              s = instantdex_statecreate(s,n,"ALICE_idle",BTC_checkdeckfunc,0,"BTC_cleanup",0,1);
              instantdex_addevent(s,*n,"BOB_idle","BTCoffer","poll","BTC_waitdeck"); // send deck + Chose
              instantdex_addevent(s,*n,"ALICE_idle","BTCoffer","poll","BTC_waitdeck");*/
+                
+                char *basilisk_issuebalances(struct supernet_info *myinfo,char *remoteaddr,int32_t basilisktag,char *symbol,int32_t lastheight,int32_t minconf,cJSON *addresses,int32_t timeoutmillis)
+            {
+                struct iguana_info *coin; char *retstr = 0; cJSON *retjson,*args = 0;
+                if ( (coin= iguana_coinfind(symbol)) != 0 )
+                {
+                    if ( coin->basilisk_balances != 0 )
+                    {
+                        if ( (retstr= (*coin->basilisk_balances)(myinfo,coin,remoteaddr,basilisktag,&args,lastheight,minconf,addresses,timeoutmillis)) != 0 )
+                        {
+                            retjson = basilisk_resultsjson(myinfo,symbol,remoteaddr,basilisktag,timeoutmillis,retstr,args);
+                            free(retstr);
+                            retstr = jprint(retjson,1);
+                        }
+                    }
+                }
+                return(retstr);
+            }
+                
+                char *basilisk_issuevalue(struct supernet_info *myinfo,char *remoteaddr,uint32_t basilisktag,char *symbol,bits256 txid,int16_t vout,char *coinaddr,int32_t timeoutmillis)
+            {
+                struct iguana_info *coin; char *retstr = 0; cJSON *retjson,*args = 0;
+                if ( (coin= iguana_coinfind(symbol)) != 0 )
+                {
+                    if ( coin->basilisk_value != 0 )
+                    {
+                        if ( (retstr= (*coin->basilisk_value)(myinfo,coin,remoteaddr,basilisktag,&args,txid,vout,coinaddr,timeoutmillis)) != 0 )
+                        {
+                            retjson = basilisk_resultsjson(myinfo,symbol,remoteaddr,basilisktag,timeoutmillis,retstr,args);
+                            free(retstr);
+                            retstr = jprint(retjson,1);
+                        }
+                    }
+                }
+                return(retstr);
+            }
 
 
 #endif

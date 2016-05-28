@@ -495,13 +495,13 @@ struct hhbits256 { UT_hash_handle hh; bits256 txid; int32_t height; uint16_t fir
 
 struct iguana_monitorinfo { bits256 txid; int32_t numreported; uint8_t peerbits[IGUANA_MAXPEERS >> 3]; };
 
+typedef char *(*basilisk_func)(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON **argsp,cJSON *vals);
+
 struct iguana_info
 {
     char name[64],symbol[8],protocol,statusstr[512],scriptsfname[2][512];
     struct iguana_peers peers; struct iguana_peer internaladdr;
-    char *(*basilisk_rawtx)(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,cJSON **vinsp,uint32_t locktime,uint64_t satoshis,char *changeaddr,uint64_t txfee,cJSON *addresses,int32_t minconf,char *spendscriptstr,int32_t timeoutmillis);
-    int64_t (*basilisk_balances)(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,cJSON **arrayp,int32_t lastheight,int32_t minconf,cJSON *addresses,int32_t timeoutmillis);
-    int64_t (*basilisk_value)(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,bits256 txid,int32_t vout,char *coinaddr,int32_t timeoutmillis);
+    basilisk_func basilisk_rawtx,basilisk_balances,basilisk_value;
 
     uint32_t fastfind; FILE *fastfps[0x100]; uint8_t *fast[0x100]; int32_t *fasttables[0x100]; long fastsizes[0x100];
     uint64_t instance_nonce,myservices,totalsize,totalrecv,totalpackets,sleeptime;

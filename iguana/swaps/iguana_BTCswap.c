@@ -170,7 +170,7 @@ void iguana_addinputs(struct iguana_info *coin,struct bitcoin_spend *spend,cJSON
 
 struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo,struct iguana_info *coin,uint32_t locktime,char *scriptstr,int64_t satoshis,int64_t txfee,int32_t minconf,int32_t myside)
 {
-    struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct bitcoin_statetx *tx=0; uint8_t pubkey33[33]; char coinaddr[64],wifstr[64]; char *rawtx,*signedtx,*retstr; bits256 signedtxid; uint32_t basilisktag; int32_t flag,completed; cJSON *valsobj,*vins,*retjson=0,*privkey,*argjson,*addresses;
+    struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct bitcoin_statetx *tx=0; uint8_t pubkey33[33]; char coinaddr[64],wifstr[64]; char *rawtx,*signedtx,*retstr; bits256 signedtxid; uint32_t basilisktag; int32_t flag,completed; cJSON *valsobj,*vins,*retjson=0,*privkey,*addresses;
     if ( (waddr= iguana_getaccountaddress(myinfo,coin,0,0,coin->changeaddr,"change")) == 0 )
     {
         printf("no change addr error\n");
@@ -188,18 +188,19 @@ struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo
         bitcoin_priv2wif(wifstr,waddr->privkey,coin->chain->wiftype);
         jaddistr(privkey,waddr->wifstr);
     }
+    basilisktag = (uint32_t)rand();
     jaddistr(addresses,coinaddr);
     valsobj = cJSON_CreateObject();
+    jadd(valsobj,"addresses",addresses);
     jaddstr(valsobj,"coin",coin->symbol);
+    jaddstr(valsobj,"changeaddr",coin->changeaddr);
     jadd64bits(valsobj,"amount",satoshis);
     jadd64bits(valsobj,"txfee",txfee);
     jaddnum(valsobj,"minconf",minconf);
-    basilisktag = (uint32_t)rand();
     jaddnum(valsobj,"basilisktag",basilisktag);
     jaddnum(valsobj,"locktime",locktime);
-    argjson = cJSON_CreateObject();
-    jaddnum(argjson,"timeout",30000);
-    if ( (retstr= basilisk_rawtx(myinfo,coin,argjson,0,coin->changeaddr,addresses,valsobj,scriptstr)) != 0 )
+    jaddnum(valsobj,"timeout",30000);
+    if ( (retstr= basilisk_rawtx(myinfo,coin,0,0,basilisktag,valsobj,coin->symbol)) != 0 )
     {
         printf("%s got.(%s)\n",str,retstr);
         flag = 0;
@@ -232,7 +233,6 @@ struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo
         free(retstr);
     } else printf("error creating %s feetx\n",myside != 0 ? "BOB" : "ALICE");
     free_json(addresses);
-    free_json(argjson);
     return(tx);
 }
 

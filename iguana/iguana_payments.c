@@ -382,7 +382,7 @@ void iguana_unspentslock(struct supernet_info *myinfo,struct iguana_info *coin,c
 
 char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,char *coinaddr,uint64_t satoshis,uint64_t txfee,char *comment,char *comment2,int32_t minconf,char *account)
 {
-    uint8_t addrtype,spendscript[1024],rmd160[20]; int32_t completed; char spendscriptstr[4096],*rawtx=0,*signedtx = 0; bits256 signedtxid,senttxid; cJSON *retjson,*vins,*addresses; uint32_t spendlen,locktime = 0; struct iguana_waddress *waddr;
+    uint8_t addrtype,spendscript[1024],rmd160[20]; int32_t completed; char *retstr,spendscriptstr[4096],*rawtx=0,*signedtx = 0; bits256 signedtxid,senttxid; cJSON *retjson,*vins,*addresses,*valsobj; uint32_t spendlen,locktime = 0; struct iguana_waddress *waddr; uint32_t basilisktag;
     //sendtoaddress	<bitcoinaddress> <amount> [comment] [comment-to]	<amount> is a real and is rounded to 8 decimal places. Returns the transaction ID <txid> if successful.	Y
     addresses = iguana_getaddressesbyaccount(myinfo,coin,account);
     if ( coin->changeaddr[0] == 0 )
@@ -398,33 +398,52 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
         bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
         spendlen = bitcoin_standardspend(spendscript,0,rmd160);
         init_hexbytes_noT(spendscriptstr,spendscript,spendlen);
-        if ( (rawtx= basilisk_issuerawtx(myinfo,remoteaddr,0,coin->symbol,&vins,locktime,satoshis,spendscriptstr,coin->changeaddr,txfee,minconf,addresses,0)) != 0 )
+        basilisktag = (uint32_t)rand();
+        valsobj = cJSON_CreateObject();
+        jadd(valsobj,"addresses",addresses);
+        jaddstr(valsobj,"coin",coin->symbol);
+        jaddstr(valsobj,"changeaddr",coin->changeaddr);
+        jadd64bits(valsobj,"amount",satoshis);
+        jadd64bits(valsobj,"txfee",txfee);
+        jaddnum(valsobj,"minconf",minconf);
+        jaddnum(valsobj,"basilisktag",basilisktag);
+        jaddnum(valsobj,"locktime",locktime);
+        jaddnum(valsobj,"timeout",30000);
+        if ( (retstr= basilisk_rawtx(myinfo,coin,0,0,basilisktag,valsobj,coin->symbol)) != 0 )
         {
-            if ( (signedtx= iguana_signrawtx(myinfo,coin,&signedtxid,&completed,vins,rawtx,0)) != 0 )
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
-                iguana_unspentslock(myinfo,coin,vins);
-                retjson = cJSON_CreateObject();
-                jaddbits256(retjson,"result",signedtxid);
-                jaddstr(retjson,"signedtx",signedtx);
-                jadd(retjson,"complete",completed != 0 ? jtrue() : jfalse());
-                if ( 1 )
+                if ( (rawtx= jstr(retjson,"result")) != 0 && (vins= jobj(retjson,"vins")) != 0 )
                 {
-                    senttxid = iguana_sendrawtransaction(myinfo,coin,signedtx);
-                    if ( bits256_cmp(senttxid,signedtxid) == 0 )
-                        jaddstr(retjson,"sendrawtransaction","success");
-                    else jaddbits256(retjson,"senderror",senttxid);
+                    if ( (signedtx= iguana_signrawtx(myinfo,coin,&signedtxid,&completed,vins,rawtx,0)) != 0 )
+                    {
+                        iguana_unspentslock(myinfo,coin,vins);
+                        retjson = cJSON_CreateObject();
+                        jaddbits256(retjson,"result",signedtxid);
+                        jaddstr(retjson,"signedtx",signedtx);
+                        jadd(retjson,"complete",completed != 0 ? jtrue() : jfalse());
+                        if ( 1 )
+                        {
+                            senttxid = iguana_sendrawtransaction(myinfo,coin,signedtx);
+                            if ( bits256_cmp(senttxid,signedtxid) == 0 )
+                                jaddstr(retjson,"sendrawtransaction","success");
+                            else jaddbits256(retjson,"senderror",senttxid);
+                        }
+                        free_json(vins);
+                        free(rawtx);
+                        free(signedtx);
+                        return(jprint(retjson,1));
+                    }
+                    else
+                    {
+                        free_json(vins);
+                        free(rawtx);
+                        return(clonestr("{\"error\":\"couldnt sign rawtx\"}"));
+                    }
                 }
-                free_json(vins);
-                free(rawtx);
-                free(signedtx);
-                return(jprint(retjson,1));
+                free_json(retjson);
             }
-            else
-            {
-                free_json(vins);
-                free(rawtx);
-                return(clonestr("{\"error\":\"couldnt sign rawtx\"}"));
-            }
+            free(retstr);
         } else return(clonestr("{\"error\":\"couldnt create rawtx\"}"));
     }
     return(clonestr("{\"error\":\"need address and amount\"}"));
