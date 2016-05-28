@@ -341,6 +341,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
         array = cJSON_CreateArray();
         if ( rwflag == 0 )
             sigser = calloc(1,maxsize);
+        printf("json.%p array.%p sigser.%p\n",json,array,sigser);
     }
     //printf("version.%d\n",msg->version);
     if ( coin->chain->hastimestamp != 0 )
@@ -469,7 +470,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
     return(len);
 }
 
-bits256 iguana_parsetxobj(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *txstartp,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,cJSON *txobj,struct vin_info *V) // json -> serialized + (msg,V)
+bits256 iguana_parsetxobj(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *txstartp,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,cJSON *txobj,struct vin_info *V)
 {
     int32_t i,numvins,numvouts,len = 0; cJSON *array=0; bits256 txid; char vpnstr[64];
     memset(&txid,0,sizeof(txid));

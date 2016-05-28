@@ -317,7 +317,7 @@ bits256 iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_inf
 
 char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t satoshis,char *changeaddr,int64_t txfee,cJSON *addresses,int32_t minconf)
 {
-    uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; int32_t max,num,spendlen; char *rawtx=0; bits256 txid; cJSON *vins=0; int64_t avail,total,change,*unspents = 0;
+    uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; int32_t max,num,spendlen; char *rawtx=0; bits256 txid; cJSON *vins=0; int64_t avail,total,change,*unspents = 0; struct vin_info *V=0;
     *vinsp = 0;
     max = 10000;
     unspents = calloc(max,sizeof(*unspents));
@@ -358,7 +358,11 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
                 spendlen = bitcoin_standardspend(spendscript,0,rmd160);
                 bitcoin_txoutput(coin,txobj,spendscript,spendlen,change);
             }
-            rawtx = bitcoin_json2hex(myinfo,coin,&txid,txobj,0);
+            if ( vins != 0 )
+                V = calloc(cJSON_GetArraySize(vins),sizeof(*V));
+            rawtx = bitcoin_json2hex(myinfo,coin,&txid,txobj,V);
+            if ( V != 0 )
+                free(V);
         }
     }
     free(unspents);
