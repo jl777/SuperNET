@@ -82,7 +82,7 @@ int32_t basilisk_submit(struct supernet_info *myinfo,cJSON *reqjson,int32_t time
     int32_t i,j,k,l,r2,r,n; struct iguana_peer *addr; struct iguana_info *coin; char *reqstr; cJSON *tmpjson;
     tmpjson = basilisk_json(myinfo,reqjson,ptr->basilisktag,timeout);
     reqstr = jprint(tmpjson,1);
-    //printf("basilisk_submit.(%s)\n",reqstr);
+    printf("basilisk_submit.(%s)\n",reqstr);
     if ( fanout <= 0 )
         fanout = BASILISK_MINFANOUT;
     else if ( fanout > BASILISK_MAXFANOUT )
@@ -100,6 +100,7 @@ int32_t basilisk_submit(struct supernet_info *myinfo,cJSON *reqjson,int32_t time
                 if ( (addr= &coin->peers.active[j]) != 0 && addr->supernet != 0 && addr->usock >= 0 )
                 {
                     ptr->submit = (uint32_t)time(NULL);
+                    printf("submit to (%s)\n",addr->ipaddr);
                     iguana_send_supernet(addr,reqstr,0);
                     if ( n++ > fanout )
                         break;
