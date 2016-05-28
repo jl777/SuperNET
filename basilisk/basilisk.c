@@ -178,9 +178,10 @@ char *basilisk_issuecmd(basilisk_func func,struct supernet_info *myinfo,char *re
         {
             if ( (retstr= (*func)(myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
             {
-                retjson = basilisk_resultsjson(myinfo,symbol,remoteaddr,basilisktag,timeoutmillis,retstr);
-                free(retstr);
-                retstr = jprint(retjson,1);
+                //retjson = basilisk_resultsjson(myinfo,symbol,remoteaddr,basilisktag,timeoutmillis,retstr);
+                //free(retstr);
+                //retstr = jprint(retjson,1);
+                printf("issue ret.(%s)\n",retstr);
             }
         }
     }
