@@ -60,6 +60,10 @@ static struct iguana_chain Chains[] =
         14631,14632,1,0x1e,
         { { 12000, (80 * SATOSHIDEN) }, }
     },
+    //curl --url "http://127.0.0.1:7778" --data "{\"RELAY\":1,\"VALIDATE\":1,\"prefetchlag\":-1,\"poll\":10,\"active\":1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":8,\"endpend\":8,\"services\":129,\"maxpeers\":256,\"newcoin\":\"VPN\",\"name\":\"VPNcoin\",\"hasheaders\":1,\"useaddmultisig\":0,\"txhastimestamp\":1,\"minoutput\":10000,\"minconfirms\":2,\"txfee_satoshis\":\"10000\",\"genesishash\":\"00000ac7d764e7119da60d3c832b1d4458da9bc9ef9d5dd0d91a15f690a46d99\",\"genesis\":{\"version\":1,\"timestamp\":1409839200,\"nBits\":\"1e0fffff\",\"nonce\":64881664,\"merkle_root\":\"698a93a1cacd495a7a4fb3864ad8d06ed4421dedbc57f9aaad733ea53b1b5828\"},\"protover\":70002,\"netmagic\":\"fbc0b6db\",\"p2p\":1920,\"rpc\":1921,\"pubval\":71,\"p2shval\":5,\"wifval\":199}"
+    
+    //iguana_chaingenesis("VPN",0,bits256_conv("00000ac7d764e7119da60d3c832b1d4458da9bc9ef9d5dd0d91a15f690a46d99"),genesisblock,"scrypt",1,1409839200,0x1e0fffff,64881664,bits256_conv("698a93a1cacd495a7a4fb3864ad8d06ed4421dedbc57f9aaad733ea53b1b5828")); // VPN
+
 	//[CHAIN_VPN] =
     {
         "VPNcoin", "VPN", "VPNcoin Signed Message:\n", // strMessageMagic

@@ -78,9 +78,14 @@ int32_t iguana_rwversion(int32_t rwflag,uint8_t *serialized,struct iguana_msgver
 
 // 06000000996da490f6151ad9d05d9defc99bda58441d2b833c0da69d11e764d7c70a00003378a650b506a66b41097a0b513f2fee899788711bc6643ff976ce6dbb0b620c5f800854ffff0f1e0004de0301010000005e800854010000000000000000000000000000000000000000000000000000000000000000ffffffff03510102ffffffff0100008a5d784563011976a9145166e6e52de58dfacb18670c0030aedcf295233988ac000000000000
 
+//000007000000940daac77c87ab323a76b7ebb1ba6b9044e3add7108f867be4782925768bffe9b7023b7343cb1b7c8523cbf446f31648616b8500040681140ada6bad40ad8f6ee5c10954ffff0f1e0000
+
 int32_t iguana_rwblock(char *symbol,int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serialized,int32_t len),int32_t rwflag,bits256 *hash2p,uint8_t *serialized,struct iguana_msgblock *msg)
 {
     int32_t len = 0; uint64_t x;
+    //int32_t i; for (i=0; i<80; i++)
+    //    printf("%02x",serialized[i]);
+    //printf(" block\n");
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->H.version),&msg->H.version);
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->H.prev_block),msg->H.prev_block.bytes);
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->H.merkle_root),msg->H.merkle_root.bytes);
@@ -88,7 +93,7 @@ int32_t iguana_rwblock(char *symbol,int32_t (*hashalgo)(uint8_t *blockhashp,uint
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->H.bits),&msg->H.bits);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->H.nonce),&msg->H.nonce);
     *hash2p = iguana_calcblockhash(symbol,hashalgo,serialized,len);
-    //char str[65]; printf("len.%d: block version.%d timestamp.%u bits.%x nonce.%u prev.(%s) %llx blockhash.(%s) %llx\n",len,msg->H.version,msg->H.timestamp,msg->H.bits,msg->H.nonce,bits256_str(str,msg->H.prev_block),(long long)msg->H.merkle_root.txid,blockhash,(long long)hash2p->txid);
+    //char str[65]; printf("len.%d: block version.%d timestamp.%u bits.%x nonce.%u prev.(%s) %llx  %llx\n",len,msg->H.version,msg->H.timestamp,msg->H.bits,msg->H.nonce,bits256_str(str,msg->H.prev_block),(long long)msg->H.merkle_root.txid,(long long)hash2p->txid);
     if ( rwflag != 0 )
         x = msg->txn_count;
     len += iguana_rwvarint(rwflag,&serialized[len],&x);
