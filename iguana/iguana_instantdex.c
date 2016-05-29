@@ -393,24 +393,6 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     //if ( strcmp(cmdstr,"poll") == 0 )
     //    return(clonestr("{\"result\":\"skip sending poll\"}"));
     //category_subscribe(myinfo,myinfo->instantdex_category,GENESIS_PUBKEY);
-    str = jprint(argjson,0);
-    buf = malloc(strlen(str)*2 + 1);
-    init_hexbytes_noT((char *)buf,(uint8_t *)str,(int32_t)strlen(str));
-    free(str);
-    sendjson = cJSON_CreateObject();
-    jaddstr(sendjson,"hexmsg",(char *)buf);
-    free(buf);
-    jaddstr(sendjson,"cmd",cmdstr);
-    jaddstr(sendjson,"agent","SuperNET");
-    jaddstr(sendjson,"method","DHT");
-    jaddstr(sendjson,"handle",myinfo->handle);
-    jaddnum(sendjson,"plaintext",1);
-    jaddbits256(sendjson,"categoryhash",myinfo->instantdex_category);
-    jaddbits256(sendjson,"traderpub",myinfo->myaddr.persistent);
-    str = jprint(sendjson,1);
-    basilisk_sendcmd(0,str);
-    free(str);
-    return(clonestr("{\"result\":\"success\"}"));
     
     orderhash = instantdex_rwoffer(1,&olen,serialized,offer);
     if ( 1 )
@@ -478,6 +460,24 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
         }
     }
     free(reqstr);
+    
+    buf = malloc(datalen*2 + 1);
+    init_hexbytes_noT((char *)buf,(uint8_t *)msg,datalen);
+    sendjson = cJSON_CreateObject();
+    jaddstr(sendjson,"hexmsg",(char *)buf);
+    free(buf);
+    jaddstr(sendjson,"cmd",cmdstr);
+    jaddstr(sendjson,"agent","SuperNET");
+    jaddstr(sendjson,"method","DHT");
+    jaddstr(sendjson,"handle",myinfo->handle);
+    jaddnum(sendjson,"plaintext",1);
+    jaddbits256(sendjson,"categoryhash",myinfo->instantdex_category);
+    jaddbits256(sendjson,"traderpub",myinfo->myaddr.persistent);
+    str = jprint(sendjson,1);
+    basilisk_sendcmd(0,str);
+    free(str);
+    return(clonestr("{\"result\":\"success\"}"));
+
     if ( instantdex_msgcreate(myinfo,msg,datalen) != 0 )
     {
         //printf(">>>>>>>>>>>> instantdex send.(%s) datalen.%d allocsize.%d crc.%x\n",cmdstr,datalen,msg->sig.allocsize,calc_crc32(0,(void *)((long)msg + 8),datalen-8));
@@ -1461,7 +1461,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,struct category_info *cat,v
         free_json(argjson);
         return(clonestr("{\"error\":\"string base packets deprecated\"}"));
     }
-    else if ( (signerbits= acct777_validate(&msg->sig,acct777_msgprivkey(serdata,datalen),msg->sig.pubkey)) != 0 || 1 )
+    else if ( (signerbits= acct777_validate(&msg->sig,acct777_msgprivkey(serdata,datalen),msg->sig.pubkey)) != 0 )
     {
         flag++;
         if ( signerbits == myinfo->myaddr.nxt64bits )

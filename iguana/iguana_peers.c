@@ -420,7 +420,7 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
     }
     else if ( addr->msgcounts.verack == 0 && (strcmp(cmdstr,"version") != 0 && strcmp(cmdstr,"ConnectTo") != 0 && strcmp(cmdstr,"verack") != 0) != 0 )
     {
-        printf("skip.(%s) since no verack yet\n",cmdstr);
+        //printf("skip.(%s) since no verack yet\n",cmdstr);
         return(-1);
     }
     if ( strcmp(cmdstr,"ping") == 0 )
