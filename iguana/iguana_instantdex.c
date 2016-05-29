@@ -389,16 +389,29 @@ bits256 instantdex_rwoffer(int32_t rwflag,int32_t *lenp,uint8_t *serialized,stru
 
 char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extraser,int32_t extralen,struct iguana_peer *addr,struct bitcoin_swapinfo *swap)
 {
-    char *reqstr,*hexstr,*retstr; struct instantdex_msghdr *msg; bits256 orderhash,tmphash; struct iguana_info *coin; int32_t i,j,len,serflag,olen,slen,datalen,max=-1; uint8_t serialized[sizeof(*offer) + sizeof(struct iguana_msghdr) + 4096 + INSTANTDEX_DECKSIZE*33]; uint64_t x,nxt64bits;
+    cJSON *sendjson; char *reqstr,*hexstr,*retstr,*str; struct instantdex_msghdr *msg; bits256 orderhash,tmphash; int32_t i,j,len,serflag,olen,slen,datalen; uint8_t *buf,serialized[sizeof(*offer) + sizeof(struct iguana_msghdr) + 4096 + INSTANTDEX_DECKSIZE*33]; uint64_t x,nxt64bits;
     //if ( strcmp(cmdstr,"poll") == 0 )
     //    return(clonestr("{\"result\":\"skip sending poll\"}"));
-    category_subscribe(myinfo,myinfo->instantdex_category,GENESIS_PUBKEY);
-    jaddstr(argjson,"cmd",cmdstr);
-    jaddstr(argjson,"agent","SuperNET");
-    jaddstr(argjson,"method","DHT");
-    jaddstr(argjson,"handle",myinfo->handle);
-    jaddbits256(argjson,"categoryhash",myinfo->instantdex_category);
-    jaddbits256(argjson,"traderpub",myinfo->myaddr.persistent);
+    //category_subscribe(myinfo,myinfo->instantdex_category,GENESIS_PUBKEY);
+    str = jprint(argjson,0);
+    buf = malloc(strlen(str)*2 + 1);
+    init_hexbytes_noT((char *)buf,(uint8_t *)str,(int32_t)strlen(str));
+    free(str);
+    sendjson = cJSON_CreateObject();
+    jaddstr(sendjson,"hexmsg",(char *)buf);
+    free(buf);
+    jaddstr(sendjson,"cmd",cmdstr);
+    jaddstr(sendjson,"agent","SuperNET");
+    jaddstr(sendjson,"method","DHT");
+    jaddstr(sendjson,"handle",myinfo->handle);
+    jaddnum(sendjson,"plaintext",1);
+    jaddbits256(sendjson,"categoryhash",myinfo->instantdex_category);
+    jaddbits256(sendjson,"traderpub",myinfo->myaddr.persistent);
+    str = jprint(sendjson,1);
+    basilisk_sendcmd(0,str);
+    free(str);
+    return(clonestr("{\"result\":\"success\"}"));
+    
     orderhash = instantdex_rwoffer(1,&olen,serialized,offer);
     if ( 1 )
     {
@@ -472,12 +485,11 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
         {
             memset(serialized,0,sizeof(struct iguana_msghdr));
             memcpy(&serialized[sizeof(struct iguana_msghdr)],(uint8_t *)msg,msg->sig.allocsize);
-            if ( (coin= iguana_coinfind("BTCD")) != 0 )//&& (max= coin->peers.numranked) > 0 )
-                iguana_queue_send(addr,0,serialized,"InstantDEX",msg->sig.allocsize,0,0);
-            else printf("cant find coin.%p or no ranked.%d\n",coin,max);
+            iguana_queue_send(addr,0,serialized,"InstantDEX",msg->sig.allocsize,0,0);
         }
         else
         {
+            printf("instantdex_sendcmd: deprecated path\n");
             if ( (hexstr= malloc(msg->sig.allocsize*2 + 1)) != 0 )
             {
                 init_hexbytes_noT(hexstr,(uint8_t *)msg,msg->sig.allocsize);

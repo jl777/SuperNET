@@ -276,9 +276,34 @@ char *basilisk_iscomplete(struct basilisk_item *ptr)
     return(retstr);
 }
 
+int32_t basilisk_sendcmd(char *ipaddr,char *msgstr)
+{
+    int32_t i,j,r,r2,k,l; struct iguana_info *coin; struct iguana_peer *addr;
+    r = rand(), r2 = rand();
+    for (k=0; k<IGUANA_MAXCOINS; k++)
+    {
+        j = (r2 + k) % IGUANA_MAXCOINS;
+        if ( (coin= Coins[j]) == 0 )
+            continue;
+        for (l=0; l<IGUANA_MAXPEERS; l++)
+        {
+            i = (l + r) % IGUANA_MAXPEERS;
+            if ( (addr= &coin->peers.active[i]) != 0 && addr->usock >= 0 )
+            {
+                if ( addr->supernet != 0 && (ipaddr == 0 || ipaddr[0] == 0 || strcmp(addr->ipaddr,ipaddr) == 0) )
+                {
+                    //printf("send back.%s basilisk_result addr->supernet.%u to (%s).%d\n",retstr,addr->supernet,addr->ipaddr,addr->A.port);
+                    return(iguana_send_supernet(addr,msgstr,0));
+                }
+            }
+        }
+    }
+    return(-1);
+}
+
 char *basilisk_block(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,struct basilisk_item *Lptr,struct basilisk_item *ptr)
 {
-    int32_t i,j; char *retstr = 0; struct iguana_peer *addr; cJSON *hexobj,*retjson,*valsobj;
+    char *retstr = 0; cJSON *hexobj,*retjson,*valsobj;
     if ( ptr == Lptr )
     {
         if ( (retstr= Lptr->retstr) == 0 )
@@ -314,25 +339,7 @@ char *basilisk_block(struct supernet_info *myinfo,struct iguana_info *coin,char 
         free_json(hexobj);
         free(retstr);
         retstr = jprint(retjson,1);
-        for (j=0; j<IGUANA_MAXCOINS; j++)
-        {
-            if ( (coin= Coins[j]) == 0 )
-                continue;
-            for (i=0; i<IGUANA_MAXPEERS; i++)
-            {
-                if ( (addr= &coin->peers.active[i]) != 0 && addr->usock >= 0 )
-                {
-                    if ( addr->supernet != 0 && strcmp(addr->ipaddr,remoteaddr) == 0 )
-                    {
-                        //printf("send back.%s basilisk_result addr->supernet.%u to (%s).%d\n",retstr,addr->supernet,addr->ipaddr,addr->A.port);
-                        iguana_send_supernet(addr,retstr,0);
-                        return(retstr);
-                    }
-                }
-                if ( 0 && addr->ipbits != 0 )
-                    printf("i.%d (%s) vs (%s) %s\n",i,addr->ipaddr,remoteaddr,coin->symbol);
-            }
-        }
+        basilisk_sendcmd(remoteaddr,retstr);
     }
     return(retstr);
 }

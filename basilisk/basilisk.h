@@ -41,5 +41,6 @@ struct basilisk_info
 
 struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,char *methodstr,char *symbol,cJSON *vals,int32_t timeoutmillis,int32_t fanout,int32_t minresults,uint32_t basilisktag,void *metricfunc,char *retstr);
 void basilisks_init(struct supernet_info *myinfo);
+int32_t basilisk_sendcmd(char *ipaddr,char *msgstr);
 
 #endif

@@ -885,6 +885,9 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( jobj(json,"VALIDATE") != 0 )
         coin->VALIDATENODE = juint(json,"VALIDATE");
     else coin->VALIDATENODE = 1;
+#ifdef __PNACL
+    coin->VALIDATENODE = coin->RELAYNODE = 0;
+#endif
     if ( jobj(json,"validatedir") != 0 )
         safecopy(coin->VALIDATEDIR,jstr(json,"validatedir"),sizeof(coin->VALIDATEDIR));
     else strcpy(coin->VALIDATEDIR,GLOBAL_VALIDATEDIR);
