@@ -39,7 +39,7 @@ int64_t bitcoin_value(struct iguana_info *coin,bits256 txid,int16_t vout,char *c
                     {
                         if ( strcmp(jstri(addrs,j),coinaddr) == 0 )
                         {
-                            value = SATOSHIDEN * jdouble(item,"amount");
+                            value = SATOSHIDEN * jdouble(item,"satoshis");
                             break;
                         }
                     }
@@ -74,7 +74,7 @@ char *bitcoin_balance(struct iguana_info *coin,char *coinaddr,int32_t lastheight
             if ( (n= cJSON_GetArraySize(array)) > 0 )
             {
                 for (i=0; i<n; i++)
-                    balance += SATOSHIDEN * jdouble(jitem(array,i),"amount");
+                    balance += SATOSHIDEN * jdouble(jitem(array,i),"satoshis");
             }
             free_json(array);
         }
@@ -373,7 +373,7 @@ char *basilisk_valuestr(struct iguana_info *coin,char *coinaddr,uint64_t value,i
     cJSON *retjson = cJSON_CreateObject();
     jaddnum(retjson,"result",dstr(value));
     jaddstr(retjson,"address",coinaddr);
-    jadd64bits(retjson,"value",value);
+    jadd64bits(retjson,"satoshis",value);
     jaddnum(retjson,"height",height);
     jaddbits256(retjson,"txid",txid);
     jaddnum(retjson,"vout",vout);
@@ -390,7 +390,7 @@ double basilisk_bitcoin_valuemetric(struct supernet_info *myinfo,struct basilisk
     if ( (resultarg= cJSON_Parse(resultstr)) != 0 )
     {
         safecopy(v->coinaddr,jstr(resultarg,"address"),sizeof(v->coinaddr));
-        v->value = j64bits(resultarg,"value");
+        v->value = j64bits(resultarg,"satoshis");
         v->txid = jbits256(resultarg,"txid");
         v->vout = jint(resultarg,"vout");
         v->height = jint(resultarg,"height");
@@ -432,7 +432,7 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
         }
     }
     //printf("bitcoinvalue issue remote\n");
-    return(basilisk_issueremote(myinfo,"value",coin->symbol,valsobj,timeoutmillis,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,coin->basilisk_valuemetric));
+    return(basilisk_issueremote(myinfo,"satoshis",coin->symbol,valsobj,timeoutmillis,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,coin->basilisk_valuemetric));
 }
 
 double basilisk_bitcoin_rawtxmetric_dependents(struct supernet_info *myinfo,struct iguana_info *coin,struct basilisk_item *ptr,struct bitcoin_rawtxdependents *dependents)
@@ -470,11 +470,13 @@ double basilisk_bitcoin_rawtxmetric_dependents(struct supernet_info *myinfo,stru
         addresses = jarray(&numaddrs,ptr->vals,"addresses");
         for (inputsum=i=0; i<dependents->numptrs; i++)
         {
-            if ( (child= dependents->ptrs[i]) != 0 && (childstr= child->retstr) != 0 && (coinaddr= &dependents->coinaddrs[64*i]) != 0 )
+            if ( (child= dependents->ptrs[i]) != 0 && (childstr= child->retstr) != 0 )
             {
+                printf("child.(%s)\n",childstr);
+                coinaddr = &dependents->coinaddrs[64*i];
                 if ( (childjson= cJSON_Parse(childstr)) != 0 )
                 {
-                    if ( (value= j64bits(childjson,"value")) != 0 )
+                    if ( (value= j64bits(childjson,"satoshis")) != 0 )
                     {
                         inputsum += value;
                         for (j=0; j<numaddrs; j++)
@@ -532,7 +534,7 @@ double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk
         }
         changeaddr = jstr(ptr->vals,"changeaddr");
         locktime = juint(ptr->vals,"locktime");
-        amount = j64bits(ptr->vals,"amount");
+        amount = j64bits(ptr->vals,"satoshis");
         addresses = jarray(&numaddrs,ptr->vals,"addresses");
         if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,rawtx,extraspace,sizeof(extraspace),serialized)) != 0 )
         {
@@ -637,7 +639,7 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
     vins = 0;
     changeaddr = jstr(valsobj,"changeaddr");
     spendscriptstr = jstr(valsobj,"spendscript");
-    amount = j64bits(valsobj,"amount");
+    amount = j64bits(valsobj,"satoshis");
     if ( (txfee= j64bits(valsobj,"txfee")) == 0 )
         txfee = coin->chain->txfee;
     if ( txfee == 0 )
