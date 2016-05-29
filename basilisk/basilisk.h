@@ -39,7 +39,7 @@ struct basilisk_info
     struct basilisk_value values[8192]; int32_t numvalues;
 };
 
-struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,char *methodstr,char *symbol,cJSON *vals,int32_t timeoutmillis,int32_t fanout,int32_t minresults,uint32_t basilisktag);
+struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,char *methodstr,char *symbol,cJSON *vals,int32_t timeoutmillis,int32_t fanout,int32_t minresults,uint32_t basilisktag,void *metricfunc);
 void basilisks_init(struct supernet_info *myinfo);
 
 #endif

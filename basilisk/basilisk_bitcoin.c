@@ -372,6 +372,7 @@ char *basilisk_valuestr(struct iguana_info *coin,char *coinaddr,uint64_t value,i
 {
     cJSON *retjson = cJSON_CreateObject();
     jaddnum(retjson,"result",dstr(value));
+    jaddstr(retjson,"address",coinaddr);
     jadd64bits(retjson,"value",value);
     jaddnum(retjson,"height",height);
     jaddbits256(retjson,"txid",txid);
@@ -417,7 +418,7 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
         Lptr->retstr = clonestr("{\"error\":\"basilisk value missing address\"}");
         return(Lptr);
     }
-    printf("Scan basilisks values\n");
+    //printf("Scan basilisks values\n");
     if ( (v= myinfo->basilisks.values) != 0 )
     {
         for (i=0; i<myinfo->basilisks.numvalues; i++,v++)
@@ -430,8 +431,8 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
             }
         }
     }
-    printf("bitcoinvalue issue remote\n");
-    return(basilisk_issueremote(myinfo,"value",coin->symbol,valsobj,0,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag));
+    //printf("bitcoinvalue issue remote\n");
+    return(basilisk_issueremote(myinfo,"value",coin->symbol,valsobj,timeoutmillis,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,coin->basilisk_valuemetric));
 }
 
 double basilisk_bitcoin_rawtxmetric_dependents(struct supernet_info *myinfo,struct iguana_info *coin,struct basilisk_item *ptr,struct bitcoin_rawtxdependents *dependents)
@@ -500,7 +501,7 @@ double basilisk_bitcoin_rawtxmetric_dependents(struct supernet_info *myinfo,stru
 
 double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk_item *ptr,char *resultstr)
 {
-    cJSON *txobj,*vouts,*vin,*sobj,*addrs,*vins,*argvals,*resultsobj,*addresses; int64_t outputsum=0,amount=0,cost = -1; int32_t i,m,numaddrs,spendlen,n; struct iguana_msgtx msgtx; uint8_t extraspace[8192],script[IGUANA_MAXSCRIPTSIZE],asmtype; struct vin_info V; char *scriptstr,*changeaddr,*coinaddr,*rawtx,*spendscriptstr; bits256 txid; struct iguana_info *coin; struct basilisk_item Lsubptr,*child; struct bitcoin_rawtxdependents *dependents=0; double metric; uint32_t locktime;
+    cJSON *txobj,*vouts,*vin,*sobj,*addrs,*vins,*argvals,*resultsobj,*addresses; int64_t outputsum=0,amount=0,cost = -1; int32_t i,m,numaddrs,spendlen,n; struct iguana_msgtx msgtx; uint8_t extraspace[8192],script[IGUANA_MAXSCRIPTSIZE],serialized[16384],asmtype; struct vin_info V; char *scriptstr,*changeaddr,*coinaddr,*rawtx,*spendscriptstr; bits256 txid; struct iguana_info *coin; struct basilisk_item Lsubptr,*child; struct bitcoin_rawtxdependents *dependents=0; double metric; uint32_t locktime;
     if ( (coin= iguana_coinfind(ptr->symbol)) != 0 )
     {
         if ( (dependents= ptr->dependents) != 0 )
@@ -520,16 +521,18 @@ double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk
             printf("resultstr error.(%s)\n",resultstr);
             return(-1.); // error
         }
-        spendscriptstr = jstr(ptr->vals,"spendscript");
+        if ( (spendscriptstr= jstr(ptr->vals,"spendscript")) != 0 )
+        {
+            spendlen = (int32_t)strlen(spendscriptstr) >> 1;
+            decode_hex(script,spendlen,spendscriptstr);
+        }
         changeaddr = jstr(ptr->vals,"changeaddr");
         locktime = juint(ptr->vals,"locktime");
         amount = j64bits(ptr->vals,"amount");
         addresses = jarray(&numaddrs,ptr->vals,"addresses");
-        spendlen = (int32_t)strlen(spendscriptstr) >> 1;
-        decode_hex(script,spendlen,spendscriptstr);
-        if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,rawtx,extraspace,sizeof(extraspace))) != 0 )
+        if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,rawtx,extraspace,sizeof(extraspace),serialized)) != 0 )
         {
-            printf("GOT VINS.(%s)\n",jprint(vins,0));
+            printf("GOT VINS.(%s) rawtx.(%s) out0 %.8f\n",jprint(vins,0),rawtx,dstr(msgtx.vouts[0].value));
             if ( juint(txobj,"locktime") != locktime )
             {
                 printf("locktime mismatch %u != %u\n",juint(txobj,"locktime"),locktime);
@@ -558,6 +561,7 @@ double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk
                         if ( (argvals= cJSON_CreateObject()) != 0 )
                         {
                             jaddbits256(argvals,"txid",jbits256(vin,"txid"));
+                            jaddnum(argvals,"timeout",ptr->expiration - OS_milliseconds());
                             jaddnum(argvals,"vout",jint(vin,"vout"));
                             jaddstr(argvals,"address",coinaddr);
                             if ( (dependents->ptrs[i]= basilisk_bitcoinvalue(&Lsubptr,myinfo,coin,0,rand(),(ptr->expiration - OS_milliseconds()) * .777,argvals)) != 0 )
@@ -566,7 +570,11 @@ double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk
                                 {
                                     dependents->results[i] = Lsubptr.retstr;
                                     dependents->ptrs[i] = 0;
-                                } else dependents->ptrs[i]->parent = ptr;
+                                }
+                                else
+                                {
+                                    dependents->ptrs[i]->parent = ptr;
+                                }
                             }
                             free_json(argvals);
                         }
@@ -577,8 +585,12 @@ double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk
                     for (i=0; i<msgtx.tx_out; i++)
                     {
                         outputsum += msgtx.vouts[i].value;
+                        //for (j=0; j<25; j++)
+                        //    printf("%02x",msgtx.vouts[i].pk_script[j]);
+                        //printf(" <- pk_script i.%d of %d: scriptlen.%d %s\n",i,msgtx.tx_out,spendlen,spendscriptstr);
                         if ( spendlen == msgtx.vouts[i].pk_scriptlen && memcmp(script,msgtx.vouts[i].pk_script,spendlen) == 0 )
                         {
+                            printf("set dependents\n");
                             dependents->spentsatoshis = msgtx.vouts[i].value;
                             continue;
                         }
@@ -611,6 +623,8 @@ double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk
         printf("illegal outputsum %.8f\n",dstr(outputsum));
         return(-1001.); // error
     }
+    if ( cost == 0 )
+        cost = 1;
     dependents->cost = cost;
     return(0.);
 }
@@ -672,6 +686,6 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
         Lptr->retstr = clonestr("{\"error\":\"couldnt create rawtx\"}");
         return(Lptr);
     }
-    return(basilisk_issueremote(myinfo,"rawtx",coin->symbol,valsobj,0,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag));
+    return(basilisk_issueremote(myinfo,"rawtx",coin->symbol,valsobj,timeoutmillis,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,coin->basilisk_rawtxmetric));
 }
 
