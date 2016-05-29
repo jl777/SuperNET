@@ -480,12 +480,12 @@ char *iguana_txscan(struct iguana_info *coin,cJSON *json,uint8_t *data,int32_t r
     iguana_blockconv(&block,&msg,hash2,-1);
     for (i=0; i<msg.txn_count; i++)
     {
-        if ( (n= iguana_rwmsgtx(coin,0,0,&data[len],recvlen - len,&tx,&tx.txid,vpnstr,extraspace,extralen)) < 0 )
+        if ( (n= iguana_rwmsgtx(coin,0,0,&data[len],recvlen - len,&tx,&tx.txid,vpnstr,extraspace,extralen,0)) < 0 )
             break;
         //char str[65]; printf("%d of %d: %s\n",i,msg.txn_count,bits256_str(str,tx.txid));
         if ( bits256_cmp(txid,tx.txid) == 0 )
         {
-            if ( (n= iguana_rwmsgtx(coin,0,json,&data[len],recvlen - len,&tx,&tx.txid,vpnstr,extraspace,extralen)) > 0 )
+            if ( (n= iguana_rwmsgtx(coin,0,json,&data[len],recvlen - len,&tx,&tx.txid,vpnstr,extraspace,extralen,0)) > 0 )
             {
                 txbytes = malloc(n*2+1);
                 init_hexbytes_noT(txbytes,&data[len],n);

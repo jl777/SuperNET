@@ -320,7 +320,7 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin,uint8_t *serialized,int32_t max
         dest.vins[i].p2shlen = 0;
         dest.vins[i].redeemscript = 0;
     }
-    len = iguana_rwmsgtx(coin,1,0,serialized,maxlen,&dest,&txid,vpnstr,0,0);
+    len = iguana_rwmsgtx(coin,1,0,serialized,maxlen,&dest,&txid,vpnstr,0,0,0);
     if ( len > 0 )
     {
         len += iguana_rwnum(1,&serialized[len],sizeof(hashtype),&hashtype);
@@ -331,7 +331,7 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin,uint8_t *serialized,int32_t max
     return(sigtxid);
 }
 
-int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,bits256 *txidp,char *vpnstr,uint8_t *extraspace,int32_t extralen)
+int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,bits256 *txidp,char *vpnstr,uint8_t *extraspace,int32_t extralen,cJSON *vins)
 {
     int32_t i,n,len = 0,extraused=0; uint8_t *txstart = serialized,*sigser=0; char txidstr[65]; cJSON *array=0; bits256 sigtxid;
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
@@ -382,10 +382,10 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
         }
         if ( array != 0 )
         {
-            if ( sigser != 0 )
+            if ( sigser != 0 && vins != 0 )
             {
                 //set spendscript here
-                printf("vini.%d spendscript.%p spendlen.%d\n",i,msg->vins[i].spendscript,msg->vins[i].spendlen);
+                printf("vini.%d spendscript.%p spendlen.%d (%s)\n",i,msg->vins[i].spendscript,msg->vins[i].spendlen,jprint(jitem(vins,i),0));
                 sigtxid = bitcoin_sigtxid(coin,sigser,maxsize*2,msg,i,msg->vins[i].spendscript,msg->vins[i].spendlen,SIGHASH_ALL,vpnstr);
             } else memset(sigtxid.bytes,0,sizeof(sigtxid));
             jaddi(array,iguana_vinjson(coin,&msg->vins[i],sigtxid));
@@ -515,7 +515,7 @@ bits256 iguana_parsetxobj(struct supernet_info *myinfo,struct iguana_info *coin,
     msg->lock_time = (int32_t)j64bits(txobj,"locktime");
     msg->txid = jbits256(txobj,"txid");
     *txstartp = len;
-    if ( (msg->allocsize= iguana_rwmsgtx(coin,1,0,&serialized[len],maxsize-len,msg,&txid,vpnstr,0,0)) < 0 )
+    if ( (msg->allocsize= iguana_rwmsgtx(coin,1,0,&serialized[len],maxsize-len,msg,&txid,vpnstr,0,0,0)) < 0 )
     {
         memset(txid.bytes,0,sizeof(txid));
         printf("error parsing txobj\n");
@@ -531,7 +531,7 @@ char *iguana_rawtxbytes(struct iguana_info *coin,cJSON *json,struct iguana_msgtx
     serialized = malloc(IGUANA_MAXPACKETSIZE);
     vpnstr[0] = 0;
     //char str[65]; printf("%d of %d: %s\n",i,msg.txn_count,bits256_str(str,tx.txid));
-    if ( (n= iguana_rwmsgtx(coin,1,json,serialized,IGUANA_MAXPACKETSIZE,msgtx,&msgtx->txid,vpnstr,0,0)) > 0 )
+    if ( (n= iguana_rwmsgtx(coin,1,json,serialized,IGUANA_MAXPACKETSIZE,msgtx,&msgtx->txid,vpnstr,0,0,0)) > 0 )
     {
         txbytes = malloc(n*2+1);
         init_hexbytes_noT(txbytes,serialized,n);
@@ -572,7 +572,7 @@ cJSON *bitcoin_hex2json(struct iguana_info *coin,bits256 *txidp,struct iguana_ms
     decode_hex(serialized,len,txbytes);
     vpnstr[0] = 0;
     memset(txidp,0,sizeof(*txidp));
-    if ( (n= iguana_rwmsgtx(coin,0,txobj,serialized,len,msgtx,txidp,vpnstr,extraspace,extralen)) <= 0 )
+    if ( (n= iguana_rwmsgtx(coin,0,txobj,serialized,len,msgtx,txidp,vpnstr,extraspace,extralen,0)) <= 0 )
     {
         free_json(txobj);
         txobj = cJSON_CreateObject();
@@ -1080,7 +1080,7 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
         if ( (numinputs= cJSON_GetArraySize(vins)) > 0 )
         {
             memset(msgtx,0,sizeof(*msgtx));
-            if ( iguana_rwmsgtx(coin,0,0,serialized,maxsize,msgtx,&txid,"",extraspace,65536) > 0 && numinputs == msgtx->tx_in )
+            if ( iguana_rwmsgtx(coin,0,0,serialized,maxsize,msgtx,&txid,"",extraspace,65536,vins) > 0 && numinputs == msgtx->tx_in )
             {
                 if ( (n= cJSON_GetArraySize(privkeys)) > 0 )
                 {

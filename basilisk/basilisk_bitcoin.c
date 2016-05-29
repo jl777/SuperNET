@@ -467,11 +467,12 @@ double basilisk_bitcoin_rawtxmetric_dependents(struct supernet_info *myinfo,stru
         if ( txfee == 0 )
             txfee = 10000;
         addresses = jarray(&numaddrs,ptr->vals,"addresses");
+        printf("got all inputs:\n");
         for (inputsum=i=0; i<dependents->numptrs; i++)
         {
             if ( (child= dependents->ptrs[i]) != 0 && (childstr= child->retstr) != 0 )
             {
-                //printf("child.(%s)\n",childstr);
+                printf("childi.%d (%s)\n",i,childstr);
                 coinaddr = &dependents->coinaddrs[64*i];
                 if ( (childjson= cJSON_Parse(childstr)) != 0 )
                 {
