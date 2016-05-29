@@ -290,7 +290,7 @@ void iguana_gotaddr(struct iguana_info *coin,struct iguana_peer *addr,struct igu
         printf("}, 14631},\n");
     }
     iguana_possible_peer(coin,ipport);
-    //printf("gotaddr.(%s:%d) from (%s)\n",ipaddr,port,addr->ipaddr);
+    printf("gotaddr.(%s:%d) from (%s)\n",ipaddr,port,addr->ipaddr);
 }
 
 void iguana_gotping(struct iguana_info *coin,struct iguana_peer *addr,uint64_t nonce,uint8_t *data)
@@ -781,10 +781,14 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
     else if ( (ishost= (strcmp(H->command,"getaddr") == 0)) || strcmp(H->command,"addr") == 0 )
     {
         struct iguana_msgaddress A;
+        printf("iguana_msgparser from (%s) parse.(%s) len.%d\n",addr->ipaddr,H->command,recvlen);
         if ( addr != 0 )
         {
             if ( ishost == 0 )
             {
+                for (i=0; i<recvlen; i++)
+                    printf("%02x",data[i]);
+                printf(" addr recvlen.%d\n",recvlen);
                 len = iguana_rwvarint(0,data,&x);
                 for (i=0; i<x; i++)
                 {
@@ -803,10 +807,11 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                 len = 0;
                 if ( (sendlen= iguana_peeraddrrequest(coin,addr,&addr->blockspace[sizeof(H)],IGUANA_MAXPACKETSIZE)) > 0 )
                 {
-                    if ( 0 )
+                    if ( 1 )
                     {
                         int32_t checklen; uint32_t checkbits; uint16_t checkport; char checkaddr[64];
                         checklen = iguana_rwvarint(0,&addr->blockspace[sizeof(H)],&x);
+                        printf("\nSENDING:\n");
                         for (i=0; i<sendlen; i++)
                             printf("%02x",addr->blockspace[sizeof(H)+i]);
                         printf(" %p addr sendlen.%d\n",&addr->blockspace[sizeof(H)],sendlen);

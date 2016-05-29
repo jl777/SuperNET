@@ -362,7 +362,7 @@ int32_t iguana_peeraddrrequest(struct iguana_info *coin,struct iguana_peer *addr
         {
             if ( (tmpaddr= coin->peers.ranked[i]) != 0 && ((iter == 0 && tmpaddr->supernet != 0) || (iter == 1 && tmpaddr->supernet == 0)) && tmpaddr->ipaddr[0] != 0 )
             {
-                //printf("(%s).%d ",tmpaddr->ipaddr,sendlen);
+                printf("(%s).%d ",tmpaddr->ipaddr,sendlen);
                 iguana_rwnum(1,&tmpaddr->A.ip[12],sizeof(uint32_t),&tmpaddr->ipbits);
                 sendlen += iguana_rwaddr(1,&space[sendlen],&tmpaddr->A,(int32_t)tmpaddr->protover);
                 x++;
@@ -372,9 +372,9 @@ int32_t iguana_peeraddrrequest(struct iguana_info *coin,struct iguana_peer *addr
         }
     }
     iguana_rwvarint(1,space,&x);
-    //for (i=0; i<sendlen; i++)
-    //    printf("%02x",space[i]);
-    //printf(" %p addrrequest: sendlen.%d x.%d\n",space,sendlen,(int32_t)x);
+    for (i=0; i<sendlen; i++)
+        printf("%02x",space[i]);
+    printf(" %p addrrequest: sendlen.%d x.%d\n",space,sendlen,(int32_t)x);
     if ( x == 0 )
         return(-1);
     return(sendlen);
