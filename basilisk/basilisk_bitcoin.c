@@ -463,7 +463,10 @@ double basilisk_bitcoin_rawtxmetric_dependents(struct supernet_info *myinfo,stru
     }
     else if ( ptr->vals != 0 )
     {
-        txfee = j64bits(ptr->vals,"txfee");
+        if ( (txfee= j64bits(ptr->vals,"txfee")) == 0 )
+            txfee = coin->chain->txfee;
+        if ( txfee == 0 )
+            txfee = 10000;
         addresses = jarray(&numaddrs,ptr->vals,"addresses");
         for (inputsum=i=0; i<dependents->numptrs; i++)
         {
@@ -638,11 +641,11 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
     amount = j64bits(valsobj,"amount");
     if ( (txfee= j64bits(valsobj,"txfee")) == 0 )
         txfee = coin->chain->txfee;
+    if ( txfee == 0 )
+        txfee = 10000;
     minconf = juint(valsobj,"minconf");
     locktime = juint(valsobj,"locktime");
     addresses = jobj(valsobj,"addresses");
-    if ( (txfee= j64bits(valsobj,"txfee")) == 0 )
-        txfee = 10000;
     if ( changeaddr == 0 || changeaddr[0] == 0 || spendscriptstr == 0 || spendscriptstr[0] == 0 || amount == 0 || addresses == 0 )
     {
         Lptr->retstr = clonestr("{\"error\":\"invalid changeaddr or spendscript or addresses\"}");
