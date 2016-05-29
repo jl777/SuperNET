@@ -203,11 +203,11 @@ struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo
     jaddnum(valsobj,"timeout",30000);
     if ( (retstr= basilisk_rawtx(myinfo,coin,0,0,basilisktag,valsobj,coin->symbol)) != 0 )
     {
-        printf("%s got.(%s)\n",str,retstr);
+        //printf("%s got.(%s)\n",str,retstr);
         flag = 0;
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
-            if ( (rawtx= jstr(retjson,"result")) != 0 && (vins= jobj(retjson,"vins")) != 0 )
+            if ( (rawtx= jstr(retjson,"rawtx")) != 0 && (vins= jobj(retjson,"vins")) != 0 )
                 flag = 1;
         }
         if ( flag != 0 && vins != 0 )

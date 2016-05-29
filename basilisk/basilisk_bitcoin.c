@@ -538,7 +538,7 @@ double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk
         addresses = jarray(&numaddrs,ptr->vals,"addresses");
         if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,rawtx,extraspace,sizeof(extraspace),serialized)) != 0 )
         {
-            printf("GOT VINS.(%s) rawtx.(%s) out0 %.8f\n",jprint(vins,0),rawtx,dstr(msgtx.vouts[0].value));
+            //printf("GOT VINS.(%s) rawtx.(%s) out0 %.8f\n",jprint(vins,0),rawtx,dstr(msgtx.vouts[0].value));
             if ( juint(txobj,"locktime") != locktime )
             {
                 printf("locktime mismatch %u != %u\n",juint(txobj,"locktime"),locktime);
