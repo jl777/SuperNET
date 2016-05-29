@@ -182,7 +182,7 @@ struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo
         bitcoin_address(coin->changeaddr,coin->chain->pubtype,waddr->rmd160,20);
     bitcoin_pubkey33(myinfo->ctx,pubkey33,myinfo->persistent_priv);
     bitcoin_address(coinaddr,coin->chain->pubtype,pubkey33,33);
-    printf("%s persistent.(%s) (%s) change.(%s) scriptstr.(%s)\n",coin->symbol,myinfo->myaddr.BTC,coinaddr,coin->changeaddr,scriptstr);
+    //printf("%s persistent.(%s) (%s) change.(%s) scriptstr.(%s)\n",coin->symbol,myinfo->myaddr.BTC,coinaddr,coin->changeaddr,scriptstr);
     if ( (waddr= iguana_waddresssearch(myinfo,coin,&wacct,coinaddr)) != 0 )
     {
         bitcoin_priv2wif(wifstr,waddr->privkey,coin->chain->wiftype);
@@ -667,7 +667,7 @@ void instantdex_newjson(struct supernet_info *myinfo,struct bitcoin_swapinfo *sw
     {
         jaddbits256(newjson,"feetxid",swap->myfee->txid);
         jaddstr(newjson,"feetx",swap->myfee->txbytes);
-        //printf("add feetx to newjson have.%x\n",swap->havestate);
+        printf("add feetx to newjson have.%x\n",swap->havestate);
     }
     if ( instantdex_isbob(swap) == 0 )
     {
@@ -810,7 +810,7 @@ cJSON *instantdex_parseargjson(struct supernet_info *myinfo,struct exchange_info
             swap->otherverifiedcut = 1;
         if ( juint(argjson,"have") != 0 )
             swap->otherhavestate |= juint(argjson,"have");
-        //printf("got other.%x myhave.%x choosei.(%d %d)\n",swap->otherhavestate,swap->havestate,swap->choosei,swap->otherchoosei);
+        printf("got other.%x myhave.%x choosei.(%d %d) otherfee.%p dep.%p pay.%p alt.%p\n",swap->otherhavestate,swap->havestate,swap->choosei,swap->otherchoosei,swap->otherfee,swap->deposit,swap->payment,swap->altpayment);
     }
     return(newjson);
 }

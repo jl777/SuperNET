@@ -444,7 +444,7 @@ double basilisk_bitcoin_rawtxmetric_dependents(struct supernet_info *myinfo,stru
         {
             if ( ptr->finished != 0 )
             {
-                printf("parent finished\n");
+                //printf("parent finished\n");
                 if ( child->finished == 0 )
                 {
                     ptr->childrendone++;

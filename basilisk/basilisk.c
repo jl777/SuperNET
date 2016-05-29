@@ -148,7 +148,7 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,char *me
     jaddnum(hexjson,"timeout",timeoutmillis);
     if ( vals != 0 )
         jadd(hexjson,"vals",jduplicate(vals));
-    printf("issue.(%s) timeout.%d\n",jprint(hexjson,0),timeoutmillis);
+    //printf("issue.(%s) timeout.%d\n",jprint(hexjson,0),timeoutmillis);
     ptr = calloc(1,sizeof(*ptr));
     ptr->basilisktag = basilisktag;
     ptr->numrequired = minresults;
@@ -262,7 +262,7 @@ char *basilisk_block(struct supernet_info *myinfo,struct iguana_info *coin,char 
     {
         if ( (retstr= Lptr->retstr) == 0 )
             retstr = clonestr("{\"result\":\"null return from local basilisk_issuecmd\"}");
-        printf("block got local.(%s)\n",retstr);
+        //printf("block got local.(%s)\n",retstr);
     }
     else
     {
@@ -303,7 +303,7 @@ char *basilisk_block(struct supernet_info *myinfo,struct iguana_info *coin,char 
                 {
                     if ( addr->supernet != 0 && strcmp(addr->ipaddr,remoteaddr) == 0 )
                     {
-                        printf("send back.%s basilisk_result addr->supernet.%u to (%s).%d\n",retstr,addr->supernet,addr->ipaddr,addr->A.port);
+                        //printf("send back.%s basilisk_result addr->supernet.%u to (%s).%d\n",retstr,addr->supernet,addr->ipaddr,addr->A.port);
                         iguana_send_supernet(addr,retstr,0);
                         return(retstr);
                     }
@@ -588,8 +588,8 @@ void basilisks_loop(void *arg)
             }
         }
         if ( flag == 0 )
-            sleep(1);
-        else sleep(3);
+            usleep(100000);
+        else usleep(25000);
     }
 }
 
