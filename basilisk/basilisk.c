@@ -539,16 +539,16 @@ void basilisks_loop(void *arg)
         HASH_ITER(hh,myinfo->basilisks.issued,pending,tmp)
         {
             printf("pending.%u numresults.%d m %f func.%p\n",pending->basilisktag,pending->numresults,pending->metrics[0],pending->metricfunc);
-            for (i=0; i<pending->numresults; i++)
-                if ( pending->metrics[i] == 0. )
-                {
-                    if ( (metricfunc= pending->metricfunc) != 0 && pending->metrics[i] == 0. )
+            if ( (metricfunc= pending->metricfunc) != 0 )
+            {
+                for (i=0; i<pending->numresults; i++)
+                    if ( pending->metrics[i] == 0. )
                     {
                         pending->metrics[i] = (*metricfunc)(myinfo,pending,pending->results[i]);
-                        //printf("iter.%d %p.[%d] poll metrics.%u metric %f\n",iter,pending,i,pending->basilisktag,pending->metrics[i]);
+                            printf("iter.%d %p.[%d] poll metrics.%u metric %f\n",iter,pending,i,pending->basilisktag,pending->metrics[i]);
+                        flag++;
                     }
-                    flag++;
-                }
+            }
             if ( (retstr= basilisk_iscomplete(pending)) != 0 )
                 printf("completed.(%s)\n",retstr);
             if ( OS_milliseconds() > pending->expiration )
