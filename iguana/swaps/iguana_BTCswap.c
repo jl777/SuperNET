@@ -193,6 +193,7 @@ struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo
     valsobj = cJSON_CreateObject();
     jadd(valsobj,"addresses",addresses);
     jaddstr(valsobj,"coin",coin->symbol);
+    jaddstr(valsobj,"spendscript",scriptstr);
     jaddstr(valsobj,"changeaddr",coin->changeaddr);
     jadd64bits(valsobj,"amount",satoshis);
     jadd64bits(valsobj,"txfee",txfee);

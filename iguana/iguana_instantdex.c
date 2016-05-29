@@ -1449,7 +1449,7 @@ char *InstantDEX_hexmsg(struct supernet_info *myinfo,struct category_info *cat,v
         free_json(argjson);
         return(clonestr("{\"error\":\"string base packets deprecated\"}"));
     }
-    else if ( (signerbits= acct777_validate(&msg->sig,acct777_msgprivkey(serdata,datalen),msg->sig.pubkey)) != 0 )//|| 1 )
+    else if ( (signerbits= acct777_validate(&msg->sig,acct777_msgprivkey(serdata,datalen),msg->sig.pubkey)) != 0 || 1 )
     {
         flag++;
         if ( signerbits == myinfo->myaddr.nxt64bits )

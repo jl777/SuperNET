@@ -425,7 +425,7 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
         {
             if ( v->vout == vout && bits256_cmp(txid,v->txid) == 0 && strcmp(v->coinaddr,coinaddr) == 0 )
             {
-                printf("bitcoinvalue local\n");
+                //printf("bitcoinvalue local\n");
                 Lptr->retstr = basilisk_valuestr(coin,coinaddr,v->value,v->height,txid,vout);
                 return(Lptr);
             }
@@ -498,13 +498,14 @@ double basilisk_bitcoin_rawtxmetric_dependents(struct supernet_info *myinfo,stru
             printf("inputsum %.8f - outputsum %.8f = %.8f != txfee %.8f\n",dstr(inputsum),dstr(dependents->outputsum),dstr(inputsum)-dstr(dependents->outputsum),dstr(txfee));
             return(-1001.); // error
         }
+        //printf("dependents cost %lld\n",(long long)dependents->cost);
         return(dstr(dependents->cost));
     } else return(-666.); // no vals??
 }
 
 double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk_item *ptr,char *resultstr)
 {
-    cJSON *txobj,*vouts,*vin,*sobj,*addrs,*vins,*argvals,*resultsobj,*addresses; int64_t outputsum=0,amount=0,cost = -1; int32_t i,m,numaddrs,spendlen,n; struct iguana_msgtx msgtx; uint8_t extraspace[8192],script[IGUANA_MAXSCRIPTSIZE],serialized[16384],asmtype; struct vin_info V; char *scriptstr,*changeaddr,*coinaddr,*rawtx,*spendscriptstr; bits256 txid; struct iguana_info *coin; struct basilisk_item Lsubptr,*child; struct bitcoin_rawtxdependents *dependents=0; double metric; uint32_t locktime;
+    cJSON *txobj,*vouts,*vin,*sobj,*addrs,*vins,*argvals,*resultsobj,*addresses; int64_t outputsum=0,amount=0,cost = 0; int32_t i,m,numaddrs,spendlen,n; struct iguana_msgtx msgtx; uint8_t extraspace[8192],script[IGUANA_MAXSCRIPTSIZE],serialized[16384],asmtype; struct vin_info V; char *scriptstr,*changeaddr,*coinaddr,*rawtx,*spendscriptstr; bits256 txid; struct iguana_info *coin; struct basilisk_item Lsubptr,*child; struct bitcoin_rawtxdependents *dependents=0; double metric; uint32_t locktime;
     if ( (coin= iguana_coinfind(ptr->symbol)) != 0 )
     {
         if ( (dependents= ptr->dependents) != 0 )
@@ -535,7 +536,7 @@ double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk
         addresses = jarray(&numaddrs,ptr->vals,"addresses");
         if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,rawtx,extraspace,sizeof(extraspace),serialized)) != 0 )
         {
-            printf("GOT VINS.(%s) rawtx.(%s) out0 %.8f\n",jprint(vins,0),rawtx,dstr(msgtx.vouts[0].value));
+            //printf("GOT VINS.(%s) rawtx.(%s) out0 %.8f\n",jprint(vins,0),rawtx,dstr(msgtx.vouts[0].value));
             if ( juint(txobj,"locktime") != locktime )
             {
                 printf("locktime mismatch %u != %u\n",juint(txobj,"locktime"),locktime);
@@ -574,10 +575,7 @@ double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk
                                     dependents->results[i] = Lsubptr.retstr;
                                     dependents->ptrs[i] = 0;
                                 }
-                                else
-                                {
-                                    dependents->ptrs[i]->parent = ptr;
-                                }
+                                else dependents->ptrs[i]->parent = ptr;
                             }
                             free_json(argvals);
                         }
@@ -593,7 +591,7 @@ double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk
                         //printf(" <- pk_script i.%d of %d: scriptlen.%d %s\n",i,msgtx.tx_out,spendlen,spendscriptstr);
                         if ( spendlen == msgtx.vouts[i].pk_scriptlen && memcmp(script,msgtx.vouts[i].pk_script,spendlen) == 0 )
                         {
-                            printf("set dependents\n");
+                            //printf("set spentsatosis %.8f\n",dstr(msgtx.vouts[i].value));
                             dependents->spentsatoshis = msgtx.vouts[i].value;
                             continue;
                         }
@@ -610,6 +608,7 @@ double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk
                             }
                         }
                         cost += msgtx.vouts[i].value;
+                        //printf("boost cost %.8f\n",dstr(msgtx.vouts[i].value));
                     }
                 }
             }

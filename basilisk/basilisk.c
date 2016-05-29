@@ -18,11 +18,13 @@
 char *basilisk_finish(struct basilisk_item *ptr,int32_t besti,char *errstr)
 {
     char *retstr = 0; struct basilisk_item *parent;
+    if ( ptr->retstr != 0 )
+        return(ptr->retstr);
     if ( besti >= 0 && besti < ptr->numresults )
     {
         retstr = ptr->results[besti];
         ptr->results[besti] = 0;
-    }
+    } else printf("besti.%d vs numresults.%d retstr.%p\n",besti,ptr->numresults,retstr);
     if ( retstr == 0 )
         retstr = clonestr(errstr);
     ptr->retstr = retstr;
@@ -205,17 +207,12 @@ void basilisk_functions(struct iguana_info *coin)
 
 int32_t basilisk_besti(struct basilisk_item *ptr)
 {
-    int32_t i,besti = -1; double metric,bestmetric;
-    if ( ptr->metricdir > 0 )
-        bestmetric = -1.;
-    else if ( ptr->metricdir < 0 )
-        bestmetric = 1.;
-    else bestmetric = 0.;
+    int32_t i,besti = -1; double metric,bestmetric=-1.;
     for (i=0; i<ptr->numresults; i++)
     {
         if ( (metric= ptr->metrics[i]) > 0. )
         {
-            if ( (ptr->metricdir < 0 && (bestmetric == 0. || metric < bestmetric)) || (ptr->metricdir > 0 && (bestmetric == 0. || metric > bestmetric)) || (ptr->metricdir == 0 && bestmetric == 0.) )
+            if ( (ptr->metricdir < 0 && (bestmetric < 0. || metric < bestmetric)) || (ptr->metricdir > 0 && (bestmetric < 0. || metric > bestmetric)) || (ptr->metricdir == 0 && bestmetric < 0.) )
             {
                 bestmetric = metric;
                 besti = i;
@@ -234,7 +231,7 @@ int32_t basilisk_besti(struct basilisk_item *ptr)
 char *basilisk_iscomplete(struct basilisk_item *ptr)
 {
     int32_t i,numvalid,besti=-1; char *errstr = 0,*retstr = 0;
-    if ( ptr->retstr != 0 )
+    if ( ptr->retstr != 0 || ptr->finished != 0 )
         return(ptr->retstr);
     if ( (numvalid= ptr->numresults) >= ptr->numrequired )
     {
@@ -246,15 +243,15 @@ char *basilisk_iscomplete(struct basilisk_item *ptr)
     }
     if ( numvalid < ptr->numrequired )
     {
-        printf("%u: numvalid.%d < required.%d m %f\n",ptr->basilisktag,numvalid,ptr->numrequired,ptr->metrics[0]);
+        //printf("%u: numvalid.%d < required.%d m %f\n",ptr->basilisktag,numvalid,ptr->numrequired,ptr->metrics[0]);
         return(0);
     }
     if ( ptr->uniqueflag == 0 && ptr->numexact != ptr->numresults && ptr->numexact < (ptr->numresults >> 1) )
         besti = -1, errstr = "{\"error\":\"basilisk non-consensus results\"}";
     else besti = basilisk_besti(ptr), errstr = "{\"error\":\"basilisk no valid results\"}";
-    printf("%u complete besti.%d\n",ptr->basilisktag,besti);
+    //printf("%u complete besti.%d\n",ptr->basilisktag,besti);
     retstr = basilisk_finish(ptr,besti,errstr);
-    printf("%u besti.%d numexact.%d numresults.%d -> (%s)\n",ptr->basilisktag,besti,ptr->numexact,ptr->numresults,retstr);
+    //printf("%u besti.%d numexact.%d numresults.%d -> (%s)\n",ptr->basilisktag,besti,ptr->numexact,ptr->numresults,retstr);
     return(retstr);
 }
 
@@ -402,7 +399,11 @@ char *basilisk_checkrawtx(int32_t *timeoutmillisp,uint32_t *basilisktagp,char *s
     }
     if ( spendscriptstr != 0 && spendscriptstr[0] != 0 )
         return(basilisk_check(timeoutmillisp,basilisktagp,symbol,vals));
-    else return(clonestr("{\"error\":\"missing spendscript\"}"));
+    else
+    {
+        printf("vals.(%s)\n",jprint(vals,0));
+        return(clonestr("{\"error\":\"missing spendscript\"}"));
+    }
 }
 
 INT_ARRAY_STRING(basilisk,rawtx,basilisktag,vals,activecoin)
@@ -501,7 +502,7 @@ char *basilisk_hexmsg(struct supernet_info *myinfo,struct category_info *cat,voi
 
 void basilisks_loop(void *arg)
 {
-    basilisk_metricfunc metricfunc; struct basilisk_item *ptr,*tmp,*pending,*parent; int32_t i,iter,flag,n; char *retstr; struct supernet_info *myinfo = arg;
+    basilisk_metricfunc metricfunc; struct basilisk_item *ptr,*tmp,*pending,*parent; int32_t i,iter,flag,n; struct supernet_info *myinfo = arg;
     //uint8_t *blockspace; struct OS_memspace RAWMEM;
     //memset(&RAWMEM,0,sizeof(RAWMEM));
     //blockspace = calloc(1,IGUANA_MAXPACKETSIZE);
@@ -538,19 +539,18 @@ void basilisks_loop(void *arg)
         flag = 0;
         HASH_ITER(hh,myinfo->basilisks.issued,pending,tmp)
         {
-            printf("pending.%u numresults.%d m %f func.%p\n",pending->basilisktag,pending->numresults,pending->metrics[0],pending->metricfunc);
+            //printf("pending.%u numresults.%d m %f func.%p\n",pending->basilisktag,pending->numresults,pending->metrics[0],pending->metricfunc);
             if ( (metricfunc= pending->metricfunc) != 0 )
             {
                 for (i=0; i<pending->numresults; i++)
                     if ( pending->metrics[i] == 0. )
                     {
                         pending->metrics[i] = (*metricfunc)(myinfo,pending,pending->results[i]);
-                            printf("iter.%d %p.[%d] poll metrics.%u metric %f\n",iter,pending,i,pending->basilisktag,pending->metrics[i]);
+                        // printf("iter.%d %p.[%d] poll metrics.%u metric %f\n",iter,pending,i,pending->basilisktag,pending->metrics[i]);
                         flag++;
                     }
             }
-            if ( (retstr= basilisk_iscomplete(pending)) != 0 )
-                printf("completed.(%s)\n",retstr);
+            basilisk_iscomplete(pending);
             if ( OS_milliseconds() > pending->expiration )
             {
                 if ( pending->finished == 0 )
@@ -561,13 +561,13 @@ void basilisks_loop(void *arg)
                         parent->childrendone++;
                     }
                     pending->finished = (uint32_t)time(NULL);
+                    if ( pending->retstr == 0 )
+                        pending->retstr = clonestr("{\"error\":\"basilisk timeout\"}");
+                    printf("timeout call metrics.%u lag %f - %f\n",pending->basilisktag,OS_milliseconds(),pending->expiration);
+                    for (i=0; i<pending->numresults; i++)
+                        if ( (metricfunc= pending->metricfunc) != 0 )
+                            pending->metrics[i] = (*metricfunc)(myinfo,pending,pending->results[i]);
                 }
-                if ( pending->retstr == 0 )
-                    pending->retstr = clonestr("{\"error\":\"basilisk timeout\"}");
-                printf("timeout call metrics.%u lag %f - %f\n",pending->basilisktag,OS_milliseconds(),pending->expiration);
-                for (i=0; i<pending->numresults; i++)
-                    if ( (metricfunc= pending->metricfunc) != 0 )
-                        pending->metrics[i] = (*metricfunc)(myinfo,pending,pending->results[i]);
             }
             if ( pending->finished != 0 && time(NULL) > pending->finished+60 )
             {
