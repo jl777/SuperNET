@@ -39,7 +39,7 @@ static struct iguana_chain Chains[] =
     //[CHAIN_BITCOIN] =
     {
 		//CHAIN_BITCOIN,
-        "bitcoin", "BTC", "Bitcoin Signed Message:\n", // strMessageMagic
+        "Bitcoin", "BTC", "Bitcoin Signed Message:\n", // strMessageMagic
 		0, 5, 0x80,
 		"\xf9\xbe\xb4\xd9",
         "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
@@ -51,7 +51,7 @@ static struct iguana_chain Chains[] =
 	//[CHAIN_BTCD] =
     {
 		//CHAIN_BTCD,
-        "btcd", "BTCD", "BitcoinDark Signed Message:\n", // strMessageMagic
+        "BitcoinDark", "BTCD", "BitcoinDark Signed Message:\n", // strMessageMagic
 		PUBKEY_ADDRESS_BTCD, SCRIPT_ADDRESS_BTCD, PRIVKEY_ADDRESS_BTCD,
 		"\xe4\xc2\xd8\xe6",
         "0000044966f40703b516c5af180582d53f783bfd319bb045e2dc3e05ea695d46",
@@ -60,9 +60,10 @@ static struct iguana_chain Chains[] =
         14631,14632,1,0x1e,
         { { 12000, (80 * SATOSHIDEN) }, }
     },
+    /*
 	//[CHAIN_VPN] =
     {
-        "vpncoin", "VPN", "VPNcoin Signed Message:\n", // strMessageMagic
+        "VPNcoin", "VPN", "VPNcoin Signed Message:\n", // strMessageMagic
 		71, 5, 199, // PUBKEY_ADDRESS + SCRIPT_ADDRESS addrman.h, use wif2priv API on any valid wif
 		"\xfb\xc0\xb6\xdb", // pchMessageStart main.cpp
         //"aaea16b9b820180153d9cd069dbfd54764f07cb49c71987163132a72d568cb14",
@@ -72,14 +73,14 @@ static struct iguana_chain Chains[] =
     },
 	//[CHAIN_LTC] =
     {
-        "litecoin", "LTC", "Litecoin Signed Message:\n",
+        "Litecoin", "LTC", "Litecoin Signed Message:\n",
 		0, 5, 176, // PUBKEY_ADDRESS + SCRIPT_ADDRESS addrman.h, use wif2priv API on any valid wif
 		"\xfb\xc0\xb6\xdb", // pchMessageStart main.cpp
         //"12a765e31ffd4059bada1e25190f6e98c99d9714d334efa41a195a7e7e04bfe2",
         "12a765e31ffd4059bada1e25190f6e98c99d9714d334efa41a195a7e7e04bfe2",
         "010000000000000000000000000000000000000000000000000000000000000000000000d9ced4ed1130f7b7faad9be25323ffafa33232a17c3edf6cfd97bee6bafbdd97b9aa8e4ef0ff0f1ecd513f7c0101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4804ffff001d0104404e592054696d65732030352f4f63742f32303131205374657665204a6f62732c204170706c65e280997320566973696f6e6172792c2044696573206174203536ffffffff0100f2052a010000004341040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9ac00000000",
         9333,9334,0,0x1e // port and rpcport litecoin.conf
-    },
+    },*/
 };
 
 /*
@@ -118,6 +119,7 @@ int32_t blockhash_scrypt(uint8_t *blockhashp,uint8_t *serialized,int32_t len)
 
 blockhashfunc iguana_hashalgo(char *hashalgostr)
 {
+    return(blockhash_sha256); // all coins seem to use this for the actual blockchain data
     if ( hashalgostr == 0 || hashalgostr[0] == 0 || strcmp(hashalgostr,"sha256") == 0 )
         return(blockhash_sha256);
     else if ( strcmp(hashalgostr,"scrypt") == 0 )
@@ -279,12 +281,11 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
     char *path,*conf,*hexstr,genesisblock[1024]; bits256 hash; uint16_t port; cJSON *rpair,*genesis,*rewards,*item; int32_t i,n,m; uint32_t nBits; uint8_t tmp[4];
     if ( strcmp(chain->symbol,"NXT") != 0 )
     {
-        if ( strcmp(chain->symbol,"BTC") != 0 )
-        {
-            if ( strcmp(chain->symbol,"LTC") == 0 )
+        if ( strcmp(chain->symbol,"BTCD") == 0 )
+            chain->pubtype = 60, chain->p2shtype = 85;
+/*            if ( strcmp(chain->symbol,"LTC") == 0 )
                 chain->pubtype = 48, chain->p2shtype = 5, chain->minconfirms = 1, chain->txfee = 100000;
             else if ( strcmp(chain->symbol,"BTCD") == 0 )
-                chain->pubtype = 60, chain->p2shtype = 85;
             else if ( strcmp(chain->symbol,"DOGE") == 0 )
                 chain->pubtype = 30, chain->p2shtype = 35, chain->txfee = SATOSHIDEN;
             else if ( strcmp(chain->symbol,"VRC") == 0 )
@@ -293,21 +294,29 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
                 chain->pubtype = 115, chain->p2shtype = 28;
             else if ( strcmp(chain->symbol,"BITS") == 0 )
                 chain->pubtype = 25, chain->p2shtype = 8;
-        }
-        chain->minoutput = j64bits(argjson,"minoutput");
+        }*/
+        if ( (chain->minoutput= j64bits(argjson,"minoutput")) == 0 )
+            chain->minoutput = 10000;
         chain->minconfirms = juint(argjson,"minconfirms");
         chain->estblocktime = juint(argjson,"estblocktime");
         path = jstr(argjson,"path");
         conf = jstr(argjson,"conf");
-        chain->dust = j64bits(argjson,"dust");
+        safecopy(chain->name,jstr(argjson,"name"),sizeof(chain->name));
+        //chain->dust = j64bits(argjson,"dust");
         if ( jobj(argjson,"txfee_satoshis") != 0 )
             chain->txfee = j64bits(argjson,"txfee_satoshis");
         if ( chain->txfee == 0 )
             chain->txfee = (uint64_t)(SATOSHIDEN * jdouble(argjson,"txfee"));
         chain->use_addmultisig = juint(argjson,"useaddmultisig");
         chain->do_opreturn = juint(argjson,"do_opreturn");
-        if ( jobj(argjson,"hastimestamp") != 0 )
-            chain->hastimestamp = juint(argjson,"hastimestamp");
+        if ( juint(argjson,"p2p") != 0 )
+            chain->portp2p = juint(argjson,"p2p");
+        if ( (chain->ramchainport= juint(argjson,"ramchain")) == 0 )
+            chain->ramchainport = chain->portp2p - 1;
+        if ( (chain->rpcport= juint(argjson,"rpc")) == 0 )
+            chain->rpcport = chain->portp2p + 1;
+        if ( jobj(argjson,"txhastimestamp") != 0 )
+            chain->hastimestamp = juint(argjson,"txhastimestamp");
         else if ( jobj(argjson,"oldtx_format") != 0 )
             chain->hastimestamp = !juint(argjson,"oldtx_format");
         if ( jstr(argjson,"userhome") != 0 )
@@ -322,12 +331,16 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
             decode_hex((uint8_t *)&chain->pubtype,1,hexstr);
         if ( (hexstr= jstr(argjson,"scriptval")) != 0 && strlen(hexstr) == 2 )
             decode_hex((uint8_t *)&chain->p2shtype,1,hexstr);
-        if ( (hexstr= jstr(argjson,"wiftype")) != 0 && strlen(hexstr) == 2 )
+        else if ( (hexstr= jstr(argjson,"p2shval")) != 0 && strlen(hexstr) == 2 )
+            decode_hex((uint8_t *)&chain->p2shtype,1,hexstr);
+        if ( (hexstr= jstr(argjson,"wifval")) != 0 && strlen(hexstr) == 2 )
             decode_hex((uint8_t *)&chain->wiftype,1,hexstr);
         if ( (hexstr= jstr(argjson,"netmagic")) != 0 && strlen(hexstr) == 8 )
             decode_hex((uint8_t *)chain->netmagic,1,hexstr);
         if ( (hexstr= jstr(argjson,"unitval")) != 0 && strlen(hexstr) == 2 )
             decode_hex((uint8_t *)&chain->unitval,1,hexstr);
+        if ( (hexstr= jstr(argjson,"alertpubkey")) != 0 && (strlen(hexstr)>>1) <= sizeof(chain->alertpubkey) )
+            decode_hex((uint8_t *)chain->alertpubkey,(int32_t)strlen(hexstr)>>1,hexstr);
         if ( (hexstr= jstr(argjson,"genesishash")) != 0 )
         {
             chain->genesis_hash = mycalloc('G',1,strlen(hexstr)+1);
@@ -358,12 +371,6 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
                 strcpy(chain->genesis_hex,hexstr);
             }
         }
-        if ( juint(argjson,"p2p") != 0 )
-            chain->portp2p = juint(argjson,"p2p");
-        if ( (chain->ramchainport= juint(argjson,"ramchain")) == 0 )
-            chain->ramchainport = chain->portp2p - 1;
-        if ( (chain->rpcport= juint(argjson,"rpc")) == 0 )
-            chain->rpcport = chain->portp2p + 1;
         if ( (rewards= jarray(&n,argjson,"rewards")) != 0 )
         {
             for (i=0; i<n; i++)
@@ -376,6 +383,7 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
                 }
             }
         }
+        sprintf(chain->messagemagic,"%s Signed Message:\n",chain->name);
     }
 }
 
@@ -392,12 +400,7 @@ void iguana_chaininit(struct iguana_chain *chain,int32_t hasheaders,cJSON *argjs
         chain->PoWtarget = bits256_from_compact(0x1e0fffff);
     }
     chain->hasheaders = hasheaders;
-    chain->minoutput = 10000;
-    if ( strcmp(chain->symbol,"LTC") == 0 )
-    {
-        char *pubkeystr = "040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9";
-        decode_hex(chain->alertpubkey,(int32_t)strlen(pubkeystr)>>1,pubkeystr);
-    }
+    //chain->minoutput = 10000;
     chain->hashalgo = blockhash_sha256; // most all coins seem to use this for blockchain
     if ( strcmp(chain->symbol,"BTC") == 0 )
     {
