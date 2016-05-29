@@ -186,7 +186,7 @@ int32_t iguana_rwvarint32(int32_t rwflag,uint8_t *serialized,uint32_t *int32p)
     return(len);
 }
 
-int32_t iguana_rwstr(int32_t rwflag,uint8_t *serialized,int32_t maxlen,char *endianedp)
+int32_t iguana_rwvarstr(int32_t rwflag,uint8_t *serialized,int32_t maxlen,char *endianedp)
 {
     int32_t vlen; uint64_t n;
     if ( rwflag == 0 )

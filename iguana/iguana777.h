@@ -227,6 +227,7 @@ struct iguana_chain
     char use_addmultisig,do_opreturn;
     int32_t estblocktime;
     bits256 PoWtarget,PoStargets[16]; int32_t numPoStargets,PoSheights[16];
+    uint8_t alertpubkey[65];
 };
 
 struct iguana_msgaddress {	uint32_t nTime; uint64_t nServices; uint8_t ip[16]; uint16_t port; } __attribute__((packed));
@@ -242,6 +243,20 @@ struct iguana_msgversion
 	uint32_t nStartingHeight;
     uint8_t relayflag;
 } __attribute__((packed));
+
+struct iguana_msgalert // warning, many varints/variable length fields, struct is 1:1
+{
+    int32_t version;
+    int64_t relayuntil,expiration;
+    int32_t ID,cancel;
+    uint32_t numcancellist;
+    int32_t minver,maxver;
+    uint32_t setsubvervar; char subver[1024];
+    int32_t priority;
+    char comment[1024],statusbar[1024],reserved[1024];
+    uint8_t siglen,sig[74];
+    uint32_t list[64];
+};
 
 struct iguana_VPNversion
 {
@@ -1019,6 +1034,7 @@ char *bitcoin_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJ
 char *bitcoin_blockhashstr(char *coinstr,char *serverport,char *userpass,int32_t height);
 bits256 basilisk_blockhash(struct iguana_info *coin,bits256 prevhash2);
 void calc_scrypthash(uint32_t *hash,void *data);
+int32_t iguana_rwvarstr(int32_t rwflag,uint8_t *serialized,int32_t maxlen,char *endianedp);
 
 extern int32_t HDRnet,netBLOCKS;
 

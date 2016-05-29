@@ -41,7 +41,7 @@ int32_t iguana_rwversion(int32_t rwflag,uint8_t *serialized,struct iguana_msgver
     len += iguana_rwaddr(rwflag,&serialized[len],&msg->addrTo,MIN_PROTO_VERSION);
     len += iguana_rwaddr(rwflag,&serialized[len],&msg->addrFrom,MIN_PROTO_VERSION);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->nonce),&msg->nonce);
-    len += iguana_rwstr(rwflag,&serialized[len],sizeof(msg->strSubVer),msg->strSubVer);
+    len += iguana_rwvarstr(rwflag,&serialized[len],sizeof(msg->strSubVer),msg->strSubVer);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->nStartingHeight),&msg->nStartingHeight);
     if ( readsize == 117 )
     {
@@ -133,6 +133,49 @@ int32_t iguana_rwblockhash(int32_t rwflag,uint8_t *serialized,uint32_t *nVersion
         //    printf("%02x ",serialized[i]);
         //printf("rwblockhash len.%d\n",len);
     } else printf("iguana_rwblockhash: illegal varint.%d\n",*varintp);
+    return(len);
+}
+
+int32_t iguana_rwmsgalert(struct iguana_info *coin,int32_t rwflag,uint8_t *serialized,struct iguana_msgalert *msg)
+{
+    bits256 alerthash2; int32_t i,plen,isvalid,len = 0;
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->relayuntil),&msg->relayuntil);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->expiration),&msg->expiration);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->ID),&msg->ID);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->cancel),&msg->cancel);
+    len += iguana_rwvarint32(rwflag,&serialized[len],&msg->numcancellist);
+    if ( msg->numcancellist != 0 )
+    {
+        for (i=0; i<msg->numcancellist; i++)
+            len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->list[i]);
+    }
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->minver),&msg->minver);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->maxver),&msg->maxver);
+    len += iguana_rwvarint32(rwflag,&serialized[len],&msg->setsubvervar);
+    len += iguana_rwvarstr(rwflag,&serialized[len],sizeof(msg->subver),msg->subver);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->priority),&msg->priority);
+    len += iguana_rwvarstr(rwflag,&serialized[len],sizeof(msg->comment),msg->comment);
+    len += iguana_rwvarstr(rwflag,&serialized[len],sizeof(msg->statusbar),msg->statusbar);
+    len += iguana_rwvarstr(rwflag,&serialized[len],sizeof(msg->reserved),msg->reserved);
+    alerthash2 = bits256_doublesha256(0,serialized,len);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->siglen),&msg->siglen);
+    if ( msg->siglen >= 70 && msg->siglen < 74 )
+    {
+        if ( rwflag == 0 )
+            memcpy(msg->sig,&serialized[len],msg->siglen);
+        else memcpy(&serialized[len],msg->sig,msg->siglen);
+        len += msg->siglen;
+        plen = bitcoin_pubkeylen(coin->chain->alertpubkey);
+        isvalid = (bitcoin_verify(coin->ctx,msg->sig,msg->siglen,alerthash2,coin->chain->alertpubkey,plen) == 0);
+        for (i=0; i<msg->siglen; i++)
+            printf("%02x",msg->sig[i]);
+        printf(" %s\n",isvalid != 0 ? "VALIDSIG" : "SIGERROR");
+        for (i=0; i<plen; i++)
+            printf("%02x",coin->chain->alertpubkey[i]);
+        char str[65]; printf(" alertpubkey.%d, alerthash2.%s\n",plen,bits256_str(str,alerthash2));
+    } else msg->siglen = 0;
+    printf("  ALERT v.%d relay.%llu expires.%llu ID.%d cancel.%d numlist.%d minver.%d maxver.%d subver.(%s) priority.%d comment.(%s) STATUS.(%s) reserved.(%s)\n",msg->version,msg->relayuntil,msg->expiration,msg->ID,msg->cancel,msg->numcancellist,msg->minver,msg->maxver,msg->subver,msg->priority,msg->comment,msg->statusbar,msg->reserved);
     return(len);
 }
 
@@ -838,10 +881,9 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
     }
     else if ( strcmp(H->command,"alert") == 0 )
     {
-        for (i=0; i<recvlen; i++)
-            printf("%02x ",data[i]);
-        printf("alert.(%s)\n",data+1);
-        len = recvlen;
+        struct iguana_msgalert alert;
+        memset(&alert,0,sizeof(alert));
+        len = iguana_rwmsgalert(coin,0,data,&alert);
         if ( len == recvlen && addr != 0 )
             addr->msgcounts.alert++;
     }

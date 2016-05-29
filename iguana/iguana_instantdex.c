@@ -356,8 +356,8 @@ bits256 instantdex_rwoffer(int32_t rwflag,int32_t *lenp,uint8_t *serialized,stru
     {
         memset(offer,0,sizeof(*offer));
     }
-    len += iguana_rwstr(rwflag,&serialized[len],sizeof(offer->base),offer->base);
-    len += iguana_rwstr(rwflag,&serialized[len],sizeof(offer->rel),offer->rel);
+    len += iguana_rwvarstr(rwflag,&serialized[len],sizeof(offer->base),offer->base);
+    len += iguana_rwvarstr(rwflag,&serialized[len],sizeof(offer->rel),offer->rel);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(offer->price64),&offer->price64);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(offer->basevolume64),&offer->basevolume64);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(offer->account),&offer->account);

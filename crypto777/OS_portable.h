@@ -356,7 +356,7 @@ uint8_t *iguana_varint32(int32_t rwflag,uint8_t *serialized,uint16_t *varint16p)
 uint8_t *iguana_varint64(int32_t rwflag,uint8_t *serialized,uint32_t *varint32p);
 int32_t iguana_rwvarint(int32_t rwflag,uint8_t *serialized,uint64_t *varint64p);
 int32_t iguana_rwvarint32(int32_t rwflag,uint8_t *serialized,uint32_t *int32p);
-int32_t iguana_rwstr(int32_t rwflag,uint8_t *serialized,int32_t maxlen,char *endianedp);
+int32_t iguana_rwvarstr(int32_t rwflag,uint8_t *serialized,int32_t maxlen,char *endianedp);
 int32_t iguana_rwmem(int32_t rwflag,uint8_t *serialized,int32_t len,void *endianedp);
 
 bits256 bits256_doublesha256(char *hashstr,uint8_t *data,int32_t datalen);

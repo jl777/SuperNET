@@ -393,9 +393,12 @@ void iguana_chaininit(struct iguana_chain *chain,int32_t hasheaders,cJSON *argjs
     }
     chain->hasheaders = hasheaders;
     chain->minoutput = 10000;
-    if ( strcmp(chain->symbol,"LTC") == 0 || strcmp(chain->symbol,"VPN") == 0 )
-        chain->hashalgo = blockhash_sha256;//blockhash_scrypt;
-    else chain->hashalgo = blockhash_sha256;
+    if ( strcmp(chain->symbol,"LTC") == 0 )
+    {
+        char *pubkeystr = "040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9";
+        decode_hex(chain->alertpubkey,(int32_t)strlen(pubkeystr)>>1,pubkeystr);
+    }
+    chain->hashalgo = blockhash_sha256; // most all coins seem to use this for blockchain
     if ( strcmp(chain->symbol,"BTC") == 0 )
     {
         chain->unitval = 0x1d;
