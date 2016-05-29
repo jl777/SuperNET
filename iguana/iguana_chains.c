@@ -434,14 +434,14 @@ struct iguana_chain *iguana_chainfind(char *name,cJSON *argjson,int32_t createfl
         {
             if ( createflag != 0 && argjson != 0 )
             {
-                iguana_chaininit(chain,strcmp(chain->symbol,"BTC") == 0,argjson);
+                iguana_chaininit(chain,strcmp(chain->symbol,"BTCD") != 0,argjson);
                 return(chain);
             }
   			continue;
         }
 		if ( strcmp(name,chain->symbol) == 0 )
         {
-            iguana_chaininit(chain,strcmp(chain->symbol,"BTC") == 0,argjson);
+            iguana_chaininit(chain,strcmp(chain->symbol,"BTCD") != 0,argjson);
             return(chain);
         }
 	}

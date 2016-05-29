@@ -858,6 +858,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     sprintf(dirname,"%s/ro",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/ro/%s",GLOBAL_DBDIR,symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/%s",GLOBAL_DBDIR,symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/purgeable/%s",GLOBAL_DBDIR,symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/%s/validated",GLOBAL_DBDIR,symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/%s/accounts",GLOBAL_DBDIR,symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/%s/spends",GLOBAL_DBDIR,symbol), OS_ensure_directory(dirname);

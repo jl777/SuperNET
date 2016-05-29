@@ -312,7 +312,7 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remote
         }
         jsonstr = jprint(json,0);
         //printf("RPC? (%s)\n",jsonstr);
-        if ( (remoteaddr == 0 || remoteaddr[0] == 0 || jstr(json,"immediate") != 0) && port == IGUANA_RPCPORT )
+        if ( jstr(json,"immediate") != 0 || ((remoteaddr == 0 || remoteaddr[0] == 0) && port == IGUANA_RPCPORT) )
             retjsonstr = SuperNET_jsonstr(myinfo,jsonstr,remoteaddr,port);
         else retjsonstr = iguana_blockingjsonstr(myinfo,jsonstr,tag,timeout,remoteaddr,port);
         if ( retjsonstr != 0 )
@@ -1163,9 +1163,9 @@ void iguana_appletests(struct supernet_info *myinfo)
         //printf("shash -> %s sha256x2 %s\n",bits256_str(str,shash),bits256_str(str2,hash2));
     getchar();
     }
-    if ( 0 )
+    if ( 1 )
     {
-        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"RELAY\":1,\"VALIDATE\":1,\"prefetchlag\":-1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":4,\"endpend\":4,\"services\":129,\"maxpeers\":128,\"newcoin\":\"LTC\",\"active\":1,\"numhelpers\":4,\"poll\":100}"),0,9334)) != 0 )
+        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"immediate\":\"yes\",\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"RELAY\":1,\"VALIDATE\":1,\"prefetchlag\":-1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":4,\"endpend\":4,\"services\":128,\"maxpeers\":128,\"newcoin\":\"LTC\",\"active\":1,\"numhelpers\":4,\"poll\":100}"),0,9334)) != 0 )
         {
             free(str);
             if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"RELAY\":0,\"VALIDATE\":0,\"prefetchlag\":-1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":4,\"endpend\":4,\"services\":129,\"maxpeers\":64,\"newcoin\":\"BTC\",\"active\":0,\"numhelpers\":4,\"poll\":100}"),0,8334)) != 0 )
@@ -1231,6 +1231,7 @@ void iguana_ensuredirs()
     sprintf(dirname,"%s",GLOBAL_HELPDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s",GLOBAL_CONFSDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/purgeable",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s",GLOBAL_TMPDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s",GLOBAL_VALIDATEDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/ECB",GLOBAL_DBDIR), OS_ensure_directory(dirname);
@@ -1343,6 +1344,7 @@ void iguana_main(void *arg)
     exchange_create("bitcoin",0);
     argjson = arg != 0 ? cJSON_Parse(arg) : cJSON_Parse("{}");
     iguana_coinadd("BTC",argjson);
+    ///iguana_coinadd("LTC",argjson);
     free_json(argjson);
     iguana_helpinit(myinfo);
     iguana_commandline(myinfo,arg);

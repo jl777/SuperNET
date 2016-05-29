@@ -266,7 +266,7 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
     {
         j = (int32_t)strlen(line) - 1;
         line[j] = 0;
-        //printf("parse line.(%s) maxpeers.%d\n",line,coin->MAXPEERS);
+        printf("parse line.(%s) maxpeers.%d\n",line,coin->MAXPEERS);
         if ( iter == 0 )
         {
             if ( m < coin->MAXPEERS-3 )//&& m < 77.7 )
