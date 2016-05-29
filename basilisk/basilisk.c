@@ -151,7 +151,8 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,char *me
     //printf("issue.(%s) timeout.%d\n",jprint(hexjson,0),timeoutmillis);
     ptr = calloc(1,sizeof(*ptr));
     ptr->basilisktag = basilisktag;
-    ptr->numrequired = minresults;
+    if ( (ptr->numrequired= minresults) == 0 )
+        ptr->numrequired = 1;
     if ( (ptr->metricfunc= metricfunc) != 0 )
         ptr->vals = jduplicate(vals);
     strcpy(ptr->symbol,symbol);
@@ -231,6 +232,8 @@ int32_t basilisk_besti(struct basilisk_item *ptr)
 char *basilisk_iscomplete(struct basilisk_item *ptr)
 {
     int32_t i,numvalid,besti=-1; char *errstr = 0,*retstr = 0;
+    if ( ptr->childrendone < ptr->numchildren )
+        return(0);
     if ( ptr->retstr != 0 || ptr->finished != 0 )
         return(ptr->retstr);
     if ( (numvalid= ptr->numresults) >= ptr->numrequired )
@@ -266,11 +269,10 @@ char *basilisk_block(struct supernet_info *myinfo,struct iguana_info *coin,char 
     }
     else
     {
-        if ( ptr->numrequired == 0 )
-            ptr->numrequired = 1;
         while ( OS_milliseconds() < ptr->expiration )
         {
-            if ( (retstr= basilisk_iscomplete(ptr)) != 0 )
+            //if ( (retstr= basilisk_iscomplete(ptr)) != 0 )
+            if ( (retstr= ptr->retstr) != 0 )
                 break;
             usleep(1000000);
         }
@@ -526,12 +528,12 @@ void basilisks_loop(void *arg)
             {
                 if ( (n= pending->numresults) < sizeof(pending->results)/sizeof(*pending->results) )
                 {
-                    pending->results[n] = ptr->retstr;
                     pending->numresults++;
                     if ( (metricfunc= pending->metricfunc) == 0 )
                         pending->metrics[n] = n + 1;
-                    else pending->metrics[n] = (*metricfunc)(myinfo,pending,pending->results[n]);
+                    else pending->metrics[n] = (*metricfunc)(myinfo,pending,ptr->retstr);
                     printf("%u Add results[%d] <- (%s) metric %f\n",pending->basilisktag,n,ptr->retstr,pending->metrics[n]);
+                    pending->results[n] = ptr->retstr;
                 }
             }
             free(ptr);
@@ -543,7 +545,7 @@ void basilisks_loop(void *arg)
             if ( (metricfunc= pending->metricfunc) != 0 )
             {
                 for (i=0; i<pending->numresults; i++)
-                    if ( pending->metrics[i] == 0. )
+                    if ( pending->metrics[i] == 0. && pending->results[i] != 0 )
                     {
                         pending->metrics[i] = (*metricfunc)(myinfo,pending,pending->results[i]);
                         // printf("iter.%d %p.[%d] poll metrics.%u metric %f\n",iter,pending,i,pending->basilisktag,pending->metrics[i]);

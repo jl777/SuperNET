@@ -431,8 +431,8 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
             }
         }
     }
-    //printf("bitcoinvalue issue remote\n");
-    return(basilisk_issueremote(myinfo,"satoshis",coin->symbol,valsobj,timeoutmillis,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,coin->basilisk_valuemetric));
+    printf("bitcoinvalue issue remote\n");
+    return(basilisk_issueremote(myinfo,"value",coin->symbol,valsobj,timeoutmillis,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,coin->basilisk_valuemetric));
 }
 
 double basilisk_bitcoin_rawtxmetric_dependents(struct supernet_info *myinfo,struct iguana_info *coin,struct basilisk_item *ptr,struct bitcoin_rawtxdependents *dependents)
@@ -458,7 +458,7 @@ double basilisk_bitcoin_rawtxmetric_dependents(struct supernet_info *myinfo,stru
     if ( notfinished != 0 )
     {
         if ( ptr->finished != 0 )
-            return(-1.);
+            return(-13.);
         else return(0.);
     }
     else if ( ptr->vals != 0 )
@@ -472,7 +472,7 @@ double basilisk_bitcoin_rawtxmetric_dependents(struct supernet_info *myinfo,stru
         {
             if ( (child= dependents->ptrs[i]) != 0 && (childstr= child->retstr) != 0 )
             {
-                printf("child.(%s)\n",childstr);
+                //printf("child.(%s)\n",childstr);
                 coinaddr = &dependents->coinaddrs[64*i];
                 if ( (childjson= cJSON_Parse(childstr)) != 0 )
                 {
@@ -538,7 +538,7 @@ double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk
         addresses = jarray(&numaddrs,ptr->vals,"addresses");
         if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,rawtx,extraspace,sizeof(extraspace),serialized)) != 0 )
         {
-            //printf("GOT VINS.(%s) rawtx.(%s) out0 %.8f\n",jprint(vins,0),rawtx,dstr(msgtx.vouts[0].value));
+            printf("GOT VINS.(%s) rawtx.(%s) out0 %.8f\n",jprint(vins,0),rawtx,dstr(msgtx.vouts[0].value));
             if ( juint(txobj,"locktime") != locktime )
             {
                 printf("locktime mismatch %u != %u\n",juint(txobj,"locktime"),locktime);
@@ -649,6 +649,7 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
     addresses = jobj(valsobj,"addresses");
     if ( changeaddr == 0 || changeaddr[0] == 0 || spendscriptstr == 0 || spendscriptstr[0] == 0 || amount == 0 || addresses == 0 )
     {
+        printf("vals.(%s)\n",jprint(valsobj,0));
         Lptr->retstr = clonestr("{\"error\":\"invalid changeaddr or spendscript or addresses\"}");
         return(Lptr);
     }

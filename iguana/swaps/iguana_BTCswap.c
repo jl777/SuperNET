@@ -195,7 +195,7 @@ struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo
     jaddstr(valsobj,"coin",coin->symbol);
     jaddstr(valsobj,"spendscript",scriptstr);
     jaddstr(valsobj,"changeaddr",coin->changeaddr);
-    jadd64bits(valsobj,"amount",satoshis);
+    jadd64bits(valsobj,"satoshis",satoshis);
     jadd64bits(valsobj,"txfee",txfee);
     jaddnum(valsobj,"minconf",minconf);
     jaddnum(valsobj,"basilisktag",basilisktag);
