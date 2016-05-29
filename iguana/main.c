@@ -1165,6 +1165,17 @@ void iguana_appletests(struct supernet_info *myinfo)
     }
     if ( 1 )
     {
+        /*int32_t i; ;bits256 hash2; uint8_t pubkey[33];
+        double startmillis = OS_milliseconds();
+        for (i=0; i<1000; i++)
+            hash2 = curve25519_shared(hash2,rand256(0));
+        printf("curve25519 elapsed %.3f for %d iterations\n",OS_milliseconds() - startmillis,i);
+        startmillis = OS_milliseconds();
+        bitcoin_pubkey33(myinfo->ctx,pubkey,hash2);
+        for (i=0; i<1000; i++)
+            bitcoin_sharedsecret(myinfo->ctx,hash2,pubkey,33);
+        printf("secp256k1 elapsed %.3f for %d iterations\n",OS_milliseconds() - startmillis,i);
+       getchar();**/
         if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"protover\":70002,\"immediate\":\"yes\",\"userhome\":\"/Users/jimbolaptop/Library/Application Support\",\"RELAY\":1,\"VALIDATE\":1,\"portp2p\":9333,\"prefetchlag\":-1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":4,\"endpend\":4,\"services\":129,\"maxpeers\":128,\"newcoin\":\"LTC\",\"active\":1,\"numhelpers\":4,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
         {
             free(str);

@@ -700,8 +700,10 @@ void iguana_coinloop(void *arg)
                 if ( coin->started == 0 && coin->active != 0 )
                 {
                     iguana_rwiAddrind(coin,0,0,0);
+                    //for (i=0; i<sizeof(*coin->chain); i++)
+                    //    printf("%02x",((uint8_t *)coin->chain)[i]);
+                    printf(" netmagic.%08x init.(%s) maxpeers.%d maxrecvcache.%s services.%llx MAXMEM.%s polltimeout.%d cache.%d pend.(%d -> %d)\n",*(uint32_t *)coin->chain->netmagic,coin->symbol,coin->MAXPEERS,mbstr(str,coin->MAXRECVCACHE),(long long)coin->myservices,mbstr(str,coin->MAXMEM),coin->polltimeout,coin->enableCACHE,coin->startPEND,coin->endPEND);
                     iguana_coinstart(coin,coin->initialheight,coin->mapflags);
-                    printf("init.(%s) maxpeers.%d maxrecvcache.%s services.%llx MAXMEM.%s polltimeout.%d cache.%d pend.(%d -> %d)\n",coin->symbol,coin->MAXPEERS,mbstr(str,coin->MAXRECVCACHE),(long long)coin->myservices,mbstr(str,coin->MAXMEM),coin->polltimeout,coin->enableCACHE,coin->startPEND,coin->endPEND);
                     coin->chain->minconfirms = coin->minconfirms;
                     coin->started = coin;
                     coin->startutc = (uint32_t)time(NULL);
@@ -786,7 +788,8 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     struct iguana_chain *iguana_createchain(cJSON *json);
     struct iguana_info *coin; int32_t j,m,mult,maxval,mapflags; char dirname[512]; cJSON *peers;
     mapflags = IGUANA_MAPRECVDATA | maphash*IGUANA_MAPTXIDITEMS | maphash*IGUANA_MAPPKITEMS | maphash*IGUANA_MAPBLOCKITEMS | maphash*IGUANA_MAPPEERITEMS;
-    coin = iguana_coinadd(symbol,json);
+    if ( (coin= iguana_coinfind(symbol)) == 0 )
+        coin = iguana_coinadd(symbol,json);
     if ( (coin->MAXPEERS= maxpeers) <= 0 )
         coin->MAXPEERS = (strcmp(symbol,"BTC") == 0) ? 128 : 64;
     if ( (coin->MAXRECVCACHE= maxrecvcache) == 0 )
@@ -920,9 +923,10 @@ int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json)
         {
             coins[0] = (void *)((long)1);
             coins[1] = coin;
-            printf("launch coinloop for.%s services.%llx\n",coin->symbol,(long long)services);
+            printf("launch coinloop for.%s services.%llx started.%p\n",coin->symbol,(long long)services,coin->started);
             coin->launched = iguana_launch(coin,"iguana_coinloop",iguana_coinloop,coins,IGUANA_PERMTHREAD);
             coin->active = 1;
+            coin->started = 0;
             return(1);
         }
         else

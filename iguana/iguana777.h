@@ -1035,6 +1035,7 @@ char *bitcoin_blockhashstr(char *coinstr,char *serverport,char *userpass,int32_t
 bits256 basilisk_blockhash(struct iguana_info *coin,bits256 prevhash2);
 void calc_scrypthash(uint32_t *hash,void *data);
 int32_t iguana_rwvarstr(int32_t rwflag,uint8_t *serialized,int32_t maxlen,char *endianedp);
+bits256 bitcoin_sharedsecret(void *ctx,bits256 privkey,uint8_t *pubkey,int32_t plen);
 
 extern int32_t HDRnet,netBLOCKS;
 

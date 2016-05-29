@@ -71,7 +71,7 @@ static struct iguana_chain Chains[] =
         1920,1921,1,0x1e // port and rpcport vpncoin.conf
     },
 	
-     //[CHAIN_LTC] =
+    /* //[CHAIN_LTC] =
     {
         "Litecoin", "LTC", "Litecoin Signed Message:\n",
 		0, 5, 176, // PUBKEY_ADDRESS + SCRIPT_ADDRESS addrman.h, use wif2priv API on any valid wif
@@ -80,7 +80,7 @@ static struct iguana_chain Chains[] =
         "12a765e31ffd4059bada1e25190f6e98c99d9714d334efa41a195a7e7e04bfe2",
         "010000000000000000000000000000000000000000000000000000000000000000000000d9ced4ed1130f7b7faad9be25323ffafa33232a17c3edf6cfd97bee6bafbdd97b9aa8e4ef0ff0f1ecd513f7c0101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4804ffff001d0104404e592054696d65732030352f4f63742f32303131205374657665204a6f62732c204170706c65e280997320566973696f6e6172792c2044696573206174203536ffffffff0100f2052a010000004341040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9ac00000000",
         9333,9334,0,0x1e // port and rpcport litecoin.conf
-    },
+    },*/
 };
 
 /*
@@ -338,7 +338,10 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
         if ( (hexstr= jstr(argjson,"wifval")) != 0 && strlen(hexstr) == 2 )
             decode_hex((uint8_t *)&chain->wiftype,1,hexstr);
         if ( (hexstr= jstr(argjson,"netmagic")) != 0 && strlen(hexstr) == 8 )
-            decode_hex((uint8_t *)chain->netmagic,1,hexstr);
+        {
+            decode_hex((uint8_t *)chain->netmagic,4,hexstr);
+            printf("NETMAGIC.(%s) -> %08x\n",hexstr,*(uint32_t *)chain->netmagic);
+        }
         if ( (hexstr= jstr(argjson,"unitval")) != 0 && strlen(hexstr) == 2 )
             decode_hex((uint8_t *)&chain->unitval,1,hexstr);
         if ( (hexstr= jstr(argjson,"alertpubkey")) != 0 && (strlen(hexstr)>>1) <= sizeof(chain->alertpubkey) )
@@ -362,6 +365,9 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
             }
             else nBits = 0x1e00ffff;
             hash = iguana_chaingenesis(chain->symbol,chain->hashalgo,hash,genesisblock,jstr(genesis,"hashalgo"),juint(genesis,"version"),juint(genesis,"timestamp"),nBits,juint(genesis,"nonce"),jbits256(genesis,"merkle_root"));
+            memcpy(chain->genesis_hashdata,hash.bytes,32);
+            char str[65]; init_hexbytes_noT(str,chain->genesis_hashdata,32);
+            chain->genesis_hash = clonestr(str);
             //chain->genesis_hash = clonestr(bits256_str(str,hash));
             chain->genesis_hex = clonestr(genesisblock);
         }

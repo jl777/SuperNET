@@ -293,7 +293,7 @@ void iguana_gotaddr(struct iguana_info *coin,struct iguana_peer *addr,struct igu
         printf("}, 14631},\n");
     }
     iguana_possible_peer(coin,ipport);
-    printf("gotaddr.(%s:%d) from (%s)\n",ipaddr,port,addr->ipaddr);
+    //printf("gotaddr.(%s:%d) from (%s)\n",ipaddr,port,addr->ipaddr);
 }
 
 void iguana_gotping(struct iguana_info *coin,struct iguana_peer *addr,uint64_t nonce,uint8_t *data)
@@ -784,7 +784,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
     else if ( (ishost= (strcmp(H->command,"getaddr") == 0)) || strcmp(H->command,"addr") == 0 )
     {
         struct iguana_msgaddress A;
-        printf("iguana_msgparser from (%s) parse.(%s) len.%d\n",addr->ipaddr,H->command,recvlen);
+        //printf("iguana_msgparser from (%s) parse.(%s) len.%d\n",addr->ipaddr,H->command,recvlen);
         if ( addr != 0 )
         {
             if ( ishost == 0 )

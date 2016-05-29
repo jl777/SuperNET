@@ -379,8 +379,8 @@ int32_t iguana_peeraddrrequest(struct iguana_info *coin,struct iguana_peer *addr
         }
     }
     iguana_rwvarint(1,space,&x);
-    for (i=0; i<sendlen; i++)
-        printf("%02x",space[i]);
+    //for (i=0; i<sendlen; i++)
+    //    printf("%02x",space[i]);
     printf(" %p addrrequest: sendlen.%d x.%d\n",space,sendlen,(int32_t)x);
     if ( x == 0 )
         return(-1);
