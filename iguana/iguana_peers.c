@@ -395,7 +395,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
 
 int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *serialized,int32_t len)
 {
-    int32_t numsent,remains,usock,r,i;
+    int32_t numsent,remains,usock,r,i; char *cmdstr = (char *)&serialized[4];
     if ( addr == 0 )
     {
         r = rand();
@@ -414,16 +414,16 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
         return(-1);
     }
     remains = len;
-    if ( strncmp((char *)&serialized[4],"SuperNET",strlen("SuperNET")) == 0 )
+    if ( strncmp(cmdstr,"SuperNET",strlen("SuperNET")) == 0 )
     {
-        //printf(" >>>>>>> send.(%s) %d bytes to %s:%u supernet.%d\n",(char *)&serialized[4],len,addr->ipaddr,addr->A.port,addr->supernet);
+        //printf(" >>>>>>> send.(%s) %d bytes to %s:%u supernet.%d\n",cmdstr,len,addr->ipaddr,addr->A.port,addr->supernet);
     }
-    else if ( addr->msgcounts.verack == 0 && (strcmp((char *)&serialized[4],"version") != 0 && strcmp((char *)&serialized[4],"ConnectTo") != 0 && strcmp((char *)&serialized[4],"verack") != 0) != 0 )
+    else if ( addr->msgcounts.verack == 0 && (strcmp(cmdstr,"version") != 0 && strcmp(cmdstr,"ConnectTo") != 0 && strcmp(cmdstr,"verack") != 0) != 0 )
     {
-        //printf("skip.(%s) since no verack yet\n",(char *)&serialized[4]);
+        printf("skip.(%s) since no verack yet\n",cmdstr);
         return(-1);
     }
-    if ( strcmp((char *)&serialized[4],"ping") == 0 )
+    if ( strcmp(cmdstr,"ping") == 0 )
         addr->sendmillis = OS_milliseconds();
     if ( len > IGUANA_MAXPACKETSIZE )
         printf("sending too big! %d\n",len);
@@ -451,7 +451,7 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
         }
     }
     addr->totalsent += len;
-    //printf(" %s sent.%d bytes to %s\n",(char *)&serialized[4],len,addr->ipaddr);// getchar();
+    //printf(" (%s) sent.%d bytes to %s\n",cmdstr,len,addr->ipaddr);// getchar();
     return(len);
 }
 
@@ -511,10 +511,11 @@ int32_t iguana_recv(char *ipaddr,int32_t usock,uint8_t *recvbuf,int32_t len)
             if ( recvlen > 0 )
             {
                 remains -= recvlen;
+                //int32_t i; for (i=0; i<recvlen; i++)
+                //    printf("%02x",recvbuf[i]);
+                //printf("got %d remains.%d of total.%d from (%s)\n",recvlen,remains,len,ipaddr);
                 recvbuf = &recvbuf[recvlen];
             } else usleep(10000);
-            if ( 0 && remains > 0 )
-                printf("got %d remains.%d of total.%d\n",recvlen,remains,len);
         }
     }
     return(len);
@@ -639,10 +640,10 @@ void iguana_startconnection(void *arg)
     }
     if ( strcmp(coin->name,addr->coinstr) != 0 )
     {
-        printf("iguana_startconnection.%s mismatched coin.%p (%s) vs (%s)\n",addr->ipaddr,coin,coin->symbol,addr->coinstr);
+        printf("iguana_startconnection.%s:%04x mismatched coin.%p (%s) vs (%s)\n",addr->ipaddr,coin->chain->portp2p,coin,coin->symbol,addr->coinstr);
         return;
     }
-    //printf("MYSERVICES.%llx\n",(long long)coin->myservices);
+    //printf("iguana_startconnection.%s:%04x (%s)\n",addr->ipaddr,coin->chain->portp2p,addr->coinstr);
     if ( strcmp("127.0.0.1",addr->ipaddr) == 0 )//&& (coin->myservices & NODE_NETWORK) != 0 )
     {
         iguana_iAkill(coin,addr,0);
@@ -1101,7 +1102,6 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
         //printf("send version myservices.%llu to (%s)\n",(long long)coin->myservices,addr->ipaddr);
     }
     //sleep(1+(rand()%5));
-    //iguana_queue_send(coin,addr,0,serialized,"getaddr",0,0,0);
     run = 0;
     while ( addr->usock >= 0 && addr->dead == 0 && coin->peers.shuttingdown == 0 )
     {

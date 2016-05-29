@@ -60,7 +60,6 @@ static struct iguana_chain Chains[] =
         14631,14632,1,0x1e,
         { { 12000, (80 * SATOSHIDEN) }, }
     },
-    /*
 	//[CHAIN_VPN] =
     {
         "VPNcoin", "VPN", "VPNcoin Signed Message:\n", // strMessageMagic
@@ -71,7 +70,8 @@ static struct iguana_chain Chains[] =
         "01000000000000000000000000000000000000000000000000000000000000000000000028581b3ba53e73adaaf957bced1d42d46ed0d84a86b34f7a5a49cdcaa1938a6940540854ffff0f1e78b20100010100000040540854010000000000000000000000000000000000000000000000000000000000000000ffffffff2404ffff001d01041c5468752c20342053657020323031342031323a30303a303020474d54ffffffff01000000000000000000000000000000",
         1920,1921,1,0x1e // port and rpcport vpncoin.conf
     },
-	//[CHAIN_LTC] =
+	
+     //[CHAIN_LTC] =
     {
         "Litecoin", "LTC", "Litecoin Signed Message:\n",
 		0, 5, 176, // PUBKEY_ADDRESS + SCRIPT_ADDRESS addrman.h, use wif2priv API on any valid wif
@@ -80,7 +80,7 @@ static struct iguana_chain Chains[] =
         "12a765e31ffd4059bada1e25190f6e98c99d9714d334efa41a195a7e7e04bfe2",
         "010000000000000000000000000000000000000000000000000000000000000000000000d9ced4ed1130f7b7faad9be25323ffafa33232a17c3edf6cfd97bee6bafbdd97b9aa8e4ef0ff0f1ecd513f7c0101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4804ffff001d0104404e592054696d65732030352f4f63742f32303131205374657665204a6f62732c204170706c65e280997320566973696f6e6172792c2044696573206174203536ffffffff0100f2052a010000004341040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9ac00000000",
         9333,9334,0,0x1e // port and rpcport litecoin.conf
-    },*/
+    },
 };
 
 /*
@@ -311,6 +311,7 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
         chain->do_opreturn = juint(argjson,"do_opreturn");
         if ( juint(argjson,"p2p") != 0 )
             chain->portp2p = juint(argjson,"p2p");
+        else chain->portp2p = juint(argjson,"portp2p");
         if ( (chain->ramchainport= juint(argjson,"ramchain")) == 0 )
             chain->ramchainport = chain->portp2p - 1;
         if ( (chain->rpcport= juint(argjson,"rpc")) == 0 )
@@ -322,11 +323,12 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
         if ( jstr(argjson,"userhome") != 0 )
             strcpy(chain->userhome,jstr(argjson,"userhome"));
         else strcpy(chain->userhome,Userhome);
+        if ( (chain->protover= juint(argjson,"protover")) == 0 )
+            chain->protover = PROTOCOL_VERSION;
         if ( (port= extract_userpass(chain->serverport,chain->userpass,chain->symbol,chain->userhome,path,conf)) != 0 )
             chain->rpcport = port;
         if ( chain->serverport[0] == 0 )
             sprintf(chain->serverport,"127.0.0.1:%u",chain->rpcport);
-        printf("COIN.%s serverport.(%s) userpass.(%s) port.%u\n",chain->symbol,chain->serverport,chain->userpass,chain->rpcport);
         if ( (hexstr= jstr(argjson,"pubval")) != 0 && strlen(hexstr) == 2 )
             decode_hex((uint8_t *)&chain->pubtype,1,hexstr);
         if ( (hexstr= jstr(argjson,"scriptval")) != 0 && strlen(hexstr) == 2 )
@@ -384,6 +386,7 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
             }
         }
         sprintf(chain->messagemagic,"%s Signed Message:\n",chain->name);
+        printf("COIN.%s serverport.(%s) userpass.(%s) port.%u magic.%08x\n",chain->symbol,chain->serverport,chain->userpass,chain->rpcport,*(uint32_t *)chain->netmagic);
     }
 }
 

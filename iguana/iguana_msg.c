@@ -236,7 +236,10 @@ int32_t iguana_send_version(struct iguana_info *coin,struct iguana_peer *addr,ui
 	msg.nServices = myservices;
 	msg.nTime = (int64_t)time(NULL);
 	msg.nonce = coin->instance_nonce;
-	sprintf(msg.strSubVer,"/Satoshi:0.10.0/");
+    if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
+        sprintf(msg.strSubVer,"/iguana 0.00/");
+    else sprintf(msg.strSubVer,"/basilisk 0.00/");
+    //sprintf(msg.strSubVer,"/Satoshi:0.10.0/");
 	msg.nStartingHeight = coin->blocks.hwmchain.height;
     iguana_gotdata(coin,addr,msg.nStartingHeight);
     len = iguana_rwversion(1,&serialized[sizeof(struct iguana_msghdr)],&msg,addr->ipaddr,0);
@@ -786,14 +789,14 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
         {
             if ( ishost == 0 )
             {
-                for (i=0; i<recvlen; i++)
-                    printf("%02x",data[i]);
-                printf(" addr recvlen.%d\n",recvlen);
+                //for (i=0; i<recvlen; i++)
+                //    printf("%02x",data[i]);
+                //printf(" addr recvlen.%d\n",recvlen);
                 len = iguana_rwvarint(0,data,&x);
                 for (i=0; i<x; i++)
                 {
                     memset(&A,0,sizeof(A));
-                    len += iguana_rwaddr(0,&data[len],&A,(int32_t)addr->protover);
+                    len += iguana_rwaddr(0,&data[len],&A,CADDR_TIME_VERSION);//(int32_t)addr->protover);
                     iguana_gotaddr(coin,addr,&A);
                 }
                 if ( len == recvlen )
@@ -807,22 +810,21 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                 len = 0;
                 if ( (sendlen= iguana_peeraddrrequest(coin,addr,&addr->blockspace[sizeof(H)],IGUANA_MAXPACKETSIZE)) > 0 )
                 {
-                    if ( 1 )
+                    if ( 0 )
                     {
-                        int32_t checklen; uint32_t checkbits; uint16_t checkport; char checkaddr[64];
+                        int32_t checklen; uint32_t checkbits; char checkaddr[64];
                         checklen = iguana_rwvarint(0,&addr->blockspace[sizeof(H)],&x);
                         printf("\nSENDING:\n");
                         for (i=0; i<sendlen; i++)
                             printf("%02x",addr->blockspace[sizeof(H)+i]);
-                        printf(" %p addr sendlen.%d\n",&addr->blockspace[sizeof(H)],sendlen);
+                        printf(" %p addr sendlen.%d N.%d\n",&addr->blockspace[sizeof(H)],sendlen,(int32_t)x);
                         for (i=0; i<x; i++)
                         {
                             memset(&A,0,sizeof(A));
-                            checklen += iguana_rwaddr(0,&addr->blockspace[sizeof(H) + checklen],&A,(int32_t)addr->protover);
+                            checklen += iguana_rwaddr(0,&addr->blockspace[sizeof(H) + checklen],&A,CADDR_TIME_VERSION);
                             iguana_rwnum(0,&A.ip[12],sizeof(uint32_t),&checkbits);
-                            iguana_rwnum(0,(void *)&A.port,sizeof(uint16_t),&checkport);
                             expand_ipbits(checkaddr,checkbits);
-                            printf("checkaddr.(%s:%u) ",checkaddr,checkport);
+                            printf("checkaddr.(%s:%02x%02x) ",checkaddr,((uint8_t *)&A.port)[1],((uint8_t *)&A.port)[0]);
                         }
                         printf("x.%d\n",(int32_t)x);
                     }
@@ -920,4 +922,3 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
     }
     return(retval);
 }
-

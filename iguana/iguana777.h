@@ -225,7 +225,7 @@ struct iguana_chain
     blockhashfunc hashalgo;
     char userhome[512],serverport[128],userpass[1024];
     char use_addmultisig,do_opreturn;
-    int32_t estblocktime;
+    int32_t estblocktime,protover;
     bits256 PoWtarget,PoStargets[16]; int32_t numPoStargets,PoSheights[16];
     uint8_t alertpubkey[65];
 };

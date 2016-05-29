@@ -349,7 +349,7 @@ int32_t iguana_peergetrequest(struct iguana_info *coin,struct iguana_peer *addr,
 
 int32_t iguana_peeraddrrequest(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *space,int32_t spacesize)
 {
-    int32_t i,iter,n,max,sendlen; uint64_t x; struct iguana_peer *tmpaddr;
+    int32_t i,iter,n,max,sendlen; uint64_t x; struct iguana_peer *tmpaddr,tmp; char ipaddr[65];
     sendlen = 0;
     max = (IGUANA_MINPEERS + IGUANA_MAXPEERS) / 2;
     if ( max > coin->peers.numranked )
@@ -360,11 +360,18 @@ int32_t iguana_peeraddrrequest(struct iguana_info *coin,struct iguana_peer *addr
     {
         for (i=n=0; i<max; i++)
         {
-            if ( (tmpaddr= coin->peers.ranked[i]) != 0 && ((iter == 0 && tmpaddr->supernet != 0) || (iter == 1 && tmpaddr->supernet == 0)) && tmpaddr->ipaddr[0] != 0 )
+            if ( (tmpaddr= coin->peers.ranked[i]) != 0 && ((iter == 0 && tmpaddr->supernet != 0) || (iter == 1 && tmpaddr->supernet == 0)) && tmpaddr->ipbits != 0 )
             {
-                printf("(%s).%d ",tmpaddr->ipaddr,sendlen);
-                iguana_rwnum(1,&tmpaddr->A.ip[12],sizeof(uint32_t),&tmpaddr->ipbits);
-                sendlen += iguana_rwaddr(1,&space[sendlen],&tmpaddr->A,(int32_t)tmpaddr->protover);
+                tmp = *tmpaddr;
+                iguana_rwnum(1,&tmp.A.ip[12],sizeof(uint32_t),&tmp.ipbits);
+                expand_ipbits(ipaddr,tmp.ipbits);
+                if ( tmp.A.port == 0 )
+                {
+                    ((uint8_t *)&tmp.A.port)[0] = ((uint8_t *)&coin->chain->portp2p)[1];
+                    ((uint8_t *)&tmp.A.port)[1] = ((uint8_t *)&coin->chain->portp2p)[0];
+                }
+                printf("(%s:%02x%02x).%04x ",ipaddr,((uint8_t *)&tmp.A.port)[0],((uint8_t *)&tmp.A.port)[1],(int32_t)tmp.protover);
+                sendlen += iguana_rwaddr(1,&space[sendlen],&tmp.A,CADDR_TIME_VERSION);
                 x++;
                 if ( x == 0xf8 )
                     break;
