@@ -394,7 +394,7 @@ void iguana_chaininit(struct iguana_chain *chain,int32_t hasheaders,cJSON *argjs
     chain->hasheaders = hasheaders;
     chain->minoutput = 10000;
     if ( strcmp(chain->symbol,"LTC") == 0 || strcmp(chain->symbol,"VPN") == 0 )
-        chain->hashalgo = blockhash_scrypt;
+        chain->hashalgo = blockhash_sha256;//blockhash_scrypt;
     else chain->hashalgo = blockhash_sha256;
     if ( strcmp(chain->symbol,"BTC") == 0 )
     {
