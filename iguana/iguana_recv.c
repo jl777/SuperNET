@@ -820,6 +820,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
                         fprintf(stderr,"recvhdr: ht.%d[%d] vs i.%d\n",bp->bundleheight,bundlei,i);
                 }
             }
+            char str[65],str2[65]; printf("%d bp.%p [%d] bundlei.%d %s prev.%s\n",i,bp,bp!=0?bp->hdrsi:-1,bundlei,bits256_str(str,blocks[i].RO.hash2),bits256_str(str2,blocks[i].RO.prev_block));
             //else if ( bp != firstbp )
             //    printf("blockhash[%d] cant be found n.%d\n",i,n);
         }
@@ -1021,7 +1022,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
             block = iguana_bundleblock(coin,&hash2,bp,bundlei);
         }
         //printf("autoadd [%d:%d]\n",bp->hdrsi,bundlei);
-    }
+    } // else printf("couldnt find.(%s)\n",bits256_str(str,block->RO.hash2));
     if ( bp != 0 )
     {
         bp->dirty++;
@@ -1043,7 +1044,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
                 if ( (tmpblock= bp->blocks[i]) != 0 && tmpblock->fpipbits != 0 && tmpblock->fpos >= 0 && ((bp->hdrsi == 0 && i == 0) || bits256_nonz(tmpblock->RO.prev_block) != 0) )
                     numsaved++;
         }
-        //fprintf(stderr,"%s [%d:%d] block.%x | s.%d r.%d copy.%d mainchain.%d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block!=0?block->fpipbits:0,numsaved,numrecv,req->copyflag,block->mainchain);
+        fprintf(stderr,"%s [%d:%d] block.%x | s.%d r.%d copy.%d mainchain.%d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block!=0?block->fpipbits:0,numsaved,numrecv,req->copyflag,block->mainchain);
         if ( _iguana_chainlink(coin,block) == 0 )
         {
             next = block;
