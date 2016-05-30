@@ -329,6 +329,7 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
         else strcpy(chain->userhome,Userhome);
         if ( (chain->protover= juint(argjson,"protover")) == 0 )
             chain->protover = PROTOCOL_VERSION;
+        chain->auxpow = juint(argjson,"auxpow");
         if ( (port= extract_userpass(chain->serverport,chain->userpass,chain->symbol,chain->userhome,path,conf)) != 0 )
             chain->rpcport = port;
         if ( chain->serverport[0] == 0 )

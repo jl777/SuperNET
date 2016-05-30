@@ -77,7 +77,7 @@ void iguana_initcoin(struct iguana_info *coin,cJSON *argjson)
 
 bits256 iguana_genesis(struct iguana_info *coin,struct iguana_chain *chain)
 {
-    struct iguana_block block,*ptr; struct iguana_msgblock msg; bits256 hash2; char str[65],str2[65]; uint8_t buf[1024]; int32_t height;
+    struct iguana_block block,*ptr; struct iguana_msgblock msg; bits256 hash2; char str[65],str2[65]; uint8_t buf[1024]; int32_t height,auxback;
     if ( chain->genesis_hex == 0 )
     {
         printf("no genesis_hex for %s\n",coin->symbol);
@@ -86,7 +86,9 @@ bits256 iguana_genesis(struct iguana_info *coin,struct iguana_chain *chain)
     }
     decode_hex(buf,(int32_t)strlen(chain->genesis_hex)/2,(char *)chain->genesis_hex);
     hash2 = iguana_calcblockhash(coin->symbol,coin->chain->hashalgo,buf,sizeof(struct iguana_msgblockhdr));
+    auxback = coin->chain->auxpow, coin->chain->auxpow = 0;
     iguana_rwblock(coin->symbol,coin->chain->hashalgo,0,&hash2,buf,&msg);
+    coin->chain->auxpow = auxback;
     if  ( coin->MAXPEERS > 1 && memcmp(hash2.bytes,chain->genesis_hashdata,sizeof(hash2)) != 0 )
     {
         bits256_str(str,hash2);

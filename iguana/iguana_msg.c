@@ -80,20 +80,60 @@ int32_t iguana_rwversion(int32_t rwflag,uint8_t *serialized,struct iguana_msgver
 
 //000007000000940daac77c87ab323a76b7ebb1ba6b9044e3add7108f867be4782925768bffe9b7023b7343cb1b7c8523cbf446f31648616b8500040681140ada6bad40ad8f6ee5c10954ffff0f1e0000
 
-int32_t iguana_rwblock(char *symbol,int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serialized,int32_t len),int32_t rwflag,bits256 *hash2p,uint8_t *serialized,struct iguana_msgblock *msg)
+int32_t iguana_rwmerklebranch(int32_t rwflag,uint8_t *serialized,struct iguana_msgmerkle *msg)
 {
-    int32_t len = 0; uint64_t x;
-    //int32_t i; for (i=0; i<80; i++)
-    //    printf("%02x",serialized[i]);
-    //printf(" block\n");
+    int32_t i,len = 0;
+    len += iguana_rwvarint32(rwflag,&serialized[len],&msg->branch_length);
+    if ( msg->branch_length < sizeof(msg->branch_hash)/sizeof(*msg->branch_hash) )
+    {
+        for (i=0; i<msg->branch_length; i++)
+        {
+            len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->branch_hash[i]),msg->branch_hash[i].bytes);
+        }
+    } else return(1000000);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->branch_side_mask),&msg->branch_side_mask);
+    //printf("branch_length.%d side_mask.%x\n",msg->branch_length,msg->branch_side_mask);
+    return(len);
+}
+
+int32_t iguana_rwblock80(int32_t rwflag,uint8_t *serialized,struct iguana_msgblock *msg)
+{
+    int32_t len = 0;
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->H.version),&msg->H.version);
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->H.prev_block),msg->H.prev_block.bytes);
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->H.merkle_root),msg->H.merkle_root.bytes);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->H.timestamp),&msg->H.timestamp);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->H.bits),&msg->H.bits);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->H.nonce),&msg->H.nonce);
+    return(len);
+}
+
+int32_t iguana_rwblock(char *symbol,int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serialized,int32_t len),int32_t rwflag,bits256 *hash2p,uint8_t *serialized,struct iguana_msgblock *msg)
+{
+    int32_t len = 0; uint64_t x; struct iguana_info *coin;
+    len = iguana_rwblock80(rwflag,serialized,msg);
     *hash2p = iguana_calcblockhash(symbol,hashalgo,serialized,len);
     //char str[65]; printf("len.%d: block version.%d timestamp.%u bits.%x nonce.%u prev.(%s) %llx  %llx\n",len,msg->H.version,msg->H.timestamp,msg->H.bits,msg->H.nonce,bits256_str(str,msg->H.prev_block),(long long)msg->H.merkle_root.txid,(long long)hash2p->txid);
+    if ( rwflag == 0 )
+    {
+        void *ptr; struct iguana_msgtx msg; struct OS_memspace MEM; bits256 auxhash2,coinbasetxid; struct iguana_msgmerkle coinbase_branch,blockchain_branch; struct iguana_msgblock parentblock;
+        if ( (coin= iguana_coinfind(symbol)) != 0 && coin->chain->auxpow != 0 )
+        {
+            memset(&msg,0,sizeof(msg));
+            memset(&coinbase_branch,0,sizeof(coinbase_branch));
+            memset(&blockchain_branch,0,sizeof(blockchain_branch));
+            memset(&parentblock,0,sizeof(parentblock));
+            memset(&MEM,0,sizeof(MEM));
+            ptr = calloc(1,1000000);
+            iguana_meminit(&MEM,"auxpow",ptr,1000000,0);
+            len += iguana_rwtx(rwflag,&MEM,&serialized[len],&msg,(int32_t)MEM.totalsize,&coinbasetxid,coin->chain->hastimestamp,0);
+            len += iguana_rwbignum(rwflag,&serialized[len],sizeof(auxhash2),auxhash2.bytes);
+            len += iguana_rwmerklebranch(rwflag,&serialized[len],&coinbase_branch);
+            len += iguana_rwmerklebranch(rwflag,&serialized[len],&blockchain_branch);
+            len += iguana_rwblock80(rwflag,&serialized[len],&parentblock);
+            free(ptr);
+        }
+    }
     if ( rwflag != 0 )
         x = msg->txn_count;
     len += iguana_rwvarint(rwflag,&serialized[len],&x);
@@ -500,9 +540,12 @@ char *iguana_txscan(struct iguana_info *coin,cJSON *json,uint8_t *data,int32_t r
 
 int32_t iguana_gentxarray(struct iguana_info *coin,struct OS_memspace *mem,struct iguana_txblock *txdata,int32_t *lenp,uint8_t *data,int32_t recvlen)
 {
-    struct iguana_msgtx *tx; bits256 hash2; struct iguana_msgblock msg; int32_t i,n,len,numvouts,numvins;
+    struct iguana_msgtx *tx; bits256 hash2; struct iguana_msgblock msg; int32_t i,n,hdrlen,len,numvouts,numvins; char str[65];
     memset(&msg,0,sizeof(msg));
     len = iguana_rwblock(coin->symbol,coin->chain->hashalgo,0,&hash2,data,&msg);
+    hdrlen = len;
+    if ( len > recvlen )
+        return(-1);
     iguana_blockconv(&txdata->block,&msg,hash2,-1);
     tx = iguana_memalloc(mem,msg.txn_count*sizeof(*tx),1);
     for (i=numvins=numvouts=0; i<msg.txn_count; i++)
@@ -520,6 +563,8 @@ int32_t iguana_gentxarray(struct iguana_info *coin,struct OS_memspace *mem,struc
         len += (recvlen-len);
         txdata->extralen = (recvlen - len);
     } else txdata->extralen = 0;
+    if ( coin->chain->auxpow != 0 && len != recvlen )
+        printf("%s hdrlen.%d len.%d vs recvlen.%d\n",bits256_str(str,hash2),hdrlen,len,recvlen);
     txdata->recvlen = len;
     txdata->numtxids = msg.txn_count;
     txdata->numunspents = numvouts;
@@ -679,6 +724,12 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
             memset(&txdata,0,sizeof(txdata));
             if ( ishost == 0 )
             {
+                if ( 0 && coin->chain->auxpow != 0 )
+                {
+                    int32_t i; for (i=0; i<recvlen; i++)
+                        printf("%02x",data[i]);
+                    printf(" auxblock\n");
+                }
                 addr->msgcounts.block++;
                 if ( (n= iguana_gentxarray(coin,rawmem,&txdata,&len,data,recvlen)) == recvlen )
                 {
@@ -728,9 +779,12 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                 if ( n <= IGUANA_MAXINV )
                 {
                     blocks = mycalloc('i',1,sizeof(*blocks) * n);
+                    printf("%s got %d headers len.%d\n",coin->symbol,n,recvlen);
                     for (i=0; i<n; i++)
                     {
-                        len += iguana_rwblock(coin->symbol,coin->chain->hashalgo,0,&hash2,&data[len],&msg);
+                        iguana_rwblock80(0,&data[len],&msg);
+                        hash2 = iguana_calcblockhash(coin->symbol,coin->chain->hashalgo,&data[len],80);
+                        len += 80;
                         iguana_blockconv(&blocks[i],&msg,hash2,-1);
                     }
                     iguana_gotheadersM(coin,addr,blocks,n);

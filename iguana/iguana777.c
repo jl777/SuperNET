@@ -910,6 +910,8 @@ int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json)
     int64_t maxrecvcache; uint64_t services; struct iguana_info **coins,*coin;
     if ( symbol == 0 )
         return(-1);
+    if ( (coin= iguana_coinfind(symbol)) != 0 )
+        return(0);
     printf("launchcoin.%s\n",symbol);
     if ( (coin= iguana_coinadd(symbol,json)) == 0 )
         return(-1);

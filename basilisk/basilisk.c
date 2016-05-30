@@ -318,7 +318,7 @@ char *basilisk_block(struct supernet_info *myinfo,struct iguana_info *coin,char 
             //if ( (retstr= basilisk_iscomplete(ptr)) != 0 )
             if ( (retstr= ptr->retstr) != 0 )
                 break;
-            usleep(1000000);
+            usleep(50000);
         }
         if ( retstr == 0 )
             retstr = basilisk_finish(ptr,-1,"{\"error\":\"basilisk timeout\"}");

@@ -227,7 +227,7 @@ struct iguana_chain
     char use_addmultisig,do_opreturn;
     int32_t estblocktime,protover;
     bits256 PoWtarget,PoStargets[16]; int32_t numPoStargets,PoSheights[16];
-    uint8_t alertpubkey[65];
+    uint8_t auxpow,alertpubkey[65];
 };
 
 struct iguana_msgaddress {	uint32_t nTime; uint64_t nServices; uint8_t ip[16]; uint16_t port; } __attribute__((packed));
@@ -275,6 +275,13 @@ struct iguana_msgblockhdr
     uint32_t version;
     bits256 prev_block,merkle_root;
     uint32_t timestamp,bits,nonce;
+} __attribute__((packed));
+
+struct iguana_msgmerkle
+{
+    uint32_t branch_length;
+    bits256 branch_hash[4096];
+    uint32_t branch_side_mask;
 } __attribute__((packed));
 
 struct iguana_msgblock
