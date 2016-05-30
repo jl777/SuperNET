@@ -795,7 +795,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                     //printf("%s got %d headers len.%d\n",coin->symbol,n,recvlen);
                     for (i=0; i<n; i++)
                     {
-                        if ( 1 )
+                        if ( coin->chain->auxpow != 0 )
                         {
                             tmp = iguana_rwblock80(0,&data[len],&msg);
                             hash2 = iguana_calcblockhash(coin->symbol,coin->chain->hashalgo,&data[len],tmp);
@@ -812,7 +812,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                             }
                             len += iguana_rwvarint32(0,&data[len],&tmp);
                             char str[65],str2[65];
-                            if ( coin->chain->auxpow != 0 )
+                            if ( 0 && coin->chain->auxpow != 0 )
                                 printf("%d %d of %d: %s %s v.%08x numtx.%d cmp.%d\n",len,i,n,bits256_str(str,hash2),bits256_str(str2,msg.H.prev_block),msg.H.version,tmp,bits256_cmp(prevhash2,msg.H.prev_block));
                         } else len += iguana_rwblock(coin->chain->symbol,coin->chain->hashalgo,0,&hash2,&data[len],&msg);
                         iguana_blockconv(&blocks[i],&msg,hash2,-1);
