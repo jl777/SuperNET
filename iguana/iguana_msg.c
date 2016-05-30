@@ -795,7 +795,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                     //printf("%s got %d headers len.%d\n",coin->symbol,n,recvlen);
                     for (i=0; i<n; i++)
                     {
-                        if ( 1 )
+                        if ( 0 )
                         {
                             tmp = iguana_rwblock80(0,&data[len],&msg);
                             hash2 = iguana_calcblockhash(coin->symbol,coin->chain->hashalgo,&data[len],tmp);
