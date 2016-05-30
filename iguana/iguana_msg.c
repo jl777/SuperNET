@@ -787,7 +787,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                 len = iguana_rwvarint32(0,data,&n);
                 if ( n <= IGUANA_MAXINV )
                 {
-                    bits256 prevhash2; struct iguana_msgtx *tx;
+                    bits256 auxhash2,prevhash2; struct iguana_msgtx *tx; struct iguana_msgmerkle coinbase_branch,blockchain_branch; struct iguana_msgblock parentblock;
                     if ( rawmem->totalsize == 0 )
                         iguana_meminit(rawmem,"bighdrs",0,IGUANA_MAXPACKETSIZE * 2,0);
                     memset(prevhash2.bytes,0,sizeof(prevhash2));
@@ -795,18 +795,22 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                     //printf("%s got %d headers len.%d\n",coin->symbol,n,recvlen);
                     for (i=0; i<n; i++)
                     {
-                        if ( 0 )
+                        if ( 1 )
                         {
                             tmp = iguana_rwblock80(0,&data[len],&msg);
                             hash2 = iguana_calcblockhash(coin->symbol,coin->chain->hashalgo,&data[len],tmp);
                             len += tmp;
-                            if ( (tmp= data[len++]) > 0 && (msg.H.version & 0x100) != 0 )
+                            len += iguana_rwvarint32(0,&data[len],&tmp);
+                            if ( (msg.H.version & 0x100) != 0 )
                             {
                                 iguana_memreset(rawmem);
                                 tx = iguana_memalloc(rawmem,sizeof(*tx),1);
                                 len += iguana_rwtx(0,rawmem,&data[len],tx,recvlen-len,&tx->txid,coin->chain->hastimestamp,strcmp(coin->symbol,"VPN")==0);
+                                len += iguana_rwbignum(0,&data[len],sizeof(auxhash2),auxhash2.bytes);
+                                len += iguana_rwmerklebranch(0,&data[len],&coinbase_branch);
+                                len += iguana_rwmerklebranch(0,&data[len],&blockchain_branch);
+                                len += iguana_rwblock80(0,&data[len],&parentblock);
                             }
-                            //len += iguana_rwvarint32(0,&data[len],&tmp);
                             char str[65],str2[65];
                             if ( coin->chain->auxpow != 0 )
                                 printf("%d %d of %d: %s %s v.%08x numtx.%d cmp.%d\n",len,i,n,bits256_str(str,hash2),bits256_str(str2,msg.H.prev_block),msg.H.version,tmp,bits256_cmp(prevhash2,msg.H.prev_block));
