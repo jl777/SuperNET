@@ -790,7 +790,7 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
                 printf("%s possible peer.(%s) %x already there\n",coin->symbol,ipaddr,(uint32_t)coin->peers.active[i].ipbits);
                 return(0);
             }
-        printf("Q possible.(%s)\n",ipaddr);
+        //printf("Q possible.(%s)\n",ipaddr);
         queue_enqueue("possibleQ",&coin->possibleQ,queueitem(ipaddr),1);
         return((uint32_t)time(NULL));
     }
@@ -810,7 +810,7 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
     {
         if ( strcmp(ipaddr,coin->peers.active[i].ipaddr) == 0 )
         {
-            //printf("(%s) already active\n",ipaddr);
+            printf("(%s) already active\n",ipaddr);
             free_queueitem(ipaddr);
             return((uint32_t)time(NULL));
         }
@@ -846,8 +846,7 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
                         } else printf("ignore.(%s) lastconnect.%u lastkilled.%u numconnects.%d\n",ipaddr,iA->lastconnect,iA->lastkilled,iA->numconnects);
                     } //else printf("skip.(%s) ind.%d status.%d\n",ipaddr,iA->hh.itemind,iA->status);
                 } else printf("cant find (%s) which should have been created\n",ipaddr);
-            }
-            else printf("reject ipaddr.(%s) vs checkaddr.(%s)\n",ipaddr,checkaddr);
+            } else printf("reject ipaddr.(%s) vs checkaddr.(%s)\n",ipaddr,checkaddr);
         }
     }
     free_queueitem(ipaddr);
