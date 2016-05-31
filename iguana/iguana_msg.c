@@ -247,7 +247,7 @@ int32_t iguana_rwmsgalert(struct iguana_info *coin,int32_t rwflag,uint8_t *seria
 void iguana_gotversion(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msgversion *vers)
 {
     uint8_t serialized[sizeof(struct iguana_msghdr)];
-    //printf("gotversion from %s: starting height.%d services.%llx proto.%d\n",addr->ipaddr,vers->nStartingHeight,(long long)vers->nServices,vers->nVersion);
+    //printf("gotversion from %s: starting height.%d services.%llx proto.%d (%s)\n",addr->ipaddr,vers->nStartingHeight,(long long)vers->nServices,vers->nVersion,vers->strSubVer);
     if ( strncmp(vers->strSubVer,"/iguana",strlen("/iguana")) == 0 )
         addr->supernet = 1, addr->basilisk = 0;
     else if ( strncmp(vers->strSubVer,"/basilisk",strlen("/basilisk")) == 0 )
@@ -263,10 +263,10 @@ void iguana_gotversion(struct iguana_info *coin,struct iguana_peer *addr,struct 
         iguana_queue_send(addr,0,serialized,"verack",0);
         //iguana_send_ping(coin,addr);
     }
-    else if ( addr->supernet == 0 || (coin->RELAYNODE == 0 && coin->VALIDATENODE == 0) )
+    else if ( addr->supernet == 0 && addr->basilisk == 0 )//|| (addr->basilisk != 0 && myinfo->IAMRELAY == 0) )
         addr->dead = (uint32_t)time(NULL);
-    if ( addr->supernet != 0 || addr->basilisk != 0 )
-        printf("height.%d nServices.%lld nonce.%llu %srelay node.(%s) supernet.%d\n",vers->nStartingHeight,(long long)vers->nServices,(long long)vers->nonce,addr->relayflag==0?"non-":"",addr->ipaddr,addr->supernet);
+    //if ( addr->supernet != 0 || addr->basilisk != 0 )
+        printf("height.%d nServices.%lld nonce.%llu %srelay node.(%s) supernet.%d basilisk.%d\n",vers->nStartingHeight,(long long)vers->nServices,(long long)vers->nonce,addr->relayflag==0?"non-":"",addr->ipaddr,addr->supernet,addr->basilisk);
     if ( (int32_t)vers->nStartingHeight > coin->longestchain )
     {
         if ( coin->badlongestchain != 0 && (int32_t)vers->nStartingHeight >= coin->badlongestchain )
@@ -289,6 +289,7 @@ int32_t iguana_send_version(struct iguana_info *coin,struct iguana_peer *addr,ui
     if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
         sprintf(msg.strSubVer,"/iguana 0.00/");
     else sprintf(msg.strSubVer,"/basilisk 0.00/");
+    printf("SEND.(%s) -> (%s)\n",msg.strSubVer,addr->ipaddr);
     //sprintf(msg.strSubVer,"/Satoshi:0.10.0/");
 	msg.nStartingHeight = coin->blocks.hwmchain.height;
     iguana_gotdata(coin,addr,msg.nStartingHeight);
