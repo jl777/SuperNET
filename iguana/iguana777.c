@@ -903,7 +903,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         }
         printf("addnodes.%d\n",m);
     }
-    char str[65]; printf("pend.(%d -> %d) MAXMEM.%s enablecache.%d VALIDATEDIR.(%s)\n",coin->startPEND,coin->endPEND,mbstr(str,coin->MAXMEM),coin->enableCACHE,coin->VALIDATEDIR);
+    char str[65]; printf("pend.(%d -> %d) MAXMEM.%s enablecache.%d VALIDATEDIR.(%s) VALIDATE.%d RELAY.%d\n",coin->startPEND,coin->endPEND,mbstr(str,coin->MAXMEM),coin->enableCACHE,coin->VALIDATEDIR,coin->VALIDATENODE,coin->RELAYNODE);
     return(coin);
 }
 
