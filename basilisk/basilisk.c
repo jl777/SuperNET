@@ -57,13 +57,14 @@ struct basilisk_item *basilisk_itemcreate(struct supernet_info *myinfo,uint32_t 
 
 void basilisk_msgprocess(struct supernet_info *myinfo,struct iguana_peer *addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen)
 {
-    basilisk_remotefunc *basilisk_services[][2] =
+    cJSON *valsobj; char *retstr=0,remoteaddr[64]; int32_t i,jsonlen; struct iguana_info *coin=0;
+    static const basilisk_remotefunc *basilisk_services[][2] =
     {
         { (void *)"RAW", &_basilisk_rawtx },
         { (void *)"VAL", &_basilisk_value },
         { (void *)"BAL", &_basilisk_balances },
     };
-    cJSON *valsobj; char *retstr=0,remoteaddr[64]; int32_t i,jsonlen; struct iguana_info *coin=0;
+    printf("MSGPROCESS.(%s)\n",(char *)data);
     if ( (valsobj= cJSON_Parse((char *)data)) != 0 )
     {
         jsonlen = (int32_t)strlen((char *)data) + 1;
@@ -72,6 +73,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,struct iguana_peer *addr,u
         else data = 0, datalen = 0;
         if ( jobj(valsobj,"coin") != 0 )
             coin = iguana_coinfind(jstr(valsobj,"coin"));
+        printf("coin.%p ipbits.%x\n",coin,senderipbits);
         if ( coin != 0 )
         {
             if ( senderipbits != 0 )
