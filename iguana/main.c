@@ -1354,7 +1354,7 @@ void iguana_main(void *arg)
     category_init(myinfo);
     exchange_create("bitcoin",0);
     argjson = arg != 0 ? cJSON_Parse(arg) : cJSON_Parse("{}");
-    iguana_coinadd("BTC",argjson);
+    //iguana_coinadd("BTC",argjson); dont do this here, coin args not set
     ///iguana_coinadd("LTC",argjson);
     free_json(argjson);
     iguana_helpinit(myinfo);
