@@ -43,7 +43,7 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,char *ty
 void basilisks_init(struct supernet_info *myinfo);
 int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *type,uint32_t basilisktag,int32_t encryptflag,int32_t delaymillis,uint8_t *data,int32_t datalen,int32_t fanout); // data must be offset by sizeof(iguana_msghdr)
 void basilisk_p2p(void *myinfo,void *_addr,int32_t *delaymillisp,char *ipaddr,uint8_t *data,int32_t datalen,char *type,int32_t encrypted);
-uint8_t *basilisk_jsondata(int32_t *datalenp,cJSON *sendjson,uint32_t basilisktag);
+uint8_t *basilisk_jsondata(void **ptrp,uint8_t *space,int32_t spacesize,int32_t *datalenp,cJSON *sendjson,uint32_t basilisktag);
 
 uint8_t *SuperNET_ciphercalc(void **ptrp,int32_t *cipherlenp,bits256 *privkeyp,bits256 *destpubkeyp,uint8_t *data,int32_t datalen,uint8_t *space2,int32_t space2size);
 void *SuperNET_deciphercalc(void **ptrp,int32_t *msglenp,bits256 privkey,bits256 srcpubkey,uint8_t *cipher,int32_t cipherlen,uint8_t *buf,int32_t bufsize);

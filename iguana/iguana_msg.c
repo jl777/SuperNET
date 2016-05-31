@@ -682,7 +682,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
         } else ipaddr = 0;
         len = recvlen;
         basilisk_p2p(myinfo,addr,&delay,ipaddr,data,recvlen,&H->command[strlen("SuperNET")],H->command[6] == 'e' && H->command[7] == 't');
-        //printf("GOT.(%s) len.%d from %s -> ret.(%s)\n",H->command,recvlen,addr->ipaddr,retstr==0?"null":retstr);
+        printf("GOT.(%s) len.%d from %s\n",H->command,recvlen,addr->ipaddr);
         return(0);
     }
     if ( addr != 0 )

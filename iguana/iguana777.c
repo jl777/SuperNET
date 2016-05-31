@@ -47,6 +47,7 @@ struct iguana_info *iguana_coinadd(const char *symbol,cJSON *argjson)
             {
                 Coins[i] = mycalloc('C',1,sizeof(*Coins[i]));
                 printf("iguana_coin.(new) -> %p\n",Coins[i]);
+                basilisk_functions(Coins[i],IGUANA_PROTOCOL_BITCOIN);
                 return(Coins[i]);
             } return(0);
             printf("i.%d (%s) vs name.(%s)\n",i,Coins[i]->name,symbol);
@@ -64,7 +65,10 @@ struct iguana_info *iguana_coinadd(const char *symbol,cJSON *argjson)
             if ( strcmp("endmarker",Hardcoded_coins[i][0]) == 0 || strcmp(symbol,Hardcoded_coins[i][0]) == 0 )
             {
                 if ( Coins[i] == 0 )
+                {
                     Coins[i] = mycalloc('C',1,sizeof(*Coins[i]));
+                    basilisk_functions(Coins[i],IGUANA_PROTOCOL_BITCOIN);
+                }
                 coin = Coins[i];
                 if ( coin->chain == 0 )
                 {
@@ -800,7 +804,6 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->initialheight = initialheight;
     coin->mapflags = mapflags;
     coin->protocol = IGUANA_PROTOCOL_BITCOIN;
-    basilisk_functions(coin);
     mult = (strcmp("BTC",coin->symbol) != 0) ? 8 : 8;
     maxval = IGUANA_MAXPENDBUNDLES;
     if ( (coin->txfee= jdouble(json,"txfee") * SATOSHIDEN) == 0 )

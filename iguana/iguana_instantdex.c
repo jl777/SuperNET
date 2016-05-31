@@ -389,7 +389,7 @@ bits256 instantdex_rwoffer(int32_t rwflag,int32_t *lenp,uint8_t *serialized,stru
 
 char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extraser,int32_t extralen,struct iguana_peer *addr,struct bitcoin_swapinfo *swap)
 {
-    cJSON *sendjson; char *reqstr,*hexstr,*retstr; struct instantdex_msghdr *msg; bits256 orderhash,tmphash; int32_t i,j,len,dir=0,serflag,olen,slen,datalen; uint8_t *buf,serialized[sizeof(*offer) + sizeof(struct iguana_msghdr) + 4096 + INSTANTDEX_DECKSIZE*33]; uint64_t x,nxt64bits;
+    cJSON *sendjson; void *allocptr; char *reqstr,*hexstr,*retstr; struct instantdex_msghdr *msg; bits256 orderhash,tmphash; int32_t i,j,len,dir=0,serflag,olen,slen,datalen; uint8_t *buf,space[4096],serialized[sizeof(*offer) + sizeof(struct iguana_msghdr) + 4096 + INSTANTDEX_DECKSIZE*33]; uint64_t x,nxt64bits;
     //if ( strcmp(cmdstr,"poll") == 0 )
     //    return(clonestr("{\"result\":\"skip sending poll\"}"));
     //category_subscribe(myinfo,myinfo->instantdex_category,GENESIS_PUBKEY);
@@ -473,10 +473,11 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     jaddnum(sendjson,"plaintext",1);
     jaddbits256(sendjson,"categoryhash",myinfo->instantdex_category);
     jaddbits256(sendjson,"traderpub",myinfo->myaddr.persistent);
-    data = basilisk_jsondata(&datalen,sendjson,basilisktag);
+    data = basilisk_jsondata(&allocptr,space,sizeof(space),&datalen,sendjson,basilisktag);
     basilisk_sendcmd(myinfo,addr->ipaddr,dir > 0 ? "BID" : "ASK",basilisktag,encryptflag,delaymillis,data,datalen,1);
     free_json(sendjson);
-    free(data);
+    if ( allocptr != 0 )
+        free(allocptr);
     return(clonestr("{\"result\":\"success\"}"));
 
     if ( instantdex_msgcreate(myinfo,msg,datalen) != 0 )

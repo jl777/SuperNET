@@ -419,9 +419,9 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
         return(-1);
     }
     remains = len;
-    if ( strncmp(cmdstr,"SuperNET",strlen("SuperNET")) == 0 )
+    if ( strncmp(cmdstr,"SuperNET",strlen("SuperNET")) == 0 || strncmp(cmdstr,"SuperNet",strlen("SuperNet")) == 0  )
     {
-        //printf(" >>>>>>> send.(%s) %d bytes to %s:%u supernet.%d\n",cmdstr,len,addr->ipaddr,addr->A.port,addr->supernet);
+        printf(" >>>>>>> send.(%s) %d bytes to %s:%u supernet.%d\n",cmdstr,len,addr->ipaddr,addr->A.port,addr->supernet);
     }
     else if ( addr->msgcounts.verack == 0 && (strcmp(cmdstr,"version") != 0 && strcmp(cmdstr,"ConnectTo") != 0 && strcmp(cmdstr,"verack") != 0) != 0 )
     {
