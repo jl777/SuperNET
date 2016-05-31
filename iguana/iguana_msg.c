@@ -223,7 +223,7 @@ int32_t iguana_rwmsgalert(struct iguana_info *coin,int32_t rwflag,uint8_t *seria
             printf("%02x",coin->chain->alertpubkey[i]);
         char str[65]; printf(" alertpubkey.%d, alerthash2.%s\n",plen,bits256_str(str,alerthash2));
     } else msg->siglen = 0;
-    printf("  ALERT v.%d relay.%llu expires.%llu ID.%d cancel.%d numlist.%d minver.%d maxver.%d subver.(%s) priority.%d comment.(%s) STATUS.(%s) reserved.(%s)\n",msg->version,msg->relayuntil,msg->expiration,msg->ID,msg->cancel,msg->numcancellist,msg->minver,msg->maxver,msg->subver,msg->priority,msg->comment,msg->statusbar,msg->reserved);
+    printf("  ALERT v.%d relay.%lld expires.%lld ID.%d cancel.%d numlist.%d minver.%d maxver.%d subver.(%s) priority.%d comment.(%s) STATUS.(%s) reserved.(%s)\n",msg->version,(long long)msg->relayuntil,(long long)msg->expiration,msg->ID,msg->cancel,msg->numcancellist,msg->minver,msg->maxver,msg->subver,msg->priority,msg->comment,msg->statusbar,msg->reserved);
     return(len);
 }
 

@@ -362,9 +362,7 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
             if ( v->vout == vout && bits256_cmp(txid,v->txid) == 0 && strcmp(v->coinaddr,coinaddr) == 0 )
             {
                 printf("bitcoinvalue local ht.%d %s %.8f\n",v->height,v->coinaddr,dstr(v->value));
-                Lptr->retstr = basilisk_valuestr(coin,v->coinaddr,v->value,v->height,txid,vout);
-                return(Lptr);
-                //return(basilisk_issueremote(myinfo,"VAL",valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,coin->basilisk_valuemetric,basilisk_valuestr(coin,v->coinaddr,v->value,v->height,txid,vout)));
+                return(basilisk_issueremote(myinfo,coin->symbol,"VAL",valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_valuemetric,basilisk_valuestr(coin,v->coinaddr,v->value,v->height,txid,vout)));
             }
         }
     }
