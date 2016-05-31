@@ -15,6 +15,9 @@
 
 #include "../iguana/iguana777.h"
 
+typedef char *basilisk_remotefunc(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen);
+extern basilisk_remotefunc _basilisk_rawtx,_basilisk_balances,_basilisk_value,_basilisk_result;
+
 char *basilisk_finish(struct basilisk_item *ptr,int32_t besti,char *errstr)
 {
     char *retstr = 0; struct basilisk_item *parent;
@@ -52,82 +55,49 @@ struct basilisk_item *basilisk_itemcreate(struct supernet_info *myinfo,uint32_t 
     return(ptr);
 }
 
-char *basilisk_hexmsg(struct supernet_info *myinfo,struct category_info *dontuse,void *ptr,int32_t len,char *remoteaddr) // incoming
-{
-    char *method="",*agent="",*retstr = 0; cJSON *array,*remotejson,*valsobj; struct iguana_info *coin=0; uint32_t basilisktag;
-    array = 0;
-    if ( (remotejson= cJSON_Parse(ptr)) != 0 )
-    {
-        //printf("basilisk.(%s)\n",jprint(remotejson,0));
-        agent = jstr(remotejson,"agent");
-        method = jstr(remotejson,"method");
-        basilisktag = juint(remotejson,"basilisktag");
-        if ( strcmp(agent,"basilisk") == 0 && (valsobj= jobj(remotejson,"vals")) != 0 )
-        {
-            if ( jobj(valsobj,"coin") != 0 )
-                coin = iguana_coinfind(jstr(valsobj,"coin"));
-            else if ( jstr(remotejson,"activecoin") != 0 )
-                coin = iguana_coinfind(jstr(remotejson,"activecoin"));
-            //printf("coin.%p agent.%s method.%s vals.%p\n",coin,agent,method,valsobj);
-            if ( coin != 0 )
-            {
-                if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
-                {
-                    if ( strcmp(method,"rawtx") == 0 )
-                        retstr = basilisk_rawtx(myinfo,coin,0,remoteaddr,basilisktag,valsobj,coin->symbol);
-                    else if ( strcmp(method,"balances") == 0 )
-                        retstr = basilisk_balances(myinfo,coin,0,remoteaddr,basilisktag,valsobj,coin->symbol);
-                    else if ( strcmp(method,"value") == 0 )
-                        retstr = basilisk_value(myinfo,coin,0,remoteaddr,basilisktag,valsobj,coin->symbol);
-                    if ( retstr != 0 )
-                        free(retstr);
-                    return(0);
-                    // should automatically send to remote requester
-                }
-                else
-                {
-                    if ( strcmp(method,"result") == 0 )
-                        return(basilisk_result(myinfo,coin,0,remoteaddr,basilisktag,valsobj));
-                }
-            }
-        }
-        free_json(remotejson);
-    }
-    printf("unhandled bitcoin_hexmsg.(%d) from %s (%s)\n",len,remoteaddr,(char *)ptr);
-    return(retstr);
-}
-
 void basilisk_msgprocess(struct supernet_info *myinfo,struct iguana_peer *addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen)
 {
-    cJSON *argjson; char *retstr,*jsonstr,remoteaddr[64];
-    if ( strcmp(type,"BID") == 0 || strcmp(type,"ASK") == 0 )
+    basilisk_remotefunc *basilisk_services[][2] =
     {
-        instantdex_quotep2p(myinfo,0,addr,data,datalen);
-    }
-    else if ( (argjson= cJSON_Parse((char *)data)) != 0 )
+        { (void *)"RAW", &_basilisk_rawtx },
+        { (void *)"VAL", &_basilisk_value },
+        { (void *)"BAL", &_basilisk_balances },
+    };
+    cJSON *valsobj; char *retstr=0,remoteaddr[64]; int32_t i,jsonlen; struct iguana_info *coin=0;
+    if ( (valsobj= cJSON_Parse((char *)data)) != 0 )
     {
-        jaddstr(argjson,"agent","basilisk");
-        jaddnum(argjson,"basilisktag",basilisktag);
-        if ( strcmp(type,"RET") == 0 )
+        jsonlen = (int32_t)strlen((char *)data) + 1;
+        if ( datalen > jsonlen )
+            data += jsonlen, datalen -= jsonlen;
+        else data = 0, datalen = 0;
+        if ( jobj(valsobj,"coin") != 0 )
+            coin = iguana_coinfind(jstr(valsobj,"coin"));
+        if ( coin != 0 )
         {
-            jaddstr(argjson,"method","return");
-        }
-        else if ( strcmp(type,"RAW") == 0 )
-        {
-            jaddstr(argjson,"method","rawtx");
-        }
-        else if ( strcmp(type,"VAL") == 0 )
-        {
-            jaddstr(argjson,"method","value");
-        }
-        if ( senderipbits != 0 )
-            expand_ipbits(remoteaddr,senderipbits);
-        else remoteaddr[0] = 0;
-        jsonstr = jprint(argjson,1);
-        if ( (retstr= basilisk_hexmsg(myinfo,0,(void *)jsonstr,(int32_t)strlen(jsonstr)+1,remoteaddr)) != 0 )
+            if ( senderipbits != 0 )
+                expand_ipbits(remoteaddr,senderipbits);
+            else remoteaddr[0] = 0;
+            if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 ) // iguana node
+            {
+                for (i=0; i<sizeof(basilisk_services)/sizeof(*basilisk_services); i++)
+                    if ( strcmp((char *)basilisk_services[i][0],type) == 0 )
+                        retstr = (*basilisk_services[i][1])(myinfo,coin,addr,remoteaddr,basilisktag,valsobj,data,datalen);
+                /*if ( strcmp(type,"RAW") == 0 )
+                    retstr = _basilisk_rawtx(myinfo,coin,addr,remoteaddr,basilisktag,valsobj,data,datalen);
+                else if ( strcmp(type,"BAL") == 0 )
+                    retstr = _basilisk_balances(myinfo,coin,addr,remoteaddr,basilisktag,valsobj,data,datalen);
+                else if ( strcmp(type,"VAL") == 0 )
+                    retstr = _basilisk_value(myinfo,coin,addr,remoteaddr,basilisktag,valsobj,data,datalen);*/
+            }
+            else // basilisk node
+            {
+                if ( strcmp(type,"RET") == 0 )
+                    retstr = _basilisk_result(myinfo,coin,addr,remoteaddr,basilisktag,valsobj,data,datalen);
+            }
+        } else printf("basilisk_hexmsg no coin\n");
+        free_json(valsobj);
+        if ( retstr != 0 )
             free(retstr);
-        free(jsonstr);
-        free_json(argjson);
     }
 }
 
@@ -249,7 +219,7 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,char *ty
     else
     {
         data = basilisk_jsondata(&allocptr,space,sizeof(space),&datalen,valsobj,basilisktag);
-        basilisk_sendcmd(myinfo,0,"RET",basilisktag,encryptflag,delaymillis,data,datalen,0);
+        basilisk_sendcmd(myinfo,0,type,basilisktag,encryptflag,delaymillis,data,datalen,0);
         if ( allocptr != 0 )
             free(allocptr);
     }
@@ -345,21 +315,28 @@ char *basilisk_iscomplete(struct basilisk_item *ptr)
 
 uint8_t *basilisk_jsondata(void **ptrp,uint8_t *space,int32_t spacesize,int32_t *datalenp,cJSON *sendjson,uint32_t basilisktag)
 {
-    char *sendstr; uint8_t *data; int32_t datalen,extrasize;
+    char *sendstr,*hexstr; uint8_t *data; int32_t datalen,hexlen=0,extrasize;
+    if ( (hexstr= jstr(sendjson,"data")) != 0 && (hexlen= is_hexstr(hexstr,0)) > 0 )
+        hexlen >>= 1;
     extrasize = (int32_t)(sizeof(struct iguana_msghdr) + sizeof(basilisktag));
     *ptrp = 0;
     sendstr = jprint(sendjson,0);
     datalen = (int32_t)strlen(sendstr) + 1;
-    if ( (datalen + extrasize) <= spacesize )
+    if ( (datalen + extrasize + hexlen) <= spacesize )
         data = space;
     else
     {
-        data = calloc(1,datalen + extrasize);
+        data = calloc(1,datalen + extrasize + hexlen);
         *ptrp = data;
     }
     data += extrasize;
     memcpy(data,sendstr,datalen);
     free(sendstr);
+    if ( hexlen > 0 )
+    {
+        decode_hex(&data[datalen],hexlen,hexstr);
+        datalen += hexlen;
+    }
     *datalenp = datalen;
     return(data);
 }
@@ -451,21 +428,44 @@ char *basilisk_standardcmd(struct supernet_info *myinfo,char *activecoin,char *r
     } else return(retstr);
 }
 
-#include "../includes/iguana_apidefs.h"
-#include "../includes/iguana_apideclares.h"
-
-INT_ARRAY_STRING(basilisk,balances,basilisktag,vals,activecoin)
+char *_basilisk_value(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
-    if ( (coin= iguana_coinfind(activecoin)) != 0 )
-        return(basilisk_standardcmd(myinfo,activecoin,remoteaddr,basilisktag,vals,coin->basilisk_balances,coin->basilisk_balancesmetric));
-    else return(clonestr("{\"error\":\"cant find missing coin\"}"));
+    return(basilisk_standardcmd(myinfo,coin->symbol,remoteaddr,basilisktag,valsobj,coin->basilisk_value,coin->basilisk_valuemetric));
 }
 
-INT_ARRAY_STRING(basilisk,value,basilisktag,vals,activecoin)
+char *_basilisk_balances(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
-    if ( (coin= iguana_coinfind(activecoin)) != 0 )
-        return(basilisk_standardcmd(myinfo,activecoin,remoteaddr,basilisktag,vals,coin->basilisk_value,coin->basilisk_valuemetric));
-    else return(clonestr("{\"error\":\"cant find missing coin\"}"));
+    return(basilisk_standardcmd(myinfo,coin->symbol,remoteaddr,basilisktag,valsobj,coin->basilisk_balances,coin->basilisk_balancesmetric));
+}
+
+char *_basilisk_rawtx(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen)
+{
+    char *hexstr=0,*retstr;
+    if ( data != 0 )
+    {
+        hexstr = calloc(1,(datalen<<1) + 1);
+        init_hexbytes_noT(hexstr,data,datalen);
+        jaddstr(valsobj,"data",hexstr);
+    }
+    retstr = basilisk_rawtx(myinfo,coin,0,remoteaddr,basilisktag,valsobj,coin->symbol);
+    if ( hexstr != 0 )
+        free(hexstr);
+    return(retstr);
+}
+
+char *_basilisk_result(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen)
+{
+    char *hexstr=0,*retstr;
+    if ( data != 0 )
+    {
+        hexstr = calloc(1,(datalen<<1) + 1);
+        init_hexbytes_noT(hexstr,data,datalen);
+        jaddstr(valsobj,"data",hexstr);
+    }
+    retstr = basilisk_result(myinfo,coin,0,remoteaddr,basilisktag,valsobj);
+    if ( hexstr != 0 )
+        free(hexstr);
+    return(retstr);
 }
 
 char *basilisk_checkrawtx(int32_t *timeoutmillisp,uint32_t *basilisktagp,char *symbol,cJSON *vals)
@@ -490,6 +490,19 @@ char *basilisk_checkrawtx(int32_t *timeoutmillisp,uint32_t *basilisktagp,char *s
         printf("vals.(%s)\n",jprint(vals,0));
         return(clonestr("{\"error\":\"missing spendscript\"}"));
     }
+}
+
+#include "../includes/iguana_apidefs.h"
+#include "../includes/iguana_apideclares.h"
+
+INT_ARRAY_STRING(basilisk,balances,basilisktag,vals,activecoin)
+{
+    return(basilisk_standardcmd(myinfo,activecoin,remoteaddr,basilisktag,vals,coin->basilisk_balances,coin->basilisk_balancesmetric));
+}
+
+INT_ARRAY_STRING(basilisk,value,basilisktag,vals,activecoin)
+{
+    return(basilisk_standardcmd(myinfo,activecoin,remoteaddr,basilisktag,vals,coin->basilisk_value,coin->basilisk_valuemetric));
 }
 
 INT_ARRAY_STRING(basilisk,rawtx,basilisktag,vals,activecoin)
@@ -624,13 +637,13 @@ void basilisks_loop(void *arg)
 
 void basilisks_init(struct supernet_info *myinfo)
 {
-    bits256 basiliskhash;
+    //bits256 basiliskhash;
     iguana_initQ(&myinfo->basilisks.submitQ,"submitQ");
     iguana_initQ(&myinfo->basilisks.resultsQ,"resultsQ");
-    basiliskhash = calc_categoryhashes(0,"basilisk",0);
-    myinfo->basilisk_category = basiliskhash;
-    category_subscribe(myinfo,basiliskhash,GENESIS_PUBKEY);
-    category_processfunc(basiliskhash,GENESIS_PUBKEY,basilisk_hexmsg);
-    category_processfunc(basiliskhash,myinfo->myaddr.persistent,basilisk_hexmsg);
+    //basiliskhash = calc_categoryhashes(0,"basilisk",0);
+    //myinfo->basilisk_category = basiliskhash;
+    //category_subscribe(myinfo,basiliskhash,GENESIS_PUBKEY);
+    //category_processfunc(basiliskhash,GENESIS_PUBKEY,basilisk_hexmsg);
+    //category_processfunc(basiliskhash,myinfo->myaddr.persistent,basilisk_hexmsg);
     myinfo->basilisks.launched = iguana_launch(iguana_coinfind("BTCD"),"basilisks_loop",basilisks_loop,myinfo,IGUANA_PERMTHREAD);
 }
