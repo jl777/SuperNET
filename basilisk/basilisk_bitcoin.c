@@ -301,82 +301,18 @@ int32_t basilisk_bitcoinavail(struct iguana_info *coin)
 
 void *basilisk_bitcoinbalances(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *vals)
 {
-   /* cJSON *array=0,*result,*item,*retjson,*hexjson; int32_t i,n,besti=-1; char *coinaddr,*balancestr=0,*retstr=0; int64_t total=0,amount,most=0; struct basilisk_item *ptr;
-    array = cJSON_CreateArray();
-    if ( coin != 0 && basilisk_bitcoinavail(coin) != 0 )
-    {
-        if ( (n= cJSON_GetArraySize(addresses)) > 0 )
-        {
-            for (i=0; i<n; i++)
-            {
-                coinaddr = jstri(addresses,i);
-                if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
-                    balancestr = iguana_balance(myinfo,coin,0,remoteaddr,coin->symbol,coinaddr,lastheight,minconf);
-                //else balancestr = bitcoin_balance(coin,coinaddr,lastheight,minconf);
-                if ( balancestr != 0 )
-                {
-                    if ( (result= cJSON_Parse(balancestr)) != 0 )
-                    {
-                        if ( jobj(result,"balance") != 0 )
-                        {
-                            item = cJSON_CreateObject();
-                            amount = SATOSHIDEN * jdouble(result,"balance");
-                            total += amount;
-                            jaddnum(item,coinaddr,dstr(amount));
-                            jaddi(array,item);
-                        }
-                        free_json(result);
-                    }
-                    free(balancestr);
-                }
-            }
-        }
-    }
-    else
-    {
-        hexjson = cJSON_CreateObject();
-        jaddnum(hexjson,"basilisktag",basilisktag);
-        jadd(hexjson,"addresses",jduplicate(addresses));
-        jaddnum(hexjson,"minconf",minconf);
-        jaddnum(hexjson,"lastheight",lastheight);
-        jaddstr(hexjson,"agent","basilisk");
-        jaddstr(hexjson,"method","balances");
-        if ( (ptr= basilisk_issue(myinfo,hexjson,timeoutmillis,0,1,basilisktag)) != 0 )
-        {
-            for (i=0; i<ptr->numresults; i++)
-            {
-                if ( ptr->results[i] == 0 )
-                    continue;
-                if ( retstr != 0 && strcmp(ptr->results[i],retstr) == 0 )
-                    ptr->numexact++;
-                if ( (retjson= cJSON_Parse(ptr->results[i])) != 0 )
-                {
-                    if ( (total= j64bits(retjson,"balance")) > most )
-                    {
-                        most = total;
-                        besti = i;
-                    }
-                    free_json(retjson);
-                }
-            }
-            retstr = basilisk_finish(ptr,arrayp,besti);
-        }
-        free_json(hexjson);
-    }
-    *arrayp = array;
-    return(most);*/
     return(0);
 }
 
 char *basilisk_valuestr(struct iguana_info *coin,char *coinaddr,uint64_t value,int32_t height,bits256 txid,int16_t vout)
 {
     cJSON *retjson = cJSON_CreateObject();
-    jaddnum(retjson,"result",dstr(value));
     jaddstr(retjson,"address",coinaddr);
     jadd64bits(retjson,"satoshis",value);
     jaddnum(retjson,"height",height);
     jaddbits256(retjson,"txid",txid);
     jaddnum(retjson,"vout",vout);
+    jaddstr(retjson,"coin",coin->symbol);
     return(jprint(retjson,1));
 }
 
@@ -426,12 +362,14 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
             if ( v->vout == vout && bits256_cmp(txid,v->txid) == 0 && strcmp(v->coinaddr,coinaddr) == 0 )
             {
                 printf("bitcoinvalue local ht.%d %s %.8f\n",v->height,v->coinaddr,dstr(v->value));
-                return(basilisk_issueremote(myinfo,"value",coin->symbol,valsobj,timeoutmillis,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,coin->basilisk_valuemetric,basilisk_valuestr(coin,v->coinaddr,v->value,v->height,txid,vout)));
+                Lptr->retstr = basilisk_valuestr(coin,v->coinaddr,v->value,v->height,txid,vout);
+                return(Lptr);
+                //return(basilisk_issueremote(myinfo,"VAL",valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,coin->basilisk_valuemetric,basilisk_valuestr(coin,v->coinaddr,v->value,v->height,txid,vout)));
             }
         }
     }
     printf("bitcoinvalue issue remote\n");
-    return(basilisk_issueremote(myinfo,"value",coin->symbol,valsobj,timeoutmillis,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,coin->basilisk_valuemetric,0));
+    return(basilisk_issueremote(myinfo,"VAL",valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_valuemetric,0));
 }
 
 double basilisk_bitcoin_rawtxmetric_dependents(struct supernet_info *myinfo,struct iguana_info *coin,struct basilisk_item *ptr,struct bitcoin_rawtxdependents *dependents)
@@ -679,6 +617,7 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
                 valsobj = cJSON_CreateObject();
                 jadd(valsobj,"vins",vins);
                 jaddstr(valsobj,"rawtx",rawtx);
+                jaddstr(valsobj,"coin",coin->symbol);
                 free(rawtx);
                 Lptr->retstr = jprint(valsobj,1);
                 return(Lptr);
@@ -691,6 +630,6 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
         Lptr->retstr = clonestr("{\"error\":\"couldnt create rawtx\"}");
         return(Lptr);
     }
-    return(basilisk_issueremote(myinfo,"rawtx",coin->symbol,valsobj,timeoutmillis,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,coin->basilisk_rawtxmetric,0));
+    return(basilisk_issueremote(myinfo,"RAW",valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_rawtxmetric,0));
 }
 

@@ -303,7 +303,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
                                 if ( (checklen= iguana_gentxarray(coin,&RAWMEM,&txdata,&checklen,&blockspace[sizeof(struct iguana_msghdr)],total)) != total )
                                     printf("Error reconstructing txarray checklen.%d total.%d\n",checklen,total);
                             }
-                            return(iguana_queue_send(addr,0,blockspace,"block",total,0,0));
+                            return(iguana_queue_send(addr,0,blockspace,"block",total));
                         }
                         else
                         {

@@ -256,7 +256,7 @@ void iguana_gotversion(struct iguana_info *coin,struct iguana_peer *addr,struct 
         addr->height = vers->nStartingHeight;
         addr->relayflag = 1;
         iguana_gotdata(coin,addr,addr->height);
-        iguana_queue_send(addr,0,serialized,"verack",0,0,0);
+        iguana_queue_send(addr,0,serialized,"verack",0);
         //iguana_send_ping(coin,addr);
     }
     else if ( (vers->nServices & (1<<7)) == 0 )
@@ -273,7 +273,7 @@ void iguana_gotversion(struct iguana_info *coin,struct iguana_peer *addr,struct 
             addr->dead = 1;
         } else coin->longestchain = vers->nStartingHeight;
     }
-    iguana_queue_send(addr,0,serialized,"getaddr",0,0,0);
+    iguana_queue_send(addr,0,serialized,"getaddr",0);
 }
 
 int32_t iguana_send_version(struct iguana_info *coin,struct iguana_peer *addr,uint64_t myservices)
@@ -291,7 +291,7 @@ int32_t iguana_send_version(struct iguana_info *coin,struct iguana_peer *addr,ui
 	msg.nStartingHeight = coin->blocks.hwmchain.height;
     iguana_gotdata(coin,addr,msg.nStartingHeight);
     len = iguana_rwversion(1,&serialized[sizeof(struct iguana_msghdr)],&msg,addr->ipaddr,0);
-    return(iguana_queue_send(addr,0,serialized,"version",len,0,1));
+    return(iguana_queue_send(addr,0,serialized,"version",len));
 }
 
 int32_t iguana_send_VPNversion(struct iguana_info *coin,struct iguana_peer *addr,uint64_t myservices)
@@ -305,7 +305,7 @@ int32_t iguana_send_VPNversion(struct iguana_info *coin,struct iguana_peer *addr
 	sprintf(msg.strSubVer,"/Satoshi:0.11.99/");
 	msg.nStartingHeight = coin->blocks.hwmchain.height;
     len = iguana_rwversion(1,&serialized[sizeof(struct iguana_msghdr)],(void *)&msg,addr->ipaddr,117);
-    return(iguana_queue_send(addr,0,serialized,"version",len,0,1));
+    return(iguana_queue_send(addr,0,serialized,"version",len));
 }
 
 void iguana_gotverack(struct iguana_info *coin,struct iguana_peer *addr)
@@ -315,7 +315,7 @@ void iguana_gotverack(struct iguana_info *coin,struct iguana_peer *addr)
     {
         //printf("gotverack from %s\n",addr->ipaddr);
         addr->A.nTime = (uint32_t)time(NULL);
-        iguana_queue_send(addr,0,serialized,"getaddr",0,0,0);
+        iguana_queue_send(addr,0,serialized,"getaddr",0);
         if ( addr->supernet != 0 )
         {
             //printf("send getpeers to %s\n",addr->ipaddr);
@@ -350,7 +350,7 @@ void iguana_gotping(struct iguana_info *coin,struct iguana_peer *addr,uint64_t n
     len = iguana_rwnum(1,&serialized[sizeof(struct iguana_msghdr)],sizeof(uint64_t),&nonce);
     if ( memcmp(data,&serialized[sizeof(struct iguana_msghdr)],sizeof(nonce)) != 0 )
         printf("ping ser error %llx != %llx\n",(long long)nonce,*(long long *)data);
-    iguana_queue_send(addr,0,serialized,"pong",len,0,0);
+    iguana_queue_send(addr,0,serialized,"pong",len);
     if ( addr->supernet != 0 )
     {
         iguana_send_supernet(addr,SUPERNET_GETPEERSTR,0);
@@ -367,11 +367,11 @@ int32_t iguana_send_ping(struct iguana_info *coin,struct iguana_peer *addr)
         addr->pingtime = (uint32_t)time(NULL);
     }
     //printf("pingnonce.%llx from (%s)\n",(long long)nonce,addr->ipaddr);
-    iguana_queue_send(addr,0,serialized,"getaddr",0,0,0);
+    iguana_queue_send(addr,0,serialized,"getaddr",0);
     len = iguana_rwnum(1,&serialized[sizeof(struct iguana_msghdr)],sizeof(uint64_t),&nonce);
     if ( addr->supernet != 0 )
         iguana_send_supernet(addr,SUPERNET_GETPEERSTR,0);
-    return(iguana_queue_send(addr,0,serialized,"ping",len,0,0));
+    return(iguana_queue_send(addr,0,serialized,"ping",len));
 }
 
 int32_t iguana_send_ConnectTo(struct iguana_info *coin,struct iguana_peer *addr)
@@ -380,7 +380,7 @@ int32_t iguana_send_ConnectTo(struct iguana_info *coin,struct iguana_peer *addr)
     r = rand();
     len = iguana_rwnum(1,&serialized[sizeof(struct iguana_msghdr)],sizeof(uint32_t),&r);
     len += iguana_rwnum(1,&serialized[sizeof(struct iguana_msghdr)+len],sizeof(port),&port);
-    return(iguana_queue_send(addr,0,serialized,"ConnectTo",len,0,0));
+    return(iguana_queue_send(addr,0,serialized,"ConnectTo",len));
 }
 
 void iguana_gotpong(struct iguana_info *coin,struct iguana_peer *addr,uint64_t nonce)
@@ -591,7 +591,7 @@ int32_t iguana_send_hashes(struct iguana_info *coin,char *command,struct iguana_
         nVersion = 0;
         len = iguana_rwblockhash(1,&serialized[sizeof(struct iguana_msghdr)],&nVersion,&varint,hashes,&stophash);
         //printf("%s send_hashes.%d %s height.%d\n",addr->ipaddr,n,bits256_str(hashes[0]),iguana_height(coin,hashes[0]));
-        retval = iguana_queue_send(addr,0,serialized,command,len,0,0);
+        retval = iguana_queue_send(addr,0,serialized,command,len);
         myfree(serialized,size);
     } else printf("iguana_send_hashes: unexpected n.%d\n",n);
     return(retval);
@@ -670,351 +670,320 @@ int32_t iguana_intvectors(struct iguana_info *coin,struct iguana_peer *addr,int3
 
 int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struct OS_memspace *rawmem,struct OS_memspace *txmem,struct OS_memspace *hashmem,struct iguana_msghdr *H,uint8_t *data,int32_t recvlen)
 {
-    uint8_t serialized[16384]; char *retstr; struct supernet_info *myinfo = SuperNET_MYINFO(0);
-    int32_t i,n,retval,ishost,delay,srvmsg,bloom,sendlen=0,intvectors,len= -100; uint64_t nonce,x;  bits256 hash2;
+    uint8_t serialized[16384]; char *ipaddr; struct supernet_info *myinfo = SuperNET_MYINFO(0);
+    int32_t i,n,retval=-1,ishost,delay=0,srvmsg,bloom,sendlen=0,intvectors,len= -100; uint64_t nonce,x;  bits256 hash2;
     bloom = intvectors = srvmsg = -1;
+    if ( strncmp(H->command,"SuperNET",strlen("SuperNET")) == 0 || strncmp(H->command,"SuperNet",strlen("SuperNet")) == 0 )
+    {
+        if ( addr != 0 )
+        {
+            addr->supernet = 1;
+            ipaddr = addr->ipaddr;
+        } else ipaddr = 0;
+        len = recvlen;
+        basilisk_p2p(myinfo,addr,&delay,ipaddr,data,recvlen,&H->command[strlen("SuperNET")],H->command[6] == 'e' && H->command[7] == 't');
+        //printf("GOT.(%s) len.%d from %s -> ret.(%s)\n",H->command,recvlen,addr->ipaddr,retstr==0?"null":retstr);
+        return(0);
+    }
     if ( addr != 0 )
     {
         //printf("iguana_msgparser from (%s) parse.(%s) len.%d\n",addr->ipaddr,H->command,recvlen);
         //iguana_peerblockrequest(coin,addr->blockspace,IGUANA_MAXPACKETSIZE,addr,iguana_blockhash(coin,100),0);
         addr->lastcontact = (uint32_t)time(NULL);
         strcpy(addr->lastcommand,H->command);
-        if ( strncmp(H->command,"SuperNET",strlen("SuperNET")) == 0 )
+        retval = 0;
+        if ( (ishost= (strcmp(H->command,"getblocks") == 0)) || strcmp(H->command,"block") == 0 )
         {
-            addr->supernet = 1;
-            addr->msgcounts.verack++;
-            len = recvlen;
-            if ( (retstr= SuperNET_p2p(coin,addr,&delay,addr->ipaddr,data,recvlen,H->command[strlen("SuperNET")]=='b')) != 0 )
+            if ( addr != 0 )
             {
-                cJSON *rawtxjson;
-                if ( (rawtxjson= cJSON_Parse(retstr)) != 0 )
+                struct iguana_txblock txdata;
+                iguana_memreset(rawmem), iguana_memreset(txmem);
+                memset(&txdata,0,sizeof(txdata));
+                if ( ishost == 0 )
                 {
-                    if ( jstr(rawtxjson,"method") != 0 && strcmp(jstr(rawtxjson,"method"),"rawtx_return") == 0 )
+                    if ( 0 && coin->chain->auxpow != 0 )
                     {
-                        ;
+                        int32_t i; for (i=0; i<recvlen; i++)
+                            printf("%02x",data[i]);
+                        printf(" auxblock\n");
+                    }
+                    addr->msgcounts.block++;
+                    if ( (n= iguana_gentxarray(coin,rawmem,&txdata,&len,data,recvlen)) == recvlen )
+                    {
+                        len = n;
+                        iguana_gotblockM(coin,addr,&txdata,rawmem->ptr,H,data,recvlen);
+                    }
+                    else
+                    {
+                        //for (i=0; i<recvlen; i++)
+                        //    printf("%02x",data[i]);
+                        printf(" parse error block txn_count.%d, n.%d len.%d vs recvlen.%d from.(%s)\n",txdata.block.RO.txn_count,n,len,recvlen,addr->ipaddr);
                     }
                 }
-                iguana_send_supernet(addr,retstr,delay);
-                free(retstr);
-            }
-            //printf("GOT.(%s) len.%d from %s -> ret.(%s)\n",H->command,recvlen,addr->ipaddr,retstr==0?"null":retstr);
-            return(0);
-        }
-        else if ( strcmp(H->command,"InstantDEX") == 0 )
-        {
-            char *str;
-            printf("peer InstantDEX message datalen.%d\n",recvlen);
-            if ( (str= InstantDEX_hexmsg(myinfo,category_find(myinfo->instantdex_category,GENESIS_PUBKEY),data,recvlen,addr->ipaddr)) != 0 )
-                free(str);
-            //SuperNET_hexmsgadd(myinfo,myinfo->instantdex_category,GENESIS_PUBKEY,(char *)serialized,tai_now(),addr->ipaddr);
-            return(0);
-        }
-        else if ( strcmp(H->command,"pangea") == 0 )
-        {
-            //init_hexbytes_noT(0,data,recvlen);
-            printf("skip pangea InstantDEX message\n");
-            //SuperNET_hexmsgadd(myinfo,myinfo->pangea_category,GENESIS_PUBKEY,0,tai_now(),addr->ipaddr);
-            return(0);
-        }
-        else if ( strcmp(H->command,"quote") == 0 )
-        {
-            printf("got full quote from %s\n",addr->ipaddr);
-            instantdex_quotep2p(myinfo,coin,addr,data,recvlen);
-            return(0);
-        }
-    }
-    retval = 0;
-    if ( (ishost= (strcmp(H->command,"getblocks") == 0)) || strcmp(H->command,"block") == 0 )
-    {
-        if ( addr != 0 )
-        {
-            struct iguana_txblock txdata;
-            iguana_memreset(rawmem), iguana_memreset(txmem);
-            memset(&txdata,0,sizeof(txdata));
-            if ( ishost == 0 )
-            {
-                if ( 0 && coin->chain->auxpow != 0 )
+                else
                 {
-                    int32_t i; for (i=0; i<recvlen; i++)
-                        printf("%02x",data[i]);
-                    printf(" auxblock\n");
+                    len = iguana_peergetrequest(coin,addr,data,recvlen,1);
                 }
-                addr->msgcounts.block++;
-                if ( (n= iguana_gentxarray(coin,rawmem,&txdata,&len,data,recvlen)) == recvlen )
+            }
+        }
+        else if ( (ishost= (strncmp(H->command,"inv",3) == 0)) || strncmp(H->command,"getdata",7) == 0 )
+        {
+            if ( addr != 0 )
+            {
+                if ( ishost == 0 )
                 {
-                    len = n;
-                    iguana_gotblockM(coin,addr,&txdata,rawmem->ptr,H,data,recvlen);
+                    addr->msgcounts.getdata++;
+                    len = iguana_peerdatarequest(coin,addr,data,recvlen);
                 }
                 else
+                {
+                    intvectors = 'I', addr->msgcounts.inv++;
+                    if ( 0 && strcmp(H->command,"inv2") == 0 )
+                        printf("GOT INV2.%d\n",recvlen);
+                    len = iguana_intvectors(coin,addr,1,data,recvlen); // indirectly issues getdata
+                }
+            }
+        }
+        else if ( (ishost= (strcmp(H->command,"getheaders") == 0)) || strcmp(H->command,"headers") == 0 )
+        {
+            struct iguana_msgblock msg; struct iguana_block *blocks; uint32_t tmp,n=0;
+            len = 0;
+            if ( addr != 0 )
+            {
+                if ( ishost == 0 )
+                {
+                    len = iguana_rwvarint32(0,data,&n);
+                    if ( n <= IGUANA_MAXINV )
+                    {
+                        bits256 auxhash2,prevhash2; struct iguana_msgtx *tx; struct iguana_msgmerkle coinbase_branch,blockchain_branch; struct iguana_msgblock parentblock;
+                        if ( rawmem->totalsize == 0 )
+                            iguana_meminit(rawmem,"bighdrs",0,IGUANA_MAXPACKETSIZE * 2,0);
+                        memset(prevhash2.bytes,0,sizeof(prevhash2));
+                        blocks = mycalloc('i',1,sizeof(*blocks) * n);
+                        //printf("%s got %d headers len.%d\n",coin->symbol,n,recvlen);
+                        for (i=0; i<n; i++)
+                        {
+                            if ( coin->chain->auxpow != 0 )
+                            {
+                                tmp = iguana_rwblock80(0,&data[len],&msg);
+                                hash2 = iguana_calcblockhash(coin->symbol,coin->chain->hashalgo,&data[len],tmp);
+                                len += tmp;
+                                if ( (msg.H.version & 0x100) != 0 )
+                                {
+                                    iguana_memreset(rawmem);
+                                    tx = iguana_memalloc(rawmem,sizeof(*tx),1);
+                                    len += iguana_rwtx(0,rawmem,&data[len],tx,recvlen-len,&tx->txid,coin->chain->hastimestamp,strcmp(coin->symbol,"VPN")==0);
+                                    len += iguana_rwbignum(0,&data[len],sizeof(auxhash2),auxhash2.bytes);
+                                    len += iguana_rwmerklebranch(0,&data[len],&coinbase_branch);
+                                    len += iguana_rwmerklebranch(0,&data[len],&blockchain_branch);
+                                    len += iguana_rwblock80(0,&data[len],&parentblock);
+                                }
+                                len += iguana_rwvarint32(0,&data[len],&tmp);
+                                char str[65],str2[65];
+                                if ( 0 && coin->chain->auxpow != 0 )
+                                    printf("%d %d of %d: %s %s v.%08x numtx.%d cmp.%d\n",len,i,n,bits256_str(str,hash2),bits256_str(str2,msg.H.prev_block),msg.H.version,tmp,bits256_cmp(prevhash2,msg.H.prev_block));
+                            } else len += iguana_rwblock(coin->chain->symbol,coin->chain->hashalgo,0,&hash2,&data[len],&msg);
+                            iguana_blockconv(&blocks[i],&msg,hash2,-1);
+                            prevhash2 = hash2;
+                        }
+                        if ( 0 && coin->chain->auxpow != 0 )
+                        {
+                            len += iguana_rwvarint32(0,&data[len],&n);
+                            for (i=0; i<n; i++)
+                                len += iguana_eatauxpow(0,coin->symbol,&data[len]);
+                        }
+                        iguana_gotheadersM(coin,addr,blocks,n);
+                        //myfree(blocks,sizeof(*blocks) * n);
+                        if ( len == recvlen && addr != 0 )
+                            addr->msgcounts.headers++;
+                    } else printf("got unexpected n.%d for headers\n",n);
+                }
+                else if ( addr->headerserror == 0 )
+                    len = iguana_peergetrequest(coin,addr,data,recvlen,0);
+            }
+        }
+        else if ( (ishost= (strcmp(H->command,"version") == 0)) || strcmp(H->command,"verack") == 0 )
+        {
+            if ( addr != 0 )
+            {
+                if ( ishost != 0 )
+                {
+                    struct iguana_msgversion recvmv;
+                    len = iguana_rwversion(0,data,&recvmv,addr->ipaddr,recvlen);
+                    if ( len <= recvlen )
+                        iguana_gotversion(coin,addr,&recvmv);
+                    addr->msgcounts.version++;
+                }
+                else
+                {
+                    iguana_gotverack(coin,addr);
+                    addr->msgcounts.verack++;
+                    len = 0;
+                }
+            }
+        }
+        else if ( (ishost= (strcmp(H->command,"ping") == 0)) || strcmp(H->command,"pong") == 0 )
+        {
+            len = 0;
+            if ( recvlen == sizeof(uint64_t) && addr != 0 )
+            {
+                len = iguana_rwnum(0,data,sizeof(uint64_t),&nonce);
+                if ( addr != 0 )
+                {
+                    //printf("%u got nonce.%llx from %s\n",(uint32_t)time(NULL),(long long)nonce,addr->ipaddr);
+                    if ( ishost != 0 )
+                    {
+                        iguana_gotping(coin,addr,nonce,data);
+                        addr->msgcounts.ping++;
+                    }
+                    else
+                    {
+                        iguana_gotpong(coin,addr,nonce);
+                        addr->msgcounts.pong++;
+                    }
+                    iguana_queue_send(addr,0,serialized,"getaddr",0);
+                }
+            }
+        }
+        else if ( (ishost= (strcmp(H->command,"getaddr") == 0)) || strcmp(H->command,"addr") == 0 )
+        {
+            struct iguana_msgaddress A;
+            //printf("iguana_msgparser from (%s) parse.(%s) len.%d\n",addr->ipaddr,H->command,recvlen);
+            if ( addr != 0 )
+            {
+                if ( ishost == 0 )
                 {
                     //for (i=0; i<recvlen; i++)
                     //    printf("%02x",data[i]);
-                    printf(" parse error block txn_count.%d, n.%d len.%d vs recvlen.%d from.(%s)\n",txdata.block.RO.txn_count,n,len,recvlen,addr->ipaddr);
-                }
-            }
-            else
-            {
-                len = iguana_peergetrequest(coin,addr,data,recvlen,1);
-            }
-        }
-    }
-    else if ( (ishost= (strncmp(H->command,"inv",3) == 0)) || strncmp(H->command,"getdata",7) == 0 )
-    {
-        if ( addr != 0 )
-        {
-            if ( ishost == 0 )
-            {
-                addr->msgcounts.getdata++;
-                len = iguana_peerdatarequest(coin,addr,data,recvlen);
-            }
-            else
-            {
-                intvectors = 'I', addr->msgcounts.inv++;
-                if ( 0 && strcmp(H->command,"inv2") == 0 )
-                    printf("GOT INV2.%d\n",recvlen);
-                len = iguana_intvectors(coin,addr,1,data,recvlen); // indirectly issues getdata
-            }
-        }
-    }
-    else if ( (ishost= (strcmp(H->command,"getheaders") == 0)) || strcmp(H->command,"headers") == 0 )
-    {
-        struct iguana_msgblock msg; struct iguana_block *blocks; uint32_t tmp,n=0;
-        len = 0;
-        if ( addr != 0 )
-        {
-            if ( ishost == 0 )
-            {
-                len = iguana_rwvarint32(0,data,&n);
-                if ( n <= IGUANA_MAXINV )
-                {
-                    bits256 auxhash2,prevhash2; struct iguana_msgtx *tx; struct iguana_msgmerkle coinbase_branch,blockchain_branch; struct iguana_msgblock parentblock;
-                    if ( rawmem->totalsize == 0 )
-                        iguana_meminit(rawmem,"bighdrs",0,IGUANA_MAXPACKETSIZE * 2,0);
-                    memset(prevhash2.bytes,0,sizeof(prevhash2));
-                    blocks = mycalloc('i',1,sizeof(*blocks) * n);
-                    //printf("%s got %d headers len.%d\n",coin->symbol,n,recvlen);
-                    for (i=0; i<n; i++)
+                    //printf(" addr recvlen.%d\n",recvlen);
+                    len = iguana_rwvarint(0,data,&x);
+                    for (i=0; i<x; i++)
                     {
-                        if ( coin->chain->auxpow != 0 )
-                        {
-                            tmp = iguana_rwblock80(0,&data[len],&msg);
-                            hash2 = iguana_calcblockhash(coin->symbol,coin->chain->hashalgo,&data[len],tmp);
-                            len += tmp;
-                            if ( (msg.H.version & 0x100) != 0 )
-                            {
-                                iguana_memreset(rawmem);
-                                tx = iguana_memalloc(rawmem,sizeof(*tx),1);
-                                len += iguana_rwtx(0,rawmem,&data[len],tx,recvlen-len,&tx->txid,coin->chain->hastimestamp,strcmp(coin->symbol,"VPN")==0);
-                                len += iguana_rwbignum(0,&data[len],sizeof(auxhash2),auxhash2.bytes);
-                                len += iguana_rwmerklebranch(0,&data[len],&coinbase_branch);
-                                len += iguana_rwmerklebranch(0,&data[len],&blockchain_branch);
-                                len += iguana_rwblock80(0,&data[len],&parentblock);
-                            }
-                            len += iguana_rwvarint32(0,&data[len],&tmp);
-                            char str[65],str2[65];
-                            if ( 0 && coin->chain->auxpow != 0 )
-                                printf("%d %d of %d: %s %s v.%08x numtx.%d cmp.%d\n",len,i,n,bits256_str(str,hash2),bits256_str(str2,msg.H.prev_block),msg.H.version,tmp,bits256_cmp(prevhash2,msg.H.prev_block));
-                        } else len += iguana_rwblock(coin->chain->symbol,coin->chain->hashalgo,0,&hash2,&data[len],&msg);
-                        iguana_blockconv(&blocks[i],&msg,hash2,-1);
-                        prevhash2 = hash2;
+                        memset(&A,0,sizeof(A));
+                        len += iguana_rwaddr(0,&data[len],&A,CADDR_TIME_VERSION);//(int32_t)addr->protover);
+                        iguana_gotaddr(coin,addr,&A);
                     }
-                    if ( 0 && coin->chain->auxpow != 0 )
+                    if ( len == recvlen )
                     {
-                        len += iguana_rwvarint32(0,&data[len],&n);
-                        for (i=0; i<n; i++)
-                            len += iguana_eatauxpow(0,coin->symbol,&data[len]);
+                        addr->lastgotaddr = (uint32_t)time(NULL);
+                        addr->msgcounts.addr++;
                     }
-                    iguana_gotheadersM(coin,addr,blocks,n);
-                    //myfree(blocks,sizeof(*blocks) * n);
-                    if ( len == recvlen && addr != 0 )
-                        addr->msgcounts.headers++;
-                } else printf("got unexpected n.%d for headers\n",n);
-            }
-            else if ( addr->headerserror == 0 )
-                len = iguana_peergetrequest(coin,addr,data,recvlen,0);
-        }
-    }
-    else if ( (ishost= (strcmp(H->command,"version") == 0)) || strcmp(H->command,"verack") == 0 )
-    {
-        if ( addr != 0 )
-        {
-            if ( ishost != 0 )
-            {
-                struct iguana_msgversion recvmv;
-                len = iguana_rwversion(0,data,&recvmv,addr->ipaddr,recvlen);
-                if ( len <= recvlen )
-                    iguana_gotversion(coin,addr,&recvmv);
-                addr->msgcounts.version++;
-            }
-            else
-            {
-                iguana_gotverack(coin,addr);
-                addr->msgcounts.verack++;
-                len = 0;
-            }
-        }
-    }
-    else if ( (ishost= (strcmp(H->command,"ping") == 0)) || strcmp(H->command,"pong") == 0 )
-    {
-        len = 0;
-        if ( recvlen == sizeof(uint64_t) && addr != 0 )
-        {
-            len = iguana_rwnum(0,data,sizeof(uint64_t),&nonce);
-            if ( addr != 0 )
-            {
-                //printf("%u got nonce.%llx from %s\n",(uint32_t)time(NULL),(long long)nonce,addr->ipaddr);
-                if ( ishost != 0 )
-                {
-                    iguana_gotping(coin,addr,nonce,data);
-                    addr->msgcounts.ping++;
                 }
                 else
                 {
-                    iguana_gotpong(coin,addr,nonce);
-                    addr->msgcounts.pong++;
-                }
-                iguana_queue_send(addr,0,serialized,"getaddr",0,0,0);
-            }
-        }
-    }
-    else if ( (ishost= (strcmp(H->command,"getaddr") == 0)) || strcmp(H->command,"addr") == 0 )
-    {
-        struct iguana_msgaddress A;
-        //printf("iguana_msgparser from (%s) parse.(%s) len.%d\n",addr->ipaddr,H->command,recvlen);
-        if ( addr != 0 )
-        {
-            if ( ishost == 0 )
-            {
-                //for (i=0; i<recvlen; i++)
-                //    printf("%02x",data[i]);
-                //printf(" addr recvlen.%d\n",recvlen);
-                len = iguana_rwvarint(0,data,&x);
-                for (i=0; i<x; i++)
-                {
-                    memset(&A,0,sizeof(A));
-                    len += iguana_rwaddr(0,&data[len],&A,CADDR_TIME_VERSION);//(int32_t)addr->protover);
-                    iguana_gotaddr(coin,addr,&A);
-                }
-                if ( len == recvlen )
-                {
-                    addr->lastgotaddr = (uint32_t)time(NULL);
-                    addr->msgcounts.addr++;
-                }
-            }
-            else
-            {
-                len = 0;
-                if ( (sendlen= iguana_peeraddrrequest(coin,addr,&addr->blockspace[sizeof(H)],IGUANA_MAXPACKETSIZE)) > 0 )
-                {
-                    if ( 0 )
+                    len = 0;
+                    if ( (sendlen= iguana_peeraddrrequest(coin,addr,&addr->blockspace[sizeof(H)],IGUANA_MAXPACKETSIZE)) > 0 )
                     {
-                        int32_t checklen; uint32_t checkbits; char checkaddr[64];
-                        checklen = iguana_rwvarint(0,&addr->blockspace[sizeof(H)],&x);
-                        printf("\nSENDING:\n");
-                        for (i=0; i<sendlen; i++)
-                            printf("%02x",addr->blockspace[sizeof(H)+i]);
-                        printf(" %p addr sendlen.%d N.%d\n",&addr->blockspace[sizeof(H)],sendlen,(int32_t)x);
-                        for (i=0; i<x; i++)
+                        if ( 0 )
                         {
-                            memset(&A,0,sizeof(A));
-                            checklen += iguana_rwaddr(0,&addr->blockspace[sizeof(H) + checklen],&A,CADDR_TIME_VERSION);
-                            iguana_rwnum(0,&A.ip[12],sizeof(uint32_t),&checkbits);
-                            expand_ipbits(checkaddr,checkbits);
-                            printf("checkaddr.(%s:%02x%02x) ",checkaddr,((uint8_t *)&A.port)[1],((uint8_t *)&A.port)[0]);
+                            int32_t checklen; uint32_t checkbits; char checkaddr[64];
+                            checklen = iguana_rwvarint(0,&addr->blockspace[sizeof(H)],&x);
+                            printf("\nSENDING:\n");
+                            for (i=0; i<sendlen; i++)
+                                printf("%02x",addr->blockspace[sizeof(H)+i]);
+                            printf(" %p addr sendlen.%d N.%d\n",&addr->blockspace[sizeof(H)],sendlen,(int32_t)x);
+                            for (i=0; i<x; i++)
+                            {
+                                memset(&A,0,sizeof(A));
+                                checklen += iguana_rwaddr(0,&addr->blockspace[sizeof(H) + checklen],&A,CADDR_TIME_VERSION);
+                                iguana_rwnum(0,&A.ip[12],sizeof(uint32_t),&checkbits);
+                                expand_ipbits(checkaddr,checkbits);
+                                printf("checkaddr.(%s:%02x%02x) ",checkaddr,((uint8_t *)&A.port)[1],((uint8_t *)&A.port)[0]);
+                            }
+                            printf("x.%d\n",(int32_t)x);
                         }
-                        printf("x.%d\n",(int32_t)x);
+                        retval = iguana_queue_send(addr,0,addr->blockspace,"addr",sendlen);
                     }
-                    retval = iguana_queue_send(addr,0,addr->blockspace,"addr",sendlen,0,0);
+                    addr->msgcounts.getaddr++;
                 }
-                addr->msgcounts.getaddr++;
             }
+            //printf("%s -> addr recvlen.%d num.%d\n",addr->ipaddr,recvlen,(int32_t)x);
         }
-        //printf("%s -> addr recvlen.%d num.%d\n",addr->ipaddr,recvlen,(int32_t)x);
-    }
-    else if ( strcmp(H->command,"notfound") == 0 )
-    {
-        if ( addr != 0 )
+        else if ( strcmp(H->command,"notfound") == 0 )
         {
-            printf("%s SERVER notfound\n",addr->ipaddr);
-            intvectors = 'N', addr->msgcounts.notfound++;
-            len = iguana_intvectors(coin,addr,1,data,recvlen);
-        }
-    }
-    else if ( strcmp(H->command,"mempool") == 0 )
-    {
-        if ( addr != 0 )
-        {
-            printf("%s SERVER mempool\n",addr->ipaddr);
-            srvmsg = 'M', addr->msgcounts.mempool++;
-        }
-    }
-    else if ( strcmp(H->command,"tx") == 0 )
-    {
-        struct iguana_msgtx *tx;
-        iguana_memreset(rawmem);
-        tx = iguana_memalloc(rawmem,sizeof(*tx),1);//mycalloc('u',1,sizeof(*tx));
-        len = iguana_rwtx(0,rawmem,data,tx,recvlen,&tx->txid,coin->chain->hastimestamp,strcmp(coin->symbol,"VPN")==0);
-        if ( addr != 0 )
-        {
-            iguana_gotunconfirmedM(coin,addr,tx,data,recvlen);
-            printf("tx recvlen.%d vs len.%d\n",recvlen,len);
-            addr->msgcounts.tx++;
-        }
-    }
-    else if ( addr != 0 && strcmp(H->command,"ConnectTo") == 0 )
-    {
-        iguana_queue_send(addr,0,serialized,"getaddr",0,0,0);
-        len = 6;
-    }
-    else if ( strcmp(H->command,"reject") == 0 )
-    {
-        if ( addr != 0 )
-        {
-            if ( strncmp((char *)data+1,"headers",7) == 0 )
-                addr->headerserror++;
-            else
+            if ( addr != 0 )
             {
-                for (i=0; i<recvlen; i++)
-                    printf("%02x ",data[i]);
-                printf("reject.(%s) recvlen.%d %s proto.%d\n",data+1,recvlen,addr->ipaddr,addr->protover);
-                addr->msgcounts.reject++;
+                printf("%s SERVER notfound\n",addr->ipaddr);
+                intvectors = 'N', addr->msgcounts.notfound++;
+                len = iguana_intvectors(coin,addr,1,data,recvlen);
             }
         }
-        len = recvlen;
-    }
-    else if ( strcmp(H->command,"alert") == 0 )
-    {
-        struct iguana_msgalert alert;
-        memset(&alert,0,sizeof(alert));
-        len = iguana_rwmsgalert(coin,0,data,&alert);
-        if ( len == recvlen && addr != 0 )
-            addr->msgcounts.alert++;
-    }
-    else if ( addr != 0 )
-    {
-        if ( strcmp(H->command,"filterload") == 0 ) // for bloom
-            bloom = 'L', addr->msgcounts.filterload++;
-        else if ( strcmp(H->command,"filteradd") == 0 ) // for bloom
-            bloom = 'A', addr->msgcounts.filteradd++;
-        else if ( strcmp(H->command,"filterclear") == 0 ) // for bloom
-            bloom = 'C', addr->msgcounts.filterclear++;
-        else if ( strcmp(H->command,"merkleblock") == 0 ) // for bloom
-            bloom = 'M', addr->msgcounts.merkleblock++;
-    }
-    if ( bloom >= 0 || srvmsg >= 0 )
-        len = recvlen; // just mark as valid
-    if ( len != recvlen && len != recvlen-1 && len != recvlen-2 )
-    {
-        //printf("error.(%s) (%s): len.%d != recvlen.%d\n",H->command,addr->ipaddr,len,recvlen);
-        //for (i=0; i<len; i++)
-        //    printf("%02x",data[i]);
-        if ( strcmp(H->command,"addr") != 0 && (coin->chain->auxpow == 0 || strcmp(H->command,"headers") != 0) )
-            printf("%s %s.%s len mismatch %d != %d\n",coin->symbol,addr!=0?addr->ipaddr:"local",H->command,len,recvlen);
-    }
-    else if ( len != recvlen )
-    {
-        printf("%s extra byte.[%02x] command.%s len.%d recvlen.%d\n",addr->ipaddr,data[recvlen-1],H->command,len,recvlen);
-        //retval = -1;
+        else if ( strcmp(H->command,"mempool") == 0 )
+        {
+            if ( addr != 0 )
+            {
+                printf("%s SERVER mempool\n",addr->ipaddr);
+                srvmsg = 'M', addr->msgcounts.mempool++;
+            }
+        }
+        else if ( strcmp(H->command,"tx") == 0 )
+        {
+            struct iguana_msgtx *tx;
+            iguana_memreset(rawmem);
+            tx = iguana_memalloc(rawmem,sizeof(*tx),1);//mycalloc('u',1,sizeof(*tx));
+            len = iguana_rwtx(0,rawmem,data,tx,recvlen,&tx->txid,coin->chain->hastimestamp,strcmp(coin->symbol,"VPN")==0);
+            if ( addr != 0 )
+            {
+                iguana_gotunconfirmedM(coin,addr,tx,data,recvlen);
+                printf("tx recvlen.%d vs len.%d\n",recvlen,len);
+                addr->msgcounts.tx++;
+            }
+        }
+        else if ( addr != 0 && strcmp(H->command,"ConnectTo") == 0 )
+        {
+            iguana_queue_send(addr,0,serialized,"getaddr",0);
+            len = 6;
+        }
+        else if ( strcmp(H->command,"reject") == 0 )
+        {
+            if ( addr != 0 )
+            {
+                if ( strncmp((char *)data+1,"headers",7) == 0 )
+                    addr->headerserror++;
+                else
+                {
+                    for (i=0; i<recvlen; i++)
+                        printf("%02x ",data[i]);
+                    printf("reject.(%s) recvlen.%d %s proto.%d\n",data+1,recvlen,addr->ipaddr,addr->protover);
+                    addr->msgcounts.reject++;
+                }
+            }
+            len = recvlen;
+        }
+        else if ( strcmp(H->command,"alert") == 0 )
+        {
+            struct iguana_msgalert alert;
+            memset(&alert,0,sizeof(alert));
+            len = iguana_rwmsgalert(coin,0,data,&alert);
+            if ( len == recvlen && addr != 0 )
+                addr->msgcounts.alert++;
+        }
+        else if ( addr != 0 )
+        {
+            if ( strcmp(H->command,"filterload") == 0 ) // for bloom
+                bloom = 'L', addr->msgcounts.filterload++;
+            else if ( strcmp(H->command,"filteradd") == 0 ) // for bloom
+                bloom = 'A', addr->msgcounts.filteradd++;
+            else if ( strcmp(H->command,"filterclear") == 0 ) // for bloom
+                bloom = 'C', addr->msgcounts.filterclear++;
+            else if ( strcmp(H->command,"merkleblock") == 0 ) // for bloom
+                bloom = 'M', addr->msgcounts.merkleblock++;
+        }
+        if ( bloom >= 0 || srvmsg >= 0 )
+            len = recvlen; // just mark as valid
+        if ( len != recvlen && len != recvlen-1 && len != recvlen-2 )
+        {
+            //printf("error.(%s) (%s): len.%d != recvlen.%d\n",H->command,addr->ipaddr,len,recvlen);
+            //for (i=0; i<len; i++)
+            //    printf("%02x",data[i]);
+            if ( strcmp(H->command,"addr") != 0 && (coin->chain->auxpow == 0 || strcmp(H->command,"headers") != 0) )
+                printf("%s %s.%s len mismatch %d != %d\n",coin->symbol,addr!=0?addr->ipaddr:"local",H->command,len,recvlen);
+        }
+        else if ( len != recvlen )
+        {
+            printf("%s extra byte.[%02x] command.%s len.%d recvlen.%d\n",addr->ipaddr,data[recvlen-1],H->command,len,recvlen);
+            //retval = -1;
+        }
     }
     return(retval);
 }

@@ -20,19 +20,24 @@ struct iguana_iAddr *iguana_iAddrhashfind(struct iguana_info *coin,uint64_t ipbi
 
 int32_t iguana_validatehdr(char *symbol,struct iguana_msghdr *H)
 {
-    int32_t i = 0,len = -1;
-    if ( strcmp(symbol,"VPN") != 0 )
+    int32_t i = 0,valid=0,len = -1;
+    if ( strcmp(symbol,"VPN") == 0 || strncmp("SuperNET",H->command,strlen("SuperNET")) == 0 )
+        valid = 1;
+    else
     {
         for (i=0; Iguana_validcommands[i]!=0&&Iguana_validcommands[i][0]!=0; i++)
             if ( strcmp(H->command,Iguana_validcommands[i]) == 0 )
+            {
+                valid = 1;
                 break;
+            }
     }
-    if ( Iguana_validcommands[i][0] != 0 )
+    if ( valid != 0 )
     {
         iguana_rwnum(0,H->serdatalen,sizeof(H->serdatalen),(uint32_t *)&len);
         if ( len > IGUANA_MAXPACKETSIZE )
             return(-1);
-    }
+    } else return(-1);
     return(len);
 }
 
@@ -455,7 +460,7 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
     return(len);
 }
 
-int32_t iguana_queue_send(struct iguana_peer *addr,int32_t delay,uint8_t *serialized,char *cmd,int32_t len,int32_t getdatablock,int32_t forceflag)
+int32_t iguana_queue_send(struct iguana_peer *addr,int32_t delay,uint8_t *serialized,char *cmd,int32_t len)
 {
     struct iguana_packet *packet; int32_t datalen;
     if ( addr == 0 )
@@ -464,18 +469,10 @@ int32_t iguana_queue_send(struct iguana_peer *addr,int32_t delay,uint8_t *serial
         exit(-1);
         return(-1);
     }
-    else if ( forceflag != 0 )
-    {
-        //printf("forceflag not supported\n");
-        //return(iguana_send(coin,addr,serialized,len));
-    }
-
     if ( (datalen= iguana_sethdr((void *)serialized,addr->netmagic,cmd,&serialized[sizeof(struct iguana_msghdr)],len)) < 0 )
         return(-1);
     if ( strcmp("getaddr",cmd) == 0 && time(NULL) < addr->lastgotaddr+300 )
         return(0);
-    //if ( strcmp("version",cmd) == 0 )
-    //    return(iguana_send(coin,addr,serialized,datalen));
     packet = mycalloc('S',1,sizeof(struct iguana_packet) + datalen);
     packet->datalen = datalen;
     packet->addr = addr;

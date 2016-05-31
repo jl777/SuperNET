@@ -17058,6 +17058,178 @@ len = 0;
                 return(retstr);
             }
 
+                int32_t basilisk_submit(struct supernet_info *myinfo,cJSON *reqjson,int32_t timeout,int32_t fanout,struct basilisk_item *ptr)
+            {
+                int32_t i,j,k,l,r2,r,n; struct iguana_peer *addr; struct iguana_info *coin; char *reqstr; cJSON *tmpjson;
+                tmpjson = basilisk_json(myinfo,reqjson,ptr->basilisktag,timeout);
+                reqstr = jprint(tmpjson,1);
+                //printf("basilisk_submit.(%s)\n",reqstr);
+                if ( fanout <= 0 )
+                    fanout = BASILISK_MINFANOUT;
+                else if ( fanout > BASILISK_MAXFANOUT )
+                    fanout = BASILISK_MAXFANOUT;
+                r2 = rand();
+                for (l=n=0; l<IGUANA_MAXCOINS; l++)
+                {
+                    i = (l + r2) % IGUANA_MAXCOINS;
+                    if ( (coin= Coins[i]) != 0 )
+                    {
+                        r = rand();
+                        for (k=0; k<IGUANA_MAXPEERS; k++)
+                        {
+                            j = (k + r) % IGUANA_MAXPEERS;
+                            if ( (addr= &coin->peers.active[j]) != 0 && addr->supernet != 0 && addr->usock >= 0 )
+                            {
+                                ptr->submit = (uint32_t)time(NULL);
+                                printf("submit to (%s)\n",addr->ipaddr);
+                                iguana_send_supernet(addr,reqstr,0);
+                                if ( n++ > fanout )
+                                    break;
+                            }
+                        }
+                    }
+                }
+                free(reqstr);
+                return(n);
+            }
+                
+            /*cJSON *basilisk_json(struct supernet_info *myinfo,cJSON *hexjson,uint32_t basilisktag,int32_t timeout)
+             {
+             char *str,*buf; cJSON *retjson;
+             if ( jobj(hexjson,"basilisktag") != 0 )
+             jdelete(hexjson,"basilisktag");
+             jaddnum(hexjson,"basilisktag",basilisktag);
+             str = jprint(hexjson,0);
+             buf = malloc(strlen(str)*2 + 1);
+             init_hexbytes_noT(buf,(uint8_t *)str,(int32_t)strlen(str));
+             free(str);
+             retjson = cJSON_CreateObject();
+             jaddstr(retjson,"hexmsg",buf);
+             free(buf);
+             jaddstr(retjson,"agent","SuperNET");
+             jaddstr(retjson,"method","DHT");
+             jaddnum(retjson,"request",1);
+             jaddnum(retjson,"plaintext",1);
+             jaddbits256(retjson,"categoryhash",myinfo->basilisk_category);
+             jaddnum(retjson,"timeout",timeout);
+             return(retjson);
+             }
+             
+             char *basilisk_results(uint32_t basilisktag,cJSON *valsobj)
+             {
+             cJSON *resultobj = cJSON_CreateObject();
+             jadd(resultobj,"vals",valsobj);
+             jaddstr(resultobj,"agent","basilisk");
+             jaddstr(resultobj,"method","result");
+             jaddnum(resultobj,"plaintext",1);
+             if ( jobj(resultobj,"basilisktag") != 0 )
+             jdelete(resultobj,"basilisktag");
+             jaddnum(resultobj,"basilisktag",basilisktag);
+             return(jprint(resultobj,1));
+             }
+             
+             cJSON *basilisk_resultsjson(struct supernet_info *myinfo,char *symbol,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,char *retstr)
+             {
+             cJSON *hexjson=0,*retjson=0;
+             if ( retstr != 0 )
+             {
+             if ( remoteaddr != 0 && remoteaddr[0] != 0 )
+             {
+             hexjson = cJSON_CreateObject();
+             jaddstr(hexjson,"agent","basilisk");
+             jaddstr(hexjson,"method","result");
+             if ( (retjson= cJSON_Parse(retstr)) != 0 )
+             jadd(hexjson,"vals",retjson);
+             retjson = basilisk_json(myinfo,hexjson,basilisktag,timeoutmillis);
+             free_json(hexjson);
+             printf("resultsjson.(%s)\n",jprint(retjson,0));
+             }
+             else // local request
+             retjson = cJSON_Parse(retstr);
+             }
+             return(retjson);
+             }*/
+            /* cJSON *array=0,*result,*item,*retjson,*hexjson; int32_t i,n,besti=-1; char *coinaddr,*balancestr=0,*retstr=0; int64_t total=0,amount,most=0; struct basilisk_item *ptr;
+             array = cJSON_CreateArray();
+             if ( coin != 0 && basilisk_bitcoinavail(coin) != 0 )
+             {
+             if ( (n= cJSON_GetArraySize(addresses)) > 0 )
+             {
+             for (i=0; i<n; i++)
+             {
+             coinaddr = jstri(addresses,i);
+             if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
+             balancestr = iguana_balance(myinfo,coin,0,remoteaddr,coin->symbol,coinaddr,lastheight,minconf);
+             //else balancestr = bitcoin_balance(coin,coinaddr,lastheight,minconf);
+             if ( balancestr != 0 )
+             {
+             if ( (result= cJSON_Parse(balancestr)) != 0 )
+             {
+             if ( jobj(result,"balance") != 0 )
+             {
+             item = cJSON_CreateObject();
+             amount = SATOSHIDEN * jdouble(result,"balance");
+             total += amount;
+             jaddnum(item,coinaddr,dstr(amount));
+             jaddi(array,item);
+             }
+             free_json(result);
+             }
+             free(balancestr);
+             }
+             }
+             }
+             }
+             else
+             {
+             hexjson = cJSON_CreateObject();
+             jaddnum(hexjson,"basilisktag",basilisktag);
+             jadd(hexjson,"addresses",jduplicate(addresses));
+             jaddnum(hexjson,"minconf",minconf);
+             jaddnum(hexjson,"lastheight",lastheight);
+             jaddstr(hexjson,"agent","basilisk");
+             jaddstr(hexjson,"method","balances");
+             if ( (ptr= basilisk_issue(myinfo,hexjson,timeoutmillis,0,1,basilisktag)) != 0 )
+             {
+             for (i=0; i<ptr->numresults; i++)
+             {
+             if ( ptr->results[i] == 0 )
+             continue;
+             if ( retstr != 0 && strcmp(ptr->results[i],retstr) == 0 )
+             ptr->numexact++;
+             if ( (retjson= cJSON_Parse(ptr->results[i])) != 0 )
+             {
+             if ( (total= j64bits(retjson,"balance")) > most )
+             {
+             most = total;
+             besti = i;
+             }
+             free_json(retjson);
+             }
+             }
+             retstr = basilisk_finish(ptr,arrayp,besti);
+             }
+             free_json(hexjson);
+             }
+             *arrayp = array;
+             return(most);*/
+                if ( agent != 0 && method != 0 && strcmp(agent,"SuperNET") == 0 && strcmp(method,"DHT") == 0 && (hexmsg= jstr(remotejson,"hexmsg")) != 0 )
+                {
+                    n = (int32_t)(strlen(hexmsg) >> 1);
+                    tmpstr = calloc(1,n + 1);
+                    decode_hex((void *)tmpstr,n,hexmsg);
+                    free_json(remotejson);
+                    printf("NESTED.(%s)\n",tmpstr);
+                    if ( (remotejson= cJSON_Parse(tmpstr)) == 0 )
+                    {
+                        printf("couldnt parse decoded hexmsg.(%s)\n",tmpstr);
+                        free(tmpstr);
+                        return(0);
+                    }
+                    free(tmpstr);
+                    agent = jstr(remotejson,"agent");
+                    method = jstr(remotejson,"method");
+                }
 
 #endif
 #endif

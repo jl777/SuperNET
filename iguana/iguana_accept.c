@@ -199,7 +199,7 @@ int32_t iguana_process_msgrequestQ(struct supernet_info *myinfo,struct iguana_in
                     if ( (addr= msg->addr) != 0 && (len= iguana_peerblockrequest(coin,coin->blockspace,(int32_t)(sizeof(coin->blockspace) - sizeof(struct iguana_msghdr)),0,msg->hash2,0)) > 0 )
                     {
                         //char str[65]; printf("msg Sendlen.%d block %s to %s\n",len,bits256_str(str,msg->hash2),addr->ipaddr);
-                        iguana_queue_send(addr,0,coin->blockspace,"block",len,0,0);
+                        iguana_queue_send(addr,0,coin->blockspace,"block",len);
                     }
                 }
             }
@@ -213,7 +213,7 @@ int32_t iguana_process_msgrequestQ(struct supernet_info *myinfo,struct iguana_in
                         {
                             char str[65],str2[65];
                             if ( bits256_cmp(msg->hash2,checktxid) == 0 )
-                                iguana_queue_send(msg->addr,0,coin->blockspace,"block",len,0,0);
+                                iguana_queue_send(msg->addr,0,coin->blockspace,"block",len);
                             else printf("checktxid mismatch (%s) != (%s)\n",bits256_str(str,msg->hash2),bits256_str(str2,checktxid));
                         }
                     }
@@ -237,7 +237,7 @@ int32_t iguana_process_msgrequestQ(struct supernet_info *myinfo,struct iguana_in
                 {
                     //iguana_sethdr((void *)coin->blockspace,coin->chain->netmagic,"quote",&coin->blockspace[sizeof(struct iguana_msghdr)],len);
                     //iguana_msgparser(coin,msg->addr,0,0,0,(void *)coin->blockspace,&coin->blockspace[sizeof(struct iguana_msghdr)],len);
-                    iguana_queue_send(msg->addr,0,coin->blockspace,"quote",len,0,0);
+                    iguana_queue_send(msg->addr,0,coin->blockspace,"quote",len);
                 }
             }
         }
@@ -313,7 +313,7 @@ int32_t iguana_peerhdrrequest(struct iguana_info *coin,uint8_t *serialized,int32
             }
         }
         if ( flag != 0 )
-            retval = iguana_queue_send(addr,0,serialized,"headers",len,0,0);
+            retval = iguana_queue_send(addr,0,serialized,"headers",len);
         //printf("hdrs request retval.%d len.%d\n",retval,len);
     } //else printf("couldnt find header\n");
     return(retval);

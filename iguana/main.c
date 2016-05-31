@@ -53,7 +53,7 @@ int32_t myfclose(FILE *fp)
 // ALL globals must be here!
 char *Iguana_validcommands[] =
 {
-    "SuperNET", "SuperNETb", "inv2", "getdata2", "InstantDEX", "pangea", "quote", "ConnectTo",
+    "SuperNET", "inv2", "getdata2", "ConnectTo",
     "version", "verack", "getaddr", "addr", "inv", "getdata", "notfound", "getblocks", "getheaders", "headers", "tx", "block", "mempool", "ping", "pong",
     "reject", "filterload", "filteradd", "filterclear", "merkleblock", "alert", ""
 };

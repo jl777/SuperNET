@@ -36,7 +36,7 @@ typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t
 
 #define IGUANA_MAXHEIGHT (1 << 30)
 #define IGUANA_MAXCOINS 64
-#define IGUANA_MAXDELAY_MILLIS (3600 * 1000) 
+#define IGUANA_MAXDELAY_MILLIS (3600 * 1000 * 24) 
 #define IGUANA_DEFAULT_POLLTIMEOUT 10
 
 #define IGUANA_EXCHANGEIDLE 10
@@ -590,7 +590,7 @@ struct bitcoin_spend
 int32_t iguana_verifypeer(struct iguana_info *coin,void *key,void *value,int32_t itemind,int32_t itemsize);
 int32_t iguana_peermetrics(struct supernet_info *myinfo,struct iguana_info *coin);
 void iguana_peersloop(void *arg);
-int32_t iguana_queue_send(struct iguana_peer *addr,int32_t delay,uint8_t *serialized,char *cmd,int32_t len,int32_t getdatablock,int32_t forceflag);
+int32_t iguana_queue_send(struct iguana_peer *addr,int32_t delay,uint8_t *serialized,char *cmd,int32_t len);
 uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana_iAddr *iA,uint32_t ind);
 void iguana_connections(void *arg);
 uint32_t iguana_possible_peer(struct iguana_info *coin,char *ip_port);

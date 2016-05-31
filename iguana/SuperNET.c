@@ -164,7 +164,7 @@ void *SuperNET_deciphercalc(void **ptrp,int32_t *msglenp,bits256 privkey,bits256
     if ( bits256_nonz(srcpubkey) == 0 )
     {
         memcpy(srcpubkey.bytes,cipher,sizeof(srcpubkey));
-        //char str[65]; printf("use attached pubkey.(%s)\n",bits256_str(str,srcpubkey));
+        char str[65]; printf("use attached pubkey.(%s)\n",bits256_str(str,srcpubkey));
         cipher += sizeof(srcpubkey);
         cipherlen -= sizeof(srcpubkey);
     }
@@ -492,7 +492,7 @@ int32_t iguana_send_supernet(struct iguana_peer *addr,char *jsonstr,int32_t dela
                 printf("SUPERSEND -> (%s) (%s) delaymillis.%d datalen.%d checkc.%x\n",jprint(SuperNET_bits2json(&serialized[sizeof(struct iguana_msghdr)],datalen),1),addr->ipaddr,delaymillis,datalen,checkc);
             if ( memcmp(destpub.bytes,GENESIS_PUBKEY.bytes,sizeof(destpub)) == 0 )
             {
-                qlen = iguana_queue_send(addr,delaymillis,serialized,"SuperNET",datalen+1,0,0);
+                qlen = iguana_queue_send(addr,delaymillis,serialized,"SuperNET",datalen+1);
                 //printf("send broadcast\n");
             }
             else
@@ -509,7 +509,7 @@ int32_t iguana_send_supernet(struct iguana_peer *addr,char *jsonstr,int32_t dela
                         printf("encrypted mypriv.%llx destpub.%llx\n",(long long)privkey.txid,(long long)destpub.txid);
                     } // else printf("decrypted\n");
                     //printf("send to (%s)\n",addr->ipaddr);
-                    qlen = iguana_queue_send(addr,delaymillis,&cipher[-sizeof(struct iguana_msghdr)],"SuperNETb",cipherlen,0,0);
+                    qlen = iguana_queue_send(addr,delaymillis,&cipher[-sizeof(struct iguana_msghdr)],"SuperNETb",cipherlen);
                     if ( ptr != 0 )
                         free(ptr);
                 }

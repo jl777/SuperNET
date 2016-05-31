@@ -389,7 +389,7 @@ bits256 instantdex_rwoffer(int32_t rwflag,int32_t *lenp,uint8_t *serialized,stru
 
 char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extraser,int32_t extralen,struct iguana_peer *addr,struct bitcoin_swapinfo *swap)
 {
-    cJSON *sendjson; char *reqstr,*hexstr,*retstr,*str; struct instantdex_msghdr *msg; bits256 orderhash,tmphash; int32_t i,j,len,serflag,olen,slen,datalen; uint8_t *buf,serialized[sizeof(*offer) + sizeof(struct iguana_msghdr) + 4096 + INSTANTDEX_DECKSIZE*33]; uint64_t x,nxt64bits;
+    cJSON *sendjson; char *reqstr,*hexstr,*retstr; struct instantdex_msghdr *msg; bits256 orderhash,tmphash; int32_t i,j,len,dir=0,serflag,olen,slen,datalen; uint8_t *buf,serialized[sizeof(*offer) + sizeof(struct iguana_msghdr) + 4096 + INSTANTDEX_DECKSIZE*33]; uint64_t x,nxt64bits;
     //if ( strcmp(cmdstr,"poll") == 0 )
     //    return(clonestr("{\"result\":\"skip sending poll\"}"));
     //category_subscribe(myinfo,myinfo->instantdex_category,GENESIS_PUBKEY);
@@ -460,7 +460,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
         }
     }
     free(reqstr);
-    
+    int32_t delaymillis=0,encryptflag=0; uint8_t *data; uint32_t basilisktag=0;
     buf = malloc(datalen*2 + 1);
     init_hexbytes_noT((char *)buf,(uint8_t *)msg,datalen);
     sendjson = cJSON_CreateObject();
@@ -473,9 +473,10 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     jaddnum(sendjson,"plaintext",1);
     jaddbits256(sendjson,"categoryhash",myinfo->instantdex_category);
     jaddbits256(sendjson,"traderpub",myinfo->myaddr.persistent);
-    str = jprint(sendjson,1);
-    basilisk_sendcmd(0,str);
-    free(str);
+    data = basilisk_jsondata(&datalen,sendjson,basilisktag);
+    basilisk_sendcmd(myinfo,addr->ipaddr,dir > 0 ? "BID" : "ASK",basilisktag,encryptflag,delaymillis,data,datalen,1);
+    free_json(sendjson);
+    free(data);
     return(clonestr("{\"result\":\"success\"}"));
 
     if ( instantdex_msgcreate(myinfo,msg,datalen) != 0 )
@@ -485,7 +486,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
         {
             memset(serialized,0,sizeof(struct iguana_msghdr));
             memcpy(&serialized[sizeof(struct iguana_msghdr)],(uint8_t *)msg,msg->sig.allocsize);
-            iguana_queue_send(addr,0,serialized,"InstantDEX",msg->sig.allocsize,0,0);
+            iguana_queue_send(addr,0,serialized,"InstantDEX",msg->sig.allocsize);
         }
         else
         {
@@ -968,7 +969,7 @@ int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coi
         printf(" nhashes for (%s)\n",addr->ipaddr);
         len = iguana_inv2packet(serialized,sizeof(serialized),MSG_QUOTE,hashes,n);
         //printf("Send inv2[%d] -> (%s)\n",n,addr->ipaddr);
-        return(iguana_queue_send(addr,0,serialized,"inv2",len,0,0));
+        return(iguana_queue_send(addr,0,serialized,"inv2",len));
     }
     return(-1);
 }
@@ -1082,7 +1083,7 @@ void instantdex_propagate(struct supernet_info *myinfo,struct exchange_info *exc
             if ( (addr= coin->peers.ranked[i]) != 0 && addr->supernet != 0 && addr->usock >= 0 && GETBIT(ap->peerhas,addr->addrind) == 0 && strcmp("0.0.0.0",addr->ipaddr) != 0 && strcmp("127.0.0.1",addr->ipaddr) != 0 )
             {
                 char str[65]; printf("send quote.(%s) <- [%d] %s %llx\n",addr->ipaddr,len,bits256_str(str,orderhash),(long long)orderhash.txid);
-                iguana_queue_send(addr,0,serialized,"quote",len,0,0);
+                iguana_queue_send(addr,0,serialized,"quote",len);
             }
     }
 }

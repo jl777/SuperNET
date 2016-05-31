@@ -307,7 +307,7 @@ bits256 iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_inf
         for (i=0; i<8; i++)
         {
             if ( (addr= coin->peers.ranked[i]) != 0 && addr->dead == 0 && addr->usock >= 0 )
-                iguana_queue_send(addr,0,serialized,"tx",len,0,0);
+                iguana_queue_send(addr,0,serialized,"tx",len);
         }
         free(serialized);
         txid = bits256_doublesha256(0,&serialized[sizeof(struct iguana_msghdr)],len);
