@@ -126,10 +126,10 @@ cJSON *pangea_handitem(int32_t *cardip,cJSON **pitemp,uint8_t type,uint64_t valA
 
 int32_t pangea_parsesummary(uint8_t *typep,uint64_t *valAp,uint64_t *bits64p,bits256 *cardp,uint8_t *summary,int32_t len)
 {
-    int32_t handid; uint16_t cardi_player; uint32_t changes=0; uint8_t player;
+    //int32_t handid; uint16_t cardi_player; uint32_t changes=0; uint8_t player;
     *bits64p = 0;
     memset(cardp,0,sizeof(*cardp));
-    len += SuperNET_copybits(1,&summary[len],(void *)typep,sizeof(*typep));
+    /*len += SuperNET_copybits(1,&summary[len],(void *)typep,sizeof(*typep));
     if ( *typep == 0 )
     {
         printf("len.%d type.%d [%d]\n",len,*typep,summary[len-1]);
@@ -152,7 +152,7 @@ int32_t pangea_parsesummary(uint8_t *typep,uint64_t *valAp,uint64_t *bits64p,bit
         len += SuperNET_copybits(1,&summary[len],(void *)bits64p,sizeof(*bits64p) * CARDS777_MAXPLAYERS);
     else if ( *typep == CARDS777_CHANGES )
         len += SuperNET_copybits(1,&summary[len],(void *)bits64p,sizeof(*bits64p) * (changes & 0xf));
-    else len += SuperNET_copybits(1,&summary[len],(void *)bits64p,sizeof(*bits64p));
+    else len += SuperNET_copybits(1,&summary[len],(void *)bits64p,sizeof(*bits64p));*/
     return(len);
 }
 
@@ -218,14 +218,14 @@ char *pangea_dispsummary(struct supernet_info *myinfo,struct table_info *tp,int3
 
 void pangea_summaryadd(struct supernet_info *myinfo,struct table_info *tp,uint8_t type,void *arg0,int32_t size0,void *arg1,int32_t size1)
 {
-    uint64_t valA,bits64[CARDS777_MAXPLAYERS + (CARDS777_MAXCARDS+1)*4];
-    bits256 card; uint8_t checktype; int32_t len,startlen = tp->summarysize;
+    //uint64_t valA,bits64[CARDS777_MAXPLAYERS + (CARDS777_MAXCARDS+1)*4];
+    //bits256 card; uint8_t checktype; int32_t len,startlen = tp->summarysize;
     if ( type == 0 )
     {
         printf("type.0\n"); getchar();
     }
     //printf("summarysize.%d type.%d [%02x %02x]\n",dp->summarysize,type,*(uint8_t *)arg0,*(uint8_t *)arg1);
-    tp->summarysize += SuperNET_copybits(0,&tp->summary[tp->summarysize],(void *)&type,sizeof(type));
+    /*tp->summarysize += SuperNET_copybits(0,&tp->summary[tp->summarysize],(void *)&type,sizeof(type));
     //printf("-> %d\n",tp->summary[tp->summarysize-1]);
     tp->summarysize += SuperNET_copybits(0,&tp->summary[tp->summarysize],arg0,size0);
     tp->summarysize += SuperNET_copybits(0,&tp->summary[tp->summarysize],arg1,size1);
@@ -236,7 +236,7 @@ void pangea_summaryadd(struct supernet_info *myinfo,struct table_info *tp,uint8_
     if ( card.txid != 0 && memcmp(card.bytes,arg1,sizeof(card)) != 0 )
         printf("pangea_summary: parse error card mismatch %llx != %llx\n",(long long)card.txid,*(long long *)arg1);
     else if ( card.txid == 0 && memcmp(arg1,bits64,size1) != 0 )
-        printf("pangea_summary: parse error bits64 %llx != %llx\n",(long long)bits64[0],*(long long *)arg0);
+        printf("pangea_summary: parse error bits64 %llx != %llx\n",(long long)bits64[0],*(long long *)arg0);*/
     /*if ( 1 && hn->client->H.slot == pangea_slotA(tp->table) )
      {
      if ( (item= pangea_handitem(&cardi,&pitem,type,valA,bits64,card,tp->G.N)) != 0 )

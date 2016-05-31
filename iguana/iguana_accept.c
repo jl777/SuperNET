@@ -370,7 +370,7 @@ int32_t iguana_peeraddrrequest(struct iguana_info *coin,struct iguana_peer *addr
                     ((uint8_t *)&tmp.A.port)[0] = ((uint8_t *)&coin->chain->portp2p)[1];
                     ((uint8_t *)&tmp.A.port)[1] = ((uint8_t *)&coin->chain->portp2p)[0];
                 }
-                printf("(%s:%02x%02x).%04x ",ipaddr,((uint8_t *)&tmp.A.port)[0],((uint8_t *)&tmp.A.port)[1],(int32_t)tmp.protover);
+                //printf("(%s:%02x%02x).%04x ",ipaddr,((uint8_t *)&tmp.A.port)[0],((uint8_t *)&tmp.A.port)[1],(int32_t)tmp.protover);
                 sendlen += iguana_rwaddr(1,&space[sendlen],&tmp.A,CADDR_TIME_VERSION);
                 x++;
                 if ( x == 0xf8 )
@@ -381,7 +381,7 @@ int32_t iguana_peeraddrrequest(struct iguana_info *coin,struct iguana_peer *addr
     iguana_rwvarint(1,space,&x);
     //for (i=0; i<sendlen; i++)
     //    printf("%02x",space[i]);
-    printf(" %p addrrequest: sendlen.%d x.%d\n",space,sendlen,(int32_t)x);
+    //printf(" %p addrrequest: sendlen.%d x.%d\n",space,sendlen,(int32_t)x);
     if ( x == 0 )
         return(-1);
     return(sendlen);

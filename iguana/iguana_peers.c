@@ -20,8 +20,12 @@ struct iguana_iAddr *iguana_iAddrhashfind(struct iguana_info *coin,uint64_t ipbi
 
 int32_t iguana_validatehdr(char *symbol,struct iguana_msghdr *H)
 {
-    int32_t i = 0,valid=0,len = -1;
-    if ( strcmp(symbol,"VPN") == 0 || strncmp("SuperNET",H->command,strlen("SuperNET")) == 0 )
+    int32_t i = 0,valid=0,len = -1; char cmdstr[16];
+    memcpy(cmdstr,H->command,sizeof(H->command));
+    cmdstr[0] = toupper(cmdstr[0]);
+    cmdstr[6] = toupper(cmdstr[6]);
+    cmdstr[7] = toupper(cmdstr[7]);
+    if ( strcmp(symbol,"VPN") == 0 || strncmp("SuperNET",cmdstr,strlen("SuperNET")) == 0 )
         valid = 1;
     else
     {
@@ -419,7 +423,7 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
         return(-1);
     }
     remains = len;
-    if ( strncmp(cmdstr,"SuperNET",strlen("SuperNET")) == 0 || strncmp(cmdstr,"SuperNet",strlen("SuperNet")) == 0  )
+    if ( strncmp(cmdstr+1,"uperNET",strlen("uperNET")) == 0 || strncmp(cmdstr+1,"uperNet",strlen("uperNet")) == 0  )
     {
         printf(" >>>>>>> send.(%s) %d bytes to %s:%u supernet.%d\n",cmdstr,len,addr->ipaddr,addr->A.port,addr->supernet);
     }

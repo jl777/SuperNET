@@ -294,8 +294,8 @@ void pangea_sendcmd(struct supernet_info *myinfo,struct table_info *tp,char *cmd
         }
         else if ( (p= tp->active[destplayer]) != 0 )
         {
-            if ( (str= SuperNET_DHTsend(myinfo,p->ipbits,tp->G.gamehash,tp->G.tablehash,hexstr,0,0,plaintext)) != 0 )
-                free(str);
+            //if ( (str= SuperNET_DHTsend(myinfo,p->ipbits,tp->G.gamehash,tp->G.tablehash,hexstr,0,0,plaintext)) != 0 )
+            //    free(str);
         }
         if ( loopback != 0 )
         {

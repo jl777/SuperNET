@@ -90,7 +90,7 @@ struct supernet_info
     //struct nn_pollfd pfd[SUPERNET_MAXAGENTS]; //struct relay_info active;
     struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ;
     struct basilisk_info basilisks;
-    int32_t numagents,numexchanges;
+    int32_t numagents,numexchanges,IAMRELAY;
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES];
     struct iguana_waccount *wallet; void *ctx;
     char handle[1024],*decryptstr;

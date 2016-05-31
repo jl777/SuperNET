@@ -19,6 +19,22 @@ INT_ARRAY_STRING(basilisk,rawtx,basilisktag,vals,activecoin);
 INT_ARRAY_STRING(basilisk,value,basilisktag,vals,activecoin);
 INT_AND_ARRAY(basilisk,result,basilisktag,vals);
 
+HASH_ARRAY_STRING(basilisk,addrelay,pubkey,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,dispatch,pubkey,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,publish,pubkey,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,subscribe,pubkey,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,setfield,pubkey,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,getfield,pubkey,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,forward,pubkey,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,mailbox,pubkey,vals,hexstr);
+
+HASH_ARRAY_STRING(basilisk,VPNcreate,pubkey,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,VPNjoin,pubkey,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,VPNmessage,pubkey,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,VPNbroadcast,pubkey,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,VPNreceive,pubkey,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,VPNlogout,pubkey,vals,hexstr);
+
 ZERO_ARGS(bitcoinrpc,getinfo);
 ZERO_ARGS(bitcoinrpc,getblockcount);
 ZERO_ARGS(bitcoinrpc,getbestblockhash);
@@ -183,7 +199,7 @@ THREE_STRINGS(SuperNET,encryptjson,password,permanentfile,payload);
 TWO_STRINGS(SuperNET,decryptjson,password,permanentfile);
 
 TWO_STRINGS(SuperNET,html,agentform,htmlfile);
-TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(SuperNET,DHT,hexmsg,destip,categoryhash,subhash,maxdelay,broadcast);
+//TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(SuperNET,DHT,hexmsg,destip,categoryhash,subhash,maxdelay,broadcast);
 
 THREE_STRINGS(SuperNET,rosetta,passphrase,pin,showprivkey);
 ZERO_ARGS(SuperNET,keypair);

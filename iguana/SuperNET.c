@@ -220,6 +220,7 @@ uint8_t *SuperNET_ciphercalc(void **ptrp,int32_t *cipherlenp,bits256 *privkeyp,b
     return(origptr);
 }
 
+#ifdef oldway
 int32_t SuperNET_copybits(int32_t reverse,uint8_t *dest,uint8_t *src,int32_t len)
 {
     int32_t i; uint8_t *tmp;
@@ -845,6 +846,37 @@ char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *de
         free(ptr);
     return(retstr);
 }
+#else
+char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,uint16_t port)
+{
+    int32_t autologin = 0; uint32_t timestamp; char *retstr=0,*agent=0,*method=0,*jsonstr=0; uint64_t tag;
+    //printf("SuperNET_JSON.(%s)\n",jprint(json,0));
+    if ( remoteaddr != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 )
+        remoteaddr = 0;
+    if ( (agent = jstr(json,"agent")) == 0 )
+        agent = "bitcoinrpc";
+    method = jstr(json,"method");
+    if ( remoteaddr == 0 )
+    {
+        if ( jobj(json,"timestamp") != 0 )
+            jdelete(json,"timestamp");
+        timestamp = (uint32_t)time(NULL);
+        jaddnum(json,"timestamp",timestamp);
+    }
+    if ( (tag= j64bits(json,"tag")) == 0 )
+    {
+        OS_randombytes((uint8_t *)&tag,sizeof(tag));
+        jadd64bits(json,"tag",tag);
+    }
+    if ( (retstr= SuperNET_processJSON(myinfo,json,remoteaddr,port)) == 0 )
+        printf("null retstr from SuperNET_JSON\n");
+    if ( jsonstr != 0 )
+        free(jsonstr);
+    if ( autologin != 0 )
+        SuperNET_logout(myinfo,0,json,remoteaddr);
+    return(retstr);
+}
+#endif
 
 cJSON *SuperNET_peerarray(struct iguana_info *coin,int32_t max,int32_t supernetflag)
 {
@@ -1208,14 +1240,14 @@ STRING_ARG(SuperNET,getpeers,activecoin)
     return(jprint(retjson,1));
 }
 
-TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(SuperNET,DHT,hexmsg,destip,categoryhash,subhash,maxdelay,broadcast)
+/*TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(SuperNET,DHT,hexmsg,destip,categoryhash,subhash,maxdelay,broadcast)
 {
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"cant remote DHT\"}"));
     else if ( hexmsg == 0 || is_hexstr(hexmsg,(int32_t)strlen(hexmsg)) <= 0 )
         return(clonestr("{\"error\":\"hexmsg missing or not in hex\"}"));
     return(SuperNET_DHTencode(myinfo,destip,categoryhash,subhash,hexmsg,maxdelay,broadcast,juint(json,"plaintext")!=0));
-}
+}*/
 
 HASH_AND_STRING(SuperNET,saveconf,wallethash,confjsonstr)
 {

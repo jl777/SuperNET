@@ -53,7 +53,7 @@ int32_t myfclose(FILE *fp)
 // ALL globals must be here!
 char *Iguana_validcommands[] =
 {
-    "SuperNET", "inv2", "getdata2", "ConnectTo",
+    "inv2", "getdata2", "ConnectTo",
     "version", "verack", "getaddr", "addr", "inv", "getdata", "notfound", "getblocks", "getheaders", "headers", "tx", "block", "mempool", "ping", "pong",
     "reject", "filterload", "filteradd", "filterclear", "merkleblock", "alert", ""
 };
@@ -343,32 +343,33 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remote
 
 void iguana_exit()
 {
-    int32_t i,j,iter; char *stopstr = SUPERNET_STOPSTR;
+    int32_t i,j,iter;
     printf("start EXIT\n");
     for (iter=0; iter<3; iter++)
     {
-        for (i=0; i<IGUANA_MAXCOINS; i++)
+        if ( iter == 0 )
+            basilisk_request_goodbye(SuperNET_MYINFO(0));
+        else
         {
-            if ( Coins[i] != 0 )
+            for (i=0; i<IGUANA_MAXCOINS; i++)
             {
-                for (j=0; j<IGUANA_MAXPEERS; j++)
+                if ( Coins[i] != 0 )
                 {
-                    switch ( iter )
+                    for (j=0; j<IGUANA_MAXPEERS; j++)
                     {
-                        case 0:
-                            if ( Coins[i]->peers.active[j].usock >= 0 && Coins[i]->peers.active[j].supernet != 0 )
-                                iguana_send_supernet(&Coins[i]->peers.active[j],stopstr,0);
-                            break;
-                        case 1: Coins[i]->peers.active[j].dead = (uint32_t)time(NULL); break;
-                        case 2:
-                            if ( Coins[i]->peers.active[j].usock >= 0 )
-                                closesocket(Coins[i]->peers.active[j].usock);
-                            break;
+                        switch ( iter )
+                        {
+                            case 1: Coins[i]->peers.active[j].dead = (uint32_t)time(NULL); break;
+                            case 2:
+                                if ( Coins[i]->peers.active[j].usock >= 0 )
+                                    closesocket(Coins[i]->peers.active[j].usock);
+                                break;
+                        }
                     }
                 }
             }
         }
-        sleep(5);
+        sleep(3);
     }
     printf("sockets closed, now EXIT\n");
     exit(0);

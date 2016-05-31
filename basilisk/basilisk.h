@@ -27,8 +27,8 @@ struct basilisk_value { bits256 txid; int64_t value; int32_t height; int16_t vou
 struct basilisk_item
 {
     struct queueitem DL; UT_hash_handle hh; struct basilisk_item *parent; void *dependents;
-    uint32_t submit,finished,basilisktag,numresults,numexact,uniqueflag,numrequired,childrendone,numchildren;
-    char symbol[32]; double expiration; cJSON *vals; int32_t metricdir; void *metricfunc;
+    uint32_t submit,finished,basilisktag,numresults,numsent,numexact,uniqueflag,numrequired,childrendone,numchildren;
+    char symbol[32],CMD[4]; double expiration; cJSON *vals; int32_t metricdir; void *metricfunc;
     char *retstr,*results[BASILISK_MAXFANOUT]; double metrics[BASILISK_MAXFANOUT];
 };
 
@@ -39,7 +39,8 @@ struct basilisk_info
     struct basilisk_value values[8192]; int32_t numvalues;
 };
 
-struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,char *symbol,char *type,cJSON *vals,int32_t fanout,int32_t minresults,uint32_t basilisktag,int32_t timeoutmillis,void *metricfunc,char *retstr);
+void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen,bits256 pubkey);
+
 void basilisks_init(struct supernet_info *myinfo);
 int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *type,uint32_t basilisktag,int32_t encryptflag,int32_t delaymillis,uint8_t *data,int32_t datalen,int32_t fanout); // data must be offset by sizeof(iguana_msghdr)
 void basilisk_p2p(void *myinfo,void *_addr,int32_t *delaymillisp,char *ipaddr,uint8_t *data,int32_t datalen,char *type,int32_t encrypted);
@@ -47,5 +48,7 @@ uint8_t *basilisk_jsondata(void **ptrp,uint8_t *space,int32_t spacesize,int32_t 
 
 uint8_t *SuperNET_ciphercalc(void **ptrp,int32_t *cipherlenp,bits256 *privkeyp,bits256 *destpubkeyp,uint8_t *data,int32_t datalen,uint8_t *space2,int32_t space2size);
 void *SuperNET_deciphercalc(void **ptrp,int32_t *msglenp,bits256 privkey,bits256 srcpubkey,uint8_t *cipher,int32_t cipherlen,uint8_t *buf,int32_t bufsize);
+
+void basilisk_request_goodbye(struct supernet_info *myinfo);
 
 #endif

@@ -320,10 +320,12 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
             chain->ramchainport = chain->portp2p - 1;
         if ( (chain->rpcport= juint(argjson,"rpc")) == 0 )
             chain->rpcport = chain->portp2p + 1;
-        if ( jobj(argjson,"txhastimestamp") != 0 )
-            chain->hastimestamp = juint(argjson,"txhastimestamp");
+        if ( jobj(argjson,"isPoS") != 0 )
+            chain->hastimestamp = juint(argjson,"isPoS");
         else if ( jobj(argjson,"oldtx_format") != 0 )
             chain->hastimestamp = !juint(argjson,"oldtx_format");
+        else if ( jobj(argjson,"txhastimestamp") != 0 )
+            chain->hastimestamp = !juint(argjson,"txhastimestamp");
         if ( jstr(argjson,"userhome") != 0 )
             strcpy(chain->userhome,jstr(argjson,"userhome"));
         else strcpy(chain->userhome,Userhome);

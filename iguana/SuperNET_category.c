@@ -188,7 +188,7 @@ char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag
     plaintext = category_plaintext(myinfo,categoryhash,subhash,plaintext);
     broadcastflag = category_broadcastflag(myinfo,categoryhash,subhash,broadcastflag);
     maxdelay = category_maxdelay(myinfo,categoryhash,subhash,maxdelay);
-    retstr = SuperNET_DHTsend(myinfo,0,categoryhash,subhash,hexmsg,maxdelay,broadcastflag,plaintext);
+    retstr = 0;//SuperNET_DHTsend(myinfo,0,categoryhash,subhash,hexmsg,maxdelay,broadcastflag,plaintext);
     //if ( 0 && argjson != 0 )
     //    SuperNET_hexmsgprocess(myinfo,retjson,argjson,hexmsg,remoteaddr);
     if ( hexmsg != message)

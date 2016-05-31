@@ -787,7 +787,7 @@ void iguana_coinargs(char *symbol,int64_t *maxrecvcachep,int32_t *minconfirmsp,i
     *servicesp = j64bits(json,"services");
 }
 
-struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,int64_t maxrecvcache,uint64_t services,int32_t initialheight,int32_t maphash,int32_t minconfirms,int32_t maxrequests,int32_t maxbundles,cJSON *json)
+struct iguana_info *iguana_setcoin(struct supernet_info *myinfo,char *symbol,void *launched,int32_t maxpeers,int64_t maxrecvcache,uint64_t services,int32_t initialheight,int32_t maphash,int32_t minconfirms,int32_t maxrequests,int32_t maxbundles,cJSON *json)
 {
     struct iguana_chain *iguana_createchain(cJSON *json);
     struct iguana_info *coin; int32_t j,m,mult,maxval,mapflags; char dirname[512]; cJSON *peers;
@@ -888,6 +888,8 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( jobj(json,"VALIDATE") != 0 )
         coin->VALIDATENODE = juint(json,"VALIDATE");
     else coin->VALIDATENODE = 1;
+    if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
+        myinfo->IAMRELAY = 1;
 #ifdef __PNACL
     coin->VALIDATENODE = coin->RELAYNODE = 0;
 #endif
@@ -927,7 +929,7 @@ int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json)
         else maphash = 0;
         iguana_coinargs(symbol,&maxrecvcache,&minconfirms,&maxpeers,&initialheight,&services,&maxrequests,&maxbundles,json);
         coins = mycalloc('A',1+1,sizeof(*coins));
-        if ( (coin= iguana_setcoin(symbol,coins,maxpeers,maxrecvcache,services,initialheight,maphash,minconfirms,maxrequests,maxbundles,json)) != 0 )
+        if ( (coin= iguana_setcoin(myinfo,symbol,coins,maxpeers,maxrecvcache,services,initialheight,maphash,minconfirms,maxrequests,maxbundles,json)) != 0 )
         {
             coins[0] = (void *)((long)1);
             coins[1] = coin;
@@ -951,7 +953,8 @@ void iguana_coins(void *arg)
 {
     struct iguana_info **coins,*coin; char *jsonstr,*symbol; cJSON *array,*item,*json;
     int32_t i,n,maxpeers,maphash,initialheight,minconfirms,maxrequests,maxbundles;
-    int64_t maxrecvcache; uint64_t services; struct vin_info V;
+    int64_t maxrecvcache; uint64_t services; struct vin_info V; struct supernet_info *myinfo;
+    myinfo = SuperNET_MYINFO(0);
     memset(&V,0,sizeof(V));
     if ( (jsonstr= arg) != 0 && (json= cJSON_Parse(jsonstr)) != 0 )
     {
@@ -960,7 +963,7 @@ void iguana_coins(void *arg)
             if ( (symbol= jstr(json,"coin")) != 0 && strncmp(symbol,"BTC",3) == 0 )
             {
                 coins = mycalloc('A',1+1,sizeof(*coins));
-                if ( (coins[1]= iguana_setcoin(symbol,coins,0,0,0,0,0,0,0,0,json)) != 0 )
+                if ( (coins[1]= iguana_setcoin(myinfo,symbol,coins,0,0,0,0,0,0,0,0,json)) != 0 )
                 {
                     _iguana_calcrmd160(coins[1],&V);
                     coins[0] = (void *)((long)1);
@@ -988,7 +991,7 @@ void iguana_coins(void *arg)
                 continue;
             }
             iguana_coinargs(symbol,&maxrecvcache,&minconfirms,&maxpeers,&initialheight,&services,&maxrequests,&maxbundles,item);
-            coins[1 + i] = coin = iguana_setcoin(symbol,coins,maxpeers,maxrecvcache,services,initialheight,maphash,minconfirms,maxrequests,maxbundles,item);
+            coins[1 + i] = coin = iguana_setcoin(myinfo,symbol,coins,maxpeers,maxrecvcache,services,initialheight,maphash,minconfirms,maxrequests,maxbundles,item);
             if ( coin == 0 )
             {
                 printf("iguana_coins: couldnt initialize.(%s)\n",symbol);

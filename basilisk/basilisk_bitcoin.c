@@ -336,7 +336,7 @@ double basilisk_bitcoin_valuemetric(struct supernet_info *myinfo,struct basilisk
 
 void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj)
 {
-    int32_t i,height,vout; char *coinaddr; struct basilisk_value *v; uint64_t value = 0; bits256 txid;
+    int32_t i,height,vout,numsent; char *coinaddr; struct basilisk_value *v; uint64_t value = 0; bits256 txid;
     txid = jbits256(valsobj,"txid");
     vout = jint(valsobj,"vout");
     coinaddr = jstr(valsobj,"address");
@@ -362,12 +362,12 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
             if ( v->vout == vout && bits256_cmp(txid,v->txid) == 0 && strcmp(v->coinaddr,coinaddr) == 0 )
             {
                 printf("bitcoinvalue local ht.%d %s %.8f\n",v->height,v->coinaddr,dstr(v->value));
-                return(basilisk_issueremote(myinfo,coin->symbol,"VAL",valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_valuemetric,basilisk_valuestr(coin,v->coinaddr,v->value,v->height,txid,vout)));
+                return(basilisk_issueremote(myinfo,&numsent,"VAL",coin->symbol,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_valuemetric,basilisk_valuestr(coin,v->coinaddr,v->value,v->height,txid,vout),0,0));
             }
         }
     }
     printf("bitcoinvalue issue remote\n");
-    return(basilisk_issueremote(myinfo,coin->symbol,"VAL",valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_valuemetric,0));
+    return(basilisk_issueremote(myinfo,&numsent,"VAL",coin->symbol,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_valuemetric,0,0,0));
 }
 
 double basilisk_bitcoin_rawtxmetric_dependents(struct supernet_info *myinfo,struct iguana_info *coin,struct basilisk_item *ptr,struct bitcoin_rawtxdependents *dependents)
@@ -571,7 +571,7 @@ double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk
 
 void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj)
 {
-    uint8_t buf[IGUANA_MAXSCRIPTSIZE]; int32_t minconf,spendlen; cJSON *vins,*addresses,*txobj = 0; uint32_t locktime; char *spendscriptstr,*changeaddr,*rawtx = 0; int64_t amount,txfee;
+    uint8_t buf[IGUANA_MAXSCRIPTSIZE]; int32_t numsent,minconf,spendlen; cJSON *vins,*addresses,*txobj = 0; uint32_t locktime; char *spendscriptstr,*changeaddr,*rawtx = 0; int64_t amount,txfee;
     vins = 0;
     changeaddr = jstr(valsobj,"changeaddr");
     spendscriptstr = jstr(valsobj,"spendscript");
@@ -628,6 +628,6 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
         Lptr->retstr = clonestr("{\"error\":\"couldnt create rawtx\"}");
         return(Lptr);
     }
-    return(basilisk_issueremote(myinfo,coin->symbol,"RAW",valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_rawtxmetric,0));
+    return(basilisk_issueremote(myinfo,&numsent,"RAW",coin->symbol,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_rawtxmetric,0,0,0));
 }
 
