@@ -139,6 +139,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
         j = (r2 + k) % IGUANA_MAXCOINS;
         if ( (coin= Coins[j]) == 0 )
             continue;
+        printf("check coin.%s\n",coin->symbol);
         if ( coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 )
             cmd[0] = 's';
         else cmd[0] = 'S';
@@ -150,6 +151,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                 for (s=0; s<n; s++)
                     if ( alreadysent[s] == addr->ipbits )
                         break;
+                printf("%s s.%d vs n.%d\n",addr->ipaddr,s,n);
                 if ( s == n && addr->supernet != 0 && (destipaddr == 0 || strcmp(addr->ipaddr,destipaddr) == 0) )
                 {
                     printf("[%s] send %s.(%s) addr->supernet.%u to (%s).%d destip.%s\n",cmd,type,(char *)&data[4],addr->supernet,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
