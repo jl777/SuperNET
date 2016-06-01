@@ -130,9 +130,10 @@ struct category_info
 {
     UT_hash_handle hh; queue_t Q;
     char *(*processfunc)(struct supernet_info *myinfo,struct category_info *cat,void *data,int32_t datalen,char *remoteaddr);
-    struct category_chain *catchain;
-    bits256 hash; void *info; struct category_info *sub;
+    struct category_chain *catchain; bits256 hash,prevhash; void *info; struct category_info *sub,*next;
+    int32_t datalen; uint8_t data[];
 };
+
 extern struct category_info *Categories;
 struct category_msg { struct queueitem DL; struct tai t; uint64_t remoteipbits; int32_t len; uint8_t msg[]; };
 
@@ -169,7 +170,7 @@ void SuperNET_hex2str(char *str,uint8_t *hex,int32_t len);
 void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,char *hexmsg,struct tai now,char *remoteaddr);
 int32_t SuperNET_hexmsgfind(struct supernet_info *myinfo,bits256 category,bits256 subhash,char *hexmsg,int32_t addflag);
 void category_posthexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,char *hexmsg,struct tai now,char *remoteaddr);
-void *category_subscribe(struct supernet_info *myinfo,bits256 category,bits256 subhash);
+void *category_subscribe(struct supernet_info *myinfo,bits256 category,bits256 subhash,uint8_t *data,int32_t datalen);
 struct category_msg *category_gethexmsg(struct supernet_info *myinfo,struct category_info **catptrp,bits256 categoryhash,bits256 subhash);
 char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr);
 queue_t *category_Q(struct category_info **catptrp,bits256 categoryhash,bits256 subhash);

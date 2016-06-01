@@ -1281,7 +1281,7 @@ TWO_STRINGS(SuperNET,subscribe,category,subcategory)
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     categoryhash = calc_categoryhashes(&subhash,category,subcategory);
-    if ( category_subscribe(myinfo,categoryhash,subhash) != 0 )
+    if ( category_subscribe(myinfo,categoryhash,subhash,0,0) != 0 )
         return(clonestr("{\"result\":\"subscribed\"}"));
     else return(clonestr("{\"error\":\"couldnt subscribe\"}"));
 }

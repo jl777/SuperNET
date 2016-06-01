@@ -23,8 +23,6 @@
 #include "../includes/curve25519.h"
 #include "../includes/cJSON.h"
 
-
-
 bits256 calc_categoryhashes(bits256 *subhashp,char *category,char *subcategory)
 {
     bits256 categoryhash;
@@ -126,14 +124,16 @@ void category_posthexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits2
    // char str[65]; printf("no subscription for category.(%s) %llx\n",bits256_str(str,categoryhash),(long long)subhash.txid);
 }
 
-void *category_subscribe(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash)
+void *category_subscribe(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,uint8_t *data,int32_t datalen)
 {
     struct category_info *cat,*sub; bits256 hash;
     HASH_FIND(hh,Categories,categoryhash.bytes,sizeof(categoryhash),cat);
     if ( cat == 0 )
     {
-        cat = mycalloc('c',1,sizeof(*cat));
+        cat = mycalloc('c',1,sizeof(*cat) + datalen);
         cat->hash = hash = categoryhash;
+        if ( (cat->datalen= datalen) > 0 )
+            memcpy(cat->data,data,datalen);
         char str[65]; printf("ADD cat.(%s)\n",bits256_str(str,categoryhash));
         HASH_ADD(hh,Categories,hash,sizeof(hash),cat);
     }
@@ -142,9 +142,11 @@ void *category_subscribe(struct supernet_info *myinfo,bits256 categoryhash,bits2
         HASH_FIND(hh,cat->sub,subhash.bytes,sizeof(subhash),sub);
         if ( sub == 0 )
         {
-            sub = mycalloc('c',1,sizeof(*sub));
+            sub = mycalloc('c',1,sizeof(*sub) + datalen);
             sub->hash = hash = subhash;
-            char str[65],str2[65]; printf("subadd.(%s) -> (%s)\n",bits256_str(str,hash),bits256_str(str2,categoryhash));
+            if ( (sub->datalen= datalen) > 0 )
+                memcpy(sub->data,data,datalen);
+            char str[65],str2[65]; printf("subadd.(%s) -> (%s) datalen.%d\n",bits256_str(str,subhash),bits256_str(str2,categoryhash),datalen);
             HASH_ADD(hh,cat->sub,hash,sizeof(hash),sub);
         }
     }
@@ -204,18 +206,22 @@ char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag
 
 void category_init(struct supernet_info *myinfo)
 {
-    bits256 pangeahash,instantdexhash;
-    category_subscribe(myinfo,GENESIS_PUBKEY,GENESIS_PUBKEY);
+    bits256 pangeahash,instantdexhash,baseliskhash;
+    category_subscribe(myinfo,GENESIS_PUBKEY,GENESIS_PUBKEY,0,0);
     pangeahash = calc_categoryhashes(0,"pangea",0);
     myinfo->pangea_category = pangeahash;
-    category_subscribe(myinfo,pangeahash,GENESIS_PUBKEY);
+    category_subscribe(myinfo,pangeahash,GENESIS_PUBKEY,0,0);
     category_processfunc(pangeahash,GENESIS_PUBKEY,pangea_hexmsg);
     category_chain_functions(myinfo,pangeahash,GENESIS_PUBKEY,sizeof(bits256),sizeof(bits256),0,0,0,0,0,0);
     instantdexhash = calc_categoryhashes(0,"InstantDEX",0);
     myinfo->instantdex_category = instantdexhash;
-    category_subscribe(myinfo,instantdexhash,GENESIS_PUBKEY);
+    category_subscribe(myinfo,instantdexhash,GENESIS_PUBKEY,0,0);
     category_processfunc(instantdexhash,GENESIS_PUBKEY,InstantDEX_hexmsg);
     category_processfunc(instantdexhash,myinfo->myaddr.persistent,InstantDEX_hexmsg);
-    
+  
+    baseliskhash = calc_categoryhashes(0,"baselisk",0);
+    myinfo->basilisk_category = baseliskhash;
+    category_subscribe(myinfo,baseliskhash,GENESIS_PUBKEY,0,0);
+
     basilisks_init(myinfo);
 }

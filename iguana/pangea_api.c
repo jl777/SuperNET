@@ -196,7 +196,7 @@ struct table_info *pangea_table(struct supernet_info *myinfo,bits256 tablehash,i
     }
     if ( tp != 0 )
     {
-        category_subscribe(SuperNET_MYINFO(0),myinfo->pangea_category,tablehash);
+        category_subscribe(SuperNET_MYINFO(0),myinfo->pangea_category,tablehash,0,0);
         if ( category_infoset(myinfo->pangea_category,tablehash,tp) == 0 )
             printf("error: couldnt set table.(%s)\n",bits256_str(str,tablehash)), tp = 0;
         //else tp->G.allocsize = allocsize;
@@ -220,8 +220,8 @@ struct player_info *pangea_playerfind(struct supernet_info *myinfo,struct table_
 char *pangea_jsondatacmd(struct supernet_info *myinfo,bits256 tablehash,struct pangea_msghdr *pm,cJSON *json,char *cmdstr,char *ipaddr)
 {
     cJSON *argjson; char *reqstr,hexstr[8192]; uint64_t nxt64bits; struct table_info *tp; int32_t i,datalen;
-    category_subscribe(myinfo,myinfo->pangea_category,GENESIS_PUBKEY);
-    category_subscribe(myinfo,myinfo->pangea_category,tablehash);
+    category_subscribe(myinfo,myinfo->pangea_category,GENESIS_PUBKEY,0,0);
+    category_subscribe(myinfo,myinfo->pangea_category,tablehash,0,0);
     argjson = json != 0 ? jduplicate(json) : cJSON_CreateObject();
     jaddstr(argjson,"cmd",cmdstr);
     if ( myinfo->ipaddr[0] == 0 || strncmp(myinfo->ipaddr,"127.0.0.1",strlen("127.0.0.1")) == 0 )
@@ -808,7 +808,7 @@ ZERO_ARGS(pangea,lobby)
     //cJSON *retjson,*argjson; char *retstr,*result; uint8_t *buf; int32_t flag,len; struct pangea_msghdr *pm;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    category_subscribe(myinfo,myinfo->pangea_category,GENESIS_PUBKEY);
+    category_subscribe(myinfo,myinfo->pangea_category,GENESIS_PUBKEY,0,0);
     pangea_update(myinfo);
     return(jprint(pangea_lobbyjson(myinfo),1));
 }

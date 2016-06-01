@@ -709,7 +709,7 @@ cJSON *iguana_walletiterate(struct supernet_info *myinfo,struct iguana_info *coi
                     HASH_DELETE(hh,wacct->waddr,waddr);
                     if ( waddr->unspents != 0 )
                         free(waddr->unspents);
-                    printf("%p free %s\n",waddr,waddr->coinaddr);
+                    //printf("walletiterate: %p free %s\n",waddr,waddr->coinaddr);
                     myfree(waddr,sizeof(*waddr) + waddr->scriptlen);
                 }
             }
