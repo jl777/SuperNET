@@ -33,7 +33,7 @@ void basilisk_request_goodbye(struct supernet_info *myinfo)
 
 char *basilisk_respond_setfield(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
 {
-    bits256 hash,cathash; struct category_info *cat,*prevcat=0; char *category; char str[65];
+    bits256 hash,cathash; struct category_info *rootcat,*cat,*prevcat=0; char *category; char str[65];
     printf("from.(%s) SET.(%s) datalen.%d\n",remoteaddr,jprint(valsobj,0),datalen);
     if ( datalen <= 0 || (category= jstr(valsobj,"category")) == 0 )
         return(0);
@@ -47,11 +47,17 @@ char *basilisk_respond_setfield(struct supernet_info *myinfo,char *CMD,struct ig
             printf("basilisk_respond_publish: cant find prevhash.%s\n",bits256_str(str,prevhash));
         }
     } else memset(prevhash.bytes,0,sizeof(prevhash));
-    if ( (cat= category_find(cathash,hash)) == 0 )
+    if ( (rootcat= category_find(cathash,GENESIS_PUBKEY)) == 0 )
+        printf("error finding category.(%s)\n",category);
+    else if ( (cat= category_find(cathash,hash)) == 0 )
         printf("error finding just added category\n");
-    cat->prevhash = prevhash;
-    if ( prevcat != 0 )
-        prevcat->next = cat;
+    else
+    {
+        rootcat->lasthash = hash;
+        cat->prevhash = prevhash;
+        if ( prevcat != 0 )
+            prevcat->next = cat;
+    }
     return(0);
 }
 
@@ -63,18 +69,31 @@ struct basilisk_item *basilisk_request_setfield(struct basilisk_item *Lptr,struc
 char *basilisk_respond_getfield(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
 {
     bits256 cathash; struct category_info *cat; char *category,*hexstr; cJSON *retjson;
-    printf("from.(%s) GET.(%s) datalen.%d\n",remoteaddr,jprint(valsobj,0),datalen);
     if ( (category= jstr(valsobj,"category")) == 0 )
         return(0);
     vcalc_sha256(0,cathash.bytes,(uint8_t *)category,(int32_t)strlen(category));
-    if ( (cat= category_find(cathash,prevhash)) == 0 )
-        printf("error finding just added category\n");
+    char str[65]; printf("from.(%s) GET.(%s) datalen.%d %s\n",remoteaddr,jprint(valsobj,0),datalen,bits256_str(str,cathash));
     retjson = cJSON_CreateObject();
-    if ( cat->datalen > 0 )
+    if ( bits256_nonz(prevhash) == 0 || bits256_cmp(GENESIS_PUBKEY,prevhash) == 0 )
     {
-        hexstr = calloc(1,(cat->datalen << 1) + 1);
-        init_hexbytes_noT(hexstr,cat->data,cat->datalen);
-        jaddstr(retjson,"data",hexstr);
+        if ( (cat= category_find(cathash,GENESIS_PUBKEY)) == 0 )
+            jaddstr(retjson,"error","cant find category");
+        else
+        {
+            jaddbits256(retjson,"genesis",cat->hash);
+            jaddbits256(retjson,"last",cat->lasthash);
+        }
+    }
+    else
+    {
+        if ( (cat= category_find(cathash,prevhash)) == 0 )
+            printf("error finding just added category\n");
+        if ( cat->datalen > 0 )
+        {
+            hexstr = calloc(1,(cat->datalen << 1) + 1);
+            init_hexbytes_noT(hexstr,cat->data,cat->datalen);
+            jaddstr(retjson,"data",hexstr);
+        }
     }
     return(jprint(retjson,1));
 }

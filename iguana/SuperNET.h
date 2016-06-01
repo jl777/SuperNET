@@ -130,7 +130,7 @@ struct category_info
 {
     UT_hash_handle hh; queue_t Q;
     char *(*processfunc)(struct supernet_info *myinfo,struct category_info *cat,void *data,int32_t datalen,char *remoteaddr);
-    struct category_chain *catchain; bits256 hash,prevhash; void *info; struct category_info *sub,*next;
+    struct category_chain *catchain; bits256 hash,prevhash,lasthash; void *info; struct category_info *sub,*next;
     int32_t datalen; uint8_t data[];
 };
 

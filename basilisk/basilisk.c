@@ -101,7 +101,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
     else if ( fanout > BASILISK_MAXFANOUT )
         fanout = BASILISK_MAXFANOUT;
     if ( type == 0 )
-        type = "";
+        type = "BTCD";
     if ( strlen(type) > 3 )
     {
         printf("basilisk_sendcmd illegal type(%s)\n",type);
@@ -309,7 +309,7 @@ struct basilisk_item *basilisk_requestservice(struct basilisk_item *Lptr,struct 
         timeoutmillis = BASILISK_TIMEOUT;
     encryptflag = jint(valsobj,"encrypt");
     delaymillis = jint(valsobj,"delay");
-    return(basilisk_issueremote(myinfo,&numsent,CMD,"",valsobj,1,minresults,basilisktag,timeoutmillis,0,0,encryptflag,delaymillis));
+    return(basilisk_issueremote(myinfo,&numsent,CMD,"BTCD",valsobj,1,minresults,basilisktag,timeoutmillis,0,0,encryptflag,delaymillis));
 }
 
 void basilisk_sendback(struct supernet_info *myinfo,char *symbol,char *remoteaddr,uint32_t basilisktag,char *retstr)
@@ -383,9 +383,9 @@ char *basilisk_standardservice(char *CMD,basilisk_requestfunc *func,struct super
         if ( blockflag != 0 )
         {
             ptr->vals = jduplicate(vals);
-            strcpy(ptr->symbol,"");
+            strcpy(ptr->symbol,"BTCD");
             strcpy(ptr->CMD,CMD);
-            return(basilisk_block(myinfo,CMD,"",0,&Lptr,ptr));
+            return(basilisk_block(myinfo,CMD,"BTCD",0,&Lptr,ptr));
         }
         else if ( ptr->numsent > 0 )
         {
@@ -777,7 +777,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
                 data += sizeof(pubkey), datalen -= sizeof(pubkey);
         } else data = 0, datalen = 0;
         if ( (symbol= jstr(valsobj,"coin")) == 0 )
-            symbol = "";
+            symbol = "BTCD";
         timeoutmillis = jint(valsobj,"timeout");
         if ( (numrequired= jint(valsobj,"numrequired")) == 0 )
             numrequired = 1;
