@@ -651,7 +651,7 @@ HASH_ARRAY_STRING(basilisk,addrelay,pubkey,vals,hexstr)
 
 HASH_ARRAY_STRING(basilisk,dispatch,pubkey,vals,hexstr)
 {
-    return(basilisk_standardservice("RUN",&basilisk_request_dispatch,myinfo,pubkey,vals,hexstr,0));
+    return(basilisk_standardservice("RUN",&basilisk_request_dispatch,myinfo,pubkey,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,publish,pubkey,vals,hexstr)
@@ -661,7 +661,7 @@ HASH_ARRAY_STRING(basilisk,publish,pubkey,vals,hexstr)
 
 HASH_ARRAY_STRING(basilisk,subscribe,pubkey,vals,hexstr)
 {
-    return(basilisk_standardservice("SUB",&basilisk_request_subscribe,myinfo,pubkey,vals,hexstr,0));
+    return(basilisk_standardservice("SUB",&basilisk_request_subscribe,myinfo,pubkey,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,setfield,pubkey,vals,hexstr)
@@ -671,7 +671,9 @@ HASH_ARRAY_STRING(basilisk,setfield,pubkey,vals,hexstr)
 
 HASH_ARRAY_STRING(basilisk,getfield,pubkey,vals,hexstr)
 {
-    return(basilisk_standardservice("GET",&basilisk_request_getfield,myinfo,pubkey,vals,hexstr,0));
+    if ( jobj(vals,"timeout") == 0 )
+        jaddnum(vals,"timeout",BASILISK_TIMEOUT);
+    return(basilisk_standardservice("GET",&basilisk_request_getfield,myinfo,pubkey,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,forward,pubkey,vals,hexstr)
@@ -681,32 +683,32 @@ HASH_ARRAY_STRING(basilisk,forward,pubkey,vals,hexstr)
 
 HASH_ARRAY_STRING(basilisk,mailbox,pubkey,vals,hexstr)
 {
-    return(basilisk_standardservice("BOX",&basilisk_request_mailbox,myinfo,pubkey,vals,hexstr,0));
+    return(basilisk_standardservice("BOX",&basilisk_request_mailbox,myinfo,pubkey,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,VPNcreate,pubkey,vals,hexstr)
 {
-    return(basilisk_standardservice("HUB",&basilisk_request_VPNcreate,myinfo,pubkey,vals,hexstr,0));
+    return(basilisk_standardservice("HUB",&basilisk_request_VPNcreate,myinfo,pubkey,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,VPNjoin,pubkey,vals,hexstr)
 {
-    return(basilisk_standardservice("ARC",&basilisk_request_VPNjoin,myinfo,pubkey,vals,hexstr,0));
+    return(basilisk_standardservice("ARC",&basilisk_request_VPNjoin,myinfo,pubkey,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,VPNmessage,pubkey,vals,hexstr)
 {
-    return(basilisk_standardservice("GAB",&basilisk_request_VPNmessage,myinfo,pubkey,vals,hexstr,0));
+    return(basilisk_standardservice("GAB",&basilisk_request_VPNmessage,myinfo,pubkey,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,VPNbroadcast,pubkey,vals,hexstr)
 {
-    return(basilisk_standardservice("SAY",&basilisk_request_VPNbroadcast,myinfo,pubkey,vals,hexstr,0));
+    return(basilisk_standardservice("SAY",&basilisk_request_VPNbroadcast,myinfo,pubkey,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,VPNreceive,pubkey,vals,hexstr)
 {
-    return(basilisk_standardservice("EAR",&basilisk_request_VPNreceive,myinfo,pubkey,vals,hexstr,0));
+    return(basilisk_standardservice("EAR",&basilisk_request_VPNreceive,myinfo,pubkey,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,VPNlogout,pubkey,vals,hexstr)
@@ -790,6 +792,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
                         basilisk_sendcmd(myinfo,0,cmd,rand(),0,0,origdata,origlen,-1); // to other iguanas
                     if ( (retstr= (*basilisk_services[i][1])(myinfo,type,addr,remoteaddr,basilisktag,valsobj,data,datalen,pubkey,from_basilisk)) != 0 )
                     {
+                        printf("from_basilisk.%d ret.(%s)\n",from_basilisk,retstr);
                         if ( from_basilisk != 0 )
                             basilisk_sendback(myinfo,symbol,remoteaddr,basilisktag,retstr);
                         if ( retstr != 0 )
@@ -808,6 +811,9 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
                     if ( strcmp((char *)basilisk_coinservices[i][0],type) == 0 )
                     {
                         retstr = (*basilisk_coinservices[i][1])(myinfo,coin,addr,remoteaddr,basilisktag,valsobj,data,datalen);
+                        printf("from_basilisk.%d ret.(%s)\n",from_basilisk,retstr);
+                        if ( from_basilisk != 0 )
+                            basilisk_sendback(myinfo,symbol,remoteaddr,basilisktag,retstr);
                         break;
                     }
             }

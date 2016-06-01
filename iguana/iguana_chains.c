@@ -319,7 +319,7 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
         if ( (chain->ramchainport= juint(argjson,"ramchain")) == 0 )
             chain->ramchainport = chain->portp2p - 1;
         if ( (chain->rpcport= juint(argjson,"rpc")) == 0 )
-            chain->rpcport = chain->portp2p + 1;
+            chain->rpcport = chain->portp2p - 1;
         if ( jobj(argjson,"isPoS") != 0 )
             chain->hastimestamp = juint(argjson,"isPoS");
         else if ( jobj(argjson,"oldtx_format") != 0 )

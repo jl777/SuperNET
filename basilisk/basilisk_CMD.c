@@ -82,7 +82,7 @@ char *basilisk_respond_getfield(struct supernet_info *myinfo,char *CMD,struct ig
 struct basilisk_item *basilisk_request_getfield(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 prevhash,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
     bits256 cathash; char *category;
-    if ( datalen <= 0 || (category= jstr(valsobj,"category")) == 0 )
+    if ( (category= jstr(valsobj,"category")) == 0 )
         return(0);
     vcalc_sha256(0,cathash.bytes,(uint8_t *)category,(int32_t)strlen(category));
     return(basilisk_requestservice(Lptr,myinfo,"GET",0,valsobj,prevhash));

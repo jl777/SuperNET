@@ -1,1 +1,1 @@
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"basilisk\",\"method\":\"setfield\",\"vals\":{\"setfield\":\"setthis\"},\"hexstr\":\"beefdead\",\"category\":\"test\"}"
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"basilisk\",\"method\":\"setfield\",\"vals\":{\"setfield\":\"setthis\",\"category\":\"test\"},\"hexstr\":\"beefdead\"}"
