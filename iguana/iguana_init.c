@@ -471,7 +471,7 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
     memset(&coin->blocks.hwmchain,0,sizeof(coin->blocks.hwmchain));
     coin->blocks.hwmchain.height = 0;
     printf("%s MYSERVICES.%llx\n",coin->symbol,(long long)coin->myservices);
-    if ( coin->myservices != 0 )//(coin->myservices & NODE_NETWORK) != 0 )
+    if ( (coin->myservices & NODE_NETWORK) != 0 )
     {
         if ( coin->peers.acceptloop == 0 && coin->peers.localaddr == 0 )
         {
