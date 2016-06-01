@@ -313,11 +313,13 @@ struct basilisk_item *basilisk_requestservice(struct basilisk_item *Lptr,struct 
 void basilisk_sendback(struct supernet_info *myinfo,char *symbol,char *remoteaddr,uint32_t basilisktag,char *retstr)
 {
     uint8_t *data,space[4096]; void *allocptr; cJSON *valsobj; int32_t datalen,encryptflag=0,delaymillis=0;
+    printf("retstr.(%s) -> remote.(%s) basilisktag.%u\n",retstr,remoteaddr,basilisktag);
     if ( retstr != 0 && remoteaddr != 0 && remoteaddr[0] != 0 && strcmp(remoteaddr,"127.0.0.1") != 0 )
     {
         if ( (valsobj= cJSON_Parse(retstr)) != 0 )
         {
             data = basilisk_jsondata(&allocptr,space,sizeof(space),&datalen,symbol,valsobj,basilisktag);
+            printf("send data.%d\n",datalen);
             basilisk_sendcmd(myinfo,remoteaddr,"RET",basilisktag,encryptflag,delaymillis,data,datalen,0);
             if ( allocptr != 0 )
                 free(allocptr);
