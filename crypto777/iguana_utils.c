@@ -90,7 +90,7 @@ bits256 bits256_add(bits256 a,bits256 b)
 int32_t bits256_cmp(bits256 a,bits256 b)
 {
     int32_t i;
-    for (i=0; i<4; i++)
+    for (i=3; i>=0; i--)
     {
         if ( a.ulongs[i] > b.ulongs[i] )
             return(1);

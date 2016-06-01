@@ -93,9 +93,9 @@ struct basilisk_item *basilisk_itemcreate(struct supernet_info *myinfo,char *CMD
     return(n);
 }*/
 
-int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *type,uint32_t basilisktag,int32_t encryptflag,int32_t delaymillis,uint8_t *data,int32_t datalen,int32_t fanout) // data must be offset by sizeof(iguana_msghdr)+sizeof(basilisktag)
+int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *type,uint32_t *basilisktagp,int32_t encryptflag,int32_t delaymillis,uint8_t *data,int32_t datalen,int32_t fanout,uint32_t nBits) // data must be offset by sizeof(iguana_msghdr)+sizeof(basilisktag)
 {
-    int32_t i,j,r,r2,k,l,s,val,n=0,offset,havepubkey=0,retval = -1; char cmd[12]; struct iguana_info *coin; struct iguana_peer *addr; bits256 pubkey; uint32_t *alreadysent;
+    int32_t i,j,r,r2,k,l,s,numiters,val,n=0,offset,havepubkey=0,retval = -1; char cmd[12]; struct iguana_info *coin; struct iguana_peer *addr; bits256 pubkey,threshold,hash,hash2; uint32_t *alreadysent;
     if ( fanout <= 0 )
         fanout = BASILISK_MINFANOUT;
     else if ( fanout > BASILISK_MAXFANOUT )
@@ -124,13 +124,28 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                 }
             }
             offset = (int32_t)(havepubkey * (1 + sizeof(bits256)));
-            basilisk_msgprocess(myinfo,0,0,type,basilisktag,data+offset,datalen-offset,pubkey);
+            basilisk_msgprocess(myinfo,0,0,type,*basilisktagp,data+offset,datalen-offset,pubkey);
             return(0);
         }
     }
     alreadysent = calloc(IGUANA_MAXPEERS * IGUANA_MAXCOINS,sizeof(*alreadysent));
-    iguana_rwnum(1,&data[-sizeof(basilisktag)],sizeof(basilisktag),&basilisktag);
-    data -= sizeof(basilisktag), datalen += sizeof(basilisktag);
+    iguana_rwnum(1,&data[-sizeof(*basilisktagp)],sizeof(*basilisktagp),basilisktagp);
+    if ( *basilisktagp == 0 )
+    {
+        numiters = 0;
+        vcalc_sha256(0,hash.bytes,data,datalen);
+        threshold = bits256_from_compact(nBits);
+        while ( numiters++ < 1000000 )
+        {
+            OS_randombytes((void *)hash.uints,sizeof(*basilisktagp));
+            vcalc_sha256(0,hash2.bytes,hash.bytes,sizeof(hash));
+            if ( bits256_cmp(threshold,hash2) > 0 )
+                break;
+        }
+        iguana_rwnum(0,(void *)hash.uints,sizeof(*basilisktagp),basilisktagp);
+        char str[65],str2[65]; printf("found hash after numiters.%d %s vs %s basilisktag.%u\n",numiters,bits256_str(str,threshold),bits256_str(str2,hash2),*basilisktagp);
+    }
+    data -= sizeof(*basilisktagp), datalen += sizeof(*basilisktagp);
     memset(cmd,0,sizeof(cmd));
     sprintf(cmd,"SuperNET%s",type);
     r = rand(), r2 = rand();
@@ -197,7 +212,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
 
 void basilisk_p2p(void *_myinfo,void *_addr,int32_t *delaymillisp,char *senderip,uint8_t *data,int32_t datalen,char *type,int32_t encrypted)
 {
-    uint32_t ipbits,basilisktag; int32_t i,havepubkey,msglen,len=0; void *ptr = 0; uint8_t space[8192]; bits256 senderpub,pubkey; struct supernet_info *myinfo = _myinfo;
+    uint32_t ipbits,basilisktag; int32_t i,havepubkey,msglen,len=0; void *ptr = 0; uint8_t space[8192]; bits256 senderpub,pubkey,hash,hash2; struct supernet_info *myinfo = _myinfo;
     pubkey = GENESIS_PUBKEY;
     if ( encrypted != 0 )
     {
@@ -215,6 +230,10 @@ void basilisk_p2p(void *_myinfo,void *_addr,int32_t *delaymillisp,char *senderip
     len += iguana_rwnum(0,&data[len],sizeof(basilisktag),&basilisktag);
     if ( datalen > len && (havepubkey= data[len]) != 0 )
     {
+        vcalc_sha256(0,hash.bytes,&data[len],datalen - len);
+        hash.uints[0] = basilisktag;
+        vcalc_sha256(0,hash2.bytes,hash.bytes,sizeof(hash));
+        char str[65]; printf("tag.%u %s\n",basilisktag,bits256_str(str,hash2));
         for (i=0; i<32; i++)
             pubkey.bytes[i] = data[len + i + 1];
     }
@@ -268,12 +287,11 @@ uint8_t *basilisk_jsondata(void **ptrp,uint8_t *space,int32_t spacesize,int32_t 
     return(data);
 }
 
-struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,int32_t *numsentp,char *CMD,char *symbol,cJSON *valsobj,int32_t fanout,int32_t minresults,uint32_t basilisktag,int32_t timeoutmillis,void *_metricfunc,char *retstr,int32_t encryptflag,int32_t delaymillis)
+struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,int32_t *numsentp,char *CMD,char *symbol,cJSON *valsobj,int32_t fanout,int32_t minresults,uint32_t basilisktag,int32_t timeoutmillis,void *_metricfunc,char *retstr,int32_t encryptflag,int32_t delaymillis,uint32_t nBits)
 {
     struct basilisk_item *ptr; void *allocptr; uint8_t *data,space[4096]; int32_t datalen; basilisk_metricfunc metricfunc = _metricfunc;
-    if ( basilisktag == 0 )
-        basilisktag = rand();
     ptr = basilisk_itemcreate(myinfo,CMD,symbol,basilisktag,minresults,valsobj,timeoutmillis,metricfunc);
+    ptr->nBits = nBits;
     *numsentp = 0;
     if ( retstr != 0 )
     {
@@ -285,7 +303,7 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,int32_t 
     else
     {
         data = basilisk_jsondata(&allocptr,space,sizeof(space),&datalen,symbol,valsobj,basilisktag);
-        *numsentp = ptr->numsent = basilisk_sendcmd(myinfo,0,CMD,basilisktag,encryptflag,delaymillis,data,datalen,0);
+        *numsentp = ptr->numsent = basilisk_sendcmd(myinfo,0,CMD,&ptr->basilisktag,encryptflag,delaymillis,data,datalen,0,ptr->nBits);
         if ( allocptr != 0 )
             free(allocptr);
     }
@@ -294,11 +312,9 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,int32_t 
     return(ptr);
 }
 
-struct basilisk_item *basilisk_requestservice(struct basilisk_item *Lptr,struct supernet_info *myinfo,char *CMD,uint32_t basilisktag,cJSON *valsobj,bits256 pubkey)
+struct basilisk_item *basilisk_requestservice(struct basilisk_item *Lptr,struct supernet_info *myinfo,char *CMD,uint32_t basilisktag,cJSON *valsobj,bits256 pubkey,uint32_t nBits)
 {
     int32_t minresults,timeoutmillis,numsent,delaymillis,encryptflag;
-    if ( basilisktag == 0 )
-        OS_randombytes((void *)&basilisktag,sizeof(basilisktag));
     if ( jobj(valsobj,"pubkey") != 0 )
         jdelete(valsobj,"pubkey");
     if ( bits256_cmp(pubkey,GENESIS_PUBKEY) != 0 )
@@ -309,7 +325,7 @@ struct basilisk_item *basilisk_requestservice(struct basilisk_item *Lptr,struct 
         timeoutmillis = BASILISK_TIMEOUT;
     encryptflag = jint(valsobj,"encrypt");
     delaymillis = jint(valsobj,"delay");
-    return(basilisk_issueremote(myinfo,&numsent,CMD,"BTCD",valsobj,1,minresults,basilisktag,timeoutmillis,0,0,encryptflag,delaymillis));
+    return(basilisk_issueremote(myinfo,&numsent,CMD,"BTCD",valsobj,1,minresults,basilisktag,timeoutmillis,0,0,encryptflag,delaymillis,nBits));
 }
 
 void basilisk_sendback(struct supernet_info *myinfo,char *symbol,char *remoteaddr,uint32_t basilisktag,char *retstr)
@@ -322,7 +338,7 @@ void basilisk_sendback(struct supernet_info *myinfo,char *symbol,char *remoteadd
         {
             data = basilisk_jsondata(&allocptr,space,sizeof(space),&datalen,symbol,valsobj,basilisktag);
             printf("send data.%d\n",datalen);
-            basilisk_sendcmd(myinfo,remoteaddr,"RET",basilisktag,encryptflag,delaymillis,data,datalen,0);
+            basilisk_sendcmd(myinfo,remoteaddr,"RET",&basilisktag,encryptflag,delaymillis,data,datalen,0,0x1efffff0);
             if ( allocptr != 0 )
                 free(allocptr);
             free_json(valsobj);
@@ -793,7 +809,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
                 if ( myinfo->IAMRELAY != 0 ) // iguana node
                 {
                     if ( from_basilisk != 0 )
-                        basilisk_sendcmd(myinfo,0,cmd,rand(),0,0,origdata,origlen,-1); // to other iguanas
+                        basilisk_sendcmd(myinfo,0,cmd,&basilisktag,0,0,origdata,origlen,-1,0x1efffff0); // to other iguanas
                     if ( (retstr= (*basilisk_services[i][1])(myinfo,type,addr,remoteaddr,basilisktag,valsobj,data,datalen,pubkey,from_basilisk)) != 0 )
                     {
                         printf("from_basilisk.%d ret.(%s)\n",from_basilisk,retstr);

@@ -474,7 +474,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     jaddbits256(sendjson,"categoryhash",myinfo->instantdex_category);
     jaddbits256(sendjson,"traderpub",myinfo->myaddr.persistent);
     data = basilisk_jsondata(&allocptr,space,sizeof(space),&datalen,swap->mine.offer.base,sendjson,basilisktag);
-    basilisk_sendcmd(myinfo,addr->ipaddr,dir > 0 ? "BID" : "ASK",basilisktag,encryptflag,delaymillis,data,datalen,1);
+    basilisk_sendcmd(myinfo,addr->ipaddr,dir > 0 ? "BID" : "ASK",&basilisktag,encryptflag,delaymillis,data,datalen,1,0x1efffff0);
     free_json(sendjson);
     if ( allocptr != 0 )
         free(allocptr);

@@ -27,7 +27,7 @@ struct basilisk_value { bits256 txid; int64_t value; int32_t height; int16_t vou
 struct basilisk_item
 {
     struct queueitem DL; UT_hash_handle hh; struct basilisk_item *parent; void *dependents;
-    uint32_t submit,finished,basilisktag,numresults,numsent,numexact,uniqueflag,numrequired,childrendone,numchildren;
+    uint32_t submit,finished,basilisktag,numresults,numsent,numexact,uniqueflag,numrequired,childrendone,numchildren,nBits;
     char symbol[32],CMD[4]; double expiration; cJSON *vals; int32_t metricdir; void *metricfunc;
     char *retstr,*results[BASILISK_MAXFANOUT]; double metrics[BASILISK_MAXFANOUT];
 };
@@ -42,7 +42,7 @@ struct basilisk_info
 void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen,bits256 pubkey);
 
 void basilisks_init(struct supernet_info *myinfo);
-int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *type,uint32_t basilisktag,int32_t encryptflag,int32_t delaymillis,uint8_t *data,int32_t datalen,int32_t fanout); // data must be offset by sizeof(iguana_msghdr)
+int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *type,uint32_t *basilisktagp,int32_t encryptflag,int32_t delaymillis,uint8_t *data,int32_t datalen,int32_t fanout,uint32_t nBits); // data must be offset by sizeof(iguana_msghdr)
 void basilisk_p2p(void *myinfo,void *_addr,int32_t *delaymillisp,char *ipaddr,uint8_t *data,int32_t datalen,char *type,int32_t encrypted);
 uint8_t *basilisk_jsondata(void **ptrp,uint8_t *space,int32_t spacesize,int32_t *datalenp,char *symbol,cJSON *sendjson,uint32_t basilisktag);
 

@@ -27,7 +27,7 @@ void basilisk_request_goodbye(struct supernet_info *myinfo)
 {
     struct basilisk_item Lptr; cJSON *valsobj = cJSON_CreateObject();
     jaddnum(valsobj,"timeout",-1);
-    basilisk_requestservice(&Lptr,myinfo,"BYE",0,valsobj,GENESIS_PUBKEY);
+    basilisk_requestservice(&Lptr,myinfo,"BYE",0,valsobj,GENESIS_PUBKEY,0x1efffff0);
     free_json(valsobj);
 }
 
@@ -63,7 +63,7 @@ char *basilisk_respond_setfield(struct supernet_info *myinfo,char *CMD,struct ig
 
 struct basilisk_item *basilisk_request_setfield(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
-    return(basilisk_requestservice(Lptr,myinfo,"SET",0,valsobj,pubkey));
+    return(basilisk_requestservice(Lptr,myinfo,"SET",0,valsobj,pubkey,0x1efffff0));
 }
 
 char *basilisk_respond_getfield(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
@@ -104,7 +104,7 @@ struct basilisk_item *basilisk_request_getfield(struct basilisk_item *Lptr,struc
     if ( (category= jstr(valsobj,"category")) == 0 )
         return(0);
     vcalc_sha256(0,cathash.bytes,(uint8_t *)category,(int32_t)strlen(category));
-    return(basilisk_requestservice(Lptr,myinfo,"GET",0,valsobj,prevhash));
+    return(basilisk_requestservice(Lptr,myinfo,"GET",0,valsobj,prevhash,0x1efffff0));
 }
 
 char *basilisk_respond_publish(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
@@ -116,7 +116,7 @@ char *basilisk_respond_publish(struct supernet_info *myinfo,char *CMD,struct igu
 
 struct basilisk_item *basilisk_request_publish(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
-    return(basilisk_requestservice(Lptr,myinfo,"PUB",0,valsobj,pubkey));
+    return(basilisk_requestservice(Lptr,myinfo,"PUB",0,valsobj,pubkey,0x1efffff0));
 }
 
 char *basilisk_respond_subscribe(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
@@ -128,7 +128,7 @@ char *basilisk_respond_subscribe(struct supernet_info *myinfo,char *CMD,struct i
 
 struct basilisk_item *basilisk_request_subscribe(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
-    return(basilisk_requestservice(Lptr,myinfo,"SUB",0,valsobj,pubkey));
+    return(basilisk_requestservice(Lptr,myinfo,"SUB",0,valsobj,pubkey,0x1efffff0));
 }
 
 char *basilisk_respond_dispatch(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
@@ -139,7 +139,7 @@ char *basilisk_respond_dispatch(struct supernet_info *myinfo,char *CMD,struct ig
 
 struct basilisk_item *basilisk_request_dispatch(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
-    return(basilisk_requestservice(Lptr,myinfo,"RUN",0,valsobj,pubkey));
+    return(basilisk_requestservice(Lptr,myinfo,"RUN",0,valsobj,pubkey,0x1efffff0));
 }
 
 char *basilisk_respond_addrelay(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
@@ -150,7 +150,7 @@ char *basilisk_respond_addrelay(struct supernet_info *myinfo,char *CMD,struct ig
 
 struct basilisk_item *basilisk_request_addrelay(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
-    return(basilisk_requestservice(Lptr,myinfo,"ADD",0,valsobj,pubkey));
+    return(basilisk_requestservice(Lptr,myinfo,"ADD",0,valsobj,pubkey,0x1efffff0));
 }
 
 char *basilisk_respond_forward(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
@@ -161,7 +161,7 @@ char *basilisk_respond_forward(struct supernet_info *myinfo,char *CMD,struct igu
 
 struct basilisk_item *basilisk_request_forward(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
-    return(basilisk_requestservice(Lptr,myinfo,"HOP",0,valsobj,pubkey));
+    return(basilisk_requestservice(Lptr,myinfo,"HOP",0,valsobj,pubkey,0x1efffff0));
 }
 
 char *basilisk_respond_mailbox(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
@@ -172,7 +172,7 @@ char *basilisk_respond_mailbox(struct supernet_info *myinfo,char *CMD,struct igu
 
 struct basilisk_item *basilisk_request_mailbox(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
-    return(basilisk_requestservice(Lptr,myinfo,"BOX",0,valsobj,pubkey));
+    return(basilisk_requestservice(Lptr,myinfo,"BOX",0,valsobj,pubkey,0x1efffff0));
 }
 
 char *basilisk_respond_VPNcreate(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
@@ -183,7 +183,7 @@ char *basilisk_respond_VPNcreate(struct supernet_info *myinfo,char *CMD,struct i
 
 struct basilisk_item *basilisk_request_VPNcreate(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
-    return(basilisk_requestservice(Lptr,myinfo,"HUB",0,valsobj,pubkey));
+    return(basilisk_requestservice(Lptr,myinfo,"HUB",0,valsobj,pubkey,0x1efffff0));
 }
 
 char *basilisk_respond_VPNjoin(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
@@ -194,7 +194,7 @@ char *basilisk_respond_VPNjoin(struct supernet_info *myinfo,char *CMD,struct igu
 
 struct basilisk_item *basilisk_request_VPNjoin(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
-    return(basilisk_requestservice(Lptr,myinfo,"ARC",0,valsobj,pubkey));
+    return(basilisk_requestservice(Lptr,myinfo,"ARC",0,valsobj,pubkey,0x1efffff0));
 }
 
 char *basilisk_respond_VPNlogout(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
@@ -205,7 +205,7 @@ char *basilisk_respond_VPNlogout(struct supernet_info *myinfo,char *CMD,struct i
 
 struct basilisk_item *basilisk_request_VPNlogout(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
-    return(basilisk_requestservice(Lptr,myinfo,"END",0,valsobj,pubkey));
+    return(basilisk_requestservice(Lptr,myinfo,"END",0,valsobj,pubkey,0x1efffff0));
 }
 
 char *basilisk_respond_VPNbroadcast(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
@@ -216,7 +216,7 @@ char *basilisk_respond_VPNbroadcast(struct supernet_info *myinfo,char *CMD,struc
 
 struct basilisk_item *basilisk_request_VPNbroadcast(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
-    return(basilisk_requestservice(Lptr,myinfo,"SAY",0,valsobj,pubkey));
+    return(basilisk_requestservice(Lptr,myinfo,"SAY",0,valsobj,pubkey,0x1efffff0));
 }
 
 char *basilisk_respond_VPNreceive(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
@@ -227,7 +227,7 @@ char *basilisk_respond_VPNreceive(struct supernet_info *myinfo,char *CMD,struct 
 
 struct basilisk_item *basilisk_request_VPNreceive(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
-    return(basilisk_requestservice(Lptr,myinfo,"EAR",0,valsobj,pubkey));
+    return(basilisk_requestservice(Lptr,myinfo,"EAR",0,valsobj,pubkey,0x1efffff0));
 }
 
 char *basilisk_respond_VPNmessage(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
@@ -238,7 +238,7 @@ char *basilisk_respond_VPNmessage(struct supernet_info *myinfo,char *CMD,struct 
 
 struct basilisk_item *basilisk_request_VPNmessage(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
-    return(basilisk_requestservice(Lptr,myinfo,"GAP",0,valsobj,pubkey));
+    return(basilisk_requestservice(Lptr,myinfo,"GAP",0,valsobj,pubkey,0x1efffff0));
 }
 
 
