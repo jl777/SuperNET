@@ -31,11 +31,11 @@ void basilisk_request_goodbye(struct supernet_info *myinfo)
     free_json(valsobj);
 }
 
-char *basilisk_respond_publish(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
+char *basilisk_respond_setfield(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
 {
     bits256 hash,cathash; struct category_info *cat,*prevcat=0; char *category; char str[65];
-    printf("from.(%s) PUB.(%s) datalen.%d\n",remoteaddr,jprint(valsobj,0),datalen);
-    if ( datalen <= 0 || (category= jstr(valsobj,"cat")) == 0 )
+    printf("from.(%s) SET.(%s) datalen.%d\n",remoteaddr,jprint(valsobj,0),datalen);
+    if ( datalen <= 0 || (category= jstr(valsobj,"category")) == 0 )
         return(0);
     vcalc_sha256(0,cathash.bytes,(uint8_t *)category,(int32_t)strlen(category));
     vcalc_sha256(0,hash.bytes,data,datalen);
@@ -55,16 +55,16 @@ char *basilisk_respond_publish(struct supernet_info *myinfo,char *CMD,struct igu
     return(0);
 }
 
-struct basilisk_item *basilisk_request_publish(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
+struct basilisk_item *basilisk_request_setfield(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
-    return(basilisk_requestservice(Lptr,myinfo,"PUB",0,valsobj,pubkey));
+    return(basilisk_requestservice(Lptr,myinfo,"SET",0,valsobj,pubkey));
 }
 
-char *basilisk_respond_subscribe(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
+char *basilisk_respond_getfield(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
 {
     bits256 cathash; struct category_info *cat; char *category,*hexstr; cJSON *retjson;
-    printf("from.(%s) SUB.(%s) datalen.%d\n",remoteaddr,jprint(valsobj,0),datalen);
-    if ( (category= jstr(valsobj,"cat")) == 0 )
+    printf("from.(%s) GET.(%s) datalen.%d\n",remoteaddr,jprint(valsobj,0),datalen);
+    if ( (category= jstr(valsobj,"category")) == 0 )
         return(0);
     vcalc_sha256(0,cathash.bytes,(uint8_t *)category,(int32_t)strlen(category));
     if ( (cat= category_find(cathash,prevhash)) == 0 )
@@ -79,37 +79,37 @@ char *basilisk_respond_subscribe(struct supernet_info *myinfo,char *CMD,struct i
     return(jprint(retjson,1));
 }
 
-struct basilisk_item *basilisk_request_subscribe(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 prevhash,cJSON *valsobj,uint8_t *data,int32_t datalen)
+struct basilisk_item *basilisk_request_getfield(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 prevhash,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
     bits256 cathash; char *category;
-    if ( datalen <= 0 || (category= jstr(valsobj,"cat")) == 0 )
+    if ( datalen <= 0 || (category= jstr(valsobj,"category")) == 0 )
         return(0);
     vcalc_sha256(0,cathash.bytes,(uint8_t *)category,(int32_t)strlen(category));
-    return(basilisk_requestservice(Lptr,myinfo,"SUB",0,valsobj,prevhash));
+    return(basilisk_requestservice(Lptr,myinfo,"GET",0,valsobj,prevhash));
 }
 
-char *basilisk_respond_setfield(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
+char *basilisk_respond_publish(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
 {
     char *retstr=0;
-    printf("from.(%s) SET.(%s) datalen.%d\n",remoteaddr,jprint(valsobj,0),datalen);
+    printf("from.(%s) PUB.(%s) datalen.%d\n",remoteaddr,jprint(valsobj,0),datalen);
     return(retstr);
 }
 
-struct basilisk_item *basilisk_request_setfield(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
+struct basilisk_item *basilisk_request_publish(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
-    return(basilisk_requestservice(Lptr,myinfo,"SET",0,valsobj,pubkey));
+    return(basilisk_requestservice(Lptr,myinfo,"PUB",0,valsobj,pubkey));
 }
 
-char *basilisk_respond_getfield(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
+char *basilisk_respond_subscribe(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
 {
     char *retstr=0;
-    printf("from.(%s) GET.(%s) datalen.%d\n",remoteaddr,jprint(valsobj,0),datalen);
+    printf("from.(%s) SUB.(%s) datalen.%d\n",remoteaddr,jprint(valsobj,0),datalen);
     return(retstr);
 }
 
-struct basilisk_item *basilisk_request_getfield(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
+struct basilisk_item *basilisk_request_subscribe(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
-    return(basilisk_requestservice(Lptr,myinfo,"GET",0,valsobj,pubkey));
+    return(basilisk_requestservice(Lptr,myinfo,"SUB",0,valsobj,pubkey));
 }
 
 char *basilisk_respond_dispatch(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)

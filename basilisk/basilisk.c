@@ -374,18 +374,21 @@ char *basilisk_standardservice(char *CMD,basilisk_requestfunc *func,struct super
     ptr = (*func)(&Lptr,myinfo,pubkey,vals,data,datalen);
     if ( allocptr != 0 )
         free(allocptr);
-    if ( blockflag != 0 )
+    if ( ptr != 0 )
     {
-        ptr->vals = jduplicate(vals);
-        strcpy(ptr->symbol,"");
-        strcpy(ptr->CMD,CMD);
-        return(basilisk_block(myinfo,CMD,"",0,&Lptr,ptr));
-    }
-    else if ( ptr->numsent > 0 )
-    {
-        jaddstr(retjson,"result","success");
-        jaddnum(retjson,"numsent",ptr->numsent);
-    } else jaddstr(retjson,"error","didnt find any nodes to send to");
+        if ( blockflag != 0 )
+        {
+            ptr->vals = jduplicate(vals);
+            strcpy(ptr->symbol,"");
+            strcpy(ptr->CMD,CMD);
+            return(basilisk_block(myinfo,CMD,"",0,&Lptr,ptr));
+        }
+        else if ( ptr->numsent > 0 )
+        {
+            jaddstr(retjson,"result","success");
+            jaddnum(retjson,"numsent",ptr->numsent);
+        } else jaddstr(retjson,"error","didnt find any nodes to send to");
+    } else jaddstr(retjson,"error","couldnt create basilisk item");
     return(jprint(retjson,1));
 }
 
