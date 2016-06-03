@@ -560,7 +560,7 @@ cJSON *iguana_peersjson(struct iguana_info *coin,int32_t addronly)
     array = cJSON_CreateArray();
     for (i=0; i<coin->MAXPEERS; i++)
     {
-        addr = &coin->peers.active[i];
+        addr = &coin->peers->active[i];
         if ( addr->usock >= 0 && addr->ipbits != 0 && addr->ipaddr[0] != 0 )
         {
             if ( addronly != 0 )
@@ -593,8 +593,8 @@ STRING_ARG(iguana,getconnectioncount,activecoin)
     int32_t i,num = 0; char buf[512];
     if ( coin != 0 )
     {
-        for (i=0; i<sizeof(coin->peers.active)/sizeof(*coin->peers.active); i++)
-            if ( coin->peers.active[i].usock >= 0 )
+        for (i=0; i<sizeof(coin->peers->active)/sizeof(*coin->peers->active); i++)
+            if ( coin->peers->active[i].usock >= 0 )
                 num++;
         sprintf(buf,"{\"result\":\"%d\"}",num);
         return(clonestr(buf));
@@ -669,22 +669,22 @@ TWO_STRINGS(iguana,addnode,activecoin,ipaddr)
             addr->supernet = 1;
             if ( addr->usock >= 0 )
             {
-                if ( (n= coin->peers.numranked) != 0 )
+                if ( (n= coin->peers->numranked) != 0 )
                 {
                     for (i=0; i<n; i++)
                     {
-                        if ( addr == coin->peers.ranked[i] )
+                        if ( addr == coin->peers->ranked[i] )
                             break;
                     }
                     if ( i == n )
                     {
                         if ( i == IGUANA_MAXPEERS )
                             i--;
-                        else coin->peers.numranked = n+1;
-                        coin->peers.ranked[i] = addr;
-                        addr->recvblocks = coin->peers.ranked[0]->recvblocks + 100;
-                        addr->recvtotal = coin->peers.ranked[0]->recvtotal*1.1 + 100;
-                        printf("set (%s) -> slot.%d numranked.%d\n",ipaddr,i,coin->peers.numranked);
+                        else coin->peers->numranked = n+1;
+                        coin->peers->ranked[i] = addr;
+                        addr->recvblocks = coin->peers->ranked[0]->recvblocks + 100;
+                        addr->recvtotal = coin->peers->ranked[0]->recvtotal*1.1 + 100;
+                        printf("set (%s) -> slot.%d numranked.%d\n",ipaddr,i,coin->peers->numranked);
                     } else printf("(%s) is already peer.%d\n",ipaddr,i);
                 }
                 return(clonestr("{\"result\":\"peer was already connected\"}"));
@@ -709,9 +709,9 @@ TWO_STRINGS(iguana,persistent,activecoin,ipaddr)
     {
         for (i=0; i<IGUANA_MAXPEERS; i++)
         {
-            if ( strcmp(coin->peers.active[i].ipaddr,ipaddr) == 0 )
+            if ( strcmp(coin->peers->active[i].ipaddr,ipaddr) == 0 )
             {
-                coin->peers.active[i].persistent_peer = juint(json,"interval")+3;
+                coin->peers->active[i].persistent_peer = juint(json,"interval")+3;
                 return(clonestr("{\"result\":\"node marked as persistent\"}"));
             }
         }
@@ -726,10 +726,10 @@ TWO_STRINGS(iguana,removenode,activecoin,ipaddr)
     {
         for (i=0; i<IGUANA_MAXPEERS; i++)
         {
-            if ( strcmp(coin->peers.active[i].ipaddr,ipaddr) == 0 )
+            if ( strcmp(coin->peers->active[i].ipaddr,ipaddr) == 0 )
             {
-                coin->peers.active[i].rank = 0;
-                coin->peers.active[i].dead = (uint32_t)time(NULL);
+                coin->peers->active[i].rank = 0;
+                coin->peers->active[i].dead = (uint32_t)time(NULL);
                 return(clonestr("{\"result\":\"node marked as dead\"}"));
             }
         }
@@ -753,7 +753,7 @@ TWO_STRINGS(iguana,nodestatus,activecoin,ipaddr)
     {
         for (i=0; i<coin->MAXPEERS; i++)
         {
-            addr = &coin->peers.active[i];
+            addr = &coin->peers->active[i];
             if ( strcmp(addr->ipaddr,ipaddr) == 0 )
                 return(jprint(iguana_peerjson(coin,addr),1));
         }
@@ -772,7 +772,7 @@ STRING_AND_INT(iguana,maxpeers,activecoin,max)
         if ( max > coin->MAXPEERS )
         {
             for (i=max; i<coin->MAXPEERS; i++)
-                if ( (addr= coin->peers.ranked[i]) != 0 )
+                if ( (addr= coin->peers->ranked[i]) != 0 )
                     addr->dead = 1;
         }
         coin->MAXPEERS = max;

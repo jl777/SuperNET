@@ -69,12 +69,15 @@ uint32_t iguana_minstake(struct iguana_info *coin,int32_t height,uint32_t nBits,
     return(iguana_maxbits(iguana_targetval(coin,height,1),nBits,nTime));
 }
 
-uint32_t iguana_targetbits(struct iguana_info *coin,struct iguana_block *hwmchain,struct iguana_block *prev,struct iguana_block *prev2,int32_t PoSflag)
+uint32_t iguana_targetbits(struct iguana_info *coin,struct iguana_block *hwmchain,struct iguana_block *prev,struct iguana_block *prev2,int32_t PoSflag,int32_t targetspacing,int32_t targettimespan)
 {
+    // targetspacing NTARGETSPACING, mspacing NINTERVAL_MSPACING, pspacing NINTERVAL_PSPACING
     bits256 mpz_muldivcmp(bits256 oldval,int32_t mulval,int32_t divval,bits256 cmpval);
-    bits256 targetval; int32_t gap;
+    bits256 targetval; int32_t gap,mspacing,pspacing;
     if ( hwmchain->height <= 2 )
         return(hwmchain->RO.bits);
+    mspacing = (((targettimespan / targetspacing) - 1) * targetspacing);
+    pspacing = (((targettimespan / targetspacing) + 1) * targetspacing);
     targetval = iguana_targetval(coin,hwmchain->height,PoSflag);
     if ( prev != 0 )
     {
@@ -83,10 +86,10 @@ uint32_t iguana_targetbits(struct iguana_info *coin,struct iguana_block *hwmchai
             //if ( prev->RO.timestamp != 0 && prev2->RO.timestamp != 0 ) skip check for compatiblity
             {
                 if ( (gap= prev->RO.timestamp - prev2->RO.timestamp) < 0 )
-                    gap = NTARGETSPACING;
+                    gap = targetspacing;
                 // ppcoin: target change every block, retarget with exponential moving toward target spacing
                 //printf("MSPACING.%d gap.%d\n",NINTERVAL_MSPACING,gap);
-                targetval = mpz_muldivcmp(bits256_from_compact(prev->RO.bits),NINTERVAL_MSPACING + (gap << 1),NINTERVAL_PSPACING,targetval);
+                targetval = mpz_muldivcmp(bits256_from_compact(prev->RO.bits),mspacing + (gap << 1),pspacing,targetval);
             }
         }
     }

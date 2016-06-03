@@ -1084,13 +1084,13 @@ void iguana_bitmapbundle(struct iguana_info *coin,uint8_t *rect,int32_t rowwidth
 struct iguana_bitmap *iguana_bitmapfind(char *name)
 {
     struct iguana_info *coin; int32_t width,height,n,hdrsi,x,y;
-    if ( (coin= iguana_coinfind(name)) != 0 || (coin= iguana_coinfind("BTCD")) != 0 )
+    if ( ((coin= iguana_coinfind(name)) != 0 || (coin= iguana_coinfind("BTCD")) != 0) && coin->screen != 0 )
     {
-        strcpy(coin->screen.name,coin->symbol);
-        coin->screen.amplitude = 255;
-        coin->screen.width = IGUANA_WIDTH;
-        coin->screen.height = IGUANA_HEIGHT;
-        memset(coin->screen.data,0xff,sizeof(coin->screen.data));
+        strcpy(coin->screen->name,coin->symbol);
+        coin->screen->amplitude = 255;
+        coin->screen->width = IGUANA_WIDTH;
+        coin->screen->height = IGUANA_HEIGHT;
+        memset(coin->screen->data,0xff,sizeof(coin->screen->data));
         if ( coin->bundlescount > 0 )
         {
             n = 100;
@@ -1109,11 +1109,11 @@ struct iguana_bitmap *iguana_bitmapfind(char *name)
                 {
                     if ( hdrsi >= coin->bundlescount )
                         break;
-                    iguana_bitmapbundle(coin,&coin->screen.data[3*(y*coin->screen.width*n + x*n)],coin->screen.width,n,n,coin->bundles[hdrsi]);
+                    iguana_bitmapbundle(coin,&coin->screen->data[3*(y*coin->screen->width*n + x*n)],coin->screen->width,n,n,coin->bundles[hdrsi]);
                 }
             }
         }
-        return(&coin->screen);
+        return(coin->screen);
     }
     return(0);
 }

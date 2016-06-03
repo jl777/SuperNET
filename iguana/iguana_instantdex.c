@@ -474,7 +474,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     jaddbits256(sendjson,"categoryhash",myinfo->instantdex_category);
     jaddbits256(sendjson,"traderpub",myinfo->myaddr.persistent);
     data = basilisk_jsondata(&allocptr,space,sizeof(space),&datalen,swap->mine.offer.base,sendjson,basilisktag);
-    basilisk_sendcmd(myinfo,addr->ipaddr,dir > 0 ? "BID" : "ASK",&basilisktag,encryptflag,delaymillis,data,datalen,1,0x1efffff0);
+    basilisk_sendcmd(myinfo,addr->ipaddr,dir > 0 ? "BID" : "ASK",&basilisktag,encryptflag,delaymillis,data,datalen,1,BASILISK_DEFAULTDIFF);
     free_json(sendjson);
     if ( allocptr != 0 )
         free(allocptr);
@@ -1078,10 +1078,10 @@ void instantdex_propagate(struct supernet_info *myinfo,struct exchange_info *exc
 {
     bits256 orderhash; uint8_t serialized[8192]; int32_t i,len; struct iguana_peer *addr; struct iguana_info *coin;
     orderhash = instantdex_rwoffer(1,&len,&serialized[sizeof(struct iguana_msghdr)],&ap->offer);
-    if ( (coin= iguana_coinfind("BTCD")) != 0 && coin->peers.numranked > 0 )
+    if ( (coin= iguana_coinfind("BTCD")) != 0 && coin->peers->numranked > 0 )
     {
-        for (i=0; i<coin->peers.numranked; i++)
-            if ( (addr= coin->peers.ranked[i]) != 0 && addr->supernet != 0 && addr->usock >= 0 && GETBIT(ap->peerhas,addr->addrind) == 0 && strcmp("0.0.0.0",addr->ipaddr) != 0 && strcmp("127.0.0.1",addr->ipaddr) != 0 )
+        for (i=0; i<coin->peers->numranked; i++)
+            if ( (addr= coin->peers->ranked[i]) != 0 && addr->supernet != 0 && addr->usock >= 0 && GETBIT(ap->peerhas,addr->addrind) == 0 && strcmp("0.0.0.0",addr->ipaddr) != 0 && strcmp("127.0.0.1",addr->ipaddr) != 0 )
             {
                 char str[65]; printf("send quote.(%s) <- [%d] %s %llx\n",addr->ipaddr,len,bits256_str(str,orderhash),(long long)orderhash.txid);
                 iguana_queue_send(addr,0,serialized,"quote",len);
@@ -1445,7 +1445,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
     return(clonestr("{\"error\":\"request needs argjson\"}"));
 }
 
-char *InstantDEX_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void *ptr,int32_t len,char *remoteaddr)
+char *InstantDEX_hexmsg(struct supernet_info *myinfo,struct private_chain *cat,void *ptr,int32_t len,char *remoteaddr)
 {
     struct instantdex_msghdr *msg = ptr; int32_t olen,slen,datalen,newlen,flag = 0;
     uint8_t *serdata; struct instantdex_offer rawoffer; // struct supernet_info *myinfos[64];
@@ -1554,7 +1554,7 @@ char *instantdex_createaccept(struct supernet_info *myinfo,struct instantdex_acc
 
 void instantdex_update(struct supernet_info *myinfo)
 {
-    struct instantdex_msghdr *pm; struct category_msg *m; char *str,remote[64]; queue_t *Q; struct queueitem *item; struct category_info *cat;
+    struct instantdex_msghdr *pm; struct category_msg *m; char *str,remote[64]; queue_t *Q; struct queueitem *item; struct private_chain *cat;
     //char str2[65]; printf("myinfo->instantdex_category.(%s)\n",bits256_str(str2,myinfo->instantdex_category));
     if ( (Q= category_Q(&cat,myinfo->instantdex_category,myinfo->myaddr.persistent)) != 0 && queue_size(Q) > 0 && (item= Q->list) != 0 )
     {

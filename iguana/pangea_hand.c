@@ -418,14 +418,15 @@ int32_t pangea_queueprocess(struct supernet_info *myinfo,struct table_info *tp)
 
 void pangea_queues(struct supernet_info *myinfo)
 {
-    struct category_info *cat,*sub,*tmp; struct table_info *tp;
+    struct private_chain *cat,*subchain,*tmp; //struct table_info *tp;
     pangea_update(myinfo);
     if ( (cat= category_find(calc_categoryhashes(0,"pangea",0),GENESIS_PUBKEY)) != 0 )
     {
-        HASH_ITER(hh,cat->sub,sub,tmp)
+        HASH_ITER(hh,cat->subchains,subchain,tmp)
         {
-            if ( (tp= sub->info) != 0 )
-                pangea_queueprocess(myinfo,tp);
+            printf("undeprecate\n");
+            //if ( (tp= sub->info) != 0 )
+            //    pangea_queueprocess(myinfo,tp);
         }
     }
 }

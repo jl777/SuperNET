@@ -107,15 +107,16 @@ int32_t pangea_opentable(struct game_info *gp)
 
 cJSON *pangea_lobbyjson(struct supernet_info *myinfo)
 {
-    struct category_info *cat,*sub,*tmp; struct table_info *tp; cJSON *array,*retjson;
+    struct private_chain *cat,*subchain,*tmp; cJSON *array,*retjson; //struct table_info *tp;
     retjson = cJSON_CreateObject();
     array = cJSON_CreateArray();
     if ( (cat= category_find(calc_categoryhashes(0,"pangea",0),GENESIS_PUBKEY)) != 0 )
     {
-        HASH_ITER(hh,cat->sub,sub,tmp)
+        HASH_ITER(hh,cat->subchains,subchain,tmp)
         {
-            if ( (tp= sub->info) != 0 && pangea_opentable(&tp->G) > 0 )
-                jaddi(array,pangea_tablestatus(myinfo,tp));
+            printf("undeprecate\n");
+            //if ( (tp= sub->info) != 0 && pangea_opentable(&tp->G) > 0 )
+            //    jaddi(array,pangea_tablestatus(myinfo,tp));
         }
     }
     jadd(retjson,"tables",array);

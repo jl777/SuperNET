@@ -123,8 +123,8 @@ int32_t iguana_sendtxidreq(struct iguana_info *coin,struct iguana_peer *addr,bit
             for (i=0; i<coin->MAXPEERS; i++)
             {
                 j = (i + r) % coin->MAXPEERS;
-                addr = &coin->peers.active[j];
-                if ( coin->peers.active[j].usock >= 0 && coin->peers.active[j].dead == 0 )
+                addr = &coin->peers->active[j];
+                if ( coin->peers->active[j].usock >= 0 && coin->peers->active[j].dead == 0 )
                 {
                     iguana_send(coin,addr,serialized,len);
                     break;
@@ -147,8 +147,8 @@ int32_t iguana_txidreq(struct iguana_info *coin,char **retstrp,bits256 txid)
     char str[65]; printf("txidreq.%s\n",bits256_str(str,txid));
     coin->reqtxids[coin->numreqtxids++] = txid;
     for (i=0; i<coin->MAXPEERS; i++)
-        if ( coin->peers.active[i].usock >= 0 )
-            iguana_sendtxidreq(coin,coin->peers.ranked[i],txid);
+        if ( coin->peers->active[i].usock >= 0 )
+            iguana_sendtxidreq(coin,coin->peers->ranked[i],txid);
     return(0);
 }
 
@@ -770,8 +770,8 @@ void iguana_checklongestchain(struct iguana_info *coin,struct iguana_bundle *bp,
                 coin->badlongestchain = coin->longestchain;
                 coin->longestchain = bp->bundleheight+num;
                 coin->longestchain_strange = 0;
-                for (i=0; i<coin->peers.numranked; i++)
-                    if ( (addr= coin->peers.ranked[i]) != 0 && addr->height >= coin->badlongestchain )
+                for (i=0; i<coin->peers->numranked; i++)
+                    if ( (addr= coin->peers->ranked[i]) != 0 && addr->height >= coin->badlongestchain )
                     {
                         printf("blacklist addr.(%s) height %d\n",addr->ipaddr,addr->height);
                         addr->dead = 1;
@@ -973,7 +973,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
             //block->blockhashes = blockhashes, req->hashes = 0;
             //printf("set block->blockhashes[%d]\n",num);
         }
-        /*if ( (addr= coin->peers.ranked[0]) != 0 )
+        /*if ( (addr= coin->peers->ranked[0]) != 0 )
         {
             if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,&blockhashes[1],1)) > 0 )
             {
@@ -1439,11 +1439,11 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
             req->height = height;
             req->bundlei = bundlei;
             char str2[65];
-            //printf("%s %s %s [%d:%d] %d %s %d numranked.%d qsize.%d\n",coin->symbol,argstr,str,bp!=0?bp->hdrsi:-1,bundlei,req->height,bits256_str(str2,hash2),coin->blocks.recvblocks,coin->peers.numranked,queue_size(Q));
+            //printf("%s %s %s [%d:%d] %d %s %d numranked.%d qsize.%d\n",coin->symbol,argstr,str,bp!=0?bp->hdrsi:-1,bundlei,req->height,bits256_str(str2,hash2),coin->blocks.recvblocks,coin->peers->numranked,queue_size(Q));
             if ( (n= queue_size(Q)) > 100000 )
             {
                 if ( 1 && n > 200000 )
-                    printf("%s %s %s [%d:%d] %d %s %d numranked.%d qsize.%d\n",coin->symbol,argstr,str,bp!=0?bp->hdrsi:-1,bundlei,req->height,bits256_str(str2,hash2),coin->blocks.recvblocks,coin->peers.numranked,queue_size(Q));
+                    printf("%s %s %s [%d:%d] %d %s %d numranked.%d qsize.%d\n",coin->symbol,argstr,str,bp!=0?bp->hdrsi:-1,bundlei,req->height,bits256_str(str2,hash2),coin->blocks.recvblocks,coin->peers->numranked,queue_size(Q));
                 while ( (ptr= queue_dequeue(Q,0)) != 0 )
                     myfree(ptr,sizeof(*ptr));
                 coin->backlog = n*10 + 1000000;
@@ -1527,9 +1527,9 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
     if ( flag == 0 && req == 0 && addr->pendblocks < limit )
     {
         priority = 0;
-        for (i=m=pend=0; i<coin->peers.numranked; i++)
+        for (i=m=pend=0; i<coin->peers->numranked; i++)
         {
-            if ( (ptr= coin->peers.ranked[i]) != 0 && ptr->msgcounts.verack > 0 )
+            if ( (ptr= coin->peers->ranked[i]) != 0 && ptr->msgcounts.verack > 0 )
                 pend += ptr->pendblocks, m++;
         }
         if ( pend < coin->MAXPENDINGREQUESTS*m )

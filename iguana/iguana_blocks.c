@@ -15,7 +15,7 @@
 
 #include "iguana777.h"
 
-bits256 iguana_merkle(struct iguana_info *coin,bits256 *tree,int32_t txn_count)
+bits256 iguana_merkle(bits256 *tree,int32_t txn_count)
 {
     int32_t i,n=0,prev; uint8_t serialized[sizeof(bits256) * 2];
     if ( txn_count == 1 )

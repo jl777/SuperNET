@@ -96,6 +96,7 @@ struct iguana_txdatabits { uint64_t addrind:IGUANA_LOG2MAXPEERS,filecount:10,fpo
 #endif
 
 #define IGUANA_SUBDIRDIVISOR 28000
+#define NTARGETSPACING 60
 
 #define IGUANA_PROTOCOL_BITCOIN 'b'
 #define IGUANA_PROTOCOL_NXT 'n'
@@ -216,7 +217,7 @@ struct iguana_chain
     uint8_t pubtype,p2shtype,wiftype,netmagic[4];
     char *genesis_hash,*genesis_hex; // hex string
     uint16_t portp2p,rpcport;
-    uint8_t hastimestamp,unitval;
+    uint8_t txhastimestamp,unitval;
     uint64_t rewards[512][2];
     uint8_t genesis_hashdata[32],minconfirms;
     uint16_t ramchainport,bundlesize,hasheaders;
@@ -228,6 +229,7 @@ struct iguana_chain
     int32_t estblocktime,protover;
     bits256 PoWtarget,PoStargets[16]; int32_t numPoStargets,PoSheights[16];
     uint8_t auxpow,alertpubkey[65];
+    int32_t targetspacing,targettimespan;
 };
 
 struct iguana_msgaddress {	uint32_t nTime; uint64_t nServices; uint8_t ip[16]; uint16_t port; } __attribute__((packed));
@@ -354,11 +356,7 @@ struct iguana_block
 struct iguana_counts
 {
     uint32_t firsttxidind,firstunspentind,firstspendind,firstpkind;
-    //bits256 lhashes[IGUANA_NUMAPPENDS],ledgerhash; struct sha256_vstate states[IGUANA_NUMAPPENDS];
-    //bits256 blockhash,merkle_root;
     uint64_t credits,debits;
-    //uint32_t timestamp,height;
-    //struct iguana_prevdep dep;
     struct iguana_block block;
 } __attribute__((packed));
 
@@ -522,8 +520,8 @@ typedef double (*basilisk_metricfunc)(struct supernet_info *myinfo,struct basili
 
 struct iguana_info
 {
-    char name[64],symbol[8],protocol,statusstr[512],scriptsfname[2][512];
-    struct iguana_peers peers; struct iguana_peer internaladdr;
+    char name[64],symbol[64],protocol,statusstr[512],scriptsfname[2][512];
+    struct iguana_peers *peers; struct iguana_peer internaladdr;
     basilisk_func basilisk_rawtx,basilisk_balances,basilisk_value;
     basilisk_metricfunc basilisk_rawtxmetric,basilisk_balancesmetric,basilisk_valuemetric;
     
@@ -538,14 +536,11 @@ struct iguana_info
     struct iguana_chain *chain;
     struct iguana_iAddr *iAddrs;
     void *ctx;
-    struct iguana_bitmap screen;
-    //struct pollfd fds[IGUANA_MAXPEERS]; struct iguana_peer bindaddr; int32_t numsocks;
+    struct iguana_bitmap *screen;
     struct OS_memspace TXMEM,MEM,MEMB[IGUANA_MAXBUNDLESIZE];
     queue_t acceptQ,hdrsQ,blocksQ,priorityQ,possibleQ,cacheQ,recvQ,msgrequestQ;
     double parsemillis,avetime; uint32_t Launched[8],Terminated[8];
     portable_mutex_t peers_mutex,blocks_mutex;
-    //portable_mutex_t scripts_mutex[2]; FILE *scriptsfp[2]; void *scriptsptr[2]; long scriptsfilesize[2];
-    //struct scriptinfo *scriptstable[2];
     char changeaddr[64];
     struct iguana_bundle *bundles[IGUANA_MAXBUNDLES],*current,*lastpending;
     struct iguana_ramchain RTramchain; struct OS_memspace RTmem,RThashmem; bits256 RThash1;
@@ -560,6 +555,7 @@ struct iguana_info
     struct iguana_hhutxo *utxotable; struct iguana_hhaccount *accountstable; char lastdispstr[2048];
     double txidfind_totalmillis,txidfind_num,spendtxid_totalmillis,spendtxid_num;
     struct iguana_monitorinfo monitoring[256];
+    struct basilisk_sequences SEQ;
 };
 
 struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };
@@ -661,7 +657,7 @@ bits256 iguana_blockhash(struct iguana_info *coin,int32_t height);
 #define iguana_blockfind(str,coin,hash2) iguana_blockhashset(str,coin,-1,hash2,0)
 struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin,int32_t height,bits256 hash2,int32_t createflag);
 struct iguana_block *iguana_prevblock(struct iguana_info *coin,struct iguana_block *block,int32_t PoSflag);
-uint32_t iguana_targetbits(struct iguana_info *coin,struct iguana_block *hwmchain,struct iguana_block *prev,struct iguana_block *prev2,int32_t PoSflag);
+uint32_t iguana_targetbits(struct iguana_info *coin,struct iguana_block *hwmchain,struct iguana_block *prev,struct iguana_block *prev2,int32_t PoSflag,int32_t targetspacing,int32_t targettimespan);
 
 uint32_t iguana_syncs(struct iguana_info *coin);
 void iguana_gotdata(struct iguana_info *coin,struct iguana_peer *addr,int32_t height);
@@ -865,9 +861,10 @@ struct bitcoin_spend *iguana_spendset(struct supernet_info *myinfo,struct iguana
 cJSON *bitcoin_hex2json(struct iguana_info *coin,bits256 *txidp,struct iguana_msgtx *msgtx,char *txbytes,uint8_t *extrapace,int32_t extralen,uint8_t *serialized);
 cJSON *iguana_signtx(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,char **signedtxp,struct bitcoin_spend *spend,cJSON *txobj,cJSON *vins);
 void iguana_addscript(struct iguana_info *coin,cJSON *dest,uint8_t *script,int32_t scriptlen,char *fieldname);
+bits256 iguana_genesis(struct iguana_info *coin,struct iguana_chain *chain);
 
-cJSON *bitcoin_txcreate(struct iguana_info *coin,int64_t locktime);
-cJSON *bitcoin_txoutput(struct iguana_info *coin,cJSON *txobj,uint8_t *paymentscript,int32_t len,uint64_t satoshis);
+cJSON *bitcoin_txcreate(int32_t txhastimestamp,int64_t locktime);
+cJSON *bitcoin_txoutput(cJSON *txobj,uint8_t *paymentscript,int32_t len,uint64_t satoshis);
 cJSON *bitcoin_txinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32_t vout,uint32_t sequenceid,uint8_t *spendscript,int32_t spendlen,uint8_t *redeemscript,int32_t p2shlen,uint8_t *pubkeys[],int32_t numpubkeys);
 
 int32_t bitcoin_changescript(struct iguana_info *coin,uint8_t *changescript,int32_t n,uint64_t *changep,char *changeaddr,uint64_t inputsatoshis,uint64_t satoshis,uint64_t txfee);
@@ -959,7 +956,7 @@ int32_t iguana_bundlefname(struct iguana_info *coin,struct iguana_bundle *bp,cha
 int32_t iguana_bundleremove(struct iguana_info *coin,int32_t hdrsi,int32_t tmpfiles);
 int32_t iguana_voutsfname(struct iguana_info *coin,int32_t roflag,char *fname,int32_t slotid);
 int32_t iguana_vinsfname(struct iguana_info *coin,int32_t roflag,char *fname,int32_t slotid);
-bits256 iguana_merkle(struct iguana_info *coin,bits256 *tree,int32_t txn_count);
+bits256 iguana_merkle(bits256 *tree,int32_t txn_count);
 int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int32_t requiredflag);
 int32_t iguana_blast(struct iguana_info *coin,struct iguana_peer *addr);
 int32_t iguana_validated(struct iguana_info *coin);
@@ -1029,7 +1026,6 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
 char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *signedtxidp,int32_t *completedp,cJSON *vins,char *rawtx,cJSON *privkey);
 bits256 scrypt_blockhash(const void *input);
 bits256 iguana_calcblockhash(char *symbol,int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serialized,int32_t len),uint8_t *serialized,int32_t len);
-uint32_t iguana_targetbits(struct iguana_info *coin,struct iguana_block *hwmchain,struct iguana_block *prev,struct iguana_block *prev2,int32_t PoSflag);
 struct bitcoin_eventitem *instantdex_event(char *cmdstr,cJSON *argjson,cJSON *newjson,uint8_t *serdata,int32_t serdatalen);
 void instantdex_eventfree(struct bitcoin_eventitem *ptr);
 struct iguana_monitorinfo *iguana_txidmonitor(struct iguana_info *coin,bits256 txid);

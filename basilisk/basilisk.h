@@ -22,6 +22,22 @@
 #define BASILISK_MINFANOUT 8
 #define BASILISK_MAXFANOUT 64
 
+#define BASILISK_MAXFUTUREBLOCK 60
+#define BASILISK_MAXBLOCKLAG 600
+#define BASILISK_MAXBTCGAP 9
+#define BASILISK_MAXBTCDGAP 18
+
+#define BASILISK_DEFAULTVERSION 1
+#define BASILISK_DEFAULTDIFF 0x1effffff
+#define BASILISK_DEFAULTDIFFSTR "1effffff"
+
+#define BASILISK_FIRSTPOSSIBLEBTC 414000
+#define BASILISK_FIRSTPOSSIBLEBTCD 1100000
+
+struct hashstamp { bits256 hash2; uint32_t timestamp; int32_t height; };
+struct basilisk_sequence { struct hashstamp *stamps; int32_t lastupdate,maxstamps,numstamps,lasti,longestchain; };
+struct basilisk_sequences { struct basilisk_sequence BTC,BTCD; };
+
 struct basilisk_value { bits256 txid; int64_t value; int32_t height; int16_t vout; char coinaddr[64]; };
 
 struct basilisk_item
@@ -42,7 +58,6 @@ struct basilisk_info
 void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen,bits256 pubkey);
 
 void basilisks_init(struct supernet_info *myinfo);
-int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *type,uint32_t *basilisktagp,int32_t encryptflag,int32_t delaymillis,uint8_t *data,int32_t datalen,int32_t fanout,uint32_t nBits); // data must be offset by sizeof(iguana_msghdr)
 void basilisk_p2p(void *myinfo,void *_addr,int32_t *delaymillisp,char *ipaddr,uint8_t *data,int32_t datalen,char *type,int32_t encrypted);
 uint8_t *basilisk_jsondata(void **ptrp,uint8_t *space,int32_t spacesize,int32_t *datalenp,char *symbol,cJSON *sendjson,uint32_t basilisktag);
 

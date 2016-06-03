@@ -82,7 +82,8 @@ static struct iguana_chain Chains[] =
 		"\xfb\xc0\xb6\xdb", // pchMessageStart main.cpp
         //"12a765e31ffd4059bada1e25190f6e98c99d9714d334efa41a195a7e7e04bfe2",
         "12a765e31ffd4059bada1e25190f6e98c99d9714d334efa41a195a7e7e04bfe2",
-        "010000000000000000000000000000000000000000000000000000000000000000000000d9ced4ed1130f7b7faad9be25323ffafa33232a17c3edf6cfd97bee6bafbdd97b9aa8e4ef0ff0f1ecd513f7c0101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4804ffff001d0104404e592054696d65732030352f4f63742f32303131205374657665204a6f62732c204170706c65e280997320566973696f6e6172792c2044696573206174203536ffffffff0100f2052a010000004341040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9ac00000000",
+        //010000000000000000000000000000000000000000000000000000000000000000000000d9ced4ed1130f7b7faad9be25323ffafa33232a17c3edf6cfd97bee6bafbdd97b9aa8e4ef0ff0f1ecd513f7c
+     "010000000000000000000000000000000000000000000000000000000000000000000000d9ced4ed1130f7b7faad9be25323ffafa33232a17c3edf6cfd97bee6bafbdd97b9aa8e4ef0ff0f1ecd513f7c0101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4804ffff001d0104404e592054696d65732030352f4f63742f32303131205374657665204a6f62732c204170706c65e280997320566973696f6e6172792c2044696573206174203536ffffffff0100f2052a010000004341040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9ac00000000",
         9333,9334,0,0x1e // port and rpcport litecoin.conf
     },*/
 };
@@ -219,8 +220,9 @@ char *default_coindir(char *confname,char *coinstr)
 void set_coinconfname(char *fname,char *coinstr,char *userhome,char *coindir,char *confname)
 {
     char buf[64];
-    if ( coindir == 0 || coindir[0] == 0 )
+    if ( coindir == 0 || coindir[0] == 0 || confname == 0 || confname[0] == 0 )
         coindir = default_coindir(buf,coinstr);
+    else buf[0] = 0;
     if ( confname == 0 || confname[0] == 0 )
     {
         confname = buf;
@@ -238,7 +240,7 @@ uint16_t extract_userpass(char *serverport,char *userpass,char *coinstr,char *us
         return(0);
     serverport[0] = userpass[0] = 0;
     set_coinconfname(fname,coinstr,userhome,coindir,confname);
-    printf("set_coinconfname.(%s)\n",fname);
+    printf("set_coinconfname.(%s) <- (%s)\n",fname,confname);
     if ( (fp= fopen(OS_compatible_path(fname),"r")) != 0 )
     {
         if ( Debuglevel > 1 )
@@ -282,7 +284,7 @@ uint16_t extract_userpass(char *serverport,char *userpass,char *coinstr,char *us
 void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
 {
     extern char Userhome[];
-    char *path,*conf,*hexstr,genesisblock[1024]; bits256 hash; uint16_t port; cJSON *rpair,*genesis,*rewards,*item; int32_t i,n,m; uint32_t nBits; uint8_t tmp[4];
+    char *path,conf[512],*hexstr,genesisblock[1024]; bits256 hash; uint16_t port; cJSON *rpair,*genesis,*rewards,*item; int32_t i,n,m; uint32_t nBits; uint8_t tmp[4];
     if ( strcmp(chain->symbol,"NXT") != 0 )
     {
         if ( strcmp(chain->symbol,"BTCD") == 0 )
@@ -304,7 +306,10 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
         chain->minconfirms = juint(argjson,"minconfirms");
         chain->estblocktime = juint(argjson,"estblocktime");
         path = jstr(argjson,"path");
-        conf = jstr(argjson,"conf");
+        if ( jobj(argjson,"conf") == 0 )
+            conf[0] = 0;
+        else safecopy(conf,jstr(argjson,"conf"),sizeof(conf));
+        printf("CONF.(%s)\n",conf);
         safecopy(chain->name,jstr(argjson,"name"),sizeof(chain->name));
         //chain->dust = j64bits(argjson,"dust");
         if ( jobj(argjson,"txfee_satoshis") != 0 )
@@ -321,17 +326,21 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
         if ( (chain->rpcport= juint(argjson,"rpc")) == 0 )
             chain->rpcport = chain->portp2p - 1;
         if ( jobj(argjson,"isPoS") != 0 )
-            chain->hastimestamp = juint(argjson,"isPoS");
+            chain->txhastimestamp = juint(argjson,"isPoS");
         else if ( jobj(argjson,"oldtx_format") != 0 )
-            chain->hastimestamp = !juint(argjson,"oldtx_format");
+            chain->txhastimestamp = !juint(argjson,"oldtx_format");
         else if ( jobj(argjson,"txhastimestamp") != 0 )
-            chain->hastimestamp = !juint(argjson,"txhastimestamp");
+            chain->txhastimestamp = !juint(argjson,"txhastimestamp");
         if ( jstr(argjson,"userhome") != 0 )
             strcpy(chain->userhome,jstr(argjson,"userhome"));
         else strcpy(chain->userhome,Userhome);
         if ( (chain->protover= juint(argjson,"protover")) == 0 )
             chain->protover = PROTOCOL_VERSION;
         chain->auxpow = juint(argjson,"auxpow");
+        if ( (chain->targetspacing= jint(argjson,"targetspacing")) == 0 )
+            chain->targetspacing = NTARGETSPACING;
+        if ( (chain->targettimespan= jint(argjson,"targettimespan")) == 0 )
+            chain->targettimespan = NTARGETSPACING * 60;
         if ( (port= extract_userpass(chain->serverport,chain->userpass,chain->symbol,chain->userhome,path,conf)) != 0 )
             chain->rpcport = port;
         if ( chain->serverport[0] == 0 )

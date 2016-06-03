@@ -955,7 +955,7 @@ ZERO_ARGS(bitcoinrpc,getinfo)
         jaddnum(retjson,"blocks",coin->blocks.hwmchain.height);
         jaddnum(retjson,"longestchain",coin->longestchain);
         jaddnum(retjson,"port",coin->chain->portp2p);
-        jaddnum(retjson,"connections",coin->peers.numranked);
+        jaddnum(retjson,"connections",coin->peers->numranked);
         jaddnum(retjson,"difficulty",coin->blocks.hwmchain.PoW);
         jaddstr(retjson,"status",coin->statusstr);
         jaddstr(retjson,"coin",coin->symbol);

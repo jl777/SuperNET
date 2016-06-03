@@ -126,15 +126,14 @@ struct crypto777_msghdr
     uint8_t serialized[];
 } __attribute__((packed));
 
-struct category_info
+struct private_chain
 {
     UT_hash_handle hh; queue_t Q;
-    char *(*processfunc)(struct supernet_info *myinfo,struct category_info *cat,void *data,int32_t datalen,char *remoteaddr);
-    struct category_chain *catchain; bits256 hash,prevhash,lasthash; void *info; struct category_info *sub,*next;
-    int32_t datalen; uint8_t data[];
+    char *(*processfunc)(struct supernet_info *myinfo,struct private_chain *cat,void *data,int32_t datalen,char *remoteaddr);
+    bits256 hash; struct private_chain *subchains; struct iguana_info *info;
 };
 
-extern struct category_info *Categories;
+extern struct private_chain *Categories;
 struct category_msg { struct queueitem DL; struct tai t; uint64_t remoteipbits; int32_t len; uint8_t msg[]; };
 
 struct exchange_quote { uint64_t satoshis,orderid,offerNXT,exchangebits; double price,volume; uint32_t timestamp,val; };
@@ -157,12 +156,12 @@ bits256 SuperNET_sharedseed(bits256 privkey,bits256 otherpub);
 int32_t SuperNET_decrypt(bits256 *senderpubp,uint64_t *senderbitsp,uint32_t *timestampp,bits256 mypriv,bits256 mypub,uint8_t *dest,int32_t maxlen,uint8_t *src,int32_t len);
 cJSON *SuperNET_argjson(cJSON *json);
 
-void *category_info(bits256 categoryhash,bits256 subhash);
-void *category_infoset(bits256 categoryhash,bits256 subhash,void *info);
-struct category_info *category_find(bits256 categoryhash,bits256 subhash);
+void *private_chain(bits256 categoryhash,bits256 subhash);
+void *private_chainset(bits256 categoryhash,bits256 subhash,void *info);
+struct private_chain *category_find(bits256 categoryhash,bits256 subhash);
 void SuperNET_hexmsgprocess(struct supernet_info *myinfo,cJSON *retjson,cJSON *json,char *hexmsg,char *remoteaddr);
-struct category_info *category_processfunc(bits256 categoryhash,bits256 subhash,char *(*process_func)(struct supernet_info *myinfo,struct category_info *cat,void *data,int32_t datalen,char *remoteaddr));
-char *pangea_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void *data,int32_t len,char *remoteaddr);
+struct private_chain *category_processfunc(bits256 categoryhash,bits256 subhash,char *(*process_func)(struct supernet_info *myinfo,struct private_chain *cat,void *data,int32_t datalen,char *remoteaddr));
+char *pangea_hexmsg(struct supernet_info *myinfo,struct private_chain *cat,void *data,int32_t len,char *remoteaddr);
 void pangea_queues(struct supernet_info *myinfo);
 
 int32_t SuperNET_str2hex(uint8_t *hex,char *str);
@@ -170,20 +169,20 @@ void SuperNET_hex2str(char *str,uint8_t *hex,int32_t len);
 void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,char *hexmsg,struct tai now,char *remoteaddr);
 int32_t SuperNET_hexmsgfind(struct supernet_info *myinfo,bits256 category,bits256 subhash,char *hexmsg,int32_t addflag);
 void category_posthexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,char *hexmsg,struct tai now,char *remoteaddr);
-void *category_subscribe(struct supernet_info *myinfo,bits256 category,bits256 subhash,uint8_t *data,int32_t datalen);
-struct category_msg *category_gethexmsg(struct supernet_info *myinfo,struct category_info **catptrp,bits256 categoryhash,bits256 subhash);
+void *category_subscribe(struct supernet_info *myinfo,bits256 category,bits256 keyhash);
+struct category_msg *category_gethexmsg(struct supernet_info *myinfo,struct private_chain **catptrp,bits256 categoryhash,bits256 subhash);
 char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr);
-queue_t *category_Q(struct category_info **catptrp,bits256 categoryhash,bits256 subhash);
+queue_t *category_Q(struct private_chain **catptrp,bits256 categoryhash,bits256 subhash);
 
 char *SuperNET_categorymulticast(struct supernet_info *myinfo,int32_t surveyflag,bits256 categoryhash,bits256 subhash,char *message,int32_t maxdelay,int32_t broadcastflag,int32_t plaintext,cJSON *argjson,char *remoteaddr);
 bits256 calc_categoryhashes(bits256 *subhashp,char *category,char *subcategory);
-struct category_chain *category_chain_functions(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,int32_t hashlen,int32_t addrlen,void *hash_func,void *stake_func,void *hit_func,void *default_func,void *ishwm_func,void *payment_func);
+//struct category_chain *category_chain_functions(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,int32_t hashlen,int32_t addrlen,void *hash_func,void *stake_func,void *hit_func,void *default_func,void *ishwm_func,void *payment_func);
 #define category_default_latest() (*catchain->default_func)(catchain,'L',0,0,0,0,zero)
 void category_init(struct supernet_info *myinfo);
 char *SuperNET_keysinit(struct supernet_info *myinfo,char *jsonstr);
 double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *sortbuf,int32_t max,double *totalvolp,char *base,char *rel,double volume,cJSON *argjson);
 void SuperNET_setkeys(struct supernet_info *myinfo,void *pass,int32_t passlen,int32_t dosha256);
-char *InstantDEX_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void *data,int32_t len,char *remoteaddr);
+char *InstantDEX_hexmsg(struct supernet_info *myinfo,struct private_chain *cat,void *data,int32_t len,char *remoteaddr);
 bits256 bitcoin_pubkey33(void *ctx,uint8_t data[33],bits256 privkey);
 char *bitcoin_address(char *coinaddr,uint8_t addrtype,uint8_t *pubkey,int32_t len);
 
@@ -197,7 +196,10 @@ int32_t SuperNET_MYINFOS(struct supernet_info **myinfos,int32_t max);
 FILE *myfopen(char *fname,char *mode);
 int32_t myfclose(FILE *fp);
 cJSON *SuperNET_rosettajson(bits256 privkey,int32_t showprivs);
-char *basilisk_hexmsg(struct supernet_info *myinfo,struct category_info *cat,void *ptr,int32_t len,char *remoteaddr);
+char *basilisk_hexmsg(struct supernet_info *myinfo,struct private_chain *cat,void *ptr,int32_t len,char *remoteaddr);
+
+int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *type,uint32_t *basilisktagp,int32_t encryptflag,int32_t delaymillis,uint8_t *data,int32_t datalen,int32_t fanout,uint32_t nBits); // data must be offset by sizeof(iguana_msghdr)
+
 
 #endif
 

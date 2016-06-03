@@ -469,7 +469,7 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
                     //printf("purge.(%s)\n",fname);
                     fclose(fp);
                     if ( OS_removefile(fname,0) > 0 )
-                        coin->peers.numfiles--, m++;
+                        coin->peers->numfiles--, m++;
                 }
             }
             else printf("error removing.(%s)\n",fname);
@@ -496,10 +496,10 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
 
 uint8_t iguana_recentpeers(struct iguana_info *coin,int32_t *capacityp,struct iguana_peer *peers[])
 {
-    struct iguana_peer *addr; uint8_t m; int32_t capacity,i,n = coin->peers.numranked;
+    struct iguana_peer *addr; uint8_t m; int32_t capacity,i,n = coin->peers->numranked;
     for (i=m=capacity=0; i<n&&m<0xff; i++)
     {
-        if ( (addr= coin->peers.ranked[i]) != 0 && addr->dead == 0 && addr->usock >= 0 && addr->msgcounts.verack != 0 && addr->pendblocks < coin->MAXPENDINGREQUESTS )
+        if ( (addr= coin->peers->ranked[i]) != 0 && addr->dead == 0 && addr->usock >= 0 && addr->msgcounts.verack != 0 && addr->pendblocks < coin->MAXPENDINGREQUESTS )
         {
             if ( peers != 0 )
                 peers[m] = addr;
@@ -606,7 +606,7 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
         else if ( lag < 60 )
             lag = 60;
     }
-    if ( (num= coin->peers.numranked) != 0 )
+    if ( (num= coin->peers->numranked) != 0 )
     {
         if ( num > 64 )
             max = log2(num * num) + 1;
@@ -630,7 +630,7 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
                 iguana_bundleblock(coin,&hash2,bp,i);
                 if ( bits256_nonz(hash2) != 0 )
                 {
-                     if ( (addr= coin->peers.ranked[rand() % max]) != 0 && addr->usock >= 0 && addr->dead == 0 )
+                     if ( (addr= coin->peers->ranked[rand() % max]) != 0 && addr->usock >= 0 && addr->dead == 0 )
                     {
                         struct iguana_blockreq *req = 0;
                         //if ( bp == coin->current )
@@ -658,7 +658,7 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
             iguana_bundleblock(coin,&hash2,bp,firsti);
             if ( bits256_nonz(hash2) != 0 )
             {
-                if ( (addr= coin->peers.ranked[rand() % max]) != 0 && addr->usock >= 0 && addr->dead == 0 )
+                if ( (addr= coin->peers->ranked[rand() % max]) != 0 && addr->usock >= 0 && addr->dead == 0 )
                 {
                     //if ( bp == coin->current )
                       //  printf("iguana_bundleissuemissing.[%d:%d]\n",bp->hdrsi,i);
@@ -1123,10 +1123,10 @@ int32_t iguana_cacheprocess(struct iguana_info *coin,struct iguana_bundle *bp,in
 void iguana_unstickhdr(struct iguana_info *coin,struct iguana_bundle *bp,int32_t lag)
 {
     int32_t datalen,m,i; uint8_t serialized[512]; char str[65]; struct iguana_peer *addr;
-    if ( (m= coin->peers.numranked) > 0 && bp->numhashes < bp->n && bp->hdrsi < coin->longestchain/coin->chain->bundlesize && time(NULL) > bp->unsticktime+lag )
+    if ( (m= coin->peers->numranked) > 0 && bp->numhashes < bp->n && bp->hdrsi < coin->longestchain/coin->chain->bundlesize && time(NULL) > bp->unsticktime+lag )
     {
         for (i=0; i<10; i++)
-        if ( (addr= coin->peers.ranked[rand() % m]) != 0 && addr->usock >= 0 && addr->dead == 0 && (datalen= iguana_gethdrs(coin,serialized,coin->chain->gethdrsmsg,bits256_str(str,bp->hashes[0]))) > 0 )
+        if ( (addr= coin->peers->ranked[rand() % m]) != 0 && addr->usock >= 0 && addr->dead == 0 && (datalen= iguana_gethdrs(coin,serialized,coin->chain->gethdrsmsg,bits256_str(str,bp->hashes[0]))) > 0 )
         {
             //printf("UNSTICK HDR.[%d]\n",bp->hdrsi);
             iguana_send(coin,addr,serialized,datalen);
@@ -1313,7 +1313,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
     coin->blocksrecv = numrecv;
     uint64_t tmp; int32_t diff,p = 0; struct tai difft,t = tai_now();
     for (i=0; i<IGUANA_MAXPEERS; i++)
-        if ( coin->peers.active[i].usock >= 0 )
+        if ( coin->peers->active[i].usock >= 0 )
             p++;
     diff = (int32_t)time(NULL) - coin->startutc;
     difft.x = (t.x - coin->starttime.x), difft.millis = (t.millis - coin->starttime.millis);

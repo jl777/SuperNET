@@ -1059,7 +1059,7 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
 #endif
     if ( (fp= fopen(fname,"wb")) == 0 )
         printf("iguana_ramchain_save: couldnt create.(%s) errno.%d\n",fname,errno);
-    else coin->peers.numfiles++;
+    else coin->peers->numfiles++;
     if ( fp != 0 )
     {
         fpos = ftell(fp);
@@ -1839,7 +1839,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         iguana_memreset(&addr->TXDATA);
         for (i=0; i<txn_count; i++)
             tree[i] = txarray[i].txid;
-        merkle_root = iguana_merkle(coin,tree,txn_count);
+        merkle_root = iguana_merkle(tree,txn_count);
         if ( bits256_cmp(merkle_root,origtxdata->block.RO.merkle_root) != 0 )
         {
             char str[65],str2[65];
@@ -2331,9 +2331,9 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
                 //    bp->hashes[i] = B[i].hash2;
                 if ( (prev= block->hh.prev) != 0 )
                     prev2 = prev->hh.prev;
-                if ( strcmp(coin->symbol,"BTCD") == 0 && bp->bundleheight > 20000 && prev != 0 && iguana_targetbits(coin,block,prev,prev2,1) != block->RO.bits )
+                if ( strcmp(coin->symbol,"BTCD") == 0 && bp->bundleheight > 20000 && prev != 0 && iguana_targetbits(coin,block,prev,prev2,1,coin->chain->targetspacing,coin->chain->targettimespan) != block->RO.bits )
                 {
-                    printf("nbits target error %x != %x ht.%d\n",iguana_targetbits(coin,block,prev,prev2,1),block->RO.bits,block->height);
+                    printf("nbits target error %x != %x ht.%d\n",iguana_targetbits(coin,block,prev,prev2,1,coin->chain->targetspacing,coin->chain->targettimespan),block->RO.bits,block->height);
                 } //else printf(">>>>>>>>>> matched nbits %x ht.%d\n",block->RO.bits,block->height);
                 if ( bp->bundleheight+i == coin->blocks.hwmchain.height+1 )
                 {
@@ -2625,7 +2625,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
             for (j=starti; j<=endi; j++)
             {
                 if ( iguana_peerfname(coin,&hdrsi,GLOBAL_TMPDIR,fname,0,bp->hashes[j],zero,1,1) >= 0 )
-                    coin->peers.numfiles -= OS_removefile(fname,0);
+                    coin->peers->numfiles -= OS_removefile(fname,0);
                 else printf("error removing.(%s)\n",fname);
             }
             //sprintf(dirname,"%s/%s/%d",GLOBAL_TMPDIR,coin->symbol,bp->bundleheight), OS_portable_rmdir(dirname,1);

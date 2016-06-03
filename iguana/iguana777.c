@@ -80,6 +80,8 @@ struct iguana_info *iguana_coinadd(const char *symbol,cJSON *argjson)
                             safecopy(coin->name,jstr(argjson,"name"),sizeof(coin->name));
                         else strcpy(coin->name,symbol);
                     }
+                    if ( jstr(argjson,"privatechain") == 0 )
+                        coin->peers = calloc(1,sizeof(*coin->peers));
                     coin->chain = iguana_chainfind((char *)symbol,argjson,1);
                     coin->ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
                     secp256k1_pedersen_context_initialize(coin->ctx);
@@ -158,7 +160,7 @@ int32_t iguana_inv2poll(struct supernet_info *myinfo,struct iguana_info *coin)
             coin->lastinv2 = (uint32_t)time(NULL);
             for (i=n=0; i<coin->MAXPEERS; i++)
             {
-                addr = &coin->peers.active[i];
+                addr = &coin->peers->active[i];
                 if ( addr->supernet != 0 )
                 {
                     //printf("iguana_inv2poll (%s) usock.%d dead.%u ready.%u ipbits.%u supernet.%d\n",addr->ipaddr,addr->usock,addr->dead,addr->ready,(uint32_t)addr->ipbits,addr->supernet);
@@ -179,16 +181,16 @@ int32_t iguana_peermetrics(struct supernet_info *myinfo,struct iguana_info *coin
     int32_t i,ind,n; double *sortbuf,sum; uint32_t now; struct iguana_peer *addr,*slowest = 0;
     //printf("peermetrics\n");
     sortbuf = mycalloc('s',coin->MAXPEERS,sizeof(double)*2);
-    coin->peers.mostreceived = 0;
+    coin->peers->mostreceived = 0;
     now = (uint32_t)time(NULL);
     for (i=n=0; i<coin->MAXPEERS; i++)
     {
-        addr = &coin->peers.active[i];
+        addr = &coin->peers->active[i];
         if ( addr->usock < 0 || addr->dead != 0 || addr->ready == 0 || addr->ipbits == 0 )
             continue;
         addr->pendblocks = 0;
-        if ( addr->recvblocks > coin->peers.mostreceived )
-            coin->peers.mostreceived = addr->recvblocks;
+        if ( addr->recvblocks > coin->peers->mostreceived )
+            coin->peers->mostreceived = addr->recvblocks;
         //printf("[%.0f %.0f] ",addr->recvblocks,addr->recvtotal);
         sortbuf[n*2 + 0] = iguana_metric(addr,now,.995);
         sortbuf[n*2 + 1] = i;
@@ -202,31 +204,31 @@ int32_t iguana_peermetrics(struct supernet_info *myinfo,struct iguana_info *coin
         {
             if ( i < coin->MAXPEERS )
             {
-                coin->peers.topmetrics[i] = sortbuf[i*2];
+                coin->peers->topmetrics[i] = sortbuf[i*2];
                 ind = (int32_t)sortbuf[i*2 +1];
-                coin->peers.ranked[i] = &coin->peers.active[ind];
+                coin->peers->ranked[i] = &coin->peers->active[ind];
                 if ( sortbuf[i*2] > SMALLVAL && (double)i/n > .8 && (time(NULL) - addr->ready) > 77 )
-                    slowest = coin->peers.ranked[i];
-                //printf("(%.5f %s) ",sortbuf[i*2],coin->peers.ranked[i]->ipaddr);
-                coin->peers.ranked[i]->rank = i + 1;
-                sum += coin->peers.topmetrics[i];
+                    slowest = coin->peers->ranked[i];
+                //printf("(%.5f %s) ",sortbuf[i*2],coin->peers->ranked[i]->ipaddr);
+                coin->peers->ranked[i]->rank = i + 1;
+                sum += coin->peers->topmetrics[i];
             }
         }
-        coin->peers.numranked = n;
+        coin->peers->numranked = n;
         portable_mutex_unlock(&coin->peers_mutex);
         //printf("NUMRANKED.%d\n",n);
         if ( i > 0 )
         {
-            coin->peers.avemetric = (sum / i);
+            coin->peers->avemetric = (sum / i);
             if ( i >= 7*(coin->MAXPEERS/8) && slowest != 0 )
             {
-                printf("prune slowest peer.(%s) numranked.%d MAXPEERS.%d\n",slowest->ipaddr,n,coin->MAXPEERS);
+                printf("prune slowest peer.(%s) numranked.%d MAXpeers->%d\n",slowest->ipaddr,n,coin->MAXPEERS);
                 slowest->dead = 1;
             }
         }
     }
     myfree(sortbuf,coin->MAXPEERS * sizeof(double) * 2);
-    return(coin->peers.mostreceived);
+    return(coin->peers->mostreceived);
 }
 
 void *iguana_kviAddriterator(struct iguana_info *coin,struct iguanakv *kv,struct iguana_kvitem *item,uint64_t args,void *key,void *value,int32_t valuesize)
@@ -234,10 +236,10 @@ void *iguana_kviAddriterator(struct iguana_info *coin,struct iguanakv *kv,struct
     char ipaddr[64]; int32_t i; FILE *fp = (FILE *)(long)args; struct iguana_peer *addr; struct iguana_iAddr *iA = value;
     if ( fp != 0 && iA != 0 && iA->numconnects > 0 && iA->lastconnect > time(NULL)-IGUANA_RECENTPEER )
     {
-        for (i=0; i<coin->peers.numranked; i++)
-            if ( (addr= coin->peers.ranked[i]) != 0 && addr->ipbits == iA->ipbits )
+        for (i=0; i<coin->peers->numranked; i++)
+            if ( (addr= coin->peers->ranked[i]) != 0 && addr->ipbits == iA->ipbits )
                 break;
-        if ( i == coin->peers.numranked )
+        if ( i == coin->peers->numranked )
         {
             expand_ipbits(ipaddr,iA->ipbits);
             fprintf(fp,"%s\n",ipaddr);
@@ -255,16 +257,16 @@ uint32_t iguana_updatemetrics(struct supernet_info *myinfo,struct iguana_info *c
     sprintf(tmpfname,"%s/%s/peers.txt",GLOBAL_TMPDIR,coin->symbol), OS_compatible_path(tmpfname);
     if ( (fp= fopen(tmpfname,"w")) != 0 )
     {
-        for (i=0; i<coin->peers.numranked; i++)
+        for (i=0; i<coin->peers->numranked; i++)
         {
-            if ( (addr= coin->peers.ranked[i]) != 0 && addr->relayflag != 0 && strcmp(addr->ipaddr,"127.0.0.1") != 0 )
+            if ( (addr= coin->peers->ranked[i]) != 0 && addr->relayflag != 0 && strcmp(addr->ipaddr,"127.0.0.1") != 0 )
             {
-                for (j=0; j<coin->peers.numranked; j++)
+                for (j=0; j<coin->peers->numranked; j++)
                 {
-                    if ( i != j && (tmpaddr= coin->peers.ranked[j]) != 0 && (uint32_t)addr->ipbits == (uint32_t)tmpaddr->ipbits )
+                    if ( i != j && (tmpaddr= coin->peers->ranked[j]) != 0 && (uint32_t)addr->ipbits == (uint32_t)tmpaddr->ipbits )
                         break;
                 }
-                if ( j == coin->peers.numranked )
+                if ( j == coin->peers->numranked )
                 {
                     expand_ipbits(ipaddr,(uint32_t)addr->ipbits);
                     fprintf(fp,"%s\n",ipaddr);
@@ -670,7 +672,7 @@ void iguana_helper(void *arg)
             //printf("bundlesQ allcurrent\n");
             usleep(polltimeout * 10000);
         }
-        else usleep(polltimeout * 1000);
+        else usleep(polltimeout * 5000);
     }
 }
 
@@ -718,7 +720,7 @@ void iguana_coinloop(void *arg)
                 coin->idletime = 0;
                 if ( coin->started != 0 && coin->active != 0 )
                 {
-                    if ( coin->peers.numranked > 4 && coin->isRT == 0 && now > coin->startutc+77 && coin->numsaved >= (coin->longestchain/coin->chain->bundlesize)*coin->chain->bundlesize && coin->blocks.hwmchain.height >= coin->longestchain-30 )
+                    if ( coin->peers->numranked > 4 && coin->isRT == 0 && now > coin->startutc+77 && coin->numsaved >= (coin->longestchain/coin->chain->bundlesize)*coin->chain->bundlesize && coin->blocks.hwmchain.height >= coin->longestchain-30 )
                     {
                         fprintf(stderr,">>>>>>> %s isRT blockrecv.%d vs longest.%d\n",coin->symbol,coin->blocksrecv,coin->longestchain);
                         coin->isRT = 1;
@@ -735,27 +737,27 @@ void iguana_coinloop(void *arg)
                     }
                     if ( coin->bindsock >= 0 )
                     {
-                        if ( coin->MAXPEERS > 1 && coin->peers.numranked < (coin->MAXPEERS/2) && now > coin->lastpossible )
+                        if ( coin->MAXPEERS > 1 && coin->peers->numranked < (coin->MAXPEERS/2) && now > coin->lastpossible )
                         {
                             //fprintf(stderr,"check possible\n");
-                            if ( coin->peers.numranked > 0 && (now % 60) == 0 )
-                                iguana_send_ping(coin,coin->peers.ranked[rand() % coin->peers.numranked]);
+                            if ( coin->peers->numranked > 0 && (now % 60) == 0 )
+                                iguana_send_ping(coin,coin->peers->ranked[rand() % coin->peers->numranked]);
                             coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
                         }
                     }
                     else
                     {
-                        if ( coin->MAXPEERS > 1 && coin->peers.numranked < ((7*coin->MAXPEERS)>>3) && now > coin->lastpossible )
+                        if ( coin->MAXPEERS > 1 && coin->peers->numranked < ((7*coin->MAXPEERS)>>3) && now > coin->lastpossible )
                         {
-                            if ( coin->peers.numranked > 0 && (now % 60) == 0 )
-                                iguana_send_ping(coin,coin->peers.ranked[rand() % coin->peers.numranked]);
+                            if ( coin->peers->numranked > 0 && (now % 60) == 0 )
+                                iguana_send_ping(coin,coin->peers->ranked[rand() % coin->peers->numranked]);
                             coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
                         }
                     }
-                    if ( coin->MAXPEERS > 1 && now > coin->peers.lastmetrics+10 )
+                    if ( coin->MAXPEERS > 1 && now > coin->peers->lastmetrics+10 )
                     {
                         //fprintf(stderr,"metrics\n");
-                        coin->peers.lastmetrics = iguana_updatemetrics(myinfo,coin); // ranks peers
+                        coin->peers->lastmetrics = iguana_updatemetrics(myinfo,coin); // ranks peers
                     }
                     if ( coin->longestchain+10000 > coin->blocks.maxbits )
                         iguana_recvalloc(coin,coin->longestchain + 100000);
@@ -767,9 +769,9 @@ void iguana_coinloop(void *arg)
             }
         }
         if ( flag == 0 && coin->isRT == 0 )
-            usleep(coin->polltimeout*1000 + (coin->peers.numranked == 0)*1000000);
+            usleep(coin->polltimeout*1000 + (coin->peers->numranked == 0)*1000000);
         else if ( coin->current != 0 && coin->current->hdrsi == coin->longestchain/coin->chain->bundlesize )
-            usleep(coin->polltimeout*1000 + 90000 + (coin->peers.numranked == 0)*1000000);
+            usleep(coin->polltimeout*1000 + 90000 + (coin->peers->numranked == 0)*1000000);
         else usleep(coin->polltimeout*1000);
     }
 }

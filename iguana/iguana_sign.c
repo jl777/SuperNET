@@ -344,7 +344,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
         //printf("json.%p array.%p sigser.%p\n",json,array,sigser);
     }
     //printf("version.%d\n",msg->version);
-    if ( coin->chain->hastimestamp != 0 )
+    if ( coin->chain->txhastimestamp != 0 )
     {
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->timestamp),&msg->timestamp);
         //char str[65]; printf("version.%d timestamp.%08x %u %s\n",msg->version,msg->timestamp,msg->timestamp,utc_str(str,msg->timestamp));
@@ -481,7 +481,7 @@ bits256 iguana_parsetxobj(struct supernet_info *myinfo,struct iguana_info *coin,
     vpnstr[0] = 0;
     if ( (msg->version= juint(txobj,"version")) == 0 )
         msg->version = 1;
-    if ( coin->chain->hastimestamp != 0 )
+    if ( coin->chain->txhastimestamp != 0 )
     {
         if ( (msg->timestamp= juint(txobj,"timestamp")) == 0 )
             msg->timestamp = (uint32_t)time(NULL);
@@ -806,7 +806,7 @@ int32_t bitcoin_txaddspend(struct iguana_info *coin,cJSON *txobj,char *destaddre
     {
         bitcoin_addr2rmd160(&addrtype,rmd160,destaddress);
         scriptlen = bitcoin_standardspend(outputscript,0,rmd160);
-        bitcoin_txoutput(coin,txobj,outputscript,scriptlen,satoshis);
+        bitcoin_txoutput(txobj,outputscript,scriptlen,satoshis);
         return(0);
     } else return(-1);
 }
@@ -911,7 +911,7 @@ cJSON *bitcoin_txinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32_
     return(txobj);
 }
 
-cJSON *bitcoin_txcreate(struct iguana_info *coin,int64_t locktime)
+cJSON *bitcoin_txcreate(int32_t txhastimestamp,int64_t locktime)
 {
     cJSON *json = cJSON_CreateObject();
     if ( locktime == 0 )
@@ -924,14 +924,14 @@ cJSON *bitcoin_txcreate(struct iguana_info *coin,int64_t locktime)
         jaddnum(json,"version",4);
         jadd64bits(json,"locktime",locktime);
     }
-    if ( coin->chain->hastimestamp != 0 )
+    if ( txhastimestamp != 0 )
         jaddnum(json,"timestamp",time(NULL));
     jadd(json,"vin",cJSON_CreateArray());
     jadd(json,"vout",cJSON_CreateArray());
     return(json);
 }
 
-cJSON *bitcoin_txoutput(struct iguana_info *coin,cJSON *txobj,uint8_t *paymentscript,int32_t len,uint64_t satoshis)
+cJSON *bitcoin_txoutput(cJSON *txobj,uint8_t *paymentscript,int32_t len,uint64_t satoshis)
 {
     char *hexstr; cJSON *item,*skey,*vouts = jduplicate(jobj(txobj,"vout"));
     jdelete(txobj,"vout");
@@ -1004,7 +1004,7 @@ P2SH_SPENDAPI(iguana,spendmsig,activecoin,vintxid,vinvout,destaddress,destamount
     if ( M > N || N > 3 )
         return(clonestr("{\"error\":\"illegal M or N\"}"));
     memset(&V,0,sizeof(V));
-    txobj = bitcoin_txcreate(active,0);
+    txobj = bitcoin_txcreate(active->chain->txhastimestamp,0);
     if ( destaddress[0] != 0 && destamount > 0. )
         bitcoin_txaddspend(active,txobj,destaddress,destamount * SATOSHIDEN);
     if ( destaddress2[0] != 0 && destamount2 > 0. )

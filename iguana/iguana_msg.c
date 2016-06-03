@@ -120,7 +120,7 @@ int32_t iguana_eatauxpow(int32_t rwflag,char *symbol,uint8_t *serialized)
         memset(&MEM,0,sizeof(MEM));
         ptr = calloc(1,1000000);
         iguana_meminit(&MEM,"auxpow",ptr,1000000,0);
-        len += iguana_rwtx(rwflag,&MEM,&serialized[len],&msg,(int32_t)MEM.totalsize,&coinbasetxid,coin->chain->hastimestamp,0);
+        len += iguana_rwtx(rwflag,&MEM,&serialized[len],&msg,(int32_t)MEM.totalsize,&coinbasetxid,coin->chain->txhastimestamp,0);
         len += iguana_rwbignum(rwflag,&serialized[len],sizeof(auxhash2),auxhash2.bytes);
         len += iguana_rwmerklebranch(rwflag,&serialized[len],&coinbase_branch);
         len += iguana_rwmerklebranch(rwflag,&serialized[len],&blockchain_branch);
@@ -566,13 +566,13 @@ int32_t iguana_gentxarray(struct iguana_info *coin,struct OS_memspace *mem,struc
     {
         if ( len > recvlen )
             break;
-        if ( (n= iguana_rwtx(0,mem,&data[len],&tx[i],recvlen - len,&tx[i].txid,coin->chain->hastimestamp,strcmp(coin->symbol,"VPN")==0)) < 0 )
+        if ( (n= iguana_rwtx(0,mem,&data[len],&tx[i],recvlen - len,&tx[i].txid,coin->chain->txhastimestamp,strcmp(coin->symbol,"VPN")==0)) < 0 )
             break;
         numvouts += tx[i].tx_out;
         numvins += tx[i].tx_in;
         len += n;
     }
-    if ( coin->chain->hastimestamp != 0 && len != recvlen && data[len] == (recvlen - len - 1) )
+    if ( coin->chain->txhastimestamp != 0 && len != recvlen && data[len] == (recvlen - len - 1) )
     {
         //printf("\n>>>>>>>>>>> len.%d vs recvlen.%d [%d]\n",len,recvlen,data[len]);
         memcpy(txdata->space,&data[len],recvlen-len);
@@ -782,7 +782,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                                 {
                                     iguana_memreset(rawmem);
                                     tx = iguana_memalloc(rawmem,sizeof(*tx),1);
-                                    len += iguana_rwtx(0,rawmem,&data[len],tx,recvlen-len,&tx->txid,coin->chain->hastimestamp,strcmp(coin->symbol,"VPN")==0);
+                                    len += iguana_rwtx(0,rawmem,&data[len],tx,recvlen-len,&tx->txid,coin->chain->txhastimestamp,strcmp(coin->symbol,"VPN")==0);
                                     len += iguana_rwbignum(0,&data[len],sizeof(auxhash2),auxhash2.bytes);
                                     len += iguana_rwmerklebranch(0,&data[len],&coinbase_branch);
                                     len += iguana_rwmerklebranch(0,&data[len],&blockchain_branch);
@@ -931,7 +931,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
             struct iguana_msgtx *tx;
             iguana_memreset(rawmem);
             tx = iguana_memalloc(rawmem,sizeof(*tx),1);//mycalloc('u',1,sizeof(*tx));
-            len = iguana_rwtx(0,rawmem,data,tx,recvlen,&tx->txid,coin->chain->hastimestamp,strcmp(coin->symbol,"VPN")==0);
+            len = iguana_rwtx(0,rawmem,data,tx,recvlen,&tx->txid,coin->chain->txhastimestamp,strcmp(coin->symbol,"VPN")==0);
             if ( addr != 0 )
             {
                 iguana_gotunconfirmedM(coin,addr,tx,data,recvlen);

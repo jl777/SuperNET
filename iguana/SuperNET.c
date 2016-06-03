@@ -86,7 +86,7 @@ int32_t SuperNET_confirmip(struct supernet_info *myinfo,uint32_t ipbits)
         {
             for (j=0; j<IGUANA_MAXPEERS; j++)
             {
-                if ( (x= Coins[i]->peers.active[j].myipbits) != 0 )
+                if ( (x= Coins[i]->peers->active[j].myipbits) != 0 )
                 {
                     if ( x == ipbits )
                         total++;
@@ -113,7 +113,7 @@ void SuperNET_checkipaddr(struct supernet_info *myinfo,struct iguana_info *coin,
     if ( addr->myipbits == myinfo->myaddr.myipbits )
         myinfo->myaddr.confirmed++;
     else myinfo->myaddr.confirmed--;
-    if ( (myinfo->myaddr.totalconfirmed= SuperNET_confirmip(myinfo,addr->myipbits)) >= coin->peers.numranked )
+    if ( (myinfo->myaddr.totalconfirmed= SuperNET_confirmip(myinfo,addr->myipbits)) >= coin->peers->numranked )
         myinfo->myaddr.selfipbits = addr->myipbits;
     if ( myinfo->myaddr.selfipbits == myinfo->myaddr.myipbits )
     {
@@ -885,7 +885,7 @@ cJSON *SuperNET_peerarray(struct iguana_info *coin,int32_t max,int32_t supernetf
     for (j=0; j<IGUANA_MAXPEERS; j++)
     {
         i = (r + j) % IGUANA_MAXPEERS;
-        addr = &coin->peers.active[i];
+        addr = &coin->peers->active[i];
         if ( addr->usock >= 0 && supernetflag == (addr->supernet != 0) )
         {
             jaddistr(array,addr->ipaddr);
@@ -1281,14 +1281,14 @@ TWO_STRINGS(SuperNET,subscribe,category,subcategory)
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     categoryhash = calc_categoryhashes(&subhash,category,subcategory);
-    if ( category_subscribe(myinfo,categoryhash,subhash,0,0) != 0 )
+    if ( category_subscribe(myinfo,categoryhash,subhash) != 0 )
         return(clonestr("{\"result\":\"subscribed\"}"));
     else return(clonestr("{\"error\":\"couldnt subscribe\"}"));
 }
 
 TWO_STRINGS(SuperNET,gethexmsg,category,subcategory)
 {
-    bits256 categoryhash,subhash; struct category_msg *m; char *hexstr; cJSON *retjson; struct category_info *cat;
+    bits256 categoryhash,subhash; struct category_msg *m; char *hexstr; cJSON *retjson; struct private_chain *cat;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     categoryhash = calc_categoryhashes(&subhash,category,subcategory);

@@ -882,7 +882,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
         coin->active = 0;
         coin->started = 0;
         for (i=0; i<IGUANA_MAXPEERS; i++)
-            coin->peers.active[i].dead = (uint32_t)time(NULL);
+            coin->peers->active[i].dead = (uint32_t)time(NULL);
 #ifdef __linux__
         char cmd[1024];
         sprintf(cmd,"mksquashfs %s/%s %s.%d -comp xz",GLOBAL_DBDIR,coin->symbol,coin->symbol,coin->balanceswritten);

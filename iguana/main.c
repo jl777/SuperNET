@@ -59,7 +59,7 @@ char *Iguana_validcommands[] =
 };
 int32_t Showmode,Autofold,PANGEA_MAXTHREADS = 1;
 
-struct category_info *Categories;
+struct private_chain *Categories;
 struct iguana_info *Coins[IGUANA_MAXCOINS];
 char Userhome[512];
 int32_t USE_JAY,FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel,IGUANA_BIGENDIAN;
@@ -359,10 +359,10 @@ void iguana_exit()
                     {
                         switch ( iter )
                         {
-                            case 1: Coins[i]->peers.active[j].dead = (uint32_t)time(NULL); break;
+                            case 1: Coins[i]->peers->active[j].dead = (uint32_t)time(NULL); break;
                             case 2:
-                                if ( Coins[i]->peers.active[j].usock >= 0 )
-                                    closesocket(Coins[i]->peers.active[j].usock);
+                                if ( Coins[i]->peers->active[j].usock >= 0 )
+                                    closesocket(Coins[i]->peers->active[j].usock);
                                 break;
                         }
                     }
@@ -444,7 +444,7 @@ void mainloop(struct supernet_info *myinfo)
                     if ( coin->active != 0 && coin->started != 0 )
                     {
                         isRT *= coin->isRT;
-                        numpeers += coin->peers.numranked;
+                        numpeers += coin->peers->numranked;
                         if ( time(NULL) > coin->startutc+10 && coin->spendvectorsaved == 0 && coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-coin->minconfirms)/coin->chain->bundlesize )
                         {
                             n = coin->bundlescount-1;
@@ -1164,7 +1164,7 @@ void iguana_appletests(struct supernet_info *myinfo)
         //printf("shash -> %s sha256x2 %s\n",bits256_str(str,shash),bits256_str(str2,hash2));
     getchar();
     }
-    if ( 1 )
+    if ( 0 )
     {
         /*int32_t i; ;bits256 hash2; uint8_t pubkey[33];
         double startmillis = OS_milliseconds();

@@ -68,7 +68,7 @@ void iguana_acceptloop(void *args)
     socklen_t clilen; struct sockaddr_in cli_addr; char ipaddr[64]; uint32_t i,ipbits,flag;
     while ( (coin->bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
     {
-        if ( coin->peers.localaddr != 0 )
+        if ( coin->peers->localaddr != 0 )
         {
             printf("another daemon running, no need to have iguana accept connections\n");
             return;
@@ -99,17 +99,17 @@ void iguana_acceptloop(void *args)
         printf("incoming (%s:%u)\n",ipaddr,cli_addr.sin_port);
         for (i=flag=0; i<IGUANA_MAXPEERS; i++)
         {
-            if ( coin->peers.active[i].ipbits == (uint32_t)ipbits && coin->peers.active[i].usock >= 0 )
+            if ( coin->peers->active[i].ipbits == (uint32_t)ipbits && coin->peers->active[i].usock >= 0 )
             {
                 printf("found existing peer.(%s) in slot[%d]\n",ipaddr,i);
-                close(coin->peers.active[i].usock);
-                coin->peers.active[i].dead = 0;
-                coin->peers.active[i].usock = sock;
-                coin->peers.active[i].A.port = cli_addr.sin_port;
-                coin->peers.active[i].ready = (uint32_t)time(NULL);
+                close(coin->peers->active[i].usock);
+                coin->peers->active[i].dead = 0;
+                coin->peers->active[i].usock = sock;
+                coin->peers->active[i].A.port = cli_addr.sin_port;
+                coin->peers->active[i].ready = (uint32_t)time(NULL);
                 flag = 1;
-                instantdex_peerhas_clear(coin,&coin->peers.active[i]);
-                //iguana_iAkill(coin,&coin->peers.active[i],0);
+                instantdex_peerhas_clear(coin,&coin->peers->active[i]);
+                //iguana_iAkill(coin,&coin->peers->active[i],0);
                 //sleep(1);
                 break;
             }
@@ -352,15 +352,15 @@ int32_t iguana_peeraddrrequest(struct iguana_info *coin,struct iguana_peer *addr
     int32_t i,iter,n,max,sendlen; uint64_t x; struct iguana_peer *tmpaddr,tmp; char ipaddr[65];
     sendlen = 0;
     max = (IGUANA_MINPEERS + IGUANA_MAXPEERS) / 2;
-    if ( max > coin->peers.numranked )
-        max = coin->peers.numranked;
+    if ( max > coin->peers->numranked )
+        max = coin->peers->numranked;
     x = 0;
     sendlen = iguana_rwvarint(1,&space[sendlen],&x);
     for (iter=0; iter<2; iter++)
     {
         for (i=n=0; i<max; i++)
         {
-            if ( (tmpaddr= coin->peers.ranked[i]) != 0 && ((iter == 0 && tmpaddr->supernet != 0) || (iter == 1 && tmpaddr->supernet == 0)) && tmpaddr->ipbits != 0 )
+            if ( (tmpaddr= coin->peers->ranked[i]) != 0 && ((iter == 0 && tmpaddr->supernet != 0) || (iter == 1 && tmpaddr->supernet == 0)) && tmpaddr->ipbits != 0 )
             {
                 tmp = *tmpaddr;
                 iguana_rwnum(1,&tmp.A.ip[12],sizeof(uint32_t),&tmp.ipbits);

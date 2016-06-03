@@ -88,7 +88,7 @@ int32_t iguana_vinset(struct iguana_info *coin,uint8_t *scriptspace,int32_t heig
             if ( s->scriptpos != 0 && s->scriptlen > 0 )
             {
                 iguana_vinsfname(coin,bp->ramchain.from_ro,fname,s->fileid);
-                if ( (scriptlen= iguana_scriptdata(coin,scriptspace,coin->peers.vinptrs[s->fileid],fname,s->scriptpos,s->scriptlen)) != s->scriptlen )
+                if ( (scriptlen= iguana_scriptdata(coin,scriptspace,coin->peers->vinptrs[s->fileid],fname,s->scriptpos,s->scriptlen)) != s->scriptlen )
                     printf("err.%d getting %d bytes from fileid.%llu[%d] %s for s%d\n",err,s->scriptlen,(long long)s->scriptpos,s->fileid,fname,spendind);
             }
             vin->scriptlen = s->scriptlen;
@@ -107,7 +107,7 @@ int32_t iguana_voutscript(struct iguana_info *coin,struct iguana_bundle *bp,uint
     if ( u->scriptpos > 0 && u->scriptlen > 0 )
     {
         iguana_voutsfname(coin,bp->ramchain.from_ro,fname,u->fileid);
-        if ( (scriptlen= iguana_scriptdata(coin,scriptspace,coin->peers.voutptrs[u->fileid],fname,u->scriptpos,u->scriptlen)) != u->scriptlen )
+        if ( (scriptlen= iguana_scriptdata(coin,scriptspace,coin->peers->voutptrs[u->fileid],fname,u->scriptpos,u->scriptlen)) != u->scriptlen )
             printf("%d bytes from fileid.%d[%d] %s for type.%d\n",u->scriptlen,u->fileid,u->scriptpos,fname,u->type);
     }
     else
@@ -174,7 +174,7 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
     int32_t i,rwflag=1,len = 0; char asmstr[512],txidstr[65];
     uint32_t numvins,numvouts; struct iguana_msgvin vin; struct iguana_msgvout vout; uint8_t space[IGUANA_MAXSCRIPTSIZE];
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->version),&tx->version);
-    if ( coin->chain->hastimestamp != 0 )
+    if ( coin->chain->txhastimestamp != 0 )
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->timestamp),&tx->timestamp);
     numvins = tx->numvins, numvouts = tx->numvouts;
     len += iguana_rwvarint32(rwflag,&serialized[len],&numvins);
@@ -276,7 +276,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
                 }
                 if ( i == block->RO.txn_count )
                 {
-                    merkle_root = iguana_merkle(coin,tree,block->RO.txn_count);
+                    merkle_root = iguana_merkle(tree,block->RO.txn_count);
                     if ( bits256_cmp(merkle_root,block->RO.merkle_root) == 0 )
                     {
                         if ( addr != 0 )

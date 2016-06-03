@@ -299,14 +299,14 @@ char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,bit
 bits256 iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx)
 {
     bits256 txid; uint8_t *serialized; int32_t i,len; struct iguana_peer *addr;
-    if ( coin->peers.numranked >= 8 )
+    if ( coin->peers->numranked >= 8 )
     {
         len = (int32_t)strlen(signedtx) >> 1;
         serialized = calloc(1,sizeof(struct iguana_msghdr) + len);
         decode_hex(&serialized[sizeof(struct iguana_msghdr)],len,signedtx);
         for (i=0; i<8; i++)
         {
-            if ( (addr= coin->peers.ranked[i]) != 0 && addr->dead == 0 && addr->usock >= 0 )
+            if ( (addr= coin->peers->ranked[i]) != 0 && addr->dead == 0 && addr->usock >= 0 )
                 iguana_queue_send(addr,0,serialized,"tx",len);
         }
         free(serialized);
@@ -356,7 +356,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
                 }
                 bitcoin_addr2rmd160(&addrtype,rmd160,changeaddr);
                 spendlen = bitcoin_standardspend(spendscript,0,rmd160);
-                bitcoin_txoutput(coin,txobj,spendscript,spendlen,change);
+                bitcoin_txoutput(txobj,spendscript,spendlen,change);
             }
             if ( vins != 0 )
                 V = calloc(cJSON_GetArraySize(vins),sizeof(*V));
@@ -974,7 +974,7 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
     bits256 txid; int32_t offset,spendlen=0,n; uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; uint64_t satoshis; char *hexstr,*field,*txstr; cJSON *txobj,*item,*obj,*retjson = cJSON_CreateObject();
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    if ( coin != 0 && (txobj= bitcoin_txcreate(coin,locktime)) != 0 )
+    if ( coin != 0 && (txobj= bitcoin_txcreate(coin->chain->txhastimestamp,locktime)) != 0 )
     {
         iguana_createvins(myinfo,coin,txobj,vins);
         if ( (n= cJSON_GetArraySize(vouts)) > 0 )
@@ -1025,7 +1025,7 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
                                 if ( (obj= jobj(item,"amount")) != 0 )
                                     satoshis = jdouble(obj,0) * SATOSHIDEN;
                                 else satoshis = 0;
-                                bitcoin_txoutput(coin,txobj,spendscript+offset,spendlen,satoshis);
+                                bitcoin_txoutput(txobj,spendscript+offset,spendlen,satoshis);
                             }
                         }
                         break;
@@ -1036,7 +1036,7 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
                         {
                             spendlen = bitcoin_standardspend(spendscript,0,rmd160);
                             satoshis = jdouble(item,0) * SATOSHIDEN;
-                            bitcoin_txoutput(coin,txobj,spendscript,spendlen,satoshis);
+                            bitcoin_txoutput(txobj,spendscript,spendlen,satoshis);
                         }
                     }
                 }

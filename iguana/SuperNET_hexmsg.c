@@ -75,7 +75,7 @@ void SuperNET_hexmsgadd(struct supernet_info *myinfo,bits256 categoryhash,bits25
 
 void SuperNET_hexmsgprocess(struct supernet_info *myinfo,cJSON *retjson,cJSON *json,char *hexmsg,char *remoteaddr)
 {
-    int32_t len,flag=0; char *str; uint8_t _buf[8192],*buf = _buf; bits256 categoryhash,subhash; struct category_info *cat;
+    int32_t len,flag=0; char *str; uint8_t _buf[8192],*buf = _buf; bits256 categoryhash,subhash; struct private_chain *cat;
     if ( hexmsg != 0 )
     {
         len = (int32_t)strlen(hexmsg);
@@ -116,6 +116,7 @@ void SuperNET_hexmsgprocess(struct supernet_info *myinfo,cJSON *retjson,cJSON *j
     }
 }
 
+#ifdef later
 int32_t category_default_blockhash(struct category_chain *catchain,void *blockhashp,void *data,int32_t datalen)
 {
     bits256 hash;
@@ -235,7 +236,7 @@ int32_t category_default_payment(struct category_chain *catchain,void *src,void 
 
 struct category_chain *category_chain_functions(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,int32_t hashlen,int32_t addrlen,void *hash_func,void *stake_func,void *hit_func,void *default_func,void *ishwm_func,void *payment_func)
 {
-    struct category_info *cat; struct category_chain *catchain = calloc(1,sizeof(*catchain));
+    struct private_chain *cat; struct category_chain *catchain = calloc(1,sizeof(*catchain));
     if ( (cat= category_find(categoryhash,subhash)) != 0 )
     {
         catchain->maxblocknum = -1;
@@ -270,11 +271,12 @@ struct category_chain *category_chain_functions(struct supernet_info *myinfo,bit
                 return(0);
             }
         }
-        cat->catchain = catchain;
+        //cat->catchain = catchain;
         return(catchain);
     }
     return(0);
 }
+#endif
 
 struct crypto777_msghdr *crypto777_msgcreate(struct supernet_info *myinfo,struct crypto777_msghdr *msg,int32_t datalen)
 {
@@ -300,20 +302,20 @@ struct crypto777_msghdr *crypto777_msgcreate(struct supernet_info *myinfo,struct
     return(0);
 }
 
-void crypto777_catchain(struct supernet_info *myinfo,struct category_info *cat,bits256 *prevhashp,bits256 *btchashp)
+void crypto777_catchain(struct supernet_info *myinfo,struct private_chain *cat,bits256 *prevhashp,bits256 *btchashp)
 {
     *btchashp = myinfo->BTCmarkerhash;
-    *prevhashp = cat->catchain->hwmhash;
+    //*prevhashp = cat->catchain->hwmhash;
 }
 
 char *crypto777_sendmsg(struct supernet_info *myinfo,bits256 category,bits256 subhash,uint8_t *data,int32_t datalen,int32_t hops,char cmdstr[8])
 {
-    char *hexstr,*retstr; int32_t i; struct crypto777_msghdr *msg; bits256 prevhash,btchash; struct category_info *cat;
+    char *hexstr,*retstr; int32_t i; struct crypto777_msghdr *msg; bits256 prevhash,btchash; struct private_chain *cat;
     msg = calloc(1,datalen + sizeof(*msg));
     for (i=0; i<sizeof(msg->cmd); i++)
         if ( (msg->cmd[i]= cmdstr[i]) == 0 )
             break;
-    cat = category_info(category,subhash);
+    cat = private_chain(category,subhash);
     crypto777_catchain(myinfo,cat,&prevhash,&btchash);
     iguana_rwbignum(1,msg->prevhash.bytes,sizeof(bits256),prevhash.bytes);
     iguana_rwbignum(1,msg->btchash.bytes,sizeof(bits256),btchash.bytes);

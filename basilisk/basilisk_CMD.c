@@ -25,86 +25,94 @@ char *basilisk_respond_goodbye(struct supernet_info *myinfo,char *CMD,struct igu
 
 void basilisk_request_goodbye(struct supernet_info *myinfo)
 {
-    struct basilisk_item Lptr; cJSON *valsobj = cJSON_CreateObject();
+    cJSON *valsobj = cJSON_CreateObject();
     jaddnum(valsobj,"timeout",-1);
-    basilisk_requestservice(&Lptr,myinfo,"BYE",0,valsobj,GENESIS_PUBKEY,0x1efffff0);
+    basilisk_requestservice(myinfo,"BYE",valsobj,GENESIS_PUBKEY,0,0,0);
     free_json(valsobj);
 }
 
-char *basilisk_respond_setfield(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
+int32_t iguana_rwhashstamp(int32_t rwflag,uint8_t *serialized,struct hashstamp *stamp)
 {
-    bits256 hash,cathash; struct category_info *rootcat,*cat,*prevcat=0; char *category; char str[65];
-    printf("from.(%s) SET.(%s) datalen.%d\n",remoteaddr,jprint(valsobj,0),datalen);
-    if ( datalen <= 0 || (category= jstr(valsobj,"category")) == 0 )
-        return(0);
-    vcalc_sha256(0,cathash.bytes,(uint8_t *)category,(int32_t)strlen(category));
-    vcalc_sha256(0,hash.bytes,data,datalen);
-    category_subscribe(myinfo,cathash,hash,data,datalen);
-    if ( bits256_cmp(prevhash,GENESIS_PUBKEY) != 0 && bits256_nonz(prevhash) != 0 )
-    {
-        if ( (prevcat= category_find(cathash,prevhash)) == 0 )
-        {
-            printf("basilisk_respond_publish: cant find prevhash.%s\n",bits256_str(str,prevhash));
-        }
-    } else memset(prevhash.bytes,0,sizeof(prevhash));
-    if ( (rootcat= category_find(cathash,GENESIS_PUBKEY)) == 0 )
-        printf("error finding category.(%s)\n",category);
-    else if ( (cat= category_find(cathash,hash)) == 0 )
-        printf("error finding just added category\n");
-    else
-    {
-        rootcat->lasthash = hash;
-        cat->prevhash = prevhash;
-        if ( prevcat != 0 )
-            prevcat->next = cat;
-    }
-    return(0);
+    int32_t len = 0;
+    len += iguana_rwbignum(rwflag,&serialized[len],sizeof(stamp->hash2),stamp->hash2.bytes);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(stamp->timestamp),&stamp->timestamp);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(stamp->height),&stamp->height);
+    return(len);
 }
 
-struct basilisk_item *basilisk_request_setfield(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
+cJSON *basilisk_sequencejson(struct basilisk_sequence *seq,int32_t startheight,int32_t firstpossible)
 {
-    return(basilisk_requestservice(Lptr,myinfo,"SET",0,valsobj,pubkey,0x1efffff0));
+    int32_t i,n,len=0,num = 0; cJSON *item; uint8_t *data;
+    if ( startheight < firstpossible )
+        startheight = firstpossible;
+    if ( (i= (startheight - firstpossible) ) < 0 || i >= seq->numstamps )
+        return(0);
+    item = cJSON_CreateObject();
+    n = (seq->numstamps - i);
+    data = calloc(n,sizeof(*seq->stamps));
+    for (; i<seq->numstamps && num<n; i++,num++)
+    {
+        if ( seq->stamps[i].timestamp == 0 )
+            break;
+        len += iguana_rwhashstamp(1,&data[len],&seq->stamps[i]);
+    }
+    jaddnum(item,"start",startheight);
+    jaddnum(item,"num",num);
+    jaddnum(item,"lastupdate",seq->lastupdate);
+    jaddnum(item,"longest",seq->longestchain);
+    return(item);
 }
 
-char *basilisk_respond_getfield(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
+char *basilisk_respond_hashstamps(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
 {
-    bits256 cathash; struct category_info *cat; char *category,*hexstr; cJSON *retjson;
-    if ( (category= jstr(valsobj,"category")) == 0 )
-        return(0);
-    vcalc_sha256(0,cathash.bytes,(uint8_t *)category,(int32_t)strlen(category));
-    char str[65]; printf("from.(%s) GET.(%s) datalen.%d %s\n",remoteaddr,jprint(valsobj,0),datalen,bits256_str(str,cathash));
-    retjson = cJSON_CreateObject();
-    if ( bits256_nonz(prevhash) == 0 || bits256_cmp(GENESIS_PUBKEY,prevhash) == 0 )
+    int32_t doneflag; struct iguana_info *btcd; cJSON *retjson = cJSON_CreateObject();
+    if ( (btcd= iguana_coinfind("BTCD")) != 0 && (doneflag= juint(valsobj,"done")) != 3 )
     {
-        if ( (cat= category_find(cathash,GENESIS_PUBKEY)) == 0 )
-            jaddstr(retjson,"error","cant find category");
-        else
-        {
-            jaddbits256(retjson,"genesis",cat->hash);
-            jaddbits256(retjson,"last",cat->lasthash);
-        }
-    }
-    else
-    {
-        if ( (cat= category_find(cathash,prevhash)) == 0 )
-            printf("error finding just added category\n");
-        if ( cat->datalen > 0 )
-        {
-            hexstr = calloc(1,(cat->datalen << 1) + 1);
-            init_hexbytes_noT(hexstr,cat->data,cat->datalen);
-            jaddstr(retjson,"data",hexstr);
-        }
+        if ( (doneflag & 1) == 0 )
+            jadd(retjson,"BTCD",basilisk_sequencejson(&btcd->SEQ.BTCD,juint(valsobj,"BTCD"),BASILISK_FIRSTPOSSIBLEBTCD));
+        else if ( (doneflag & 2) == 0 )
+            jadd(retjson,"BTC",basilisk_sequencejson(&btcd->SEQ.BTC,juint(valsobj,"BTC"),BASILISK_FIRSTPOSSIBLEBTC));
     }
     return(jprint(retjson,1));
 }
 
-struct basilisk_item *basilisk_request_getfield(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 prevhash,cJSON *valsobj,uint8_t *data,int32_t datalen)
+char *basilisk_respond_setfield(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
 {
-    bits256 cathash; char *category;
-    if ( (category= jstr(valsobj,"category")) == 0 )
-        return(0);
-    vcalc_sha256(0,cathash.bytes,(uint8_t *)category,(int32_t)strlen(category));
-    return(basilisk_requestservice(Lptr,myinfo,"GET",0,valsobj,prevhash,0x1efffff0));
+    struct iguana_info *coin; struct iguana_block *prevblock,*prev2,*newblock,block; char str[65],*blocktx; uint32_t nBits,timestamp,nonce; cJSON *retjson; bits256 btcdhash;
+    if ( datalen <= 0 )
+        return(clonestr("{\"error\":\"no data specified\"}"));
+    if ( (coin= basilisk_chain(myinfo,valsobj)) == 0 )
+        return(clonestr("{\"error\":\"couldnt get basilisk_chain\"}"));
+    printf("from.(%s) SET.(%s) datalen.%d prev.%s\n",remoteaddr,jprint(valsobj,0),datalen,bits256_str(str,prevhash));
+    if ( bits256_nonz(prevhash) == 0 )
+        prevhash = coin->blocks.hwmchain.RO.hash2;
+    if ( (prevblock= iguana_blockfind("setfield",coin,prevhash)) == 0 )
+        return(clonestr("{\"error\":\"couldnt find prevhash\"}"));
+    if ( (prev2= iguana_blockfind("setfield",coin,prevblock->RO.prev_block)) == 0 )
+        return(clonestr("{\"error\":\"couldnt find prevhash2\"}"));
+    timestamp = juint(valsobj,"timestamp");
+    nonce = juint(valsobj,"nonce");
+    nBits = iguana_targetbits(coin,&coin->blocks.hwmchain,prevblock,prev2,1,coin->chain->targetspacing,coin->chain->targettimespan);
+    blocktx = basilisk_block(myinfo,coin,&block,1,timestamp,&nonce,prevhash,nBits,prevblock->height+1,0,0,data,datalen,btcdhash,jobj(valsobj,"coinbase"));
+    retjson = cJSON_CreateObject();
+    jaddbits256(retjson,"hash",block.RO.hash2);
+    jaddstr(retjson,"data",blocktx);
+    if ( (newblock= _iguana_chainlink(coin,&block)) != 0 )
+    {
+        jaddstr(retjson,"result","chain extended");
+        jaddnum(retjson,"ht",block.height);
+    } else jaddstr(retjson,"error","couldnt extend chain");
+    free(blocktx);
+    return(jprint(retjson,1));
+}
+
+char *basilisk_respond_getfield(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
+{
+    struct iguana_info *coin; cJSON *retjson;
+    if ( (coin= basilisk_chain(myinfo,valsobj)) == 0 )
+        return(clonestr("{\"error\":\"couldnt get basilisk_chain\"}"));
+    retjson = cJSON_CreateObject();
+    return(jprint(retjson,1));
 }
 
 char *basilisk_respond_publish(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
@@ -114,21 +122,11 @@ char *basilisk_respond_publish(struct supernet_info *myinfo,char *CMD,struct igu
     return(retstr);
 }
 
-struct basilisk_item *basilisk_request_publish(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
-{
-    return(basilisk_requestservice(Lptr,myinfo,"PUB",0,valsobj,pubkey,0x1efffff0));
-}
-
 char *basilisk_respond_subscribe(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
 {
     char *retstr=0;
     printf("from.(%s) SUB.(%s) datalen.%d\n",remoteaddr,jprint(valsobj,0),datalen);
     return(retstr);
-}
-
-struct basilisk_item *basilisk_request_subscribe(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
-{
-    return(basilisk_requestservice(Lptr,myinfo,"SUB",0,valsobj,pubkey,0x1efffff0));
 }
 
 char *basilisk_respond_dispatch(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
@@ -137,20 +135,10 @@ char *basilisk_respond_dispatch(struct supernet_info *myinfo,char *CMD,struct ig
     return(retstr);
 }
 
-struct basilisk_item *basilisk_request_dispatch(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
-{
-    return(basilisk_requestservice(Lptr,myinfo,"RUN",0,valsobj,pubkey,0x1efffff0));
-}
-
 char *basilisk_respond_addrelay(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
 {
     char *retstr=0;
     return(retstr);
-}
-
-struct basilisk_item *basilisk_request_addrelay(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
-{
-    return(basilisk_requestservice(Lptr,myinfo,"ADD",0,valsobj,pubkey,0x1efffff0));
 }
 
 char *basilisk_respond_forward(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
@@ -159,20 +147,10 @@ char *basilisk_respond_forward(struct supernet_info *myinfo,char *CMD,struct igu
     return(retstr);
 }
 
-struct basilisk_item *basilisk_request_forward(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
-{
-    return(basilisk_requestservice(Lptr,myinfo,"HOP",0,valsobj,pubkey,0x1efffff0));
-}
-
 char *basilisk_respond_mailbox(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
 {
     char *retstr=0;
     return(retstr);
-}
-
-struct basilisk_item *basilisk_request_mailbox(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
-{
-    return(basilisk_requestservice(Lptr,myinfo,"BOX",0,valsobj,pubkey,0x1efffff0));
 }
 
 char *basilisk_respond_VPNcreate(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
@@ -181,20 +159,10 @@ char *basilisk_respond_VPNcreate(struct supernet_info *myinfo,char *CMD,struct i
     return(retstr);
 }
 
-struct basilisk_item *basilisk_request_VPNcreate(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
-{
-    return(basilisk_requestservice(Lptr,myinfo,"HUB",0,valsobj,pubkey,0x1efffff0));
-}
-
 char *basilisk_respond_VPNjoin(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
 {
     char *retstr=0;
     return(retstr);
-}
-
-struct basilisk_item *basilisk_request_VPNjoin(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
-{
-    return(basilisk_requestservice(Lptr,myinfo,"ARC",0,valsobj,pubkey,0x1efffff0));
 }
 
 char *basilisk_respond_VPNlogout(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
@@ -203,20 +171,10 @@ char *basilisk_respond_VPNlogout(struct supernet_info *myinfo,char *CMD,struct i
     return(retstr);
 }
 
-struct basilisk_item *basilisk_request_VPNlogout(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
-{
-    return(basilisk_requestservice(Lptr,myinfo,"END",0,valsobj,pubkey,0x1efffff0));
-}
-
 char *basilisk_respond_VPNbroadcast(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
 {
     char *retstr=0;
     return(retstr);
-}
-
-struct basilisk_item *basilisk_request_VPNbroadcast(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
-{
-    return(basilisk_requestservice(Lptr,myinfo,"SAY",0,valsobj,pubkey,0x1efffff0));
 }
 
 char *basilisk_respond_VPNreceive(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
@@ -225,20 +183,10 @@ char *basilisk_respond_VPNreceive(struct supernet_info *myinfo,char *CMD,struct 
     return(retstr);
 }
 
-struct basilisk_item *basilisk_request_VPNreceive(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
-{
-    return(basilisk_requestservice(Lptr,myinfo,"EAR",0,valsobj,pubkey,0x1efffff0));
-}
-
 char *basilisk_respond_VPNmessage(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
 {
     char *retstr=0;
     return(retstr);
-}
-
-struct basilisk_item *basilisk_request_VPNmessage(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen)
-{
-    return(basilisk_requestservice(Lptr,myinfo,"GAP",0,valsobj,pubkey,0x1efffff0));
 }
 
 

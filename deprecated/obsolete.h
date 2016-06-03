@@ -17293,5 +17293,25 @@ len = 0;
                 printf("unhandled bitcoin_hexmsg.(%d) from %s (%s)\n",len,remoteaddr,(char *)ptr);
                 return(retstr);
             }
+                
+                int32_t basilisk_hashstamps(struct iguana_info *btcd,struct hashstamp *BTCDstamps,struct basilisk_sequence *seq,int32_t max,uint32_t reftimestamp)
+            {
+                uint32_t i,timestamp; struct iguana_block *block;
+                block = &btcd->blocks.hwmchain;
+                while ( block != 0 && (timestamp= block->RO.timestamp) > reftimestamp )
+                    block = iguana_blockfind("hashstamps",btcd,block->RO.prev_block);
+                if ( block == 0 )
+                    return(-1);
+                for (i=0; i<max; i++)
+                {
+                    BTCDstamps[i].hash2 = block->RO.hash2;
+                    BTCDstamps[i].timestamp = block->RO.timestamp;
+                    BTCDstamps[i].height = block->height;
+                    if ( (block= iguana_blockfind("hashstamps",btcd,block->RO.prev_block)) == 0 )
+                        return(i+1);
+                }
+                return(i);
+            }
+
 #endif
 #endif
