@@ -531,7 +531,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
     }
     while ( iguana_balancefinished(coin) < max || coin->balanceflush != 0 )
         sleep(3);
-    //printf("helper.%d check validates\n",helperid);
+    printf("helper.%d check validates\n",helperid);
     incr = IGUANA_NUMHELPERS;
     if ( helperid < incr )
     {
@@ -561,7 +561,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
         while ( coin->spendvectorsaved <= 1 )
             sleep(IGUANA_NUMHELPERS+3);
     }
-    //printf("helper.%d helperdone\n",helperid);
+    printf("helper.%d helperdone\n",helperid);
     return(num);
 }
 
