@@ -686,6 +686,8 @@ void iguana_coinloop(void *arg)
     coins++;
     printf("begin coinloop[%d]\n",n);
     coin = coins[0];
+    if ( coin->peers == 0 )
+        coin->peers = calloc(1,sizeof(*coin->peers));
     iguana_launchpeer(coin,"127.0.0.1");
     memset(zero.bytes,0,sizeof(zero));
     while ( 1 )
