@@ -1021,12 +1021,12 @@ HASH_ARRAY_STRING(basilisk,subscribe,pubkey,vals,hexstr)
     return(basilisk_standardservice("SUB",myinfo,pubkey,vals,hexstr,1));
 }
 
-HASH_ARRAY_STRING(basilisk,setfield,pubkey,vals,hexstr)
+HASH_ARRAY_STRING(basilisk,set,pubkey,vals,hexstr)
 {
     return(basilisk_standardservice("SET",myinfo,pubkey,vals,hexstr,1));
 }
 
-HASH_ARRAY_STRING(basilisk,getfield,pubkey,vals,hexstr)
+HASH_ARRAY_STRING(basilisk,get,pubkey,vals,hexstr)
 {
     return(basilisk_standardservice("GET",myinfo,pubkey,vals,hexstr,1));
 }
