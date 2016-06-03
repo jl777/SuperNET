@@ -314,7 +314,6 @@ int32_t basilisk_hashstampsupdate(struct iguana_info *coin,struct basilisk_seque
         else seq->numstamps++;
     }
     seq->longestchain = coin->longestchain;
-    seq->lastupdate = (uint32_t)time(NULL);
     return(seq->numstamps);
 }
 
@@ -1209,13 +1208,17 @@ void basilisks_loop(void *arg)
             if ( btcd->RELAYNODE != 0 || btcd->VALIDATENODE != 0 )
             {
                 if ( (now= (uint32_t)time(NULL)) > btcd->SEQ.BTCD.lastupdate+10 )
+                {
                     if ( basilisk_update("BTCD",now) >= 0 )
                         done &= ~1;
+                    btcd->SEQ.BTCD.lastupdate = (uint32_t)time(NULL);
+                }
             }
             if ( (now= (uint32_t)time(NULL)) > btcd->SEQ.BTC.lastupdate+30 )
             {
                 if ( basilisk_update("BTC",now) >= 0 )
                     done &= ~2;
+                btcd->SEQ.BTC.lastupdate = (uint32_t)time(NULL);
             }
             if ( done != 3 )
             {
