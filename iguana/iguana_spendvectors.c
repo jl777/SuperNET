@@ -1050,7 +1050,7 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
     }
     if ( bp->validated <= 1 || forceflag != 0 )
     {
-        //printf("validate.[%d]\n",bp->hdrsi);
+        printf("validate.[%d] forceflag.%d\n",bp->hdrsi,forceflag);
         vupdate_sha256(validatehash.bytes,&vstate,0,0);
         sprintf(fname,"%s/%s/validated/%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
         //printf("validatefname.(%s)\n",fname);
