@@ -292,16 +292,23 @@ int32_t basilisk_hashstampset(struct iguana_info *coin,struct hashstamp *stamp,i
     return(-1);
 }
 
+void basilisk_ensure(struct basilisk_sequence *seq,int32_t num)
+{
+    int32_t oldmax,incr = 1000;
+    if ( num >= seq->maxstamps )
+    {
+        oldmax = seq->maxstamps;
+        seq->maxstamps = ((num + 2*incr) / incr) * incr;
+        seq->stamps = realloc(seq->stamps,sizeof(*seq->stamps) * seq->maxstamps);
+        memset(&seq->stamps[oldmax],0,sizeof(*seq->stamps) * (seq->maxstamps - oldmax));
+    }
+}
+
 int32_t basilisk_hashstampsupdate(struct iguana_info *coin,struct basilisk_sequence *seq,int32_t firstpossible)
 {
     while ( (firstpossible + seq->numstamps) < coin->blocks.hwmchain.height )
     {
-        if ( seq->numstamps >= seq->maxstamps )
-        {
-            seq->maxstamps += coin->chain->bundlesize;
-            seq->stamps = realloc(seq->stamps,sizeof(*seq->stamps) * seq->maxstamps);
-            memset(&seq->stamps[seq->numstamps],0,sizeof(*seq->stamps) * (seq->maxstamps - seq->numstamps));
-        }
+        basilisk_ensure(seq,seq->numstamps);
         if ( basilisk_hashstampset(coin,&seq->stamps[seq->numstamps],firstpossible + seq->numstamps) < 0 )
             break;
         else seq->numstamps++;
@@ -701,7 +708,7 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,char 
 
 char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,bits256 hash,cJSON *valsobj,char *hexstr,int32_t blockflag) // client side
 {
-    struct iguana_info *coin,*btcd,*btc; bits256 prevhash; uint32_t nBits = 0; char chainname[64],str[65]; uint8_t space[8192],*allocptr=0,*data = 0; struct basilisk_item *ptr,Lptr; int32_t doneflag,datalen = 0; struct iguana_block *block; cJSON *retjson;
+    struct iguana_info *coin; bits256 prevhash; uint32_t nBits = 0; char chainname[64],str[65]; uint8_t space[8192],*allocptr=0,*data = 0; struct basilisk_item *ptr,Lptr; int32_t datalen = 0; struct iguana_block *block; cJSON *retjson;
     retjson = cJSON_CreateObject();
     if ( strcmp(CMD,"SET") == 0 || strcmp(CMD,"GET") == 0 )
     {
@@ -723,26 +730,6 @@ char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,bits256 ha
             if ( jobj(valsobj,"prev") != 0 )
                 jdelete(valsobj,"prev");
         }
-    }
-    else if ( strcmp(CMD,"SEQ") == 0 )
-    {
-        doneflag = 0;
-        if ( (btcd= iguana_coinfind("BTCD")) != 0 )
-        {
-            if ( btcd->RELAYNODE != 0 || btcd->VALIDATENODE != 0 )
-                doneflag |= (btcd->SEQ.BTCD.numstamps+BASILISK_FIRSTPOSSIBLEBTCD+1 >= btcd->longestchain);
-            if ( (btc= iguana_coinfind("BTC")) != 0 && (btc->RELAYNODE != 0 || btc->VALIDATENODE != 0) )
-                doneflag |= (btcd->SEQ.BTC.numstamps+BASILISK_FIRSTPOSSIBLEBTC+1 >= btcd->SEQ.BTC.longestchain) << 1;
-            if ( doneflag == 3 )
-                return(clonestr("{\"result\":\"both BTC and BTCD in full relay mode and current\"}"));
-        }
-        if ( jobj(valsobj,"done") != 0 )
-            jdelete(valsobj,"done");
-        jaddnum(valsobj,"done",doneflag);
-        if ( (doneflag & 1) == 0 )
-            jaddnum(valsobj,"BTCD",btcd->SEQ.BTCD.numstamps+BASILISK_FIRSTPOSSIBLEBTCD);
-        if ( (doneflag & 2) == 0 )
-            jaddnum(valsobj,"BTC",btcd->SEQ.BTC.numstamps+BASILISK_FIRSTPOSSIBLEBTC);
     }
     data = get_dataptr(&allocptr,&datalen,space,sizeof(space),hexstr);
     ptr = basilisk_requestservice(myinfo,CMD,valsobj,hash,data,datalen,nBits);
@@ -1218,22 +1205,33 @@ void basilisks_loop(void *arg)
         iter++;
         if ( (btcd= iguana_coinfind("BTCD")) != 0 )
         {
-            done = 0;
+            done = 3;
             if ( btcd->RELAYNODE != 0 || btcd->VALIDATENODE != 0 )
             {
                 if ( (now= (uint32_t)time(NULL)) > btcd->SEQ.BTCD.lastupdate+10 )
                     if ( basilisk_update("BTCD",now) >= 0 )
-                        done = 1;
+                        done &= ~1;
             }
             if ( (now= (uint32_t)time(NULL)) > btcd->SEQ.BTC.lastupdate+30 )
             {
                 if ( basilisk_update("BTC",now) >= 0 )
-                    done |= 2;
+                    done &= ~2;
             }
             if ( done != 3 )
             {
                 valsobj = cJSON_CreateObject();
-                basilisk_standardservice("SEQ",myinfo,GENESIS_PUBKEY,valsobj,0,0);
+                if ( btcd->RELAYNODE == 0 && btcd->VALIDATENODE == 0 )
+                {
+                    jaddnum(valsobj,"BTCD",btcd->SEQ.BTCD.numstamps+BASILISK_FIRSTPOSSIBLEBTCD);
+                    basilisk_standardservice("SEQ",myinfo,GENESIS_PUBKEY,valsobj,0,0);
+                }
+                if ( (done & 2) == 0 )
+                {
+                    free_json(valsobj);
+                    valsobj = cJSON_CreateObject();
+                    jaddnum(valsobj,"BTC",btcd->SEQ.BTC.numstamps+BASILISK_FIRSTPOSSIBLEBTC);
+                    basilisk_standardservice("SEQ",myinfo,GENESIS_PUBKEY,valsobj,0,0);
+                }
                 free_json(valsobj);
             }
         }
@@ -1265,6 +1263,7 @@ void basilisks_loop(void *arg)
                     {
                         if ( (retjson= cJSON_Parse(ptr->retstr)) != 0 )
                         {
+                            basilisk_seqresult(myinfo,ptr->retstr);
                             free_json(retjson);
                         }
                     }

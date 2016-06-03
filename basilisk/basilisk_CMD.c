@@ -37,18 +37,20 @@ int32_t iguana_rwhashstamp(int32_t rwflag,uint8_t *serialized,struct hashstamp *
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(stamp->hash2),stamp->hash2.bytes);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(stamp->timestamp),&stamp->timestamp);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(stamp->height),&stamp->height);
+    len += iguana_rwblock80(rwflag,&serialized[len],(void *)stamp->RO);
     return(len);
 }
 
 cJSON *basilisk_sequencejson(struct basilisk_sequence *seq,int32_t startheight,int32_t firstpossible)
 {
-    int32_t i,n,len=0,num = 0; cJSON *item; uint8_t *data;
+    int32_t i,n,len=0,datalen,num = 0; cJSON *item; uint8_t *data; char strbuf[8192],*hexstr=0;
     if ( startheight < firstpossible )
         startheight = firstpossible;
     if ( (i= (startheight - firstpossible) ) < 0 || i >= seq->numstamps )
         return(0);
     item = cJSON_CreateObject();
     n = (seq->numstamps - i);
+    datalen = (int32_t)(n * sizeof(*seq->stamps));
     data = calloc(n,sizeof(*seq->stamps));
     for (; i<seq->numstamps && num<n; i++,num++)
     {
@@ -60,18 +62,60 @@ cJSON *basilisk_sequencejson(struct basilisk_sequence *seq,int32_t startheight,i
     jaddnum(item,"num",num);
     jaddnum(item,"lastupdate",seq->lastupdate);
     jaddnum(item,"longest",seq->longestchain);
+    basilisk_addhexstr(&hexstr,item,strbuf,sizeof(strbuf),data,datalen);
+    if ( hexstr != 0 )
+        free(hexstr);
     return(item);
+}
+
+void basilisk_seqresult(struct supernet_info *myinfo,char *retstr)
+{
+    struct iguana_info *btcd; struct hashstamp stamp; struct basilisk_sequence *seq = 0; cJSON *resultjson; uint8_t *allocptr = 0,space[8192],*data = 0; int32_t ind,startheight,datalen,lastupdate,longestchain,i,num,firstpossible,len = 0; char *hexstr;
+    if ( (btcd= iguana_coinfind("BTCD")) != 0 && (resultjson= cJSON_Parse(retstr)) != 0 )
+    {
+        if ( jstr(resultjson,"BTCD") != 0 )
+            seq = &btcd->SEQ.BTCD, firstpossible = BASILISK_FIRSTPOSSIBLEBTCD;
+        else if ( jstr(resultjson,"BTC") != 0 )
+            seq = &btcd->SEQ.BTC, firstpossible = BASILISK_FIRSTPOSSIBLEBTC;
+        if ( seq != 0 )
+        {
+            startheight = jint(resultjson,"start");
+            if ( (ind= startheight-firstpossible) < 0 )
+            {
+                free_json(resultjson);
+                return;
+            }
+            num = jint(resultjson,"num");
+            lastupdate = jint(resultjson,"lastupdate");
+            longestchain = jint(resultjson,"longest");
+            hexstr = jstr(resultjson,"data");
+            printf("got startheight.%d num.%d lastupdate.%d longest.%d (%s)\n",startheight,num,lastupdate,longestchain,hexstr!=0?hexstr:"");
+            if ( hexstr != 0 && (data= get_dataptr(&allocptr,&datalen,space,sizeof(space),hexstr)) != 0 )
+            {
+                basilisk_ensure(seq,ind + num);
+                for (i=0; i<num; i++,ind++)
+                {
+                    len += iguana_rwhashstamp(0,&data[len],&stamp);
+                    // verify blockheader
+                    seq->stamps[ind] = stamp;
+                }
+            }
+            if ( allocptr != 0 )
+                free(allocptr);
+        }
+        free_json(resultjson);
+    }
 }
 
 char *basilisk_respond_hashstamps(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
 {
-    int32_t doneflag; struct iguana_info *btcd; cJSON *retjson = cJSON_CreateObject();
-    if ( (btcd= iguana_coinfind("BTCD")) != 0 && (doneflag= juint(valsobj,"done")) != 3 )
+    int32_t startheight; struct iguana_info *btcd; cJSON *retjson = cJSON_CreateObject();
+    if ( (btcd= iguana_coinfind("BTCD")) != 0 )
     {
-        if ( (doneflag & 1) == 0 )
-            jadd(retjson,"BTCD",basilisk_sequencejson(&btcd->SEQ.BTCD,juint(valsobj,"BTCD"),BASILISK_FIRSTPOSSIBLEBTCD));
-        else if ( (doneflag & 2) == 0 )
-            jadd(retjson,"BTC",basilisk_sequencejson(&btcd->SEQ.BTC,juint(valsobj,"BTC"),BASILISK_FIRSTPOSSIBLEBTC));
+        if ( (startheight= juint(valsobj,"BTCD")) != 0 )
+            jadd(retjson,"BTCD",basilisk_sequencejson(&btcd->SEQ.BTCD,startheight,BASILISK_FIRSTPOSSIBLEBTCD));
+        else if ( (startheight= juint(valsobj,"BTC")) != 0 )
+            jadd(retjson,"BTC",basilisk_sequencejson(&btcd->SEQ.BTC,startheight,BASILISK_FIRSTPOSSIBLEBTC));
     }
     return(jprint(retjson,1));
 }
@@ -111,6 +155,7 @@ char *basilisk_respond_getfield(struct supernet_info *myinfo,char *CMD,struct ig
     struct iguana_info *coin; cJSON *retjson;
     if ( (coin= basilisk_chain(myinfo,valsobj)) == 0 )
         return(clonestr("{\"error\":\"couldnt get basilisk_chain\"}"));
+    printf("getfield\n");
     retjson = cJSON_CreateObject();
     return(jprint(retjson,1));
 }
