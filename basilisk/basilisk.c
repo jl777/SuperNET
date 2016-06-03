@@ -180,7 +180,7 @@ char *basilisk_block(struct supernet_info *myinfo,struct iguana_info *coin,struc
     }
     if ( (coinbasestr= basilisk_coinbase(myinfo,coin,&txids[0],coinbase,coinbaselen,coinbasespend,txjson)) != 0 )
     {
-        memset(&block,0,sizeof(block));
+        memset(block,0,sizeof(*block));
         block->RO.version = version;
         block->RO.prev_block = prevblock;
         block->RO.merkle_root = iguana_merkle(txids,txn_count + 1);
@@ -219,6 +219,8 @@ char *basilisk_block(struct supernet_info *myinfo,struct iguana_info *coin,struc
 int32_t basilisk_hashstampsfind(struct hashstamp *stamps,int32_t max,struct basilisk_sequence *seq,bits256 hash,uint32_t reftimestamp)
 {
     int32_t j,i = 0,foundflag = -1,gap = -1; uint32_t timestamp;
+    if ( seq->stamps == 0 )
+        return(-1);
     if ( seq->stamps[seq->lasti].timestamp < reftimestamp && seq->lasti >= 3 )
         i = seq->lasti - 3;
     for (; i<seq->numstamps; i++)
