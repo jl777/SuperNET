@@ -686,8 +686,6 @@ void iguana_coinloop(void *arg)
     coins++;
     printf("begin coinloop[%d]\n",n);
     coin = coins[0];
-    if ( coin->peers == 0 )
-        coin->peers = calloc(1,sizeof(*coin->peers));
     iguana_launchpeer(coin,"127.0.0.1");
     memset(zero.bytes,0,sizeof(zero));
     while ( 1 )
@@ -937,7 +935,9 @@ int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json)
         {
             coins[0] = (void *)((long)1);
             coins[1] = coin;
-            printf("launch coinloop for.%s services.%llx started.%p\n",coin->symbol,(long long)services,coin->started);
+            printf("launch coinloop for.%s services.%llx started.%p peers.%p\n",coin->symbol,(long long)services,coin->started,coin->peers);
+            if ( coin->peers == 0 )
+                coin->peers = calloc(1,sizeof(*coin->peers));
             coin->launched = iguana_launch(coin,"iguana_coinloop",iguana_coinloop,coins,IGUANA_PERMTHREAD);
             coin->active = 1;
             coin->started = 0;
