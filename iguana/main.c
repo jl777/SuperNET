@@ -1164,7 +1164,7 @@ void iguana_appletests(struct supernet_info *myinfo)
         //printf("shash -> %s sha256x2 %s\n",bits256_str(str,shash),bits256_str(str2,hash2));
     getchar();
     }
-    if ( 0 )
+    if ( 1 )
     {
         /*int32_t i; ;bits256 hash2; uint8_t pubkey[33];
         double startmillis = OS_milliseconds();

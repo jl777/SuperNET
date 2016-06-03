@@ -660,7 +660,7 @@ void iguana_startconnection(void *arg)
     if ( addr->usock < 0 || coin->peers->shuttingdown != 0 )
     {
         strcpy(ipaddr,addr->ipaddr);
-        printf("%s refused PEER KILLED. slot.%d for %s:%d usock.%d\n",coin->symbol,addr->addrind,ipaddr,coin->chain->portp2p,addr->usock);
+        //printf("%s refused PEER KILLED. slot.%d for %s:%d usock.%d\n",coin->symbol,addr->addrind,ipaddr,coin->chain->portp2p,addr->usock);
         iguana_iAkill(coin,addr,1);
     }
     else
@@ -678,7 +678,7 @@ void iguana_startconnection(void *arg)
                 n++;
         iguana_iAconnected(coin,addr);
         coin->peers->numconnected++;
-        printf("%s.PEER CONNECTED.%d:%d of max.%d! %s:%d usock.%d\n",coin->symbol,coin->peers->numconnected,n,coin->MAXPEERS,addr->ipaddr,coin->chain->portp2p,addr->usock);
+        //printf("%s.PEER CONNECTED.%d:%d of max.%d! %s:%d usock.%d\n",coin->symbol,coin->peers->numconnected,n,coin->MAXPEERS,addr->ipaddr,coin->chain->portp2p,addr->usock);
         if ( strcmp("127.0.0.1",addr->ipaddr) == 0 )
             coin->peers->localaddr = addr;
         else if ( coin->peers->numranked == 0 )

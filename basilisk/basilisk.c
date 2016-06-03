@@ -332,7 +332,7 @@ int32_t basilisk_update(char *symbol,uint32_t reftimestamp)
             seq = &coin->SEQ.BTC;
             firstpossible = BASILISK_FIRSTPOSSIBLEBTC;
         } else return(-1);
-        printf("basilisk update.%s %u lag.%d\n",symbol,reftimestamp,(uint32_t)time(NULL)-seq->lastupdate);
+        //printf("basilisk update.%s %u lag.%d\n",symbol,reftimestamp,(uint32_t)time(NULL)-seq->lastupdate);
         if ( basilisk_hashstampsupdate(coin,seq,firstpossible) > 0 )
         {
             if ( (block= iguana_blockfind("SEQupdate",coin,coin->blocks.hwmchain.RO.hash2)) != 0 )
