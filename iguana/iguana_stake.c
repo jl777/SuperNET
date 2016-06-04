@@ -74,14 +74,14 @@ uint32_t iguana_targetbits(struct iguana_info *coin,struct iguana_block *hwmchai
     // targetspacing NTARGETSPACING, mspacing NINTERVAL_MSPACING, pspacing NINTERVAL_PSPACING
     bits256 mpz_muldivcmp(bits256 oldval,int32_t mulval,int32_t divval,bits256 cmpval);
     bits256 targetval; int32_t gap,mspacing,pspacing;
-    if ( hwmchain->height <= 2 )
+    if ( hwmchain->height <= 2 || hwmchain->height <= 0 )
         return(hwmchain->RO.bits);
     mspacing = (((targettimespan / targetspacing) - 1) * targetspacing);
     pspacing = (((targettimespan / targetspacing) + 1) * targetspacing);
     targetval = iguana_targetval(coin,hwmchain->height,PoSflag);
     if ( prev != 0 )
     {
-        if ( prev2 != 0 )
+        if ( prev2 != 0 && prev->RO.timestamp != 0 && prev2->RO.timestamp != 0 )
         {
             //if ( prev->RO.timestamp != 0 && prev2->RO.timestamp != 0 ) skip check for compatiblity
             {
