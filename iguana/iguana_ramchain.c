@@ -2328,7 +2328,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
                 //    bp->hashes[i] = bRO->hash2;
                 if ( (prev= block->hh.prev) != 0 )
                     prev2 = prev->hh.prev;
-                if ( strcmp(coin->symbol,"BTCD") == 0 && bp->bundleheight > 20000 && prev != 0 && iguana_targetbits(coin,block,prev,prev2,1,coin->chain->targetspacing,coin->chain->targettimespan) != block->RO.bits )
+                if ( prev2 != 0 && prev != 0 && strcmp(coin->symbol,"BTCD") == 0 && bp->bundleheight > 20000 && prev != 0 && iguana_targetbits(coin,block,prev,prev2,1,coin->chain->targetspacing,coin->chain->targettimespan) != block->RO.bits )
                 {
                     printf("nbits target error %x != %x ht.%d\n",iguana_targetbits(coin,block,prev,prev2,1,coin->chain->targetspacing,coin->chain->targettimespan),block->RO.bits,block->height);
                 } //else printf(">>>>>>>>>> matched nbits %x ht.%d\n",block->RO.bits,block->height);
