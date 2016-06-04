@@ -806,7 +806,7 @@ struct iguana_info *iguana_setcoin(struct supernet_info *myinfo,char *symbol,voi
     coin->initialheight = initialheight;
     coin->mapflags = mapflags;
     coin->protocol = IGUANA_PROTOCOL_BITCOIN;
-    mult = (strcmp("BTC",coin->symbol) != 0) ? 8 : 8;
+    mult = (strcmp("BTC",coin->symbol) != 0) ? 8 : 32;
     maxval = IGUANA_MAXPENDBUNDLES;
     if ( (coin->txfee= jdouble(json,"txfee") * SATOSHIDEN) == 0 )
         coin->txfee = 10000;
