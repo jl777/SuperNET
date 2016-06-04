@@ -830,7 +830,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
                             fprintf(stderr,"recvhdr: ht.%d[%d] vs i.%d\n",bp->bundleheight,bundlei,i);
                     }
                 }
-            } else printf("unexpected prevblock at %d %s vs %s\n",i,bits256_str(str,prevhash2),bits256_str(str2,zblocks[i].RO.hash2));
+            }
             prevhash2 = zblocks[i].RO.hash2;
             //printf("%d bp.%p [%d] bundlei.%d %s prev.%s\n",i,bp,bp!=0?bp->hdrsi:-1,bundlei,bits256_str(str,zblocks[i].RO.hash2),bits256_str(str2,zblocks[i].RO.prev_block));
             //else if ( bp != firstbp )
