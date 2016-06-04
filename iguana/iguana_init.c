@@ -523,7 +523,7 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
         if ( iter == 0 )
         {
             char **ipaddrs = 0; int32_t j,num;
-            char *BTC_ipaddrs[] = { "5.9.102.210", "130.211.146.81", "1176.9.29.76", "108.58.252.82", "148.251.151.48", "74.207.233.193" };
+            char *BTC_ipaddrs[] = { "5.9.102.210", "130.211.146.81", "176.9.29.76", "108.58.252.82", "148.251.151.48", "74.207.233.193" };
             char *BTCD_ipaddrs[] = { "5.9.102.210", "89.248.160.236", "89.248.160.237", "89.248.160.238", "89.248.160.239", "89.248.160.240", "89.248.160.241", "89.248.160.242", "89.248.160.243", "89.248.160.244", "89.248.160.245", "78.47.58.62", "67.212.70.88", "94.102.50.69", "50.179.58.158", "194.135.94.30", "109.236.85.42", "104.236.127.154", "68.45.147.145", "37.59.14.7", "78.47.115.250", "188.40.138.8", "62.75.143.120", "82.241.71.230", "217.23.6.2", "73.28.172.128", "45.55.149.34", "192.0.242.54", "81.181.155.53", "91.66.185.97", "85.25.217.233", "144.76.239.66", "95.80.9.112", "80.162.193.118", "173.65.129.85", "2.26.173.58", "78.14.250.69", "188.226.253.77", "58.107.67.39", "124.191.37.212", "176.226.137.238", "69.145.25.85", "24.168.14.28", "73.201.180.47", "76.188.171.53", "63.247.147.166", "121.108.241.247", "36.74.36.125", "106.186.119.171", "188.166.91.37", "223.134.228.208", "89.248.160.244", "178.33.209.212", "71.53.156.38", "88.198.10.165", "24.117.221.0", "74.14.104.57", "158.69.27.82", "110.174.129.213", "75.130.163.51" };
             if ( strcmp(coin->symbol,"BTCD") == 0 )
                 ipaddrs = BTCD_ipaddrs, num = (int32_t)(sizeof(BTCD_ipaddrs)/sizeof(*BTCD_ipaddrs));
@@ -542,7 +542,7 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
         }
         else
         {
-#include "confs/BTCD_hdrs.h"
+/*#include "confs/BTCD_hdrs.h"
             if ( strcmp(coin->symbol,"BTCD") == 0 )
             {
                 bits256 hash2,allhash,hash1; int32_t bundlei,i,nonz,height; struct iguana_bundle *bp;
@@ -566,7 +566,7 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
                 //if ( bits256_nonz(lastbundle) != 0 )
                 //    iguana_initfinal(coin,lastbundle);
                 //break;
-            }
+            }*/
         }
 #endif
         sprintf(fname,"%s/%s_%s.txt",GLOBAL_CONFSDIR,coin->symbol,(iter == 0) ? "peers" : "hdrs"), OS_compatible_path(fname);

@@ -208,7 +208,7 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
         portable_mutex_lock(&coin->blocks_mutex);
         block = calloc(1,sizeof(*block) + coin->chain->zcash*sizeof(*block->zRO));
         block->RO.hash2 = hash2;
-        block->RO.allocsize = (int32_t)(sizeof(*block) + coin->chain->zcash*sizeof(*block->zRO));
+        block->RO.allocsize = coin->chain->zcash != 0 ? sizeof(*block) : sizeof(struct iguana_zblock);
         block->hh.itemind = height, block->height = -1;
         HASH_ADD(hh,coin->blocks.hash,RO.hash2,sizeof(hash2),block);
         block->hh.next = block->hh.prev = 0;
@@ -283,6 +283,8 @@ int32_t iguana_blockvalidate(struct iguana_info *coin,int32_t *validp,struct igu
     iguana_serialize_block(coin->chain,&hash2,serialized,block);
     *validp = (memcmp(hash2.bytes,block->RO.hash2.bytes,sizeof(hash2)) == 0);
     block->valid = *validp;
+    if ( block->RO.allocsize == 0 )
+        block->RO.allocsize = coin->chain->zcash != 0 ? sizeof(*block) : sizeof(struct iguana_zblock);
     char str[65]; char str2[65];
     if ( *validp == 0 )
     {
@@ -484,11 +486,15 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
     bits256 *hash2p=0; double prevPoW = 0.; struct iguana_bundle *bp;
     if ( newblock == 0 )
         return(0);
+    if ( newblock->RO.allocsize == 0 )
+        newblock->RO.allocsize = coin->chain->zcash != 0 ? sizeof(*newblock) : sizeof(struct iguana_zblock);
     hwmchain = (struct iguana_block *)&coin->blocks.hwmchain;
     if ( 0 && hwmchain->height > 0 && ((bp= coin->current) == 0 || hwmchain->height/coin->chain->bundlesize > bp->hdrsi+0*bp->isRT) )
         return(0);
     if ( (block= iguana_blockfind("chainlink",coin,newblock->RO.hash2)) != 0 )
     {
+        if ( block->RO.allocsize == 0 )
+            block->RO.allocsize = coin->chain->zcash != 0 ? sizeof(*newblock) : sizeof(struct iguana_zblock);
         if ( memcmp(coin->chain->genesis_hashdata,block->RO.hash2.bytes,sizeof(bits256)) == 0 )
             block->PoW = PoW_from_compact(block->RO.bits,coin->chain->unitval), height = 0;
         else if ( (prev= iguana_blockfind("chainprev",coin,block->RO.prev_block)) != 0 )
@@ -551,9 +557,9 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                 else str2[0] = 0;
                 if ( coin->blocks.maxblocks > coin->longestchain )
                     coin->longestchain = coin->blocks.maxblocks;
-                if ( 1 && (block->height % 1000) == 0 )
+                if ( 1 && (block->height % coin->chain->bundlesize) == 0 )
                 {
-                    //printf("EXTENDMAIN %s %d <- (%s) n.%u max.%u PoW %f numtx.%d valid.%d\n",str,block->height,str2,hwmchain->height+1,coin->blocks.maxblocks,block->PoW,block->RO.txn_count,block->valid);
+                    printf("EXTENDMAIN %s %d <- (%s) n.%u max.%u PoW %f numtx.%d valid.%d\n",str,block->height,str2,hwmchain->height+1,coin->blocks.maxblocks,block->PoW,block->RO.txn_count,block->valid);
                     //iguana_walkchain(coin);
                 }
                 struct iguana_bundle *bp; int32_t hdrsi;

@@ -22,9 +22,9 @@ int32_t iguana_validatehdr(char *symbol,struct iguana_msghdr *H)
 {
     int32_t i = 0,valid=0,len = -1; char cmdstr[16];
     memcpy(cmdstr,H->command,sizeof(H->command));
-    cmdstr[0] = toupper(cmdstr[0]);
-    cmdstr[6] = toupper(cmdstr[6]);
-    cmdstr[7] = toupper(cmdstr[7]);
+    cmdstr[0] = toupper((int32_t)cmdstr[0]);
+    cmdstr[6] = toupper((int32_t)cmdstr[6]);
+    cmdstr[7] = toupper((int32_t)cmdstr[7]);
     if ( strcmp(symbol,"VPN") == 0 || strncmp("SuperNET",cmdstr,strlen("SuperNET")) == 0 )
         valid = 1;
     else

@@ -1205,11 +1205,12 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                 next = 0;
             }
         }
-        if ( next != 0 )
+        if ( next != 0 )//&& time(NULL) > coin->nextchecked+10 )
         {
             //printf("have next %d\n",coin->blocks.hwmchain.height);
             if ( memcmp(next->RO.prev_block.bytes,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256)) == 0 )
             {
+                coin->nextchecked = (uint32_t)time(NULL);
                 if ( _iguana_chainlink(coin,next) != 0 )
                     lflag++, flag++;
                 //else printf("chainlink error for %d\n",coin->blocks.hwmchain.height+1);
