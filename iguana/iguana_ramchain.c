@@ -2563,7 +2563,8 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
                 iguana_blockunmark(coin,block,bp,i,1);
                 return(-1);
             }
-            memcpy((void *)((long)destB + i*bROsize),&block->RO,bROsize);
+            destB[i] = block->RO;
+            //memcpy((void *)((long)destB + i*bROsize),&block->RO,bROsize);
         } else printf("error getting block (%d:%d) %p vs %p\n",bp->hdrsi,i,block,bp->blocks[i]);
     }
     dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
@@ -2577,8 +2578,8 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         {
             iguana_blocksetcounters(coin,block,dest);
             //coin->blocks.RO[bp->bundleheight+bundlei] = block->RO;
-            //memcpy((void *)((long)B + bundlei*bROsize),&block->RO,bROsize);//[bundlei] = block->RO;
-            //B[bundlei] = block->RO;
+            memcpy((void *)((long)destB + bundlei*bROsize),&block->RO,bROsize);//[bundlei] = block->RO;
+            //destB[bundlei] = block->RO;
             //fprintf(stderr,"(%d %d).%d ",R[bundlei].H.data->numtxids,dest->H.txidind,bundlei);
             if ( (err= iguana_ramchain_iterate(coin,dest,&R[bundlei],bp,bundlei)) != 0 )
             {
