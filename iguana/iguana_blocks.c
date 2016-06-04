@@ -547,7 +547,9 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
             if ( coin->isRT != 0 || block->height == hwmchain->height )
             {
                 coin->blocks.maxblocks = (block->height + 1);
-                memcpy(&coin->blocks.hwmchain,block,block->RO.allocsize);
+                if ( coin->chain->zcash != 0 )
+                    coin->blocks.hwmchain = *(struct iguana_zblock *)block;
+                else *(struct iguana_block *)&coin->blocks.hwmchain = *block;
                 //printf("[%s] <- ht.%d %f\n",bits256_str(str,block->RO.hash2),coin->blocks.hwmchain.height,coin->blocks.hwmchain.PoW);
                 char str[65],str2[65]; bits256 zero;
                 memset(&zero,0,sizeof(zero));
