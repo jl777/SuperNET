@@ -327,7 +327,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                 totalmillis0 += (OS_milliseconds() - startmillis0);
                 num0++;
                 flag++;
-                coin->blocks.RO[bp->bundleheight+bundlei] = block->RO;
+                //coin->blocks.RO[bp->bundleheight+bundlei] = block->RO;
                 coin->RTheight++;
                 //printf(">>>> RT.%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",coin->RTheight,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize);
                 if ( coin->RTramchain.H.data != 0 )

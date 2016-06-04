@@ -300,8 +300,8 @@ int32_t iguana_peerhdrrequest(struct iguana_info *coin,uint8_t *serialized,int32
             {
                 if ( (block= bp->blocks[i]) != 0 )
                 {
-                    iguana_blockunconv(&msgB,block,1);
-                    len += iguana_rwblock(coin->symbol,coin->chain->hashalgo,1,&checkhash2,&serialized[sizeof(struct iguana_msghdr) + len],&msgB);
+                    iguana_blockunconv(coin->chain->zcash,coin->chain->auxpow,&msgB,block,1);
+                    len += iguana_rwblock(coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,1,&checkhash2,&serialized[sizeof(struct iguana_msghdr) + len],&msgB,(int32_t)(maxsize-len-sizeof(struct iguana_msghdr)));
                     flag++;
                     if ( bits256_cmp(checkhash2,block->RO.hash2) != 0 )
                     {

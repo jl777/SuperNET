@@ -216,14 +216,12 @@ int32_t basilisk_bitcoinscan(struct iguana_info *coin,uint8_t origblockspace[IGU
                     bitsbuf[i] = revbits[3 - i];
                 memcpy(&B.RO.bits,bitsbuf,sizeof(B.RO.bits));
             }
+            printf("need to handle zcash/auxpow\n");
             B.RO.nonce = juint(blockjson,"nonce");
             //char str[65],str2[65];
             //printf("v.%d t.%u bits.%08x nonce.%x %s %s\n",B.RO.version,B.RO.timestamp,B.RO.bits,B.RO.nonce,bits256_str(str,B.RO.prev_block),bits256_str(str2,B.RO.merkle_root));
             iguana_serialize_block(coin->chain,&checkhash2,blockspace,&B);
-            //for (i=0; i<80; i++)
-            //    printf("%02x",blockspace[i]);
-            //printf(" B.%s\n",bits256_str(str,checkhash2));
-            msg = (void *)blockspace;
+             msg = (void *)blockspace;
             //printf("(%s)\n",jprint(blockjson,0));
             checkhash2 = iguana_calcblockhash(coin->symbol,coin->chain->hashalgo,blockspace,sizeof(*msg)-4);
             if ( jstr(blockjson,"hash") != 0 )

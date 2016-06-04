@@ -1111,7 +1111,7 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
             if ( req->datalen != 0 )
             {
                 //char str[65]; printf("CACHE.%p parse[%d] %s %s\n",req,req->recvlen,req->H.command,bits256_str(str,req->block.RO.hash2));
-                iguana_parsebuf(coin,addr,&req->H,req->serialized,req->recvlen);
+                iguana_parsebuf(coin,addr,&req->H,req->serializeddata,req->recvlen);
             } else printf("CACHE error no datalen\n");
             coin->cachefreed++;
             myfree(req,req->allocsize);

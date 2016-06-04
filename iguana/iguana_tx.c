@@ -228,9 +228,9 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
     {
         if ( (block= bp->blocks[bundlei]) != 0 )
         {
-            iguana_blockunconv(&msgB,block,0);
+            iguana_blockunconv(coin->chain->zcash,coin->chain->auxpow,&msgB,block,0);
             msgB.txn_count = block->RO.txn_count;
-            total = iguana_rwblock(coin->symbol,coin->chain->hashalgo,1,&checkhash2,&blockspace[sizeof(struct iguana_msghdr) + 0],&msgB);
+            total = iguana_rwblock(coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,1,&checkhash2,&blockspace[sizeof(struct iguana_msghdr) + 0],&msgB,max);
             if ( bits256_cmp(checkhash2,block->RO.hash2) != 0 )
             {
                 static int counter;
@@ -366,9 +366,15 @@ cJSON *iguana_blockjson(struct iguana_info *coin,struct iguana_block *block,int3
     msg.H.merkle_root = block->RO.merkle_root;
     msg.H.timestamp = block->RO.timestamp;
     msg.H.bits = block->RO.bits;
-    msg.H.nonce = block->RO.nonce;
+    if ( block->RO.allocsize == sizeof(*block)+sizeof(*block->zRO) )
+    {
+        msg.zH.bignonce = block->zRO[0].bignonce;
+        msg.zH.numelements = ZCASH_SOLUTION_ELEMENTS;
+        for (i=0; i<ZCASH_SOLUTION_ELEMENTS; i++)
+            msg.zH.solution[i] = block->zRO[0].solution[i];
+    } else msg.H.nonce = block->RO.nonce;
     msg.txn_count = 0;//block->RO.txn_count;
-    len = iguana_rwblock(coin->symbol,coin->chain->hashalgo,1,&hash2,serialized,&msg);
+    len = iguana_rwblock(coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,1,&hash2,serialized,&msg,IGUANA_MAXPACKETSIZE*2);
     init_hexbytes_noT(hexstr,serialized,len);
     jaddstr(json,"blockheader",hexstr);
     if ( txidsflag != 0 )

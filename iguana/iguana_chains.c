@@ -160,19 +160,21 @@ bits256 iguana_calcblockhash(char *symbol,int32_t (*hashalgo)(uint8_t *blockhash
     return(hash2);
 }
 
-bits256 iguana_chaingenesis(char *symbol,int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serialized,int32_t len),bits256 genesishash,char *genesisblock,char *hashalgostr,int32_t version,uint32_t timestamp,uint32_t nBits,uint32_t nonce,bits256 merkle_root)
+bits256 iguana_chaingenesis(char *symbol,uint8_t zcash,uint8_t auxpow,int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serialized,int32_t len),bits256 genesishash,char *genesisblock,char *hashalgostr,int32_t version,uint32_t timestamp,uint32_t nBits,uint32_t nonce,bits256 merkle_root)
 {
-    struct iguana_msgblock msg; int32_t len; bits256 hash2; char blockhashstr[256],str3[65]; uint8_t serialized[1024];
+    struct iguana_msgblock msg; int32_t len; bits256 hash2; char blockhashstr[256],str3[65]; uint8_t serialized[8192];
     memset(&msg,0,sizeof(msg));
     msg.H.version = version;
     msg.H.merkle_root = merkle_root;
     msg.H.timestamp = timestamp;
     msg.H.bits = nBits;
     msg.H.nonce = nonce;
+    if ( zcash != 0 )
+        printf("need to handle zcash genesis\n");
     if ( hashalgostr != 0 && strcmp(hashalgostr,"sha256") != 0 )
         hashalgo = iguana_hashalgo(hashalgostr);
     else hashalgo = blockhash_sha256;
-    len = iguana_rwblock(symbol,hashalgo,1,&hash2,serialized,&msg);
+    len = iguana_rwblock(symbol,zcash,auxpow,hashalgo,1,&hash2,serialized,&msg,sizeof(1024));
     blockhashstr[0] = 0;
     init_hexbytes_noT(blockhashstr,hash2.bytes,sizeof(hash2));
     char str[65],str2[65];
@@ -325,6 +327,7 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
             chain->ramchainport = chain->portp2p - 1;
         if ( (chain->rpcport= juint(argjson,"rpc")) == 0 )
             chain->rpcport = chain->portp2p - 1;
+        chain->zcash = juint(argjson,"zcash");
         if ( jobj(argjson,"isPoS") != 0 )
             chain->txhastimestamp = juint(argjson,"isPoS");
         else if ( jobj(argjson,"oldtx_format") != 0 )
@@ -380,7 +383,7 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
                 ((uint8_t *)&nBits)[3] = tmp[0];
             }
             else nBits = 0x1e00ffff;
-            hash = iguana_chaingenesis(chain->symbol,chain->hashalgo,hash,genesisblock,jstr(genesis,"hashalgo"),juint(genesis,"version"),juint(genesis,"timestamp"),nBits,juint(genesis,"nonce"),jbits256(genesis,"merkle_root"));
+            hash = iguana_chaingenesis(chain->symbol,chain->zcash,chain->auxpow,chain->hashalgo,hash,genesisblock,jstr(genesis,"hashalgo"),juint(genesis,"version"),juint(genesis,"timestamp"),nBits,juint(genesis,"nonce"),jbits256(genesis,"merkle_root"));
             memcpy(chain->genesis_hashdata,hash.bytes,32);
             char str[65]; init_hexbytes_noT(str,chain->genesis_hashdata,32);
             chain->genesis_hash = clonestr(str);

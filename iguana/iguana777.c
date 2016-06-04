@@ -45,7 +45,7 @@ struct iguana_info *iguana_coinadd(const char *symbol,cJSON *argjson)
         {
             if ( Coins[i] == 0 )
             {
-                Coins[i] = mycalloc('C',1,sizeof(*Coins[i]));
+                Coins[i] = mycalloc('C',1,sizeof(*Coins[i]) + sizeof(struct iguana_zcashRO));
                 printf("iguana_coin.(new) -> %p\n",Coins[i]);
                 basilisk_functions(Coins[i],IGUANA_PROTOCOL_BITCOIN);
                 return(Coins[i]);
@@ -66,7 +66,7 @@ struct iguana_info *iguana_coinadd(const char *symbol,cJSON *argjson)
             {
                 if ( Coins[i] == 0 )
                 {
-                    Coins[i] = mycalloc('C',1,sizeof(*Coins[i]));
+                    Coins[i] = mycalloc('C',1,sizeof(*Coins[i]) + sizeof(struct iguana_zcashRO));
                     basilisk_functions(Coins[i],IGUANA_PROTOCOL_BITCOIN);
                 }
                 coin = Coins[i];
@@ -110,9 +110,9 @@ struct iguana_info *iguana_coinselect()
 void iguana_recvalloc(struct iguana_info *coin,int32_t numitems)
 {
     //coin->blocks.ptrs = myrealloc('W',coin->blocks.ptrs,coin->blocks.ptrs==0?0:coin->blocks.maxbits * sizeof(*coin->blocks.ptrs),numitems * sizeof(*coin->blocks.ptrs));
-    coin->blocks.RO = myrealloc('W',coin->blocks.RO,coin->blocks.RO==0?0:coin->blocks.maxbits * sizeof(*coin->blocks.RO),numitems * sizeof(*coin->blocks.RO));
+    //coin->blocks.RO = myrealloc('W',coin->blocks.RO,coin->blocks.RO==0?0:coin->blocks.maxbits * sizeof(*coin->blocks.RO),numitems * sizeof(*coin->blocks.RO));
     //printf("realloc waitingbits.%d -> %d\n",coin->blocks.maxbits,numitems);
-    coin->blocks.maxbits = numitems;
+    //coin->blocks.maxbits = numitems;
 }
 
 static int _decreasing_double(const void *a,const void *b)
@@ -759,8 +759,8 @@ void iguana_coinloop(void *arg)
                         //fprintf(stderr,"metrics\n");
                         coin->peers->lastmetrics = iguana_updatemetrics(myinfo,coin); // ranks peers
                     }
-                    if ( coin->longestchain+10000 > coin->blocks.maxbits )
-                        iguana_recvalloc(coin,coin->longestchain + 100000);
+                    //if ( coin->longestchain+10000 > coin->blocks.maxbits )
+                    //    iguana_recvalloc(coin,coin->longestchain + 100000);
                     if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 || coin->MAXPEERS == 1 )
                         flag += iguana_processrecv(myinfo,coin);
                     iguana_jsonQ();
