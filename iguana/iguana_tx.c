@@ -226,7 +226,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
     struct iguana_txid *tx,T; bits256 checktxid; int32_t i,len,total,bundlei=-2; struct iguana_block *block; struct iguana_msgblock msgB; bits256 *tree,checkhash2,merkle_root; struct iguana_bundle *bp=0; long tmp; char str[65];
     if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) != 0 && bundlei >= 0 && bundlei < bp->n )
     {
-        if ( (block= bp->blocks[bundlei]) != 0 )
+        if ( (block= bp->blocks[bundlei]) != 0 && bp->ramchain.H.data != 0 )
         {
             iguana_blockunconv(coin->chain->zcash,coin->chain->auxpow,&msgB,block,0);
             msgB.txn_count = block->RO.txn_count;

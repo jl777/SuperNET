@@ -33,6 +33,7 @@
 
 #define BASILISK_FIRSTPOSSIBLEBTC 414000
 #define BASILISK_FIRSTPOSSIBLEBTCD 1100000
+#define BASILISK_MAXNAMELEN 64
 
 struct hashstamp { bits256 hash2; uint32_t timestamp; int32_t height; };
 struct basilisk_sequence { struct hashstamp *stamps; int32_t lastupdate,maxstamps,numstamps,lasti,longestchain; };

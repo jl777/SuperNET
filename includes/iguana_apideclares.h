@@ -19,6 +19,7 @@ INT_ARRAY_STRING(basilisk,rawtx,basilisktag,vals,activecoin);
 INT_ARRAY_STRING(basilisk,value,basilisktag,vals,activecoin);
 INT_AND_ARRAY(basilisk,result,basilisktag,vals);
 
+HASH_ARRAY_STRING(basilisk,newprivatechain,pubkey,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,addrelay,pubkey,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,dispatch,pubkey,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,publish,pubkey,vals,hexstr);

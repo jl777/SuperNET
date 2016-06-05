@@ -98,7 +98,7 @@ bits256 iguana_genesis(struct iguana_info *coin,struct iguana_chain *chain)
     auxback = coin->chain->auxpow, coin->chain->auxpow = 0;
     iguana_rwblock(coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,0,&hash2,buf,&msg,sizeof(buf));
     coin->chain->auxpow = auxback;
-    if  ( coin->MAXPEERS > 1 )
+    if  ( coin->MAXPEERS == 0 || coin->MAXPEERS > 1 )
     {
         if ( memcmp(hash2.bytes,chain->genesis_hashdata,sizeof(hash2)) != 0 )
         {
@@ -129,15 +129,6 @@ bits256 iguana_genesis(struct iguana_info *coin,struct iguana_chain *chain)
         }
         else printf("genesis block doesnt validate for %s ht.%d\n",coin->symbol,height);
     } else printf("couldnt hashset genesis\n");
-    int32_t bundlei = -2;
-    static const bits256 zero;
-    iguana_bundlecreate(coin,&bundlei,0,hash2,zero,1);
-    _iguana_chainlink(coin,iguana_blockfind("genesis",coin,hash2));
-    if ( coin->blocks.hwmchain.height != 0 || fabs(coin->blocks.hwmchain.PoW - block->PoW) > SMALLVAL || memcmp(coin->blocks.hwmchain.RO.hash2.bytes,hash2.bytes,sizeof(hash2)) != 0 )
-    {
-        printf("%s genesis values mismatch hwmheight.%d %.15f %.15f %s\n",coin->name,coin->blocks.hwmchain.height,coin->blocks.hwmchain.PoW,block->PoW,bits256_str(str,coin->blocks.hwmchain.RO.hash2));
-        getchar();
-    }
     return(hash2);
 }
 
@@ -517,6 +508,15 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
     }
      //coin->firstblock = coin->blocks.parsedblocks + 1;
     iguana_genesis(coin,coin->chain);
+    int32_t bundlei = -2;
+    static const bits256 zero;
+    iguana_bundlecreate(coin,&bundlei,0,*(bits256 *)coin->chain->genesis_hashdata,zero,1);
+    _iguana_chainlink(coin,iguana_blockfind("genesis",coin,*(bits256 *)coin->chain->genesis_hashdata));
+    if ( coin->blocks.hwmchain.height != 0 || memcmp(coin->blocks.hwmchain.RO.hash2.bytes,coin->chain->genesis_hashdata,sizeof(coin->chain->genesis_hashdata)) != 0 )
+    {
+        char str[65]; printf("%s genesis values mismatch hwmheight.%d %.15f %.15f %s\n",coin->name,coin->blocks.hwmchain.height,coin->blocks.hwmchain.PoW,coin->blocks.hwmchain.PoW,bits256_str(str,coin->blocks.hwmchain.RO.hash2));
+        getchar();
+    }
     memset(&lastbundle,0,sizeof(lastbundle));
     for (iter=coin->peers->numranked>8; iter<2; iter++)
     {
