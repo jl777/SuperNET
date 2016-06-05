@@ -227,9 +227,9 @@ struct iguana_chain
     char userhome[512],serverport[128],userpass[1024];
     char use_addmultisig,do_opreturn;
     int32_t estblocktime,protover;
-    bits256 PoWtarget,PoStargets[16]; int32_t numPoStargets,PoSheights[16];
+    bits256 genesishash2,PoWtarget,PoStargets[16]; int32_t numPoStargets,PoSheights[16];
     uint8_t zcash,auxpow,alertpubkey[65];
-    int32_t targetspacing,targettimespan;
+    uint16_t targetspacing,targettimespan; uint32_t nBits;
 };
 
 struct iguana_msgaddress {	uint32_t nTime; uint64_t nServices; uint8_t ip[16]; uint16_t port; } __attribute__((packed));
@@ -563,7 +563,7 @@ struct iguana_info
     int32_t MAXPEERS,MAXPENDINGREQUESTS,MAXBUNDLES,MAXSTUCKTIME,active,closestbundle,numemitted,lastsweep,numemit,startutc,newramchain,numcached,cachefreed,helperdepth,startPEND,endPEND,enableCACHE,RELAYNODE,VALIDATENODE,origbalanceswritten,balanceswritten,RTheight,RTdatabad;
     bits256 balancehash,allbundles;
     uint32_t lastsync,parsetime,numiAddrs,lastpossible,bundlescount,savedblocks,backlog,spendvectorsaved,laststats,lastinv2; char VALIDATEDIR[512];
-    int32_t longestchain,badlongestchain,longestchain_strange,RTramchain_busy,emitbusy,stuckiters;
+    int32_t longestchain,badlongestchain,longestchain_strange,RTramchain_busy,emitbusy,stuckiters,virtualchain;
     struct tai starttime; double startmillis;
     struct iguana_chain *chain;
     struct iguana_iAddr *iAddrs;
@@ -719,9 +719,13 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr);
 int32_t iguana_avail(struct iguana_info *coin,int32_t height,int32_t n);
 int32_t iguana_updatebundles(struct iguana_info *coin);
 void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag);
+void iguana_chaininit(struct iguana_chain *chain,int32_t hasheaders,cJSON *argjson);
+void iguana_coinargs(char *symbol,int64_t *maxrecvcachep,int32_t *minconfirmsp,int32_t *maxpeersp,int32_t *initialheightp,uint64_t *servicesp,int32_t *maxrequestsp,int32_t *maxbundlesp,cJSON *json);
+struct iguana_info *iguana_setcoin(struct supernet_info *myinfo,char *symbol,void *launched,int32_t maxpeers,int64_t maxrecvcache,uint64_t services,int32_t initialheight,int32_t maphash,int32_t minconfirms,int32_t maxrequests,int32_t maxbundles,cJSON *json);
 
 // init
 struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialheight,int32_t mapflags);
+void iguana_callcoinstart(struct iguana_info *coin);
 void iguana_initcoin(struct iguana_info *coin,cJSON *argjson);
 void iguana_coinloop(void *arg);
 
@@ -835,6 +839,7 @@ void iguana_dedicatedglue(void *arg);
 void SuperNET_remotepeer(struct supernet_info *myinfo,struct iguana_info *coin,char *symbol,char *ipaddr,int32_t supernetflag);
 void SuperNET_yourip(struct supernet_info *myinfo,char *yourip);
 void iguana_peerkill(struct iguana_info *coin);
+int32_t blockhash_sha256(uint8_t *blockhashp,uint8_t *serialized,int32_t len);
 
 char *busdata_sync(uint32_t *noncep,char *jsonstr,char *broadcastmode,char *destNXTaddr);
 void peggy();

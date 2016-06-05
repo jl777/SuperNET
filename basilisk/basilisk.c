@@ -16,7 +16,7 @@
 #include "../iguana/iguana777.h"
 
 typedef char *basilisk_coinfunc(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen);
-typedef char *basilisk_servicefunc(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk);
+typedef char *basilisk_servicefunc(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk);
 typedef struct basilisk_item *basilisk_requestfunc(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen);
 
 uint32_t basilisk_calcnonce(struct supernet_info *myinfo,uint8_t *data,int32_t datalen,uint32_t nBits)
@@ -446,7 +446,6 @@ char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,bits256 ha
 #include "basilisk_waves.c"
 #include "basilisk_lisk.c"
 #include "basilisk_CMD.c"
-#include "basilisk_privatechains.c"
 
 void basilisk_functions(struct iguana_info *coin,int32_t protocol)
 {

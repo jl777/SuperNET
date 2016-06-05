@@ -238,7 +238,7 @@ uint16_t extract_userpass(char *serverport,char *userpass,char *coinstr,char *us
 {
     FILE *fp; uint16_t port = 0;
     char fname[2048],line[1024],*rpcuser,*rpcpassword,*rpcport,*str;
-    if ( strcmp(coinstr,"NXT") == 0 )
+    if ( strcmp(coinstr,"NXT") == 0 || coindir == 0 || confname == 0 || coindir[0] == 0 || confname[0] == 0 )
         return(0);
     serverport[0] = userpass[0] = 0;
     set_coinconfname(fname,coinstr,userhome,coindir,confname);
@@ -286,7 +286,7 @@ uint16_t extract_userpass(char *serverport,char *userpass,char *coinstr,char *us
 void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
 {
     extern char Userhome[];
-    char *path,conf[512],*hexstr,genesisblock[1024]; bits256 hash; uint16_t port; cJSON *rpair,*genesis,*rewards,*item; int32_t i,n,m; uint32_t nBits; uint8_t tmp[4];
+    char *path,conf[512],*hexstr,genesisblock[1024]; uint16_t port; cJSON *rpair,*genesis,*rewards,*item; int32_t i,n,m; uint32_t nBits; uint8_t tmp[4];
     if ( strcmp(chain->symbol,"NXT") != 0 )
     {
         if ( strcmp(chain->symbol,"BTCD") == 0 )
@@ -311,7 +311,8 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
         if ( jobj(argjson,"conf") == 0 )
             conf[0] = 0;
         else safecopy(conf,jstr(argjson,"conf"),sizeof(conf));
-        printf("CONF.(%s)\n",conf);
+        if ( conf[0] != 0 )
+            printf("CONF.(%s)\n",conf);
         safecopy(chain->name,jstr(argjson,"name"),sizeof(chain->name));
         //chain->dust = j64bits(argjson,"dust");
         if ( jobj(argjson,"txfee_satoshis") != 0 )
@@ -326,7 +327,10 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
         if ( (chain->ramchainport= juint(argjson,"ramchain")) == 0 )
             chain->ramchainport = chain->portp2p - 1;
         if ( (chain->rpcport= juint(argjson,"rpc")) == 0 )
-            chain->rpcport = chain->portp2p - 1;
+        {
+            if ( chain->portp2p != 0 )
+                chain->rpcport = chain->portp2p-1;
+        }
         chain->zcash = juint(argjson,"zcash");
         if ( jobj(argjson,"isPoS") != 0 )
             chain->txhastimestamp = juint(argjson,"isPoS");
@@ -373,7 +377,7 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
         if ( (genesis= jobj(argjson,"genesis")) != 0 )
         {
             chain->hashalgo = iguana_hashalgo(jstr(genesis,"hashalgo"));
-            decode_hex(hash.bytes,sizeof(hash),chain->genesis_hash);
+            decode_hex(chain->genesishash2.bytes,sizeof(chain->genesishash2),chain->genesis_hash);
             if ( jstr(genesis,"nBits") != 0 )
             {
                 decode_hex((void *)&tmp,sizeof(tmp),jstr(genesis,"nBits"));
@@ -383,8 +387,8 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
                 ((uint8_t *)&nBits)[3] = tmp[0];
             }
             else nBits = 0x1e00ffff;
-            hash = iguana_chaingenesis(chain->symbol,chain->zcash,chain->auxpow,chain->hashalgo,hash,genesisblock,jstr(genesis,"hashalgo"),juint(genesis,"version"),juint(genesis,"timestamp"),nBits,juint(genesis,"nonce"),jbits256(genesis,"merkle_root"));
-            memcpy(chain->genesis_hashdata,hash.bytes,32);
+            chain->genesishash2 = iguana_chaingenesis(chain->symbol,chain->zcash,chain->auxpow,chain->hashalgo,chain->genesishash2,genesisblock,jstr(genesis,"hashalgo"),juint(genesis,"version"),juint(genesis,"timestamp"),nBits,juint(genesis,"nonce"),jbits256(genesis,"merkle_root"));
+            memcpy(chain->genesis_hashdata,chain->genesishash2.bytes,32);
             char str[65]; init_hexbytes_noT(str,chain->genesis_hashdata,32);
             chain->genesis_hash = clonestr(str);
             //chain->genesis_hash = clonestr(bits256_str(str,hash));
@@ -394,8 +398,13 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
         {
             if ( (hexstr= jstr(argjson,"genesisblock")) != 0 )
             {
+                uint8_t hexbuf[1024],*ptr,*data; int32_t datalen,hdrsize = (chain->zcash != 0) ? sizeof(struct iguana_msgblockhdr_zcash) : sizeof(struct iguana_msgblockhdr);
                 chain->genesis_hex = mycalloc('G',1,strlen(hexstr)+1);
                 strcpy(chain->genesis_hex,hexstr);
+                data = get_dataptr(&ptr,&datalen,hexbuf,sizeof(hexbuf),hexstr);
+                memcpy(chain->genesis_hashdata,data,hdrsize);
+                if ( ptr != 0 )
+                    free(ptr);
             }
         }
         if ( (rewards= jarray(&n,argjson,"rewards")) != 0 )
@@ -411,7 +420,7 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
             }
         }
         sprintf(chain->messagemagic,"%s Signed Message:\n",chain->name);
-        printf("COIN.%s serverport.(%s) userpass.(%s) port.%u magic.%08x\n",chain->symbol,chain->serverport,chain->userpass,chain->rpcport,*(uint32_t *)chain->netmagic);
+        printf("COIN.%s serverport.(%s) userpass.(%s) RPCport.%u magic.%08x\n",chain->symbol,chain->serverport,chain->userpass,chain->rpcport,*(uint32_t *)chain->netmagic);
     }
 }
 

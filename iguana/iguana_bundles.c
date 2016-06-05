@@ -1313,7 +1313,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
     coin->blocksrecv = numrecv;
     uint64_t tmp; int32_t diff,p = 0; struct tai difft,t = tai_now();
     for (i=0; i<IGUANA_MAXPEERS; i++)
-        if ( coin->peers->active[i].usock >= 0 )
+        if ( coin->peers->active[i].usock > 0 )
             p++;
     diff = (int32_t)time(NULL) - coin->startutc;
     difft.x = (t.x - coin->starttime.x), difft.millis = (t.millis - coin->starttime.millis);

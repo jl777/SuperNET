@@ -317,7 +317,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
         else
         {
             if ( block != 0 )
-                printf("iguana_peerblockrequest: block.%p ht.%d mainchain.%d [%d:%d]\n",block,block->height,block->mainchain,bp->hdrsi,bundlei);
+                printf("iguana_peerblockrequest: block.%p ht.%d mainchain.%d [%d:%d] from %s\n",block,block->height,block->mainchain,bp->hdrsi,bundlei,addr!=0?addr->ipaddr:"local");
             else printf("iguana_peerblockrequest: block.%p [%d:%d]\n",block,bp->hdrsi,bundlei);
         }
     } //else printf("iguana_peerblockrequest: cant find %s\n",bits256_str(str,hash2));

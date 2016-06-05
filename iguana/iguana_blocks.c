@@ -670,7 +670,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                 return(block);
             }
         }
-    } else printf("chainlink error from block.%p\n",block);
+    } //else printf("chainlink error from block.%p\n",block);
     return(0);
 }
 

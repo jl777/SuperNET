@@ -13,6 +13,7 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "../iguana/iguana777.h"
 
 /*int32_t basilist_validateblock(cJSON *valsobj)
  {
@@ -64,8 +65,7 @@ int32_t basilisk_hashstampsfind(struct hashstamp *stamps,int32_t max,struct basi
 bits256 basilisk_hashstampscalc(struct iguana_info *btcd,bits256 *btchashp,uint32_t reftimestamp)
 {
     struct hashstamp BTCDstamps[BASILISK_MAXBTCDGAP],BTCstamps[BASILISK_MAXBTCGAP]; bits256 btcdhash;
-    memset(btcdhash.bytes,0,sizeof(btcdhash));
-    memset(btchashp,0,sizeof(*btchashp));
+    btcdhash = *btchashp = GENESIS_PUBKEY;
     if ( basilisk_hashstampsfind(BTCDstamps,BASILISK_MAXBTCDGAP,&btcd->SEQ.BTCD,btcdhash,reftimestamp) < 0 )
     {
         btcdhash = BTCDstamps[BASILISK_MAXBTCDGAP >> 1].hash2;
@@ -238,7 +238,7 @@ void basilisk_seqresult(struct supernet_info *myinfo,char *retstr)
     }
 }
 
-char *basilisk_respond_hashstamps(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
+char *basilisk_respond_hashstamps(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
 {
     int32_t startheight; struct iguana_info *btcd; cJSON *retjson = cJSON_CreateObject();
     if ( (btcd= iguana_coinfind("BTCD")) != 0 )
@@ -251,14 +251,15 @@ char *basilisk_respond_hashstamps(struct supernet_info *myinfo,char *CMD,struct 
     return(jprint(retjson,1));
 }
 
-char *basilisk_coinbase(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,uint8_t *data,int32_t datalen,bits256 coinbasespend,cJSON *txjson)
+char *basilisk_coinbase(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,uint8_t *data,int32_t datalen,bits256 coinbasespend,cJSON *origtxjson)
 {
-    char *rawtx; struct vin_info V;
-    if ( txjson == 0 )
+    char *rawtx; struct vin_info V; cJSON *txjson;
+    if ( (txjson= origtxjson) == 0 )
         txjson = bitcoin_txcreate(1,0);
     bitcoin_txinput(coin,txjson,coinbasespend,-1,0xffffffff,0,0,data,datalen,0,0);
     rawtx = bitcoin_json2hex(myinfo,coin,txidp,txjson,&V);
-    free_json(txjson);
+    if ( txjson != origtxjson )
+        free_json(txjson);
     return(rawtx);
 }
 
@@ -331,7 +332,7 @@ int32_t basilisk_privatechainvals(struct supernet_info *myinfo,char *CMD,cJSON *
     return(-1);
 }
 
-char *basilisk_block(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_block *block,int32_t version,uint32_t timestamp,uint32_t *noncep,bits256 prevblock,uint32_t nBits,int32_t height,char **txptrs,int32_t txn_count,uint8_t *coinbase,int32_t coinbaselen,bits256 coinbasespend,cJSON *txjson)
+char *basilisk_block(struct supernet_info *myinfo,struct iguana_info *virt,struct iguana_block *block,int32_t version,uint32_t timestamp,uint32_t *noncep,bits256 prevblock,uint32_t nBits,int32_t height,char **txptrs,int32_t txn_count,uint8_t *coinbase,int32_t coinbaselen,bits256 coinbasespend,cJSON *txjson)
 {
     struct iguana_info *btcd; uint8_t serialized[sizeof(*block)],space[16384],*txdata,*allocptr = 0; int32_t i,n,totaltxlen=0,txlen,numiters=1000000; char *coinbasestr,*blockstr=0; bits256 *txids=0,txspace[256],threshold;
     if ( (btcd= iguana_coinfind("BTCD")) == 0 )
@@ -361,7 +362,7 @@ char *basilisk_block(struct supernet_info *myinfo,struct iguana_info *coin,struc
                 free(allocptr);
         }
     }
-    if ( (coinbasestr= basilisk_coinbase(myinfo,coin,&txids[0],coinbase,coinbaselen,coinbasespend,txjson)) != 0 )
+    if ( (coinbasestr= basilisk_coinbase(myinfo,virt,&txids[0],coinbase,coinbaselen,coinbasespend,txjson)) != 0 )
     {
         memset(block,0,sizeof(*block));
         block->RO.version = version;
@@ -372,18 +373,21 @@ char *basilisk_block(struct supernet_info *myinfo,struct iguana_info *coin,struc
         block->RO.txn_count = (txn_count + 1);
         block->height = height;
         threshold = bits256_from_compact(nBits);
+        //offset = (int32_t)((long)&block->RO.bits - (long)block);
+        //n = iguana_serialize_block(virt->chain,&block->RO.hash2,serialized,block);
         if ( (block->RO.nonce= *noncep) == 0 )
         {
             for (i=0; i<numiters; i++)
             {
                 block->RO.nonce = rand();
-                n = iguana_serialize_block(coin->chain,&block->RO.hash2,serialized,block);
+                n = iguana_serialize_block(virt->chain,&block->RO.hash2,serialized,block);
+                //char str[65]; printf("nonce.%08x %s\n",block->RO.nonce,bits256_str(str,block->RO.hash2));
                 if ( bits256_cmp(threshold,block->RO.hash2) > 0 )
                     break;
             }
         }
         *noncep = block->RO.nonce;
-        n = iguana_serialize_block(coin->chain,&block->RO.hash2,serialized,block);
+        n = iguana_serialize_block(virt->chain,&block->RO.hash2,serialized,block);
         if ( bits256_cmp(threshold,block->RO.hash2) > 0 )
         {
             blockstr = calloc(1,strlen(coinbasestr) + (totaltxlen+n)*2 + 1);
@@ -393,13 +397,50 @@ char *basilisk_block(struct supernet_info *myinfo,struct iguana_info *coin,struc
                 strcat(blockstr,txptrs[i]);
         }
         free(coinbasestr);
+/*
+        if ( (block->RO.nonce= *noncep) == 0 )
+        {
+            for (i=0; i<numiters; i++)
+            {
+                block->RO.nonce = rand();
+                iguana_rwnum(1,&serialized[offset],sizeof(block->RO.nonce),&block->RO.nonce);
+                block->RO.hash2 = iguana_calcblockhash(virt->symbol,virt->chain->hashalgo,serialized,sizeof(struct iguana_msgblockhdr));
+                char str[65]; printf("nonce.%08x %s\n",block->RO.nonce,bits256_str(str,block->RO.hash2));
+                if ( bits256_cmp(threshold,block->RO.hash2) > 0 )
+                {
+                    printf("found kernel\n");
+                    break;
+                }
+            }
+        }
+        *noncep = block->RO.nonce;
+        n = iguana_serialize_block(virt->chain,&block->RO.hash2,serialized,block);
+        if ( bits256_cmp(threshold,block->RO.hash2) > 0 )
+        {
+            blockstr = calloc(1,strlen(coinbasestr) + (totaltxlen+n)*2 + 1);
+            init_hexbytes_noT(blockstr,serialized,n);
+            strcat(blockstr,coinbasestr);
+            for (i=0; i<txn_count; i++)
+                strcat(blockstr,txptrs[i]);
+        } else printf("nonce failure\n");
+        free(coinbasestr);*/
     }
     if ( txids != txspace )
         free(txids);
     return(blockstr);
 }
 
-char *basilisk_respond_setfield(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
+int32_t basilisk_blocknonce_verify(struct iguana_info *virt,uint8_t *serialized,int32_t datalen,uint32_t nBits)
+{
+    bits256 threshold,hash2;
+    threshold = bits256_from_compact(nBits);
+    hash2 = iguana_calcblockhash(virt->symbol,virt->chain->hashalgo,serialized,datalen);
+    if ( bits256_cmp(threshold,hash2) > 0 )
+        return(0);
+    else return(0);
+}
+
+char *basilisk_respond_setfield(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
 {
     struct iguana_info *virt; struct iguana_block *prevblock,*prev2,*newblock,block; char chainname[BASILISK_MAXNAMELEN],str[65],*blocktx; uint32_t nBits,timestamp,nonce; cJSON *retjson; bits256 btcdhash;
     if ( datalen <= 0 )
@@ -429,7 +470,7 @@ char *basilisk_respond_setfield(struct supernet_info *myinfo,char *CMD,struct ig
     return(jprint(retjson,1));
 }
 
-char *basilisk_respond_getfield(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
+char *basilisk_respond_getfield(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
 {
     struct iguana_info *coin; cJSON *retjson; char chainname[BASILISK_MAXNAMELEN];
     if ( (coin= basilisk_chain(myinfo,chainname,valsobj)) == 0 )
@@ -441,14 +482,19 @@ char *basilisk_respond_getfield(struct supernet_info *myinfo,char *CMD,struct ig
 
 cJSON *basilisk_genesisjson(struct supernet_info *myinfo,struct iguana_info *btcd,char *chainname,cJSON *valsobj)
 {
-    char str[64],str2[64],argbuf[1024],*nbitstr,*blockstr; bits256 btchash,btcdhash,zero; uint8_t coinbase[512],buf[4]; int32_t i,coinbaselen; uint32_t nonce,nbits; struct iguana_block genesis; uint32_t timestamp; cJSON *txjson;
+    char str2[64],hashstr[64],argbuf[1024],*nbitstr,*blockstr; bits256 btchash,btcdhash,zero; uint8_t coinbase[512],buf[4]; int32_t i,coinbaselen; uint32_t nonce,nbits; struct iguana_block genesis; uint32_t timestamp; cJSON *txjson;
     timestamp = (uint32_t)time(NULL);
     btcdhash = basilisk_hashstampscalc(btcd,(bits256 *)coinbase,timestamp);
+    if ( bits256_cmp(btcdhash,GENESIS_PUBKEY) == 0 || bits256_cmp(*(bits256 *)coinbase,GENESIS_PUBKEY) == 0 )
+    {
+        printf("no hashstamps\n");
+        return(cJSON_Parse("{\"error\":\"no up to date hashstamps\"}"));
+    }
     coinbaselen = (int32_t)strlen(chainname);
     memcpy(&coinbase[sizeof(btchash)],chainname,coinbaselen);
     memset(zero.bytes,0,sizeof(zero));
     nonce = 0;
-    if ( (nbitstr= jstr(valsobj,"nBits")) == 0 )
+    if ( (nbitstr= jstr(valsobj,"nbits")) == 0 )
     {
         nbits = BASILISK_DEFAULTDIFF;
         nbitstr = BASILISK_DEFAULTDIFFSTR;
@@ -461,37 +507,90 @@ cJSON *basilisk_genesisjson(struct supernet_info *myinfo,struct iguana_info *btc
     }
     txjson = basilisk_paymentsobj(0,jobj(valsobj,"payments"));
     blockstr = basilisk_block(myinfo,btcd,&genesis,BASILISK_DEFAULTVERSION,timestamp,&nonce,zero,nbits,0,0,0,coinbase,coinbaselen,btcdhash,txjson);
-    sprintf(argbuf,"(\"name\":\"%s\",\"unitval\":%02x,\"genesishash\":\"%s\",\"genesis\":{\"hashalgo\":\"sha256\",\"version\":1,\"timestamp\":%u,\"nbits\":\"%s\",\"nonce\":%d,\"merkle_root\":\"%s\"},\"genesis_block\":\"%s\"}",chainname,(nbits >> 24) & 0xff,bits256_str(str,genesis.RO.hash2),timestamp,nbitstr,genesis.RO.nonce,bits256_str(str2,genesis.RO.merkle_root),blockstr);
+    bits256_str(hashstr,genesis.RO.hash2);
+    sprintf(argbuf,"{\"name\":\"%s\",\"unitval\":%02x,\"genesishash\":\"%s\",\"genesis\":{\"version\":1,\"timestamp\":%u,\"nbits\":\"%s\",\"nonce\":%d,\"merkle_root\":\"%s\"},\"genesisblock\":\"%s\"}",chainname,(nbits >> 24) & 0xff,hashstr,timestamp,nbitstr,genesis.RO.nonce,bits256_str(str2,genesis.RO.merkle_root),blockstr);
     free(blockstr);
+    //printf("argbuf.(%s) hash.%s\n",argbuf,hashstr);
     return(cJSON_Parse(argbuf));
 }
 
-char *basilisk_respond_newprivatechain(struct supernet_info *myinfo,char *CMD,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
+struct iguana_info *basilisk_privatechain(struct supernet_info *myinfo,char *symbol,char *chainname,cJSON *valsobj)
 {
-    struct iguana_info *virt,*btcd; char chainname[BASILISK_MAXNAMELEN]; cJSON *argjson; uint16_t port,targetspacing;
+    int32_t datalen,maxpeers,initialheight,minconfirms,maxrequests,maxbundles,hdrsize; int64_t maxrecvcache; uint64_t services; struct iguana_info *virt=0; char *hexstr; uint8_t hexbuf[1024],*ptr,*serialized;
+    if ( (hexstr= jstr(valsobj,"genesisblock")) != 0 && (virt= iguana_coinadd(symbol,valsobj)) == 0 )
+    {
+        safecopy(virt->name,chainname,sizeof(virt->name));
+        virt->chain = calloc(1,sizeof(*virt->chain));
+        virt->chain->hashalgo = blockhash_sha256;
+        serialized = get_dataptr(&ptr,&datalen,hexbuf,sizeof(hexbuf),hexstr);
+        iguana_chaininit(virt->chain,1,valsobj);
+        iguana_coinargs(symbol,&maxrecvcache,&minconfirms,&maxpeers,&initialheight,&services,&maxrequests,&maxbundles,valsobj);
+        iguana_setcoin(myinfo,symbol,virt,maxpeers,maxrecvcache,services,initialheight,0,minconfirms,maxrequests,maxbundles,valsobj);
+        hdrsize = (virt->chain->zcash != 0) ? sizeof(struct iguana_msgblockhdr_zcash) : sizeof(struct iguana_msgblockhdr);
+        if ( basilisk_blocknonce_verify(virt,serialized,hdrsize,virt->chain->nBits) == 0 )
+        {
+            virt->chain->genesishash2 = iguana_calcblockhash(symbol,virt->chain->hashalgo,serialized,hdrsize);
+            memcpy(virt->chain->genesis_hashdata,virt->chain->genesishash2.bytes,sizeof(virt->chain->genesishash2));
+            if ( ptr != 0 )
+                free(ptr);
+            virt->chain->genesis_hex = clonestr(hexstr);
+            virt->MAXPEERS = 0;
+            iguana_callcoinstart(virt);
+            printf("nonce verified\n");
+        } else printf("error validating nonce\n");
+    }
+    return(virt);
+}
+
+cJSON *basilisk_genesisargs(char *symbol,char *chainname,char *chain,char *keystr,char *genesishash,char *genesisblock,char *magicstr,uint16_t port,uint16_t blocktime,char *nbitstr)
+{
+    int32_t timespan,targetspacing; cJSON *argvals = cJSON_CreateObject();
+    if ( genesishash != 0 && genesishash[0] != 0 )
+        jaddstr(argvals,"genesishash",genesishash);
+    if ( genesisblock != 0 && genesisblock[0] != 0  )
+        jaddstr(argvals,"genesisblock",genesisblock);
+    jaddstr(argvals,"netmagic",magicstr);
+    jaddstr(argvals,"symbol",symbol);
+    jaddstr(argvals,"name",chainname);
+    if ( nbitstr == 0 || nbitstr[0] == 0 )
+        nbitstr = BASILISK_DEFAULTDIFFSTR;
+    jaddstr(argvals,"nbits",nbitstr);
+    jaddstr(argvals,"chain",chain);
+    if ( keystr != 0 )
+        jaddstr(argvals,"key",keystr);
+    if ( port == 0 )
+        jaddstr(argvals,"privatechain",chainname);
+    else
+    {
+        jaddnum(argvals,"services",129);
+        jaddnum(argvals,"portp2p",port);
+        if ( blocktime == 0xffff )
+            targetspacing = 24 * 60 * 60; // one day
+        else targetspacing = 60; // one minute
+        jaddnum(argvals,"targetspacing",targetspacing);
+        if ( (timespan= sqrt(604800 / targetspacing)) < 7 )
+            timespan = 7;
+        jaddnum(argvals,"targettimespan",targetspacing * timespan);
+    }
+    return(argvals);
+}
+
+char *basilisk_respond_newprivatechain(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
+{
+    struct iguana_info *virt,*btcd; char *symbol,*chain,chainname[BASILISK_MAXNAMELEN]; cJSON *retjson;
     if ( (virt= basilisk_chain(myinfo,chainname,valsobj)) != 0 )
     {
         printf("%s already exists\n",chainname);
         return(clonestr("{\"error\":\"cant create duplicate privatechain\"}"));
     }
-    if ( (btcd= iguana_coinfind("BTCD")) != 0 )
+    if ( (btcd= iguana_coinfind("BTCD")) != 0 && (symbol= jstr(valsobj,"symbol")) != 0 && (chain= jstr(valsobj,"chain")) != 0 )
     {
-        if ( (port= juint(valsobj,"port")) == 0 )
-            jaddstr(argjson,"privatechain",chainname);
-        else
+        if ( (virt= basilisk_privatechain(myinfo,symbol,chainname,valsobj)) != 0 )
         {
-            jaddnum(argjson,"portp2p",port);
-            if ( (targetspacing= juint(valsobj,"blocktime")) == 0 )
-                targetspacing = 60;
-            jaddnum(argjson,"targetspacing",targetspacing);
-            jaddnum(argjson,"targettimespan",targetspacing * 60);
+            retjson = basilisk_genesisargs(symbol,chainname,chain,jstr(valsobj,"key"),jstr(valsobj,"genesishash"),jstr(valsobj,"genesisblock"),jstr(valsobj,"netmagic"),juint(valsobj,"port"),juint(valsobj,"blocktime"),jstr(valsobj,"nbits"));
+            jaddstr(retjson,"result","success");
+            return(jprint(retjson,1));
         }
-        if ( (virt= iguana_coinadd(chainname,argjson)) != 0 )
-        {
-            iguana_genesis(virt,virt->chain);
-        }
-        if ( argjson != 0 )
-            free_json(argjson);
     }
     return(clonestr("{\"error\":-22}"));
 }
@@ -501,18 +600,46 @@ char *basilisk_respond_newprivatechain(struct supernet_info *myinfo,char *CMD,st
 
 HASH_ARRAY_STRING(basilisk,newprivatechain,pubkey,vals,hexstr)
 {
-    char chainname[BASILISK_MAXNAMELEN]; struct iguana_info *virt,*btcd; cJSON *argjson;
-    if ( (btcd= iguana_coinfind("BTCD")) != 0 )
+    char chainname[BASILISK_MAXNAMELEN],magicstr[9],*retstr,*symbol,*chain; struct iguana_info *virt,*btcd; cJSON *argjson,*argvals,*retjson=0; int32_t i; uint32_t magic;
+    if ( (btcd= iguana_coinfind("BTCD")) != 0 && (symbol= jstr(vals,"symbol")) != 0 && (chain= jstr(vals,"chain")) != 0 )
     {
-        if ( (virt= basilisk_chain(myinfo,chainname,vals)) != 0 )
+        if ( iguana_coinfind(symbol) == 0 && (virt= basilisk_chain(myinfo,chainname,vals)) != 0 )
         {
             printf("%s already exists\n",chainname);
             return(clonestr("{\"error\":\"cant create duplicate privatechain\"}"));
         }
-        argjson = basilisk_genesisjson(myinfo,btcd,chainname,vals);
-        
-        return(basilisk_standardservice("NEW",myinfo,pubkey,vals,hexstr,1));
-    } else return(clonestr("{\"error\":\"need BTCD to create private chain\"}"));
+        if ( jobj(vals,"netmagic") == 0 )
+        {
+            OS_randombytes((void *)&magic,sizeof(magic));
+            for (i=0; i<sizeof(magic); i++)
+                ((uint8_t *)&magic)[i] |= 0x80;
+            init_hexbytes_noT(magicstr,(void *)&magic,sizeof(magic));
+        } else safecopy(magicstr,jstr(vals,"netmagic"),sizeof(magicstr));
+        if ( (argjson= basilisk_genesisjson(myinfo,btcd,chainname,vals)) != 0 )
+        {
+            argvals = basilisk_genesisargs(symbol,chainname,chain,jstr(argjson,"key"),jstr(argjson,"genesishash"),jstr(argjson,"genesisblock"),jstr(argjson,"netmagic"),juint(argjson,"port"),juint(argjson,"blocktime"),jstr(argjson,"nbits"));
+            if ( btcd->RELAYNODE != 0 || btcd->VALIDATENODE != 0 )
+                retstr = basilisk_respond_newprivatechain(myinfo,"NEW",0,0,0,argvals,0,0,GENESIS_PUBKEY,0);
+            else retstr = basilisk_standardservice("NEW",myinfo,GENESIS_PUBKEY,argvals,0,1);
+            free_json(argvals);
+            if ( (argvals= cJSON_Parse(retstr)) != 0 )
+            {
+                if ( jobj(argvals,"result") != 0 && strcmp(jstr(argvals,"result"),"success") == 0 )
+                {
+                    if ( basilisk_privatechain(myinfo,symbol,chainname,argvals) != 0 )
+                        jaddstr(argvals,"status","active");
+                    //free_json(argvals);
+                } else jaddstr(argvals,"error","couldnt initialize privatechain");
+                free(retstr);
+                return(jprint(argvals,1));
+            }
+            if ( retjson != 0 )
+                free_json(retjson);
+            free_json(argvals);
+            return(retstr);
+        } else return(clonestr("{\"error\":\"couldnt create genesis_block\"}"));
+    }
+    return(clonestr("{\"error\":\"need symbol and chain and BTCD to create new private chain\"}"));
 }
 
 HASH_ARRAY_STRING(basilisk,sequence,pubkey,vals,hexstr)

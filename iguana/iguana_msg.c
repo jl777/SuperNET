@@ -328,7 +328,7 @@ void iguana_gotversion(struct iguana_info *coin,struct iguana_peer *addr,struct 
     }
     else if ( 0 && addr->supernet == 0 && addr->basilisk == 0 )//|| (addr->basilisk != 0 && myinfo->IAMRELAY == 0) )
         addr->dead = (uint32_t)time(NULL);
-    //if ( addr->supernet != 0 || addr->basilisk != 0 )
+    if ( addr->supernet != 0 || addr->basilisk != 0 )
        printf("height.%d nServices.%lld nonce.%llu %srelay node.(%s) supernet.%d basilisk.%d longest.%u\n",vers->nStartingHeight,(long long)vers->nServices,(long long)vers->nonce,addr->relayflag==0?"non-":"",addr->ipaddr,addr->supernet,addr->basilisk,vers->nStartingHeight);
     if ( (int32_t)vers->nStartingHeight > coin->longestchain )
     {
