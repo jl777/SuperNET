@@ -264,7 +264,7 @@ int32_t iguana_ramchain_spendtxid(struct iguana_info *coin,uint32_t *unspentindp
 struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,struct iguana_txid *tx,bits256 txid,int32_t lasthdrsi)
 {
     uint8_t *TXbits; struct iguana_txid *T; uint32_t txidind; int32_t i;
-    struct iguana_bundle *bp; struct iguana_ramchain *ramchain; //struct iguana_block *block;
+    struct iguana_bundle *bp; struct iguana_ramchain *ramchain; struct iguana_ramchaindata *rdata; //struct iguana_block *block;
     *heightp = -1;
     memset(tx,0,sizeof(*tx));
     if ( lasthdrsi < 0 )
