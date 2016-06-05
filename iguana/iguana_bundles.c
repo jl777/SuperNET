@@ -422,7 +422,7 @@ struct iguana_txid *iguana_bundletx(struct iguana_info *coin,struct iguana_bundl
 
 char *iguana_bundleaddrs(struct iguana_info *coin,int32_t hdrsi)
 {
-    uint8_t *PKbits; struct iguana_pkhash *P; uint32_t pkind,numpkinds; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; cJSON *retjson; char rmdstr[41];
+    uint8_t *PKbits; struct iguana_pkhash *P; uint32_t pkind,numpkinds; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; struct iguana_ramchaindata *rdata; cJSON *retjson; char rmdstr[41];
     if ( (bp= coin->bundles[hdrsi]) != 0 )
     {
         if ( 0 && coin->RTramchain_busy != 0 )
@@ -431,14 +431,14 @@ char *iguana_bundleaddrs(struct iguana_info *coin,int32_t hdrsi)
             return(0);
         }
         ramchain = &bp->ramchain;//(bp->isRT != 0) ? &bp->ramchain : &coin->RTramchain;
-        if ( ramchain->H.data != 0 )
+        if ( (rdata= ramchain->H.data) != 0 )
         {
-            numpkinds = ramchain->H.data->numpkinds;//(bp->isRT != 0) ? ramchain->H.data->numpkinds : ramchain->pkind;
+            numpkinds = rdata->numpkinds;//(bp->isRT != 0) ? rdata->numpkinds : ramchain->pkind;
             retjson = cJSON_CreateArray();
-            PKbits = RAMCHAIN_PTR(ramchain->H.data,PKoffset);
-            P = RAMCHAIN_PTR(ramchain->H.data,Poffset);
-            //PKbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->PKoffset);
-            //P = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Poffset);
+            PKbits = RAMCHAIN_PTR(rdata,PKoffset);
+            P = RAMCHAIN_PTR(rdata,Poffset);
+            //PKbits = (void *)(long)((long)rdata + rdata->PKoffset);
+            //P = (void *)(long)((long)rdata + rdata->Poffset);
             for (pkind=0; pkind<numpkinds; pkind++,P++)
             {
                 init_hexbytes_noT(rmdstr,P->rmd160,20);

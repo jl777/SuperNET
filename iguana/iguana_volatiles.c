@@ -83,16 +83,16 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
 
 struct iguana_utxo iguana_utxofind(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t spent_unspentind,int32_t *RTspendflagp,int32_t lockflag)
 {
-    uint64_t val,uval; struct iguana_hhutxo *hhutxo; struct iguana_utxo utxo; struct iguana_ramchain *ramchain; struct iguana_bundle *bp;
+    uint64_t val,uval; struct iguana_hhutxo *hhutxo; struct iguana_utxo utxo; struct iguana_ramchain *ramchain; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata;
     *RTspendflagp = 0;
     memset(&utxo,0,sizeof(utxo));
     if ( (bp= coin->bundles[spent_hdrsi]) == 0 )
         return(utxo);
     ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
-    if ( ramchain->H.data == 0 )
+    if ( (rdata= ramchain->H.data) == 0 )
         return(utxo);
     val = ((uint64_t)spent_hdrsi << 32) | spent_unspentind;
-    if ( spent_unspentind > 0 && spent_unspentind < ramchain->H.data->numunspents )
+    if ( spent_unspentind > 0 && spent_unspentind < rdata->numunspents )
     {
         if ( ramchain->Uextras != 0 )
         {
@@ -133,7 +133,7 @@ struct iguana_utxo iguana_utxofind(struct iguana_info *coin,int16_t spent_hdrsi,
     }
     else
     {
-        printf("illegal unspentind.%u vs %u hdrs.%d\n",spent_unspentind,ramchain->H.data->numunspents,spent_hdrsi);
+        printf("illegal unspentind.%u vs %u hdrs.%d\n",spent_unspentind,rdata->numunspents,spent_hdrsi);
     }
     return(utxo);
 }
@@ -141,8 +141,11 @@ struct iguana_utxo iguana_utxofind(struct iguana_info *coin,int16_t spent_hdrsi,
 int32_t iguana_spentflag(struct iguana_info *coin,int64_t *RTspendp,int32_t *spentheightp,struct iguana_ramchain *ramchain,int16_t spent_hdrsi,uint32_t spent_unspentind,int32_t height,int32_t minconf,int32_t maxconf,uint64_t amount)
 {
     uint32_t numunspents; int32_t RTspentflag; struct iguana_utxo utxo; uint64_t confs,RTspend = 0;
+    struct iguana_ramchaindata *rdata;
+    if ( (rdata= ramchain->H.data) == 0 )
+        return(0);
     *spentheightp = 0;
-    numunspents = ramchain->H.data->numunspents;
+    numunspents = rdata->numunspents;
     utxo = iguana_utxofind(coin,spent_hdrsi,spent_unspentind,&RTspentflag,0);
     if ( RTspentflag != 0 )
         *RTspendp = (amount == 0) ? coin->txfee : amount;
@@ -308,7 +311,7 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
     for (iter=0; iter<2; iter++)
     {
         sprintf(fname,"%s/%s%s/accounts/debits.%d",GLOBAL_DBDIR,iter==0?"ro/":"",coin->symbol,ramchain->height);
-        if ( (ramchain->debitsfileptr= OS_mapfile(fname,&ramchain->debitsfilesize,0)) != 0 && ramchain->debitsfilesize == sizeof(int32_t) + 2*sizeof(bits256) + sizeof(*ramchain->A2) * ramchain->H.data->numpkinds )
+        if ( (ramchain->debitsfileptr= OS_mapfile(fname,&ramchain->debitsfilesize,0)) != 0 && ramchain->debitsfilesize == sizeof(int32_t) + 2*sizeof(bits256) + sizeof(*ramchain->A2) * rdata->numpkinds )
         {
             ramchain->from_roA = (iter == 0);
             numhdrsi = *(int32_t *)ramchain->debitsfileptr;
@@ -324,7 +327,7 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
             {
                 ramchain->A2 = (void *)((long)ramchain->debitsfileptr + sizeof(numhdrsi) + 2*sizeof(bits256));
                 sprintf(fname,"%s/%s%s/accounts/lastspends.%d",GLOBAL_DBDIR,iter==0?"ro/":"",coin->symbol,ramchain->height);
-                if ( (ramchain->lastspendsfileptr= OS_mapfile(fname,&ramchain->lastspendsfilesize,0)) != 0 && ramchain->lastspendsfilesize == sizeof(int32_t) + 2*sizeof(bits256) + sizeof(*ramchain->Uextras) * ramchain->H.data->numunspents )
+                if ( (ramchain->lastspendsfileptr= OS_mapfile(fname,&ramchain->lastspendsfilesize,0)) != 0 && ramchain->lastspendsfilesize == sizeof(int32_t) + 2*sizeof(bits256) + sizeof(*ramchain->Uextras) * rdata->numunspents )
                 {
                     numhdrsi = *(int32_t *)ramchain->lastspendsfileptr;
                     memcpy(balancehash.bytes,(void *)((long)ramchain->lastspendsfileptr + sizeof(numhdrsi)),sizeof(balancehash));
@@ -340,7 +343,7 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
             }
             else
             {
-                printf("ramchain.[%d] map error balanceswritten %d vs %d hashes %x %x\n",ramchain->H.data->height,coin->balanceswritten,numhdrsi,coin->balancehash.uints[0],balancehash.uints[0]);
+                printf("ramchain.[%d] map error balanceswritten %d vs %d hashes %x %x\n",rdata->height,coin->balanceswritten,numhdrsi,coin->balancehash.uints[0],balancehash.uints[0]);
                 err++;
                 OS_removefile(fname,0);
             }

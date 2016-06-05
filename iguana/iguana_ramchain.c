@@ -164,7 +164,7 @@ int32_t iguana_peerfile_exists(struct iguana_info *coin,struct iguana_peer *addr
 
 uint32_t iguana_ramchain_addtxid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp,int16_t bundlei)
 {
-    uint32_t txidind; struct iguana_txid *t; struct iguana_kvitem *ptr;
+    uint32_t txidind; struct iguana_txid *t; struct iguana_kvitem *ptr; struct iguana_ramchaindata *rdata;
     if ( sizeof(*t) != 64 )
         printf("sizeof iguana_txid.%d != 64?\n",(int32_t)sizeof(*t));
     txidind = ramchain->H.txidind;
@@ -191,8 +191,8 @@ uint32_t iguana_ramchain_addtxid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 
             printf("addtxid error: t->txidind %u != %u txidind || t->firstvout %u != %u ramchain->H.unspentind || t->firstvin %u != %u ramchain->H.spendind || t->bundlei %u != %u bundlei\n",t->txidind,txidind,t->firstvout,ramchain->H.unspentind,t->firstvin,ramchain->H.spendind,t->bundlei,bundlei);
             return(0);
         }
-        if ( ramchain->expanded != 0 )
-            iguana_sparseaddtx(TXbits,ramchain->H.data->txsparsebits,ramchain->H.data->numtxsparse,txid,T,txidind,ramchain);
+        if ( ramchain->expanded != 0 && (rdata= ramchain->H.data) != 0 )
+            iguana_sparseaddtx(TXbits,rdata->txsparsebits,rdata->numtxsparse,txid,T,txidind,ramchain);
         //if ( txidind <= 2 )
         //    printf("%p TXID.[%d] firstvout.%d/%d firstvin.%d/%d\n",t,txidind,ramchain->unspentind,numvouts,ramchain->spendind,numvins);
     }
@@ -213,8 +213,8 @@ uint32_t iguana_ramchain_addtxid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 
 
 uint32_t iguana_ramchain_addpkhash(struct iguana_info *coin,RAMCHAIN_FUNC,uint8_t *rmd160,int32_t pubkeyind,uint32_t unspentind,uint32_t pkind)
 {
-    struct iguana_kvitem *ptr; uint32_t i;
-    if ( ramchain->expanded != 0 && (ptr= iguana_hashfind(ramchain,'P',rmd160)) == 0 )
+    struct iguana_kvitem *ptr; uint32_t i; struct iguana_ramchaindata *rdata;
+    if ( ramchain->expanded != 0 && (ptr= iguana_hashfind(ramchain,'P',rmd160)) == 0 && (rdata= ramchain->H.data) != 0 )
     {
         if ( ramchain->H.ROflag != 0 )
         {
@@ -252,7 +252,7 @@ uint32_t iguana_ramchain_addpkhash(struct iguana_info *coin,RAMCHAIN_FUNC,uint8_
             //    printf("%02x",rmd160[i]);
             //printf(" -> rmd160 pkind.%d \n",pkind);
             if ( ramchain->expanded != 0 )
-                iguana_sparseaddpk(PKbits,ramchain->H.data->pksparsebits,ramchain->H.data->numpksparse,rmd160,P,pkind,ramchain);
+                iguana_sparseaddpk(PKbits,rdata->pksparsebits,rdata->numpksparse,rmd160,P,pkind,ramchain);
         }
         if ( (ptr= iguana_hashsetPT(ramchain,'P',&P[pkind],pkind)) == 0 )
         {
@@ -370,10 +370,6 @@ uint32_t iguana_ramchain_addunspent(struct iguana_info *coin,RAMCHAIN_FUNC,uint6
         printf("addunspent error getting pkind\n");
         return(0);
     }
-    if ( 0 )
-    {
-        printf(" ROflag.%d pkind.%d unspentind.%d vout.%d %.8f script[%d] uoffset.%d %d:%d type.%d A.%p\n",ramchain->H.ROflag,pkind,unspentind,vout,dstr(value),scriptlen,u->scriptpos,ramchain->H.scriptoffset,ramchain->H.data->scriptspace,type,A);
-    }
     if ( ramchain->H.ROflag != 0 )
     {
         /*if ( Kspace != 0 && ((u->scriptoffset != 0 && scriptlen > 0) || type == IGUANA_SCRIPT_76AC) )
@@ -413,17 +409,17 @@ uint32_t iguana_ramchain_addunspent(struct iguana_info *coin,RAMCHAIN_FUNC,uint6
 
 int32_t iguana_ramchain_txid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 *txidp,struct iguana_spend *s)
 {
-    uint32_t ind,external;
+    uint32_t ind,external; struct iguana_ramchaindata *rdata;
     memset(txidp,0,sizeof(*txidp));
     //printf("s.%p ramchaintxid vout.%x spendtxidind.%d numexternals.%d isext.%d numspendinds.%d\n",s,s->vout,s->spendtxidind,ramchain->numexternaltxids,s->external,ramchain->numspends);
-    if ( s->prevout < 0 )
+    if ( s->prevout < 0 || (rdata= ramchain->H.data) == 0 )
         return(-1);
     ind = s->spendtxidind;
     external = (ind >> 31) & 1;
     ind &= ~(1 << 31);
-    if ( s->external != 0 && s->external == external && ind < ramchain->H.data->numexternaltxids )
+    if ( s->external != 0 && s->external == external && ind < rdata->numexternaltxids )
     {
-        //printf("ind.%d externalind.%d X[%d]\n",ind,ramchain->externalind,ramchain->H.data->numexternaltxids);
+        //printf("ind.%d externalind.%d X[%d]\n",ind,ramchain->externalind,rdata->numexternaltxids);
         *txidp = X[ind];
         return(s->prevout);
     }
@@ -437,9 +433,10 @@ int32_t iguana_ramchain_txid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 *txi
 
 uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 prev_hash,int32_t prev_vout,uint32_t sequence,int32_t hdrsi,uint16_t fileid,uint64_t scriptpos,int32_t vinscriptlen)
 {
-    struct iguana_spend *s; struct iguana_kvitem *ptr = 0; bits256 txid;
-    uint32_t spendind,unspentind,txidind=0,pkind,external=0; uint64_t value = 0;
-    // uint8_t _script[IGUANA_MAXSCRIPTSIZE]; int32_t metalen,i,checklen;
+    struct iguana_spend *s; struct iguana_kvitem *ptr = 0; bits256 txid; uint32_t spendind,unspentind,txidind=0,pkind,external=0; uint64_t value = 0; struct iguana_ramchaindata *rdata;
+    if ( (rdata= ramchain->H.data) == 0 )
+        return(0);
+        // uint8_t _script[IGUANA_MAXSCRIPTSIZE]; int32_t metalen,i,checklen;
     spendind = ramchain->H.spendind++;
     s = &Sx[spendind];
     pkind = unspentind = 0;
@@ -454,7 +451,7 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
         {
             if ( memcmp(X[txidind].bytes,prev_hash.bytes,sizeof(prev_hash)) != 0 )
             {
-                char str[65],str2[65]; printf("iguana_ramchain_addspend X[%d] of %d cmperror %s vs %s\n",txidind,ramchain->H.data->numexternaltxids,bits256_str(str,X[txidind]),bits256_str(str2,prev_hash));
+                char str[65],str2[65]; printf("iguana_ramchain_addspend X[%d] of %d cmperror %s vs %s\n",txidind,rdata->numexternaltxids,bits256_str(str,X[txidind]),bits256_str(str2,prev_hash));
                 return(0);
             }
         } else X[txidind] = prev_hash;
@@ -471,18 +468,18 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
         printf("unexpected addspend case: null ptr prev.%d [%d] s%u\n",prev_vout,hdrsi,spendind);
     if ( prev_vout >= 0 && (external= ((txidind >> 31) & 1)) == 0 )
     {
-        if ( txidind > 0 && txidind < ramchain->H.data->numtxids )
+        if ( txidind > 0 && txidind < rdata->numtxids )
         {
-            if ( (unspentind= T[txidind].firstvout + prev_vout) > 0 && unspentind < ramchain->H.data->numunspents )
+            if ( (unspentind= T[txidind].firstvout + prev_vout) > 0 && unspentind < rdata->numunspents )
             {
                 value = Ux[unspentind].value;
-                if ( (pkind= Ux[unspentind].pkind) == 0 || pkind >= ramchain->H.data->numpkinds )
+                if ( (pkind= Ux[unspentind].pkind) == 0 || pkind >= rdata->numpkinds )
                 {
                     printf("spendind.%d -> unspendind.%d %.8f -> pkind.0x%x\n",spendind,unspentind,dstr(value),pkind);
                     return(0);
                 }
-            } else printf("addspend illegal unspentind.%d vs %d\n",unspentind,ramchain->H.data->numunspents);
-        } else printf("addspend illegal txidind.%d vs %d\n",txidind,ramchain->H.data->numtxids), exit(-1);
+            } else printf("addspend illegal unspentind.%d vs %d\n",unspentind,rdata->numunspents);
+        } else printf("addspend illegal txidind.%d vs %d\n",txidind,rdata->numtxids), exit(-1);
     }
     if ( ramchain->H.ROflag != 0 )
     {
@@ -492,7 +489,7 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
             char str[65],str2[65]; printf("ramchain_addspend RO value mismatch diffseq.%x v %x (%d) vs (%d) %s vs %s\n",s->sequenceid,sequence,s->prevout,prev_vout,bits256_str(str,txid),bits256_str(str2,prev_hash));
             return(0);
         }
-        /*if ( (checklen= iguana_vinscriptdecode(coin,ramchain,&metalen,_script,&Kspace[ramchain->H.data->scriptspace],Kspace,s)) != vinscriptlen || (vinscript != 0 && memcmp(_script,vinscript,vinscriptlen) != 0) )
+        /*if ( (checklen= iguana_vinscriptdecode(coin,ramchain,&metalen,_script,&Kspace[rdata->scriptspace],Kspace,s)) != vinscriptlen || (vinscript != 0 && memcmp(_script,vinscript,vinscriptlen) != 0) )
         {
             static uint64_t counter;
             if ( counter++ < 100 )
@@ -711,9 +708,9 @@ void *iguana_ramchain_offset(char *fname,void *dest,uint8_t *lhash,FILE *fp,uint
 int32_t iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain *ramchain,int32_t flag)
 {
     RAMCHAIN_DECLARE; RAMCHAIN_ZEROES;
-    struct iguana_pkhash p; struct iguana_unspent u; struct iguana_txid txid; uint32_t i,numpkinds,numtxids,numunspents,numexternal,tlen,plen,nonz=0; uint8_t *ptr;
+    struct iguana_pkhash p; struct iguana_unspent u; struct iguana_txid txid; uint32_t i,numpkinds,numtxids,numunspents,numexternal,tlen,plen,nonz=0; uint8_t *ptr; struct iguana_ramchaindata *rdata;
 //return(0);
-    if ( ramchain->H.data != 0 )
+    if ( (rdata= ramchain->H.data) != 0 )
     {
         if ( flag == 0 )
         {
@@ -725,15 +722,12 @@ int32_t iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain
         else if ( (flag & 1) != 0 )
         {
             //printf("nonz.%d of %d\n",nonz,(int32_t)ramchain->filesize);
-            X = RAMCHAIN_PTR(ramchain->H.data,Xoffset);
-            T = RAMCHAIN_PTR(ramchain->H.data,Toffset);
-            TXbits = RAMCHAIN_PTR(ramchain->H.data,TXoffset);
-            //X = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Xoffset);
-            //T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
-            //TXbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->TXoffset);
-            numtxids = ramchain->H.data->numtxids;
-            numexternal = ramchain->H.data->numexternaltxids;
-            tlen = (ramchain->H.data->numtxsparse * ramchain->H.data->txsparsebits) >> 3;
+            X = RAMCHAIN_PTR(rdata,Xoffset);
+            T = RAMCHAIN_PTR(rdata,Toffset);
+            TXbits = RAMCHAIN_PTR(rdata,TXoffset);
+            numtxids = rdata->numtxids;
+            numexternal = rdata->numexternaltxids;
+            tlen = (rdata->numtxsparse * rdata->txsparsebits) >> 3;
             for (i=0; i<numtxids; i++)
             {
                 memcpy(&txid,&T[i],sizeof(txid));
@@ -752,9 +746,8 @@ int32_t iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain
         }
         else if ( (flag & 2) != 0 )
         {
-            U = RAMCHAIN_PTR(ramchain->H.data,Uoffset);
-            //U = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Uoffset);
-            numunspents = ramchain->H.data->numunspents;
+            U = RAMCHAIN_PTR(rdata,Uoffset);
+            numunspents = rdata->numunspents;
             for (i=0; i<numunspents; i++)
             {
                 memcpy(&u,&U[i],sizeof(u));
@@ -764,12 +757,10 @@ int32_t iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain
         }
         else if ( (flag & 4) != 0 )
         {
-            P = RAMCHAIN_PTR(ramchain->H.data,Poffset);
-            PKbits = RAMCHAIN_PTR(ramchain->H.data,PKoffset);
-            //P = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Poffset);
-            //PKbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->PKoffset);
-            numpkinds = ramchain->H.data->numpkinds;
-            plen = (ramchain->H.data->numpksparse * ramchain->H.data->pksparsebits) >> 3;
+            P = RAMCHAIN_PTR(rdata,Poffset);
+            PKbits = RAMCHAIN_PTR(rdata,PKoffset);
+            numpkinds = rdata->numpkinds;
+            plen = (rdata->numpksparse * rdata->pksparsebits) >> 3;
             for (i=0; i<numpkinds; i++)
             {
                 memcpy(&p,&P[i],sizeof(p));
@@ -781,7 +772,7 @@ int32_t iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain
                     nonz++;
         }
     }
-    //printf("PREFETCH.[%d] flag.%d -> nonz.%d\n",ramchain->H.data->height,flag,nonz);
+    //printf("PREFETCH.[%d] flag.%d -> nonz.%d\n",rdata->height,flag,nonz);
     return(nonz);
 }
 
@@ -901,10 +892,13 @@ int64_t iguana_ramchain_action(char *fname,RAMCHAIN_FUNC,FILE *fp,bits256 lhashe
 
 int64_t iguana_ramchain_size(char *fname,RAMCHAIN_FUNC,int32_t numblocks,int32_t scriptspace,uint8_t zcash)
 {
-    int64_t allocsize;
-    allocsize = iguana_ramchain_action(fname,RAMCHAIN_ARG,0,0,0,0,ramchain->H.data,numblocks,scriptspace,zcash);
-    if ( 0 && ramchain->expanded != 0 )
-        printf("%p iguana_ramchain_size.expanded.%d %u: Koffset.%u scriptoffset.%u stacksize.%u stackspace.%u [%u]\n",ramchain,ramchain->expanded,(int32_t)allocsize,(int32_t)ramchain->H.data->Koffset,(int32_t)ramchain->H.scriptoffset,(int32_t)ramchain->H.stacksize,(int32_t)ramchain->H.data->stackspace,scriptspace);
+    int64_t allocsize = -1; struct iguana_ramchaindata *rdata;
+    if ( (rdata= ramchain->H.data) != 0 )
+    {
+        allocsize = iguana_ramchain_action(fname,RAMCHAIN_ARG,0,0,0,0,rdata,numblocks,scriptspace,zcash);
+        if ( 0 && ramchain->expanded != 0 )
+            printf("%p iguana_ramchain_size.expanded.%d %u: Koffset.%u scriptoffset.%u stacksize.%u stackspace.%u [%u]\n",ramchain,ramchain->expanded,(int32_t)allocsize,(int32_t)rdata->Koffset,(int32_t)ramchain->H.scriptoffset,(int32_t)ramchain->H.stacksize,(int32_t)rdata->stackspace,scriptspace);
+    }
     return(allocsize);
 }
 
@@ -912,18 +906,21 @@ long iguana_ramchain_setsize(char *fname,struct iguana_ramchain *ramchain,struct
 {
     RAMCHAIN_DECLARE; RAMCHAIN_ZEROES; struct iguana_ramchaindata *rdata = ramchain->H.data;
     //B = 0, Ux = 0, Sx = 0, P = 0, A = 0, X = 0, Kspace = TXbits = PKbits = 0, U = 0, S = 0, T = 0; //U2 = 0, P2 = 0,
-    rdata->numtxids = ramchain->H.txidind;
-    rdata->numunspents = ramchain->H.unspentind;
-    rdata->numspends = ramchain->H.spendind;
-    rdata->numpkinds = ramchain->pkind;
-    rdata->numexternaltxids = ramchain->externalind;
-    rdata->scriptspace = ramchain->H.scriptoffset;
-    rdata->stackspace = ramchain->H.stacksize;
-    rdata->allocsize = iguana_ramchain_size(fname,RAMCHAIN_ARG,numblocks,rdata->scriptspace,zcash);
-    if ( 0 && rdata->scriptspace != 0 )
-        printf("iguana_ramchain_setsize: Koffset.%d scriptspace.%d stackspace.%d (scriptoffset.%d stacksize.%d) allocsize.%d\n",(int32_t)rdata->Koffset,(int32_t)rdata->scriptspace,(int32_t)rdata->stackspace,(int32_t)ramchain->H.scriptoffset,(int32_t)ramchain->H.stacksize,(int32_t)rdata->allocsize);
-    ramchain->datasize = rdata->allocsize;
-    return((long)rdata->allocsize);
+    if ( rdata != 0 )
+    {
+        rdata->numtxids = ramchain->H.txidind;
+        rdata->numunspents = ramchain->H.unspentind;
+        rdata->numspends = ramchain->H.spendind;
+        rdata->numpkinds = ramchain->pkind;
+        rdata->numexternaltxids = ramchain->externalind;
+        rdata->scriptspace = ramchain->H.scriptoffset;
+        rdata->stackspace = ramchain->H.stacksize;
+        rdata->allocsize = iguana_ramchain_size(fname,RAMCHAIN_ARG,numblocks,rdata->scriptspace,zcash);
+        if ( 0 && rdata->scriptspace != 0 )
+            printf("iguana_ramchain_setsize: Koffset.%d scriptspace.%d stackspace.%d (scriptoffset.%d stacksize.%d) allocsize.%d\n",(int32_t)rdata->Koffset,(int32_t)rdata->scriptspace,(int32_t)rdata->stackspace,(int32_t)ramchain->H.scriptoffset,(int32_t)ramchain->H.stacksize,(int32_t)rdata->allocsize);
+        ramchain->datasize = rdata->allocsize;
+        return((long)rdata->allocsize);
+    } else return(-1);
 }
 
 int64_t iguana_ramchain_compact(char *fname,RAMCHAIN_FUNC,struct iguana_ramchaindata *destdata,struct iguana_ramchaindata *srcdata,int32_t numblocks,uint8_t zcash)
@@ -952,7 +949,7 @@ int64_t iguana_ramchain_saveaction(char *fname,RAMCHAIN_FUNC,FILE *fp,struct igu
             printf("%02x",Kspace[i]);
         printf(" SAVEACTION: K.%d:%ld rdata.%d DEST T.%d U.%d S.%d P.%d X.%d -> size.%ld %ld vs %ld %u\n",(int32_t)rdata->Koffset,(long)Kspace-(long)rdata,(int32_t)sizeof(*rdata),rdata->numtxids,rdata->numunspents,rdata->numspends,rdata->numpkinds,rdata->numexternaltxids,(long)rdata->allocsize,(long)iguana_ramchain_size(fname,RAMCHAIN_ARG,numblocks,scriptspace,zcash),after-before+sizeof(*rdata),scriptspace);
     }
-    //printf("before.%ld after.%ld allocsize.%ld [%ld] %ld expanded.%d\n",before,after,(long)srcdata->allocsize,(long)ramchain->H.data->allocsize,(long)iguana_ramchain_size(ramchain),ramchain->expanded);
+    //printf("before.%ld after.%ld allocsize.%ld [%ld] %ld expanded.%d\n",before,after,(long)srcdata->allocsize,(long)rdata->allocsize,(long)iguana_ramchain_size(ramchain),ramchain->expanded);
     return(after - before);
 }
 
@@ -967,6 +964,8 @@ int64_t iguana_ramchain_init(char *fname,struct iguana_ramchain *ramchain,struct
     if ( (ramchain->hashmem= hashmem) != 0 )
         iguana_memreset(hashmem);
     rdata = ramchain->H.data = mem->ptr;//, offset += sizeof(struct iguana_ramchaindata);
+    if ( rdata == 0 )
+        return(0);
     if ( (rdata->firsti= firsti) != 0 )
     {
         numtxids++, numunspents++, numspends++;
@@ -1060,7 +1059,7 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
         tmp = *rdata;
         iguana_ramchain_compact(fname,RAMCHAIN_ARG,&tmp,rdata,bp!=0?bp->n:1,zcash);
         if ( 0 && ramchain->expanded != 0 )
-            printf("compact.%s: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d\n",fname,(int32_t)ramchain->H.data->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)ramchain->H.data->allocsize);
+            printf("compact.%s: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d\n",fname,(int32_t)rdata->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)rdata->allocsize);
         if ( fwrite(&tmp,1,sizeof(tmp),fp) != sizeof(tmp) )
         {
             printf("ramchain_save error writing header.%s\n",fname);
@@ -1119,13 +1118,13 @@ int32_t iguana_ramchain_verify(struct iguana_info *coin,struct iguana_ramchain *
                         printf("BIP 0 detected\n");
                     else
                     {
-                        char str[65]; printf("error -3: %s itemind.%d vs txidind.%d | num.%d\n",bits256_str(str,t->txid),ptr->hh.itemind,ramchain->H.txidind,ramchain->H.data->numtxids);
+                        char str[65]; printf("error -3: %s itemind.%d vs txidind.%d | num.%d\n",bits256_str(str,t->txid),ptr->hh.itemind,ramchain->H.txidind,rdata->numtxids);
                         return(-3);
                     }
                 }
                 else
                 {
-                    char str[65]; printf("error -3: %s itemind.%d vs txidind.%d | num.%d\n",bits256_str(str,t->txid),ptr->hh.itemind,ramchain->H.txidind,ramchain->H.data->numtxids);
+                    char str[65]; printf("error -3: %s itemind.%d vs txidind.%d | num.%d\n",bits256_str(str,t->txid),ptr->hh.itemind,ramchain->H.txidind,rdata->numtxids);
                     //exit(-1);
                     return(-3);
                 }
@@ -1217,19 +1216,21 @@ int32_t iguana_ramchain_verify(struct iguana_info *coin,struct iguana_ramchain *
 
 int32_t iguana_ramchain_free(struct iguana_info *coin,struct iguana_ramchain *ramchain,int32_t deleteflag)
 {
-    struct iguana_kvitem *item,*tmp;
+    struct iguana_kvitem *item,*tmp; struct iguana_ramchaindata *rdata;
+    if ( (rdata= ramchain->H.data) == 0 )
+        return(-1);
     if ( ramchain->H.ROflag != 0 && ramchain->hashmem == 0 )
     {
         if ( ramchain->A != ramchain->creditsA )
         {
-            //printf("hashmem.%p Free A %p %p, numpkinds.%d %ld\n",ramchain->hashmem,ramchain->A,ramchain->creditsA,ramchain->H.data->numpkinds,sizeof(*ramchain->A) * ramchain->H.data->numpkinds);
+            //printf("hashmem.%p Free A %p %p, numpkinds.%d %ld\n",ramchain->hashmem,ramchain->A,ramchain->creditsA,rdata->numpkinds,sizeof(*ramchain->A) * rdata->numpkinds);
             if ( deleteflag != 0 )
-                myfree(ramchain->A,sizeof(*ramchain->A) * ramchain->H.data->numpkinds), ramchain->A = 0;
+                myfree(ramchain->A,sizeof(*ramchain->A) * rdata->numpkinds), ramchain->A = 0;
         }
         //if ( ramchain->U2 != ramchain->roU2 )
-        //    myfree(ramchain->U2,sizeof(*ramchain->U2) * ramchain->H.data->numunspents), ramchain->U2 = 0;
+        //    myfree(ramchain->U2,sizeof(*ramchain->U2) * rdata->numunspents), ramchain->U2 = 0;
         //if ( ramchain->P2 != ramchain->roP2 )
-        //    myfree(ramchain->P2,sizeof(*ramchain->P2) * ramchain->H.data->numpkinds), ramchain->P2 = 0;
+        //    myfree(ramchain->P2,sizeof(*ramchain->P2) * rdata->numpkinds), ramchain->P2 = 0;
     }
     if ( deleteflag != 0 )
     {
@@ -1311,17 +1312,17 @@ int32_t iguana_bundleremove(struct iguana_info *coin,int32_t hdrsi,int32_t tmpfi
 
 int32_t iguana_ramchain_extras(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct OS_memspace *hashmem,int32_t extraflag)
 {
-    RAMCHAIN_DECLARE; int32_t err=0; 
-    if ( ramchain->expanded != 0 )
+    RAMCHAIN_DECLARE; int32_t err=0;  struct iguana_ramchaindata *rdata;
+    if ( ramchain->expanded != 0 && (rdata= ramchain->H.data) != 0 )
     {
-        _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
-        if ( extraflag == 0 && ramchain->H.data != 0 )
+        _iguana_ramchain_setptrs(RAMCHAIN_PTRS,rdata);
+        if ( extraflag == 0 )
         {
             if ( (ramchain->hashmem= hashmem) != 0 )
                 iguana_memreset(hashmem);
-            else printf("alloc ramchain->A %d\n",(int32_t)(sizeof(struct iguana_account) * ramchain->H.data->numpkinds));
-            ramchain->A = (hashmem != 0 && hashmem->ptr != 0) ? iguana_memalloc(hashmem,sizeof(struct iguana_account) * ramchain->H.data->numpkinds,1) : mycalloc('p',ramchain->H.data->numpkinds,sizeof(struct iguana_account));
-            ramchain->Uextras = (hashmem != 0 && hashmem->ptr != 0) ? iguana_memalloc(hashmem,sizeof(*ramchain->Uextras) * ramchain->H.data->numunspents,1) : mycalloc('p',ramchain->H.data->numunspents,sizeof(*ramchain->Uextras));
+            else printf("alloc ramchain->A %d\n",(int32_t)(sizeof(struct iguana_account) * rdata->numpkinds));
+            ramchain->A = (hashmem != 0 && hashmem->ptr != 0) ? iguana_memalloc(hashmem,sizeof(struct iguana_account) * rdata->numpkinds,1) : mycalloc('p',rdata->numpkinds,sizeof(struct iguana_account));
+            ramchain->Uextras = (hashmem != 0 && hashmem->ptr != 0) ? iguana_memalloc(hashmem,sizeof(*ramchain->Uextras) * rdata->numunspents,1) : mycalloc('p',rdata->numunspents,sizeof(*ramchain->Uextras));
         } else err = iguana_volatilesmap(coin,ramchain);
     }
     return(err);
@@ -1367,8 +1368,9 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
 
 struct iguana_ramchain *_iguana_ramchain_map(struct iguana_info *coin,char *fname,struct iguana_bundle *bp,int32_t numblocks,struct iguana_ramchain *ramchain,struct OS_memspace *hashmem,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t bundlei,long fpos,int32_t allocextras,int32_t expanded,uint8_t zcash)
 {
-    RAMCHAIN_DECLARE; int32_t valid,iter,i,checki,hdrsi; long filesize; void *ptr;
-    char str[65],str2[65],dirstr[64]; struct iguana_block *block; struct iguana_blockRO *bRO;
+    RAMCHAIN_DECLARE; int32_t valid,iter,i,checki,hdrsi; long filesize; void *ptr; char str[65],str2[65],dirstr[64]; struct iguana_block *block; struct iguana_blockRO *bRO; struct iguana_ramchaindata *rdata;
+    if ( (rdata= ramchain->H.data) == 0 )
+        return(0);
     /*if ( ramchain->expanded != 0 && (ramchain->sigsfileptr == 0 || ramchain->sigsfilesize == 0) )
     {
         sprintf(sigsfname,"sigs/%s/%s",coin->symbol,bits256_str(str,hash2));
@@ -1410,10 +1412,10 @@ struct iguana_ramchain *_iguana_ramchain_map(struct iguana_info *coin,char *fnam
         ramchain->H.ROflag = 1;
         ramchain->expanded = expanded;
         ramchain->numblocks = (bp == 0) ? 1 : bp->n;
-        //printf("ptr.%p exp.%d extra.%d %p mapped P[%d] fpos.%d + %ld -> %ld vs %ld offset.%u:%u stack.%u:%u\n",ptr,expanded,allocextras,ramchain->H.data,(int32_t)ramchain->H.data->Poffset,(int32_t)fpos,(long)ramchain->H.data->allocsize,(long)(fpos + ramchain->H.data->allocsize),ramchain->filesize,ramchain->H.scriptoffset,ramchain->H.data->scriptspace,ramchain->H.stacksize,ramchain->H.data->stackspace);
+        //printf("ptr.%p exp.%d extra.%d %p mapped P[%d] fpos.%d + %ld -> %ld vs %ld offset.%u:%u stack.%u:%u\n",ptr,expanded,allocextras,rdata,(int32_t)rdata->Poffset,(int32_t)fpos,(long)rdata->allocsize,(long)(fpos + rdata->allocsize),ramchain->filesize,rscriptoffset,rdata->scriptspace,rstacksize,rdata->stackspace);
         if ( 0 && bp != 0 )
         {
-            /*blocksRO = (struct iguana_blockRO *)ramchain->H.data;
+            /*blocksRO = (struct iguana_blockRO *)rdata;
             for (i=0; i<bp->n; i++)
             {
                 printf("%p ",&blocksRO[i]);
@@ -1425,7 +1427,7 @@ struct iguana_ramchain *_iguana_ramchain_map(struct iguana_info *coin,char *fnam
              }
              bp->blocks[i]->RO = blocksRO[i];
              }
-             ramchain->H.data = (void *)&blocksRO[bp->n];*/
+             rdata = (void *)&blocksRO[bp->n];*/
              for (valid=0,i=bp->n-1; i>=0; i--)
              {
                 if ( (block= bp->blocks[i]) != 0 )
@@ -1443,18 +1445,18 @@ struct iguana_ramchain *_iguana_ramchain_map(struct iguana_info *coin,char *fnam
                 return(0);
             }
         }
-        _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
-        if ( iguana_ramchain_size(fname,RAMCHAIN_ARG,ramchain->numblocks,ramchain->H.data->scriptspace,zcash) != ramchain->H.data->allocsize || fpos+ramchain->H.data->allocsize > filesize )
+        _iguana_ramchain_setptrs(RAMCHAIN_PTRS,rdata);
+        if ( iguana_ramchain_size(fname,RAMCHAIN_ARG,ramchain->numblocks,rdata->scriptspace,zcash) != rdata->allocsize || fpos+rdata->allocsize > filesize )
         {
-            printf("iguana_ramchain_map.(%s) size mismatch %ld vs %ld vs filesize.%ld numblocks.%d expanded.%d fpos.%d sum %ld\n",fname,(long)iguana_ramchain_size(fname,RAMCHAIN_ARG,ramchain->numblocks,ramchain->H.data->scriptspace,zcash),(long)ramchain->H.data->allocsize,(long)filesize,ramchain->numblocks,expanded,(int32_t)fpos,(long)(fpos+ramchain->H.data->allocsize));
+            printf("iguana_ramchain_map.(%s) size mismatch %ld vs %ld vs filesize.%ld numblocks.%d expanded.%d fpos.%d sum %ld\n",fname,(long)iguana_ramchain_size(fname,RAMCHAIN_ARG,ramchain->numblocks,rdata->scriptspace,zcash),(long)rdata->allocsize,(long)filesize,ramchain->numblocks,expanded,(int32_t)fpos,(long)(fpos+rdata->allocsize));
             //exit(-1);
             munmap(ramchain->fileptr,ramchain->filesize);
             OS_removefile(fname,0);
             return(0);
         }
-        else if ( memcmp(hash2.bytes,ramchain->H.data->firsthash2.bytes,sizeof(bits256)) != 0 )
+        else if ( memcmp(hash2.bytes,rdata->firsthash2.bytes,sizeof(bits256)) != 0 )
         {
-            printf("iguana_ramchain_map.(%s) hash2 mismatch %s vs %s\n",fname,bits256_str(str,hash2),bits256_str(str2,ramchain->H.data->firsthash2));
+            printf("iguana_ramchain_map.(%s) hash2 mismatch %s vs %s\n",fname,bits256_str(str,hash2),bits256_str(str2,rdata->firsthash2));
             //munmap(ramchain->fileptr,ramchain->filesize);
             return(0);
         }
@@ -1462,7 +1464,7 @@ struct iguana_ramchain *_iguana_ramchain_map(struct iguana_info *coin,char *fnam
         {
             if ( allocextras > 0 )
             {
-                ramchain->height = ramchain->H.data->height;
+                ramchain->height = rdata->height;
                 if ( iguana_ramchain_extras(coin,ramchain,ramchain->hashmem,allocextras) == 0 && bp != 0 )
                 {
                     bp->balancefinish = (uint32_t)time(NULL);
@@ -1487,7 +1489,7 @@ struct iguana_ramchain *_iguana_ramchain_map(struct iguana_info *coin,char *fnam
                 }
             }
         }
-        //printf("iguana_ramchain_map.(%s) size %ld vs %ld vs filesize.%ld numblocks.%d expanded.%d fpos.%d sum %ld\n",fname,(long)iguana_ramchain_size(RAMCHAIN_ARG,ramchain->numblocks,ramchain->H.data->scriptspace),(long)ramchain->H.data->allocsize,(long)filesize,ramchain->numblocks,expanded,(int32_t)fpos,(long)(fpos+ramchain->H.data->allocsize));
+        //printf("iguana_ramchain_map.(%s) size %ld vs %ld vs filesize.%ld numblocks.%d expanded.%d fpos.%d sum %ld\n",fname,(long)iguana_ramchain_size(RAMCHAIN_ARG,ramchain->numblocks,rdata->scriptspace),(long)rdata->allocsize,(long)filesize,ramchain->numblocks,expanded,(int32_t)fpos,(long)(fpos+rdata->allocsize));
         bp->Xvalid = 1;
         iguana_Xspendmap(coin,ramchain,bp);
         return(ramchain);
@@ -1512,21 +1514,25 @@ struct iguana_ramchain *iguana_ramchain_map(struct iguana_info *coin,char *fname
 
 void iguana_ramchain_link(struct iguana_ramchain *ramchain,bits256 firsthash2,int32_t hdrsi,int32_t height,int32_t bundlei,int32_t numblocks,int32_t firsti,int32_t ROflag)
 {
-    if ( ROflag == 0 )
+    struct iguana_ramchaindata *rdata;
+    if ( (rdata= ramchain->H.data) != 0 )
     {
-        ramchain->H.data->firsthash2 = firsthash2;
-        //ramchain->H.data->lasthash2 = lasthash2;
-        ramchain->H.data->hdrsi = hdrsi;
-        ramchain->H.data->height = height;
-        ramchain->H.data->numblocks = numblocks;
+        if ( ROflag == 0 )
+        {
+            rdata->firsthash2 = firsthash2;
+            //rdata->lasthash2 = lasthash2;
+            rdata->hdrsi = hdrsi;
+            rdata->height = height;
+            rdata->numblocks = numblocks;
+        }
+        ramchain->H.hdrsi = hdrsi;
+        ramchain->H.bundlei = bundlei;
+        ramchain->height = height;
+        ramchain->numblocks = numblocks;
+        //ramchain->lasthash2 = lasthash2;
+        ramchain->H.txidind = ramchain->H.unspentind = ramchain->H.spendind = ramchain->pkind = firsti;
+        ramchain->externalind = 0;//ramchain->H.scriptoffset = ramchain->H.stacksize = 0;
     }
-    ramchain->H.hdrsi = hdrsi;
-    ramchain->H.bundlei = bundlei;
-    ramchain->height = height;
-    ramchain->numblocks = numblocks;
-    //ramchain->lasthash2 = lasthash2;
-    ramchain->H.txidind = ramchain->H.unspentind = ramchain->H.spendind = ramchain->pkind = firsti;
-    ramchain->externalind = 0;//ramchain->H.scriptoffset = ramchain->H.stacksize = 0;
 }
 
 int32_t iguana_ramchain_cmp(struct iguana_ramchain *A,struct iguana_ramchain *B,int32_t deepflag)
@@ -1618,7 +1624,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
     bits256 prevhash; uint64_t value; uint8_t type; struct iguana_unspent *u;
     struct iguana_txid *tx; struct iguana_ramchaindata *rdata; uint8_t rmd160[20];
     //if ( dest != 0 )
-    //    printf("iterate ramchain.%p rdata.%p dest.%p ht.%d/%d txids.%p destoffset.%d\n",ramchain,ramchain->H.data,dest,bp->bundleheight,bp->n,ramchain->txids,dest->H.scriptoffset);
+    //    printf("iterate ramchain.%p rdata.%p dest.%p ht.%d/%d txids.%p destoffset.%d\n",ramchain,rdata,dest,bp->bundleheight,bp->n,ramchain->txids,dest->H.scriptoffset);
     if ( (rdata= ramchain->H.data) == 0 )
     {
         printf("iguana_ramchain_iterate cant iterate without data\n");
@@ -1627,7 +1633,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
     if ( dest != 0 )
         _iguana_ramchain_setptrs(RAMCHAIN_DESTPTRS,dest->H.data);
     //fprintf(stderr,"iterate %d/%d dest.%p ramchain.%p rdata.%p\n",bp->bundleheight,bp->n,dest,ramchain,rdata);
-    _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
+    _iguana_ramchain_setptrs(RAMCHAIN_PTRS,rdata);
     ramchain->H.ROflag = 1;
     ramchain->H.unspentind = ramchain->H.spendind = ramchain->pkind = rdata->firsti;
     ramchain->externalind = ramchain->H.stacksize = 0;
@@ -1642,7 +1648,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
         if ( coin->active == 0 )
             return(-1);;
         if ( 0 && ramchain->expanded == 0 && dest != 0 )
-            printf("ITER [%d] TXID.%d -> dest.%p desttxid.%d dest->hashmem.%p numtxids.%d\n",ramchain->H.data->height,ramchain->H.txidind,dest,dest!=0?dest->H.txidind:0,dest!=0?dest->hashmem:0,rdata->numtxids);
+            printf("ITER [%d] TXID.%d -> dest.%p desttxid.%d dest->hashmem.%p numtxids.%d\n",rdata->height,ramchain->H.txidind,dest,dest!=0?dest->H.txidind:0,dest!=0?dest->hashmem:0,rdata->numtxids);
         tx = &T[ramchain->H.txidind];
         if ( iguana_ramchain_addtxid(coin,RAMCHAIN_ARG,tx->txid,tx->numvouts,tx->numvins,tx->locktime,tx->version,tx->timestamp,bundlei) == 0 )
             return(-1);
@@ -1651,7 +1657,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
         {
             //char str[65];
             if ( 0 && ramchain->expanded == 0 )
-                printf("ITER [%d] TXID.%d -> dest.%p desttxid.%d dest->hashmem.%p numtxids.%d\n",ramchain->H.data->height,ramchain->H.txidind,dest,dest!=0?dest->H.txidind:0,dest!=0?dest->hashmem:0,rdata->numtxids);
+                printf("ITER [%d] TXID.%d -> dest.%p desttxid.%d dest->hashmem.%p numtxids.%d\n",rdata->height,ramchain->H.txidind,dest,dest!=0?dest->H.txidind:0,dest!=0?dest->hashmem:0,rdata->numtxids);
             if ( iguana_ramchain_addtxid(coin,RAMCHAIN_DESTARG,tx->txid,tx->numvouts,tx->numvins,tx->locktime,tx->version,tx->timestamp,bundlei) == 0 )
                 return(-2);
         }
@@ -1730,7 +1736,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
         {
             dest->H.txidind++;
             dest->H.spendind += tx->numvins;
-        } //else printf("iter scriptoffset.%u/%u stacksize.%u/%u\n",ramchain->H.scriptoffset,ramchain->H.data->scriptspace,ramchain->H.stacksize,ramchain->H.data->stackspace);
+        } //else printf("iter scriptoffset.%u/%u stacksize.%u/%u\n",ramchain->H.scriptoffset,rdata->scriptspace,ramchain->H.stacksize,rdata->stackspace);
     }
     if ( dest != 0 )
     {
@@ -1753,7 +1759,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
                 fileid = Sx[ramchain->H.spendind].fileid;
                 scriptpos = Sx[ramchain->H.spendind].scriptpos;
                 scriptlen = Sx[ramchain->H.spendind].scriptlen;
-          //scriptlen = iguana_vinscriptdecode(coin,ramchain,&metalen,_script,&Kspace[ramchain->H.data->scriptspace],Kspace,&Sx[ramchain->H.spendind]);
+          //scriptlen = iguana_vinscriptdecode(coin,ramchain,&metalen,_script,&Kspace[rdata->scriptspace],Kspace,&Sx[ramchain->H.spendind]);
                 //scriptdata = _script;
                 prevout = iguana_ramchain_txid(coin,RAMCHAIN_ARG,&prevhash,&Sx[ramchain->H.spendind]);
                 //fprintf(stderr,"from expanded iter\n");
@@ -1761,7 +1767,7 @@ int32_t iguana_ramchain_iterate(struct iguana_info *coin,struct iguana_ramchain 
                 {
                     char str[65];
                     printf("hdrsi.%d txidind.%d spendind.%d spendtxid.%x %d vin.%d %s vout.%d\n",bp->bundleheight,ramchain->H.txidind,ramchain->H.spendind,Sx[ramchain->H.spendind].spendtxidind,Sx[ramchain->H.spendind].spendtxidind&0xfffffff,j,bits256_str(str,prevhash),prevout);
-                    //for (i=0; i<ramchain->H.data->numexternaltxids; i++)
+                    //for (i=0; i<rdata->numexternaltxids; i++)
                     //    printf("%p X[%d] %s\n",X,i,bits256_str(str,X[i]));
                     //exit(-1);
                     iguana_ramchain_txid(coin,RAMCHAIN_ARG,&prevhash,&Sx[ramchain->H.spendind]);
@@ -1808,10 +1814,9 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
 {
     static uint64_t totalrecv;
     int32_t verifyflag = 0;
-    RAMCHAIN_DECLARE; uint32_t addr_ipbits; struct iguana_ramchain R,*mapchain,*ramchain = &addr->ramchain;
-    struct iguana_msgtx *tx; char fname[1024]; uint8_t rmd160[20]; // long fsize; void *ptr;
-    int32_t i,j,fpos,pubkeysize,msize,sigsize,subdir,firsti=1,err,flag,bundlei = -2; bits256 merkle_root;
-    struct iguana_bundle *bp = 0; struct iguana_block *block; uint32_t scriptspace,stackspace;
+    RAMCHAIN_DECLARE; uint32_t addr_ipbits; struct iguana_ramchain R,*mapchain,*ramchain = &addr->ramchain; struct iguana_msgtx *tx; char fname[1024]; uint8_t rmd160[20]; struct iguana_ramchaindata *rdata; int32_t i,j,fpos,pubkeysize,msize,sigsize,subdir,firsti=1,err,flag,bundlei = -2; bits256 merkle_root; struct iguana_bundle *bp = 0; struct iguana_block *block; uint32_t scriptspace,stackspace;
+    if ( (rdata= ramchain->H.data) == 0 )
+        return(-1);
     totalrecv += recvlen;
 #ifdef __PNACL__
     //verifyflag = 1;
@@ -1894,7 +1899,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
     }
     block->fpos = fpos = -1;
     iguana_ramchain_link(ramchain,block->RO.hash2,bp->hdrsi,bp->bundleheight+bundlei,bundlei,1,firsti,0);
-    _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
+    _iguana_ramchain_setptrs(RAMCHAIN_PTRS,rdata);
     subdir = bp->bundleheight / IGUANA_SUBDIRDIVISOR;
     char dirname[1024]; sprintf(dirname,"%s/%s/%d",GLOBAL_TMPDIR,coin->symbol,subdir), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/%s/%d/%d",GLOBAL_TMPDIR,coin->symbol,subdir,bp->bundleheight), OS_ensure_directory(dirname);
@@ -1920,7 +1925,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         ramchain->H.spendind += tx->tx_in;
     }
     //printf("scriptoffset.%d after %d txids\n",ramchain->H.scriptoffset,txn_count);
-    ramchain->H.txidind = ramchain->H.spendind = ramchain->H.data->firsti;
+    ramchain->H.txidind = ramchain->H.spendind = rdata->firsti;
     for (i=0; i<txn_count; i++,ramchain->H.txidind++)
     {
         tx = &txarray[i];
@@ -1929,14 +1934,14 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
              iguana_ramchain_addspend256(coin,addr,RAMCHAIN_ARG,tx->vins[j].prev_hash,tx->vins[j].prev_vout,tx->vins[j].vinscript,tx->vins[j].scriptlen,tx->vins[j].sequence,bp);//,bp->hdrsi,bundlei);
         }
     }
-    ramchain->H.data->prevhash2 = block->RO.prev_block;
-    ramchain->H.data->scriptspace = scriptspace = ramchain->H.scriptoffset;
-    ramchain->H.data->stackspace = stackspace = ramchain->H.stacksize;
-    iguana_ramchain_setsize(fname,ramchain,ramchain->H.data,1,coin->chain->zcash);
+    rdata->prevhash2 = block->RO.prev_block;
+    rdata->scriptspace = scriptspace = ramchain->H.scriptoffset;
+    rdata->stackspace = stackspace = ramchain->H.stacksize;
+    iguana_ramchain_setsize(fname,ramchain,rdata,1,coin->chain->zcash);
     flag = 0;
-    if ( ramchain->H.txidind != ramchain->H.data->numtxids || ramchain->H.unspentind != ramchain->H.data->numunspents || ramchain->H.spendind != ramchain->H.data->numspends )
+    if ( ramchain->H.txidind != rdata->numtxids || ramchain->H.unspentind != rdata->numunspents || ramchain->H.spendind != rdata->numspends )
     {
-        printf("error creating PT ramchain.[%d:%d] ramchain->txidind %d != %d ramchain->data->numtxids || ramchain->unspentind %d != %d ramchain->data->numunspents || ramchain->spendind %d != %d ramchain->data->numspends space.(%d v %d)\n",bp->hdrsi,bp->bundleheight,ramchain->H.txidind,ramchain->H.data->numtxids,ramchain->H.unspentind,ramchain->H.data->numunspents,ramchain->H.spendind,ramchain->H.data->numspends,ramchain->H.scriptoffset,ramchain->H.data->scriptspace);
+        printf("error creating PT ramchain.[%d:%d] ramchain->txidind %d != %d ramchain->data->numtxids || ramchain->unspentind %d != %d ramchain->data->numunspents || ramchain->spendind %d != %d ramchain->data->numspends space.(%d v %d)\n",bp->hdrsi,bp->bundleheight,ramchain->H.txidind,rdata->numtxids,ramchain->H.unspentind,rdata->numunspents,ramchain->H.spendind,rdata->numspends,ramchain->H.scriptoffset,rdata->scriptspace);
         block->fpipbits = 0;
         block->issued = 0;
         block->RO.recvlen = 0;
@@ -1946,11 +1951,11 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         if ( (err= iguana_ramchain_verify(coin,ramchain)) == 0 )
         {
             iguana_blockzcopyRO(coin->chain->zcash,B,0,&block->RO,0);
-            ramchain->H.data->scriptspace = ramchain->H.scriptoffset = scriptspace;
-            ramchain->H.data->stackspace = ramchain->H.stacksize = stackspace;
+            rdata->scriptspace = ramchain->H.scriptoffset = scriptspace;
+            rdata->stackspace = ramchain->H.stacksize = stackspace;
             if ( (fpos= (int32_t)iguana_ramchain_save(coin,RAMCHAIN_ARG,addr_ipbits,block->RO.hash2,block->RO.prev_block,bundlei,0,coin->chain->zcash)) >= 0 )
             {
-                origtxdata->datalen = (int32_t)ramchain->H.data->allocsize;
+                origtxdata->datalen = (int32_t)rdata->allocsize;
                 //char str[65]; printf("saved.%s [%d:%d] fpos.%d datalen.%d\n",bits256_str(str,block->RO.hash2),bp->hdrsi,bundlei,fpos,origtxdata->datalen);
                 ramchain->H.ROflag = 0;
                 flag = 1;
@@ -1993,10 +1998,10 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
                         if ( (err= iguana_ramchain_iterate(coin,0,&R,bp,bundlei)) != 0 )
                             printf("err.%d iterate ",err);
                         //printf("SUCCESS REMAP\n");
-                        bp->numtxids += ramchain->H.data->numtxids;
-                        bp->numunspents += ramchain->H.data->numunspents;
-                        bp->numspends += ramchain->H.data->numspends;
-                        //bp->rawscriptspace += ramchain->H.data->scriptspace;
+                        bp->numtxids += rdata->numtxids;
+                        bp->numunspents += rdata->numunspents;
+                        bp->numspends += rdata->numspends;
+                        //bp->rawscriptspace += rdata->scriptspace;
                     }
                     iguana_ramchain_free(coin,&R,1);
                     if ( err != 0 )
@@ -2004,10 +2009,10 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
                 }
                 else
                 {
-                    bp->numtxids += ramchain->H.data->numtxids;
-                    bp->numunspents += ramchain->H.data->numunspents;
-                    bp->numspends += ramchain->H.data->numspends;
-                    //bp->rawscriptspace += ramchain->H.data->scriptspace;
+                    bp->numtxids += rdata->numtxids;
+                    bp->numunspents += rdata->numunspents;
+                    bp->numspends += rdata->numspends;
+                    //bp->rawscriptspace += rdata->scriptspace;
                 }
                 if ( fpos >= 0 )
                     block->fpos = fpos, block->fpipbits = addr_ipbits;
@@ -2021,7 +2026,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
     }
     if ( fpos < 0 )
         iguana_blockunmark(coin,block,bp,bundlei,1);
-    //fprintf(stderr,"finished with hdrsi.%d ht.%d scripts.%u:%u\n",bp->hdrsi,bp->bundleheight,ramchain->H.scriptoffset,ramchain->H.data->scriptspace);
+    //fprintf(stderr,"finished with hdrsi.%d ht.%d scripts.%u:%u\n",bp->hdrsi,bp->bundleheight,ramchain->H.scriptoffset,rdata->scriptspace);
     ramchain->H.ROflag = 0;
     iguana_ramchain_free(coin,ramchain,0);
     return(fpos);
@@ -2031,12 +2036,12 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
 
 void iguana_ramchain_disp(struct iguana_ramchain *ramchain)
 {
-    RAMCHAIN_DECLARE; int32_t j; uint32_t txidind,unspentind,spendind; struct iguana_txid *tx; char str[65];
-    _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
-    if ( ramchain->H.data != 0 )
+    RAMCHAIN_DECLARE; int32_t j; uint32_t txidind,unspentind,spendind; struct iguana_txid *tx; char str[65]; struct iguana_ramchaindata *rdata;
+    if ( (rdata= ramchain->H.data) != 0 )
     {
-        unspentind = spendind = ramchain->H.data->firsti;
-        for (txidind=ramchain->H.data->firsti; txidind<ramchain->H.data->numtxids; txidind++)
+        _iguana_ramchain_setptrs(RAMCHAIN_PTRS,rdata);
+        unspentind = spendind = rdata->firsti;
+        for (txidind=rdata->firsti; txidind<rdata->numtxids; txidind++)
         {
             tx = &T[txidind];
             for (j=0; j<tx->numvins; j++, spendind++)
@@ -2199,51 +2204,51 @@ void iguana_bundlemapfree(struct iguana_info *coin,struct OS_memspace *mem,struc
 int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,struct iguana_ramchain *newchain,struct OS_memspace *hashmem,int32_t cmpflag,struct iguana_bundle *bp)
 {
     static const bits256 zero;
-    bits256 firsthash2; int32_t err,bundlei,hdrsi,numblocks,firsti,height,retval= -1;
-    struct iguana_ramchain checkR,*mapchain; char fname[1024]; struct iguana_block *block;
-    uint32_t scriptspace,scriptoffset,stacksize; uint8_t *destoffset,*srcoffset;
-    firsthash2 = ramchain->H.data->firsthash2;//, lasthash2 = ramchain->H.data->lasthash2;
-    height = ramchain->height, firsti = ramchain->H.data->firsti, hdrsi = ramchain->H.hdrsi, numblocks = ramchain->numblocks;
+    bits256 firsthash2; int32_t err,bundlei,hdrsi,numblocks,firsti,height,retval= -1; struct iguana_ramchain checkR,*mapchain; char fname[1024]; struct iguana_block *block; uint32_t scriptspace,scriptoffset,stacksize; uint8_t *destoffset,*srcoffset; struct iguana_ramchaindata *rdata;
+    if ( (rdata= ramchain->H.data) == 0 )
+        return(-1);
+    firsthash2 = rdata->firsthash2;//, lasthash2 = rdata->lasthash2;
+    height = ramchain->height, firsti = rdata->firsti, hdrsi = ramchain->H.hdrsi, numblocks = ramchain->numblocks;
     destoffset = &Kspace[ramchain->H.scriptoffset];
-    srcoffset = &Kspace[ramchain->H.data->scriptspace - ramchain->H.stacksize];
+    srcoffset = &Kspace[rdata->scriptspace - ramchain->H.stacksize];
     if ( ramchain->expanded != 0 )
     {
         if ( (long)destoffset > (long)srcoffset )
             printf("smashed stack? dest.%ld vs src %ld offset.%u stacksize.%u space.%u\n",(long)destoffset,(long)srcoffset,(uint32_t)ramchain->H.scriptoffset,(uint32_t)ramchain->H.stacksize,(uint32_t)ramchain->H.scriptoffset);
     }
-    //printf("%d SAVE: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d gap.%ld RO.%d\n",bp->bundleheight,(int32_t)ramchain->H.data->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)ramchain->H.data->allocsize,(long)destoffset - (long)srcoffset,ramchain->H.ROflag);
-    scriptspace = ramchain->H.data->scriptspace;
+    //printf("%d SAVE: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d gap.%ld RO.%d\n",bp->bundleheight,(int32_t)rdata->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)rdata->allocsize,(long)destoffset - (long)srcoffset,ramchain->H.ROflag);
+    scriptspace = rdata->scriptspace;
     scriptoffset = ramchain->H.scriptoffset;
     stacksize = ramchain->H.stacksize;
     //ramchain->H.scriptoffset = scriptoffset;
     if ( (block= bp->blocks[0]) != 0 )
-        ramchain->H.data->prevhash2 = block->RO.prev_block;
-    ramchain->H.data->scriptspace = scriptoffset;
-    ramchain->H.stacksize = ramchain->H.data->stackspace = stacksize;
-    iguana_ramchain_setsize(fname,ramchain,ramchain->H.data,bp->n,coin->chain->zcash);
-    //printf("Apresave T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d scriptoffset.%d stacksize.%d\n",ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,firsti,ramchain->H.scriptoffset,ramchain->H.stacksize);
+        rdata->prevhash2 = block->RO.prev_block;
+    rdata->scriptspace = scriptoffset;
+    ramchain->H.stacksize = rdata->stackspace = stacksize;
+    iguana_ramchain_setsize(fname,ramchain,rdata,bp->n,coin->chain->zcash);
+    //printf("Apresave T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d scriptoffset.%d stacksize.%d\n",rdata->numtxids,rdata->numunspents,rdata->numspends,rdata->numpkinds,rdata->numexternaltxids,(long)rdata->allocsize,firsti,ramchain->H.scriptoffset,ramchain->H.stacksize);
     *newchain = *ramchain;
-    //memcpy(ramchain->roU2,ramchain->U2,sizeof(*ramchain->U2) * ramchain->H.data->numunspents);
-    //memcpy(ramchain->roP2,ramchain->P2,sizeof(*ramchain->P2) * ramchain->H.data->numpkinds);
-    memcpy(ramchain->creditsA,ramchain->A,sizeof(*ramchain->A) * ramchain->H.data->numpkinds);
-    memset(ramchain->A,0,sizeof(*ramchain->A) * ramchain->H.data->numpkinds);
-    //printf("presave T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d\n",ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,firsti);
-    //printf("0 preSAVE: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d\n",(int32_t)ramchain->H.data->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)ramchain->H.data->allocsize);
+    //memcpy(ramchain->roU2,ramchain->U2,sizeof(*ramchain->U2) * rdata->numunspents);
+    //memcpy(ramchain->roP2,ramchain->P2,sizeof(*ramchain->P2) * rdata->numpkinds);
+    memcpy(ramchain->creditsA,ramchain->A,sizeof(*ramchain->A) * rdata->numpkinds);
+    memset(ramchain->A,0,sizeof(*ramchain->A) * rdata->numpkinds);
+    //printf("presave T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d\n",rdata->numtxids,rdata->numunspents,rdata->numspends,rdata->numpkinds,rdata->numexternaltxids,(long)rdata->allocsize,firsti);
+    //printf("0 preSAVE: Koffset.%d scriptoffset.%d stacksize.%d allocsize.%d\n",(int32_t)rdata->Koffset,ramchain->H.scriptoffset,ramchain->H.stacksize,(int32_t)rdata->allocsize);
     if ( (err= iguana_ramchain_iterate(coin,0,ramchain,bp,-1)) != 0 )
         printf("ERROR.%d iterating presave ramchain hdrsi.%d\n",err,hdrsi);
     else
     {
-        //printf("postiterate0.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d scripts.%d:%d stack.%d:%d\n",bp->bundleheight,ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,firsti,(int32_t)ramchain->H.scriptoffset,scriptoffset,(int32_t)ramchain->H.stacksize,stacksize);
+        //printf("postiterate0.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d scripts.%d:%d stack.%d:%d\n",bp->bundleheight,rdata->numtxids,rdata->numunspents,rdata->numspends,rdata->numpkinds,rdata->numexternaltxids,(long)rdata->allocsize,firsti,(int32_t)ramchain->H.scriptoffset,scriptoffset,(int32_t)ramchain->H.stacksize,stacksize);
         if ( ramchain->H.scriptoffset > scriptoffset || ramchain->H.stacksize > stacksize )
             printf("MEMORY OVERFLOW\n");
         if ( (err= iguana_ramchain_verify(coin,ramchain)) != 0 )
             printf("ERROR.%d verifying presave ramchain hdrsi.%d\n",err,hdrsi);
         else retval = 0;
     }
-    //printf("postiterateA.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d scripts.%d:%d stack.%d:%d\n",bp->bundleheight,ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,firsti,(int32_t)ramchain->H.scriptoffset,scriptoffset,(int32_t)ramchain->H.stacksize,stacksize);
+    //printf("postiterateA.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld firsti.%d scripts.%d:%d stack.%d:%d\n",bp->bundleheight,rdata->numtxids,rdata->numunspents,rdata->numspends,rdata->numpkinds,rdata->numexternaltxids,(long)rdata->allocsize,firsti,(int32_t)ramchain->H.scriptoffset,scriptoffset,(int32_t)ramchain->H.stacksize,stacksize);
     ramchain->H.scriptoffset = scriptoffset;
-    ramchain->H.data->scriptspace = scriptoffset;
-    ramchain->H.stacksize = ramchain->H.data->stackspace = stacksize;
+    rdata->scriptspace = scriptoffset;
+    ramchain->H.stacksize = rdata->stackspace = stacksize;
     if ( iguana_ramchain_save(coin,RAMCHAIN_ARG,0,firsthash2,zero,0,bp,coin->chain->zcash) < 0 )
     {
         printf("ERROR saving ramchain hdrsi.%d, deleting and will regenerate\n",hdrsi);
@@ -2251,7 +2256,7 @@ int32_t iguana_ramchain_expandedsave(struct iguana_info *coin,RAMCHAIN_FUNC,stru
     }
     else
     {
-        //printf("DEST T.%d U.%d S.%d P.%d X.%d -> size.%ld Xoffset.%d\n",ramchain->H.data->numtxids,ramchain->H.data->numunspents,ramchain->H.data->numspends,ramchain->H.data->numpkinds,ramchain->H.data->numexternaltxids,(long)ramchain->H.data->allocsize,(int32_t)ramchain->H.data->Xoffset);
+        //printf("DEST T.%d U.%d S.%d P.%d X.%d -> size.%ld Xoffset.%d\n",rdata->numtxids,rdata->numunspents,rdata->numspends,rdata->numpkinds,rdata->numexternaltxids,(long)rdata->allocsize,(int32_t)rdata->Xoffset);
         //printf("free dest hdrs.%d retval.%d\n",bp->hdrsi,retval);
         memset(&checkR,0,sizeof(checkR));
         checkR.sigsfileptr = ramchain->sigsfileptr;
@@ -2293,47 +2298,50 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
 {
     static const bits256 zero;
     struct iguana_blockRO *B; struct iguana_txid *T; int32_t i,firsti = 1; char fname[512];
-    struct iguana_block *block,*prev,*prev2; struct iguana_ramchain *mapchain;
+    struct iguana_block *block,*prev,*prev2; struct iguana_ramchain *mapchain; struct iguana_ramchaindata *rdata;
     memset(ramchain,0,sizeof(*ramchain));
     if ( (mapchain= iguana_ramchain_map(coin,fname,bp,bp->n,ramchain,0,0,bp->hashes[0],zero,0,0,extraflag,1)) != 0 )
     {
         iguana_ramchain_link(mapchain,bp->hashes[0],bp->hdrsi,bp->bundleheight,0,bp->n,firsti,1);
         //char str[65]; printf("bp.%d: T.%d U.%d S.%d P%d X.%d MAPPED %s %p\n",bp->hdrsi,mapchain->H.data->numtxids,mapchain->H.data->numunspents,mapchain->H.data->numspends,mapchain->H.data->numpkinds,mapchain->H.data->numexternaltxids,mbstr(str,mapchain->H.data->allocsize),mapchain->H.data);
         //ramcoder_test(mapchain->H.data,mapchain->H.data->allocsize);
-        B = RAMCHAIN_PTR(ramchain->H.data,Boffset);
-        T = RAMCHAIN_PTR(ramchain->H.data,Toffset);
-        prev = prev2 = 0;
-        for (i=0; i<bp->n; i++)
+        if ( (rdata= ramchain->H.data) != 0 )
         {
-            if ( (block= bp->blocks[i]) != 0 || (block= iguana_blockhashset("bundleload",coin,bp->bundleheight+i,bp->hashes[i],1)) != 0 )
+            B = RAMCHAIN_PTR(rdata,Boffset);
+            T = RAMCHAIN_PTR(rdata,Toffset);
+            prev = prev2 = 0;
+            for (i=0; i<bp->n; i++)
             {
-                if ( bits256_to_compact(bits256_from_compact(block->RO.bits)) != block->RO.bits )
+                if ( (block= bp->blocks[i]) != 0 || (block= iguana_blockhashset("bundleload",coin,bp->bundleheight+i,bp->hashes[i],1)) != 0 )
                 {
-                    char str[65];
-                    printf("nbits calc error %x -> %s -> %x\n",block->RO.bits,bits256_str(str,bits256_from_compact(block->RO.bits)),bits256_to_compact(bits256_from_compact(block->RO.bits)));
+                    if ( bits256_to_compact(bits256_from_compact(block->RO.bits)) != block->RO.bits )
+                    {
+                        char str[65];
+                        printf("nbits calc error %x -> %s -> %x\n",block->RO.bits,bits256_str(str,bits256_from_compact(block->RO.bits)),bits256_to_compact(bits256_from_compact(block->RO.bits)));
+                    }
+                    block->queued = 1;
+                    block->txvalid = 1;
+                    block->height = bp->bundleheight + i;
+                    block->hdrsi = bp->hdrsi;
+                    block->bundlei = i;
+                    block->fpipbits = (uint32_t)calc_ipbits("127.0.0.1");
+                    iguana_blockzcopyRO(coin->chain->zcash,&block->RO,0,B,i);
+                    //printf("%x ",(int32_t)B[i].hash2.ulongs[3]);
+                    iguana_hash2set(coin,"bundleload",bp,i,block->RO.hash2);
+                    bp->blocks[i] = block;
+                    if ( (prev= block->hh.prev) != 0 )
+                        prev2 = prev->hh.prev;
+                    if ( prev2 != 0 && prev != 0 && strcmp(coin->symbol,"BTCD") == 0 && bp->bundleheight > 20000 && prev != 0 && iguana_targetbits(coin,block,prev,prev2,1,coin->chain->targetspacing,coin->chain->targettimespan) != block->RO.bits )
+                    {
+                        printf("nbits target error %x != %x ht.%d\n",iguana_targetbits(coin,block,prev,prev2,1,coin->chain->targetspacing,coin->chain->targettimespan),block->RO.bits,block->height);
+                    } //else printf(">>>>>>>>>> matched nbits %x ht.%d\n",block->RO.bits,block->height);
+                    if ( bp->bundleheight+i == coin->blocks.hwmchain.height+1 )
+                    {
+                        //printf("try extend.%d\n",bp->bundleheight+i);
+                        //_iguana_chainlink(coin,block); wrong context
+                    }
+                    prev2 = prev, prev = block;
                 }
-                block->queued = 1;
-                block->txvalid = 1;
-                block->height = bp->bundleheight + i;
-                block->hdrsi = bp->hdrsi;
-                block->bundlei = i;
-                block->fpipbits = (uint32_t)calc_ipbits("127.0.0.1");
-                iguana_blockzcopyRO(coin->chain->zcash,&block->RO,0,B,i);
-                //printf("%x ",(int32_t)B[i].hash2.ulongs[3]);
-                iguana_hash2set(coin,"bundleload",bp,i,block->RO.hash2);
-                bp->blocks[i] = block;
-                if ( (prev= block->hh.prev) != 0 )
-                    prev2 = prev->hh.prev;
-                if ( prev2 != 0 && prev != 0 && strcmp(coin->symbol,"BTCD") == 0 && bp->bundleheight > 20000 && prev != 0 && iguana_targetbits(coin,block,prev,prev2,1,coin->chain->targetspacing,coin->chain->targettimespan) != block->RO.bits )
-                {
-                    printf("nbits target error %x != %x ht.%d\n",iguana_targetbits(coin,block,prev,prev2,1,coin->chain->targetspacing,coin->chain->targettimespan),block->RO.bits,block->height);
-                } //else printf(">>>>>>>>>> matched nbits %x ht.%d\n",block->RO.bits,block->height);
-                if ( bp->bundleheight+i == coin->blocks.hwmchain.height+1 )
-                {
-                    //printf("try extend.%d\n",bp->bundleheight+i);
-                    //_iguana_chainlink(coin,block); wrong context
-                }
-                prev2 = prev, prev = block;
             }
         }
         //printf("mapped bundle.%d\n",bp->bundleheight);
@@ -2403,7 +2411,7 @@ int64_t iguana_ramchainopen(char *fname,struct iguana_info *coin,struct iguana_r
         iguana_ramchain_link(ramchain,hash2,bundleheight/coin->chain->bundlesize,bundleheight,0,0,1,0);
         ramchain->expanded = 1;
         ramchain->H.scriptoffset = 1;
-        _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
+        _iguana_ramchain_setptrs(RAMCHAIN_PTRS,rdata);
         iguana_ramchain_extras(coin,ramchain,hashmem,0);
     }
     if ( rdata != 0 )

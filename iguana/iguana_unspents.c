@@ -407,19 +407,22 @@ int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *co
 
 int32_t iguana_uvaltxid(struct supernet_info *myinfo,bits256 *txidp,struct iguana_info *coin,int16_t hdrsi,uint32_t unspentind)
 {
-    struct iguana_bundle *bp; struct iguana_unspent *U,*u; struct iguana_txid *T; struct iguana_ramchain *ramchain;
+    struct iguana_bundle *bp; struct iguana_unspent *U,*u; struct iguana_txid *T; struct iguana_ramchain *ramchain; struct iguana_ramchaindata *rdata;
     if ( (bp= coin->bundles[hdrsi]) == 0 )
         return(-1);
     ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
-    U = RAMCHAIN_PTR(ramchain->H.data,Uoffset);
-    T = RAMCHAIN_PTR(ramchain->H.data,Toffset);
-    if ( unspentind > 0 && unspentind < ramchain->H.data->numunspents )
+    if ( (rdata= ramchain->H.data) != 0 )
     {
-        u = &U[unspentind];
-        if ( u->txidind > 0 && u->txidind < ramchain->H.data->numtxids )
+        U = RAMCHAIN_PTR(rdata,Uoffset);
+        T = RAMCHAIN_PTR(rdata,Toffset);
+        if ( unspentind > 0 && unspentind < rdata->numunspents )
         {
-            *txidp = T[u->txidind].txid;
-            return(unspentind - T[u->txidind].firstvout);
+            u = &U[unspentind];
+            if ( u->txidind > 0 && u->txidind < rdata->numtxids )
+            {
+                *txidp = T[u->txidind].txid;
+                return(unspentind - T[u->txidind].firstvout);
+            }
         }
     }
     return(-1);
@@ -427,12 +430,14 @@ int32_t iguana_uvaltxid(struct supernet_info *myinfo,bits256 *txidp,struct iguan
 
 int64_t iguana_unspentavail(struct iguana_info *coin,uint64_t hdrsi_unspentind,int32_t minconf,int32_t maxconf)
 {
-    struct iguana_ramchain *ramchain; struct iguana_bundle *bp; int64_t RTspend; int32_t hdrsi,spentheight,spentflag; struct iguana_unspent *U,*u; uint32_t unspentind;
+    struct iguana_ramchain *ramchain; struct iguana_bundle *bp; int64_t RTspend; int32_t hdrsi,spentheight,spentflag; struct iguana_unspent *U,*u; uint32_t unspentind; struct iguana_ramchaindata *rdata;
     if ( (bp= coin->bundles[hdrsi_unspentind>>32]) == 0 )
         return(-1);
     hdrsi = (int16_t)(hdrsi_unspentind >> 32);
     unspentind = (uint32_t)hdrsi_unspentind;
     ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
+    if ( (rdata= ramchain->H.data) == 0 )
+        return(0);
     if ( (spentflag= iguana_spentflag(coin,&RTspend,&spentheight,ramchain,hdrsi,unspentind,0,minconf,maxconf,0)) > 0 )
     {
         printf("[%d].u%d was already spent ht.%d\n",hdrsi,(uint32_t)unspentind,spentheight);
@@ -440,15 +445,15 @@ int64_t iguana_unspentavail(struct iguana_info *coin,uint64_t hdrsi_unspentind,i
     }
     else if ( spentflag == 0 )
     {
-        U = RAMCHAIN_PTR(ramchain->H.data,Uoffset);
-        if ( unspentind > 0 && unspentind < ramchain->H.data->numunspents )
+        U = RAMCHAIN_PTR(rdata,Uoffset);
+        if ( unspentind > 0 && unspentind < rdata->numunspents )
         {
             u = &U[unspentind];
             return(u->value);
         }
         else
         {
-            printf("illegal unspentind.%u vs %u [%d]\n",unspentind,ramchain->H.data->numunspents,bp->hdrsi);
+            printf("illegal unspentind.%u vs %u [%d]\n",unspentind,rdata->numunspents,bp->hdrsi);
             return(-2);
         }
     }

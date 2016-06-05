@@ -202,7 +202,7 @@ int32_t iguana_bestunspent(struct iguana_info *coin,int32_t *aboveip,int64_t *ab
 
 cJSON *iguana_inputsjson(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *totalp,uint64_t amount,int64_t *unspents,int32_t num)
 {
-    cJSON *item,*vins,*sobj; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE]; struct iguana_txid *T; struct iguana_unspent *U,*u; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; char coinaddr[64],hexstr[IGUANA_MAXSCRIPTSIZE*2+1]; int32_t height,abovei,belowi,i,spendlen,ind,hdrsi; uint32_t txidind,unspentind; int64_t value,above,below,total = 0; int64_t remains = amount;
+    cJSON *item,*vins,*sobj; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE]; struct iguana_txid *T; struct iguana_unspent *U,*u; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; char coinaddr[64],hexstr[IGUANA_MAXSCRIPTSIZE*2+1]; int32_t height,abovei,belowi,i,spendlen,ind,hdrsi; uint32_t txidind,unspentind; struct iguana_ramchaindata *rdata; int64_t value,above,below,total = 0; int64_t remains = amount;
     *totalp = 0;
     vins = cJSON_CreateArray();
     for (i=0; i<num; i++)
@@ -228,12 +228,14 @@ cJSON *iguana_inputsjson(struct supernet_info *myinfo,struct iguana_info *coin,i
             return(0);
         }
         ramchain = &bp->ramchain;
-        U = RAMCHAIN_PTR(ramchain->H.data,Uoffset);
-        T = RAMCHAIN_PTR(ramchain->H.data,Toffset);
-        if ( unspentind > 0 && unspentind < ramchain->H.data->numunspents )
+        if ( (rdata= ramchain->H.data) == 0 )
+            continue;
+        U = RAMCHAIN_PTR(rdata,Uoffset);
+        T = RAMCHAIN_PTR(rdata,Toffset);
+        if ( unspentind > 0 && unspentind < rdata->numunspents )
         {
             u = &U[unspentind];
-            if ( (txidind= u->txidind) > 0 && txidind < ramchain->H.data->numtxids )
+            if ( (txidind= u->txidind) > 0 && txidind < rdata->numtxids )
             {
                 if ( iguana_unspentindfind(coin,coinaddr,spendscript,&spendlen,&amount,&height,T[txidind].txid,u->vout,coin->bundlescount-1) == unspentind && spendlen > 0 )
                 {
