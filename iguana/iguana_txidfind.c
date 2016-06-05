@@ -277,7 +277,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
     {
         if ( (bp= coin->bundles[i]) != 0 && (bp == coin->current || bp->emitfinish > 1) )
         {
-            ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
+            ramchain = &bp->ramchain;//(bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
             if ( (rdata= ramchain->H.data) != 0 )
             {
                 if ( (TXbits= ramchain->txbits) == 0 )

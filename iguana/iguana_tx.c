@@ -72,7 +72,7 @@ int32_t iguana_vinset(struct iguana_info *coin,uint8_t *scriptspace,int32_t heig
     memset(vin,0,sizeof(*vin));
     if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0 )
     {
-        ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
+        ramchain = &bp->ramchain;//(bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
         if ( (rdata= ramchain->H.data) != 0 && i < rdata->numspends )
         {
             S = RAMCHAIN_PTR(rdata,Soffset);
@@ -125,7 +125,7 @@ int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmst
     memset(vout,0,sizeof(*vout));
     if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0  )
     {
-        ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
+        ramchain = &bp->ramchain;//(bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
         if ( (rdata= ramchain->H.data) != 0 && i < tx->numvouts )
         {
             U = RAMCHAIN_PTR(rdata,Uoffset);
@@ -139,7 +139,7 @@ int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmst
             vout->value = u->value;
             vout->pk_script = scriptspace;
             scriptlen = iguana_voutscript(coin,bp,scriptspace,asmstr,u,&P[u->pkind],i);
-        } else printf("iguana_voutset unexpected path rdata.%p i.%d %d\n",rdata,i,tx->numvouts);
+        } else printf("iguana_voutset unexpected path [%d] rdata.%p i.%d %d\n",bp->hdrsi,rdata,i,tx->numvouts);
     } else printf("vout error getting rdata.%p height.%d\n",rdata,height);
     vout->pk_scriptlen = scriptlen;
     if ( err != 0 )
