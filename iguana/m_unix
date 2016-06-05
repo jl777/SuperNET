@@ -3,7 +3,7 @@ rm ../agents/iguana *.o
 git pull
 cd secp256k1; ./m_unix; cd ..
 cd ../crypto777; ./m_unix; cd ../iguana
-gcc -g -Wno-deprecated -c -O2 *.c ../basilisk/basilisk.c #databases/iguana_DB.c
+gcc -g -Wno-deprecated -c -O2 *.c ../basilisk/basilisk.c ../basilisk/basilisk_privatechains.c #databases/iguana_DB.c
 gcc -g -Wno-deprecated -c  main.c iguana777.c iguana_bundles.c
 #gcc -g -o ../agents/iguana *.o ../agents/libcrypto777.a  -lcrypto -lpthread -lm #../includes/libsecp256k1.a -lgmp
 gcc -g -o ../agents/iguana *.o ../agents/libcrypto777.a  -lpthread -lm

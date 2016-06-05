@@ -755,8 +755,8 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
         // private chains
         { (void *)"NEW", &basilisk_respond_newprivatechain }, // creates new virtual private chain
         { (void *)"SEQ", &basilisk_respond_hashstamps }, // BTCD and BTC recent hashes from timestamp
-        { (void *)"SET", &basilisk_respond_setfield },   // adding field to one relay propagates to all others
-        { (void *)"GET", &basilisk_respond_getfield },   // any relay can be queried
+        { (void *)"VTX", &basilisk_respond_privatetx },   // adding field to one relay propagates to all others
+        { (void *)"BLK", &basilisk_respond_privateblock },   // any relay can be queried
 
         // unencrypted low level functions, used by higher level protocols and virtual network funcs
         { (void *)"ADD", &basilisk_respond_addrelay },   // relays register with each other bus

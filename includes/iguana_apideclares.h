@@ -24,8 +24,8 @@ HASH_ARRAY_STRING(basilisk,addrelay,pubkey,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,dispatch,pubkey,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,publish,pubkey,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,subscribe,pubkey,vals,hexstr);
-HASH_ARRAY_STRING(basilisk,set,pubkey,vals,hexstr);
-HASH_ARRAY_STRING(basilisk,get,pubkey,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,privatetx,pubkey,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,privateblock,pubkey,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,forward,pubkey,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,mailbox,pubkey,vals,hexstr);
 

@@ -595,6 +595,16 @@ char *basilisk_respond_newprivatechain(struct supernet_info *myinfo,char *CMD,vo
     return(clonestr("{\"error\":-22}"));
 }
 
+char *basilisk_respond_privatetx(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
+{
+    return(0);
+}
+
+char *basilisk_respond_privateblock(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
+{
+    return(0);
+}
+
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
@@ -647,14 +657,14 @@ HASH_ARRAY_STRING(basilisk,sequence,pubkey,vals,hexstr)
     return(basilisk_standardservice("SEQ",myinfo,pubkey,vals,hexstr,1));
 }
 
-HASH_ARRAY_STRING(basilisk,set,pubkey,vals,hexstr)
+HASH_ARRAY_STRING(basilisk,privatetx,pubkey,vals,hexstr)
 {
-    return(basilisk_standardservice("SET",myinfo,pubkey,vals,hexstr,1));
+    return(basilisk_standardservice("VTX",myinfo,pubkey,vals,hexstr,1));
 }
 
-HASH_ARRAY_STRING(basilisk,get,pubkey,vals,hexstr)
+HASH_ARRAY_STRING(basilisk,privateblock,pubkey,vals,hexstr)
 {
-    return(basilisk_standardservice("GET",myinfo,pubkey,vals,hexstr,1));
+    return(basilisk_standardservice("BLK",myinfo,pubkey,vals,hexstr,1));
 }
 #include "../includes/iguana_apiundefs.h"
 
