@@ -366,7 +366,7 @@ cJSON *iguana_blockjson(struct iguana_info *coin,struct iguana_block *block,int3
     msg.H.merkle_root = block->RO.merkle_root;
     msg.H.timestamp = block->RO.timestamp;
     msg.H.bits = block->RO.bits;
-    if ( block->RO.allocsize == sizeof(*block)+sizeof(*block->zRO) )
+    if ( block->RO.allocsize == sizeof(struct iguana_zblock) )
     {
         msg.zH.bignonce = block->zRO[0].bignonce;
         msg.zH.numelements = ZCASH_SOLUTION_ELEMENTS;

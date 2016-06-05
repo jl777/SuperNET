@@ -327,6 +327,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             }
         }
     }
+    origtxdata->zblock.RO.allocsize = sizeof(origtxdata->zblock);
     if ( iguana_blockvalidate(coin,&valid,(struct iguana_block *)&origtxdata->zblock,1) < 0 )
     {
         printf("got block that doesnt validate? %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
@@ -804,11 +805,6 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
         {
             //fprintf(stderr,"i.%d of %d bundleset\n",i,n);
             bp = 0, bundlei = -1;
-            /*src = (void *)((long)blocks + bsize*i);
-            memset(&zblock,0,sizeof(zblock));
-            zblock.RO.allocsize = sizeof(zblock);
-            iguana_blockconv(coin->chain->zcash,coin->chain->auxpow,(struct iguana_block *)&zblock,src,zblock.RO.hash2,zblock.height);
-            iguana_serialize_block(coin->chain,&zblock.RO.hash2,serialized,(struct iguana_block *)&zblock);*/
             if ( i > 0 && bits256_cmp(prevhash2,zblocks[i].RO.prev_block) == 0 )
             {
                 if ( (bp= iguana_bundleset(coin,&block,&bundlei,(struct iguana_block *)&zblocks[i])) != 0 )
@@ -852,10 +848,6 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
             addr->RThashes[i] = firstbp->hashes[0];
             for (i=1; i<n; i++)
             {
-                /*src = (void *)((long)blocks + bsize*i);
-                memset(&zblock,0,sizeof(zblock));
-                zblock.RO.allocsize = sizeof(zblock);
-                iguana_blockconv(coin->chain->zcash,coin->chain->auxpow,(struct iguana_block *)&zblock,src,zblock.RO.hash2,zblock.height);*/
                 iguana_serialize_block(coin->chain,&addr->RThashes[i],serialized,(struct iguana_block *)&zblocks[i]);
             }
             //memcpy(addr->RThashes,blockhashes,bp->numspec * sizeof(*addr->RThashes));

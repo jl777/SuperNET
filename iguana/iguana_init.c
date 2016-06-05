@@ -86,7 +86,7 @@ bits256 iguana_genesis(struct iguana_info *coin,struct iguana_chain *chain)
     struct iguana_block *block,*ptr; struct iguana_msgblock msg; bits256 hash2; char str[65],str2[65]; uint8_t buf[8192],blockspace[sizeof(*block)+sizeof(*block->zRO)]; int32_t height,auxback;
     block = (void *)blockspace;
     memset(block,0,sizeof(blockspace));
-    block->RO.allocsize = (int32_t)(sizeof(*block) + coin->chain->zcash*sizeof(*block->zRO));
+    iguana_blocksizecheck("genesis",coin->chain->zcash,block);
     if ( chain->genesis_hex == 0 )
     {
         printf("no genesis_hex for %s\n",coin->symbol);
@@ -117,12 +117,13 @@ bits256 iguana_genesis(struct iguana_info *coin,struct iguana_chain *chain)
     if ( (ptr= iguana_blockhashset("genesis0",coin,0,hash2,1)) != 0 )
     {
         iguana_blockcopy(coin->chain->zcash,coin->chain->auxpow,coin,ptr,block);
+        iguana_blocksizecheck("genesis ptr",coin->chain->zcash,ptr);
         ptr->mainchain = 1;
         ptr->height = 0;
         //coin->blocks.RO[0] = block.RO;
         if ( (height= iguana_chainextend(coin,ptr)) == 0 )
         {
-            memcpy(block,ptr,block->RO.allocsize);
+            iguana_blockzcopy(coin->chain->zcash,block,ptr);
             printf("size.%d genesis block PoW %f ptr %f\n",block->RO.allocsize,block->PoW,ptr->PoW);
             coin->blocks.recvblocks = coin->blocks.issuedblocks = 1;
         }

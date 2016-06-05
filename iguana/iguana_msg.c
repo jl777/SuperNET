@@ -217,7 +217,7 @@ int32_t iguana_serialize_block(struct iguana_chain *chain,bits256 *hash2p,uint8_
         msg.H.nonce = block->RO.nonce;
     else
     {
-        if ( block->RO.allocsize == sizeof(*block)+sizeof(*block->zRO) )
+        if ( block->RO.allocsize == sizeof(struct iguana_zblock) ) 
         {
             msg.zH.bignonce = block->zRO[0].bignonce;
             msg.zH.numelements = ZCASH_SOLUTION_ELEMENTS;

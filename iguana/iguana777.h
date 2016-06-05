@@ -1074,6 +1074,10 @@ void calc_scrypthash(uint32_t *hash,void *data);
 int32_t iguana_rwvarstr(int32_t rwflag,uint8_t *serialized,int32_t maxlen,char *endianedp);
 bits256 bitcoin_sharedsecret(void *ctx,bits256 privkey,uint8_t *pubkey,int32_t plen);
 int32_t iguana_blockhdrsize(char *symbol,uint8_t zcash,uint8_t auxpow);//,uint8_t *serialized,int32_t maxlen);
+int32_t iguana_blockROsize(uint8_t zcash);
+void *iguana_blockzcopyRO(uint8_t zcash,struct iguana_blockRO *dest,int32_t desti,struct iguana_blockRO *src,int32_t srci);
+void iguana_blockzcopy(uint8_t zcash,struct iguana_block *dest,struct iguana_block *src);
+int32_t iguana_blocksizecheck(char *debugstr,uint8_t zcash,struct iguana_block *block);
 
 extern int32_t HDRnet,netBLOCKS;
 
