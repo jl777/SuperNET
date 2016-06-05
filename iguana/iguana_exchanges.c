@@ -875,7 +875,7 @@ void iguana_gotquotesM(struct iguana_info *coin,struct iguana_peer *addr,bits256
 {
     struct iguana_bundlereq *req; struct exchange_info *exchange = exchanges777_find("bitcoin");
     //printf("got %d quotes from %s\n",n,addr->ipaddr);
-    req = iguana_bundlereq(coin,addr,'Q',0);
+    req = iguana_bundlereq(coin,addr,'Q',0,0);
     req->hashes = quotes, req->n = n;
     queue_enqueue("recvQ",&exchange->recvQ,&req->DL,0);
 }

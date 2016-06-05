@@ -1815,8 +1815,6 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
     static uint64_t totalrecv;
     int32_t verifyflag = 0;
     RAMCHAIN_DECLARE; uint32_t addr_ipbits; struct iguana_ramchain R,*mapchain,*ramchain = &addr->ramchain; struct iguana_msgtx *tx; char fname[1024]; uint8_t rmd160[20]; struct iguana_ramchaindata *rdata; int32_t i,j,fpos,pubkeysize,msize,sigsize,subdir,firsti=1,err,flag,bundlei = -2; bits256 merkle_root; struct iguana_bundle *bp = 0; struct iguana_block *block; uint32_t scriptspace,stackspace;
-    if ( (rdata= ramchain->H.data) == 0 )
-        return(-1);
     totalrecv += recvlen;
 #ifdef __PNACL__
     //verifyflag = 1;
@@ -1899,129 +1897,95 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
     }
     block->fpos = fpos = -1;
     iguana_ramchain_link(ramchain,block->RO.hash2,bp->hdrsi,bp->bundleheight+bundlei,bundlei,1,firsti,0);
-    _iguana_ramchain_setptrs(RAMCHAIN_PTRS,rdata);
-    subdir = bp->bundleheight / IGUANA_SUBDIRDIVISOR;
-    char dirname[1024]; sprintf(dirname,"%s/%s/%d",GLOBAL_TMPDIR,coin->symbol,subdir), OS_ensure_directory(dirname);
-    sprintf(dirname,"%s/%s/%d/%d",GLOBAL_TMPDIR,coin->symbol,subdir,bp->bundleheight), OS_ensure_directory(dirname);
-    //printf("Kspace.%p bp.[%d:%d] <- scriptspace.%d expanded.%d\n",Kspace,bp->hdrsi,bundlei,scriptspace,ramchain->expanded);
-    if ( T == 0 || U == 0 || S == 0 || B == 0 )
+    if ( (rdata= ramchain->H.data) != 0 )
     {
-        block->issued = 0;
-        block->RO.recvlen = 0;
-        printf("fatal error getting txdataptrs %p %p %p %p\n",T,U,S,B);
-        return(-1);
-    }
-    block->fpipbits = 1;
-    for (i=0; i<txn_count; i++,ramchain->H.txidind++)
-    {
-        tx = &txarray[i];
-        iguana_ramchain_addtxid(coin,RAMCHAIN_ARG,tx->txid,tx->tx_out,tx->tx_in,tx->lock_time,tx->version,tx->timestamp,bundlei);
-        for (j=0; j<tx->tx_out; j++)
+        _iguana_ramchain_setptrs(RAMCHAIN_PTRS,rdata);
+        subdir = bp->bundleheight / IGUANA_SUBDIRDIVISOR;
+        char dirname[1024]; sprintf(dirname,"%s/%s/%d",GLOBAL_TMPDIR,coin->symbol,subdir), OS_ensure_directory(dirname);
+        sprintf(dirname,"%s/%s/%d/%d",GLOBAL_TMPDIR,coin->symbol,subdir,bp->bundleheight), OS_ensure_directory(dirname);
+        //printf("Kspace.%p bp.[%d:%d] <- scriptspace.%d expanded.%d\n",Kspace,bp->hdrsi,bundlei,scriptspace,ramchain->expanded);
+        if ( T == 0 || U == 0 || S == 0 || B == 0 )
         {
-            memset(rmd160,0,sizeof(rmd160));
-            //printf("i.%d j.%d pkscriptlen.%d\n",i,j,tx->vouts[j].pk_scriptlen);
-            iguana_ramchain_addunspent20(coin,addr,RAMCHAIN_ARG,tx->vouts[j].value,tx->vouts[j].pk_script,tx->vouts[j].pk_scriptlen,tx->txid,j,-1,bp,rmd160);
+            block->issued = 0;
+            block->RO.recvlen = 0;
+            printf("fatal error getting txdataptrs %p %p %p %p\n",T,U,S,B);
+            return(-1);
         }
-        ramchain->H.spendind += tx->tx_in;
-    }
-    //printf("scriptoffset.%d after %d txids\n",ramchain->H.scriptoffset,txn_count);
-    ramchain->H.txidind = ramchain->H.spendind = rdata->firsti;
-    for (i=0; i<txn_count; i++,ramchain->H.txidind++)
-    {
-        tx = &txarray[i];
-        for (j=0; j<tx->tx_in; j++)
+        block->fpipbits = 1;
+        for (i=0; i<txn_count; i++,ramchain->H.txidind++)
         {
-             iguana_ramchain_addspend256(coin,addr,RAMCHAIN_ARG,tx->vins[j].prev_hash,tx->vins[j].prev_vout,tx->vins[j].vinscript,tx->vins[j].scriptlen,tx->vins[j].sequence,bp);//,bp->hdrsi,bundlei);
-        }
-    }
-    rdata->prevhash2 = block->RO.prev_block;
-    rdata->scriptspace = scriptspace = ramchain->H.scriptoffset;
-    rdata->stackspace = stackspace = ramchain->H.stacksize;
-    iguana_ramchain_setsize(fname,ramchain,rdata,1,coin->chain->zcash);
-    flag = 0;
-    if ( ramchain->H.txidind != rdata->numtxids || ramchain->H.unspentind != rdata->numunspents || ramchain->H.spendind != rdata->numspends )
-    {
-        printf("error creating PT ramchain.[%d:%d] ramchain->txidind %d != %d ramchain->data->numtxids || ramchain->unspentind %d != %d ramchain->data->numunspents || ramchain->spendind %d != %d ramchain->data->numspends space.(%d v %d)\n",bp->hdrsi,bp->bundleheight,ramchain->H.txidind,rdata->numtxids,ramchain->H.unspentind,rdata->numunspents,ramchain->H.spendind,rdata->numspends,ramchain->H.scriptoffset,rdata->scriptspace);
-        block->fpipbits = 0;
-        block->issued = 0;
-        block->RO.recvlen = 0;
-    }
-    else
-    {
-        if ( (err= iguana_ramchain_verify(coin,ramchain)) == 0 )
-        {
-            iguana_blockzcopyRO(coin->chain->zcash,B,0,&block->RO,0);
-            rdata->scriptspace = ramchain->H.scriptoffset = scriptspace;
-            rdata->stackspace = ramchain->H.stacksize = stackspace;
-            if ( (fpos= (int32_t)iguana_ramchain_save(coin,RAMCHAIN_ARG,addr_ipbits,block->RO.hash2,block->RO.prev_block,bundlei,0,coin->chain->zcash)) >= 0 )
+            tx = &txarray[i];
+            iguana_ramchain_addtxid(coin,RAMCHAIN_ARG,tx->txid,tx->tx_out,tx->tx_in,tx->lock_time,tx->version,tx->timestamp,bundlei);
+            for (j=0; j<tx->tx_out; j++)
             {
-                origtxdata->datalen = (int32_t)rdata->allocsize;
-                //char str[65]; printf("saved.%s [%d:%d] fpos.%d datalen.%d\n",bits256_str(str,block->RO.hash2),bp->hdrsi,bundlei,fpos,origtxdata->datalen);
-                ramchain->H.ROflag = 0;
-                flag = 1;
-                if ( addr->dirty[0] != 0 && addr->voutsfp != 0 )
-                    fflush(addr->voutsfp);
-                if ( addr->dirty[1] != 0 && addr->vinsfp != 0 )
-                    fflush(addr->vinsfp);
-                memset(&R,0,sizeof(R));
-                if ( verifyflag != 0 && (mapchain= iguana_ramchain_map(coin,fname,0,1,&R,0,addr_ipbits,block->RO.hash2,block->RO.prev_block,bundlei,fpos,1,0)) == 0 )
+                memset(rmd160,0,sizeof(rmd160));
+                //printf("i.%d j.%d pkscriptlen.%d\n",i,j,tx->vouts[j].pk_scriptlen);
+                iguana_ramchain_addunspent20(coin,addr,RAMCHAIN_ARG,tx->vouts[j].value,tx->vouts[j].pk_script,tx->vouts[j].pk_scriptlen,tx->txid,j,-1,bp,rmd160);
+            }
+            ramchain->H.spendind += tx->tx_in;
+        }
+        //printf("scriptoffset.%d after %d txids\n",ramchain->H.scriptoffset,txn_count);
+        ramchain->H.txidind = ramchain->H.spendind = rdata->firsti;
+        for (i=0; i<txn_count; i++,ramchain->H.txidind++)
+        {
+            tx = &txarray[i];
+            for (j=0; j<tx->tx_in; j++)
+            {
+                iguana_ramchain_addspend256(coin,addr,RAMCHAIN_ARG,tx->vins[j].prev_hash,tx->vins[j].prev_vout,tx->vins[j].vinscript,tx->vins[j].scriptlen,tx->vins[j].sequence,bp);//,bp->hdrsi,bundlei);
+            }
+        }
+        rdata->prevhash2 = block->RO.prev_block;
+        rdata->scriptspace = scriptspace = ramchain->H.scriptoffset;
+        rdata->stackspace = stackspace = ramchain->H.stacksize;
+        iguana_ramchain_setsize(fname,ramchain,rdata,1,coin->chain->zcash);
+        flag = 0;
+        if ( ramchain->H.txidind != rdata->numtxids || ramchain->H.unspentind != rdata->numunspents || ramchain->H.spendind != rdata->numspends )
+        {
+            printf("error creating PT ramchain.[%d:%d] ramchain->txidind %d != %d ramchain->data->numtxids || ramchain->unspentind %d != %d ramchain->data->numunspents || ramchain->spendind %d != %d ramchain->data->numspends space.(%d v %d)\n",bp->hdrsi,bp->bundleheight,ramchain->H.txidind,rdata->numtxids,ramchain->H.unspentind,rdata->numunspents,ramchain->H.spendind,rdata->numspends,ramchain->H.scriptoffset,rdata->scriptspace);
+            block->fpipbits = 0;
+            block->issued = 0;
+            block->RO.recvlen = 0;
+        }
+        else
+        {
+            if ( (err= iguana_ramchain_verify(coin,ramchain)) == 0 )
+            {
+                iguana_blockzcopyRO(coin->chain->zcash,B,0,&block->RO,0);
+                rdata->scriptspace = ramchain->H.scriptoffset = scriptspace;
+                rdata->stackspace = ramchain->H.stacksize = stackspace;
+                if ( (fpos= (int32_t)iguana_ramchain_save(coin,RAMCHAIN_ARG,addr_ipbits,block->RO.hash2,block->RO.prev_block,bundlei,0,coin->chain->zcash)) >= 0 )
                 {
-                    printf("delete unverified [%d:%d]\n",bp->hdrsi,bundlei);
-                    iguana_ramchain_free(coin,&R,1);
-                    fpos = -1;
-                    //printf("mapped Soffset.%ld\n",(long)mapchain->data->Soffset);
-                    /*iguana_ramchain_link(&R,block->RO.hash2,bp->hdrsi,bp->bundleheight+bundlei,bundlei,1,firsti,1);
-                    if ( 1 ) // unix issues?
+                    origtxdata->datalen = (int32_t)rdata->allocsize;
+                    //char str[65]; printf("saved.%s [%d:%d] fpos.%d datalen.%d\n",bits256_str(str,block->RO.hash2),bp->hdrsi,bundlei,fpos,origtxdata->datalen);
+                    ramchain->H.ROflag = 0;
+                    flag = 1;
+                    if ( addr->dirty[0] != 0 && addr->voutsfp != 0 )
+                        fflush(addr->voutsfp);
+                    if ( addr->dirty[1] != 0 && addr->vinsfp != 0 )
+                        fflush(addr->vinsfp);
+                    memset(&R,0,sizeof(R));
+                    if ( verifyflag != 0 && (mapchain= iguana_ramchain_map(coin,fname,0,1,&R,0,addr_ipbits,block->RO.hash2,block->RO.prev_block,bundlei,fpos,1,0)) == 0 )
                     {
-                        if ( (err= iguana_ramchain_cmp(ramchain,mapchain,0)) != 0 )
-                            fpos = -1, printf("error.%d comparing ramchains\n",err);
-                        else
-                        {
-                            ptr = mapchain->fileptr; fsize = mapchain->filesize;
-                            mapchain->fileptr = 0, mapchain->filesize = 0;
-                            iguana_ramchain_free(coin,mapchain,1);
-                            memset(&R,0,sizeof(R));
-                            R.H.data = (void *)(long)((long)ptr + fpos), R.filesize = fsize;
-                            iguana_ramchain_link(&R,block->RO.hash2,bp->hdrsi,bp->bundleheight+bundlei,bundlei,1,firsti,1);
-                        }
-                    }
-                    if ( (err= iguana_ramchain_cmp(ramchain,&R,0)) != 0 )
-                    {
+                        printf("delete unverified [%d:%d]\n",bp->hdrsi,bundlei);
+                        iguana_ramchain_free(coin,&R,1);
                         fpos = -1;
-                        block->issued = 0;
-                        block->RO.recvlen = 0;
-                        printf("error.%d comparing REMAP ramchains\n",err);
                     }
                     else
                     {
-                        iguana_ramchain_extras(coin,&R,0,0);
-                        if ( (err= iguana_ramchain_iterate(coin,0,&R,bp,bundlei)) != 0 )
-                            printf("err.%d iterate ",err);
-                        //printf("SUCCESS REMAP\n");
                         bp->numtxids += rdata->numtxids;
                         bp->numunspents += rdata->numunspents;
                         bp->numspends += rdata->numspends;
                         //bp->rawscriptspace += rdata->scriptspace;
                     }
-                    iguana_ramchain_free(coin,&R,1);
-                    if ( err != 0 )
-                        iguana_blockunmark(coin,block,bp,bundlei,1);*/
-                }
-                else
-                {
-                    bp->numtxids += rdata->numtxids;
-                    bp->numunspents += rdata->numunspents;
-                    bp->numspends += rdata->numspends;
-                    //bp->rawscriptspace += rdata->scriptspace;
-                }
-                if ( fpos >= 0 )
-                    block->fpos = fpos, block->fpipbits = addr_ipbits;
-            } else printf("save error\n");
-        }
-        else
-        {
-            printf("ramchain verification error.%d hdrsi.%d bundlei.%d n.%d\n",err,bp->hdrsi,bundlei,bp->n);
-            fpos = -1;
+                    if ( fpos >= 0 )
+                        block->fpos = fpos, block->fpipbits = addr_ipbits;
+                } else printf("save error\n");
+            }
+            else
+            {
+                printf("ramchain verification error.%d hdrsi.%d bundlei.%d n.%d\n",err,bp->hdrsi,bundlei,bp->n);
+                fpos = -1;
+            }
         }
     }
     if ( fpos < 0 )

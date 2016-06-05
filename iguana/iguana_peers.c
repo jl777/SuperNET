@@ -550,7 +550,14 @@ void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct ig
             coin->totalrecv += len, coin->totalpackets++;
             //printf("next iter.(%s) numreferrals.%d numpings.%d\n",addr->ipaddr,addr->numreferrals,addr->numpings);
         }
-    } else printf("header error from %s\n",addr->ipaddr);
+    }
+    else
+    {
+        int z;
+        for (z=0; z<sizeof(*H); z++)
+            printf("%02x",((uint8_t *)H)[z]);
+        printf(" header error from %s len %d crc.%08x\n",addr->ipaddr,len,calc_crc32(0,buf,len));
+    }
 }
 
 void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_peer *addr,uint8_t *_buf,int32_t maxlen)
@@ -1106,11 +1113,11 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
     run = 0;
     while ( addr->usock >= 0 && addr->dead == 0 && coin->peers->shuttingdown == 0 )
     {
-        if ( 0 && (req= queue_dequeue(&coin->cacheQ,0)) != 0 )
+        if ( (req= queue_dequeue(&coin->cacheQ,0)) != 0 )
         {
             if ( req->datalen != 0 )
             {
-                //char str[65]; printf("CACHE.%p parse[%d] %s %s\n",req,req->recvlen,req->H.command,bits256_str(str,req->block.RO.hash2));
+                //char str[65]; printf("CACHE.%p parse[%d] %s %s\n",req,req->recvlen,req->H.command,bits256_str(str,req->zblock.RO.hash2));
                 iguana_parsebuf(coin,addr,&req->H,req->serializeddata,req->recvlen);
             } else printf("CACHE error no datalen\n");
             coin->cachefreed++;

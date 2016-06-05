@@ -854,7 +854,7 @@ struct iguana_info *iguana_setcoin(struct supernet_info *myinfo,char *symbol,voi
 #ifdef __PNACL__
     coin->startPEND =  coin->endPEND = 1;
 #endif
-    coin->enableCACHE = 0;//(strcmp("BTC",coin->symbol) != 0);
+    coin->enableCACHE = (strcmp("BTCD",coin->symbol) == 0);
     if ( jobj(json,"cache") != 0 )
         coin->enableCACHE = juint(json,"cache");
     if ( (coin->polltimeout= juint(json,"poll")) <= 0 )

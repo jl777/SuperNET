@@ -20,18 +20,20 @@
 static int32_t numDuplicates,numAfteremit;
 static int64_t sizeDuplicates,sizeAfteremit;
 
-struct iguana_bundlereq *iguana_bundlereq(struct iguana_info *coin,struct iguana_peer *addr,int32_t type,int32_t datalen)
+struct iguana_bundlereq *iguana_bundlereq(struct iguana_info *coin,struct iguana_peer *addr,int32_t type,uint8_t *data,int32_t datalen)
 {
-    struct iguana_bundlereq *req; int32_t allocsize,bsize;
-    bsize = (int32_t)(sizeof(struct iguana_block) + coin->chain->zcash*sizeof(struct iguana_zcashRO));
-    allocsize = (uint32_t)sizeof(*req) + datalen + bsize;
+    struct iguana_bundlereq *req; int32_t allocsize;
+    if ( data == 0 )
+        datalen = 0;
+    allocsize = (uint32_t)sizeof(*req) + datalen;
     req = mycalloc(type,1,allocsize);
     req->allocsize = allocsize;
     req->datalen = datalen;
     req->addr = addr;
     req->coin = coin;
     req->type = type;
-    req->serializeddata = (void *)((long)req + bsize);
+    if ( data != 0 && datalen > 0 )
+        memcpy(req->serializeddata,data,datalen);
     return(req);
 }
 
@@ -158,7 +160,7 @@ void iguana_gotunconfirmedM(struct iguana_info *coin,struct iguana_peer *addr,st
 {
     struct iguana_bundlereq *req;
     char str[65]; printf("%s unconfirmed.%s\n",addr->ipaddr,bits256_str(str,tx->txid));
-    req = iguana_bundlereq(coin,addr,'U',datalen);
+    req = iguana_bundlereq(coin,addr,'U',data,datalen);
     req->datalen = datalen;
     req->txid = tx->txid;
     memcpy(req->serializeddata,data,datalen);
@@ -366,7 +368,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             //iguana_blast(coin,addr);
         }
     }
-    copyflag = 0;//(coin->enableCACHE != 0) && (strcmp(coin->symbol,"BTC") != 0);
+    copyflag = (coin->enableCACHE != 0) && (strcmp(coin->symbol,"BTC") != 0);
     bp = 0, bundlei = -2;
     bp = iguana_bundlefind(coin,&bp,&bundlei,origtxdata->zblock.RO.hash2);
     if ( bp != 0 && bundlei >= 0 && bundlei < bp->n )
@@ -384,7 +386,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
         bp->dirty++;
         if ( bundlei >= 0 && block != 0 )
         {
-            if ( iguana_blockstatus(coin,block) != 0 && block->txvalid != 0 )
+            if ( block->fpipbits != 0 && block->txvalid != 0 )
             {
                 numDuplicates++;
                 sizeDuplicates += recvlen;
@@ -402,14 +404,8 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
                 if ( 0 && bp == coin->current )
                     printf("recv [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
             }
-            block->RO = origtxdata->zblock.RO;
+            iguana_blockzcopyRO(coin->chain->zcash,&block->RO,0,&origtxdata->zblock.RO,0);
             block->txvalid = 1;
-            /*if ( block->serdata == 0 )
-            {
-                block->serdata = malloc(recvlen);
-                memcpy(block->serdata,data,recvlen);
-            }*/
-            //printf("update prev for [%d:%d]\n",bp->hdrsi,bundlei);
         }
     }
     else
@@ -432,20 +428,27 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             }
         }
     }
-    if ( copyflag != 0 && recvlen != 0 && (bp == 0 || bundlei < 0 || ((block= bp->blocks[bundlei]) != 0 && iguana_blockstatus(coin,block) == 0)) )
+    block = 0;
+    if ( copyflag != 0 && recvlen != 0 && (bp == 0 || bundlei < 0 || ((block= bp->blocks[bundlei]) != 0 && block->fpipbits == 0 && block->req == 0)) )
     {
-        req = iguana_bundlereq(coin,addr,'B',copyflag * recvlen);
+        struct iguana_msghdr checkH;
+        req = iguana_bundlereq(coin,addr,'B',data,copyflag * recvlen);
         req->copyflag = 1;
-        printf("copy %p serialized[%d]\n",req,req->recvlen);
-        memcpy(req->serializeddata,data,recvlen);
+        req->H = *H;
+        if ( 0 && iguana_sethdr(&checkH,coin->chain->netmagic,H->command,req->serializeddata,recvlen) > 0 && memcmp(&checkH,H,sizeof(checkH)) != 0 )
+        {
+            int z;
+            for (z=0; z<sizeof(checkH); z++)
+                printf("%02x",((uint8_t *)&checkH)[z]);
+            printf(" req->H datalen.%d crc.%08x error\n",recvlen,calc_crc32(0,data,recvlen));
+        }
     }
     else
     {
         copyflag = 0;
-        req = iguana_bundlereq(coin,addr,'B',0);
+        req = iguana_bundlereq(coin,addr,'B',0,0);
     }
     req->recvlen = recvlen;
-    req->H = *H;
     if ( bits256_cmp(origtxdata->zblock.RO.hash2,coin->APIblockhash) == 0 )
     {
         printf("MATCHED APIblockhash\n");
@@ -494,7 +497,7 @@ void iguana_gottxidsM(struct iguana_info *coin,struct iguana_peer *addr,bits256 
 {
     struct iguana_bundlereq *req;
     //printf("got %d txids from %s\n",n,addr->ipaddr);
-    req = iguana_bundlereq(coin,addr,'T',0);
+    req = iguana_bundlereq(coin,addr,'T',0,0);
     req->hashes = txids, req->n = n;
     queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
 }
@@ -526,7 +529,7 @@ void iguana_gotheadersM(struct iguana_info *coin,struct iguana_peer *addr,struct
             addr->numRThashes = num;
         }
     }
-    req = iguana_bundlereq(coin,addr,'H',0);
+    req = iguana_bundlereq(coin,addr,'H',0,0);
     req->blocks = zblocks, req->n = n;
     HDRnet++;
     queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
@@ -547,7 +550,7 @@ void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bi
             addr->numRThashes = num;
         }
     }
-    req = iguana_bundlereq(coin,addr,'S',0);
+    req = iguana_bundlereq(coin,addr,'S',0,0);
     req->hashes = blockhashes, req->n = n;
     char str[65];
     if ( 0 && n > 2 && addr != 0 )
@@ -1045,6 +1048,23 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
             }
         }
     }
+    else if ( req->copyflag != 0 )
+    {
+        if ( bp == 0 && (block == 0 || block->queued == 0))
+        {
+            //fprintf(stderr,"req.%p copyflag.%d data %d %d\n",req,req->copyflag,req->recvlen,recvlen);
+            coin->numcached++;
+            if ( block != 0 )
+                block->queued = 1;
+            queue_enqueue("cacheQ",&coin->cacheQ,&req->DL,0);
+            return(0);
+        }
+        else if ( block != 0 && block->req == 0 )
+        {
+            block->req = req;
+            req = 0;
+        } //else printf("already have cache entry.(%s)\n",bits256_str(str,origblock->RO.hash2));
+    }
     if ( block != 0 )//&& bp != 0 && bp->hdrsi == coin->bundlescount-1 )
     {
         int32_t i,numsaved = 0; struct iguana_block *tmpblock; static int32_t numrecv;
@@ -1084,22 +1104,6 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
             iguana_blockcopy(coin->chain->zcash,coin->chain->auxpow,coin,block,(struct iguana_block *)origblock);
         if ( block->lag != 0 && block->issued != 0 )
             block->lag = (uint32_t)time(NULL) - block->issued;
-        if ( req->copyflag != 0 )
-        {
-            if ( block->queued == 0 && bp != 0 )
-            {
-                char str[65]; fprintf(stderr,"req.%p %s copyflag.%d %d data %d %d\n",req,bits256_str(str,block->RO.hash2),req->copyflag,block->height,req->recvlen,recvlen);
-                coin->numcached++;
-                block->queued = 1;
-                queue_enqueue("cacheQ",&coin->cacheQ,&req->DL,0);
-                return(0);
-            }
-            else if ( block->req == 0 )
-            {
-                block->req = req;
-                req = 0;
-            } //else printf("already have cache entry.(%s)\n",bits256_str(str,origblock->RO.hash2));
-        }
         //printf("datalen.%d ipbits.%x\n",datalen,req->ipbits);
     } else printf("cant create origblock.%p block.%p bp.%p bundlei.%d\n",origblock,block,bp,bundlei);
     return(req);

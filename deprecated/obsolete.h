@@ -17312,6 +17312,43 @@ len = 0;
                 }
                 return(i);
             }
-
+                //printf("mapped Soffset.%ld\n",(long)mapchain->data->Soffset);
+            /*iguana_ramchain_link(&R,block->RO.hash2,bp->hdrsi,bp->bundleheight+bundlei,bundlei,1,firsti,1);
+             if ( 1 ) // unix issues?
+             {
+             if ( (err= iguana_ramchain_cmp(ramchain,mapchain,0)) != 0 )
+             fpos = -1, printf("error.%d comparing ramchains\n",err);
+             else
+             {
+             ptr = mapchain->fileptr; fsize = mapchain->filesize;
+             mapchain->fileptr = 0, mapchain->filesize = 0;
+             iguana_ramchain_free(coin,mapchain,1);
+             memset(&R,0,sizeof(R));
+             R.H.data = (void *)(long)((long)ptr + fpos), R.filesize = fsize;
+             iguana_ramchain_link(&R,block->RO.hash2,bp->hdrsi,bp->bundleheight+bundlei,bundlei,1,firsti,1);
+             }
+             }
+             if ( (err= iguana_ramchain_cmp(ramchain,&R,0)) != 0 )
+             {
+             fpos = -1;
+             block->issued = 0;
+             block->RO.recvlen = 0;
+             printf("error.%d comparing REMAP ramchains\n",err);
+             }
+             else
+             {
+             iguana_ramchain_extras(coin,&R,0,0);
+             if ( (err= iguana_ramchain_iterate(coin,0,&R,bp,bundlei)) != 0 )
+             printf("err.%d iterate ",err);
+             //printf("SUCCESS REMAP\n");
+             bp->numtxids += rdata->numtxids;
+             bp->numunspents += rdata->numunspents;
+             bp->numspends += rdata->numspends;
+             //bp->rawscriptspace += rdata->scriptspace;
+             }
+             iguana_ramchain_free(coin,&R,1);
+             if ( err != 0 )
+             iguana_blockunmark(coin,block,bp,bundlei,1);*/
+                
 #endif
 #endif

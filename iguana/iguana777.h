@@ -532,8 +532,8 @@ struct iguana_bundlereq
     struct iguana_txdatabits txdatabits;
     struct iguana_msghdr H;
     int32_t allocsize,datalen,n,recvlen,numtx; uint32_t ipbits;
-    uint8_t copyflag,*serializeddata;
     struct iguana_zblock zblock;
+    uint8_t copyflag,serializeddata[];
 };
 
 struct iguana_bitmap { int32_t width,height,amplitude; char name[52]; uint8_t data[IGUANA_WIDTH*IGUANA_HEIGHT*3]; };
@@ -1053,7 +1053,7 @@ int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coi
 struct iguana_bundlereq *instantdex_recvquotes(struct iguana_info *coin,struct iguana_bundlereq *req,bits256 *encodedhash,int32_t n);
 struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson);
 int32_t iguana_inv2poll(struct supernet_info *myinfo,struct iguana_info *coin);
-struct iguana_bundlereq *iguana_bundlereq(struct iguana_info *coin,struct iguana_peer *addr,int32_t type,int32_t datalen);
+struct iguana_bundlereq *iguana_bundlereq(struct iguana_info *coin,struct iguana_peer *addr,int32_t type,uint8_t *data,int32_t datalen);
 void instantdex_FSMinit();
 void iguana_unspentslock(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins);
 char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t satoshis,char *changeaddr,int64_t txfee,cJSON *addresses,int32_t minconf);
