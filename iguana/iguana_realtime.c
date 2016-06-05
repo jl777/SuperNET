@@ -235,7 +235,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     bp = coin->current;
     if ( bp == 0 || iguana_validated(coin) < bp->hdrsi )
     {
-        printf("bp.%p validated.%d vs hdrsi.%d\n",bp,iguana_validated(coin),bp->hdrsi);
+        //printf("bp.%p validated.%d vs hdrsi.%d\n",bp,iguana_validated(coin),bp->hdrsi);
         return(0);
     }
     if ( 1 && coin->RTheight > 0 && coin->spendvectorsaved != 1 && coin->bundlescount-1 != coin->balanceswritten )

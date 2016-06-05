@@ -172,7 +172,7 @@ void _iguana_blocklink(struct iguana_info *coin,struct iguana_block *prev,struct
 
 struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin,int32_t height,bits256 hash2,int32_t createflag)
 {
-    struct iguana_block *block,*prev;
+    struct iguana_block *block,*prev; int32_t size;
     /*if ( height > 0 && height > coin->blocks.maxbits )
     {
         printf("%s: illegal height.%d when max.%d, or nonz depth.%d\n",debugstr,height,coin->blocks.maxbits,coin->blockdepth);
@@ -206,9 +206,10 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
     if ( createflag > 0 )
     {
         portable_mutex_lock(&coin->blocks_mutex);
-        block = calloc(1,sizeof(*block) + coin->chain->zcash*sizeof(*block->zRO));
+        size = (int32_t)((coin->chain->zcash != 0) ? sizeof(struct iguana_zblock) : sizeof(struct iguana_block));
+        block = calloc(1,size);
         block->RO.hash2 = hash2;
-        block->RO.allocsize = coin->chain->zcash != 0 ? sizeof(*block) : sizeof(struct iguana_zblock);
+        block->RO.allocsize = size;
         block->hh.itemind = height, block->height = -1;
         HASH_ADD(hh,coin->blocks.hash,RO.hash2,sizeof(hash2),block);
         block->hh.next = block->hh.prev = 0;
