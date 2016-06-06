@@ -794,7 +794,7 @@ int32_t iguana_intvectors(struct iguana_info *coin,struct iguana_peer *addr,int3
 int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struct OS_memspace *rawmem,struct OS_memspace *txmem,struct OS_memspace *hashmem,struct iguana_msghdr *H,uint8_t *data,int32_t recvlen)
 {
     uint8_t serialized[16384]; char *ipaddr; struct supernet_info *myinfo = SuperNET_MYINFO(0);
-    int32_t i,n,retval=-1,ishost,delay=0,srvmsg,bloom,sendlen=0,intvectors,len= -100; uint64_t nonce,x;  bits256 hash2;
+    int32_t i,n,retval=-1,ishost,srvmsg,bloom,sendlen=0,intvectors,len= -100; uint64_t nonce,x;  bits256 hash2;
     bloom = intvectors = srvmsg = -1;
     if ( strncmp(H->command+1,"uperNET",strlen("uperNET")) == 0 || strncmp(H->command,"uperNet",strlen("uperNet")) == 0 )
     {
@@ -807,7 +807,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
             ipaddr = addr->ipaddr;
         } else ipaddr = 0;
         len = recvlen;
-        basilisk_p2p(myinfo,addr,&delay,ipaddr,data,recvlen,&H->command[strlen("SuperNET")],H->command[6] == 'e' && H->command[7] == 't');
+        basilisk_p2p(myinfo,addr,ipaddr,data,recvlen,&H->command[strlen("SuperNET")],H->command[6] == 'e' && H->command[7] == 't');
         printf("GOT.(%s) len.%d from %s\n",H->command,recvlen,addr->ipaddr);
         return(0);
     }

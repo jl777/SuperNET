@@ -17350,5 +17350,45 @@ len = 0;
              if ( err != 0 )
              iguana_blockunmark(coin,block,bp,bundlei,1);*/
                 
+                char *basilisk_respond_setfield(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
+            {
+                struct iguana_info *virt; struct iguana_block *prevblock,*prev2,*newblock,block; char chainname[BASILISK_MAXNAMELEN],str[65],*blocktx; uint32_t nBits,timestamp,nonce; cJSON *retjson; bits256 btcdhash;
+                if ( datalen <= 0 )
+                    return(clonestr("{\"error\":\"no data specified\"}"));
+                if ( (virt= basilisk_chain(myinfo,chainname,valsobj)) == 0 )
+                    return(clonestr("{\"error\":\"couldnt get basilisk_chain\"}"));
+                printf("from.(%s) SET.(%s) datalen.%d prev.%s\n",remoteaddr,jprint(valsobj,0),datalen,bits256_str(str,prevhash));
+                if ( bits256_nonz(prevhash) == 0 )
+                    prevhash = virt->blocks.hwmchain.RO.hash2;
+                if ( (prevblock= iguana_blockfind("setfield",virt,prevhash)) == 0 )
+                    return(clonestr("{\"error\":\"couldnt find prevhash\"}"));
+                if ( (prev2= iguana_blockfind("setfield",virt,prevblock->RO.prev_block)) == 0 )
+                    return(clonestr("{\"error\":\"couldnt find prevhash2\"}"));
+                timestamp = juint(valsobj,"timestamp");
+                nonce = juint(valsobj,"nonce");
+                nBits = iguana_targetbits(virt,(struct iguana_block *)&virt->blocks.hwmchain,prevblock,prev2,1,virt->chain->targetspacing,virt->chain->targettimespan);
+                blocktx = basilisk_block(myinfo,virt,&block,1,timestamp,&nonce,prevhash,nBits,prevblock->height+1,0,0,data,datalen,btcdhash,jobj(valsobj,"coinbase"));
+                retjson = cJSON_CreateObject();
+                jaddbits256(retjson,"hash",block.RO.hash2);
+                jaddstr(retjson,"data",blocktx);
+                if ( (newblock= _iguana_chainlink(virt,&block)) != 0 )
+                {
+                    jaddstr(retjson,"result","chain extended");
+                    jaddnum(retjson,"ht",block.height);
+                } else jaddstr(retjson,"error","couldnt extend chain");
+                free(blocktx);
+                return(jprint(retjson,1));
+            }
+                
+                char *basilisk_respond_getfield(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
+            {
+                struct iguana_info *coin; cJSON *retjson; char chainname[BASILISK_MAXNAMELEN];
+                if ( (coin= basilisk_chain(myinfo,chainname,valsobj)) == 0 )
+                    return(clonestr("{\"error\":\"couldnt get basilisk_chain\"}"));
+                printf("getfield\n");
+                retjson = cJSON_CreateObject();
+                return(jprint(retjson,1));
+            }
+
 #endif
 #endif

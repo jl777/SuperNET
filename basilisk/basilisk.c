@@ -43,7 +43,7 @@ char *basilisk_addhexstr(char **ptrp,cJSON *valsobj,char *strbuf,int32_t strsize
     *ptrp = 0;
     if ( data != 0 && datalen > 0 )
     {
-        if ( jobj(valsobj,"data") != 0 )
+        if ( valsobj != 0 && jobj(valsobj,"data") != 0 )
         {
             printf("basilisk_addhexstr warning: already have data object\n");
             jdelete(valsobj,"data");
@@ -54,26 +54,29 @@ char *basilisk_addhexstr(char **ptrp,cJSON *valsobj,char *strbuf,int32_t strsize
             *ptrp = (void *)strbuf;
         }
         init_hexbytes_noT(strbuf,data,datalen);
-        jaddstr(valsobj,"data",strbuf);
+        if ( valsobj != 0 )
+            jaddstr(valsobj,"data",strbuf);
     } else return(0);
     return(strbuf);
 }
 
 uint8_t *get_dataptr(uint8_t **ptrp,int32_t *datalenp,uint8_t *space,int32_t spacesize,char *hexstr)
 {
-    *ptrp = 0; uint8_t *data = 0;
+    *ptrp = 0; uint8_t *data = 0; uint32_t basilisktag;
     if ( hexstr != 0 && (*datalenp= is_hexstr(hexstr,0)) > 0 )
     {
         *datalenp >>= 1;
-        if ( *datalenp <= spacesize )
-            data = space;
-        else *ptrp = data = calloc(1,*datalenp);
-        decode_hex(data,*datalenp,hexstr);
+        if ( *datalenp+sizeof(struct iguana_msghdr)+sizeof(basilisktag) <= spacesize )
+        {
+            memset(space,0,sizeof(struct iguana_msghdr)+sizeof(basilisktag));
+            data = &space[sizeof(struct iguana_msghdr)+sizeof(basilisktag)];
+        } else *ptrp = data = calloc(1,*datalenp + sizeof(struct iguana_msghdr)+sizeof(basilisktag));
+        decode_hex(&data[sizeof(struct iguana_msghdr)+sizeof(basilisktag)],*datalenp,hexstr);
     }
     return(data);
 }
 
-uint8_t *basilisk_jsondata(void **ptrp,uint8_t *space,int32_t spacesize,int32_t *datalenp,char *symbol,cJSON *sendjson,uint32_t basilisktag)
+uint8_t *basilisk_jsondata(uint8_t **ptrp,uint8_t *space,int32_t spacesize,int32_t *datalenp,char *symbol,cJSON *sendjson,uint32_t basilisktag)
 {
     char *sendstr,*hexstr; uint8_t *data; bits256 pubkey; int32_t i,datalen,hexlen=0,extrasize,havepubkey=1;
     if ( jobj(sendjson,"coin") == 0 )
@@ -293,7 +296,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
     return(n);
 }
 
-void basilisk_p2p(void *_myinfo,void *_addr,int32_t *delaymillisp,char *senderip,uint8_t *data,int32_t datalen,char *type,int32_t encrypted)
+void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t datalen,char *type,int32_t encrypted)
 {
     uint32_t ipbits,basilisktag; int32_t i,havepubkey,msglen,len=0; void *ptr = 0; uint8_t space[8192]; bits256 senderpub,pubkey,hash,hash2; struct supernet_info *myinfo = _myinfo;
     pubkey = GENESIS_PUBKEY;
@@ -329,7 +332,7 @@ void basilisk_p2p(void *_myinfo,void *_addr,int32_t *delaymillisp,char *senderip
 
 void basilisk_sendback(struct supernet_info *myinfo,char *symbol,char *remoteaddr,uint32_t basilisktag,char *retstr)
 {
-    uint8_t *data,space[4096]; void *allocptr; cJSON *valsobj; int32_t datalen,encryptflag=0,delaymillis=0;
+    uint8_t *data,space[4096],*allocptr; cJSON *valsobj; int32_t datalen,encryptflag=0,delaymillis=0;
     printf("retstr.(%s) -> remote.(%s) basilisktag.%u\n",retstr,remoteaddr,basilisktag);
     if ( retstr != 0 && remoteaddr != 0 && remoteaddr[0] != 0 && strcmp(remoteaddr,"127.0.0.1") != 0 )
     {
@@ -373,7 +376,7 @@ char *basilisk_waitresponse(struct supernet_info *myinfo,char *CMD,char *symbol,
 
 struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,int32_t *numsentp,char *CMD,char *symbol,cJSON *valsobj,int32_t fanout,int32_t minresults,uint32_t basilisktag,int32_t timeoutmillis,void *_metricfunc,char *retstr,int32_t encryptflag,int32_t delaymillis,uint32_t nBits)
 {
-    struct basilisk_item *ptr; void *allocptr; uint8_t *data,space[4096]; int32_t datalen; basilisk_metricfunc metricfunc = _metricfunc;
+    struct basilisk_item *ptr; uint8_t *allocptr,*data,space[4096]; int32_t datalen; basilisk_metricfunc metricfunc = _metricfunc;
     ptr = basilisk_itemcreate(myinfo,CMD,symbol,basilisktag,minresults,valsobj,timeoutmillis,metricfunc);
     ptr->nBits = nBits;
     *numsentp = 0;
