@@ -891,7 +891,7 @@ struct iguana_info *iguana_setcoin(struct supernet_info *myinfo,char *symbol,voi
         strcpy(coin->name,"illegalcoin");
         coin->symbol[0] = 0;
         return(0);
-    } else iguana_chainparms(coin->chain,json);
+    } //else iguana_chainparms(coin->chain,json);
     if ( jobj(json,"RELAY") != 0 )
         coin->RELAYNODE = juint(json,"RELAY");
     else coin->RELAYNODE = (strcmp(coin->symbol,"BTCD") == 0);
