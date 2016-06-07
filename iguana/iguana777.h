@@ -350,9 +350,15 @@ struct iguana_blockRO
     uint32_t timestamp,nonce,bits,version;
     uint32_t firsttxidind,firstvin,firstvout,firstpkind,firstexternalind,recvlen:24,tbd:8;
     uint16_t txn_count,numvouts,numvins,allocsize;
-};
+} __attribute__((packed));
 
-struct iguana_zcashRO { bits256 bignonce; uint32_t solution[ZCASH_SOLUTION_ELEMENTS]; };
+struct iguana_zcashRO { bits256 bignonce; uint32_t solution[ZCASH_SOLUTION_ELEMENTS]; } __attribute__((packed));
+
+struct iguana_zblockRO
+{
+    struct iguana_blockRO RO;
+    struct iguana_zcashRO zRO;
+} __attribute__((packed));
 
 #define iguana_blockfields      double PoW; \
                                 int32_t height,fpos; uint32_t fpipbits,issued,lag:20,peerid:12; \
@@ -364,13 +370,13 @@ struct iguana_block
 {
     iguana_blockfields;
     struct iguana_zcashRO zRO[];
-};
+} __attribute__((packed));
 
 struct iguana_zblock // mu
 {
     iguana_blockfields;
     struct iguana_zcashRO zRO;
-};
+} __attribute__((packed));
 
 #define IGUANA_LHASH_BLOCKS 0
 #define IGUANA_LHASH_TXIDS 1 //

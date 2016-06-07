@@ -130,10 +130,13 @@ bits256 bits256_from_compact(uint32_t c)
 	uint32_t nbytes,nbits,i; bits256 x;
     memset(x.bytes,0,sizeof(x));
     nbytes = (c >> 24) & 0xFF;
-    nbits = (8 * (nbytes - 3));
-    x.ulongs[0] = c & 0xFFFFFF;
-    for (i=0; i<nbits; i++)
-        x = bits256_lshift(x);
+    if ( nbytes >= 3 )
+    {
+        nbits = (8 * (nbytes - 3));
+        x.ulongs[0] = c & 0xFFFFFF;
+        for (i=0; i<nbits; i++)
+            x = bits256_lshift(x);
+    }
     return(x);
 }
 

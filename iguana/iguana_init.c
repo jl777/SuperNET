@@ -129,8 +129,7 @@ bits256 iguana_genesis(struct iguana_info *coin,struct iguana_chain *chain)
             iguana_blockzcopy(coin->chain->zcash,block,ptr);
             printf("size.%d genesis block PoW %f ptr %f\n",block->RO.allocsize,block->PoW,ptr->PoW);
             coin->blocks.recvblocks = coin->blocks.issuedblocks = 1;
-        }
-        else printf("genesis block doesnt validate for %s ht.%d\n",coin->symbol,height);
+        } else printf("genesis block doesnt validate for %s ht.%d\n",coin->symbol,height);
     } else printf("couldnt hashset genesis\n");
     return(hash2);
 }

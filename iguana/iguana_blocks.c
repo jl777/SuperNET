@@ -501,6 +501,7 @@ struct iguana_block *iguana_fastlink(struct iguana_info *coin,int32_t hwmheight)
         block->valid = block->mainchain = 1;
         block->hdrsi = hdrsi, block->bundlei = bundlei;
         block->height = height;
+        //printf("set height.%d for bundlei.%d\n",height,bundlei);
         block->PoW = PoW_from_compact(block->RO.bits,coin->chain->unitval) + prevPoW;
         block->hh.prev = prev;
         if ( prev != 0 )
@@ -592,9 +593,6 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
             if ( coin->isRT != 0 || block->height == hwmchain->height )
             {
                 coin->blocks.maxblocks = (block->height + 1);
-                if ( coin->chain->zcash != 0 )
-                    coin->blocks.hwmchain = *(struct iguana_zblock *)block;
-                else *(struct iguana_block *)&coin->blocks.hwmchain = *block;
                 //printf("[%s] <- ht.%d %f\n",bits256_str(str,block->RO.hash2),coin->blocks.hwmchain.height,coin->blocks.hwmchain.PoW);
                 char str[65],str2[65]; bits256 zero;
                 memset(&zero,0,sizeof(zero));
@@ -667,6 +665,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                     printf(" call process_iguanablock2.%p ht.%d nbits.%08x\n",block->serdata,block->height,*(uint32_t *)&block->serdata[72]);
                     process_iguanablock(block->serdata,CHAINPARMS);
                 }*/
+                iguana_blockzcopy(coin->chain->zcash,(void *)&coin->blocks.hwmchain,block);
                 return(block);
             }
         }
@@ -674,7 +673,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
     return(0);
 }
 
-void iguana_blocksetheights(struct iguana_info *coin,struct iguana_block *block)
+/*void iguana_blocksetheights(struct iguana_info *coin,struct iguana_block *block)
 {
     int32_t height;
     if ( (height= block->height) < 0 )
@@ -685,7 +684,7 @@ void iguana_blocksetheights(struct iguana_info *coin,struct iguana_block *block)
         iguana_bundlehash2add(coin,0,coin->bundles[height/coin->chain->bundlesize],height % coin->chain->bundlesize,block->RO.hash2);
         block = block->hh.next, height++;
     }
-}
+}*/
 
 int32_t iguana_chainextend(struct iguana_info *coin,struct iguana_block *newblock)
 {

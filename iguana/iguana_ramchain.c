@@ -1368,7 +1368,7 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
 
 struct iguana_ramchain *_iguana_ramchain_map(struct iguana_info *coin,char *fname,struct iguana_bundle *bp,int32_t numblocks,struct iguana_ramchain *ramchain,struct OS_memspace *hashmem,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t bundlei,long fpos,int32_t allocextras,int32_t expanded,uint8_t zcash)
 {
-    RAMCHAIN_DECLARE; int32_t valid,iter,i,checki,hdrsi; long filesize; void *ptr; char str[65],str2[65],dirstr[64]; struct iguana_block *block; struct iguana_blockRO *bRO; struct iguana_ramchaindata *rdata;
+    RAMCHAIN_DECLARE; int32_t valid,iter,i,checki,hdrsi; long filesize; void *ptr; char str[65],str2[65],dirstr[64]; struct iguana_block *block; struct iguana_zblockRO zRO; struct iguana_ramchaindata *rdata;
     /*if ( ramchain->expanded != 0 && (ramchain->sigsfileptr == 0 || ramchain->sigsfilesize == 0) )
     {
         sprintf(sigsfname,"sigs/%s/%s",coin->symbol,bits256_str(str,hash2));
@@ -1474,17 +1474,24 @@ struct iguana_ramchain *_iguana_ramchain_map(struct iguana_info *coin,char *fnam
         {
             for (i=0; i<bp->n; i++)
             {
-                if ( bp->blocks[i] == 0 &&  (bp->blocks[i]= iguana_blockhashset("mapchain",coin,-1,bRO->hash2,1)) == 0 )
+                iguana_blockzcopyRO(zcash,(void *)&zRO,0,B,i);
+                if ( bp->blocks[i] == 0 &&  (bp->blocks[i]= iguana_blockhashset("mapchain",coin,-1,zRO.RO.hash2,1)) == 0 )
                 {
                     printf("Error getting blockptr\n");
                     return(0);
                 }
-                if ( (bRO= iguana_blockzcopyRO(zcash,&bp->blocks[i]->RO,0,B,i)) != 0 )
+                else
+                {
+                    bp->hashes[i] = zRO.RO.hash2;
+                    //bp->blocks[i]->RO = zRO.RO;
+                    iguana_blockzcopyRO(zcash,&bp->blocks[i]->RO,0,(void *)&zRO,0);
+                }
+               /* if ( (bRO= iguana_blockzcopyRO(zcash,&bp->blocks[i]->RO,0,B,i)) != 0 )
                 {
                     //memcpy(&bp->blocks[i]->RO,bRO,bROsize);//coin->blocks.RO[bp->bundleheight + i];
                     //coin->blocks.RO[bp->bundleheight+i] = B[i];
                     bp->hashes[i] = bRO->hash2;
-                }
+                }*/
             }
         }
         //printf("iguana_ramchain_map.(%s) size %ld vs %ld vs filesize.%ld numblocks.%d expanded.%d fpos.%d sum %ld\n",fname,(long)iguana_ramchain_size(RAMCHAIN_ARG,ramchain->numblocks,rdata->scriptspace),(long)rdata->allocsize,(long)filesize,ramchain->numblocks,expanded,(int32_t)fpos,(long)(fpos+rdata->allocsize));
@@ -2284,6 +2291,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
                     block->queued = 1;
                     block->txvalid = 1;
                     block->height = bp->bundleheight + i;
+                    //printf("bundleload bundlei.%d < height %d %d\n",i,block->height,i);
                     block->hdrsi = bp->hdrsi;
                     block->bundlei = i;
                     block->fpipbits = (uint32_t)calc_ipbits("127.0.0.1");
@@ -2292,7 +2300,10 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
                     iguana_hash2set(coin,"bundleload",bp,i,block->RO.hash2);
                     bp->blocks[i] = block;
                     if ( (prev= block->hh.prev) != 0 )
+                    {
                         prev2 = prev->hh.prev;
+                        prev->hh.next = block;
+                    }
                     if ( prev2 != 0 && prev != 0 && strcmp(coin->symbol,"BTCD") == 0 && bp->bundleheight > 20000 && prev != 0 && iguana_targetbits(coin,block,prev,prev2,1,coin->chain->targetspacing,coin->chain->targettimespan) != block->RO.bits )
                     {
                         printf("nbits target error %x != %x ht.%d\n",iguana_targetbits(coin,block,prev,prev2,1,coin->chain->targetspacing,coin->chain->targettimespan),block->RO.bits,block->height);
@@ -2300,7 +2311,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
                     if ( bp->bundleheight+i == coin->blocks.hwmchain.height+1 )
                     {
                         //printf("try extend.%d\n",bp->bundleheight+i);
-                        //_iguana_chainlink(coin,block); wrong context
+                        //_iguana_chainlink(coin,block); //wrong context
                     }
                     prev2 = prev, prev = block;
                 }
