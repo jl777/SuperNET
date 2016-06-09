@@ -843,7 +843,7 @@ int32_t iguana_bundlehdr(struct iguana_info *coin,struct iguana_bundle *bp,int32
             for (i=0; i<bp->n; i++)
                 if ( GETBIT(bp->haveblock,i) == 0 )
                     bp->issued[i] = 0;
-            //queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
+            queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
         }
         iguana_bundleissuemissing(coin,bp,3,1.);
         /*if ( bp == coin->current )
