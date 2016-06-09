@@ -401,14 +401,8 @@ char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *a
         {
             iguana_rwblock(symbol,virt->chain->zcash,virt->chain->auxpow,virt->chain->hashalgo,0,&checkhash2,data,&msg,datalen);
             if ( bits256_cmp(hash2,checkhash2) == 0 )
-            {
-                /*iguana_blockconv(virt->chain->zcash,virt->chain->auxpow,&newblock,&msg,hash2,jint(valsobj,"ht"));
-                if ( _iguana_chainlink(virt,&newblock) != 0 )
-                {
-                    return(clonestr("{\"result\":\"gecko chain extended\"}"));
-                } else return(clonestr("{\"result\":\"block not HWM\"}"));*/
-                return(gecko_blockarrived(myinfo,addr,valsobj,data,datalen));
-            } else return(clonestr("{\"error\":\"block error with checkhash2\"}"));
+                return(gecko_blockarrived(myinfo,virt,addr,data,datalen));
+            else return(clonestr("{\"error\":\"block error with checkhash2\"}"));
         } else return(clonestr("{\"error\":\"block nonce didnt verify\"}"));
     }
     return(0);

@@ -264,24 +264,12 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
 
 int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *virt,char *blockstr)
 {
-    struct iguana_txblock txdata; int32_t recvlen,n,len = -1;; struct iguana_msghdr H; uint8_t *data,space[16384],*allocptr;
-    if ( virt->TXMEM.ptr == 0 )
-        iguana_meminit(&virt->TXMEM,virt->name,0,IGUANA_MAXPACKETSIZE * 2,0);
-    iguana_memreset(&virt->TXMEM);
+    int32_t recvlen; uint8_t *data,space[16384],*allocptr;
     if ( (data= get_dataptr(BASILISK_HDROFFSET,&allocptr,&recvlen,space,sizeof(space),blockstr)) != 0 )
-    {
-        memset(&txdata,0,sizeof(txdata));
-        if ( (n= iguana_gentxarray(virt,&virt->TXMEM,&txdata,&len,data,recvlen)) == recvlen )
-        {
-            len = n;
-            memset(&H,0,sizeof(H));
-            gecko_blockarrived(myinfo,&virt->internaladdr,0,data,recvlen);
-            //iguana_gotblockM(virt,&virt->internaladdr,&txdata,virt->TXMEM.ptr,&H,data,recvlen);
-        }
-    }
+        gecko_blockarrived(myinfo,virt,&virt->internaladdr,data,recvlen);
     if ( allocptr != 0 )
         free(allocptr);
-    return(len);
+    return(recvlen);
 }
 
 void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t datalen,char *type,int32_t encrypted)

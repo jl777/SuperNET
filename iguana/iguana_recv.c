@@ -1540,7 +1540,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
                     }
                     if ( bp == 0 || bp->speculative == 0 || bp == coin->current || bp->hdrsi == coin->bundlescount-1 || bp->numhashes < bp->n )
                     {
-                        if ( 0 && bp == coin->current )
+                        if ( 1 && bp == coin->current )
                             printf("%s request HDR.(%s) numhashes.%d [%d]\n",addr!=0?addr->ipaddr:"local",hashstr,bp!=0?bp->numhashes:0,bp!=0?bp->hdrsi:-1);
                         iguana_send(coin,addr,serialized,datalen);
                         addr->pendhdrs++;

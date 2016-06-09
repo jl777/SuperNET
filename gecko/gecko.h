@@ -52,6 +52,7 @@ char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *a
 void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,int32_t maxmillis,char *mineraddr);
 void gecko_seqresult(struct supernet_info *myinfo,char *retstr);
 int32_t gecko_sequpdate(char *symbol,uint32_t reftimestamp);
-char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_peer *addr,cJSON *valsobj,uint8_t *data,int32_t datalen);
+char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,struct iguana_peer *addr,uint8_t *data,int32_t datalen);
+char *gecko_headersarrived(struct supernet_info *myinfo,struct iguana_info *virt,struct iguana_peer *addr,uint8_t *data,int32_t datalen);
 
 #endif

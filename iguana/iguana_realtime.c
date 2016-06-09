@@ -343,7 +343,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         if ( (n= iguana_walkchain(coin,1)) == coin->RTheight-1+offset )
         {
             //printf("RTgenesis verified\n");
-            if ( (coin->RTheight % coin->chain->bundlesize) > 1 )
+            if ( (coin->RTheight % coin->chain->bundlesize) > 3 )
             {
                 iguana_RTspendvectors(coin,bp);
                 coin->RTgenesis = (uint32_t)time(NULL);

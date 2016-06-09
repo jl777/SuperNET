@@ -15,7 +15,22 @@
 
 // included from gecko.c
 
-char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_peer *addr,cJSON *valsobj,uint8_t *data,int32_t datalen)
+char *gecko_headersarrived(struct supernet_info *myinfo,struct iguana_info *virt,struct iguana_peer *addr,uint8_t *data,int32_t datalen)
 {
-    return(clonestr("{\"result\":\"gecko block queued\"}"));
+    return(clonestr("{\"result\":\"gecko headers queued\"}"));
+}
+
+char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,struct iguana_peer *addr,uint8_t *data,int32_t datalen)
+{
+    struct iguana_txblock txdata; int32_t n,len = -1; struct iguana_msghdr H;
+    if ( virt->TXMEM.ptr == 0 )
+        iguana_meminit(&virt->TXMEM,virt->name,0,IGUANA_MAXPACKETSIZE * 2,0);
+    iguana_memreset(&virt->TXMEM);
+    memset(&txdata,0,sizeof(txdata));
+    if ( (n= iguana_gentxarray(virt,&virt->TXMEM,&txdata,&len,data,datalen)) == datalen )
+    {
+        memset(&H,0,sizeof(H));
+        iguana_gotblockM(virt,addr,&txdata,virt->TXMEM.ptr,&H,data,datalen);
+        return(clonestr("{\"result\":\"gecko block queued\"}"));
+    } else return(clonestr("{\"error\":\"gecko block didnt decode\"}"));
 }
