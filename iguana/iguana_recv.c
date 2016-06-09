@@ -918,7 +918,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
             if ( (prevblock= iguana_blockfind("prev",coin,blockhashes[i])) != 0 && prevblock->height+1 > coin->longestchain )
             {
                 coin->longestchain = prevblock->height+1;
-                if ( bp->speculative != 0 && i < bp->n && bits256_nonz(bp->speculative[i]) == 0 )
+                if ( bp->speculative != 0 && i < bp->n )
                     bp->speculative[i] = blockhashes[i];
             }
     }
