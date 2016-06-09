@@ -16,6 +16,7 @@
 #include "../iguana/iguana777.h"
 #include "gecko_delayedPoW.c"
 #include "gecko_miner.c"
+#include "gecko_blocks.c"
 
 bits256 calc_categoryhashes(bits256 *subhashp,char *category,char *subcategory)
 {
@@ -233,7 +234,7 @@ struct iguana_info *basilisk_geckochain(struct supernet_info *myinfo,char *symbo
         safecopy(virt->name,chainname,sizeof(virt->name));
         virt->chain = calloc(1,sizeof(*virt->chain));
         virt->enableCACHE = 1;
-        serialized = get_dataptr(&ptr,&datalen,hexbuf,sizeof(hexbuf),hexstr);
+        serialized = get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,hexbuf,sizeof(hexbuf),hexstr);
         iguana_chaininit(virt->chain,1,valsobj);
         hdrsize = (virt->chain->zcash != 0) ? sizeof(struct iguana_msgblockhdr_zcash) : sizeof(struct iguana_msgblockhdr);
         if ( gecko_blocknonce_verify(virt,serialized,hdrsize,virt->chain->nBits) == 0 )
@@ -390,7 +391,7 @@ char *basilisk_respond_geckotx(struct supernet_info *myinfo,char *CMD,void *addr
 
 char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash2,int32_t from_basilisk)
 {
-    char *symbol; struct iguana_info *virt; bits256 checkhash2; int32_t hdrsize; uint32_t nBits; struct iguana_msgblock msg; struct iguana_block newblock;
+    char *symbol; struct iguana_info *virt; bits256 checkhash2; int32_t hdrsize; uint32_t nBits; struct iguana_msgblock msg;
     printf("got geckoblock len.%d from (%s) %s\n",datalen,remoteaddr!=0?remoteaddr:"",jprint(valsobj,0));
     if ( (symbol= jstr(valsobj,"coin")) != 0 && (virt= iguana_coinfind(symbol)) != 0 )
     {
@@ -401,11 +402,12 @@ char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *a
             iguana_rwblock(symbol,virt->chain->zcash,virt->chain->auxpow,virt->chain->hashalgo,0,&checkhash2,data,&msg,datalen);
             if ( bits256_cmp(hash2,checkhash2) == 0 )
             {
-                iguana_blockconv(virt->chain->zcash,virt->chain->auxpow,&newblock,&msg,hash2,jint(valsobj,"ht"));
+                /*iguana_blockconv(virt->chain->zcash,virt->chain->auxpow,&newblock,&msg,hash2,jint(valsobj,"ht"));
                 if ( _iguana_chainlink(virt,&newblock) != 0 )
                 {
                     return(clonestr("{\"result\":\"gecko chain extended\"}"));
-                } else return(clonestr("{\"result\":\"block not HWM\"}"));
+                } else return(clonestr("{\"result\":\"block not HWM\"}"));*/
+                return(gecko_blockarrived(myinfo,addr,valsobj,data,datalen));
             } else return(clonestr("{\"error\":\"block error with checkhash2\"}"));
         } else return(clonestr("{\"error\":\"block nonce didnt verify\"}"));
     }
@@ -476,16 +478,16 @@ HASH_ARRAY_STRING(basilisk,geckotx,pubkey,vals,hexstr)
         {
             if ( btcd->RELAYNODE != 0 || btcd->VALIDATENODE != 0 )
             {
-                if ( (data= get_dataptr(&allocptr,&datalen,space,sizeof(space),hexstr)) != 0 )
+                if ( (data= get_dataptr(BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),hexstr)) != 0 )
                 {
                     txid = bits256_doublesha256(0,data,datalen);
-                    retstr = basilisk_respond_geckotx(myinfo,"VTX",0,0,0,vals,data,datalen,txid,0);
+                    retstr = basilisk_respond_geckotx(myinfo,"GTX",0,0,0,vals,data,datalen,txid,0);
                 }
                 if ( allocptr != 0 )
                     free(allocptr);
                 if ( retstr == 0 )
                     retstr = clonestr("{\"error\":\"couldnt create geckotx\"}");
-            } else retstr = basilisk_standardservice("VTX",myinfo,txid,vals,hexstr,1);
+            } else retstr = basilisk_standardservice("GTX",myinfo,txid,vals,hexstr,1);
             return(retstr);
         } else return(clonestr("{\"error\":\"couldnt find geckochain\"}"));
     }

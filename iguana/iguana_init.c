@@ -516,6 +516,15 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
     }
      //coin->firstblock = coin->blocks.parsedblocks + 1;
     iguana_genesis(coin,coin->chain);
+    int32_t bundlei = -2;
+    static const bits256 zero;
+    iguana_bundlecreate(coin,&bundlei,0,*(bits256 *)coin->chain->genesis_hashdata,zero,1);
+    _iguana_chainlink(coin,iguana_blockfind("genesis",coin,*(bits256 *)coin->chain->genesis_hashdata));
+    if ( coin->blocks.hwmchain.height != 0 || memcmp(coin->blocks.hwmchain.RO.hash2.bytes,coin->chain->genesis_hashdata,sizeof(coin->chain->genesis_hashdata)) != 0 )
+    {
+        char str[65]; printf("%s genesis values mismatch hwmheight.%d %.15f %.15f %s\n",coin->name,coin->blocks.hwmchain.height,coin->blocks.hwmchain.PoW,coin->blocks.hwmchain.PoW,bits256_str(str,coin->blocks.hwmchain.RO.hash2));
+        getchar();
+    }
     memset(&lastbundle,0,sizeof(lastbundle));
     if ( coin->peers == 0 )
         iter = 2;
@@ -587,15 +596,6 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
             fpos = ftell(fp);
             fclose(fp);
         } else fpos = -1;
-    }
-    int32_t bundlei = -2;
-    static const bits256 zero;
-    iguana_bundlecreate(coin,&bundlei,0,*(bits256 *)coin->chain->genesis_hashdata,zero,1);
-    _iguana_chainlink(coin,iguana_blockfind("genesis",coin,*(bits256 *)coin->chain->genesis_hashdata));
-    if ( coin->blocks.hwmchain.height != 0 || memcmp(coin->blocks.hwmchain.RO.hash2.bytes,coin->chain->genesis_hashdata,sizeof(coin->chain->genesis_hashdata)) != 0 )
-    {
-        char str[65]; printf("%s genesis values mismatch hwmheight.%d %.15f %.15f %s\n",coin->name,coin->blocks.hwmchain.height,coin->blocks.hwmchain.PoW,coin->blocks.hwmchain.PoW,bits256_str(str,coin->blocks.hwmchain.RO.hash2));
-        getchar();
     }
 #ifndef IGUANA_DEDICATED_THREADS
     coin->peers->peersloop = iguana_launch("peersloop",iguana_peersloop,coin,IGUANA_PERMTHREAD);

@@ -386,7 +386,7 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
                 uint8_t hexbuf[1024],*ptr,*data; int32_t datalen,hdrsize;
                 hdrsize = chain->zcash != 0 ? sizeof(struct iguana_msgblockhdr_zcash) : sizeof(struct iguana_msgblockhdr);
                 chain->genesis_hex = clonestr(hexstr);
-                data = get_dataptr(&ptr,&datalen,hexbuf,sizeof(hexbuf),hexstr);
+                data = get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,hexbuf,sizeof(hexbuf),hexstr);
                 chain->genesishash2 = iguana_calcblockhash(chain->symbol,chain->hashalgo,data,hdrsize);
                 memcpy(chain->genesis_hashdata,chain->genesishash2.bytes,32);
                 //char str[65]; printf("%s -> calculated %s from %d datalen\n",hexstr,bits256_str(str,chain->genesishash2),hdrsize);

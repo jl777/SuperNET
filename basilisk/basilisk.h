@@ -25,7 +25,7 @@
 
 #define BASILISK_MAXFUTUREBLOCK 60
 #define BASILISK_MAXBLOCKLAG 600
-#define BASILISK_HDROFFSET ((int32_t)(sizeof(struct iguana_msghdr)+sizeof(basilisktag)))
+#define BASILISK_HDROFFSET ((int32_t)(sizeof(struct iguana_msghdr)+sizeof(uint32_t)))
 
 struct basilisk_value { bits256 txid; int64_t value; int32_t height; int16_t vout; char coinaddr[64]; };
 
@@ -53,7 +53,7 @@ uint8_t *basilisk_jsondata(uint8_t **ptrp,uint8_t *space,int32_t spacesize,int32
 
 uint8_t *SuperNET_ciphercalc(void **ptrp,int32_t *cipherlenp,bits256 *privkeyp,bits256 *destpubkeyp,uint8_t *data,int32_t datalen,uint8_t *space2,int32_t space2size);
 void *SuperNET_deciphercalc(void **ptrp,int32_t *msglenp,bits256 privkey,bits256 srcpubkey,uint8_t *cipher,int32_t cipherlen,uint8_t *buf,int32_t bufsize);
-uint8_t *get_dataptr(uint8_t **ptrp,int32_t *datalenp,uint8_t *space,int32_t spacesize,char *hexstr);
+uint8_t *get_dataptr(int32_t hdroffset,uint8_t **ptrp,int32_t *datalenp,uint8_t *space,int32_t spacesize,char *hexstr);
 char *basilisk_addhexstr(char **ptrp,cJSON *valsobj,char *strbuf,int32_t strsize,uint8_t *data,int32_t datalen);
 char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,bits256 hash,cJSON *valsobj,char *hexstr,int32_t blockflag); // client side
 

@@ -28,6 +28,8 @@
 #define GECKO_MAXNAMELEN 64
 #define GECKO_MAXMINERITERS 10000000
 
+struct iguana_peer;
+
 struct hashstamp { bits256 hash2; uint32_t timestamp; int32_t height; };
 struct gecko_sequence { struct hashstamp *stamps; int32_t lastupdate,maxstamps,numstamps,lasti,longestchain; };
 struct gecko_sequences { struct gecko_sequence BTC,BTCD; };
@@ -50,5 +52,6 @@ char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *a
 void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,int32_t maxmillis,char *mineraddr);
 void gecko_seqresult(struct supernet_info *myinfo,char *retstr);
 int32_t gecko_sequpdate(char *symbol,uint32_t reftimestamp);
+char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_peer *addr,cJSON *valsobj,uint8_t *data,int32_t datalen);
 
 #endif

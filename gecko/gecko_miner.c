@@ -13,7 +13,7 @@
  *                                                                            *
  ******************************************************************************/
 
-// included from gecko_chains.c
+// included from gecko.c
 
 int32_t gecko_blocknonce_verify(struct iguana_info *virt,uint8_t *serialized,int32_t datalen,uint32_t nBits)
 {
@@ -89,7 +89,7 @@ char *gecko_block(struct supernet_info *myinfo,struct iguana_info *virt,struct i
     {
         for (i=0; i<txn_count; i++)
         {
-            if ( (txdata= get_dataptr(&allocptr,&txlen,space,sizeof(space),txptrs[i])) == 0 )
+            if ( (txdata= get_dataptr(BASILISK_HDROFFSET,&allocptr,&txlen,space,sizeof(space),txptrs[i])) == 0 )
             {
                 printf("gecko_block error tx.%d\n",i);
                 if ( txids != txspace )
@@ -218,7 +218,22 @@ char **gecko_mempool(struct supernet_info *myinfo,struct iguana_info *virt,int64
 
 void gecko_blocksubmit(struct supernet_info *myinfo,struct iguana_info *virt,char *blockstr)
 {
-    
+    uint8_t *data,space[16384],*allocptr=0; int32_t i,len,numranked=0; struct iguana_peers *peers; struct iguana_peer *addr;
+    if ( (peers= virt->peers) == 0 || (numranked= peers->numranked) == 0 )
+        basilisk_blocksubmit(myinfo,virt,blockstr);
+    else
+    {
+        if ( (data= get_dataptr(sizeof(struct iguana_msghdr),&allocptr,&len,space,sizeof(space),blockstr)) != 0 )
+        {
+            for (i=0; i<numranked; i++)
+            {
+                if ( (addr= peers->ranked[i]) != 0 && addr->usock >= 0 && addr->supernet != 0 )
+                    iguana_queue_send(addr,0,data,"block",len);
+            }
+        }
+        if ( allocptr != 0 )
+            free(allocptr);
+    }
 }
 
 void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,int32_t maxmillis,char *mineraddr)

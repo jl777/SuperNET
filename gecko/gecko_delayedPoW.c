@@ -13,7 +13,7 @@
  *                                                                            *
  ******************************************************************************/
 
-// included from gecko_chains.c
+// included from gecko.c
 
 int32_t gecko_hashstampsfind(struct hashstamp *stamps,int32_t max,struct gecko_sequence *seq,bits256 hash,uint32_t reftimestamp)
 {
@@ -202,7 +202,7 @@ void gecko_seqresult(struct supernet_info *myinfo,char *retstr)
             longestchain = jint(resultjson,"longest");
             hexstr = jstr(resultjson,"data");
             printf("got startheight.%d num.%d lastupdate.%d longest.%d (%s)\n",startheight,num,lastupdate,longestchain,hexstr!=0?hexstr:"");
-            if ( hexstr != 0 && (data= get_dataptr(&allocptr,&datalen,space,sizeof(space),hexstr)) != 0 )
+            if ( hexstr != 0 && (data= get_dataptr(BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),hexstr)) != 0 )
             {
                 gecko_ensure(seq,ind + num);
                 for (i=0; i<num; i++,ind++)

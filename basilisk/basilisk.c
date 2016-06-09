@@ -60,21 +60,21 @@ char *basilisk_addhexstr(char **ptrp,cJSON *valsobj,char *strbuf,int32_t strsize
     return(strbuf);
 }
 
-uint8_t *get_dataptr(uint8_t **ptrp,int32_t *datalenp,uint8_t *space,int32_t spacesize,char *hexstr)
+uint8_t *get_dataptr(int32_t hdroffset,uint8_t **ptrp,int32_t *datalenp,uint8_t *space,int32_t spacesize,char *hexstr)
 {
-    *ptrp = 0; uint8_t *data = 0; uint32_t basilisktag;
+    *ptrp = 0; uint8_t *data = 0;
     if ( hexstr != 0 && (*datalenp= is_hexstr(hexstr,0)) > 0 )
     {
         *datalenp >>= 1;
-        if ( (*datalenp+BASILISK_HDROFFSET) <= spacesize )
+        if ( (*datalenp+hdroffset) <= spacesize )
         {
-            memset(space,0,BASILISK_HDROFFSET);
-            data = &space[BASILISK_HDROFFSET];
-        } else *ptrp = data = calloc(1,*datalenp + BASILISK_HDROFFSET);
-        decode_hex(&data[BASILISK_HDROFFSET],*datalenp,hexstr);
+            memset(space,0,hdroffset);
+            data = &space[hdroffset];
+        } else *ptrp = data = calloc(1,*datalenp + hdroffset);
+        decode_hex(&data[hdroffset],*datalenp,hexstr);
     }
     if ( data != 0 )
-        return(&data[BASILISK_HDROFFSET]);
+        return(&data[hdroffset]);
     else return(data);
 }
 
@@ -269,14 +269,15 @@ int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *vi
     if ( virt->TXMEM.ptr == 0 )
         iguana_meminit(&virt->TXMEM,virt->name,0,IGUANA_MAXPACKETSIZE * 2,0);
     iguana_memreset(&virt->TXMEM);
-    if ( (data= get_dataptr(&allocptr,&recvlen,space,sizeof(space),blockstr)) != 0 )
+    if ( (data= get_dataptr(BASILISK_HDROFFSET,&allocptr,&recvlen,space,sizeof(space),blockstr)) != 0 )
     {
         memset(&txdata,0,sizeof(txdata));
         if ( (n= iguana_gentxarray(virt,&virt->TXMEM,&txdata,&len,data,recvlen)) == recvlen )
         {
             len = n;
             memset(&H,0,sizeof(H));
-            iguana_gotblockM(virt,&virt->internaladdr,&txdata,virt->TXMEM.ptr,&H,data,recvlen);
+            gecko_blockarrived(myinfo,&virt->internaladdr,0,data,recvlen);
+            //iguana_gotblockM(virt,&virt->internaladdr,&txdata,virt->TXMEM.ptr,&H,data,recvlen);
         }
     }
     if ( allocptr != 0 )
@@ -407,7 +408,7 @@ char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,bits256 ha
 {
     uint32_t nBits = 0; uint8_t space[8192],*allocptr=0,*data = 0; struct basilisk_item *ptr,Lptr; int32_t datalen = 0; cJSON *retjson;
     retjson = cJSON_CreateObject();
-    data = get_dataptr(&allocptr,&datalen,space,sizeof(space),hexstr);
+    data = get_dataptr(BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),hexstr);
     ptr = basilisk_requestservice(myinfo,CMD,valsobj,hash,data,datalen,nBits);
     if ( allocptr != 0 )
         free(allocptr);
@@ -738,9 +739,6 @@ HASH_ARRAY_STRING(basilisk,VPNlogout,pubkey,vals,hexstr)
 void basilisks_loop(void *arg)
 {
     basilisk_metricfunc metricfunc; struct iguana_info *btcd,*virt,*hhtmp; struct basilisk_item *ptr,*tmp,*pending,*parent; int32_t i,iter,maxmillis,done,flag,n; cJSON *valsobj,*retjson; uint32_t now; struct supernet_info *myinfo = arg;
-    //uint8_t *blockspace; struct OS_memspace RAWMEM;
-    //memset(&RAWMEM,0,sizeof(RAWMEM));
-    //blockspace = calloc(1,IGUANA_MAXPACKETSIZE);
     iter = 0;
     while ( 1 )
     {
@@ -919,7 +917,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
         // gecko chains
         { (void *)"NEW", &basilisk_respond_newgeckochain }, // creates new virtual gecko chain
         { (void *)"SEQ", &basilisk_respond_hashstamps }, // BTCD and BTC recent hashes from timestamp
-        { (void *)"VTX", &basilisk_respond_geckotx },
+        { (void *)"GTX", &basilisk_respond_geckotx },
         { (void *)"BLK", &basilisk_respond_geckoblock },
         { (void *)"GEN", &basilisk_respond_geckogenesis },
         
