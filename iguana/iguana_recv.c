@@ -908,7 +908,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
     memset(zero.bytes,0,sizeof(zero));
     bp = 0, bundlei = -2;
     iguana_bundlefind(coin,&bp,&bundlei,blockhashes[1]);
-    if ( 0 && num >= coin->chain->bundlesize )
+    //if ( 0 && num >= coin->chain->bundlesize )
         printf("blockhashes[%d] %d of %d %s bp.%d[%d]\n",num,bp==0?-1:bp->hdrsi,coin->bundlescount,bits256_str(str,blockhashes[1]),bp==0?-1:bp->bundleheight,bundlei);
     if ( num < 2 )
         return(req);
@@ -957,7 +957,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
                 //printf("speculate new issue [%d:%d]\n",bp->hdrsi,i);
             }
             bp->speculative[0] = bp->hashes[0];
-            bp->numspec = num <= bp->n+1 ? num : bp->n+1;
+            bp->numspec = (num <= bp->n+1) ? num : bp->n+1;
             if ( bp == coin->current && (addr= req->addr) != 0 )
             {
                 memcpy(addr->RThashes,blockhashes,bp->numspec * sizeof(*addr->RThashes));
