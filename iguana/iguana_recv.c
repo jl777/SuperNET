@@ -804,7 +804,6 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
         printf("iguana_recvblockhdrs null blocks?\n");
         return(req);
     }
-    //bsize = 1 + iguana_blockhdrsize(coin->symbol,coin->chain->zcash,coin->chain->auxpow);
     if ( zblocks != 0 && n > 0 )
     {
         memset(prevhash2.bytes,0,sizeof(prevhash2));
@@ -840,7 +839,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
             //    printf("blockhash[%d] cant be found n.%d\n",i,n);
         }
         char str[65];
-        if ( 0 && bp == coin->current )
+        if ( 1 && bp == coin->current )
             printf("i.%d n.%d match.%d blockhdrs.%s hdrsi.%d\n",i,n,match,bits256_str(str,zblocks[0].RO.hash2),firstbp!=0?firstbp->hdrsi:-1);
         if ( firstbp != 0 && match == coin->chain->bundlesize-1 && n == firstbp->n )
         {
@@ -1364,7 +1363,7 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                     else lag = 13;
                     if ( time(NULL) > bp->issuetime+lag )
                     {
-                        if ( 1 && bp == coin->current )
+                        if ( 0 && bp == coin->current )
                             printf("LAG.%ld hdrsi.%d numhashes.%d:%d needhdrs.%d qsize.%d zcount.%d\n",time(NULL)-bp->hdrtime,i,bp->numhashes,bp->n,iguana_needhdrs(coin),queue_size(&coin->hdrsQ),coin->zcount);
                         if ( bp->issuetime == 0 )
                             coin->numpendings++;
