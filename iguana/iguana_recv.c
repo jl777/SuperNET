@@ -908,10 +908,20 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
     memset(zero.bytes,0,sizeof(zero));
     bp = 0, bundlei = -2;
     iguana_bundlefind(coin,&bp,&bundlei,blockhashes[1]);
-    //if ( 0 && num >= coin->chain->bundlesize )
+    if ( 0 && num >= coin->chain->bundlesize )
         printf("blockhashes[%d] %d of %d %s bp.%d[%d]\n",num,bp==0?-1:bp->hdrsi,coin->bundlescount,bits256_str(str,blockhashes[1]),bp==0?-1:bp->bundleheight,bundlei);
     if ( num < 2 )
         return(req);
+    else
+    {
+        for (i=1; i<num; i++)
+            if ( (prevblock= iguana_blockfind("prev",coin,blockhashes[i])) != 0 && prevblock->height+1 > coin->longestchain )
+            {
+                coin->longestchain = prevblock->height+1;
+                if ( bp->speculative != 0 && i < bp->n && bits256_nonz(bp->speculative[i]) == 0 )
+                    bp->speculative[i] = blockhashes[i];
+            }
+    }
     if ( bp != 0 )
     {
         bp->dirty++;
@@ -962,8 +972,6 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
                 //    iguana_blockQ("speculate",coin,bp,-i,blockhashes[i],0);
                 if ( bp->blocks[i] == 0 )
                     bp->blocks[i] = iguana_blockhashset("recvhashes3",coin,bp->bundleheight+i,blockhashes[i],1);
-                if ( (prevblock= iguana_blockfind("prev",coin,blockhashes[i])) != 0 && prevblock->height+1 > coin->longestchain )
-                    coin->longestchain = prevblock->height+1;
                 //printf("speculate new issue [%d:%d]\n",bp->hdrsi,i);
             }
             bp->speculative[0] = bp->hashes[0];
