@@ -1364,7 +1364,7 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                     else lag = 13;
                     if ( time(NULL) > bp->issuetime+lag )
                     {
-                        if ( 0 && bp == coin->current )
+                        if ( 1 && bp == coin->current )
                             printf("LAG.%ld hdrsi.%d numhashes.%d:%d needhdrs.%d qsize.%d zcount.%d\n",time(NULL)-bp->hdrtime,i,bp->numhashes,bp->n,iguana_needhdrs(coin),queue_size(&coin->hdrsQ),coin->zcount);
                         if ( bp->issuetime == 0 )
                             coin->numpendings++;
