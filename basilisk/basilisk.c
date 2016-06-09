@@ -907,7 +907,7 @@ void basilisks_init(struct supernet_info *myinfo)
 
 void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen,bits256 pubkey)
 {
-    cJSON *valsobj; char *symbol,*retstr=0,remoteaddr[64],CMD[4],cmd[4]; int32_t origlen,from_basilisk,i,timeoutmillis,numrequired,jsonlen; uint8_t *origdata; struct iguana_info *coin=0;
+    cJSON *valsobj; char *symbol,*retstr=0,remoteaddr[64],CMD[4],cmd[4]; int32_t origlen,from_basilisk,i,timeoutmillis,flag,numrequired,jsonlen; uint8_t *origdata; struct iguana_info *coin=0;
     static basilisk_servicefunc *basilisk_services[][2] =
     {
         { (void *)"RUN", &basilisk_respond_dispatch },   // higher level protocol handler, pass through
@@ -943,6 +943,14 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
         { (void *)"VAL", &_basilisk_value },
         { (void *)"BAL", &_basilisk_balances },
     };
+    for (i=flag=0; i<sizeof(basilisk_services)/sizeof(*basilisk_services); i++) // iguana node
+        if ( strcmp((char *)basilisk_services[i][0],type) == 0 )
+        {
+            flag = 1;
+            break;
+        }
+    if ( flag == 0 )
+        return;
     strncpy(CMD,type,3), CMD[3] = cmd[3] = 0;
     if ( isupper((int32_t)CMD[0]) != 0 && isupper((int32_t)CMD[1]) != 0 && isupper((int32_t)CMD[2]) != 0 )
         from_basilisk = 1;
@@ -952,7 +960,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
     for (i=0; i<3; i++)
     {
         CMD[i] = toupper((int32_t)CMD[i]);
-        cmd[i] = tolower((int32_t)cmd[i]);
+        cmd[i] = tolower((int32_t)CMD[i]);
     }
     //printf("MSGPROCESS.(%s)\n",(char *)data);
     if ( (valsobj= cJSON_Parse((char *)data)) != 0 )
