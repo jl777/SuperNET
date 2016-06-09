@@ -474,24 +474,22 @@ HASH_ARRAY_STRING(basilisk,geckotx,pubkey,vals,hexstr)
     struct iguana_info *btcd,*virt; char *retstr=0,*symbol; uint8_t *data,*allocptr,space[4096]; int32_t datalen; bits256 txid;
     if ( (btcd= iguana_coinfind("BTCD")) != 0 && (symbol= jstr(vals,"symbol")) != 0 )
     {
-        if ( (virt= iguana_coinfind(symbol)) != 0 )
+        if ( (data= get_dataptr(BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),hexstr)) != 0 )
         {
-            if ( btcd->RELAYNODE != 0 || btcd->VALIDATENODE != 0 )
+            txid = bits256_doublesha256(0,data,datalen);
+            if ( (virt= iguana_coinfind(symbol)) != 0 )
             {
-                if ( (data= get_dataptr(BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),hexstr)) != 0 )
-                {
-                    txid = bits256_doublesha256(0,data,datalen);
+                if ( btcd->RELAYNODE != 0 || btcd->VALIDATENODE != 0 )
                     retstr = basilisk_respond_geckotx(myinfo,"GTX",0,0,0,vals,data,datalen,txid,0);
-                }
-                if ( allocptr != 0 )
-                    free(allocptr);
-                if ( retstr == 0 )
-                    retstr = clonestr("{\"error\":\"couldnt create geckotx\"}");
-            } else retstr = basilisk_standardservice("GTX",myinfo,txid,vals,hexstr,1);
-            return(retstr);
-        } else return(clonestr("{\"error\":\"couldnt find geckochain\"}"));
-    }
-    return(clonestr("{\"error\":\"need symbol and chain and BTCD to create new gecko tx\"}"));
+                else retstr = basilisk_standardservice("GTX",myinfo,txid,vals,hexstr,1);
+            }
+        } else retstr = clonestr("{\"error\":\"no tx submitted\"}");
+        if ( allocptr != 0 )
+            free(allocptr);
+        if ( retstr == 0 )
+            retstr = clonestr("{\"error\":\"couldnt create geckotx\"}");
+        return(retstr);
+    } return(clonestr("{\"error\":\"need symbol and chain and BTCD to create new gecko tx\"}"));
 }
 
 HASH_ARRAY_STRING(basilisk,geckoblock,pubkey,vals,hexstr)
