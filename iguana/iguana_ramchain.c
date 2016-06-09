@@ -2387,7 +2387,7 @@ int64_t iguana_ramchainopen(char *fname,struct iguana_info *coin,struct iguana_r
         iguana_ramchain_link(ramchain,hash2,bundleheight/coin->chain->bundlesize,bundleheight,0,0,1,0);
         ramchain->expanded = 1;
         ramchain->H.scriptoffset = 1;
-        _iguana_ramchain_setptrs(RAMCHAIN_PTRS,rdata);
+        _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
         iguana_ramchain_extras(coin,ramchain,hashmem,0);
     }
     if ( rdata != 0 )

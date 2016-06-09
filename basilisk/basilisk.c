@@ -218,7 +218,6 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                     if ( alreadysent[s] == addr->ipbits )
                         break;
                 //printf("%s s.%d vs n.%d\n",addr->ipaddr,s,n);
-                printf("[%s] send %s.(%s) addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",cmd,type,(char *)&data[4],addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
                 if ( s == n && (addr->supernet != 0 || addr->basilisk != 0) && (destipaddr == 0 || strcmp(addr->ipaddr,destipaddr) == 0) )
                 {
                     printf("[%s] send %s.(%s) addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",cmd,type,(char *)&data[4],addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
