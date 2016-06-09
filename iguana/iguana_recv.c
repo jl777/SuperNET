@@ -933,7 +933,17 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
             //printf("done allhashes\n");
         }
         else if ( bp->hdrsi == coin->bundlescount-1 )
+        {
             iguana_checklongestchain(coin,bp,num);
+            if ( bp->speculative != 0 && bp->numspec < num )
+            {
+                for (i=bp->numspec; i<num; i++)
+                {
+                    if ( bits256_nonz(bp->speculative[i]) == 0 )
+                        bp->speculative[i] = blockhashes[i];
+                }
+            }
+        }
         if ( strcmp("BTC",coin->symbol) != 0 && (bp->speculative == 0 || num > bp->numspec) && bp->emitfinish == 0 )
         {
             //printf("FOUND speculative.%s BLOCKHASHES[%d] ht.%d\n",bits256_str(str,blockhashes[1]),num,bp->bundleheight);
