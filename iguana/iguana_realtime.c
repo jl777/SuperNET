@@ -222,12 +222,12 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     }
     for (i=0; i<coin->bundlescount-1; i++)
     {
-        if ( (bp= coin->bundles[i]) != 0 && (i > 0 && bp->utxofinish == 0) )
+        if ( (bp= coin->bundles[i]) != 0 && (i > 0 && bp->utxofinish == 0) && bp != coin->current )
         {
             if ( iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,0,0) < 0 )
             {
-                printf("error generating spendvectors.[%d], exiting. just restart iguana\n",i);
-                exit(-1);
+                printf("error generating spendvectors.[%d], skipping\n",i);
+                return(0);
             } // else printf("generated UTXO.[%d]\n",i);
             coin->spendvectorsaved = 1;
         }
