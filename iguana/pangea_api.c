@@ -183,8 +183,8 @@ struct table_info *pangea_tablealloc(struct table_info *tp,int32_t N)
 
 struct table_info *pangea_table(struct supernet_info *myinfo,bits256 tablehash,int32_t N)
 {
-    struct table_info *tp; char str[65];
-    if ( (tp= private_chain(myinfo->pangea_category,tablehash)) == 0 && N > 0 )
+    /*struct table_info *tp; char str[65];
+    if ( (tp= gecko_chain(myinfo->pangea_category,tablehash)) == 0 && N > 0 )
     {
         tp = pangea_tablealloc(0,N);
         memset(tp,0,sizeof(*tp));
@@ -197,11 +197,12 @@ struct table_info *pangea_table(struct supernet_info *myinfo,bits256 tablehash,i
     if ( tp != 0 )
     {
         category_subscribe(SuperNET_MYINFO(0),myinfo->pangea_category,tablehash);
-        if ( private_chainset(myinfo->pangea_category,tablehash,tp) == 0 )
+        if ( gecko_chainset(myinfo->pangea_category,tablehash,tp) == 0 )
             printf("error: couldnt set table.(%s)\n",bits256_str(str,tablehash)), tp = 0;
         //else tp->G.allocsize = allocsize;
     }
-    return(tp);
+    return(tp);*/
+    return(0);
 }
 
 struct player_info *pangea_playerfind(struct supernet_info *myinfo,struct table_info *tp)
@@ -219,7 +220,7 @@ struct player_info *pangea_playerfind(struct supernet_info *myinfo,struct table_
 
 char *pangea_jsondatacmd(struct supernet_info *myinfo,bits256 tablehash,struct pangea_msghdr *pm,cJSON *json,char *cmdstr,char *ipaddr)
 {
-    cJSON *argjson; char *reqstr,hexstr[8192]; uint64_t nxt64bits; struct table_info *tp; int32_t i,datalen;
+    /*cJSON *argjson; char *reqstr,hexstr[8192]; uint64_t nxt64bits; struct table_info *tp; int32_t i,datalen;
     category_subscribe(myinfo,myinfo->pangea_category,GENESIS_PUBKEY);
     category_subscribe(myinfo,myinfo->pangea_category,tablehash);
     argjson = json != 0 ? jduplicate(json) : cJSON_CreateObject();
@@ -266,12 +267,13 @@ char *pangea_jsondatacmd(struct supernet_info *myinfo,bits256 tablehash,struct p
     {
         printf("cant msgcreate\n");
         return(clonestr("{\"error\":\"couldnt create pangea message\"}"));
-    }
+    }*/
+    return(0);
 }
 
 void pangea_sendcmd(struct supernet_info *myinfo,struct table_info *tp,char *cmdstr,int32_t destplayer,uint8_t *data,int32_t datalen,int32_t cardi,int32_t turni)
 {
-    struct player_info *p; struct pangea_msghdr *pm; char *str,*hexstr; int32_t plaintext,loopback = 0;
+    /*struct player_info *p; struct pangea_msghdr *pm; char *str,*hexstr; int32_t plaintext,loopback = 0;
     pm = calloc(1,sizeof(*pm) + datalen);//(void *)tp->space;
     memset(pm,0,sizeof(*pm));
     strncpy(pm->cmd,cmdstr,8);
@@ -304,7 +306,7 @@ void pangea_sendcmd(struct supernet_info *myinfo,struct table_info *tp,char *cmd
         }
         free(hexstr);
     }
-    free(pm);
+    free(pm);*/
 }
 
 void pangea_tablejoin(struct supernet_info *myinfo,struct table_info *tp,uint8_t *data,int32_t datalen,uint64_t signer64bits,uint32_t sigtimestamp,bits256 sigtablehash)
@@ -451,7 +453,7 @@ void pangea_addfunds(PANGEA_HANDARGS)
     printf("got remote addfunds\n");
 }
 
-char *pangea_hexmsg(struct supernet_info *myinfo,struct private_chain *cat,void *data,int32_t len,char *remoteaddr)
+char *pangea_hexmsg(struct supernet_info *myinfo,struct gecko_chain *cat,void *data,int32_t len,char *remoteaddr)
 {
     static struct { char *cmdstr; void (*func)(PANGEA_HANDARGS); uint64_t cmdbits; } tablecmds[] =
     {
@@ -511,7 +513,8 @@ char *pangea_hexmsg(struct supernet_info *myinfo,struct private_chain *cat,void 
                         allocsize = pangea_allocsize(tp,9,0);
                         if ( tp->G.allocsize < allocsize )
                             tp = pangea_tablealloc(tp,9);
-                        private_chainset(tp->G.gamehash,tp->G.tablehash,tp);
+                        printf("deprecated usage of chainset\n");
+                        //gecko_chainset(tp->G.gamehash,tp->G.tablehash,tp);
                         if ( strcmp(tablecmds[i].cmdstr,"newhand") == 0 )
                         {
                             tp->G.numactive = pm->turni;
@@ -538,7 +541,7 @@ char *pangea_hexmsg(struct supernet_info *myinfo,struct private_chain *cat,void 
 
 void pangea_update(struct supernet_info *myinfo)
 {
-    struct pangea_msghdr *pm; struct category_msg *m; char remoteaddr[64],*str; struct private_chain *cat = 0;
+    /*struct pangea_msghdr *pm; struct category_msg *m; char remoteaddr[64],*str; struct gecko_chain *cat = 0;
     while ( (m= category_gethexmsg(myinfo,&cat,myinfo->pangea_category,GENESIS_PUBKEY)) != 0 )
     {
         pm = (struct pangea_msghdr *)m->msg;
@@ -548,7 +551,7 @@ void pangea_update(struct supernet_info *myinfo)
         if ( (str= pangea_hexmsg(myinfo,cat,pm,m->len,remoteaddr)) != 0 )
             free(str);
         free(m);
-    }
+    }*/
 }
 /*
 char *_pangea_status(struct supernet_info *myinfo,bits256 tablehash,cJSON *json)
@@ -865,7 +868,8 @@ HASH_ARG(pangea,start,tablehash)
             if ( tp->G.allocsize < allocsize )
             {
                 tp = pangea_tablealloc(tp,9);
-                private_chainset(tp->G.gamehash,tp->G.tablehash,tp);
+                printf("deprecated usage of chainset\n");
+                //gecko_chainset(tp->G.gamehash,tp->G.tablehash,tp);
             }
             if ( tp->G.creatorbits == myinfo->myaddr.nxt64bits )
                 pangea_newdeck(myinfo,tp);

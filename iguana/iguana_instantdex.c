@@ -389,7 +389,7 @@ bits256 instantdex_rwoffer(int32_t rwflag,int32_t *lenp,uint8_t *serialized,stru
 
 char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extraser,int32_t extralen,struct iguana_peer *addr,struct bitcoin_swapinfo *swap)
 {
-    cJSON *sendjson; char *reqstr,*hexstr,*retstr; struct instantdex_msghdr *msg; bits256 orderhash,tmphash; int32_t i,j,len,dir=0,serflag,olen,slen,datalen; uint8_t *buf,*allocptr,space[4096],serialized[sizeof(*offer) + sizeof(struct iguana_msghdr) + 4096 + INSTANTDEX_DECKSIZE*33]; uint64_t x,nxt64bits;
+    cJSON *sendjson; char *reqstr; struct instantdex_msghdr *msg; bits256 orderhash,tmphash; int32_t i,j,len,dir=0,serflag,olen,slen,datalen; uint8_t *buf,*allocptr,space[4096],serialized[sizeof(*offer) + sizeof(struct iguana_msghdr) + 4096 + INSTANTDEX_DECKSIZE*33]; uint64_t x,nxt64bits; //,*hexstr,*retstr
     //if ( strcmp(cmdstr,"poll") == 0 )
     //    return(clonestr("{\"result\":\"skip sending poll\"}"));
     //category_subscribe(myinfo,myinfo->instantdex_category,GENESIS_PUBKEY);
@@ -480,7 +480,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
         free(allocptr);
     return(clonestr("{\"result\":\"success\"}"));
 
-    if ( instantdex_msgcreate(myinfo,msg,datalen) != 0 )
+ /*   if ( instantdex_msgcreate(myinfo,msg,datalen) != 0 )
     {
         //printf(">>>>>>>>>>>> instantdex send.(%s) datalen.%d allocsize.%d crc.%x\n",cmdstr,datalen,msg->sig.allocsize,calc_crc32(0,(void *)((long)msg + 8),datalen-8));
         if ( addr != 0 )
@@ -508,7 +508,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
         free(msg);
         printf("cant msgcreate datalen.%d\n",datalen);
         return(clonestr("{\"error\":\"couldnt create instantdex message\"}"));
-    }
+    }*/
 }
 
 int32_t instantdex_updatesources(struct exchange_info *exchange,struct exchange_quote *sortbuf,int32_t n,int32_t max,int32_t ind,int32_t dir,struct exchange_quote *quotes,int32_t numquotes)
@@ -1445,7 +1445,7 @@ char *instantdex_parse(struct supernet_info *myinfo,struct instantdex_msghdr *ms
     return(clonestr("{\"error\":\"request needs argjson\"}"));
 }
 
-char *InstantDEX_hexmsg(struct supernet_info *myinfo,struct private_chain *cat,void *ptr,int32_t len,char *remoteaddr)
+char *InstantDEX_hexmsg(struct supernet_info *myinfo,struct gecko_chain *cat,void *ptr,int32_t len,char *remoteaddr)
 {
     struct instantdex_msghdr *msg = ptr; int32_t olen,slen,datalen,newlen,flag = 0;
     uint8_t *serdata; struct instantdex_offer rawoffer; // struct supernet_info *myinfos[64];
@@ -1554,7 +1554,7 @@ char *instantdex_createaccept(struct supernet_info *myinfo,struct instantdex_acc
 
 void instantdex_update(struct supernet_info *myinfo)
 {
-    struct instantdex_msghdr *pm; struct category_msg *m; char *str,remote[64]; queue_t *Q; struct queueitem *item; struct private_chain *cat;
+    /*struct instantdex_msghdr *pm; struct category_msg *m; char *str,remote[64]; queue_t *Q; struct queueitem *item; struct gecko_chain *cat;
     //char str2[65]; printf("myinfo->instantdex_category.(%s)\n",bits256_str(str2,myinfo->instantdex_category));
     if ( (Q= category_Q(&cat,myinfo->instantdex_category,myinfo->myaddr.persistent)) != 0 && queue_size(Q) > 0 && (item= Q->list) != 0 )
     {
@@ -1571,7 +1571,7 @@ void instantdex_update(struct supernet_info *myinfo)
         if ( (str= InstantDEX_hexmsg(myinfo,cat,pm,m->len,remote)) != 0 )
             free(str);
         free(m);
-    }
+    }*/
 }
 
 #include "../includes/iguana_apidefs.h"

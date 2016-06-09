@@ -1067,7 +1067,7 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
         }
         if ( forceflag != 0 || bp->validated <= 1 )
         {
-            max = sizeof(coin->blockspace);
+            max = coin->blockspacesize;
             blockspace = calloc(1,max);
             iguana_volatilesmap(coin,&bp->ramchain);
             for (i=0; i<bp->n; i++)

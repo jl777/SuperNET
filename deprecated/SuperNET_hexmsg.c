@@ -15,6 +15,7 @@
 
 #include "iguana777.h"
 
+#ifdef oldway
 int32_t SuperNET_hexmsgfind(struct supernet_info *myinfo,bits256 category,bits256 subhash,char *hexmsg,int32_t addflag)
 {
     static int lastpurge; static uint64_t Packetcache[1024];
@@ -116,7 +117,6 @@ void SuperNET_hexmsgprocess(struct supernet_info *myinfo,cJSON *retjson,cJSON *j
     }
 }
 
-#ifdef later
 int32_t category_default_blockhash(struct category_chain *catchain,void *blockhashp,void *data,int32_t datalen)
 {
     bits256 hash;
@@ -276,7 +276,6 @@ struct category_chain *category_chain_functions(struct supernet_info *myinfo,bit
     }
     return(0);
 }
-#endif
 
 struct crypto777_msghdr *crypto777_msgcreate(struct supernet_info *myinfo,struct crypto777_msghdr *msg,int32_t datalen)
 {
@@ -369,6 +368,7 @@ char *crypto777_hexmsg(struct supernet_info *myinfo,void *ptr,int32_t len,char *
     }
     return(clonestr("{\"result\":\"test packet\"}"));
 }
+#endif
 
 /*
  Consensus rules: 

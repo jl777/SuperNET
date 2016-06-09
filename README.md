@@ -1,5 +1,15 @@
 #SuperNET Client "iguana"
 
+Codebase is going under radical changes now and versions from mid-May should be used unless you are doing advanced testing. There will be four layers:
+
+gecko: abstracted bitcoin compatible blockchains that run via basilisk lite mode or as iguana core full network peers. I will try to get a geckochain to simultaneously have both virtual basilisk nodes and private iguana nodes, but at first will probably need to choose which mode a new chain will be and transition between the two via special suspend and resume functions that allow migration from virtual to physical. Each specific geckochain will be able to be enhanced into a datachain.
+
+basilisk: abstracted crypto transactions layer, which has a reference implementation for bitcoin protocol via the iguana nodes, but can be expanded to support any coin protocol that can support the required functions. Since it works with bitcoin protocol, any 2.0 coin with at least bitcoin level functionality should be able to create a basilisk interface.
+
+iguana: most efficient bitcoin core implementation that can simultaneously be full peers for multiple bitcoin blockchains. Special support being added to virtualize blockchains so all can share the same peers. The iguana peers identify as a supernet node, regardless of which coin, so by having nodes that support multiple coins, supernet peers are propagated across all coins. non-iguana peers wont get any non-standard packets so it is interoperable with all the existing bitcoin and bitcoin clone networks
+
+komodo: this is the top secret project I cant talk about publicly yet
+
 > #TL;DR#
 > 
 > ```sudo apt-get update; sudo apt-get install git build-essential; git clone https://github.com/jl777/SuperNET; cd SuperNET; ./m_onetime m_unix;```

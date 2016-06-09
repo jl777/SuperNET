@@ -21,23 +21,11 @@
 #define BASILISK_TIMEOUT 30000
 #define BASILISK_MINFANOUT 8
 #define BASILISK_MAXFANOUT 64
+#define BASILISK_DEFAULTDIFF 0x1effffff
 
 #define BASILISK_MAXFUTUREBLOCK 60
 #define BASILISK_MAXBLOCKLAG 600
-#define BASILISK_MAXBTCGAP 9
-#define BASILISK_MAXBTCDGAP 18
-
-#define BASILISK_DEFAULTVERSION 1
-#define BASILISK_DEFAULTDIFF 0x1effffff
-#define BASILISK_DEFAULTDIFFSTR "1effffff"
-
-#define BASILISK_FIRSTPOSSIBLEBTC 414000
-#define BASILISK_FIRSTPOSSIBLEBTCD 1100000
-#define BASILISK_MAXNAMELEN 64
-
-struct hashstamp { bits256 hash2; uint32_t timestamp; int32_t height; };
-struct basilisk_sequence { struct hashstamp *stamps; int32_t lastupdate,maxstamps,numstamps,lasti,longestchain; };
-struct basilisk_sequences { struct basilisk_sequence BTC,BTCD; };
+#define BASILISK_HDROFFSET ((int32_t)(sizeof(struct iguana_msghdr)+sizeof(basilisktag)))
 
 struct basilisk_value { bits256 txid; int64_t value; int32_t height; int16_t vout; char coinaddr[64]; };
 
@@ -57,6 +45,7 @@ struct basilisk_info
 };
 
 void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen,bits256 pubkey);
+int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *type,uint32_t *basilisktagp,int32_t encryptflag,int32_t delaymillis,uint8_t *data,int32_t datalen,int32_t fanout,uint32_t nBits); // data must be offset by sizeof(iguana_msghdr)+sizeof(basilisktag)
 
 void basilisks_init(struct supernet_info *myinfo);
 void basilisk_p2p(void *myinfo,void *_addr,char *ipaddr,uint8_t *data,int32_t datalen,char *type,int32_t encrypted);
@@ -68,10 +57,6 @@ uint8_t *get_dataptr(uint8_t **ptrp,int32_t *datalenp,uint8_t *space,int32_t spa
 char *basilisk_addhexstr(char **ptrp,cJSON *valsobj,char *strbuf,int32_t strsize,uint8_t *data,int32_t datalen);
 char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,bits256 hash,cJSON *valsobj,char *hexstr,int32_t blockflag); // client side
 
-char *basilisk_respond_hashstamps(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk);
-char *basilisk_respond_newprivatechain(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk);
-char *basilisk_respond_privatetx(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk);
-char *basilisk_respond_privateblock(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk);
 
 void basilisk_request_goodbye(struct supernet_info *myinfo);
 int32_t basilisk_update(char *symbol,uint32_t reftimestamp);

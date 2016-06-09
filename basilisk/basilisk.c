@@ -66,19 +66,21 @@ uint8_t *get_dataptr(uint8_t **ptrp,int32_t *datalenp,uint8_t *space,int32_t spa
     if ( hexstr != 0 && (*datalenp= is_hexstr(hexstr,0)) > 0 )
     {
         *datalenp >>= 1;
-        if ( *datalenp+sizeof(struct iguana_msghdr)+sizeof(basilisktag) <= spacesize )
+        if ( (*datalenp+BASILISK_HDROFFSET) <= spacesize )
         {
-            memset(space,0,sizeof(struct iguana_msghdr)+sizeof(basilisktag));
-            data = &space[sizeof(struct iguana_msghdr)+sizeof(basilisktag)];
-        } else *ptrp = data = calloc(1,*datalenp + sizeof(struct iguana_msghdr)+sizeof(basilisktag));
-        decode_hex(&data[sizeof(struct iguana_msghdr)+sizeof(basilisktag)],*datalenp,hexstr);
+            memset(space,0,BASILISK_HDROFFSET);
+            data = &space[BASILISK_HDROFFSET];
+        } else *ptrp = data = calloc(1,*datalenp + BASILISK_HDROFFSET);
+        decode_hex(&data[BASILISK_HDROFFSET],*datalenp,hexstr);
     }
-    return(data);
+    if ( data != 0 )
+        return(&data[BASILISK_HDROFFSET]);
+    else return(data);
 }
 
 uint8_t *basilisk_jsondata(uint8_t **ptrp,uint8_t *space,int32_t spacesize,int32_t *datalenp,char *symbol,cJSON *sendjson,uint32_t basilisktag)
 {
-    char *sendstr,*hexstr; uint8_t *data; bits256 pubkey; int32_t i,datalen,hexlen=0,extrasize,havepubkey=1;
+    char *sendstr,*hexstr; uint8_t *data; bits256 pubkey; int32_t i,datalen,hexlen=0,havepubkey=1;
     if ( jobj(sendjson,"coin") == 0 )
         jaddstr(sendjson,"coin",symbol);
     if ( jobj(sendjson,"pubkey") != 0 )
@@ -88,18 +90,17 @@ uint8_t *basilisk_jsondata(uint8_t **ptrp,uint8_t *space,int32_t spacesize,int32
     }
     if ( (hexstr= jstr(sendjson,"data")) != 0 && (hexlen= is_hexstr(hexstr,0)) > 0 )
         hexlen >>= 1;
-    extrasize = (int32_t)(sizeof(struct iguana_msghdr) + sizeof(basilisktag));
     *ptrp = 0;
     sendstr = jprint(sendjson,0);
     datalen = (int32_t)strlen(sendstr) + 1;
-    if ( (datalen + extrasize + hexlen + havepubkey*(sizeof(pubkey)+1)) <= spacesize )
+    if ( (datalen + BASILISK_HDROFFSET + hexlen + havepubkey*(sizeof(pubkey)+1)) <= spacesize )
         data = space;
     else
     {
-        data = calloc(1,datalen + extrasize + hexlen + havepubkey*(sizeof(pubkey)+1));
+        data = calloc(1,datalen + BASILISK_HDROFFSET + hexlen + havepubkey*(sizeof(pubkey)+1));
         *ptrp = data;
     }
-    data += extrasize;
+    data += BASILISK_HDROFFSET;
     memcpy(data,sendstr,datalen);
     free(sendstr);
     if ( havepubkey != 0 || hexlen != 0 )
@@ -156,46 +157,9 @@ struct basilisk_item *basilisk_itemcreate(struct supernet_info *myinfo,char *CMD
     return(ptr);
 }
 
-/*int32_t basilisk_sendPUB(struct supernet_info *myinfo,uint32_t basilisktag,uint8_t *data,int32_t datalen) // data must be offset by sizeof(iguana_msghdr)+sizeof(basilisktag)
-{
-    int32_t i,j,r,r2,s,k,val,l,n=0; uint32_t *alreadysent; struct iguana_info *coin; struct iguana_peer *addr;
-    alreadysent = calloc(IGUANA_MAXPEERS * IGUANA_MAXCOINS,sizeof(*alreadysent));
-    r = rand(), r2 = rand();
-    for (k=0; k<IGUANA_MAXCOINS; k++)
-    {
-        j = (r2 + k) % IGUANA_MAXCOINS;
-        if ( (coin= Coins[j]) == 0 )
-            continue;
-        for (l=0; l<IGUANA_MAXPEERS; l++)
-        {
-            i = (l + r) % IGUANA_MAXPEERS;
-            if ( (addr= &coin->peers.active[i]) != 0 && addr->ipbits != 0 && addr->usock >= 0 && addr->basilisk != 0 )
-            {
-                for (s=0; s<n; s++)
-                    if ( alreadysent[s] == addr->ipbits )
-                        break;
-                if ( s == n )
-                {
-                    printf("pub (%s) addr->supernet.%u to (%s).%d\n",(char *)&data[4],addr->supernet,addr->ipaddr,addr->A.port);
-                    if ( (val= iguana_queue_send(addr,0,&data[-sizeof(struct iguana_msghdr)],"SuperNETpub",datalen)) >= datalen )
-                    {
-                        alreadysent[n++] = (uint32_t)addr->ipbits;
-                        if ( n >= IGUANA_MAXPEERS*IGUANA_MAXCOINS )
-                            break;
-                    }
-                }
-            }
-        }
-        if ( n >= IGUANA_MAXPEERS*IGUANA_MAXCOINS )
-            break;
-    }
-    free(alreadysent);
-    return(n);
-}*/
-
 int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *type,uint32_t *basilisktagp,int32_t encryptflag,int32_t delaymillis,uint8_t *data,int32_t datalen,int32_t fanout,uint32_t nBits) // data must be offset by sizeof(iguana_msghdr)+sizeof(basilisktag)
 {
-    int32_t i,j,r,r2,k,l,s,val,n=0,offset,havepubkey=0,retval = -1; char cmd[12]; struct iguana_info *coin; struct iguana_peer *addr; bits256 pubkey; uint32_t *alreadysent;
+    int32_t i,r,l,s,val,n=0,offset,havepubkey=0,retval = -1; char cmd[12]; struct iguana_info *coin,*tmp; struct iguana_peer *addr; bits256 pubkey; uint32_t *alreadysent;
     if ( fanout <= 0 )
         fanout = BASILISK_MINFANOUT;
     else if ( fanout > BASILISK_MAXFANOUT )
@@ -235,11 +199,11 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
     data -= sizeof(*basilisktagp), datalen += sizeof(*basilisktagp);
     memset(cmd,0,sizeof(cmd));
     sprintf(cmd,"SuperNET%s",type);
-    r = rand(), r2 = rand();
-    for (k=0; k<IGUANA_MAXCOINS; k++)
+    r = rand();
+    //portable_mutex_lock(&Allcoins_mutex);
+    HASH_ITER(hh,myinfo->allcoins,coin,tmp)
     {
-        j = (r2 + k) % IGUANA_MAXCOINS;
-        if ( (coin= Coins[j]) == 0 || coin->peers == 0 )
+        if (  coin->peers == 0 )
             continue;
         if ( coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 )
             cmd[0] = 's';
@@ -247,15 +211,17 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
         for (l=0; l<IGUANA_MAXPEERS; l++)
         {
             i = (l + r) % IGUANA_MAXPEERS;
-            if ( (addr= &coin->peers->active[i]) != 0 && addr->usock >= 0 )
+            addr = &coin->peers->active[i];
+            if ( addr->usock >= 0 )
             {
                 for (s=0; s<n; s++)
                     if ( alreadysent[s] == addr->ipbits )
                         break;
                 //printf("%s s.%d vs n.%d\n",addr->ipaddr,s,n);
+                printf("[%s] send %s.(%s) addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",cmd,type,(char *)&data[4],addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
                 if ( s == n && (addr->supernet != 0 || addr->basilisk != 0) && (destipaddr == 0 || strcmp(addr->ipaddr,destipaddr) == 0) )
                 {
-                    printf("[%s] send %s.(%s) addr->supernet.%u to (%s).%d destip.%s\n",cmd,type,(char *)&data[4],addr->supernet,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
+                    printf("[%s] send %s.(%s) addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",cmd,type,(char *)&data[4],addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
                     if ( encryptflag != 0 && bits256_nonz(addr->pubkey) != 0 )
                     {
                         void *ptr; uint8_t *cipher,space[8192]; int32_t cipherlen; bits256 privkey;
@@ -292,8 +258,30 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
         if ( n >= IGUANA_MAXPEERS*IGUANA_MAXCOINS )
             break;
     }
+    //portable_mutex_unlock(&Allcoins_mutex);
     free(alreadysent);
     return(n);
+}
+
+int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *virt,char *blockstr)
+{
+    struct iguana_txblock txdata; int32_t recvlen,n,len = -1;; struct iguana_msghdr H; uint8_t *data,space[16384],*allocptr;
+    if ( virt->TXMEM.ptr == 0 )
+        iguana_meminit(&virt->TXMEM,virt->name,0,IGUANA_MAXPACKETSIZE * 2,0);
+    iguana_memreset(&virt->TXMEM);
+    if ( (data= get_dataptr(&allocptr,&recvlen,space,sizeof(space),blockstr)) != 0 )
+    {
+        memset(&txdata,0,sizeof(txdata));
+        if ( (n= iguana_gentxarray(virt,&virt->TXMEM,&txdata,&len,data,recvlen)) == recvlen )
+        {
+            len = n;
+            memset(&H,0,sizeof(H));
+            iguana_gotblockM(virt,&virt->internaladdr,&txdata,virt->TXMEM.ptr,&H,data,recvlen);
+        }
+    }
+    if ( allocptr != 0 )
+        free(allocptr);
+    return(len);
 }
 
 void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t datalen,char *type,int32_t encrypted)
@@ -747,6 +735,179 @@ HASH_ARRAY_STRING(basilisk,VPNlogout,pubkey,vals,hexstr)
 
 #include "../includes/iguana_apiundefs.h"
 
+void basilisks_loop(void *arg)
+{
+    basilisk_metricfunc metricfunc; struct iguana_info *btcd,*virt,*hhtmp; struct basilisk_item *ptr,*tmp,*pending,*parent; int32_t i,iter,maxmillis,done,flag,n; cJSON *valsobj,*retjson; uint32_t now; struct supernet_info *myinfo = arg;
+    //uint8_t *blockspace; struct OS_memspace RAWMEM;
+    //memset(&RAWMEM,0,sizeof(RAWMEM));
+    //blockspace = calloc(1,IGUANA_MAXPACKETSIZE);
+    iter = 0;
+    while ( 1 )
+    {
+        iter++;
+        if ( (ptr= queue_dequeue(&myinfo->basilisks.submitQ,0)) != 0 )
+        {
+            if ( ptr->finished == 0 )
+                HASH_ADD(hh,myinfo->basilisks.issued,basilisktag,sizeof(ptr->basilisktag),ptr);
+            else free(ptr);
+            continue;
+        }
+        if ( (ptr= queue_dequeue(&myinfo->basilisks.resultsQ,0)) != 0 )
+        {
+            HASH_FIND(hh,myinfo->basilisks.issued,&ptr->basilisktag,sizeof(ptr->basilisktag),pending);
+            if ( pending != 0 )
+            {
+                if ( (n= pending->numresults) < sizeof(pending->results)/sizeof(*pending->results) )
+                {
+                    pending->numresults++;
+                    if ( (metricfunc= pending->metricfunc) == 0 )
+                        pending->metrics[n] = n + 1;
+                    else if ( (pending->metrics[n]= (*metricfunc)(myinfo,pending,ptr->retstr)) != 0. )
+                        pending->childrendone++;
+                    printf("%u Add results[%d] <- (%s) metric %f\n",pending->basilisktag,n,ptr->retstr,pending->metrics[n]);
+                    pending->results[n] = ptr->retstr;
+                    if ( strcmp(ptr->CMD,"SEQ") == 0 )
+                    {
+                        if ( (retjson= cJSON_Parse(ptr->retstr)) != 0 )
+                        {
+                            gecko_seqresult(myinfo,ptr->retstr);
+                            free_json(retjson);
+                        }
+                    }
+                }
+            }
+            free(ptr);
+            continue;
+        }
+        flag = 0;
+        HASH_ITER(hh,myinfo->basilisks.issued,pending,tmp)
+        {
+            //printf("pending.%u numresults.%d m %f func.%p\n",pending->basilisktag,pending->numresults,pending->metrics[0],pending->metricfunc);
+            if ( (metricfunc= pending->metricfunc) != 0 )
+            {
+                for (i=0; i<pending->numresults; i++)
+                    if ( pending->metrics[i] == 0. && pending->results[i] != 0 )
+                    {
+                        if ( (pending->metrics[i]= (*metricfunc)(myinfo,pending,pending->results[i])) != 0 )
+                            pending->childrendone++;
+                        // printf("iter.%d %p.[%d] poll metrics.%u metric %f\n",iter,pending,i,pending->basilisktag,pending->metrics[i]);
+                        flag++;
+                    }
+            }
+            basilisk_iscomplete(pending);
+            if ( OS_milliseconds() > pending->expiration )
+            {
+                if ( pending->finished == 0 )
+                {
+                    if ( (parent= pending->parent) != 0 )
+                    {
+                        pending->parent = 0;
+                        parent->childrendone++;
+                    }
+                    pending->finished = (uint32_t)time(NULL);
+                    if ( pending->retstr == 0 )
+                        pending->retstr = clonestr("{\"error\":\"basilisk timeout\"}");
+                    printf("timeout call metrics.%u lag %f - %f\n",pending->basilisktag,OS_milliseconds(),pending->expiration);
+                    for (i=0; i<pending->numresults; i++)
+                        if ( (metricfunc= pending->metricfunc) != 0 )
+                            pending->metrics[i] = (*metricfunc)(myinfo,pending,pending->results[i]);
+                    flag++;
+                }
+            }
+            if ( pending->finished != 0 && time(NULL) > pending->finished+60 )
+            {
+                if ( pending->dependents == 0 || pending->childrendone >= pending->numchildren )
+                {
+                    HASH_DELETE(hh,myinfo->basilisks.issued,pending);
+                    if ( pending->dependents != 0 )
+                        free(pending->dependents);
+                    printf("HASH_DELETE free ptr.%u\n",pending->basilisktag);
+                    for (i=0; i<pending->numresults; i++)
+                        if ( pending->results[i] != 0 )
+                            free(pending->results[i]);
+                    if ( pending->vals != 0 )
+                        free_json(pending->vals);
+                    free(pending);
+                    flag++;
+                }
+            }
+        }
+        if ( (btcd= iguana_coinfind("BTCD")) != 0 )
+        {
+            done = 3;
+            if ( btcd->RELAYNODE != 0 || btcd->VALIDATENODE != 0 )
+            {
+                if ( (now= (uint32_t)time(NULL)) > btcd->SEQ.BTCD.lastupdate+10 )
+                {
+                    if ( gecko_sequpdate("BTCD",now) >= 0 )
+                        done &= ~1;
+                    btcd->SEQ.BTCD.lastupdate = (uint32_t)time(NULL);
+                }
+            }
+            if ( (now= (uint32_t)time(NULL)) > btcd->SEQ.BTC.lastupdate+30 )
+            {
+                if ( gecko_sequpdate("BTC",now) >= 0 )
+                    done &= ~2;
+                btcd->SEQ.BTC.lastupdate = (uint32_t)time(NULL);
+            }
+            if ( done != 3 )
+            {
+                valsobj = cJSON_CreateObject();
+                if ( btcd->RELAYNODE == 0 && btcd->VALIDATENODE == 0 )
+                {
+                    jaddnum(valsobj,"BTCD",btcd->SEQ.BTCD.numstamps+GECKO_FIRSTPOSSIBLEBTCD);
+                    basilisk_standardservice("SEQ",myinfo,GENESIS_PUBKEY,valsobj,0,0);
+                    flag++;
+                }
+                if ( (done & 2) == 0 )
+                {
+                    free_json(valsobj);
+                    valsobj = cJSON_CreateObject();
+                    jaddnum(valsobj,"BTC",btcd->SEQ.BTC.numstamps+GECKO_FIRSTPOSSIBLEBTC);
+                    basilisk_standardservice("SEQ",myinfo,GENESIS_PUBKEY,valsobj,0,0);
+                    flag++;
+                }
+                free_json(valsobj);
+            }
+            if ( flag == 0 && myinfo->allcoins_numvirts > 0 )
+            {
+                char mineraddr[64];
+                maxmillis = (1000 / myinfo->allcoins_numvirts) + 1;
+                //portable_mutex_lock(&Allcoins_mutex);
+                HASH_ITER(hh,myinfo->allcoins,virt,hhtmp)
+                {
+                    if ( iguana_processrecv(myinfo,virt) == 0 )
+                    {
+                        bitcoin_address(mineraddr,virt->chain->pubtype,myinfo->persistent_pubkey33,33);
+                        //printf("mine.%s %s\n",virt->symbol,mineraddr);
+                        gecko_miner(myinfo,btcd,virt,maxmillis,mineraddr);
+                    }
+                    flag++;
+                }
+                //portable_mutex_unlock(&Allcoins_mutex);
+            }
+        }
+        //for (i=0; i<IGUANA_MAXCOINS; i++)
+        //    if ( (coin= Coins[i]) != 0 && coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 && coin->active != 0 && coin->chain->userpass[0] != 0 && coin->MAXPEERS == 1 )
+        //        basilisk_bitcoinscan(coin,blockspace,&RAWMEM);
+        if ( flag == 0 )
+            usleep(10000);
+    }
+}
+
+void basilisks_init(struct supernet_info *myinfo)
+{
+    //bits256 basiliskhash;
+    iguana_initQ(&myinfo->basilisks.submitQ,"submitQ");
+    iguana_initQ(&myinfo->basilisks.resultsQ,"resultsQ");
+    //basiliskhash = calc_categoryhashes(0,"basilisk",0);
+    //myinfo->basilisk_category = basiliskhash;
+    //category_subscribe(myinfo,basiliskhash,GENESIS_PUBKEY);
+    //category_processfunc(basiliskhash,GENESIS_PUBKEY,basilisk_hexmsg);
+    //category_processfunc(basiliskhash,myinfo->myaddr.persistent,basilisk_hexmsg);
+    myinfo->basilisks.launched = iguana_launch(iguana_coinfind("BTCD"),"basilisks_loop",basilisks_loop,myinfo,IGUANA_PERMTHREAD);
+}
+
 void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen,bits256 pubkey)
 {
     cJSON *valsobj; char *symbol,*retstr=0,remoteaddr[64],CMD[4],cmd[4]; int32_t origlen,from_basilisk,i,timeoutmillis,numrequired,jsonlen; uint8_t *origdata; struct iguana_info *coin=0;
@@ -754,13 +915,14 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
     {
         { (void *)"RUN", &basilisk_respond_dispatch },   // higher level protocol handler, pass through
         { (void *)"BYE", &basilisk_respond_goodbye },    // disconnect
-       
-        // private chains
-        { (void *)"NEW", &basilisk_respond_newprivatechain }, // creates new virtual private chain
+        
+        // gecko chains
+        { (void *)"NEW", &basilisk_respond_newgeckochain }, // creates new virtual gecko chain
         { (void *)"SEQ", &basilisk_respond_hashstamps }, // BTCD and BTC recent hashes from timestamp
-        { (void *)"VTX", &basilisk_respond_privatetx },   // adding field to one relay propagates to all others
-        { (void *)"BLK", &basilisk_respond_privateblock },   // any relay can be queried
-
+        { (void *)"VTX", &basilisk_respond_geckotx },
+        { (void *)"BLK", &basilisk_respond_geckoblock },
+        { (void *)"GEN", &basilisk_respond_geckogenesis },
+        
         // unencrypted low level functions, used by higher level protocols and virtual network funcs
         { (void *)"ADD", &basilisk_respond_addrelay },   // relays register with each other bus
         { (void *)"PUB", &basilisk_respond_publish },    // adds to global list of published items
@@ -869,156 +1031,4 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
         free(retstr);
 }
 
-void basilisks_loop(void *arg)
-{
-    basilisk_metricfunc metricfunc; struct iguana_info *btcd; struct basilisk_item *ptr,*tmp,*pending,*parent; int32_t i,iter,done,flag,n; cJSON *valsobj,*retjson; uint32_t now; struct supernet_info *myinfo = arg;
-    //uint8_t *blockspace; struct OS_memspace RAWMEM;
-    //memset(&RAWMEM,0,sizeof(RAWMEM));
-    //blockspace = calloc(1,IGUANA_MAXPACKETSIZE);
-    iter = 0;
-    while ( 1 )
-    {
-        iter++;
-        if ( (btcd= iguana_coinfind("BTCD")) != 0 )
-        {
-            done = 3;
-            if ( btcd->RELAYNODE != 0 || btcd->VALIDATENODE != 0 )
-            {
-                if ( (now= (uint32_t)time(NULL)) > btcd->SEQ.BTCD.lastupdate+10 )
-                {
-                    if ( basilisk_update("BTCD",now) >= 0 )
-                        done &= ~1;
-                    btcd->SEQ.BTCD.lastupdate = (uint32_t)time(NULL);
-                }
-            }
-            if ( (now= (uint32_t)time(NULL)) > btcd->SEQ.BTC.lastupdate+30 )
-            {
-                if ( basilisk_update("BTC",now) >= 0 )
-                    done &= ~2;
-                btcd->SEQ.BTC.lastupdate = (uint32_t)time(NULL);
-            }
-            if ( done != 3 )
-            {
-                valsobj = cJSON_CreateObject();
-                if ( btcd->RELAYNODE == 0 && btcd->VALIDATENODE == 0 )
-                {
-                    jaddnum(valsobj,"BTCD",btcd->SEQ.BTCD.numstamps+BASILISK_FIRSTPOSSIBLEBTCD);
-                    basilisk_standardservice("SEQ",myinfo,GENESIS_PUBKEY,valsobj,0,0);
-                }
-                if ( (done & 2) == 0 )
-                {
-                    free_json(valsobj);
-                    valsobj = cJSON_CreateObject();
-                    jaddnum(valsobj,"BTC",btcd->SEQ.BTC.numstamps+BASILISK_FIRSTPOSSIBLEBTC);
-                    basilisk_standardservice("SEQ",myinfo,GENESIS_PUBKEY,valsobj,0,0);
-                }
-                free_json(valsobj);
-            }
-        }
-        //for (i=0; i<IGUANA_MAXCOINS; i++)
-        //    if ( (coin= Coins[i]) != 0 && coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 && coin->active != 0 && coin->chain->userpass[0] != 0 && coin->MAXPEERS == 1 )
-        //        basilisk_bitcoinscan(coin,blockspace,&RAWMEM);
-        if ( (ptr= queue_dequeue(&myinfo->basilisks.submitQ,0)) != 0 )
-        {
-            if ( ptr->finished == 0 )
-                HASH_ADD(hh,myinfo->basilisks.issued,basilisktag,sizeof(ptr->basilisktag),ptr);
-            else free(ptr);
-            continue;
-        }
-        if ( (ptr= queue_dequeue(&myinfo->basilisks.resultsQ,0)) != 0 )
-        {
-            HASH_FIND(hh,myinfo->basilisks.issued,&ptr->basilisktag,sizeof(ptr->basilisktag),pending);
-            if ( pending != 0 )
-            {
-                if ( (n= pending->numresults) < sizeof(pending->results)/sizeof(*pending->results) )
-                {
-                    pending->numresults++;
-                    if ( (metricfunc= pending->metricfunc) == 0 )
-                        pending->metrics[n] = n + 1;
-                    else if ( (pending->metrics[n]= (*metricfunc)(myinfo,pending,ptr->retstr)) != 0. )
-                        pending->childrendone++;
-                    printf("%u Add results[%d] <- (%s) metric %f\n",pending->basilisktag,n,ptr->retstr,pending->metrics[n]);
-                    pending->results[n] = ptr->retstr;
-                    if ( strcmp(ptr->CMD,"SEQ") == 0 )
-                    {
-                        if ( (retjson= cJSON_Parse(ptr->retstr)) != 0 )
-                        {
-                            basilisk_seqresult(myinfo,ptr->retstr);
-                            free_json(retjson);
-                        }
-                    }
-                }
-            }
-            free(ptr);
-            continue;
-        }
-        flag = 0;
-        HASH_ITER(hh,myinfo->basilisks.issued,pending,tmp)
-        {
-            //printf("pending.%u numresults.%d m %f func.%p\n",pending->basilisktag,pending->numresults,pending->metrics[0],pending->metricfunc);
-            if ( (metricfunc= pending->metricfunc) != 0 )
-            {
-                for (i=0; i<pending->numresults; i++)
-                    if ( pending->metrics[i] == 0. && pending->results[i] != 0 )
-                    {
-                        if ( (pending->metrics[i]= (*metricfunc)(myinfo,pending,pending->results[i])) != 0 )
-                            pending->childrendone++;
-                        // printf("iter.%d %p.[%d] poll metrics.%u metric %f\n",iter,pending,i,pending->basilisktag,pending->metrics[i]);
-                        flag++;
-                    }
-            }
-            basilisk_iscomplete(pending);
-            if ( OS_milliseconds() > pending->expiration )
-            {
-                if ( pending->finished == 0 )
-                {
-                    if ( (parent= pending->parent) != 0 )
-                    {
-                        pending->parent = 0;
-                        parent->childrendone++;
-                    }
-                    pending->finished = (uint32_t)time(NULL);
-                    if ( pending->retstr == 0 )
-                        pending->retstr = clonestr("{\"error\":\"basilisk timeout\"}");
-                    printf("timeout call metrics.%u lag %f - %f\n",pending->basilisktag,OS_milliseconds(),pending->expiration);
-                    for (i=0; i<pending->numresults; i++)
-                        if ( (metricfunc= pending->metricfunc) != 0 )
-                            pending->metrics[i] = (*metricfunc)(myinfo,pending,pending->results[i]);
-                }
-            }
-            if ( pending->finished != 0 && time(NULL) > pending->finished+60 )
-            {
-                if ( pending->dependents == 0 || pending->childrendone >= pending->numchildren )
-                {
-                    HASH_DELETE(hh,myinfo->basilisks.issued,pending);
-                    if ( pending->dependents != 0 )
-                        free(pending->dependents);
-                    printf("HASH_DELETE free ptr.%u\n",pending->basilisktag);
-                    for (i=0; i<pending->numresults; i++)
-                        if ( pending->results[i] != 0 )
-                            free(pending->results[i]);
-                    if ( pending->vals != 0 )
-                        free_json(pending->vals);
-                    free(pending);
-                    flag++;
-                }
-            }
-        }
-        if ( flag == 0 )
-            usleep(50000);
-        else usleep(10000);
-    }
-}
 
-void basilisks_init(struct supernet_info *myinfo)
-{
-    //bits256 basiliskhash;
-    iguana_initQ(&myinfo->basilisks.submitQ,"submitQ");
-    iguana_initQ(&myinfo->basilisks.resultsQ,"resultsQ");
-    //basiliskhash = calc_categoryhashes(0,"basilisk",0);
-    //myinfo->basilisk_category = basiliskhash;
-    //category_subscribe(myinfo,basiliskhash,GENESIS_PUBKEY);
-    //category_processfunc(basiliskhash,GENESIS_PUBKEY,basilisk_hexmsg);
-    //category_processfunc(basiliskhash,myinfo->myaddr.persistent,basilisk_hexmsg);
-    myinfo->basilisks.launched = iguana_launch(iguana_coinfind("BTCD"),"basilisks_loop",basilisks_loop,myinfo,IGUANA_PERMTHREAD);
-}

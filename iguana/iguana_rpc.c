@@ -14,7 +14,7 @@
  ******************************************************************************/
 
 #include "iguana777.h"
-#include "SuperNET.h"
+//#include "SuperNET.h"
 
 #define RPCARGS struct supernet_info *myinfo,uint16_t port,struct iguana_info *coin,cJSON *params[],int32_t n,cJSON *json,char *remoteaddr,cJSON *array
 #define GLUEARGS cJSON *json,struct supernet_info *myinfo,uint16_t port,struct iguana_info *coin,char *remoteaddr,cJSON *params[]
@@ -644,7 +644,7 @@ char *iguana_bitcoinrpc(struct supernet_info *myinfo,uint16_t port,struct iguana
 
 char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr,uint16_t port)
 {
-    cJSON *params[16],*array; struct iguana_info *coin = 0; char symbol[16]; int32_t i,c,n; char *retstr = 0;
+    cJSON *params[16],*array; struct iguana_info *tmp,*coin = 0; char symbol[16]; int32_t i,c,n; char *retstr = 0;
     symbol[0] = 0;
     memset(params,0,sizeof(params));
     if ( json != 0 )
@@ -671,11 +671,14 @@ char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,ch
         }
         else
         {
-            for (i=0; i<IGUANA_MAXCOINS; i++)
-                if ( (coin= Coins[i]) != 0 && coin->chain->rpcport == port )
+            //portable_mutex_lock(&Allcoins_mutex);
+            HASH_ITER(hh,myinfo->allcoins,coin,tmp)
+            {
+                if ( coin->chain->rpcport == port )
                     break;
-            if ( i == IGUANA_MAXCOINS )
-                coin = 0;
+                else coin = 0;
+            }
+            //portable_mutex_unlock(&Allcoins_mutex);
         }
         if ( coin == 0 && symbol[0] != 0 )
             coin = iguana_coinfind(symbol);

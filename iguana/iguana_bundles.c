@@ -994,7 +994,7 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
                 coin->numemitted++;
                 for (i=0; i<bp->n; i++)
                     iguana_hash2set(coin,"bundlefinalize",bp,i,bp->hashes[i]);
-                /*if ( bp->hdrsi == 0 && iguana_peerblockrequest(coin,coin->blockspace,sizeof(coin->blockspace),0,bp->hashes[0],1) > 0 )
+                /*if ( bp->hdrsi == 0 && iguana_peerblockrequest(coin,coin->blockspace,coin->blockspacesize,0,bp->hashes[0],1) > 0 )
                     printf("GENESIS block validated\n");
                 else printf("GENESIS didnt validate bp.%p\n",bp);*/
                 //if ( strcmp("BTC",coin->symbol) != 0 )
@@ -1046,7 +1046,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
     starti = currentbp == 0 ? 0 : currentbp->hdrsi;
     lasti = lastbp == 0 ? coin->bundlescount-1 : lastbp->hdrsi;
     iguana_bundlecalcs(coin,bp,lag);
-    if ( coin->blockdepth == 0 && bp->hdrsi == coin->bundlescount-1 )
+    if ( coin->blockdepth == 0 && coin->blockdepth == 0 && bp->hdrsi == coin->bundlescount-1 )
         iguana_autoextend(coin,bp);
     if ( 0 && bp->hdrsi == 0 )
         printf("ITER utxo.%u now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",bp->utxofinish,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
@@ -1186,7 +1186,9 @@ void iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,uin
 void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
 {
     int32_t i,n,m,j,numv,numconverted,count,starti,lasti,pending,capacity,displag,numutxo,numbalances,numrecv,done,numhashes,numcached,numsaved,numemit; struct iguana_block *block; bits256 hash2;
-    int64_t spaceused=0,estsize = 0; struct iguana_bundle *currentbp,*lastbp,*bp,*lastpending = 0,*firstgap = 0; uint32_t now; 
+    int64_t spaceused=0,estsize = 0; struct iguana_bundle *currentbp,*lastbp,*bp,*lastpending = 0,*firstgap = 0; uint32_t now;
+    if ( coin->bundlescount <= 0 )
+        return;
     now = (uint32_t)time(NULL);
     displag = (now - coin->lastdisp);
     numrecv = numhashes = numcached = numconverted = numsaved = numemit = done = numutxo = numbalances = 0;

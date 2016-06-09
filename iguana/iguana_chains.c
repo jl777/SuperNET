@@ -26,7 +26,7 @@
 
 static struct iguana_chain Chains[] =
 {
-	//[CHAIN_TESTNET3] =
+	/*//[CHAIN_TESTNET3] =
     {
 		//CHAIN_TESTNET3,
         "testnet3", "tBTC", "Bitcoin Signed Message:\n", // strMessageMagic
@@ -35,7 +35,7 @@ static struct iguana_chain Chains[] =
         "000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943",
         "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4adae5494dffff001d1aa4ae180101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4d04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73ffffffff0100f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac00000000",
         18333,18334,0,
-    },
+    },*/
     //[CHAIN_BITCOIN] =
     {
 		//CHAIN_BITCOIN,
@@ -64,7 +64,7 @@ static struct iguana_chain Chains[] =
     
     //iguana_chaingenesis("VPN",0,bits256_conv("00000ac7d764e7119da60d3c832b1d4458da9bc9ef9d5dd0d91a15f690a46d99"),genesisblock,"scrypt",1,1409839200,0x1e0fffff,64881664,bits256_conv("698a93a1cacd495a7a4fb3864ad8d06ed4421dedbc57f9aaad733ea53b1b5828")); // VPN
 
-	//[CHAIN_VPN] =
+	/*//[CHAIN_VPN] =
     {
         "VPNcoin", "VPN", "VPNcoin Signed Message:\n", // strMessageMagic
 		71, 5, 199, // PUBKEY_ADDRESS + SCRIPT_ADDRESS addrman.h, use wif2priv API on any valid wif
@@ -75,7 +75,7 @@ static struct iguana_chain Chains[] =
         1920,1921,1,0x1e // port and rpcport vpncoin.conf
     },
 	
-    /* //[CHAIN_LTC] =
+    //[CHAIN_LTC] =
     {
         "Litecoin", "LTC", "Litecoin Signed Message:\n",
 		0, 5, 176, // PUBKEY_ADDRESS + SCRIPT_ADDRESS addrman.h, use wif2priv API on any valid wif
@@ -291,18 +291,6 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
     {
         if ( strcmp(chain->symbol,"BTCD") == 0 )
             chain->pubtype = 60, chain->p2shtype = 85;
-/*            if ( strcmp(chain->symbol,"LTC") == 0 )
-                chain->pubtype = 48, chain->p2shtype = 5, chain->minconfirms = 1, chain->txfee = 100000;
-            else if ( strcmp(chain->symbol,"BTCD") == 0 )
-            else if ( strcmp(chain->symbol,"DOGE") == 0 )
-                chain->pubtype = 30, chain->p2shtype = 35, chain->txfee = SATOSHIDEN;
-            else if ( strcmp(chain->symbol,"VRC") == 0 )
-                chain->pubtype = 70, chain->p2shtype = 85;
-            else if ( strcmp(chain->symbol,"OPAL") == 0 )
-                chain->pubtype = 115, chain->p2shtype = 28;
-            else if ( strcmp(chain->symbol,"BITS") == 0 )
-                chain->pubtype = 25, chain->p2shtype = 8;
-        }*/
         if ( (chain->minoutput= j64bits(argjson,"minoutput")) == 0 )
             chain->minoutput = 10000;
         chain->minconfirms = juint(argjson,"minconfirms");
@@ -324,20 +312,18 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
         if ( juint(argjson,"p2p") != 0 )
             chain->portp2p = juint(argjson,"p2p");
         else chain->portp2p = juint(argjson,"portp2p");
-        if ( (chain->ramchainport= juint(argjson,"ramchain")) == 0 )
-            chain->ramchainport = chain->portp2p - 1;
         if ( (chain->rpcport= juint(argjson,"rpc")) == 0 )
         {
             if ( chain->portp2p != 0 )
                 chain->rpcport = chain->portp2p-1;
         }
         chain->zcash = juint(argjson,"zcash");
+        if ( (chain->normal_txversion= juint(argjson,"normal_txversion")) == 0 )
+            chain->normal_txversion = IGUANA_NORMAL_TXVERSION;
+        if ( (chain->locktime_txversion= juint(argjson,"locktime_txversion")) == 0 )
+            chain->locktime_txversion = IGUANA_LOCKTIME_TXVERSION;
         if ( jobj(argjson,"isPoS") != 0 )
-            chain->txhastimestamp = juint(argjson,"isPoS");
-        else if ( jobj(argjson,"oldtx_format") != 0 )
-            chain->txhastimestamp = !juint(argjson,"oldtx_format");
-        else if ( jobj(argjson,"txhastimestamp") != 0 )
-            chain->txhastimestamp = !juint(argjson,"txhastimestamp");
+            chain->isPoS = juint(argjson,"isPoS");
         if ( jstr(argjson,"userhome") != 0 )
             strcpy(chain->userhome,jstr(argjson,"userhome"));
         else strcpy(chain->userhome,Userhome);
@@ -391,18 +377,19 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
             memcpy(chain->genesis_hashdata,chain->genesishash2.bytes,32);
             char str[65]; init_hexbytes_noT(str,chain->genesis_hashdata,32);
             chain->genesis_hash = clonestr(str);
-            //chain->genesis_hash = clonestr(bits256_str(str,hash));
             chain->genesis_hex = clonestr(genesisblock);
         }
         else
         {
             if ( (hexstr= jstr(argjson,"genesisblock")) != 0 )
             {
-                uint8_t hexbuf[1024],*ptr,*data; int32_t datalen,hdrsize = (chain->zcash != 0) ? sizeof(struct iguana_msgblockhdr_zcash) : sizeof(struct iguana_msgblockhdr);
-                chain->genesis_hex = mycalloc('G',1,strlen(hexstr)+1);
-                strcpy(chain->genesis_hex,hexstr);
+                uint8_t hexbuf[1024],*ptr,*data; int32_t datalen,hdrsize;
+                hdrsize = chain->zcash != 0 ? sizeof(struct iguana_msgblockhdr_zcash) : sizeof(struct iguana_msgblockhdr);
+                chain->genesis_hex = clonestr(hexstr);
                 data = get_dataptr(&ptr,&datalen,hexbuf,sizeof(hexbuf),hexstr);
-                memcpy(chain->genesis_hashdata,data,hdrsize);
+                chain->genesishash2 = iguana_calcblockhash(chain->symbol,chain->hashalgo,data,hdrsize);
+                memcpy(chain->genesis_hashdata,chain->genesishash2.bytes,32);
+                //char str[65]; printf("%s -> calculated %s from %d datalen\n",hexstr,bits256_str(str,chain->genesishash2),hdrsize);
                 if ( ptr != 0 )
                     free(ptr);
             }
@@ -427,6 +414,8 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
 void iguana_chaininit(struct iguana_chain *chain,int32_t hasheaders,cJSON *argjson)
 {
     int32_t i;
+    if ( chain->hashalgo != 0 )
+        return;
     if ( strcmp(chain->symbol,"BTCD") == 0 )
     {
         chain->numPoStargets = 1;
@@ -437,7 +426,6 @@ void iguana_chaininit(struct iguana_chain *chain,int32_t hasheaders,cJSON *argjs
         chain->PoWtarget = bits256_from_compact(0x1e0fffff);
     }
     chain->hasheaders = hasheaders;
-    //chain->minoutput = 10000;
     chain->hashalgo = blockhash_sha256; // most all coins seem to use this for blockchain
     if ( strcmp(chain->symbol,"BTC") == 0 )
     {
@@ -460,8 +448,6 @@ void iguana_chaininit(struct iguana_chain *chain,int32_t hasheaders,cJSON *argjs
         chain->bundlesize = _IGUANA_BLOCKHASHES;
     }
     decode_hex((uint8_t *)chain->genesis_hashdata,32,(char *)chain->genesis_hash);
-    if ( chain->ramchainport == 0 )
-        chain->ramchainport = chain->portp2p - 1;
     if ( chain->rpcport == 0 )
         chain->rpcport = chain->portp2p + 1;
 }
@@ -472,7 +458,7 @@ struct iguana_chain *iguana_chainfind(char *name,cJSON *argjson,int32_t createfl
     for (i=0; i<sizeof(Chains)/sizeof(*Chains); i++)
     {
 		chain = &Chains[i];
-        printf("chain.(%s).%s vs %s.%d\n",chain->genesis_hash,chain->name,name,strcmp(name,chain->name));
+        //printf("chain.(%s).%s vs %s.%d\n",chain->genesis_hash,chain->name,name,strcmp(name,chain->name));
 		if ( chain->name[0] == 0 || chain->genesis_hash == 0 )
         {
             if ( createflag != 0 && argjson != 0 )
@@ -488,7 +474,9 @@ struct iguana_chain *iguana_chainfind(char *name,cJSON *argjson,int32_t createfl
             return(chain);
         }
 	}
-	return NULL;
+    chain = calloc(1,sizeof(*chain));
+    iguana_chaininit(chain,1,argjson);
+    return(chain);
 }
 
 struct iguana_chain *iguana_findmagic(uint8_t netmagic[4])

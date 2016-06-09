@@ -14,7 +14,7 @@
  ******************************************************************************/
 
 #include "iguana777.h"
-#include "SuperNET.h"
+//#include "SuperNET.h"
 
 //struct iguana_txid { bits256 txid; uint32_t txidind,firstvout,firstvin,locktime,version,timestamp; uint16_t numvouts,numvins; } __attribute__((packed));
 
@@ -174,7 +174,7 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
     int32_t i,rwflag=1,len = 0; char asmstr[512],txidstr[65];
     uint32_t numvins,numvouts; struct iguana_msgvin vin; struct iguana_msgvout vout; uint8_t space[IGUANA_MAXSCRIPTSIZE];
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->version),&tx->version);
-    if ( coin->chain->txhastimestamp != 0 )
+    if ( coin->chain->isPoS != 0 )
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->timestamp),&tx->timestamp);
     numvins = tx->numvins, numvouts = tx->numvouts;
     len += iguana_rwvarint32(rwflag,&serialized[len],&numvins);
@@ -206,7 +206,7 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
     }
     if ( len > maxlen )
     {
-        printf("len.%d > maxlen.%d\n",len,maxlen);
+        printf("len.%d > maxlenB.%d\n",len,maxlen);
         return(0);
     }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->locktime),&tx->locktime);
@@ -388,7 +388,7 @@ cJSON *iguana_blockjson(struct iguana_info *coin,struct iguana_block *block,int3
         jadd(json,"tx",array);
         //printf("add txids[%d]\n",block->txn_count);
     }
-    if ( (size= iguana_peerblockrequest(coin,coin->blockspace,sizeof(coin->blockspace),0,block->RO.hash2,0)) < 0 )
+    if ( (size= iguana_peerblockrequest(coin,coin->blockspace,coin->blockspacesize,0,block->RO.hash2,0)) < 0 )
         jaddstr(json,"error","couldnt generate raw bytes for block");
     else jaddnum(json,"size",size);
     return(json);

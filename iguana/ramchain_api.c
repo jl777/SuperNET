@@ -136,7 +136,7 @@ HASH_AND_TWOINTS(bitcoinrpc,getblock,blockhash,verbose,remoteonly)
             return(jprint(iguana_blockjson(coin,block,1),1));
         else
         {
-            if ( (len= iguana_peerblockrequest(coin,coin->blockspace,sizeof(coin->blockspace),0,blockhash,0)) > 0 )
+            if ( (len= iguana_peerblockrequest(coin,coin->blockspace,coin->blockspacesize,0,blockhash,0)) > 0 )
             {
                 datastr = malloc(len*2 + 1);
                 init_hexbytes_noT(datastr,coin->blockspace,len);

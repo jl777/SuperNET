@@ -21,7 +21,7 @@
 #define CHROMEAPP_HANDLER Handler_SuperNET
 
 #include "../pnacl_main.h"
-#include "SuperNET.h"
+//#include "SuperNET.h"
 
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL	0x4000	// Do not generate SIGPIPE

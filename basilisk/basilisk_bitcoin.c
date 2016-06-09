@@ -591,7 +591,7 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
     {
         if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
         {
-            if ( (txobj= bitcoin_txcreate(coin->chain->txhastimestamp,locktime)) != 0 )
+            if ( (txobj= bitcoin_txcreate(coin->chain->isPoS,locktime,locktime==0?coin->chain->normal_txversion:coin->chain->locktime_txversion)) != 0 )
             {
                 spendlen = (int32_t)strlen(spendscriptstr) >> 1;
                 decode_hex(buf,spendlen,spendscriptstr);

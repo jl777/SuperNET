@@ -13,21 +13,14 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef iguana777_net_h
-#define iguana777_net_h
+#ifndef H_IGUANATYPES_H
+#define H_IGUANATYPES_H
 
-struct supernet_info;
-struct exchange_info;
 
-#include "../crypto777/OS_portable.h"
-#include "../basilisk/basilisk.h"
-#include "../gecko/gecko.h"
-
-#include "../includes/iguana_defines.h"
-#include "../includes/iguana_types.h"
-#include "../includes/iguana_structs.h"
-#include "../includes/iguana_funcs.h"
-#include "../includes/iguana_globals.h"
-
+typedef void (*iguana_func)(void *);
+typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t len);
+typedef void *(*basilisk_func)(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *vals);
+typedef double (*basilisk_metricfunc)(struct supernet_info *myinfo,struct basilisk_item *ptr,char *result);
 
 #endif
+

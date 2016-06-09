@@ -418,7 +418,7 @@ int32_t pangea_queueprocess(struct supernet_info *myinfo,struct table_info *tp)
 
 void pangea_queues(struct supernet_info *myinfo)
 {
-    struct private_chain *cat,*subchain,*tmp; //struct table_info *tp;
+    struct gecko_chain *cat,*subchain,*tmp; //struct table_info *tp;
     pangea_update(myinfo);
     if ( (cat= category_find(calc_categoryhashes(0,"pangea",0),GENESIS_PUBKEY)) != 0 )
     {

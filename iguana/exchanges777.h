@@ -49,6 +49,7 @@
 #define EXCHANGES777_DEFAULT_TIMEOUT 30
 typedef void CURL;
 struct exchange_info;
+struct exchange_quote;
 
 struct exchange_funcs
 {

@@ -107,7 +107,7 @@ int32_t pangea_opentable(struct game_info *gp)
 
 cJSON *pangea_lobbyjson(struct supernet_info *myinfo)
 {
-    struct private_chain *cat,*subchain,*tmp; cJSON *array,*retjson; //struct table_info *tp;
+    struct gecko_chain *cat,*subchain,*tmp; cJSON *array,*retjson; //struct table_info *tp;
     retjson = cJSON_CreateObject();
     array = cJSON_CreateArray();
     if ( (cat= category_find(calc_categoryhashes(0,"pangea",0),GENESIS_PUBKEY)) != 0 )

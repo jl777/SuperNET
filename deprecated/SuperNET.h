@@ -16,6 +16,7 @@
 #ifndef INCLUDED_SUPERNET_H
 #define INCLUDED_SUPERNET_H
 
+deprecated file
 #define SUPERNET_MAXHOPS 7
 #include "../crypto777/OS_portable.h"
 #include "../includes/cJSON.h"
@@ -75,25 +76,26 @@ struct supernet_address
 
 struct supernet_info;
 #include "../basilisk/basilisk.h"
+#include "../gecko/gecko.h"
 
 struct supernet_info
 {
     char ipaddr[64],transport[8]; int32_t APISLEEP; int32_t iamrelay; uint32_t expiration,dirty;
     int32_t Debuglevel,readyflag,dead,POLLTIMEOUT; char rpcsymbol[16],LBpoint[64],PUBpoint[64];
-    //int32_t pullsock,subclient,lbclient,lbserver,servicesock,pubglobal,pubrelays,numservers;
     bits256 privkey,persistent_priv,BTCmarkerhash,instantdex_category,pangea_category,basilisk_category;
-    char secret[2048],NXTAPIURL[512],permanentfile[1024];
+    char secret[2048],NXTAPIURL[512],permanentfile[1024]; uint8_t persistent_pubkey33[33];
     uint8_t *recvbuf[6];
     struct supernet_address myaddr;
     int32_t LBsock,PUBsock,reqsock,subsock,networktimeout,maxdelay;
     uint16_t LBport,PUBport,reqport,subport,rpcport,publicRPC,argport;
-    //struct nn_pollfd pfd[SUPERNET_MAXAGENTS]; //struct relay_info active;
     struct supernet_agent agents[SUPERNET_MAXAGENTS]; queue_t acceptQ;
     struct basilisk_info basilisks;
     int32_t numagents,numexchanges,IAMRELAY;
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES];
     struct iguana_waccount *wallet; void *ctx;
     char handle[1024],*decryptstr;
+    struct iguana_info *allcoins; int32_t allcoins_being_added,allcoins_numvirts; portable_mutex_t allcoins_mutex;
+
 };
 
 /*struct supernet_endpoint
@@ -125,13 +127,6 @@ struct crypto777_msghdr
     uint8_t cmd[8];
     uint8_t serialized[];
 } __attribute__((packed));
-
-struct private_chain
-{
-    UT_hash_handle hh; queue_t Q;
-    char *(*processfunc)(struct supernet_info *myinfo,struct private_chain *cat,void *data,int32_t datalen,char *remoteaddr);
-    bits256 hash; struct private_chain *subchains; struct iguana_info *info;
-};
 
 extern struct private_chain *Categories;
 struct category_msg { struct queueitem DL; struct tai t; uint64_t remoteipbits; int32_t len; uint8_t msg[]; };

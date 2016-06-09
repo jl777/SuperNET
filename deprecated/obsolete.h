@@ -16036,7 +16036,7 @@ len = 0;
              decode_hex(hash2.bytes,sizeof(hash2),txidstr);
              if ( (tx= iguana_txidfind(coin,&height,&T,hash2)) != 0 )
              {
-             if ( (len= iguana_txbytes(coin,coin->blockspace,sizeof(coin->blockspace),&checktxid,tx,height,0,0)) > 0 )
+             if ( (len= iguana_txbytes(coin,coin->blockspace,coin->blockspacesize,&checktxid,tx,height,0,0)) > 0 )
              {
              txbytes = mycalloc('x',1,len*2+1);
              init_hexbytes_noT(txbytes,coin->blockspace,len*2+1);
@@ -16554,7 +16554,7 @@ len = 0;
              jaddstr(array,waddr->coinaddr);
              total = 0;
              n = 0;
-             iguana_pkhasharray(myinfo,coin,0,coin->minconfirms,coin->longestchain,&total,0,coin->bundlescount,waddr->rmd160,waddr->coinaddr,waddr->pubkey,coin->blocks.hwmchain.height - coin->minconfirms,(uint64_t *)coin->blockspace,&n,(int32_t)(sizeof(coin->blockspace)/sizeof(*waddr->unspents))-1000);
+             iguana_pkhasharray(myinfo,coin,0,coin->minconfirms,coin->longestchain,&total,0,coin->bundlescount,waddr->rmd160,waddr->coinaddr,waddr->pubkey,coin->blocks.hwmchain.height - coin->minconfirms,(uint64_t *)coin->blockspace,&n,(int32_t)(coin->blockspacesize/sizeof(*waddr->unspents))-1000);
              if ( n > 0 )
              {
              if ( waddr->unspents == 0 || waddr->maxunspents < n )
@@ -17389,6 +17389,80 @@ len = 0;
                 retjson = cJSON_CreateObject();
                 return(jprint(retjson,1));
             }
+            /*int32_t basilisk_sendPUB(struct supernet_info *myinfo,uint32_t basilisktag,uint8_t *data,int32_t datalen) // data must be offset by sizeof(iguana_msghdr)+sizeof(basilisktag)
+             {
+             int32_t i,j,r,r2,s,k,val,l,n=0; uint32_t *alreadysent; struct iguana_info *coin; struct iguana_peer *addr;
+             alreadysent = calloc(IGUANA_MAXPEERS * IGUANA_MAXCOINS,sizeof(*alreadysent));
+             r = rand(), r2 = rand();
+             for (k=0; k<IGUANA_MAXCOINS; k++)
+             {
+             j = (r2 + k) % IGUANA_MAXCOINS;
+             if ( (coin= Coins[j]) == 0 )
+             continue;
+             for (l=0; l<IGUANA_MAXPEERS; l++)
+             {
+             i = (l + r) % IGUANA_MAXPEERS;
+             if ( (addr= &coin->peers.active[i]) != 0 && addr->ipbits != 0 && addr->usock >= 0 && addr->basilisk != 0 )
+             {
+             for (s=0; s<n; s++)
+             if ( alreadysent[s] == addr->ipbits )
+             break;
+             if ( s == n )
+             {
+             printf("pub (%s) addr->supernet.%u to (%s).%d\n",(char *)&data[4],addr->supernet,addr->ipaddr,addr->A.port);
+             if ( (val= iguana_queue_send(addr,0,&data[-sizeof(struct iguana_msghdr)],"SuperNETpub",datalen)) >= datalen )
+             {
+             alreadysent[n++] = (uint32_t)addr->ipbits;
+             if ( n >= IGUANA_MAXPEERS*IGUANA_MAXCOINS )
+             break;
+             }
+             }
+             }
+             }
+             if ( n >= IGUANA_MAXPEERS*IGUANA_MAXCOINS )
+             break;
+             }
+             free(alreadysent);
+             return(n);
+             }*/
+                
+                struct iguana_info *_iguana_coinadd(char *symbol,cJSON *argjson)
+            {
+                struct iguana_info *coin; char *privatechain; int32_t pval,i = 0;
+                if ( symbol == 0 )
+                {
+                    printf("_iguana_coinadd deprecated null symbol\n");
+                    exit(-1);
+                }
+                else
+                {
+                    for (i=0; i<sizeof(Coins)/sizeof(*Coins); i++)
+                    {
+                        if ( i >= sizeof(Hardcoded_coins)/sizeof(*Hardcoded_coins) )
+                            break;
+                        //printf("Hardcoded_coins[i][0] %s vs.(%s)\n",Hardcoded_coins[i][0],symbol);
+                        //if ( symbol[0] == 0 )
+                        //    getchar();
+                        if ( strcmp("endmarker",Hardcoded_coins[i][0]) == 0 || strcmp(symbol,Hardcoded_coins[i][0]) == 0 )
+                        {
+                            if ( coin->chain == 0 )
+                            {
+                                if ( i < sizeof(Hardcoded_coins)/sizeof(*Hardcoded_coins) )
+                                    strcpy(coin->name,Hardcoded_coins[i][1]);
+                                else if (argjson != 0 )
+                                {
+                                    if ( jstr(argjson,"name") != 0 )
+                                        safecopy(coin->name,jstr(argjson,"name"),sizeof(coin->name));
+                                    else strcpy(coin->name,symbol);
+                                }
+                            }
+                            return(coin);
+                        }
+                    }
+                }
+                return(0);
+            }
+
 
 #endif
 #endif

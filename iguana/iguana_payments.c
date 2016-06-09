@@ -54,7 +54,7 @@ bits256 iguana_str2priv(struct supernet_info *myinfo,struct iguana_info *coin,ch
             decode_hex(privkey.bytes,sizeof(privkey),str);
         else if ( bitcoin_wif2priv(&addrtype,&privkey,str) != sizeof(bits256) )
         {
-            if ( (waddr= iguana_waddresssearch(myinfo,coin,&wacct,str)) != 0 )
+            if ( (waddr= iguana_waddresssearch(myinfo,&wacct,str)) != 0 )
                 privkey = waddr->privkey;
             else memset(privkey.bytes,0,sizeof(privkey));
         }
@@ -68,7 +68,7 @@ int32_t iguana_pubkeyget(struct supernet_info *myinfo,struct iguana_info *coin,u
     len = (int32_t)strlen(str);
     if ( is_hexstr(str,len) == 0 )
     {
-        if ( (waddr= iguana_waddresssearch(myinfo,coin,&wacct,str)) != 0 )
+        if ( (waddr= iguana_waddresssearch(myinfo,&wacct,str)) != 0 )
         {
             if ( (plen= bitcoin_pubkeylen(waddr->pubkey)) > 0 )
                 memcpy(pubkeydata,waddr->pubkey,plen);
@@ -111,7 +111,7 @@ cJSON *iguana_p2shjson(struct supernet_info *myinfo,struct iguana_info *coin,cJS
         addresses = cJSON_CreateArray();
         for (i=0; i<V.N; i++)
         {
-            if ( V.signers[i].coinaddr[0] != 0 && (waddr= iguana_waddresssearch(myinfo,coin,&wacct,V.signers[i].coinaddr)) != 0 && waddr->wifstr[0] != 0 )
+            if ( V.signers[i].coinaddr[0] != 0 && (waddr= iguana_waddresssearch(myinfo,&wacct,V.signers[i].coinaddr)) != 0 && waddr->wifstr[0] != 0 )
                 jaddistr(privkeys,waddr->wifstr);
             else jaddistr(privkeys,"");
             if ( (plen= bitcoin_pubkeylen(V.signers[i].pubkey)) > 0 )
@@ -763,7 +763,7 @@ HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
     if ( (tx= iguana_txidfind(coin,&height,&T,txid,coin->bundlescount-1)) != 0 )
     {
         retjson = cJSON_CreateObject();
-        if ( (len= iguana_ramtxbytes(coin,coin->blockspace,sizeof(coin->blockspace),&checktxid,tx,height,0,0,0)) > 0 )
+        if ( (len= iguana_ramtxbytes(coin,coin->blockspace,coin->blockspacesize,&checktxid,tx,height,0,0,0)) > 0 )
         {
             txbytes = calloc(1,len*2+1);
             init_hexbytes_noT(txbytes,coin->blockspace,len);
@@ -941,7 +941,7 @@ cJSON *iguana_createvins(struct supernet_info *myinfo,struct iguana_info *coin,c
             if ( (unspentind= iguana_unspentindfind(coin,coinaddr,spendscript,&spendlen,&satoshis,&height,txid,vout,coin->bundlescount-1)) > 0 )
             {
                 //printf("[%d] unspentind.%d (%s) spendlen.%d %.8f\n",height/coin->chain->bundlesize,unspentind,coinaddr,spendlen,dstr(satoshis));
-                if ( coinaddr[0] != 0 && (waddr= iguana_waddresssearch(myinfo,coin,&wacct,coinaddr)) != 0 )
+                if ( coinaddr[0] != 0 && (waddr= iguana_waddresssearch(myinfo,&wacct,coinaddr)) != 0 )
                 {
                     init_hexbytes_noT(pubkeystr,waddr->pubkey,bitcoin_pubkeylen(waddr->pubkey));
                     jaddistr(pubkeys,pubkeystr);
@@ -976,7 +976,7 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
     bits256 txid; int32_t offset,spendlen=0,n; uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; uint64_t satoshis; char *hexstr,*field,*txstr; cJSON *txobj,*item,*obj,*retjson = cJSON_CreateObject();
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    if ( coin != 0 && (txobj= bitcoin_txcreate(coin->chain->txhastimestamp,locktime)) != 0 )
+    if ( coin != 0 && (txobj= bitcoin_txcreate(coin->chain->isPoS,locktime,locktime==0?coin->chain->normal_txversion:coin->chain->locktime_txversion)) != 0 )
     {
         iguana_createvins(myinfo,coin,txobj,vins);
         if ( (n= cJSON_GetArraySize(vouts)) > 0 )

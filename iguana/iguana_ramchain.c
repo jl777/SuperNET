@@ -1824,7 +1824,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
 #ifdef __PNACL__
     //verifyflag = 1;
 #endif
-    if ( (addr_ipbits= (uint32_t)addr->ipbits) == 0 )
+    if ( addr == 0 || (addr_ipbits= (uint32_t)addr->ipbits) == 0 )
         addr_ipbits = 1;
     if ( bits256_nonz(origtxdata->zblock.RO.merkle_root) == 0 )
     {
@@ -1833,8 +1833,11 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         origtxdata->zblock.issued = 0;
         return(-1);
     }
-    for (i=0; i<sizeof(addr->dirty)/sizeof(*addr->dirty); i++)
-        addr->dirty[i] = 0;
+    if ( addr != 0 )
+    {
+        for (i=0; i<sizeof(addr->dirty)/sizeof(*addr->dirty); i++)
+            addr->dirty[i] = 0;
+    }
     msize = (int32_t)sizeof(bits256) * (txn_count+1) * 2;
     if ( msize <= addr->TXDATA.totalsize )
     {

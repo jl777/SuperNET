@@ -13,7 +13,7 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "SuperNET.h"
+//#include "SuperNET.h"
 #define IGUANA_FORMS "[ \
 \
 {\"disp\":\"simple explorer\",\"agent\":\"ramchain\",\"method\":\"explore\",\"fields\":[{\"skip\":1,\"field\":\"search\",\"cols\":65,\"rows\":1}]}, \

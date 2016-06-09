@@ -340,7 +340,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
     else if ( 0 && coin->enableCACHE != 0 )
         printf("cache.%d validated.(%s)\n",coin->enableCACHE,bits256_str(str,origtxdata->zblock.RO.hash2));
     origtxdata->zblock.txvalid = 1;
-    if ( addr != 0 && addr != &coin->internaladdr )
+    if ( coin->virtualchain == 0 && addr != 0 && addr != &coin->internaladdr )
     {
         static uint64_t received[IGUANA_MAXPEERS],count[IGUANA_MAXPEERS],lastcount,lastreceived,last;
         received[addr->addrind] += recvlen;
@@ -486,7 +486,8 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
         } //else printf("cant save block\n");
     }
     req->zblock = txdata->zblock;
-    //printf("recvlen.%d ipbits.%x prev.(%s)\n",req->zblock.RO.recvlen,req->zblock.fpipbits,bits256_str(str,txdata->zblock.RO.prev_block));
+    if ( coin->virtualchain != 0 )
+        printf("%s recvlen.%d ipbits.%x prev.(%s)\n",coin->symbol,req->zblock.RO.recvlen,req->zblock.fpipbits,bits256_str(str,txdata->zblock.RO.prev_block));
     req->zblock.RO.txn_count = req->numtx = txdata->zblock.RO.txn_count;
     coin->recvcount++;
     coin->recvtime = (uint32_t)time(NULL);

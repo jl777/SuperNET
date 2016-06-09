@@ -222,9 +222,10 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
             if ( prev != 0 )
                 _iguana_blocklink(coin,prev,block);
         }
-        //char str[65]; printf("added.(%s) height.%d (%p %p)\n",bits256_str(str,hash2),height,block->hh.prev,block->hh.next);
-        if ( 0 )
+        //char str[65];
+        if ( coin->virtualchain != 0 )
         {
+            //printf("%s added.(%s) height.%d (%p %p)\n",coin->symbol,bits256_str(str,hash2),height,block->hh.prev,block->hh.next);
             struct iguana_block *tmp;
             HASH_FIND(hh,coin->blocks.hash,&hash2,sizeof(hash2),tmp);
             char str[65];
@@ -378,7 +379,7 @@ double PoW_from_compact(uint32_t nBits,uint8_t unitval) // NOT consensus safe, b
     nbytes = (nBits >> 24) & 0xFF;
     nbits = (8 * (nbytes - 3));
     PoW = (nBits & 0xFFFFFF);
-    if ( 1 && nbytes > unitval )
+    if ( 0 && nbytes > unitval )
     {
         printf("illegal nBits.%x unitval.%02x\n",nBits,unitval);
         return(0.);
@@ -534,6 +535,10 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
     bits256 *hash2p=0; double prevPoW = 0.; struct iguana_bundle *bp;
     if ( newblock == 0 )
         return(0);
+    if ( coin->virtualchain != 0 )
+    {
+        ;
+    }
     iguana_blocksizecheck("chainlink new",coin->chain->zcash,newblock);
     hwmchain = (struct iguana_block *)&coin->blocks.hwmchain;
     if ( 0 && hwmchain->height > 0 && ((bp= coin->current) == 0 || hwmchain->height/coin->chain->bundlesize > bp->hdrsi+0*bp->isRT) )
@@ -669,7 +674,12 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                 return(block);
             }
         }
-    } //else printf("chainlink error from block.%p\n",block);
+    }
+    else
+    {
+        char str[65];
+        printf("chainlink error from block.%p %s\n",block,bits256_str(str,newblock->RO.hash2));
+    }
     return(0);
 }
 

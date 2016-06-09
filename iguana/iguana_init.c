@@ -51,33 +51,36 @@ void iguana_initpeer(struct iguana_info *coin,struct iguana_peer *addr,uint64_t 
     expand_ipbits(addr->ipaddr,(uint32_t)addr->ipbits);
     //addr->pending = (uint32_t)time(NULL);
     strcpy(addr->symbol,coin->symbol);
-    strcpy(addr->coinstr,coin->name);
+    strcpy(addr->coinname,coin->name);
     iguana_initQ(&addr->sendQ,"addrsendQ");
 }
 
 void iguana_initcoin(struct iguana_info *coin,cJSON *argjson)
 {
     int32_t i; char dirname[1024];
-    sprintf(dirname,"%s/%s",GLOBAL_TMPDIR,coin->symbol), OS_portable_path(dirname);
-    portable_mutex_init(&coin->peers_mutex);
-    portable_mutex_init(&coin->blocks_mutex);
-    coin->txfee = 10000;
-    iguana_meminit(&coin->blockMEM,"blockMEM",coin->blockspace,sizeof(coin->blockspace),0);
-    iguana_initQs(coin);
-    coin->bindsock = -1;
-    OS_randombytes((unsigned char *)&coin->instance_nonce,sizeof(coin->instance_nonce));
-    coin->startutc = (uint32_t)time(NULL);
-    while ( time(NULL) == coin->startutc )
-        usleep(1);
-    coin->startutc++;
-    printf("start.%u\n",coin->startutc);
-    coin->startmillis = OS_milliseconds(), coin->starttime = tai_now();
-    coin->avetime = 1 * 100;
-    //coin->R.maxrecvbundles = IGUANA_INITIALBUNDLES;
-    if ( coin->MAXPEERS > 0 )
+    if ( coin->instance_nonce == 0 )
     {
-        for (i=0; i<IGUANA_MAXPEERS; i++)
-            coin->peers->active[i].usock = -1;
+        sprintf(dirname,"%s/%s",GLOBAL_TMPDIR,coin->symbol), OS_portable_path(dirname);
+        portable_mutex_init(&coin->peers_mutex);
+        portable_mutex_init(&coin->blocks_mutex);
+        coin->txfee = 10000;
+        iguana_meminit(&coin->blockMEM,"blockMEM",coin->blockspace,coin->blockspacesize,0);
+        iguana_initQs(coin);
+        coin->bindsock = -1;
+        OS_randombytes((unsigned char *)&coin->instance_nonce,sizeof(coin->instance_nonce));
+        coin->startutc = (uint32_t)time(NULL);
+        while ( time(NULL) == coin->startutc )
+            usleep(1);
+        coin->startutc++;
+        printf("start.%u\n",coin->startutc);
+        coin->startmillis = OS_milliseconds(), coin->starttime = tai_now();
+        coin->avetime = 1 * 100;
+        //coin->R.maxrecvbundles = IGUANA_INITIALBUNDLES;
+        if ( coin->MAXPEERS > 0 )
+        {
+            for (i=0; i<IGUANA_MAXPEERS; i++)
+                coin->peers->active[i].usock = -1;
+        }
     }
 }
 

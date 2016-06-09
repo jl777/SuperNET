@@ -127,6 +127,10 @@ cJSON *iguana_vinjson(struct iguana_info *coin,struct iguana_msgvin *vin,bits256
 int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_msgvin *vin,cJSON *vinobj,struct vin_info *V)
 {
     struct iguana_waddress *waddr; struct iguana_waccount *wacct; int32_t i,n,plen,len = 0; char *suffixstr,*pubkeystr,*hexstr = 0,*redeemstr = 0,*spendstr = 0; cJSON *scriptjson = 0,*obj,*pubkeysjson = 0;
+    if ( serialized == 0 )
+    {
+        ;
+    }
     //printf("PARSEVIN.(%s) vin.%p\n",jprint(vinobj,0),vin);
     if ( V == 0 )
         memset(vin,0,sizeof(*vin));
@@ -165,7 +169,7 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
         {
             if ( (V->unspentind= iguana_unspentindfind(coin,V->coinaddr,V->spendscript,&V->spendlen,&V->amount,&V->height,vin->prev_hash,vin->prev_vout,coin->bundlescount-1)) > 0 )
             {
-                if ( V->coinaddr[0] != 0 && (waddr= iguana_waddresssearch(myinfo,coin,&wacct,V->coinaddr)) != 0 )
+                if ( V->coinaddr[0] != 0 && (waddr= iguana_waddresssearch(myinfo,&wacct,V->coinaddr)) != 0 )
                 {
                     memcpy(V->signers[0].pubkey,waddr->pubkey,bitcoin_pubkeylen(waddr->pubkey));
                 }
@@ -344,7 +348,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
         //printf("json.%p array.%p sigser.%p\n",json,array,sigser);
     }
     //printf("version.%d\n",msg->version);
-    if ( coin->chain->txhastimestamp != 0 )
+    if ( coin->chain->isPoS != 0 )
     {
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->timestamp),&msg->timestamp);
         //char str[65]; printf("version.%d timestamp.%08x %u %s\n",msg->version,msg->timestamp,msg->timestamp,utc_str(str,msg->timestamp));
@@ -481,7 +485,7 @@ bits256 iguana_parsetxobj(struct supernet_info *myinfo,struct iguana_info *coin,
     vpnstr[0] = 0;
     if ( (msg->version= juint(txobj,"version")) == 0 )
         msg->version = 1;
-    if ( coin->chain->txhastimestamp != 0 )
+    if ( coin->chain->isPoS != 0 )
     {
         if ( (msg->timestamp= juint(txobj,"timestamp")) == 0 )
             msg->timestamp = (uint32_t)time(NULL);
@@ -735,7 +739,7 @@ int32_t iguana_vininfo_create(struct supernet_info *myinfo,struct iguana_info *c
                 if ( (plen= bitcoin_pubkeylen(vp->signers[0].pubkey)) > 0 )
                     bitcoin_address(vp->coinaddr,coin->chain->pubtype,vp->signers[0].pubkey,plen);
             }
-            if ( vp->coinaddr[i] != 0 && (waddr= iguana_waddresssearch(myinfo,coin,&wacct,vp->coinaddr)) != 0 )
+            if ( vp->coinaddr[i] != 0 && (waddr= iguana_waddresssearch(myinfo,&wacct,vp->coinaddr)) != 0 )
             {
                 vp->signers[0].privkey = waddr->privkey;
                 if ( (plen= bitcoin_pubkeylen(waddr->pubkey)) != vp->spendscript[1] || vp->spendscript[vp->spendlen-1] != 0xac )
@@ -766,7 +770,7 @@ void iguana_ensure_privkey(struct supernet_info *myinfo,struct iguana_info *coin
     bitcoin_pubkey33(myinfo->ctx,pubkey33,privkey);
     bitcoin_address(coinaddr,coin->chain->pubtype,pubkey33,33);
     //printf("privkey for (%s)\n",coinaddr);
-    if ( myinfo->expiration != 0 && ((waddr= iguana_waddresssearch(myinfo,coin,&wacct,coinaddr)) == 0 || bits256_nonz(waddr->privkey) == 0) )
+    if ( myinfo->expiration != 0 && ((waddr= iguana_waddresssearch(myinfo,&wacct,coinaddr)) == 0 || bits256_nonz(waddr->privkey) == 0) )
     {
         if ( waddr == 0 )
         {
@@ -911,20 +915,12 @@ cJSON *bitcoin_txinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32_
     return(txobj);
 }
 
-cJSON *bitcoin_txcreate(int32_t txhastimestamp,int64_t locktime)
+cJSON *bitcoin_txcreate(int32_t isPoS,int64_t locktime,uint32_t txversion)
 {
     cJSON *json = cJSON_CreateObject();
-    if ( locktime == 0 )
-    {
-        jaddnum(json,"version",1);
-        jadd64bits(json,"locktime",0);
-    }
-    else
-    {
-        jaddnum(json,"version",4);
-        jadd64bits(json,"locktime",locktime);
-    }
-    if ( txhastimestamp != 0 )
+    jaddnum(json,"version",txversion);
+    jadd64bits(json,"locktime",locktime);
+    if ( isPoS != 0 )
         jaddnum(json,"timestamp",time(NULL));
     jadd(json,"vin",cJSON_CreateArray());
     jadd(json,"vout",cJSON_CreateArray());
@@ -1004,7 +1000,7 @@ P2SH_SPENDAPI(iguana,spendmsig,activecoin,vintxid,vinvout,destaddress,destamount
     if ( M > N || N > 3 )
         return(clonestr("{\"error\":\"illegal M or N\"}"));
     memset(&V,0,sizeof(V));
-    txobj = bitcoin_txcreate(active->chain->txhastimestamp,0);
+    txobj = bitcoin_txcreate(active->chain->isPoS,0,coin->chain->normal_txversion);
     if ( destaddress[0] != 0 && destamount > 0. )
         bitcoin_txaddspend(active,txobj,destaddress,destamount * SATOSHIDEN);
     if ( destaddress2[0] != 0 && destamount2 > 0. )

@@ -18,14 +18,15 @@ INT_ARRAY_STRING(basilisk,balances,basilisktag,vals,activecoin);
 INT_ARRAY_STRING(basilisk,rawtx,basilisktag,vals,activecoin);
 INT_ARRAY_STRING(basilisk,value,basilisktag,vals,activecoin);
 INT_AND_ARRAY(basilisk,result,basilisktag,vals);
+HASH_ARRAY_STRING(basilisk,geckogenesis,pubkey,vals,hexstr);
 
-HASH_ARRAY_STRING(basilisk,newprivatechain,pubkey,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,newgeckochain,pubkey,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,addrelay,pubkey,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,dispatch,pubkey,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,publish,pubkey,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,subscribe,pubkey,vals,hexstr);
-HASH_ARRAY_STRING(basilisk,privatetx,pubkey,vals,hexstr);
-HASH_ARRAY_STRING(basilisk,privateblock,pubkey,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,geckotx,pubkey,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,geckoblock,pubkey,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,forward,pubkey,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,mailbox,pubkey,vals,hexstr);
 
@@ -219,12 +220,12 @@ STRING_ARG(SuperNET,broadcastdecipher,message);
 HASH_AND_STRING(SuperNET,multicastcipher,pubkey,message);
 HASH_AND_STRING(SuperNET,multicastdecipher,privkey,cipherstr);
 
-TWO_STRINGS(SuperNET,subscribe,category,subcategory);
+/*TWO_STRINGS(SuperNET,subscribe,category,subcategory);
 TWO_STRINGS(SuperNET,gethexmsg,category,subcategory);
 THREE_STRINGS(SuperNET,posthexmsg,category,subcategory,hexmsg);
 THREE_STRINGS(SuperNET,announce,category,subcategory,message);
 THREE_STRINGS(SuperNET,survey,category,subcategory,message);
-TWO_STRINGS(SuperNET,categoryhashes,category,subcategory);
+TWO_STRINGS(SuperNET,categoryhashes,category,subcategory);*/
 
 STRING_AND_TWOINTS(mouse,image,name,x,y);
 STRING_AND_TWOINTS(mouse,change,name,x,y);

@@ -13,7 +13,7 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "../iguana/iguana777.h"
+// included from basilisk.c
 
 char *basilisk_respond_goodbye(struct supernet_info *myinfo,char *CMD,void *_addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk)
 {

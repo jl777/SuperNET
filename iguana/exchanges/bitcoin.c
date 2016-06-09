@@ -451,36 +451,42 @@ char *PARSEBALANCE(struct exchange_info *exchange,double *balancep,char *coinstr
 
 cJSON *BALANCES(struct exchange_info *exchange,cJSON *argjson)
 {
-    double balance; int32_t i,minconfirms; struct iguana_info *coin; // char *retstr,numunspents;
-    struct supernet_info *myinfo; cJSON *retjson;// item,*utxo; //struct bitcoin_unspent *unspents;
+    double balance; int16_t hdrsi; uint32_t unspentind; int32_t i,minconfirms,numunspents,max; struct iguana_info *coin,*tmp; struct supernet_info *myinfo; cJSON *retjson,*array,*item,*addresses=0; int64_t *unspents=0,value,avail;
     retjson = cJSON_CreateArray();
     myinfo = SuperNET_accountfind(argjson);
-    for (i=0; i<IGUANA_MAXCOINS; i++)
+    //portable_mutex_lock(&Allcoins_mutex);
+    HASH_ITER(hh,myinfo->allcoins,coin,tmp)
     {
-        if ( (coin= Coins[i]) != 0 )//&& coin->chain->serverport[0] != 0 )
+        balance = 0.;
+        minconfirms = juint(argjson,"minconfirms");
+        if ( minconfirms < coin->minconfirms )
+            minconfirms = coin->minconfirms;
+        max = 100000;
+        unspents = calloc(max,sizeof(*unspents));
+        if ( (numunspents= iguana_unspentslists(myinfo,coin,&avail,unspents,max,((uint64_t)1 << 62),minconfirms,addresses)) > 0 )
         {
-            balance = 0.;
-            minconfirms = juint(argjson,"minconfirms");
-            if ( minconfirms < coin->minconfirms )
-                minconfirms = coin->minconfirms;
-            /*if ( (unspents= iguana_unspentsget(myinfo,coin,&retstr,&balance,&numunspents,minconfirms,0)) != 0 )
+            array = cJSON_CreateArray();
+            for (i=0; i<numunspents; i++)
             {
-                item = cJSON_CreateObject();
-                jaddnum(retjson,"balance",balance);
-                if ( retstr != 0 )
-                {
-                    if ( (utxo= cJSON_Parse(retstr)) != 0 )
-                    {
-                        jadd(item,"unspents",utxo);
-                        jaddnum(item,"numunspents",numunspents);
-                    }
-                    free(retstr);
-                }
-                free(unspents);
-                jadd(retjson,coin->symbol,item);
-            }*/
+                item = cJSON_CreateArray();
+                hdrsi = (int16_t)(unspents[(i << 1)] >> 32);
+                unspentind = (uint32_t)unspents[(i << 1)];
+                value = unspents[(i << 1) + 1];
+                jaddinum(item,hdrsi);
+                jaddinum(item,unspentind);
+                jaddinum(item,dstr(value));
+                jaddi(array,item);
+            }
+            item = cJSON_CreateObject();
+            jadd(item,"unspents",array);
+            jaddnum(item,"numunspents",numunspents);
+            jaddnum(item,"balance",dstr(avail));
+            jadd(retjson,coin->symbol,item);
         }
+        if ( unspents != 0 )
+            free(unspents);
     }
+    //portable_mutex_unlock(&Allcoins_mutex);
     return(retjson);
 }
 
@@ -497,8 +503,7 @@ int32_t is_valid_BTCother(char *other)
 
 uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,char *base,char *rel,int32_t dir,double price,double volume,cJSON *argjson)
 {
-    char *str,*retstr,coinaddr[64]; int32_t added; uint64_t txid = 0; cJSON *json=0; struct instantdex_accept *ap;
-    struct supernet_info *myinfo; uint8_t pubkey[33]; struct iguana_info *other;
+    char *str,*retstr,coinaddr[64]; int32_t added; uint64_t txid = 0; cJSON *json=0; struct instantdex_accept *ap; struct supernet_info *myinfo; struct iguana_info *other;
     myinfo = SuperNET_MYINFO(0);//SuperNET_accountfind(argjson);
     //printf("TRADE with myinfo.%p\n",myinfo);
     if ( retstrp != 0 )
@@ -522,8 +527,8 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
         {
             if ( (other= iguana_coinfind(base)) != 0 )
             {
-                bitcoin_pubkey33(0,pubkey,myinfo->persistent_priv);
-                bitcoin_address(coinaddr,other->chain->pubtype,pubkey,sizeof(pubkey));
+                //bitcoin_pubkey33(0,pubkey,myinfo->persistent_priv);
+                bitcoin_address(coinaddr,other->chain->pubtype,myinfo->persistent_pubkey33,33);
                 jaddstr(argjson,base,coinaddr);
             }
             else if ( strcmp(base,"NXT") == 0 || (is_decimalstr(base) > 0 && strlen(base) > 13) )

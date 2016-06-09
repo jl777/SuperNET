@@ -196,7 +196,7 @@ int32_t iguana_process_msgrequestQ(struct supernet_info *myinfo,struct iguana_in
             {
                 if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
                 {
-                    if ( (addr= msg->addr) != 0 && (len= iguana_peerblockrequest(coin,coin->blockspace,(int32_t)(sizeof(coin->blockspace) - sizeof(struct iguana_msghdr)),0,msg->hash2,0)) > 0 )
+                    if ( (addr= msg->addr) != 0 && (len= iguana_peerblockrequest(coin,coin->blockspace,(int32_t)(coin->blockspacesize - sizeof(struct iguana_msghdr)),0,msg->hash2,0)) > 0 )
                     {
                         //char str[65]; printf("msg Sendlen.%d block %s to %s\n",len,bits256_str(str,msg->hash2),addr->ipaddr);
                         iguana_queue_send(addr,0,coin->blockspace,"block",len);
@@ -209,7 +209,7 @@ int32_t iguana_process_msgrequestQ(struct supernet_info *myinfo,struct iguana_in
                 {
                     if ( (tx= iguana_txidfind(coin,&height,&T,msg->hash2,coin->bundlescount-1)) != 0 )
                     {
-                        if ( (len= iguana_ramtxbytes(coin,&coin->blockspace[sizeof(struct iguana_msghdr)],sizeof(coin->blockspace),&checktxid,tx,height,0,0,0)) > 0 )
+                        if ( (len= iguana_ramtxbytes(coin,&coin->blockspace[sizeof(struct iguana_msghdr)],coin->blockspacesize,&checktxid,tx,height,0,0,0)) > 0 )
                         {
                             char str[65],str2[65];
                             if ( bits256_cmp(msg->hash2,checktxid) == 0 )
@@ -233,7 +233,7 @@ int32_t iguana_process_msgrequestQ(struct supernet_info *myinfo,struct iguana_in
             }
             else if ( msg->type == MSG_QUOTE )
             {
-                if ( (len= instantdex_quoterequest(myinfo,coin,&coin->blockspace[sizeof(struct iguana_msghdr)],sizeof(coin->blockspace),msg->addr,msg->hash2)) > 0 )
+                if ( (len= instantdex_quoterequest(myinfo,coin,&coin->blockspace[sizeof(struct iguana_msghdr)],coin->blockspacesize,msg->addr,msg->hash2)) > 0 )
                 {
                     //iguana_sethdr((void *)coin->blockspace,coin->chain->netmagic,"quote",&coin->blockspace[sizeof(struct iguana_msghdr)],len);
                     //iguana_msgparser(coin,msg->addr,0,0,0,(void *)coin->blockspace,&coin->blockspace[sizeof(struct iguana_msghdr)],len);

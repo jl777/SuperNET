@@ -38,9 +38,9 @@ bits256 calc_categoryhashes(bits256 *subhashp,char *category,char *subcategory)
     return(categoryhash);
 }
 
-struct private_chain *category_find(bits256 categoryhash,bits256 subhash)
+struct gecko_chain *category_find(bits256 categoryhash,bits256 subhash)
 {
-    struct private_chain *cat=0,*sub = 0; bits256 hash;
+    struct gecko_chain *cat=0,*sub = 0; bits256 hash;
     HASH_FIND(hh,Categories,categoryhash.bytes,sizeof(categoryhash),cat);
     if ( cat != 0 )
     {
@@ -56,9 +56,9 @@ struct private_chain *category_find(bits256 categoryhash,bits256 subhash)
     return(0);
 }
 
-queue_t *category_Q(struct private_chain **catptrp,bits256 categoryhash,bits256 subhash)
+queue_t *category_Q(struct gecko_chain **catptrp,bits256 categoryhash,bits256 subhash)
 {
-    struct private_chain *cat;
+    struct gecko_chain *cat;
     *catptrp = 0;
     if ( (cat= category_find(categoryhash,subhash)) != 0 )
     {
@@ -68,17 +68,17 @@ queue_t *category_Q(struct private_chain **catptrp,bits256 categoryhash,bits256 
     else return(0);
 }
 
-void *private_chain(bits256 categoryhash,bits256 subhash)
+/*void *gecko_chain(bits256 categoryhash,bits256 subhash)
 {
-    struct private_chain *cat;
+    struct gecko_chain *cat;
     if ( (cat= category_find(categoryhash,subhash)) != 0 )
         return(cat->info);
     else return(0);
-}
+}*/
 
-void *private_chainset(bits256 categoryhash,bits256 subhash,void *info)
+void *gecko_chainset(bits256 categoryhash,bits256 subhash,void *info)
 {
-    struct private_chain *cat;
+    struct gecko_chain *cat;
     if ( (cat= category_find(categoryhash,subhash)) != 0 )
     {
         cat->info = info;
@@ -87,9 +87,10 @@ void *private_chainset(bits256 categoryhash,bits256 subhash,void *info)
     return(0);
 }
 
-struct private_chain *category_processfunc(bits256 categoryhash,bits256 subhash,char *(*process_func)(struct supernet_info *myinfo,struct private_chain *cat,void *data,int32_t datalen,char *remoteaddr))
+#ifdef later
+struct gecko_chain *category_processfunc(bits256 categoryhash,bits256 subhash,char *(*process_func)(struct supernet_info *myinfo,struct gecko_chain *cat,void *data,int32_t datalen,char *remoteaddr))
 {
-    struct private_chain *cat;
+    struct gecko_chain *cat;
     if ( (cat= category_find(categoryhash,subhash)) != 0 )
     {
         cat->processfunc = process_func;
@@ -98,7 +99,7 @@ struct private_chain *category_processfunc(bits256 categoryhash,bits256 subhash,
     return(0);
 }
 
-struct category_msg *category_gethexmsg(struct supernet_info *myinfo,struct private_chain **catptrp,bits256 categoryhash,bits256 subhash)
+struct category_msg *category_gethexmsg(struct supernet_info *myinfo,struct gecko_chain **catptrp,bits256 categoryhash,bits256 subhash)
 {
     queue_t *Q;
     //char str[65]; printf("getmsg.(%s) %llx\n",bits256_str(str,categoryhash),(long long)subhash.txid);
@@ -109,7 +110,7 @@ struct category_msg *category_gethexmsg(struct supernet_info *myinfo,struct priv
 
 void category_posthexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits256 subhash,char *hexmsg,struct tai now,char *remoteaddr)
 {
-    int32_t len; struct category_msg *m; queue_t *Q = 0; struct private_chain *cat;
+    int32_t len; struct category_msg *m; queue_t *Q = 0; struct gecko_chain *cat;
     if ( (Q= category_Q(&cat,categoryhash,subhash)) != 0 )
     {
         len = (int32_t)strlen(hexmsg) >> 1;
@@ -127,7 +128,7 @@ void category_posthexmsg(struct supernet_info *myinfo,bits256 categoryhash,bits2
 
 void *category_subscribe(struct supernet_info *myinfo,bits256 chainhash,bits256 keyhash)
 {
-    struct private_chain *chain,*subchain; bits256 hash;
+    struct gecko_chain *chain,*subchain; bits256 hash;
     HASH_FIND(hh,Categories,chainhash.bytes,sizeof(chainhash),chain);
     if ( chain == 0 )
     {
@@ -220,5 +221,6 @@ void category_init(struct supernet_info *myinfo)
     myinfo->basilisk_category = baseliskhash;
     category_subscribe(myinfo,baseliskhash,GENESIS_PUBKEY);
 
-    basilisks_init(myinfo);
 }
+
+#endif

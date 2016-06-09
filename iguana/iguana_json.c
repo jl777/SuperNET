@@ -14,7 +14,7 @@
  ******************************************************************************/
 
 #include "iguana777.h"
-#include "SuperNET.h"
+//#include "SuperNET.h"
 
 cJSON *helpjson(cJSON *json,cJSON *array,cJSON *agents,char *agentstr,char *method,cJSON *methodargs)
 {

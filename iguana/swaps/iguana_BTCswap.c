@@ -170,7 +170,7 @@ void iguana_addinputs(struct iguana_info *coin,struct bitcoin_spend *spend,cJSON
 
 struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo,struct iguana_info *coin,uint32_t locktime,char *scriptstr,int64_t satoshis,int64_t txfee,int32_t minconf,int32_t myside)
 {
-    struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct bitcoin_statetx *tx=0; uint8_t pubkey33[33]; char coinaddr[64],wifstr[64]; char *rawtx=0,*signedtx,*retstr; bits256 signedtxid; uint32_t basilisktag; int32_t flag,completed; cJSON *valsobj,*vins=0,*retjson=0,*privkey,*addresses;
+    struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct bitcoin_statetx *tx=0; char coinaddr[64],wifstr[64]; char *rawtx=0,*signedtx,*retstr; bits256 signedtxid; uint32_t basilisktag; int32_t flag,completed; cJSON *valsobj,*vins=0,*retjson=0,*privkey,*addresses;
     if ( (waddr= iguana_getaccountaddress(myinfo,coin,0,0,coin->changeaddr,"change")) == 0 )
     {
         printf("no change addr error\n");
@@ -180,10 +180,10 @@ struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo
     addresses = cJSON_CreateArray();
     if ( coin->changeaddr[0] == 0 )
         bitcoin_address(coin->changeaddr,coin->chain->pubtype,waddr->rmd160,20);
-    bitcoin_pubkey33(myinfo->ctx,pubkey33,myinfo->persistent_priv);
-    bitcoin_address(coinaddr,coin->chain->pubtype,pubkey33,33);
+    //bitcoin_pubkey33(myinfo->ctx,pubkey33,myinfo->persistent_priv);
+    bitcoin_address(coinaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
     //printf("%s persistent.(%s) (%s) change.(%s) scriptstr.(%s)\n",coin->symbol,myinfo->myaddr.BTC,coinaddr,coin->changeaddr,scriptstr);
-    if ( (waddr= iguana_waddresssearch(myinfo,coin,&wacct,coinaddr)) != 0 )
+    if ( (waddr= iguana_waddresssearch(myinfo,&wacct,coinaddr)) != 0 )
     {
         bitcoin_priv2wif(wifstr,waddr->privkey,coin->chain->wiftype);
         jaddistr(privkey,waddr->wifstr);
