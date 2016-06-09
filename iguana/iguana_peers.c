@@ -806,7 +806,7 @@ void *iguana_iAddriterator(struct iguana_info *coin,struct iguana_iAddr *iA)
                     printf("error rwiAddrind.%d\n",iA->hh.itemind);
                 }
             }
-        } else printf("no open peer slots left\n");
+        } else printf("%s no open peer slots left\n",coin->symbol);
     }
     //else if ( iA != 0 )
     //    printf("iA->ipbits %d, %d iguana_numthreads(coin,1 << IGUANA_CONNTHREAD) status.%d\n",iA->ipbits,iguana_numthreads(coin,1 << IGUANA_CONNTHREAD),iA->status);
