@@ -536,7 +536,7 @@ int64_t iguana_fastfindcreate(struct iguana_info *coin)
             }
             for (i=errs=0; i<0x100; i++)
             {
-                fclose(coin->fastfps[i]);
+                fclose(coin->fastfps[i]), coin->fastfps[i] = 0;
                 sprintf(fname,"DB/%s/fastfind/%02x",coin->symbol,i), OS_compatible_path(fname);
                 //printf("%s\n",fname);
                 if ( (sortbuf= OS_filestr(&allocsize,fname)) != 0 )
@@ -582,8 +582,7 @@ int64_t iguana_fastfindcreate(struct iguana_info *coin)
                         }
                         if ( fwrite(hashtable,sizeof(*hashtable),tablesize,coin->fastfps[i]) == tablesize )
                         {
-                            fclose(coin->fastfps[i]);
-                            coin->fastfps[i] = 0;
+                            fclose(coin->fastfps[i]), coin->fastfps[i] = 0;
                             if ( (coin->fast[i]= OS_mapfile(fname,&coin->fastsizes[i],0)) != 0 )
                             {
                             } else errs++;
@@ -593,8 +592,7 @@ int64_t iguana_fastfindcreate(struct iguana_info *coin)
                         {
                             printf("error saving (%s)\n",fname);
                             OS_removefile(fname,0);
-                            fclose(coin->fastfps[i]);
-                            coin->fastfps[i] = 0;
+                            fclose(coin->fastfps[i]), coin->fastfps[i] = 0;
                         }
                         free(hashtable);
                     } else printf("couldnt overwrite (%s)\n",fname);

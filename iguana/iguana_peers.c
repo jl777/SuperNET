@@ -1245,13 +1245,13 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
     }
     //printf(">>>>>>>>>>>>>> finish %s dedicatedloop.%s\n",coin->symbol,addr->ipaddr);
     if ( addr->vinsfp != 0 )
-        fclose(addr->vinsfp);
+        fclose(addr->vinsfp), addr->vinsfp = 0;
     if ( addr->voutsfp != 0 )
-        fclose(addr->voutsfp);
+        fclose(addr->voutsfp), addr->voutsfp = 0;
     iguana_iAkill(coin,addr,addr->dead != 0);
     myfree(buf,bufsize);
     if ( addr->filehash2 != 0 )
-        myfree(addr->filehash2,addr->maxfilehash2*sizeof(*addr->filehash2));
+        myfree(addr->filehash2,addr->maxfilehash2*sizeof(*addr->filehash2)), addr->filehash2 = 0;
     iguana_mempurge(&addr->RAWMEM);
     iguana_mempurge(&addr->TXDATA);
     iguana_mempurge(&addr->HASHMEM);
