@@ -21,12 +21,15 @@ INT_AND_ARRAY(basilisk,result,basilisktag,vals);
 HASH_ARRAY_STRING(basilisk,geckogenesis,pubkey,vals,hexstr);
 
 HASH_ARRAY_STRING(basilisk,newgeckochain,pubkey,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,geckoheaders,pubkey,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,geckoblock,pubkey,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,geckotx,pubkey,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,geckoget,pubkey,vals,hexstr);
+
 HASH_ARRAY_STRING(basilisk,addrelay,pubkey,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,dispatch,pubkey,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,publish,pubkey,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,subscribe,pubkey,vals,hexstr);
-HASH_ARRAY_STRING(basilisk,geckotx,pubkey,vals,hexstr);
-HASH_ARRAY_STRING(basilisk,geckoblock,pubkey,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,forward,pubkey,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,mailbox,pubkey,vals,hexstr);
 

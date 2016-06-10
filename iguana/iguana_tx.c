@@ -354,7 +354,7 @@ cJSON *iguana_blockjson(struct iguana_info *coin,struct iguana_block *block,int3
     jaddnum(json,"valid",block->valid);
     jaddnum(json,"txn_count",block->RO.txn_count);
     
-    jaddnum(json,"bits",block->RO.bits);
+    jaddnum(json,"nBits",block->RO.bits);
     serialized[0] = ((uint8_t *)&block->RO.bits)[3];
     serialized[1] = ((uint8_t *)&block->RO.bits)[2];
     serialized[2] = ((uint8_t *)&block->RO.bits)[1];

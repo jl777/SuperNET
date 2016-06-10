@@ -20,13 +20,15 @@
 #define GECKO_MAXBTCDGAP 18
 
 #define GECKO_DEFAULTVERSION 1
-#define GECKO_DEFAULTDIFF 0x1fffffff
-#define GECKO_DEFAULTDIFFSTR "1fffffff"
+#define GECKO_EASIESTDIFF 0x1fffffff
+#define GECKO_DEFAULTDIFF 0x1f00ffff
+#define GECKO_DEFAULTDIFFSTR "1f00ffff"
 
 #define GECKO_FIRSTPOSSIBLEBTC 414000
 #define GECKO_FIRSTPOSSIBLEBTCD 1100000
 #define GECKO_MAXNAMELEN 64
 #define GECKO_MAXMINERITERS 10000000
+#define GECKO_DIFFITERS 3
 
 struct iguana_peer;
 
@@ -48,11 +50,14 @@ char *basilisk_respond_hashstamps(struct supernet_info *myinfo,char *CMD,void *a
 char *basilisk_respond_newgeckochain(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk);
 char *basilisk_respond_geckotx(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk);
 char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk);
+char *basilisk_respond_geckoheaders(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash2,int32_t from_basilisk);
+char *basilisk_respond_geckoget(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash2,int32_t from_basilisk);
 
 void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,int32_t maxmillis,char *mineraddr);
 void gecko_seqresult(struct supernet_info *myinfo,char *retstr);
 int32_t gecko_sequpdate(char *symbol,uint32_t reftimestamp);
-char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,struct iguana_peer *addr,uint8_t *data,int32_t datalen);
-char *gecko_headersarrived(struct supernet_info *myinfo,struct iguana_info *virt,struct iguana_peer *addr,uint8_t *data,int32_t datalen);
+char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *data,int32_t datalen,bits256 hash2);
+char *gecko_txarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *data,int32_t datalen,bits256 hash2);
+char *gecko_headersarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *data,int32_t datalen,bits256 hash2);
 
 #endif

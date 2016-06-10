@@ -209,7 +209,7 @@ int32_t basilisk_bitcoinscan(struct iguana_info *coin,uint8_t origblockspace[IGU
             B.RO.prev_block = jbits256(blockjson,"previousblockhash");
             B.RO.merkle_root = jbits256(blockjson,"merkleroot");
             B.RO.timestamp = juint(blockjson,"time");
-            if ( (bitstr= jstr(blockjson,"bits")) != 0 )
+            if ( (bitstr= jstr(blockjson,"nBits")) != 0 )
             {
                 decode_hex(revbits,sizeof(uint32_t),bitstr);
                 for (i=0; i<4; i++)

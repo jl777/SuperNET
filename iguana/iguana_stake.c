@@ -87,8 +87,7 @@ uint32_t iguana_targetbits(struct iguana_info *coin,struct iguana_block *hwmchai
             {
                 if ( (gap= prev->RO.timestamp - prev2->RO.timestamp) < 0 )
                     gap = targetspacing;
-                // ppcoin: target change every block, retarget with exponential moving toward target spacing
-                //printf("MSPACING.%d gap.%d\n",NINTERVAL_MSPACING,gap);
+                //printf("nBits.%08x gap.%d (%u - %u)\n",prev->RO.bits,gap,prev->RO.timestamp,prev2->RO.timestamp);
                 targetval = mpz_muldivcmp(bits256_from_compact(prev->RO.bits),mspacing + (gap << 1),pspacing,targetval);
             }
         }

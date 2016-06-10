@@ -101,7 +101,7 @@ int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,
         bp = 0, bundlei = -2;
         if ( bits256_nonz(prevhash2) == 0 || (bp= iguana_bundlefind(coin,&bp,&bundlei,prevhash2)) == 0 || bundlei >= coin->chain->bundlesize-1 )
         {
-            if ( 0 && dispflag != 0 )
+            //if ( 0 && dispflag != 0 )
                 printf("iguana_peerfname error finding.(%s) spec.%p bp.%p\n",bits256_str(str,hash2),bp!=0?bp->speculative:0,bp);
             return(-2);
         }
@@ -1050,7 +1050,8 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
 #endif
     if ( (fp= fopen(fname,"wb")) == 0 )
         printf("iguana_ramchain_save: couldnt create.(%s) errno.%d\n",fname,errno);
-    else coin->peers->numfiles++;
+    else if ( coin->peers != 0 )
+        coin->peers->numfiles++;
     if ( fp != 0 )
     {
         fpos = ftell(fp);
@@ -2603,7 +2604,7 @@ int32_t iguana_bundlesaveHT(struct iguana_info *coin,struct OS_memspace *mem,str
         {
             for (j=starti; j<=endi; j++)
             {
-                if ( iguana_peerfname(coin,&hdrsi,GLOBAL_TMPDIR,fname,0,bp->hashes[j],zero,1,1) >= 0 )
+                if ( iguana_peerfname(coin,&hdrsi,GLOBAL_TMPDIR,fname,0,bp->hashes[j],zero,1,1) >= 0 && coin->peers != 0 )
                     coin->peers->numfiles -= OS_removefile(fname,0);
                 else printf("error removing.(%s)\n",fname);
             }

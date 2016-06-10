@@ -262,11 +262,11 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
     return(n);
 }
 
-int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *virt,char *blockstr)
+int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *virt,char *blockstr,bits256 hash2)
 {
     int32_t recvlen; uint8_t *data,space[16384],*allocptr;
     if ( (data= get_dataptr(BASILISK_HDROFFSET,&allocptr,&recvlen,space,sizeof(space),blockstr)) != 0 )
-        gecko_blockarrived(myinfo,virt,&virt->internaladdr,data,recvlen);
+        gecko_blockarrived(myinfo,virt,"127.0.0.1",data,recvlen,hash2);
     if ( allocptr != 0 )
         free(allocptr);
     return(recvlen);
@@ -654,6 +654,7 @@ INT_AND_ARRAY(basilisk,result,basilisktag,vals)
         ptr = calloc(1,sizeof(*ptr));
         ptr->retstr = jprint(vals,0);
         ptr->basilisktag = basilisktag;
+        strcpy(ptr->remoteaddr,remoteaddr);
         printf("(%s) -> Q.%u results vals.(%s)\n",ptr->CMD,basilisktag,ptr->retstr);
         queue_enqueue("resultsQ",&myinfo->basilisks.resultsQ,&ptr->DL,0);
         return(clonestr("{\"result\":\"queued basilisk return\"}"));
@@ -723,6 +724,36 @@ HASH_ARRAY_STRING(basilisk,VPNlogout,pubkey,vals,hexstr)
 
 #include "../includes/iguana_apiundefs.h"
 
+void basilisk_geckoresult(struct supernet_info *myinfo,struct basilisk_item *ptr)
+{
+    uint8_t *data,space[16384],*allocptr = 0; struct iguana_info *virt; char *symbol,*str,*type; int32_t datalen; cJSON *retjson; bits256 hash2;
+    if ( (retjson= cJSON_Parse(ptr->retstr)) != 0 )
+    {
+        if ( (symbol= jstr(retjson,"coin")) != 0 && (virt= iguana_coinfind(symbol)) != 0 )
+        {
+            if ( (data= get_dataptr(0,&allocptr,&datalen,space,sizeof(space),jstr(retjson,"data"))) != 0 )
+            {
+                str = 0;
+                if ( (type= jstr(retjson,"type")) != 0 )
+                {
+                    hash2 = jbits256(retjson,"pubkey");
+                    if ( strcmp(type,"HDR") == 0 )
+                        str = gecko_headersarrived(myinfo,virt,ptr->remoteaddr,data,datalen,hash2);
+                    else if ( strcmp(type,"BLK") == 0 )
+                        str = gecko_blockarrived(myinfo,virt,ptr->remoteaddr,data,datalen,hash2);
+                    else if ( strcmp(type,"GTX") == 0 )
+                        str = gecko_txarrived(myinfo,virt,ptr->remoteaddr,data,datalen,hash2);
+                }
+                if ( str != 0 )
+                    free(str);
+                if ( allocptr != 0 )
+                    free(allocptr);
+            }
+        }
+        free_json(retjson);
+    }
+}
+
 void basilisks_loop(void *arg)
 {
     basilisk_metricfunc metricfunc; struct iguana_info *btcd,*virt,*hhtmp; struct basilisk_item *ptr,*tmp,*pending,*parent; int32_t i,iter,maxmillis,done,flag,n; cJSON *valsobj,*retjson; uint32_t now; struct supernet_info *myinfo = arg;
@@ -758,6 +789,9 @@ void basilisks_loop(void *arg)
                             gecko_seqresult(myinfo,ptr->retstr);
                             free_json(retjson);
                         }
+                    }
+                    else if ( strcmp(ptr->CMD,"RET") == 0 )
+                    {
                     }
                 }
             }
@@ -861,12 +895,9 @@ void basilisks_loop(void *arg)
                 //portable_mutex_lock(&Allcoins_mutex);
                 HASH_ITER(hh,myinfo->allcoins,virt,hhtmp)
                 {
-                    if ( iguana_processrecv(myinfo,virt) == 0 )
-                    {
-                        bitcoin_address(mineraddr,virt->chain->pubtype,myinfo->persistent_pubkey33,33);
-                        //printf("mine.%s %s\n",virt->symbol,mineraddr);
-                        gecko_miner(myinfo,btcd,virt,maxmillis,mineraddr);
-                    }
+                    bitcoin_address(mineraddr,virt->chain->pubtype,myinfo->persistent_pubkey33,33);
+                    //printf("mine.%s %s\n",virt->symbol,mineraddr);
+                    gecko_miner(myinfo,btcd,virt,maxmillis,mineraddr);
                     flag++;
                 }
                 //portable_mutex_unlock(&Allcoins_mutex);
@@ -903,10 +934,12 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
         
         // gecko chains
         { (void *)"NEW", &basilisk_respond_newgeckochain }, // creates new virtual gecko chain
+        { (void *)"GEN", &basilisk_respond_geckogenesis },  // returns genesis list
+        { (void *)"GET", &basilisk_respond_geckoget },      // requests headers, block or tx
+        { (void *)"HDR", &basilisk_respond_geckoheaders },  // reports headers
+        { (void *)"BLK", &basilisk_respond_geckoblock },    // reports block
+        { (void *)"GTX", &basilisk_respond_geckotx },       // reports tx
         { (void *)"SEQ", &basilisk_respond_hashstamps }, // BTCD and BTC recent hashes from timestamp
-        { (void *)"GTX", &basilisk_respond_geckotx },
-        { (void *)"BLK", &basilisk_respond_geckoblock },
-        { (void *)"GEN", &basilisk_respond_geckogenesis },
         
         // unencrypted low level functions, used by higher level protocols and virtual network funcs
         { (void *)"ADD", &basilisk_respond_addrelay },   // relays register with each other bus
@@ -993,7 +1026,11 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
         }
         if ( coin != 0 )
         {
-            if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 ) // iguana node
+            if ( strcmp(type,"RET") == 0 )
+            {
+                retstr = _basilisk_result(myinfo,coin,addr,remoteaddr,basilisktag,valsobj,data,datalen);
+            }
+            else if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 ) // iguana node
             {
                 for (i=0; i<sizeof(basilisk_coinservices)/sizeof(*basilisk_coinservices); i++)
                     if ( strcmp((char *)basilisk_coinservices[i][0],type) == 0 )
@@ -1007,11 +1044,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
             }
             else // basilisk node
             {
-                if ( strcmp(type,"RET") == 0 )
-                {
-                    retstr = _basilisk_result(myinfo,coin,addr,remoteaddr,basilisktag,valsobj,data,datalen);
-                }
-                else if ( strcmp(type,"ADD") == 0 )
+                if ( strcmp(type,"ADD") == 0 )
                 {
                     printf("new relay ADD.(%s) datalen.%d\n",jprint(valsobj,0),datalen);
                 }

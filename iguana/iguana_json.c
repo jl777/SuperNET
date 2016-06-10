@@ -799,7 +799,7 @@ char *hmac_dispatch(char *(*hmacfunc)(char *dest,char *key,int32_t key_size,char
 
 char *hash_dispatch(void (*hashfunc)(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len),char *name,char *message)
 {
-    char hexstr[16384]; uint8_t databuf[8192]; cJSON *json;
+    char hexstr[65537]; uint8_t databuf[32768]; cJSON *json;
     if ( message != 0 && message[0] != 0 )
     {
         memset(hexstr,0,sizeof(hexstr));

@@ -486,7 +486,7 @@ void iguana_blockzcopy(uint8_t zcash,struct iguana_block *dest,struct iguana_blo
 int32_t iguana_blocksizecheck(char *debugstr,uint8_t zcash,struct iguana_block *block);
 void basilisk_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,int32_t maxmillis,char *mineraddr);
 int32_t bitcoin_pubkeyspend(uint8_t *script,int32_t n,uint8_t pubkey[66]);
-int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *virt,char *blockstr);
+int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *virt,char *blockstr,bits256 hash2);
 struct supernet_info *SuperNET_MYINFO(char *passphrase);
 bits256 calc_categoryhashes(bits256 *subhashp,char *category,char *subcategory);
 struct gecko_chain *category_find(bits256 categoryhash,bits256 subhash);
@@ -500,6 +500,8 @@ char *SuperNET_keysinit(struct supernet_info *myinfo,char *argjsonstr);
 char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,cJSON *json,char *remoteaddr);
 char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr);
 void SuperNET_setkeys(struct supernet_info *myinfo,void *pass,int32_t passlen,int32_t dosha256);
+int32_t iguana_headerget(struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_block *block);
+int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,struct OS_memspace *mem,struct OS_memspace *memB);
 
 #include "../includes/iguana_api.h"
 

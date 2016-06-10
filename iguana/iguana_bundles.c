@@ -217,12 +217,12 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
         }
         if ( bits256_nonz(bp->hashes[bundlei]) != 0 && bits256_cmp(bp->hashes[bundlei],block->RO.hash2) != 0 )
         {
-            char str[65],str2[65];
-            printf("bp.[%d]->hashes[%d] mismatch %s != %s%s\n",bp->hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]),bits256_str(str2,block->RO.hash2),block->mainchain?".main":"");
+            //char str[65],str2[65];
+            //printf("B bp.[%d]->hashes[%d] mismatch %s != %s%s\n",bp->hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]),bits256_str(str2,block->RO.hash2),block->mainchain?".main":"");
             iguana_blockunmark(coin,block,bp,bundlei,1);
             bp->blocks[bundlei] = 0;
             //if ( block->mainchain != 0 )
-              //  bp->hashes[bundlei] = block->RO.hash2;
+            //    bp->hashes[bundlei] = block->RO.hash2;
             
             return(-1);
         }
@@ -805,6 +805,7 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
                     if ( 0 && requiredflag != 0 )
                         printf("not ready altpath.(%d %d %d %d %d) [%d:%d]\n",block->txvalid == 0,block->fpipbits == 0 ,block->fpos < 0,(bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0),iguana_blockvalidate(coin,&valid,block,1) < 0,bp->hdrsi,i);
                 }
+                else printf("cant find (%s)\n",fname);
             }
         }
         else
@@ -819,6 +820,7 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
             }
         }
     }
+    printf("ready.%d\n",ready);
     return(ready);
 }
 

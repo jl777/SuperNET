@@ -287,6 +287,7 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
 {
     extern char Userhome[];
     char *path,conf[512],*hexstr,genesisblock[1024]; uint16_t port; cJSON *rpair,*genesis,*rewards,*item; int32_t i,n,m; uint32_t nBits; uint8_t tmp[4];
+    printf("chainparams.(%s)\n",jprint(argjson,0));
     if ( strcmp(chain->symbol,"NXT") != 0 )
     {
         if ( strcmp(chain->symbol,"BTCD") == 0 )
@@ -294,7 +295,8 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
         if ( (chain->minoutput= j64bits(argjson,"minoutput")) == 0 )
             chain->minoutput = 10000;
         chain->minconfirms = juint(argjson,"minconfirms");
-        chain->estblocktime = juint(argjson,"estblocktime");
+        if ( (chain->estblocktime= juint(argjson,"estblocktime")) == 0 )
+            chain->estblocktime = juint(argjson,"blocktime");
         path = jstr(argjson,"path");
         if ( jobj(argjson,"conf") == 0 )
             conf[0] = 0;
@@ -347,10 +349,7 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
         if ( (hexstr= jstr(argjson,"wifval")) != 0 && strlen(hexstr) == 2 )
             decode_hex((uint8_t *)&chain->wiftype,1,hexstr);
         if ( (hexstr= jstr(argjson,"netmagic")) != 0 && strlen(hexstr) == 8 )
-        {
             decode_hex((uint8_t *)chain->netmagic,4,hexstr);
-            printf("NETMAGIC.(%s) -> %08x\n",hexstr,*(uint32_t *)chain->netmagic);
-        }
         if ( (hexstr= jstr(argjson,"unitval")) != 0 && strlen(hexstr) == 2 )
             decode_hex((uint8_t *)&chain->unitval,1,hexstr);
         if ( (hexstr= jstr(argjson,"alertpubkey")) != 0 && (strlen(hexstr)>>1) <= sizeof(chain->alertpubkey) )
@@ -371,8 +370,10 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
                 ((uint8_t *)&nBits)[1] = tmp[2];
                 ((uint8_t *)&nBits)[2] = tmp[1];
                 ((uint8_t *)&nBits)[3] = tmp[0];
-            }
-            else nBits = 0x1e00ffff;
+            } else nBits = 0x1e00ffff;
+            chain->nBits = nBits;
+            chain->unitval = (nBits >> 24);
+            printf("NETMAGIC %08x unitval.%02x nBits.%08x\n",*(uint32_t *)chain->netmagic,chain->unitval,chain->nBits);
             chain->genesishash2 = iguana_chaingenesis(chain->symbol,chain->zcash,chain->auxpow,chain->hashalgo,chain->genesishash2,genesisblock,jstr(genesis,"hashalgo"),juint(genesis,"version"),juint(genesis,"timestamp"),nBits,juint(genesis,"nonce"),jbits256(genesis,"merkle_root"));
             memcpy(chain->genesis_hashdata,chain->genesishash2.bytes,32);
             char str[65]; init_hexbytes_noT(str,chain->genesis_hashdata,32);
@@ -381,6 +382,17 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
         }
         else
         {
+            if ( jstr(argjson,"nBits") != 0 )
+            {
+                decode_hex((void *)&tmp,sizeof(tmp),jstr(argjson,"nBits"));
+                ((uint8_t *)&nBits)[0] = tmp[3];
+                ((uint8_t *)&nBits)[1] = tmp[2];
+                ((uint8_t *)&nBits)[2] = tmp[1];
+                ((uint8_t *)&nBits)[3] = tmp[0];
+            } else nBits = 0x1e00ffff;
+            chain->nBits = nBits;
+            chain->unitval = (nBits >> 24);
+            printf("NETMAGIC -> %08x unitval.%02x (%s) -> tmp.%08x nBits.%08x\n",*(uint32_t *)chain->netmagic,chain->unitval,jstr(argjson,"nBits"),*(uint32_t *)tmp,chain->nBits);
             if ( (hexstr= jstr(argjson,"genesisblock")) != 0 )
             {
                 uint8_t hexbuf[1024],*ptr,*data; int32_t datalen,hdrsize;
