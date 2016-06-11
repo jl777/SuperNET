@@ -13,22 +13,4 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifndef iguana777_net_h
-#define iguana777_net_h
 
-struct supernet_info;
-struct exchange_info;
-
-#include "../crypto777/OS_portable.h"
-#include "../basilisk/basilisk.h"
-#include "../gecko/gecko.h"
-#include "../datachain/datachain.h"
-
-#include "../includes/iguana_defines.h"
-#include "../includes/iguana_types.h"
-#include "../includes/iguana_structs.h"
-#include "../includes/iguana_funcs.h"
-#include "../includes/iguana_globals.h"
-
-
-#endif

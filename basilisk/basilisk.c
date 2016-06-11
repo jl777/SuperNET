@@ -16,8 +16,8 @@
 #include "../iguana/iguana777.h"
 
 typedef char *basilisk_coinfunc(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen);
-typedef char *basilisk_servicefunc(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 pubkey,int32_t from_basilisk);
-typedef struct basilisk_item *basilisk_requestfunc(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 pubkey,cJSON *valsobj,uint8_t *data,int32_t datalen);
+typedef char *basilisk_servicefunc(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk);
+typedef struct basilisk_item *basilisk_requestfunc(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 hash,cJSON *valsobj,uint8_t *data,int32_t datalen);
 
 uint32_t basilisk_calcnonce(struct supernet_info *myinfo,uint8_t *data,int32_t datalen,uint32_t nBits)
 {
@@ -80,35 +80,35 @@ uint8_t *get_dataptr(int32_t hdroffset,uint8_t **ptrp,int32_t *datalenp,uint8_t 
 
 uint8_t *basilisk_jsondata(uint8_t **ptrp,uint8_t *space,int32_t spacesize,int32_t *datalenp,char *symbol,cJSON *sendjson,uint32_t basilisktag)
 {
-    char *sendstr,*hexstr; uint8_t *data; bits256 pubkey; int32_t i,datalen,hexlen=0,havepubkey=1;
+    char *sendstr,*hexstr; uint8_t *data; bits256 hash; int32_t i,datalen,hexlen=0,havehash=1;
     if ( jobj(sendjson,"coin") == 0 )
         jaddstr(sendjson,"coin",symbol);
-    if ( jobj(sendjson,"pubkey") != 0 )
+    if ( jobj(sendjson,"hash") != 0 )
     {
-        havepubkey = 1;
-        pubkey = jbits256(sendjson,"pubkey");
+        havehash = 1;
+        hash = jbits256(sendjson,"hash");
     }
     if ( (hexstr= jstr(sendjson,"data")) != 0 && (hexlen= is_hexstr(hexstr,0)) > 0 )
         hexlen >>= 1;
     *ptrp = 0;
     sendstr = jprint(sendjson,0);
     datalen = (int32_t)strlen(sendstr) + 1;
-    if ( (datalen + BASILISK_HDROFFSET + hexlen + havepubkey*(sizeof(pubkey)+1)) <= spacesize )
+    if ( (datalen + BASILISK_HDROFFSET + hexlen + havehash*(sizeof(hash)+1)) <= spacesize )
         data = space;
     else
     {
-        data = calloc(1,datalen + BASILISK_HDROFFSET + hexlen + havepubkey*(sizeof(pubkey)+1));
+        data = calloc(1,datalen + BASILISK_HDROFFSET + hexlen + havehash*(sizeof(hash)+1));
         *ptrp = data;
     }
     data += BASILISK_HDROFFSET;
     memcpy(data,sendstr,datalen);
     free(sendstr);
-    if ( havepubkey != 0 || hexlen != 0 )
+    if ( havehash != 0 || hexlen != 0 )
     {
-        if ( (data[datalen++]= havepubkey) != 0 )
+        if ( (data[datalen++]= havehash) != 0 )
         {
             for (i=0; i<32; i++)
-                data[datalen++] = pubkey.bytes[i];
+                data[datalen++] = hash.bytes[i];
         }
     }
     if ( hexlen > 0 )
@@ -159,7 +159,7 @@ struct basilisk_item *basilisk_itemcreate(struct supernet_info *myinfo,char *CMD
 
 int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *type,uint32_t *basilisktagp,int32_t encryptflag,int32_t delaymillis,uint8_t *data,int32_t datalen,int32_t fanout,uint32_t nBits) // data must be offset by sizeof(iguana_msghdr)+sizeof(basilisktag)
 {
-    int32_t i,r,l,s,val,n=0,offset,havepubkey=0,retval = -1; char cmd[12]; struct iguana_info *coin,*tmp; struct iguana_peer *addr; bits256 pubkey; uint32_t *alreadysent;
+    int32_t i,r,l,s,val,n=0,offset,havehash=0,retval = -1; char cmd[12]; struct iguana_info *coin,*tmp; struct iguana_peer *addr; bits256 hash; uint32_t *alreadysent;
     if ( fanout <= 0 )
         fanout = BASILISK_MINFANOUT;
     else if ( fanout > BASILISK_MAXFANOUT )
@@ -178,17 +178,17 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
         else if ( strcmp(destipaddr,"127.0.0.1") == 0 )
         {
             printf("return after locally basilisk_msgprocess\n");
-            pubkey = GENESIS_PUBKEY;
+            hash = GENESIS_PUBKEY;
             if ( datalen > 0 )
             {
-                if ( (havepubkey= *data) != 0 )
+                if ( (havehash= *data) != 0 )
                 {
                     for (i=0; i<32; i++)
-                        pubkey.bytes[i] = data[i + 1];
+                        hash.bytes[i] = data[i + 1];
                 }
             }
-            offset = (int32_t)(havepubkey * (1 + sizeof(bits256)));
-            basilisk_msgprocess(myinfo,0,0,type,*basilisktagp,data+offset,datalen-offset,pubkey);
+            offset = (int32_t)(havehash * (1 + sizeof(bits256)));
+            basilisk_msgprocess(myinfo,0,0,type,*basilisktagp,data+offset,datalen-offset,hash);
             return(0);
         }
     }
@@ -274,8 +274,8 @@ int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *vi
 
 void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t datalen,char *type,int32_t encrypted)
 {
-    uint32_t ipbits,basilisktag; int32_t i,havepubkey,msglen,len=0; void *ptr = 0; uint8_t space[8192]; bits256 senderpub,pubkey,hash,hash2; struct supernet_info *myinfo = _myinfo;
-    pubkey = GENESIS_PUBKEY;
+    uint32_t ipbits,basilisktag; int32_t i,havehash,msglen,len=0; void *ptr = 0; uint8_t space[8192]; bits256 senderpub,hash,tmp,hash2; struct supernet_info *myinfo = _myinfo;
+    hash = GENESIS_PUBKEY;
     if ( encrypted != 0 )
     {
         printf("encrypted basilisk_p2p.(%s) from %s\n",type,senderip!=0?senderip:"?");
@@ -290,18 +290,17 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
         ipbits = (uint32_t)calc_ipbits(senderip);
     else ipbits = 0;
     len += iguana_rwnum(0,&data[len],sizeof(basilisktag),&basilisktag);
-    if ( datalen > len && (havepubkey= data[len]) != 0 )
+    if ( datalen > len && (havehash= data[len]) != 0 )
     {
-        vcalc_sha256(0,hash.bytes,&data[len],datalen - len);
-        hash.uints[0] = basilisktag;
-        vcalc_sha256(0,hash2.bytes,hash.bytes,sizeof(hash));
-        char str[65]; printf("tag.%u %s\n",basilisktag,bits256_str(str,hash2));
+        vcalc_sha256(0,tmp.bytes,&data[len],datalen - len);
+        tmp.uints[0] = basilisktag;
+        vcalc_sha256(0,hash2.bytes,tmp.bytes,sizeof(tmp));
         for (i=0; i<32; i++)
-            pubkey.bytes[i] = data[len + i + 1];
+            hash.bytes[i] = data[len + i + 1];
     }
-    if ( bits256_nonz(pubkey) == 0 )
-        pubkey = GENESIS_PUBKEY;
-    basilisk_msgprocess(myinfo,_addr,ipbits,type,basilisktag,&data[len],datalen - len,pubkey);
+    if ( bits256_nonz(hash) == 0 )
+        hash = GENESIS_PUBKEY;
+    basilisk_msgprocess(myinfo,_addr,ipbits,type,basilisktag,&data[len],datalen - len,hash);
     if ( ptr != 0 )
         free(ptr);
 }
@@ -373,14 +372,14 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,int32_t 
     return(ptr);
 }
 
-struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,char *CMD,cJSON *valsobj,bits256 pubkey,uint8_t *data,int32_t datalen,uint32_t nBits)
+struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,char *CMD,cJSON *valsobj,bits256 hash,uint8_t *data,int32_t datalen,uint32_t nBits)
 {
     int32_t minresults,timeoutmillis,numsent,delaymillis,encryptflag; struct basilisk_item *ptr; char buf[4096],*str = 0;
     basilisk_addhexstr(&str,valsobj,buf,sizeof(buf),data,datalen);
-    if ( jobj(valsobj,"pubkey") != 0 )
-        jdelete(valsobj,"pubkey");
-    if ( bits256_cmp(pubkey,GENESIS_PUBKEY) != 0 && bits256_nonz(pubkey) != 0 )
-        jaddbits256(valsobj,"pubkey",pubkey);
+    if ( jobj(valsobj,"hash") != 0 )
+        jdelete(valsobj,"hash");
+    if ( bits256_cmp(hash,GENESIS_PUBKEY) != 0 && bits256_nonz(hash) != 0 )
+        jaddbits256(valsobj,"hash",hash);
     if ( (minresults= jint(valsobj,"minresults")) <= 0 )
         minresults = 1;
     if ( (timeoutmillis= jint(valsobj,"timeout")) == 0 )
@@ -662,64 +661,64 @@ INT_AND_ARRAY(basilisk,result,basilisktag,vals)
     return(clonestr("{\"error\":\"no hexmsg to return\"}"));
 }
 
-HASH_ARRAY_STRING(basilisk,addrelay,pubkey,vals,hexstr)
+HASH_ARRAY_STRING(basilisk,addrelay,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("ADD",myinfo,pubkey,vals,hexstr,1));
+    return(basilisk_standardservice("ADD",myinfo,hash,vals,hexstr,1));
 }
 
-HASH_ARRAY_STRING(basilisk,dispatch,pubkey,vals,hexstr)
+HASH_ARRAY_STRING(basilisk,dispatch,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("RUN",myinfo,pubkey,vals,hexstr,1));
+    return(basilisk_standardservice("RUN",myinfo,hash,vals,hexstr,1));
 }
 
-HASH_ARRAY_STRING(basilisk,publish,pubkey,vals,hexstr)
+HASH_ARRAY_STRING(basilisk,publish,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("PUB",myinfo,pubkey,vals,hexstr,1));
+    return(basilisk_standardservice("PUB",myinfo,hash,vals,hexstr,1));
 }
 
-HASH_ARRAY_STRING(basilisk,subscribe,pubkey,vals,hexstr)
+HASH_ARRAY_STRING(basilisk,subscribe,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("SUB",myinfo,pubkey,vals,hexstr,1));
+    return(basilisk_standardservice("SUB",myinfo,hash,vals,hexstr,1));
 }
 
-HASH_ARRAY_STRING(basilisk,forward,pubkey,vals,hexstr)
+HASH_ARRAY_STRING(basilisk,forward,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("HOP",myinfo,pubkey,vals,hexstr,0));
+    return(basilisk_standardservice("HOP",myinfo,hash,vals,hexstr,0));
 }
 
-HASH_ARRAY_STRING(basilisk,mailbox,pubkey,vals,hexstr)
+HASH_ARRAY_STRING(basilisk,mailbox,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("BOX",myinfo,pubkey,vals,hexstr,1));
+    return(basilisk_standardservice("BOX",myinfo,hash,vals,hexstr,1));
 }
 
-HASH_ARRAY_STRING(basilisk,VPNcreate,pubkey,vals,hexstr)
+HASH_ARRAY_STRING(basilisk,VPNcreate,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("VPN",myinfo,pubkey,vals,hexstr,1));
+    return(basilisk_standardservice("VPN",myinfo,hash,vals,hexstr,1));
 }
 
-HASH_ARRAY_STRING(basilisk,VPNjoin,pubkey,vals,hexstr)
+HASH_ARRAY_STRING(basilisk,VPNjoin,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("ARC",myinfo,pubkey,vals,hexstr,1));
+    return(basilisk_standardservice("ARC",myinfo,hash,vals,hexstr,1));
 }
 
-HASH_ARRAY_STRING(basilisk,VPNmessage,pubkey,vals,hexstr)
+HASH_ARRAY_STRING(basilisk,VPNmessage,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("GAB",myinfo,pubkey,vals,hexstr,0));
+    return(basilisk_standardservice("GAB",myinfo,hash,vals,hexstr,0));
 }
 
-HASH_ARRAY_STRING(basilisk,VPNbroadcast,pubkey,vals,hexstr)
+HASH_ARRAY_STRING(basilisk,VPNbroadcast,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("SAY",myinfo,pubkey,vals,hexstr,0));
+    return(basilisk_standardservice("SAY",myinfo,hash,vals,hexstr,0));
 }
 
-HASH_ARRAY_STRING(basilisk,VPNreceive,pubkey,vals,hexstr)
+HASH_ARRAY_STRING(basilisk,VPNreceive,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("EAR",myinfo,pubkey,vals,hexstr,1));
+    return(basilisk_standardservice("EAR",myinfo,hash,vals,hexstr,1));
 }
 
-HASH_ARRAY_STRING(basilisk,VPNlogout,pubkey,vals,hexstr)
+HASH_ARRAY_STRING(basilisk,VPNlogout,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("END",myinfo,pubkey,vals,hexstr,0));
+    return(basilisk_standardservice("END",myinfo,hash,vals,hexstr,0));
 }
 
 #include "../includes/iguana_apiundefs.h"
@@ -736,7 +735,7 @@ void basilisk_geckoresult(struct supernet_info *myinfo,struct basilisk_item *ptr
                 str = 0;
                 if ( (type= jstr(retjson,"type")) != 0 )
                 {
-                    hash2 = jbits256(retjson,"pubkey");
+                    hash2 = jbits256(retjson,"hash");
                     if ( strcmp(type,"HDR") == 0 )
                         str = gecko_headersarrived(myinfo,virt,ptr->remoteaddr,data,datalen,hash2);
                     else if ( strcmp(type,"BLK") == 0 )
@@ -895,10 +894,13 @@ void basilisks_loop(void *arg)
                 //portable_mutex_lock(&Allcoins_mutex);
                 HASH_ITER(hh,myinfo->allcoins,virt,hhtmp)
                 {
-                    bitcoin_address(mineraddr,virt->chain->pubtype,myinfo->persistent_pubkey33,33);
-                    //printf("mine.%s %s\n",virt->symbol,mineraddr);
-                    gecko_miner(myinfo,btcd,virt,maxmillis,mineraddr);
-                    flag++;
+                    if ( virt->started != 0 && virt->active != 0 && virt->virtualchain != 0 )
+                    {
+                        bitcoin_address(mineraddr,virt->chain->pubtype,myinfo->persistent_pubkey33,33);
+                        //printf("mine.%s %s\n",virt->symbol,mineraddr);
+                        gecko_miner(myinfo,btcd,virt,maxmillis,myinfo->persistent_pubkey33);
+                        flag++;
+                    }
                 }
                 //portable_mutex_unlock(&Allcoins_mutex);
             }
@@ -916,6 +918,9 @@ void basilisks_init(struct supernet_info *myinfo)
     //bits256 basiliskhash;
     iguana_initQ(&myinfo->basilisks.submitQ,"submitQ");
     iguana_initQ(&myinfo->basilisks.resultsQ,"resultsQ");
+    portable_mutex_init(&myinfo->allcoins_mutex);
+    portable_mutex_init(&myinfo->basilisk_mutex);
+    portable_mutex_init(&myinfo->gecko_mutex);
     //basiliskhash = calc_categoryhashes(0,"basilisk",0);
     //myinfo->basilisk_category = basiliskhash;
     //category_subscribe(myinfo,basiliskhash,GENESIS_PUBKEY);
@@ -924,7 +929,21 @@ void basilisks_init(struct supernet_info *myinfo)
     myinfo->basilisks.launched = iguana_launch(iguana_coinfind("BTCD"),"basilisks_loop",basilisks_loop,myinfo,IGUANA_PERMTHREAD);
 }
 
-void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen,bits256 pubkey)
+void basilisk_wait(struct supernet_info *myinfo,struct iguana_info *coin)
+{
+    if ( coin != 0 )
+    {
+        while ( coin->basilisk_busy != 0 )
+            usleep(1000);
+    }
+    else
+    {
+        while ( myinfo->basilisk_busy != 0 )
+            usleep(1000);
+    }
+}
+
+void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen,bits256 hash)
 {
     cJSON *valsobj; char *symbol,*retstr=0,remoteaddr[64],CMD[4],cmd[4]; int32_t origlen,from_basilisk,i,timeoutmillis,flag,numrequired,jsonlen; uint8_t *origdata; struct iguana_info *coin=0;
     static basilisk_servicefunc *basilisk_services[][2] =
@@ -943,8 +962,8 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
         
         // unencrypted low level functions, used by higher level protocols and virtual network funcs
         { (void *)"ADD", &basilisk_respond_addrelay },   // relays register with each other bus
-        { (void *)"PUB", &basilisk_respond_publish },    // adds to global list of published items
-        { (void *)"SUB", &basilisk_respond_subscribe },  // subscribes to one or all published items
+        { (void *)"BID", &basilisk_respond_bid },
+        { (void *)"ASK", &basilisk_respond_ask },
         
         // encrypted data for jumblr
         { (void *)"HOP", &basilisk_respond_forward },    // message forwarding
@@ -984,6 +1003,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
         cmd[i] = tolower((int32_t)CMD[i]);
     }
     //printf("MSGPROCESS.(%s)\n",(char *)data);
+    myinfo->basilisk_busy = 1;
     if ( (valsobj= cJSON_Parse((char *)data)) != 0 )
     {
         jsonlen = (int32_t)strlen((char *)data) + 1;
@@ -991,7 +1011,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
         {
             data += jsonlen, datalen -= jsonlen;
             if ( *data++ != 0 )
-                data += sizeof(pubkey), datalen -= sizeof(pubkey);
+                data += sizeof(hash), datalen -= sizeof(hash);
         } else data = 0, datalen = 0;
         if ( (symbol= jstr(valsobj,"coin")) == 0 )
             symbol = "BTCD";
@@ -999,7 +1019,10 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
         if ( (numrequired= jint(valsobj,"numrequired")) == 0 )
             numrequired = 1;
         if ( jobj(valsobj,"coin") != 0 )
-            coin = iguana_coinfind(jstr(valsobj,"coin"));
+        {
+            if ( (coin= iguana_coinfind(jstr(valsobj,"coin"))) != 0 )
+                coin->basilisk_busy = 1;
+        }
         if ( senderipbits != 0 )
             expand_ipbits(remoteaddr,senderipbits);
         else remoteaddr[0] = 0;
@@ -1011,7 +1034,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
                 {
                     if ( from_basilisk != 0 )
                         basilisk_sendcmd(myinfo,0,cmd,&basilisktag,0,0,origdata,origlen,-1,0); // to other iguanas
-                    if ( (retstr= (*basilisk_services[i][1])(myinfo,type,addr,remoteaddr,basilisktag,valsobj,data,datalen,pubkey,from_basilisk)) != 0 )
+                    if ( (retstr= (*basilisk_services[i][1])(myinfo,type,addr,remoteaddr,basilisktag,valsobj,data,datalen,hash,from_basilisk)) != 0 )
                     {
                         printf("from_basilisk.%d ret.(%s)\n",from_basilisk,retstr);
                         if ( from_basilisk != 0 )
@@ -1021,6 +1044,9 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
                     }
                 } else printf("non-relay got unexpected.(%s)\n",type);
                 free_json(valsobj);
+                if ( coin != 0 )
+                    coin->basilisk_busy = 0;
+                myinfo->basilisk_busy = 0;
                 return;
             }
         }
@@ -1055,6 +1081,9 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
     free_json(valsobj);
     if ( retstr != 0 )
         free(retstr);
+    if ( coin != 0 )
+        coin->basilisk_busy = 0;
+    myinfo->basilisk_busy = 0;
 }
 
 

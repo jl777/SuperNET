@@ -66,6 +66,8 @@ void iguana_acceptloop(void *args)
     struct iguana_peer *addr; struct iguana_info *coin = args;
     struct pollfd pfd; int32_t sock; struct iguana_accept *ptr; uint16_t port = coin->chain->portp2p;
     socklen_t clilen; struct sockaddr_in cli_addr; char ipaddr[64]; uint32_t i,ipbits,flag;
+    if ( coin->peers == 0 )
+        return;
     while ( (coin->bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
     {
         if ( coin->peers->localaddr != 0 )
@@ -362,6 +364,8 @@ int32_t iguana_peergetrequest(struct iguana_info *coin,struct iguana_peer *addr,
 int32_t iguana_peeraddrrequest(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *space,int32_t spacesize)
 {
     int32_t i,iter,n,max,sendlen; uint64_t x; struct iguana_peer *tmpaddr,tmp; char ipaddr[65];
+    if ( coin->peers == 0 )
+        return(0);
     sendlen = 0;
     max = (IGUANA_MINPEERS + IGUANA_MAXPEERS) / 2;
     if ( max > coin->peers->numranked )

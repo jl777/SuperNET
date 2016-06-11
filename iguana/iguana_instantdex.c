@@ -389,11 +389,7 @@ bits256 instantdex_rwoffer(int32_t rwflag,int32_t *lenp,uint8_t *serialized,stru
 
 char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extraser,int32_t extralen,struct iguana_peer *addr,struct bitcoin_swapinfo *swap)
 {
-    cJSON *sendjson; char *reqstr; struct instantdex_msghdr *msg; bits256 orderhash,tmphash; int32_t i,j,len,dir=0,serflag,olen,slen,datalen; uint8_t *buf,*allocptr,space[4096],serialized[sizeof(*offer) + sizeof(struct iguana_msghdr) + 4096 + INSTANTDEX_DECKSIZE*33]; uint64_t x,nxt64bits; //,*hexstr,*retstr
-    //if ( strcmp(cmdstr,"poll") == 0 )
-    //    return(clonestr("{\"result\":\"skip sending poll\"}"));
-    //category_subscribe(myinfo,myinfo->instantdex_category,GENESIS_PUBKEY);
-    
+    cJSON *sendjson; char *reqstr; struct instantdex_msghdr *msg; bits256 orderhash,tmphash; int32_t i,j,len,dir=0,serflag,olen,slen,datalen; uint8_t *buf,*allocptr,space[4096],serialized[sizeof(*offer) + sizeof(struct iguana_msghdr) + 4096 + INSTANTDEX_DECKSIZE*33]; uint64_t x,nxt64bits;
     orderhash = instantdex_rwoffer(1,&olen,serialized,offer);
     if ( 1 )
     {
@@ -422,7 +418,6 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
         extralen = (int32_t)sizeof(swap->privkeys);
         serflag = 2;
     } else serflag = 0;
-    printf("serflag.%d\n",serflag);
     datalen = (int32_t)slen + extralen + olen;
     msg = calloc(1,datalen + sizeof(*msg));
     for (i=0; i<sizeof(msg->cmd); i++)
@@ -452,9 +447,6 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
                 memcpy(&tmphash,&((uint8_t *)extraser)[len],sizeof(tmphash));
                 for (j=0; j<32; j++)
                     ((uint8_t *)extraser)[len++] = tmphash.bytes[j];
-                //iguana_rwbignum(1,&((uint8_t *)extraser)[len],sizeof(bits256),tmphash.bytes);
-                //if ( len == 0 )
-                //    printf("ser privkeys0 %s\n",bits256_str(str,*(bits256 *)extraser));
                 len += sizeof(bits256);
             }
         }
@@ -466,12 +458,12 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     sendjson = cJSON_CreateObject();
     jaddstr(sendjson,"hexmsg",(char *)buf);
     free(buf);
+    //jaddstr(sendjson,"agent","SuperNET");
+    //jaddstr(sendjson,"method","DHT");
+    //jaddnum(sendjson,"plaintext",1);
+    //jaddbits256(sendjson,"categoryhash",myinfo->instantdex_category);
     jaddstr(sendjson,"cmd",cmdstr);
-    jaddstr(sendjson,"agent","SuperNET");
-    jaddstr(sendjson,"method","DHT");
     jaddstr(sendjson,"handle",myinfo->handle);
-    jaddnum(sendjson,"plaintext",1);
-    jaddbits256(sendjson,"categoryhash",myinfo->instantdex_category);
     jaddbits256(sendjson,"traderpub",myinfo->myaddr.persistent);
     data = basilisk_jsondata(&allocptr,space,sizeof(space),&datalen,swap->mine.offer.base,sendjson,basilisktag);
     basilisk_sendcmd(myinfo,addr->ipaddr,dir > 0 ? "BID" : "ASK",&basilisktag,encryptflag,delaymillis,data,datalen,1,BASILISK_DEFAULTDIFF);
@@ -1078,7 +1070,7 @@ void instantdex_propagate(struct supernet_info *myinfo,struct exchange_info *exc
 {
     bits256 orderhash; uint8_t serialized[8192]; int32_t i,len; struct iguana_peer *addr; struct iguana_info *coin;
     orderhash = instantdex_rwoffer(1,&len,&serialized[sizeof(struct iguana_msghdr)],&ap->offer);
-    if ( (coin= iguana_coinfind("BTCD")) != 0 && coin->peers->numranked > 0 )
+    if ( (coin= iguana_coinfind("BTCD")) != 0 && coin->peers != 0 && coin->peers->numranked > 0 )
     {
         for (i=0; i<coin->peers->numranked; i++)
             if ( (addr= coin->peers->ranked[i]) != 0 && addr->supernet != 0 && addr->usock >= 0 && GETBIT(ap->peerhas,addr->addrind) == 0 && strcmp("0.0.0.0",addr->ipaddr) != 0 && strcmp("127.0.0.1",addr->ipaddr) != 0 )

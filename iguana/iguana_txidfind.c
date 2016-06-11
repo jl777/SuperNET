@@ -651,7 +651,7 @@ struct iguana_monitorinfo *iguana_txidmonitor(struct iguana_info *coin,bits256 t
 double iguana_txidstatus(struct iguana_info *coin,bits256 txid)
 {
     int32_t height,firstvout,numranked; struct iguana_monitorinfo *ptr; char str[65];
-    if ( coin != 0 && (numranked= coin->peers->numranked) > 0 )
+    if ( coin != 0 && coin->peers != 0 && (numranked= coin->peers->numranked) > 0 )
     {
         if ( (firstvout= iguana_unspentindfind(coin,0,0,0,0,&height,txid,0,coin->bundlescount-1)) != 0 )
         {

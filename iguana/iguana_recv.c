@@ -121,7 +121,7 @@ int32_t iguana_sendtxidreq(struct iguana_info *coin,struct iguana_peer *addr,bit
     int32_t len,i,r,j; //char hexstr[65]; init_hexbytes_noT(hexstr,hash2.bytes,sizeof(hash2));
     if ( (len= iguana_getdata(coin,serialized,MSG_TX,&hash2,1)) > 0 )
     {
-        if ( addr == 0 )
+        if ( addr == 0 && coin->peers != 0 )
         {
             r = rand();
             for (i=0; i<coin->MAXPEERS; i++)
@@ -150,9 +150,12 @@ int32_t iguana_txidreq(struct iguana_info *coin,char **retstrp,bits256 txid)
     }
     char str[65]; printf("txidreq.%s\n",bits256_str(str,txid));
     coin->reqtxids[coin->numreqtxids++] = txid;
-    for (i=0; i<coin->MAXPEERS; i++)
-        if ( coin->peers->active[i].usock >= 0 )
-            iguana_sendtxidreq(coin,coin->peers->ranked[i],txid);
+    if ( coin->peers != 0 )
+    {
+        for (i=0; i<coin->MAXPEERS; i++)
+            if ( coin->peers->active[i].usock >= 0 )
+                iguana_sendtxidreq(coin,coin->peers->ranked[i],txid);
+    }
     return(0);
 }
 
@@ -779,13 +782,16 @@ void iguana_checklongestchain(struct iguana_info *coin,struct iguana_bundle *bp,
                 coin->badlongestchain = coin->longestchain;
                 coin->longestchain = bp->bundleheight+num;
                 coin->longestchain_strange = 0;
-                for (i=0; i<coin->peers->numranked; i++)
-                    if ( (addr= coin->peers->ranked[i]) != 0 && addr->height >= coin->badlongestchain )
-                    {
-                        printf("blacklist addr.(%s) height %d\n",addr->ipaddr,addr->height);
-                        addr->dead = 1;
-                        addr->rank = 0;
-                    }
+                if ( coin->peers != 0 )
+                {
+                    for (i=0; i<coin->peers->numranked; i++)
+                        if ( (addr= coin->peers->ranked[i]) != 0 && addr->height >= coin->badlongestchain )
+                        {
+                            printf("blacklist addr.(%s) height %d\n",addr->ipaddr,addr->height);
+                            addr->dead = 1;
+                            addr->rank = 0;
+                        }
+                }
             }
         }
         else if ( coin->longestchain_strange > 0 )
@@ -1504,7 +1510,7 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
             if ( (n= queue_size(Q)) > 100000 )
             {
                 if ( 1 && n > 200000 )
-                    printf("%s %s %s [%d:%d] %d %s %d numranked.%d qsize.%d\n",coin->symbol,argstr,str,bp!=0?bp->hdrsi:-1,bundlei,req->height,bits256_str(str2,hash2),coin->blocks.recvblocks,coin->peers->numranked,queue_size(Q));
+                    printf("%s %s %s [%d:%d] %d %s %d numranked.%d qsize.%d\n",coin->symbol,argstr,str,bp!=0?bp->hdrsi:-1,bundlei,req->height,bits256_str(str2,hash2),coin->blocks.recvblocks,coin->peers != 0 ? coin->peers->numranked : -1,queue_size(Q));
                 while ( (ptr= queue_dequeue(Q,0)) != 0 )
                     myfree(ptr,sizeof(*ptr));
                 coin->backlog = n*10 + 1000000;
@@ -1584,14 +1590,18 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
         return(0);
     }
     priority = 1;
+    pend = 0;
     req = queue_dequeue(&coin->priorityQ,0);
     if ( flag == 0 && req == 0 && addr->pendblocks < limit )
     {
         priority = 0;
-        for (i=m=pend=0; i<coin->peers->numranked; i++)
+        if ( coin->peers != 0 )
         {
-            if ( (ptr= coin->peers->ranked[i]) != 0 && ptr->msgcounts.verack > 0 )
-                pend += ptr->pendblocks, m++;
+            for (i=m=pend=0; i<coin->peers->numranked; i++)
+            {
+                if ( (ptr= coin->peers->ranked[i]) != 0 && ptr->msgcounts.verack > 0 )
+                    pend += ptr->pendblocks, m++;
+            }
         }
         if ( pend < coin->MAXPENDINGREQUESTS*m )
             req = queue_dequeue(&coin->blocksQ,0);

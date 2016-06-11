@@ -291,7 +291,7 @@ void iguana_emitQ(struct iguana_info *coin,struct iguana_bundle *bp)
 void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
 {
     struct iguana_helper *ptr;
-    if ( bp->queued == 0 && bp->emitfinish <= 1 && iguana_bundleready(coin,bp,0) == bp->n )
+    if ( 0 && bp->queued == 0 && bp->emitfinish <= 1 && iguana_bundleready(coin,bp,0) == bp->n )
         printf("bundle.[%d] is ready\n",bp->hdrsi);
     bp->queued = (uint32_t)time(NULL);
     ptr = mycalloc('i',1,sizeof(*ptr));
@@ -656,7 +656,7 @@ void iguana_helper(void *arg)
     }
 }
 
-void iguana_callcoinstart(struct iguana_info *coin)
+void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     struct iguana_bundle *bp; int32_t bundlei; bits256 zero; char dirname[512],*symbol;
     iguana_rwiAddrind(coin,0,0,0);
@@ -685,6 +685,8 @@ void iguana_callcoinstart(struct iguana_info *coin)
     memset(zero.bytes,0,sizeof(zero));
     if ( (bp= iguana_bundlecreate(coin,&bundlei,0,*(bits256 *)coin->chain->genesis_hashdata,zero,1)) != 0 )
         bp->bundleheight = 0;
+    if ( strcmp("BTCD",coin->symbol) == 0 )
+        basilisk_geckogenesis(myinfo,coin,0,0,GENESIS_PUBKEY,0,0);
 }
 
 void iguana_coinloop(void *arg)
@@ -722,7 +724,7 @@ void iguana_coinloop(void *arg)
 #endif
                 }
                 if ( coin->started == 0 && coin->active != 0 )
-                    iguana_callcoinstart(coin);
+                    iguana_callcoinstart(myinfo,coin);
                 now = (uint32_t)time(NULL);
                 coin->idletime = 0;
                 if ( coin->started != 0 && coin->active != 0 )
@@ -735,8 +737,6 @@ void iguana_coinloop(void *arg)
                             coin->polltimeout = 100;
                         if ( coin->MAXPEERS > IGUANA_MINPEERS )
                             coin->MAXPEERS = IGUANA_MINPEERS;
-                        if ( strcmp("BTCD",coin->symbol) == 0 )
-                            basilisk_geckogenesis(myinfo,coin,0,0,GENESIS_PUBKEY,0,0);
                     }
                     if ( coin->isRT != 0 && coin->current != 0 && coin->numverified >= coin->current->hdrsi )
                     {

@@ -300,20 +300,28 @@ char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,bit
 
 bits256 iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx)
 {
-    bits256 txid; uint8_t *serialized; int32_t i,len; struct iguana_peer *addr;
-    if ( coin->peers->numranked >= 8 )
+    bits256 txid; uint8_t *serialized; int32_t i,len,n; struct iguana_peer *addr; cJSON *vals; char *str;
+    len = (int32_t)strlen(signedtx) >> 1;
+    serialized = calloc(1,sizeof(struct iguana_msghdr) + len);
+    decode_hex(&serialized[sizeof(struct iguana_msghdr)],len,signedtx);
+    txid = bits256_doublesha256(0,&serialized[sizeof(struct iguana_msghdr)],len);
+    if ( coin->peers != 0 && (n= coin->peers->numranked) > 0 )
     {
-        len = (int32_t)strlen(signedtx) >> 1;
-        serialized = calloc(1,sizeof(struct iguana_msghdr) + len);
-        decode_hex(&serialized[sizeof(struct iguana_msghdr)],len,signedtx);
-        for (i=0; i<8; i++)
+        for (i=0; i<8 && i<n; i++)
         {
             if ( (addr= coin->peers->ranked[i]) != 0 && addr->dead == 0 && addr->usock >= 0 )
                 iguana_queue_send(addr,0,serialized,"tx",len);
         }
-        free(serialized);
-        txid = bits256_doublesha256(0,&serialized[sizeof(struct iguana_msghdr)],len);
-    } else memset(txid.bytes,0,sizeof(txid));
+    }
+    else
+    {
+        vals = cJSON_CreateObject();
+        jaddstr(vals,"symbol",coin->symbol);
+        if ( (str= gecko_sendrawtransaction(myinfo,coin,serialized,len,txid,vals,signedtx)) != 0 )
+            free(str);
+        free_json(vals);
+    }
+    free(serialized);
     return(txid);
 }
 
@@ -633,9 +641,6 @@ HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool)
                     U = RAMCHAIN_PTR(rdata,Uoffset);
                     P = RAMCHAIN_PTR(rdata,Poffset);
                     T = RAMCHAIN_PTR(rdata,Toffset);
-                    //U = (void *)(long)((long)rdata + rdata->Uoffset);
-                    //P = (void *)(long)((long)rdata + rdata->Poffset);
-                    //T = (void *)(long)((long)rdata + rdata->Toffset);
                     RTspend = 0;
                     if ( iguana_spentflag(coin,&RTspend,&spentheight,ramchain,bp->hdrsi,unspentind,height,minconf,coin->longestchain,U[unspentind].value) == 0 )
                     {

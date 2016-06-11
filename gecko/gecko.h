@@ -20,7 +20,7 @@
 #define GECKO_MAXBTCDGAP 18
 
 #define GECKO_DEFAULTVERSION 1
-#define GECKO_EASIESTDIFF 0x1fffffff
+#define GECKO_EASIESTDIFF 0x1f7fffff
 #define GECKO_DEFAULTDIFF 0x1f00ffff
 #define GECKO_DEFAULTDIFFSTR "1f00ffff"
 
@@ -35,6 +35,14 @@ struct iguana_peer;
 struct hashstamp { bits256 hash2; uint32_t timestamp; int32_t height; };
 struct gecko_sequence { struct hashstamp *stamps; int32_t lastupdate,maxstamps,numstamps,lasti,longestchain; };
 struct gecko_sequences { struct gecko_sequence BTC,BTCD; };
+
+struct gecko_mempooltx { bits256 txid; char *rawtx; int64_t txfee; int32_t pending; uint32_t ipbits; };
+
+struct gecko_mempool
+{
+    int32_t numtx;
+    struct gecko_mempooltx txs[100];
+};
 
 struct gecko_chain
 {
@@ -53,11 +61,12 @@ char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *a
 char *basilisk_respond_geckoheaders(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash2,int32_t from_basilisk);
 char *basilisk_respond_geckoget(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash2,int32_t from_basilisk);
 
-void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,int32_t maxmillis,char *mineraddr);
+void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,int32_t maxmillis,uint8_t *minerpubkey33);
 void gecko_seqresult(struct supernet_info *myinfo,char *retstr);
 int32_t gecko_sequpdate(char *symbol,uint32_t reftimestamp);
 char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *data,int32_t datalen,bits256 hash2);
 char *gecko_txarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *data,int32_t datalen,bits256 hash2);
 char *gecko_headersarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *data,int32_t datalen,bits256 hash2);
+char *gecko_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *virt,uint8_t *data,int32_t datalen,bits256 txid,cJSON *vals,char *signedtx);
 
 #endif

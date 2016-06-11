@@ -139,6 +139,8 @@ void iguana_rdatarestore(struct iguana_ramchain *dest,struct iguana_ramchaindata
 void iguana_RThdrs(struct iguana_info *coin,struct iguana_bundle *bp,int32_t numaddrs)
 {
     int32_t datalen,i; uint8_t serialized[512]; char str[65]; struct iguana_peer *addr;
+    if ( coin->peers == 0 )
+        return;
     for (i=0; i<numaddrs && i<coin->peers->numranked; i++)
     {
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
@@ -205,6 +207,8 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     double startmillis0; static double totalmillis0; static int32_t num0;
     struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t offset,bundlei,i,n,flag=0; bits256 hash2,*ptr; struct iguana_peer *addr;
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
+    if ( coin->peers == 0 )
+        return(0);
     offset = (strcmp("BTC",coin->symbol) != 0);
     if ( coin->current != 0 && (coin->blocks.hwmchain.height % coin->chain->bundlesize) == coin->chain->bundlesize-1 && coin->blocks.hwmchain.height/coin->chain->bundlesize == coin->longestchain/coin->chain->bundlesize )
     {

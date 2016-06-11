@@ -78,17 +78,16 @@ int32_t iguana_vinset(struct iguana_info *coin,uint8_t *scriptspace,int32_t heig
             S = RAMCHAIN_PTR(rdata,Soffset);
             X = RAMCHAIN_PTR(rdata,Xoffset);
             T = RAMCHAIN_PTR(rdata,Toffset);
-            //S = (void *)(long)((long)rdata + rdata->Soffset);
-            //X = (void *)(long)((long)rdata + rdata->Xoffset);
-            //T = (void *)(long)((long)rdata + rdata->Toffset);
             spendind = (tx->firstvin + i);
             s = &S[spendind];
             vin->sequence = s->sequenceid;
             vin->prev_vout = s->prevout;
+            if ( s->prevout < 0 )
+                ;
             if ( s->scriptpos != 0 && s->scriptlen > 0 )
             {
                 iguana_vinsfname(coin,bp->ramchain.from_ro,fname,s->fileid);
-                if ( (scriptlen= iguana_scriptdata(coin,scriptspace,coin->peers->vinptrs[s->fileid],fname,s->scriptpos,s->scriptlen)) != s->scriptlen )
+                if ( (scriptlen= iguana_scriptdata(coin,scriptspace,coin->vinptrs[s->fileid],fname,s->scriptpos,s->scriptlen)) != s->scriptlen )
                     printf("err.%d getting %d bytes from fileid.%llu[%d] %s for s%d\n",err,s->scriptlen,(long long)s->scriptpos,s->fileid,fname,spendind);
             }
             vin->scriptlen = s->scriptlen;
@@ -107,7 +106,7 @@ int32_t iguana_voutscript(struct iguana_info *coin,struct iguana_bundle *bp,uint
     if ( u->scriptpos > 0 && u->scriptlen > 0 )
     {
         iguana_voutsfname(coin,bp->ramchain.from_ro,fname,u->fileid);
-        if ( (scriptlen= iguana_scriptdata(coin,scriptspace,coin->peers->voutptrs[u->fileid],fname,u->scriptpos,u->scriptlen)) != u->scriptlen )
+        if ( (scriptlen= iguana_scriptdata(coin,scriptspace,coin->voutptrs[u->fileid],fname,u->scriptpos,u->scriptlen)) != u->scriptlen )
             printf("%d bytes from fileid.%d[%d] %s for type.%d\n",u->scriptlen,u->fileid,u->scriptpos,fname,u->type);
     }
     else
@@ -316,6 +315,8 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
         }
         else
         {
+            if ( coin->virtualchain != 0 )
+                ;
             if ( block != 0 )
                 printf("iguana_peerblockrequest: block.%p ht.%d mainchain.%d [%d:%d] from %s\n",block,block->height,block->mainchain,bp->hdrsi,bundlei,addr!=0?addr->ipaddr:"local");
             else printf("iguana_peerblockrequest: block.%p [%d:%d]\n",block,bp->hdrsi,bundlei);

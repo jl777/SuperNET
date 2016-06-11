@@ -555,7 +555,7 @@ cJSON *iguana_peerjson(struct iguana_info *coin,struct iguana_peer *addr)
 cJSON *iguana_peersjson(struct iguana_info *coin,int32_t addronly)
 {
     cJSON *retjson,*array; int32_t i; struct iguana_peer *addr;
-    if ( coin == 0 )
+    if ( coin == 0 || coin->peers == 0 )
         return(0);
     array = cJSON_CreateArray();
     for (i=0; i<coin->MAXPEERS; i++)
@@ -591,7 +591,7 @@ STRING_ARG(iguana,peers,activecoin)
 STRING_ARG(iguana,getconnectioncount,activecoin)
 {
     int32_t i,num = 0; char buf[512];
-    if ( coin != 0 )
+    if ( coin != 0 && coin->peers == 0 )
     {
         for (i=0; i<sizeof(coin->peers->active)/sizeof(*coin->peers->active); i++)
             if ( coin->peers->active[i].usock >= 0 )
@@ -661,7 +661,7 @@ TWO_STRINGS(iguana,addnode,activecoin,ipaddr)
     if ( coin == 0 )
         coin = iguana_coinfind(activecoin);
     printf("coin.%p.[%s] addnode.%s -> %s\n",coin,coin!=0?coin->symbol:"",activecoin,ipaddr);
-    if ( coin != 0 && ipaddr != 0 && is_ipaddr(ipaddr) != 0 )
+    if ( coin != 0 && coin->peers != 0 && ipaddr != 0 && is_ipaddr(ipaddr) != 0 )
     {
         //iguana_possible_peer(coin,ipaddr);
         if ( (addr= iguana_peerslot(coin,(uint32_t)calc_ipbits(ipaddr),1)) != 0 )
@@ -705,7 +705,7 @@ TWO_STRINGS(iguana,addnode,activecoin,ipaddr)
 TWO_STRINGS(iguana,persistent,activecoin,ipaddr)
 {
     int32_t i;
-    if ( coin != 0 && ipaddr != 0 )
+    if ( coin != 0 && coin->peers != 0 && ipaddr != 0 )
     {
         for (i=0; i<IGUANA_MAXPEERS; i++)
         {
@@ -722,7 +722,7 @@ TWO_STRINGS(iguana,persistent,activecoin,ipaddr)
 TWO_STRINGS(iguana,removenode,activecoin,ipaddr)
 {
     int32_t i;
-    if ( coin != 0 && ipaddr != 0 )
+    if ( coin != 0 && coin->peers != 0 && ipaddr != 0 )
     {
         for (i=0; i<IGUANA_MAXPEERS; i++)
         {
@@ -749,7 +749,7 @@ TWO_STRINGS(iguana,oneshot,activecoin,ipaddr)
 TWO_STRINGS(iguana,nodestatus,activecoin,ipaddr)
 {
     int32_t i; struct iguana_peer *addr;
-    if ( coin != 0 && ipaddr != 0 )
+    if ( coin != 0 && coin->peers != 0 && ipaddr != 0 )
     {
         for (i=0; i<coin->MAXPEERS; i++)
         {
@@ -764,7 +764,7 @@ TWO_STRINGS(iguana,nodestatus,activecoin,ipaddr)
 STRING_AND_INT(iguana,maxpeers,activecoin,max)
 {
     cJSON *retjson; int32_t i; struct iguana_peer *addr;
-    if ( coin != 0 )
+    if ( coin != 0 && coin->peers != 0 )
     {
         retjson = cJSON_CreateObject();
         if ( max > IGUANA_MAXPEERS )

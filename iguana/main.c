@@ -322,15 +322,18 @@ void iguana_exit()
             //portable_mutex_lock(&Allcoins_mutex);
             HASH_ITER(hh,Allcoins,coin,tmp)
             {
-                for (j=0; j<IGUANA_MAXPEERS; j++)
+                if ( coin->peers != 0 )
                 {
-                    switch ( iter )
+                    for (j=0; j<IGUANA_MAXPEERS; j++)
                     {
-                        case 1: coin->peers->active[j].dead = (uint32_t)time(NULL); break;
-                        case 2:
-                            if ( coin->peers->active[j].usock >= 0 )
-                                closesocket(coin->peers->active[j].usock);
-                            break;
+                        switch ( iter )
+                        {
+                            case 1: coin->peers->active[j].dead = (uint32_t)time(NULL); break;
+                            case 2:
+                                if ( coin->peers->active[j].usock >= 0 )
+                                    closesocket(coin->peers->active[j].usock);
+                                break;
+                        }
                     }
                 }
             }
@@ -412,7 +415,8 @@ void mainloop(struct supernet_info *myinfo)
                 if ( coin->current != 0 && coin->active != 0 && coin->started != 0 )
                 {
                     isRT *= coin->isRT;
-                    numpeers += coin->peers->numranked;
+                    if ( coin->peers != 0 )
+                        numpeers += coin->peers->numranked;
                     if ( time(NULL) > coin->startutc+10 && coin->spendvectorsaved == 0 && coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-coin->minconfirms)/coin->chain->bundlesize )
                     {
                         n = coin->bundlescount-1;
@@ -1320,7 +1324,6 @@ void iguana_main(void *arg)
     iguana_Qinit();
     myinfo = SuperNET_MYINFO(0);
     myinfo->rpcport = IGUANA_RPCPORT;
-    portable_mutex_init(&myinfo->allcoins_mutex);
     strcpy(myinfo->rpcsymbol,"BTCD");
     iguana_urlinit(myinfo,ismainnet,usessl);
     //category_init(myinfo);
@@ -1452,6 +1455,8 @@ cJSON *SuperNET_rosettajson(bits256 privkey,int32_t showprivs)
 cJSON *SuperNET_peerarray(struct iguana_info *coin,int32_t max,int32_t supernetflag)
 {
     int32_t i,r,j,n = 0; struct iguana_peer *addr; cJSON *array = cJSON_CreateArray();
+    if ( coin->peers == 0 )
+        return(array);
     r = rand();
     for (j=0; j<IGUANA_MAXPEERS; j++)
     {

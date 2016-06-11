@@ -338,6 +338,12 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
             chain->targettimespan = NTARGETSPACING * 60;
         if ( (port= extract_userpass(chain->serverport,chain->userpass,chain->symbol,chain->userhome,path,conf)) != 0 )
             chain->rpcport = port;
+        if ( jobj(argjson,"halving") != 0 )
+            chain->halvingduration = juint(argjson,"halving");
+        else chain->halvingduration = 210000;
+        if ( jobj(argjson,"reward") != 0 )
+            chain->initialreward = jdouble(argjson,"reward") * SATOSHIDEN;
+        else chain->initialreward = 50 * SATOSHIDEN;
         if ( chain->serverport[0] == 0 )
             sprintf(chain->serverport,"127.0.0.1:%u",chain->rpcport);
         if ( (hexstr= jstr(argjson,"pubval")) != 0 && strlen(hexstr) == 2 )

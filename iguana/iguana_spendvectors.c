@@ -705,7 +705,7 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
 
 void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
 {
-    int32_t i; struct iguana_bundle *bp; bits256 hash2; struct iguana_block *block; char hashstr[65];
+    int32_t i,hdrsi,bundlei,height; struct iguana_bundle *bp; bits256 hash2; struct iguana_block *block; char hashstr[65];
     if ( bits256_nonz(lastbundle) > 0 )
     {
         init_hexbytes_noT(hashstr,lastbundle.bytes,sizeof(bits256));
@@ -770,7 +770,20 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
     iguana_walkchain(coin,0);
     hash2 = iguana_blockhash(coin,coin->balanceswritten * coin->chain->bundlesize);
     if ( bits256_nonz(hash2) != 0 && (block= iguana_blockfind("initfinal",coin,hash2)) != 0 )
-        _iguana_chainlink(coin,block);
+    {
+        for (height=0; height<coin->bundlescount*coin->chain->bundlesize; height++)
+        {
+            if ( _iguana_chainlink(coin,block) == 0 )
+                break;
+            if ( coin->virtualchain == 0 )
+                break;
+            bundlei = (height % coin->chain->bundlesize);
+            hdrsi = (height / coin->chain->bundlesize);
+            if ( (bp= coin->bundles[hdrsi]) == 0 || (block= bp->blocks[bundlei]) == 0 )
+                break;
+        }
+        printf("%s height.%d hwm.%d\n",coin->symbol,height,coin->blocks.hwmchain.height);
+    }
 }
 
 int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
@@ -880,8 +893,9 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
     {
         coin->active = 0;
         coin->started = 0;
-        for (i=0; i<IGUANA_MAXPEERS; i++)
-            coin->peers->active[i].dead = (uint32_t)time(NULL);
+        if ( coin->peers != 0 )
+            for (i=0; i<IGUANA_MAXPEERS; i++)
+                coin->peers->active[i].dead = (uint32_t)time(NULL);
 #ifdef __linux__
         char cmd[1024];
         sprintf(cmd,"mksquashfs %s/%s %s.%d -comp xz",GLOBAL_DBDIR,coin->symbol,coin->symbol,coin->balanceswritten);

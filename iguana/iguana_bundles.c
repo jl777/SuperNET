@@ -458,7 +458,7 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
     if ( coin->current != 0 )
         lasti = coin->current->hdrsi;
     else lasti = 0;
-    if ( bp->purgetime == 0 && time(NULL) > bp->emitfinish+600 && bp->hdrsi < lasti-2 )
+    if ( coin->virtualchain != 0 || (bp->purgetime == 0 && time(NULL) > bp->emitfinish+600 && bp->hdrsi < lasti-2) )
     {
         for (j=m=0; j<bp->n; j++)
         {
@@ -469,7 +469,11 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
                     //printf("purge.(%s)\n",fname);
                     fclose(fp);
                     if ( OS_removefile(fname,0) > 0 )
-                        coin->peers->numfiles--, m++;
+                    {
+                        if ( coin->peers != 0 )
+                            coin->peers->numfiles--;
+                        m++;
+                    }
                 }
             }
             else printf("error removing.(%s)\n",fname);
@@ -496,7 +500,10 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
 
 uint8_t iguana_recentpeers(struct iguana_info *coin,int32_t *capacityp,struct iguana_peer *peers[])
 {
-    struct iguana_peer *addr; uint8_t m; int32_t capacity,i,n = coin->peers->numranked;
+    struct iguana_peer *addr; uint8_t m; int32_t capacity,i,n;
+    if ( coin->peers == 0 )
+        return(0);
+    n = coin->peers->numranked;
     for (i=m=capacity=0; i<n&&m<0xff; i++)
     {
         if ( (addr= coin->peers->ranked[i]) != 0 && addr->dead == 0 && addr->usock >= 0 && addr->msgcounts.verack != 0 && addr->pendblocks < coin->MAXPENDINGREQUESTS )
@@ -580,6 +587,8 @@ struct iguana_block *iguana_bundleblock(struct iguana_info *coin,bits256 *hash2p
 int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle *bp,int32_t priority,double mult)
 {
     int32_t i,max,nonz,starti,lasti,firsti,lag,num,n=0; uint32_t now; bits256 hash2; double aveduration; struct iguana_peer *addr;
+    if ( coin->peers == 0 )
+        return(0);
     starti = coin->current == 0 ? 0 : coin->current->hdrsi;
     lasti = coin->lastpending == 0 ? starti+coin->MAXBUNDLES : coin->lastpending->hdrsi;
     if ( bp->hdrsi < starti || bp->hdrsi > lasti || bp->emitfinish != 0 || ((priority > 0 || bp == coin->current) && time(NULL) < bp->missingstime+3) || time(NULL) < bp->missingstime+30 )
@@ -820,7 +829,6 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
             }
         }
     }
-    printf("ready.%d\n",ready);
     return(ready);
 }
 
@@ -1010,7 +1018,7 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
             }
             else
             {
-                //fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d error\n",coin,bp->hdrsi,bp->bundleheight);
+                fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d error\n",coin,bp->hdrsi,bp->bundleheight);
                 bp->emitfinish = 0;
             }
             coin->emitbusy--;
@@ -1057,7 +1065,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
         iguana_bundlehdr(coin,bp,starti);
     else if ( bp->emitfinish == 0 && bp->numsaved >= bp->n )
     {
-        if ( iguana_bundlefinalize(coin,bp,mem,memB) > 0 )
+        if ( coin->virtualchain != 0 || iguana_bundlefinalize(coin,bp,mem,memB) > 0 )
             return(0);
         //else printf("bundlefinalize not done.[%d]\n",bp->hdrsi);
         retval = 1;
@@ -1125,6 +1133,8 @@ int32_t iguana_cacheprocess(struct iguana_info *coin,struct iguana_bundle *bp,in
 void iguana_unstickhdr(struct iguana_info *coin,struct iguana_bundle *bp,int32_t lag)
 {
     int32_t datalen,m,i; uint8_t serialized[512]; char str[65]; struct iguana_peer *addr;
+    if ( coin->peers == 0 )
+        return;
     if ( (m= coin->peers->numranked) > 0 && bp->numhashes < bp->n && bp->hdrsi < coin->longestchain/coin->chain->bundlesize && time(NULL) > bp->unsticktime+lag )
     {
         for (i=0; i<10; i++)
@@ -1316,9 +1326,12 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
     coin->numremain = n;
     coin->blocksrecv = numrecv;
     uint64_t tmp; int32_t diff,p = 0; struct tai difft,t = tai_now();
-    for (i=0; i<IGUANA_MAXPEERS; i++)
-        if ( coin->peers->active[i].usock > 0 )
-            p++;
+    if ( coin->peers != 0 )
+    {
+        for (i=0; i<IGUANA_MAXPEERS; i++)
+            if ( coin->peers->active[i].usock > 0 )
+                p++;
+    }
     diff = (int32_t)time(NULL) - coin->startutc;
     difft.x = (t.x - coin->starttime.x), difft.millis = (t.millis - coin->starttime.millis);
     tmp = (difft.millis * 1000000);

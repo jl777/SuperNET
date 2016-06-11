@@ -535,10 +535,6 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
     bits256 *hash2p=0; double prevPoW = 0.; struct iguana_bundle *bp;
     if ( newblock == 0 )
         return(0);
-    if ( coin->virtualchain != 0 )
-    {
-        ;
-    }
     iguana_blocksizecheck("chainlink new",coin->chain->zcash,newblock);
     hwmchain = (struct iguana_block *)&coin->blocks.hwmchain;
     if ( 0 && hwmchain->height > 0 && ((bp= coin->current) == 0 || hwmchain->height/coin->chain->bundlesize > bp->hdrsi+0*bp->isRT) )

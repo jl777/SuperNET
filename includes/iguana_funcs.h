@@ -125,7 +125,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
 
 // init
 struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialheight,int32_t mapflags);
-void iguana_callcoinstart(struct iguana_info *coin);
+void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin);
 void iguana_initcoin(struct iguana_info *coin,cJSON *argjson);
 void iguana_coinloop(void *arg);
 
@@ -502,6 +502,10 @@ char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr)
 void SuperNET_setkeys(struct supernet_info *myinfo,void *pass,int32_t passlen,int32_t dosha256);
 int32_t iguana_headerget(struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_block *block);
 int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,struct OS_memspace *mem,struct OS_memspace *memB);
+bits256 iguana_parsetxobj(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *txstartp,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,cJSON *txobj,struct vin_info *V);
+int32_t iguana_ROallocsize(struct iguana_info *virt);
+long iguana_bundlesload(struct supernet_info *myinfo,struct iguana_info *coin);
+void basilisk_wait(struct supernet_info *myinfo,struct iguana_info *coin);
 
 #include "../includes/iguana_api.h"
 

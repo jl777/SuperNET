@@ -101,8 +101,8 @@ int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,
         bp = 0, bundlei = -2;
         if ( bits256_nonz(prevhash2) == 0 || (bp= iguana_bundlefind(coin,&bp,&bundlei,prevhash2)) == 0 || bundlei >= coin->chain->bundlesize-1 )
         {
-            //if ( 0 && dispflag != 0 )
-                printf("iguana_peerfname error finding.(%s) spec.%p bp.%p\n",bits256_str(str,hash2),bp!=0?bp->speculative:0,bp);
+            if ( 0 && dispflag != 0 )
+                printf("iguana_peerfname %s error finding.(%s) spec.%p bp.%p\n",coin->symbol,bits256_str(str,hash2),bp!=0?bp->speculative:0,bp);
             return(-2);
         }
         else bundlei++;
@@ -332,7 +332,9 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
 #ifdef __PNACL__
                     //portable_mutex_unlock(&mutex);
 #endif
-                } else printf("addr.%p unspent error fp.%p\n",addr,addr!=0?addr->voutsfp:0);
+                }
+                else
+                    printf("addr.%p unspent error fp.%p\n",addr,addr!=0?addr->voutsfp:0);
             }
         }
         u->txidind = ramchain->H.txidind;
@@ -2276,7 +2278,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
     if ( (mapchain= iguana_ramchain_map(coin,fname,bp,bp->n,ramchain,0,0,bp->hashes[0],zero,0,0,extraflag,1)) != 0 )
     {
         iguana_ramchain_link(mapchain,bp->hashes[0],bp->hdrsi,bp->bundleheight,0,bp->n,firsti,1);
-        //char str[65]; printf("bp.%d: T.%d U.%d S.%d P%d X.%d MAPPED %s %p\n",bp->hdrsi,mapchain->H.data->numtxids,mapchain->H.data->numunspents,mapchain->H.data->numspends,mapchain->H.data->numpkinds,mapchain->H.data->numexternaltxids,mbstr(str,mapchain->H.data->allocsize),mapchain->H.data);
+        //char str[65]; printf("%s bp.%d: T.%d U.%d S.%d P%d X.%d MAPPED %s %p\n",coin->symbol,bp->hdrsi,mapchain->H.data->numtxids,mapchain->H.data->numunspents,mapchain->H.data->numspends,mapchain->H.data->numpkinds,mapchain->H.data->numexternaltxids,mbstr(str,mapchain->H.data->allocsize),mapchain->H.data);
         //ramcoder_test(mapchain->H.data,mapchain->H.data->allocsize);
         if ( (rdata= ramchain->H.data) != 0 )
         {

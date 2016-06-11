@@ -36,7 +36,7 @@ void iguana_initQs(struct iguana_info *coin)
     iguana_initQ(&coin->msgrequestQ,"msgrequestQ");
     iguana_initQ(&coin->cacheQ,"cacheQ");
     iguana_initQ(&coin->recvQ,"recvQ");
-    if ( coin->MAXPEERS > 0 )
+    if ( coin->MAXPEERS > 0 && coin->peers != 0 )
     {
         for (i=0; i<IGUANA_MAXPEERS; i++)
             iguana_initQ(&coin->peers->active[i].sendQ,"addrsendQ");
@@ -76,7 +76,7 @@ void iguana_initcoin(struct iguana_info *coin,cJSON *argjson)
         coin->startmillis = OS_milliseconds(), coin->starttime = tai_now();
         coin->avetime = 1 * 100;
         //coin->R.maxrecvbundles = IGUANA_INITIALBUNDLES;
-        if ( coin->MAXPEERS > 0 )
+        if ( coin->MAXPEERS > 0 && coin->peers != 0 )
         {
             for (i=0; i<IGUANA_MAXPEERS; i++)
                 coin->peers->active[i].usock = -1;
@@ -315,16 +315,19 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
             if ( line[k] == ' ' )
             {
                 decode_hex(hash2.bytes,sizeof(hash2),line+k+1);
-                //printf("line.(%s) k.%d (%c)(%c)(%d)\n",line,k,line[k+63],line[k+64],line[k+65]);
+                if ( coin->virtualchain != 0 )
+                    printf("line.(%s) k.%d (%c)(%c)(%d)\n",line,k,line[k+63],line[k+64],line[k+65]);
                 if ( height >= 0 && bits256_nonz(hash2) != 0 )
                 {
                     if ( (bp= iguana_bundlecreate(coin,&bundlei,height,hash2,zero,0)) != 0 )
                     {
                         //printf("created bundle.%d\n",bp->hdrsi);
+                        memset(hash1.bytes,0,sizeof(hash1));
+                        iguana_bundleinitmap(coin,bp,height,hash2,hash1);
                         lastbundle = hash2;
                     }
                 }
-                if ( line[k + 65] != 0 && line[k+65] != '\n'  && line[k+65] != '\r' )
+                if ( line[k + 65] != 0 && line[k+65] != '\n' && line[k+65] != '\r' )
                 {
                     //if ( height > (coin->blocks.maxbits - 1000) )
                     //    iguana_recvalloc(coin,height + 100000);
@@ -337,7 +340,9 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
                         if ( strlen(line+k+1 + 2*64 + 2) == sizeof(hash1)*2 )
                             decode_hex(hash1.bytes,sizeof(hash1),line+k+1 + 2*64 + 2);
                         else memset(hash1.bytes,0,sizeof(hash1));
-                        //char str[65],str2[65]; printf(">>>> bundle.%d got (%s)/(%s) allhash.(%s)\n",height,bits256_str(str,hash1),checkstr,bits256_str(str2,allhash));
+                        if ( coin->virtualchain != 0 )
+                            memset(hash1.bytes,0,sizeof(hash1));
+                        //char str[65],str2[65]; printf(">>>> %s bundle.%d last.%d got (%s)/(%s) allhash.(%s)\n",coin->symbol,height,lastheight,bits256_str(str,hash1),checkstr,bits256_str(str2,allhash));
                         if ( (bp= iguana_bundlecreate(coin,&bundlei,height,hash2,allhash,0)) != 0 )
                         {
                             if ( bits256_cmp(allhash,bp->allhash) != 0 )
@@ -362,6 +367,20 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
         printf("parseline ht.%d\n",lastheight);
         iguana_initfinal(coin,lastbundle);
     }
+}
+
+long iguana_bundlesload(struct supernet_info *myinfo,struct iguana_info *coin)
+{
+    char fname[1024]; int32_t iter = 1; FILE *fp; long fpos = -1;
+    sprintf(fname,"%s/%s_%s.txt",GLOBAL_CONFSDIR,coin->symbol,(iter == 0) ? "peers" : "hdrs"), OS_compatible_path(fname);
+    if ( (fp= fopen(fname,"r")) != 0 )
+    {
+        iguana_parseline(coin,iter,fp);
+        printf("done parsefile.%d (%s) size.%ld\n",iter,fname,fpos);
+        fpos = ftell(fp);
+        fclose(fp);
+    }
+    return(fpos);
 }
 
 void iguana_ramchainpurge(struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_ramchain *ramchain)
@@ -489,7 +508,7 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
     coin->blocks.hwmchain.height = 0;
     coin->blocks.hwmchain.RO.allocsize = coin->chain->zcash != 0 ? sizeof(struct iguana_zblock) : sizeof(struct iguana_block);
     printf("%s MYSERVICES.%llx\n",coin->symbol,(long long)coin->myservices);
-    if ( coin->virtualchain == 0 )
+    if ( coin->virtualchain == 0 && coin->peers != 0 )
     {
         if ( (coin->myservices & NODE_NETWORK) != 0 )
         {

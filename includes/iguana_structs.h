@@ -44,7 +44,7 @@ struct iguana_chain
     uint8_t genesis_hashdata[32],minconfirms;
     uint16_t bundlesize,hasheaders;
     char gethdrsmsg[16];
-    uint64_t txfee,minoutput,dust;
+    uint64_t txfee,minoutput,dust,halvingduration,initialreward;
     blockhashfunc hashalgo;
     char userhome[512],serverport[128],userpass[1024];
     char use_addmultisig,do_opreturn;
@@ -329,7 +329,6 @@ struct iguana_peers
     struct iguana_peer active[IGUANA_MAXPEERS+1],*ranked[IGUANA_MAXPEERS+1],*localaddr;
     struct iguana_thread *peersloop,*recvloop; pthread_t *acceptloop;
     double topmetrics[IGUANA_MAXPEERS+1],avemetric;
-    long vinptrs[IGUANA_MAXPEERS+1][2],voutptrs[IGUANA_MAXPEERS+1][2];
     uint32_t numranked,mostreceived,shuttingdown,lastpeer,lastmetrics,numconnected;
     int32_t numfiles;
 };
@@ -383,7 +382,7 @@ struct iguana_info
     struct iguana_peers *peers; struct iguana_peer internaladdr;
     basilisk_func basilisk_rawtx,basilisk_balances,basilisk_value;
     basilisk_metricfunc basilisk_rawtxmetric,basilisk_balancesmetric,basilisk_valuemetric;
-    
+    long vinptrs[IGUANA_MAXPEERS+1][2],voutptrs[IGUANA_MAXPEERS+1][2];
     uint32_t fastfind; FILE *fastfps[0x100]; uint8_t *fast[0x100]; int32_t *fasttables[0x100]; long fastsizes[0x100];
     uint64_t instance_nonce,myservices,totalsize,totalrecv,totalpackets,sleeptime;
     int64_t mining,totalfees,TMPallocated,MAXRECVCACHE,MAXMEM,PREFETCHLAG,estsize,activebundles;
@@ -406,7 +405,7 @@ struct iguana_info
     int32_t numremain,numpendings,zcount,recvcount,bcount,pcount,lastbundle,numsaved,pendbalances,numverified,blockdepth;
     uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ,lastbundleitime,lastdisp,RTgenesis,firstRTgenesis,RTstarti,idletime,stucktime,stuckmonitor,maxstuck,lastreqtime,RThdrstime,nextchecked;
     double bandwidth,maxbandwidth,backstopmillis; bits256 backstophash2; int64_t spaceused;
-    int32_t initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,polltimeout,numreqtxids,allhashes,balanceflush; bits256 reqtxids[64];
+    int32_t initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,polltimeout,numreqtxids,allhashes,balanceflush,basilisk_busy; bits256 reqtxids[64];
     void *launched,*started,*rpcloop;
     uint64_t bloomsearches,bloomhits,bloomfalse,collisions,txfee_perkb,txfee;
     uint8_t *blockspace; int32_t blockspacesize; struct OS_memspace blockMEM;
@@ -415,7 +414,7 @@ struct iguana_info
     double txidfind_totalmillis,txidfind_num,spendtxid_totalmillis,spendtxid_num;
     struct iguana_monitorinfo monitoring[256];
     struct gecko_sequences SEQ;
-    struct iguana_blocks blocks;
+    struct iguana_blocks blocks; void *mempool;
 };
 
 struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };
@@ -458,15 +457,15 @@ struct supernet_info
     uint8_t persistent_pubkey33[33];
     char ipaddr[64],NXTAPIURL[512],secret[4096],rpcsymbol[64],handle[1024],permanentfile[1024];
     char *decryptstr;
-    int32_t maxdelay,IAMRELAY,publicRPC;
+    int32_t maxdelay,IAMRELAY,publicRPC,basilisk_busy;
     uint32_t expiration,dirty;
     uint16_t argport,rpcport;
     struct basilisk_info basilisks;
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES]; int32_t numexchanges;
     struct iguana_waccount *wallet;
-    struct iguana_info *allcoins; int32_t allcoins_being_added,allcoins_numvirts; portable_mutex_t allcoins_mutex;
+    struct iguana_info *allcoins; int32_t allcoins_being_added,allcoins_numvirts;
+    portable_mutex_t allcoins_mutex,gecko_mutex,basilisk_mutex;
     void *ctx;
-    
     // compatibility
     bits256 pangea_category,instantdex_category;
 };
