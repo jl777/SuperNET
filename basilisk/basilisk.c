@@ -962,8 +962,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
         
         // unencrypted low level functions, used by higher level protocols and virtual network funcs
         { (void *)"ADD", &basilisk_respond_addrelay },   // relays register with each other bus
-        { (void *)"BID", &basilisk_respond_bid },
-        { (void *)"ASK", &basilisk_respond_ask },
+        { (void *)"DEX", &basilisk_respond_instantdex },
         
         // encrypted data for jumblr
         { (void *)"HOP", &basilisk_respond_forward },    // message forwarding
