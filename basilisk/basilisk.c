@@ -261,7 +261,6 @@ int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *vi
 void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t datalen,char *type,int32_t encrypted)
 {
     uint32_t ipbits,basilisktag; int32_t msglen,len=0; void *ptr = 0; uint8_t space[8192]; bits256 senderpub; struct supernet_info *myinfo = _myinfo;
-    printf("received.%d basilisk_p2p.(%s) from %s\n",datalen,type,senderip!=0?senderip:"?");
     if ( encrypted != 0 )
     {
         memset(senderpub.bytes,0,sizeof(senderpub));
@@ -275,6 +274,7 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
         ipbits = (uint32_t)calc_ipbits(senderip);
     else ipbits = 0;
     len += iguana_rwnum(0,data,sizeof(basilisktag),&basilisktag);
+    printf("received.%d basilisk_p2p.(%s) from %s tag.%d\n",datalen,type,senderip!=0?senderip:"?",basilisktag);
     basilisk_msgprocess(myinfo,_addr,ipbits,type,basilisktag,&data[len],datalen - len);
     if ( ptr != 0 )
         free(ptr);
@@ -976,7 +976,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
         CMD[i] = toupper((int32_t)CMD[i]);
         cmd[i] = tolower((int32_t)CMD[i]);
     }
-    //printf("MSGPROCESS.(%s)\n",(char *)data);
+    printf("MSGPROCESS.(%s) tag.%d\n",(char *)data,basilisktag);
     myinfo->basilisk_busy = 1;
     if ( (valsobj= cJSON_Parse((char *)data)) != 0 )
     {
@@ -1028,6 +1028,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
                 return;
             }
         }
+        printf("check coin\n");
         if ( coin != 0 )
         {
             if ( strcmp(type,"RET") == 0 )
@@ -1036,6 +1037,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
             }
             else if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 ) // iguana node
             {
+                printf("relay path\n");
                 if ( from_basilisk != 0 )
                 {
                     printf("echo to other relays\n");
