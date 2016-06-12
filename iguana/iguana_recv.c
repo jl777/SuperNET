@@ -910,21 +910,21 @@ void iguana_autoextend(struct iguana_info *coin,struct iguana_bundle *bp)
 
 struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct iguana_bundlereq *req,bits256 *blockhashes,int32_t num)
 {
-    int32_t bundlei,i,starti; struct iguana_block *prevblock; struct iguana_bundle *bp; bits256 allhash,zero; struct iguana_peer *addr; struct iguana_block *block; char str[65],str2[65]; // uint8_t serialized[512];
+    int32_t bundlei,i,starti; struct iguana_block *block; struct iguana_bundle *bp; bits256 allhash,zero; struct iguana_peer *addr; char str[65],str2[65]; // uint8_t serialized[512];
     memset(zero.bytes,0,sizeof(zero));
     bp = 0, bundlei = -2;
     iguana_bundlefind(coin,&bp,&bundlei,blockhashes[1]);
-    if ( 1 && strcmp("BTCD",coin->symbol) == 0 )//0 && num >= coin->chain->bundlesize )
+    if ( 0 && strcmp("BTCD",coin->symbol) == 0 )//0 && num >= coin->chain->bundlesize )
         printf("blockhashes[%d] %d of %d %s bp.%d[%d]\n",num,bp==0?-1:bp->hdrsi,coin->bundlescount,bits256_str(str,blockhashes[1]),bp==0?-1:bp->bundleheight,bundlei);
     if ( num < 2 )
         return(req);
     else
     {
-        iguana_blockQ("recvhash",coin,0,-1,blockhashes[1],1);
         for (i=1; i<num; i++)
-            if ( (prevblock= iguana_blockfind("prev",coin,blockhashes[i])) != 0 && prevblock->height+1 > coin->longestchain )
+            if ( (block= iguana_blockfind("prev",coin,blockhashes[i])) != 0 && block->height+1 > coin->longestchain )
             {
-                coin->longestchain = prevblock->height+1;
+                iguana_blockQ("recvhash",coin,0,-1,blockhashes[i],1);
+                coin->longestchain = block->height+1;
                 if ( bp->speculative != 0 && i < bp->n )
                     bp->speculative[i] = blockhashes[i];
             }
