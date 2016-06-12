@@ -1008,7 +1008,10 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
                 if ( myinfo->IAMRELAY != 0 ) // iguana node
                 {
                     if ( from_basilisk != 0 )
+                    {
+                        printf("echo to other relays\n");
                         basilisk_sendcmd(myinfo,0,cmd,&basilisktag,0,0,origdata,origlen,-1,0); // to other iguanas
+                    }
                     if ( (retstr= (*basilisk_services[i][1])(myinfo,type,addr,remoteaddr,basilisktag,valsobj,data,datalen,hash,from_basilisk)) != 0 )
                     {
                         printf("from_basilisk.%d ret.(%s)\n",from_basilisk,retstr);
@@ -1016,7 +1019,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
                             basilisk_sendback(myinfo,symbol,remoteaddr,basilisktag,retstr);
                         if ( retstr != 0 )
                             free(retstr);
-                    }
+                    } else printf("services null return\n");
                 } else printf("non-relay got unexpected.(%s)\n",type);
                 free_json(valsobj);
                 if ( coin != 0 )
@@ -1033,6 +1036,11 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
             }
             else if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 ) // iguana node
             {
+                if ( from_basilisk != 0 )
+                {
+                    printf("echo to other relays\n");
+                    basilisk_sendcmd(myinfo,0,cmd,&basilisktag,0,0,origdata,origlen,-1,0); // to other iguanas
+                }
                 for (i=0; i<sizeof(basilisk_coinservices)/sizeof(*basilisk_coinservices); i++)
                     if ( strcmp((char *)basilisk_coinservices[i][0],type) == 0 )
                     {
