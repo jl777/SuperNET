@@ -1068,7 +1068,7 @@ int32_t instantdex_quotep2p(struct supernet_info *myinfo,struct iguana_info *coi
 
 void instantdex_propagate(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *ap)
 {
-    bits256 orderhash; uint8_t serialized[8192]; int32_t i,len; struct iguana_peer *addr; struct iguana_info *coin;
+    bits256 orderhash; uint8_t serialized[8192]; int32_t i,len; struct iguana_peer *addr; struct iguana_info *coin; uint32_t basilisktag = 0;
     orderhash = instantdex_rwoffer(1,&len,&serialized[64+sizeof(struct iguana_msghdr)],&ap->offer);
     if ( (coin= iguana_coinfind("BTCD")) != 0 && coin->peers != 0 && coin->peers->numranked > 0 )
     {
@@ -1076,7 +1076,7 @@ void instantdex_propagate(struct supernet_info *myinfo,struct exchange_info *exc
             if ( (addr= coin->peers->ranked[i]) != 0 && addr->supernet != 0 && addr->usock >= 0 && GETBIT(ap->peerhas,addr->addrind) == 0 && strcmp("0.0.0.0",addr->ipaddr) != 0 && strcmp("127.0.0.1",addr->ipaddr) != 0 )
             {
                 char str[65]; printf("send quote.(%s) <- [%d] %s %llx\n",addr->ipaddr,len,bits256_str(str,orderhash),(long long)orderhash.txid);
-                basilisk_sendcmd(myinfo,addr->ipaddr,"DEX",0,0,0,&serialized[64+sizeof(struct iguana_msghdr)],len,1,BASILISK_DEFAULTDIFF);
+                basilisk_sendcmd(myinfo,addr->ipaddr,"DEX",&basilisktag,0,0,&serialized[64+sizeof(struct iguana_msghdr)],len,1,BASILISK_DEFAULTDIFF);
                 //iguana_queue_send(addr,0,serialized,"quote",len);
             }
     }
