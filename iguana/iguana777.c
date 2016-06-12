@@ -746,7 +746,7 @@ void iguana_coinloop(void *arg)
                     }
                     if ( coin->bindsock >= 0 )
                     {
-                        if ( coin->MAXPEERS > 1 && coin->peers->numranked < (coin->MAXPEERS/2) && now > coin->lastpossible )
+                        if ( coin->MAXPEERS > 1 && coin->peers->numranked < IGUANA_MAXPEERS/2 && now > coin->lastpossible )
                         {
                             //fprintf(stderr,"check possible\n");
                             if ( coin->peers->numranked > 0 && (now % 60) == 0 )
