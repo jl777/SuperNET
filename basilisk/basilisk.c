@@ -80,37 +80,28 @@ uint8_t *get_dataptr(int32_t hdroffset,uint8_t **ptrp,int32_t *datalenp,uint8_t 
 
 uint8_t *basilisk_jsondata(int32_t extraoffset,uint8_t **ptrp,uint8_t *space,int32_t spacesize,int32_t *datalenp,char *symbol,cJSON *sendjson,uint32_t basilisktag)
 {
-    char *sendstr,*hexstr; uint8_t *data; bits256 hash; int32_t i,datalen,hexlen=0,havehash=1;
+    char *sendstr,*hexstr; uint8_t *data; int32_t datalen,hexlen=0;
     if ( jobj(sendjson,"coin") == 0 )
         jaddstr(sendjson,"coin",symbol);
-    if ( jobj(sendjson,"hash") != 0 )
+    if ( (hexstr= jstr(sendjson,"data")) != 0 )
     {
-        havehash = 1;
-        hash = jbits256(sendjson,"hash");
+        if ( (hexlen= is_hexstr(hexstr,0)) > 0 )
+            hexlen >>= 1;
+        jdelete(sendjson,"data");
     }
-    if ( (hexstr= jstr(sendjson,"data")) != 0 && (hexlen= is_hexstr(hexstr,0)) > 0 )
-        hexlen >>= 1;
     *ptrp = 0;
     sendstr = jprint(sendjson,0);
     datalen = (int32_t)strlen(sendstr) + 1;
-    if ( (datalen + extraoffset + BASILISK_HDROFFSET + hexlen + havehash*(sizeof(hash)+1)) <= spacesize )
+    if ( (datalen + extraoffset + BASILISK_HDROFFSET + hexlen) <= spacesize )
         data = space;
     else
     {
-        data = calloc(1,datalen + extraoffset + BASILISK_HDROFFSET + hexlen + havehash*(sizeof(hash)+1));
+        data = calloc(1,datalen + extraoffset + BASILISK_HDROFFSET + hexlen);
         *ptrp = data;
     }
     data += extraoffset + BASILISK_HDROFFSET;
     memcpy(data,sendstr,datalen);
     free(sendstr);
-    if ( havehash != 0 || hexlen != 0 )
-    {
-        if ( (data[datalen++]= havehash) != 0 )
-        {
-            for (i=0; i<32; i++)
-                data[datalen++] = hash.bytes[i];
-        }
-    }
     if ( hexlen > 0 )
     {
         decode_hex(&data[datalen],hexlen,hexstr);
@@ -159,7 +150,7 @@ struct basilisk_item *basilisk_itemcreate(struct supernet_info *myinfo,char *CMD
 
 int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *type,uint32_t *basilisktagp,int32_t encryptflag,int32_t delaymillis,uint8_t *data,int32_t datalen,int32_t fanout,uint32_t nBits) // data must be offset by sizeof(iguana_msghdr)+sizeof(basilisktag)
 {
-    int32_t i,r,l,s,val,n=0,offset,havehash=0,retval = -1; char cmd[12]; struct iguana_info *coin,*tmp; struct iguana_peer *addr; bits256 hash; uint32_t *alreadysent;
+    int32_t i,r,l,s,val,n=0,retval = -1; char cmd[12]; struct iguana_info *coin,*tmp; struct iguana_peer *addr; bits256 hash; uint32_t *alreadysent;
     if ( fanout <= 0 )
         fanout = BASILISK_MINFANOUT;
     else if ( fanout > BASILISK_MAXFANOUT )
@@ -179,23 +170,18 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
         {
             printf("return after locally basilisk_msgprocess\n");
             hash = GENESIS_PUBKEY;
-            if ( datalen > 0 )
-            {
-                if ( (havehash= *data) != 0 )
-                {
-                    for (i=0; i<32; i++)
-                        hash.bytes[i] = data[i + 1];
-                }
-            }
-            offset = (int32_t)(havehash * (1 + sizeof(bits256)));
-            basilisk_msgprocess(myinfo,0,0,type,*basilisktagp,data+offset,datalen-offset,hash);
+            basilisk_msgprocess(myinfo,0,0,type,*basilisktagp,data,datalen);
             return(0);
         }
     }
     alreadysent = calloc(IGUANA_MAXPEERS * IGUANA_MAXCOINS,sizeof(*alreadysent));
     iguana_rwnum(1,&data[-sizeof(*basilisktagp)],sizeof(*basilisktagp),basilisktagp);
-    if ( nBits != 0 && *basilisktagp == 0 )
-        *basilisktagp = basilisk_calcnonce(myinfo,data,datalen,nBits);
+    if ( *basilisktagp == 0 )
+    {
+        if ( nBits != 0 )
+            *basilisktagp = basilisk_calcnonce(myinfo,data,datalen,nBits);
+        else *basilisktagp = rand();
+    }
     data -= sizeof(*basilisktagp), datalen += sizeof(*basilisktagp);
     memset(cmd,0,sizeof(cmd));
     sprintf(cmd,"SuperNET%s",type);
@@ -274,9 +260,8 @@ int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *vi
 
 void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t datalen,char *type,int32_t encrypted)
 {
-    uint32_t ipbits,basilisktag; int32_t i,havehash,msglen,len=0; void *ptr = 0; uint8_t space[8192]; bits256 senderpub,hash,tmp,hash2; struct supernet_info *myinfo = _myinfo;
-    hash = GENESIS_PUBKEY;
-    printf("received basilisk_p2p.(%s) from %s\n",type,senderip!=0?senderip:"?");
+    uint32_t ipbits,basilisktag; int32_t msglen,len=0; void *ptr = 0; uint8_t space[8192]; bits256 senderpub; struct supernet_info *myinfo = _myinfo;
+    printf("received.%d basilisk_p2p.(%s) from %s\n",datalen,type,senderip!=0?senderip:"?");
     if ( encrypted != 0 )
     {
         memset(senderpub.bytes,0,sizeof(senderpub));
@@ -289,18 +274,8 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
     if ( senderip != 0 && senderip[0] != 0 && strcmp(senderip,"127.0.0.1") != 0 )
         ipbits = (uint32_t)calc_ipbits(senderip);
     else ipbits = 0;
-    len += iguana_rwnum(0,&data[len],sizeof(basilisktag),&basilisktag);
-    if ( datalen > len && (havehash= data[len]) != 0 )
-    {
-        vcalc_sha256(0,tmp.bytes,&data[len],datalen - len);
-        tmp.uints[0] = basilisktag;
-        vcalc_sha256(0,hash2.bytes,tmp.bytes,sizeof(tmp));
-        for (i=0; i<32; i++)
-            hash.bytes[i] = data[len + i + 1];
-    }
-    if ( bits256_nonz(hash) == 0 )
-        hash = GENESIS_PUBKEY;
-    basilisk_msgprocess(myinfo,_addr,ipbits,type,basilisktag,&data[len],datalen - len,hash);
+    len += iguana_rwnum(0,data,sizeof(basilisktag),&basilisktag);
+    basilisk_msgprocess(myinfo,_addr,ipbits,type,basilisktag,&data[len],datalen - len);
     if ( ptr != 0 )
         free(ptr);
 }
@@ -943,9 +918,9 @@ void basilisk_wait(struct supernet_info *myinfo,struct iguana_info *coin)
     }
 }
 
-void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen,bits256 hash)
+void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen)
 {
-    cJSON *valsobj; char *symbol,*retstr=0,remoteaddr[64],CMD[4],cmd[4]; int32_t origlen,from_basilisk,i,timeoutmillis,flag,numrequired,jsonlen; uint8_t *origdata; struct iguana_info *coin=0;
+    cJSON *valsobj; char *symbol,*retstr=0,remoteaddr[64],CMD[4],cmd[4]; int32_t origlen,from_basilisk,i,timeoutmillis,flag,numrequired,jsonlen; uint8_t *origdata; struct iguana_info *coin=0; bits256 hash;
     static basilisk_servicefunc *basilisk_services[][2] =
     {
         { (void *)"RUN", &basilisk_respond_dispatch },   // higher level protocol handler, pass through
@@ -1014,6 +989,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
         } else data = 0, datalen = 0;
         if ( (symbol= jstr(valsobj,"coin")) == 0 )
             symbol = "BTCD";
+        hash = jbits256(valsobj,"hash");
         timeoutmillis = jint(valsobj,"timeout");
         if ( (numrequired= jint(valsobj,"numrequired")) == 0 )
             numrequired = 1;

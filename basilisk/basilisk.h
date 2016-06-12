@@ -45,7 +45,7 @@ struct basilisk_info
     struct basilisk_value values[8192]; int32_t numvalues;
 };
 
-void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen,bits256 pubkey);
+void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen);
 int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *type,uint32_t *basilisktagp,int32_t encryptflag,int32_t delaymillis,uint8_t *data,int32_t datalen,int32_t fanout,uint32_t nBits); // data must be offset by sizeof(iguana_msghdr)+sizeof(basilisktag)
 
 void basilisks_init(struct supernet_info *myinfo);
