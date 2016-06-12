@@ -233,8 +233,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     }
     if ( coin->spendvectorsaved <= 1 )
     {
-        //printf("spendvectorsaved not yet\n");
-        sleep(1);
+        printf("spendvectorsaved not yet\n");
         return(0);
     }
     bp = coin->current;
