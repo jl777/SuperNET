@@ -219,6 +219,12 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
         }
         else printf("RT edge case.%d\n",block->height);
     }
+    if ( coin->spendvectorsaved <= 1 )
+    {
+        //printf("spendvectorsaved not yet\n");
+        usleep(100000);
+        return(0);
+    }
     for (i=0; i<coin->bundlescount-1; i++)
     {
         if ( (bp= coin->bundles[i]) != 0 && (i > 0 && bp->utxofinish == 0) && bp != coin->current )
@@ -230,12 +236,6 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             } // else printf("generated UTXO.[%d]\n",i);
             coin->spendvectorsaved = 1;
         }
-    }
-    if ( coin->spendvectorsaved <= 1 )
-    {
-        //printf("spendvectorsaved not yet\n");
-        usleep(100000);
-        return(0);
     }
     bp = coin->current;
     if ( bp == 0 || iguana_validated(coin) < bp->hdrsi )
