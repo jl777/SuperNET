@@ -102,6 +102,7 @@ uint8_t *basilisk_jsondata(int32_t extraoffset,uint8_t **ptrp,uint8_t *space,int
     }
     data += extraoffset + BASILISK_HDROFFSET;
     memcpy(data,sendstr,datalen);
+    printf("jsondata.(%s) + hexlen.%d\n",sendstr,hexlen);
     free(sendstr);
     if ( hexlen > 0 )
     {
@@ -562,7 +563,7 @@ char *_basilisk_rawtx(struct supernet_info *myinfo,struct iguana_info *coin,stru
 char *_basilisk_result(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
     char *retstr,strbuf[4096],*str = 0;
-    basilisk_addhexstr(&str,valsobj,strbuf,sizeof(strbuf),data,datalen);
+    //basilisk_addhexstr(&str,valsobj,strbuf,sizeof(strbuf),data,datalen);
     retstr = basilisk_result(myinfo,coin,0,remoteaddr,basilisktag,valsobj);
     if ( str != 0 )
         free(str);
@@ -770,6 +771,12 @@ void basilisks_loop(void *arg)
                     }
                     else if ( strcmp(ptr->CMD,"RET") == 0 )
                     {
+                        printf("got return for tag.%d parent.%p\n",pending->basilisktag,pending->parent);
+                        if ( (parent= pending->parent) != 0 )
+                        {
+                            pending->parent = 0;
+                            parent->childrendone++;
+                        }
                     }
                 }
             }
