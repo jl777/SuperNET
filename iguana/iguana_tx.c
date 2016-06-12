@@ -278,8 +278,9 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
                     merkle_root = iguana_merkle(tree,block->RO.txn_count);
                     if ( bits256_cmp(merkle_root,block->RO.merkle_root) == 0 )
                     {
-                        if ( addr != 0 )
+                        if ( addr != 0 && addr->lastsent != block->height )
                         {
+                            addr->lastsent = block->height;
                             printf("Sendlen.%d block.%d %s to %s\n",total,block->height,bits256_str(str,block->RO.hash2),addr->ipaddr);
                             if ( 0 )
                             {

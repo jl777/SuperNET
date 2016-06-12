@@ -307,7 +307,7 @@ struct iguana_peer
     char ipaddr[64],lastcommand[16],coinname[64],symbol[64];
     uint64_t pingnonce,totalsent,totalrecv,ipbits; double pingtime,sendmillis,pingsum,getdatamillis;
     uint32_t lastcontact,sendtime,ready,startsend,startrecv,pending,lastgotaddr,lastblockrecv,pendtime,lastflush,lastpoll,myipbits,persistent_peer,protover;
-    int32_t supernet,basilisk,dead,addrind,usock,lastheight,relayflag,numpackets,numpings,ipv6,height,rank,pendhdrs,pendblocks,recvhdrs,lastlefti,validpub,othervalid,dirty[2],laggard,headerserror;
+    int32_t supernet,basilisk,dead,addrind,usock,lastheight,relayflag,numpackets,numpings,ipv6,height,rank,pendhdrs,pendblocks,recvhdrs,lastlefti,validpub,othervalid,dirty[2],laggard,headerserror,lastsent;
     double recvblocks,recvtotal;
     int64_t allocated,freed;
     bits256 RThashes[IGUANA_MAXBUNDLESIZE]; int32_t numRThashes;
