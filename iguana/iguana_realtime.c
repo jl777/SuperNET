@@ -233,8 +233,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     }
     if ( coin->spendvectorsaved <= 1 )
     {
-        //usleep(10000);
-        printf("spendvectorsaved not yet\n");
+        //printf("spendvectorsaved not yet\n");
         sleep(1);
         return(0);
     }
@@ -269,7 +268,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
                 }
             }
         }
-        char str[65]; printf("check longest.%d RTheight.%d hwm.%d %s %p\n",coin->longestchain,coin->RTheight,coin->blocks.hwmchain.height,bits256_str(str,bp->hashes[0]),block);
+        //char str[65]; printf("check longest.%d RTheight.%d hwm.%d %s %p\n",coin->longestchain,coin->RTheight,coin->blocks.hwmchain.height,bits256_str(str,bp->hashes[0]),block);
         if ( bits256_cmp(coin->RThash1,bp->hashes[1]) != 0 )
             coin->RThash1 = bp->hashes[1];
         bp->lastRT = (uint32_t)time(NULL);
