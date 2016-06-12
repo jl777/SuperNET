@@ -562,11 +562,11 @@ char *_basilisk_rawtx(struct supernet_info *myinfo,struct iguana_info *coin,stru
 
 char *_basilisk_result(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
-    char *retstr,strbuf[4096],*str = 0;
+    char *retstr;//,*str = 0; //strbuf[4096],
     //basilisk_addhexstr(&str,valsobj,strbuf,sizeof(strbuf),data,datalen);
     retstr = basilisk_result(myinfo,coin,0,remoteaddr,basilisktag,valsobj);
-    if ( str != 0 )
-        free(str);
+    //if ( str != 0 )
+    //    free(str);
     return(retstr);
 }
 
@@ -742,9 +742,9 @@ void basilisks_loop(void *arg)
         iter++;
         if ( (ptr= queue_dequeue(&myinfo->basilisks.submitQ,0)) != 0 )
         {
-            if ( ptr->finished == 0 )
+            //if ( ptr->finished == 0 )
                 HASH_ADD(hh,myinfo->basilisks.issued,basilisktag,sizeof(ptr->basilisktag),ptr);
-            else free(ptr);
+            //else free(ptr);
             continue;
         }
         if ( (ptr= queue_dequeue(&myinfo->basilisks.resultsQ,0)) != 0 )
@@ -759,7 +759,7 @@ void basilisks_loop(void *arg)
                         pending->metrics[n] = n + 1;
                     else if ( (pending->metrics[n]= (*metricfunc)(myinfo,pending,ptr->retstr)) != 0. )
                         pending->childrendone++;
-                    printf("%u Add results[%d] <- (%s) metric %f\n",pending->basilisktag,n,ptr->retstr,pending->metrics[n]);
+                    printf("%s.%u Add results[%d] <- (%s) metric %f\n",pending->CMD,pending->basilisktag,n,ptr->retstr,pending->metrics[n]);
                     pending->results[n] = ptr->retstr;
                     if ( strcmp(ptr->CMD,"SEQ") == 0 )
                     {
@@ -779,7 +779,7 @@ void basilisks_loop(void *arg)
                         }
                     }
                 }
-            }
+            } else printf("couldnt find issued.%u\n",ptr->basilisktag);
             free(ptr);
             continue;
         }
