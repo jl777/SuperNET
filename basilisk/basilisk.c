@@ -1032,11 +1032,11 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
             {
                 if ( myinfo->IAMRELAY != 0 ) // iguana node
                 {
-                    if ( from_basilisk != 0 )
+                    /*if ( from_basilisk != 0 )
                     {
                         printf("echo to other relays\n");
                         basilisk_sendcmd(myinfo,0,cmd,&basilisktag,0,0,origdata,origlen,-1,0); // to other iguanas
-                    }
+                    }*/
                     if ( (retstr= (*basilisk_services[i][1])(myinfo,type,addr,remoteaddr,basilisktag,valsobj,data,datalen,hash,from_basilisk)) != 0 )
                     {
                         printf("from_basilisk.%d ret.(%s)\n",from_basilisk,retstr);
