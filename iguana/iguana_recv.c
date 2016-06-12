@@ -920,6 +920,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
         return(req);
     else
     {
+        iguana_blockQ("recvhash",coin,0,-1,blockhashes[1],1);
         for (i=1; i<num; i++)
             if ( (prevblock= iguana_blockfind("prev",coin,blockhashes[i])) != 0 && prevblock->height+1 > coin->longestchain )
             {
