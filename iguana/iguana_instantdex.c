@@ -465,7 +465,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
     jaddstr(sendjson,"cmd",cmdstr);
     jaddstr(sendjson,"handle",myinfo->handle);
     jaddbits256(sendjson,"traderpub",myinfo->myaddr.persistent);
-    data = basilisk_jsondata(&allocptr,space,sizeof(space),&datalen,swap->mine.offer.base,sendjson,basilisktag);
+    data = basilisk_jsondata(sizeof(struct iguana_msghdr),&allocptr,space,sizeof(space),&datalen,swap->mine.offer.base,sendjson,basilisktag);
     basilisk_sendcmd(myinfo,addr->ipaddr,dir > 0 ? "BID" : "ASK",&basilisktag,encryptflag,delaymillis,data,datalen,1,BASILISK_DEFAULTDIFF);
     free_json(sendjson);
     if ( allocptr != 0 )

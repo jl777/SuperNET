@@ -78,7 +78,7 @@ uint8_t *get_dataptr(int32_t hdroffset,uint8_t **ptrp,int32_t *datalenp,uint8_t 
     else return(data);
 }
 
-uint8_t *basilisk_jsondata(uint8_t **ptrp,uint8_t *space,int32_t spacesize,int32_t *datalenp,char *symbol,cJSON *sendjson,uint32_t basilisktag)
+uint8_t *basilisk_jsondata(int32_t extraoffset,uint8_t **ptrp,uint8_t *space,int32_t spacesize,int32_t *datalenp,char *symbol,cJSON *sendjson,uint32_t basilisktag)
 {
     char *sendstr,*hexstr; uint8_t *data; bits256 hash; int32_t i,datalen,hexlen=0,havehash=1;
     if ( jobj(sendjson,"coin") == 0 )
@@ -93,14 +93,14 @@ uint8_t *basilisk_jsondata(uint8_t **ptrp,uint8_t *space,int32_t spacesize,int32
     *ptrp = 0;
     sendstr = jprint(sendjson,0);
     datalen = (int32_t)strlen(sendstr) + 1;
-    if ( (datalen + BASILISK_HDROFFSET + hexlen + havehash*(sizeof(hash)+1)) <= spacesize )
+    if ( (datalen + extraoffset + BASILISK_HDROFFSET + hexlen + havehash*(sizeof(hash)+1)) <= spacesize )
         data = space;
     else
     {
-        data = calloc(1,datalen + BASILISK_HDROFFSET + hexlen + havehash*(sizeof(hash)+1));
+        data = calloc(1,datalen + extraoffset + BASILISK_HDROFFSET + hexlen + havehash*(sizeof(hash)+1));
         *ptrp = data;
     }
-    data += BASILISK_HDROFFSET;
+    data += extraoffset + BASILISK_HDROFFSET;
     memcpy(data,sendstr,datalen);
     free(sendstr);
     if ( havehash != 0 || hexlen != 0 )
@@ -313,7 +313,7 @@ void basilisk_sendback(struct supernet_info *myinfo,char *symbol,char *remoteadd
     {
         if ( (valsobj= cJSON_Parse(retstr)) != 0 )
         {
-            data = basilisk_jsondata(&allocptr,space,sizeof(space),&datalen,symbol,valsobj,basilisktag);
+            data = basilisk_jsondata(sizeof(struct iguana_msghdr),&allocptr,space,sizeof(space),&datalen,symbol,valsobj,basilisktag);
             basilisk_sendcmd(myinfo,remoteaddr,"RET",&basilisktag,encryptflag,delaymillis,data,datalen,0,0);
             if ( allocptr != 0 )
                 free(allocptr);
@@ -364,7 +364,7 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,int32_t 
     }
     else
     {
-        data = basilisk_jsondata(&allocptr,space,sizeof(space),&datalen,symbol,valsobj,basilisktag);
+        data = basilisk_jsondata(sizeof(struct iguana_msghdr),&allocptr,space,sizeof(space),&datalen,symbol,valsobj,basilisktag);
         *numsentp = ptr->numsent = basilisk_sendcmd(myinfo,0,CMD,&ptr->basilisktag,encryptflag,delaymillis,data,datalen,1,ptr->nBits);
         if ( allocptr != 0 )
             free(allocptr);
