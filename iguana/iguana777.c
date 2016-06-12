@@ -535,7 +535,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
     if ( helperid == 0 )
     {
         coin->spendvectorsaved = (uint32_t)time(NULL);
-        //printf("UTXOGEN spendvectorsaved <- %u\n",coin->spendvectorsaved);
+        printf("UTXOGEN spendvectorsaved <- %u\n",coin->spendvectorsaved);
     }
     else
     {
