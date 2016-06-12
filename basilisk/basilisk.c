@@ -276,9 +276,9 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
 {
     uint32_t ipbits,basilisktag; int32_t i,havehash,msglen,len=0; void *ptr = 0; uint8_t space[8192]; bits256 senderpub,hash,tmp,hash2; struct supernet_info *myinfo = _myinfo;
     hash = GENESIS_PUBKEY;
+    printf("received basilisk_p2p.(%s) from %s\n",type,senderip!=0?senderip:"?");
     if ( encrypted != 0 )
     {
-        printf("encrypted basilisk_p2p.(%s) from %s\n",type,senderip!=0?senderip:"?");
         memset(senderpub.bytes,0,sizeof(senderpub));
         if ( (data= SuperNET_deciphercalc(&ptr,&msglen,myinfo->privkey,senderpub,data,datalen,space,sizeof(space))) == 0 )
         {
