@@ -123,7 +123,7 @@ void iguana_acceptloop(void *args)
         {
             
         }*/
-        if ( (addr= iguana_peerslot(coin,ipbits,0)) == 0 )
+        if ( (addr= iguana_peerslot(coin,ipbits,1)) == 0 )
         {
             ptr = mycalloc('a',1,sizeof(*ptr));
             strcpy(ptr->ipaddr,ipaddr);
