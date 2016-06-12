@@ -181,6 +181,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
         if ( nBits != 0 )
             *basilisktagp = basilisk_calcnonce(myinfo,data,datalen,nBits);
         else *basilisktagp = rand();
+        iguana_rwnum(1,&data[-sizeof(*basilisktagp)],sizeof(*basilisktagp),basilisktagp);
     }
     data -= sizeof(*basilisktagp), datalen += sizeof(*basilisktagp);
     memset(cmd,0,sizeof(cmd));
@@ -206,7 +207,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                 //printf("%s s.%d vs n.%d\n",addr->ipaddr,s,n);
                 if ( s == n && (addr->supernet != 0 || addr->basilisk != 0) && (destipaddr == 0 || strcmp(addr->ipaddr,destipaddr) == 0) )
                 {
-                    printf("[%s] send %s.(%s) addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",cmd,type,(char *)&data[4],addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
+                    printf("[%s].tag%d send %s.(%s) addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",cmd,*(uint32_t *)data,type,(char *)&data[4],addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
                     if ( encryptflag != 0 && bits256_nonz(addr->pubkey) != 0 )
                     {
                         void *ptr; uint8_t *cipher,space[8192]; int32_t cipherlen; bits256 privkey;
@@ -964,7 +965,16 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
             break;
         }
     if ( flag == 0 )
-        return;
+    {
+        for (i=0; i<sizeof(basilisk_coinservices)/sizeof(*basilisk_coinservices); i++) // iguana node
+            if ( strcmp((char *)basilisk_coinservices[i][0],type) == 0 )
+            {
+                flag = 1;
+                break;
+            }
+        if ( flag == 0 )
+            return;
+    }
     strncpy(CMD,type,3), CMD[3] = cmd[3] = 0;
     if ( isupper((int32_t)CMD[0]) != 0 && isupper((int32_t)CMD[1]) != 0 && isupper((int32_t)CMD[2]) != 0 )
         from_basilisk = 1;
