@@ -221,8 +221,9 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
     }
     if ( coin->spendvectorsaved <= 1 )
     {
-        usleep(10000);
-        //printf("spendvectorsaved not yet\n");
+        //usleep(10000);
+        printf("spendvectorsaved not yet\n");
+        sleep(1);
         return(0);
     }
     for (i=0; i<coin->bundlescount-1; i++)
