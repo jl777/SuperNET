@@ -602,7 +602,7 @@ void iguana_statemachineupdate(struct supernet_info *myinfo,struct exchange_info
         if ( instantdex_recvquotes(coin,req,req->hashes,req->n) != 0 )
             myfree(req->hashes,(req->n+1) * sizeof(*req->hashes)), req->hashes = 0;
     }
-    iguana_inv2poll(myinfo,coin);
+    //iguana_inv2poll(myinfo,coin);
 }
 
 void exchanges777_loop(void *ptr)

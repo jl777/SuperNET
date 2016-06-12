@@ -928,7 +928,7 @@ struct instantdex_accept *instantdex_acceptable(struct supernet_info *myinfo,str
     return(retap);
 }
 
-int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct exchange_info *exchange)
+/*int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct exchange_info *exchange)
 {
     struct instantdex_accept *tmp,*ap; uint32_t now,n=0,len; bits256 encodedhash,hashes[100]; uint8_t serialized[100*36 + 1024];
     //printf("instantdex_inv2data exchange.%p (%s)\n",exchange,addr->ipaddr);
@@ -965,7 +965,7 @@ int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coi
         return(iguana_queue_send(addr,0,serialized,"inv2",len));
     }
     return(-1);
-}
+}*/
 
 struct instantdex_accept *instantdex_quotefind(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,bits256 encodedhash)
 {

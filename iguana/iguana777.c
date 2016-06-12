@@ -129,7 +129,7 @@ double iguana_metric(struct iguana_peer *addr,uint32_t now,double decay)
     return(metric);
 }
 
-int32_t iguana_inv2poll(struct supernet_info *myinfo,struct iguana_info *coin)
+/*int32_t iguana_inv2poll(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     struct exchange_info *exchange; int32_t i,n=0; struct iguana_peer *addr; char myipaddr[64];
     expand_ipbits(myipaddr,myinfo->myaddr.myipbits);
@@ -155,7 +155,7 @@ int32_t iguana_inv2poll(struct supernet_info *myinfo,struct iguana_info *coin)
         }
     }
     return(n);
-}
+}*/
 
 int32_t iguana_peermetrics(struct supernet_info *myinfo,struct iguana_info *coin)
 {
