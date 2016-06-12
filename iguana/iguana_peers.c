@@ -23,6 +23,7 @@ int32_t iguana_validatehdr(char *symbol,struct iguana_msghdr *H)
     int32_t i = 0,valid=0,len = -1; char cmdstr[16];
     memcpy(cmdstr,H->command,sizeof(H->command));
     cmdstr[0] = toupper((int32_t)cmdstr[0]);
+    cmdstr[5] = toupper((int32_t)cmdstr[5]);
     cmdstr[6] = toupper((int32_t)cmdstr[6]);
     cmdstr[7] = toupper((int32_t)cmdstr[7]);
     if ( strcmp(symbol,"VPN") == 0 || strncmp("SuperNET",cmdstr,strlen("SuperNET")) == 0 )
@@ -613,8 +614,8 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
         }
         int32_t i; for (i=0; i<sizeof(H); i++)
             printf("%02x",((uint8_t *)&H)[i]);
-        printf(" invalid header received from (%s)\n",addr->ipaddr);
-        addr->dead = 1;
+        printf(" invalid header.%s received from (%s) len.%d\n",H.command,addr->ipaddr,len);
+        //addr->dead = 1;
     }
    // printf("%s recv error on hdr errno.%d (%s) -> zombify\n",addr->ipaddr,-recvlen,strerror(-recvlen));
 #ifndef IGUANA_DEDICATED_THREADS
