@@ -958,6 +958,17 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
         { (void *)"VAL", &_basilisk_value },
         { (void *)"BAL", &_basilisk_balances },
     };
+    if ( (valsobj= cJSON_Parse((char *)data)) != 0 )
+    {
+        if ( jobj(valsobj,"coin") != 0 )
+            coin = iguana_coinfind(jstr(valsobj,"coin"));
+        if ( strcmp(type,"RET") == 0 )
+        {
+            if ( (retstr= _basilisk_result(myinfo,coin,addr,remoteaddr,basilisktag,valsobj,data,datalen)) != 0 )
+                free(retstr);
+            return;
+        }
+    } else return;
     for (i=flag=0; i<sizeof(basilisk_services)/sizeof(*basilisk_services); i++) // iguana node
         if ( strcmp((char *)basilisk_services[i][0],type) == 0 )
         {
@@ -988,7 +999,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
     }
     printf("MSGPROCESS.(%s) tag.%d\n",(char *)data,basilisktag);
     myinfo->basilisk_busy = 1;
-    if ( (valsobj= cJSON_Parse((char *)data)) != 0 )
+    if ( valsobj != 0 )
     {
         jsonlen = (int32_t)strlen((char *)data) + 1;
         if ( datalen > jsonlen )
@@ -997,17 +1008,14 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
             if ( *data++ != 0 )
                 data += sizeof(hash), datalen -= sizeof(hash);
         } else data = 0, datalen = 0;
-        if ( (symbol= jstr(valsobj,"coin")) == 0 )
-            symbol = "BTCD";
+        if ( coin == 0 )
+            coin = iguana_coinfind("BTCD");
+        if ( coin != 0 )
+            coin->basilisk_busy = 1;
         hash = jbits256(valsobj,"hash");
         timeoutmillis = jint(valsobj,"timeout");
         if ( (numrequired= jint(valsobj,"numrequired")) == 0 )
             numrequired = 1;
-        if ( jobj(valsobj,"coin") != 0 )
-        {
-            if ( (coin= iguana_coinfind(jstr(valsobj,"coin"))) != 0 )
-                coin->basilisk_busy = 1;
-        }
         if ( senderipbits != 0 )
             expand_ipbits(remoteaddr,senderipbits);
         else remoteaddr[0] = 0;
@@ -1038,14 +1046,9 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
                 return;
             }
         }
-        printf("check coin\n");
         if ( coin != 0 )
         {
-            if ( strcmp(type,"RET") == 0 )
-            {
-                retstr = _basilisk_result(myinfo,coin,addr,remoteaddr,basilisktag,valsobj,data,datalen);
-            }
-            else if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 ) // iguana node
+            if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 ) // iguana node
             {
                 printf("relay path\n");
                 if ( from_basilisk != 0 )
