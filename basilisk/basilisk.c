@@ -309,11 +309,11 @@ char *basilisk_waitresponse(struct supernet_info *myinfo,char *CMD,char *symbol,
         if ( (retstr= Lptr->retstr) == 0 )
             retstr = clonestr("{\"result\":\"null return from local basilisk_issuecmd\"}");
         ptr = basilisk_itemcreate(myinfo,CMD,symbol,Lptr->basilisktag,Lptr->numrequired,Lptr->vals,OS_milliseconds() - Lptr->expiration,Lptr->metricfunc);
-        queue_enqueue("submitQ",&myinfo->basilisks.submitQ,&ptr->DL,0);
+        //queue_enqueue("submitQ",&myinfo->basilisks.submitQ,&ptr->DL,0);
     }
     else
     {
-        queue_enqueue("submitQ",&myinfo->basilisks.submitQ,&ptr->DL,0);
+        //queue_enqueue("submitQ",&myinfo->basilisks.submitQ,&ptr->DL,0);
         while ( OS_milliseconds() < ptr->expiration )
         {
             //if ( (retstr= basilisk_iscomplete(ptr)) != 0 )
@@ -345,6 +345,7 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,int32_t 
     {
         data = basilisk_jsondata(sizeof(struct iguana_msghdr),&allocptr,space,sizeof(space),&datalen,symbol,valsobj,basilisktag);
         *numsentp = ptr->numsent = basilisk_sendcmd(myinfo,0,CMD,&ptr->basilisktag,encryptflag,delaymillis,data,datalen,1,ptr->nBits);
+        queue_enqueue("submitQ",&myinfo->basilisks.submitQ,&ptr->DL,0);
         if ( allocptr != 0 )
             free(allocptr);
     }
@@ -386,6 +387,7 @@ char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,bits256 ha
             ptr->vals = jduplicate(valsobj);
             strcpy(ptr->symbol,"BTCD");
             strcpy(ptr->CMD,CMD);
+            queue_enqueue("submitQ",&myinfo->basilisks.submitQ,&ptr->DL,0);
             return(basilisk_waitresponse(myinfo,CMD,"BTCD",0,&Lptr,ptr));
         }
         else if ( ptr->numsent > 0 )
@@ -533,7 +535,10 @@ char *basilisk_standardcmd(struct supernet_info *myinfo,char *CMD,char *activeco
         if ( (coin= iguana_coinfind(activecoin)) != 0 )
         {
             if ( (ptr= basilisk_issuecmd(&Lptr,func,metric,myinfo,remoteaddr,basilisktag,activecoin,timeoutmillis,vals)) != 0 )
+            {
+                queue_enqueue("submitQ",&myinfo->basilisks.submitQ,&ptr->DL,0);
                 return(basilisk_waitresponse(myinfo,CMD,coin->symbol,remoteaddr,&Lptr,ptr));
+            }
             else return(clonestr("{\"error\":\"null return from basilisk_issuecmd\"}"));
         } else return(clonestr("{\"error\":\"couldnt get coin\"}"));
     } else return(retstr);
@@ -619,6 +624,7 @@ INT_ARRAY_STRING(basilisk,rawtx,basilisktag,vals,activecoin)
                 ptr->numrequired = 1;
             ptr->uniqueflag = 1;
             ptr->metricdir = -1;
+            queue_enqueue("submitQ",&myinfo->basilisks.submitQ,&ptr->DL,0);
             return(basilisk_waitresponse(myinfo,"RAW",coin->symbol,remoteaddr,&Lptr,ptr));
         } else return(clonestr("{\"error\":\"error issuing basilisk rawtx\"}"));
     } else return(retstr);

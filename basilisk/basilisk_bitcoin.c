@@ -364,7 +364,7 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
             }
         }
     }
-    printf("bitcoinvalue issue remote\n");
+    printf("bitcoinvalue issue remote tag.%u\n",basilisktag);
     return(basilisk_issueremote(myinfo,&numsent,"VAL",coin->symbol,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_valuemetric,0,0,0,BASILISK_DEFAULTDIFF));
 }
 
