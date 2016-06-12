@@ -88,6 +88,7 @@ uint8_t *basilisk_jsondata(int32_t extraoffset,uint8_t **ptrp,uint8_t *space,int
         if ( (hexlen= is_hexstr(hexstr,0)) > 0 )
             hexlen >>= 1;
         jdelete(sendjson,"data");
+        printf("delete data.[%d] from sendjson\n",hexlen);
     }
     *ptrp = 0;
     sendstr = jprint(sendjson,0);
@@ -281,7 +282,7 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
         free(ptr);
 }
 
-void basilisk_sendback(struct supernet_info *myinfo,char *symbol,char *remoteaddr,uint32_t basilisktag,char *retstr)
+void basilisk_sendback(struct supernet_info *myinfo,char *origCMD,char *symbol,char *remoteaddr,uint32_t basilisktag,char *retstr)
 {
     uint8_t *data,space[4096],*allocptr; cJSON *valsobj; int32_t datalen,encryptflag=0,delaymillis=0;
     printf("retstr.(%s) -> remote.(%s) basilisktag.%u\n",retstr,remoteaddr,basilisktag);
@@ -289,6 +290,7 @@ void basilisk_sendback(struct supernet_info *myinfo,char *symbol,char *remoteadd
     {
         if ( (valsobj= cJSON_Parse(retstr)) != 0 )
         {
+            jaddstr(valsobj,"origcmd",origCMD);
             data = basilisk_jsondata(sizeof(struct iguana_msghdr),&allocptr,space,sizeof(space),&datalen,symbol,valsobj,basilisktag);
             basilisk_sendcmd(myinfo,remoteaddr,"RET",&basilisktag,encryptflag,delaymillis,data,datalen,0,0);
             if ( allocptr != 0 )
@@ -321,7 +323,7 @@ char *basilisk_waitresponse(struct supernet_info *myinfo,char *CMD,char *symbol,
         if ( retstr == 0 )
             retstr = basilisk_finish(ptr,-1,"{\"error\":\"basilisk timeout\"}");
     }
-    basilisk_sendback(myinfo,symbol,remoteaddr,ptr->basilisktag,retstr);
+    basilisk_sendback(myinfo,CMD,symbol,remoteaddr,ptr->basilisktag,retstr);
     return(retstr);
 }
 
@@ -630,6 +632,7 @@ INT_AND_ARRAY(basilisk,result,basilisktag,vals)
         ptr->retstr = jprint(vals,0);
         ptr->basilisktag = basilisktag;
         strcpy(ptr->remoteaddr,remoteaddr);
+        safecopy(ptr->CMD,jstr(vals,"origcmd"),sizeof(ptr->CMD));
         printf("(%s) -> Q.%u results vals.(%s)\n",ptr->CMD,basilisktag,ptr->retstr);
         queue_enqueue("resultsQ",&myinfo->basilisks.resultsQ,&ptr->DL,0);
         return(clonestr("{\"result\":\"queued basilisk return\"}"));
@@ -958,6 +961,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
         { (void *)"VAL", &_basilisk_value },
         { (void *)"BAL", &_basilisk_balances },
     };
+    symbol = "BTCD";
     if ( (valsobj= cJSON_Parse((char *)data)) != 0 )
     {
         if ( jobj(valsobj,"coin") != 0 )
@@ -1011,7 +1015,10 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
         if ( coin == 0 )
             coin = iguana_coinfind("BTCD");
         if ( coin != 0 )
+        {
+            symbol = coin->symbol;
             coin->basilisk_busy = 1;
+        }
         hash = jbits256(valsobj,"hash");
         timeoutmillis = jint(valsobj,"timeout");
         if ( (numrequired= jint(valsobj,"numrequired")) == 0 )
@@ -1034,7 +1041,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
                     {
                         printf("from_basilisk.%d ret.(%s)\n",from_basilisk,retstr);
                         if ( from_basilisk != 0 )
-                            basilisk_sendback(myinfo,symbol,remoteaddr,basilisktag,retstr);
+                            basilisk_sendback(myinfo,CMD,symbol,remoteaddr,basilisktag,retstr);
                         if ( retstr != 0 )
                             free(retstr);
                     } else printf("services null return\n");
@@ -1062,7 +1069,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
                         retstr = (*basilisk_coinservices[i][1])(myinfo,coin,addr,remoteaddr,basilisktag,valsobj,data,datalen);
                         printf("from_basilisk.%d ret.(%s)\n",from_basilisk,retstr);
                         if ( from_basilisk != 0 )
-                            basilisk_sendback(myinfo,symbol,remoteaddr,basilisktag,retstr);
+                            basilisk_sendback(myinfo,CMD,symbol,remoteaddr,basilisktag,retstr);
                         break;
                     }
             }
