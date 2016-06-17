@@ -820,9 +820,9 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
 
 char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr,char *filetype,uint16_t port)
 {
-    cJSON *tokens,*argjson,*json = 0; long filesize;
+    cJSON *tokens,*argjson,*origargjson,*json = 0; long filesize;
     char symbol[16],buf[4096],urlmethod[16],*data,url[1024],*retstr,*filestr,*token = 0; int32_t i,j,n,num=0;
-    printf("rpcparse.(%s)\n",urlstr);
+    //printf("rpcparse.(%s)\n",urlstr);
     for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
         urlmethod[i] = urlstr[i];
     urlmethod[i++] = 0;
@@ -835,7 +835,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
     n += i;
     j = i = 0;
     filetype[0] = 0;
-    printf("url.(%s) method.(%s)\n",&url[i],urlmethod);
+    //printf("url.(%s) method.(%s)\n",&url[i],urlmethod);
     if ( strcmp(&url[i],"/") == 0 && strcmp(urlmethod,"GET") == 0 )
     {
         static int counter;
@@ -915,7 +915,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
         jaddstr(argjson,"agent",jstri(tokens,0));
     if ( num > 1 )
         jaddstr(argjson,"method",jstri(tokens,1));
-    printf("urlstr.(%s)\n",urlstr+n);
+    //printf("urlstr.(%s)\n",urlstr+n);
     if ( (json= SuperNET_urlconv(retbuf,bufsize,urlstr+n)) != 0 )
     {
         jadd(json,"tokens",tokens);
@@ -1007,14 +1007,17 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
             }
         }
         printf("after urlconv.(%s) argjson.(%s)\n",jprint(json,0),jprint(argjson,0));
+        origargjson = argjson;
+        if ( is_cJSON_Array(argjson) != 0 && cJSON_GetArraySize(argjson) == 0 )
+            argjson = jitem(argjson,0);
         if ( jstr(argjson,"method") == 0 )
         {
-            free_json(argjson);
+            free_json(origargjson);
             return(0);
         }
         retstr = SuperNET_JSON(myinfo,argjson,remoteaddr,port);
         printf("(%s) {%s} -> (%s) postflag.%d (%s)\n",urlstr,jprint(argjson,0),cJSON_Print(json),*postflagp,retstr);
-        free_json(argjson);
+        free_json(origargjson);
         return(retstr);
     }
     *jsonflagp = 1;
