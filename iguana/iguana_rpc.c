@@ -73,7 +73,8 @@ char *sglue(GLUEARGS,char *agent,char *method)
                     {
                         for (i=1,j=0; i<len-1; i++,j++)
                             rpcretstr[j] = rpcretstr[i];
-                        rpcretstr[j++] = '\n', rpcretstr[j] = 0;
+                        //rpcretstr[j++] = '\n';
+                        rpcretstr[j] = 0;
                         free_json(retjson);
                         free(retstr);
                         return(rpcretstr);
