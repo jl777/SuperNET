@@ -373,6 +373,11 @@ int32_t btc_priv2pub(uint8_t pubkey[33],uint8_t privkey[32]);
 void calc_shares(unsigned char *shares,unsigned char *secret,int32_t size,int32_t width,int32_t M,int32_t N,unsigned char *sharenrs);
 int32_t OS_portable_rmdir(char *dirname,int32_t diralso);
 void calc_hmac_sha256(uint8_t *mac,int32_t maclen,uint8_t *key,int32_t key_size,uint8_t *message,int32_t len);
+int32_t revsort32(uint32_t *buf,uint32_t num,int32_t size);
+
+bits256 bits256_sha256(bits256 data);
+void bits256_rmd160(uint8_t rmd160[20],bits256 data);
+void bits256_rmd160_sha256(uint8_t rmd160[20],bits256 data);
 
 extern char *Iguana_validcommands[];
 extern bits256 GENESIS_PUBKEY,GENESIS_PRIVKEY;

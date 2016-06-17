@@ -1150,7 +1150,7 @@ void iguana_appletests(struct supernet_info *myinfo)
             bitcoin_sharedsecret(myinfo->ctx,hash2,pubkey,33);
         printf("secp256k1 elapsed %.3f for %d iterations\n",OS_milliseconds() - startmillis,i);
        getchar();**/
-        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"protover\":70002,\"RELAY\":0,\"VALIDATE\":0,\"portp2p\":14631,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":64,\"endpend\":64,\"services\":129,\"maxpeers\":128,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":4,\"poll\":1}"),0,myinfo->rpcport)) != 0 )
+        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"protover\":70002,\"RELAY\":1,\"VALIDATE\":1,\"portp2p\":14631,\"rpc\":14632,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":64,\"endpend\":64,\"services\":129,\"maxpeers\":128,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":4,\"poll\":1}"),0,myinfo->rpcport)) != 0 )
         {
             free(str);
             if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"portp2p\":8333,\"RELAY\":0,\"VALIDATE\":0,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":1,\"endpend\":1,\"services\":128,\"maxpeers\":64,\"newcoin\":\"BTC\",\"active\":0,\"numhelpers\":4,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
@@ -1309,6 +1309,116 @@ int32_t iguana_isbigendian()
     else return(-1);
 }
 
+#define SECP_ENSURE_CTX int32_t flag = 0; if ( ctx == 0 ) { ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY); secp256k1_pedersen_context_initialize(ctx); secp256k1_rangeproof_context_initialize(ctx); flag++; } else flag = 0; if ( ctx != 0 )
+#define ENDSECP_ENSURE_CTX if ( flag != 0 ) secp256k1_context_destroy(ctx);
+
+int32_t iguana_schnorr_peersign(void *ctx,uint8_t *allpub33,uint8_t *partialsig64,int32_t peeri,bits256 mypriv,bits256 privnonce,bits256 *nonces,int32_t n,bits256 msg256)
+{
+    secp256k1_pubkey Rall,ALL,PUBS[256],*PUBptrs[256]; int32_t i,num,retval = -1; size_t plen; uint8_t pubkey[33];
+    pubkey[0] = 2;
+    SECP_ENSURE_CTX
+    {
+        for (i=num=0; i<n; i++)
+        {
+            plen = 33;
+            memcpy(pubkey+1,nonces[i].bytes,32);
+            if ( secp256k1_ec_pubkey_parse(ctx,&PUBS[i],pubkey,plen) == 0 )
+                printf("error extracting pubkey.%d of %d\n",i,n);
+            if ( i != peeri )
+                PUBptrs[num++] = &PUBS[i];
+        }
+        PUBptrs[num] = &PUBS[peeri];
+        if ( secp256k1_ec_pubkey_combine(ctx,&ALL,(void *)PUBptrs,num+1) != 0 )
+        {
+            plen = 33;
+            secp256k1_ec_pubkey_serialize(ctx,allpub33,&plen,&ALL,SECP256K1_EC_COMPRESSED);
+            //for (i=0; i<33; i++)
+            //    printf("%02x",allpub33[i]);
+            //printf("\n");
+        } else printf("error combining ALL\n");
+        if ( secp256k1_ec_pubkey_combine(ctx,&Rall,(void *)PUBptrs,num) != 0 )
+        {
+            if ( secp256k1_schnorr_partial_sign(ctx,partialsig64,msg256.bytes,mypriv.bytes,&Rall,privnonce.bytes) == 0 )
+                printf("iguana_schnorr_peersign: err %d of num.%d\n",peeri,n);
+            else retval = 0;
+        } else printf("error parsing pubkey.%d\n",peeri);
+        ENDSECP_ENSURE_CTX
+    }
+    return(retval);
+}
+
+bits256 iguana_schnorr_noncepair(void *ctx,bits256 *pubkey,uint8_t odd_even,bits256 msg256,bits256 privkey,int32_t maxj)
+{
+    bits256 privnonce; int32_t j; uint8_t pubkey33[33];
+    for (j=0; j<maxj; j++)
+    {
+        privnonce = bitcoin_schnorr_noncepair(ctx,pubkey33,msg256,privkey);
+        if ( pubkey33[0] == (odd_even + 2) )
+        {
+            memcpy(pubkey->bytes,pubkey33+1,32);
+            break;
+        }
+    }
+    if ( j == maxj )
+    {
+        printf("couldnt generate even noncepair\n");
+        exit(-1);
+    }
+    return(privnonce);
+}
+
+void iguana_schnorr(struct supernet_info *myinfo)
+{
+    uint8_t allpubs[256][33],allpub[33],sig64s[256][64],sig64[64],*sigs[256]; bits256 msg256,privnonces[256],signers,privkeys[256],pubkeys[256],pubkeysB[256],nonces[256]; int32_t i,iter,n,k,maxj = 100;
+    OS_randombytes((void *)&n,sizeof(n));
+    srand(n);
+    n = 64;//(rand() % 200);
+    // generate onetime keypairs
+    for (i=0; i<n; i++)
+        pubkeys[i] = bitcoin_pub256(myinfo->ctx,&privkeys[i],0);
+    msg256 = rand256(0);
+    for (i=0; i<n; i++)
+        privnonces[i] = iguana_schnorr_noncepair(myinfo->ctx,&nonces[i],0,msg256,privkeys[i],maxj);
+    for (i=0; i<n; i++)
+        iguana_schnorr_peersign(myinfo->ctx,allpubs[i],sig64s[i],i,privkeys[i],privnonces[i],nonces,n,msg256);
+    for (iter=0; iter<1; iter++)
+    {
+        memset(signers.bytes,0,sizeof(signers));
+        for (i=k=0; i<n; i++)
+        {
+            if ( (rand() % 100) < 50 )
+            {
+                //printf("%d ",i);
+                sigs[k] = sig64s[i];
+                pubkeysB[k] = pubkeys[i];
+                k++;
+                SETBIT(signers.bytes,i);
+            }
+        }
+        if ( bitcoin_schnorr_combine(myinfo->ctx,sig64,allpub,sigs,k,msg256) < 0 )
+            printf("error combining k.%d sig64 iter.%d\n",k,iter);
+        else if ( bitcoin_schnorr_verify(myinfo->ctx,sig64,msg256,allpub,33) < 0 )
+            printf("error verifying combined sig k.%d\n",k);
+        else if ( 0 )
+        {
+            if ( bitcoin_pubkey_combine(myinfo->ctx,allpub,0,pubkeys,n,0,0) == 0 )
+            {
+                if ( memcmp(allpub,allpubs[0],33) != 0 )
+                {
+                    printf("\n");
+                    for (k=0; k<33; k++)
+                        printf("%02x",allpubs[0][k]);
+                    printf(" combined\n");
+                    for (k=0; k<33; k++)
+                        printf("%02x",allpub[k]);
+                    printf(" allpub, ");
+                    printf("allpub mismatch iter.%d i.%d n.%d\n",iter,i,n);
+                } else printf("validated iter.%d k.%d %llx\n",iter,k,(long long)signers.txid);
+            } //else printf("error combining\n");
+        } else printf("passed\n");
+    }
+}
+
 void iguana_main(void *arg)
 {
     int32_t usessl = 0, ismainnet = 1; struct supernet_info *myinfo; cJSON *argjson = 0;
@@ -1320,9 +1430,50 @@ void iguana_main(void *arg)
     mycalloc(0,0,0);
     if ( 0 )
         iguana_signalsinit();
+    if ( 0 )
+    {
+        int32_t i,max=10000000; FILE *fp; bits256 check,val,hash = rand256(0);
+        if ( (fp= fopen("/tmp/seeds2","rb")) != 0 )
+        {
+            fread(&check,1,sizeof(check),fp);
+            for (i=1; i<max; i++)
+            {
+                if ( (i % 1000000) == 0 )
+                    fprintf(stderr,".");
+                fread(&val,1,sizeof(val),fp);
+                hash = bits256_sha256(val);
+                hash = bits256_sha256(hash);
+                if ( bits256_cmp(hash,check) != 0 )
+                    printf("hash error at i.%d\n",i);
+                check = val;
+            }
+            printf("validated %d seeds\n",max);
+            getchar();
+        }
+        else if ( (fp= fopen("/tmp/seeds2","wb")) != 0 )
+        {
+            for (i=0; i<max; i++)
+            {
+                if ( (i % 1000000) == 0 )
+                    fprintf(stderr,".");
+                hash = bits256_sha256(hash);
+                hash = bits256_sha256(hash);
+                fseek(fp,(max-i-1) * sizeof(bits256),SEEK_SET);
+                if ( fwrite(hash.bytes,1,sizeof(hash),fp) != sizeof(hash) )
+                    printf("error writing hash[%d] i.%d\n",(max-i-1),i);
+            }
+            fclose(fp);
+        }
+    }
     iguana_ensuredirs();
     iguana_Qinit();
     myinfo = SuperNET_MYINFO(0);
+    if ( 0 )
+    {
+        int32_t i; for (i=0; i<10; i++)
+            iguana_schnorr(myinfo);
+        getchar();
+    }
     myinfo->rpcport = IGUANA_RPCPORT;
     strcpy(myinfo->rpcsymbol,"BTCD");
     iguana_urlinit(myinfo,ismainnet,usessl);

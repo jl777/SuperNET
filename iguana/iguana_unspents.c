@@ -20,9 +20,9 @@
 #include "iguana777.h"
 #include "exchanges/bitcoin.h"
 
-int32_t iguana_unspentindfind(struct iguana_info *coin,char *coinaddr,uint8_t *spendscript,int32_t *spendlenp,uint64_t *valuep,int32_t *heightp,bits256 txid,int32_t vout,int32_t lasthdrsi)
+int32_t iguana_unspentindfind(struct iguana_info *coin,char *coinaddr,uint8_t *spendscript,int32_t *spendlenp,uint64_t *valuep,int32_t *heightp,bits256 txid,int32_t vout,int32_t lasthdrsi,int32_t mempool)
 {
-    struct iguana_txid *tp,TX; struct iguana_pkhash *P; struct iguana_unspent *U; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int64_t RTspend; int32_t pkind,hdrsi,firstvout,spentheight,unspentind = -1;
+    struct iguana_txid *tp,TX; struct gecko_memtx *memtx; struct iguana_pkhash *P; struct iguana_unspent *U; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int64_t RTspend; int32_t pkind,hdrsi,firstvout,spentheight,flag=0,unspentind = -1;
     if ( valuep != 0 )
         *valuep = 0;
     if ( coinaddr != 0 )
@@ -35,12 +35,11 @@ int32_t iguana_unspentindfind(struct iguana_info *coin,char *coinaddr,uint8_t *s
     {
         U = RAMCHAIN_PTR(rdata,Uoffset);
         P = RAMCHAIN_PTR(rdata,Poffset);
-        //U = (void *)(long)((long)rdata + rdata->Uoffset);
-        //P = (void *)(long)((long)rdata + rdata->Poffset);
         pkind = U[unspentind].pkind;
         if ( pkind > 0 && pkind < rdata->numpkinds )
         {
             RTspend = 0;
+            flag++;
             if ( iguana_spentflag(coin,&RTspend,&spentheight,&bp->ramchain,bp->hdrsi,unspentind,0,1,coin->longestchain,U[unspentind].value) == 0 ) //bp == coin->current ? &coin->RTramchain :
             {
                 if ( valuep != 0 )
@@ -48,6 +47,22 @@ int32_t iguana_unspentindfind(struct iguana_info *coin,char *coinaddr,uint8_t *s
                 bitcoin_address(coinaddr,iguana_addrtype(coin,U[unspentind].type),P[pkind].rmd160,sizeof(P[pkind].rmd160));
                 if ( spendscript != 0 && spendlenp != 0 )
                     *spendlenp = iguana_voutscript(coin,bp,spendscript,0,&U[unspentind],&P[pkind],1);
+            }
+        }
+    }
+    if ( flag == 0 && mempool != 0 )
+    {
+        if ( (memtx= gecko_unspentfind(0,coin,txid)) != 0 && vout < memtx->numoutputs )
+        {
+            if ( *gecko_valueptr(memtx,vout) > 0 )
+            {
+                *valuep = *gecko_valueptr(memtx,vout);
+                if ( spendlenp != 0 )
+                {
+                    *spendlenp = 1;
+                    spendscript = 0;
+                    printf("mempool unspentind doesnt support scriptlenp yet\n");
+                }
             }
         }
     }
@@ -63,7 +78,7 @@ char *iguana_inputaddress(struct iguana_info *coin,char *coinaddr,int16_t *spent
     {
         txid = jbits256(vinobj,"txid");
         vout = jint(vinobj,"vout");
-        if ( (checkind= iguana_unspentindfind(coin,coinaddr,0,0,0,&height,txid,vout,coin->bundlescount-1)) > 0 )
+        if ( (checkind= iguana_unspentindfind(coin,coinaddr,0,0,0,&height,txid,vout,coin->bundlescount-1,0)) > 0 )
         {
             *spent_hdrsip = (height / coin->chain->bundlesize);
             *unspentindp = checkind;
@@ -116,7 +131,7 @@ cJSON *iguana_unspentjson(struct supernet_info *myinfo,struct iguana_info *coin,
     if ( iguana_scriptget(coin,scriptstr,asmstr,sizeof(scriptstr),hdrsi,unspentind,T[up->txidind].txid,up->vout,rmd160,up->type,pubkey33) != 0 )
         jaddstr(item,"scriptPubKey",scriptstr);
     jaddnum(item,"amount",dstr(up->value));
-    if ( (checkind= iguana_unspentindfind(coin,0,0,0,0,&height,T[up->txidind].txid,up->vout,coin->bundlescount-1)) != 0 )
+    if ( (checkind= iguana_unspentindfind(coin,0,0,0,0,&height,T[up->txidind].txid,up->vout,coin->bundlescount-1,0)) != 0 )
     {
         jaddnum(item,"confirmations",coin->blocks.hwmchain.height - height + 1);
         jaddnum(item,"checkind",checkind);

@@ -429,7 +429,7 @@ void iguana_gotping(struct iguana_info *coin,struct iguana_peer *addr,uint64_t n
     iguana_supernet_ping(addr);
 }
 
-int32_t iguana_send_ping(struct iguana_info *coin,struct iguana_peer *addr)
+int32_t iguana_send_ping(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr)
 {
   	int32_t len; uint64_t nonce; uint8_t serialized[sizeof(struct iguana_msghdr) + sizeof(nonce)];
     if ( (nonce= addr->pingnonce) == 0 )
@@ -442,6 +442,8 @@ int32_t iguana_send_ping(struct iguana_info *coin,struct iguana_peer *addr)
     iguana_queue_send(addr,0,serialized,"getaddr",0);
     len = iguana_rwnum(1,&serialized[sizeof(struct iguana_msghdr)],sizeof(uint64_t),&nonce);
     iguana_supernet_ping(addr);
+    if ( myinfo->IAMRELAY != 0 )
+        basilisk_relays_send(myinfo,addr);
     return(iguana_queue_send(addr,0,serialized,"ping",len));
 }
 

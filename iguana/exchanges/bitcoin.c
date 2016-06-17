@@ -22,15 +22,6 @@ char *bitcoind_passthru(char *coinstr,char *serverport,char *userpass,char *meth
     return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params));
 }
 
-int32_t bitcoin_pubkeylen(const uint8_t *pubkey)
-{
-    if ( pubkey[0] == 2 || pubkey[0] == 3 )
-        return(33);
-    else if ( pubkey[0] == 4 )
-        return(65);
-    else return(-1);
-}
-
 int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr)
 {
     bits256 hash; uint8_t *buf,_buf[25]; int32_t len;

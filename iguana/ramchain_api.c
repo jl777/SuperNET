@@ -171,6 +171,7 @@ ZERO_ARGS(bitcoinrpc,getbestblockhash)
 ZERO_ARGS(bitcoinrpc,getblockcount)
 {
     cJSON *retjson = cJSON_CreateObject();
+    //printf("result %d\n",coin->blocks.hwmchain.height);
     jaddnum(retjson,"result",coin->blocks.hwmchain.height);
     return(jprint(retjson,1));
 }

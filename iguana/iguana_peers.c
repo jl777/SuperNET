@@ -46,6 +46,31 @@ int32_t iguana_validatehdr(char *symbol,struct iguana_msghdr *H)
     return(len);
 }
 
+struct iguana_peer *iguana_peeralive(struct iguana_peer *addr,int32_t needalive)
+{
+    if ( needalive == 0 || (addr->usock >= 0 && addr->dead == 0) )
+        return(addr);
+    else return(0);
+}
+
+struct iguana_peer *iguana_peerfindipaddr(struct iguana_info *coin,char *ipaddr,int32_t needalive)
+{
+    int32_t i;
+    for (i=0; i<IGUANA_MAXPEERS; i++)
+        if ( strcmp(ipaddr,coin->peers->active[i].ipaddr) == 0 )
+            return(iguana_peeralive(&coin->peers->active[i],needalive));
+    return(0);
+}
+
+struct iguana_peer *iguana_peerfindipbits(struct iguana_info *coin,uint32_t ipbits,int32_t needalive)
+{
+    int32_t i;
+    for (i=0; i<IGUANA_MAXPEERS; i++)
+        if ( ipbits == coin->peers->active[i].ipbits )
+            return(iguana_peeralive(&coin->peers->active[i],needalive));
+    return(0);
+}
+
 struct iguana_iAddr *_iguana_hashset(struct iguana_info *coin,uint32_t ipbits,int32_t itemind)
 {
     struct iguana_iAddr *ptr = 0; int32_t allocsize; char str[65]; struct OS_memspace *mem = 0;
@@ -699,7 +724,7 @@ void iguana_startconnection(void *arg)
         if ( coin->peers != 0 )
         {
             coin->peers->lastpeer = (uint32_t)time(NULL);
-            for (i=n=0; i<coin->MAXPEERS; i++)
+            for (i=n=0; i<IGUANA_MAXPEERS; i++)
                 if ( coin->peers->active[i].usock > 0 )
                     n++;
             coin->peers->numconnected++;
@@ -827,7 +852,7 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
     {
         if ( strcmp(ipaddr,"0.0.0.0") == 0 || strcmp(ipaddr,"127.0.0.1") == 0 )
             return(0);
-        for (i=n=0; i<coin->MAXPEERS; i++)
+        for (i=n=0; i<IGUANA_MAXPEERS; i++)
             if ( strcmp(ipaddr,coin->peers->active[i].ipaddr) == 0 )
             {
                 printf("%s possible peer.(%s) %x already there\n",coin->symbol,ipaddr,(uint32_t)coin->peers->active[i].ipbits);
@@ -852,7 +877,7 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
     //printf("check possible peer.(%s)\n",ipaddr);
     if ( iguana_peerslot(coin,(uint32_t)ipbits,0) != 0 )
         return((uint32_t)time(NULL));
-    for (i=n=0; i<coin->MAXPEERS; i++)
+    for (i=n=0; i<IGUANA_MAXPEERS; i++)
     {
         if ( strcmp(ipaddr,coin->peers->active[i].ipaddr) == 0 )
         {

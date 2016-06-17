@@ -23,7 +23,7 @@
 
 char *sglue(GLUEARGS,char *agent,char *method)
 {
-    char *retstr,*rpcretstr,*walletstr; cJSON *retjson,*tmpjson,*result,*error,*wallet; int32_t i,j,len;
+    char *retstr,*rpcretstr,*walletstr,checkstr[64]; cJSON *retjson,*tmpjson,*result,*error,*wallet; int32_t i,j,len; int64_t val;
     if ( json == 0 )
         json = cJSON_CreateObject();
     //printf("sglue.(%s)\n",jprint(json,0));
@@ -77,6 +77,17 @@ char *sglue(GLUEARGS,char *agent,char *method)
                         free_json(retjson);
                         free(retstr);
                         return(rpcretstr);
+                    }
+                    else
+                    {
+                        val = atol(rpcretstr);
+                        sprintf(checkstr,"%lld",(long long)val);
+                        if ( strcmp(checkstr,rpcretstr) == 0 )
+                        {
+                            free_json(retjson);
+                            free(retstr);
+                            return(rpcretstr);
+                        }
                     }
                     free(rpcretstr);
                 }
@@ -682,6 +693,8 @@ char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,ch
         }
         if ( coin == 0 && symbol[0] != 0 )
             coin = iguana_coinfind(symbol);
+        if ( coin != 0 )
+            safecopy(symbol,coin->symbol,sizeof(symbol));
         //printf("method.(%s) (%s) remote.(%s) symbol.(%s)\n",method,jprint(json,0),remoteaddr,symbol);
         if ( method != 0 && symbol[0] != 0 && (coin != 0 || (coin= iguana_coinfind(symbol)) != 0) )
         {

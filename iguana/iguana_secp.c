@@ -31,6 +31,15 @@ SECP256K1_API extern const secp256k1_nonce_function secp256k1_nonce_function_rfc
 #define SECP_ENSURE_CTX int32_t flag = 0; if ( ctx == 0 ) { ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY); secp256k1_pedersen_context_initialize(ctx); secp256k1_rangeproof_context_initialize(ctx); flag++; } else flag = 0; if ( ctx != 0 )
 #define ENDSECP_ENSURE_CTX if ( flag != 0 ) secp256k1_context_destroy(ctx);
 
+int32_t bitcoin_pubkeylen(const uint8_t *pubkey)
+{
+    if ( pubkey[0] == 2 || pubkey[0] == 3 )
+        return(33);
+    else if ( pubkey[0] == 4 )
+        return(65);
+    else return(-1);
+}
+
 bits256 bitcoin_randkey(secp256k1_context *ctx)
 {
     int32_t i; bits256 privkey;
@@ -39,7 +48,7 @@ bits256 bitcoin_randkey(secp256k1_context *ctx)
         for (i=0; i<100; i++)
         {
             privkey = rand256(0);
-            if ( secp256k1_ec_seckey_verify(ctx,privkey.bytes) > 0 )
+            if ( secp256k1_ec_seckey_verify(ctx,privkey.bytes) != 0 )
             {
                 ENDSECP_ENSURE_CTX
                 return(privkey);
@@ -62,7 +71,7 @@ bits256 bitcoin_pubkey33(secp256k1_context *ctx,uint8_t *data,bits256 privkey)
             printf("bitcoin_sign illegal privkey\n");
             return(pubkey);
         }
-        if ( secp256k1_ec_pubkey_create(ctx,&secppub,privkey.bytes) > 0 )
+        if ( secp256k1_ec_pubkey_create(ctx,&secppub,privkey.bytes) != 0 )
         {
             plen = 33;
             secp256k1_ec_pubkey_serialize(ctx,data,&plen,&secppub,SECP256K1_EC_COMPRESSED);
@@ -72,6 +81,21 @@ bits256 bitcoin_pubkey33(secp256k1_context *ctx,uint8_t *data,bits256 privkey)
         ENDSECP_ENSURE_CTX
     }
     return(pubkey);
+}
+
+bits256 bitcoin_pub256(void *ctx,bits256 *privkeyp,uint8_t odd_even)
+{
+    bits256 pub256; uint8_t pubkey[33]; int32_t i;
+    for (i=0; i<100; i++)
+    {
+        *privkeyp = rand256(0);
+        pub256 = bitcoin_pubkey33(ctx,pubkey,*privkeyp);
+        if ( pubkey[0] == odd_even+2 )
+            return(pub256);
+    }
+    printf("bitcoin_pub256 couldnt generate pubkey.%d\n",odd_even+2);
+    memset(pub256.bytes,0,sizeof(pub256));
+    return(pub256);
 }
 
 int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256 privkey,int32_t recoverflag)
@@ -87,17 +111,17 @@ int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256
             printf("bitcoin_sign illegal privkey\n");
             return(-1);
         }
-        if ( secp256k1_context_randomize(ctx,seed.bytes) > 0 )
+        if ( secp256k1_context_randomize(ctx,seed.bytes) != 0 )
         {
             if ( recoverflag != 0 )
             {
-                if ( secp256k1_ecdsa_sign_recoverable(ctx,&rSIG,txhash2.bytes,privkey.bytes,secp256k1_nonce_function_rfc6979,extra_entropy.bytes) > 0 )
+                if ( secp256k1_ecdsa_sign_recoverable(ctx,&rSIG,txhash2.bytes,privkey.bytes,secp256k1_nonce_function_rfc6979,extra_entropy.bytes) != 0 )
                 {
                     recid = -1;
                     secp256k1_ecdsa_recoverable_signature_serialize_compact(ctx,sig+1,&recid,&rSIG);
-                    if ( secp256k1_ecdsa_recover(ctx,&SECPUB,&rSIG,txhash2.bytes) > 0 )
+                    if ( secp256k1_ecdsa_recover(ctx,&SECPUB,&rSIG,txhash2.bytes) != 0 )
                     {
-                        if ( secp256k1_ec_pubkey_create(ctx,&CHECKPUB,privkey.bytes) > 0 )
+                        if ( secp256k1_ec_pubkey_create(ctx,&CHECKPUB,privkey.bytes) != 0 )
                         {
                             if ( memcmp(&SECPUB,&CHECKPUB,sizeof(SECPUB)) == 0 )
                             {
@@ -111,9 +135,9 @@ int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256
             }
             else
             {
-                if ( secp256k1_ecdsa_sign(ctx,&SIG,txhash2.bytes,privkey.bytes,secp256k1_nonce_function_rfc6979,extra_entropy.bytes) > 0 )
+                if ( secp256k1_ecdsa_sign(ctx,&SIG,txhash2.bytes,privkey.bytes,secp256k1_nonce_function_rfc6979,extra_entropy.bytes) != 0 )
                 {
-                    if ( secp256k1_ecdsa_signature_serialize_der(ctx,sig,&siglen,&SIG) > 0 )
+                    if ( secp256k1_ecdsa_signature_serialize_der(ctx,sig,&siglen,&SIG) != 0 )
                         retval = (int32_t)siglen;
                 }
             }
@@ -132,10 +156,10 @@ int32_t bitcoin_recoververify(void *ctx,char *symbol,uint8_t *sig65,bits256 mess
         plen = (sig65[0] <= 31) ? 65 : 33;
         secp256k1_ecdsa_recoverable_signature_parse_compact(ctx,&rSIG,sig65 + 1,0);
         secp256k1_ecdsa_recoverable_signature_convert(ctx,&SIG,&rSIG);
-        if ( secp256k1_ecdsa_recover(ctx,&PUB,&rSIG,messagehash2.bytes) > 0 )
+        if ( secp256k1_ecdsa_recover(ctx,&PUB,&rSIG,messagehash2.bytes) != 0 )
         {
             secp256k1_ec_pubkey_serialize(ctx,pubkey,&plen,&PUB,plen == 65 ? SECP256K1_EC_UNCOMPRESSED : SECP256K1_EC_COMPRESSED);
-            if ( secp256k1_ecdsa_verify(ctx,&SIG,messagehash2.bytes,&PUB) > 0 )
+            if ( secp256k1_ecdsa_verify(ctx,&SIG,messagehash2.bytes,&PUB) != 0 )
                 retval = 0;
             else printf("secp256k1_ecdsa_verify error\n");
         } else printf("secp256k1_ecdsa_recover error\n");
@@ -149,10 +173,10 @@ int32_t bitcoin_verify(void *ctx,uint8_t *sig,int32_t siglen,bits256 txhash2,uin
     int32_t retval = -1; secp256k1_pubkey PUB; secp256k1_ecdsa_signature SIG;
     SECP_ENSURE_CTX
     {
-        if ( secp256k1_ec_pubkey_parse(ctx,&PUB,pubkey,plen) > 0 )
+        if ( secp256k1_ec_pubkey_parse(ctx,&PUB,pubkey,plen) != 0 )
         {
             secp256k1_ecdsa_signature_parse_der(ctx,&SIG,sig,siglen);
-            if ( secp256k1_ecdsa_verify(ctx,&SIG,txhash2.bytes,&PUB) > 0 )
+            if ( secp256k1_ecdsa_verify(ctx,&SIG,txhash2.bytes,&PUB) != 0 )
                 retval = 0;
         }
         ENDSECP_ENSURE_CTX
@@ -166,9 +190,9 @@ bits256 bitcoin_sharedsecret(void *ctx,bits256 privkey,uint8_t *pubkey,int32_t p
     memset(shared.bytes,0,sizeof(shared));
     SECP_ENSURE_CTX
     {
-        if ( secp256k1_ec_pubkey_parse(ctx,&PUB,pubkey,plen) > 0 )
+        if ( secp256k1_ec_pubkey_parse(ctx,&PUB,pubkey,plen) != 0 )
         {
-            if ( secp256k1_ecdh(ctx,shared.bytes,&PUB,privkey.bytes) > 0 )
+            if ( secp256k1_ecdh(ctx,shared.bytes,&PUB,privkey.bytes) != 0 )
                 retval = 0;
             else memset(shared.bytes,0,sizeof(shared));
         }
@@ -183,7 +207,7 @@ int32_t bitcoin_schnorr_sign(void *ctx,uint8_t *sig64,bits256 txhash2,bits256 pr
     SECP_ENSURE_CTX
     {
         seed = rand256(0);
-        if ( secp256k1_schnorr_sign(ctx,sig64,txhash2.bytes,privkey.bytes,secp256k1_nonce_function_rfc6979,seed.bytes) > 0 )
+        if ( secp256k1_schnorr_sign(ctx,sig64,txhash2.bytes,privkey.bytes,secp256k1_nonce_function_rfc6979,seed.bytes) != 0 )
             retval = 0;
         ENDSECP_ENSURE_CTX
     }
@@ -195,9 +219,9 @@ int32_t bitcoin_schnorr_verify(void *ctx,uint8_t *sig64,bits256 txhash2,uint8_t 
     int32_t retval = -1; secp256k1_pubkey PUB;
     SECP_ENSURE_CTX
     {
-        if ( secp256k1_ec_pubkey_parse(ctx,&PUB,pubkey,plen) > 0 )
+        if ( secp256k1_ec_pubkey_parse(ctx,&PUB,pubkey,plen) != 0 )
         {
-            if ( secp256k1_schnorr_verify(ctx,sig64,txhash2.bytes,&PUB) > 0 )
+            if ( secp256k1_schnorr_verify(ctx,sig64,txhash2.bytes,&PUB) != 0 )
                 retval = 0;
         }
         ENDSECP_ENSURE_CTX
@@ -210,7 +234,7 @@ int32_t bitcoin_schnorr_recover(void *ctx,uint8_t *pubkey,uint8_t *sig64,bits256
     int32_t retval = -1; secp256k1_pubkey PUB; size_t plen;
     SECP_ENSURE_CTX
     {
-        if ( secp256k1_schnorr_recover(ctx,&PUB,sig64,txhash2.bytes) > 0 )
+        if ( secp256k1_schnorr_recover(ctx,&PUB,sig64,txhash2.bytes) != 0 )
         {
             plen = 33;
             secp256k1_ec_pubkey_serialize(ctx,pubkey,&plen,&PUB,SECP256K1_EC_COMPRESSED);
@@ -229,7 +253,7 @@ bits256 bitcoin_schnorr_noncepair(void *ctx,uint8_t *pubnonce,bits256 txhash2,bi
     SECP_ENSURE_CTX
     {
         seed = rand256(0);
-        if ( secp256k1_schnorr_generate_nonce_pair(ctx,&PUB,privnonce.bytes,txhash2.bytes,privkey.bytes,secp256k1_nonce_function_rfc6979,seed.bytes) > 0 )
+        if ( secp256k1_schnorr_generate_nonce_pair(ctx,&PUB,privnonce.bytes,txhash2.bytes,privkey.bytes,secp256k1_nonce_function_rfc6979,seed.bytes) != 0 )
         {
             plen = 33;
             secp256k1_ec_pubkey_serialize(ctx,pubnonce,&plen,&PUB,SECP256K1_EC_COMPRESSED);
@@ -238,6 +262,50 @@ bits256 bitcoin_schnorr_noncepair(void *ctx,uint8_t *pubnonce,bits256 txhash2,bi
         ENDSECP_ENSURE_CTX
     }
     return(privnonce);
+}
+
+int32_t bitcoin_pubkey_combine(void *ctx,uint8_t *combined_pub,uint8_t *skipkey,bits256 *evenkeys,int32_t n,bits256 *oddkeys,int32_t m)
+{
+    int32_t i,num,iter,max,retval = -1; uint8_t pubkey[33]; size_t plen; secp256k1_pubkey PUBall,*PUBptrs[256],PUBkeys[256];
+    SECP_ENSURE_CTX
+    {
+        if ( n+m > 0 && n+m < sizeof(PUBptrs)/sizeof(*PUBptrs) )
+        {
+            for (iter=num=0; iter<2; iter++)
+            {
+                if ( (max= (iter == 0) ? n : m) != 0 )
+                {
+                    for (i=0; i<max; i++)
+                    {
+                        PUBptrs[num] = &PUBkeys[num];
+                        pubkey[0] = 2 + iter;
+                        memcpy(pubkey+1,((iter == 0) ? evenkeys : oddkeys)[i].bytes,32);
+                        if ( skipkey != 0 && memcmp(pubkey,skipkey,33) == 0 )
+                        {
+                            //printf("skipkey.%d\n",i);
+                            continue;
+                        }
+                        if ( secp256k1_ec_pubkey_parse(ctx,PUBptrs[num],pubkey,33) == 0 )
+                        {
+                            int32_t j; for (j=0; j<33; j++)
+                                printf("%02x",pubkey[j]);
+                            printf(" error parsing pubkey iter.%d num.%d i.%d\n",iter,num,i);
+                            break;
+                        }
+                        num++;
+                    }
+                }
+            }
+            if ( secp256k1_ec_pubkey_combine(ctx,&PUBall,(void *)PUBptrs,num) != 0 )
+            {
+                plen = 33;
+                secp256k1_ec_pubkey_serialize(ctx,combined_pub,&plen,&PUBall,SECP256K1_EC_COMPRESSED);
+                retval = 0;
+            }
+        }
+        ENDSECP_ENSURE_CTX
+    }
+    return(retval);
 }
 
 int32_t bitcoin_schnorr_partialsign(void *ctx,uint8_t *sig64,uint8_t *combined_pub,bits256 txhash2,bits256 privkey,bits256 privnonce,uint8_t *pubptrs[],int32_t n) // generate and exchange
@@ -250,13 +318,13 @@ int32_t bitcoin_schnorr_partialsign(void *ctx,uint8_t *sig64,uint8_t *combined_p
         for (i=0; i<n; i++)
         {
             PUBptrs[i] = calloc(1,sizeof(secp256k1_pubkey));
-            if ( secp256k1_ec_pubkey_parse(ctx,PUBptrs[i],pubptrs[i],bitcoin_pubkeylen(pubptrs[i])) == 0 )
+            if ( secp256k1_ec_pubkey_parse(ctx,PUBptrs[i],pubptrs[i],bitcoin_pubkeylen(pubptrs[i])) != 0 )
                 break;
         }
-        if ( n > 0 && secp256k1_ec_pubkey_combine(ctx,&PUBall,(void *)PUBptrs,n) > 0 )
+        if ( n > 0 && secp256k1_ec_pubkey_combine(ctx,&PUBall,(void *)PUBptrs,n) != 0 )
         {
             plen = 33;
-            if ( secp256k1_schnorr_partial_sign(ctx,sig64,txhash2.bytes,privkey.bytes,&PUBall,privnonce.bytes) > 0 )
+            if ( secp256k1_schnorr_partial_sign(ctx,sig64,txhash2.bytes,privkey.bytes,&PUBall,privnonce.bytes) != 0 )
             {
                 secp256k1_ec_pubkey_serialize(ctx,combined_pub,&plen,&PUBall,SECP256K1_EC_COMPRESSED);
                 retval = 0;
@@ -273,7 +341,7 @@ int32_t bitcoin_schnorr_combine(void *ctx,uint8_t *sig64,uint8_t *allpub,uint8_t
     int32_t rc,retval = -1;
     SECP_ENSURE_CTX
     {
-        if ( (rc= secp256k1_schnorr_partial_combine(ctx,sig64,(void *)sigs,n)) > 0 )
+        if ( (rc= secp256k1_schnorr_partial_combine(ctx,sig64,(void *)sigs,n)) != 0 )
         {
             if ( bitcoin_schnorr_recover(ctx,allpub,sig64,txhash2) == 0 )
             {
@@ -291,7 +359,7 @@ int32_t bitcoin_pederson_commit(void *ctx,uint8_t *commit,bits256 blind,uint64_t
     int32_t retval = -1;
     SECP_ENSURE_CTX
     {
-        if ( secp256k1_pedersen_commit(ctx,commit,blind.bytes,value) > 0 )
+        if ( secp256k1_pedersen_commit(ctx,commit,blind.bytes,value) != 0 )
             retval = 0;
         ENDSECP_ENSURE_CTX
     }
@@ -316,7 +384,7 @@ int32_t bitcoin_pederson_tally(void *ctx,uint8_t **commits,int32_t n,int32_t num
     int32_t retval = -1;
     SECP_ENSURE_CTX
     {
-        if ( secp256k1_pedersen_verify_tally(ctx,(void *)commits,numpos,(void *)&commits[numpos],n - numpos,excess) > 0 )
+        if ( secp256k1_pedersen_verify_tally(ctx,(void *)commits,numpos,(void *)&commits[numpos],n - numpos,excess) != 0 )
             retval = 0;
         ENDSECP_ENSURE_CTX
     }
@@ -328,7 +396,7 @@ int32_t bitcoin_rangeproof_message(void *ctx,uint8_t *blind_out,uint8_t *message
     int32_t outlen = 0,retval = -1;
     SECP_ENSURE_CTX
     {
-        if ( secp256k1_rangeproof_rewind(ctx,blind_out,valuep,message,&outlen,nonce.bytes,min_valuep,max_valuep,commit,proof,prooflen) > 0 )
+        if ( secp256k1_rangeproof_rewind(ctx,blind_out,valuep,message,&outlen,nonce.bytes,min_valuep,max_valuep,commit,proof,prooflen) != 0 )
             retval = outlen;
         ENDSECP_ENSURE_CTX
     }
@@ -339,11 +407,11 @@ uint64_t bitcoin_rangeverify(void *ctx,int32_t *exponentp,int32_t *mantissap,uin
 {
     uint64_t max_value,retval = 0;
     max_value = *min_valuep = *exponentp = *mantissap = 0;
-    if ( secp256k1_rangeproof_info(ctx,exponentp,mantissap,min_valuep,&max_value,proof,prooflen) > 0 )
+    if ( secp256k1_rangeproof_info(ctx,exponentp,mantissap,min_valuep,&max_value,proof,prooflen) != 0 )
     {
         if ( commit != 0 )
         {
-            if ( secp256k1_rangeproof_verify(ctx,min_valuep,&max_value,commit,proof,prooflen) > 0 )
+            if ( secp256k1_rangeproof_verify(ctx,min_valuep,&max_value,commit,proof,prooflen) != 0 )
                 retval = max_value;
         } else retval = max_value;
     }
@@ -355,7 +423,7 @@ int32_t bitcoin_rangeproof(void *ctx,uint8_t *proof,uint8_t *commit,bits256 blin
     int32_t prooflen=0  ,retval = -1;
     SECP_ENSURE_CTX
     {
-        if ( secp256k1_rangeproof_sign(ctx,proof,&prooflen,min_value,commit,blind.bytes,nonce.bytes,exponent,min_bits,value) > 0 )
+        if ( secp256k1_rangeproof_sign(ctx,proof,&prooflen,min_value,commit,blind.bytes,nonce.bytes,exponent,min_bits,value) != 0 )
             retval = prooflen;
         ENDSECP_ENSURE_CTX
     }

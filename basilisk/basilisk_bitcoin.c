@@ -334,7 +334,7 @@ double basilisk_bitcoin_valuemetric(struct supernet_info *myinfo,struct basilisk
 
 void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj)
 {
-    int32_t i,height,vout,numsent; char *coinaddr; struct basilisk_value *v; uint64_t value = 0; bits256 txid;
+    int32_t i,height,vout,numsent; struct basilisk_item *ptr; char *coinaddr; struct basilisk_value *v; uint64_t value = 0; bits256 txid;
     txid = jbits256(valsobj,"txid");
     vout = jint(valsobj,"vout");
     coinaddr = jstr(valsobj,"address");
@@ -342,7 +342,7 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
     {
         if ( (coin->VALIDATENODE != 0 || coin->RELAYNODE != 0) && coinaddr != 0 && coinaddr[0] != 0 )
         {
-            if ( iguana_unspentindfind(coin,coinaddr,0,0,&value,&height,txid,vout,coin->bundlescount) > 0 )
+            if ( iguana_unspentindfind(coin,coinaddr,0,0,&value,&height,txid,vout,coin->bundlescount,0) > 0 )
             {
                 printf("bitcoinvalue found iguana\n");
                 Lptr->retstr = basilisk_valuestr(coin,coinaddr,value,height,txid,vout);
@@ -360,12 +360,16 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
             if ( v->vout == vout && bits256_cmp(txid,v->txid) == 0 && strcmp(v->coinaddr,coinaddr) == 0 )
             {
                 printf("bitcoinvalue local ht.%d %s %.8f\n",v->height,v->coinaddr,dstr(v->value));
-                return(basilisk_issueremote(myinfo,&numsent,"VAL",coin->symbol,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_valuemetric,basilisk_valuestr(coin,v->coinaddr,v->value,v->height,txid,vout),0,0,BASILISK_DEFAULTDIFF));
+                ptr = basilisk_issueremote(myinfo,&numsent,"VAL",coin->symbol,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_valuemetric,basilisk_valuestr(coin,v->coinaddr,v->value,v->height,txid,vout),0,0,BASILISK_DEFAULTDIFF);
+                queue_enqueue("submitQ",&myinfo->basilisks.submitQ,&ptr->DL,0);
+                return(ptr);
             }
         }
     }
     printf("bitcoinvalue issue remote tag.%u\n",basilisktag);
-    return(basilisk_issueremote(myinfo,&numsent,"VAL",coin->symbol,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_valuemetric,0,0,0,BASILISK_DEFAULTDIFF));
+    ptr = basilisk_issueremote(myinfo,&numsent,"VAL",coin->symbol,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_valuemetric,0,0,0,BASILISK_DEFAULTDIFF);
+    queue_enqueue("submitQ",&myinfo->basilisks.submitQ,&ptr->DL,0);
+    return(ptr);
 }
 
 double basilisk_bitcoin_rawtxmetric_dependents(struct supernet_info *myinfo,struct iguana_info *coin,struct basilisk_item *ptr,struct bitcoin_rawtxdependents *dependents)
@@ -421,7 +425,7 @@ double basilisk_bitcoin_rawtxmetric_dependents(struct supernet_info *myinfo,stru
                             printf("spend of invalid input address.(%s)\n",coinaddr);
                             metric = -(3. + i);
                         }
-                        printf("Valid spend %.8f to %s\n",dstr(value),coinaddr);
+                        printf("Valid spend %.8f sum.(%.8f) to %s\n",dstr(value),dstr(inputsum),coinaddr);
                     }
                     free_json(childjson);
                 }

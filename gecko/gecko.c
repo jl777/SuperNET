@@ -34,6 +34,7 @@
 
 #include "../iguana/iguana777.h"
 #include "gecko_delayedPoW.c"
+#include "gecko_mempool.c"
 #include "gecko_miner.c"
 #include "gecko_blocks.c"
 
@@ -483,6 +484,14 @@ char *basilisk_respond_geckoget(struct supernet_info *myinfo,char *CMD,void *add
     } else return(clonestr("{\"error\":\"invalid geckoget type, mustbe (HDR or BLK or GTX)\"}"));
 }
 
+char *basilisk_respond_mempool(struct supernet_info *myinfo,char *CMD,void *_addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
+{
+    char *symbol; struct iguana_info *virt;
+    if ( (symbol= jstr(valsobj,"symbol")) != 0 && (virt= iguana_coinfind(symbol)) != 0 )
+        return(gecko_mempoolarrived(myinfo,virt,_addr,data,datalen,hash));
+    else return(clonestr("{\"error\":\"couldt find gecko chain\"}"));
+}
+
 char *basilisk_respond_geckoheaders(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash2,int32_t from_basilisk)
 {
     char *symbol; struct iguana_info *virt;
@@ -568,7 +577,6 @@ HASH_ARRAY_STRING(basilisk,newgeckochain,hash,vals,hexstr)
                 {
                     if ( basilisk_geckochain(myinfo,symbol,chainname,argvals) != 0 )
                         jaddstr(argvals,"status","active");
-                    //free_json(argvals);
                 } else jaddstr(argvals,"error","couldnt initialize geckochain");
                 free(retstr);
                 return(jprint(argvals,1));

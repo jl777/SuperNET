@@ -36,12 +36,20 @@ struct hashstamp { bits256 hash2; uint32_t timestamp; int32_t height; };
 struct gecko_sequence { struct hashstamp *stamps; int32_t lastupdate,maxstamps,numstamps,lasti,longestchain; };
 struct gecko_sequences { struct gecko_sequence BTC,BTCD; };
 
-struct gecko_mempooltx { bits256 txid; char *rawtx; int64_t txfee; int32_t pending; uint32_t ipbits; };
+struct gecko_memtx
+{
+    double feeperkb;
+    bits256 txid;
+    uint32_t ipbits;
+    int64_t txfee,inputsum,outputsum; int32_t pending,numinputs,numoutputs,datalen;
+    uint8_t data[];
+};
 
 struct gecko_mempool
 {
-    int32_t numtx;
-    struct gecko_mempooltx txs[100];
+    int32_t numtx; uint32_t ipbits;
+    bits256 txids[0xffff];
+    struct gecko_memtx **txs;
 };
 
 struct gecko_chain
@@ -66,7 +74,10 @@ void gecko_seqresult(struct supernet_info *myinfo,char *retstr);
 int32_t gecko_sequpdate(char *symbol,uint32_t reftimestamp);
 char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *data,int32_t datalen,bits256 hash2);
 char *gecko_txarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *data,int32_t datalen,bits256 hash2);
+char *gecko_mempoolarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *data,int32_t datalen,bits256 hash2);
 char *gecko_headersarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *data,int32_t datalen,bits256 hash2);
 char *gecko_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *virt,uint8_t *data,int32_t datalen,bits256 txid,cJSON *vals,char *signedtx);
+
+struct gecko_mempool *gecko_mempoolfind(struct supernet_info *myinfo,struct iguana_info *virt,int32_t *numotherp,uint32_t ipbits);
 
 #endif

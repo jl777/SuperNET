@@ -20,49 +20,61 @@ char *gecko_headersarrived(struct supernet_info *myinfo,struct iguana_info *virt
     return(clonestr("{\"result\":\"gecko headers queued\"}"));
 }
 
-char *gecko_txarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *serialized,int32_t datalen,bits256 txid)
+char *gecko_mempoolarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *data,int32_t datalen,bits256 hash2)
 {
-    struct gecko_mempool *pool; int64_t txfee,vinstotal,voutstotal; uint64_t hdrsi_unspentind,value; int32_t i,numvins,numvouts,txlen,spentheight,minconf,maxconf,unspentind,hdrsi; struct gecko_mempooltx *mtx; struct iguana_msgtx msg;
-    memset(&msg,0,sizeof(msg));
-    iguana_memreset(&virt->TXMEM);
-    txlen = iguana_rwtx(virt->chain->zcash,0,&virt->TXMEM,serialized,&msg,datalen,&txid,virt->chain->isPoS,strcmp("VPN",virt->symbol) == 0);
-    vinstotal = voutstotal = 0;
-    maxconf = virt->longestchain;
-    minconf = virt->chain->minconfirms;
-    if ( (numvins= msg.tx_in) > 0 )
+    int32_t i,j,numother,len = 0; struct gecko_mempool *otherpool; bits256 txid;
+    if ( (otherpool= gecko_mempoolfind(myinfo,virt,&numother,(uint32_t)calc_ipbits(remoteaddr))) != 0 )
     {
-        for (i=0; i<numvins; i++)
+        if ( numother > 0 )
         {
-            if ( (unspentind= iguana_unspentindfind(virt,0,0,0,&value,&spentheight,msg.vins[i].prev_hash,msg.vins[i].prev_vout,virt->bundlescount-1)) != 0 )
+            for (i=0; i<numother; i++)
             {
-                hdrsi = spentheight / virt->chain->bundlesize;
-                hdrsi_unspentind = ((uint64_t)hdrsi << 32) | unspentind;
-                if ( iguana_unspentavail(virt,hdrsi_unspentind,minconf,maxconf) != value )
+                len += iguana_rwbignum(0,&data[len],sizeof(txid),txid.bytes);
+                for (j=0; j<otherpool->numtx; j++)
+                    if ( bits256_cmp(txid,otherpool->txids[j]) == 0 )
+                        break;
+                if ( j == otherpool->numtx )
                 {
-                    printf("vin.%d already spent\n",i);
-                    return(clonestr("{\"error\":\"gecko tx has double spend\"}"));
+                    otherpool->txids[otherpool->numtx++] = txid;
+                    printf("if first time, submit request for txid\n");
                 }
-                vinstotal += value;
             }
         }
     }
-    if ( (numvouts= msg.tx_out) > 0 )
-        for (i=0; i<numvouts; i++)
-            voutstotal += msg.vouts[i].value;
-    if ( (txfee= (vinstotal - voutstotal)) < 0 )
-        return(clonestr("{\"error\":\"gecko tx has more spends than inputs\"}"));
-    if ( txlen <= 0 )
-        return(clonestr("{\"error\":\"couldnt decode gecko tx\"}"));
-    if ( (pool= virt->mempool) == 0 )
-        pool = virt->mempool = calloc(1,sizeof(*pool));
-    mtx = &pool->txs[pool->numtx];
-    memset(mtx,0,sizeof(*mtx));
-    mtx->txid = txid;
-    mtx->txfee = txfee;
-    mtx->ipbits = (uint32_t)calc_ipbits(remoteaddr);
-    mtx->rawtx = calloc(1,datalen*2 + 1);
-    init_hexbytes_noT(mtx->rawtx,serialized,datalen);
-    return(clonestr("{\"result\":\"gecko tx queued\"}"));
+    return(clonestr("{\"result\":\"gecko mempool queued\"}"));
+}
+
+void gecko_txidpurge(struct iguana_info *virt,bits256 txid)
+{
+    struct gecko_mempool *pool; int32_t i,n; struct gecko_memtx *memtx;
+    if ( (pool= virt->mempool) != 0 && pool->txs != 0 && (n= pool->numtx) )
+    {
+        for (i=0; i<n; i++)
+        {
+            if ( (memtx= pool->txs[i]) != 0 && bits256_cmp(txid,memtx->txid) == 0 )
+            {
+                free(pool->txs[i]);
+                pool->txs[i] = pool->txs[--pool->numtx];
+            }
+        }
+    }
+    if ( virt->RELAYNODE != 0 )
+    {
+        for (i=0; i<IGUANA_MAXRELAYS; i++)
+        {
+            if ( (pool= virt->mempools[i]) != 0 && (n= pool->numtx) != 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    if ( bits256_cmp(txid,pool->txids[i]) == 0 )
+                    {
+                        pool->txids[i] = pool->txids[--pool->numtx];
+                        memset(pool->txids[pool->numtx].bytes,0,sizeof(pool->txids[pool->numtx]));
+                    }
+                }
+            }
+        }
+    }
 }
 
 struct iguana_bundle *gecko_ensurebundle(struct iguana_info *virt,struct iguana_block *block,int32_t origheight,int32_t depth)
@@ -131,7 +143,7 @@ struct iguana_bundle *gecko_ensurebundle(struct iguana_info *virt,struct iguana_
 
 int32_t gecko_hwmset(struct iguana_info *virt,struct iguana_txblock *txdata,struct iguana_msgtx *txarray,uint8_t *data,int32_t datalen,int32_t depth)
 {
-    struct iguana_peer *addr; int32_t hdrsi; struct iguana_bundle *bp,*prevbp; struct iguana_block *block;
+    struct iguana_peer *addr; int32_t i,hdrsi; struct iguana_bundle *bp,*prevbp; struct iguana_block *block;
     if ( (block= iguana_blockhashset("gecko_hwmset",virt,txdata->zblock.height,txdata->zblock.RO.hash2,1)) != 0 )
     {
         iguana_blockcopy(virt->chain->zcash,virt->chain->auxpow,virt,block,(struct iguana_block *)&txdata->zblock);
@@ -156,6 +168,8 @@ int32_t gecko_hwmset(struct iguana_info *virt,struct iguana_txblock *txdata,stru
                 iguana_bundlepurgefiles(virt,prevbp);
                 iguana_savehdrs(virt);
                 iguana_bundlevalidate(virt,prevbp,1);
+                for (i=0; i<block->RO.txn_count; i++)
+                    gecko_txidpurge(virt,txarray[i].txid);
             }
         }
         //printf("created block.%d [%d:%d] %d\n",block->height,bp!=0?bp->hdrsi:-1,block->height%virt->chain->bundlesize,bp->numsaved);

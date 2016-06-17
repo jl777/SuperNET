@@ -152,7 +152,7 @@ int32_t iguana_txidreq(struct iguana_info *coin,char **retstrp,bits256 txid)
     coin->reqtxids[coin->numreqtxids++] = txid;
     if ( coin->peers != 0 )
     {
-        for (i=0; i<coin->MAXPEERS; i++)
+        for (i=0; i<IGUANA_MAXPEERS; i++)
             if ( coin->peers->active[i].usock >= 0 )
                 iguana_sendtxidreq(coin,coin->peers->ranked[i],txid);
     }

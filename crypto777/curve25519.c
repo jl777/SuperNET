@@ -1540,6 +1540,25 @@ void calc_rmd160(char hexstr[41],uint8_t buf[20],uint8_t *msg,int32_t len)
         init_hexbytes_noT(hexstr,buf,20);
 }
 
+bits256 bits256_sha256(bits256 data)
+{
+    bits256 hash;
+    vcalc_sha256(0,hash.bytes,data.bytes,sizeof(data));
+    return(hash);
+}
+
+void bits256_rmd160(uint8_t rmd160[20],bits256 data)
+{
+    calc_rmd160(0,rmd160,data.bytes,sizeof(data));
+}
+
+void bits256_rmd160_sha256(uint8_t rmd160[20],bits256 data)
+{
+    bits256 hash;
+    hash = bits256_sha256(data);
+    bits256_rmd160(rmd160,hash);
+}
+
 #ifdef ENABLE_RMDTEST
 int rmd160_test(void)
 {

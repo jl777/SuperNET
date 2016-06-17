@@ -137,10 +137,9 @@ char *gecko_coinbasestr(struct supernet_info *myinfo,struct iguana_info *virt,bi
     return(rawtx);
 }
 
-char *gecko_block(struct supernet_info *myinfo,struct iguana_info *virt,struct iguana_block *newblock,uint32_t *noncep,char **txptrs,int32_t txn_count,uint8_t *coinbase,int32_t coinbaselen,bits256 coinbasespend,double expiration,uint8_t *minerpubkey,int64_t blockreward)
+char *gecko_blockconstruct(struct supernet_info *myinfo,struct iguana_info *virt,struct iguana_block *newblock,uint32_t *noncep,struct gecko_memtx **txptrs,int32_t txn_count,uint8_t *coinbase,int32_t coinbaselen,bits256 coinbasespend,double expiration,uint8_t *minerpubkey,int64_t blockreward)
 {
-    struct iguana_info *btcd; uint8_t serialized[sizeof(*newblock)],space[16384],*txdata,*allocptr = 0; int32_t i,n,totaltxlen=0,txlen; char *coinbasestr,*blockstr=0; bits256 *txids=0,txspace[256],threshold;
-    //char str[65]; printf("prevblock.%s\n",bits256_str(str,newblock->RO.prev_block));
+    struct iguana_info *btcd; uint8_t serialized[sizeof(*newblock)],space[16384]; int32_t i,n,len,totaltxlen=0; char *coinbasestr,*blockstr=0; bits256 *txids=0,txspace[256],threshold; struct gecko_memtx *memtx;
     if ( (btcd= iguana_coinfind("BTCD")) == 0 )
     {
         printf("basilisk needs BTCD\n");
@@ -155,17 +154,11 @@ char *gecko_block(struct supernet_info *myinfo,struct iguana_info *virt,struct i
     {
         for (i=0; i<txn_count; i++)
         {
-            if ( (txdata= get_dataptr(BASILISK_HDROFFSET,&allocptr,&txlen,space,sizeof(space),txptrs[i])) == 0 )
+            if ( (memtx= txptrs[i]) != 0 )
             {
-                printf("gecko_block error tx.%d\n",i);
-                if ( txids != txspace )
-                    free(txids);
-                return(0);
+                totaltxlen += memtx->datalen;
+                txids[i + 1] = memtx->txid;
             }
-            totaltxlen += txlen;
-            txids[i+1] = bits256_doublesha256(0,txdata,txlen);
-            if ( allocptr != 0 )
-                free(allocptr);
         }
     }
     if ( (coinbasestr= gecko_coinbasestr(myinfo,virt,&txids[0],newblock->RO.timestamp,minerpubkey,blockreward,coinbase,coinbaselen,coinbasespend)) != 0 )
@@ -194,8 +187,15 @@ char *gecko_block(struct supernet_info *myinfo,struct iguana_info *virt,struct i
             init_hexbytes_noT(blockstr,serialized,n);
             //printf("block.(%s) coinbase.(%s) lens.%ld\n",blockstr,coinbasestr,(strlen(blockstr)+strlen(coinbasestr))/2);
             strcat(blockstr,coinbasestr);
+            len = (int32_t)strlen(blockstr);
             for (i=0; i<txn_count; i++)
-                strcat(blockstr,txptrs[i]);
+            {
+                if ( (memtx= txptrs[i]) != 0 )
+                {
+                    init_hexbytes_noT(&blockstr[len],gecko_txdata(memtx),memtx->datalen);
+                    len += memtx->datalen << 1;
+                }
+            }
         }
         free(coinbasestr);
     }
@@ -204,7 +204,7 @@ char *gecko_block(struct supernet_info *myinfo,struct iguana_info *virt,struct i
     return(blockstr);
 }
 
-char *gecko_createblock(struct supernet_info *myinfo,struct iguana_info *btcd,int32_t isPoS,struct iguana_block *newblock,char *symbol,char **txptrs,int32_t txn_count,int32_t maxmillis,uint8_t *minerpubkey,int64_t blockreward)
+char *gecko_createblock(struct supernet_info *myinfo,struct iguana_info *btcd,int32_t isPoS,struct iguana_block *newblock,char *symbol,struct gecko_memtx **txptrs,int32_t txn_count,int32_t maxmillis,uint8_t *minerpubkey,int64_t blockreward)
 {
     bits256 btcdhash; uint8_t coinbase[512]; int32_t coinbaselen; uint32_t nonce; double expiration = OS_milliseconds() + maxmillis;
     //char str[65]; printf("create prev.(%s) %p\n",bits256_str(str,newblock->RO.prev_block),&newblock->RO.prev_block);
@@ -217,7 +217,7 @@ char *gecko_createblock(struct supernet_info *myinfo,struct iguana_info *btcd,in
             return(0);
         }
         nonce = 0;
-        return(gecko_block(myinfo,btcd,newblock,&nonce,txptrs,txn_count,coinbase,coinbaselen,btcdhash,expiration,minerpubkey,blockreward));
+        return(gecko_blockconstruct(myinfo,btcd,newblock,&nonce,txptrs,txn_count,coinbase,coinbaselen,btcdhash,expiration,minerpubkey,blockreward));
     } else return(0);
 }
 
@@ -275,40 +275,6 @@ cJSON *gecko_paymentsobj(struct supernet_info *myinfo,cJSON *txjson,cJSON *valso
     return(txjson);
 }
 
-void **gecko_mempool(struct supernet_info *myinfo,struct iguana_info *virt,int64_t *rewardp,int32_t *txn_countp,void **ptrp,void *space,int32_t max,int32_t height)
-{
-    int32_t i,n; void **txptrs; struct gecko_mempool *pool; int64_t txfees = 0,reward = virt->chain->initialreward;
-    if ( virt->chain->halvingduration != 0 && (n= (height / virt->chain->halvingduration)) != 0 )
-    {
-        for (i=0; i<n; i++)
-            reward >>= 1;
-    }
-    *ptrp = 0;
-    *txn_countp = 0;
-    if ( (pool= virt->mempool) == 0 )
-        pool = virt->mempool = calloc(1,sizeof(*pool));
-    if ( pool->numtx*sizeof(char *) <= max )
-        txptrs = space;
-    else
-    {
-        txptrs = calloc(pool->numtx,sizeof(char *));
-        *ptrp = (void *)txptrs;
-    }
-    for (i=n=0; i<pool->numtx; i++)
-    {
-        if ( pool->txs[i].pending == 0 )
-        {
-            txfees += pool->txs[i].txfee;
-            txptrs[n++] = pool->txs[i].rawtx;
-            pool->txs[i].pending = height;
-        }
-    }
-    *rewardp = (reward + txfees);
-    if ( (*txn_countp= n) != 0 )
-        return(txptrs);
-    else return(0);
-}
-
 void gecko_blocksubmit(struct supernet_info *myinfo,struct iguana_info *virt,char *blockstr,bits256 hash2)
 {
     uint8_t *data,space[16384],*allocptr=0; int32_t i,len,numranked=0; struct iguana_peers *peers; struct iguana_peer *addr;
@@ -331,7 +297,7 @@ void gecko_blocksubmit(struct supernet_info *myinfo,struct iguana_info *virt,cha
 
 void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,int32_t maxmillis,uint8_t *minerpubkey33)
 {
-    struct iguana_zblock newblock; uint32_t nBits; int64_t reward = 0; int32_t txn_count; char *blockstr,*space[256]; void **txptrs,*ptr; //struct iguana_bundle *bp;
+    struct iguana_zblock newblock; uint32_t nBits; int64_t reward = 0; int32_t txn_count; char *blockstr,*space[256]; struct gecko_memtx **txptrs; void *ptr; //struct iguana_bundle *bp;
     if ( virt->virtualchain == 0 )
         return;
     memset(&newblock,0,sizeof(newblock));
@@ -343,9 +309,9 @@ void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct ig
     {
         newblock.RO.bits = nBits;
         //printf("mine.%s nBits.%x ht.%d\n",virt->symbol,nBits,newblock.height);
-        txptrs = gecko_mempool(myinfo,virt,&reward,&txn_count,&ptr,space,(int32_t)(sizeof(space)/sizeof(*space)),newblock.height);
+        txptrs = gecko_mempool_txptrs(myinfo,virt,&reward,&txn_count,&ptr,space,(int32_t)(sizeof(space)/sizeof(*space)),newblock.height);
         //char str[65]; printf("HWM.%s %p\n",bits256_str(str,newblock.RO.prev_block),&newblock.RO.prev_block);
-        if ( (blockstr= gecko_createblock(myinfo,btcd,virt->chain->isPoS,(void *)&newblock,virt->symbol,(char **)txptrs,txn_count,maxmillis,minerpubkey33,reward)) != 0 )
+        if ( (blockstr= gecko_createblock(myinfo,btcd,virt->chain->isPoS,(void *)&newblock,virt->symbol,txptrs,txn_count,maxmillis,minerpubkey33,reward)) != 0 )
         {
             char str[65]; printf("%s.%x %s %u %d %.8f\n",virt->symbol,newblock.RO.bits,bits256_str(str,newblock.RO.hash2),newblock.RO.timestamp,newblock.height,dstr(reward));
             gecko_blocksubmit(myinfo,virt,blockstr,newblock.RO.hash2);

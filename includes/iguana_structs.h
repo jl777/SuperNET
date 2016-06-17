@@ -16,6 +16,7 @@
 #ifndef H_IGUANASTRUCTS_H
 #define H_IGUANASTRUCTS_H
 
+#define IGUANA_MAXRELAYS 64
 
 struct iguana_thread
 {
@@ -136,7 +137,8 @@ struct iguana_msgtx
     struct iguana_msgvin *vins;
     struct iguana_msgvout *vouts;
     bits256 txid;
-    int32_t allocsize,timestamp;
+    int32_t allocsize,timestamp,numinputs,numoutputs;
+    int64_t inputsum,outputsum,txfee;
 } __attribute__((packed));
 
 struct iguana_msgjoinsplit
@@ -307,7 +309,7 @@ struct iguana_peer
     char ipaddr[64],lastcommand[16],coinname[64],symbol[64];
     uint64_t pingnonce,totalsent,totalrecv,ipbits; double pingtime,sendmillis,pingsum,getdatamillis;
     uint32_t lastcontact,sendtime,ready,startsend,startrecv,pending,lastgotaddr,lastblockrecv,pendtime,lastflush,lastpoll,myipbits,persistent_peer,protover;
-    int32_t supernet,basilisk,dead,addrind,usock,lastheight,relayflag,numpackets,numpings,ipv6,height,rank,pendhdrs,pendblocks,recvhdrs,lastlefti,validpub,othervalid,dirty[2],laggard,headerserror,lastsent;
+    int32_t supernet,basilisk,dead,addrind,usock,lastheight,relayflag,numpackets,numpings,ipv6,height,rank,pendhdrs,pendblocks,recvhdrs,lastlefti,validpub,othervalid,dirty[2],laggard,headerserror,lastsent,isrelay;
     double recvblocks,recvtotal;
     int64_t allocated,freed;
     bits256 RThashes[IGUANA_MAXBUNDLESIZE]; int32_t numRThashes;
@@ -414,7 +416,7 @@ struct iguana_info
     double txidfind_totalmillis,txidfind_num,spendtxid_totalmillis,spendtxid_num;
     struct iguana_monitorinfo monitoring[256];
     struct gecko_sequences SEQ;
-    struct iguana_blocks blocks; void *mempool;
+    struct iguana_blocks blocks; void *mempool; void *mempools[IGUANA_MAXRELAYS];
 };
 
 struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };
@@ -468,6 +470,7 @@ struct supernet_info
     void *ctx;
     // compatibility
     bits256 pangea_category,instantdex_category;
+    uint32_t relaybits[IGUANA_MAXRELAYS]; struct basilisk_relay relays[IGUANA_MAXRELAYS]; int32_t numrelays;
 };
 #endif
 
