@@ -1006,12 +1006,13 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
                 }
             }
         }
-        printf("after urlconv.(%s) argjson.(%s)\n",jprint(json,0),jprint(argjson,0));
         origargjson = argjson;
         if ( is_cJSON_Array(argjson) != 0 && cJSON_GetArraySize(argjson) == 0 )
             argjson = jitem(argjson,0);
+        printf("after urlconv.(%s) argjson.(%s)\n",jprint(json,0),jprint(argjson,0));
         if ( jstr(argjson,"method") == 0 )
         {
+            printf("no method in request.(%s)\n",jprint(argjson,0));
             free_json(origargjson);
             return(0);
         }
