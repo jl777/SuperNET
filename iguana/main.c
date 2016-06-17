@@ -156,7 +156,7 @@ char *iguana_JSON(char *jsonstr,uint16_t port)
 char *SuperNET_jsonstr(struct supernet_info *myinfo,char *jsonstr,char *remoteaddr,uint16_t port)
 {
     cJSON *json; char *agent,*method,*retstr = 0;
-    //char str[65]; printf("SuperNET_jsonstr %p %s\n",&myinfo->privkey,bits256_str(str,myinfo->privkey));
+    printf("SuperNET_jsonstr.(%s)\n",jsonstr);
     if ( (json= cJSON_Parse(jsonstr)) != 0 )
     {
         method = jstr(json,"method");
@@ -191,7 +191,7 @@ int32_t iguana_jsonQ()
     {
         if ( (ptr->retjsonstr= SuperNET_jsonstr(ptr->myinfo,ptr->jsonstr,ptr->remoteaddr,ptr->port)) == 0 )
             ptr->retjsonstr = clonestr("{\"error\":\"null return from iguana_jsonstr\"}");
-        //printf("finished.(%s) -> (%s) %.0f\n",ptr->jsonstr,*ptr->retjsonstrp!=0?*ptr->retjsonstrp:"null return",OS_milliseconds());
+        printf("finished.(%s) -> (%s) %.0f\n",ptr->jsonstr,ptr->retjsonstr!=0?ptr->retjsonstr:"null return",OS_milliseconds());
         queue_enqueue("finishedQ",&finishedQ,&ptr->DL,0);
         return(1);
     }

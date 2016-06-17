@@ -666,6 +666,7 @@ char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,ch
     cJSON *params[16],*array; struct iguana_info *tmp,*coin = 0; char symbol[16]; int32_t i,c,n; char *retstr = 0;
     symbol[0] = 0;
     memset(params,0,sizeof(params));
+    printf("bitcoinRPC\n");
     if ( json != 0 )
     {
         if ( port == myinfo->rpcport )
