@@ -703,7 +703,7 @@ char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,ch
             coin = iguana_coinfind(symbol);
         if ( coin != 0 )
             safecopy(symbol,coin->symbol,sizeof(symbol));
-        //printf("method.(%s) (%s) remote.(%s) symbol.(%s)\n",method,jprint(json,0),remoteaddr,symbol);
+        printf("method.(%s) (%s) remote.(%s) symbol.(%s)\n",method,jprint(json,0),remoteaddr,symbol);
         if ( method != 0 && symbol[0] != 0 && (coin != 0 || (coin= iguana_coinfind(symbol)) != 0) )
         {
             if ( (array= jarray(&n,json,"params")) == 0 )
@@ -813,7 +813,7 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
         } else break;
     }
     jadd(json,"lines",array);
-    printf("urlconv.(%s)\n",jprint(json,0));
+    //printf("urlconv.(%s)\n",jprint(json,0));
     return(json);
 }
 
