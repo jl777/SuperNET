@@ -591,7 +591,7 @@ STRING_ARG(iguana,peers,activecoin)
 STRING_ARG(iguana,getconnectioncount,activecoin)
 {
     int32_t i,num = 0; char buf[512];
-    if ( coin != 0 && coin->peers == 0 )
+    if ( coin != 0 && coin->peers != 0 )
     {
         for (i=0; i<sizeof(coin->peers->active)/sizeof(*coin->peers->active); i++)
             if ( coin->peers->active[i].usock >= 0 )
@@ -599,6 +599,16 @@ STRING_ARG(iguana,getconnectioncount,activecoin)
         sprintf(buf,"{\"result\":\"%d\"}",num);
         return(clonestr(buf));
     } else return(clonestr("{\"error\":\"getconnectioncount needs coin\"}"));
+}
+
+ZERO_ARGS(bitcoinrpc,getdifficulty)
+{
+    char buf[64];
+    if ( coin != 0 )
+    {
+        sprintf(buf,"{\"result\":\"%.8f\"}",PoW_from_compact(coin->blocks.hwmchain.RO.bits,coin->chain->unitval));
+        return(clonestr(buf));
+    } else return(clonestr("{\"error\":\"getdifficulty needs coin\"}"));
 }
 
 STRING_ARG(iguana,addcoin,newcoin)

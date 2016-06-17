@@ -23,7 +23,7 @@
 
 char *sglue(GLUEARGS,char *agent,char *method)
 {
-    char *retstr,*rpcretstr,*walletstr,checkstr[64]; cJSON *retjson,*tmpjson,*result,*error,*wallet; int32_t i,j,len; int64_t val;
+    char *retstr,*rpcretstr,*walletstr,checkstr[64],dcheckstr[64]; cJSON *retjson,*tmpjson,*result,*error,*wallet; int32_t i,j,len; int64_t val; double dval;
     if ( json == 0 )
         json = cJSON_CreateObject();
     //printf("sglue.(%s)\n",jprint(json,0));
@@ -80,9 +80,11 @@ char *sglue(GLUEARGS,char *agent,char *method)
                     }
                     else
                     {
+                        dval = atof(rpcretstr);
+                        sprintf(dcheckstr,"%.8f",dval);
                         val = atol(rpcretstr);
                         sprintf(checkstr,"%lld",(long long)val);
-                        if ( strcmp(checkstr,rpcretstr) == 0 )
+                        if ( strcmp(checkstr,rpcretstr) == 0 || strcmp(dcheckstr,rpcretstr) == 0 )
                         {
                             free_json(retjson);
                             free(retstr);
@@ -262,6 +264,11 @@ static char *getbestblockhash(RPCARGS)
 static char *getblockcount(RPCARGS)
 {
     return(sglue(0,CALLGLUE,"bitcoinrpc","getblockcount"));
+}
+
+static char *getdifficulty(RPCARGS)
+{
+    return(sglue(0,CALLGLUE,"bitcoinrpc","getdifficulty"));
 }
 
 static char *getblock(RPCARGS)
@@ -546,6 +553,7 @@ struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,remotefla
     { "stop",                   &stop,                   true,   true },
     { "getbestblockhash",       &getbestblockhash,       true,   true },
     { "getblockcount",          &getblockcount,          true,   true },
+    { "getdifficulty",          &getdifficulty,          true,   true },
     { "getconnectioncount",     &getconnectioncount,     true,   true },
     { "getpeerinfo",            &getpeerinfo,            true,   true },
     { "getinfo",                &getinfo,                true,   true },
@@ -700,7 +708,7 @@ char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,ch
         {
             if ( (array= jarray(&n,json,"params")) == 0 )
             {
-                i= 0, n = 0;
+                i = 0, n = 0;
             }
             else if ( n > 0 )
             {

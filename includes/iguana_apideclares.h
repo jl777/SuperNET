@@ -42,6 +42,7 @@ HASH_ARRAY_STRING(basilisk,VPNlogout,hash,vals,hexstr);
 
 ZERO_ARGS(bitcoinrpc,getinfo);
 ZERO_ARGS(bitcoinrpc,getblockcount);
+ZERO_ARGS(bitcoinrpc,getdifficulty);
 ZERO_ARGS(bitcoinrpc,getbestblockhash);
 INT_ARG(bitcoinrpc,getblockhash,height);
 HASH_AND_TWOINTS(bitcoinrpc,getblock,blockhash,verbose,remoteonly);

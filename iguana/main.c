@@ -1435,12 +1435,14 @@ void iguana_main(void *arg)
         int32_t i,max=10000000; FILE *fp; bits256 check,val,hash = rand256(0);
         if ( (fp= fopen("/tmp/seeds2","rb")) != 0 )
         {
-            fread(&check,1,sizeof(check),fp);
+            if ( fread(&check,1,sizeof(check),fp) != sizeof(check) )
+                printf("check read error\n");
             for (i=1; i<max; i++)
             {
                 if ( (i % 1000000) == 0 )
                     fprintf(stderr,".");
-                fread(&val,1,sizeof(val),fp);
+                if ( fread(&val,1,sizeof(val),fp) != sizeof(val) )
+                    printf("val read error\n");
                 hash = bits256_sha256(val);
                 hash = bits256_sha256(hash);
                 if ( bits256_cmp(hash,check) != 0 )
