@@ -807,13 +807,13 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
             {
                 data = &urlstr[totallen - datalen];
                 data[-1] = 0;
-                //printf("post.(%s) (%c)\n",data,data[0]);
+                printf("post.(%s) (%c)\n",data,data[0]);
                 jaddstr(json,"POST",data);
             }
         } else break;
     }
     jadd(json,"lines",array);
-    //printf("urlconv.(%s)\n",jprint(json,0));
+    printf("urlconv.(%s)\n",jprint(json,0));
     return(json);
 }
 
@@ -834,7 +834,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
     n += i;
     j = i = 0;
     filetype[0] = 0;
-    //printf("url.(%s) method.(%s)\n",&url[i],urlmethod);
+    printf("url.(%s) method.(%s)\n",&url[i],urlmethod);
     if ( strcmp(&url[i],"/") == 0 && strcmp(urlmethod,"GET") == 0 )
     {
         static int counter;
@@ -914,7 +914,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
         jaddstr(argjson,"agent",jstri(tokens,0));
     if ( num > 1 )
         jaddstr(argjson,"method",jstri(tokens,1));
-    //printf("urlstr.(%s)\n",urlstr+n);
+    printf("urlstr.(%s)\n",urlstr+n);
     if ( (json= SuperNET_urlconv(retbuf,bufsize,urlstr+n)) != 0 )
     {
         jadd(json,"tokens",tokens);
