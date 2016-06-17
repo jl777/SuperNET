@@ -1007,7 +1007,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
             }
         }
         origargjson = argjson;
-        if ( is_cJSON_Array(argjson) != 0 && cJSON_GetArraySize(argjson) == 0 )
+        if ( is_cJSON_Array(argjson) != 0 && cJSON_GetArraySize(argjson) == 1 )
             argjson = jitem(argjson,0);
         printf("after urlconv.(%s) argjson.(%s)\n",jprint(json,0),jprint(argjson,0));
         if ( jstr(argjson,"method") == 0 )
