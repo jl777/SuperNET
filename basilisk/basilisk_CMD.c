@@ -144,7 +144,7 @@ void basilisk_request_goodbye(struct supernet_info *myinfo)
 {
     cJSON *valsobj = cJSON_CreateObject();
     jaddnum(valsobj,"timeout",-1);
-    basilisk_requestservice(myinfo,"BYE",valsobj,GENESIS_PUBKEY,0,0,0);
+    basilisk_requestservice(myinfo,"BYE",0,valsobj,GENESIS_PUBKEY,0,0,0);
     free_json(valsobj);
 }
 
