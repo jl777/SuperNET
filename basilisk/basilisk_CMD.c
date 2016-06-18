@@ -44,13 +44,14 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint
                 rp->pubkey = pubkey;
             if ( pubkey33[0] != 0 )
                 memcpy(rp->pubkey33,pubkey33,33);
+            printf("updated %x\n",ipbits);
             return(clonestr("{\"error\":\"relay already there\"}"));
         }
     }
     if ( i >= sizeof(myinfo->relays)/sizeof(*myinfo->relays) )
         i = (rand() % (sizeof(myinfo->relays)/sizeof(*myinfo->relays)));
+    printf("add relay[%d] <- %x\n",i,ipbits);
     rp = &myinfo->relays[i];
-    printf("verify relay sig for %x\n",ipbits);
     rp->ipbits = ipbits;
     rp->addr = basilisk_ensurerelay(btcd,rp->ipbits);
     for (i=0; i<myinfo->numrelays; i++)
@@ -61,16 +62,18 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint
 
 char *basilisk_respond_relays(struct supernet_info *myinfo,char *CMD,void *_addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
-    bits256 txhash2; uint32_t ipbits; int32_t i,n,len,siglen; uint8_t pubkey33[33],sig[128]; char *sigstr = 0,*retstr;
+    bits256 txhash2; uint32_t ipbits; int32_t i,n,len,siglen; uint8_t pubkey33[33],sig[128]; char *sigstr = 0,*retstr,pubstr[128];
     if ( (sigstr= jstr(valsobj,"sig")) != 0 )
     {
         siglen = (int32_t)strlen(sigstr) >> 1;
         decode_hex(sig,siglen,sigstr);
         vcalc_sha256(0,txhash2.bytes,data,datalen);
-        if ( 1 || bitcoin_recoververify(myinfo->ctx,"BTCD",sig,txhash2,pubkey33) == 0 )
+        memset(pubkey33,0,33);
+        if ( bitcoin_recoververify(myinfo->ctx,"BTCD",sig,txhash2,pubkey33) == 0 || 1 )
         {
             // compare with existing
-            printf("verified relay data sig.%d\n",siglen);
+            init_hexbytes_noT(pubstr,pubkey33,33);
+            printf("skip verified relay data siglen.%d pub33.%s\n",siglen,pubstr);
             if ( (retstr= basilisk_addrelay_info(myinfo,pubkey33,(uint32_t)calc_ipbits(remoteaddr),hash)) != 0 )
                 free(retstr);
             n = (int32_t)(datalen / sizeof(uint32_t));
