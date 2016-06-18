@@ -158,14 +158,15 @@ int32_t bitcoin_recoververify(void *ctx,char *symbol,uint8_t *sig65,bits256 mess
         secp256k1_ecdsa_recoverable_signature_convert(ctx,&SIG,&rSIG);
         if ( secp256k1_ecdsa_recover(ctx,&PUB,&rSIG,messagehash2.bytes) != 0 )
         {
-            secp256k1_ec_pubkey_serialize(ctx,pubkey,&plen,&PUB,plen == 65 ? SECP256K1_EC_UNCOMPRESSED : SECP256K1_EC_COMPRESSED);
+            plen = 33;
+            secp256k1_ec_pubkey_serialize(ctx,pubkey,&plen,&PUB,SECP256K1_EC_COMPRESSED);//plen == 65 ? SECP256K1_EC_UNCOMPRESSED : SECP256K1_EC_COMPRESSED);
             if ( secp256k1_ecdsa_verify(ctx,&SIG,messagehash2.bytes,&PUB) != 0 )
             {
                 retval = 0;
-                if ( pubkey[0] == 4 ) // experimentally looks like 04 is set
+                /*if ( pubkey[0] == 4 ) // experimentally looks like 04 is set
                     pubkey[0] = 2;
                 else if ( pubkey[0] != 2 )
-                    pubkey[0] = 3;
+                    pubkey[0] = 3;*/
             }
             else printf("secp256k1_ecdsa_verify error\n");
         } else printf("secp256k1_ecdsa_recover error\n");
