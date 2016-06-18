@@ -48,7 +48,7 @@ struct basilisk_info
 struct basilisk_relay
 {
     bits256 pubkey; uint32_t ipbits; struct iguana_peer *addr;
-    char btcdaddr[64],sigstr[168];
+    uint8_t pubkey33[33];
 };
 
 void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen);

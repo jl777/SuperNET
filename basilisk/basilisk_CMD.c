@@ -30,7 +30,7 @@ struct iguana_peer *basilisk_ensurerelay(struct iguana_info *btcd,uint32_t ipbit
     return(addr);
 }
 
-char *basilisk_addrelay_info(struct supernet_info *myinfo,char *btcdaddr,uint32_t ipbits,bits256 pubkey,char *sigstr)
+char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint32_t ipbits,bits256 pubkey)
 {
     int32_t i; struct basilisk_relay *rp; struct iguana_info *btcd;
     if ( (btcd= iguana_coinfind("BTCD")) == 0 )
@@ -39,16 +39,19 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,char *btcdaddr,uint32_
     {
         rp = &myinfo->relays[i];
         if ( ipbits == rp->ipbits )
+        {
+            if ( bits256_cmp(GENESIS_PUBKEY,pubkey) != 0 && bits256_nonz(pubkey) != 0 )
+                rp->pubkey = pubkey;
+            if ( pubkey33[0] != 0 )
+                memcpy(rp->pubkey33,pubkey33,33);
             return(clonestr("{\"error\":\"relay already there\"}"));
+        }
     }
     if ( i >= sizeof(myinfo->relays)/sizeof(*myinfo->relays) )
         i = (rand() % (sizeof(myinfo->relays)/sizeof(*myinfo->relays)));
     rp = &myinfo->relays[i];
-    printf("verify relay sig\n");
+    printf("verify relay sig for %x\n",ipbits);
     rp->ipbits = ipbits;
-    rp->pubkey = pubkey;
-    safecopy(rp->btcdaddr,btcdaddr,sizeof(rp->btcdaddr));
-    safecopy(rp->sigstr,sigstr,sizeof(rp->sigstr));
     rp->addr = basilisk_ensurerelay(btcd,rp->ipbits);
     for (i=0; i<myinfo->numrelays; i++)
         myinfo->relaybits[i] = myinfo->relays[i].ipbits;
@@ -57,6 +60,55 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,char *btcdaddr,uint32_
 }
 
 char *basilisk_respond_relays(struct supernet_info *myinfo,char *CMD,void *_addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
+{
+    bits256 txhash2; uint32_t ipbits; int32_t i,n,len,siglen; uint8_t pubkey33[33],sig[128]; char *sigstr = 0,*retstr;
+    if ( (sigstr= jstr(valsobj,"sig")) != 0 )
+    {
+        siglen = (int32_t)strlen(sigstr) >> 1;
+        decode_hex(sig,siglen,sigstr);
+        vcalc_sha256(0,txhash2.bytes,data,datalen);
+        if ( bitcoin_recoververify(myinfo->ctx,"BTCD",sig,txhash2,pubkey33) == 0 )
+        {
+            // compare with existing
+            printf("verified relay data sig.%d\n",siglen);
+            if ( (retstr= basilisk_addrelay_info(myinfo,pubkey33,(uint32_t)calc_ipbits(remoteaddr),hash)) != 0 )
+                free(retstr);
+            n = (int32_t)(datalen / sizeof(uint32_t));
+            for (i=len=0; i<n; i++)
+            {
+                len += iguana_rwnum(0,(void *)&data[len],sizeof(uint32_t),&ipbits);
+                if ( (retstr= basilisk_addrelay_info(myinfo,0,ipbits,GENESIS_PUBKEY)) != 0 )
+                    free(retstr);
+            }
+        } else printf("error relay data sig.%d didnt verify\n",siglen);
+    }
+    return(clonestr("{\"result\":\"processed relays\"}"));
+}
+
+int32_t basilisk_relays_send(struct supernet_info *myinfo,struct iguana_peer *addr)
+{
+    int32_t i,siglen,len = 0; char strbuf[256]; bits256 txhash2; uint8_t sig[128],serialized[sizeof(myinfo->relaybits)]; cJSON *vals; bits256 hash; char *retstr,hexstr[sizeof(myinfo->relaybits)*2 + 1];
+    if ( myinfo != 0 )
+    {
+        vals = cJSON_CreateObject();
+        hash = myinfo->myaddr.persistent;
+        for (i=0; i<myinfo->numrelays; i++)
+            len += iguana_rwnum(1,&serialized[len],sizeof(uint32_t),&myinfo->relaybits[i]);
+        vcalc_sha256(0,txhash2.bytes,serialized,len);
+        if ( (siglen= bitcoin_sign(myinfo->ctx,"BTCD",sig,txhash2,myinfo->persistent_priv,1)) > 0 )
+        {
+            init_hexbytes_noT(strbuf,sig,siglen);
+            jaddstr(vals,"sig",strbuf);
+        }
+        init_hexbytes_noT(hexstr,serialized,len);
+        if ( (retstr= basilisk_standardservice("RLY",myinfo,hash,vals,hexstr,0)) != 0 )
+            free(retstr);
+        free_json(vals);
+        return(0);
+    } else return(-1);
+}
+
+/*char *basilisk_respond_relays(struct supernet_info *myinfo,char *CMD,void *_addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
     uint32_t *ipbits = (uint32_t *)data; int32_t num,i,j,n = datalen >> 2;
     for (i=num=0; i<n; i++)
@@ -67,14 +119,14 @@ char *basilisk_respond_relays(struct supernet_info *myinfo,char *CMD,void *_addr
         if ( j == myinfo->numrelays )
         {
             num++;
-            printf("ensure unknown relay\n");
+            printf("i.%d j.%d ensure new relay.(%s)\n",i,j,remoteaddr);
             basilisk_ensurerelay(iguana_coinfind("BTCD"),ipbits[i]);
         }
     }
     if ( num == 0 )
         return(clonestr("{\"result\":\"no new relays found\"}"));
     else return(clonestr("{\"result\":\"relay added\"}"));
-}
+}*/
 
 char *basilisk_respond_goodbye(struct supernet_info *myinfo,char *CMD,void *_addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
@@ -103,17 +155,16 @@ char *basilisk_respond_instantdex(struct supernet_info *myinfo,char *CMD,void *a
 
 char *basilisk_respond_dispatch(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
-    char *ipaddr,*btcdaddr,*sigstr,*retstr=0;
-    printf("from.(%s) ADD.(%s) datalen.%d\n",remoteaddr,jprint(valsobj,0),datalen);
-    if ( (ipaddr= jstr(valsobj,"ipaddr")) != 0 && (btcdaddr= jstr(valsobj,"btcdaddr")) != 0 && (sigstr= jstr(valsobj,"sigstr")) != 0 )
-        retstr = basilisk_addrelay_info(myinfo,btcdaddr,(uint32_t)calc_ipbits(ipaddr),hash,sigstr);
-    else retstr = clonestr("{\"error\":\"need rmd160, address and ipaddr\"}");
+    char *retstr=0;
     return(retstr);
 }
 
 char *basilisk_respond_addrelay(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
-    char *retstr=0;
+    char *ipaddr,*retstr=0;
+    if ( (ipaddr= jstr(valsobj,"ipaddr")) != 0 )
+        retstr = basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(ipaddr),jbits256(valsobj,"pubkey"));
+    else retstr = clonestr("{\"error\":\"need rmd160, address and ipaddr\"}");
     return(retstr);
 }
 

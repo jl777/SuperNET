@@ -95,7 +95,10 @@ void gecko_iteration(struct supernet_info *myinfo,struct iguana_info *btcd,struc
     longesthdrsi = virt->longestchain / virt->chain->bundlesize;
     if ( hwmhdrsi < longesthdrsi )
         gecko_requesthdrs(myinfo,virt,hwmhdrsi);
-    bitcoin_address(mineraddr,virt->chain->pubtype,myinfo->persistent_pubkey33,33);
+    if ( btcd->RELAYNODE != 0 )
+    {
+        bitcoin_address(mineraddr,virt->chain->pubtype,myinfo->persistent_pubkey33,33);
     //printf("mine.%s %s\n",virt->symbol,mineraddr);
-    gecko_miner(myinfo,btcd,virt,maxmillis,myinfo->persistent_pubkey33);
+        gecko_miner(myinfo,btcd,virt,maxmillis,myinfo->persistent_pubkey33);
+    }
 }
