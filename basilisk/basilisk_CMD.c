@@ -42,7 +42,7 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint
         {
             if ( bits256_cmp(GENESIS_PUBKEY,pubkey) != 0 && bits256_nonz(pubkey) != 0 )
                 rp->pubkey = pubkey;
-            if ( pubkey33[0] != 0 )
+            if ( pubkey33 != 0 && pubkey33[0] != 0 )
                 memcpy(rp->pubkey33,pubkey33,33);
             printf("updated %x\n",ipbits);
             return(clonestr("{\"error\":\"relay already there\"}"));
