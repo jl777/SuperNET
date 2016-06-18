@@ -54,6 +54,8 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint
     rp = &myinfo->relays[i];
     rp->ipbits = ipbits;
     rp->addr = basilisk_ensurerelay(btcd,rp->ipbits);
+    if ( myinfo->numrelays < sizeof(myinfo->relays)/sizeof(*myinfo->relays) )
+        myinfo->numrelays++;
     for (i=0; i<myinfo->numrelays; i++)
         myinfo->relaybits[i] = myinfo->relays[i].ipbits;
     revsort32(&myinfo->relaybits[0],myinfo->numrelays,sizeof(myinfo->relaybits[0]));
