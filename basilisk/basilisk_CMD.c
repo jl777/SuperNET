@@ -69,11 +69,11 @@ char *basilisk_respond_relays(struct supernet_info *myinfo,char *CMD,void *_addr
         decode_hex(sig,siglen,sigstr);
         vcalc_sha256(0,txhash2.bytes,data,datalen);
         memset(pubkey33,0,33);
-        if ( bitcoin_recoververify(myinfo->ctx,"BTCD",sig,txhash2,pubkey33) == 0 || 1 )
+        if ( bitcoin_recoververify(myinfo->ctx,"BTCD",sig,txhash2,pubkey33) == 0 )
         {
             // compare with existing
             init_hexbytes_noT(pubstr,pubkey33,33);
-            printf("skip verified relay data siglen.%d pub33.%s\n",siglen,pubstr);
+            printf(" verified relay data siglen.%d pub33.%s\n",siglen,pubstr);
             if ( (retstr= basilisk_addrelay_info(myinfo,pubkey33,(uint32_t)calc_ipbits(remoteaddr),hash)) != 0 )
                 free(retstr);
             n = (int32_t)(datalen / sizeof(uint32_t));
