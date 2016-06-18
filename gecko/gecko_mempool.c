@@ -33,7 +33,7 @@ struct gecko_mempool *gecko_mempoolfind(struct supernet_info *myinfo,struct igua
             }
         } else firstz = j;
     }
-    if ( j == myinfo->numrelays )
+    if ( otherpool == 0 )
     {
         virt->mempools[firstz] = otherpool = calloc(1,sizeof(struct gecko_mempool));
         otherpool->ipbits = (uint32_t)ipbits;
@@ -54,6 +54,7 @@ void gecko_mempool_sync(struct supernet_info *myinfo,struct iguana_info *virt,bi
     else coin = virt;
     for (; i<myinfo->numrelays; i+=n)
     {
+        printf("mempool_sync.%d\n",i);
         if ( (addr= iguana_peerfindipbits(coin,myinfo->relaybits[i],1)) != 0 )
         {
             if ( (otherpool= gecko_mempoolfind(myinfo,virt,&numother,myinfo->relaybits[i])) != 0 )
@@ -221,7 +222,7 @@ int32_t basilisk_respond_geckogettx(struct supernet_info *myinfo,struct iguana_i
 
 char *gecko_txarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *serialized,int32_t datalen,bits256 txid)
 {
-    struct gecko_mempool *pool; int64_t txfee,vinstotal,voutstotal; uint64_t hdrsi_unspentind,value; int32_t i,numvins,numvouts,txlen,spentheight,minconf,maxconf,unspentind,hdrsi; struct iguana_msgtx msg; char *rawtx; struct gecko_memtx *memtx;
+    struct gecko_mempool *pool; int64_t txfee,vinstotal,voutstotal; uint64_t hdrsi_unspentind,value; int32_t i,numvins,numvouts,txlen,spentheight,minconf,maxconf,unspentind,hdrsi; struct iguana_msgtx msg; char *rawtx; struct gecko_memtx *memtx; struct iguana_info *btcd;
     memset(&msg,0,sizeof(msg));
     iguana_memreset(&virt->TXMEM);
     txlen = iguana_rwtx(virt->chain->zcash,0,&virt->TXMEM,serialized,&msg,datalen,&txid,virt->chain->isPoS,strcmp("VPN",virt->symbol) == 0);
@@ -268,7 +269,7 @@ char *gecko_txarrived(struct supernet_info *myinfo,struct iguana_info *virt,char
         char str[65]; printf("add tx.%s to mempool i.%d numtx.%d\n",bits256_str(str,memtx->txid),i,pool->numtx);
         for (i=0; i<pool->numtx; i++)
             pool->txids[i] = pool->txs[i]->txid;
-        if ( myinfo->IAMRELAY != 0 )
+        if ( (btcd= iguana_coinfind("BTCD")) != 0 && btcd->RELAYNODE != 0 && myinfo->IAMRELAY != 0 )
             gecko_mempool_sync(myinfo,virt,pool->txids,pool->numtx);
     }
     else
