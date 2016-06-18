@@ -508,9 +508,10 @@ HASH_ARRAY_STRING(basilisk,newgeckochain,hash,vals,hexstr)
     return(clonestr("{\"error\":\"need symbol and chain and BTCD to create new gecko chain\"}"));
 }
 
-char *gecko_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *virt,uint8_t *data,int32_t datalen,bits256 txid,cJSON *vals,char *signedtx)
+char *gecko_sendrawtransaction(struct supernet_info *myinfo,char *symbol,uint8_t *data,int32_t datalen,bits256 txid,cJSON *vals,char *signedtx)
 {
-    char *retstr = 0; struct iguana_info *btcd = iguana_coinfind("BTCD");
+    char *retstr = 0; struct iguana_info *virt,*btcd = iguana_coinfind("BTCD");
+    virt = iguana_coinfind(symbol);
     if ( btcd != 0 && (btcd->RELAYNODE != 0 || btcd->VALIDATENODE != 0) )
     {
         basilisk_wait(myinfo,virt);
@@ -523,15 +524,13 @@ char *gecko_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *
 
 HASH_ARRAY_STRING(basilisk,geckotx,hash,vals,hexstr)
 {
-    struct iguana_info *btcd,*virt; char *retstr=0,*symbol; uint8_t *data,*allocptr,space[4096]; int32_t datalen; bits256 txid;
+    struct iguana_info *btcd; char *retstr=0,*symbol; uint8_t *data,*allocptr,space[4096]; int32_t datalen; bits256 txid;
     if ( (btcd= iguana_coinfind("BTCD")) != 0 && (symbol= jstr(vals,"symbol")) != 0 )
     {
         if ( (data= get_dataptr(BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),hexstr)) != 0 )
         {
             txid = bits256_doublesha256(0,data,datalen);
-            if ( (virt= iguana_coinfind(symbol)) != 0 )
-                retstr = gecko_sendrawtransaction(myinfo,virt,data,datalen,txid,vals,hexstr);
-            else retstr = clonestr("{\"error\":\"virtualchain not found\"}");
+            retstr = gecko_sendrawtransaction(myinfo,symbol,data,datalen,txid,vals,hexstr);
         } else retstr = clonestr("{\"error\":\"no tx submitted\"}");
         if ( allocptr != 0 )
             free(allocptr);

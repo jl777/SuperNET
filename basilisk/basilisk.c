@@ -278,9 +278,9 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
         ipbits = (uint32_t)calc_ipbits(senderip);
     else ipbits = 0;
     len += iguana_rwnum(0,data,sizeof(basilisktag),&basilisktag);
-    int32_t i; for (i=0; i<datalen-len; i++)
-        printf("%02x",data[len+i]);
-    printf(" ->received.%d basilisk_p2p.(%s) from %s tag.%d\n",datalen,type,senderip!=0?senderip:"?",basilisktag);
+    //int32_t i; for (i=0; i<datalen-len; i++)
+    //    printf("%02x",data[len+i]);
+    //printf(" ->received.%d basilisk_p2p.(%s) from %s tag.%d\n",datalen,type,senderip!=0?senderip:"?",basilisktag);
     basilisk_msgprocess(myinfo,_addr,ipbits,type,basilisktag,&data[len],datalen - len);
     if ( ptr != 0 )
         free(ptr);
@@ -1079,11 +1079,9 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         if ( datalen > jsonlen )
         {
             data += jsonlen, datalen -= jsonlen;
-            for (i=0; i<datalen; i++)
-                printf("%02x",data[i]);
-            printf(" <-> got datalen.%d\n",datalen);
-            //if ( *data++ != 0 )
-            //    data += sizeof(hash), datalen -= sizeof(hash);
+            //for (i=0; i<datalen; i++)
+            //    printf("%02x",data[i]);
+            //printf(" <-> got datalen.%d\n",datalen);
         } else data = 0, datalen = 0;
         if ( coin == 0 )
             coin = iguana_coinfind("BTCD");
@@ -1145,7 +1143,6 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         {
             if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 ) // iguana node
             {
-                printf("relay path\n");
                 if ( from_basilisk != 0 )
                 {
                     printf("echo to other relays\n");

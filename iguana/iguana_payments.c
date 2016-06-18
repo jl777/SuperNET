@@ -317,7 +317,7 @@ bits256 iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_inf
     {
         vals = cJSON_CreateObject();
         jaddstr(vals,"symbol",coin->symbol);
-        if ( (str= gecko_sendrawtransaction(myinfo,coin,serialized,len,txid,vals,signedtx)) != 0 )
+        if ( (str= gecko_sendrawtransaction(myinfo,coin->symbol,serialized,len,txid,vals,signedtx)) != 0 )
             free(str);
         free_json(vals);
     }
