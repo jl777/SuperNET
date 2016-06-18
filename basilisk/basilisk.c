@@ -1018,7 +1018,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
     symbol = "BTCD";
     if ( (valsobj= cJSON_Parse((char *)data)) != 0 )
     {
-        printf("MSGVALS.(%s)\n",(char *)data);
+        //printf("MSGVALS.(%s)\n",(char *)data);
         if ( jobj(valsobj,"coin") != 0 )
             coin = iguana_coinfind(jstr(valsobj,"coin"));
         else if ( jobj(valsobj,"symbol") != 0 )
@@ -1068,7 +1068,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         CMD[i] = toupper((int32_t)CMD[i]);
         cmd[i] = tolower((int32_t)CMD[i]);
     }
-    printf("MSGPROCESS.(%s) tag.%d\n",(char *)data,basilisktag);
+    //printf("MSGPROCESS.(%s) tag.%d\n",(char *)data,basilisktag);
     myinfo->basilisk_busy = 1;
     if ( valsobj != 0 )
     {
