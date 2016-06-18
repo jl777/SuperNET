@@ -33,6 +33,7 @@ struct iguana_peer *basilisk_ensurerelay(struct iguana_info *btcd,uint32_t ipbit
 char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint32_t ipbits,bits256 pubkey)
 {
     int32_t i; struct basilisk_relay *rp; struct iguana_info *btcd;
+    printf("addrelay.%x\n",ipbits);
     if ( (btcd= iguana_coinfind("BTCD")) == 0 || ipbits == 0 )
         return(clonestr("{\"error\":\"add relay needs BTCD and ipbits\"}"));
     for (i=0; i<myinfo->numrelays; i++)
@@ -95,6 +96,7 @@ char *basilisk_respond_relays(struct supernet_info *myinfo,char *CMD,void *_addr
                 for (i=len=0; i<n; i++)
                 {
                     len += iguana_rwnum(0,(void *)&data[len],sizeof(uint32_t),&ipbits);
+                    printf("(%d %x) ",i,ipbits);
                     if ( (retstr= basilisk_addrelay_info(myinfo,0,ipbits,GENESIS_PUBKEY)) != 0 )
                         free(retstr);
                 }
@@ -121,7 +123,6 @@ int32_t basilisk_relays_send(struct supernet_info *myinfo,struct iguana_peer *ad
             init_hexbytes_noT(strbuf,sig,siglen);
             jaddstr(vals,"sig",strbuf);
         }
-        init_hexbytes_noT(hexstr,serialized,len);
         if ( (retstr= basilisk_standardservice("RLY",myinfo,hash,vals,hexstr,0)) != 0 )
             free(retstr);
         free_json(vals);

@@ -80,15 +80,14 @@ uint8_t *get_dataptr(int32_t hdroffset,uint8_t **ptrp,int32_t *datalenp,uint8_t 
 
 uint8_t *basilisk_jsondata(int32_t extraoffset,uint8_t **ptrp,uint8_t *space,int32_t spacesize,int32_t *datalenp,char *symbol,cJSON *sendjson,uint32_t basilisktag)
 {
-    char *sendstr,*hexstr; uint8_t *data; int32_t datalen,hexlen=0;
+    char *sendstr,*hexstr=0; uint8_t *data,hexspace[8192],*allocptr=0,*hexdata; int32_t datalen,hexlen=0;
     if ( jobj(sendjson,"coin") == 0 )
         jaddstr(sendjson,"coin",symbol);
     if ( (hexstr= jstr(sendjson,"data")) != 0 )
     {
-        if ( (hexlen= is_hexstr(hexstr,0)) > 0 )
-            hexlen >>= 1;
+        hexdata = get_dataptr(0,&allocptr,&hexlen,hexspace,sizeof(hexspace),hexstr);
+        printf("delete data.%s from sendjson\n",hexstr);
         jdelete(sendjson,"data");
-        printf("delete data.[%d] from sendjson\n",hexlen);
     }
     *ptrp = 0;
     sendstr = jprint(sendjson,0);
@@ -106,10 +105,12 @@ uint8_t *basilisk_jsondata(int32_t extraoffset,uint8_t **ptrp,uint8_t *space,int
     free(sendstr);
     if ( hexlen > 0 )
     {
-        decode_hex(&data[datalen],hexlen,hexstr);
+        memcpy(&data[datalen],hexdata,hexlen);
         datalen += hexlen;
     }
     *datalenp = datalen;
+    if ( allocptr != 0 )
+        free(allocptr);
     return(data);
 }
 
@@ -209,7 +210,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                 //printf("%s s.%d vs n.%d\n",addr->ipaddr,s,n);
                 if ( s == n && (addr->supernet != 0 || addr->basilisk != 0) && (destipaddr == 0 || strcmp(addr->ipaddr,destipaddr) == 0) )
                 {
-                    printf("[%s].tag%d send %s.(%s) addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",cmd,*(uint32_t *)data,type,(char *)&data[4],addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
+                    printf("[%s].tag%d send %s.(%s) [%x] datalen.%d addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",cmd,*(uint32_t *)data,type,(char *)&data[4],*(int32_t *)&data[datalen-4],datalen,addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
                     if ( encryptflag != 0 && bits256_nonz(addr->pubkey) != 0 )
                     {
                         void *ptr; uint8_t *cipher,space[8192]; int32_t cipherlen; bits256 privkey;
@@ -277,7 +278,9 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
         ipbits = (uint32_t)calc_ipbits(senderip);
     else ipbits = 0;
     len += iguana_rwnum(0,data,sizeof(basilisktag),&basilisktag);
-    //printf("received.%d basilisk_p2p.(%s) from %s tag.%d\n",datalen,type,senderip!=0?senderip:"?",basilisktag);
+    int32_t i; for (i=0; i<datalen-len; i++)
+        printf("%02x",data[len+i]);
+    printf(" ->received.%d basilisk_p2p.(%s) from %s tag.%d\n",datalen,type,senderip!=0?senderip:"?",basilisktag);
     basilisk_msgprocess(myinfo,_addr,ipbits,type,basilisktag,&data[len],datalen - len);
     if ( ptr != 0 )
         free(ptr);
@@ -1076,8 +1079,11 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         if ( datalen > jsonlen )
         {
             data += jsonlen, datalen -= jsonlen;
-            if ( *data++ != 0 )
-                data += sizeof(hash), datalen -= sizeof(hash);
+            for (i=0; i<datalen; i++)
+                printf("%02x",data[i]);
+            printf(" <-> got datalen.%d\n",datalen);
+            //if ( *data++ != 0 )
+            //    data += sizeof(hash), datalen -= sizeof(hash);
         } else data = 0, datalen = 0;
         if ( coin == 0 )
             coin = iguana_coinfind("BTCD");

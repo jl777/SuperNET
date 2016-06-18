@@ -308,12 +308,16 @@ int32_t iguana_rwmsgalert(struct iguana_info *coin,int32_t rwflag,uint8_t *seria
  return(len);
  }*/
 
-void iguana_gotversion(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msgversion *vers)
+void iguana_gotversion(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msgversion *vers)
 {
-    uint8_t serialized[sizeof(struct iguana_msghdr)];
+    uint8_t serialized[sizeof(struct iguana_msghdr)]; char *retstr;
     //printf("gotversion from %s: starting height.%d services.%llx proto.%d (%s)\n",addr->ipaddr,vers->nStartingHeight,(long long)vers->nServices,vers->nVersion,vers->strSubVer);
     if ( strncmp(vers->strSubVer,"/iguana",strlen("/iguana")) == 0 )
+    {
         addr->supernet = 1, addr->basilisk = 0;
+        if ( (retstr= basilisk_addrelay_info(myinfo,0,(uint32_t)addr->ipbits,GENESIS_PUBKEY)) != 0 )
+            free(retstr);
+    }
     else if ( strncmp(vers->strSubVer,"/basilisk",strlen("/basilisk")) == 0 )
         addr->basilisk = 1, addr->supernet = 0;
     if ( (vers->nServices & NODE_NETWORK) != 0 )
@@ -944,7 +948,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                     struct iguana_msgversion recvmv;
                     len = iguana_rwversion(0,data,&recvmv,addr->ipaddr,recvlen);
                     if ( len <= recvlen )
-                        iguana_gotversion(coin,addr,&recvmv);
+                        iguana_gotversion(myinfo,coin,addr,&recvmv);
                     addr->msgcounts.version++;
                 }
                 else
