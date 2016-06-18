@@ -156,7 +156,7 @@ char *iguana_JSON(char *jsonstr,uint16_t port)
 char *SuperNET_jsonstr(struct supernet_info *myinfo,char *jsonstr,char *remoteaddr,uint16_t port)
 {
     cJSON *json; char *agent,*method,*retstr = 0;
-    printf("SuperNET_jsonstr.(%s)\n",jsonstr);
+    //printf("SuperNET_jsonstr.(%s)\n",jsonstr);
     if ( (json= cJSON_Parse(jsonstr)) != 0 )
     {
         method = jstr(json,"method");

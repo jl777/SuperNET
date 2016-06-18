@@ -124,6 +124,11 @@ bits256 bits256_lshift(bits256 x)
     return(x);
 }
 
+bits256 bits256_ave(bits256 a,bits256 b)
+{
+    return(bits256_rshift(bits256_add(a,b)));
+}
+
 bits256 bits256_from_compact(uint32_t c)
 {
     

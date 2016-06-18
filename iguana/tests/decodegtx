@@ -1,0 +1,1 @@
+curl --url "http://127.0.0.1:7778" --data "{\"coin\":\"DEX\",\"method\":\"decoderawtransaction\",\"params\":[\"01000000c3e763570001000000000000000006056adeadbeef00000000\"]}"

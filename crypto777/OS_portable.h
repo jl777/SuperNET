@@ -359,6 +359,7 @@ int32_t iguana_rwvarint32(int32_t rwflag,uint8_t *serialized,uint32_t *int32p);
 int32_t iguana_rwvarstr(int32_t rwflag,uint8_t *serialized,int32_t maxlen,char *endianedp);
 int32_t iguana_rwmem(int32_t rwflag,uint8_t *serialized,int32_t len,void *endianedp);
 
+bits256 bits256_ave(bits256 a,bits256 b);
 bits256 bits256_doublesha256(char *hashstr,uint8_t *data,int32_t datalen);
 char *bits256_str(char hexstr[65],bits256 x);
 char *bits256_lstr(char hexstr[65],bits256 x);

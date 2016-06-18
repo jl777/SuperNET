@@ -15,35 +15,6 @@
 
 // included from gecko.c
 
-char *gecko_headersarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *data,int32_t datalen,bits256 hash2)
-{
-    return(clonestr("{\"result\":\"gecko headers queued\"}"));
-}
-
-char *gecko_mempoolarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *data,int32_t datalen,bits256 hash2)
-{
-    int32_t i,j,numother,len = 0; struct gecko_mempool *otherpool; bits256 txid;
-    if ( (otherpool= gecko_mempoolfind(myinfo,virt,&numother,(uint32_t)calc_ipbits(remoteaddr))) != 0 )
-    {
-        if ( numother > 0 )
-        {
-            for (i=0; i<numother; i++)
-            {
-                len += iguana_rwbignum(0,&data[len],sizeof(txid),txid.bytes);
-                for (j=0; j<otherpool->numtx; j++)
-                    if ( bits256_cmp(txid,otherpool->txids[j]) == 0 )
-                        break;
-                if ( j == otherpool->numtx )
-                {
-                    otherpool->txids[otherpool->numtx++] = txid;
-                    printf("if first time, submit request for txid\n");
-                }
-            }
-        }
-    }
-    return(clonestr("{\"result\":\"gecko mempool queued\"}"));
-}
-
 void gecko_txidpurge(struct iguana_info *virt,bits256 txid)
 {
     struct gecko_mempool *pool; int32_t i,n; struct gecko_memtx *memtx;
@@ -237,3 +208,28 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
     return(clonestr("{\"error\":\"gecko block didnt decode\"}"));
 }
 
+char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash2,int32_t from_basilisk)
+{
+    char *symbol; struct iguana_info *virt; bits256 checkhash2; int32_t hdrsize; uint32_t prevtimestamp,nBits; struct iguana_msgblock msg;
+    printf("got geckoblock len.%d from (%s) %s\n",datalen,remoteaddr!=0?remoteaddr:"",jprint(valsobj,0));
+    if ( (symbol= jstr(valsobj,"coin")) != 0 && (virt= iguana_coinfind(symbol)) != 0 )
+    {
+        hdrsize = (virt->chain->zcash != 0) ? sizeof(struct iguana_msgblockhdr_zcash) : sizeof(struct iguana_msgblockhdr);
+        nBits = gecko_nBits(virt,&prevtimestamp,(struct iguana_block *)&virt->blocks.hwmchain,GECKO_DIFFITERS);
+        if ( gecko_blocknonce_verify(virt,data,hdrsize,nBits,virt->blocks.hwmchain.RO.timestamp,prevtimestamp) == 0 )
+        {
+            iguana_rwblock(symbol,virt->chain->zcash,virt->chain->auxpow,virt->chain->hashalgo,0,&checkhash2,data,&msg,datalen);
+            if ( bits256_cmp(hash2,checkhash2) == 0 )
+                return(gecko_blockarrived(myinfo,virt,addr,data,datalen,hash2));
+            else return(clonestr("{\"error\":\"block error with checkhash2\"}"));
+        } else return(clonestr("{\"error\":\"block nonce didnt verify\"}"));
+    }
+    return(0);
+}
+
+int32_t basilisk_respond_geckogetblock(struct supernet_info *myinfo,struct iguana_info *virt,uint8_t *serialized,int32_t maxsize,cJSON *valsobj,bits256 hash2)
+{
+    int32_t datalen = 0;
+    // find block and set serialized
+    return(datalen);
+}

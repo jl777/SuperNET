@@ -1,0 +1,1 @@
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"basilisk\",\"method\":\"geckotx\",\"vals\":{\"chain\":\"InstantDEX\",\"symbol\":\"DEX\"},\"hexstr\":\"01000000c3e763570001000000000000000006056adeadbeef00000000\"}"

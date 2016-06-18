@@ -297,6 +297,8 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
         chain->minconfirms = juint(argjson,"minconfirms");
         if ( (chain->estblocktime= juint(argjson,"estblocktime")) == 0 )
             chain->estblocktime = juint(argjson,"blocktime");
+        if ( chain->estblocktime == 0 )
+            chain->estblocktime = 60;
         path = jstr(argjson,"path");
         if ( jobj(argjson,"conf") == 0 )
             conf[0] = 0;

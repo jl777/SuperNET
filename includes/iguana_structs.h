@@ -317,7 +317,6 @@ struct iguana_peer
     struct OS_memspace RAWMEM,TXDATA,HASHMEM;
     struct iguana_ramchain ramchain;
     struct iguana_fileitem *filehash2; int32_t numfilehash2,maxfilehash2;
-    //struct iguana_bundle *bp;
     FILE *voutsfp,*vinsfp;
     uint8_t *blockspace;//[IGUANA_MAXPACKETSIZE + 8192];
 #ifdef IGUANA_PEERALLOC

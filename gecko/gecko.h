@@ -28,7 +28,8 @@
 #define GECKO_FIRSTPOSSIBLEBTCD 1100000
 #define GECKO_MAXNAMELEN 64
 #define GECKO_MAXMINERITERS 10000000
-#define GECKO_DIFFITERS 3
+#define GECKO_DIFFITERS 13
+#define GECKO_MAXFUTUREBLOCK 3
 
 struct iguana_peer;
 
@@ -79,5 +80,6 @@ char *gecko_headersarrived(struct supernet_info *myinfo,struct iguana_info *virt
 char *gecko_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *virt,uint8_t *data,int32_t datalen,bits256 txid,cJSON *vals,char *signedtx);
 
 struct gecko_mempool *gecko_mempoolfind(struct supernet_info *myinfo,struct iguana_info *virt,int32_t *numotherp,uint32_t ipbits);
+void gecko_iteration(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,int32_t maxmillis);
 
 #endif

@@ -69,7 +69,7 @@ void gecko_mempool_sync(struct supernet_info *myinfo,struct iguana_info *virt,bi
                     txids[num++] = txid;
                 }
                 if ( num > 0 )
-                    basilisk_headers_send(myinfo,virt,addr,txids,num);
+                    basilisk_hashes_send(myinfo,virt,addr,"MEM",txids,num);
             }
         }
     }
@@ -200,6 +200,22 @@ struct gecko_memtx *gecko_mempool_txadd(struct supernet_info *myinfo,struct igua
     return(memtx);
 }
 
+struct gecko_mempool *gecko_mempool_alloc(int32_t otherflag)
+{
+    struct gecko_mempool *pool;
+    pool = calloc(1,sizeof(*pool));
+    if ( otherflag == 0 )
+        pool->txs = calloc(0xffff,sizeof(*pool->txs));
+    return(pool);
+}
+
+int32_t basilisk_respond_geckogettx(struct supernet_info *myinfo,struct iguana_info *virt,uint8_t *serialized,int32_t maxsize,cJSON *valsobj,bits256 hash2)
+{
+    int32_t datalen = 0;
+    // find txid and set serialized
+    return(datalen);
+}
+
 char *gecko_txarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *serialized,int32_t datalen,bits256 txid)
 {
     struct gecko_mempool *pool; int64_t txfee,vinstotal,voutstotal; uint64_t hdrsi_unspentind,value; int32_t i,numvins,numvouts,txlen,spentheight,minconf,maxconf,unspentind,hdrsi; struct iguana_msgtx msg; char *rawtx; struct gecko_memtx *memtx;
@@ -234,10 +250,7 @@ char *gecko_txarrived(struct supernet_info *myinfo,struct iguana_info *virt,char
     if ( txlen <= 0 )
         return(clonestr("{\"error\":\"couldnt decode gecko tx\"}"));
     if ( (pool= virt->mempool) == 0 )
-    {
-        pool = virt->mempool = calloc(1,sizeof(*pool));
-        pool->txs = calloc(0xffff,sizeof(*pool->txs));
-    }
+        pool = virt->mempool = gecko_mempool_alloc(0);
     rawtx = calloc(1,datalen*2 + 1);
     init_hexbytes_noT(rawtx,serialized,datalen);
     if ( (memtx= gecko_mempool_txadd(myinfo,virt,rawtx,(uint32_t)calc_ipbits(remoteaddr))) != 0 )
@@ -249,13 +262,32 @@ char *gecko_txarrived(struct supernet_info *myinfo,struct iguana_info *virt,char
         }
         pool->txs[pool->numtx++] = pool->txs[i];
         pool->txs[i] = memtx;
+        char str[65]; printf("add tx.%s to mempool i.%d numtx.%d\n",bits256_str(str,memtx->txid),i,pool->numtx);
         for (i=0; i<pool->numtx; i++)
             pool->txids[i] = pool->txs[i]->txid;
         if ( myinfo->IAMRELAY != 0 )
             gecko_mempool_sync(myinfo,virt,pool->txids,pool->numtx);
     }
+    else
+    {
+        free(rawtx);
+        return(clonestr("{\"error\":\"geckotx invalid\"}"));
+    }
     free(rawtx);
     return(clonestr("{\"result\":\"gecko tx queued\"}"));
+}
+
+char *basilisk_respond_geckotx(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 txid,int32_t from_basilisk)
+{
+    bits256 checktxid; char *symbol; struct iguana_info *virt;
+    if ( data != 0 && datalen != 0 && (symbol= jstr(valsobj,"symbol")) != 0 && (virt= iguana_coinfind(symbol)) != 0 )
+    {
+        checktxid = bits256_doublesha256(0,data,datalen);
+        if ( bits256_cmp(txid,checktxid) == 0 )
+            return(gecko_txarrived(myinfo,virt,addr,data,datalen,txid));
+        else return(clonestr("{\"error\":\"geckotx mismatched txid\"}"));
+    }
+    return(clonestr("{\"error\":\"no geckotx chain or missing tx data\"}"));
 }
 
 struct gecko_memtx **gecko_mempool_txptrs(struct supernet_info *myinfo,struct iguana_info *virt,int64_t *rewardp,int32_t *txn_countp,void **ptrp,void *space,int32_t max,int32_t height)
@@ -269,7 +301,7 @@ struct gecko_memtx **gecko_mempool_txptrs(struct supernet_info *myinfo,struct ig
     *ptrp = 0;
     *txn_countp = 0;
     if ( (pool= virt->mempool) == 0 )
-        pool = virt->mempool = calloc(1,sizeof(*pool));
+        pool = virt->mempool = gecko_mempool_alloc(0);
     if ( pool->numtx*sizeof(char *) <= max )
         txptrs = space;
     else
@@ -287,7 +319,41 @@ struct gecko_memtx **gecko_mempool_txptrs(struct supernet_info *myinfo,struct ig
         }
     }
     *rewardp = (reward + txfees);
+    if ( n > 0 )
+        printf("reward %.8f n.%d numtx.%d\n",dstr(*rewardp),n,pool->numtx);
     if ( (*txn_countp= n) != 0 )
         return(txptrs);
     else return(0);
+}
+
+char *gecko_mempoolarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *data,int32_t datalen,bits256 hash2)
+{
+    int32_t i,j,numother,len = 0; struct gecko_mempool *otherpool; bits256 txid;
+    if ( (otherpool= gecko_mempoolfind(myinfo,virt,&numother,(uint32_t)calc_ipbits(remoteaddr))) != 0 )
+    {
+        if ( numother > 0 )
+        {
+            for (i=0; i<numother; i++)
+            {
+                len += iguana_rwbignum(0,&data[len],sizeof(txid),txid.bytes);
+                for (j=0; j<otherpool->numtx; j++)
+                    if ( bits256_cmp(txid,otherpool->txids[j]) == 0 )
+                        break;
+                if ( j == otherpool->numtx )
+                {
+                    otherpool->txids[otherpool->numtx++] = txid;
+                    printf("if first time, submit request for txid\n");
+                }
+            }
+        }
+    }
+    return(clonestr("{\"result\":\"gecko mempool queued\"}"));
+}
+
+char *basilisk_respond_mempool(struct supernet_info *myinfo,char *CMD,void *_addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
+{
+    char *symbol; struct iguana_info *virt;
+    if ( (symbol= jstr(valsobj,"symbol")) != 0 && (virt= iguana_coinfind(symbol)) != 0 )
+        return(gecko_mempoolarrived(myinfo,virt,_addr,data,datalen,hash));
+    else return(clonestr("{\"error\":\"couldt find gecko chain\"}"));
 }
