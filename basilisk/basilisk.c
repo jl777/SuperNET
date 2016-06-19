@@ -584,6 +584,8 @@ char *_basilisk_rawtx(struct supernet_info *myinfo,struct iguana_info *coin,stru
 
 char *_basilisk_result(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen)
 {
+    char strbuf[4096],*str = 0;
+    basilisk_addhexstr(&str,valsobj,strbuf,sizeof(strbuf),data,datalen);
     return(basilisk_result(myinfo,coin,0,remoteaddr,basilisktag,valsobj));
 }
 
@@ -677,7 +679,7 @@ INT_AND_ARRAY(basilisk,result,basilisktag,vals)
         ptr->basilisktag = basilisktag;
         strcpy(ptr->remoteaddr,remoteaddr);
         safecopy(ptr->CMD,jstr(vals,"origcmd"),sizeof(ptr->CMD));
-        printf("(%s) -> Q.%u results vals.(%s)\n",ptr->CMD,basilisktag,ptr->retstr);
+        //printf("(%s) -> Q.%u results vals.(%s)\n",ptr->CMD,basilisktag,ptr->retstr);
         queue_enqueue("resultsQ",&myinfo->basilisks.resultsQ,&ptr->DL,0);
         return(clonestr("{\"result\":\"queued basilisk return\"}"));
     } else printf("null vals.(%s) or no hexmsg.%p\n",jprint(vals,0),vals);
@@ -813,7 +815,7 @@ void basilisks_loop(void *arg)
                         pending->metrics[n] = n + 1;
                     else if ( (pending->metrics[n]= (*metricfunc)(myinfo,pending,ptr->retstr)) != 0. )
                         pending->childrendone++;
-                    printf("%s.%u Add results[%d] <- (%s) metric %f\n",pending->CMD,pending->basilisktag,n,ptr->retstr,pending->metrics[n]);
+                    printf("%s.%u Add results[%d] <- metric %f\n",pending->CMD,pending->basilisktag,n,pending->metrics[n]);
                     pending->results[n] = ptr->retstr;
                     if ( strcmp(ptr->CMD,"SEQ") == 0 )
                     {

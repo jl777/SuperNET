@@ -53,9 +53,9 @@ void gecko_blockhashupdate(struct iguana_info *virt,bits256 hash2,int32_t height
 
 char *gecko_headersarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *data,int32_t datalen,bits256 firsthash2)
 {
-    bits256 hash2,prevhash2; struct iguana_block *block; int32_t height,firstheight,i,len=0,n,num; struct iguana_msgblock msgB;
+    bits256 hash2,prevhash2; struct iguana_block *block; int32_t height,firstheight,i,len=0,n,num; struct iguana_msgblock msgB; char str[65],str2[65];
     num = (int32_t)(datalen / 84);
-    char str[65]; printf("headers arrived.%d from %s\n",num,bits256_str(str,firsthash2));
+    printf("headers arrived.%d from %s\n",num,bits256_str(str,firsthash2));
     if ( (block= iguana_blockfind("geckohdrs",virt,firsthash2)) != 0 && (firstheight= block->height) >= 0 )
     {
         gecko_blockhashupdate(virt,firsthash2,firstheight);
@@ -69,8 +69,9 @@ char *gecko_headersarrived(struct supernet_info *myinfo,struct iguana_info *virt
                     height = (firstheight + i + 1);
                     gecko_blockhashupdate(virt,hash2,height);
                     printf("ht.%d %s %08x t.%u\n",height,bits256_str(str,hash2),msgB.H.bits,msgB.H.timestamp);
-                } else printf("ht.%d non prevhash i.%d\n",height,i);
+                } else printf("ht.%d non prevhash i.%d %s %s\n",height,i,bits256_str(str,prevhash2),bits256_str(str2,msgB.H.prev_block));
                 len += n;
+                prevhash2 = hash2;
             }
         }
         return(clonestr("{\"result\":\"gecko headers processed\"}"));
