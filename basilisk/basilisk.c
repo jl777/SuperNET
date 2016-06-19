@@ -279,13 +279,19 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
 
 void basilisk_sendback(struct supernet_info *myinfo,char *origCMD,char *symbol,char *remoteaddr,uint32_t basilisktag,char *retstr)
 {
-    uint8_t *data,space[4096],*allocptr; cJSON *valsobj; int32_t datalen,encryptflag=0,delaymillis=0;
-    printf("%s retstr.(%s) -> remote.(%s) basilisktag.%u\n",origCMD,retstr,remoteaddr,basilisktag);
+    uint8_t *data,space[4096],*allocptr; struct iguana_info *virt; cJSON *valsobj; int32_t datalen,encryptflag=0,delaymillis=0;
+    //printf("%s retstr.(%s) -> remote.(%s) basilisktag.%u\n",origCMD,retstr,remoteaddr,basilisktag);
     if ( retstr != 0 && remoteaddr != 0 && remoteaddr[0] != 0 && strcmp(remoteaddr,"127.0.0.1") != 0 )
     {
         if ( (valsobj= cJSON_Parse(retstr)) != 0 )
         {
             jaddstr(valsobj,"origcmd",origCMD);
+            jaddstr(valsobj,"symbol",symbol);
+            if ( (virt= iguana_coinfind(symbol)) != 0 )
+            {
+                jaddnum(valsobj,"hwm",virt->blocks.hwmchain.height);
+                jaddbits256(valsobj,"chaintip",virt->blocks.hwmchain.RO.hash2);
+            }
             data = basilisk_jsondata(sizeof(struct iguana_msghdr),&allocptr,space,sizeof(space),&datalen,symbol,valsobj,basilisktag);
             basilisk_sendcmd(myinfo,remoteaddr,"RET",&basilisktag,encryptflag,delaymillis,data,datalen,0,0);
             if ( allocptr != 0 )
@@ -752,7 +758,7 @@ void basilisk_geckoresult(struct supernet_info *myinfo,struct basilisk_item *ptr
     uint8_t *data,space[16384],*allocptr = 0; struct iguana_info *virt; char *symbol,*str,*type; int32_t datalen; cJSON *retjson; bits256 hash2;
     if ( (retjson= cJSON_Parse(ptr->retstr)) != 0 )
     {
-        if ( (symbol= jstr(retjson,"coin")) != 0 && (virt= iguana_coinfind(symbol)) != 0 )
+        if ( (symbol= jstr(retjson,"symbol")) != 0 && (virt= iguana_coinfind(symbol)) != 0 )
         {
             if ( (data= get_dataptr(0,&allocptr,&datalen,space,sizeof(space),jstr(retjson,"data"))) != 0 )
             {

@@ -54,6 +54,7 @@ char *gecko_headersarrived(struct supernet_info *myinfo,struct iguana_info *virt
 {
     bits256 hash2; struct iguana_block *block; int32_t firstheight,i,len=0,n;
     n = (int32_t)(datalen / sizeof(bits256));
+    char str[65]; printf("headers arrived.%d from %s\n",n,bits256_str(str,firsthash2));
     if ( (block= iguana_blockfind("geckohdrs",virt,firsthash2)) != 0 && (firstheight= block->height) >= 0 )
     {
         gecko_headerupdate(virt,firsthash2,firstheight);

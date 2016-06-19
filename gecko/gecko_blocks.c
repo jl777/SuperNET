@@ -237,7 +237,11 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
                     txdata.zblock.height = block->height;
                     txdata.zblock.mainchain = block->mainchain = 1;
                     if ( gecko_hwmset(virt,&txdata,virt->TXMEM.ptr,data,datalen,i+1) >= 0 )
+                    {
+                        if ( block->height > virt->longestchain )
+                            virt->longestchain = block->height;
                         return(clonestr("{\"result\":\"gecko block created\"}"));
+                    }
                     else return(clonestr("{\"error\":\"gecko error creating hwmblock\"}"));
                 } else return(clonestr("{\"results\":\"gecko block wasnt hwmblock\"}"));
             }

@@ -219,6 +219,7 @@ struct gecko_mempool *gecko_mempool_alloc(int32_t otherflag)
 int32_t basilisk_respond_geckogettx(struct supernet_info *myinfo,struct iguana_info *virt,uint8_t *serialized,int32_t maxsize,cJSON *valsobj,bits256 hash2)
 {
     int32_t datalen = 0;
+    char str[65]; printf("got request for GTX.%s\n",bits256_str(str,hash2));
     // find txid and set serialized
     return(datalen);
 }
@@ -360,6 +361,7 @@ char *gecko_mempoolarrived(struct supernet_info *myinfo,struct iguana_info *virt
 char *basilisk_respond_mempool(struct supernet_info *myinfo,char *CMD,void *_addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
     char *symbol; struct iguana_info *virt;
+    printf("got getmempool request\n");
     if ( (symbol= jstr(valsobj,"symbol")) != 0 && (virt= iguana_coinfind(symbol)) != 0 )
         return(gecko_mempoolarrived(myinfo,virt,_addr,data,datalen,hash));
     else return(clonestr("{\"error\":\"couldt find gecko chain\"}"));

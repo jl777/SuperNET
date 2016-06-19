@@ -438,8 +438,10 @@ char *basilisk_standardreturn(char *CMD,char *type,struct iguana_info *virt,uint
         jaddstr(retjson,"CMD",CMD);
         jaddstr(retjson,"type",type);
         jaddstr(retjson,"coin",virt->symbol);
-        jaddnum(retjson,"longest",virt->longestchain);
+        //jaddnum(retjson,"longest",virt->longestchain);
         jaddnum(retjson,"hwm",virt->blocks.hwmchain.height);
+        jaddnum(retjson,"datalen",datalen);
+        jaddbits256(retjson,"chaintip",virt->blocks.hwmchain.RO.hash2);
         jaddbits256(retjson,"hash",hash);
     } else jaddstr(retjson,"error","no data to send");
     if ( allocstr != 0 )
@@ -450,7 +452,7 @@ char *basilisk_standardreturn(char *CMD,char *type,struct iguana_info *virt,uint
 char *basilisk_respond_geckoget(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash2,int32_t from_basilisk)
 {
     int32_t (*getfunc)(struct supernet_info *myinfo,struct iguana_info *virt,uint8_t *serialized,int32_t maxsize,cJSON *valsobj,bits256 hash2);
-    uint8_t *serialized; int32_t maxsize,len = 0; char *symbol,*type; struct iguana_info *virt;
+    uint8_t *serialized; int32_t maxsize; char *symbol,*type; struct iguana_info *virt;
     if ( (type= jstr(valsobj,"type")) != 0 )
     {
         if ( strcmp(type,"HDR") == 0 )
@@ -466,6 +468,7 @@ char *basilisk_respond_geckoget(struct supernet_info *myinfo,char *CMD,void *add
         if ( (symbol= jstr(valsobj,"symbol")) != 0 && (virt= iguana_coinfind(symbol)) != 0 )
         {
             datalen = (*getfunc)(myinfo,virt,serialized,maxsize,valsobj,hash2);
+            printf("return datalen.%d for %s\n",datalen,type);
             return(basilisk_standardreturn(CMD,type,virt,serialized,datalen,hash2));
         } else return(clonestr("{\"error\":\"couldt find gecko chain\"}"));
     } else return(clonestr("{\"error\":\"invalid geckoget type, mustbe (HDR or BLK or GTX)\"}"));
