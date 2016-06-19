@@ -22,7 +22,7 @@
 
 int32_t iguana_unspentindfind(struct iguana_info *coin,char *coinaddr,uint8_t *spendscript,int32_t *spendlenp,uint64_t *valuep,int32_t *heightp,bits256 txid,int32_t vout,int32_t lasthdrsi,int32_t mempool)
 {
-    struct iguana_txid *tp,TX; struct gecko_memtx *memtx; struct iguana_pkhash *P; struct iguana_unspent *U; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int64_t RTspend; int32_t pkind,hdrsi,firstvout,spentheight,flag=0,unspentind = -1;
+    struct iguana_txid *tp,TX; struct gecko_memtx *memtx; struct iguana_pkhash *P; struct iguana_unspent *U; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int64_t RTspend; int64_t value; int32_t pkind,hdrsi,firstvout,spentheight,flag=0,unspentind = -1;
     if ( valuep != 0 )
         *valuep = 0;
     if ( coinaddr != 0 )
@@ -54,9 +54,10 @@ int32_t iguana_unspentindfind(struct iguana_info *coin,char *coinaddr,uint8_t *s
     {
         if ( (memtx= gecko_unspentfind(0,coin,txid)) != 0 && vout < memtx->numoutputs )
         {
-            if ( *gecko_valueptr(memtx,vout) > 0 )
+            memcpy(&value,gecko_valueptr(memtx,vout),sizeof(value));
+            if ( value > 0 )
             {
-                *valuep = *gecko_valueptr(memtx,vout);
+                *valuep = value;
                 if ( spendlenp != 0 )
                 {
                     *spendlenp = 1;

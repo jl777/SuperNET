@@ -41,9 +41,10 @@ struct gecko_memtx
 {
     double feeperkb;
     bits256 txid;
+    int64_t txfee,inputsum,outputsum;
+    int32_t pending,numinputs,numoutputs,datalen;
     uint32_t ipbits;
-    int64_t txfee,inputsum,outputsum; int32_t pending,numinputs,numoutputs,datalen;
-    uint8_t data[];
+    bits256 data256[];
 };
 
 struct gecko_mempool

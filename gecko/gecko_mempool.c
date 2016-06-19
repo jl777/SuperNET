@@ -84,12 +84,12 @@ void gecko_mempool_sync(struct supernet_info *myinfo,struct iguana_info *virt,bi
 
 uint8_t *gecko_txdata(struct gecko_memtx *memtx)
 {
-    return(&memtx->data[memtx->numoutputs * sizeof(int64_t) + memtx->numinputs * sizeof(bits256)]);
+    return((void *)((long)memtx->data256 + memtx->numoutputs * sizeof(int64_t) + memtx->numinputs * sizeof(bits256)));
 }
 
 int64_t *gecko_valueptr(struct gecko_memtx *memtx,int32_t vout)
 {
-    return((int64_t *)&memtx->data[memtx->numinputs * sizeof(bits256) + vout*sizeof(int64_t)]);
+    return((void *)((long)memtx->data256 + vout * sizeof(int64_t) + memtx->numinputs * sizeof(bits256)));
 }
 
 int32_t gecko_memtxcmp(struct gecko_memtx *memtxA,struct gecko_memtx *memtxB)
@@ -99,13 +99,13 @@ int32_t gecko_memtxcmp(struct gecko_memtx *memtxA,struct gecko_memtx *memtxB)
     {
         for (i=0; i<memtxA->numinputs; i++)
         {
-            if ( bits256_cmp(*(bits256 *)&memtxA->data[i * sizeof(bits256)],*(bits256 *)&memtxB->data[i * sizeof(bits256)]) != 0 )
+            if ( bits256_cmp(memtxA->data256[i],memtxB->data256[i]) != 0 )
                 return(-1 - 2*i);
         }
         for (i=numdiff=0; i<memtxA->numoutputs; i++)
         {
-            valA = *gecko_valueptr(memtxA,i);
-            valB = *gecko_valueptr(memtxB,i);
+            memcpy(&valA,gecko_valueptr(memtxA,i),sizeof(valA));
+            memcpy(&valB,gecko_valueptr(memtxB,i),sizeof(valB));
             if ( (diff= valA - valB) < 0 )
                 diff = -diff;
             if ( diff > 100000 )
@@ -139,7 +139,7 @@ struct gecko_memtx *gecko_unspentfind(struct gecko_memtx ***ptrpp,struct iguana_
 
 struct gecko_memtx *gecko_mempool_txadd(struct supernet_info *myinfo,struct iguana_info *virt,char *rawtx,uint32_t senderbits)
 {
-    struct gecko_memtx *spentmemtx,**ptrp,*memtx = 0; uint8_t *extraspace; char *str; struct iguana_msgtx msgtx; int32_t i,len,extralen = 65536; cJSON *retjson; int64_t *amountptr;
+    struct gecko_memtx *spentmemtx,**ptrp,*memtx = 0; uint8_t *extraspace; char *str; struct iguana_msgtx msgtx; int32_t i,len,extralen = 65536; cJSON *retjson; int64_t value;
     extraspace = calloc(1,extralen);
     if ( (str= iguana_validaterawtx(myinfo,virt,&msgtx,extraspace,extralen,rawtx,1)) != 0 )
     {
@@ -159,16 +159,16 @@ struct gecko_memtx *gecko_mempool_txadd(struct supernet_info *myinfo,struct igua
                 memtx->datalen = len;
                 memtx->feeperkb = dstr(memtx->txfee) / (memtx->datalen / 1024.);
                 for (i=0; i<msgtx.numoutputs; i++)
-                    *gecko_valueptr(memtx,i) = msgtx.vouts[i].value;
+                    memcpy(gecko_valueptr(memtx,i),&msgtx.vouts[i].value,sizeof(msgtx.vouts[i].value));
                 decode_hex(gecko_txdata(memtx),len,rawtx);
                 for (i=0; i<msgtx.numinputs; i++)
-                    memcpy(&memtx->data[i * sizeof(bits256)],msgtx.vins[i].prev_hash.bytes,sizeof(bits256));
+                    memtx->data256[i] = msgtx.vins[i].prev_hash;
                 for (i=0; i<msgtx.numinputs; i++)
                 {
                     if ( (spentmemtx= gecko_unspentfind(&ptrp,virt->mempool,msgtx.vins[i].prev_hash)) != 0 )
                     {
-                        amountptr = gecko_valueptr(spentmemtx,msgtx.vins[i].prev_vout);
-                        if ( *amountptr < 0 )
+                        memcpy(&value,gecko_valueptr(spentmemtx,msgtx.vins[i].prev_vout),sizeof(value));
+                        if ( value < 0 )
                         {
                             if ( gecko_memtxcmp(spentmemtx,memtx) != 0 || memtx->txfee <= spentmemtx->txfee )
                             {
@@ -193,8 +193,9 @@ struct gecko_memtx *gecko_mempool_txadd(struct supernet_info *myinfo,struct igua
                 {
                     if ( (spentmemtx= gecko_unspentfind(0,virt->mempool,msgtx.vins[i].prev_hash)) != 0 )
                     {
-                        amountptr = gecko_valueptr(spentmemtx,msgtx.vins[i].prev_vout);
-                        *amountptr = -(*amountptr);
+                        memcpy(&value,gecko_valueptr(spentmemtx,msgtx.vins[i].prev_vout),sizeof(value));
+                        value = -value;
+                        memcpy(gecko_valueptr(spentmemtx,msgtx.vins[i].prev_vout),&value,sizeof(value));
                     }
                 }
             } else printf("gecko_mempool_txadd had error.(%s)\n",str);
