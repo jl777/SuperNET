@@ -169,7 +169,7 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
             {
                 printf("gecko_blockarrived: duplicate.[%d] txid.%s\n",i,bits256_str(str,txid));
                 return(clonestr("{\"error\":\"gecko block duplicate txid\"}"));
-            }
+            } else printf("%s is new txid\n",bits256_str(str,txid));
         }
         txdata.zblock.RO.allocsize = iguana_ROallocsize(virt);
         if ( iguana_blockvalidate(virt,&valid,(struct iguana_block *)&txdata.zblock,1) < 0 )
@@ -213,20 +213,24 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
                         }
                     }
                     prev = block;
-                    for (j=0; j<=i; j++)
+                    for (j=0; j<=i+1; j++)
                     {
-                        if ( (prev= iguana_blockfind("geckoprev",virt,prev->RO.prev_block)) == 0 )
-                            return(clonestr("{\"error\":\"gecko block mainchain link error\"}"));
                         if ( prev->protected == 0 || prev->height == (adjacent + 1 - j) )
                         {
-                            prev->mainchain = 1;
-                            prev->height = (adjacent + 1 - j);
+                            if ( prev->mainchain != 1 )
+                                prev->mainchain = 1;
+                            if ( prev->height != (adjacent + 1 - j) )
+                                prev->height = (adjacent + 1 - j);
+                            if ( prev->height == 0 )
+                                break;
                         }
                         else
                         {
                             printf("REJECT block: cant change height of protected block: ht.%d vs %d\n",adjacent + 1 - j, prev->height);
                             return(clonestr("{\"error\":\"gecko block cant override protected block's height\"}"));
                         }
+                        if ( (prev= iguana_blockfind("geckoprev",virt,prev->RO.prev_block)) == 0 )
+                            return(clonestr("{\"error\":\"gecko block mainchain link error\"}"));
                     }
                     txdata.zblock.height = block->height;
                     txdata.zblock.mainchain = block->mainchain = 1;

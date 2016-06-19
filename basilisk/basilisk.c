@@ -86,7 +86,7 @@ uint8_t *basilisk_jsondata(int32_t extraoffset,uint8_t **ptrp,uint8_t *space,int
     if ( (hexstr= jstr(sendjson,"data")) != 0 )
     {
         hexdata = get_dataptr(0,&allocptr,&hexlen,hexspace,sizeof(hexspace),hexstr);
-        printf("delete data.%s from sendjson\n",hexstr);
+        //printf("delete data.%s from sendjson\n",hexstr);
         jdelete(sendjson,"data");
     }
     *ptrp = 0;
@@ -407,24 +407,6 @@ char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,bits256 ha
         } else jaddstr(retjson,"error","didnt find any nodes to send to");
     } else jaddstr(retjson,"error","couldnt create basilisk item");
     return(jprint(retjson,1));
-}
-
-int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,char *blockstr,bits256 hash2)
-{
-    int32_t datalen; uint8_t *data,space[16384],*allocptr; cJSON *valsobj; char *str;
-    if ( (data= get_dataptr(sizeof(struct iguana_msghdr) + BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),blockstr)) != 0 )
-    {
-        gecko_blockarrived(myinfo,virt,"127.0.0.1",data,datalen,hash2);
-        valsobj = cJSON_CreateObject();
-        jaddnum(valsobj,"fanout",-1);
-        jaddstr(valsobj,"symbol",virt->symbol);
-        if ( (str= basilisk_standardservice("BLK",myinfo,hash2,valsobj,blockstr,0)) != 0 )
-            free(str);
-        free_json(valsobj);
-    }
-    if ( allocptr != 0 )
-        free(allocptr);
-    return(0);
 }
 
 #include "basilisk_bitcoin.c"

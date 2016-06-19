@@ -463,7 +463,7 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
     remains = len;
     if ( strncmp(cmdstr+1,"uperNET",strlen("uperNET")) == 0 || strncmp(cmdstr+1,"uperNet",strlen("uperNet")) == 0  )
     {
-        printf(" >>>>>>> send.(%s) %d bytes to %s:%u supernet.%d\n",cmdstr,len,addr->ipaddr,addr->A.port,addr->supernet);
+        printf(" >>>>>>> send.(%s) crc.%x %d bytes to %s:%u supernet.%d\n",cmdstr,calc_crc32(0,serialized,len),len,addr->ipaddr,addr->A.port,addr->supernet);
     }
     else if ( addr->msgcounts.verack == 0 && (strcmp(cmdstr,"version") != 0 && strcmp(cmdstr,"ConnectTo") != 0 && strcmp(cmdstr,"verack") != 0) != 0 )
     {
