@@ -147,6 +147,7 @@ void *category_subscribe(struct supernet_info *myinfo,bits256 chainhash,bits256 
 struct gecko_chain *gecko_chain(struct supernet_info *myinfo,char chainname[GECKO_MAXNAMELEN],cJSON *valsobj)
 {
     char *chainstr,*keystr; bits256 keyhash,chainhash; struct gecko_chain *chain;
+    chainname[0] = 0;
     if ( (chainstr= jstr(valsobj,"chain")) == 0 )
         return(0);
     if ( (keystr= jstr(valsobj,"key")) != 0 )

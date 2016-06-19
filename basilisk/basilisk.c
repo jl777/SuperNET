@@ -269,9 +269,9 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
         ipbits = (uint32_t)calc_ipbits(senderip);
     else ipbits = 0;
     len += iguana_rwnum(0,data,sizeof(basilisktag),&basilisktag);
-    int32_t i; for (i=0; i<datalen-len; i++)
-        printf("%02x",data[len+i]);
-    printf(" ->received.%d basilisk_p2p.(%s) from %s tag.%d\n",datalen,type,senderip!=0?senderip:"?",basilisktag);
+    //int32_t i; for (i=0; i<datalen-len; i++)
+    //    printf("%02x",data[len+i]);
+    //printf(" ->received.%d basilisk_p2p.(%s) from %s tag.%d\n",datalen,type,senderip!=0?senderip:"?",basilisktag);
     basilisk_msgprocess(myinfo,_addr,ipbits,type,basilisktag,&data[len],datalen - len);
     if ( ptr != 0 )
         free(ptr);
@@ -788,9 +788,9 @@ void basilisks_loop(void *arg)
         iter++;
         if ( (ptr= queue_dequeue(&myinfo->basilisks.submitQ,0)) != 0 )
         {
-            if ( ptr->finished == 0 )
+            //if ( ptr->finished == 0 )
                 HASH_ADD(hh,myinfo->basilisks.issued,basilisktag,sizeof(ptr->basilisktag),ptr);
-            else free(ptr);
+            //else free(ptr);
             continue;
         }
         if ( (ptr= queue_dequeue(&myinfo->basilisks.resultsQ,0)) != 0 )
@@ -1016,7 +1016,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
     symbol = "BTCD";
     if ( (valsobj= cJSON_Parse((char *)data)) != 0 )
     {
-        printf("MSGVALS.(%s)\n",(char *)data);
+        //printf("MSGVALS.(%s)\n",(char *)data);
         if ( jobj(valsobj,"coin") != 0 )
             coin = iguana_coinfind(jstr(valsobj,"coin"));
         else if ( jobj(valsobj,"symbol") != 0 )
@@ -1074,7 +1074,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         if ( datalen > jsonlen )
         {
             data += jsonlen, datalen -= jsonlen;
-            if ( strcmp("BLK",CMD) == 0 )
+            if ( 0 && strcmp("BLK",CMD) == 0 )
             {
                 for (i=0; i<datalen; i++)
                     printf("%02x",data[i]);
