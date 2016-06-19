@@ -316,7 +316,7 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
             {
                 decode_hex(hash2.bytes,sizeof(hash2),line+k+1);
                 if ( coin->virtualchain != 0 )
-                    printf("line.(%s) k.%d (%c)(%c)(%d)\n",line,k,line[k+63],line[k+64],line[k+65]);
+                    printf("%s line.(%s) k.%d (%c)(%c)(%d)\n",coin->symbol,line,k,line[k+63],line[k+64],line[k+65]);
                 if ( height >= 0 && bits256_nonz(hash2) != 0 )
                 {
                     if ( (bp= iguana_bundlecreate(coin,&bundlei,height,hash2,zero,0)) != 0 )

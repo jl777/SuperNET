@@ -272,6 +272,34 @@ char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *a
     return(0);
 }
 
+int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,char *blockstr,bits256 hash2)
+{
+    int32_t datalen; uint8_t *data,space[16384],*allocptr; cJSON *valsobj=0,*retjson; char *str,*str2;
+    if ( (data= get_dataptr(sizeof(struct iguana_msghdr) + BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),blockstr)) != 0 )
+    {
+        if ( (str= gecko_blockarrived(myinfo,virt,"127.0.0.1",data,datalen,hash2)) != 0 )
+        {
+            if ( (retjson= cJSON_Parse(str)) != 0 )
+            {
+                if ( jobj(retjson,"error") == 0 )
+                {
+                    valsobj = cJSON_CreateObject();
+                    jaddnum(valsobj,"fanout",-1);
+                    jaddstr(valsobj,"symbol",virt->symbol);
+                    if ( (str2= basilisk_standardservice("BLK",myinfo,hash2,valsobj,blockstr,0)) != 0 )
+                        free(str2);
+                    free_json(valsobj);
+                }
+                free_json(retjson);
+            }
+            free(str);
+        }
+    }
+    if ( allocptr != 0 )
+        free(allocptr);
+    return(0);
+}
+
 int32_t basilisk_respond_geckogetblock(struct supernet_info *myinfo,struct iguana_info *virt,uint8_t *serialized,int32_t maxsize,cJSON *valsobj,bits256 hash2)
 {
     int32_t datalen = 0; char str[65];

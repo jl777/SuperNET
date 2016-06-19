@@ -39,32 +39,25 @@
 #include "gecko_miner.c"
 #include "gecko_blocks.c"
 
-int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,char *blockstr,bits256 hash2)
+void gecko_iteration(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,int32_t maxmillis)
 {
-    int32_t datalen; uint8_t *data,space[16384],*allocptr; cJSON *valsobj=0,*retjson; char *str,*str2;
-    if ( (data= get_dataptr(sizeof(struct iguana_msghdr) + BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),blockstr)) != 0 )
+    char mineraddr[64]; int32_t hwmhdrsi,longesthdrsi;
+    hwmhdrsi = virt->blocks.hwmchain.height / virt->chain->bundlesize;
+    longesthdrsi = virt->longestchain / virt->chain->bundlesize;
+    if ( hwmhdrsi <= longesthdrsi )
     {
-        if ( (str= gecko_blockarrived(myinfo,virt,"127.0.0.1",data,datalen,hash2)) != 0 )
+        if ( time(NULL) > virt->hdrstime+3 )
         {
-            if ( (retjson= cJSON_Parse(str)) != 0 )
-            {
-                if ( jobj(retjson,"error") == 0 )
-                {
-                    valsobj = cJSON_CreateObject();
-                    jaddnum(valsobj,"fanout",-1);
-                    jaddstr(valsobj,"symbol",virt->symbol);
-                    if ( (str2= basilisk_standardservice("BLK",myinfo,hash2,valsobj,blockstr,0)) != 0 )
-                        free(str2);
-                    free_json(valsobj);
-                }
-                free_json(retjson);
-            }
-            free(str);
+            gecko_requesthdrs(myinfo,virt,hwmhdrsi);
+            virt->hdrstime = (uint32_t)time(NULL);
         }
     }
-    if ( allocptr != 0 )
-        free(allocptr);
-    return(0);
+    if ( btcd->RELAYNODE != 0 && virt->blocks.hwmchain.height >= virt->longestchain-1 )
+    {
+        bitcoin_address(mineraddr,virt->chain->pubtype,myinfo->persistent_pubkey33,33);
+        //printf("mine.%s %s\n",virt->symbol,mineraddr);
+        gecko_miner(myinfo,btcd,virt,maxmillis,myinfo->persistent_pubkey33);
+    }
 }
 
 int32_t iguana_ROallocsize(struct iguana_info *virt)
@@ -448,8 +441,7 @@ char *basilisk_standardreturn(char *CMD,char *type,struct iguana_info *virt,uint
         jaddnum(retjson,"longest",virt->longestchain);
         jaddnum(retjson,"hwm",virt->blocks.hwmchain.height);
         jaddbits256(retjson,"hash",hash);
-    }
-    else jaddstr(retjson,"error","no data to send");
+    } else jaddstr(retjson,"error","no data to send");
     if ( allocstr != 0 )
         free(allocstr);
     return(jprint(retjson,1));
@@ -474,7 +466,7 @@ char *basilisk_respond_geckoget(struct supernet_info *myinfo,char *CMD,void *add
         if ( (symbol= jstr(valsobj,"symbol")) != 0 && (virt= iguana_coinfind(symbol)) != 0 )
         {
             datalen = (*getfunc)(myinfo,virt,serialized,maxsize,valsobj,hash2);
-            return(basilisk_standardreturn(CMD,type,virt,serialized,len,hash2));
+            return(basilisk_standardreturn(CMD,type,virt,serialized,datalen,hash2));
         } else return(clonestr("{\"error\":\"couldt find gecko chain\"}"));
     } else return(clonestr("{\"error\":\"invalid geckoget type, mustbe (HDR or BLK or GTX)\"}"));
 }

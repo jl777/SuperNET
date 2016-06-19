@@ -81,24 +81,11 @@ void gecko_requesthdrs(struct supernet_info *myinfo,struct iguana_info *virt,int
     {
         vals = cJSON_CreateObject();
         memset(zero.bytes,0,sizeof(zero));
-        jaddstr(vals,"coin",virt->symbol);
-        if ( (retstr= basilisk_standardservice("HDR",myinfo,bp->hashes[0],vals,0,0)) != 0 )
+        jaddstr(vals,"symbol",virt->symbol);
+        jaddstr(vals,"type","HDR");
+        if ( (retstr= basilisk_standardservice("GET",myinfo,bp->hashes[0],vals,0,0)) != 0 )
             free(retstr);
         free_json(vals);
     } else printf("dont have bundle needed\n");
 }
 
-void gecko_iteration(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,int32_t maxmillis)
-{
-    char mineraddr[64]; int32_t hwmhdrsi,longesthdrsi;
-    hwmhdrsi = virt->blocks.hwmchain.height / virt->chain->bundlesize;
-    longesthdrsi = virt->longestchain / virt->chain->bundlesize;
-    if ( hwmhdrsi < longesthdrsi )
-        gecko_requesthdrs(myinfo,virt,hwmhdrsi);
-    if ( btcd->RELAYNODE != 0 )
-    {
-        bitcoin_address(mineraddr,virt->chain->pubtype,myinfo->persistent_pubkey33,33);
-    //printf("mine.%s %s\n",virt->symbol,mineraddr);
-        gecko_miner(myinfo,btcd,virt,maxmillis,myinfo->persistent_pubkey33);
-    }
-}

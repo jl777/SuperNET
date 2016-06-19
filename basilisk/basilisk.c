@@ -786,7 +786,7 @@ void basilisks_loop(void *arg)
     while ( 1 )
     {
         fprintf(stderr,"basilisk iter.%d\n",iter);
-        sleep(1);
+        sleep(3);
         fprintf(stderr,"basilisk iter.%d\n",iter);
         iter++;
         if ( (ptr= queue_dequeue(&myinfo->basilisks.submitQ,0)) != 0 )
@@ -794,6 +794,7 @@ void basilisks_loop(void *arg)
             HASH_ADD(hh,myinfo->basilisks.issued,basilisktag,sizeof(ptr->basilisktag),ptr);
             continue;
         }
+        fprintf(stderr,"A");
         if ( (ptr= queue_dequeue(&myinfo->basilisks.resultsQ,0)) != 0 )
         {
             HASH_FIND(hh,myinfo->basilisks.issued,&ptr->basilisktag,sizeof(ptr->basilisktag),pending);
@@ -830,6 +831,7 @@ void basilisks_loop(void *arg)
             free(ptr);
             continue;
         }
+        fprintf(stderr,"B");
         flag = 0;
         HASH_ITER(hh,myinfo->basilisks.issued,pending,tmp)
         {
@@ -865,6 +867,7 @@ void basilisks_loop(void *arg)
                     flag++;
                 }
             }
+            fprintf(stderr,"c");
             if ( pending->finished != 0 && time(NULL) > pending->finished+60 )
             {
                 if ( pending->dependents == 0 || pending->childrendone >= pending->numchildren )
@@ -883,6 +886,7 @@ void basilisks_loop(void *arg)
                 }
             }
         }
+        fprintf(stderr,"D");
         if ( (btcd= iguana_coinfind("BTCD")) != 0 )
         {
             done = 3;
@@ -935,6 +939,7 @@ void basilisks_loop(void *arg)
                 //portable_mutex_unlock(&Allcoins_mutex);
             }
         }
+        fprintf(stderr,"E ");
         //for (i=0; i<IGUANA_MAXCOINS; i++)
         //    if ( (coin= Coins[i]) != 0 && coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 && coin->active != 0 && coin->chain->userpass[0] != 0 && coin->MAXPEERS == 1 )
         //        basilisk_bitcoinscan(coin,blockspace,&RAWMEM);
