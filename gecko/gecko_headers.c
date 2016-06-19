@@ -43,6 +43,7 @@ int32_t basilisk_respond_geckogetheaders(struct supernet_info *myinfo,struct igu
 void gecko_headerupdate(struct iguana_info *virt,bits256 hash2,int32_t height)
 {
     int32_t bundlei; struct iguana_bundle *bp; bits256 zero;
+    char str[65]; printf("height.%d %s\n",height,bits256_str(str,hash2));
     memset(zero.bytes,0,sizeof(zero));
     if ( (height % virt->chain->bundlesize) == 0 )
         bp = iguana_bundlecreate(virt,&bundlei,height,hash2,zero,0);
@@ -52,16 +53,19 @@ void gecko_headerupdate(struct iguana_info *virt,bits256 hash2,int32_t height)
 
 char *gecko_headersarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *data,int32_t datalen,bits256 firsthash2)
 {
-    bits256 hash2; struct iguana_block *block; int32_t firstheight,i,len=0,n;
-    n = (int32_t)(datalen / sizeof(bits256));
+    bits256 hash2; struct iguana_block *block; int32_t firstheight,i,len=0,n,num; struct iguana_msgblock msgB;
+    num = (int32_t)(datalen / 84);
     char str[65]; printf("headers arrived.%d from %s\n",n,bits256_str(str,firsthash2));
     if ( (block= iguana_blockfind("geckohdrs",virt,firsthash2)) != 0 && (firstheight= block->height) >= 0 )
     {
         gecko_headerupdate(virt,firsthash2,firstheight);
-        for (i=0; i<n; i++)
+        for (i=0; i<num; i++)
         {
-            len += iguana_rwbignum(0,&data[len],sizeof(hash2),hash2.bytes);
-            gecko_headerupdate(virt,hash2,firstheight + i + 1);
+            if ( (n= iguana_rwblock(virt->symbol,virt->chain->zcash,virt->chain->auxpow,virt->chain->hashalgo,0,&hash2,&data[len],&msgB,datalen-len)) > 0 )
+            {
+                gecko_headerupdate(virt,hash2,firstheight + i + 1);
+                len += n;
+            }
         }
         return(clonestr("{\"result\":\"gecko headers processed\"}"));
     } else return(clonestr("{\"error\":\"gecko headers couldnt find firsthash2\"}"));
@@ -70,6 +74,7 @@ char *gecko_headersarrived(struct supernet_info *myinfo,struct iguana_info *virt
 char *basilisk_respond_geckoheaders(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash2,int32_t from_basilisk)
 {
     char *symbol; struct iguana_info *virt;
+    printf("respond to incoming headers datalen.%d\n",datalen);
     if ( (symbol= jstr(valsobj,"symbol")) != 0 && (virt= iguana_coinfind(symbol)) != 0 )
         return(gecko_headersarrived(myinfo,virt,addr,data,datalen,hash2));
     else return(clonestr("{\"error\":\"couldt find gecko chain\"}"));
