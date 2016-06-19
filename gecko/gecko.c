@@ -600,9 +600,8 @@ HASH_ARRAY_STRING(basilisk,geckogenesis,hash,vals,hexstr)
     {
         if ( (retstr= basilisk_standardservice("GEN",myinfo,hash,vals,hexstr,1)) != 0 )
         {
-            item = cJSON_Parse(retstr);
-            arrayB = cJSON_CreateArray();
-            jaddi(arrayB,item);
+            myinfo->genesisresults++;
+            arrayB = cJSON_Parse(retstr);
             free(retstr);
         }
         if ( btcd->RELAYNODE != 0 || btcd->VALIDATENODE != 0 )
@@ -616,26 +615,27 @@ HASH_ARRAY_STRING(basilisk,geckogenesis,hash,vals,hexstr)
                 array = arrayB;
             else if ( arrayB != 0 )
             {
-                if ( (n= cJSON_GetArraySize(arrayB)) > 0 )
+                if ( (n= cJSON_GetArraySize(array)) > 0 )
                 {
-                    if ( (m= cJSON_GetArraySize(array)) <= 0 )
-                        array = arrayB;
-                    else
+                    if ( (m= cJSON_GetArraySize(arrayB)) > 0 )
                     {
-                        for (i=0; i<n; i++)
+                        for (j=0; j<m; j++)
                         {
-                            item = jitem(arrayB,i);
-                            if ( (symbol= jstr(item,"symbol")) != 0 )
+                            item = jitem(arrayB,j);
+                            if ( jobj(item,"error") == 0 && (symbol= jstr(item,"symbol")) != 0 )
                             {
-                                for (j=0; j<m; j++)
+                                for (i=0; i<n; i++)
                                 {
-                                    if ( (ref= jstr(jitem(array,j),"symbol")) != 0 && strcmp(symbol,ref) != 0 )
-                                        jaddi(arrayB,jduplicate(item));
+                                    if ( (ref= jstr(jitem(array,i),"symbol")) != 0 && strcmp(symbol,ref) == 0 )
+                                        break;
                                 }
+                                if ( i == n )
+                                    jaddi(array,jduplicate(item));
                             }
                         }
                     }
                 }
+                free_json(arrayB);
             }
         } else array = arrayB;
         if ( array != 0 )

@@ -550,7 +550,7 @@ void iguana_helper(void *arg)
 {
     static int32_t maxhelperid;
     cJSON *argjson=0; int32_t iter,n,j,polltimeout,type,helperid=rand(),flag,allcurrent,idle=0;
-    struct iguana_helper *ptr; struct iguana_info *coin,*tmp; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp; struct supernet_info *myinfo = SuperNET_MYINFO(0);
+    struct iguana_helper *ptr; struct iguana_info *coin,*btcd,*tmp; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp; struct supernet_info *myinfo = SuperNET_MYINFO(0);
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
         helperid = juint(argjson,"helperid");
     if ( helperid > maxhelperid )
@@ -571,6 +571,11 @@ void iguana_helper(void *arg)
     sleep(2);
     while ( 1 )
     {
+        if ( helperid == 0 && (btcd= iguana_coinfind("BTCD")) != 0 )
+        {
+            if ( myinfo->numrelays > 0 && myinfo->genesisresults == 0 )
+                basilisk_geckogenesis(myinfo,btcd,0,0,GENESIS_PUBKEY,0,0);
+        }
         //iguana_jsonQ(); cant do this here
         flag = 0;
         allcurrent = 2;
@@ -685,8 +690,6 @@ void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
     memset(zero.bytes,0,sizeof(zero));
     if ( (bp= iguana_bundlecreate(coin,&bundlei,0,*(bits256 *)coin->chain->genesis_hashdata,zero,1)) != 0 )
         bp->bundleheight = 0;
-    if ( strcmp("BTCD",coin->symbol) == 0 )
-        basilisk_geckogenesis(myinfo,coin,0,0,GENESIS_PUBKEY,0,0);
 }
 
 void iguana_coinloop(void *arg)

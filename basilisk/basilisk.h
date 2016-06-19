@@ -24,8 +24,8 @@
 #define BASILISK_DEFAULTDIFF 0x1effffff
 
 #define BASILISK_MAXFUTUREBLOCK 60
-#define BASILISK_MAXBLOCKLAG 600
-#define BASILISK_HDROFFSET ((int32_t)(sizeof(struct iguana_msghdr)+sizeof(uint32_t)))
+//#define BASILISK_MAXBLOCKLAG 600
+#define BASILISK_HDROFFSET ((int32_t)(sizeof(bits256)+sizeof(struct iguana_msghdr)+sizeof(uint32_t)))
 
 struct basilisk_value { bits256 txid; int64_t value; int32_t height; int16_t vout; char coinaddr[64]; };
 

@@ -785,12 +785,13 @@ void basilisks_loop(void *arg)
     iter = 0;
     while ( 1 )
     {
+        fprintf(stderr,"basilisk iter.%d\n",iter);
+        sleep(1);
+        fprintf(stderr,"basilisk iter.%d\n",iter);
         iter++;
         if ( (ptr= queue_dequeue(&myinfo->basilisks.submitQ,0)) != 0 )
         {
-            //if ( ptr->finished == 0 )
-                HASH_ADD(hh,myinfo->basilisks.issued,basilisktag,sizeof(ptr->basilisktag),ptr);
-            //else free(ptr);
+            HASH_ADD(hh,myinfo->basilisks.issued,basilisktag,sizeof(ptr->basilisktag),ptr);
             continue;
         }
         if ( (ptr= queue_dequeue(&myinfo->basilisks.resultsQ,0)) != 0 )
@@ -857,7 +858,7 @@ void basilisks_loop(void *arg)
                     pending->finished = (uint32_t)time(NULL);
                     if ( pending->retstr == 0 )
                         pending->retstr = clonestr("{\"error\":\"basilisk timeout\"}");
-                    printf("timeout.%s call metrics.%u lag %f - %f\n",pending->CMD,pending->basilisktag,OS_milliseconds(),pending->expiration);
+                    fprintf(stderr,"timeout.%s call metrics.%u lag %f - %f\n",pending->CMD,pending->basilisktag,OS_milliseconds(),pending->expiration);
                     for (i=0; i<pending->numresults; i++)
                         if ( (metricfunc= pending->metricfunc) != 0 )
                             pending->metrics[i] = (*metricfunc)(myinfo,pending,pending->results[i]);
@@ -871,13 +872,13 @@ void basilisks_loop(void *arg)
                     HASH_DELETE(hh,myinfo->basilisks.issued,pending);
                     if ( pending->dependents != 0 )
                         free(pending->dependents);
-                    //printf("HASH_DELETE free ptr.%u\n",pending->basilisktag);
+                    fprintf(stderr,"HASH_DELETE free ptr.%u\n",pending->basilisktag);
                     for (i=0; i<pending->numresults; i++)
                         if ( pending->results[i] != 0 )
                             free(pending->results[i]), pending->results[i] = 0;
                     if ( pending->vals != 0 )
                         free_json(pending->vals), pending->vals = 0;
-                    //free(pending);
+                    free(pending);
                     flag++;
                 }
             }
@@ -1131,7 +1132,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
                             basilisk_sendback(myinfo,CMD,symbol,remoteaddr,basilisktag,retstr);
                         if ( retstr != 0 )
                             free(retstr);
-                    } else printf("services null return\n");
+                    } //else printf("services null return\n");
                 } else printf("non-relay got unexpected.(%s)\n",type);
                 free_json(valsobj);
                 if ( coin != 0 )
