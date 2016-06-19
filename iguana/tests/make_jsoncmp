@@ -1,2 +1,5 @@
 gcc -o jsoncmp jsoncmp.c ../../agents/libcrypto777.a -pthread -lm
 gcc -o json_extract json_extract.c ../../agents/libcrypto777.a -pthread -lm
+gcc -o json_extracti json_extracti.c ../../agents/libcrypto777.a -pthread -lm
+gcc -o json_extractd json_extractd.c ../../agents/libcrypto777.a -pthread -lm
+gcc -o json_extracta json_extracta.c ../../agents/libcrypto777.a -pthread -lm
