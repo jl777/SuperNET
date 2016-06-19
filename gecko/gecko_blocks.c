@@ -259,7 +259,7 @@ char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *a
         }
         hdrsize = (virt->chain->zcash != 0) ? sizeof(struct iguana_msgblockhdr_zcash) : sizeof(struct iguana_msgblockhdr);
         nBits = gecko_nBits(virt,&prevtimestamp,(struct iguana_block *)&virt->blocks.hwmchain,GECKO_DIFFITERS);
-        if ( gecko_blocknonce_verify(virt,data,hdrsize,nBits,virt->blocks.hwmchain.RO.timestamp,prevtimestamp) == 0 )
+        if ( gecko_blocknonce_verify(virt,data,hdrsize,nBits,virt->blocks.hwmchain.RO.timestamp,prevtimestamp) > 0 )
         {
             iguana_rwblock(symbol,virt->chain->zcash,virt->chain->auxpow,virt->chain->hashalgo,0,&checkhash2,data,&msg,datalen);
             if ( bits256_cmp(hash2,checkhash2) == 0 )
