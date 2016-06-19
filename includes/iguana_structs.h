@@ -185,7 +185,7 @@ struct iguana_zblockRO
 } __attribute__((packed));
 
 #define iguana_blockfields      double PoW; \
-int32_t height,fpos; uint32_t fpipbits,issued,lag:20,peerid:12; \
+int32_t height,fpos; uint32_t fpipbits,issued,lag:19,protected:1,peerid:12; \
 uint16_t hdrsi:15,mainchain:1,bundlei:11,valid:1,queued:1,txvalid:1,newtx:1,processed:1; \
 UT_hash_handle hh; struct iguana_bundlereq *req; \
 struct iguana_blockRO RO
@@ -374,7 +374,6 @@ struct scriptinfo { UT_hash_handle hh; uint32_t fpos; uint16_t scriptlen; uint8_
 struct hhbits256 { UT_hash_handle hh; bits256 txid; int32_t height; uint16_t firstvout; };
 
 struct iguana_monitorinfo { bits256 txid; int32_t numreported; uint8_t peerbits[IGUANA_MAXPEERS >> 3]; };
-
 
 struct iguana_info
 {

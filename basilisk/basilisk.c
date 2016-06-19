@@ -252,16 +252,6 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
     return(n);
 }
 
-int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *virt,char *blockstr,bits256 hash2)
-{
-    int32_t recvlen; uint8_t *data,space[16384],*allocptr;
-    if ( (data= get_dataptr(BASILISK_HDROFFSET,&allocptr,&recvlen,space,sizeof(space),blockstr)) != 0 )
-        gecko_blockarrived(myinfo,virt,"127.0.0.1",data,recvlen,hash2);
-    if ( allocptr != 0 )
-        free(allocptr);
-    return(recvlen);
-}
-
 void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t datalen,char *type,int32_t encrypted)
 {
     uint32_t ipbits,basilisktag; int32_t msglen,len=0; void *ptr = 0; uint8_t space[8192]; bits256 senderpub; struct supernet_info *myinfo = _myinfo;
@@ -359,7 +349,7 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,int32_t 
 
 struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,char *CMD,int32_t blockflag,cJSON *valsobj,bits256 hash,uint8_t *data,int32_t datalen,uint32_t nBits)
 {
-    int32_t minresults,timeoutmillis,numsent,delaymillis,encryptflag; struct basilisk_item *ptr; char buf[4096],*symbol,*str = 0; struct iguana_info *virt,*btcd;
+    int32_t minresults,timeoutmillis,numsent,delaymillis,encryptflag,fanout; struct basilisk_item *ptr; char buf[4096],*symbol,*str = 0; struct iguana_info *virt,*btcd;
     if ( (btcd= iguana_coinfind("BTCD")) != 0 && btcd->RELAYNODE != 0 )
         jaddnum(valsobj,"iamrelay",1);
     basilisk_addhexstr(&str,valsobj,buf,sizeof(buf),data,datalen);
@@ -373,6 +363,9 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,char 
         minresults = 1;
     if ( (timeoutmillis= jint(valsobj,"timeout")) == 0 )
         timeoutmillis = BASILISK_TIMEOUT;
+    if ( jobj(valsobj,"fanout") == 0 )
+        fanout = 1;
+    else fanout = jint(valsobj,"fanout");
     if ( (symbol= jstr(valsobj,"coin")) != 0 || (symbol= jstr(valsobj,"symbol")) != 0 )
     {
         if ( (virt= iguana_coinfind(symbol)) != 0 )
@@ -384,7 +377,7 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,char 
     }
     encryptflag = jint(valsobj,"encrypt");
     delaymillis = jint(valsobj,"delay");
-    ptr = basilisk_issueremote(myinfo,&numsent,CMD,"BTCD",blockflag,valsobj,1,minresults,0,timeoutmillis,0,0,encryptflag,delaymillis,nBits);
+    ptr = basilisk_issueremote(myinfo,&numsent,CMD,"BTCD",blockflag,valsobj,fanout,minresults,0,timeoutmillis,0,0,encryptflag,delaymillis,nBits);
     return(ptr);
 }
 
@@ -414,6 +407,24 @@ char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,bits256 ha
         } else jaddstr(retjson,"error","didnt find any nodes to send to");
     } else jaddstr(retjson,"error","couldnt create basilisk item");
     return(jprint(retjson,1));
+}
+
+int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,char *blockstr,bits256 hash2)
+{
+    int32_t datalen; uint8_t *data,space[16384],*allocptr; cJSON *valsobj; char *str;
+    if ( (data= get_dataptr(sizeof(struct iguana_msghdr) + BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),blockstr)) != 0 )
+    {
+        gecko_blockarrived(myinfo,virt,"127.0.0.1",data,datalen,hash2);
+        valsobj = cJSON_CreateObject();
+        jaddnum(valsobj,"fanout",-1);
+        jaddstr(valsobj,"symbol",virt->symbol);
+        if ( (str= basilisk_standardservice("BLK",myinfo,hash2,valsobj,blockstr,0)) != 0 )
+            free(str);
+        free_json(valsobj);
+    }
+    if ( allocptr != 0 )
+        free(allocptr);
+    return(0);
 }
 
 #include "basilisk_bitcoin.c"
@@ -1021,7 +1032,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
     symbol = "BTCD";
     if ( (valsobj= cJSON_Parse((char *)data)) != 0 )
     {
-        //printf("MSGVALS.(%s)\n",(char *)data);
+        printf("MSGVALS.(%s)\n",(char *)data);
         if ( jobj(valsobj,"coin") != 0 )
             coin = iguana_coinfind(jstr(valsobj,"coin"));
         else if ( jobj(valsobj,"symbol") != 0 )
@@ -1071,7 +1082,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         CMD[i] = toupper((int32_t)CMD[i]);
         cmd[i] = tolower((int32_t)CMD[i]);
     }
-    //printf("MSGPROCESS.(%s) tag.%d\n",(char *)data,basilisktag);
+    printf("MSGPROCESS.(%s) tag.%d\n",(char *)data,basilisktag);
     myinfo->basilisk_busy = 1;
     if ( valsobj != 0 )
     {

@@ -151,7 +151,7 @@ int32_t gecko_hwmset(struct iguana_info *virt,struct iguana_txblock *txdata,stru
 
 char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *data,int32_t datalen,bits256 hash2)
 {
-    struct iguana_txblock txdata; int32_t valid,adjacent,n,i,j,len = -1; struct iguana_block *block,*prev;
+    struct iguana_txblock txdata; int32_t height,valid,adjacent,gap,n,i,j,len = -1; struct iguana_block *block,*prev; struct iguana_txid tx; char str[65]; bits256 txid; struct iguana_msgtx *txs;
     memset(&txdata,0,sizeof(txdata));
     iguana_memreset(&virt->TXMEM);
     if ( (n= iguana_gentxarray(virt,&virt->TXMEM,&txdata,&len,data,datalen)) == datalen )
@@ -160,6 +160,16 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
         {
             printf("gecko_blockarrived: mismatched hash2\n");
             return(clonestr("{\"error\":\"gecko block hash2 mismatch\"}"));
+        }
+        txs = virt->TXMEM.ptr;
+        for (i=0; i<txdata.zblock.RO.txn_count; i++)
+        {
+            txid = txs[i].txid;
+            if ( iguana_txidfind(virt,&height,&tx,txid,virt->bundlescount-1) != 0 && height >= 0 )
+            {
+                printf("gecko_blockarrived: duplicate.[%d] txid.%s\n",i,bits256_str(str,txid));
+                return(clonestr("{\"error\":\"gecko block duplicate txid\"}"));
+            }
         }
         txdata.zblock.RO.allocsize = iguana_ROallocsize(virt);
         if ( iguana_blockvalidate(virt,&valid,(struct iguana_block *)&txdata.zblock,1) < 0 )
@@ -182,21 +192,44 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
             if ( i == 0 )
                 adjacent = prev->height;
             //printf("i.%d prevht.%d adjacent.%d hwm.%d\n",i,prev->height,adjacent,virt->blocks.hwmchain.height);
-            if ( prev->height >= 0 )
+            if ( prev->height >= 0 && prev->mainchain != 0 )
             {
-                txdata.zblock.height = block->height = adjacent + 1;
-                if ( block->height > virt->blocks.hwmchain.height ) // longest chain wins
+                if ( (adjacent + 1) > virt->blocks.hwmchain.height ) // longest chain wins
                 {
                     //printf("new HWM %d adjacent.%d prev.%d i.%d\n",block->height,adjacent,prev->height,i);
-                    txdata.zblock.mainchain = block->mainchain = 1;
+                    if ( (gap= (block->height - virt->blocks.hwmchain.height)) > 1 )
+                    {
+                        prev = iguana_blockfind("geckoclear",virt,virt->blocks.hwmchain.RO.prev_block);
+                        for (j=0; j<gap && prev!=0; j++)
+                        {
+                            printf("%d of %d: protected.%d unlink %s ht.%d from mainchain, newhwm ht.%d\n",j,gap,prev->protected,bits256_str(str,prev->RO.hash2),prev->height,block->height);
+                            if ( prev->protected != 0 )
+                            {
+                                printf("REJECT block: cant overwrite protected block\n");
+                                return(clonestr("{\"error\":\"gecko block cant override protected block\"}"));
+                            }
+                            prev->mainchain = 0;
+                            prev = iguana_blockfind("geckoclrprev",virt,prev->RO.prev_block);
+                        }
+                    }
                     prev = block;
-                    // probably should clear mainchain bits in old path
                     for (j=0; j<=i; j++)
                     {
                         if ( (prev= iguana_blockfind("geckoprev",virt,prev->RO.prev_block)) == 0 )
                             return(clonestr("{\"error\":\"gecko block mainchain link error\"}"));
-                        prev->mainchain = 1;
+                        if ( prev->protected == 0 || prev->height == (adjacent + 1 - j) )
+                        {
+                            prev->mainchain = 1;
+                            prev->height = (adjacent + 1 - j);
+                        }
+                        else
+                        {
+                            printf("REJECT block: cant change height of protected block: ht.%d vs %d\n",adjacent + 1 - j, prev->height);
+                            return(clonestr("{\"error\":\"gecko block cant override protected block's height\"}"));
+                        }
                     }
+                    txdata.zblock.height = block->height;
+                    txdata.zblock.mainchain = block->mainchain = 1;
                     if ( gecko_hwmset(virt,&txdata,virt->TXMEM.ptr,data,datalen,i+1) >= 0 )
                         return(clonestr("{\"result\":\"gecko block created\"}"));
                     else return(clonestr("{\"error\":\"gecko error creating hwmblock\"}"));
@@ -214,6 +247,12 @@ char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *a
     printf("got geckoblock len.%d from (%s) %s\n",datalen,remoteaddr!=0?remoteaddr:"",jprint(valsobj,0));
     if ( (symbol= jstr(valsobj,"coin")) != 0 && (virt= iguana_coinfind(symbol)) != 0 )
     {
+        if ( iguana_blockfind("geckoblock",virt,hash2) != 0 )
+        {
+            char str[65];
+            printf("REJECT: duplicate block %s\n",bits256_str(str,hash2));
+            return(clonestr("{\"error\":\"duplicate block rejected\"}"));
+        }
         hdrsize = (virt->chain->zcash != 0) ? sizeof(struct iguana_msgblockhdr_zcash) : sizeof(struct iguana_msgblockhdr);
         nBits = gecko_nBits(virt,&prevtimestamp,(struct iguana_block *)&virt->blocks.hwmchain,GECKO_DIFFITERS);
         if ( gecko_blocknonce_verify(virt,data,hdrsize,nBits,virt->blocks.hwmchain.RO.timestamp,prevtimestamp) == 0 )
@@ -229,7 +268,8 @@ char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *a
 
 int32_t basilisk_respond_geckogetblock(struct supernet_info *myinfo,struct iguana_info *virt,uint8_t *serialized,int32_t maxsize,cJSON *valsobj,bits256 hash2)
 {
-    int32_t datalen = 0;
+    int32_t datalen = 0; char str[65];
+    printf("GOT request for block.(%s)\n",bits256_str(str,hash2));
     // find block and set serialized
     return(datalen);
 }
