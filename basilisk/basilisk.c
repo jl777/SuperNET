@@ -257,6 +257,7 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
     uint32_t ipbits,basilisktag; int32_t msglen,len=0; void *ptr = 0; uint8_t space[8192]; bits256 senderpub; struct supernet_info *myinfo = _myinfo;
     if ( encrypted != 0 )
     {
+        printf("encrypted p2p\n");
         memset(senderpub.bytes,0,sizeof(senderpub));
         if ( (data= SuperNET_deciphercalc(&ptr,&msglen,myinfo->privkey,senderpub,data,datalen,space,sizeof(space))) == 0 )
         {
@@ -268,9 +269,9 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
         ipbits = (uint32_t)calc_ipbits(senderip);
     else ipbits = 0;
     len += iguana_rwnum(0,data,sizeof(basilisktag),&basilisktag);
-    //int32_t i; for (i=0; i<datalen-len; i++)
-    //    printf("%02x",data[len+i]);
-    //printf(" ->received.%d basilisk_p2p.(%s) from %s tag.%d\n",datalen,type,senderip!=0?senderip:"?",basilisktag);
+    int32_t i; for (i=0; i<datalen-len; i++)
+        printf("%02x",data[len+i]);
+    printf(" ->received.%d basilisk_p2p.(%s) from %s tag.%d\n",datalen,type,senderip!=0?senderip:"?",basilisktag);
     basilisk_msgprocess(myinfo,_addr,ipbits,type,basilisktag,&data[len],datalen - len);
     if ( ptr != 0 )
         free(ptr);
@@ -1094,6 +1095,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         {
             if ( strcmp(CMD,"RLY") == 0 )
             {
+                printf("add relay path\n");
                 if ( juint(valsobj,"iamrelay") != 0 )
                 {
                     retstr = basilisk_respond_relays(myinfo,type,addr,remoteaddr,basilisktag,valsobj,data,datalen,hash,from_basilisk);
@@ -1102,8 +1104,8 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
                 myinfo->basilisk_busy = 0;
                 return;
             }
-            else if ( (retstr= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(remoteaddr),GENESIS_PUBKEY)) != 0 )
-                free(retstr);
+            //else if ( (retstr= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(remoteaddr),GENESIS_PUBKEY)) != 0 )
+            //    free(retstr);
         }
         for (i=0; i<sizeof(basilisk_services)/sizeof(*basilisk_services); i++) // iguana node
         {
