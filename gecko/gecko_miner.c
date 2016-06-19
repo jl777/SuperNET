@@ -340,7 +340,7 @@ void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct ig
         //char str[65]; printf("HWM.%s %p\n",bits256_str(str,newblock.RO.prev_block),&newblock.RO.prev_block);
         if ( (blockstr= gecko_createblock(myinfo,virt->chain->estblocktime,prevtimestamp,btcd,virt->chain->isPoS,(void *)&newblock,virt->symbol,txptrs,txn_count,maxmillis,minerpubkey33,reward)) != 0 )
         {
-            char str[65]; printf("%s.%x %s %u %d %.8f %d\n",virt->symbol,newblock.RO.bits,bits256_str(str,newblock.RO.hash2),newblock.RO.timestamp,newblock.height,dstr(reward),newblock.RO.txn_count);
+            char str[65]; printf(">>>>>>>>>>>>>>>>> MINED %s.%x %s %u %d %.8f %d\n",virt->symbol,newblock.RO.bits,bits256_str(str,newblock.RO.hash2),newblock.RO.timestamp,newblock.height,dstr(reward),newblock.RO.txn_count);
             gecko_blocksubmit(myinfo,btcd,virt,blockstr,newblock.RO.hash2);
             free(blockstr);
         }

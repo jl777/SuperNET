@@ -50,16 +50,16 @@ void gecko_iteration(struct supernet_info *myinfo,struct iguana_info *btcd,struc
         {
             if ( strcmp("BTCD",virt->symbol) == 0 )
                 ;
-            fprintf(stderr,"r");
+            //fprintf(stderr,"r");
             gecko_requesthdrs(myinfo,virt,hwmhdrsi);
-            fprintf(stderr,"R");
+            //fprintf(stderr,"R");
             virt->hdrstime = (uint32_t)time(NULL);
         }
     }
     if ( btcd->RELAYNODE != 0 && virt->blocks.hwmchain.height >= virt->longestchain-1 )
     {
         bitcoin_address(mineraddr,virt->chain->pubtype,myinfo->persistent_pubkey33,33);
-        fprintf(stderr,"mine.%s %s\n",virt->symbol,mineraddr);
+        //fprintf(stderr,"mine.%s %s\n",virt->symbol,mineraddr);
         gecko_miner(myinfo,btcd,virt,maxmillis,myinfo->persistent_pubkey33);
     }
 }
@@ -441,7 +441,7 @@ char *basilisk_standardreturn(char *CMD,char *type,struct iguana_info *virt,uint
     {
         jaddstr(retjson,"CMD",CMD);
         jaddstr(retjson,"type",type);
-        jaddstr(retjson,"coin",virt->symbol);
+        jaddstr(retjson,"symbol",virt->symbol);
         //jaddnum(retjson,"longest",virt->longestchain);
         jaddnum(retjson,"hwm",virt->blocks.hwmchain.height);
         jaddnum(retjson,"datalen",datalen);

@@ -81,8 +81,8 @@ uint8_t *get_dataptr(int32_t hdroffset,uint8_t **ptrp,int32_t *datalenp,uint8_t 
 uint8_t *basilisk_jsondata(int32_t extraoffset,uint8_t **ptrp,uint8_t *space,int32_t spacesize,int32_t *datalenp,char *symbol,cJSON *sendjson,uint32_t basilisktag)
 {
     char *sendstr,*hexstr=0; uint8_t *data,hexspace[8192],*allocptr=0,*hexdata; int32_t datalen,hexlen=0;
-    if ( jobj(sendjson,"coin") == 0 )
-        jaddstr(sendjson,"coin",symbol);
+    if ( jobj(sendjson,"symbol") == 0 )
+        jaddstr(sendjson,"symbol",symbol);
     if ( (hexstr= jstr(sendjson,"data")) != 0 )
     {
         hexdata = get_dataptr(0,&allocptr,&hexlen,hexspace,sizeof(hexspace),hexstr);
@@ -377,7 +377,7 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,char 
     {
         if ( (virt= iguana_coinfind(symbol)) != 0 )
         {
-            jaddstr(valsobj,"coin",symbol);
+            jaddstr(valsobj,"symbol",symbol);
             jaddnum(valsobj,"longest",virt->longestchain);
             jaddnum(valsobj,"hwm",virt->blocks.hwmchain.height);
         }
@@ -626,7 +626,7 @@ int32_t basilisk_hashes_send(struct supernet_info *myinfo,struct iguana_info *vi
         if ( (hexstr= basilisk_addhexstr(&str,0,space,sizeof(space),serialized,len)) != 0 )
         {
             vals = cJSON_CreateObject();
-            jaddstr(vals,"coin",virt->symbol);
+            jaddstr(vals,"symbol",virt->symbol);
             if ( (retstr= basilisk_standardservice(CMD,myinfo,hash,vals,hexstr,0)) != 0 )
                 free(retstr);
             free_json(vals);
@@ -791,16 +791,16 @@ void basilisks_loop(void *arg)
     iter = 0;
     while ( 1 )
     {
-        fprintf(stderr,"basilisk iter.%d\n",iter);
-        sleep(3);
-        fprintf(stderr,"basilisk iter.%d\n",iter);
+        //fprintf(stderr,"basilisk iter.%d\n",iter);
+        //sleep(3);
+        //fprintf(stderr,"basilisk iter.%d\n",iter);
         iter++;
         if ( (ptr= queue_dequeue(&myinfo->basilisks.submitQ,0)) != 0 )
         {
             HASH_ADD(hh,myinfo->basilisks.issued,basilisktag,sizeof(ptr->basilisktag),ptr);
             continue;
         }
-        fprintf(stderr,"A");
+        //fprintf(stderr,"A");
         if ( (ptr= queue_dequeue(&myinfo->basilisks.resultsQ,0)) != 0 )
         {
             HASH_FIND(hh,myinfo->basilisks.issued,&ptr->basilisktag,sizeof(ptr->basilisktag),pending);
@@ -823,7 +823,7 @@ void basilisks_loop(void *arg)
                             free_json(retjson);
                         }
                     }
-                    else if ( strcmp(ptr->CMD,"RET") == 0 )
+                    else if ( strcmp(ptr->CMD,"RET") == 0 || strcmp(ptr->CMD,"GET") == 0 )
                     {
                         printf("got return for tag.%d parent.%p\n",pending->basilisktag,pending->parent);
                         if ( (parent= pending->parent) != 0 )
@@ -831,13 +831,15 @@ void basilisks_loop(void *arg)
                             pending->parent = 0;
                             parent->childrendone++;
                         }
+                        if ( strcmp(ptr->CMD,"GET") == 0 )
+                            basilisk_geckoresult(myinfo,ptr);
                     }
                 }
             } else printf("couldnt find issued.%u\n",ptr->basilisktag);
             free(ptr);
             continue;
         }
-        fprintf(stderr,"B");
+        //fprintf(stderr,"B");
         flag = 0;
         HASH_ITER(hh,myinfo->basilisks.issued,pending,tmp)
         {
@@ -873,7 +875,7 @@ void basilisks_loop(void *arg)
                     flag++;
                 }
             }
-            fprintf(stderr,"c");
+            //fprintf(stderr,"c");
             if ( pending->finished != 0 && time(NULL) > pending->finished+60 )
             {
                 if ( pending->dependents == 0 || pending->childrendone >= pending->numchildren )
@@ -892,7 +894,7 @@ void basilisks_loop(void *arg)
                 }
             }
         }
-        fprintf(stderr,"D");
+        //fprintf(stderr,"D");
         if ( (btcd= iguana_coinfind("BTCD")) != 0 )
         {
             done = 3;
@@ -916,14 +918,14 @@ void basilisks_loop(void *arg)
                 valsobj = cJSON_CreateObject();
                 if ( btcd->RELAYNODE == 0 && btcd->VALIDATENODE == 0 )
                 {
-                    fprintf(stderr,"e");
+                    //fprintf(stderr,"e");
                     jaddnum(valsobj,"BTCD",btcd->SEQ.BTCD.numstamps+GECKO_FIRSTPOSSIBLEBTCD);
                     basilisk_standardservice("SEQ",myinfo,GENESIS_PUBKEY,valsobj,0,0);
                     flag++;
                 }
                 if ( (done & 2) == 0 )
                 {
-                    fprintf(stderr,"f");
+                    //fprintf(stderr,"f");
                     free_json(valsobj);
                     valsobj = cJSON_CreateObject();
                     jaddnum(valsobj,"BTC",btcd->SEQ.BTC.numstamps+GECKO_FIRSTPOSSIBLEBTC);
@@ -932,7 +934,7 @@ void basilisks_loop(void *arg)
                 }
                 free_json(valsobj);
             }
-            fprintf(stderr,"G");
+            //fprintf(stderr,"G");
             if ( flag == 0 && myinfo->allcoins_numvirts > 0 )
             {
                 maxmillis = (1000 / myinfo->allcoins_numvirts) + 1;
@@ -941,7 +943,7 @@ void basilisks_loop(void *arg)
                 {
                     if ( virt->started != 0 && virt->active != 0 && virt->virtualchain != 0 )
                     {
-                        fprintf(stderr,"h");
+                        //fprintf(stderr,"h");
                         gecko_iteration(myinfo,btcd,virt,maxmillis);
                         flag++;
                     }
@@ -949,7 +951,7 @@ void basilisks_loop(void *arg)
                 //portable_mutex_unlock(&Allcoins_mutex);
             }
         }
-        fprintf(stderr,"i ");
+        //fprintf(stderr,"i ");
         //for (i=0; i<IGUANA_MAXCOINS; i++)
         //    if ( (coin= Coins[i]) != 0 && coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 && coin->active != 0 && coin->chain->userpass[0] != 0 && coin->MAXPEERS == 1 )
         //        basilisk_bitcoinscan(coin,blockspace,&RAWMEM);
