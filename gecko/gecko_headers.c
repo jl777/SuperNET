@@ -40,10 +40,10 @@ int32_t basilisk_respond_geckogetheaders(struct supernet_info *myinfo,struct igu
     return(-1);
 }
 
-void gecko_headerupdate(struct iguana_info *virt,bits256 hash2,int32_t height)
+void gecko_blockhashupdate(struct iguana_info *virt,bits256 hash2,int32_t height)
 {
     int32_t bundlei; struct iguana_bundle *bp; bits256 zero;
-    char str[65]; printf("height.%d %s\n",height,bits256_str(str,hash2));
+    char str[65]; printf("gecko_blockhashupdate height.%d %s\n",height,bits256_str(str,hash2));
     memset(zero.bytes,0,sizeof(zero));
     if ( (height % virt->chain->bundlesize) == 0 )
         bp = iguana_bundlecreate(virt,&bundlei,height,hash2,zero,0);
@@ -53,17 +53,23 @@ void gecko_headerupdate(struct iguana_info *virt,bits256 hash2,int32_t height)
 
 char *gecko_headersarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *data,int32_t datalen,bits256 firsthash2)
 {
-    bits256 hash2; struct iguana_block *block; int32_t firstheight,i,len=0,n,num; struct iguana_msgblock msgB;
+    bits256 hash2,prevhash2; struct iguana_block *block; int32_t height,firstheight,i,len=0,n,num; struct iguana_msgblock msgB;
     num = (int32_t)(datalen / 84);
-    char str[65]; printf("headers arrived.%d from %s\n",n,bits256_str(str,firsthash2));
+    char str[65]; printf("headers arrived.%d from %s\n",num,bits256_str(str,firsthash2));
     if ( (block= iguana_blockfind("geckohdrs",virt,firsthash2)) != 0 && (firstheight= block->height) >= 0 )
     {
-        gecko_headerupdate(virt,firsthash2,firstheight);
+        gecko_blockhashupdate(virt,firsthash2,firstheight);
+        prevhash2 = firsthash2;
         for (i=0; i<num; i++)
         {
             if ( (n= iguana_rwblock(virt->symbol,virt->chain->zcash,virt->chain->auxpow,virt->chain->hashalgo,0,&hash2,&data[len],&msgB,datalen-len)) > 0 )
             {
-                gecko_headerupdate(virt,hash2,firstheight + i + 1);
+                if ( bits256_cmp(msgB.H.prev_block,prevhash2) == 0 )
+                {
+                    height = (firstheight + i + 1);
+                    gecko_blockhashupdate(virt,hash2,height);
+                    printf("ht.%d %s %08x t.%u\n",height,bits256_str(str,hash2),msgB.H.bits,msgB.H.timestamp);
+                } else printf("ht.%d non prevhash i.%d\n",height,i);
                 len += n;
             }
         }

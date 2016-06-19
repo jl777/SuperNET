@@ -916,12 +916,14 @@ void basilisks_loop(void *arg)
                 valsobj = cJSON_CreateObject();
                 if ( btcd->RELAYNODE == 0 && btcd->VALIDATENODE == 0 )
                 {
+                    fprintf(stderr,"e");
                     jaddnum(valsobj,"BTCD",btcd->SEQ.BTCD.numstamps+GECKO_FIRSTPOSSIBLEBTCD);
                     basilisk_standardservice("SEQ",myinfo,GENESIS_PUBKEY,valsobj,0,0);
                     flag++;
                 }
                 if ( (done & 2) == 0 )
                 {
+                    fprintf(stderr,"f");
                     free_json(valsobj);
                     valsobj = cJSON_CreateObject();
                     jaddnum(valsobj,"BTC",btcd->SEQ.BTC.numstamps+GECKO_FIRSTPOSSIBLEBTC);
@@ -930,6 +932,7 @@ void basilisks_loop(void *arg)
                 }
                 free_json(valsobj);
             }
+            fprintf(stderr,"G");
             if ( flag == 0 && myinfo->allcoins_numvirts > 0 )
             {
                 maxmillis = (1000 / myinfo->allcoins_numvirts) + 1;
@@ -938,6 +941,7 @@ void basilisks_loop(void *arg)
                 {
                     if ( virt->started != 0 && virt->active != 0 && virt->virtualchain != 0 )
                     {
+                        fprintf(stderr,"h");
                         gecko_iteration(myinfo,btcd,virt,maxmillis);
                         flag++;
                     }
@@ -945,7 +949,7 @@ void basilisks_loop(void *arg)
                 //portable_mutex_unlock(&Allcoins_mutex);
             }
         }
-        fprintf(stderr,"E ");
+        fprintf(stderr,"i ");
         //for (i=0; i<IGUANA_MAXCOINS; i++)
         //    if ( (coin= Coins[i]) != 0 && coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 && coin->active != 0 && coin->chain->userpass[0] != 0 && coin->MAXPEERS == 1 )
         //        basilisk_bitcoinscan(coin,blockspace,&RAWMEM);
