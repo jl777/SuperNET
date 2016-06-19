@@ -403,6 +403,7 @@ char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,bits256 ha
         }
         else if ( ptr->numsent > 0 )
         {
+            queue_enqueue("submitQ",&myinfo->basilisks.submitQ,&ptr->DL,0);
             jaddstr(retjson,"result","success");
             jaddnum(retjson,"numsent",ptr->numsent);
         } else jaddstr(retjson,"error","didnt find any nodes to send to");
@@ -1073,9 +1074,12 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         if ( datalen > jsonlen )
         {
             data += jsonlen, datalen -= jsonlen;
-            //for (i=0; i<datalen; i++)
-            //    printf("%02x",data[i]);
-            //printf(" <-> got datalen.%d\n",datalen);
+            if ( strcmp("BLK",CMD) == 0 )
+            {
+                for (i=0; i<datalen; i++)
+                    printf("%02x",data[i]);
+                printf(" <-> got datalen.%d\n",datalen);
+            }
         } else data = 0, datalen = 0;
         if ( coin == 0 )
             coin = iguana_coinfind("BTCD");
@@ -1101,6 +1105,8 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
                     retstr = basilisk_respond_relays(myinfo,type,addr,remoteaddr,basilisktag,valsobj,data,datalen,hash,from_basilisk);
                 }
                 free_json(valsobj);
+                if ( coin != 0 )
+                    coin->basilisk_busy = 0;
                 myinfo->basilisk_busy = 0;
                 return;
             }

@@ -29,18 +29,23 @@ int32_t gecko_blocknonce_verify(struct iguana_info *virt,uint8_t *serialized,int
     if ( 1 && timestamp != 0 && prevtimestamp != 0 )
     {
         if ( prevtimestamp != 0 && timestamp < gecko_earliest_blocktime(virt->chain->estblocktime,prevtimestamp)  )
+        {
+            printf("reject timestamp prev.%u %u earliest.%u\n",prevtimestamp,timestamp,gecko_earliest_blocktime(virt->chain->estblocktime,prevtimestamp));
             return(-1);
+        }
         if ( timestamp > time(NULL) + GECKO_MAXFUTUREBLOCK )
+        {
+            printf("reject future timestamp.%u vs %u\n",timestamp,(uint32_t)time(NULL));
             return(-1);
+        }
     }
     threshold = bits256_from_compact(nBits);
     hash2 = iguana_calcblockhash(virt->symbol,virt->chain->hashalgo,serialized,datalen);
     if ( bits256_cmp(threshold,hash2) > 0 )
     {
-        printf("nonce worked crc.%d\n",calc_crc32(0,serialized,datalen));
+        printf("nonce worked crc.%x\n",calc_crc32(0,serialized,datalen));
         return(1);
-    }
-    printf("nonce failed crc.%d\n",calc_crc32(0,serialized,datalen));
+    } else printf("nonce failed crc.%x\n",calc_crc32(0,serialized,datalen));
     return(-1);
 }
 
@@ -299,6 +304,7 @@ cJSON *gecko_paymentsobj(struct supernet_info *myinfo,cJSON *txjson,cJSON *valso
 void gecko_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,char *blockstr,bits256 hash2)
 {
     uint8_t *data,space[16384],*allocptr=0; int32_t i,len,numranked=0; struct iguana_peers *peers; struct iguana_peer *addr;
+    printf("submit.(%s)\n",blockstr);
     if ( (peers= virt->peers) == 0 || (numranked= peers->numranked) == 0 )
         basilisk_blocksubmit(myinfo,btcd,virt,blockstr,hash2);
     else // physical node for geckochain
