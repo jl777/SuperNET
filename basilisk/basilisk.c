@@ -679,7 +679,7 @@ INT_AND_ARRAY(basilisk,result,basilisktag,vals)
         ptr->basilisktag = basilisktag;
         strcpy(ptr->remoteaddr,remoteaddr);
         safecopy(ptr->CMD,jstr(vals,"origcmd"),sizeof(ptr->CMD));
-        //printf("(%s) -> Q.%u results vals.(%s)\n",ptr->CMD,basilisktag,ptr->retstr);
+        printf("(%s) -> Q.%u results vals.(%s)\n",ptr->CMD,basilisktag,ptr->retstr);
         queue_enqueue("resultsQ",&myinfo->basilisks.resultsQ,&ptr->DL,0);
         return(clonestr("{\"result\":\"queued basilisk return\"}"));
     } else printf("null vals.(%s) or no hexmsg.%p\n",jprint(vals,0),vals);
@@ -800,6 +800,7 @@ void basilisks_loop(void *arg)
         if ( (ptr= queue_dequeue(&myinfo->basilisks.submitQ,0)) != 0 )
         {
             HASH_ADD(hh,myinfo->basilisks.issued,basilisktag,sizeof(ptr->basilisktag),ptr);
+            ptr->refcount++;
             continue;
         }
         //fprintf(stderr,"A");
@@ -883,15 +884,18 @@ void basilisks_loop(void *arg)
                 if ( pending->dependents == 0 || pending->childrendone >= pending->numchildren )
                 {
                     HASH_DELETE(hh,myinfo->basilisks.issued,pending);
-                    if ( pending->dependents != 0 )
-                        free(pending->dependents);
-                    fprintf(stderr,"HASH_DELETE free ptr.%u\n",pending->basilisktag);
-                    for (i=0; i<pending->numresults; i++)
-                        if ( pending->results[i] != 0 )
-                            free(pending->results[i]), pending->results[i] = 0;
-                    if ( pending->vals != 0 )
-                        free_json(pending->vals), pending->vals = 0;
-                    free(pending);
+                    if ( --pending->refcount == 0 )
+                    {
+                        if ( pending->dependents != 0 )
+                            free(pending->dependents);
+                        fprintf(stderr,"HASH_DELETE free ptr.%u refcount.%d\n",pending->basilisktag,pending->refcount);
+                        for (i=0; i<pending->numresults; i++)
+                            if ( pending->results[i] != 0 )
+                                free(pending->results[i]), pending->results[i] = 0;
+                        if ( pending->vals != 0 )
+                            free_json(pending->vals), pending->vals = 0;
+                        //free(pending);
+                    } else printf("illegal refcount for pending\n");
                     flag++;
                 }
             }

@@ -56,7 +56,7 @@ void gecko_iteration(struct supernet_info *myinfo,struct iguana_info *btcd,struc
             virt->hdrstime = (uint32_t)time(NULL);
         }
     }
-    if ( btcd->RELAYNODE != 0 && virt->blocks.hwmchain.height >= virt->longestchain-1 )
+    if ( btcd->RELAYNODE != 0 && virt->blocks.hwmchain.height >= virt->longestchain-virt->chain->bundlesize )
     {
         bitcoin_address(mineraddr,virt->chain->pubtype,myinfo->persistent_pubkey33,33);
         //fprintf(stderr,"mine.%s %s\n",virt->symbol,mineraddr);
