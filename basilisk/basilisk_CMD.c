@@ -20,12 +20,12 @@ struct iguana_peer *basilisk_ensurerelay(struct iguana_info *btcd,uint32_t ipbit
     struct iguana_peer *addr;
     if ( (addr= iguana_peerfindipbits(btcd,ipbits,0)) == 0 )
     {
-        /*if ( (addr= iguana_peerslot(btcd,ipbits,0)) != 0 )
+        if ( (addr= iguana_peerslot(btcd,ipbits,0)) != 0 )
         {
             printf("launch peer for relay\n");
             addr->isrelay = 1;
             iguana_launch(btcd,"addrelay",iguana_startconnection,addr,IGUANA_CONNTHREAD);
-        } else printf("error getting peerslot\n");*/
+        } else printf("error getting peerslot\n");
     } else addr->isrelay = 1;
     return(addr);
 }
@@ -34,7 +34,6 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint
 {
     int32_t i; struct basilisk_relay *rp; struct iguana_info *btcd;
 //return(clonestr("{\"error\":\"addrelay info disabled\"}"));
-
     if ( (btcd= iguana_coinfind("BTCD")) == 0 || ipbits == 0 )
         return(clonestr("{\"error\":\"add relay needs BTCD and ipbits\"}"));
     for (i=0; i<myinfo->numrelays; i++)
@@ -60,14 +59,14 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint
         myinfo->numrelays++;
     for (i=0; i<myinfo->numrelays; i++)
         myinfo->relaybits[i] = myinfo->relays[i].ipbits;
-    revsort32(&myinfo->relaybits[0],myinfo->numrelays,sizeof(myinfo->relaybits[0]));
+    /*revsort32(&myinfo->relaybits[0],myinfo->numrelays,sizeof(myinfo->relaybits[0]));
     for (i=0; i<myinfo->numrelays; i++)
     {
         char ipaddr[64];
         expand_ipbits(ipaddr,myinfo->relaybits[i]);
         printf("%s ",ipaddr);
     }
-    printf("sorted\n");
+    printf("sorted\n");*/
     return(clonestr("{\"result\":\"relay added\"}"));
 }
 
