@@ -18,7 +18,7 @@
 struct iguana_peer *basilisk_ensurerelay(struct iguana_info *btcd,uint32_t ipbits)
 {
     struct iguana_peer *addr;
-    if ( (addr= iguana_peerfindipbits(btcd,ipbits,0)) == 0 )
+    if ( (addr= iguana_peerfindipbits(btcd,ipbits,0)) == 0 && 0 )
     {
         if ( (addr= iguana_peerslot(btcd,ipbits,0)) != 0 )
         {
@@ -33,7 +33,7 @@ struct iguana_peer *basilisk_ensurerelay(struct iguana_info *btcd,uint32_t ipbit
 char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint32_t ipbits,bits256 pubkey)
 {
     int32_t i; struct basilisk_relay *rp; struct iguana_info *btcd;
-    return(clonestr("{\"error\":\"addrelay info disabled\"}"));
+//return(clonestr("{\"error\":\"addrelay info disabled\"}"));
 
     if ( (btcd= iguana_coinfind("BTCD")) == 0 || ipbits == 0 )
         return(clonestr("{\"error\":\"add relay needs BTCD and ipbits\"}"));
