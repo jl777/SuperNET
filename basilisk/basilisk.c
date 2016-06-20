@@ -884,7 +884,7 @@ void basilisks_loop(void *arg)
                 if ( pending->dependents == 0 || pending->childrendone >= pending->numchildren )
                 {
                     HASH_DELETE(hh,myinfo->basilisks.issued,pending);
-                    if ( --pending->refcount == 0 && 0 )
+                    if ( --pending->refcount == 0 )
                     {
                         if ( pending->dependents != 0 )
                             free(pending->dependents);
