@@ -18,14 +18,14 @@
 struct iguana_peer *basilisk_ensurerelay(struct iguana_info *btcd,uint32_t ipbits)
 {
     struct iguana_peer *addr;
-    if ( (addr= iguana_peerfindipbits(btcd,ipbits,0)) == 0 && 0 )
+    if ( (addr= iguana_peerfindipbits(btcd,ipbits,0)) == 0 )
     {
-        if ( (addr= iguana_peerslot(btcd,ipbits,0)) != 0 )
+        /*if ( (addr= iguana_peerslot(btcd,ipbits,0)) != 0 )
         {
             printf("launch peer for relay\n");
             addr->isrelay = 1;
             iguana_launch(btcd,"addrelay",iguana_startconnection,addr,IGUANA_CONNTHREAD);
-        } else printf("error getting peerslot\n");
+        } else printf("error getting peerslot\n");*/
     } else addr->isrelay = 1;
     return(addr);
 }
