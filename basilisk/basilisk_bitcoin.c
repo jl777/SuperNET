@@ -372,7 +372,7 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
     return(ptr);
 }
 
-double basilisk_bitcoin_rawtxmetric_dependents(struct supernet_info *myinfo,struct iguana_info *coin,struct basilisk_item *ptr,struct bitcoin_rawtxdependents *dependents)
+/*double basilisk_bitcoin_rawtxmetric_dependents(struct supernet_info *myinfo,struct iguana_info *coin,struct basilisk_item *ptr,struct bitcoin_rawtxdependents *dependents)
 {
     int32_t i,j,numaddrs,notfinished = 0; cJSON *childjson,*addresses; struct basilisk_item *child; double metric = 0.; char *childstr,*coinaddr; int64_t inputsum,value,txfee;
     for (i=0; i<dependents->numptrs; i++)
@@ -569,7 +569,7 @@ double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk
         cost = 1;
     dependents->cost = cost;
     return(0.);
-}
+}*/
 
 void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj)
 {
