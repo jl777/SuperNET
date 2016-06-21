@@ -787,167 +787,122 @@ void basilisk_geckoresult(struct supernet_info *myinfo,struct basilisk_item *ptr
     }
 }
 
+void basilisk_pending_result(struct supernet_info *myinfo,struct basilisk_item *ptr,struct basilisk_item *pending)
+{
+    int32_t n; struct basilisk_item *parent; basilisk_metricfunc metricfunc; cJSON *retjson;
+    if ( (n= pending->numresults) < sizeof(pending->results)/sizeof(*pending->results) )
+    {
+        pending->numresults++;
+        if ( (metricfunc= pending->metricfunc) == 0 )
+            pending->metrics[n] = n + 1;
+        else if ( (pending->metrics[n]= (*metricfunc)(myinfo,pending,ptr->retstr)) != 0. )
+            pending->childrendone++;
+        printf("%s.%u Add results[%d] <- metric %f\n",pending->CMD,pending->basilisktag,n,pending->metrics[n]);
+        pending->results[n] = ptr->retstr;
+        if ( strcmp(ptr->CMD,"SEQ") == 0 )
+        {
+            if ( (retjson= cJSON_Parse(ptr->retstr)) != 0 )
+            {
+                gecko_seqresult(myinfo,ptr->retstr);
+                free_json(retjson);
+            }
+        }
+        else if ( strcmp(ptr->CMD,"RET") == 0 || strcmp(ptr->CMD,"GET") == 0 )
+        {
+            printf("got return for tag.%d parent.%p\n",pending->basilisktag,pending->parent);
+            if ( (parent= pending->parent) != 0 )
+            {
+                pending->parent = 0;
+                parent->childrendone++;
+            }
+            if ( strcmp(ptr->CMD,"GET") == 0 )
+                basilisk_geckoresult(myinfo,ptr);
+        }
+    }
+}
+
+int32_t basilisk_issued_iteration(struct supernet_info *myinfo,struct basilisk_item *pending)
+{
+    basilisk_metricfunc metricfunc; struct basilisk_item *parent; int32_t i,flag = 0;
+    //printf("pending.%u numresults.%d m %f func.%p\n",pending->basilisktag,pending->numresults,pending->metrics[0],pending->metricfunc);
+    if ( (metricfunc= pending->metricfunc) != 0 )
+    {
+        for (i=0; i<pending->numresults; i++)
+            if ( pending->metrics[i] == 0. && pending->results[i] != 0 )
+            {
+                if ( (pending->metrics[i]= (*metricfunc)(myinfo,pending,pending->results[i])) != 0 )
+                    pending->childrendone++;
+                // printf("iter.%d %p.[%d] poll metrics.%u metric %f\n",iter,pending,i,pending->basilisktag,pending->metrics[i]);
+                flag++;
+            }
+    }
+    basilisk_iscomplete(pending);
+    if ( OS_milliseconds() > pending->expiration )
+    {
+        if ( pending->finished == 0 )
+        {
+            if ( (parent= pending->parent) != 0 )
+            {
+                pending->parent = 0;
+                parent->childrendone++;
+            }
+            pending->finished = (uint32_t)time(NULL);
+            if ( pending->retstr == 0 )
+                pending->retstr = clonestr("{\"error\":\"basilisk timeout\"}");
+            fprintf(stderr,"timeout.%s call metrics.%u lag %f - %f\n",pending->CMD,pending->basilisktag,OS_milliseconds(),pending->expiration);
+            for (i=0; i<pending->numresults; i++)
+                if ( (metricfunc= pending->metricfunc) != 0 && pending->metrics[i] == 0. )
+                    pending->metrics[i] = (*metricfunc)(myinfo,pending,pending->results[i]);
+            flag++;
+        }
+    }
+    //fprintf(stderr,"c");
+    if ( pending->finished != 0 && time(NULL) > pending->finished+60 )
+    {
+        if ( pending->dependents == 0 || pending->childrendone >= pending->numchildren )
+        {
+            HASH_DELETE(hh,myinfo->basilisks.issued,pending);
+            if ( pending->dependents != 0 )
+                free(pending->dependents);
+            fprintf(stderr,"HASH_DELETE free ptr.%u refcount.%d\n",pending->basilisktag,pending->refcount);
+            for (i=0; i<pending->numresults; i++)
+                if ( pending->results[i] != 0 )
+                    free(pending->results[i]), pending->results[i] = 0;
+            if ( pending->vals != 0 )
+                free_json(pending->vals), pending->vals = 0;
+            free(pending);
+            flag++;
+        }
+    }
+    return(flag);
+}
+
 void basilisks_loop(void *arg)
 {
-    basilisk_metricfunc metricfunc; struct iguana_info *btcd,*virt,*hhtmp; struct basilisk_item *ptr,*tmp,*pending,*parent; int32_t i,iter,maxmillis,done,flag,n; cJSON *valsobj,*retjson; uint32_t now; struct supernet_info *myinfo = arg;
+    struct iguana_info *btcd,*virt,*hhtmp; struct basilisk_item *ptr,*tmp,*pending; int32_t iter,maxmillis,flag; struct supernet_info *myinfo = arg;
     iter = 0;
     while ( 1 )
     {
-        //fprintf(stderr,"basilisk iter.%d\n",iter);
-        //sleep(3);
-        //fprintf(stderr,"basilisk iter.%d\n",iter);
         iter++;
         if ( (ptr= queue_dequeue(&myinfo->basilisks.submitQ,0)) != 0 )
-        {
-            portable_mutex_lock(&myinfo->basilisk_mutex);
             HASH_ADD(hh,myinfo->basilisks.issued,basilisktag,sizeof(ptr->basilisktag),ptr);
-            portable_mutex_unlock(&myinfo->basilisk_mutex);
-            ptr->refcount++;
-            continue;
-        }
         //fprintf(stderr,"A");
-        if ( (ptr= queue_dequeue(&myinfo->basilisks.resultsQ,0)) != 0 )
+        else if ( (ptr= queue_dequeue(&myinfo->basilisks.resultsQ,0)) != 0 )
         {
-            portable_mutex_lock(&myinfo->basilisk_mutex);
             HASH_FIND(hh,myinfo->basilisks.issued,&ptr->basilisktag,sizeof(ptr->basilisktag),pending);
-            portable_mutex_unlock(&myinfo->basilisk_mutex);
             if ( pending != 0 )
-            {
-                if ( (n= pending->numresults) < sizeof(pending->results)/sizeof(*pending->results) )
-                {
-                    pending->numresults++;
-                    if ( (metricfunc= pending->metricfunc) == 0 )
-                        pending->metrics[n] = n + 1;
-                    else if ( (pending->metrics[n]= (*metricfunc)(myinfo,pending,ptr->retstr)) != 0. )
-                        pending->childrendone++;
-                    printf("%s.%u Add results[%d] <- metric %f\n",pending->CMD,pending->basilisktag,n,pending->metrics[n]);
-                    pending->results[n] = ptr->retstr;
-                    if ( strcmp(ptr->CMD,"SEQ") == 0 )
-                    {
-                        if ( (retjson= cJSON_Parse(ptr->retstr)) != 0 )
-                        {
-                            gecko_seqresult(myinfo,ptr->retstr);
-                            free_json(retjson);
-                        }
-                    }
-                    else if ( strcmp(ptr->CMD,"RET") == 0 || strcmp(ptr->CMD,"GET") == 0 )
-                    {
-                        printf("got return for tag.%d parent.%p\n",pending->basilisktag,pending->parent);
-                        if ( (parent= pending->parent) != 0 )
-                        {
-                            pending->parent = 0;
-                            parent->childrendone++;
-                        }
-                        if ( strcmp(ptr->CMD,"GET") == 0 )
-                            basilisk_geckoresult(myinfo,ptr);
-                    }
-                }
-            } else printf("couldnt find issued.%u\n",ptr->basilisktag);
+                basilisk_pending_result(myinfo,ptr,pending);
+            else printf("couldnt find issued.%u\n",ptr->basilisktag);
             free(ptr);
-            continue;
         }
-        //fprintf(stderr,"B");
-        flag = 0;
-        portable_mutex_lock(&myinfo->basilisk_mutex);
-        HASH_ITER(hh,myinfo->basilisks.issued,pending,tmp)
+        else
         {
-            //printf("pending.%u numresults.%d m %f func.%p\n",pending->basilisktag,pending->numresults,pending->metrics[0],pending->metricfunc);
-            if ( (metricfunc= pending->metricfunc) != 0 )
+            flag = 0;
+            HASH_ITER(hh,myinfo->basilisks.issued,pending,tmp)
             {
-                for (i=0; i<pending->numresults; i++)
-                    if ( pending->metrics[i] == 0. && pending->results[i] != 0 )
-                    {
-                        if ( (pending->metrics[i]= (*metricfunc)(myinfo,pending,pending->results[i])) != 0 )
-                            pending->childrendone++;
-                        // printf("iter.%d %p.[%d] poll metrics.%u metric %f\n",iter,pending,i,pending->basilisktag,pending->metrics[i]);
-                        flag++;
-                    }
+                flag += basilisk_issued_iteration(myinfo,pending);
             }
-            basilisk_iscomplete(pending);
-            if ( OS_milliseconds() > pending->expiration )
-            {
-                if ( pending->finished == 0 )
-                {
-                    if ( (parent= pending->parent) != 0 )
-                    {
-                        pending->parent = 0;
-                        parent->childrendone++;
-                    }
-                    pending->finished = (uint32_t)time(NULL);
-                    if ( pending->retstr == 0 )
-                        pending->retstr = clonestr("{\"error\":\"basilisk timeout\"}");
-                    fprintf(stderr,"timeout.%s call metrics.%u lag %f - %f\n",pending->CMD,pending->basilisktag,OS_milliseconds(),pending->expiration);
-                    for (i=0; i<pending->numresults; i++)
-                        if ( (metricfunc= pending->metricfunc) != 0 )
-                            pending->metrics[i] = (*metricfunc)(myinfo,pending,pending->results[i]);
-                    flag++;
-                }
-            }
-            //fprintf(stderr,"c");
-            if ( pending->finished != 0 && time(NULL) > pending->finished+60 )
-            {
-                if ( pending->dependents == 0 || pending->childrendone >= pending->numchildren )
-                {
-                    HASH_DELETE(hh,myinfo->basilisks.issued,pending);
-                    if ( --pending->refcount == 0 )
-                    {
-                        if ( pending->dependents != 0 )
-                            free(pending->dependents);
-                        fprintf(stderr,"HASH_DELETE free ptr.%u refcount.%d\n",pending->basilisktag,pending->refcount);
-                        for (i=0; i<pending->numresults; i++)
-                            if ( pending->results[i] != 0 )
-                                free(pending->results[i]), pending->results[i] = 0;
-                        if ( pending->vals != 0 )
-                            free_json(pending->vals), pending->vals = 0;
-                        free(pending);
-                    } else printf("illegal refcount for pending\n");
-                    flag++;
-                }
-            }
-        }
-        portable_mutex_unlock(&myinfo->basilisk_mutex);
-        //fprintf(stderr,"D");
-        if ( (btcd= iguana_coinfind("BTCD")) != 0 )
-        {
-            done = 3;
-            if ( btcd->RELAYNODE != 0 || btcd->VALIDATENODE != 0 )
-            {
-                if ( (now= (uint32_t)time(NULL)) > btcd->SEQ.BTCD.lastupdate+10 )
-                {
-                    if ( gecko_sequpdate("BTCD",now) >= 0 )
-                        done &= ~1;
-                    btcd->SEQ.BTCD.lastupdate = (uint32_t)time(NULL);
-                }
-            }
-            if ( (now= (uint32_t)time(NULL)) > btcd->SEQ.BTC.lastupdate+30 )
-            {
-                if ( gecko_sequpdate("BTC",now) >= 0 )
-                    done &= ~2;
-                btcd->SEQ.BTC.lastupdate = (uint32_t)time(NULL);
-            }
-            if ( done != 3 )
-            {
-                valsobj = cJSON_CreateObject();
-                if ( btcd->RELAYNODE == 0 && btcd->VALIDATENODE == 0 )
-                {
-                    //fprintf(stderr,"e");
-                    jaddnum(valsobj,"BTCD",btcd->SEQ.BTCD.numstamps+GECKO_FIRSTPOSSIBLEBTCD);
-                    basilisk_standardservice("SEQ",myinfo,GENESIS_PUBKEY,valsobj,0,0);
-                    flag++;
-                }
-                if ( (done & 2) == 0 )
-                {
-                    //fprintf(stderr,"f");
-                    free_json(valsobj);
-                    valsobj = cJSON_CreateObject();
-                    jaddnum(valsobj,"BTC",btcd->SEQ.BTC.numstamps+GECKO_FIRSTPOSSIBLEBTC);
-                    basilisk_standardservice("SEQ",myinfo,GENESIS_PUBKEY,valsobj,0,0);
-                    flag++;
-                }
-                free_json(valsobj);
-            }
-            //fprintf(stderr,"G");
-            if ( flag == 0 && myinfo->allcoins_numvirts > 0 )
+            if ( flag == 0 && myinfo->allcoins_numvirts > 0 && (btcd= iguana_coinfind("BTCD")) != 0 )
             {
                 maxmillis = (1000 / myinfo->allcoins_numvirts) + 1;
                 //portable_mutex_lock(&Allcoins_mutex);

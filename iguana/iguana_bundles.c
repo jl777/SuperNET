@@ -979,7 +979,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
     return(0);
 }*/
 
-int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,struct OS_memspace *mem,struct OS_memspace *memB)
+int32_t iguana_bundlefinalize(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,struct OS_memspace *mem,struct OS_memspace *memB)
 {
     int32_t i; struct iguana_bundle *tmpbp;
     if ( iguana_bundleready(coin,bp,0) == bp->n )
@@ -996,7 +996,7 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
         {
             sleep(1); // make sure new incoming packet didnt overwrite
             coin->emitbusy++;
-            if ( iguana_bundlesaveHT(coin,mem,memB,bp,(uint32_t)time(NULL)) == 0 )
+            if ( iguana_bundlesaveHT(myinfo,coin,mem,memB,bp,(uint32_t)time(NULL)) == 0 )
             {
                 //fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d\n",coin,bp->hdrsi,bp->bundleheight);
                 bp->emitfinish = (uint32_t)time(NULL) + 1;
@@ -1038,7 +1038,7 @@ int32_t iguana_bundlefinalize(struct iguana_info *coin,struct iguana_bundle *bp,
     return(0);
 }
 
-int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_bundle *bp,int32_t timelimit,int32_t lag)
+int32_t iguana_bundleiters(struct supernet_info *myinfo,struct iguana_info *coin,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_bundle *bp,int32_t timelimit,int32_t lag)
 {
     int32_t range,starti,lasti,retval=0,max,counter = 0; struct iguana_bundle *currentbp,*lastbp;
     if ( coin->started == 0 || coin->active == 0 )
@@ -1065,7 +1065,7 @@ int32_t iguana_bundleiters(struct iguana_info *coin,struct OS_memspace *mem,stru
         iguana_bundlehdr(coin,bp,starti);
     else if ( bp->emitfinish == 0 && bp->numsaved >= bp->n )
     {
-        if ( coin->virtualchain != 0 || iguana_bundlefinalize(coin,bp,mem,memB) > 0 )
+        if ( coin->virtualchain != 0 || iguana_bundlefinalize(myinfo,coin,bp,mem,memB) > 0 )
             return(0);
         //else printf("bundlefinalize not done.[%d]\n",bp->hdrsi);
         retval = 1;

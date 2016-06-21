@@ -43,14 +43,14 @@ int32_t gecko_hashstampsfind(struct hashstamp *stamps,int32_t max,struct gecko_s
     return(-1);
 }
 
-bits256 gecko_hashstampscalc(struct iguana_info *btcd,bits256 *btchashp,uint32_t reftimestamp)
+bits256 gecko_hashstampscalc(struct supernet_info *myinfo,struct iguana_info *btcd,bits256 *btchashp,uint32_t reftimestamp)
 {
     struct hashstamp BTCDstamps[GECKO_MAXBTCDGAP],BTCstamps[GECKO_MAXBTCGAP]; bits256 btcdhash;
     btcdhash = *btchashp = GENESIS_PUBKEY;
-    if ( gecko_hashstampsfind(BTCDstamps,GECKO_MAXBTCDGAP,&btcd->SEQ.BTCD,btcdhash,reftimestamp) < 0 )
+    if ( gecko_hashstampsfind(BTCDstamps,GECKO_MAXBTCDGAP,&myinfo->dPOW.SEQ.BTCD,btcdhash,reftimestamp) < 0 )
     {
         btcdhash = BTCDstamps[GECKO_MAXBTCDGAP >> 1].hash2;
-        if ( gecko_hashstampsfind(BTCstamps,GECKO_MAXBTCGAP,&btcd->SEQ.BTC,*btchashp,reftimestamp) < 0 )
+        if ( gecko_hashstampsfind(BTCstamps,GECKO_MAXBTCGAP,&myinfo->dPOW.SEQ.BTC,*btchashp,reftimestamp) < 0 )
             *btchashp = BTCstamps[GECKO_MAXBTCGAP >> 1].hash2;
     }
     return(btcdhash);
@@ -117,19 +117,19 @@ int32_t gecko_hashstampsupdate(struct iguana_info *coin,struct gecko_sequence *s
     return(seq->numstamps);
 }
 
-int32_t gecko_sequpdate(char *symbol,uint32_t reftimestamp)
+int32_t gecko_sequpdate(struct supernet_info *myinfo,char *symbol,uint32_t reftimestamp)
 {
     struct gecko_sequence *seq=0; int32_t max=0,firstpossible=0; struct iguana_info *coin; struct iguana_block *block;
     if ( (coin= iguana_coinfind(symbol)) != 0 && (coin->RELAYNODE != 0 || coin->VALIDATENODE != 0) )
     {
         if ( strcmp(symbol,"BTCD") == 0 )
         {
-            seq = &coin->SEQ.BTCD;
+            seq = &myinfo->dPOW.SEQ.BTCD;
             firstpossible = GECKO_FIRSTPOSSIBLEBTCD;
         }
         else if ( strcmp(symbol,"BTC") == 0 )
         {
-            seq = &coin->SEQ.BTC;
+            seq = &myinfo->dPOW.SEQ.BTC;
             firstpossible = GECKO_FIRSTPOSSIBLEBTC;
         } else return(-1);
         //printf("basilisk update.%s %u lag.%d\n",symbol,reftimestamp,(uint32_t)time(NULL)-seq->lastupdate);
@@ -186,9 +186,9 @@ void gecko_seqresult(struct supernet_info *myinfo,char *retstr)
     if ( (btcd= iguana_coinfind("BTCD")) != 0 && (resultjson= cJSON_Parse(retstr)) != 0 )
     {
         if ( jstr(resultjson,"BTCD") != 0 )
-            seq = &btcd->SEQ.BTCD, firstpossible = GECKO_FIRSTPOSSIBLEBTCD;
+            seq = &myinfo->dPOW.SEQ.BTCD, firstpossible = GECKO_FIRSTPOSSIBLEBTCD;
         else if ( jstr(resultjson,"BTC") != 0 )
-            seq = &btcd->SEQ.BTC, firstpossible = GECKO_FIRSTPOSSIBLEBTC;
+            seq = &myinfo->dPOW.SEQ.BTC, firstpossible = GECKO_FIRSTPOSSIBLEBTC;
         if ( seq != 0 )
         {
             startheight = jint(resultjson,"start");
@@ -225,9 +225,49 @@ char *basilisk_respond_hashstamps(struct supernet_info *myinfo,char *CMD,void *a
     if ( (btcd= iguana_coinfind("BTCD")) != 0 )
     {
         if ( (startheight= juint(valsobj,"BTCD")) != 0 )
-            jadd(retjson,"BTCD",gecko_sequencejson(btcd->chain->zcash,&btcd->SEQ.BTCD,startheight,GECKO_FIRSTPOSSIBLEBTCD));
+            jadd(retjson,"BTCD",gecko_sequencejson(btcd->chain->zcash,&myinfo->dPOW.SEQ.BTCD,startheight,GECKO_FIRSTPOSSIBLEBTCD));
         else if ( (startheight= juint(valsobj,"BTC")) != 0 )
-            jadd(retjson,"BTC",gecko_sequencejson(btcd->chain->zcash,&btcd->SEQ.BTC,startheight,GECKO_FIRSTPOSSIBLEBTC));
+            jadd(retjson,"BTC",gecko_sequencejson(btcd->chain->zcash,&myinfo->dPOW.SEQ.BTC,startheight,GECKO_FIRSTPOSSIBLEBTC));
     }
     return(jprint(retjson,1));
 }
+
+/*
+done = 3;
+if ( btcd->RELAYNODE != 0 || btcd->VALIDATENODE != 0 )
+{
+    if ( (now= (uint32_t)time(NULL)) > myinfo->dPOW.SEQ.BTCD.lastupdate+10 )
+    {
+        if ( gecko_sequpdate(myinfo,"BTCD",now) >= 0 )
+            done &= ~1;
+        myinfo->dPOW.SEQ.BTCD.lastupdate = (uint32_t)time(NULL);
+    }
+}
+if ( (now= (uint32_t)time(NULL)) > myinfo->dPOW.SEQ.BTC.lastupdate+30 )
+{
+    if ( gecko_sequpdate(myinfo,"BTC",now) >= 0 )
+        done &= ~2;
+        myinfo->dPOW.SEQ.BTC.lastupdate = (uint32_t)time(NULL);
+        }
+if ( done != 3 )
+{
+    valsobj = cJSON_CreateObject();
+    if ( btcd->RELAYNODE == 0 && btcd->VALIDATENODE == 0 )
+    {
+        //fprintf(stderr,"e");
+        jaddnum(valsobj,"BTCD",myinfo->dPOW.SEQ.BTCD.numstamps+GECKO_FIRSTPOSSIBLEBTCD);
+        basilisk_standardservice("SEQ",myinfo,GENESIS_PUBKEY,valsobj,0,0);
+        flag++;
+    }
+    if ( (done & 2) == 0 )
+    {
+        //fprintf(stderr,"f");
+        free_json(valsobj);
+        valsobj = cJSON_CreateObject();
+        jaddnum(valsobj,"BTC",myinfo->dPOW.SEQ.BTC.numstamps+GECKO_FIRSTPOSSIBLEBTC);
+        basilisk_standardservice("SEQ",myinfo,GENESIS_PUBKEY,valsobj,0,0);
+        flag++;
+    }
+    free_json(valsobj);
+}
+*/

@@ -112,7 +112,7 @@ struct iguana_bundle *gecko_ensurebundle(struct iguana_info *virt,struct iguana_
     return(bp);
 }
 
-int32_t gecko_hwmset(struct iguana_info *virt,struct iguana_txblock *txdata,struct iguana_msgtx *txarray,uint8_t *data,int32_t datalen,int32_t depth)
+int32_t gecko_hwmset(struct supernet_info *myinfo,struct iguana_info *virt,struct iguana_txblock *txdata,struct iguana_msgtx *txarray,uint8_t *data,int32_t datalen,int32_t depth)
 {
     struct iguana_peer *addr; int32_t i,hdrsi; struct iguana_bundle *bp,*prevbp; struct iguana_block *block;
     if ( (block= iguana_blockhashset("gecko_hwmset",virt,txdata->zblock.height,txdata->zblock.RO.hash2,1)) != 0 )
@@ -134,7 +134,7 @@ int32_t gecko_hwmset(struct iguana_info *virt,struct iguana_txblock *txdata,stru
             bp->numsaved++;
             if ( (block->height % virt->chain->bundlesize) == 13 && hdrsi > 0 && (prevbp= virt->bundles[hdrsi - 1]) != 0 && prevbp->emitfinish == 0 && prevbp->numsaved >= prevbp->n )
             {
-                iguana_bundlefinalize(virt,prevbp,&virt->MEM,virt->MEMB);
+                iguana_bundlefinalize(myinfo,virt,prevbp,&virt->MEM,virt->MEMB);
                 prevbp->emitfinish = (uint32_t)(time(NULL) - 3600);
                 iguana_bundlepurgefiles(virt,prevbp);
                 iguana_savehdrs(virt);
@@ -236,7 +236,7 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
                     }
                     txdata.zblock.height = block->height;
                     txdata.zblock.mainchain = block->mainchain = 1;
-                    if ( gecko_hwmset(virt,&txdata,virt->TXMEM.ptr,data,datalen,i+1) >= 0 )
+                    if ( gecko_hwmset(myinfo,virt,&txdata,virt->TXMEM.ptr,data,datalen,i+1) >= 0 )
                     {
                         if ( block->height > virt->longestchain )
                             virt->longestchain = block->height;

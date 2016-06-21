@@ -1432,6 +1432,7 @@ void iguana_main(void *arg)
         printf("LITTLE ENDIAN arg.%p\n",arg);
     else printf("ENDIAN ERROR\n");
     mycalloc(0,0,0);
+    decode_hex(CRYPTO777_RMD160,20,"");
     if ( 0 )
         iguana_signalsinit();
     if ( 0 )

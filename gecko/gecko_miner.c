@@ -100,7 +100,7 @@ int32_t gecko_delayedPoW(struct supernet_info *myinfo,struct iguana_info *btcd,i
     len += iguana_rwnum(1,&coinbase[len],sizeof(height),(void *)&height);
     if ( (isPoS & 7) != 0 )
     {
-        *btcdhashp = gecko_hashstampscalc(btcd,&btchash,timestamp);
+        *btcdhashp = gecko_hashstampscalc(myinfo,btcd,&btchash,timestamp);
         if ( (isPoS & 2) != 0 && (bits256_cmp(*btcdhashp,GENESIS_PUBKEY) == 0 || bits256_nonz(*btcdhashp) == 0) )
             return(-1);
         if ( (isPoS & 4) != 0 && (bits256_cmp(btchash,GENESIS_PUBKEY) == 0 || bits256_nonz(btchash) == 0) )

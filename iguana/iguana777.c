@@ -610,7 +610,7 @@ void iguana_helper(void *arg)
                     coin->numbundlesQ--;
                     if ( coin->started != 0 && (bp->nexttime == 0 || time(NULL) > bp->nexttime) && coin->active != 0 )
                     {
-                        flag += iguana_bundleiters(ptr->coin,&MEM,MEMB,bp,ptr->timelimit,IGUANA_DEFAULTLAG);
+                        flag += iguana_bundleiters(myinfo,ptr->coin,&MEM,MEMB,bp,ptr->timelimit,IGUANA_DEFAULTLAG);
                     }
                     else
                     {

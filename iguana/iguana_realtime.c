@@ -41,7 +41,7 @@ void iguana_RTramchainfree(struct iguana_info *coin,struct iguana_bundle *bp)
     }
 }
 
-void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,struct iguana_ramchain *R,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block)
+void *iguana_ramchainfile(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_ramchain *dest,struct iguana_ramchain *R,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block)
 {
     char fname[1024]; long filesize; int32_t err; void *ptr=0;
     if ( block == bp->blocks[bundlei] && (ptr= iguana_bundlefile(coin,fname,&filesize,bp,bundlei)) != 0 )
@@ -49,7 +49,7 @@ void *iguana_ramchainfile(struct iguana_info *coin,struct iguana_ramchain *dest,
         if ( iguana_mapchaininit(fname,coin,R,bp,bundlei,block,ptr,filesize) >= 0 )
         {
             if ( dest != 0 && dest->H.data != 0 )
-                err = iguana_ramchain_iterate(coin,dest,R,bp,bundlei);
+                err = iguana_ramchain_iterate(myinfo,coin,dest,R,bp,bundlei);
             else err = 0;
             if ( err != 0 || dest->H.data == 0 || bits256_cmp(R->H.data->firsthash2,block->RO.hash2) != 0 )
             {
@@ -202,7 +202,7 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
     }
 }
 
-int32_t iguana_realtime_update(struct iguana_info *coin)
+int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     double startmillis0; static double totalmillis0; static int32_t num0;
     struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t offset,bundlei,i,n,flag=0; bits256 hash2,*ptr; struct iguana_peer *addr;
@@ -303,7 +303,7 @@ int32_t iguana_realtime_update(struct iguana_info *coin)
             {
                 iguana_blocksetcounters(coin,block,dest);
                 startmillis0 = OS_milliseconds();
-                if ( coin->RTdatabad == 0 && iguana_ramchainfile(coin,dest,&blockR,bp,bundlei,block) == 0 )
+                if ( coin->RTdatabad == 0 && iguana_ramchainfile(myinfo,coin,dest,&blockR,bp,bundlei,block) == 0 )
                 {
                     for (i=0; i<bp->n; i++)
                         if ( GETBIT(bp->haveblock,i) == 0 )

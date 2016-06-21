@@ -44,7 +44,7 @@ void gecko_iteration(struct supernet_info *myinfo,struct iguana_info *btcd,struc
     char mineraddr[64]; int32_t hwmhdrsi,longesthdrsi;
     hwmhdrsi = virt->blocks.hwmchain.height / virt->chain->bundlesize;
     longesthdrsi = virt->longestchain / virt->chain->bundlesize;
-    if ( hwmhdrsi <= longesthdrsi && virt->blocks.hwmchain.height < virt->longestchain-1 )
+    if ( 0 && hwmhdrsi <= longesthdrsi && virt->blocks.hwmchain.height < virt->longestchain-1 )
     {
         if ( time(NULL) > virt->hdrstime+3 )
         {
@@ -331,7 +331,7 @@ struct iguana_info *basilisk_geckochain(struct supernet_info *myinfo,char *symbo
                 iguana_gentxarray(virt,&virt->TXMEM,&txdata,&len,serialized,datalen);
                 txdata.zblock.height = 0;
                 txdata.zblock.RO.allocsize = iguana_ROallocsize(virt);
-                gecko_hwmset(virt,&txdata,virt->TXMEM.ptr,serialized,datalen,txdata.numtxids);
+                gecko_hwmset(myinfo,virt,&txdata,virt->TXMEM.ptr,serialized,datalen,txdata.numtxids);
             }
             virt->started = virt;
             virt->active = (uint32_t)time(NULL);

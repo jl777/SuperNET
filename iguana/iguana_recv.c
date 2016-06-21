@@ -668,7 +668,7 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
     if ( firstflag != 0 && bp->emitfinish == 0 )
     {
         //block->fpos = -1;
-        if ( 0 && iguana_ramchainfile(coin,0,&blockR,bp,bundlei,block) == 0 )
+        if ( 0 && iguana_ramchainfile(SuperNET_MYINFO(0),coin,0,&blockR,bp,bundlei,block) == 0 )
         {
             size = sizeof(blockR);
             iguana_ramchain_free(coin,&blockR,1);
@@ -1672,7 +1672,7 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
     {
         for (i=0; i<coin->chain->bundlesize; i++)
         {
-            if ( coin->RTdatabad != 0 || iguana_realtime_update(coin) <= 0 )
+            if ( coin->RTdatabad != 0 || iguana_realtime_update(myinfo,coin) <= 0 )
                 break;
         }
     }

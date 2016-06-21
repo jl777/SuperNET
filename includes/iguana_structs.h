@@ -413,7 +413,7 @@ struct iguana_info
     struct iguana_hhutxo *utxotable; struct iguana_hhaccount *accountstable; char lastdispstr[2048];
     double txidfind_totalmillis,txidfind_num,spendtxid_totalmillis,spendtxid_num;
     struct iguana_monitorinfo monitoring[256];
-    struct gecko_sequences SEQ;
+    uint32_t dPoW_lasthdrsi,dPoW_lastunspentind;
     struct iguana_blocks blocks; void *mempool; void *mempools[IGUANA_MAXRELAYS];
 };
 
@@ -450,6 +450,12 @@ struct supernet_address
     char NXTADDR[32],BTC[64],BTCD[64];
 };
 
+struct delayedPoW_info
+{
+    struct gecko_sequences SEQ;
+    uint32_t lastbtc_hdrsi,lastbtc_unspentind,lastbtcd_hdrsi,lastbtcd_unspentind;
+};
+
 struct supernet_info
 {
     struct supernet_address myaddr;
@@ -468,6 +474,7 @@ struct supernet_info
     void *ctx;
     // compatibility
     bits256 pangea_category,instantdex_category;
+    struct delayedPoW_info dPOW;
     uint32_t relaybits[IGUANA_MAXRELAYS]; struct basilisk_relay relays[IGUANA_MAXRELAYS]; int32_t numrelays;
 };
 #endif
