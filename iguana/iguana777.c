@@ -569,6 +569,7 @@ void iguana_helper(void *arg)
     sleep(2);
     while ( 1 )
     {
+        flag = 0;
         if ( (btcd= iguana_coinfind("BTCD")) != 0 )
         {
             if ( helperid == 0 && myinfo->numrelays > 0 && myinfo->genesisresults == 0 )
@@ -576,22 +577,21 @@ void iguana_helper(void *arg)
             if ( myinfo->allcoins_numvirts > 0 )
             {
                 maxmillis = (10000 / myinfo->allcoins_numvirts) + 1;
-                flag = 0;
+                n = 0;
                 //portable_mutex_lock(&myinfo->allcoins_mutex);
                 HASH_ITER(hh,myinfo->allcoins,virt,tmp)
                 {
                     if ( virt->started != 0 && virt->active != 0 && virt->virtualchain != 0 )
                     {
                         //fprintf(stderr,"h");
-                        if ( (flag++ % IGUANA_NUMHELPERS) == helperid )
-                            gecko_iteration(myinfo,btcd,virt,maxmillis);
+                        if ( (n++ % IGUANA_NUMHELPERS) == helperid )
+                            gecko_iteration(myinfo,btcd,virt,maxmillis), flag++;
                     }
                 }
                 //portable_mutex_unlock(&myinfo->allcoins_mutex);
             }
         }
         //iguana_jsonQ(); cant do this here
-        flag = 0;
         allcurrent = 2;
         polltimeout = 100;
         //portable_mutex_lock(&myinfo->allcoins_mutex);
