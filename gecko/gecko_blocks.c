@@ -244,7 +244,7 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
                         return(clonestr("{\"result\":\"gecko block created\"}"));
                     }
                     else return(clonestr("{\"error\":\"gecko error creating hwmblock\"}"));
-                } else return(clonestr("{\"results\":\"gecko block wasnt hwmblock\"}"));
+                } else return(clonestr("{\"result\":\"gecko block wasnt hwmblock\"}"));
             }
         }
         return(clonestr("{\"error\":\"gecko orphan block\"}"));

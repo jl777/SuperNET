@@ -861,7 +861,7 @@ void basilisk_pending_result(struct supernet_info *myinfo,struct basilisk_item *
 
 int32_t basilisk_issued_iteration(struct supernet_info *myinfo,struct basilisk_item *pending)
 {
-    basilisk_metricfunc metricfunc; struct basilisk_item *parent; int32_t i,flag = 0;
+    basilisk_metricfunc metricfunc; int32_t i,flag = 0;
     //printf("pending.%u numresults.%d m %f func.%p\n",pending->basilisktag,pending->numresults,pending->metrics[0],pending->metricfunc);
     if ( (metricfunc= pending->metricfunc) != 0 )
     {
