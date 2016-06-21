@@ -331,7 +331,7 @@ struct iguana_info *basilisk_geckochain(struct supernet_info *myinfo,char *symbo
                 iguana_gentxarray(virt,&virt->TXMEM,&txdata,&len,serialized,datalen);
                 txdata.zblock.height = 0;
                 txdata.zblock.RO.allocsize = iguana_ROallocsize(virt);
-                gecko_hwmset(myinfo,virt,&txdata,virt->TXMEM.ptr,serialized,datalen,txdata.numtxids);
+                gecko_hwmset(myinfo,virt,&txdata,virt->TXMEM.ptr,serialized,datalen,txdata.numtxids,0);
             }
             virt->started = virt;
             virt->active = (uint32_t)time(NULL);

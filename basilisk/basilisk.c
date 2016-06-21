@@ -810,7 +810,7 @@ void basilisk_geckoresult(struct supernet_info *myinfo,struct basilisk_item *ptr
                     else if ( strcmp(type,"MEM") == 0 )
                         str = gecko_mempoolarrived(myinfo,virt,ptr->remoteaddr,data,datalen,hash2);
                     else if ( strcmp(type,"BLK") == 0 )
-                        str = gecko_blockarrived(myinfo,virt,ptr->remoteaddr,data,datalen,hash2);
+                        str = gecko_blockarrived(myinfo,virt,ptr->remoteaddr,data,datalen,hash2,0);
                     else if ( strcmp(type,"GTX") == 0 )
                         str = gecko_txarrived(myinfo,virt,ptr->remoteaddr,data,datalen,hash2);
                 }
