@@ -113,7 +113,7 @@ char *basilisk_respond_relays(struct supernet_info *myinfo,char *CMD,void *_addr
 int32_t basilisk_relays_send(struct supernet_info *myinfo,struct iguana_peer *addr)
 {
     int32_t i,siglen,len = 0; char strbuf[512]; bits256 txhash2; uint8_t sig[128],serialized[sizeof(myinfo->relaybits)]; cJSON *vals; bits256 hash; char *retstr,hexstr[sizeof(myinfo->relaybits)*2 + 1];
-    printf("skip sending relays\n");
+    //printf("skip sending relays\n");
     if ( 0 && myinfo != 0 )
     {
         vals = cJSON_CreateObject();

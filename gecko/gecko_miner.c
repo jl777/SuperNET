@@ -329,9 +329,20 @@ void gecko_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,str
 
 void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,int32_t maxmillis,uint8_t *minerpubkey33)
 {
-    struct iguana_zblock newblock; uint32_t prevtimestamp,nBits; int64_t reward = 0; int32_t txn_count; char *blockstr,*space[256]; struct gecko_memtx **txptrs; void *ptr; //struct iguana_bundle *bp;
-    if ( virt->virtualchain == 0 || myinfo->RELAYID < 0 || myinfo->numrelays < 1 || (virt->blocks.hwmchain.height % myinfo->numrelays) != myinfo->RELAYID )
+    struct iguana_zblock newblock; uint32_t prevtimestamp,nBits; int64_t reward = 0; int32_t i,gap,txn_count; char *blockstr,*space[256]; struct gecko_memtx **txptrs; void *ptr; //struct iguana_bundle *bp;
+    if ( virt->virtualchain == 0 || myinfo->RELAYID < 0 || myinfo->numrelays < 1 )
         return;
+    if ( (virt->blocks.hwmchain.height % myinfo->numrelays) != myinfo->RELAYID )
+    {
+        gap = (int32_t)(time(NULL) - virt->backstoptime) / virt->chain->estblocktime;
+        for (i=0; i<gap; i++)
+        {
+            if ( ((virt->blocks.hwmchain.height+i) % myinfo->numrelays) == myinfo->RELAYID )
+                break;
+        }
+        if ( i == gap )
+            return;
+    }
     memset(&newblock,0,sizeof(newblock));
     newblock.height = virt->blocks.hwmchain.height + 1;
     newblock.RO.prev_block = virt->blocks.hwmchain.RO.hash2;

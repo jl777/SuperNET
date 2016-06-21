@@ -240,6 +240,7 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
                     {
                         if ( block->height > virt->longestchain )
                             virt->longestchain = block->height;
+                        virt->backstoptime = (uint32_t)time(NULL);
                         return(clonestr("{\"result\":\"gecko block created\"}"));
                     }
                     else return(clonestr("{\"error\":\"gecko error creating hwmblock\"}"));
